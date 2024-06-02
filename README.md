@@ -4,7 +4,7 @@ While Klipper has been an enormous boon to the 3D printing community as a whole,
 As for the name, it is a combination of terms like Phi (referencing the number 500 among other meanings), filament (that's what we're primarily obsessed with in 3D printing) and element (we're taking things down to the element level, that sort of thinking). The individual components of the project have been named after atomic elements, for example.
 
 ## Elements
-This project has a number of components, each named after an element in the periodic table.
+This project has a number of components, each named after an element in the periodic table. Like the elements in the real world, some of these will be hugely important and ubiquitous, while others may be small and insignificant, relatively-speaking. And development will likely be equally unbalanced as the focus shifts around to the different pieces needed to get this up and running.
 - hydrogen - A C program that is the basic building block of Philement. This is intended to run on or close to the printer (or perhaps control several printers), like on a Raspberry Pi, typically alongside Klipper. It provides a combination of what Klipper and Moonraker provide, in that it serves up a websocket interface, but provides the low-level control of the printer. In the near-term, this will act more like Moonraker where it interfaces with Klipper, which we would need to do anyway.
 - helium - Everything database-related. And there's a lot of database stuff going on. Support for the most popular flavors, naturally - SQLite, Postgres, MySQL/MariaDB, and IBM DB2 just because we can.
 - lithium - The UI. This is all CSS/HTML/JS. Talks almost exclusively to the hydrogen websocket interface. 
