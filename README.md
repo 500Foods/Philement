@@ -12,16 +12,16 @@ This project has a number of, well, elements. Each is named after an element in 
 |:---------:|:---|
 | [hydrogen](https://github.com/500Foods/Philement/tree/main/001-hydrogen/README.md) | This is a bit like the core of Klipper+Moonraker. A websocket-equipped service running the printer. Or a Klipper gateway. <tr></tr> |
 | [helium](https://github.com/500Foods/Philement/tree/main/002-helium/README.md) | Everything database-related. <tr></tr> |
-| [lithium](https://github.com/500Foods/Philement/tree/main/003-lithium/README.md) | The UI. This is all CSS/HTML/JS. Talks almost exclusively to the hydrogen websocket interface.  <tr></tr> |
-| [beryllium](https://github.com/500Foods/Philement/tree/main/004-beryllium/README.md) | Deals with everything gcode-related. Analyzing gcode for print times and filament requirements. Macro expansion. Lua support. Things like that. <tr></tr> |
-| [boron](https://github.com/500Foods/Philement/tree/main/005-boron/README.md) | Rhymes with Voron! This component is concerned with managing the vast amount of information about printers. Like Vorons. Or [Troodons](https://github.com/500Foods/WelcomeToTroodon). <tr></tr> |
+| [lithium](https://github.com/500Foods/Philement/tree/main/003-lithium/README.md) | Web-based UI.  <tr></tr> |
+| [beryllium](https://github.com/500Foods/Philement/tree/main/004-beryllium/README.md) | Deals with everything gcode-related. <tr></tr> |
+| [boron](https://github.com/500Foods/Philement/tree/main/005-boron/README.md) | Rhymes with Voron! A repository of supported printer information. Like Vorons. Or [Troodons](https://github.com/500Foods/WelcomeToTroodon). <tr></tr> |
 | [carbon](https://github.com/500Foods/Philement/tree/main/006-carbon/README.md) | Print fault detection, a bit like what Obico is for. <tr></tr> |
 | [Nitrogen](https://github.com/500Foods/Philement/tree/main/007-nitrogen/README.md) | Think "clapperboard" for 3D printers. Or KlipperScreen. Or Knomi. That sort of thing.   <tr></tr> |
 | [Oxygen](https://github.com/500Foods/Philement/tree/main/008-oxygen/README.md) | Notifications. <tr></tr> |
-| [Fluorine](https://github.com/500Foods/Philement/tree/main/009-fluorine/README.md) | Filament management. <tr></tr> |
+| [Fluorine](https://github.com/500Foods/Philement/tree/main/009-fluorine/README.md) | Filament management system. <tr></tr> |
 | [Neon](https://github.com/500Foods/Philement/tree/main/010-neon/README.md) | Well, lighting, obviously. <tr></tr> |
-| [Sodium](https://github.com/500Foods/Philement/tree/main/011-sodium/README.md) | MMU stuff. <tr></tr> |
-| [Magnesium](https://github.com/500Foods/Philement/tree/main/012-magnesium/README.md) | Print farm stuff <tr></tr> || 
+| [Sodium](https://github.com/500Foods/Philement/tree/main/011-sodium/README.md) | An MMU and MMU support. <tr></tr> |
+| [Magnesium](https://github.com/500Foods/Philement/tree/main/012-magnesium/README.md) | Print farm management tool. <tr></tr> || 
 
 ## Additional Notes
 While this project is currently under active development, feel free to give it a try and post any issues you encounter.  Or start a discussion if you would like to help steer the project in a particular direction.  Early days yet, so a good time to have your voice heard.  As the project unfolds, additional resources will be made available, including platform binaries, more documentation, demos, and so on.
