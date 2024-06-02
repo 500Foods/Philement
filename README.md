@@ -13,7 +13,7 @@ This project has a number of components, each named after an element in the peri
 - carbon - A C program used to compare two images. This is part of a basic print failure detection system that uses timelapse-style images taken between layers to see if an object has been knocked out of position, or if we're dealing with spaghetti, that sort of thing.
 - Nitrogen - Think "clapperboard" for 3D printers.  
 - Oxygen - Notifications.
-- Fluorine - Security stuff.
+- Fluorine - Filament management.
 - Neon - Well, lighting, obviously.
 - Sodium - MMU stuff.
 - Magnesium - Print farm stuff.
