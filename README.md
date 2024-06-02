@@ -1,7 +1,7 @@
 # Philement
-While Klipper has been an enormous boon to the 3D printing community as a whole, it isn't without its faults. Philement has been conceived as a full-on replacement, but it will take quite awhile to get there. In the interim it may end up serving as a front-end to Klipper, a bit like Obico perhaps.
+While Klipper has been an enormous boon to the 3D printing community as a whole, it isn't without its faults. Philement has been conceived as a full-on replacement, but it will take quite awhile to get there. In the interim it may end up serving as a front-end to Klipper, a bit like Obico perhaps. The main item to address upfront is that a large chunk of the lower-level stuff has been written in C and specifically not Python. For so many reasons. 
 
-As for the name, it is a combination of terms like Phi (referencing the number 500 among other meanings), filament (that's what we're primarily occupied with in 3D printing) and element (we're taking things down to the element level, that sort of thinking). The individual components of the project have elements as names, for example.
+As for the name, it is a combination of terms like Phi (referencing the number 500 among other meanings), filament (that's what we're primarily obsessed with in 3D printing) and element (we're taking things down to the element level, that sort of thinking). The individual components of the project have been named after atomic elements, for example.
 
 ## Additional Notes
 While this project is currently under active development, feel free to give it a try and post any issues you encounter.  Or start a discussion if you would like to help steer the project in a particular direction.  Early days yet, so a good time to have your voice heard.  As the project unfolds, additional resources will be made available, including platform binaries, more documentation, demos, and so on.
