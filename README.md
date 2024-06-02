@@ -1,4 +1,4 @@
-# Philement
+# [Philement](https://www.philement.com)
 While Klipper has been an enormous boon to the 3D printing community as a whole, it isn't without its faults. Philement has been conceived as a full-on replacement, but it will take quite awhile to get there. In the interim it may end up serving as a front-end to Klipper, a bit like Obico perhaps. 
 
 The main differentiator to address upfront is that a large chunk of the lower-level code has been written in C and specifically not Python. For so many reasons. To help make this go a little more quickly, various AI engines are being tasked to help out. It isn't written by AI, but written with the help of AI. If that distinction matters. Sort of like relying on something like Copilot to do the grunt work. This has helped cover a lot of ground far more quickly than what might have otherwise been possible. When looking at any of the code, be sure to examine it critically - it may very well be in need of some proper attention.
@@ -10,7 +10,7 @@ This project has a number of, well, elements. Each is named after an element in 
 
 | Element  | Description |
 |:---------:|:---|
-| [hydrogen](https://github.com/500Foods/Philement/tree/main/001-hydrogen/README.md) | This is a bit like the core of Klipper+Moonraker. A websocket-equipped service running the printer. Or a Klipper gateway. <tr></tr> |
+| [hydrogen](https://github.com/500Foods/Philement/tree/main/001-hydrogen/README.md) | A websocket-equipped service, like Klipper+Moonraker combined. <tr></tr> |
 | [helium](https://github.com/500Foods/Philement/tree/main/002-helium/README.md) | Everything database-related. <tr></tr> |
 | [lithium](https://github.com/500Foods/Philement/tree/main/003-lithium/README.md) | Web-based UI.  <tr></tr> |
 | [beryllium](https://github.com/500Foods/Philement/tree/main/004-beryllium/README.md) | Deals with everything gcode-related. <tr></tr> |
