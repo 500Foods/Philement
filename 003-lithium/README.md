@@ -13,3 +13,13 @@ As with most UIs these days, this will ultimately end up as an HTML/CSS/JS app, 
 - Should be able to connect to multiple hydrogen instances.
 - Users range from home user to enterprise farms.
 - Performant, or at least as performant as web apps can be.
+- Should work consistently whether hydrogen is running or not.
+- Optionally connect to helium for reporting tasks.
+- Possibly, anyway. Trying to stick to one interface where possible.
+- Themable. And more than light/dark.
+- Dashboards.
+- D3 Charts. Exportable.
+- Tabulator. Everything exportable. Importable where it makes sense.
+- Interface to hydrogen configuration.
+- Interface to helium SQL.
+- Interface to Lua, wherever that happens to live.
