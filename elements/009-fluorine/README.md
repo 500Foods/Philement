@@ -9,3 +9,4 @@ Everybody has a ton of filament. Maybe this could be managed better.
 - Cost accounting.
 - Print history by filament type.
 - Filament recycling issues.
+- Waste tracking.
