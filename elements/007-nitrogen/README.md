@@ -11,6 +11,6 @@ While Lithium is the primary UI, there's an interest in additional UIs. Maybe fo
 - Adafruit/Feather/WiFi/Can bus/Arduino project is the current thought process.
 - Use the same tooling for the MMU project.
 - An actual product that could be made for sale.
-- Maybe develop production version rather than the Adafruit feather implementation.
+- Maybe develop a production version rather than the Adafruit feather implementation.
 - RP2040.
 
