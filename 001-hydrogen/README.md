@@ -16,3 +16,4 @@ At the outset of this project, there are a number of thoughts about what kinds o
 - Aside from G-code, primarily communicates using JSON.
 - Scripting support with Lua. TBD.
 - Optimized for speed and minimal resource usage.
+- This is likely what the slicer will be talking to.
