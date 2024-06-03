@@ -14,7 +14,7 @@ This project has a number of, well, elements. Each is named after an element in 
 | [helium](https://github.com/500Foods/Philement/tree/main/002-helium/README.md) | Everything database-related. <tr></tr> |
 | [lithium](https://github.com/500Foods/Philement/tree/main/003-lithium/README.md) | Web-based UI.  <tr></tr> |
 | [beryllium](https://github.com/500Foods/Philement/tree/main/004-beryllium/README.md) | Deals with everything gcode-related. <tr></tr> |
-| [boron](https://github.com/500Foods/Philement/tree/main/005-boron/README.md) | Rhymes with Voron! A repository of supported printer information. Like Vorons. Or [Troodons](https://github.com/500Foods/WelcomeToTroodon). <tr></tr> |
+| [boron](https://github.com/500Foods/Philement/tree/main/005-boron/README.md) | Rhymes with Voron! Hardware database. Like Vorons. Or [Troodons](https://github.com/500Foods/WelcomeToTroodon). <tr></tr> |
 | [carbon](https://github.com/500Foods/Philement/tree/main/006-carbon/README.md) | Print fault detection, a bit like what Obico is for. <tr></tr> |
 | [Nitrogen](https://github.com/500Foods/Philement/tree/main/007-nitrogen/README.md) | Think "clapperboard" for 3D printers. Or KlipperScreen. Or Knomi. That sort of thing.   <tr></tr> |
 | [Oxygen](https://github.com/500Foods/Philement/tree/main/008-oxygen/README.md) | Notifications. <tr></tr> |
