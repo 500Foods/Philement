@@ -46,6 +46,18 @@ To configure Klipper to perform checks using carbon, let's first ensure the foll
 - The Klipper PAUSE macro is configured and works as expected, or something equivalent.
 - The mechanism for sending Klipper commands from Linux has been tested.
 
+### Compile carbon
+As carbon is a plain C application, it can be compiled easily using GCC, which is likely already installed and
+configured on any device running Klipper, particuarly a Raspberry Pi or a clone. Typically all of Philement is
+installed in separate folders, so in this case, we just need to download the source file and compile it
+```
+mkdir ~/Philement
+cd ~/Philement
+mkdir carbon
+cd carbon
+wget
+gcc -c carbon.c -lm -ljpeg -lpng -o carbon
+```
 With that out of the way, lets create a [PRINT_CHECK] macro that calls a Linux Bash script that can then call carbon.
 Based on the output of carbon, this script can then log the output, trigger a pause, and so on. But first, Klipper.
 ```
