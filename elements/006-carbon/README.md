@@ -33,9 +33,9 @@ The basic algorithm is the following.
 - An assessment is made based on whether there are any egregious block discrepancies.
 - If the assessment is a fail, an image is generated highlighting the portions of the image that don't match.
 
-## Examples
-- Example One - Shows the output run with precision=30 and tolerance=10 (Pass).
-- Example Two - Shows the same images with precision=100 and tolerance=5 (Fail).
+## carbon Examples
+- [carbon Example One](https://github.com/500Foods/Philement/blob/main/elements/006-carbon/examples/example1.md) - Shows the output run with precision=30 and tolerance=10 (Pass).
+- [carbon Example Two](https://github.com/500Foods/Philement/blob/main/elements/006-carbon/examples/example1.md) - Shows the same images with precision=100 and tolerance=2 (Fail).
 
 ## Configuration
 To configure Klipper to perform checks using carbon, let's first ensure the following conditions are met.
