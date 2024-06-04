@@ -151,10 +151,9 @@ timediff=$(($script_end-$script_start))
 # Make a note in the log of what went down
 echo `date +"%Y-%m-%dT%H:%M:%S%z"` " $printername.$currentlayername  [$assessment]  Elapsed Time: $timediff ms" >> $log1
 ```
-Note that if a print failure is detected, it runs the [PRINT_PAUSE] command in Klipper. This isn't a default Klipper macro,
-so either update Klipper with a macro named [PRINT_PAUSE] to trigger the pause, or change this script to use a different
-macro or take a different action. Other actions, like sending an email, can also be performed here, likely outside of
-Klipper.
+Note that if a print failure is detected, it issues a log G-code command to Klipper (M118). Calling another macro to 
+actually pause or cancel the print would normally be the case once it has been through a little more testing.
+Other actions, like sending an email, can also be performed here, likely outside of Klipper.
 
 The above script uses a precision value of 100, meaning that it is expecting to receive a profile that is 100 characters
 across by as many down that fit the aspect ratio of the images. A profile100.txt file can be found in the examples folder.
