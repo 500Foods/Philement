@@ -35,7 +35,7 @@ The basic algorithm is the following.
 
 ## carbon Examples
 - [carbon Example One](https://github.com/500Foods/Philement/blob/main/elements/006-carbon/examples/example1.md) - Shows the output run with precision=30 and tolerance=10 (Pass).
-- [carbon Example Two](https://github.com/500Foods/Philement/blob/main/elements/006-carbon/examples/example1.md) - Shows the same images with precision=100 and tolerance=2 (Fail).
+- [carbon Example Two](https://github.com/500Foods/Philement/blob/main/elements/006-carbon/examples/example2.md) - Shows the same images with precision=100 and tolerance=2 (Fail).
 
 ## Configuration
 To configure Klipper to perform checks using carbon, let's first ensure the following conditions are met.
