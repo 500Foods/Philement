@@ -37,7 +37,7 @@ The basic algorithm is the following.
 - [Example One](https://github.com/500Foods/Philement/blob/main/elements/006-carbon/examples/example1.md) - Shows the output run with precision=30 and tolerance=10 (Pass).
 - [Example Two](https://github.com/500Foods/Philement/blob/main/elements/006-carbon/examples/example2.md) - Shows the same images with precision=100 and tolerance=2 (Fail).
 
-## carbon Klipper Configuration
+## Klipper Configuration
 To configure Klipper to perform checks using carbon, let's first ensure the following conditions are met.
 - Timelapse is configured to generate suitable images (see above) after each layer.
 - The gcode_shell_command extension has been installed and tested.
