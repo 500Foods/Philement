@@ -192,6 +192,7 @@ subsequent layers.
 - This is running an algorithm after each layer print. It usually only takes around 1100 msec in testing on a BTT-CB1, a low-powered Raspberry Pi clone.
 - These systems don't have a lot of cycles to spare. Klipper can get tripped up if it takes too long to process an image.
 - The 'nice' and 'sleep' commands were added in an attempt to smooth this over. Adjust or remove as needed.
+- If Fluidd, Mainsail, Obico, and everything else imaginable are also running, this might be too much of a load for the system.
 - The debug log can be redirected to /dev/null when testing is complete, but it regenerates a file for each layer during its run.
 - They aren't deleted, so if a new run has fewer layers, the debug logs will have a mix of print jobs contained within them. Pay attention to the timestamps.
 - Running as configured, an image will be generated in the same timelapse folder as the other images, one for each failure.
