@@ -6,21 +6,21 @@
 // carbon <image1> <image2> [precision] [tolerance] [profile]
 //
 // This will compare image1 to image2 and make an assessment as to
-// whether a print error has occurred. The precision paramater is
+// whether a print error has occurred. The precision parameter is
 // used to determine how many subdivisions to compare. The images
 // are then divided into this many equal squares across, with as 
 // many squares vertically as needed to fit the aspect ratio. The 
 // tolerance is used as a factor in determining how similar the
 // individual blocks are when compared. If images are considered
 // a match, the assessment is 'pass'. If the assessment is 'fail'
-// an image is output showing the blocks that contribted. The 
+// an image is output showing the blocks that contributed. The 
 // profile is a text file describing the parts of the image that
-// are assigned as excluded, print area or non-print area. The
+// are assigned as excluded, print area, or non-print area. The
 // non-print area is scrutinized most, and excluded is ignored.
 //
 // Created By: Andrew Simard
 // Created On: 2024-Jun-03
-// Created At: https://
+// Created At: https://raw.githubusercontent.com/500Foods/Philement/main/elements/006-carbon/carbon/carbon.c
 
 
 #include <stdio.h>
