@@ -33,5 +33,18 @@ The basic algorithm is the following.
 - An assessment is made based on whether there are any egregious block discrepancies.
 - If the assessment is a fail, an image is generated highlighting the portions of the image that don't match.
 
+## Examples
+- Example One - Shows the output run with precision=30 and tolerance=10 (Pass).
+- Example Two - Shows the same images with precision=100 and tolerance=5 (Fail).
+
+## Configuration
+To configure Klipper to perform checks using carbon, let's first ensure the following conditions are met.
+- Timelapse is configured to generate suitable images (see above) after each layer.
+- The gcode_shell_command extension has been installed and tested.
+- More than passing familiarity with both Klipper macros and Linux Bash scripts.
+- Necessary permissions to make changes to both Klipper macros and Linus Bash scripts.
+- The Klipper PAUSE macro is configured and works as expected, or something equivalent.
+- The mechanism for sending Klipper commands from Linux has been tested.
+
 
 
