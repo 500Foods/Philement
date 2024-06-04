@@ -11,8 +11,10 @@ As they are square, for this image, there will be 75 vertical blocks.
 So the analysis is done over this array of 100x75 blocks. 
 First, the content of each block is reduced to an RGB triple (0-255). 
 The profile is then overlaid to mask any parts of the images that need to be blocked. 
-In this example, the profile excludes the bottom permieter but not the digitial displays. 
+
+In this example, the profile excludes the bottom perimeter but not the digital displays. 
 The left side is marked as non-print area, meaning that any changes here are counted at a higher precedence.
+And the tolerance is changed from the default of 10 down to 2, meaning almost any variation will get flagged.
 
 ```
 profile100.txt
@@ -356,8 +358,17 @@ WARNING: Print failure detected! Consider aborting the print job.
 Failure Image: frame000002-failure.jpg
 Execution Time: 117.69 ms
 ```
-In this example, with a "tolerance" of two, the print fails. 
+In this example, with a "tolerance" of 2, the print fails. 
 
-In the comparison grid, there's some variation everywhere, which is a result of the images being ever so slightly different when scrutinized more closely, but well below the threshold where it would be a fail. 
+In the comparison grid, there's some variation everywhere, which is a result of JPEG images being ever so slightly different when scrutinized more closely, but well below the threshold where it would be a fail on its own, even at a tolerance of 2. 
 
-However, because we're looking at the image in such detail, the clock changing is enough to trigger the failure. An image is then generated showing the blocks shaded in red that have been responsible for the failure. The excluded blocks are also shaded in black for calibration purposes.
+However, because we're looking at the image in such detail, the clock changing is enough to trigger the failure. 
+An image is then generated showing the blocks shaded in red that have been responsible for the failure. The excluded blocks are also shaded in black for calibration purposes.
+
+| Original Image 2 | Highlighted Image 2|
+|---------|--------|
+|<img src=frame000002.jpg> |<img src=frame000002-failure.jpg>|
+
+Normally, a tolerance of 2 would be far too low. And the digital displays, perhaps even the belts in this case, should be excluded from consideration. As the print proceeds, there will be variations in the printed area as well, particularly when going from having no plastic present in a block to having a plastic-filled block. Some tuning of both the precision and tolerance parameters will get us part way towards not triggering false positives.
+
+Longer-term, more extensive analysis will likely be needed, but as we're trying to do this on-device with not especially powerful devices, this is sufficient to get us up and running.
