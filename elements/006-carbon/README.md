@@ -74,10 +74,9 @@ verbose: False
 [gcode_macro PRINT_CHECK]
 description: Run Philement/carbon to compare Timelapse images
 gcode:
-    # Show elapsed time (Note: Requires TIMER 
+    # Assign printer name and send current layer number
     {% set printer_name="Troondon" %}
-    {% set current_layer='%05d' % printer.print_stats.info.current_layer|int %}
-    RUN_SHELL_COMMAND CMD=shell_print_check PARAMS="{printer_name} {current_layer}"
+    RUN_SHELL_COMMAND CMD=shell_print_check PARAMS="{printer_name} {printer.print_stats.info.current_layer}"
 ```
 The script being called is ~/scripts/print_check.sh, passing the printer name and the current layer as parameters.
 
@@ -141,9 +140,17 @@ macro or take a different action. Other actions, like sending an email, can also
 Klipper.
 
 ## Orca Configuration
-And for reasons unknown, Orca doesn't necessarily tell Klipper about layer changes. So in the Layer change G-code section,
-where TIMELAPSE_TAKE_FRAME] was added as part of installing Timelapse support, we'll need to call our [PRINT_CHECK] macro 
-and also update the layer counter.
+Finally, for reasons unknown, Orca doesn't necessarily tell Klipper about layer changes. Perhaps this is configured for
+each printer individually. In any event, two changes need to be made.
+
+In the Machine start G-code, where normally there is just the call to PRINT_START, the total number of layers is 
+passed into Klipper.
+```
+PRINT_START EXTRUDER=[nozzle_temperature_initial_layer] BED=[bed_temperature_initial_layer_single]
+SET_PRINT_STATS_INFO TOTAL_LAYER=[total_layer_count]
+```
+In the Layer change G-code section, where TIMELAPSE_TAKE_FRAME] was added as part of installing Timelapse support, 
+this is where the call to the [PRINT_CHECK] macro is added, and where the layer counter is updated.
 ```
 ;AFTER_LAYER_CHANGE
 ;[layer_z]
@@ -151,3 +158,6 @@ SET_PRINT_STATS_INFO CURRENT_LAYER={layer_num + 1}
 TIMELAPSE_TAKE_FRAME
 PRINT_CHECK
 ```
+Note that both of these have to be configured in order for the layer counting mechanism to work. The layer count
+is used by our script to skip checking the first few layers as those are likely to change more dramatically than
+subsequent layers.
