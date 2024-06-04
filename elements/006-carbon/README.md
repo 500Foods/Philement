@@ -156,6 +156,15 @@ so either update Klipper with a macro named [PRINT_PAUSE] to trigger the pause, 
 macro or take a different action. Other actions, like sending an email, can also be performed here, likely outside of
 Klipper.
 
+The above script uses a precision value of 100, meaning that it is expecting to receive a profile that is 100 characters
+across by as many down that fit the aspect ratio of the images. A profile100.txt file can be found in the examples folder.
+Be sure to edit it to mask areas (X) or mark print area (P) versus non-print area (N) regions.
+
+The above script uses a tolerance value of 4. This can be adjusted to reduce the rates of false positives. It needs to
+be low enough to catch obvious issues. It can be tested by simply adding or removing an object from the build plate.
+The default action defined above just logs an entry in Klipper, so be sure to test and ensure that the tolerance is
+low enough to trigger the warning. 
+
 ## Orca Configuration
 Finally, for reasons unknown, Orca doesn't necessarily tell Klipper about layer changes. Perhaps this is configured for
 each printer individually. In any event, two changes need to be made.
@@ -178,3 +187,12 @@ PRINT_CHECK
 Note that both of these have to be configured in order for the layer counting mechanism to work. The layer count
 is used by our script to skip checking the first few layers as those are likely to change more dramatically than
 subsequent layers.
+
+## Additional Notes
+- This is running an algorithm after each layer print. It usually only takes around 1100 msec in testing on a BTT-CB1, a low-powered Raspberry Pi clone.
+- These systems don't have a lot of cycles to spare. Klipper can get tripped up if it takes too long to process an image.
+- The 'nice' and 'sleep' commands were added in an attempt to smooth this over. Adjust or remove as needed.
+- The debug log can be redirected to /dev/null when testing is complete, but it regenerates a file for each layer during its run.
+- They aren't deleted, so if a new run has fewer layers, the debug logs will have a mix of print jobs contained within them. Pay attention to the timestamps.
+- Running as configured, an image will be generated in the same timelapse folder as the other images, one for each failure.
+- These do seem to get cleaned up when the timelapse completes.
