@@ -139,3 +139,15 @@ Note that if a print failure is detected, it runs the [PRINT_PAUSE] command in K
 so either update Klipper with a macro named [PRINT_PAUSE] to trigger the pause, or change this script to use a different
 macro or take a different action. Other actions, like sending an email, can also be performed here, likely outside of
 Klipper.
+
+## Orca Configuration
+And for reasons unknown, Orca doesn't necessarily tell Klipper about layer changes. So in the Layer change G-code section,
+where TIMELAPSE_TAKE_FRAME] was added as part of installing Timelapse support, we'll need to call our [PRINT_CHECK] macro 
+and also update the layer counter.
+```
+;AFTER_LAYER_CHANGE
+;[layer_z]
+SET_PRINT_STATS_INFO CURRENT_LAYER={layer_num + 1} 
+TIMELAPSE_TAKE_FRAME
+PRINT_CHECK
+```
