@@ -1,4 +1,4 @@
-# Carbon - Example 1
+# carbon - Example Two
 In this example, a single run of the carbon app using the same two images is performe again, but with a precision of 100.
 
 | Image 1 | Image 2|
