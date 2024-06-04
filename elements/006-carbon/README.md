@@ -34,10 +34,10 @@ The basic algorithm is the following.
 - If the assessment is a fail, an image is generated highlighting the portions of the image that don't match.
 
 ## carbon Examples
-- [carbon Example One](https://github.com/500Foods/Philement/blob/main/elements/006-carbon/examples/example1.md) - Shows the output run with precision=30 and tolerance=10 (Pass).
-- [carbon Example Two](https://github.com/500Foods/Philement/blob/main/elements/006-carbon/examples/example2.md) - Shows the same images with precision=100 and tolerance=2 (Fail).
+- [Example One](https://github.com/500Foods/Philement/blob/main/elements/006-carbon/examples/example1.md) - Shows the output run with precision=30 and tolerance=10 (Pass).
+- [Example Two](https://github.com/500Foods/Philement/blob/main/elements/006-carbon/examples/example2.md) - Shows the same images with precision=100 and tolerance=2 (Fail).
 
-## Configuration
+## carbon Klipper Configuration
 To configure Klipper to perform checks using carbon, let's first ensure the following conditions are met.
 - Timelapse is configured to generate suitable images (see above) after each layer.
 - The gcode_shell_command extension has been installed and tested.
@@ -45,6 +45,12 @@ To configure Klipper to perform checks using carbon, let's first ensure the foll
 - Necessary permissions to make changes to both Klipper macros and Linus Bash scripts.
 - The Klipper PAUSE macro is configured and works as expected, or something equivalent.
 - The mechanism for sending Klipper commands from Linux has been tested.
+
+With that out of the way, lets create a [PRINT_CHECK] macro that calls a Linux Bash script that can then call carbon.
+Based on the output of carbon, this script can then log the output, trigger a pause, and so on. But first, Klipper.
+```
+[PRINT_CHECK]
+```
 
 
 
