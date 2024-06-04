@@ -1,5 +1,5 @@
 # carbon
-The idea here is about monitoring a print or other activity, and taking actions when failures are detected. Might be as simple as pausing a print. This is the main reason to use Obico at the moment (spaghetti detection as they like to call it).
+This element is concerned with monitoring a print or other activity, and taking actions when failures are detected. 
 
 ## Brainstorming
 - The first draft is just comparing timelapse images.
