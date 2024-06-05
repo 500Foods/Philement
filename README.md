@@ -12,11 +12,11 @@ This project has a number of, well, elements. Each is named after an element in 
 |:-------:|:------:|:------------|
 | [hydrogen](https://github.com/500Foods/Philement/tree/main/elements/001-hydrogen/README.md) | 🔨 | A websocket-equipped service, like Klipper+Moonraker combined. <tr></tr> |
 | [helium](https://github.com/500Foods/Philement/tree/main/elements/002-helium/README.md) | 💡 | Everything database-related. <tr></tr> |
-| [lithium](https://github.com/500Foods/Philement/tree/main/elements/003-lithium/README.md) | 💡 | Web-based UI.  <tr></tr> |
+| [lithium](https://github.com/500Foods/Philement/tree/main/elements/003-lithium/README.md) | 💡 | Web-based UI for desktops and larger systems.  <tr></tr> |
 | [beryllium](https://github.com/500Foods/Philement/tree/main/elements/004-beryllium/README.md) | 💡 | Deals with everything gcode-related. <tr></tr> |
 | [boron](https://github.com/500Foods/Philement/tree/main/elements/005-boron/README.md) | 💡 | Rhymes with Voron! Hardware database. Like Vorons. Or [Troodons](https://github.com/500Foods/WelcomeToTroodon). <tr></tr> |
 | [carbon](https://github.com/500Foods/Philement/tree/main/elements/006-carbon/README.md) | 🚚 | Print fault detection, a bit like what Obico is for. <tr></tr> |
-| [Nitrogen](https://github.com/500Foods/Philement/tree/main/elements/007-nitrogen/README.md) | 💡 | Think "clapperboard" for 3D printers. Or KlipperScreen. Or Knomi. That sort of thing.   <tr></tr> |
+| [Nitrogen](https://github.com/500Foods/Philement/tree/main/elements/007-nitrogen/README.md) | 💡 | LVGL-based UI for controllers and smaller systems. <tr></tr> |
 | [Oxygen](https://github.com/500Foods/Philement/tree/main/elements/008-oxygen/README.md) | 💡 | Notifications. <tr></tr> |
 | [Fluorine](https://github.com/500Foods/Philement/tree/main/elements/009-fluorine/README.md) | 💡 | Filament management system. <tr></tr> |
 | [Neon](https://github.com/500Foods/Philement/tree/main/elements/010-neon/README.md) | 💡 | Well, lighting, obviously. <tr></tr> |
