@@ -111,6 +111,12 @@ passfail=-1
 image1=`ls -t1 $timelapse | grep -v failure | head -n2 | tail -n1`
 image2=`ls -t1 $timelapse | grep -v failure | head -n1`
 
+# Make a note in the log as a reminder that this is running
+if [ $currentlayer -eq 5 ]
+then
+    echo "M118 PRINT_CHECK Monitoring is active" > $KlipperCmd
+fi
+
 # if the images aren't the same file (first layer or no images) then get to work
 if [ $currentlayer -gt 5 ]
 then
