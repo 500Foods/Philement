@@ -110,3 +110,4 @@ Configuration:
 - Could use feedrate as a way to calibrate the algorithm, in theory, if it isn't really a known figure for a given printer.
 - Similarly, the weight calculation (grams) is important, but its accuracy depends on accurately knowing the density.
 - Lots of room for improvement, but for a first draft this gives us some data to work with.
+- To get layer times, a separate parameter must be passed (-l or --layertimes) but the slicer must also have added layer changes to the G-code using the 'SET_PRINT_STATS_INFO CURRENT_LAYER=12' mechanism.
