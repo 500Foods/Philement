@@ -99,3 +99,14 @@ Configuration:
   Filament diameter: 1.75 mm
   Filament density: 1.04 g/cm^3
 ```
+## Additional Information
+- As a first draft, this isn't going to be perfect for everything, but with enough detail about a specific printer, it should be able to generate something reasonably respectable.
+- More defaults could be gleaned from the G-code file, but it isn't always the case that the slicer puts the data in there. Like filament density, for example.
+- The default filament density is for ASA, for example, which is by no means the most popular or most or least dense filament.
+- The defaults are not especially ideal for any printer but should be easy enough to customize if you happen to know the correct values.
+- More could be done to improve accuracy. To help not go too far down that rabbit hole, an array of layer times is generated. We could use this to compare to actual times during a print to make adjustments on the fly.
+- The calculations are assuming Core XY kinematics, but this might look very different for different styles of printers.
+- Fiddling with the parameters, particularly the default feedrate, can produce dramatically different results.
+- Could use feedrate as a way to calibrate the algorithm, in theory, if it isn't really a known figure for a given printer.
+- Similarly, the weight calculation (grams) is important, but its accuracy depends on accurately knowing the density.
+- Lots of room for improvement, but for a first draft this gives us some data to work with.
