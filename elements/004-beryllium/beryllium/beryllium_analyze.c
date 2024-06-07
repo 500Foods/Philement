@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
     printf("Analysis end: %s\n", end_time);
 
     double elapsed_time = ((double)(end - start)) / CLOCKS_PER_SEC * 1000.0;
-    printf("Aanalysis duration: %.6f ms\n", elapsed_time);
+    printf("Analysis duration: %.6f ms\n", elapsed_time);
 
     printf("\nFile size: %ld bytes\n", stats.file_size);
     printf("Total lines: %d\n", stats.total_lines);
