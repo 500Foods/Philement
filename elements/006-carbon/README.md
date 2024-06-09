@@ -147,6 +147,7 @@ failure="Possible failure detected"
 #       to make sure that it is working before trying to use it here.
 # Note: The summary that carbon produces is also appended to the email if it is available
 # Note: An image is attached highlighting flagged areas if available
+# Note: The score is appended to the subject if available
 #---------------------------------------------------------------------------------------------------
 email="andrew@500foods.com"
 
@@ -217,6 +218,8 @@ then
     if [ -f $log2 ] && [ $log2 != "/dev/null" ]
     then
         body+=`tail -n 3 $log2`
+        score=`grep Assessment $log2 |  awk -F ' \(|\):' '{print $2}'`
+        subject+=" ($score)"
     fi
 
     # Attach failed image if available
@@ -298,7 +301,8 @@ subsequent layers.
     - Added more comments throughout the script
     - Added TEST mechanism to print_check.sh and code for [PRINT_CHECK_TEST] macro
     - Updated to support sending and formatting HTML e-mails
-    - Added code to extract assessment information from debug log and append to e-mail
+    - Added code to extract assessment information from debug log and append to body of e-mail
+    - Added code to extract score and append to subject of e-mail
   - carbon.c
     - Added HTML parameter to summary output to make it easier to format HTML e-mails
     - Changed calculation of assessment to be a points system, with 25 points needed to fail
