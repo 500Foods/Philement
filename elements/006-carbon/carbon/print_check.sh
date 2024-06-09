@@ -54,6 +54,7 @@ failure="Possible failure detected"
 #       to make sure that it is working before trying to use it here.
 # Note: The summary that carbon produces is also appended to the email if it is available
 # Note: An image is attached highlighting flagged areas if available
+# Note: The score is appended to the subject if available
 #---------------------------------------------------------------------------------------------------
 email="andrew@500foods.com"
 
@@ -109,7 +110,7 @@ then
     assessment="Pass"
 fi
 
-# It failed, so we should send out notification and inform Klipper
+# It failed, so we should send out a notification and inform Klipper
 # Note: We should also do this if the TEST option is supplied as an optional last parameter
 #       This can also be triggered from Klipper via a PRINT_CHECK_TEST macro
 if [ $passfail -eq 1 ] || [ $4 ==  'TEST' ]
@@ -124,6 +125,8 @@ then
     if [ -f $log2 ] && [ $log2 != "/dev/null" ]
     then
         body+=`tail -n 3 $log2`
+        score=`grep Assessment $log2 |  awk -F ' \(|\):' '{print $2}'`
+        subject+=" ($score)"
     fi
 
     # Attach failed image if available
