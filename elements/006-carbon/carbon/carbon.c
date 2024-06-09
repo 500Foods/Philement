@@ -1,26 +1,26 @@
 // carbon.c
-// 
+//
 // Part of the Philements project
-// 
+//
 // Usage:
 // carbon <image1> <image2> [precision] [tolerance] [profile]
 //
 // This will compare image1 to image2 and make an assessment as to
-// whether a print error has occurred. The precision parameter is
+// whether a print error has occurred. The precision paramater is
 // used to determine how many subdivisions to compare. The images
-// are then divided into this many equal squares across, with as 
-// many squares vertically as needed to fit the aspect ratio. The 
+// are then divided into this many equal squares across, with as
+// many squares vertically as needed to fit the aspect ratio. The
 // tolerance is used as a factor in determining how similar the
 // individual blocks are when compared. If images are considered
 // a match, the assessment is 'pass'. If the assessment is 'fail'
-// an image is output showing the blocks that contributed. The 
+// an image is output showing the blocks that contribted. The
 // profile is a text file describing the parts of the image that
-// are assigned as excluded, print area, or non-print area. The
+// are assigned as excluded, print area or non-print area. The
 // non-print area is scrutinized most, and excluded is ignored.
 //
 // Created By: Andrew Simard
 // Created On: 2024-Jun-03
-// Created At: https://raw.githubusercontent.com/500Foods/Philement/main/elements/006-carbon/carbon/carbon.c
+// Created At: https://
 
 
 #include <stdio.h>
@@ -74,8 +74,8 @@ typedef struct {
 } ComparisonGrid;
 
 
-int max(int a, int b); 
-int min(int a, int b); 
+int max(int a, int b);
+int min(int a, int b);
 Image allocateImage(int width, int height, int channels);
 void freeImage(Image image);
 ImageInfo getJPGImageInfo(const char *filename);
@@ -84,16 +84,16 @@ ImageInfo getImageInfo(const char *filename);
 Image loadJPGImage(const char *filename);
 Image loadPNGImage(const char *filename);
 RGBColor *divideIntoBlocks(Image image, int precision);
-void printBlocks(RGBColor *blocks, int numHorizontalBlocks, int numVerticalBlocks, Profile profile); 
-ColorAndIntensity getColorAndIntensity(unsigned char r, unsigned char g, unsigned char b); 
+void printBlocks(RGBColor *blocks, int numHorizontalBlocks, int numVerticalBlocks, Profile profile);
+ColorAndIntensity getColorAndIntensity(unsigned char r, unsigned char g, unsigned char b);
 Profile loadProfile(const char *filename, int width, int height);
 void freeProfile(Profile profile);
 ComparisonGrid allocateComparisonGrid(int width, int height);
 void freeComparisonGrid(ComparisonGrid grid);
 ComparisonGrid compareBlocks(RGBColor *blocks1, RGBColor *blocks2, int width, int height, Profile profile, int tolerance);
 void printComparisonGrid(ComparisonGrid grid);
-bool summarizeComparison(ComparisonGrid grid);
-Profile createDefaultProfile(int width, int height); 
+bool summarizeComparison(ComparisonGrid grid, char *outputformat);
+Profile createDefaultProfile(int width, int height);
 
 
 int max(int a, int b) {
@@ -587,6 +587,7 @@ ComparisonGrid compareBlocks(RGBColor *blocks1, RGBColor *blocks2, int width, in
             if (profileChar == 'X') {
                 grid.scores[index] = 'X';  // Use 'X' character instead of 0
             } else {
+                grid.scores[index] = '0';
                 int dr = blocks1[index].r - blocks2[index].r;
                 int dg = blocks1[index].g - blocks2[index].g;
                 int db = blocks1[index].b - blocks2[index].b;
@@ -597,9 +598,14 @@ ComparisonGrid compareBlocks(RGBColor *blocks1, RGBColor *blocks2, int width, in
                     score = (int)(distance / (2.0 * tolerance) + 0.5);  // Less sensitive for 'P' blocks
                 } else {  // 'N'
                     score = (int)(distance / tolerance + 0.5);  // More sensitive for 'N' blocks
+                    if (score < 7)  {
+                       grid.scores[index] = 'N'; // Use 'N' to indicate non-print area
+                    }
                 }
 
-                grid.scores[index] = min(score, 9) + '0';  // Convert to character '0'-'9'
+                if (grid.scores[index] != 'N') {
+                    grid.scores[index] = min(score, 9) + '0';  // Convert to character '0'-'9'
+                }
             }
         }
     }
@@ -615,10 +621,10 @@ void printComparisonGrid(ComparisonGrid grid) {
             char score = grid.scores[index];
 
             if (score == 'X') {
-                printf(" "); 
+                printf(" ");
             } else {
                 //printf("\033[1;%dm%c\033[0m ", 30 + ((score > '0') ? 31 : 37), score);  // Red for non-zero, white for zero
-                printf("%c", score); 
+                printf("%c", score);
             }
         }
         printf("\n");
@@ -626,46 +632,93 @@ void printComparisonGrid(ComparisonGrid grid) {
 }
 
 
-bool summarizeComparison(ComparisonGrid grid) {
-    int counts[11] = {0};  // 0-9 for scores, 10 for 'X'
+bool summarizeComparison(ComparisonGrid grid, char *outputformat) {
+    int counts[12] = {0};  // 0-9 for scores, 10 for 'X', 11 for 'N'
     bool shouldFail = false;
+    float finalscore = 0.0;
 
     for (int i = 0; i < grid.height; i++) {
         for (int j = 0; j < grid.width; j++) {
             int index = i * grid.width + j;
             char score = grid.scores[index];
-            if (score == 'X')
+            if (score == 'X') {
                 counts[10]++;
-            else
+            } else if (score == 'N') {
+                counts[11]++;
+            } else {
                 counts[score - '0']++;
+            }
         }
     }
 
-    printf("Summary:\n");
-    for (int i = 0; i < 10; i++) {
-        if (counts[i] > 0) {
-            printf("- %d-blocks: %d\n", i, counts[i]);
+    if (outputformat == "TEXT") {
+        printf("Summary:\n");
+        for (int i = 0; i < 10; i++) {
+            if (counts[i] > 0) {
+                printf("- %d-blocks: %d\n", i, counts[i]);
+
+                if (i == 9) {
+                    finalscore += counts[i] * 10.0;
+                } else if (i == 8) {
+                    finalscore += counts[i] * 1.0;
+                } else if (i == 7) {
+                    finalscore += counts[i] * 0.1;
+                }
+            }
+        }
+        if (counts[11] > 0) {
+            printf("- N-blocks: %d\n", counts[11]);
+        }
+        if (counts[10] > 0) {
+            printf("- X-blocks: %d\n", counts[10]);
+        }
+
+        // Apply the failure criteria
+        if (finalscore > 25.0) {
+            shouldFail = true;
+        }
+
+        printf("Assessment: %s\n", shouldFail ? "Fail" : "Pass");
+        if (shouldFail) {
+            printf("WARNING: Print failure detected! Consider aborting the print job.\n");
+        } else {
+            printf("Print job appears to be progressing normally.\n");
         }
     }
-    if (counts[10] > 0) {
-        printf("- X-blocks: %d\n", counts[10]);
-    }
+    else {
+        printf("<p>Summary:<ul>");
+        for (int i = 0; i < 10; i++) {
+            if (counts[i] > 0) {
+                printf("<li> %d-blocks: %d</li>", i, counts[i]);
 
-    // Apply the failure criteria
-    if (counts[9] > 0) {
-        printf("Reason: More than 0 '9' blocks\n");
-        shouldFail = true;
-    }
-    if (counts[8] > 10) {
-        printf("Reason: More than 10 '8' blocks\n");
-        shouldFail = true;
-    }
-    if (counts[7] > 50) {
-        printf("Reason: More than 50 '7' blocks\n");
-        shouldFail = true;
-    }
+                if (i == 9) {
+                    finalscore += counts[i] * 10.0;
+                } else if (i == 8) {
+                    finalscore += counts[i] * 1.0;
+                } else if (i == 7) {
+                    finalscore += counts[i] * 0.1;
+                }
+            }
+        }
+        if (counts[11] > 0) {
+            printf("<li>N-blocks: %d</li>", counts[11]);
+        }
+        if (counts[10] > 0) {
+            printf("<li>X-blocks: %d</li>", counts[10]);
+        }
 
-    printf("Assessment: %s\n", shouldFail ? "Fail" : "Pass");
+        // Apply the failure criteria
+        if (finalscore > 25.0) {
+            shouldFail = true;
+        }
+
+        printf("</ul></p>Assessment (Score: %.1f/25.0): %s<br/>", finalscore, shouldFail ? "Fail" : "Pass");
+        if (shouldFail) {
+            printf("WARNING: Print failure detected! Consider aborting the print job.<br/>");
+        } else {
+            printf("Print job appears to be progressing normally.<br/>");
+        }
+    }
     return shouldFail;
 }
 
@@ -705,9 +758,11 @@ void highlightDifferences(Image *image, ComparisonGrid grid, int blockSize) {
             int y = i * blockSize;
 
             if (score == 'X') {
-                overlayColor(image, x, y, blockSize, blockSize, 0, 0, 0, 0.5);  // Black overlay with 50% opacity
-            } else if (score >= '7') {
+                overlayColor(image, x, y, blockSize, blockSize, 0, 0, 0, 0.25);  // Black overlay with 25% opacity
+            } else if ((score == '7') || (score == '8') || (score == 9))  {
                 overlayColor(image, x, y, blockSize, blockSize, 255, 0, 0, 0.7);  // Red overlay with 70% opacity
+            } else if (score == 'N') {
+                overlayColor(image, x, y, blockSize, blockSize, 0, 0, 255, 0.25);  // Blue overlay with 25% opacity
             }
         }
     }
@@ -813,7 +868,7 @@ int main(int argc, char *argv[]) {
 
     if (argc < 4) {
         printf("Insufficient parameters.\nUsage: %s <image1> <image2> <precision> [tolerance] [profile]\n", argv[0]);
-        return 1;
+        return 2;
     }
 
     char *image1 = argv[1];
@@ -821,6 +876,7 @@ int main(int argc, char *argv[]) {
     int precision = atoi(argv[3]);
     int tolerance = (argc > 4 && atoi(argv[4]) > 0) ? atoi(argv[4]) : 10;
     char *profileFile = (argc > 5) ? argv[5] : NULL;
+    char *outputformat = (argc > 6) ? argv[6] : "TEXT";
 
     printf("Input Parameters:\n");
     printf("- Image 1: %s\n", image1);
@@ -834,12 +890,12 @@ int main(int argc, char *argv[]) {
 
     if (image1Info.width == 0 || image1Info.height == 0) {
         printf("Error: Invalid image file '%s'\n", image1);
-        return 1;
+        return 3;
     }
 
     if (image2Info.width == 0 || image2Info.height == 0) {
         printf("Error: Invalid image file '%s'\n", image2);
-        return 1;
+        return 4;
     }
 
     printf("Image 1: %s (%d x %d)\n", image1Info.type, image1Info.width, image1Info.height);
@@ -859,7 +915,7 @@ int main(int argc, char *argv[]) {
     } else if (strcmp(image2Info.type, "PNG") == 0) {
         loadedImage2 = loadPNGImage(image2);
     }
-	
+
     int blockSize = (loadedImage1.width + precision - 1) / precision;
     int numHorizontalBlocks = precision;
     int numVerticalBlocks = (loadedImage1.height + blockSize - 1) / blockSize;
@@ -873,7 +929,7 @@ int main(int argc, char *argv[]) {
         printf("Error: Failed to load profile\n");
         free(image1Blocks);
         free(image2Blocks);
-        return 1;
+        return 5;
     }
 
     printf("Image 1:\n");
@@ -881,7 +937,7 @@ int main(int argc, char *argv[]) {
 
     printf("\nImage 2:\n");
     printBlocks(image2Blocks, numHorizontalBlocks, numVerticalBlocks, profile);
-   
+
     ComparisonGrid comparison = compareBlocks(image1Blocks, image2Blocks, numHorizontalBlocks, numVerticalBlocks, profile, tolerance);
     if (comparison.scores == NULL) {
         printf("Error: Failed to allocate comparison grid\n");
@@ -890,29 +946,30 @@ int main(int argc, char *argv[]) {
         freeProfile(profile);
         freeImage(loadedImage1);
         freeImage(loadedImage2);
-        return 1;
+        return 6;
     }
 
     printf("\nComparison Grid:\n");
     printComparisonGrid(comparison);
 
     printf("\n");
-    bool shouldAbort = summarizeComparison(comparison);
+    bool shouldAbort = summarizeComparison(comparison, outputformat);
 
     freeImage(loadedImage1);
 
     if (shouldAbort) {
-        printf("WARNING: Print failure detected! Consider aborting the print job.\n");
-
         char *failureFilename = generateFailureFilename(image2);
         if (failureFilename != NULL) {
             highlightDifferences(&loadedImage2, comparison, blockSize);
             saveImage(loadedImage2, failureFilename);
-            printf("Failure Image: %s\n", failureFilename);
+            if (outputformat == "TEXT") {
+                printf("Failure Image: %s\n", failureFilename);
+            }
+            else {
+                printf("Failure Image: %s<br/>", failureFilename);
+            }
             free(failureFilename);
         }
-    } else {
-        printf("Print job appears to be progressing normally.\n");
     }
 
     free(image1Blocks);
@@ -923,8 +980,15 @@ int main(int argc, char *argv[]) {
 
     end = clock();
     cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000;
-    printf("Execution Time: %.2f ms\n", cpu_time_used);
+    if (outputformat == "TEXT") {
+        printf("Execution Time: %.2f ms\n", cpu_time_used);
+    } else {
+        printf("Execution Time: %.2f ms<br/>", cpu_time_used);
+    }
 
-    return 0;
+    if (shouldAbort) {
+        return 1;
+    } else {
+        return 0;
+    }
 }
-
