@@ -291,3 +291,17 @@ subsequent layers.
 - They aren't deleted, so if a new run has fewer layers, the debug logs will have a mix of print jobs contained within them. Pay attention to the timestamps.
 - Running as configured, an image will be generated in the same timelapse folder as the other images, one for each failure.
 - These do seem to get cleaned up when the timelapse completes.
+
+## Change History Highlights
+- 2024-Jun-09
+  - print_check.sh
+    - Added more comments throughout the script
+    - Added TEST mechanism to print_check.sh and code for [PRINT_CHECK_TEST] macro
+    - Updated to support sending and formatting HTML e-mails
+    - Added code to extract assessment information from debug log and append to e-mail
+  - carbon.c
+    - Added HTML parameter to summary output to make it easier to format HTML e-mails
+    - Changed calculation of assessment to be a points system, with 25 points needed to fail
+    - Output points along with assessment. Might need some tuning still
+    - Image highlighting adjusted, now includes blue highlights for non-print area
+
