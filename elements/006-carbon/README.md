@@ -75,10 +75,17 @@ verbose: False
 description: Run Philement/carbon to compare Timelapse images
 gcode:
     # Assign printer name and send current layer number
-    {% set printer_name="Troondon" %}
-    RUN_SHELL_COMMAND CMD=shell_print_check PARAMS="{printer_name} {printer.print_stats.info.current_layer}"
+    {% set printer_name="Mr.Troodon" %}
+    RUN_SHELL_COMMAND CMD=shell_print_check PARAMS="{printer_name} {printer.print_stats.info.current_layer} {printer.print_stats.info.total_layer}"
+
+[gcode_macro PRINT_CHECK_TEST]
+description: Run Philement/carbon to compare Timelapse images
+gcode:
+    # Assign printer name and send current layer number
+    {% set printer_name="Mr.Troodon" %}
+    RUN_SHELL_COMMAND CMD=shell_print_check PARAMS="{printer_name} {printer.print_stats.info.current_layer} {printer.print_stats.info.total_layer} TEST"
 ```
-The script being called is ~/scripts/print_check.sh, passing the printer name and the current layer as parameters.
+The script being called has been placed in ~/scripts/print_check.sh. 
 
 ## Bash print_check.sh Script
 This Bash script then takes the parameters that were passed and sorts out where the various parts of Klipper and carbon
