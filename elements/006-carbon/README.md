@@ -48,7 +48,7 @@ To configure Klipper to perform checks using carbon, let's first ensure the foll
 
 ## Compile carbon
 As carbon is a plain C application, it can be compiled easily using GCC, which is likely already installed and
-configured on any device running Klipper, particuarly a Raspberry Pi or a clone. Typically all of Philement is
+configured on any device running Klipper, particularly a Raspberry Pi or a clone. Typically all of Philement is
 installed in separate folders, so in this case, we just need to download the source file and compile it
 ```
 mkdir ~/Philement
@@ -56,7 +56,7 @@ cd ~/Philement
 mkdir carbon
 cd carbon
 wget https://raw.githubusercontent.com/500Foods/Philement/main/elements/006-carbon/carbon/carbon.c
-gcc carbon.c -lm -ljpeg -lpng -o carbon
+gcc -std=c17 carbon.c -lm -ljpeg -lpng -o carbon
 ```
 ## [PRINT_CHECK] Macro
 With that out of the way, let's create a [PRINT_CHECK] macro that calls a Linux Bash script that can then call carbon.
@@ -202,7 +202,7 @@ then
     assessment="Pass"
 fi
 
-# It failed, so we should send out notification and inform Klipper
+# It failed, so we should send out a notification and inform Klipper
 # Note: We should also do this if the TEST option is supplied as an optional last parameter
 #       This can also be triggered from Klipper via a PRINT_CHECK_TEST macro
 if [ $passfail -eq 1 ] || [ $4 ==  'TEST' ]
@@ -278,7 +278,7 @@ SET_PRINT_STATS_INFO CURRENT_LAYER={layer_num + 1}
 TIMELAPSE_TAKE_FRAME
 PRINT_CHECK
 ```
-Note that both of these have to be configured in order for the layer counting mechanism to work. The layer count
+Note that both of these have to be configured in order for the layer-counting mechanism to work. The layer count
 is used by our script to skip checking the first few layers as those are likely to change more dramatically than
 subsequent layers.
 
