@@ -1,4 +1,4 @@
-# silicon - Experimental Printer: Voron 2.4r2 without an MCU
+# silicon - Printer Experiment: Voron 2.4r2 without an MCU
 Using a microcontroller as an interface to motor drivers has been a standard in 3D printing for some time. This project aims to remove the MCU, but not really. 
 Instead, each motor is equipped with its own MCU - something like an MKS-SERVO42D. This is a closed-loop CAN bus controller that is fitted to the back of a NEMA17 motor.
 With this approach, the MCU is essentially split up into separate simpler parts and the main MCU can be removed. The whole thing can then be driven by a Raspberry Pi.
