@@ -136,7 +136,7 @@ carbon=~/philement/carbon/carbon
 carbonprofile=~/philement/carbon/profile$precision.txt
 
 # Messages sent to Klipper
-monitoring="Montirong is active"
+monitoring="Monitoring is active"
 failure="Possible failure detected"
 
 #---------------------------------------------------------------------------------------------------
