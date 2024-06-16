@@ -45,3 +45,25 @@ Wi-Fi Device Information:
  [  40% | 2.4G ] TELUS5496-2.4G
  [  37% | 2.4G ] komrad-2.4
 ```
+
+## Example: Fedora Linux Desktop
+Here, the program is run on a system without WiFi but with an array of (virtual) adapters used by KVM/QEMU for running various virtual machines.
+```
+$ ./netscan
+netscan v.11
+
+10 Network Interfaces:
+[Active   | Other    ] lo              (lo             ): 127.0.0.1
+[Active   | Wired    ] eno1            (eno1           ):
+[Active   | Other    ] bridge0         (bridge0        ): 192.168.0.44
+[Active   | Other    ] virbr0          (virbr0         ): 192.168.122.1
+[Active   | Other    ] vnet2           (vnet2          ):
+[Active   | Other    ] vnet3           (vnet3          ):
+[Active   | Other    ] vnet4           (vnet4          ):
+[Active   | Other    ] br-b5dea5ed9377 (br-b5dea5ed9377): 172.19.0.1
+[Active   | Other    ] docker0         (docker0        ): 172.17.0.1
+[Active   | Other    ] virbr1          (virbr1         ): 192.168.100.1
+
+No Wi-Fi networks found.
+```
+
