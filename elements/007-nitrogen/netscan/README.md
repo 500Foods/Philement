@@ -1,9 +1,11 @@
 # netscan - Network Discovery
-This is a sample C program used to test how to do network discovery on a typical Linux system. This uses low-level NetworkManager APIs to talk to dbus to do its work, with no other dependencies. 
+This is a sample C program used to test how to do network discovery on a typical Linux system. This uses low-level NetworkManager APIs to talk to dbus to do its work. 
 This should make it small and light enough for the smallest nitrogen elements running on similar platforms. 
 
 A separate test version will presumably need to be created for the RP2040/ESP32 WiFi system given that it won't have access to Network Manager, to start with, and the coprocessor mechanism is
 considerably more involved than what we're dealing with here.
+
+A Makefile has been provided, so simply run 'make' with 'Makefile' and 'netscan.c' files in the same folder. NetworkManager development libraries as well as glib2 are required dependencis.
 
 ## Example: BTT-CB1 
 Here is an example of the program's output when it is run on a BTT-CB1 found inside of a Troodon 2.0 Pro 3D printer. The WiFi connection has already been configured.
