@@ -33,6 +33,25 @@ This project has a number of, well, elements. Each is named after an element in 
 ## Additional Notes
 While this project is currently under active development, feel free to give it a try and post any issues you encounter.  Or start a discussion if you would like to help steer the project in a particular direction.  Early days yet, so a good time to have your voice heard.  As the project unfolds, additional resources will be made available, including platform binaries, more documentation, demos, and so on.
 
+## Development Preferences
+There are countless tools, frameworks, coding styles, conventions, and so on that are readily available out in the world today. A big part of working on any project is selecting a suite of tools that can bring about the best code in the least amount of time for the lowest cost given a particular pool of developer talent. When the number of developers is small (currently one as this is being written), projects are at the whim of the wishes of a small number of developers. This can be both good and bad, depending on w
+
+### C Coding
+- Uses GCC wherever possible, written to C17, usually with _GNU_SOURCE included as well, for things like usleep().
+- Should have a simple Makefile that can be run with 'make', 'make clean' and so on.
+- Code should be tested on Linux/X86, Linux/x64, Windows/X64, macOS/Intel, macOS/Arm, RaspberryPi, and where appropriate RP2040.
+- Code is often written with the help of AI LLMs, generally at a very low level to reduce dependencies on obscure third-party libraries.
+- This is a conscious design choice as a lot of the code is designed specifically to be performant and, well, simple.
+- Try to avoid the way modern JS and Python projects are built with hundreds or even thousands of dependencies.
+- Try to reuse code between projects where it makes sense, such as some of the network code.
+- Prefer JSON rather than YAML or other file formats.
+
+### Web Coding
+- Most of this has been done with TMS WEB Core and Delphi. Think of it like TypeScript. It generates 100% HTML/CSS/JS.
+- Should be tested on Firefox/Chrome/Safari on Linux/Windows/macOS. As these are web pages, they *should* run everywhere.
+- Designed with the idea that any code can be self-hosted without making any changes other than to configuration files
+- Prefer JSON rather than YAML or other file formats.
+
 ## Repository Information 
 [![Count Lines of Code](https://github.com/500Foods/Template/actions/workflows/main.yml/badge.svg)](https://github.com/500Foods/Template/actions/workflows/main.yml)
 <!--CLOC-START -->
