@@ -1,4 +1,4 @@
-# nitro
+# nitro - mDNS
 This is a C program that takes a couple of parameters and then starts up a websocket server and advertises it over mDNS. 
 
 There are lots of bits and pieces here that make up the core of both hydrogen and lithium projects, potentially others as well.
