@@ -17,7 +17,7 @@ While Lithium is the primary UI, there's an interest in additional UIs. Maybe fo
 - Supports all the above platforms plus as a bonus it can spit out WebASM code!
 - Native C library that supports all the things we'd like it to support.
 
-## Prototyping: mDNS
+[## Prototyping: nitro - mDNS](https://github.com/500Foods/Philement/blob/main/elements/007-nitrogen/nitro/README.md)
 This is a small self-contained test project that implements an mDNS advertising mechanism. 
 The various nitrogen elements (whether just one to replace KlipperScreen, or an army of them across a print farm) can advertise their IP address and other attributes.
 This allows for an element like hydrogen to pick them up without having to do any configuration. It also makes it possible to tie them to Home Assistant more easily.
