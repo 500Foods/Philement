@@ -16,3 +16,15 @@ While Lithium is the primary UI, there's an interest in additional UIs. Maybe fo
 - Seems like LVGL is the way to go here.
 - Supports all the above platforms plus as a bonus it can spit out WebASM code!
 - Native C library that supports all the things we'd like it to support.
+
+## Prototyping: mDNS
+This is a small self-contained test project that implements an mDNS advertising mechanism. 
+The various nitrogen elements (whether just one to replace KlipperScreen, or an army of them across a print farm) can advertise their IP address and other attributes.
+This allows for an element like hydrogen to pick them up without having to do any configuration. It also makes it possible to tie them to Home Assistant more easily.
+This code will likely find its way into both nitrogen and hydrogen elements, as hydrogen itself might want to broadcast its location as well.
+
+## Prototyping: Network Scan
+This is a small self-contained test project that takes an inventory of local network resources. First, it itemizes the available local network interfaces and then for
+wireless interfaces, it displays all the available SSIDs. This is likely to be incorporated into nitrogen elements. Imagine starting the equivalent of KlipperScreen
+on a device that has not yet been connected to a network. This kind of information is used to feed the UI so the user can select a network interface to configure
+and in the case of WiFi, select an SSID for the connection. 
