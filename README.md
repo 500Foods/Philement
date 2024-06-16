@@ -34,7 +34,7 @@ This project has a number of, well, elements. Each is named after an element in 
 While this project is currently under active development, feel free to give it a try and post any issues you encounter.  Or start a discussion if you would like to help steer the project in a particular direction.  Early days yet, so a good time to have your voice heard.  As the project unfolds, additional resources will be made available, including platform binaries, more documentation, demos, and so on.
 
 ## Development Preferences
-There are countless tools, frameworks, coding styles, conventions, and so on that are readily available out in the world today. A big part of working on any project is selecting a suite of tools that can bring about the best code in the least amount of time for the lowest cost given a particular pool of developer talent. When the number of developers is small (currently one as this is being written), projects are at the whim of the wishes of a small number of developers. This can be both good and bad, depending on w
+There are countless tools, frameworks, coding styles, conventions, languages, and so on, that are readily available out in the world today. A big part of working on any project is selecting a suite of tools that can surface the best code in the least amount of time for the lowest cost given a particular pool of developer talent. When the number of developers is small, tool selection is often subject to the whims of the developers. This project is no exception.
 
 ### C Coding
 - Uses GCC wherever possible, written to C17, usually with _GNU_SOURCE included as well, for things like usleep().
@@ -49,7 +49,8 @@ There are countless tools, frameworks, coding styles, conventions, and so on tha
 ### Web Coding
 - Most of this has been done with TMS WEB Core and Delphi. Think of it like TypeScript. It generates 100% HTML/CSS/JS.
 - Should be tested on Firefox/Chrome/Safari on Linux/Windows/macOS. As these are web pages, they *should* run everywhere.
-- Designed with the idea that any code can be self-hosted without making any changes other than to configuration files
+- Designed with the idea that any code can be self-hosted without making any changes other than to configuration files.
+- Try to limit the number of third-party JavaScript libraries.
 - Prefer JSON rather than YAML or other file formats.
 
 ## Repository Information 
