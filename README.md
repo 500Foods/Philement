@@ -39,17 +39,18 @@ There are countless tools, frameworks, coding styles, conventions, languages, an
 ### C Coding
 - Uses GCC wherever possible, written to C17, usually with _GNU_SOURCE included as well.
 - Should have a simple Makefile that can be run with 'make', 'make clean', and so on.
-- Code should be tested on Linux/X86, Linux/x64, Windows/X64, macOS/Intel, macOS/Arm, and Raspberry Pi.
+- Code should be tested on Linux/X86, Linux/x64, Linux/Arm, Windows/X64, macOS/x64, macOS/Arm.
 - Code is often written with the help of AI LLMs and at a very low level to reduce dependencies.
 - Try to avoid the way modern JS and Python projects are built with thousands of dependencies.
 - Try to reuse code between projects where it makes sense, such as some of the network code.
 - Prefer JSON rather than YAML or other file formats.
 
 ### Web Coding
-- Most of this has been done with TMS WEB Core and Delphi. Think of it like TypeScript. It generates 100% HTML/CSS/JS.
-- Should be tested on Firefox/Chrome/Safari on Linux/Windows/macOS. As these are web pages, they *should* run everywhere.
-- Designed with the idea that any code can be self-hosted without making any changes other than to configuration files.
-- Try to limit the number of third-party JavaScript libraries.
+- Most of this has been done with TMS WEB Core and Delphi. It generates 100% HTML/CSS/JS.
+- Should be tested on Firefox/Chrome/Safari on Linux/Windows/macOS, desktop and mobile.
+- As these are web pages, they *should* run everywhere, not deliberately excluding anyone.
+- Designed to be self-hosted without making any changes other than to configuration files.
+- Try to stick to the same set of JavaScript libraries. Bootstrap. Tabulator. Etc.
 - Prefer JSON rather than YAML or other file formats.
 
 ## Repository Information 
