@@ -56,12 +56,12 @@ There are countless tools, frameworks, coding styles, conventions, languages, an
 [![Count Lines of Code](https://github.com/500Foods/Template/actions/workflows/main.yml/badge.svg)](https://github.com/500Foods/Template/actions/workflows/main.yml)
 <!--CLOC-START -->
 ```
-Last updated at 2024-06-18 18:54:48 UTC
+Last updated at 2024-06-18 18:57:50 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 C                               16            574            106           2858
-Markdown                        23            135              2           1265
+Markdown                        23            135              2           1264
 C/C++ Header                    11             68              9            204
 Bourne Shell                     3             28             56             79
 HTML                             2             11              7             77
@@ -74,7 +74,7 @@ Pascal                           2             11              2             31
 JavaScript                       1              3              0             25
 CSS                              1              2              2             24
 -------------------------------------------------------------------------------
-SUM:                            67            876            213           4816
+SUM:                            67            876            213           4815
 -------------------------------------------------------------------------------
 12 Files (without source code) were skipped
 ```
