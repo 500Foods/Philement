@@ -11,7 +11,7 @@ As low-level as possible was the goal here, so just straight-up LVGL and the SDL
 Not very many files are needed as this is really just a test.
 
 - Makefile - Compiles and builds lvgldemo and sdltest
-- libs/lvgl - A clone of the LVGL repository from GitHub
+- libs/lvgl - Clone the LVGL repository from GitHub
 - src/main.c - The main() component of lvgldemo
 - src/display.h - Header for lvgldemo
 - src/display.c - Implementation for lvgldemo
