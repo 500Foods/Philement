@@ -28,3 +28,8 @@ This is a small self-contained test project that takes an inventory of local net
 wireless interfaces, it displays all the available SSIDs. This is likely to be incorporated into nitrogen elements. Imagine starting the equivalent of KlipperScreen
 on a device that has not yet been connected to a network. This kind of information is used to feed the UI so the user can select a network interface to configure
 and in the case of WiFi, select an SSID for the connection. 
+
+## Prototyping: lvgldemo
+This is a small self-contained test project that uses LVGL to display a gradient background and some text. Nothing too fancy, just enough to demonstrate that LVGL 
+is working in our code, and can display something non-trivial. Well, it's trivial but a white screen or a black screen could be displayed with all the driver stuff
+horribly wrong.
