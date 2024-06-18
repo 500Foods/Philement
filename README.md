@@ -37,12 +37,11 @@ While this project is currently under active development, feel free to give it a
 There are countless tools, frameworks, coding styles, conventions, languages, and so on, that are readily available out in the world today. A big part of working on any project is selecting a suite of tools that can surface the best code in the least amount of time for the lowest cost given a particular pool of developer talent. When the number of developers is small, tool selection is often subject to the whims of the developers. This project is no exception.
 
 ### C Coding
-- Uses GCC wherever possible, written to C17, usually with _GNU_SOURCE included as well, for things like usleep().
-- Should have a simple Makefile that can be run with 'make', 'make clean' and so on.
-- Code should be tested on Linux/X86, Linux/x64, Windows/X64, macOS/Intel, macOS/Arm, RaspberryPi, and where appropriate RP2040.
-- Code is often written with the help of AI LLMs, generally at a very low level to reduce dependencies on obscure third-party libraries.
-- This is a conscious design choice as a lot of the code is designed specifically to be performant and, well, simple.
-- Try to avoid the way modern JS and Python projects are built with hundreds or even thousands of dependencies.
+- Uses GCC wherever possible, written to C17, usually with _GNU_SOURCE included as well.
+- Should have a simple Makefile that can be run with 'make', 'make clean', and so on.
+- Code should be tested on Linux/X86, Linux/x64, Windows/X64, macOS/Intel, macOS/Arm, and Raspberry Pi.
+- Code is often written with the help of AI LLMs and at a very low level to reduce dependencies.
+- Try to avoid the way modern JS and Python projects are built with thousands of dependencies.
 - Try to reuse code between projects where it makes sense, such as some of the network code.
 - Prefer JSON rather than YAML or other file formats.
 
