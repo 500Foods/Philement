@@ -36,7 +36,7 @@ While this project is currently under active development, feel free to give it a
 ## Development Preferences
 There are countless tools, frameworks, coding styles, conventions, languages, and so on, that are readily available out in the world today. A big part of working on any project is selecting a suite of tools that can surface the best code in the least amount of time for the lowest cost given a particular pool of developer talent. When the number of developers is small, tool selection is often subject to the whims of the developers. This project is no exception.
 
-### C Coding
+### Working with C
 - Uses GCC wherever possible, written to C17, usually with _GNU_SOURCE included as well.
 - Should have a simple Makefile that can be run with 'make', 'make clean', and so on.
 - Code should be tested on Linux/X86, Linux/x64, Linux/Arm, Windows/X64, macOS/x64, macOS/Arm.
@@ -45,7 +45,7 @@ There are countless tools, frameworks, coding styles, conventions, languages, an
 - Try to reuse code between projects where it makes sense, such as some of the network code.
 - Prefer JSON rather than YAML or other file formats.
 
-### Web Coding
+### Working with HTML/CSS/JS
 - Most of this has been done with TMS WEB Core and Delphi. It generates 100% HTML/CSS/JS.
 - Should be tested on Firefox/Chrome/Safari on Linux/Windows/macOS, desktop and mobile.
 - As these are web pages, they *should* run everywhere, not deliberately excluding anyone.
