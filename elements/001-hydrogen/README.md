@@ -18,6 +18,7 @@ At the outset of this project, there are a number of thoughts about what kinds o
 - Optimized for speed and minimal resource usage.
 - This is likely what the slicer will be talking to.
 
-## Prototyping: 3dstatus - Klipper API Access
-This is a small self-contained test project that runs locally alongside Klipper, much like Moonraker. It talks to Klipper over a unix socket connection and outputs what it gets back to the console. This is intended as a test of communicating with Klipper where the bulk of the effort is actually in reading the various 
-configuration files to figure out where Klipper is running in the first place. A version in both Python and C is provided.
+## Prototyping: klippertest - Klipper API Access
+This is a small self-contained test project that runs locally alongside Klipper, much like Moonraker. It talks to Klipper over a unix socket connection and outputs what it gets back to the console. 
+This is intended as a test of communicating with Klipper where the bulk of the effort is actually in reading the various configuration files to figure out where Klipper is running in the first place. 
+A version in both Python and C is provided.
