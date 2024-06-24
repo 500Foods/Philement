@@ -60,17 +60,18 @@ There are countless tools, frameworks, coding styles, conventions, languages, an
 [![Count Lines of Code](https://github.com/500Foods/Template/actions/workflows/main.yml/badge.svg)](https://github.com/500Foods/Template/actions/workflows/main.yml)
 <!--CLOC-START -->
 ```
-Last updated at 2024-06-24 20:38:21 UTC
+Last updated at 2024-06-24 20:39:42 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C                               16            574            106           2858
-Markdown                        24            146              2           1524
-C/C++ Header                    11             68              9            204
+C                               19            652            121           3300
+Markdown                        24            146              2           1523
+C/C++ Header                    13             76              9            233
+Python                           1             36              9            195
+make                             4             41             16             80
 Bourne Shell                     3             28             56             79
 HTML                             2             11              7             77
 Text                             1              0              0             75
-make                             3             35             16             66
 Delphi Form                      1              1              0             43
 YAML                             2              8             13             35
 JSON                             1              0              0             34
@@ -78,7 +79,7 @@ Pascal                           2             11              2             31
 JavaScript                       1              3              0             25
 CSS                              1              2              2             24
 -------------------------------------------------------------------------------
-SUM:                            68            887            213           5075
+SUM:                            75           1015            237           5754
 -------------------------------------------------------------------------------
 12 Files (without source code) were skipped
 ```
