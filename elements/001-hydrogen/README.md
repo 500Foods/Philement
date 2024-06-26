@@ -23,6 +23,6 @@ This is a small self-contained test project that runs locally alongside Klipper,
 This is intended as a test of communicating with Klipper where the bulk of the effort is actually in reading the various configuration files to figure out where Klipper is running in the first place. 
 A version in both Python and C is provided.
 
-## Prototyping: hydro - System Status
+## Prototyping: [hydro](https://github.com/500Foods/Philement/tree/main/elements/001-hydrogen/hydro) - System Status
 This is a small self-contained test project that simply (?!) outputs a bunch of system status information. Things like memory usage, current network connections, free disk space and so on. The idea is
 to have it output JSON that can then be fed via a WebSocket connection to a client system for display.
