@@ -22,3 +22,7 @@ At the outset of this project, there are a number of thoughts about what kinds o
 This is a small self-contained test project that runs locally alongside Klipper, much like Moonraker. It talks to Klipper over a unix socket connection and outputs what it gets back to the console. 
 This is intended as a test of communicating with Klipper where the bulk of the effort is actually in reading the various configuration files to figure out where Klipper is running in the first place. 
 A version in both Python and C is provided.
+
+## Prototyping: hydro - System Status
+This is a small self-contained test project that simply (?!) outputs a bunch of system status information. Things like memory usage, current network connections, free disk space and so on. The idea is
+to have it output JSON that can then be fed via a WebSocket connection to a client system for display.
