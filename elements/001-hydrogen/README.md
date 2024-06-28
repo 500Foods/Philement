@@ -26,3 +26,11 @@ A version in both Python and C is provided.
 ## Prototyping: [hydro](https://github.com/500Foods/Philement/tree/main/elements/001-hydrogen/hydro) - System Status
 This is a small self-contained test project that simply (?!) outputs a bunch of system status information. Things like memory usage, current network connections, free disk space and so on. The idea is
 to have it output JSON that can then be fed via a WebSocket connection to a client system for display.
+
+## hydrogen
+This is the main course. A C-based server that is intended to run in close proximity to the printer, typically on a Raspberry Pi or equivalent. Initially as a back-end proxy for Klipper, not unlike Moonraker, it needs to be running on the same system to be able to connect to the (default) Unix socket that Klipper offers. 
+
+At a high level, this is a program architected around a collection of thread-safe JSON queues. Something happens. A JSON object might get tossed onto a queue. A queue manager might pull some JSON off of a queue. There's a connection to Klipper. There's a WebSocket server. Everything has its own thread. 
+
+
+
