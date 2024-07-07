@@ -4,8 +4,8 @@ For some plastics, in fact, this can be done repeatedly without loss of quality.
 
 ## Brainstorming
 - Generally speaking, recycling waste plastic in a home setting hasn't been remotely cost effective.
-Shredder-style machines to break down the prints typically *start* at $1,000 USD.
-Machines to convert the resulting particles tend to be another machine, starting also at $1,000 USD or often much more.
+- Shredder-style machines to break down the prints typically *start* at $1,000 USD.
+- Machines to convert the resulting particles tend to be another machine, starting also at $1,000 USD or often much more.
 - Everyone likes to do the math, where it costs, say, $50/roll to recylce, and $20/roll to buy new, so why bother?
 - This is short-sighted though, as without trying new things, the status quo will likely never change.
 - Two main parts to the problem - breaking down waste material and then re-extruding the broken down pieces.
@@ -23,3 +23,5 @@ Machines to convert the resulting particles tend to be another machine, starting
 - OK, a little special in that you want to cool it right away and be able to monitor the 1.75mm output.
 - Should be able to be built in a small and simple form factor, not much bigger than a filament box.
 - Filament should be cooled but also dried so it is ready to print as soon as possible.
+- Candles created in this way are presumably "dry" to begin with, no need to dry the particles.
+  
