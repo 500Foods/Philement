@@ -13,11 +13,13 @@ Machines to convert the resulting particles tend to be another machine, starting
 - A typical 3D printer converts 1.75mm filament into something like 0.4mm filament.
 - Let's build a similar extruder using the same approach, converting 25mm cylinders into 1.75mm filament.
 - 25mm cylinders can be created using candlestick molds. Fill with 2mm particles, melt in the oven, get a 30cm "candle".
+- Probably less than 30cm given that filament will melt. Maybe 20cm candles when it is done.
+- Could likely work with much larger particles, so long as they fit in the mold and melt evenly.
 - Feed these candles into an extruder with a 1.75mm nozzle and a 25mm filament path.
-- Will take awhile to extrude, so just need to add a new candle to the extruder every so often.
+- Will take a while to extrude, so just need to add a new candle to the extruder every so often.
+- Could also "join" the candles together to make a 1kg cylinder. Note that 1kg would be about 2m at 25mm diameter (for, say ASA).
+- That'd be about 10 candles to produce a roll of filament. Probably want to start with that many candle molds anyway.
 - Output of extruder can be collected and wound onto spool using common rewinder prints, nothing special there.
 - OK, a little special in that you want to cool it right away and be able to monitor the 1.75mm output.
 - Should be able to be built in a small and simple form factor, not much bigger than a filament box.
 - Filament should be cooled but also dried so it is ready to print as soon as possible.
-
-  
