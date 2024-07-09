@@ -7,7 +7,9 @@
 #include <unistd.h>
 #include <limits.h>
 
-int MAX_PRIORITY_LABEL_WIDTH = 0;
+int MAX_PRIORITY_LABEL_WIDTH = 9;
+int MAX_SUBSYSTEM_LABEL_WIDTH = 18;
+
 const PriorityLevel DEFAULT_PRIORITY_LEVELS[NUM_PRIORITY_LEVELS] = {
     {0, "INFO"},
     {1, "WARN"},
@@ -85,6 +87,7 @@ json_t* load_config(const char* config_path) {
         root = json_load_file(config_path, 0, &error);
         if (!root) {
             fprintf(stderr, "Error: Failed to load default config file: %s\n", error.text);
+	    return NULL;
         }
     }
 

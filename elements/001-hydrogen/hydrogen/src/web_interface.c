@@ -1,0 +1,665 @@
+#include "web_interface.h"
+#include "configuration.h"
+#include "logging.h"
+#include "beryllium.h"
+#include "queue.h"
+#include "print_queue_manager.h"
+#include <microhttpd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <pthread.h>
+#include <signal.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <time.h>
+#include <sys/time.h>
+#include <jansson.h>
+
+#define UUID_STR_LEN 37
+
+static struct MHD_Daemon *web_daemon = NULL;
+static unsigned int server_port = 0;
+static char *server_upload_path = NULL;
+static char *server_upload_dir = NULL;
+static volatile sig_atomic_t keep_running = 1;
+
+static size_t max_upload_size = DEFAULT_MAX_UPLOAD_SIZE;
+
+extern volatile sig_atomic_t keep_running;
+extern pthread_cond_t terminate_cond;
+extern pthread_mutex_t terminate_mutex;
+
+struct ConnectionInfo {
+    FILE *fp;
+    char *original_filename;
+    char *new_filename;
+    struct MHD_PostProcessor *postprocessor;
+    size_t total_size;
+    size_t last_logged_mb;
+    size_t expected_size;
+    bool is_first_chunk;
+    bool print_after_upload;
+    bool response_sent;
+};
+
+static json_t* extract_gcode_info(const char* filename);
+static char* extract_preview_image(const char* filename);
+static enum MHD_Result handle_print_queue_request(struct MHD_Connection *connection);
+
+static void generate_uuid(char *uuid_str) {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    unsigned long long int time_in_usec = ((unsigned long long int)tv.tv_sec * 1000000ULL) + tv.tv_usec;
+
+    snprintf(uuid_str, UUID_STR_LEN, "%08llx-%04x-%04x-%04x-%012llx",
+             time_in_usec & 0xFFFFFFFFULL,
+             (unsigned int)(rand() & 0xffff),
+             (unsigned int)((rand() & 0xfff) | 0x4000),
+             (unsigned int)((rand() & 0x3fff) | 0x8000),
+             (unsigned long long int)rand() * rand());
+}
+
+static bool is_port_available(int port) {
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock == -1) {
+        return false;
+    }
+
+    struct sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+    addr.sin_addr.s_addr = INADDR_ANY;
+
+    int result = bind(sock, (struct sockaddr*)&addr, sizeof(addr));
+    close(sock);
+
+    return result == 0;
+}
+
+
+static enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind kind, const char *key,
+                                          const char *filename, const char *content_type,
+                                          const char *transfer_encoding, const char *data, uint64_t off, size_t size) {
+    struct ConnectionInfo *con_info = coninfo_cls;
+    (void)kind; (void)content_type; (void)transfer_encoding; (void)off;  // Unused parameters
+
+    //printf("Received key: %s, filename: %s, size: %zu\n", key, filename ? filename : "NULL", size);
+
+    if (0 == strcmp(key, "file")) {
+        if (!con_info->fp) {
+            if (filename) {
+                char uuid_str[37];
+                generate_uuid(uuid_str);
+
+                char file_path[1024];
+                snprintf(file_path, sizeof(file_path), "%s/%s.gcode", server_upload_dir, uuid_str);
+                con_info->fp = fopen(file_path, "wb");
+                if (!con_info->fp) {
+                    log_this("WebInterface", "Failed to open file for writing", 3, true, false, true);
+                    return MHD_NO;
+                }
+                free(con_info->original_filename);  // Free previous allocation if any
+                free(con_info->new_filename);       // Free previous allocation if any
+                con_info->original_filename = strdup(filename);
+                con_info->new_filename = strdup(file_path);
+
+                char log_buffer[256];
+                snprintf(log_buffer, sizeof(log_buffer), "Starting file upload: %s", filename);
+                log_this("WebInterface", log_buffer, 0, true, false, true);
+            }
+        }
+
+        if (size > 0) {
+            if (con_info->total_size + size > max_upload_size) {
+                log_this("WebInterface", "File upload exceeds maximum allowed size", 3, true, false, true);
+                return MHD_NO;
+            }
+
+            if (fwrite(data, 1, size, con_info->fp) != size) {
+                log_this("WebInterface", "Failed to write to file", 3, true, false, true);
+                return MHD_NO;
+            }
+            con_info->total_size += size;
+
+            // Log progress every 100MB
+            if (con_info->total_size / (100 * 1024 * 1024) > con_info->last_logged_mb) {
+                con_info->last_logged_mb = con_info->total_size / (100 * 1024 * 1024);
+                char progress_log[128];
+                snprintf(progress_log, sizeof(progress_log), "Upload progress: %zu MB", con_info->last_logged_mb * 100);
+                log_this("WebInterface", progress_log, 2, true, false, true);
+            }
+        }
+    } else if (0 == strcmp(key, "print")) {
+        // Handle the 'print' field
+        con_info->print_after_upload = (0 == strcmp(data, "true"));
+        printf("Print after upload: %s\n", con_info->print_after_upload ? "true" : "false");
+    } else {
+        // Log unknown keys
+        char log_buffer[256];
+        snprintf(log_buffer, sizeof(log_buffer), "Received unknown key in form data: %s", key);
+        log_this("WebInterface", log_buffer, 2, true, false, true);
+    }
+
+    return MHD_YES;
+}
+
+static enum MHD_Result handle_version_request(struct MHD_Connection *connection) {
+    const char *version_json = "{\"api\": \"0.1\", \"server\": \"1.1.0\", \"text\": \"OctoPrint 1.1.0\"}";
+    struct MHD_Response *response = MHD_create_response_from_buffer(strlen(version_json),
+                                    (void*)version_json, MHD_RESPMEM_PERSISTENT);
+    MHD_add_response_header(response, "Content-Type", "application/json");
+    enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+    MHD_destroy_response(response);
+    return ret;
+}
+
+static enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
+                          const char *url, const char *method,
+                          const char *version, const char *upload_data,
+                          size_t *upload_data_size, void **con_cls) {
+    (void)cls; (void)version;
+
+    if (strcmp(url, "/api/version") == 0) {
+        return handle_version_request(connection);
+    } else if (strcmp(url, "/print/queue") == 0) {
+        return handle_print_queue_request(connection);
+    }
+
+    if (strcmp(url, "/api/files/local") != 0 &&
+        strcmp(url, "/api/upload") != 0 &&
+        (server_upload_path && strcmp(url, server_upload_path) != 0)) {
+        char log_buffer[256];
+        snprintf(log_buffer, sizeof(log_buffer), "Invalid URL requested: %s", url);
+        log_this("WebInterface", log_buffer, 2, true, true, true);
+
+        const char *page = "<html><body>Invalid API endpoint</body></html>";
+        struct MHD_Response *response = MHD_create_response_from_buffer(strlen(page), (void*)page, MHD_RESPMEM_PERSISTENT);
+        enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_NOT_FOUND, response);
+        MHD_destroy_response(response);
+        return ret;
+    }
+
+    struct ConnectionInfo *con_info = *con_cls;
+    if (NULL == con_info) {
+        con_info = calloc(1, sizeof(struct ConnectionInfo));
+        if (NULL == con_info) return MHD_NO;
+        con_info->postprocessor = MHD_create_post_processor(connection, 8192, handle_upload_data, con_info);
+        if (NULL == con_info->postprocessor) {
+            free(con_info);
+            return MHD_NO;
+        }
+        *con_cls = (void*)con_info;
+        return MHD_YES;
+    }
+
+    if (0 == strcmp(method, "POST")) {
+        if (*upload_data_size != 0) {
+            MHD_post_process(con_info->postprocessor, upload_data, *upload_data_size);
+            *upload_data_size = 0;
+            return MHD_YES;
+        } else if (!con_info->response_sent) {
+            if (con_info->fp) {
+                fclose(con_info->fp);
+                con_info->fp = NULL;
+
+                // Process print job here
+                json_t* print_job = json_object();
+
+                json_object_set_new(print_job, "original_filename", json_string(con_info->original_filename));
+                json_object_set_new(print_job, "new_filename", json_string(con_info->new_filename));
+                json_object_set_new(print_job, "file_size", json_integer(con_info->total_size));
+		json_object_set_new(print_job, "print_after_upload", json_boolean(con_info->print_after_upload));
+
+                json_t* gcode_info = extract_gcode_info(con_info->new_filename);
+                if (gcode_info) {
+                    json_object_set_new(print_job, "gcode_info", gcode_info);
+                }
+
+                char* preview_image = extract_preview_image(con_info->new_filename);
+                if (preview_image) {
+                    json_object_set_new(print_job, "preview_image", json_string(preview_image));
+                    free(preview_image);
+                }
+
+                char* print_job_str = json_dumps(print_job, JSON_COMPACT);
+                if (print_job_str) {
+                    //printf("JSON: %s\n", print_job_str);
+
+                    Queue* print_queue = queue_find("PrintQueue");
+                    if (print_queue) {
+                        queue_enqueue(print_queue, print_job_str, strlen(print_job_str), 0);
+                        log_this("WebInterface", "Added print job to queue", 0, true, false, true);
+                    } else {
+                        log_this("WebInterface", "Failed to find PrintQueue", 3, true, false, true);
+                    }
+
+                    free(print_job_str);
+                } else {
+                    log_this("WebInterface", "Failed to create JSON string", 3, true, false, true);
+                }
+
+                json_decref(print_job);
+
+                char complete_log[512];
+		log_this("WebInterface", "File upload completed:", 0, true, true, true);
+                snprintf(complete_log, sizeof(complete_log), " -> Source: %s", con_info->original_filename);
+                log_this("WebInterface", complete_log, 0, true, true, true);
+                snprintf(complete_log, sizeof(complete_log), " ->  Local: %s", con_info->new_filename);
+                log_this("WebInterface", complete_log, 0, true, true, true);
+                snprintf(complete_log, sizeof(complete_log), " ->   Size: %zu bytes", con_info->total_size);
+                log_this("WebInterface", complete_log, 0, true, true, true);
+                snprintf(complete_log, sizeof(complete_log), " ->  Print: %s", con_info->print_after_upload ? "true" : "false");
+                log_this("WebInterface", complete_log, 0, true, true, true);
+
+                // Send response
+                const char *response_text = "{\"files\": {\"local\": {\"name\": \"%s\", \"origin\": \"local\"}}, \"done\": true}";
+                char *json_response = malloc(strlen(response_text) + strlen(con_info->original_filename) + 1);
+                sprintf(json_response, response_text, con_info->original_filename);
+
+                struct MHD_Response *response = MHD_create_response_from_buffer(strlen(json_response),
+                                                (void*)json_response, MHD_RESPMEM_MUST_FREE);
+                MHD_add_response_header(response, "Content-Type", "application/json");
+                enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+                MHD_destroy_response(response);
+                con_info->response_sent = true;
+                return ret;
+            } else {
+                log_this("WebInterface", "File upload failed or no file was uploaded", 2, true, false, true);
+                const char *error_response = "{\"error\": \"File upload failed\", \"done\": false}";
+                struct MHD_Response *response = MHD_create_response_from_buffer(strlen(error_response),
+                                                (void*)error_response, MHD_RESPMEM_PERSISTENT);
+                MHD_add_response_header(response, "Content-Type", "application/json");
+                enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_INTERNAL_SERVER_ERROR, response);
+                MHD_destroy_response(response);
+                con_info->response_sent = true;
+                return ret;
+            }
+        }
+    } else {
+        // Handle non-POST requests
+        const char *page = "<html><body>Use POST to upload files</body></html>";
+        struct MHD_Response *response = MHD_create_response_from_buffer(strlen(page), (void*)page, MHD_RESPMEM_PERSISTENT);
+        enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_BAD_REQUEST, response);
+        MHD_destroy_response(response);
+        return ret;
+    }
+
+    return MHD_YES;
+}
+
+static void request_completed(void *cls, struct MHD_Connection *connection,
+                              void **con_cls, enum MHD_RequestTerminationCode toe) {
+    (void)cls; (void)connection; (void)toe;  // Unused parameters
+    struct ConnectionInfo *con_info = *con_cls;
+    if (NULL == con_info) return;
+    if (con_info->postprocessor) {
+        MHD_destroy_post_processor(con_info->postprocessor);
+    }
+    if (con_info->fp) {
+        fclose(con_info->fp);
+    }
+    free(con_info->original_filename);
+    free(con_info->new_filename);
+    free(con_info);
+    *con_cls = NULL;
+}
+
+bool init_web_server(unsigned int port, const char* upload_path, const char* upload_dir, size_t config_max_upload_size) {
+    if (!is_port_available(port)) {
+        log_this("WebInterface", "Port is not available", 3, true, false, true);
+        return false;
+    }
+
+    max_upload_size = config_max_upload_size > 0 ? config_max_upload_size : DEFAULT_MAX_UPLOAD_SIZE;
+
+    server_port = port;
+    if (server_upload_path) {
+        free(server_upload_path);
+    }
+    server_upload_path = upload_path ? strdup(upload_path) : NULL;
+    if (server_upload_dir) {
+        free(server_upload_dir);
+    }
+    server_upload_dir = upload_dir ? strdup(upload_dir) : NULL;
+
+    log_this("WebInterface", "Initializing web server", 0, true, false, true);
+    char buffer[256];
+    snprintf(buffer, sizeof(buffer), "Server port: %u, Upload path: %s, Upload dir: %s",
+             server_port, server_upload_path, server_upload_dir);
+    log_this("WebInterface", buffer, 2, true, false, true);
+
+    // Create upload directory if it doesn't exist
+    struct stat st = {0};
+    if (stat(server_upload_dir, &st) == -1) {
+        log_this("WebInterface", "Upload directory does not exist, attempting to create", 2, true, false, true);
+        if (mkdir(server_upload_dir, 0700) != 0) {
+            char error_buffer[256];
+            snprintf(error_buffer, sizeof(error_buffer), "Failed to create upload directory: %s", strerror(errno));
+            log_this("WebInterface", error_buffer, 3, true, false, true);
+            return false;
+        }
+        log_this("WebInterface", "Created upload directory", 0, true, false, true);
+    } else {
+        log_this("WebInterface", "Upload directory already exists", 2, true, false, true);
+    }
+
+    return true;
+}
+
+const char* get_upload_path(void) {
+    return server_upload_path;
+}
+
+void* run_web_server(void* arg) {
+    (void)arg; // Unused parameter
+
+    log_this("WebInterface", "Starting web server", 0, true, false, true);
+    web_daemon = MHD_start_daemon(MHD_USE_THREAD_PER_CONNECTION, server_port, NULL, NULL,
+                              &handle_request, NULL,
+                              MHD_OPTION_NOTIFY_COMPLETED, request_completed, NULL,
+                              MHD_OPTION_END);
+    if (web_daemon == NULL) {
+        log_this("WebInterface", "Failed to start web server", 4, true, false, true);
+        return NULL;
+    }
+
+    // Check if the web server is actually running
+    const union MHD_DaemonInfo *info = MHD_get_daemon_info(web_daemon, MHD_DAEMON_INFO_BIND_PORT);
+    if (info == NULL) {
+        log_this("WebInterface", "Failed to get daemon info", 4, true, false, true);
+        MHD_stop_daemon(web_daemon);
+        web_daemon = NULL;
+        return NULL;
+    }
+
+    unsigned int actual_port = info->port;
+    if (actual_port == 0) {
+        log_this("WebInterface", "Web server failed to bind to the specified port", 4, true, false, true);
+        MHD_stop_daemon(web_daemon);
+        web_daemon = NULL;
+        return NULL;
+    }
+
+    char port_info[64];
+    snprintf(port_info, sizeof(port_info), "Web server bound to port: %u", actual_port);
+    log_this("WebInterface", port_info, 0, true, false, true);
+
+    log_this("WebInterface", "Web server started successfully", 0, true, false, true);
+
+    while(keep_running) {
+        pthread_mutex_lock(&terminate_mutex);
+        struct timespec ts;
+        clock_gettime(CLOCK_REALTIME, &ts);
+        ts.tv_sec += 1; // Wait for at most 1 second
+        int rc = pthread_cond_timedwait(&terminate_cond, &terminate_mutex, &ts);
+        pthread_mutex_unlock(&terminate_mutex);
+        
+        if (rc == ETIMEDOUT) {
+            // Timeout occurred, check keep_running flag
+            if (!keep_running) {
+                break;
+            }
+        } else if (rc == 0) {
+            // Condition variable was signaled
+            break;
+        }
+    }
+
+    log_this("WebInterface", "Web server thread exiting", 0, true, false, true);
+    return NULL;
+}
+
+void shutdown_web_server(void) {
+    log_this("WebInterface", "Shutting down web server", 0, true, false, true);
+    if (web_daemon != NULL) {
+        MHD_stop_daemon(web_daemon);
+        web_daemon = NULL;
+        log_this("WebInterface", "Web server shut down successfully", 0, true, false, true);
+    } else {
+        log_this("WebInterface", "Web server was not running", 1, true, false, true);
+    }
+
+    free(server_upload_path);
+    free(server_upload_dir);
+}
+
+
+static json_t* extract_gcode_info(const char* filename) {
+    FILE* file = fopen(filename, "r");
+    if (!file) {
+        log_this("WebInterface", "Failed to open G-code file for analysis", 3, true, false, true);
+        return NULL;
+    }
+
+    BerylliumConfig config = {
+        .acceleration = ACCELERATION,
+        .z_acceleration = Z_ACCELERATION,
+        .extruder_acceleration = E_ACCELERATION,
+        .max_speed_xy = MAX_SPEED_XY,
+        .max_speed_travel = MAX_SPEED_TRAVEL,
+        .max_speed_z = MAX_SPEED_Z,
+        .default_feedrate = DEFAULT_FEEDRATE,
+        .filament_diameter = DEFAULT_FILAMENT_DIAMETER,
+        .filament_density = DEFAULT_FILAMENT_DENSITY
+    };
+
+    char *start_time = get_iso8601_timestamp();
+    clock_t start = clock();
+    BerylliumStats stats = beryllium_analyze_gcode(file, &config);
+    clock_t end = clock();
+    char *end_time = get_iso8601_timestamp();
+    fclose(file);
+
+    double elapsed_time = ((double)(end - start)) / CLOCKS_PER_SEC * 1000.0;
+
+    json_t* info = json_object();
+
+    json_object_set_new(info, "analysis_start", json_string(start_time));
+    json_object_set_new(info, "analysis_end", json_string(end_time));
+    json_object_set_new(info, "analysis_duration_ms", json_real(elapsed_time));
+
+    json_object_set_new(info, "file_size", json_integer(stats.file_size));
+    json_object_set_new(info, "total_lines", json_integer(stats.total_lines));
+    json_object_set_new(info, "gcode_lines", json_integer(stats.gcode_lines));
+    json_object_set_new(info, "layer_count_height", json_integer(stats.layer_count_height));
+    json_object_set_new(info, "layer_count_slicer", json_integer(stats.layer_count_slicer));
+
+    json_t* objects = json_array();
+    for (int i = 0; i < stats.num_objects; i++) {
+        json_t* object = json_object();
+        json_object_set_new(object, "index", json_integer(stats.object_infos[i].index + 1));
+        json_object_set_new(object, "name", json_string(stats.object_infos[i].name));
+        json_array_append_new(objects, object);
+    }
+    json_object_set_new(info, "objects", objects);
+
+    json_object_set_new(info, "filament_used_mm", json_real(stats.extrusion));
+    json_object_set_new(info, "filament_used_cm3", json_real(stats.filament_volume));
+    json_object_set_new(info, "filament_weight_g", json_real(stats.filament_weight));
+
+    char print_time_str[20];
+    format_time(stats.print_time, print_time_str);
+    json_object_set_new(info, "estimated_print_time", json_string(print_time_str));
+
+    json_t* layers = json_array();
+    double cumulative_time = 0.0;
+    for (int i = 0; i < stats.layer_count_slicer; i++) {
+        json_t* layer = json_object();
+        char start_str[20], end_str[20], duration_str[20];
+        format_time(cumulative_time, start_str);
+        cumulative_time += stats.layer_times[i];
+        format_time(cumulative_time, end_str);
+        format_time(stats.layer_times[i], duration_str);
+
+        json_object_set_new(layer, "layer", json_integer(i + 1));
+        json_object_set_new(layer, "start_time", json_string(start_str));
+        json_object_set_new(layer, "end_time", json_string(end_str));
+        json_object_set_new(layer, "duration", json_string(duration_str));
+
+        json_t* layer_objects = json_array();
+        for (int j = 0; j < stats.num_objects; j++) {
+            if (stats.object_times[i][j] > 0) {
+                json_t* obj = json_object();
+                char obj_start_str[20], obj_end_str[20], obj_duration_str[20];
+                format_time(cumulative_time - stats.layer_times[i], obj_start_str);
+                format_time(cumulative_time - stats.layer_times[i] + stats.object_times[i][j], obj_end_str);
+                format_time(stats.object_times[i][j], obj_duration_str);
+
+                json_object_set_new(obj, "object", json_integer(j + 1));
+                json_object_set_new(obj, "start_time", json_string(obj_start_str));
+                json_object_set_new(obj, "end_time", json_string(obj_end_str));
+                json_object_set_new(obj, "duration", json_string(obj_duration_str));
+
+                json_array_append_new(layer_objects, obj);
+            }
+        }
+        json_object_set_new(layer, "objects", layer_objects);
+        json_array_append_new(layers, layer);
+    }
+    json_object_set_new(info, "layers", layers);
+
+    json_t* configuration = json_object();
+    json_object_set_new(configuration, "acceleration", json_real(config.acceleration));
+    json_object_set_new(configuration, "z_acceleration", json_real(config.z_acceleration));
+    json_object_set_new(configuration, "extruder_acceleration", json_real(config.extruder_acceleration));
+    json_object_set_new(configuration, "max_speed_xy", json_real(config.max_speed_xy));
+    json_object_set_new(configuration, "max_speed_travel", json_real(config.max_speed_travel));
+    json_object_set_new(configuration, "max_speed_z", json_real(config.max_speed_z));
+    json_object_set_new(configuration, "default_feedrate", json_real(config.default_feedrate));
+    json_object_set_new(configuration, "filament_diameter", json_real(config.filament_diameter));
+    json_object_set_new(configuration, "filament_density", json_real(config.filament_density));
+    json_object_set_new(info, "configuration", configuration);
+
+    // Free the memory allocated for stats.object_times
+    for (int i = 0; i < stats.layer_count_slicer; i++) {
+        free(stats.object_times[i]);
+    }
+    free(stats.object_times);
+
+    // Free the object names and object_infos array
+    for (int i = 0; i < stats.num_objects; i++) {
+        free(stats.object_infos[i].name);
+    }
+    free(stats.object_infos);
+
+    return info;
+}
+
+static char* extract_preview_image(const char* filename) {
+    FILE* file = fopen(filename, "r");
+    if (!file) {
+        log_this("WebInterface", "Failed to open G-code file for image extraction", 3, true, false, true);
+        return NULL;
+    }
+
+    char line[1024];
+    char* image_data = NULL;
+    size_t image_size = 0;
+    bool in_thumbnail = false;
+
+    while (fgets(line, sizeof(line), file)) {
+        if (strstr(line, "; thumbnail begin")) {
+            in_thumbnail = true;
+            continue;
+        }
+        if (strstr(line, "; thumbnail end")) {
+            break;
+        }
+        if (in_thumbnail && line[0] == ';') {
+            size_t len = strlen(line);
+            if (len > 2) {
+                image_data = realloc(image_data, image_size + len - 2);
+                memcpy(image_data + image_size, line + 2, len - 3);  // -3 to remove newline
+                image_size += len - 3;
+            }
+        }
+    }
+
+    fclose(file);
+
+    if (image_data) {
+        image_data = realloc(image_data, image_size + 1);
+        image_data[image_size] = '\0';
+
+        // Create a data URL
+        char *data_url = malloc(image_size * 4 / 3 + 50); // Allocate enough space for the prefix and the base64 data
+        sprintf(data_url, "data:image/png;base64,%s", image_data);
+        free(image_data);
+        return data_url;
+    }
+
+    return image_data;
+}
+
+static enum MHD_Result handle_print_queue_request(struct MHD_Connection *connection) {
+    Queue* print_queue = queue_find("PrintQueue");
+    if (!print_queue) {
+        const char *error_response = "{\"error\": \"Print queue not found\"}";
+        struct MHD_Response *response = MHD_create_response_from_buffer(strlen(error_response),
+                                        (void*)error_response, MHD_RESPMEM_PERSISTENT);
+        MHD_add_response_header(response, "Content-Type", "application/json");
+        enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_INTERNAL_SERVER_ERROR, response);
+        MHD_destroy_response(response);
+        return ret;
+    }
+
+    json_t *queue_array = json_array();
+    size_t queue_size_value = queue_size(print_queue);
+
+    for (size_t i = 0; i < queue_size_value; i++) {
+        size_t size;
+        int priority;
+        char *job_str = queue_dequeue(print_queue, &size, &priority);
+        if (job_str) {
+            json_t *job_json = json_loads(job_str, 0, NULL);
+            if (job_json) {
+                json_array_append_new(queue_array, job_json);
+            }
+            queue_enqueue(print_queue, job_str, size, priority);
+            free(job_str);
+        }
+    }
+
+    char *queue_str = json_dumps(queue_array, JSON_INDENT(2));
+    json_decref(queue_array);
+
+    // Create HTML wrapper
+    char *html_response = malloc(strlen(queue_str) + 1000); // Allocate extra space for HTML
+    sprintf(html_response,
+            "<html><head><title>Print Queue</title></head>"
+            "<body>"
+            "<h1>Print Queue</h1>"
+            "<div id='queue-data' style='display:none;'>%s</div>"
+            "<div id='queue-display'></div>"
+            "<script>"
+            "var queueData = JSON.parse(document.getElementById('queue-data').textContent);"
+            "var displayDiv = document.getElementById('queue-display');"
+            "queueData.forEach(function(job, index) {"
+            "  var jobDiv = document.createElement('div');"
+            "  jobDiv.innerHTML = '<h2>Job ' + (index + 1) + '</h2>' +"
+            "    '<p>Filename: ' + job.original_filename + '</p>' +"
+            "    '<p>Size: ' + job.file_size + ' bytes</p>' +"
+            "    '<img src=\"' + job.preview_image + '\" alt=\"Preview\" style=\"max-width:300px;\">' +"
+            "    '<pre>' + JSON.stringify(job, null, 2) + '</pre>';"
+            "  displayDiv.appendChild(jobDiv);"
+            "});"
+            "</script>"
+            "</body></html>",
+            queue_str);
+
+    free(queue_str);
+
+    struct MHD_Response *response = MHD_create_response_from_buffer(strlen(html_response),
+                                    (void*)html_response, MHD_RESPMEM_MUST_FREE);
+    MHD_add_response_header(response, "Content-Type", "text/html");
+    enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+    MHD_destroy_response(response);
+
+    return ret;
+}
