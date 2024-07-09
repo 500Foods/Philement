@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -std=c17 -Wall -Wextra -pedantic -O2 -D_GNU_SOURCE
-LDFLAGS = -ljansson -lpthread
+LDFLAGS = -ljansson -lpthread -lmicrohttpd -lm
 
 SRC_DIR = src
 BUILD_DIR = build
@@ -19,13 +19,13 @@ debug: LDFLAGS += -fsanitize=address
 debug: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+        $(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -c -o $@ $<
+        $(CC) $(CFLAGS) -c -o $@ $<
 
 $(BUILD_DIR):
-	mkdir -p $@
+        mkdir -p $@
 
 clean:
-	rm -rf $(BUILD_DIR) $(TARGET)
+        rm -rf $(BUILD_DIR) $(TARGET)
