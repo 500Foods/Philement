@@ -3,6 +3,8 @@
 
 #include <stdbool.h>
 
+#define LOG_LINE_BREAK "----------------------------------"
+
 void log_this(const char* subsystem, const char* details, int priority, bool LogConsole, bool LogDatabase, bool LogFile);
 
 #endif // LOGGING_H

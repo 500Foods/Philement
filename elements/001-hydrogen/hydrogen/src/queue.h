@@ -53,7 +53,7 @@ bool queue_enqueue(Queue* queue, const char* data, size_t size, int priority);
 char* queue_dequeue(Queue* queue, size_t* size, int* priority);
 size_t queue_size(Queue* queue);
 size_t queue_memory_usage(Queue* queue);
-double queue_oldest_element_age(Queue* queue);
-double queue_youngest_element_age(Queue* queue);
+long queue_oldest_element_age(Queue* queue);
+long queue_youngest_element_age(Queue* queue);
 
 #endif // QUEUE_H

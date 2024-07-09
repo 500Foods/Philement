@@ -22,31 +22,3 @@ void log_this(const char* subsystem, const char* details, int priority, bool Log
     }
 }
 
-//void log_this(const char* subsystem, const char* details, bool LogConsole, bool LogDatabase) {
-    //(void)LogDatabase;  // Silence unused parameter warning
-//
-    //if (!LogConsole) {
-        //return;  // For now, we only handle console logging
-    //}
-//
-    //struct timeval tv;
-    //gettimeofday(&tv, NULL);
-//
-    //struct tm* tm_info = localtime(&tv.tv_sec);
-//
-    //char timestamp[24];  // YYYY-MM-DD HH:MM:SS.mmm
-    //strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", tm_info);
-//
-    //char formatted_priority[MAX_PRIORITY_LABEL_WIDTH + 4];  // "[LABEL ]"
-    //snprintf(formatted_priority, sizeof(formatted_priority), "[ %-*s ]", MAX_PRIORITY_LABEL_WIDTH, get_priority_label(priority));
-//
-    //char formatted_subsystem[25];  // [ subsystem           ]
-    //snprintf(formatted_subsystem, sizeof(formatted_subsystem), "[ %-20.20s ]", subsystem);
-//
-    //printf("%s.%03ld  %s  %s\n", 
-           //timestamp, 
-           //tv.tv_usec / 1000,  // Convert microseconds to milliseconds
-	   //formatted_priority,
-           //formatted_subsystem, 
-           //details);
-//}

@@ -124,47 +124,21 @@ void queue_destroy(Queue* queue) {
         return;
     }
 
-    // Store the queue name for logging
-    char* queue_name = strdup(queue->name);
-    if (queue_name == NULL) {
-        // If we can't allocate memory for the name, just use a generic message
-        queue_name = "unknown";
-    }
-
-    // Acquire the queue mutex to ensure thread-safety
     pthread_mutex_lock(&queue->mutex);
 
-    // Free all remaining elements in the queue
-    QueueElement* current = queue->head;
-    while (current != NULL) {
-        QueueElement* next = current->next;
-        free(current->data);
-        free(current);
-        current = next;
+    while (queue->head != NULL) {
+        QueueElement* temp = queue->head;
+        queue->head = queue->head->next;
+        free(temp->data);
+        free(temp);
     }
 
-    // Release the mutex before destroying it
     pthread_mutex_unlock(&queue->mutex);
-
-    // Destroy the mutex and condition variables
     pthread_mutex_destroy(&queue->mutex);
     pthread_cond_destroy(&queue->not_empty);
     pthread_cond_destroy(&queue->not_full);
 
-    // Log the queue destruction, but not for SystemLog queue
-    if (strcmp(queue_name, "SystemLog") != 0) {
-        log_this("QueueSystem", "Queue destroyed", 0, true, true, true);
-    }
-
-    // Free the queue name
     free(queue->name);
-
-    // Free the temporary queue name if we allocated it
-    if (strcmp(queue_name, "unknown") != 0) {
-        free(queue_name);
-    }
-
-    // Finally, free the queue structure itself
     free(queue);
 }
 
@@ -253,16 +227,59 @@ size_t queue_size(Queue* queue) {
 
 
 size_t queue_memory_usage(Queue* queue) {
-    // TODO: Implement
-    return 0;
+    if (!queue) {
+        return 0;
+    }
+
+    pthread_mutex_lock(&queue->mutex);
+    size_t memory_used = queue->memory_used;
+    pthread_mutex_unlock(&queue->mutex);
+
+    return memory_used;
 }
 
-double queue_oldest_element_age(Queue* queue) {
-    // TODO: Implement
-    return 0.0;
+long queue_oldest_element_age(Queue* queue) {
+    if (!queue) {
+        return 0;
+    }
+
+    pthread_mutex_lock(&queue->mutex);
+
+    if (queue->size == 0) {
+        pthread_mutex_unlock(&queue->mutex);
+        return 0;
+    }
+
+    struct timespec now;
+    clock_gettime(CLOCK_REALTIME, &now);
+
+    long age_ms = (now.tv_sec - queue->head->timestamp.tv_sec) * 1000 +
+                  (now.tv_nsec - queue->head->timestamp.tv_nsec) / 1000000;
+
+    pthread_mutex_unlock(&queue->mutex);
+
+    return age_ms;
 }
 
-double queue_youngest_element_age(Queue* queue) {
-    // TODO: Implement
-    return 0.0;
+long queue_youngest_element_age(Queue* queue) {
+    if (!queue) {
+        return 0;
+    }
+
+    pthread_mutex_lock(&queue->mutex);
+
+    if (queue->size == 0) {
+        pthread_mutex_unlock(&queue->mutex);
+        return 0;
+    }
+
+    struct timespec now;
+    clock_gettime(CLOCK_REALTIME, &now);
+
+    long age_ms = (now.tv_sec - queue->tail->timestamp.tv_sec) * 1000 +
+                  (now.tv_nsec - queue->tail->timestamp.tv_nsec) / 1000000;
+
+    pthread_mutex_unlock(&queue->mutex);
+
+    return age_ms;
 }
