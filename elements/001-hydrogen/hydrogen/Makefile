@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -std=c17 -Wall -Wextra -pedantic -O2 -D_GNU_SOURCE
-LDFLAGS = -ljansson -lpthread -lmicrohttpd -lm
+LDFLAGS = -ljansson -lpthread -lmicrohttpd -lm -lssl -lcrypto -lwebsockets
 
 SRC_DIR = src
 BUILD_DIR = build
