@@ -6,6 +6,34 @@ This is a C program that is essentially a JSON queue manager. Most of what this 
 
 Each queue has its own queue manager that determines what happens when something arrives in its queue. Logging, for example, will look at the queued element and either print it to the console, write it out to a log file, or add it to the database. This is handled separately from whatever generated the log event so *that* process doesn't have to wait for any of these actions to complete before continuing on. 
 
+## Files
+
+- `hydrogen.json` Configuration file for the Hydrogen server.
+- `Makefile`  Build instructions for compiling the Hydrogen program.
+- `src/beryllium.c` Implements G-code analysis functionality.
+- `src/beryllium.h` Header file for G-code analysis declarations.
+- `src/configuration.c` Handles loading and managing configuration settings.
+- `src/configuration.h` Defines configuration-related structures and constants.
+- `src/hydrogen.c` Main entry point of the program, initializes components.
+- `src/keys.c` Implements secret key generation functionality.
+- `src/keys.h` Header file for secret key generation.
+- `src/logging.c` Implements logging functionality.
+- `src/logging.h` Defines logging-related functions and macros.
+- `src/log_queue_manager.c` Manages the log message queue.
+- `src/log_queue_manager.h` Header file for log queue management.
+- `src/mdns.h` Defines mDNS-related structures and functions.
+- `src/mdns_linux.c` Implements mDNS functionality for Linux.
+- `src/network.h` Defines network-related structures and functions.
+- `src/network_linux.c` Implements network functionality for Linux.
+- `src/print_queue_manager.c` Manages the print job queue.
+- `src/print_queue_manager.h` Header file for print queue management.
+- `src/queue.c` Implements a generic queue data structure.
+- `src/queue.h` Defines queue-related structures and functions.
+- `src/utils.c` Implements utility functions.
+- `src/utils.h` Defines utility functions and constants.
+- `src/web_interface.c` Implements the web server interface.
+- `src/web_interface.h` Header file for web server interface.
+
 ## C Dependencies
 - pthreads
 - jansson
