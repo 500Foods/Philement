@@ -40,7 +40,7 @@ Each queue has its own queue manager that determines what happens when something
 - microhttpd
   
 ## Release Notes
-### 2024-Jul-09
+### 2024-Jul-11
 Focus was all about mDNS and the initial groundwork for the WebSockets interface.
 - Integrated the code from the nitrogen/nitro prototype project.
   
