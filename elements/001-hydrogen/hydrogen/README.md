@@ -40,6 +40,13 @@ Each queue has its own queue manager that determines what happens when something
 - microhttpd
   
 ## Release Notes
+### 2024-Jul-15
+Bit of cleanup of mDNS code. Not sure it is working entirely yet. Some other updates.
+- Addressed issues with log_this not being all that reliable
+- Fixed memory issues with app_config
+- Cleanup of shutdown code
+- Added generic WebServer support to serve lithium content
+  
 ### 2024-Jul-11
 Focus was all about mDNS and the initial groundwork for the WebSockets interface.
 - Integrated the code from the nitrogen/nitro prototype project.
