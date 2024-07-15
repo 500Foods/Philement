@@ -1,4 +1,5 @@
 // System Libraries
+//
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -47,7 +48,6 @@ void inthandler(int signum) {
 
     printf("\n");
     log_this("Shutdown", "Cleaning up and shutting down", 0, true, true, true);
-    usleep(10000);
 
     pthread_mutex_lock(&terminate_mutex);
     keep_running = 0;
@@ -99,32 +99,35 @@ void graceful_shutdown() {
     // 5. Free other resources
     log_this("Shutdown", "Freeing other resources", 0, true, true, true);
 
-    // 6. Shutdown Logging (do this last)
+    // 6. Shutdown Logging
     log_this("Shutdown", "Initiating Logging shutdown", 0, true, true, true);
     log_queue_shutdown = 1;
     pthread_cond_broadcast(&terminate_cond);
     pthread_join(log_thread, NULL);
-
-    // Switch to printf for logging after this point
-    printf("- Closing file logging\n");
+    log_this("Shutdown", "Closing File Logging", 0, true, true, true);
     close_file_logging();
-    printf("- Logging shutdown complete\n");
+    log_this("Shutdown", "Logging shutdown complete", 0, true, true, true);
 
-    // 7. Final cleanup
-    printf("- Destroying queue system\n");
+    // 7. Shutdown queue system
+    log_this("Shutdown", "Initiating queue system shutdown", 0, true, true, true);
     queue_system_destroy();
-    printf("- Destroying condition variable and mutex\n");
+    log_this("Shutdown", "Initiating queue system shutdown", 0, true, true, true);
+
+    // 8. Synchronization variables
+    log_this("Shutdown", "Releasing condition variable and mutex", 0, true, true, true);
     pthread_cond_destroy(&terminate_cond);
     pthread_mutex_destroy(&terminate_mutex);
 
-    // Free app_config
+    // 9. Free app_config
+    log_this("Shutdown", "Releasing configuration information", 0, true, true, true);
     if (app_config) {
         free(app_config->server_name);
         free(app_config->executable_path);
         free(app_config->log_file_path);
         free(app_config->upload_path);
         free(app_config->upload_dir);
-        
+	free(app_config->web_root);
+
         // Free mDNS config
         free(app_config->mdns.device_id);
         free(app_config->mdns.friendly_name);
@@ -132,16 +135,20 @@ void graceful_shutdown() {
         free(app_config->mdns.manufacturer);
         free(app_config->mdns.version);
         for (int i = 0; i < app_config->mdns.num_services; i++) {
+            free(app_config->mdns.services[i].name);
             free(app_config->mdns.services[i].type);
+            for (int j = 0; j < app_config->mdns.services[i].num_txt_records; j++) {
+                free(app_config->mdns.services[i].txt_records[j]);
+            }
             free(app_config->mdns.services[i].txt_records);
         }
         free(app_config->mdns.services);
-        
+
         free(app_config);
         app_config = NULL;
     }
 
-    printf("Graceful shutdown complete\n");
+    log_this("Shutdown", "Shutdown complete", 0, true, true, true);
     shutting_down = 1;
 }
 
@@ -156,9 +163,6 @@ int main(int argc, char *argv[]) {
     act.sa_handler = inthandler;
     sigaction(SIGINT, &act, NULL);
 
-    // Temp storage for output messages
-    char buffer[256];
-   
     // Initialize the queue system
     queue_system_init();
     
@@ -194,40 +198,28 @@ int main(int argc, char *argv[]) {
     }
 
     // Output app information
-    snprintf(buffer, sizeof(buffer), LOG_LINE_BREAK);
-    log_this("Initialization", buffer, 0, true, true, true);
-
-    snprintf(buffer, sizeof(buffer), "Server Name: %s", app_config->server_name);
-    log_this("Initialization", buffer, 0, true, true, true);
-
-    snprintf(buffer, sizeof(buffer), "Executable: %s", app_config->executable_path);
-    log_this("Initialization", buffer, 0, true, false, true);
-
-    snprintf(buffer, sizeof(buffer), "Version: %s", VERSION);
-    log_this("Initialization", buffer, 0, true, false, true);
+    log_this("Initialization", "%s", 0, true, true, true, LOG_LINE_BREAK);
+    log_this("Initialization", "Server Name: %s", 0, true, true, true, app_config->server_name);
+    log_this("Initialization", "Executable: %s", 0, true, true, true, app_config->executable_path);
+    log_this("Initialization", "Version: %s", 0, true, true, true, VERSION);
 
     long file_size = get_file_size(app_config->executable_path);
     if (file_size >= 0) {
-        snprintf(buffer, sizeof(buffer), "Size: %ld bytes", file_size);
-        log_this("Initialization", buffer, 0, true, false, true);
+        log_this("Initialization", "Size: %ld", 0, true, true, true, file_size);
     } else {
         log_this("Initialization", "Error: Unable to get file size", 0, true, false, true);
     }
 
     char* mod_time = get_file_modification_time(app_config->executable_path);
     if (mod_time) {
-        snprintf(buffer, sizeof(buffer), "Last modified: %s", mod_time);
-        log_this("Initialization", buffer, 0, true, false, true);
+        log_this("Initialization", "Last Modified: %s", 0, true, false, true, mod_time);
         free(mod_time);
     } else {
         log_this("Initialization", "Error: Unable to get modification time", 0, true, false, true);
     }
 
-    snprintf(buffer, sizeof(buffer), "Log File: %s", app_config->log_file_path ? app_config->log_file_path : "None");
-    log_this("Initialization", buffer, 0, true, true, true);
-
-    snprintf(buffer, sizeof(buffer), LOG_LINE_BREAK);
-    log_this("Initialization", buffer, 0, true, true, true);
+    log_this("Initialization", "Log File: %s", 0, true, true, true, app_config->log_file_path ? app_config->log_file_path : "None"); 
+    log_this("Initialization", "%s", 0, true, true, true, LOG_LINE_BREAK);
 
     // Initialize print queue
     init_print_queue();
@@ -296,20 +288,18 @@ int main(int argc, char *argv[]) {
     // Ready to go
     // Give threads a moment to launch first
     usleep(10000);
-    snprintf(buffer, sizeof(buffer), LOG_LINE_BREAK);
-    log_this("Initialization", buffer, 0, true, true, true);
+    log_this("Initialization", "%s", 0, true, true, true, LOG_LINE_BREAK);
     log_this("Initialization", "Application started", 0, true, true, true);
     log_this("Initialization", "Press Ctrl+C to exit", 0, true, false, true);
+    log_this("Initialization", "%s", 0, true, true, true, LOG_LINE_BREAK);
 
     ////////////////////////////////////////////////////////////////////////////////
-    log_this("Initialization", "Entering main loop", 0, true, true, true);
 
     while (keep_running) {
         pthread_mutex_lock(&terminate_mutex);
         pthread_cond_wait(&terminate_cond, &terminate_mutex);
         pthread_mutex_unlock(&terminate_mutex);
     }
-    log_this("Shutdown", "Exiting main loop", 0, true, true, true);
 
     ////////////////////////////////////////////////////////////////////////////////
 
