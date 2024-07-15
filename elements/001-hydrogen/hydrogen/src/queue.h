@@ -55,5 +55,6 @@ size_t queue_size(Queue* queue);
 size_t queue_memory_usage(Queue* queue);
 long queue_oldest_element_age(Queue* queue);
 long queue_youngest_element_age(Queue* queue);
+void queue_clear(Queue* queue);
 
 #endif // QUEUE_H

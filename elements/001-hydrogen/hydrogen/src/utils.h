@@ -1,11 +1,13 @@
-   #ifndef UTILS_H
-   #define UTILS_H
+#ifndef UTILS_H
+#define UTILS_H
 
-   #include <stddef.h>
+// System Libraries
+#include <stddef.h>
 
-   #define ID_CHARS "BCDFGHKPRST"
-   #define ID_LEN 5
 
-   void generate_id(char *buf, size_t len);
+#define ID_CHARS "BCDFGHKPRST"
+#define ID_LEN 5
 
-   #endif // UTILS_H
+void generate_id(char *buf, size_t len);
+
+#endif // UTILS_H

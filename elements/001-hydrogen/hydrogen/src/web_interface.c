@@ -1,14 +1,7 @@
-#include "web_interface.h"
-#include "configuration.h"
-#include "logging.h"
-#include "beryllium.h"
-#include "queue.h"
-#include "print_queue_manager.h"
-#include <microhttpd.h>
+// System Libraries
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 #include <pthread.h>
 #include <signal.h>
 #include <sys/stat.h>
@@ -19,7 +12,18 @@
 #include <netinet/in.h>
 #include <time.h>
 #include <sys/time.h>
+
+// Third-Party Libraries
 #include <jansson.h>
+#include <microhttpd.h>
+
+// Project Libraries
+#include "web_interface.h"
+#include "configuration.h"
+#include "logging.h"
+#include "beryllium.h"
+#include "queue.h"
+#include "print_queue_manager.h"
 
 #define UUID_STR_LEN 37
 
@@ -27,11 +31,10 @@ static struct MHD_Daemon *web_daemon = NULL;
 static unsigned int server_port = 0;
 static char *server_upload_path = NULL;
 static char *server_upload_dir = NULL;
-static volatile sig_atomic_t keep_running = 1;
-
 static size_t max_upload_size = DEFAULT_MAX_UPLOAD_SIZE;
 
 extern volatile sig_atomic_t keep_running;
+extern volatile sig_atomic_t web_server_shutdown;
 extern pthread_cond_t terminate_cond;
 extern pthread_mutex_t terminate_mutex;
 
@@ -82,14 +85,11 @@ static bool is_port_available(int port) {
     return result == 0;
 }
 
-
 static enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind kind, const char *key,
                                           const char *filename, const char *content_type,
                                           const char *transfer_encoding, const char *data, uint64_t off, size_t size) {
     struct ConnectionInfo *con_info = coninfo_cls;
     (void)kind; (void)content_type; (void)transfer_encoding; (void)off;  // Unused parameters
-
-    //printf("Received key: %s, filename: %s, size: %zu\n", key, filename ? filename : "NULL", size);
 
     if (0 == strcmp(key, "file")) {
         if (!con_info->fp) {
@@ -160,9 +160,9 @@ static enum MHD_Result handle_version_request(struct MHD_Connection *connection)
 }
 
 static enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
-                          const char *url, const char *method,
-                          const char *version, const char *upload_data,
-                          size_t *upload_data_size, void **con_cls) {
+                           const char *url, const char *method,
+                           const char *version, const char *upload_data,
+                           size_t *upload_data_size, void **con_cls) {
     (void)cls; (void)version;
 
     if (strcmp(url, "/api/version") == 0) {
@@ -214,7 +214,7 @@ static enum MHD_Result handle_request(void *cls, struct MHD_Connection *connecti
                 json_object_set_new(print_job, "original_filename", json_string(con_info->original_filename));
                 json_object_set_new(print_job, "new_filename", json_string(con_info->new_filename));
                 json_object_set_new(print_job, "file_size", json_integer(con_info->total_size));
-		json_object_set_new(print_job, "print_after_upload", json_boolean(con_info->print_after_upload));
+                json_object_set_new(print_job, "print_after_upload", json_boolean(con_info->print_after_upload));
 
                 json_t* gcode_info = extract_gcode_info(con_info->new_filename);
                 if (gcode_info) {
@@ -229,8 +229,6 @@ static enum MHD_Result handle_request(void *cls, struct MHD_Connection *connecti
 
                 char* print_job_str = json_dumps(print_job, JSON_COMPACT);
                 if (print_job_str) {
-                    //printf("JSON: %s\n", print_job_str);
-
                     Queue* print_queue = queue_find("PrintQueue");
                     if (print_queue) {
                         queue_enqueue(print_queue, print_job_str, strlen(print_job_str), 0);
@@ -247,7 +245,7 @@ static enum MHD_Result handle_request(void *cls, struct MHD_Connection *connecti
                 json_decref(print_job);
 
                 char complete_log[512];
-		log_this("WebInterface", "File upload completed:", 0, true, true, true);
+                log_this("WebInterface", "File upload completed:", 0, true, true, true);
                 snprintf(complete_log, sizeof(complete_log), " -> Source: %s", con_info->original_filename);
                 log_this("WebInterface", complete_log, 0, true, true, true);
                 snprintf(complete_log, sizeof(complete_log), " ->  Local: %s", con_info->new_filename);
@@ -361,9 +359,9 @@ void* run_web_server(void* arg) {
 
     log_this("WebInterface", "Starting web server", 0, true, false, true);
     web_daemon = MHD_start_daemon(MHD_USE_THREAD_PER_CONNECTION, server_port, NULL, NULL,
-                              &handle_request, NULL,
-                              MHD_OPTION_NOTIFY_COMPLETED, request_completed, NULL,
-                              MHD_OPTION_END);
+                               &handle_request, NULL,
+                               MHD_OPTION_NOTIFY_COMPLETED, request_completed, NULL,
+                               MHD_OPTION_END);
     if (web_daemon == NULL) {
         log_this("WebInterface", "Failed to start web server", 4, true, false, true);
         return NULL;
@@ -392,31 +390,13 @@ void* run_web_server(void* arg) {
 
     log_this("WebInterface", "Web server started successfully", 0, true, false, true);
 
-    while(keep_running) {
-        pthread_mutex_lock(&terminate_mutex);
-        struct timespec ts;
-        clock_gettime(CLOCK_REALTIME, &ts);
-        ts.tv_sec += 1; // Wait for at most 1 second
-        int rc = pthread_cond_timedwait(&terminate_cond, &terminate_mutex, &ts);
-        pthread_mutex_unlock(&terminate_mutex);
-        
-        if (rc == ETIMEDOUT) {
-            // Timeout occurred, check keep_running flag
-            if (!keep_running) {
-                break;
-            }
-        } else if (rc == 0) {
-            // Condition variable was signaled
-            break;
-        }
-    }
-
-    log_this("WebInterface", "Web server thread exiting", 0, true, false, true);
+    // Instead of a blocking loop, we'll just return and let the thread exit
+    // The MHD daemon will continue running in its own threads
     return NULL;
 }
 
 void shutdown_web_server(void) {
-    log_this("WebInterface", "Shutting down web server", 0, true, false, true);
+    log_this("WebInterface", "Shutdown: Shutting down web server", 0, true, false, true);
     if (web_daemon != NULL) {
         MHD_stop_daemon(web_daemon);
         web_daemon = NULL;

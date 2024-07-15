@@ -1,16 +1,21 @@
-#include "log_queue_manager.h"
-#include "logging.h"
-#include "queue.h"
-#include "configuration.h"
+// System Libraries
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include <jansson.h>
 #include <signal.h>
 #include <unistd.h>
 #include <time.h>
 #include <sys/time.h>
+
+// Third-Party Libraries
+#include <jansson.h>
+
+// Project Libraries
+#include "log_queue_manager.h"
+#include "logging.h"
+#include "queue.h"
+#include "configuration.h"
 
 extern volatile sig_atomic_t keep_running;
 extern volatile sig_atomic_t shutting_down;
@@ -19,66 +24,6 @@ extern pthread_cond_t terminate_cond;
 extern pthread_mutex_t terminate_mutex;
 
 static FILE* log_file = NULL;
-
-static void cleanup_log_queue_manager(void* arg);
-static void process_log_message(const char* message, int priority);
-
-
-void init_file_logging(const char* log_file_path) {
-    if (log_file) {
-        fclose(log_file);
-    }
-    log_file = fopen(log_file_path, "a");
-    if (!log_file) {
-        fprintf(stderr, "Error: Unable to open log file: %s\n", log_file_path);
-    }
-}
-
-void close_file_logging() {
-    if (log_file) {
-        fclose(log_file);
-        log_file = NULL;
-    }
-}
-
-void* log_queue_manager(void* arg) {
-    Queue* log_queue = (Queue*)arg;
-
-    pthread_cleanup_push(cleanup_log_queue_manager, NULL);
-
-    log_this("LogQueueManager", "Log queue manager started", 0, true, true, true);
-
-    while (!log_queue_shutdown || queue_size(log_queue) > 0) {
-        size_t message_size;
-        int priority;
-        char* message = queue_dequeue(log_queue, &message_size, &priority);
-        if (message) {
-            // Only process the message if we're not shutting down, or if it's a high-priority message
-            if (!log_queue_shutdown || priority > 1) {
-                process_log_message(message, priority);
-            }
-            free(message);
-        } else if (!log_queue_shutdown) {
-            pthread_mutex_lock(&terminate_mutex);
-            struct timespec ts;
-            clock_gettime(CLOCK_REALTIME, &ts);
-            ts.tv_sec += 1; // Wait for at most 1 second
-            pthread_cond_timedwait(&terminate_cond, &terminate_mutex, &ts);
-            pthread_mutex_unlock(&terminate_mutex);
-        }
-
-        if (log_queue_shutdown && queue_size(log_queue) == 0) {
-            // Only log this message once, when the queue is empty
-            printf("- Log Queue Manager processing final messages\n");
-            break;
-        }
-    }
-
-    printf("- Log Queue Manager exiting\n");
-
-    pthread_cleanup_pop(1);
-    return NULL;
-}
 
 static void cleanup_log_queue_manager(void* arg) {
     (void)arg;  // Unused parameter
@@ -130,4 +75,56 @@ static void process_log_message(const char* message, int priority) {
     } else {
         fprintf(stderr, "Error parsing JSON: %s\n", error.text);
     }
+}
+
+void init_file_logging(const char* log_file_path) {
+    if (log_file) {
+        fclose(log_file);
+    }
+    log_file = fopen(log_file_path, "a");
+    if (!log_file) {
+        fprintf(stderr, "Error: Unable to open log file: %s\n", log_file_path);
+    }
+}
+
+void close_file_logging() {
+    if (log_file) {
+        fclose(log_file);
+        log_file = NULL;
+    }
+}
+
+void* log_queue_manager(void* arg) {
+    Queue* log_queue = (Queue*)arg;
+
+    pthread_cleanup_push(cleanup_log_queue_manager, NULL);
+
+    log_this("LogQueueManager", "Log queue manager started", 0, true, true, true);
+
+    while (!log_queue_shutdown) {
+        pthread_mutex_lock(&terminate_mutex);
+        while (queue_size(log_queue) == 0 && !log_queue_shutdown) {
+            pthread_cond_wait(&terminate_cond, &terminate_mutex);
+        }
+        pthread_mutex_unlock(&terminate_mutex);
+
+        if (log_queue_shutdown && queue_size(log_queue) == 0) {
+            log_this("LogQueueManager", "Shutdown: Log Queue Manager processing final messages", 0, true, true, true);
+        }
+
+        while (queue_size(log_queue) > 0) {
+            size_t message_size;
+            int priority;
+            char* message = queue_dequeue(log_queue, &message_size, &priority);
+            if (message) {
+                process_log_message(message, priority);
+                free(message);
+            }
+        }
+    }
+
+    log_this("LogQueueManager", "Shutdown: Log Queue Manager exiting", 0, true, true, true);
+
+    pthread_cleanup_pop(1);
+    return NULL;
 }

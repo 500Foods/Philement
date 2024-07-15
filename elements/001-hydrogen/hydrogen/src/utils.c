@@ -1,10 +1,14 @@
-#include "utils.h"
-#include "logging.h"
+// Standard Libraries
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <stdarg.h>
+#include <ctype.h>
+
+// Project Libraries
+#include "utils.h"
+#include "logging.h"
 
 void generate_id(char *buf, size_t len) {
     if (len < ID_LEN + 1) {

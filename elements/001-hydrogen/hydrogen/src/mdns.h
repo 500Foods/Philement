@@ -1,8 +1,11 @@
 #ifndef MDNS_H
 #define MDNS_H
 
+// System Libraries
 #include <stdint.h>
 #include <pthread.h>
+
+// Project Libraries
 #include "network.h"
 
 #define MDNS_PORT 5353
@@ -22,12 +25,14 @@
 #define MDNS_CLASS_IN 1
 #define MDNS_FLAG_RESPONSE 0x8400
 #define MDNS_FLAG_AUTHORITATIVE 0x0400
-#define MDNS_MAX_PACKET_SIZE 512
+#define MDNS_MAX_PACKET_SIZE 1500
 
 typedef struct {
-    char *service_type;
+    char *name;
+    char *type;
     int port;
-    char *txt_records;  // Comma-separated key=value pairs
+    char **txt_records;  
+    int num_txt_records;
 } mdns_service_t;
 
 typedef struct {
@@ -54,6 +59,8 @@ typedef struct {
     volatile int *running;
 } mdns_thread_arg_t;
 
+
+// Functions
 mdns_t *mdns_init(const char *app_name, 
 		  const char *id, 
 		  const char *friendly_name, 
@@ -64,7 +71,7 @@ mdns_t *mdns_init(const char *app_name,
 		  const char *config_url,
 		  mdns_service_t *services,
 		  int num_services);
-void mdns_build_announcement(uint8_t *packet, size_t *packet_len, const char *hostname, const mdns_t *mdns, uint32_t ttl);
+void mdns_build_announcement(uint8_t *packet, size_t *packet_len, const char *hostname, const mdns_t *mdns, uint32_t ttl, const network_info_t *net_info);
 void mdns_send_announcement(mdns_t *mdns, int port, const network_info_t *net_info);
 void mdns_shutdown(mdns_t *mdns);
 void *mdns_announce_loop(void *arg);
