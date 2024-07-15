@@ -12,6 +12,7 @@
 #include <netinet/in.h>
 #include <time.h>
 #include <sys/time.h>
+#include <limits.h>
 
 // Third-Party Libraries
 #include <jansson.h>
@@ -33,6 +34,7 @@ static char *server_upload_path = NULL;
 static char *server_upload_dir = NULL;
 static size_t max_upload_size = DEFAULT_MAX_UPLOAD_SIZE;
 
+extern volatile AppConfig *app_config;
 extern volatile sig_atomic_t keep_running;
 extern volatile sig_atomic_t web_server_shutdown;
 extern pthread_cond_t terminate_cond;
@@ -85,6 +87,12 @@ static bool is_port_available(int port) {
     return result == 0;
 }
 
+static void add_cors_headers(struct MHD_Response *response) {
+    MHD_add_response_header(response, "Access-Control-Allow-Origin", "*");
+    MHD_add_response_header(response, "Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    MHD_add_response_header(response, "Access-Control-Allow-Headers", "Content-Type");
+}
+
 static enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind kind, const char *key,
                                           const char *filename, const char *content_type,
                                           const char *transfer_encoding, const char *data, uint64_t off, size_t size) {
@@ -101,7 +109,7 @@ static enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind 
                 snprintf(file_path, sizeof(file_path), "%s/%s.gcode", server_upload_dir, uuid_str);
                 con_info->fp = fopen(file_path, "wb");
                 if (!con_info->fp) {
-                    log_this("WebInterface", "Failed to open file for writing", 3, true, false, true);
+                    log_this("WebServer", "Failed to open file for writing", 3, true, false, true);
                     return MHD_NO;
                 }
                 free(con_info->original_filename);  // Free previous allocation if any
@@ -111,18 +119,18 @@ static enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind 
 
                 char log_buffer[256];
                 snprintf(log_buffer, sizeof(log_buffer), "Starting file upload: %s", filename);
-                log_this("WebInterface", log_buffer, 0, true, false, true);
+                log_this("WebServer", log_buffer, 0, true, false, true);
             }
         }
 
         if (size > 0) {
             if (con_info->total_size + size > max_upload_size) {
-                log_this("WebInterface", "File upload exceeds maximum allowed size", 3, true, false, true);
+                log_this("WebServer", "File upload exceeds maximum allowed size", 3, true, false, true);
                 return MHD_NO;
             }
 
             if (fwrite(data, 1, size, con_info->fp) != size) {
-                log_this("WebInterface", "Failed to write to file", 3, true, false, true);
+                log_this("WebServer", "Failed to write to file", 3, true, false, true);
                 return MHD_NO;
             }
             con_info->total_size += size;
@@ -132,7 +140,7 @@ static enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind 
                 con_info->last_logged_mb = con_info->total_size / (100 * 1024 * 1024);
                 char progress_log[128];
                 snprintf(progress_log, sizeof(progress_log), "Upload progress: %zu MB", con_info->last_logged_mb * 100);
-                log_this("WebInterface", progress_log, 2, true, false, true);
+                log_this("WebServer", progress_log, 2, true, false, true);
             }
         }
     } else if (0 == strcmp(key, "print")) {
@@ -143,7 +151,7 @@ static enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind 
         // Log unknown keys
         char log_buffer[256];
         snprintf(log_buffer, sizeof(log_buffer), "Received unknown key in form data: %s", key);
-        log_this("WebInterface", log_buffer, 2, true, false, true);
+        log_this("WebServer", log_buffer, 2, true, false, true);
     }
 
     return MHD_YES;
@@ -153,7 +161,39 @@ static enum MHD_Result handle_version_request(struct MHD_Connection *connection)
     const char *version_json = "{\"api\": \"0.1\", \"server\": \"1.1.0\", \"text\": \"OctoPrint 1.1.0\"}";
     struct MHD_Response *response = MHD_create_response_from_buffer(strlen(version_json),
                                     (void*)version_json, MHD_RESPMEM_PERSISTENT);
+    add_cors_headers(response);
     MHD_add_response_header(response, "Content-Type", "application/json");
+    enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+    MHD_destroy_response(response);
+    return ret;
+}
+
+static enum MHD_Result serve_file(struct MHD_Connection *connection, const char *file_path) {
+    int fd = open(file_path, O_RDONLY);
+    if (fd == -1) return MHD_NO;
+
+    struct stat st;
+    if (fstat(fd, &st) == -1) {
+        close(fd);
+        return MHD_NO;
+    }
+
+    struct MHD_Response *response = MHD_create_response_from_fd(st.st_size, fd);
+    if (!response) {
+        close(fd);
+        return MHD_NO;
+    }
+
+    add_cors_headers(response);
+
+    const char *ext = strrchr(file_path, '.');
+    if (ext) {
+        if (strcmp(ext, ".html") == 0) MHD_add_response_header(response, "Content-Type", "text/html");
+        else if (strcmp(ext, ".css") == 0) MHD_add_response_header(response, "Content-Type", "text/css");
+        else if (strcmp(ext, ".js") == 0) MHD_add_response_header(response, "Content-Type", "application/javascript");
+        // Add more content types as needed
+    }
+
     enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
     MHD_destroy_response(response);
     return ret;
@@ -165,21 +205,44 @@ static enum MHD_Result handle_request(void *cls, struct MHD_Connection *connecti
                            size_t *upload_data_size, void **con_cls) {
     (void)cls; (void)version;
 
-    if (strcmp(url, "/api/version") == 0) {
-        return handle_version_request(connection);
-    } else if (strcmp(url, "/print/queue") == 0) {
-        return handle_print_queue_request(connection);
+    // Handle OPTIONS method for CORS preflight requests
+    if (strcmp(method, "OPTIONS") == 0) {
+        struct MHD_Response *response = MHD_create_response_from_buffer(0, NULL, MHD_RESPMEM_PERSISTENT);
+        add_cors_headers(response);
+        enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+        MHD_destroy_response(response);
+        return ret;
     }
 
-    if (strcmp(url, "/api/files/local") != 0 &&
-        strcmp(url, "/api/upload") != 0 &&
-        (server_upload_path && strcmp(url, server_upload_path) != 0)) {
-        char log_buffer[256];
-        snprintf(log_buffer, sizeof(log_buffer), "Invalid URL requested: %s", url);
-        log_this("WebInterface", log_buffer, 2, true, true, true);
+    // Deal with regular GET requests
+    if (strcmp(method, "GET") == 0) {
+        
+        // Expected endpoints 
+        if (strcmp(url, "/api/version") == 0) {
+            return handle_version_request(connection);
+        } else if (strcmp(url, "/print/queue") == 0) {
+            return handle_print_queue_request(connection);
+        }
 
-        const char *page = "<html><body>Invalid API endpoint</body></html>";
+        // If no API endpoint matched, try to serve a static file
+        char file_path[PATH_MAX];
+        snprintf(file_path, sizeof(file_path), "%s%s", app_config->web_root, url);
+
+        // If the URL ends with a /, append index.html
+        if (url[strlen(url) - 1] == '/') {
+            strcat(file_path, "index.html");
+        }
+
+	// Serve up the requested file
+        if (access(file_path, F_OK) != -1) {
+	    log_this("WebServer","Served File: %s", 0, true, true, true, file_path);
+            return serve_file(connection, file_path);
+        }
+
+        // If file not found, return 404
+        const char *page = "<html><body>404 Not Found</body></html>";
         struct MHD_Response *response = MHD_create_response_from_buffer(strlen(page), (void*)page, MHD_RESPMEM_PERSISTENT);
+	add_cors_headers(response);
         enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_NOT_FOUND, response);
         MHD_destroy_response(response);
         return ret;
@@ -232,28 +295,28 @@ static enum MHD_Result handle_request(void *cls, struct MHD_Connection *connecti
                     Queue* print_queue = queue_find("PrintQueue");
                     if (print_queue) {
                         queue_enqueue(print_queue, print_job_str, strlen(print_job_str), 0);
-                        log_this("WebInterface", "Added print job to queue", 0, true, false, true);
+                        log_this("WebServer", "Added print job to queue", 0, true, false, true);
                     } else {
-                        log_this("WebInterface", "Failed to find PrintQueue", 3, true, false, true);
+                        log_this("WebServer", "Failed to find PrintQueue", 3, true, false, true);
                     }
 
                     free(print_job_str);
                 } else {
-                    log_this("WebInterface", "Failed to create JSON string", 3, true, false, true);
+                    log_this("WebServer", "Failed to create JSON string", 3, true, false, true);
                 }
 
                 json_decref(print_job);
 
                 char complete_log[512];
-                log_this("WebInterface", "File upload completed:", 0, true, true, true);
+                log_this("WebServer", "File upload completed:", 0, true, true, true);
                 snprintf(complete_log, sizeof(complete_log), " -> Source: %s", con_info->original_filename);
-                log_this("WebInterface", complete_log, 0, true, true, true);
+                log_this("WebServer", complete_log, 0, true, true, true);
                 snprintf(complete_log, sizeof(complete_log), " ->  Local: %s", con_info->new_filename);
-                log_this("WebInterface", complete_log, 0, true, true, true);
+                log_this("WebServer", complete_log, 0, true, true, true);
                 snprintf(complete_log, sizeof(complete_log), " ->   Size: %zu bytes", con_info->total_size);
-                log_this("WebInterface", complete_log, 0, true, true, true);
+                log_this("WebServer", complete_log, 0, true, true, true);
                 snprintf(complete_log, sizeof(complete_log), " ->  Print: %s", con_info->print_after_upload ? "true" : "false");
-                log_this("WebInterface", complete_log, 0, true, true, true);
+                log_this("WebServer", complete_log, 0, true, true, true);
 
                 // Send response
                 const char *response_text = "{\"files\": {\"local\": {\"name\": \"%s\", \"origin\": \"local\"}}, \"done\": true}";
@@ -262,16 +325,18 @@ static enum MHD_Result handle_request(void *cls, struct MHD_Connection *connecti
 
                 struct MHD_Response *response = MHD_create_response_from_buffer(strlen(json_response),
                                                 (void*)json_response, MHD_RESPMEM_MUST_FREE);
+                add_cors_headers(response);
                 MHD_add_response_header(response, "Content-Type", "application/json");
                 enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
                 MHD_destroy_response(response);
                 con_info->response_sent = true;
                 return ret;
             } else {
-                log_this("WebInterface", "File upload failed or no file was uploaded", 2, true, false, true);
+                log_this("WebServer", "File upload failed or no file was uploaded", 2, true, false, true);
                 const char *error_response = "{\"error\": \"File upload failed\", \"done\": false}";
                 struct MHD_Response *response = MHD_create_response_from_buffer(strlen(error_response),
                                                 (void*)error_response, MHD_RESPMEM_PERSISTENT);
+		add_cors_headers(response);
                 MHD_add_response_header(response, "Content-Type", "application/json");
                 enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_INTERNAL_SERVER_ERROR, response);
                 MHD_destroy_response(response);
@@ -283,6 +348,7 @@ static enum MHD_Result handle_request(void *cls, struct MHD_Connection *connecti
         // Handle non-POST requests
         const char *page = "<html><body>Use POST to upload files</body></html>";
         struct MHD_Response *response = MHD_create_response_from_buffer(strlen(page), (void*)page, MHD_RESPMEM_PERSISTENT);
+	add_cors_headers(response);
         enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_BAD_REQUEST, response);
         MHD_destroy_response(response);
         return ret;
@@ -310,7 +376,7 @@ static void request_completed(void *cls, struct MHD_Connection *connection,
 
 bool init_web_server(unsigned int port, const char* upload_path, const char* upload_dir, size_t config_max_upload_size) {
     if (!is_port_available(port)) {
-        log_this("WebInterface", "Port is not available", 3, true, false, true);
+        log_this("WebServer", "Port is not available", 3, true, false, true);
         return false;
     }
 
@@ -326,25 +392,25 @@ bool init_web_server(unsigned int port, const char* upload_path, const char* upl
     }
     server_upload_dir = upload_dir ? strdup(upload_dir) : NULL;
 
-    log_this("WebInterface", "Initializing web server", 0, true, false, true);
-    char buffer[256];
-    snprintf(buffer, sizeof(buffer), "Server port: %u, Upload path: %s, Upload dir: %s",
-             server_port, server_upload_path, server_upload_dir);
-    log_this("WebInterface", buffer, 2, true, false, true);
+    log_this("WebServer", "Initializing web server", 0, true, false, true);
+    log_this("WebServer", "-> Port: %u", 0, true, true, true, server_port);
+    log_this("WebServer", "-> WebRoot: %s", 0, true, true, true, app_config->web_root);
+    log_this("WebServer", "-> Upload Path: %s", 0, true, true, true, server_upload_path);
+    log_this("WebServer", "-> Upload Dir: %s", 0, true, true, true, server_upload_dir);
 
     // Create upload directory if it doesn't exist
     struct stat st = {0};
     if (stat(server_upload_dir, &st) == -1) {
-        log_this("WebInterface", "Upload directory does not exist, attempting to create", 2, true, false, true);
+        log_this("WebServer", "Upload directory does not exist, attempting to create", 2, true, false, true);
         if (mkdir(server_upload_dir, 0700) != 0) {
             char error_buffer[256];
             snprintf(error_buffer, sizeof(error_buffer), "Failed to create upload directory: %s", strerror(errno));
-            log_this("WebInterface", error_buffer, 3, true, false, true);
+            log_this("WebServer", error_buffer, 3, true, false, true);
             return false;
         }
-        log_this("WebInterface", "Created upload directory", 0, true, false, true);
+        log_this("WebServer", "Created upload directory", 0, true, false, true);
     } else {
-        log_this("WebInterface", "Upload directory already exists", 2, true, false, true);
+        log_this("WebServer", "Upload directory already exists", 2, true, false, true);
     }
 
     return true;
@@ -357,20 +423,20 @@ const char* get_upload_path(void) {
 void* run_web_server(void* arg) {
     (void)arg; // Unused parameter
 
-    log_this("WebInterface", "Starting web server", 0, true, false, true);
+    log_this("WebServer", "Starting web server", 0, true, false, true);
     web_daemon = MHD_start_daemon(MHD_USE_THREAD_PER_CONNECTION, server_port, NULL, NULL,
                                &handle_request, NULL,
                                MHD_OPTION_NOTIFY_COMPLETED, request_completed, NULL,
                                MHD_OPTION_END);
     if (web_daemon == NULL) {
-        log_this("WebInterface", "Failed to start web server", 4, true, false, true);
+        log_this("WebServer", "Failed to start web server", 4, true, false, true);
         return NULL;
     }
 
     // Check if the web server is actually running
     const union MHD_DaemonInfo *info = MHD_get_daemon_info(web_daemon, MHD_DAEMON_INFO_BIND_PORT);
     if (info == NULL) {
-        log_this("WebInterface", "Failed to get daemon info", 4, true, false, true);
+        log_this("WebServer", "Failed to get daemon info", 4, true, false, true);
         MHD_stop_daemon(web_daemon);
         web_daemon = NULL;
         return NULL;
@@ -378,7 +444,7 @@ void* run_web_server(void* arg) {
 
     unsigned int actual_port = info->port;
     if (actual_port == 0) {
-        log_this("WebInterface", "Web server failed to bind to the specified port", 4, true, false, true);
+        log_this("WebServer", "Web server failed to bind to the specified port", 4, true, false, true);
         MHD_stop_daemon(web_daemon);
         web_daemon = NULL;
         return NULL;
@@ -386,9 +452,9 @@ void* run_web_server(void* arg) {
 
     char port_info[64];
     snprintf(port_info, sizeof(port_info), "Web server bound to port: %u", actual_port);
-    log_this("WebInterface", port_info, 0, true, false, true);
+    log_this("WebServer", port_info, 0, true, false, true);
 
-    log_this("WebInterface", "Web server started successfully", 0, true, false, true);
+    log_this("WebServer", "Web server started successfully", 0, true, false, true);
 
     // Instead of a blocking loop, we'll just return and let the thread exit
     // The MHD daemon will continue running in its own threads
@@ -396,13 +462,13 @@ void* run_web_server(void* arg) {
 }
 
 void shutdown_web_server(void) {
-    log_this("WebInterface", "Shutdown: Shutting down web server", 0, true, false, true);
+    log_this("WebServer", "Shutdown: Shutting down web server", 0, true, false, true);
     if (web_daemon != NULL) {
         MHD_stop_daemon(web_daemon);
         web_daemon = NULL;
-        log_this("WebInterface", "Web server shut down successfully", 0, true, false, true);
+        log_this("WebServer", "Web server shut down successfully", 0, true, false, true);
     } else {
-        log_this("WebInterface", "Web server was not running", 1, true, false, true);
+        log_this("WebServer", "Web server was not running", 1, true, false, true);
     }
 
     free(server_upload_path);
@@ -413,7 +479,7 @@ void shutdown_web_server(void) {
 static json_t* extract_gcode_info(const char* filename) {
     FILE* file = fopen(filename, "r");
     if (!file) {
-        log_this("WebInterface", "Failed to open G-code file for analysis", 3, true, false, true);
+        log_this("WebServer", "Failed to open G-code file for analysis", 3, true, false, true);
         return NULL;
     }
 
@@ -534,7 +600,7 @@ static json_t* extract_gcode_info(const char* filename) {
 static char* extract_preview_image(const char* filename) {
     FILE* file = fopen(filename, "r");
     if (!file) {
-        log_this("WebInterface", "Failed to open G-code file for image extraction", 3, true, false, true);
+        log_this("WebServer", "Failed to open G-code file for image extraction", 3, true, false, true);
         return NULL;
     }
 
@@ -583,6 +649,7 @@ static enum MHD_Result handle_print_queue_request(struct MHD_Connection *connect
         const char *error_response = "{\"error\": \"Print queue not found\"}";
         struct MHD_Response *response = MHD_create_response_from_buffer(strlen(error_response),
                                         (void*)error_response, MHD_RESPMEM_PERSISTENT);
+	add_cors_headers(response);
         MHD_add_response_header(response, "Content-Type", "application/json");
         enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_INTERNAL_SERVER_ERROR, response);
         MHD_destroy_response(response);
@@ -637,6 +704,7 @@ static enum MHD_Result handle_print_queue_request(struct MHD_Connection *connect
 
     struct MHD_Response *response = MHD_create_response_from_buffer(strlen(html_response),
                                     (void*)html_response, MHD_RESPMEM_MUST_FREE);
+    add_cors_headers(response);
     MHD_add_response_header(response, "Content-Type", "text/html");
     enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
     MHD_destroy_response(response);

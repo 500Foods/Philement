@@ -381,17 +381,12 @@ mdns_t *mdns_init(const char *app_name,
                   mdns_service_t *services,
                   int num_services) {
 
-    log_this("mDNS", "Entering mdns_init function", 0, true, true, true);
-    usleep(10000);
 
     mdns_t *mdns = malloc(sizeof(mdns_t));
     if (!mdns) {
         log_this("mDNS", "Out of memory", 4, true, true, true);
         return NULL;
     }
-
-    log_this("mDNS", "Getting network information", 0, true, true, true);
-    usleep(10000);
 
     // Set up timeout for get_network_info
     struct timeval start, end;
@@ -410,8 +405,6 @@ mdns_t *mdns_init(const char *app_name,
         return NULL;
     }
 
-    log_this("mDNS", "Creating multicast sockets", 0, true, true, true);
-    usleep(10000);
     mdns->sockfd_v4 = create_multicast_socket(AF_INET, MDNS_GROUP_V4);
     mdns->sockfd_v6 = create_multicast_socket(AF_INET6, MDNS_GROUP_V6);
 

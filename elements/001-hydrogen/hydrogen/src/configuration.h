@@ -41,6 +41,7 @@ typedef struct {
     char *upload_path;
     char *upload_dir;
     size_t max_upload_size;
+    char *web_root;
     mDNSConfig mdns;
 } AppConfig;
 

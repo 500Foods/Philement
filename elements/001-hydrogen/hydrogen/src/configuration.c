@@ -146,6 +146,7 @@ AppConfig* load_config(const char* config_path) {
     config->upload_dir = strdup(json_string_value(json_object_get(root, "UploadDir")));
     config->max_upload_size = json_integer_value(json_object_get(root, "MaxUploadSize"));
     config->log_file_path = strdup(json_string_value(json_object_get(root, "LogFile")));
+    config->web_root = strdup(json_string_value(json_object_get(root, "WebRoot")));
 
     config->executable_path = get_executable_path();
 
@@ -168,7 +169,6 @@ AppConfig* load_config(const char* config_path) {
                 config->mdns.services[i].type = strdup(json_string_value(json_object_get(service, "Type")));
                 config->mdns.services[i].port = json_integer_value(json_object_get(service, "Port"));
 
-                // Parse TXT records
                 const char* txt_records_str = json_string_value(json_object_get(service, "TxtRecords"));
                 char* txt_records_copy = strdup(txt_records_str);
                 char* saveptr;
@@ -177,7 +177,6 @@ AppConfig* load_config(const char* config_path) {
                 char** txt_records = NULL;
 
                 while (token != NULL) {
-                    // Trim leading and trailing whitespace
                     while (*token == ' ') token++;
                     char* end = token + strlen(token) - 1;
                     while (end > token && *end == ' ') end--;
