@@ -2,7 +2,7 @@
     "ServerName": "Philement/hydrogen",
     "WebPort": 5000,
     "WebsocketPort": 5001,
-    "WebRoot":"/home/asimard/lithium",
+    "WebRoot":"/var/www/lithium",
     "UploadPath": "/api/upload",
     "UploadDir": "/tmp/hydrogen_uploads",
     "MaxUploadSize": 2147483648,
