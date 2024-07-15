@@ -1,37 +1,45 @@
+// System Libraries
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <unistd.h>
 #include <time.h>
+
+// Project Libraries
 #include "configuration.h"
 #include "logging.h"
 #include "queue.h"
 #include "log_queue_manager.h"
 #include "print_queue_manager.h"
 #include "web_interface.h"
+#include "mdns.h"
+#include "network.h"
 
 // Handle application state in threadsafe manner
 volatile sig_atomic_t keep_running = 1;
 volatile sig_atomic_t shutting_down = 0;
+pthread_cond_t terminate_cond = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t terminate_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+// Track shutdown of each component seprately
 volatile sig_atomic_t web_server_shutdown = 0;
 volatile sig_atomic_t print_queue_shutdown = 0;
 volatile sig_atomic_t log_queue_shutdown = 0;
+volatile sig_atomic_t mdns_server_shutdown = 0;
 
-pthread_cond_t terminate_cond = PTHREAD_COND_INITIALIZER;
-pthread_mutex_t terminate_mutex = PTHREAD_MUTEX_INITIALIZER;
-    
 // Queue Threads
 pthread_t log_thread;
 pthread_t print_queue_thread;
+pthread_t mdns_thread;
+pthread_t web_thread;
 
 // Local data
-char* server_name = NULL;
-char* executable_path = NULL;
-char* upload_path = NULL;
-char* upload_dir = NULL;
-char* log_file_path = NULL;
+AppConfig *app_config = NULL;
+
+// mDNS and network info
+mdns_t *mdns = NULL;
+network_info_t *net_info = NULL;
 
 // Ctrl+C handler
 void inthandler(int signum) {
@@ -47,73 +55,93 @@ void inthandler(int signum) {
     pthread_mutex_unlock(&terminate_mutex);
 }
 
-// When it is time to go
 void graceful_shutdown() {
+    log_this("Shutdown", "Initiating graceful shutdown", 0, true, true, true);
 
-    // Signal web server to shut down
-    log_this("Shutdown", "Web server shutdown initiated", 0, true, true, true);
-    usleep(10000);
+    // Signal all threads that shutdown is imminent
+    keep_running = 0;
+    pthread_cond_broadcast(&terminate_cond);
+
+    // 1. Shutdown mDNS
+    log_this("Shutdown", "Initiating mDNS shutdown", 0, true, true, true);
+    mdns_server_shutdown = 1;
+    pthread_cond_broadcast(&terminate_cond);
+    pthread_join(mdns_thread, NULL);
+    if (mdns) {
+        mdns_shutdown(mdns);
+        mdns = NULL;
+    }
+    log_this("Shutdown", "mDNS shutdown complete", 0, true, true, true);
+
+    // 2. Shutdown Web Server
+    log_this("Shutdown", "Initiating Web Server shutdown", 0, true, true, true);
     web_server_shutdown = 1;
     pthread_cond_broadcast(&terminate_cond);
+    pthread_join(web_thread, NULL);
     shutdown_web_server();
-   
-    // Wait for that and then continue without logging to database
-    usleep(10000);
-    printf("%s\n", LOG_LINE_BREAK);
-    
-    // Signal print queue to shut down
+    log_this("Shutdown", "Web Server shutdown complete", 0, true, true, true);
+
+    // 3. Shutdown Print Queue
+    log_this("Shutdown", "Initiating Print Queue shutdown", 0, true, true, true);
     print_queue_shutdown = 1;
     pthread_cond_broadcast(&terminate_cond);
-    printf("- Waiting for Print Queue Manager thread to finish\n");
     pthread_join(print_queue_thread, NULL);
-    printf("- Print Queue Manager thread finished\n");
-
-    // Drain any remaining jobs in the print queue
-    Queue* print_queue = queue_find("PrintQueue");
-    if (print_queue) {
-        size_t remaining = queue_size(print_queue);
-        printf("- Remaining jobs in print queue: %zu\n", remaining);
-        while (queue_size(print_queue) > 0) {
-            size_t size;
-            int priority;
-            char* job = queue_dequeue(print_queue, &size, &priority);
-            if (job) {
-                printf("- Drained job: %s\n", job);
-                free(job);
-            }
-        }
-    }
     shutdown_print_queue();
+    log_this("Shutdown", "Print Queue shutdown complete", 0, true, true, true);
 
-    // Signal log queue to shut down
+    // 4. Shutdown Network Info
+    log_this("Shutdown", "Freeing network info", 0, true, true, true);
+    if (net_info) {
+        free_network_info(net_info);
+        net_info = NULL;
+    }
+
+    // 5. Free other resources
+    log_this("Shutdown", "Freeing other resources", 0, true, true, true);
+
+    // 6. Shutdown Logging (do this last)
+    log_this("Shutdown", "Initiating Logging shutdown", 0, true, true, true);
     log_queue_shutdown = 1;
     pthread_cond_broadcast(&terminate_cond);
-    log_this("Shutdown", "Log queue shutdown initiated", 0, true, true, true);
-
-    printf("- Waiting for Log Queue Manager thread to finish\n");
     pthread_join(log_thread, NULL);
-    printf("- Log Queue Manager thread finished\n");
 
+    // Switch to printf for logging after this point
     printf("- Closing file logging\n");
     close_file_logging();
+    printf("- Logging shutdown complete\n");
 
+    // 7. Final cleanup
     printf("- Destroying queue system\n");
     queue_system_destroy();
-
     printf("- Destroying condition variable and mutex\n");
     pthread_cond_destroy(&terminate_cond);
     pthread_mutex_destroy(&terminate_mutex);
 
-    // Cleanup these
-    free(server_name);
-    free(executable_path);
-    free(upload_path);
-    free(upload_dir);
-    free(log_file_path);
+    // Free app_config
+    if (app_config) {
+        free(app_config->server_name);
+        free(app_config->executable_path);
+        free(app_config->log_file_path);
+        free(app_config->upload_path);
+        free(app_config->upload_dir);
+        
+        // Free mDNS config
+        free(app_config->mdns.device_id);
+        free(app_config->mdns.friendly_name);
+        free(app_config->mdns.model);
+        free(app_config->mdns.manufacturer);
+        free(app_config->mdns.version);
+        for (int i = 0; i < app_config->mdns.num_services; i++) {
+            free(app_config->mdns.services[i].type);
+            free(app_config->mdns.services[i].txt_records);
+        }
+        free(app_config->mdns.services);
+        
+        free(app_config);
+        app_config = NULL;
+    }
 
-    printf("- Cleanup and shutdown complete\n");
-    printf("%s\n", LOG_LINE_BREAK);
-
+    printf("Graceful shutdown complete\n");
     shutting_down = 1;
 }
 
@@ -145,77 +173,15 @@ int main(int argc, char *argv[]) {
 
     // Load configuration
     char* config_path = (argc > 1) ? argv[1] : "hydrogen.json";
-    json_t* root = load_config(config_path);
-
-    server_name = strdup(DEFAULT_SERVER_NAME);
-    unsigned int web_port = DEFAULT_WEB_PORT;
-    upload_path = strdup(DEFAULT_UPLOAD_PATH);
-    upload_dir = strdup(DEFAULT_UPLOAD_DIR);
-    size_t config_max_upload_size = DEFAULT_MAX_UPLOAD_SIZE;
-
-    if (root) {
-        json_t* name = json_object_get(root, "ServerName");
-        if (json_is_string(name)) {
-	    free(server_name);
-            server_name = strdup(json_string_value(name));
-        }
-
-        json_t* log_file = json_object_get(root, "LogFile");
-        if (json_is_string(log_file)) {
-            free(log_file_path);
-            log_file_path = strdup(json_string_value(log_file));
-        }
-
-        json_t* port = json_object_get(root, "WebPort");
-        if (json_is_integer(port)) {
-            web_port = json_integer_value(port);
-        }
-
-        json_t* path = json_object_get(root, "UploadPath");
-        if (json_is_string(path)) {
-            free(upload_path);
-            upload_path = strdup(json_string_value(path));
-        }
-
-        json_t* dir = json_object_get(root, "UploadDir");
-        if (json_is_string(dir)) {
-            free(upload_dir);
-            upload_dir = strdup(json_string_value(dir));
-        }
-
-	json_t* max_size = json_object_get(root, "MaxUploadSize");
-        if (json_is_integer(max_size)) {
-            config_max_upload_size = (size_t)json_integer_value(max_size);
-        }
-
-        json_decref(root);
-    }
-
-    // LogFile not supplied, use /var/log/hydrogen.log by default
-    if (log_file_path == NULL) {
-        log_file_path = strdup(DEFAULT_LOG_FILE);
+    app_config = load_config(config_path);
+    if (!app_config) {
+        log_this("Initialization", "Failed to load configuration", 4, true, true, true);
+        queue_system_destroy();
+        return 1;
     }
 
     // Initialize file logging
-    FILE* test_file = fopen(log_file_path, "a");
-    if (test_file == NULL) {
-        log_this("Initialization", "Unable to write to supplied log file:", 1, true, false, false);
-        snprintf(buffer, sizeof(buffer), " => %s", log_file_path);
-        log_this("Initialization", buffer, 1, true, false, false);
-        free(log_file_path);
-        log_file_path = strdup("hydrogen.log");
-        test_file = fopen(log_file_path, "a");
-	if (test_file == NULL) {
-            log_this("Initialization", "Unable to write to fallback log file", 1, true, false, false);
-            free(log_file_path);
-            log_file_path = NULL;
-        }
-    }
-    if (test_file != NULL) {
-        fclose(test_file);
-    }
-    init_file_logging(log_file_path);
-
+    init_file_logging(app_config->log_file_path);
 
     log_this("Initialization", "Configuration loaded", 0, true, true, true);
 
@@ -227,28 +193,20 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    
     // Output app information
     snprintf(buffer, sizeof(buffer), LOG_LINE_BREAK);
     log_this("Initialization", buffer, 0, true, true, true);
 
-    snprintf(buffer, sizeof(buffer), "Server Name: %s", server_name);
+    snprintf(buffer, sizeof(buffer), "Server Name: %s", app_config->server_name);
     log_this("Initialization", buffer, 0, true, true, true);
 
-    executable_path = get_executable_path();
-    if (!executable_path) {
-        log_this("Initialization", "Error: Unable to get executable path", 0, true, false, true);
-        queue_system_destroy();
-        return 1;
-    }
-
-    snprintf(buffer, sizeof(buffer), "Executable: %s", executable_path);
+    snprintf(buffer, sizeof(buffer), "Executable: %s", app_config->executable_path);
     log_this("Initialization", buffer, 0, true, false, true);
 
     snprintf(buffer, sizeof(buffer), "Version: %s", VERSION);
     log_this("Initialization", buffer, 0, true, false, true);
 
-    long file_size = get_file_size(executable_path);
+    long file_size = get_file_size(app_config->executable_path);
     if (file_size >= 0) {
         snprintf(buffer, sizeof(buffer), "Size: %ld bytes", file_size);
         log_this("Initialization", buffer, 0, true, false, true);
@@ -256,7 +214,7 @@ int main(int argc, char *argv[]) {
         log_this("Initialization", "Error: Unable to get file size", 0, true, false, true);
     }
 
-    char* mod_time = get_file_modification_time(executable_path);
+    char* mod_time = get_file_modification_time(app_config->executable_path);
     if (mod_time) {
         snprintf(buffer, sizeof(buffer), "Last modified: %s", mod_time);
         log_this("Initialization", buffer, 0, true, false, true);
@@ -265,7 +223,7 @@ int main(int argc, char *argv[]) {
         log_this("Initialization", "Error: Unable to get modification time", 0, true, false, true);
     }
 
-    snprintf(buffer, sizeof(buffer), "Log File: %s", log_file_path ? log_file_path : "None");
+    snprintf(buffer, sizeof(buffer), "Log File: %s", app_config->log_file_path ? app_config->log_file_path : "None");
     log_this("Initialization", buffer, 0, true, true, true);
 
     snprintf(buffer, sizeof(buffer), LOG_LINE_BREAK);
@@ -284,32 +242,54 @@ int main(int argc, char *argv[]) {
     }
 
     // Initialize web server
-    if (!init_web_server(web_port, upload_path, upload_dir, config_max_upload_size)) {
+    if (!init_web_server(app_config->web_port, app_config->upload_path, app_config->upload_dir, app_config->max_upload_size)) {
         log_this("Initialization", "Failed to initialize web server", 4, true, true, true);
         // Cleanup code
-        free(upload_path);
-        free(upload_dir);
         queue_system_destroy();
         close_file_logging();
-        free(log_file_path);
-        free(server_name);
-        free(executable_path);
+        free(app_config);
         return 1;
     }
 
     // Initialize web server thread
-    pthread_t web_thread;
     if (pthread_create(&web_thread, NULL, run_web_server, NULL) != 0) {
         log_this("Initialization", "Failed to start web server thread", 4, true, true, true);
         // Cleanup code
         shutdown_web_server(); // This should clean up resources allocated in init_web_server
-        free(upload_path);
-        free(upload_dir);
         queue_system_destroy();
         close_file_logging();
-        free(log_file_path);
-        free(server_name);
-        free(executable_path);
+        free(app_config);
+        return 1;
+    }
+
+    // Initialize mDNS
+    log_this("Initialization", "Starting mDNS initialization", 0, true, true, true);
+    mdns = mdns_init(app_config->server_name, app_config->mdns.device_id, app_config->mdns.friendly_name,
+                     app_config->mdns.model, app_config->mdns.manufacturer, app_config->mdns.version,
+                     "1.0", // Hardware version
+                     "http://localhost:5000", // Config URL
+                     app_config->mdns.services, app_config->mdns.num_services);
+
+    if (!mdns) {
+        log_this("Initialization", "Failed to initialize mDNS", 3, true, true, true);
+        graceful_shutdown();
+        return 1;
+    }
+
+    // Start mDNS thread
+    net_info = get_network_info();
+    mdns_thread_arg_t mdns_arg = {
+        .mdns = mdns,
+        .port = app_config->web_port,
+        .net_info = net_info,
+        .running = &keep_running
+    };
+
+    if (pthread_create(&mdns_thread, NULL, mdns_announce_loop, &mdns_arg) != 0) {
+        log_this("Initialization", "Failed to start mDNS thread", 3, true, true, true);
+        mdns_shutdown(mdns);
+        free_network_info(net_info);
+        graceful_shutdown();
         return 1;
     }
 
@@ -322,15 +302,17 @@ int main(int argc, char *argv[]) {
     log_this("Initialization", "Press Ctrl+C to exit", 0, true, false, true);
 
     ////////////////////////////////////////////////////////////////////////////////
+    log_this("Initialization", "Entering main loop", 0, true, true, true);
 
     while (keep_running) {
         pthread_mutex_lock(&terminate_mutex);
         pthread_cond_wait(&terminate_cond, &terminate_mutex);
         pthread_mutex_unlock(&terminate_mutex);
     }
-    
+    log_this("Shutdown", "Exiting main loop", 0, true, true, true);
+
     ////////////////////////////////////////////////////////////////////////////////
-    
+
     graceful_shutdown();
 
     return 0;

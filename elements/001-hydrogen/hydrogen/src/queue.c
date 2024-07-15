@@ -29,7 +29,9 @@ void queue_system_destroy() {
         while (queue) {
             Queue* next = queue->hash_next;
             queue_system.queues[i] = next;  // Remove from hash table
-            queue_destroy(queue);
+            if (queue->name) {  // Check if the queue is still valid
+                queue_destroy(queue);
+            }
             queue = next;
         }
     }
@@ -282,4 +284,20 @@ long queue_youngest_element_age(Queue* queue) {
     pthread_mutex_unlock(&queue->mutex);
 
     return age_ms;
+}
+
+void queue_clear(Queue* queue) {
+    if (!queue) return;
+
+    pthread_mutex_lock(&queue->mutex);
+    while (queue->head) {
+        QueueElement* temp = queue->head;
+        queue->head = queue->head->next;
+        free(temp->data);
+        free(temp);
+    }
+    queue->tail = NULL;
+    queue->size = 0;
+    queue->memory_used = 0;
+    pthread_mutex_unlock(&queue->mutex);
 }
