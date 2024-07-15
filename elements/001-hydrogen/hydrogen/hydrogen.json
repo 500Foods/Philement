@@ -1,0 +1,37 @@
+{
+    "ServerName": "Philement/hydrogen",
+    "WebPort": 5000,
+    "WebsocketPort": 5001,
+    "WebRoot":"/home/asimard/lithium",
+    "UploadPath": "/api/upload",
+    "UploadDir": "/tmp/hydrogen_uploads",
+    "MaxUploadSize": 2147483648,
+    "LogFile": "/var/log/hydrogen.log",
+    "mDNS": {
+        "DeviceId": "hydrogen-printer",
+        "FriendlyName": "Hydrogen 3D Printer",
+        "Model": "Hydrogen",
+        "Manufacturer": "Philement",
+        "Version": "0.1.0",
+        "Services": [
+            {
+                "Name": "Hydrogen Web Interface",
+                "Type": "_http._tcp",
+                "Port": 5000,
+                "TxtRecords": "path=/api/upload"
+            },
+            {
+                "Name": "Hydrogen OctoPrint Emulation",
+                "Type": "_octoprint._tcp",
+                "Port": 5000,
+                "TxtRecords": "path=/api,version=1.1.0"
+            },
+            {
+                "Name": "Hydrogen WebSocket",
+                "Type": "_websocket._tcp",
+                "Port": 5001,
+                "TxtRecords": "path=/websocket"
+            }
+        ]
+    }
+}
