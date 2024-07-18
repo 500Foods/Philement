@@ -1,0 +1,34 @@
+{
+   "short_name":"$(ShortName)",
+   "name":"$(Name)",
+   "description":"$(Description)",
+   "start_url":"$(StartURL)",
+   "display":"fullscreen",
+   "theme_color":"$(ThemeColor)",
+   "background_color":"$(BackgroundColor)",
+   "related_applications": [{
+     "platform": "webapp",
+     "url": "$(StartURL)/manifest.json"
+    }],
+   "icons":
+   [
+    {
+      "src": "$(LowResFileName)",
+      "type": "image/png",
+      "sizes": "64x64",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "$(MidResFileName)",
+      "type": "image/png",
+      "sizes": "256x256",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "$(HighResFileName)",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+   ]
+}
