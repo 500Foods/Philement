@@ -6,7 +6,7 @@ The main differentiator to address upfront is that a large chunk of the lower-le
 As for the name, it is a combination of terms like 'Phi' (referencing the number 500 among *many* other meanings), 'filament' (that's what 3D printing is primarily obsessed with), and 'element' (small pieces of something larger). The individual components of the project have been named after atomic elements, for example.
 
 As far as progress reporting goes, well, there are likely 500 steps or more to be completed before anyone takes this project seriously. Some of those steps will yield useful tools that people can use, as is already the case. But it is an ambitious project with many items to complete, and many more that likely haven't even been added to the list yet.
-<br/><br/><img src="https://progress-bar.dev/6/?scale=500&title=%20Completed%20&width=415&suffix=%20%2F%20500%20Steps">
+<br/><br/><img src="https://progress-bar.dev/8/?scale=500&title=%20Completed%20&width=415&suffix=%20%2F%20500%20Steps">
 
 ## Elements
 This project has a number of, well, elements. Each is named after an element in the periodic table. Like elements in the real world, some of these will be hugely important while others may be relatively insignificant. Some will require thousands and thousands of developer hours and others not so much. And the effort applied to each will likely be equally unbalanced as the focus shifts among the different pieces needed to get this up and running.
@@ -23,13 +23,14 @@ This project has a number of, well, elements. Each is named after an element in 
 | [oxygen](https://github.com/500F1oods/Philement/tree/main/elements/008-oxygen/README.md) | 💡 | Notifications. <tr></tr> |
 | [fluorine](https://github.com/500Foods/Philement/tree/main/elements/009-fluorine/README.md) | 💡 | Filament management system. <tr></tr> |
 | [neon](https://github.com/500Foods/Philement/tree/main/elements/010-neon/README.md) | 💡 | Well, lighting, obviously. <tr></tr> |
-| [sodium](https://github.com/500Foods/Philement/tree/main/elements/011-sodium/README.md) | 💡 | An MMU and MMU support. <tr></tr> |
+| [sodium](https://github.com/500Foods/Philement/tree/main/elements/011-sodium/README.md) | 💡 | An MMU and general MMU support. <tr></tr> |
 | [magnesium](https://github.com/500Foods/Philement/tree/main/elements/012-magnesium/README.md) | 💡 | Print farm management tool. <tr></tr> || 
 | [aluminum](https://github.com/500Foods/Philement/tree/main/elements/013-aluminum/README.md) | 💡 | Home Assistant integration. <tr></tr> || 
 | [silicon](https://github.com/500Foods/Philement/tree/main/elements/014-silicon/README.md) | 💡 | Printer experiment - Voron 2.4r2 without an MCU. <tr></tr> || 
 | [phosphorus](https://github.com/500Foods/Philement/tree/main/elements/015-phosphorus/README.md) | 💡 | Printer experiment - Beltless printer. <tr></tr> || 
 | [sulfur](https://github.com/500Foods/Philement/tree/main/elements/016-sulfur/README.md) | 💡 | Printer experiment - Robotic arm printer. <tr></tr> || 
 | [chlorine](https://github.com/500Foods/Philement/tree/main/elements/017-chlorine/README.md) | 🔨 | TMS WEB Core project for the www.philement.com website. <tr></tr> || 
+| [argon](https://github.com/500Foods/Philement/tree/main/elements/018-argon/README.md) | 💡 | Filament extruder - recycle that waste plastic! <tr></tr> || 
 
 <sup>💡 → Idea and Planning Stage &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 🔨 → Working on it &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 🏆 → Nowhere near done but... Check it out!</sup>
 
@@ -60,26 +61,26 @@ There are countless tools, frameworks, coding styles, conventions, languages, an
 [![Count Lines of Code](https://github.com/500Foods/Template/actions/workflows/main.yml/badge.svg)](https://github.com/500Foods/Template/actions/workflows/main.yml)
 <!--CLOC-START -->
 ```
-Last updated at 2024-06-23 02:19:26 UTC
+Last updated at 2024-07-15 22:50:00 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C                               16            574            106           2858
-Markdown                        24            137              2           1272
-Python                           1             38              5            212
-C/C++ Header                    11             68              9            204
+C                               33           1262            313           6430
+Markdown                        27            165              2           1837
+C/C++ Header                    25            153             32            523
+Python                           1             36              9            195
+make                             6             66             16            139
 Bourne Shell                     3             28             56             79
 HTML                             2             11              7             77
 Text                             1              0              0             75
-make                             3             35             16             66
+JSON                             2              0              0             71
 Delphi Form                      1              1              0             43
 YAML                             2              8             13             35
-JSON                             1              0              0             34
 Pascal                           2             11              2             31
 JavaScript                       1              3              0             25
 CSS                              1              2              2             24
 -------------------------------------------------------------------------------
-SUM:                            69            916            218           5035
+SUM:                           107           1746            452           9584
 -------------------------------------------------------------------------------
 12 Files (without source code) were skipped
 ```
