@@ -21,7 +21,7 @@ Each queue has its own queue manager that determines what happens when something
 - `src/logging.h` Defines logging-related functions and macros.
 - `src/log_queue_manager.c` Manages the log message queue.
 - `src/log_queue_manager.h` Header file for log queue management.
-- `src/mdns.h` Defines mDNS-related structures and functions.
+- `src/mdns_server.h` Defines mDNS-related structures and functions.
 - `src/mdns_linux.c` Implements mDNS functionality for Linux.
 - `src/network.h` Defines network-related structures and functions.
 - `src/network_linux.c` Implements network functionality for Linux.
@@ -31,8 +31,11 @@ Each queue has its own queue manager that determines what happens when something
 - `src/queue.h` Defines queue-related structures and functions.
 - `src/utils.c` Implements utility functions.
 - `src/utils.h` Defines utility functions and constants.
-- `src/web_interface.c` Implements the web server interface.
-- `src/web_interface.h` Header file for web server interface.
+- `src/web_server.c` Implements the web server interface.
+- `src/web_server.h` Header file for web server interface.
+- `src/websocket_server.c` Implements the websocket server interface.
+- `src/websocket_server.h` Header file for websocket server interface.
+- `src/websocket_server_status.c` Implementation of WebSocket "status" endpoint
 
 ## C Dependencies
 - pthreads
