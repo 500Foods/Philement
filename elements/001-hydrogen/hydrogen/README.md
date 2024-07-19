@@ -43,7 +43,7 @@ Each queue has its own queue manager that determines what happens when something
 - microhttpd
   
 # Release Notes
-##2024-Jul-18
+## 2024-Jul-18
 Added a WebSocket server to the project. This is what the web interface (lithium) will be talking to.
 - Uses Authorization: Key abc in the header to grant access
 - Uses Protocol: hydrogen-protocol, one of the JSON options
