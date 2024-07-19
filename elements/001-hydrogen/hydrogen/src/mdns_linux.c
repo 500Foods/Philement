@@ -19,7 +19,7 @@
 
 // Project Libraries
 #include "keys.h"
-#include "mdns.h"
+#include "mdns_server.h"
 #include "utils.h"
 #include "logging.h"
 
@@ -186,7 +186,7 @@ static uint8_t *write_dns_srv_record(uint8_t *ptr, const char *name, uint16_t pr
     return ptr;
 }
 
-static uint8_t *write_dns_txt_record(uint8_t *ptr, const char *name, char **txt_records, int num_txt_records, uint32_t ttl) {
+static uint8_t *write_dns_txt_record(uint8_t *ptr, const char *name, char **txt_records, size_t num_txt_records, uint32_t ttl) {
     ptr = write_dns_name(ptr, name);
     *((uint16_t*)ptr) = htons(MDNS_TYPE_TXT); ptr += 2;
     *((uint16_t*)ptr) = htons(MDNS_CLASS_IN); ptr += 2;
@@ -194,14 +194,14 @@ static uint8_t *write_dns_txt_record(uint8_t *ptr, const char *name, char **txt_
 
     // Calculate total length of all TXT records
     size_t total_len = 0;
-    for (int i = 0; i < num_txt_records; i++) {
+    for (size_t i = 0; i < num_txt_records; i++) {
         total_len += strlen(txt_records[i]) + 1;  // +1 for length byte
     }
 
     *((uint16_t*)ptr) = htons(total_len); ptr += 2;
 
     // Write all TXT records as a single string
-    for (int i = 0; i < num_txt_records; i++) {
+    for (size_t i = 0; i < num_txt_records; i++) {
         size_t len = strlen(txt_records[i]);
         *ptr++ = len;
         memcpy(ptr, txt_records[i], len);
@@ -239,7 +239,7 @@ void mdns_build_announcement(uint8_t *packet, size_t *packet_len, const char *ho
     }
 
     // Service records
-    for (int i = 0; i < mdns->num_services; i++) {
+    for (size_t i = 0; i < mdns->num_services; i++) {
         char full_service_name[256];
         snprintf(full_service_name, sizeof(full_service_name), "%s.%s", mdns->services[i].name, mdns->services[i].type);
 
@@ -379,7 +379,7 @@ mdns_t *mdns_init(const char *app_name,
                   const char *hw_version,
                   const char *config_url,
                   mdns_service_t *services,
-                  int num_services) {
+                  size_t num_services) {
 
 
     mdns_t *mdns = malloc(sizeof(mdns_t));
@@ -423,13 +423,13 @@ mdns_t *mdns_init(const char *app_name,
         return NULL;
     }
 
-    for (int i = 0; i < num_services; i++) {
+    for (size_t i = 0; i < num_services; i++) {
         mdns->services[i].name = strdup(services[i].name);
         mdns->services[i].type = strdup(services[i].type);
         mdns->services[i].port = services[i].port;
         mdns->services[i].num_txt_records = services[i].num_txt_records;
         mdns->services[i].txt_records = malloc(sizeof(char*) * services[i].num_txt_records);
-        for (int j = 0; j < services[i].num_txt_records; j++) {
+        for (size_t j = 0; j < services[i].num_txt_records; j++) {
             mdns->services[i].txt_records[j] = strdup(services[i].txt_records[j]);
         }
     }
@@ -542,10 +542,10 @@ void mdns_shutdown(mdns_t *mdns) {
         free(mdns->config_url);
         free(mdns->secret_key);
 
-        for (int i = 0; i < mdns->num_services; i++) {
+        for (size_t i = 0; i < mdns->num_services; i++) {
             free(mdns->services[i].name);
             free(mdns->services[i].type);
-            for (int j = 0; j < mdns->services[i].num_txt_records; j++) {
+            for (size_t j = 0; j < mdns->services[i].num_txt_records; j++) {
                 free(mdns->services[i].txt_records[j]);
             }
             free(mdns->services[i].txt_records);
