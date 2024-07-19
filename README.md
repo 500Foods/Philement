@@ -61,7 +61,7 @@ There are countless tools, frameworks, coding styles, conventions, languages, an
 [![Count Lines of Code](https://github.com/500Foods/Template/actions/workflows/main.yml/badge.svg)](https://github.com/500Foods/Template/actions/workflows/main.yml)
 <!--CLOC-START -->
 ```
-Last updated at 2024-07-19 08:52:30 UTC
+Last updated at 2024-07-19 08:52:59 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
@@ -71,18 +71,18 @@ C/C++ Header                    26            164             40            543
 Python                           1             36              9            195
 make                             6             66             16            139
 HTML                             3             38             23            134
+JSON                             3              0              0            115
 Bourne Shell                     3             28             56             79
 Text                             1              0              0             75
 Delphi Form                      2              1              0             74
-JSON                             2              0              0             71
 Pascal                           4             22              4             60
 YAML                             2              8             13             35
 JavaScript                       1              3              0             25
 CSS                              1              2              2             24
 -------------------------------------------------------------------------------
-SUM:                           114           1910            512          10133
+SUM:                           115           1910            512          10177
 -------------------------------------------------------------------------------
-16 Files (without source code) were skipped
+17 Files (without source code) were skipped
 ```
 <!--CLOC-END-->
 
