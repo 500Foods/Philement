@@ -7,7 +7,7 @@
 #include "logging.h"
 #include "configuration.h"
 
-#define HYDROGEN_KEY_HEADER "X-Hydrogen-Key"
+#define HYDROGEN_AUTH_SCHEME "Key"
 
 extern AppConfig *app_config;
 
@@ -72,56 +72,39 @@ static int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
     ws_session_data *session_data = (ws_session_data *)user;
 
     switch (reason) {
-        case LWS_CALLBACK_ESTABLISHED:
-		break;
+        case LWS_CALLBACK_ESTABLISHED: // 0
+            log_this("WebSocket", "0/LWS_CALLBACK_ESTABLISHED", 0, true, true, true);
+            break;
 
-	case LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION:
-		        {
-            log_this("WebSocket", "Connection established, checking authentication", 0, true, true, true);
+        case LWS_CALLBACK_CLIENT_CONNECTION_ERROR: // 1
+            log_this("WebSocket", "1/LWS_CALLBACK_CLIENT_CONNECTION_ERROR", 0, true, true, true);
+            break;
 
-            char buf[256];
-            int i, n;
-            bool key_found = false;
+        case LWS_CALLBACK_CLIENT_FILTER_PRE_ESTABLISH: // 2
+            log_this("WebSocket", "2/LWS_CALLBACK_CLIENT_FILTER_PRE_ESTABLISH", 0, true, true, true);
+            break;
 
-            for (i = 0; i < WSI_TOKEN_COUNT; i++) {
-                if (lws_hdr_total_length(wsi, i)) {
-                    n = lws_hdr_copy(wsi, buf, sizeof(buf), i);
-                    if (n > 0) {
-                        log_this("WebSocket", "Header %d: %s", 0, true, true, true, i, buf);
+        case LWS_CALLBACK_CLIENT_ESTABLISHED: // 3
+            log_this("WebSocket", "3/LWS_CALLBACK_CLIENT_ESTABLISHED", 0, true, true, true);
+            break;
 
-                        // Check if this header is our custom key header
-                        char *header_name = lws_token_to_string(i);
-                        if (header_name && strcasecmp(header_name, HYDROGEN_KEY_HEADER) == 0) {
-                            log_this("WebSocket", "Found key header: %s", 0, true, true, true, buf);
-                            if (strcmp(buf, app_config->websocket.key) == 0) {
-                                log_this("WebSocket", "Valid key provided, allowing connection", 0, true, true, true);
-                                session_data->authenticated = true;
-                                key_found = true;
-                                break;
-                            }
-                        }
-                    }
+        case LWS_CALLBACK_CLOSED: // 4
+            log_this("WebSocket", "4/LWS_CALLBACK_CLOSED", 0, true, true, true);
+            break;
+
+        case LWS_CALLBACK_CLOSED_HTTP: // 5
+            log_this("WebSocket", "5/LWS_CALLBACK_CLOSED_HTTP", 0, true, true, true);
+            break;
+
+        case LWS_CALLBACK_RECEIVE: // 6
+	    {
+                log_this("WebSocket", "6/LWS_CALLBACK_RECEIVE", 0, true, true, true);
+
+                if (!session_data->authenticated) {
+                    log_this("WebSocket", "Received data from unauthenticated connection", 2, true, true, true);
+                    return -1;
                 }
-            }
 
-            if (!key_found) {
-                log_this("WebSocket", "Invalid or missing key", 2, true, true, true);
-                return -1; // Reject the connection
-            }
-
-            break;
-        }
-
-        case LWS_CALLBACK_CLOSED:
-            log_this("WebSocket", "Connection closed", 0, true, true, true);
-            break;
-
-        case LWS_CALLBACK_RECEIVE:
-            {
-		        if (!session_data->authenticated) {
-        log_this("WebSocket", "Received data from unauthenticated connection", 2, true, true, true);
-        return -1;
-    }
                 ws_requests++;
                 log_this("WebSocket", "Received data (length: %zu)", 0, true, true, true, len);
 
@@ -141,7 +124,7 @@ static int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
                 log_this("WebSocket", "Complete message received: %.*s", 0, true, true, true, (int)message_length, (const char *)message_buffer);
 
                 json_error_t error;
-		message_buffer[message_length] = '\0';
+                message_buffer[message_length] = '\0';
                 json_t *root = json_loads((const char *)message_buffer, 0, &error);
                 message_length = 0; // Reset buffer for the next message
 
@@ -165,67 +148,185 @@ static int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
                 }
 
                 json_decref(root);
-		message_length = 0;
+                message_length = 0;
             }
             break;
 
-        case LWS_CALLBACK_SERVER_WRITEABLE:
-            log_this("WebSocket", "Server writable", 0, true, true, true);
+        case LWS_CALLBACK_RECEIVE_PONG: // 7
+            log_this("WebSocket", "7/LWS_CALLBACK_RECEIVE_PONG", 0, true, true, true);
             break;
 
-        case LWS_CALLBACK_HTTP:
-            log_this("WebSocket", "HTTP request", 0, true, true, true);
+        case LWS_CALLBACK_CLIENT_RECEIVE: // 8
+            log_this("WebSocket", "8/LWS_CALLBACK_CLIENT_RECEIVE", 0, true, true, true);
             break;
 
-	//case LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION:
-            //log_this("WebSocket", "Filter Protocol Connection", 0, true, true, true);
-            //break;
-
-        case LWS_CALLBACK_PROTOCOL_INIT:
-            log_this("WebSocket", "Protocol init", 0, true, true, true);
+        case LWS_CALLBACK_CLIENT_RECEIVE_PONG: // 9
+            log_this("WebSocket", "9/LWS_CALLBACK_CLIENT_RECEIVE_PONG", 0, true, true, true);
             break;
 
-        case LWS_CALLBACK_PROTOCOL_DESTROY:
-            log_this("WebSocket", "Protocol destroy", 0, true, true, true);
+        case LWS_CALLBACK_CLIENT_WRITEABLE: // 10
+            log_this("WebSocket", "10/LWS_CALLBACK_CLIENT_WRITEABLE", 0, true, true, true);
             break;
 
-        case LWS_CALLBACK_WSI_CREATE:
-            log_this("WebSocket", "WSI create", 0, true, true, true);
-	                ws_connections++;
-			            ws_connections_total++;
+        case LWS_CALLBACK_SERVER_WRITEABLE: // 11
+            log_this("WebSocket", "11/LWS_CALLBACK_SERVER_WRITEABLE", 0, true, true, true);
             break;
 
-        case LWS_CALLBACK_WSI_DESTROY:
-            log_this("WebSocket", "WSI destroy", 0, true, true, true);
-	                ws_connections--;
+        case LWS_CALLBACK_HTTP: // 12
+            log_this("WebSocket", "12/LWS_CALLBACK_HTTP", 0, true, true, true);
             break;
 
-        case LWS_CALLBACK_FILTER_NETWORK_CONNECTION:
-            log_this("WebSocket", "Filter network connection", 0, true, true, true);
+        case LWS_CALLBACK_HTTP_BODY: // 13
+            log_this("WebSocket", "13/LWS_CALLBACK_HTTP_BODY", 0, true, true, true);
             break;
 
-        case LWS_CALLBACK_SERVER_NEW_CLIENT_INSTANTIATED:
-            log_this("WebSocket", "Server new client instantiated", 0, true, true, true);
+        case LWS_CALLBACK_HTTP_BODY_COMPLETION: // 14
+            log_this("WebSocket", "14/LWS_CALLBACK_HTTP_BODY_COMPLETION", 0, true, true, true);
             break;
 
-        case LWS_CALLBACK_EVENT_WAIT_CANCELLED:
-            log_this("WebSocket", "Event wait cancelled", 0, true, true, true);
+        case LWS_CALLBACK_HTTP_FILE_COMPLETION: // 15
+            log_this("WebSocket", "15/LWS_CALLBACK_HTTP_FILE_COMPLETION", 0, true, true, true);
             break;
 
-        case LWS_CALLBACK_HTTP_CONFIRM_UPGRADE:
-            log_this("WebSocket", "HTTP confirm upgrade", 0, true, true, true);
+        case LWS_CALLBACK_HTTP_WRITEABLE: // 16
+            log_this("WebSocket", "16/LWS_CALLBACK_HTTP_WRITEABLE", 0, true, true, true);
             break;
 
-        case LWS_CALLBACK_HTTP_BIND_PROTOCOL:
-            log_this("WebSocket", "HTTP bind protocol", 0, true, true, true);
+        case LWS_CALLBACK_FILTER_NETWORK_CONNECTION: // 17
+            log_this("WebSocket", "17/LWS_CALLBACK_FILTER_NETWORK_CONNECTION", 0, true, true, true);
             break;
 
-        case LWS_CALLBACK_ADD_HEADERS:
-            log_this("WebSocket", "Add headers", 0, true, true, true);
+        case LWS_CALLBACK_FILTER_HTTP_CONNECTION: // 18
+            log_this("WebSocket", "18/LWS_CALLBACK_FILTER_HTTP_CONNECTION", 0, true, true, true);
             break;
 
-        case LWS_CALLBACK_WS_PEER_INITIATED_CLOSE:
-            log_this("WebSocket", "Peer initiated close", 0, true, true, true);
+        case LWS_CALLBACK_SERVER_NEW_CLIENT_INSTANTIATED: // 19
+            log_this("WebSocket", "19/LWS_CALLBACK_SERVER_NEW_CLIENT_INSTANTIATED", 0, true, true, true);
+            break;
+
+        case LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION: // 20
+            {
+                log_this("WebSocket", "Filtering protocol connection", 0, true, true, true);
+
+                char buf[256];
+                int length = lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_AUTHORIZATION);
+
+                if (length > 0) {
+                    lws_hdr_copy(wsi, buf, sizeof(buf), WSI_TOKEN_HTTP_AUTHORIZATION);
+                    log_this("WebSocket", "Received Authorization header: %s", 0, true, true, true, buf);
+
+                    // Check if the authorization scheme is correct
+                    if (strncmp(buf, HYDROGEN_AUTH_SCHEME " ", strlen(HYDROGEN_AUTH_SCHEME) + 1) == 0) {
+                        char *key = buf + strlen(HYDROGEN_AUTH_SCHEME) + 1;
+                        log_this("WebSocket", "Extracted key: %s", 0, true, true, true, key);
+                        log_this("WebSocket", "Expected key: %s", 0, true, true, true, app_config->websocket.key);
+    
+                        if (strcmp(key, app_config->websocket.key) == 0) {
+                            log_this("WebSocket", "Valid key provided, allowing connection", 0, true, true, true);
+                            session_data->authenticated = true;
+                            return 0;
+                        }
+                    }
+                }
+
+                log_this("WebSocket", "Invalid or missing authorization", 2, true, true, true);
+                lws_return_http_status(wsi, HTTP_STATUS_UNAUTHORIZED, "Invalid or missing authorization");
+                return -1;  // Reject the connection
+            }
+
+        case LWS_CALLBACK_OPENSSL_LOAD_EXTRA_CLIENT_VERIFY_CERTS: // 21
+            log_this("WebSocket", "21/LWS_CALLBACK_OPENSSL_LOAD_EXTRA_CLIENT_VERIFY_CERTS", 0, true, true, true);
+            break;
+
+        case LWS_CALLBACK_OPENSSL_LOAD_EXTRA_SERVER_VERIFY_CERTS: // 22
+            log_this("WebSocket", "22/LWS_CALLBACK_OPENSSL_LOAD_EXTRA_SERVER_VERIFY_CERTS", 0, true, true, true);
+            break;
+
+        case LWS_CALLBACK_OPENSSL_PERFORM_CLIENT_CERT_VERIFICATION: // 23
+            log_this("WebSocket", "23/LWS_CALLBACK_OPENSSL_PERFORM_CLIENT_CERT_VERIFICATION", 0, true, true, true);
+            break;
+
+        case LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER: // 24
+            log_this("WebSocket", "24/LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER", 0, true, true, true);
+            break;
+
+        case LWS_CALLBACK_CONFIRM_EXTENSION_OKAY: // 25
+            log_this("WebSocket", "25/LWS_CALLBACK_CONFIRM_EXTENSION_OKAY", 0, true, true, true);
+            break;
+
+        case LWS_CALLBACK_CLIENT_CONFIRM_EXTENSION_SUPPORTED: // 26
+            log_this("WebSocket", "26/LWS_CALLBACK_CLIENT_CONFIRM_EXTENSION_SUPPORTED", 0, true, true, true);
+            break;
+
+        case LWS_CALLBACK_PROTOCOL_INIT: // 27
+            log_this("WebSocket", "27/LWS_CALLBACK_PROTOCOL_INIT", 0, true, true, true);
+            break;
+
+        case LWS_CALLBACK_PROTOCOL_DESTROY: // 28
+            log_this("WebSocket", "28/LWS_CALLBACK_PROTOCOL_DESTROY", 0, true, true, true);
+            break;
+
+        case LWS_CALLBACK_WSI_CREATE: // 29
+            log_this("WebSocket", "29/LWS_CALLBACK_WSI_CREATE", 0, true, true, true);
+            ws_connections++;
+            ws_connections_total++;
+            break;
+
+        case LWS_CALLBACK_WSI_DESTROY: // 30
+            log_this("WebSocket", "30/LWS_CALLBACK_WSI_DESTROY", 0, true, true, true);
+            ws_connections--;
+            break;
+
+        case LWS_CALLBACK_GET_THREAD_ID: // 31
+            log_this("WebSocket", "31/LWS_CALLBACK_GET_THREAD_ID", 0, true, true, true);
+            break;
+
+        case LWS_CALLBACK_ADD_POLL_FD: // 32
+            log_this("WebSocket", "32/LWS_CALLBACK_ADD_POLL_FD", 0, true, true, true);
+            break;
+
+        case LWS_CALLBACK_DEL_POLL_FD: // 33
+            log_this("WebSocket", "33/LWS_CALLBACK_DEL_POLL_FD", 0, true, true, true);
+            break;
+
+        case LWS_CALLBACK_CHANGE_MODE_POLL_FD: // 34
+            log_this("WebSocket", "34/LWS_CALLBACK_CHANGE_MODE_POLL_FD", 0, true, true, true);
+            break;
+
+        case LWS_CALLBACK_LOCK_POLL: // 35
+            log_this("WebSocket", "35/LWS_CALLBACK_LOCK_POLL", 0, true, true, true);
+            break;
+
+        case LWS_CALLBACK_UNLOCK_POLL: // 36
+            log_this("WebSocket", "36/LWS_CALLBACK_UNLOCK_POLL", 0, true, true, true);
+            break;
+
+        case LWS_CALLBACK_WS_PEER_INITIATED_CLOSE: // 38
+            log_this("WebSocket", "38/LWS_CALLBACK_WS_PEER_INITIATED_CLOSE", 0, true, true, true);
+            break;
+
+        case LWS_CALLBACK_EVENT_WAIT_CANCELLED: // 71
+            log_this("WebSocket", "71/LWS_CALLBACK_EVENT_WAIT_CANCELLED", 0, true, true, true);
+            break;
+
+        case LWS_CALLBACK_HTTP_BIND_PROTOCOL: // 49
+            log_this("WebSocket", "49/LWS_CALLBACK_HTTP_BIND_PROTOCOL", 0, true, true, true);
+            break;
+
+        case LWS_CALLBACK_ADD_HEADERS: // 53
+            log_this("WebSocket", "53/LWS_CALLBACK_ADD_HEADERS", 0, true, true, true);
+            break;
+
+        case LWS_CALLBACK_OPENSSL_PERFORM_SERVER_CERT_VERIFICATION: // 58
+            log_this("WebSocket", "58/LWS_CALLBACK_OPENSSL_PERFORM_SERVER_CERT_VERIFICATION", 0, true, true, true);
+            break;
+
+        case LWS_CALLBACK_HTTP_CONFIRM_UPGRADE: // 86
+            log_this("WebSocket", "86/LWS_CALLBACK_HTTP_CONFIRM_UPGRADE", 0, true, true, true);
+            break;
+
+        case LWS_CALLBACK_WS_SERVER_DROP_PROTOCOL: // 78
+            log_this("WebSocket", "78/LWS_CALLBACK_WS_SERVER_DROP_PROTOCOL", 0, true, true, true);
             break;
 
         default:
