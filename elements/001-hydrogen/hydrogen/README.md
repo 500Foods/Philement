@@ -21,7 +21,7 @@ Each queue has its own queue manager that determines what happens when something
 - `src/logging.h` Defines logging-related functions and macros.
 - `src/log_queue_manager.c` Manages the log message queue.
 - `src/log_queue_manager.h` Header file for log queue management.
-- `src/mdns.h` Defines mDNS-related structures and functions.
+- `src/mdns_server.h` Defines mDNS-related structures and functions.
 - `src/mdns_linux.c` Implements mDNS functionality for Linux.
 - `src/network.h` Defines network-related structures and functions.
 - `src/network_linux.c` Implements network functionality for Linux.
@@ -31,27 +31,36 @@ Each queue has its own queue manager that determines what happens when something
 - `src/queue.h` Defines queue-related structures and functions.
 - `src/utils.c` Implements utility functions.
 - `src/utils.h` Defines utility functions and constants.
-- `src/web_interface.c` Implements the web server interface.
-- `src/web_interface.h` Header file for web server interface.
+- `src/web_server.c` Implements the web server interface.
+- `src/web_server.h` Header file for web server interface.
+- `src/websocket_server.c` Implements the websocket server interface.
+- `src/websocket_server.h` Header file for websocket server interface.
+- `src/websocket_server_status.c` Implementation of WebSocket "status" endpoint
 
 ## C Dependencies
 - pthreads
 - jansson
 - microhttpd
   
-## Release Notes
-### 2024-Jul-15
+# Release Notes
+## 2024-Jul-18
+Added a WebSocket server to the project. This is what the web interface (lithium) will be talking to.
+- Uses Authorization: Key abc in the header to grant access
+- Uses Protocol: hydrogen-protocol, one of the JSON options
+- Uses libwebsockets - not for the squeamish.
+
+## 2024-Jul-15
 Bit of cleanup of mDNS code. Not sure it is working entirely yet. Some other updates.
 - Addressed issues with log_this not being all that reliable
 - Fixed memory issues with app_config
 - Cleanup of shutdown code
 - Added generic WebServer support to serve lithium content
   
-### 2024-Jul-11
+## 2024-Jul-11
 Focus was all about mDNS and the initial groundwork for the WebSockets interface.
 - Integrated the code from the nitrogen/nitro prototype project.
   
-### 2024-Jul-08
+## 2024-Jul-08
 Updated code to implement an HTTP service that is used to handle incoming print requests, typically from OrcaSlicer. So, in Orca, you can configure the printer connection by specifying a URL and port. It then assumes a bunch of API endpoints, like /api/version or /api/files/upload or something like that. This is what the "test" and "upload" and "upload and print" functions use to communicate with Klipper. In the case of hydrogen, it responds to the requests to get Orca to think we're Octoprint-compatible, enough so that it will send along a print job. At the moment, it does the following.
 - Accepts the print job and stores it in a /tmp location with a unique (GUID) filename
 - Generates JSON showing the filename mapping, and other data extracted using the beryllium code
