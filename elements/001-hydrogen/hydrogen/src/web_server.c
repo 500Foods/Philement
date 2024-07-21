@@ -19,7 +19,7 @@
 #include <microhttpd.h>
 
 // Project Libraries
-#include "web_interface.h"
+#include "web_server.h"
 #include "configuration.h"
 #include "logging.h"
 #include "beryllium.h"
@@ -29,10 +29,7 @@
 #define UUID_STR_LEN 37
 
 static struct MHD_Daemon *web_daemon = NULL;
-static unsigned int server_port = 0;
-static char *server_upload_path = NULL;
-static char *server_upload_dir = NULL;
-static size_t max_upload_size = DEFAULT_MAX_UPLOAD_SIZE;
+static WebConfig *server_web_config = NULL;
 
 extern volatile AppConfig *app_config;
 extern volatile sig_atomic_t keep_running;
@@ -106,7 +103,7 @@ static enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind 
                 generate_uuid(uuid_str);
 
                 char file_path[1024];
-                snprintf(file_path, sizeof(file_path), "%s/%s.gcode", server_upload_dir, uuid_str);
+                snprintf(file_path, sizeof(file_path), "%s/%s.gcode", server_web_config->upload_dir, uuid_str);
                 con_info->fp = fopen(file_path, "wb");
                 if (!con_info->fp) {
                     log_this("WebServer", "Failed to open file for writing", 3, true, false, true);
@@ -124,7 +121,7 @@ static enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind 
         }
 
         if (size > 0) {
-            if (con_info->total_size + size > max_upload_size) {
+            if (con_info->total_size + size > server_web_config->max_upload_size) {
                 log_this("WebServer", "File upload exceeds maximum allowed size", 3, true, false, true);
                 return MHD_NO;
             }
@@ -226,7 +223,7 @@ static enum MHD_Result handle_request(void *cls, struct MHD_Connection *connecti
 
         // If no API endpoint matched, try to serve a static file
         char file_path[PATH_MAX];
-        snprintf(file_path, sizeof(file_path), "%s%s", app_config->web_root, url);
+        snprintf(file_path, sizeof(file_path), "%s%s", app_config->web.web_root, url);
 
         // If the URL ends with a /, append index.html
         if (url[strlen(url) - 1] == '/') {
@@ -374,35 +371,25 @@ static void request_completed(void *cls, struct MHD_Connection *connection,
     *con_cls = NULL;
 }
 
-bool init_web_server(unsigned int port, const char* upload_path, const char* upload_dir, size_t config_max_upload_size) {
-    if (!is_port_available(port)) {
+bool init_web_server(WebConfig *web_config) {
+    if (!is_port_available(web_config->port)) {
         log_this("WebServer", "Port is not available", 3, true, false, true);
         return false;
     }
 
-    max_upload_size = config_max_upload_size > 0 ? config_max_upload_size : DEFAULT_MAX_UPLOAD_SIZE;
-
-    server_port = port;
-    if (server_upload_path) {
-        free(server_upload_path);
-    }
-    server_upload_path = upload_path ? strdup(upload_path) : NULL;
-    if (server_upload_dir) {
-        free(server_upload_dir);
-    }
-    server_upload_dir = upload_dir ? strdup(upload_dir) : NULL;
+    server_web_config = web_config;
 
     log_this("WebServer", "Initializing web server", 0, true, false, true);
-    log_this("WebServer", "-> Port: %u", 0, true, true, true, server_port);
-    log_this("WebServer", "-> WebRoot: %s", 0, true, true, true, app_config->web_root);
-    log_this("WebServer", "-> Upload Path: %s", 0, true, true, true, server_upload_path);
-    log_this("WebServer", "-> Upload Dir: %s", 0, true, true, true, server_upload_dir);
+    log_this("WebServer", "-> Port: %u", 0, true, true, true, server_web_config->port);
+    log_this("WebServer", "-> WebRoot: %s", 0, true, true, true, server_web_config->web_root);
+    log_this("WebServer", "-> Upload Path: %s", 0, true, true, true, server_web_config->upload_path);
+    log_this("WebServer", "-> Upload Dir: %s", 0, true, true, true, server_web_config->upload_dir);
 
     // Create upload directory if it doesn't exist
     struct stat st = {0};
-    if (stat(server_upload_dir, &st) == -1) {
+    if (stat(server_web_config->upload_dir, &st) == -1) {
         log_this("WebServer", "Upload directory does not exist, attempting to create", 2, true, false, true);
-        if (mkdir(server_upload_dir, 0700) != 0) {
+        if (mkdir(server_web_config->upload_dir, 0700) != 0) {
             char error_buffer[256];
             snprintf(error_buffer, sizeof(error_buffer), "Failed to create upload directory: %s", strerror(errno));
             log_this("WebServer", error_buffer, 3, true, false, true);
@@ -417,17 +404,17 @@ bool init_web_server(unsigned int port, const char* upload_path, const char* upl
 }
 
 const char* get_upload_path(void) {
-    return server_upload_path;
+    return server_web_config->upload_path;
 }
 
 void* run_web_server(void* arg) {
     (void)arg; // Unused parameter
 
     log_this("WebServer", "Starting web server", 0, true, false, true);
-    web_daemon = MHD_start_daemon(MHD_USE_THREAD_PER_CONNECTION, server_port, NULL, NULL,
-                               &handle_request, NULL,
-                               MHD_OPTION_NOTIFY_COMPLETED, request_completed, NULL,
-                               MHD_OPTION_END);
+    web_daemon = MHD_start_daemon(MHD_USE_THREAD_PER_CONNECTION, server_web_config->port, NULL, NULL,
+                                &handle_request, NULL,
+                                MHD_OPTION_NOTIFY_COMPLETED, request_completed, NULL,
+                                MHD_OPTION_END);
     if (web_daemon == NULL) {
         log_this("WebServer", "Failed to start web server", 4, true, false, true);
         return NULL;
@@ -456,8 +443,6 @@ void* run_web_server(void* arg) {
 
     log_this("WebServer", "Web server started successfully", 0, true, false, true);
 
-    // Instead of a blocking loop, we'll just return and let the thread exit
-    // The MHD daemon will continue running in its own threads
     return NULL;
 }
 
@@ -471,10 +456,9 @@ void shutdown_web_server(void) {
         log_this("WebServer", "Web server was not running", 1, true, false, true);
     }
 
-    free(server_upload_path);
-    free(server_upload_dir);
+    // We don't free server_web_config here because it's a pointer to the AppConfig structure
+    // which is managed elsewhere (likely in the main hydrogen.c file)
 }
-
 
 static json_t* extract_gcode_info(const char* filename) {
     FILE* file = fopen(filename, "r");

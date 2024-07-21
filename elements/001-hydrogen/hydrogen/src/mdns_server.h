@@ -32,7 +32,7 @@ typedef struct {
     char *type;
     int port;
     char **txt_records;  
-    int num_txt_records;
+    size_t num_txt_records;
 } mdns_service_t;
 
 typedef struct {
@@ -49,7 +49,7 @@ typedef struct {
     char *hw_version;
     char *config_url;
     mdns_service_t *services;
-    int num_services;
+    size_t num_services;
 } mdns_t;
 
 typedef struct {
@@ -70,7 +70,7 @@ mdns_t *mdns_init(const char *app_name,
 		  const char *hw_version, 
 		  const char *config_url,
 		  mdns_service_t *services,
-		  int num_services);
+		  size_t num_services);
 void mdns_build_announcement(uint8_t *packet, size_t *packet_len, const char *hostname, const mdns_t *mdns, uint32_t ttl, const network_info_t *net_info);
 void mdns_send_announcement(mdns_t *mdns, int port, const network_info_t *net_info);
 void mdns_shutdown(mdns_t *mdns);

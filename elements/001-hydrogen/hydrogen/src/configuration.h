@@ -1,11 +1,14 @@
 #ifndef CONFIGURATION_H
 #define CONFIGURATION_H
 
+// System Libraries
+#include <stddef.h>
+
 // Third-Party Libraries
 #include <jansson.h>
 
 // Project Libraries
-#include "mdns.h"
+#include "mdns_server.h"
 
 #define VERSION "0.1.0"
 #define DEFAULT_SERVER_NAME "Philement/hydrogen"
@@ -23,25 +26,36 @@ typedef struct {
 } PriorityLevel;
 
 typedef struct {
+    int port;
+    char *web_root;
+    char *upload_path;
+    char *upload_dir;
+    size_t max_upload_size;
+} WebConfig;
+
+typedef struct {
+    int port;
+    char *key;
+    char *protocol;
+    size_t max_message_size; // bytes
+} WebSocketConfig;
+
+typedef struct {
     char *device_id;
     char *friendly_name;
     char *model;
     char *manufacturer;
     char *version;
     mdns_service_t *services;
-    int num_services;
+    size_t num_services;
 } mDNSConfig;
 
 typedef struct {
     char *server_name;
     char *executable_path;
     char *log_file_path;
-    int web_port;
-    int websocket_port;
-    char *upload_path;
-    char *upload_dir;
-    size_t max_upload_size;
-    char *web_root;
+    WebConfig web;
+    WebSocketConfig websocket;
     mDNSConfig mdns;
 } AppConfig;
 

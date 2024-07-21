@@ -13,9 +13,11 @@
 #include "queue.h"
 #include "log_queue_manager.h"
 #include "print_queue_manager.h"
-#include "web_interface.h"
-#include "mdns.h"
 #include "network.h"
+#include "web_server.h"
+#include "websocket_server.h"
+#include "mdns_server.h"
+#include "websocket_server.h"
 
 // Handle application state in threadsafe manner
 volatile sig_atomic_t keep_running = 1;
@@ -28,12 +30,14 @@ volatile sig_atomic_t web_server_shutdown = 0;
 volatile sig_atomic_t print_queue_shutdown = 0;
 volatile sig_atomic_t log_queue_shutdown = 0;
 volatile sig_atomic_t mdns_server_shutdown = 0;
+volatile sig_atomic_t websocket_server_shutdown = 0;
 
 // Queue Threads
 pthread_t log_thread;
 pthread_t print_queue_thread;
 pthread_t mdns_thread;
 pthread_t web_thread;
+pthread_t websocket_thread;
 
 // Local data
 AppConfig *app_config = NULL;
@@ -62,7 +66,7 @@ void graceful_shutdown() {
     keep_running = 0;
     pthread_cond_broadcast(&terminate_cond);
 
-    // 1. Shutdown mDNS
+    // Shutdown mDNS
     log_this("Shutdown", "Initiating mDNS shutdown", 0, true, true, true);
     mdns_server_shutdown = 1;
     pthread_cond_broadcast(&terminate_cond);
@@ -73,7 +77,7 @@ void graceful_shutdown() {
     }
     log_this("Shutdown", "mDNS shutdown complete", 0, true, true, true);
 
-    // 2. Shutdown Web Server
+    // Shutdown Web Server
     log_this("Shutdown", "Initiating Web Server shutdown", 0, true, true, true);
     web_server_shutdown = 1;
     pthread_cond_broadcast(&terminate_cond);
@@ -81,7 +85,15 @@ void graceful_shutdown() {
     shutdown_web_server();
     log_this("Shutdown", "Web Server shutdown complete", 0, true, true, true);
 
-    // 3. Shutdown Print Queue
+    // Shutdown WebSocket Server
+    log_this("Shutdown", "Initiating WebSocket Server shutdown", 0, true, true, true);
+    websocket_server_shutdown = 1;
+    pthread_cond_broadcast(&terminate_cond);
+    stop_websocket_server();
+    cleanup_websocket_server();
+    log_this("Shutdown", "WebSocket Server shutdown complete", 0, true, true, true);
+
+    // Shutdown Print Queue
     log_this("Shutdown", "Initiating Print Queue shutdown", 0, true, true, true);
     print_queue_shutdown = 1;
     pthread_cond_broadcast(&terminate_cond);
@@ -89,17 +101,17 @@ void graceful_shutdown() {
     shutdown_print_queue();
     log_this("Shutdown", "Print Queue shutdown complete", 0, true, true, true);
 
-    // 4. Shutdown Network Info
+    // Shutdown Network Info
     log_this("Shutdown", "Freeing network info", 0, true, true, true);
     if (net_info) {
         free_network_info(net_info);
         net_info = NULL;
     }
 
-    // 5. Free other resources
+    // Free other resources
     log_this("Shutdown", "Freeing other resources", 0, true, true, true);
 
-    // 6. Shutdown Logging
+    // Shutdown Logging
     log_this("Shutdown", "Initiating Logging shutdown", 0, true, true, true);
     log_queue_shutdown = 1;
     pthread_cond_broadcast(&terminate_cond);
@@ -108,25 +120,31 @@ void graceful_shutdown() {
     close_file_logging();
     log_this("Shutdown", "Logging shutdown complete", 0, true, true, true);
 
-    // 7. Shutdown queue system
+    // Shutdown queue system
     log_this("Shutdown", "Initiating queue system shutdown", 0, true, true, true);
     queue_system_destroy();
     log_this("Shutdown", "Initiating queue system shutdown", 0, true, true, true);
 
-    // 8. Synchronization variables
+    // Synchronization variables
     log_this("Shutdown", "Releasing condition variable and mutex", 0, true, true, true);
     pthread_cond_destroy(&terminate_cond);
     pthread_mutex_destroy(&terminate_mutex);
 
-    // 9. Free app_config
-    log_this("Shutdown", "Releasing configuration information", 0, true, true, true);
+    // Free app_config
+        log_this("Shutdown", "Releasing configuration information", 0, true, true, true);
     if (app_config) {
         free(app_config->server_name);
         free(app_config->executable_path);
         free(app_config->log_file_path);
-        free(app_config->upload_path);
-        free(app_config->upload_dir);
-	free(app_config->web_root);
+
+        // Free Web config
+        free(app_config->web.web_root);
+        free(app_config->web.upload_path);
+        free(app_config->web.upload_dir);
+
+        // Free WebSocket config
+        free(app_config->websocket.key);
+        free(app_config->websocket.protocol);
 
         // Free mDNS config
         free(app_config->mdns.device_id);
@@ -134,10 +152,10 @@ void graceful_shutdown() {
         free(app_config->mdns.model);
         free(app_config->mdns.manufacturer);
         free(app_config->mdns.version);
-        for (int i = 0; i < app_config->mdns.num_services; i++) {
+        for (size_t i = 0; i < app_config->mdns.num_services; i++) {
             free(app_config->mdns.services[i].name);
             free(app_config->mdns.services[i].type);
-            for (int j = 0; j < app_config->mdns.services[i].num_txt_records; j++) {
+            for (size_t j = 0; j < app_config->mdns.services[i].num_txt_records; j++) {
                 free(app_config->mdns.services[i].txt_records[j]);
             }
             free(app_config->mdns.services[i].txt_records);
@@ -234,7 +252,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Initialize web server
-    if (!init_web_server(app_config->web_port, app_config->upload_path, app_config->upload_dir, app_config->max_upload_size)) {
+    if (!init_web_server(&app_config->web)) {
         log_this("Initialization", "Failed to initialize web server", 4, true, true, true);
         // Cleanup code
         queue_system_destroy();
@@ -251,6 +269,20 @@ int main(int argc, char *argv[]) {
         queue_system_destroy();
         close_file_logging();
         free(app_config);
+        return 1;
+    }
+
+    // Initialize WebSocket server
+    if (init_websocket_server(app_config->websocket.port, app_config->websocket.protocol, app_config->websocket.key) != 0) {
+        log_this("Initialization", "Failed to initialize WebSocket server", 4, true, true, true);
+        graceful_shutdown();
+        return 1;
+    }
+
+    // Start WebSocket server
+    if (start_websocket_server() != 0) {
+        log_this("Initialization", "Failed to start WebSocket server", 4, true, true, true);
+        graceful_shutdown();
         return 1;
     }
 
@@ -272,7 +304,7 @@ int main(int argc, char *argv[]) {
     net_info = get_network_info();
     mdns_thread_arg_t mdns_arg = {
         .mdns = mdns,
-        .port = app_config->web_port,
+        .port = app_config->web.port,
         .net_info = net_info,
         .running = &keep_running
     };
