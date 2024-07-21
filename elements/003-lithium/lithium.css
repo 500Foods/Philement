@@ -1,0 +1,25 @@
+html,body {
+  margin: 0;
+  width: 100vw;
+  height: 100vh;
+}
+
+:root {
+ --bg-border: rgb(31,31,31);
+ --bg-fill: rgb(15,15,15);
+ --bg-stroke: 1;
+}
+
+#bg {
+  background: var(--bg-fill);
+  min-width: 100vw;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+#hex {
+  fill: var(--bg-fill);
+  stroke-width: var(--bg-stroke);
+  stroke: var(--bg-border);
+}
+

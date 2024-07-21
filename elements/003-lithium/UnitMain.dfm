@@ -1,31 +1,22 @@
 object Form1: TForm1
+  Width = 640
+  Height = 480
   CSSLibrary = cssBootstrap
-  Color = clWhite
   ElementFont = efCSS
   Font.Charset = ANSI_CHARSET
   Font.Color = clBlack
   Font.Height = -11
   Font.Name = 'Arial'
-  Font.Size = 8
   Font.Style = []
-  FormStyle = fsNormal
-  Height = 480
-  Left = 0
-  TabOrder = 0
-  Top = 0
-  Width = 640
+  ParentFont = False
   object WebLabel1: TWebLabel
+    Left = 256
+    Top = 128
+    Width = 97
+    Height = 41
     Caption = 'Welcome to Lithium'
     ElementClassName = 'border border-dark rounded p-2'
-    Font.Charset = ANSI_CHARSET
-    Font.Color = clBlack
-    Font.Height = -11
-    Font.Name = 'Arial'
-    Font.Size = 8
-    Font.Style = []
-    Height = 42
-    Left = 200
-    Top = 224
-    Width = 160
+    HeightPercent = 100.000000000000000000
+    WidthPercent = 100.000000000000000000
   end
 end
