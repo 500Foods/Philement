@@ -59,12 +59,12 @@
         <Icon_MainIcon>$(BDS)\bin\delphi_PROJECTICON.ico</Icon_MainIcon>
         <Icns_MainIcns>$(BDS)\bin\delphi_PROJECTICNS.icns</Icns_MainIcns>
         <SanitizedProjectName>Lithium</SanitizedProjectName>
-        <TMSWebPWAServiceWorkerFile>serviceworker.js</TMSWebPWAServiceWorkerFile>
-        <TMSWebPWAResIconLowFile>IconResLow.png</TMSWebPWAResIconLowFile>
         <TMSWebPWAResIconMidFile>IconResMid.png</TMSWebPWAResIconMidFile>
+        <TMSWebPWAResIconLowFile>IconResLow.png</TMSWebPWAResIconLowFile>
+        <TMSWebPWAServiceWorkerFile>serviceworker.js</TMSWebPWAServiceWorkerFile>
         <TMSWebPWAResIconHighFile>IconResHigh.png</TMSWebPWAResIconHighFile>
-        <TMSWebHTMLFile>lithium.html</TMSWebHTMLFile>
         <TMSPWAManifestFile>Manifest.json</TMSPWAManifestFile>
+        <TMSWebHTMLFile>lithium.html</TMSWebHTMLFile>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
         <DCC_UsePackage>DBXSqliteDriver;RESTComponents;fmxase;DBXDb2Driver;DBXInterBaseDriver;FmxTeeUI926;VCLTMSFNCChartPkgDXE12;vclactnband;TMSLogging;vclFireDAC;emsclientfiredac;tethering;svnui;DataSnapFireDAC;FireDACADSDriver;DBXMSSQLDriver;TMSQueryStudio;TMSScripter;DatasnapConnectorsFreePascal;FireDACMSSQLDriver;JSExtend;vcltouch;rbUSERDesign2126;FMXTMSFNCUIPackPkgDXE12;vcldb;bindcompfmx;svn;TMSWEBCorePkgLibDXE12;DBXOracleDriver;inetdb;IcsFmxD103Run;CEF4Delphi;IcsVclD103Run;rbTC2126;FMXTMSFNCWXPackPkgDXE12;TMSScripter_Memo;emsedge;fmx;FireDACIBDriver;fmxdae;vclib;rbBDE2126;FireDACDBXDriver;dbexpress;IndyCore;DCEF_XE5;xdata;vclx;dsnap;emsclient;DataSnapCommon;rbRCL2126;FireDACCommon;VCLTMSFNCUIPackPkgDXE12;RESTBackendComponents;DataSnapConnectors;VCLRESTComponents;soapserver;TMSScripter_Legacy;TMSScripter_VCL;vclie;FMXTeeDB926;bindengine;DBXMySQLDriver;CloudService;FireDACOracleDriver;FireDACMySQLDriver;DBXFirebirdDriver;CData.QuickBooksOnline.D26;remotedb;FireDACCommonODBC;FireDACCommonDriver;VCLTMSFNCCorePkgDXE12;DataSnapClient;inet;rbTCUI2126;IndyIPCommon;bindcompdbx;vcl;IndyIPServer;DBXSybaseASEDriver;sparkle;tmsbcl;IndySystem;FireDACDb2Driver;FMXTee926;dsnapcon;sphinx;FMXTMSFNCCorePkgDXE12;TMSWorkflow;FireDACMSAccDriver;fmxFireDAC;FireDACInfxDriver;vclimg;FireDAC;emshosting;FireDACSqliteDriver;FireDACPgDriver;ibmonitor;FireDACASADriver;advmemopkgdXE12;DBXOdbcDriver;FireDACTDataDriver;TMSDiagram;soaprtl;DbxCommonDriver;ibxpress;DataSnapServer;xmlrtl;soapmidas;DataSnapNativeClient;fmxobj;vclwinx;FireDACDSDriver;rtl;emsserverresource;DbxClientDriver;ibxbindings;DBXSybaseASADriver;TMSScripter_IDE;CustomIPTransport;vcldsnap;rbIDE2126;bindcomp;appanalytics;DBXInformixDriver;IndyIPClient;EurekaLogCore;rbCloudSC2126;bindcompvcl;IcsCommonD103Run;rbUSER2126;TMSCryptoPkgDXE12;dclTMSQueryStudio;TMSWEBCorePkgDXE12;dbxcds;VclSmp;adortl;FireDACODBCDriver;VCLTMSFNCWXPackPkgDXE12;DataSnapIndy10ServerTransport;aurelius;dsnapxml;DataSnapProviderClient;dbrtl;IndyProtocols;inetdbxpress;FireDACMongoDBDriver;TMSCryptoPkgDEDXE12;FMXTMSFNCChartPkgDXE12;DataSnapServerMidas;$(DCC_UsePackage)</DCC_UsePackage>
@@ -132,6 +132,7 @@
             <ResourceType>RCDATA</ResourceType>
             <ResourceId>PngImage_3</ResourceId>
         </RcItem>
+        <None Include="lithium.css"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -169,19 +170,13 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="lithium.html" Configuration="Debug" Class="ProjectFile">
-                    <Platform Name="Win32">
-                        <RemoteDir>.\</RemoteDir>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
                 <DeployFile LocalName="..\..\..\IconResHigh.png" Configuration="Debug" Class="ProjectFile">
                     <Platform Name="Win32">
                         <RemoteDir>.\</RemoteDir>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="Philement\elements\003-lithium\lithium.html" Configuration="Debug" Class="ProjectFile">
+                <DeployFile LocalName="lithium.html" Configuration="Debug" Class="ProjectFile">
                     <Platform Name="Win32">
                         <RemoteDir>.\</RemoteDir>
                         <Overwrite>true</Overwrite>
@@ -193,15 +188,21 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
+                <DeployFile LocalName="Win32\Debug\Lithium.exe" Configuration="Debug" Class="ProjectOutput">
+                    <Platform Name="Win32">
+                        <RemoteName>Lithium.exe</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployFile LocalName="serviceworker.js" Configuration="Debug" Class="ProjectFile">
                     <Platform Name="Win32">
                         <RemoteDir>.\</RemoteDir>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="Win32\Debug\Lithium.exe" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="Untitled1.css" Configuration="Debug" Class="ProjectFile">
                     <Platform Name="Win32">
-                        <RemoteName>Lithium.exe</RemoteName>
+                        <RemoteDir>.\</RemoteDir>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
