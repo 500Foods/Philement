@@ -1,25 +1,15 @@
-html,body {
+html, body {
+  height: 100%;
+  width: 100%;
   margin: 0;
-  width: 100vw;
-  height: 100vh;
-}
-
-:root {
- --bg-border: rgb(31,31,31);
- --bg-fill: rgb(15,15,15);
- --bg-stroke: 1;
-}
-
-#bg {
-  background: var(--bg-fill);
-  min-width: 100vw;
-  min-height: 100vh;
+  padding: 0;
+  background-color: #0F0F0F;
   overflow: hidden;
 }
 
-#hex {
-  fill: var(--bg-fill);
-  stroke-width: var(--bg-stroke);
-  stroke: var(--bg-border);
+#background {
+  width: 100%;
+  height: 100%;
+  transform: translateZ(0);   /* Force GPU acceleration */
+  will-change: transform;     /* Hint future changes to the browser */
 }
-

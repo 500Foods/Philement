@@ -6,17 +6,19 @@
     </style>
   </head>
   <body>
-    <svg id="bg" xmlns:xlink="http://www.w3.org/1999/xlink"	width="100%" height="100%">
+
+    <svg id="background" width="100%" height="100%" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
       <defs>
-        <pattern id="hexagons" width="50" height="43.4" patternUnits="userSpaceOnUse" patternTransform="scale(1) translate(2) rotate(45)">
-          <polygon points="24.8,22 37.3,29.2 37.3,43.7 24.8,50.9 12.3,43.7 12.3,29.2" id="hex" />
-          <use xlink:href="#hex" x="25" />
-          <use xlink:href="#hex" x="-25" />
-          <use xlink:href="#hex" x="12.5" y="-21.7" />
-          <use xlink:href="#hex" x="-12.5" y="-21.7" />
+        <pattern id="bgHexagons" width="50" height="43.4" patternUnits="userSpaceOnUse">
+          <polygon id="bgHex" points="24.8,22 37.3,29.2 37.3,43.7 24.8,50.9 12.3,43.7 12.3,29.2" fill="#0F0F0F" stroke="#131313" stroke-width="0.5" vector-effect="non-scaling-stroke" />
+          <use xlink:href="#bgHex" x="25" />
+          <use xlink:href="#bgHex" x="-25" />
+          <use xlink:href="#bgHex" x="12.5" y="-21.7" />
+          <use xlink:href="#bgHex" x="-12.5" y="-21.7" />
         </pattern>
       </defs>
-      <rect width="100%" height="100%" fill="url(#hexagons)" />
+      <rect id="bgRect" width="100%" height="100%" fill="url(#bgHexagons)"/>
     </svg>
+
   </body>
 </html>

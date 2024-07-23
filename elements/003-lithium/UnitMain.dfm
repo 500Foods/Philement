@@ -9,11 +9,12 @@ object Form1: TForm1
   Font.Name = 'Arial'
   Font.Style = []
   ParentFont = False
+  OnCreate = WebFormCreate
   object WebLabel1: TWebLabel
     Left = 256
     Top = 128
-    Width = 97
-    Height = 41
+    Width = 92
+    Height = 14
     Caption = 'Welcome to Lithium'
     ElementClassName = 'border border-dark rounded p-2'
     HeightPercent = 100.000000000000000000
