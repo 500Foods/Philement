@@ -14,4 +14,6 @@ It's mid-2024 as this is being written. Databases should be the norm for most of
 - Try to be performant, particularly with respect to logging.
 - Support for the usual suspects - SQLite, Postgres, MySQL/MariaDB, IBM DB2, MSSQL.
 - Be mindful of system dependencies - extra work to get installed
-  
+- Configure database connection via JSON
+- Maybe craft custom DB layer? 
+
