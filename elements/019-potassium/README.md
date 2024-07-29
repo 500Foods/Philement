@@ -22,3 +22,5 @@ Still, electricity is a shared resource for all of us, so minimizing our use, or
 - Potentially deal with multiple sensors, multiple voltage levels, etc.
 - The analog-to-digital board is likely to have multiple inputs - main power, bed heater, etc.
 - Got to be inexpensive if anyone is going to use it.
+- Use off-the-shelf parts or kits if possible.
+- Minimal soldering or assembly steps.
