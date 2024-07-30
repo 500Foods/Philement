@@ -24,3 +24,4 @@ Still, electricity is a shared resource for all of us, so minimizing our use, or
 - Got to be inexpensive if anyone is going to use it.
 - Use off-the-shelf parts or kits if possible.
 - Minimal soldering or assembly steps.
+~ Provide a suitable .STL for mounting the circuit board.
