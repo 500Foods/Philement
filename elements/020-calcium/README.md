@@ -11,4 +11,5 @@ Finding the right modifications to hit performance targets, or estimating what p
 - Figure out what parameters in printer.cfg are most important
 - Figure out what other parameters not in printer.cfg are most important (eg: filament)
 - Incorporate some kind of cost+effort into the model
+- Could in essence work out to be a full-fledged simulator.
   
