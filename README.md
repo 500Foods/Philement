@@ -6,7 +6,7 @@ The main differentiator to address upfront is that a large chunk of the lower-le
 As for the name, it is a combination of terms like 'Phi' (referencing the number 500 among *many* other meanings), 'filament' (that's what 3D printing is primarily obsessed with), and 'element' (small pieces of something larger). The individual components of the project have been named after atomic elements, for example.
 
 As far as progress reporting goes, well, there are likely 500 steps or more to be completed before anyone takes this project seriously. Some of those steps will yield useful tools that people can use, as is already the case. But it is an ambitious project with many items to complete, and many more that likely haven't even been added to the list yet.
-<br/><br/><img src="https://progress-bar.dev/10/?scale=500&title=%20Completed%20&width=415&suffix=%20%2F%20500%20Steps">
+<br/><br/><img src="https://progressbar-guibranco.vercel.app/12/?scale=500&title=%20Completed%20&width=415&suffix=%20%2F%20500%20Steps">
 
 ## Elements
 This project has a number of, well, elements. Each is named after an element in the periodic table. Like elements in the real world, some of these will be hugely important while others may be relatively insignificant. Some will require thousands and thousands of developer hours and others not so much. And the effort applied to each will likely be equally unbalanced as the focus shifts among the different pieces needed to get this up and running.
@@ -31,6 +31,8 @@ This project has a number of, well, elements. Each is named after an element in 
 | [sulfur](https://github.com/500Foods/Philement/tree/main/elements/016-sulfur/README.md) | 💡 | Printer experiment - Robotic arm printer. <tr></tr> || 
 | [chlorine](https://github.com/500Foods/Philement/tree/main/elements/017-chlorine/README.md) | 🔨 | TMS WEB Core project for the www.philement.com website. <tr></tr> || 
 | [argon](https://github.com/500Foods/Philement/tree/main/elements/018-argon/README.md) | 💡 | Filament extruder - recycle that waste plastic! <tr></tr> || 
+| [potassium](https://github.com/500Foods/Philement/tree/main/elements/019-potassium/README.md) | 💡 | Power monitoring <tr></tr> || 
+| [calcium](https://github.com/500Foods/Philement/tree/main/elements/020-calcium/README.md) | 💡 | Optimization Wizard - building on beryllium and boron <tr></tr> || 
 
 <sup>💡 → Idea and Planning Stage &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 🔨 → Working on it &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 🏆 → Nowhere near done but... Check it out!</sup>
 
@@ -61,12 +63,12 @@ There are countless tools, frameworks, coding styles, conventions, languages, an
 [![Count Lines of Code](https://github.com/500Foods/Template/actions/workflows/main.yml/badge.svg)](https://github.com/500Foods/Template/actions/workflows/main.yml)
 <!--CLOC-START -->
 ```
-Last updated at 2024-07-21 02:43:44 UTC
+Last updated at 2024-08-11 20:18:46 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 C                               35           1377            347           6842
-Markdown                        27            166              2           1845
+Markdown                        29            171              2           1887
 C/C++ Header                    26            164             40            543
 Python                           1             36              9            195
 HTML                             4             38             23            157
@@ -77,12 +79,22 @@ Text                             1              0              0             75
 Delphi Form                      2              1              0             65
 Pascal                           4             22              4             60
 CSS                              2              6              2             45
-YAML                             2              8             13             35
+YAML                             2              8             13             37
 JavaScript                       1              3              0             25
 -------------------------------------------------------------------------------
-SUM:                           117           1915            512          10220
+SUM:                           119           1920            512          10264
 -------------------------------------------------------------------------------
-16 Files (without source code) were skipped
+16 Files were skipped (duplicate, binary, or without source code):
+  jpg: 3
+  png: 3
+  dproj: 2
+  gitignore: 2
+  gitattributes: 1
+  ico: 1
+  js: 1
+  json: 1
+  license: 1
+  makefile: 1
 ```
 <!--CLOC-END-->
 
