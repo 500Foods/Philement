@@ -24,4 +24,5 @@ For some plastics, in fact, this can be done repeatedly without loss of quality.
 - Should be able to be built in a small and simple form factor, not much bigger than a filament box.
 - Filament should be cooled but also dried so it is ready to print as soon as possible.
 - Candles created in this way are presumably "dry" to begin with, no need to dry the particles.
-  
+- Or. Forget the candles. Instead, use a pellet extruder to extrude new filament.
+- Or. Use the particles directly in a pellet extruder to print without any intermediate step.
