@@ -1,5 +1,8 @@
+#define _POSIX_C_SOURCE 200809L
+
 // System Libraries
 //
+#include <pthread.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -131,7 +134,7 @@ void graceful_shutdown() {
     pthread_mutex_destroy(&terminate_mutex);
 
     // Free app_config
-        log_this("Shutdown", "Releasing configuration information", 0, true, true, true);
+    log_this("Shutdown", "Releasing configuration information", 0, true, true, true);
     if (app_config) {
         free(app_config->server_name);
         free(app_config->executable_path);
@@ -169,7 +172,7 @@ void graceful_shutdown() {
     log_this("Shutdown", "Shutdown complete", 0, true, true, true);
     shutting_down = 1;
 }
-
+                    
 int main(int argc, char *argv[]) {
     
     // Seed random number generator
@@ -284,6 +287,16 @@ int main(int argc, char *argv[]) {
         log_this("Initialization", "Failed to start WebSocket server", 4, true, true, true);
         graceful_shutdown();
         return 1;
+    }
+
+    // Get the actual bound port and update mDNS configuration
+    int actual_port = get_websocket_port();
+    for (size_t i = 0; i < app_config->mdns.num_services; i++) {
+        if (strcmp(app_config->mdns.services[i].type, "_websocket._tcp") == 0) {
+            app_config->mdns.services[i].port = actual_port;
+            log_this("Initialization", "Updated WebSocket mDNS service port to %d", 0, true, true, true, actual_port);
+            break;
+        }
     }
 
     // Initialize mDNS

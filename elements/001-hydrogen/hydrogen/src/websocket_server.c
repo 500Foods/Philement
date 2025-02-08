@@ -3,6 +3,9 @@
 #include <pthread.h>
 #include <signal.h>
 #include <jansson.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
 #include "websocket_server.h"
 #include "logging.h"
 #include "configuration.h"
@@ -74,6 +77,9 @@ static int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
     switch (reason) {
         case LWS_CALLBACK_ESTABLISHED: // 0
             log_this("WebSocket", "0/LWS_CALLBACK_ESTABLISHED", 0, true, true, true);
+            // Initialize session data
+            memset(session_data, 0, sizeof(ws_session_data));
+            session_data->authenticated = false;
             break;
 
         case LWS_CALLBACK_CLIENT_CONNECTION_ERROR: // 1
@@ -373,7 +379,7 @@ int init_websocket_server(int port, const char* protocol, const char* key)
     info.protocols = protocols;
     info.gid = -1;
     info.uid = -1;
-    info.options = LWS_SERVER_OPTION_VALIDATE_UTF8;
+    info.options = LWS_SERVER_OPTION_EXPLICIT_VHOSTS;
 
     // Set up custom logging
     lws_set_log_level(LLL_ERR | LLL_WARN | LLL_NOTICE | LLL_INFO, custom_lws_log);
@@ -384,6 +390,41 @@ int init_websocket_server(int port, const char* protocol, const char* key)
     context = lws_create_context(&info);
     if (!context) {
         log_this("WebSocket", "Failed to create LWS context", 3, true, true, true);
+        return -1;
+    }
+
+    // Create vhost
+    // Try to bind to the specified port or fall back to alternative ports
+    struct lws_vhost *vhost = NULL;
+    int try_port = port;
+    int max_attempts = 10;  // Try up to 10 different ports
+    
+    for (int attempt = 0; attempt < max_attempts; attempt++) {
+        struct lws_context_creation_info vhost_info;
+        memset(&vhost_info, 0, sizeof(vhost_info));
+        vhost_info.port = try_port;
+        vhost_info.protocols = protocols;
+        vhost_info.options = LWS_SERVER_OPTION_VALIDATE_UTF8 | 
+                            LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
+
+        vhost = lws_create_vhost(context, &vhost_info);
+        if (vhost) {
+            // Successfully created vhost
+            if (try_port != port) {
+                log_this("WebSocket", "Successfully bound to alternative port %d", 0, true, true, true, try_port);
+                websocket_port = try_port;  // Update the actual port being used
+            }
+            break;
+        }
+        
+        log_this("WebSocket", "Failed to bind to port %d, trying next port", 1, true, true, true, try_port);
+        try_port++;  // Try next port
+    }
+
+    if (!vhost) {
+        log_this("WebSocket", "Failed to create vhost after trying multiple ports", 3, true, true, true);
+        lws_context_destroy(context);
+        context = NULL;
         return -1;
     }
 
@@ -460,4 +501,8 @@ void cleanup_websocket_server()
     pthread_cond_destroy(&websocket_cond);
 
     log_this("WebSocket", "WebSocket server resources cleaned up", 0, true, true, true);
+}
+
+int get_websocket_port(void) {
+    return websocket_port;
 }

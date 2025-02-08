@@ -102,6 +102,9 @@ static int accelerated_move(double length, double acceleration, double max_veloc
 
 BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config) {
     BerylliumStats stats = {0};
+    stats.success = true;  // Initialize success flag to true
+    stats.object_times = NULL;  // Explicitly initialize pointer to NULL
+    stats.object_infos = NULL;  // Explicitly initialize pointer to NULL
     double current_x = 0.0, current_y = 0.0, current_z = 0.0, extrusion = 0.0;
     bool relative_mode = false, relative_extrusion = false;
     char line[MAX_LINE_LENGTH];
@@ -116,6 +119,8 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
     stats.object_times = calloc(MAX_LAYERS, sizeof(double *));
     if (stats.object_times == NULL) {
         fprintf(stderr, "Memory allocation failed for object_times\n");
+        stats.success = false;
+        stats.object_times = NULL;
         return stats;
     }
 
@@ -127,6 +132,8 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
     if (z_values == NULL) {
         fprintf(stderr, "Memory allocation failed\n");
         free(stats.object_times);
+        stats.object_times = NULL;
+        stats.success = false;
         return stats;
     }
     int z_values_count = 0, z_values_capacity = 100;
@@ -147,11 +154,13 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
                 if (object_infos == NULL) {
                     fprintf(stderr, "Memory reallocation failed for object_infos\n");
                     free(stats.object_times);
+                    stats.object_times = NULL;
                     free(z_values);
                     for (int i = 0; i < num_objects; i++) {
                         free(object_infos[i].name);
                     }
                     free(object_infos);
+                    stats.success = false;
                     return stats;
                 }
                 object_infos[num_objects].name = strndup(name_start, name_length);
@@ -159,11 +168,13 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
                 if (object_infos[num_objects].name == NULL) {
                     fprintf(stderr, "Memory allocation failed for object name\n");
                     free(stats.object_times);
+                    stats.object_times = NULL;
                     free(z_values);
                     for (int i = 0; i < num_objects; i++) {
                         free(object_infos[i].name);
                     }
                     free(object_infos);
+                    stats.success = false;
                     return stats;
                 }
                 object_infos[num_objects].index = num_objects;
@@ -213,12 +224,18 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
                     stats.object_times[current_layer] = calloc(num_objects, sizeof(double));
                     if (stats.object_times[current_layer] == NULL) {
                         fprintf(stderr, "Memory allocation failed for object_times[%d]\n", current_layer);
+                        // Free previously allocated layer arrays
+                        for (int i = 0; i < current_layer; i++) {
+                            free(stats.object_times[i]);
+                        }
                         free(stats.object_times);
+                        stats.object_times = NULL;
                         free(z_values);
                         for (int i = 0; i < num_objects; i++) {
                             free(object_infos[i].name);
                         }
                         free(object_infos);
+                        stats.success = false;
                         return stats;
                     }
                 }
@@ -293,10 +310,12 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
                                 free(stats.object_times[i]);
                             }
                             free(stats.object_times);
+                            stats.object_times = NULL;
                             for (int i = 0; i < num_objects; i++) {
                                 free(object_infos[i].name);
                             }
                             free(object_infos);
+                            stats.success = false;
                             return stats;
                         }
                         z_values = new_z_values;
@@ -337,10 +356,14 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
     stats.filament_volume = M_PI * pow(filament_radius, 2) * extrusion / 1000.0;  // Volume in cm^3
     stats.filament_weight = stats.filament_volume * config->filament_density;  // Weight in grams
 
+    // Set final stats values
     stats.object_infos = object_infos;
     stats.num_objects = num_objects;
+    stats.success = true;  // Confirm success before returning
 
-        free(z_values);
+    // Note: We don't free object_times or its arrays here
+    // The caller is responsible for freeing memory after using the stats
+    free(z_values);
 	    // Debugging statements
     // printf("Debugging stats:\n");
     // printf("Number of layers (height): %d\n", stats.layer_count_height);
@@ -362,4 +385,33 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
     // }
 
     return stats;
+}
+
+void beryllium_free_stats(BerylliumStats *stats) {
+    if (!stats) {
+        return;
+    }
+
+    // Free object_times array and its layer arrays
+    if (stats->object_times) {
+        for (int i = 0; i < stats->layer_count_slicer; i++) {
+            free(stats->object_times[i]);
+        }
+        free(stats->object_times);
+        stats->object_times = NULL;
+    }
+
+    // Free object_infos array and object names
+    if (stats->object_infos) {
+        for (int i = 0; i < stats->num_objects; i++) {
+            free(stats->object_infos[i].name);
+        }
+        free(stats->object_infos);
+        stats->object_infos = NULL;
+    }
+
+    // Reset counters
+    stats->num_objects = 0;
+    stats->layer_count_slicer = 0;
+    stats->success = false;
 }

@@ -6,6 +6,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <limits.h>
+#include <linux/limits.h>
 #include <stdbool.h>
 
 // Project Libraries
@@ -165,37 +166,80 @@ AppConfig* load_config(const char* config_path) {
     // Web Configuration
     json_t* web = json_object_get(root, "Web");
     if (json_is_object(web)) {
-        config->web.port = json_integer_value(json_object_get(web, "Port"));
-        config->web.web_root = strdup(json_string_value(json_object_get(web, "WebRoot")));
-        config->web.upload_path = strdup(json_string_value(json_object_get(web, "UploadPath")));
-        config->web.upload_dir = strdup(json_string_value(json_object_get(web, "UploadDir")));
-        config->web.max_upload_size = json_integer_value(json_object_get(web, "MaxUploadSize"));
+        json_t* port = json_object_get(web, "Port");
+        config->web.port = json_is_integer(port) ? json_integer_value(port) : DEFAULT_WEB_PORT;
+
+        json_t* web_root = json_object_get(web, "WebRoot");
+        const char* web_root_str = json_is_string(web_root) ? json_string_value(web_root) : "/var/www/html";
+        config->web.web_root = strdup(web_root_str);
+
+        json_t* upload_path = json_object_get(web, "UploadPath");
+        const char* upload_path_str = json_is_string(upload_path) ? json_string_value(upload_path) : DEFAULT_UPLOAD_PATH;
+        config->web.upload_path = strdup(upload_path_str);
+
+        json_t* upload_dir = json_object_get(web, "UploadDir");
+        const char* upload_dir_str = json_is_string(upload_dir) ? json_string_value(upload_dir) : DEFAULT_UPLOAD_DIR;
+        config->web.upload_dir = strdup(upload_dir_str);
+
+        json_t* max_upload_size = json_object_get(web, "MaxUploadSize");
+        config->web.max_upload_size = json_is_integer(max_upload_size) ? 
+            (size_t)json_integer_value(max_upload_size) : DEFAULT_MAX_UPLOAD_SIZE;
+    } else {
+        // Use defaults if web section is missing
+        config->web.port = DEFAULT_WEB_PORT;
+        config->web.web_root = strdup("/var/www/html");
+        config->web.upload_path = strdup(DEFAULT_UPLOAD_PATH);
+        config->web.upload_dir = strdup(DEFAULT_UPLOAD_DIR);
+        config->web.max_upload_size = DEFAULT_MAX_UPLOAD_SIZE;
     }
 
     // WebSocket Configuration
     json_t* websocket = json_object_get(root, "WebSocket");
     if (json_is_object(websocket)) {
-        config->websocket.port = json_integer_value(json_object_get(websocket, "Port"));
-        config->websocket.key = strdup(json_string_value(json_object_get(websocket, "Key")));
-        config->websocket.protocol = strdup(json_string_value(json_object_get(websocket, "Protocol")));
+        json_t* port = json_object_get(websocket, "Port");
+        config->websocket.port = json_is_integer(port) ? json_integer_value(port) : DEFAULT_WEBSOCKET_PORT;
+
+        json_t* key = json_object_get(websocket, "Key");
+        const char* key_str = json_is_string(key) ? json_string_value(key) : "default_key";
+        config->websocket.key = strdup(key_str);
+
+        json_t* protocol = json_object_get(websocket, "Protocol");
+        const char* protocol_str = json_is_string(protocol) ? json_string_value(protocol) : "hydrogen-protocol";
+        config->websocket.protocol = strdup(protocol_str);
 
         json_t* max_message_mb = json_object_get(websocket, "MaxMessageMB");
-        if (json_is_integer(max_message_mb)) {
-            config->websocket.max_message_size = json_integer_value(max_message_mb) * 1024 * 1024;
-        } else {
-            config->websocket.max_message_size = 10 * 1024 * 1024;  // Default to 10 MB if not specified
-        }
-
+        config->websocket.max_message_size = json_is_integer(max_message_mb) ? 
+            json_integer_value(max_message_mb) * 1024 * 1024 : 10 * 1024 * 1024;  // Default to 10 MB
+    } else {
+        // Use defaults if websocket section is missing
+        config->websocket.port = DEFAULT_WEBSOCKET_PORT;
+        config->websocket.key = strdup("default_key");
+        config->websocket.protocol = strdup("hydrogen-protocol");
+        config->websocket.max_message_size = 10 * 1024 * 1024;  // Default to 10 MB
     }
 
     // mDNS Configuration
     json_t* mdns = json_object_get(root, "mDNS");
     if (json_is_object(mdns)) {
-        config->mdns.device_id = strdup(json_string_value(json_object_get(mdns, "DeviceId")));
-        config->mdns.friendly_name = strdup(json_string_value(json_object_get(mdns, "FriendlyName")));
-        config->mdns.model = strdup(json_string_value(json_object_get(mdns, "Model")));
-        config->mdns.manufacturer = strdup(json_string_value(json_object_get(mdns, "Manufacturer")));
-        config->mdns.version = strdup(json_string_value(json_object_get(mdns, "Version")));
+        json_t* device_id = json_object_get(mdns, "DeviceId");
+        const char* device_id_str = json_is_string(device_id) ? json_string_value(device_id) : "hydrogen-printer";
+        config->mdns.device_id = strdup(device_id_str);
+
+        json_t* friendly_name = json_object_get(mdns, "FriendlyName");
+        const char* friendly_name_str = json_is_string(friendly_name) ? json_string_value(friendly_name) : "Hydrogen 3D Printer";
+        config->mdns.friendly_name = strdup(friendly_name_str);
+
+        json_t* model = json_object_get(mdns, "Model");
+        const char* model_str = json_is_string(model) ? json_string_value(model) : "Hydrogen";
+        config->mdns.model = strdup(model_str);
+
+        json_t* manufacturer = json_object_get(mdns, "Manufacturer");
+        const char* manufacturer_str = json_is_string(manufacturer) ? json_string_value(manufacturer) : "Philement";
+        config->mdns.manufacturer = strdup(manufacturer_str);
+
+        json_t* version = json_object_get(mdns, "Version");
+        const char* version_str = json_is_string(version) ? json_string_value(version) : VERSION;
+        config->mdns.version = strdup(version_str);
 
         json_t* services = json_object_get(mdns, "Services");
 	if (json_is_array(services)) {
@@ -204,9 +248,18 @@ AppConfig* load_config(const char* config_path) {
 
             for (size_t i = 0; i < config->mdns.num_services; i++) {
                 json_t* service = json_array_get(services, i);
-                config->mdns.services[i].name = strdup(json_string_value(json_object_get(service, "Name")));
-                config->mdns.services[i].type = strdup(json_string_value(json_object_get(service, "Type")));
-                config->mdns.services[i].port = json_integer_value(json_object_get(service, "Port"));
+                if (!json_is_object(service)) continue;
+
+                json_t* name = json_object_get(service, "Name");
+                const char* name_str = json_is_string(name) ? json_string_value(name) : "hydrogen";
+                config->mdns.services[i].name = strdup(name_str);
+
+                json_t* type = json_object_get(service, "Type");
+                const char* type_str = json_is_string(type) ? json_string_value(type) : "_http._tcp.local";
+                config->mdns.services[i].type = strdup(type_str);
+
+                json_t* port = json_object_get(service, "Port");
+                config->mdns.services[i].port = json_is_integer(port) ? json_integer_value(port) : DEFAULT_WEB_PORT;
         
                 // Handle TXT records
                 json_t* txt_records = json_object_get(service, "TxtRecords");

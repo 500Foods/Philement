@@ -15,6 +15,9 @@ void stop_websocket_server();
 // Cleanup WebSocket server resources
 void cleanup_websocket_server();
 
+// Get the actual port the WebSocket server is bound to
+int get_websocket_port(void);
+
 // Function prototypes for endpoint handlers
 void handle_status_request(struct lws *wsi);
 

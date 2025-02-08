@@ -62,12 +62,45 @@ typedef struct {
     double **object_times;
     ObjectInfo *object_infos;
     int num_objects;
+    bool success;  // Indicates if the analysis completed successfully
 } BerylliumStats;
 
 // Function Prototypes
+
+/**
+ * Get current timestamp in ISO8601 format
+ * @return Static buffer containing timestamp string
+ */
 char* get_iso8601_timestamp(void);
+
+/**
+ * Format time duration into days:hours:minutes:seconds
+ * @param seconds Time duration in seconds
+ * @param buffer Buffer to store formatted string
+ */
 void format_time(double seconds, char *buffer);
+
+/**
+ * Analyze G-code file and return statistics
+ * @param file File pointer to G-code file
+ * @param config Printer configuration
+ * @return BerylliumStats structure containing analysis results
+ * 
+ * Note: The returned structure contains dynamically allocated memory.
+ * Caller must call beryllium_free_stats() to free this memory when done.
+ */
 BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config);
+
+/**
+ * Free memory allocated in BerylliumStats structure
+ * @param stats Pointer to stats structure to clean up
+ * 
+ * This function frees all dynamically allocated memory in the stats structure:
+ * - object_times array and all its layer arrays
+ * - object_infos array and all object names
+ * After calling this, the stats structure should not be used again.
+ */
+void beryllium_free_stats(BerylliumStats *stats);
 
 #endif // BERYLLIUM_H
 

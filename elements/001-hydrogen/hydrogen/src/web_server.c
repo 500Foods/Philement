@@ -13,6 +13,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <limits.h>
+#include <linux/limits.h>
 
 // Third-Party Libraries
 #include <jansson.h>
@@ -566,17 +567,8 @@ static json_t* extract_gcode_info(const char* filename) {
     json_object_set_new(configuration, "filament_density", json_real(config.filament_density));
     json_object_set_new(info, "configuration", configuration);
 
-    // Free the memory allocated for stats.object_times
-    for (int i = 0; i < stats.layer_count_slicer; i++) {
-        free(stats.object_times[i]);
-    }
-    free(stats.object_times);
-
-    // Free the object names and object_infos array
-    for (int i = 0; i < stats.num_objects; i++) {
-        free(stats.object_infos[i].name);
-    }
-    free(stats.object_infos);
+    // Clean up the stats structure
+    beryllium_free_stats(&stats);
 
     return info;
 }
