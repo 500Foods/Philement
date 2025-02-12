@@ -31,6 +31,7 @@ typedef struct {
     char *upload_path;
     char *upload_dir;
     size_t max_upload_size;
+    char *log_level;         // Added LogLevel field
 } WebConfig;
 
 typedef struct {
@@ -38,6 +39,7 @@ typedef struct {
     char *key;
     char *protocol;
     size_t max_message_size; // bytes
+    char *log_level;         // Added LogLevel field
 } WebSocketConfig;
 
 typedef struct {
@@ -48,6 +50,7 @@ typedef struct {
     char *version;
     mdns_service_t *services;
     size_t num_services;
+    char *log_level;         // Added LogLevel field
 } mDNSConfig;
 
 typedef struct {

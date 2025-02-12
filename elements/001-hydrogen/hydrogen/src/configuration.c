@@ -83,13 +83,15 @@ void create_default_config(const char* config_path) {
     json_object_set_new(web, "UploadPath", json_string("/api/upload"));
     json_object_set_new(web, "UploadDir", json_string("/tmp/hydrogen_uploads"));
     json_object_set_new(web, "MaxUploadSize", json_integer(2147483648));
-    json_object_set_new(root, "Web", web);
+    json_object_set_new(web, "LogLevel", json_string("ALL"));
+    json_object_set_new(root, "WebServer", web);
 
     // WebSocket Configuration
     json_t* websocket = json_object();
     json_object_set_new(websocket, "Port", json_integer(5001));
     json_object_set_new(websocket, "Key", json_string("default_key_change_me"));
     json_object_set_new(websocket, "Protocol", json_string("hydrogen-protocol"));
+    json_object_set_new(websocket, "LogLevel", json_string("ALL"));
     json_object_set_new(root, "WebSocket", websocket);
 
     // mDNS Configuration
@@ -99,6 +101,7 @@ void create_default_config(const char* config_path) {
     json_object_set_new(mdns, "Model", json_string("Hydrogen"));
     json_object_set_new(mdns, "Manufacturer", json_string("Philement"));
     json_object_set_new(mdns, "Version", json_string("0.1.0"));
+    json_object_set_new(mdns, "LogLevel", json_string("ALL"));
 
     json_t* services = json_array();
 
@@ -164,7 +167,7 @@ AppConfig* load_config(const char* config_path) {
     }
 
     // Web Configuration
-    json_t* web = json_object_get(root, "Web");
+    json_t* web = json_object_get(root, "WebServer");
     if (json_is_object(web)) {
         json_t* port = json_object_get(web, "Port");
         config->web.port = json_is_integer(port) ? json_integer_value(port) : DEFAULT_WEB_PORT;
@@ -184,6 +187,10 @@ AppConfig* load_config(const char* config_path) {
         json_t* max_upload_size = json_object_get(web, "MaxUploadSize");
         config->web.max_upload_size = json_is_integer(max_upload_size) ? 
             (size_t)json_integer_value(max_upload_size) : DEFAULT_MAX_UPLOAD_SIZE;
+
+        json_t* log_level = json_object_get(web, "LogLevel");
+        const char* log_level_str = json_is_string(log_level) ? json_string_value(log_level) : "ALL";
+        config->web.log_level = strdup(log_level_str);
     } else {
         // Use defaults if web section is missing
         config->web.port = DEFAULT_WEB_PORT;
@@ -191,6 +198,7 @@ AppConfig* load_config(const char* config_path) {
         config->web.upload_path = strdup(DEFAULT_UPLOAD_PATH);
         config->web.upload_dir = strdup(DEFAULT_UPLOAD_DIR);
         config->web.max_upload_size = DEFAULT_MAX_UPLOAD_SIZE;
+        config->web.log_level = strdup("ALL");
     }
 
     // WebSocket Configuration
@@ -210,6 +218,10 @@ AppConfig* load_config(const char* config_path) {
         json_t* max_message_mb = json_object_get(websocket, "MaxMessageMB");
         config->websocket.max_message_size = json_is_integer(max_message_mb) ? 
             json_integer_value(max_message_mb) * 1024 * 1024 : 10 * 1024 * 1024;  // Default to 10 MB
+
+        json_t* log_level = json_object_get(websocket, "LogLevel");
+        const char* log_level_str = json_is_string(log_level) ? json_string_value(log_level) : "ALL";
+        config->websocket.log_level = strdup(log_level_str);
     } else {
         // Use defaults if websocket section is missing
         config->websocket.port = DEFAULT_WEBSOCKET_PORT;
@@ -224,6 +236,10 @@ AppConfig* load_config(const char* config_path) {
         json_t* device_id = json_object_get(mdns, "DeviceId");
         const char* device_id_str = json_is_string(device_id) ? json_string_value(device_id) : "hydrogen-printer";
         config->mdns.device_id = strdup(device_id_str);
+
+        json_t* log_level = json_object_get(mdns, "LogLevel");
+        const char* log_level_str = json_is_string(log_level) ? json_string_value(log_level) : "ALL";
+        config->mdns.log_level = strdup(log_level_str);
 
         json_t* friendly_name = json_object_get(mdns, "FriendlyName");
         const char* friendly_name_str = json_is_string(friendly_name) ? json_string_value(friendly_name) : "Hydrogen 3D Printer";

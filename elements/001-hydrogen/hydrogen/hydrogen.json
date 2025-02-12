@@ -1,14 +1,21 @@
 {
     "ServerName": "Philement/hydrogen",
-    "WebPort": 5000,
-    "WebsocketPort": 5001,
-    "WebRoot":"/var/www/lithium",
-    "UploadPath": "/api/upload",
-    "UploadDir": "/tmp/hydrogen_uploads",
-    "MaxUploadSize": 2147483648,
     "LogFile": "/var/log/hydrogen.log",
+    "WebServer": {
+        "Port": 5000,
+        "WebRoot": "/var/www/lithium",
+        "UploadPath": "/api/upload",
+        "UploadDir": "/tmp/hydrogen_uploads",
+        "MaxUploadSize": 2147483648,
+        "LogLevel": "WARN"
+    },
+    "WebSocket": {
+        "Port": 5001,
+        "LogLevel": "WARN"
+    },
     "mDNS": {
         "DeviceId": "hydrogen-printer",
+        "LogLevel": "ALL",
         "FriendlyName": "Hydrogen 3D Printer",
         "Model": "Hydrogen",
         "Manufacturer": "Philement",
