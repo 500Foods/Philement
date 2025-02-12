@@ -1,7 +1,28 @@
+/*
+ * Implementation of the G-code analysis system for Hydrogen.
+ * 
+ * Provides sophisticated G-code parsing and analysis including:
+ * - Acceleration-aware motion planning
+ * - Per-object and per-layer timing analysis
+ * - Support for relative/absolute positioning
+ * - Material consumption calculations
+ */
+
+// Feature test macros must come first
+#define _GNU_SOURCE
+#define _POSIX_C_SOURCE 200809L
+
+// Core system headers
+#include <sys/types.h>
+#include <time.h>
+
+// Standard C headers
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
+#include <stdio.h>
 #include <math.h>
+
+// Project headers
 #include "beryllium.h"
 
 char* get_iso8601_timestamp(void) {

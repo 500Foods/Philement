@@ -1,3 +1,11 @@
+/*
+ * mDNS (multicast DNS) service discovery interface for the Hydrogen printer.
+ * 
+ * Enables automatic printer discovery on local networks through DNS-SD/mDNS.
+ * Supports both IPv4 and IPv6, multiple service types (HTTP, WebSocket, OctoPrint),
+ * and TXT record attributes for service metadata.
+ */
+
 #ifndef MDNS_H
 #define MDNS_H
 

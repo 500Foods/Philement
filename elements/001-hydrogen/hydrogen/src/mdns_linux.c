@@ -1,21 +1,35 @@
-// System Libraries
-#include <arpa/inet.h>
-#include <errno.h>
-#include <net/if.h>
-#include <netdb.h>
+/*
+ * Linux implementation of mDNS service discovery for the Hydrogen printer.
+ * 
+ * Implements DNS-SD/mDNS protocol for service announcement and discovery:
+ * - Handles IPv4/IPv6 multicast socket setup and management
+ * - Provides DNS packet construction and parsing
+ * - Manages service announcements and responses
+ * - Supports graceful shutdown with goodbye packets
+ */
+
+// Feature test macros must come first
+#define _GNU_SOURCE
+#define _POSIX_C_SOURCE 200809L
+
+// Core system headers
+#include <sys/types.h>
+#include <time.h>
+#include <sys/time.h>
+
+// Network headers
+#include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
 #include <unistd.h>
 #include <pthread.h>
-#include <arpa/inet.h>
-#include <netinet/ip.h>
-#include <netinet/udp.h>
 #include <signal.h>
 #include <time.h>
 #include <sys/time.h>
+#include <errno.h>
 
 // Project Libraries
 #include "keys.h"

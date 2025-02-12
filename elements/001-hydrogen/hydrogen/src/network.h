@@ -1,3 +1,11 @@
+/*
+ * Network interface management for the Hydrogen server.
+ * 
+ * Provides functionality for discovering network interfaces, managing IP addresses,
+ * and finding available network ports. Supports both IPv4 and IPv6 addressing,
+ * with the ability to track multiple interfaces and their associated addresses.
+ */
+
 #ifndef NETWORK_H
 #define NETWORK_H
 

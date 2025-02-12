@@ -1,15 +1,31 @@
-// System Libraries
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+/*
+ * Implementation of the Hydrogen server configuration system.
+ * 
+ * Handles loading and parsing of JSON configuration files, providing default values
+ * when needed. Includes utilities for file operations and priority level management.
+ * The configuration system supports web server, WebSocket, and mDNS settings with
+ * flexible service discovery options.
+ */
+
+// Feature test macros must come first
+#define _GNU_SOURCE
+#define _POSIX_C_SOURCE 200809L
+
+// Core system headers
+#include <sys/types.h>
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
 #include <limits.h>
 #include <linux/limits.h>
+
+// Standard C headers
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <stdbool.h>
 
-// Project Libraries
+// Project headers
 #include "configuration.h"
 #include "logging.h"
 

@@ -1,3 +1,12 @@
+/*
+ * Thread-safe priority queue system for message passing.
+ * 
+ * Provides a hash-based lookup system for managing multiple named queues.
+ * Each queue supports priority levels, timestamps, and memory tracking.
+ * Used throughout the application for inter-thread communication and
+ * message buffering.
+ */
+
 #ifndef QUEUE_H
 #define QUEUE_H
 

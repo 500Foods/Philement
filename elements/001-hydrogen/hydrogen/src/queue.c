@@ -1,9 +1,29 @@
-#include "queue.h"
-#include "logging.h"
+/*
+ * Implementation of the thread-safe priority queue system.
+ * 
+ * Provides a robust implementation of named queues with hash-based lookup.
+ * Features include thread-safe operations, priority-based messaging,
+ * timestamp tracking, and memory usage monitoring. Uses mutex locks and
+ * condition variables to ensure safe concurrent access.
+ */
+
+// Feature test macros must come first
+#define _GNU_SOURCE
+#define _POSIX_C_SOURCE 200809L
+
+// Core system headers
+#include <sys/types.h>
+#include <pthread.h>
+#include <time.h>
+
+// Standard C headers
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
-#include <time.h>
+
+// Project headers
+#include "queue.h"
+#include "logging.h"
 
 QueueSystem queue_system;
 

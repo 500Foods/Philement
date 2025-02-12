@@ -1,14 +1,33 @@
-// Standard Libraries
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <jansson.h>
+/*
+ * Implementation of the print queue manager for the Hydrogen 3D printer.
+ * 
+ * Processes 3D print jobs from a priority queue, handling job metadata in
+ * JSON format including file information and print parameters. Features
+ * include job status logging, graceful shutdown with job preservation,
+ * and cleanup of incomplete jobs.
+ */
+
+// Feature test macros must come first
+#define _GNU_SOURCE
+#define _POSIX_C_SOURCE 200809L
+
+// Core system headers
+#include <sys/types.h>
+#include <pthread.h>
 #include <signal.h>
 #include <unistd.h>
 #include <time.h>
 
-// Project Libraries
+// Standard C headers
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+
+// Third-party libraries
+#include <jansson.h>
+
+// Project headers
 #include "print_queue_manager.h"
 #include "queue.h"
 #include "configuration.h"
