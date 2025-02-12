@@ -1,12 +1,27 @@
-// Standard Libraries
+/*
+ * Implementation of utility functions for the Hydrogen printer.
+ * 
+ * Provides implementations for:
+ * - Random ID generation using consonants for human-readable identifiers
+ * - Thread-safe initialization of random number generator
+ */
+
+// Feature test macros must come first
+#define _GNU_SOURCE
+#define _POSIX_C_SOURCE 200809L
+
+// Core system headers
+#include <sys/types.h>
+#include <time.h>
+
+// Standard C headers
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include <stdarg.h>
 #include <ctype.h>
 
-// Project Libraries
+// Project headers
 #include "utils.h"
 #include "logging.h"
 

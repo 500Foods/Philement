@@ -1,9 +1,19 @@
-// beryllium.h
+/*
+ * G-code analysis system for the Hydrogen 3D printer.
+ * 
+ * Provides detailed analysis of G-code files including:
+ * - Print time estimation with acceleration modeling
+ * - Layer-by-layer timing breakdown
+ * - Multi-object print tracking
+ * - Material usage calculation (length, volume, weight)
+ */
+
 #ifndef BERYLLIUM_H
 #define BERYLLIUM_H
 
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846

@@ -1,14 +1,31 @@
-// System Libraries
-#include <stdio.h>
-#include <time.h>
-#include <sys/time.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <signal.h>
-#include <pthread.h>
+/*
+ * Implementation of the Hydrogen server's logging system.
+ * 
+ * Provides thread-safe logging with JSON-formatted messages that can be directed
+ * to multiple outputs. Uses a queue system for asynchronous processing, with
+ * mutex protection to ensure thread safety. Supports priority levels and
+ * different output targets (console, database, file).
+ */
 
-// Project Libraries
+// Feature test macros must come first
+#define _GNU_SOURCE
+#define _POSIX_C_SOURCE 200809L
+
+// Core system headers
+#include <sys/types.h>
+#include <sys/time.h>
+#include <time.h>
+#include <pthread.h>
+#include <signal.h>
+#include <unistd.h>
+
+// Standard C headers
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdarg.h>
+
+// Project headers
 #include "logging.h"
 #include "configuration.h"
 #include "queue.h"

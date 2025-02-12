@@ -1,16 +1,30 @@
+/*
+ * Main application entry point for the Hydrogen 3D printer server.
+ * 
+ * This file orchestrates multiple components including a web server, WebSocket server,
+ * mDNS service discovery, logging system, and print queue management. It handles
+ * graceful startup/shutdown of all services and provides a robust multi-threaded
+ * architecture for 3D printer control and monitoring.
+ */
+
+// Feature test macros must come first
+#define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
 
-// System Libraries
-//
-#include <pthread.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+// Core system headers
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <signal.h>
-#include <unistd.h>
+#include <pthread.h>
 #include <time.h>
+#include <unistd.h>
 
-// Project Libraries
+// Standard C headers
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// Project headers
 #include "configuration.h"
 #include "logging.h"
 #include "queue.h"
@@ -20,7 +34,6 @@
 #include "web_server.h"
 #include "websocket_server.h"
 #include "mdns_server.h"
-#include "websocket_server.h"
 
 // Handle application state in threadsafe manner
 volatile sig_atomic_t keep_running = 1;
@@ -179,10 +192,7 @@ int main(int argc, char *argv[]) {
     srand((unsigned int)time(NULL));
     
     // Set up interrupt handler
-    struct sigaction act;
-    memset(&act, 0, sizeof(act));
-    act.sa_handler = inthandler;
-    sigaction(SIGINT, &act, NULL);
+    signal(SIGINT, inthandler);
 
     // Initialize the queue system
     queue_system_init();

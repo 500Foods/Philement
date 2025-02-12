@@ -1,11 +1,40 @@
-#include <libwebsockets.h>
+/*
+ * Implementation of the Hydrogen 3D printer's WebSocket server.
+ * 
+ * Uses libwebsockets to provide secure, authenticated real-time communication.
+ * Features include:
+ * - Key-based client authentication
+ * - Automatic port fallback if primary port is unavailable
+ * - Message fragmentation handling for large payloads
+ * - Configurable logging levels
+ * - Connection statistics tracking
+ */
+
+// Feature test macros must come first
+#define _GNU_SOURCE
+#define _POSIX_C_SOURCE 200809L
+
+// Core system headers
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <time.h>
+
+// Network headers
+#include <netinet/in.h>
+
+// Standard C headers
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <pthread.h>
 #include <signal.h>
+
+// Third-party libraries
+#include <libwebsockets.h>
 #include <jansson.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
+
+// Project headers
 #include "websocket_server.h"
 #include "logging.h"
 #include "configuration.h"

@@ -1,3 +1,11 @@
+/*
+ * Log queue manager interface for the Hydrogen server.
+ * 
+ * Manages asynchronous processing of log messages from a queue, supporting
+ * multiple output destinations (console, file, database). Provides thread-safe
+ * initialization and cleanup of logging facilities.
+ */
+
 #ifndef LOG_QUEUE_MANAGER_H
 #define LOG_QUEUE_MANAGER_H
 

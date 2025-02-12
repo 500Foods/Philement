@@ -1,18 +1,38 @@
-#include "network.h"
-#include "utils.h"
-#include "logging.h"
+/*
+ * Linux-specific implementation of network interface management.
+ * 
+ * Uses Linux system calls and data structures to discover network interfaces
+ * and their properties. Handles IPv4/IPv6 address enumeration, interface
+ * identification, and port availability checking through the Linux socket API.
+ */
+
+// Feature test macros must come first
+#define _GNU_SOURCE
+#define _POSIX_C_SOURCE 200809L
+
+// Core system headers
+#include <sys/types.h>
+#include <sys/socket.h>
+
+// Network headers
+#include <netinet/in.h>
 #include <arpa/inet.h>
-#include <errno.h>
-#include <ifaddrs.h>
 #include <net/if.h>
 #include <linux/if_packet.h>
 #include <netdb.h>
+#include <ifaddrs.h>
+
+// Standard C headers
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
+#include <errno.h>
+
+// Project headers
+#include "network.h"
+#include "utils.h"
+#include "logging.h"
 
 static int count_interfaces() __attribute__((unused));
 static int count_interfaces() {
@@ -61,8 +81,8 @@ network_info_t *get_network_info() {
             }
 
             if (new_interface && info->count < MAX_INTERFACES) {
-                strncpy(info->interfaces[info->count].name, ifa->ifa_name, IFNAMSIZ);
-                info->interfaces[info->count].name[IFNAMSIZ - 1] = '\0';
+                strncpy(info->interfaces[info->count].name, ifa->ifa_name, IF_NAMESIZE);
+                info->interfaces[info->count].name[IF_NAMESIZE - 1] = '\0';
                 info->interfaces[info->count].ip_count = 0;
                 info->count++;
             }

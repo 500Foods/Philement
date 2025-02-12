@@ -1,17 +1,34 @@
-// System Libraries
+/*
+ * Implementation of the log queue manager for the Hydrogen server.
+ * 
+ * Processes log messages from a queue and distributes them to configured outputs.
+ * Features include JSON-formatted messages, timestamping, priority levels,
+ * and support for multiple output destinations (console, file, database).
+ * Provides graceful shutdown handling and thread cleanup.
+ */
+
+// Feature test macros must come first
+#define _GNU_SOURCE
+#define _POSIX_C_SOURCE 200809L
+
+// Core system headers
+#include <sys/types.h>
+#include <sys/time.h>
+#include <pthread.h>
+#include <signal.h>
+#include <unistd.h>
+#include <time.h>
+
+// Standard C headers
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include <signal.h>
-#include <unistd.h>
-#include <time.h>
-#include <sys/time.h>
 
-// Third-Party Libraries
+// Third-party libraries
 #include <jansson.h>
 
-// Project Libraries
+// Project headers
 #include "log_queue_manager.h"
 #include "logging.h"
 #include "queue.h"

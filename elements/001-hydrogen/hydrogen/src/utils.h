@@ -1,3 +1,11 @@
+/*
+ * Utility functions and constants for the Hydrogen printer.
+ * 
+ * Provides common functionality used across the application:
+ * - Random ID generation using consonants for readability
+ * - Shared constants and macros
+ */
+
 #ifndef UTILS_H
 #define UTILS_H
 

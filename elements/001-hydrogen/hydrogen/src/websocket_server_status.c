@@ -1,12 +1,30 @@
-// System Libraries
+/*
+ * WebSocket server status handler for the Hydrogen printer.
+ * 
+ * Provides real-time server statistics and status information via WebSocket,
+ * including uptime, connection counts, and request metrics. Formats the data
+ * as JSON for easy consumption by client applications.
+ */
+
+// Feature test macros must come first
+#define _GNU_SOURCE
+#define _POSIX_C_SOURCE 200809L
+
+// Core system headers
+#include <sys/types.h>
 #include <sys/sysinfo.h>
 #include <time.h>
 
-// Third-Party Libraries
+// Standard C headers
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// Third-party libraries
 #include <jansson.h>
 #include <libwebsockets.h>
 
-// Project Libraries
+// Project headers
 #include "websocket_server.h"
 #include "logging.h"
 #include "configuration.h"

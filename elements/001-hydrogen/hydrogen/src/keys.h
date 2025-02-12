@@ -1,3 +1,10 @@
+/*
+ * Cryptographic key generation interface for the Hydrogen server.
+ * 
+ * Provides secure random key generation using OpenSSL's RAND_bytes
+ * for authentication and encryption purposes throughout the application.
+ */
+
 #ifndef KEYS_H
 #define KEYS_H
 

@@ -1,25 +1,45 @@
-// System Libraries
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
-#include <signal.h>
+/*
+ * Implementation of the Hydrogen 3D printer's web server.
+ * 
+ * Uses libmicrohttpd to provide a multi-threaded HTTP server that handles:
+ * - File uploads with progress tracking and validation
+ * - G-code file analysis and preview image extraction
+ * - Print queue management with JSON-based job descriptions
+ * - Static file serving for the web interface
+ * - RESTful API endpoints compatible with OctoPrint clients
+ */
+
+// Feature test macros must come first
+#define _GNU_SOURCE
+#define _POSIX_C_SOURCE 200809L
+
+// Core system headers
+#include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <errno.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
-#include <time.h>
 #include <sys/time.h>
+#include <time.h>
+#include <fcntl.h>
 #include <limits.h>
 #include <linux/limits.h>
 
-// Third-Party Libraries
+// Network headers
+#include <netinet/in.h>
+
+// Standard C headers
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <errno.h>
+#include <pthread.h>
+#include <signal.h>
+
+// Third-party libraries
 #include <jansson.h>
 #include <microhttpd.h>
 
-// Project Libraries
+// Project headers
 #include "web_server.h"
 #include "configuration.h"
 #include "logging.h"

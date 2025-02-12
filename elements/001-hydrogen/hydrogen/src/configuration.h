@@ -1,3 +1,12 @@
+/*
+ * Configuration system for the Hydrogen 3D printer server.
+ * 
+ * Defines structures and functions for managing server configuration including
+ * web server settings, WebSocket parameters, and mDNS service discovery options.
+ * Configuration is loaded from a JSON file and provides defaults when settings
+ * are not specified.
+ */
+
 #ifndef CONFIGURATION_H
 #define CONFIGURATION_H
 
