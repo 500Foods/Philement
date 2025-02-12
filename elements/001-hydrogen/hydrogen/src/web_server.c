@@ -385,6 +385,7 @@ bool init_web_server(WebConfig *web_config) {
     log_this("WebServer", "-> WebRoot: %s", 0, true, true, true, server_web_config->web_root);
     log_this("WebServer", "-> Upload Path: %s", 0, true, true, true, server_web_config->upload_path);
     log_this("WebServer", "-> Upload Dir: %s", 0, true, true, true, server_web_config->upload_dir);
+    log_this("WebServer", "-> LogLevel: %s", 0, true, true, true, server_web_config->log_level);
 
     // Create upload directory if it doesn't exist
     struct stat st = {0};

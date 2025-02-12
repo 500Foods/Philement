@@ -381,8 +381,21 @@ int init_websocket_server(int port, const char* protocol, const char* key)
     info.uid = -1;
     info.options = LWS_SERVER_OPTION_EXPLICIT_VHOSTS;
 
-    // Set up custom logging
-    lws_set_log_level(LLL_ERR | LLL_WARN | LLL_NOTICE | LLL_INFO, custom_lws_log);
+    // Set up custom logging based on configuration
+    int log_level = LLL_ERR;  // Always include errors
+    const char *config_level = app_config->websocket.log_level;
+    
+    if (strcmp(config_level, "ALL") == 0) {
+        log_level |= LLL_ERR | LLL_WARN | LLL_NOTICE | LLL_INFO;
+    } else if (strcmp(config_level, "WARN") == 0) {
+        log_level |= LLL_ERR | LLL_WARN;
+    } else if (strcmp(config_level, "DEBUG") == 0) {
+        log_level |= LLL_ERR | LLL_WARN | LLL_INFO;
+    } else if (strcmp(config_level, "ERROR") == 0 || strcmp(config_level, "CRITICAL") == 0) {
+        log_level = LLL_ERR;  // Only errors
+    }
+    
+    lws_set_log_level(log_level, custom_lws_log);
 
     websocket_server_shutdown = 0;  // Reset the shutdown flag
     websocket_port = port;
