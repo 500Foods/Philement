@@ -9,16 +9,19 @@
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
 
+// Standard C headers
 #include <signal.h>
 #include <pthread.h>
 #include <errno.h>
 #include <time.h>
 
+// Project headers
 #include "state.h"
 #include "startup.h"
 #include "shutdown.h"
 
 int main(int argc, char *argv[]) {
+
     // Set up interrupt handler
     signal(SIGINT, inthandler);
     
@@ -28,11 +31,15 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // Main event loop with timeout
+    // Main event loop - Implements a timed wait pattern that:
+    // 1. Allows immediate response to shutdown signals
+    // 2. Provides regular timeouts for system maintenance
+    // 3. Efficiently uses system resources through conditional waiting
     struct timespec ts;
     while (keep_running) {
+        
         clock_gettime(CLOCK_REALTIME, &ts);
-        ts.tv_sec += 1; // 1 second timeout
+        ts.tv_sec += 1; // Wake up periodically to check system state
         
         pthread_mutex_lock(&terminate_mutex);
         int wait_result = pthread_cond_timedwait(&terminate_cond, &terminate_mutex, &ts);
@@ -43,10 +50,6 @@ int main(int argc, char *argv[]) {
             break;  // Exit immediately when shutdown is requested
         }
         
-        // On timeout, just continue waiting
-        if (wait_result == ETIMEDOUT) {
-            continue;
-        }
     }
 
     // Clean shutdown
