@@ -29,6 +29,12 @@ Each queue has its own queue manager that determines what happens when something
 - `src/print_queue_manager.h` Header file for print queue management.
 - `src/queue.c` Implements a generic queue data structure.
 - `src/queue.h` Defines queue-related structures and functions.
+- `src/shutdown.c` Implements graceful shutdown procedures.
+- `src/shutdown.h` Header file for shutdown management.
+- `src/startup.c` Implements system initialization procedures.
+- `src/startup.h` Header file for startup management.
+- `src/state.c` Implements system state management.
+- `src/state.h` Defines state management structures and functions.
 - `src/utils.c` Implements utility functions.
 - `src/utils.h` Defines utility functions and constants.
 - `src/web_server.c` Implements the web server interface.
@@ -43,7 +49,15 @@ Each queue has its own queue manager that determines what happens when something
 - microhttpd
   
 # Release Notes
-## 2025-Feb-08 
+## 2025-Feb-13
+Added comprehensive state management and initialization procedures:
+- Implemented structured startup and shutdown sequences
+- Added system state management for better control flow
+- Enhanced print queue management system
+- Improved WebSocket server stability
+- Refined mDNS service integration
+
+## 2025-Feb-08
 Brought into Visual Studio Code.
 - Just reviewing where things are at, getting more of a footing when coding inside of VSC/GitHub directly
 ## 2024-Jul-18
