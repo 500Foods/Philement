@@ -18,6 +18,7 @@
 #include <unistd.h>
 #include <limits.h>
 #include <linux/limits.h>
+#include <errno.h>
 
 // Standard C headers
 #include <stdio.h>
@@ -43,11 +44,17 @@ const PriorityLevel DEFAULT_PRIORITY_LEVELS[NUM_PRIORITY_LEVELS] = {
 char* get_executable_path() {
     char path[PATH_MAX];
     ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
-    if (len != -1) {
-        path[len] = '\0';
-        return strdup(path);  // Return a dynamically allocated copy
+    if (len == -1) {
+        fprintf(stderr, "Error reading /proc/self/exe: %s\n", strerror(errno));
+        return NULL;
     }
-    return NULL;
+    path[len] = '\0';
+    char* result = strdup(path);
+    if (!result) {
+        fprintf(stderr, "Error allocating memory for executable path\n");
+        return NULL;
+    }
+    return result;
 }
 
 long get_file_size(const char* filename) {
@@ -159,15 +166,22 @@ AppConfig* load_config(const char* config_path) {
     json_t* root = json_load_file(config_path, 0, &error);
 
     if (!root) {
-        log_this("Configuration", "Failed to load config file: %s", 3, true, true, true, error.text);
+        fprintf(stderr, "Failed to load config file: %s\n", error.text);
         return NULL;
     }
 
     AppConfig* config = calloc(1, sizeof(AppConfig));
     if (!config) {
-        log_this("Configuration", "Failed to allocate memory for config", 3, true, true, true);
+        fprintf(stderr, "Failed to allocate memory for config\n");
         json_decref(root);
         return NULL;
+    }
+
+    // Set executable path
+    config->executable_path = get_executable_path();
+    if (!config->executable_path) {
+        fprintf(stderr, "Warning: Failed to get executable path, using default\n");
+        config->executable_path = strdup("./hydrogen");
     }
 
     // Server Name

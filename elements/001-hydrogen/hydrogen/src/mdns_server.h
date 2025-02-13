@@ -80,7 +80,7 @@ mdns_t *mdns_init(const char *app_name,
 		  mdns_service_t *services,
 		  size_t num_services);
 void mdns_build_announcement(uint8_t *packet, size_t *packet_len, const char *hostname, const mdns_t *mdns, uint32_t ttl, const network_info_t *net_info);
-void mdns_send_announcement(mdns_t *mdns, int port, const network_info_t *net_info);
+void mdns_send_announcement(mdns_t *mdns, const network_info_t *net_info);
 void mdns_shutdown(mdns_t *mdns);
 void *mdns_announce_loop(void *arg);
 void *mdns_responder_loop(void *arg);

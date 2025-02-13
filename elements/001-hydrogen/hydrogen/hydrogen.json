@@ -3,7 +3,7 @@
     "LogFile": "/var/log/hydrogen.log",
     "WebServer": {
         "Port": 5000,
-        "WebRoot": "/var/www/lithium",
+        "WebRoot": "/var/www/html",
         "UploadPath": "/api/upload",
         "UploadDir": "/tmp/hydrogen_uploads",
         "MaxUploadSize": 2147483648,
@@ -11,7 +11,7 @@
     },
     "WebSocket": {
         "Port": 5001,
-        "LogLevel": "WARN"
+        "LogLevel": "NONE"
     },
     "mDNS": {
         "DeviceId": "hydrogen-printer",

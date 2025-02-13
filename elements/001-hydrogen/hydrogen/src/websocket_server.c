@@ -71,6 +71,17 @@ typedef struct _ws_session_data {
 
 static void custom_lws_log(int level, const char *line)
 {
+    // During shutdown, use printf instead of log_this
+    if (websocket_server_shutdown) {
+        printf("WebSocket [%s]: %s\n", 
+               (level == LLL_ERR) ? "ERROR" :
+               (level == LLL_WARN) ? "WARN" :
+               (level == LLL_NOTICE) ? "NOTICE" :
+               (level == LLL_INFO) ? "INFO" : "DEBUG",
+               line);
+        return;
+    }
+
     int priority;
     switch (level) {
         case LLL_ERR:
@@ -101,8 +112,35 @@ static void custom_lws_log(int level, const char *line)
 static int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
                              void *user, void *in, size_t len)
 {
-    ws_session_data *session_data = (ws_session_data *)user;
+    // During shutdown, only allow essential callbacks
+    if (websocket_server_shutdown) {
+        switch (reason) {
+            case LWS_CALLBACK_WSI_DESTROY:
+                log_this("WebSocket", "WSI destroy during shutdown", 0, true, true, true);
+                pthread_mutex_lock(&websocket_mutex);
+                ws_connections--;
+                pthread_mutex_unlock(&websocket_mutex);
+                return 0;
+            case LWS_CALLBACK_PROTOCOL_DESTROY:
+                log_this("WebSocket", "Protocol destroy during shutdown", 0, true, true, true);
+                return 0;
+            case LWS_CALLBACK_CLOSED:
+                log_this("WebSocket", "Connection closed during shutdown", 0, true, true, true);
+                pthread_mutex_lock(&websocket_mutex);
+                ws_connections--;
+                pthread_mutex_unlock(&websocket_mutex);
+                return 0;
+            case LWS_CALLBACK_GET_THREAD_ID:
+            case LWS_CALLBACK_EVENT_WAIT_CANCELLED:
+                // Allow these essential callbacks silently
+                break;
+            default:
+                // Reject all other callbacks during shutdown
+                return -1;
+        }
+    }
 
+    ws_session_data *session_data = (ws_session_data *)user;
     switch (reason) {
         case LWS_CALLBACK_ESTABLISHED: // 0
             log_this("WebSocket", "0/LWS_CALLBACK_ESTABLISHED", 0, true, true, true);
@@ -298,18 +336,32 @@ static int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
             break;
 
         case LWS_CALLBACK_PROTOCOL_DESTROY: // 28
-            log_this("WebSocket", "28/LWS_CALLBACK_PROTOCOL_DESTROY", 0, true, true, true);
+            if (websocket_server_shutdown) {
+                log_this("WebSocket", "Protocol destroy during shutdown", 0, true, true, true);
+            } else {
+                log_this("WebSocket", "28/LWS_CALLBACK_PROTOCOL_DESTROY", 0, true, true, true);
+            }
             break;
 
         case LWS_CALLBACK_WSI_CREATE: // 29
+            if (websocket_server_shutdown) {
+                log_this("WebSocket", "WSI create during shutdown", 0, true, true, true);
+                return -1;  // Reject new connections during shutdown
+            }
             log_this("WebSocket", "29/LWS_CALLBACK_WSI_CREATE", 0, true, true, true);
             ws_connections++;
             ws_connections_total++;
             break;
 
         case LWS_CALLBACK_WSI_DESTROY: // 30
-            log_this("WebSocket", "30/LWS_CALLBACK_WSI_DESTROY", 0, true, true, true);
+            if (websocket_server_shutdown) {
+                log_this("WebSocket", "WSI destroy during shutdown", 0, true, true, true);
+            } else {
+                log_this("WebSocket", "30/LWS_CALLBACK_WSI_DESTROY", 0, true, true, true);
+            }
+            pthread_mutex_lock(&websocket_mutex);
             ws_connections--;
+            pthread_mutex_unlock(&websocket_mutex);
             break;
 
         case LWS_CALLBACK_GET_THREAD_ID: // 31
@@ -321,19 +373,35 @@ static int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
             break;
 
         case LWS_CALLBACK_DEL_POLL_FD: // 33
-            log_this("WebSocket", "33/LWS_CALLBACK_DEL_POLL_FD", 0, true, true, true);
+            if (websocket_server_shutdown) {
+                log_this("WebSocket", "Del poll fd during shutdown", 0, true, true, true);
+            } else {
+                log_this("WebSocket", "33/LWS_CALLBACK_DEL_POLL_FD", 0, true, true, true);
+            }
             break;
 
         case LWS_CALLBACK_CHANGE_MODE_POLL_FD: // 34
-            log_this("WebSocket", "34/LWS_CALLBACK_CHANGE_MODE_POLL_FD", 0, true, true, true);
+            if (websocket_server_shutdown) {
+                log_this("WebSocket", "Change mode poll fd during shutdown", 0, true, true, true);
+            } else {
+                log_this("WebSocket", "34/LWS_CALLBACK_CHANGE_MODE_POLL_FD", 0, true, true, true);
+            }
             break;
 
         case LWS_CALLBACK_LOCK_POLL: // 35
-            log_this("WebSocket", "35/LWS_CALLBACK_LOCK_POLL", 0, true, true, true);
+            if (websocket_server_shutdown) {
+                log_this("WebSocket", "Lock poll during shutdown", 0, true, true, true);
+            } else {
+                log_this("WebSocket", "35/LWS_CALLBACK_LOCK_POLL", 0, true, true, true);
+            }
             break;
 
         case LWS_CALLBACK_UNLOCK_POLL: // 36
-            log_this("WebSocket", "36/LWS_CALLBACK_UNLOCK_POLL", 0, true, true, true);
+            if (websocket_server_shutdown) {
+                log_this("WebSocket", "Unlock poll during shutdown", 0, true, true, true);
+            } else {
+                log_this("WebSocket", "36/LWS_CALLBACK_UNLOCK_POLL", 0, true, true, true);
+            }
             break;
 
         case LWS_CALLBACK_WS_PEER_INITIATED_CLOSE: // 38
@@ -410,21 +478,21 @@ int init_websocket_server(int port, const char* protocol, const char* key)
     info.uid = -1;
     info.options = LWS_SERVER_OPTION_EXPLICIT_VHOSTS;
 
-    // Set up custom logging based on configuration
-    int log_level = LLL_ERR;  // Always include errors
+    // Set up logging based on configuration
     const char *config_level = app_config->websocket.log_level;
     
-    if (strcmp(config_level, "ALL") == 0) {
-        log_level |= LLL_ERR | LLL_WARN | LLL_NOTICE | LLL_INFO;
+    // Disable all libwebsockets logging by default
+    lws_set_log_level(0, NULL);
+
+    // Only enable logging if explicitly configured
+    if (strcmp(config_level, "ERROR") == 0) {
+        lws_set_log_level(LLL_ERR, custom_lws_log);
     } else if (strcmp(config_level, "WARN") == 0) {
-        log_level |= LLL_ERR | LLL_WARN;
-    } else if (strcmp(config_level, "DEBUG") == 0) {
-        log_level |= LLL_ERR | LLL_WARN | LLL_INFO;
-    } else if (strcmp(config_level, "ERROR") == 0 || strcmp(config_level, "CRITICAL") == 0) {
-        log_level = LLL_ERR;  // Only errors
+        lws_set_log_level(LLL_ERR | LLL_WARN, custom_lws_log);
+    } else if (strcmp(config_level, "ALL") == 0) {
+        lws_set_log_level(LLL_ERR | LLL_WARN | LLL_NOTICE | LLL_INFO, custom_lws_log);
     }
-    
-    lws_set_log_level(log_level, custom_lws_log);
+    // NONE: logging remains disabled
 
     websocket_server_shutdown = 0;  // Reset the shutdown flag
     websocket_port = port;
@@ -470,7 +538,7 @@ int init_websocket_server(int port, const char* protocol, const char* key)
         return -1;
     }
 
-    log_this("WebSocket", "Server initialized on port %d with protocol %s", 0, true, true, true, port, websocket_protocol);
+    log_this("WebSocket", "Server initialized on port %d with protocol %s", 0, true, true, true, websocket_port, websocket_protocol);
     return 0;
 }
 
@@ -478,24 +546,69 @@ void *websocket_server_run(void *arg)
 {
     (void)arg; // Suppress unused parameter warning
 
-    log_this("WebSocket", "WebSocket server thread starting", 0, true, true, true);
+    if (websocket_server_shutdown) {
+        log_this("WebSocket", "Server starting in shutdown state", 0, true, true, true);
+        return NULL;
+    }
+
+    log_this("WebSocket", "Server thread starting", 0, true, true, true);
 
     while (!websocket_server_shutdown) {
-        int n = lws_service(context, 50);
-        
-        if (n < 0) {
-            log_this("WebSocket", "lws_service error: %d", 2, true, true, true, n);
+        // Safely get context
+        pthread_mutex_lock(&websocket_mutex);
+        struct lws_context *current_context = context;
+        pthread_mutex_unlock(&websocket_mutex);
+
+        if (!current_context) {
+            log_this("WebSocket", "Context is NULL, exiting thread", 0, true, true, true);
             break;
         }
 
-        // Check for any pending tasks or events here
-        // For example, you might want to process any queued messages
+        // Service with short timeout to allow shutdown checks
+        int n = lws_service(current_context, 50);
+        
+        // Only treat service errors as fatal if we're not shutting down
+        if (n < 0 && !websocket_server_shutdown) {
+            log_this("WebSocket", "Service error %d", 3, true, true, true, n);
+            break;
+        }
 
-        // Optionally, yield to other threads
-        // sched_yield();
+        // During shutdown, wait for connections to close
+        if (websocket_server_shutdown) {
+            pthread_mutex_lock(&websocket_mutex);
+            int current_connections = ws_connections;
+            pthread_mutex_unlock(&websocket_mutex);
+
+            if (current_connections == 0) {
+                log_this("WebSocket", "All connections closed, exiting thread", 0, true, true, true);
+                // Force context destruction before exiting thread
+                if (context) {
+                    log_this("WebSocket", "Force destroying context before thread exit", 0, true, true, true);
+                    lws_context_destroy(context);
+                    context = NULL;
+                }
+                break;
+            }
+            
+            // Give connections time to close gracefully
+            usleep(50000); // 50ms sleep
+            continue;
+        }
+
+        // Give other threads a chance
+        usleep(1000); // 1ms sleep
     }
 
-    log_this("WebSocket", "WebSocket server thread exiting", 0, true, true, true);
+    // Ensure context is destroyed
+    pthread_mutex_lock(&websocket_mutex);
+    if (context) {
+        log_this("WebSocket", "Final context cleanup in thread", 0, true, true, true);
+        lws_context_destroy(context);
+        context = NULL;
+    }
+    pthread_mutex_unlock(&websocket_mutex);
+
+    log_this("WebSocket", "Server thread exiting cleanly", 0, true, true, true);
     return NULL;
 }
 
@@ -511,38 +624,71 @@ int start_websocket_server()
 
 void stop_websocket_server()
 {
-    log_this("WebSocket", "Stopping WebSocket server", 0, true, true, true);
+    log_this("WebSocket", "Stopping WebSocket server on port %d", 0, true, true, true, websocket_port);
     
+    // Set shutdown flag first
     websocket_server_shutdown = 1;
     
-    // Wait for the thread to finish (you might want to add a timeout here)
-    pthread_join(websocket_thread, NULL);
-    
+    // Cancel service to wake up the service thread
+    pthread_mutex_lock(&websocket_mutex);
     if (context) {
-        lws_context_destroy(context);
-        context = NULL;
+        log_this("WebSocket", "Cancelling service", 0, true, true, true);
+        lws_cancel_service(context);
+    }
+    pthread_mutex_unlock(&websocket_mutex);
+    
+    // Wait for server thread to finish
+    log_this("WebSocket", "Waiting for thread to exit...", 0, true, true, true);
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    ts.tv_sec += 2; // 2 second timeout for thread join
+    
+    int join_result = pthread_timedjoin_np(websocket_thread, NULL, &ts);
+    if (join_result == ETIMEDOUT) {
+        // Use printf for timeout message since logging might be shutting down
+        log_this("WebSocket", "Thread join timed out after 2s", 0, true, true, true);
+    } else {
+        log_this("WebSocket", "Thread exited cleanly", 0, true, true, true);
     }
     
-    log_this("WebSocket", "WebSocket server stopped", 0, true, true, true);
+    // Now safe to destroy context
+    pthread_mutex_lock(&websocket_mutex);
+    if (context) {
+        log_this("WebSocket", "Destroying libwebsocket context", 0, true, true, true);
+        lws_context_destroy(context);
+        context = NULL;
+        ws_connections = 0;
+        log_this("WebSocket", "Context destroyed", 0, true, true, true);
+    }
+    pthread_mutex_unlock(&websocket_mutex);
+    
+    log_this("WebSocket", "Server stopped", 0, true, true, true);
 }
+
 void cleanup_websocket_server()
 {
-    log_this("WebSocket", "Cleaning up WebSocket server resources", 0, true, true, true);
+    // Final cleanup messages commented out to reduce noise
+    // printf("WebSocket: Cleaning up WebSocket server resources\n");
 
-    if (context) {
-        lws_context_destroy(context);
-        context = NULL;
-    }
+    // Ensure we're not in any callbacks
+    usleep(100000); // 100ms delay
 
-        if (message_buffer) {
+    // Free message buffer with mutex protection
+    pthread_mutex_lock(&websocket_mutex);
+    if (message_buffer) {
         free(message_buffer);
         message_buffer = NULL;
     }
+    pthread_mutex_unlock(&websocket_mutex);
 
+    // Wait for any pending operations
+    usleep(100000); // 100ms delay
+
+    // Clean up synchronization primitives
     pthread_mutex_destroy(&websocket_mutex);
     pthread_cond_destroy(&websocket_cond);
 
-    log_this("WebSocket", "WebSocket server resources cleaned up", 0, true, true, true);
+    // printf("WebSocket: Server resources cleaned up\n");
 }
 
 int get_websocket_port(void) {
