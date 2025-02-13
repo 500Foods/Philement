@@ -10,11 +10,11 @@ At the outset of this project, there are a number of thoughts about what kinds o
 - Single executable file to deal with, mostly self-contained except for a database.
 - Able to talk to other printers (Klipper primarily) or other hydrogen instances.
 - Intended to be run as a service (or perhaps several services) on whatever system it is running on.
-- Can pass it G-code or alternatives and it can.
+- Can pass it G-code or alternatives and it can analyze those, track progress through the print, and so on.
 - Multithreaded, at least one thread per printer, that sort of thing.
 - Various logging interfaces.
 - Aside from G-code, primarily communicates using JSON.
-- Scripting support with Lua. TBD.
+- Scripting support, likely with Lua. TBD.
 - Optimized for speed and minimal resource usage.
 - This is likely what the slicer will be talking to.
 
