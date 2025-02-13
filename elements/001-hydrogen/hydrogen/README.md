@@ -49,6 +49,12 @@ Each queue has its own queue manager that determines what happens when something
 - microhttpd
   
 # Release Notes
+
+## 2025-Feb-13
+More maintenance
+- Reviewed code and comments in hydrogen.c
+- Reviewed code and comments in Makefile
+
 ## 2025-Feb-12
 Worked on various maintenance tasks
 - Cleaning up the amount of detail in logging, particularly web sockets (lws)
