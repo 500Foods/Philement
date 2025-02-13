@@ -49,17 +49,17 @@ Each queue has its own queue manager that determines what happens when something
 - microhttpd
   
 # Release Notes
-## 2025-Feb-13
-Added comprehensive state management and initialization procedures:
-- Implemented structured startup and shutdown sequences
-- Added system state management for better control flow
-- Enhanced print queue management system
-- Improved WebSocket server stability
-- Refined mDNS service integration
+## 2025-Feb-12
+Worked on various maintenance tasks
+- Cleaning up the amount of detail in logging, particularly web sockets (lws)
+- Try to have a smoother shutdown, again, particularly around web sockets (lws)
+- Fix errors with not being able to identify file size or timestamp
+- Bit of refactoring to move startup and shutdown code into their own files
 
 ## 2025-Feb-08
 Brought into Visual Studio Code.
 - Just reviewing where things are at, getting more of a footing when coding inside of VSC/GitHub directly
+
 ## 2024-Jul-18
 Added a WebSocket server to the project. This is what the web interface (lithium) will be talking to.
 - Uses Authorization: Key abc in the header to grant access
