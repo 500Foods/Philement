@@ -273,7 +273,7 @@ void mdns_build_announcement(uint8_t *packet, size_t *packet_len, const char *ho
     *packet_len = ptr - packet;
 }
 
-void mdns_send_announcement(mdns_t *mdns, int port, const network_info_t *net_info) {
+void mdns_send_announcement(mdns_t *mdns, const network_info_t *net_info) {
     uint8_t packet[MDNS_MAX_PACKET_SIZE];
     size_t packet_len;
 
@@ -305,11 +305,16 @@ void mdns_send_announcement(mdns_t *mdns, int port, const network_info_t *net_in
         }
     }
 
-    log_this("mDNS", "Announced %s on port %d", 0, true, true, true, mdns->service_name, port);
+    // Log each service's port
+    for (size_t i = 0; i < mdns->num_services; i++) {
+        log_this("mDNS", "Announced %s on port %d", 0, true, true, true, 
+                mdns->services[i].name, mdns->services[i].port);
+    }
 }
 
 void *mdns_announce_loop(void *arg) {
     mdns_thread_arg_t *thread_arg = (mdns_thread_arg_t *)arg;
+    mdns_t *mdns = thread_arg->mdns;
 
     log_this("mDNS", "mDNS announce loop started", 0, true, true, true);
 
@@ -324,11 +329,48 @@ void *mdns_announce_loop(void *arg) {
         pthread_mutex_unlock(&terminate_mutex);
 
         if (!mdns_server_shutdown) {
-            mdns_send_announcement(thread_arg->mdns, thread_arg->port, thread_arg->net_info);
+            // Send announcement using service-specific ports
+            uint8_t packet[MDNS_MAX_PACKET_SIZE];
+            size_t packet_len;
+
+            mdns_build_announcement(packet, &packet_len, mdns->hostname, mdns, MDNS_TTL, thread_arg->net_info);
+
+            struct sockaddr_in addr_v4;
+            memset(&addr_v4, 0, sizeof(addr_v4));
+            addr_v4.sin_family = AF_INET;
+            addr_v4.sin_port = htons(MDNS_PORT);
+            inet_pton(AF_INET, MDNS_GROUP_V4, &addr_v4.sin_addr);
+
+            if (sendto(mdns->sockfd_v4, packet, packet_len, 0, (struct sockaddr *)&addr_v4, sizeof(addr_v4)) < 0) {
+                log_this("mDNS", "Failed to send IPv4 mDNS announcement: %s", 3, true, true, true, strerror(errno));
+            } else {
+                log_this("mDNS", "Sent IPv4 mDNS announcement to %s:%d", 0, true, true, true, MDNS_GROUP_V4, MDNS_PORT);
+            }
+
+            if (mdns->sockfd_v6 >= 0) {
+                struct sockaddr_in6 addr_v6;
+                memset(&addr_v6, 0, sizeof(addr_v6));
+                addr_v6.sin6_family = AF_INET6;
+                addr_v6.sin6_port = htons(MDNS_PORT);
+                inet_pton(AF_INET6, MDNS_GROUP_V6, &addr_v6.sin6_addr);
+
+                if (sendto(mdns->sockfd_v6, packet, packet_len, 0, (struct sockaddr *)&addr_v6, sizeof(addr_v6)) < 0) {
+                    log_this("mDNS", "Failed to send IPv6 mDNS announcement: %s", 2, true, true, true, strerror(errno));
+                } else {
+                    log_this("mDNS", "Sent IPv6 mDNS announcement", 0, true, true, true);
+                }
+            }
+
+            // Log each service's port
+            for (size_t i = 0; i < mdns->num_services; i++) {
+                log_this("mDNS", "Announced %s on port %d", 0, true, true, true, 
+                        mdns->services[i].name, mdns->services[i].port);
+            }
         }
     }
 
     log_this("mDNS", "Shutdown: mDNS announce loop exiting", 0, true, true, true);
+    free(thread_arg);  // Clean up the thread argument
     return NULL;
 }
 
@@ -373,7 +415,7 @@ void *mdns_responder_loop(void *arg) {
                     (qtype == MDNS_TYPE_SRV && strcmp(name, thread_arg->mdns->service_name) == 0) ||
                     (qtype == MDNS_TYPE_TXT && strcmp(name, thread_arg->mdns->service_name) == 0) ||
                     (qtype == MDNS_TYPE_A && strcmp(name, thread_arg->mdns->hostname) == 0)) {
-                    mdns_send_announcement(thread_arg->mdns, thread_arg->port, thread_arg->net_info);
+                    mdns_send_announcement(thread_arg->mdns, thread_arg->net_info);
                     break;
                 }
             }

@@ -133,7 +133,7 @@ Queue* queue_create(const char* name, QueueAttributes* attrs) {
 
     // Log the queue creation
     if (strcmp(name, "SystemLog") == 0) {
-        log_this("QueueSystem", "SystemLog queue created", 0, true, false, true);
+        log_this("QueueSystem", "SystemLog queue created", 0, true, true, true);
     } else {
         log_this("QueueSystem", "New queue created", 0, true, true, true);
     }

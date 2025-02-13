@@ -37,7 +37,7 @@ extern volatile sig_atomic_t print_queue_shutdown;
 extern pthread_cond_t terminate_cond;
 extern pthread_mutex_t terminate_mutex;
 
-static Queue* print_queue = NULL;
+Queue* print_queue = NULL;
 
 static void cleanup_print_queue_manager(void* arg) {
     (void)arg;  // Unused parameter
@@ -76,14 +76,15 @@ static void process_print_job(const char* job_data) {
     json_decref(json);
 }
 
-void init_print_queue() {
+int init_print_queue(void) {
     QueueAttributes print_queue_attrs = {0}; // Initialize with default values for now
     print_queue = queue_create("PrintQueue", &print_queue_attrs);
     if (!print_queue) {
         log_this("PrintQueueManager", "Failed to create PrintQueue", 3, true, true, true);
-    } else {
-        log_this("PrintQueueManager", "PrintQueue created successfully", 0, true, true, true);
+        return 0;
     }
+    log_this("PrintQueueManager", "PrintQueue created successfully", 0, true, true, true);
+    return 1;
 }
 
 void* print_queue_manager(void* arg) {
