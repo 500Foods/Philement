@@ -46,13 +46,14 @@
 #include "beryllium.h"
 #include "queue.h"
 #include "print_queue_manager.h"
+#include "api/system/system_service.h"
 
 #define UUID_STR_LEN 37
 
 static struct MHD_Daemon *web_daemon = NULL;
 static WebConfig *server_web_config = NULL;
 
-extern volatile AppConfig *app_config;
+extern AppConfig *app_config;
 extern volatile sig_atomic_t keep_running;
 extern volatile sig_atomic_t web_server_shutdown;
 extern pthread_cond_t terminate_cond;
@@ -105,7 +106,7 @@ static bool is_port_available(int port) {
     return result == 0;
 }
 
-static void add_cors_headers(struct MHD_Response *response) {
+void add_cors_headers(struct MHD_Response *response) {
     MHD_add_response_header(response, "Access-Control-Allow-Origin", "*");
     MHD_add_response_header(response, "Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     MHD_add_response_header(response, "Access-Control-Allow-Headers", "Content-Type");
@@ -217,11 +218,52 @@ static enum MHD_Result serve_file(struct MHD_Connection *connection, const char 
     return ret;
 }
 
+static bool is_api_endpoint(const char *url, char *service, char *endpoint) {
+    // Check if URL starts with /api/
+    if (strncmp(url, "/api/", 5) != 0) {
+        return false;
+    }
+
+    // Skip "/api/"
+    const char *path = url + 5;
+    
+    // Find the next slash
+    const char *slash = strchr(path, '/');
+    if (!slash) {
+        return false;
+    }
+
+    // Extract service name (e.g., "system" from "/api/system/info")
+    size_t service_len = slash - path;
+    strncpy(service, path, service_len);
+    service[service_len] = '\0';
+
+    // Extract endpoint name (e.g., "info" from "/api/system/info")
+    const char *endpoint_start = slash + 1;
+    strcpy(endpoint, endpoint_start);
+
+    // Convert first character to uppercase for service name
+    if (service[0] >= 'a' && service[0] <= 'z') {
+        service[0] = service[0] - 'a' + 'A';
+    }
+
+    return true;
+}
+
 static enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
                            const char *url, const char *method,
                            const char *version, const char *upload_data,
                            size_t *upload_data_size, void **con_cls) {
     (void)cls; (void)version;
+
+    // Log API endpoint access
+    char service[32] = {0};
+    char endpoint[32] = {0};
+    if (is_api_endpoint(url, service, endpoint)) {
+        char detail[128];
+        snprintf(detail, sizeof(detail), "%sService/%s", service, endpoint);
+        log_this("API", detail, 0, true, false, true);
+    }
 
     // Handle OPTIONS method for CORS preflight requests
     if (strcmp(method, "OPTIONS") == 0) {
@@ -240,6 +282,8 @@ static enum MHD_Result handle_request(void *cls, struct MHD_Connection *connecti
             return handle_version_request(connection);
         } else if (strcmp(url, "/print/queue") == 0) {
             return handle_print_queue_request(connection);
+        } else if (strcmp(url, "/api/system/info") == 0) {
+            return handle_system_info_request(connection);
         }
 
         // If no API endpoint matched, try to serve a static file
