@@ -19,10 +19,10 @@ DEBUG_DIR = build_debug
 VALGRIND_DIR = build_valgrind
 
 # Source and object files for different build configurations
-SRCS = $(wildcard $(SRC_DIR)/*.c)
-OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRCS))
-DEBUG_OBJS = $(patsubst $(SRC_DIR)/%.c,$(DEBUG_DIR)/%.o,$(SRCS))
-VALGRIND_OBJS = $(patsubst $(SRC_DIR)/%.c,$(VALGRIND_DIR)/%.o,$(SRCS))
+SRCS = $(shell find $(SRC_DIR) -type f -name '*.c')
+OBJS = $(patsubst $(SRC_DIR)/%,$(BUILD_DIR)/%,$(SRCS:.c=.o))
+DEBUG_OBJS = $(patsubst $(SRC_DIR)/%,$(DEBUG_DIR)/%,$(SRCS:.c=.o))
+VALGRIND_OBJS = $(patsubst $(SRC_DIR)/%,$(VALGRIND_DIR)/%,$(SRCS:.c=.o))
 
 # Build targets
 TARGET = hydrogen
@@ -56,23 +56,32 @@ $(VALGRIND_TARGET): $(VALGRIND_OBJS)
 
 # Compilation rules for object files
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(DEBUG_DIR)/%.o: $(SRC_DIR)/%.c | $(DEBUG_DIR)
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(VALGRIND_DIR)/%.o: $(SRC_DIR)/%.c | $(VALGRIND_DIR)
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 # Create build directories if they don't exist
 $(BUILD_DIR):
 	mkdir -p $@
+	mkdir -p $(BUILD_DIR)/api/system
 
 $(DEBUG_DIR):
 	mkdir -p $@
+	mkdir -p $(DEBUG_DIR)/api/system
 
 $(VALGRIND_DIR):
 	mkdir -p $@
+	mkdir -p $(VALGRIND_DIR)/api/system
+
+# Create subdirectories for object files
+$(shell mkdir -p $(sort $(dir $(OBJS)) $(dir $(DEBUG_OBJS)) $(dir $(VALGRIND_OBJS))))
 
 # Clean all build artifacts
 clean:

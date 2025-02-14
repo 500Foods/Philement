@@ -9,9 +9,16 @@
 #ifndef WEB_SERVER_H
 #define WEB_SERVER_H
 
+// Feature test macros must come first
+#define _GNU_SOURCE
+#define _POSIX_C_SOURCE 200809L
+
 // Standard Libraries
 #include <stdbool.h>
 #include <stdlib.h>
+
+// Third-party libraries
+#include <microhttpd.h>
 
 // Project Libraries
 #include "configuration.h"
@@ -27,5 +34,8 @@ void shutdown_web_server(void);
 
 // Get the configured upload path
 const char* get_upload_path(void);
+
+// Add CORS headers to a response
+void add_cors_headers(struct MHD_Response *response);
 
 #endif // WEB_SERVER_H

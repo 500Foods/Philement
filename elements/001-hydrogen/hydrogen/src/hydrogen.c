@@ -14,11 +14,13 @@
 #include <pthread.h>
 #include <errno.h>
 #include <time.h>
+#include <stdbool.h>
 
 // Project headers
-#include "state.h"
-#include "startup.h"
+#include "logging.h"
 #include "shutdown.h"
+#include "startup.h"
+#include "state.h"
 
 int main(int argc, char *argv[]) {
 
@@ -44,6 +46,11 @@ int main(int argc, char *argv[]) {
         pthread_mutex_lock(&terminate_mutex);
         int wait_result = pthread_cond_timedwait(&terminate_cond, &terminate_mutex, &ts);
         pthread_mutex_unlock(&terminate_mutex);
+        
+        if (wait_result != 0 && wait_result != ETIMEDOUT) {
+            // Log unexpected errors, but continue running
+            log_this("Main", "Unexpected error in main event loop", 3, true, false, true);
+        }
         
         // Check if we're shutting down
         if (!keep_running) {

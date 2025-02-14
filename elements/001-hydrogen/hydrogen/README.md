@@ -50,6 +50,11 @@ Each queue has its own queue manager that determines what happens when something
   
 # Release Notes
 
+## 2025-Feb-14 
+Basic REST API Implemented
+- SystemService/Info Endpoint added
+- Logging API calls added
+
 ## 2025-Feb-13
 More maintenance
 - Reviewed code and comments in hydrogen.c
