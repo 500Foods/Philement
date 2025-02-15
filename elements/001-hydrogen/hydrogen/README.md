@@ -65,6 +65,11 @@ Comprehensive documentation is available in the `docs` directory:
 
 ### 2025-Feb-15
 
+Started work on documentation for project and added example code for the status API endpoint
+which is now also synchronized with the WebSockets output showing the same information.
+
+### 2025-Feb-15
+
 Configuration options to control servers independently. We might run hydrogen just as a generic
 web server, or a generic websockets server or a print server without needing all of the servers
 running, so this ideally allows us to control them independently.
