@@ -11,7 +11,7 @@
         "LogLevel": "WARN"
     },
     "WebSocket": {
-        "Enabled": true,
+        "Enabled": false,
         "Port": 5001,
         "LogLevel": "NONE"
     },
@@ -20,7 +20,7 @@
         "LogLevel": "WARN"
     },
     "mDNS": {
-        "Enabled": true,
+        "Enabled": false,
         "DeviceId": "hydrogen-printer",
         "LogLevel": "ALL",
         "FriendlyName": "Hydrogen 3D Printer",

@@ -41,6 +41,10 @@ void inthandler(int signum) {
 }
 
 static void shutdown_mdns_system(void) {
+    if (!app_config->mdns.enabled) {
+        return;
+    }
+
     log_this("Shutdown", "Initiating mDNS shutdown", 0, true, true, true);
     mdns_server_shutdown = 1;
     pthread_cond_broadcast(&terminate_cond);
@@ -64,40 +68,52 @@ static void shutdown_mdns_system(void) {
 }
 
 static void shutdown_web_systems(void) {
+    if (!app_config->web.enabled && !app_config->websocket.enabled) {
+        return;
+    }
+
     log_this("Shutdown", "Starting web systems shutdown sequence", 0, true, true, true);
 
-    // First shutdown web server
-    log_this("Shutdown", "Initiating Web Server shutdown", 0, true, true, true);
-    web_server_shutdown = 1;
-    pthread_cond_broadcast(&terminate_cond);
-    pthread_join(web_thread, NULL);
-    shutdown_web_server();
-    log_this("Shutdown", "Web Server shutdown complete", 0, true, true, true);
+    // Shutdown web server if it was enabled
+    if (app_config->web.enabled) {
+        log_this("Shutdown", "Initiating Web Server shutdown", 0, true, true, true);
+        web_server_shutdown = 1;
+        pthread_cond_broadcast(&terminate_cond);
+        pthread_join(web_thread, NULL);
+        shutdown_web_server();
+        log_this("Shutdown", "Web Server shutdown complete", 0, true, true, true);
+    }
 
-    // Then handle WebSocket server
-    log_this("Shutdown", "Initiating WebSocket server shutdown", 0, true, true, true);
-    websocket_server_shutdown = 1;
-    pthread_cond_broadcast(&terminate_cond);
+    // Shutdown WebSocket server if it was enabled
+    if (app_config->websocket.enabled) {
+        log_this("Shutdown", "Initiating WebSocket server shutdown", 0, true, true, true);
+        websocket_server_shutdown = 1;
+        pthread_cond_broadcast(&terminate_cond);
 
-    // Give WebSocket server time to process shutdown flag and close connections
-    usleep(2000000);  // 2s delay for connections to close
+        // Give WebSocket server time to process shutdown flag and close connections
+        usleep(2000000);  // 2s delay for connections to close
 
-    // Stop the server with a timeout
-    log_this("Shutdown", "Stopping WebSocket server", 0, true, true, true);
-    stop_websocket_server();
+        // Stop the server with a timeout
+        log_this("Shutdown", "Stopping WebSocket server", 0, true, true, true);
+        stop_websocket_server();
 
-    // Wait for server thread to fully exit
-    usleep(1000000);  // 1s delay
+        // Wait for server thread to fully exit
+        usleep(1000000);  // 1s delay
 
-    // Force cleanup regardless of connection state
-    log_this("Shutdown", "Cleaning up WebSocket resources", 0, true, true, true);
-    cleanup_websocket_server();
+        // Force cleanup regardless of connection state
+        log_this("Shutdown", "Cleaning up WebSocket resources", 0, true, true, true);
+        cleanup_websocket_server();
 
-    // Brief final delay
-    usleep(100000);  // 100ms delay
+        // Brief final delay
+        usleep(100000);  // 100ms delay
+    }
 }
 
 static void shutdown_print_system(void) {
+    if (!app_config->print_queue.enabled) {
+        return;
+    }
+
     log_this("Shutdown", "Initiating Print Queue shutdown", 0, true, true, true);
     print_queue_shutdown = 1;
     pthread_cond_broadcast(&terminate_cond);
@@ -124,10 +140,15 @@ static void free_app_config(void) {
         free(app_config->web.web_root);
         free(app_config->web.upload_path);
         free(app_config->web.upload_dir);
+        free(app_config->web.log_level);
 
         // Free WebSocket config
         free(app_config->websocket.key);
         free(app_config->websocket.protocol);
+        free(app_config->websocket.log_level);
+
+        // Free Print Queue config
+        free(app_config->print_queue.log_level);
 
         // Free mDNS config
         free(app_config->mdns.device_id);

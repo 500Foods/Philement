@@ -101,6 +101,7 @@ void create_default_config(const char* config_path) {
 
     // Web Configuration
     json_t* web = json_object();
+    json_object_set_new(web, "Enabled", json_boolean(1));
     json_object_set_new(web, "Port", json_integer(5000));
     json_object_set_new(web, "WebRoot", json_string("/home/asimard/lithium"));
     json_object_set_new(web, "UploadPath", json_string("/api/upload"));
@@ -111,6 +112,7 @@ void create_default_config(const char* config_path) {
 
     // WebSocket Configuration
     json_t* websocket = json_object();
+    json_object_set_new(websocket, "Enabled", json_boolean(1));
     json_object_set_new(websocket, "Port", json_integer(5001));
     json_object_set_new(websocket, "Key", json_string("default_key_change_me"));
     json_object_set_new(websocket, "Protocol", json_string("hydrogen-protocol"));
@@ -119,6 +121,7 @@ void create_default_config(const char* config_path) {
 
     // mDNS Configuration
     json_t* mdns = json_object();
+    json_object_set_new(mdns, "Enabled", json_boolean(1));
     json_object_set_new(mdns, "DeviceId", json_string("hydrogen-printer"));
     json_object_set_new(mdns, "FriendlyName", json_string("Hydrogen 3D Printer"));
     json_object_set_new(mdns, "Model", json_string("Hydrogen"));
@@ -151,6 +154,12 @@ void create_default_config(const char* config_path) {
 
     json_object_set_new(mdns, "Services", services);
     json_object_set_new(root, "mDNS", mdns);
+
+    // Print Queue Configuration
+    json_t* print_queue = json_object();
+    json_object_set_new(print_queue, "Enabled", json_boolean(1));
+    json_object_set_new(print_queue, "LogLevel", json_string("WARN"));
+    json_object_set_new(root, "PrintQueue", print_queue);
 
     if (json_dump_file(root, config_path, JSON_INDENT(4)) != 0) {
         log_this("Configuration", "Error: Unable to create default config at %s", 3, true, true, true, config_path);
@@ -199,6 +208,9 @@ AppConfig* load_config(const char* config_path) {
     // Web Configuration
     json_t* web = json_object_get(root, "WebServer");
     if (json_is_object(web)) {
+        json_t* enabled = json_object_get(web, "Enabled");
+        config->web.enabled = json_is_boolean(enabled) ? json_boolean_value(enabled) : 1;
+
         json_t* port = json_object_get(web, "Port");
         config->web.port = json_is_integer(port) ? json_integer_value(port) : DEFAULT_WEB_PORT;
 
@@ -234,6 +246,9 @@ AppConfig* load_config(const char* config_path) {
     // WebSocket Configuration
     json_t* websocket = json_object_get(root, "WebSocket");
     if (json_is_object(websocket)) {
+        json_t* enabled = json_object_get(websocket, "Enabled");
+        config->websocket.enabled = json_is_boolean(enabled) ? json_boolean_value(enabled) : 1;
+
         json_t* port = json_object_get(websocket, "Port");
         config->websocket.port = json_is_integer(port) ? json_integer_value(port) : DEFAULT_WEBSOCKET_PORT;
 
@@ -263,6 +278,9 @@ AppConfig* load_config(const char* config_path) {
     // mDNS Configuration
     json_t* mdns = json_object_get(root, "mDNS");
     if (json_is_object(mdns)) {
+        json_t* enabled = json_object_get(mdns, "Enabled");
+        config->mdns.enabled = json_is_boolean(enabled) ? json_boolean_value(enabled) : 1;
+
         json_t* device_id = json_object_get(mdns, "DeviceId");
         const char* device_id_str = json_is_string(device_id) ? json_string_value(device_id) : "hydrogen-printer";
         config->mdns.device_id = strdup(device_id_str);
@@ -328,6 +346,21 @@ AppConfig* load_config(const char* config_path) {
                 }
             }
         }
+    }
+
+    // Print Queue Configuration
+    json_t* print_queue = json_object_get(root, "PrintQueue");
+    if (json_is_object(print_queue)) {
+        json_t* enabled = json_object_get(print_queue, "Enabled");
+        config->print_queue.enabled = json_is_boolean(enabled) ? json_boolean_value(enabled) : 1;
+
+        json_t* log_level = json_object_get(print_queue, "LogLevel");
+        const char* log_level_str = json_is_string(log_level) ? json_string_value(log_level) : "WARN";
+        config->print_queue.log_level = strdup(log_level_str);
+    } else {
+        // Use defaults if print queue section is missing
+        config->print_queue.enabled = 1;
+        config->print_queue.log_level = strdup("WARN");
     }
 
     json_decref(root);
