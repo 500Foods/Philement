@@ -35,23 +35,26 @@ typedef struct {
 } PriorityLevel;
 
 typedef struct {
+    int enabled;            // New Enabled flag
     int port;
     char *web_root;
     char *upload_path;
     char *upload_dir;
     size_t max_upload_size;
-    char *log_level;         // Added LogLevel field
+    char *log_level;
 } WebConfig;
 
 typedef struct {
+    int enabled;            // New Enabled flag
     int port;
     char *key;
     char *protocol;
     size_t max_message_size; // bytes
-    char *log_level;         // Added LogLevel field
+    char *log_level;
 } WebSocketConfig;
 
 typedef struct {
+    int enabled;            // New Enabled flag
     char *device_id;
     char *friendly_name;
     char *model;
@@ -59,8 +62,13 @@ typedef struct {
     char *version;
     mdns_service_t *services;
     size_t num_services;
-    char *log_level;         // Added LogLevel field
+    char *log_level;
 } mDNSConfig;
+
+typedef struct {
+    int enabled;            // New Enabled flag
+    char *log_level;
+} PrintQueueConfig;
 
 typedef struct {
     char *server_name;
@@ -69,6 +77,7 @@ typedef struct {
     WebConfig web;
     WebSocketConfig websocket;
     mDNSConfig mdns;
+    PrintQueueConfig print_queue;  // New PrintQueueConfig
 } AppConfig;
 
 extern const PriorityLevel DEFAULT_PRIORITY_LEVELS[NUM_PRIORITY_LEVELS];

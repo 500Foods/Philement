@@ -50,6 +50,15 @@ Each queue has its own queue manager that determines what happens when something
   
 # Release Notes
 
+## 2025-Feb-15
+Configuration options to control servers independently. We might run hydrogen just as a generic
+web server, or a generic websockets server or a print server without needing all of the servers
+running, so this ideally allows us to control them independently.
+- JSON updated with Enabled flags for each server
+- PrintServer added to JSON (wasn't there previously)
+- Startup and Shutdown functions updated to check for these flags
+- mDNS, if started, should advertise only what has been started
+
 ## 2025-Feb-14 
 Basic REST API Implemented
 - SystemService/Info Endpoint added

@@ -75,58 +75,99 @@ static int init_print_system(void) {
     return 1;
 }
 
-// Initialize web and websocket servers
+// Initialize web and websocket servers independently
 static int init_web_systems(void) {
-    // Initialize web server
-    if (!init_web_server(&app_config->web)) {
-        log_this("Initialization", "Failed to initialize web server", 4, true, true, true);
-        return 0;
+    int web_success = 1;
+    int websocket_success = 1;
+
+    // Initialize web server if enabled
+    if (app_config->web.enabled) {
+        if (!init_web_server(&app_config->web)) {
+            log_this("Initialization", "Failed to initialize web server", 4, true, true, true);
+            web_success = 0;
+        } else if (pthread_create(&web_thread, NULL, run_web_server, NULL) != 0) {
+            log_this("Initialization", "Failed to start web server thread", 4, true, true, true);
+            shutdown_web_server();
+            web_success = 0;
+        }
     }
 
-    // Initialize web server thread
-    if (pthread_create(&web_thread, NULL, run_web_server, NULL) != 0) {
-        log_this("Initialization", "Failed to start web server thread", 4, true, true, true);
-        shutdown_web_server();
-        return 0;
+    // Initialize WebSocket server if enabled (completely independent of web server)
+    if (app_config->websocket.enabled) {
+        if (init_websocket_server(app_config->websocket.port, 
+                                app_config->websocket.protocol, 
+                                app_config->websocket.key) != 0) {
+            log_this("Initialization", "Failed to initialize WebSocket server", 4, true, true, true);
+            websocket_success = 0;
+        } else if (start_websocket_server() != 0) {
+            log_this("Initialization", "Failed to start WebSocket server", 4, true, true, true);
+            websocket_success = 0;
+        }
     }
 
-    // Initialize WebSocket server
-    if (init_websocket_server(app_config->websocket.port, 
-                            app_config->websocket.protocol, 
-                            app_config->websocket.key) != 0) {
-        log_this("Initialization", "Failed to initialize WebSocket server", 4, true, true, true);
-        return 0;
+    // Return success if at least one enabled service started successfully
+    if (app_config->web.enabled && !web_success) {
+        log_this("Initialization", "Web server failed to start", 3, true, true, true);
+    }
+    if (app_config->websocket.enabled && !websocket_success) {
+        log_this("Initialization", "WebSocket server failed to start", 3, true, true, true);
     }
 
-    // Start WebSocket server
-    if (start_websocket_server() != 0) {
-        log_this("Initialization", "Failed to start WebSocket server", 4, true, true, true);
-        return 0;
-    }
-
-    return 1;
+    // Only return failure if all enabled services failed
+    return (!app_config->web.enabled || web_success) || 
+           (!app_config->websocket.enabled || websocket_success);
 }
 
 // Initialize mDNS system
 static int init_mdns_system(void) {
-    // Get the actual bound port and validate it
-    int actual_port = get_websocket_port();
-    if (actual_port <= 0 || actual_port > 65535) {
-        log_this("Initialization", "Invalid WebSocket port: %d", 3, true, true, true, actual_port);
-        return 0;
-    }
-
     // Initialize mDNS with validated configuration
     log_this("Initialization", "Starting mDNS initialization", 0, true, true, true);
-    char config_url[128];
-    snprintf(config_url, sizeof(config_url), "http://localhost:%d", app_config->web.port);
-    
-    // Update service ports before mdns_init
-    for (size_t i = 0; i < app_config->mdns.num_services; i++) {
-        if (strcmp(app_config->mdns.services[i].type, "_websocket._tcp") == 0) {
-            app_config->mdns.services[i].port = (uint16_t)actual_port;
-            log_this("Initialization", "Setting WebSocket mDNS service port to %d", 0, true, true, true, actual_port);
+
+    // Create a filtered list of services based on what's enabled
+    mdns_service_t *filtered_services = NULL;
+    size_t filtered_count = 0;
+
+    if (app_config->mdns.services && app_config->mdns.num_services > 0) {
+        filtered_services = calloc(app_config->mdns.num_services, sizeof(mdns_service_t));
+        if (!filtered_services) {
+            log_this("Initialization", "Failed to allocate memory for filtered services", 3, true, true, true);
+            return 0;
         }
+
+        for (size_t i = 0; i < app_config->mdns.num_services; i++) {
+            // Only include web-related services if web server is enabled
+            if (strstr(app_config->mdns.services[i].type, "_http._tcp") != NULL) {
+                if (app_config->web.enabled) {
+                    memcpy(&filtered_services[filtered_count], &app_config->mdns.services[i], sizeof(mdns_service_t));
+                    filtered_count++;
+                }
+            }
+            // Only include websocket services if websocket server is enabled
+            else if (strstr(app_config->mdns.services[i].type, "_websocket._tcp") != NULL) {
+                if (app_config->websocket.enabled) {
+                    int actual_port = get_websocket_port();
+                    if (actual_port > 0 && actual_port <= 65535) {
+                        memcpy(&filtered_services[filtered_count], &app_config->mdns.services[i], sizeof(mdns_service_t));
+                        filtered_services[filtered_count].port = (uint16_t)actual_port;
+                        log_this("Initialization", "Setting WebSocket mDNS service port to %d", 0, true, true, true, actual_port);
+                        filtered_count++;
+                    } else {
+                        log_this("Initialization", "Invalid WebSocket port: %d, skipping mDNS service", 3, true, true, true, actual_port);
+                    }
+                }
+            }
+            // Include any other services by default
+            else {
+                memcpy(&filtered_services[filtered_count], &app_config->mdns.services[i], sizeof(mdns_service_t));
+                filtered_count++;
+            }
+        }
+    }
+
+    // Only create config URL if web server is enabled
+    char config_url[128] = {0};
+    if (app_config->web.enabled) {
+        snprintf(config_url, sizeof(config_url), "http://localhost:%d", app_config->web.port);
     }
     
     mdns = mdns_init(app_config->server_name, 
@@ -137,11 +178,12 @@ static int init_mdns_system(void) {
                      app_config->mdns.version,
                      "1.0", // Hardware version
                      config_url,
-                     app_config->mdns.services, 
-                     app_config->mdns.num_services);
+                     filtered_services,
+                     filtered_count);
 
     if (!mdns) {
         log_this("Initialization", "Failed to initialize mDNS", 3, true, true, true);
+        free(filtered_services);
         return 0;
     }
 
@@ -152,6 +194,7 @@ static int init_mdns_system(void) {
         log_this("Initialization", "Failed to allocate mDNS thread arguments", 3, true, true, true);
         mdns_shutdown(mdns);
         free_network_info(net_info);
+        free(filtered_services);
         return 0;
     }
 
@@ -165,8 +208,11 @@ static int init_mdns_system(void) {
         free(mdns_arg);
         mdns_shutdown(mdns);
         free_network_info(net_info);
+        free(filtered_services);
         return 0;
     }
+
+    free(filtered_services);  // Safe to free after mdns_init has copied the data
 
     return 1;
 }
@@ -215,25 +261,45 @@ int startup_hydrogen(const char *config_path) {
     // Log application information after logging is initialized
     log_app_info();
 
-    // Initialize print queue system
-    if (!init_print_system()) {
-        queue_system_destroy();
-        close_file_logging();
-        return 0;
+    // Initialize print queue system if enabled
+    if (app_config->print_queue.enabled) {
+        if (!init_print_system()) {
+            queue_system_destroy();
+            close_file_logging();
+            return 0;
+        }
+        log_this("Initialization", "Print Queue system initialized", 0, true, true, true);
+    } else {
+        log_this("Initialization", "Print Queue system disabled", 0, true, true, true);
     }
 
-    // Initialize web and websocket servers
-    if (!init_web_systems()) {
-        queue_system_destroy();
-        close_file_logging();
-        return 0;
+    // Initialize web and websocket servers if enabled
+    if (app_config->web.enabled || app_config->websocket.enabled) {
+        if (!init_web_systems()) {
+            queue_system_destroy();
+            close_file_logging();
+            return 0;
+        }
+        if (app_config->web.enabled) {
+            log_this("Initialization", "Web Server initialized", 0, true, true, true);
+        }
+        if (app_config->websocket.enabled) {
+            log_this("Initialization", "WebSocket Server initialized", 0, true, true, true);
+        }
+    } else {
+        log_this("Initialization", "Web systems disabled", 0, true, true, true);
     }
 
-    // Initialize mDNS system
-    if (!init_mdns_system()) {
-        queue_system_destroy();
-        close_file_logging();
-        return 0;
+    // Initialize mDNS system if enabled
+    if (app_config->mdns.enabled) {
+        if (!init_mdns_system()) {
+            queue_system_destroy();
+            close_file_logging();
+            return 0;
+        }
+        log_this("Initialization", "mDNS system initialized", 0, true, true, true);
+    } else {
+        log_this("Initialization", "mDNS system disabled", 0, true, true, true);
     }
 
     // Give threads a moment to launch
