@@ -1,10 +1,41 @@
 /*
  * Implementation of the log queue manager for the Hydrogen server.
  * 
- * Processes log messages from a queue and distributes them to configured outputs.
- * Features include JSON-formatted messages, timestamping, priority levels,
- * and support for multiple output destinations (console, file, database).
- * Provides graceful shutdown handling and thread cleanup.
+ * Provides a thread-safe, queue-based logging system that decouples log
+ * generation from processing. The system implements a producer-consumer
+ * pattern where components generate logs (producers) and the queue manager
+ * processes them (consumer).
+ * 
+ * Message Format:
+ * - JSON-structured log entries
+ * - Timestamps with millisecond precision
+ * - Subsystem identification
+ * - Priority levels with labels
+ * - Configurable output flags
+ * 
+ * Processing Pipeline:
+ * 1. Components submit JSON messages to queue
+ * 2. Queue manager retrieves messages in FIFO order
+ * 3. Messages are parsed and validated
+ * 4. Formatted according to output requirements
+ * 5. Distributed to enabled outputs
+ * 
+ * Output Destinations:
+ * - Console: Immediate display with formatting
+ * - File: Persistent storage with rotation
+ * - Database: Future expansion capability
+ * 
+ * Thread Safety:
+ * - Mutex-protected queue access
+ * - Condition variable for queue notification
+ * - Atomic shutdown flags
+ * - Cleanup handler registration
+ * 
+ * Shutdown Process:
+ * - Processes remaining messages
+ * - Closes open file handles
+ * - Releases thread resources
+ * - Verifies complete cleanup
  */
 
 // Feature test macros must come first
@@ -42,11 +73,20 @@ extern pthread_mutex_t terminate_mutex;
 
 static FILE* log_file = NULL;
 
+// Cleanup handler registered with pthread_cleanup_push
+// Ensures log files are properly closed even if thread
+// is cancelled or terminates unexpectedly
 static void cleanup_log_queue_manager(void* arg) {
     (void)arg;  // Unused parameter
     close_file_logging();
 }
 
+// Process a single log message from the queue
+// 1. Parses JSON message structure
+// 2. Extracts metadata (subsystem, priority, flags)
+// 3. Formats timestamp and labels
+// 4. Distributes to enabled outputs
+// Returns: void, errors are handled internally
 static void process_log_message(const char* message, int priority) {
     json_error_t error;
     json_t* json = json_loads(message, 0, &error);
@@ -94,6 +134,10 @@ static void process_log_message(const char* message, int priority) {
     }
 }
 
+// Initialize file-based logging
+// Opens the specified log file in append mode
+// Ensures previous file handle is closed
+// Handles file access errors
 void init_file_logging(const char* log_file_path) {
     if (log_file) {
         fclose(log_file);
@@ -111,6 +155,12 @@ void close_file_logging() {
     }
 }
 
+// Main log queue manager thread function
+// Implements the consumer side of the logging system:
+// 1. Waits for messages using condition variables
+// 2. Processes messages in order of arrival
+// 3. Handles shutdown signals gracefully
+// 4. Ensures all messages are processed before exit
 void* log_queue_manager(void* arg) {
     Queue* log_queue = (Queue*)arg;
 

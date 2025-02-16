@@ -1,11 +1,38 @@
 /*
  * Linux implementation of mDNS service discovery for the Hydrogen printer.
  * 
- * Implements DNS-SD/mDNS protocol for service announcement and discovery:
- * - Handles IPv4/IPv6 multicast socket setup and management
- * - Provides DNS packet construction and parsing
- * - Manages service announcements and responses
- * - Supports graceful shutdown with goodbye packets
+ * Implements DNS-SD/mDNS (RFC 6762, RFC 6763) for network service discovery
+ * and announcement. The implementation provides automatic network presence
+ * for Hydrogen printers with the following features:
+ * 
+ * Network Management:
+ * - Dual-stack IPv4/IPv6 support
+ * - Multicast socket configuration
+ * - Interface monitoring and selection
+ * - Automatic port selection and binding
+ * 
+ * DNS Protocol:
+ * - Standard-compliant packet construction
+ * - Resource record management (A, AAAA, PTR, SRV, TXT)
+ * - Query handling and response generation
+ * - Name compression for efficiency
+ * 
+ * Service Management:
+ * - Multiple service registration
+ * - Service metadata via TXT records
+ * - Dynamic port assignment
+ * - Service instance naming
+ * 
+ * Reliability Features:
+ * - Probing for name conflicts
+ * - Automatic service re-announcement
+ * - Goodbye packets on shutdown
+ * - Error recovery mechanisms
+ * 
+ * Thread Safety:
+ * - Mutex-protected shared resources
+ * - Safe shutdown coordination
+ * - Resource cleanup verification
  */
 
 // Feature test macros must come first
@@ -51,6 +78,11 @@ typedef struct {
     uint16_t arcount;
 } __attribute__((packed)) dns_header_t;
 
+// Parse a DNS name from a packet, handling compression
+// Follows RFC 1035 name compression scheme:
+// - Regular labels: length byte + data
+// - Compressed labels: 2 bytes with pointer
+// - Handles both absolute and relative names
 static uint8_t *read_dns_name(uint8_t *ptr, const uint8_t *packet, char *name, size_t name_len) {
     size_t i = 0;
     while (*ptr) {
@@ -72,6 +104,12 @@ static uint8_t *read_dns_name(uint8_t *ptr, const uint8_t *packet, char *name, s
     return ptr + 1;
 }
 
+// Create and configure a multicast socket for mDNS
+// 1. Creates socket with appropriate family
+// 2. Sets socket options for multicast
+// 3. Binds to mDNS port
+// 4. Joins multicast group
+// Returns: socket fd on success, -1 on failure
 static int create_multicast_socket(int family, const char *group) {
     int sockfd = socket(family, SOCK_DGRAM, 0);
     if (sockfd < 0) {
@@ -225,6 +263,13 @@ static uint8_t *write_dns_txt_record(uint8_t *ptr, const char *name, char **txt_
     return ptr;
 }
 
+// Build an mDNS announcement packet
+// Constructs a complete mDNS response packet containing:
+// 1. DNS header with appropriate flags
+// 2. A/AAAA records for hostname
+// 3. PTR records for service discovery
+// 4. SRV records for service instances
+// 5. TXT records with service metadata
 void mdns_build_announcement(uint8_t *packet, size_t *packet_len, const char *hostname, const mdns_t *mdns, uint32_t ttl, const network_info_t *net_info) {
     dns_header_t *header = (dns_header_t *)packet;
     header->id = 0;  // mDNS uses 0
@@ -312,6 +357,12 @@ void mdns_send_announcement(mdns_t *mdns, const network_info_t *net_info) {
     }
 }
 
+// Main announcement thread function
+// Periodically announces services via multicast:
+// 1. Builds announcement packets
+// 2. Sends to IPv4 and IPv6 multicast groups
+// 3. Handles shutdown coordination
+// 4. Logs announcement status
 void *mdns_announce_loop(void *arg) {
     mdns_thread_arg_t *thread_arg = (mdns_thread_arg_t *)arg;
     mdns_t *mdns = thread_arg->mdns;

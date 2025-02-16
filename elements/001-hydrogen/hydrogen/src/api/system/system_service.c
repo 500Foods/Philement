@@ -1,6 +1,37 @@
 /*
  * Implementation of System Service API endpoints.
- * Provides system-level information and operations.
+ * 
+ * Provides RESTful endpoints for retrieving system information and status.
+ * This service implements the /api/system/* endpoints following the HTTP/1.1
+ * and REST specifications.
+ * 
+ * Endpoint Structure:
+ * GET /api/system/info
+ * - Returns comprehensive system information
+ * - Includes OS details, runtime status, component states
+ * - Supports CORS for cross-origin access
+ * 
+ * Response Format:
+ * - Content-Type: application/json
+ * - UTF-8 encoded
+ * - Pretty-printed (indented) JSON
+ * - Standardized error responses
+ * 
+ * System Information:
+ * - Operating system details (via uname)
+ * - Component status (all service states)
+ * - Runtime metrics and statistics
+ * - Configuration settings
+ * 
+ * Error Handling:
+ * - HTTP status codes for all responses
+ * - Detailed error messages in JSON format
+ * - Logging of all error conditions
+ * 
+ * Security:
+ * - CORS headers for controlled access
+ * - Input validation and sanitization
+ * - Error message sanitization
  */
 
 // Feature test macros must come first
@@ -40,6 +71,11 @@ extern volatile sig_atomic_t log_queue_shutdown;
 extern volatile sig_atomic_t mdns_server_shutdown;
 extern volatile sig_atomic_t websocket_server_shutdown;
 
+// Handle GET /api/system/info requests
+// Returns system information and status in JSON format
+// Success: 200 OK with JSON response
+// Error: 500 Internal Server Error with error details
+// Includes CORS headers for cross-origin access
 enum MHD_Result handle_system_info_request(struct MHD_Connection *connection)
 {
     struct utsname system_info;

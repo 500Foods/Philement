@@ -1,13 +1,39 @@
 /*
  * Implementation of the Hydrogen 3D printer's WebSocket server.
  * 
- * Uses libwebsockets to provide secure, authenticated real-time communication.
- * Features include:
- * - Key-based client authentication
+ * Uses libwebsockets to provide secure, authenticated real-time communication
+ * for status updates and printer control. The server implements a robust
+ * connection lifecycle with several key features:
+ * 
+ * Connection Management:
+ * - Multi-threaded event processing
+ * - Connection state tracking
  * - Automatic port fallback if primary port is unavailable
- * - Message fragmentation handling for large payloads
- * - Configurable logging levels
+ * - Graceful connection termination
+ * 
+ * Security:
+ * - Key-based client authentication
+ * - Connection validation before data exchange
+ * - UTF-8 validation on all messages
+ * - Security headers enforcement
+ * 
+ * Message Handling:
+ * - Large message fragmentation support
+ * - Buffer size limits and validation
+ * - JSON message parsing and validation
+ * - Bi-directional communication
+ * 
+ * Monitoring:
  * - Connection statistics tracking
+ * - Configurable logging levels
+ * - Performance metrics collection
+ * - Error detection and reporting
+ * 
+ * Shutdown Process:
+ * - Graceful connection termination
+ * - Resource cleanup in correct order
+ * - Thread synchronization
+ * - State cleanup verification
  */
 
 // Feature test macros must come first
@@ -69,6 +95,10 @@ typedef struct _ws_session_data {
     bool authenticated;
 } ws_session_data;
 
+// Custom logging handler for libwebsockets
+// Maps libwebsockets log levels to Hydrogen log levels
+// Handles special cases during shutdown
+// Formats messages for consistency
 static void custom_lws_log(int level, const char *line)
 {
     // During shutdown, use printf instead of log_this
@@ -109,6 +139,13 @@ static void custom_lws_log(int level, const char *line)
     free(log_line);
 }
 
+// Main WebSocket callback handler
+// Processes all WebSocket events and manages connection lifecycle:
+// 1. Connection establishment and authentication
+// 2. Message reception and fragmentation handling
+// 3. State management and tracking
+// 4. Error handling and connection cleanup
+// 5. Shutdown coordination
 static int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
                              void *user, void *in, size_t len)
 {
@@ -453,6 +490,13 @@ static struct lws_protocols protocols[] = {
     { NULL, NULL, 0, 0, 0, NULL, 0 } /* terminator */
 };
 
+// Initialize the WebSocket server
+// Sets up the server context with:
+// - Protocol handlers and security options
+// - Port binding with fallback logic
+// - Message buffer allocation
+// - Logging configuration
+// Returns 0 on success, -1 on failure
 int init_websocket_server(int port, const char* protocol, const char* key)
 {
     struct lws_context_creation_info info;
@@ -622,6 +666,12 @@ int start_websocket_server()
     return 0;
 }
 
+// Initiate graceful server shutdown
+// 1. Sets shutdown flag to prevent new connections
+// 2. Cancels service loop to wake handler thread
+// 3. Waits for existing connections to close
+// 4. Cleans up context and resources
+// 5. Verifies complete shutdown
 void stop_websocket_server()
 {
     log_this("WebSocket", "Stopping WebSocket server on port %d", 0, true, true, true, websocket_port);

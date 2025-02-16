@@ -2,8 +2,34 @@
  * Shutdown sequence handler for the Hydrogen 3D printer server.
  * 
  * This file manages the graceful shutdown of all server components including
- * mDNS, web server, WebSocket server, print queue, and logging system. It ensures
- * proper cleanup order and handles resource deallocation to prevent memory leaks.
+ * mDNS, web server, WebSocket server, print queue, and logging system. The shutdown
+ * sequence follows a specific order to ensure proper cleanup and prevent resource leaks:
+ * 
+ * Shutdown Order:
+ * 1. Signal all threads to begin shutdown (set keep_running = 0)
+ * 2. mDNS System - Stop advertising services first
+ * 3. Web Systems - Stop accepting new connections
+ * 4. Print System - Complete or cancel current jobs
+ * 5. Network - Clean up network resources
+ * 6. Logging System - Process final log messages
+ * 7. Queue System - Clean up after all producers stopped
+ * 8. Configuration - Free after all components done
+ * 
+ * Thread Synchronization:
+ * - Uses terminate_mutex/cond for coordinated shutdown
+ * - Components get shutdown signal via atomic flags
+ * - Strategic delays ensure orderly resource cleanup
+ * - Final broadcast ensures no threads remain blocked
+ * 
+ * Error Handling:
+ * - Components handle their own cleanup on errors
+ * - Shutdown continues even if individual cleanups fail
+ * - All resources are freed even after errors
+ * 
+ * Resource Cleanup:
+ * - Thread resources released via pthread_join
+ * - Memory freed in reverse allocation order
+ * - Handles complex structures (config) recursively
  */
 
 // Feature test macros must come first
@@ -28,6 +54,8 @@
 #include "log_queue_manager.h"    // For close_file_logging()
 
 // Ctrl+C handler
+// Initiates graceful shutdown when user interrupts program
+// Sets keep_running=0 and signals all threads via condition variable
 void inthandler(int signum) {
     (void)signum;
 
@@ -40,6 +68,9 @@ void inthandler(int signum) {
     pthread_mutex_unlock(&terminate_mutex);
 }
 
+// Shutdown mDNS system
+// Must be first to stop advertising services
+// Ensures no new clients attempt to connect during shutdown
 static void shutdown_mdns_system(void) {
     if (!app_config->mdns.enabled) {
         return;
@@ -67,6 +98,9 @@ static void shutdown_mdns_system(void) {
     log_this("Shutdown", "mDNS shutdown complete", 0, true, true, true);
 }
 
+// Shutdown web and websocket servers
+// Stops accepting new connections while allowing existing ones to complete
+// Uses delays to ensure proper connection cleanup
 static void shutdown_web_systems(void) {
     if (!app_config->web.enabled && !app_config->websocket.enabled) {
         return;
@@ -109,6 +143,9 @@ static void shutdown_web_systems(void) {
     }
 }
 
+// Shutdown print queue system
+// Ensures current print jobs are completed or safely cancelled
+// Waits for queue manager thread to process shutdown
 static void shutdown_print_system(void) {
     if (!app_config->print_queue.enabled) {
         return;
@@ -122,6 +159,9 @@ static void shutdown_print_system(void) {
     log_this("Shutdown", "Print Queue shutdown complete", 0, true, true, true);
 }
 
+// Clean up network resources
+// Called after all network-using components are stopped
+// Frees network interface information
 static void shutdown_network(void) {
     log_this("Shutdown", "Freeing network info", 0, true, true, true);
     if (net_info) {
@@ -130,6 +170,9 @@ static void shutdown_network(void) {
     }
 }
 
+// Free all configuration resources
+// Must be called last as other components may need config during shutdown
+// Recursively frees all allocated configuration structures
 static void free_app_config(void) {
     if (app_config) {
         free(app_config->server_name);
@@ -171,6 +214,10 @@ static void free_app_config(void) {
     }
 }
 
+// Main shutdown sequence coordinator
+// Orchestrates orderly shutdown of all components
+// Uses strategic delays to ensure proper cleanup order
+// Handles thread synchronization and resource cleanup
 void graceful_shutdown(void) {
     printf("\n");  // Keep this printf for visual separation
     log_this("Shutdown", "Initiating graceful shutdown", 0, true, true, true);
