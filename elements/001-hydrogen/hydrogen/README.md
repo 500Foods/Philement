@@ -66,6 +66,8 @@ Comprehensive documentation is available in the `docs` directory:
 ### 2025-Feb-16
 
 Work on comments, trying to make things a little easier to follow.
+Added IPv6Enable flag to JSON configuration for mDNS.
+Updated logging output to look the same regardless of how logging is performed
 
 ### 2025-Feb-15
 

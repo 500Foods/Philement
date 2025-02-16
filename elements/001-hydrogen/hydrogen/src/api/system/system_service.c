@@ -2,8 +2,8 @@
  * Implementation of System Service API endpoints.
  * 
  * Provides RESTful endpoints for retrieving system information and status.
- * This service implements the /api/system/* endpoints following the HTTP/1.1
- * and REST specifications.
+ * This service implements the /api/system endpoints (with wildcards) following
+ * the HTTP/1.1 and REST specifications.
  * 
  * Endpoint Structure:
  * GET /api/system/info

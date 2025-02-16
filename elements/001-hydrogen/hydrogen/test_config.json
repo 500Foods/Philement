@@ -21,6 +21,7 @@
     },
     "mDNS": {
         "Enabled": false,
+        "EnableIPv6": true,
         "DeviceId": "hydrogen-printer",
         "LogLevel": "ALL",
         "FriendlyName": "Hydrogen 3D Printer",

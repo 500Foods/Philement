@@ -55,6 +55,7 @@ typedef struct {
 
 typedef struct {
     int enabled;            // New Enabled flag
+    int enable_ipv6;        // Control IPv6 functionality
     char *device_id;
     char *friendly_name;
     char *model;

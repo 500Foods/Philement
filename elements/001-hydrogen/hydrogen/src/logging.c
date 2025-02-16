@@ -36,6 +36,32 @@ extern pthread_cond_t terminate_cond;
 extern pthread_mutex_t terminate_mutex;
 static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+// Log a message with configurable output targets and priority
+//
+// Logging system design prioritizes:
+// 1. Thread Safety
+//    - Mutex protection for concurrent access
+//    - Atomic operations for shutdown
+//    - Queue-based message handling
+//    - Safe signal handling
+//
+// 2. Reliability
+//    - Fallback console output
+//    - Buffer overflow prevention
+//    - Queue monitoring
+//    - Graceful degradation
+//
+// 3. Performance
+//    - Asynchronous processing
+//    - Efficient JSON formatting
+//    - Minimal blocking time
+//    - Memory reuse
+//
+// 4. Flexibility
+//    - Multiple output targets
+//    - Priority-based handling
+//    - Subsystem categorization
+//    - Format customization
 void log_this(const char* subsystem, const char* format, int priority, bool LogConsole, bool LogDatabase, bool LogFile, ...) {
     pthread_mutex_lock(&log_mutex);
 
@@ -64,8 +90,8 @@ void log_this(const char* subsystem, const char* format, int priority, bool LogC
         //    usleep(100000);  // Sleep for 100ms
        // }
     } else if (LogConsole) {
-        // If the log queue is shutting down or not available, print to console as a fallback
-        printf("%s: %s\n", subsystem, details);
+        // If the log queue is shutting down or not available, use formatted console output
+        console_log(subsystem, priority, details);
     }
 
     pthread_mutex_unlock(&log_mutex);

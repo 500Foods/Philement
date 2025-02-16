@@ -20,7 +20,27 @@
 // Project headers
 #include "keys.h"
 
-char *generate_secret_key() {
+// Generate cryptographically secure random key for authentication
+//
+// Key generation strategy:
+// 1. Security
+//    - Uses OpenSSL's CSPRNG for cryptographic quality
+//    - Key length chosen for attack resistance
+//    - Avoids modulo bias in random distribution
+//    - Hexadecimal encoding for safe transport
+//
+// 2. Memory Safety
+//    - Bounded buffer sizes
+//    - NULL termination guarantee
+//    - Cleanup on error paths
+//    - No sensitive data leaks
+//
+// 3. Error Handling
+//    - CSPRNG failure detection
+//    - Allocation failure recovery
+//    - Clean error propagation
+//    - Resource cleanup
+char *generate_secret_key(void) {
     unsigned char random_bytes[SECRET_KEY_LENGTH];
     char *secret_key = malloc(SECRET_KEY_LENGTH * 2 + 1);
 

@@ -24,7 +24,15 @@
 
 // Project headers
 #include "beryllium.h"
+#include "utils.h"
 
+// Generate ISO8601 timestamps for print metadata
+//
+// Uses static buffer for efficiency since:
+// - Timestamps are frequently generated
+// - Memory allocation would be wasteful
+// - Thread safety not required for timestamps
+// - Format is fixed and known at compile time
 char* get_iso8601_timestamp(void) {
     static char buffer[sizeof "2011-10-08T07:07:09Z"];
     time_t now = time(NULL);
@@ -42,6 +50,16 @@ void format_time(double seconds, char *buffer) {
     sprintf(buffer, "%02d:%02d:%02d:%02.0f", days, hours, minutes, seconds);
 }
 
+// Extract numeric parameters from G-code commands
+//
+// Design choices for parameter parsing:
+// 1. No memory allocation - Uses direct string scanning
+// 2. Default to 0.0 - Safe for missing parameters
+// 3. Minimal validation - Assumes well-formed input
+// 4. No error reporting - Speed over detailed errors
+//
+// This approach prioritizes performance since parameter
+// parsing is one of the most frequent operations
 static double parse_parameter(const char *line, const char *parameter) {
     char *pos = strstr(line, parameter);
     if (pos != NULL) {
@@ -93,6 +111,15 @@ char* parse_name_parameter(const char *line) {
     return strdup(""); // Return an empty string if NAME= is not found
 }
 
+// Parse layer changes from G-code metadata
+//
+// Layer detection strategy:
+// 1. Comment-based tracking - More reliable than Z changes
+// 2. Immediate state update - Ensures accurate timing
+// 3. Explicit numbering - Handles non-sequential layers
+// 4. Fast string matching - Optimized for frequent checks
+//
+// Returns -1 for non-layer lines to distinguish from layer 0
 static int parse_current_layer(const char *line) {
     char *pos = strstr(line, "SET_PRINT_STATS_INFO CURRENT_LAYER=");
     if (pos != NULL) {
@@ -102,6 +129,23 @@ static int parse_current_layer(const char *line) {
 }
 
 
+// Calculate move duration using real-world motion profiles
+//
+// Motion planning algorithm chosen to balance:
+// 1. Accuracy - Models actual stepper behavior
+//    - Trapezoidal velocity profiles
+//    - Proper acceleration/deceleration
+//    - Maximum velocity limits
+//
+// 2. Performance - Fast computation for millions of moves
+//    - Minimal floating point operations
+//    - No trigonometry or complex math
+//    - Early exit for zero moves
+//
+// 3. Mechanical Constraints
+//    - Prevents excessive acceleration
+//    - Respects maximum velocities
+//    - Models actual motor capabilities
 static int accelerated_move(double length, double acceleration, double max_velocity) {
     if (length == 0.0) {
         return 0.0;
@@ -139,7 +183,7 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
     // Allocate memory for stats.object_times
     stats.object_times = calloc(MAX_LAYERS, sizeof(double *));
     if (stats.object_times == NULL) {
-        fprintf(stderr, "Memory allocation failed for object_times\n");
+        console_log("Beryllium", 3, "Memory allocation failed for object_times");
         stats.success = false;
         stats.object_times = NULL;
         return stats;
@@ -151,7 +195,7 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
 
     double *z_values = calloc(100, sizeof(double));  // Start with 100 elements
     if (z_values == NULL) {
-        fprintf(stderr, "Memory allocation failed\n");
+        console_log("Beryllium", 3, "Memory allocation failed for z_values");
         free(stats.object_times);
         stats.object_times = NULL;
         stats.success = false;
@@ -173,7 +217,7 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
                 int name_length = name_end - name_start;
                 object_infos = realloc(object_infos, (num_objects + 1) * sizeof(ObjectInfo));
                 if (object_infos == NULL) {
-                    fprintf(stderr, "Memory reallocation failed for object_infos\n");
+                    console_log("Beryllium", 3, "Memory reallocation failed for object_infos");
                     free(stats.object_times);
                     stats.object_times = NULL;
                     free(z_values);
@@ -187,7 +231,7 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
                 object_infos[num_objects].name = strndup(name_start, name_length);
 	    //printf("Object defined: %s\n",object_infos[num_objects].name);
                 if (object_infos[num_objects].name == NULL) {
-                    fprintf(stderr, "Memory allocation failed for object name\n");
+                    console_log("Beryllium", 3, "Memory allocation failed for object name");
                     free(stats.object_times);
                     stats.object_times = NULL;
                     free(z_values);
@@ -244,7 +288,7 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
                 if (stats.object_times[current_layer] == NULL) {
                     stats.object_times[current_layer] = calloc(num_objects, sizeof(double));
                     if (stats.object_times[current_layer] == NULL) {
-                        fprintf(stderr, "Memory allocation failed for object_times[%d]\n", current_layer);
+                        console_log("Beryllium", 3, "Memory allocation failed for layer object times");
                         // Free previously allocated layer arrays
                         for (int i = 0; i < current_layer; i++) {
                             free(stats.object_times[i]);
@@ -325,7 +369,7 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
                         z_values_capacity += 100;
                         double *new_z_values = realloc(z_values, z_values_capacity * sizeof(double));
                         if (new_z_values == NULL) {
-                            fprintf(stderr, "Memory reallocation failed\n");
+                            console_log("Beryllium", 3, "Memory reallocation failed for z_values");
                             free(z_values);
                             for (int i = 0; i < stats.layer_count_slicer; i++) {
                                 free(stats.object_times[i]);
@@ -408,6 +452,16 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
     return stats;
 }
 
+// Clean up analysis results with complete resource release
+//
+// Memory management strategy:
+// 1. Hierarchical cleanup - Parent structures last
+// 2. Null protection - Safe for partial initialization
+// 3. Counter reset - Prevents stale length data
+// 4. Pointer nulling - Prevents use-after-free
+//
+// This careful cleanup prevents memory leaks even in
+// error cases and ensures consistent state for reuse
 void beryllium_free_stats(BerylliumStats *stats) {
     if (!stats) {
         return;

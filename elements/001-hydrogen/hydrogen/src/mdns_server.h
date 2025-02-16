@@ -46,6 +46,7 @@ typedef struct {
 typedef struct {
     int sockfd_v4;
     int sockfd_v6;
+    int enable_ipv6;        // Control IPv6 functionality
     char *hostname;
     char *service_name;
     char *device_id;
@@ -78,7 +79,8 @@ mdns_t *mdns_init(const char *app_name,
 		  const char *hw_version, 
 		  const char *config_url,
 		  mdns_service_t *services,
-		  size_t num_services);
+		  size_t num_services,
+		  int enable_ipv6);
 void mdns_build_announcement(uint8_t *packet, size_t *packet_len, const char *hostname, const mdns_t *mdns, uint32_t ttl, const network_info_t *net_info);
 void mdns_send_announcement(mdns_t *mdns, const network_info_t *net_info);
 void mdns_shutdown(mdns_t *mdns);

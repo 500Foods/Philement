@@ -1,15 +1,51 @@
-# Compiler and basic flags
+# Build System Configuration
+#
+# Build strategy prioritizes:
+# 1. Code Quality
+#    - Modern C17 standard for latest features
+#    - Strict warning flags for code quality
+#    - Pedantic mode for standard compliance
+#    - O2 optimization for performance/safety balance
+#
+# 2. Development Experience
+#    - Separate debug/valgrind builds
+#    - Address sanitizer integration
+#    - Clear error reporting
+#    - Fast incremental builds
+#
+# 3. Maintainability
+#    - Automatic dependency tracking
+#    - Modular directory structure
+#    - Consistent naming scheme
+#    - Clean build separation
+#
+# 4. Production Readiness
+#    - Optimized release builds
+#    - Proper symbol handling
+#    - Version management
+#    - Deployment preparation
+
+# Compiler selection and optimization flags
 CC = gcc
 CFLAGS = -std=c17 -Wall -Wextra -pedantic -O2
 
-# Required external library dependencies
-# -ljansson    : JSON parsing and creation library
-# -lpthread    : POSIX threads for concurrent operations
-# -lmicrohttpd : Lightweight HTTP server functionality
-# -lm          : Standard C math library
-# -lssl        : OpenSSL for SSL/TLS encryption
-# -lcrypto     : OpenSSL cryptographic functions
-# -lwebsockets : WebSocket protocol implementation
+# External Dependencies
+#
+# Library selection rationale:
+# 1. Core Functionality
+#    - jansson: Efficient JSON handling with memory safety
+#    - pthread: POSIX thread support for concurrency
+#    - microhttpd: Lightweight embedded HTTP server
+#
+# 2. Security
+#    - ssl/crypto: Industry-standard encryption
+#    - Memory safety features
+#    - Secure random number generation
+#
+# 3. Communication
+#    - websockets: Full-duplex realtime messaging
+#    - Efficient binary protocol support
+#    - Automatic connection management
 LDFLAGS = -ljansson -lpthread -lmicrohttpd -lm -lssl -lcrypto -lwebsockets
 
 # Directory structure

@@ -30,11 +30,13 @@ Welcome to the Hydrogen Project server documentation. This documentation will he
 For the most common operations, refer to these quick examples:
 
 1. Get system status:
+
    ```bash
    curl http://localhost:5000/api/system/info
    ```
 
 2. View print queue (HTML interface):
+
    ```bash
    curl http://localhost:5000/print/queue
    ```
@@ -51,6 +53,7 @@ When adding new features to Hydrogen, please remember to:
 ## Support
 
 If you find any issues with the documentation or need clarification, please:
+
 1. Check the existing documentation thoroughly
 2. Look for related code comments in the source
 3. Create an issue in the project repository

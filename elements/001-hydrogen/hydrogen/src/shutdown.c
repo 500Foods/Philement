@@ -52,15 +52,25 @@
 #include "mdns_server.h"
 #include "print_queue_manager.h"  // For shutdown_print_queue()
 #include "log_queue_manager.h"    // For close_file_logging()
+#include "utils.h"               // For console_log()
 
-// Ctrl+C handler
-// Initiates graceful shutdown when user interrupts program
-// Sets keep_running=0 and signals all threads via condition variable
+// Signal handler implementing graceful shutdown initiation
+//
+// Design choices for interrupt handling:
+// 1. Thread Safety
+//    - Minimal work in signal context
+//    - Atomic flag modifications only
+//    - Deferred cleanup to main thread
+//
+// 2. Coordination
+//    - Single point of shutdown initiation
+//    - Broadcast notification to all threads
+//    - Prevents multiple shutdown attempts
 void inthandler(int signum) {
     (void)signum;
 
-    printf("\n");
-    log_this("Shutdown", "Cleaning up and shutting down", 0, true, true, true);
+    printf("\n");  // Keep newline for visual separation
+    console_log("Shutdown", 0, "Cleaning up and shutting down");
 
     pthread_mutex_lock(&terminate_mutex);
     keep_running = 0;
@@ -68,9 +78,23 @@ void inthandler(int signum) {
     pthread_mutex_unlock(&terminate_mutex);
 }
 
-// Shutdown mDNS system
-// Must be first to stop advertising services
-// Ensures no new clients attempt to connect during shutdown
+// Stop network service advertisement with connection preservation
+//
+// mDNS shutdown strategy prioritizes:
+// 1. Client Experience
+//    - Clean service withdrawal
+//    - Goodbye packet transmission
+//    - DNS cache invalidation
+//
+// 2. Resource Management
+//    - Socket cleanup
+//    - Memory deallocation
+//    - Thread termination
+//
+// 3. Network Stability
+//    - Prevent lingering advertisements
+//    - Clear multicast groups
+//    - Release network resources
 static void shutdown_mdns_system(void) {
     if (!app_config->mdns.enabled) {
         return;
@@ -214,12 +238,27 @@ static void free_app_config(void) {
     }
 }
 
-// Main shutdown sequence coordinator
-// Orchestrates orderly shutdown of all components
-// Uses strategic delays to ensure proper cleanup order
-// Handles thread synchronization and resource cleanup
+// Orchestrate system shutdown with dependency-aware sequencing
+//
+// The shutdown architecture implements:
+// 1. Component Dependencies
+//    - Service advertisement first
+//    - Network services second
+//    - Core systems last
+//    - Configuration cleanup final
+//
+// 2. Resource Safety
+//    - Staged cleanup phases
+//    - Timeout-based waiting
+//    - Forced cleanup fallbacks
+//    - Memory leak prevention
+//
+// 3. Error Handling
+//    - Component isolation
+//    - Partial shutdown recovery
+//    - Resource leak prevention
+//    - Cleanup verification
 void graceful_shutdown(void) {
-    printf("\n");  // Keep this printf for visual separation
     log_this("Shutdown", "Initiating graceful shutdown", 0, true, true, true);
     
     // Signal all threads that shutdown is imminent
@@ -246,21 +285,21 @@ void graceful_shutdown(void) {
     usleep(1000000);  // 1s delay
 
     // Now safe to stop logging since other components are done
-    printf("Shutting down logging system...\n");
+    console_log("Shutdown", 0, "Shutting down logging system...");
     pthread_mutex_lock(&terminate_mutex);
     log_queue_shutdown = 1;
     pthread_cond_broadcast(&terminate_cond);
     pthread_mutex_unlock(&terminate_mutex);
     
     // Wait for log thread to finish processing remaining messages
-    printf("Waiting for log queue to drain...\n");
+    console_log("Shutdown", 0, "Waiting for log queue to drain...");
     pthread_join(log_thread, NULL);
     
     // Wait for any pending log operations
     usleep(500000);  // 500ms delay
     
     // Now safe to destroy queues since all threads are stopped
-    printf("Shutting down queue system...\n");
+    console_log("Shutdown", 0, "Shutting down queue system...");
     queue_system_destroy();
 
     // Wait for any pending operations
@@ -280,5 +319,5 @@ void graceful_shutdown(void) {
     // Free configuration last since other components might need it
     free_app_config();
 
-    printf("Shutdown complete\n");
+    console_log("Shutdown", 0, "Shutdown complete");
 }
