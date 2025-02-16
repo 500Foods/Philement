@@ -1,5 +1,5 @@
 /*
- * System Service API endpoints for the Hydrogen 3D printer.
+ * System Service API endpoints for the Hydrogen Project.
  * Provides system-level information and operations.
  */
 

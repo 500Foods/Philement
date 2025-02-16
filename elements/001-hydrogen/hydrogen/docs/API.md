@@ -1,6 +1,6 @@
 # Hydrogen API Documentation
 
-This document provides details about the available API endpoints in the Hydrogen 3D printer server.
+This document provides details about the available API endpoints in the Hydrogen Project server.
 
 ## System Endpoints
 

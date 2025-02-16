@@ -1,8 +1,9 @@
 /*
- * Startup sequence handler for the Hydrogen 3D printer server.
+ * Startup sequence handler for the Hydrogen Project server.
  * 
- * This file manages the initialization of all server components including logging,
- * print queue, web server, WebSocket server, and mDNS service discovery. The startup
+ * This file manages the initialization of all server components including core services
+ * and optional features. The startup sequence handles both general-purpose components
+ * (logging, web server, WebSocket server, mDNS) and specialized features (print queue). The startup
  * sequence follows a specific order to handle dependencies between components and
  * ensure proper initialization:
  * 

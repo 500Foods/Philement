@@ -1,7 +1,7 @@
 /*
- * WebSocket server interface for the Hydrogen 3D printer.
+ * WebSocket server interface for the Hydrogen Project.
  * 
- * Provides real-time bidirectional communication for printer status updates
+ * Provides real-time bidirectional communication for device status updates
  * and control. Features include key-based authentication, protocol versioning,
  * and automatic port selection with fallback options.
  */

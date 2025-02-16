@@ -1,6 +1,6 @@
 # Hydrogen Documentation
 
-Welcome to the Hydrogen 3D printer server documentation. This documentation will help you understand how to interact with and configure the Hydrogen server.
+Welcome to the Hydrogen Project server documentation. This documentation will help you understand how to interact with and configure the Hydrogen server.
 
 ## Contents
 
