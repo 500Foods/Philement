@@ -2,9 +2,38 @@
  * Implementation of the thread-safe priority queue system.
  * 
  * Provides a robust implementation of named queues with hash-based lookup.
- * Features include thread-safe operations, priority-based messaging,
- * timestamp tracking, and memory usage monitoring. Uses mutex locks and
- * condition variables to ensure safe concurrent access.
+ * This implementation focuses on thread safety, performance, and reliability
+ * through careful synchronization and resource management.
+ * 
+ * Implementation Strategy:
+ * - Hash table with chaining for queue lookup
+ * - Lock-based thread synchronization
+ * - Two-phase locking for complex operations
+ * - Resource cleanup on errors
+ * 
+ * Synchronization Patterns:
+ * - System mutex for queue creation/deletion
+ * - Per-queue mutex for operations
+ * - Condition variables for blocking ops
+ * - Lock ordering to prevent deadlocks
+ * 
+ * Memory Management:
+ * - Defensive allocation checks
+ * - Cleanup on partial failures
+ * - Buffer overflow prevention
+ * - Memory usage tracking
+ * 
+ * Error Handling:
+ * - Input validation
+ * - Resource allocation checks
+ * - Partial operation rollback
+ * - Error logging
+ * 
+ * Performance Considerations:
+ * - Minimized critical sections
+ * - Efficient hash function
+ * - Optimized memory operations
+ * - Lock-free reads where safe
  */
 
 // Feature test macros must come first
@@ -27,6 +56,9 @@
 
 QueueSystem queue_system;
 
+// DJB2 hash function for queue name lookup
+// Provides good distribution with string keys
+// Returns: hash value modulo table size
 static unsigned int hash(const char* str) {
     unsigned int hash = 5381;
     int c;
@@ -74,6 +106,13 @@ Queue* queue_find(const char* name) {
     return NULL;
 }
 
+// Create a new message queue
+// Thread-safe queue creation with:
+// 1. Duplicate name checking
+// 2. Resource allocation
+// 3. Mutex/condition initialization
+// 4. Hash table insertion
+// Returns: Queue pointer or NULL on error
 Queue* queue_create(const char* name, QueueAttributes* attrs) {
     if (name == NULL || attrs == NULL) {
         return NULL;
@@ -164,6 +203,13 @@ void queue_destroy(Queue* queue) {
     free(queue);
 }
 
+// Add a message to the queue
+// Thread-safe enqueue operation:
+// 1. Validates input parameters
+// 2. Allocates message buffer
+// 3. Updates queue state
+// 4. Signals waiting threads
+// Returns: true on success, false on error
 bool queue_enqueue(Queue* queue, const char* data, size_t size, int priority) {
     if (!queue || !data || size == 0) {
         return false;
@@ -204,6 +250,13 @@ bool queue_enqueue(Queue* queue, const char* data, size_t size, int priority) {
     return true;
 } 
 
+// Remove and return the next message
+// Thread-safe dequeue operation:
+// 1. Waits for available message
+// 2. Updates queue state
+// 3. Manages memory accounting
+// 4. Signals waiting threads
+// Returns: Message data or NULL on error
 char* queue_dequeue(Queue* queue, size_t* size, int* priority) {
     if (!queue || !size || !priority) {
         return NULL;

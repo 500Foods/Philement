@@ -1,12 +1,44 @@
 /*
  * Implementation of the Hydrogen 3D printer's web server.
  * 
- * Uses libmicrohttpd to provide a multi-threaded HTTP server that handles:
- * - File uploads with progress tracking and validation
- * - G-code file analysis and preview image extraction
- * - Print queue management with JSON-based job descriptions
- * - Static file serving for the web interface
- * - RESTful API endpoints compatible with OctoPrint clients
+ * Uses libmicrohttpd to provide a multi-threaded HTTP server that implements
+ * a RESTful API and file management system. The server provides several key
+ * features:
+ * 
+ * Request Handling:
+ * - Multi-threaded processing for concurrent requests
+ * - CORS support for cross-origin requests
+ * - Request routing based on URL patterns
+ * - Static file serving for web interface
+ * 
+ * File Upload System:
+ * - Secure file upload handling with size limits
+ * - Progress tracking and logging
+ * - Automatic UUID generation for unique filenames
+ * - Upload directory management and validation
+ * 
+ * G-code Processing:
+ * - Automatic analysis of uploaded G-code files
+ * - Preview image extraction from embedded thumbnails
+ * - Print time estimation and statistics
+ * - Layer-by-layer breakdown of print jobs
+ * 
+ * Print Queue Management:
+ * - JSON-based job descriptions
+ * - Queue visualization and management
+ * - Print job status tracking
+ * - Integration with print queue manager
+ * 
+ * API Compatibility:
+ * - OctoPrint-compatible REST endpoints
+ * - Version information and system status
+ * - Print job control and monitoring
+ * 
+ * Security Considerations:
+ * - File size limits and validation
+ * - Safe file path handling
+ * - Resource cleanup on errors
+ * - Proper error reporting
  */
 
 // Feature test macros must come first
@@ -76,6 +108,9 @@ static json_t* extract_gcode_info(const char* filename);
 static char* extract_preview_image(const char* filename);
 static enum MHD_Result handle_print_queue_request(struct MHD_Connection *connection);
 
+// Generate a unique identifier for uploaded files
+// Uses system time and random numbers for uniqueness
+// Format: 8-4-4-4-12 hexadecimal digits
 static void generate_uuid(char *uuid_str) {
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -89,6 +124,9 @@ static void generate_uuid(char *uuid_str) {
              (unsigned long long int)rand() * rand());
 }
 
+// Check if a network port is available for binding
+// Attempts to create and bind a socket to verify availability
+// Returns true if port can be bound, false otherwise
 static bool is_port_available(int port) {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == -1) {
@@ -112,6 +150,10 @@ void add_cors_headers(struct MHD_Response *response) {
     MHD_add_response_header(response, "Access-Control-Allow-Headers", "Content-Type");
 }
 
+// Process incoming file upload data chunks
+// Handles file creation, data writing, and progress tracking
+// Supports both file data and metadata (like print-after-upload flag)
+// Returns MHD_YES on success, MHD_NO on error
 static enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind kind, const char *key,
                                           const char *filename, const char *content_type,
                                           const char *transfer_encoding, const char *data, uint64_t off, size_t size) {
@@ -250,6 +292,10 @@ static bool is_api_endpoint(const char *url, char *service, char *endpoint) {
     return true;
 }
 
+// Main request handler for all incoming HTTP requests
+// Routes requests to appropriate handlers based on URL and method
+// Supports GET, POST, and OPTIONS methods
+// Implements API endpoints and static file serving
 static enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
                            const char *url, const char *method,
                            const char *version, const char *upload_data,
@@ -419,6 +465,11 @@ static enum MHD_Result handle_request(void *cls, struct MHD_Connection *connecti
     return MHD_YES;
 }
 
+// Cleanup handler called after request completion
+// Ensures proper resource cleanup:
+// - Closes open files
+// - Frees allocated memory
+// - Destroys post processors
 static void request_completed(void *cls, struct MHD_Connection *connection,
                               void **con_cls, enum MHD_RequestTerminationCode toe) {
     (void)cls; (void)connection; (void)toe;  // Unused parameters

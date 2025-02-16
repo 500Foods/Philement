@@ -2,7 +2,21 @@
  * Main application entry point for the Hydrogen 3D printer server.
  * 
  * This file orchestrates the startup and shutdown sequences, delegating the actual
- * initialization and cleanup to specialized components.
+ * initialization and cleanup to specialized components. The program follows a modular
+ * architecture where each major function (web server, WebSocket, logging, etc.) is
+ * handled by dedicated components that are initialized during startup and cleaned up
+ * during shutdown.
+ * 
+ * Program Lifecycle:
+ * 1. Signal handlers are established to catch interrupt signals for clean shutdown
+ * 2. Configuration is loaded from a JSON file (default: hydrogen.json)
+ * 3. Components are initialized in dependency order via startup_hydrogen()
+ * 4. Main event loop runs until shutdown is requested
+ * 5. Graceful shutdown sequence cleans up all components
+ * 
+ * The main event loop uses a timed wait pattern to balance responsiveness with
+ * system resource usage. This allows for both immediate shutdown response and
+ * periodic system maintenance operations.
  */
 
 // Feature test macros must come first
@@ -24,19 +38,23 @@
 
 int main(int argc, char *argv[]) {
 
-    // Set up interrupt handler
+    // Set up interrupt handler for clean shutdown on Ctrl+C
+    // This ensures all components get a chance to clean up their resources
     signal(SIGINT, inthandler);
     
-    // Load configuration and start all components
+    // Load configuration and initialize all system components
+    // Components are started in a specific order to handle dependencies
     char* config_path = (argc > 1) ? argv[1] : "hydrogen.json";
     if (!startup_hydrogen(config_path)) {
         return 1;
     }
 
-    // Main event loop - Implements a timed wait pattern that:
-    // 1. Allows immediate response to shutdown signals
-    // 2. Provides regular timeouts for system maintenance
-    // 3. Efficiently uses system resources through conditional waiting
+    // Main event loop 
+    // This implements a timed wait pattern that balances several needs:
+    // 1. Allows immediate response to shutdown signals through condition variables
+    // 2. Provides regular timeouts (every 1 second) for system maintenance tasks
+    // 3. Efficiently uses system resources by sleeping when idle
+    // 4. Maintains system responsiveness without busy-waiting
     struct timespec ts;
     while (keep_running) {
         
@@ -59,7 +77,8 @@ int main(int argc, char *argv[]) {
         
     }
 
-    // Clean shutdown
+    // Initiate graceful shutdown sequence
+    // This ensures all components are properly stopped and resources are released
     graceful_shutdown();
 
     return 0;

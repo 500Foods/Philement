@@ -2,8 +2,29 @@
  * Startup sequence handler for the Hydrogen 3D printer server.
  * 
  * This file manages the initialization of all server components including logging,
- * print queue, web server, WebSocket server, and mDNS service discovery. It ensures
- * proper startup order and handles initialization failures gracefully.
+ * print queue, web server, WebSocket server, and mDNS service discovery. The startup
+ * sequence follows a specific order to handle dependencies between components and
+ * ensure proper initialization:
+ * 
+ * Initialization Order:
+ * 1. Queue System - Core infrastructure for inter-thread communication
+ * 2. Logging System - Enables system-wide logging and error reporting
+ * 3. Configuration - Loads and validates server configuration
+ * 4. Print Queue (optional) - Manages 3D print job scheduling
+ * 5. Web Server (optional) - Handles HTTP requests for the REST API
+ * 6. WebSocket Server (optional) - Provides real-time status updates
+ * 7. mDNS System (optional) - Enables network service discovery
+ * 
+ * Error Handling:
+ * - Each component's initialization is isolated to prevent cascading failures
+ * - Failed initialization of optional components may not stop the server
+ * - Critical component failures (logging, queue system) trigger immediate shutdown
+ * - All failures are logged when possible for diagnostics
+ * 
+ * Configuration:
+ * - Components can be selectively enabled/disabled via config
+ * - Each component has its own configuration section
+ * - Runtime validation ensures all required settings are present
  */
 
 // Feature test macros must come first
@@ -31,6 +52,8 @@
 static void log_app_info(void);
 
 // Initialize logging system and create log queue
+// This is a critical system component - failure here will prevent startup
+// The log queue provides thread-safe logging for all other components
 static int init_logging(const char *config_path) {
     // Create the SystemLog queue
     QueueAttributes system_log_attrs = {0};
@@ -62,6 +85,9 @@ static int init_logging(const char *config_path) {
 }
 
 // Initialize print queue system
+// Requires: Logging system, Queue system
+// Optional component that manages the 3D printer job queue
+// Launches a dedicated thread for processing print jobs
 static int init_print_system(void) {
     if (!init_print_queue()) {
         return 0;
@@ -76,6 +102,11 @@ static int init_print_system(void) {
 }
 
 // Initialize web and websocket servers independently
+// Requires: Logging system
+// Optional components that can be enabled/disabled separately
+// Web server provides REST API access
+// WebSocket server enables real-time status updates
+// Each server runs in its own thread when enabled
 static int init_web_systems(void) {
     int web_success = 1;
     int websocket_success = 1;
@@ -119,6 +150,10 @@ static int init_web_systems(void) {
 }
 
 // Initialize mDNS system
+// Requires: Network info, Logging system
+// Optional component for network service discovery
+// Advertises enabled services (web/websocket) via mDNS
+// Filters advertised services based on which servers are running
 static int init_mdns_system(void) {
     // Initialize mDNS with validated configuration
     log_this("Initialization", "Starting mDNS initialization", 0, true, true, true);
@@ -218,6 +253,10 @@ static int init_mdns_system(void) {
 }
 
 // Log application information
+// Records key details about the server instance including:
+// - Server name and version
+// - Executable details (path, size, modification time)
+// - Active configuration settings
 static void log_app_info(void) {
     log_this("Initialization", "%s", 0, true, true, true, LOG_LINE_BREAK);
     log_this("Initialization", "Server Name: %s", 0, true, true, true, app_config->server_name);
@@ -245,6 +284,9 @@ static void log_app_info(void) {
 }
 
 // Main startup function
+// Orchestrates the entire startup sequence
+// Returns 1 on successful startup, 0 on critical failure
+// Critical failures trigger cleanup of initialized components
 int startup_hydrogen(const char *config_path) {
     // Seed random number generator
     srand((unsigned int)time(NULL));

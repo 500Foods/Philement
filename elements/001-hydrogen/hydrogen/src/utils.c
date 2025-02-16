@@ -1,9 +1,33 @@
 /*
  * Implementation of utility functions for the Hydrogen printer.
  * 
- * Provides implementations for:
- * - Random ID generation using consonants for human-readable identifiers
- * - Thread-safe initialization of random number generator
+ * Provides core utility implementations with a focus on reliability,
+ * thread safety, and proper resource management. These implementations
+ * handle common operations needed throughout the system.
+ * 
+ * JSON Status Generation:
+ * - Thread-safe status collection
+ * - Hierarchical status structure
+ * - Comprehensive system information
+ * - Service configuration reporting
+ * 
+ * Thread Synchronization:
+ * - Mutex protection for shared data
+ * - Atomic operations where appropriate
+ * - Lock scope minimization
+ * - Deadlock prevention
+ * 
+ * Random Generation:
+ * - Thread-safe initialization
+ * - Entropy source management
+ * - Buffer overflow prevention
+ * - Error checking
+ * 
+ * Resource Management:
+ * - Memory leak prevention
+ * - Error state cleanup
+ * - Resource initialization
+ * - Proper deallocation
  */
 
 // Feature test macros must come first
@@ -29,13 +53,24 @@
 #include "configuration.h"
 #include "state.h"
 
-// Mutex for thread-safe access to shared resources
+// Mutex for thread-safe status generation
+// Protects:
+// - System information collection
+// - JSON object construction
+// - Configuration access
 static pthread_mutex_t status_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // External configuration and state
 extern AppConfig *app_config;
 extern volatile sig_atomic_t keep_running;
 extern volatile sig_atomic_t shutting_down;
+// Generate comprehensive system status report
+// Thread-safe collection and JSON formatting of:
+// - Version information
+// - System details
+// - Service status
+// - Configuration settings
+// - Performance metrics
 json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
     pthread_mutex_lock(&status_mutex);
     
@@ -140,6 +175,12 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
     pthread_mutex_unlock(&status_mutex);
     return root;
 }
+// Generate random identifier string
+// Thread-safe ID generation with:
+// - One-time random seed initialization
+// - Buffer overflow protection
+// - Error logging on invalid input
+// - Consonant-based output for readability
 void generate_id(char *buf, size_t len) {
     if (len < ID_LEN + 1) {
         log_this("Utils", "Buffer too small for ID", 3, true, true, true);
