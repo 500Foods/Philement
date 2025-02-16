@@ -60,7 +60,7 @@ static int init_logging(const char *config_path) {
     QueueAttributes system_log_attrs = {0};
     Queue* system_log_queue = queue_create("SystemLog", &system_log_attrs);
     if (!system_log_queue) {
-        fprintf(stderr, "Failed to create SystemLog queue\n");
+        console_log("Initialization", 3, "Failed to create SystemLog queue");
         return 0;
     }
 
@@ -77,7 +77,7 @@ static int init_logging(const char *config_path) {
 
     // Launch log queue manager
     if (pthread_create(&log_thread, NULL, log_queue_manager, system_log_queue) != 0) {
-        fprintf(stderr, "Failed to start log queue manager thread\n");
+        console_log("Initialization", 3, "Failed to start log queue manager thread");
         queue_destroy(system_log_queue);
         return 0;
     }
@@ -104,10 +104,17 @@ static int init_print_system(void) {
 
 // Initialize web and websocket servers independently
 // Requires: Logging system
-// Optional components that can be enabled/disabled separately
-// Web server provides REST API access
-// WebSocket server enables real-time status updates
-// Each server runs in its own thread when enabled
+//
+// The web and websocket servers are intentionally decoupled to:
+// 1. Allow independent scaling - Each server can handle its own load without affecting the other
+// 2. Enhance reliability - Failure in one server doesn't compromise the other
+// 3. Support flexible deployment - Systems can run with either or both servers
+// 4. Enable different security policies - Each server can implement its own authentication
+//
+// The REST API (web server) handles stateless requests for configuration and control,
+// while the WebSocket server provides low-latency status updates and real-time monitoring.
+// This separation follows the principle of single responsibility and allows for
+// future expansion of either interface without affecting the other.
 static int init_web_systems(void) {
     int web_success = 1;
     int websocket_success = 1;
@@ -152,9 +159,17 @@ static int init_web_systems(void) {
 
 // Initialize mDNS system
 // Requires: Network info, Logging system
-// Optional component for network service discovery
-// Advertises enabled services (web/websocket) via mDNS
-// Filters advertised services based on which servers are running
+//
+// The mDNS system implements dynamic service advertisement based on active components.
+// This design choice serves several purposes:
+// 1. Zero-configuration networking - Clients can discover the server without manual setup
+// 2. Accurate service representation - Only advertises services that are actually available
+// 3. Runtime port adaptation - Handles cases where preferred ports are unavailable
+// 4. Security through obscurity - Services are only advertised when explicitly enabled
+//
+// The service filtering logic prevents misleading network advertisements and
+// ensures clients can rely on service discovery results. This is particularly
+// important in environments with multiple Hydrogen instances or other competing services.
 static int init_mdns_system(void) {
     // Initialize mDNS with validated configuration
     log_this("Initialization", "Starting mDNS initialization", 0, true, true, true);
@@ -215,7 +230,8 @@ static int init_mdns_system(void) {
                      "1.0", // Hardware version
                      config_url,
                      filtered_services,
-                     filtered_count);
+                     filtered_count,
+                     app_config->mdns.enable_ipv6);
 
     if (!mdns) {
         log_this("Initialization", "Failed to initialize mDNS", 3, true, true, true);
@@ -285,9 +301,20 @@ static void log_app_info(void) {
 }
 
 // Main startup function
-// Orchestrates the entire startup sequence
+//
+// The startup sequence follows a carefully planned order to ensure system stability:
+// 1. Queue system first - Required by all other components for thread-safe communication
+// 2. Logging second - Essential for debugging startup issues and runtime monitoring
+// 3. Optional systems last - Print queue, web servers, and mDNS in order of dependency
+//
+// This ordering is designed to:
+// - Ensure core infrastructure (queues, logging) is available for all components
+// - Allow partial system functionality even if optional components fail
+// - Provide meaningful error reporting throughout the startup process
+// - Enable clean shutdown if critical components fail
+//
 // Returns 1 on successful startup, 0 on critical failure
-// Critical failures trigger cleanup of initialized components
+// Critical failures trigger cleanup of initialized components to prevent resource leaks
 int startup_hydrogen(const char *config_path) {
     // Seed random number generator
     srand((unsigned int)time(NULL));

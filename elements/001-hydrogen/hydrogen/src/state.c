@@ -38,41 +38,91 @@
 
 #include "state.h"
 
-// Core application state flags
-// keep_running: Main program loop control
-// shutting_down: System shutdown indicator
-// Condition variables for thread coordination
+// Core state flags implementing coordinated lifecycle management
+//
+// Design choices for global state:
+// 1. Atomic Operations
+//    - sig_atomic_t for signal safety
+//    - Prevents partial updates
+//    - Ensures visibility across cores
+//
+// 2. Minimal State
+//    - Binary flags only
+//    - No complex state machines
+//    - Clear state transitions
+//
+// 3. Thread Coordination
+//    - Mutex for state changes
+//    - Condition variable for waiting
+//    - Broadcast notifications
 volatile sig_atomic_t keep_running = 1;
 volatile sig_atomic_t shutting_down = 0;
 pthread_cond_t terminate_cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t terminate_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-// Individual component shutdown flags
-// Each flag controls the shutdown of a specific subsystem
-// Order is important for clean shutdown sequence
-// All flags are atomic for thread safety
+// Component-specific shutdown flags with dependency awareness
+//
+// Shutdown flag design prioritizes:
+// 1. Dependency Order
+//    - mDNS first (stop advertising)
+//    - Network services next
+//    - Core systems last
+//
+// 2. Safety
+//    - Atomic operations only
+//    - Independent state tracking
+//    - Prevents deadlocks
+//
+// 3. Observability
+//    - Clear shutdown progress
+//    - Component state tracking
+//    - Debugging support
 volatile sig_atomic_t web_server_shutdown = 0;
 volatile sig_atomic_t print_queue_shutdown = 0;
 volatile sig_atomic_t log_queue_shutdown = 0;
 volatile sig_atomic_t mdns_server_shutdown = 0;
 volatile sig_atomic_t websocket_server_shutdown = 0;
 
-// Thread handles for all system components
-// Used for:
-// - Thread lifecycle management
-// - Shutdown coordination
-// - Resource cleanup
+// System thread handles with lifecycle management
+//
+// Thread handle centralization enables:
+// 1. Resource Management
+//    - Consistent cleanup
+//    - Join operations
+//    - Handle validation
+//
+// 2. Shutdown Coordination
+//    - Ordered termination
+//    - Resource release
+//    - Deadlock prevention
+//
+// 3. State Tracking
+//    - Component health
+//    - Resource usage
+//    - System monitoring
 pthread_t log_thread;
 pthread_t print_queue_thread;
 pthread_t mdns_thread;
 pthread_t web_thread;
 pthread_t websocket_thread;
 
-// Global shared resources
-// Managed centrally for:
-// - Consistent access
-// - Lifecycle control
-// - Resource cleanup
+// Shared resource handles with centralized management
+//
+// Resource management strategy:
+// 1. Access Control
+//    - Single source of truth
+//    - Controlled initialization
+//    - Safe deallocation
+//
+// 2. Lifecycle Management
+//    - Dependency tracking
+//    - Ordered initialization
+//    - Clean shutdown
+//
+// 3. Memory Safety
+//    - Clear ownership
+//    - Null safety
+//    - Leak prevention
 AppConfig *app_config = NULL;
 mdns_t *mdns = NULL;
 network_info_t *net_info = NULL;

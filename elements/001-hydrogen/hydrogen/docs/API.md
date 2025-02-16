@@ -17,6 +17,7 @@ curl http://localhost:5000/api/system/info
 **Content-Type:** application/json
 
 **Response Format:**
+
 ```json
 {
   "system": {

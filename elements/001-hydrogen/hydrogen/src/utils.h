@@ -79,4 +79,13 @@ void generate_id(char *buf, size_t len);
 //   NULL: On memory allocation failure
 json_t* get_system_status_json(const WebSocketMetrics *ws_metrics);
 
+// Format and output a log message directly to console
+// Matches the format of the logging queue system:
+// timestamp  [ priority ]  [ subsystem ]  message
+// Parameters:
+//   subsystem: Name of the subsystem (e.g., "Shutdown", "WebServer")
+//   priority: Log priority level (0-3)
+//   message: The message to log
+void console_log(const char* subsystem, int priority, const char* message);
+
 #endif // UTILS_H

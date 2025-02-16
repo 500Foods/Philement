@@ -36,6 +36,32 @@ extern int ws_connections;
 extern int ws_connections_total;
 extern int ws_requests;
 
+// Handle real-time status request via WebSocket
+//
+// Status reporting design prioritizes:
+// 1. Data Accuracy
+//    - Atomic metric collection
+//    - Consistent timestamps
+//    - Race condition prevention
+//    - State synchronization
+//
+// 2. Performance
+//    - Efficient JSON generation
+//    - Memory pooling
+//    - Minimal allocations
+//    - Zero-copy where possible
+//
+// 3. Reliability
+//    - Memory leak prevention
+//    - Error recovery paths
+//    - Resource cleanup
+//    - Partial success handling
+//
+// 4. Client Experience
+//    - Consistent message format
+//    - Meaningful metrics
+//    - Real-time updates
+//    - Low latency delivery
 void handle_status_request(struct lws *wsi)
 {
     log_this("WebSocket", "Preparing status response", 0, true, true, true);

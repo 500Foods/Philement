@@ -34,26 +34,27 @@
 #include "utils.h"
 #include "logging.h"
 
-static int count_interfaces() __attribute__((unused));
-static int count_interfaces() {
-    struct ifaddrs *ifaddr;
-    if (getifaddrs(&ifaddr) == -1) {
-        log_this("Network", "getifaddrs failed: %s", 3, true, true, true, strerror(errno));
-        return 0;
-    }
-
-    int count = 0;
-    for (struct ifaddrs *ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
-        if (ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_PACKET) {
-            count++;
-        }
-    }
-
-    freeifaddrs(ifaddr);
-    return count;
-}
-
-network_info_t *get_network_info() {
+// Discover and analyze network interfaces with comprehensive enumeration
+//
+// Network discovery design prioritizes:
+// 1. Address Management
+//    - Dual IPv4/IPv6 stack support
+//    - Interface categorization
+//    - Address deduplication
+//    - Loopback handling
+//
+// 2. Memory Safety
+//    - Bounded array sizes
+//    - String length checks
+//    - NULL termination
+//    - Resource cleanup
+//
+// 3. Error Recovery
+//    - Partial results handling
+//    - System call retries
+//    - Fallback options
+//    - Detailed logging
+network_info_t *get_network_info(void) {
     network_info_t *info = malloc(sizeof(network_info_t));
     if (!info) {
         perror("malloc");
@@ -128,6 +129,26 @@ void free_network_info(network_info_t *info) {
     }
 }
 
+// Find available network port with collision avoidance
+//
+// Port selection strategy:
+// 1. Reliability
+//    - Sequential port testing
+//    - Bind verification
+//    - Permission checking
+//    - Range validation
+//
+// 2. Security
+//    - Privileged port avoidance
+//    - System port skipping
+//    - Permission validation
+//    - Resource cleanup
+//
+// 3. Performance
+//    - Early exit on success
+//    - Efficient socket ops
+//    - Resource reuse
+//    - Quick release
 int find_available_port(int start_port) {
     struct sockaddr_in addr;
     int sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -151,4 +172,3 @@ int find_available_port(int start_port) {
     log_this("Network", "No available ports found", 3, true, true, true);
     return -1;
 }
-

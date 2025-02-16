@@ -64,6 +64,7 @@
 #include "websocket_server.h"
 #include "logging.h"
 #include "configuration.h"
+#include "utils.h"
 
 #define HYDROGEN_AUTH_SCHEME "Key"
 
@@ -95,20 +96,36 @@ typedef struct _ws_session_data {
     bool authenticated;
 } ws_session_data;
 
-// Custom logging handler for libwebsockets
-// Maps libwebsockets log levels to Hydrogen log levels
-// Handles special cases during shutdown
-// Formats messages for consistency
+// Custom logging handler designed to bridge libwebsockets and Hydrogen logging
+//
+// This custom handler serves multiple purposes:
+// 1. Unified logging - Integrates external library logs into our system
+// 2. Graceful degradation - Falls back to printf during shutdown
+// 3. Level translation - Maps between different logging schemas
+// 4. Format consistency - Ensures all logs follow project standards
+//
+// We explicitly handle shutdown separately to ensure critical messages
+// are not lost when the logging system may be unavailable.
 static void custom_lws_log(int level, const char *line)
 {
-    // During shutdown, use printf instead of log_this
+    // During shutdown, use console_log instead of log_this
     if (websocket_server_shutdown) {
-        printf("WebSocket [%s]: %s\n", 
-               (level == LLL_ERR) ? "ERROR" :
-               (level == LLL_WARN) ? "WARN" :
-               (level == LLL_NOTICE) ? "NOTICE" :
-               (level == LLL_INFO) ? "INFO" : "DEBUG",
-               line);
+        int priority;
+        switch (level) {
+            case LLL_ERR:
+                priority = 3;  // ERROR
+                break;
+            case LLL_WARN:
+                priority = 2;  // WARN
+                break;
+            case LLL_NOTICE:
+            case LLL_INFO:
+                priority = 0;  // INFO
+                break;
+            default:
+                priority = 2;  // Default to WARN for unknown levels
+        }
+        console_log("WebSocket", priority, line);
         return;
     }
 
@@ -139,13 +156,19 @@ static void custom_lws_log(int level, const char *line)
     free(log_line);
 }
 
-// Main WebSocket callback handler
-// Processes all WebSocket events and manages connection lifecycle:
-// 1. Connection establishment and authentication
-// 2. Message reception and fragmentation handling
-// 3. State management and tracking
-// 4. Error handling and connection cleanup
-// 5. Shutdown coordination
+// Main WebSocket callback handler implementing the connection state machine
+//
+// This centralized callback architecture was chosen to:
+// 1. Maintain consistent state transitions - All events flow through one point
+// 2. Simplify security enforcement - Authentication check happens early
+// 3. Enable graceful shutdown - Controlled connection lifecycle
+// 4. Prevent resource leaks - Systematic cleanup on any path
+//
+// The handler implements defensive programming:
+// - Early authentication checks before processing
+// - Strict message size limits
+// - Complete message reassembly before processing
+// - Atomic state updates with mutex protection
 static int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
                              void *user, void *in, size_t len)
 {
@@ -490,13 +513,18 @@ static struct lws_protocols protocols[] = {
     { NULL, NULL, 0, 0, 0, NULL, 0 } /* terminator */
 };
 
-// Initialize the WebSocket server
-// Sets up the server context with:
-// - Protocol handlers and security options
-// - Port binding with fallback logic
-// - Message buffer allocation
-// - Logging configuration
-// Returns 0 on success, -1 on failure
+// Initialize the WebSocket server with robust error recovery
+//
+// The initialization process uses a resilient design pattern:
+// 1. Port binding with fallback - Automatically recovers from port conflicts
+// 2. Progressive enhancement - Security features layered on basic functionality
+// 3. Resource pre-allocation - Prevents runtime allocation failures
+// 4. Configurable logging - Adapts to different deployment needs
+//
+// The port fallback mechanism is particularly important for:
+// - Container deployments where port mapping is dynamic
+// - Multi-instance deployments on the same host
+// - Recovery from port conflicts without manual intervention
 int init_websocket_server(int port, const char* protocol, const char* key)
 {
     struct lws_context_creation_info info;
@@ -666,12 +694,19 @@ int start_websocket_server()
     return 0;
 }
 
-// Initiate graceful server shutdown
-// 1. Sets shutdown flag to prevent new connections
-// 2. Cancels service loop to wake handler thread
-// 3. Waits for existing connections to close
-// 4. Cleans up context and resources
-// 5. Verifies complete shutdown
+// Initiate graceful server shutdown with connection preservation
+//
+// The shutdown sequence carefully orchestrates resource cleanup:
+// 1. Soft stop - Prevents new connections while maintaining existing ones
+// 2. Connection drain - Allows in-flight operations to complete
+// 3. Resource cleanup - Systematic teardown to prevent leaks
+// 4. Verification - Ensures complete cleanup before exit
+//
+// This approach prioritizes:
+// - Data integrity - Allows clients to complete transactions
+// - Resource cleanup - Prevents memory and handle leaks
+// - Reliability - Verifies shutdown completion
+// - Observability - Logs each shutdown phase
 void stop_websocket_server()
 {
     log_this("WebSocket", "Stopping WebSocket server on port %d", 0, true, true, true, websocket_port);

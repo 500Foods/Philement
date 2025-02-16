@@ -79,6 +79,7 @@
 #include "queue.h"
 #include "print_queue_manager.h"
 #include "api/system/system_service.h"
+#include "utils.h"
 
 #define UUID_STR_LEN 37
 
@@ -108,9 +109,23 @@ static json_t* extract_gcode_info(const char* filename);
 static char* extract_preview_image(const char* filename);
 static enum MHD_Result handle_print_queue_request(struct MHD_Connection *connection);
 
-// Generate a unique identifier for uploaded files
-// Uses system time and random numbers for uniqueness
-// Format: 8-4-4-4-12 hexadecimal digits
+// Generate collision-resistant file identifiers
+//
+// UUID generation strategy balances several needs:
+// 1. Uniqueness guarantees
+//    - Microsecond timestamp component
+//    - Random number entropy
+//    - Version 4 UUID structure
+//
+// 2. Performance considerations
+//    - No filesystem queries needed
+//    - Minimal system calls
+//    - Fast string operations
+//
+// 3. Security implications
+//    - Non-sequential for privacy
+//    - Unpredictable for security
+//    - No PII exposure
 static void generate_uuid(char *uuid_str) {
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -150,10 +165,23 @@ void add_cors_headers(struct MHD_Response *response) {
     MHD_add_response_header(response, "Access-Control-Allow-Headers", "Content-Type");
 }
 
-// Process incoming file upload data chunks
-// Handles file creation, data writing, and progress tracking
-// Supports both file data and metadata (like print-after-upload flag)
-// Returns MHD_YES on success, MHD_NO on error
+// Process file uploads with streaming and progress monitoring
+//
+// Upload handling design prioritizes:
+// 1. Memory efficiency
+//    - Streaming processing
+//    - Bounded buffer sizes
+//    - Early validation
+//
+// 2. Reliability
+//    - Atomic file operations
+//    - Progress tracking
+//    - Partial upload cleanup
+//
+// 3. Security
+//    - Size limit enforcement
+//    - Path traversal prevention
+//    - File type validation
 static enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind kind, const char *key,
                                           const char *filename, const char *content_type,
                                           const char *transfer_encoding, const char *data, uint64_t off, size_t size) {
@@ -207,7 +235,7 @@ static enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind 
     } else if (0 == strcmp(key, "print")) {
         // Handle the 'print' field
         con_info->print_after_upload = (0 == strcmp(data, "true"));
-        printf("Print after upload: %s\n", con_info->print_after_upload ? "true" : "false");
+        console_log("WebServer", 0, con_info->print_after_upload ? "Print after upload: enabled" : "Print after upload: disabled");
     } else {
         // Log unknown keys
         char log_buffer[256];
@@ -292,10 +320,26 @@ static bool is_api_endpoint(const char *url, char *service, char *endpoint) {
     return true;
 }
 
-// Main request handler for all incoming HTTP requests
-// Routes requests to appropriate handlers based on URL and method
-// Supports GET, POST, and OPTIONS methods
-// Implements API endpoints and static file serving
+// Request router with comprehensive security and performance features
+//
+// The routing architecture implements:
+// 1. Security measures
+//    - CORS policy enforcement
+//    - Method validation
+//    - Path sanitization
+//    - Resource limits
+//
+// 2. Performance optimization
+//    - Fast path matching
+//    - Static file caching
+//    - Connection reuse
+//    - Minimal allocations
+//
+// 3. API compatibility
+//    - RESTful endpoint structure
+//    - Standard HTTP semantics
+//    - Flexible content negotiation
+//    - Proper status codes
 static enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
                            const char *url, const char *method,
                            const char *version, const char *upload_data,

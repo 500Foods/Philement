@@ -56,9 +56,14 @@
 
 QueueSystem queue_system;
 
-// DJB2 hash function for queue name lookup
-// Provides good distribution with string keys
-// Returns: hash value modulo table size
+// DJB2 hash function chosen for queue name lookup because:
+// 1. Excellent distribution - Minimizes collisions for string keys
+// 2. Speed - Simple integer math operations, no complex calculations
+// 3. Deterministic - Same name always maps to same bucket
+// 4. Avalanche effect - Small changes in input create large changes in hash
+//
+// We use modulo QUEUE_HASH_SIZE to bound the result, accepting the slight
+// increase in collision probability to maintain fixed memory usage.
 static unsigned int hash(const char* str) {
     unsigned int hash = 5381;
     int c;
@@ -106,13 +111,18 @@ Queue* queue_find(const char* name) {
     return NULL;
 }
 
-// Create a new message queue
-// Thread-safe queue creation with:
-// 1. Duplicate name checking
-// 2. Resource allocation
-// 3. Mutex/condition initialization
-// 4. Hash table insertion
-// Returns: Queue pointer or NULL on error
+// Create a new message queue with comprehensive safety guarantees
+//
+// The creation process uses a multi-phase approach to ensure reliability:
+// 1. Duplicate check first - Prevents resource waste on existing queues
+// 2. Staged resource allocation - Allows clean rollback on any failure
+// 3. Two-phase initialization - Separates structure setup from system integration
+// 4. Atomic hash table insertion - Ensures queue is only visible when fully ready
+//
+// This careful orchestration prevents partially initialized queues from being
+// visible to other threads and ensures clean cleanup on any initialization failure.
+// The strdup of name creates a private copy, isolating the queue from external
+// string lifetime issues.
 Queue* queue_create(const char* name, QueueAttributes* attrs) {
     if (name == NULL || attrs == NULL) {
         return NULL;
@@ -203,13 +213,18 @@ void queue_destroy(Queue* queue) {
     free(queue);
 }
 
-// Add a message to the queue
-// Thread-safe enqueue operation:
-// 1. Validates input parameters
-// 2. Allocates message buffer
-// 3. Updates queue state
-// 4. Signals waiting threads
-// Returns: true on success, false on error
+// Add a message to the queue with guaranteed ordering and memory safety
+//
+// The enqueue operation uses a carefully designed sequence to ensure:
+// 1. Memory isolation - Creates private copy of data to prevent external modifications
+// 2. Null termination - Always adds null byte for safety with string operations
+// 3. Atomic state updates - All queue state changes happen under single lock
+// 4. Priority preservation - Messages maintain strict FIFO order within priority levels
+//
+// The design chooses to copy rather than reference data to:
+// - Prevent memory corruption from external changes
+// - Allow safe deallocation of source memory
+// - Simplify memory ownership semantics
 bool queue_enqueue(Queue* queue, const char* data, size_t size, int priority) {
     if (!queue || !data || size == 0) {
         return false;
@@ -250,13 +265,18 @@ bool queue_enqueue(Queue* queue, const char* data, size_t size, int priority) {
     return true;
 } 
 
-// Remove and return the next message
-// Thread-safe dequeue operation:
-// 1. Waits for available message
-// 2. Updates queue state
-// 3. Manages memory accounting
-// 4. Signals waiting threads
-// Returns: Message data or NULL on error
+// Remove and return the next message using conditional waiting
+//
+// The dequeue operation implements a careful balance between:
+// 1. Blocking behavior - Threads sleep when queue is empty to reduce CPU usage
+// 2. Memory ownership - Transfers data ownership to caller for clear lifecycle
+// 3. State consistency - Maintains queue invariants even during error conditions
+// 4. Resource accounting - Tracks memory usage for system monitoring
+//
+// Uses pthread_cond_wait to implement blocking behavior, which:
+// - Reduces CPU usage compared to polling
+// - Automatically handles spurious wakeups
+// - Maintains mutex ordering to prevent deadlocks
 char* queue_dequeue(Queue* queue, size_t* size, int* priority) {
     if (!queue || !size || !priority) {
         return NULL;

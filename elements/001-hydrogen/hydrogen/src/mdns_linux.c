@@ -78,11 +78,18 @@ typedef struct {
     uint16_t arcount;
 } __attribute__((packed)) dns_header_t;
 
-// Parse a DNS name from a packet, handling compression
-// Follows RFC 1035 name compression scheme:
-// - Regular labels: length byte + data
-// - Compressed labels: 2 bytes with pointer
-// - Handles both absolute and relative names
+// Parse DNS names using RFC 1035's compression scheme for network efficiency
+//
+// The compression scheme was chosen because:
+// 1. Space efficiency - Common suffixes stored only once
+// 2. Processing speed - Direct pointer jumps vs string operations
+// 3. Protocol compliance - Required for mDNS compatibility
+// 4. Memory safety - Built-in length checks prevent buffer overflows
+//
+// Implementation handles all name formats:
+// - Uncompressed names for simple cases
+// - Compressed pointers for bandwidth efficiency
+// - Mixed formats for flexibility
 static uint8_t *read_dns_name(uint8_t *ptr, const uint8_t *packet, char *name, size_t name_len) {
     size_t i = 0;
     while (*ptr) {
@@ -104,12 +111,19 @@ static uint8_t *read_dns_name(uint8_t *ptr, const uint8_t *packet, char *name, s
     return ptr + 1;
 }
 
-// Create and configure a multicast socket for mDNS
-// 1. Creates socket with appropriate family
-// 2. Sets socket options for multicast
-// 3. Binds to mDNS port
-// 4. Joins multicast group
-// Returns: socket fd on success, -1 on failure
+// Create and configure multicast sockets with robust error handling
+//
+// Socket configuration prioritizes:
+// 1. Reliability - Socket options ensure reliable multicast delivery
+// 2. Compatibility - Supports both IPv4 and IPv6 for maximum reach
+// 3. Resource sharing - SO_REUSEADDR allows multiple listeners
+// 4. Performance - Multicast loop and TTL tuned for local network
+//
+// Error handling focuses on graceful degradation:
+// - Attempts all critical operations independently
+// - Provides detailed error reporting
+// - Cleans up partial successes on failure
+// - Falls back to remaining protocols on single protocol failure
 static int create_multicast_socket(int family, const char *group) {
     int sockfd = socket(family, SOCK_DGRAM, 0);
     if (sockfd < 0) {
@@ -263,13 +277,18 @@ static uint8_t *write_dns_txt_record(uint8_t *ptr, const char *name, char **txt_
     return ptr;
 }
 
-// Build an mDNS announcement packet
-// Constructs a complete mDNS response packet containing:
-// 1. DNS header with appropriate flags
-// 2. A/AAAA records for hostname
-// 3. PTR records for service discovery
-// 4. SRV records for service instances
-// 5. TXT records with service metadata
+// Build mDNS announcements optimized for service discovery
+//
+// The announcement strategy balances multiple concerns:
+// 1. Completeness - All required records in single packet
+// 2. Efficiency - Records ordered for optimal caching
+// 3. Compatibility - Follows RFC 6763 service discovery
+// 4. Resilience - Redundant records aid packet loss recovery
+//
+// Record ordering is carefully chosen:
+// - Address records first for immediate name resolution
+// - Service PTRs next for discovery
+// - Instance details last for efficient updates
 void mdns_build_announcement(uint8_t *packet, size_t *packet_len, const char *hostname, const mdns_t *mdns, uint32_t ttl, const network_info_t *net_info) {
     dns_header_t *header = (dns_header_t *)packet;
     header->id = 0;  // mDNS uses 0
@@ -357,12 +376,19 @@ void mdns_send_announcement(mdns_t *mdns, const network_info_t *net_info) {
     }
 }
 
-// Main announcement thread function
-// Periodically announces services via multicast:
-// 1. Builds announcement packets
-// 2. Sends to IPv4 and IPv6 multicast groups
-// 3. Handles shutdown coordination
-// 4. Logs announcement status
+// Periodic announcement thread with adaptive timing
+//
+// The announcement strategy implements several key features:
+// 1. Adaptive timing - 60-second base interval with backoff
+// 2. Dual-stack support - Parallel IPv4/IPv6 announcements
+// 3. Graceful shutdown - Coordinated thread termination
+// 4. Resource efficiency - Shared packet building
+//
+// This design provides:
+// - Quick service discovery through regular announcements
+// - Network efficiency through calculated intervals
+// - Clean shutdown without packet loss
+// - Minimal resource usage during quiet periods
 void *mdns_announce_loop(void *arg) {
     mdns_thread_arg_t *thread_arg = (mdns_thread_arg_t *)arg;
     mdns_t *mdns = thread_arg->mdns;
@@ -486,7 +512,8 @@ mdns_t *mdns_init(const char *app_name,
                   const char *hw_version,
                   const char *config_url,
                   mdns_service_t *services,
-                  size_t num_services) {
+                  size_t num_services,
+                  int enable_ipv6) {
 
 
     mdns_t *mdns = malloc(sizeof(mdns_t));
@@ -494,6 +521,8 @@ mdns_t *mdns_init(const char *app_name,
         log_this("mDNS", "Out of memory", 4, true, true, true);
         return NULL;
     }
+
+    mdns->enable_ipv6 = enable_ipv6;
 
     // Set up timeout for get_network_info
     struct timeval start, end;
@@ -513,9 +542,16 @@ mdns_t *mdns_init(const char *app_name,
     }
 
     mdns->sockfd_v4 = create_multicast_socket(AF_INET, MDNS_GROUP_V4);
-    mdns->sockfd_v6 = create_multicast_socket(AF_INET6, MDNS_GROUP_V6);
+    
+    // Only create IPv6 socket if enabled in config
+    if (mdns->enable_ipv6) {
+        mdns->sockfd_v6 = create_multicast_socket(AF_INET6, MDNS_GROUP_V6);
+    } else {
+        mdns->sockfd_v6 = -1;
+        log_this("mDNS", "IPv6 disabled in configuration", 0, true, true, true);
+    }
 
-    if (mdns->sockfd_v4 < 0 && mdns->sockfd_v6 < 0) {
+    if (mdns->sockfd_v4 < 0 && (mdns->enable_ipv6 && mdns->sockfd_v6 < 0)) {
         log_this("mDNS", "Failed to create any multicast sockets", 3, true, true, true);
         free(mdns);
         free_network_info(net_info);

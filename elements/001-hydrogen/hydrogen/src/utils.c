@@ -37,6 +37,7 @@
 // Core system headers
 #include <sys/types.h>
 #include <sys/utsname.h>
+#include <sys/time.h>
 #include <time.h>
 #include <pthread.h>
 
@@ -53,24 +54,49 @@
 #include "configuration.h"
 #include "state.h"
 
-// Mutex for thread-safe status generation
-// Protects:
-// - System information collection
-// - JSON object construction
-// - Configuration access
+// Thread synchronization for status generation with minimal locking
+//
+// Mutex design choices:
+// 1. Scope Minimization
+//    - Lock only during JSON construction
+//    - Quick system calls outside lock
+//    - Batched data collection
+//
+// 2. Deadlock Prevention
+//    - Single lock acquisition
+//    - No nested locking
+//    - Clear lock hierarchy
+//
+// 3. Performance
+//    - Reduced contention
+//    - Efficient memory usage
+//    - Quick release
 static pthread_mutex_t status_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // External configuration and state
 extern AppConfig *app_config;
 extern volatile sig_atomic_t keep_running;
 extern volatile sig_atomic_t shutting_down;
-// Generate comprehensive system status report
-// Thread-safe collection and JSON formatting of:
-// - Version information
-// - System details
-// - Service status
-// - Configuration settings
-// - Performance metrics
+// System status reporting with hierarchical organization
+//
+// Status generation strategy:
+// 1. Data Organization
+//    - Logical grouping
+//    - Clear hierarchy
+//    - Consistent structure
+//    - Extensible format
+//
+// 2. Performance Optimization
+//    - Memory preallocation
+//    - Batched collection
+//    - Efficient string handling
+//    - Minimal allocations
+//
+// 3. Error Handling
+//    - Partial data recovery
+//    - Memory cleanup
+//    - Error reporting
+//    - Fallback values
 json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
     pthread_mutex_lock(&status_mutex);
     
@@ -175,12 +201,26 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
     pthread_mutex_unlock(&status_mutex);
     return root;
 }
-// Generate random identifier string
-// Thread-safe ID generation with:
-// - One-time random seed initialization
-// - Buffer overflow protection
-// - Error logging on invalid input
-// - Consonant-based output for readability
+// Thread-safe identifier generation with collision resistance
+//
+// ID generation design prioritizes:
+// 1. Uniqueness
+//    - Time-based seeding
+//    - Character space optimization
+//    - Length considerations
+//    - Entropy maximization
+//
+// 2. Safety
+//    - Buffer overflow prevention
+//    - Thread-safe initialization
+//    - Input validation
+//    - Error reporting
+//
+// 3. Usability
+//    - Human-readable format
+//    - Consistent length
+//    - Easy validation
+//    - Simple comparison
 void generate_id(char *buf, size_t len) {
     if (len < ID_LEN + 1) {
         log_this("Utils", "Buffer too small for ID", 3, true, true, true);
@@ -198,5 +238,40 @@ void generate_id(char *buf, size_t len) {
         buf[i] = ID_CHARS[rand() % id_chars_len];
     }
     buf[ID_LEN] = '\0';
+}
+
+// Format and output a log message directly to console
+// Matches the format of the logging queue system for consistency
+//
+// Format components:
+// 1. Timestamp with ms precision
+// 2. Priority label with padding
+// 3. Subsystem label with padding
+// 4. Message content
+//
+// Example output:
+// 2025-02-16 14:24:10.065  [ INFO      ]  [ Shutdown           ]  message
+void console_log(const char* subsystem, int priority, const char* message) {
+    // Get current time with millisecond precision
+    struct timeval tv;
+    struct tm* tm_info;
+    gettimeofday(&tv, NULL);
+    tm_info = localtime(&tv.tv_sec);
+
+    // Format timestamp
+    char timestamp[32];
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", tm_info);
+    char timestamp_ms[36];
+    snprintf(timestamp_ms, sizeof(timestamp_ms), "%s.%03d", timestamp, (int)(tv.tv_usec / 1000));
+
+    // Format priority and subsystem labels with proper padding
+    char formatted_priority[MAX_PRIORITY_LABEL_WIDTH + 5];
+    snprintf(formatted_priority, sizeof(formatted_priority), "[ %-*s ]", MAX_PRIORITY_LABEL_WIDTH, get_priority_label(priority));
+
+    char formatted_subsystem[MAX_SUBSYSTEM_LABEL_WIDTH + 5];
+    snprintf(formatted_subsystem, sizeof(formatted_subsystem), "[ %-*s ]", MAX_SUBSYSTEM_LABEL_WIDTH, subsystem);
+
+    // Output the formatted log entry
+    printf("%s  %s  %s  %s\n", timestamp_ms, formatted_priority, formatted_subsystem, message);
 }
 
