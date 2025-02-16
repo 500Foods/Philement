@@ -1,9 +1,10 @@
 /*
- * Web server interface for the Hydrogen 3D printer.
+ * Web server interface for the Hydrogen Project.
  * 
- * Provides a HTTP server that handles file uploads for 3D print jobs,
- * manages a print queue, and serves static files. Features include
- * G-code file analysis, print job management, and REST API endpoints.
+ * Provides a HTTP server with both general-purpose and 3D printing features.
+ * General capabilities include static file serving and REST API endpoints.
+ * 3D printing specific features include handling file uploads for print jobs,
+ * G-code file analysis, and print queue management.
  */
 
 #ifndef WEB_SERVER_H
