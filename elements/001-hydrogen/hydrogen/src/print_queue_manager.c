@@ -1,42 +1,62 @@
 /*
- * Implementation of the print queue manager for the Hydrogen 3D printer.
+ * Print Job Management System for 3D Printer Control
  * 
- * Provides a thread-safe, queue-based job management system for 3D print
- * operations. The system implements a producer-consumer pattern where web
- * and WebSocket interfaces submit jobs (producers) and the queue manager
- * processes them (consumer).
+ * Why Robust Job Management Matters:
+ * 1. Print Quality Assurance
+ *    - Job validation and preprocessing
+ *    - Parameter verification
+ *    - Resource availability checks
+ *    - Quality monitoring
  * 
- * Job Structure:
- * - JSON-formatted job descriptions
- * - File metadata (name, size, path)
- * - G-code analysis results
- * - Print parameters and settings
- * - Preview images when available
+ * 2. Safety Considerations
+ *    Why These Checks?
+ *    - Temperature limits
+ *    - Material compatibility
+ *    - Hardware readiness
+ *    - Emergency handling
  * 
- * Processing Pipeline:
- * 1. Jobs submitted to priority queue
- * 2. Manager retrieves jobs in priority order
- * 3. Job metadata validated and parsed
- * 4. Print operation initiated and monitored
- * 5. Status updates logged and broadcast
+ * 3. Resource Management
+ *    Why This Matters?
+ *    - Long print durations
+ *    - Material consumption
+ *    - Power management
+ *    - System resources
  * 
- * Queue Management:
- * - Priority-based job ordering
- * - Job preservation during shutdown
- * - Incomplete job cleanup
- * - Status tracking and reporting
+ * 4. Job Prioritization
+ *    Why Priority Queuing?
+ *    - Emergency stops
+ *    - Maintenance tasks
+ *    - User priorities
+ *    - System tasks
  * 
- * Thread Safety:
- * - Mutex-protected queue access
- * - Condition variable for job notification
- * - Atomic shutdown flags
- * - Cleanup handler registration
+ * 5. Error Recovery
+ *    Why These Features?
+ *    - Print failure handling
+ *    - State preservation
+ *    - Job resumption
+ *    - Resource cleanup
  * 
- * Shutdown Process:
- * - Graceful job completion
- * - Queue state preservation
- * - Resource cleanup
- * - Status logging
+ * Implementation Features:
+ * - Thread-safe queue system
+ * - Priority-based processing
+ * - Resource monitoring
+ * - Status tracking
+ * 
+ * Job Processing Pipeline:
+ * 1. Validation Phase
+ *    - G-code analysis
+ *    - Resource checks
+ *    - Safety verification
+ * 
+ * 2. Execution Phase
+ *    - Real-time monitoring
+ *    - Status updates
+ *    - Error detection
+ * 
+ * 3. Completion Phase
+ *    - Resource cleanup
+ *    - State updates
+ *    - Job archiving
  */
 
 // Feature test macros must come first

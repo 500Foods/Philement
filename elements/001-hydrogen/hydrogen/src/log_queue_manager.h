@@ -1,9 +1,40 @@
 /*
- * Log queue manager interface for the Hydrogen server.
+ * Comprehensive Logging for 3D Printer Control
  * 
- * Manages asynchronous processing of log messages from a queue, supporting
- * multiple output destinations (console, file, database). Provides thread-safe
- * initialization and cleanup of logging facilities.
+ * Why Advanced Logging Matters:
+ * 1. Print Quality Tracking
+ *    - Temperature history
+ *    - Motion events
+ *    - Material flow
+ *    - Layer timing
+ * 
+ * 2. Diagnostic Support
+ *    Why These Features?
+ *    - Error analysis
+ *    - Performance profiling
+ *    - Resource tracking
+ *    - System health
+ * 
+ * 3. Error Investigation
+ *    Why This Detail?
+ *    - Failure analysis
+ *    - Issue reproduction
+ *    - Root cause finding
+ *    - Prevention planning
+ * 
+ * 4. Performance Analysis
+ *    Why This Monitoring?
+ *    - System bottlenecks
+ *    - Resource usage
+ *    - Timing patterns
+ *    - Optimization needs
+ * 
+ * 5. Safety Records
+ *    Why This Logging?
+ *    - Emergency events
+ *    - Temperature excursions
+ *    - Motion limits
+ *    - Power issues
  */
 
 #ifndef LOG_QUEUE_MANAGER_H

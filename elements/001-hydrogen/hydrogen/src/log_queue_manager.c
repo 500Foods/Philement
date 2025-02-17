@@ -1,41 +1,85 @@
 /*
- * Implementation of the log queue manager for the Hydrogen server.
+ * Log Queue Manager for the Hydrogen 3D Printer Control System
  * 
- * Provides a thread-safe, queue-based logging system that decouples log
- * generation from processing. The system implements a producer-consumer
- * pattern where components generate logs (producers) and the queue manager
- * processes them (consumer).
+ * Why a Queue-Based Design?
+ * 1. Real-Time Performance
+ *    - Non-blocking log submission critical for printer control
+ *    - Decoupled logging from time-sensitive operations
+ *    - Predictable latency for control systems
+ *    - Minimal impact on motion planning
  * 
- * Message Format:
- * - JSON-structured log entries
- * - Timestamps with millisecond precision
- * - Subsystem identification
- * - Priority levels with labels
- * - Configurable output flags
+ * 2. Reliability Requirements
+ *    - No log loss during critical operations
+ *    - Ordered message delivery for event reconstruction
+ *    - Graceful handling of system pressure
+ *    - Recovery from resource exhaustion
  * 
- * Processing Pipeline:
- * 1. Components submit JSON messages to queue
- * 2. Queue manager retrieves messages in FIFO order
- * 3. Messages are parsed and validated
- * 4. Formatted according to output requirements
- * 5. Distributed to enabled outputs
+ * Message Design:
+ * Why JSON Structure?
+ * - Self-describing data format
+ * - Easy parsing and validation
+ * - Extensible for future needs
+ * - Human-readable for debugging
  * 
- * Output Destinations:
- * - Console: Immediate display with formatting
- * - File: Persistent storage with rotation
- * - Database: Future expansion capability
+ * Why These Fields?
+ * - Timestamps: Critical for event correlation
+ * - Subsystems: Isolate component behavior
+ * - Priorities: Guide maintenance response
+ * - Flags: Control output routing
  * 
- * Thread Safety:
- * - Mutex-protected queue access
- * - Condition variable for queue notification
- * - Atomic shutdown flags
- * - Cleanup handler registration
+ * Processing Strategy:
+ * Why This Pipeline?
+ * 1. Queue Submission
+ *    - Atomic message acceptance
+ *    - Back-pressure handling
+ *    - Memory management
  * 
- * Shutdown Process:
- * - Processes remaining messages
- * - Closes open file handles
- * - Releases thread resources
- * - Verifies complete cleanup
+ * 2. Ordered Processing
+ *    - Maintains event sequence
+ *    - Batches for efficiency
+ *    - Handles priority levels
+ * 
+ * 3. Output Distribution
+ *    - Configurable destinations
+ *    - Failure isolation
+ *    - Format adaptation
+ * 
+ * Output Architecture:
+ * Why Multiple Destinations?
+ * - Console: Immediate operator feedback
+ * - File: Long-term troubleshooting data
+ * - Database: Future analytics support
+ * 
+ * Why This Implementation?
+ * - Atomic file operations
+ * - Buffered console output
+ * - Extensible routing system
+ * 
+ * Concurrency Design:
+ * Why These Mechanisms?
+ * - Mutex Protection: Prevent data races
+ * - Condition Variables: Efficient waiting
+ * - Atomic Flags: Fast state checks
+ * - Cleanup Handlers: Reliable shutdown
+ * 
+ * Why This Matters?
+ * - Printer control requires reliability
+ * - Debug logs crucial for support
+ * - Performance impacts print quality
+ * - Resource leaks affect stability
+ * 
+ * Shutdown Strategy:
+ * Why This Sequence?
+ * - Complete message processing
+ * - Ensure data persistence
+ * - Clean resource release
+ * - Verification steps
+ * 
+ * Why So Careful?
+ * - Prevent log loss during errors
+ * - Maintain filesystem integrity
+ * - Support system restarts
+ * - Enable post-mortem analysis
  */
 
 // Feature test macros must come first

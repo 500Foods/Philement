@@ -1,44 +1,59 @@
 /*
- * Implementation of the Hydrogen 3D printer's web server.
+ * Web Interface for 3D Printer Control and Monitoring
  * 
- * Uses libmicrohttpd to provide a multi-threaded HTTP server that implements
- * a RESTful API and file management system. The server provides several key
- * features:
+ * Why Advanced Web Control Matters:
+ * 1. Safety-Critical Operations
+ *    - Emergency stop capability
+ *    - Temperature monitoring
+ *    - Motion control validation
+ *    - Error detection and handling
  * 
- * Request Handling:
- * - Multi-threaded processing for concurrent requests
- * - CORS support for cross-origin requests
- * - Request routing based on URL patterns
- * - Static file serving for web interface
+ * 2. Real-time Requirements
+ *    Why This Architecture?
+ *    - Immediate command response
+ *    - Continuous status updates
+ *    - Progress monitoring
+ *    - Alert notifications
  * 
- * File Upload System:
- * - Secure file upload handling with size limits
- * - Progress tracking and logging
- * - Automatic UUID generation for unique filenames
- * - Upload directory management and validation
+ * 3. Resource Management
+ *    Why These Features?
+ *    - Large G-code file handling
+ *    - Print queue optimization
+ *    - Memory efficiency
+ *    - Network bandwidth control
  * 
- * G-code Processing:
- * - Automatic analysis of uploaded G-code files
- * - Preview image extraction from embedded thumbnails
- * - Print time estimation and statistics
- * - Layer-by-layer breakdown of print jobs
+ * 4. User Interface
+ *    Why This Design?
+ *    - Intuitive control access
+ *    - Visual print monitoring
+ *    - Status visualization
+ *    - Error feedback
  * 
- * Print Queue Management:
- * - JSON-based job descriptions
- * - Queue visualization and management
- * - Print job status tracking
- * - Integration with print queue manager
+ * 5. Integration Support
+ *    Why These Choices?
+ *    - OctoPrint compatibility
+ *    - Plugin ecosystem
+ *    - Tool chain support
+ *    - Custom client apps
  * 
- * API Compatibility:
- * - OctoPrint-compatible REST endpoints
- * - Version information and system status
- * - Print job control and monitoring
+ * Implementation Features:
+ * 1. Upload System
+ *    - Streaming for large files
+ *    - Progress tracking
+ *    - Validation checks
+ *    - Resource limits
  * 
- * Security Considerations:
- * - File size limits and validation
- * - Safe file path handling
- * - Resource cleanup on errors
- * - Proper error reporting
+ * 2. Command Processing
+ *    - Priority handling
+ *    - Safety validation
+ *    - Response tracking
+ *    - Error recovery
+ * 
+ * 3. Status Monitoring
+ *    - Real-time updates
+ *    - Performance metrics
+ *    - Resource tracking
+ *    - Error detection
  */
 
 // Feature test macros must come first

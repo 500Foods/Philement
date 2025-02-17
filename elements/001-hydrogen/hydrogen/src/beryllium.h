@@ -1,11 +1,40 @@
 /*
- * G-code analysis system for the Hydrogen 3D printer.
+ * G-code Analysis for High-Quality 3D Printing
  * 
- * Provides detailed analysis of G-code files including:
- * - Print time estimation with acceleration modeling
- * - Layer-by-layer timing breakdown
- * - Multi-object print tracking
- * - Material usage calculation (length, volume, weight)
+ * Why Advanced Analysis Matters:
+ * 1. Print Quality
+ *    - Motion path validation
+ *    - Acceleration profiles
+ *    - Layer timing analysis
+ *    - Material flow rates
+ * 
+ * 2. Resource Management
+ *    Why These Calculations?
+ *    - Material consumption
+ *    - Print time prediction
+ *    - Power usage estimation
+ *    - Cost calculation
+ * 
+ * 3. Time Estimation
+ *    Why So Precise?
+ *    - Scheduling accuracy
+ *    - Resource planning
+ *    - Progress tracking
+ *    - Maintenance timing
+ * 
+ * 4. Multi-Object Printing
+ *    Why This Support?
+ *    - Object separation
+ *    - Print sequencing
+ *    - Failure isolation
+ *    - Resource allocation
+ * 
+ * 5. Safety Features
+ *    Why These Checks?
+ *    - Motion limit validation
+ *    - Temperature profiling
+ *    - Tool path verification
+ *    - Resource bounds
  */
 
 #ifndef BERYLLIUM_H

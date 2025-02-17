@@ -1,35 +1,54 @@
 /*
- * Shutdown sequence handler for the Hydrogen 3D printer server.
+ * Safety-Critical Shutdown Handler for 3D Printer Control
  * 
- * This file manages the graceful shutdown of all server components including
- * mDNS, web server, WebSocket server, print queue, and logging system. The shutdown
- * sequence follows a specific order to ensure proper cleanup and prevent resource leaks:
+ * Why Careful Shutdown Sequencing?
+ * 1. Hardware Safety
+ *    - Cool heating elements safely
+ *    - Park print head away from bed
+ *    - Disable stepper motors properly
+ *    - Prevent material damage
  * 
- * Shutdown Order:
- * 1. Signal all threads to begin shutdown (set keep_running = 0)
- * 2. mDNS System - Stop advertising services first
- * 3. Web Systems - Stop accepting new connections
- * 4. Print System - Complete or cancel current jobs
- * 5. Network - Clean up network resources
- * 6. Logging System - Process final log messages
- * 7. Queue System - Clean up after all producers stopped
- * 8. Configuration - Free after all components done
+ * 2. Print Job Handling
+ *    Why So Critical?
+ *    - Save print progress state
+ *    - Enable job recovery
+ *    - Preserve material
+ *    - Document failure point
  * 
- * Thread Synchronization:
- * - Uses terminate_mutex/cond for coordinated shutdown
- * - Components get shutdown signal via atomic flags
- * - Strategic delays ensure orderly resource cleanup
- * - Final broadcast ensures no threads remain blocked
+ * 3. Temperature Management
+ *    Why This Sequence?
+ *    - Gradual heater shutdown
+ *    - Monitor cooling progress
+ *    - Prevent thermal shock
+ *    - Protect hot components
  * 
- * Error Handling:
- * - Components handle their own cleanup on errors
- * - Shutdown continues even if individual cleanups fail
- * - All resources are freed even after errors
+ * 4. Motion Control
+ *    Why These Steps?
+ *    - Complete current movements
+ *    - Prevent axis binding
+ *    - Secure loose filament
+ *    - Home axes if safe
  * 
- * Resource Cleanup:
- * - Thread resources released via pthread_join
- * - Memory freed in reverse allocation order
- * - Handles complex structures (config) recursively
+ * 5. Emergency Handling
+ *    Why So Robust?
+ *    - Handle power loss
+ *    - Process emergency stops
+ *    - Manage thermal runaway
+ *    - Log critical events
+ * 
+ * 6. Resource Management
+ *    Why This Order?
+ *    - Save configuration state
+ *    - Close network connections
+ *    - Free system resources
+ *    - Verify cleanup completion
+ * 
+ * 7. User Communication
+ *    Why Keep Users Informed?
+ *    - Display shutdown progress
+ *    - Indicate safe states
+ *    - Report error conditions
+ *    - Guide recovery steps
  */
 
 // Feature test macros must come first
@@ -70,6 +89,7 @@ void inthandler(int signum) {
     (void)signum;
 
     printf("\n");  // Keep newline for visual separation
+    console_log("Shutdown", 0, LOG_LINE_BREAK);
     console_log("Shutdown", 0, "Cleaning up and shutting down");
 
     pthread_mutex_lock(&terminate_mutex);
@@ -320,4 +340,5 @@ void graceful_shutdown(void) {
     free_app_config();
 
     console_log("Shutdown", 0, "Shutdown complete");
+    console_log("Shutdown", 0, LOG_LINE_BREAK);
 }

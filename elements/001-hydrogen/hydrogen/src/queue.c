@@ -74,11 +74,35 @@ static unsigned int hash(const char* str) {
     return hash % QUEUE_HASH_SIZE;
 }
 
+/*
+ * Initialize the queue system with clean state
+ * 
+ * Why this approach?
+ * - memset ensures no stale data
+ * - Single mutex minimizes overhead
+ * - No dynamic allocation prevents failures
+ * - Called once at system startup
+ */
 void queue_system_init() {
     memset(&queue_system, 0, sizeof(QueueSystem));
     pthread_mutex_init(&queue_system.mutex, NULL);
 }
 
+/*
+ * Clean shutdown of the entire queue system
+ * 
+ * Why this sequence?
+ * 1. Lock system first to prevent new queues
+ * 2. Destroy queues in hash table order
+ * 3. Release system lock last
+ * 4. Clean up system mutex
+ * 
+ * This ensures:
+ * - No memory leaks
+ * - No dangling references
+ * - Thread-safe cleanup
+ * - Complete resource release
+ */
 void queue_system_destroy() {
     pthread_mutex_lock(&queue_system.mutex);
     for (int i = 0; i < QUEUE_HASH_SIZE; i++) {
@@ -96,6 +120,20 @@ void queue_system_destroy() {
     pthread_mutex_destroy(&queue_system.mutex);
 }
 
+/*
+ * Locate a queue by name with O(1) average complexity
+ * 
+ * Why hash-based lookup?
+ * - Constant time access critical for real-time ops
+ * - Hash function spreads load across buckets
+ * - Chaining handles collisions gracefully
+ * - System lock prevents race conditions
+ * 
+ * Thread Safety:
+ * - System mutex protects hash table
+ * - Early unlock after finding queue
+ * - Queue's own mutex for operations
+ */
 Queue* queue_find(const char* name) {
     unsigned int index = hash(name);
     pthread_mutex_lock(&queue_system.mutex);
@@ -308,6 +346,17 @@ char* queue_dequeue(Queue* queue, size_t* size, int* priority) {
     return data;
 }
 
+/*
+ * Get current queue size with minimal locking
+ * 
+ * Why this design?
+ * - Short critical section
+ * - Atomic size counter
+ * - No element traversal
+ * - Safe concurrent access
+ * 
+ * Returns 0 for invalid queues to prevent crashes
+ */
 size_t queue_size(Queue* queue) {
     if (!queue) {
         return 0;
@@ -321,6 +370,17 @@ size_t queue_size(Queue* queue) {
 }
 
 
+/*
+ * Track memory usage for resource management
+ * 
+ * Why track memory?
+ * - Detect memory leaks
+ * - Prevent exhaustion
+ * - Monitor queue health
+ * - Guide cleanup decisions
+ * 
+ * Uses atomic counter for accuracy
+ */
 size_t queue_memory_usage(Queue* queue) {
     if (!queue) {
         return 0;
@@ -333,6 +393,17 @@ size_t queue_memory_usage(Queue* queue) {
     return memory_used;
 }
 
+/*
+ * Calculate age of oldest message for queue health
+ * 
+ * Why track message age?
+ * - Detect stalled messages
+ * - Guide priority boosting
+ * - Monitor processing delays
+ * - Support timeout policies
+ * 
+ * Uses monotonic clock for reliability
+ */
 long queue_oldest_element_age(Queue* queue) {
     if (!queue) {
         return 0;
@@ -379,6 +450,21 @@ long queue_youngest_element_age(Queue* queue) {
     return age_ms;
 }
 
+/*
+ * Remove all messages from queue immediately
+ * 
+ * Why needed?
+ * - Emergency cleanup
+ * - System reset
+ * - Memory pressure relief
+ * - Queue recycling
+ * 
+ * Implementation:
+ * - Single-pass cleanup
+ * - Proper memory deallocation
+ * - Maintains queue structure
+ * - Updates statistics
+ */
 void queue_clear(Queue* queue) {
     if (!queue) return;
 

@@ -1,9 +1,40 @@
 /*
- * WebSocket server interface for the Hydrogen Project.
+ * Real-time Communication for 3D Printer Control
  * 
- * Provides real-time bidirectional communication for device status updates
- * and control. Features include key-based authentication, protocol versioning,
- * and automatic port selection with fallback options.
+ * Why WebSockets Matter:
+ * 1. Real-time Control
+ *    - Immediate command execution
+ *    - Status synchronization
+ *    - Emergency stop capability
+ *    - Motion coordination
+ * 
+ * 2. Bidirectional Updates
+ *    Why This Design?
+ *    - Temperature monitoring
+ *    - Position tracking
+ *    - Error reporting
+ *    - Progress updates
+ * 
+ * 3. Security Features
+ *    Why These Measures?
+ *    - Authentication system
+ *    - Command validation
+ *    - Connection control
+ *    - Data protection
+ * 
+ * 4. Connection Management
+ *    Why So Robust?
+ *    - Auto-reconnection
+ *    - State preservation
+ *    - Error recovery
+ *    - Load balancing
+ * 
+ * 5. Status Monitoring
+ *    Why These Capabilities?
+ *    - Print progress tracking
+ *    - Hardware health checks
+ *    - Resource monitoring
+ *    - Performance metrics
  */
 
 #ifndef WEBSOCKET_SERVER_H

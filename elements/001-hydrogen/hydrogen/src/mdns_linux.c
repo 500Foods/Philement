@@ -198,6 +198,21 @@ static int create_multicast_socket(int family, const char *group) {
     return sockfd;
 }
 
+/*
+ * Write DNS name in packet format with compression support
+ * 
+ * Why this format?
+ * - RFC 1035 compliant name encoding
+ * - Supports both compressed and uncompressed names
+ * - Efficient memory usage for repeated suffixes
+ * - Safe handling of malformed inputs
+ * 
+ * Format details:
+ * - Each label prefixed with length
+ * - Dots used as label separators
+ * - Null terminator marks end of name
+ * - Supports future compression extensions
+ */
 static uint8_t *write_dns_name(uint8_t *ptr, const char *name) {
     const char *part = name;
     while (*part) {
@@ -216,6 +231,23 @@ static uint8_t *write_dns_name(uint8_t *ptr, const char *name) {
     return ptr;
 }
 
+/*
+ * Write complete DNS resource record with flexible data handling
+ * 
+ * Why this approach?
+ * - Generic record construction for all types
+ * - Consistent network byte order handling
+ * - Efficient buffer management
+ * - Support for variable-length data
+ * 
+ * Record Structure:
+ * 1. Name field (variable length)
+ * 2. Type field (2 bytes)
+ * 3. Class field (2 bytes)
+ * 4. TTL field (4 bytes)
+ * 5. Data length (2 bytes)
+ * 6. Record data (variable)
+ */
 static uint8_t *write_dns_record(uint8_t *ptr, const char *name, uint16_t type, uint16_t class, uint32_t ttl, const void *rdata, uint16_t rdlen) {
     ptr = write_dns_name(ptr, name);
     *((uint16_t*)ptr) = htons(type); ptr += 2;
@@ -227,6 +259,21 @@ static uint8_t *write_dns_record(uint8_t *ptr, const char *name, uint16_t type, 
     return ptr;
 }
 
+/*
+ * Write DNS PTR record for service discovery
+ * 
+ * Why PTR records?
+ * - Enable service enumeration
+ * - Support reverse lookups
+ * - Allow multiple instances
+ * - Facilitate browsing
+ * 
+ * Implementation choices:
+ * - Standard record format
+ * - Automatic length calculation
+ * - Name compression ready
+ * - Efficient memory use
+ */
 static uint8_t *write_dns_ptr_record(uint8_t *ptr, const char *name, const char *ptr_data, uint32_t ttl) {
     ptr = write_dns_name(ptr, name);
     *((uint16_t*)ptr) = htons(MDNS_TYPE_PTR); ptr += 2;
@@ -238,6 +285,21 @@ static uint8_t *write_dns_ptr_record(uint8_t *ptr, const char *name, const char 
     return ptr;
 }
 
+/*
+ * Write DNS SRV record for service instance details
+ * 
+ * Why SRV records?
+ * - Specify service location
+ * - Support load balancing
+ * - Enable port discovery
+ * - Allow priority handling
+ * 
+ * Record components:
+ * - Priority for service selection
+ * - Weight for load distribution
+ * - Port for connection
+ * - Target for resolution
+ */
 static uint8_t *write_dns_srv_record(uint8_t *ptr, const char *name, uint16_t priority, uint16_t weight, uint16_t port, const char *target, uint32_t ttl) {
     ptr = write_dns_name(ptr, name);
     *((uint16_t*)ptr) = htons(MDNS_TYPE_SRV); ptr += 2;
@@ -252,6 +314,21 @@ static uint8_t *write_dns_srv_record(uint8_t *ptr, const char *name, uint16_t pr
     return ptr;
 }
 
+/*
+ * Write DNS TXT record for service metadata
+ * 
+ * Why TXT records?
+ * - Provide service attributes
+ * - Support key-value pairs
+ * - Enable feature discovery
+ * - Allow protocol versioning
+ * 
+ * Format considerations:
+ * - Length-prefixed strings
+ * - Multiple record support
+ * - Efficient packing
+ * - UTF-8 compatibility
+ */
 static uint8_t *write_dns_txt_record(uint8_t *ptr, const char *name, char **txt_records, size_t num_txt_records, uint32_t ttl) {
     ptr = write_dns_name(ptr, name);
     *((uint16_t*)ptr) = htons(MDNS_TYPE_TXT); ptr += 2;

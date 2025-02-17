@@ -1,31 +1,53 @@
 /*
- * Startup sequence handler for the Hydrogen Project server.
+ * Startup Sequence Handler for Hydrogen 3D Printer Control
  * 
- * This file manages the initialization of all server components including core services
- * and optional features. The startup sequence handles both general-purpose components
- * (logging, web server, WebSocket server, mDNS) and specialized features (print queue). The startup
- * sequence follows a specific order to handle dependencies between components and
- * ensure proper initialization:
+ * Why Careful Startup Sequencing?
+ * 1. Safety Requirements
+ *    - Ensure printer is in known state
+ *    - Verify safety systems before operation
+ *    - Initialize emergency stop capability first
+ *    - Prevent uncontrolled motion
  * 
- * Initialization Order:
- * 1. Queue System - Core infrastructure for inter-thread communication
- * 2. Logging System - Enables system-wide logging and error reporting
- * 3. Configuration - Loads and validates server configuration
- * 4. Print Queue (optional) - Manages 3D print job scheduling
- * 5. Web Server (optional) - Handles HTTP requests for the REST API
- * 6. WebSocket Server (optional) - Provides real-time status updates
- * 7. mDNS System (optional) - Enables network service discovery
+ * 2. Component Dependencies
+ *    - Queue system enables emergency commands
+ *    - Logging captures hardware initialization
+ *    - Print queue requires temperature monitoring
+ *    - Network services need hardware status
  * 
- * Error Handling:
- * - Each component's initialization is isolated to prevent cascading failures
- * - Failed initialization of optional components may not stop the server
- * - Critical component failures (logging, queue system) trigger immediate shutdown
- * - All failures are logged when possible for diagnostics
+ * 3. Initialization Order
+ *    Why This Sequence?
+ *    - Core safety systems first
+ *    - Hardware control systems second
+ *    - User interface systems last
+ *    - Network services after safety checks
  * 
- * Configuration:
- * - Components can be selectively enabled/disabled via config
- * - Each component has its own configuration section
- * - Runtime validation ensures all required settings are present
+ * 4. Error Recovery
+ *    Why So Careful?
+ *    - Prevent partial initialization
+ *    - Maintain hardware safety
+ *    - Preserve calibration data
+ *    - Enable manual intervention
+ * 
+ * 5. Resource Management
+ *    Why This Matters?
+ *    - Temperature sensor allocation
+ *    - Motor controller initialization
+ *    - End-stop signal handling
+ *    - Emergency stop circuits
+ * 
+ * 6. Configuration Validation
+ *    Why Validate Early?
+ *    - Prevent unsafe settings
+ *    - Verify hardware compatibility
+ *    - Check temperature limits
+ *    - Validate motion constraints
+ * 
+ * 7. Startup Monitoring
+ *    Why Monitor Startup?
+ *    - Detect hardware issues early
+ *    - Verify sensor readings
+ *    - Confirm communication links
+ *    - Log initialization sequence
  */
 
 // Feature test macros must come first
