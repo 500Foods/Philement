@@ -63,6 +63,10 @@ Comprehensive documentation is available in the `docs` directory:
 
 ## Release Notes
 
+### 2025-Feb-17
+
+Configuration and service documentation.
+
 ### 2025-Feb-16
 
 Work on comments, trying to make things a little easier to follow.
