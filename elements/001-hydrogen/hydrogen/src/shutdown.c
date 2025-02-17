@@ -305,6 +305,8 @@ void graceful_shutdown(void) {
     usleep(1000000);  // 1s delay
 
     // Now safe to stop logging since other components are done
+    log_this("Shutdown", "Subsystem shutdown completed", 0, true, true, true);    
+    log_this("Shutdown", LOG_LINE_BREAK, 0, true, true, true);    
     console_log("Shutdown", 0, "Shutting down logging system...");
     pthread_mutex_lock(&terminate_mutex);
     log_queue_shutdown = 1;
