@@ -1,37 +1,45 @@
 /*
- * Implementation of System Service API endpoints.
+ * System API for 3D Printer Control and Monitoring
  * 
- * Provides RESTful endpoints for retrieving system information and status.
- * This service implements the /api/system endpoints (with wildcards) following
- * the HTTP/1.1 and REST specifications.
+ * Why Robust System APIs Matter:
+ * 1. Operational Safety
+ *    - Real-time system monitoring
+ *    - Component health tracking
+ *    - Resource utilization
+ *    - Error detection
  * 
- * Endpoint Structure:
- * GET /api/system/info
- * - Returns comprehensive system information
- * - Includes OS details, runtime status, component states
- * - Supports CORS for cross-origin access
+ * 2. Integration Support
+ *    Why RESTful Design?
+ *    - Client application support
+ *    - Third-party integration
+ *    - Monitoring systems
+ *    - Automation tools
  * 
- * Response Format:
- * - Content-Type: application/json
- * - UTF-8 encoded
- * - Pretty-printed (indented) JSON
- * - Standardized error responses
+ * 3. Status Monitoring
+ *    Why These Metrics?
+ *    - Print job progress
+ *    - Hardware health
+ *    - Resource availability
+ *    - Performance tracking
  * 
- * System Information:
- * - Operating system details (via uname)
- * - Component status (all service states)
- * - Runtime metrics and statistics
- * - Configuration settings
+ * 4. Security Design
+ *    Why These Measures?
+ *    - Access control
+ *    - Input validation
+ *    - Error sanitization
+ *    - CORS protection
  * 
- * Error Handling:
- * - HTTP status codes for all responses
- * - Detailed error messages in JSON format
- * - Logging of all error conditions
+ * 5. Error Management
+ *    Why Comprehensive Handling?
+ *    - Safe error recovery
+ *    - Detailed diagnostics
+ *    - Audit logging
+ *    - Client feedback
  * 
- * Security:
- * - CORS headers for controlled access
- * - Input validation and sanitization
- * - Error message sanitization
+ * Endpoint: GET /api/system/info
+ * Purpose: Comprehensive system monitoring
+ * Format: JSON with UTF-8 encoding
+ * Security: Input validation, CORS, sanitization
  */
 
 // Feature test macros must come first

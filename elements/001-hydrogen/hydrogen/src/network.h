@@ -1,9 +1,40 @@
 /*
- * Network interface management for the Hydrogen server.
+ * Network Management for Remote 3D Printer Control
  * 
- * Provides functionality for discovering network interfaces, managing IP addresses,
- * and finding available network ports. Supports both IPv4 and IPv6 addressing,
- * with the ability to track multiple interfaces and their associated addresses.
+ * Why Robust Networking Matters:
+ * 1. Real-time Control
+ *    - Command transmission
+ *    - Status monitoring
+ *    - Emergency stops
+ *    - Progress updates
+ * 
+ * 2. Remote Monitoring
+ *    Why These Features?
+ *    - Print progress tracking
+ *    - Temperature monitoring
+ *    - Error detection
+ *    - Quality assurance
+ * 
+ * 3. Security Design
+ *    Why So Careful?
+ *    - Access control
+ *    - Command validation
+ *    - Network isolation
+ *    - Data protection
+ * 
+ * 4. Interface Management
+ *    Why This Approach?
+ *    - Multiple connection types
+ *    - Fallback paths
+ *    - Address management
+ *    - Service discovery
+ * 
+ * 5. Connection Reliability
+ *    Why These Features?
+ *    - Print job continuity
+ *    - Command reliability
+ *    - Status consistency
+ *    - Error recovery
  */
 
 #ifndef NETWORK_H

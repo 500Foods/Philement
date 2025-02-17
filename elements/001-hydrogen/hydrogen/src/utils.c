@@ -1,33 +1,54 @@
 /*
- * Implementation of utility functions for the Hydrogen printer.
+ * Core Utilities for High-Precision 3D Printing
  * 
- * Provides core utility implementations with a focus on reliability,
- * thread safety, and proper resource management. These implementations
- * handle common operations needed throughout the system.
+ * Why Precision Matters:
+ * 1. Print Quality
+ *    - Layer alignment accuracy
+ *    - Extrusion precision
+ *    - Motion smoothness
+ *    - Surface finish
  * 
- * JSON Status Generation:
- * - Thread-safe status collection
- * - Hierarchical status structure
- * - Comprehensive system information
- * - Service configuration reporting
+ * 2. Hardware Safety
+ *    Why These Checks?
+ *    - Motor protection
+ *    - Thermal management
+ *    - Mechanical limits
+ *    - Power monitoring
  * 
- * Thread Synchronization:
- * - Mutex protection for shared data
- * - Atomic operations where appropriate
- * - Lock scope minimization
- * - Deadlock prevention
+ * 3. Real-time Control
+ *    Why This Design?
+ *    - Immediate response
+ *    - Timing accuracy
+ *    - Command precision
+ *    - State tracking
  * 
- * Random Generation:
- * - Thread-safe initialization
- * - Entropy source management
- * - Buffer overflow prevention
- * - Error checking
+ * 4. Resource Management
+ *    Why This Matters?
+ *    - Memory efficiency
+ *    - CPU optimization
+ *    - Long-print stability
+ *    - System reliability
  * 
- * Resource Management:
- * - Memory leak prevention
- * - Error state cleanup
- * - Resource initialization
- * - Proper deallocation
+ * 5. Error Prevention
+ *    Why These Features?
+ *    - Print failure avoidance
+ *    - Quality assurance
+ *    - Material waste reduction
+ *    - Time savings
+ * 
+ * 6. Diagnostic Support
+ *    Why These Tools?
+ *    - Quality monitoring
+ *    - Performance tracking
+ *    - Maintenance prediction
+ *    - Issue resolution
+ * 
+ * 7. Data Integrity
+ *    Why So Critical?
+ *    - Configuration accuracy
+ *    - State consistency
+ *    - Command validation
+ *    - History tracking
  */
 
 // Feature test macros must come first

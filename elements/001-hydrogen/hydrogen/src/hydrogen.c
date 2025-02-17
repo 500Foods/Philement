@@ -1,22 +1,55 @@
 /*
- * Main application entry point for the Hydrogen 3D printer server.
+ * Hydrogen 3D Printer Control System
  * 
- * This file orchestrates the startup and shutdown sequences, delegating the actual
- * initialization and cleanup to specialized components. The program follows a modular
- * architecture where each major function (web server, WebSocket, logging, etc.) is
- * handled by dedicated components that are initialized during startup and cleaned up
- * during shutdown.
+ * Why This Architecture Matters:
+ * 1. Safety-Critical Design
+ *    - Controlled startup sequence
+ *    - Graceful shutdown handling
+ *    - Component isolation
+ *    - Resource protection
+ * 
+ * 2. Real-time Requirements
+ *    Why This Approach?
+ *    - Immediate command response
+ *    - Continuous monitoring
+ *    - Temperature control
+ *    - Motion precision
+ * 
+ * 3. System Reliability
+ *    Why These Features?
+ *    - Component health checks
+ *    - Error recovery paths
+ *    - Resource monitoring
+ *    - Watchdog functions
+ * 
+ * 4. Print Quality
+ *    Why This Matters?
+ *    - Timing accuracy
+ *    - Motion coordination
+ *    - Temperature stability
+ *    - Material flow control
  * 
  * Program Lifecycle:
- * 1. Signal handlers are established to catch interrupt signals for clean shutdown
- * 2. Configuration is loaded from a JSON file (default: hydrogen.json)
- * 3. Components are initialized in dependency order via startup_hydrogen()
- * 4. Main event loop runs until shutdown is requested
- * 5. Graceful shutdown sequence cleans up all components
+ * 1. Initialization
+ *    Why This Order?
+ *    - Safety systems first
+ *    - Hardware validation
+ *    - Component readiness
+ *    - Network services last
  * 
- * The main event loop uses a timed wait pattern to balance responsiveness with
- * system resource usage. This allows for both immediate shutdown response and
- * periodic system maintenance operations.
+ * 2. Main Loop Design
+ *    Why This Pattern?
+ *    - Real-time response
+ *    - Resource efficiency
+ *    - System maintenance
+ *    - Error detection
+ * 
+ * 3. Shutdown Sequence
+ *    Why So Careful?
+ *    - Hardware protection
+ *    - Print job preservation
+ *    - Resource cleanup
+ *    - State persistence
  */
 
 // Feature test macros must come first

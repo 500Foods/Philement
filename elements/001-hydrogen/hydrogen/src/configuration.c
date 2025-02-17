@@ -63,16 +63,21 @@ const PriorityLevel DEFAULT_PRIORITY_LEVELS[NUM_PRIORITY_LEVELS] = {
     {4, "CRITICAL"}
 };
 
-// Determine executable location with robust error handling
-//
-// Path resolution strategy:
-// 1. Use /proc/self/exe for accuracy
-// 2. Handle symlinks correctly
-// 3. Provide meaningful errors
-// 4. Allocate exact buffer size
-//
-// This approach ensures reliable path resolution
-// even in complex deployment scenarios
+/*
+ * Determine executable location with robust error handling
+ * 
+ * Why use /proc/self/exe?
+ * - Provides the true binary path even when called through symlinks
+ * - Works regardless of current working directory
+ * - Handles SUID/SGID binaries correctly
+ * - Gives absolute path without assumptions
+ * 
+ * Error Handling Strategy:
+ * 1. Use readlink() for atomic path resolution
+ * 2. Ensure null-termination for safety
+ * 3. Handle memory allocation failures gracefully
+ * 4. Return NULL on any error for consistent error handling
+ */
 char* get_executable_path() {
     char path[PATH_MAX];
     ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
@@ -89,6 +94,15 @@ char* get_executable_path() {
     return result;
 }
 
+/*
+ * Get file size with proper error detection
+ * 
+ * Why use stat()?
+ * - Avoids opening the file unnecessarily
+ * - Works for special files (devices, pipes)
+ * - More efficient than seeking
+ * - Provides atomic size reading
+ */
 long get_file_size(const char* filename) {
     struct stat st;
     if (stat(filename, &st) == 0) {
@@ -97,6 +111,20 @@ long get_file_size(const char* filename) {
     return -1;
 }
 
+/*
+ * Get file modification time in human-readable format
+ * 
+ * Why this format?
+ * - ISO 8601-like timestamp for consistency
+ * - Local time for admin readability
+ * - Fixed width for log formatting
+ * - Includes date and time for complete context
+ * 
+ * Memory Management:
+ * - Allocates fixed size buffer for safety
+ * - Caller owns returned string
+ * - Returns NULL on any error
+ */
 char* get_file_modification_time(const char* filename) {
     struct stat st;
     if (stat(filename, &st) != 0) {
@@ -122,23 +150,32 @@ char* get_file_modification_time(const char* filename) {
 }
 
 
-// Generate default configuration with secure baseline
-//
-// Default configuration design choices:
-// 1. Security-first defaults
-//    - Conservative permissions
-//    - Secure communication defaults
-//    - Resource usage limits
-//
-// 2. Operational safety
-//    - Validated port selections
-//    - Reasonable resource limits
-//    - Safe file paths
-//
-// 3. Discoverability
-//    - Standard service ports
-//    - Common protocol choices
-//    - Clear naming conventions
+/*
+ * Generate default configuration with secure baseline
+ * 
+ * Why these defaults?
+ * 1. Security First
+ *    - Conservative file permissions and paths
+ *    - Secure WebSocket keys and protocols
+ *    - Resource limits to prevent DoS
+ *    - Separate ports for different services
+ * 
+ * 2. Zero Configuration
+ *    - Works out of the box for basic setups
+ *    - Reasonable defaults for most environments
+ *    - Clear upgrade path from defaults
+ * 
+ * 3. Discovery Ready
+ *    - Standard ports for easy finding
+ *    - mDNS services pre-configured
+ *    - Compatible with common tools
+ * 
+ * 4. Operational Safety
+ *    - Temporary directories for uploads
+ *    - Size limits on all inputs
+ *    - Separate logging for each component
+ *    - Graceful failure modes
+ */
 void create_default_config(const char* config_path) {
     json_t* root = json_object();
 
@@ -220,24 +257,34 @@ void create_default_config(const char* config_path) {
     json_decref(root);
 }
 
-// Load and validate configuration with comprehensive error handling
-//
-// Configuration loading strategy:
-// 1. Memory Management
-//    - Staged allocation for partial success
-//    - Cleanup on any failure
-//    - Minimal copying
-//
-// 2. Validation
-//    - Type checking all values
-//    - Range validation for numbers
-//    - Path existence verification
-//    - Port availability checking
-//
-// 3. Default Handling
-//    - Intelligent fallbacks for missing values
-//    - Environment-aware defaults
-//    - Logged default usage
+/*
+ * Load and validate configuration with comprehensive error handling
+ * 
+ * Why this approach?
+ * 1. Resilient Loading
+ *    - Handles partial configurations
+ *    - Validates all values before use
+ *    - Falls back to defaults safely
+ *    - Preserves existing values when possible
+ * 
+ * 2. Memory Safety
+ *    - Staged allocation for partial success
+ *    - Complete cleanup on any failure
+ *    - Minimal data copying
+ *    - Proper string duplication
+ * 
+ * 3. Security Checks
+ *    - Type validation for all values
+ *    - Range checking for numeric fields
+ *    - Path validation and normalization
+ *    - Port availability verification
+ * 
+ * 4. Operational Awareness
+ *    - Environment-specific defaults
+ *    - Detailed error logging
+ *    - Clear indication of fallback use
+ *    - Maintains configuration versioning
+ */
 AppConfig* load_config(const char* config_path) {
     json_error_t error;
     json_t* root = json_load_file(config_path, 0, &error);
@@ -439,6 +486,15 @@ AppConfig* load_config(const char* config_path) {
 }
 
 
+/*
+ * Map numeric priority to human-readable label
+ * 
+ * Why use string labels?
+ * - More meaningful in logs
+ * - Consistent across all components
+ * - Easier to grep and filter
+ * - Maps to syslog priorities
+ */
 const char* get_priority_label(int priority) {
     for (int i = 0; i < NUM_PRIORITY_LEVELS; i++) {
         if (DEFAULT_PRIORITY_LEVELS[i].value == priority) {
@@ -448,6 +504,15 @@ const char* get_priority_label(int priority) {
     return "UNKNOWN";
 }
 
+/*
+ * Calculate maximum width of priority labels
+ * 
+ * Why pre-calculate?
+ * - Ensures consistent log formatting
+ * - Avoids repeated calculations
+ * - Supports dynamic priority systems
+ * - Maintains log readability
+ */
 void calculate_max_priority_label_width() {
     MAX_PRIORITY_LABEL_WIDTH = 0;
     for (int i = 0; i < NUM_PRIORITY_LEVELS; i++) {

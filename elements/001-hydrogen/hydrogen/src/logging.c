@@ -1,10 +1,37 @@
 /*
- * Implementation of the Hydrogen server's logging system.
+ * Hydrogen Server Logging System
  * 
- * Provides thread-safe logging with JSON-formatted messages that can be directed
- * to multiple outputs. Uses a queue system for asynchronous processing, with
- * mutex protection to ensure thread safety. Supports priority levels and
- * different output targets (console, database, file).
+ * Why Advanced Logging in 3D Printing?
+ * 1. Print Quality Monitoring
+ *    - Track temperature fluctuations
+ *    - Monitor motion events
+ *    - Record material flow
+ *    - Detect anomalies
+ * 
+ * 2. Safety Critical Events
+ *    - Emergency stops
+ *    - Temperature excursions
+ *    - Motor stalls
+ *    - Power issues
+ * 
+ * 3. Performance Analysis
+ *    - Print timing accuracy
+ *    - System responsiveness
+ *    - Resource utilization
+ *    - Command latency
+ * 
+ * 4. Diagnostic Support
+ *    - Error tracing
+ *    - Event correlation
+ *    - State transitions
+ *    - Configuration changes
+ * 
+ * Implementation Features:
+ * - Thread-safe design for concurrent access
+ * - JSON formatting for structured analysis
+ * - Multiple output targets (console/DB/file)
+ * - Priority-based message handling
+ * - Asynchronous queue processing
  */
 
 // Feature test macros must come first

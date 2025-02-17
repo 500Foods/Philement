@@ -1,11 +1,40 @@
 /*
- * Implementation of the G-code analysis system for Hydrogen.
+ * G-code Analysis System for High-Quality 3D Printing
  * 
- * Provides sophisticated G-code parsing and analysis including:
- * - Acceleration-aware motion planning
- * - Per-object and per-layer timing analysis
- * - Support for relative/absolute positioning
- * - Material consumption calculations
+ * Why Sophisticated G-code Analysis?
+ * 1. Print Quality
+ *    - Validate motion constraints
+ *    - Detect potential issues
+ *    - Ensure proper layering
+ *    - Prevent under/over-extrusion
+ * 
+ * 2. Motion Planning
+ *    Why This Matters?
+ *    - Prevent mechanical stress
+ *    - Optimize print speed
+ *    - Reduce vibration
+ *    - Maintain accuracy
+ * 
+ * 3. Resource Management
+ *    Why Track These?
+ *    - Material usage estimation
+ *    - Print time prediction
+ *    - Power consumption
+ *    - Maintenance scheduling
+ * 
+ * 4. Safety Features
+ *    Why These Checks?
+ *    - Prevent axis crashes
+ *    - Monitor temperatures
+ *    - Track tool changes
+ *    - Validate commands
+ * 
+ * 5. Performance Design
+ *    Why So Optimized?
+ *    - Handle large files
+ *    - Real-time analysis
+ *    - Memory efficiency
+ *    - Fast parsing
  */
 
 // Feature test macros must come first

@@ -1,9 +1,39 @@
 /*
- * Linux-specific implementation of network interface management.
+ * Network Management for 3D Printer Control
  * 
- * Uses Linux system calls and data structures to discover network interfaces
- * and their properties. Handles IPv4/IPv6 address enumeration, interface
- * identification, and port availability checking through the Linux socket API.
+ * Why Robust Networking Matters in 3D Printing:
+ * 1. Real-time Control Requirements
+ *    - Command transmission reliability
+ *    - Status monitoring latency
+ *    - Emergency stop responsiveness
+ *    - Print progress updates
+ * 
+ * 2. Interface Management
+ *    Why Multiple Interface Support?
+ *    - Local network control
+ *    - Direct USB connections
+ *    - Remote monitoring access
+ *    - Fallback connectivity
+ * 
+ * 3. Port Management
+ *    Why Careful Port Selection?
+ *    - Service availability
+ *    - Protocol separation
+ *    - Security boundaries
+ *    - System integration
+ * 
+ * 4. Security Considerations
+ *    Why Extra Precautions?
+ *    - Machine safety
+ *    - Access control
+ *    - Command validation
+ *    - Network isolation
+ * 
+ * Implementation Features:
+ * - Dual IPv4/IPv6 stack support
+ * - Interface auto-discovery
+ * - Port availability checking
+ * - Resource cleanup
  */
 
 // Feature test macros must come first

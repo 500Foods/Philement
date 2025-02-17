@@ -1,39 +1,54 @@
 /*
- * Global state management for the Hydrogen printer server.
+ * Safety-Critical State Management for 3D Printer Control
  * 
- * Manages the global state and shared resources of the system, including
- * thread handles, shutdown flags, and synchronization primitives. This
- * module is critical for coordinating the lifecycle of all components.
+ * Why Centralized State Management?
+ * 1. Safety Requirements
+ *    - Emergency stop coordination
+ *    - Temperature limit enforcement
+ *    - Motion boundary checking
+ *    - End-stop signal handling
  * 
- * State Management:
- * - Runtime flags for system state
- * - Component shutdown coordination
- * - Thread handle tracking
- * - Resource lifecycle management
+ * 2. Hardware State Tracking
+ *    Why This Matters?
+ *    - Prevent conflicting movements
+ *    - Monitor thermal stability
+ *    - Track filament flow
+ *    - Detect sensor failures
  * 
- * Thread Coordination:
- * - Mutex for state changes
- * - Condition variable for notifications
- * - Atomic operations for flags
- * - Thread handle tracking
+ * 3. Real-Time Coordination
+ *    Why So Critical?
+ *    - Synchronize multiple motors
+ *    - Balance heating elements
+ *    - Control cooling systems
+ *    - Time sensitive operations
  * 
- * Shutdown Sequence:
- * - Individual component flags
- * - Coordinated shutdown order
- * - Resource cleanup tracking
- * - Thread termination sync
+ * 4. Error Recovery
+ *    Why This Approach?
+ *    - Safe failure modes
+ *    - Preserve print progress
+ *    - Protect mechanical parts
+ *    - Enable manual recovery
  * 
- * Resource Management:
- * - Configuration state
- * - Network resources
- * - Service handles
- * - Memory tracking
+ * 5. Resource Protection
+ *    Why These Safeguards?
+ *    - Prevent heater runaway
+ *    - Avoid motor overload
+ *    - Monitor power systems
+ *    - Track resource usage
  * 
- * Dependencies:
- * - Used by all major components
- * - Critical for system stability
- * - Required for clean shutdown
- * - Core to resource management
+ * 6. Operational Modes
+ *    Why Multiple Modes?
+ *    - Normal printing state
+ *    - Emergency stop state
+ *    - Maintenance mode
+ *    - Calibration state
+ * 
+ * 7. State Transitions
+ *    Why So Careful?
+ *    - Validate temperature changes
+ *    - Ensure safe motion paths
+ *    - Coordinate tool changes
+ *    - Handle power events
  */
 
 #include "state.h"

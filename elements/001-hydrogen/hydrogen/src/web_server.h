@@ -1,10 +1,40 @@
 /*
- * Web server interface for the Hydrogen Project.
+ * Web Interface for 3D Printer Control
  * 
- * Provides a HTTP server with both general-purpose and 3D printing features.
- * General capabilities include static file serving and REST API endpoints.
- * 3D printing specific features include handling file uploads for print jobs,
- * G-code file analysis, and print queue management.
+ * Why Web-Based Control Matters:
+ * 1. User Interface
+ *    - Intuitive printer control
+ *    - Visual status display
+ *    - Print job management
+ *    - Configuration access
+ * 
+ * 2. File Management
+ *    Why These Features?
+ *    - G-code upload handling
+ *    - Print job organization
+ *    - File validation
+ *    - Storage management
+ * 
+ * 3. Security Design
+ *    Why These Measures?
+ *    - Access control
+ *    - File validation
+ *    - CORS protection
+ *    - Request filtering
+ * 
+ * 4. Print Control
+ *    Why This Approach?
+ *    - Job queue management
+ *    - Print parameter control
+ *    - Progress monitoring
+ *    - Error handling
+ * 
+ * 5. System Integration
+ *    Why These Features?
+ *    - REST API endpoints
+ *    - Status monitoring
+ *    - Resource management
+ *    - Configuration control
  */
 
 #ifndef WEB_SERVER_H

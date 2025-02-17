@@ -1,39 +1,54 @@
 /*
- * Implementation of the Hydrogen 3D printer's WebSocket server.
+ * Real-Time WebSocket Server for 3D Printer Control
  * 
- * Uses libwebsockets to provide secure, authenticated real-time communication
- * for status updates and printer control. The server implements a robust
- * connection lifecycle with several key features:
+ * Why WebSockets for Printer Control?
+ * 1. Real-Time Requirements
+ *    - Immediate emergency stop capability
+ *    - Live print progress monitoring
+ *    - Temperature feedback loops
+ *    - Motion control synchronization
  * 
- * Connection Management:
- * - Multi-threaded event processing
- * - Connection state tracking
- * - Automatic port fallback if primary port is unavailable
- * - Graceful connection termination
+ * 2. Connection Management
+ *    Why This Design?
+ *    - Persistent connections reduce latency
+ *    - Automatic reconnection for reliability
+ *    - Connection state tracking for safety
+ *    - Multi-client support for monitoring
  * 
- * Security:
- * - Key-based client authentication
- * - Connection validation before data exchange
- * - UTF-8 validation on all messages
- * - Security headers enforcement
+ * 3. Safety Architecture
+ *    Why These Protections?
+ *    - Prevent unauthorized printer access
+ *    - Validate commands before execution
+ *    - Maintain printer state consistency
+ *    - Handle connection loss safely
  * 
- * Message Handling:
- * - Large message fragmentation support
- * - Buffer size limits and validation
- * - JSON message parsing and validation
- * - Bi-directional communication
+ * 4. Message Protocol
+ *    Why This Format?
+ *    - Command validation for safety
+ *    - Structured status updates
+ *    - Error reporting with context
+ *    - Extensible for new features
  * 
- * Monitoring:
- * - Connection statistics tracking
- * - Configurable logging levels
- * - Performance metrics collection
- * - Error detection and reporting
+ * 5. Performance Design
+ *    Why These Choices?
+ *    - Minimal latency for control
+ *    - Efficient state updates
+ *    - Memory optimization for embedded
+ *    - CPU-friendly for realtime
  * 
- * Shutdown Process:
- * - Graceful connection termination
- * - Resource cleanup in correct order
- * - Thread synchronization
- * - State cleanup verification
+ * 6. Monitoring System
+ *    Why This Matters?
+ *    - Print failure prevention
+ *    - Performance optimization
+ *    - Maintenance scheduling
+ *    - Usage analytics
+ * 
+ * 7. Shutdown Strategy
+ *    Why So Careful?
+ *    - Prevent print job corruption
+ *    - Safe machine state handling
+ *    - Clean resource release
+ *    - Recovery point creation
  */
 
 // Feature test macros must come first
