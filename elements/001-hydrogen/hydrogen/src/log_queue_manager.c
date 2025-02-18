@@ -108,6 +108,7 @@
 #include "logging.h"
 #include "queue.h"
 #include "configuration.h"
+#include "utils.h"
 
 extern volatile sig_atomic_t keep_running;
 extern volatile sig_atomic_t shutting_down;
@@ -131,6 +132,10 @@ static FILE* log_file = NULL;
 //    - Maintains file system integrity
 static void cleanup_log_queue_manager(void* arg) {
     (void)arg;  // Unused parameter
+    
+    // Remove this thread from tracking before cleanup
+    remove_service_thread(&logging_threads, pthread_self());
+    
     close_file_logging();
 }
 
@@ -244,6 +249,9 @@ void close_file_logging() {
 //    - Verify completion
 void* log_queue_manager(void* arg) {
     Queue* log_queue = (Queue*)arg;
+
+    // Register this thread with the logging service
+    add_service_thread(&logging_threads, pthread_self());
 
     pthread_cleanup_push(cleanup_log_queue_manager, NULL);
 

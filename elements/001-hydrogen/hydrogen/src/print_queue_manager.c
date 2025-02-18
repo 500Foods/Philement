@@ -84,6 +84,7 @@
 #include "queue.h"
 #include "configuration.h"
 #include "logging.h"
+#include "utils.h"
 
 extern volatile sig_atomic_t print_queue_shutdown;
 extern pthread_cond_t terminate_cond;
@@ -96,6 +97,10 @@ Queue* print_queue = NULL;
 // Logs cleanup status for debugging
 static void cleanup_print_queue_manager(void* arg) {
     (void)arg;  // Unused parameter
+    
+    // Remove this thread from tracking before cleanup
+    remove_service_thread(&print_threads, pthread_self());
+    
     log_this("PrintQueueManager", "Shutdown: Cleaning up Print Queue Manager", 0, true, true, true);
     // Add any necessary cleanup code here
 }
@@ -160,6 +165,9 @@ int init_print_queue(void) {
 // 4. Ensures proper cleanup on exit
 void* print_queue_manager(void* arg) {
     (void)arg; // Unused parameter
+
+    // Register this thread with the print service
+    add_service_thread(&print_threads, pthread_self());
 
     pthread_cleanup_push(cleanup_print_queue_manager, NULL);
 

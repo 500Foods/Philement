@@ -426,6 +426,10 @@ static int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
             log_this("WebSocket", "29/LWS_CALLBACK_WSI_CREATE", 0, true, true, true);
             ws_connections++;
             ws_connections_total++;
+            
+            // Register connection thread
+            extern ServiceThreads websocket_threads;
+            add_service_thread(&websocket_threads, pthread_self());
             break;
 
         case LWS_CALLBACK_WSI_DESTROY: // 30
@@ -436,6 +440,9 @@ static int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
             }
             pthread_mutex_lock(&websocket_mutex);
             ws_connections--;
+            // Remove thread from tracking
+            extern ServiceThreads websocket_threads;
+            remove_service_thread(&websocket_threads, pthread_self());
             pthread_mutex_unlock(&websocket_mutex);
             break;
 
@@ -637,6 +644,10 @@ void *websocket_server_run(void *arg)
         log_this("WebSocket", "Server starting in shutdown state", 0, true, true, true);
         return NULL;
     }
+
+    // Register main WebSocket server thread
+    extern ServiceThreads websocket_threads;
+    add_service_thread(&websocket_threads, pthread_self());
 
     log_this("WebSocket", "Server thread starting", 0, true, true, true);
 
