@@ -46,6 +46,7 @@ This section controls the web page you use to interact with your printer:
 {
     "WebServer": {
         "Enabled": true,
+        "EnableIPv6": false,
         "Port": 5000,
         "WebRoot": "/var/www/html",
         "UploadPath": "/api/upload",
@@ -59,6 +60,7 @@ This section controls the web page you use to interact with your printer:
 | Setting | What It Does |
 |---------|-------------|
 | `Enabled` | Turns the web interface on or off |
+| `EnableIPv6` | Allows connections over IPv6 networks |
 | `Port` | The network port number for accessing the web interface |
 | `WebRoot` | Where the web interface files are stored |
 | `UploadPath` | The web address for uploading files to your printer |
@@ -74,6 +76,7 @@ WebSockets allow your web browser to receive instant updates about your printer'
 {
     "WebSocket": {
         "Enabled": true,
+        "EnableIPv6": false,
         "Port": 5001,
         "LogLevel": "NONE"
     }
@@ -83,6 +86,7 @@ WebSockets allow your web browser to receive instant updates about your printer'
 | Setting | What It Does |
 |---------|-------------|
 | `Enabled` | Turns real-time updates on or off |
+| `EnableIPv6` | Allows real-time updates over IPv6 networks |
 | `Port` | The network port used for real-time communications |
 | `LogLevel` | How much information to record about real-time updates |
 
@@ -185,16 +189,23 @@ Here are some important security tips:
    - Check if the web interface is enabled
    - Verify the port numbers
    - Make sure your firewall allows access to the configured ports
+   - If using IPv6, verify EnableIPv6 is set to true in the WebServer section
 
 2. **Can't Upload Files**:
    - Check if you have enough disk space
    - Verify the file isn't larger than `MaxUploadSize`
    - Ensure the upload directory exists and is writable
 
-3. **Printer Not Being Discovered**:
+3. **Real-Time Updates Not Working**:
+   - Verify WebSocket server is enabled
+   - Check if the correct port is being used
+   - If using IPv6, ensure EnableIPv6 is set to true in the WebSocket section
+
+4. **Printer Not Being Discovered**:
    - Check if mDNS is enabled
    - Verify your network allows discovery
-   - Try disabling IPv6 if your network doesn't support it
+   - Check IPv6 settings in all relevant sections (mDNS, WebServer, WebSocket)
+   - Try disabling IPv6 in all sections if your network doesn't support it
 
 ## Getting Help
 

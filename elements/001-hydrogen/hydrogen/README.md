@@ -63,6 +63,14 @@ Comprehensive documentation is available in the `docs` directory:
 
 ## Release Notes
 
+### 2025-Feb-18
+
+Extended IPv6 support to web and websocket servers:
+- Added EnableIPv6 configuration flags for web and websocket servers
+- Implemented dual-stack support in web server
+- Added IPv6 interface binding in websocket server
+- All network services (mDNS, web, websocket) now have consistent IPv6 configuration
+
 ### 2025-Feb-17
 
 Lots of configuration and service documentation.
