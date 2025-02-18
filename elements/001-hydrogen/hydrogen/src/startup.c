@@ -275,7 +275,7 @@ static int init_mdns_system(void) {
     mdns_arg->mdns = mdns;
     mdns_arg->port = 0;  // Not used anymore, each service has its own port
     mdns_arg->net_info = net_info;
-    mdns_arg->running = &keep_running;
+    mdns_arg->running = &server_running;
 
     if (pthread_create(&mdns_thread, NULL, mdns_announce_loop, mdns_arg) != 0) {
         log_this("Initialization", "Failed to start mDNS thread", 3, true, true, true);
@@ -400,6 +400,9 @@ int startup_hydrogen(const char *config_path) {
     log_this("Initialization", "Application started", 0, true, true, true);
     log_this("Initialization", "Press Ctrl+C to exit", 0, true, false, true);
     log_this("Initialization", "%s", 0, true, true, true, LOG_LINE_BREAK);
+
+    // All services have been started successfully, mark startup as complete
+    server_starting = 0;
 
     return 1;
 }

@@ -54,8 +54,9 @@
 #include "network.h"
 
 // Application state flags
-extern volatile sig_atomic_t keep_running;
-extern volatile sig_atomic_t shutting_down;
+extern volatile sig_atomic_t server_running;
+extern volatile sig_atomic_t server_stopping;
+extern volatile sig_atomic_t server_starting;
 extern pthread_cond_t terminate_cond;
 extern pthread_mutex_t terminate_mutex;
 

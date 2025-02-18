@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
     // 3. Efficiently uses system resources by sleeping when idle
     // 4. Maintains system responsiveness without busy-waiting
     struct timespec ts;
-    while (keep_running) {
+    while (server_running) {
         
         clock_gettime(CLOCK_REALTIME, &ts);
         ts.tv_sec += 1; // Wake up periodically to check system state
@@ -104,7 +104,7 @@ int main(int argc, char *argv[]) {
         }
         
         // Check if we're shutting down
-        if (!keep_running) {
+        if (!server_running) {
             break;  // Exit immediately when shutdown is requested
         }
         
