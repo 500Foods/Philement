@@ -188,6 +188,7 @@ void create_default_config(const char* config_path) {
     // Web Configuration
     json_t* web = json_object();
     json_object_set_new(web, "Enabled", json_boolean(1));
+    json_object_set_new(web, "EnableIPv6", json_boolean(0));  // Default to disabled like mDNS
     json_object_set_new(web, "Port", json_integer(5000));
     json_object_set_new(web, "WebRoot", json_string("/home/asimard/lithium"));
     json_object_set_new(web, "UploadPath", json_string("/api/upload"));
@@ -199,6 +200,7 @@ void create_default_config(const char* config_path) {
     // WebSocket Configuration
     json_t* websocket = json_object();
     json_object_set_new(websocket, "Enabled", json_boolean(1));
+    json_object_set_new(websocket, "EnableIPv6", json_boolean(0));  // Default to disabled like mDNS
     json_object_set_new(websocket, "Port", json_integer(5001));
     json_object_set_new(websocket, "Key", json_string("default_key_change_me"));
     json_object_set_new(websocket, "Protocol", json_string("hydrogen-protocol"));
@@ -326,6 +328,9 @@ AppConfig* load_config(const char* config_path) {
         json_t* enabled = json_object_get(web, "Enabled");
         config->web.enabled = json_is_boolean(enabled) ? json_boolean_value(enabled) : 1;
 
+        json_t* enable_ipv6 = json_object_get(web, "EnableIPv6");
+        config->web.enable_ipv6 = json_is_boolean(enable_ipv6) ? json_boolean_value(enable_ipv6) : 0;
+
         json_t* port = json_object_get(web, "Port");
         config->web.port = json_is_integer(port) ? json_integer_value(port) : DEFAULT_WEB_PORT;
 
@@ -363,6 +368,9 @@ AppConfig* load_config(const char* config_path) {
     if (json_is_object(websocket)) {
         json_t* enabled = json_object_get(websocket, "Enabled");
         config->websocket.enabled = json_is_boolean(enabled) ? json_boolean_value(enabled) : 1;
+
+        json_t* enable_ipv6 = json_object_get(websocket, "EnableIPv6");
+        config->websocket.enable_ipv6 = json_is_boolean(enable_ipv6) ? json_boolean_value(enable_ipv6) : 0;
 
         json_t* port = json_object_get(websocket, "Port");
         config->websocket.port = json_is_integer(port) ? json_integer_value(port) : DEFAULT_WEBSOCKET_PORT;

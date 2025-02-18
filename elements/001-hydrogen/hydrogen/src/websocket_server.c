@@ -571,6 +571,10 @@ int init_websocket_server(int port, const char* protocol, const char* key)
     info.gid = -1;
     info.uid = -1;
     info.options = LWS_SERVER_OPTION_EXPLICIT_VHOSTS;
+    if (app_config->websocket.enable_ipv6) {
+        info.options |= LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;  // Required for IPv6
+        log_this("WebSocket", "IPv6 support enabled", 0, true, false, true);
+    }
 
     // Set up logging based on configuration
     const char *config_level = app_config->websocket.log_level;
@@ -610,6 +614,11 @@ int init_websocket_server(int port, const char* protocol, const char* key)
         vhost_info.protocols = protocols;
         vhost_info.options = LWS_SERVER_OPTION_VALIDATE_UTF8 | 
                             LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
+        if (app_config->websocket.enable_ipv6) {
+            vhost_info.iface = "::";  // IPv6 any address
+        } else {
+            vhost_info.iface = "0.0.0.0";  // IPv4 any address
+        }
 
         vhost = lws_create_vhost(context, &vhost_info);
         if (vhost) {

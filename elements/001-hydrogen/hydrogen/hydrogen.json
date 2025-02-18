@@ -3,6 +3,7 @@
     "LogFile": "/var/log/hydrogen.log",
     "WebServer": {
         "Enabled": true,
+        "EnableIPv6": false,
         "Port": 5000,
         "WebRoot": "/var/www/html",
         "UploadPath": "/api/upload",
@@ -12,6 +13,7 @@
     },
     "WebSocket": {
         "Enabled": true,
+        "EnableIPv6": false,
         "Port": 5001,
         "LogLevel": "NONE"
     },

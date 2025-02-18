@@ -70,6 +70,7 @@ typedef struct {
  */
 typedef struct {
     int enabled;            // Runtime toggle for web server
+    int enable_ipv6;        // IPv6 support toggle
     int port;              // HTTP service port
     char *web_root;        // Static content directory
     char *upload_path;     // URL path for file uploads
@@ -86,6 +87,7 @@ typedef struct {
  */
 typedef struct {
     int enabled;            // Runtime toggle for WebSocket server
+    int enable_ipv6;        // IPv6 support toggle
     int port;              // WebSocket service port
     char *key;             // Authentication key
     char *protocol;        // WebSocket subprotocol identifier
