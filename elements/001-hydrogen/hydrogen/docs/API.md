@@ -15,8 +15,8 @@ Retrieves comprehensive system status and information about the Hydrogen server,
 
 ## Additional Resources
 
-- [Configuration Guide](./Configuration.md) (TODO)
-- [WebSocket API](./WebSocket.md) (TODO)
+- [Configuration Guide](./Configuration.md) - Complete guide for server configuration
+- [WebSocket API](./WebSocket.md) - Real-time communication interface
 - [Print Queue Management](./PrintQueue.md) (TODO)
 
 ## Contributing to Documentation

@@ -14,8 +14,8 @@ Comprehensive documentation is available in the `docs` directory:
 
 - [API Documentation](docs/API.md) - REST API endpoints and usage
 - [Main Documentation](docs/README.md) - Overview and getting started
-- Configuration Guide (Coming Soon)
-- WebSocket Interface (Coming Soon)
+- [Configuration Guide](docs/Configuration.md) - Server configuration and settings
+- [WebSocket Interface](docs/WebSocket.md) - Real-time communication interface
 - Print Queue Management (Coming Soon)
 
 ## Files
