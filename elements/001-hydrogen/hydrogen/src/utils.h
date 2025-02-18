@@ -47,6 +47,13 @@
 #define MAX_SERVICE_THREADS 32
 #define MAX_QUEUE_BLOCKS 128
 
+// File descriptor information structure
+typedef struct {
+    int fd;                 // File descriptor number
+    char type[32];         // Type (socket, file, pipe, etc.)
+    char description[256]; // Detailed description
+} FileDescriptorInfo;
+
 // Memory metrics structure
 typedef struct {
     size_t virtual_bytes;     // Virtual memory usage in bytes
@@ -137,7 +144,11 @@ void generate_id(char *buf, size_t len);
 // Returns:
 //   json_t*: New JSON object (caller must json_decref)
 //   NULL: On memory allocation failure
+// Generate system status report in JSON format
 json_t* get_system_status_json(const WebSocketMetrics *ws_metrics);
+
+// Get detailed file descriptor information
+json_t* get_file_descriptors_json(void);
 
 // Format and output a log message directly to console
 // Matches the format of the logging queue system:

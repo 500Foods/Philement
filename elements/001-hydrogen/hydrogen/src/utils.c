@@ -1,56 +1,5 @@
-/*
- * Core Utilities for High-Precision 3D Printing
- * 
- * Why Precision Matters:
- * 1. Print Quality
- *    - Layer alignment accuracy
- *    - Extrusion precision
- *    - Motion smoothness
- *    - Surface finish
- * 
- * 2. Hardware Safety
- *    Why These Checks?
- *    - Motor protection
- *    - Thermal management
- *    - Mechanical limits
- *    - Power monitoring
- * 
- * 3. Real-time Control
- *    Why This Design?
- *    - Immediate response
- *    - Timing accuracy
- *    - Command precision
- *    - State tracking
- * 
- * 4. Resource Management
- *    Why This Matters?
- *    - Memory efficiency
- *    - CPU optimization
- *    - Long-print stability
- *    - System reliability
- * 
- * 5. Error Prevention
- *    Why These Features?
- *    - Print failure avoidance
- *    - Quality assurance
- *    - Material waste reduction
- *    - Time savings
- * 
- * 6. Diagnostic Support
- *    Why These Tools?
- *    - Quality monitoring
- *    - Performance tracking
- *    - Maintenance prediction
- *    - Issue resolution
- * 
- * 7. Data Integrity
- *    Why So Critical?
- *    - Configuration accuracy
- *    - State consistency
- *    - Command validation
- *    - History tracking
- */
-
+// Core Utilities for High-Precision 3D Printing
+// 
 // Feature test macros must come first
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
@@ -65,12 +14,17 @@
 #include <sys/types.h>
 #include <sys/utsname.h>
 #include <sys/time.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/un.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <time.h>
 #include <pthread.h>
 #include <signal.h>
 #include <unistd.h>
 
-// For reading /proc files
+// For reading /proc files and file descriptors
 #include <fcntl.h>
 #include <dirent.h>
 #include <errno.h>
@@ -86,7 +40,6 @@
 
 // Forward declarations of static functions
 static void init_all_service_threads(void);
-static void update_queue_memory_metrics(QueueMemoryMetrics *queue);
 
 // Thread synchronization mutexes
 static pthread_mutex_t status_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -125,7 +78,8 @@ void track_queue_allocation(QueueMemoryMetrics *queue, size_t size) {
     if (queue->block_count < MAX_QUEUE_BLOCKS) {
         queue->block_sizes[queue->block_count++] = size;
         queue->total_allocation += size;
-        update_queue_memory_metrics(queue);
+        queue->metrics.virtual_bytes = queue->total_allocation;
+        queue->metrics.resident_bytes = queue->total_allocation;
     }
 }
 
@@ -139,18 +93,11 @@ void track_queue_deallocation(QueueMemoryMetrics *queue, size_t size) {
             }
             queue->block_count--;
             queue->total_allocation -= size;
-            update_queue_memory_metrics(queue);
+            queue->metrics.virtual_bytes = queue->total_allocation;
+            queue->metrics.resident_bytes = queue->total_allocation;
             break;
         }
     }
-}
-
-// Update memory metrics for a queue
-void update_queue_memory_metrics(QueueMemoryMetrics *queue) {
-    // For now, use total_allocation as both virtual and resident
-    // In the future, we could add more sophisticated tracking
-    queue->metrics.virtual_bytes = queue->total_allocation;
-    queue->metrics.resident_bytes = queue->total_allocation;
 }
 
 // Initialize service thread tracking
@@ -193,13 +140,60 @@ void remove_service_thread(ServiceThreads *threads, pthread_t thread_id) {
                 threads->thread_metrics[i] = threads->thread_metrics[threads->thread_count];
             }
             char msg[128];
-            snprintf(msg, sizeof(msg), "Removed thread %lu (tid: %d), new count: %d", 
-                     (unsigned long)thread_id, threads->thread_tids[i], threads->thread_count);
+            snprintf(msg, sizeof(msg), "Removed thread %lu, new count: %d", 
+                     (unsigned long)thread_id, threads->thread_count);
             console_log("ThreadMgmt", 1, msg);
             break;
         }
     }
     pthread_mutex_unlock(&thread_mutex);
+}
+
+// Get thread stack size from /proc/[tid]/status
+static size_t get_thread_stack_size(pid_t tid) {
+    char path[64];
+    snprintf(path, sizeof(path), "/proc/self/task/%d/status", tid);
+    
+    FILE *status = fopen(path, "r");
+    if (!status) return 0;
+    
+    char line[256];
+    size_t stack_size = 0;
+    while (fgets(line, sizeof(line), status)) {
+        if (strncmp(line, "VmStk:", 6) == 0) {
+            sscanf(line, "VmStk: %zu", &stack_size);
+            break;
+        }
+    }
+    
+    fclose(status);
+    return stack_size;
+}
+
+// Get overall process memory from /proc/self/status
+static void get_process_memory(size_t *vmsize, size_t *vmrss, size_t *vmswap) {
+    *vmsize = 0;
+    *vmrss = 0;
+    *vmswap = 0;
+    
+    FILE *status = fopen("/proc/self/status", "r");
+    if (!status) {
+        console_log("MemoryMetrics", 3, "Failed to open /proc/self/status");
+        return;
+    }
+    
+    char line[256];
+    while (fgets(line, sizeof(line), status)) {
+        if (strncmp(line, "VmSize:", 7) == 0) {
+            sscanf(line, "VmSize: %zu", vmsize);
+        } else if (strncmp(line, "VmRSS:", 6) == 0) {
+            sscanf(line, "VmRSS: %zu", vmrss);
+        } else if (strncmp(line, "VmSwap:", 7) == 0) {
+            sscanf(line, "VmSwap: %zu", vmswap);
+        }
+    }
+    
+    fclose(status);
 }
 
 // Update memory metrics for all threads in a service
@@ -210,12 +204,34 @@ void update_service_thread_metrics(ServiceThreads *threads) {
     threads->virtual_memory = 0;
     threads->resident_memory = 0;
     
-    // Update each thread's metrics and add to totals
+    // Update each thread's metrics using stack size only
     for (int i = 0; i < threads->thread_count; i++) {
-        ThreadMemoryMetrics metrics = get_thread_memory_metrics(threads, threads->thread_ids[i]);
-        threads->thread_metrics[i] = metrics;
-        threads->virtual_memory += metrics.virtual_bytes;
-        threads->resident_memory += metrics.resident_bytes;
+        pid_t tid = threads->thread_tids[i];
+        
+        // Check if thread is alive
+        if (kill(tid, 0) != 0) {
+            // Thread is dead, remove it
+            threads->thread_count--;
+            if (i < threads->thread_count) {
+                threads->thread_ids[i] = threads->thread_ids[threads->thread_count];
+                threads->thread_tids[i] = threads->thread_tids[threads->thread_count];
+                threads->thread_metrics[i] = threads->thread_metrics[threads->thread_count];
+            }
+            i--; // Reprocess this index
+            continue;
+        }
+        
+        // Get thread stack size
+        size_t stack_size = get_thread_stack_size(tid);
+        
+        // Update thread metrics with stack size
+        ThreadMemoryMetrics *metrics = &threads->thread_metrics[i];
+        metrics->virtual_bytes = stack_size * 1024; // Convert KB to bytes
+        metrics->resident_bytes = stack_size * 1024; // Assume stack is resident
+        
+        // Add to service totals
+        threads->virtual_memory += metrics->virtual_bytes;
+        threads->resident_memory += metrics->resident_bytes;
     }
     
     pthread_mutex_unlock(&thread_mutex);
@@ -231,122 +247,20 @@ static void init_all_service_threads(void) {
 }
 
 // Get memory metrics for a specific thread
-// Returns memory usage in bytes
 ThreadMemoryMetrics get_thread_memory_metrics(ServiceThreads *threads, pthread_t thread_id) {
     ThreadMemoryMetrics metrics = {0, 0};
-    char path[256];
-    char msg[512];
     
-    // Find the thread's TID in our tracking array
-    pid_t tid = 0;
-    int thread_index = -1;
+    pthread_mutex_lock(&thread_mutex);
+    
+    // Find the thread in our tracking array
     for (int i = 0; i < threads->thread_count; i++) {
         if (pthread_equal(threads->thread_ids[i], thread_id)) {
-            tid = threads->thread_tids[i];
-            thread_index = i;
+            metrics = threads->thread_metrics[i];
             break;
         }
     }
-
-    if (tid == 0 || thread_index == -1) {
-        snprintf(msg, sizeof(msg), "Thread %lu not found in tracking array", (unsigned long)thread_id);
-        console_log("MemoryMetrics", 3, msg);
-        return metrics;
-    }
-
-    // Check if thread is still alive by sending signal 0
-    if (kill(tid, 0) != 0) {
-        snprintf(msg, sizeof(msg), "Thread %lu (tid: %d) appears to be terminated, removing from tracking", 
-                 (unsigned long)thread_id, tid);
-        console_log("MemoryMetrics", 2, msg);
-        
-        // Remove the terminated thread from tracking
-        threads->thread_count--;
-        if (thread_index < threads->thread_count) {
-            threads->thread_ids[thread_index] = threads->thread_ids[threads->thread_count];
-            threads->thread_tids[thread_index] = threads->thread_tids[threads->thread_count];
-            threads->thread_metrics[thread_index] = threads->thread_metrics[threads->thread_count];
-        }
-        return metrics;
-    }
-
-    // Try reading from /proc/self/task/[tid]/smaps for accurate per-thread memory
-    snprintf(path, sizeof(path), "/proc/self/task/%d/smaps", tid);
-    snprintf(msg, sizeof(msg), "Attempting to read memory metrics from: %s for thread %lu (tid: %d)", 
-             path, (unsigned long)thread_id, tid);
-    console_log("MemoryMetrics", 0, msg);
     
-    FILE *maps = fopen(path, "r");
-    if (!maps) {
-        // Try alternate path with process ID
-        pid_t pid = getpid();
-        snprintf(path, sizeof(path), "/proc/%d/task/%d/smaps", pid, tid);
-        snprintf(msg, sizeof(msg), "Trying alternate path: %s for thread %lu (tid: %d)", 
-                 path, (unsigned long)thread_id, tid);
-        console_log("MemoryMetrics", 0, msg);
-        maps = fopen(path, "r");
-    }
-    
-    if (maps) {
-        char line[1024];
-        unsigned long start, end;
-        char perms[5];
-        
-        // Track memory totals
-        size_t total_private_clean = 0;
-        size_t total_private_dirty = 0;
-        size_t total_pss = 0;
-        size_t total_writable_private = 0;
-        bool in_mapping = false;
-        
-        while (fgets(line, sizeof(line), maps)) {
-            if (sscanf(line, "%lx-%lx %4s", &start, &end, perms) == 3) {
-                // Only count writable private mappings for virtual memory
-                if (perms[1] == 'w' && perms[3] == 'p') {
-                    total_writable_private += (end - start);
-                }
-                in_mapping = true;
-                continue;
-            }
-            
-            if (in_mapping) {
-                size_t value;
-                if (sscanf(line, "Private_Clean: %zu", &value) == 1) {
-                    total_private_clean += value;
-                }
-                else if (sscanf(line, "Private_Dirty: %zu", &value) == 1) {
-                    total_private_dirty += value;
-                }
-                else if (sscanf(line, "Pss: %zu", &value) == 1) {
-                    total_pss += value;
-                }
-                else if (strstr(line, "VmFlags:") != NULL) {
-                    in_mapping = false;
-                }
-            }
-        }
-        
-        // Set metrics based on actual thread memory
-        metrics.virtual_bytes = total_writable_private;  // Only count writable private mappings
-        metrics.resident_bytes = (total_private_clean + total_private_dirty) * 1024;
-        
-        char debug_msg[256];
-        snprintf(debug_msg, sizeof(debug_msg), 
-                "Thread %lu (tid: %d) - Private Clean: %zu kB, Private Dirty: %zu kB, PSS: %zu kB", 
-                (unsigned long)thread_id, tid, total_private_clean, total_private_dirty, total_pss);
-        console_log("MemoryMetrics", 0, debug_msg);
-        
-        snprintf(msg, sizeof(msg), 
-                 "Thread %lu (tid: %d) metrics - Virtual: %zu bytes, Writable/Private: %zu bytes", 
-                 (unsigned long)thread_id, tid, metrics.virtual_bytes, metrics.resident_bytes);
-        console_log("MemoryMetrics", 0, msg);
-        
-        fclose(maps);
-    } else {
-        snprintf(msg, sizeof(msg), "Failed to open %s (errno: %d: %s) for thread %lu (tid: %d)", 
-                 path, errno, strerror(errno), (unsigned long)thread_id, tid);
-        console_log("MemoryMetrics", 3, msg);
-    }
+    pthread_mutex_unlock(&thread_mutex);
     
     return metrics;
 }
@@ -355,26 +269,198 @@ ThreadMemoryMetrics get_thread_memory_metrics(ServiceThreads *threads, pthread_t
 extern AppConfig *app_config;
 extern volatile sig_atomic_t keep_running;
 extern volatile sig_atomic_t shutting_down;
-// System status reporting with hierarchical organization
-//
-// Status generation strategy:
-// 1. Data Organization
-//    - Logical grouping
-//    - Clear hierarchy
-//    - Consistent structure
-//    - Extensible format
-//
-// 2. Performance Optimization
-//    - Memory preallocation
-//    - Batched collection
-//    - Efficient string handling
-//    - Minimal allocations
-//
-// 3. Error Handling
-//    - Partial data recovery
-//    - Memory cleanup
-//    - Error reporting
-//    - Fallback values
+
+// Helper function to add thread IDs to a service status object
+static void add_thread_ids_to_service(json_t *service_status, ServiceThreads *threads) {
+    // Create thread IDs array and add to service status
+    json_t *tid_array = json_array();
+    for (int i = 0; i < threads->thread_count; i++) {
+        json_array_append_new(tid_array, json_integer(threads->thread_tids[i]));
+    }
+    json_object_set_new(service_status, "threadIds", tid_array);
+}
+
+// Helper function to get socket information from /proc/net files
+static void get_socket_info(int inode, char *proto, int *port) {
+    char path[64];
+    const char *net_files[] = {
+        "tcp", "tcp6", "udp", "udp6"
+    };
+    
+    *port = 0;
+    proto[0] = '\0';
+    
+    for (int i = 0; i < 4; i++) {
+        snprintf(path, sizeof(path), "/proc/net/%s", net_files[i]);
+        FILE *f = fopen(path, "r");
+        if (!f) continue;
+        
+        char line[512];
+        fgets(line, sizeof(line), f); // Skip header
+        
+        while (fgets(line, sizeof(line), f)) {
+            unsigned local_port;
+            unsigned socket_inode;
+            if (sscanf(line, "%*x: %*x:%x %*x:%*x %*x %*x:%*x %*x:%*x %*x %*d %*d %u",
+                      &local_port, &socket_inode) == 2) {
+                if (socket_inode == (unsigned)inode) {
+                    *port = local_port;
+                    strncpy(proto, net_files[i], 31);
+                    proto[31] = '\0';
+                    fclose(f);
+                    return;
+                }
+            }
+        }
+        fclose(f);
+    }
+}
+
+// Helper function to get file descriptor type and description
+static void get_fd_info(int fd, FileDescriptorInfo *info) {
+    char path[64], target[256];
+    struct stat st;
+    
+    snprintf(path, sizeof(path), "/proc/self/fd/%d", fd);
+    ssize_t len = readlink(path, target, sizeof(target) - 1);
+    if (len < 0) {
+        snprintf(info->type, sizeof(info->type), "unknown");
+        snprintf(info->description, sizeof(info->description), "error reading link");
+        return;
+    }
+    target[len] = '\0';
+    
+    if (fstat(fd, &st) < 0) {
+        snprintf(info->type, sizeof(info->type), "error");
+        snprintf(info->description, sizeof(info->description), "fstat failed");
+        return;
+    }
+    
+    // Handle standard streams
+    if (fd <= 2) {
+        snprintf(info->type, sizeof(info->type), "stdio");
+        const char *stream_name = (fd == 0) ? "stdin" : (fd == 1) ? "stdout" : "stderr";
+        snprintf(info->description, sizeof(info->description), "%s: terminal", stream_name);
+        return;
+    }
+    
+    // Handle socket
+    if (S_ISSOCK(st.st_mode)) {
+        char proto[32];
+        int port;
+        get_socket_info(st.st_ino, proto, &port);
+        
+        snprintf(info->type, sizeof(info->type), "socket");
+        if (port > 0) {
+            const char *service = "";
+            if (port == 5000) service = "web server";
+            else if (port == 5001 || port == 5002) service = "websocket server";
+            else if (port == 5353) service = "mDNS";
+            
+            if (service[0]) {
+                snprintf(info->description, sizeof(info->description), 
+                        "socket (%s port %d - %s)", proto, port, service);
+            } else {
+                snprintf(info->description, sizeof(info->description), 
+                        "socket (%s port %d)", proto, port);
+            }
+        } else if (strstr(target, "socket:[")) {
+            struct sockaddr_storage addr;
+            socklen_t addr_len = sizeof(addr);
+            if (getsockname(fd, (struct sockaddr*)&addr, &addr_len) == 0) {
+                if (addr.ss_family == AF_UNIX) {
+                    struct sockaddr_un *un = (struct sockaddr_un*)&addr;
+                    if (un->sun_path[0])
+                        snprintf(info->description, sizeof(info->description), 
+                                "Unix domain socket: %s", un->sun_path);
+                    else
+                        snprintf(info->description, sizeof(info->description), 
+                                "Unix domain socket: *");
+                } else {
+                    snprintf(info->description, sizeof(info->description), 
+                            "socket (inode: %lu)", st.st_ino);
+                }
+            } else {
+                snprintf(info->description, sizeof(info->description), 
+                        "socket (inode: %lu)", st.st_ino);
+            }
+        }
+        return;
+    }
+    
+    // Handle anonymous inodes
+    if (strncmp(target, "anon_inode:", 11) == 0) {
+        snprintf(info->type, sizeof(info->type), "anon_inode");
+        const char *anon_type = target + 11;
+        if (strcmp(anon_type, "[eventfd]") == 0)
+            snprintf(info->description, sizeof(info->description), "event notification channel");
+        else if (strcmp(anon_type, "[eventpoll]") == 0)
+            snprintf(info->description, sizeof(info->description), "epoll instance");
+        else if (strcmp(anon_type, "[timerfd]") == 0)
+            snprintf(info->description, sizeof(info->description), "timer notification");
+        else {
+            // Ensure we have room for "anonymous inode: " (17 chars) plus null terminator
+            char truncated_type[sizeof(info->description) - 17];
+            strncpy(truncated_type, anon_type, sizeof(truncated_type) - 1);
+            truncated_type[sizeof(truncated_type) - 1] = '\0';
+            snprintf(info->description, sizeof(info->description), "anonymous inode: %s", truncated_type);
+        }
+        return;
+    }
+    
+    // Handle regular files and other types
+    if (S_ISREG(st.st_mode)) {
+        snprintf(info->type, sizeof(info->type), "file");
+        // Ensure we have room for "file: " (6 chars) plus null terminator
+        char truncated_path[sizeof(info->description) - 6];
+        strncpy(truncated_path, target, sizeof(truncated_path) - 1);
+        truncated_path[sizeof(truncated_path) - 1] = '\0';
+        snprintf(info->description, sizeof(info->description), "file: %s", truncated_path);
+    } else if (strncmp(target, "/dev/", 5) == 0) {
+        snprintf(info->type, sizeof(info->type), "device");
+        if (strcmp(target, "/dev/urandom") == 0)
+            snprintf(info->description, sizeof(info->description), "random number source");
+        else {
+            strncpy(info->description, target, sizeof(info->description) - 1);
+            info->description[sizeof(info->description) - 1] = '\0';
+        }
+    } else {
+        snprintf(info->type, sizeof(info->type), "other");
+        strncpy(info->description, target, sizeof(info->description) - 1);
+        info->description[sizeof(info->description) - 1] = '\0';
+    }
+}
+
+// Get file descriptor information as JSON
+json_t* get_file_descriptors_json(void) {
+    DIR *dir;
+    struct dirent *ent;
+    json_t *fd_array = json_array();
+    
+    dir = opendir("/proc/self/fd");
+    if (!dir) {
+        console_log("Utils", 3, "Failed to open /proc/self/fd");
+        return fd_array;
+    }
+    
+    while ((ent = readdir(dir)) != NULL) {
+        if (ent->d_name[0] == '.') continue;
+        
+        int fd = atoi(ent->d_name);
+        FileDescriptorInfo info;
+        get_fd_info(fd, &info);
+        
+        json_t *fd_obj = json_object();
+        json_object_set_new(fd_obj, "fd", json_integer(info.fd));
+        json_object_set_new(fd_obj, "type", json_string(info.type));
+        json_object_set_new(fd_obj, "description", json_string(info.description));
+        json_array_append_new(fd_array, fd_obj);
+    }
+    
+    closedir(dir);
+    return fd_array;
+}
+
 json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
     pthread_mutex_lock(&status_mutex);
     
@@ -397,193 +483,107 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
         json_object_set_new(system, "machine", json_string(system_info.machine));
         json_object_set_new(root, "system", system);
     }
-
+    
     // Status Information with resource summary
     json_t *status = json_object();
     json_object_set_new(status, "running", json_boolean(keep_running));
     json_object_set_new(status, "shutting_down", json_boolean(shutting_down));
-    char msg[256];
     
-    // Get main process memory metrics using maps (like pmap does)
-    char proc_path[256];
-    snprintf(proc_path, sizeof(proc_path), "/proc/self/maps");
-    FILE *proc_maps = fopen(proc_path, "r");
-    size_t process_virtual = 0, process_resident = 0;
+    // Get process memory metrics using /proc/self/status
+    size_t process_virtual = 0, process_resident = 0, process_swap = 0;
+    get_process_memory(&process_virtual, &process_resident, &process_swap);
     
-    if (proc_maps) {
-        char line[1024];
-        unsigned long start, end;
-        char perms[5];
-        
-        while (fgets(line, sizeof(line), proc_maps)) {
-            // Parse map entry: address perms offset dev inode pathname
-            if (sscanf(line, "%lx-%lx %4s", &start, &end, perms) == 3) {
-                size_t size = end - start;
-                process_virtual += size;  // All mappings count towards virtual memory
-                
-                // Count as resident if writable and private (like pmap -d shows)
-                if (perms[1] == 'w' && perms[3] == 'p') {
-                    process_resident += size;
-                }
-            }
-        }
-        
-        snprintf(msg, sizeof(msg), "Process memory - Virtual: %zu bytes, Writable/Private: %zu bytes",
-                 process_virtual, process_resident);
-        console_log("SystemStatus", 0, msg);
-        
-        fclose(proc_maps);
-    }
-
     // Count total threads
     size_t total_threads = logging_threads.thread_count + 
                           web_threads.thread_count + 
                           websocket_threads.thread_count + 
                           mdns_threads.thread_count + 
                           print_threads.thread_count;
-
-    // Update memory metrics for each service using actual measurements
-    update_service_thread_metrics(&logging_threads);
-    update_service_thread_metrics(&web_threads);
-    update_service_thread_metrics(&websocket_threads);
-    update_service_thread_metrics(&mdns_threads);
-    update_service_thread_metrics(&print_threads);
-
-    // Log thread and memory distribution
-    snprintf(msg, sizeof(msg), "Thread distribution - logging: %d, web: %d, websocket: %d, mdns: %d, print: %d, total: %zu",
-             logging_threads.thread_count, web_threads.thread_count, websocket_threads.thread_count,
-             mdns_threads.thread_count, print_threads.thread_count, total_threads);
-    console_log("SystemStatus", 0, msg);
-
-    snprintf(msg, sizeof(msg), "Process memory - Total Virtual: %zu bytes, Total Resident: %zu bytes",
-             process_virtual, process_resident);
-    console_log("SystemStatus", 0, msg);
-
-    // Calculate queue memory including base structures, state, and allocations
-    const size_t QUEUE_BASE_SIZE = sizeof(QueueMemoryMetrics) + 4096;  // Base structure + state overhead
-    size_t queue_virtual_total = QUEUE_BASE_SIZE * 2;  // Two queues
-    size_t queue_resident_total = QUEUE_BASE_SIZE * 2;
     
-    // Add actual queue allocations
-    queue_virtual_total += log_queue_memory.total_allocation + 
-                          print_queue_memory.total_allocation;
-    queue_resident_total += log_queue_memory.total_allocation + 
-                           print_queue_memory.total_allocation;
-
-    // Update queue metrics to include base structure and state overhead
-    log_queue_memory.metrics.virtual_bytes = QUEUE_BASE_SIZE + log_queue_memory.total_allocation;
-    log_queue_memory.metrics.resident_bytes = QUEUE_BASE_SIZE + log_queue_memory.total_allocation;
-    print_queue_memory.metrics.virtual_bytes = QUEUE_BASE_SIZE + print_queue_memory.total_allocation;
-    print_queue_memory.metrics.resident_bytes = QUEUE_BASE_SIZE + print_queue_memory.total_allocation;
-
-    // Update memory metrics for each service to get latest measurements
+    // Update memory metrics for each service
     update_service_thread_metrics(&logging_threads);
     update_service_thread_metrics(&web_threads);
     update_service_thread_metrics(&websocket_threads);
     update_service_thread_metrics(&mdns_threads);
     update_service_thread_metrics(&print_threads);
-
-    // Use the actual measured values from each service's threads
+    
+    // Calculate service memory totals (just stacks)
     size_t service_virtual_total = logging_threads.virtual_memory +
-                                  web_threads.virtual_memory +
-                                  websocket_threads.virtual_memory +
-                                  mdns_threads.virtual_memory +
-                                  print_threads.virtual_memory;
-
-    size_t service_resident_total = logging_threads.resident_memory +
-                                   web_threads.resident_memory +
-                                   websocket_threads.resident_memory +
-                                   mdns_threads.resident_memory +
-                                   print_threads.resident_memory;
-
-    // Ensure service totals don't exceed process totals
-    if (service_virtual_total > process_virtual) {
-        service_virtual_total = process_virtual;
-    }
-    if (service_resident_total > process_resident) {
-        service_resident_total = process_resident;
-    }
-
-    // Calculate service percentages based on actual measurements
-    if (process_resident > 0) {
-        logging_threads.memory_percent = round((double)logging_threads.resident_memory / process_resident * 100000.0) / 1000.0;
-        web_threads.memory_percent = round((double)web_threads.resident_memory / process_resident * 100000.0) / 1000.0;
-        websocket_threads.memory_percent = round((double)websocket_threads.resident_memory / process_resident * 100000.0) / 1000.0;
-        mdns_threads.memory_percent = round((double)mdns_threads.resident_memory / process_resident * 100000.0) / 1000.0;
-        print_threads.memory_percent = round((double)print_threads.resident_memory / process_resident * 100000.0) / 1000.0;
-    }
-
-    // Add process totals to status object
-    json_object_set_new(status, "totalThreads", json_integer((int)total_threads + 1));  // +1 for main thread
-    json_object_set_new(status, "totalVirtualMemoryBytes", json_integer(process_virtual));
-    json_object_set_new(status, "totalResidentMemoryBytes", json_integer(process_resident));
-
-    // Create and populate resources object with memory measurements
-    json_t *resources = json_object();
+                                 web_threads.virtual_memory +
+                                 websocket_threads.virtual_memory +
+                                 mdns_threads.virtual_memory +
+                                 print_threads.virtual_memory;
     
-    // Calculate total queue entries
-    size_t total_queue_entries = log_queue_memory.entry_count + print_queue_memory.entry_count;
+    size_t service_resident_total = logging_threads.resident_memory +
+                                  web_threads.resident_memory +
+                                  websocket_threads.resident_memory +
+                                  mdns_threads.resident_memory +
+                                  print_threads.resident_memory;
+    
+    // Calculate queue memory
+    size_t queue_virtual_total = log_queue_memory.metrics.virtual_bytes + 
+                               print_queue_memory.metrics.virtual_bytes;
+    size_t queue_resident_total = log_queue_memory.metrics.resident_bytes + 
+                                print_queue_memory.metrics.resident_bytes;
+    
+    // Add process totals to status object (in bytes)
+    json_object_set_new(status, "totalThreads", json_integer((int)total_threads + 1));  // +1 for main thread
+    json_object_set_new(status, "totalVirtualMemoryBytes", json_integer(process_virtual * 1024));
+    json_object_set_new(status, "totalResidentMemoryBytes", json_integer(process_resident * 1024));
+    
+    // Other memory is everything not accounted for in services or queues
+    size_t other_virtual = (process_virtual * 1024) > service_virtual_total + queue_virtual_total ? 
+                         (process_virtual * 1024) - service_virtual_total - queue_virtual_total : 0;
+    size_t other_resident = (process_resident * 1024) > service_resident_total + queue_resident_total ? 
+                          (process_resident * 1024) - service_resident_total - queue_resident_total : 0;
+    
+    // Calculate percentages with rounding to 3 decimal places
+    double service_percent = process_resident > 0 ? 
+                          round((double)service_resident_total / (process_resident * 1024) * 100000.0) / 1000.0 : 0.0;
+    double queue_percent = process_resident > 0 ? 
+                         round((double)queue_resident_total / (process_resident * 1024) * 100000.0) / 1000.0 : 0.0;
+    double other_percent = round((100.0 - service_percent - queue_percent) * 1000.0) / 1000.0;
+    
+    // Format percentages as strings with exactly 3 decimal places
+    char service_percent_str[16], queue_percent_str[16], other_percent_str[16];
+    snprintf(service_percent_str, sizeof(service_percent_str), "%.3f", service_percent);
+    snprintf(queue_percent_str, sizeof(queue_percent_str), "%.3f", queue_percent);
+    snprintf(other_percent_str, sizeof(other_percent_str), "%.3f", other_percent);
+    
+    // Create resources object
+    json_t *resources = json_object();
     
     // Service resources
     json_t *service_resources = json_object();
     json_object_set_new(service_resources, "threads", json_integer((int)total_threads));
     json_object_set_new(service_resources, "virtualMemoryBytes", json_integer(service_virtual_total));
     json_object_set_new(service_resources, "residentMemoryBytes", json_integer(service_resident_total));
+    json_object_set_new(service_resources, "allocationPercent", json_string(service_percent_str));
+    json_object_set_new(resources, "serviceResources", service_resources);
     
     // Queue resources
     json_t *queue_resources = json_object();
-    json_object_set_new(queue_resources, "entries", json_integer(total_queue_entries));
+    json_object_set_new(queue_resources, "entries", json_integer(log_queue_memory.entry_count + print_queue_memory.entry_count));
     json_object_set_new(queue_resources, "virtualMemoryBytes", json_integer(queue_virtual_total));
     json_object_set_new(queue_resources, "residentMemoryBytes", json_integer(queue_resident_total));
-    
-    // Calculate percentages ensuring they sum to 100%
-    double service_percent = 0.0, queue_percent = 0.0, other_percent = 0.0;
-    
-    if (process_resident > 0) {
-        service_percent = round((double)service_resident_total / process_resident * 100000.0) / 1000.0;
-        queue_percent = round((double)queue_resident_total / process_resident * 100000.0) / 1000.0;
-        other_percent = 100.0 - service_percent - queue_percent;
-        
-        // Ensure percentages are non-negative and sum to 100%
-        if (other_percent < 0.0) {
-            other_percent = 0.0;
-            // Adjust service_percent to account for rounding
-            service_percent = 100.0 - queue_percent;
-        }
-    }
-    
-    // Add percentages to resources objects
-    json_object_set_new(service_resources, "allocationPercent", json_real(service_percent));
-    json_object_set_new(resources, "serviceResources", service_resources);
-    
-    json_object_set_new(queue_resources, "allocationPercent", json_real(queue_percent));
+    json_object_set_new(queue_resources, "allocationPercent", json_string(queue_percent_str));
     json_object_set_new(resources, "queueResources", queue_resources);
     
     // Other resources (main thread and shared libraries)
     json_t *other_resources = json_object();
-    // Calculate other memory as remaining after services and queues
-    size_t other_virtual = (process_virtual > service_virtual_total + queue_virtual_total) ?
-                          (process_virtual - service_virtual_total - queue_virtual_total) : 0;
-    size_t other_resident = (process_resident > service_resident_total + queue_resident_total) ?
-                           (process_resident - service_resident_total - queue_resident_total) : 0;
     json_object_set_new(other_resources, "threads", json_integer(1));  // Main thread
     json_object_set_new(other_resources, "virtualMemoryBytes", json_integer(other_virtual));
     json_object_set_new(other_resources, "residentMemoryBytes", json_integer(other_resident));
-    
-    // Ensure other_percent is not negative
-    if (other_percent < 0.0) {
-        other_percent = 0.0;
-        // Adjust service_percent to account for rounding
-        service_percent = 100.0 - queue_percent;
-    }
-    
-    json_object_set_new(other_resources, "allocationPercent", json_real(other_percent));
+    json_object_set_new(other_resources, "allocationPercent", json_string(other_percent_str));
     json_object_set_new(resources, "otherResources", other_resources);
     
-    // Add resources object to root
-    json_object_set_new(root, "status", status);
     json_object_set_new(status, "resources", resources);
-
+    // Add file descriptors to status
+    json_t *files = get_file_descriptors_json();
+    json_object_set_new(status, "files", files);
+    
+    json_object_set_new(root, "status", status);
+    
     // Add queue information
     json_t *queues = json_object();
     
@@ -606,7 +606,7 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
     json_object_set_new(queues, "print", print_queue);
     
     json_object_set_new(root, "queues", queues);
-
+    
     // List of enabled services
     json_t *enabled_services = json_array();
     // Logging is always enabled
@@ -620,61 +620,54 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
     if (app_config->print_queue.enabled)
         json_array_append_new(enabled_services, json_string("print"));
     json_object_set_new(root, "enabledServices", enabled_services);
-
+    
     // All service configurations
     json_t *services = json_object();
     
     // Logging service (always enabled)
     json_t *logging = json_object();
-    // Configuration
     json_object_set_new(logging, "enabled", json_true());
     json_object_set_new(logging, "log_file", json_string(app_config->log_file_path));
-
+    
     // Status with thread and memory metrics
     json_t *logging_status = json_object();
-    json_object_set_new(logging_status, "messageCount", json_integer(0));  // Placeholder for message count
+    json_object_set_new(logging_status, "messageCount", json_integer(0));  // Placeholder
     json_object_set_new(logging_status, "threads", json_integer(logging_threads.thread_count));
-    
-    // Use measured memory values from smaps
     json_object_set_new(logging_status, "virtualMemoryBytes", json_integer(logging_threads.virtual_memory));
     json_object_set_new(logging_status, "residentMemoryBytes", json_integer(logging_threads.resident_memory));
+    add_thread_ids_to_service(logging_status, &logging_threads);
     json_object_set_new(logging, "status", logging_status);
     json_object_set_new(services, "logging", logging);
     
     // Web server configuration
     json_t *web = json_object();
-    // Configuration
     json_object_set_new(web, "enabled", json_boolean(app_config->web.enabled));
     json_object_set_new(web, "port", json_integer(app_config->web.port));
     json_object_set_new(web, "upload_path", json_string(app_config->web.upload_path));
     json_object_set_new(web, "max_upload_size", json_integer(app_config->web.max_upload_size));
     json_object_set_new(web, "log_level", json_string(app_config->web.log_level));
-    // Status with thread and memory metrics
-    json_t *web_status = json_object();
-    json_object_set_new(web_status, "activeRequests", json_integer(0));   // Placeholder for active requests
-    json_object_set_new(web_status, "totalRequests", json_integer(0));    // Placeholder for total requests
-    json_object_set_new(web_status, "threads", json_integer(web_threads.thread_count));
     
-    // Use measured memory values from smaps
+    json_t *web_status = json_object();
+    json_object_set_new(web_status, "activeRequests", json_integer(0));   // Placeholder
+    json_object_set_new(web_status, "totalRequests", json_integer(0));    // Placeholder
+    json_object_set_new(web_status, "threads", json_integer(web_threads.thread_count));
     json_object_set_new(web_status, "virtualMemoryBytes", json_integer(web_threads.virtual_memory));
     json_object_set_new(web_status, "residentMemoryBytes", json_integer(web_threads.resident_memory));
+    add_thread_ids_to_service(web_status, &web_threads);
     json_object_set_new(web, "status", web_status);
     json_object_set_new(services, "web", web);
     
     // WebSocket configuration
     json_t *websocket = json_object();
-    // Configuration
     json_object_set_new(websocket, "enabled", json_boolean(app_config->websocket.enabled));
     json_object_set_new(websocket, "port", json_integer(app_config->websocket.port));
     json_object_set_new(websocket, "protocol", json_string(app_config->websocket.protocol));
     json_object_set_new(websocket, "max_message_size", json_integer(app_config->websocket.max_message_size));
     json_object_set_new(websocket, "log_level", json_string(app_config->websocket.log_level));
     
-    // WebSocket status with thread and memory info
     json_t *websocket_status = json_object();
     json_object_set_new(websocket_status, "threads", json_integer(websocket_threads.thread_count));
     
-    // Add WebSocket metrics directly to status
     if (ws_metrics != NULL) {
         json_object_set_new(websocket_status, "uptime", 
             json_integer(time(NULL) - ws_metrics->server_start_time));
@@ -686,51 +679,47 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
             json_integer(ws_metrics->total_requests));
     }
     
-    // Use measured memory values from smaps
     json_object_set_new(websocket_status, "virtualMemoryBytes", json_integer(websocket_threads.virtual_memory));
     json_object_set_new(websocket_status, "residentMemoryBytes", json_integer(websocket_threads.resident_memory));
+    add_thread_ids_to_service(websocket_status, &websocket_threads);
     json_object_set_new(websocket, "status", websocket_status);
     json_object_set_new(services, "websocket", websocket);
     
     // mDNS configuration
     json_t *mdns = json_object();
-    // Configuration
     json_object_set_new(mdns, "enabled", json_boolean(app_config->mdns.enabled));
     json_object_set_new(mdns, "device_id", json_string(app_config->mdns.device_id));
     json_object_set_new(mdns, "friendly_name", json_string(app_config->mdns.friendly_name));
     json_object_set_new(mdns, "model", json_string(app_config->mdns.model));
     json_object_set_new(mdns, "manufacturer", json_string(app_config->mdns.manufacturer));
     json_object_set_new(mdns, "log_level", json_string(app_config->mdns.log_level));
-    // Status with thread and memory metrics
-    json_t *mdns_status = json_object();
-    json_object_set_new(mdns_status, "discoveryCount", json_integer(0));  // Placeholder for discovery count
-    json_object_set_new(mdns_status, "threads", json_integer(mdns_threads.thread_count));
     
-    // Use measured memory values from smaps
+    json_t *mdns_status = json_object();
+    json_object_set_new(mdns_status, "discoveryCount", json_integer(0));  // Placeholder
+    json_object_set_new(mdns_status, "threads", json_integer(mdns_threads.thread_count));
     json_object_set_new(mdns_status, "virtualMemoryBytes", json_integer(mdns_threads.virtual_memory));
     json_object_set_new(mdns_status, "residentMemoryBytes", json_integer(mdns_threads.resident_memory));
+    add_thread_ids_to_service(mdns_status, &mdns_threads);
     json_object_set_new(mdns, "status", mdns_status);
     json_object_set_new(services, "mdns", mdns);
     
     // Print queue configuration
     json_t *print = json_object();
-    // Configuration
     json_object_set_new(print, "enabled", json_boolean(app_config->print_queue.enabled));
     json_object_set_new(print, "log_level", json_string(app_config->print_queue.log_level));
-    // Status with thread and memory metrics
-    json_t *print_status = json_object();
-    json_object_set_new(print_status, "queuedJobs", json_integer(0));     // Placeholder for queued jobs
-    json_object_set_new(print_status, "completedJobs", json_integer(0));  // Placeholder for completed jobs
-    json_object_set_new(print_status, "threads", json_integer(print_threads.thread_count));
     
-    // Use measured memory values from smaps
+    json_t *print_status = json_object();
+    json_object_set_new(print_status, "queuedJobs", json_integer(0));     // Placeholder
+    json_object_set_new(print_status, "completedJobs", json_integer(0));  // Placeholder
+    json_object_set_new(print_status, "threads", json_integer(print_threads.thread_count));
     json_object_set_new(print_status, "virtualMemoryBytes", json_integer(print_threads.virtual_memory));
     json_object_set_new(print_status, "residentMemoryBytes", json_integer(print_threads.resident_memory));
+    add_thread_ids_to_service(print_status, &print_threads);
     json_object_set_new(print, "status", print_status);
     json_object_set_new(services, "print", print);
     
     json_object_set_new(root, "services", services);
-
+    
     pthread_mutex_unlock(&status_mutex);
     return root;
 }
@@ -746,26 +735,8 @@ void track_queue_entry_removed(QueueMemoryMetrics *queue) {
         queue->entry_count--;
     }
 }
+
 // Thread-safe identifier generation with collision resistance
-//
-// ID generation design prioritizes:
-// 1. Uniqueness
-//    - Time-based seeding
-//    - Character space optimization
-//    - Length considerations
-//    - Entropy maximization
-//
-// 2. Safety
-//    - Buffer overflow prevention
-//    - Thread-safe initialization
-//    - Input validation
-//    - Error reporting
-//
-// 3. Usability
-//    - Human-readable format
-//    - Consistent length
-//    - Easy validation
-//    - Simple comparison
 void generate_id(char *buf, size_t len) {
     if (len < ID_LEN + 1) {
         log_this("Utils", "Buffer too small for ID", 3, true, true, true);
@@ -786,16 +757,6 @@ void generate_id(char *buf, size_t len) {
 }
 
 // Format and output a log message directly to console
-// Matches the format of the logging queue system for consistency
-//
-// Format components:
-// 1. Timestamp with ms precision
-// 2. Priority label with padding
-// 3. Subsystem label with padding
-// 4. Message content
-//
-// Example output:
-// 2025-02-16 14:24:10.065  [ INFO      ]  [ Shutdown           ]  message
 void console_log(const char* subsystem, int priority, const char* message) {
     // Get current time with millisecond precision
     struct timeval tv;
@@ -819,4 +780,3 @@ void console_log(const char* subsystem, int priority, const char* message) {
     // Output the formatted log entry
     printf("%s  %s  %s  %s\n", timestamp_ms, formatted_priority, formatted_subsystem, message);
 }
-

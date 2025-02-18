@@ -6,28 +6,12 @@ This document provides details about the available API endpoints in the Hydrogen
 
 ### Get System Information
 
-Retrieves system status and information about the Hydrogen server.
-
-```bash
-curl http://localhost:5000/api/system/info
-```
+Retrieves comprehensive system status and information about the Hydrogen server, including version information, system details, resource usage, service status, and active file descriptors.
 
 **Endpoint:** `/api/system/info`  
-**Method:** GET  
-**Content-Type:** application/json
+**Method:** GET
 
-**Response Format:**
-
-```json
-{
-  "system": {
-    "status": "...",
-    "uptime": "...",
-    "version": "..."
-  },
-  // Additional system information fields
-}
-```
+[Detailed Documentation](./system_info.md)
 
 ## Additional Resources
 

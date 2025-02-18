@@ -65,7 +65,10 @@ Comprehensive documentation is available in the `docs` directory:
 
 ### 2025-Feb-17
 
-Configuration and service documentation.
+Lots of configuration and service documentation.
+Revisited how thread and process memory is reported.
+Example of Bash script that does the same thing.
+File Descriptor informatino added to info endpoint.
 
 ### 2025-Feb-16
 
