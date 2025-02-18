@@ -50,6 +50,7 @@
 #include <sys/types.h>
 #include <sys/utsname.h>
 #include <unistd.h>
+#include <time.h>
 
 // Network headers
 #include <microhttpd.h>
@@ -69,6 +70,12 @@
 #include "../../logging.h"
 #include "../../web_server.h"
 #include "../../utils.h"
+
+// External WebSocket metrics
+extern time_t server_start_time;
+extern int ws_connections;
+extern int ws_connections_total;
+extern int ws_requests;
 
 extern AppConfig *app_config;
 extern volatile sig_atomic_t keep_running;
@@ -99,8 +106,16 @@ enum MHD_Result handle_system_info_request(struct MHD_Connection *connection)
         return ret;
     }
 
-    // Get system status JSON (no WebSocket metrics needed for API endpoint)
-    json_t *root = get_system_status_json(NULL);
+    // Create WebSocket metrics for status
+    WebSocketMetrics metrics = {
+        .server_start_time = server_start_time,
+        .active_connections = ws_connections,
+        .total_connections = ws_connections_total,
+        .total_requests = ws_requests
+    };
+
+    // Get system status JSON with WebSocket metrics
+    json_t *root = get_system_status_json(&metrics);
 
     // Convert to string and create response
     char *response_str = json_dumps(root, JSON_INDENT(2));

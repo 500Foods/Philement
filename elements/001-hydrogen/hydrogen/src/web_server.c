@@ -361,6 +361,15 @@ static enum MHD_Result handle_request(void *cls, struct MHD_Connection *connecti
                            size_t *upload_data_size, void **con_cls) {
     (void)cls; (void)version;
 
+    // Register connection thread if this is a new request
+    if (*con_cls == NULL) {
+        extern ServiceThreads web_threads;
+        add_service_thread(&web_threads, pthread_self());
+        char msg[128];
+        snprintf(msg, sizeof(msg), "New connection thread for %s %s", method, url);
+        log_this("WebServer", msg, 0, true, false, true);
+    }
+
     // Log API endpoint access
     char service[32] = {0};
     char endpoint[32] = {0};
@@ -532,6 +541,8 @@ static enum MHD_Result handle_request(void *cls, struct MHD_Connection *connecti
 static void request_completed(void *cls, struct MHD_Connection *connection,
                               void **con_cls, enum MHD_RequestTerminationCode toe) {
     (void)cls; (void)connection; (void)toe;  // Unused parameters
+
+    // Clean up connection info
     struct ConnectionInfo *con_info = *con_cls;
     if (NULL == con_info) return;
     if (con_info->postprocessor) {
@@ -544,6 +555,11 @@ static void request_completed(void *cls, struct MHD_Connection *connection,
     free(con_info->new_filename);
     free(con_info);
     *con_cls = NULL;
+
+    // Remove connection thread from tracking after cleanup
+    extern ServiceThreads web_threads;
+    remove_service_thread(&web_threads, pthread_self());
+    log_this("WebServer", "Connection thread completed", 0, true, false, true);
 }
 
 bool init_web_server(WebConfig *web_config) {
@@ -587,9 +603,14 @@ void* run_web_server(void* arg) {
     (void)arg; // Unused parameter
 
     log_this("WebServer", "Starting web server", 0, true, false, true);
+
+    // Register main web server thread
+    extern ServiceThreads web_threads;
+    add_service_thread(&web_threads, pthread_self());
     web_daemon = MHD_start_daemon(MHD_USE_THREAD_PER_CONNECTION, server_web_config->port, NULL, NULL,
                                 &handle_request, NULL,
                                 MHD_OPTION_NOTIFY_COMPLETED, request_completed, NULL,
+                                MHD_OPTION_THREAD_STACK_SIZE, (1024 * 1024), // 1MB stack size
                                 MHD_OPTION_END);
     if (web_daemon == NULL) {
         log_this("WebServer", "Failed to start web server", 4, true, false, true);

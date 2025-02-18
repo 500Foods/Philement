@@ -470,6 +470,9 @@ void *mdns_announce_loop(void *arg) {
     mdns_thread_arg_t *thread_arg = (mdns_thread_arg_t *)arg;
     mdns_t *mdns = thread_arg->mdns;
 
+    // Register this thread with the mDNS service
+    add_service_thread(&mdns_threads, pthread_self());
+
     log_this("mDNS", "mDNS announce loop started", 0, true, true, true);
 
     while (!mdns_server_shutdown) {
@@ -524,6 +527,10 @@ void *mdns_announce_loop(void *arg) {
     }
 
     log_this("mDNS", "Shutdown: mDNS announce loop exiting", 0, true, true, true);
+    
+    // Remove this thread from tracking before exit
+    remove_service_thread(&mdns_threads, pthread_self());
+    
     free(thread_arg);  // Clean up the thread argument
     return NULL;
 }
@@ -532,6 +539,9 @@ void *mdns_responder_loop(void *arg) {
     mdns_thread_arg_t *thread_arg = (mdns_thread_arg_t *)arg;
     uint8_t buffer[MDNS_MAX_PACKET_SIZE];
     char name[256];
+
+    // Register this thread with the mDNS service
+    add_service_thread(&mdns_threads, pthread_self());
 
     log_this("mDNS", "mDNS responder loop started", 0, true, true, true);
 
@@ -577,6 +587,10 @@ void *mdns_responder_loop(void *arg) {
     }
 
     log_this("mDNS", "Shutdown: mDNS responder loop exiting", 0, true, true, true);
+    
+    // Remove this thread from tracking before exit
+    remove_service_thread(&mdns_threads, pthread_self());
+    
     return NULL;
 }
 
