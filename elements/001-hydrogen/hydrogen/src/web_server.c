@@ -157,21 +157,44 @@ static void generate_uuid(char *uuid_str) {
 // Check if a network port is available for binding
 // Attempts to create and bind a socket to verify availability
 // Returns true if port can be bound, false otherwise
-static bool is_port_available(int port) {
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock == -1) {
-        return false;
+static bool is_port_available(int port, bool check_ipv6) {
+    bool ipv4_ok = false;
+    bool ipv6_ok = false;
+
+    // Check IPv4
+    int sock_v4 = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock_v4 != -1) {
+        struct sockaddr_in addr;
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(port);
+        addr.sin_addr.s_addr = INADDR_ANY;
+
+        int result = bind(sock_v4, (struct sockaddr*)&addr, sizeof(addr));
+        ipv4_ok = (result == 0);
+        close(sock_v4);
     }
 
-    struct sockaddr_in addr;
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(port);
-    addr.sin_addr.s_addr = INADDR_ANY;
+    // Check IPv6 if requested
+    if (check_ipv6) {
+        int sock_v6 = socket(AF_INET6, SOCK_STREAM, 0);
+        if (sock_v6 != -1) {
+            struct sockaddr_in6 addr;
+            addr.sin6_family = AF_INET6;
+            addr.sin6_port = htons(port);
+            addr.sin6_addr = in6addr_any;
 
-    int result = bind(sock, (struct sockaddr*)&addr, sizeof(addr));
-    close(sock);
+            // Enable dual-stack (IPv4 + IPv6) if possible
+            int off = 0;
+            setsockopt(sock_v6, IPPROTO_IPV6, IPV6_V6ONLY, &off, sizeof(off));
 
-    return result == 0;
+            int result = bind(sock_v6, (struct sockaddr*)&addr, sizeof(addr));
+            ipv6_ok = (result == 0);
+            close(sock_v6);
+        }
+        return ipv6_ok;
+    }
+
+    return ipv4_ok;
 }
 
 void add_cors_headers(struct MHD_Response *response) {
@@ -563,7 +586,7 @@ static void request_completed(void *cls, struct MHD_Connection *connection,
 }
 
 bool init_web_server(WebConfig *web_config) {
-    if (!is_port_available(web_config->port)) {
+    if (!is_port_available(web_config->port, web_config->enable_ipv6)) {
         log_this("WebServer", "Port is not available", 3, true, false, true);
         return false;
     }
@@ -571,6 +594,9 @@ bool init_web_server(WebConfig *web_config) {
     server_web_config = web_config;
 
     log_this("WebServer", "Initializing web server", 0, true, false, true);
+    if (web_config->enable_ipv6) {
+        log_this("WebServer", "IPv6 support enabled", 0, true, false, true);
+    }
     log_this("WebServer", "-> Port: %u", 0, true, true, true, server_web_config->port);
     log_this("WebServer", "-> WebRoot: %s", 0, true, true, true, server_web_config->web_root);
     log_this("WebServer", "-> Upload Path: %s", 0, true, true, true, server_web_config->upload_path);
@@ -607,7 +633,13 @@ void* run_web_server(void* arg) {
     // Register main web server thread
     extern ServiceThreads web_threads;
     add_service_thread(&web_threads, pthread_self());
-    web_daemon = MHD_start_daemon(MHD_USE_THREAD_PER_CONNECTION, server_web_config->port, NULL, NULL,
+    unsigned int flags = MHD_USE_THREAD_PER_CONNECTION;
+    if (server_web_config->enable_ipv6) {
+        flags |= MHD_USE_DUAL_STACK;
+        log_this("WebServer", "Starting with IPv6 dual-stack support", 0, true, false, true);
+    }
+
+    web_daemon = MHD_start_daemon(flags, server_web_config->port, NULL, NULL,
                                 &handle_request, NULL,
                                 MHD_OPTION_NOTIFY_COMPLETED, request_completed, NULL,
                                 MHD_OPTION_THREAD_STACK_SIZE, (1024 * 1024), // 1MB stack size
