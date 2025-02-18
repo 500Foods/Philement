@@ -102,7 +102,7 @@ static struct MHD_Daemon *web_daemon = NULL;
 static WebConfig *server_web_config = NULL;
 
 extern AppConfig *app_config;
-extern volatile sig_atomic_t keep_running;
+extern volatile sig_atomic_t server_running;
 extern volatile sig_atomic_t web_server_shutdown;
 extern pthread_cond_t terminate_cond;
 extern pthread_mutex_t terminate_mutex;

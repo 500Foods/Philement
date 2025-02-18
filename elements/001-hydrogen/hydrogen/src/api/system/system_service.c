@@ -78,8 +78,8 @@ extern int ws_connections_total;
 extern int ws_requests;
 
 extern AppConfig *app_config;
-extern volatile sig_atomic_t keep_running;
-extern volatile sig_atomic_t shutting_down;
+extern volatile sig_atomic_t server_running;
+extern volatile sig_atomic_t server_stopping;
 extern volatile sig_atomic_t web_server_shutdown;
 extern volatile sig_atomic_t print_queue_shutdown;
 extern volatile sig_atomic_t log_queue_shutdown;

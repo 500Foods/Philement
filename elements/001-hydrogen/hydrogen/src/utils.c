@@ -267,8 +267,8 @@ ThreadMemoryMetrics get_thread_memory_metrics(ServiceThreads *threads, pthread_t
 
 // External configuration and state
 extern AppConfig *app_config;
-extern volatile sig_atomic_t keep_running;
-extern volatile sig_atomic_t shutting_down;
+extern volatile sig_atomic_t server_running;
+extern volatile sig_atomic_t server_stopping;
 
 // Helper function to add thread IDs to a service status object
 static void add_thread_ids_to_service(json_t *service_status, ServiceThreads *threads) {
@@ -486,8 +486,9 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
     
     // Status Information with resource summary
     json_t *status = json_object();
-    json_object_set_new(status, "running", json_boolean(keep_running));
-    json_object_set_new(status, "shutting_down", json_boolean(shutting_down));
+    json_object_set_new(status, "server_running", json_boolean(server_running));
+    json_object_set_new(status, "server_stopping", json_boolean(server_stopping));
+    json_object_set_new(status, "server_starting", json_boolean(server_starting));
     
     // Get process memory metrics using /proc/self/status
     size_t process_virtual = 0, process_resident = 0, process_swap = 0;

@@ -70,8 +70,9 @@
 //    - Mutex for state changes
 //    - Condition variable for waiting
 //    - Broadcast notifications
-volatile sig_atomic_t keep_running = 1;
-volatile sig_atomic_t shutting_down = 0;
+volatile sig_atomic_t server_running = 1;
+volatile sig_atomic_t server_stopping = 0;
+volatile sig_atomic_t server_starting = 1;  // Start as true, will be set to false once startup complete
 pthread_cond_t terminate_cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t terminate_mutex = PTHREAD_MUTEX_INITIALIZER;
 

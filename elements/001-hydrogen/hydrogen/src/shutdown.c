@@ -93,7 +93,7 @@ void inthandler(int signum) {
     console_log("Shutdown", 0, "Cleaning up and shutting down");
 
     pthread_mutex_lock(&terminate_mutex);
-    keep_running = 0;
+    server_running = 0;
     pthread_cond_broadcast(&terminate_cond);
     pthread_mutex_unlock(&terminate_mutex);
 }
@@ -283,8 +283,8 @@ void graceful_shutdown(void) {
     
     // Signal all threads that shutdown is imminent
     pthread_mutex_lock(&terminate_mutex);
-    keep_running = 0;
-    shutting_down = 1;
+    server_running = 0;
+    server_stopping = 1;
     pthread_cond_broadcast(&terminate_cond);
     pthread_mutex_unlock(&terminate_mutex);
 
