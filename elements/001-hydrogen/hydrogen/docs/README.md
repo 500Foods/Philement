@@ -20,7 +20,13 @@ Welcome to the Hydrogen Project server documentation. This documentation will he
    - Upload directories
    - Logging options
 
-4. [Print Queue](./PrintQueue.md) (Coming Soon)
+4. [C Coding Guidelines](./CodingGuidelines.md)
+   - Project structure and organization
+   - Libraries and includes
+   - Error handling patterns
+   - Threading practices
+
+5. [Print Queue](./PrintQueue.md) (Coming Soon)
    - Queue management
    - Job priorities
    - Status monitoring
