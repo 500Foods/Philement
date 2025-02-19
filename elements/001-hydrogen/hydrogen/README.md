@@ -59,9 +59,9 @@ Comprehensive documentation is available in the `docs` directory:
 ## System Dependencies
 
 Core Libraries:
-- pthreads - POSIX thread support for concurrent operations
-- jansson - Efficient and memory-safe JSON parsing/generation
-- microhttpd - Lightweight embedded HTTP server
-- libwebsockets - Full-duplex WebSocket communication
-- OpenSSL (libssl/libcrypto) - Industry-standard encryption and security
-- libm - Mathematical operations support
+- [pthreads](https://pubs.opengroup.org/onlinepubs/7908799/xsh/pthread.h.html) - POSIX thread support for concurrent operations
+- [jansson](https://github.com/akheron/jansson) - Efficient and memory-safe JSON parsing/generation
+- [microhttpd](https://www.gnu.org/software/libmicrohttpd/) - Lightweight embedded HTTP server
+- [libwebsockets](https://github.com/warmcat/libwebsockets) - Full-duplex WebSocket communication
+- [OpenSSL](https://www.openssl.org/) (libssl/libcrypto) - Industry-standard encryption and security
+- [libm](https://www.gnu.org/software/libc/manual/html_node/Mathematics.html) - Mathematical operations support
