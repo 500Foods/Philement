@@ -13,6 +13,7 @@ This endpoint provides a basic health check mechanism that can be used by load b
 **Content-Type:** application/json
 
 Example:
+
 ```bash
 curl http://localhost:5000/api/system/health
 ```

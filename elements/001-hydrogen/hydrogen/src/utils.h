@@ -119,6 +119,15 @@ void remove_service_thread(ServiceThreads *threads, pthread_t thread_id);
 void update_service_thread_metrics(ServiceThreads *threads);
 ThreadMemoryMetrics get_thread_memory_metrics(ServiceThreads *threads, pthread_t thread_id);
 
+// Server state tracking
+// Called when server_starting transitions to false
+// Records the timestamp for uptime calculations
+void update_server_ready_time(void);
+
+// Check if server ready time has been set
+// Returns 1 if set, 0 if not yet set
+int is_server_ready_time_set(void);
+
 // Queue entry tracking
 void track_queue_entry_added(QueueMemoryMetrics *queue);
 void track_queue_entry_removed(QueueMemoryMetrics *queue);

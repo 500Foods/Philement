@@ -2,6 +2,13 @@
 
 ## 2025-Feb-19
 
+Enhanced system status reporting:
+- Added server timing information to /api/system/info endpoint
+- New `server_started` field shows ISO-formatted UTC start time
+- New `server_runtime` field shows uptime in seconds
+- New `server_runtime_formatted` field shows human-readable uptime
+- Updated API documentation with real-world examples
+
 Documentation improvements:
 - Added link to Print Queue Management documentation
 - Moved release notes to a dedicated file

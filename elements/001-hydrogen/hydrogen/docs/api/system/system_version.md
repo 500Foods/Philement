@@ -13,6 +13,7 @@ This endpoint provides version information about the Hydrogen server and its API
 **Content-Type:** application/json
 
 Example:
+
 ```bash
 curl http://localhost:5000/api/version
 ```

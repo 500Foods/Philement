@@ -11,6 +11,7 @@ The print queue system handles the scheduling and management of print jobs, ensu
 Print queue settings are managed in the configuration file. See the [Configuration Guide](../reference/configuration.md#print-job-management-printqueue) for detailed settings.
 
 Basic configuration example:
+
 ```json
 {
     "PrintQueue": {
@@ -31,6 +32,7 @@ The print queue can be viewed through a web interface:
 **Response:** HTML page showing current queue status
 
 Example request:
+
 ```bash
 curl http://localhost:5000/print/queue
 ```
@@ -38,6 +40,7 @@ curl http://localhost:5000/print/queue
 ### Queue Information
 
 The queue interface displays:
+
 - Original filename
 - File size
 - Print status
@@ -113,6 +116,7 @@ The queue system uses several technical features to ensure reliable operation:
    - System load management
 
 For additional details, see:
+
 - [Configuration Guide](../reference/configuration.md) for setup
 - [API Documentation](../reference/api.md) for endpoints
 - [WebSocket Documentation](../reference/web_socket.md) for real-time updates
@@ -120,6 +124,7 @@ For additional details, see:
 ## Future Enhancements
 
 Planned features for the print queue system:
+
 1. Job prioritization
 2. Print time estimation
 3. Material usage tracking
@@ -129,6 +134,7 @@ Planned features for the print queue system:
 ## Contributing
 
 When adding features to the print queue:
+
 1. Update this documentation
 2. Add configuration options to configuration.md
 3. Document any new API endpoints

@@ -402,7 +402,14 @@ int startup_hydrogen(const char *config_path) {
     log_this("Initialization", "%s", 0, true, true, true, LOG_LINE_BREAK);
 
     // All services have been started successfully, mark startup as complete
-    server_starting = 0;
+    server_starting = 0;  // First set the flag
+    update_server_ready_time();  // Then try to record the time
+    
+    // Make sure we capture the ready time
+    for (int i = 0; i < 5 && !is_server_ready_time_set(); i++) {
+        usleep(1000);  // Wait 1ms between attempts
+        update_server_ready_time();
+    }
 
     return 1;
 }
