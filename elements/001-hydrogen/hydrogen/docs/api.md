@@ -13,6 +13,46 @@ Retrieves comprehensive system status and information about the Hydrogen server,
 
 [Detailed Documentation](./system_info.md)
 
+### Health Check
+
+Simple health check endpoint used by load balancers to verify service availability in distributed deployments.
+
+```bash
+curl http://localhost:5000/api/system/health
+```
+
+**Endpoint:** `/api/system/health`  
+**Method:** GET  
+**Content-Type:** application/json
+
+Response example:
+```json
+{
+    "status": "Yes, I'm alive, thanks!"
+}
+```
+
+### Version Information
+
+Retrieves the current version information for the API and server.
+
+```bash
+curl http://localhost:5000/api/version
+```
+
+**Endpoint:** `/api/version`  
+**Method:** GET  
+**Content-Type:** application/json
+
+Response example:
+```json
+{
+    "api": "0.1",
+    "server": "1.1.0",
+    "text": "OctoPrint 1.1.0"
+}
+```
+
 ## Additional Resources
 
 - [Configuration Guide](./Configuration.md) - Complete guide for server configuration

@@ -1,65 +1,85 @@
 # Hydrogen Documentation
 
-Welcome to the Hydrogen Project server documentation. This documentation will help you understand how to interact with and configure the Hydrogen server.
+Welcome to the Hydrogen Project documentation. This guide will help you understand, configure, and use the Hydrogen 3D printer control server.
 
-## Contents
+## Getting Started
 
-1. [API Documentation](./API.md)
-   - REST API endpoints
-   - Response formats
-   - Usage examples
+- [Quick Start Guide](./guides/quick-start.md) - Get up and running quickly
+- [Installation Guide](./guides/installation.md) - Detailed installation instructions
+- [Configuration Guide](./reference/configuration.md) - Essential configuration
 
-2. [WebSocket Interface](./WebSocket.md) (Coming Soon)
-   - Real-time status updates
-   - Event notifications
-   - WebSocket protocol details
+## User Guides
 
-3. [Configuration](./Configuration.md) (Coming Soon)
-   - Server configuration
-   - Network settings
-   - Upload directories
-   - Logging options
+### Basic Usage
+- [Basic Operations](./guides/basic-operations.md) - Common tasks and operations
+- [Print Queue Management](./guides/print-queue.md) - Managing print jobs
+- [Monitoring Your Printer](./guides/monitoring.md) - Real-time monitoring
 
-4. [C Coding Guidelines](./CodingGuidelines.md)
-   - Project structure and organization
-   - Libraries and includes
-   - Error handling patterns
-   - Threading practices
+### Advanced Usage
+- [Load Balancing](./guides/load-balancing.md) - Multi-printer setups
+- [Custom Integrations](./guides/integrations.md) - Third-party integration
+- [Automation](./guides/automation.md) - Automating common tasks
 
-5. [Print Queue](./PrintQueue.md) (Coming Soon)
-   - Queue management
-   - Job priorities
-   - Status monitoring
+### Use Cases
+- [Home Workshop](./guides/use-cases/home-workshop.md) - Single printer setup
+- [Small Print Farm](./guides/use-cases/print-farm.md) - Multiple printer management
+- [Educational Lab](./guides/use-cases/educational-lab.md) - School/university setup
+- [Production Environment](./guides/use-cases/production.md) - Industrial usage
 
-## Quick Start
+## Reference Documentation
 
-For the most common operations, refer to these quick examples:
+### API Reference
+- [API Overview](./reference/api.md) - API introduction
+- [System Endpoints](./reference/system_info.md) - System API details
+- [WebSocket Interface](./reference/web_socket.md) - Real-time communications
+- [Error Codes](./reference/error_codes.md) - API error reference
 
-1. Get system status:
+### Technical Reference
+- [Architecture Overview](./reference/architecture.md) - System design
+- [Data Structures](./reference/data_structures.md) - Core data types
+- [Configuration Reference](./reference/configuration.md) - Detailed settings
+- [Service Management](./reference/service.md) - Service configuration
 
-   ```bash
-   curl http://localhost:5000/api/system/info
-   ```
+### Development
+- [Contributing Guide](./development/contributing.md) - How to contribute
+- [Coding Guidelines](./development/coding_guidelines.md) - Code standards
+- [Build Guide](./development/building.md) - Building from source
+- [Testing Guide](./development/testing.md) - Running tests
 
-2. View print queue (HTML interface):
+## Deployment
 
-   ```bash
-   curl http://localhost:5000/print/queue
-   ```
+### Setup Guides
+- [Linux Service](./deployment/linux_service.md) - Running as a service
+- [Docker Deployment](./deployment/docker.md) - Container setup
+- [Load Balancer Setup](./deployment/load_balancer.md) - Apache configuration
+- [Reverse Proxy](./deployment/reverse_proxy.md) - Nginx setup
 
-## Contributing
-
-When adding new features to Hydrogen, please remember to:
-
-1. Document any new API endpoints in [API.md](./API.md)
-2. Include curl examples for REST endpoints
-3. Add configuration details to [Configuration.md](./Configuration.md)
-4. Document WebSocket events in [WebSocket.md](./WebSocket.md)
+### Best Practices
+- [Security Guide](./deployment/security.md) - Securing your installation
+- [Monitoring Guide](./deployment/monitoring.md) - System monitoring
+- [Backup Strategy](./deployment/backup.md) - Data backup
+- [Upgrade Guide](./deployment/upgrading.md) - Version upgrades
 
 ## Support
 
-If you find any issues with the documentation or need clarification, please:
+- [Troubleshooting Guide](./support/troubleshooting.md) - Common issues
+- [FAQ](./support/faq.md) - Frequently asked questions
+- [Known Issues](./support/known_issues.md) - Current limitations
+- [Getting Help](./support/getting_help.md) - Where to find help
 
-1. Check the existing documentation thoroughly
-2. Look for related code comments in the source
-3. Create an issue in the project repository
+## Contributing
+
+When adding new features to Hydrogen, please:
+
+1. Update relevant guides and reference documentation
+2. Add examples for new functionality
+3. Include configuration documentation
+4. Update API documentation if applicable
+
+## Documentation Updates
+
+This documentation is actively maintained. For the most up-to-date information:
+
+1. Check the [Configuration Reference](./reference/configuration.md)
+2. Review recent [API changes](./reference/api.md)
+3. See [Known Issues](./support/known_issues.md) for current status

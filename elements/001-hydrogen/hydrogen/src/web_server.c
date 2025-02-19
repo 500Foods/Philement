@@ -421,6 +421,8 @@ static enum MHD_Result handle_request(void *cls, struct MHD_Connection *connecti
             return handle_print_queue_request(connection);
         } else if (strcmp(url, "/api/system/info") == 0) {
             return handle_system_info_request(connection);
+        } else if (strcmp(url, "/api/system/health") == 0) {
+            return handle_system_health_request(connection);
         }
 
         // If no API endpoint matched, try to serve a static file
