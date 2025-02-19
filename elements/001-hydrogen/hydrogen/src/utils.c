@@ -44,6 +44,40 @@ static void init_all_service_threads(void);
 // Thread synchronization mutexes
 static pthread_mutex_t status_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t ready_time_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+// Global state tracking
+static time_t server_ready_time = 0;  // Protected by ready_time_mutex
+
+// Format duration in human-readable format (e.g. "4d 1h 22m 0s")
+static void format_duration(time_t seconds, char *buffer, size_t buflen) {
+    int days = seconds / 86400;
+    int hours = (seconds % 86400) / 3600;
+    int minutes = (seconds % 3600) / 60;
+    int secs = seconds % 60;
+    snprintf(buffer, buflen, "%dd %dh %dm %ds", days, hours, minutes, secs);
+}
+
+// Track when server_starting becomes false
+void update_server_ready_time(void) {
+    pthread_mutex_lock(&ready_time_mutex);
+    if (server_ready_time == 0) {  // Only set it once
+        volatile sig_atomic_t starting = server_starting;  // Get current state
+        if (!starting) {  // Check if we're no longer starting
+            server_ready_time = time(NULL);
+            log_this("Utils", "Server ready time recorded: %ld", 1, true, false, true, (long)server_ready_time);
+        }
+    }
+    pthread_mutex_unlock(&ready_time_mutex);
+}
+
+// Check if server ready time has been set
+int is_server_ready_time_set(void) {
+    pthread_mutex_lock(&ready_time_mutex);
+    int is_set = (server_ready_time > 0);
+    pthread_mutex_unlock(&ready_time_mutex);
+    return is_set;
+}
 
 // Initialize service threads when module loads
 static void __attribute__((constructor)) init_utils(void) {
@@ -269,6 +303,7 @@ ThreadMemoryMetrics get_thread_memory_metrics(ServiceThreads *threads, pthread_t
 extern AppConfig *app_config;
 extern volatile sig_atomic_t server_running;
 extern volatile sig_atomic_t server_stopping;
+extern volatile sig_atomic_t server_starting;
 
 // Helper function to add thread IDs to a service status object
 static void add_thread_ids_to_service(json_t *service_status, ServiceThreads *threads) {
@@ -489,6 +524,24 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
     json_object_set_new(status, "server_running", json_boolean(server_running));
     json_object_set_new(status, "server_stopping", json_boolean(server_stopping));
     json_object_set_new(status, "server_starting", json_boolean(server_starting));
+
+    // Add server start time and runtime if server is ready
+    pthread_mutex_lock(&ready_time_mutex);
+    time_t ready_time = server_ready_time;  // Get a local copy
+    if (ready_time > 0) {
+        char iso_time[32];
+        struct tm *tm_info = gmtime(&ready_time);
+        strftime(iso_time, sizeof(iso_time), "%Y-%m-%dT%H:%M:%S.000Z", tm_info);
+        json_object_set_new(status, "server_started", json_string(iso_time));
+
+        time_t runtime = time(NULL) - ready_time;
+        json_object_set_new(status, "server_runtime", json_integer(runtime));
+
+        char runtime_str[32];
+        format_duration(runtime, runtime_str, sizeof(runtime_str));
+        json_object_set_new(status, "server_runtime_formatted", json_string(runtime_str));
+    }
+    pthread_mutex_unlock(&ready_time_mutex);
     
     // Get process memory metrics using /proc/self/status
     size_t process_virtual = 0, process_resident = 0, process_swap = 0;

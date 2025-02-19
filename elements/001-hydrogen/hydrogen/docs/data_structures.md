@@ -5,7 +5,9 @@ This document describes the core data structures and types used in the Hydrogen 
 ## Queue System
 
 ### QueueElement
+
 Core structure for queue entries:
+
 ```c
 typedef struct QueueElement {
     char* data;              // Message data buffer
@@ -16,7 +18,9 @@ typedef struct QueueElement {
 ```
 
 ### Queue
+
 Queue management structure:
+
 ```c
 typedef struct Queue {
     char* name;              // Queue identifier
@@ -28,7 +32,9 @@ typedef struct Queue {
 ```
 
 ### QueueAttributes
+
 Queue configuration:
+
 ```c
 typedef struct QueueAttributes {
     size_t initial_memory;   // Initial memory allocation
@@ -40,7 +46,9 @@ typedef struct QueueAttributes {
 ## Network and WebSocket
 
 ### WebSocketMetrics
+
 Connection statistics:
+
 ```c
 typedef struct {
     time_t server_start_time;   // Server start timestamp
@@ -51,7 +59,9 @@ typedef struct {
 ```
 
 ### ConnectionInfo
+
 File upload handling:
+
 ```c
 struct ConnectionInfo {
     FILE *fp;                  // File handle
@@ -65,7 +75,9 @@ struct ConnectionInfo {
 ## Configuration Structures
 
 ### WebConfig
+
 Web server configuration:
+
 ```c
 typedef struct {
     int enabled;               // Server enabled
@@ -80,7 +92,9 @@ typedef struct {
 ```
 
 ### PrintQueueConfig
+
 Print queue settings:
+
 ```c
 typedef struct {
     int enabled;              // Queue enabled
@@ -91,7 +105,9 @@ typedef struct {
 ## Resource Management
 
 ### FileDescriptorInfo
+
 File handle tracking:
+
 ```c
 typedef struct {
     int fd;                  // File descriptor
@@ -101,7 +117,9 @@ typedef struct {
 ```
 
 ### MemoryMetrics
+
 Memory usage tracking:
+
 ```c
 typedef struct {
     size_t virtual_bytes;    // Virtual memory

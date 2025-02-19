@@ -17,6 +17,7 @@ This guide describes how to set up and use Hydrogen in a typical home workshop e
    - Printer connection
 
 2. **Configuration**
+
    ```json
    {
        "ServerName": "home-workshop",
@@ -38,6 +39,7 @@ This guide describes how to set up and use Hydrogen in a typical home workshop e
 ## Common Use Cases
 
 ### Remote Monitoring
+
 ```bash
 # Check printer status
 curl http://your-printer:5000/api/system/info
@@ -47,11 +49,13 @@ curl http://your-printer:5000/print/queue
 ```
 
 ### Print Job Management
+
 - Uploading files through web interface
 - Monitoring print progress
 - Basic queue management
 
 ### Integration Examples
+
 - OctoPrint-compatible tools
 - Mobile apps
 - Home automation

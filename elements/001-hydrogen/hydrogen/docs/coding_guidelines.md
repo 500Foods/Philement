@@ -5,11 +5,13 @@ This document outlines the C programming guidelines and patterns used in the Hyd
 ## Project Structure
 
 ### Header Files
+
 - Each `.c` file should have a corresponding `.h` file (except for main program files)
 - Use header guards in all header files
 - Keep interface declarations in headers, implementations in source files
 
 Example header guard:
+
 ```c
 #ifndef HYDROGEN_COMPONENT_H
 #define HYDROGEN_COMPONENT_H
@@ -22,6 +24,7 @@ Example header guard:
 ## Required Feature Test Macros
 
 At the start of source files that use POSIX features:
+
 ```c
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
@@ -32,6 +35,7 @@ These must come before any includes.
 ## Standard Library Usage
 
 ### Common Standard Headers
+
 ```c
 #include <signal.h>    // Signal handling
 #include <pthread.h>   // POSIX threading
@@ -44,6 +48,7 @@ These must come before any includes.
 ```
 
 ### Project-Specific Headers
+
 ```c
 #include "logging.h"   // Logging functions
 #include "state.h"     // State management
@@ -58,6 +63,7 @@ These must come before any includes.
 4. Clean up resources on error paths
 
 Example:
+
 ```c
 if (operation_failed) {
     log_this("Component", "Operation failed: specific reason", 3, true, false, true);
@@ -74,6 +80,7 @@ if (operation_failed) {
 4. Follow consistent locking order to prevent deadlocks
 
 Example:
+
 ```c
 pthread_mutex_lock(&resource_mutex);
 // Access shared resource
@@ -83,11 +90,13 @@ pthread_mutex_unlock(&resource_mutex);
 ## Logging Conventions
 
 Use the project's logging system with appropriate severity levels:
+
 ```c
 log_this("Component", "Message", severity, to_console, to_file, to_websocket);
 ```
 
 Severity levels:
+
 - 1: Debug
 - 2: Info
 - 3: Warning
@@ -102,6 +111,7 @@ Severity levels:
 4. Consider using static allocation for fixed-size resources
 
 Example:
+
 ```c
 void* ptr = malloc(size);
 if (!ptr) {
@@ -121,6 +131,7 @@ if (!ptr) {
    - Error conditions
 
 Example:
+
 ```c
 /*
  * Why This Architecture Matters:
@@ -137,6 +148,7 @@ Example:
 ## Build System
 
 The project uses Make for building. Key targets:
+
 - `make` - Build the project
 - `make debug` - Build with debug symbols
 - `make clean` - Clean build artifacts

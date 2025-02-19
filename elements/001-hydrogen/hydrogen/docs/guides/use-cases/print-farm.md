@@ -12,7 +12,7 @@ This guide describes how to set up and manage Hydrogen in a small print farm env
 
 ## Architecture Overview
 
-```
+```text
 [Load Balancer] --> [Hydrogen Server 1] --> [Printer 1]
                 --> [Hydrogen Server 2] --> [Printer 2]
                 --> [Hydrogen Server N] --> [Printer N]
@@ -21,6 +21,7 @@ This guide describes how to set up and manage Hydrogen in a small print farm env
 ## Setup Components
 
 1. **Individual Printer Nodes**
+
    ```json
    {
        "ServerName": "printer-01",
@@ -35,6 +36,7 @@ This guide describes how to set up and manage Hydrogen in a small print farm env
    ```
 
 2. **Load Balancer Configuration**
+
    ```apache
    <Proxy balancer://printercluster>
        BalancerMember http://printer-01:5000
@@ -44,6 +46,7 @@ This guide describes how to set up and manage Hydrogen in a small print farm env
    ```
 
 3. **Health Monitoring**
+
    ```bash
    # Health check endpoint
    curl http://printer-01:5000/api/system/health
@@ -52,16 +55,19 @@ This guide describes how to set up and manage Hydrogen in a small print farm env
 ## Management Strategies
 
 ### Job Distribution
+
 - Automatic load balancing
 - Priority queue management
 - Resource allocation
 
 ### Monitoring
+
 - Centralized dashboard
 - Status aggregation
 - Alert system
 
 ### Maintenance
+
 - Rolling updates
 - Backup rotation
 - Log aggregation
@@ -69,12 +75,14 @@ This guide describes how to set up and manage Hydrogen in a small print farm env
 ## Common Workflows
 
 ### Print Job Submission
+
 1. Submit to load balancer
 2. Automatic printer selection
 3. Job execution
 4. Status monitoring
 
 ### Resource Management
+
 1. Material tracking
 2. Printer availability
 3. Queue optimization
