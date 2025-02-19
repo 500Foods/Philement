@@ -40,9 +40,51 @@ Status messages are sent as JSON objects with the following structure:
     "server_start_time": "ISO8601 timestamp",
     "active_connections": number,
     "total_connections": number,
-    "total_requests": number
+    "total_requests": number,
+    "system": {
+        "sysname": "string",
+        "nodename": "string",
+        "release": "string",
+        "version": "string",
+        "machine": "string"
+    },
+    "status": {
+        "running": boolean,
+        "shutting_down": boolean,
+        "totalThreads": number,
+        "totalVirtualMemoryBytes": number,
+        "totalResidentMemoryBytes": number
+    }
 }
 ```
+
+### Message Fields
+
+- **server_start_time**: ISO8601 formatted timestamp of server start
+- **active_connections**: Current number of WebSocket connections
+- **total_connections**: Total connections since server start
+- **total_requests**: Total WebSocket requests processed
+- **system**: Operating system and hardware information
+- **status**: Current server status and resource usage
+
+### Error Messages
+
+Error responses follow this format:
+
+```json
+{
+    "error": {
+        "code": "string",
+        "message": "string",
+        "details": object
+    }
+}
+```
+
+Common error codes:
+- `auth_failed`: Authentication failure
+- `invalid_message`: Malformed message
+- `server_error`: Internal server error
 
 ## Security
 

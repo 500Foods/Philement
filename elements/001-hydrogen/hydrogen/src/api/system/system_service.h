@@ -42,4 +42,14 @@
  */
 enum MHD_Result handle_system_info_request(struct MHD_Connection *connection);
 
+/**
+ * Handles the /api/system/health endpoint request.
+ * Returns a simple health check response indicating the service is alive.
+ * Used primarily by load balancers for health monitoring in distributed deployments.
+ *
+ * @param connection The MHD_Connection to send the response through
+ * @return MHD_Result indicating success or failure
+ */
+enum MHD_Result handle_system_health_request(struct MHD_Connection *connection);
+
 #endif /* HYDROGEN_SYSTEM_SERVICE_H */

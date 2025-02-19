@@ -1,6 +1,49 @@
-# System Information Endpoint
+# System Service Endpoints
 
-This document details the `/api/system/info` endpoint which provides comprehensive information about the Hydrogen server's status, including version information, system details, resource usage, and service status.
+This document details the system-related endpoints that provide information about the Hydrogen server's status and health.
+
+## System Information Endpoint
+
+The `/api/system/info` endpoint provides comprehensive information about the Hydrogen server's status, including version information, system details, resource usage, and service status.
+
+## Health Check Endpoint
+
+The `/api/system/health` endpoint provides a simple health check mechanism used primarily by load balancers in distributed deployments to verify service availability.
+
+**URL:** `/api/system/health`  
+**Method:** GET  
+**Content-Type:** application/json
+
+### Example Request
+
+```bash
+curl http://localhost:5000/api/system/health
+```
+
+### Example Response
+
+```json
+{
+    "status": "Yes, I'm alive, thanks!"
+}
+```
+
+### Use Cases
+
+1. **Load Balancer Health Checks**
+   - Used by Apache and other load balancers to verify service availability
+   - Supports round-robin deployment strategies
+   - Quick response time for efficient health monitoring
+
+2. **Service Monitoring**
+   - Simple endpoint for monitoring tools
+   - Minimal overhead for frequent polling
+   - Clear status indication
+
+3. **Deployment Verification**
+   - Quick verification of service deployment
+   - Simple integration into deployment scripts
+   - Immediate feedback on service availability
 
 ## Endpoint Details
 
