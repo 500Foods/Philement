@@ -134,6 +134,6 @@ typedef struct {
 
 ## Related Documentation
 
-- [Coding Guidelines](./CodingGuidelines.md)
-- [API Documentation](./API.md)
-- [Configuration Guide](./Configuration.md)
+- [Coding Guidelines](./coding_guidelines.md)
+- [API Documentation](./api.md)
+- [Configuration Guide](./configuration.md)

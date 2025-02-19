@@ -55,9 +55,9 @@ Response example:
 
 ## Additional Resources
 
-- [Configuration Guide](./Configuration.md) - Complete guide for server configuration
-- [WebSocket API](./WebSocket.md) - Real-time communication interface
-- [Print Queue Management](./PrintQueue.md) (TODO)
+- [Configuration Guide](./configuration.md) - Complete guide for server configuration
+- [WebSocket API](./web_socket.md) - Real-time communication interface
+- [Print Queue Management](./print_queue.md) (TODO)
 
 ## Contributing to Documentation
 

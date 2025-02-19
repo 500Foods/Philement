@@ -144,6 +144,6 @@ The project uses Make for building. Key targets:
 
 ## Related Documentation
 
-- [API Documentation](./API.md)
-- [Configuration Guide](./Configuration.md)
-- [Service Documentation](./Service.md)
+- [API Documentation](./api.md)
+- [Configuration Guide](./configuration.md)
+- [Service Documentation](./service.md)
