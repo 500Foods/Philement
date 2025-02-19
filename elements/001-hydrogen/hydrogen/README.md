@@ -12,10 +12,10 @@ Each queue has its own queue manager that determines what happens when something
 
 Comprehensive documentation is available in the `docs` directory:
 
-- [API Documentation](docs/API.md) - REST API endpoints and usage
+- [API Documentation](docs/api.md) - REST API endpoints and usage
 - [Main Documentation](docs/README.md) - Overview and getting started
-- [Configuration Guide](docs/Configuration.md) - Server configuration and settings
-- [WebSocket Interface](docs/WebSocket.md) - Real-time communication interface
+- [Configuration Guide](docs/configuration.md) - Server configuration and settings
+- [WebSocket Interface](docs/web_socket.md) - Real-time communication interface
 - [Print Queue Management](docs/print_queue.md) - Print job scheduling and management
 - [Release Notes](docs/release_notes.md) - Detailed version history and changes
 

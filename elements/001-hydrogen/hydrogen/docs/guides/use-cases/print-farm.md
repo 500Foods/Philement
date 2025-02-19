@@ -116,9 +116,9 @@ This guide describes how to set up and manage Hydrogen in a small print farm env
 
 ## Resources
 
-- [Load Balancer Setup](../../deployment/LoadBalancer.md)
-- [Monitoring Guide](../../deployment/Monitoring.md)
-- [API Documentation](../../reference/API.md)
+- [Load Balancer Setup](../../deployment/load_balancer.md)
+- [Monitoring Guide](../../deployment/monitoring.md)
+- [API Documentation](../../reference/api.md)
 
 ## Common Questions
 

@@ -76,8 +76,8 @@ This guide will help you get Hydrogen up and running quickly with a basic config
 ## Next Steps
 
 1. [Configure for Your Environment](./configuration-basics.md)
-2. [Set Up as a Service](../reference/Service.md)
-3. [Secure Your Installation](../reference/Security.md)
+2. [Set Up as a Service](../reference/service.md)
+3. [Secure Your Installation](../reference/security.md)
 4. [Explore Advanced Features](./basic-operations.md)
 
 ## Common Issues
@@ -99,15 +99,15 @@ This guide will help you get Hydrogen up and running quickly with a basic config
 
 ## Getting Help
 
-1. Check the [Troubleshooting Guide](../reference/Troubleshooting.md)
-2. Review [Known Issues](../reference/KnownIssues.md)
+1. Check the [Troubleshooting Guide](../reference/troubleshooting.md)
+2. Review [Known Issues](../reference/known_issues.md)
 3. Search existing issues
 4. Create a new issue if needed
 
 ## Use Case Examples
 
-- [Home Workshop Setup](./use-cases/HomeWorkshop.md)
-- [Print Farm Configuration](./use-cases/PrintFarm.md)
-- [Educational Lab Setup](./use-cases/EducationalLab.md)
+- [Home Workshop Setup](./use-cases/home_workshop.md)
+- [Print Farm Configuration](./use-cases/print_farm.md)
+- [Educational Lab Setup](./use-cases/educational_lab.md)
 
 Note: This guide will be expanded with more detailed instructions and examples.

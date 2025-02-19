@@ -87,9 +87,9 @@ curl http://your-printer:5000/print/queue
 
 ## Resources
 
-- [Configuration Guide](../../reference/Configuration.md)
-- [Security Guide](../../reference/Security.md)
-- [Troubleshooting Guide](../../reference/Troubleshooting.md)
+- [Configuration Guide](../../reference/configuration.md)
+- [Security Guide](../../reference/security.md)
+- [Troubleshooting Guide](../../reference/troubleshooting.md)
 
 ## Common Questions
 
