@@ -121,11 +121,20 @@ typedef struct {
  *    - Dynamic service updates
  *    - Resource cleanup
  */
+// Per-interface socket information
 typedef struct {
-    // Network sockets
-    int sockfd_v4;          // IPv4 multicast socket
-    int sockfd_v6;          // IPv6 multicast socket
-    int enable_ipv6;        // IPv6 support flag
+    char *if_name;         // Interface name
+    int sockfd_v4;         // IPv4 socket for this interface
+    int sockfd_v6;         // IPv6 socket for this interface
+    char **ip_addresses;   // IP addresses for this interface
+    size_t num_addresses;  // Number of IP addresses
+} mdns_interface_t;
+
+typedef struct {
+    // Network interfaces
+    mdns_interface_t *interfaces;  // Array of interface sockets
+    size_t num_interfaces;         // Number of interfaces
+    int enable_ipv6;              // IPv6 support flag
     
     // Device identification
     char *hostname;         // Local hostname
