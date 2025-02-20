@@ -67,6 +67,7 @@ This guide will help you get Hydrogen up and running quickly with a basic config
    ```
 
    Example response (truncated):
+
    ```json
    {
      "status": {
@@ -79,6 +80,7 @@ This guide will help you get Hydrogen up and running quickly with a basic config
      }
    }
    ```
+
    The response includes server uptime and timing information useful for monitoring.
 
 ## Basic Operations

@@ -3,7 +3,7 @@
     "LogFile": "/var/log/hydrogen.log",
     "WebServer": {
         "Enabled": true,
-        "EnableIPv6": false,
+        "EnableIPv6": true,
         "Port": 5000,
         "WebRoot": "/var/www/html",
         "UploadPath": "/api/upload",
@@ -13,7 +13,7 @@
     },
     "WebSocket": {
         "Enabled": true,
-        "EnableIPv6": false,
+        "EnableIPv6": true,
         "Port": 5001,
         "LogLevel": "NONE"
     },
@@ -23,7 +23,7 @@
     },
     "mDNS": {
         "Enabled": true,
-        "EnableIPv6": false,
+        "EnableIPv6": true,
         "DeviceId": "hydrogen-printer",
         "LogLevel": "ALL",
         "FriendlyName": "Hydrogen 3D Printer",
@@ -32,19 +32,19 @@
         "Version": "0.1.0",
         "Services": [
             {
-                "Name": "Hydrogen Web Interface",
+                "Name": "Hydrogen_Web_Interface",
                 "Type": "_http._tcp",
                 "Port": 5000,
                 "TxtRecords": "path=/api/upload"
             },
             {
-                "Name": "Hydrogen OctoPrint Emulation",
+                "Name": "Hydrogen_OctoPrint_Emulation",
                 "Type": "_octoprint._tcp",
                 "Port": 5000,
                 "TxtRecords": "path=/api,version=1.1.0"
             },
             {
-                "Name": "Hydrogen WebSocket",
+                "Name": "Hydrogen_WebSocket",
                 "Type": "_websocket._tcp",
                 "Port": 5001,
                 "TxtRecords": "path=/websocket"
