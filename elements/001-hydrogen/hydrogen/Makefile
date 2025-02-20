@@ -46,6 +46,12 @@ CFLAGS = -std=c17 -Wall -Wextra -pedantic -O2
 #    - websockets: Full-duplex realtime messaging
 #    - Efficient binary protocol support
 #    - Automatic connection management
+#
+# 4. Build Variants
+#    - Dynamic linking (default): Standard shared library usage
+#    - Debug builds for development
+#    - Valgrind builds for memory checking
+
 LDFLAGS = -ljansson -lpthread -lmicrohttpd -lm -lssl -lcrypto -lwebsockets
 
 # Directory structure
@@ -71,6 +77,7 @@ VALGRIND_TARGET = hydrogen_valgrind
 # Default target: optimized build
 all: $(TARGET)
 
+
 # Debug build: includes Address Sanitizer and debug symbols
 debug: CFLAGS += -g -fsanitize=address -fno-omit-frame-pointer
 debug: LDFLAGS += -fsanitize=address
@@ -90,6 +97,7 @@ $(DEBUG_TARGET): $(DEBUG_OBJS)
 $(VALGRIND_TARGET): $(VALGRIND_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
+
 # Compilation rules for object files
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
 	@mkdir -p $(dir $@)
@@ -102,6 +110,7 @@ $(DEBUG_DIR)/%.o: $(SRC_DIR)/%.c | $(DEBUG_DIR)
 $(VALGRIND_DIR)/%.o: $(SRC_DIR)/%.c | $(VALGRIND_DIR)
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c -o $@ $<
+
 
 # Create build directories if they don't exist
 $(BUILD_DIR):
