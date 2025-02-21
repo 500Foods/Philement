@@ -159,7 +159,44 @@ static void cleanup_log_queue_manager(void* arg) {
 //    - File write retry
 //    - Memory allocation checks
 //    - Partial write detection
+// Check if a message should be logged to a specific destination
+static bool should_log_to_destination(const char* subsystem, int priority, const LoggingDestination* dest) {
+    if (!dest->Enabled) {
+        return false;
+    }
+
+    // Get subsystem-specific level if configured, otherwise use default
+    int configured_level = dest->DefaultLevel;
+    
+    // Check subsystem-specific configuration
+    if (strcmp(subsystem, "ThreadMgmt") == 0) {
+        configured_level = dest->Subsystems.ThreadMgmt;
+    } else if (strcmp(subsystem, "Shutdown") == 0) {
+        configured_level = dest->Subsystems.Shutdown;
+    } else if (strcmp(subsystem, "mDNS") == 0) {
+        configured_level = dest->Subsystems.mDNS;
+    } else if (strcmp(subsystem, "WebServer") == 0) {
+        configured_level = dest->Subsystems.WebServer;
+    } else if (strcmp(subsystem, "WebSocket") == 0) {
+        configured_level = dest->Subsystems.WebSocket;
+    } else if (strcmp(subsystem, "PrintQueue") == 0) {
+        configured_level = dest->Subsystems.PrintQueue;
+    } else if (strcmp(subsystem, "LogQueueManager") == 0) {
+        configured_level = dest->Subsystems.LogQueueManager;
+    }
+
+    // Special handling for ALL and NONE
+    if (configured_level == LOG_LEVEL_ALL) return true;
+    if (configured_level == LOG_LEVEL_NONE) return false;
+
+    // For normal levels, message priority must be >= configured level
+    return priority >= configured_level;
+}
+
 static void process_log_message(const char* message, int priority) {
+    extern AppConfig *app_config;  // Get access to global config
+    if (!app_config) return;
+
     json_error_t error;
     json_t* json = json_loads(message, 0, &error);
     if (json) {
@@ -187,17 +224,18 @@ static void process_log_message(const char* message, int priority) {
         char log_entry[1024];  // Increase buffer size
         snprintf(log_entry, sizeof(log_entry), "%s  %s  %s  %s\n", timestamp_ms, formatted_priority, formatted_subsystem, details);
 
-        if (logConsole) {
+        // Apply filtering for each destination
+        if (logConsole && should_log_to_destination(subsystem, priority, &app_config->Logging.Console)) {
             printf("%s", log_entry);
         }
 
-        if (logFile && log_file) {
+        if (logFile && log_file && should_log_to_destination(subsystem, priority, &app_config->Logging.File)) {
             fputs(log_entry, log_file);
             fflush(log_file);  // Ensure the log is written immediately
         }
 
-        if (logDatabase) {
-            // TODO: Implement database logging
+        if (logDatabase && should_log_to_destination(subsystem, priority, &app_config->Logging.Database)) {
+            // TODO: Implement database logging when needed
         }
 
         json_decref(json);
@@ -255,7 +293,7 @@ void* log_queue_manager(void* arg) {
 
     pthread_cleanup_push(cleanup_log_queue_manager, NULL);
 
-    log_this("LogQueueManager", "Log queue manager started", 0, true, true, true);
+    log_this("LogQueueManager", "Log queue manager started", LOG_LEVEL_INFO, true, true, true);
 
     while (!log_queue_shutdown) {
         pthread_mutex_lock(&terminate_mutex);
@@ -265,7 +303,7 @@ void* log_queue_manager(void* arg) {
         pthread_mutex_unlock(&terminate_mutex);
 
         if (log_queue_shutdown && queue_size(log_queue) == 0) {
-            log_this("LogQueueManager", "Shutdown: Log Queue Manager processing final messages", 0, true, true, true);
+            log_this("LogQueueManager", "Shutdown: Log Queue Manager processing final messages", LOG_LEVEL_INFO, true, true, true);
         }
 
         while (queue_size(log_queue) > 0) {
@@ -279,7 +317,7 @@ void* log_queue_manager(void* arg) {
         }
     }
 
-    log_this("LogQueueManager", "Shutdown: Log Queue Manager exiting", 0, true, true, true);
+    log_this("LogQueueManager", "Shutdown: Log Queue Manager exiting", LOG_LEVEL_INFO, true, true, true);
 
     pthread_cleanup_pop(1);
     return NULL;

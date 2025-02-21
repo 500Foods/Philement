@@ -264,6 +264,13 @@ json_t* get_file_descriptors_json(void) {
 }
 
 // Generate system status report in JSON format
+// All percentage values in this function are formatted as strings with exactly 3 decimal places
+// for consistent precision across the API. This applies to:
+// - CPU usage percentages (total and per-core)
+// - Memory usage percentages (RAM and swap)
+// - Filesystem usage percentages
+// - Resource allocation percentages
+// This formatting ensures uniform representation of percentage metrics in the JSON output
 json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
     pthread_mutex_lock(&status_mutex);
     
@@ -302,6 +309,7 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
                 sscanf(line, "%s %lld %lld %lld %lld %lld %lld %lld %lld",
                        cpu, &user, &nice, &system_time, &idle, &iowait, &irq, &softirq, &steal);
                 
+                // CPU usage is reported as a string with 3 decimal places for consistent precision
                 long long total = user + nice + system_time + idle + iowait + irq + softirq + steal;
                 double usage = 100.0 * (total - idle) / total;
                 char usage_str[16];
@@ -333,6 +341,8 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
     }
 
     // Memory Information
+    // All memory-related percentages use 3 decimal places for consistent formatting
+    // across the entire status report
     struct sysinfo si;
     if (sysinfo(&si) == 0) {
         json_t *memory = json_object();
@@ -547,6 +557,9 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
                           (process_resident * 1024) - service_resident_total - queue_resident_total : 0;
     
     // Calculate percentages
+    // Resource allocation percentages follow the standard 3 decimal place format
+    // This precision is important for accurate resource tracking and consistency
+    // with other percentage metrics in the status report
     double service_percent = process_resident > 0 ? 
                           round((double)service_resident_total / (process_resident * 1024) * 100000.0) / 1000.0 : 0.0;
     double queue_percent = process_resident > 0 ? 

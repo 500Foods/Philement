@@ -194,7 +194,7 @@ static int init_web_systems(void) {
 // important in environments with multiple Hydrogen instances or other competing services.
 static int init_mdns_system(void) {
     // Initialize mDNS with validated configuration
-    log_this("Initialization", "Starting mDNS initialization", 0, true, true, true);
+    log_this("Initialization", "Starting mDNS initialization", LOG_LEVEL_INFO, true, true, true);
 
     // Create a filtered list of services based on what's enabled
     mdns_service_t *filtered_services = NULL;
@@ -222,7 +222,7 @@ static int init_mdns_system(void) {
                     if (actual_port > 0 && actual_port <= 65535) {
                         memcpy(&filtered_services[filtered_count], &app_config->mdns.services[i], sizeof(mdns_service_t));
                         filtered_services[filtered_count].port = (uint16_t)actual_port;
-                        log_this("Initialization", "Setting WebSocket mDNS service port to %d", 0, true, true, true, actual_port);
+                        log_this("Initialization", "Setting WebSocket mDNS service port to %d", LOG_LEVEL_INFO, true, true, true, actual_port);
                         filtered_count++;
                     } else {
                         log_this("Initialization", "Invalid WebSocket port: %d, skipping mDNS service", 3, true, true, true, actual_port);
@@ -297,29 +297,29 @@ static int init_mdns_system(void) {
 // - Executable details (path, size, modification time)
 // - Active configuration settings
 static void log_app_info(void) {
-    log_this("Initialization", "%s", 0, true, true, true, LOG_LINE_BREAK);
-    log_this("Initialization", "Server Name: %s", 0, true, true, true, app_config->server_name);
-    log_this("Initialization", "Executable: %s", 0, true, true, true, app_config->executable_path);
-    log_this("Initialization", "Version: %s", 0, true, true, true, VERSION);
+    log_this("Initialization", "%s", LOG_LEVEL_INFO, true, true, true, LOG_LINE_BREAK);
+    log_this("Initialization", "Server Name: %s", LOG_LEVEL_INFO, true, true, true, app_config->server_name);
+    log_this("Initialization", "Executable: %s", LOG_LEVEL_INFO, true, true, true, app_config->executable_path);
+    log_this("Initialization", "Version: %s", LOG_LEVEL_INFO, true, true, true, VERSION);
 
     long file_size = get_file_size(app_config->executable_path);
     if (file_size >= 0) {
-        log_this("Initialization", "Size: %ld", 0, true, true, true, file_size);
+        log_this("Initialization", "Size: %ld", LOG_LEVEL_INFO, true, true, true, file_size);
     } else {
-        log_this("Initialization", "Error: Unable to get file size", 0, true, false, true);
+        log_this("Initialization", "Error: Unable to get file size", LOG_LEVEL_ERROR, true, false, true);
     }
 
     char* mod_time = get_file_modification_time(app_config->executable_path);
     if (mod_time) {
-        log_this("Initialization", "Last Modified: %s", 0, true, false, true, mod_time);
+        log_this("Initialization", "Last Modified: %s", LOG_LEVEL_INFO, true, false, true, mod_time);
         free(mod_time);
     } else {
-        log_this("Initialization", "Error: Unable to get modification time", 0, true, false, true);
+        log_this("Initialization", "Error: Unable to get modification time", LOG_LEVEL_ERROR, true, false, true);
     }
 
-    log_this("Initialization", "Log File: %s", 0, true, true, true, 
+    log_this("Initialization", "Log File: %s", LOG_LEVEL_INFO, true, true, true, 
              app_config->log_file_path ? app_config->log_file_path : "None");
-    log_this("Initialization", "%s", 0, true, true, true, LOG_LINE_BREAK);
+    log_this("Initialization", "%s", LOG_LEVEL_INFO, true, true, true, LOG_LINE_BREAK);
 }
 
 // Main startup function
@@ -373,9 +373,9 @@ int startup_hydrogen(const char *config_path) {
             close_file_logging();
             return 0;
         }
-        log_this("Initialization", "Print Queue system initialized", 0, true, true, true);
+        log_this("Initialization", "Print Queue system initialized", LOG_LEVEL_INFO, true, true, true);
     } else {
-        log_this("Initialization", "Print Queue system disabled", 0, true, true, true);
+        log_this("Initialization", "Print Queue system disabled", LOG_LEVEL_INFO, true, true, true);
     }
 
     // Initialize web and websocket servers if enabled
@@ -386,13 +386,13 @@ int startup_hydrogen(const char *config_path) {
             return 0;
         }
         if (app_config->web.enabled) {
-            log_this("Initialization", "Web Server initialized", 0, true, true, true);
+            log_this("Initialization", "Web Server initialized", LOG_LEVEL_INFO, true, true, true);
         }
         if (app_config->websocket.enabled) {
-            log_this("Initialization", "WebSocket Server initialized", 0, true, true, true);
+            log_this("Initialization", "WebSocket Server initialized", LOG_LEVEL_INFO, true, true, true);
         }
     } else {
-        log_this("Initialization", "Web systems disabled", 0, true, true, true);
+        log_this("Initialization", "Web systems disabled", LOG_LEVEL_INFO, true, true, true);
     }
 
     // Initialize mDNS system if enabled
@@ -402,17 +402,17 @@ int startup_hydrogen(const char *config_path) {
             close_file_logging();
             return 0;
         }
-        log_this("Initialization", "mDNS system initialized", 0, true, true, true);
+        log_this("Initialization", "mDNS system initialized", LOG_LEVEL_INFO, true, true, true);
     } else {
-        log_this("Initialization", "mDNS system disabled", 0, true, true, true);
+        log_this("Initialization", "mDNS system disabled", LOG_LEVEL_INFO, true, true, true);
     }
 
     // Give threads a moment to launch
     usleep(10000);
-    log_this("Initialization", "%s", 0, true, true, true, LOG_LINE_BREAK);
-    log_this("Initialization", "Application started", 0, true, true, true);
-    log_this("Initialization", "Press Ctrl+C to exit", 0, true, false, true);
-    log_this("Initialization", "%s", 0, true, true, true, LOG_LINE_BREAK);
+    log_this("Initialization", "%s", LOG_LEVEL_INFO, true, true, true, LOG_LINE_BREAK);
+    log_this("Initialization", "Application started", LOG_LEVEL_INFO, true, true, true);
+    log_this("Initialization", "Press Ctrl+C to exit", LOG_LEVEL_INFO, true, false, true);
+    log_this("Initialization", "%s", LOG_LEVEL_INFO, true, true, true, LOG_LINE_BREAK);
 
     // All services have been started successfully, mark startup as complete
     server_starting = 0;  // First set the flag
