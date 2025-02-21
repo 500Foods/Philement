@@ -70,14 +70,10 @@
 #include "../../logging.h"
 #include "../../web_server.h"
 #include "../../utils.h"
-
-// External WebSocket metrics
-extern time_t server_start_time;
-extern int ws_connections;
-extern int ws_connections_total;
-extern int ws_requests;
+#include "../../websocket_server_internal.h"
 
 extern AppConfig *app_config;
+extern WebSocketServerContext *ws_context;
 extern volatile sig_atomic_t server_running;
 extern volatile sig_atomic_t server_stopping;
 extern volatile sig_atomic_t web_server_shutdown;
@@ -106,13 +102,27 @@ enum MHD_Result handle_system_info_request(struct MHD_Connection *connection)
         return ret;
     }
 
-    // Create WebSocket metrics for status
-    WebSocketMetrics metrics = {
-        .server_start_time = server_start_time,
-        .active_connections = ws_connections,
-        .total_connections = ws_connections_total,
-        .total_requests = ws_requests
+    // Check WebSocket context availability
+    if (!ws_context) {
+        log_this("SystemService", "WebSocket context not available", 3, true, false, true);
+        const char *error_response = "{\"error\": \"WebSocket service unavailable\"}";
+        struct MHD_Response *response = MHD_create_response_from_buffer(
+            strlen(error_response), (void *)error_response, MHD_RESPMEM_PERSISTENT);
+        MHD_add_response_header(response, "Content-Type", "application/json");
+        enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_SERVICE_UNAVAILABLE, response);
+        MHD_destroy_response(response);
+        return ret;
+    }
+
+    // Safely copy metrics under lock
+    pthread_mutex_lock(&ws_context->mutex);
+    const WebSocketMetrics metrics = {
+        .server_start_time = ws_context->start_time,
+        .active_connections = ws_context->active_connections,
+        .total_connections = ws_context->total_connections,
+        .total_requests = ws_context->total_requests
     };
+    pthread_mutex_unlock(&ws_context->mutex);
 
     // Get system status JSON with WebSocket metrics
     json_t *root = get_system_status_json(&metrics);

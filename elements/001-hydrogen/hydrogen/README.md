@@ -52,13 +52,28 @@ Comprehensive documentation is available in the `docs` directory:
 - `src/utils.h` Defines utility functions and constants.
 - `src/web_server.c` Implements the web server interface.
 - `src/web_server.h` Header file for web server interface.
-- `src/websocket_server.c` Implements the websocket server interface.
-- `src/websocket_server.h` Header file for websocket server interface.
-- `src/websocket_server_status.c` Implementation of WebSocket "status" endpoint
+- `src/websocket_server.c` Core WebSocket server implementation and public API.
+- `src/websocket_server.h` Public WebSocket server interface.
+- `src/websocket_server_internal.h` Internal WebSocket implementation details.
+- `src/websocket_server_auth.c` WebSocket authentication handling.
+- `src/websocket_server_connection.c` Connection lifecycle management.
+- `src/websocket_server_context.c` Server state and metrics management.
+- `src/websocket_server_dispatch.c` Event routing and callback handling.
+- `src/websocket_server_message.c` Message processing and validation.
+- `src/websocket_server_status.c` Status endpoint implementation.
+
+The WebSocket server implementation uses a modular architecture with:
+
+- Centralized state management via WebSocketServerContext
+- Thread-safe operations with proper synchronization
+- Clear separation of concerns (auth, connection, messaging)
+- Robust error handling and recovery
+- Memory-efficient message processing
 
 ## System Dependencies
 
 Core Libraries:
+
 - [pthreads](https://pubs.opengroup.org/onlinepubs/7908799/xsh/pthread.h.html) - POSIX thread support for concurrent operations
 - [jansson](https://github.com/akheron/jansson) - Efficient and memory-safe JSON parsing/generation
 - [microhttpd](https://www.gnu.org/software/libmicrohttpd/) - Lightweight embedded HTTP server

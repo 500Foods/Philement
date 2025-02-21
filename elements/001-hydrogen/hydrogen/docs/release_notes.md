@@ -1,8 +1,26 @@
 # Release Notes
 
+## 2025-Feb-20
+
+Major WebSocket server refactoring:
+
+- Split monolithic implementation into focused modules:
+  - Connection lifecycle management
+  - Authentication handling
+  - Message processing
+  - Event dispatching
+  - Status reporting
+- Improved state management with WebSocketServerContext
+- Enhanced initialization sequence and error handling
+- Added port fallback mechanism for better reliability
+- Fixed session validation during vhost creation
+- Improved thread safety with proper mutex protection
+- Better error reporting and logging throughout
+
 ## 2025-Feb-19
 
 Enhanced system status reporting:
+
 - Added server timing information to /api/system/info endpoint
 - New `server_started` field shows ISO-formatted UTC start time
 - New `server_runtime` field shows uptime in seconds
@@ -10,6 +28,7 @@ Enhanced system status reporting:
 - Updated API documentation with real-world examples
 
 Documentation improvements:
+
 - Added link to Print Queue Management documentation
 - Moved release notes to a dedicated file
 - Enhanced System Dependencies section with detailed descriptions
@@ -18,6 +37,7 @@ Documentation improvements:
 ## 2025-Feb-18
 
 Extended IPv6 support to web and websocket servers:
+
 - Added EnableIPv6 configuration flags for web and websocket servers
 - Implemented dual-stack support in web server
 - Added IPv6 interface binding in websocket server
