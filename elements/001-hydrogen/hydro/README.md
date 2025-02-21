@@ -1,8 +1,9 @@
-## hydro - System Status
+# hydro - System Status
+
 This is a small self-contained test project that simply (?!) outputs a bunch of system status information. Things like memory usage, current network connections, free disk space and so on. The idea is
 to have it output JSON that can then be fed via a WebSocket connection to a client system for display. Something like this.
 
-```
+```json
 {
     "memory": {
         "high_watermark": {
@@ -225,6 +226,7 @@ to have it output JSON that can then be fed via a WebSocket connection to a clie
     }
 }
 ```
+
 Generally speaking, the idea is to have this generated periodically, every 15s or something like that and then served up to any WebSocket subscribers. It does take a bit of time to generate
 and it does take a bit of time to transmit, so some thought will have to be given. Maybe a differential JSON can be generated. Something to experiment with. Might not be worth the trouble
 as most of the content is likely to be changing continually.

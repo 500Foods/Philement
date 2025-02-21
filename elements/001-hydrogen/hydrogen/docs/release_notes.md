@@ -1,5 +1,16 @@
 # Release Notes
 
+## 2025-Feb-21
+
+Enhanced system information reporting:
+
+- Expanded system metrics in /api/system/info and WebSocket status:
+  - Network interface details including IP addresses and traffic statistics
+  - Filesystem information with space usage and mount points
+  - CPU usage per core and system load averages
+  - Detailed memory and swap usage statistics
+  - Currently logged-in users
+
 ## 2025-Feb-20
 
 Major WebSocket server refactoring:
