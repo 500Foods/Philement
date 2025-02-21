@@ -56,11 +56,13 @@ int MAX_PRIORITY_LABEL_WIDTH = 9;
 int MAX_SUBSYSTEM_LABEL_WIDTH = 18;
 
 const PriorityLevel DEFAULT_PRIORITY_LEVELS[NUM_PRIORITY_LEVELS] = {
-    {0, "INFO"},
-    {1, "WARN"},
-    {2, "DEBUG"},
-    {3, "ERROR"},
-    {4, "CRITICAL"}
+    {0, "ALL"},
+    {1, "INFO"},
+    {2, "WARN"},
+    {3, "DEBUG"},
+    {4, "ERROR"},
+    {5, "CRITICAL"},
+    {6, "NONE"}
 };
 
 /*
@@ -194,8 +196,36 @@ void create_default_config(const char* config_path) {
     json_object_set_new(web, "UploadPath", json_string("/api/upload"));
     json_object_set_new(web, "UploadDir", json_string("/tmp/hydrogen_uploads"));
     json_object_set_new(web, "MaxUploadSize", json_integer(2147483648));
-    json_object_set_new(web, "LogLevel", json_string("ALL"));
     json_object_set_new(root, "WebServer", web);
+
+    // Logging Configuration
+    json_t* logging = json_object();
+    
+    // Define logging levels
+    json_t* levels = json_array();
+    for (int i = 0; i < NUM_PRIORITY_LEVELS; i++) {
+        json_t* level = json_array();
+        json_array_append_new(level, json_integer(DEFAULT_PRIORITY_LEVELS[i].value));
+        json_array_append_new(level, json_string(DEFAULT_PRIORITY_LEVELS[i].label));
+        json_array_append_new(levels, level);
+    }
+    json_object_set_new(logging, "Levels", levels);
+
+    // Console logging configuration
+    json_t* console = json_object();
+    json_object_set_new(console, "Enabled", json_boolean(1));
+    json_t* console_subsystems = json_object();
+    json_object_set_new(console_subsystems, "ThreadMgmt", json_integer(LOG_LEVEL_WARN));
+    json_object_set_new(console_subsystems, "Shutdown", json_integer(LOG_LEVEL_INFO));
+    json_object_set_new(console_subsystems, "mDNS", json_integer(LOG_LEVEL_INFO));
+    json_object_set_new(console_subsystems, "WebServer", json_integer(LOG_LEVEL_INFO));
+    json_object_set_new(console_subsystems, "WebSocket", json_integer(LOG_LEVEL_INFO));
+    json_object_set_new(console_subsystems, "PrintQueue", json_integer(LOG_LEVEL_WARN));
+    json_object_set_new(console_subsystems, "LogQueueManager", json_integer(LOG_LEVEL_INFO));
+    json_object_set_new(console, "Subsystems", console_subsystems);
+    json_object_set_new(logging, "Console", console);
+
+    json_object_set_new(root, "Logging", logging);
 
     // WebSocket Configuration
     json_t* websocket = json_object();
@@ -204,7 +234,6 @@ void create_default_config(const char* config_path) {
     json_object_set_new(websocket, "Port", json_integer(5001));
     json_object_set_new(websocket, "Key", json_string("default_key_change_me"));
     json_object_set_new(websocket, "Protocol", json_string("hydrogen-protocol"));
-    json_object_set_new(websocket, "LogLevel", json_string("ALL"));
     json_object_set_new(root, "WebSocket", websocket);
 
     // mDNS Configuration
@@ -216,7 +245,6 @@ void create_default_config(const char* config_path) {
     json_object_set_new(mdns, "Model", json_string("Hydrogen"));
     json_object_set_new(mdns, "Manufacturer", json_string("Philement"));
     json_object_set_new(mdns, "Version", json_string("0.1.0"));
-    json_object_set_new(mdns, "LogLevel", json_string("ALL"));
 
     json_t* services = json_array();
 
@@ -247,7 +275,6 @@ void create_default_config(const char* config_path) {
     // Print Queue Configuration
     json_t* print_queue = json_object();
     json_object_set_new(print_queue, "Enabled", json_boolean(1));
-    json_object_set_new(print_queue, "LogLevel", json_string("WARN"));
     json_object_set_new(root, "PrintQueue", print_queue);
 
     if (json_dump_file(root, config_path, JSON_INDENT(4)) != 0) {
@@ -350,9 +377,6 @@ AppConfig* load_config(const char* config_path) {
         config->web.max_upload_size = json_is_integer(max_upload_size) ? 
             (size_t)json_integer_value(max_upload_size) : DEFAULT_MAX_UPLOAD_SIZE;
 
-        json_t* log_level = json_object_get(web, "LogLevel");
-        const char* log_level_str = json_is_string(log_level) ? json_string_value(log_level) : "ALL";
-        config->web.log_level = strdup(log_level_str);
     } else {
         // Use defaults if web section is missing
         config->web.port = DEFAULT_WEB_PORT;
@@ -360,7 +384,6 @@ AppConfig* load_config(const char* config_path) {
         config->web.upload_path = strdup(DEFAULT_UPLOAD_PATH);
         config->web.upload_dir = strdup(DEFAULT_UPLOAD_DIR);
         config->web.max_upload_size = DEFAULT_MAX_UPLOAD_SIZE;
-        config->web.log_level = strdup("ALL");
     }
 
     // WebSocket Configuration
@@ -387,9 +410,6 @@ AppConfig* load_config(const char* config_path) {
         config->websocket.max_message_size = json_is_integer(max_message_mb) ? 
             json_integer_value(max_message_mb) * 1024 * 1024 : 10 * 1024 * 1024;  // Default to 10 MB
 
-        json_t* log_level = json_object_get(websocket, "LogLevel");
-        const char* log_level_str = json_is_string(log_level) ? json_string_value(log_level) : "ALL";
-        config->websocket.log_level = strdup(log_level_str);
     } else {
         // Use defaults if websocket section is missing
         config->websocket.port = DEFAULT_WEBSOCKET_PORT;
@@ -411,9 +431,6 @@ AppConfig* load_config(const char* config_path) {
         const char* device_id_str = json_is_string(device_id) ? json_string_value(device_id) : "hydrogen-printer";
         config->mdns.device_id = strdup(device_id_str);
 
-        json_t* log_level = json_object_get(mdns, "LogLevel");
-        const char* log_level_str = json_is_string(log_level) ? json_string_value(log_level) : "ALL";
-        config->mdns.log_level = strdup(log_level_str);
 
         json_t* friendly_name = json_object_get(mdns, "FriendlyName");
         const char* friendly_name_str = json_is_string(friendly_name) ? json_string_value(friendly_name) : "Hydrogen 3D Printer";
@@ -480,13 +497,61 @@ AppConfig* load_config(const char* config_path) {
         json_t* enabled = json_object_get(print_queue, "Enabled");
         config->print_queue.enabled = json_is_boolean(enabled) ? json_boolean_value(enabled) : 1;
 
-        json_t* log_level = json_object_get(print_queue, "LogLevel");
-        const char* log_level_str = json_is_string(log_level) ? json_string_value(log_level) : "WARN";
-        config->print_queue.log_level = strdup(log_level_str);
     } else {
         // Use defaults if print queue section is missing
         config->print_queue.enabled = 1;
-        config->print_queue.log_level = strdup("WARN");
+    }
+
+    // Load Logging Configuration
+    json_t* logging = json_object_get(root, "Logging");
+    if (json_is_object(logging)) {
+        // Load logging levels
+        json_t* levels = json_object_get(logging, "Levels");
+        if (json_is_array(levels)) {
+            config->Logging.LevelCount = json_array_size(levels);
+            config->Logging.Levels = calloc(config->Logging.LevelCount, sizeof(struct { int value; const char *name; }));
+            
+            for (size_t i = 0; i < config->Logging.LevelCount; i++) {
+                json_t* level = json_array_get(levels, i);
+                if (json_is_array(level) && json_array_size(level) == 2) {
+                    json_t* value = json_array_get(level, 0);
+                    json_t* name = json_array_get(level, 1);
+                    if (json_is_integer(value) && json_is_string(name)) {
+                        config->Logging.Levels[i].value = json_integer_value(value);
+                        config->Logging.Levels[i].name = strdup(json_string_value(name));
+                    }
+                }
+            }
+        }
+
+        // Load console configuration
+        json_t* console = json_object_get(logging, "Console");
+        if (json_is_object(console)) {
+            json_t* enabled = json_object_get(console, "Enabled");
+            config->Logging.Console.Enabled = json_is_boolean(enabled) ? json_boolean_value(enabled) : 1;
+
+            json_t* default_level = json_object_get(console, "DefaultLevel");
+            config->Logging.Console.DefaultLevel = json_is_integer(default_level) ? json_integer_value(default_level) : LOG_LEVEL_INFO;
+
+            json_t* subsystems = json_object_get(console, "Subsystems");
+            if (json_is_object(subsystems)) {
+                json_t* level;
+                level = json_object_get(subsystems, "ThreadMgmt");
+                config->Logging.Console.Subsystems.ThreadMgmt = json_is_integer(level) ? json_integer_value(level) : LOG_LEVEL_WARN;
+                level = json_object_get(subsystems, "Shutdown");
+                config->Logging.Console.Subsystems.Shutdown = json_is_integer(level) ? json_integer_value(level) : LOG_LEVEL_INFO;
+                level = json_object_get(subsystems, "mDNS");
+                config->Logging.Console.Subsystems.mDNS = json_is_integer(level) ? json_integer_value(level) : LOG_LEVEL_INFO;
+                level = json_object_get(subsystems, "WebServer");
+                config->Logging.Console.Subsystems.WebServer = json_is_integer(level) ? json_integer_value(level) : LOG_LEVEL_INFO;
+                level = json_object_get(subsystems, "WebSocket");
+                config->Logging.Console.Subsystems.WebSocket = json_is_integer(level) ? json_integer_value(level) : LOG_LEVEL_INFO;
+                level = json_object_get(subsystems, "PrintQueue");
+                config->Logging.Console.Subsystems.PrintQueue = json_is_integer(level) ? json_integer_value(level) : LOG_LEVEL_WARN;
+                level = json_object_get(subsystems, "LogQueueManager");
+                config->Logging.Console.Subsystems.LogQueueManager = json_is_integer(level) ? json_integer_value(level) : LOG_LEVEL_INFO;
+            }
+        }
     }
 
     json_decref(root);

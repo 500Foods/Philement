@@ -341,6 +341,19 @@ int startup_hydrogen(const char *config_path) {
     // Seed random number generator
     srand((unsigned int)time(NULL));
     
+    // Initialize thread tracking
+    extern ServiceThreads logging_threads;
+    extern ServiceThreads web_threads;
+    extern ServiceThreads websocket_threads;
+    extern ServiceThreads mdns_threads;
+    extern ServiceThreads print_threads;
+    
+    init_service_threads(&logging_threads);
+    init_service_threads(&web_threads);
+    init_service_threads(&websocket_threads);
+    init_service_threads(&mdns_threads);
+    init_service_threads(&print_threads);
+    
     // Initialize the queue system
     queue_system_init();
     

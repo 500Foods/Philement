@@ -52,6 +52,14 @@
 #include "configuration.h"
 #include "mdns_server.h"
 #include "network.h"
+#include "utils_threads.h"
+
+// Thread tracking structures
+extern ServiceThreads logging_threads;
+extern ServiceThreads web_threads;
+extern ServiceThreads websocket_threads;
+extern ServiceThreads mdns_threads;
+extern ServiceThreads print_threads;
 
 // Application state flags
 extern volatile sig_atomic_t server_running;

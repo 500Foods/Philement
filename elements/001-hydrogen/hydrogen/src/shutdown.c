@@ -68,6 +68,7 @@
 #include "queue.h"
 #include "web_server.h"
 #include "websocket_server.h"
+#include "websocket_server_internal.h"  // For WebSocketServerContext
 #include "mdns_server.h"
 #include "print_queue_manager.h"  // For shutdown_print_queue()
 #include "log_queue_manager.h"    // For close_file_logging()
@@ -165,25 +166,57 @@ static void shutdown_web_systems(void) {
     // Shutdown WebSocket server if it was enabled
     if (app_config->websocket.enabled) {
         log_this("Shutdown", "Initiating WebSocket server shutdown", 0, true, true, true);
+        
+        // Signal shutdown to all subsystems
         websocket_server_shutdown = 1;
         pthread_cond_broadcast(&terminate_cond);
 
-        // Give WebSocket server time to process shutdown flag and close connections
-        usleep(2000000);  // 2s delay for connections to close
+        // First attempt: Give connections time to close gracefully
+        log_this("Shutdown", "Waiting for WebSocket connections to close gracefully", 0, true, true, true);
+        usleep(2000000);  // 2s initial delay
 
-        // Stop the server with a timeout
+        // Stop the server and wait for thread exit
         log_this("Shutdown", "Stopping WebSocket server", 0, true, true, true);
         stop_websocket_server();
 
-        // Wait for server thread to fully exit
-        usleep(1000000);  // 1s delay
+        // Second phase: Force close any remaining connections
+        log_this("Shutdown", "Forcing close of any remaining connections", 0, true, true, true);
+        extern WebSocketServerContext *ws_context;  // Declare external context
+        if (ws_context) {
+            // Set shutdown flag and cancel service to interrupt any blocking operations
+            ws_context->shutdown = 1;
+            if (ws_context->lws_context) {
+                lws_cancel_service(ws_context->lws_context);
+            }
+            
+            // Wait for any remaining threads with timeout
+            struct timespec wait_time;
+            clock_gettime(CLOCK_REALTIME, &wait_time);
+            wait_time.tv_sec += 1;  // 1s timeout
 
-        // Force cleanup regardless of connection state
-        log_this("Shutdown", "Cleaning up WebSocket resources", 0, true, true, true);
-        cleanup_websocket_server();
+            pthread_mutex_lock(&ws_context->mutex);
+            while (ws_context->active_connections > 0) {
+                if (pthread_cond_timedwait(&ws_context->cond, &ws_context->mutex, &wait_time) == ETIMEDOUT) {
+                    log_this("Shutdown", "Timeout waiting for connections, forcing cleanup", 2, true, true, true);
+                    break;
+                }
+            }
+            pthread_mutex_unlock(&ws_context->mutex);
+            
+            // Force cleanup regardless of state
+            log_this("Shutdown", "Cleaning up WebSocket resources", 0, true, true, true);
+            cleanup_websocket_server();
+        }
 
-        // Brief final delay
-        usleep(100000);  // 100ms delay
+        // Update thread metrics one final time
+        extern ServiceThreads websocket_threads;
+        update_service_thread_metrics(&websocket_threads);
+        if (websocket_threads.thread_count > 0) {
+            log_this("Shutdown", "Warning: %d WebSocket threads still active", 
+                    2, true, true, true, websocket_threads.thread_count);
+        }
+        
+        log_this("Shutdown", "WebSocket server shutdown complete", 0, true, true, true);
     }
 }
 
@@ -227,15 +260,10 @@ static void free_app_config(void) {
         free(app_config->web.web_root);
         free(app_config->web.upload_path);
         free(app_config->web.upload_dir);
-        free(app_config->web.log_level);
 
         // Free WebSocket config
-        free(app_config->websocket.key);
         free(app_config->websocket.protocol);
-        free(app_config->websocket.log_level);
-
-        // Free Print Queue config
-        free(app_config->print_queue.log_level);
+        free(app_config->websocket.key);
 
         // Free mDNS config
         free(app_config->mdns.device_id);
@@ -252,6 +280,14 @@ static void free_app_config(void) {
             free(app_config->mdns.services[i].txt_records);
         }
         free(app_config->mdns.services);
+
+        // Free Logging config
+        if (app_config->Logging.Levels) {
+            for (size_t i = 0; i < app_config->Logging.LevelCount; i++) {
+                free((void*)app_config->Logging.Levels[i].name);
+            }
+            free(app_config->Logging.Levels);
+        }
 
         free(app_config);
         app_config = NULL;
@@ -279,7 +315,7 @@ static void free_app_config(void) {
 //    - Resource leak prevention
 //    - Cleanup verification
 void graceful_shutdown(void) {
-    log_this("Shutdown", "Initiating graceful shutdown", 0, true, true, true);
+    log_this("Shutdown", "Starting graceful shutdown sequence", 0, true, true, true);
     
     // Signal all threads that shutdown is imminent
     pthread_mutex_lock(&terminate_mutex);
@@ -289,16 +325,16 @@ void graceful_shutdown(void) {
     pthread_mutex_unlock(&terminate_mutex);
 
     // First stop accepting new connections/requests
-    log_this("Shutdown", "Initiating mDNS system shutdown", 0, true, true, true);
+    log_this("Shutdown", "Stopping mDNS service...", 0, true, true, true);
     shutdown_mdns_system();
     
-    log_this("Shutdown", "Initiating web systems shutdown", 0, true, true, true);
+    log_this("Shutdown", "Stopping web services...", 0, true, true, true);
     shutdown_web_systems();
     
-    log_this("Shutdown", "Initiating print system shutdown", 0, true, true, true);
+    log_this("Shutdown", "Stopping print system...", 0, true, true, true);
     shutdown_print_system();
     
-    log_this("Shutdown", "Initiating network shutdown", 0, true, true, true);
+    log_this("Shutdown", "Cleaning up network...", 0, true, true, true);
     shutdown_network();
 
     // Give threads a moment to process their shutdown flags
@@ -307,7 +343,84 @@ void graceful_shutdown(void) {
     // Now safe to stop logging since other components are done
     log_this("Shutdown", "Subsystem shutdown completed", 0, true, true, true);    
     log_this("Shutdown", LOG_LINE_BREAK, 0, true, true, true);    
-    console_log("Shutdown", 0, "Shutting down logging system...");
+
+    // Check remaining threads before logging shutdown
+    extern ServiceThreads logging_threads;
+    extern ServiceThreads web_threads;
+    extern ServiceThreads websocket_threads;
+    extern ServiceThreads mdns_threads;
+    extern ServiceThreads print_threads;
+    
+    // Update thread metrics to clean up any dead threads
+    update_service_thread_metrics(&logging_threads);
+    update_service_thread_metrics(&web_threads);
+    update_service_thread_metrics(&websocket_threads);
+    update_service_thread_metrics(&mdns_threads);
+    update_service_thread_metrics(&print_threads);
+    
+    // Only show thread status if there are remaining threads
+    if (logging_threads.thread_count > 0 || web_threads.thread_count > 0 ||
+        websocket_threads.thread_count > 0 || mdns_threads.thread_count > 0 ||
+        print_threads.thread_count > 0) {
+        char thread_status[256];
+        snprintf(thread_status, sizeof(thread_status), 
+                 "Remaining threads - Log: %d, Web: %d, WS: %d, mDNS: %d, Print: %d",
+                 logging_threads.thread_count,
+                 web_threads.thread_count,
+                 websocket_threads.thread_count,
+                 mdns_threads.thread_count,
+                 print_threads.thread_count);
+        console_log("Shutdown", 1, thread_status);
+    }
+
+    // Wait for remaining threads with simplified status updates
+    int wait_count = 0;
+    const int max_wait_cycles = 10;  // 5 seconds total
+    bool threads_active;
+
+    do {
+        threads_active = false;
+        update_service_thread_metrics(&logging_threads);
+        update_service_thread_metrics(&web_threads);
+        update_service_thread_metrics(&websocket_threads);
+        update_service_thread_metrics(&mdns_threads);
+        update_service_thread_metrics(&print_threads);
+
+        if (logging_threads.thread_count > 0 || web_threads.thread_count > 0 ||
+            websocket_threads.thread_count > 0 || mdns_threads.thread_count > 0 ||
+            print_threads.thread_count > 0) {
+            threads_active = true;
+            
+            // Only log detailed thread info at debug level
+            if (wait_count == 0 || wait_count == max_wait_cycles - 1) {
+                char msg[128];
+                snprintf(msg, sizeof(msg), "Waiting for %d thread(s) to exit (attempt %d/%d)", 
+                        logging_threads.thread_count + web_threads.thread_count + 
+                        websocket_threads.thread_count + mdns_threads.thread_count + 
+                        print_threads.thread_count,
+                        wait_count + 1, max_wait_cycles);
+                console_log("Shutdown", 1, msg);
+            }
+            
+            // Signal any waiting threads
+            pthread_mutex_lock(&terminate_mutex);
+            pthread_cond_broadcast(&terminate_cond);
+            pthread_mutex_unlock(&terminate_mutex);
+            
+            usleep(500000);  // 500ms delay between checks
+        }
+        
+        wait_count++;
+    } while (threads_active && wait_count < max_wait_cycles);
+
+    if (threads_active) {
+        console_log("Shutdown", 2, "Some threads did not exit cleanly");
+    } else {
+        console_log("Shutdown", 0, "All threads exited successfully");
+    }
+
+    // Now safe to stop logging
+    console_log("Shutdown", 0, "Shutting down logging system");
     pthread_mutex_lock(&terminate_mutex);
     log_queue_shutdown = 1;
     pthread_cond_broadcast(&terminate_cond);
@@ -320,23 +433,142 @@ void graceful_shutdown(void) {
     // Wait for any pending log operations
     usleep(500000);  // 500ms delay
     
-    // Now safe to destroy queues since all threads are stopped
-    console_log("Shutdown", 0, "Shutting down queue system...");
+    // Update all thread metrics one final time
+    update_service_thread_metrics(&logging_threads);
+    update_service_thread_metrics(&web_threads);
+    update_service_thread_metrics(&websocket_threads);
+    update_service_thread_metrics(&mdns_threads);
+    update_service_thread_metrics(&print_threads);
+
+    // Get main thread ID for exclusion from counts
+    pthread_t main_thread = pthread_self();
+    
+    // Calculate total remaining threads
+    int total_threads = logging_threads.thread_count + web_threads.thread_count +
+                       websocket_threads.thread_count + mdns_threads.thread_count +
+                       print_threads.thread_count;
+
+    // Only show detailed status if there are remaining threads
+    if (total_threads > 0) {
+        char thread_status[256];
+        snprintf(thread_status, sizeof(thread_status), 
+                 "Remaining threads before final cleanup - Log: %d, Web: %d, WS: %d, mDNS: %d, Print: %d",
+                 logging_threads.thread_count,
+                 web_threads.thread_count,
+                 websocket_threads.thread_count,
+                 mdns_threads.thread_count,
+                 print_threads.thread_count);
+        console_log("Shutdown", 1, thread_status);
+    }
+    
+    // Now safe to destroy queues
+    console_log("Shutdown", 0, "Shutting down queue system");
     queue_system_destroy();
+    usleep(100000);  // 100ms delay
+    
+    // Update thread metrics one last time
+    update_service_thread_metrics(&logging_threads);
+    update_service_thread_metrics(&web_threads);
+    update_service_thread_metrics(&websocket_threads);
+    update_service_thread_metrics(&mdns_threads);
+    update_service_thread_metrics(&print_threads);
 
-    // Wait for any pending operations
-    usleep(500000);  // 500ms delay
+    // Count non-main threads and check their state
+    int non_main_threads = 0;
+    char thread_info[2048] = {0};
+    int offset = 0;
+    bool has_uninterruptible = false;
 
-    // Release synchronization primitives
+    // Helper macro to check thread state and syscall
+    #define CHECK_THREAD_STATE(threads, name) \
+        for (int i = 0; i < threads.thread_count; i++) { \
+            if (!pthread_equal(threads.thread_ids[i], main_thread)) { \
+                non_main_threads++; \
+                char state = '?'; \
+                char syscall[256] = "unknown"; \
+                bool is_uninterruptible = false; \
+                \
+                /* Check thread state */ \
+                char state_path[64]; \
+                snprintf(state_path, sizeof(state_path), "/proc/%d/status", threads.thread_tids[i]); \
+                FILE *status = fopen(state_path, "r"); \
+                if (status) { \
+                    char line[256]; \
+                    while (fgets(line, sizeof(line), status)) { \
+                        if (strncmp(line, "State:", 6) == 0) { \
+                            state = line[7]; \
+                            is_uninterruptible = (state == 'D'); \
+                            has_uninterruptible |= is_uninterruptible; \
+                            break; \
+                        } \
+                    } \
+                    fclose(status); \
+                } \
+                \
+                /* Check if thread is stuck in syscall */ \
+                char syscall_path[64]; \
+                snprintf(syscall_path, sizeof(syscall_path), "/proc/%d/syscall", threads.thread_tids[i]); \
+                FILE *sc = fopen(syscall_path, "r"); \
+                if (sc) { \
+                    if (fgets(syscall, sizeof(syscall), sc)) { \
+                        char *newline = strchr(syscall, '\n'); \
+                        if (newline) *newline = '\0'; \
+                    } \
+                    fclose(sc); \
+                } \
+                \
+                offset += snprintf(thread_info + offset, sizeof(thread_info) - offset, \
+                                 "\n  %s thread: %lu (tid: %d)\n    State: %c%s, Syscall: %s", \
+                                 name, \
+                                 (unsigned long)threads.thread_ids[i], \
+                                 threads.thread_tids[i], \
+                                 state, \
+                                 is_uninterruptible ? " (uninterruptible)" : "", \
+                                 syscall); \
+            } \
+        }
+
+    CHECK_THREAD_STATE(logging_threads, "Logging");
+    CHECK_THREAD_STATE(web_threads, "Web");
+    CHECK_THREAD_STATE(websocket_threads, "WebSocket");
+    CHECK_THREAD_STATE(mdns_threads, "mDNS");
+    CHECK_THREAD_STATE(print_threads, "Print");
+
+    #undef CHECK_THREAD_STATE
+
+    if (non_main_threads > 0) {
+        char msg[4096];
+        snprintf(msg, sizeof(msg), "%d non-main thread(s) still active:%s", 
+                non_main_threads, thread_info);
+        console_log("Shutdown", 2, msg);
+        
+        // One final attempt to signal threads
+        pthread_mutex_lock(&terminate_mutex);
+        pthread_cond_broadcast(&terminate_cond);
+        pthread_mutex_unlock(&terminate_mutex);
+        
+        // Give threads more time if any are in uninterruptible sleep
+        usleep(has_uninterruptible ? 10000000 : 2000000);  // 10s delay for D state, 2s otherwise
+        
+        // Force cleanup if threads are still stuck
+        if (has_uninterruptible) {
+            console_log("Shutdown", 2, "Some threads are in uninterruptible state, forcing cleanup");
+            // Let the OS clean up remaining threads
+            _exit(0);
+        }
+    } else {
+        console_log("Shutdown", 0, "All non-main threads exited successfully");
+    }
+
+    // Now safe to destroy synchronization primitives
     pthread_mutex_lock(&terminate_mutex);
-    pthread_cond_broadcast(&terminate_cond);  // Final broadcast
-    usleep(100000);  // 100ms delay to let any waiting threads process
-    pthread_cond_destroy(&terminate_cond);
+    pthread_cond_broadcast(&terminate_cond);
     pthread_mutex_unlock(&terminate_mutex);
+    
+    usleep(100000);  // Brief delay before destruction
+    
+    pthread_cond_destroy(&terminate_cond);
     pthread_mutex_destroy(&terminate_mutex);
-
-    // Wait for any pending operations
-    usleep(500000);  // 500ms delay
 
     // Free configuration last since other components might need it
     free_app_config();
