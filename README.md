@@ -64,15 +64,15 @@ There are countless tools, frameworks, coding styles, conventions, languages, an
 [![Count Lines of Code](https://github.com/500Foods/Template/actions/workflows/main.yml/badge.svg)](https://github.com/500Foods/Template/actions/workflows/main.yml)
 <!--CLOC-START -->
 ```
-Last updated at 2025-02-21 00:57:12 UTC
+Last updated at 2025-02-21 08:20:10 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C                               51           1736           2080           8516
+C                               51           1805           2159           8928
 Markdown                        54            985              2           4844
-C/C++ Header                    40            308            965            836
+C/C++ Header                    40            311            981            877
+JSON                             5              0              0            237
 Python                           1             36              9            195
-JSON                             5              0              0            189
 HTML                             4             40             23            157
 make                             6             72             77            146
 Bourne Shell                     3             28             56             79
@@ -83,7 +83,7 @@ CSS                              2              3              2             38
 YAML                             2              8             13             37
 JavaScript                       1              3              0             25
 -------------------------------------------------------------------------------
-SUM:                           176           3254           3258          15275
+SUM:                           176           3326           3353          15776
 -------------------------------------------------------------------------------
 16 Files were skipped (duplicate, binary, or without source code):
   jpg: 3
