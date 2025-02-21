@@ -2,73 +2,109 @@
 
 ## Overview
 
-Initially, this works very much like Moonraker, providing a WebSocket proxy to the Klipper API. Later, this will also be the component that replaces Klipper itself, but that's going to be a little bit further down the road.
+Hydrogen is a high-performance, multithreaded server framework that began as a modern replacement for Mainsail and Moonraker in the 3D printing ecosystem. While it excels at providing a powerful front-end for Klipper-based 3D printers, it has evolved into a versatile platform capable of serving many roles beyond 3D printing.
 
-This is a C program that is essentially a JSON queue manager. Most of what this program does involves moving elements around in different multithreaded and thread-safe queues. Even logging activities use a queue - the first queue created in fact.
+At its heart, Hydrogen features a robust queue system and a sophisticated service management architecture. Core services include:
 
-Each queue has its own queue manager that determines what happens when something arrives in its queue. Logging, for example, will look at the queued element and either print it to the console, write it out to a log file, or add it to the database. This is handled separately from whatever generated the log event so *that* process doesn't have to wait for any of these actions to complete before continuing on.
+- Web Server: Delivers static content and exposes a comprehensive REST API
+- WebSocket Server: Enables real-time bidirectional communication with guaranteed message delivery
+- mDNS Client/Server: Handles service discovery and auto-configuration
+- Queue System: Provides thread-safe data management across all components
+- Print Server: Offers complete 3D printer control and monitoring capabilities
+
+Whether you're managing a single 3D printer, orchestrating a large print farm, or building a high-performance web application, Hydrogen provides the foundation you need. Its modular architecture and emphasis on performance make it a versatile tool for both Philement projects and broader applications.
+
+## Intended Audience & Requirements
+
+Hydrogen is currently designed for technical users who:
+
+- Are comfortable working with Linux-based systems
+- Have experience with command-line interfaces and system configuration
+- Understand basic networking concepts and server administration
+- Are familiar with development tools and building software from source
+
+**Platform Support:**
+
+- Primary Platform: Linux-based systems
+- Future Support: While we plan to expand platform support in the future, Hydrogen is currently optimized for and tested primarily on Linux systems
+
+**Technical Prerequisites:**
+
+- Linux operating system
+- Familiarity with building and running server applications
+- Basic understanding of WebSocket and REST API concepts
+- Command-line proficiency for configuration and maintenance
 
 ## Documentation
 
 Comprehensive documentation is available in the `docs` directory:
 
-- [API Documentation](docs/api.md) - REST API endpoints and usage
 - [Main Documentation](docs/README.md) - Overview and getting started
 - [Configuration Guide](docs/configuration.md) - Server configuration and settings
+- [REST API Documentation](docs/api.md) - REST API endpoints and usage
 - [WebSocket Interface](docs/web_socket.md) - Real-time communication interface
 - [Print Queue Management](docs/print_queue.md) - Print job scheduling and management
 - [Release Notes](docs/release_notes.md) - Detailed version history and changes
 
 ## Files
 
-- `hydrogen.json` Configuration file for the Hydrogen server.
-- `Makefile` Build instructions for compiling the Hydrogen program.
-- `src/beryllium.c` Implements G-code analysis functionality.
-- `src/beryllium.h` Header file for G-code analysis declarations.
-- `src/configuration.c` Handles loading and managing configuration settings.
-- `src/configuration.h` Defines configuration-related structures and constants.
-- `src/hydrogen.c` Main entry point of the program, initializes components.
-- `src/keys.c` Implements secret key generation functionality.
-- `src/keys.h` Header file for secret key generation.
-- `src/logging.c` Implements logging functionality.
-- `src/logging.h` Defines logging-related functions and macros.
-- `src/log_queue_manager.c` Manages the log message queue.
-- `src/log_queue_manager.h` Header file for log queue management.
-- `src/mdns_server.h` Defines mDNS-related structures and functions.
-- `src/mdns_linux.c` Implements mDNS functionality for Linux.
-- `src/network.h` Defines network-related structures and functions.
-- `src/network_linux.c` Implements network functionality for Linux.
-- `src/print_queue_manager.c` Manages the print job queue.
-- `src/print_queue_manager.h` Header file for print queue management.
-- `src/queue.c` Implements a generic queue data structure.
-- `src/queue.h` Defines queue-related structures and functions.
-- `src/shutdown.c` Implements graceful shutdown procedures.
-- `src/shutdown.h` Header file for shutdown management.
-- `src/startup.c` Implements system initialization procedures.
-- `src/startup.h` Header file for startup management.
-- `src/state.c` Implements system state management.
-- `src/state.h` Defines state management structures and functions.
-- `src/utils.c` Implements utility functions.
-- `src/utils.h` Defines utility functions and constants.
-- `src/web_server.c` Implements the web server interface.
-- `src/web_server.h` Header file for web server interface.
-- `src/websocket_server.c` Core WebSocket server implementation and public API.
-- `src/websocket_server.h` Public WebSocket server interface.
-- `src/websocket_server_internal.h` Internal WebSocket implementation details.
-- `src/websocket_server_auth.c` WebSocket authentication handling.
-- `src/websocket_server_connection.c` Connection lifecycle management.
-- `src/websocket_server_context.c` Server state and metrics management.
-- `src/websocket_server_dispatch.c` Event routing and callback handling.
-- `src/websocket_server_message.c` Message processing and validation.
-- `src/websocket_server_status.c` Status endpoint implementation.
-
-The WebSocket server implementation uses a modular architecture with:
-
-- Centralized state management via WebSocketServerContext
-- Thread-safe operations with proper synchronization
-- Clear separation of concerns (auth, connection, messaging)
-- Robust error handling and recovery
-- Memory-efficient message processing
+- `hydrogen.json` Configuration file for the Hydrogen server
+- `Makefile` Build instructions for compiling the Hydrogen program
+- `src/beryllium.c` Implements G-code analysis functionality
+- `src/beryllium.h` Header file for G-code analysis declarations
+- `src/configuration.c` Handles loading and managing configuration settings
+- `src/configuration.h` Defines configuration-related structures and constants
+- `src/hydrogen.c` Main entry point and core system initialization
+- `src/keys.c` Implements cryptographic key generation and management
+- `src/keys.h` Header file for cryptographic operations
+- `src/logging.c` Core logging system implementation
+- `src/logging.h` Logging interface and configuration
+- `src/log_queue_manager.c` Thread-safe log message queue handler
+- `src/log_queue_manager.h` Log queue management interface
+- `src/mdns_server.h` Service discovery interface definitions
+- `src/mdns_linux.c` Linux-specific mDNS implementation
+- `src/network.h` Network interface abstractions
+- `src/network_linux.c` Linux network stack implementation
+- `src/print_queue_manager.c` 3D print job scheduling and management
+- `src/print_queue_manager.h` Print queue interface
+- `src/queue.c` Generic thread-safe queue implementation
+- `src/queue.h` Queue data structure interface
+- `src/shutdown.c` Graceful system shutdown coordination
+- `src/shutdown.h` Shutdown procedure definitions
+- `src/startup.c` System initialization and service startup
+- `src/startup.h` Startup sequence definitions
+- `src/state.c` Global state management implementation
+- `src/state.h` State tracking interface
+- `src/utils.c` Common utility functions
+- `src/utils.h` Utility function declarations
+- `src/utils_logging.c` Extended logging utilities
+- `src/utils_logging.h` Logging utility interfaces
+- `src/utils_queue.c` Queue manipulation utilities
+- `src/utils_queue.h` Queue utility interfaces
+- `src/utils_status.c` Status reporting utilities
+- `src/utils_status.h` Status utility interfaces
+- `src/utils_threads.c` Thread management utilities
+- `src/utils_threads.h` Threading utility interfaces
+- `src/utils_time.c` Time handling utilities
+- `src/utils_time.h` Time utility interfaces
+- `src/web_server_core.c` Core HTTP server implementation
+- `src/web_server_core.h` HTTP server interface
+- `src/web_server_print.h` 3D printing endpoint definitions
+- `src/web_server_request.c` HTTP request handling
+- `src/web_server_request.h` Request processing interface
+- `src/web_server_upload.c` File upload handling
+- `src/web_server_upload.h` Upload processing interface
+- `src/websocket_server.c` WebSocket server core implementation
+- `src/websocket_server.h` WebSocket server public interface
+- `src/websocket_server_internal.h` Internal WebSocket definitions
+- `src/websocket_server_auth.c` WebSocket authentication system
+- `src/websocket_server_connection.c` Connection lifecycle handler
+- `src/websocket_server_context.c` Server context management
+- `src/websocket_server_dispatch.c` Message routing system
+- `src/websocket_server_message.c` Message processing engine
+- `src/websocket_server_status.c` Status reporting implementation
+- `src/api/system/system_service.c` System service implementation
+- `src/api/system/system_service.h` System service interface
 
 ## System Dependencies
 
