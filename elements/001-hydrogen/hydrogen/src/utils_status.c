@@ -18,6 +18,8 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/stat.h>
+#include <sys/sysinfo.h>
+#include <sys/statvfs.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
@@ -27,6 +29,9 @@
 #include <string.h>
 #include <errno.h>
 #include <signal.h>
+#include <ifaddrs.h>
+#include <mntent.h>
+#include <utmp.h>
 
 // Thread synchronization mutex
 static pthread_mutex_t status_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -271,16 +276,205 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
     json_object_set_new(root, "version", version);
 
     // System Information
+    json_t *system = json_object();
+
+    // Basic system info
     struct utsname system_info;
     if (uname(&system_info) == 0) {
-        json_t *system = json_object();
         json_object_set_new(system, "sysname", json_string(system_info.sysname));
         json_object_set_new(system, "nodename", json_string(system_info.nodename));
         json_object_set_new(system, "release", json_string(system_info.release));
         json_object_set_new(system, "version", json_string(system_info.version));
         json_object_set_new(system, "machine", json_string(system_info.machine));
-        json_object_set_new(root, "system", system);
     }
+
+    // CPU Information
+    FILE *stat = fopen("/proc/stat", "r");
+    if (stat) {
+        char line[256];
+        json_t *cpu_usage = json_object();
+        json_t *cpu_usage_per_core = json_object();
+
+        while (fgets(line, sizeof(line), stat)) {
+            if (strncmp(line, "cpu", 3) == 0) {
+                char cpu[10];
+                long long user, nice, system_time, idle, iowait, irq, softirq, steal;
+                sscanf(line, "%s %lld %lld %lld %lld %lld %lld %lld %lld",
+                       cpu, &user, &nice, &system_time, &idle, &iowait, &irq, &softirq, &steal);
+                
+                long long total = user + nice + system_time + idle + iowait + irq + softirq + steal;
+                double usage = 100.0 * (total - idle) / total;
+                char usage_str[16];
+                snprintf(usage_str, sizeof(usage_str), "%.3f", usage);
+
+                if (strcmp(cpu, "cpu") == 0) {
+                    json_object_set_new(cpu_usage, "total", json_string(usage_str));
+                } else {
+                    json_object_set_new(cpu_usage_per_core, cpu, json_string(usage_str));
+                }
+            }
+        }
+        fclose(stat);
+
+        json_object_set_new(system, "cpu_usage", cpu_usage);
+        json_object_set_new(system, "cpu_usage_per_core", cpu_usage_per_core);
+    }
+
+    // Load averages
+    double loadavg[3];
+    if (getloadavg(loadavg, 3) != -1) {
+        char load_str[16];
+        snprintf(load_str, sizeof(load_str), "%.3f", loadavg[0]);
+        json_object_set_new(system, "load_1min", json_string(load_str));
+        snprintf(load_str, sizeof(load_str), "%.3f", loadavg[1]);
+        json_object_set_new(system, "load_5min", json_string(load_str));
+        snprintf(load_str, sizeof(load_str), "%.3f", loadavg[2]);
+        json_object_set_new(system, "load_15min", json_string(load_str));
+    }
+
+    // Memory Information
+    struct sysinfo si;
+    if (sysinfo(&si) == 0) {
+        json_t *memory = json_object();
+        unsigned long long total_ram = si.totalram * si.mem_unit;
+        unsigned long long free_ram = si.freeram * si.mem_unit;
+        unsigned long long used_ram = total_ram - free_ram;
+        
+        char used_percent_str[16];
+        snprintf(used_percent_str, sizeof(used_percent_str), "%.3f", (double)used_ram / total_ram * 100.0);
+        json_object_set_new(memory, "total", json_integer(total_ram));
+        json_object_set_new(memory, "used", json_integer(used_ram));
+        json_object_set_new(memory, "free", json_integer(free_ram));
+        json_object_set_new(memory, "used_percent", json_string(used_percent_str));
+
+        unsigned long long total_swap = si.totalswap * si.mem_unit;
+        if (total_swap > 0) {
+            unsigned long long free_swap = si.freeswap * si.mem_unit;
+            unsigned long long used_swap = total_swap - free_swap;
+            char swap_used_percent_str[16];
+            snprintf(swap_used_percent_str, sizeof(swap_used_percent_str), "%.3f", (double)used_swap / total_swap * 100.0);
+            json_object_set_new(memory, "swap_total", json_integer(total_swap));
+            json_object_set_new(memory, "swap_used", json_integer(used_swap));
+            json_object_set_new(memory, "swap_free", json_integer(free_swap));
+            json_object_set_new(memory, "swap_used_percent", json_string(swap_used_percent_str));
+        }
+
+        json_object_set_new(system, "memory", memory);
+    }
+
+    // Network Interfaces
+    struct ifaddrs *ifaddr, *ifa;
+    if (getifaddrs(&ifaddr) == 0) {
+        json_t *interfaces = json_object();
+        
+        for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+            if (ifa->ifa_addr == NULL || strcmp(ifa->ifa_name, "lo") == 0)
+                continue;
+
+            int family = ifa->ifa_addr->sa_family;
+            if (family != AF_INET && family != AF_INET6)
+                continue;
+
+            json_t *iface = json_object_get(interfaces, ifa->ifa_name);
+            if (!iface) {
+                iface = json_object();
+                json_object_set_new(iface, "name", json_string(ifa->ifa_name));
+                json_object_set_new(iface, "addresses", json_array());
+                json_object_set_new(interfaces, ifa->ifa_name, iface);
+            }
+
+            char addr[INET6_ADDRSTRLEN];
+            void *sin_addr = (family == AF_INET) ? 
+                (void*)&((struct sockaddr_in*)ifa->ifa_addr)->sin_addr :
+                (void*)&((struct sockaddr_in6*)ifa->ifa_addr)->sin6_addr;
+            
+            if (inet_ntop(family, sin_addr, addr, sizeof(addr))) {
+                json_array_append_new(json_object_get(iface, "addresses"), json_string(addr));
+            }
+
+            // Add interface statistics
+            char path[256];
+            snprintf(path, sizeof(path), "/sys/class/net/%s/statistics/rx_bytes", ifa->ifa_name);
+            FILE *f = fopen(path, "r");
+            if (f) {
+                unsigned long long rx_bytes;
+                fscanf(f, "%llu", &rx_bytes);
+                fclose(f);
+                json_object_set_new(iface, "rx_bytes", json_integer(rx_bytes));
+            }
+
+            snprintf(path, sizeof(path), "/sys/class/net/%s/statistics/tx_bytes", ifa->ifa_name);
+            f = fopen(path, "r");
+            if (f) {
+                unsigned long long tx_bytes;
+                fscanf(f, "%llu", &tx_bytes);
+                fclose(f);
+                json_object_set_new(iface, "tx_bytes", json_integer(tx_bytes));
+            }
+        }
+
+        freeifaddrs(ifaddr);
+        json_object_set_new(system, "network", interfaces);
+    }
+
+    // Filesystem Information
+    FILE *mtab = setmntent("/etc/mtab", "r");
+    if (mtab) {
+        json_t *filesystems = json_object();
+        struct mntent *entry;
+
+        while ((entry = getmntent(mtab))) {
+            struct statvfs vfs;
+            if (statvfs(entry->mnt_dir, &vfs) == 0) {
+                // Skip virtual filesystems
+                if (strcmp(entry->mnt_type, "tmpfs") == 0 ||
+                    strcmp(entry->mnt_type, "devtmpfs") == 0 ||
+                    strcmp(entry->mnt_type, "sysfs") == 0 ||
+                    strcmp(entry->mnt_type, "proc") == 0)
+                    continue;
+
+                json_t *fs = json_object();
+                unsigned long long total_space = (unsigned long long)vfs.f_frsize * vfs.f_blocks;
+                unsigned long long free_space = (unsigned long long)vfs.f_frsize * vfs.f_bfree;
+                unsigned long long available_space = (unsigned long long)vfs.f_frsize * vfs.f_bavail;
+                unsigned long long used_space = total_space - free_space;
+
+                json_object_set_new(fs, "device", json_string(entry->mnt_fsname));
+                json_object_set_new(fs, "mount_point", json_string(entry->mnt_dir));
+                json_object_set_new(fs, "type", json_string(entry->mnt_type));
+                char used_percent_str[16];
+                snprintf(used_percent_str, sizeof(used_percent_str), "%.3f", (double)used_space / total_space * 100.0);
+
+                json_object_set_new(fs, "total_space", json_integer(total_space));
+                json_object_set_new(fs, "used_space", json_integer(used_space));
+                json_object_set_new(fs, "available_space", json_integer(available_space));
+                json_object_set_new(fs, "used_percent", json_string(used_percent_str));
+
+                json_object_set_new(filesystems, entry->mnt_dir, fs);
+            }
+        }
+        endmntent(mtab);
+        json_object_set_new(system, "filesystems", filesystems);
+    }
+
+    // Logged in users
+    json_t *users = json_array();
+    setutent();
+    struct utmp *entry;
+    while ((entry = getutent()) != NULL) {
+        if (entry->ut_type == USER_PROCESS) {
+            json_t *user = json_object();
+            json_object_set_new(user, "username", json_string(entry->ut_user));
+            json_object_set_new(user, "tty", json_string(entry->ut_line));
+            json_object_set_new(user, "host", json_string(entry->ut_host));
+            json_object_set_new(user, "login_time", json_integer(entry->ut_tv.tv_sec));
+            json_array_append_new(users, user);
+        }
+    }
+    endutent();
+    json_object_set_new(system, "logged_in_users", users);
+
+    json_object_set_new(root, "system", system);
     
     // Status Information
     json_t *status = json_object();
