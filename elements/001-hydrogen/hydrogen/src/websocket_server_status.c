@@ -56,15 +56,13 @@
 
 // Project headers
 #include "websocket_server.h"
+#include "websocket_server_internal.h"
 #include "logging.h"
 #include "configuration.h"
 #include "utils.h"
 
 extern AppConfig *app_config;
-extern time_t server_start_time;
-extern int ws_connections;
-extern int ws_connections_total;
-extern int ws_requests;
+extern WebSocketServerContext *ws_context;
 
 // Handle real-time status request via WebSocket
 //
@@ -94,15 +92,22 @@ extern int ws_requests;
 //    - Low latency delivery
 void handle_status_request(struct lws *wsi)
 {
+    if (!ws_context) {
+        log_this("WebSocket", "No server context available", 3, true, true, true);
+        return;
+    }
+
     log_this("WebSocket", "Preparing status response", 0, true, true, true);
 
-    // Prepare WebSocket metrics
-    WebSocketMetrics metrics = {
-        .server_start_time = server_start_time,
-        .active_connections = ws_connections,
-        .total_connections = ws_connections_total,
-        .total_requests = ws_requests
+    // Safely copy metrics under lock
+    pthread_mutex_lock(&ws_context->mutex);
+    const WebSocketMetrics metrics = {
+        .server_start_time = ws_context->start_time,
+        .active_connections = ws_context->active_connections,
+        .total_connections = ws_context->total_connections,
+        .total_requests = ws_context->total_requests
     };
+    pthread_mutex_unlock(&ws_context->mutex);
 
     // Get system status JSON with WebSocket metrics
     json_t *root = get_system_status_json(&metrics);

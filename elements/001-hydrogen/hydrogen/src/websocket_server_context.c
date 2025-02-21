@@ -1,0 +1,111 @@
+/*
+ * WebSocket Server Context Management
+ *
+ * Handles the creation, initialization, and cleanup of the WebSocket server context:
+ * - Memory allocation and initialization
+ * - Configuration management
+ * - Resource cleanup
+ */
+
+#define _GNU_SOURCE
+#define _POSIX_C_SOURCE 200809L
+
+// System headers
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+// Project headers
+#include "websocket_server_internal.h"
+#include "logging.h"
+#include "configuration.h"
+
+// External configuration reference
+extern AppConfig *app_config;
+
+WebSocketServerContext* ws_context_create(int port, const char* protocol, const char* key)
+{
+    WebSocketServerContext *ctx = calloc(1, sizeof(WebSocketServerContext));
+    if (!ctx) {
+        log_this("WebSocket", "Failed to allocate server context", 3, true, true, true);
+        return NULL;
+    }
+
+    // Initialize configuration
+    ctx->port = port;
+    strncpy(ctx->protocol, protocol, sizeof(ctx->protocol) - 1);
+    ctx->protocol[sizeof(ctx->protocol) - 1] = '\0';
+    strncpy(ctx->auth_key, key, sizeof(ctx->auth_key) - 1);
+    ctx->auth_key[sizeof(ctx->auth_key) - 1] = '\0';
+
+    // Initialize mutex and condition variable
+    if (pthread_mutex_init(&ctx->mutex, NULL) != 0) {
+        log_this("WebSocket", "Failed to initialize mutex", 3, true, true, true);
+        free(ctx);
+        return NULL;
+    }
+
+    if (pthread_cond_init(&ctx->cond, NULL) != 0) {
+        log_this("WebSocket", "Failed to initialize condition variable", 3, true, true, true);
+        pthread_mutex_destroy(&ctx->mutex);
+        free(ctx);
+        return NULL;
+    }
+
+    // Initialize message buffer
+    ctx->max_message_size = app_config->websocket.max_message_size;
+    ctx->message_buffer = malloc(ctx->max_message_size + 1);
+    if (!ctx->message_buffer) {
+        log_this("WebSocket", "Failed to allocate message buffer", 3, true, true, true);
+        pthread_mutex_destroy(&ctx->mutex);
+        pthread_cond_destroy(&ctx->cond);
+        free(ctx);
+        return NULL;
+    }
+
+    // Initialize metrics
+    ctx->start_time = time(NULL);
+    ctx->active_connections = 0;
+    ctx->total_connections = 0;
+    ctx->total_requests = 0;
+
+    // Initialize state
+    ctx->shutdown = 0;
+    ctx->vhost_creating = 0;  // Start with vhost creation flag clear
+    ctx->message_length = 0;
+    ctx->lws_context = NULL;  // Will be set during server initialization
+
+    log_this("WebSocket", "Server context created successfully", 0, true, true, true);
+    return ctx;
+}
+
+void ws_context_destroy(WebSocketServerContext* ctx)
+{
+    if (!ctx) {
+        return;
+    }
+
+    // Ensure we're in shutdown state
+    ctx->shutdown = 1;
+
+    // Clean up libwebsockets context if it exists
+    if (ctx->lws_context) {
+        lws_context_destroy(ctx->lws_context);
+        ctx->lws_context = NULL;
+    }
+
+    // Free message buffer
+    if (ctx->message_buffer) {
+        free(ctx->message_buffer);
+        ctx->message_buffer = NULL;
+    }
+
+    // Clean up synchronization primitives
+    pthread_mutex_destroy(&ctx->mutex);
+    pthread_cond_destroy(&ctx->cond);
+
+    // Free the context itself
+    free(ctx);
+
+    log_this("WebSocket", "Server context destroyed", 0, true, true, true);
+}
