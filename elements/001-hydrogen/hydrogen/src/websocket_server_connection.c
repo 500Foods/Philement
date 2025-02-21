@@ -73,22 +73,29 @@ int ws_handle_connection_closed(struct lws *wsi, WebSocketSessionData *session)
     // Update metrics
     if (ws_context->active_connections > 0) {
         ws_context->active_connections--;
+        
+        // Log closure with remaining count
+        log_this("WebSocket", "Connection closed (remaining active: %d)",
+                 0, true, true, true,
+                 ws_context->active_connections);
     }
 
     // Remove thread from tracking
     extern ServiceThreads websocket_threads;
     remove_service_thread(&websocket_threads, pthread_self());
 
-    // During shutdown, signal if this was the last connection
-    if (ws_context->shutdown && ws_context->active_connections == 0) {
-        pthread_cond_signal(&ws_context->cond);
+    // During shutdown, broadcast to all waiting threads when last connection closes
+    if (ws_context->shutdown) {
+        if (ws_context->active_connections == 0) {
+            log_this("WebSocket", "Last connection closed during shutdown", 0, true, true, true);
+            pthread_cond_broadcast(&ws_context->cond);
+        } else {
+            log_this("WebSocket", "Connection closed during shutdown (%d remaining)",
+                     1, true, true, true, ws_context->active_connections);
+        }
     }
 
     pthread_mutex_unlock(&ws_context->mutex);
-
-    log_this("WebSocket", "Connection closed (remaining active: %d)",
-             0, true, true, true,
-             ws_context->active_connections);
 
     return 0;
 }

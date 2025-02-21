@@ -26,17 +26,43 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
 {
     WebSocketSessionData *session = (WebSocketSessionData *)user;
 
+    // Protocol lifecycle callbacks - handle these first and independently
+    if (reason == LWS_CALLBACK_PROTOCOL_INIT ||
+        reason == LWS_CALLBACK_PROTOCOL_DESTROY) {
+        // These are critical for clean shutdown
+        if (reason == LWS_CALLBACK_PROTOCOL_DESTROY) {
+            if (ws_context) {
+                // Final protocol cleanup
+                pthread_mutex_lock(&ws_context->mutex);
+                
+                // Log any remaining connections
+                if (ws_context->active_connections > 0) {
+                    log_this("WebSocket", "Protocol destroy with %d active connections",
+                            2, true, true, true, ws_context->active_connections);
+                }
+                
+                // Force clear connections and notify all waiting threads
+                ws_context->active_connections = 0;
+                pthread_cond_broadcast(&ws_context->cond);
+                
+                pthread_mutex_unlock(&ws_context->mutex);
+                
+                log_this("WebSocket", "Protocol cleanup complete", 0, true, true, true);
+            } else {
+                // Context already cleaned up, which is also valid
+                log_this("WebSocket", "Protocol destroy with no context", 1, true, true, true);
+            }
+        }
+        return 0;
+    }
+
     // Early callbacks that don't need context or session data
     switch (reason) {
-        // Protocol lifecycle
-        case LWS_CALLBACK_PROTOCOL_INIT:
-        case LWS_CALLBACK_PROTOCOL_DESTROY:
         case LWS_CALLBACK_WSI_CREATE:
         case LWS_CALLBACK_WSI_DESTROY:
-            log_this("WebSocket", "Protocol lifecycle callback: %d", 0, true, true, true, reason);
             return 0;
 
-        // System callbacks
+        // System callbacks - always allow
         case LWS_CALLBACK_GET_THREAD_ID:
         case LWS_CALLBACK_EVENT_WAIT_CANCELLED:
         case LWS_CALLBACK_ADD_POLL_FD:
@@ -44,7 +70,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
         case LWS_CALLBACK_CHANGE_MODE_POLL_FD:
         case LWS_CALLBACK_LOCK_POLL:
         case LWS_CALLBACK_UNLOCK_POLL:
-            return 0;  // Always allow these system callbacks
+            return 0;
 
         // Early connection handling
         case LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION:
@@ -81,18 +107,37 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
             // Allow cleanup callbacks during shutdown
             case LWS_CALLBACK_WSI_DESTROY:
             case LWS_CALLBACK_CLOSED:
-                return ws_handle_connection_closed(wsi, session);
+            case LWS_CALLBACK_PROTOCOL_DESTROY:
+                if (reason == LWS_CALLBACK_CLOSED || reason == LWS_CALLBACK_WSI_DESTROY) {
+                    int result = ws_handle_connection_closed(wsi, session);
+                    // Broadcast completion if this was the last connection
+                    if (result == 0) {
+                        pthread_mutex_lock(&ws_context->mutex);
+                        if (ws_context->active_connections == 0) {
+                            log_this("WebSocket", "Last connection closed, notifying waiters", 
+                                    0, true, true, true);
+                            pthread_cond_broadcast(&ws_context->cond);
+                        }
+                        pthread_mutex_unlock(&ws_context->mutex);
+                    }
+                    return result;
+                }
+                return 0;
+
+            // Allow system callbacks during shutdown
+            case LWS_CALLBACK_GET_THREAD_ID:
+            case LWS_CALLBACK_EVENT_WAIT_CANCELLED:
+                return 0;
 
             // Reject new connections during shutdown
             case LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION:
             case LWS_CALLBACK_FILTER_NETWORK_CONNECTION:
             case LWS_CALLBACK_SERVER_NEW_CLIENT_INSTANTIATED:
             case LWS_CALLBACK_ESTABLISHED:
-                log_this("WebSocket", "Rejecting connection during shutdown", 1, true, true, true);
-                return -1;
+                return -1;  // Silently reject during shutdown
 
             default:
-                return -1;  // Reject all other callbacks during shutdown
+                return -1;  // Silently reject other callbacks during shutdown
         }
     }
 

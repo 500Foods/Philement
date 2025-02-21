@@ -6,6 +6,7 @@
 #include "utils_threads.h"
 #include "utils_logging.h"
 #include "logging.h"
+#include "state.h"
 
 // System headers
 #include <sys/syscall.h>
@@ -20,12 +21,12 @@
 // Thread synchronization mutex
 static pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-// Global tracking structures
-ServiceThreads logging_threads;
-ServiceThreads web_threads;
-ServiceThreads websocket_threads;
-ServiceThreads mdns_threads;
-ServiceThreads print_threads;
+// Global tracking structures (defined in state.c)
+extern ServiceThreads logging_threads;
+extern ServiceThreads web_threads;
+extern ServiceThreads websocket_threads;
+extern ServiceThreads mdns_threads;
+extern ServiceThreads print_threads;
 
 // Forward declarations of static functions
 static size_t get_thread_stack_size(pid_t tid);
@@ -48,9 +49,15 @@ void add_service_thread(ServiceThreads *threads, pthread_t thread_id) {
         threads->thread_tids[threads->thread_count] = tid;
         threads->thread_count++;
         char msg[128];
-        snprintf(msg, sizeof(msg), "Added thread %lu (tid: %d), new count: %d", 
-                 (unsigned long)thread_id, tid, threads->thread_count);
-        console_log("ThreadMgmt", 1, msg);
+        // Only show thread ID details at debug level during shutdown
+        if (server_running) {
+            snprintf(msg, sizeof(msg), "Added thread %lu (tid: %d), new count: %d", 
+                     (unsigned long)thread_id, tid, threads->thread_count);
+            console_log("ThreadMgmt", 1, msg);
+        } else {
+            snprintf(msg, sizeof(msg), "Thread added, count: %d", threads->thread_count);
+            console_log("ThreadMgmt", 2, msg);
+        }
     } else {
         console_log("ThreadMgmt", 3, "Failed to add thread: MAX_SERVICE_THREADS reached");
     }
@@ -70,9 +77,15 @@ void remove_service_thread(ServiceThreads *threads, pthread_t thread_id) {
                 threads->thread_metrics[i] = threads->thread_metrics[threads->thread_count];
             }
             char msg[128];
-            snprintf(msg, sizeof(msg), "Removed thread %lu, new count: %d", 
-                     (unsigned long)thread_id, threads->thread_count);
-            console_log("ThreadMgmt", 1, msg);
+            // Only show thread ID details at debug level during shutdown
+            if (server_running) {
+                snprintf(msg, sizeof(msg), "Removed thread %lu, new count: %d", 
+                         (unsigned long)thread_id, threads->thread_count);
+                console_log("ThreadMgmt", 1, msg);
+            } else {
+                snprintf(msg, sizeof(msg), "Thread removed, count: %d", threads->thread_count);
+                console_log("ThreadMgmt", 2, msg);
+            }
             break;
         }
     }

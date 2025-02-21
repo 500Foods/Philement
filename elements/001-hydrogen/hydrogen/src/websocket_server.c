@@ -60,25 +60,64 @@ static int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
         return ws_callback_dispatch(wsi, reason, user, in, len);
     }
 
+    // During shutdown, allow cleanup and system callbacks
+    if (ctx && ctx->shutdown) {
+        // Always allow these critical callbacks during shutdown
+        switch (reason) {
+            // Protocol lifecycle
+            case LWS_CALLBACK_PROTOCOL_INIT:
+            case LWS_CALLBACK_PROTOCOL_DESTROY:
+                log_this("WebSocket", "Protocol lifecycle callback during shutdown: %d", 
+                        0, true, true, true, reason);
+                return ws_callback_dispatch(wsi, reason, user, in, len);
+
+            // Connection cleanup
+            case LWS_CALLBACK_WSI_DESTROY:
+            case LWS_CALLBACK_CLOSED:
+                log_this("WebSocket", "Connection cleanup callback during shutdown: %d", 
+                        0, true, true, true, reason);
+                return ws_callback_dispatch(wsi, reason, user, in, len);
+
+            // System callbacks
+            case LWS_CALLBACK_GET_THREAD_ID:
+            case LWS_CALLBACK_EVENT_WAIT_CANCELLED:
+            case LWS_CALLBACK_ADD_POLL_FD:
+            case LWS_CALLBACK_DEL_POLL_FD:
+            case LWS_CALLBACK_CHANGE_MODE_POLL_FD:
+            case LWS_CALLBACK_LOCK_POLL:
+            case LWS_CALLBACK_UNLOCK_POLL:
+                return ws_callback_dispatch(wsi, reason, user, in, len);
+
+            // Reject new activity during shutdown
+            case LWS_CALLBACK_ESTABLISHED:
+            case LWS_CALLBACK_RECEIVE:
+            case LWS_CALLBACK_SERVER_WRITEABLE:
+            case LWS_CALLBACK_RECEIVE_PONG:
+            case LWS_CALLBACK_TIMER:
+            case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
+            case LWS_CALLBACK_CLIENT_FILTER_PRE_ESTABLISH:
+            case LWS_CALLBACK_CLIENT_ESTABLISHED:
+            case LWS_CALLBACK_CLIENT_RECEIVE:
+            case LWS_CALLBACK_CLIENT_RECEIVE_PONG:
+            case LWS_CALLBACK_CLIENT_WRITEABLE:
+            case LWS_CALLBACK_CLIENT_CONFIRM_EXTENSION_SUPPORTED:
+            case LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER:
+            case LWS_CALLBACK_CLIENT_HTTP_WRITEABLE:
+                return -1;
+
+            // Log and allow other callbacks during shutdown
+            default:
+                log_this("WebSocket", "Unhandled callback during shutdown: %d", 
+                        1, true, true, true, reason);
+                return ws_callback_dispatch(wsi, reason, user, in, len);
+        }
+    }
+
     // Cast and validate session data for other callbacks
     WebSocketSessionData *session = (WebSocketSessionData *)user;
     if (!session && reason != LWS_CALLBACK_PROTOCOL_INIT) {
         log_this("WebSocket", "Invalid session data for callback %d", 3, true, true, true, reason);
         return -1;
-    }
-
-    // During shutdown, only allow cleanup callbacks
-    if (ctx && ctx->shutdown) {
-        switch (reason) {
-            case LWS_CALLBACK_WSI_DESTROY:
-            case LWS_CALLBACK_PROTOCOL_DESTROY:
-            case LWS_CALLBACK_CLOSED:
-            case LWS_CALLBACK_GET_THREAD_ID:
-            case LWS_CALLBACK_EVENT_WAIT_CANCELLED:
-                return ws_callback_dispatch(wsi, reason, user, in, len);
-            default:
-                return -1;
-        }
     }
 
     return ws_callback_dispatch(wsi, reason, user, in, len);
@@ -164,17 +203,40 @@ int init_websocket_server(int port, const char* protocol, const char* key)
     // Set context user data
     lws_set_log_level(0, NULL);  // Reset logging before context creation
 
-    // Configure logging
-    const char *config_level = app_config->websocket.log_level;
+    // Configure logging based on numeric level
+    int config_level = app_config->Logging.Console.Subsystems.WebSocket;
     lws_set_log_level(0, NULL);  // Reset logging
 
-    if (strcmp(config_level, "ERROR") == 0) {
-        lws_set_log_level(LLL_ERR, custom_lws_log);
-    } else if (strcmp(config_level, "WARN") == 0) {
-        lws_set_log_level(LLL_ERR | LLL_WARN, custom_lws_log);
-    } else if (strcmp(config_level, "ALL") == 0) {
-        lws_set_log_level(LLL_ERR | LLL_WARN | LLL_NOTICE | LLL_INFO, custom_lws_log);
+    // Map numeric levels to libwebsockets levels
+    int lws_level = 0;
+    switch (config_level) {
+        case 0:  // ALL
+            lws_level = LLL_ERR | LLL_WARN | LLL_NOTICE | LLL_INFO | LLL_DEBUG | LLL_PARSER | LLL_HEADER;
+            break;
+        case 1:  // INFO
+            lws_level = LLL_ERR | LLL_WARN | LLL_NOTICE | LLL_INFO;
+            break;
+        case 2:  // WARN
+            lws_level = LLL_ERR | LLL_WARN;
+            break;
+        case 3:  // DEBUG
+            lws_level = LLL_ERR | LLL_WARN | LLL_NOTICE | LLL_INFO | LLL_DEBUG;
+            break;
+        case 4:  // ERROR
+            lws_level = LLL_ERR;
+            break;
+        case 5:  // CRITICAL
+            lws_level = LLL_ERR;
+            break;
+        case 6:  // NONE
+            lws_level = 0;
+            break;
+        default:
+            lws_level = LLL_ERR | LLL_WARN;  // Default to WARN level
+            break;
     }
+
+    lws_set_log_level(lws_level, custom_lws_log);
 
     // Create libwebsockets context
     ws_context->lws_context = lws_create_context(&info);
@@ -273,7 +335,18 @@ static void *websocket_server_run(void *arg)
 
     log_this("WebSocket", "Server thread starting", 0, true, true, true);
 
-    while (!ws_context->shutdown) {
+    // Enable thread cancellation
+    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+    pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
+
+    extern volatile sig_atomic_t server_running;
+    int shutdown_wait = 0;
+    const int max_shutdown_wait = 40;  // 2 seconds total (40 * 50ms)
+
+    while (server_running && !ws_context->shutdown) {
+        // Add cancellation point before service
+        pthread_testcancel();
+        
         int n = lws_service(ws_context->lws_context, 50);
         
         if (n < 0 && !ws_context->shutdown) {
@@ -281,18 +354,32 @@ static void *websocket_server_run(void *arg)
             break;
         }
 
-        // During shutdown, wait for connections to close
-        if (ws_context->shutdown) {
+        // During shutdown, wait for connections to close with timeout
+        if (!server_running || ws_context->shutdown) {
             pthread_mutex_lock(&ws_context->mutex);
-            if (ws_context->active_connections == 0) {
+            if (ws_context->active_connections == 0 || shutdown_wait >= max_shutdown_wait) {
+                // Force close any remaining connections
+                if (ws_context->active_connections > 0) {
+                    log_this("WebSocket", "Forcing close of %d remaining connections", 
+                            2, true, true, true, ws_context->active_connections);
+                    lws_cancel_service(ws_context->lws_context);
+                    ws_context->active_connections = 0;  // Force reset
+                }
                 pthread_mutex_unlock(&ws_context->mutex);
                 break;
             }
             pthread_mutex_unlock(&ws_context->mutex);
+            
+            shutdown_wait++;
+            
+            // Add cancellation point during shutdown wait
+            pthread_testcancel();
             usleep(50000);  // 50ms sleep
             continue;
         }
 
+        // Add cancellation point during normal operation
+        pthread_testcancel();
         usleep(1000);  // 1ms sleep
     }
 
@@ -335,11 +422,24 @@ void stop_websocket_server()
     // Wait for server thread with timeout
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
-    ts.tv_sec += 2;  // 2 second timeout
+    ts.tv_sec += 3;  // 3 second timeout
 
     int join_result = pthread_timedjoin_np(ws_context->server_thread, NULL, &ts);
     if (join_result == ETIMEDOUT) {
-        log_this("WebSocket", "Thread join timed out", 2, true, true, true);
+        log_this("WebSocket", "Thread join timed out, forcing cleanup", 2, true, true, true);
+        // Don't return - continue with cleanup
+    }
+
+    // Force close any remaining connections if context still exists
+    pthread_mutex_lock(&ws_context->mutex);
+    if (ws_context->lws_context) {
+        log_this("WebSocket", "Destroying WebSocket context", 0, true, true, true);
+        struct lws_context *ctx = ws_context->lws_context;
+        ws_context->lws_context = NULL;  // Prevent double destruction
+        pthread_mutex_unlock(&ws_context->mutex);
+        lws_context_destroy(ctx);
+    } else {
+        pthread_mutex_unlock(&ws_context->mutex);
     }
 
     log_this("WebSocket", "Server stopped", 0, true, true, true);

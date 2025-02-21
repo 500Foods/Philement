@@ -122,6 +122,29 @@ pthread_t mdns_thread;
 pthread_t web_thread;
 pthread_t websocket_thread;
 
+// Thread tracking structures with centralized management
+//
+// Design choices for thread tracking:
+// 1. Component Isolation
+//    - Separate tracking per subsystem
+//    - Clear ownership boundaries
+//    - Independent cleanup
+//
+// 2. Resource Management
+//    - Memory tracking
+//    - Stack monitoring
+//    - Cleanup coordination
+//
+// 3. Debugging Support
+//    - Thread identification
+//    - State monitoring
+//    - Resource usage tracking
+ServiceThreads logging_threads;
+ServiceThreads web_threads;
+ServiceThreads websocket_threads;
+ServiceThreads mdns_threads;
+ServiceThreads print_threads;
+
 // Shared resource handles with centralized management
 //
 // Resource management strategy:

@@ -68,6 +68,10 @@
 #include "shutdown.h"
 #include "startup.h"
 #include "state.h"
+#include "utils_threads.h"
+
+// External thread tracking structures
+extern ServiceThreads logging_threads;
 
 int main(int argc, char *argv[]) {
 
@@ -90,7 +94,6 @@ int main(int argc, char *argv[]) {
     // 4. Maintains system responsiveness without busy-waiting
     struct timespec ts;
     while (server_running) {
-        
         clock_gettime(CLOCK_REALTIME, &ts);
         ts.tv_sec += 1; // Wake up periodically to check system state
         
@@ -102,17 +105,17 @@ int main(int argc, char *argv[]) {
             // Log unexpected errors, but continue running
             log_this("Main", "Unexpected error in main event loop", 3, true, false, true);
         }
-        
-        // Check if we're shutting down
-        if (!server_running) {
-            break;  // Exit immediately when shutdown is requested
-        }
-        
     }
 
+    // Add this thread to tracking before shutdown
+    add_service_thread(&logging_threads, pthread_self());
+    
     // Initiate graceful shutdown sequence
     // This ensures all components are properly stopped and resources are released
     graceful_shutdown();
+    
+    // Remove this thread from tracking
+    remove_service_thread(&logging_threads, pthread_self());
 
     return 0;
 }

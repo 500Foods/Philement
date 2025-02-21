@@ -459,7 +459,6 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
     json_object_set_new(web, "port", json_integer(app_config->web.port));
     json_object_set_new(web, "upload_path", json_string(app_config->web.upload_path));
     json_object_set_new(web, "max_upload_size", json_integer(app_config->web.max_upload_size));
-    json_object_set_new(web, "log_level", json_string(app_config->web.log_level));
     
     json_t *web_status = json_object();
     json_object_set_new(web_status, "activeRequests", json_integer(0));
@@ -477,7 +476,6 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
     json_object_set_new(websocket, "port", json_integer(app_config->websocket.port));
     json_object_set_new(websocket, "protocol", json_string(app_config->websocket.protocol));
     json_object_set_new(websocket, "max_message_size", json_integer(app_config->websocket.max_message_size));
-    json_object_set_new(websocket, "log_level", json_string(app_config->websocket.log_level));
     
     json_t *websocket_status = json_object();
     json_object_set_new(websocket_status, "threads", json_integer(websocket_threads.thread_count));
@@ -506,7 +504,6 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
     json_object_set_new(mdns, "friendly_name", json_string(app_config->mdns.friendly_name));
     json_object_set_new(mdns, "model", json_string(app_config->mdns.model));
     json_object_set_new(mdns, "manufacturer", json_string(app_config->mdns.manufacturer));
-    json_object_set_new(mdns, "log_level", json_string(app_config->mdns.log_level));
     
     json_t *mdns_status = json_object();
     json_object_set_new(mdns_status, "discoveryCount", json_integer(0));
@@ -520,7 +517,6 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
     // Print queue configuration
     json_t *print = json_object();
     json_object_set_new(print, "enabled", json_boolean(app_config->print_queue.enabled));
-    json_object_set_new(print, "log_level", json_string(app_config->print_queue.log_level));
     
     json_t *print_status = json_object();
     json_object_set_new(print_status, "queuedJobs", json_integer(0));

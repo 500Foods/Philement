@@ -8,24 +8,72 @@
         "WebRoot": "/var/www/html",
         "UploadPath": "/api/upload",
         "UploadDir": "/tmp/hydrogen_uploads",
-        "MaxUploadSize": 2147483648,
-        "LogLevel": "WARN"
+        "MaxUploadSize": 2147483648
     },
     "WebSocket": {
         "Enabled": true,
         "EnableIPv6": true,
-        "Port": 5001,
-        "LogLevel": "NONE"
+        "Port": 5001
     },
     "PrintQueue": {
-        "Enabled": true,
-        "LogLevel": "WARN"
+        "Enabled": true
+    },
+    "Logging": {
+        "Levels": [
+            [0, "ALL"],
+            [1, "INFO"],
+            [2, "WARN"],
+            [3, "DEBUG"],
+            [4, "ERROR"],
+            [5, "CRITICAL"],
+            [6, "NONE"]
+        ],
+        "Console": {
+            "Enabled": true,
+            "DefaultLevel": 1,
+            "Subsystems": {
+                "ThreadMgmt": 6,
+                "Shutdown": 2,
+                "mDNS": 2,
+                "WebServer": 2,
+                "WebSocket": 2,
+                "PrintQueue": 2,
+                "LogQueueManager": 2
+            }
+        },
+        "Database": {
+            "Enabled": true,
+            "DefaultLevel": 4,
+            "ConnectionString": "sqlite:///var/lib/hydrogen/logs.db",
+            "Subsystems": {
+                "ThreadMgmt": 4,
+                "Shutdown": 4,
+                "mDNS": 4,
+                "WebServer": 4,
+                "WebSocket": 4,
+                "PrintQueue": 4,
+                "LogQueueManager": 4
+            }
+        },
+        "File": {
+            "Enabled": true,
+            "DefaultLevel": 1,
+            "Path": "/var/log/hydrogen.log",
+            "Subsystems": {
+                "ThreadMgmt": 1,
+                "Shutdown": 1,
+                "mDNS": 1,
+                "WebServer": 1,
+                "WebSocket": 1,
+                "PrintQueue": 1,
+                "LogQueueManager": 1
+            }
+        }
     },
     "mDNS": {
         "Enabled": true,
         "EnableIPv6": true,
         "DeviceId": "hydrogen-printer",
-        "LogLevel": "ALL",
         "FriendlyName": "Hydrogen 3D Printer",
         "Model": "Hydrogen",
         "Manufacturer": "Philement",

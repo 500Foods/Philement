@@ -50,17 +50,35 @@
 #define DEFAULT_UPLOAD_PATH "/api/upload"  // REST-style API path
 #define DEFAULT_UPLOAD_DIR "/tmp/hydrogen_uploads"  // Secure temp directory
 #define DEFAULT_MAX_UPLOAD_SIZE (2ULL * 1024 * 1024 * 1024)  // 2GB limit for safety
-#define NUM_PRIORITY_LEVELS 5              // Standard logging levels
+#define NUM_PRIORITY_LEVELS 7              // ALL, INFO, WARN, DEBUG, ERROR, CRITICAL, NONE
 
 /*
  * Logging Priority System:
  * Maps numeric priority levels to human-readable labels for consistent
  * log formatting and filtering across all server components.
+ * 
+ * Level Values:
+ * 0 = ALL (log everything)
+ * 1 = INFO
+ * 2 = WARN
+ * 3 = DEBUG
+ * 4 = ERROR
+ * 5 = CRITICAL
+ * 6 = NONE (log nothing)
  */
 typedef struct {
     int value;          // Numeric priority for comparison
     const char* label;  // Human-readable label for display
 } PriorityLevel;
+
+// These are just defaults, actual values come from JSON config
+#define LOG_LEVEL_ALL      0
+#define LOG_LEVEL_INFO     1
+#define LOG_LEVEL_WARN     2
+#define LOG_LEVEL_DEBUG    3
+#define LOG_LEVEL_ERROR    4
+#define LOG_LEVEL_CRITICAL 5
+#define LOG_LEVEL_NONE     6
 
 /*
  * Web Server Configuration:
@@ -76,8 +94,45 @@ typedef struct {
     char *upload_path;     // URL path for file uploads
     char *upload_dir;      // Storage location for uploads
     size_t max_upload_size;// Upload size limit for DoS prevention
-    char *log_level;       // Component-specific logging control
 } WebConfig;
+
+/*
+ * Logging Configuration:
+ * Comprehensive logging system with support for multiple destinations
+ * and per-subsystem log levels.
+ */
+typedef struct {
+    struct {
+        int ThreadMgmt;      // Thread management logging
+        int Shutdown;        // Shutdown process logging
+        int mDNS;           // mDNS service logging
+        int WebServer;      // Web server logging
+        int WebSocket;      // WebSocket server logging
+        int PrintQueue;     // Print queue logging
+        int LogQueueManager;// Log queue manager logging
+    } Subsystems;
+    int DefaultLevel;      // Default logging level
+    int Enabled;            // Whether this destination is active
+    union {
+        struct {
+            char *Path;      // Log file path
+        } File;
+        struct {
+            char *ConnectionString;  // Database connection
+        } Database;
+    } Config;
+} LoggingDestination;
+
+typedef struct {
+    struct {
+        int value;
+        const char *name;
+    } *Levels;                  // Array of level definitions
+    size_t LevelCount;          // Number of defined levels
+    LoggingDestination Console;  // Console output configuration
+    LoggingDestination File;     // File output configuration
+    LoggingDestination Database; // Database output configuration
+} LoggingConfig;
 
 /*
  * WebSocket Configuration:
@@ -92,7 +147,6 @@ typedef struct {
     char *key;             // Authentication key
     char *protocol;        // WebSocket subprotocol identifier
     size_t max_message_size;// Message size limit for memory safety
-    char *log_level;       // Component-specific logging control
 } WebSocketConfig;
 
 /*
@@ -111,7 +165,6 @@ typedef struct {
     char *version;        // Firmware/software version
     mdns_service_t *services; // Array of advertised services
     size_t num_services;   // Number of advertised services
-    char *log_level;       // Component-specific logging control
 } mDNSConfig;
 
 /*
@@ -121,7 +174,6 @@ typedef struct {
  */
 typedef struct {
     int enabled;            // Runtime toggle for print queue
-    char *log_level;       // Component-specific logging control
 } PrintQueueConfig;
 
 /*
@@ -138,8 +190,8 @@ typedef struct {
     WebSocketConfig websocket; // WebSocket server settings
     mDNSConfig mdns;       // Service discovery settings
     PrintQueueConfig print_queue; // Print management settings
+    LoggingConfig Logging;  // Logging configuration
 } AppConfig;
-
 /*
  * Global Configuration State:
  * These externals provide access to shared configuration state

@@ -90,8 +90,69 @@ void ws_context_destroy(WebSocketServerContext* ctx)
 
     // Clean up libwebsockets context if it exists
     if (ctx->lws_context) {
-        lws_context_destroy(ctx->lws_context);
-        ctx->lws_context = NULL;
+        struct lws_context *lws_ctx = ctx->lws_context;
+        ctx->lws_context = NULL;  // Prevent other threads from using it
+        
+        // Cancel any pending service to trigger final callbacks
+        lws_cancel_service(lws_ctx);
+        
+        // Multiple service loops to ensure all callbacks are processed
+        for (int i = 0; i < 3; i++) {
+            lws_service(lws_ctx, 0);
+            usleep(50000);  // 50ms delay between loops
+        }
+        
+        // Wait for protocol destroy callback and connection cleanup
+        struct timespec wait_time;
+        clock_gettime(CLOCK_REALTIME, &wait_time);
+        wait_time.tv_sec += 2;  // 2 second timeout
+
+        pthread_mutex_lock(&ctx->mutex);
+        while (ctx->active_connections > 0) {
+            if (pthread_cond_timedwait(&ctx->cond, &ctx->mutex, &wait_time) == ETIMEDOUT) {
+                log_this("WebSocket", "Timeout waiting for cleanup, forcing shutdown", 2, true, true, true);
+                ctx->active_connections = 0;  // Force clear any remaining connections
+                break;
+            }
+        }
+        pthread_mutex_unlock(&ctx->mutex);
+
+        // Final check for any remaining threads
+        extern ServiceThreads websocket_threads;
+        update_service_thread_metrics(&websocket_threads);
+        if (websocket_threads.thread_count > 0) {
+            log_this("WebSocket", "Waiting for %d threads to exit", 1, true, true, true, 
+                    websocket_threads.thread_count);
+            
+            // Give threads a chance to exit cleanly
+            for (int i = 0; i < 10 && websocket_threads.thread_count > 0; i++) {
+                usleep(100000);  // 100ms delay
+                update_service_thread_metrics(&websocket_threads);
+            }
+            
+            // Force any remaining threads to exit
+            if (websocket_threads.thread_count > 0) {
+                log_this("WebSocket", "Forcing %d threads to exit", 2, true, true, true,
+                        websocket_threads.thread_count);
+                for (int i = 0; i < websocket_threads.thread_count; i++) {
+                    pthread_t thread = websocket_threads.thread_ids[i];
+                    pthread_cancel(thread);  // Force thread termination
+                }
+            }
+        }
+
+        // Final service loop to process any remaining callbacks
+        lws_service(lws_ctx, 0);
+        
+        // Now safe to destroy the context
+        lws_context_destroy(lws_ctx);
+        
+        // Final thread cleanup
+        update_service_thread_metrics(&websocket_threads);
+        if (websocket_threads.thread_count > 0) {
+            log_this("WebSocket", "Warning: %d threads remain after context destruction",
+                    2, true, true, true, websocket_threads.thread_count);
+        }
     }
 
     // Free message buffer
@@ -108,4 +169,7 @@ void ws_context_destroy(WebSocketServerContext* ctx)
     free(ctx);
 
     log_this("WebSocket", "Server context destroyed", 0, true, true, true);
+    
+    // Final delay to allow any pending logs to be processed
+    usleep(100000);  // 100ms delay
 }
