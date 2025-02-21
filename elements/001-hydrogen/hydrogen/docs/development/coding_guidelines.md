@@ -87,12 +87,52 @@ Use the project's logging system with appropriate severity levels:
 log_this("Component", "Message", severity, to_console, to_file, to_websocket);
 ```
 
-Severity levels:
-- 1: Debug
-- 2: Info
-- 3: Warning
-- 4: Error
-- 5: Critical
+Severity levels for logging in code:
+- 1: INFO - General operational information, startup messages, and normal operations
+- 2: WARN - Warning conditions that don't prevent operation but require attention
+- 3: DEBUG - Detailed debug-level information for troubleshooting
+- 4: ERROR - Error conditions that affect functionality but don't require shutdown
+- 5: CRITICAL - Critical conditions requiring immediate attention or shutdown
+
+IMPORTANT: The values 0 (ALL) and 6 (NONE) are special values used only for log filtering in configuration files. They must never be used in log_this() calls. Many existing calls using level 0 should be changed to level 1 (INFO).
+
+Default log filtering by output:
+- Console: Level 1 (INFO) and above
+- Database: Level 4 (ERROR) and above
+- File: Level 1 (INFO) and above
+
+Example of correct usage:
+```c
+// Correct: Startup/operational info uses INFO level
+log_this("WebServer", "Server started on port 5000", 1, true, true, true);
+
+// Correct: Warning about resource usage uses WARN level
+log_this("PrintQueue", "Print job queue approaching capacity", 2, true, true, true);
+
+// Correct: Detailed debugging info uses DEBUG level
+log_this("WebSocket", "Processing message type: %s", 3, true, true, true, type);
+
+// Correct: Error condition uses ERROR level
+log_this("Network", "Failed to bind socket: %s", 4, true, true, true, strerror(errno));
+
+// Correct: Critical failure uses CRITICAL level
+log_this("Initialization", "Failed to load configuration", 5, true, true, true);
+
+// INCORRECT: Never use level 0 in code
+// log_this("WebServer", "Server initialized", 0, true, true, true);  // Wrong!
+```
+
+Example:
+```c
+// Correct usage for operational info
+log_this("WebServer", "Server started on port 5000", 1, true, true, false);
+
+// Correct usage for warning condition
+log_this("PrintQueue", "Print job queue approaching capacity", 2, true, true, true);
+
+// Correct usage for error condition
+log_this("WebSocket", "Failed to establish connection", 4, true, true, false);
+```
 
 ## Memory Management
 
@@ -109,6 +149,34 @@ if (!ptr) {
     return false;
 }
 ```
+
+## Data Formatting Standards
+
+### JSON Output Formatting
+
+1. **Percentage Values**
+   - Format all percentage values as strings with exactly 3 decimal places
+   - This applies to all metrics that represent percentages (CPU usage, memory usage, etc.)
+   - Use consistent formatting across all JSON responses for API consistency
+   
+Example:
+```c
+// Correct percentage formatting
+char percent_str[16];
+snprintf(percent_str, sizeof(percent_str), "%.3f", percentage_value);
+json_object_set_new(obj, "usage_percent", json_string(percent_str));
+```
+
+Why This Matters:
+- Ensures consistent precision across all percentage metrics
+- Maintains API compatibility and predictability
+- Allows accurate tracking of small changes in resource usage
+- Prevents floating-point representation issues in JSON
+
+2. **Numeric Values**
+   - Use integers for byte counts and absolute values
+   - Use strings for formatted durations and timestamps
+   - Document any special formatting requirements in the relevant function
 
 ## Code Documentation
 

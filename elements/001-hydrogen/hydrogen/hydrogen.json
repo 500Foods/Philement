@@ -33,12 +33,12 @@
             "DefaultLevel": 1,
             "Subsystems": {
                 "ThreadMgmt": 6,
-                "Shutdown": 2,
-                "mDNS": 2,
+                "Shutdown": 0,
+                "mDNS": 3,
                 "WebServer": 2,
-                "WebSocket": 2,
+                "WebSocket": 3,
                 "PrintQueue": 2,
-                "LogQueueManager": 2
+                "LogQueueManager": 0
             }
         },
         "Database": {
