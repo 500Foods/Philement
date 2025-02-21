@@ -1,142 +1,313 @@
-# Small Print Farm Setup
+# Print Farm Setup Guide
 
-This guide describes how to set up and manage Hydrogen in a small print farm environment with multiple 3D printers.
-
-## Typical Environment
-
-- Multiple 3D printers (2-10 units)
-- Dedicated network segment
-- Continuous operation requirements
-- Load balancing needs
-- Central monitoring station
+This guide covers setting up and managing multiple 3D printers with Hydrogen in a print farm configuration.
 
 ## Architecture Overview
 
-```text
-[Load Balancer] --> [Hydrogen Server 1] --> [Printer 1]
-                --> [Hydrogen Server 2] --> [Printer 2]
-                --> [Hydrogen Server N] --> [Printer N]
-```
+### Basic Setup
+- One Hydrogen instance per printer
+- Central management server
+- Shared network storage (recommended)
+- Load balancer for distribution
 
-## Setup Components
+## Initial Setup
 
-1. **Individual Printer Nodes**
+### Network Configuration
 
+1. **Network Planning**
+   ```
+   Print Farm Network (192.168.1.0/24)
+   ├── Management Server (192.168.1.10)
+   ├── Printer 1 (192.168.1.101)
+   ├── Printer 2 (192.168.1.102)
+   └── Printer N (192.168.1.10N)
+   ```
+
+2. **Static IP Assignment**
+   - Assign static IPs to all printers
+   - Configure DNS records
+   - Set up VLAN if needed
+
+### Printer Configuration
+
+1. **Individual Printer Setup**
    ```json
    {
-       "ServerName": "printer-01",
-       "WebServer": {
-           "Port": 5000,
-           "EnableIPv6": true
-       },
-       "PrintQueue": {
-           "Enabled": true
-       }
+     "ServerName": "printer-01",
+     "PrinterID": "PR01",
+     "ClusterRole": "node",
+     "ClusterManager": "http://192.168.1.10:5000",
+     "WebServer": {
+       "Port": 5000,
+       "AllowRemoteAdmin": true
+     }
    }
    ```
 
-2. **Load Balancer Configuration**
-
-   ```apache
-   <Proxy balancer://printercluster>
-       BalancerMember http://printer-01:5000
-       BalancerMember http://printer-02:5000
-       ProxySet lbmethod=byrequests
-   </Proxy>
+2. **Management Server Setup**
+   ```json
+   {
+     "ServerName": "print-manager",
+     "ClusterRole": "manager",
+     "WebServer": {
+       "Port": 5000
+     },
+     "ClusterManagement": {
+       "Enabled": true,
+       "NodeDiscovery": "static",
+       "Nodes": [
+         "http://192.168.1.101:5000",
+         "http://192.168.1.102:5000"
+       ]
+     }
+   }
    ```
 
-3. **Health Monitoring**
+## Load Balancing Strategy
 
-   ```bash
-   # Health check endpoint
-   curl http://printer-01:5000/api/system/health
+### Job Distribution Methods
+
+1. **Round Robin**
+   ```json
+   {
+     "LoadBalancing": {
+       "Strategy": "round-robin",
+       "EnabledPrinters": ["PR01", "PR02", "PR03"]
+     }
+   }
    ```
 
-## Management Strategies
+2. **Printer Capability Matching**
+   ```json
+   {
+     "LoadBalancing": {
+       "Strategy": "capability-match",
+       "PrinterProfiles": {
+         "PR01": {
+           "MaterialTypes": ["PLA", "PETG"],
+           "BuildVolume": {
+             "X": 250,
+             "Y": 210,
+             "Z": 210
+           }
+         }
+       }
+     }
+   }
+   ```
 
-### Job Distribution
+3. **Queue-Based Distribution**
+   ```json
+   {
+     "LoadBalancing": {
+       "Strategy": "queue-length",
+       "MaxQueueLength": 5,
+       "RebalanceThreshold": 3
+     }
+   }
+   ```
 
-- Automatic load balancing
-- Priority queue management
-- Resource allocation
+### Optimization Settings
+```json
+{
+  "QueueOptimization": {
+    "Enabled": true,
+    "Factors": {
+      "PrintTime": 0.4,
+      "MaterialType": 0.3,
+      "QueueLength": 0.3
+    },
+    "RebalanceInterval": 300
+  }
+}
+```
 
-### Monitoring
+## Material Management
 
-- Centralized dashboard
-- Status aggregation
-- Alert system
+### Material Profiles
 
-### Maintenance
+1. **Central Material Database**
+   ```json
+   {
+     "MaterialManagement": {
+       "DatabasePath": "/shared/materials.db",
+       "Profiles": {
+         "PLA_Standard": {
+           "Type": "PLA",
+           "Temperature": {
+             "Extruder": 200,
+             "Bed": 60
+           }
+         },
+         "PETG_High_Strength": {
+           "Type": "PETG",
+           "Temperature": {
+             "Extruder": 240,
+             "Bed": 80
+           }
+         }
+       }
+     }
+   }
+   ```
 
-- Rolling updates
-- Backup rotation
-- Log aggregation
+2. **Printer-Specific Overrides**
+   ```json
+   {
+     "PrinterMaterialOverrides": {
+       "PR01": {
+         "PLA_Standard": {
+           "Temperature": {
+             "Extruder": 205
+           }
+         }
+       }
+     }
+   }
+   ```
 
-## Common Workflows
+### Material Tracking
 
-### Print Job Submission
+1. **Inventory Management**
+   ```json
+   {
+     "MaterialTracking": {
+       "Enabled": true,
+       "LowStockThreshold": 500,
+       "CriticalStockThreshold": 100,
+       "NotifyOnLow": true
+     }
+   }
+   ```
 
-1. Submit to load balancer
-2. Automatic printer selection
-3. Job execution
-4. Status monitoring
+2. **Usage Monitoring**
+   ```json
+   {
+     "UsageTracking": {
+       "Enabled": true,
+       "LogInterval": 3600,
+       "ReportInterval": 86400
+     }
+   }
+   ```
 
-### Resource Management
+## Monitoring and Management
 
-1. Material tracking
-2. Printer availability
-3. Queue optimization
-4. Capacity planning
+### Centralized Monitoring
+
+1. **System Metrics**
+   ```json
+   {
+     "Monitoring": {
+       "Enabled": true,
+       "Metrics": {
+         "SystemStats": true,
+         "PrinterStats": true,
+         "QueueStats": true
+       },
+       "CollectionInterval": 60
+     }
+   }
+   ```
+
+2. **Alert Configuration**
+   ```json
+   {
+     "Alerts": {
+       "Enabled": true,
+       "Channels": ["email", "slack"],
+       "Triggers": {
+         "PrinterError": true,
+         "MaterialLow": true,
+         "QueueFull": true
+       }
+     }
+   }
+   ```
+
+### Maintenance Schedule
+
+1. **Automated Maintenance**
+   ```json
+   {
+     "Maintenance": {
+       "Schedule": {
+         "Enabled": true,
+         "CheckInterval": 86400,
+         "Tasks": [
+           {
+             "Type": "calibration",
+             "Interval": "7d"
+           },
+           {
+             "Type": "nozzle_clean",
+             "Interval": "24h"
+           }
+         ]
+       }
+     }
+   }
+   ```
+
+## Scaling Considerations
+
+### Adding New Printers
+
+1. **Hardware Setup**
+   - Physical installation
+   - Network connection
+   - Initial calibration
+
+2. **Software Configuration**
+   - Clone base configuration
+   - Assign unique ID
+   - Register with manager
+   - Configure material profiles
+
+### Performance Optimization
+
+1. **Network Optimization**
+   - Use Gigabit networking
+   - Implement QoS
+   - Monitor bandwidth usage
+
+2. **Storage Management**
+   - Implement file deduplication
+   - Configure automatic cleanup
+   - Monitor disk usage
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Load Balancing Problems**
+   - Check network connectivity
+   - Verify printer status
+   - Review distribution logs
+
+2. **Material Management Issues**
+   - Verify sensor readings
+   - Check inventory accuracy
+   - Review material profiles
+
+3. **Performance Problems**
+   - Monitor system resources
+   - Check network latency
+   - Review queue statistics
 
 ## Best Practices
 
-1. **Network Setup**
-   - Dedicated VLAN
-   - Static IP assignments
-   - Redundant connections
+1. **Regular Maintenance**
+   - Schedule printer maintenance
+   - Update firmware regularly
+   - Clean and calibrate systematically
 
-2. **Security**
-   - Access control
-   - Network isolation
-   - Monitoring systems
+2. **Documentation**
+   - Keep printer configurations documented
+   - Maintain material profiles
+   - Log maintenance activities
 
-3. **Operations**
-   - Regular maintenance schedule
-   - Backup procedures
-   - Update strategy
-
-## Advanced Topics
-
-1. **Scaling Considerations**
-   - Adding new printers
-   - Load balancer configuration
-   - Network capacity
-
-2. **Automation**
-   - Job scheduling
-   - Material management
-   - Maintenance alerts
-
-3. **Integration**
-   - ERP systems
-   - Inventory management
-   - Quality control
-
-## Resources
-
-- [Load Balancer Setup](../../deployment/load_balancer.md)
-- [Monitoring Guide](../../deployment/monitoring.md)
-- [API Documentation](../../reference/api.md)
-
-## Common Questions
-
-1. **Q: How do I add a new printer to the farm?**  
-   A: Section to be completed with printer addition workflow.
-
-2. **Q: What's the optimal load balancing strategy?**  
-   A: Section to be completed with load balancing recommendations.
-
-3. **Q: How do I handle printer-specific materials?**  
-   A: Section to be completed with material management guidelines.
-
-Note: This document serves as a template and will be expanded with more detailed information and real-world examples.
+3. **Backup Strategy**
+   - Regular configuration backups
+   - Material profile backups
+   - Print history archives

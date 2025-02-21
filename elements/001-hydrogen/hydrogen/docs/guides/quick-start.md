@@ -11,14 +11,34 @@ This guide will help you get Hydrogen up and running quickly with a basic config
 
 ## Installation
 
-1. **Download Hydrogen**
+1. **Install Dependencies**
 
    ```bash
-   # Commands for downloading and extracting Hydrogen
-   # To be completed with actual download instructions
+   # Ubuntu/Debian
+   sudo apt-get update
+   sudo apt-get install build-essential git libjansson-dev libmicrohttpd-dev \
+                        libwebsockets-dev libssl-dev
+
+   # Fedora/RHEL
+   sudo dnf install gcc git jansson-devel libmicrohttpd-devel \
+                    libwebsockets-devel openssl-devel
    ```
 
-2. **Basic Configuration**
+2. **Download and Build Hydrogen**
+
+   ```bash
+   # Clone the repository
+   git clone https://github.com/philement/hydrogen.git
+   cd hydrogen
+
+   # Build the server
+   make
+
+   # Optional: Build debug version
+   make debug
+   ```
+
+3. **Basic Configuration**
    Create a file named `hydrogen.json`:
 
    ```json
@@ -37,11 +57,14 @@ This guide will help you get Hydrogen up and running quickly with a basic config
    }
    ```
 
-3. **Start the Server**
+4. **Start the Server**
 
    ```bash
-   # Command to start Hydrogen
-   ./hydrogen /path/to/hydrogen.json
+   # Start with your configuration
+   ./hydrogen hydrogen.json
+
+   # Or for debug version
+   ./hydrogen_debug hydrogen.json
    ```
 
 ## Verify Installation
@@ -101,10 +124,9 @@ This guide will help you get Hydrogen up and running quickly with a basic config
 
 ## Next Steps
 
-1. [Configure for Your Environment](./configuration-basics.md)
-2. [Set Up as a Service](../reference/service.md)
-3. [Secure Your Installation](../reference/security.md)
-4. [Explore Advanced Features](./basic-operations.md)
+1. [Configure Your Environment](../configuration.md)
+2. [Set Up as a Service](../service.md)
+3. [Explore Advanced Features](../reference/api.md)
 
 ## Common Issues
 
@@ -128,15 +150,13 @@ This guide will help you get Hydrogen up and running quickly with a basic config
 
 ## Getting Help
 
-1. Check the [Troubleshooting Guide](../reference/troubleshooting.md)
-2. Review [Known Issues](../reference/known_issues.md)
+1. Review the [System Information](../reference/system_info.md)
+2. Check the [Configuration Guide](../configuration.md)
 3. Search existing issues
 4. Create a new issue if needed
 
 ## Use Case Examples
 
-- [Home Workshop Setup](./use-cases/home_workshop.md)
-- [Print Farm Configuration](./use-cases/print_farm.md)
-- [Educational Lab Setup](./use-cases/educational_lab.md)
+- [Home Workshop Setup](./use-cases/home-workshop.md)
+- [Print Farm Configuration](./use-cases/print-farm.md)
 
-Note: This guide will be expanded with more detailed instructions and examples.
