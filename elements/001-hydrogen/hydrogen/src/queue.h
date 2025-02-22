@@ -151,6 +151,7 @@ typedef struct QueueSystem {
 } QueueSystem;
 
 extern QueueSystem queue_system;
+extern int queue_system_initialized;  // Flag indicating if queue system is ready
 
 /*
  * Queue System Interface

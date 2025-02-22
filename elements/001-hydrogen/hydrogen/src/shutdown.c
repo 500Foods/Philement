@@ -96,6 +96,9 @@ void inthandler(int signum) {
     console_log("Shutdown", LOG_LEVEL_INFO, LOG_LINE_BREAK);
     console_log("Shutdown", LOG_LEVEL_INFO, "Cleaning up and shutting down");
 
+    // Start timing the shutdown process
+    record_shutdown_start_time();
+
     pthread_mutex_lock(&terminate_mutex);
     server_running = 0;
     pthread_cond_broadcast(&terminate_cond);
@@ -389,18 +392,21 @@ void graceful_shutdown(void) {
         update_service_thread_metrics(&mdns_threads);
         update_service_thread_metrics(&print_threads);
 
-        if (logging_threads.thread_count > 0 || web_threads.thread_count > 0 ||
-            websocket_threads.thread_count > 0 || mdns_threads.thread_count > 0 ||
-            print_threads.thread_count > 0) {
+        // Calculate total non-logging threads
+        int non_logging_threads = web_threads.thread_count + 
+                                websocket_threads.thread_count + 
+                                mdns_threads.thread_count + 
+                                print_threads.thread_count;
+
+        // Only continue waiting if we have more than just logging thread
+        if (non_logging_threads > 0) {
             threads_active = true;
             
             // Only log detailed thread info at debug level
             if (wait_count == 0 || wait_count == max_wait_cycles - 1) {
                 char msg[128];
                 snprintf(msg, sizeof(msg), "Waiting for %d thread(s) to exit (attempt %d/%d)", 
-                        logging_threads.thread_count + web_threads.thread_count + 
-                        websocket_threads.thread_count + mdns_threads.thread_count + 
-                        print_threads.thread_count,
+                        non_logging_threads,
                         wait_count + 1, max_wait_cycles);
                 console_log("Shutdown", 1, msg);
             }
@@ -411,15 +417,20 @@ void graceful_shutdown(void) {
             pthread_mutex_unlock(&terminate_mutex);
             
             usleep(500000);  // 500ms delay between checks
+        } else if (logging_threads.thread_count > 0) {
+            // Only logging thread remains, which is expected
+            console_log("Shutdown", LOG_LEVEL_INFO, "Only logging thread remains, proceeding with shutdown");
+            break;
         }
         
         wait_count++;
     } while (threads_active && wait_count < max_wait_cycles);
 
-    if (threads_active) {
-        console_log("Shutdown", 2, "Some threads did not exit cleanly");
+    if (threads_active && web_threads.thread_count + websocket_threads.thread_count + 
+        mdns_threads.thread_count + print_threads.thread_count > 0) {
+        console_log("Shutdown", 2, "Some non-logging threads did not exit cleanly");
     } else {
-        console_log("Shutdown", LOG_LEVEL_INFO, "All threads exited successfully");
+        console_log("Shutdown", LOG_LEVEL_INFO, "All non-logging threads exited successfully");
     }
 
     // Now safe to stop logging
@@ -563,6 +574,13 @@ void graceful_shutdown(void) {
         console_log("Shutdown", LOG_LEVEL_INFO, "All non-main threads exited successfully");
     }
 
+    // Record final timing statistics and log final messages
+    record_shutdown_end_time();
+    log_this("Shutdown", "Shutdown complete", LOG_LEVEL_INFO, true, false, false);
+
+    // Brief delay to ensure log message is processed
+    usleep(100000);
+
     // Now safe to destroy synchronization primitives
     pthread_mutex_lock(&terminate_mutex);
     pthread_cond_broadcast(&terminate_cond);
@@ -575,7 +593,4 @@ void graceful_shutdown(void) {
 
     // Free configuration last since other components might need it
     free_app_config();
-
-    console_log("Shutdown", LOG_LEVEL_INFO, "Shutdown complete");
-    console_log("Shutdown", LOG_LEVEL_INFO, LOG_LINE_BREAK);
 }

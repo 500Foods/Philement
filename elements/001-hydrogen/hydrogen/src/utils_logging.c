@@ -77,7 +77,7 @@ static bool should_log_message(const char* subsystem, int priority) {
 void console_log(const char* subsystem, int priority, const char* message) {
     // Check if this message should be logged based on configuration
     if (!should_log_message(subsystem, priority)) {
-        return;
+         return;
     }
 
     // Get current time with millisecond precision

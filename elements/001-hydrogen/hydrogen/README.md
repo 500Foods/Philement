@@ -40,31 +40,37 @@ Hydrogen is currently designed for technical users who:
 Comprehensive documentation is available in the `docs` directory:
 
 ### Core Documentation
+
 - [Main Documentation](docs/README.md) - Overview and getting started
 - [Configuration Guide](docs/configuration.md) - Server configuration and settings
 - [Release Notes](docs/release_notes.md) - Detailed version history and changes
 
 ### API & Interfaces
+
 - [REST API Documentation](docs/api.md) - REST API endpoints and usage
 - [WebSocket Interface](docs/web_socket.md) - Real-time communication interface
 - [System API Reference](docs/api/system/system_info.md) - System-level API documentation
 
 ### Features & Components
+
 - [Print Queue Management](docs/print_queue.md) - Print job scheduling and management
 - [Data Structures](docs/data_structures.md) - Core data structure documentation
 - [Thread Monitoring](docs/thread_monitoring.md) - Thread management and monitoring
 - [Service Management](docs/service.md) - Service lifecycle and configuration
 
 ### Guides & Use Cases
+
 - [Quick Start Guide](docs/guides/quick-start.md) - Get up and running quickly
 - [Print Farm Setup](docs/guides/use-cases/print-farm.md) - Setting up a print farm
 - [Home Workshop](docs/guides/use-cases/home-workshop.md) - Single printer setup
 
 ### Development & Deployment
+
 - [Coding Guidelines](docs/coding_guidelines.md) - Development standards and practices
 - [Docker Deployment](docs/deployment/docker.md) - Container-based deployment guide
 
 ### Technical Reference
+
 - [System Information](docs/reference/system_info.md) - Detailed system architecture
 - [API Reference](docs/reference/api.md) - Complete API documentation
 - [Configuration Reference](docs/reference/configuration.md) - Detailed configuration options
