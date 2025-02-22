@@ -93,11 +93,11 @@ extern WebSocketServerContext *ws_context;
 void handle_status_request(struct lws *wsi)
 {
     if (!ws_context) {
-        log_this("WebSocket", "No server context available", 3, true, true, true);
+        log_this("WebSocket", "No server context available", LOG_LEVEL_ERROR);
         return;
     }
 
-    log_this("WebSocket", "Preparing status response", 0, true, true, true);
+    log_this("WebSocket", "Preparing status response", LOG_LEVEL_INFO);
 
     // Safely copy metrics under lock
     pthread_mutex_lock(&ws_context->mutex);
@@ -115,17 +115,17 @@ void handle_status_request(struct lws *wsi)
     json_decref(root);
 
     size_t len = strlen(response_str);
-    log_this("WebSocket", "Status response: %s", 0, true, true, true, response_str);
+    log_this("WebSocket", "Status response: %s", LOG_LEVEL_INFO, response_str);
 
     // Prepare and send WebSocket message
     unsigned char *buf = malloc(LWS_PRE + len);
     if (buf) {
         memcpy(buf + LWS_PRE, response_str, len);
         int written = lws_write(wsi, buf + LWS_PRE, len, LWS_WRITE_TEXT);
-        log_this("WebSocket", "Wrote %d bytes to WebSocket", 0, true, true, true, written);
+        log_this("WebSocket", "Wrote %d bytes to WebSocket", LOG_LEVEL_INFO, written);
         free(buf);
     } else {
-        log_this("WebSocket", "Failed to allocate buffer for response", 3, true, true, true);
+        log_this("WebSocket", "Failed to allocate buffer for response", LOG_LEVEL_ERROR);
     }
 
     free(response_str);

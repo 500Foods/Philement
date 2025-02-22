@@ -84,13 +84,13 @@ char* get_executable_path() {
     char path[PATH_MAX];
     ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
     if (len == -1) {
-        log_this("Configuration", "Error reading /proc/self/exe", 3, true, false, true);
+        log_this("Configuration", "Error reading /proc/self/exe", LOG_LEVEL_DEBUG);
         return NULL;
     }
     path[len] = '\0';
     char* result = strdup(path);
     if (!result) {
-        log_this("Configuration", "Error allocating memory for executable path", 3, true, false, true);
+        log_this("Configuration", "Error allocating memory for executable path", LOG_LEVEL_DEBUG);
         return NULL;
     }
     return result;
@@ -365,9 +365,9 @@ void create_default_config(const char* config_path) {
     json_object_set_new(root, "PrintQueue", print_queue);
 
     if (json_dump_file(root, config_path, JSON_INDENT(4)) != 0) {
-        log_this("Configuration", "Error: Unable to create default config at %s", 3, true, true, true, config_path);
+        log_this("Configuration", "Error: Unable to create default config at %s", LOG_LEVEL_DEBUG, config_path);
     } else {
-        log_this("Configuration", "Created default config at %s", 0, true, true, true, config_path);
+        log_this("Configuration", "Created default config at %s", LOG_LEVEL_INFO, config_path);
     }
 
     json_decref(root);
@@ -406,13 +406,13 @@ AppConfig* load_config(const char* config_path) {
     json_t* root = json_load_file(config_path, 0, &error);
 
     if (!root) {
-        log_this("Configuration", "Failed to load config file", 3, true, false, true);
+        log_this("Configuration", "Failed to load config file", LOG_LEVEL_DEBUG);
         return NULL;
     }
 
     AppConfig* config = calloc(1, sizeof(AppConfig));
     if (!config) {
-        log_this("Configuration", "Failed to allocate memory for config", 3, true, false, true);
+        log_this("Configuration", "Failed to allocate memory for config", LOG_LEVEL_DEBUG);
         json_decref(root);
         return NULL;
     }
@@ -420,7 +420,7 @@ AppConfig* load_config(const char* config_path) {
     // Set executable path
     config->executable_path = get_executable_path();
     if (!config->executable_path) {
-        log_this("Configuration", "Failed to get executable path, using default", 1, true, false, true);
+        log_this("Configuration", "Failed to get executable path, using default", LOG_LEVEL_INFO);
         config->executable_path = strdup("./hydrogen");
     }
 

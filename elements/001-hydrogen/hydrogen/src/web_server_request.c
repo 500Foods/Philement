@@ -106,7 +106,7 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
         add_service_thread(&web_threads, pthread_self());
         char msg[128];
         snprintf(msg, sizeof(msg), "New connection thread for %s %s", method, url);
-        log_this("WebServer", msg, 0, true, false, true);
+        log_this("WebServer", msg, LOG_LEVEL_INFO);
     }
 
     // Log API endpoint access
@@ -115,7 +115,7 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
     if (is_api_endpoint(url, service, endpoint)) {
         char detail[128];
         snprintf(detail, sizeof(detail), "%sService/%s", service, endpoint);
-        log_this("API", detail, 0, true, false, true);
+        log_this("API", detail, LOG_LEVEL_INFO);
     }
 
     // Handle OPTIONS method for CORS preflight requests
@@ -149,7 +149,7 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
 
         // Serve up the requested file
         if (access(file_path, F_OK) != -1) {
-            log_this("WebServer", "Served File: %s", 0, true, true, true, file_path);
+            log_this("WebServer", "Served File: %s", LOG_LEVEL_INFO, file_path);
             return serve_file(connection, file_path);
         }
 
@@ -199,5 +199,5 @@ void request_completed(void *cls, struct MHD_Connection *connection,
     // Remove connection thread from tracking after cleanup
     extern ServiceThreads web_threads;
     remove_service_thread(&web_threads, pthread_self());
-    log_this("WebServer", "Connection thread completed", 0, true, false, true);
+    log_this("WebServer", "Connection thread completed", LOG_LEVEL_INFO);
 }

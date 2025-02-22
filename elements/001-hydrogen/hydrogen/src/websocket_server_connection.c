@@ -28,7 +28,7 @@ int ws_handle_connection_established(struct lws *wsi, WebSocketSessionData *sess
     (void)wsi;  // Parameter reserved for future use
 
     if (!session || !ws_context) {
-        log_this("WebSocket", "Invalid session or context", 3, true, true, true);
+        log_this("WebSocket", "Invalid session or context", LOG_LEVEL_DEBUG);
         return -1;
     }
 
@@ -50,7 +50,7 @@ int ws_handle_connection_established(struct lws *wsi, WebSocketSessionData *sess
     pthread_mutex_unlock(&ws_context->mutex);
 
     log_this("WebSocket", "New connection established (active: %d, total: %d)",
-             0, true, true, true,
+             LOG_LEVEL_INFO,
              ws_context->active_connections,
              ws_context->total_connections);
 
@@ -64,7 +64,7 @@ int ws_handle_connection_closed(struct lws *wsi, WebSocketSessionData *session)
     (void)session;
 
     if (!ws_context) {
-        log_this("WebSocket", "Invalid context during connection closure", 3, true, true, true);
+        log_this("WebSocket", "Invalid context during connection closure", LOG_LEVEL_DEBUG);
         return -1;
     }
 
@@ -76,7 +76,7 @@ int ws_handle_connection_closed(struct lws *wsi, WebSocketSessionData *session)
         
         // Log closure with remaining count
         log_this("WebSocket", "Connection closed (remaining active: %d)",
-                 0, true, true, true,
+                 LOG_LEVEL_INFO,
                  ws_context->active_connections);
     }
 
@@ -87,11 +87,11 @@ int ws_handle_connection_closed(struct lws *wsi, WebSocketSessionData *session)
     // During shutdown, broadcast to all waiting threads when last connection closes
     if (ws_context->shutdown) {
         if (ws_context->active_connections == 0) {
-            log_this("WebSocket", "Last connection closed during shutdown", 0, true, true, true);
+            log_this("WebSocket", "Last connection closed during shutdown", LOG_LEVEL_INFO);
             pthread_cond_broadcast(&ws_context->cond);
         } else {
             log_this("WebSocket", "Connection closed during shutdown (%d remaining)",
-                     1, true, true, true, ws_context->active_connections);
+                     LOG_LEVEL_WARN, ws_context->active_connections);
         }
     }
 
@@ -133,7 +133,7 @@ void ws_update_client_info(struct lws *wsi, WebSocketSessionData *session)
     }
 
     log_this("WebSocket", "Client connected - IP: %s, App: %s, Client: %s",
-             0, true, true, true,
+             LOG_LEVEL_INFO,
              session->request_ip,
              session->request_app,
              session->request_client);
