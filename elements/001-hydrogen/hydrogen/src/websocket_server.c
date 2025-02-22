@@ -128,11 +128,11 @@ static void custom_lws_log(int level, const char *line)
 {
     if (!line) return;
 
-    // During shutdown, use direct console logging
+    // During shutdown, use log_this with console-only output
     if (ws_context && ws_context->shutdown) {
         int priority = (level == LLL_ERR) ? 3 : 
                       (level == LLL_WARN) ? 2 : 0;
-        console_log("WebSocket", priority, line);
+        log_this("WebSocket", line, priority, true, false, false);
         return;
     }
 

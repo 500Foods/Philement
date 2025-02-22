@@ -53,6 +53,10 @@
 // Project headers
 #include "queue.h"
 #include "logging.h"
+#include "configuration.h"
+
+// External configuration
+extern AppConfig *app_config;
 
 QueueSystem queue_system;
 int queue_system_initialized = 0;  // Initialize to 0 (not initialized)
@@ -221,12 +225,10 @@ Queue* queue_create(const char* name, QueueAttributes* attrs) {
     queue_system.queues[index] = queue;
     pthread_mutex_unlock(&queue_system.mutex);
 
-    // Log the queue creation
-    if (strcmp(name, "SystemLog") == 0) {
-        log_this("Initialization", LOG_LINE_BREAK, 0, true, true, true);
-        log_this("Initialization", "SystemLog queue created", 0, true, true, true);
-    } else {
-        log_this("QueueSystem", "New queue created", 0, true, true, true);
+    // During early initialization (SystemLog queue creation), logging system isn't ready
+    // For all other queues, use the normal logging system
+    if (strcmp(name, "SystemLog") != 0) {
+        log_this("QueueSystem", "New queue created: %s", 0, true, false, true, name);
     }
 
     return queue;

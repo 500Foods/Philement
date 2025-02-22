@@ -13,12 +13,13 @@
 
 #include <jansson.h>
 #include <time.h>
+#include "configuration.h"
 
 // File descriptor information structure
 typedef struct {
     int fd;                 // File descriptor number
-    char type[32];         // Type (socket, file, pipe, etc.)
-    char description[256]; // Detailed description
+    char type[DEFAULT_FD_TYPE_SIZE];         // Type (socket, file, pipe, etc.)
+    char description[DEFAULT_FD_DESCRIPTION_SIZE]; // Detailed description
 } FileDescriptorInfo;
 
 // WebSocket metrics structure

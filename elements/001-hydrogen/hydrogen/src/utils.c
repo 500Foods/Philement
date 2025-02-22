@@ -12,8 +12,16 @@ static void init_all_service_threads(void);
 // Initialize service threads when module loads
 static void __attribute__((constructor)) init_utils(void) {
     init_all_service_threads();
-    init_queue_memory(&log_queue_memory);
-    init_queue_memory(&print_queue_memory);
+    init_queue_memory(&log_queue_memory, NULL);
+    init_queue_memory(&print_queue_memory, NULL);
+}
+
+// Update queue limits after configuration is loaded
+void update_queue_limits_from_config(const AppConfig *config) {
+    if (!config) return;
+    
+    update_queue_limits(&log_queue_memory, config);
+    update_queue_limits(&print_queue_memory, config);
 }
 
 // Initialize all service thread tracking

@@ -10,6 +10,10 @@
 #include "logging.h"
 #include "utils_time.h"
 #include "utils_logging.h"
+#include "configuration.h"
+
+// Global configuration
+extern AppConfig* app_config;
 
 // System headers
 #include <sys/time.h>
@@ -44,7 +48,7 @@ enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind kind,
                 char uuid_str[37];
                 generate_uuid(uuid_str);
 
-                char file_path[1024];
+                char file_path[DEFAULT_LINE_BUFFER_SIZE];  // Use configured line buffer size
                 snprintf(file_path, sizeof(file_path), "%s/%s.gcode", server_web_config->upload_dir, uuid_str);
                 con_info->fp = fopen(file_path, "wb");
                 if (!con_info->fp) {
@@ -56,7 +60,7 @@ enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind kind,
                 con_info->original_filename = strdup(filename);
                 con_info->new_filename = strdup(file_path);
 
-                char log_buffer[256];
+                char log_buffer[DEFAULT_LOG_BUFFER_SIZE];  // Use configured log buffer size
                 snprintf(log_buffer, sizeof(log_buffer), "Starting file upload: %s", filename);
                 log_this("WebServer", log_buffer, 0, true, false, true);
             }
@@ -77,7 +81,7 @@ enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind kind,
             // Log progress every 100MB
             if (con_info->total_size / (100 * 1024 * 1024) > con_info->last_logged_mb) {
                 con_info->last_logged_mb = con_info->total_size / (100 * 1024 * 1024);
-                char progress_log[128];
+                char progress_log[DEFAULT_LOG_BUFFER_SIZE];  // Use configured log buffer size
                 snprintf(progress_log, sizeof(progress_log), "Upload progress: %zu MB", con_info->last_logged_mb * 100);
                 log_this("WebServer", progress_log, 2, true, false, true);
             }
@@ -85,10 +89,11 @@ enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind kind,
     } else if (0 == strcmp(key, "print")) {
         // Handle the 'print' field
         con_info->print_after_upload = (0 == strcmp(data, "true"));
-        console_log("WebServer", 0, con_info->print_after_upload ? "Print after upload: enabled" : "Print after upload: disabled");
+        log_this("WebServer", con_info->print_after_upload ? "Print after upload: enabled" : "Print after upload: disabled", 
+                0, true, false, true);
     } else {
         // Log unknown keys
-        char log_buffer[256];
+        char log_buffer[DEFAULT_LOG_BUFFER_SIZE];  // Use configured log buffer size
         snprintf(log_buffer, sizeof(log_buffer), "Received unknown key in form data: %s", key);
         log_this("WebServer", log_buffer, 2, true, false, true);
     }
@@ -105,7 +110,9 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
     if (NULL == con_info) {
         con_info = calloc(1, sizeof(struct ConnectionInfo));
         if (NULL == con_info) return MHD_NO;
-        con_info->postprocessor = MHD_create_post_processor(connection, 8192, handle_upload_data, con_info);
+        con_info->postprocessor = MHD_create_post_processor(connection, 
+            app_config ? app_config->resources.post_processor_buffer_size : DEFAULT_POST_PROCESSOR_BUFFER_SIZE,
+            handle_upload_data, con_info);
         if (NULL == con_info->postprocessor) {
             free(con_info);
             return MHD_NO;
@@ -159,7 +166,7 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
 
             json_decref(print_job);
 
-            char complete_log[512];
+            char complete_log[DEFAULT_LOG_BUFFER_SIZE];  // Use configured log buffer size
             log_this("WebServer", "File upload completed:", 0, true, true, true);
             snprintf(complete_log, sizeof(complete_log), " -> Source: %s", con_info->original_filename);
             log_this("WebServer", complete_log, 0, true, true, true);
@@ -207,17 +214,8 @@ json_t* extract_gcode_info(const char* filename) {
         return NULL;
     }
 
-    BerylliumConfig config = {
-        .acceleration = ACCELERATION,
-        .z_acceleration = Z_ACCELERATION,
-        .extruder_acceleration = E_ACCELERATION,
-        .max_speed_xy = MAX_SPEED_XY,
-        .max_speed_travel = MAX_SPEED_TRAVEL,
-        .max_speed_z = MAX_SPEED_Z,
-        .default_feedrate = DEFAULT_FEEDRATE,
-        .filament_diameter = DEFAULT_FILAMENT_DIAMETER,
-        .filament_density = DEFAULT_FILAMENT_DENSITY
-    };
+    // Use configuration-based defaults
+    BerylliumConfig config = beryllium_create_config(app_config);
 
     char *start_time = get_iso8601_timestamp();
     clock_t start = clock();
@@ -319,7 +317,7 @@ char* extract_preview_image(const char* filename) {
         return NULL;
     }
 
-    char line[1024];
+    char line[DEFAULT_LINE_BUFFER_SIZE];  // Use configured line buffer size
     char* image_data = NULL;
     size_t image_size = 0;
     bool in_thumbnail = false;
