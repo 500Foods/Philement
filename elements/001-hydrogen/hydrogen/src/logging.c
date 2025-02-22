@@ -82,19 +82,25 @@ static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
  * - Thread safety
  */
 static void console_log(const char* subsystem, int priority, const char* message) {
-    const char* priority_label;
-    switch (priority) {
-        case 1: priority_label = "DEBUG"; break;
-        case 2: priority_label = "INFO"; break;
-        case 3: priority_label = "WARNING"; break;
-        case 4: priority_label = "ERROR"; break;
-        case 5: priority_label = "CRITICAL"; break;
-        default: priority_label = "UNKNOWN"; break;
-    }
-    fprintf(stderr, "[%s] %s: %s\n", subsystem, priority_label, message);
+    char formatted_priority[MAX_PRIORITY_LABEL_WIDTH + 5];
+    snprintf(formatted_priority, sizeof(formatted_priority), "[ %-*s ]", MAX_PRIORITY_LABEL_WIDTH, get_priority_label(priority));
+
+    char formatted_subsystem[MAX_SUBSYSTEM_LABEL_WIDTH + 5];
+    snprintf(formatted_subsystem, sizeof(formatted_subsystem), "[ %-*s ]", MAX_SUBSYSTEM_LABEL_WIDTH, subsystem);
+
+    char timestamp[32];
+    struct timeval tv;
+    struct tm* tm_info;
+    gettimeofday(&tv, NULL);
+    tm_info = localtime(&tv.tv_sec);
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", tm_info);
+    char timestamp_ms[36];
+    snprintf(timestamp_ms, sizeof(timestamp_ms), "%s.%03d", timestamp, (int)(tv.tv_usec / 1000));
+
+    fprintf(stderr, "%s  %s  %s  %s\n", timestamp_ms, formatted_priority, formatted_subsystem, message);
 }
 
-// Log a message with configurable output targets and priority
+// Log a message based on configuration settings
 //
 // Logging system design prioritizes:
 // 1. Thread Safety
@@ -104,7 +110,7 @@ static void console_log(const char* subsystem, int priority, const char* message
 //    - Safe signal handling
 //
 // 2. Reliability
-//    - Fallback console output
+//    - Configuration-based routing
 //    - Buffer overflow prevention
 //    - Queue monitoring
 //    - Graceful degradation
@@ -116,23 +122,23 @@ static void console_log(const char* subsystem, int priority, const char* message
 //    - Memory reuse
 //
 // 4. Flexibility
-//    - Multiple output targets
+//    - Configuration-driven destinations
 //    - Priority-based handling
 //    - Subsystem categorization
 //    - Format customization
-void log_this(const char* subsystem, const char* format, int priority, bool LogConsole, bool LogDatabase, bool LogFile, ...) {
+void log_this(const char* subsystem, const char* format, int priority, ...) {
     pthread_mutex_lock(&log_mutex);
 
     char details[DEFAULT_LOG_ENTRY_SIZE];
     va_list args;
-    va_start(args, LogFile);
+    va_start(args, priority);
     vsnprintf(details, sizeof(details), format, args);
     va_end(args);
 
     char json_message[DEFAULT_MAX_LOG_MESSAGE_SIZE];
     snprintf(json_message, sizeof(json_message),
-             "{\"subsystem\":\"%s\",\"details\":\"%s\",\"priority\":%d,\"LogConsole\":%s,\"LogDatabase\":%s,\"LogFile\":%s}",
-             subsystem, details, priority, LogConsole ? "true" : "false", LogDatabase ? "true" : "false", LogFile ? "true" : "false");
+             "{\"subsystem\":\"%s\",\"details\":\"%s\",\"priority\":%d}",
+             subsystem, details, priority);
 
     // Try to use queue system if it's available and running
     Queue* log_queue = NULL;
@@ -152,12 +158,12 @@ void log_this(const char* subsystem, const char* format, int priority, bool LogC
         }
     }
 
-    // Use console output if:
+    // Use console output based on configuration and fallback conditions:
     // - Queue system is not initialized
     // - Queue system is shutting down
     // - Queue is not found
     // - Queue enqueue failed
-    if (LogConsole && use_console) {
+    if (app_config && app_config->Logging.Console.Enabled && use_console) {
         console_log(subsystem, priority, details);
     }
 

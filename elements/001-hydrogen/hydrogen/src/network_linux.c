@@ -96,7 +96,7 @@ network_info_t *get_network_info(void) {
 
     struct ifaddrs *ifaddr;
     if (getifaddrs(&ifaddr) == -1) {
-        log_this("Network", "getifaddrs failed: %s", 3, true, true, true, strerror(errno));
+        log_this("Network", "getifaddrs failed: %s", LOG_LEVEL_ERROR, strerror(errno));
         free(info);
         return NULL;
     }
@@ -183,7 +183,7 @@ int find_available_port(int start_port) {
     struct sockaddr_in addr;
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
-        log_this("Network", "Failed to create socket: %s", 0, true, true, true, strerror(errno));
+        log_this("Network", "Failed to create socket: %s", LOG_LEVEL_ERROR, strerror(errno));
         return -1;
     }
 
@@ -199,6 +199,6 @@ int find_available_port(int start_port) {
     }
 
     close(sock);
-    log_this("Network", "No available ports found", 3, true, true, true);
+    log_this("Network", "No available ports found", LOG_LEVEL_DEBUG);
     return -1;
 }

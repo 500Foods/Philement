@@ -103,7 +103,7 @@ int main(int argc, char *argv[]) {
         
         if (wait_result != 0 && wait_result != ETIMEDOUT) {
             // Log unexpected errors, but continue running
-            log_this("Main", "Unexpected error in main event loop", 3, true, false, true);
+            log_this("Main", "Unexpected error in main event loop", LOG_LEVEL_ERROR);
         }
     }
 

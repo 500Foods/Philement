@@ -27,7 +27,7 @@ WebSocketServerContext* ws_context_create(int port, const char* protocol, const 
 {
     WebSocketServerContext *ctx = calloc(1, sizeof(WebSocketServerContext));
     if (!ctx) {
-        log_this("WebSocket", "Failed to allocate server context", 3, true, true, true);
+        log_this("WebSocket", "Failed to allocate server context", LOG_LEVEL_ERROR);
         return NULL;
     }
 
@@ -40,13 +40,13 @@ WebSocketServerContext* ws_context_create(int port, const char* protocol, const 
 
     // Initialize mutex and condition variable
     if (pthread_mutex_init(&ctx->mutex, NULL) != 0) {
-        log_this("WebSocket", "Failed to initialize mutex", 3, true, true, true);
+        log_this("WebSocket", "Failed to initialize mutex", LOG_LEVEL_ERROR);
         free(ctx);
         return NULL;
     }
 
     if (pthread_cond_init(&ctx->cond, NULL) != 0) {
-        log_this("WebSocket", "Failed to initialize condition variable", 3, true, true, true);
+        log_this("WebSocket", "Failed to initialize condition variable", LOG_LEVEL_ERROR);
         pthread_mutex_destroy(&ctx->mutex);
         free(ctx);
         return NULL;
@@ -56,7 +56,7 @@ WebSocketServerContext* ws_context_create(int port, const char* protocol, const 
     ctx->max_message_size = app_config->websocket.max_message_size;
     ctx->message_buffer = malloc(ctx->max_message_size + 1);
     if (!ctx->message_buffer) {
-        log_this("WebSocket", "Failed to allocate message buffer", 3, true, true, true);
+        log_this("WebSocket", "Failed to allocate message buffer", LOG_LEVEL_ERROR);
         pthread_mutex_destroy(&ctx->mutex);
         pthread_cond_destroy(&ctx->cond);
         free(ctx);
@@ -75,7 +75,7 @@ WebSocketServerContext* ws_context_create(int port, const char* protocol, const 
     ctx->message_length = 0;
     ctx->lws_context = NULL;  // Will be set during server initialization
 
-    log_this("WebSocket", "Server context created successfully", 0, true, true, true);
+    log_this("WebSocket", "Server context created successfully", LOG_LEVEL_INFO);
     return ctx;
 }
 
@@ -110,7 +110,7 @@ void ws_context_destroy(WebSocketServerContext* ctx)
         pthread_mutex_lock(&ctx->mutex);
         while (ctx->active_connections > 0) {
             if (pthread_cond_timedwait(&ctx->cond, &ctx->mutex, &wait_time) == ETIMEDOUT) {
-                log_this("WebSocket", "Timeout waiting for cleanup, forcing shutdown", 2, true, true, true);
+                log_this("WebSocket", "Timeout waiting for cleanup, forcing shutdown", LOG_LEVEL_WARN);
                 ctx->active_connections = 0;  // Force clear any remaining connections
                 break;
             }
@@ -121,7 +121,7 @@ void ws_context_destroy(WebSocketServerContext* ctx)
         extern ServiceThreads websocket_threads;
         update_service_thread_metrics(&websocket_threads);
         if (websocket_threads.thread_count > 0) {
-            log_this("WebSocket", "Waiting for %d threads to exit", 1, true, true, true, 
+            log_this("WebSocket", "Waiting for %d threads to exit", LOG_LEVEL_INFO,
                     websocket_threads.thread_count);
             
             // Give threads a chance to exit cleanly
@@ -132,7 +132,7 @@ void ws_context_destroy(WebSocketServerContext* ctx)
             
             // Force any remaining threads to exit
             if (websocket_threads.thread_count > 0) {
-                log_this("WebSocket", "Forcing %d threads to exit", 2, true, true, true,
+                log_this("WebSocket", "Forcing %d threads to exit", LOG_LEVEL_WARN,
                         websocket_threads.thread_count);
                 for (int i = 0; i < websocket_threads.thread_count; i++) {
                     pthread_t thread = websocket_threads.thread_ids[i];
@@ -151,7 +151,7 @@ void ws_context_destroy(WebSocketServerContext* ctx)
         update_service_thread_metrics(&websocket_threads);
         if (websocket_threads.thread_count > 0) {
             log_this("WebSocket", "Warning: %d threads remain after context destruction",
-                    2, true, true, true, websocket_threads.thread_count);
+                    LOG_LEVEL_WARN, websocket_threads.thread_count);
         }
     }
 
@@ -168,7 +168,7 @@ void ws_context_destroy(WebSocketServerContext* ctx)
     // Free the context itself
     free(ctx);
 
-    log_this("WebSocket", "Server context destroyed", 0, true, true, true);
+    log_this("WebSocket", "Server context destroyed", LOG_LEVEL_INFO);
     
     // Final delay to allow any pending logs to be processed
     usleep(100000);  // 100ms delay

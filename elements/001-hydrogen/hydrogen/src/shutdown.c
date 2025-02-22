@@ -93,8 +93,8 @@ void inthandler(int signum) {
     (void)signum;
 
     printf("\n");  // Keep newline for visual separation
-    log_this("Shutdown", LOG_LINE_BREAK, LOG_LEVEL_INFO, true, false, true);
-    log_this("Shutdown", "Cleaning up and shutting down", LOG_LEVEL_INFO, true, false, true);
+    log_this("Shutdown", LOG_LINE_BREAK, LOG_LEVEL_INFO);
+    log_this("Shutdown", "Cleaning up and shutting down", LOG_LEVEL_INFO);
 
     // Start timing the shutdown process
     record_shutdown_start_time();
@@ -127,7 +127,7 @@ static void shutdown_mdns_system(void) {
         return;
     }
 
-    log_this("Shutdown", "Initiating mDNS shutdown", LOG_LEVEL_INFO, true, true, true);
+    log_this("Shutdown", "Initiating mDNS shutdown", LOG_LEVEL_INFO);
     mdns_server_shutdown = 1;
     pthread_cond_broadcast(&terminate_cond);
     
@@ -146,7 +146,7 @@ static void shutdown_mdns_system(void) {
         free(thread_arg);
     }
     
-    log_this("Shutdown", "mDNS shutdown complete", LOG_LEVEL_INFO, true, true, true);
+    log_this("Shutdown", "mDNS shutdown complete", LOG_LEVEL_INFO);
 }
 
 // Shutdown web and websocket servers
@@ -157,36 +157,36 @@ static void shutdown_web_systems(void) {
         return;
     }
 
-    log_this("Shutdown", "Starting web systems shutdown sequence", LOG_LEVEL_INFO, true, true, true);
+    log_this("Shutdown", "Starting web systems shutdown sequence", LOG_LEVEL_INFO);
 
     // Shutdown web server if it was enabled
     if (app_config->web.enabled) {
-        log_this("Shutdown", "Initiating Web Server shutdown", LOG_LEVEL_INFO, true, true, true);
+        log_this("Shutdown", "Initiating Web Server shutdown", LOG_LEVEL_INFO);
         web_server_shutdown = 1;
         pthread_cond_broadcast(&terminate_cond);
         pthread_join(web_thread, NULL);
         shutdown_web_server();
-        log_this("Shutdown", "Web Server shutdown complete", LOG_LEVEL_INFO, true, true, true);
+        log_this("Shutdown", "Web Server shutdown complete", LOG_LEVEL_INFO);
     }
 
     // Shutdown WebSocket server if it was enabled
     if (app_config->websocket.enabled) {
-        log_this("Shutdown", "Initiating WebSocket server shutdown", LOG_LEVEL_INFO, true, true, true);
+        log_this("Shutdown", "Initiating WebSocket server shutdown", LOG_LEVEL_INFO);
         
         // Signal shutdown to all subsystems
         websocket_server_shutdown = 1;
         pthread_cond_broadcast(&terminate_cond);
 
         // First attempt: Give connections time to close gracefully
-        log_this("Shutdown", "Waiting for WebSocket connections to close gracefully", LOG_LEVEL_INFO, true, true, true);
+        log_this("Shutdown", "Waiting for WebSocket connections to close gracefully", LOG_LEVEL_INFO);
         usleep(2000000);  // 2s initial delay
 
         // Stop the server and wait for thread exit
-        log_this("Shutdown", "Stopping WebSocket server", LOG_LEVEL_INFO, true, true, true);
+        log_this("Shutdown", "Stopping WebSocket server", LOG_LEVEL_INFO);
         stop_websocket_server();
 
         // Second phase: Force close any remaining connections
-        log_this("Shutdown", "Forcing close of any remaining connections", LOG_LEVEL_INFO, true, true, true);
+        log_this("Shutdown", "Forcing close of any remaining connections", LOG_LEVEL_INFO);
         extern WebSocketServerContext *ws_context;  // Declare external context
         if (ws_context) {
             // Set shutdown flag and cancel service to interrupt any blocking operations
@@ -203,14 +203,14 @@ static void shutdown_web_systems(void) {
             pthread_mutex_lock(&ws_context->mutex);
             while (ws_context->active_connections > 0) {
                 if (pthread_cond_timedwait(&ws_context->cond, &ws_context->mutex, &wait_time) == ETIMEDOUT) {
-                    log_this("Shutdown", "Timeout waiting for connections, forcing cleanup", 2, true, true, true);
+                    log_this("Shutdown", "Timeout waiting for connections, forcing cleanup", LOG_LEVEL_WARN);
                     break;
                 }
             }
             pthread_mutex_unlock(&ws_context->mutex);
             
             // Force cleanup regardless of state
-            log_this("Shutdown", "Cleaning up WebSocket resources", LOG_LEVEL_INFO, true, true, true);
+            log_this("Shutdown", "Cleaning up WebSocket resources", LOG_LEVEL_INFO);
             cleanup_websocket_server();
         }
 
@@ -219,10 +219,10 @@ static void shutdown_web_systems(void) {
         update_service_thread_metrics(&websocket_threads);
         if (websocket_threads.thread_count > 0) {
             log_this("Shutdown", "Warning: %d WebSocket threads still active", 
-                    2, true, true, true, websocket_threads.thread_count);
+                    LOG_LEVEL_WARN, websocket_threads.thread_count);
         }
         
-        log_this("Shutdown", "WebSocket server shutdown complete", LOG_LEVEL_INFO, true, true, true);
+        log_this("Shutdown", "WebSocket server shutdown complete", LOG_LEVEL_INFO);
     }
 }
 
@@ -234,19 +234,19 @@ static void shutdown_print_system(void) {
         return;
     }
 
-    log_this("Shutdown", "Initiating Print Queue shutdown", LOG_LEVEL_INFO, true, true, true);
+    log_this("Shutdown", "Initiating Print Queue shutdown", LOG_LEVEL_INFO);
     print_queue_shutdown = 1;
     pthread_cond_broadcast(&terminate_cond);
     pthread_join(print_queue_thread, NULL);
     shutdown_print_queue();
-    log_this("Shutdown", "Print Queue shutdown complete", LOG_LEVEL_INFO, true, true, true);
+    log_this("Shutdown", "Print Queue shutdown complete", LOG_LEVEL_INFO);
 }
 
 // Clean up network resources
 // Called after all network-using components are stopped
 // Frees network interface information
 static void shutdown_network(void) {
-    log_this("Shutdown", "Freeing network info", LOG_LEVEL_INFO, true, true, true);
+    log_this("Shutdown", "Freeing network info", LOG_LEVEL_INFO);
     if (net_info) {
         free_network_info(net_info);
         net_info = NULL;
@@ -321,7 +321,7 @@ static void free_app_config(void) {
 //    - Resource leak prevention
 //    - Cleanup verification
 void graceful_shutdown(void) {
-    log_this("Shutdown", "Starting graceful shutdown sequence", LOG_LEVEL_INFO, true, true, true);
+    log_this("Shutdown", "Starting graceful shutdown sequence", LOG_LEVEL_INFO);
     
     // Signal all threads that shutdown is imminent
     pthread_mutex_lock(&terminate_mutex);
@@ -331,24 +331,24 @@ void graceful_shutdown(void) {
     pthread_mutex_unlock(&terminate_mutex);
 
     // First stop accepting new connections/requests
-    log_this("Shutdown", "Stopping mDNS service...", LOG_LEVEL_INFO, true, true, true);
+    log_this("Shutdown", "Stopping mDNS service...", LOG_LEVEL_INFO);
     shutdown_mdns_system();
     
-    log_this("Shutdown", "Stopping web services...", LOG_LEVEL_INFO, true, true, true);
+    log_this("Shutdown", "Stopping web services...", LOG_LEVEL_INFO);
     shutdown_web_systems();
     
-    log_this("Shutdown", "Stopping print system...", LOG_LEVEL_INFO, true, true, true);
+    log_this("Shutdown", "Stopping print system...", LOG_LEVEL_INFO);
     shutdown_print_system();
     
-    log_this("Shutdown", "Cleaning up network...", LOG_LEVEL_INFO, true, true, true);
+    log_this("Shutdown", "Cleaning up network...", LOG_LEVEL_INFO);
     shutdown_network();
 
     // Give threads a moment to process their shutdown flags
     usleep(1000000);  // 1s delay
 
     // Now safe to stop logging since other components are done
-    log_this("Shutdown", "Subsystem shutdown completed", LOG_LEVEL_INFO, true, true, true);    
-    log_this("Shutdown", LOG_LINE_BREAK, LOG_LEVEL_INFO, true, true, true);
+    log_this("Shutdown", "Subsystem shutdown completed", LOG_LEVEL_INFO);    
+    log_this("Shutdown", LOG_LINE_BREAK, LOG_LEVEL_INFO);
 
     // Check remaining threads before logging shutdown
     extern ServiceThreads logging_threads;
@@ -376,7 +376,7 @@ void graceful_shutdown(void) {
                  websocket_threads.thread_count,
                  mdns_threads.thread_count,
                  print_threads.thread_count);
-                log_this("Shutdown", thread_status, 1, true, false, true);
+                log_this("Shutdown", thread_status, LOG_LEVEL_INFO);
     }
 
     // Wait for remaining threads with simplified status updates
@@ -408,7 +408,7 @@ void graceful_shutdown(void) {
                 snprintf(msg, sizeof(msg), "Waiting for %d thread(s) to exit (attempt %d/%d)", 
                         non_logging_threads,
                         wait_count + 1, max_wait_cycles);
-                log_this("Shutdown", msg, 1, true, false, true);
+                log_this("Shutdown", msg, LOG_LEVEL_INFO);
             }
             
             // Signal any waiting threads
@@ -419,7 +419,7 @@ void graceful_shutdown(void) {
             usleep(500000);  // 500ms delay between checks
         } else if (logging_threads.thread_count > 0) {
             // Only logging thread remains, which is expected
-            log_this("Shutdown", "Only logging thread remains, proceeding with shutdown", LOG_LEVEL_INFO, true, false, true);
+            log_this("Shutdown", "Only logging thread remains, proceeding with shutdown", LOG_LEVEL_INFO);
             break;
         }
         
@@ -428,20 +428,20 @@ void graceful_shutdown(void) {
 
     if (threads_active && web_threads.thread_count + websocket_threads.thread_count + 
         mdns_threads.thread_count + print_threads.thread_count > 0) {
-        log_this("Shutdown", "Some non-logging threads did not exit cleanly", 2, true, false, true);
+        log_this("Shutdown", "Some non-logging threads did not exit cleanly", LOG_LEVEL_WARN);
     } else {
-        log_this("Shutdown", "All non-logging threads exited successfully", LOG_LEVEL_INFO, true, false, true);
+        log_this("Shutdown", "All non-logging threads exited successfully", LOG_LEVEL_INFO);
     }
 
     // Now safe to stop logging
-    log_this("Shutdown", "Shutting down logging system", LOG_LEVEL_INFO, true, false, true);
+    log_this("Shutdown", "Shutting down logging system", LOG_LEVEL_INFO);
     pthread_mutex_lock(&terminate_mutex);
     log_queue_shutdown = 1;
     pthread_cond_broadcast(&terminate_cond);
     pthread_mutex_unlock(&terminate_mutex);
     
     // Wait for log thread to finish processing remaining messages
-    log_this("Shutdown", "Waiting for log queue to drain...", LOG_LEVEL_INFO, true, false, true);
+    log_this("Shutdown", "Waiting for log queue to drain...", LOG_LEVEL_INFO);
     pthread_join(log_thread, NULL);
     
     // Wait for any pending log operations
@@ -472,11 +472,11 @@ void graceful_shutdown(void) {
                  websocket_threads.thread_count,
                  mdns_threads.thread_count,
                  print_threads.thread_count);
-        log_this("Shutdown", thread_status, 1, true, false, true);
+        log_this("Shutdown", thread_status, LOG_LEVEL_INFO);
     }
     
     // Now safe to destroy queues
-    log_this("Shutdown", "Shutting down queue system", LOG_LEVEL_INFO, true, false, true);
+    log_this("Shutdown", "Shutting down queue system", LOG_LEVEL_INFO);
     queue_system_destroy();
     usleep(100000);  // 100ms delay
     
@@ -554,7 +554,7 @@ void graceful_shutdown(void) {
         char msg[4096];
         snprintf(msg, sizeof(msg), "%d non-main thread(s) still active:%s", 
                 non_main_threads, thread_info);
-        log_this("Shutdown", msg, 2, true, false, true);
+        log_this("Shutdown", msg, LOG_LEVEL_WARN);
         
         // One final attempt to signal threads
         pthread_mutex_lock(&terminate_mutex);
@@ -566,17 +566,17 @@ void graceful_shutdown(void) {
         
         // Force cleanup if threads are still stuck
         if (has_uninterruptible) {
-            log_this("Shutdown", "Some threads are in uninterruptible state, forcing cleanup", 2, true, false, true);
+            log_this("Shutdown", "Some threads are in uninterruptible state, forcing cleanup", LOG_LEVEL_WARN);
             // Let the OS clean up remaining threads
             _exit(0);
         }
     } else {
-        log_this("Shutdown", "All non-main threads exited successfully", LOG_LEVEL_INFO, true, false, true);
+        log_this("Shutdown", "All non-main threads exited successfully", LOG_LEVEL_INFO);
     }
 
     // Record final timing statistics and log final messages
     record_shutdown_end_time();
-    log_this("Shutdown", "Shutdown complete", LOG_LEVEL_INFO, true, false, false);
+    log_this("Shutdown", "Shutdown complete", LOG_LEVEL_INFO);
 
     // Brief delay to ensure log message is processed
     usleep(100000);

@@ -228,7 +228,7 @@ Queue* queue_create(const char* name, QueueAttributes* attrs) {
     // During early initialization (SystemLog queue creation), logging system isn't ready
     // For all other queues, use the normal logging system
     if (strcmp(name, "SystemLog") != 0) {
-        log_this("QueueSystem", "New queue created: %s", 0, true, false, true, name);
+        log_this("QueueSystem", "New queue created: %s", LOG_LEVEL_INFO, name);
     }
 
     return queue;
