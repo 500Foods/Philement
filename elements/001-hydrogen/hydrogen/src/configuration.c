@@ -489,13 +489,26 @@ AppConfig* load_config(const char* config_path) {
         const char* key_str = json_is_string(key) ? json_string_value(key) : "default_key";
         config->websocket.key = strdup(key_str);
 
-        json_t* protocol = json_object_get(websocket, "Protocol");
-        const char* protocol_str = json_is_string(protocol) ? json_string_value(protocol) : "hydrogen-protocol";
-        config->websocket.protocol = strdup(protocol_str);
+        // Get protocol with fallback to legacy uppercase key
+        json_t* protocol = json_object_get(websocket, "protocol");
+        if (!protocol) {
+            protocol = json_object_get(websocket, "Protocol");  // Try legacy uppercase key
+        }
+        if (json_is_string(protocol)) {
+            config->websocket.protocol = strdup(json_string_value(protocol));
+        } else {
+            config->websocket.protocol = strdup("hydrogen-protocol");
+        }
+        if (!config->websocket.protocol) {
+            log_this("Configuration", "Failed to allocate WebSocket protocol string", LOG_LEVEL_ERROR);
+            // Clean up previously allocated strings
+            free(config->websocket.key);
+            return NULL;
+        }
 
-        json_t* max_message_mb = json_object_get(websocket, "MaxMessageMB");
-        config->websocket.max_message_size = json_is_integer(max_message_mb) ? 
-            json_integer_value(max_message_mb) * 1024 * 1024 : 10 * 1024 * 1024;  // Default to 10 MB
+        json_t* max_message_size = json_object_get(websocket, "MaxMessageSize");
+        config->websocket.max_message_size = json_is_integer(max_message_size) ? 
+            json_integer_value(max_message_size) : 10 * 1024 * 1024;  // Default to 10 MB if not specified
 
     } else {
         // Use defaults if websocket section is missing

@@ -314,8 +314,14 @@ int init_websocket_server(int port, const char* protocol, const char* key)
 
     log_this("WebSocket", "Vhost creation completed successfully", LOG_LEVEL_INFO);
 
-    log_this("WebSocket", "Server initialized on port %d with protocol %s", 
-             LOG_LEVEL_INFO, true, true, true, ws_context->port, protocol);
+    // Log initialization with protocol validation
+    if (protocol) {
+        log_this("WebSocket", "Server initialized on port %d with protocol %s", 
+                 LOG_LEVEL_INFO, ws_context->port, protocol);
+    } else {
+        log_this("WebSocket", "Server initialized on port %d", 
+                 LOG_LEVEL_INFO, ws_context->port);
+    }
     return 0;
 }
 

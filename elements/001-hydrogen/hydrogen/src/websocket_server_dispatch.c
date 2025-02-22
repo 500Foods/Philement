@@ -56,52 +56,24 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
         return 0;
     }
 
-    // Early callbacks that don't need context or session data
-    switch (reason) {
-        case LWS_CALLBACK_WSI_CREATE:
-        case LWS_CALLBACK_WSI_DESTROY:
-            return 0;
-
-        // System callbacks - always allow
-        case LWS_CALLBACK_GET_THREAD_ID:
-        case LWS_CALLBACK_EVENT_WAIT_CANCELLED:
-        case LWS_CALLBACK_ADD_POLL_FD:
-        case LWS_CALLBACK_DEL_POLL_FD:
-        case LWS_CALLBACK_CHANGE_MODE_POLL_FD:
-        case LWS_CALLBACK_LOCK_POLL:
-        case LWS_CALLBACK_UNLOCK_POLL:
-            return 0;
-
-        // Early connection handling
-        case LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION:
-        case LWS_CALLBACK_FILTER_NETWORK_CONNECTION:
-            return 0;  // Allow during vhost creation
-
-        // Unhandled callbacks
-        default:
-            if (!ws_context) {
-                // Only log unhandled callbacks that need context
-                log_this("WebSocket", "Unhandled early callback: %d", LOG_LEVEL_INFO, reason);
-            }
-            return 0;
+    // Get server context if available
+    WebSocketServerContext *ctx = ws_context;
+    if (!ctx) {
+        ctx = (WebSocketServerContext *)lws_context_user(lws_get_context(wsi));
     }
 
-    // All other callbacks require context
+    // During vhost creation or early initialization, allow all callbacks
+    if (!ctx || (ctx && ctx->vhost_creating)) {
+        return 0;  // Accept all callbacks during initialization
+    }
+
+    // Normal operation requires valid context
     if (!ws_context) {
         log_this("WebSocket", "No server context available for callback %d", LOG_LEVEL_ERROR, reason);
         return -1;
     }
 
-    // Session validation for callbacks that require it
-    if (!session && 
-        reason != LWS_CALLBACK_SERVER_NEW_CLIENT_INSTANTIATED &&
-        reason != LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION &&
-        reason != LWS_CALLBACK_FILTER_NETWORK_CONNECTION) {
-        log_this("WebSocket", "Invalid session data for callback %d", LOG_LEVEL_ERROR, reason);
-        return -1;
-    }
-
-    // Handle shutdown state
+    // Handle shutdown state first
     if (ws_context->shutdown) {
         switch (reason) {
             // Allow cleanup callbacks during shutdown
@@ -109,6 +81,12 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
             case LWS_CALLBACK_CLOSED:
             case LWS_CALLBACK_PROTOCOL_DESTROY:
                 if (reason == LWS_CALLBACK_CLOSED || reason == LWS_CALLBACK_WSI_DESTROY) {
+                    // During shutdown, some sessions might be already cleaned up
+                    if (!session) {
+                        log_this("WebSocket", "Connection cleanup with no session during shutdown", 
+                                LOG_LEVEL_INFO, true, true, true);
+                        return 0;
+                    }
                     int result = ws_handle_connection_closed(wsi, session);
                     // Broadcast completion if this was the last connection
                     if (result == 0) {
@@ -124,9 +102,14 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 }
                 return 0;
 
-            // Allow system callbacks during shutdown
+            // Allow system callbacks during shutdown without session validation
             case LWS_CALLBACK_GET_THREAD_ID:
             case LWS_CALLBACK_EVENT_WAIT_CANCELLED:
+            case LWS_CALLBACK_ADD_POLL_FD:
+            case LWS_CALLBACK_DEL_POLL_FD:
+            case LWS_CALLBACK_CHANGE_MODE_POLL_FD:
+            case LWS_CALLBACK_LOCK_POLL:
+            case LWS_CALLBACK_UNLOCK_POLL:
                 return 0;
 
             // Reject new connections during shutdown
@@ -137,8 +120,22 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 return -1;  // Silently reject during shutdown
 
             default:
+                // During shutdown, log but don't error on missing session
+                if (!session) {
+                    log_this("WebSocket", "Ignoring callback %d during shutdown (no session)", 
+                            LOG_LEVEL_INFO, true, true, true, reason);
+                }
                 return -1;  // Silently reject other callbacks during shutdown
         }
+    }
+
+    // Session validation for normal operation
+    if (!session && 
+        reason != LWS_CALLBACK_SERVER_NEW_CLIENT_INSTANTIATED &&
+        reason != LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION &&
+        reason != LWS_CALLBACK_FILTER_NETWORK_CONNECTION) {
+        log_this("WebSocket", "Invalid session data for callback %d", LOG_LEVEL_ERROR, reason);
+        return -1;
     }
 
     // Normal operation dispatch
