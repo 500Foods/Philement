@@ -5,6 +5,7 @@
 // Project headers
 #include "utils_logging.h"
 #include "configuration.h"
+#include "logging.h"
 
 // System headers
 #include <stdio.h>
@@ -17,7 +18,7 @@
 // Thread-safe identifier generation with collision resistance
 void generate_id(char *buf, size_t len) {
     if (len < ID_LEN + 1) {
-        console_log("Utils", 3, "Buffer too small for ID");
+        log_this("Utils", "Buffer too small for ID", 3, true, false, true);
         return;
     }
 
@@ -34,73 +35,17 @@ void generate_id(char *buf, size_t len) {
     buf[ID_LEN] = '\0';
 }
 
-// Check if a message should be logged based on configuration
-static bool should_log_message(const char* subsystem, int priority) {
-    extern AppConfig *app_config;  // Get access to global config
-    if (!app_config || !app_config->Logging.Console.Enabled) {
-        return false;
+// Get the string representation of a log priority level
+const char* get_priority_label(int priority) {
+    switch (priority) {
+        case LOG_LEVEL_ALL:      return "ALL";
+        case LOG_LEVEL_INFO:     return "INFO";
+        case LOG_LEVEL_WARN:     return "WARN";
+        case LOG_LEVEL_DEBUG:    return "DEBUG";
+        case LOG_LEVEL_ERROR:    return "ERROR";
+        case LOG_LEVEL_CRITICAL: return "CRITICAL";
+        case LOG_LEVEL_NONE:     return "NONE";
+        default:                 return "UNKNOWN";
     }
-
-    // Get subsystem-specific level if configured, otherwise use default
-    int configured_level = app_config->Logging.Console.DefaultLevel;
-    
-    // Check subsystem-specific configuration
-    if (strcmp(subsystem, "ThreadMgmt") == 0) {
-        configured_level = app_config->Logging.Console.Subsystems.ThreadMgmt;
-    } else if (strcmp(subsystem, "Shutdown") == 0) {
-        configured_level = app_config->Logging.Console.Subsystems.Shutdown;
-    } else if (strcmp(subsystem, "mDNS") == 0) {
-        configured_level = app_config->Logging.Console.Subsystems.mDNS;
-    } else if (strcmp(subsystem, "WebServer") == 0) {
-        configured_level = app_config->Logging.Console.Subsystems.WebServer;
-    } else if (strcmp(subsystem, "WebSocket") == 0) {
-        configured_level = app_config->Logging.Console.Subsystems.WebSocket;
-    } else if (strcmp(subsystem, "PrintQueue") == 0) {
-        configured_level = app_config->Logging.Console.Subsystems.PrintQueue;
-    } else if (strcmp(subsystem, "LogQueueManager") == 0) {
-        configured_level = app_config->Logging.Console.Subsystems.LogQueueManager;
-    }
-
-    // Special handling for ALL and NONE
-    if (configured_level == LOG_LEVEL_ALL) return true;
-    if (configured_level == LOG_LEVEL_NONE) return false;
-
-    // For normal levels, message priority must be >= configured level
-    // This ensures that:
-    // - When level is set to INFO (1), we log messages with priority >= 1 (INFO through CRITICAL)
-    // - When level is set to ERROR (4), we log messages with priority >= 4 (ERROR and CRITICAL)
-    // - When level is set to CRITICAL (5), we log only messages with priority >= 5 (CRITICAL)
-    return priority >= configured_level;
 }
 
-// Format and output a log message directly to console
-void console_log(const char* subsystem, int priority, const char* message) {
-    // Check if this message should be logged based on configuration
-    if (!should_log_message(subsystem, priority)) {
-         return;
-    }
-
-    // Get current time with millisecond precision
-    struct timeval tv;
-    struct tm* tm_info;
-    gettimeofday(&tv, NULL);
-    tm_info = localtime(&tv.tv_sec);
-
-    // Format timestamp
-    char timestamp[32];
-    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", tm_info);
-    char timestamp_ms[36];
-    snprintf(timestamp_ms, sizeof(timestamp_ms), "%s.%03d", timestamp, (int)(tv.tv_usec / 1000));
-
-    // Format priority and subsystem labels with proper padding
-    char formatted_priority[MAX_PRIORITY_LABEL_WIDTH + 5];
-    snprintf(formatted_priority, sizeof(formatted_priority), "[ %-*s ]", 
-             MAX_PRIORITY_LABEL_WIDTH, get_priority_label(priority));
-
-    char formatted_subsystem[MAX_SUBSYSTEM_LABEL_WIDTH + 5];
-    snprintf(formatted_subsystem, sizeof(formatted_subsystem), "[ %-*s ]", 
-             MAX_SUBSYSTEM_LABEL_WIDTH, subsystem);
-
-    // Output the formatted log entry
-    printf("%s  %s  %s  %s\n", timestamp_ms, formatted_priority, formatted_subsystem, message);
-}

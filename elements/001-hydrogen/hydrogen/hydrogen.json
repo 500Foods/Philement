@@ -13,10 +13,69 @@
     "WebSocket": {
         "Enabled": true,
         "EnableIPv6": true,
-        "Port": 5001
+        "Port": 5001,
+        "MaxMessageSize": 2048,
+        "ConnectionTimeouts": {
+            "ShutdownWaitSeconds": 2,
+            "ServiceLoopDelayMs": 50,
+            "ConnectionCleanupMs": 500
+        }
+    },
+    "Network": {
+        "Interfaces": {
+            "MaxInterfaces": 16,
+            "MaxIPsPerInterface": 8,
+            "MaxInterfaceNameLength": 16,
+            "MaxIPAddressLength": 46
+        },
+        "PortAllocation": {
+            "StartPort": 5000,
+            "EndPort": 65535,
+            "ReservedPorts": [22, 80, 443],
+            "RetryAttempts": 5
+        }
+    },
+    "SystemResources": {
+        "Queues": {
+            "MaxQueueBlocks": 128,
+            "QueueHashSize": 256,
+            "DefaultQueueCapacity": 1024
+        },
+        "Buffers": {
+            "DefaultMessageBuffer": 1024,
+            "MaxLogMessageSize": 2048,
+            "PathBufferSize": 256,
+            "LineBufferSize": 512
+        }
+    },
+    "SystemMonitoring": {
+        "Intervals": {
+            "StatusUpdateMs": 1000,
+            "ResourceCheckMs": 5000,
+            "MetricsUpdateMs": 2000
+        },
+        "Thresholds": {
+            "MemoryWarningPercent": 90,
+            "DiskSpaceWarningPercent": 85,
+            "LoadAverageWarning": 5.0
+        }
     },
     "PrintQueue": {
-        "Enabled": true
+        "Enabled": true,
+        "QueueSettings": {
+            "DefaultPriority": 1,
+            "EmergencyPriority": 0,
+            "MaintenancePriority": 2,
+            "SystemPriority": 3
+        },
+        "Timeouts": {
+            "ShutdownWaitMs": 500,
+            "JobProcessingTimeoutMs": 1000
+        },
+        "Buffers": {
+            "JobMessageSize": 256,
+            "StatusMessageSize": 256
+        }
     },
     "Logging": {
         "Levels": [

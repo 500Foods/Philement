@@ -54,6 +54,27 @@
 // Project headers
 #include "beryllium.h"
 #include "utils.h"
+#include "logging.h"
+
+/**
+ * Create a BerylliumConfig from AppConfig
+ * @param app_config The application configuration
+ * @return BerylliumConfig initialized with values from app_config
+ */
+BerylliumConfig beryllium_create_config(const AppConfig *app_config) {
+    BerylliumConfig config = {
+        .acceleration = app_config ? app_config->motion.acceleration : DEFAULT_ACCELERATION,
+        .z_acceleration = app_config ? app_config->motion.z_acceleration : DEFAULT_Z_ACCELERATION,
+        .extruder_acceleration = app_config ? app_config->motion.e_acceleration : DEFAULT_E_ACCELERATION,
+        .max_speed_xy = app_config ? app_config->motion.max_speed_xy : DEFAULT_MAX_SPEED_XY,
+        .max_speed_travel = app_config ? app_config->motion.max_speed_travel : DEFAULT_MAX_SPEED_TRAVEL,
+        .max_speed_z = app_config ? app_config->motion.max_speed_z : DEFAULT_MAX_SPEED_Z,
+        .default_feedrate = DEFAULT_FEEDRATE,  // Not configurable - G-code standard
+        .filament_diameter = DEFAULT_FILAMENT_DIAMETER,  // Could be made configurable in future
+        .filament_density = DEFAULT_FILAMENT_DENSITY     // Could be made configurable in future
+    };
+    return config;
+}
 
 // Generate ISO8601 timestamps for print metadata
 //
@@ -212,7 +233,7 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
     // Allocate memory for stats.object_times
     stats.object_times = calloc(MAX_LAYERS, sizeof(double *));
     if (stats.object_times == NULL) {
-        console_log("Beryllium", 3, "Memory allocation failed for object_times");
+        log_this("Beryllium", "Memory allocation failed for object_times", 3, true, false, true);
         stats.success = false;
         stats.object_times = NULL;
         return stats;
@@ -222,15 +243,15 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
     stats.file_size = ftell(file);
     rewind(file); // Reset the file pointer to the beginning
 
-    double *z_values = calloc(100, sizeof(double));  // Start with 100 elements
+    double *z_values = calloc(DEFAULT_Z_VALUES_CHUNK, sizeof(double));  // Start with configured chunk size
     if (z_values == NULL) {
-        console_log("Beryllium", 3, "Memory allocation failed for z_values");
+        log_this("Beryllium", "Memory allocation failed for z_values", 3, true, false, true);
         free(stats.object_times);
         stats.object_times = NULL;
         stats.success = false;
         return stats;
     }
-    int z_values_count = 0, z_values_capacity = 100;
+    int z_values_count = 0, z_values_capacity = DEFAULT_Z_VALUES_CHUNK;
 
 
     while (fgets(line, sizeof(line), file) != NULL) {
@@ -246,7 +267,7 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
                 int name_length = name_end - name_start;
                 object_infos = realloc(object_infos, (num_objects + 1) * sizeof(ObjectInfo));
                 if (object_infos == NULL) {
-                    console_log("Beryllium", 3, "Memory reallocation failed for object_infos");
+                    log_this("Beryllium", "Memory reallocation failed for object_infos", 3, true, false, true);
                     free(stats.object_times);
                     stats.object_times = NULL;
                     free(z_values);
@@ -260,7 +281,7 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
                 object_infos[num_objects].name = strndup(name_start, name_length);
 	    //printf("Object defined: %s\n",object_infos[num_objects].name);
                 if (object_infos[num_objects].name == NULL) {
-                    console_log("Beryllium", 3, "Memory allocation failed for object name");
+                    log_this("Beryllium", "Memory allocation failed for object name", 3, true, false, true);
                     free(stats.object_times);
                     stats.object_times = NULL;
                     free(z_values);
@@ -317,7 +338,7 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
                 if (stats.object_times[current_layer] == NULL) {
                     stats.object_times[current_layer] = calloc(num_objects, sizeof(double));
                     if (stats.object_times[current_layer] == NULL) {
-                        console_log("Beryllium", 3, "Memory allocation failed for layer object times");
+                        log_this("Beryllium", "Memory allocation failed for layer object times", 3, true, false, true);
                         // Free previously allocated layer arrays
                         for (int i = 0; i < current_layer; i++) {
                             free(stats.object_times[i]);
@@ -395,10 +416,10 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
 
                 if (!z_exists) {
                     if (z_values_count == z_values_capacity) {
-                        z_values_capacity += 100;
+                        z_values_capacity += DEFAULT_Z_VALUES_CHUNK;
                         double *new_z_values = realloc(z_values, z_values_capacity * sizeof(double));
                         if (new_z_values == NULL) {
-                            console_log("Beryllium", 3, "Memory reallocation failed for z_values");
+                            log_this("Beryllium", "Memory reallocation failed for z_values", 3, true, false, true);
                             free(z_values);
                             for (int i = 0; i < stats.layer_count_slicer; i++) {
                                 free(stats.object_times[i]);

@@ -13,23 +13,60 @@
 QueueMemoryMetrics log_queue_memory;
 QueueMemoryMetrics print_queue_memory;
 
-// Initialize queue memory tracking
-void init_queue_memory(QueueMemoryMetrics *queue) {
+// Initialize queue memory tracking with optional configuration
+void init_queue_memory(QueueMemoryMetrics *queue, const AppConfig *config) {
     queue->block_count = 0;
     queue->total_allocation = 0;
     queue->entry_count = 0;
     queue->metrics.virtual_bytes = 0;
     queue->metrics.resident_bytes = 0;
     memset(queue->block_sizes, 0, sizeof(size_t) * MAX_QUEUE_BLOCKS);
+    
+    // Set initial limits and initialization state
+    if (config) {
+        queue->limits.max_blocks = config->resources.max_queue_blocks;
+        queue->limits.block_limit = config->resources.max_queue_blocks;
+        queue->limits.early_init = 0;
+    } else {
+        queue->limits.max_blocks = MAX_QUEUE_BLOCKS;
+        queue->limits.block_limit = DEFAULT_BLOCK_LIMIT;
+        queue->limits.early_init = 1;
+    }
 }
-
+// Update queue limits from configuration
+void update_queue_limits(QueueMemoryMetrics *queue, const AppConfig *config) {
+    if (!config) return;
+    
+    // If transitioning from early init, use console_log
+    if (queue->limits.early_init) {
+        queue->limits.max_blocks = config->resources.max_queue_blocks;
+        queue->limits.block_limit = config->resources.max_queue_blocks;
+        queue->limits.early_init = 0;
+        
+        if (queue->block_count > queue->limits.block_limit) {
+            log_this("Queue", "Warning: Current queue usage (%zu blocks) exceeds new limit (%zu blocks)",
+                    2, true, false, true, queue->block_count, queue->limits.block_limit);
+        }
+    } else {
+        queue->limits.max_blocks = config->resources.max_queue_blocks;
+        queue->limits.block_limit = config->resources.max_queue_blocks;
+        
+        // Use log_this for normal operation
+        if (queue->block_count > queue->limits.block_limit) {
+            log_this("Queue", "Warning: Current queue usage (%zu blocks) exceeds new limit (%zu blocks)",
+                    2, true, true, true, queue->block_count, queue->limits.block_limit);
+        }
+    }
+}
 // Track memory allocation in a queue
 void track_queue_allocation(QueueMemoryMetrics *queue, size_t size) {
-    if (queue->block_count < MAX_QUEUE_BLOCKS) {
+    if (queue->block_count < queue->limits.block_limit) {
         queue->block_sizes[queue->block_count++] = size;
         queue->total_allocation += size;
         queue->metrics.virtual_bytes = queue->total_allocation;
         queue->metrics.resident_bytes = queue->total_allocation;
+    } else {
+        log_this("Queue", "Queue block limit reached (%zu blocks)", 2, true, true, true, queue->limits.block_limit);
     }
 }
 

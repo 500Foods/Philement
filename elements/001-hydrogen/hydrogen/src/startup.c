@@ -82,7 +82,7 @@ static int init_logging(const char *config_path) {
     QueueAttributes system_log_attrs = {0};
     Queue* system_log_queue = queue_create("SystemLog", &system_log_attrs);
     if (!system_log_queue) {
-        console_log("Initialization", 3, "Failed to create SystemLog queue");
+        log_this("Initialization", "Failed to create SystemLog queue", 3, true, false, true);
         return 0;
     }
 
@@ -94,12 +94,15 @@ static int init_logging(const char *config_path) {
         return 0;
     }
 
+    // Update queue limits from loaded configuration
+    update_queue_limits_from_config(app_config);
+
     // Initialize file logging
     init_file_logging(app_config->log_file_path);
 
     // Launch log queue manager
     if (pthread_create(&log_thread, NULL, log_queue_manager, system_log_queue) != 0) {
-        console_log("Initialization", 3, "Failed to start log queue manager thread");
+        log_this("Initialization", "Failed to start log queue manager thread", 3, true, false, true);
         queue_destroy(system_log_queue);
         return 0;
     }

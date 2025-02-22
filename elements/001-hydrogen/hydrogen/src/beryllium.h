@@ -43,25 +43,20 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include "configuration.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
-// Max length of a G-Code Line
-#define MAX_LINE_LENGTH 1024
+// Max length of a G-Code Line - using system default
+#define MAX_LINE_LENGTH DEFAULT_LINE_BUFFER_SIZE
 
-// Maximum number of layers to output for timing function
-#define MAX_LAYERS 10000
+// Maximum number of layers - using system default
+#define MAX_LAYERS DEFAULT_MAX_LAYERS
 
-// Physical printer capabilities
-#define ACCELERATION       1000.0  // Acceleration
-#define Z_ACCELERATION     250.0   // Z Acceleration
-#define E_ACCELERATION     2000.0  // E Acceleration
-#define MAX_SPEED_XY       5000.0  // Maximum speed for printing moves (mm/s)
-#define MAX_SPEED_TRAVEL   5000.0  // Maximum speed for non-printing moves (mm/s)
-#define MAX_SPEED_Z        10.0    // Maximum speed in Z-axis (mm/s)
-#define DEFAULT_FEEDRATE   7500.0  // Default feedrate in mm/min
+// Default feedrate in mm/min (not configurable as it's a G-code standard)
+#define DEFAULT_FEEDRATE   7500.0
 
 // Filament properties
 #define DEFAULT_FILAMENT_DIAMETER 1.75  // mm
@@ -105,6 +100,13 @@ typedef struct {
 } BerylliumStats;
 
 // Function Prototypes
+
+/**
+ * Create a BerylliumConfig from AppConfig
+ * @param app_config The application configuration
+ * @return BerylliumConfig initialized with values from app_config
+ */
+BerylliumConfig beryllium_create_config(const AppConfig *app_config);
 
 /**
  * Get current timestamp in ISO8601 format

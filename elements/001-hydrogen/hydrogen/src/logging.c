@@ -58,10 +58,41 @@
 #include "queue.h"
 #include "utils.h"
 
+// Global configuration
+extern AppConfig* app_config;
+
+// Forward declarations
 extern volatile sig_atomic_t log_queue_shutdown;
 extern pthread_cond_t terminate_cond;
 extern pthread_mutex_t terminate_mutex;
+
+// Internal implementation details
 static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/*
+ * INTERNAL USE ONLY - Do not call directly!
+ * 
+ * This is an internal helper function used by log_this() to handle console output
+ * when the logging system is not fully initialized or during shutdown.
+ * 
+ * All logging should go through log_this() which handles:
+ * - Proper initialization checks
+ * - Configuration-based filtering
+ * - Output routing
+ * - Thread safety
+ */
+static void console_log(const char* subsystem, int priority, const char* message) {
+    const char* priority_label;
+    switch (priority) {
+        case 1: priority_label = "DEBUG"; break;
+        case 2: priority_label = "INFO"; break;
+        case 3: priority_label = "WARNING"; break;
+        case 4: priority_label = "ERROR"; break;
+        case 5: priority_label = "CRITICAL"; break;
+        default: priority_label = "UNKNOWN"; break;
+    }
+    fprintf(stderr, "[%s] %s: %s\n", subsystem, priority_label, message);
+}
 
 // Log a message with configurable output targets and priority
 //
@@ -92,14 +123,13 @@ static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 void log_this(const char* subsystem, const char* format, int priority, bool LogConsole, bool LogDatabase, bool LogFile, ...) {
     pthread_mutex_lock(&log_mutex);
 
-    char details[1024];  // Increased buffer size to accommodate formatted string
+    char details[DEFAULT_LOG_ENTRY_SIZE];
     va_list args;
     va_start(args, LogFile);
     vsnprintf(details, sizeof(details), format, args);
     va_end(args);
 
-    // Create a JSON string with the log message details
-    char json_message[2048];  // Increased buffer size
+    char json_message[DEFAULT_MAX_LOG_MESSAGE_SIZE];
     snprintf(json_message, sizeof(json_message),
              "{\"subsystem\":\"%s\",\"details\":\"%s\",\"priority\":%d,\"LogConsole\":%s,\"LogDatabase\":%s,\"LogFile\":%s}",
              subsystem, details, priority, LogConsole ? "true" : "false", LogDatabase ? "true" : "false", LogFile ? "true" : "false");

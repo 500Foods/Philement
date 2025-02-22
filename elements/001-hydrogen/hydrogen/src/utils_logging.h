@@ -1,11 +1,13 @@
 /*
- * Logging and ID generation utilities.
+ * ID generation and logging utilities.
  * 
  * Provides functionality for:
- * - Console logging
- * - ID generation
+ * - ID generation for unique identifiers
  * - Log message formatting
  * - Priority label handling
+ * 
+ * Note: Console logging functionality has been moved to logging.h
+ * to maintain proper separation of concerns and avoid circular dependencies.
  */
 
 #ifndef UTILS_LOGGING_H
@@ -20,10 +22,10 @@
 // Include configuration for label widths
 #include "configuration.h"
 
-// Console logging function
-void console_log(const char* subsystem, int priority, const char* message);
-
 // ID generation function
 void generate_id(char *buf, size_t len);
+
+// Priority label handling
+const char* get_priority_label(int priority);
 
 #endif // UTILS_LOGGING_H
