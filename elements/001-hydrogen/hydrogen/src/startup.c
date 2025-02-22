@@ -338,6 +338,9 @@ static void log_app_info(void) {
 // Returns 1 on successful startup, 0 on critical failure
 // Critical failures trigger cleanup of initialized components to prevent resource leaks
 int startup_hydrogen(const char *config_path) {
+    // Record the server start time first thing
+    set_server_start_time();
+    
     // Seed random number generator
     srand((unsigned int)time(NULL));
     

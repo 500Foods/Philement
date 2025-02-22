@@ -104,20 +104,30 @@ void log_this(const char* subsystem, const char* format, int priority, bool LogC
              "{\"subsystem\":\"%s\",\"details\":\"%s\",\"priority\":%d,\"LogConsole\":%s,\"LogDatabase\":%s,\"LogFile\":%s}",
              subsystem, details, priority, LogConsole ? "true" : "false", LogDatabase ? "true" : "false", LogFile ? "true" : "false");
 
-    // Enqueue the log message
-    Queue* log_queue = queue_find("SystemLog");
-    if (log_queue && !log_queue_shutdown) {
-        queue_enqueue(log_queue, json_message, strlen(json_message), priority);
+    // Try to use queue system if it's available and running
+    Queue* log_queue = NULL;
+    extern int queue_system_initialized;  // From queue.c
+    
+    // If queue system is initialized and not shutting down, try to use it
+    bool use_console = true;  // Default to using console unless queue succeeds
+    if (queue_system_initialized && !log_queue_shutdown) {
+        log_queue = queue_find("SystemLog");
+        if (log_queue) {
+            if (queue_enqueue(log_queue, json_message, strlen(json_message), priority) == 0) {
+                // Queue succeeded, don't need console fallback
+                use_console = false;
+                // Signal the log queue manager
+                pthread_cond_signal(&terminate_cond);
+            }
+        }
+    }
 
-        // Signal the log queue manager
-        pthread_cond_signal(&terminate_cond);
-
-        // If this is a shutdown-related log, sleep to ensure logging completes
-        //if ((strcmp(subsystem, "Shutdown") == 0) || (strcmp(subsystem,"Initialization") == 0) || (strcasestr(format, "shutdown") != NULL)) {
-        //    usleep(100000);  // Sleep for 100ms
-       // }
-    } else if (LogConsole) {
-        // If the log queue is shutting down or not available, use formatted console output
+    // Use console output if:
+    // - Queue system is not initialized
+    // - Queue system is shutting down
+    // - Queue is not found
+    // - Queue enqueue failed
+    if (LogConsole && use_console) {
         console_log(subsystem, priority, details);
     }
 

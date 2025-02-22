@@ -55,6 +55,7 @@
 #include "logging.h"
 
 QueueSystem queue_system;
+int queue_system_initialized = 0;  // Initialize to 0 (not initialized)
 
 // DJB2 hash function chosen for queue name lookup because:
 // 1. Excellent distribution - Minimizes collisions for string keys
@@ -86,6 +87,7 @@ static unsigned int hash(const char* str) {
 void queue_system_init() {
     memset(&queue_system, 0, sizeof(QueueSystem));
     pthread_mutex_init(&queue_system.mutex, NULL);
+    queue_system_initialized = 1;  // Mark as initialized
 }
 
 /*
@@ -104,6 +106,7 @@ void queue_system_init() {
  * - Complete resource release
  */
 void queue_system_destroy() {
+    queue_system_initialized = 0;  // Mark as not initialized
     pthread_mutex_lock(&queue_system.mutex);
     for (int i = 0; i < QUEUE_HASH_SIZE; i++) {
         Queue* queue = queue_system.queues[i];
