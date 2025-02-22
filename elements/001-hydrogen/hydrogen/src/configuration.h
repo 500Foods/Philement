@@ -52,6 +52,53 @@
 #define DEFAULT_MAX_UPLOAD_SIZE (2ULL * 1024 * 1024 * 1024)  // 2GB limit for safety
 #define NUM_PRIORITY_LEVELS 7              // ALL, INFO, WARN, DEBUG, ERROR, CRITICAL, NONE
 
+/* System Resource Defaults */
+#define DEFAULT_MAX_QUEUE_BLOCKS 128
+#define DEFAULT_QUEUE_HASH_SIZE 256
+#define DEFAULT_QUEUE_CAPACITY 1024
+/* Message and Log Buffer Defaults */
+#define DEFAULT_LOG_BUFFER_SIZE 256
+#define DEFAULT_MESSAGE_BUFFER_SIZE 1024
+#define DEFAULT_MAX_LOG_MESSAGE_SIZE 2048
+#define DEFAULT_LINE_BUFFER_SIZE 512
+#define DEFAULT_POST_PROCESSOR_BUFFER_SIZE 8192  // Buffer size for MHD post processor
+#define DEFAULT_JSON_MESSAGE_SIZE 2048
+#define DEFAULT_LOG_ENTRY_SIZE 1024
+#define DEFAULT_FD_TYPE_SIZE 32
+#define DEFAULT_FD_DESCRIPTION_SIZE 256
+
+/* Network Defaults */
+#define DEFAULT_MAX_INTERFACES 16
+#define DEFAULT_MAX_IPS_PER_INTERFACE 8
+#define DEFAULT_MAX_INTERFACE_NAME_LENGTH 16
+#define DEFAULT_MAX_IP_ADDRESS_LENGTH 46
+
+/* System Monitoring Defaults */
+#define DEFAULT_STATUS_UPDATE_MS 1000
+#define DEFAULT_RESOURCE_CHECK_MS 5000
+#define DEFAULT_METRICS_UPDATE_MS 2000
+#define DEFAULT_MEMORY_WARNING_PERCENT 90
+#define DEFAULT_DISK_WARNING_PERCENT 85
+#define DEFAULT_LOAD_WARNING 5.0
+
+/* Print Queue Defaults */
+#define DEFAULT_SHUTDOWN_WAIT_MS 500
+#define DEFAULT_JOB_PROCESSING_TIMEOUT_MS 1000
+
+/* Printer Motion Defaults */
+#define DEFAULT_MAX_LAYERS 10000
+#define DEFAULT_ACCELERATION 1000.0
+#define DEFAULT_Z_ACCELERATION 250.0
+#define DEFAULT_E_ACCELERATION 2000.0
+#define DEFAULT_MAX_SPEED_XY 5000.0
+#define DEFAULT_MAX_SPEED_TRAVEL 5000.0
+#define DEFAULT_MAX_SPEED_Z 10.0
+#define DEFAULT_Z_VALUES_CHUNK 100
+
+/* Thread Management Defaults */
+#define DEFAULT_THREAD_STARTUP_DELAY_US 10000
+#define DEFAULT_THREAD_RETRY_DELAY_US 1000
+
 /*
  * Logging Priority System:
  * Maps numeric priority levels to human-readable labels for consistent
@@ -173,7 +220,67 @@ typedef struct {
  * scheduling, status tracking, and error handling.
  */
 typedef struct {
+    size_t max_queue_blocks;
+    size_t queue_hash_size;
+    size_t default_capacity;
+    size_t message_buffer_size;
+    size_t max_log_message_size;
+    size_t line_buffer_size;
+    size_t log_buffer_size;      // Size for general log buffers
+    size_t json_message_size;    // Size for JSON message buffers
+    size_t log_entry_size;       // Size for log entry buffers
+    size_t fd_type_size;         // Size for file descriptor type strings
+    size_t fd_description_size;  // Size for file descriptor descriptions
+    size_t post_processor_buffer_size;  // Size for MHD post processor buffer
+} SystemResourcesConfig;
+
+typedef struct {
+    size_t max_interfaces;
+    size_t max_ips_per_interface;
+    size_t max_interface_name_length;
+    size_t max_ip_address_length;
+    int start_port;
+    int end_port;
+    int* reserved_ports;
+    size_t reserved_ports_count;
+} NetworkConfig;
+
+typedef struct {
+    size_t status_update_ms;
+    size_t resource_check_ms;
+    size_t metrics_update_ms;
+    int memory_warning_percent;
+    int disk_warning_percent;
+    float load_warning;
+} SystemMonitoringConfig;
+
+typedef struct {
+    size_t max_layers;          // Maximum number of layers
+    double acceleration;        // Default acceleration (mm/s²)
+    double z_acceleration;      // Z-axis acceleration (mm/s²)
+    double e_acceleration;      // Extruder acceleration (mm/s²)
+    double max_speed_xy;       // Maximum XY speed (mm/s)
+    double max_speed_travel;   // Maximum travel speed (mm/s)
+    double max_speed_z;        // Maximum Z speed (mm/s)
+    size_t z_values_chunk;     // Size of Z-values array chunks
+} PrinterMotionConfig;
+
+typedef struct {
     int enabled;            // Runtime toggle for print queue
+    struct {
+        int default_priority;
+        int emergency_priority;
+        int maintenance_priority;
+        int system_priority;
+    } priorities;
+    struct {
+        size_t shutdown_wait_ms;
+        size_t job_processing_timeout_ms;
+    } timeouts;
+    struct {
+        size_t job_message_size;
+        size_t status_message_size;
+    } buffers;
 } PrintQueueConfig;
 
 /*
@@ -189,8 +296,12 @@ typedef struct {
     WebConfig web;         // HTTP server settings
     WebSocketConfig websocket; // WebSocket server settings
     mDNSConfig mdns;       // Service discovery settings
-    PrintQueueConfig print_queue; // Print management settings
-    LoggingConfig Logging;  // Logging configuration
+    PrintQueueConfig print_queue;     // Print management settings
+    LoggingConfig Logging;            // Logging configuration
+    SystemResourcesConfig resources;   // System resource settings
+    NetworkConfig network;            // Network interface settings
+    SystemMonitoringConfig monitoring; // System monitoring settings
+    PrinterMotionConfig motion;       // Printer motion settings
 } AppConfig;
 /*
  * Global Configuration State:

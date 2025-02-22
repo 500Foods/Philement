@@ -84,13 +84,13 @@ char* get_executable_path() {
     char path[PATH_MAX];
     ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
     if (len == -1) {
-        console_log("Configuration", 3, "Error reading /proc/self/exe");
+        log_this("Configuration", "Error reading /proc/self/exe", 3, true, false, true);
         return NULL;
     }
     path[len] = '\0';
     char* result = strdup(path);
     if (!result) {
-        console_log("Configuration", 3, "Error allocating memory for executable path");
+        log_this("Configuration", "Error allocating memory for executable path", 3, true, false, true);
         return NULL;
     }
     return result;
@@ -272,9 +272,96 @@ void create_default_config(const char* config_path) {
     json_object_set_new(mdns, "Services", services);
     json_object_set_new(root, "mDNS", mdns);
 
+    // System Resources Configuration
+    json_t* resources = json_object();
+    
+    json_t* queues = json_object();
+    json_object_set_new(queues, "MaxQueueBlocks", json_integer(DEFAULT_MAX_QUEUE_BLOCKS));
+    json_object_set_new(queues, "QueueHashSize", json_integer(DEFAULT_QUEUE_HASH_SIZE));
+    json_object_set_new(queues, "DefaultQueueCapacity", json_integer(DEFAULT_QUEUE_CAPACITY));
+    json_object_set_new(resources, "Queues", queues);
+
+    json_t* buffers = json_object();
+    json_object_set_new(buffers, "DefaultMessageBuffer", json_integer(DEFAULT_MESSAGE_BUFFER_SIZE));
+    json_object_set_new(buffers, "MaxLogMessageSize", json_integer(DEFAULT_MAX_LOG_MESSAGE_SIZE));
+    json_object_set_new(buffers, "LineBufferSize", json_integer(DEFAULT_LINE_BUFFER_SIZE));
+    json_object_set_new(buffers, "PostProcessorBuffer", json_integer(DEFAULT_POST_PROCESSOR_BUFFER_SIZE));
+    json_object_set_new(resources, "Buffers", buffers);
+    
+    json_object_set_new(root, "SystemResources", resources);
+
+    // Network Configuration
+    json_t* network = json_object();
+    
+    json_t* interfaces = json_object();
+    json_object_set_new(interfaces, "MaxInterfaces", json_integer(DEFAULT_MAX_INTERFACES));
+    json_object_set_new(interfaces, "MaxIPsPerInterface", json_integer(DEFAULT_MAX_IPS_PER_INTERFACE));
+    json_object_set_new(interfaces, "MaxInterfaceNameLength", json_integer(DEFAULT_MAX_INTERFACE_NAME_LENGTH));
+    json_object_set_new(interfaces, "MaxIPAddressLength", json_integer(DEFAULT_MAX_IP_ADDRESS_LENGTH));
+    json_object_set_new(network, "Interfaces", interfaces);
+
+    json_t* port_allocation = json_object();
+    json_object_set_new(port_allocation, "StartPort", json_integer(5000));
+    json_object_set_new(port_allocation, "EndPort", json_integer(65535));
+    json_t* reserved_ports = json_array();
+    json_array_append_new(reserved_ports, json_integer(22));
+    json_array_append_new(reserved_ports, json_integer(80));
+    json_array_append_new(reserved_ports, json_integer(443));
+    json_object_set_new(port_allocation, "ReservedPorts", reserved_ports);
+    json_object_set_new(network, "PortAllocation", port_allocation);
+    
+    json_object_set_new(root, "Network", network);
+
+    // System Monitoring Configuration
+    json_t* monitoring = json_object();
+    
+    json_t* intervals = json_object();
+    json_object_set_new(intervals, "StatusUpdateMs", json_integer(DEFAULT_STATUS_UPDATE_MS));
+    json_object_set_new(intervals, "ResourceCheckMs", json_integer(DEFAULT_RESOURCE_CHECK_MS));
+    json_object_set_new(intervals, "MetricsUpdateMs", json_integer(DEFAULT_METRICS_UPDATE_MS));
+    json_object_set_new(monitoring, "Intervals", intervals);
+
+    json_t* thresholds = json_object();
+    json_object_set_new(thresholds, "MemoryWarningPercent", json_integer(DEFAULT_MEMORY_WARNING_PERCENT));
+    json_object_set_new(thresholds, "DiskSpaceWarningPercent", json_integer(DEFAULT_DISK_WARNING_PERCENT));
+    json_object_set_new(thresholds, "LoadAverageWarning", json_real(DEFAULT_LOAD_WARNING));
+    json_object_set_new(monitoring, "Thresholds", thresholds);
+    
+    json_object_set_new(root, "SystemMonitoring", monitoring);
+
+    // Printer Motion Configuration
+    json_t* motion = json_object();
+    json_object_set_new(motion, "MaxLayers", json_integer(DEFAULT_MAX_LAYERS));
+    json_object_set_new(motion, "Acceleration", json_real(DEFAULT_ACCELERATION));
+    json_object_set_new(motion, "ZAcceleration", json_real(DEFAULT_Z_ACCELERATION));
+    json_object_set_new(motion, "EAcceleration", json_real(DEFAULT_E_ACCELERATION));
+    json_object_set_new(motion, "MaxSpeedXY", json_real(DEFAULT_MAX_SPEED_XY));
+    json_object_set_new(motion, "MaxSpeedTravel", json_real(DEFAULT_MAX_SPEED_TRAVEL));
+    json_object_set_new(motion, "MaxSpeedZ", json_real(DEFAULT_MAX_SPEED_Z));
+    json_object_set_new(motion, "ZValuesChunk", json_integer(DEFAULT_Z_VALUES_CHUNK));
+    json_object_set_new(root, "Motion", motion);
+
     // Print Queue Configuration
     json_t* print_queue = json_object();
     json_object_set_new(print_queue, "Enabled", json_boolean(1));
+    
+    json_t* queue_settings = json_object();
+    json_object_set_new(queue_settings, "DefaultPriority", json_integer(1));
+    json_object_set_new(queue_settings, "EmergencyPriority", json_integer(0));
+    json_object_set_new(queue_settings, "MaintenancePriority", json_integer(2));
+    json_object_set_new(queue_settings, "SystemPriority", json_integer(3));
+    json_object_set_new(print_queue, "QueueSettings", queue_settings);
+
+    json_t* queue_timeouts = json_object();
+    json_object_set_new(queue_timeouts, "ShutdownWaitMs", json_integer(DEFAULT_SHUTDOWN_WAIT_MS));
+    json_object_set_new(queue_timeouts, "JobProcessingTimeoutMs", json_integer(DEFAULT_JOB_PROCESSING_TIMEOUT_MS));
+    json_object_set_new(print_queue, "Timeouts", queue_timeouts);
+
+    json_t* queue_buffers = json_object();
+    json_object_set_new(queue_buffers, "JobMessageSize", json_integer(256));
+    json_object_set_new(queue_buffers, "StatusMessageSize", json_integer(256));
+    json_object_set_new(print_queue, "Buffers", queue_buffers);
+    
     json_object_set_new(root, "PrintQueue", print_queue);
 
     if (json_dump_file(root, config_path, JSON_INDENT(4)) != 0) {
@@ -319,13 +406,13 @@ AppConfig* load_config(const char* config_path) {
     json_t* root = json_load_file(config_path, 0, &error);
 
     if (!root) {
-        console_log("Configuration", 3, "Failed to load config file");
+        log_this("Configuration", "Failed to load config file", 3, true, false, true);
         return NULL;
     }
 
     AppConfig* config = calloc(1, sizeof(AppConfig));
     if (!config) {
-        console_log("Configuration", 3, "Failed to allocate memory for config");
+        log_this("Configuration", "Failed to allocate memory for config", 3, true, false, true);
         json_decref(root);
         return NULL;
     }
@@ -333,7 +420,7 @@ AppConfig* load_config(const char* config_path) {
     // Set executable path
     config->executable_path = get_executable_path();
     if (!config->executable_path) {
-        console_log("Configuration", 1, "Failed to get executable path, using default");
+        log_this("Configuration", "Failed to get executable path, using default", 1, true, false, true);
         config->executable_path = strdup("./hydrogen");
     }
 
@@ -491,15 +578,238 @@ AppConfig* load_config(const char* config_path) {
         }
     }
 
+    // System Resources Configuration
+    json_t* resources = json_object_get(root, "SystemResources");
+    if (json_is_object(resources)) {
+        json_t* queues = json_object_get(resources, "Queues");
+        if (json_is_object(queues)) {
+            json_t* val;
+            val = json_object_get(queues, "MaxQueueBlocks");
+            config->resources.max_queue_blocks = json_is_integer(val) ? json_integer_value(val) : DEFAULT_MAX_QUEUE_BLOCKS;
+            
+            val = json_object_get(queues, "QueueHashSize");
+            config->resources.queue_hash_size = json_is_integer(val) ? json_integer_value(val) : DEFAULT_QUEUE_HASH_SIZE;
+            
+            val = json_object_get(queues, "DefaultQueueCapacity");
+            config->resources.default_capacity = json_is_integer(val) ? json_integer_value(val) : DEFAULT_QUEUE_CAPACITY;
+        }
+
+        json_t* buffers = json_object_get(resources, "Buffers");
+        if (json_is_object(buffers)) {
+            json_t* val;
+            val = json_object_get(buffers, "DefaultMessageBuffer");
+            config->resources.message_buffer_size = json_is_integer(val) ? json_integer_value(val) : DEFAULT_MESSAGE_BUFFER_SIZE;
+            
+            val = json_object_get(buffers, "MaxLogMessageSize");
+            config->resources.max_log_message_size = json_is_integer(val) ? json_integer_value(val) : DEFAULT_MAX_LOG_MESSAGE_SIZE;
+            
+            val = json_object_get(buffers, "LineBufferSize");
+            config->resources.line_buffer_size = json_is_integer(val) ? json_integer_value(val) : DEFAULT_LINE_BUFFER_SIZE;
+
+            val = json_object_get(buffers, "PostProcessorBuffer");
+            config->resources.post_processor_buffer_size = json_is_integer(val) ? json_integer_value(val) : DEFAULT_POST_PROCESSOR_BUFFER_SIZE;
+
+            val = json_object_get(buffers, "LogBufferSize");
+            config->resources.log_buffer_size = json_is_integer(val) ? json_integer_value(val) : DEFAULT_LOG_BUFFER_SIZE;
+
+            val = json_object_get(buffers, "JsonMessageSize");
+            config->resources.json_message_size = json_is_integer(val) ? json_integer_value(val) : DEFAULT_JSON_MESSAGE_SIZE;
+
+            val = json_object_get(buffers, "LogEntrySize");
+            config->resources.log_entry_size = json_is_integer(val) ? json_integer_value(val) : DEFAULT_LOG_ENTRY_SIZE;
+        }
+    } else {
+        // Use defaults if section is missing
+        config->resources.max_queue_blocks = DEFAULT_MAX_QUEUE_BLOCKS;
+        config->resources.queue_hash_size = DEFAULT_QUEUE_HASH_SIZE;
+        config->resources.default_capacity = DEFAULT_QUEUE_CAPACITY;
+        config->resources.message_buffer_size = DEFAULT_MESSAGE_BUFFER_SIZE;
+        config->resources.max_log_message_size = DEFAULT_MAX_LOG_MESSAGE_SIZE;
+        config->resources.line_buffer_size = DEFAULT_LINE_BUFFER_SIZE;
+        config->resources.post_processor_buffer_size = DEFAULT_POST_PROCESSOR_BUFFER_SIZE;
+        config->resources.log_buffer_size = DEFAULT_LOG_BUFFER_SIZE;
+        config->resources.json_message_size = DEFAULT_JSON_MESSAGE_SIZE;
+        config->resources.log_entry_size = DEFAULT_LOG_ENTRY_SIZE;
+    }
+
+    // Network Configuration
+    json_t* network = json_object_get(root, "Network");
+    if (json_is_object(network)) {
+        json_t* interfaces = json_object_get(network, "Interfaces");
+        if (json_is_object(interfaces)) {
+            json_t* val;
+            val = json_object_get(interfaces, "MaxInterfaces");
+            config->network.max_interfaces = json_is_integer(val) ? json_integer_value(val) : DEFAULT_MAX_INTERFACES;
+            
+            val = json_object_get(interfaces, "MaxIPsPerInterface");
+            config->network.max_ips_per_interface = json_is_integer(val) ? json_integer_value(val) : DEFAULT_MAX_IPS_PER_INTERFACE;
+            
+            val = json_object_get(interfaces, "MaxInterfaceNameLength");
+            config->network.max_interface_name_length = json_is_integer(val) ? json_integer_value(val) : DEFAULT_MAX_INTERFACE_NAME_LENGTH;
+            
+            val = json_object_get(interfaces, "MaxIPAddressLength");
+            config->network.max_ip_address_length = json_is_integer(val) ? json_integer_value(val) : DEFAULT_MAX_IP_ADDRESS_LENGTH;
+        }
+
+        json_t* port_allocation = json_object_get(network, "PortAllocation");
+        if (json_is_object(port_allocation)) {
+            json_t* val;
+            val = json_object_get(port_allocation, "StartPort");
+            config->network.start_port = json_is_integer(val) ? json_integer_value(val) : 5000;
+            
+            val = json_object_get(port_allocation, "EndPort");
+            config->network.end_port = json_is_integer(val) ? json_integer_value(val) : 65535;
+
+            json_t* reserved_ports = json_object_get(port_allocation, "ReservedPorts");
+            if (json_is_array(reserved_ports)) {
+                config->network.reserved_ports_count = json_array_size(reserved_ports);
+                config->network.reserved_ports = malloc(sizeof(int) * config->network.reserved_ports_count);
+                for (size_t i = 0; i < config->network.reserved_ports_count; i++) {
+                    config->network.reserved_ports[i] = json_integer_value(json_array_get(reserved_ports, i));
+                }
+            }
+        }
+    } else {
+        // Use defaults if section is missing
+        config->network.max_interfaces = DEFAULT_MAX_INTERFACES;
+        config->network.max_ips_per_interface = DEFAULT_MAX_IPS_PER_INTERFACE;
+        config->network.max_interface_name_length = DEFAULT_MAX_INTERFACE_NAME_LENGTH;
+        config->network.max_ip_address_length = DEFAULT_MAX_IP_ADDRESS_LENGTH;
+        config->network.start_port = 5000;
+        config->network.end_port = 65535;
+        config->network.reserved_ports = NULL;
+        config->network.reserved_ports_count = 0;
+    }
+
+    // System Monitoring Configuration
+    json_t* monitoring = json_object_get(root, "SystemMonitoring");
+    if (json_is_object(monitoring)) {
+        json_t* intervals = json_object_get(monitoring, "Intervals");
+        if (json_is_object(intervals)) {
+            json_t* val;
+            val = json_object_get(intervals, "StatusUpdateMs");
+            config->monitoring.status_update_ms = json_is_integer(val) ? json_integer_value(val) : DEFAULT_STATUS_UPDATE_MS;
+            
+            val = json_object_get(intervals, "ResourceCheckMs");
+            config->monitoring.resource_check_ms = json_is_integer(val) ? json_integer_value(val) : DEFAULT_RESOURCE_CHECK_MS;
+            
+            val = json_object_get(intervals, "MetricsUpdateMs");
+            config->monitoring.metrics_update_ms = json_is_integer(val) ? json_integer_value(val) : DEFAULT_METRICS_UPDATE_MS;
+        }
+
+        json_t* thresholds = json_object_get(monitoring, "Thresholds");
+        if (json_is_object(thresholds)) {
+            json_t* val;
+            val = json_object_get(thresholds, "MemoryWarningPercent");
+            config->monitoring.memory_warning_percent = json_is_integer(val) ? json_integer_value(val) : DEFAULT_MEMORY_WARNING_PERCENT;
+            
+            val = json_object_get(thresholds, "DiskSpaceWarningPercent");
+            config->monitoring.disk_warning_percent = json_is_integer(val) ? json_integer_value(val) : DEFAULT_DISK_WARNING_PERCENT;
+            
+            val = json_object_get(thresholds, "LoadAverageWarning");
+            config->monitoring.load_warning = json_is_real(val) ? json_real_value(val) : DEFAULT_LOAD_WARNING;
+        }
+    } else {
+        // Use defaults if section is missing
+        config->monitoring.status_update_ms = DEFAULT_STATUS_UPDATE_MS;
+        config->monitoring.resource_check_ms = DEFAULT_RESOURCE_CHECK_MS;
+        config->monitoring.metrics_update_ms = DEFAULT_METRICS_UPDATE_MS;
+        config->monitoring.memory_warning_percent = DEFAULT_MEMORY_WARNING_PERCENT;
+        config->monitoring.disk_warning_percent = DEFAULT_DISK_WARNING_PERCENT;
+        config->monitoring.load_warning = DEFAULT_LOAD_WARNING;
+    }
+
+    // Printer Motion Configuration
+    json_t* motion = json_object_get(root, "Motion");
+    if (json_is_object(motion)) {
+        json_t* val;
+        val = json_object_get(motion, "MaxLayers");
+        config->motion.max_layers = json_is_integer(val) ? json_integer_value(val) : DEFAULT_MAX_LAYERS;
+        
+        val = json_object_get(motion, "Acceleration");
+        config->motion.acceleration = json_is_real(val) ? json_real_value(val) : DEFAULT_ACCELERATION;
+        
+        val = json_object_get(motion, "ZAcceleration");
+        config->motion.z_acceleration = json_is_real(val) ? json_real_value(val) : DEFAULT_Z_ACCELERATION;
+        
+        val = json_object_get(motion, "EAcceleration");
+        config->motion.e_acceleration = json_is_real(val) ? json_real_value(val) : DEFAULT_E_ACCELERATION;
+        
+        val = json_object_get(motion, "MaxSpeedXY");
+        config->motion.max_speed_xy = json_is_real(val) ? json_real_value(val) : DEFAULT_MAX_SPEED_XY;
+        
+        val = json_object_get(motion, "MaxSpeedTravel");
+        config->motion.max_speed_travel = json_is_real(val) ? json_real_value(val) : DEFAULT_MAX_SPEED_TRAVEL;
+        
+        val = json_object_get(motion, "MaxSpeedZ");
+        config->motion.max_speed_z = json_is_real(val) ? json_real_value(val) : DEFAULT_MAX_SPEED_Z;
+        
+        val = json_object_get(motion, "ZValuesChunk");
+        config->motion.z_values_chunk = json_is_integer(val) ? json_integer_value(val) : DEFAULT_Z_VALUES_CHUNK;
+    } else {
+        // Use defaults if section is missing
+        config->motion.max_layers = DEFAULT_MAX_LAYERS;
+        config->motion.acceleration = DEFAULT_ACCELERATION;
+        config->motion.z_acceleration = DEFAULT_Z_ACCELERATION;
+        config->motion.e_acceleration = DEFAULT_E_ACCELERATION;
+        config->motion.max_speed_xy = DEFAULT_MAX_SPEED_XY;
+        config->motion.max_speed_travel = DEFAULT_MAX_SPEED_TRAVEL;
+        config->motion.max_speed_z = DEFAULT_MAX_SPEED_Z;
+        config->motion.z_values_chunk = DEFAULT_Z_VALUES_CHUNK;
+    }
+
     // Print Queue Configuration
     json_t* print_queue = json_object_get(root, "PrintQueue");
     if (json_is_object(print_queue)) {
         json_t* enabled = json_object_get(print_queue, "Enabled");
         config->print_queue.enabled = json_is_boolean(enabled) ? json_boolean_value(enabled) : 1;
 
+        json_t* queue_settings = json_object_get(print_queue, "QueueSettings");
+        if (json_is_object(queue_settings)) {
+            json_t* val;
+            val = json_object_get(queue_settings, "DefaultPriority");
+            config->print_queue.priorities.default_priority = json_is_integer(val) ? json_integer_value(val) : 1;
+            
+            val = json_object_get(queue_settings, "EmergencyPriority");
+            config->print_queue.priorities.emergency_priority = json_is_integer(val) ? json_integer_value(val) : 0;
+            
+            val = json_object_get(queue_settings, "MaintenancePriority");
+            config->print_queue.priorities.maintenance_priority = json_is_integer(val) ? json_integer_value(val) : 2;
+            
+            val = json_object_get(queue_settings, "SystemPriority");
+            config->print_queue.priorities.system_priority = json_is_integer(val) ? json_integer_value(val) : 3;
+        }
+
+        json_t* timeouts = json_object_get(print_queue, "Timeouts");
+        if (json_is_object(timeouts)) {
+            json_t* val;
+            val = json_object_get(timeouts, "ShutdownWaitMs");
+            config->print_queue.timeouts.shutdown_wait_ms = json_is_integer(val) ? json_integer_value(val) : DEFAULT_SHUTDOWN_WAIT_MS;
+            
+            val = json_object_get(timeouts, "JobProcessingTimeoutMs");
+            config->print_queue.timeouts.job_processing_timeout_ms = json_is_integer(val) ? json_integer_value(val) : DEFAULT_JOB_PROCESSING_TIMEOUT_MS;
+        }
+
+        json_t* buffers = json_object_get(print_queue, "Buffers");
+        if (json_is_object(buffers)) {
+            json_t* val;
+            val = json_object_get(buffers, "JobMessageSize");
+            config->print_queue.buffers.job_message_size = json_is_integer(val) ? json_integer_value(val) : 256;
+            
+            val = json_object_get(buffers, "StatusMessageSize");
+            config->print_queue.buffers.status_message_size = json_is_integer(val) ? json_integer_value(val) : 256;
+        }
     } else {
         // Use defaults if print queue section is missing
         config->print_queue.enabled = 1;
+        config->print_queue.priorities.default_priority = 1;
+        config->print_queue.priorities.emergency_priority = 0;
+        config->print_queue.priorities.maintenance_priority = 2;
+        config->print_queue.priorities.system_priority = 3;
+        config->print_queue.timeouts.shutdown_wait_ms = DEFAULT_SHUTDOWN_WAIT_MS;
+        config->print_queue.timeouts.job_processing_timeout_ms = DEFAULT_JOB_PROCESSING_TIMEOUT_MS;
+        config->print_queue.buffers.job_message_size = 256;
+        config->print_queue.buffers.status_message_size = 256;
     }
 
     // Load Logging Configuration
@@ -559,23 +869,6 @@ AppConfig* load_config(const char* config_path) {
 }
 
 
-/*
- * Map numeric priority to human-readable label
- * 
- * Why use string labels?
- * - More meaningful in logs
- * - Consistent across all components
- * - Easier to grep and filter
- * - Maps to syslog priorities
- */
-const char* get_priority_label(int priority) {
-    for (int i = 0; i < NUM_PRIORITY_LEVELS; i++) {
-        if (DEFAULT_PRIORITY_LEVELS[i].value == priority) {
-            return DEFAULT_PRIORITY_LEVELS[i].label;
-        }
-    }
-    return "UNKNOWN";
-}
 
 /*
  * Calculate maximum width of priority labels

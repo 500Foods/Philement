@@ -13,10 +13,18 @@
 
 #include <stddef.h>
 
-// Constants
-#define MAX_QUEUE_BLOCKS 128
+#include "configuration.h"
+
+// Default values for early initialization
+#define MAX_QUEUE_BLOCKS 128  // Maximum possible blocks
+#define DEFAULT_BLOCK_LIMIT 64  // Default limit during early init
 
 // Memory metrics structure
+typedef struct {
+    size_t max_blocks;        // Runtime limit from configuration
+    size_t block_limit;       // Current block limit (from config)
+    int early_init;          // Flag to indicate early initialization
+} QueueLimits;
 typedef struct {
     size_t virtual_bytes;     // Virtual memory usage in bytes
     size_t resident_bytes;    // Resident memory usage in bytes
@@ -29,6 +37,7 @@ typedef struct {
     size_t entry_count;                      // Number of entries in queue
     MemoryMetrics metrics;                   // Queue memory usage
     size_t block_sizes[MAX_QUEUE_BLOCKS];    // Size of each allocated block
+    QueueLimits limits;                      // Runtime limits from configuration
 } QueueMemoryMetrics;
 
 // Global queue memory tracking
@@ -36,12 +45,16 @@ extern QueueMemoryMetrics log_queue_memory;
 extern QueueMemoryMetrics print_queue_memory;
 
 // Queue memory initialization and tracking
-void init_queue_memory(QueueMemoryMetrics *queue);
+void init_queue_memory(QueueMemoryMetrics *queue, const AppConfig *config);
+void update_queue_limits(QueueMemoryMetrics *queue, const AppConfig *config);
 void track_queue_allocation(QueueMemoryMetrics *queue, size_t size);
 void track_queue_deallocation(QueueMemoryMetrics *queue, size_t size);
 
 // Queue entry tracking
 void track_queue_entry_added(QueueMemoryMetrics *queue);
 void track_queue_entry_removed(QueueMemoryMetrics *queue);
+
+// Update all queue limits from configuration
+void update_queue_limits_from_config(const AppConfig *config);
 
 #endif // UTILS_QUEUE_H

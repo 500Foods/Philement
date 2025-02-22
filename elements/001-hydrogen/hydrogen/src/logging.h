@@ -44,6 +44,16 @@
 
 #define LOG_LINE_BREAK "――――――――――――――――――――――――――"
 
+/*
+ * Primary logging function - use this for all logging needs
+ * 
+ * This is the ONLY function that should be used for logging throughout the codebase.
+ * It handles:
+ * - Checking if logging is initialized
+ * - Applying logging filters
+ * - Routing to appropriate outputs (console, database, file)
+ * - Thread safety and synchronization
+ */
 void log_this(const char* subsystem, const char* format, int priority, bool LogConsole, bool LogDatabase, bool LogFile, ...);
 
 #endif // LOGGING_H

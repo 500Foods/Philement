@@ -50,7 +50,7 @@ static void add_thread_ids_to_service(json_t *service_status, ServiceThreads *th
 
 // Helper function to get socket information from /proc/net files
 static void get_socket_info(int inode, char *proto, int *port) {
-    char path[64];
+    char path[64];  // System path buffer - fixed size for /proc paths
     const char *net_files[] = {
         "tcp", "tcp6", "udp", "udp6"
     };
@@ -63,7 +63,7 @@ static void get_socket_info(int inode, char *proto, int *port) {
         FILE *f = fopen(path, "r");
         if (!f) continue;
         
-        char line[512];
+        char line[256];  // Fixed size for /proc/net entries
         fgets(line, sizeof(line), f); // Skip header
         
         while (fgets(line, sizeof(line), f)) {
@@ -73,7 +73,7 @@ static void get_socket_info(int inode, char *proto, int *port) {
                       &local_port, &socket_inode) == 2) {
                 if (socket_inode == (unsigned)inode) {
                     *port = local_port;
-                    strncpy(proto, net_files[i], 31);
+                    strncpy(proto, net_files[i], 31);  // Use fixed size for early initialization
                     proto[31] = '\0';
                     fclose(f);
                     return;
@@ -86,7 +86,7 @@ static void get_socket_info(int inode, char *proto, int *port) {
 
 // Helper function to get file descriptor type and description
 static void get_fd_info(int fd, FileDescriptorInfo *info) {
-    char path[64], target[256];
+    char path[64], target[256];  // System path buffers - fixed size for /proc/self/fd
     struct stat st;
     
     snprintf(path, sizeof(path), "/proc/self/fd/%d", fd);
@@ -114,16 +114,17 @@ static void get_fd_info(int fd, FileDescriptorInfo *info) {
     
     // Handle socket
     if (S_ISSOCK(st.st_mode)) {
-        char proto[32];
+    char proto[32];  // Protocol name buffer - standard size
         int port;
         get_socket_info(st.st_ino, proto, &port);
         
         snprintf(info->type, sizeof(info->type), "socket");
         if (port > 0) {
             const char *service = "";
-            if (port == 5000) service = "web server";
-            else if (port == 5001 || port == 5002) service = "websocket server";
-            else if (port == 5353) service = "mDNS";
+            // Use default ports during early initialization
+            if (port == DEFAULT_WEB_PORT) service = "web server";
+            else if (port == DEFAULT_WEBSOCKET_PORT) service = "websocket server";
+            else if (port == 5353) service = "mDNS";  // mDNS port is standard
             
             if (service[0]) {
                 snprintf(info->description, sizeof(info->description), 
@@ -167,9 +168,9 @@ static void get_fd_info(int fd, FileDescriptorInfo *info) {
         else if (strcmp(anon_type, "[timerfd]") == 0)
             snprintf(info->description, sizeof(info->description), "timer notification");
         else {
-            char truncated_type[sizeof(info->description) - 17];
-            strncpy(truncated_type, anon_type, sizeof(truncated_type) - 1);
-            truncated_type[sizeof(truncated_type) - 1] = '\0';
+            char truncated_type[239];  // Fixed size: DEFAULT_FD_DESCRIPTION_SIZE - 17
+            strncpy(truncated_type, anon_type, 238);  // Leave room for null terminator
+            truncated_type[238] = '\0';
             snprintf(info->description, sizeof(info->description), "anonymous inode: %s", truncated_type);
         }
         return;
@@ -178,9 +179,9 @@ static void get_fd_info(int fd, FileDescriptorInfo *info) {
     // Handle regular files and other types
     if (S_ISREG(st.st_mode)) {
         snprintf(info->type, sizeof(info->type), "file");
-        char truncated_path[sizeof(info->description) - 6];
-        strncpy(truncated_path, target, sizeof(truncated_path) - 1);
-        truncated_path[sizeof(truncated_path) - 1] = '\0';
+        char truncated_path[250];  // Fixed size: DEFAULT_FD_DESCRIPTION_SIZE - 6
+        strncpy(truncated_path, target, 249);  // Leave room for null terminator
+        truncated_path[249] = '\0';
         snprintf(info->description, sizeof(info->description), "file: %s", truncated_path);
     } else if (strncmp(target, "/dev/", 5) == 0) {
         snprintf(info->type, sizeof(info->type), "device");
@@ -205,11 +206,11 @@ static void get_process_memory(size_t *vmsize, size_t *vmrss, size_t *vmswap) {
     
     FILE *status = fopen("/proc/self/status", "r");
     if (!status) {
-        console_log("MemoryMetrics", 3, "Failed to open /proc/self/status");
+        log_this("MemoryMetrics", "Failed to open /proc/self/status", 3, true, false, true);
         return;
     }
     
-    char line[256];
+    char line[256];  // Fixed size for /proc/self/status entries
     while (fgets(line, sizeof(line), status)) {
         if (strncmp(line, "VmSize:", 7) == 0) {
             sscanf(line, "VmSize: %zu", vmsize);
@@ -240,7 +241,7 @@ json_t* get_file_descriptors_json(void) {
     
     dir = opendir("/proc/self/fd");
     if (!dir) {
-        console_log("Utils", 3, "Failed to open /proc/self/fd");
+        log_this("Utils", "Failed to open /proc/self/fd", 3, true, false, true);
         return fd_array;
     }
     
@@ -298,13 +299,13 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
     // CPU Information
     FILE *stat = fopen("/proc/stat", "r");
     if (stat) {
-        char line[256];
+        char line[256];  // Fixed size for /proc/stat entries
         json_t *cpu_usage = json_object();
         json_t *cpu_usage_per_core = json_object();
 
         while (fgets(line, sizeof(line), stat)) {
             if (strncmp(line, "cpu", 3) == 0) {
-                char cpu[10];
+                char cpu[32];  // CPU identifier buffer
                 long long user, nice, system_time, idle, iowait, irq, softirq, steal;
                 sscanf(line, "%s %lld %lld %lld %lld %lld %lld %lld %lld",
                        cpu, &user, &nice, &system_time, &idle, &iowait, &irq, &softirq, &steal);
@@ -312,7 +313,7 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
                 // CPU usage is reported as a string with 3 decimal places for consistent precision
                 long long total = user + nice + system_time + idle + iowait + irq + softirq + steal;
                 double usage = 100.0 * (total - idle) / total;
-                char usage_str[16];
+                char usage_str[32];  // Fixed size for percentage string
                 snprintf(usage_str, sizeof(usage_str), "%.3f", usage);
 
                 if (strcmp(cpu, "cpu") == 0) {
@@ -331,7 +332,7 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
     // Load averages
     double loadavg[3];
     if (getloadavg(loadavg, 3) != -1) {
-        char load_str[16];
+        char load_str[32];  // Load average string buffer
         snprintf(load_str, sizeof(load_str), "%.3f", loadavg[0]);
         json_object_set_new(system, "load_1min", json_string(load_str));
         snprintf(load_str, sizeof(load_str), "%.3f", loadavg[1]);
@@ -350,7 +351,7 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
         unsigned long long free_ram = si.freeram * si.mem_unit;
         unsigned long long used_ram = total_ram - free_ram;
         
-        char used_percent_str[16];
+        char used_percent_str[32];  // Percentage string buffer
         snprintf(used_percent_str, sizeof(used_percent_str), "%.3f", (double)used_ram / total_ram * 100.0);
         json_object_set_new(memory, "total", json_integer(total_ram));
         json_object_set_new(memory, "used", json_integer(used_ram));
@@ -361,7 +362,7 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
         if (total_swap > 0) {
             unsigned long long free_swap = si.freeswap * si.mem_unit;
             unsigned long long used_swap = total_swap - free_swap;
-            char swap_used_percent_str[16];
+            char swap_used_percent_str[32];  // Percentage string buffer
             snprintf(swap_used_percent_str, sizeof(swap_used_percent_str), "%.3f", (double)used_swap / total_swap * 100.0);
             json_object_set_new(memory, "swap_total", json_integer(total_swap));
             json_object_set_new(memory, "swap_used", json_integer(used_swap));
@@ -403,7 +404,7 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
             }
 
             // Add interface statistics
-            char path[256];
+            char path[256];  // Fixed size for system paths
             snprintf(path, sizeof(path), "/sys/class/net/%s/statistics/rx_bytes", ifa->ifa_name);
             FILE *f = fopen(path, "r");
             if (f) {
@@ -413,7 +414,7 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
                 json_object_set_new(iface, "rx_bytes", json_integer(rx_bytes));
             }
 
-            snprintf(path, sizeof(path), "/sys/class/net/%s/statistics/tx_bytes", ifa->ifa_name);
+            snprintf(path, sizeof(path), "/sys/class/net/%s/statistics/tx_bytes", ifa->ifa_name);  // Using same fixed-size buffer
             f = fopen(path, "r");
             if (f) {
                 unsigned long long tx_bytes;
@@ -452,7 +453,7 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
                 json_object_set_new(fs, "device", json_string(entry->mnt_fsname));
                 json_object_set_new(fs, "mount_point", json_string(entry->mnt_dir));
                 json_object_set_new(fs, "type", json_string(entry->mnt_type));
-                char used_percent_str[16];
+                char used_percent_str[32];  // Percentage string buffer
                 snprintf(used_percent_str, sizeof(used_percent_str), "%.3f", (double)used_space / total_space * 100.0);
 
                 json_object_set_new(fs, "total_space", json_integer(total_space));
@@ -495,7 +496,7 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
     // Add server start time and runtime if server is ready
     if (is_server_ready_time_set()) {
         time_t ready_time = get_server_ready_time();
-        char iso_time[32];
+        char iso_time[32];  // ISO time string buffer
         struct tm *tm_info = gmtime(&ready_time);
         strftime(iso_time, sizeof(iso_time), "%Y-%m-%dT%H:%M:%S.000Z", tm_info);
         json_object_set_new(status, "server_started", json_string(iso_time));
@@ -503,7 +504,7 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
         time_t runtime = time(NULL) - ready_time;
         json_object_set_new(status, "server_runtime", json_integer(runtime));
 
-        char runtime_str[32];
+        char runtime_str[32];  // Runtime string buffer
         format_duration(runtime, runtime_str, sizeof(runtime_str));
         json_object_set_new(status, "server_runtime_formatted", json_string(runtime_str));
     }
@@ -567,7 +568,9 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
     double other_percent = round((100.0 - service_percent - queue_percent) * 1000.0) / 1000.0;
     
     // Format percentages
-    char service_percent_str[16], queue_percent_str[16], other_percent_str[16];
+    char service_percent_str[32],  // Percentage string buffers
+         queue_percent_str[32],
+         other_percent_str[32];
     snprintf(service_percent_str, sizeof(service_percent_str), "%.3f", service_percent);
     snprintf(queue_percent_str, sizeof(queue_percent_str), "%.3f", queue_percent);
     snprintf(other_percent_str, sizeof(other_percent_str), "%.3f", other_percent);
