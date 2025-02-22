@@ -1,11 +1,6 @@
-// Feature test macros must come first
+// Feature test macros
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
-
-// Project headers
-#include "utils_logging.h"
-#include "configuration.h"
-#include "logging.h"
 
 // System headers
 #include <stdio.h>
@@ -14,6 +9,11 @@
 #include <time.h>
 #include <sys/time.h>
 #include <stdbool.h>
+
+// Project headers
+#include "utils_logging.h"
+#include "configuration.h"
+#include "logging.h"
 
 // Thread-safe identifier generation with collision resistance
 void generate_id(char *buf, size_t len) {
