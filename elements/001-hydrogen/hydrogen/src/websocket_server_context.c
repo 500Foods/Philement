@@ -31,12 +31,26 @@ WebSocketServerContext* ws_context_create(int port, const char* protocol, const 
         return NULL;
     }
 
-    // Initialize configuration
+    // Initialize configuration with validation
     ctx->port = port;
-    strncpy(ctx->protocol, protocol, sizeof(ctx->protocol) - 1);
-    ctx->protocol[sizeof(ctx->protocol) - 1] = '\0';
-    strncpy(ctx->auth_key, key, sizeof(ctx->auth_key) - 1);
-    ctx->auth_key[sizeof(ctx->auth_key) - 1] = '\0';
+    
+    // Handle protocol
+    if (protocol) {
+        strncpy(ctx->protocol, protocol, sizeof(ctx->protocol) - 1);
+        ctx->protocol[sizeof(ctx->protocol) - 1] = '\0';
+    } else {
+        strncpy(ctx->protocol, "hydrogen-protocol", sizeof(ctx->protocol) - 1);
+        ctx->protocol[sizeof(ctx->protocol) - 1] = '\0';
+    }
+
+    // Handle auth key
+    if (key) {
+        strncpy(ctx->auth_key, key, sizeof(ctx->auth_key) - 1);
+        ctx->auth_key[sizeof(ctx->auth_key) - 1] = '\0';
+    } else {
+        strncpy(ctx->auth_key, "default_key", sizeof(ctx->auth_key) - 1);
+        ctx->auth_key[sizeof(ctx->auth_key) - 1] = '\0';
+    }
 
     // Initialize mutex and condition variable
     if (pthread_mutex_init(&ctx->mutex, NULL) != 0) {
@@ -91,21 +105,23 @@ void ws_context_destroy(WebSocketServerContext* ctx)
     // Clean up libwebsockets context if it exists
     if (ctx->lws_context) {
         struct lws_context *lws_ctx = ctx->lws_context;
-        ctx->lws_context = NULL;  // Prevent other threads from using it
         
         // Cancel any pending service to trigger final callbacks
         lws_cancel_service(lws_ctx);
         
         // Multiple service loops to ensure all callbacks are processed
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 5; i++) {
             lws_service(lws_ctx, 0);
-            usleep(50000);  // 50ms delay between loops
+            usleep(100000);  // 100ms delay between loops
         }
+
+        // Now safe to null the context as callbacks are processed
+        ctx->lws_context = NULL;
         
         // Wait for protocol destroy callback and connection cleanup
         struct timespec wait_time;
         clock_gettime(CLOCK_REALTIME, &wait_time);
-        wait_time.tv_sec += 2;  // 2 second timeout
+        wait_time.tv_sec += 3;  // 3 second timeout
 
         pthread_mutex_lock(&ctx->mutex);
         while (ctx->active_connections > 0) {
