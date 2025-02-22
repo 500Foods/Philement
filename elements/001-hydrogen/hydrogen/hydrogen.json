@@ -91,13 +91,23 @@
             "Enabled": true,
             "DefaultLevel": 1,
             "Subsystems": {
-                "ThreadMgmt": 6,
-                "Shutdown": 0,
+                "ThreadMgmt": 2,
+                "Shutdown": 1,
                 "mDNS": 3,
                 "WebServer": 2,
                 "WebSocket": 3,
                 "PrintQueue": 2,
-                "LogQueueManager": 0
+                "LogQueueManager": 2,
+                "Main": 1,
+                "QueueSystem": 2,
+                "SystemService": 2,
+                "Utils": 1,
+                "MemoryMetrics": 2,
+                "Beryllium": 2,
+                "Configuration": 2,
+                "API": 2,
+                "Initialization": 1,
+                "Network": 2
             }
         },
         "Database": {
@@ -111,7 +121,17 @@
                 "WebServer": 4,
                 "WebSocket": 4,
                 "PrintQueue": 4,
-                "LogQueueManager": 4
+                "LogQueueManager": 4,
+                "Main": 4,
+                "QueueSystem": 4,
+                "SystemService": 4,
+                "Utils": 4,
+                "MemoryMetrics": 4,
+                "Beryllium": 4,
+                "Configuration": 4,
+                "API": 4,
+                "Initialization": 4,
+                "Network": 4
             }
         },
         "File": {
@@ -125,7 +145,17 @@
                 "WebServer": 1,
                 "WebSocket": 1,
                 "PrintQueue": 1,
-                "LogQueueManager": 1
+                "LogQueueManager": 1,
+                "Main": 1,
+                "QueueSystem": 1,
+                "SystemService": 1,
+                "Utils": 1,
+                "MemoryMetrics": 1,
+                "Beryllium": 1,
+                "Configuration": 1,
+                "API": 1,
+                "Initialization": 1,
+                "Network": 1
             }
         }
     },

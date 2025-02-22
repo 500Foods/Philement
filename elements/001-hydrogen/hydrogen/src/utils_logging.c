@@ -18,7 +18,7 @@
 // Thread-safe identifier generation with collision resistance
 void generate_id(char *buf, size_t len) {
     if (len < ID_LEN + 1) {
-        log_this("Utils", "Buffer too small for ID", 3, true, false, true);
+        log_this("Utils", "Buffer too small for ID", LOG_LEVEL_ERROR);
         return;
     }
 

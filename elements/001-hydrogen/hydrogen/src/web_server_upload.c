@@ -52,7 +52,7 @@ enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind kind,
                 snprintf(file_path, sizeof(file_path), "%s/%s.gcode", server_web_config->upload_dir, uuid_str);
                 con_info->fp = fopen(file_path, "wb");
                 if (!con_info->fp) {
-                    log_this("WebServer", "Failed to open file for writing", 3, true, false, true);
+                    log_this("WebServer", "Failed to open file for writing", LOG_LEVEL_DEBUG);
                     return MHD_NO;
                 }
                 free(con_info->original_filename);  // Free previous allocation if any
@@ -62,18 +62,18 @@ enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind kind,
 
                 char log_buffer[DEFAULT_LOG_BUFFER_SIZE];  // Use configured log buffer size
                 snprintf(log_buffer, sizeof(log_buffer), "Starting file upload: %s", filename);
-                log_this("WebServer", log_buffer, 0, true, false, true);
+                log_this("WebServer", log_buffer, LOG_LEVEL_INFO);
             }
         }
 
         if (size > 0) {
             if (con_info->total_size + size > server_web_config->max_upload_size) {
-                log_this("WebServer", "File upload exceeds maximum allowed size", 3, true, false, true);
+                log_this("WebServer", "File upload exceeds maximum allowed size", LOG_LEVEL_DEBUG);
                 return MHD_NO;
             }
 
             if (fwrite(data, 1, size, con_info->fp) != size) {
-                log_this("WebServer", "Failed to write to file", 3, true, false, true);
+                log_this("WebServer", "Failed to write to file", LOG_LEVEL_DEBUG);
                 return MHD_NO;
             }
             con_info->total_size += size;
@@ -83,19 +83,19 @@ enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind kind,
                 con_info->last_logged_mb = con_info->total_size / (100 * 1024 * 1024);
                 char progress_log[DEFAULT_LOG_BUFFER_SIZE];  // Use configured log buffer size
                 snprintf(progress_log, sizeof(progress_log), "Upload progress: %zu MB", con_info->last_logged_mb * 100);
-                log_this("WebServer", progress_log, 2, true, false, true);
+                log_this("WebServer", progress_log, LOG_LEVEL_WARN);
             }
         }
     } else if (0 == strcmp(key, "print")) {
         // Handle the 'print' field
         con_info->print_after_upload = (0 == strcmp(data, "true"));
         log_this("WebServer", con_info->print_after_upload ? "Print after upload: enabled" : "Print after upload: disabled", 
-                0, true, false, true);
+                LOG_LEVEL_INFO);
     } else {
         // Log unknown keys
         char log_buffer[DEFAULT_LOG_BUFFER_SIZE];  // Use configured log buffer size
         snprintf(log_buffer, sizeof(log_buffer), "Received unknown key in form data: %s", key);
-        log_this("WebServer", log_buffer, 2, true, false, true);
+        log_this("WebServer", log_buffer, LOG_LEVEL_WARN);
     }
 
     return MHD_YES;
@@ -154,28 +154,28 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
                 Queue* print_queue = queue_find("PrintQueue");
                 if (print_queue) {
                     queue_enqueue(print_queue, print_job_str, strlen(print_job_str), 0);
-                    log_this("WebServer", "Added print job to queue", 0, true, false, true);
+                    log_this("WebServer", "Added print job to queue", LOG_LEVEL_INFO);
                 } else {
-                    log_this("WebServer", "Failed to find PrintQueue", 3, true, false, true);
+                    log_this("WebServer", "Failed to find PrintQueue", LOG_LEVEL_DEBUG);
                 }
 
                 free(print_job_str);
             } else {
-                log_this("WebServer", "Failed to create JSON string", 3, true, false, true);
+                log_this("WebServer", "Failed to create JSON string", LOG_LEVEL_DEBUG);
             }
 
             json_decref(print_job);
 
             char complete_log[DEFAULT_LOG_BUFFER_SIZE];  // Use configured log buffer size
-            log_this("WebServer", "File upload completed:", 0, true, true, true);
+            log_this("WebServer", "File upload completed:", LOG_LEVEL_INFO);
             snprintf(complete_log, sizeof(complete_log), " -> Source: %s", con_info->original_filename);
-            log_this("WebServer", complete_log, 0, true, true, true);
+            log_this("WebServer", complete_log, LOG_LEVEL_INFO);
             snprintf(complete_log, sizeof(complete_log), " ->  Local: %s", con_info->new_filename);
-            log_this("WebServer", complete_log, 0, true, true, true);
+            log_this("WebServer", complete_log, LOG_LEVEL_INFO);
             snprintf(complete_log, sizeof(complete_log), " ->   Size: %zu bytes", con_info->total_size);
-            log_this("WebServer", complete_log, 0, true, true, true);
+            log_this("WebServer", complete_log, LOG_LEVEL_INFO);
             snprintf(complete_log, sizeof(complete_log), " ->  Print: %s", con_info->print_after_upload ? "true" : "false");
-            log_this("WebServer", complete_log, 0, true, true, true);
+            log_this("WebServer", complete_log, LOG_LEVEL_INFO);
 
             // Send response
             const char *response_text = "{\"files\": {\"local\": {\"name\": \"%s\", \"origin\": \"local\"}}, \"done\": true}";
@@ -191,7 +191,7 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
             con_info->response_sent = true;
             return ret;
         } else {
-            log_this("WebServer", "File upload failed or no file was uploaded", 2, true, false, true);
+            log_this("WebServer", "File upload failed or no file was uploaded", LOG_LEVEL_WARN);
             const char *error_response = "{\"error\": \"File upload failed\", \"done\": false}";
             struct MHD_Response *response = MHD_create_response_from_buffer(strlen(error_response),
                                             (void*)error_response, MHD_RESPMEM_PERSISTENT);
@@ -210,7 +210,7 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
 json_t* extract_gcode_info(const char* filename) {
     FILE* file = fopen(filename, "r");
     if (!file) {
-        log_this("WebServer", "Failed to open G-code file for analysis", 3, true, false, true);
+        log_this("WebServer", "Failed to open G-code file for analysis", LOG_LEVEL_DEBUG);
         return NULL;
     }
 
@@ -313,7 +313,7 @@ json_t* extract_gcode_info(const char* filename) {
 char* extract_preview_image(const char* filename) {
     FILE* file = fopen(filename, "r");
     if (!file) {
-        log_this("WebServer", "Failed to open G-code file for image extraction", 3, true, false, true);
+        log_this("WebServer", "Failed to open G-code file for image extraction", LOG_LEVEL_DEBUG);
         return NULL;
     }
 

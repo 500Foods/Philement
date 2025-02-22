@@ -293,7 +293,7 @@ void* log_queue_manager(void* arg) {
 
     pthread_cleanup_push(cleanup_log_queue_manager, NULL);
 
-    log_this("LogQueueManager", "Log queue manager started", LOG_LEVEL_INFO, true, true, true);
+    log_this("LogQueueManager", "Log queue manager started", LOG_LEVEL_INFO);
 
     while (!log_queue_shutdown) {
         pthread_mutex_lock(&terminate_mutex);
@@ -303,7 +303,7 @@ void* log_queue_manager(void* arg) {
         pthread_mutex_unlock(&terminate_mutex);
 
         if (log_queue_shutdown && queue_size(log_queue) == 0) {
-            log_this("LogQueueManager", "Shutdown: Log Queue Manager processing final messages", LOG_LEVEL_INFO, true, true, true);
+            log_this("LogQueueManager", "Shutdown: Log Queue Manager processing final messages", LOG_LEVEL_INFO);
         }
 
         while (queue_size(log_queue) > 0) {
@@ -317,7 +317,7 @@ void* log_queue_manager(void* arg) {
         }
     }
 
-    log_this("LogQueueManager", "Shutdown: Log Queue Manager exiting", LOG_LEVEL_INFO, true, true, true);
+    log_this("LogQueueManager", "Shutdown: Log Queue Manager exiting", LOG_LEVEL_INFO);
 
     pthread_cleanup_pop(1);
     return NULL;

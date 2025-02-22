@@ -92,7 +92,7 @@ enum MHD_Result handle_system_info_request(struct MHD_Connection *connection)
     struct utsname system_info;
     if (uname(&system_info) < 0)
     {
-        log_this("SystemService", "Failed to get system information", 3, true, false, true);
+        log_this("SystemService", "Failed to get system information", LOG_LEVEL_DEBUG);
         const char *error_response = "{\"error\": \"Failed to retrieve system information\"}";
         struct MHD_Response *response = MHD_create_response_from_buffer(
             strlen(error_response), (void *)error_response, MHD_RESPMEM_PERSISTENT);
@@ -104,7 +104,7 @@ enum MHD_Result handle_system_info_request(struct MHD_Connection *connection)
 
     // Check WebSocket context availability
     if (!ws_context) {
-        log_this("SystemService", "WebSocket context not available", 3, true, false, true);
+        log_this("SystemService", "WebSocket context not available", LOG_LEVEL_DEBUG);
         const char *error_response = "{\"error\": \"WebSocket service unavailable\"}";
         struct MHD_Response *response = MHD_create_response_from_buffer(
             strlen(error_response), (void *)error_response, MHD_RESPMEM_PERSISTENT);
@@ -133,7 +133,7 @@ enum MHD_Result handle_system_info_request(struct MHD_Connection *connection)
 
     if (!response_str)
     {
-        log_this("SystemService", "Failed to create JSON response", 3, true, false, true);
+        log_this("SystemService", "Failed to create JSON response", LOG_LEVEL_DEBUG);
         const char *error_response = "{\"error\": \"Failed to create response\"}";
         struct MHD_Response *response = MHD_create_response_from_buffer(
             strlen(error_response), (void *)error_response, MHD_RESPMEM_PERSISTENT);
@@ -172,7 +172,7 @@ enum MHD_Result handle_system_health_request(struct MHD_Connection *connection)
 
     if (!response_str)
     {
-        log_this("SystemService", "Failed to create health check JSON response", 3, true, false, true);
+        log_this("SystemService", "Failed to create health check JSON response", LOG_LEVEL_DEBUG);
         const char *error_response = "{\"error\": \"Failed to create response\"}";
         struct MHD_Response *response = MHD_create_response_from_buffer(
             strlen(error_response), (void *)error_response, MHD_RESPMEM_PERSISTENT);

@@ -38,7 +38,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 // Log any remaining connections
                 if (ws_context->active_connections > 0) {
                     log_this("WebSocket", "Protocol destroy with %d active connections",
-                            2, true, true, true, ws_context->active_connections);
+                            LOG_LEVEL_WARN, true, true, true, ws_context->active_connections);
                 }
                 
                 // Force clear connections and notify all waiting threads
@@ -47,10 +47,10 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 
                 pthread_mutex_unlock(&ws_context->mutex);
                 
-                log_this("WebSocket", "Protocol cleanup complete", 0, true, true, true);
+                log_this("WebSocket", "Protocol cleanup complete", LOG_LEVEL_INFO);
             } else {
                 // Context already cleaned up, which is also valid
-                log_this("WebSocket", "Protocol destroy with no context", 1, true, true, true);
+                log_this("WebSocket", "Protocol destroy with no context", LOG_LEVEL_INFO);
             }
         }
         return 0;
@@ -81,14 +81,14 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
         default:
             if (!ws_context) {
                 // Only log unhandled callbacks that need context
-                log_this("WebSocket", "Unhandled early callback: %d", 1, true, true, true, reason);
+                log_this("WebSocket", "Unhandled early callback: %d", LOG_LEVEL_INFO, reason);
             }
             return 0;
     }
 
     // All other callbacks require context
     if (!ws_context) {
-        log_this("WebSocket", "No server context available for callback %d", 3, true, true, true, reason);
+        log_this("WebSocket", "No server context available for callback %d", LOG_LEVEL_ERROR, reason);
         return -1;
     }
 
@@ -97,7 +97,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
         reason != LWS_CALLBACK_SERVER_NEW_CLIENT_INSTANTIATED &&
         reason != LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION &&
         reason != LWS_CALLBACK_FILTER_NETWORK_CONNECTION) {
-        log_this("WebSocket", "Invalid session data for callback %d", 3, true, true, true, reason);
+        log_this("WebSocket", "Invalid session data for callback %d", LOG_LEVEL_ERROR, reason);
         return -1;
     }
 
@@ -115,7 +115,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                         pthread_mutex_lock(&ws_context->mutex);
                         if (ws_context->active_connections == 0) {
                             log_this("WebSocket", "Last connection closed, notifying waiters", 
-                                    0, true, true, true);
+                                    LOG_LEVEL_INFO, true, true, true);
                             pthread_cond_broadcast(&ws_context->cond);
                         }
                         pthread_mutex_unlock(&ws_context->mutex);
@@ -161,7 +161,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 char buf[256];
                 int length = lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_AUTHORIZATION);
                 if (length <= 0) {
-                    log_this("WebSocket", "Missing authorization header", 2, true, true, true);
+                    log_this("WebSocket", "Missing authorization header", LOG_LEVEL_WARN);
                     return -1;
                 }
 
@@ -200,7 +200,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
         // Unhandled Callbacks
         default:
             // Log unhandled callback for debugging
-            log_this("WebSocket", "Unhandled callback reason: %d", 1, true, true, true, reason);
+            log_this("WebSocket", "Unhandled callback reason: %d", LOG_LEVEL_INFO, reason);
             return 0;  // Accept unhandled callbacks during normal operation
     }
 }

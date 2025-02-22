@@ -82,14 +82,14 @@ static int init_logging(const char *config_path) {
     QueueAttributes system_log_attrs = {0};
     Queue* system_log_queue = queue_create("SystemLog", &system_log_attrs);
     if (!system_log_queue) {
-        log_this("Initialization", "Failed to create SystemLog queue", 3, true, false, true);
+        log_this("Initialization", "Failed to create SystemLog queue", LOG_LEVEL_DEBUG);
         return 0;
     }
 
     // Load configuration
     app_config = load_config(config_path);
     if (!app_config) {
-        log_this("Initialization", "Failed to load configuration", 4, true, true, true);
+        log_this("Initialization", "Failed to load configuration", LOG_LEVEL_ERROR);
         queue_destroy(system_log_queue);
         return 0;
     }
@@ -102,7 +102,7 @@ static int init_logging(const char *config_path) {
 
     // Launch log queue manager
     if (pthread_create(&log_thread, NULL, log_queue_manager, system_log_queue) != 0) {
-        log_this("Initialization", "Failed to start log queue manager thread", 3, true, false, true);
+        log_this("Initialization", "Failed to start log queue manager thread", LOG_LEVEL_DEBUG);
         queue_destroy(system_log_queue);
         return 0;
     }
@@ -120,7 +120,7 @@ static int init_print_system(void) {
     }
 
     if (pthread_create(&print_queue_thread, NULL, print_queue_manager, NULL) != 0) {
-        log_this("Initialization", "Failed to start print queue manager thread", 4, true, true, true);
+        log_this("Initialization", "Failed to start print queue manager thread", LOG_LEVEL_ERROR);
         return 0;
     }
 
@@ -147,10 +147,10 @@ static int init_web_systems(void) {
     // Initialize web server if enabled
     if (app_config->web.enabled) {
         if (!init_web_server(&app_config->web)) {
-            log_this("Initialization", "Failed to initialize web server", 4, true, true, true);
+            log_this("Initialization", "Failed to initialize web server", LOG_LEVEL_ERROR);
             web_success = 0;
         } else if (pthread_create(&web_thread, NULL, run_web_server, NULL) != 0) {
-            log_this("Initialization", "Failed to start web server thread", 4, true, true, true);
+            log_this("Initialization", "Failed to start web server thread", LOG_LEVEL_ERROR);
             shutdown_web_server();
             web_success = 0;
         }
@@ -161,20 +161,20 @@ static int init_web_systems(void) {
         if (init_websocket_server(app_config->websocket.port, 
                                 app_config->websocket.protocol, 
                                 app_config->websocket.key) != 0) {
-            log_this("Initialization", "Failed to initialize WebSocket server", 4, true, true, true);
+            log_this("Initialization", "Failed to initialize WebSocket server", LOG_LEVEL_ERROR);
             websocket_success = 0;
         } else if (start_websocket_server() != 0) {
-            log_this("Initialization", "Failed to start WebSocket server", 4, true, true, true);
+            log_this("Initialization", "Failed to start WebSocket server", LOG_LEVEL_ERROR);
             websocket_success = 0;
         }
     }
 
     // Return success if at least one enabled service started successfully
     if (app_config->web.enabled && !web_success) {
-        log_this("Initialization", "Web server failed to start", 3, true, true, true);
+        log_this("Initialization", "Web server failed to start", LOG_LEVEL_DEBUG);
     }
     if (app_config->websocket.enabled && !websocket_success) {
-        log_this("Initialization", "WebSocket server failed to start", 3, true, true, true);
+        log_this("Initialization", "WebSocket server failed to start", LOG_LEVEL_DEBUG);
     }
 
     // Only return failure if all enabled services failed
@@ -197,7 +197,7 @@ static int init_web_systems(void) {
 // important in environments with multiple Hydrogen instances or other competing services.
 static int init_mdns_system(void) {
     // Initialize mDNS with validated configuration
-    log_this("Initialization", "Starting mDNS initialization", LOG_LEVEL_INFO, true, true, true);
+    log_this("Initialization", "Starting mDNS initialization", LOG_LEVEL_INFO);
 
     // Create a filtered list of services based on what's enabled
     mdns_service_t *filtered_services = NULL;
@@ -206,7 +206,7 @@ static int init_mdns_system(void) {
     if (app_config->mdns.services && app_config->mdns.num_services > 0) {
         filtered_services = calloc(app_config->mdns.num_services, sizeof(mdns_service_t));
         if (!filtered_services) {
-            log_this("Initialization", "Failed to allocate memory for filtered services", 3, true, true, true);
+            log_this("Initialization", "Failed to allocate memory for filtered services", LOG_LEVEL_DEBUG);
             return 0;
         }
 
@@ -225,10 +225,10 @@ static int init_mdns_system(void) {
                     if (actual_port > 0 && actual_port <= 65535) {
                         memcpy(&filtered_services[filtered_count], &app_config->mdns.services[i], sizeof(mdns_service_t));
                         filtered_services[filtered_count].port = (uint16_t)actual_port;
-                        log_this("Initialization", "Setting WebSocket mDNS service port to %d", LOG_LEVEL_INFO, true, true, true, actual_port);
+                        log_this("Initialization", "Setting WebSocket mDNS service port to %d", LOG_LEVEL_INFO, actual_port);
                         filtered_count++;
                     } else {
-                        log_this("Initialization", "Invalid WebSocket port: %d, skipping mDNS service", 3, true, true, true, actual_port);
+                        log_this("Initialization", "Invalid WebSocket port: %d, skipping mDNS service", LOG_LEVEL_DEBUG, actual_port);
                     }
                 }
             }
@@ -259,7 +259,7 @@ static int init_mdns_system(void) {
                      app_config->mdns.enable_ipv6);
 
     if (!mdns) {
-        log_this("Initialization", "Failed to initialize mDNS", 3, true, true, true);
+        log_this("Initialization", "Failed to initialize mDNS", LOG_LEVEL_DEBUG);
         free(filtered_services);
         return 0;
     }
@@ -268,7 +268,7 @@ static int init_mdns_system(void) {
     net_info = get_network_info();
     mdns_thread_arg_t *mdns_arg = malloc(sizeof(mdns_thread_arg_t));
     if (!mdns_arg) {
-        log_this("Initialization", "Failed to allocate mDNS thread arguments", 3, true, true, true);
+        log_this("Initialization", "Failed to allocate mDNS thread arguments", LOG_LEVEL_DEBUG);
         mdns_shutdown(mdns);
         free_network_info(net_info);
         free(filtered_services);
@@ -281,7 +281,7 @@ static int init_mdns_system(void) {
     mdns_arg->running = &server_running;
 
     if (pthread_create(&mdns_thread, NULL, mdns_announce_loop, mdns_arg) != 0) {
-        log_this("Initialization", "Failed to start mDNS thread", 3, true, true, true);
+        log_this("Initialization", "Failed to start mDNS thread", LOG_LEVEL_DEBUG);
         free(mdns_arg);
         mdns_shutdown(mdns);
         free_network_info(net_info);
@@ -300,29 +300,29 @@ static int init_mdns_system(void) {
 // - Executable details (path, size, modification time)
 // - Active configuration settings
 static void log_app_info(void) {
-    log_this("Initialization", "%s", LOG_LEVEL_INFO, true, true, true, LOG_LINE_BREAK);
-    log_this("Initialization", "Server Name: %s", LOG_LEVEL_INFO, true, true, true, app_config->server_name);
-    log_this("Initialization", "Executable: %s", LOG_LEVEL_INFO, true, true, true, app_config->executable_path);
-    log_this("Initialization", "Version: %s", LOG_LEVEL_INFO, true, true, true, VERSION);
+    log_this("Initialization", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
+    log_this("Initialization", "Server Name: %s", LOG_LEVEL_INFO, app_config->server_name);
+    log_this("Initialization", "Executable: %s", LOG_LEVEL_INFO, app_config->executable_path);
+    log_this("Initialization", "Version: %s", LOG_LEVEL_INFO, VERSION);
 
     long file_size = get_file_size(app_config->executable_path);
     if (file_size >= 0) {
-        log_this("Initialization", "Size: %ld", LOG_LEVEL_INFO, true, true, true, file_size);
+        log_this("Initialization", "Size: %ld", LOG_LEVEL_INFO, file_size);
     } else {
-        log_this("Initialization", "Error: Unable to get file size", LOG_LEVEL_ERROR, true, false, true);
+        log_this("Initialization", "Error: Unable to get file size", LOG_LEVEL_ERROR);
     }
 
     char* mod_time = get_file_modification_time(app_config->executable_path);
     if (mod_time) {
-        log_this("Initialization", "Last Modified: %s", LOG_LEVEL_INFO, true, false, true, mod_time);
+        log_this("Initialization", "Last Modified: %s", LOG_LEVEL_INFO, mod_time);
         free(mod_time);
     } else {
-        log_this("Initialization", "Error: Unable to get modification time", LOG_LEVEL_ERROR, true, false, true);
+        log_this("Initialization", "Error: Unable to get modification time", LOG_LEVEL_ERROR);
     }
 
-    log_this("Initialization", "Log File: %s", LOG_LEVEL_INFO, true, true, true, 
+    log_this("Initialization", "Log File: %s", LOG_LEVEL_INFO,
              app_config->log_file_path ? app_config->log_file_path : "None");
-    log_this("Initialization", "%s", LOG_LEVEL_INFO, true, true, true, LOG_LINE_BREAK);
+    log_this("Initialization", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
 }
 
 // Main startup function
@@ -379,9 +379,9 @@ int startup_hydrogen(const char *config_path) {
             close_file_logging();
             return 0;
         }
-        log_this("Initialization", "Print Queue system initialized", LOG_LEVEL_INFO, true, true, true);
+        log_this("Initialization", "Print Queue system initialized", LOG_LEVEL_INFO);
     } else {
-        log_this("Initialization", "Print Queue system disabled", LOG_LEVEL_INFO, true, true, true);
+        log_this("Initialization", "Print Queue system disabled", LOG_LEVEL_INFO);
     }
 
     // Initialize web and websocket servers if enabled
@@ -392,13 +392,13 @@ int startup_hydrogen(const char *config_path) {
             return 0;
         }
         if (app_config->web.enabled) {
-            log_this("Initialization", "Web Server initialized", LOG_LEVEL_INFO, true, true, true);
+            log_this("Initialization", "Web Server initialized", LOG_LEVEL_INFO);
         }
         if (app_config->websocket.enabled) {
-            log_this("Initialization", "WebSocket Server initialized", LOG_LEVEL_INFO, true, true, true);
+            log_this("Initialization", "WebSocket Server initialized", LOG_LEVEL_INFO);
         }
     } else {
-        log_this("Initialization", "Web systems disabled", LOG_LEVEL_INFO, true, true, true);
+        log_this("Initialization", "Web systems disabled", LOG_LEVEL_INFO);
     }
 
     // Initialize mDNS system if enabled
@@ -408,17 +408,17 @@ int startup_hydrogen(const char *config_path) {
             close_file_logging();
             return 0;
         }
-        log_this("Initialization", "mDNS system initialized", LOG_LEVEL_INFO, true, true, true);
+        log_this("Initialization", "mDNS system initialized", LOG_LEVEL_INFO);
     } else {
-        log_this("Initialization", "mDNS system disabled", LOG_LEVEL_INFO, true, true, true);
+        log_this("Initialization", "mDNS system disabled", LOG_LEVEL_INFO);
     }
 
     // Give threads a moment to launch
     usleep(10000);
-    log_this("Initialization", "%s", LOG_LEVEL_INFO, true, true, true, LOG_LINE_BREAK);
-    log_this("Initialization", "Application started", LOG_LEVEL_INFO, true, true, true);
-    log_this("Initialization", "Press Ctrl+C to exit", LOG_LEVEL_INFO, true, false, true);
-    log_this("Initialization", "%s", LOG_LEVEL_INFO, true, true, true, LOG_LINE_BREAK);
+    log_this("Initialization", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
+    log_this("Initialization", "Application started", LOG_LEVEL_INFO);
+    log_this("Initialization", "Press Ctrl+C to exit", LOG_LEVEL_INFO);
+    log_this("Initialization", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
 
     // All services have been started successfully, mark startup as complete
     server_starting = 0;  // First set the flag

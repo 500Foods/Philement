@@ -77,34 +77,34 @@ void add_cors_headers(struct MHD_Response *response) {
 
 bool init_web_server(WebConfig *web_config) {
     if (!is_port_available(web_config->port, web_config->enable_ipv6)) {
-        log_this("WebServer", "Port is not available", 3, true, false, true);
+        log_this("WebServer", "Port is not available", LOG_LEVEL_DEBUG);
         return false;
     }
 
     server_web_config = web_config;
 
-    log_this("WebServer", "Initializing web server", LOG_LEVEL_INFO, true, false, true);
+    log_this("WebServer", "Initializing web server", LOG_LEVEL_INFO);
     if (web_config->enable_ipv6) {
-        log_this("WebServer", "IPv6 support enabled", LOG_LEVEL_INFO, true, false, true);
+        log_this("WebServer", "IPv6 support enabled", LOG_LEVEL_INFO);
     }
-    log_this("WebServer", "-> Port: %u", LOG_LEVEL_INFO, true, true, true, server_web_config->port);
-    log_this("WebServer", "-> WebRoot: %s", LOG_LEVEL_INFO, true, true, true, server_web_config->web_root);
-    log_this("WebServer", "-> Upload Path: %s", LOG_LEVEL_INFO, true, true, true, server_web_config->upload_path);
-    log_this("WebServer", "-> Upload Dir: %s", LOG_LEVEL_INFO, true, true, true, server_web_config->upload_dir);
+    log_this("WebServer", "-> Port: %u", LOG_LEVEL_INFO, server_web_config->port);
+    log_this("WebServer", "-> WebRoot: %s", LOG_LEVEL_INFO, server_web_config->web_root);
+    log_this("WebServer", "-> Upload Path: %s", LOG_LEVEL_INFO, server_web_config->upload_path);
+    log_this("WebServer", "-> Upload Dir: %s", LOG_LEVEL_INFO, server_web_config->upload_dir);
 
     // Create upload directory if it doesn't exist
     struct stat st = {0};
     if (stat(server_web_config->upload_dir, &st) == -1) {
-        log_this("WebServer", "Upload directory does not exist, attempting to create", 2, true, false, true);
+        log_this("WebServer", "Upload directory does not exist, attempting to create", LOG_LEVEL_WARN);
         if (mkdir(server_web_config->upload_dir, 0700) != 0) {
             char error_buffer[256];
             snprintf(error_buffer, sizeof(error_buffer), "Failed to create upload directory: %s", strerror(errno));
-            log_this("WebServer", error_buffer, 3, true, false, true);
+            log_this("WebServer", error_buffer, LOG_LEVEL_DEBUG);
             return false;
         }
-        log_this("WebServer", "Created upload directory", LOG_LEVEL_INFO, true, false, true);
+        log_this("WebServer", "Created upload directory", LOG_LEVEL_INFO);
     } else {
-        log_this("WebServer", "Upload directory already exists", LOG_LEVEL_WARN, true, false, true);
+        log_this("WebServer", "Upload directory already exists", LOG_LEVEL_WARN);
     }
 
     return true;
@@ -113,7 +113,7 @@ bool init_web_server(WebConfig *web_config) {
 void* run_web_server(void* arg) {
     (void)arg; // Unused parameter
 
-    log_this("WebServer", "Starting web server", LOG_LEVEL_INFO, true, false, true);
+    log_this("WebServer", "Starting web server", LOG_LEVEL_INFO);
 
     // Register main web server thread
     extern ServiceThreads web_threads;
@@ -121,7 +121,7 @@ void* run_web_server(void* arg) {
     unsigned int flags = MHD_USE_THREAD_PER_CONNECTION;
     if (server_web_config->enable_ipv6) {
         flags |= MHD_USE_DUAL_STACK;
-        log_this("WebServer", "Starting with IPv6 dual-stack support", LOG_LEVEL_INFO, true, false, true);
+        log_this("WebServer", "Starting with IPv6 dual-stack support", LOG_LEVEL_INFO);
     }
 
     web_daemon = MHD_start_daemon(flags, server_web_config->port, NULL, NULL,
@@ -130,14 +130,14 @@ void* run_web_server(void* arg) {
                                 MHD_OPTION_THREAD_STACK_SIZE, (1024 * 1024), // 1MB stack size
                                 MHD_OPTION_END);
     if (web_daemon == NULL) {
-        log_this("WebServer", "Failed to start web server", 4, true, false, true);
+        log_this("WebServer", "Failed to start web server", LOG_LEVEL_ERROR);
         return NULL;
     }
 
     // Check if the web server is actually running
     const union MHD_DaemonInfo *info = MHD_get_daemon_info(web_daemon, MHD_DAEMON_INFO_BIND_PORT);
     if (info == NULL) {
-        log_this("WebServer", "Failed to get daemon info", 4, true, false, true);
+        log_this("WebServer", "Failed to get daemon info", LOG_LEVEL_ERROR);
         MHD_stop_daemon(web_daemon);
         web_daemon = NULL;
         return NULL;
@@ -145,7 +145,7 @@ void* run_web_server(void* arg) {
 
     unsigned int actual_port = info->port;
     if (actual_port == 0) {
-        log_this("WebServer", "Web server failed to bind to the specified port", 4, true, false, true);
+        log_this("WebServer", "Web server failed to bind to the specified port", LOG_LEVEL_ERROR);
         MHD_stop_daemon(web_daemon);
         web_daemon = NULL;
         return NULL;
@@ -153,21 +153,21 @@ void* run_web_server(void* arg) {
 
     char port_info[64];
     snprintf(port_info, sizeof(port_info), "Web server bound to port: %u", actual_port);
-    log_this("WebServer", port_info, LOG_LEVEL_INFO, true, false, true);
+    log_this("WebServer", port_info, LOG_LEVEL_INFO);
 
-    log_this("WebServer", "Web server started successfully", LOG_LEVEL_INFO, true, false, true);
+    log_this("WebServer", "Web server started successfully", LOG_LEVEL_INFO);
 
     return NULL;
 }
 
 void shutdown_web_server(void) {
-    log_this("WebServer", "Shutdown: Shutting down web server", LOG_LEVEL_INFO, true, false, true);
+    log_this("WebServer", "Shutdown: Shutting down web server", LOG_LEVEL_INFO);
     if (web_daemon != NULL) {
         MHD_stop_daemon(web_daemon);
         web_daemon = NULL;
-        log_this("WebServer", "Web server shut down successfully", LOG_LEVEL_INFO, true, false, true);
+        log_this("WebServer", "Web server shut down successfully", LOG_LEVEL_INFO);
     } else {
-        log_this("WebServer", "Web server was not running", 1, true, false, true);
+        log_this("WebServer", "Web server was not running", LOG_LEVEL_INFO);
     }
 }
 

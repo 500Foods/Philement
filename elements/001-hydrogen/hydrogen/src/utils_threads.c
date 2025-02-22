@@ -53,13 +53,13 @@ void add_service_thread(ServiceThreads *threads, pthread_t thread_id) {
         if (server_running) {
             snprintf(msg, sizeof(msg), "Added thread %lu (tid: %d), new count: %d", 
                      (unsigned long)thread_id, tid, threads->thread_count);
-            log_this("ThreadMgmt", msg, 1, true, true, true);
+            log_this("ThreadMgmt", msg, LOG_LEVEL_INFO);
         } else {
             snprintf(msg, sizeof(msg), "Thread added, count: %d", threads->thread_count);
-            log_this("ThreadMgmt", msg, 2, true, true, true);
+            log_this("ThreadMgmt", msg, LOG_LEVEL_WARN);
         }
     } else {
-        log_this("ThreadMgmt", "Failed to add thread: MAX_SERVICE_THREADS reached", 3, true, true, true);
+        log_this("ThreadMgmt", "Failed to add thread: MAX_SERVICE_THREADS reached", LOG_LEVEL_DEBUG);
     }
     pthread_mutex_unlock(&thread_mutex);
 }
@@ -81,10 +81,10 @@ void remove_service_thread(ServiceThreads *threads, pthread_t thread_id) {
             if (server_running) {
                 snprintf(msg, sizeof(msg), "Removed thread %lu, new count: %d", 
                          (unsigned long)thread_id, threads->thread_count);
-                log_this("ThreadMgmt", msg, 1, true, true, true);
+                log_this("ThreadMgmt", msg, LOG_LEVEL_INFO);
             } else {
                 snprintf(msg, sizeof(msg), "Thread removed, count: %d", threads->thread_count);
-                log_this("ThreadMgmt", msg, 2, true, true, true);
+                log_this("ThreadMgmt", msg, LOG_LEVEL_WARN);
             }
             break;
         }
