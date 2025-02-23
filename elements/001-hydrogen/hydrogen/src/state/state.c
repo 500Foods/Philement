@@ -117,10 +117,10 @@ volatile sig_atomic_t websocket_server_shutdown = 0;
 //    - Resource usage
 //    - System monitoring
 pthread_t log_thread;
-pthread_t print_queue_thread;
-pthread_t mdns_thread;
 pthread_t web_thread;
 pthread_t websocket_thread;
+pthread_t mdns_server_thread;
+pthread_t print_queue_thread;
 
 // Thread tracking structures with centralized management
 //
@@ -142,7 +142,7 @@ pthread_t websocket_thread;
 ServiceThreads logging_threads;
 ServiceThreads web_threads;
 ServiceThreads websocket_threads;
-ServiceThreads mdns_threads;
+ServiceThreads mdns_server_threads;
 ServiceThreads print_threads;
 
 // Shared resource handles with centralized management
@@ -163,5 +163,5 @@ ServiceThreads print_threads;
 //    - Null safety
 //    - Leak prevention
 AppConfig *app_config = NULL;
-mdns_server_t *mdns = NULL;
+mdns_server_t *mdns_server = NULL;
 network_info_t *net_info = NULL;

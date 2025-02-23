@@ -1,58 +1,11 @@
 /*
- * Hydrogen 3D Printer Control System
+ * Hydrogen Server
  * 
- * Why This Architecture Matters:
- * 1. Safety-Critical Design
- *    - Controlled startup sequence
- *    - Graceful shutdown handling
- *    - Component isolation
- *    - Resource protection
- * 
- * 2. Real-time Requirements
- *    Why This Approach?
- *    - Immediate command response
- *    - Continuous monitoring
- *    - Temperature control
- *    - Motion precision
- * 
- * 3. System Reliability
- *    Why These Features?
- *    - Component health checks
- *    - Error recovery paths
- *    - Resource monitoring
- *    - Watchdog functions
- * 
- * 4. Print Quality
- *    Why This Matters?
- *    - Timing accuracy
- *    - Motion coordination
- *    - Temperature stability
- *    - Material flow control
- * 
- * Program Lifecycle:
- * 1. Initialization
- *    Why This Order?
- *    - Safety systems first
- *    - Hardware validation
- *    - Component readiness
- *    - Network services last
- * 
- * 2. Main Loop Design
- *    Why This Pattern?
- *    - Real-time response
- *    - Resource efficiency
- *    - System maintenance
- *    - Error detection
- * 
- * 3. Shutdown Sequence
- *    Why So Careful?
- *    - Hardware protection
- *    - Print job preservation
- *    - Resource cleanup
- *    - State persistence
+ * This is the main entry point for the Hydrogen Server.
+ * It intializes all system components and starts the main event looop.
  */
 
-// Feature test macros must come first
+// Feature test macros
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
 

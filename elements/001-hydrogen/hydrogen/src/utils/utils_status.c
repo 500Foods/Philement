@@ -124,7 +124,7 @@ static void get_fd_info(int fd, FileDescriptorInfo *info) {
             // Use default ports during early initialization
             if (port == DEFAULT_WEB_PORT) service = "web server";
             else if (port == DEFAULT_WEBSOCKET_PORT) service = "websocket server";
-            else if (port == 5353) service = "mDNS";  // mDNS port is standard
+            else if (port == 5353) service = "mDNS server";  // mDNS port is standard
             
             if (service[0]) {
                 snprintf(info->description, sizeof(info->description), 
@@ -517,27 +517,27 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
     size_t total_threads = logging_threads.thread_count + 
                           web_threads.thread_count + 
                           websocket_threads.thread_count + 
-                          mdns_threads.thread_count + 
+                          mdns_server_threads.thread_count + 
                           print_threads.thread_count;
     
     // Update memory metrics for each service
     update_service_thread_metrics(&logging_threads);
     update_service_thread_metrics(&web_threads);
     update_service_thread_metrics(&websocket_threads);
-    update_service_thread_metrics(&mdns_threads);
+    update_service_thread_metrics(&mdns_server_threads);
     update_service_thread_metrics(&print_threads);
     
     // Calculate service memory totals
     size_t service_virtual_total = logging_threads.virtual_memory +
                                  web_threads.virtual_memory +
                                  websocket_threads.virtual_memory +
-                                 mdns_threads.virtual_memory +
+                                 mdns_server_threads.virtual_memory +
                                  print_threads.virtual_memory;
     
     size_t service_resident_total = logging_threads.resident_memory +
                                   web_threads.resident_memory +
                                   websocket_threads.resident_memory +
-                                  mdns_threads.resident_memory +
+                                  mdns_server_threads.resident_memory +
                                   print_threads.resident_memory;
     
     // Calculate queue memory
@@ -640,8 +640,8 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
         json_array_append_new(enabled_services, json_string("web"));
     if (app_config->websocket.enabled)
         json_array_append_new(enabled_services, json_string("websocket"));
-    if (app_config->mdns.enabled)
-        json_array_append_new(enabled_services, json_string("mdns"));
+    if (app_config->mdns_server.enabled)
+        json_array_append_new(enabled_services, json_string("mdns server"));
     if (app_config->print_queue.enabled)
         json_array_append_new(enabled_services, json_string("print"));
     json_object_set_new(root, "enabledServices", enabled_services);
@@ -707,22 +707,22 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
     json_object_set_new(websocket, "status", websocket_status);
     json_object_set_new(services, "websocket", websocket);
     
-    // mDNS configuration
-    json_t *mdns = json_object();
-    json_object_set_new(mdns, "enabled", json_boolean(app_config->mdns.enabled));
-    json_object_set_new(mdns, "device_id", json_string(app_config->mdns.device_id));
-    json_object_set_new(mdns, "friendly_name", json_string(app_config->mdns.friendly_name));
-    json_object_set_new(mdns, "model", json_string(app_config->mdns.model));
-    json_object_set_new(mdns, "manufacturer", json_string(app_config->mdns.manufacturer));
+    // mDNS Server configuration
+    json_t *mdns_server = json_object();
+    json_object_set_new(mdns_server, "enabled", json_boolean(app_config->mdns_server.enabled));
+    json_object_set_new(mdns_server, "device_id", json_string(app_config->mdns_server.device_id));
+    json_object_set_new(mdns_server, "friendly_name", json_string(app_config->mdns_server.friendly_name));
+    json_object_set_new(mdns_server, "model", json_string(app_config->mdns_server.model));
+    json_object_set_new(mdns_server, "manufacturer", json_string(app_config->mdns_server.manufacturer));
     
-    json_t *mdns_status = json_object();
-    json_object_set_new(mdns_status, "discoveryCount", json_integer(0));
-    json_object_set_new(mdns_status, "threads", json_integer(mdns_threads.thread_count));
-    json_object_set_new(mdns_status, "virtualMemoryBytes", json_integer(mdns_threads.virtual_memory));
-    json_object_set_new(mdns_status, "residentMemoryBytes", json_integer(mdns_threads.resident_memory));
-    add_thread_ids_to_service(mdns_status, &mdns_threads);
-    json_object_set_new(mdns, "status", mdns_status);
-    json_object_set_new(services, "mdns", mdns);
+    json_t *mdns_server_status = json_object();
+    json_object_set_new(mdns_server_status, "discoveryCount", json_integer(0));
+    json_object_set_new(mdns_server_status, "threads", json_integer(mdns_server_threads.thread_count));
+    json_object_set_new(mdns_server_status, "virtualMemoryBytes", json_integer(mdns_server_threads.virtual_memory));
+    json_object_set_new(mdns_server_status, "residentMemoryBytes", json_integer(mdns_server_threads.resident_memory));
+    add_thread_ids_to_service(mdns_server_status, &mdns_server_threads);
+    json_object_set_new(mdns_server, "status", mdns_server_status);
+    json_object_set_new(services, "mdns server", mdns_server);
     
     // Print queue configuration
     json_t *print = json_object();

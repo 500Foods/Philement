@@ -269,7 +269,7 @@ static uint8_t *write_dns_txt_record(uint8_t *ptr, const char *name, char **txt_
 }
 
 static void _mdns_server_build_interface_announcement(uint8_t *packet, size_t *packet_len, const char *hostname, 
-                                             const mdns_server_t *mdns, uint32_t ttl, const mdns_server_interface_t *iface) {
+                                             const mdns_server_t *mdns_server, uint32_t ttl, const mdns_server_interface_t *iface) {
     dns_header_t *header = (dns_header_t *)packet;
     header->id = 0;
     header->flags = htons(MDNS_FLAG_RESPONSE | MDNS_FLAG_AUTHORITATIVE);
@@ -294,35 +294,35 @@ static void _mdns_server_build_interface_announcement(uint8_t *packet, size_t *p
     }
 
     // Add service records
-    for (size_t i = 0; i < mdns->num_services; i++) {
+    for (size_t i = 0; i < mdns_server->num_services; i++) {
         char service_type[256];
         char full_service_name[256];
-        const char *local_suffix = strstr(mdns->services[i].type, ".local");
-        size_t type_len = local_suffix ? (size_t)(local_suffix - mdns->services[i].type) : strlen(mdns->services[i].type);
-        strncpy(service_type, mdns->services[i].type, type_len);
+        const char *local_suffix = strstr(mdns_server->services[i].type, ".local");
+        size_t type_len = local_suffix ? (size_t)(local_suffix - mdns_server->services[i].type) : strlen(mdns_server->services[i].type);
+        strncpy(service_type, mdns_server->services[i].type, type_len);
         service_type[type_len] = '\0';
 
         const size_t max_name_len = 100;
         const size_t max_type_len = 100;
-        size_t name_len = strlen(mdns->services[i].name);
+        size_t name_len = strlen(mdns_server->services[i].name);
         size_t stype_len = strlen(service_type);
         
         size_t total_len = name_len + 1 + stype_len + 6;
         if (total_len >= sizeof(full_service_name)) {
             log_this("mDNSServer", "Service name too long: %s.%s.local truncated", LOG_LEVEL_WARN,
-                     mdns->services[i].name, service_type);
+                     mdns_server->services[i].name, service_type);
             name_len = max_name_len < name_len ? max_name_len : name_len;
             stype_len = max_type_len < stype_len ? max_type_len : stype_len;
         }
 
         snprintf(full_service_name, sizeof(full_service_name), "%.*s.%.*s.local", 
-                 (int)name_len, mdns->services[i].name, (int)stype_len, service_type);
+                 (int)name_len, mdns_server->services[i].name, (int)stype_len, service_type);
 
-        ptr = write_dns_ptr_record(ptr, mdns->services[i].type, full_service_name, ttl);
+        ptr = write_dns_ptr_record(ptr, mdns_server->services[i].type, full_service_name, ttl);
         header->ancount = htons(ntohs(header->ancount) + 1);
-        ptr = write_dns_srv_record(ptr, full_service_name, 0, 0, mdns->services[i].port, hostname, ttl);
+        ptr = write_dns_srv_record(ptr, full_service_name, 0, 0, mdns_server->services[i].port, hostname, ttl);
         header->ancount = htons(ntohs(header->ancount) + 1);
-        ptr = write_dns_txt_record(ptr, full_service_name, mdns->services[i].txt_records, mdns->services[i].num_txt_records, ttl);
+        ptr = write_dns_txt_record(ptr, full_service_name, mdns_server->services[i].txt_records, mdns_server->services[i].num_txt_records, ttl);
         header->ancount = htons(ntohs(header->ancount) + 1);
     }
 
@@ -333,21 +333,21 @@ static void _mdns_server_build_interface_announcement(uint8_t *packet, size_t *p
 }
 
 void mdns_server_build_announcement(uint8_t *packet, size_t *packet_len, const char *hostname, 
-                           const mdns_server_t *mdns, uint32_t ttl, const network_info_t *net_info) {
+                           const mdns_server_t *mdns_server, uint32_t ttl, const network_info_t *net_info) {
     // Find the matching interface from net_info
     mdns_server_interface_t *matching_iface = NULL;
     if (net_info && net_info->primary_index >= 0 && net_info->primary_index < net_info->count) {
         const interface_t *primary = &net_info->interfaces[net_info->primary_index];
-        for (size_t i = 0; i < mdns->num_interfaces; i++) {
-            if (strcmp(mdns->interfaces[i].if_name, primary->name) == 0) {
-                matching_iface = &mdns->interfaces[i];
+        for (size_t i = 0; i < mdns_server->num_interfaces; i++) {
+            if (strcmp(mdns_server->interfaces[i].if_name, primary->name) == 0) {
+                matching_iface = &mdns_server->interfaces[i];
                 break;
             }
         }
     }
 
     // Use the interface-specific announcement builder
-    _mdns_server_build_interface_announcement(packet, packet_len, hostname, mdns, ttl, matching_iface);
+    _mdns_server_build_interface_announcement(packet, packet_len, hostname, mdns_server, ttl, matching_iface);
 }
 
 static network_info_t *create_single_interface_net_info(const mdns_server_interface_t *iface) {
@@ -380,7 +380,7 @@ static void free_single_interface_net_info(network_info_t *net_info) {
     free(net_info);
 }
 
-void mdns_server_send_announcement(mdns_server_t *mdns, const network_info_t *net_info __attribute__((unused))) {
+void mdns_server_send_announcement(mdns_server_t *mdns_server, const network_info_t *net_info __attribute__((unused))) {
     struct sockaddr_in addr_v4;
     struct sockaddr_in6 addr_v6;
 
@@ -395,8 +395,8 @@ void mdns_server_send_announcement(mdns_server_t *mdns, const network_info_t *ne
     inet_pton(AF_INET6, MDNS_GROUP_V6, &addr_v6.sin6_addr);
 
     // Send announcement on each interface
-    for (size_t i = 0; i < mdns->num_interfaces; i++) {
-        mdns_server_interface_t *iface = &mdns->interfaces[i];
+    for (size_t i = 0; i < mdns_server->num_interfaces; i++) {
+        mdns_server_interface_t *iface = &mdns_server->interfaces[i];
         uint8_t packet[MDNS_MAX_PACKET_SIZE];
         size_t packet_len;
 
@@ -408,7 +408,7 @@ void mdns_server_send_announcement(mdns_server_t *mdns, const network_info_t *ne
         }
 
         // Build announcement with interface-specific IPs
-        mdns_server_build_announcement(packet, &packet_len, mdns->hostname, mdns, MDNS_TTL, iface_net_info);
+        mdns_server_build_announcement(packet, &packet_len, mdns_server->hostname, mdns_server, MDNS_TTL, iface_net_info);
         free_single_interface_net_info(iface_net_info);
 
         // Send IPv4 announcement
@@ -435,8 +435,8 @@ void mdns_server_send_announcement(mdns_server_t *mdns, const network_info_t *ne
 
 void *mdns_server_announce_loop(void *arg) {
     mdns_server_thread_arg_t *thread_arg = (mdns_server_thread_arg_t *)arg;
-    mdns_server_t *mdns = thread_arg->mdns;
-    add_service_thread(&mdns_threads, pthread_self());
+    mdns_server_t *mdns_server = thread_arg->mdns_server;
+    add_service_thread(&mdns_server_threads, pthread_self());
 
     log_this("mDNSServer", "mDNS Server announce loop started", LOG_LEVEL_INFO);
 
@@ -445,7 +445,7 @@ void *mdns_server_announce_loop(void *arg) {
 
     while (!mdns_server_system_shutdown) {
         if (initial_announcements > 0) {
-            mdns_server_send_announcement(mdns, thread_arg->net_info);
+            mdns_server_send_announcement(mdns_server, thread_arg->net_info);
             initial_announcements--;
             sleep(interval);
             if (initial_announcements == 0) interval = 60; // Switch to normal interval
@@ -460,38 +460,38 @@ void *mdns_server_announce_loop(void *arg) {
             pthread_mutex_unlock(&terminate_mutex);
 
             if (!mdns_server_system_shutdown) {
-                mdns_server_send_announcement(mdns, thread_arg->net_info);
+                mdns_server_send_announcement(mdns_server, thread_arg->net_info);
             }
         }
     }
 
     log_this("mDNSServer", "Shutdown: mDNS Server announce loop exiting", LOG_LEVEL_INFO);
-    remove_service_thread(&mdns_threads, pthread_self());
+    remove_service_thread(&mdns_server_threads, pthread_self());
     free(thread_arg);
     return NULL;
 }
 
 void *mdns_server_responder_loop(void *arg) {
     mdns_server_thread_arg_t *thread_arg = (mdns_server_thread_arg_t *)arg;
-    mdns_server_t *mdns = thread_arg->mdns;
+    mdns_server_t *mdns_server = thread_arg->mdns_server;
     uint8_t buffer[MDNS_MAX_PACKET_SIZE];
     char name[256];
 
-    add_service_thread(&mdns_threads, pthread_self());
+    add_service_thread(&mdns_server_threads, pthread_self());
     log_this("mDNSServer", "mDNS Server responder loop started", LOG_LEVEL_INFO);
 
     // Create pollfd array for all interface sockets
-    struct pollfd *fds = malloc(sizeof(struct pollfd) * mdns->num_interfaces * 2); // 2 sockets per interface (v4/v6)
+    struct pollfd *fds = malloc(sizeof(struct pollfd) * mdns_server->num_interfaces * 2); // 2 sockets per interface (v4/v6)
     if (!fds) {
         log_this("mDNSServer", "Out of memory for poll fds", LOG_LEVEL_DEBUG);
-        remove_service_thread(&mdns_threads, pthread_self());
+        remove_service_thread(&mdns_server_threads, pthread_self());
         free(thread_arg);
         return NULL;
     }
 
     int nfds = 0;
-    for (size_t i = 0; i < mdns->num_interfaces; i++) {
-        mdns_server_interface_t *iface = &mdns->interfaces[i];
+    for (size_t i = 0; i < mdns_server->num_interfaces; i++) {
+        mdns_server_interface_t *iface = &mdns_server->interfaces[i];
         if (iface->sockfd_v4 >= 0) {
             fds[nfds].fd = iface->sockfd_v4;
             fds[nfds].events = POLLIN;
@@ -507,7 +507,7 @@ void *mdns_server_responder_loop(void *arg) {
     if (nfds == 0) {
         log_this("mDNSServer", "No sockets to monitor", LOG_LEVEL_DEBUG);
         free(fds);
-        remove_service_thread(&mdns_threads, pthread_self());
+        remove_service_thread(&mdns_server_threads, pthread_self());
         free(thread_arg);
         return NULL;
     }
@@ -546,24 +546,24 @@ void *mdns_server_responder_loop(void *arg) {
 
                     if ((qclass & 0x7FFF) == MDNS_CLASS_IN) {
                         if (qtype == MDNS_TYPE_PTR) {
-                            for (size_t k = 0; k < mdns->num_services; k++) {
-                                if (strcmp(name, mdns->services[k].type) == 0) {
-                                    mdns_server_send_announcement(mdns, thread_arg->net_info);
+                            for (size_t k = 0; k < mdns_server->num_services; k++) {
+                                if (strcmp(name, mdns_server->services[k].type) == 0) {
+                                    mdns_server_send_announcement(mdns_server, thread_arg->net_info);
                                     goto next_packet;
                                 }
                             }
                         } else if (qtype == MDNS_TYPE_SRV || qtype == MDNS_TYPE_TXT) {
-                            for (size_t k = 0; k < mdns->num_services; k++) {
+                            for (size_t k = 0; k < mdns_server->num_services; k++) {
                                 char full_name[256];
-                                snprintf(full_name, sizeof(full_name), "%s.%s", mdns->services[k].name, mdns->services[k].type);
+                                snprintf(full_name, sizeof(full_name), "%s.%s", mdns_server->services[k].name, mdns_server->services[k].type);
                                 if (strcmp(name, full_name) == 0) {
-                                    mdns_server_send_announcement(mdns, thread_arg->net_info);
+                                    mdns_server_send_announcement(mdns_server, thread_arg->net_info);
                                     goto next_packet;
                                 }
                             }
                         } else if ((qtype == MDNS_TYPE_A || qtype == MDNS_TYPE_AAAA || qtype == MDNS_TYPE_ANY) &&
-                                   strcmp(name, mdns->hostname) == 0) {
-                            mdns_server_send_announcement(mdns, thread_arg->net_info);
+                                   strcmp(name, mdns_server->hostname) == 0) {
+                            mdns_server_send_announcement(mdns_server, thread_arg->net_info);
                             goto next_packet;
                         }
                     }
@@ -575,7 +575,7 @@ void *mdns_server_responder_loop(void *arg) {
     }
 
     log_this("mDNSServer", "Shutdown: mDNS Server responder loop exiting", LOG_LEVEL_INFO);
-    remove_service_thread(&mdns_threads, pthread_self());
+    remove_service_thread(&mdns_server_threads, pthread_self());
     free(thread_arg);
     return NULL;
 }
@@ -584,26 +584,26 @@ mdns_server_t *mdns_server_init(const char *app_name, const char *id, const char
                   const char *model, const char *manufacturer, const char *sw_version,
                   const char *hw_version, const char *config_url,
                   mdns_server_service_t *services, size_t num_services, int enable_ipv6) {
-    mdns_server_t *mdns = malloc(sizeof(mdns_server_t));
-    if (!mdns) {
+    mdns_server_t *mdns_server = malloc(sizeof(mdns_server_t));
+    if (!mdns_server) {
         log_this("mDNSServer", "Out of memory", LOG_LEVEL_ERROR);
         return NULL;
     }
 
-    mdns->enable_ipv6 = enable_ipv6;
+    mdns_server->enable_ipv6 = enable_ipv6;
     network_info_t *net_info = get_network_info();
     if (!net_info || net_info->count == 0) {
         log_this("mDNSServer", "Failed to get network info", LOG_LEVEL_DEBUG);
-        free(mdns);
+        free(mdns_server);
         return NULL;
     }
 
     // Allocate space for interfaces
-    mdns->interfaces = malloc(sizeof(mdns_server_interface_t) * net_info->count);
-    mdns->num_interfaces = 0;
-    if (!mdns->interfaces) {
+    mdns_server->interfaces = malloc(sizeof(mdns_server_interface_t) * net_info->count);
+    mdns_server->num_interfaces = 0;
+    if (!mdns_server->interfaces) {
         log_this("mDNSServer", "Out of memory for interfaces", LOG_LEVEL_DEBUG);
-        free(mdns);
+        free(mdns_server);
         free_network_info(net_info);
         return NULL;
     }
@@ -617,60 +617,60 @@ mdns_server_t *mdns_server_init(const char *app_name, const char *id, const char
             continue;
         }
 
-        mdns_server_interface_t *mdns_if = &mdns->interfaces[mdns->num_interfaces];
-        mdns_if->if_name = strdup(iface->name);
-        mdns_if->ip_addresses = malloc(sizeof(char*) * iface->ip_count);
-        mdns_if->num_addresses = iface->ip_count;
+        mdns_server_interface_t *mdns_server_if = &mdns_server->interfaces[mdns_server->num_interfaces];
+        mdns_server_if->if_name = strdup(iface->name);
+        mdns_server_if->ip_addresses = malloc(sizeof(char*) * iface->ip_count);
+        mdns_server_if->num_addresses = iface->ip_count;
 
-        if (!mdns_if->if_name || !mdns_if->ip_addresses) {
+        if (!mdns_server_if->if_name || !mdns_server_if->ip_addresses) {
             log_this("mDNSServer", "Out of memory for interface %s", LOG_LEVEL_DEBUG, iface->name);
             goto cleanup;
         }
 
         // Copy IP addresses
         for (int j = 0; j < iface->ip_count; j++) {
-            mdns_if->ip_addresses[j] = strdup(iface->ips[j]);
-            if (!mdns_if->ip_addresses[j]) {
+            mdns_server_if->ip_addresses[j] = strdup(iface->ips[j]);
+            if (!mdns_server_if->ip_addresses[j]) {
                 log_this("mDNSServer", "Out of memory for IP address", LOG_LEVEL_DEBUG);
                 goto cleanup;
             }
         }
 
         // Create sockets
-        mdns_if->sockfd_v4 = create_multicast_socket(AF_INET, MDNS_GROUP_V4, mdns_if->if_name);
-        mdns_if->sockfd_v6 = enable_ipv6 ? create_multicast_socket(AF_INET6, MDNS_GROUP_V6, mdns_if->if_name) : -1;
+        mdns_server_if->sockfd_v4 = create_multicast_socket(AF_INET, MDNS_GROUP_V4, mdns_server_if->if_name);
+        mdns_server_if->sockfd_v6 = enable_ipv6 ? create_multicast_socket(AF_INET6, MDNS_GROUP_V6, mdns_server_if->if_name) : -1;
 
-        if (mdns_if->sockfd_v4 < 0 && (!enable_ipv6 || mdns_if->sockfd_v6 < 0)) {
-            log_this("mDNSServer", "Failed to create sockets for interface %s", LOG_LEVEL_DEBUG, mdns_if->if_name);
+        if (mdns_server_if->sockfd_v4 < 0 && (!enable_ipv6 || mdns_server_if->sockfd_v6 < 0)) {
+            log_this("mDNSServer", "Failed to create sockets for interface %s", LOG_LEVEL_DEBUG, mdns_server_if->if_name);
             goto cleanup;
         }
 
-        mdns->num_interfaces++;
+        mdns_server->num_interfaces++;
     }
 
-    if (mdns->num_interfaces == 0) {
+    if (mdns_server->num_interfaces == 0) {
         log_this("mDNSServer", "No usable interfaces found", LOG_LEVEL_DEBUG);
         goto cleanup;
     }
 
     // Initialize services
-    mdns->num_services = num_services;
-    mdns->services = malloc(sizeof(mdns_server_service_t) * num_services);
-    if (!mdns->services) {
+    mdns_server->num_services = num_services;
+    mdns_server->services = malloc(sizeof(mdns_server_service_t) * num_services);
+    if (!mdns_server->services) {
         log_this("mDNSServer", "Out of memory for services", LOG_LEVEL_DEBUG);
-        free(mdns);
+        free(mdns_server);
         free_network_info(net_info);
         return NULL;
     }
 
     for (size_t i = 0; i < num_services; i++) {
-        mdns->services[i].name = strdup(services[i].name);
-        mdns->services[i].type = strdup(services[i].type);
-        mdns->services[i].port = services[i].port;
-        mdns->services[i].num_txt_records = services[i].num_txt_records;
-        mdns->services[i].txt_records = malloc(sizeof(char*) * services[i].num_txt_records);
+        mdns_server->services[i].name = strdup(services[i].name);
+        mdns_server->services[i].type = strdup(services[i].type);
+        mdns_server->services[i].port = services[i].port;
+        mdns_server->services[i].num_txt_records = services[i].num_txt_records;
+        mdns_server->services[i].txt_records = malloc(sizeof(char*) * services[i].num_txt_records);
         for (size_t j = 0; j < services[i].num_txt_records; j++) {
-            mdns->services[i].txt_records[j] = strdup(services[i].txt_records[j]);
+            mdns_server->services[i].txt_records[j] = strdup(services[i].txt_records[j]);
         }
     }
 
@@ -683,83 +683,83 @@ mdns_server_t *mdns_server_init(const char *app_name, const char *id, const char
     char *dot = strchr(hostname, '.');
     if (dot) *dot = '\0';
 
-    mdns->hostname = malloc(strlen(hostname) + 7);
-    if (!mdns->hostname) {
+    mdns_server->hostname = malloc(strlen(hostname) + 7);
+    if (!mdns_server->hostname) {
         log_this("mDNSServer", "Out of memory", LOG_LEVEL_ERROR);
         goto cleanup;
     }
-    sprintf(mdns->hostname, "%s.local", hostname);
+    sprintf(mdns_server->hostname, "%s.local", hostname);
 
     // Initialize service info
-    mdns->service_name = strdup(app_name);
-    mdns->device_id = strdup(id);
-    mdns->friendly_name = strdup(friendly_name);
-    mdns->model = strdup(model);
-    mdns->manufacturer = strdup(manufacturer);
-    mdns->sw_version = strdup(sw_version);
-    mdns->hw_version = strdup(hw_version);
-    mdns->config_url = strdup(config_url);
-    mdns->secret_key = generate_secret_key();
+    mdns_server->service_name = strdup(app_name);
+    mdns_server->device_id = strdup(id);
+    mdns_server->friendly_name = strdup(friendly_name);
+    mdns_server->model = strdup(model);
+    mdns_server->manufacturer = strdup(manufacturer);
+    mdns_server->sw_version = strdup(sw_version);
+    mdns_server->hw_version = strdup(hw_version);
+    mdns_server->config_url = strdup(config_url);
+    mdns_server->secret_key = generate_secret_key();
 
-    if (!mdns->service_name || !mdns->device_id || !mdns->friendly_name ||
-        !mdns->model || !mdns->manufacturer || !mdns->sw_version ||
-        !mdns->hw_version || !mdns->config_url || !mdns->secret_key) {
+    if (!mdns_server->service_name || !mdns_server->device_id || !mdns_server->friendly_name ||
+        !mdns_server->model || !mdns_server->manufacturer || !mdns_server->sw_version ||
+        !mdns_server->hw_version || !mdns_server->config_url || !mdns_server->secret_key) {
         log_this("mDNSServer", "Out of memory", LOG_LEVEL_ERROR);
         goto cleanup;
     }
 
-    log_this("mDNSServer", "mDNS Server initialized with hostname: %s", LOG_LEVEL_INFO, mdns->hostname);
+    log_this("mDNSServer", "mDNS Server initialized with hostname: %s", LOG_LEVEL_INFO, mdns_server->hostname);
     free_network_info(net_info);
-    return mdns;
+    return mdns_server;
 
 cleanup:
-    if (mdns) {
-        if (mdns->interfaces) {
-            for (size_t i = 0; i < mdns->num_interfaces; i++) {
-                mdns_server_interface_t *mdns_if = &mdns->interfaces[i];
-                if (mdns_if->if_name) free(mdns_if->if_name);
-                if (mdns_if->ip_addresses) {
-                    for (size_t j = 0; j < mdns_if->num_addresses; j++) {
-                        if (mdns_if->ip_addresses[j]) free(mdns_if->ip_addresses[j]);
+    if (mdns_server) {
+        if (mdns_server->interfaces) {
+            for (size_t i = 0; i < mdns_server->num_interfaces; i++) {
+                mdns_server_interface_t *mdns_server_if = &mdns_server->interfaces[i];
+                if (mdns_server_if->if_name) free(mdns_server_if->if_name);
+                if (mdns_server_if->ip_addresses) {
+                    for (size_t j = 0; j < mdns_server_if->num_addresses; j++) {
+                        if (mdns_server_if->ip_addresses[j]) free(mdns_server_if->ip_addresses[j]);
                     }
-                    free(mdns_if->ip_addresses);
+                    free(mdns_server_if->ip_addresses);
                 }
-                if (mdns_if->sockfd_v4 >= 0) close(mdns_if->sockfd_v4);
-                if (mdns_if->sockfd_v6 >= 0) close(mdns_if->sockfd_v6);
+                if (mdns_server_if->sockfd_v4 >= 0) close(mdns_server_if->sockfd_v4);
+                if (mdns_server_if->sockfd_v6 >= 0) close(mdns_server_if->sockfd_v6);
             }
-            free(mdns->interfaces);
+            free(mdns_server->interfaces);
         }
-        if (mdns->services) {
-            for (size_t i = 0; i < mdns->num_services; i++) {
-                if (mdns->services[i].name) free(mdns->services[i].name);
-                if (mdns->services[i].type) free(mdns->services[i].type);
-                if (mdns->services[i].txt_records) {
-                    for (size_t j = 0; j < mdns->services[i].num_txt_records; j++) {
-                        if (mdns->services[i].txt_records[j]) free(mdns->services[i].txt_records[j]);
+        if (mdns_server->services) {
+            for (size_t i = 0; i < mdns_server->num_services; i++) {
+                if (mdns_server->services[i].name) free(mdns_server->services[i].name);
+                if (mdns_server->services[i].type) free(mdns_server->services[i].type);
+                if (mdns_server->services[i].txt_records) {
+                    for (size_t j = 0; j < mdns_server->services[i].num_txt_records; j++) {
+                        if (mdns_server->services[i].txt_records[j]) free(mdns_server->services[i].txt_records[j]);
                     }
-                    free(mdns->services[i].txt_records);
+                    free(mdns_server->services[i].txt_records);
                 }
             }
-            free(mdns->services);
+            free(mdns_server->services);
         }
-        if (mdns->hostname) free(mdns->hostname);
-        if (mdns->service_name) free(mdns->service_name);
-        if (mdns->device_id) free(mdns->device_id);
-        if (mdns->friendly_name) free(mdns->friendly_name);
-        if (mdns->model) free(mdns->model);
-        if (mdns->manufacturer) free(mdns->manufacturer);
-        if (mdns->sw_version) free(mdns->sw_version);
-        if (mdns->hw_version) free(mdns->hw_version);
-        if (mdns->config_url) free(mdns->config_url);
-        if (mdns->secret_key) free(mdns->secret_key);
-        free(mdns);
+        if (mdns_server->hostname) free(mdns_server->hostname);
+        if (mdns_server->service_name) free(mdns_server->service_name);
+        if (mdns_server->device_id) free(mdns_server->device_id);
+        if (mdns_server->friendly_name) free(mdns_server->friendly_name);
+        if (mdns_server->model) free(mdns_server->model);
+        if (mdns_server->manufacturer) free(mdns_server->manufacturer);
+        if (mdns_server->sw_version) free(mdns_server->sw_version);
+        if (mdns_server->hw_version) free(mdns_server->hw_version);
+        if (mdns_server->config_url) free(mdns_server->config_url);
+        if (mdns_server->secret_key) free(mdns_server->secret_key);
+        free(mdns_server);
     }
     if (net_info) free_network_info(net_info);
     return NULL;
 }
 
-void mdns_server_shutdown(mdns_server_t *mdns) {
-    if (!mdns) return;
+void mdns_server_shutdown(mdns_server_t *mdns_server) {
+    if (!mdns_server) return;
 
     log_this("mDNSServer", "Shutdown: Initiating mDNS Server shutdown", LOG_LEVEL_INFO);
     network_info_t *net_info = get_network_info();
@@ -778,8 +778,8 @@ void mdns_server_shutdown(mdns_server_t *mdns) {
         inet_pton(AF_INET6, MDNS_GROUP_V6, &addr_v6.sin6_addr);
 
         // Send goodbye packets on each interface
-        for (size_t iface_idx = 0; iface_idx < mdns->num_interfaces; iface_idx++) {
-            mdns_server_interface_t *iface = &mdns->interfaces[iface_idx];
+        for (size_t iface_idx = 0; iface_idx < mdns_server->num_interfaces; iface_idx++) {
+            mdns_server_interface_t *iface = &mdns_server->interfaces[iface_idx];
             uint8_t packet[MDNS_MAX_PACKET_SIZE];
             size_t packet_len;
 
@@ -791,7 +791,7 @@ void mdns_server_shutdown(mdns_server_t *mdns) {
             }
 
             // Build goodbye announcement with interface-specific IPs
-            mdns_server_build_announcement(packet, &packet_len, mdns->hostname, mdns, 0, iface_net_info);
+            mdns_server_build_announcement(packet, &packet_len, mdns_server->hostname, mdns_server, 0, iface_net_info);
             free_single_interface_net_info(iface_net_info);
             
             // Send 3 goodbye packets per RFC 6762
@@ -813,26 +813,26 @@ void mdns_server_shutdown(mdns_server_t *mdns) {
         }
     }
     free_network_info(net_info);
-    free(mdns->hostname);
-    free(mdns->service_name);
-    free(mdns->device_id);
-    free(mdns->friendly_name);
-    free(mdns->model);
-    free(mdns->manufacturer);
-    free(mdns->sw_version);
-    free(mdns->hw_version);
-    free(mdns->config_url);
-    free(mdns->secret_key);
+    free(mdns_server->hostname);
+    free(mdns_server->service_name);
+    free(mdns_server->device_id);
+    free(mdns_server->friendly_name);
+    free(mdns_server->model);
+    free(mdns_server->manufacturer);
+    free(mdns_server->sw_version);
+    free(mdns_server->hw_version);
+    free(mdns_server->config_url);
+    free(mdns_server->secret_key);
 
-    for (size_t i = 0; i < mdns->num_services; i++) {
-        free(mdns->services[i].name);
-        free(mdns->services[i].type);
-        for (size_t j = 0; j < mdns->services[i].num_txt_records; j++) {
-            free(mdns->services[i].txt_records[j]);
+    for (size_t i = 0; i < mdns_server->num_services; i++) {
+        free(mdns_server->services[i].name);
+        free(mdns_server->services[i].type);
+        for (size_t j = 0; j < mdns_server->services[i].num_txt_records; j++) {
+            free(mdns_server->services[i].txt_records[j]);
         }
-        free(mdns->services[i].txt_records);
+        free(mdns_server->services[i].txt_records);
     }
-    free(mdns->services);
-    free(mdns);
+    free(mdns_server->services);
+    free(mdns_server);
     log_this("mDNSServer", "Shutdown: mDNS Server shutdown complete", LOG_LEVEL_INFO);
 }
