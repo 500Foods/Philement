@@ -122,8 +122,8 @@ void inthandler(int signum) {
 //    - Prevent lingering advertisements
 //    - Clear multicast groups
 //    - Release network resources
-static void shutdown_mdns_system(void) {
-    if (!app_config->mdns.enabled) {
+static void shutdown_mdns_server_system(void) {
+    if (!app_config->mdns_server.enabled) {
         return;
     }
 
@@ -133,12 +133,12 @@ static void shutdown_mdns_system(void) {
     
     // Get the thread arguments before joining
     void *thread_arg;
-    pthread_join(mdns_thread, &thread_arg);
+    pthread_join(mdns_server_thread, &thread_arg);
     
-    // Clean up mDNS resources
-    if (mdns) {
-        mdns_server_shutdown(mdns);
-        mdns = NULL;
+    // Clean up mDNS Server resources
+    if (mdns_server) {
+        mdns_server_shutdown(mdns_server);
+        mdns_server = NULL;
     }
     
     // Free the thread arguments if they exist
@@ -271,21 +271,21 @@ static void free_app_config(void) {
         free(app_config->websocket.protocol);
         free(app_config->websocket.key);
 
-        // Free mDNS config
-        free(app_config->mdns.device_id);
-        free(app_config->mdns.friendly_name);
-        free(app_config->mdns.model);
-        free(app_config->mdns.manufacturer);
-        free(app_config->mdns.version);
-        for (size_t i = 0; i < app_config->mdns.num_services; i++) {
-            free(app_config->mdns.services[i].name);
-            free(app_config->mdns.services[i].type);
-            for (size_t j = 0; j < app_config->mdns.services[i].num_txt_records; j++) {
-                free(app_config->mdns.services[i].txt_records[j]);
+        // Free mDNS Server config
+        free(app_config->mdns_server.device_id);
+        free(app_config->mdns_server.friendly_name);
+        free(app_config->mdns_server.model);
+        free(app_config->mdns_server.manufacturer);
+        free(app_config->mdns_server.version);
+        for (size_t i = 0; i < app_config->mdns_server.num_services; i++) {
+            free(app_config->mdns_server.services[i].name);
+            free(app_config->mdns_server.services[i].type);
+            for (size_t j = 0; j < app_config->mdns_server.services[i].num_txt_records; j++) {
+                free(app_config->mdns_server.services[i].txt_records[j]);
             }
-            free(app_config->mdns.services[i].txt_records);
+            free(app_config->mdns_server.services[i].txt_records);
         }
-        free(app_config->mdns.services);
+        free(app_config->mdns_server.services);
 
         // Free Logging config
         if (app_config->Logging.Levels) {
@@ -332,7 +332,7 @@ void graceful_shutdown(void) {
 
     // First stop accepting new connections/requests
     log_this("Shutdown", "Stopping mDNS Server service...", LOG_LEVEL_INFO);
-    shutdown_mdns_system();
+    shutdown_mdns_server_system();
     
     log_this("Shutdown", "Stopping web services...", LOG_LEVEL_INFO);
     shutdown_web_systems();
@@ -354,19 +354,19 @@ void graceful_shutdown(void) {
     extern ServiceThreads logging_threads;
     extern ServiceThreads web_threads;
     extern ServiceThreads websocket_threads;
-    extern ServiceThreads mdns_threads;
+    extern ServiceThreads mdns_server_threads;
     extern ServiceThreads print_threads;
     
     // Update thread metrics to clean up any dead threads
     update_service_thread_metrics(&logging_threads);
     update_service_thread_metrics(&web_threads);
     update_service_thread_metrics(&websocket_threads);
-    update_service_thread_metrics(&mdns_threads);
+    update_service_thread_metrics(&mdns_server_threads);
     update_service_thread_metrics(&print_threads);
     
     // Only show thread status if there are remaining threads
     if (logging_threads.thread_count > 0 || web_threads.thread_count > 0 ||
-        websocket_threads.thread_count > 0 || mdns_threads.thread_count > 0 ||
+        websocket_threads.thread_count > 0 || mdns_server_threads.thread_count > 0 ||
         print_threads.thread_count > 0) {
         char thread_status[256];
         snprintf(thread_status, sizeof(thread_status), 
@@ -374,7 +374,7 @@ void graceful_shutdown(void) {
                  logging_threads.thread_count,
                  web_threads.thread_count,
                  websocket_threads.thread_count,
-                 mdns_threads.thread_count,
+                 mdns_server_threads.thread_count,
                  print_threads.thread_count);
                 log_this("Shutdown", thread_status, LOG_LEVEL_INFO);
     }
@@ -389,13 +389,13 @@ void graceful_shutdown(void) {
         update_service_thread_metrics(&logging_threads);
         update_service_thread_metrics(&web_threads);
         update_service_thread_metrics(&websocket_threads);
-        update_service_thread_metrics(&mdns_threads);
+        update_service_thread_metrics(&mdns_server_threads);
         update_service_thread_metrics(&print_threads);
 
         // Calculate total non-logging threads
         int non_logging_threads = web_threads.thread_count + 
                                 websocket_threads.thread_count + 
-                                mdns_threads.thread_count + 
+                                mdns_server_threads.thread_count + 
                                 print_threads.thread_count;
 
         // Only continue waiting if we have more than just logging thread
@@ -427,7 +427,7 @@ void graceful_shutdown(void) {
     } while (threads_active && wait_count < max_wait_cycles);
 
     if (threads_active && web_threads.thread_count + websocket_threads.thread_count + 
-        mdns_threads.thread_count + print_threads.thread_count > 0) {
+        mdns_server_threads.thread_count + print_threads.thread_count > 0) {
         log_this("Shutdown", "Some non-logging threads did not exit cleanly", LOG_LEVEL_WARN);
     } else {
         log_this("Shutdown", "All non-logging threads exited successfully", LOG_LEVEL_INFO);
@@ -451,7 +451,7 @@ void graceful_shutdown(void) {
     update_service_thread_metrics(&logging_threads);
     update_service_thread_metrics(&web_threads);
     update_service_thread_metrics(&websocket_threads);
-    update_service_thread_metrics(&mdns_threads);
+    update_service_thread_metrics(&mdns_server_threads);
     update_service_thread_metrics(&print_threads);
 
     // Get main thread ID for exclusion from counts
@@ -459,7 +459,7 @@ void graceful_shutdown(void) {
     
     // Calculate total remaining threads
     int total_threads = logging_threads.thread_count + web_threads.thread_count +
-                       websocket_threads.thread_count + mdns_threads.thread_count +
+                       websocket_threads.thread_count + mdns_server_threads.thread_count +
                        print_threads.thread_count;
 
     // Only show detailed status if there are remaining threads
@@ -470,7 +470,7 @@ void graceful_shutdown(void) {
                  logging_threads.thread_count,
                  web_threads.thread_count,
                  websocket_threads.thread_count,
-                 mdns_threads.thread_count,
+                 mdns_server_threads.thread_count,
                  print_threads.thread_count);
         log_this("Shutdown", thread_status, LOG_LEVEL_INFO);
     }
@@ -484,7 +484,7 @@ void graceful_shutdown(void) {
     update_service_thread_metrics(&logging_threads);
     update_service_thread_metrics(&web_threads);
     update_service_thread_metrics(&websocket_threads);
-    update_service_thread_metrics(&mdns_threads);
+    update_service_thread_metrics(&mdns_server_threads);
     update_service_thread_metrics(&print_threads);
 
     // Count non-main threads and check their state
@@ -545,7 +545,7 @@ void graceful_shutdown(void) {
     CHECK_THREAD_STATE(logging_threads, "Logging");
     CHECK_THREAD_STATE(web_threads, "Web");
     CHECK_THREAD_STATE(websocket_threads, "WebSocket");
-    CHECK_THREAD_STATE(mdns_threads, "mDNS Server");
+    CHECK_THREAD_STATE(mdns_server_threads, "mDNS Server");
     CHECK_THREAD_STATE(print_threads, "Print");
 
     #undef CHECK_THREAD_STATE

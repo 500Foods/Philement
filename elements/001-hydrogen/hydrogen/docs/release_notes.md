@@ -1,8 +1,44 @@
 # Release Notes
 
+## 2025-Feb-23
+
+System organization and print queue improvements:
+
+- Refactored hydrogen module for better organization:
+  - Reorganized header includes for clearer dependencies
+  - Removed unused files for cleaner codebase
+  - Enhanced web server print queue management
+  - Improved overall code structure and maintainability
+
+## 2025-Feb-22
+
+Server management and logging enhancements:
+
+- Improved server naming consistency:
+  - Renamed mDNS references to mDNS Server throughout codebase
+  - Updated related documentation and configuration
+- Enhanced WebSocket server:
+  - Refactored initialization process
+  - Improved configuration handling
+  - Removed deprecated example status code
+- Upgraded logging system:
+  - Implemented defined log level constants
+  - Enhanced readability and maintainability
+  - Standardized logging calls across codebase
+
 ## 2025-Feb-21
 
-Enhanced system information reporting:
+Major system improvements:
+
+- Enhanced queue system and logging:
+  - Added queue system readiness tracking
+  - Implemented unified logging function
+  - Introduced timing functions for server lifecycle
+  - Improved shutdown logging for thread status
+  - Enhanced configuration support for queue initialization
+  - Standardized percentage formatting in status reports
+
+- Enhanced system information reporting:
 
 - Expanded system metrics in /api/system/info and WebSocket status:
   - Network interface details including IP addresses and traffic statistics

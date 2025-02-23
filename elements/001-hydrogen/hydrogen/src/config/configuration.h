@@ -56,6 +56,7 @@
 #define DEFAULT_MAX_QUEUE_BLOCKS 128
 #define DEFAULT_QUEUE_HASH_SIZE 256
 #define DEFAULT_QUEUE_CAPACITY 1024
+
 /* Message and Log Buffer Defaults */
 #define DEFAULT_LOG_BUFFER_SIZE 256
 #define DEFAULT_MESSAGE_BUFFER_SIZE 1024
@@ -212,7 +213,7 @@ typedef struct {
     char *version;        // Firmware/software version
     mdns_server_service_t *services; // Array of advertised services
     size_t num_services;   // Number of advertised services
-} mDNSConfig;
+} mDNSServerConfig;
 
 /*
  * Print Queue Configuration:
@@ -295,7 +296,7 @@ typedef struct {
     char *log_file_path;   // Central log file location
     WebConfig web;         // HTTP server settings
     WebSocketConfig websocket; // WebSocket server settings
-    mDNSConfig mdns;       // Service discovery settings
+    mDNSServerConfig mdns_server;       // Service discovery settings
     PrintQueueConfig print_queue;     // Print management settings
     LoggingConfig Logging;            // Logging configuration
     SystemResourcesConfig resources;   // System resource settings

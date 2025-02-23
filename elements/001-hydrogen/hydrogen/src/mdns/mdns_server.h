@@ -166,7 +166,7 @@ typedef struct {
  * - Enables different timing for each operation
  */
 typedef struct {
-    mdns_server_t *mdns;             // Server state
+    mdns_server_t *mdns_server;             // Server state
     int port;                        // Service port
     const network_info_t *net_info;  // Network interface info
     volatile int *running;           // Thread control flag
@@ -195,15 +195,15 @@ mdns_server_t *mdns_server_init(const char *app_name,        // Application iden
 void mdns_server_build_announcement(uint8_t *packet,           // Output buffer
                            size_t *packet_len,          // Packet length
                            const char *hostname,        // Local hostname
-                           const mdns_server_t *mdns,         // Server state
+                           const mdns_server_t *mdns_server,         // Server state
                            uint32_t ttl,               // Record TTL
                            const network_info_t *net_info); // Network info
 
 // Broadcast service announcements on all interfaces
-void mdns_server_send_announcement(mdns_server_t *mdns, const network_info_t *net_info);
+void mdns_server_send_announcement(mdns_server_t *mdns_server, const network_info_t *net_info);
 
 // Clean shutdown of mDNS server
-void mdns_server_shutdown(mdns_server_t *mdns);
+void mdns_server_shutdown(mdns_server_t *mdns_server);
 
 // Background thread for periodic announcements
 void *mdns_server_announce_loop(void *arg);
