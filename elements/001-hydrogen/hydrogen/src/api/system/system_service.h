@@ -6,7 +6,7 @@
 #ifndef HYDROGEN_SYSTEM_SERVICE_H
 #define HYDROGEN_SYSTEM_SERVICE_H
 
-// Feature test macros must come first
+// Feature test macros
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
 
@@ -26,8 +26,8 @@
 #include <jansson.h>
 
 // Project headers
-#include "../../configuration.h"
-#include "../../state.h"
+#include "../../config/configuration.h"
+#include "../../state/state.h"
 
 /**
  * Handles the /api/system/info endpoint request.
