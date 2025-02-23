@@ -25,7 +25,7 @@ static pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 extern ServiceThreads logging_threads;
 extern ServiceThreads web_threads;
 extern ServiceThreads websocket_threads;
-extern ServiceThreads mdns_threads;
+extern ServiceThreads mdns_server_threads;
 extern ServiceThreads print_threads;
 
 // Forward declarations of static functions

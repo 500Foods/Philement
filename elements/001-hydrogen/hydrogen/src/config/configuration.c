@@ -236,15 +236,15 @@ void create_default_config(const char* config_path) {
     json_object_set_new(websocket, "Protocol", json_string("hydrogen-protocol"));
     json_object_set_new(root, "WebSocket", websocket);
 
-    // mDNS Configuration
-    json_t* mdns = json_object();
-    json_object_set_new(mdns, "Enabled", json_boolean(1));
-    json_object_set_new(mdns, "EnableIPv6", json_boolean(0));  // Default to disabled since dev system doesn't support IPv6
-    json_object_set_new(mdns, "DeviceId", json_string("hydrogen-printer"));
-    json_object_set_new(mdns, "FriendlyName", json_string("Hydrogen 3D Printer"));
-    json_object_set_new(mdns, "Model", json_string("Hydrogen"));
-    json_object_set_new(mdns, "Manufacturer", json_string("Philement"));
-    json_object_set_new(mdns, "Version", json_string("0.1.0"));
+    // mDNS Server Configuration
+    json_t* mdns_server = json_object();
+    json_object_set_new(mdns_server, "Enabled", json_boolean(1));
+    json_object_set_new(mdns_server, "EnableIPv6", json_boolean(0));  // Default to disabled since dev system doesn't support IPv6
+    json_object_set_new(mdns_server, "DeviceId", json_string("hydrogen-printer"));
+    json_object_set_new(mdns_server, "FriendlyName", json_string("Hydrogen 3D Printer"));
+    json_object_set_new(mdns_server, "Model", json_string("Hydrogen"));
+    json_object_set_new(mdns_server, "Manufacturer", json_string("Philement"));
+    json_object_set_new(mdns_server, "Version", json_string("0.1.0"));
 
     json_t* services = json_array();
 
@@ -269,8 +269,8 @@ void create_default_config(const char* config_path) {
     json_object_set_new(websocket_service, "TxtRecords", json_string("path=/websocket"));
     json_array_append_new(services, websocket_service);
 
-    json_object_set_new(mdns, "Services", services);
-    json_object_set_new(root, "mDNSServer", mdns);
+    json_object_set_new(mdns_server, "Services", services);
+    json_object_set_new(root, "mDNSServer", mdns_server);
 
     // System Resources Configuration
     json_t* resources = json_object();
@@ -518,74 +518,74 @@ AppConfig* load_config(const char* config_path) {
         config->websocket.max_message_size = 10 * 1024 * 1024;  // Default to 10 MB
     }
 
-    // mDNS Configuration
-    json_t* mdns = json_object_get(root, "mDNSServer");
-    if (json_is_object(mdns)) {
-        json_t* enabled = json_object_get(mdns, "Enabled");
-        config->mdns.enabled = json_is_boolean(enabled) ? json_boolean_value(enabled) : 1;
+    // mDNS Server Configuration
+    json_t* mdns_server = json_object_get(root, "mDNSServer");
+    if (json_is_object(mdns_server)) {
+        json_t* enabled = json_object_get(mdns_server, "Enabled");
+        config->mdns_server.enabled = json_is_boolean(enabled) ? json_boolean_value(enabled) : 1;
 
-        json_t* enable_ipv6 = json_object_get(mdns, "EnableIPv6");
-        config->mdns.enable_ipv6 = json_is_boolean(enable_ipv6) ? json_boolean_value(enable_ipv6) : 1;
+        json_t* enable_ipv6 = json_object_get(mdns_server, "EnableIPv6");
+        config->mdns_server.enable_ipv6 = json_is_boolean(enable_ipv6) ? json_boolean_value(enable_ipv6) : 1;
 
-        json_t* device_id = json_object_get(mdns, "DeviceId");
+        json_t* device_id = json_object_get(mdns_server, "DeviceId");
         const char* device_id_str = json_is_string(device_id) ? json_string_value(device_id) : "hydrogen-printer";
-        config->mdns.device_id = strdup(device_id_str);
+        config->mdns_server.device_id = strdup(device_id_str);
 
 
-        json_t* friendly_name = json_object_get(mdns, "FriendlyName");
+        json_t* friendly_name = json_object_get(mdns_server, "FriendlyName");
         const char* friendly_name_str = json_is_string(friendly_name) ? json_string_value(friendly_name) : "Hydrogen 3D Printer";
-        config->mdns.friendly_name = strdup(friendly_name_str);
+        config->mdns_server.friendly_name = strdup(friendly_name_str);
 
-        json_t* model = json_object_get(mdns, "Model");
+        json_t* model = json_object_get(mdns_server, "Model");
         const char* model_str = json_is_string(model) ? json_string_value(model) : "Hydrogen";
-        config->mdns.model = strdup(model_str);
+        config->mdns_server.model = strdup(model_str);
 
-        json_t* manufacturer = json_object_get(mdns, "Manufacturer");
+        json_t* manufacturer = json_object_get(mdns_server, "Manufacturer");
         const char* manufacturer_str = json_is_string(manufacturer) ? json_string_value(manufacturer) : "Philement";
-        config->mdns.manufacturer = strdup(manufacturer_str);
+        config->mdns_server.manufacturer = strdup(manufacturer_str);
 
-        json_t* version = json_object_get(mdns, "Version");
+        json_t* version = json_object_get(mdns_server, "Version");
         const char* version_str = json_is_string(version) ? json_string_value(version) : VERSION;
-        config->mdns.version = strdup(version_str);
+        config->mdns_server.version = strdup(version_str);
 
-        json_t* services = json_object_get(mdns, "Services");
+        json_t* services = json_object_get(mdns_server, "Services");
 	if (json_is_array(services)) {
-            config->mdns.num_services = json_array_size(services);
-            config->mdns.services = calloc(config->mdns.num_services, sizeof(mdns_server_service_t));
+            config->mdns_server.num_services = json_array_size(services);
+            config->mdns_server.services = calloc(config->mdns_server.num_services, sizeof(mdns_server_service_t));
 
-            for (size_t i = 0; i < config->mdns.num_services; i++) {
+            for (size_t i = 0; i < config->mdns_server.num_services; i++) {
                 json_t* service = json_array_get(services, i);
                 if (!json_is_object(service)) continue;
 
                 json_t* name = json_object_get(service, "Name");
                 const char* name_str = json_is_string(name) ? json_string_value(name) : "hydrogen";
-                config->mdns.services[i].name = strdup(name_str);
+                config->mdns_server.services[i].name = strdup(name_str);
 
                 json_t* type = json_object_get(service, "Type");
                 const char* type_str = json_is_string(type) ? json_string_value(type) : "_http._tcp.local";
-                config->mdns.services[i].type = strdup(type_str);
+                config->mdns_server.services[i].type = strdup(type_str);
 
                 json_t* port = json_object_get(service, "Port");
-                config->mdns.services[i].port = json_is_integer(port) ? json_integer_value(port) : DEFAULT_WEB_PORT;
+                config->mdns_server.services[i].port = json_is_integer(port) ? json_integer_value(port) : DEFAULT_WEB_PORT;
         
                 // Handle TXT records
                 json_t* txt_records = json_object_get(service, "TxtRecords");
                 if (json_is_string(txt_records)) {
                     // If TxtRecords is a single string, treat it as one record
-                    config->mdns.services[i].num_txt_records = 1;
-                    config->mdns.services[i].txt_records = malloc(sizeof(char*));
-                    config->mdns.services[i].txt_records[0] = strdup(json_string_value(txt_records));
+                    config->mdns_server.services[i].num_txt_records = 1;
+                    config->mdns_server.services[i].txt_records = malloc(sizeof(char*));
+                    config->mdns_server.services[i].txt_records[0] = strdup(json_string_value(txt_records));
                 } else if (json_is_array(txt_records)) {
                     // If TxtRecords is an array, handle multiple records
-                    config->mdns.services[i].num_txt_records = json_array_size(txt_records);
-                    config->mdns.services[i].txt_records = malloc(config->mdns.services[i].num_txt_records * sizeof(char*));
-                    for (size_t j = 0; j < config->mdns.services[i].num_txt_records; j++) {
-                        config->mdns.services[i].txt_records[j] = strdup(json_string_value(json_array_get(txt_records, j)));
+                    config->mdns_server.services[i].num_txt_records = json_array_size(txt_records);
+                    config->mdns_server.services[i].txt_records = malloc(config->mdns_server.services[i].num_txt_records * sizeof(char*));
+                    for (size_t j = 0; j < config->mdns_server.services[i].num_txt_records; j++) {
+                        config->mdns_server.services[i].txt_records[j] = strdup(json_string_value(json_array_get(txt_records, j)));
                     }
                 } else {
                     // If TxtRecords is not present or invalid, set to NULL
-                    config->mdns.services[i].num_txt_records = 0;
-                    config->mdns.services[i].txt_records = NULL;
+                    config->mdns_server.services[i].num_txt_records = 0;
+                    config->mdns_server.services[i].txt_records = NULL;
                 }
             }
         }

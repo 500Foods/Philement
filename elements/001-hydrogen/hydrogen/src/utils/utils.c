@@ -29,6 +29,6 @@ static void init_all_service_threads(void) {
     init_service_threads(&logging_threads);
     init_service_threads(&web_threads);
     init_service_threads(&websocket_threads);
-    init_service_threads(&mdns_threads);
+    init_service_threads(&mdns_server_threads);
     init_service_threads(&print_threads);
 }

@@ -204,27 +204,27 @@ static int init_mdns_server_system(void) {
     mdns_server_service_t *filtered_services = NULL;
     size_t filtered_count = 0;
 
-    if (app_config->mdns.services && app_config->mdns.num_services > 0) {
-        filtered_services = calloc(app_config->mdns.num_services, sizeof(mdns_server_service_t));
+    if (app_config->mdns_server.services && app_config->mdns_server.num_services > 0) {
+        filtered_services = calloc(app_config->mdns_server.num_services, sizeof(mdns_server_service_t));
         if (!filtered_services) {
             log_this("Initialization", "Failed to allocate memory for filtered services", LOG_LEVEL_DEBUG);
             return 0;
         }
 
-        for (size_t i = 0; i < app_config->mdns.num_services; i++) {
+        for (size_t i = 0; i < app_config->mdns_server.num_services; i++) {
             // Only include web-related services if web server is enabled
-            if (strstr(app_config->mdns.services[i].type, "_http._tcp") != NULL) {
+            if (strstr(app_config->mdns_server.services[i].type, "_http._tcp") != NULL) {
                 if (app_config->web.enabled) {
-                    memcpy(&filtered_services[filtered_count], &app_config->mdns.services[i], sizeof(mdns_server_service_t));
+                    memcpy(&filtered_services[filtered_count], &app_config->mdns_server.services[i], sizeof(mdns_server_service_t));
                     filtered_count++;
                 }
             }
             // Only include websocket services if websocket server is enabled
-            else if (strstr(app_config->mdns.services[i].type, "_websocket._tcp") != NULL) {
+            else if (strstr(app_config->mdns_server.services[i].type, "_websocket._tcp") != NULL) {
                 if (app_config->websocket.enabled) {
                     int actual_port = get_websocket_port();
                     if (actual_port > 0 && actual_port <= 65535) {
-                    memcpy(&filtered_services[filtered_count], &app_config->mdns.services[i], sizeof(mdns_server_service_t));
+                    memcpy(&filtered_services[filtered_count], &app_config->mdns_server.services[i], sizeof(mdns_server_service_t));
                         filtered_services[filtered_count].port = (uint16_t)actual_port;
                         log_this("Initialization", "Setting WebSocket mDNS service port to %d", LOG_LEVEL_INFO, actual_port);
                         filtered_count++;
@@ -235,7 +235,7 @@ static int init_mdns_server_system(void) {
             }
             // Include any other services by default
             else {
-                memcpy(&filtered_services[filtered_count], &app_config->mdns.services[i], sizeof(mdns_server_service_t));
+                memcpy(&filtered_services[filtered_count], &app_config->mdns_server.services[i], sizeof(mdns_server_service_t));
                 filtered_count++;
             }
         }
@@ -247,19 +247,19 @@ static int init_mdns_server_system(void) {
         snprintf(config_url, sizeof(config_url), "http://localhost:%d", app_config->web.port);
     }
     
-    mdns = mdns_server_init(app_config->server_name,
-                     app_config->mdns.device_id, 
-                     app_config->mdns.friendly_name,
-                     app_config->mdns.model, 
-                     app_config->mdns.manufacturer, 
-                     app_config->mdns.version,
+    mdns_server = mdns_server_init(app_config->server_name,
+                     app_config->mdns_server.device_id, 
+                     app_config->mdns_server.friendly_name,
+                     app_config->mdns_server.model, 
+                     app_config->mdns_server.manufacturer, 
+                     app_config->mdns_server.version,
                      "1.0", // Hardware version
                      config_url,
                      filtered_services,
                      filtered_count,
-                     app_config->mdns.enable_ipv6);
+                     app_config->mdns_server.enable_ipv6);
 
-    if (!mdns) {
+    if (!mdns_server) {
         log_this("Initialization", "Failed to initialize mDNS Server", LOG_LEVEL_DEBUG);
         free(filtered_services);
         return 0;
@@ -267,30 +267,30 @@ static int init_mdns_server_system(void) {
 
     // Start mDNS thread with heap-allocated arguments
     net_info = get_network_info();
-    mdns_server_thread_arg_t *mdns_arg = malloc(sizeof(mdns_server_thread_arg_t));
-    if (!mdns_arg) {
+    mdns_server_thread_arg_t *mdns_server_arg = malloc(sizeof(mdns_server_thread_arg_t));
+    if (!mdns_server_arg) {
         log_this("Initialization", "Failed to allocate mDNS Server thread arguments", LOG_LEVEL_DEBUG);
-        mdns_server_shutdown(mdns);
+        mdns_server_shutdown(mdns_server);
         free_network_info(net_info);
         free(filtered_services);
         return 0;
     }
 
-    mdns_arg->mdns = mdns;
-    mdns_arg->port = 0;  // Not used anymore, each service has its own port
-    mdns_arg->net_info = net_info;
-    mdns_arg->running = &server_running;
+    mdns_server_arg->mdns_server = mdns_server;
+    mdns_server_arg->port = 0;  // Not used anymore, each service has its own port
+    mdns_server_arg->net_info = net_info;
+    mdns_server_arg->running = &server_running;
 
-    if (pthread_create(&mdns_thread, NULL, mdns_server_announce_loop, mdns_arg) != 0) {
+    if (pthread_create(&mdns_server_thread, NULL, mdns_server_announce_loop, mdns_server_arg) != 0) {
         log_this("Initialization", "Failed to start mDNS Server thread", LOG_LEVEL_DEBUG);
-        free(mdns_arg);
-        mdns_server_shutdown(mdns);
+        free(mdns_server_arg);
+        mdns_server_shutdown(mdns_server);
         free_network_info(net_info);
         free(filtered_services);
         return 0;
     }
 
-    free(filtered_services);  // Safe to free after mdns_init has copied the data
+    free(filtered_services);  // Safe to free after mdns_server_init has copied the data
 
     return 1;
 }
@@ -352,13 +352,13 @@ int startup_hydrogen(const char *config_path) {
     extern ServiceThreads logging_threads;
     extern ServiceThreads web_threads;
     extern ServiceThreads websocket_threads;
-    extern ServiceThreads mdns_threads;
+    extern ServiceThreads mdns_server_threads;
     extern ServiceThreads print_threads;
     
     init_service_threads(&logging_threads);
     init_service_threads(&web_threads);
     init_service_threads(&websocket_threads);
-    init_service_threads(&mdns_threads);
+    init_service_threads(&mdns_server_threads);
     init_service_threads(&print_threads);
     
     // Initialize the queue system
@@ -403,7 +403,7 @@ int startup_hydrogen(const char *config_path) {
     }
 
     // Initialize mDNS Server system if enabled
-    if (app_config->mdns.enabled) {
+    if (app_config->mdns_server.enabled) {
         if (!init_mdns_server_system()) {
             queue_system_destroy();
             close_file_logging();
