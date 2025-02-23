@@ -79,7 +79,7 @@ extern volatile sig_atomic_t server_stopping;
 extern volatile sig_atomic_t web_server_shutdown;
 extern volatile sig_atomic_t print_queue_shutdown;
 extern volatile sig_atomic_t log_queue_shutdown;
-extern volatile sig_atomic_t mdns_server_shutdown;
+extern volatile sig_atomic_t mdns_server_system_shutdown;
 extern volatile sig_atomic_t websocket_server_shutdown;
 
 // Handle GET /api/system/info requests

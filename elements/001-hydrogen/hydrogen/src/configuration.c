@@ -217,7 +217,7 @@ void create_default_config(const char* config_path) {
     json_t* console_subsystems = json_object();
     json_object_set_new(console_subsystems, "ThreadMgmt", json_integer(LOG_LEVEL_WARN));
     json_object_set_new(console_subsystems, "Shutdown", json_integer(LOG_LEVEL_INFO));
-    json_object_set_new(console_subsystems, "mDNS", json_integer(LOG_LEVEL_INFO));
+    json_object_set_new(console_subsystems, "mDNSServer", json_integer(LOG_LEVEL_INFO));
     json_object_set_new(console_subsystems, "WebServer", json_integer(LOG_LEVEL_INFO));
     json_object_set_new(console_subsystems, "WebSocket", json_integer(LOG_LEVEL_INFO));
     json_object_set_new(console_subsystems, "PrintQueue", json_integer(LOG_LEVEL_WARN));
@@ -270,7 +270,7 @@ void create_default_config(const char* config_path) {
     json_array_append_new(services, websocket_service);
 
     json_object_set_new(mdns, "Services", services);
-    json_object_set_new(root, "mDNS", mdns);
+    json_object_set_new(root, "mDNSServer", mdns);
 
     // System Resources Configuration
     json_t* resources = json_object();
@@ -519,7 +519,7 @@ AppConfig* load_config(const char* config_path) {
     }
 
     // mDNS Configuration
-    json_t* mdns = json_object_get(root, "mDNS");
+    json_t* mdns = json_object_get(root, "mDNSServer");
     if (json_is_object(mdns)) {
         json_t* enabled = json_object_get(mdns, "Enabled");
         config->mdns.enabled = json_is_boolean(enabled) ? json_boolean_value(enabled) : 1;
@@ -551,7 +551,7 @@ AppConfig* load_config(const char* config_path) {
         json_t* services = json_object_get(mdns, "Services");
 	if (json_is_array(services)) {
             config->mdns.num_services = json_array_size(services);
-            config->mdns.services = calloc(config->mdns.num_services, sizeof(mdns_service_t));
+            config->mdns.services = calloc(config->mdns.num_services, sizeof(mdns_server_service_t));
 
             for (size_t i = 0; i < config->mdns.num_services; i++) {
                 json_t* service = json_array_get(services, i);
@@ -863,8 +863,8 @@ AppConfig* load_config(const char* config_path) {
                 config->Logging.Console.Subsystems.ThreadMgmt = json_is_integer(level) ? json_integer_value(level) : LOG_LEVEL_WARN;
                 level = json_object_get(subsystems, "Shutdown");
                 config->Logging.Console.Subsystems.Shutdown = json_is_integer(level) ? json_integer_value(level) : LOG_LEVEL_INFO;
-                level = json_object_get(subsystems, "mDNS");
-                config->Logging.Console.Subsystems.mDNS = json_is_integer(level) ? json_integer_value(level) : LOG_LEVEL_INFO;
+                level = json_object_get(subsystems, "mDNSServer");
+                config->Logging.Console.Subsystems.mDNSServer = json_is_integer(level) ? json_integer_value(level) : LOG_LEVEL_INFO;
                 level = json_object_get(subsystems, "WebServer");
                 config->Logging.Console.Subsystems.WebServer = json_is_integer(level) ? json_integer_value(level) : LOG_LEVEL_INFO;
                 level = json_object_get(subsystems, "WebSocket");
