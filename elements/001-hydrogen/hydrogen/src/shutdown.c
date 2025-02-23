@@ -107,7 +107,7 @@ void inthandler(int signum) {
 
 // Stop network service advertisement with connection preservation
 //
-// mDNS shutdown strategy prioritizes:
+// mDNS Server shutdown strategy prioritizes:
 // 1. Client Experience
 //    - Clean service withdrawal
 //    - Goodbye packet transmission
@@ -127,8 +127,8 @@ static void shutdown_mdns_system(void) {
         return;
     }
 
-    log_this("Shutdown", "Initiating mDNS shutdown", LOG_LEVEL_INFO);
-    mdns_server_shutdown = 1;
+    log_this("Shutdown", "Initiating mDNS Server shutdown", LOG_LEVEL_INFO);
+    mdns_server_system_shutdown = 1;
     pthread_cond_broadcast(&terminate_cond);
     
     // Get the thread arguments before joining
@@ -137,7 +137,7 @@ static void shutdown_mdns_system(void) {
     
     // Clean up mDNS resources
     if (mdns) {
-        mdns_shutdown(mdns);
+        mdns_server_shutdown(mdns);
         mdns = NULL;
     }
     
@@ -146,7 +146,7 @@ static void shutdown_mdns_system(void) {
         free(thread_arg);
     }
     
-    log_this("Shutdown", "mDNS shutdown complete", LOG_LEVEL_INFO);
+    log_this("Shutdown", "mDNS Server shutdown complete", LOG_LEVEL_INFO);
 }
 
 // Shutdown web and websocket servers
@@ -331,7 +331,7 @@ void graceful_shutdown(void) {
     pthread_mutex_unlock(&terminate_mutex);
 
     // First stop accepting new connections/requests
-    log_this("Shutdown", "Stopping mDNS service...", LOG_LEVEL_INFO);
+    log_this("Shutdown", "Stopping mDNS Server service...", LOG_LEVEL_INFO);
     shutdown_mdns_system();
     
     log_this("Shutdown", "Stopping web services...", LOG_LEVEL_INFO);
@@ -370,7 +370,7 @@ void graceful_shutdown(void) {
         print_threads.thread_count > 0) {
         char thread_status[256];
         snprintf(thread_status, sizeof(thread_status), 
-                 "Remaining threads - Log: %d, Web: %d, WS: %d, mDNS: %d, Print: %d",
+                 "Remaining threads - Log: %d, Web: %d, WS: %d, mDNS Server: %d, Print: %d",
                  logging_threads.thread_count,
                  web_threads.thread_count,
                  websocket_threads.thread_count,
@@ -466,7 +466,7 @@ void graceful_shutdown(void) {
     if (total_threads > 0) {
         char thread_status[256];
         snprintf(thread_status, sizeof(thread_status), 
-                 "Remaining threads before final cleanup - Log: %d, Web: %d, WS: %d, mDNS: %d, Print: %d",
+                 "Remaining threads before final cleanup - Log: %d, Web: %d, WS: %d, mDNS Server: %d, Print: %d",
                  logging_threads.thread_count,
                  web_threads.thread_count,
                  websocket_threads.thread_count,
@@ -545,7 +545,7 @@ void graceful_shutdown(void) {
     CHECK_THREAD_STATE(logging_threads, "Logging");
     CHECK_THREAD_STATE(web_threads, "Web");
     CHECK_THREAD_STATE(websocket_threads, "WebSocket");
-    CHECK_THREAD_STATE(mdns_threads, "mDNS");
+    CHECK_THREAD_STATE(mdns_threads, "mDNS Server");
     CHECK_THREAD_STATE(print_threads, "Print");
 
     #undef CHECK_THREAD_STATE
