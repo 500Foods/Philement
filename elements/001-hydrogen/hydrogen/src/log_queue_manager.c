@@ -173,8 +173,8 @@ static bool should_log_to_destination(const char* subsystem, int priority, const
         configured_level = dest->Subsystems.ThreadMgmt;
     } else if (strcmp(subsystem, "Shutdown") == 0) {
         configured_level = dest->Subsystems.Shutdown;
-    } else if (strcmp(subsystem, "mDNS") == 0) {
-        configured_level = dest->Subsystems.mDNS;
+    } else if (strcmp(subsystem, "mDNSServer") == 0) {
+        configured_level = dest->Subsystems.mDNSServer;
     } else if (strcmp(subsystem, "WebServer") == 0) {
         configured_level = dest->Subsystems.WebServer;
     } else if (strcmp(subsystem, "WebSocket") == 0) {

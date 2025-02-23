@@ -72,7 +72,7 @@ extern pthread_mutex_t terminate_mutex;
 extern volatile sig_atomic_t web_server_shutdown;
 extern volatile sig_atomic_t print_queue_shutdown;
 extern volatile sig_atomic_t log_queue_shutdown;
-extern volatile sig_atomic_t mdns_server_shutdown;
+extern volatile sig_atomic_t mdns_server_system_shutdown;
 extern volatile sig_atomic_t websocket_server_shutdown;
 
 // Queue Threads
@@ -84,7 +84,7 @@ extern pthread_t websocket_thread;
 
 // Shared resources
 extern AppConfig *app_config;
-extern mdns_t *mdns;
+extern mdns_server_t *mdns;
 extern network_info_t *net_info;
 
 #endif // HYDROGEN_STATE_H

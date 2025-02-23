@@ -152,7 +152,7 @@ typedef struct {
     struct {
         int ThreadMgmt;      // Thread management logging
         int Shutdown;        // Shutdown process logging
-        int mDNS;           // mDNS service logging
+        int mDNSServer;     // mDNS Server service logging
         int WebServer;      // Web server logging
         int WebSocket;      // WebSocket server logging
         int PrintQueue;     // Print queue logging
@@ -210,7 +210,7 @@ typedef struct {
     char *model;           // Device model information
     char *manufacturer;    // Manufacturer information
     char *version;        // Firmware/software version
-    mdns_service_t *services; // Array of advertised services
+    mdns_server_service_t *services; // Array of advertised services
     size_t num_services;   // Number of advertised services
 } mDNSConfig;
 

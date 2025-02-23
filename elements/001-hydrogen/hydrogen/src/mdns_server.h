@@ -1,11 +1,11 @@
 /*
- * mDNS (multicast DNS) service discovery interface for the Hydrogen printer.
+ * mDNS Server (multicast DNS) service discovery interface for the Hydrogen printer.
  * 
- * This module implements zero-configuration network discovery, allowing Hydrogen
+ * This module implements zero-configuration network service announcements, allowing Hydrogen
  * printers to be automatically discovered on local networks. Key features:
  * 
  * 1. Protocol Support
- *    - Full mDNS (RFC 6762) compliance
+ *    - Full mDNS Server (RFC 6762) compliance
  *    - DNS-SD service registration (RFC 6763)
  *    - Dual-stack IPv4/IPv6 support
  *    - Multiple service type advertisement
@@ -29,8 +29,8 @@
  *    - Announcement coalescing
  */
 
-#ifndef MDNS_H
-#define MDNS_H
+#ifndef MDNS_SERVER_H
+#define MDNS_SERVER_H
 
 /*
  * Include Organization:
@@ -98,7 +98,7 @@ typedef struct {
     int port;                // Service port number
     char **txt_records;      // Array of TXT record strings
     size_t num_txt_records;  // Number of TXT records
-} mdns_service_t;
+} mdns_server_service_t;
 
 /*
  * mDNS Server State:
@@ -128,11 +128,11 @@ typedef struct {
     int sockfd_v6;         // IPv6 socket for this interface
     char **ip_addresses;   // IP addresses for this interface
     size_t num_addresses;  // Number of IP addresses
-} mdns_interface_t;
+} mdns_server_interface_t;
 
 typedef struct {
     // Network interfaces
-    mdns_interface_t *interfaces;  // Array of interface sockets
+    mdns_server_interface_t *interfaces;  // Array of interface sockets
     size_t num_interfaces;         // Number of interfaces
     int enable_ipv6;              // IPv6 support flag
     
@@ -151,9 +151,9 @@ typedef struct {
     char *config_url;      // Configuration interface URL
     
     // Service registry
-    mdns_service_t *services;  // Array of advertised services
+    mdns_server_service_t *services;  // Array of advertised services
     size_t num_services;       // Number of services
-} mdns_t;
+} mdns_server_t;
 
 /*
  * Thread Arguments:
@@ -166,11 +166,11 @@ typedef struct {
  * - Enables different timing for each operation
  */
 typedef struct {
-    mdns_t *mdns;                    // Server state
+    mdns_server_t *mdns;             // Server state
     int port;                        // Service port
     const network_info_t *net_info;  // Network interface info
     volatile int *running;           // Thread control flag
-} mdns_thread_arg_t;
+} mdns_server_thread_arg_t;
 
 /*
  * Core mDNS Functions:
@@ -179,7 +179,7 @@ typedef struct {
 
 // Initialize mDNS server with device information and services
 // Returns NULL on any initialization failure
-mdns_t *mdns_init(const char *app_name,        // Application identifier
+mdns_server_t *mdns_server_init(const char *app_name,        // Application identifier
                   const char *id,               // Unique device ID
                   const char *friendly_name,    // Human-readable name
                   const char *model,            // Device model
@@ -187,28 +187,28 @@ mdns_t *mdns_init(const char *app_name,        // Application identifier
                   const char *sw_version,       // Software version
                   const char *hw_version,       // Hardware version
                   const char *config_url,       // Config interface URL
-                  mdns_service_t *services,     // Array of services
+                  mdns_server_service_t *services,     // Array of services
                   size_t num_services,          // Number of services
                   int enable_ipv6);            // IPv6 support flag
 
 // Construct announcement packet following RFC 6762
-void mdns_build_announcement(uint8_t *packet,           // Output buffer
+void mdns_server_build_announcement(uint8_t *packet,           // Output buffer
                            size_t *packet_len,          // Packet length
                            const char *hostname,        // Local hostname
-                           const mdns_t *mdns,         // Server state
+                           const mdns_server_t *mdns,         // Server state
                            uint32_t ttl,               // Record TTL
                            const network_info_t *net_info); // Network info
 
 // Broadcast service announcements on all interfaces
-void mdns_send_announcement(mdns_t *mdns, const network_info_t *net_info);
+void mdns_server_send_announcement(mdns_server_t *mdns, const network_info_t *net_info);
 
 // Clean shutdown of mDNS server
-void mdns_shutdown(mdns_t *mdns);
+void mdns_server_shutdown(mdns_server_t *mdns);
 
 // Background thread for periodic announcements
-void *mdns_announce_loop(void *arg);
+void *mdns_server_announce_loop(void *arg);
 
 // Background thread for handling incoming queries
-void *mdns_responder_loop(void *arg);
+void *mdns_server_responder_loop(void *arg);
 
-#endif // MDNS_H
+#endif // MDNS_SERVER_H

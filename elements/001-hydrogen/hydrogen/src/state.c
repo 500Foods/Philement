@@ -80,7 +80,7 @@ pthread_mutex_t terminate_mutex = PTHREAD_MUTEX_INITIALIZER;
 //
 // Shutdown flag design prioritizes:
 // 1. Dependency Order
-//    - mDNS first (stop advertising)
+//    - mDNS Server first (stop advertising)
 //    - Network services next
 //    - Core systems last
 //
@@ -96,7 +96,7 @@ pthread_mutex_t terminate_mutex = PTHREAD_MUTEX_INITIALIZER;
 volatile sig_atomic_t web_server_shutdown = 0;
 volatile sig_atomic_t print_queue_shutdown = 0;
 volatile sig_atomic_t log_queue_shutdown = 0;
-volatile sig_atomic_t mdns_server_shutdown = 0;
+volatile sig_atomic_t mdns_server_system_shutdown = 0;
 volatile sig_atomic_t websocket_server_shutdown = 0;
 
 // System thread handles with lifecycle management
@@ -163,5 +163,5 @@ ServiceThreads print_threads;
 //    - Null safety
 //    - Leak prevention
 AppConfig *app_config = NULL;
-mdns_t *mdns = NULL;
+mdns_server_t *mdns = NULL;
 network_info_t *net_info = NULL;

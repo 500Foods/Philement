@@ -182,10 +182,10 @@ static int init_web_systems(void) {
            (!app_config->websocket.enabled || websocket_success);
 }
 
-// Initialize mDNS system
+// Initialize mDNS Server system
 // Requires: Network info, Logging system
 //
-// The mDNS system implements dynamic service advertisement based on active components.
+// The mDNS Server system implements dynamic service advertisement based on active components.
 // This design choice serves several purposes:
 // 1. Zero-configuration networking - Clients can discover the server without manual setup
 // 2. Accurate service representation - Only advertises services that are actually available
@@ -195,16 +195,16 @@ static int init_web_systems(void) {
 // The service filtering logic prevents misleading network advertisements and
 // ensures clients can rely on service discovery results. This is particularly
 // important in environments with multiple Hydrogen instances or other competing services.
-static int init_mdns_system(void) {
+static int init_mdns_server_system(void) {
     // Initialize mDNS with validated configuration
-    log_this("Initialization", "Starting mDNS initialization", LOG_LEVEL_INFO);
+    log_this("Initialization", "Starting mDNS Server initialization", LOG_LEVEL_INFO);
 
     // Create a filtered list of services based on what's enabled
-    mdns_service_t *filtered_services = NULL;
+    mdns_server_service_t *filtered_services = NULL;
     size_t filtered_count = 0;
 
     if (app_config->mdns.services && app_config->mdns.num_services > 0) {
-        filtered_services = calloc(app_config->mdns.num_services, sizeof(mdns_service_t));
+        filtered_services = calloc(app_config->mdns.num_services, sizeof(mdns_server_service_t));
         if (!filtered_services) {
             log_this("Initialization", "Failed to allocate memory for filtered services", LOG_LEVEL_DEBUG);
             return 0;
@@ -214,7 +214,7 @@ static int init_mdns_system(void) {
             // Only include web-related services if web server is enabled
             if (strstr(app_config->mdns.services[i].type, "_http._tcp") != NULL) {
                 if (app_config->web.enabled) {
-                    memcpy(&filtered_services[filtered_count], &app_config->mdns.services[i], sizeof(mdns_service_t));
+                    memcpy(&filtered_services[filtered_count], &app_config->mdns.services[i], sizeof(mdns_server_service_t));
                     filtered_count++;
                 }
             }
@@ -223,7 +223,7 @@ static int init_mdns_system(void) {
                 if (app_config->websocket.enabled) {
                     int actual_port = get_websocket_port();
                     if (actual_port > 0 && actual_port <= 65535) {
-                        memcpy(&filtered_services[filtered_count], &app_config->mdns.services[i], sizeof(mdns_service_t));
+                    memcpy(&filtered_services[filtered_count], &app_config->mdns.services[i], sizeof(mdns_server_service_t));
                         filtered_services[filtered_count].port = (uint16_t)actual_port;
                         log_this("Initialization", "Setting WebSocket mDNS service port to %d", LOG_LEVEL_INFO, actual_port);
                         filtered_count++;
@@ -234,7 +234,7 @@ static int init_mdns_system(void) {
             }
             // Include any other services by default
             else {
-                memcpy(&filtered_services[filtered_count], &app_config->mdns.services[i], sizeof(mdns_service_t));
+                memcpy(&filtered_services[filtered_count], &app_config->mdns.services[i], sizeof(mdns_server_service_t));
                 filtered_count++;
             }
         }
@@ -246,7 +246,7 @@ static int init_mdns_system(void) {
         snprintf(config_url, sizeof(config_url), "http://localhost:%d", app_config->web.port);
     }
     
-    mdns = mdns_init(app_config->server_name, 
+    mdns = mdns_server_init(app_config->server_name,
                      app_config->mdns.device_id, 
                      app_config->mdns.friendly_name,
                      app_config->mdns.model, 
@@ -259,17 +259,17 @@ static int init_mdns_system(void) {
                      app_config->mdns.enable_ipv6);
 
     if (!mdns) {
-        log_this("Initialization", "Failed to initialize mDNS", LOG_LEVEL_DEBUG);
+        log_this("Initialization", "Failed to initialize mDNS Server", LOG_LEVEL_DEBUG);
         free(filtered_services);
         return 0;
     }
 
     // Start mDNS thread with heap-allocated arguments
     net_info = get_network_info();
-    mdns_thread_arg_t *mdns_arg = malloc(sizeof(mdns_thread_arg_t));
+    mdns_server_thread_arg_t *mdns_arg = malloc(sizeof(mdns_server_thread_arg_t));
     if (!mdns_arg) {
-        log_this("Initialization", "Failed to allocate mDNS thread arguments", LOG_LEVEL_DEBUG);
-        mdns_shutdown(mdns);
+        log_this("Initialization", "Failed to allocate mDNS Server thread arguments", LOG_LEVEL_DEBUG);
+        mdns_server_shutdown(mdns);
         free_network_info(net_info);
         free(filtered_services);
         return 0;
@@ -280,10 +280,10 @@ static int init_mdns_system(void) {
     mdns_arg->net_info = net_info;
     mdns_arg->running = &server_running;
 
-    if (pthread_create(&mdns_thread, NULL, mdns_announce_loop, mdns_arg) != 0) {
-        log_this("Initialization", "Failed to start mDNS thread", LOG_LEVEL_DEBUG);
+    if (pthread_create(&mdns_thread, NULL, mdns_server_announce_loop, mdns_arg) != 0) {
+        log_this("Initialization", "Failed to start mDNS Server thread", LOG_LEVEL_DEBUG);
         free(mdns_arg);
-        mdns_shutdown(mdns);
+        mdns_server_shutdown(mdns);
         free_network_info(net_info);
         free(filtered_services);
         return 0;
@@ -330,7 +330,7 @@ static void log_app_info(void) {
 // The startup sequence follows a carefully planned order to ensure system stability:
 // 1. Queue system first - Required by all other components for thread-safe communication
 // 2. Logging second - Essential for debugging startup issues and runtime monitoring
-// 3. Optional systems last - Print queue, web servers, and mDNS in order of dependency
+// 3. Optional systems last - Print queue, web servers, and mDNS Server in order of dependency
 //
 // This ordering is designed to:
 // - Ensure core infrastructure (queues, logging) is available for all components
@@ -401,16 +401,16 @@ int startup_hydrogen(const char *config_path) {
         log_this("Initialization", "Web systems disabled", LOG_LEVEL_INFO);
     }
 
-    // Initialize mDNS system if enabled
+    // Initialize mDNS Server system if enabled
     if (app_config->mdns.enabled) {
-        if (!init_mdns_system()) {
+        if (!init_mdns_server_system()) {
             queue_system_destroy();
             close_file_logging();
             return 0;
         }
-        log_this("Initialization", "mDNS system initialized", LOG_LEVEL_INFO);
+        log_this("Initialization", "mDNS Server system initialized", LOG_LEVEL_INFO);
     } else {
-        log_this("Initialization", "mDNS system disabled", LOG_LEVEL_INFO);
+        log_this("Initialization", "mDNS Server system disabled", LOG_LEVEL_INFO);
     }
 
     // Give threads a moment to launch
