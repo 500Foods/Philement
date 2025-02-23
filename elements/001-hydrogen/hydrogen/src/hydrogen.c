@@ -64,11 +64,11 @@
 #include <stdbool.h>
 
 // Project headers
-#include "logging.h"
-#include "shutdown.h"
-#include "startup.h"
-#include "state.h"
-#include "utils_threads.h"
+#include "logging/logging.h"
+#include "state/state.h"
+#include "state/startup.h"
+#include "state/shutdown.h"
+#include "utils/utils_threads.h"
 
 // External thread tracking structures
 extern ServiceThreads logging_threads;
