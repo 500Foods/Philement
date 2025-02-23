@@ -42,7 +42,7 @@
  * Security: Input validation, CORS, sanitization
  */
 
-// Feature test macros must come first
+// Feature test macros
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
 
@@ -65,12 +65,12 @@
 
 // Project headers
 #include "system_service.h"
-#include "../../configuration.h"
-#include "../../state.h"
-#include "../../logging.h"
-#include "../../web_server.h"
-#include "../../utils.h"
-#include "../../websocket_server_internal.h"
+#include "../../config/configuration.h"
+#include "../../state/state.h"
+#include "../../logging/logging.h"
+#include "../../webserver/web_server.h"
+#include "../../utils/utils.h"
+#include "../../websocket/websocket_server_internal.h"
 
 extern AppConfig *app_config;
 extern WebSocketServerContext *ws_context;

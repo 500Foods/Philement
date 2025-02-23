@@ -78,63 +78,118 @@ Comprehensive documentation is available in the `docs` directory:
 
 ## Files
 
+### Root Directory
+
 - `hydrogen.json` Configuration file for the Hydrogen server
 - `Makefile` Build instructions for compiling the Hydrogen program
-- `src/beryllium.c` Implements G-code analysis functionality
-- `src/beryllium.h` Header file for G-code analysis declarations
-- `src/configuration.c` Handles loading and managing configuration settings
-- `src/configuration.h` Defines configuration-related structures and constants
 - `src/hydrogen.c` Main entry point and core system initialization
-- `src/keys.c` Implements cryptographic key generation and management
-- `src/keys.h` Header file for cryptographic operations
-- `src/logging.c` Core logging system implementation
-- `src/logging.h` Logging interface and configuration
-- `src/log_queue_manager.c` Thread-safe log message queue handler
-- `src/log_queue_manager.h` Log queue management interface
-- `src/mdns_server.h` Service discovery interface definitions
-- `src/mdns_linux.c` Linux-specific mDNS implementation
-- `src/network.h` Network interface abstractions
-- `src/network_linux.c` Linux network stack implementation
-- `src/print_queue_manager.c` 3D print job scheduling and management
-- `src/print_queue_manager.h` Print queue interface
-- `src/queue.c` Generic thread-safe queue implementation
-- `src/queue.h` Queue data structure interface
-- `src/shutdown.c` Graceful system shutdown coordination
-- `src/shutdown.h` Shutdown procedure definitions
-- `src/startup.c` System initialization and service startup
-- `src/startup.h` Startup sequence definitions
-- `src/state.c` Global state management implementation
-- `src/state.h` State tracking interface
-- `src/utils.c` Common utility functions
-- `src/utils.h` Utility function declarations
-- `src/utils_logging.c` Extended logging utilities
-- `src/utils_logging.h` Logging utility interfaces
-- `src/utils_queue.c` Queue manipulation utilities
-- `src/utils_queue.h` Queue utility interfaces
-- `src/utils_status.c` Status reporting utilities
-- `src/utils_status.h` Status utility interfaces
-- `src/utils_threads.c` Thread management utilities
-- `src/utils_threads.h` Threading utility interfaces
-- `src/utils_time.c` Time handling utilities
-- `src/utils_time.h` Time utility interfaces
-- `src/web_server_core.c` Core HTTP server implementation
-- `src/web_server_core.h` HTTP server interface
-- `src/web_server_print.h` 3D printing endpoint definitions
-- `src/web_server_request.c` HTTP request handling
-- `src/web_server_request.h` Request processing interface
-- `src/web_server_upload.c` File upload handling
-- `src/web_server_upload.h` Upload processing interface
-- `src/websocket_server.c` WebSocket server core implementation
-- `src/websocket_server.h` WebSocket server public interface
-- `src/websocket_server_internal.h` Internal WebSocket definitions
-- `src/websocket_server_auth.c` WebSocket authentication system
-- `src/websocket_server_connection.c` Connection lifecycle handler
-- `src/websocket_server_context.c` Server context management
-- `src/websocket_server_dispatch.c` Message routing system
-- `src/websocket_server_message.c` Message processing engine
-- `src/websocket_server_status.c` Status reporting implementation
-- `src/api/system/system_service.c` System service implementation
-- `src/api/system/system_service.h` System service interface
+
+### API Components
+
+Located in `src/api/`:
+
+- `system/system_service.c` System service implementation
+- `system/system_service.h` System service interface
+
+### Configuration Management
+
+Located in `src/config/`:
+
+- `configuration.c` Handles loading and managing configuration settings
+- `configuration.h` Defines configuration-related structures and constants
+- `keys.c` Implements cryptographic key generation and management
+- `keys.h` Header file for cryptographic operations
+
+### Logging System
+
+Located in `src/logging/`:
+
+- `logging.c` Core logging system implementation
+- `logging.h` Logging interface and configuration
+- `log_queue_manager.c` Thread-safe log message queue handler
+- `log_queue_manager.h` Log queue management interface
+
+### Network Services
+
+Located in `src/mdns/`:
+
+- `mdns_server.h` Service discovery interface definitions
+- `mdns_linux.c` Linux-specific mDNS implementation
+
+Located in `src/network/`:
+
+- `network.h` Network interface abstractions
+- `network_linux.c` Linux network stack implementation
+
+### Print Management
+
+Located in `src/print/`:
+
+- `beryllium.c` Implements G-code analysis functionality
+- `beryllium.h` Header file for G-code analysis declarations
+- `print_queue_manager.c` 3D print job scheduling and management
+- `print_queue_manager.h` Print queue interface
+
+### Queue System
+
+Located in `src/queue/`:
+
+- `queue.c` Generic thread-safe queue implementation
+- `queue.h` Queue data structure interface
+
+### State Management
+
+Located in `src/state/`:
+
+- `shutdown.c` Graceful system shutdown coordination
+- `shutdown.h` Shutdown procedure definitions
+- `startup.c` System initialization and service startup
+- `startup.h` Startup sequence definitions
+- `state.c` Global state management implementation
+- `state.h` State tracking interface
+
+### Utility Functions
+
+Located in `src/utils/`:
+
+- `utils.c` Common utility functions
+- `utils.h` Utility function declarations
+- `utils_logging.c` Extended logging utilities
+- `utils_logging.h` Logging utility interfaces
+- `utils_queue.c` Queue manipulation utilities
+- `utils_queue.h` Queue utility interfaces
+- `utils_status.c` Status reporting utilities
+- `utils_status.h` Status utility interfaces
+- `utils_threads.c` Thread management utilities
+- `utils_threads.h` Threading utility interfaces
+- `utils_time.c` Time handling utilities
+- `utils_time.h` Time utility interfaces
+
+### Web Server
+
+Located in `src/webserver/`:
+
+- `web_server_core.c` Core HTTP server implementation
+- `web_server_core.h` HTTP server interface
+- `web_server_print.h` 3D printing endpoint definitions
+- `web_server_request.c` HTTP request handling
+- `web_server_request.h` Request processing interface
+- `web_server_upload.c` File upload handling
+- `web_server_upload.h` Upload processing interface
+
+### WebSocket Server
+
+Located in `src/websocket/`:
+
+- `websocket_server.c` WebSocket server core implementation
+- `websocket_server.h` WebSocket server public interface
+- `websocket_server_internal.h` Internal WebSocket definitions
+- `websocket_server_auth.c` WebSocket authentication system
+- `websocket_server_connection.c` Connection lifecycle handler
+- `websocket_server_context.c` Server context management
+- `websocket_server_dispatch.c` Message routing system
+- `websocket_server_message.c` Message processing engine
+- `websocket_server_status.c` Status reporting implementation
 
 ## System Dependencies
 
