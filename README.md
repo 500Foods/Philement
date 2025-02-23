@@ -64,12 +64,12 @@ There are countless tools, frameworks, coding styles, conventions, languages, an
 [![Count Lines of Code](https://github.com/500Foods/Template/actions/workflows/main.yml/badge.svg)](https://github.com/500Foods/Template/actions/workflows/main.yml)
 <!--CLOC-START -->
 ```
-Last updated at 2025-02-23 04:33:37 UTC
+Last updated at 2025-02-23 10:10:32 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C                               51           1924           2243           9488
-Markdown                        55           1110              2           5416
+C                               51           1924           2244           9489
+Markdown                        55           1143              2           5438
 C/C++ Header                    40            326           1015            990
 JSON                             4              0              0            274
 Python                           1             36              9            195
@@ -83,26 +83,19 @@ CSS                              2              3              2             38
 YAML                             2              8             13             37
 JavaScript                       1              3              0             25
 -------------------------------------------------------------------------------
-SUM:                           176           3585           3471          17058
+SUM:                           176           3618           3472          17081
 -------------------------------------------------------------------------------
-23 Files were skipped (duplicate, binary, or without source code):
+16 Files were skipped (duplicate, binary, or without source code):
   jpg: 3
   png: 3
   dproj: 2
   gitignore: 2
-  137211: 1
-  484558: 1
-  486040: 1
-  492953: 1
-  495208: 1
-  498781: 1
   gitattributes: 1
   hydrogen: 1
   ico: 1
   js: 1
   json: 1
   license: 1
-  log: 1
 ```
 <!--CLOC-END-->
 
