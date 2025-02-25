@@ -166,6 +166,41 @@ The WebSocket server uses a modular architecture designed for reliability, maint
   - Port binding with fallback mechanism
   - Context propagation to all components
 
+### Shutdown Sequence
+
+The WebSocket server implements a robust, multi-phase shutdown process:
+
+1. **Signaling Phase**
+   - Set `websocket_server_shutdown = 1` flag
+   - Broadcast on condition variable to wake waiting threads
+   - Allow threads to detect shutdown state and begin cleanup
+
+2. **Connection Closure Phase**
+   - Allow existing connections to complete normally (2s timeout)
+   - Process remaining messages in queue
+   - Clients receive proper closure frames
+
+3. **Thread Termination Phase**
+   - Call `stop_websocket_server()` to initiate thread termination
+   - Join server thread with extended timeout (5s)
+   - Use mutex protection for thread state access
+
+4. **Resource Cleanup Phase**
+   - Two-phase pointer handling to prevent use-after-free
+   - Wait for callbacks to complete before context destruction
+   - Increased delay (250ms) before final resource deallocation
+   - Use local copy of context before nullifying global pointer
+
+5. **Fallback Mechanisms**
+   - Progressive timeouts with shorter intervals for forced cleanup
+   - Thread cancellation if normal termination fails
+   - Forced context destruction with proper synchronization
+   - Explicit thread status verification
+
+This approach ensures that even under heavy load or in error conditions, the WebSocket server will shut down cleanly without resource leaks, thread hangs, or race conditions.
+
+For a complete overview of the shutdown architecture across all components, see the [Shutdown Architecture](./shutdown_architecture.md) document.
+
 ### Memory Management
 
 - Zero-copy message passing where possible
