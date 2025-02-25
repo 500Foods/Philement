@@ -1,6 +1,6 @@
 # Release Notes
 
-## 2025-Feb-25
+## 2025-Feb-24
 
 Major shutdown improvements and documentation enhancements:
 
