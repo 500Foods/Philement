@@ -14,6 +14,7 @@ Welcome to the Hydrogen Project documentation. This guide will help you understa
 
 - [API Documentation](./api.md) - Complete API reference
 - [WebSocket Interface](./web_socket.md) - Real-time communications
+- [mDNS Server](./mdns_server.md) - Network service discovery
 - [System API](./api/system/system_info.md) - System endpoints
 
 ### Features & Components
@@ -21,6 +22,7 @@ Welcome to the Hydrogen Project documentation. This guide will help you understa
 - [Print Queue Management](./print_queue.md) - Managing print jobs
 - [Data Structures](./reference/data_structures.md) - Core data types
 - [Service Management](./service.md) - Service configuration
+- [Shutdown Architecture](./shutdown_architecture.md) - Safe system termination
 
 ### Use Cases
 

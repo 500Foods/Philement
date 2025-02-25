@@ -2,7 +2,7 @@
  * Hydrogen Server
  * 
  * This is the main entry point for the Hydrogen Server.
- * It intializes all system components and starts the main event looop.
+ * It initializes all system components and starts the main event loop.
  */
 
 // Feature test macros
@@ -27,6 +27,8 @@
 extern ServiceThreads logging_threads;
 
 int main(int argc, char *argv[]) {
+    // Store main thread ID for tracking
+    pthread_t main_thread_id = pthread_self();
 
     // Set up interrupt handler for clean shutdown on Ctrl+C
     // This ensures all components get a chance to clean up their resources
@@ -55,20 +57,20 @@ int main(int argc, char *argv[]) {
         pthread_mutex_unlock(&terminate_mutex);
         
         if (wait_result != 0 && wait_result != ETIMEDOUT) {
-            // Log unexpected errors, but continue running
-            log_this("Main", "Unexpected error in main event loop", LOG_LEVEL_ERROR);
+            // Log unexpected errors with error code, but continue running
+            log_this("Main", "Unexpected error in main event loop: %d", LOG_LEVEL_ERROR, wait_result);
         }
     }
 
-    // Add this thread to tracking before shutdown
-    add_service_thread(&logging_threads, pthread_self());
+    // Add main thread to tracking before shutdown
+    add_service_thread(&logging_threads, main_thread_id);
     
     // Initiate graceful shutdown sequence
     // This ensures all components are properly stopped and resources are released
     graceful_shutdown();
     
-    // Remove this thread from tracking
-    remove_service_thread(&logging_threads, pthread_self());
+    // Remove main thread from tracking
+    remove_service_thread(&logging_threads, main_thread_id);
 
     return 0;
 }

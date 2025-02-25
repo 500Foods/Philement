@@ -1,5 +1,31 @@
 # Release Notes
 
+## 2025-Feb-25
+
+Major shutdown improvements and documentation enhancements:
+
+- Robust WebSocket server shutdown implementation:
+  - Fixed race conditions between thread termination and context destruction
+  - Implemented two-phase pointer handling to prevent use-after-free
+  - Added extended timeouts with progressive fallback mechanisms
+  - Improved thread joining with proper synchronization
+  - Enhanced error handling with detailed logging
+
+- Improved mDNS server shutdown sequence:
+  - Added explicit socket closure for all network interfaces
+  - Implemented proper thread coordination and exit verification
+  - Enhanced RFC-compliant service withdrawal ("goodbye" packets)
+  - Improved resource cleanup with race condition prevention
+  - Fixed potential memory and socket leaks
+
+- Comprehensive documentation additions:
+  - Added detailed Shutdown Architecture documentation
+  - Created mDNS Server implementation documentation
+  - Enhanced WebSocket server documentation with shutdown details
+  - Updated main documentation index with references to new docs
+
+These improvements significantly enhance system reliability during shutdown, preventing resource leaks and ensuring clean termination even under challenging conditions.
+
 ## 2025-Feb-23
 
 System organization and print queue improvements:
