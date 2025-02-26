@@ -30,6 +30,7 @@ The core test script that validates Hydrogen's startup and shutdown sequence:
 ```
 
 Key features:
+
 - Launches Hydrogen with a specified configuration
 - Waits for successful startup
 - Initiates a controlled shutdown
@@ -46,6 +47,7 @@ A diagnostic tool that analyzes thread states to help diagnose shutdown stalls:
 ```
 
 Key features:
+
 - Examines all threads in a running process
 - Identifies problematic thread states (especially uninterruptible sleep)
 - Captures kernel stacks, wait channels info, and syscall information
@@ -60,6 +62,7 @@ A resource monitoring tool for tracking process metrics:
 ```
 
 Key features:
+
 - Tracks memory, CPU, thread count, and file descriptor usage
 - Takes periodic snapshots of detailed process state
 - Runs until the process exits or specified duration expires
@@ -119,9 +122,11 @@ If Hydrogen stalls during shutdown:
 
 1. Note the process ID (PID) from the test output
 2. Run the thread analyzer to identify stuck threads:
+
    ```bash
    ./analyze_stuck_threads.sh <hydrogen_pid>
    ```
+
 3. Check for threads in uninterruptible sleep (D state)
 4. Examine the wait channels to identify what resources threads are waiting on
 
