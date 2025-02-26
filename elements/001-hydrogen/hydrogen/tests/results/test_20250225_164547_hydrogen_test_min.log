@@ -1,0 +1,22 @@
+=== HYDROGEN SHUTDOWN TEST ===
+Config: /home/asimard/Projects/Philement/Philement/elements/001-hydrogen/hydrogen/tests/hydrogen_test_min.json
+Timestamp: Tue Feb 25 16:45:47 PST 2025
+===============================
+Starting Hydrogen with config: /home/asimard/Projects/Philement/Philement/elements/001-hydrogen/hydrogen/tests/hydrogen_test_min.json
+Started Hydrogen with PID: 3729679
+Waiting 10 seconds for startup...
+Capturing pre-shutdown state...
+Initiating shutdown at 16:45:57.679409591
+Monitoring shutdown progress...
+Log activity at +1s: 2025-02-25 16:45:58.681  [ WARN      ]  [ ThreadMgmt         ]  Thread removed, count: 1
+Log activity at +2s: 2025-02-25 16:45:59.281  [ INFO      ]  [ Shutdown           ]  Shutdown complete
+Hydrogen shut down in 2 seconds
+Clean shutdown detected
+Shutdown took 22 log lines from signal to completion
+=== SHUTDOWN TEST SUMMARY ===
+Config: /home/asimard/Projects/Philement/Philement/elements/001-hydrogen/hydrogen/tests/hydrogen_test_min.json
+Start time: Tue Feb 25 16:45:57 PST 2025
+End time: Tue Feb 25 16:45:59 PST 2025
+Duration: 2 seconds
+RESULT: PASSED (clean shutdown)
+=== Test completed at Tue Feb 25 16:45:59 PST 2025 ===

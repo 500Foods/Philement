@@ -1,207 +1,235 @@
 # Release Notes
 
+<!-- 
+EDITING GUIDELINES (not visible when rendered):
+- Keep entries concise and factual
+- Focus on WHAT changed, not WHY it's good
+- Avoid adjectives like "comprehensive", "robust", "significant"
+- Eliminate unnecessary justifications
+- Use fewer words where possible
+- Stick to listing actual changes, not opinions about them
+- This is a technical record, not marketing material
+- Use collapsible sections by month (except for the most recent month)
+  - Wrap older months in <details><summary>YYYY-MMM</summary> and </details> tags
+  - Keep the current/most recent month expanded
+  - This creates a more compact view while maintaining all history
+- Maintain consistent structure for all entries:
+  - Start with a topic heading (e.g., "WebSocket Server:", "Testing:")
+  - Follow with bullet points for specific changes related to that topic
+  - Group related changes under the same topic
+-->
+
+## 2025-Feb-26
+
+Testing System:
+- Testing framework:
+  - Configuration-driven test system with minimal and maximal configurations
+  - Test scripts for startup/shutdown validation
+  - Diagnostic tools for troubleshooting
+  - Modular framework for test expansion
+
+- Diagnostic tools for shutdown analysis:
+  - Thread analyzer for stuck threads and deadlocks
+  - Resource monitoring for memory, CPU, and thread usage
+  - Logging and report generation
+  - Automatic timeout handling
+
+- Documentation:
+  - Added testing documentation in docs/testing.md
+  - Created tests/README.md with usage examples
+  - Updated docs with shutdown diagnosis procedures
+
 ## 2025-Feb-24
 
-Major shutdown improvements and documentation enhancements:
-
-- Robust WebSocket server shutdown implementation:
+WebSocket Server:
+- Shutdown implementation:
   - Fixed race conditions between thread termination and context destruction
-  - Implemented two-phase pointer handling to prevent use-after-free
-  - Added extended timeouts with progressive fallback mechanisms
-  - Improved thread joining with proper synchronization
-  - Enhanced error handling with detailed logging
+  - Two-phase pointer handling to prevent use-after-free
+  - Extended timeouts with fallback mechanisms
+  - Improved thread joining with synchronization
+  - Error handling with logging
 
-- Improved mDNS server shutdown sequence:
-  - Added explicit socket closure for all network interfaces
-  - Implemented proper thread coordination and exit verification
-  - Enhanced RFC-compliant service withdrawal ("goodbye" packets)
-  - Improved resource cleanup with race condition prevention
-  - Fixed potential memory and socket leaks
+mDNS Server:
+- Shutdown sequence:
+  - Socket closure for all network interfaces
+  - Thread coordination and exit verification
+  - RFC-compliant service withdrawal ("goodbye" packets)
+  - Resource cleanup with race condition prevention
+  - Fixed memory and socket leaks
 
-- Comprehensive documentation additions:
-  - Added detailed Shutdown Architecture documentation
-  - Created mDNS Server implementation documentation
-  - Enhanced WebSocket server documentation with shutdown details
-  - Updated main documentation index with references to new docs
-
-These improvements significantly enhance system reliability during shutdown, preventing resource leaks and ensuring clean termination even under challenging conditions.
+Documentation:
+- Added Shutdown Architecture documentation
+- Created mDNS Server implementation documentation
+- Added WebSocket server shutdown documentation
+- Updated main documentation index
 
 ## 2025-Feb-23
 
-System organization and print queue improvements:
-
-- Refactored hydrogen module for better organization:
-  - Reorganized header includes for clearer dependencies
-  - Removed unused files for cleaner codebase
-  - Enhanced web server print queue management
-  - Improved overall code structure and maintainability
+Core System:
+- Refactored hydrogen module:
+  - Reorganized header includes
+  - Removed unused files
+  - Updated web server print queue management
 
 ## 2025-Feb-22
 
-Server management and logging enhancements:
+Server Management:
+- Server naming consistency:
+  - Renamed mDNS references to mDNS Server
+  - Updated documentation and configuration
 
-- Improved server naming consistency:
-  - Renamed mDNS references to mDNS Server throughout codebase
-  - Updated related documentation and configuration
-- Enhanced WebSocket server:
-  - Refactored initialization process
-  - Improved configuration handling
-  - Removed deprecated example status code
-- Upgraded logging system:
-  - Implemented defined log level constants
-  - Enhanced readability and maintainability
-  - Standardized logging calls across codebase
+WebSocket Server:
+- Refactored initialization
+- Updated configuration handling
+- Removed deprecated example status code
+
+Logging System:
+- Added log level constants
+- Standardized logging calls
 
 ## 2025-Feb-21
 
-Major system improvements:
+Queue System:
+- Queue system readiness tracking
+- Unified logging function
+- Timing functions for server lifecycle
+- Shutdown logging for thread status
+- Configuration support for queue initialization
+- Standardized percentage formatting
 
-- Enhanced queue system and logging:
-  - Added queue system readiness tracking
-  - Implemented unified logging function
-  - Introduced timing functions for server lifecycle
-  - Improved shutdown logging for thread status
-  - Enhanced configuration support for queue initialization
-  - Standardized percentage formatting in status reports
-
-- Enhanced system information reporting:
-
-- Expanded system metrics in /api/system/info and WebSocket status:
-  - Network interface details including IP addresses and traffic statistics
-  - Filesystem information with space usage and mount points
-  - CPU usage per core and system load averages
-  - Detailed memory and swap usage statistics
-  - Currently logged-in users
+System Information:
+- Added metrics to /api/system/info and WebSocket status:
+  - Network interface details with IP addresses and traffic
+  - Filesystem information with space usage
+  - CPU usage per core and load averages
+  - Memory and swap usage
+  - Logged-in users
 
 ## 2025-Feb-20
 
-Major WebSocket server refactoring:
-
-- Split monolithic implementation into focused modules:
-  - Connection lifecycle management
-  - Authentication handling
+WebSocket Server:
+- Split implementation into modules:
+  - Connection lifecycle
+  - Authentication
   - Message processing
   - Event dispatching
   - Status reporting
-- Improved state management with WebSocketServerContext
-- Enhanced initialization sequence and error handling
-- Added port fallback mechanism for better reliability
+- State management with WebSocketServerContext
+- Updated initialization sequence and error handling
+- Added port fallback mechanism
 - Fixed session validation during vhost creation
-- Improved thread safety with proper mutex protection
-- Better error reporting and logging throughout
+- Thread safety with mutex protection
+- Improved error reporting and logging
 
 ## 2025-Feb-19
 
-Enhanced system status reporting:
+System Status:
+- Added server timing to /api/system/info endpoint:
+  - `server_started` field with ISO-formatted UTC start time
+  - `server_runtime` field with uptime in seconds
+  - `server_runtime_formatted` field with human-readable uptime
+- Updated API documentation with examples
 
-- Added server timing information to /api/system/info endpoint
-- New `server_started` field shows ISO-formatted UTC start time
-- New `server_runtime` field shows uptime in seconds
-- New `server_runtime_formatted` field shows human-readable uptime
-- Updated API documentation with real-world examples
-
-Documentation improvements:
-
+Documentation:
 - Added link to Print Queue Management documentation
-- Moved release notes to a dedicated file
-- Enhanced System Dependencies section with detailed descriptions
-- Improved documentation organization and cross-linking
+- Moved release notes to dedicated file
+- Updated System Dependencies section
+- Improved documentation organization
 
 ## 2025-Feb-18
 
-Extended IPv6 support to web and websocket servers:
-
-- Added EnableIPv6 configuration flags for web and websocket servers
-- Implemented dual-stack support in web server
-- Added IPv6 interface binding in websocket server
-- All network services (mDNS, web, websocket) now have consistent IPv6 configuration
+Network Infrastructure:
+- IPv6 support for web and websocket servers:
+  - Added EnableIPv6 configuration flags
+  - Implemented dual-stack support in web server
+  - Added IPv6 interface binding in websocket server
+  - Consistent IPv6 configuration across network services
 
 ## 2025-Feb-17
 
-Lots of configuration and service documentation.
-Revisited how thread and process memory is reported.
-Example of Bash script that does the same thing.
-File Descriptor information added to info endpoint.
+Documentation and System Metrics:
+- Added configuration and service documentation
+- Updated thread and process memory reporting
+- Added Bash script example
+- Added File Descriptor information to info endpoint
 
 ## 2025-Feb-16
 
-Work on comments, trying to make things a little easier to follow.
-Added IPv6Enable flag to JSON configuration for mDNS.
-Updated logging output to look the same regardless of how logging is performed
+Code Quality and Configuration:
+- Improved code comments
+- Added IPv6Enable flag to JSON configuration for mDNS
+- Standardized logging output format
 
 ## 2025-Feb-15
 
-Started work on documentation for project and added example code for the status API endpoint
-which is now also synchronized with the WebSockets output showing the same information.
-
-Configuration options to control servers independently. We might run hydrogen just as a generic
-web server, or a generic websockets server or a print server without needing all of the servers
-running, so this ideally allows us to control them independently.
-
-- JSON updated with Enabled flags for each server
-- PrintServer added to JSON (wasn't there previously)
-- Startup and Shutdown functions updated to check for these flags
-- mDNS, if started, should advertise only what has been started
+Documentation and Configuration:
+- Added project documentation and status API endpoint example
+- Synchronized API endpoint with WebSockets output
+- Added server independence configuration:
+  - JSON updated with Enabled flags for each server
+  - Added PrintServer to JSON
+  - Updated Startup/Shutdown functions to check for flags
+  - Configured mDNS to advertise only enabled services
 
 ## 2025-Feb-14
 
-Basic REST API Implemented
-
-- SystemService/Info Endpoint added
-- Logging API calls added
+API Development:
+- Basic REST API implementation:
+  - Added SystemService/Info Endpoint
+  - Added logging API calls
 
 ## 2025-Feb-13
 
-More maintenance
-
-- Reviewed code and comments in hydrogen.c
-- Reviewed code and comments in Makefile
+Code Maintenance:
+- Updated code and comments in hydrogen.c
+- Updated code and comments in Makefile
 
 ## 2025-Feb-12
 
-Worked on various maintenance tasks
-
-- Cleaning up the amount of detail in logging, particularly web sockets (lws)
-- Try to have a smoother shutdown, again, particularly around web sockets (lws)
-- Fix errors with not being able to identify file size or timestamp
-- Bit of refactoring to move startup and shutdown code into their own files
+Code Maintenance:
+- Reduced logging detail, particularly for web sockets (lws)
+- Improved shutdown process for web sockets
+- Fixed file size and timestamp identification errors
+- Moved startup and shutdown code to separate files
 
 ## 2025-Feb-08
 
-Brought into Visual Studio Code.
+Development Environment:
+- Imported project into Visual Studio Code
 
-- Just reviewing where things are at, getting more of a footing when coding inside of VSC/GitHub directly
+<details>
+<summary>2024-Jul</summary>
 
 ## 2024-Jul-18
 
-Added a WebSocket server to the project. This is what the web interface (lithium) will be talking to.
-
-- Uses Authorization: Key abc in the header to grant access
-- Uses Protocol: hydrogen-protocol, one of the JSON options
-- Uses libwebsockets - not for the squeamish.
+WebSocket Server:
+- Uses Authorization: Key abc in header
+- Uses Protocol: hydrogen-protocol
+- Implemented with libwebsockets
 
 ## 2024-Jul-15
 
-Bit of cleanup of mDNS code. Not sure it is working entirely yet. Some other updates.
-
-- Addressed issues with log_this not being all that reliable
-- Fixed memory issues with app_config
-- Cleanup of shutdown code
-- Added generic WebServer support to serve lithium content
+System Improvements:
+- mDNS code cleanup and updates:
+  - Fixed log_this reliability issues
+  - Fixed app_config memory issues
+  - Improved shutdown code
+- Added WebServer support for lithium content
 
 ## 2024-Jul-11
 
-Focus was all about mDNS and the initial groundwork for the WebSockets interface.
-
-- Integrated the code from the nitrogen/nitro prototype project.
+Network Infrastructure:
+- mDNS and WebSockets groundwork:
+  - Integrated code from nitrogen/nitro prototype
 
 ## 2024-Jul-08
 
-Updated code to implement an HTTP service that is used to handle incoming print requests, typically from OrcaSlicer. So, in Orca, you can configure the printer connection by specifying a URL and port. It then assumes a bunch of API endpoints, like /api/version or /api/files/upload or something like that. This is what the "test" and "upload" and "upload and print" functions use to communicate with Klipper. In the case of hydrogen, it responds to the requests to get Orca to think we're Octoprint-compatible, enough so that it will send along a print job. At the moment, it does the following.
+Print Service:
+- Implemented HTTP service for OrcaSlicer print requests:
+  - Print job handling with /tmp storage using GUID filenames
+  - JSON generation with filename mapping and beryllium-extracted data
+  - PrintQueue integration for job management
+  - /print/queue endpoint for queue inspection
+  - Support for preview images embedded in G-code
 
-- Accepts the print job and stores it in a /tmp location with a unique (GUID) filename
-- Generates JSON showing the filename mapping, and other data extracted using the beryllium code
-- This includes things like layer times, estimated filament, etc.
-- This JSON is then added to a PrintQueue, ready to be handled in whatever way we like
-- A separate /print/queue endpoint will show all the PrintQueue JSON objects as an array
-- This also includes the preview image that is added to the G-code by Orca.
+</details>
