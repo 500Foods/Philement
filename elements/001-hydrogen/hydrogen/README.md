@@ -39,7 +39,7 @@ Hydrogen is currently designed for technical users who:
 
 Complete, detailed documentation is available in the `docs` directory, organized by topic:
 
-- [**Main Documentation**](docs/README.md) - Start here for a comprehensive overview 
+- [**Main Documentation**](docs/README.md) - Start here for a comprehensive overview
 - [**Quick Start Guide**](docs/guides/quick-start.md) - Get up and running quickly
 - [**Release Notes**](docs/release_notes.md) - Detailed version history
 
@@ -51,6 +51,7 @@ Complete, detailed documentation is available in the `docs` directory, organized
 - `hydrogen.json` Configuration file for the Hydrogen server
 - `Makefile` Build instructions for compiling the Hydrogen program
 - `src/hydrogen.c` Main entry point and core system initialization
+
 </details>
 <details>
 <summary><h3>API Components</h3></summary>
@@ -59,6 +60,7 @@ Located in `src/api/`:
 
 - `system/system_service.c` System service implementation
 - `system/system_service.h` System service interface
+
 </details>
 <details>
 <summary><h3>Configuration Management</h3></summary>
@@ -69,6 +71,7 @@ Located in `src/config/`:
 - `configuration.h` Defines configuration-related structures and constants
 - `keys.c` Implements cryptographic key generation and management
 - `keys.h` Header file for cryptographic operations
+
 </details>
 <details>
 <summary><h3>Logging System</h3></summary>
@@ -79,6 +82,7 @@ Located in `src/logging/`:
 - `logging.h` Logging interface and configuration
 - `log_queue_manager.c` Thread-safe log message queue handler
 - `log_queue_manager.h` Log queue management interface
+
 </details>
 <details>
 <summary><h3>Network Services</h3></summary>
@@ -92,6 +96,7 @@ Located in `src/network/`:
 
 - `network.h` Network interface abstractions
 - `network_linux.c` Linux network stack implementation
+
 </details>
 <details>
 <summary><h3>Print Management</h3></summary>
@@ -102,6 +107,7 @@ Located in `src/print/`:
 - `beryllium.h` Header file for G-code analysis declarations
 - `print_queue_manager.c` 3D print job scheduling and management
 - `print_queue_manager.h` Print queue interface
+
 </details>
 <details>
 <summary><h3>Queue System</h3></summary>
@@ -110,6 +116,7 @@ Located in `src/queue/`:
 
 - `queue.c` Generic thread-safe queue implementation
 - `queue.h` Queue data structure interface
+
 </details>
 <details>
 <summary><h3>State Management</h3></summary>
@@ -122,6 +129,7 @@ Located in `src/state/`:
 - `startup.h` Startup sequence definitions
 - `state.c` Global state management implementation
 - `state.h` State tracking interface
+
 </details>
 <details>
 <summary><h3>Utility Functions</h3></summary>
@@ -140,6 +148,7 @@ Located in `src/utils/`:
 - `utils_threads.h` Threading utility interfaces
 - `utils_time.c` Time handling utilities
 - `utils_time.h` Time utility interfaces
+
 </details>
 <details>
 <summary><h3>Web Server</h3></summary>
@@ -153,6 +162,7 @@ Located in `src/webserver/`:
 - `web_server_request.h` Request processing interface
 - `web_server_upload.c` File upload handling
 - `web_server_upload.h` Upload processing interface
+
 </details>
 <details>
 <summary><h3>WebSocket Server</h3></summary>
@@ -168,6 +178,7 @@ Located in `src/websocket/`:
 - `websocket_server_dispatch.c` Message routing system
 - `websocket_server_message.c` Message processing engine
 - `websocket_server_status.c` Status reporting implementation
+
 </details>
 
 ## System Dependencies
