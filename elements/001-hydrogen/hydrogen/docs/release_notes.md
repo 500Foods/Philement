@@ -47,7 +47,12 @@ Shutdown Architecture:
 
 - Documentation:
   - Fixed Markdown linting errors
-  - Reorganized top-level README
+  - Enhanced top-level README:
+    - Replaced h3 tags with b tags to reduce spacing between collapsed sections
+    - Renamed "Root Directory" to "Project Folder" for clarity
+    - Added Tests section with links to testing scripts
+    - Converted all file references to clickable links for improved navigation
+    - Removed redundant location text for cleaner presentation
 
 ## 2025-Feb-25
 
