@@ -32,6 +32,7 @@ Welcome to the Hydrogen Project documentation. This guide will help you understa
 ## Development
 
 - [Coding Guidelines](./coding_guidelines.md) - Development standards
+- [Testing System](./testing.md) - Test configuration and execution
 - [Docker Deployment](./deployment/docker.md) - Container-based deployment
 
 ## Contributing

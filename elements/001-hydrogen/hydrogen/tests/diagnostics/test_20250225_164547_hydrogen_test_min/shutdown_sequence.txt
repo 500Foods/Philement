@@ -1,0 +1,23 @@
+2025-02-25 16:45:57.680  [ INFO      ]  [ Shutdown           ]  Cleaning up and shutting down
+2025-02-25 16:45:57.680  [ WARN      ]  [ ThreadMgmt         ]  Thread added, count: 2
+2025-02-25 16:45:57.680  [ INFO      ]  [ Shutdown           ]  Starting graceful shutdown sequence
+2025-02-25 16:45:57.680  [ INFO      ]  [ Shutdown           ]  Stopping mDNS Server service...
+2025-02-25 16:45:57.680  [ INFO      ]  [ Shutdown           ]  Stopping web services...
+2025-02-25 16:45:57.680  [ INFO      ]  [ Shutdown           ]  Stopping print system...
+2025-02-25 16:45:57.680  [ INFO      ]  [ Shutdown           ]  Cleaning up network...
+2025-02-25 16:45:57.680  [ INFO      ]  [ Shutdown           ]  Freeing network info
+2025-02-25 16:45:58.680  [ INFO      ]  [ Shutdown           ]  Subsystem shutdown completed
+2025-02-25 16:45:58.680  [ INFO      ]  [ Shutdown           ]  ――――――――――――――――――――――――――
+2025-02-25 16:45:58.680  [ INFO      ]  [ Shutdown           ]  Remaining threads - Log: 2, Web: 0, WS: 0, mDNS Server: 0, Print: 0
+2025-02-25 16:45:58.680  [ INFO      ]  [ Shutdown           ]  Only logging thread remains, proceeding with shutdown
+2025-02-25 16:45:58.680  [ INFO      ]  [ Shutdown           ]  All non-logging threads exited successfully
+2025-02-25 16:45:58.680  [ INFO      ]  [ Shutdown           ]  Shutting down logging system
+2025-02-25 16:45:58.680  [ INFO      ]  [ Shutdown           ]  Waiting for log queue to drain...
+2025-02-25 16:45:58.681  [ INFO      ]  [ LogQueueManager    ]  Shutdown: Log Queue Manager exiting
+2025-02-25 16:45:58.681  [ WARN      ]  [ ThreadMgmt         ]  Thread removed, count: 1
+2025-02-25 16:45:59.181  [ INFO      ]  [ Shutdown           ]  Remaining threads before final cleanup - Log: 1, Web: 0, WS: 0, mDNS Server: 0, Print: 0
+2025-02-25 16:45:59.181  [ INFO      ]  [ Shutdown           ]  Shutting down queue system
+2025-02-25 16:45:59.281  [ INFO      ]  [ Shutdown           ]  All non-main threads exited successfully
+2025-02-25 16:45:59.281  [ INFO      ]  [ Utils              ]  System shutdown initiated at 2025-02-26T00:45:59Z
+2025-02-25 16:45:59.281  [ INFO      ]  [ Utils              ]  System shutdown took 1.601s
+2025-02-25 16:45:59.281  [ INFO      ]  [ Shutdown           ]  Shutdown complete
