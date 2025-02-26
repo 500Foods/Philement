@@ -23,6 +23,32 @@ EDITING GUIDELINES (not visible when rendered):
 
 Testing System:
 
+- Test cleanup automation:
+  - Added automatic cleanup of old test results and diagnostics
+  - Modified `run_tests.sh` to remove previous test data before each run
+  - Created `.gitignore` file to exclude test artifacts from GitHub synchronization
+  - Improved test execution efficiency
+
+Shutdown Architecture:
+
+- WebSocket Server:
+  - Enhanced connection handling during shutdown
+  - Added thread management with timeout-based cancellation
+  - Implemented multi-phase context destruction
+  - Extended error recovery with fallback mechanisms
+  - Added resource leak prevention
+
+- Core Shutdown:
+  - Improved shutdown sequencing with proper dependency ordering
+  - Enhanced thread monitoring and cleanup
+  - Added detailed diagnostic information during shutdown
+  - Implemented timeout-based waiting with fallback mechanisms
+  - Improved service-specific cleanup procedures
+
+## 2025-Feb-25
+
+Testing System:
+
 - Testing framework:
   - Configuration-driven test system with minimal and maximal configurations
   - Test scripts for startup/shutdown validation

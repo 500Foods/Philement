@@ -1,0 +1,18 @@
+# Hydrogen test artifacts
+tests/diagnostics/
+tests/results/
+
+# Build outputs
+build/
+build_debug/
+build_valgrind/
+
+# Configuration files and logs that might contain environment-specific info
+hydrogen_test*.log
+hydrogen_test*.json
+
+# Executable
+hydrogen
+
+# Upload directory
+uploads/

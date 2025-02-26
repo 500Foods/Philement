@@ -1,677 +1,711 @@
-2025-02-25 16:46:24.828  [ INFO      ]  [ Initialization     ]  ――――――――――――――――――――――――――
-2025-02-25 16:46:24.828  [ INFO      ]  [ Initialization     ]  Server Name: Philement/hydrogen-test-max
-2025-02-25 16:46:24.828  [ INFO      ]  [ Initialization     ]  Executable: /home/asimard/Projects/Philement/Philement/elements/001-hydrogen/hydrogen/hydrogen
-2025-02-25 16:46:24.828  [ INFO      ]  [ ThreadMgmt         ]  Added thread 140153207891648 (tid: 3730620), new count: 1
-2025-02-25 16:46:24.828  [ INFO      ]  [ LogQueueManager    ]  Log queue manager started
-2025-02-25 16:46:24.828  [ INFO      ]  [ Initialization     ]  Version: 0.1.0
-2025-02-25 16:46:24.828  [ INFO      ]  [ Initialization     ]  Size: 139704
-2025-02-25 16:46:24.828  [ INFO      ]  [ Initialization     ]  Last Modified: 2025-02-24 22:54:07
-2025-02-25 16:46:24.828  [ INFO      ]  [ Initialization     ]  Log File: ./hydrogen_test_max.log
-2025-02-25 16:46:24.828  [ INFO      ]  [ Initialization     ]  ――――――――――――――――――――――――――
-2025-02-25 16:46:24.828  [ INFO      ]  [ QueueSystem        ]  New queue created: PrintQueue
-2025-02-25 16:46:24.828  [ INFO      ]  [ PrintQueueManager  ]  PrintQueue created successfully
-2025-02-25 16:46:24.828  [ INFO      ]  [ Initialization     ]  Print Queue system initialized
-2025-02-25 16:46:24.828  [ INFO      ]  [ WebServer          ]  Initializing web server
-2025-02-25 16:46:24.828  [ INFO      ]  [ WebServer          ]  IPv6 support enabled
-2025-02-25 16:46:24.828  [ INFO      ]  [ WebServer          ]  -> Port: 5000
-2025-02-25 16:46:24.828  [ INFO      ]  [ WebServer          ]  -> WebRoot: ./www
-2025-02-25 16:46:24.828  [ INFO      ]  [ WebServer          ]  -> Upload Path: /api/upload
-2025-02-25 16:46:24.828  [ INFO      ]  [ WebServer          ]  -> Upload Dir: ./uploads
-2025-02-25 16:46:24.828  [ INFO      ]  [ ThreadMgmt         ]  Added thread 140153199498944 (tid: 3730621), new count: 1
-2025-02-25 16:46:24.828  [ INFO      ]  [ PrintQueueManager  ]  Print queue manager started
-2025-02-25 16:46:24.828  [ WARN      ]  [ WebServer          ]  Upload directory does not exist, attempting to create
-2025-02-25 16:46:24.828  [ INFO      ]  [ WebServer          ]  Created upload directory
-2025-02-25 16:46:24.828  [ INFO      ]  [ WebSocket          ]  Server context created successfully
-2025-02-25 16:46:24.828  [ INFO      ]  [ WebSocket          ]  IPv6 support enabled
-2025-02-25 16:46:24.828  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8289] I: lws_create_context: ev lib path /usr/lib64, '/home/db2inst1/sqllib/lib64:/home/db2inst1/sqllib/lib64/gskit:/home/db2inst1/sqllib/lib32'
-2025-02-25 16:46:24.828  [ INFO      ]  [ WebServer          ]  Starting web server
-2025-02-25 16:46:24.828  [ INFO      ]  [ ThreadMgmt         ]  Added thread 140153191106240 (tid: 3730622), new count: 1
-2025-02-25 16:46:24.828  [ INFO      ]  [ WebServer          ]  Starting with IPv6 dual-stack support
-2025-02-25 16:46:24.829  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8289] D: _realloc: size 7744: context
-2025-02-25 16:46:24.829  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8290] N: lws_create_context: LWS: 4.3.3-no_hash, NET CLI SRV H1 H2 WS ConMon IPV6-on
-2025-02-25 16:46:24.829  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8290] I: lws_create_context: Event loop: poll
-2025-02-25 16:46:24.829  [ INFO      ]  [ WebServer          ]  Web server bound to port: 5000
-2025-02-25 16:46:24.829  [ INFO      ]  [ WebServer          ]  Web server started successfully
-2025-02-25 16:46:24.829  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8290] D: _realloc: size 64: lws_smd_register
-2025-02-25 16:46:24.829  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8290] I: lws_smd_register: peer 0x21a8750 (count 1) registered
-2025-02-25 16:46:24.829  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8290] D: _realloc: size 4194304: fds table
-2025-02-25 16:46:24.830  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8303] I: lws_create_context: ctx:  6224B (2128 ctx + pt(1 thr x 4096)), pt-fds: 524288, fdmap: 4194304
-2025-02-25 16:46:24.830  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8303] I: lws_create_context:  http: ah_data: 4096, ah: 984, max count 524288
-2025-02-25 16:46:24.830  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8303] D: _realloc: size 4194304: lws_lookup
-2025-02-25 16:46:24.831  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8316] I: lws_plat_init:  mem: platform fd map: 4194304 B
-2025-02-25 16:46:24.831  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8316] D: _realloc: size 1520: __lws_wsi_create_with_role
-2025-02-25 16:46:24.831  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8316] D: : lws_role_transition: wsistate 0x200, ops pipe
-2025-02-25 16:46:24.831  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8316] N: __lws_lc_tag:  ++ [wsi|0|pipe] (1)
-2025-02-25 16:46:24.831  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8316] D: [wsi|0|pipe]: __insert_wsi_socket_into_fds: tsi=0, sock=7, pos-in-fds=0
-2025-02-25 16:46:24.831  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8316] I: rops_pt_init_destroy_netlink: creating netlink skt
-2025-02-25 16:46:24.831  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8316] D: _realloc: size 1520: __lws_wsi_create_with_role
-2025-02-25 16:46:24.831  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8316] D: : lws_role_transition: wsistate 0x200, ops netlink
-2025-02-25 16:46:24.831  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8316] N: __lws_lc_tag:  ++ [vh|0|netlink] (1)
-2025-02-25 16:46:24.831  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8316] D: [vh|0|netlink]: __insert_wsi_socket_into_fds: tsi=0, sock=8, pos-in-fds=1
-2025-02-25 16:46:24.831  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8317] D: rops_pt_init_destroy_netlink: starting netlink coldplug wait
-2025-02-25 16:46:24.831  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8317] I: lws_context_init_ssl_library:  Compiled with OpenSSL support
-2025-02-25 16:46:24.831  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8317] I: lws_context_init_ssl_library: Doing SSL library init
-2025-02-25 16:46:24.832  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8323] I: lws_server_get_canonical_hostname:  canonical_hostname = angrin.500foods.com
-2025-02-25 16:46:24.832  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8323] I: lws_create_context:  mem: per-conn:         1520 bytes + protocol rx buf
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8323] D: lws_cancel_service: 
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8323] D: _realloc: size 1217: lws_create_vhost
-2025-02-25 16:46:24.832  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8323] N: __lws_lc_tag:  ++ [vh|1|hydrogen|::|::|5001] (2)
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8323] D: _realloc: size 168: vh plugin table
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8323] D: _realloc: size 48: same vh list
-2025-02-25 16:46:24.832  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8323] I: [vh|1|hydrogen|::|::|5001]: lws_create_vhost: Creating Vhost 'hydrogen' port 5001, 2 protocols, IPv6 on
-2025-02-25 16:46:24.832  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8323] I: _lws_vhost_init_server_af: af 10
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8325] D:  interface lo vs :: (fam 17) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8325] D:  interface eno1 vs :: (fam 17) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8325] D:  interface virbr1 vs :: (fam 17) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8325] D:  interface bridge0 vs :: (fam 17) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8325] D:  interface vnet3 vs :: (fam 17) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8325] D:  interface vnet4 vs :: (fam 17) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8325] D:  interface vnet5 vs :: (fam 17) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8325] D:  interface lo vs :: (fam 2) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8325] D:  interface virbr1 vs :: (fam 2) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8325] D:  interface bridge0 vs :: (fam 2) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8325] D:  interface lo vs :: (fam 10) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8325] D:  interface bridge0 vs :: (fam 10) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8325] D:  interface bridge0 vs :: (fam 10) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8325] D:  interface vnet3 vs :: (fam 10) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8326] D:  interface vnet4 vs :: (fam 10) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8326] D:  interface vnet5 vs :: (fam 10) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8327] D: initial if check says 0
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8328] D:  interface lo vs :: (fam 17) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8328] D:  interface eno1 vs :: (fam 17) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8328] D:  interface virbr1 vs :: (fam 17) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8328] D:  interface bridge0 vs :: (fam 17) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8328] D:  interface vnet3 vs :: (fam 17) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8328] D:  interface vnet4 vs :: (fam 17) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8328] D:  interface vnet5 vs :: (fam 17) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8328] D:  interface lo vs :: (fam 2) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8328] D:  interface virbr1 vs :: (fam 2) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8328] D:  interface bridge0 vs :: (fam 2) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8328] D:  interface lo vs :: (fam 10) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8328] D:  interface bridge0 vs :: (fam 10) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8328] D:  interface bridge0 vs :: (fam 10) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8328] D:  interface vnet3 vs :: (fam 10) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8328] D:  interface vnet4 vs :: (fam 10) ipv6 1
-2025-02-25 16:46:24.832  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8328] D:  interface vnet5 vs :: (fam 10) ipv6 1
-2025-02-25 16:46:24.833  [ DEBUG     ]  [ WebSocket          ]  [2025/02/25 16:46:24:8330] E: [null wsi]: lws_socket_bind: ERROR on binding fd 9 to port 5001 (-1 98)
-2025-02-25 16:46:24.833  [ DEBUG     ]  [ WebSocket          ]  [2025/02/25 16:46:24:8330] E: [vh|1|hydrogen|::|::|5001]: lws_create_vhost: init server failed
-2025-02-25 16:46:24.833  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8330] I: [vh|1|hydrogen|::|::|5001]: lws_vhost_destroy1: 
-2025-02-25 16:46:24.833  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8330] I: [vh|1|hydrogen|::|::|5001]: lws_vhost_destroy: count_bound_wsi 0
-2025-02-25 16:46:24.833  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8330] N: __lws_lc_untag:  -- [vh|1|hydrogen|::|::|5001] (1) 700μs
-2025-02-25 16:46:24.833  [ INFO      ]  [ WebSocket          ]  Port 5001 is in use, trying next port
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8330] D: _realloc: size 1217: lws_create_vhost
-2025-02-25 16:46:24.833  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8330] N: __lws_lc_tag:  ++ [vh|2|hydrogen|::|::|5002] (2)
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8330] D: _realloc: size 168: vh plugin table
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8330] D: _realloc: size 48: same vh list
-2025-02-25 16:46:24.833  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8330] I: [vh|2|hydrogen|::|::|5002]: lws_create_vhost: Creating Vhost 'hydrogen' port 5002, 2 protocols, IPv6 on
-2025-02-25 16:46:24.833  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8330] I: _lws_vhost_init_server_af: af 10
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8331] D:  interface lo vs :: (fam 17) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8332] D:  interface eno1 vs :: (fam 17) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8332] D:  interface virbr1 vs :: (fam 17) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8332] D:  interface bridge0 vs :: (fam 17) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8332] D:  interface vnet3 vs :: (fam 17) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8332] D:  interface vnet4 vs :: (fam 17) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8332] D:  interface vnet5 vs :: (fam 17) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8332] D:  interface lo vs :: (fam 2) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8332] D:  interface virbr1 vs :: (fam 2) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8332] D:  interface bridge0 vs :: (fam 2) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8332] D:  interface lo vs :: (fam 10) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8332] D:  interface bridge0 vs :: (fam 10) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8332] D:  interface bridge0 vs :: (fam 10) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8333] D:  interface vnet3 vs :: (fam 10) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8333] D:  interface vnet4 vs :: (fam 10) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8333] D:  interface vnet5 vs :: (fam 10) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8334] D: initial if check says 0
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8335] D:  interface lo vs :: (fam 17) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8335] D:  interface eno1 vs :: (fam 17) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8336] D:  interface virbr1 vs :: (fam 17) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8336] D:  interface bridge0 vs :: (fam 17) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8336] D:  interface vnet3 vs :: (fam 17) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8336] D:  interface vnet4 vs :: (fam 17) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8336] D:  interface vnet5 vs :: (fam 17) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8336] D:  interface lo vs :: (fam 2) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8336] D:  interface virbr1 vs :: (fam 2) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8336] D:  interface bridge0 vs :: (fam 2) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8336] D:  interface lo vs :: (fam 10) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8336] D:  interface bridge0 vs :: (fam 10) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8336] D:  interface bridge0 vs :: (fam 10) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8336] D:  interface vnet3 vs :: (fam 10) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8336] D:  interface vnet4 vs :: (fam 10) ipv6 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8336] D:  interface vnet5 vs :: (fam 10) ipv6 1
-2025-02-25 16:46:24.833  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8337] N: [vh|2|hydrogen|::|::|5002]: lws_socket_bind: source ads ::
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8337] D: _realloc: size 1520: __lws_wsi_create_with_role
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8337] D: : lws_role_transition: wsistate 0x200, ops listen
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8338] D: _lws_vhost_init_server_af: lws_socket_bind says 5002
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8338] D: : lws_vhost_bind_wsi: vh hydrogen: wsi listen/hydrogen-protocol, count_bound_wsi 1
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8338] D: : __insert_wsi_socket_into_fds: tsi=0, sock=9, pos-in-fds=2
-2025-02-25 16:46:24.833  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8338] N: __lws_lc_tag:  ++ [wsi|1|listen|hydrogen|::|5002] (2)
-2025-02-25 16:46:24.833  [ INFO      ]  [ WebSocket          ]  Successfully bound to port 5002
-2025-02-25 16:46:24.833  [ INFO      ]  [ WebSocket          ]  Vhost creation completed successfully
-2025-02-25 16:46:24.833  [ INFO      ]  [ WebSocket          ]  Server initialized on port 5002 with protocol hydrogen-protocol
-2025-02-25 16:46:24.833  [ INFO      ]  [ Initialization     ]  Web Server initialized
-2025-02-25 16:46:24.833  [ INFO      ]  [ Initialization     ]  WebSocket Server initialized
-2025-02-25 16:46:24.833  [ INFO      ]  [ Initialization     ]  Starting mDNS Server initialization
-2025-02-25 16:46:24.833  [ INFO      ]  [ Initialization     ]  Setting WebSocket mDNS service port to 5002
-2025-02-25 16:46:24.833  [ INFO      ]  [ ThreadMgmt         ]  Added thread 140152970147520 (tid: 3730624), new count: 1
-2025-02-25 16:46:24.833  [ INFO      ]  [ WebSocket          ]  Server thread starting
-2025-02-25 16:46:24.833  [ ERROR     ]  [ WebSocket          ]  Invalid session data for callback 31
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8339] D: _lws_state_transition: system: changed 1 'CONTEXT_CREATED' -> 2 'INITIALIZED'
-2025-02-25 16:46:24.833  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8339] I: lws_state_notify_protocol_init: waiting for netlink coldplug
-2025-02-25 16:46:24.833  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8339] I: _report: system: prot_init: rejected 'INITIALIZED' -> 'IFACE_COLDPLUG'
-2025-02-25 16:46:24.833  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8339] I: lws_state_transition_steps: CONTEXT_CREATED -> INITIALIZED
-2025-02-25 16:46:24.833  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8339] I: lws_protocol_init: 
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8339] D: [vh|2|hydrogen|::|::|5002]: lws_protocol_init_vhost: not instantiating hydrogen-protocol
-2025-02-25 16:46:24.833  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8339] I: [vh|2|hydrogen|::|::|5002]: lws_protocol_init_vhost: init hydrogen.hydrogen-protocol
-2025-02-25 16:46:24.833  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8339] D: [vh|2|hydrogen|::|::|5002]: lws_protocol_init_vhost: not instantiating lws-ws-proxy
-2025-02-25 16:46:24.833  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8339] I: [vh|2|hydrogen|::|::|5002]: lws_protocol_init_vhost: init hydrogen.lws-ws-proxy
-2025-02-25 16:46:24.833  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8339] I: lws_plat_drop_app_privileges: not changing group
-2025-02-25 16:46:24.833  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8339] I: lws_plat_drop_app_privileges: not changing user
-2025-02-25 16:46:24.834  [ ERROR     ]  [ WebSocket          ]  Invalid session data for callback 71
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8340] I: closed in event cancel
-2025-02-25 16:46:24.834  [ INFO      ]  [ mDNSServer         ]  Created multicast socket on interface virbr1
-2025-02-25 16:46:24.834  [ INFO      ]  [ mDNSServer         ]  Created multicast socket on interface virbr1
-2025-02-25 16:46:24.834  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8340] D: [wsi|0|pipe]: lws_service_fd_tsi: Close and handled
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8340] I: [wsi|0|pipe]: __lws_close_free_wsi: caller: close_and_handled
-2025-02-25 16:46:24.834  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8340] D: [wsi|0|pipe]: __lws_close_free_wsi: real just_kill_connection A: (sockfd 7)
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8340] I: [wsi|0|pipe]: __lws_close_free_wsi: real just_kill_connection: sockfd 7
-2025-02-25 16:46:24.834  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8340] D: [wsi|1|listen|hydrogen|::|5002]: _lws_change_pollfd: fd 9 events 1 -> 1
-2025-02-25 16:46:24.834  [ DEBUG     ]  [ WebSocket          ]  Invalid session data for callback 34
-2025-02-25 16:46:24.834  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8341] D: [wsi|0|pipe]: lwsi_set_state: lwsi_set_state 0x200 -> 0x20
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8341] I: [wsi|0|pipe]: __lws_close_free_wsi: cce=0
-2025-02-25 16:46:24.834  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8341] D: [wsi|0|pipe]: __lws_close_free_wsi_final: fd 7
-2025-02-25 16:46:24.834  [ INFO      ]  [ mDNSServer         ]  Created multicast socket on interface bridge0
-2025-02-25 16:46:24.834  [ INFO      ]  [ mDNSServer         ]  Created multicast socket on interface bridge0
-2025-02-25 16:46:24.834  [ INFO      ]  [ mDNSServer         ]  Created multicast socket on interface vnet3
-2025-02-25 16:46:24.834  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8341] D: [wsi|1|listen|hydrogen|::|5002]: _lws_change_pollfd: fd 9 events 1 -> 1
-2025-02-25 16:46:24.834  [ DEBUG     ]  [ WebSocket          ]  Invalid session data for callback 34
-2025-02-25 16:46:24.834  [ INFO      ]  [ mDNSServer         ]  Created multicast socket on interface vnet3
-2025-02-25 16:46:24.834  [ INFO      ]  [ mDNSServer         ]  Created multicast socket on interface vnet4
-2025-02-25 16:46:24.834  [ INFO      ]  [ mDNSServer         ]  Created multicast socket on interface vnet4
-2025-02-25 16:46:24.834  [ INFO      ]  [ mDNSServer         ]  Created multicast socket on interface vnet5
-2025-02-25 16:46:24.834  [ INFO      ]  [ mDNSServer         ]  Created multicast socket on interface vnet5
-2025-02-25 16:46:24.834  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8345] D: [wsi|0|pipe]: __lws_free_wsi: tsi fds count 2
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8345] N: __lws_lc_untag:  -- [wsi|0|pipe] (1) 2.915ms
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8345] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8345] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8345] I: rops_handle_POLLIN_netlink: ifidx 7
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8345] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 1
-2025-02-25 16:46:24.834  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8346] D: _realloc: size 144: rops_handle_POLLIN_netlink
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8346] I: rops_handle_POLLIN_netlink: route list size 1
-2025-02-25 16:46:24.834  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8346] D: _realloc: size 63: lws_smd_msg_alloc
-2025-02-25 16:46:24.834  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8346] D: lws_cancel_service: 
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8346] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8346] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8346] I: rops_handle_POLLIN_netlink: RTA_DST: 127.0.0.0
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8346] I: rops_handle_POLLIN_netlink: RTA_SRC: 127.0.0.1
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8346] I: rops_handle_POLLIN_netlink: ifidx 1
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8346] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 1
-2025-02-25 16:46:24.834  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8346] D: _realloc: size 144: rops_handle_POLLIN_netlink
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8346] I: rops_handle_POLLIN_netlink: route list size 2
-2025-02-25 16:46:24.834  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8346] D: _realloc: size 63: lws_smd_msg_alloc
-2025-02-25 16:46:24.834  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8346] D: lws_cancel_service: 
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8346] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8346] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8346] I: rops_handle_POLLIN_netlink: RTA_DST: 192.168.0.0
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8347] I: rops_handle_POLLIN_netlink: RTA_SRC: 192.168.0.44
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8347] I: rops_handle_POLLIN_netlink: ifidx 7
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8347] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 1
-2025-02-25 16:46:24.834  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8347] D: _realloc: size 144: rops_handle_POLLIN_netlink
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8347] I: rops_handle_POLLIN_netlink: route list size 3
-2025-02-25 16:46:24.834  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8347] D: _realloc: size 63: lws_smd_msg_alloc
-2025-02-25 16:46:24.834  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8347] D: lws_cancel_service: 
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8347] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8347] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8347] I: rops_handle_POLLIN_netlink: RTA_DST: 192.168.100.0
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8347] I: rops_handle_POLLIN_netlink: RTA_SRC: 192.168.100.1
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8347] I: rops_handle_POLLIN_netlink: ifidx 3
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8347] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 1
-2025-02-25 16:46:24.834  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8347] D: _realloc: size 144: rops_handle_POLLIN_netlink
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8347] I: rops_handle_POLLIN_netlink: route list size 4
-2025-02-25 16:46:24.834  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8347] D: _realloc: size 63: lws_smd_msg_alloc
-2025-02-25 16:46:24.834  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8347] D: lws_cancel_service: 
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8347] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8348] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8348] I: rops_handle_POLLIN_netlink: RTA_DST: 127.0.0.0
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8348] I: rops_handle_POLLIN_netlink: RTA_SRC: 127.0.0.1
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8348] I: rops_handle_POLLIN_netlink: ifidx 1
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8348] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 3
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8348] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8348] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8348] I: rops_handle_POLLIN_netlink: RTA_DST: 127.0.0.0
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8348] I: rops_handle_POLLIN_netlink: RTA_SRC: 127.0.0.1
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8348] I: rops_handle_POLLIN_netlink: ifidx 1
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8348] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 2
-2025-02-25 16:46:24.834  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8348] D: _realloc: size 144: rops_handle_POLLIN_netlink
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8348] I: rops_handle_POLLIN_netlink: route list size 5
-2025-02-25 16:46:24.834  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8348] D: _realloc: size 63: lws_smd_msg_alloc
-2025-02-25 16:46:24.834  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8348] D: lws_cancel_service: 
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8348] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8348] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8348] I: rops_handle_POLLIN_netlink: Local addr: RTA_DST -> added to RTA_SRC
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8349] I: rops_handle_POLLIN_netlink: RTA_DST: 127.0.0.1
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8349] I: rops_handle_POLLIN_netlink: RTA_SRC: 127.0.0.1
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8349] I: rops_handle_POLLIN_netlink: ifidx 1
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8349] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 2
-2025-02-25 16:46:24.834  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8349] D: _realloc: size 144: rops_handle_POLLIN_netlink
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8349] I: rops_handle_POLLIN_netlink: route list size 6
-2025-02-25 16:46:24.834  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8349] D: _realloc: size 63: lws_smd_msg_alloc
-2025-02-25 16:46:24.834  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8349] D: lws_cancel_service: 
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8349] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8349] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8349] I: rops_handle_POLLIN_netlink: RTA_DST: 127.255.255.255
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8349] I: rops_handle_POLLIN_netlink: RTA_SRC: 127.0.0.1
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8349] I: rops_handle_POLLIN_netlink: ifidx 1
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8349] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 3
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8349] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8349] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8349] I: rops_handle_POLLIN_netlink: RTA_DST: 192.168.0.0
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8349] I: rops_handle_POLLIN_netlink: RTA_SRC: 192.168.0.44
-2025-02-25 16:46:24.834  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8349] I: rops_handle_POLLIN_netlink: ifidx 7
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8350] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 3
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8350] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8350] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8350] I: rops_handle_POLLIN_netlink: Local addr: RTA_DST -> added to RTA_SRC
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8350] I: rops_handle_POLLIN_netlink: RTA_DST: 192.168.0.44
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8350] I: rops_handle_POLLIN_netlink: RTA_SRC: 192.168.0.44
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8350] I: rops_handle_POLLIN_netlink: ifidx 7
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8350] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 2
-2025-02-25 16:46:24.835  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8350] D: _realloc: size 144: rops_handle_POLLIN_netlink
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8350] I: rops_handle_POLLIN_netlink: route list size 7
-2025-02-25 16:46:24.835  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8350] D: _realloc: size 63: lws_smd_msg_alloc
-2025-02-25 16:46:24.835  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8350] D: lws_cancel_service: 
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8350] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8350] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8350] I: rops_handle_POLLIN_netlink: RTA_DST: 192.168.0.255
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8351] I: rops_handle_POLLIN_netlink: RTA_SRC: 192.168.0.44
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8351] I: rops_handle_POLLIN_netlink: ifidx 7
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8351] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 3
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8351] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8351] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8351] I: rops_handle_POLLIN_netlink: RTA_DST: 192.168.100.0
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8351] I: rops_handle_POLLIN_netlink: RTA_SRC: 192.168.100.1
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8351] I: rops_handle_POLLIN_netlink: ifidx 3
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8351] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 3
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8351] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8351] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8351] I: rops_handle_POLLIN_netlink: Local addr: RTA_DST -> added to RTA_SRC
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8351] I: rops_handle_POLLIN_netlink: RTA_DST: 192.168.100.1
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8352] I: rops_handle_POLLIN_netlink: RTA_SRC: 192.168.100.1
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8352] I: rops_handle_POLLIN_netlink: ifidx 3
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8352] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 2
-2025-02-25 16:46:24.835  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8352] D: _realloc: size 144: rops_handle_POLLIN_netlink
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8352] I: rops_handle_POLLIN_netlink: route list size 8
-2025-02-25 16:46:24.835  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8352] D: _realloc: size 63: lws_smd_msg_alloc
-2025-02-25 16:46:24.835  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8352] D: lws_cancel_service: 
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8352] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8352] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8352] I: rops_handle_POLLIN_netlink: RTA_DST: 192.168.100.255
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8352] I: rops_handle_POLLIN_netlink: RTA_SRC: 192.168.100.1
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8352] I: rops_handle_POLLIN_netlink: ifidx 3
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8352] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 3
-2025-02-25 16:46:24.835  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8352] D: _realloc: size 92: lws_smd_msg_alloc
-2025-02-25 16:46:24.835  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8353] D: lws_cancel_service: 
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8353] I: _lws_routing_table_dump: 
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8353] I: _lws_routing_entry_dump:  gw: 192.168.0.1,  ifidx: 7, pri: 425, proto: 4
-2025-02-25 16:46:24.835  [ INFO      ]  [ mDNSServer         ]  mDNS Server initialized with hostname: angrin.local
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8353] I: _lws_routing_entry_dump:  dst: 127.0.0.0/8, src: 127.0.0.1/0,  ifidx: 1, pri: 30, proto: 2
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8353] I: _lws_routing_entry_dump:  dst: 192.168.0.0/24, src: 192.168.0.44/0,  ifidx: 7, pri: 425, proto: 2
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8353] I: _lws_routing_entry_dump:  dst: 192.168.100.0/24, src: 192.168.100.1/0,  ifidx: 3, pri: -1, proto: 2
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8353] I: _lws_routing_entry_dump:  dst: 127.0.0.0/8, src: 127.0.0.1/0,  ifidx: 1, pri: -1, proto: 2
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8353] I: _lws_routing_entry_dump:  dst: 127.0.0.1/32, src: 127.0.0.1/0,  ifidx: 1, pri: -1, proto: 2
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8353] I: _lws_routing_entry_dump:  dst: 192.168.0.44/32, src: 192.168.0.44/0,  ifidx: 7, pri: -1, proto: 2
-2025-02-25 16:46:24.835  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8353] I: _lws_routing_entry_dump:  dst: 192.168.100.1/32, src: 192.168.100.1/0,  ifidx: 3, pri: -1, proto: 2
-2025-02-25 16:46:24.835  [ INFO      ]  [ Initialization     ]  mDNS Server system initialized
-2025-02-25 16:46:24.835  [ INFO      ]  [ ThreadMgmt         ]  Added thread 140152961754816 (tid: 3730625), new count: 1
-2025-02-25 16:46:24.835  [ INFO      ]  [ mDNSServer         ]  mDNS Server announce loop started
-2025-02-25 16:46:24.835  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 announcement on virbr1
-2025-02-25 16:46:24.835  [ WARN      ]  [ mDNSServer         ]  Failed to send IPv6 announcement on virbr1: Network is unreachable
-2025-02-25 16:46:24.835  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 announcement on bridge0
-2025-02-25 16:46:24.836  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 announcement on bridge0
-2025-02-25 16:46:24.836  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 announcement on vnet3
-2025-02-25 16:46:24.836  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 announcement on vnet3
-2025-02-25 16:46:24.836  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 announcement on vnet4
-2025-02-25 16:46:24.836  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 announcement on vnet4
-2025-02-25 16:46:24.836  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 announcement on vnet5
-2025-02-25 16:46:24.836  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 announcement on vnet5
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8364] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x21a8750
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8365] I: _lws_smd_msg_destroy: destroy msg 0x7f77ec002e00
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8365] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x21a8750
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8365] I: _lws_smd_msg_destroy: destroy msg 0x7f77ec003460
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8365] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x21a8750
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8365] I: _lws_smd_msg_destroy: destroy msg 0x7f77ec003d10
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8365] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x21a8750
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8365] I: _lws_smd_msg_destroy: destroy msg 0x7f77ec0045c0
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8366] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x21a8750
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8366] I: _lws_smd_msg_destroy: destroy msg 0x7f77ec004e70
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8366] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x21a8750
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8366] I: _lws_smd_msg_destroy: destroy msg 0x7f77ec005bd0
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8366] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x21a8750
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8366] I: _lws_smd_msg_destroy: destroy msg 0x7f77ec006560
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8366] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x21a8750
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8366] I: _lws_smd_msg_destroy: destroy msg 0x7f77ec007850
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8366] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 42, refc 1, to peer 0x21a8750
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8366] I: _lws_smd_msg_destroy: destroy msg 0x7f77ec0090c0
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8367] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8367] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8367] I: rops_handle_POLLIN_netlink: RTA_DST: ::1
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8367] I: rops_handle_POLLIN_netlink: ifidx 1
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8367] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 1
-2025-02-25 16:46:24.836  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8367] D: _realloc: size 144: rops_handle_POLLIN_netlink
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8367] I: rops_handle_POLLIN_netlink: route list size 9
-2025-02-25 16:46:24.836  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8368] D: _realloc: size 63: lws_smd_msg_alloc
-2025-02-25 16:46:24.836  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8368] D: lws_cancel_service: 
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8368] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8368] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8368] I: rops_handle_POLLIN_netlink: RTA_DST: ::1
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8368] I: rops_handle_POLLIN_netlink: ifidx 1
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8368] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 1
-2025-02-25 16:46:24.836  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8368] D: _realloc: size 144: rops_handle_POLLIN_netlink
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8368] I: rops_handle_POLLIN_netlink: route list size 10
-2025-02-25 16:46:24.836  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8368] D: _realloc: size 63: lws_smd_msg_alloc
-2025-02-25 16:46:24.836  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8369] D: lws_cancel_service: 
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8369] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8369] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8369] I: rops_handle_POLLIN_netlink: RTA_DST: fd3d:98da:b4e6::
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8369] I: rops_handle_POLLIN_netlink: unknown attr type 9
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8369] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 1
-2025-02-25 16:46:24.836  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8369] D: _realloc: size 144: rops_handle_POLLIN_netlink
-2025-02-25 16:46:24.836  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8369] I: rops_handle_POLLIN_netlink: route list size 11
-2025-02-25 16:46:24.836  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8369] D: _realloc: size 63: lws_smd_msg_alloc
-2025-02-25 16:46:24.836  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8369] D: lws_cancel_service: 
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8370] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8370] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8370] I: rops_handle_POLLIN_netlink: RTA_DST: fd8f:a4ad:b5b8:e348::
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8370] I: rops_handle_POLLIN_netlink: ifidx 7
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8370] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 1
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8370] D: _realloc: size 144: rops_handle_POLLIN_netlink
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8370] I: rops_handle_POLLIN_netlink: route list size 12
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8370] D: _realloc: size 63: lws_smd_msg_alloc
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8370] D: lws_cancel_service: 
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8370] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8370] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8371] I: rops_handle_POLLIN_netlink: RTA_DST: fe80::
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8371] I: rops_handle_POLLIN_netlink: ifidx 8
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8371] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 1
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8371] D: _realloc: size 144: rops_handle_POLLIN_netlink
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8371] I: rops_handle_POLLIN_netlink: route list size 13
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8371] D: _realloc: size 63: lws_smd_msg_alloc
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8371] D: lws_cancel_service: 
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8371] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8371] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8372] I: rops_handle_POLLIN_netlink: RTA_DST: fe80::
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8372] I: rops_handle_POLLIN_netlink: ifidx 9
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8372] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 1
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8372] D: _realloc: size 144: rops_handle_POLLIN_netlink
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8372] I: rops_handle_POLLIN_netlink: route list size 14
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8372] D: _realloc: size 63: lws_smd_msg_alloc
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8372] D: lws_cancel_service: 
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8372] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8372] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8373] I: rops_handle_POLLIN_netlink: RTA_DST: fe80::
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8373] I: rops_handle_POLLIN_netlink: ifidx 10
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8373] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 1
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8373] D: _realloc: size 144: rops_handle_POLLIN_netlink
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8373] I: rops_handle_POLLIN_netlink: route list size 15
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8373] D: _realloc: size 63: lws_smd_msg_alloc
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8373] D: lws_cancel_service: 
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8373] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8373] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8373] I: rops_handle_POLLIN_netlink: RTA_DST: fe80::
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8374] I: rops_handle_POLLIN_netlink: ifidx 7
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8374] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 1
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8374] D: _realloc: size 144: rops_handle_POLLIN_netlink
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8374] I: rops_handle_POLLIN_netlink: route list size 16
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8374] D: _realloc: size 63: lws_smd_msg_alloc
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8374] D: lws_cancel_service: 
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8374] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8374] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8374] I: rops_handle_POLLIN_netlink: Local addr: RTA_DST -> added to RTA_SRC
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8374] I: rops_handle_POLLIN_netlink: RTA_DST: ::1
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8375] I: rops_handle_POLLIN_netlink: ifidx 1
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8375] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 2
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8375] D: _realloc: size 144: rops_handle_POLLIN_netlink
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8375] I: rops_handle_POLLIN_netlink: route list size 17
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8375] D: _realloc: size 63: lws_smd_msg_alloc
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8375] D: lws_cancel_service: 
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8375] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8375] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8375] I: rops_handle_POLLIN_netlink: Local addr: RTA_DST -> added to RTA_SRC
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8375] I: rops_handle_POLLIN_netlink: RTA_DST: fd8f:a4ad:b5b8:e348:72a:69a0:c3ec:40ec
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8376] I: rops_handle_POLLIN_netlink: ifidx 7
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8376] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 2
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8376] D: _realloc: size 144: rops_handle_POLLIN_netlink
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8376] I: rops_handle_POLLIN_netlink: route list size 18
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8376] D: _realloc: size 63: lws_smd_msg_alloc
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8376] D: lws_cancel_service: 
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8376] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8376] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8376] I: rops_handle_POLLIN_netlink: Local addr: RTA_DST -> added to RTA_SRC
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8376] I: rops_handle_POLLIN_netlink: RTA_DST: fe80::192e:dfdd:dcc9:4f01
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8376] I: rops_handle_POLLIN_netlink: ifidx 7
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8376] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 2
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8376] D: _realloc: size 144: rops_handle_POLLIN_netlink
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8377] I: rops_handle_POLLIN_netlink: route list size 19
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8377] D: _realloc: size 63: lws_smd_msg_alloc
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8377] D: lws_cancel_service: 
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8377] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8377] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8377] I: rops_handle_POLLIN_netlink: Local addr: RTA_DST -> added to RTA_SRC
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8377] I: rops_handle_POLLIN_netlink: RTA_DST: fe80::fc54:ff:fe00:2d5e
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8377] I: rops_handle_POLLIN_netlink: ifidx 8
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8377] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 2
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8377] D: _realloc: size 144: rops_handle_POLLIN_netlink
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8377] I: rops_handle_POLLIN_netlink: route list size 20
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8377] D: _realloc: size 63: lws_smd_msg_alloc
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8377] D: lws_cancel_service: 
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8378] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8378] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8378] I: rops_handle_POLLIN_netlink: Local addr: RTA_DST -> added to RTA_SRC
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8378] I: rops_handle_POLLIN_netlink: RTA_DST: fe80::fc54:ff:fe47:742b
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8378] I: rops_handle_POLLIN_netlink: ifidx 10
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8378] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 2
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8378] D: _realloc: size 144: rops_handle_POLLIN_netlink
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8378] I: rops_handle_POLLIN_netlink: route list size 21
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8378] D: _realloc: size 63: lws_smd_msg_alloc
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8378] D: lws_cancel_service: 
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8378] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8378] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8378] I: rops_handle_POLLIN_netlink: Local addr: RTA_DST -> added to RTA_SRC
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8378] I: rops_handle_POLLIN_netlink: RTA_DST: fe80::fc54:ff:fea0:2c89
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8378] I: rops_handle_POLLIN_netlink: ifidx 9
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8378] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 2
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8378] D: _realloc: size 144: rops_handle_POLLIN_netlink
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8378] I: rops_handle_POLLIN_netlink: route list size 22
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8378] D: _realloc: size 63: lws_smd_msg_alloc
-2025-02-25 16:46:24.837  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8379] D: lws_cancel_service: 
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8379] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8379] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8379] I: rops_handle_POLLIN_netlink: RTA_DST: ff00::
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8379] I: rops_handle_POLLIN_netlink: ifidx 2
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8379] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 5
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8379] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8379] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8379] I: rops_handle_POLLIN_netlink: RTA_DST: ff00::
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8379] I: rops_handle_POLLIN_netlink: ifidx 7
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8379] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 5
-2025-02-25 16:46:24.837  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8379] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8380] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8380] I: rops_handle_POLLIN_netlink: RTA_DST: ff00::
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8380] I: rops_handle_POLLIN_netlink: ifidx 8
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8380] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 5
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8380] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8380] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8380] I: rops_handle_POLLIN_netlink: RTA_DST: ff00::
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8380] I: rops_handle_POLLIN_netlink: ifidx 9
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8380] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 5
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8380] I: rops_handle_POLLIN_netlink: RTM 24
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8380] I: rops_handle_POLLIN_netlink: NEWROUTE
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8380] I: rops_handle_POLLIN_netlink: RTA_DST: ff00::
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8381] I: rops_handle_POLLIN_netlink: ifidx 10
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8381] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 5
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8381] I: _lws_routing_table_dump: 
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8381] I: _lws_routing_entry_dump:  gw: 192.168.0.1,  ifidx: 7, pri: 425, proto: 4
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8381] I: _lws_routing_entry_dump:  dst: 127.0.0.0/8, src: 127.0.0.1/0,  ifidx: 1, pri: 30, proto: 2
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8381] I: _lws_routing_entry_dump:  dst: 192.168.0.0/24, src: 192.168.0.44/0,  ifidx: 7, pri: 425, proto: 2
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8381] I: _lws_routing_entry_dump:  dst: 192.168.100.0/24, src: 192.168.100.1/0,  ifidx: 3, pri: -1, proto: 2
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8381] I: _lws_routing_entry_dump:  dst: 127.0.0.0/8, src: 127.0.0.1/0,  ifidx: 1, pri: -1, proto: 2
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8381] I: _lws_routing_entry_dump:  dst: 127.0.0.1/32, src: 127.0.0.1/0,  ifidx: 1, pri: -1, proto: 2
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8381] I: _lws_routing_entry_dump:  dst: 192.168.0.44/32, src: 192.168.0.44/0,  ifidx: 7, pri: -1, proto: 2
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8381] I: _lws_routing_entry_dump:  dst: 192.168.100.1/32, src: 192.168.100.1/0,  ifidx: 3, pri: -1, proto: 2
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8381] I: _lws_routing_entry_dump:  dst: ::1/128,  ifidx: 1, pri: 30, proto: 2
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8381] I: _lws_routing_entry_dump:  dst: ::1/128,  ifidx: 1, pri: 256, proto: 2
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8381] I: _lws_routing_entry_dump:  dst: fd3d:98da:b4e6::/64,  ifidx: -1, pri: 430, proto: 9
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8381] I: _lws_routing_entry_dump:  dst: fd8f:a4ad:b5b8:e348::/64,  ifidx: 7, pri: 425, proto: 9
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8381] I: _lws_routing_entry_dump:  dst: fe80::/64,  ifidx: 8, pri: 256, proto: 2
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8382] I: _lws_routing_entry_dump:  dst: fe80::/64,  ifidx: 9, pri: 256, proto: 2
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8382] I: _lws_routing_entry_dump:  dst: fe80::/64,  ifidx: 10, pri: 256, proto: 2
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8382] I: _lws_routing_entry_dump:  dst: fe80::/64,  ifidx: 7, pri: 1024, proto: 2
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8382] I: _lws_routing_entry_dump:  dst: ::1/128, src: ::1/0,  ifidx: 1, pri: 0, proto: 2
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8382] I: _lws_routing_entry_dump:  dst: fd8f:a4ad:b5b8:e348:72a:69a0:c3ec:40ec/128, src: fd8f:a4ad:b5b8:e348:72a:69a0:c3ec:40ec/0,  ifidx: 7, pri: 0, proto: 2
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8382] I: _lws_routing_entry_dump:  dst: fe80::192e:dfdd:dcc9:4f01/128, src: fe80::192e:dfdd:dcc9:4f01/0,  ifidx: 7, pri: 0, proto: 2
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8382] I: _lws_routing_entry_dump:  dst: fe80::fc54:ff:fe00:2d5e/128, src: fe80::fc54:ff:fe00:2d5e/0,  ifidx: 8, pri: 0, proto: 2
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8382] I: _lws_routing_entry_dump:  dst: fe80::fc54:ff:fe47:742b/128, src: fe80::fc54:ff:fe47:742b/0,  ifidx: 10, pri: 0, proto: 2
-2025-02-25 16:46:24.838  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8382] I: _lws_routing_entry_dump:  dst: fe80::fc54:ff:fea0:2c89/128, src: fe80::fc54:ff:fea0:2c89/0,  ifidx: 9, pri: 0, proto: 2
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8393] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x21a8750
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8393] I: _lws_smd_msg_destroy: destroy msg 0x7f77ec005bd0
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8393] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x21a8750
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8393] I: _lws_smd_msg_destroy: destroy msg 0x7f77ec004e70
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8393] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x21a8750
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8393] I: _lws_smd_msg_destroy: destroy msg 0x7f77ec0045c0
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8393] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x21a8750
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8393] I: _lws_smd_msg_destroy: destroy msg 0x7f77ec003d10
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8394] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x21a8750
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8394] I: _lws_smd_msg_destroy: destroy msg 0x7f77ec003460
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8394] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x21a8750
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8394] I: _lws_smd_msg_destroy: destroy msg 0x7f77ec002e00
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8394] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x21a8750
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8394] I: _lws_smd_msg_destroy: destroy msg 0x7f77ec008b40
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8394] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x21a8750
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8394] I: _lws_smd_msg_destroy: destroy msg 0x7f77ec007850
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8394] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x21a8750
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8394] I: _lws_smd_msg_destroy: destroy msg 0x7f77ec006560
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8394] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x21a8750
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8395] I: _lws_smd_msg_destroy: destroy msg 0x7f77ec00ef30
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8395] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x21a8750
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8395] I: _lws_smd_msg_destroy: destroy msg 0x7f77ec00f810
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8395] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x21a8750
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8395] I: _lws_smd_msg_destroy: destroy msg 0x7f77ec0100e0
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8395] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x21a8750
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8395] I: _lws_smd_msg_destroy: destroy msg 0x7f77ec0109b0
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8395] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x21a8750
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8395] I: _lws_smd_msg_destroy: destroy msg 0x7f77ec011280
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8395] I: rops_handle_POLLIN_netlink: RTM 3
-2025-02-25 16:46:24.839  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:8395] I: rops_handle_POLLIN_netlink: *** Unknown RTM_3
-2025-02-25 16:46:24.845  [ INFO      ]  [ Initialization     ]  ――――――――――――――――――――――――――
-2025-02-25 16:46:24.845  [ INFO      ]  [ Initialization     ]  Application started
-2025-02-25 16:46:24.845  [ INFO      ]  [ Initialization     ]  Press Ctrl+C to exit
-2025-02-25 16:46:24.845  [ INFO      ]  [ Initialization     ]  ――――――――――――――――――――――――――
-2025-02-25 16:46:24.845  [ INFO      ]  [ Utils              ]  System started at 2025-02-26T00:46:24Z
-2025-02-25 16:46:24.845  [ INFO      ]  [ Utils              ]  System startup took 0.019s
-2025-02-25 16:46:24.939  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:9398] D: _lws_state_transition: system: changed 2 'INITIALIZED' -> 3 'IFACE_COLDPLUG'
-2025-02-25 16:46:24.939  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:9398] D: _lws_state_transition: system: changed 3 'IFACE_COLDPLUG' -> 4 'DHCP'
-2025-02-25 16:46:24.939  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:9399] D: _lws_state_transition: system: changed 4 'DHCP' -> 5 'CPD_PRE_TIME'
-2025-02-25 16:46:24.939  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:9399] D: _lws_state_transition: system: changed 5 'CPD_PRE_TIME' -> 6 'TIME_VALID'
-2025-02-25 16:46:24.939  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:9399] D: _lws_state_transition: system: changed 6 'TIME_VALID' -> 7 'CPD_POST_TIME'
-2025-02-25 16:46:24.939  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:9399] D: _lws_state_transition: system: changed 7 'CPD_POST_TIME' -> 8 'POLICY_VALID'
-2025-02-25 16:46:24.939  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:9399] D: _lws_state_transition: system: changed 8 'POLICY_VALID' -> 9 'REGISTERED'
-2025-02-25 16:46:24.939  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:9399] D: _lws_state_transition: system: changed 9 'REGISTERED' -> 10 'AUTH1'
-2025-02-25 16:46:24.939  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:9399] D: _lws_state_transition: system: changed 10 'AUTH1' -> 11 'AUTH2'
-2025-02-25 16:46:24.939  [ WARN      ]  [ WebSocket          ]  [2025/02/25 16:46:24:9399] D: _lws_state_transition: system: changed 11 'AUTH2' -> 12 'OPERATIONAL'
-2025-02-25 16:46:24.939  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:24:9399] I: lws_state_transition_steps: INITIALIZED -> OPERATIONAL
-2025-02-25 16:46:25.836  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 announcement on virbr1
-2025-02-25 16:46:25.836  [ WARN      ]  [ mDNSServer         ]  Failed to send IPv6 announcement on virbr1: Network is unreachable
-2025-02-25 16:46:25.836  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 announcement on bridge0
-2025-02-25 16:46:25.836  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 announcement on bridge0
-2025-02-25 16:46:25.836  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 announcement on vnet3
-2025-02-25 16:46:25.836  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 announcement on vnet3
-2025-02-25 16:46:25.837  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 announcement on vnet4
-2025-02-25 16:46:25.837  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 announcement on vnet4
-2025-02-25 16:46:25.837  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 announcement on vnet5
-2025-02-25 16:46:25.837  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 announcement on vnet5
-2025-02-25 16:46:26.837  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 announcement on virbr1
-2025-02-25 16:46:26.837  [ WARN      ]  [ mDNSServer         ]  Failed to send IPv6 announcement on virbr1: Network is unreachable
-2025-02-25 16:46:26.837  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 announcement on bridge0
-2025-02-25 16:46:26.838  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 announcement on bridge0
-2025-02-25 16:46:26.838  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 announcement on vnet3
-2025-02-25 16:46:26.838  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 announcement on vnet3
-2025-02-25 16:46:26.838  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 announcement on vnet4
-2025-02-25 16:46:26.838  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 announcement on vnet4
-2025-02-25 16:46:26.838  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 announcement on vnet5
-2025-02-25 16:46:26.838  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 announcement on vnet5
-2025-02-25 16:46:35.012  [ INFO      ]  [ Shutdown           ]  ――――――――――――――――――――――――――
-2025-02-25 16:46:35.012  [ INFO      ]  [ Shutdown           ]  Cleaning up and shutting down
-2025-02-25 16:46:35.012  [ WARN      ]  [ ThreadMgmt         ]  Thread added, count: 2
-2025-02-25 16:46:35.012  [ INFO      ]  [ Shutdown           ]  Starting graceful shutdown sequence
-2025-02-25 16:46:35.012  [ INFO      ]  [ Shutdown           ]  Stopping mDNS Server service...
-2025-02-25 16:46:35.012  [ INFO      ]  [ Shutdown           ]  Initiating mDNS Server shutdown
-2025-02-25 16:46:35.012  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 announcement on virbr1
-2025-02-25 16:46:35.012  [ WARN      ]  [ mDNSServer         ]  Failed to send IPv6 announcement on virbr1: Network is unreachable
-2025-02-25 16:46:35.012  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 announcement on bridge0
-2025-02-25 16:46:35.012  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 announcement on bridge0
-2025-02-25 16:46:35.012  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 announcement on vnet3
-2025-02-25 16:46:35.012  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 announcement on vnet3
-2025-02-25 16:46:35.012  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 announcement on vnet4
-2025-02-25 16:46:35.012  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 announcement on vnet4
-2025-02-25 16:46:35.012  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 announcement on vnet5
-2025-02-25 16:46:35.012  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 announcement on vnet5
-2025-02-25 16:46:35.012  [ INFO      ]  [ mDNSServer         ]  Shutdown: mDNS Server announce loop exiting
-2025-02-25 16:46:35.012  [ WARN      ]  [ ThreadMgmt         ]  Thread removed, count: 0
-2025-02-25 16:46:35.012  [ INFO      ]  [ mDNSServer         ]  Shutdown: Initiating mDNS Server shutdown
-2025-02-25 16:46:35.013  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 1/3 on virbr1
-2025-02-25 16:46:35.013  [ WARN      ]  [ mDNSServer         ]  Failed to send IPv6 goodbye on virbr1: Network is unreachable
-2025-02-25 16:46:35.263  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 2/3 on virbr1
-2025-02-25 16:46:35.263  [ WARN      ]  [ mDNSServer         ]  Failed to send IPv6 goodbye on virbr1: Network is unreachable
-2025-02-25 16:46:35.513  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 3/3 on virbr1
-2025-02-25 16:46:35.514  [ WARN      ]  [ mDNSServer         ]  Failed to send IPv6 goodbye on virbr1: Network is unreachable
-2025-02-25 16:46:35.764  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 1/3 on bridge0
-2025-02-25 16:46:35.764  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 goodbye packet 1/3 on bridge0
-2025-02-25 16:46:36.014  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 2/3 on bridge0
-2025-02-25 16:46:36.014  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 goodbye packet 2/3 on bridge0
-2025-02-25 16:46:36.265  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 3/3 on bridge0
-2025-02-25 16:46:36.265  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 goodbye packet 3/3 on bridge0
-2025-02-25 16:46:36.515  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 1/3 on vnet3
-2025-02-25 16:46:36.515  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 goodbye packet 1/3 on vnet3
-2025-02-25 16:46:36.765  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 2/3 on vnet3
-2025-02-25 16:46:36.765  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 goodbye packet 2/3 on vnet3
-2025-02-25 16:46:37.015  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 3/3 on vnet3
-2025-02-25 16:46:37.015  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 goodbye packet 3/3 on vnet3
-2025-02-25 16:46:37.266  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 1/3 on vnet4
-2025-02-25 16:46:37.266  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 goodbye packet 1/3 on vnet4
-2025-02-25 16:46:37.516  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 2/3 on vnet4
-2025-02-25 16:46:37.516  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 goodbye packet 2/3 on vnet4
-2025-02-25 16:46:37.767  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 3/3 on vnet4
-2025-02-25 16:46:37.767  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 goodbye packet 3/3 on vnet4
-2025-02-25 16:46:38.017  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 1/3 on vnet5
-2025-02-25 16:46:38.017  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 goodbye packet 1/3 on vnet5
-2025-02-25 16:46:38.267  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 2/3 on vnet5
-2025-02-25 16:46:38.267  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 goodbye packet 2/3 on vnet5
-2025-02-25 16:46:38.517  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 3/3 on vnet5
-2025-02-25 16:46:38.517  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 goodbye packet 3/3 on vnet5
-2025-02-25 16:46:38.768  [ INFO      ]  [ mDNSServer         ]  Closing mDNS Server sockets
-2025-02-25 16:46:38.768  [ INFO      ]  [ mDNSServer         ]  Closing IPv4 socket on interface virbr1
-2025-02-25 16:46:38.768  [ INFO      ]  [ mDNSServer         ]  Closing IPv6 socket on interface virbr1
-2025-02-25 16:46:38.768  [ INFO      ]  [ mDNSServer         ]  Closing IPv4 socket on interface bridge0
-2025-02-25 16:46:38.768  [ INFO      ]  [ mDNSServer         ]  Closing IPv6 socket on interface bridge0
-2025-02-25 16:46:38.768  [ INFO      ]  [ mDNSServer         ]  Closing IPv4 socket on interface vnet3
-2025-02-25 16:46:38.768  [ INFO      ]  [ mDNSServer         ]  Closing IPv6 socket on interface vnet3
-2025-02-25 16:46:38.768  [ INFO      ]  [ mDNSServer         ]  Closing IPv4 socket on interface vnet4
-2025-02-25 16:46:38.768  [ INFO      ]  [ mDNSServer         ]  Closing IPv6 socket on interface vnet4
-2025-02-25 16:46:38.768  [ INFO      ]  [ mDNSServer         ]  Closing IPv4 socket on interface vnet5
-2025-02-25 16:46:38.768  [ INFO      ]  [ mDNSServer         ]  Closing IPv6 socket on interface vnet5
-2025-02-25 16:46:38.968  [ INFO      ]  [ mDNSServer         ]  Freeing mDNS Server resources
-2025-02-25 16:46:38.968  [ INFO      ]  [ mDNSServer         ]  Shutdown: mDNS Server shutdown complete
-2025-02-25 16:46:38.968  [ INFO      ]  [ Shutdown           ]  mDNS Server shutdown complete
-2025-02-25 16:46:38.968  [ INFO      ]  [ Shutdown           ]  Stopping web services...
-2025-02-25 16:46:38.968  [ INFO      ]  [ Shutdown           ]  Starting web systems shutdown sequence
-2025-02-25 16:46:38.968  [ INFO      ]  [ Shutdown           ]  Initiating Web Server shutdown
-2025-02-25 16:46:38.968  [ INFO      ]  [ WebServer          ]  Shutdown: Shutting down web server
-2025-02-25 16:46:38.968  [ INFO      ]  [ WebServer          ]  Web server shut down successfully
-2025-02-25 16:46:38.968  [ INFO      ]  [ Shutdown           ]  Web Server shutdown complete
-2025-02-25 16:46:38.968  [ INFO      ]  [ Shutdown           ]  Initiating WebSocket server shutdown
-2025-02-25 16:46:38.968  [ INFO      ]  [ Shutdown           ]  Waiting for WebSocket connections to close gracefully
-2025-02-25 16:46:40.968  [ INFO      ]  [ Shutdown           ]  Stopping WebSocket server
-2025-02-25 16:46:40.968  [ INFO      ]  [ WebSocket          ]  Stopping server on port 5002
-2025-02-25 16:46:40.968  [ INFO      ]  [ WebSocket          ]  Setting shutdown flag and cancelling service
-2025-02-25 16:46:40.968  [ INFO      ]  [ WebSocket          ]  [2025/02/25 16:46:40:9685] D: lws_cancel_service: 
+2025-02-26 01:58:57.465  [ INFO      ]  [ Initialization     ]  ――――――――――――――――――――――――――
+2025-02-26 01:58:57.465  [ INFO      ]  [ Initialization     ]  Server Name: Philement/hydrogen-test-max
+2025-02-26 01:58:57.465  [ INFO      ]  [ Initialization     ]  Executable: /home/asimard/Projects/Philement/Philement/elements/001-hydrogen/hydrogen/hydrogen
+2025-02-26 01:58:57.465  [ INFO      ]  [ Initialization     ]  Version: 0.1.0
+2025-02-26 01:58:57.465  [ INFO      ]  [ Initialization     ]  Size: 139704
+2025-02-26 01:58:57.465  [ INFO      ]  [ Initialization     ]  Last Modified: 2025-02-24 22:54:07
+2025-02-26 01:58:57.465  [ INFO      ]  [ Initialization     ]  Log File: ./hydrogen_test_max.log
+2025-02-26 01:58:57.465  [ INFO      ]  [ Initialization     ]  ――――――――――――――――――――――――――
+2025-02-26 01:58:57.465  [ INFO      ]  [ QueueSystem        ]  New queue created: PrintQueue
+2025-02-26 01:58:57.465  [ INFO      ]  [ PrintQueueManager  ]  PrintQueue created successfully
+2025-02-26 01:58:57.465  [ INFO      ]  [ ThreadMgmt         ]  Added thread 139773246408384 (tid: 4122813), new count: 1
+2025-02-26 01:58:57.465  [ INFO      ]  [ Initialization     ]  Print Queue system initialized
+2025-02-26 01:58:57.465  [ INFO      ]  [ LogQueueManager    ]  Log queue manager started
+2025-02-26 01:58:57.465  [ INFO      ]  [ ThreadMgmt         ]  Added thread 139773238015680 (tid: 4122814), new count: 1
+2025-02-26 01:58:57.465  [ INFO      ]  [ PrintQueueManager  ]  Print queue manager started
+2025-02-26 01:58:57.465  [ INFO      ]  [ WebServer          ]  Initializing web server
+2025-02-26 01:58:57.465  [ INFO      ]  [ WebServer          ]  IPv6 support enabled
+2025-02-26 01:58:57.465  [ INFO      ]  [ WebServer          ]  -> Port: 5000
+2025-02-26 01:58:57.465  [ INFO      ]  [ WebServer          ]  -> WebRoot: ./www
+2025-02-26 01:58:57.465  [ INFO      ]  [ WebServer          ]  -> Upload Path: /api/upload
+2025-02-26 01:58:57.465  [ INFO      ]  [ WebServer          ]  -> Upload Dir: ./uploads
+2025-02-26 01:58:57.465  [ WARN      ]  [ WebServer          ]  Upload directory already exists
+2025-02-26 01:58:57.465  [ INFO      ]  [ WebSocket          ]  Server context created successfully
+2025-02-26 01:58:57.465  [ INFO      ]  [ WebSocket          ]  IPv6 support enabled
+2025-02-26 01:58:57.465  [ INFO      ]  [ WebServer          ]  Starting web server
+2025-02-26 01:58:57.465  [ INFO      ]  [ ThreadMgmt         ]  Added thread 139773229622976 (tid: 4122815), new count: 1
+2025-02-26 01:58:57.465  [ INFO      ]  [ WebServer          ]  Starting with IPv6 dual-stack support
+2025-02-26 01:58:57.465  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4654] I: lws_create_context: ev lib path /usr/lib64, '/home/db2inst1/sqllib/lib64:/home/db2inst1/sqllib/lib64/gskit:/home/db2inst1/sqllib/lib32'
+2025-02-26 01:58:57.465  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4654] D: _realloc: size 7744: context
+2025-02-26 01:58:57.465  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4654] N: lws_create_context: LWS: 4.3.3-no_hash, NET CLI SRV H1 H2 WS ConMon IPV6-on
+2025-02-26 01:58:57.465  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4655] I: lws_create_context: Event loop: poll
+2025-02-26 01:58:57.465  [ INFO      ]  [ WebServer          ]  Web server bound to port: 5000
+2025-02-26 01:58:57.465  [ INFO      ]  [ WebServer          ]  Web server started successfully
+2025-02-26 01:58:57.465  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4655] D: _realloc: size 64: lws_smd_register
+2025-02-26 01:58:57.465  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4655] I: lws_smd_register: peer 0x1adb750 (count 1) registered
+2025-02-26 01:58:57.465  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4655] D: _realloc: size 4194304: fds table
+2025-02-26 01:58:57.466  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4668] I: lws_create_context: ctx:  6224B (2128 ctx + pt(1 thr x 4096)), pt-fds: 524288, fdmap: 4194304
+2025-02-26 01:58:57.466  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4668] I: lws_create_context:  http: ah_data: 4096, ah: 984, max count 524288
+2025-02-26 01:58:57.466  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4668] D: _realloc: size 4194304: lws_lookup
+2025-02-26 01:58:57.469  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4696] I: lws_plat_init:  mem: platform fd map: 4194304 B
+2025-02-26 01:58:57.469  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4696] D: _realloc: size 1520: __lws_wsi_create_with_role
+2025-02-26 01:58:57.469  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4696] D: : lws_role_transition: wsistate 0x200, ops pipe
+2025-02-26 01:58:57.469  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4696] N: __lws_lc_tag:  ++ [wsi|0|pipe] (1)
+2025-02-26 01:58:57.469  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4696] D: [wsi|0|pipe]: __insert_wsi_socket_into_fds: tsi=0, sock=7, pos-in-fds=0
+2025-02-26 01:58:57.469  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4697] I: rops_pt_init_destroy_netlink: creating netlink skt
+2025-02-26 01:58:57.469  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4697] D: _realloc: size 1520: __lws_wsi_create_with_role
+2025-02-26 01:58:57.469  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4697] D: : lws_role_transition: wsistate 0x200, ops netlink
+2025-02-26 01:58:57.469  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4697] N: __lws_lc_tag:  ++ [vh|0|netlink] (1)
+2025-02-26 01:58:57.469  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4697] D: [vh|0|netlink]: __insert_wsi_socket_into_fds: tsi=0, sock=8, pos-in-fds=1
+2025-02-26 01:58:57.469  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4697] D: rops_pt_init_destroy_netlink: starting netlink coldplug wait
+2025-02-26 01:58:57.469  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4697] I: lws_context_init_ssl_library:  Compiled with OpenSSL support
+2025-02-26 01:58:57.469  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4698] I: lws_context_init_ssl_library: Doing SSL library init
+2025-02-26 01:58:57.470  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4705] I: lws_server_get_canonical_hostname:  canonical_hostname = angrin.500foods.com
+2025-02-26 01:58:57.470  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4705] I: lws_create_context:  mem: per-conn:         1520 bytes + protocol rx buf
+2025-02-26 01:58:57.470  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4705] D: lws_cancel_service: 
+2025-02-26 01:58:57.470  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4705] D: _realloc: size 1217: lws_create_vhost
+2025-02-26 01:58:57.470  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4705] N: __lws_lc_tag:  ++ [vh|1|hydrogen|::|::|5001] (2)
+2025-02-26 01:58:57.470  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4705] D: _realloc: size 168: vh plugin table
+2025-02-26 01:58:57.470  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4706] D: _realloc: size 48: same vh list
+2025-02-26 01:58:57.470  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4706] I: [vh|1|hydrogen|::|::|5001]: lws_create_vhost: Creating Vhost 'hydrogen' port 5001, 2 protocols, IPv6 on
+2025-02-26 01:58:57.470  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4706] I: _lws_vhost_init_server_af: af 10
+2025-02-26 01:58:57.470  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4707] D:  interface lo vs :: (fam 17) ipv6 1
+2025-02-26 01:58:57.470  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4707] D:  interface eno1 vs :: (fam 17) ipv6 1
+2025-02-26 01:58:57.470  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4707] D:  interface virbr1 vs :: (fam 17) ipv6 1
+2025-02-26 01:58:57.470  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4707] D:  interface bridge0 vs :: (fam 17) ipv6 1
+2025-02-26 01:58:57.470  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4707] D:  interface vnet3 vs :: (fam 17) ipv6 1
+2025-02-26 01:58:57.470  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4707] D:  interface vnet4 vs :: (fam 17) ipv6 1
+2025-02-26 01:58:57.470  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4707] D:  interface vnet5 vs :: (fam 17) ipv6 1
+2025-02-26 01:58:57.470  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4707] D:  interface lo vs :: (fam 2) ipv6 1
+2025-02-26 01:58:57.470  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4708] D:  interface virbr1 vs :: (fam 2) ipv6 1
+2025-02-26 01:58:57.470  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4708] D:  interface bridge0 vs :: (fam 2) ipv6 1
+2025-02-26 01:58:57.470  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4708] D:  interface lo vs :: (fam 10) ipv6 1
+2025-02-26 01:58:57.470  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4708] D:  interface bridge0 vs :: (fam 10) ipv6 1
+2025-02-26 01:58:57.470  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4708] D:  interface bridge0 vs :: (fam 10) ipv6 1
+2025-02-26 01:58:57.470  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4708] D:  interface vnet3 vs :: (fam 10) ipv6 1
+2025-02-26 01:58:57.470  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4708] D:  interface vnet4 vs :: (fam 10) ipv6 1
+2025-02-26 01:58:57.470  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4708] D:  interface vnet5 vs :: (fam 10) ipv6 1
+2025-02-26 01:58:57.470  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4709] D: initial if check says 0
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4710] D:  interface lo vs :: (fam 17) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4710] D:  interface eno1 vs :: (fam 17) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4710] D:  interface virbr1 vs :: (fam 17) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4710] D:  interface bridge0 vs :: (fam 17) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4710] D:  interface vnet3 vs :: (fam 17) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4710] D:  interface vnet4 vs :: (fam 17) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4710] D:  interface vnet5 vs :: (fam 17) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4710] D:  interface lo vs :: (fam 2) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4711] D:  interface virbr1 vs :: (fam 2) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4711] D:  interface bridge0 vs :: (fam 2) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4711] D:  interface lo vs :: (fam 10) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4711] D:  interface bridge0 vs :: (fam 10) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4711] D:  interface bridge0 vs :: (fam 10) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4711] D:  interface vnet3 vs :: (fam 10) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4711] D:  interface vnet4 vs :: (fam 10) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4711] D:  interface vnet5 vs :: (fam 10) ipv6 1
+2025-02-26 01:58:57.471  [ DEBUG     ]  [ WebSocket          ]  [2025/02/26 01:58:57:4712] E: [null wsi]: lws_socket_bind: ERROR on binding fd 9 to port 5001 (-1 98)
+2025-02-26 01:58:57.471  [ DEBUG     ]  [ WebSocket          ]  [2025/02/26 01:58:57:4712] E: [vh|1|hydrogen|::|::|5001]: lws_create_vhost: init server failed
+2025-02-26 01:58:57.471  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4713] I: [vh|1|hydrogen|::|::|5001]: lws_vhost_destroy1: 
+2025-02-26 01:58:57.471  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4713] I: [vh|1|hydrogen|::|::|5001]: lws_vhost_destroy: count_bound_wsi 0
+2025-02-26 01:58:57.471  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4713] N: __lws_lc_untag:  -- [vh|1|hydrogen|::|::|5001] (1) 722μs
+2025-02-26 01:58:57.471  [ INFO      ]  [ WebSocket          ]  Port 5001 is in use, trying next port
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4713] D: _realloc: size 1217: lws_create_vhost
+2025-02-26 01:58:57.471  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4713] N: __lws_lc_tag:  ++ [vh|2|hydrogen|::|::|5002] (2)
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4713] D: _realloc: size 168: vh plugin table
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4713] D: _realloc: size 48: same vh list
+2025-02-26 01:58:57.471  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4713] I: [vh|2|hydrogen|::|::|5002]: lws_create_vhost: Creating Vhost 'hydrogen' port 5002, 2 protocols, IPv6 on
+2025-02-26 01:58:57.471  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4713] I: _lws_vhost_init_server_af: af 10
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4714] D:  interface lo vs :: (fam 17) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4715] D:  interface eno1 vs :: (fam 17) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4715] D:  interface virbr1 vs :: (fam 17) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4715] D:  interface bridge0 vs :: (fam 17) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4715] D:  interface vnet3 vs :: (fam 17) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4715] D:  interface vnet4 vs :: (fam 17) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4715] D:  interface vnet5 vs :: (fam 17) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4715] D:  interface lo vs :: (fam 2) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4715] D:  interface virbr1 vs :: (fam 2) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4715] D:  interface bridge0 vs :: (fam 2) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4715] D:  interface lo vs :: (fam 10) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4715] D:  interface bridge0 vs :: (fam 10) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4715] D:  interface bridge0 vs :: (fam 10) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4715] D:  interface vnet3 vs :: (fam 10) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4715] D:  interface vnet4 vs :: (fam 10) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4715] D:  interface vnet5 vs :: (fam 10) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4716] D: initial if check says 0
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4718] D:  interface lo vs :: (fam 17) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4718] D:  interface eno1 vs :: (fam 17) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4718] D:  interface virbr1 vs :: (fam 17) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4718] D:  interface bridge0 vs :: (fam 17) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4718] D:  interface vnet3 vs :: (fam 17) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4718] D:  interface vnet4 vs :: (fam 17) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4718] D:  interface vnet5 vs :: (fam 17) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4718] D:  interface lo vs :: (fam 2) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4718] D:  interface virbr1 vs :: (fam 2) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4718] D:  interface bridge0 vs :: (fam 2) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4718] D:  interface lo vs :: (fam 10) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4718] D:  interface bridge0 vs :: (fam 10) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4718] D:  interface bridge0 vs :: (fam 10) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4718] D:  interface vnet3 vs :: (fam 10) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4718] D:  interface vnet4 vs :: (fam 10) ipv6 1
+2025-02-26 01:58:57.471  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4718] D:  interface vnet5 vs :: (fam 10) ipv6 1
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4720] N: [vh|2|hydrogen|::|::|5002]: lws_socket_bind: source ads ::
+2025-02-26 01:58:57.472  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4720] D: _realloc: size 1520: __lws_wsi_create_with_role
+2025-02-26 01:58:57.472  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4720] D: : lws_role_transition: wsistate 0x200, ops listen
+2025-02-26 01:58:57.472  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4720] D: _lws_vhost_init_server_af: lws_socket_bind says 5002
+2025-02-26 01:58:57.472  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4720] D: : lws_vhost_bind_wsi: vh hydrogen: wsi listen/hydrogen-protocol, count_bound_wsi 1
+2025-02-26 01:58:57.472  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4720] D: : __insert_wsi_socket_into_fds: tsi=0, sock=9, pos-in-fds=2
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4720] N: __lws_lc_tag:  ++ [wsi|1|listen|hydrogen|::|5002] (2)
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  Successfully bound to port 5002
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  Vhost creation completed successfully
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  Server initialized on port 5002 with protocol hydrogen-protocol
+2025-02-26 01:58:57.472  [ INFO      ]  [ Initialization     ]  Web Server initialized
+2025-02-26 01:58:57.472  [ INFO      ]  [ Initialization     ]  WebSocket Server initialized
+2025-02-26 01:58:57.472  [ INFO      ]  [ Initialization     ]  Starting mDNS Server initialization
+2025-02-26 01:58:57.472  [ INFO      ]  [ Initialization     ]  Setting WebSocket mDNS service port to 5002
+2025-02-26 01:58:57.472  [ INFO      ]  [ ThreadMgmt         ]  Added thread 139773211780800 (tid: 4122817), new count: 1
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  Server thread starting
+2025-02-26 01:58:57.472  [ ERROR     ]  [ WebSocket          ]  Invalid session data for callback 31
+2025-02-26 01:58:57.472  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4722] D: _lws_state_transition: system: changed 1 'CONTEXT_CREATED' -> 2 'INITIALIZED'
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4722] I: lws_state_notify_protocol_init: waiting for netlink coldplug
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4722] I: _report: system: prot_init: rejected 'INITIALIZED' -> 'IFACE_COLDPLUG'
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4722] I: lws_state_transition_steps: CONTEXT_CREATED -> INITIALIZED
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4722] I: lws_protocol_init: 
+2025-02-26 01:58:57.472  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4722] D: [vh|2|hydrogen|::|::|5002]: lws_protocol_init_vhost: not instantiating hydrogen-protocol
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4722] I: [vh|2|hydrogen|::|::|5002]: lws_protocol_init_vhost: init hydrogen.hydrogen-protocol
+2025-02-26 01:58:57.472  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4722] D: [vh|2|hydrogen|::|::|5002]: lws_protocol_init_vhost: not instantiating lws-ws-proxy
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4722] I: [vh|2|hydrogen|::|::|5002]: lws_protocol_init_vhost: init hydrogen.lws-ws-proxy
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4722] I: lws_plat_drop_app_privileges: not changing group
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4723] I: lws_plat_drop_app_privileges: not changing user
+2025-02-26 01:58:57.472  [ ERROR     ]  [ WebSocket          ]  Invalid session data for callback 71
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4723] I: closed in event cancel
+2025-02-26 01:58:57.472  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4723] D: [wsi|0|pipe]: lws_service_fd_tsi: Close and handled
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4723] I: [wsi|0|pipe]: __lws_close_free_wsi: caller: close_and_handled
+2025-02-26 01:58:57.472  [ INFO      ]  [ mDNSServer         ]  Created multicast socket on interface virbr1
+2025-02-26 01:58:57.472  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4723] D: [wsi|0|pipe]: __lws_close_free_wsi: real just_kill_connection A: (sockfd 7)
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4723] I: [wsi|0|pipe]: __lws_close_free_wsi: real just_kill_connection: sockfd 7
+2025-02-26 01:58:57.472  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4723] D: [wsi|1|listen|hydrogen|::|5002]: _lws_change_pollfd: fd 9 events 1 -> 1
+2025-02-26 01:58:57.472  [ DEBUG     ]  [ WebSocket          ]  Invalid session data for callback 34
+2025-02-26 01:58:57.472  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4723] D: [wsi|0|pipe]: lwsi_set_state: lwsi_set_state 0x200 -> 0x20
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4723] I: [wsi|0|pipe]: __lws_close_free_wsi: cce=0
+2025-02-26 01:58:57.472  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4723] D: [wsi|0|pipe]: __lws_close_free_wsi_final: fd 7
+2025-02-26 01:58:57.472  [ INFO      ]  [ mDNSServer         ]  Created multicast socket on interface virbr1
+2025-02-26 01:58:57.472  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4724] D: [wsi|1|listen|hydrogen|::|5002]: _lws_change_pollfd: fd 9 events 1 -> 1
+2025-02-26 01:58:57.472  [ DEBUG     ]  [ WebSocket          ]  Invalid session data for callback 34
+2025-02-26 01:58:57.472  [ INFO      ]  [ mDNSServer         ]  Created multicast socket on interface bridge0
+2025-02-26 01:58:57.472  [ INFO      ]  [ mDNSServer         ]  Created multicast socket on interface bridge0
+2025-02-26 01:58:57.472  [ INFO      ]  [ mDNSServer         ]  Created multicast socket on interface vnet3
+2025-02-26 01:58:57.472  [ INFO      ]  [ mDNSServer         ]  Created multicast socket on interface vnet3
+2025-02-26 01:58:57.472  [ INFO      ]  [ mDNSServer         ]  Created multicast socket on interface vnet4
+2025-02-26 01:58:57.472  [ INFO      ]  [ mDNSServer         ]  Created multicast socket on interface vnet4
+2025-02-26 01:58:57.472  [ INFO      ]  [ mDNSServer         ]  Created multicast socket on interface vnet5
+2025-02-26 01:58:57.472  [ INFO      ]  [ mDNSServer         ]  Created multicast socket on interface vnet5
+2025-02-26 01:58:57.472  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4728] D: [wsi|0|pipe]: __lws_free_wsi: tsi fds count 2
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4728] N: __lws_lc_untag:  -- [wsi|0|pipe] (1) 3.187ms
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4728] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4729] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4729] I: rops_handle_POLLIN_netlink: ifidx 7
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4729] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 1
+2025-02-26 01:58:57.472  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4729] D: _realloc: size 144: rops_handle_POLLIN_netlink
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4729] I: rops_handle_POLLIN_netlink: route list size 1
+2025-02-26 01:58:57.472  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4729] D: _realloc: size 63: lws_smd_msg_alloc
+2025-02-26 01:58:57.472  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4729] D: lws_cancel_service: 
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4729] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4729] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4729] I: rops_handle_POLLIN_netlink: RTA_DST: 127.0.0.0
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4729] I: rops_handle_POLLIN_netlink: RTA_SRC: 127.0.0.1
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4729] I: rops_handle_POLLIN_netlink: ifidx 1
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4729] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 1
+2025-02-26 01:58:57.472  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4729] D: _realloc: size 144: rops_handle_POLLIN_netlink
+2025-02-26 01:58:57.472  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4729] I: rops_handle_POLLIN_netlink: route list size 2
+2025-02-26 01:58:57.472  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4729] D: _realloc: size 63: lws_smd_msg_alloc
+2025-02-26 01:58:57.472  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4729] D: lws_cancel_service: 
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4730] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4730] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4730] I: rops_handle_POLLIN_netlink: RTA_DST: 192.168.0.0
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4730] I: rops_handle_POLLIN_netlink: RTA_SRC: 192.168.0.44
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4730] I: rops_handle_POLLIN_netlink: ifidx 7
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4730] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 1
+2025-02-26 01:58:57.473  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4730] D: _realloc: size 144: rops_handle_POLLIN_netlink
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4730] I: rops_handle_POLLIN_netlink: route list size 3
+2025-02-26 01:58:57.473  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4730] D: _realloc: size 63: lws_smd_msg_alloc
+2025-02-26 01:58:57.473  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4730] D: lws_cancel_service: 
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4730] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4730] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4730] I: rops_handle_POLLIN_netlink: RTA_DST: 192.168.100.0
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4730] I: rops_handle_POLLIN_netlink: RTA_SRC: 192.168.100.1
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4730] I: rops_handle_POLLIN_netlink: ifidx 3
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4730] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 1
+2025-02-26 01:58:57.473  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4730] D: _realloc: size 144: rops_handle_POLLIN_netlink
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4730] I: rops_handle_POLLIN_netlink: route list size 4
+2025-02-26 01:58:57.473  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4730] D: _realloc: size 63: lws_smd_msg_alloc
+2025-02-26 01:58:57.473  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4731] D: lws_cancel_service: 
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4731] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4731] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4731] I: rops_handle_POLLIN_netlink: RTA_DST: 127.0.0.0
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4731] I: rops_handle_POLLIN_netlink: RTA_SRC: 127.0.0.1
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4731] I: rops_handle_POLLIN_netlink: ifidx 1
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4731] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 3
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4731] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4731] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4731] I: rops_handle_POLLIN_netlink: RTA_DST: 127.0.0.0
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4731] I: rops_handle_POLLIN_netlink: RTA_SRC: 127.0.0.1
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4731] I: rops_handle_POLLIN_netlink: ifidx 1
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4731] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 2
+2025-02-26 01:58:57.473  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4731] D: _realloc: size 144: rops_handle_POLLIN_netlink
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4731] I: rops_handle_POLLIN_netlink: route list size 5
+2025-02-26 01:58:57.473  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4731] D: _realloc: size 63: lws_smd_msg_alloc
+2025-02-26 01:58:57.473  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4731] D: lws_cancel_service: 
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4731] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4731] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4731] I: rops_handle_POLLIN_netlink: Local addr: RTA_DST -> added to RTA_SRC
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4732] I: rops_handle_POLLIN_netlink: RTA_DST: 127.0.0.1
+2025-02-26 01:58:57.473  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4732] I: rops_handle_POLLIN_netlink: RTA_SRC: 127.0.0.1
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4732] I: rops_handle_POLLIN_netlink: ifidx 1
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4742] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 2
+2025-02-26 01:58:57.474  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4742] D: _realloc: size 144: rops_handle_POLLIN_netlink
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4742] I: rops_handle_POLLIN_netlink: route list size 6
+2025-02-26 01:58:57.474  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4742] D: _realloc: size 63: lws_smd_msg_alloc
+2025-02-26 01:58:57.474  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4742] D: lws_cancel_service: 
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4742] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4742] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4742] I: rops_handle_POLLIN_netlink: RTA_DST: 127.255.255.255
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4742] I: rops_handle_POLLIN_netlink: RTA_SRC: 127.0.0.1
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4742] I: rops_handle_POLLIN_netlink: ifidx 1
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4742] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 3
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4742] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4742] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4742] I: rops_handle_POLLIN_netlink: RTA_DST: 192.168.0.0
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4742] I: rops_handle_POLLIN_netlink: RTA_SRC: 192.168.0.44
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4742] I: rops_handle_POLLIN_netlink: ifidx 7
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4743] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 3
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4743] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4743] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4743] I: rops_handle_POLLIN_netlink: Local addr: RTA_DST -> added to RTA_SRC
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4743] I: rops_handle_POLLIN_netlink: RTA_DST: 192.168.0.44
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4743] I: rops_handle_POLLIN_netlink: RTA_SRC: 192.168.0.44
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4743] I: rops_handle_POLLIN_netlink: ifidx 7
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4743] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 2
+2025-02-26 01:58:57.474  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4743] D: _realloc: size 144: rops_handle_POLLIN_netlink
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4743] I: rops_handle_POLLIN_netlink: route list size 7
+2025-02-26 01:58:57.474  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4743] D: _realloc: size 63: lws_smd_msg_alloc
+2025-02-26 01:58:57.474  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4743] D: lws_cancel_service: 
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4743] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4743] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4743] I: rops_handle_POLLIN_netlink: RTA_DST: 192.168.0.255
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4743] I: rops_handle_POLLIN_netlink: RTA_SRC: 192.168.0.44
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4744] I: rops_handle_POLLIN_netlink: ifidx 7
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4744] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 3
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4744] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4744] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4744] I: rops_handle_POLLIN_netlink: RTA_DST: 192.168.100.0
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4744] I: rops_handle_POLLIN_netlink: RTA_SRC: 192.168.100.1
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4744] I: rops_handle_POLLIN_netlink: ifidx 3
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4744] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 3
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4744] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4744] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4744] I: rops_handle_POLLIN_netlink: Local addr: RTA_DST -> added to RTA_SRC
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4744] I: rops_handle_POLLIN_netlink: RTA_DST: 192.168.100.1
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4744] I: rops_handle_POLLIN_netlink: RTA_SRC: 192.168.100.1
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4744] I: rops_handle_POLLIN_netlink: ifidx 3
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4744] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 2
+2025-02-26 01:58:57.474  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4745] D: _realloc: size 144: rops_handle_POLLIN_netlink
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4745] I: rops_handle_POLLIN_netlink: route list size 8
+2025-02-26 01:58:57.474  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4745] D: _realloc: size 63: lws_smd_msg_alloc
+2025-02-26 01:58:57.474  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4745] D: lws_cancel_service: 
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4745] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4745] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4745] I: rops_handle_POLLIN_netlink: RTA_DST: 192.168.100.255
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4745] I: rops_handle_POLLIN_netlink: RTA_SRC: 192.168.100.1
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4745] I: rops_handle_POLLIN_netlink: ifidx 3
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4745] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 3
+2025-02-26 01:58:57.474  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4745] D: _realloc: size 92: lws_smd_msg_alloc
+2025-02-26 01:58:57.474  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4745] D: lws_cancel_service: 
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4745] I: _lws_routing_table_dump: 
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4745] I: _lws_routing_entry_dump:  gw: 192.168.0.1,  ifidx: 7, pri: 425, proto: 4
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4745] I: _lws_routing_entry_dump:  dst: 127.0.0.0/8, src: 127.0.0.1/0,  ifidx: 1, pri: 30, proto: 2
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4745] I: _lws_routing_entry_dump:  dst: 192.168.0.0/24, src: 192.168.0.44/0,  ifidx: 7, pri: 425, proto: 2
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4745] I: _lws_routing_entry_dump:  dst: 192.168.100.0/24, src: 192.168.100.1/0,  ifidx: 3, pri: -1, proto: 2
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4745] I: _lws_routing_entry_dump:  dst: 127.0.0.0/8, src: 127.0.0.1/0,  ifidx: 1, pri: -1, proto: 2
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4746] I: _lws_routing_entry_dump:  dst: 127.0.0.1/32, src: 127.0.0.1/0,  ifidx: 1, pri: -1, proto: 2
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4746] I: _lws_routing_entry_dump:  dst: 192.168.0.44/32, src: 192.168.0.44/0,  ifidx: 7, pri: -1, proto: 2
+2025-02-26 01:58:57.474  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4746] I: _lws_routing_entry_dump:  dst: 192.168.100.1/32, src: 192.168.100.1/0,  ifidx: 3, pri: -1, proto: 2
+2025-02-26 01:58:57.474  [ INFO      ]  [ mDNSServer         ]  mDNS Server initialized with hostname: angrin.local
+2025-02-26 01:58:57.475  [ INFO      ]  [ Initialization     ]  mDNS Server system initialized
+2025-02-26 01:58:57.475  [ INFO      ]  [ ThreadMgmt         ]  Added thread 139772999759552 (tid: 4122818), new count: 1
+2025-02-26 01:58:57.475  [ INFO      ]  [ mDNSServer         ]  mDNS Server announce loop started
+2025-02-26 01:58:57.475  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 announcement on virbr1
+2025-02-26 01:58:57.475  [ WARN      ]  [ mDNSServer         ]  Failed to send IPv6 announcement on virbr1: Network is unreachable
+2025-02-26 01:58:57.475  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 announcement on bridge0
+2025-02-26 01:58:57.475  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 announcement on bridge0
+2025-02-26 01:58:57.475  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 announcement on vnet3
+2025-02-26 01:58:57.475  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 announcement on vnet3
+2025-02-26 01:58:57.475  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 announcement on vnet4
+2025-02-26 01:58:57.475  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4757] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x1adb750
+2025-02-26 01:58:57.475  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4757] I: _lws_smd_msg_destroy: destroy msg 0x7f1f74000bb0
+2025-02-26 01:58:57.475  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4757] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x1adb750
+2025-02-26 01:58:57.475  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4757] I: _lws_smd_msg_destroy: destroy msg 0x7f1f74003390
+2025-02-26 01:58:57.475  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4757] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x1adb750
+2025-02-26 01:58:57.475  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4757] I: _lws_smd_msg_destroy: destroy msg 0x7f1f74003c40
+2025-02-26 01:58:57.475  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4757] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x1adb750
+2025-02-26 01:58:57.475  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 announcement on vnet4
+2025-02-26 01:58:57.475  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4758] I: _lws_smd_msg_destroy: destroy msg 0x7f1f740044f0
+2025-02-26 01:58:57.475  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4758] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x1adb750
+2025-02-26 01:58:57.475  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4758] I: _lws_smd_msg_destroy: destroy msg 0x7f1f74004da0
+2025-02-26 01:58:57.475  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4758] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x1adb750
+2025-02-26 01:58:57.475  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4758] I: _lws_smd_msg_destroy: destroy msg 0x7f1f74005b00
+2025-02-26 01:58:57.475  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4758] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x1adb750
+2025-02-26 01:58:57.475  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4758] I: _lws_smd_msg_destroy: destroy msg 0x7f1f74006490
+2025-02-26 01:58:57.475  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4758] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x1adb750
+2025-02-26 01:58:57.475  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4759] I: _lws_smd_msg_destroy: destroy msg 0x7f1f74007780
+2025-02-26 01:58:57.475  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4759] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 42, refc 1, to peer 0x1adb750
+2025-02-26 01:58:57.475  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4759] I: _lws_smd_msg_destroy: destroy msg 0x7f1f74008ff0
+2025-02-26 01:58:57.475  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 announcement on vnet5
+2025-02-26 01:58:57.475  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4759] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.475  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4759] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.475  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4759] I: rops_handle_POLLIN_netlink: RTA_DST: ::1
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4760] I: rops_handle_POLLIN_netlink: ifidx 1
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4760] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 1
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4760] D: _realloc: size 144: rops_handle_POLLIN_netlink
+2025-02-26 01:58:57.476  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 announcement on vnet5
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4760] I: rops_handle_POLLIN_netlink: route list size 9
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4760] D: _realloc: size 63: lws_smd_msg_alloc
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4760] D: lws_cancel_service: 
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4760] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4760] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4760] I: rops_handle_POLLIN_netlink: RTA_DST: ::1
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4760] I: rops_handle_POLLIN_netlink: ifidx 1
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4761] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 1
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4761] D: _realloc: size 144: rops_handle_POLLIN_netlink
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4761] I: rops_handle_POLLIN_netlink: route list size 10
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4761] D: _realloc: size 63: lws_smd_msg_alloc
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4761] D: lws_cancel_service: 
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4761] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4761] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4761] I: rops_handle_POLLIN_netlink: RTA_DST: fd3d:98da:b4e6::
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4761] I: rops_handle_POLLIN_netlink: unknown attr type 9
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4761] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 1
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4761] D: _realloc: size 144: rops_handle_POLLIN_netlink
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4761] I: rops_handle_POLLIN_netlink: route list size 11
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4761] D: _realloc: size 63: lws_smd_msg_alloc
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4761] D: lws_cancel_service: 
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4761] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4761] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4761] I: rops_handle_POLLIN_netlink: RTA_DST: fd8f:a4ad:b5b8:e348::
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4762] I: rops_handle_POLLIN_netlink: ifidx 7
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4762] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 1
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4762] D: _realloc: size 144: rops_handle_POLLIN_netlink
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4762] I: rops_handle_POLLIN_netlink: route list size 12
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4762] D: _realloc: size 63: lws_smd_msg_alloc
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4762] D: lws_cancel_service: 
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4762] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4762] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4762] I: rops_handle_POLLIN_netlink: RTA_DST: fe80::
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4762] I: rops_handle_POLLIN_netlink: ifidx 8
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4762] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 1
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4762] D: _realloc: size 144: rops_handle_POLLIN_netlink
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4762] I: rops_handle_POLLIN_netlink: route list size 13
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4762] D: _realloc: size 63: lws_smd_msg_alloc
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4762] D: lws_cancel_service: 
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4762] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4762] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4762] I: rops_handle_POLLIN_netlink: RTA_DST: fe80::
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4763] I: rops_handle_POLLIN_netlink: ifidx 9
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4763] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 1
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4763] D: _realloc: size 144: rops_handle_POLLIN_netlink
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4763] I: rops_handle_POLLIN_netlink: route list size 14
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4763] D: _realloc: size 63: lws_smd_msg_alloc
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4763] D: lws_cancel_service: 
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4763] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4763] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4763] I: rops_handle_POLLIN_netlink: RTA_DST: fe80::
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4763] I: rops_handle_POLLIN_netlink: ifidx 10
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4763] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 1
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4763] D: _realloc: size 144: rops_handle_POLLIN_netlink
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4763] I: rops_handle_POLLIN_netlink: route list size 15
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4763] D: _realloc: size 63: lws_smd_msg_alloc
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4763] D: lws_cancel_service: 
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4763] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4763] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4763] I: rops_handle_POLLIN_netlink: RTA_DST: fe80::
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4764] I: rops_handle_POLLIN_netlink: ifidx 7
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4764] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 1
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4764] D: _realloc: size 144: rops_handle_POLLIN_netlink
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4764] I: rops_handle_POLLIN_netlink: route list size 16
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4764] D: _realloc: size 63: lws_smd_msg_alloc
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4764] D: lws_cancel_service: 
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4764] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4764] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4764] I: rops_handle_POLLIN_netlink: Local addr: RTA_DST -> added to RTA_SRC
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4764] I: rops_handle_POLLIN_netlink: RTA_DST: ::1
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4765] I: rops_handle_POLLIN_netlink: ifidx 1
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4765] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 2
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4765] D: _realloc: size 144: rops_handle_POLLIN_netlink
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4765] I: rops_handle_POLLIN_netlink: route list size 17
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4765] D: _realloc: size 63: lws_smd_msg_alloc
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4765] D: lws_cancel_service: 
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4765] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4765] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4765] I: rops_handle_POLLIN_netlink: Local addr: RTA_DST -> added to RTA_SRC
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4765] I: rops_handle_POLLIN_netlink: RTA_DST: fd8f:a4ad:b5b8:e348:72a:69a0:c3ec:40ec
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4765] I: rops_handle_POLLIN_netlink: ifidx 7
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4765] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 2
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4765] D: _realloc: size 144: rops_handle_POLLIN_netlink
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4765] I: rops_handle_POLLIN_netlink: route list size 18
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4765] D: _realloc: size 63: lws_smd_msg_alloc
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4766] D: lws_cancel_service: 
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4766] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4766] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4766] I: rops_handle_POLLIN_netlink: Local addr: RTA_DST -> added to RTA_SRC
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4766] I: rops_handle_POLLIN_netlink: RTA_DST: fe80::192e:dfdd:dcc9:4f01
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4766] I: rops_handle_POLLIN_netlink: ifidx 7
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4766] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 2
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4766] D: _realloc: size 144: rops_handle_POLLIN_netlink
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4766] I: rops_handle_POLLIN_netlink: route list size 19
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4766] D: _realloc: size 63: lws_smd_msg_alloc
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4766] D: lws_cancel_service: 
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4766] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4766] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4766] I: rops_handle_POLLIN_netlink: Local addr: RTA_DST -> added to RTA_SRC
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4766] I: rops_handle_POLLIN_netlink: RTA_DST: fe80::fc54:ff:fe00:2d5e
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4766] I: rops_handle_POLLIN_netlink: ifidx 8
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4766] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 2
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4767] D: _realloc: size 144: rops_handle_POLLIN_netlink
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4767] I: rops_handle_POLLIN_netlink: route list size 20
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4767] D: _realloc: size 63: lws_smd_msg_alloc
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4767] D: lws_cancel_service: 
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4767] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4767] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4767] I: rops_handle_POLLIN_netlink: Local addr: RTA_DST -> added to RTA_SRC
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4767] I: rops_handle_POLLIN_netlink: RTA_DST: fe80::fc54:ff:fe47:742b
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4767] I: rops_handle_POLLIN_netlink: ifidx 10
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4767] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 2
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4767] D: _realloc: size 144: rops_handle_POLLIN_netlink
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4767] I: rops_handle_POLLIN_netlink: route list size 21
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4767] D: _realloc: size 63: lws_smd_msg_alloc
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4768] D: lws_cancel_service: 
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4768] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4768] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4768] I: rops_handle_POLLIN_netlink: Local addr: RTA_DST -> added to RTA_SRC
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4768] I: rops_handle_POLLIN_netlink: RTA_DST: fe80::fc54:ff:fea0:2c89
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4768] I: rops_handle_POLLIN_netlink: ifidx 9
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4768] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 2
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4768] D: _realloc: size 144: rops_handle_POLLIN_netlink
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4768] I: rops_handle_POLLIN_netlink: route list size 22
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4768] D: _realloc: size 63: lws_smd_msg_alloc
+2025-02-26 01:58:57.476  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4768] D: lws_cancel_service: 
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4768] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4768] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4768] I: rops_handle_POLLIN_netlink: RTA_DST: ff00::
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4768] I: rops_handle_POLLIN_netlink: ifidx 2
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4768] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 5
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4769] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4769] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4769] I: rops_handle_POLLIN_netlink: RTA_DST: ff00::
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4769] I: rops_handle_POLLIN_netlink: ifidx 7
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4769] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 5
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4769] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4769] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4769] I: rops_handle_POLLIN_netlink: RTA_DST: ff00::
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4769] I: rops_handle_POLLIN_netlink: ifidx 8
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4769] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 5
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4769] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4769] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4769] I: rops_handle_POLLIN_netlink: RTA_DST: ff00::
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4769] I: rops_handle_POLLIN_netlink: ifidx 9
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4769] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 5
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4769] I: rops_handle_POLLIN_netlink: RTM 24
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4769] I: rops_handle_POLLIN_netlink: NEWROUTE
+2025-02-26 01:58:57.476  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4769] I: rops_handle_POLLIN_netlink: RTA_DST: ff00::
+2025-02-26 01:58:57.477  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4770] I: rops_handle_POLLIN_netlink: ifidx 10
+2025-02-26 01:58:57.477  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4770] I: rops_handle_POLLIN_netlink: NEWROUTE rtm_type 5
+2025-02-26 01:58:57.477  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4770] I: _lws_routing_table_dump: 
+2025-02-26 01:58:57.477  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4770] I: _lws_routing_entry_dump:  gw: 192.168.0.1,  ifidx: 7, pri: 425, proto: 4
+2025-02-26 01:58:57.477  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4770] I: _lws_routing_entry_dump:  dst: 127.0.0.0/8, src: 127.0.0.1/0,  ifidx: 1, pri: 30, proto: 2
+2025-02-26 01:58:57.477  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4770] I: _lws_routing_entry_dump:  dst: 192.168.0.0/24, src: 192.168.0.44/0,  ifidx: 7, pri: 425, proto: 2
+2025-02-26 01:58:57.477  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4770] I: _lws_routing_entry_dump:  dst: 192.168.100.0/24, src: 192.168.100.1/0,  ifidx: 3, pri: -1, proto: 2
+2025-02-26 01:58:57.477  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4770] I: _lws_routing_entry_dump:  dst: 127.0.0.0/8, src: 127.0.0.1/0,  ifidx: 1, pri: -1, proto: 2
+2025-02-26 01:58:57.477  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4770] I: _lws_routing_entry_dump:  dst: 127.0.0.1/32, src: 127.0.0.1/0,  ifidx: 1, pri: -1, proto: 2
+2025-02-26 01:58:57.477  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4770] I: _lws_routing_entry_dump:  dst: 192.168.0.44/32, src: 192.168.0.44/0,  ifidx: 7, pri: -1, proto: 2
+2025-02-26 01:58:57.477  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4770] I: _lws_routing_entry_dump:  dst: 192.168.100.1/32, src: 192.168.100.1/0,  ifidx: 3, pri: -1, proto: 2
+2025-02-26 01:58:57.477  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4770] I: _lws_routing_entry_dump:  dst: ::1/128,  ifidx: 1, pri: 30, proto: 2
+2025-02-26 01:58:57.477  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4770] I: _lws_routing_entry_dump:  dst: ::1/128,  ifidx: 1, pri: 256, proto: 2
+2025-02-26 01:58:57.477  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4770] I: _lws_routing_entry_dump:  dst: fd3d:98da:b4e6::/64,  ifidx: -1, pri: 430, proto: 9
+2025-02-26 01:58:57.477  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4770] I: _lws_routing_entry_dump:  dst: fd8f:a4ad:b5b8:e348::/64,  ifidx: 7, pri: 425, proto: 9
+2025-02-26 01:58:57.477  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4770] I: _lws_routing_entry_dump:  dst: fe80::/64,  ifidx: 8, pri: 256, proto: 2
+2025-02-26 01:58:57.477  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4770] I: _lws_routing_entry_dump:  dst: fe80::/64,  ifidx: 9, pri: 256, proto: 2
+2025-02-26 01:58:57.477  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4771] I: _lws_routing_entry_dump:  dst: fe80::/64,  ifidx: 10, pri: 256, proto: 2
+2025-02-26 01:58:57.477  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4771] I: _lws_routing_entry_dump:  dst: fe80::/64,  ifidx: 7, pri: 1024, proto: 2
+2025-02-26 01:58:57.477  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4771] I: _lws_routing_entry_dump:  dst: ::1/128, src: ::1/0,  ifidx: 1, pri: 0, proto: 2
+2025-02-26 01:58:57.477  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4771] I: _lws_routing_entry_dump:  dst: fd8f:a4ad:b5b8:e348:72a:69a0:c3ec:40ec/128, src: fd8f:a4ad:b5b8:e348:72a:69a0:c3ec:40ec/0,  ifidx: 7, pri: 0, proto: 2
+2025-02-26 01:58:57.477  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4771] I: _lws_routing_entry_dump:  dst: fe80::192e:dfdd:dcc9:4f01/128, src: fe80::192e:dfdd:dcc9:4f01/0,  ifidx: 7, pri: 0, proto: 2
+2025-02-26 01:58:57.477  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4771] I: _lws_routing_entry_dump:  dst: fe80::fc54:ff:fe00:2d5e/128, src: fe80::fc54:ff:fe00:2d5e/0,  ifidx: 8, pri: 0, proto: 2
+2025-02-26 01:58:57.477  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4771] I: _lws_routing_entry_dump:  dst: fe80::fc54:ff:fe47:742b/128, src: fe80::fc54:ff:fe47:742b/0,  ifidx: 10, pri: 0, proto: 2
+2025-02-26 01:58:57.477  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4771] I: _lws_routing_entry_dump:  dst: fe80::fc54:ff:fea0:2c89/128, src: fe80::fc54:ff:fea0:2c89/0,  ifidx: 9, pri: 0, proto: 2
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4782] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x1adb750
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4782] I: _lws_smd_msg_destroy: destroy msg 0x7f1f74005b00
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4782] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x1adb750
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4782] I: _lws_smd_msg_destroy: destroy msg 0x7f1f74004da0
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4782] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x1adb750
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4782] I: _lws_smd_msg_destroy: destroy msg 0x7f1f740044f0
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4782] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x1adb750
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4782] I: _lws_smd_msg_destroy: destroy msg 0x7f1f74003c40
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4782] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x1adb750
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4783] I: _lws_smd_msg_destroy: destroy msg 0x7f1f74003390
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4783] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x1adb750
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4783] I: _lws_smd_msg_destroy: destroy msg 0x7f1f74000bb0
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4783] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x1adb750
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4783] I: _lws_smd_msg_destroy: destroy msg 0x7f1f74008a70
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4783] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x1adb750
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4783] I: _lws_smd_msg_destroy: destroy msg 0x7f1f74007780
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4783] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x1adb750
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4783] I: _lws_smd_msg_destroy: destroy msg 0x7f1f74006490
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4783] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x1adb750
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4783] I: _lws_smd_msg_destroy: destroy msg 0x7f1f7400ee60
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4783] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x1adb750
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4783] I: _lws_smd_msg_destroy: destroy msg 0x7f1f7400f740
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4784] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x1adb750
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4784] I: _lws_smd_msg_destroy: destroy msg 0x7f1f74010010
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4784] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x1adb750
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4784] I: _lws_smd_msg_destroy: destroy msg 0x7f1f740108e0
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4784] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x1adb750
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4784] I: _lws_smd_msg_destroy: destroy msg 0x7f1f740111b0
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4784] I: rops_handle_POLLIN_netlink: RTM 3
+2025-02-26 01:58:57.478  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:4784] I: rops_handle_POLLIN_netlink: *** Unknown RTM_3
+2025-02-26 01:58:57.485  [ INFO      ]  [ Initialization     ]  ――――――――――――――――――――――――――
+2025-02-26 01:58:57.485  [ INFO      ]  [ Initialization     ]  Application started
+2025-02-26 01:58:57.485  [ INFO      ]  [ Initialization     ]  Press Ctrl+C to exit
+2025-02-26 01:58:57.485  [ INFO      ]  [ Initialization     ]  ――――――――――――――――――――――――――
+2025-02-26 01:58:57.485  [ INFO      ]  [ Utils              ]  System started at 2025-02-26T09:58:57Z
+2025-02-26 01:58:57.485  [ INFO      ]  [ Utils              ]  System startup took 0.021s
+2025-02-26 01:58:57.578  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:5787] D: _lws_state_transition: system: changed 2 'INITIALIZED' -> 3 'IFACE_COLDPLUG'
+2025-02-26 01:58:57.578  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:5787] D: _lws_state_transition: system: changed 3 'IFACE_COLDPLUG' -> 4 'DHCP'
+2025-02-26 01:58:57.578  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:5787] D: _lws_state_transition: system: changed 4 'DHCP' -> 5 'CPD_PRE_TIME'
+2025-02-26 01:58:57.578  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:5787] D: _lws_state_transition: system: changed 5 'CPD_PRE_TIME' -> 6 'TIME_VALID'
+2025-02-26 01:58:57.578  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:5787] D: _lws_state_transition: system: changed 6 'TIME_VALID' -> 7 'CPD_POST_TIME'
+2025-02-26 01:58:57.578  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:5788] D: _lws_state_transition: system: changed 7 'CPD_POST_TIME' -> 8 'POLICY_VALID'
+2025-02-26 01:58:57.578  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:5788] D: _lws_state_transition: system: changed 8 'POLICY_VALID' -> 9 'REGISTERED'
+2025-02-26 01:58:57.578  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:5788] D: _lws_state_transition: system: changed 9 'REGISTERED' -> 10 'AUTH1'
+2025-02-26 01:58:57.578  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:5788] D: _lws_state_transition: system: changed 10 'AUTH1' -> 11 'AUTH2'
+2025-02-26 01:58:57.578  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:58:57:5788] D: _lws_state_transition: system: changed 11 'AUTH2' -> 12 'OPERATIONAL'
+2025-02-26 01:58:57.578  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:58:57:5788] I: lws_state_transition_steps: INITIALIZED -> OPERATIONAL
+2025-02-26 01:58:57.682  [ INFO      ]  [ Shutdown           ]  ――――――――――――――――――――――――――
+2025-02-26 01:58:57.682  [ INFO      ]  [ Shutdown           ]  Cleaning up and shutting down
+2025-02-26 01:58:57.682  [ WARN      ]  [ ThreadMgmt         ]  Thread added, count: 2
+2025-02-26 01:58:57.682  [ INFO      ]  [ Shutdown           ]  Starting graceful shutdown sequence
+2025-02-26 01:58:57.682  [ INFO      ]  [ Shutdown           ]  Stopping mDNS Server service...
+2025-02-26 01:58:57.682  [ INFO      ]  [ Shutdown           ]  Initiating mDNS Server shutdown
+2025-02-26 01:58:58.476  [ INFO      ]  [ mDNSServer         ]  Shutdown: mDNS Server announce loop exiting
+2025-02-26 01:58:58.476  [ WARN      ]  [ ThreadMgmt         ]  Thread removed, count: 0
+2025-02-26 01:58:58.476  [ INFO      ]  [ mDNSServer         ]  Shutdown: Initiating mDNS Server shutdown
+2025-02-26 01:58:58.476  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 1/3 on virbr1
+2025-02-26 01:58:58.476  [ WARN      ]  [ mDNSServer         ]  Failed to send IPv6 goodbye on virbr1: Network is unreachable
+2025-02-26 01:58:58.726  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 2/3 on virbr1
+2025-02-26 01:58:58.726  [ WARN      ]  [ mDNSServer         ]  Failed to send IPv6 goodbye on virbr1: Network is unreachable
+2025-02-26 01:58:58.977  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 3/3 on virbr1
+2025-02-26 01:58:58.977  [ WARN      ]  [ mDNSServer         ]  Failed to send IPv6 goodbye on virbr1: Network is unreachable
+2025-02-26 01:58:59.227  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 1/3 on bridge0
+2025-02-26 01:58:59.227  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 goodbye packet 1/3 on bridge0
+2025-02-26 01:58:59.477  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 2/3 on bridge0
+2025-02-26 01:58:59.477  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 goodbye packet 2/3 on bridge0
+2025-02-26 01:58:59.728  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 3/3 on bridge0
+2025-02-26 01:58:59.728  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 goodbye packet 3/3 on bridge0
+2025-02-26 01:58:59.978  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 1/3 on vnet3
+2025-02-26 01:58:59.978  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 goodbye packet 1/3 on vnet3
+2025-02-26 01:59:00.228  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 2/3 on vnet3
+2025-02-26 01:59:00.228  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 goodbye packet 2/3 on vnet3
+2025-02-26 01:59:00.479  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 3/3 on vnet3
+2025-02-26 01:59:00.479  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 goodbye packet 3/3 on vnet3
+2025-02-26 01:59:00.729  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 1/3 on vnet4
+2025-02-26 01:59:00.729  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 goodbye packet 1/3 on vnet4
+2025-02-26 01:59:00.979  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 2/3 on vnet4
+2025-02-26 01:59:00.979  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 goodbye packet 2/3 on vnet4
+2025-02-26 01:59:01.229  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 3/3 on vnet4
+2025-02-26 01:59:01.229  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 goodbye packet 3/3 on vnet4
+2025-02-26 01:59:01.480  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 1/3 on vnet5
+2025-02-26 01:59:01.480  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 goodbye packet 1/3 on vnet5
+2025-02-26 01:59:01.730  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 2/3 on vnet5
+2025-02-26 01:59:01.730  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 goodbye packet 2/3 on vnet5
+2025-02-26 01:59:01.980  [ INFO      ]  [ mDNSServer         ]  Sent IPv4 goodbye packet 3/3 on vnet5
+2025-02-26 01:59:01.980  [ INFO      ]  [ mDNSServer         ]  Sent IPv6 goodbye packet 3/3 on vnet5
+2025-02-26 01:59:02.230  [ INFO      ]  [ mDNSServer         ]  Closing mDNS Server sockets
+2025-02-26 01:59:02.230  [ INFO      ]  [ mDNSServer         ]  Closing IPv4 socket on interface virbr1
+2025-02-26 01:59:02.230  [ INFO      ]  [ mDNSServer         ]  Closing IPv6 socket on interface virbr1
+2025-02-26 01:59:02.230  [ INFO      ]  [ mDNSServer         ]  Closing IPv4 socket on interface bridge0
+2025-02-26 01:59:02.230  [ INFO      ]  [ mDNSServer         ]  Closing IPv6 socket on interface bridge0
+2025-02-26 01:59:02.230  [ INFO      ]  [ mDNSServer         ]  Closing IPv4 socket on interface vnet3
+2025-02-26 01:59:02.230  [ INFO      ]  [ mDNSServer         ]  Closing IPv6 socket on interface vnet3
+2025-02-26 01:59:02.230  [ INFO      ]  [ mDNSServer         ]  Closing IPv4 socket on interface vnet4
+2025-02-26 01:59:02.230  [ INFO      ]  [ mDNSServer         ]  Closing IPv6 socket on interface vnet4
+2025-02-26 01:59:02.230  [ INFO      ]  [ mDNSServer         ]  Closing IPv4 socket on interface vnet5
+2025-02-26 01:59:02.230  [ INFO      ]  [ mDNSServer         ]  Closing IPv6 socket on interface vnet5
+2025-02-26 01:59:02.431  [ INFO      ]  [ mDNSServer         ]  Freeing mDNS Server resources
+2025-02-26 01:59:02.431  [ INFO      ]  [ mDNSServer         ]  Shutdown: mDNS Server shutdown complete
+2025-02-26 01:59:02.431  [ INFO      ]  [ Shutdown           ]  mDNS Server shutdown complete
+2025-02-26 01:59:02.431  [ INFO      ]  [ Shutdown           ]  Stopping web services...
+2025-02-26 01:59:02.431  [ INFO      ]  [ Shutdown           ]  Starting web systems shutdown sequence
+2025-02-26 01:59:02.431  [ INFO      ]  [ Shutdown           ]  Initiating Web Server shutdown
+2025-02-26 01:59:02.431  [ INFO      ]  [ WebServer          ]  Shutdown: Shutting down web server
+2025-02-26 01:59:02.431  [ INFO      ]  [ WebServer          ]  Web server shut down successfully
+2025-02-26 01:59:02.431  [ INFO      ]  [ Shutdown           ]  Web Server shutdown complete
+2025-02-26 01:59:02.431  [ INFO      ]  [ Shutdown           ]  Initiating WebSocket server shutdown
+2025-02-26 01:59:02.431  [ INFO      ]  [ Shutdown           ]  Waiting for WebSocket connections to close gracefully
+2025-02-26 01:59:04.431  [ INFO      ]  [ Shutdown           ]  Stopping WebSocket server
+2025-02-26 01:59:04.431  [ INFO      ]  [ WebSocket          ]  Stopping server on port 5002
+2025-02-26 01:59:04.431  [ INFO      ]  [ WebSocket          ]  Setting shutdown flag and cancelling service
+2025-02-26 01:59:04.431  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:04:4314] D: lws_cancel_service: 
 
-2025-02-25 16:46:40.968  [ INFO      ]  [ WebSocket          ]  Waiting for server thread to exit (timeout: 5s)
+2025-02-26 01:59:04.431  [ INFO      ]  [ WebSocket          ]  Waiting for server thread to exit (timeout: 5s)
+2025-02-26 01:59:09.431  [ WARN      ]  [ WebSocket          ]  Primary thread join timed out, trying final cancellation
+2025-02-26 01:59:09.432  [ INFO      ]  [ WebSocket          ]  Thread terminated after cancellation
+2025-02-26 01:59:09.432  [ INFO      ]  [ WebSocket          ]  Server stopped
+2025-02-26 01:59:09.432  [ INFO      ]  [ Shutdown           ]  Forcing close of any remaining connections
+2025-02-26 01:59:09.432  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:09:4324] D: lws_cancel_service: 
+
+2025-02-26 01:59:09.432  [ INFO      ]  [ Shutdown           ]  Cleaning up WebSocket resources
+2025-02-26 01:59:09.432  [ INFO      ]  [ WebSocket          ]  Starting WebSocket server cleanup
+2025-02-26 01:59:09.682  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:59:09:6825] D: lws_cancel_service: 
+2025-02-26 01:59:26.713  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7122] I: rops_handle_POLLIN_netlink: RTM 20
+2025-02-26 01:59:26.714  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7147] I: rops_handle_POLLIN_netlink: NEWADDR
+2025-02-26 01:59:26.714  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7147] I: rops_handle_POLLIN_netlink: NEWADDR
+2025-02-26 01:59:26.714  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7147] I: _lws_route_remove: deleting route
+2025-02-26 01:59:26.714  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7148] I: _lws_route_remove: deleting route
+2025-02-26 01:59:26.714  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7148] D: _realloc: size 144: rops_handle_POLLIN_netlink
+2025-02-26 01:59:26.714  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7148] I: rops_handle_POLLIN_netlink: route list size 21
+2025-02-26 01:59:26.714  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7148] D: _lws_route_pt_close_unroutable: in
+2025-02-26 01:59:26.714  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7149] I: _lws_routing_table_dump: 
+2025-02-26 01:59:26.714  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7149] I: _lws_routing_entry_dump:  gw: 192.168.0.1,  ifidx: 7, pri: 425, proto: 4
+2025-02-26 01:59:26.714  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7149] I: _lws_routing_entry_dump:  dst: 127.0.0.0/8, src: 127.0.0.1/0,  ifidx: 1, pri: 30, proto: 2
+2025-02-26 01:59:26.714  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7149] I: _lws_routing_entry_dump:  dst: 192.168.0.0/24, src: 192.168.0.44/0,  ifidx: 7, pri: 425, proto: 2
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7150] I: _lws_routing_entry_dump:  dst: 192.168.100.0/24, src: 192.168.100.1/0,  ifidx: 3, pri: -1, proto: 2
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7150] I: _lws_routing_entry_dump:  dst: 127.0.0.0/8, src: 127.0.0.1/0,  ifidx: 1, pri: -1, proto: 2
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7150] I: _lws_routing_entry_dump:  dst: 127.0.0.1/32, src: 127.0.0.1/0,  ifidx: 1, pri: -1, proto: 2
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7151] I: _lws_routing_entry_dump:  dst: 192.168.0.44/32, src: 192.168.0.44/0,  ifidx: 7, pri: -1, proto: 2
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7151] I: _lws_routing_entry_dump:  dst: 192.168.100.1/32, src: 192.168.100.1/0,  ifidx: 3, pri: -1, proto: 2
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7151] I: _lws_routing_entry_dump:  dst: ::1/128,  ifidx: 1, pri: 30, proto: 2
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7152] I: _lws_routing_entry_dump:  dst: ::1/128,  ifidx: 1, pri: 256, proto: 2
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7152] I: _lws_routing_entry_dump:  dst: fd3d:98da:b4e6::/64,  ifidx: -1, pri: 430, proto: 9
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7152] I: _lws_routing_entry_dump:  dst: fe80::/64,  ifidx: 8, pri: 256, proto: 2
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7152] I: _lws_routing_entry_dump:  dst: fe80::/64,  ifidx: 9, pri: 256, proto: 2
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7153] I: _lws_routing_entry_dump:  dst: fe80::/64,  ifidx: 10, pri: 256, proto: 2
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7153] I: _lws_routing_entry_dump:  dst: ::1/128, src: ::1/0,  ifidx: 1, pri: 0, proto: 2
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7153] I: _lws_routing_entry_dump:  dst: fd8f:a4ad:b5b8:e348:72a:69a0:c3ec:40ec/128, src: fd8f:a4ad:b5b8:e348:72a:69a0:c3ec:40ec/0,  ifidx: 7, pri: 0, proto: 2
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7153] I: _lws_routing_entry_dump:  dst: fe80::192e:dfdd:dcc9:4f01/128, src: fe80::192e:dfdd:dcc9:4f01/0,  ifidx: 7, pri: 0, proto: 2
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7153] I: _lws_routing_entry_dump:  dst: fe80::fc54:ff:fe00:2d5e/128, src: fe80::fc54:ff:fe00:2d5e/0,  ifidx: 8, pri: 0, proto: 2
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7154] I: _lws_routing_entry_dump:  dst: fe80::fc54:ff:fe47:742b/128, src: fe80::fc54:ff:fe47:742b/0,  ifidx: 10, pri: 0, proto: 2
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7154] I: _lws_routing_entry_dump:  dst: fe80::fc54:ff:fea0:2c89/128, src: fe80::fc54:ff:fea0:2c89/0,  ifidx: 9, pri: 0, proto: 2
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7154] I: _lws_routing_entry_dump:  dst: ::/64,  ifidx: 7, pri: -1, proto: 0
+2025-02-26 01:59:26.715  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7155] D: _realloc: size 63: lws_smd_msg_alloc
+2025-02-26 01:59:26.715  [ WARN      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7155] D: lws_cancel_service: 
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7156] I: _lws_routing_table_dump: 
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7156] I: _lws_routing_entry_dump:  gw: 192.168.0.1,  ifidx: 7, pri: 425, proto: 4
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7156] I: _lws_routing_entry_dump:  dst: 127.0.0.0/8, src: 127.0.0.1/0,  ifidx: 1, pri: 30, proto: 2
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7157] I: _lws_routing_entry_dump:  dst: 192.168.0.0/24, src: 192.168.0.44/0,  ifidx: 7, pri: 425, proto: 2
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7157] I: _lws_routing_entry_dump:  dst: 192.168.100.0/24, src: 192.168.100.1/0,  ifidx: 3, pri: -1, proto: 2
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7157] I: _lws_routing_entry_dump:  dst: 127.0.0.0/8, src: 127.0.0.1/0,  ifidx: 1, pri: -1, proto: 2
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7157] I: _lws_routing_entry_dump:  dst: 127.0.0.1/32, src: 127.0.0.1/0,  ifidx: 1, pri: -1, proto: 2
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7157] I: _lws_routing_entry_dump:  dst: 192.168.0.44/32, src: 192.168.0.44/0,  ifidx: 7, pri: -1, proto: 2
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7158] I: _lws_routing_entry_dump:  dst: 192.168.100.1/32, src: 192.168.100.1/0,  ifidx: 3, pri: -1, proto: 2
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7158] I: _lws_routing_entry_dump:  dst: ::1/128,  ifidx: 1, pri: 30, proto: 2
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7158] I: _lws_routing_entry_dump:  dst: ::1/128,  ifidx: 1, pri: 256, proto: 2
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7158] I: _lws_routing_entry_dump:  dst: fd3d:98da:b4e6::/64,  ifidx: -1, pri: 430, proto: 9
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7159] I: _lws_routing_entry_dump:  dst: fe80::/64,  ifidx: 8, pri: 256, proto: 2
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7159] I: _lws_routing_entry_dump:  dst: fe80::/64,  ifidx: 9, pri: 256, proto: 2
+2025-02-26 01:59:26.715  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7159] I: _lws_routing_entry_dump:  dst: fe80::/64,  ifidx: 10, pri: 256, proto: 2
+2025-02-26 01:59:26.716  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7160] I: _lws_routing_entry_dump:  dst: ::1/128, src: ::1/0,  ifidx: 1, pri: 0, proto: 2
+2025-02-26 01:59:26.716  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7160] I: _lws_routing_entry_dump:  dst: fd8f:a4ad:b5b8:e348:72a:69a0:c3ec:40ec/128, src: fd8f:a4ad:b5b8:e348:72a:69a0:c3ec:40ec/0,  ifidx: 7, pri: 0, proto: 2
+2025-02-26 01:59:26.716  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7160] I: _lws_routing_entry_dump:  dst: fe80::192e:dfdd:dcc9:4f01/128, src: fe80::192e:dfdd:dcc9:4f01/0,  ifidx: 7, pri: 0, proto: 2
+2025-02-26 01:59:26.716  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7160] I: _lws_routing_entry_dump:  dst: fe80::fc54:ff:fe00:2d5e/128, src: fe80::fc54:ff:fe00:2d5e/0,  ifidx: 8, pri: 0, proto: 2
+2025-02-26 01:59:26.716  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7161] I: _lws_routing_entry_dump:  dst: fe80::fc54:ff:fe47:742b/128, src: fe80::fc54:ff:fe47:742b/0,  ifidx: 10, pri: 0, proto: 2
+2025-02-26 01:59:26.716  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7161] I: _lws_routing_entry_dump:  dst: fe80::fc54:ff:fea0:2c89/128, src: fe80::fc54:ff:fea0:2c89/0,  ifidx: 9, pri: 0, proto: 2
+2025-02-26 01:59:26.716  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:7162] I: _lws_routing_entry_dump:  dst: ::/64,  ifidx: 7, pri: -1, proto: 0
+2025-02-26 01:59:26.816  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:8163] I: _lws_smd_msg_deliver_peer: deliver cl 0x4, len 13, refc 1, to peer 0x1adb750
+2025-02-26 01:59:26.816  [ INFO      ]  [ WebSocket          ]  [2025/02/26 01:59:26:8164] I: _lws_smd_msg_destroy: destroy msg 0x1b3dff0

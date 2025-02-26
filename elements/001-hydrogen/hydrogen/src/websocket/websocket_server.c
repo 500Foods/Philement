@@ -364,6 +364,8 @@ static void *websocket_server_run(void *arg)
         // During shutdown, wait for connections to close with timeout
         if (!server_running || ws_context->shutdown) {
             pthread_mutex_lock(&ws_context->mutex);
+            
+            // If no active connections or timeout reached
             if (ws_context->active_connections == 0 || shutdown_wait >= max_shutdown_wait) {
                 // Force close any remaining connections
                 if (ws_context->active_connections > 0) {
@@ -375,13 +377,37 @@ static void *websocket_server_run(void *arg)
                 pthread_mutex_unlock(&ws_context->mutex);
                 break;
             }
-            pthread_mutex_unlock(&ws_context->mutex);
             
+            // Wait on condition with timeout instead of sleep polling
+            struct timespec ts;
+            clock_gettime(CLOCK_REALTIME, &ts);
+            ts.tv_nsec += 50000000; // 50ms in nanoseconds
+            if (ts.tv_nsec >= 1000000000) {
+                ts.tv_sec += 1;
+                ts.tv_nsec -= 1000000000;
+            }
+            
+            // Log first wait for debugging
+            if (shutdown_wait == 0) {
+                log_this("WebSocket", "Waiting for %d connections to close", 
+                        LOG_LEVEL_INFO, true, true, true, ws_context->active_connections);
+            }
+            
+            // Wait for condition or timeout
+            int wait_result = pthread_cond_timedwait(&ws_context->cond, &ws_context->mutex, &ts);
+            
+            // Increment counter and log periodic updates
             shutdown_wait++;
+            if (shutdown_wait % 10 == 0) {
+                log_this("WebSocket", "Still waiting for %d connections to close (wait: %d/%d)", 
+                        LOG_LEVEL_INFO, true, true, true, 
+                        ws_context->active_connections, shutdown_wait, max_shutdown_wait);
+            }
+            
+            pthread_mutex_unlock(&ws_context->mutex);
             
             // Add cancellation point during shutdown wait
             pthread_testcancel();
-            usleep(50000);  // 50ms sleep
             continue;
         }
 
@@ -425,34 +451,57 @@ void stop_websocket_server()
         log_this("WebSocket", "Setting shutdown flag and cancelling service", LOG_LEVEL_INFO);
         ws_context->shutdown = 1;
         
-        // Cancel service to wake up server thread
+        // Force close all connections immediately
         pthread_mutex_lock(&ws_context->mutex);
+        if (ws_context->active_connections > 0) {
+            log_this("WebSocket", "Forcing close of %d connections", LOG_LEVEL_WARN,
+                    true, true, true, ws_context->active_connections);
+            ws_context->active_connections = 0;  // Force reset connection counter
+        }
+        
+        // Cancel service multiple times to ensure all threads wake up
         if (ws_context->lws_context) {
+            log_this("WebSocket", "Canceling service multiple times to force wakeup", LOG_LEVEL_INFO);
+            lws_cancel_service(ws_context->lws_context);
+            usleep(10000);  // 10ms sleep
             lws_cancel_service(ws_context->lws_context);
         }
+        
+        // Signal all waiting threads
+        pthread_cond_broadcast(&ws_context->cond);
         pthread_mutex_unlock(&ws_context->mutex);
         
-        // Wait for server thread with progressive timeouts
+        // Wait for server thread with increased timeout
         struct timespec ts;
         clock_gettime(CLOCK_REALTIME, &ts);
-        ts.tv_sec += 5;  // Increased timeout to 5 seconds
+        ts.tv_sec += 10;  // Increased timeout to 10 seconds
         
-        log_this("WebSocket", "Waiting for server thread to exit (timeout: 5s)", LOG_LEVEL_INFO);
+        log_this("WebSocket", "Waiting for server thread to exit (timeout: 10s)", LOG_LEVEL_INFO);
         int join_result = pthread_timedjoin_np(ws_context->server_thread, NULL, &ts);
         
         if (join_result == ETIMEDOUT) {
             log_this("WebSocket", "Primary thread join timed out, trying final cancellation", LOG_LEVEL_WARN);
             
-            // Signal cancellation and wait a bit longer
+            // Signal cancellation more aggressively
             pthread_cancel(ws_context->server_thread);
+            pthread_mutex_lock(&ws_context->mutex);
+            pthread_cond_broadcast(&ws_context->cond);  // One more broadcast to wake any waiting threads
+            pthread_mutex_unlock(&ws_context->mutex);
             
-            // Wait again with a shorter timeout
+            // Wait again with a longer timeout
             clock_gettime(CLOCK_REALTIME, &ts);
-            ts.tv_sec += 2;  // 2 more seconds
+            ts.tv_sec += 5;  // 5 more seconds (total 15s)
             
             join_result = pthread_timedjoin_np(ws_context->server_thread, NULL, &ts);
             if (join_result == ETIMEDOUT) {
                 log_this("WebSocket", "Final thread join failed, thread may be leaking", LOG_LEVEL_ERROR);
+                
+                // Force cleanup anyway as a last resort
+                extern ServiceThreads websocket_threads;
+                pthread_t server_thread = ws_context->server_thread;
+                remove_service_thread(&websocket_threads, server_thread);
+                
+                log_this("WebSocket", "Forced removal of server thread from tracking", LOG_LEVEL_ERROR);
             } else {
                 log_this("WebSocket", "Thread terminated after cancellation", LOG_LEVEL_INFO);
             }
@@ -467,6 +516,47 @@ void stop_websocket_server()
     log_this("WebSocket", "Server stopped", LOG_LEVEL_INFO);
 }
 
+// Cleanup synchronization data structure
+struct CleanupData {
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+    bool complete;
+    bool cancelled;
+    WebSocketServerContext* context;
+};
+
+// Context destruction wrapper function (file scope)
+static void* context_destroy_thread(void *arg) {
+    struct CleanupData *data = (struct CleanupData*)arg;
+    
+    // Enable cancellation
+    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+    pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
+    
+    // Check if cleanup has been cancelled before starting
+    pthread_mutex_lock(&data->mutex);
+    if (data->cancelled) {
+        pthread_mutex_unlock(&data->mutex);
+        return NULL;
+    }
+    pthread_mutex_unlock(&data->mutex);
+    
+    // Log start of actual destruction
+    log_this("WebSocket", "Beginning actual context destruction", LOG_LEVEL_INFO);
+    
+    // Do the actual destruction
+    ws_context_destroy(data->context);
+    
+    // Update completion status
+    pthread_mutex_lock(&data->mutex);
+    data->complete = true;
+    pthread_cond_signal(&data->cond);
+    pthread_mutex_unlock(&data->mutex);
+    
+    log_this("WebSocket", "Context destruction completed successfully", LOG_LEVEL_INFO);
+    return NULL;
+}
+
 // Clean up server resources
 void cleanup_websocket_server()
 {
@@ -476,14 +566,160 @@ void cleanup_websocket_server()
     
     log_this("WebSocket", "Starting WebSocket server cleanup", LOG_LEVEL_INFO);
     
-    // Ensure we're not in callbacks - longer delay
-    usleep(250000);  // 250ms delay
+    // Shorter delay - just enough to clear immediate callbacks
+    log_this("WebSocket", "Brief pause for callbacks (100ms)", LOG_LEVEL_INFO);
+    usleep(100000);  // 100ms delay
     
-    // Final cleanup of the context
+    // Force close all remaining connections
+    pthread_mutex_lock(&ws_context->mutex);
+    if (ws_context->active_connections > 0) {
+        log_this("WebSocket", "Forcing close of %d connections during cleanup", 
+                LOG_LEVEL_WARN, true, true, true, ws_context->active_connections);
+        ws_context->active_connections = 0;
+    }
+    
+    // Broadcast condition so any waiting threads will wake up
+    pthread_cond_broadcast(&ws_context->cond);
+    pthread_mutex_unlock(&ws_context->mutex);
+    
+    // Important: Save context locally BEFORE nullifying global pointer
     WebSocketServerContext* ctx_to_destroy = ws_context;
-    ws_context = NULL;  // Clear global pointer before destruction
     
-    ws_context_destroy(ctx_to_destroy);
+    // Extra cancellation calls on context before destruction
+    if (ctx_to_destroy->lws_context) {
+        log_this("WebSocket", "Forcing multiple service cancellations", LOG_LEVEL_INFO);
+        lws_cancel_service(ctx_to_destroy->lws_context);
+        usleep(10000);  // 10ms delay
+        lws_cancel_service(ctx_to_destroy->lws_context);
+        usleep(10000);  // 10ms delay
+        lws_cancel_service(ctx_to_destroy->lws_context);  // Triple cancellation for reliability
+    }
+    
+    // Aggressively terminate any lingering threads BEFORE nullifying global pointer
+    extern ServiceThreads websocket_threads;
+    
+    // First log what threads are still active
+    log_this("WebSocket", "Checking for remaining threads before cleanup", LOG_LEVEL_INFO);
+    update_service_thread_metrics(&websocket_threads);
+    
+    if (websocket_threads.thread_count > 0) {
+        log_this("WebSocket", "Found %d active websocket threads, forcing termination", 
+                LOG_LEVEL_WARN, true, true, true, websocket_threads.thread_count);
+        
+        // Force cancel all tracked threads
+        for (int i = 0; i < websocket_threads.thread_count; i++) {
+            pthread_t thread = websocket_threads.thread_ids[i];
+            if (thread != 0) {
+                log_this("WebSocket", "Cancelling thread %lu", LOG_LEVEL_WARN, 
+                        true, true, true, (unsigned long)thread);
+                pthread_cancel(thread);
+            }
+        }
+        
+        // Short wait for cancellation to take effect
+        usleep(100000);  // 100ms delay
+        
+        // Clear thread tracking completely
+        websocket_threads.thread_count = 0;
+        log_this("WebSocket", "Forced all thread tracking to clear", LOG_LEVEL_WARN);
+    }
+    
+    // NOW nullify the global pointer after thread cleanup
+    ws_context = NULL;
+    
+    // Create and initialize cleanup data structure
+    struct CleanupData cleanup_data;
+    pthread_mutex_init(&cleanup_data.mutex, NULL);
+    pthread_cond_init(&cleanup_data.cond, NULL);
+    cleanup_data.complete = false;
+    cleanup_data.cancelled = false;
+    cleanup_data.context = ctx_to_destroy;
+    
+    // Create the cleanup thread
+    pthread_t cleanup_thread;
+    log_this("WebSocket", "Destroying WebSocket context (with 5s timeout)", LOG_LEVEL_INFO);
+    
+    if (pthread_create(&cleanup_thread, NULL, context_destroy_thread, &cleanup_data) != 0) {
+        // Thread creation failed, clean up and fall back to direct destruction
+        log_this("WebSocket", "Failed to create cleanup thread, destroying directly", LOG_LEVEL_WARN);
+        pthread_mutex_destroy(&cleanup_data.mutex);
+        pthread_cond_destroy(&cleanup_data.cond);
+        
+        // Direct destruction as fallback
+        ws_context_destroy(ctx_to_destroy);
+        return;
+    }
+    
+    // Wait for completion with timeout using condition variable
+    struct timespec timeout;
+    clock_gettime(CLOCK_REALTIME, &timeout);
+    timeout.tv_sec += 5; // 5 second timeout
+    
+    pthread_mutex_lock(&cleanup_data.mutex);
+    int timed_out = 0;
+    
+    // Wait loop with timeout protection
+    while (!cleanup_data.complete && !timed_out) {
+        int wait_result = pthread_cond_timedwait(&cleanup_data.cond, 
+                                                &cleanup_data.mutex, &timeout);
+        if (wait_result == ETIMEDOUT) {
+            timed_out = 1;
+        }
+    }
+    
+    if (timed_out) {
+        // Timeout occurred
+        cleanup_data.cancelled = true;
+        pthread_mutex_unlock(&cleanup_data.mutex);
+        
+        log_this("WebSocket", "Context destruction timed out after 5s, forcing cancellation", 
+                LOG_LEVEL_ERROR, true, true, true);
+        
+        // Cancel the thread and wait briefly for it to clean up
+        pthread_cancel(cleanup_thread);
+        
+        // Try joining with a shorter timeout to ensure cleanliness
+        struct timespec short_timeout;
+        clock_gettime(CLOCK_REALTIME, &short_timeout);
+        short_timeout.tv_sec += 1; // 1 second timeout
+        
+        if (pthread_timedjoin_np(cleanup_thread, NULL, &short_timeout) != 0) {
+            log_this("WebSocket", "CRITICAL: Could not join cleanup thread even after cancellation", 
+                    LOG_LEVEL_ERROR, true, true, true);
+            
+            // Detach the thread as a last resort
+            pthread_detach(cleanup_thread);
+        }
+        
+        log_this("WebSocket", "Context destruction may be incomplete, but continuing", LOG_LEVEL_ERROR);
+    } else {
+        pthread_mutex_unlock(&cleanup_data.mutex);
+        log_this("WebSocket", "Context destroyed successfully within timeout", LOG_LEVEL_INFO);
+        
+        // Join the thread to clean up resources
+        pthread_join(cleanup_thread, NULL);
+    }
+    
+    // Clean up synchronization resources
+    pthread_mutex_destroy(&cleanup_data.mutex);
+    pthread_cond_destroy(&cleanup_data.cond);
+    
+    // Final check for any remaining threads and force termination
+    update_service_thread_metrics(&websocket_threads);
+    if (websocket_threads.thread_count > 0) {
+        log_this("WebSocket", "CRITICAL: %d threads still remain after full cleanup, forcing exit", 
+                LOG_LEVEL_ERROR, true, true, true, websocket_threads.thread_count);
+        
+        // Force cancel any remaining threads one last time
+        for (int i = 0; i < websocket_threads.thread_count; i++) {
+            if (websocket_threads.thread_ids[i] != 0) {
+                pthread_cancel(websocket_threads.thread_ids[i]);
+            }
+        }
+        
+        // Finally just force clear the count
+        websocket_threads.thread_count = 0;
+    }
     
     log_this("WebSocket", "WebSocket server cleanup completed", LOG_LEVEL_INFO);
 }
