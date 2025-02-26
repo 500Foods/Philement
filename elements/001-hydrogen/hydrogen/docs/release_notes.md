@@ -22,6 +22,7 @@ EDITING GUIDELINES (not visible when rendered):
 ## 2025-Feb-26
 
 Testing System:
+
 - Testing framework:
   - Configuration-driven test system with minimal and maximal configurations
   - Test scripts for startup/shutdown validation
@@ -42,6 +43,7 @@ Testing System:
 ## 2025-Feb-24
 
 WebSocket Server:
+
 - Shutdown implementation:
   - Fixed race conditions between thread termination and context destruction
   - Two-phase pointer handling to prevent use-after-free
@@ -50,6 +52,7 @@ WebSocket Server:
   - Error handling with logging
 
 mDNS Server:
+
 - Shutdown sequence:
   - Socket closure for all network interfaces
   - Thread coordination and exit verification
@@ -58,6 +61,7 @@ mDNS Server:
   - Fixed memory and socket leaks
 
 Documentation:
+
 - Added Shutdown Architecture documentation
 - Created mDNS Server implementation documentation
 - Added WebSocket server shutdown documentation
@@ -66,6 +70,7 @@ Documentation:
 ## 2025-Feb-23
 
 Core System:
+
 - Refactored hydrogen module:
   - Reorganized header includes
   - Removed unused files
@@ -74,22 +79,26 @@ Core System:
 ## 2025-Feb-22
 
 Server Management:
+
 - Server naming consistency:
   - Renamed mDNS references to mDNS Server
   - Updated documentation and configuration
 
 WebSocket Server:
+
 - Refactored initialization
 - Updated configuration handling
 - Removed deprecated example status code
 
 Logging System:
+
 - Added log level constants
 - Standardized logging calls
 
 ## 2025-Feb-21
 
 Queue System:
+
 - Queue system readiness tracking
 - Unified logging function
 - Timing functions for server lifecycle
@@ -98,6 +107,7 @@ Queue System:
 - Standardized percentage formatting
 
 System Information:
+
 - Added metrics to /api/system/info and WebSocket status:
   - Network interface details with IP addresses and traffic
   - Filesystem information with space usage
@@ -108,6 +118,7 @@ System Information:
 ## 2025-Feb-20
 
 WebSocket Server:
+
 - Split implementation into modules:
   - Connection lifecycle
   - Authentication
@@ -124,6 +135,7 @@ WebSocket Server:
 ## 2025-Feb-19
 
 System Status:
+
 - Added server timing to /api/system/info endpoint:
   - `server_started` field with ISO-formatted UTC start time
   - `server_runtime` field with uptime in seconds
@@ -131,6 +143,7 @@ System Status:
 - Updated API documentation with examples
 
 Documentation:
+
 - Added link to Print Queue Management documentation
 - Moved release notes to dedicated file
 - Updated System Dependencies section
@@ -139,6 +152,7 @@ Documentation:
 ## 2025-Feb-18
 
 Network Infrastructure:
+
 - IPv6 support for web and websocket servers:
   - Added EnableIPv6 configuration flags
   - Implemented dual-stack support in web server
@@ -148,6 +162,7 @@ Network Infrastructure:
 ## 2025-Feb-17
 
 Documentation and System Metrics:
+
 - Added configuration and service documentation
 - Updated thread and process memory reporting
 - Added Bash script example
@@ -156,6 +171,7 @@ Documentation and System Metrics:
 ## 2025-Feb-16
 
 Code Quality and Configuration:
+
 - Improved code comments
 - Added IPv6Enable flag to JSON configuration for mDNS
 - Standardized logging output format
@@ -163,6 +179,7 @@ Code Quality and Configuration:
 ## 2025-Feb-15
 
 Documentation and Configuration:
+
 - Added project documentation and status API endpoint example
 - Synchronized API endpoint with WebSockets output
 - Added server independence configuration:
@@ -174,6 +191,7 @@ Documentation and Configuration:
 ## 2025-Feb-14
 
 API Development:
+
 - Basic REST API implementation:
   - Added SystemService/Info Endpoint
   - Added logging API calls
@@ -181,12 +199,14 @@ API Development:
 ## 2025-Feb-13
 
 Code Maintenance:
+
 - Updated code and comments in hydrogen.c
 - Updated code and comments in Makefile
 
 ## 2025-Feb-12
 
 Code Maintenance:
+
 - Reduced logging detail, particularly for web sockets (lws)
 - Improved shutdown process for web sockets
 - Fixed file size and timestamp identification errors
@@ -195,6 +215,7 @@ Code Maintenance:
 ## 2025-Feb-08
 
 Development Environment:
+
 - Imported project into Visual Studio Code
 
 <details>
@@ -203,6 +224,7 @@ Development Environment:
 ## 2024-Jul-18
 
 WebSocket Server:
+
 - Uses Authorization: Key abc in header
 - Uses Protocol: hydrogen-protocol
 - Implemented with libwebsockets
@@ -210,6 +232,7 @@ WebSocket Server:
 ## 2024-Jul-15
 
 System Improvements:
+
 - mDNS code cleanup and updates:
   - Fixed log_this reliability issues
   - Fixed app_config memory issues
@@ -219,12 +242,14 @@ System Improvements:
 ## 2024-Jul-11
 
 Network Infrastructure:
+
 - mDNS and WebSockets groundwork:
   - Integrated code from nitrogen/nitro prototype
 
 ## 2024-Jul-08
 
 Print Service:
+
 - Implemented HTTP service for OrcaSlicer print requests:
   - Print job handling with /tmp storage using GUID filenames
   - JSON generation with filename mapping and beryllium-extracted data

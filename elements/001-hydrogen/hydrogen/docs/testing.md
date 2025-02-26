@@ -69,6 +69,7 @@ The simplest way to execute tests is using the test runner script:
 ```
 
 The test runner automates the process of:
+
 - Making all test scripts executable
 - Running tests with specified configurations
 - Collecting and analyzing results
@@ -97,12 +98,14 @@ When Hydrogen stalls during shutdown, the thread analyzer can help identify the 
 ```
 
 This tool:
+
 - Examines all threads in a running process
 - Identifies threads in problematic states (especially uninterruptible sleep)
 - Captures kernel stacks, wait channels info, and syscall information
 - Generates detailed reports in the `./diagnostics` directory
 
 Thread analysis is particularly useful for identifying:
+
 - Deadlocks where threads are waiting on each other
 - I/O operations that aren't completing
 - Resource contention issues
@@ -117,6 +120,7 @@ To track system resource usage over time:
 ```
 
 This tool captures:
+
 - Memory usage trends
 - CPU utilization
 - Thread count over time
@@ -124,6 +128,7 @@ This tool captures:
 - Periodic detailed snapshots
 
 Resource monitoring helps identify:
+
 - Memory leaks
 - Excessive resource consumption
 - Unusual resource patterns during shutdown
