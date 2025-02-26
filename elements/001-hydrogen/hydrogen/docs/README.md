@@ -32,10 +32,17 @@ Welcome to the Hydrogen Project documentation. This guide will help you understa
 
 ## Development
 
+- [System Architecture](./reference/system_architecture.md) - High-level architecture of the entire system
 - [Coding Guidelines](./coding_guidelines.md) - Development standards
 - [Testing System](./testing.md) - Test configuration and execution
 - [Docker Deployment](./deployment/docker.md) - Container-based deployment
 - [AI in Development](./development/ai_development.md) - How AI is used in the project's development
+
+### Component Architecture
+
+- [Print Queue Architecture](./reference/print_queue_architecture.md) - Detailed internal design of the print queue system
+- [WebSocket Server Architecture](./reference/websocket_architecture.md) - Implementation details of the WebSocket communication layer
+- [Network Interface Architecture](./reference/network_architecture.md) - Network abstraction layer design and implementation
 
 ## Contributing
 

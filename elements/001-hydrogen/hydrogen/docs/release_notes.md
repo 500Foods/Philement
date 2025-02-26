@@ -58,6 +58,13 @@ Shutdown Architecture:
     - Created AI in Development (docs/development/ai_development.md) with development process information
     - Added section on AI-oriented commenting practices with examples
     - Updated main README and docs README with links to AI documentation
+  - Added architecture documentation:
+    - Created System Architecture (docs/reference/system_architecture.md) with high-level system overview
+    - Created Print Queue Architecture (docs/reference/print_queue_architecture.md) with component details
+    - Created WebSocket Server Architecture (docs/reference/websocket_architecture.md) with implementation specifics
+    - Created Network Interface Architecture (docs/reference/network_architecture.md) with abstraction patterns
+    - Updated main documentation README with Component Architecture section
+    - Reorganized documentation for improved discoverability
 
 ## 2025-Feb-25
 
