@@ -64,28 +64,30 @@ There are countless tools, frameworks, coding styles, conventions, languages, an
 [![Count Lines of Code](https://github.com/500Foods/Template/actions/workflows/main.yml/badge.svg)](https://github.com/500Foods/Template/actions/workflows/main.yml)
 <!--CLOC-START -->
 ```
-Last updated at 2025-02-25 07:01:07 UTC
+Last updated at 2025-02-26 01:01:44 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 C                               51           1949           2216           9559
-Markdown                        57           1299              2           5840
+Markdown                        59           1397             20           6106
+Text                            23              2              0           1377
 C/C++ Header                    40            327           1015            990
-JSON                             4              0              0            274
+JSON                             6              0              0            637
+Bourne Shell                     7            145            169            467
 Python                           1             36              9            195
 HTML                             4             40             23            157
 make                             6             72             77            146
-Bourne Shell                     3             28             56             79
-Text                             1              0              0             75
 Pascal                           4             34             31             72
 Delphi Form                      2              1              0             66
 CSS                              2              3              2             38
 YAML                             2              8             13             37
 JavaScript                       1              3              0             25
 -------------------------------------------------------------------------------
-SUM:                           178           3800           3444          17553
+SUM:                           208           4017           3575          19872
 -------------------------------------------------------------------------------
-16 Files were skipped (duplicate, binary, or without source code):
+31 Files were skipped (duplicate, binary, or without source code):
+  log: 8
+  txt: 7
   jpg: 3
   png: 3
   dproj: 2
