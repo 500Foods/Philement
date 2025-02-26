@@ -48,148 +48,123 @@ Complete, detailed documentation is available in the `docs` directory, organized
 <details>
 <summary><b>Project Folder</b></summary>
 
-- `hydrogen.json` Configuration file for the Hydrogen server
-- `Makefile` Build instructions for compiling the Hydrogen program
-- `src/hydrogen.c` Main entry point and core system initialization
+- [hydrogen.json](hydrogen.json) Configuration file for the Hydrogen server
+- [Makefile](Makefile) Build instructions for compiling the Hydrogen program
+- [src/hydrogen.c](src/hydrogen.c) Main entry point and core system initialization
 
 </details>
 <details>
 <summary><b>API Components</b></summary>
 
-Located in `src/api/`:
-
-- `system/system_service.c` System service implementation
-- `system/system_service.h` System service interface
+- [src/api/system/system_service.c](src/api/system/system_service.c) System service implementation
+- [src/api/system/system_service.h](src/api/system/system_service.h) System service interface
 
 </details>
 <details>
 <summary><b>Configuration Management</b></summary>
 
-Located in `src/config/`:
-
-- `configuration.c` Handles loading and managing configuration settings
-- `configuration.h` Defines configuration-related structures and constants
-- `keys.c` Implements cryptographic key generation and management
-- `keys.h` Header file for cryptographic operations
+- [src/config/configuration.c](src/config/configuration.c) Handles loading and managing configuration settings
+- [src/config/configuration.h](src/config/configuration.h) Defines configuration-related structures and constants
+- [src/config/keys.c](src/config/keys.c) Implements cryptographic key generation and management
+- [src/config/keys.h](src/config/keys.h) Header file for cryptographic operations
 
 </details>
 <details>
 <summary><b>Logging System</b></summary>
 
-Located in `src/logging/`:
-
-- `logging.c` Core logging system implementation
-- `logging.h` Logging interface and configuration
-- `log_queue_manager.c` Thread-safe log message queue handler
-- `log_queue_manager.h` Log queue management interface
+- [src/logging/logging.c](src/logging/logging.c) Core logging system implementation
+- [src/logging/logging.h](src/logging/logging.h) Logging interface and configuration
+- [src/logging/log_queue_manager.c](src/logging/log_queue_manager.c) Thread-safe log message queue handler
+- [src/logging/log_queue_manager.h](src/logging/log_queue_manager.h) Log queue management interface
 
 </details>
 <details>
 <summary><b>Network Services</b></summary>
 
-Located in `src/mdns/`:
-
-- `mdns_server.h` Service discovery interface definitions
-- `mdns_linux.c` Linux-specific mDNS implementation
-
-Located in `src/network/`:
-
-- `network.h` Network interface abstractions
-- `network_linux.c` Linux network stack implementation
+- [src/mdns/mdns_server.h](src/mdns/mdns_server.h) Service discovery interface definitions
+- [src/mdns/mdns_linux.c](src/mdns/mdns_linux.c) Linux-specific mDNS implementation
+- [src/network/network.h](src/network/network.h) Network interface abstractions
+- [src/network/network_linux.c](src/network/network_linux.c) Linux network stack implementation
 
 </details>
 <details>
 <summary><b>Print Management</b></summary>
 
-Located in `src/print/`:
-
-- `beryllium.c` Implements G-code analysis functionality
-- `beryllium.h` Header file for G-code analysis declarations
-- `print_queue_manager.c` 3D print job scheduling and management
-- `print_queue_manager.h` Print queue interface
+- [src/print/beryllium.c](src/print/beryllium.c) Implements G-code analysis functionality
+- [src/print/beryllium.h](src/print/beryllium.h) Header file for G-code analysis declarations
+- [src/print/print_queue_manager.c](src/print/print_queue_manager.c) 3D print job scheduling and management
+- [src/print/print_queue_manager.h](src/print/print_queue_manager.h) Print queue interface
 
 </details>
 <details>
 <summary><b>Queue System</b></summary>
 
-Located in `src/queue/`:
-
-- `queue.c` Generic thread-safe queue implementation
-- `queue.h` Queue data structure interface
+- [src/queue/queue.c](src/queue/queue.c) Generic thread-safe queue implementation
+- [src/queue/queue.h](src/queue/queue.h) Queue data structure interface
 
 </details>
 <details>
 <summary><b>State Management</b></summary>
 
-Located in `src/state/`:
-
-- `shutdown.c` Graceful system shutdown coordination
-- `shutdown.h` Shutdown procedure definitions
-- `startup.c` System initialization and service startup
-- `startup.h` Startup sequence definitions
-- `state.c` Global state management implementation
-- `state.h` State tracking interface
+- [src/state/shutdown.c](src/state/shutdown.c) Graceful system shutdown coordination
+- [src/state/shutdown.h](src/state/shutdown.h) Shutdown procedure definitions
+- [src/state/startup.c](src/state/startup.c) System initialization and service startup
+- [src/state/startup.h](src/state/startup.h) Startup sequence definitions
+- [src/state/state.c](src/state/state.c) Global state management implementation
+- [src/state/state.h](src/state/state.h) State tracking interface
 
 </details>
 <details>
 <summary><b>Tests</b></summary>
 
-Located in `tests/`:
-
-- `analyze_stuck_threads.sh` Script for analyzing thread deadlocks
-- `run_tests.sh` Script for executing test suites
-- `test_startup_shutdown.sh` Tests for startup/shutdown procedures
-- `monitor_resources.sh` Script for monitoring system resource usage
-- `README.md` Testing documentation
+- [tests/analyze_stuck_threads.sh](tests/analyze_stuck_threads.sh) Script for analyzing thread deadlocks
+- [tests/run_tests.sh](tests/run_tests.sh) Script for executing test suites
+- [tests/test_startup_shutdown.sh](tests/test_startup_shutdown.sh) Tests for startup/shutdown procedures
+- [tests/monitor_resources.sh](tests/monitor_resources.sh) Script for monitoring system resource usage
+- [tests/README.md](tests/README.md) Testing documentation
 
 </details>
 <details>
 <summary><b>Utility Functions</b></summary>
 
-Located in `src/utils/`:
-
-- `utils.c` Common utility functions
-- `utils.h` Utility function declarations
-- `utils_logging.c` Extended logging utilities
-- `utils_logging.h` Logging utility interfaces
-- `utils_queue.c` Queue manipulation utilities
-- `utils_queue.h` Queue utility interfaces
-- `utils_status.c` Status reporting utilities
-- `utils_status.h` Status utility interfaces
-- `utils_threads.c` Thread management utilities
-- `utils_threads.h` Threading utility interfaces
-- `utils_time.c` Time handling utilities
-- `utils_time.h` Time utility interfaces
+- [src/utils/utils.c](src/utils/utils.c) Common utility functions
+- [src/utils/utils.h](src/utils/utils.h) Utility function declarations
+- [src/utils/utils_logging.c](src/utils/utils_logging.c) Extended logging utilities
+- [src/utils/utils_logging.h](src/utils/utils_logging.h) Logging utility interfaces
+- [src/utils/utils_queue.c](src/utils/utils_queue.c) Queue manipulation utilities
+- [src/utils/utils_queue.h](src/utils/utils_queue.h) Queue utility interfaces
+- [src/utils/utils_status.c](src/utils/utils_status.c) Status reporting utilities
+- [src/utils/utils_status.h](src/utils/utils_status.h) Status utility interfaces
+- [src/utils/utils_threads.c](src/utils/utils_threads.c) Thread management utilities
+- [src/utils/utils_threads.h](src/utils/utils_threads.h) Threading utility interfaces
+- [src/utils/utils_time.c](src/utils/utils_time.c) Time handling utilities
+- [src/utils/utils_time.h](src/utils/utils_time.h) Time utility interfaces
 
 </details>
 <details>
 <summary><b>Web Server</b></summary>
 
-Located in `src/webserver/`:
-
-- `web_server_core.c` Core HTTP server implementation
-- `web_server_core.h` HTTP server interface
-- `web_server_print.h` 3D printing endpoint definitions
-- `web_server_request.c` HTTP request handling
-- `web_server_request.h` Request processing interface
-- `web_server_upload.c` File upload handling
-- `web_server_upload.h` Upload processing interface
+- [src/webserver/web_server_core.c](src/webserver/web_server_core.c) Core HTTP server implementation
+- [src/webserver/web_server_core.h](src/webserver/web_server_core.h) HTTP server interface
+- [src/webserver/web_server_print.h](src/webserver/web_server_print.h) 3D printing endpoint definitions
+- [src/webserver/web_server_request.c](src/webserver/web_server_request.c) HTTP request handling
+- [src/webserver/web_server_request.h](src/webserver/web_server_request.h) Request processing interface
+- [src/webserver/web_server_upload.c](src/webserver/web_server_upload.c) File upload handling
+- [src/webserver/web_server_upload.h](src/webserver/web_server_upload.h) Upload processing interface
 
 </details>
 <details>
 <summary><b>WebSocket Server</b></summary>
 
-Located in `src/websocket/`:
-
-- `websocket_server.c` WebSocket server core implementation
-- `websocket_server.h` WebSocket server public interface
-- `websocket_server_internal.h` Internal WebSocket definitions
-- `websocket_server_auth.c` WebSocket authentication system
-- `websocket_server_connection.c` Connection lifecycle handler
-- `websocket_server_context.c` Server context management
-- `websocket_server_dispatch.c` Message routing system
-- `websocket_server_message.c` Message processing engine
-- `websocket_server_status.c` Status reporting implementation
+- [src/websocket/websocket_server.c](src/websocket/websocket_server.c) WebSocket server core implementation
+- [src/websocket/websocket_server.h](src/websocket/websocket_server.h) WebSocket server public interface
+- [src/websocket/websocket_server_internal.h](src/websocket/websocket_server_internal.h) Internal WebSocket definitions
+- [src/websocket/websocket_server_auth.c](src/websocket/websocket_server_auth.c) WebSocket authentication system
+- [src/websocket/websocket_server_connection.c](src/websocket/websocket_server_connection.c) Connection lifecycle handler
+- [src/websocket/websocket_server_context.c](src/websocket/websocket_server_context.c) Server context management
+- [src/websocket/websocket_server_dispatch.c](src/websocket/websocket_server_dispatch.c) Message routing system
+- [src/websocket/websocket_server_message.c](src/websocket/websocket_server_message.c) Message processing engine
+- [src/websocket/websocket_server_status.c](src/websocket/websocket_server_status.c) Status reporting implementation
 
 </details>
 
