@@ -53,6 +53,11 @@ Shutdown Architecture:
     - Added Tests section with links to testing scripts
     - Converted all file references to clickable links for improved navigation
     - Removed redundant location text for cleaner presentation
+  - Added AI documentation:
+    - Created AI Integration (docs/ai_integration.md) with features and implementation details
+    - Created AI in Development (docs/development/ai_development.md) with development process information
+    - Added section on AI-oriented commenting practices with examples
+    - Updated main README and docs README with links to AI documentation
 
 ## 2025-Feb-25
 
