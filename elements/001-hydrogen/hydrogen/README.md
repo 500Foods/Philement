@@ -46,7 +46,7 @@ Complete, detailed documentation is available in the `docs` directory, organized
 ## Files
 
 <details>
-<summary><h3>Root Directory</h3></summary>
+<summary><b>Project Folder</b></summary>
 
 - `hydrogen.json` Configuration file for the Hydrogen server
 - `Makefile` Build instructions for compiling the Hydrogen program
@@ -54,7 +54,7 @@ Complete, detailed documentation is available in the `docs` directory, organized
 
 </details>
 <details>
-<summary><h3>API Components</h3></summary>
+<summary><b>API Components</b></summary>
 
 Located in `src/api/`:
 
@@ -63,7 +63,7 @@ Located in `src/api/`:
 
 </details>
 <details>
-<summary><h3>Configuration Management</h3></summary>
+<summary><b>Configuration Management</b></summary>
 
 Located in `src/config/`:
 
@@ -74,7 +74,7 @@ Located in `src/config/`:
 
 </details>
 <details>
-<summary><h3>Logging System</h3></summary>
+<summary><b>Logging System</b></summary>
 
 Located in `src/logging/`:
 
@@ -85,7 +85,7 @@ Located in `src/logging/`:
 
 </details>
 <details>
-<summary><h3>Network Services</h3></summary>
+<summary><b>Network Services</b></summary>
 
 Located in `src/mdns/`:
 
@@ -99,7 +99,7 @@ Located in `src/network/`:
 
 </details>
 <details>
-<summary><h3>Print Management</h3></summary>
+<summary><b>Print Management</b></summary>
 
 Located in `src/print/`:
 
@@ -110,7 +110,7 @@ Located in `src/print/`:
 
 </details>
 <details>
-<summary><h3>Queue System</h3></summary>
+<summary><b>Queue System</b></summary>
 
 Located in `src/queue/`:
 
@@ -119,7 +119,7 @@ Located in `src/queue/`:
 
 </details>
 <details>
-<summary><h3>State Management</h3></summary>
+<summary><b>State Management</b></summary>
 
 Located in `src/state/`:
 
@@ -132,7 +132,19 @@ Located in `src/state/`:
 
 </details>
 <details>
-<summary><h3>Utility Functions</h3></summary>
+<summary><b>Tests</b></summary>
+
+Located in `tests/`:
+
+- `analyze_stuck_threads.sh` Script for analyzing thread deadlocks
+- `run_tests.sh` Script for executing test suites
+- `test_startup_shutdown.sh` Tests for startup/shutdown procedures
+- `monitor_resources.sh` Script for monitoring system resource usage
+- `README.md` Testing documentation
+
+</details>
+<details>
+<summary><b>Utility Functions</b></summary>
 
 Located in `src/utils/`:
 
@@ -151,7 +163,7 @@ Located in `src/utils/`:
 
 </details>
 <details>
-<summary><h3>Web Server</h3></summary>
+<summary><b>Web Server</b></summary>
 
 Located in `src/webserver/`:
 
@@ -165,7 +177,7 @@ Located in `src/webserver/`:
 
 </details>
 <details>
-<summary><h3>WebSocket Server</h3></summary>
+<summary><b>WebSocket Server</b></summary>
 
 Located in `src/websocket/`:
 
