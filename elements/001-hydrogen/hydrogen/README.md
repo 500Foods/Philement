@@ -52,7 +52,6 @@ Complete, detailed documentation is available in the `docs` directory, organized
 - `Makefile` Build instructions for compiling the Hydrogen program
 - `src/hydrogen.c` Main entry point and core system initialization
 </details>
-
 <details>
 <summary><h3>API Components</h3></summary>
 
@@ -61,7 +60,6 @@ Located in `src/api/`:
 - `system/system_service.c` System service implementation
 - `system/system_service.h` System service interface
 </details>
-
 <details>
 <summary><h3>Configuration Management</h3></summary>
 
@@ -72,7 +70,6 @@ Located in `src/config/`:
 - `keys.c` Implements cryptographic key generation and management
 - `keys.h` Header file for cryptographic operations
 </details>
-
 <details>
 <summary><h3>Logging System</h3></summary>
 
@@ -83,7 +80,6 @@ Located in `src/logging/`:
 - `log_queue_manager.c` Thread-safe log message queue handler
 - `log_queue_manager.h` Log queue management interface
 </details>
-
 <details>
 <summary><h3>Network Services</h3></summary>
 
@@ -97,7 +93,6 @@ Located in `src/network/`:
 - `network.h` Network interface abstractions
 - `network_linux.c` Linux network stack implementation
 </details>
-
 <details>
 <summary><h3>Print Management</h3></summary>
 
@@ -108,7 +103,6 @@ Located in `src/print/`:
 - `print_queue_manager.c` 3D print job scheduling and management
 - `print_queue_manager.h` Print queue interface
 </details>
-
 <details>
 <summary><h3>Queue System</h3></summary>
 
@@ -117,7 +111,6 @@ Located in `src/queue/`:
 - `queue.c` Generic thread-safe queue implementation
 - `queue.h` Queue data structure interface
 </details>
-
 <details>
 <summary><h3>State Management</h3></summary>
 
@@ -130,7 +123,6 @@ Located in `src/state/`:
 - `state.c` Global state management implementation
 - `state.h` State tracking interface
 </details>
-
 <details>
 <summary><h3>Utility Functions</h3></summary>
 
@@ -149,7 +141,6 @@ Located in `src/utils/`:
 - `utils_time.c` Time handling utilities
 - `utils_time.h` Time utility interfaces
 </details>
-
 <details>
 <summary><h3>Web Server</h3></summary>
 
@@ -163,7 +154,6 @@ Located in `src/webserver/`:
 - `web_server_upload.c` File upload handling
 - `web_server_upload.h` Upload processing interface
 </details>
-
 <details>
 <summary><h3>WebSocket Server</h3></summary>
 
