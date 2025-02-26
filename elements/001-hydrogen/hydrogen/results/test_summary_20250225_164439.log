@@ -1,0 +1,20 @@
+============================================
+Hydrogen Startup/Shutdown Test Runner
+Started at: Tue Feb 25 16:44:39 PST 2025
+============================================
+
+Running test with minimal configuration only
+Running test with configuration: hydrogen_test_min.json
+❌ Test with hydrogen_test_min.json failed with exit code 127
+
+============================================
+Test Summary
+Completed at: Tue Feb 25 16:44:39 PST 2025
+Summary log: ./results/test_summary_20250225_164439.log
+OVERALL RESULT: ❌ ONE OR MORE TESTS FAILED
+============================================
+
+For more detailed analysis:
+  • Thread analysis:    ./analyze_stuck_threads.sh <pid>
+  • Resource monitoring: ./monitor_resources.sh <pid> [seconds]
+

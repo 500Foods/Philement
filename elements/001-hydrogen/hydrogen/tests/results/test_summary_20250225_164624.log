@@ -1,0 +1,23 @@
+============================================
+Hydrogen Startup/Shutdown Test Runner
+Started at: Tue Feb 25 16:46:24 PST 2025
+============================================
+
+Running test with maximal configuration only
+Running test with configuration: hydrogen_test_max.json
+✅ Test with hydrogen_test_max.json completed successfully
+   Test log: /home/asimard/Projects/Philement/Philement/elements/001-hydrogen/hydrogen/tests/results/test_20250225_164624_hydrogen_test_max.log
+   Shutdown completed in: 10 seconds
+   ⚠️ Shutdown timed out
+
+============================================
+Test Summary
+Completed at: Tue Feb 25 16:46:45 PST 2025
+Summary log: /home/asimard/Projects/Philement/Philement/elements/001-hydrogen/hydrogen/tests/results/test_summary_20250225_164624.log
+OVERALL RESULT: ✅ ALL TESTS PASSED
+============================================
+
+For more detailed analysis:
+  • Thread analysis:    /home/asimard/Projects/Philement/Philement/elements/001-hydrogen/hydrogen/tests/analyze_stuck_threads.sh <pid>
+  • Resource monitoring: /home/asimard/Projects/Philement/Philement/elements/001-hydrogen/hydrogen/tests/monitor_resources.sh <pid> [seconds]
+
