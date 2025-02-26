@@ -23,6 +23,7 @@ Welcome to the Hydrogen Project documentation. This guide will help you understa
 - [Data Structures](./reference/data_structures.md) - Core data types
 - [Service Management](./service.md) - Service configuration
 - [Shutdown Architecture](./shutdown_architecture.md) - Safe system termination
+- [AI Integration](./ai_integration.md) - AI capabilities and implementations
 
 ### Use Cases
 
@@ -34,6 +35,7 @@ Welcome to the Hydrogen Project documentation. This guide will help you understa
 - [Coding Guidelines](./coding_guidelines.md) - Development standards
 - [Testing System](./testing.md) - Test configuration and execution
 - [Docker Deployment](./deployment/docker.md) - Container-based deployment
+- [AI in Development](./development/ai_development.md) - How AI is used in the project's development
 
 ## Contributing
 

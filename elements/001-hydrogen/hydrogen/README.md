@@ -42,6 +42,7 @@ Complete, detailed documentation is available in the `docs` directory, organized
 - [**Main Documentation**](docs/README.md) - Start here for a comprehensive overview
 - [**Quick Start Guide**](docs/guides/quick-start.md) - Get up and running quickly
 - [**Release Notes**](docs/release_notes.md) - Detailed version history
+- [**AI Integration**](docs/ai_integration.md) - AI capabilities and implementations
 
 ## Files
 
