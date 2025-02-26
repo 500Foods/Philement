@@ -45,6 +45,10 @@ Shutdown Architecture:
   - Implemented timeout-based waiting with fallback mechanisms
   - Improved service-specific cleanup procedures
 
+- Documentation:
+  - Fixed Markdown linting errors
+  - Reorganized top-level README
+
 ## 2025-Feb-25
 
 Testing System:
@@ -245,7 +249,7 @@ Development Environment:
 - Imported project into Visual Studio Code
 
 <details>
-<summary>2024-Jul</summary>
+<summary><h2>2024-Jul</h2></summary>
 
 ## 2024-Jul-18
 
