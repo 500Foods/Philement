@@ -70,10 +70,25 @@ The simplest way to execute tests is using the test runner script:
 
 The test runner automates the process of:
 
+- Cleaning up previous test results and diagnostics
 - Making all test scripts executable
 - Running tests with specified configurations
 - Collecting and analyzing results
 - Providing a formatted summary of test outcomes
+
+### Test Artifacts Management
+
+Test execution generates two types of artifacts:
+
+1. **Results** - Test logs and summary reports in `./tests/results/`
+2. **Diagnostics** - Detailed diagnostic data in `./tests/diagnostics/`
+
+These artifacts are managed as follows:
+
+- **Automatic Cleanup** - Previous test artifacts are automatically removed before each test run
+- **Git Exclusion** - Test artifacts directories are excluded from GitHub synchronization
+- **Local Availability** - Artifacts remain available for analysis until the next test run
+- **External Testing** - This approach allows tests to be run on production systems without sharing data
 
 ### Manual Test Execution
 

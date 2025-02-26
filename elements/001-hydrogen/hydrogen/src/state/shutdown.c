@@ -209,9 +209,52 @@ static void shutdown_web_systems(void) {
             }
             pthread_mutex_unlock(&ws_context->mutex);
             
-            // Force cleanup regardless of state
-            log_this("Shutdown", "Cleaning up WebSocket resources", LOG_LEVEL_INFO);
-            cleanup_websocket_server();
+        // EMERGENCY BYPASS: Skip standard cleanup to avoid libwebsockets hang
+        log_this("Shutdown", "EMERGENCY BYPASS: Skipping standard WebSocket cleanup", LOG_LEVEL_WARN);
+        
+        // Set a process-wide emergency timeout
+        pid_t current_pid = getpid();
+        pid_t child_pid = fork();
+        
+        if (child_pid == 0) {
+            // Child process: wait and then force kill parent if still running
+            sleep(3);  // Give parent 3 seconds to complete cleanup
+            
+            // Check if parent still exists
+            if (kill(current_pid, 0) == 0) {
+                log_this("Shutdown", "CRITICAL: Force terminating parent process", LOG_LEVEL_ERROR);
+                kill(current_pid, SIGKILL);  // Force kill if parent is still running
+            }
+            exit(0);  // Child exits
+        } else if (child_pid > 0) {
+            // Parent: Continue with minimal cleanup
+            
+            // Attempt minimal resource cleanup without entering libwebsockets network code
+            extern WebSocketServerContext *ws_context;
+            if (ws_context != NULL) {
+                // Forcibly free critical resources without full cleanup
+                pthread_mutex_lock(&ws_context->mutex);
+                ws_context->shutdown = 1;  // Ensure shutdown flag is set
+                ws_context->active_connections = 0;  // Force reset connections
+                
+                // Cancel service one last time
+                if (ws_context->lws_context) {
+                    log_this("Shutdown", "Force cancelling libwebsockets service", LOG_LEVEL_WARN);
+                    lws_cancel_service(ws_context->lws_context);
+                }
+                pthread_mutex_unlock(&ws_context->mutex);
+                
+                // Do NOT call lws_context_destroy as it hangs
+                log_this("Shutdown", "SKIPPING libwebsockets context destruction", LOG_LEVEL_WARN);
+                ws_context = NULL;  // Just discard the pointer
+            }
+            
+            // Force clear any websocket thread tracking
+            extern ServiceThreads websocket_threads;
+            websocket_threads.thread_count = 0;
+            
+            log_this("Shutdown", "Emergency WebSocket cleanup completed", LOG_LEVEL_INFO);
+        }
         }
 
         // Update thread metrics one final time

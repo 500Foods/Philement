@@ -1,9 +1,0 @@
-total 0
-lr-x------ 1 asimard asimard 64 Feb 25 16:45 0 -> /dev/null
-l-wx------ 1 asimard asimard 64 Feb 25 16:45 1 -> /home/asimard/Projects/Philement/Philement/elements/001-hydrogen/hydrogen/tests/hydrogen_test.log
-lr-x------ 1 asimard asimard 64 Feb 25 16:45 103 -> /usr/share/code/v8_context_snapshot.bin
-l-wx------ 1 asimard asimard 64 Feb 25 16:45 2 -> /home/asimard/Projects/Philement/Philement/elements/001-hydrogen/hydrogen/tests/hydrogen_test.log
-l-wx------ 1 asimard asimard 64 Feb 25 16:45 3 -> /home/asimard/Projects/Philement/Philement/elements/001-hydrogen/hydrogen/hydrogen_test_min.log
-l-wx------ 1 asimard asimard 64 Feb 25 16:45 43 -> /home/asimard/.config/Code/logs/20250224T221427/ptyhost.log
-lrwx------ 1 asimard asimard 64 Feb 25 16:45 44 -> /dev/ptmx
-lrwx------ 1 asimard asimard 64 Feb 25 16:45 47 -> /dev/ptmx

@@ -154,6 +154,23 @@ The project uses Make for building. Key targets:
 - `make clean` - Clean build artifacts
 - `make valgrind` - Run with memory checking
 
+## Time and Date Formatting
+
+1. Display time values with millisecond precision (3 decimal places) when reporting durations or timestamps
+2. Use ISO 8601 format (YYYY-MM-DD HH:MM:SS.sss) for date-time values where appropriate
+3. Be consistent with time unit representations across logs and interfaces
+
+Example:
+
+```c
+// Displaying elapsed time with millisecond precision
+printf("Operation completed in %.3f seconds\n", elapsed_time);
+
+// Displaying timestamps with millisecond precision
+printf("Event occurred at %02d:%02d:%02d.%03d\n", 
+       hour, minute, second, millisecond);
+```
+
 ## Related Documentation
 
 - [API Documentation](./api.md)
