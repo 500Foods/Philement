@@ -8,6 +8,32 @@
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+# Clean up previous test results and diagnostics
+cleanup_old_tests() {
+    echo "Cleaning up previous test results and diagnostics..."
+    
+    # Define directories to clean
+    RESULTS_DIR="$SCRIPT_DIR/results"
+    DIAGNOSTICS_DIR="$SCRIPT_DIR/diagnostics"
+    
+    # Remove all files in results directory
+    if [ -d "$RESULTS_DIR" ]; then
+        rm -rf "$RESULTS_DIR"/*
+        echo "Removed old test results from $RESULTS_DIR"
+    fi
+    
+    # Remove all files in diagnostics directory
+    if [ -d "$DIAGNOSTICS_DIR" ]; then
+        rm -rf "$DIAGNOSTICS_DIR"/*
+        echo "Removed old test diagnostics from $DIAGNOSTICS_DIR"
+    fi
+    
+    echo "Cleanup complete"
+}
+
+# Run cleanup before starting tests
+cleanup_old_tests
+
 # Make all test scripts executable
 chmod +x $SCRIPT_DIR/test_startup_shutdown.sh
 chmod +x $SCRIPT_DIR/analyze_stuck_threads.sh
@@ -42,17 +68,42 @@ run_test() {
         echo "✅ Test with $CONFIG_FILE completed successfully" | tee -a "$SUMMARY_LOG"
     else
         echo "❌ Test with $CONFIG_FILE failed with exit code $TEST_EXIT_CODE" | tee -a "$SUMMARY_LOG"
+        
+        # Look for the log file before trying to display it
+        LATEST_LOG=$(find "$RESULTS_DIR" -type f -name "*$(basename $CONFIG_FILE .json).log" | sort -r | head -1)
+        if [ -n "$LATEST_LOG" ] && [ -f "$LATEST_LOG" ]; then
+            echo "" | tee -a "$SUMMARY_LOG"
+            echo "==== TEST EXECUTION LOG FOR FAILED TEST ====" | tee -a "$SUMMARY_LOG"
+            cat "$LATEST_LOG" | tee -a "$SUMMARY_LOG"
+            echo "==== END OF TEST EXECUTION LOG ====" | tee -a "$SUMMARY_LOG"
+            
+            # Also display the actual Hydrogen internal log file
+            HYDROGEN_LOG="$SCRIPT_DIR/hydrogen_test.log"
+            if [ -f "$HYDROGEN_LOG" ]; then
+                echo "" | tee -a "$SUMMARY_LOG"
+                echo "==== HYDROGEN INTERNAL LOG (LAST 100 LINES) ====" | tee -a "$SUMMARY_LOG"
+                tail -100 "$HYDROGEN_LOG" | tee -a "$SUMMARY_LOG"
+                echo "==== END OF HYDROGEN INTERNAL LOG ====" | tee -a "$SUMMARY_LOG"
+                echo "" | tee -a "$SUMMARY_LOG"
+                echo "TIP: Analyze the log above for error patterns to identify needed code changes in Hydrogen" | tee -a "$SUMMARY_LOG"
+            else
+                echo "WARNING: Hydrogen log file not found at $HYDROGEN_LOG" | tee -a "$SUMMARY_LOG"
+            fi
+            echo "" | tee -a "$SUMMARY_LOG"
+        fi
     fi
     
-    # Look for the most recent result log for this test
-    LATEST_LOG=$(find "$RESULTS_DIR" -type f -name "*$(basename $CONFIG_FILE .json).log" | sort -r | head -1)
+    # Look for the most recent result log for this test (if not already found)
+    if [ -z "$LATEST_LOG" ]; then
+        LATEST_LOG=$(find "$RESULTS_DIR" -type f -name "*$(basename $CONFIG_FILE .json).log" | sort -r | head -1)
+    fi
     if [ -n "$LATEST_LOG" ]; then
         echo "   Test log: $LATEST_LOG" | tee -a "$SUMMARY_LOG"
         
-        # Extract shutdown duration if available
-        SHUTDOWN_DURATION=$(grep "shut down in" "$LATEST_LOG" | grep -o "[0-9]* seconds" | head -1)
+        # Extract shutdown duration if available (with millisecond precision)
+        SHUTDOWN_DURATION=$(grep "shut down in" "$LATEST_LOG" | grep -o "[0-9]*\.[0-9]* seconds" | head -1)
         if [ -n "$SHUTDOWN_DURATION" ]; then
-            echo "   Shutdown completed in: $SHUTDOWN_DURATION" | tee -a "$SUMMARY_LOG"
+            echo "   Shutdown completed in $SHUTDOWN_DURATION" | tee -a "$SUMMARY_LOG"
         fi
         
         # Check for thread leaks or stalls
