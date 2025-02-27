@@ -171,8 +171,397 @@ printf("Event occurred at %02d:%02d:%02d.%03d\n",
        hour, minute, second, millisecond);
 ```
 
+## Security Coding Standards
+
+The following guidelines apply to security-critical code, such as the OIDC implementation:
+
+1. **Defense in Depth**
+   - Never rely on a single security control
+   - Implement multiple layers of validation
+   - Assume that any single security mechanism might fail
+
+2. **Principle of Least Privilege**
+   - Code should operate with minimal required permissions
+   - Limit access to sensitive data to only the components that need it
+   - Use separate credentials or tokens for different operations
+
+3. **Never Trust External Input**
+   - Always validate all inputs from external sources
+   - Apply strict validation to all security-critical parameters
+   - Sanitize inputs before using them in sensitive operations
+
+4. **Fail Securely**
+   - Default to the secure state on any failure
+   - Return specific error codes without leaking sensitive information
+   - Close any open resources on failure paths
+
+Example of secure input validation:
+
+```c
+// Validate all security-critical parameters
+if (!validate_client_id(client_id) || !validate_redirect_uri(redirect_uri)) {
+    log_this("OIDC", "Invalid client parameters", 4, true, true, true);
+    return AUTH_ERROR_INVALID_CLIENT;
+}
+```
+
+## JWT and Token Handling
+
+When working with JWTs and security tokens:
+
+1. **Token Validation Requirements**
+   - Always validate all of the following:
+     - Token integrity (signature)
+     - Issuer (`iss` claim)
+     - Audience (`aud` claim)
+     - Expiration time (`exp` claim)
+     - Token type and other required claims
+
+2. **Token Generation**
+   - Use cryptographically secure random number generators
+   - Set appropriate token lifetimes based on security requirements
+   - Include minimal necessary claims
+
+3. **Token Storage**
+   - Never store sensitive tokens in plain text
+   - Use secure storage mechanisms with appropriate access controls
+   - Consider using hardware security modules for high-security deployments
+
+4. **Token Transmission**
+   - Only transmit tokens over secure channels (TLS)
+   - Use appropriate headers and content types
+   - Apply additional protections for high-value tokens (e.g., token binding)
+
+Example of proper token validation:
+
+```c
+bool validate_token(const char* token) {
+    // Check token format first
+    if (!is_valid_jwt_format(token)) {
+        return false;
+    }
+    
+    // Verify signature
+    if (!verify_signature(token, public_key)) {
+        log_this("TokenService", "Token signature verification failed", 4, true, true, true);
+        return false;
+    }
+    
+    // Extract and validate claims
+    int current_time = get_current_time();
+    
+    if (token_expired(token, current_time)) {
+        log_this("TokenService", "Token has expired", 3, true, false, true);
+        return false;
+    }
+    
+    if (!validate_issuer(token, expected_issuer)) {
+        log_this("TokenService", "Invalid token issuer", 4, true, true, true);
+        return false;
+    }
+    
+    if (!validate_audience(token, expected_audience)) {
+        log_this("TokenService", "Invalid token audience", 4, true, true, true);
+        return false;
+    }
+    
+    return true;
+}
+```
+
+## Cryptographic Operations
+
+When implementing cryptographic operations:
+
+1. **Use Established Libraries**
+   - Prefer well-tested cryptographic libraries (e.g., OpenSSL)
+   - Never implement your own cryptographic algorithms
+   - Keep cryptographic libraries updated to address known vulnerabilities
+
+2. **Key Management**
+   - Implement secure key generation using proper entropy sources
+   - Store keys securely, never in source code or plain text configurations
+   - Implement key rotation mechanisms with configurable intervals
+   - Protect key material in memory (avoid unnecessary copies, clear after use)
+
+3. **Algorithm Selection**
+   - Use modern, widely accepted algorithms (e.g., RSA-2048+, ECDSA, SHA-256+)
+   - Avoid deprecated or weak algorithms
+   - Implement algorithm negotiation where appropriate
+
+4. **Randomness**
+   - Use cryptographically secure random number generators
+   - Never use `rand()` for security purposes
+   - Verify that random number generators are properly seeded
+
+5. **Version Control and Key Protection**
+   - Never commit cryptographic keys, credentials, or secrets to Git repositories
+   - Use `.gitignore` to exclude key files, compiled binaries, and credential files
+   - Consider using environment variables for runtime secrets
+   - Implement separate configuration loading for development vs. production keys
+   - Create sample configuration files (e.g., `config.sample.json`) without real keys
+   - Document key file locations but never include the actual key files in repositories
+   - Be vigilant with temporary test keys which might accidentally be committed
+   - Regularly audit repositories for accidentally committed secrets
+
+Example of secure key management:
+
+```c
+// Generate a new RSA key pair
+EVP_PKEY* generate_rsa_key(int key_size) {
+    EVP_PKEY* key = NULL;
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, NULL);
+    
+    if (!ctx) {
+        log_this("KeyManager", "Failed to create key context", 4, true, true, true);
+        return NULL;
+    }
+    
+    if (EVP_PKEY_keygen_init(ctx) <= 0) {
+        log_this("KeyManager", "Failed to initialize key generation", 4, true, true, true);
+        EVP_PKEY_CTX_free(ctx);
+        return NULL;
+    }
+    
+    if (EVP_PKEY_CTX_set_rsa_keygen_bits(ctx, key_size) <= 0) {
+        log_this("KeyManager", "Failed to set key size", 4, true, true, true);
+        EVP_PKEY_CTX_free(ctx);
+        return NULL;
+    }
+    
+    if (EVP_PKEY_keygen(ctx, &key) <= 0) {
+        log_this("KeyManager", "Key generation failed", 4, true, true, true);
+        EVP_PKEY_CTX_free(ctx);
+        return NULL;
+    }
+    
+    EVP_PKEY_CTX_free(ctx);
+    return key;
+}
+```
+
+## Secure Input Validation
+
+For validating security-critical inputs:
+
+1. **Input Validation Strategies**
+   - Apply whitelisting (accept only known-good input) rather than blacklisting
+   - Validate both syntax (format) and semantics (meaning/context)
+   - Consider context-specific validation (e.g., URL validation for redirect URIs)
+
+2. **Common Validation Patterns**
+   - Use regular expressions for format validation
+   - Use dedicated parsers for structured data (JSON, XML)
+   - Implement multi-stage validation for complex inputs
+
+3. **Client-Supplied Data**
+   - Apply strict validation to all client-supplied identifiers
+   - Sanitize client data before logging or storage
+   - Reject requests with suspicious patterns
+
+Example of redirect URI validation:
+
+```c
+bool validate_redirect_uri(const char* uri, const char* allowed_origins[], int num_origins) {
+    // Check basic URL format
+    if (!is_valid_url_format(uri)) {
+        log_this("OIDC", "Invalid redirect URI format", 3, true, false, true);
+        return false;
+    }
+    
+    // Extract origin from URI
+    char origin[256];
+    if (!extract_origin(uri, origin, sizeof(origin))) {
+        log_this("OIDC", "Failed to extract origin from redirect URI", 3, true, false, true);
+        return false;
+    }
+    
+    // Check against allowed origins
+    for (int i = 0; i < num_origins; i++) {
+        if (strcmp(origin, allowed_origins[i]) == 0) {
+            return true;
+        }
+    }
+    
+    log_this("OIDC", "Redirect URI origin not allowed", 3, true, false, true);
+    return false;
+}
+```
+
+## Security Error Handling
+
+For error handling in security-sensitive code:
+
+1. **Error Reporting**
+   - Provide clear error messages for developers without leaking sensitive information
+   - Use different detail levels for logs vs. client-visible errors
+   - Include security-relevant context in internal logs
+
+2. **Comprehensive Cleanup**
+   - Always free security-sensitive resources on error paths
+   - Zero out sensitive memory before freeing
+   - Ensure consistent state even after security failures
+
+3. **Secure Defaults**
+   - Always default to the secure option when handling errors
+   - Deny access rather than grant it when validation is inconclusive
+   - Implement timeouts for all security-critical operations
+
+Example of proper security error handling:
+
+```c
+int authenticate_client(const char* client_id, const char* client_secret) {
+    Client* client = NULL;
+    
+    // Look up client
+    client = find_client_by_id(client_id);
+    if (!client) {
+        // Don't leak whether the client exists
+        log_this("OIDC", "Authentication failed for client ID", 3, true, false, true);
+        return AUTH_ERROR_INVALID_CLIENT;
+    }
+    
+    // Validate client secret using constant-time comparison
+    if (!secure_compare(client->secret, client_secret, strlen(client_secret))) {
+        // Don't leak that the client exists but password is wrong
+        log_this("OIDC", "Authentication failed for client ID", 3, true, false, true);
+        return AUTH_ERROR_INVALID_CLIENT;
+    }
+    
+    return AUTH_SUCCESS;
+}
+```
+
+## Security-Focused Documentation
+
+For security-sensitive components:
+
+1. **Security Documentation Requirements**
+   - Document security assumptions and preconditions
+   - Explain security design decisions and trade-offs
+   - Document threat models and mitigations
+   - Include security testing procedures
+
+2. **API Security Documentation**
+   - Document security requirements for API callers
+   - Specify required validation before calling security-sensitive functions
+   - Document expected error handling and recovery
+
+Example of security-focused documentation:
+
+```c
+/*
+ * Validates and processes an authorization request.
+ *
+ * Security Considerations:
+ * - All parameters must be validated before calling this function
+ * - The redirect_uri must match one registered for the client
+ * - The state parameter must be cryptographically secure
+ * - For public clients, PKCE must be enforced (code_challenge required)
+ *
+ * Threat Mitigations:
+ * - CSRF: Enforced through state parameter validation
+ * - Code Interception: Mitigated through PKCE and short code lifetime
+ * - Redirect URI Manipulation: Strict validation against registered URIs
+ *
+ * Parameters:
+ * - client_id: The registered client identifier
+ * - redirect_uri: The URI to redirect to after authorization
+ * - response_type: Must be "code" for authorization code flow
+ * - scope: Space-separated list of requested scopes
+ * - state: Client-provided state for CSRF protection
+ * - code_challenge: PKCE code challenge (required for public clients)
+ * - code_challenge_method: PKCE challenge method (S256 recommended)
+ *
+ * Returns:
+ * - AUTH_SUCCESS on success
+ * - Error code on failure (see oidc_errors.h)
+ */
+```
+
+## Secure Configuration
+
+For configuration of security-sensitive components:
+
+1. **Configuration Validation**
+   - Validate all security-critical configuration parameters at startup
+   - Apply secure defaults when configuration is missing or invalid
+   - Implement configuration versioning to handle format changes
+
+2. **Sensitive Configuration Data**
+   - Store secrets in dedicated secure storage
+   - Support environment variable or external secret providers
+   - Encrypt sensitive configuration at rest
+
+3. **Configuration Monitoring**
+   - Log all security-critical configuration changes
+   - Implement validation for configuration updates
+   - Provide mechanisms to test configuration before applying
+
+Example of secure configuration validation:
+
+```c
+bool validate_oidc_config(OIDCConfig* config) {
+    // Check issuer URL
+    if (!config->issuer || !is_valid_url(config->issuer)) {
+        log_this("OIDC", "Invalid issuer URL in configuration", 4, true, true, true);
+        return false;
+    }
+    
+    // Validate token lifetimes
+    if (config->access_token_lifetime <= 0 || config->access_token_lifetime > MAX_TOKEN_LIFETIME) {
+        log_this("OIDC", "Invalid access token lifetime", 4, true, true, true);
+        return false;
+    }
+    
+    // Enforce minimum key size
+    if (config->signing_key_size < MIN_RSA_KEY_SIZE) {
+        log_this("OIDC", "Insufficient signing key size", 4, true, true, true);
+        return false;
+    }
+    
+    return true;
+}
+```
+
+## Security Code Review Requirements
+
+For reviewing security-sensitive code:
+
+1. **Security Review Process**
+   - Require secondary review for all security-critical components
+   - Use a security-focused checklist for reviews
+   - Document security design decisions and their review
+
+2. **Common Security Review Items**
+   - Input validation completeness
+   - Authentication and authorization checks
+   - Proper cryptographic operations
+   - Error handling and edge cases
+   - Resource cleanup
+   - Logging of security events
+
+3. **Threat Modeling**
+   - Consider potential attack vectors during review
+   - Verify that known threats are mitigated
+   - Document security assumptions
+
+Example security review checklist item:
+
+```
+Cryptographic Operations Review:
+- [ ] Uses approved cryptographic libraries
+- [ ] No custom cryptographic implementations
+- [ ] Appropriate algorithm selection and parameters
+- [ ] Secure key management
+- [ ] Proper randomness sources
+- [ ] No hardcoded cryptographic secrets
+```
+
 ## Related Documentation
 
 - [API Documentation](./api.md)
 - [Configuration Guide](./configuration.md)
 - [Service Documentation](./service.md)
+- [OIDC Architecture](./reference/oidc_architecture.md)
+- [Security Best Practices](./security_best_practices.md)

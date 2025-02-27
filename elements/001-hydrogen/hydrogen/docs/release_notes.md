@@ -19,6 +19,56 @@ EDITING GUIDELINES (not visible when rendered):
   - Group related changes under the same topic
 -->
 
+## 2025-Feb-27
+
+OIDC Service:
+
+- Added full OpenID Connect (OIDC) Identity Provider capabilities:
+  - Core OIDC service with standard endpoints (authorization, token, userinfo)
+  - JWT token handling with RSA key rotation and management
+  - Client registration and management system
+  - User identity and profile management
+  - Flexible configuration for token lifetimes and security policies
+  - Support for multiple authentication flows (authorization code, client credentials)
+
+- Configuration Framework:
+  - Extended configuration system with OIDC-specific settings
+  - Added sensible defaults for all OIDC options
+  - Structured validation for security parameters
+
+- API Endpoints:
+  - Added standard OIDC endpoints to API structure
+  - Implemented JWKS (JSON Web Key Set) endpoint
+  - Added token introspection and revocation endpoints
+  - Added client registration endpoint
+
+- Client Examples:
+  - Created comprehensive client integration examples for multiple languages:
+    - Implemented C client examples for three OAuth flows (auth_code_flow.c, client_credentials.c, password_flow.c)
+    - Developed a JavaScript browser-based client example (auth_code_flow.html)
+    - Added detailed README with client registration and security best practices
+    - Included extensive documentation within each example explaining OAuth flows
+    - Implemented proper error handling and token validation in all examples
+    - Created a Makefile for easy compilation of C examples
+
+- Documentation:
+  - Created comprehensive OIDC architecture documentation
+  - Added code examples for client integration
+  - Provided implementation references for all OIDC features
+  - Created detailed OIDC architecture reference document
+  - Added explanations of token structures and security considerations
+
+- Coding Guidelines:
+  - Enhanced coding guidelines with security-focused sections:
+    - Added security coding standards for OIDC and authentication systems
+    - Provided specific guidance for JWT and token handling
+    - Added best practices for cryptographic operations
+    - Created standards for secure input validation
+    - Implemented guidelines for security-aware error handling
+    - Added requirements for security-focused documentation
+    - Provided patterns for secure configuration management
+    - Created security code review checklist and requirements
+
 ## 2025-Feb-26
 
 Testing System:

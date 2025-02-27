@@ -168,6 +168,17 @@ Complete, detailed documentation is available in the `docs` directory, organized
 - [src/websocket/websocket_server_status.c](src/websocket/websocket_server_status.c) Status reporting implementation
 
 </details>
+<details>
+<summary><b>OIDC Client Examples</b></summary>
+
+- [oidc-client-examples/README.md](oidc-client-examples/README.md) Overview of OIDC example implementations
+- [oidc-client-examples/C/auth_code_flow.c](oidc-client-examples/C/auth_code_flow.c) Authorization Code flow example in C
+- [oidc-client-examples/C/client_credentials.c](oidc-client-examples/C/client_credentials.c) Client Credentials flow example in C
+- [oidc-client-examples/C/password_flow.c](oidc-client-examples/C/password_flow.c) Resource Owner Password flow example in C
+- [oidc-client-examples/C/Makefile](oidc-client-examples/C/Makefile) Makefile for building C examples
+- [oidc-client-examples/JavaScript/auth_code_flow.html](oidc-client-examples/JavaScript/auth_code_flow.html) Authorization Code flow example in JavaScript
+
+</details>
 
 ## System Dependencies
 
