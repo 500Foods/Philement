@@ -1,0 +1,33 @@
+# OIDC Client Examples - .gitignore
+
+# Ignore compiled binaries
+/C/auth_code_flow
+/C/client_credentials
+/C/password_flow
+/C/*_flow
+/C/*.o
+/C/*.out
+
+# Ignore potential credential files and sensitive data
+*_key.pem
+*_cert.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.jks
+*.keystore
+*secret*
+*credentials*
+*config*.json
+.env
+*.env
+env.*
+*_token.txt
+
+# Editor and OS specific files
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*~

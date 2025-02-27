@@ -1,0 +1,176 @@
+/*
+ * OIDC API Endpoints
+ *
+ * Implements OpenID Connect protocol endpoints:
+ * - Authorization endpoint
+ * - Token endpoint
+ * - UserInfo endpoint
+ * - Discovery endpoint
+ * - JWKS endpoint
+ * - Client registration endpoint
+ */
+
+#ifndef OIDC_ENDPOINTS_H
+#define OIDC_ENDPOINTS_H
+
+// Feature test macros
+#define _GNU_SOURCE
+#define _POSIX_C_SOURCE 200809L
+
+// Standard Libraries
+#include <stdbool.h>
+#include <stdlib.h>
+
+// Third-party libraries
+#include <microhttpd.h>
+
+// Project Libraries
+#include "../../oidc/oidc_service.h"
+#include "../../webserver/web_server_core.h"
+
+/*
+ * Initialize OIDC API endpoints
+ *
+ * @param oidc_context The OIDC service context
+ * @return true if initialization successful, false otherwise
+ */
+bool init_oidc_endpoints(OIDCContext *oidc_context);
+
+/*
+ * Clean up OIDC API endpoints
+ */
+void cleanup_oidc_endpoints(void);
+
+/*
+ * Register OIDC API endpoints with the web server
+ * 
+ * This function registers all OIDC endpoints with the web server's
+ * routing system.
+ *
+ * @return true if registration successful, false otherwise
+ */
+bool register_oidc_endpoints(void);
+
+/*
+ * Handle an OIDC HTTP request
+ *
+ * This function is called by the main request handler when a request
+ * to an OIDC endpoint is received.
+ *
+ * @param connection The MHD connection
+ * @param url The request URL
+ * @param method The HTTP method (GET, POST, etc.)
+ * @param version The HTTP version
+ * @param upload_data Upload data (for POST requests)
+ * @param upload_data_size Size of upload data
+ * @param con_cls Connection-specific data
+ * @return MHD_Result indicating success or failure
+ */
+enum MHD_Result handle_oidc_request(struct MHD_Connection *connection,
+                                 const char *url, const char *method,
+                                 const char *version, const char *upload_data,
+                                 size_t *upload_data_size, void **con_cls);
+
+/*
+ * Check if a URL is an OIDC endpoint
+ *
+ * @param url The URL to check
+ * @return true if URL is an OIDC endpoint, false otherwise
+ */
+bool is_oidc_endpoint(const char *url);
+
+/*
+ * OIDC endpoint handlers
+ */
+
+// Discovery document endpoint (.well-known/openid-configuration)
+enum MHD_Result handle_oidc_discovery_endpoint(struct MHD_Connection *connection);
+
+// Authorization endpoint
+enum MHD_Result handle_oidc_authorization_endpoint(struct MHD_Connection *connection,
+                                               const char *method,
+                                               const char *upload_data,
+                                               size_t *upload_data_size,
+                                               void **con_cls);
+
+// Token endpoint
+enum MHD_Result handle_oidc_token_endpoint(struct MHD_Connection *connection,
+                                       const char *method,
+                                       const char *upload_data,
+                                       size_t *upload_data_size,
+                                       void **con_cls);
+
+// UserInfo endpoint
+enum MHD_Result handle_oidc_userinfo_endpoint(struct MHD_Connection *connection,
+                                         const char *method);
+
+// JWKS endpoint
+enum MHD_Result handle_oidc_jwks_endpoint(struct MHD_Connection *connection);
+
+// Token introspection endpoint
+enum MHD_Result handle_oidc_introspection_endpoint(struct MHD_Connection *connection,
+                                               const char *method,
+                                               const char *upload_data,
+                                               size_t *upload_data_size,
+                                               void **con_cls);
+
+// Token revocation endpoint
+enum MHD_Result handle_oidc_revocation_endpoint(struct MHD_Connection *connection,
+                                           const char *method,
+                                           const char *upload_data,
+                                           size_t *upload_data_size,
+                                           void **con_cls);
+
+// Client registration endpoint
+enum MHD_Result handle_oidc_registration_endpoint(struct MHD_Connection *connection,
+                                             const char *method,
+                                             const char *upload_data,
+                                             size_t *upload_data_size,
+                                             void **con_cls);
+
+// End session endpoint
+enum MHD_Result handle_oidc_end_session_endpoint(struct MHD_Connection *connection,
+                                            const char *method,
+                                            const char *upload_data,
+                                            size_t *upload_data_size,
+                                            void **con_cls);
+
+/*
+ * Helper functions
+ */
+
+// Extract OAuth query parameters from request
+bool extract_oauth_params(struct MHD_Connection *connection, char **client_id,
+                         char **redirect_uri, char **response_type,
+                         char **scope, char **state, char **nonce,
+                         char **code_challenge, char **code_challenge_method);
+
+// Extract token request parameters
+bool extract_token_request_params(struct MHD_Connection *connection,
+                                const char *upload_data, size_t upload_data_size,
+                                char **grant_type, char **code, char **redirect_uri,
+                                char **client_id, char **client_secret,
+                                char **refresh_token, char **code_verifier);
+
+// Extract client credentials from Basic Auth header
+bool extract_client_credentials(struct MHD_Connection *connection,
+                              char **client_id, char **client_secret);
+
+// Send OAuth error response
+enum MHD_Result send_oauth_error(struct MHD_Connection *connection,
+                             const char *error, const char *error_description,
+                             const char *redirect_uri, const char *state);
+
+// Send OIDC JSON response
+enum MHD_Result send_oidc_json_response(struct MHD_Connection *connection,
+                                    const char *json, unsigned int status_code);
+
+// Validate required OAuth parameters
+bool validate_oauth_params(const char *client_id, const char *redirect_uri,
+                         const char *response_type, char **error,
+                         char **error_description);
+
+// Add CORS headers for OIDC endpoints
+void add_oidc_cors_headers(struct MHD_Response *response);
+
+#endif // OIDC_ENDPOINTS_H

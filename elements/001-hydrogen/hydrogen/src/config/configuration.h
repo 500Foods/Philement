@@ -290,6 +290,49 @@ typedef struct {
  * configurations. This represents the complete runtime configuration
  * of the Hydrogen server.
  */
+/*
+ * OIDC Configuration:
+ * Settings for the OpenID Connect Identity Provider functionality.
+ * Includes endpoint paths, token lifetimes, security policies, and key management.
+ */
+typedef struct {
+    char *authorization;    // Authorization endpoint path
+    char *token;           // Token endpoint path
+    char *userinfo;        // Userinfo endpoint path
+    char *jwks;            // JSON Web Key Set endpoint path
+    char *introspection;   // Token introspection endpoint path
+    char *revocation;      // Token revocation endpoint path
+    char *registration;    // Client registration endpoint path
+} OIDCEndpointsConfig;
+
+typedef struct {
+    int rotation_interval_days;  // Number of days before key rotation
+    char *storage_path;         // Path to store key files
+    int encryption_enabled;     // Whether to encrypt stored keys
+} OIDCKeysConfig;
+
+typedef struct {
+    int access_token_lifetime;   // Access token lifetime in seconds
+    int refresh_token_lifetime;  // Refresh token lifetime in seconds
+    int id_token_lifetime;       // ID token lifetime in seconds
+} OIDCTokensConfig;
+
+typedef struct {
+    int require_pkce;            // Require PKCE for authorization code flow
+    int allow_implicit_flow;     // Allow implicit flow (less secure)
+    int allow_client_credentials; // Allow client credentials flow
+    int require_consent;         // Require user consent screen
+} OIDCSecurityConfig;
+
+typedef struct {
+    int enabled;                // Runtime toggle for OIDC service
+    char *issuer;              // Issuer URI for this IdP (e.g., https://example.com)
+    OIDCEndpointsConfig endpoints; // OIDC endpoint configurations
+    OIDCKeysConfig keys;          // Key management settings
+    OIDCTokensConfig tokens;      // Token lifetime settings
+    OIDCSecurityConfig security;  // Security policy settings
+} OIDCConfig;
+
 typedef struct {
     char *server_name;      // Server identification
     char *executable_path;  // Binary location for resource loading
@@ -303,6 +346,7 @@ typedef struct {
     NetworkConfig network;            // Network interface settings
     SystemMonitoringConfig monitoring; // System monitoring settings
     PrinterMotionConfig motion;       // Printer motion settings
+    OIDCConfig oidc;       // OIDC service configuration
 } AppConfig;
 /*
  * Global Configuration State:
