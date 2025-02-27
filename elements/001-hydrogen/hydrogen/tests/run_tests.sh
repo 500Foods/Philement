@@ -35,6 +35,7 @@ cleanup_old_tests() {
 cleanup_old_tests
 
 # Make all test scripts executable
+chmod +x $SCRIPT_DIR/test_compilation.sh
 chmod +x $SCRIPT_DIR/test_startup_shutdown.sh
 chmod +x $SCRIPT_DIR/analyze_stuck_threads.sh
 chmod +x $SCRIPT_DIR/monitor_resources.sh
@@ -54,7 +55,36 @@ echo "Started at: $(date)" | tee -a "$SUMMARY_LOG"
 echo "============================================" | tee -a "$SUMMARY_LOG"
 echo "" | tee -a "$SUMMARY_LOG"
 
-# Function to run a single test with a configuration
+# Function to run the compilation test
+run_compilation_test() {
+    echo "Running compilation test" | tee -a "$SUMMARY_LOG"
+    
+    # Start the test
+    $SCRIPT_DIR/test_compilation.sh
+    TEST_EXIT_CODE=$?
+    
+    # Report result
+    if [ $TEST_EXIT_CODE -eq 0 ]; then
+        echo "✅ Compilation test completed successfully" | tee -a "$SUMMARY_LOG"
+    else
+        echo "❌ Compilation test failed with exit code $TEST_EXIT_CODE" | tee -a "$SUMMARY_LOG"
+        
+        # Look for the most recent compilation test log
+        LATEST_LOG=$(find "$RESULTS_DIR" -type f -name "*compilation.log" | sort -r | head -1)
+        if [ -n "$LATEST_LOG" ] && [ -f "$LATEST_LOG" ]; then
+            echo "" | tee -a "$SUMMARY_LOG"
+            echo "==== COMPILATION TEST EXECUTION LOG ====" | tee -a "$SUMMARY_LOG"
+            cat "$LATEST_LOG" | tee -a "$SUMMARY_LOG"
+            echo "==== END OF COMPILATION TEST EXECUTION LOG ====" | tee -a "$SUMMARY_LOG"
+        fi
+    fi
+    
+    echo "   Test log: $LATEST_LOG" | tee -a "$SUMMARY_LOG"
+    echo "" | tee -a "$SUMMARY_LOG"
+    return $TEST_EXIT_CODE
+}
+
+# Function to run a single startup/shutdown test with a configuration
 run_test() {
     local CONFIG_FILE=$1
     echo "Running test with configuration: $CONFIG_FILE" | tee -a "$SUMMARY_LOG"
@@ -123,49 +153,60 @@ run_test() {
 # Parse command line argument
 TEST_TYPE=${1:-"all"}  # Default to "all" if not specified
 
-case "$TEST_TYPE" in
-    "min")
-        echo "Running test with minimal configuration only" | tee -a "$SUMMARY_LOG"
-        run_test "hydrogen_test_min.json"
-        EXIT_CODE=$?
-        ;;
-    "max")
-        echo "Running test with maximal configuration only" | tee -a "$SUMMARY_LOG"
-        run_test "hydrogen_test_max.json" 
-        EXIT_CODE=$?
-        ;;
-    "all")
-        echo "Running tests with both configurations" | tee -a "$SUMMARY_LOG"
-        echo "" | tee -a "$SUMMARY_LOG"
-        
-        # Run minimal configuration test
-        echo "=== MINIMAL CONFIGURATION TEST ===" | tee -a "$SUMMARY_LOG"
-        run_test "hydrogen_test_min.json"
-        MIN_EXIT_CODE=$?
-        
-        echo "" | tee -a "$SUMMARY_LOG"
-        
-        # Run maximal configuration test
-        echo "=== MAXIMAL CONFIGURATION TEST ===" | tee -a "$SUMMARY_LOG"
-        run_test "hydrogen_test_max.json"
-        MAX_EXIT_CODE=$?
-        
-        # Set overall exit code
-        if [ $MIN_EXIT_CODE -eq 0 ] && [ $MAX_EXIT_CODE -eq 0 ]; then
-            EXIT_CODE=0
-        else
+# Run compilation test first
+echo "=== COMPILATION TEST ===" | tee -a "$SUMMARY_LOG"
+run_compilation_test
+COMPILATION_EXIT_CODE=$?
+
+# Only proceed with other tests if compilation passes
+if [ $COMPILATION_EXIT_CODE -ne 0 ]; then
+    echo "❌ Compilation failed - skipping startup/shutdown tests" | tee -a "$SUMMARY_LOG"
+    EXIT_CODE=$COMPILATION_EXIT_CODE
+else
+    case "$TEST_TYPE" in
+        "min")
+            echo "Running test with minimal configuration only" | tee -a "$SUMMARY_LOG"
+            run_test "hydrogen_test_min.json"
+            EXIT_CODE=$?
+            ;;
+        "max")
+            echo "Running test with maximal configuration only" | tee -a "$SUMMARY_LOG"
+            run_test "hydrogen_test_max.json" 
+            EXIT_CODE=$?
+            ;;
+        "all")
+            echo "Running tests with both configurations" | tee -a "$SUMMARY_LOG"
+            echo "" | tee -a "$SUMMARY_LOG"
+            
+            # Run minimal configuration test
+            echo "=== MINIMAL CONFIGURATION TEST ===" | tee -a "$SUMMARY_LOG"
+            run_test "hydrogen_test_min.json"
+            MIN_EXIT_CODE=$?
+            
+            echo "" | tee -a "$SUMMARY_LOG"
+            
+            # Run maximal configuration test
+            echo "=== MAXIMAL CONFIGURATION TEST ===" | tee -a "$SUMMARY_LOG"
+            run_test "hydrogen_test_max.json"
+            MAX_EXIT_CODE=$?
+            
+            # Set overall exit code
+            if [ $MIN_EXIT_CODE -eq 0 ] && [ $MAX_EXIT_CODE -eq 0 ]; then
+                EXIT_CODE=0
+            else
+                EXIT_CODE=1
+            fi
+            ;;
+        *)
+            echo "Invalid test type: $TEST_TYPE" | tee -a "$SUMMARY_LOG"
+            echo "Usage: $0 [min|max|all]" | tee -a "$SUMMARY_LOG"
+            echo "  min: Run with minimal configuration only" | tee -a "$SUMMARY_LOG"
+            echo "  max: Run with maximal configuration only" | tee -a "$SUMMARY_LOG"
+            echo "  all: Run with both configurations (default)" | tee -a "$SUMMARY_LOG"
             EXIT_CODE=1
-        fi
-        ;;
-    *)
-        echo "Invalid test type: $TEST_TYPE" | tee -a "$SUMMARY_LOG"
-        echo "Usage: $0 [min|max|all]" | tee -a "$SUMMARY_LOG"
-        echo "  min: Run with minimal configuration only" | tee -a "$SUMMARY_LOG"
-        echo "  max: Run with maximal configuration only" | tee -a "$SUMMARY_LOG"
-        echo "  all: Run with both configurations (default)" | tee -a "$SUMMARY_LOG"
-        exit 1
-        ;;
-esac
+            ;;
+    esac
+fi
 
 # Print overall summary
 echo "============================================" | tee -a "$SUMMARY_LOG"

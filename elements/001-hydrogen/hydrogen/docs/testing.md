@@ -14,8 +14,18 @@ The Hydrogen testing system is designed around these key principles:
 
 ## Current Testing Capabilities
 
-The current testing system focuses on validating the successful startup and shutdown of the Hydrogen application with different subsystem configurations. This validation is critical because:
+The current testing system provides validation at two key levels:
 
+1. **Compilation Testing** - Verifies that all components build cleanly without errors or warnings
+2. **Startup/Shutdown Testing** - Validates successful initialization and termination of the system
+
+The compilation testing is a critical first step because it:
+- Ensures code quality through strict compiler warnings
+- Verifies all build variants work correctly (standard, debug, valgrind)
+- Confirms OIDC client examples build successfully 
+- Prevents downstream issues from broken compilation
+
+The startup/shutdown testing is essential because:
 - It verifies that all components initialize and terminate properly
 - It ensures resources are correctly allocated and released
 - It confirms that interdependent subsystems interact correctly
@@ -26,10 +36,11 @@ The current testing system focuses on validating the successful startup and shut
 
 The testing system includes several specialized scripts:
 
-1. **run_tests.sh** - Test orchestration script that executes tests with different configurations
-2. **test_startup_shutdown.sh** - Core script that validates startup and shutdown sequences
-3. **analyze_stuck_threads.sh** - Diagnostic tool that identifies problematic thread states
-4. **monitor_resources.sh** - Monitoring tool for tracking resource usage patterns
+1. **test_compilation.sh** - Verifies clean compilation of all components with strict warning flags
+2. **run_tests.sh** - Test orchestration script that executes tests with different configurations
+3. **test_startup_shutdown.sh** - Core script that validates startup and shutdown sequences
+4. **analyze_stuck_threads.sh** - Diagnostic tool that identifies problematic thread states
+5. **monitor_resources.sh** - Monitoring tool for tracking resource usage patterns
 
 These scripts work together to provide comprehensive testing and diagnostic capabilities while requiring minimal changes to the core Hydrogen codebase.
 
@@ -54,6 +65,13 @@ Two primary test configurations have been created:
 ## Running Tests
 
 ### Using the Test Runner
+
+The test runner automatically executes tests in logical sequence:
+
+1. First, compilation tests (all build variants and OIDC examples)
+2. Then, startup/shutdown tests with configured variants
+
+If compilation fails, startup/shutdown tests will be skipped since they would not be meaningful.
 
 The simplest way to execute tests is using the test runner script:
 
