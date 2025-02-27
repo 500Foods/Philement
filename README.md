@@ -64,16 +64,16 @@ There are countless tools, frameworks, coding styles, conventions, languages, an
 [![Count Lines of Code](https://github.com/500Foods/Template/actions/workflows/main.yml/badge.svg)](https://github.com/500Foods/Template/actions/workflows/main.yml)
 <!--CLOC-START -->
 ```
-Last updated at 2025-02-27 19:45:54 UTC
+Last updated at 2025-02-27 21:16:24 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 C                               54           2420           2770          11669
-Markdown                        68           2211             23           9307
+Markdown                        70           2321             33           9720
 C/C++ Header                    45            472           1632           1411
 HTML                             5            114             23            650
 JSON                             7              0              0            643
-Bourne Shell                     7            161            190            539
+Bourne Shell                     8            192            226            637
 Python                           1             36              9            195
 make                             7             86             99            195
 Text                             1              0              0             75
@@ -83,16 +83,15 @@ CSS                              2              3              2             38
 YAML                             2              8             13             37
 JavaScript                       1              3              0             25
 -------------------------------------------------------------------------------
-SUM:                           206           5549           4792          24922
+SUM:                           209           5690           4838          25433
 -------------------------------------------------------------------------------
-22 Files were skipped (duplicate, binary, or without source code):
+21 Files were skipped (duplicate, binary, or without source code):
   gitignore: 4
   log: 4
   jpg: 3
   png: 3
   dproj: 2
   gitattributes: 1
-  hydrogen: 1
   ico: 1
   js: 1
   json: 1
