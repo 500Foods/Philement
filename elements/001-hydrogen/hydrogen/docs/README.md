@@ -16,6 +16,7 @@ Welcome to the Hydrogen Project documentation. This guide will help you understa
 - [WebSocket Interface](./web_socket.md) - Real-time communications
 - [mDNS Server](./mdns_server.md) - Network service discovery
 - [System API](./api/system/system_info.md) - System endpoints
+- [OIDC Endpoints](./api/oidc/oidc_endpoints.md) - OpenID Connect authentication endpoints
 
 ### Features & Components
 
@@ -24,6 +25,7 @@ Welcome to the Hydrogen Project documentation. This guide will help you understa
 - [Service Management](./service.md) - Service configuration
 - [Shutdown Architecture](./shutdown_architecture.md) - Safe system termination
 - [AI Integration](./ai_integration.md) - AI capabilities and implementations
+- [OIDC Integration](./oidc_integration.md) - OpenID Connect Identity Provider
 
 ### Use Cases
 
@@ -43,6 +45,7 @@ Welcome to the Hydrogen Project documentation. This guide will help you understa
 - [Print Queue Architecture](./reference/print_queue_architecture.md) - Detailed internal design of the print queue system
 - [WebSocket Server Architecture](./reference/websocket_architecture.md) - Implementation details of the WebSocket communication layer
 - [Network Interface Architecture](./reference/network_architecture.md) - Network abstraction layer design and implementation
+- [OIDC Architecture](./reference/oidc_architecture.md) - OpenID Connect service design and implementation
 
 ## Contributing
 

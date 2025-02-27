@@ -364,6 +364,46 @@ void create_default_config(const char* config_path) {
     
     json_object_set_new(root, "PrintQueue", print_queue);
 
+    // OIDC Configuration
+    json_t* oidc = json_object();
+    json_object_set_new(oidc, "Enabled", json_boolean(1));
+    json_object_set_new(oidc, "Issuer", json_string("https://hydrogen.example.com"));
+    
+    // OIDC Endpoints
+    json_t* endpoints = json_object();
+    json_object_set_new(endpoints, "Authorization", json_string("/oauth/authorize"));
+    json_object_set_new(endpoints, "Token", json_string("/oauth/token"));
+    json_object_set_new(endpoints, "Userinfo", json_string("/oauth/userinfo"));
+    json_object_set_new(endpoints, "Jwks", json_string("/oauth/jwks"));
+    json_object_set_new(endpoints, "Introspection", json_string("/oauth/introspect"));
+    json_object_set_new(endpoints, "Revocation", json_string("/oauth/revoke"));
+    json_object_set_new(endpoints, "Registration", json_string("/oauth/register"));
+    json_object_set_new(oidc, "Endpoints", endpoints);
+    
+    // OIDC Key Management
+    json_t* keys = json_object();
+    json_object_set_new(keys, "RotationIntervalDays", json_integer(30));
+    json_object_set_new(keys, "StoragePath", json_string("/var/lib/hydrogen/oidc/keys"));
+    json_object_set_new(keys, "EncryptionEnabled", json_boolean(1));
+    json_object_set_new(oidc, "Keys", keys);
+    
+    // OIDC Token Settings
+    json_t* tokens = json_object();
+    json_object_set_new(tokens, "AccessTokenLifetime", json_integer(3600));        // 1 hour
+    json_object_set_new(tokens, "RefreshTokenLifetime", json_integer(86400 * 30)); // 30 days
+    json_object_set_new(tokens, "IdTokenLifetime", json_integer(3600));            // 1 hour
+    json_object_set_new(oidc, "Tokens", tokens);
+    
+    // OIDC Security Settings
+    json_t* security = json_object();
+    json_object_set_new(security, "RequirePkce", json_boolean(1));
+    json_object_set_new(security, "AllowImplicitFlow", json_boolean(0));
+    json_object_set_new(security, "AllowClientCredentials", json_boolean(1));
+    json_object_set_new(security, "RequireConsent", json_boolean(1));
+    json_object_set_new(oidc, "Security", security);
+    
+    json_object_set_new(root, "OIDC", oidc);
+
     if (json_dump_file(root, config_path, JSON_INDENT(4)) != 0) {
         log_this("Configuration", "Error: Unable to create default config at %s", LOG_LEVEL_DEBUG, config_path);
     } else {
@@ -875,6 +915,184 @@ AppConfig* load_config(const char* config_path) {
                 config->Logging.Console.Subsystems.LogQueueManager = json_is_integer(level) ? json_integer_value(level) : LOG_LEVEL_INFO;
             }
         }
+    }
+
+    // OIDC Configuration
+    json_t* oidc = json_object_get(root, "OIDC");
+    if (json_is_object(oidc)) {
+        // Basic settings
+        json_t* enabled = json_object_get(oidc, "Enabled");
+        config->oidc.enabled = json_is_boolean(enabled) ? json_boolean_value(enabled) : 1;
+        
+        json_t* issuer = json_object_get(oidc, "Issuer");
+        if (json_is_string(issuer)) {
+            config->oidc.issuer = strdup(json_string_value(issuer));
+        } else {
+            config->oidc.issuer = strdup("https://hydrogen.example.com");
+        }
+        
+        // Endpoints
+        json_t* endpoints = json_object_get(oidc, "Endpoints");
+        if (json_is_object(endpoints)) {
+            json_t* val;
+            
+            val = json_object_get(endpoints, "Authorization");
+            if (json_is_string(val)) {
+                config->oidc.endpoints.authorization = strdup(json_string_value(val));
+            } else {
+                config->oidc.endpoints.authorization = strdup("/oauth/authorize");
+            }
+            
+            val = json_object_get(endpoints, "Token");
+            if (json_is_string(val)) {
+                config->oidc.endpoints.token = strdup(json_string_value(val));
+            } else {
+                config->oidc.endpoints.token = strdup("/oauth/token");
+            }
+            
+            val = json_object_get(endpoints, "Userinfo");
+            if (json_is_string(val)) {
+                config->oidc.endpoints.userinfo = strdup(json_string_value(val));
+            } else {
+                config->oidc.endpoints.userinfo = strdup("/oauth/userinfo");
+            }
+            
+            val = json_object_get(endpoints, "Jwks");
+            if (json_is_string(val)) {
+                config->oidc.endpoints.jwks = strdup(json_string_value(val));
+            } else {
+                config->oidc.endpoints.jwks = strdup("/oauth/jwks");
+            }
+            
+            val = json_object_get(endpoints, "Introspection");
+            if (json_is_string(val)) {
+                config->oidc.endpoints.introspection = strdup(json_string_value(val));
+            } else {
+                config->oidc.endpoints.introspection = strdup("/oauth/introspect");
+            }
+            
+            val = json_object_get(endpoints, "Revocation");
+            if (json_is_string(val)) {
+                config->oidc.endpoints.revocation = strdup(json_string_value(val));
+            } else {
+                config->oidc.endpoints.revocation = strdup("/oauth/revoke");
+            }
+            
+            val = json_object_get(endpoints, "Registration");
+            if (json_is_string(val)) {
+                config->oidc.endpoints.registration = strdup(json_string_value(val));
+            } else {
+                config->oidc.endpoints.registration = strdup("/oauth/register");
+            }
+        } else {
+            // Default endpoints if not specified
+            config->oidc.endpoints.authorization = strdup("/oauth/authorize");
+            config->oidc.endpoints.token = strdup("/oauth/token");
+            config->oidc.endpoints.userinfo = strdup("/oauth/userinfo");
+            config->oidc.endpoints.jwks = strdup("/oauth/jwks");
+            config->oidc.endpoints.introspection = strdup("/oauth/introspect");
+            config->oidc.endpoints.revocation = strdup("/oauth/revoke");
+            config->oidc.endpoints.registration = strdup("/oauth/register");
+        }
+        
+        // Key Management
+        json_t* keys = json_object_get(oidc, "Keys");
+        if (json_is_object(keys)) {
+            json_t* val;
+            
+            val = json_object_get(keys, "RotationIntervalDays");
+            config->oidc.keys.rotation_interval_days = json_is_integer(val) ? json_integer_value(val) : 30;
+            
+            val = json_object_get(keys, "StoragePath");
+            if (json_is_string(val)) {
+                config->oidc.keys.storage_path = strdup(json_string_value(val));
+            } else {
+                config->oidc.keys.storage_path = strdup("/var/lib/hydrogen/oidc/keys");
+            }
+            
+            val = json_object_get(keys, "EncryptionEnabled");
+            config->oidc.keys.encryption_enabled = json_is_boolean(val) ? json_boolean_value(val) : 1;
+        } else {
+            // Default key management settings if not specified
+            config->oidc.keys.rotation_interval_days = 30;
+            config->oidc.keys.storage_path = strdup("/var/lib/hydrogen/oidc/keys");
+            config->oidc.keys.encryption_enabled = 1;
+        }
+        
+        // Token Settings
+        json_t* tokens = json_object_get(oidc, "Tokens");
+        if (json_is_object(tokens)) {
+            json_t* val;
+            
+            val = json_object_get(tokens, "AccessTokenLifetime");
+            config->oidc.tokens.access_token_lifetime = json_is_integer(val) ? json_integer_value(val) : 3600;
+            
+            val = json_object_get(tokens, "RefreshTokenLifetime");
+            config->oidc.tokens.refresh_token_lifetime = json_is_integer(val) ? json_integer_value(val) : 86400 * 30;
+            
+            val = json_object_get(tokens, "IdTokenLifetime");
+            config->oidc.tokens.id_token_lifetime = json_is_integer(val) ? json_integer_value(val) : 3600;
+        } else {
+            // Default token settings if not specified
+            config->oidc.tokens.access_token_lifetime = 3600;        // 1 hour
+            config->oidc.tokens.refresh_token_lifetime = 86400 * 30; // 30 days
+            config->oidc.tokens.id_token_lifetime = 3600;            // 1 hour
+        }
+        
+        // Security Settings
+        json_t* security = json_object_get(oidc, "Security");
+        if (json_is_object(security)) {
+            json_t* val;
+            
+            val = json_object_get(security, "RequirePkce");
+            config->oidc.security.require_pkce = json_is_boolean(val) ? json_boolean_value(val) : 1;
+            
+            val = json_object_get(security, "AllowImplicitFlow");
+            config->oidc.security.allow_implicit_flow = json_is_boolean(val) ? json_boolean_value(val) : 0;
+            
+            val = json_object_get(security, "AllowClientCredentials");
+            config->oidc.security.allow_client_credentials = json_is_boolean(val) ? json_boolean_value(val) : 1;
+            
+            val = json_object_get(security, "RequireConsent");
+            config->oidc.security.require_consent = json_is_boolean(val) ? json_boolean_value(val) : 1;
+        } else {
+            // Default security settings if not specified
+            config->oidc.security.require_pkce = 1;
+            config->oidc.security.allow_implicit_flow = 0;
+            config->oidc.security.allow_client_credentials = 1;
+            config->oidc.security.require_consent = 1;
+        }
+    } else {
+        // Use defaults if OIDC section is missing
+        config->oidc.enabled = 1;
+        config->oidc.issuer = strdup("https://hydrogen.example.com");
+        
+        // Default endpoints
+        config->oidc.endpoints.authorization = strdup("/oauth/authorize");
+        config->oidc.endpoints.token = strdup("/oauth/token");
+        config->oidc.endpoints.userinfo = strdup("/oauth/userinfo");
+        config->oidc.endpoints.jwks = strdup("/oauth/jwks");
+        config->oidc.endpoints.introspection = strdup("/oauth/introspect");
+        config->oidc.endpoints.revocation = strdup("/oauth/revoke");
+        config->oidc.endpoints.registration = strdup("/oauth/register");
+        
+        // Default key management
+        config->oidc.keys.rotation_interval_days = 30;
+        config->oidc.keys.storage_path = strdup("/var/lib/hydrogen/oidc/keys");
+        config->oidc.keys.encryption_enabled = 1;
+        
+        // Default tokens
+        config->oidc.tokens.access_token_lifetime = 3600;        // 1 hour
+        config->oidc.tokens.refresh_token_lifetime = 86400 * 30; // 30 days
+        config->oidc.tokens.id_token_lifetime = 3600;            // 1 hour
+        
+        // Default security
+        config->oidc.security.require_pkce = 1;
+        config->oidc.security.allow_implicit_flow = 0;
+        config->oidc.security.allow_client_credentials = 1;
+        config->oidc.security.require_consent = 1;
+        
+        log_this("Configuration", "Using default OIDC configuration", LOG_LEVEL_INFO);
     }
 
     json_decref(root);
