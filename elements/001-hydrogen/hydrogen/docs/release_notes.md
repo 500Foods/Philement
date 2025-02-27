@@ -21,6 +21,41 @@ EDITING GUIDELINES (not visible when rendered):
 
 ## 2025-Feb-27
 
+Bug Fixes:
+
+- Fixed OIDC client examples:
+  - Corrected malformed comment structure in client_credentials.c
+  - Resolved compilation errors in Client Credentials flow example
+  - Ensured clean build with strict compiler flags
+
+Testing System:
+
+- Added compilation verification test:
+  - Created test_compilation.sh script to verify clean builds
+  - Tests all build variants (standard, debug, valgrind) of main project
+  - Tests OIDC client examples compilation
+  - Treats warnings as errors for strict quality enforcement
+  - Integrated as first step in test workflow
+  - Added failure detection to skip subsequent tests if compilation fails
+  - Updated test documentation to reflect new capabilities
+
+Documentation:
+
+- Added developer onboarding resources:
+  - Created developer_onboarding.md with visual architecture diagrams
+  - Added code navigation guide with component relationships
+  - Created project glossary and implementation patterns
+  - Added development workflow guidance
+  - Updated both README files with references to new guide
+
+- Created AI assistant resources:
+  - Added AI_ASSISTANT.md with machine-optimized project information
+  - Structured project overview in YAML format for AI processing
+  - Added code pattern examples
+  - Included development workflow steps from onboarding to release
+  - Added HTML comment in README for AI discoverability
+  - Provided project-specific terminology for AI assistants
+
 OIDC Service:
 
 - Added full OpenID Connect (OIDC) Identity Provider capabilities:

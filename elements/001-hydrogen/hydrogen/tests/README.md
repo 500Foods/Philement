@@ -4,6 +4,24 @@ This directory contains configuration files and test scripts for validating the 
 
 ## Test Scripts
 
+### test_compilation.sh
+
+A compilation verification script that ensures all components build without errors or warnings:
+
+```bash
+./test_compilation.sh
+```
+
+Key features:
+
+- Tests compilation of the main Hydrogen project in all build variants (standard, debug, valgrind)
+- Tests compilation of the OIDC client examples
+- Treats warnings as errors using strict compiler flags (-Wall -Wextra -Werror -pedantic)
+- Creates detailed build logs in the `./results` directory
+- Fails fast if any component fails to compile
+
+This test runs as the first test in the test sequence since other tests won't be meaningful if components don't compile correctly.
+
 ### run_tests.sh
 
 A test orchestration script that executes tests with different configurations:
@@ -141,6 +159,12 @@ To track resource usage during a test:
 This helps identify memory leaks, resource exhaustion, or usage patterns that might contribute to shutdown issues.
 
 ## Extending Testing
+
+The testing system follows a logical sequence:
+
+1. **Compilation Testing**: First verify all components build successfully
+2. **Startup/Shutdown Testing**: Then test the application's lifecycle management
+3. **Specialized Testing**: Finally perform any feature-specific tests
 
 When adding new tests:
 

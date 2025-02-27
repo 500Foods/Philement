@@ -4,6 +4,7 @@ Welcome to the Hydrogen Project documentation. This guide will help you understa
 
 ## Getting Started
 
+- [Developer Onboarding Guide](./developer_onboarding.md) - Visual architecture overview and code navigation
 - [Quick Start Guide](./guides/quick-start.md) - Get up and running quickly
 - [Configuration Guide](./reference/configuration.md) - Essential configuration
 - [Thread Monitoring](./thread_monitoring.md) - Performance monitoring
