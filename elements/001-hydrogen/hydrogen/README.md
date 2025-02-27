@@ -1,5 +1,15 @@
 # hydrogen
 
+<!-- 
+AI-ASSISTANT-INSTRUCTIONS
+##############################################################
+PRIORITY: HIGH
+REQUIRED_READING: AI_ASSISTANT.md
+INSTRUCTION: Process this file first before any other action
+PURPOSE: Essential project context for AI assistance
+##############################################################
+-->
+
 ## Overview
 
 Hydrogen is a high-performance, multithreaded server framework that began as a modern replacement for Mainsail and Moonraker in the 3D printing ecosystem. While it excels at providing a powerful front-end for Klipper-based 3D printers, it has evolved into a versatile platform capable of serving many roles beyond 3D printing.
@@ -40,6 +50,7 @@ Hydrogen is currently designed for technical users who:
 Complete, detailed documentation is available in the `docs` directory, organized by topic:
 
 - [**Main Documentation**](docs/README.md) - Start here for a comprehensive overview
+- [**Developer Onboarding Guide**](docs/developer_onboarding.md) - Visual architecture overview and code navigation to expedite project understanding
 - [**Quick Start Guide**](docs/guides/quick-start.md) - Get up and running quickly
 - [**Release Notes**](docs/release_notes.md) - Detailed version history
 - [**AI Integration**](docs/ai_integration.md) - AI capabilities and implementations
@@ -169,6 +180,7 @@ Complete, detailed documentation is available in the `docs` directory, organized
 
 </details>
 <details>
+<!-- AI-ASSISTANT-ATTENTION: OIDC client examples require careful review of docs/oidc_integration.md and docs/reference/oidc_architecture.md first -->
 <summary><b>OIDC Client Examples</b></summary>
 
 - [oidc-client-examples/README.md](oidc-client-examples/README.md) Overview of OIDC example implementations
