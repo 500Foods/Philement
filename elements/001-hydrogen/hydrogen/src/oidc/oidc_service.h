@@ -22,43 +22,8 @@
 #include "../config/configuration.h"
 #include "../logging/logging.h"
 
-/*
- * OIDC Configuration
- * Defines the configuration settings for the OIDC service
- */
-typedef struct {
-    bool enabled;                    // Whether the OIDC service is enabled
-    char *issuer;                    // The issuer identifier (URL)
-    
-    struct {
-        char *authorization;         // Authorization endpoint path
-        char *token;                 // Token endpoint path
-        char *userinfo;              // UserInfo endpoint path
-        char *jwks;                  // JWKS endpoint path
-        char *introspection;         // Token introspection endpoint path
-        char *revocation;            // Token revocation endpoint path
-        char *registration;          // Client registration endpoint path
-    } endpoints;
-    
-    struct {
-        int rotation_interval_days;  // Number of days between key rotations
-        char *storage_path;          // Path to key storage
-        bool encryption_enabled;     // Whether to encrypt stored keys
-    } keys;
-    
-    struct {
-        int access_token_lifetime_seconds;    // Access token lifetime
-        int refresh_token_lifetime_seconds;   // Refresh token lifetime
-        int id_token_lifetime_seconds;        // ID token lifetime
-    } tokens;
-    
-    struct {
-        bool require_pkce;            // Whether to require PKCE
-        bool allow_implicit_flow;     // Whether to allow the implicit flow
-        bool allow_client_credentials; // Whether to allow client credentials
-        bool require_consent;         // Whether to require user consent
-    } security;
-} OIDCConfig;
+// OIDCConfig is defined in ../config/configuration.h
+// No need to redefine it here
 
 /*
  * OIDC Context
@@ -74,7 +39,46 @@ typedef struct {
     void *client_context;           // Client registry context
     void *data_context;             // Data storage context
 } OIDCContext;
+#include "oidc_clients.h"
+#include "oidc_keys.h"
+#include "oidc_tokens.h"
+#include "oidc_users.h"
 
+/*
+ * Client Registry Management Functions
+ * Handle OIDC client registration and lifecycle
+ */
+OIDCClientContext* init_oidc_client_registry(void);
+void cleanup_oidc_client_registry(OIDCClientContext *client_context);
+
+/*
+ * Key Management Functions
+ * Handle JWKS generation and key rotation
+ */
+OIDCKeyContext* init_oidc_key_management(const char *storage_path, bool encryption_enabled, int rotation_interval_days);
+void cleanup_oidc_key_management(OIDCKeyContext *key_context);
+char* oidc_generate_jwks(OIDCKeyContext *key_context);
+
+/*
+ * Token Service Functions
+ * Handle token creation and validation
+ */
+OIDCTokenContext* init_oidc_token_service(OIDCKeyContext *key_context, int access_token_lifetime, int refresh_token_lifetime, int id_token_lifetime);
+void cleanup_oidc_token_service(OIDCTokenContext *token_context);
+
+/*
+ * User Management Functions
+ * Handle user authentication and storage
+ */
+OIDCUserContext* init_oidc_user_management(int max_failed_attempts, bool require_email_verification, int password_min_length);
+void cleanup_oidc_user_management(OIDCUserContext *user_context);
+
+/*
+ * Endpoint Management Functions
+ * Handle API endpoint registration
+ */
+bool init_oidc_endpoints(OIDCContext *context);
+void cleanup_oidc_endpoints(void);
 /*
  * OIDC Token Types
  * Defines the different types of tokens issued by the OIDC service
