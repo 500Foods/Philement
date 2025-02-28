@@ -77,9 +77,9 @@ bool init_oidc_service(OIDCConfig *config) {
     log_this("OIDC", "Initializing token service", LOG_LEVEL_INFO);
     oidc_context->token_context = init_oidc_token_service(
         oidc_context->key_context,
-        config->tokens.access_token_lifetime_seconds,
-        config->tokens.refresh_token_lifetime_seconds,
-        config->tokens.id_token_lifetime_seconds
+        config->tokens.access_token_lifetime,
+        config->tokens.refresh_token_lifetime,
+        config->tokens.id_token_lifetime
     );
     if (!oidc_context->token_context) {
         log_this("OIDC", "Failed to initialize token service", LOG_LEVEL_ERROR);
@@ -190,6 +190,15 @@ char* oidc_process_authorization_request(const char *client_id, const char *redi
                                         const char *response_type, const char *scope, 
                                         const char *state, const char *nonce, 
                                         const char *code_challenge, const char *code_challenge_method) {
+    /* Mark unused parameters */
+    (void)redirect_uri;
+    (void)response_type;
+    (void)scope;
+    (void)state;
+    (void)nonce;
+    (void)code_challenge;
+    (void)code_challenge_method;
+    
     if (!oidc_context || !oidc_context->initialized) {
         log_this("OIDC", "OIDC service not initialized", LOG_LEVEL_ERROR);
         return NULL;
@@ -228,6 +237,13 @@ char* oidc_process_token_request(const char *grant_type, const char *code,
                                 const char *redirect_uri, const char *client_id, 
                                 const char *client_secret, const char *refresh_token, 
                                 const char *code_verifier) {
+    /* Mark unused parameters */
+    (void)code;
+    (void)redirect_uri;
+    (void)client_secret;
+    (void)refresh_token;
+    (void)code_verifier;
+    
     if (!oidc_context || !oidc_context->initialized) {
         log_this("OIDC", "OIDC service not initialized", LOG_LEVEL_ERROR);
         return NULL;
@@ -258,6 +274,9 @@ char* oidc_process_token_request(const char *grant_type, const char *code,
  * @return JSON response or NULL on error
  */
 char* oidc_process_userinfo_request(const char *access_token) {
+    /* Mark unused parameters */
+    (void)access_token;
+    
     if (!oidc_context || !oidc_context->initialized) {
         log_this("OIDC", "OIDC service not initialized", LOG_LEVEL_ERROR);
         return NULL;
@@ -290,6 +309,11 @@ char* oidc_process_userinfo_request(const char *access_token) {
  */
 char* oidc_process_introspection_request(const char *token, const char *token_type_hint, 
                                         const char *client_id, const char *client_secret) {
+    /* Mark unused parameters */
+    (void)token;
+    (void)token_type_hint;
+    (void)client_secret;
+    
     if (!oidc_context || !oidc_context->initialized) {
         log_this("OIDC", "OIDC service not initialized", LOG_LEVEL_ERROR);
         return NULL;
@@ -322,6 +346,11 @@ char* oidc_process_introspection_request(const char *token, const char *token_ty
  */
 bool oidc_process_revocation_request(const char *token, const char *token_type_hint, 
                                     const char *client_id, const char *client_secret) {
+    /* Mark unused parameters */
+    (void)token;
+    (void)token_type_hint;
+    (void)client_secret;
+    
     if (!oidc_context || !oidc_context->initialized) {
         log_this("OIDC", "OIDC service not initialized", LOG_LEVEL_ERROR);
         return false;

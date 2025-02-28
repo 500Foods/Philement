@@ -395,6 +395,7 @@ static void *websocket_server_run(void *arg)
             
             // Wait for condition or timeout
             int wait_result = pthread_cond_timedwait(&ws_context->cond, &ws_context->mutex, &ts);
+            (void)wait_result;  /* Mark unused variable */
             
             // Increment counter and log periodic updates
             shutdown_wait++;

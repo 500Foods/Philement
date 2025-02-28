@@ -21,49 +21,34 @@ EDITING GUIDELINES (not visible when rendered):
 
 ## 2025-Feb-27
 
-Bug Fixes:
+## Code Quality and Compilation:
+
+- Fixed compilation issues across OIDC components:
+  - Fixed function signature mismatches in oidc_tokens.c:
+    - Updated token generation functions to use OIDCTokenClaims
+    - Corrected return types for token validation functions
+    - Added missing parameters to ensure header/implementation consistency
+  - Removed duplicate OIDCConfig definition (now in configuration.h)
+  - Resolved compiler warnings by adding proper (void) casts for unused parameters
+  - Fixed unused variable in websocket_server.c
+  - Ensured clean builds with strict compiler flags (-Wall -Wextra -pedantic)
 
 - Fixed OIDC client examples:
   - Corrected malformed comment structure in client_credentials.c
   - Resolved compilation errors in Client Credentials flow example
   - Ensured clean build with strict compiler flags
 
-Testing System:
+## OIDC Service Architecture:
 
-- Added compilation verification test:
-  - Created test_compilation.sh script to verify clean builds
-  - Tests all build variants (standard, debug, valgrind) of main project
-  - Tests OIDC client examples compilation
-  - Treats warnings as errors for strict quality enforcement
-  - Integrated as first step in test workflow
-  - Added failure detection to skip subsequent tests if compilation fails
-  - Updated test documentation to reflect new capabilities
+- Implemented new client registry system:
+  - Added oidc_clients.h and oidc_clients.c for client management
+  - Created client validation and authentication methods
+  - Added support for client credentials
 
-Documentation:
-
-- Added developer onboarding resources:
-  - Created developer_onboarding.md with visual architecture diagrams
-  - Added code navigation guide with component relationships
-  - Created project glossary and implementation patterns
-  - Added development workflow guidance
-  - Updated both README files with references to new guide
-
-- Created AI assistant resources:
-  - Added AI_ASSISTANT.md with machine-optimized project information
-  - Structured project overview in YAML format for AI processing
-  - Added code pattern examples
-  - Included development workflow steps from onboarding to release
-  - Added HTML comment in README for AI discoverability
-  - Provided project-specific terminology for AI assistants
-
-OIDC Service:
-
-- Added full OpenID Connect (OIDC) Identity Provider capabilities:
+- Added full OpenID Connect Identity Provider capabilities:
   - Core OIDC service with standard endpoints (authorization, token, userinfo)
   - JWT token handling with RSA key rotation and management
-  - Client registration and management system
   - User identity and profile management
-  - Flexible configuration for token lifetimes and security policies
   - Support for multiple authentication flows (authorization code, client credentials)
 
 - Configuration Framework:
@@ -78,31 +63,45 @@ OIDC Service:
   - Added client registration endpoint
 
 - Client Examples:
-  - Created comprehensive client integration examples for multiple languages:
-    - Implemented C client examples for three OAuth flows (auth_code_flow.c, client_credentials.c, password_flow.c)
-    - Developed a JavaScript browser-based client example (auth_code_flow.html)
-    - Added detailed README with client registration and security best practices
-    - Included extensive documentation within each example explaining OAuth flows
-    - Implemented proper error handling and token validation in all examples
-    - Created a Makefile for easy compilation of C examples
+  - Created comprehensive client integration examples for multiple languages
+  - Implemented C client examples for three OAuth flows
+  - Developed a JavaScript browser-based client example
+  - Created a Makefile for easy compilation of C examples
 
-- Documentation:
+## Testing:
+
+- Added compilation verification test:
+  - Created test_compilation.sh script to verify clean builds
+  - Tests all build variants (standard, debug, valgrind) of main project
+  - Tests OIDC client examples compilation
+  - Treats warnings as errors for strict quality enforcement
+  - Integrated as first step in test workflow
+  - Added failure detection to skip subsequent tests if compilation fails
+
+## Documentation:
+
+- Added developer onboarding resources:
+  - Created developer_onboarding.md with visual architecture diagrams
+  - Added code navigation guide with component relationships
+  - Created project glossary and implementation patterns
+  - Added development workflow guidance
+
+- Created AI assistant resources:
+  - Added AI_ASSISTANT.md with machine-optimized project information
+  - Structured project overview in YAML format for AI processing
+  - Added HTML comment in README for AI discoverability
+
+- Enhanced OIDC-specific documentation:
   - Created comprehensive OIDC architecture documentation
   - Added code examples for client integration
-  - Provided implementation references for all OIDC features
-  - Created detailed OIDC architecture reference document
   - Added explanations of token structures and security considerations
+  - Updated test documentation to reflect new capabilities
 
-- Coding Guidelines:
-  - Enhanced coding guidelines with security-focused sections:
-    - Added security coding standards for OIDC and authentication systems
-    - Provided specific guidance for JWT and token handling
-    - Added best practices for cryptographic operations
-    - Created standards for secure input validation
-    - Implemented guidelines for security-aware error handling
-    - Added requirements for security-focused documentation
-    - Provided patterns for secure configuration management
-    - Created security code review checklist and requirements
+- Enhanced security documentation:
+  - Added security coding standards for OIDC and authentication systems
+  - Provided specific guidance for JWT and token handling
+  - Added best practices for cryptographic operations
+  - Created standards for secure input validation
 
 ## 2025-Feb-26
 
