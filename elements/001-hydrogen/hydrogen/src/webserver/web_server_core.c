@@ -110,6 +110,11 @@ bool init_web_server(WebConfig *web_config) {
     return true;
 }
 
+// Option constants for microhttpd
+#ifndef MHD_OPTION_LISTENING_ADDRESS_REUSE
+#define MHD_OPTION_LISTENING_ADDRESS_REUSE 5
+#endif
+
 void* run_web_server(void* arg) {
     (void)arg; // Unused parameter
 
@@ -124,9 +129,15 @@ void* run_web_server(void* arg) {
         log_this("WebServer", "Starting with IPv6 dual-stack support", LOG_LEVEL_INFO);
     }
 
-    web_daemon = MHD_start_daemon(flags, server_web_config->port, NULL, NULL,
+    log_this("WebServer", "Setting SO_REUSEADDR to enable immediate socket rebinding", LOG_LEVEL_INFO);
+    
+    // Start the daemon normally but include the SO_REUSEADDR setting
+    web_daemon = MHD_start_daemon(flags, 
+                                server_web_config->port, 
+                                NULL, NULL,
                                 &handle_request, NULL,
                                 MHD_OPTION_NOTIFY_COMPLETED, request_completed, NULL,
+                                MHD_OPTION_LISTENING_ADDRESS_REUSE, 1, // Enable SO_REUSEADDR for port rebinding
                                 MHD_OPTION_THREAD_STACK_SIZE, (1024 * 1024), // 1MB stack size
                                 MHD_OPTION_END);
     if (web_daemon == NULL) {
