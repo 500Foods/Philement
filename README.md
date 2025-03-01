@@ -61,7 +61,7 @@ There are countless tools, frameworks, coding styles, conventions, languages, an
 - Prefer JSON rather than YAML or other file formats.
 
 ## Repository Information 
-[![Count Lines of Code](https://github.com/500Foods/Template/actions/workflows/main.yml/badge.svg)](https://github.com/500Foods/Template/actions/workflows/main.yml)
+[![Count Lines of Code](https://github.com/500Foods/Philement/actions/workflows/main.yml/badge.svg)](https://github.com/500Foods/Philement/actions/workflows/main.yml)
 <!--CLOC-START -->
 ```
 Last updated at 2025-03-01 07:17:10 UTC
