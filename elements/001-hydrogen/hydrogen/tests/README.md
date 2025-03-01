@@ -2,6 +2,25 @@
 
 This directory contains configuration files and test scripts for validating the Hydrogen 3D printer control server.
 
+## Test Utilities
+
+### test_utils.sh
+
+A shared library of utilities that standardizes the formatting and output of all test scripts:
+
+```bash
+source test_utils.sh
+```
+
+Key features:
+
+- Provides consistent colored output for all tests
+- Standardizes formatting of test headers and results with checkmarks/X marks
+- Implements common test flow with start_test and end_test functions
+- Supports consistent summary generation across all tests
+
+This library is sourced by all test scripts to ensure consistent visual presentation and reporting.
+
 ## Test Scripts
 
 ### test_compilation.sh
@@ -24,7 +43,7 @@ This test runs as the first test in the test sequence since other tests won't be
 
 ### run_tests.sh
 
-A test orchestration script that executes tests with different configurations:
+A test orchestration script that executes tests with different configurations and provides a comprehensive summary:
 
 ```bash
 # Run all tests
@@ -37,7 +56,7 @@ A test orchestration script that executes tests with different configurations:
 ./run_tests.sh max
 ```
 
-The script provides formatted output with test results and automatically makes other test scripts executable.
+The script provides formatted output with test results, automatically makes other test scripts executable, and generates a comprehensive summary of all test results with visual pass/fail indicators.
 
 ### test_startup_shutdown.sh
 
@@ -55,6 +74,23 @@ Key features:
 - Monitors for successful completion or timeout
 - Collects detailed diagnostics if shutdown stalls
 - Creates logs in the `./results` directory
+- Uses standardized formatting from test_utils.sh
+
+### test_system_endpoints.sh
+
+Tests the system API endpoints to ensure they respond correctly:
+
+```bash
+./test_system_endpoints.sh
+```
+
+Key features:
+
+- Tests all system API endpoints (health, info, test)
+- Validates response content and format
+- Checks for proper JSON formatting
+- Monitors server stability during tests
+- Uses standardized formatting from test_utils.sh
 
 ### analyze_stuck_threads.sh
 
@@ -68,7 +104,7 @@ Key features:
 
 - Examines all threads in a running process
 - Identifies problematic thread states (especially uninterruptible sleep)
-- Captures kernel stacks, wait channels info, and syscall information
+- Captures kernel stacks, wait channel info, and syscall information
 - Outputs detailed diagnostics to the `./diagnostics` directory
 
 ### monitor_resources.sh
@@ -110,6 +146,22 @@ This configuration file provides a **maximal** setup to test the full feature se
 
 Purpose: Validate that all subsystems can start and stop correctly, testing the complete initialization and shutdown process with all features enabled.
 
+## Test Output
+
+All tests now provide standardized output with:
+
+- Consistent colored headers and section breaks
+- Checkmarks (✅) for passed tests
+- X marks (❌) for failed tests
+- Warning symbols (⚠️) for tests that pass with warnings
+- Info symbols (ℹ️) for informational messages
+- Detailed test summaries with pass/fail counts
+
+When running the full test suite with `run_tests.sh all`, a comprehensive summary is generated showing:
+- Individual test results for each component
+- Overall pass/fail statistics
+- Final pass/fail determination
+
 ## Usage Examples
 
 ### Basic Testing
@@ -120,7 +172,7 @@ To run tests with both configurations using the orchestration script:
 ./run_tests.sh all
 ```
 
-This will run tests with both minimal and maximal configurations and provide a summary of results.
+This will run all tests and provide a comprehensive summary of results with standardized formatting.
 
 ### Manual Testing
 
@@ -164,7 +216,8 @@ The testing system follows a logical sequence:
 
 1. **Compilation Testing**: First verify all components build successfully
 2. **Startup/Shutdown Testing**: Then test the application's lifecycle management
-3. **Specialized Testing**: Finally perform any feature-specific tests
+3. **API Testing**: Test system endpoints to verify API functionality
+4. **Specialized Testing**: Finally perform any feature-specific tests
 
 When adding new tests:
 
@@ -172,5 +225,6 @@ When adding new tests:
 2. Document the purpose and expected outcomes in this README
 3. Ensure all test configurations use relative paths for portability
 4. Set appropriate log levels for the components being tested
+5. Source the test_utils.sh file for standardized formatting
 
 See the [Testing Documentation](../docs/testing.md) for more information about the Hydrogen testing approach.

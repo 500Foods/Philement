@@ -1,0 +1,660 @@
+{
+  "version": {
+    "server": "0.1.0",
+    "api": "1.0"
+  },
+  "system": {
+    "sysname": "Linux",
+    "nodename": "angrin.500foods.com",
+    "release": "5.10.15-200.fc33.x86_64",
+    "version": "#1 SMP Wed Feb 10 17:46:55 UTC 2021",
+    "machine": "x86_64",
+    "cpu_usage": {
+      "total": "15.007"
+    },
+    "cpu_usage_per_core": {
+      "cpu0": "15.002",
+      "cpu1": "14.986",
+      "cpu2": "14.830",
+      "cpu3": "15.096",
+      "cpu4": "14.769",
+      "cpu5": "14.016",
+      "cpu6": "14.670",
+      "cpu7": "14.476",
+      "cpu8": "14.499",
+      "cpu9": "16.726",
+      "cpu10": "15.249",
+      "cpu11": "15.763"
+    },
+    "load_1min": "2.024",
+    "load_5min": "2.125",
+    "load_15min": "1.939",
+    "memory": {
+      "total": 33323405312,
+      "used": 32073793536,
+      "free": 1249611776,
+      "used_percent": "96.250",
+      "swap_total": 30006038528,
+      "swap_used": 26361339904,
+      "swap_free": 3644698624,
+      "swap_used_percent": "87.853"
+    },
+    "network": {
+      "virbr1": {
+        "name": "virbr1",
+        "addresses": [
+          "192.168.100.1"
+        ],
+        "rx_bytes": 2015966,
+        "tx_bytes": 1643100
+      },
+      "bridge0": {
+        "name": "bridge0",
+        "addresses": [
+          "192.168.0.44",
+          "fd8f:a4ad:b5b8:e348:72a:69a0:c3ec:40ec",
+          "fe80::192e:dfdd:dcc9:4f01"
+        ],
+        "rx_bytes": 23249514915,
+        "tx_bytes": 8669364447
+      },
+      "vnet3": {
+        "name": "vnet3",
+        "addresses": [
+          "fe80::fc54:ff:fe00:2d5e"
+        ],
+        "rx_bytes": 48977506,
+        "tx_bytes": 1822903388
+      },
+      "vnet4": {
+        "name": "vnet4",
+        "addresses": [
+          "fe80::fc54:ff:fea0:2c89"
+        ],
+        "rx_bytes": 2469594,
+        "tx_bytes": 19789810
+      },
+      "vnet5": {
+        "name": "vnet5",
+        "addresses": [
+          "fe80::fc54:ff:fe47:742b"
+        ],
+        "rx_bytes": 4270521307,
+        "tx_bytes": 47448768118
+      }
+    },
+    "filesystems": {
+      "/sys/kernel/security": {
+        "device": "securityfs",
+        "mount_point": "/sys/kernel/security",
+        "type": "securityfs",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/dev/pts": {
+        "device": "devpts",
+        "mount_point": "/dev/pts",
+        "type": "devpts",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/sys/fs/cgroup": {
+        "device": "cgroup2",
+        "mount_point": "/sys/fs/cgroup",
+        "type": "cgroup2",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/sys/fs/pstore": {
+        "device": "pstore",
+        "mount_point": "/sys/fs/pstore",
+        "type": "pstore",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/sys/fs/bpf": {
+        "device": "none",
+        "mount_point": "/sys/fs/bpf",
+        "type": "bpf",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/sys/kernel/tracing": {
+        "device": "none",
+        "mount_point": "/sys/kernel/tracing",
+        "type": "tracefs",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/": {
+        "device": "/dev/mapper/fedora_localhost--live-root",
+        "mount_point": "/",
+        "type": "ext4",
+        "total_space": 52521566208,
+        "used_space": 42746048512,
+        "available_space": 7074385920,
+        "used_percent": "81.388"
+      },
+      "/proc/sys/fs/binfmt_misc": {
+        "device": "binfmt_misc",
+        "mount_point": "/proc/sys/fs/binfmt_misc",
+        "type": "binfmt_misc",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/sys/kernel/debug": {
+        "device": "debugfs",
+        "mount_point": "/sys/kernel/debug",
+        "type": "debugfs",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/dev/hugepages": {
+        "device": "hugetlbfs",
+        "mount_point": "/dev/hugepages",
+        "type": "hugetlbfs",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/dev/mqueue": {
+        "device": "mqueue",
+        "mount_point": "/dev/mqueue",
+        "type": "mqueue",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/run/credentials/systemd-journald.service": {
+        "device": "none",
+        "mount_point": "/run/credentials/systemd-journald.service",
+        "type": "ramfs",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/run/credentials/systemd-udev-load-credentials.service": {
+        "device": "none",
+        "mount_point": "/run/credentials/systemd-udev-load-credentials.service",
+        "type": "ramfs",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/sys/fs/fuse/connections": {
+        "device": "fusectl",
+        "mount_point": "/sys/fs/fuse/connections",
+        "type": "fusectl",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/sys/kernel/config": {
+        "device": "configfs",
+        "mount_point": "/sys/kernel/config",
+        "type": "configfs",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/run/credentials/systemd-tmpfiles-setup-dev-early.service": {
+        "device": "none",
+        "mount_point": "/run/credentials/systemd-tmpfiles-setup-dev-early.service",
+        "type": "ramfs",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/run/credentials/systemd-sysctl.service": {
+        "device": "none",
+        "mount_point": "/run/credentials/systemd-sysctl.service",
+        "type": "ramfs",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/run/credentials/systemd-tmpfiles-setup-dev.service": {
+        "device": "none",
+        "mount_point": "/run/credentials/systemd-tmpfiles-setup-dev.service",
+        "type": "ramfs",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/run/credentials/systemd-vconsole-setup.service": {
+        "device": "none",
+        "mount_point": "/run/credentials/systemd-vconsole-setup.service",
+        "type": "ramfs",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/boot": {
+        "device": "/dev/sda1",
+        "mount_point": "/boot",
+        "type": "ext4",
+        "total_space": 1020702720,
+        "used_space": 270282752,
+        "available_space": 679956480,
+        "used_percent": "26.480"
+      },
+      "/mnt/BigA": {
+        "device": "/dev/sdc1",
+        "mount_point": "/mnt/BigA",
+        "type": "ext4",
+        "total_space": 11904377847808,
+        "used_space": 446448664576,
+        "available_space": 10857905582080,
+        "used_percent": "3.750"
+      },
+      "/mnt/speedy": {
+        "device": "/dev/md1",
+        "mount_point": "/mnt/speedy",
+        "type": "ext4",
+        "total_space": 943796760576,
+        "used_space": 850593984512,
+        "available_space": 45189058560,
+        "used_percent": "90.125"
+      },
+      "/home": {
+        "device": "/dev/mapper/fedora_localhost--live-home",
+        "mount_point": "/home",
+        "type": "ext4",
+        "total_space": 63673479168,
+        "used_space": 56118308864,
+        "available_space": 4290326528,
+        "used_percent": "88.135"
+      },
+      "/mnt/extra": {
+        "device": "/dev/nvme1n1",
+        "mount_point": "/mnt/extra",
+        "type": "ext4",
+        "total_space": 1007060504576,
+        "used_space": 796692553728,
+        "available_space": 159140700160,
+        "used_percent": "79.111"
+      },
+      "/run/credentials/systemd-tmpfiles-setup.service": {
+        "device": "none",
+        "mount_point": "/run/credentials/systemd-tmpfiles-setup.service",
+        "type": "ramfs",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/run/credentials/systemd-resolved.service": {
+        "device": "none",
+        "mount_point": "/run/credentials/systemd-resolved.service",
+        "type": "ramfs",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/var/lib/nfs/rpc_pipefs": {
+        "device": "sunrpc",
+        "mount_point": "/var/lib/nfs/rpc_pipefs",
+        "type": "rpc_pipefs",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/run/vmblock-fuse": {
+        "device": "vmware-vmblock",
+        "mount_point": "/run/vmblock-fuse",
+        "type": "fuse.vmware-vmblock",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/run/user/1000/gvfs": {
+        "device": "gvfsd-fuse",
+        "mount_point": "/run/user/1000/gvfs",
+        "type": "fuse.gvfsd-fuse",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/mnt/SmallA": {
+        "device": "/dev/sdb1",
+        "mount_point": "/mnt/SmallA",
+        "type": "ext4",
+        "total_space": 4960384933888,
+        "used_space": 1584922869760,
+        "available_space": 3125396299776,
+        "used_percent": "31.952"
+      }
+    },
+    "logged_in_users": [
+      {
+        "username": "asimard",
+        "tty": "tty1",
+        "host": "",
+        "login_time": 1740185228
+      },
+      {
+        "username": "asimard",
+        "tty": "pts/0",
+        "host": ":0",
+        "login_time": 1740185233
+      },
+      {
+        "username": "asimard",
+        "tty": "pts/4",
+        "host": ":0",
+        "login_time": 1740437734
+      },
+      {
+        "username": "asimard",
+        "tty": "pts/3",
+        "host": ":0",
+        "login_time": 1740367407
+      },
+      {
+        "username": "asimard",
+        "tty": "pts/6",
+        "host": ":0",
+        "login_time": 1740677288
+      }
+    ]
+  },
+  "status": {
+    "server_running": true,
+    "server_stopping": false,
+    "server_starting": false,
+    "server_started": "1970-01-08T02:45:06.000Z",
+    "server_runtime": 1740185198,
+    "server_runtime_formatted": "20141d 0h 46m 38s",
+    "totalThreads": 8,
+    "totalVirtualMemoryBytes": 473694208,
+    "totalResidentMemoryBytes": 17338368,
+    "resources": {
+      "serviceResources": {
+        "threads": 7,
+        "virtualMemoryBytes": 696320,
+        "residentMemoryBytes": 696320,
+        "allocationPercent": "4.016"
+      },
+      "queueResources": {
+        "entries": 0,
+        "virtualMemoryBytes": 0,
+        "residentMemoryBytes": 0,
+        "allocationPercent": "0.000"
+      },
+      "otherResources": {
+        "threads": 1,
+        "virtualMemoryBytes": 472997888,
+        "residentMemoryBytes": 16642048,
+        "allocationPercent": "95.984"
+      }
+    },
+    "files": [
+      {
+        "fd": 0,
+        "type": "stdio",
+        "description": "stdin: terminal"
+      },
+      {
+        "fd": 1,
+        "type": "stdio",
+        "description": "stdout: terminal"
+      },
+      {
+        "fd": 2,
+        "type": "stdio",
+        "description": "stderr: terminal"
+      },
+      {
+        "fd": 3,
+        "type": "file",
+        "description": "file: /var/log/hydrogen.log"
+      },
+      {
+        "fd": 4,
+        "type": "anon_inode",
+        "description": "event notification channel"
+      },
+      {
+        "fd": 5,
+        "type": "socket",
+        "description": "socket (tcp6 port 5000 - web server)"
+      },
+      {
+        "fd": 6,
+        "type": "device",
+        "description": "random number source"
+      },
+      {
+        "fd": 7,
+        "type": "socket",
+        "description": "socket (udp port 5353 - mDNS server)"
+      },
+      {
+        "fd": 8,
+        "type": "socket",
+        "description": "socket (inode: 82065220)"
+      },
+      {
+        "fd": 9,
+        "type": "socket",
+        "description": "socket (tcp6 port 5002)"
+      },
+      {
+        "fd": 10,
+        "type": "socket",
+        "description": "socket (udp6 port 5353 - mDNS server)"
+      },
+      {
+        "fd": 11,
+        "type": "socket",
+        "description": "socket (udp port 5353 - mDNS server)"
+      },
+      {
+        "fd": 12,
+        "type": "socket",
+        "description": "socket (udp6 port 5353 - mDNS server)"
+      },
+      {
+        "fd": 13,
+        "type": "socket",
+        "description": "socket (udp port 5353 - mDNS server)"
+      },
+      {
+        "fd": 14,
+        "type": "socket",
+        "description": "socket (udp6 port 5353 - mDNS server)"
+      },
+      {
+        "fd": 15,
+        "type": "socket",
+        "description": "socket (udp port 5353 - mDNS server)"
+      },
+      {
+        "fd": 16,
+        "type": "socket",
+        "description": "socket (udp6 port 5353 - mDNS server)"
+      },
+      {
+        "fd": 17,
+        "type": "socket",
+        "description": "socket (udp port 5353 - mDNS server)"
+      },
+      {
+        "fd": 18,
+        "type": "socket",
+        "description": "socket (udp6 port 5353 - mDNS server)"
+      },
+      {
+        "fd": 19,
+        "type": "socket",
+        "description": "socket (tcp6 port 5000 - web server)"
+      },
+      {
+        "fd": 20,
+        "type": "other",
+        "description": "/proc/2265174/fd"
+      },
+      {
+        "fd": 42,
+        "type": "file",
+        "description": "file: /home/asimard/.config/Code/logs/20250228T150153/ptyhost.log"
+      },
+      {
+        "fd": 43,
+        "type": "socket",
+        "description": "Unix domain socket: 470: 00000000000000000000000000000000:EB2C 00000000000000000000000000000000:0000 07 00000000:00000000 00:00000000 00000000  1000        0 6361375 2 0000000097ce26bd 0\n"
+      },
+      {
+        "fd": 44,
+        "type": "device",
+        "description": "/dev/ptmx"
+      },
+      {
+        "fd": 45,
+        "type": "device",
+        "description": "/dev/ptmx"
+      },
+      {
+        "fd": 46,
+        "type": "device",
+        "description": "/dev/ptmx"
+      },
+      {
+        "fd": 103,
+        "type": "file",
+        "description": "file: /usr/share/code/v8_context_snapshot.bin"
+      }
+    ]
+  },
+  "queues": {
+    "log": {
+      "entryCount": 0,
+      "blockCount": 0,
+      "totalAllocation": 0,
+      "virtualMemoryBytes": 0,
+      "residentMemoryBytes": 0
+    },
+    "print": {
+      "entryCount": 0,
+      "blockCount": 0,
+      "totalAllocation": 0,
+      "virtualMemoryBytes": 0,
+      "residentMemoryBytes": 0
+    }
+  },
+  "enabledServices": [
+    "logging",
+    "web",
+    "websocket",
+    "mdns server",
+    "print"
+  ],
+  "services": {
+    "logging": {
+      "enabled": true,
+      "log_file": "/var/log/hydrogen.log",
+      "status": {
+        "messageCount": 0,
+        "threads": 1,
+        "virtualMemoryBytes": 139264,
+        "residentMemoryBytes": 139264,
+        "threadIds": [
+          2265176
+        ]
+      }
+    },
+    "web": {
+      "enabled": true,
+      "port": 5000,
+      "upload_path": "/api/upload",
+      "max_upload_size": 2147483648,
+      "status": {
+        "activeRequests": 0,
+        "totalRequests": 0,
+        "threads": 1,
+        "virtualMemoryBytes": 139264,
+        "residentMemoryBytes": 139264,
+        "threadIds": [
+          2265282
+        ]
+      }
+    },
+    "websocket": {
+      "enabled": true,
+      "port": 5001,
+      "protocol": "hydrogen-protocol",
+      "max_message_size": 2048,
+      "status": {
+        "threads": 1,
+        "uptime": 5,
+        "activeConnections": 0,
+        "totalConnections": 0,
+        "totalRequests": 0,
+        "virtualMemoryBytes": 139264,
+        "residentMemoryBytes": 139264,
+        "threadIds": [
+          2265180
+        ]
+      }
+    },
+    "mdns server": {
+      "enabled": true,
+      "device_id": "hydrogen-printer",
+      "friendly_name": "Hydrogen 3D Printer",
+      "model": "Hydrogen",
+      "manufacturer": "Philement",
+      "status": {
+        "discoveryCount": 0,
+        "threads": 1,
+        "virtualMemoryBytes": 139264,
+        "residentMemoryBytes": 139264,
+        "threadIds": [
+          2265181
+        ]
+      }
+    },
+    "print": {
+      "enabled": true,
+      "status": {
+        "queuedJobs": 0,
+        "completedJobs": 0,
+        "threads": 1,
+        "virtualMemoryBytes": 139264,
+        "residentMemoryBytes": 139264,
+        "threadIds": [
+          2265177
+        ]
+      }
+    }
+  }
+}

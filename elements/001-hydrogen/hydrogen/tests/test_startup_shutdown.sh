@@ -7,6 +7,9 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 
+# Include the common test utilities
+source "$SCRIPT_DIR/test_utils.sh"
+
 # Configuration
 HYDROGEN_BIN="$HYDROGEN_DIR/hydrogen"  # Path to hydrogen executable
 CONFIG_FILE="$1"                       # Accept config file as parameter
@@ -19,8 +22,8 @@ DIAG_DIR="$SCRIPT_DIR/diagnostics"       # Directory for diagnostic data
 
 # Check if config file is provided
 if [ -z "$CONFIG_FILE" ]; then
-    echo "Usage: $0 <config_file.json>"
-    echo "Example: $0 hydrogen_test_min.json"
+    print_warning "Usage: $0 <config_file.json>"
+    print_info "Example: $0 hydrogen_test_min.json"
     exit 1
 fi
 
@@ -31,28 +34,27 @@ RESULT_LOG="$RESULTS_DIR/test_${TIMESTAMP}_$(basename $CONFIG_FILE .json).log"
 DIAG_TEST_DIR="$DIAG_DIR/test_${TIMESTAMP}_$(basename $CONFIG_FILE .json)"
 mkdir -p "$DIAG_TEST_DIR"
 
-echo "=== HYDROGEN SHUTDOWN TEST ===" | tee -a "$RESULT_LOG"
-echo "Config: $CONFIG_FILE" | tee -a "$RESULT_LOG"
-echo "Timestamp: $(date)" | tee -a "$RESULT_LOG"
-echo "===============================" | tee -a "$RESULT_LOG"
+# Start the test
+start_test "Hydrogen Startup/Shutdown Test" | tee -a "$RESULT_LOG"
+print_info "Config: $CONFIG_FILE" | tee -a "$RESULT_LOG"
 
 # Start with clean log
 > "$LOG_FILE"
 
 # Launch Hydrogen in background
-echo "Starting Hydrogen with config: $CONFIG_FILE" | tee -a "$RESULT_LOG"
+print_info "Starting Hydrogen with config: $CONFIG_FILE" | tee -a "$RESULT_LOG"
 $HYDROGEN_BIN "$CONFIG_FILE" > "$LOG_FILE" 2>&1 &
 HYDROGEN_PID=$!
-echo "Started Hydrogen with PID: $HYDROGEN_PID" | tee -a "$RESULT_LOG"
+print_info "Started Hydrogen with PID: $HYDROGEN_PID" | tee -a "$RESULT_LOG"
 
 # Check if process is running
 if ! ps -p $HYDROGEN_PID > /dev/null; then
-    echo "ERROR: Hydrogen failed to start" | tee -a "$RESULT_LOG"
+    print_result 1 "Hydrogen failed to start" | tee -a "$RESULT_LOG"
     exit 1
 fi
 
 # Wait for startup with active log monitoring
-echo "Waiting for startup (max ${STARTUP_TIMEOUT}s)..." | tee -a "$RESULT_LOG"
+print_info "Waiting for startup (max ${STARTUP_TIMEOUT}s)..." | tee -a "$RESULT_LOG"
 
 # Initialize counters and state
 STARTUP_START=$(date +%s)
@@ -67,7 +69,7 @@ while true; do
     
     if [ $ELAPSED -ge $STARTUP_TIMEOUT ]; then
         printf "\n" | tee -a "$RESULT_LOG"
-        echo "Startup timeout after ${ELAPSED}s" | tee -a "$RESULT_LOG"
+        print_warning "Startup timeout after ${ELAPSED}s" | tee -a "$RESULT_LOG"
         break
     fi
     
@@ -86,7 +88,7 @@ while true; do
                 STARTUP_COMPLETE=true
                 printf "\n" | tee -a "$RESULT_LOG"
                 STARTUP_MS=$((ELAPSED * 1000 / 1000 % 1000))  # Calculate milliseconds
-                printf "Startup completed in %d.%03d seconds\n" $ELAPSED $STARTUP_MS | tee -a "$RESULT_LOG"
+                print_info "Startup completed in $ELAPSED.$STARTUP_MS seconds" | tee -a "$RESULT_LOG"
                 break
             fi
         fi
@@ -98,19 +100,19 @@ done
 
 # Check if process is still running after startup
 if ! ps -p $HYDROGEN_PID > /dev/null; then
-    echo "ERROR: Hydrogen crashed during startup" | tee -a "$RESULT_LOG"
+    print_result 1 "Hydrogen crashed during startup" | tee -a "$RESULT_LOG"
     cp "$LOG_FILE" "$DIAG_TEST_DIR/startup_crash.log"
     exit 1
 fi
 
 # Capture pre-shutdown diagnostics
-echo "Capturing pre-shutdown state..." | tee -a "$RESULT_LOG"
+print_info "Capturing pre-shutdown state..." | tee -a "$RESULT_LOG"
 ps -eLf | grep $HYDROGEN_PID > "$DIAG_TEST_DIR/pre_shutdown_threads.txt"
 cat /proc/$HYDROGEN_PID/status > "$DIAG_TEST_DIR/pre_shutdown_status.txt" 2>/dev/null
 ls -l /proc/$HYDROGEN_PID/fd/ > "$DIAG_TEST_DIR/pre_shutdown_fds.txt" 2>/dev/null
 
 # Send shutdown signal
-echo "Initiating shutdown at $(date +%H:%M:%S.%3N)" | tee -a "$RESULT_LOG"
+print_header "Initiating shutdown at $(date +%H:%M:%S.%3N)" | tee -a "$RESULT_LOG"
 SHUTDOWN_START=$(date +%s)
 kill -SIGINT $HYDROGEN_PID
 
@@ -119,8 +121,8 @@ LOG_SIZE_BEFORE=$(stat -c %s "$LOG_FILE" 2>/dev/null || echo 0)
 LAST_ACTIVITY=$(date +%s)
 # LOG_LINE_COUNT is already initialized and tracked during startup
 
-echo "Monitoring shutdown progress..." | tee -a "$RESULT_LOG"
-echo "Current log line count: $LOG_LINE_COUNT lines" | tee -a "$RESULT_LOG"
+print_info "Monitoring shutdown progress..." | tee -a "$RESULT_LOG"
+print_info "Current log line count: $LOG_LINE_COUNT lines" | tee -a "$RESULT_LOG"
 
 # While hydrogen is still running
 while ps -p $HYDROGEN_PID >/dev/null; do
@@ -130,7 +132,7 @@ while ps -p $HYDROGEN_PID >/dev/null; do
     
     # If shutdown is taking too long, collect diagnostics and force kill
     if [ $ELAPSED -ge $SHUTDOWN_TIMEOUT ]; then
-        echo "CRITICAL: Shutdown timeout after ${ELAPSED}s - collecting diagnostics" | tee -a "$RESULT_LOG"
+        print_result 1 "Shutdown timeout after ${ELAPSED}s - collecting diagnostics" | tee -a "$RESULT_LOG"
         
         # Comprehensive diagnostics collection when stuck
         echo "Thread states:" | tee -a "$DIAG_TEST_DIR/stuck_threads.txt"
@@ -160,7 +162,7 @@ while ps -p $HYDROGEN_PID >/dev/null; do
         done
         
         # Force termination
-        echo "Forcing termination after ${ELAPSED}s" | tee -a "$RESULT_LOG"
+        print_warning "Forcing termination after ${ELAPSED}s" | tee -a "$RESULT_LOG"
         kill -9 $HYDROGEN_PID
         break
     fi
@@ -199,7 +201,7 @@ while ps -p $HYDROGEN_PID >/dev/null; do
                 # Check if any threads are in uninterruptible sleep (D state)
                 D_STATE=$(ps -eLo stat,tid | grep -w "$HYDROGEN_PID" | grep -c "D" 2>/dev/null || echo 0)
                 if [ "$D_STATE" -gt 0 ]; then
-                    echo "CRITICAL: Detected ${D_STATE} threads in uninterruptible state" | tee -a "$RESULT_LOG"
+                    print_warning "Detected ${D_STATE} threads in uninterruptible state" | tee -a "$RESULT_LOG"
                     ps -eLo stat,tid,wchan,cmd | grep $HYDROGEN_PID | grep "D" >> "$DIAG_TEST_DIR/D_state_threads.txt" 2>/dev/null
                 fi
                 
@@ -219,18 +221,18 @@ if ! ps -p $HYDROGEN_PID >/dev/null; then
     SHUTDOWN_DURATION=$((SHUTDOWN_END - SHUTDOWN_START))
     SHUTDOWN_MS=$((SHUTDOWN_DURATION * 1000 / 1000 % 1000))  # Calculate milliseconds
     printf "\n" | tee -a "$RESULT_LOG"  # Ensure we end the in-place line
-    printf "Hydrogen shut down in %d.%03d seconds\n" $SHUTDOWN_DURATION $SHUTDOWN_MS | tee -a "$RESULT_LOG"
+    print_info "Hydrogen shut down in $SHUTDOWN_DURATION.$SHUTDOWN_MS seconds" | tee -a "$RESULT_LOG"
     
     # Analyze shutdown log for issues
     if grep -q "Shutdown complete" "$LOG_FILE"; then
-        echo "Clean shutdown detected" | tee -a "$RESULT_LOG"
+        print_info "Clean shutdown detected" | tee -a "$RESULT_LOG"
     else
-        echo "WARNING: No shutdown completion message found" | tee -a "$RESULT_LOG"
+        print_warning "No shutdown completion message found" | tee -a "$RESULT_LOG"
     fi
     
     # Check for known shutdown issues in logs
     if grep -q "threads still active" "$LOG_FILE"; then
-        echo "ISSUE DETECTED: Thread leak reported by Hydrogen" | tee -a "$RESULT_LOG"
+        print_warning "ISSUE DETECTED: Thread leak reported by Hydrogen" | tee -a "$RESULT_LOG"
         grep -A 10 "threads still active" "$LOG_FILE" | tee -a "$DIAG_TEST_DIR/thread_leak.txt"
     fi
     
@@ -243,7 +245,7 @@ if ! ps -p $HYDROGEN_PID >/dev/null; then
     
     if [ ! -z "$SHUTDOWN_START_LOG" ] && [ ! -z "$SHUTDOWN_END_LOG" ]; then
         LOG_LINES=$((SHUTDOWN_END_LOG - SHUTDOWN_START_LOG))
-        echo "Shutdown took ${LOG_LINES} log lines from signal to completion" | tee -a "$RESULT_LOG"
+        print_info "Shutdown took ${LOG_LINES} log lines from signal to completion" | tee -a "$RESULT_LOG"
         
         # Extract shutdown sequence from log
         sed -n "${SHUTDOWN_START_LOG},${SHUTDOWN_END_LOG}p" "$LOG_FILE" > "$DIAG_TEST_DIR/shutdown_sequence.txt"
@@ -251,27 +253,28 @@ if ! ps -p $HYDROGEN_PID >/dev/null; then
 fi
 
 # Generate summary report
-echo "=== SHUTDOWN TEST SUMMARY ===" | tee -a "$RESULT_LOG"
-echo "Config: $CONFIG_FILE" | tee -a "$RESULT_LOG"
-echo "Start time: $(date -d @$SHUTDOWN_START +"%H:%M:%S.%3N")" | tee -a "$RESULT_LOG"
-echo "End time: $(date -d @$SHUTDOWN_END +"%H:%M:%S.%3N")" | tee -a "$RESULT_LOG"
-printf "Duration: %d.%03d seconds\n" $SHUTDOWN_DURATION $SHUTDOWN_MS | tee -a "$RESULT_LOG"
-echo "Total log lines: $LOG_LINE_COUNT" | tee -a "$RESULT_LOG"
+print_header "Shutdown Test Summary" | tee -a "$RESULT_LOG"
+print_info "Config: $CONFIG_FILE" | tee -a "$RESULT_LOG"
+print_info "Start time: $(date -d @$SHUTDOWN_START +"%H:%M:%S.%3N")" | tee -a "$RESULT_LOG"
+print_info "End time: $(date -d @$SHUTDOWN_END +"%H:%M:%S.%3N")" | tee -a "$RESULT_LOG"
+print_info "Duration: $SHUTDOWN_DURATION.$SHUTDOWN_MS seconds" | tee -a "$RESULT_LOG"
+print_info "Total log lines: $LOG_LINE_COUNT" | tee -a "$RESULT_LOG"
 
 # Print final assessment and set exit code appropriately
 EXIT_CODE=0
 if [ $SHUTDOWN_DURATION -lt $SHUTDOWN_TIMEOUT ]; then
     if grep -q "threads still active" "$LOG_FILE" || ! grep -q "Shutdown complete" "$LOG_FILE"; then
-        echo "RESULT: PASSED WITH WARNINGS (shutdown completed but with issues)" | tee -a "$RESULT_LOG"
+        print_result 0 "PASSED WITH WARNINGS (shutdown completed but with issues)" | tee -a "$RESULT_LOG"
         # Warnings don't cause a test failure
     else
-        echo "RESULT: PASSED (clean shutdown)" | tee -a "$RESULT_LOG"
+        print_result 0 "PASSED (clean shutdown)" | tee -a "$RESULT_LOG"
     fi
 else
-    echo "RESULT: FAILED (shutdown timed out after ${SHUTDOWN_TIMEOUT}s)" | tee -a "$RESULT_LOG"
-    echo "Diagnostics saved to: $DIAG_TEST_DIR/" | tee -a "$RESULT_LOG"
+    print_result 1 "FAILED (shutdown timed out after ${SHUTDOWN_TIMEOUT}s)" | tee -a "$RESULT_LOG"
+    print_info "Diagnostics saved to: $DIAG_TEST_DIR/" | tee -a "$RESULT_LOG"
     EXIT_CODE=1  # Set non-zero exit code for failure
 fi
 
-echo "=== Test completed at $(date) ===" | tee -a "$RESULT_LOG"
+# End test
+end_test $EXIT_CODE "Startup/Shutdown Test with $CONFIG_FILE" | tee -a "$RESULT_LOG"
 exit $EXIT_CODE  # Return appropriate exit code
