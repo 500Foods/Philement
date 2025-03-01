@@ -73,8 +73,7 @@ static void get_socket_info(int inode, char *proto, int *port) {
                       &local_port, &socket_inode) == 2) {
                 if (socket_inode == (unsigned)inode) {
                     *port = local_port;
-                    strncpy(proto, net_files[i], 31);  // Use fixed size for early initialization
-                    proto[31] = '\0';
+                    snprintf(proto, 32, "%s", net_files[i]);  // 32 = size of proto buffer
                     fclose(f);
                     return;
                 }
@@ -168,9 +167,13 @@ static void get_fd_info(int fd, FileDescriptorInfo *info) {
         else if (strcmp(anon_type, "[timerfd]") == 0)
             snprintf(info->description, sizeof(info->description), "timer notification");
         else {
+            // Safely truncate anon_type to fixed size and ensure null-termination
             char truncated_type[239];  // Fixed size: DEFAULT_FD_DESCRIPTION_SIZE - 17
-            strncpy(truncated_type, anon_type, 238);  // Leave room for null terminator
-            truncated_type[238] = '\0';
+            size_t max_copy = sizeof(truncated_type) - 1; // Reserve space for null terminator
+            size_t copy_len = strlen(anon_type) < max_copy ? strlen(anon_type) : max_copy;
+            memcpy(truncated_type, anon_type, copy_len);
+            truncated_type[copy_len] = '\0'; // Ensure null termination
+            
             snprintf(info->description, sizeof(info->description), "anonymous inode: %s", truncated_type);
         }
         return;
@@ -179,22 +182,25 @@ static void get_fd_info(int fd, FileDescriptorInfo *info) {
     // Handle regular files and other types
     if (S_ISREG(st.st_mode)) {
         snprintf(info->type, sizeof(info->type), "file");
+        
+        // Safely truncate target path to fixed size and ensure null-termination
         char truncated_path[250];  // Fixed size: DEFAULT_FD_DESCRIPTION_SIZE - 6
-        strncpy(truncated_path, target, 249);  // Leave room for null terminator
-        truncated_path[249] = '\0';
+        size_t max_copy = sizeof(truncated_path) - 1; // Reserve space for null terminator
+        size_t copy_len = strlen(target) < max_copy ? strlen(target) : max_copy;
+        memcpy(truncated_path, target, copy_len);
+        truncated_path[copy_len] = '\0'; // Ensure null termination
+        
         snprintf(info->description, sizeof(info->description), "file: %s", truncated_path);
     } else if (strncmp(target, "/dev/", 5) == 0) {
         snprintf(info->type, sizeof(info->type), "device");
         if (strcmp(target, "/dev/urandom") == 0)
             snprintf(info->description, sizeof(info->description), "random number source");
         else {
-            strncpy(info->description, target, sizeof(info->description) - 1);
-            info->description[sizeof(info->description) - 1] = '\0';
+            snprintf(info->description, sizeof(info->description), "%s", target);
         }
     } else {
         snprintf(info->type, sizeof(info->type), "other");
-        strncpy(info->description, target, sizeof(info->description) - 1);
-        info->description[sizeof(info->description) - 1] = '\0';
+        snprintf(info->description, sizeof(info->description), "%s", target);
     }
 }
 

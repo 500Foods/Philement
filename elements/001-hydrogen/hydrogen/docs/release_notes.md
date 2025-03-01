@@ -26,6 +26,64 @@ EDITING GUIDELINES (not visible when rendered):
 
 ## 2025-Feb-28
 
+Build System:
+
+- Added optimized release build variant:
+  - Added -O2 -s flags for performance optimization and symbol removal
+  - Added -DNDEBUG flag to disable assertions in production
+  - Added -march=x86-64 -flto for platform optimization and link-time optimization
+  - Added -fstack-protector for additional security
+  - Added version definition with -DVERSION=\"1.0.0\"
+  - Integrated upx compression for reduced binary size
+  - Created dedicated build directory for release artifacts
+  - Added comprehensive clean target for all build variants
+
+- Improved version management:
+  - Fixed VERSION macro to support compile-time definition
+  - Added #ifndef guard in configuration.h to prevent redefinition
+  - Enabled version override via compiler flags
+  - Maintained backward compatibility with default version
+
+Testing:
+
+- Enhanced test framework with release build support:
+  - Modified test scripts to prioritize release build for all tests
+  - Added release build as the first tested variant in compilation tests
+  - Updated startup/shutdown tests to use release build when available
+  - Updated system endpoint tests to prefer release build
+  - Updated JSON error handling tests to use release build
+  - Added automatic fallback to standard build when release not available
+  - Preserved build variants between test stages for consistent testing
+  - Improved test run reliability and binary availability
+
+- Updated compilation test to fail when warnings are detected:
+  - Modified test_compilation.sh to set EXIT_CODE=1 on warning detection
+  - Ensures all builds, including debug build, must be warning-free
+  - Maintains strict code quality standards across all build types
+
+Code Quality:
+
+- Improved string handling in WebSocket and utility modules:
+  - Replaced unsafe strncpy usages with safer alternatives
+  - Implemented explicit string truncation with proper null termination
+  - Fixed format-truncation warnings in fixed-buffer string operations
+  - Ensured all builds compile cleanly with Address Sanitizer enabled
+  - Eliminated string handling warnings in all build types
+
+- Improved test artifacts management:
+  - Added automatic cleanup of log files before and after test runs
+  - Removed stray log files from tests directory
+  - Created consistent log handling across all test scripts
+  - Enhanced test environment cleanliness
+
+Configuration:
+
+- Improved JSON error handling:
+  - Added detailed JSON parsing error messages with line and column information
+  - Added user-friendly error output to stderr for configuration syntax issues
+  - Added graceful exit on JSON syntax errors to prevent segfaults
+  - Enhanced error diagnostics to simplify troubleshooting
+
 API Architecture:
 
 - Restructured API modules with endpoint-specific directories:

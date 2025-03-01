@@ -42,7 +42,10 @@
  * - Defaults: Safe fallback values when config items are missing
  * - Limits: System constraints and safety boundaries
  */
+// Allow VERSION to be defined by compiler flags (e.g., -DVERSION=\"1.0.0\")
+#ifndef VERSION
 #define VERSION "0.1.0"
+#endif
 #define DEFAULT_SERVER_NAME "Philement/hydrogen"
 #define DEFAULT_LOG_FILE "/var/log/hydrogen.log"
 #define DEFAULT_WEB_PORT 5000              // Standard HTTP port range
