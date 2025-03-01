@@ -136,6 +136,8 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
             return handle_system_info_request(connection);
         } else if (strcmp(url, "/api/system/health") == 0) {
             return handle_system_health_request(connection);
+        } else if (strcmp(url, "/api/system/test") == 0) {
+            return handle_system_test_request(connection, method, upload_data, upload_data_size, con_cls);
         }
 
         // Try to serve a static file
@@ -162,9 +164,14 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
         MHD_destroy_response(response);
         return ret;
     }
-
-    // Handle POST requests in web_server_upload.c
-    if (strcmp(method, "POST") == 0) {
+    // Handle POST requests
+    else if (strcmp(method, "POST") == 0) {
+        // API endpoints that support POST
+        if (strcmp(url, "/api/system/test") == 0) {
+            return handle_system_test_request(connection, method, upload_data, upload_data_size, con_cls);
+        }
+        
+        // Handle regular uploads
         return handle_upload_request(connection, upload_data, upload_data_size, con_cls);
     }
 

@@ -403,6 +403,11 @@ void create_default_config(const char* config_path) {
     json_object_set_new(oidc, "Security", security);
     
     json_object_set_new(root, "OIDC", oidc);
+    
+    // API Configuration
+    json_t* api = json_object();
+    json_object_set_new(api, "JWTSecret", json_string("hydrogen_api_secret_change_me"));
+    json_object_set_new(root, "API", api);
 
     if (json_dump_file(root, config_path, JSON_INDENT(4)) != 0) {
         log_this("Configuration", "Error: Unable to create default config at %s", LOG_LEVEL_DEBUG, config_path);
@@ -1093,6 +1098,21 @@ AppConfig* load_config(const char* config_path) {
         config->oidc.security.require_consent = 1;
         
         log_this("Configuration", "Using default OIDC configuration", LOG_LEVEL_INFO);
+    }
+    
+    // API Configuration
+    json_t* api_config = json_object_get(root, "API");
+    if (json_is_object(api_config)) {
+        json_t* jwt_secret = json_object_get(api_config, "JWTSecret");
+        if (json_is_string(jwt_secret)) {
+            config->api.jwt_secret = strdup(json_string_value(jwt_secret));
+        } else {
+            config->api.jwt_secret = strdup("hydrogen_api_secret_change_me");
+        }
+    } else {
+        // Use defaults if API section is missing
+        config->api.jwt_secret = strdup("hydrogen_api_secret_change_me");
+        log_this("Configuration", "Using default API configuration", LOG_LEVEL_INFO);
     }
 
     json_decref(root);

@@ -12,6 +12,9 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 OIDC_EXAMPLES_DIR="$HYDROGEN_DIR/oidc-client-examples/C"
 
+# Include the common test utilities
+source "$SCRIPT_DIR/test_utils.sh"
+
 # Output directories
 RESULTS_DIR="$SCRIPT_DIR/results"
 mkdir -p "$RESULTS_DIR"
@@ -23,11 +26,8 @@ RESULT_LOG="$RESULTS_DIR/test_${TIMESTAMP}_compilation.log"
 # Initialize exit code
 EXIT_CODE=0
 
-# Print header
-echo "=== HYDROGEN COMPILATION TEST ===" | tee -a "$RESULT_LOG"
-echo "Timestamp: $(date)" | tee -a "$RESULT_LOG"
-echo "===============================" | tee -a "$RESULT_LOG"
-echo "" | tee -a "$RESULT_LOG"
+# Start the test
+start_test "Hydrogen Compilation Test" | tee -a "$RESULT_LOG"
 
 # Test function for compilation
 test_compilation() {
@@ -35,9 +35,9 @@ test_compilation() {
     local BUILD_DIR=$2
     local BUILD_CMD=$3
     
-    echo "Testing compilation of $COMPONENT..." | tee -a "$RESULT_LOG"
-    echo "Build command: $BUILD_CMD" | tee -a "$RESULT_LOG"
-    echo "Working directory: $BUILD_DIR" | tee -a "$RESULT_LOG"
+    print_header "Testing compilation of $COMPONENT" | tee -a "$RESULT_LOG"
+    print_info "Build command: $BUILD_CMD" | tee -a "$RESULT_LOG"
+    print_info "Working directory: $BUILD_DIR" | tee -a "$RESULT_LOG"
     
     # Navigate to build directory and run build command
     cd "$BUILD_DIR"
@@ -67,18 +67,18 @@ test_compilation() {
     
     # Check if the build was successful
     if [ $BUILD_RESULT -eq 0 ]; then
-        echo "✅ $COMPONENT compiled successfully in ${DURATION}s" | tee -a "$RESULT_LOG"
+        print_result 0 "$COMPONENT compiled successfully in ${DURATION}s" | tee -a "$RESULT_LOG"
         
         # Check for warnings, even though we used -Werror, we'll do a double-check
         if grep -q "warning:" "$TEMP_LOG"; then
-            echo "⚠️  Warnings detected despite build success:" | tee -a "$RESULT_LOG"
+            print_warning "Warnings detected despite build success:" | tee -a "$RESULT_LOG"
             grep "warning:" "$TEMP_LOG" | tee -a "$RESULT_LOG"
             # Don't fail the test for this, just note it
         else
-            echo "No warnings detected" | tee -a "$RESULT_LOG"
+            print_info "No warnings detected" | tee -a "$RESULT_LOG"
         fi
     else
-        echo "❌ $COMPONENT compilation failed with exit code $BUILD_RESULT" | tee -a "$RESULT_LOG"
+        print_result 1 "$COMPONENT compilation failed with exit code $BUILD_RESULT" | tee -a "$RESULT_LOG"
         echo "" | tee -a "$RESULT_LOG"
         echo "==== BUILD OUTPUT ====" | tee -a "$RESULT_LOG"
         cat "$TEMP_LOG" | tee -a "$RESULT_LOG"
@@ -89,7 +89,7 @@ test_compilation() {
     echo "" | tee -a "$RESULT_LOG"
     
     # Append the full build log to the result log
-    echo "Full build log saved to: $TEMP_LOG" | tee -a "$RESULT_LOG"
+    print_info "Full build log saved to: $TEMP_LOG" | tee -a "$RESULT_LOG"
     
     # Return to script directory
     cd "$SCRIPT_DIR"
@@ -108,17 +108,12 @@ test_compilation "Hydrogen main project (valgrind build)" "$HYDROGEN_DIR" "make 
 test_compilation "OIDC client examples" "$OIDC_EXAMPLES_DIR" "make all"
 
 # Print final summary
-echo "=== COMPILATION TEST SUMMARY ===" | tee -a "$RESULT_LOG"
-echo "Timestamp: $(date)" | tee -a "$RESULT_LOG"
+print_header "Compilation Test Summary" | tee -a "$RESULT_LOG"
+print_info "Completed at: $(date)" | tee -a "$RESULT_LOG"
+print_info "Test log: $RESULT_LOG" | tee -a "$RESULT_LOG"
 
-if [ $EXIT_CODE -eq 0 ]; then
-    echo "RESULT: ✅ PASSED (All components compiled without errors)" | tee -a "$RESULT_LOG"
-else
-    echo "RESULT: ❌ FAILED (One or more components failed to compile)" | tee -a "$RESULT_LOG"
-fi
-
-echo "Test log: $RESULT_LOG" | tee -a "$RESULT_LOG"
-echo "==========================" | tee -a "$RESULT_LOG"
+# End test with appropriate result message
+end_test $EXIT_CODE "Compilation Test" | tee -a "$RESULT_LOG"
 
 # Exit with appropriate code
 exit $EXIT_CODE

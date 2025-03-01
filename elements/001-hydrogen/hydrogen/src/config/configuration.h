@@ -333,6 +333,14 @@ typedef struct {
     OIDCSecurityConfig security;  // Security policy settings
 } OIDCConfig;
 
+/*
+ * API Configuration:
+ * Settings for REST API endpoints, including authentication and common behaviors.
+ */
+typedef struct {
+    char *jwt_secret;        // Secret key for signing and validating API JWTs
+} APIConfig;
+
 typedef struct {
     char *server_name;      // Server identification
     char *executable_path;  // Binary location for resource loading
@@ -347,6 +355,7 @@ typedef struct {
     SystemMonitoringConfig monitoring; // System monitoring settings
     PrinterMotionConfig motion;       // Printer motion settings
     OIDCConfig oidc;       // OIDC service configuration
+    APIConfig api;         // API service configuration
 } AppConfig;
 /*
  * Global Configuration State:
