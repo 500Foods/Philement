@@ -63,7 +63,7 @@ CFLAGS = -std=c17 -Wall -Wextra -pedantic -O2 -DVERSION=\"$(VERSION)\"
 #    - Valgrind builds for memory checking
 #    - Release builds for deployment with maximum optimization
 
-LDFLAGS = -ljansson -lpthread -lmicrohttpd -lm -lssl -lcrypto -lwebsockets
+LDFLAGS = -ljansson -lpthread -lmicrohttpd -lm -lssl -lcrypto -lwebsockets -lbrotlienc -lbrotlidec
 
 # Directory structure
 SRC_DIR = src

@@ -16,6 +16,7 @@
 #include "api_utils.h"
 #include "../logging/logging.h"
 #include "../oidc/oidc_tokens.h"
+#include "../webserver/web_server_compression.h"
 
 /**
  * URL decode a string
@@ -208,34 +209,86 @@ enum MHD_Result api_send_json_response(struct MHD_Connection *connection,
         return ret;
     }
     
-    // Make a persistent copy of the JSON string that we control
+    // Check if client supports Brotli compression
+    bool use_brotli = client_accepts_brotli(connection);
+    
+    struct MHD_Response *response;
     size_t json_len = strlen(json_str);
-    char *json_copy = malloc(json_len + 1);
-    if (!json_copy) {
-        log_this("API Utils", "Failed to allocate memory for JSON response", LOG_LEVEL_ERROR);
-        free(json_str); // Free the string from json_dumps
-        json_decref(json_obj); // Clean up the JSON object
-        const char *error_response = "{\"error\": \"Out of memory\"}";
-        struct MHD_Response *response = MHD_create_response_from_buffer(
-            strlen(error_response), (void *)error_response, MHD_RESPMEM_PERSISTENT);
-        MHD_add_response_header(response, "Content-Type", "application/json");
-        enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_INTERNAL_SERVER_ERROR, response);
-        MHD_destroy_response(response);
-        return ret;
+    
+    if (use_brotli) {
+        // Compress the JSON data with Brotli
+        uint8_t *compressed_data = NULL;
+        size_t compressed_size = 0;
+        
+        if (compress_with_brotli((const uint8_t *)json_str, json_len, 
+                               &compressed_data, &compressed_size)) {
+            // Use the compressed data for the response
+            response = MHD_create_response_from_buffer(
+                compressed_size, compressed_data, MHD_RESPMEM_MUST_FREE);
+            
+            if (response) {
+                // Add Brotli encoding header
+                add_brotli_header(response);
+            } else {
+                // Failed to create response, clean up compressed data
+                free(compressed_data);
+                free(json_str);
+                json_decref(json_obj);
+                return MHD_NO;
+            }
+            
+            // Original JSON string can be freed now
+            free(json_str);
+        } else {
+            // Compression failed, fall back to uncompressed
+            char *json_str_copy = malloc(json_len + 1);
+            if (!json_str_copy) {
+                log_this("API Utils", "Failed to allocate memory for JSON response", LOG_LEVEL_ERROR);
+                free(json_str);
+                json_decref(json_obj);
+                const char *error_response = "{\"error\": \"Out of memory\"}";
+                response = MHD_create_response_from_buffer(
+                    strlen(error_response), (void *)error_response, MHD_RESPMEM_PERSISTENT);
+                MHD_add_response_header(response, "Content-Type", "application/json");
+                enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_INTERNAL_SERVER_ERROR, response);
+                MHD_destroy_response(response);
+                return ret;
+            }
+            
+            memcpy(json_str_copy, json_str, json_len + 1);
+            free(json_str);
+            
+            response = MHD_create_response_from_buffer(
+                json_len, json_str_copy, MHD_RESPMEM_MUST_FREE);
+        }
+    } else {
+        // Client doesn't support Brotli, use uncompressed
+        char *json_str_copy = malloc(json_len + 1);
+        if (!json_str_copy) {
+            log_this("API Utils", "Failed to allocate memory for JSON response", LOG_LEVEL_ERROR);
+            free(json_str);
+            json_decref(json_obj);
+            const char *error_response = "{\"error\": \"Out of memory\"}";
+            response = MHD_create_response_from_buffer(
+                strlen(error_response), (void *)error_response, MHD_RESPMEM_PERSISTENT);
+            MHD_add_response_header(response, "Content-Type", "application/json");
+            enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_INTERNAL_SERVER_ERROR, response);
+            MHD_destroy_response(response);
+            return ret;
+        }
+        
+        memcpy(json_str_copy, json_str, json_len + 1);
+        free(json_str);
+        
+        response = MHD_create_response_from_buffer(
+            json_len, json_str_copy, MHD_RESPMEM_MUST_FREE);
     }
-    
-    // Copy the string and clean up the original
-    memcpy(json_copy, json_str, json_len + 1);
-    free(json_str); // Free the string from json_dumps
-    
-    // Create the response with our persistent copy
-    struct MHD_Response *response = MHD_create_response_from_buffer(
-        json_len, json_copy, MHD_RESPMEM_MUST_FREE); // MHD will free our copy
     
     if (!response) {
         log_this("API Utils", "Failed to create MHD response", LOG_LEVEL_ERROR);
-        free(json_copy); // Free our copy since MHD won't
-        json_decref(json_obj); // Clean up JSON object
+        // Just clean up the JSON object - other resources were already 
+        // freed in their respective error handling paths
+        json_decref(json_obj);
         return MHD_NO;
     }
     
