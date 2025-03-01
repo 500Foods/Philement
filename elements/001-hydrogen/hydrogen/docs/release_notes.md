@@ -38,6 +38,14 @@ Build System:
   - Created dedicated build directory for release artifacts
   - Added comprehensive clean target for all build variants
 
+- Enhanced versioning system:
+  - Implemented git-based versioning scheme with auto-incrementing build numbers
+  - Added MAJOR.MINOR.PATCH.BUILD format for consistent version identification
+  - Derived BUILD number from git commit history (commit count + base offset)
+  - Ensured version information is passed to all compilation steps
+  - Modified startup logging to display version and release timestamp
+  - Standardized version and release presentation in all logging
+
 - Improved version management:
   - Fixed VERSION macro to support compile-time definition
   - Added #ifndef guard in configuration.h to prevent redefinition

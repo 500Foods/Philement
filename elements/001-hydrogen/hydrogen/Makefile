@@ -27,11 +27,17 @@
 #    - Binary compression for minimal footprint
 
 # Version information
-VERSION = 1.0.0
+MAJOR = 1
+MINOR = 0
+PATCH = 0
+GIT_BUILD = $(shell git log --oneline . | wc -l | tr -d ' ')
+BUILD = $(shell expr $(GIT_BUILD) + 1000)
+
+VERSION = $(MAJOR).$(MINOR).$(PATCH).$(BUILD)
 
 # Compiler selection and optimization flags
 CC = gcc
-CFLAGS = -std=c17 -Wall -Wextra -pedantic -O2
+CFLAGS = -std=c17 -Wall -Wextra -pedantic -O2 -DVERSION=\"$(VERSION)\"
 
 # External Dependencies
 #
@@ -93,12 +99,12 @@ release: $(RELEASE_TARGET)
 
 
 # Debug build: includes Address Sanitizer and debug symbols
-debug: CFLAGS += -g -fsanitize=address -fno-omit-frame-pointer
+debug: CFLAGS += -g -fsanitize=address -fno-omit-frame-pointer -DVERSION=\"$(VERSION)\"
 debug: LDFLAGS += -fsanitize=address
 debug: $(DEBUG_TARGET)
 
 # Valgrind build: includes debug symbols for memory checking
-valgrind: CFLAGS += -g
+valgrind: CFLAGS += -g -DVERSION=\"$(VERSION)\"
 valgrind: $(VALGRIND_TARGET)
 
 # Linking rules for each build configuration
