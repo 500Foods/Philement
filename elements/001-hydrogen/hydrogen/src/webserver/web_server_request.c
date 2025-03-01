@@ -14,6 +14,7 @@
 #include "web_server_request.h"
 #include "web_server_core.h"
 #include "web_server_upload.h"
+#include "web_server_compression.h"
 #include "../utils/utils_threads.h"
 #include "../logging/logging.h"
 
@@ -21,23 +22,35 @@
 extern AppConfig *app_config;
 
 static enum MHD_Result serve_file(struct MHD_Connection *connection, const char *file_path) {
-    int fd = open(file_path, O_RDONLY);
+    // Check if client accepts Brotli compression
+    bool accepts_brotli = client_accepts_brotli(connection);
+    
+    // If client accepts Brotli, check if we have a pre-compressed version
+    char br_file_path[PATH_MAX];
+    bool use_br_file = accepts_brotli && brotli_file_exists(file_path, br_file_path, sizeof(br_file_path));
+    
+    // If we're using a pre-compressed file, use that instead
+    const char *path_to_serve = use_br_file ? br_file_path : file_path;
+    
+    // Open the file
+    int fd = open(path_to_serve, O_RDONLY);
     if (fd == -1) return MHD_NO;
-
+    
     struct stat st;
     if (fstat(fd, &st) == -1) {
         close(fd);
         return MHD_NO;
     }
-
+    
     struct MHD_Response *response = MHD_create_response_from_fd(st.st_size, fd);
     if (!response) {
         close(fd);
         return MHD_NO;
     }
-
+    
     add_cors_headers(response);
-
+    
+    // Set Content-Type based on the original file (not the .br version)
     const char *ext = strrchr(file_path, '.');
     if (ext) {
         if (strcmp(ext, ".html") == 0) MHD_add_response_header(response, "Content-Type", "text/html");
@@ -45,7 +58,13 @@ static enum MHD_Result serve_file(struct MHD_Connection *connection, const char 
         else if (strcmp(ext, ".js") == 0) MHD_add_response_header(response, "Content-Type", "application/javascript");
         // Add more content types as needed
     }
-
+    
+    // If serving a .br file, add the Content-Encoding header
+    if (use_br_file) {
+        add_brotli_header(response);
+        log_this("WebServer", "Serving pre-compressed Brotli file: %s", LOG_LEVEL_INFO, br_file_path);
+    }
+    
     enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
     MHD_destroy_response(response);
     return ret;
@@ -53,7 +72,38 @@ static enum MHD_Result serve_file(struct MHD_Connection *connection, const char 
 
 static enum MHD_Result handle_version_request(struct MHD_Connection *connection) {
     const char *version_json = "{\"api\": \"0.1\", \"server\": \"1.1.0\", \"text\": \"OctoPrint 1.1.0\"}";
-    struct MHD_Response *response = MHD_create_response_from_buffer(strlen(version_json),
+    size_t json_len = strlen(version_json);
+    
+    // Check if client accepts Brotli
+    bool accepts_brotli = client_accepts_brotli(connection);
+    
+    if (accepts_brotli) {
+        // Compress JSON with Brotli
+        uint8_t *compressed_data = NULL;
+        size_t compressed_size = 0;
+        
+        if (compress_with_brotli((const uint8_t *)version_json, json_len, 
+                              &compressed_data, &compressed_size)) {
+            // Create response with compressed data
+            struct MHD_Response *response = MHD_create_response_from_buffer(
+                compressed_size, compressed_data, MHD_RESPMEM_MUST_FREE);
+            
+            add_cors_headers(response);
+            MHD_add_response_header(response, "Content-Type", "application/json");
+            add_brotli_header(response);
+            
+            enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+            MHD_destroy_response(response);
+            return ret;
+        } else {
+            // Compression failed, fallback to uncompressed
+            log_this("WebServer", "Brotli compression failed, serving uncompressed response", LOG_LEVEL_WARN);
+        }
+    }
+    
+    // If we get here, either client doesn't accept Brotli or compression failed
+    // Serve uncompressed response
+    struct MHD_Response *response = MHD_create_response_from_buffer(json_len,
                                     (void*)version_json, MHD_RESPMEM_PERSISTENT);
     add_cors_headers(response);
     MHD_add_response_header(response, "Content-Type", "application/json");

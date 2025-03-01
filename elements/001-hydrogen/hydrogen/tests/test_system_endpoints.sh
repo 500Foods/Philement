@@ -20,6 +20,11 @@ validate_request() {
     local expected_field="$3"
     local response_file="response_${request_name}.json"
     
+    # Make sure curl command includes --compressed flag
+    if [[ $curl_command != *"--compressed"* ]]; then
+        curl_command="${curl_command/curl/curl --compressed}"
+    fi
+    
     print_command "$curl_command"
     eval "$curl_command > $response_file"
     CURL_STATUS=$?
@@ -270,13 +275,34 @@ if kill -0 $HYDROGEN_PID 2>/dev/null; then
     
     # Check server logs for API-related errors - filter irrelevant messages
     print_info "Checking server logs for API-related errors..."
-    grep -i "error\|warn\|fatal\|segmentation" hydrogen_test.log | grep -i "API\|System\|SystemTest\|SystemService\|Endpoint\|api" > "$RESULTS_DIR/system_test_errors_${TIMESTAMP}.log"
+    grep -i "error\|warn\|fatal\|segmentation" "$SCRIPT_DIR/hydrogen_test.log" | grep -i "API\|System\|SystemTest\|SystemService\|Endpoint\|api" > "$RESULTS_DIR/system_test_errors_${TIMESTAMP}.log"
     
     if [ -s "$RESULTS_DIR/system_test_errors_${TIMESTAMP}.log" ]; then
         print_warning "API-related warning/error messages found in logs:"
         cat "$RESULTS_DIR/system_test_errors_${TIMESTAMP}.log"
     else
         print_info "No API-related error messages found in logs"
+    fi
+
+    # Check for Brotli compression logs
+    print_info "Checking for Brotli compression logs..."
+    grep -i "Brotli" "$SCRIPT_DIR/hydrogen_test.log" > "$RESULTS_DIR/brotli_compression_${TIMESTAMP}.log"
+    if [ -s "$RESULTS_DIR/brotli_compression_${TIMESTAMP}.log" ]; then
+        print_info "Brotli compression logs found:"
+        cat "$RESULTS_DIR/brotli_compression_${TIMESTAMP}.log"
+    # Check for compression metrics with level information
+    if grep -q "Brotli(level=[0-9]\+).*bytes.*ratio.*compression.*time:" "$RESULTS_DIR/brotli_compression_${TIMESTAMP}.log"; then
+        print_result 0 "Compression logs contain detailed metrics with compression level"
+        add_test_result "Brotli Compression" 0 "Compression logs found with performance metrics and compression level"
+        else
+            print_warning "Compression logs found but missing metrics details"
+            add_test_result "Brotli Compression" 1 "Compression logs missing metrics"
+            TEST_RESULT=1
+        fi
+    else
+        print_warning "No Brotli compression logs found"
+        add_test_result "Brotli Compression" 1 "No compression logs found"
+        TEST_RESULT=1
     fi
     
     # Stop the server

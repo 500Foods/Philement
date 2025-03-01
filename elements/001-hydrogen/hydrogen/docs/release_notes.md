@@ -24,6 +24,25 @@ EDITING GUIDELINES (not visible when rendered):
   - Avoid patterns like "Documentation:"/items, "API:"/items, "Documentation:"/more items
 -->
 
+## 2025-Mar-01
+
+Web Server:
+
+- Added Brotli compression:
+  - Created compression utility module with client detection
+  - Implemented pre-compressed .br file serving for static content
+  - Added on-the-fly compression for API JSON responses
+  - Added dynamic compression level selection based on content size:
+    - Level 11 (highest) for content ≤5KB
+    - Level 6 (medium) for content >5KB and ≤500KB
+    - Level 4 (lower) for content >500KB
+  - Integrated proper Content-Encoding headers
+  - Added libbrotli dependency for encoding/decoding
+  - Added detailed compression logging with timing information and compression level
+
+<details>
+<summary><h2>2025-Feb</h2></summary>
+
 ## 2025-Feb-28
 
 Build System:
@@ -462,6 +481,8 @@ Code Maintenance:
 Development Environment:
 
 - Imported project into Visual Studio Code
+
+</details>
 
 <details>
 <summary><h2>2024-Jul</h2></summary>
