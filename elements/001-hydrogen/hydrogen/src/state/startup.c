@@ -306,19 +306,19 @@ static void log_app_info(void) {
     log_this("Initialization", "Executable: %s", LOG_LEVEL_INFO, app_config->executable_path);
     log_this("Initialization", "Version: %s", LOG_LEVEL_INFO, VERSION);
 
+    char* mod_time = get_file_modification_time(app_config->executable_path);
+    if (mod_time) {
+        log_this("Initialization", "Release: %s", LOG_LEVEL_INFO, mod_time);
+        free(mod_time);
+    } else {
+        log_this("Initialization", "Error: Unable to get release timestamp", LOG_LEVEL_ERROR);
+    }
+
     long file_size = get_file_size(app_config->executable_path);
     if (file_size >= 0) {
         log_this("Initialization", "Size: %ld", LOG_LEVEL_INFO, file_size);
     } else {
         log_this("Initialization", "Error: Unable to get file size", LOG_LEVEL_ERROR);
-    }
-
-    char* mod_time = get_file_modification_time(app_config->executable_path);
-    if (mod_time) {
-        log_this("Initialization", "Last Modified: %s", LOG_LEVEL_INFO, mod_time);
-        free(mod_time);
-    } else {
-        log_this("Initialization", "Error: Unable to get modification time", LOG_LEVEL_ERROR);
     }
 
     log_this("Initialization", "Log File: %s", LOG_LEVEL_INFO,
