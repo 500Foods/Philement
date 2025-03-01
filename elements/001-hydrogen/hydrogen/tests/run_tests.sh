@@ -473,7 +473,7 @@ if [ $EXIT_CODE -eq 0 ]; then
 else
     echo -e "${RED}${BOLD}${FAIL_ICON} OVERALL RESULT: ONE OR MORE TESTS FAILED${NC}" | tee -a "$SUMMARY_LOG"
 fi
-echo -e "${BLUE}============================================${NC}" | tee -a "$SUMMARY_LOG"
+echo -e "${BLUE}───────────────────────────────────────────────────────────────────────────────${NC}" | tee -a "$SUMMARY_LOG"
 
 # Tips for additional diagnostics
 echo "" | tee -a "$SUMMARY_LOG"
