@@ -6,7 +6,7 @@ The main differentiator to address upfront is that a large chunk of the lower-le
 As for the name, it is a combination of terms like 'Phi' (referencing the number 500 among *many* other meanings), 'filament' (that's what 3D printing is primarily obsessed with), and 'element' (small pieces of something larger). The individual components of the project have been named after atomic elements, for example.
 
 As far as progress reporting goes, well, there are likely 500 steps or more to be completed before anyone takes this project seriously. Some of those steps will yield useful tools that people can use, as is already the case. But it is an ambitious project with many items to complete, and many more that likely haven't even been added to the list yet.
-<br/><br/><img src="https://progressbar-guibranco.vercel.app/15/?scale=500&title=%20Completed%20&width=415&suffix=%20%2F%20500%20Steps">
+<br/><br/><img src="https://progressbar-guibranco.vercel.app/16/?scale=500&title=%20Completed%20&width=415&suffix=%20%2F%20500%20Steps">
 
 ## Elements
 This project has a number of, well, elements. Each is named after an element in the periodic table. Like elements in the real world, some of these will be hugely important while others may be relatively insignificant. Some will require thousands and thousands of developer hours and others not so much. And the effort applied to each will likely be equally unbalanced as the focus shifts among the different pieces needed to get this up and running.
