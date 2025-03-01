@@ -9,6 +9,7 @@
  * - Request Handling (web_server_request): HTTP request processing
  * - File Upload (web_server_upload): File upload and processing
  * - Print Queue (web_server_print): Print job management
+ * - Compression (web_server_compression): Brotli compression for responses and static files
  */
 
 #ifndef WEB_SERVER_H
@@ -19,5 +20,6 @@
 #include "web_server_request.h"
 #include "web_server_upload.h"
 #include "web_server_print.h"
+#include "web_server_compression.h"
 
 #endif // WEB_SERVER_H

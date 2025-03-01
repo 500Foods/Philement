@@ -32,6 +32,7 @@
 #include "../../../state/state.h"
 #include "../../../logging/logging.h"
 #include "../../../webserver/web_server.h"
+#include "../../../webserver/web_server_compression.h"
 #include "../../../utils/utils.h"
 #include "../../../websocket/websocket_server_internal.h"
 
@@ -106,9 +107,49 @@ enum MHD_Result handle_system_info_request(struct MHD_Connection *connection)
         MHD_destroy_response(response);
         return ret;
     }
-
+    
+    size_t json_len = strlen(response_str);
+    
+    // Check if client accepts Brotli
+    bool accepts_brotli = client_accepts_brotli(connection);
+    
+    if (accepts_brotli) {
+        // Compress JSON with Brotli
+        uint8_t *compressed_data = NULL;
+        size_t compressed_size = 0;
+        
+        if (compress_with_brotli((const uint8_t *)response_str, json_len, 
+                                &compressed_data, &compressed_size)) {
+            // Free original uncompressed string
+            free(response_str);
+            
+            // Create response with compressed data
+            struct MHD_Response *response = MHD_create_response_from_buffer(
+                compressed_size, compressed_data, MHD_RESPMEM_MUST_FREE);
+            
+            MHD_add_response_header(response, "Content-Type", "application/json");
+            
+            // Add Brotli headers
+            add_brotli_header(response);
+            
+            // Add CORS headers
+            extern void add_cors_headers(struct MHD_Response * response);
+            add_cors_headers(response);
+            
+            enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+            MHD_destroy_response(response);
+            return ret;
+        } else {
+            // Compression failed, fallback to uncompressed
+            log_this("SystemService", "Brotli compression failed, serving uncompressed response", 
+                   LOG_LEVEL_WARN);
+        }
+    }
+    
+    // If we get here, either client doesn't accept Brotli or compression failed
+    // Serve uncompressed response
     struct MHD_Response *response = MHD_create_response_from_buffer(
-        strlen(response_str), response_str, MHD_RESPMEM_MUST_FREE);
+        json_len, response_str, MHD_RESPMEM_MUST_FREE);
     MHD_add_response_header(response, "Content-Type", "application/json");
 
     // Add CORS headers using the helper function from web_server
