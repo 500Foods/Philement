@@ -19,9 +19,28 @@ EDITING GUIDELINES (not visible when rendered):
   - Group related changes under the same topic
 -->
 
+## 2025-Feb-28
+
+API Architecture:
+
+- Restructured API modules with endpoint-specific directories:
+  - Reorganized system API endpoints into dedicated subdirectories
+  - Created consistent structure for all future endpoint implementations
+  - Added isolated endpoint handlers with clear interfaces
+  - Improved separation of concerns for API functionality
+
+- Added new system/test diagnostic endpoint:
+  - Added support for both GET and POST methods
+  - Implemented JSON response with client IP address
+  - Added JWT token parsing with claim extraction
+  - Added proxy detection via X-Forwarded-For header
+  - Added query parameter decoding into JSON array
+  - Added POST data handling with URL decoding support
+  - Created example endpoint for future development
+
 ## 2025-Feb-27
 
-## Code Quality and Compilation:
+Code Quality and Compilation:
 
 - Fixed compilation issues across OIDC components:
   - Fixed function signature mismatches in oidc_tokens.c:
