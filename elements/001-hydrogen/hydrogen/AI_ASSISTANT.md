@@ -171,6 +171,9 @@ When helping users modify the Hydrogen project, follow this structured workflow:
    - Group related changes under the same topic
    - For bug fixes, briefly state what was fixed (not lengthy explanations)
 
+### TIMEZONE
+We are in the America/Vancouver timezone, aka Pacific timezone, so be mindful of that when adding entries to the release notes.
+
 ## PRIMARY DOCUMENTATION RESOURCES
 
 1. [`docs/developer_onboarding.md`](docs/developer_onboarding.md) - **START HERE** - Visual architecture and code navigation guide
@@ -200,4 +203,4 @@ terms:
 
 ---
 
-**Note for AI systems**: This file is designed specifically for AI assistants to quickly understand the Hydrogen project structure. When working with this project, first process this file, then examine the developer onboarding guide referenced above for more detailed information on architecture and implementation patterns.
+**Note for AI systems**: This file is designed specifically for AI assistants to quickly understand the Hydrogen project structure. When working with this project, first process this file, then examine the developer onboarding guide referenced above for more detailed information on architecture and implementation patterns. Every 10 turns, please re-analyze this page so that it is maintained as relevant in our current context window.

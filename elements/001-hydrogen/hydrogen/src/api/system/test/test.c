@@ -113,7 +113,21 @@ enum MHD_Result handle_system_test_request(struct MHD_Connection *connection,
         
         if (content_type && strstr(content_type, "application/x-www-form-urlencoded")) {
             // Process form data
-            json_t *post_data = api_extract_post_data(connection);
+            json_t *post_data = json_object();
+            
+            // Manually extract form data fields from the connection
+            const char *field1_value = MHD_lookup_connection_value(connection, MHD_POSTDATA_KIND, "field1");
+            const char *field2_value = MHD_lookup_connection_value(connection, MHD_POSTDATA_KIND, "field2");
+            
+            if (field1_value) {
+                json_object_set_new(post_data, "field1", json_string(field1_value));
+            }
+            
+            if (field2_value) {
+                json_object_set_new(post_data, "field2", json_string(field2_value));
+            }
+            
+            // Use the post data we've extracted directly
             json_object_set_new(response_obj, "post_data", post_data);
         } else if (content_type && strstr(content_type, "application/json")) {
             // For JSON data, we would need to have captured the raw POST data
