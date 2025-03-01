@@ -88,9 +88,18 @@ Key features:
 
 - Tests all system API endpoints (health, info, test)
 - Validates response content and format
-- Checks for proper JSON formatting
+- Verifies proper JSON formatting
+- Tests various request methods:
+  - Basic GET requests 
+  - GET requests with query parameters
+  - POST requests with form data (with proper field extraction) 
+  - POST requests with both query parameters and form data
+- Ensures robust handling of form data in POST requests
 - Monitors server stability during tests
+- Implements error handling and shell script validation
 - Uses standardized formatting from test_utils.sh
+
+The test performs individual validation for each endpoint and request type, ensuring that the system correctly processes different types of HTTP requests and properly extracts form data from POST requests. It also monitors for system crashes or instability during the testing process.
 
 ### analyze_stuck_threads.sh
 
