@@ -74,10 +74,13 @@ validate_json() {
 # Start the test
 start_test "Hydrogen System API Endpoints Test"
 
-# Start hydrogen server in background
-print_info "Starting hydrogen server in background..."
+# Configuration file for API testing
+CONFIG_FILE="$SCRIPT_DIR/hydrogen_test_api.json"
+
+# Start hydrogen server in background with appropriate configuration
+print_info "Starting hydrogen server with API test configuration..."
 cd $(dirname $0)/..
-./hydrogen > hydrogen_test.log 2>&1 &
+./hydrogen "$CONFIG_FILE" > "$SCRIPT_DIR/hydrogen_test.log" 2>&1 &
 HYDROGEN_PID=$!
 
 # Wait for the server to start
@@ -91,6 +94,16 @@ mkdir -p "$RESULTS_DIR"
 # Store the timestamp for this test run
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 TEST_LOG="$RESULTS_DIR/system_test_${TIMESTAMP}.log"
+
+# Initialize test result variables to ensure they're always defined
+TEST_HEALTH_RESULT=1
+TEST_INFO_RESULT=1
+TEST_INFO_JSON_RESULT=1
+TEST_BASIC_GET_RESULT=1
+TEST_GET_PARAMS_RESULT=1
+TEST_POST_FORM_RESULT=1
+TEST_POST_PARAMS_RESULT=1
+TEST_STABILITY_RESULT=1
 
 # Function to run all test cases
 run_tests() {
@@ -274,9 +287,9 @@ else
     tail -n 30 hydrogen_test.log
     TEST_RESULT=1
     TEST_STABILITY_RESULT=1
-}
+fi
 
-# Collect and display detailed test results
+# Collect test results 
 collect_test_results
 
 # Calculate pass/fail counts

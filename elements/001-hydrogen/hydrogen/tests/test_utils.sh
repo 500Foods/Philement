@@ -17,8 +17,8 @@ NC='\033[0m' # No Color
 # Icons/symbols for test results
 PASS_ICON="✅"
 FAIL_ICON="❌"
-WARN_ICON="⚠️"
-INFO_ICON="[i]"
+WARN_ICON="⚠️ "
+INFO_ICON="🛈 "
 
 # Function to print section headers
 print_header() {

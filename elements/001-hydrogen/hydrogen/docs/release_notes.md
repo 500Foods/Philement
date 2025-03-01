@@ -17,6 +17,11 @@ EDITING GUIDELINES (not visible when rendered):
   - Start with a topic heading (e.g., "WebSocket Server:", "Testing:")
   - Follow with bullet points for specific changes related to that topic
   - Group related changes under the same topic
+- When adding to an existing date section:
+  - Consolidate entries by topic rather than repeating headers
+  - Reflow content to keep all related items together
+  - Example: Keep all "Documentation:" entries together, all "API:" entries together, etc.
+  - Avoid patterns like "Documentation:"/items, "API:"/items, "Documentation:"/more items
 -->
 
 ## 2025-Feb-28
@@ -37,6 +42,30 @@ API Architecture:
   - Added query parameter decoding into JSON array
   - Added POST data handling with URL decoding support
   - Created example endpoint for future development
+
+Testing:
+
+- Fixed system endpoint tests:
+  - Improved form data handling in system/test endpoint
+  - Fixed field extraction from form-encoded POST data
+  - Enhanced POST request processing in test endpoint
+  - Fixed shell script syntax error in test_system_endpoints.sh
+  - Added variable initialization to ensure robust test execution
+  - Updated test documentation to reflect improved capabilities
+
+- Enhanced test artifact management:
+  - Expanded .gitignore with comprehensive log file patterns
+  - Added explicit exclusion for test-generated logs
+  - Added exclusion patterns for response JSON files and HTML reports
+  - Untracked previously tracked test files from version control
+  - Improved repository hygiene by preventing test output commits
+
+- Improved testing infrastructure:
+  - Created dedicated API endpoint test configuration
+  - Updated system endpoint tests to use proper configuration
+  - Ensured all test logs remain in tests directory
+  - Added configuration-specific log paths
+  - Isolated test artifacts from production code
 
 ## 2025-Feb-27
 

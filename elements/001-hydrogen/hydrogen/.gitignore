@@ -8,8 +8,20 @@ build_debug/
 build_valgrind/
 
 # Configuration files and logs that might contain environment-specific info
-hydrogen_test*.log
+# Log files
+*.log
+*.log.*
 hydrogen_test*.json
+system_test_*.log
+error_*.log
+tests/hydrogen_test.log
+tests/hydrogen_test_api.log
+
+# Test generated temporary files
+response_*.json
+*.html
+temp_*
+*.tmp
 
 # Executable
 hydrogen
