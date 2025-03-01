@@ -23,8 +23,11 @@ response_*.json
 temp_*
 *.tmp
 
-# Executable
+# Executables
 hydrogen
+hydrogen_debug
+hydrogen_release
+hydrogen_valgrind
 
 # Upload directory
 uploads/
