@@ -4,7 +4,7 @@
 # Tests that all components compile without errors or warnings
 #
 # This test verifies that:
-# 1. The main Hydrogen project compiles cleanly
+# 1. The main Hydrogen project compiles cleanly with all build variants
 # 2. The OIDC client examples compile cleanly
 
 # Get the directory where this script is located
@@ -45,15 +45,20 @@ test_compilation() {
     # Capture the start time
     local START_TIME=$(date +%s)
     
-    # Clean first, then build with warnings treated as errors
+    # Build with warnings treated as errors
     # Redirect both stdout and stderr to a temporary file
     local TEMP_LOG="$RESULTS_DIR/build_${COMPONENT//\//_}_${TIMESTAMP}.log"
     {
-        if [[ "$COMPONENT" == "Hydrogen main project" ]]; then
-            make clean
-            CFLAGS="-Wall -Wextra -Werror -pedantic" make
+        if [[ "$COMPONENT" == "Hydrogen main project"* ]]; then
+            # Extract the build variant (between parentheses) without including the closing parenthesis
+            local TARGET=$(echo "$COMPONENT" | sed -n 's/.*(\([^)]*\)).*/\1/p')
+            if [ "$TARGET" == "default" ]; then
+                # Default build doesn't need a specific target
+                CFLAGS="-Wall -Wextra -Werror -pedantic" make
+            else
+                CFLAGS="-Wall -Wextra -Werror -pedantic" make $TARGET
+            fi
         else
-            make clean
             CFLAGS="-Wall -Wextra -Werror -pedantic" make all
         fi
     } > "$TEMP_LOG" 2>&1
@@ -73,7 +78,9 @@ test_compilation() {
         if grep -q "warning:" "$TEMP_LOG"; then
             print_warning "Warnings detected despite build success:" | tee -a "$RESULT_LOG"
             grep "warning:" "$TEMP_LOG" | tee -a "$RESULT_LOG"
-            # Don't fail the test for this, just note it
+            # Fail the test when warnings are detected
+            print_result 1 "Test failed because warnings were detected" | tee -a "$RESULT_LOG"
+            EXIT_CODE=1
         else
             print_info "No warnings detected" | tee -a "$RESULT_LOG"
         fi
@@ -95,14 +102,22 @@ test_compilation() {
     cd "$SCRIPT_DIR"
 }
 
+# Clean all build artifacts first
+cd "$HYDROGEN_DIR"
+make clean
+cd "$SCRIPT_DIR"
+
+# Test the main Hydrogen project (release build - preferred for deployment)
+test_compilation "Hydrogen main project (release)" "$HYDROGEN_DIR" "make release"
+
 # Test the main Hydrogen project (standard build)
-test_compilation "Hydrogen main project (standard build)" "$HYDROGEN_DIR" "make"
+test_compilation "Hydrogen main project (default)" "$HYDROGEN_DIR" "make"
 
 # Test the main Hydrogen project (debug build)
-test_compilation "Hydrogen main project (debug build)" "$HYDROGEN_DIR" "make debug"
+test_compilation "Hydrogen main project (debug)" "$HYDROGEN_DIR" "make debug"
 
 # Test the main Hydrogen project (valgrind build)
-test_compilation "Hydrogen main project (valgrind build)" "$HYDROGEN_DIR" "make valgrind"
+test_compilation "Hydrogen main project (valgrind)" "$HYDROGEN_DIR" "make valgrind"
 
 # Test the OIDC client examples
 test_compilation "OIDC client examples" "$OIDC_EXAMPLES_DIR" "make all"

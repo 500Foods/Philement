@@ -451,8 +451,17 @@ AppConfig* load_config(const char* config_path) {
     json_t* root = json_load_file(config_path, 0, &error);
 
     if (!root) {
-        log_this("Configuration", "Failed to load config file", LOG_LEVEL_DEBUG);
-        return NULL;
+        // Provide detailed error information including line and column number
+        log_this("Configuration", "Failed to load config file: %s (line %d, column %d)",
+             LOG_LEVEL_ERROR, error.text, error.line, error.column);
+    
+        // Print a user-friendly error message to stderr for operators
+        fprintf(stderr, "ERROR: Hydrogen configuration file has JSON syntax errors.\n");
+        fprintf(stderr, "       %s at line %d, column %d\n", error.text, error.line, error.column);
+        fprintf(stderr, "       Please fix the syntax error and try again.\n");
+    
+        // Exit gracefully instead of returning NULL which would cause a segfault
+        exit(EXIT_FAILURE);
     }
 
     AppConfig* config = calloc(1, sizeof(AppConfig));

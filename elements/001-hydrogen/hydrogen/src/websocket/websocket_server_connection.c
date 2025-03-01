@@ -109,27 +109,24 @@ void ws_update_client_info(struct lws *wsi, WebSocketSessionData *session)
 
     // Get client IP
     lws_get_peer_simple(wsi, ip, sizeof(ip));
-    strncpy(session->request_ip, ip, sizeof(session->request_ip) - 1);
-    session->request_ip[sizeof(session->request_ip) - 1] = '\0';
+    snprintf(session->request_ip, sizeof(session->request_ip), "%s", ip);
 
     // Get application name from headers if available
     int len = lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_USER_AGENT);
     if (len > 0) {
         lws_hdr_copy(wsi, app, sizeof(app), WSI_TOKEN_HTTP_USER_AGENT);
-        strncpy(session->request_app, app, sizeof(session->request_app) - 1);
-        session->request_app[sizeof(session->request_app) - 1] = '\0';
+        snprintf(session->request_app, sizeof(session->request_app), "%s", app);
     } else {
-        strncpy(session->request_app, "Unknown", sizeof(session->request_app) - 1);
+        snprintf(session->request_app, sizeof(session->request_app), "Unknown");
     }
 
     // Get client identifier if provided
     len = lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_COOKIE);
     if (len > 0) {
         lws_hdr_copy(wsi, client, sizeof(client), WSI_TOKEN_HTTP_COOKIE);
-        strncpy(session->request_client, client, sizeof(session->request_client) - 1);
-        session->request_client[sizeof(session->request_client) - 1] = '\0';
+        snprintf(session->request_client, sizeof(session->request_client), "%s", client);
     } else {
-        strncpy(session->request_client, "Unknown", sizeof(session->request_client) - 1);
+        snprintf(session->request_client, sizeof(session->request_client), "Unknown");
     }
 
     log_this("WebSocket", "Client connected - IP: %s, App: %s, Client: %s",
