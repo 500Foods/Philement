@@ -1,6 +1,0 @@
-2025-02-28 16:54:28.335  [ WARN      ]  [ WebServer          ]  Upload directory already exists
-2025-02-28 16:54:28.340  [ ERROR     ]  [ WebSocket          ]  Invalid session data for callback 31
-2025-02-28 16:54:28.340  [ ERROR     ]  [ WebSocket          ]  Invalid session data for callback 71
-2025-02-28 16:54:28.342  [ WARN      ]  [ mDNSServer         ]  Failed to send IPv6 announcement on virbr1: Network is unreachable
-2025-02-28 16:54:29.342  [ WARN      ]  [ mDNSServer         ]  Failed to send IPv6 announcement on virbr1: Network is unreachable
-2025-02-28 16:54:30.343  [ WARN      ]  [ mDNSServer         ]  Failed to send IPv6 announcement on virbr1: Network is unreachable
