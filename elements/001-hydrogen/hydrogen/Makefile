@@ -71,6 +71,7 @@ BUILD_DIR = build
 DEBUG_DIR = build_debug
 VALGRIND_DIR = build_valgrind
 RELEASE_DIR = build_release
+PERF_DIR = build_perf
 
 # Source and object files for different build configurations
 SRCS = $(shell find $(SRC_DIR) -type f -name '*.c')
@@ -78,15 +79,26 @@ OBJS = $(patsubst $(SRC_DIR)/%,$(BUILD_DIR)/%,$(SRCS:.c=.o))
 DEBUG_OBJS = $(patsubst $(SRC_DIR)/%,$(DEBUG_DIR)/%,$(SRCS:.c=.o))
 VALGRIND_OBJS = $(patsubst $(SRC_DIR)/%,$(VALGRIND_DIR)/%,$(SRCS:.c=.o))
 RELEASE_OBJS = $(patsubst $(SRC_DIR)/%,$(RELEASE_DIR)/%,$(SRCS:.c=.o))
+PERF_OBJS = $(patsubst $(SRC_DIR)/%,$(PERF_DIR)/%,$(SRCS:.c=.o))
 
 # Build targets
 TARGET = hydrogen
 DEBUG_TARGET = hydrogen_debug
 VALGRIND_TARGET = hydrogen_valgrind
 RELEASE_TARGET = hydrogen_release
+PERF_TARGET = hydrogen_perf
 
 # Phony targets (don't create files with these names)
-.PHONY: all clean debug valgrind release
+.PHONY: all clean debug valgrind release perf all-variants
+
+# Build all variants at once
+all-variants: clean all debug valgrind release perf
+	@echo "All variants built successfully:"
+	@echo "  - Default: $(TARGET)"
+	@echo "  - Debug: $(DEBUG_TARGET)"
+	@echo "  - Valgrind: $(VALGRIND_TARGET)"
+	@echo "  - Release: $(RELEASE_TARGET)"
+	@echo "  - Performance: $(PERF_TARGET)"
 
 # Default target: optimized build
 all: $(TARGET)
@@ -107,6 +119,11 @@ debug: $(DEBUG_TARGET)
 valgrind: CFLAGS += -g -DVERSION=\"$(VERSION)\"
 valgrind: $(VALGRIND_TARGET)
 
+# Performance build: maximum runtime performance, hardware-specific optimizations
+perf: CFLAGS += -O3 -march=native -ffast-math -finline-functions -funroll-loops -DNDEBUG -DVERSION=\"$(VERSION)\"
+perf: LDFLAGS += -flto=auto
+perf: $(PERF_TARGET)
+
 # Linking rules for each build configuration
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
@@ -118,6 +135,9 @@ $(VALGRIND_TARGET): $(VALGRIND_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 $(RELEASE_TARGET): $(RELEASE_OBJS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
+$(PERF_TARGET): $(PERF_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 
@@ -135,6 +155,10 @@ $(VALGRIND_DIR)/%.o: $(SRC_DIR)/%.c | $(VALGRIND_DIR)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(RELEASE_DIR)/%.o: $(SRC_DIR)/%.c | $(RELEASE_DIR)
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(PERF_DIR)/%.o: $(SRC_DIR)/%.c | $(PERF_DIR)
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
@@ -156,9 +180,13 @@ $(RELEASE_DIR):
 	mkdir -p $@
 	mkdir -p $(RELEASE_DIR)/api/system
 
+$(PERF_DIR):
+	mkdir -p $@
+	mkdir -p $(PERF_DIR)/api/system
+
 # Create subdirectories for object files
-$(shell mkdir -p $(sort $(dir $(OBJS)) $(dir $(DEBUG_OBJS)) $(dir $(VALGRIND_OBJS)) $(dir $(RELEASE_OBJS))))
+$(shell mkdir -p $(sort $(dir $(OBJS)) $(dir $(DEBUG_OBJS)) $(dir $(VALGRIND_OBJS)) $(dir $(RELEASE_OBJS)) $(dir $(PERF_OBJS))))
 
 # Clean all build artifacts
 clean:
-	rm -rf $(BUILD_DIR) $(DEBUG_DIR) $(VALGRIND_DIR) $(RELEASE_DIR) $(TARGET) $(DEBUG_TARGET) $(VALGRIND_TARGET) $(RELEASE_TARGET)
+	rm -rf $(BUILD_DIR) $(DEBUG_DIR) $(VALGRIND_DIR) $(RELEASE_DIR) $(PERF_DIR) $(TARGET) $(DEBUG_TARGET) $(VALGRIND_TARGET) $(RELEASE_TARGET) $(PERF_TARGET)

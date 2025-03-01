@@ -20,9 +20,14 @@ validate_request() {
     local expected_field="$3"
     local response_file="response_${request_name}.json"
     
-    # Make sure curl command includes --compressed flag
+    # Make sure curl command includes --compressed flag and timeout
     if [[ $curl_command != *"--compressed"* ]]; then
         curl_command="${curl_command/curl/curl --compressed}"
+    fi
+    
+    # Add timeout if not already present
+    if [[ $curl_command != *"--max-time"* ]] && [[ $curl_command != *"-m "* ]]; then
+        curl_command="${curl_command/curl/curl --max-time 5}"
     fi
     
     print_command "$curl_command"
@@ -131,7 +136,7 @@ run_tests() {
     
     # Test health endpoint with GET request
     print_header "Test Case: Health Check"
-    validate_request "health" "curl -s http://localhost:5000/api/system/health" "Yes, I'm alive, thanks!"
+    validate_request "health" "curl -s --max-time 5 http://localhost:5000/api/system/health" "Yes, I'm alive, thanks!"
     TEST_HEALTH_RESULT=$?
     if [ $TEST_HEALTH_RESULT -eq 0 ]; then
         ((pass_count++))
@@ -147,7 +152,7 @@ run_tests() {
     
     # Test info endpoint with GET request
     print_header "Test Case: System Information"
-    validate_request "info" "curl -s http://localhost:5000/api/system/info" "system"
+    validate_request "info" "curl -s --max-time 5 http://localhost:5000/api/system/info" "system"
     TEST_INFO_RESULT=$?
     
     # Also validate that it's valid JSON
@@ -172,7 +177,7 @@ run_tests() {
     
     # Test Case 1: Basic GET request
     print_header "Test Case 1: Basic GET Request"
-    validate_request "basic_get" "curl -s http://localhost:5000/api/system/test"  "client_ip"
+    validate_request "basic_get" "curl -s --max-time 5 http://localhost:5000/api/system/test"  "client_ip"
     TEST_BASIC_GET_RESULT=$?
     if [ $TEST_BASIC_GET_RESULT -eq 0 ]; then
         ((pass_count++))
@@ -183,7 +188,7 @@ run_tests() {
     
     # Test Case 2: GET request with query parameters
     print_header "Test Case 2: GET Request with Query Parameters"
-    validate_request "get_with_params" "curl -s 'http://localhost:5000/api/system/test?param1=value1&param2=value2'" "param1"
+    validate_request "get_with_params" "curl -s --max-time 5 'http://localhost:5000/api/system/test?param1=value1&param2=value2'" "param1"
     TEST_GET_PARAMS_RESULT=$?
     if [ $TEST_GET_PARAMS_RESULT -eq 0 ]; then
         ((pass_count++))
@@ -194,7 +199,7 @@ run_tests() {
     
     # Test Case 3: POST request with form data
     print_header "Test Case 3: POST Request with Form Data"
-    validate_request "post_form" "curl -s -X POST -H 'Content-Type: application/x-www-form-urlencoded' -d 'field1=value1&field2=value2' http://localhost:5000/api/system/test" "post_data"
+    validate_request "post_form" "curl -s --max-time 5 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -d 'field1=value1&field2=value2' http://localhost:5000/api/system/test" "post_data"
     TEST_POST_FORM_RESULT=$?
     if [ $TEST_POST_FORM_RESULT -eq 0 ]; then
         ((pass_count++))
@@ -205,7 +210,7 @@ run_tests() {
     
     # Test Case 4: POST request with both query parameters and form data
     print_header "Test Case 4: POST Request with Query Parameters and Form Data"
-    validate_request "post_with_params" "curl -s -X POST -H 'Content-Type: application/x-www-form-urlencoded' -d 'field1=value1&field2=value2' 'http://localhost:5000/api/system/test?param1=value1&param2=value2'" "param1"
+    validate_request "post_with_params" "curl -s --max-time 5 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -d 'field1=value1&field2=value2' 'http://localhost:5000/api/system/test?param1=value1&param2=value2'" "param1"
     TEST_POST_PARAMS_RESULT=$?
     if [ $TEST_POST_PARAMS_RESULT -eq 0 ]; then
         ((pass_count++))

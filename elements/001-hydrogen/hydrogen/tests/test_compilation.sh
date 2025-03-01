@@ -119,6 +119,9 @@ test_compilation "Hydrogen main project (debug)" "$HYDROGEN_DIR" "make debug"
 # Test the main Hydrogen project (valgrind build)
 test_compilation "Hydrogen main project (valgrind)" "$HYDROGEN_DIR" "make valgrind"
 
+# Test the main Hydrogen project (performance build)
+test_compilation "Hydrogen main project (perf)" "$HYDROGEN_DIR" "make perf"
+
 # Test the OIDC client examples
 test_compilation "OIDC client examples" "$OIDC_EXAMPLES_DIR" "make all"
 

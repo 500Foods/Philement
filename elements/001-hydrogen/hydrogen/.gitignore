@@ -26,6 +26,7 @@ temp_*
 # Executables
 hydrogen
 hydrogen_debug
+hydrogen_perf
 hydrogen_release
 hydrogen_valgrind
 

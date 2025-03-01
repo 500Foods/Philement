@@ -40,6 +40,42 @@ Web Server:
   - Added libbrotli dependency for encoding/decoding
   - Added detailed compression logging with timing information and compression level
 
+- Fixed socket binding on server restart:
+  - Implemented SO_REUSEADDR socket option to allow immediate port rebinding
+  - Eliminated TIME_WAIT state blocking when restarting server (~60s delay)
+  - Used MHD_OPTION_LISTENING_ADDRESS_REUSE for cleaner implementation
+  - Created dedicated test for verifying socket rebinding functionality
+  - Improved error handling with proper timeout-based testing
+
+Testing:
+
+- Enhanced test system with socket rebinding verification:
+  - Integrated socket rebinding test into main test suite
+  - Added proper signal handling for test script interruption
+  - Implemented robust cleanup functions to prevent process leaks
+  - Added timeout handling for reliable test execution
+  - Created version-aware test integration for different microhttpd versions
+  - Added special handling for SIGTERM to avoid false test failures
+  - Improved test sequencing with socket rebinding check before endpoint tests
+  - Enhanced resource cleanup between sequential tests
+
+Build System:
+
+- Added all-variants build target:
+  - Created single command to build all configurations
+  - Added clean step before building for fresh environment
+  - Added output message listing all successfully built variants
+  - Streamlined full rebuild process for testing
+
+- Added performance build variant:
+  - Implemented -O3 optimization level for maximum speed
+  - Added -march=native for CPU-specific optimizations
+  - Added -ffast-math for optimized floating-point operations
+  - Implemented -finline-functions for aggressive inlining
+  - Added -funroll-loops for automatic loop optimization
+  - Created dedicated build directory for performance artifacts
+  - Updated test framework to verify performance build
+
 <details>
 <summary><h2>2025-Feb</h2></summary>
 
