@@ -11,7 +11,14 @@ HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 source "$SCRIPT_DIR/test_utils.sh"
 
 # Configuration
-HYDROGEN_BIN="$HYDROGEN_DIR/hydrogen"  # Path to hydrogen executable
+# Prefer release build if available, fallback to standard build
+if [ -f "$HYDROGEN_DIR/hydrogen_release" ]; then
+    HYDROGEN_BIN="$HYDROGEN_DIR/hydrogen_release"
+    print_info "Using release build for testing"
+else
+    HYDROGEN_BIN="$HYDROGEN_DIR/hydrogen"
+    print_info "Release build not found, using standard build"
+fi
 CONFIG_FILE="$1"                       # Accept config file as parameter
 STARTUP_TIMEOUT=10                     # Seconds to wait for startup
 SHUTDOWN_TIMEOUT=90                    # Hard limit on shutdown time (90s for thorough testing)

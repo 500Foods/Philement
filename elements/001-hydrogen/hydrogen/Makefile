@@ -24,6 +24,10 @@
 #    - Proper symbol handling
 #    - Version management
 #    - Deployment preparation
+#    - Binary compression for minimal footprint
+
+# Version information
+VERSION = 1.0.0
 
 # Compiler selection and optimization flags
 CC = gcc
@@ -51,6 +55,7 @@ CFLAGS = -std=c17 -Wall -Wextra -pedantic -O2
 #    - Dynamic linking (default): Standard shared library usage
 #    - Debug builds for development
 #    - Valgrind builds for memory checking
+#    - Release builds for deployment with maximum optimization
 
 LDFLAGS = -ljansson -lpthread -lmicrohttpd -lm -lssl -lcrypto -lwebsockets
 
@@ -59,23 +64,32 @@ SRC_DIR = src
 BUILD_DIR = build
 DEBUG_DIR = build_debug
 VALGRIND_DIR = build_valgrind
+RELEASE_DIR = build_release
 
 # Source and object files for different build configurations
 SRCS = $(shell find $(SRC_DIR) -type f -name '*.c')
 OBJS = $(patsubst $(SRC_DIR)/%,$(BUILD_DIR)/%,$(SRCS:.c=.o))
 DEBUG_OBJS = $(patsubst $(SRC_DIR)/%,$(DEBUG_DIR)/%,$(SRCS:.c=.o))
 VALGRIND_OBJS = $(patsubst $(SRC_DIR)/%,$(VALGRIND_DIR)/%,$(SRCS:.c=.o))
+RELEASE_OBJS = $(patsubst $(SRC_DIR)/%,$(RELEASE_DIR)/%,$(SRCS:.c=.o))
 
 # Build targets
 TARGET = hydrogen
 DEBUG_TARGET = hydrogen_debug
 VALGRIND_TARGET = hydrogen_valgrind
+RELEASE_TARGET = hydrogen_release
 
 # Phony targets (don't create files with these names)
-.PHONY: all clean debug valgrind
+.PHONY: all clean debug valgrind release
 
 # Default target: optimized build
 all: $(TARGET)
+
+# Release build: highly optimized with size reduction for deployment
+release: CFLAGS += -s -DNDEBUG -march=x86-64 -flto=auto -fstack-protector -DVERSION=\"$(VERSION)\"
+release: LDFLAGS += -flto=auto
+release: $(RELEASE_TARGET)
+	@which upx > /dev/null && upx --best $(RELEASE_TARGET) || echo "UPX not found, skipping compression"
 
 
 # Debug build: includes Address Sanitizer and debug symbols
@@ -97,6 +111,9 @@ $(DEBUG_TARGET): $(DEBUG_OBJS)
 $(VALGRIND_TARGET): $(VALGRIND_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
+$(RELEASE_TARGET): $(RELEASE_OBJS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
 
 # Compilation rules for object files
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
@@ -108,6 +125,10 @@ $(DEBUG_DIR)/%.o: $(SRC_DIR)/%.c | $(DEBUG_DIR)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(VALGRIND_DIR)/%.o: $(SRC_DIR)/%.c | $(VALGRIND_DIR)
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(RELEASE_DIR)/%.o: $(SRC_DIR)/%.c | $(RELEASE_DIR)
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
@@ -125,9 +146,13 @@ $(VALGRIND_DIR):
 	mkdir -p $@
 	mkdir -p $(VALGRIND_DIR)/api/system
 
+$(RELEASE_DIR):
+	mkdir -p $@
+	mkdir -p $(RELEASE_DIR)/api/system
+
 # Create subdirectories for object files
-$(shell mkdir -p $(sort $(dir $(OBJS)) $(dir $(DEBUG_OBJS)) $(dir $(VALGRIND_OBJS))))
+$(shell mkdir -p $(sort $(dir $(OBJS)) $(dir $(DEBUG_OBJS)) $(dir $(VALGRIND_OBJS)) $(dir $(RELEASE_OBJS))))
 
 # Clean all build artifacts
 clean:
-	rm -rf $(BUILD_DIR) $(DEBUG_DIR) $(VALGRIND_DIR) $(TARGET) $(DEBUG_TARGET) $(VALGRIND_TARGET)
+	rm -rf $(BUILD_DIR) $(DEBUG_DIR) $(VALGRIND_DIR) $(RELEASE_DIR) $(TARGET) $(DEBUG_TARGET) $(VALGRIND_TARGET) $(RELEASE_TARGET)

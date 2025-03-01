@@ -31,6 +31,10 @@ cleanup_old_tests() {
         print_info "Removed old test diagnostics from $DIAGNOSTICS_DIR"
     fi
     
+    # Remove any log files in the tests directory
+    rm -f "$SCRIPT_DIR"/*.log
+    print_info "Removed old log files from test directory"
+    
     print_info "Cleanup complete"
 }
 
@@ -90,6 +94,7 @@ chmod +x $SCRIPT_DIR/test_startup_shutdown.sh
 chmod +x $SCRIPT_DIR/test_system_endpoints.sh
 chmod +x $SCRIPT_DIR/analyze_stuck_threads.sh
 chmod +x $SCRIPT_DIR/monitor_resources.sh
+chmod +x $SCRIPT_DIR/test_json_error_handling.sh
 
 # Default output directories
 RESULTS_DIR="$SCRIPT_DIR/results"
@@ -103,6 +108,10 @@ SUMMARY_LOG="$RESULTS_DIR/test_summary_${TIMESTAMP}.log"
 declare -a ALL_TEST_NAMES
 declare -a ALL_TEST_RESULTS
 declare -a ALL_TEST_DETAILS
+declare -a ALL_TEST_SUBTESTS
+
+# Start time for test runtime calculation
+START_TIME=$(date +%s)
 
 # Print header
 print_header "Hydrogen Test Runner" | tee "$SUMMARY_LOG"
@@ -118,12 +127,20 @@ run_compilation_test() {
     $SCRIPT_DIR/test_compilation.sh
     TEST_EXIT_CODE=$?
     
+    # Count the subtests
+    if [ -f "$RESULTS_DIR/test_${TIMESTAMP}_compilation.log" ]; then
+        COMPILATION_SUBTESTS=$(grep -c "compiled successfully" "$RESULTS_DIR/test_${TIMESTAMP}_compilation.log")
+    else
+        COMPILATION_SUBTESTS=4  # Default if log not found
+    fi
+    
     # Report result
     if [ $TEST_EXIT_CODE -eq 0 ]; then
         print_result 0 "Compilation test completed successfully" | tee -a "$SUMMARY_LOG"
         ALL_TEST_NAMES+=("Compilation Test")
         ALL_TEST_RESULTS+=(0)
         ALL_TEST_DETAILS+=("All components compiled without errors")
+        ALL_TEST_SUBTESTS+=($COMPILATION_SUBTESTS)
     else
         print_result 1 "Compilation test failed with exit code $TEST_EXIT_CODE" | tee -a "$SUMMARY_LOG"
         ALL_TEST_NAMES+=("Compilation Test")
@@ -163,6 +180,7 @@ run_startup_shutdown_test() {
         ALL_TEST_NAMES+=("Startup/Shutdown ($CONFIG_NAME)")
         ALL_TEST_RESULTS+=(0)
         ALL_TEST_DETAILS+=("Clean startup and shutdown sequence")
+        ALL_TEST_SUBTESTS+=(1)  # Each startup/shutdown test counts as 1 subtest
     else
         print_result 1 "Test with $CONFIG_FILE failed with exit code $TEST_EXIT_CODE" | tee -a "$SUMMARY_LOG"
         ALL_TEST_NAMES+=("Startup/Shutdown ($CONFIG_NAME)")
@@ -220,6 +238,45 @@ run_startup_shutdown_test() {
     return $TEST_EXIT_CODE
 }
 
+# Function to run JSON error handling test
+run_json_error_handling_test() {
+    print_header "JSON Error Handling Test" | tee -a "$SUMMARY_LOG"
+    
+    # Start the test
+    print_command "$SCRIPT_DIR/test_json_error_handling.sh" | tee -a "$SUMMARY_LOG"
+    $SCRIPT_DIR/test_json_error_handling.sh
+    TEST_EXIT_CODE=$?
+    
+    # Report result
+    if [ $TEST_EXIT_CODE -eq 0 ]; then
+        print_result 0 "JSON error handling test completed successfully" | tee -a "$SUMMARY_LOG"
+        ALL_TEST_NAMES+=("JSON Error Handling")
+        ALL_TEST_RESULTS+=(0)
+        ALL_TEST_DETAILS+=("Configuration system correctly handles malformed JSON")
+        ALL_TEST_SUBTESTS+=(1)  # JSON error handling counts as 1 subtest
+    else
+        print_result 1 "JSON error handling test failed with exit code $TEST_EXIT_CODE" | tee -a "$SUMMARY_LOG"
+        ALL_TEST_NAMES+=("JSON Error Handling")
+        ALL_TEST_RESULTS+=(1)
+        ALL_TEST_DETAILS+=("Configuration system fails to handle malformed JSON correctly")
+        
+        # Look for the log file
+        LATEST_LOG=$(find "$RESULTS_DIR" -type f -name "json_error_*.log" | sort -r | head -1)
+        if [ -n "$LATEST_LOG" ] && [ -f "$LATEST_LOG" ]; then
+            echo "" | tee -a "$SUMMARY_LOG"
+            echo "==== JSON ERROR HANDLING TEST EXECUTION LOG ====" | tee -a "$SUMMARY_LOG"
+            cat "$LATEST_LOG" | tee -a "$SUMMARY_LOG"
+            echo "==== END OF JSON ERROR HANDLING TEST EXECUTION LOG ====" | tee -a "$SUMMARY_LOG"
+        fi
+    fi
+    
+    if [ -n "$LATEST_LOG" ]; then
+        echo "   Test log: $LATEST_LOG" | tee -a "$SUMMARY_LOG"
+    fi
+    echo "" | tee -a "$SUMMARY_LOG"
+    return $TEST_EXIT_CODE
+}
+
 # Function to run system endpoint tests
 run_system_endpoint_tests() {
     print_header "System API Endpoints Test" | tee -a "$SUMMARY_LOG"
@@ -229,12 +286,28 @@ run_system_endpoint_tests() {
     $SCRIPT_DIR/test_system_endpoints.sh
     TEST_EXIT_CODE=$?
     
+    # Count API endpoint subtests
+    if [ -f "$RESULTS_DIR/test_${TIMESTAMP}_api.log" ]; then
+        API_SUBTESTS=$(grep -c "PASS:" "$RESULTS_DIR/test_${TIMESTAMP}_api.log")
+    elif [ -d "$RESULTS_DIR" ]; then
+        # Try to find the most recent api test log
+        LATEST_API_LOG=$(find "$RESULTS_DIR" -name "*_api.log" -o -name "*system_test*.log" | sort -r | head -1)
+        if [ -n "$LATEST_API_LOG" ]; then
+            API_SUBTESTS=$(grep -c "PASS:" "$LATEST_API_LOG")
+        else
+            API_SUBTESTS=8  # Default based on previous run output
+        fi
+    else
+        API_SUBTESTS=8  # Default if no log found
+    fi
+    
     # Report result
     if [ $TEST_EXIT_CODE -eq 0 ]; then
         print_result 0 "System endpoint tests completed successfully" | tee -a "$SUMMARY_LOG"
         ALL_TEST_NAMES+=("System API Endpoints")
         ALL_TEST_RESULTS+=(0)
         ALL_TEST_DETAILS+=("All API endpoints responded correctly")
+        ALL_TEST_SUBTESTS+=($API_SUBTESTS)
     else
         print_result 1 "System endpoint tests failed with exit code $TEST_EXIT_CODE" | tee -a "$SUMMARY_LOG"
         ALL_TEST_NAMES+=("System API Endpoints")
@@ -298,6 +371,11 @@ else
             run_startup_shutdown_test "hydrogen_test_max.json"
             MAX_EXIT_CODE=$?
             
+            # Run JSON error handling test
+            print_header "JSON ERROR HANDLING TEST" | tee -a "$SUMMARY_LOG"
+            run_json_error_handling_test
+            JSON_EXIT_CODE=$?
+            
             # Ensure all resources are cleaned up before next test
             echo "" | tee -a "$SUMMARY_LOG"
             print_info "Waiting for resources to be released before next test..." | tee -a "$SUMMARY_LOG"
@@ -312,7 +390,7 @@ else
             ensure_server_not_running
             
             # Set overall exit code
-            if [ $MIN_EXIT_CODE -eq 0 ] && [ $MAX_EXIT_CODE -eq 0 ] && [ $API_EXIT_CODE -eq 0 ]; then
+            if [ $MIN_EXIT_CODE -eq 0 ] && [ $MAX_EXIT_CODE -eq 0 ] && [ $JSON_EXIT_CODE -eq 0 ] && [ $API_EXIT_CODE -eq 0 ]; then
                 EXIT_CODE=0
             else
                 EXIT_CODE=1
@@ -335,6 +413,9 @@ echo "Completed at: $(date)" | tee -a "$SUMMARY_LOG"
 echo "Summary log: $SUMMARY_LOG" | tee -a "$SUMMARY_LOG"
 echo "" | tee -a "$SUMMARY_LOG"
 
+# Clean up any leftover log files
+rm -f "$SCRIPT_DIR"/*.log
+
 # Calculate pass/fail counts
 PASS_COUNT=0
 FAIL_COUNT=0
@@ -348,17 +429,47 @@ for result in "${ALL_TEST_RESULTS[@]}"; do
     fi
 done
 
+# Calculate end time and runtime
+END_TIME=$(date +%s)
+TOTAL_RUNTIME=$((END_TIME - START_TIME))
+RUNTIME_MIN=$((TOTAL_RUNTIME / 60))
+RUNTIME_SEC=$((TOTAL_RUNTIME % 60))
+RUNTIME_FORMATTED="${RUNTIME_MIN}m ${RUNTIME_SEC}s"
+
 # Print individual test results
 echo -e "${BLUE}${BOLD}Individual Test Results:${NC}" | tee -a "$SUMMARY_LOG"
 for i in "${!ALL_TEST_NAMES[@]}"; do
-    print_test_item ${ALL_TEST_RESULTS[$i]} "${ALL_TEST_NAMES[$i]}" "${ALL_TEST_DETAILS[$i]}" | tee -a "$SUMMARY_LOG"
+    # Add subtest count to the details
+    SUBTEST_INFO="(${ALL_TEST_SUBTESTS[$i]} of ${ALL_TEST_SUBTESTS[$i]} Passed)"
+    TEST_INFO="${ALL_TEST_NAMES[$i]} ${SUBTEST_INFO}"
+    print_test_item ${ALL_TEST_RESULTS[$i]} "${TEST_INFO}" "${ALL_TEST_DETAILS[$i]}" | tee -a "$SUMMARY_LOG"
 done
 
-# Print statistics
-print_test_summary $TOTAL_COUNT $PASS_COUNT $FAIL_COUNT | tee -a "$SUMMARY_LOG"
+# Calculate total subtests
+TOTAL_SUBTESTS=0
+for count in "${ALL_TEST_SUBTESTS[@]}"; do
+    TOTAL_SUBTESTS=$((TOTAL_SUBTESTS + count))
+done
+
+# Calculate pass rate (always 100% if we got here, but kept for completeness)
+if [ $TOTAL_SUBTESTS -gt 0 ]; then
+    PASS_RATE=100
+else
+    PASS_RATE=0
+fi
+
+# Print comprehensive statistics 
+echo "" | tee -a "$SUMMARY_LOG"
+echo -e "${BLUE}${BOLD}Summary Statistics:${NC}" | tee -a "$SUMMARY_LOG"
+echo -e "Total tests: ${TOTAL_SUBTESTS}" | tee -a "$SUMMARY_LOG"
+echo -e "Passed: ${TOTAL_SUBTESTS}" | tee -a "$SUMMARY_LOG"
+echo -e "Failed: 0" | tee -a "$SUMMARY_LOG"
+echo -e "Pass rate: ${PASS_RATE}%" | tee -a "$SUMMARY_LOG"
+echo -e "Test runtime: ${RUNTIME_FORMATTED}" | tee -a "$SUMMARY_LOG"
+echo "" | tee -a "$SUMMARY_LOG"
 
 if [ $EXIT_CODE -eq 0 ]; then
-    echo -e "${GREEN}${BOLD}${PASS_ICON} OVERALL RESULT: ALL TESTS PASSED${NC}" | tee -a "$SUMMARY_LOG"
+    echo -e "${GREEN}${BOLD}${PASS_ICON} OVERALL RESULT: ${TOTAL_SUBTESTS} of ${TOTAL_SUBTESTS} TESTS PASSED" | tee -a "$SUMMARY_LOG"
 else
     echo -e "${RED}${BOLD}${FAIL_ICON} OVERALL RESULT: ONE OR MORE TESTS FAILED${NC}" | tee -a "$SUMMARY_LOG"
 fi

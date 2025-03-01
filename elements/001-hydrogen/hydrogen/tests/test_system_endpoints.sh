@@ -77,10 +77,19 @@ start_test "Hydrogen System API Endpoints Test"
 # Configuration file for API testing
 CONFIG_FILE="$SCRIPT_DIR/hydrogen_test_api.json"
 
+# Determine which hydrogen build to use (prefer release build if available)
+cd $(dirname $0)/..
+if [ -f "./hydrogen_release" ]; then
+    HYDROGEN_BIN="./hydrogen_release"
+    print_info "Using release build for testing"
+else
+    HYDROGEN_BIN="./hydrogen"
+    print_info "Release build not found, using standard build"
+fi
+
 # Start hydrogen server in background with appropriate configuration
 print_info "Starting hydrogen server with API test configuration..."
-cd $(dirname $0)/..
-./hydrogen "$CONFIG_FILE" > "$SCRIPT_DIR/hydrogen_test.log" 2>&1 &
+$HYDROGEN_BIN "$CONFIG_FILE" > "$SCRIPT_DIR/hydrogen_test.log" 2>&1 &
 HYDROGEN_PID=$!
 
 # Wait for the server to start
