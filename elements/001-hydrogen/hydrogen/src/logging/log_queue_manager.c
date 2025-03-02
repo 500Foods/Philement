@@ -168,21 +168,37 @@ static bool should_log_to_destination(const char* subsystem, int priority, const
     // Get subsystem-specific level if configured, otherwise use default
     int configured_level = dest->DefaultLevel;
     
+    // Flag to track if this is a defined subsystem
+    bool is_defined_subsystem = false;
+    
     // Check subsystem-specific configuration
     if (strcmp(subsystem, "ThreadMgmt") == 0) {
         configured_level = dest->Subsystems.ThreadMgmt;
+        is_defined_subsystem = true;
     } else if (strcmp(subsystem, "Shutdown") == 0) {
         configured_level = dest->Subsystems.Shutdown;
+        is_defined_subsystem = true;
     } else if (strcmp(subsystem, "mDNSServer") == 0) {
         configured_level = dest->Subsystems.mDNSServer;
+        is_defined_subsystem = true;
     } else if (strcmp(subsystem, "WebServer") == 0) {
         configured_level = dest->Subsystems.WebServer;
+        is_defined_subsystem = true;
     } else if (strcmp(subsystem, "WebSocket") == 0) {
         configured_level = dest->Subsystems.WebSocket;
+        is_defined_subsystem = true;
     } else if (strcmp(subsystem, "PrintQueue") == 0) {
         configured_level = dest->Subsystems.PrintQueue;
+        is_defined_subsystem = true;
     } else if (strcmp(subsystem, "LogQueueManager") == 0) {
         configured_level = dest->Subsystems.LogQueueManager;
+        is_defined_subsystem = true;
+    }
+    
+    // If this is not a defined subsystem (like "Environment" or "Configuration"),
+    // treat it as LOG_LEVEL_ALL by default to ensure all messages are logged
+    if (!is_defined_subsystem) {
+        return true;
     }
 
     // Special handling for ALL and NONE

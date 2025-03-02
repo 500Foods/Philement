@@ -96,6 +96,7 @@ chmod +x $SCRIPT_DIR/analyze_stuck_threads.sh
 chmod +x $SCRIPT_DIR/monitor_resources.sh
 chmod +x $SCRIPT_DIR/test_json_error_handling.sh
 chmod +x $SCRIPT_DIR/test_socket_rebind.sh
+chmod +x $SCRIPT_DIR/test_env_variables.sh
 
 # Default output directories
 RESULTS_DIR="$SCRIPT_DIR/results"
@@ -239,6 +240,45 @@ run_startup_shutdown_test() {
     return $TEST_EXIT_CODE
 }
 
+# Function to run environment variable substitution test
+run_env_variables_test() {
+    print_header "Environment Variable Substitution Test" | tee -a "$SUMMARY_LOG"
+    
+    # Start the test
+    print_command "$SCRIPT_DIR/test_env_variables.sh" | tee -a "$SUMMARY_LOG"
+    $SCRIPT_DIR/test_env_variables.sh
+    TEST_EXIT_CODE=$?
+    
+    # Report result
+    if [ $TEST_EXIT_CODE -eq 0 ]; then
+        print_result 0 "Environment variable substitution test completed successfully" | tee -a "$SUMMARY_LOG"
+        ALL_TEST_NAMES+=("Environment Variable Substitution")
+        ALL_TEST_RESULTS+=(0)
+        ALL_TEST_DETAILS+=("Configuration system correctly handles environment variable substitution")
+        ALL_TEST_SUBTESTS+=(3)  # 3 subtests for basic substitution, missing variables, and type conversion
+    else
+        print_result 1 "Environment variable substitution test failed with exit code $TEST_EXIT_CODE" | tee -a "$SUMMARY_LOG"
+        ALL_TEST_NAMES+=("Environment Variable Substitution")
+        ALL_TEST_RESULTS+=(1)
+        ALL_TEST_DETAILS+=("Configuration system fails to handle environment variable substitution correctly")
+        
+        # Look for the log file
+        LATEST_LOG=$(find "$RESULTS_DIR" -type f -name "env_variables_test_*.log" | sort -r | head -1)
+        if [ -n "$LATEST_LOG" ] && [ -f "$LATEST_LOG" ]; then
+            echo "" | tee -a "$SUMMARY_LOG"
+            echo "==== ENVIRONMENT VARIABLE TEST EXECUTION LOG ====" | tee -a "$SUMMARY_LOG"
+            cat "$LATEST_LOG" | tee -a "$SUMMARY_LOG"
+            echo "==== END OF ENVIRONMENT VARIABLE TEST EXECUTION LOG ====" | tee -a "$SUMMARY_LOG"
+        fi
+    fi
+    
+    if [ -n "$LATEST_LOG" ]; then
+        echo "   Test log: $LATEST_LOG" | tee -a "$SUMMARY_LOG"
+    fi
+    echo "" | tee -a "$SUMMARY_LOG"
+    return $TEST_EXIT_CODE
+}
+
 # Function to run JSON error handling test
 run_json_error_handling_test() {
     print_header "JSON Error Handling Test" | tee -a "$SUMMARY_LOG"
@@ -377,6 +417,11 @@ else
             run_json_error_handling_test
             JSON_EXIT_CODE=$?
             
+            # Run environment variable substitution test
+            print_header "ENVIRONMENT VARIABLE SUBSTITUTION TEST" | tee -a "$SUMMARY_LOG"
+            run_env_variables_test
+            ENV_EXIT_CODE=$?
+            
             # Ensure all resources are cleaned up before next test
             echo "" | tee -a "$SUMMARY_LOG"
             print_info "Waiting for resources to be released before next test..." | tee -a "$SUMMARY_LOG"
@@ -461,7 +506,7 @@ else
             ensure_server_not_running
             
             # Set overall exit code
-            if [ $MIN_EXIT_CODE -eq 0 ] && [ $MAX_EXIT_CODE -eq 0 ] && [ $JSON_EXIT_CODE -eq 0 ] && [ $SOCKET_EXIT_CODE -eq 0 ] && [ $API_EXIT_CODE -eq 0 ]; then
+            if [ $MIN_EXIT_CODE -eq 0 ] && [ $MAX_EXIT_CODE -eq 0 ] && [ $JSON_EXIT_CODE -eq 0 ] && [ $ENV_EXIT_CODE -eq 0 ] && [ $SOCKET_EXIT_CODE -eq 0 ] && [ $API_EXIT_CODE -eq 0 ]; then
                 EXIT_CODE=0
             else
                 EXIT_CODE=1

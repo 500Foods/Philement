@@ -91,8 +91,11 @@ PERF_TARGET = hydrogen_perf
 # Phony targets (don't create files with these names)
 .PHONY: all clean debug valgrind release perf all-variants
 
+# Default target: only build the standard variant
+default: $(TARGET)
+
 # Build all variants at once
-all-variants: clean all debug valgrind release perf
+all: clean default debug valgrind release perf
 	@echo "All variants built successfully:"
 	@echo "  - Default: $(TARGET)"
 	@echo "  - Debug: $(DEBUG_TARGET)"
@@ -100,8 +103,8 @@ all-variants: clean all debug valgrind release perf
 	@echo "  - Release: $(RELEASE_TARGET)"
 	@echo "  - Performance: $(PERF_TARGET)"
 
-# Default target: optimized build
-all: $(TARGET)
+# Legacy target for backward compatibility
+all-variants: all
 
 # Release build: highly optimized with size reduction for deployment
 release: CFLAGS += -s -DNDEBUG -march=x86-64 -flto=auto -fstack-protector -DVERSION=\"$(VERSION)\"

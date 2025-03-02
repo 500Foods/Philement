@@ -24,7 +24,7 @@ key_technologies:
 
 ## REPOSITORY STRUCTURE
 
-```
+```structure
 hydrogen/
 ├── src/                    # Source code
 │   ├── api/                # API endpoints
@@ -73,7 +73,7 @@ For AI-assisted development, these are the critical files to examine first:
 
 ## COMPONENT RELATIONSHIPS
 
-```
+```relationships
 graph TD
     A[hydrogen.c] --> B[startup.c]
     B --> C[logging]
@@ -96,6 +96,7 @@ graph TD
 ## CODE PATTERNS
 
 ### Thread Creation Pattern
+
 ```c
 pthread_t thread_id;
 pthread_create(&thread_id, NULL, thread_function, context);
@@ -103,6 +104,7 @@ add_service_thread(&service_threads, thread_id);
 ```
 
 ### Queue Operations Pattern
+
 ```c
 // Adding to queue
 pthread_mutex_lock(&queue->mutex);
@@ -120,6 +122,7 @@ pthread_mutex_unlock(&queue->mutex);
 ```
 
 ### Error Handling Pattern
+
 ```c
 if (operation_failed) {
     log_this("Component", "Operation failed: reason", LOG_LEVEL_ERROR, true, false, true);
@@ -129,6 +132,7 @@ if (operation_failed) {
 ```
 
 ### API Endpoint Implementation Pattern
+
 ```c
 bool handle_api_endpoint(struct MHD_Connection *connection, const char *url, 
                         const char *method, const char *upload_data,
@@ -178,7 +182,7 @@ When helping users modify the Hydrogen project, follow this structured workflow:
 
 3. **Compilation Verification**
    - Guide users to compile after changes with `make`
-   - For debug builds, suggest `make debug` 
+   - For debug builds, suggest `make debug`
    - Address any compiler warnings or errors
 
 4. **Test Validation**

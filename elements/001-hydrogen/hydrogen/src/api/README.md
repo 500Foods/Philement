@@ -4,7 +4,7 @@ This directory contains the implementation of Hydrogen's REST API endpoints, whi
 
 ## Directory Structure
 
-```
+```directories
 api/
 ├── api_utils.c         # Shared utility functions for API implementations
 ├── api_utils.h         # Header file for API utilities
@@ -54,6 +54,7 @@ Each API endpoint follows a consistent implementation pattern:
 4. Results are formatted as JSON and returned to the client
 
 API utilities in `api_utils.c` provide common functionality such as:
+
 - Request parameter extraction and validation
 - Response formatting
 - Error handling
