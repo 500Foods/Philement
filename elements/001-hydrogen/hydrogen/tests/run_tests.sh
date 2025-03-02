@@ -22,13 +22,13 @@ cleanup_old_tests() {
     # Remove all files in results directory
     if [ -d "$RESULTS_DIR" ]; then
         rm -rf "$RESULTS_DIR"/*
-        print_info "Removed old test results from $RESULTS_DIR"
+        print_info "Removed old test results from $(convert_to_relative_path "$RESULTS_DIR")"
     fi
     
     # Remove all files in diagnostics directory
     if [ -d "$DIAGNOSTICS_DIR" ]; then
         rm -rf "$DIAGNOSTICS_DIR"/*
-        print_info "Removed old test diagnostics from $DIAGNOSTICS_DIR"
+        print_info "Removed old test diagnostics from $(convert_to_relative_path "$DIAGNOSTICS_DIR")"
     fi
     
     # Remove any log files in the tests directory
@@ -159,7 +159,7 @@ run_compilation_test() {
         fi
     fi
     
-    echo "   Test log: $LATEST_LOG" | tee -a "$SUMMARY_LOG"
+    echo "   Test log: $(convert_to_relative_path "$LATEST_LOG")" | tee -a "$SUMMARY_LOG"
     echo "" | tee -a "$SUMMARY_LOG"
     return $TEST_EXIT_CODE
 }
@@ -218,7 +218,7 @@ run_startup_shutdown_test() {
         LATEST_LOG=$(find "$RESULTS_DIR" -type f -name "*$(basename $CONFIG_FILE .json).log" | sort -r | head -1)
     fi
     if [ -n "$LATEST_LOG" ]; then
-        echo "   Test log: $LATEST_LOG" | tee -a "$SUMMARY_LOG"
+        echo "   Test log: $(convert_to_relative_path "$LATEST_LOG")" | tee -a "$SUMMARY_LOG"
         
         # Extract shutdown duration if available (with millisecond precision)
         SHUTDOWN_DURATION=$(grep "shut down in" "$LATEST_LOG" | grep -o "[0-9]*\.[0-9]* seconds" | head -1)
@@ -273,7 +273,7 @@ run_env_variables_test() {
     fi
     
     if [ -n "$LATEST_LOG" ]; then
-        echo "   Test log: $LATEST_LOG" | tee -a "$SUMMARY_LOG"
+        echo "   Test log: $(convert_to_relative_path "$LATEST_LOG")" | tee -a "$SUMMARY_LOG"
     fi
     echo "" | tee -a "$SUMMARY_LOG"
     return $TEST_EXIT_CODE
@@ -312,7 +312,7 @@ run_json_error_handling_test() {
     fi
     
     if [ -n "$LATEST_LOG" ]; then
-        echo "   Test log: $LATEST_LOG" | tee -a "$SUMMARY_LOG"
+        echo "   Test log: $(convert_to_relative_path "$LATEST_LOG")" | tee -a "$SUMMARY_LOG"
     fi
     echo "" | tee -a "$SUMMARY_LOG"
     return $TEST_EXIT_CODE
@@ -365,7 +365,7 @@ run_system_endpoint_tests() {
         fi
     fi
     
-    echo "   Test log: $LATEST_LOG" | tee -a "$SUMMARY_LOG"
+    echo "   Test log: $(convert_to_relative_path "$LATEST_LOG")" | tee -a "$SUMMARY_LOG"
     echo "" | tee -a "$SUMMARY_LOG"
     return $TEST_EXIT_CODE
 }
@@ -488,7 +488,7 @@ else
             # Log the socket test result
             LATEST_LOG=$(find "$RESULTS_DIR" -type f -name "socket_rebind_test_*.log" | sort -r | head -1)
             if [ -n "$LATEST_LOG" ]; then
-                echo "   Test log: $LATEST_LOG" | tee -a "$SUMMARY_LOG"
+                echo "   Test log: $(convert_to_relative_path "$LATEST_LOG")" | tee -a "$SUMMARY_LOG"
             fi
             echo "" | tee -a "$SUMMARY_LOG"
             
@@ -526,7 +526,7 @@ fi
 # Print overall summary
 print_header "Test Summary" | tee -a "$SUMMARY_LOG"
 echo "Completed at: $(date)" | tee -a "$SUMMARY_LOG"
-echo "Summary log: $SUMMARY_LOG" | tee -a "$SUMMARY_LOG"
+echo "Summary log: $(convert_to_relative_path "$SUMMARY_LOG")" | tee -a "$SUMMARY_LOG"
 echo "" | tee -a "$SUMMARY_LOG"
 
 # Clean up any leftover log files
@@ -594,8 +594,8 @@ echo -e "${BLUE}─────────────────────�
 # Tips for additional diagnostics
 echo "" | tee -a "$SUMMARY_LOG"
 echo "For more detailed analysis:" | tee -a "$SUMMARY_LOG"
-echo "  • Thread analysis:     $SCRIPT_DIR/analyze_stuck_threads.sh <pid>" | tee -a "$SUMMARY_LOG"
-echo "  • Resource monitoring: $SCRIPT_DIR/monitor_resources.sh <pid> [seconds]" | tee -a "$SUMMARY_LOG"
+echo "  • Thread analysis:     $(convert_to_relative_path "$SCRIPT_DIR/analyze_stuck_threads.sh") <pid>" | tee -a "$SUMMARY_LOG"
+echo "  • Resource monitoring: $(convert_to_relative_path "$SCRIPT_DIR/monitor_resources.sh") <pid> [seconds]" | tee -a "$SUMMARY_LOG"
 echo "" | tee -a "$SUMMARY_LOG"
 
 exit $EXIT_CODE
