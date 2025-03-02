@@ -21,6 +21,7 @@ At its heart, Hydrogen features a robust queue system and a sophisticated servic
 - mDNS Client/Server: Handles service discovery and auto-configuration
 - Queue System: Provides thread-safe data management across all components
 - Print Server: Offers complete 3D printer control and monitoring capabilities
+- OIDC Provider: Implements OpenID Connect protocol for secure authentication and authorization
 
 Whether you're managing a single 3D printer, orchestrating a large print farm, or building a high-performance web application, Hydrogen provides the foundation you need. Its modular architecture and emphasis on performance make it a versatile tool for both Philement projects and broader applications.
 
