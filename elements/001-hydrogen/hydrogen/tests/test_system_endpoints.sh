@@ -98,7 +98,7 @@ else
 fi
 
 # Start hydrogen server in background with appropriate configuration
-print_info "Starting hydrogen server with API test configuration..."
+print_info "Starting hydrogen server with API test configuration ($(convert_to_relative_path "$CONFIG_FILE"))..."
 $HYDROGEN_BIN "$CONFIG_FILE" > "$SCRIPT_DIR/hydrogen_test.log" 2>&1 &
 HYDROGEN_PID=$!
 
@@ -283,7 +283,7 @@ if kill -0 $HYDROGEN_PID 2>/dev/null; then
     grep -i "error\|warn\|fatal\|segmentation" "$SCRIPT_DIR/hydrogen_test.log" | grep -i "API\|System\|SystemTest\|SystemService\|Endpoint\|api" > "$RESULTS_DIR/system_test_errors_${TIMESTAMP}.log"
     
     if [ -s "$RESULTS_DIR/system_test_errors_${TIMESTAMP}.log" ]; then
-        print_warning "API-related warning/error messages found in logs:"
+        print_warning "API-related warning/error messages found in logs ($(convert_to_relative_path "$RESULTS_DIR/system_test_errors_${TIMESTAMP}.log")):"
         cat "$RESULTS_DIR/system_test_errors_${TIMESTAMP}.log"
     else
         print_info "No API-related error messages found in logs"
@@ -293,7 +293,7 @@ if kill -0 $HYDROGEN_PID 2>/dev/null; then
     print_info "Checking for Brotli compression logs..."
     grep -i "Brotli" "$SCRIPT_DIR/hydrogen_test.log" > "$RESULTS_DIR/brotli_compression_${TIMESTAMP}.log"
     if [ -s "$RESULTS_DIR/brotli_compression_${TIMESTAMP}.log" ]; then
-        print_info "Brotli compression logs found:"
+        print_info "Brotli compression logs found ($(convert_to_relative_path "$RESULTS_DIR/brotli_compression_${TIMESTAMP}.log")):"
         cat "$RESULTS_DIR/brotli_compression_${TIMESTAMP}.log"
     # Check for compression metrics with level information
     if grep -q "Brotli(level=[0-9]\+).*bytes.*ratio.*compression.*time:" "$RESULTS_DIR/brotli_compression_${TIMESTAMP}.log"; then

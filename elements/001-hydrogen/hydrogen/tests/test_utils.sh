@@ -51,7 +51,10 @@ print_info() {
 
 # Function to print a command that will be executed
 print_command() {
-    echo -e "${YELLOW}Executing: $1${NC}"
+    # Convert any absolute paths in the command to relative paths
+    # Look for paths containing /elements/001-hydrogen/hydrogen/ and convert them
+    local cmd=$(echo "$1" | sed -E "s|/[[:alnum:]/_-]+/elements/001-hydrogen/hydrogen/|hydrogen/|g")
+    echo -e "${YELLOW}Executing: $cmd${NC}"
 }
 
 # Function to start a test run with proper header
@@ -217,6 +220,26 @@ EOF
     
     echo "HTML report generated: $html_file"
     return 0
+}
+
+# Function to convert absolute path to path relative to hydrogen project root
+convert_to_relative_path() {
+    local absolute_path="$1"
+    
+    # Extract the part starting from "hydrogen" and keep everything after
+    local relative_path=$(echo "$absolute_path" | sed -n 's|.*/hydrogen/|hydrogen/|p')
+    
+    # If the path contains elements/001-hydrogen/hydrogen but not starting with hydrogen/
+    if [ -z "$relative_path" ]; then
+        relative_path=$(echo "$absolute_path" | sed -n 's|.*/elements/001-hydrogen/hydrogen|hydrogen|p')
+    fi
+    
+    # If we still couldn't find a match, return the original
+    if [ -z "$relative_path" ]; then
+        echo "$absolute_path"
+    else
+        echo "$relative_path"
+    fi
 }
 
 # Export the test result to a standardized JSON format for the main summary

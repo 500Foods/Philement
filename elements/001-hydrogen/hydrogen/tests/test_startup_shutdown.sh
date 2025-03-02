@@ -43,13 +43,13 @@ mkdir -p "$DIAG_TEST_DIR"
 
 # Start the test
 start_test "Hydrogen Startup/Shutdown Test" | tee -a "$RESULT_LOG"
-print_info "Config: $CONFIG_FILE" | tee -a "$RESULT_LOG"
+print_info "Config: $(convert_to_relative_path "$CONFIG_FILE")" | tee -a "$RESULT_LOG"
 
 # Start with clean log
 > "$LOG_FILE"
 
 # Launch Hydrogen in background
-print_info "Starting Hydrogen with config: $CONFIG_FILE" | tee -a "$RESULT_LOG"
+print_info "Starting Hydrogen with config: $(convert_to_relative_path "$CONFIG_FILE")" | tee -a "$RESULT_LOG"
 $HYDROGEN_BIN "$CONFIG_FILE" > "$LOG_FILE" 2>&1 &
 HYDROGEN_PID=$!
 print_info "Started Hydrogen with PID: $HYDROGEN_PID" | tee -a "$RESULT_LOG"
@@ -261,7 +261,7 @@ fi
 
 # Generate summary report
 print_header "Shutdown Test Summary" | tee -a "$RESULT_LOG"
-print_info "Config: $CONFIG_FILE" | tee -a "$RESULT_LOG"
+print_info "Config: $(convert_to_relative_path "$CONFIG_FILE")" | tee -a "$RESULT_LOG"
 print_info "Start time: $(date -d @$SHUTDOWN_START +"%H:%M:%S.%3N")" | tee -a "$RESULT_LOG"
 print_info "End time: $(date -d @$SHUTDOWN_END +"%H:%M:%S.%3N")" | tee -a "$RESULT_LOG"
 print_info "Duration: $SHUTDOWN_DURATION.$SHUTDOWN_MS seconds" | tee -a "$RESULT_LOG"
@@ -278,10 +278,10 @@ if [ $SHUTDOWN_DURATION -lt $SHUTDOWN_TIMEOUT ]; then
     fi
 else
     print_result 1 "FAILED (shutdown timed out after ${SHUTDOWN_TIMEOUT}s)" | tee -a "$RESULT_LOG"
-    print_info "Diagnostics saved to: $DIAG_TEST_DIR/" | tee -a "$RESULT_LOG"
+    print_info "Diagnostics saved to: $(convert_to_relative_path "$DIAG_TEST_DIR/")" | tee -a "$RESULT_LOG"
     EXIT_CODE=1  # Set non-zero exit code for failure
 fi
 
 # End test
-end_test $EXIT_CODE "Startup/Shutdown Test with $CONFIG_FILE" | tee -a "$RESULT_LOG"
+end_test $EXIT_CODE "Startup/Shutdown Test with $(convert_to_relative_path "$CONFIG_FILE")" | tee -a "$RESULT_LOG"
 exit $EXIT_CODE  # Return appropriate exit code

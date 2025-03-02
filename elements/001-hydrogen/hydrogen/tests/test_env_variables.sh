@@ -74,7 +74,7 @@ cleanup() {
     
     # Save test log if we've started writing it
     if [ -n "$RESULT_LOG" ] && [ -f "$RESULT_LOG" ]; then
-        echo "Saving test results to $RESULT_LOG"
+        echo "Saving test results to $(convert_to_relative_path "$RESULT_LOG")"
     fi
     
     exit $EXIT_CODE
@@ -87,7 +87,7 @@ trap cleanup SIGINT SIGTERM EXIT
 EXIT_CODE=0
 start_test "Environment Variable Substitution Test" | tee -a "$RESULT_LOG"
 print_info "Testing config substitution with environment variables" | tee -a "$RESULT_LOG"
-print_info "Using config: $CONFIG_FILE" | tee -a "$RESULT_LOG"
+print_info "Using config: $(convert_to_relative_path "$CONFIG_FILE")" | tee -a "$RESULT_LOG"
 
 # Clean up any existing log file
 TEST_LOG_FILE="./hydrogen_env_test.log"
@@ -434,6 +434,6 @@ else
     print_result 1 "Some environment variable substitution tests FAILED" | tee -a "$RESULT_LOG"
 fi
 
-print_info "Test results saved to: $RESULT_LOG" | tee -a "$RESULT_LOG"
+print_info "Test results saved to: $(convert_to_relative_path "$RESULT_LOG")" | tee -a "$RESULT_LOG"
 end_test $EXIT_CODE "Environment Variable Substitution Test" | tee -a "$RESULT_LOG"
 # Let the cleanup() function handle the exit via the EXIT trap

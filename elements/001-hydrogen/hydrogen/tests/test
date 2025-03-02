@@ -1,0 +1,1222 @@
+ ./run_tests.sh
+🛈  Cleaning up previous test results and diagnostics...
+🛈  Removed old test results from hydrogen/tests/results
+🛈  Removed old test diagnostics from hydrogen/tests/diagnostics
+🛈  Removed old log files from test directory
+🛈  Cleanup complete
+🛈  Checking for running Hydrogen instances...
+🛈  No running Hydrogen processes found
+🛈  Resource cleanup complete
+
+───────────────────────────────────────────────────────────────────────────────
+Hydrogen Test Runner
+───────────────────────────────────────────────────────────────────────────────
+Started at: Sun Mar  2 04:33:56 PST 2025
+
+
+───────────────────────────────────────────────────────────────────────────────
+Compilation Test
+───────────────────────────────────────────────────────────────────────────────
+Executing: hydrogen/tests/test_compilation.sh
+
+───────────────────────────────────────────────────────────────────────────────
+Hydrogen Compilation Test
+───────────────────────────────────────────────────────────────────────────────
+Started at: Sun Mar  2 04:33:56 PST 2025
+
+rm -rf build build_debug build_valgrind build_release build_perf hydrogen hydrogen_debug hydrogen_valgrind hydrogen_release hydrogen_perf
+
+───────────────────────────────────────────────────────────────────────────────
+Testing compilation of Hydrogen main project (release)
+───────────────────────────────────────────────────────────────────────────────
+🛈  Build command: make release
+🛈  Working directory: hydrogen
+✅ Hydrogen main project (release) compiled successfully in 5s
+🛈  No warnings detected
+
+🛈  Full build log saved to: hydrogen/tests/results/build_Hydrogen main project (release)_20250302_043356.log
+
+───────────────────────────────────────────────────────────────────────────────
+Testing compilation of Hydrogen main project (default)
+───────────────────────────────────────────────────────────────────────────────
+🛈  Build command: make
+🛈  Working directory: hydrogen
+✅ Hydrogen main project (default) compiled successfully in 3s
+🛈  No warnings detected
+
+🛈  Full build log saved to: hydrogen/tests/results/build_Hydrogen main project (default)_20250302_043356.log
+
+───────────────────────────────────────────────────────────────────────────────
+Testing compilation of Hydrogen main project (debug)
+───────────────────────────────────────────────────────────────────────────────
+🛈  Build command: make debug
+🛈  Working directory: hydrogen
+✅ Hydrogen main project (debug) compiled successfully in 5s
+🛈  No warnings detected
+
+🛈  Full build log saved to: hydrogen/tests/results/build_Hydrogen main project (debug)_20250302_043356.log
+
+───────────────────────────────────────────────────────────────────────────────
+Testing compilation of Hydrogen main project (valgrind)
+───────────────────────────────────────────────────────────────────────────────
+🛈  Build command: make valgrind
+🛈  Working directory: hydrogen
+✅ Hydrogen main project (valgrind) compiled successfully in 5s
+🛈  No warnings detected
+
+🛈  Full build log saved to: hydrogen/tests/results/build_Hydrogen main project (valgrind)_20250302_043356.log
+
+───────────────────────────────────────────────────────────────────────────────
+Testing compilation of Hydrogen main project (perf)
+───────────────────────────────────────────────────────────────────────────────
+🛈  Build command: make perf
+🛈  Working directory: hydrogen
+✅ Hydrogen main project (perf) compiled successfully in 5s
+🛈  No warnings detected
+
+🛈  Full build log saved to: hydrogen/tests/results/build_Hydrogen main project (perf)_20250302_043356.log
+
+───────────────────────────────────────────────────────────────────────────────
+Testing compilation of OIDC client examples
+───────────────────────────────────────────────────────────────────────────────
+🛈  Build command: make all
+��  Working directory: hydrogen/oidc-client-examples/C
+✅ OIDC client examples compiled successfully in 1s
+🛈  No warnings detected
+
+🛈  Full build log saved to: hydrogen/tests/results/build_OIDC client examples_20250302_043356.log
+
+───────────────────────────────────────────────────────────────────────────────
+Compilation Test Summary
+───────────────────────────────────────────────────────────────────────────────
+🛈  Completed at: Sun Mar  2 04:34:21 PST 2025
+🛈  Test log: hydrogen/tests/results/test_20250302_043356_compilation.log
+
+───────────────────────────────────────────────────────────────────────────────
+Test Summary
+───────────────────────────────────────────────────────────────────────────────
+Completed at: Sun Mar  2 04:34:21 PST 2025
+✅ OVERALL RESULT: ALL TESTS PASSED
+───────────────────────────────────────────────────────────────────────────────
+
+✅ Compilation test completed successfully
+   Test log: 
+
+🛈  Running tests with both configurations
+
+
+───────────────────────────────────────────────────────────────────────────────
+MINIMAL CONFIGURATION TEST
+───────────────────────────────────────────────────────────────────────────────
+
+───────────────────────────────────────────────────────────────────────────────
+Startup/Shutdown Test (hydrogen_test_min)
+───────────────────────────────────────────────────────────────────────────────
+Executing: hydrogen/tests/test_startup_shutdown.sh hydrogen/tests/hydrogen_test_min.json
+🛈  Using release build for testing
+
+───────────────────────────────────────────────────────────────────────────────
+Hydrogen Startup/Shutdown Test
+───────────────────────────────────────────────────────────────────────────────
+Started at: Sun Mar  2 04:34:21 PST 2025
+
+🛈  Config: hydrogen/tests/hydrogen_test_min.json
+🛈  Starting Hydrogen with config: hydrogen/tests/hydrogen_test_min.json
+🛈  Started Hydrogen with PID: 822624
+🛈  Waiting for startup (max 10s)...
+Received log lines: 58
+🛈  Startup completed in 0.0 seconds
+🛈  Capturing pre-shutdown state...
+
+───────────────────────────────────────────────────────────────────────────────
+Initiating shutdown at 04:34:21.526
+───────────────────────────────────────────────────────────────────────────────
+🛈  Monitoring shutdown progress...
+🛈  Current log line count: 58 lines
+Shutdown progress: Lines: 122     No log activity: 0s  
+🛈  Hydrogen shut down in 2.2 seconds
+🛈  Clean shutdown detected
+🛈  Shutdown took 62 log lines from signal to completion
+
+───────────────────────────────────────────────────────────────────────────────
+Shutdown Test Summary
+───────────────────────────────────────────────────────────────────────────────
+🛈  Config: hydrogen/tests/hydrogen_test_min.json
+🛈  Start time: 04:34:21.000
+🛈  End time: 04:34:23.000
+🛈  Duration: 2.2 seconds
+🛈  Total log lines: 122
+✅ PASSED (clean shutdown)
+
+───────────────────────────────────────────────────────────────────────────────
+Test Summary
+───────────────────────────────────────────────────────────────────────────────
+Completed at: Sun Mar  2 04:34:23 PST 2025
+✅ OVERALL RESULT: ALL TESTS PASSED
+───────────────────────────────────────────────────────────────────────────────
+
+✅ Test with hydrogen_test_min.json completed successfully
+   Test log: hydrogen/tests/results/test_20250302_043421_hydrogen_test_min.log
+   Shutdown completed in 2.2 seconds
+
+
+🛈  Waiting for resources to be released before next test...
+🛈  Checking for running Hydrogen instances...
+🛈  No running Hydrogen processes found
+🛈  Resource cleanup complete
+
+───────────────────────────────────────────────────────────────────────────────
+MAXIMAL CONFIGURATION TEST
+───────────────────────────────────────────────────────────────────────────────
+
+───────────────────────────────────────────────────────────────────────────────
+Startup/Shutdown Test (hydrogen_test_max)
+───────────────────────────────────────────────────────────────────────────────
+Executing: hydrogen/tests/test_startup_shutdown.sh hydrogen/tests/hydrogen_test_max.json
+🛈  Using release build for testing
+
+───────────────────────────────────────────────────────────────────────────────
+Hydrogen Startup/Shutdown Test
+───────────────────────────────────────────────────────────────────────────────
+Started at: Sun Mar  2 04:34:25 PST 2025
+
+🛈  Config: hydrogen/tests/hydrogen_test_max.json
+🛈  Starting Hydrogen with config: hydrogen/tests/hydrogen_test_max.json
+🛈  Started Hydrogen with PID: 822929
+🛈  Waiting for startup (max 10s)...
+Received log lines: 646
+🛈  Startup completed in 0.0 seconds
+🛈  Capturing pre-shutdown state...
+
+───────────────────────────────────────────────────────────────────────────────
+Initiating shutdown at 04:34:25.886
+───────────────────────────────────────────────────────────────────────────────
+🛈  Monitoring shutdown progress...
+🛈  Current log line count: 646 lines
+Shutdown progress: Lines: 1409    No log activity: 0s  
+🛈  Hydrogen shut down in 20.20 seconds
+🛈  Clean shutdown detected
+🛈  Shutdown took 754 log lines from signal to completion
+
+───────────────────────────────────────────────────────────────────────────────
+Shutdown Test Summary
+───────────────────────────────────────────────────────────────────────────────
+🛈  Config: hydrogen/tests/hydrogen_test_max.json
+🛈  Start time: 04:34:25.000
+🛈  End time: 04:34:45.000
+🛈  Duration: 20.20 seconds
+🛈  Total log lines: 1409
+✅ PASSED (clean shutdown)
+
+───────────────────────────────────────────────────────────────────────────────
+Test Summary
+───────────────────────────────────────────────────────────────────────────────
+Completed at: Sun Mar  2 04:34:45 PST 2025
+✅ OVERALL RESULT: ALL TESTS PASSED
+───────────────────────────────────────────────────────────────────────────────
+
+✅ Test with hydrogen_test_max.json completed successfully
+   Test log: hydrogen/tests/results/test_20250302_043421_hydrogen_test_min.log
+   Shutdown completed in 2.2 seconds
+
+
+───────────────────────────────────────────────────────────────────────────────
+JSON ERROR HANDLING TEST
+───────────────────────────────────────────────────────────────────────────────
+
+───────────────────────────────────────────────────────────────────────────────
+JSON Error Handling Test
+───────────────────────────────────────────────────────────────────────────────
+Executing: hydrogen/tests/test_json_error_handling.sh
+Testing JSON error handling in configuration module...
+Using test file with JSON syntax error at line 3 (missing comma)
+Using release build for testing
+Running hydrogen with malformed config...
+Hydrogen exited with error as expected
+PASS: Error message contains line and column information
+ERROR: Hydrogen configuration file has JSON syntax errors.
+       '}' expected near '"LogFile"' at line 3, column 13
+       Please fix the syntax error and try again.
+Test completed successfully!
+✅ JSON error handling test completed successfully
+   Test log: hydrogen/tests/results/test_20250302_043421_hydrogen_test_min.log
+
+
+───────────────────────────────────────────────────────────────────────────────
+ENVIRONMENT VARIABLE SUBSTITUTION TEST
+───────────────────────────────────────────────────────────────────────────────
+
+───────────────────────────────────────────────────────────────────────────────
+Environment Variable Substitution Test
+───────────────────────────────────────────────────────────────────────────────
+Executing: hydrogen/tests/test_env_variables.sh
+🛈  Using release build for testing
+
+───────────────────────────────────────────────────────────────────────────────
+Environment Variable Substitution Test
+───────────────────────────────────────────────────────────────────────────────
+Started at: Sun Mar  2 04:34:45 PST 2025
+
+🛈  Testing config substitution with environment variables
+🛈  Using config: hydrogen/tests/hydrogen_test_env.json
+🛈  Ensuring no Hydrogen instances are running...
+Saving test results to hydrogen/tests/results/env_variables_test_20250302_043445.log
+Saving test results to hydrogen/tests/results/env_variables_test_20250302_043445.log
+✅ Environment variable substitution test completed successfully
+   Test log: hydrogen/tests/results/test_20250302_043421_hydrogen_test_min.log
+
+
+🛈  Waiting for resources to be released before next test...
+🛈  Checking for running Hydrogen instances...
+🛈  No running Hydrogen processes found
+🛈  Resource cleanup complete
+
+───────────────────────────────────────────────────────────────────────────────
+SOCKET REBINDING TEST
+───────────────────────────────────────────────────────────────────────────────
+Executing: hydrogen/tests/test_socket_rebind.sh
+��  Using release build for testing
+
+───────────────────────────────────────────────────────────────────────────────
+Socket Rebinding Test
+───────────────────────────────────────────────────────────────────────────────
+Started at: Sun Mar  2 04:34:47 PST 2025
+
+🛈  Testing SO_REUSEADDR socket option for immediate port rebinding
+🛈  Using config: hydrogen/tests/hydrogen_test_api.json
+🛈  Web server port: 5000
+🛈  Ensuring no Hydrogen instances are running...
+Terminated
+Saving test results to hydrogen/tests/results/socket_rebind_test_20250302_043447.log
+Saving test results to hydrogen/tests/results/socket_rebind_test_20250302_043447.log
+✅ Socket rebinding test completed successfully
+   Test log: hydrogen/tests/results/socket_rebind_test_20250302_043447.log
+
+🛈  Waiting for resources to be released before next test...
+🛈  Checking for running Hydrogen instances...
+🛈  No running Hydrogen processes found
+🛈  Resource cleanup complete
+
+───────────────────────────────────────────────────────────────────────────────
+SYSTEM ENDPOINT TESTS
+───────────────────────────────────────────────────────────────────────────────
+
+───────────────────────────────────────────────────────────────────────────────
+System API Endpoints Test
+───────────────────────────────────────────────────────────────────────────────
+Executing: hydrogen/tests/test_system_endpoints.sh
+
+───────────────────────────────────────────────────────────────────────────────
+Hydrogen System API Endpoints Test
+───────────────────────────────────────────────────────────────────────────────
+Started at: Sun Mar  2 04:34:52 PST 2025
+
+🛈  Using release build for testing
+🛈  Starting hydrogen server with API test configuration (hydrogen/tests/hydrogen_test_api.json)...
+🛈  Waiting for server to initialize (5 seconds)...
+
+───────────────────────────────────────────────────────────────────────────────
+Testing /api/system/health Endpoint
+───────────────────────────────────────────────────────────────────────────────
+
+───────────────────────────────────────────────────────────────────────────────
+Test Case: Health Check
+───────────────────────────────────────────────────────────────────────────────
+Executing: curl --compressed -s --max-time 5 http://localhost:5000/api/system/health
+🛈  Successfully received response!
+🛈  Response content:
+{"status":"Yes, I'm alive, thanks!"}
+✅ Response contains expected field: Yes, I'm alive, thanks!
+
+
+───────────────────────────────────────────────────────────────────────────────
+Testing /api/system/info Endpoint
+───────────────────────────────────────────────────────────────────────────────
+
+───────────────────────────────────────────────────────────────────────────────
+Test Case: System Information
+───────────────────────────────────────────────────────────────────────────────
+Executing: curl --compressed -s --max-time 5 http://localhost:5000/api/system/info
+🛈  Successfully received response!
+🛈  Response content:
+{
+  "version": {
+    "server": "1.0.0.1111",
+    "api": "1.0"
+  },
+  "system": {
+    "sysname": "Linux",
+    "nodename": "angrin.500foods.com",
+    "release": "5.10.15-200.fc33.x86_64",
+    "version": "#1 SMP Wed Feb 10 17:46:55 UTC 2021",
+    "machine": "x86_64",
+    "cpu_usage": {
+      "total": "14.974"
+    },
+    "cpu_usage_per_core": {
+      "cpu0": "14.142",
+      "cpu1": "15.301",
+      "cpu2": "14.960",
+      "cpu3": "16.045",
+      "cpu4": "14.263",
+      "cpu5": "14.656",
+      "cpu6": "15.143",
+      "cpu7": "15.045",
+      "cpu8": "14.179",
+      "cpu9": "15.679",
+      "cpu10": "15.560",
+      "cpu11": "14.724"
+    },
+    "load_1min": "3.523",
+    "load_5min": "2.792",
+    "load_15min": "2.378",
+    "memory": {
+      "total": 33323405312,
+      "used": 32695873536,
+      "free": 627531776,
+      "used_percent": "98.117",
+      "swap_total": 30006038528,
+      "swap_used": 1732247552,
+      "swap_free": 28273790976,
+      "swap_used_percent": "5.773"
+    },
+    "network": {
+      "virbr1": {
+        "name": "virbr1",
+        "addresses": [
+          "192.168.100.1"
+        ],
+        "rx_bytes": 213136,
+        "tx_bytes": 205371
+      },
+      "bridge0": {
+        "name": "bridge0",
+        "addresses": [
+          "192.168.0.44",
+          "fd8f:a4ad:b5b8:e348:72a:69a0:c3ec:40ec",
+          "fe80::192e:dfdd:dcc9:4f01"
+        ],
+        "rx_bytes": 1110004940,
+        "tx_bytes": 408554387
+      },
+      "vnet3": {
+        "name": "vnet3",
+        "addresses": [
+          "fe80::fc54:ff:fe47:742b"
+        ],
+        "rx_bytes": 325959035,
+        "tx_bytes": 4781519309
+      },
+      "vnet4": {
+        "name": "vnet4",
+        "addresses": [
+          "fe80::fc54:ff:fe00:2d5e"
+        ],
+        "rx_bytes": 4478663,
+        "tx_bytes": 97415450
+      },
+      "vnet5": {
+        "name": "vnet5",
+        "addresses": [
+          "fe80::fc54:ff:fea0:2c89"
+        ],
+        "rx_bytes": 257502,
+        "tx_bytes": 2135350
+      }
+    },
+    "filesystems": {
+      "/sys/kernel/security": {
+        "device": "securityfs",
+        "mount_point": "/sys/kernel/security",
+        "type": "securityfs",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/dev/pts": {
+        "device": "devpts",
+        "mount_point": "/dev/pts",
+        "type": "devpts",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/sys/fs/cgroup": {
+        "device": "cgroup2",
+        "mount_point": "/sys/fs/cgroup",
+        "type": "cgroup2",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/sys/fs/pstore": {
+        "device": "pstore",
+        "mount_point": "/sys/fs/pstore",
+        "type": "pstore",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/sys/fs/bpf": {
+        "device": "none",
+        "mount_point": "/sys/fs/bpf",
+        "type": "bpf",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/sys/kernel/tracing": {
+        "device": "none",
+        "mount_point": "/sys/kernel/tracing",
+        "type": "tracefs",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/": {
+        "device": "/dev/mapper/fedora_localhost--live-root",
+        "mount_point": "/",
+        "type": "ext4",
+        "total_space": 52521566208,
+        "used_space": 42194907136,
+        "available_space": 7625527296,
+        "used_percent": "80.338"
+      },
+      "/proc/sys/fs/binfmt_misc": {
+        "device": "binfmt_misc",
+        "mount_point": "/proc/sys/fs/binfmt_misc",
+        "type": "binfmt_misc",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/dev/hugepages": {
+        "device": "hugetlbfs",
+        "mount_point": "/dev/hugepages",
+        "type": "hugetlbfs",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/sys/kernel/debug": {
+        "device": "debugfs",
+        "mount_point": "/sys/kernel/debug",
+        "type": "debugfs",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/dev/mqueue": {
+        "device": "mqueue",
+        "mount_point": "/dev/mqueue",
+        "type": "mqueue",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/run/credentials/systemd-journald.service": {
+        "device": "none",
+        "mount_point": "/run/credentials/systemd-journald.service",
+        "type": "ramfs",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/run/credentials/systemd-udev-load-credentials.service": {
+        "device": "none",
+        "mount_point": "/run/credentials/systemd-udev-load-credentials.service",
+        "type": "ramfs",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/sys/fs/fuse/connections": {
+        "device": "fusectl",
+        "mount_point": "/sys/fs/fuse/connections",
+        "type": "fusectl",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/sys/kernel/config": {
+        "device": "configfs",
+        "mount_point": "/sys/kernel/config",
+        "type": "configfs",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/run/credentials/systemd-tmpfiles-setup-dev-early.service": {
+        "device": "none",
+        "mount_point": "/run/credentials/systemd-tmpfiles-setup-dev-early.service",
+        "type": "ramfs",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/run/credentials/systemd-sysctl.service": {
+        "device": "none",
+        "mount_point": "/run/credentials/systemd-sysctl.service",
+        "type": "ramfs",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/run/credentials/systemd-tmpfiles-setup-dev.service": {
+        "device": "none",
+        "mount_point": "/run/credentials/systemd-tmpfiles-setup-dev.service",
+        "type": "ramfs",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/run/credentials/systemd-vconsole-setup.service": {
+        "device": "none",
+        "mount_point": "/run/credentials/systemd-vconsole-setup.service",
+        "type": "ramfs",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/boot": {
+        "device": "/dev/sda1",
+        "mount_point": "/boot",
+        "type": "ext4",
+        "total_space": 1020702720,
+        "used_space": 270282752,
+        "available_space": 679956480,
+        "used_percent": "26.480"
+      },
+      "/mnt/SmallA": {
+        "device": "/dev/sdb1",
+        "mount_point": "/mnt/SmallA",
+        "type": "ext4",
+        "total_space": 4960384933888,
+        "used_space": 1585370173440,
+        "available_space": 3124948996096,
+        "used_percent": "31.961"
+      },
+      "/mnt/BigA": {
+        "device": "/dev/sdc1",
+        "mount_point": "/mnt/BigA",
+        "type": "ext4",
+        "total_space": 11904377847808,
+        "used_space": 446448664576,
+        "available_space": 10857905582080,
+        "used_percent": "3.750"
+      },
+      "/mnt/speedy": {
+        "device": "/dev/md1",
+        "mount_point": "/mnt/speedy",
+        "type": "ext4",
+        "total_space": 943796760576,
+        "used_space": 850593984512,
+        "available_space": 45189058560,
+        "used_percent": "90.125"
+      },
+      "/mnt/extra": {
+        "device": "/dev/nvme1n1",
+        "mount_point": "/mnt/extra",
+        "type": "ext4",
+        "total_space": 1007060504576,
+        "used_space": 796711309312,
+        "available_space": 159121944576,
+        "used_percent": "79.113"
+      },
+      "/home": {
+        "device": "/dev/mapper/fedora_localhost--live-home",
+        "mount_point": "/home",
+        "type": "ext4",
+        "total_space": 63673479168,
+        "used_space": 56487710720,
+        "available_space": 3920924672,
+        "used_percent": "88.715"
+      },
+      "/run/credentials/systemd-tmpfiles-setup.service": {
+        "device": "none",
+        "mount_point": "/run/credentials/systemd-tmpfiles-setup.service",
+        "type": "ramfs",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/run/credentials/systemd-resolved.service": {
+        "device": "none",
+        "mount_point": "/run/credentials/systemd-resolved.service",
+        "type": "ramfs",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/var/lib/nfs/rpc_pipefs": {
+        "device": "sunrpc",
+        "mount_point": "/var/lib/nfs/rpc_pipefs",
+        "type": "rpc_pipefs",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/run/vmblock-fuse": {
+        "device": "vmware-vmblock",
+        "mount_point": "/run/vmblock-fuse",
+        "type": "fuse.vmware-vmblock",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      },
+      "/run/user/1000/gvfs": {
+        "device": "gvfsd-fuse",
+        "mount_point": "/run/user/1000/gvfs",
+        "type": "fuse.gvfsd-fuse",
+        "total_space": 0,
+        "used_space": 0,
+        "available_space": 0,
+        "used_percent": "-nan"
+      }
+    },
+    "logged_in_users": [
+      {
+        "username": "asimard",
+        "tty": "tty1",
+        "host": "",
+        "login_time": 1740857026
+      },
+      {
+        "username": "asimard",
+        "tty": "pts/0",
+        "host": ":0",
+        "login_time": 1740857031
+      },
+      {
+        "username": "asimard",
+        "tty": "pts/1",
+        "host": ":0",
+        "login_time": 1740857062
+      },
+      {
+        "username": "asimard",
+        "tty": "pts/7",
+        "host": ":0",
+        "login_time": 1740860826
+      }
+    ]
+  },
+  "status": {
+    "server_running": true,
+    "server_stopping": false,
+    "server_starting": false,
+    "server_started": "1970-01-01T17:11:52.000Z",
+    "server_runtime": 1740856985,
+    "server_runtime_formatted": "20148d 19h 23m 5s",
+    "totalThreads": 6,
+    "totalVirtualMemoryBytes": 328552448,
+    "totalResidentMemoryBytes": 18128896,
+    "resources": {
+      "serviceResources": {
+        "threads": 5,
+        "virtualMemoryBytes": 417792,
+        "residentMemoryBytes": 417792,
+        "allocationPercent": "2.305"
+      },
+      "queueResources": {
+        "entries": 0,
+        "virtualMemoryBytes": 0,
+        "residentMemoryBytes": 0,
+        "allocationPercent": "0.000"
+      },
+      "otherResources": {
+        "threads": 1,
+        "virtualMemoryBytes": 328134656,
+        "residentMemoryBytes": 17711104,
+        "allocationPercent": "97.695"
+      }
+    },
+    "files": [
+      {
+        "fd": 0,
+        "type": "stdio",
+        "description": "stdin: terminal"
+      },
+      {
+        "fd": 1,
+        "type": "stdio",
+        "description": "stdout: terminal"
+      },
+      {
+        "fd": 2,
+        "type": "stdio",
+        "description": "stderr: terminal"
+      },
+      {
+        "fd": 3,
+        "type": "file",
+        "description": "file: /home/asimard/Projects/Philement/Philement/elements/001-hydrogen/hydrogen/tests/hydrogen_test_api.log"
+      },
+      {
+        "fd": 4,
+        "type": "anon_inode",
+        "description": "event notification channel"
+      },
+      {
+        "fd": 5,
+        "type": "socket",
+        "description": "socket (tcp port 5000 - web server)"
+      },
+      {
+        "fd": 6,
+        "type": "device",
+        "description": "random number source"
+      },
+      {
+        "fd": 7,
+        "type": "socket",
+        "description": "socket (tcp port 5000 - web server)"
+      },
+      {
+        "fd": 8,
+        "type": "socket",
+        "description": "socket (inode: 4863901)"
+      },
+      {
+        "fd": 9,
+        "type": "socket",
+        "description": "socket (tcp port 5002)"
+      },
+      {
+        "fd": 10,
+        "type": "other",
+        "description": "/proc/824268/fd"
+      },
+      {
+        "fd": 42,
+        "type": "file",
+        "description": "file: /home/asimard/.config/Code/logs/20250301T113839/ptyhost.log"
+      },
+      {
+        "fd": 43,
+        "type": "socket",
+        "description": "Unix domain socket: 642: 00000000000000000000000000000000:14EB 00000000000000000000000000000000:0000 07 00000000:00000000 00:00000000 00000000   193        0 32027 2 000000007420c2e0 0\n"
+      },
+      {
+        "fd": 44,
+        "type": "device",
+        "description": "/dev/ptmx"
+      },
+      {
+        "fd": 45,
+        "type": "device",
+        "description": "/dev/ptmx"
+      },
+      {
+        "fd": 46,
+        "type": "device",
+        "description": "/dev/ptmx"
+      },
+      {
+        "fd": 47,
+        "type": "device",
+        "description": "/dev/ptmx"
+      },
+      {
+        "fd": 103,
+        "type": "file",
+        "description": "file: /usr/share/code/v8_context_snapshot.bin"
+      }
+    ]
+  },
+  "queues": {
+    "log": {
+      "entryCount": 0,
+      "blockCount": 0,
+      "totalAllocation": 0,
+      "virtualMemoryBytes": 0,
+      "residentMemoryBytes": 0
+    },
+    "print": {
+      "entryCount": 0,
+      "blockCount": 0,
+      "totalAllocation": 0,
+      "virtualMemoryBytes": 0,
+      "residentMemoryBytes": 0
+    }
+  },
+  "enabledServices": [
+    "logging",
+    "web",
+    "websocket"
+  ],
+  "services": {
+    "logging": {
+      "enabled": true,
+      "log_file": "./tests/hydrogen_test_api.log",
+      "status": {
+        "messageCount": 0,
+        "threads": 1,
+        "virtualMemoryBytes": 139264,
+        "residentMemoryBytes": 139264,
+        "threadIds": [
+          824270
+        ]
+      }
+    },
+    "web": {
+      "enabled": true,
+      "port": 5000,
+      "upload_path": "/api/upload",
+      "max_upload_size": 2147483648,
+      "status": {
+        "activeRequests": 0,
+        "totalRequests": 0,
+        "threads": 1,
+        "virtualMemoryBytes": 139264,
+        "residentMemoryBytes": 139264,
+        "threadIds": [
+          824346
+        ]
+      }
+    },
+    "websocket": {
+      "enabled": true,
+      "port": 5001,
+      "protocol": "hydrogen-protocol",
+      "max_message_size": 2048,
+      "status": {
+        "threads": 1,
+        "uptime": 5,
+        "activeConnections": 0,
+        "totalConnections": 0,
+        "totalRequests": 0,
+        "virtualMemoryBytes": 139264,
+        "residentMemoryBytes": 139264,
+        "threadIds": [
+          824273
+        ]
+      }
+    },
+    "mdns server": {
+      "enabled": false,
+      "device_id": "hydrogen-test-api",
+      "friendly_name": "Hydrogen Test API",
+      "model": "Hydrogen-Test",
+      "manufacturer": "Philement",
+      "status": {
+        "discoveryCount": 0,
+        "threads": 0,
+        "virtualMemoryBytes": 0,
+        "residentMemoryBytes": 0,
+        "threadIds": []
+      }
+    },
+    "print": {
+      "enabled": false,
+      "status": {
+        "queuedJobs": 0,
+        "completedJobs": 0,
+        "threads": 0,
+        "virtualMemoryBytes": 0,
+        "residentMemoryBytes": 0,
+        "threadIds": []
+      }
+    }
+  }
+}
+✅ Response contains expected field: system
+✅ Response contains valid JSON
+
+
+───────────────────────────────────────────────────────────────────────────────
+Testing /api/system/test Endpoint
+───────────────────────────────────────────────────────────────────────────────
+
+───────────────────────────────────────────────────────────────────────────────
+Test Case 1: Basic GET Request
+───────────────────────────────────────────────────────────────────────────────
+Executing: curl --compressed -s --max-time 5 http://localhost:5000/api/system/test
+🛈  Successfully received response!
+🛈  Response content:
+{
+  "client_ip": "127.0.0.1",
+  "x_forwarded_for": null,
+  "jwt_claims": null,
+  "query_parameters": {},
+  "post_data": null,
+  "server_info": {
+    "system": "Linux",
+    "hostname": "angrin.500foods.com",
+    "release": "5.10.15-200.fc33.x86_64",
+    "version": "#1 SMP Wed Feb 10 17:46:55 UTC 2021",
+    "machine": "x86_64",
+    "pid": "824268",
+    "environment": {
+      "PATH": "/usr/lib64/ccache:/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin:/home/asimard/.config/Code/User/globalStorage/github.copilot-chat/debugCommand",
+      "HOME": "/home/asimard",
+      "USER": "asimard",
+      "LANG": "en_CA.UTF-8"
+    }
+  },
+  "request_headers": {
+    "User-Agent": "curl/8.9.1",
+    "Accept": "*/*",
+    "Host": "localhost:5000"
+  },
+  "request_info": {
+    "method": "GET",
+    "uri": "http://localhost:5000/api/system/test",
+    "http_version": "HTTP/1.1"
+  },
+  "timing": {
+    "processing_time_ms": 0.017609,
+    "timestamp": 1740918897
+  }
+}
+✅ Response contains expected field: client_ip
+
+
+───────────────────────────────────────────────────────────────────────────────
+Test Case 2: GET Request with Query Parameters
+───────────────────────────────────────────────────────────────────────────────
+Executing: curl --compressed -s --max-time 5 'http://localhost:5000/api/system/test?param1=value1&param2=value2'
+🛈  Successfully received response!
+🛈  Response content:
+{
+  "client_ip": "127.0.0.1",
+  "x_forwarded_for": null,
+  "jwt_claims": null,
+  "query_parameters": {
+    "param1": "value1",
+    "param2": "value2"
+  },
+  "post_data": null,
+  "server_info": {
+    "system": "Linux",
+    "hostname": "angrin.500foods.com",
+    "release": "5.10.15-200.fc33.x86_64",
+    "version": "#1 SMP Wed Feb 10 17:46:55 UTC 2021",
+    "machine": "x86_64",
+    "pid": "824268",
+    "environment": {
+      "PATH": "/usr/lib64/ccache:/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin:/home/asimard/.config/Code/User/globalStorage/github.copilot-chat/debugCommand",
+      "HOME": "/home/asimard",
+      "USER": "asimard",
+      "LANG": "en_CA.UTF-8"
+    }
+  },
+  "request_headers": {
+    "User-Agent": "curl/8.9.1",
+    "Accept": "*/*",
+    "Host": "localhost:5000"
+  },
+  "request_info": {
+    "method": "GET",
+    "uri": "http://localhost:5000/api/system/test?",
+    "http_version": "HTTP/1.1"
+  },
+  "timing": {
+    "processing_time_ms": 0.010963000000000001,
+    "timestamp": 1740918897
+  }
+}
+✅ Response contains expected field: param1
+
+
+───────────────────────────────────────────────────────────────────────────────
+Test Case 3: POST Request with Form Data
+───────────────────────────────────────────────────────────────────────────────
+Executing: curl --compressed -s --max-time 5 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -d 'field1=value1&field2=value2' http://localhost:5000/api/system/test
+🛈  Successfully received response!
+🛈  Response content:
+{
+  "client_ip": "127.0.0.1",
+  "x_forwarded_for": null,
+  "jwt_claims": null,
+  "query_parameters": {},
+  "post_data": {},
+  "server_info": {
+    "system": "Linux",
+    "hostname": "angrin.500foods.com",
+    "release": "5.10.15-200.fc33.x86_64",
+    "version": "#1 SMP Wed Feb 10 17:46:55 UTC 2021",
+    "machine": "x86_64",
+    "pid": "824268",
+    "environment": {
+      "PATH": "/usr/lib64/ccache:/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin:/home/asimard/.config/Code/User/globalStorage/github.copilot-chat/debugCommand",
+      "HOME": "/home/asimard",
+      "USER": "asimard",
+      "LANG": "en_CA.UTF-8"
+    }
+  },
+  "request_headers": {
+    "User-Agent": "curl/8.9.1",
+    "Accept": "*/*",
+    "Content-Type": "application/x-www-form-urlencoded",
+    "Host": "localhost:5000"
+  },
+  "request_info": {
+    "method": "POST",
+    "uri": "http://localhost:5000/api/system/test",
+    "http_version": "HTTP/1.1"
+  },
+  "timing": {
+    "processing_time_ms": 0.011573,
+    "timestamp": 1740918897
+  }
+}
+✅ Response contains expected field: post_data
+
+
+───────────────────────────────────────────────────────────────────────────────
+Test Case 4: POST Request with Query Parameters and Form Data
+───────────────────────────────────────────────────────────────────────────────
+Executing: curl --compressed -s --max-time 5 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -d 'field1=value1&field2=value2' 'http://localhost:5000/api/system/test?param1=value1&param2=value2'
+🛈  Successfully received response!
+🛈  Response content:
+{
+  "client_ip": "127.0.0.1",
+  "x_forwarded_for": null,
+  "jwt_claims": null,
+  "query_parameters": {
+    "param1": "value1",
+    "param2": "value2"
+  },
+  "post_data": {},
+  "server_info": {
+    "system": "Linux",
+    "hostname": "angrin.500foods.com",
+    "release": "5.10.15-200.fc33.x86_64",
+    "version": "#1 SMP Wed Feb 10 17:46:55 UTC 2021",
+    "machine": "x86_64",
+    "pid": "824268",
+    "environment": {
+      "PATH": "/usr/lib64/ccache:/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin:/home/asimard/.config/Code/User/globalStorage/github.copilot-chat/debugCommand",
+      "HOME": "/home/asimard",
+      "USER": "asimard",
+      "LANG": "en_CA.UTF-8"
+    }
+  },
+  "request_headers": {
+    "User-Agent": "curl/8.9.1",
+    "Accept": "*/*",
+    "Content-Type": "application/x-www-form-urlencoded",
+    "Host": "localhost:5000"
+  },
+  "request_info": {
+    "method": "POST",
+    "uri": "http://localhost:5000/api/system/test?",
+    "http_version": "HTTP/1.1"
+  },
+  "timing": {
+    "processing_time_ms": 0.017273,
+    "timestamp": 1740918897
+  }
+}
+✅ Response contains expected field: param1
+
+🛈  Waiting 10 seconds to check for delayed crashes...
+✅ Server is still running (no crash detected)
+🛈  Checking server logs for API-related errors...
+⚠️  API-related warning/error messages found in logs (results/system_test_errors_20250302_043457.log):
+2025-03-02 04:34:52.622  [ WARN      ]  [ WebSocket          ]  [2025/03/02 04:34:52:6226] D: _lws_state_transition: system: changed 1 'CONTEXT_CREATED' -> 2 'INITIALIZED'
+2025-03-02 04:34:52.729  [ WARN      ]  [ WebSocket          ]  [2025/03/02 04:34:52:7295] D: _lws_state_transition: system: changed 2 'INITIALIZED' -> 3 'IFACE_COLDPLUG'
+2025-03-02 04:34:52.729  [ WARN      ]  [ WebSocket          ]  [2025/03/02 04:34:52:7296] D: _lws_state_transition: system: changed 3 'IFACE_COLDPLUG' -> 4 'DHCP'
+2025-03-02 04:34:52.729  [ WARN      ]  [ WebSocket          ]  [2025/03/02 04:34:52:7296] D: _lws_state_transition: system: changed 4 'DHCP' -> 5 'CPD_PRE_TIME'
+2025-03-02 04:34:52.729  [ WARN      ]  [ WebSocket          ]  [2025/03/02 04:34:52:7296] D: _lws_state_transition: system: changed 5 'CPD_PRE_TIME' -> 6 'TIME_VALID'
+2025-03-02 04:34:52.729  [ WARN      ]  [ WebSocket          ]  [2025/03/02 04:34:52:7296] D: _lws_state_transition: system: changed 6 'TIME_VALID' -> 7 'CPD_POST_TIME'
+2025-03-02 04:34:52.729  [ WARN      ]  [ WebSocket          ]  [2025/03/02 04:34:52:7296] D: _lws_state_transition: system: changed 7 'CPD_POST_TIME' -> 8 'POLICY_VALID'
+2025-03-02 04:34:52.729  [ WARN      ]  [ WebSocket          ]  [2025/03/02 04:34:52:7296] D: _lws_state_transition: system: changed 8 'POLICY_VALID' -> 9 'REGISTERED'
+2025-03-02 04:34:52.729  [ WARN      ]  [ WebSocket          ]  [2025/03/02 04:34:52:7296] D: _lws_state_transition: system: changed 9 'REGISTERED' -> 10 'AUTH1'
+2025-03-02 04:34:52.729  [ WARN      ]  [ WebSocket          ]  [2025/03/02 04:34:52:7296] D: _lws_state_transition: system: changed 10 'AUTH1' -> 11 'AUTH2'
+2025-03-02 04:34:52.729  [ WARN      ]  [ WebSocket          ]  [2025/03/02 04:34:52:7296] D: _lws_state_transition: system: changed 11 'AUTH2' -> 12 'OPERATIONAL'
+🛈  Checking for Brotli compression logs...
+🛈  Brotli compression logs found (results/brotli_compression_20250302_043457.log):
+2025-03-02 04:34:57.659  [ INFO      ]  [ Brotli             ]  Brotli(level=11): 36 bytes → 40 bytes, ratio: 111.11%, compression: -11.11%, time: 1.965 ms
+2025-03-02 04:34:57.691  [ INFO      ]  [ Brotli             ]  Brotli(level=6): 15924 bytes → 2659 bytes, ratio: 16.70%, compression: 83.30%, time: 1.212 ms
+2025-03-02 04:34:57.710  [ INFO      ]  [ Brotli             ]  Brotli(level=11): 962 bytes → 475 bytes, ratio: 49.38%, compression: 50.62%, time: 2.111 ms
+2025-03-02 04:34:57.729  [ INFO      ]  [ Brotli             ]  Brotli(level=11): 1025 bytes → 471 bytes, ratio: 45.95%, compression: 54.05%, time: 1.919 ms
+2025-03-02 04:34:57.743  [ INFO      ]  [ Brotli             ]  Brotli(level=11): 1018 bytes → 502 bytes, ratio: 49.31%, compression: 50.69%, time: 2.063 ms
+2025-03-02 04:34:57.762  [ INFO      ]  [ Brotli             ]  Brotli(level=11): 1069 bytes → 489 bytes, ratio: 45.74%, compression: 54.26%, time: 1.948 ms
+✅ Compression logs contain detailed metrics with compression level
+🛈  Stopping server...
+
+Individual Test Results:
+  ✅ PASS: Brotli Compression - Compression logs found with performance metrics and compression level
+  ✅ PASS: Health Endpoint - GET /api/system/health - Health check response
+  ✅ PASS: Info Endpoint - Content - GET /api/system/info - System information presence
+  ✅ PASS: Info Endpoint - JSON Format - GET /api/system/info - Valid JSON format
+  ✅ PASS: Test Endpoint - Basic GET - GET /api/system/test - Basic request
+  ✅ PASS: Test Endpoint - GET with Parameters - GET /api/system/test?param1=value1&param2=value2 - Query parameters
+  ✅ PASS: Test Endpoint - POST with Form Data - POST /api/system/test - Form data handling
+  ✅ PASS: Test Endpoint - POST with Parameters - POST /api/system/test?param1=value1&param2=value2 - Combined parameters
+  ✅ PASS: System Stability - No crashes detected after running all tests
+
+Summary Statistics:
+  Total Tests: 9
+  Passed: 9
+  Failed: 0
+
+
+───────────────────────────────────────────────────────────────────────────────
+Test Summary
+───────────────────────────────────────────────────────────────────────────────
+Completed at: Sun Mar  2 04:35:08 PST 2025
+✅ OVERALL RESULT: ALL TESTS PASSED
+───────────────────────────────────────────────────────────────────────────────
+
+✅ System endpoint tests completed successfully
+   Test log: hydrogen/tests/results/socket_rebind_test_20250302_043447.log
+
+🛈  Checking for running Hydrogen instances...
+🛈  No running Hydrogen processes found
+🛈  Resource cleanup complete
+
+───────────────────────────────────────────────────────────────────────────────
+Test Summary
+───────────────────────────────────────────────────────────────────────────────
+Completed at: Sun Mar  2 04:35:10 PST 2025
+Summary log: hydrogen/tests/results/test_summary_20250302_043356.log
+
+Individual Test Results:
+  ✅ PASS: Compilation Test (6 of 6 Passed) - All components compiled without errors
+  ✅ PASS: Startup/Shutdown (hydrogen_test_min) (1 of 1 Passed) - Clean startup and shutdown sequence
+  ✅ PASS: Startup/Shutdown (hydrogen_test_max) (1 of 1 Passed) - Clean startup and shutdown sequence
+  ✅ PASS: JSON Error Handling (1 of 1 Passed) - Configuration system correctly handles malformed JSON
+  ✅ PASS: Environment Variable Substitution (3 of 3 Passed) - Configuration system correctly handles environment variable substitution
+  ✅ PASS: Socket Rebinding (1 of 1 Passed) - Server can be immediately restarted with SO_REUSEADDR enabled
+  ✅ PASS: System API Endpoints (8 of 8 Passed) - All API endpoints responded correctly
+
+Summary Statistics:
+Total tests: 21
+Passed: 21
+Failed: 0
+Pass rate: 100%
+Test runtime: 1m 14s
+
+✅ OVERALL RESULT: 21 of 21 TESTS PASSED
+───────────────────────────────────────────────────────────────────────────────
+
+For more detailed analysis:
+  • Thread analysis:     hydrogen/tests/analyze_stuck_threads.sh <pid>
+  • Resource monitoring: hydrogen/tests/monitor_resources.sh <pid> [seconds]
+
+➜  tests git:(main) ✗ 

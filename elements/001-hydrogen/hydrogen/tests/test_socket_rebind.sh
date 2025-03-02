@@ -81,7 +81,7 @@ cleanup() {
     
     # Save test log if we've started writing it
     if [ -n "$RESULT_LOG" ] && [ -f "$RESULT_LOG" ]; then
-        echo "Saving test results to $RESULT_LOG"
+        echo "Saving test results to $(convert_to_relative_path "$RESULT_LOG")"
     fi
     
     exit 0
@@ -93,7 +93,7 @@ trap cleanup SIGINT SIGTERM EXIT
 # Start the test
 start_test "Socket Rebinding Test" | tee -a "$RESULT_LOG"
 print_info "Testing SO_REUSEADDR socket option for immediate port rebinding" | tee -a "$RESULT_LOG"
-print_info "Using config: $CONFIG_FILE" | tee -a "$RESULT_LOG"
+print_info "Using config: $(convert_to_relative_path "$CONFIG_FILE")" | tee -a "$RESULT_LOG"
 
 # Get the web server port
 PORT=$(get_webserver_port "$CONFIG_FILE")
@@ -225,6 +225,6 @@ fi
 
 # Test successful!
 print_result 0 "Socket rebinding test PASSED - Immediate rebinding after shutdown works!" | tee -a "$RESULT_LOG"
-print_info "Results saved to: $RESULT_LOG" | tee -a "$RESULT_LOG"
+print_info "Results saved to: $(convert_to_relative_path "$RESULT_LOG")" | tee -a "$RESULT_LOG"
 end_test 0 "Socket Rebinding Test" | tee -a "$RESULT_LOG"
 exit 0

@@ -37,7 +37,7 @@ test_compilation() {
     
     print_header "Testing compilation of $COMPONENT" | tee -a "$RESULT_LOG"
     print_info "Build command: $BUILD_CMD" | tee -a "$RESULT_LOG"
-    print_info "Working directory: $BUILD_DIR" | tee -a "$RESULT_LOG"
+    print_info "Working directory: $(convert_to_relative_path "$BUILD_DIR")" | tee -a "$RESULT_LOG"
     
     # Navigate to build directory and run build command
     cd "$BUILD_DIR"
@@ -96,7 +96,7 @@ test_compilation() {
     echo "" | tee -a "$RESULT_LOG"
     
     # Append the full build log to the result log
-    print_info "Full build log saved to: $TEMP_LOG" | tee -a "$RESULT_LOG"
+    print_info "Full build log saved to: $(convert_to_relative_path "$TEMP_LOG")" | tee -a "$RESULT_LOG"
     
     # Return to script directory
     cd "$SCRIPT_DIR"
@@ -128,7 +128,7 @@ test_compilation "OIDC client examples" "$OIDC_EXAMPLES_DIR" "make all"
 # Print final summary
 print_header "Compilation Test Summary" | tee -a "$RESULT_LOG"
 print_info "Completed at: $(date)" | tee -a "$RESULT_LOG"
-print_info "Test log: $RESULT_LOG" | tee -a "$RESULT_LOG"
+print_info "Test log: $(convert_to_relative_path "$RESULT_LOG")" | tee -a "$RESULT_LOG"
 
 # End test with appropriate result message
 end_test $EXIT_CODE "Compilation Test" | tee -a "$RESULT_LOG"
