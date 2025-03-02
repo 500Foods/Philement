@@ -41,6 +41,18 @@ API Documentation:
   - Completed Swagger annotations for all system endpoints (health, info, test)
   - Added comprehensive Swagger annotations for all OIDC endpoints
   - Created detailed README for swagger directory with documentation guidelines
+  - Added SwaggerUI integration with download script
+  - Implemented SwaggerUI packaging as optimized distributable tar file:
+    - Selectively compressed static assets (JS, CSS, JSON) with Brotli for minimal size
+    - Preserved dynamic files (index.html, swagger-initializer.js) for runtime modification
+    - Added oauth2-redirect.html support for OAuth 2.0 authorization flows
+    - Created flat file structure for efficient serving
+    - Compressed final package with Brotli to ~345KB
+  - Added Swagger subsystem to configuration with UI options:
+    - Configurable endpoint prefix defaulting to /swagger
+    - TryItEnabled, AlwaysExpanded, and other SwaggerUI configuration options
+  - Added build dependencies documentation
+  - Enhanced Swagger README with comprehensive implementation details
 
 Configuration:
 

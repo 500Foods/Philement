@@ -159,6 +159,21 @@
             }
         }
     },
+    "Swagger": {
+        "Enabled": true,
+        "Prefix": "/swagger",
+        "UIOptions": {
+            "TryItEnabled": true,
+            "AlwaysExpanded": true,
+            "DisplayOperationId": true,
+            "DefaultModelsExpandDepth": 1,
+            "DefaultModelExpandDepth": 1,
+            "ShowExtensions": false,
+            "ShowCommonExtensions": true,
+            "DocExpansion": "list",
+            "SyntaxHighlightTheme": "agate"
+        }
+    },
     "mDNSServer": {
         "Enabled": true,
         "EnableIPv6": true,
