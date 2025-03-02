@@ -6,6 +6,11 @@
 #ifndef HYDROGEN_OIDC_REVOCATION_H
 #define HYDROGEN_OIDC_REVOCATION_H
 
+//@ swagger:service OIDC Revocation Service
+//@ swagger:description Allows clients to invalidate tokens they no longer need
+//@ swagger:tag oidc OpenID Connect protocol endpoints
+//@ swagger:tag revocation Token invalidation and revocation
+
 // Feature test macros
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
@@ -32,6 +37,18 @@
  * @param con_cls Connection-specific data
  * @return MHD_Result indicating success or failure
  */
+//@ swagger:path /oauth/revoke
+//@ swagger:method POST
+//@ swagger:operationId revokeToken
+//@ swagger:tags oidc,revocation
+//@ swagger:summary OAuth 2.0 token revocation endpoint
+//@ swagger:description Allows clients to notify the authorization server that a token is no longer needed, allowing the server to invalidate the token. This endpoint implements RFC 7009 and supports revocation of both access tokens and refresh tokens.
+//@ swagger:parameter token string required The token to be revoked
+//@ swagger:parameter token_type_hint string optional A hint about the type of the token (access_token, refresh_token)
+//@ swagger:security BasicAuth
+//@ swagger:response 200 application/json {} An empty JSON object
+//@ swagger:response 400 application/json {"type":"object","properties":{"error":{"type":"string","example":"invalid_request"},"error_description":{"type":"string","example":"The request is missing a required parameter"}}}
+//@ swagger:response 401 application/json {"type":"object","properties":{"error":{"type":"string","example":"invalid_client"},"error_description":{"type":"string","example":"Client authentication failed"}}}
 enum MHD_Result handle_oidc_revocation_endpoint(struct MHD_Connection *connection,
                                            const char *method,
                                            const char *upload_data,

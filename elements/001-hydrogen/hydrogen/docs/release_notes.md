@@ -38,6 +38,9 @@ API Documentation:
   - Added support for tagging and grouping related endpoints
   - Added example annotations for system/health endpoint
   - Generated OpenAPI-compliant output for use with standard tools
+  - Completed Swagger annotations for all system endpoints (health, info, test)
+  - Added comprehensive Swagger annotations for all OIDC endpoints
+  - Created detailed README for swagger directory with documentation guidelines
 
 Configuration:
 

@@ -6,6 +6,11 @@
 #ifndef HYDROGEN_SYSTEM_INFO_H
 #define HYDROGEN_SYSTEM_INFO_H
 
+//@ swagger:service System Information Service
+//@ swagger:description Provides detailed system information for monitoring and diagnostics
+//@ swagger:tag system System operations
+//@ swagger:tag info System information and status
+
 // Feature test macros
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
@@ -40,6 +45,14 @@
  * @param connection The MHD_Connection to send the response through
  * @return MHD_Result indicating success or failure
  */
+//@ swagger:path /api/system/info
+//@ swagger:method GET
+//@ swagger:operationId getSystemInfo
+//@ swagger:tags system,info
+//@ swagger:summary System information endpoint
+//@ swagger:description Returns comprehensive system information in JSON format including hardware details, operating system information, runtime statistics, and version information.
+//@ swagger:response 200 application/json {"type":"object","properties":{"hardware":{"type":"object"},"os":{"type":"object"},"runtime":{"type":"object"},"version":{"type":"object"}}}
+//@ swagger:response 500 application/json {"type":"object","properties":{"error":{"type":"string","example":"Failed to create response"}}}
 enum MHD_Result handle_system_info_request(struct MHD_Connection *connection);
 
 #endif /* HYDROGEN_SYSTEM_INFO_H */

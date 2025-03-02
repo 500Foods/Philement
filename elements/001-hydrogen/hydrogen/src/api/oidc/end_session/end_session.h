@@ -6,6 +6,11 @@
 #ifndef HYDROGEN_OIDC_END_SESSION_H
 #define HYDROGEN_OIDC_END_SESSION_H
 
+//@ swagger:service OIDC End Session Service
+//@ swagger:description Allows users to log out and terminate their sessions
+//@ swagger:tag oidc OpenID Connect protocol endpoints
+//@ swagger:tag session Session management and logout
+
 // Feature test macros
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
@@ -32,6 +37,19 @@
  * @param con_cls Connection-specific data
  * @return MHD_Result indicating success or failure
  */
+//@ swagger:path /oauth/end-session
+//@ swagger:method GET
+//@ swagger:method POST
+//@ swagger:operationId endSession
+//@ swagger:tags oidc,session
+//@ swagger:summary OpenID Connect Session Management endpoint
+//@ swagger:description Implements the OpenID Connect RP-Initiated Logout specification. Allows users to log out and terminate their session with the OpenID Provider. Can also notify Relying Parties (client applications) that the user's session has ended.
+//@ swagger:parameter id_token_hint string optional The ID Token previously issued to the client
+//@ swagger:parameter post_logout_redirect_uri string optional URI to redirect the user to after logout
+//@ swagger:parameter state string optional Opaque value used by the client to maintain state between the logout request and the callback
+//@ swagger:response 302 Redirects to the post_logout_redirect_uri if provided and valid
+//@ swagger:response 200 text/html HTML page confirming successful logout when no valid redirect URI is provided
+//@ swagger:response 400 application/json {"type":"object","properties":{"error":{"type":"string"},"error_description":{"type":"string"}}}
 enum MHD_Result handle_oidc_end_session_endpoint(struct MHD_Connection *connection,
                                             const char *method,
                                             const char *upload_data,

@@ -2,6 +2,33 @@
 
 This directory contains the implementation of Hydrogen's REST API endpoints, which provide HTTP-based access to the system's functionality. The API is organized into service categories, each handling a specific domain of functionality.
 
+## Swagger Documentation
+
+The Hydrogen API uses Swagger (OpenAPI) annotations to provide structured documentation for API endpoints. These annotations are added as special comments (`//@ swagger:`) in the header files of API endpoints. The annotations are processed to generate a comprehensive OpenAPI specification file that documents the entire API.
+
+### Annotation Structure
+
+Swagger annotations follow this pattern:
+
+```c
+//@ swagger:service ServiceName
+//@ swagger:description Service description goes here
+//@ swagger:tag tagname Tag description
+
+//@ swagger:path /path/to/endpoint
+//@ swagger:method GET
+//@ swagger:operationId operationName
+//@ swagger:tags tag1,tag2
+//@ swagger:summary Short summary of what this endpoint does
+//@ swagger:description Longer description with more details
+//@ swagger:response 200 application/json {"type":"object","properties":{...}}
+//@ swagger:response 400 application/json {"type":"object","properties":{...}}
+```
+
+### Generating Documentation
+
+The Swagger documentation is generated using the `swagger-generate.sh` script in the `swagger` directory. This script processes the annotations in the source code and generates a `swagger.json` file that can be used with Swagger UI or other API documentation tools.
+
 ## Directory Structure
 
 ```directories

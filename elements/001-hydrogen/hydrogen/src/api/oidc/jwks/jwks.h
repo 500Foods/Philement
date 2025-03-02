@@ -6,6 +6,11 @@
 #ifndef HYDROGEN_OIDC_JWKS_H
 #define HYDROGEN_OIDC_JWKS_H
 
+//@ swagger:service OIDC JWKS Service
+//@ swagger:description Provides JSON Web Key Set for token signature verification
+//@ swagger:tag oidc OpenID Connect protocol endpoints
+//@ swagger:tag jwks JSON Web Key Set and token verification
+
 // Feature test macros
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
@@ -28,6 +33,14 @@
  * @param connection The MHD_Connection to send the response through
  * @return MHD_Result indicating success or failure
  */
+//@ swagger:path /oauth/jwks
+//@ swagger:method GET
+//@ swagger:operationId getJWKS
+//@ swagger:tags oidc,jwks
+//@ swagger:summary JSON Web Key Set endpoint
+//@ swagger:description Returns a set of JSON Web Keys (JWK) that represent the public part of the keys used by the OIDC provider to sign tokens. Clients use these keys to verify the signature of tokens issued by the provider.
+//@ swagger:response 200 application/json {"type":"object","properties":{"keys":{"type":"array","items":{"type":"object","properties":{"kty":{"type":"string"},"use":{"type":"string"},"kid":{"type":"string"},"alg":{"type":"string"},"n":{"type":"string"},"e":{"type":"string"}}}}}}
+//@ swagger:response 500 application/json {"type":"object","properties":{"error":{"type":"string","example":"Internal server error"}}}
 enum MHD_Result handle_oidc_jwks_endpoint(struct MHD_Connection *connection);
 
 #endif /* HYDROGEN_OIDC_JWKS_H */

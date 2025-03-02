@@ -6,6 +6,11 @@
 #ifndef HYDROGEN_OIDC_USERINFO_H
 #define HYDROGEN_OIDC_USERINFO_H
 
+//@ swagger:service OIDC UserInfo Service
+//@ swagger:description Provides authenticated user information based on access token scopes
+//@ swagger:tag oidc OpenID Connect protocol endpoints
+//@ swagger:tag userinfo User profile information
+
 // Feature test macros
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
@@ -29,6 +34,17 @@
  * @param method The HTTP method (GET, POST)
  * @return MHD_Result indicating success or failure
  */
+//@ swagger:path /oauth/userinfo
+//@ swagger:method GET
+//@ swagger:method POST
+//@ swagger:operationId getUserInfo
+//@ swagger:tags oidc,userinfo
+//@ swagger:summary OpenID Connect UserInfo endpoint
+//@ swagger:description Returns claims about the authenticated end-user. Requires a valid access token with appropriate scopes. The claims returned depend on the scopes associated with the access token and the user's profile data.
+//@ swagger:security BearerAuth
+//@ swagger:response 200 application/json {"type":"object","properties":{"sub":{"type":"string"},"name":{"type":"string"},"given_name":{"type":"string"},"family_name":{"type":"string"},"email":{"type":"string"},"email_verified":{"type":"boolean"},"picture":{"type":"string"}}}
+//@ swagger:response 401 application/json {"type":"object","properties":{"error":{"type":"string","example":"invalid_token"},"error_description":{"type":"string","example":"The access token is invalid"}}}
+//@ swagger:response 403 application/json {"type":"object","properties":{"error":{"type":"string","example":"insufficient_scope"},"error_description":{"type":"string","example":"The access token does not have the required scopes"}}}
 enum MHD_Result handle_oidc_userinfo_endpoint(struct MHD_Connection *connection,
                                          const char *method);
 
