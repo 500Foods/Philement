@@ -1,0 +1,99 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Hydrogen REST API",
+    "description": "A comprehensive REST API for the Hydrogen Project that provides system information, OIDC authentication, and various service endpoints",
+    "version": "1.0.0",
+    "contact": {
+      "email": "api@example.com"
+    },
+    "license": {
+      "name": "MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080/api",
+      "description": "Development server"
+    },
+    {
+      "url": "https://api.example.com/api",
+      "description": "Production server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "system",
+      "description": "System operations"
+    },
+    {
+      "name": "monitoring",
+      "description": "Health monitoring endpoints"
+    },
+    {
+      "name": "diagnostics",
+      "description": "System diagnostics and troubleshooting"
+    },
+    {
+      "name": "info",
+      "description": "System information and status"
+    }
+  ],
+  "paths": {
+    "/system/health": {
+      "get": {
+        "summary": "Health check endpoint",
+        "description": "Provides system health endpoints for monitoring and diagnostics\nReturns a simple health check response indicating the service is alive. Used primarily by load balancers for health monitoring in distributed deployments.",
+        "operationId": "getSystemHealth",
+        "tags": [
+          "system",
+          "monitoring"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "Yes, I'm alive, thanks!"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Failed to create response"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {},
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

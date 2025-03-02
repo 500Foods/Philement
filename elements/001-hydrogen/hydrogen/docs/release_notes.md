@@ -26,6 +26,19 @@ EDITING GUIDELINES (not visible when rendered):
 
 ## 2025-Mar-02
 
+API Documentation:
+
+- Added OpenAPI 3.1.0 integration for REST API documentation:
+  - Created swagger directory at project root with generation script
+  - Implemented annotation-based documentation using //@ swagger: prefix
+  - Added automatic swagger.json generation from source code annotations
+  - Created path, method, and response schema documentation capability
+  - Added service-level organization for API endpoints
+  - Implemented proper status code handling for responses
+  - Added support for tagging and grouping related endpoints
+  - Added example annotations for system/health endpoint
+  - Generated OpenAPI-compliant output for use with standard tools
+
 Configuration:
 
 - Added environment variable substitution in configuration values:
@@ -52,6 +65,15 @@ Testing:
   - Refocused tests to properly detect environment variables with more reliable pattern matching
   - Fixed handling of problematic environment variables by skipping checks where appropriate
   - Simplified regex patterns for improved reliability across different log formats
+
+- Modified test scripts to display relative paths:
+  - Added path conversion function to test_utils.sh
+  - Updated command display to show relative paths instead of absolute paths
+  - Modified working directory paths to use relative format
+  - Updated file paths in cleanup functions to use relative paths
+  - Modified log output to show only the part starting from "hydrogen/"
+  - Improved log readability by removing unnecessary path prefixes
+  - Fixed final result output for consistent path presentation
 
 ## 2025-Mar-01
 

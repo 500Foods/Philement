@@ -6,6 +6,15 @@
 #ifndef HYDROGEN_API_UTILS_H
 #define HYDROGEN_API_UTILS_H
 
+//@ swagger:title Hydrogen REST API
+//@ swagger:description A comprehensive REST API for the Hydrogen Project that provides system information, OIDC authentication, and various service endpoints
+//@ swagger:version 1.0.0
+//@ swagger:contact.email api@example.com
+//@ swagger:license.name MIT
+//@ swagger:server http://localhost:8080/api Development server
+//@ swagger:server https://api.example.com/api Production server
+//@ swagger:security bearerAuth JWT authentication
+
 // Feature test macros
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
