@@ -21,7 +21,7 @@
 #include "oidc_keys.h"
 #include "oidc_tokens.h"
 #include "oidc_users.h"
-#include "../api/oidc/oidc_endpoints.h"
+#include "../api/oidc/oidc_service.h"
 #include "../logging/logging.h"
 #include "../utils/utils.h"
 

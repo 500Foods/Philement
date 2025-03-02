@@ -1,17 +1,10 @@
 /*
- * OIDC API Endpoints
- *
- * Implements OpenID Connect protocol endpoints:
- * - Authorization endpoint
- * - Token endpoint
- * - UserInfo endpoint
- * - Discovery endpoint
- * - JWKS endpoint
- * - Client registration endpoint
+ * OIDC Service API module for the Hydrogen Project.
+ * Provides OpenID Connect protocol endpoints.
  */
 
-#ifndef OIDC_ENDPOINTS_H
-#define OIDC_ENDPOINTS_H
+#ifndef HYDROGEN_OIDC_SERVICE_H
+#define HYDROGEN_OIDC_SERVICE_H
 
 // Feature test macros
 #define _GNU_SOURCE
@@ -27,6 +20,17 @@
 // Project Libraries
 #include "../../oidc/oidc_service.h"
 #include "../../webserver/web_server_core.h"
+
+// Include all OIDC endpoint headers
+#include "discovery/discovery.h"
+#include "authorization/authorization.h"
+#include "token/token.h"
+#include "userinfo/userinfo.h"
+#include "jwks/jwks.h"
+#include "introspection/introspection.h"
+#include "revocation/revocation.h"
+#include "registration/registration.h"
+#include "end_session/end_session.h"
 
 /*
  * Initialize OIDC API endpoints
@@ -79,64 +83,8 @@ enum MHD_Result handle_oidc_request(struct MHD_Connection *connection,
  */
 bool is_oidc_endpoint(const char *url);
 
-/*
- * OIDC endpoint handlers
- */
-
-// Discovery document endpoint (.well-known/openid-configuration)
-enum MHD_Result handle_oidc_discovery_endpoint(struct MHD_Connection *connection);
-
-// Authorization endpoint
-enum MHD_Result handle_oidc_authorization_endpoint(struct MHD_Connection *connection,
-                                               const char *method,
-                                               const char *upload_data,
-                                               size_t *upload_data_size,
-                                               void **con_cls);
-
-// Token endpoint
-enum MHD_Result handle_oidc_token_endpoint(struct MHD_Connection *connection,
-                                       const char *method,
-                                       const char *upload_data,
-                                       size_t *upload_data_size,
-                                       void **con_cls);
-
-// UserInfo endpoint
-enum MHD_Result handle_oidc_userinfo_endpoint(struct MHD_Connection *connection,
-                                         const char *method);
-
-// JWKS endpoint
-enum MHD_Result handle_oidc_jwks_endpoint(struct MHD_Connection *connection);
-
-// Token introspection endpoint
-enum MHD_Result handle_oidc_introspection_endpoint(struct MHD_Connection *connection,
-                                               const char *method,
-                                               const char *upload_data,
-                                               size_t *upload_data_size,
-                                               void **con_cls);
-
-// Token revocation endpoint
-enum MHD_Result handle_oidc_revocation_endpoint(struct MHD_Connection *connection,
-                                           const char *method,
-                                           const char *upload_data,
-                                           size_t *upload_data_size,
-                                           void **con_cls);
-
-// Client registration endpoint
-enum MHD_Result handle_oidc_registration_endpoint(struct MHD_Connection *connection,
-                                             const char *method,
-                                             const char *upload_data,
-                                             size_t *upload_data_size,
-                                             void **con_cls);
-
-// End session endpoint
-enum MHD_Result handle_oidc_end_session_endpoint(struct MHD_Connection *connection,
-                                            const char *method,
-                                            const char *upload_data,
-                                            size_t *upload_data_size,
-                                            void **con_cls);
-
-/*
- * Helper functions
+/* 
+ * Utility Functions for OIDC Endpoints
  */
 
 // Extract OAuth query parameters from request
@@ -173,4 +121,4 @@ bool validate_oauth_params(const char *client_id, const char *redirect_uri,
 // Add CORS headers for OIDC endpoints
 void add_oidc_cors_headers(struct MHD_Response *response);
 
-#endif // OIDC_ENDPOINTS_H
+#endif /* HYDROGEN_OIDC_SERVICE_H */

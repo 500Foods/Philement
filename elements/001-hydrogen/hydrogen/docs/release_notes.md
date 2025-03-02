@@ -26,6 +26,15 @@ EDITING GUIDELINES (not visible when rendered):
 
 ## 2025-Mar-01
 
+API Architecture:
+
+- Refactored OIDC endpoints into separate directories:
+  - Separated combined OIDC endpoint implementation into individual endpoint handlers
+  - Created dedicated directories for each OIDC endpoint (discovery, authorization, token, etc.)
+  - Created consistent interface with clear separation of concerns
+  - Followed same organizational pattern as system endpoints
+  - Maintained utility functions in central oidc_service for shared functionality
+
 Web Server:
 
 - Added Brotli compression:
