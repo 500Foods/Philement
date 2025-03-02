@@ -195,7 +195,21 @@ Complete, detailed documentation is available in the `docs` directory, organized
 
 ## System Dependencies
 
-Core Libraries:
+### Build-time Dependencies
+
+These tools are required when building or developing with the Hydrogen codebase:
+
+- [curl](https://curl.se/) - Data transfer tool for downloading dependencies
+- [tar](https://www.gnu.org/software/tar/) - Archiving utility (typically part of core utils)
+- [wget](https://www.gnu.org/software/wget/) - Alternative network downloader
+- [brotli](https://github.com/google/brotli) - Modern compression algorithm
+- [jq](https://stedolan.github.io/jq/) - Command-line JSON processor
+- [upx](https://upx.github.io/) - Executable compressor for release builds
+- C compiler and build tools (gcc/clang, make)
+
+### Runtime Dependencies
+
+These libraries are required for Hydrogen to run:
 
 - [pthreads](https://pubs.opengroup.org/onlinepubs/7908799/xsh/pthread.h.html) - POSIX thread support for concurrent operations
 - [jansson](https://github.com/akheron/jansson) - Efficient and memory-safe JSON parsing/generation
@@ -203,3 +217,5 @@ Core Libraries:
 - [libwebsockets](https://github.com/warmcat/libwebsockets) - Full-duplex WebSocket communication
 - [OpenSSL](https://www.openssl.org/) (libssl/libcrypto) - Industry-standard encryption and security
 - [libm](https://www.gnu.org/software/libc/manual/html_node/Mathematics.html) - Mathematical operations support
+- [libbrotlidec](https://github.com/google/brotli) - Brotli decompression library
+- [libtar](https://github.com/tklauser/libtar) - TAR file manipulation
