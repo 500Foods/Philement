@@ -6,6 +6,11 @@
 #ifndef HYDROGEN_OIDC_REGISTRATION_H
 #define HYDROGEN_OIDC_REGISTRATION_H
 
+//@ swagger:service OIDC Registration Service
+//@ swagger:description Allows dynamic registration of OIDC clients
+//@ swagger:tag oidc OpenID Connect protocol endpoints
+//@ swagger:tag registration Dynamic client registration
+
 // Feature test macros
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
@@ -32,6 +37,15 @@
  * @param con_cls Connection-specific data
  * @return MHD_Result indicating success or failure
  */
+//@ swagger:path /oauth/register
+//@ swagger:method POST
+//@ swagger:operationId registerClient
+//@ swagger:tags oidc,registration
+//@ swagger:summary Dynamic Client Registration endpoint
+//@ swagger:description Allows clients to register with the OIDC provider, following the OpenID Connect Dynamic Client Registration protocol. The registration metadata is submitted as a JSON document and the server returns client credentials and configuration.
+//@ swagger:requestBody application/json {"type":"object","properties":{"redirect_uris":{"type":"array","items":{"type":"string"}},"client_name":{"type":"string"},"client_uri":{"type":"string"},"logo_uri":{"type":"string"},"scope":{"type":"string"},"grant_types":{"type":"array","items":{"type":"string"}},"response_types":{"type":"array","items":{"type":"string"}},"token_endpoint_auth_method":{"type":"string"},"jwks_uri":{"type":"string"},"jwks":{"type":"object"}}}
+//@ swagger:response 201 application/json {"type":"object","properties":{"client_id":{"type":"string"},"client_secret":{"type":"string"},"client_id_issued_at":{"type":"integer"},"client_secret_expires_at":{"type":"integer"},"registration_access_token":{"type":"string"},"registration_client_uri":{"type":"string"},"redirect_uris":{"type":"array","items":{"type":"string"}},"client_name":{"type":"string"},"client_uri":{"type":"string"},"logo_uri":{"type":"string"},"scope":{"type":"string"},"grant_types":{"type":"array","items":{"type":"string"}},"response_types":{"type":"array","items":{"type":"string"}},"token_endpoint_auth_method":{"type":"string"}}}
+//@ swagger:response 400 application/json {"type":"object","properties":{"error":{"type":"string"},"error_description":{"type":"string"}}}
 enum MHD_Result handle_oidc_registration_endpoint(struct MHD_Connection *connection,
                                              const char *method,
                                              const char *upload_data,
