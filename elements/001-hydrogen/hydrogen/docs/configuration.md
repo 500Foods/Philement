@@ -160,6 +160,111 @@ mDNS helps your printer be automatically discovered by other devices on your net
 
 The `Services` section helps other software find and connect to your printer. For example, the "OctoPrint Emulation" service allows OctoPrint-compatible software to work with your Hydrogen printer.
 
+## Using Environment Variables in Configuration
+
+Hydrogen now supports using environment variables in your configuration file. This allows you to:
+
+1. Keep sensitive settings like API keys secure
+2. Create different configurations for development and production
+3. Share configuration files without exposing system-specific values
+4. Override configuration values without editing the file
+
+### Basic Syntax
+
+To use an environment variable in your configuration file, use the `${env.VARIABLE}` syntax:
+
+```json
+{
+  "ServerName": "${env.HYDROGEN_SERVER_NAME}"
+}
+```
+
+In this example, the `ServerName` will be set to the value of the `HYDROGEN_SERVER_NAME` environment variable. If this environment variable doesn't exist, Hydrogen will fall back to the default value as if the key was missing.
+
+### Value Type Conversion
+
+Hydrogen intelligently converts environment variable values to the appropriate JSON type:
+
+1. **Null Values**: If an environment variable exists but has no value, it's treated as JSON `null`
+2. **Boolean Values**: Values of "true" or "false" (case-insensitive) are converted to JSON boolean values
+3. **Number Values**: Numeric values are converted to JSON numbers
+4. **String Values**: All other values are treated as strings
+
+### Examples
+
+#### Boolean Configuration
+
+```json
+{
+  "WebServer": {
+    "Enabled": "${env.HYDROGEN_WEB_ENABLED}"
+  }
+}
+```
+
+If you set `HYDROGEN_WEB_ENABLED=true`, the web server will be enabled. Setting it to `false` will disable it.
+
+#### Numeric Configuration
+
+```json
+{
+  "WebServer": {
+    "Port": "${env.HYDROGEN_WEB_PORT}"
+  }
+}
+```
+
+If you set `HYDROGEN_WEB_PORT=8080`, the port will be set to 8080 as a number.
+
+#### Server Paths and Directories
+
+```json
+{
+  "WebServer": {
+    "WebRoot": "${env.HYDROGEN_WEB_ROOT}",
+    "UploadDir": "${env.HYDROGEN_UPLOAD_DIR}"
+  }
+}
+```
+
+This allows you to configure paths based on your system's directory structure.
+
+### Common Use Cases
+
+1. **Development vs. Production**:
+
+   ```bash
+   # Development
+   export HYDROGEN_WEB_PORT=8080
+   export HYDROGEN_UPLOAD_DIR="/tmp/hydrogen_dev"
+   
+   # Production
+   export HYDROGEN_WEB_PORT=5000
+   export HYDROGEN_UPLOAD_DIR="/var/lib/hydrogen/uploads"
+   ```
+
+2. **Sensitive Information**:
+
+   ```json
+   {
+     "API": {
+       "JWTSecret": "${env.HYDROGEN_JWT_SECRET}"
+     }
+   }
+   ```
+
+3. **Cluster Configuration**:
+
+   ```json
+   {
+     "ServerName": "${env.HOSTNAME}-hydrogen"
+   }
+   ```
+
+### Fallback Behavior
+
+If an environment variable referenced in your configuration doesn't exist, Hydrogen will behave as if that configuration key was missing, using the default value for that setting. This means your configuration remains robust even if some environment variables aren't defined.
+
 ## Understanding Log Levels
 
 Log levels control how much information Hydrogen records about its operation:

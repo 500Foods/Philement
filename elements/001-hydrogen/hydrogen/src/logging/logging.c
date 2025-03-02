@@ -136,9 +136,14 @@ void log_this(const char* subsystem, const char* format, int priority, ...) {
     va_end(args);
 
     char json_message[DEFAULT_MAX_LOG_MESSAGE_SIZE];
+    
+    // Always log undefined subsystems like "Environment" and "Configuration" to all destinations
+    bool include_all_destinations = (strcmp(subsystem, "Environment") == 0 || 
+                                    strcmp(subsystem, "Configuration") == 0);
+    
     snprintf(json_message, sizeof(json_message),
-             "{\"subsystem\":\"%s\",\"details\":\"%s\",\"priority\":%d}",
-             subsystem, details, priority);
+             "{\"subsystem\":\"%s\",\"details\":\"%s\",\"priority\":%d,\"LogConsole\":true,\"LogFile\":true,\"LogDatabase\":%s}",
+             subsystem, details, priority, include_all_destinations ? "true" : "false");
 
     // Try to use queue system if it's available and running
     Queue* log_queue = NULL;

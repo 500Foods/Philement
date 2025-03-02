@@ -1,6 +1,6 @@
 # Release Notes
 
-<!-- 
+<!--
 EDITING GUIDELINES (not visible when rendered):
 - Keep entries concise and factual
 - Focus on WHAT changed, not WHY it's good
@@ -23,6 +23,35 @@ EDITING GUIDELINES (not visible when rendered):
   - Example: Keep all "Documentation:" entries together, all "API:" entries together, etc.
   - Avoid patterns like "Documentation:"/items, "API:"/items, "Documentation:"/more items
 -->
+
+## 2025-Mar-02
+
+Configuration:
+
+- Added environment variable substitution in configuration values:
+  - Implemented ${env.VARIABLE} format for referencing environment variables
+  - Added automatic type conversion based on environment variable content
+  - Support for null, boolean, number, and string value types
+  - Fallback to defaults when environment variables don't exist
+  - Consistent handling across all configuration settings
+  - Added INFO-level logging under "Environment" subsystem showing variable name, type, and value
+  - Implemented masking for sensitive data (keys, passwords, tokens) showing only first 5 characters
+  - Enhanced testing with improved validation of environment variable processing
+
+Testing:
+
+- Improved environment variable test script:
+  - Added tracking of passed and failed checks with detailed counts
+  - Added specific tests for environment variable type detection
+  - Enhanced output with clear test results for each test phase
+  - Fixed issues with warning/error reporting and test outcome determination
+  - Added section headers to clarify different test phases
+  - Fixed inconsistency where warnings didn't affect pass/fail status
+  - Ensured all check failures increment failure counter properly
+  - Added clearer output when environment variable logs are missing
+  - Refocused tests to properly detect environment variables with more reliable pattern matching
+  - Fixed handling of problematic environment variables by skipping checks where appropriate
+  - Simplified regex patterns for improved reliability across different log formats
 
 ## 2025-Mar-01
 
@@ -228,7 +257,7 @@ Code Quality and Compilation:
   - Resolved compilation errors in Client Credentials flow example
   - Ensured clean build with strict compiler flags
 
-## OIDC Service Architecture:
+## OIDC Service Architecture
 
 - Implemented new client registry system:
   - Added oidc_clients.h and oidc_clients.c for client management
@@ -258,7 +287,7 @@ Code Quality and Compilation:
   - Developed a JavaScript browser-based client example
   - Created a Makefile for easy compilation of C examples
 
-## Testing:
+## Testing
 
 - Added compilation verification test:
   - Created test_compilation.sh script to verify clean builds
@@ -268,7 +297,7 @@ Code Quality and Compilation:
   - Integrated as first step in test workflow
   - Added failure detection to skip subsequent tests if compilation fails
 
-## Documentation:
+## Documentation
 
 - Added developer onboarding resources:
   - Created developer_onboarding.md with visual architecture diagrams
