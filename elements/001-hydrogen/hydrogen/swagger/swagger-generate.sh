@@ -1,7 +1,45 @@
 #!/bin/bash
-# OpenAPI JSON generator for Hydrogen REST API
+# ──────────────────────────────────────────────────────────────────────────────
+# OpenAPI JSON Generator for Hydrogen REST API
+# ──────────────────────────────────────────────────────────────────────────────
 # This script scans the API code and extracts OpenAPI annotations
 # to generate an OpenAPI 3.1.0 specification file for API documentation
+
+# Terminal formatting codes
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+MAGENTA='\033[0;35m'
+BOLD='\033[1m'
+NC='\033[0m'  # No Color
+
+# Status symbols
+PASS="✅"
+FAIL="❌"
+WARN="⚠️"
+INFO="ℹ️"
+
+# Function to convert absolute path to path relative to hydrogen project root
+convert_to_relative_path() {
+    local absolute_path="$1"
+    
+    # Extract the part starting from "hydrogen" and keep everything after
+    local relative_path=$(echo "$absolute_path" | sed -n 's|.*/hydrogen/|hydrogen/|p')
+    
+    # If the path contains elements/001-hydrogen/hydrogen but not starting with hydrogen/
+    if [ -z "$relative_path" ]; then
+        relative_path=$(echo "$absolute_path" | sed -n 's|.*/elements/001-hydrogen/hydrogen|hydrogen|p')
+    fi
+    
+    # If we still couldn't find a match, return the original
+    if [ -z "$relative_path" ]; then
+        echo "$absolute_path"
+    else
+        echo "$relative_path"
+    fi
+}
 
 # Set script to exit on any error
 set -e
@@ -12,14 +50,23 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 API_DIR="${PROJECT_ROOT}/src/api"
 OUTPUT_FILE="${SCRIPT_DIR}/swagger.json"
 
-echo "Generating OpenAPI 3.1.0 documentation for Hydrogen API..."
-echo "API directory: ${API_DIR}"
-echo "Output file: ${OUTPUT_FILE}"
+# Print header function
+print_header() {
+    echo -e "\n${BLUE}────────────────────────────────────────────────────────────────${NC}"
+    echo -e "${BLUE}${BOLD} $1 ${NC}"
+    echo -e "${BLUE}────────────────────────────────────────────────────────────────${NC}"
+}
+
+print_header "OpenAPI Generator for Hydrogen API"
+echo -e "${CYAN}${INFO} API directory: ${NC}$(convert_to_relative_path "${API_DIR}")"
+echo -e "${CYAN}${INFO} Output file:   ${NC}$(convert_to_relative_path "${OUTPUT_FILE}")"
 
 # Create a temporary directory for intermediate files
 TEMP_DIR=$(mktemp -d)
 PATHS_FILE="${TEMP_DIR}/paths.json"
 TAGS_FILE="${TEMP_DIR}/tags.json"
+
+echo -e "${CYAN}${INFO} Working directory: ${NC}${TEMP_DIR}"
 
 # Initialize basic files
 echo "[]" > "$TAGS_FILE"
@@ -27,13 +74,13 @@ echo "{}" > "$PATHS_FILE"
 
 # Collect all endpoints
 function find_endpoints() {
-    echo "Collecting API endpoints..."
+    print_header "Scanning API Endpoints"
     
     # Process each service directory
     for service_dir in "${API_DIR}"/*/ ; do
         if [ -d "$service_dir" ]; then
             service_name=$(basename "$service_dir")
-            echo "Processing service: $service_name"
+            echo -e "${CYAN}${BOLD}Processing service: ${NC}${service_name}"
             
             # Process service tags
             if [ -f "${service_dir}/${service_name}_service.h" ]; then
@@ -47,6 +94,7 @@ function find_endpoints() {
                         jq --arg name "$tag_name" --arg desc "$tag_desc" \
                             '. += [{"name": $name, "description": $desc}]' "$TAGS_FILE" > "${TEMP_DIR}/tags_new.json"
                         mv "${TEMP_DIR}/tags_new.json" "$TAGS_FILE"
+                        echo -e "  ${GREEN}${INFO} Added tag: ${NC}${tag_name}"
                     fi
                 done
             fi
@@ -61,7 +109,7 @@ function find_endpoints() {
                         continue
                     fi
                     
-                    echo "  Processing endpoint: $endpoint_name"
+                    echo -e "  ${YELLOW}→ Processing endpoint: ${NC}${endpoint_name}"
                     
                     # Process header files
                     for header_file in "$endpoint_dir"/*.h; do
@@ -70,7 +118,7 @@ function find_endpoints() {
                             handler_func=$(grep -E "handle_.*_${endpoint_name}" "$header_file" | grep -v "^//" | head -1 || true)
                             
                             if [ -n "$handler_func" ]; then
-                                echo "    Found handler: $handler_func"
+                                echo -e "    ${GREEN}✓ Found handler: ${NC}${handler_func}"
                                 
                                 # Extract path
                                 path=$(grep -E "//@ swagger:path" "$header_file" | sed -E 's/.*swagger:path[[:space:]]+([^[:space:]]+).*/\1/' || echo "/$service_name/$endpoint_name")
@@ -204,6 +252,8 @@ function find_endpoints() {
                                        '.[$path] = {($method): $operation[0]}' "$PATHS_FILE" > "${PATHS_FILE}.tmp" && \
                                        mv "${PATHS_FILE}.tmp" "$PATHS_FILE"
                                 fi
+                                
+                                echo -e "    ${GREEN}✓ Added ${NC}${BOLD}${method} ${path}${NC}"
                             fi
                         fi
                     done
@@ -215,7 +265,7 @@ function find_endpoints() {
 
 # Extract API info from api_utils.h
 function extract_api_info() {
-    echo "Extracting API info..."
+    print_header "Extracting API Information"
     
     API_INFO_FILE="${TEMP_DIR}/api_info.json"
     SERVERS_FILE="${TEMP_DIR}/servers.json"
@@ -236,11 +286,14 @@ function extract_api_info() {
     
     API_UTILS_FILE="${API_DIR}/api_utils.h"
     if [ -f "$API_UTILS_FILE" ]; then
+        echo -e "${CYAN}${INFO} Analyzing ${NC}$(convert_to_relative_path "${API_UTILS_FILE}")"
+        
         # Extract title
         title=$(grep -E "//@ swagger:title" "$API_UTILS_FILE" | sed -E 's/.*swagger:title[[:space:]]+([^$]*)/\1/' || echo "")
         if [ -n "$title" ]; then
             jq --arg title "$title" '.title = $title' "$API_INFO_FILE" > "${API_INFO_FILE}.tmp" && \
                 mv "${API_INFO_FILE}.tmp" "$API_INFO_FILE"
+            echo -e "  ${GREEN}✓ Found title: ${NC}${title}"
         fi
         
         # Extract description
@@ -248,6 +301,7 @@ function extract_api_info() {
         if [ -n "$desc" ]; then
             jq --arg desc "$desc" '.description = $desc' "$API_INFO_FILE" > "${API_INFO_FILE}.tmp" && \
                 mv "${API_INFO_FILE}.tmp" "$API_INFO_FILE"
+            echo -e "  ${GREEN}✓ Found description"
         fi
         
         # Extract version
@@ -255,6 +309,7 @@ function extract_api_info() {
         if [ -n "$version" ]; then
             jq --arg version "$version" '.version = $version' "$API_INFO_FILE" > "${API_INFO_FILE}.tmp" && \
                 mv "${API_INFO_FILE}.tmp" "$API_INFO_FILE"
+            echo -e "  ${GREEN}✓ Found version: ${NC}${version}"
         fi
         
         # Extract contact email
@@ -262,6 +317,7 @@ function extract_api_info() {
         if [ -n "$contact" ]; then
             jq --arg email "$contact" '.contact = {"email": $email}' "$API_INFO_FILE" > "${API_INFO_FILE}.tmp" && \
                 mv "${API_INFO_FILE}.tmp" "$API_INFO_FILE"
+            echo -e "  ${GREEN}✓ Found contact email: ${NC}${contact}"
         fi
         
         # Extract license
@@ -269,6 +325,7 @@ function extract_api_info() {
         if [ -n "$license" ]; then
             jq --arg name "$license" '.license = {"name": $name}' "$API_INFO_FILE" > "${API_INFO_FILE}.tmp" && \
                 mv "${API_INFO_FILE}.tmp" "$API_INFO_FILE"
+            echo -e "  ${GREEN}✓ Found license: ${NC}${license}"
         fi
         
         # Clear the default servers first to prevent duplicates
@@ -284,6 +341,7 @@ function extract_api_info() {
             if [ "$exists" -eq 0 ]; then
                 jq --arg url "$url" --arg desc "$desc" '. += [{"url": $url, "description": $desc}]' \
                     "$SERVERS_FILE" > "${SERVERS_FILE}.tmp" && mv "${SERVERS_FILE}.tmp" "$SERVERS_FILE"
+                echo -e "  ${GREEN}✓ Added server: ${NC}${url}"
             fi
         done
         
@@ -292,13 +350,14 @@ function extract_api_info() {
         if [ "$servers_count" -eq 0 ]; then
             jq '. += [{"url": "http://localhost:8080/api", "description": "Development server"}]' \
                 "$SERVERS_FILE" > "${SERVERS_FILE}.tmp" && mv "${SERVERS_FILE}.tmp" "$SERVERS_FILE"
+            echo -e "  ${YELLOW}${WARN} No servers found, adding default: ${NC}http://localhost:8080/api"
         fi
     fi
 }
 
 # Assemble the final OpenAPI JSON
 function assemble_openapi_json() {
-    echo "Assembling OpenAPI JSON..."
+    print_header "Assembling OpenAPI Specification"
     
     # Create the final OpenAPI JSON file - filter out empty paths
     jq -n --slurpfile info "${TEMP_DIR}/api_info.json" \
@@ -322,12 +381,19 @@ function assemble_openapi_json() {
               }
             }
           }' > "$OUTPUT_FILE"
+          
+    # Get the file size
+    FILE_SIZE=$(du -h "$OUTPUT_FILE" | cut -f1)
+    ENDPOINT_COUNT=$(jq '.paths | keys | length' "$OUTPUT_FILE")
+    
+    echo -e "${GREEN}${INFO} Generated OpenAPI specification (${FILE_SIZE})${NC}"
+    echo -e "${GREEN}${INFO} Documented endpoints: ${NC}${ENDPOINT_COUNT}"
 }
 
 # Make sure jq is available
 if ! command -v jq &> /dev/null; then
-    echo "Error: jq is required for this script to work properly."
-    echo "Please install jq using your package manager."
+    echo -e "${RED}${FAIL} Error: jq is required for this script to work properly.${NC}"
+    echo -e "${YELLOW}${INFO} Please install jq using your package manager.${NC}"
     exit 1
 fi
 
@@ -337,6 +403,10 @@ find_endpoints
 assemble_openapi_json
 
 # Clean up temporary files
+echo -e "${CYAN}${INFO} Cleaning up temporary files...${NC}"
 rm -rf "$TEMP_DIR"
 
-echo "OpenAPI 3.1.0 JSON generated successfully at: $OUTPUT_FILE"
+print_header "Generation Complete"
+echo -e "${GREEN}${PASS} ${BOLD}OpenAPI 3.1.0 JSON generated successfully!${NC}"
+echo -e "${CYAN}${INFO} Location: ${BOLD}$(convert_to_relative_path "${OUTPUT_FILE}")${NC}"
+echo -e "${BLUE}────────────────────────────────────────────────────────────────${NC}"
