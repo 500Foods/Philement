@@ -252,4 +252,4 @@ Common shutdown issues and solutions:
 - [WebSocket Interface](./web_socket.md) - WebSocket server shutdown implementation
 - [mDNS Server](./mdns_server.md) - mDNS server shutdown implementation
 - [System Info API](./api/system/system_info.md) - System health and status monitoring
-- [Release Notes](./release_notes.md) - History of shutdown improvements
+- [Release Notes](../release_notes.md) - History of shutdown improvements
