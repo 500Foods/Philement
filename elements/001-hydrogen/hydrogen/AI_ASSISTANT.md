@@ -228,6 +228,15 @@ When editing the release notes document, adhere to these specific formatting rul
 - **Use fewer words where possible**
 - **Stick to listing actual changes, not opinions about them**
 - **This is a technical record, not marketing material**
+- **CRITICAL: Use Pacific Time (America/Vancouver) for all dates**
+  - All entries must use Pacific timezone dates
+  - Check current Pacific time before adding entries
+  - Never add entries with future Pacific timezone dates
+- **CRITICAL: Consolidate entries by topic**
+  - When adding to an existing date, reflow ALL entries
+  - Group ALL related changes under a single topic header
+  - Never repeat topic headers within the same date
+  - Example: All "Testing:" entries go under one "Testing:" section
 - **Use collapsible sections by month (except for the most recent month)**
   - Wrap older months in `<details><summary>YYYY-MMM</summary>` and `</details>` tags
   - Keep the current/most recent month expanded

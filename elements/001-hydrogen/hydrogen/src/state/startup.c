@@ -379,7 +379,12 @@ int startup_hydrogen(const char *config_path) {
     log_app_info();
     
     // Check library dependencies
-    check_library_dependencies(app_config);
+    int critical_dependencies = check_library_dependencies(app_config);
+    if (critical_dependencies > 0) {
+        log_this("Initialization", "Found %d missing critical dependencies", LOG_LEVEL_WARN, critical_dependencies);
+    } else {
+        log_this("Initialization", "All critical dependencies available", LOG_LEVEL_INFO);
+    }
 
     // Initialize print queue system if enabled
     if (app_config->print_queue.enabled) {
