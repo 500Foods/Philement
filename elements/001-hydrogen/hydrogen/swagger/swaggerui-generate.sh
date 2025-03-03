@@ -128,8 +128,19 @@ download_swaggerui() {
     
     # Process static files (to be compressed with brotli)
     cp "${TEMP_DIR}/swagger-ui-${SWAGGERUI_VERSION}/dist/swagger-ui-bundle.js" "${SWAGGERUI_DIR}/"
+    cp "${TEMP_DIR}/swagger-ui-${SWAGGERUI_VERSION}/dist/swagger-ui-standalone-preset.js" "${SWAGGERUI_DIR}/"
     cp "${TEMP_DIR}/swagger-ui-${SWAGGERUI_VERSION}/dist/swagger-ui.css" "${SWAGGERUI_DIR}/"
     cp "${TEMP_DIR}/swagger-ui-${SWAGGERUI_VERSION}/dist/oauth2-redirect.html" "${SWAGGERUI_DIR}/"
+    
+    # Copy swagger.json (both compressed and uncompressed)
+    if [ -f "${SCRIPT_DIR}/swagger.json" ]; then
+        echo -e "${GREEN}${PASS} Found swagger.json, copying for packaging...${NC}"
+        cp "${SCRIPT_DIR}/swagger.json" "${SWAGGERUI_DIR}/"
+    else
+        echo -e "${YELLOW}${WARN} Warning: swagger.json not found. Run swagger-generate.sh first.${NC}"
+        # Create a minimal placeholder swagger.json
+        echo '{"openapi":"3.1.0","info":{"title":"Hydrogen API","version":"1.0.0"},"paths":{}}' > "${SWAGGERUI_DIR}/swagger.json"
+    fi
     
     # Process dynamic files (to remain uncompressed)
     cp "${TEMP_DIR}/swagger-ui-${SWAGGERUI_VERSION}/dist/index.html" "${SWAGGERUI_DIR}/"
@@ -137,16 +148,40 @@ download_swaggerui() {
     cp "${TEMP_DIR}/swagger-ui-${SWAGGERUI_VERSION}/dist/favicon-32x32.png" "${SWAGGERUI_DIR}/"
     cp "${TEMP_DIR}/swagger-ui-${SWAGGERUI_VERSION}/dist/favicon-16x16.png" "${SWAGGERUI_DIR}/"
     
-    # Modify index.html to use our swagger.json.br file
+    # Customize index.html
     echo -e "${CYAN}${INFO} Customizing index.html...${NC}"
-    sed -i 's|https://petstore.swagger.io/v2/swagger.json|swagger.json.br|' "${SWAGGERUI_DIR}/index.html"
+    cat > "${SWAGGERUI_DIR}/index.html" << 'EOF'
+<!-- HTML for static distribution bundle build -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Hydrogen API Documentation</title>
+    <link rel="stylesheet" type="text/css" href="swagger-ui.css" />
+    <link rel="icon" type="image/png" href="favicon-32x32.png" sizes="32x32" />
+    <link rel="icon" type="image/png" href="favicon-16x16.png" sizes="16x16" />
+    <style>
+      html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }
+      *, *:before, *:after { box-sizing: inherit; }
+      body { margin: 0; background: #fafafa; }
+    </style>
+  </head>
+
+  <body>
+    <div id="swagger-ui"></div>
+    <script src="swagger-ui-bundle.js"></script>
+    <script src="swagger-ui-standalone-preset.js"></script>
+    <script src="swagger-initializer.js"></script>
+  </body>
+</html>
+EOF
     
     # Update swagger-initializer.js to use our settings
     echo -e "${CYAN}${INFO} Customizing swagger-initializer.js with recommended settings...${NC}"
     cat > "${SWAGGERUI_DIR}/swagger-initializer.js" << EOF
 window.onload = function() {
   window.ui = SwaggerUIBundle({
-    url: "swagger.json.br",
+    url: "swagger.json",
     dom_id: '#swagger-ui',
     deepLinking: true,
     presets: [
@@ -166,15 +201,6 @@ window.onload = function() {
 };
 EOF
     
-    # Copy swagger.json to our temporary directory if it exists
-    if [ -f "${SCRIPT_DIR}/swagger.json" ]; then
-        echo -e "${GREEN}${PASS} Found swagger.json, copying for packaging...${NC}"
-        cp "${SCRIPT_DIR}/swagger.json" "${SWAGGERUI_DIR}/"
-    else
-        echo -e "${YELLOW}${WARN} Warning: swagger.json not found. Run swagger-generate.sh first.${NC}"
-        # Create a minimal placeholder swagger.json
-        echo '{"openapi":"3.1.0","info":{"title":"Hydrogen API","version":"1.0.0"},"paths":{}}' > "${SWAGGERUI_DIR}/swagger.json"
-    fi
     
     echo -e "${GREEN}${PASS} SwaggerUI files prepared for packaging.${NC}"
 }
@@ -188,20 +214,23 @@ compress_static_assets() {
     echo -e "${CYAN}${INFO} Compressing swagger-ui-bundle.js with Brotli (best compression)...${NC}"
     brotli --best -f "${SWAGGERUI_DIR}/swagger-ui-bundle.js" -o "${SWAGGERUI_DIR}/swagger-ui-bundle.js.br"
     
+    # Compress swagger-ui-standalone-preset.js
+    echo -e "${CYAN}${INFO} Compressing swagger-ui-standalone-preset.js with Brotli (best compression)...${NC}"
+    brotli --best -f "${SWAGGERUI_DIR}/swagger-ui-standalone-preset.js" -o "${SWAGGERUI_DIR}/swagger-ui-standalone-preset.js.br"
+    
     # Compress swagger-ui.css (static styling)
     echo -e "${CYAN}${INFO} Compressing swagger-ui.css with Brotli (best compression)...${NC}"
     brotli --best -f "${SWAGGERUI_DIR}/swagger-ui.css" -o "${SWAGGERUI_DIR}/swagger-ui.css.br"
-    
-    # Compress swagger.json
-    echo -e "${CYAN}${INFO} Compressing swagger.json with Brotli (best compression)...${NC}"
-    brotli --best -f "${SWAGGERUI_DIR}/swagger.json" -o "${SWAGGERUI_DIR}/swagger.json.br"
     
     # Compress oauth2-redirect.html
     echo -e "${CYAN}${INFO} Compressing oauth2-redirect.html with Brotli (best compression)...${NC}"
     brotli --best -f "${SWAGGERUI_DIR}/oauth2-redirect.html" -o "${SWAGGERUI_DIR}/oauth2-redirect.html.br"
     
     # Remove the uncompressed static files - we'll only include the .br versions in the tar
-    rm -f "${SWAGGERUI_DIR}/swagger-ui-bundle.js" "${SWAGGERUI_DIR}/swagger-ui.css" "${SWAGGERUI_DIR}/swagger.json" "${SWAGGERUI_DIR}/oauth2-redirect.html"
+    rm -f "${SWAGGERUI_DIR}/swagger-ui-bundle.js" \
+          "${SWAGGERUI_DIR}/swagger-ui-standalone-preset.js" \
+          "${SWAGGERUI_DIR}/swagger-ui.css" \
+          "${SWAGGERUI_DIR}/oauth2-redirect.html"
     
     echo -e "${GREEN}${PASS} Static assets compressed successfully.${NC}"
 }
@@ -213,12 +242,13 @@ create_tarball() {
     
     # Create flat tar file including only what we need
     # - Compressed static assets (.br files)
-    # - Uncompressed dynamic files
+    # - Uncompressed dynamic files and swagger.json
     # - Strip metadata (permissions and ownership) since we're the only ones using it
     cd "${SWAGGERUI_DIR}" && tar --mode=0000 --owner=0 --group=0 -cf "${TAR_FILE}" \
         swagger-ui-bundle.js.br \
+        swagger-ui-standalone-preset.js.br \
         swagger-ui.css.br \
-        swagger.json.br \
+        swagger.json \
         oauth2-redirect.html.br \
         index.html \
         swagger-initializer.js \
@@ -234,7 +264,6 @@ create_tarball() {
     ls -lh "${COMPRESSED_TAR_FILE}" | awk '{printf "  '"${GREEN}${INFO}"' Compressed tar (brotli): '"${NC}"'%s\n", $5}'
     ls -lh "${SWAGGERUI_DIR}/swagger-ui-bundle.js.br" | awk '{printf "  '"${GREEN}${INFO}"' swagger-ui-bundle.js.br: '"${NC}"'%s\n", $5}'
     ls -lh "${SWAGGERUI_DIR}/swagger-ui.css.br" | awk '{printf "  '"${GREEN}${INFO}"' swagger-ui.css.br:      '"${NC}"'%s\n", $5}'
-    ls -lh "${SWAGGERUI_DIR}/swagger.json.br" | awk '{printf "  '"${GREEN}${INFO}"' swagger.json.br:        '"${NC}"'%s\n", $5}'
     
     echo -e "${GREEN}${PASS} SwaggerUI package is ready for distribution.${NC}"
     

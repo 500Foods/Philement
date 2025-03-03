@@ -137,6 +137,12 @@ typedef struct {
  * file uploads, and static content serving. Includes safety limits
  * and path configurations.
  */
+/* Web Server Thread Pool and Connection Defaults */
+#define DEFAULT_THREAD_POOL_SIZE 4        // Number of worker threads
+#define DEFAULT_MAX_CONNECTIONS 100       // Maximum total connections
+#define DEFAULT_MAX_CONNECTIONS_PER_IP 10 // Maximum connections per IP
+#define DEFAULT_CONNECTION_TIMEOUT 30     // Connection timeout in seconds
+
 typedef struct {
     int enabled;            // Runtime toggle for web server
     int enable_ipv6;        // IPv6 support toggle
@@ -145,6 +151,17 @@ typedef struct {
     char *upload_path;     // URL path for file uploads
     char *upload_dir;      // Storage location for uploads
     size_t max_upload_size;// Upload size limit for DoS prevention
+    struct {
+        int enabled;       // Enable/disable Swagger UI
+        char *prefix;      // URL prefix for Swagger UI (e.g., "/docs")
+        int payload_available; // Set to 1 if payload is found in executable
+    } swagger;
+    
+    /* Thread Pool and Connection Settings */
+    int thread_pool_size;     // Number of worker threads (default: DEFAULT_THREAD_POOL_SIZE)
+    int max_connections;      // Maximum total connections (default: DEFAULT_MAX_CONNECTIONS)
+    int max_connections_per_ip; // Maximum connections per IP (default: DEFAULT_MAX_CONNECTIONS_PER_IP)
+    int connection_timeout;   // Connection timeout in seconds (default: DEFAULT_CONNECTION_TIMEOUT)
 } WebConfig;
 
 /*
