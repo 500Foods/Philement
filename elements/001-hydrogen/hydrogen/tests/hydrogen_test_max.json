@@ -159,6 +159,96 @@
             }
         }
     },
+    "Swagger": {
+        "Enabled": true,
+        "Prefix": "/swagger",
+        "UIOptions": {
+            "TryItEnabled": true,
+            "AlwaysExpanded": true,
+            "DisplayOperationId": true,
+            "DefaultModelsExpandDepth": 1,
+            "DefaultModelExpandDepth": 1,
+            "ShowExtensions": false,
+            "ShowCommonExtensions": true,
+            "DocExpansion": "list",
+            "SyntaxHighlightTheme": "agate"
+        }
+    },
+    "Terminal": {
+        "Enabled": true,
+        "WebPath": "/terminal",
+        "ShellCommand": "/bin/bash",
+        "MaxSessions": 4,
+        "IdleTimeoutSeconds": 600,
+        "BufferSize": 4096
+    },
+    "Databases": {
+        "Workers": 1,
+        "Connections": {
+            "OIDC": {
+                "Type": "postgres",
+                "Host": "{$env.TEST_OIDC_DB_HOST}",
+                "Port": "{$env.TEST_OIDC_DB_PORT}",
+                "Database": "{$env.TEST_OIDC_DB_NAME}",
+                "Username": "{$env.TEST_OIDC_DB_USER}",
+                "Password": "{$env.TEST_OIDC_DB_PASS}",
+                "MaxConnections": 10
+            },
+            "Acuranzo": {
+                "Type": "postgres",
+                "Host": "{$env.TEST_ACURANZO_DB_HOST}",
+                "Port": "{$env.TEST_ACURANZO_DB_PORT}",
+                "Database": "{$env.TEST_ACURANZO_DB_NAME}",
+                "Username": "{$env.TEST_ACURANZO_DB_USER}",
+                "Password": "{$env.TEST_ACURANZO_DB_PASS}",
+                "MaxConnections": 10
+            },
+            "Helium": {
+                "Type": "postgres",
+                "Host": "{$env.TEST_HELIUM_DB_HOST}",
+                "Port": "{$env.TEST_HELIUM_DB_PORT}",
+                "Database": "{$env.TEST_HELIUM_DB_NAME}",
+                "Username": "{$env.TEST_HELIUM_DB_USER}",
+                "Password": "{$env.TEST_HELIUM_DB_PASS}",
+                "MaxConnections": 10
+            },
+            "Canvas": {
+                "Type": "postgres",
+                "Host": "{$env.TEST_CANVAS_DB_HOST}",
+                "Port": "{$env.TEST_CANVAS_DB_PORT}",
+                "Database": "{$env.TEST_CANVAS_DB_NAME}",
+                "Username": "{$env.TEST_CANVAS_DB_USER}",
+                "Password": "{$env.TEST_CANVAS_DB_PASS}",
+                "MaxConnections": 10
+            }
+        }
+    },
+    "SMTPRelay": {
+        "Enabled": true,
+        "ListenPort": 587,
+        "Workers": 2,
+        "QueueSettings": {
+            "MaxQueueSize": 1000,
+            "RetryAttempts": 3,
+            "RetryDelaySeconds": 300
+        },
+        "OutboundServers": [
+            {
+                "Host": "{$env.TEST_SMTP_SERVER1_HOST}",
+                "Port": "{$env.TEST_SMTP_SERVER1_PORT}",
+                "Username": "{$env.TEST_SMTP_SERVER1_USER}",
+                "Password": "{$env.TEST_SMTP_SERVER1_PASS}",
+                "UseTLS": true
+            },
+            {
+                "Host": "{$env.TEST_SMTP_SERVER2_HOST}",
+                "Port": "{$env.TEST_SMTP_SERVER2_PORT}",
+                "Username": "{$env.TEST_SMTP_SERVER2_USER}",
+                "Password": "{$env.TEST_SMTP_SERVER2_PASS}",
+                "UseTLS": true
+            }
+        ]
+    },
     "mDNSServer": {
         "Enabled": true,
         "EnableIPv6": true,

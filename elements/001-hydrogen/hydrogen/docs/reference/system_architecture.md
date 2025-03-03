@@ -14,6 +14,16 @@ Hydrogen is designed as a modular, multi-layered architecture that prioritizes p
 │   │   Print Queue │   │  Web Server   │   │   WebSocket   │   │
 │   │    Manager    │   │               │   │    Server     │   │
 │   └───────┬───────┘   └───────┬───────┘   └───────┬───────┘   │
+│                                                               │
+│   ┌───────────────┐   ┌───────────────┐   ┌───────────────┐   │
+│   │   Terminal    │   │   Database    │   │   SMTPRelay   │   │
+│   │    Server     │   │    Manager    │   │    Server     │   │
+│   └───────┬───────┘   └───────┬───────┘   └───────┬───────┘   │
+│                                                               │
+│   ┌───────────────┐                                           │
+│   │   Swagger     │                                           │
+│   │      UI       │                                           │
+│   └───────┬───────┘                                           │
 │           │                   │                   │           │
 │           │                   │                   │           │
 │           ▼                   ▼                   ▼           │
@@ -131,6 +141,94 @@ The [WebSocket Server Architecture](./websocket_architecture.md) document provid
 ```
 
 The [Network Interface Architecture](./network_architecture.md) document provides detailed information about this component.
+
+### Terminal System
+
+```
+┌───────────────┐         ┌───────────────┐         ┌───────────────┐
+│  Web Server   │         │   Terminal    │         │    PTY        │
+│  (xterm.js)   │────────►│   Server     │────────►│   Session     │
+└───────────────┘         └───────┬───────┘         └───────────────┘
+                                  │
+                                  │
+                                  ▼
+                          ┌───────────────┐
+                          │   WebSocket   │
+                          │   Server      │
+                          └───────────────┘
+```
+
+The Terminal subsystem provides web-based terminal access through:
+- xterm.js frontend served by the web server
+- WebSocket-based bidirectional communication
+- PTY session management for shell access
+- Configurable session limits and timeouts
+
+### Database Management
+
+```
+┌───────────────┐         ┌───────────────┐         ┌───────────────┐
+│   Service     │         │   Database    │         │   Postgres    │
+│   Components  │────────►│   Manager     │────────►│   Databases   │
+└───────────────┘         └───────┬───────┘         └───────────────┘
+                                  │
+                                  │
+                                  ▼
+                          ┌───────────────┐
+                          │   Worker      │
+                          │   Threads     │
+                          └───────────────┘
+```
+
+The Database subsystem provides:
+- Connection pooling for multiple databases
+- Worker thread management for query processing
+- Environment variable-based configuration
+- Support for OIDC, Acuranzo, Helium, and Canvas databases
+
+### SMTP Relay System
+
+```
+┌───────────────┐         ┌───────────────┐         ┌───────────────┐
+│   Inbound     │         │   SMTPRelay   │         │   Outbound    │
+│   SMTP        │────────►│   Server      │────────►│   SMTP        │
+└───────────────┘         └───────┬───────┘         └───────────────┘
+                                  │
+                                  │
+                                  ▼
+                          ┌───────────────┐
+                          │   Message     │
+                          │   Queue       │
+                          └───────────────┘
+```
+
+The SMTP Relay subsystem provides:
+- Inbound SMTP server on configurable port
+- Message queuing with retry capabilities
+- Multiple outbound SMTP server support
+- Message content transformation
+
+### Swagger Documentation
+
+```
+┌───────────────┐         ┌───────────────┐         ┌───────────────┐
+│   Web Server  │         │   Swagger     │         │   OpenAPI     │
+│   (UI)        │────────►│   UI         │────────►│   Spec        │
+└───────────────┘         └───────┬───────┘         └───────────────┘
+                                  │
+                                  │
+                                  ▼
+                          ┌───────────────┐
+                          │   API         │
+                          │   Explorer    │
+                          └───────────────┘
+```
+
+The Swagger subsystem provides:
+- OpenAPI 3.1 specification support
+- Interactive API documentation
+- Built-in API testing capabilities
+- Configurable UI options and URL prefix
 
 ## Data Flow Patterns
 
