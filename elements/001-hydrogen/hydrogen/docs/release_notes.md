@@ -26,7 +26,20 @@ EDITING GUIDELINES (not visible when rendered):
 
 ## 2025-Mar-02
 
+Testing:
+
+- Enhanced test_compilation.sh with tarball verification:
+  - Added test for Swagger UI tarball presence in release builds
+  - Implemented detection of "<<< HERE BE ME TREASURE >>>" delimiter
+  - Added size verification to ensure executable contains the tarball
+  - Integrated test into existing compilation test sequence
+
 Build System:
+
+- Added tarball identifier to release executable:
+  - Appended "<<< HERE BE ME TREASURE >>>" magic string before tarball size value
+  - Enables reliable detection of appended tarball in executable
+  - Supports runtime determination of whether the executable includes SwaggerUI
 
 - Enhanced build versioning system:
   - Added compile-time RELEASE timestamp using ISO8601 format:

@@ -175,6 +175,7 @@ release: $(RELEASE_TARGET) swagger
 	@printf "$(CYAN)$(INFO) Appending Swagger UI to release executable...$(NORMAL)\n"
 	@TAR_SIZE=$$(stat -c %s "swagger/swaggerui.tar.br"); \
 	cat $(RELEASE_TARGET) "swagger/swaggerui.tar.br" > $(RELEASE_TARGET).tmp; \
+	printf "<<< HERE BE ME TREASURE >>>" >> $(RELEASE_TARGET).tmp; \
 	printf "$$(printf '%016x' $$TAR_SIZE | sed 's/\(..\)/\\x\1/g')" >> $(RELEASE_TARGET).tmp; \
 	mv $(RELEASE_TARGET).tmp $(RELEASE_TARGET); \
 	chmod +x $(RELEASE_TARGET)
