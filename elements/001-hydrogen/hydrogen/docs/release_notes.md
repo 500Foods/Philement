@@ -24,49 +24,25 @@ EDITING GUIDELINES (not visible when rendered):
   - Avoid patterns like "Documentation:"/items, "API:"/items, "Documentation:"/more items
 -->
 
+## 2025-Mar-03
+
+Library Management:
+
+- Added dynamic library loading system:
+  - Created extensible API for runtime library management
+  - Implemented conditional loading of optional libraries only when needed
+  - Added graceful fallback mechanisms for missing libraries
+  - Created function pointer abstraction for safe library usage
+  - Added support for delayed loading of libraries used in specific threads
+  - Maintained backward compatibility with existing dependency checking
+  - Added memory management for clean library unloading
+  - Implemented proper error reporting for missing dependencies
+  - Added helper macros for simplified function pointer usage
+  - Created example implementation for WebSocket server
+
 ## 2025-Mar-02
 
-Initialization:
-
-- Added library dependency checking system:
-  - Created utils_dependency utility module for version checking
-  - Implemented runtime detection of required libraries and versions
-  - Added configuration-aware dependency status reporting
-  - Different log levels based on dependency status (INFO, WARN, CRITICAL)
-  - Intelligent determination of required vs. optional libraries
-  - Automatic detection of versions during initialization
-
-Testing:
-
-- Enhanced test_compilation.sh with tarball verification:
-  - Added test for Swagger UI tarball presence in release builds
-  - Implemented detection of "<<< HERE BE ME TREASURE >>>" delimiter
-  - Added size verification to ensure executable contains the tarball
-  - Integrated test into existing compilation test sequence
-
-Build System:
-
-- Added tarball identifier to release executable:
-  - Appended "<<< HERE BE ME TREASURE >>>" magic string before tarball size value
-  - Enables reliable detection of appended tarball in executable
-  - Supports runtime determination of whether the executable includes SwaggerUI
-
-- Enhanced build versioning system:
-  - Added compile-time RELEASE timestamp using ISO8601 format:
-    - Implemented in Makefile using `date -u +'%Y-%m-%dT%H:%M:%SZ'`
-    - Passed to compiler via `-DRELEASE` macro
-    - Replaced runtime timestamp detection with compile-time value
-    - Added fallback definitions for compatibility
-  - Added BUILD_TYPE identifier for each build variant:
-    - Assigned specific values for each variant (Regular, Debug, Valgrind-Compatible, Performance, Release)
-    - Passed to compiler via `-DBUILD_TYPE` macro 
-    - Added logging of build type at startup
-    - Added build_type field to system status JSON response
-  - Maintained consistent compiler flags structure to prevent redefinition warnings
-  - Integrated with existing version information in logs and API responses
-
 API Documentation:
-
 - Added OpenAPI 3.1.0 integration for REST API documentation:
   - Created swagger directory at project root with generation script
   - Implemented annotation-based documentation using //@ swagger: prefix
@@ -93,8 +69,26 @@ API Documentation:
   - Added build dependencies documentation
   - Enhanced Swagger README with comprehensive implementation details
 
-Configuration:
+Build System:
+- Added tarball identifier to release executable:
+  - Appended "<<< HERE BE ME TREASURE >>>" magic string before tarball size value
+  - Enables reliable detection of appended tarball in executable
+  - Supports runtime determination of whether the executable includes SwaggerUI
+- Enhanced build versioning system:
+  - Added compile-time RELEASE timestamp using ISO8601 format:
+    - Implemented in Makefile using `date -u +'%Y-%m-%dT%H:%M:%SZ'`
+    - Passed to compiler via `-DRELEASE` macro
+    - Replaced runtime timestamp detection with compile-time value
+    - Added fallback definitions for compatibility
+  - Added BUILD_TYPE identifier for each build variant:
+    - Assigned specific values for each variant (Regular, Debug, Valgrind-Compatible, Performance, Release)
+    - Passed to compiler via `-DBUILD_TYPE` macro 
+    - Added logging of build type at startup
+    - Added build_type field to system status JSON response
+  - Maintained consistent compiler flags structure to prevent redefinition warnings
+  - Integrated with existing version information in logs and API responses
 
+Configuration:
 - Added environment variable substitution in configuration values:
   - Implemented ${env.VARIABLE} format for referencing environment variables
   - Added automatic type conversion based on environment variable content
@@ -104,9 +98,25 @@ Configuration:
   - Added INFO-level logging under "Environment" subsystem showing variable name, type, and value
   - Implemented masking for sensitive data (keys, passwords, tokens) showing only first 5 characters
   - Enhanced testing with improved validation of environment variable processing
+- Removed routine JSON processing log messages from configuration subsystem
+
+Initialization:
+- Added library dependency checking system:
+  - Created utils_dependency utility module for version checking
+  - Implemented runtime detection of required libraries and versions
+  - Added configuration-aware dependency status reporting
+  - Different log levels based on dependency status (INFO, WARN, CRITICAL)
+  - Intelligent determination of required vs. optional libraries
+  - Automatic detection of versions during initialization
+  - Added critical dependency counting and startup reporting
+  - Fixed dependency tracking logic to accurately count missing dependencies
 
 Testing:
-
+- Enhanced test_compilation.sh with tarball verification:
+  - Added test for Swagger UI tarball presence in release builds
+  - Implemented detection of "<<< HERE BE ME TREASURE >>>" delimiter
+  - Added size verification to ensure executable contains the tarball
+  - Integrated test into existing compilation test sequence
 - Improved environment variable test script:
   - Added tracking of passed and failed checks with detailed counts
   - Added specific tests for environment variable type detection
@@ -119,7 +129,6 @@ Testing:
   - Refocused tests to properly detect environment variables with more reliable pattern matching
   - Fixed handling of problematic environment variables by skipping checks where appropriate
   - Simplified regex patterns for improved reliability across different log formats
-
 - Modified test scripts to display relative paths:
   - Added path conversion function to test_utils.sh
   - Updated command display to show relative paths instead of absolute paths
@@ -128,6 +137,8 @@ Testing:
   - Modified log output to show only the part starting from "hydrogen/"
   - Improved log readability by removing unnecessary path prefixes
   - Fixed final result output for consistent path presentation
+- Aligned library dependency test output with system test format
+- Fixed process termination handling in dependency tests
 
 ## 2025-Mar-01
 
