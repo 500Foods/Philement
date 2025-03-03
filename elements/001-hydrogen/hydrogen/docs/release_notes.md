@@ -26,6 +26,16 @@ EDITING GUIDELINES (not visible when rendered):
 
 ## 2025-Mar-02
 
+Initialization:
+
+- Added library dependency checking system:
+  - Created utils_dependency utility module for version checking
+  - Implemented runtime detection of required libraries and versions
+  - Added configuration-aware dependency status reporting
+  - Different log levels based on dependency status (INFO, WARN, CRITICAL)
+  - Intelligent determination of required vs. optional libraries
+  - Automatic detection of versions during initialization
+
 Testing:
 
 - Enhanced test_compilation.sh with tarball verification:

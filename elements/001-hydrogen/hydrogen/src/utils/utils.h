@@ -21,5 +21,6 @@
 #include "utils_status.h"   // Local include since we're in utils/
 #include "utils_time.h"     // Local include since we're in utils/
 #include "utils_logging.h"  // Local include since we're in utils/
+#include "utils_dependency.h"  // Local include since we're in utils/
 
 #endif // UTILS_H
