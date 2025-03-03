@@ -249,6 +249,29 @@
             }
         ]
     },
+    "mDNSClient": {
+        "Enabled": true,
+        "EnableIPv6": true,
+        "ScanIntervalMs": 5000,
+        "ServiceTypes": [
+            "_http._tcp",
+            "_octoprint._tcp",
+            "_websocket._tcp",
+            "_hydrogen._tcp"
+        ],
+        "MonitoredServices": {
+            "OwnServices": true,
+            "LoadBalancers": true,
+            "PrinterServices": true,
+            "CustomServices": ["_test._tcp"]
+        },
+        "HealthCheck": {
+            "Enabled": true,
+            "IntervalMs": 30000,
+            "TimeoutMs": 5000,
+            "RetryCount": 3
+        }
+    },
     "mDNSServer": {
         "Enabled": true,
         "EnableIPv6": true,
