@@ -35,6 +35,21 @@ Service Discovery:
   - Support for multiple service types
   - Configurable monitoring intervals
 
+Web Server:
+- Added runtime Swagger UI integration:
+  - Automatic payload detection from executable using magic marker
+  - In-memory file serving with Brotli compression support
+  - Configurable URL prefix via JSON configuration
+  - Thread-safe resource management
+  - TAR extraction with dynamic memory allocation
+  - Dynamic URL updates for Swagger UI based on incoming requests:
+    - Automatic server URL detection from Host header
+    - Fallback to localhost:port when Host header missing
+    - HTTPS detection via X-Forwarded-Proto header
+    - Runtime modification of swagger-initializer.js
+    - Client-side swagger.json URL updates for correct server paths
+    - Automatic API server URL updates based on request origin
+
 Architecture:
 - Added new subsystems to core architecture:
   - Terminal: Web-based shell access with xterm.js integration

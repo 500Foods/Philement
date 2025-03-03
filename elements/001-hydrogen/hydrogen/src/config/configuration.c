@@ -1738,6 +1738,25 @@ AppConfig* load_config(const char* config_path) {
         log_this("Configuration", "Using default OIDC configuration", LOG_LEVEL_INFO);
     }
     
+    // Swagger Configuration (top-level)
+    json_t* swagger = json_object_get(root, "Swagger");
+    if (json_is_object(swagger)) {
+        json_t* enabled = json_object_get(swagger, "Enabled");
+        config->web.swagger.enabled = get_config_bool(enabled, 1);
+        
+        json_t* prefix = json_object_get(swagger, "Prefix");
+        config->web.swagger.prefix = get_config_string(prefix, "/docs");
+        
+        log_this("Configuration", "Swagger UI: %s (prefix: %s)", LOG_LEVEL_INFO,
+                config->web.swagger.enabled ? "enabled" : "disabled",
+                config->web.swagger.prefix);
+    } else {
+        // Default Swagger configuration
+        config->web.swagger.enabled = true;
+        config->web.swagger.prefix = strdup("/docs");
+        log_this("Configuration", "Using default Swagger configuration", LOG_LEVEL_INFO);
+    }
+
     // API Configuration
     json_t* api_config = json_object_get(root, "API");
     if (json_is_object(api_config)) {
