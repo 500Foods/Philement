@@ -15,11 +15,10 @@
 #include "web_server_core.h"
 #include "web_server_upload.h"
 #include "web_server_compression.h"
+#include "web_server_swagger.h"
 #include "../utils/utils_threads.h"
 #include "../logging/logging.h"
-
-// External configuration
-extern AppConfig *app_config;
+#include "../state/state.h"
 
 static enum MHD_Result serve_file(struct MHD_Connection *connection, const char *file_path) {
     // Check if client accepts Brotli compression
@@ -179,6 +178,11 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
 
     // Handle GET requests
     if (strcmp(method, "GET") == 0) {
+        // Check for Swagger UI requests first
+        if (is_swagger_request(url, server_web_config)) {
+            return handle_swagger_request(connection, url, server_web_config);
+        }
+        
         // API endpoints
         if (strcmp(url, "/api/version") == 0) {
             return handle_version_request(connection);

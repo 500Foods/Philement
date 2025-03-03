@@ -167,8 +167,8 @@ swagger:
 # Release build: highly optimized with size reduction for deployment
 # ──────────────────────────────────────────────────────────────────────────────
 release: BUILD_TYPE = Release
-release: CFLAGS += -s -DNDEBUG -march=x86-64 -flto=auto -fstack-protector
-release: LDFLAGS += -flto=auto
+release: CFLAGS += -s -DNDEBUG -march=x86-64 -flto=auto -fstack-protector -Werror -fno-strict-aliasing
+release: LDFLAGS += -flto=auto -fno-strict-aliasing
 release: $(RELEASE_TARGET) swagger
 	@printf "$(CYAN)$(INFO) Applying UPX compression to executable...$(NORMAL)\n"
 	@which upx > /dev/null && upx --best $(RELEASE_TARGET) || printf "$(YELLOW)$(WARN) UPX not found, skipping compression$(NORMAL)\n"

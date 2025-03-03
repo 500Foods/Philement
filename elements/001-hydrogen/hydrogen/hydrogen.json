@@ -93,7 +93,7 @@
             "Subsystems": {
                 "ThreadMgmt": 0,
                 "Shutdown": 0,
-                "mDNSServer": 0,
+                "mDNSServer": 6,
                 "WebServer": 0,
                 "WebSocket": 6,
                 "PrintQueue": 0,

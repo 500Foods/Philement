@@ -14,6 +14,7 @@
 
 // Project headers
 #include "web_server_core.h"
+#include "web_server_swagger.h"
 #include "../utils/utils_threads.h"
 #include "../logging/logging.h"
 
@@ -76,12 +77,13 @@ void add_cors_headers(struct MHD_Response *response) {
 }
 
 bool init_web_server(WebConfig *web_config) {
+    server_web_config = web_config;
+
+    // Check port availability before initializing resources
     if (!is_port_available(web_config->port, web_config->enable_ipv6)) {
-        log_this("WebServer", "Port is not available", LOG_LEVEL_DEBUG);
+        log_this("WebServer", "Port %u is not available", LOG_LEVEL_ERROR, web_config->port);
         return false;
     }
-
-    server_web_config = web_config;
 
     log_this("WebServer", "Initializing web server", LOG_LEVEL_INFO);
     if (web_config->enable_ipv6) {
@@ -91,6 +93,37 @@ bool init_web_server(WebConfig *web_config) {
     log_this("WebServer", "-> WebRoot: %s", LOG_LEVEL_INFO, server_web_config->web_root);
     log_this("WebServer", "-> Upload Path: %s", LOG_LEVEL_INFO, server_web_config->upload_path);
     log_this("WebServer", "-> Upload Dir: %s", LOG_LEVEL_INFO, server_web_config->upload_dir);
+
+    // Initialize thread pool and connection settings with defaults if not set
+    if (web_config->thread_pool_size == 0) {
+        web_config->thread_pool_size = DEFAULT_THREAD_POOL_SIZE;
+    }
+    if (web_config->max_connections == 0) {
+        web_config->max_connections = DEFAULT_MAX_CONNECTIONS;
+    }
+    if (web_config->max_connections_per_ip == 0) {
+        web_config->max_connections_per_ip = DEFAULT_MAX_CONNECTIONS_PER_IP;
+    }
+    if (web_config->connection_timeout == 0) {
+        web_config->connection_timeout = DEFAULT_CONNECTION_TIMEOUT;
+    }
+
+    log_this("WebServer", "-> Thread Pool Size: %d", LOG_LEVEL_INFO, web_config->thread_pool_size);
+    log_this("WebServer", "-> Max Connections: %d", LOG_LEVEL_INFO, web_config->max_connections);
+    log_this("WebServer", "-> Max Connections Per IP: %d", LOG_LEVEL_INFO, web_config->max_connections_per_ip);
+    log_this("WebServer", "-> Connection Timeout: %d seconds", LOG_LEVEL_INFO, web_config->connection_timeout);
+
+    // Initialize Swagger support if enabled
+    if (web_config->swagger.enabled) {
+        log_this("WebServer", "Initializing Swagger UI support", LOG_LEVEL_INFO);
+        if (init_swagger_support(web_config)) {
+            log_this("WebServer", "-> Swagger UI enabled at prefix: %s", LOG_LEVEL_INFO, 
+                    web_config->swagger.prefix);
+        } else {
+            log_this("WebServer", "-> Swagger UI initialization failed", LOG_LEVEL_WARN);
+            return false;
+        }
+    }
 
     // Create upload directory if it doesn't exist
     struct stat st = {0};
@@ -123,19 +156,26 @@ void* run_web_server(void* arg) {
     // Register main web server thread
     extern ServiceThreads web_threads;
     add_service_thread(&web_threads, pthread_self());
-    unsigned int flags = MHD_USE_THREAD_PER_CONNECTION;
+    
+    // Use internal polling thread with thread pool
+    unsigned int flags = MHD_USE_INTERNAL_POLLING_THREAD;
     if (server_web_config->enable_ipv6) {
         flags |= MHD_USE_DUAL_STACK;
         log_this("WebServer", "Starting with IPv6 dual-stack support", LOG_LEVEL_INFO);
     }
 
     log_this("WebServer", "Setting SO_REUSEADDR to enable immediate socket rebinding", LOG_LEVEL_INFO);
+    log_this("WebServer", "Using thread pool with %d threads", LOG_LEVEL_INFO, server_web_config->thread_pool_size);
     
-    // Start the daemon normally but include the SO_REUSEADDR setting
+    // Start the daemon with thread pool configuration
     web_daemon = MHD_start_daemon(flags, 
                                 server_web_config->port, 
                                 NULL, NULL,
                                 &handle_request, NULL,
+                                MHD_OPTION_THREAD_POOL_SIZE, server_web_config->thread_pool_size,
+                                MHD_OPTION_CONNECTION_LIMIT, server_web_config->max_connections,
+                                MHD_OPTION_PER_IP_CONNECTION_LIMIT, server_web_config->max_connections_per_ip,
+                                MHD_OPTION_CONNECTION_TIMEOUT, server_web_config->connection_timeout,
                                 MHD_OPTION_NOTIFY_COMPLETED, request_completed, NULL,
                                 MHD_OPTION_LISTENING_ADDRESS_REUSE, 1, // Enable SO_REUSEADDR for port rebinding
                                 MHD_OPTION_THREAD_STACK_SIZE, (1024 * 1024), // 1MB stack size
@@ -173,6 +213,13 @@ void* run_web_server(void* arg) {
 
 void shutdown_web_server(void) {
     log_this("WebServer", "Shutdown: Shutting down web server", LOG_LEVEL_INFO);
+    
+    // Clean up Swagger resources if enabled
+    if (server_web_config && server_web_config->swagger.enabled) {
+        cleanup_swagger_support();
+        log_this("WebServer", "Swagger UI resources cleaned up", LOG_LEVEL_INFO);
+    }
+    
     if (web_daemon != NULL) {
         MHD_stop_daemon(web_daemon);
         web_daemon = NULL;
