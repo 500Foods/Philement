@@ -26,6 +26,15 @@ EDITING GUIDELINES (not visible when rendered):
 
 ## 2025-Mar-03
 
+Service Discovery:
+- Added mDNSClient subsystem:
+  - Service discovery and monitoring capabilities
+  - Health checking for discovered services
+  - Load balancing support
+  - Integration with existing mDNSServer
+  - Support for multiple service types
+  - Configurable monitoring intervals
+
 Architecture:
 - Added new subsystems to core architecture:
   - Terminal: Web-based shell access with xterm.js integration
