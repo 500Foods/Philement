@@ -97,6 +97,7 @@ chmod +x $SCRIPT_DIR/monitor_resources.sh
 chmod +x $SCRIPT_DIR/test_json_error_handling.sh
 chmod +x $SCRIPT_DIR/test_socket_rebind.sh
 chmod +x $SCRIPT_DIR/test_env_variables.sh
+chmod +x $SCRIPT_DIR/test_library_dependencies.sh
 
 # Default output directories
 RESULTS_DIR="$SCRIPT_DIR/results"
@@ -501,12 +502,47 @@ else
             run_system_endpoint_tests
             API_EXIT_CODE=$?
             
+            # Run library dependency tests
+            print_header "LIBRARY DEPENDENCY TESTS" | tee -a "$SUMMARY_LOG"
+            print_command "$SCRIPT_DIR/test_library_dependencies.sh" | tee -a "$SUMMARY_LOG"
+            $SCRIPT_DIR/test_library_dependencies.sh
+            LIB_DEP_EXIT_CODE=$?
+            
+            # Report library dependency test result
+            if [ $LIB_DEP_EXIT_CODE -eq 0 ]; then
+                print_result 0 "Library dependency tests completed successfully" | tee -a "$SUMMARY_LOG"
+                ALL_TEST_NAMES+=("Library Dependencies")
+                ALL_TEST_RESULTS+=(0)
+                ALL_TEST_DETAILS+=("Library dependency checking system works correctly")
+                ALL_TEST_SUBTESTS+=(16)  # Estimated number of library dependency checks
+            else
+                print_result 1 "Library dependency tests failed with exit code $LIB_DEP_EXIT_CODE" | tee -a "$SUMMARY_LOG"
+                ALL_TEST_NAMES+=("Library Dependencies")
+                ALL_TEST_RESULTS+=(1)
+                ALL_TEST_DETAILS+=("Library dependency checking system has issues")
+                
+                # Look for the log file
+                LATEST_LOG=$(find "$RESULTS_DIR" -type f -name "lib_dep_test_*.log" | sort -r | head -1)
+                if [ -n "$LATEST_LOG" ] && [ -f "$LATEST_LOG" ]; then
+                    echo "" | tee -a "$SUMMARY_LOG"
+                    echo "==== LIBRARY DEPENDENCY TEST EXECUTION LOG ====" | tee -a "$SUMMARY_LOG"
+                    cat "$LATEST_LOG" | tee -a "$SUMMARY_LOG"
+                    echo "==== END OF LIBRARY DEPENDENCY TEST EXECUTION LOG ====" | tee -a "$SUMMARY_LOG"
+                fi
+            fi
+            
+            # Log the test result
+            LATEST_LOG=$(find "$RESULTS_DIR" -type f -name "lib_dep_test_*.log" | sort -r | head -1)
+            if [ -n "$LATEST_LOG" ]; then
+                echo "   Test log: $(convert_to_relative_path "$LATEST_LOG")" | tee -a "$SUMMARY_LOG"
+            fi
+            echo "" | tee -a "$SUMMARY_LOG"
             
             # Final cleanup
             ensure_server_not_running
             
             # Set overall exit code
-            if [ $MIN_EXIT_CODE -eq 0 ] && [ $MAX_EXIT_CODE -eq 0 ] && [ $JSON_EXIT_CODE -eq 0 ] && [ $ENV_EXIT_CODE -eq 0 ] && [ $SOCKET_EXIT_CODE -eq 0 ] && [ $API_EXIT_CODE -eq 0 ]; then
+            if [ $MIN_EXIT_CODE -eq 0 ] && [ $MAX_EXIT_CODE -eq 0 ] && [ $JSON_EXIT_CODE -eq 0 ] && [ $ENV_EXIT_CODE -eq 0 ] && [ $SOCKET_EXIT_CODE -eq 0 ] && [ $API_EXIT_CODE -eq 0 ] && [ $LIB_DEP_EXIT_CODE -eq 0 ]; then
                 EXIT_CODE=0
             else
                 EXIT_CODE=1
