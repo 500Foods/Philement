@@ -26,6 +26,22 @@ EDITING GUIDELINES (not visible when rendered):
 
 ## 2025-Mar-03
 
+Architecture:
+- Added new subsystems to core architecture:
+  - Terminal: Web-based shell access with xterm.js integration
+  - Databases: Multi-database support with connection pooling
+  - SMTPRelay: Email processing with message transformation
+  - Enhanced Swagger: Interactive API documentation
+
+Configuration:
+- Added new subsystems to configuration:
+  - Terminal: Web-based terminal access with xterm.js integration
+  - Databases: Multi-database support with connection pooling
+  - SMTPRelay: Email processing with queue management
+  - Enhanced Swagger: Added configurable URL prefix option
+- Updated test configurations with new subsystems
+- Added environment variable support for sensitive credentials
+
 Documentation:
 - Renamed AI_ASSISTANT.md to ADVICE.md for improved clarity
 - Added mandatory requirements section at top of document
