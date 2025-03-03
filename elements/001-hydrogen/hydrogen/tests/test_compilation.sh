@@ -6,6 +6,7 @@
 # This test verifies that:
 # 1. The main Hydrogen project compiles cleanly with all build variants
 # 2. The OIDC client examples compile cleanly
+# 3. The release build properly includes the Swagger UI tarball
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -109,6 +110,73 @@ cd "$SCRIPT_DIR"
 
 # Test the main Hydrogen project (release build - preferred for deployment)
 test_compilation "Hydrogen main project (release)" "$HYDROGEN_DIR" "make release"
+
+# Test for tarball presence in release build
+test_tarball_presence() {
+    print_header "Testing Swagger UI tarball presence in release build" | tee -a "$RESULT_LOG"
+    print_info "Checking for tarball delimiter in release executable" | tee -a "$RESULT_LOG"
+    
+    local RELEASE_EXECUTABLE="$HYDROGEN_DIR/hydrogen_release"
+    
+    # Check if the release executable exists
+    if [ ! -f "$RELEASE_EXECUTABLE" ]; then
+        print_result 1 "Release executable not found at $RELEASE_EXECUTABLE" | tee -a "$RESULT_LOG"
+        EXIT_CODE=1
+        return
+    fi
+    
+    # Extract readable strings from the binary file for safer grepping
+    local TEMP_STRINGS=$(mktemp)
+    strings "$RELEASE_EXECUTABLE" > "$TEMP_STRINGS"
+    
+    # Search for the tarball delimiter in the extracted strings
+    if grep -q "<<< HERE BE ME TREASURE >>>" "$TEMP_STRINGS"; then
+        print_result 0 "Tarball delimiter found in release executable" | tee -a "$RESULT_LOG"
+        
+        # We'll use a simpler and more reliable approach to verify the overall structure
+        # Just knowing the delimiter exists in a release build is a strong indicator
+        # that the tarball has been appended, as this is only done in the release process
+        
+        # The first check is usually sufficient, but we'll add an additional check for robustness
+        # Verify that the file size of the release executable is larger than a typical executable
+        # This suggests the tarball is appended
+        
+        local FILE_SIZE=$(stat -c %s "$RELEASE_EXECUTABLE")
+        
+        # Check if swagger tarball exists - we can use it to estimate minimum expected size
+        local SWAGGER_TARBALL="$HYDROGEN_DIR/swagger/swaggerui.tar.br"
+        if [ -f "$SWAGGER_TARBALL" ]; then
+            local TARBALL_SIZE=$(stat -c %s "$SWAGGER_TARBALL")
+            print_info "Found Swagger UI tarball (${TARBALL_SIZE} bytes)" | tee -a "$RESULT_LOG"
+            
+            # The executable should be at least as large as the tarball
+            # This verifies that there's enough space to contain the tarball
+            if [ $FILE_SIZE -ge $TARBALL_SIZE ]; then
+                print_result 0 "Release executable size ($FILE_SIZE bytes) is sufficient to contain the tarball ($TARBALL_SIZE bytes)" | tee -a "$RESULT_LOG"
+                print_info "Release build correctly includes the Swagger UI tarball" | tee -a "$RESULT_LOG"
+            else
+                print_result 1 "Release executable size ($FILE_SIZE bytes) is too small to contain the tarball ($TARBALL_SIZE bytes)" | tee -a "$RESULT_LOG"
+                EXIT_CODE=1
+            fi
+        else
+            # If the tarball isn't found, we can still check if the executable is reasonably sized
+            print_info "Release executable size: $FILE_SIZE bytes" | tee -a "$RESULT_LOG"
+            print_info "Could not verify against tarball size (swagger/swaggerui.tar.br not found)" | tee -a "$RESULT_LOG"
+        fi
+    else
+        print_result 1 "Tarball delimiter not found in release executable" | tee -a "$RESULT_LOG"
+        print_warning "The release build does not appear to include the Swagger UI tarball" | tee -a "$RESULT_LOG"
+        EXIT_CODE=1
+    fi
+    
+    # Clean up
+    rm -f "$TEMP_STRINGS"
+    
+    echo "" | tee -a "$RESULT_LOG"
+}
+
+# After testing the release build compilation, test for tarball presence
+test_tarball_presence
 
 # Test the main Hydrogen project (standard build)
 test_compilation "Hydrogen main project (default)" "$HYDROGEN_DIR" "make"
