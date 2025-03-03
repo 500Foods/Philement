@@ -72,6 +72,16 @@
 #include "../mdns/mdns_server.h"
 #include "../utils/utils.h"
 
+// Define RELEASE if not provided by compiler
+#ifndef RELEASE
+#define RELEASE "unknown"
+#endif
+
+// Define BUILD_TYPE if not provided by compiler
+#ifndef BUILD_TYPE
+#define BUILD_TYPE "unknown"
+#endif
+
 // Forward declarations
 static void log_app_info(void);
 
@@ -305,14 +315,8 @@ static void log_app_info(void) {
     log_this("Initialization", "Server Name: %s", LOG_LEVEL_INFO, app_config->server_name);
     log_this("Initialization", "Executable: %s", LOG_LEVEL_INFO, app_config->executable_path);
     log_this("Initialization", "Version: %s", LOG_LEVEL_INFO, VERSION);
-
-    char* mod_time = get_file_modification_time(app_config->executable_path);
-    if (mod_time) {
-        log_this("Initialization", "Release: %s", LOG_LEVEL_INFO, mod_time);
-        free(mod_time);
-    } else {
-        log_this("Initialization", "Error: Unable to get release timestamp", LOG_LEVEL_ERROR);
-    }
+    log_this("Initialization", "Release: %s", LOG_LEVEL_INFO, RELEASE);
+    log_this("Initialization", "Build Type: %s", LOG_LEVEL_INFO, BUILD_TYPE);
 
     long file_size = get_file_size(app_config->executable_path);
     if (file_size >= 0) {

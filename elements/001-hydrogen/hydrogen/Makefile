@@ -56,12 +56,14 @@ GIT_BUILD = $(shell git log --oneline . | wc -l | tr -d ' ')
 BUILD = $(shell expr $(GIT_BUILD) + 1000)
 
 VERSION = $(MAJOR).$(MINOR).$(PATCH).$(BUILD)
+RELEASE = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
+BUILD_TYPE = Regular
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Compiler selection and optimization flags
 # ──────────────────────────────────────────────────────────────────────────────
 CC = gcc
-CFLAGS = -std=c17 -Wall -Wextra -pedantic -O2 -DVERSION=\"$(VERSION)\"
+CFLAGS = -std=c17 -Wall -Wextra -pedantic -O2 -DVERSION=\"$(VERSION)\" -DRELEASE=\"$(RELEASE)\" -DBUILD_TYPE=\"$(BUILD_TYPE)\"
 
 # ──────────────────────────────────────────────────────────────────────────────
 # External Dependencies
@@ -164,7 +166,8 @@ swagger:
 # ──────────────────────────────────────────────────────────────────────────────
 # Release build: highly optimized with size reduction for deployment
 # ──────────────────────────────────────────────────────────────────────────────
-release: CFLAGS += -s -DNDEBUG -march=x86-64 -flto=auto -fstack-protector -DVERSION=\"$(VERSION)\"
+release: BUILD_TYPE = Release
+release: CFLAGS += -s -DNDEBUG -march=x86-64 -flto=auto -fstack-protector
 release: LDFLAGS += -flto=auto
 release: $(RELEASE_TARGET) swagger
 	@printf "$(CYAN)$(INFO) Applying UPX compression to executable...$(NORMAL)\n"
@@ -182,7 +185,8 @@ release: $(RELEASE_TARGET) swagger
 # ──────────────────────────────────────────────────────────────────────────────
 # Debug build: includes Address Sanitizer and debug symbols
 # ──────────────────────────────────────────────────────────────────────────────
-debug: CFLAGS += -g -fsanitize=address -fno-omit-frame-pointer -DVERSION=\"$(VERSION)\"
+debug: BUILD_TYPE = Debug
+debug: CFLAGS += -g -fsanitize=address -fno-omit-frame-pointer
 debug: LDFLAGS += -fsanitize=address
 debug: $(DEBUG_TARGET)
 	@printf "$(GREEN)$(PASS) $(BOLD)Debug build$(NORMAL) $(GREEN)with AddressSanitizer completed successfully$(NORMAL)\n"
@@ -190,14 +194,16 @@ debug: $(DEBUG_TARGET)
 # ──────────────────────────────────────────────────────────────────────────────
 # Valgrind build: includes debug symbols for memory checking
 # ──────────────────────────────────────────────────────────────────────────────
-valgrind: CFLAGS += -g -DVERSION=\"$(VERSION)\"
+valgrind: BUILD_TYPE = Valgrind-Compatible
+valgrind: CFLAGS += -g
 valgrind: $(VALGRIND_TARGET)
 	@printf "$(GREEN)$(PASS) $(BOLD)Valgrind-compatible build$(NORMAL) $(GREEN)completed successfully$(NORMAL)\n"
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Performance build: maximum runtime performance, hardware-specific optimizations
 # ──────────────────────────────────────────────────────────────────────────────
-perf: CFLAGS += -O3 -march=native -ffast-math -finline-functions -funroll-loops -DNDEBUG -DVERSION=\"$(VERSION)\"
+perf: BUILD_TYPE = Performance
+perf: CFLAGS += -O3 -march=native -ffast-math -finline-functions -funroll-loops -DNDEBUG
 perf: LDFLAGS += -flto=auto
 perf: $(PERF_TARGET)
 	@printf "$(GREEN)$(PASS) $(BOLD)Performance-optimized build$(NORMAL) $(GREEN)completed successfully$(NORMAL)\n"
