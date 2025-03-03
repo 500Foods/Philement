@@ -71,6 +71,7 @@
 #include "../websocket/websocket_server.h"
 #include "../mdns/mdns_server.h"
 #include "../utils/utils.h"
+#include "../utils/utils_dependency.h"
 
 // Define RELEASE if not provided by compiler
 #ifndef RELEASE
@@ -376,6 +377,9 @@ int startup_hydrogen(const char *config_path) {
 
     // Log application information after logging is initialized
     log_app_info();
+    
+    // Check library dependencies
+    check_library_dependencies(app_config);
 
     // Initialize print queue system if enabled
     if (app_config->print_queue.enabled) {
