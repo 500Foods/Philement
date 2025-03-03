@@ -33,6 +33,16 @@
 #include "../config/configuration.h"
 #include "../logging/logging.h"
 
+// Define RELEASE if not provided by compiler
+#ifndef RELEASE
+#define RELEASE "unknown"
+#endif
+
+// Define BUILD_TYPE if not provided by compiler
+#ifndef BUILD_TYPE
+#define BUILD_TYPE "unknown"
+#endif
+
 // Thread synchronization mutex
 static pthread_mutex_t status_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -287,6 +297,8 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
     json_t *version = json_object();
     json_object_set_new(version, "server", json_string(VERSION));
     json_object_set_new(version, "api", json_string("1.0"));
+    json_object_set_new(version, "release", json_string(RELEASE));
+    json_object_set_new(version, "build_type", json_string(BUILD_TYPE));
     json_object_set_new(root, "version", version);
 
     // System Information

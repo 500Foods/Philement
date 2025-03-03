@@ -26,6 +26,22 @@ EDITING GUIDELINES (not visible when rendered):
 
 ## 2025-Mar-02
 
+Build System:
+
+- Enhanced build versioning system:
+  - Added compile-time RELEASE timestamp using ISO8601 format:
+    - Implemented in Makefile using `date -u +'%Y-%m-%dT%H:%M:%SZ'`
+    - Passed to compiler via `-DRELEASE` macro
+    - Replaced runtime timestamp detection with compile-time value
+    - Added fallback definitions for compatibility
+  - Added BUILD_TYPE identifier for each build variant:
+    - Assigned specific values for each variant (Regular, Debug, Valgrind-Compatible, Performance, Release)
+    - Passed to compiler via `-DBUILD_TYPE` macro 
+    - Added logging of build type at startup
+    - Added build_type field to system status JSON response
+  - Maintained consistent compiler flags structure to prevent redefinition warnings
+  - Integrated with existing version information in logs and API responses
+
 API Documentation:
 
 - Added OpenAPI 3.1.0 integration for REST API documentation:
