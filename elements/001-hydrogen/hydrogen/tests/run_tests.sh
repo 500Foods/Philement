@@ -98,6 +98,7 @@ chmod +x $SCRIPT_DIR/test_json_error_handling.sh
 chmod +x $SCRIPT_DIR/test_socket_rebind.sh
 chmod +x $SCRIPT_DIR/test_env_variables.sh
 chmod +x $SCRIPT_DIR/test_library_dependencies.sh
+chmod +x $SCRIPT_DIR/test_dynamic_loading.sh
 
 # Default output directories
 RESULTS_DIR="$SCRIPT_DIR/results"
@@ -312,6 +313,62 @@ run_json_error_handling_test() {
         fi
     fi
     
+    if [ -n "$LATEST_LOG" ]; then
+        echo "   Test log: $(convert_to_relative_path "$LATEST_LOG")" | tee -a "$SUMMARY_LOG"
+    fi
+    echo "" | tee -a "$SUMMARY_LOG"
+    return $TEST_EXIT_CODE
+}
+
+# Function to run dynamic library loading tests
+run_dynamic_loading_test() {
+    print_header "Dynamic Library Loading Test" | tee -a "$SUMMARY_LOG"
+    
+    # Start the test
+    print_command "$SCRIPT_DIR/test_dynamic_loading.sh" | tee -a "$SUMMARY_LOG"
+    $SCRIPT_DIR/test_dynamic_loading.sh
+    TEST_EXIT_CODE=$?
+    
+    # Count dynamic loading subtests
+    if [ -f "$RESULTS_DIR/dynamic_load_test_${TIMESTAMP}.log" ]; then
+        DYNAMIC_LOAD_SUBTESTS=$(grep -c "Test [0-9]: " "$RESULTS_DIR/dynamic_load_test_${TIMESTAMP}.log")
+    elif [ -d "$RESULTS_DIR" ]; then
+        # Try to find the most recent dynamic load test log
+        LATEST_LOG=$(find "$RESULTS_DIR" -name "dynamic_load_test_*.log" | sort -r | head -1)
+        if [ -n "$LATEST_LOG" ]; then
+            DYNAMIC_LOAD_SUBTESTS=$(grep -c "Test [0-9]: " "$LATEST_LOG")
+        else
+            DYNAMIC_LOAD_SUBTESTS=5  # Default based on the 5 tests in our test script
+        fi
+    else
+        DYNAMIC_LOAD_SUBTESTS=5  # Default if no log found
+    fi
+    
+    # Report result
+    if [ $TEST_EXIT_CODE -eq 0 ]; then
+        print_result 0 "Dynamic library loading tests completed successfully" | tee -a "$SUMMARY_LOG"
+        ALL_TEST_NAMES+=("Dynamic Library Loading")
+        ALL_TEST_RESULTS+=(0)
+        ALL_TEST_DETAILS+=("Dynamic library loading system works correctly")
+        ALL_TEST_SUBTESTS+=($DYNAMIC_LOAD_SUBTESTS)
+    else
+        print_result 1 "Dynamic library loading tests failed with exit code $TEST_EXIT_CODE" | tee -a "$SUMMARY_LOG"
+        ALL_TEST_NAMES+=("Dynamic Library Loading")
+        ALL_TEST_RESULTS+=(1)
+        ALL_TEST_DETAILS+=("Dynamic library loading system has issues")
+        
+        # Look for the log file
+        LATEST_LOG=$(find "$RESULTS_DIR" -type f -name "dynamic_load_test_*.log" | sort -r | head -1)
+        if [ -n "$LATEST_LOG" ] && [ -f "$LATEST_LOG" ]; then
+            echo "" | tee -a "$SUMMARY_LOG"
+            echo "==== DYNAMIC LIBRARY LOADING TEST EXECUTION LOG ====" | tee -a "$SUMMARY_LOG"
+            cat "$LATEST_LOG" | tee -a "$SUMMARY_LOG"
+            echo "==== END OF DYNAMIC LIBRARY LOADING TEST EXECUTION LOG ====" | tee -a "$SUMMARY_LOG"
+        fi
+    fi
+    
+    # Log the test result
+    LATEST_LOG=$(find "$RESULTS_DIR" -type f -name "dynamic_load_test_*.log" | sort -r | head -1)
     if [ -n "$LATEST_LOG" ]; then
         echo "   Test log: $(convert_to_relative_path "$LATEST_LOG")" | tee -a "$SUMMARY_LOG"
     fi
@@ -538,11 +595,16 @@ else
             fi
             echo "" | tee -a "$SUMMARY_LOG"
             
+            # Run dynamic library loading tests
+            print_header "DYNAMIC LIBRARY LOADING TESTS" | tee -a "$SUMMARY_LOG"
+            run_dynamic_loading_test
+            DYNAMIC_LOAD_EXIT_CODE=$?
+            
             # Final cleanup
             ensure_server_not_running
             
             # Set overall exit code
-            if [ $MIN_EXIT_CODE -eq 0 ] && [ $MAX_EXIT_CODE -eq 0 ] && [ $JSON_EXIT_CODE -eq 0 ] && [ $ENV_EXIT_CODE -eq 0 ] && [ $SOCKET_EXIT_CODE -eq 0 ] && [ $API_EXIT_CODE -eq 0 ] && [ $LIB_DEP_EXIT_CODE -eq 0 ]; then
+            if [ $MIN_EXIT_CODE -eq 0 ] && [ $MAX_EXIT_CODE -eq 0 ] && [ $JSON_EXIT_CODE -eq 0 ] && [ $ENV_EXIT_CODE -eq 0 ] && [ $SOCKET_EXIT_CODE -eq 0 ] && [ $API_EXIT_CODE -eq 0 ] && [ $LIB_DEP_EXIT_CODE -eq 0 ] && [ $DYNAMIC_LOAD_EXIT_CODE -eq 0 ]; then
                 EXIT_CODE=0
             else
                 EXIT_CODE=1

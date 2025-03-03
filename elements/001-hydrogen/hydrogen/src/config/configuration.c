@@ -278,27 +278,20 @@ static char* get_config_string(json_t* value, const char* default_value) {
             return default_value ? strdup(default_value) : NULL;
         }
         
-        // Not an environment variable, just use the string value
-        log_this("Configuration", "Using direct string value: %s", LOG_LEVEL_DEBUG, str_value);
+        // Not an environment variable, just use the string value without logging
         return strdup(str_value);
     }
     
     // Handle non-string JSON values by converting to string
     if (json_is_boolean(value)) {
-        const char* bool_str = json_is_true(value) ? "true" : "false";
-        log_this("Configuration", "Converting JSON boolean to string: %s", LOG_LEVEL_DEBUG, bool_str);
-        return strdup(bool_str);
+        return strdup(json_is_true(value) ? "true" : "false");
     } else if (json_is_integer(value)) {
         char buffer[64];
-        json_int_t int_val = json_integer_value(value);
-        snprintf(buffer, sizeof(buffer), "%lld", int_val);
-        log_this("Configuration", "Converting JSON integer to string: %s", LOG_LEVEL_DEBUG, buffer);
+        snprintf(buffer, sizeof(buffer), "%lld", json_integer_value(value));
         return strdup(buffer);
     } else if (json_is_real(value)) {
         char buffer[64];
-        double real_val = json_real_value(value);
-        snprintf(buffer, sizeof(buffer), "%f", real_val);
-        log_this("Configuration", "Converting JSON real to string: %s", LOG_LEVEL_DEBUG, buffer);
+        snprintf(buffer, sizeof(buffer), "%f", json_real_value(value));
         return strdup(buffer);
     } else {
         // For other types or null, use default
@@ -398,17 +391,11 @@ static int get_config_bool(json_t* value, int default_value) {
         
     // Direct JSON value handling
     if (json_is_boolean(value)) {
-        int result = json_boolean_value(value);
-        log_this("Configuration", "Using direct JSON boolean value: %s", LOG_LEVEL_DEBUG, result ? "true" : "false");
-        return result;
+        return json_boolean_value(value);
     } else if (json_is_integer(value)) {
-        int result = json_integer_value(value) != 0;
-        log_this("Configuration", "Converting JSON integer to boolean: %s", LOG_LEVEL_DEBUG, result ? "true" : "false");
-        return result;
+        return json_integer_value(value) != 0;
     } else if (json_is_real(value)) {
-        int result = json_real_value(value) != 0.0;
-        log_this("Configuration", "Converting JSON real to boolean: %s", LOG_LEVEL_DEBUG, result ? "true" : "false");
-        return result;
+        return json_real_value(value) != 0.0;
     }
     
     log_this("Configuration", "JSON value is not convertible to boolean, using default: %s", 
@@ -503,17 +490,11 @@ static int get_config_int(json_t* value, int default_value) {
         
     // Direct JSON value handling
     if (json_is_integer(value)) {
-        int result = json_integer_value(value);
-        log_this("Configuration", "Using direct JSON integer value: %d", LOG_LEVEL_DEBUG, result);
-        return result;
+        return json_integer_value(value);
     } else if (json_is_real(value)) {
-        int result = (int)json_real_value(value);
-        log_this("Configuration", "Converting JSON real to integer: %d", LOG_LEVEL_DEBUG, result);
-        return result;
+        return (int)json_real_value(value);
     } else if (json_is_boolean(value)) {
-        int result = json_is_true(value) ? 1 : 0;
-        log_this("Configuration", "Converting JSON boolean to integer: %d", LOG_LEVEL_DEBUG, result);
-        return result;
+        return json_is_true(value) ? 1 : 0;
     }
     
     log_this("Configuration", "JSON value is not convertible to integer, using default: %d", 
@@ -618,25 +599,19 @@ static size_t get_config_size(json_t* value, size_t default_value) {
     if (json_is_integer(value)) {
         json_int_t val = json_integer_value(value);
         if (val >= 0) {
-            size_t result = (size_t)val;
-            log_this("Configuration", "Using direct JSON integer value as size_t: %zu", LOG_LEVEL_DEBUG, result);
-            return result;
-        } else {
-            log_this("Configuration", "JSON integer value is negative, using default size: %zu", 
-                     LOG_LEVEL_DEBUG, default_value);
-            return default_value;
+            return (size_t)val;
         }
+        log_this("Configuration", "JSON integer value is negative, using default size: %zu", 
+                 LOG_LEVEL_DEBUG, default_value);
+        return default_value;
     } else if (json_is_real(value)) {
         double val = json_real_value(value);
         if (val >= 0) {
-            size_t result = (size_t)val;
-            log_this("Configuration", "Converting JSON real to size_t: %zu", LOG_LEVEL_DEBUG, result);
-            return result;
-        } else {
-            log_this("Configuration", "JSON real value is negative, using default size: %zu", 
-                     LOG_LEVEL_DEBUG, default_value);
-            return default_value;
+            return (size_t)val;
         }
+        log_this("Configuration", "JSON real value is negative, using default size: %zu", 
+                 LOG_LEVEL_DEBUG, default_value);
+        return default_value;
     }
     
     log_this("Configuration", "JSON value is not convertible to size_t, using default: %zu", 
@@ -731,17 +706,11 @@ static double get_config_double(json_t* value, double default_value) {
         
     // Direct JSON value handling
     if (json_is_real(value)) {
-        double result = json_real_value(value);
-        log_this("Configuration", "Using direct JSON real value: %f", LOG_LEVEL_DEBUG, result);
-        return result;
+        return json_real_value(value);
     } else if (json_is_integer(value)) {
-        double result = (double)json_integer_value(value);
-        log_this("Configuration", "Converting JSON integer to double: %f", LOG_LEVEL_DEBUG, result);
-        return result;
+        return (double)json_integer_value(value);
     } else if (json_is_boolean(value)) {
-        double result = json_is_true(value) ? 1.0 : 0.0;
-        log_this("Configuration", "Converting JSON boolean to double: %f", LOG_LEVEL_DEBUG, result);
-        return result;
+        return json_is_true(value) ? 1.0 : 0.0;
     }
     
     log_this("Configuration", "JSON value is not convertible to double, using default: %f", 
