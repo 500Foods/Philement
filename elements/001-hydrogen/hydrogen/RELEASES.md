@@ -27,6 +27,7 @@ EDITING GUIDELINES (not visible when rendered):
 ## 2025-Mar-03
 
 Web Server:
+
 - Fixed Swagger UI access with URLs lacking trailing slash:
   - Implemented HTTP 301 redirect from /swagger to /swagger/
   - Added proper handling in handle_swagger_request function
@@ -46,6 +47,7 @@ Web Server:
   - Ensured compatibility with existing API endpoints
 
 Testing:
+
 - Fixed test results directory path in test_system_endpoints.sh:
   - Updated script to use tests/results/ directory for output files
   - Standardized results path to match other test scripts
@@ -73,8 +75,18 @@ Testing:
   - Changed to hydrogen_test_swagger_test_1.json and hydrogen_test_swagger_test_2.json
   - Updated tests/README.md with the new naming convention
   - Updated test_swagger_ui.sh to use the new configuration files
+- Refactored test framework for improved modularity:
+  - Removed unused support_test_runner.sh script
+  - Enhanced support_utils.sh with common test functions
+  - Added server management functions for test scripts
+  - Created standardized test environment setup functions
+  - Added HTTP request validation utilities
+  - Created comprehensive test script template
+  - Updated test documentation with standardized approach
+  - Added step-by-step instructions for creating new tests
 
 Service Discovery:
+
 - Added mDNSClient subsystem:
   - Service discovery and monitoring capabilities
   - Health checking for discovered services
@@ -84,6 +96,7 @@ Service Discovery:
   - Configurable monitoring intervals
 
 Web Server:
+
 - Added runtime Swagger UI integration:
   - Automatic payload detection from executable using magic marker
   - In-memory file serving with Brotli compression support
@@ -99,6 +112,7 @@ Web Server:
     - Automatic API server URL updates based on request origin
 
 Architecture:
+
 - Added new subsystems to core architecture:
   - Terminal: Web-based shell access with xterm.js integration
   - Databases: Multi-database support with connection pooling
@@ -106,6 +120,7 @@ Architecture:
   - Enhanced Swagger: Interactive API documentation
 
 Configuration:
+
 - Added new subsystems to configuration:
   - Terminal: Web-based terminal access with xterm.js integration
   - Databases: Multi-database support with connection pooling
@@ -115,6 +130,7 @@ Configuration:
 - Added environment variable support for sensitive credentials
 
 Documentation:
+
 - Renamed AI_ASSISTANT.md to ADVICE.md for improved clarity
 - Added mandatory requirements section at top of document
 - Added task completion checklist and quick reference guide
@@ -128,6 +144,7 @@ Documentation:
 - Updated all documentation references to reflect current filenames
 
 Library Management:
+
 - Added dynamic library loading system:
   - Created extensible API for runtime library management
   - Implemented conditional loading of optional libraries only when needed
@@ -143,6 +160,7 @@ Library Management:
 ## 2025-Mar-02
 
 API Documentation:
+
 - Added OpenAPI 3.1.0 integration for REST API documentation:
   - Created swagger directory at project root with generation script
   - Implemented annotation-based documentation using //@ swagger: prefix
@@ -170,6 +188,7 @@ API Documentation:
   - Enhanced Swagger README with comprehensive implementation details
 
 Build System:
+
 - Added tarball identifier to release executable:
   - Appended "<<< HERE BE ME TREASURE >>>" magic string before tarball size value
   - Enables reliable detection of appended tarball in executable
@@ -182,13 +201,14 @@ Build System:
     - Added fallback definitions for compatibility
   - Added BUILD_TYPE identifier for each build variant:
     - Assigned specific values for each variant (Regular, Debug, Valgrind-Compatible, Performance, Release)
-    - Passed to compiler via `-DBUILD_TYPE` macro 
+    - Passed to compiler via `-DBUILD_TYPE` macro
     - Added logging of build type at startup
     - Added build_type field to system status JSON response
   - Maintained consistent compiler flags structure to prevent redefinition warnings
   - Integrated with existing version information in logs and API responses
 
 Configuration:
+
 - Added environment variable substitution in configuration values:
   - Implemented ${env.VARIABLE} format for referencing environment variables
   - Added automatic type conversion based on environment variable content
@@ -201,6 +221,7 @@ Configuration:
 - Removed routine JSON processing log messages from configuration subsystem
 
 Initialization:
+
 - Added library dependency checking system:
   - Created utils_dependency utility module for version checking
   - Implemented runtime detection of required libraries and versions
@@ -212,6 +233,7 @@ Initialization:
   - Fixed dependency tracking logic to accurately count missing dependencies
 
 Testing:
+
 - Enhanced test_compilation.sh with tarball verification:
   - Added test for Swagger UI tarball presence in release builds
   - Implemented detection of "<<< HERE BE ME TREASURE >>>" delimiter
@@ -243,6 +265,7 @@ Testing:
 ## 2025-Mar-01
 
 API Architecture:
+
 - Refactored OIDC endpoints into separate directories:
   - Separated combined OIDC endpoint implementation into individual endpoint handlers
   - Created dedicated directories for each OIDC endpoint (discovery, authorization, token, etc.)
@@ -251,6 +274,7 @@ API Architecture:
   - Maintained utility functions in central oidc_service for shared functionality
 
 Web Server:
+
 - Added Brotli compression:
   - Created compression utility module with client detection
   - Implemented pre-compressed .br file serving for static content
@@ -271,6 +295,7 @@ Web Server:
   - Improved error handling with proper timeout-based testing
 
 Testing:
+
 - Enhanced test system with socket rebinding verification:
   - Integrated socket rebinding test into main test suite
   - Added proper signal handling for test script interruption
@@ -282,6 +307,7 @@ Testing:
   - Enhanced resource cleanup between sequential tests
 
 Build System:
+
 - Added all-variants build target:
   - Created single command to build all configurations
   - Added clean step before building for fresh environment
@@ -298,6 +324,7 @@ Build System:
   - Updated test framework to verify performance build
 
 Documentation:
+
 - Enhanced project documentation for improved efficiency:
   - Created README.md for src/api/ directory with implementation details
   - Updated AI_ASSISTANT.md with expanded project information
@@ -314,6 +341,7 @@ Documentation:
 ## 2025-Feb-28
 
 Build System:
+
 - Added optimized release build variant:
   - Added -O2 -s flags for performance optimization and symbol removal
   - Added -DNDEBUG flag to disable assertions in production
@@ -339,6 +367,7 @@ Build System:
   - Maintained backward compatibility with default version
 
 Testing:
+
 - Enhanced test framework with release build support:
   - Modified test scripts to prioritize release build for all tests
   - Added release build as the first tested variant in compilation tests
@@ -355,6 +384,7 @@ Testing:
   - Maintains strict code quality standards across all build types
 
 Code Quality:
+
 - Improved string handling in WebSocket and utility modules:
   - Replaced unsafe strncpy usages with safer alternatives
   - Implemented explicit string truncation with proper null termination
@@ -369,6 +399,7 @@ Code Quality:
   - Enhanced test environment cleanliness
 
 Configuration:
+
 - Improved JSON error handling:
   - Added detailed JSON parsing error messages with line and column information
   - Added user-friendly error output to stderr for configuration syntax issues
@@ -376,6 +407,7 @@ Configuration:
   - Enhanced error diagnostics to simplify troubleshooting
 
 API Architecture:
+
 - Restructured API modules with endpoint-specific directories:
   - Reorganized system API endpoints into dedicated subdirectories
   - Created consistent structure for all future endpoint implementations
@@ -392,6 +424,7 @@ API Architecture:
   - Created example endpoint for future development
 
 Testing:
+
 - Fixed system endpoint tests:
   - Improved form data handling in system/test endpoint
   - Fixed field extraction from form-encoded POST data
@@ -417,6 +450,7 @@ Testing:
 ## 2025-Feb-27
 
 Code Quality and Compilation:
+
 - Fixed compilation issues across OIDC components:
   - Fixed function signature mismatches in oidc_tokens.c:
     - Updated token generation functions to use OIDCTokenClaims
@@ -500,6 +534,7 @@ Code Quality and Compilation:
 ## 2025-Feb-26
 
 Testing System:
+
 - Test cleanup automation:
   - Added automatic cleanup of old test results and diagnostics
   - Modified `run_tests.sh` to remove previous test data before each run
@@ -507,6 +542,7 @@ Testing System:
   - Improved test execution efficiency
 
 Shutdown Architecture:
+
 - WebSocket Server:
   - Enhanced connection handling during shutdown
   - Added thread management with timeout-based cancellation
@@ -545,6 +581,7 @@ Shutdown Architecture:
 ## 2025-Feb-25
 
 Testing System:
+
 - Testing framework:
   - Configuration-driven test system with minimal and maximal configurations
   - Test scripts for startup/shutdown validation
@@ -565,6 +602,7 @@ Testing System:
 ## 2025-Feb-24
 
 WebSocket Server:
+
 - Shutdown implementation:
   - Fixed race conditions between thread termination and context destruction
   - Two-phase pointer handling to prevent use-after-free
@@ -573,6 +611,7 @@ WebSocket Server:
   - Error handling with logging
 
 mDNS Server:
+
 - Shutdown sequence:
   - Socket closure for all network interfaces
   - Thread coordination and exit verification
@@ -581,6 +620,7 @@ mDNS Server:
   - Fixed memory and socket leaks
 
 Documentation:
+
 - Added Shutdown Architecture documentation
 - Created mDNS Server implementation documentation
 - Added WebSocket server shutdown documentation
@@ -589,6 +629,7 @@ Documentation:
 ## 2025-Feb-23
 
 Core System:
+
 - Refactored hydrogen module:
   - Reorganized header includes
   - Removed unused files
@@ -597,22 +638,26 @@ Core System:
 ## 2025-Feb-22
 
 Server Management:
+
 - Server naming consistency:
   - Renamed mDNS references to mDNS Server
   - Updated documentation and configuration
 
 WebSocket Server:
+
 - Refactored initialization
 - Updated configuration handling
 - Removed deprecated example status code
 
 Logging System:
+
 - Added log level constants
 - Standardized logging calls
 
 ## 2025-Feb-21
 
 Queue System:
+
 - Queue system readiness tracking
 - Unified logging function
 - Timing functions for server lifecycle
@@ -621,6 +666,7 @@ Queue System:
 - Standardized percentage formatting
 
 System Information:
+
 - Added metrics to /api/system/info and WebSocket status:
   - Network interface details with IP addresses and traffic
   - Filesystem information with space usage
@@ -631,6 +677,7 @@ System Information:
 ## 2025-Feb-20
 
 WebSocket Server:
+
 - Split implementation into modules:
   - Connection lifecycle
   - Authentication
@@ -647,6 +694,7 @@ WebSocket Server:
 ## 2025-Feb-19
 
 System Status:
+
 - Added server timing to /api/system/info endpoint:
   - `server_started` field with ISO-formatted UTC start time
   - `server_runtime` field with uptime in seconds
@@ -654,6 +702,7 @@ System Status:
 - Updated API documentation with examples
 
 Documentation:
+
 - Added link to Print Queue Management documentation
 - Moved release notes to dedicated file
 - Updated System Dependencies section
@@ -662,6 +711,7 @@ Documentation:
 ## 2025-Feb-18
 
 Network Infrastructure:
+
 - IPv6 support for web and websocket servers:
   - Added EnableIPv6 configuration flags
   - Implemented dual-stack support in web server
@@ -671,6 +721,7 @@ Network Infrastructure:
 ## 2025-Feb-17
 
 Documentation and System Metrics:
+
 - Added configuration and service documentation
 - Updated thread and process memory reporting
 - Added Bash script example
@@ -679,6 +730,7 @@ Documentation and System Metrics:
 ## 2025-Feb-16
 
 Code Quality and Configuration:
+
 - Improved code comments
 - Added IPv6Enable flag to JSON configuration for mDNS
 - Standardized logging output format
@@ -686,6 +738,7 @@ Code Quality and Configuration:
 ## 2025-Feb-15
 
 Documentation and Configuration:
+
 - Added project documentation and status API endpoint example
 - Synchronized API endpoint with WebSockets output
 - Added server independence configuration:
@@ -697,6 +750,7 @@ Documentation and Configuration:
 ## 2025-Feb-14
 
 API Development:
+
 - Basic REST API implementation:
   - Added SystemService/Info Endpoint
   - Added logging API calls
@@ -704,12 +758,14 @@ API Development:
 ## 2025-Feb-13
 
 Code Maintenance:
+
 - Updated code and comments in hydrogen.c
 - Updated code and comments in Makefile
 
 ## 2025-Feb-12
 
 Code Maintenance:
+
 - Reduced logging detail, particularly for web sockets (lws)
 - Improved shutdown process for web sockets
 - Fixed file size and timestamp identification errors
@@ -718,6 +774,7 @@ Code Maintenance:
 ## 2025-Feb-08
 
 Development Environment:
+
 - Imported project into Visual Studio Code
 
 </details>
@@ -728,6 +785,7 @@ Development Environment:
 ## 2024-Jul-18
 
 WebSocket Server:
+
 - Uses Authorization: Key abc in header
 - Uses Protocol: hydrogen-protocol
 - Implemented with libwebsockets
@@ -735,6 +793,7 @@ WebSocket Server:
 ## 2024-Jul-15
 
 System Improvements:
+
 - mDNS code cleanup and updates:
   - Fixed log_this reliability issues
   - Fixed app_config memory issues
@@ -744,12 +803,14 @@ System Improvements:
 ## 2024-Jul-11
 
 Network Infrastructure:
+
 - mDNS and WebSockets groundwork:
   - Integrated code from nitrogen/nitro prototype
 
 ## 2024-Jul-08
 
 Print Service:
+
 - Implemented HTTP service for OrcaSlicer print requests:
   - Print job handling with /tmp storage using GUID filenames
   - JSON generation with filename mapping and beryllium-extracted data
