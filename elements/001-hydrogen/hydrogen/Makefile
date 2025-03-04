@@ -44,7 +44,7 @@ NORMAL := \033[0m
 PASS := ✅
 FAIL := ❌
 WARN := ⚠️
-INFO := ℹ️
+INFO := 🛈
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Version information
@@ -139,11 +139,11 @@ default: $(TARGET)
 all: clean default debug valgrind release perf
 	@printf "\n$(BLUE)────────────────────────────────────────────────────────────────$(NORMAL)\n"
 	@printf "$(GREEN)$(PASS) $(BOLD)All variants built successfully:$(NORMAL)\n"
-	@printf "  $(CYAN)$(INFO) Default:     $(BOLD)$(TARGET)$(NORMAL)\n"
-	@printf "  $(CYAN)$(INFO) Debug:       $(BOLD)$(DEBUG_TARGET)$(NORMAL)\n"
-	@printf "  $(CYAN)$(INFO) Valgrind:    $(BOLD)$(VALGRIND_TARGET)$(NORMAL)\n"
-	@printf "  $(CYAN)$(INFO) Release:     $(BOLD)$(RELEASE_TARGET)$(NORMAL)\n"
-	@printf "  $(CYAN)$(INFO) Performance: $(BOLD)$(PERF_TARGET)$(NORMAL)\n"
+	@printf "  $(CYAN)$(INFO)  Default:     $(BOLD)$(TARGET)$(NORMAL)\n"
+	@printf "  $(CYAN)$(INFO)  Debug:       $(BOLD)$(DEBUG_TARGET)$(NORMAL)\n"
+	@printf "  $(CYAN)$(INFO)  Valgrind:    $(BOLD)$(VALGRIND_TARGET)$(NORMAL)\n"
+	@printf "  $(CYAN)$(INFO)  Release:     $(BOLD)$(RELEASE_TARGET)$(NORMAL)\n"
+	@printf "  $(CYAN)$(INFO)  Performance: $(BOLD)$(PERF_TARGET)$(NORMAL)\n"
 	@printf "$(BLUE)────────────────────────────────────────────────────────────────$(NORMAL)\n"
 
 # Legacy target for backward compatibility
@@ -156,9 +156,9 @@ swagger:
 	@printf "$(BLUE)────────────────────────────────────────────────────────────────$(NORMAL)\n"
 	@printf "$(BLUE)$(BOLD) Generating Swagger Documentation$(NORMAL)\n"
 	@printf "$(BLUE)────────────────────────────────────────────────────────────────$(NORMAL)\n"
-	@printf "$(CYAN)$(INFO) Generating OpenAPI specification...$(NORMAL)\n"
+	@printf "$(CYAN)$(INFO)  Generating OpenAPI specification...$(NORMAL)\n"
 	@cd swagger && ./swagger-generate.sh
-	@printf "$(CYAN)$(INFO) Packaging SwaggerUI interface...$(NORMAL)\n"
+	@printf "$(CYAN)$(INFO)  Packaging SwaggerUI interface...$(NORMAL)\n"
 	@cd swagger && ./swaggerui-generate.sh
 	@printf "$(GREEN)$(PASS) $(BOLD)Swagger documentation generated successfully!$(NORMAL)\n"
 	@printf "$(BLUE)────────────────────────────────────────────────────────────────$(NORMAL)\n"
@@ -170,9 +170,9 @@ release: BUILD_TYPE = Release
 release: CFLAGS += -s -DNDEBUG -march=x86-64 -flto=auto -fstack-protector -Werror -fno-strict-aliasing
 release: LDFLAGS += -flto=auto -fno-strict-aliasing
 release: $(RELEASE_TARGET) swagger
-	@printf "$(CYAN)$(INFO) Applying UPX compression to executable...$(NORMAL)\n"
+	@printf "$(CYAN)$(INFO)  Applying UPX compression to executable...$(NORMAL)\n"
 	@which upx > /dev/null && upx --best $(RELEASE_TARGET) || printf "$(YELLOW)$(WARN) UPX not found, skipping compression$(NORMAL)\n"
-	@printf "$(CYAN)$(INFO) Appending Swagger UI to release executable...$(NORMAL)\n"
+	@printf "$(CYAN)$(INFO)  Appending Swagger UI to release executable...$(NORMAL)\n"
 	@TAR_SIZE=$$(stat -c %s "swagger/swaggerui.tar.br"); \
 	cat $(RELEASE_TARGET) "swagger/swaggerui.tar.br" > $(RELEASE_TARGET).tmp; \
 	printf "<<< HERE BE ME TREASURE >>>" >> $(RELEASE_TARGET).tmp; \
@@ -213,23 +213,23 @@ perf: $(PERF_TARGET)
 # Linking rules for each build configuration
 # ──────────────────────────────────────────────────────────────────────────────
 $(TARGET): $(OBJS)
-	@printf "$(CYAN)$(INFO) Linking standard build...$(NORMAL)\n"
+	@printf "$(CYAN)$(INFO)  Linking standard build...$(NORMAL)\n"
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 $(DEBUG_TARGET): $(DEBUG_OBJS)
-	@printf "$(CYAN)$(INFO) Linking debug build...$(NORMAL)\n"
+	@printf "$(CYAN)$(INFO)  Linking debug build...$(NORMAL)\n"
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 $(VALGRIND_TARGET): $(VALGRIND_OBJS)
-	@printf "$(CYAN)$(INFO) Linking valgrind-compatible build...$(NORMAL)\n"
+	@printf "$(CYAN)$(INFO)  Linking valgrind-compatible build...$(NORMAL)\n"
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 $(RELEASE_TARGET): $(RELEASE_OBJS)
-	@printf "$(CYAN)$(INFO) Linking release build...$(NORMAL)\n"
+	@printf "$(CYAN)$(INFO)  Linking release build...$(NORMAL)\n"
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 $(PERF_TARGET): $(PERF_OBJS)
-	@printf "$(CYAN)$(INFO) Linking performance-optimized build...$(NORMAL)\n"
+	@printf "$(CYAN)$(INFO)  Linking performance-optimized build...$(NORMAL)\n"
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 
@@ -266,27 +266,27 @@ $(PERF_DIR)/%.o: $(SRC_DIR)/%.c | $(PERF_DIR)
 # Create build directories if they don't exist
 # ──────────────────────────────────────────────────────────────────────────────
 $(BUILD_DIR):
-	@printf "$(CYAN)$(INFO) Creating build directories...$(NORMAL)\n"
+	@printf "$(CYAN)$(INFO)  Creating build directories...$(NORMAL)\n"
 	@mkdir -p $@
 	@mkdir -p $(BUILD_DIR)/api/system
 
 $(DEBUG_DIR):
-	@printf "$(CYAN)$(INFO) Creating debug build directories...$(NORMAL)\n"
+	@printf "$(CYAN)$(INFO)  Creating debug build directories...$(NORMAL)\n"
 	@mkdir -p $@
 	@mkdir -p $(DEBUG_DIR)/api/system
 
 $(VALGRIND_DIR):
-	@printf "$(CYAN)$(INFO) Creating valgrind build directories...$(NORMAL)\n"
+	@printf "$(CYAN)$(INFO)  Creating valgrind build directories...$(NORMAL)\n"
 	@mkdir -p $@
 	@mkdir -p $(VALGRIND_DIR)/api/system
 
 $(RELEASE_DIR):
-	@printf "$(CYAN)$(INFO) Creating release build directories...$(NORMAL)\n"
+	@printf "$(CYAN)$(INFO)  Creating release build directories...$(NORMAL)\n"
 	@mkdir -p $@
 	@mkdir -p $(RELEASE_DIR)/api/system
 
 $(PERF_DIR):
-	@printf "$(CYAN)$(INFO) Creating performance build directories...$(NORMAL)\n"
+	@printf "$(CYAN)$(INFO)  Creating performance build directories...$(NORMAL)\n"
 	@mkdir -p $@
 	@mkdir -p $(PERF_DIR)/api/system
 
@@ -299,6 +299,6 @@ $(shell mkdir -p $(sort $(dir $(OBJS)) $(dir $(DEBUG_OBJS)) $(dir $(VALGRIND_OBJ
 # Clean all build artifacts
 # ──────────────────────────────────────────────────────────────────────────────
 clean:
-	@printf "$(CYAN)$(INFO) Cleaning all build artifacts...$(NORMAL)\n"
+	@printf "$(CYAN)$(INFO)  Cleaning all build artifacts...$(NORMAL)\n"
 	@rm -rf $(BUILD_DIR) $(DEBUG_DIR) $(VALGRIND_DIR) $(RELEASE_DIR) $(PERF_DIR) $(TARGET) $(DEBUG_TARGET) $(VALGRIND_TARGET) $(RELEASE_TARGET) $(PERF_TARGET)
 	@printf "$(GREEN)$(PASS) Clean completed successfully$(NORMAL)\n"
