@@ -14,7 +14,7 @@ HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 OIDC_EXAMPLES_DIR="$HYDROGEN_DIR/oidc-client-examples/C"
 
 # Include the common test utilities
-source "$SCRIPT_DIR/test_utils.sh"
+source "$SCRIPT_DIR/support_utils.sh"
 
 # Output directories
 RESULTS_DIR="$SCRIPT_DIR/results"

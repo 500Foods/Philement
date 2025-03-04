@@ -2,14 +2,14 @@
 
 This directory contains configuration files and test scripts for validating the Hydrogen 3D printer control server.
 
-## Test Utilities
+## Support Utilities
 
-### test_utils.sh
+### support_utils.sh
 
 A shared library of utilities that standardizes the formatting and output of all test scripts:
 
 ```bash
-source test_utils.sh
+source support_utils.sh
 ```
 
 Key features:
@@ -21,7 +21,74 @@ Key features:
 
 This library is sourced by all test scripts to ensure consistent visual presentation and reporting.
 
+### support_cleanup.sh
+
+Provides functions for environment cleanup and preparation before running tests:
+
+- Cleans up temporary files and directories
+- Ensures no previous test instances are running
+- Prepares the test environment for consistent execution
+
+### support_test_runner.sh
+
+Contains the core test execution functions used by the main test orchestrator:
+
+- Provides functions for running different types of tests
+- Handles test result tracking and reporting
+- Standardizes test execution across different test types
+
+### support_analyze_stuck_threads.sh
+
+A diagnostic tool that analyzes thread states to help diagnose shutdown stalls:
+
+```bash
+./support_analyze_stuck_threads.sh <hydrogen_pid>
+```
+
+Key features:
+
+- Examines all threads in a running process
+- Identifies problematic thread states (especially uninterruptible sleep)
+- Captures kernel stacks, wait channel info, and syscall information
+- Outputs detailed diagnostics to the `./diagnostics` directory
+
+### support_monitor_resources.sh
+
+A resource monitoring tool for tracking process metrics:
+
+```bash
+./support_monitor_resources.sh <hydrogen_pid> [duration_seconds]
+```
+
+Key features:
+
+- Tracks memory, CPU, thread count, and file descriptor usage
+- Takes periodic snapshots of detailed process state
+- Runs until the process exits or specified duration expires
+- Generates statistics to help identify resource issues
+
 ## Test Scripts
+
+### test_all.sh
+
+A test orchestration script that executes tests with different configurations and provides a comprehensive summary:
+
+```bash
+# Run all tests
+./test_all.sh all
+
+# Run with minimal configuration only
+./test_all.sh min
+
+# Run with maximal configuration only
+./test_all.sh max
+```
+
+The script:
+- Provides formatted output with test results
+- Automatically makes other test scripts executable
+- Dynamically discovers and runs all test_*.sh scripts
+- Generates a comprehensive summary of all test results with visual pass/fail indicators
 
 ### test_compilation.sh
 
@@ -41,23 +108,6 @@ Key features:
 
 This test runs as the first test in the test sequence since other tests won't be meaningful if components don't compile correctly.
 
-### run_tests.sh
-
-A test orchestration script that executes tests with different configurations and provides a comprehensive summary:
-
-```bash
-# Run all tests
-./run_tests.sh all
-
-# Run with minimal configuration only
-./run_tests.sh min
-
-# Run with maximal configuration only
-./run_tests.sh max
-```
-
-The script provides formatted output with test results, automatically makes other test scripts executable, and generates a comprehensive summary of all test results with visual pass/fail indicators.
-
 ### test_startup_shutdown.sh
 
 The core test script that validates Hydrogen's startup and shutdown sequence:
@@ -74,7 +124,7 @@ Key features:
 - Monitors for successful completion or timeout
 - Collects detailed diagnostics if shutdown stalls
 - Creates logs in the `./results` directory
-- Uses standardized formatting from test_utils.sh
+- Uses standardized formatting from support_utils.sh
 
 ### test_system_endpoints.sh
 
@@ -97,39 +147,9 @@ Key features:
 - Ensures robust handling of form data in POST requests
 - Monitors server stability during tests
 - Implements error handling and shell script validation
-- Uses standardized formatting from test_utils.sh
+- Uses standardized formatting from support_utils.sh
 
 The test performs individual validation for each endpoint and request type, ensuring that the system correctly processes different types of HTTP requests and properly extracts form data from POST requests. It also monitors for system crashes or instability during the testing process.
-
-### analyze_stuck_threads.sh
-
-A diagnostic tool that analyzes thread states to help diagnose shutdown stalls:
-
-```bash
-./analyze_stuck_threads.sh <hydrogen_pid>
-```
-
-Key features:
-
-- Examines all threads in a running process
-- Identifies problematic thread states (especially uninterruptible sleep)
-- Captures kernel stacks, wait channel info, and syscall information
-- Outputs detailed diagnostics to the `./diagnostics` directory
-
-### monitor_resources.sh
-
-A resource monitoring tool for tracking process metrics:
-
-```bash
-./monitor_resources.sh <hydrogen_pid> [duration_seconds]
-```
-
-Key features:
-
-- Tracks memory, CPU, thread count, and file descriptor usage
-- Takes periodic snapshots of detailed process state
-- Runs until the process exits or specified duration expires
-- Generates statistics to help identify resource issues
 
 ## Test Configuration Files
 
@@ -155,6 +175,22 @@ This configuration file provides a **maximal** setup to test the full feature se
 
 Purpose: Validate that all subsystems can start and stop correctly, testing the complete initialization and shutdown process with all features enabled.
 
+## Port Configuration
+
+To avoid conflicts between tests that need to bind to network ports, dedicated port ranges are used for different test configurations:
+
+| Test                       | Configuration File                   | Web Server Port | WebSocket Port |
+|----------------------------|-------------------------------------|-----------------|----------------|
+| Default Min/Max            | hydrogen_test_min.json              | 5000            | 5001           |
+|                            | hydrogen_test_max.json              | 5000            | 5001           |
+| API Prefix Test            | hydrogen_test_api.json              | 5000            | 5001           |
+|                            | hydrogen_test_api_prefix.json       | 5050            | 5051           |
+| Swagger UI Test (Default)  | hydrogen_test_swagger_test_1.json   | 5040            | 5041           |
+| Swagger UI Test (Custom)   | hydrogen_test_swagger_test_2.json   | 5060            | 5061           |
+| System Endpoints Test      | hydrogen_test_system_endpoints.json | 5070            | 5071           |
+
+Using different ports for these tests ensures they can run independently without socket binding conflicts, especially in scenarios where a socket might not be released immediately after a test completes (e.g., due to TIME_WAIT state). This improves test reliability and avoids false failures due to port conflicts.
+
 ## Test Output
 
 All tests now provide standardized output with:
@@ -166,7 +202,7 @@ All tests now provide standardized output with:
 - Info symbols (ℹ️) for informational messages
 - Detailed test summaries with pass/fail counts
 
-When running the full test suite with `run_tests.sh all`, a comprehensive summary is generated showing:
+When running the full test suite with `test_all.sh all`, a comprehensive summary is generated showing:
 - Individual test results for each component
 - Overall pass/fail statistics
 - Final pass/fail determination
@@ -178,7 +214,7 @@ When running the full test suite with `run_tests.sh all`, a comprehensive summar
 To run tests with both configurations using the orchestration script:
 
 ```bash
-./run_tests.sh all
+./test_all.sh all
 ```
 
 This will run all tests and provide a comprehensive summary of results with standardized formatting.
@@ -203,7 +239,7 @@ If Hydrogen stalls during shutdown:
 2. Run the thread analyzer to identify stuck threads:
 
    ```bash
-   ./analyze_stuck_threads.sh <hydrogen_pid>
+   ./support_analyze_stuck_threads.sh <hydrogen_pid>
    ```
 
 3. Check for threads in uninterruptible sleep (D state)
@@ -214,7 +250,7 @@ If Hydrogen stalls during shutdown:
 To track resource usage during a test:
 
 ```bash
-./monitor_resources.sh <hydrogen_pid> 60  # Monitor for 60 seconds
+./support_monitor_resources.sh <hydrogen_pid> 60  # Monitor for 60 seconds
 ```
 
 This helps identify memory leaks, resource exhaustion, or usage patterns that might contribute to shutdown issues.
@@ -230,10 +266,13 @@ The testing system follows a logical sequence:
 
 When adding new tests:
 
-1. Create descriptively named configuration files that target specific test scenarios
-2. Document the purpose and expected outcomes in this README
-3. Ensure all test configurations use relative paths for portability
-4. Set appropriate log levels for the components being tested
-5. Source the test_utils.sh file for standardized formatting
+1. Create descriptively named test scripts that start with "test_" (e.g., test_feature.sh)
+2. Create any needed support functions in files that start with "support_" (e.g., support_feature_utils.sh)
+3. Ensure all test scripts source support_utils.sh for standardized formatting
+4. Document the purpose and expected outcomes in this README
+5. Ensure all test configurations use relative paths for portability
+6. Set appropriate log levels for the components being tested
+
+The `test_all.sh` script will automatically discover and run any script named with the "test_" prefix, making it easy to add new tests without modifying the main test runner.
 
 See the [Testing Documentation](../docs/testing.md) for more information about the Hydrogen testing approach.

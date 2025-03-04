@@ -8,7 +8,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 
 # Include the common test utilities
-source "$SCRIPT_DIR/test_utils.sh"
+source "$SCRIPT_DIR/support_utils.sh"
 
 # Configuration
 # Prefer release build if available, fallback to standard build
@@ -20,7 +20,7 @@ else
     print_info "Using standard build"
 fi
 
-CONFIG_FILE="$SCRIPT_DIR/hydrogen_test_env.json"
+CONFIG_FILE=$(get_config_path "hydrogen_test_env.json")
 if [ ! -f "$CONFIG_FILE" ]; then
     print_result 1 "Env test config file not found: $CONFIG_FILE"
     exit 1
@@ -106,7 +106,7 @@ export H_SERVER_NAME="hydrogen-env-test"
 export H_LOG_FILE="$TEST_LOG_FILE"
 export H_WEB_ENABLED="true"
 export H_WEB_PORT="9000"
-export H_UPLOAD_DIR="./env_test_uploads"
+export H_UPLOAD_DIR="/tmp/hydrogen_env_test_uploads"
 export H_MAX_UPLOAD_SIZE="1048576"
 export H_SHUTDOWN_WAIT="3"
 export H_MAX_QUEUE_BLOCKS="64"
