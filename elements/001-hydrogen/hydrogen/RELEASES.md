@@ -26,6 +26,17 @@ EDITING GUIDELINES (not visible when rendered):
 
 ## 2025-Mar-03
 
+Testing:
+- Fixed test results directory path in test_system_endpoints.sh:
+  - Updated script to use tests/results/ directory for output files
+  - Standardized results path to match other test scripts
+  - Eliminated output file scattering between project root and tests directory
+- Updated upload directory paths in test configuration files:
+  - Modified hydrogen_test_api.json, hydrogen_test_min.json, and hydrogen_test_max.json
+  - Changed upload directories from "./uploads" to "/tmp/hydrogen_test_uploads"
+  - Standardized temporary directory usage across test and production configurations
+  - Prevented uploads directory creation in project root
+
 Service Discovery:
 - Added mDNSClient subsystem:
   - Service discovery and monitoring capabilities
