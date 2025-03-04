@@ -8,7 +8,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 
 # Include the common test utilities
-source "$SCRIPT_DIR/test_utils.sh"
+source "$SCRIPT_DIR/support_utils.sh"
 
 # Configuration
 # Prefer release build if available, fallback to standard build
@@ -21,8 +21,8 @@ else
 fi
 
 # Default configuration files - one with everything enabled, one with minimal services
-ALL_ENABLED_CONFIG="$SCRIPT_DIR/hydrogen_test_max.json"
-MINIMAL_CONFIG="$SCRIPT_DIR/hydrogen_test_min.json"
+ALL_ENABLED_CONFIG=$(get_config_path "hydrogen_test_max.json")
+MINIMAL_CONFIG=$(get_config_path "hydrogen_test_min.json")
 
 # Timeouts and paths
 STARTUP_TIMEOUT=10                        # Seconds to wait for startup

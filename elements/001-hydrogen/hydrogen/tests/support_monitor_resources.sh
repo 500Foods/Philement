@@ -3,7 +3,7 @@
 # Hydrogen Resource Monitor
 # Tracks system resources for a running process to help diagnose resource issues
 #
-# Usage: ./monitor_resources.sh <PID> [duration_seconds]
+# Usage: ./support_monitor_resources.sh <PID> [duration_seconds]
 
 if [ $# -lt 1 ]; then
     echo "Usage: $0 <hydrogen_pid> [duration_seconds]"

@@ -1,0 +1,9 @@
+* Host localhost:5000 was resolved.
+* IPv6: ::1
+* IPv4: 127.0.0.1
+*   Trying [::1]:5000...
+* connect to ::1 port 5000 from ::1 port 57230 failed: Connection refused
+*   Trying 127.0.0.1:5000...
+* connect to 127.0.0.1 port 5000 from 127.0.0.1 port 53000 failed: Connection refused
+* Failed to connect to localhost port 5000 after 0 ms: Could not connect to server
+* closing connection #0

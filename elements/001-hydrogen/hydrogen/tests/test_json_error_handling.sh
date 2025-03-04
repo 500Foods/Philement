@@ -1,50 +1,74 @@
 #!/bin/bash
-# Test script for configuration JSON error handling
-# This script tests if the hydrogen application handles JSON syntax errors correctly
+#
+# JSON Error Handling Test
+# Tests if the Hydrogen application correctly handles JSON syntax errors in configuration
 
-# Set strict error handling
-set -e
+# Get the directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 
-# Setup
-TEST_DIR=$(dirname "$0")
-cd "$TEST_DIR/.."
-echo "Testing JSON error handling in configuration module..."
+# Include the common test utilities
+source "$SCRIPT_DIR/support_utils.sh"
+
+# Create output directories
+RESULTS_DIR="$SCRIPT_DIR/results"
+mkdir -p "$RESULTS_DIR"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+RESULT_LOG="$RESULTS_DIR/json_error_test_${TIMESTAMP}.log"
+ERROR_OUTPUT="$RESULTS_DIR/json_error_output_${TIMESTAMP}.txt"
+
+# Start the test
+start_test "JSON Error Handling Test" | tee -a "$RESULT_LOG"
 
 # Use the permanent test file with a JSON syntax error (missing comma)
-TEST_CONFIG="tests/hydrogen_test_json.json"
-echo "Using test file with JSON syntax error at line 3 (missing comma)"
+TEST_CONFIG=$(get_config_path "hydrogen_test_json.json")
+print_info "Using test file with JSON syntax error (missing comma)" | tee -a "$RESULT_LOG"
 
 # Determine which hydrogen build to use (prefer release build if available)
-if [ -f "./hydrogen_release" ]; then
-    HYDROGEN_BIN="./hydrogen_release"
-    echo "Using release build for testing"
+if [ -f "$HYDROGEN_DIR/hydrogen_release" ]; then
+    HYDROGEN_BIN="$HYDROGEN_DIR/hydrogen_release"
+    print_info "Using release build for testing" | tee -a "$RESULT_LOG"
 else
-    HYDROGEN_BIN="./hydrogen"
-    echo "Release build not found, using standard build"
+    HYDROGEN_BIN="$HYDROGEN_DIR/hydrogen"
+    print_info "Standard build will be used" | tee -a "$RESULT_LOG"
 fi
 
-# Run hydrogen with the malformed config and capture output
-echo "Running hydrogen with malformed config..."
-if $HYDROGEN_BIN "$TEST_CONFIG" 2> tests/json_error_output.txt; then
-    echo "FAIL: Hydrogen should have exited with an error but didn't"
-    rm -f tests/json_error_output.txt
+# Test 1: Run hydrogen with malformed config - should fail
+print_header "Test 1: Launch with malformed JSON configuration" | tee -a "$RESULT_LOG"
+print_command "$HYDROGEN_BIN $TEST_CONFIG" | tee -a "$RESULT_LOG"
+
+if $HYDROGEN_BIN "$TEST_CONFIG" 2> "$ERROR_OUTPUT"; then
+    print_result 1 "Application should have exited with an error but didn't" | tee -a "$RESULT_LOG"
+    rm -f "$ERROR_OUTPUT"
+    end_test 1 "JSON Error Handling Test" | tee -a "$RESULT_LOG"
     exit 1
 else
-    echo "Hydrogen exited with error as expected"
+    print_result 0 "Application exited with error as expected" | tee -a "$RESULT_LOG"
 fi
 
-# Check if the error output contains line and column information
-if grep -q "line" tests/json_error_output.txt && grep -q "column" tests/json_error_output.txt; then
-    echo "PASS: Error message contains line and column information"
-    cat tests/json_error_output.txt
+# Test 2: Check error output for line and column information
+print_header "Test 2: Verify error message contains position information" | tee -a "$RESULT_LOG"
+print_info "Examining error output..." | tee -a "$RESULT_LOG"
+
+if grep -q "line" "$ERROR_OUTPUT" && grep -q "column" "$ERROR_OUTPUT"; then
+    print_result 0 "Error message contains line and column information" | tee -a "$RESULT_LOG"
+    print_info "Error output:" | tee -a "$RESULT_LOG"
+    cat "$ERROR_OUTPUT" | tee -a "$RESULT_LOG"
+    TEST_RESULT=0
 else
-    echo "FAIL: Error message does not contain line and column information"
-    cat tests/json_error_output.txt
-    rm -f tests/json_error_output.txt
-    exit 1
+    print_result 1 "Error message does not contain line and column information" | tee -a "$RESULT_LOG"
+    print_info "Error output:" | tee -a "$RESULT_LOG"
+    cat "$ERROR_OUTPUT" | tee -a "$RESULT_LOG"
+    TEST_RESULT=1
 fi
+
+# Save error output to results directory
+cp "$ERROR_OUTPUT" "$RESULTS_DIR/json_error_full_${TIMESTAMP}.txt"
+print_info "Full error output saved to: $(convert_to_relative_path "$RESULTS_DIR/json_error_full_${TIMESTAMP}.txt")" | tee -a "$RESULT_LOG"
 
 # Clean up
-rm -f tests/json_error_output.txt
-echo "Test completed successfully!"
-exit 0
+rm -f "$ERROR_OUTPUT"
+
+# End test with appropriate exit code
+end_test $TEST_RESULT "JSON Error Handling Test" | tee -a "$RESULT_LOG"
+exit $TEST_RESULT

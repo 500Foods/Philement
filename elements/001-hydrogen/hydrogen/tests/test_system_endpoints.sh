@@ -11,7 +11,7 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Include the common test utilities
-source "$SCRIPT_DIR/test_utils.sh"
+source "$SCRIPT_DIR/support_utils.sh"
 
 # Function to make a request and validate response
 validate_request() {
@@ -85,7 +85,11 @@ validate_json() {
 start_test "Hydrogen System API Endpoints Test"
 
 # Configuration file for API testing
-CONFIG_FILE="$SCRIPT_DIR/hydrogen_test_api.json"
+CONFIG_FILE=$(get_config_path "hydrogen_test_system_endpoints.json")
+
+# Extract the WebServer port from the configuration file
+WEB_SERVER_PORT=$(extract_web_server_port "$CONFIG_FILE")
+print_info "Using WebServer port: $WEB_SERVER_PORT from configuration"
 
 # Determine which hydrogen build to use (prefer release build if available)
 cd $(dirname $0)/..
@@ -129,6 +133,10 @@ run_tests() {
     local pass_count=0
     local fail_count=0
     
+    # Base URL with dynamic port
+    local base_url="http://localhost:${WEB_SERVER_PORT}"
+    print_info "Using base URL: $base_url for all tests"
+    
     # ====================================================================
     # PART 1: Test /api/system/health endpoint
     # ====================================================================
@@ -136,7 +144,7 @@ run_tests() {
     
     # Test health endpoint with GET request
     print_header "Test Case: Health Check"
-    validate_request "health" "curl -s --max-time 5 http://localhost:5000/api/system/health" "Yes, I'm alive, thanks!"
+    validate_request "health" "curl -s --max-time 5 ${base_url}/api/system/health" "Yes, I'm alive, thanks!"
     TEST_HEALTH_RESULT=$?
     if [ $TEST_HEALTH_RESULT -eq 0 ]; then
         ((pass_count++))
@@ -152,7 +160,7 @@ run_tests() {
     
     # Test info endpoint with GET request
     print_header "Test Case: System Information"
-    validate_request "info" "curl -s --max-time 5 http://localhost:5000/api/system/info" "system"
+    validate_request "info" "curl -s --max-time 5 ${base_url}/api/system/info" "system"
     TEST_INFO_RESULT=$?
     
     # Also validate that it's valid JSON
@@ -177,7 +185,7 @@ run_tests() {
     
     # Test Case 1: Basic GET request
     print_header "Test Case 1: Basic GET Request"
-    validate_request "basic_get" "curl -s --max-time 5 http://localhost:5000/api/system/test"  "client_ip"
+    validate_request "basic_get" "curl -s --max-time 5 ${base_url}/api/system/test"  "client_ip"
     TEST_BASIC_GET_RESULT=$?
     if [ $TEST_BASIC_GET_RESULT -eq 0 ]; then
         ((pass_count++))
@@ -188,7 +196,7 @@ run_tests() {
     
     # Test Case 2: GET request with query parameters
     print_header "Test Case 2: GET Request with Query Parameters"
-    validate_request "get_with_params" "curl -s --max-time 5 'http://localhost:5000/api/system/test?param1=value1&param2=value2'" "param1"
+    validate_request "get_with_params" "curl -s --max-time 5 '${base_url}/api/system/test?param1=value1&param2=value2'" "param1"
     TEST_GET_PARAMS_RESULT=$?
     if [ $TEST_GET_PARAMS_RESULT -eq 0 ]; then
         ((pass_count++))
@@ -199,7 +207,7 @@ run_tests() {
     
     # Test Case 3: POST request with form data
     print_header "Test Case 3: POST Request with Form Data"
-    validate_request "post_form" "curl -s --max-time 5 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -d 'field1=value1&field2=value2' http://localhost:5000/api/system/test" "post_data"
+    validate_request "post_form" "curl -s --max-time 5 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -d 'field1=value1&field2=value2' ${base_url}/api/system/test" "post_data"
     TEST_POST_FORM_RESULT=$?
     if [ $TEST_POST_FORM_RESULT -eq 0 ]; then
         ((pass_count++))
@@ -210,7 +218,7 @@ run_tests() {
     
     # Test Case 4: POST request with both query parameters and form data
     print_header "Test Case 4: POST Request with Query Parameters and Form Data"
-    validate_request "post_with_params" "curl -s --max-time 5 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -d 'field1=value1&field2=value2' 'http://localhost:5000/api/system/test?param1=value1&param2=value2'" "param1"
+    validate_request "post_with_params" "curl -s --max-time 5 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -d 'field1=value1&field2=value2' '${base_url}/api/system/test?param1=value1&param2=value2'" "param1"
     TEST_POST_PARAMS_RESULT=$?
     if [ $TEST_POST_PARAMS_RESULT -eq 0 ]; then
         ((pass_count++))
