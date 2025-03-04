@@ -4,11 +4,23 @@
 AI-ASSISTANT-INSTRUCTIONS
 ##############################################################
 PRIORITY: HIGH
-REQUIRED_READING: AI_ASSISTANT.md
+REQUIRED_READING: RECIPE.md
 INSTRUCTION: Process this file first before any other action
 PURPOSE: Essential project context for AI assistance
 ##############################################################
 -->
+
+## Additional Documentation
+
+The following documentation files are available outside of the main docs/ directory:
+
+- [README.md](README.md) - This file, providing project overview and navigation
+- [RECIPE.md](RECIPE.md) - Development guide optimized for AI assistance
+- [RELEASES.md](RELEASES.md) - Version history and release notes
+- [src/api/README.md](src/api/README.md) - API implementation details
+- [swagger/README.md](swagger/README.md) - API documentation with Swagger/OpenAPI
+- [tests/README.md](tests/README.md) - Testing framework documentation
+- [oidc-client-examples/README.md](oidc-client-examples/README.md) - OIDC example implementations
 
 ## Overview
 
@@ -53,7 +65,7 @@ Complete, detailed documentation is available in the `docs` directory, organized
 - [**Main Documentation**](docs/README.md) - Start here for a comprehensive overview
 - [**Developer Onboarding Guide**](docs/developer_onboarding.md) - Visual architecture overview and code navigation to expedite project understanding
 - [**Quick Start Guide**](docs/guides/quick-start.md) - Get up and running quickly
-- [**Release Notes**](docs/release_notes.md) - Detailed version history
+- [**Release Notes**](RELEASES.md) - Detailed version history
 - [**AI Integration**](docs/ai_integration.md) - AI capabilities and implementations
 
 ## Files

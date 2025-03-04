@@ -15,7 +15,7 @@ These requirements are **NOT OPTIONAL** and must be followed for **EVERY** task:
      - Setting deadlines
 
 2. **RELEASE NOTES UPDATES**
-   - EVERY code change MUST be documented in `docs/release_notes.md`
+   - EVERY code change MUST be documented in `RELEASES.md`
    - Add entries under current Pacific Time date
    - Follow exact format of existing entries
    - Group related changes under single topic headers
@@ -45,7 +45,7 @@ Before marking any task as complete, verify these requirements:
    - All scheduling uses correct timezone
 
 2. **Release Notes**
-   - Added entry in `docs/release_notes.md`
+   - Added entry in `RELEASES.md`
    - Used correct Pacific Time date
    - Followed exact format
    - Grouped under appropriate topic
@@ -154,7 +154,6 @@ hydrogen/
 │   ├── developer_onboarding.md  # Architecture guide
 │   ├── coding_guidelines.md     # Coding standards
 │   ├── api.md             # API documentation
-│   ├── release_notes.md   # Project changelog
 │   └── api/               # Detailed API docs
 ├── tests/                 # Test framework
 ├── build*/                # Build directories
@@ -213,7 +212,7 @@ When editing release notes:
 2. [`docs/README.md`](docs/README.md) - Documentation index
 3. [`docs/coding_guidelines.md`](docs/coding_guidelines.md) - C standards
 4. [`docs/api.md`](docs/api.md) - API documentation
-5. [`docs/release_notes.md`](docs/release_notes.md) - Changelog
+5. [`RELEASES.md`](RELEASES.md) - Changelog
 
 ## PROJECT TERMINOLOGY
 
