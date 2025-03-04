@@ -107,7 +107,7 @@ print_info "Waiting for server to initialize (5 seconds)..."
 sleep 5
 
 # Create results directory if it doesn't exist
-RESULTS_DIR="results"
+RESULTS_DIR="$SCRIPT_DIR/results"
 mkdir -p "$RESULTS_DIR"
 
 # Store the timestamp for this test run

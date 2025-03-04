@@ -7,7 +7,7 @@
         "Port": 5000,
         "WebRoot": "./www",
         "UploadPath": "/api/upload",
-        "UploadDir": "./uploads",
+        "UploadDir": "/tmp/hydrogen_test_uploads",
         "MaxUploadSize": 2147483648
     },
     "WebSocket": {
