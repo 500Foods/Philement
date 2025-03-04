@@ -1189,7 +1189,11 @@ AppConfig* load_config(const char* config_path) {
 
         json_t* max_upload_size = json_object_get(web, "MaxUploadSize");
         config->web.max_upload_size = get_config_size(max_upload_size, DEFAULT_MAX_UPLOAD_SIZE);
-
+        
+        // Load API prefix with default of "/api"
+        json_t* api_prefix = json_object_get(web, "ApiPrefix");
+        config->web.api_prefix = get_config_string(api_prefix, "/api");
+        log_this("Configuration", "API Prefix: %s", LOG_LEVEL_INFO, config->web.api_prefix);
     } else {
         // Use defaults if web section is missing
         config->web.port = DEFAULT_WEB_PORT;

@@ -5,6 +5,9 @@ build_perf/
 build_release/
 build_valgrind/
 
+# Temporary generated files
+swagger/swaggerui.tar.br
+
 # Log files
 *.log
 *.log.*
