@@ -8,7 +8,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 
 # Include the common test utilities
-source "$SCRIPT_DIR/test_utils.sh"
+source "$SCRIPT_DIR/support_utils.sh"
 
 # Configuration
 # Prefer release build if available, fallback to standard build
@@ -20,9 +20,9 @@ else
     print_info "Using standard build"
 fi
 
-CONFIG_FILE="$SCRIPT_DIR/hydrogen_test_api.json"
+CONFIG_FILE=$(get_config_path "hydrogen_test_api.json")
 if [ ! -f "$CONFIG_FILE" ]; then
-    CONFIG_FILE="$SCRIPT_DIR/hydrogen_test_max.json"
+    CONFIG_FILE=$(get_config_path "hydrogen_test_max.json")
     print_info "API test config not found, using max config"
 fi
 

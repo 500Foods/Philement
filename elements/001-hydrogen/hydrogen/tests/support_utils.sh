@@ -242,6 +242,43 @@ convert_to_relative_path() {
     fi
 }
 
+# Function to get the full path to a configuration file
+# This centralizes config file access and handles the configs/ subdirectory
+get_config_path() {
+    local config_file="$1"
+    local script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    local config_path="$script_dir/configs/$config_file"
+    
+    echo "$config_path"
+}
+
+# Function to extract web server port from a JSON configuration file
+extract_web_server_port() {
+    local config_file="$1"
+    local default_port=5000
+    
+    # Extract port using grep and sed (simple approach, could be improved with jq)
+    if command -v jq &> /dev/null; then
+        # Use jq if available for proper JSON parsing
+        local port=$(jq -r '.WebServer.Port // 5000' "$config_file" 2>/dev/null)
+        if [ $? -eq 0 ] && [ -n "$port" ] && [ "$port" != "null" ]; then
+            echo "$port"
+            return 0
+        fi
+    fi
+    
+    # Fallback method using grep and sed
+    local port=$(grep -o '"Port":[^,}]*' "$config_file" | head -1 | sed 's/"Port":\s*\([0-9]*\)/\1/')
+    if [ -n "$port" ]; then
+        echo "$port"
+        return 0
+    fi
+    
+    # Return default port if extraction fails
+    echo "$default_port"
+    return 0
+}
+
 # Export the test result to a standardized JSON format for the main summary
 export_test_results() {
     local test_name=$1

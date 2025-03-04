@@ -3,7 +3,7 @@
 # Hydrogen Thread Analyzer
 # Focused script to analyze thread states and identify potential shutdown stalls
 #
-# Usage: ./analyze_stuck_threads.sh <PID>
+# Usage: ./support_analyze_stuck_threads.sh <PID>
 
 if [ $# -lt 1 ]; then
     echo "Usage: $0 <hydrogen_pid>"

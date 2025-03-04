@@ -55,6 +55,24 @@ Testing:
   - Changed upload directories from "./uploads" to "/tmp/hydrogen_test_uploads"
   - Standardized temporary directory usage across test and production configurations
   - Prevented uploads directory creation in project root
+- Refactored test scripts to use dynamic port configuration:
+  - Updated test_api_prefixes.sh to extract and use port from configuration files
+  - Modified test_swagger_ui.sh to use dynamically extracted port for URL construction
+  - Updated test_system_endpoints.sh to use consistent base URL with correct port
+  - Added port-aware socket state checking and cleanup in test_api_prefixes.sh
+  - Improved handling of custom port configurations in all network-related tests
+  - Fixed connection failures when using non-default ports in configuration
+- Added dedicated port configurations for test isolation:
+  - Created hydrogen_test_swagger_port.json with port 5060 for Swagger UI testing
+  - Created hydrogen_test_system_endpoints.json with port 5070 for API endpoint testing
+  - Updated test_swagger_ui.sh to use the new port-specific configuration
+  - Updated test_system_endpoints.sh to use the new port-specific configuration
+  - Prevented port conflicts between different test runs
+  - Improved test reliability by avoiding socket rebinding issues
+- Renamed Swagger test configuration files for consistency:
+  - Changed to hydrogen_test_swagger_test_1.json and hydrogen_test_swagger_test_2.json
+  - Updated tests/README.md with the new naming convention
+  - Updated test_swagger_ui.sh to use the new configuration files
 
 Service Discovery:
 - Added mDNSClient subsystem:

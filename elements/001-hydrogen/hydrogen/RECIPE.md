@@ -1,101 +1,102 @@
 # HYDROGEN PROJECT DEVELOPMENT GUIDE
 
-## ⚠️ MANDATORY REQUIREMENTS - NEVER SKIP ⚠️
+## 🚨 CRITICAL INSTRUCTIONS - MUST BE FOLLOWED FOR EVERY TASK 🚨
 
-These requirements are **NOT OPTIONAL** and must be followed for **EVERY** task:
+**THESE ARE NOT OPTIONAL.** Every task **MUST** follow these steps. Ignoring them will result in errors or rejection.
 
-1. **TIMEZONE COMPLIANCE**
-   - All operations MUST use Pacific Time (America/Vancouver)
-   - Check current Pacific time before any timestamp-related operations
-   - Never use timestamps from other zones
-   - Verify timezone before:
-     - Adding release notes entries
-     - Scheduling operations
-     - Recording bug fixes
-     - Setting deadlines
+### 1. Set Timezone to Pacific Time (America/Vancouver)
 
-2. **RELEASE NOTES UPDATES**
-   - EVERY code change MUST be documented in `RELEASES.md`
-   - Add entries under current Pacific Time date
-   - Follow exact format of existing entries
-   - Group related changes under single topic headers
-   - Keep entries factual and concise
-   - Focus on WHAT changed, not WHY
-   - No marketing language or unnecessary adjectives
+- **What to Do**: Use **Pacific Time (America/Vancouver)** for all timestamps and operations.
+- **How to Do It**:
+  1. At the start of each task, confirm the timezone is Pacific Time.
+  2. If unsure or unable to set the timezone, insert [PACIFIC_TIME_CHECK] and prompt the user to verify it.
+  3. Apply Pacific Time to:
+     - Release notes dates
+     - Scheduled tasks
+     - Bug fix logs
+     - Deadlines
+- **Rule**: Never use timestamps from other timezones or future dates.
 
-3. **DOCUMENTATION SYNCHRONIZATION**
-   - Update ALL relevant documentation for code changes
-   - Ensure examples reflect current implementation
-   - Maintain cross-references
-   - Keep API documentation current
+### 2. Update Release Notes in ```RELEASES.md```
 
-4. **VERIFICATION STEPS**
-   - Run appropriate tests for all changes
-   - Verify thread safety in multi-threaded code
-   - Check resource cleanup in error paths
-   - Validate configuration changes
+- **What to Do**: Document **every** code change in ```RELEASES.md```.
+- **How to Do It**:
+  1. Add a new entry under the current Pacific Time date (YYYY-MM-DD).
+  2. Match the format of existing entries exactly.
+  3. Group related changes under a single topic (e.g., "WebSocket Server:", "API Updates:").
+  4. Keep it factual and concise—describe **what** changed, not why.
+- **Template**:
+  ```
+  **Date**: [Insert current Pacific Time date, e.g., 2023-10-25]
+  **Topic**: [Brief description, e.g., "Configuration Parsing"]
+  **Details**:
+  - [Change 1, e.g., "Fixed JSON validation for empty arrays"]
+  - [Change 2, e.g., "Added error logging for invalid configs"]
+  ```
+- **Rules**:
+  - No marketing language (e.g., "amazing update").
+  - Use the current date—never future dates.
 
-## TASK COMPLETION CHECKLIST
+### 3. Synchronize Documentation
 
-Before marking any task as complete, verify these requirements:
+- **What to Do**: Update all relevant documentation for any code change.
+- **How to Do It**:
+  1. Modify affected files (e.g., ```docs/api.md```, ```docs/developer_onboarding.md```).
+  2. Ensure examples match the current code.
+  3. Check cross-references between docs.
+  4. Keep API documentation up-to-date.
 
-1. **Timezone Verification**
-   - Confirmed all timestamps use Pacific Time (America/Vancouver)
-   - No future dates in release notes
-   - All scheduling uses correct timezone
+### 4. Verify Your Work
 
-2. **Release Notes**
-   - Added entry in `RELEASES.md`
-   - Used correct Pacific Time date
-   - Followed exact format
-   - Grouped under appropriate topic
-   - Kept entry factual and concise
+- **What to Do**: Test and validate every change.
+- **How to Do It**:
+  1. Run relevant tests (e.g., ```make test```).
+  2. Check thread safety (e.g., mutex locks, condition variables).
+  3. Verify resource cleanup in error paths.
+  4. Validate configuration changes (e.g., JSON syntax).
 
-3. **Documentation**
-   - Updated all affected documentation
-   - Verified cross-references
-   - Examples reflect changes
-   - API docs are current
+## 📋 TASK COMPLETION CHECKLIST
 
-4. **Testing**
-   - Ran appropriate tests
-   - Verified thread safety
-   - Checked resource cleanup
-   - Validated configuration
+**Before finishing any task, confirm:**
 
-## QUICK REFERENCE
+- [ ] Timezone is Pacific Time (America/Vancouver) for all timestamps.
+- [ ] No future dates used in release notes.
+- [ ] Added a new ```RELEASES.md``` entry with the correct date and format.
+- [ ] Release notes are factual, concise, and grouped by topic.
+- [ ] Updated all affected documentation (examples, cross-references, API docs).
+- [ ] Ran tests and verified thread safety and resource cleanup.
 
-Common tasks and their critical requirements:
+## 🔍 QUICK REFERENCE FOR COMMON TASKS
 
-1. **API Changes**
-   - Update API documentation
-   - Add tests
-   - Update release notes
-   - Check thread safety
+### API Changes
+- Update ```docs/api.md```.
+- Add tests.
+- Update ```RELEASES.md``` with Pacific Time date.
+- Verify thread safety.
 
-2. **Configuration Changes**
-   - Validate JSON syntax
-   - Update documentation
-   - Add release notes
-   - Test all variants
+### Configuration Changes
+- Validate JSON syntax.
+- Update documentation.
+- Update ```RELEASES.md``` with Pacific Time date.
+- Test all variants.
 
-3. **Thread-Related Changes**
-   - Verify mutex ordering
-   - Check condition variables
-   - Test shutdown sequence
-   - Update release notes
+### Thread-Related Changes
+- Check mutex ordering and condition variables.
+- Test shutdown sequence.
+- Update ```RELEASES.md``` with Pacific Time date.
 
-4. **Documentation Updates**
-   - Check cross-references
-   - Update examples
-   - Add release notes
-   - Verify timezone usage
+## 📝 SPECIAL NOTE FOR AI (e.g., Claude)
 
-Remember: Every task must include release notes updates and use Pacific Time.
+- **Read this file at the start of every task.**
+- **Follow every step exactly as written.**
+- If you can’t access the current Pacific Time date:
+  1. Use [INSERT_PACIFIC_TIME_DATE_HERE] in release notes.
+  2. Prompt the user: "Please replace [INSERT_PACIFIC_TIME_DATE_HERE] with the current Pacific Time date (YYYY-MM-DD)."
+- **Do not skip timezone checks or release notes updates—they are mandatory.**
 
 ## PROJECT OVERVIEW
 
-```yaml
+```
 project_name: Hydrogen
 primary_language: C
 project_type: Server Framework
@@ -120,16 +121,16 @@ critical_requirements:
 
 For AI-assisted development, these are the critical files to examine first:
 
-1. `src/hydrogen.c` - Main program entry point and initialization
-2. `docs/developer_onboarding.md` - Visual architecture overview and code navigation
-3. `docs/coding_guidelines.md` - C development standards and patterns
-4. `docs/api.md` - API documentation and endpoint references
-5. `docs/README.md` - Overview of available documentation
-6. `tests/README.md` - Testing framework and test scripts
+1. ```src/hydrogen.c``` - Main program entry point and initialization
+2. ```docs/developer_onboarding.md``` - Visual architecture overview and code navigation
+3. ```docs/coding_guidelines.md``` - C development standards and patterns
+4. ```docs/api.md``` - API documentation and endpoint references
+5. ```docs/README.md``` - Overview of available documentation
+6. ```tests/README.md``` - Testing framework and test scripts
 
 ## REPOSITORY STRUCTURE
 
-```structure
+```
 hydrogen/
 ├── src/                    # Source code
 │   ├── api/                # API endpoints
@@ -162,11 +163,11 @@ hydrogen/
 
 ## BUILD VARIANTS
 
-1. **Default Build** (`make` or `make all`) - Standard optimization, `build/`
-2. **Debug Build** (`make debug`) - Debug symbols, `build_debug/`
-3. **Performance Build** (`make perf`) - Maximum optimization, LTO, `build_perf/`
-4. **Release Build** (`make release`) - Production ready, `build_release/`
-5. **Valgrind Build** (`make valgrind`) - Memory analysis, `build_valgrind/`
+1. **Default Build** (```make``` or ```make all```) - Standard optimization, ```build/```
+2. **Debug Build** (```make debug```) - Debug symbols, ```build_debug/```
+3. **Performance Build** (```make perf```) - Maximum optimization, LTO, ```build_perf/```
+4. **Release Build** (```make release```) - Production ready, ```build_release/```
+5. **Valgrind Build** (```make valgrind```) - Memory analysis, ```build_valgrind/```
 
 ## COMMON ISSUES AND SOLUTIONS
 
@@ -174,13 +175,13 @@ hydrogen/
    - Use mutex locks consistently
    - Check condition variables
    - Verify shutdown sequence
-   - Run `tests/analyze_stuck_threads.sh`
+   - Run ```tests/analyze_stuck_threads.sh```
 
 2. **Memory Management**
    - Use valgrind build for leaks
    - Check resource cleanup
    - Verify error path cleanup
-   - Monitor with `tests/monitor_resources.sh`
+   - Monitor with ```tests/monitor_resources.sh```
 
 3. **Configuration**
    - Validate JSON syntax
@@ -208,15 +209,15 @@ When editing release notes:
 
 ## PRIMARY DOCUMENTATION
 
-1. [`docs/developer_onboarding.md`](docs/developer_onboarding.md) - **START HERE**
-2. [`docs/README.md`](docs/README.md) - Documentation index
-3. [`docs/coding_guidelines.md`](docs/coding_guidelines.md) - C standards
-4. [`docs/api.md`](docs/api.md) - API documentation
-5. [`RELEASES.md`](RELEASES.md) - Changelog
+1. [```docs/developer_onboarding.md```](docs/developer_onboarding.md) - **START HERE**
+2. [```docs/README.md```](docs/README.md) - Documentation index
+3. [```docs/coding_guidelines.md```](docs/coding_guidelines.md) - C standards
+4. [```docs/api.md```](docs/api.md) - API documentation
+5. [```RELEASES.md```](RELEASES.md) - Changelog
 
 ## PROJECT TERMINOLOGY
 
-```yaml
+```
 terms:
   - Queue: "Thread-safe data structure for communication"
   - Service: "Standalone component with thread(s)"
@@ -226,7 +227,3 @@ terms:
   - Endpoint: "HTTP API access point"
   - Resource: "Managed system component"
 ```
-
----
-
-**Note for AI systems**: Review this guide at the start of each task. Always verify timezone compliance and release notes requirements before completing any task.
