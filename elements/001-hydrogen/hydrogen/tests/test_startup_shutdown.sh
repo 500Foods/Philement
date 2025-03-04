@@ -282,6 +282,40 @@ else
     EXIT_CODE=1  # Set non-zero exit code for failure
 fi
 
+# Track subtest results
+TOTAL_SUBTESTS=3
+PASS_COUNT=0
+
+# Startup success subtest
+if [ "$STARTUP_COMPLETE" = "true" ]; then
+    print_info "Subtest: Startup - PASSED" | tee -a "$RESULT_LOG"
+    ((PASS_COUNT++))
+else
+    print_info "Subtest: Startup - FAILED" | tee -a "$RESULT_LOG"
+fi
+
+# Shutdown timing subtest 
+if [ $SHUTDOWN_DURATION -lt $SHUTDOWN_TIMEOUT ]; then
+    print_info "Subtest: Shutdown Timing - PASSED" | tee -a "$RESULT_LOG"
+    ((PASS_COUNT++))
+else
+    print_info "Subtest: Shutdown Timing - FAILED" | tee -a "$RESULT_LOG"
+fi
+
+# Clean shutdown subtest (no thread leaks, proper completion message)
+if ! grep -q "threads still active" "$LOG_FILE" && grep -q "Shutdown complete" "$LOG_FILE"; then
+    print_info "Subtest: Clean Shutdown - PASSED" | tee -a "$RESULT_LOG"
+    ((PASS_COUNT++))
+else
+    print_info "Subtest: Clean Shutdown - FAILED" | tee -a "$RESULT_LOG"
+fi
+
+# Export subtest results for test_all.sh to pick up
+export_subtest_results $TOTAL_SUBTESTS $PASS_COUNT
+
+# Log subtest results
+print_info "Startup/Shutdown Test: $PASS_COUNT of $TOTAL_SUBTESTS subtests passed" | tee -a "$RESULT_LOG"
+
 # End test
 end_test $EXIT_CODE "Startup/Shutdown Test with $(convert_to_relative_path "$CONFIG_FILE")" | tee -a "$RESULT_LOG"
 exit $EXIT_CODE  # Return appropriate exit code

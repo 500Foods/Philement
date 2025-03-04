@@ -360,6 +360,13 @@ done
 # Print summary statistics
 print_test_summary $((PASS_COUNT + FAIL_COUNT)) $PASS_COUNT $FAIL_COUNT
 
+# Export subtest results for test_all.sh to pick up
+TOTAL_SUBTESTS=$((PASS_COUNT + FAIL_COUNT))
+export_subtest_results $TOTAL_SUBTESTS $PASS_COUNT
+
+# Log subtest results
+print_info "System API Endpoints Test: $PASS_COUNT of $TOTAL_SUBTESTS subtests passed"
+
 # End the test with final result
 end_test $TEST_RESULT "System API Endpoints Test"
 

@@ -460,7 +460,7 @@ run_curl_request() {
     fi
 }
 
-# Export the test result to a standardized JSON format for the main summary
+# Function to export the test result to a standardized JSON format for the main summary
 export_test_results() {
     local test_name=$1
     local result=$2
@@ -476,4 +476,24 @@ export_test_results() {
     "timestamp": "$(date +%Y-%m-%d\ %H:%M:%S)"
 }
 EOF
+}
+
+# Function to save subtest statistics for use by test_all.sh
+# This creates a file that test_all.sh can read to get the actual subtest counts
+export_subtest_results() {
+    local script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    local test_name="$(basename "${BASH_SOURCE[1]}" .sh | sed 's/^test_//')"
+    local total_subtests=$1
+    local passed_subtests=$2
+    local results_dir="$script_dir/results"
+    
+    # Create results directory if it doesn't exist
+    mkdir -p "$results_dir"
+    
+    # Create the subtest results file
+    local subtest_file="$results_dir/subtest_${test_name}.txt"
+    echo "${total_subtests},${passed_subtests}" > "$subtest_file"
+    
+    print_info "Exported subtest results: ${passed_subtests} of ${total_subtests} subtests passed"
+    return 0
 }

@@ -263,6 +263,12 @@ else
     EXIT_CODE=0
 fi
 
+# Export subtest results for test_all.sh to pick up
+export_subtest_results $TOTAL_TESTS $PASSED_TESTS
+
+# Log subtest results
+print_info "Library Dependencies Test: $PASSED_TESTS of $TOTAL_TESTS subtests passed" | tee -a "$RESULT_LOG"
+
 # End test
 end_test $EXIT_CODE "Library Dependencies Test" | tee -a "$RESULT_LOG"
 exit $EXIT_CODE

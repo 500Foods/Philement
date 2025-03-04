@@ -637,6 +637,24 @@ sleep 3
 test_api_prefix "$CUSTOM_CONFIG_PATH" "/myapi" "custom"
 CUSTOM_PREFIX_RESULT=$?
 
+# Track subtest counts
+# We have 2 main tests (default prefix and custom prefix)
+# Each main test has 5 subtests (health, info, json validation, test endpoint, stability)
+TOTAL_SUBTESTS=10
+PASSED_SUBTESTS=0
+
+# Count default prefix subtests from the test_api_prefix function
+if [ $DEFAULT_PREFIX_RESULT -eq 0 ]; then
+    # All 5 subtests passed for default prefix
+    PASSED_SUBTESTS=$((PASSED_SUBTESTS + 5))
+fi
+
+# Count custom prefix subtests from the test_api_prefix function  
+if [ $CUSTOM_PREFIX_RESULT -eq 0 ]; then
+    # All 5 subtests passed for custom prefix
+    PASSED_SUBTESTS=$((PASSED_SUBTESTS + 5))
+fi
+
 # Calculate overall test result
 if [ $DEFAULT_PREFIX_RESULT -eq 0 ] && [ $CUSTOM_PREFIX_RESULT -eq 0 ]; then
     TEST_RESULT=0
@@ -645,6 +663,12 @@ else
     TEST_RESULT=1
     print_result 1 "Some API prefix tests failed"
 fi
+
+# Export subtest results for test_all.sh to pick up
+export_subtest_results $TOTAL_SUBTESTS $PASSED_SUBTESTS
+
+# Log subtest results
+print_info "API Prefix Tests: $PASSED_SUBTESTS of $TOTAL_SUBTESTS subtests passed"
 
 # Ensure all servers are stopped at the end
 print_info "Cleaning up any remaining server processes..."

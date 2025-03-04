@@ -25,6 +25,7 @@ declare -a ALL_TEST_NAMES
 declare -a ALL_TEST_RESULTS
 declare -a ALL_TEST_DETAILS
 declare -a ALL_TEST_SUBTESTS
+declare -a ALL_TEST_PASSED_SUBTESTS
 
 # Start time for test runtime calculation
 START_TIME=$(date +%s)
@@ -53,18 +54,42 @@ run_test() {
     $test_script
     local test_exit_code=$?
     
+    # Check for subtest results file
+    local subtest_file="$RESULTS_DIR/subtest_${test_name}.txt"
+    local total_subtests=1
+    local passed_subtests=0
+    
+    if [ -f "$subtest_file" ]; then
+        # Read subtest results
+        IFS=',' read -r total_subtests passed_subtests < "$subtest_file"
+        print_info "Found subtest results: $passed_subtests of $total_subtests subtests passed" | tee -a "$SUMMARY_LOG"
+        # Remove the subtest file after reading
+        rm -f "$subtest_file"
+    else
+        # Default to 1 subtest
+        total_subtests=1
+        if [ $test_exit_code -eq 0 ]; then
+            passed_subtests=1
+        else
+            passed_subtests=0
+        fi
+    fi
+    
     # Record test results
     if [ $test_exit_code -eq 0 ]; then
         print_result 0 "Test $test_name completed successfully" | tee -a "$SUMMARY_LOG"
         ALL_TEST_NAMES+=("$test_name")
         ALL_TEST_RESULTS+=(0)
         ALL_TEST_DETAILS+=("Test completed without errors")
-        ALL_TEST_SUBTESTS+=(1) # Default to 1 subtest if not specified
+        ALL_TEST_SUBTESTS+=($total_subtests)
+        ALL_TEST_PASSED_SUBTESTS+=($passed_subtests)
     else
         print_result 1 "Test $test_name failed with exit code $test_exit_code" | tee -a "$SUMMARY_LOG"
         ALL_TEST_NAMES+=("$test_name")
         ALL_TEST_RESULTS+=(1)
         ALL_TEST_DETAILS+=("Test failed with errors")
+        ALL_TEST_SUBTESTS+=($total_subtests)
+        ALL_TEST_PASSED_SUBTESTS+=($passed_subtests)
         
         # Look for the most recent log file for this test
         local log_pattern="*$(echo $test_name | tr '_' '*')*.log"
@@ -98,18 +123,42 @@ run_test_with_config() {
     $test_script "$config_path"
     local test_exit_code=$?
     
+    # Check for subtest results file
+    local subtest_file="$RESULTS_DIR/subtest_${test_name}.txt"
+    local total_subtests=1
+    local passed_subtests=0
+    
+    if [ -f "$subtest_file" ]; then
+        # Read subtest results
+        IFS=',' read -r total_subtests passed_subtests < "$subtest_file"
+        print_info "Found subtest results: $passed_subtests of $total_subtests subtests passed" | tee -a "$SUMMARY_LOG"
+        # Remove the subtest file after reading
+        rm -f "$subtest_file"
+    else
+        # Default to 1 subtest
+        total_subtests=1
+        if [ $test_exit_code -eq 0 ]; then
+            passed_subtests=1
+        else
+            passed_subtests=0
+        fi
+    fi
+    
     # Record test results
     if [ $test_exit_code -eq 0 ]; then
         print_result 0 "Test $test_name with $config_name completed successfully" | tee -a "$SUMMARY_LOG"
         ALL_TEST_NAMES+=("$test_name ($config_name)")
         ALL_TEST_RESULTS+=(0)
         ALL_TEST_DETAILS+=("Test completed without errors")
-        ALL_TEST_SUBTESTS+=(1) # Default to 1 subtest if not specified
+        ALL_TEST_SUBTESTS+=($total_subtests)
+        ALL_TEST_PASSED_SUBTESTS+=($passed_subtests)
     else
         print_result 1 "Test $test_name with $config_name failed with exit code $test_exit_code" | tee -a "$SUMMARY_LOG"
         ALL_TEST_NAMES+=("$test_name ($config_name)")
         ALL_TEST_RESULTS+=(1)
         ALL_TEST_DETAILS+=("Test failed with errors")
+        ALL_TEST_SUBTESTS+=($total_subtests)
+        ALL_TEST_PASSED_SUBTESTS+=($passed_subtests)
         
         # Look for the most recent log file for this test
         local log_pattern="*$(echo $test_name | tr '_' '*')*.log"
@@ -141,17 +190,81 @@ run_all_tests() {
         return $compilation_exit_code
     fi
     
-    # Run startup/shutdown tests with min configuration
-    print_header "Running Startup/Shutdown Test (Min Config)" | tee -a "$SUMMARY_LOG"
-    run_test_with_config "$SCRIPT_DIR/test_startup_shutdown.sh" "hydrogen_test_min.json"
+    # Run startup/shutdown tests with min and max configurations as a single combined test
+    print_header "Running Startup/Shutdown Test (Combined Min/Max Configs)" | tee -a "$SUMMARY_LOG"
+    
+    # Run with min configuration first - execute but don't record in global results
+    print_info "Running with minimal configuration..." | tee -a "$SUMMARY_LOG"
+    
+    # Execute test_startup_shutdown.sh directly without using run_test_with_config to avoid recording the individual result
+    local config_path_min=$(get_config_path "hydrogen_test_min.json")
+    print_command "$SCRIPT_DIR/test_startup_shutdown.sh $config_path_min" | tee -a "$SUMMARY_LOG"
+    "$SCRIPT_DIR/test_startup_shutdown.sh" "$config_path_min"
     local min_exit_code=$?
+    
+    # Get subtest results from min config run
+    local min_subtest_file="$RESULTS_DIR/subtest_startup_shutdown.txt"
+    local min_total_subtests=0
+    local min_passed_subtests=0
+    
+    if [ -f "$min_subtest_file" ]; then
+        # Read subtest results
+        IFS=',' read -r min_total_subtests min_passed_subtests < "$min_subtest_file"
+        print_info "Min config subtests: $min_passed_subtests of $min_total_subtests passed" | tee -a "$SUMMARY_LOG"
+        # Remove the subtest file after reading
+        rm -f "$min_subtest_file"
+    fi
     
     ensure_server_not_running
     
-    # Run startup/shutdown tests with max configuration
-    print_header "Running Startup/Shutdown Test (Max Config)" | tee -a "$SUMMARY_LOG"
-    run_test_with_config "$SCRIPT_DIR/test_startup_shutdown.sh" "hydrogen_test_max.json"
+    # Run with max configuration - execute but don't record in global results
+    print_info "Running with maximal configuration..." | tee -a "$SUMMARY_LOG"
+    
+    # Execute test_startup_shutdown.sh directly without using run_test_with_config to avoid recording the individual result
+    local config_path_max=$(get_config_path "hydrogen_test_max.json")
+    print_command "$SCRIPT_DIR/test_startup_shutdown.sh $config_path_max" | tee -a "$SUMMARY_LOG"
+    "$SCRIPT_DIR/test_startup_shutdown.sh" "$config_path_max"
     local max_exit_code=$?
+    
+    # Get subtest results from max config run
+    local max_subtest_file="$RESULTS_DIR/subtest_startup_shutdown.txt"
+    local max_total_subtests=0
+    local max_passed_subtests=0
+    
+    if [ -f "$max_subtest_file" ]; then
+        # Read subtest results
+        IFS=',' read -r max_total_subtests max_passed_subtests < "$max_subtest_file"
+        print_info "Max config subtests: $max_passed_subtests of $max_total_subtests passed" | tee -a "$SUMMARY_LOG"
+        # Remove the subtest file after reading
+        rm -f "$max_subtest_file"
+    fi
+    
+    # Combine results from both runs
+    local combined_exit_code=0
+    if [ $min_exit_code -ne 0 ] || [ $max_exit_code -ne 0 ]; then
+        combined_exit_code=1
+    fi
+    
+    # Calculate total subtests from both runs
+    local combined_total_subtests=$((min_total_subtests + max_total_subtests))
+    local combined_passed_subtests=$((min_passed_subtests + max_passed_subtests))
+    
+    # Record only the combined test result in the global results
+    if [ $combined_exit_code -eq 0 ]; then
+        print_result 0 "Combined Startup/Shutdown Test completed successfully" | tee -a "$SUMMARY_LOG"
+        ALL_TEST_NAMES+=("startup_shutdown")
+        ALL_TEST_RESULTS+=(0)
+        ALL_TEST_DETAILS+=("Both min and max configuration tests passed")
+        ALL_TEST_SUBTESTS+=($combined_total_subtests)
+        ALL_TEST_PASSED_SUBTESTS+=($combined_passed_subtests)
+    else
+        print_result 1 "Combined Startup/Shutdown Test failed" | tee -a "$SUMMARY_LOG"
+        ALL_TEST_NAMES+=("startup_shutdown")
+        ALL_TEST_RESULTS+=(1)
+        ALL_TEST_DETAILS+=("One or both configuration tests failed")
+        ALL_TEST_SUBTESTS+=($combined_total_subtests)
+        ALL_TEST_PASSED_SUBTESTS+=($combined_passed_subtests)
+    fi
     
     ensure_server_not_running
     
@@ -277,16 +390,21 @@ print_summary_statistics() {
     echo -e "\n${BLUE}${BOLD}Individual Test Results:${NC}" | tee -a "$SUMMARY_LOG"
     for i in "${!ALL_TEST_NAMES[@]}"; do
         # Add subtest count to the details
-        local subtest_info="(${ALL_TEST_SUBTESTS[$i]} of ${ALL_TEST_SUBTESTS[$i]} Passed)"
+        local total_subtests=${ALL_TEST_SUBTESTS[$i]}
+        local passed_subtests=${ALL_TEST_PASSED_SUBTESTS[$i]}
+        local subtest_info="(${passed_subtests} of ${total_subtests} Passed)"
         local test_info="${ALL_TEST_NAMES[$i]} ${subtest_info}"
         print_test_item ${ALL_TEST_RESULTS[$i]} "${test_info}" "${ALL_TEST_DETAILS[$i]}" | tee -a "$SUMMARY_LOG"
     done
     
     # Calculate total subtests
     local total_subtests=0
-    for count in "${ALL_TEST_SUBTESTS[@]}"; do
-        total_subtests=$((total_subtests + count))
+    local total_passed_subtests=0
+    for i in "${!ALL_TEST_SUBTESTS[@]}"; do
+        total_subtests=$((total_subtests + ${ALL_TEST_SUBTESTS[$i]}))
+        total_passed_subtests=$((total_passed_subtests + ${ALL_TEST_PASSED_SUBTESTS[$i]}))
     done
+    local total_failed_subtests=$((total_subtests - total_passed_subtests))
     
     # Print comprehensive statistics 
     echo "" | tee -a "$SUMMARY_LOG"
@@ -294,6 +412,9 @@ print_summary_statistics() {
     echo -e "Total tests: ${total_count}" | tee -a "$SUMMARY_LOG"
     echo -e "Passed: ${pass_count}" | tee -a "$SUMMARY_LOG"
     echo -e "Failed: ${fail_count}" | tee -a "$SUMMARY_LOG"
+    echo -e "Total subtests: ${total_subtests}" | tee -a "$SUMMARY_LOG"
+    echo -e "Passed subtests: ${total_passed_subtests}" | tee -a "$SUMMARY_LOG"
+    echo -e "Failed subtests: ${total_failed_subtests}" | tee -a "$SUMMARY_LOG"
     echo -e "Test runtime: ${runtime_formatted}" | tee -a "$SUMMARY_LOG"
     echo "" | tee -a "$SUMMARY_LOG"
     

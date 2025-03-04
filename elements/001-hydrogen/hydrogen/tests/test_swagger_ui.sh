@@ -188,6 +188,23 @@ test_swagger_ui() {
         STABILITY_RESULT=1
     fi
     
+    # Track passed subtests (global counter)
+    if [ $TRAILING_SLASH_RESULT -eq 0 ]; then
+        ((PASS_COUNT++))
+    fi
+    if [ $NO_TRAILING_SLASH_RESULT -eq 0 ]; then
+        ((PASS_COUNT++))
+    fi
+    if [ $CONTENT_CHECK_RESULT -eq 0 ]; then
+        ((PASS_COUNT++))
+    fi
+    if [ $JS_CHECK_RESULT -eq 0 ]; then
+        ((PASS_COUNT++))
+    fi
+    if [ $STABILITY_RESULT -eq 0 ]; then
+        ((PASS_COUNT++))
+    fi
+    
     # Calculate overall result
     if [ $TRAILING_SLASH_RESULT -eq 0 ] && [ $NO_TRAILING_SLASH_RESULT -eq 0 ] && 
        [ $CONTENT_CHECK_RESULT -eq 0 ] && [ $JS_CHECK_RESULT -eq 0 ] && 
@@ -202,6 +219,10 @@ test_swagger_ui() {
 
 # Start the test
 start_test "Hydrogen Swagger UI Test"
+
+# Initialize subtest tracking
+TOTAL_SUBTESTS=10  # 5 tests for each of 2 configurations
+PASS_COUNT=0
 
 # Ensure clean state
 print_info "Ensuring no existing hydrogen processes are running..."
@@ -233,6 +254,12 @@ fi
 # Ensure all servers are stopped at the end
 print_info "Cleaning up any remaining server processes..."
 pkill -f "hydrogen.*json" 2>/dev/null
+
+# Export subtest results for test_all.sh to pick up
+export_subtest_results $TOTAL_SUBTESTS $PASS_COUNT
+
+# Log subtest results
+print_info "Swagger UI Test: $PASS_COUNT of $TOTAL_SUBTESTS subtests passed" | tee -a "$RESULT_LOG"
 
 # End the test with final result
 end_test $TEST_RESULT "Swagger UI Test"
