@@ -69,6 +69,26 @@ print_info "Full error output saved to: $(convert_to_relative_path "$RESULTS_DIR
 # Clean up
 rm -f "$ERROR_OUTPUT"
 
+# Track subtest results
+TOTAL_SUBTESTS=2  # Malformed JSON test and Error Position test
+PASS_COUNT=0
+
+# First test - Application exits with error when given malformed JSON
+if ! grep -q "Application should have exited with an error but didn't" "$RESULT_LOG"; then
+    ((PASS_COUNT++))
+fi
+
+# Second test - Error message contains position information
+if grep -q "Error message contains line and column information" "$RESULT_LOG"; then
+    ((PASS_COUNT++))
+fi
+
+# Export subtest results for test_all.sh to pick up
+export_subtest_results $TOTAL_SUBTESTS $PASS_COUNT
+
+# Log subtest results
+print_info "JSON Error Handling Test: $PASS_COUNT of $TOTAL_SUBTESTS subtests passed" | tee -a "$RESULT_LOG"
+
 # End test with appropriate exit code
 end_test $TEST_RESULT "JSON Error Handling Test" | tee -a "$RESULT_LOG"
 exit $TEST_RESULT

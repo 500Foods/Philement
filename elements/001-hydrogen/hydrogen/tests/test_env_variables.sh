@@ -427,12 +427,38 @@ else
     fi
 fi
 
+# Track subtest results
+TOTAL_SUBTESTS=3  # Basic, Fallback, Type conversion tests
+PASS_COUNT=0
+
+# Check which subtests passed
+# Basic test
+if grep -q "Basic environment variable substitution test PASSED" "$RESULT_LOG"; then
+    ((PASS_COUNT++))
+fi
+
+# Fallback test
+if grep -q "Missing environment variables fallback test PASSED" "$RESULT_LOG"; then
+    ((PASS_COUNT++))
+fi
+
+# Type conversion test
+if grep -q "Environment variable type conversion test PASSED" "$RESULT_LOG"; then
+    ((PASS_COUNT++))
+fi
+
 # Overall test result
 if [ $EXIT_CODE -eq 0 ]; then
     print_result 0 "All environment variable substitution tests PASSED" | tee -a "$RESULT_LOG"
 else
     print_result 1 "Some environment variable substitution tests FAILED" | tee -a "$RESULT_LOG"
 fi
+
+# Export subtest results for test_all.sh to pick up
+export_subtest_results $TOTAL_SUBTESTS $PASS_COUNT
+
+# Log subtest results
+print_info "Environment Variable Test: $PASS_COUNT of $TOTAL_SUBTESTS subtests passed" | tee -a "$RESULT_LOG"
 
 print_info "Test results saved to: $(convert_to_relative_path "$RESULT_LOG")" | tee -a "$RESULT_LOG"
 end_test $EXIT_CODE "Environment Variable Substitution Test" | tee -a "$RESULT_LOG"

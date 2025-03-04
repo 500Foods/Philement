@@ -300,6 +300,12 @@ rm -f "$TEST_HARNESS" "$TEST_HARNESS_BIN" "$SCRIPT_DIR/memory_before.txt" "$SCRI
 # Print summary statistics
 print_test_summary $TOTAL_TESTS $PASSED_TESTS $FAILED_TESTS | tee -a "$RESULT_LOG"
 
+# Export subtest results for test_all.sh to pick up
+export_subtest_results $TOTAL_TESTS $PASSED_TESTS
+
+# Log subtest results
+print_info "Dynamic Library Loading Test: $PASSED_TESTS of $TOTAL_TESTS subtests passed" | tee -a "$RESULT_LOG"
+
 # Determine final result
 if [ $FAILED_TESTS -gt 0 ]; then
     print_result 1 "FAILED: $FAILED_TESTS out of $TOTAL_TESTS tests failed" | tee -a "$RESULT_LOG"
