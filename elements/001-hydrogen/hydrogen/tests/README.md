@@ -29,14 +29,6 @@ Provides functions for environment cleanup and preparation before running tests:
 - Ensures no previous test instances are running
 - Prepares the test environment for consistent execution
 
-### support_test_runner.sh
-
-Contains the core test execution functions used by the main test orchestrator:
-
-- Provides functions for running different types of tests
-- Handles test result tracking and reporting
-- Standardizes test execution across different test types
-
 ### support_analyze_stuck_threads.sh
 
 A diagnostic tool that analyzes thread states to help diagnose shutdown stalls:
@@ -85,6 +77,7 @@ A test orchestration script that executes tests with different configurations an
 ```
 
 The script:
+
 - Provides formatted output with test results
 - Automatically makes other test scripts executable
 - Dynamically discovers and runs all test_*.sh scripts
@@ -140,9 +133,9 @@ Key features:
 - Validates response content and format
 - Verifies proper JSON formatting
 - Tests various request methods:
-  - Basic GET requests 
+  - Basic GET requests
   - GET requests with query parameters
-  - POST requests with form data (with proper field extraction) 
+  - POST requests with form data (with proper field extraction)
   - POST requests with both query parameters and form data
 - Ensures robust handling of form data in POST requests
 - Monitors server stability during tests
@@ -199,10 +192,11 @@ All tests now provide standardized output with:
 - Checkmarks (✅) for passed tests
 - X marks (❌) for failed tests
 - Warning symbols (⚠️) for tests that pass with warnings
-- Info symbols (ℹ️) for informational messages
+- Info symbols (🛈) for informational messages
 - Detailed test summaries with pass/fail counts
 
 When running the full test suite with `test_all.sh all`, a comprehensive summary is generated showing:
+
 - Individual test results for each component
 - Overall pass/fail statistics
 - Final pass/fail determination
@@ -264,11 +258,48 @@ The testing system follows a logical sequence:
 3. **API Testing**: Test system endpoints to verify API functionality
 4. **Specialized Testing**: Finally perform any feature-specific tests
 
+### Creating New Tests
+
+The recommended approach to create new tests is to use the provided template:
+
+1. Copy the template file to create a new test:
+
+   ```bash
+   cp test_template.sh test_your_feature.sh
+   chmod +x test_your_feature.sh
+   ```
+
+2. Modify the new test script:
+   - Set an appropriate test name
+   - Choose or create a suitable configuration file
+   - Implement your specific test cases by replacing the placeholders
+   - Add appropriate validation and result checking
+
+The template standardizes:
+
+- Test environment setup and cleanup
+- Server startup and shutdown
+- Configuration file handling
+- Result reporting and formatting
+
+### Test Template Structure
+
+The `test_template.sh` script provides a standard structure for all tests:
+
+1. **Environment Setup**: Sets up directories, logging, and timestamps
+2. **Test Configuration**: Selects the appropriate configuration file
+3. **Binary Selection**: Automatically finds the appropriate Hydrogen binary
+4. **Test Implementation**: Contains the specific test cases
+5. **Result Collection**: Tracks and reports test results
+6. **Cleanup**: Ensures resources are properly released
+
+### General Guidelines
+
 When adding new tests:
 
 1. Create descriptively named test scripts that start with "test_" (e.g., test_feature.sh)
 2. Create any needed support functions in files that start with "support_" (e.g., support_feature_utils.sh)
-3. Ensure all test scripts source support_utils.sh for standardized formatting
+3. Use the standardized utility functions from `support_utils.sh` to minimize boilerplate
 4. Document the purpose and expected outcomes in this README
 5. Ensure all test configurations use relative paths for portability
 6. Set appropriate log levels for the components being tested
