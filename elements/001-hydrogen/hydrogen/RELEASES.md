@@ -75,6 +75,9 @@ Documentation:
 - Moved release_notes.md to project root for better visibility and to emphasize its critical role
 - Updated all documentation references to new release notes location
 - Removed old AI_ASSISTANT.md file
+- Renamed ADVICE.md to RECIPE.md for clearer purpose indication
+- Added "Additional Documentation" section to README.md listing all .md files outside docs/
+- Updated all documentation references to reflect current filenames
 
 Library Management:
 - Added dynamic library loading system:
