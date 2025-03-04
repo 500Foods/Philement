@@ -205,4 +205,4 @@ Common mDNS Server issues and solutions:
 - [WebSocket Interface](./web_socket.md) - WebSocket server implementation
 - [Configuration Guide](./reference/configuration.md) - Configuration options
 - [Thread Monitoring](./thread_monitoring.md) - Thread tracking and diagnostics
-- [Release Notes](../release_notes.md) - History of mDNS server improvements
+- [Release Notes](../RELEASES.md) - History of mDNS server improvements
