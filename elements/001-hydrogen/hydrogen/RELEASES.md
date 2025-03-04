@@ -26,6 +26,25 @@ EDITING GUIDELINES (not visible when rendered):
 
 ## 2025-Mar-03
 
+Web Server:
+- Fixed Swagger UI access with URLs lacking trailing slash:
+  - Implemented HTTP 301 redirect from /swagger to /swagger/
+  - Added proper handling in handle_swagger_request function
+  - Enhanced logging of URL processing for debugging
+  - Ensured correct relative path resolution for all resources
+  - Maintained backward compatibility with existing functionality
+- Updated Swagger UI implementation to use configurable prefix:
+  - Removed hardcoded "/swagger/" path in swagger-initializer.js
+  - Used config->swagger.prefix for all internal paths
+  - Ensured correct operation when prefix is changed in configuration
+  - Fixed dynamic content generation to respect configured prefix
+- Made API prefix configurable in configuration file:
+  - Replaced hardcoded "/api" with configurable WebConfig->api_prefix
+  - Fixed format string issue in web_server_swagger.c for dynamic initializer
+  - Updated API endpoint detection in web_server_request.c for consistency
+  - Added helper function to build API paths with configured prefix
+  - Ensured compatibility with existing API endpoints
+
 Testing:
 - Fixed test results directory path in test_system_endpoints.sh:
   - Updated script to use tests/results/ directory for output files
