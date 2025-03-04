@@ -24,6 +24,16 @@ EDITING GUIDELINES (not visible when rendered):
   - Avoid patterns like "Documentation:"/items, "API:"/items, "Documentation:"/more items
 -->
 
+## 2025-Mar-04
+
+Configuration:
+
+- Fixed API prefix initialization when WebServer section is missing:
+  - Added default initialization of api_prefix to "/api" in configuration.c
+  - Ensured API endpoints work correctly with minimal configuration
+  - Fixed test_api_prefixes.sh test failures due to missing prefix
+  - Added logging for default API prefix when using minimal configuration
+
 ## 2025-Mar-03
 
 Web Server:

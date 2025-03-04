@@ -176,8 +176,8 @@ To avoid conflicts between tests that need to bind to network ports, dedicated p
 |----------------------------|-------------------------------------|-----------------|----------------|
 | Default Min/Max            | hydrogen_test_min.json              | 5000            | 5001           |
 |                            | hydrogen_test_max.json              | 5000            | 5001           |
-| API Prefix Test            | hydrogen_test_api.json              | 5000            | 5001           |
-|                            | hydrogen_test_api_prefix.json       | 5050            | 5051           |
+| API Prefix Test            | hydrogen_test_api_test_1.json       | 5030            | 5031           |
+|                            | hydrogen_test_api_test_2.json       | 5050            | 5051           |
 | Swagger UI Test (Default)  | hydrogen_test_swagger_test_1.json   | 5040            | 5041           |
 | Swagger UI Test (Custom)   | hydrogen_test_swagger_test_2.json   | 5060            | 5061           |
 | System Endpoints Test      | hydrogen_test_system_endpoints.json | 5070            | 5071           |
