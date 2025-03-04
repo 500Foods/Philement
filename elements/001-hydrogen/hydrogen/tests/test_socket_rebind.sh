@@ -95,6 +95,10 @@ start_test "Socket Rebinding Test" | tee -a "$RESULT_LOG"
 print_info "Testing SO_REUSEADDR socket option for immediate port rebinding" | tee -a "$RESULT_LOG"
 print_info "Using config: $(convert_to_relative_path "$CONFIG_FILE")" | tee -a "$RESULT_LOG"
 
+# Initialize subtest tracking
+TOTAL_SUBTESTS=3  # First instance, shutdown, second instance
+PASS_COUNT=0
+
 # Get the web server port
 PORT=$(get_webserver_port "$CONFIG_FILE")
 print_info "Web server port: $PORT" | tee -a "$RESULT_LOG"
@@ -140,6 +144,8 @@ if ! check_port_in_use $PORT; then
 fi
 
 print_info "First instance running and bound to port $PORT" | tee -a "$RESULT_LOG"
+# First subtest passed
+((PASS_COUNT++))
 
 # Shutdown first instance
 print_header "Shutting down first instance" | tee -a "$RESULT_LOG"
@@ -154,6 +160,8 @@ if ps -p $FIRST_PID > /dev/null; then
 fi
 
 print_info "First instance has terminated" | tee -a "$RESULT_LOG"
+# Second subtest passed
+((PASS_COUNT++))
 
 # Check if socket is in TIME_WAIT state
 if command -v ss &> /dev/null; then
@@ -213,6 +221,8 @@ fi
 
 print_info "Second instance running and bound to port $PORT successfully!" | tee -a "$RESULT_LOG"
 print_info "SO_REUSEADDR is working correctly" | tee -a "$RESULT_LOG"
+# Third subtest passed
+((PASS_COUNT++))
 
 # Clean up
 print_header "Cleaning up" | tee -a "$RESULT_LOG"
@@ -222,6 +232,12 @@ if ps -p $SECOND_PID > /dev/null; then
     print_warning "Second instance still running, forcing termination..." | tee -a "$RESULT_LOG"
     kill -9 $SECOND_PID 2>/dev/null || true
 fi
+
+# Export subtest results for test_all.sh to pick up
+export_subtest_results $TOTAL_SUBTESTS $PASS_COUNT
+
+# Log subtest results
+print_info "Socket Rebind Test: $PASS_COUNT of $TOTAL_SUBTESTS subtests passed" | tee -a "$RESULT_LOG"
 
 # Test successful!
 print_result 0 "Socket rebinding test PASSED - Immediate rebinding after shutdown works!" | tee -a "$RESULT_LOG"

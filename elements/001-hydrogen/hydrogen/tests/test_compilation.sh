@@ -24,8 +24,10 @@ mkdir -p "$RESULTS_DIR"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 RESULT_LOG="$RESULTS_DIR/test_${TIMESTAMP}_compilation.log"
 
-# Initialize exit code
+# Initialize exit code and subtest tracking
 EXIT_CODE=0
+TOTAL_SUBTESTS=7  # Release, tarball, standard, debug, valgrind, perf builds, OIDC examples
+PASS_COUNT=0
 
 # Start the test
 start_test "Hydrogen Compilation Test" | tee -a "$RESULT_LOG"
@@ -84,6 +86,9 @@ test_compilation() {
             EXIT_CODE=1
         else
             print_info "No warnings detected" | tee -a "$RESULT_LOG"
+            # Increment pass count for this subtest
+            ((PASS_COUNT++))
+            print_info "Subtest passed: $COMPONENT" | tee -a "$RESULT_LOG"
         fi
     else
         print_result 1 "$COMPONENT compilation failed with exit code $BUILD_RESULT" | tee -a "$RESULT_LOG"
@@ -154,6 +159,9 @@ test_tarball_presence() {
             if [ $FILE_SIZE -ge $TARBALL_SIZE ]; then
                 print_result 0 "Release executable size ($FILE_SIZE bytes) is sufficient to contain the tarball ($TARBALL_SIZE bytes)" | tee -a "$RESULT_LOG"
                 print_info "Release build correctly includes the Swagger UI tarball" | tee -a "$RESULT_LOG"
+                # Increment pass count for tarball verification subtest
+                ((PASS_COUNT++))
+                print_info "Subtest passed: Swagger UI tarball verification" | tee -a "$RESULT_LOG"
             else
                 print_result 1 "Release executable size ($FILE_SIZE bytes) is too small to contain the tarball ($TARBALL_SIZE bytes)" | tee -a "$RESULT_LOG"
                 EXIT_CODE=1
@@ -197,6 +205,10 @@ test_compilation "OIDC client examples" "$OIDC_EXAMPLES_DIR" "make all"
 print_header "Compilation Test Summary" | tee -a "$RESULT_LOG"
 print_info "Completed at: $(date)" | tee -a "$RESULT_LOG"
 print_info "Test log: $(convert_to_relative_path "$RESULT_LOG")" | tee -a "$RESULT_LOG"
+print_info "Subtest results: $PASS_COUNT of $TOTAL_SUBTESTS subtests passed" | tee -a "$RESULT_LOG"
+
+# Export subtest results for test_all.sh to pick up
+export_subtest_results $TOTAL_SUBTESTS $PASS_COUNT
 
 # End test with appropriate result message
 end_test $EXIT_CODE "Compilation Test" | tee -a "$RESULT_LOG"

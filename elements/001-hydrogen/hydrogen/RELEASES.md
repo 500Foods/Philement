@@ -34,6 +34,24 @@ Configuration:
   - Fixed test_api_prefixes.sh test failures due to missing prefix
   - Added logging for default API prefix when using minimal configuration
 
+Testing:
+
+- Enhanced test summary with subtest result aggregation:
+  - Added export_subtest_results function to support_utils.sh
+  - Modified test_all.sh to collect and display subtest statistics
+  - Implemented subtest tracking in all test scripts:
+    - test_api_prefixes.sh (10 subtests)
+    - test_system_endpoints.sh (9 subtests)
+    - test_startup_shutdown.sh (6 subtests, combining min/max configurations)
+    - test_compilation.sh (7 subtests)
+    - test_dynamic_loading.sh (7 subtests)
+    - test_env_variables.sh (3 subtests)
+    - test_json_error_handling.sh (2 subtests)
+    - test_library_dependencies.sh (16 subtests)
+    - test_socket_rebind.sh (3 subtests)
+    - test_swagger_ui.sh (10 subtests)
+  - Added comprehensive subtest pass/fail counts to test summary
+
 ## 2025-Mar-03
 
 Web Server:
