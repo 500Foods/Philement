@@ -279,6 +279,187 @@ extract_web_server_port() {
     return 0
 }
 
+# Function to set up the standard test environment
+setup_test_environment() {
+    local test_name=$1
+    
+    # Create results directory if it doesn't exist
+    RESULTS_DIR="$SCRIPT_DIR/results"
+    mkdir -p "$RESULTS_DIR"
+    
+    # Get timestamp for this test run
+    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+    
+    # Create a test-specific log file
+    local test_id=$(echo "$test_name" | tr ' ' '_' | tr '[:upper:]' '[:lower:]')
+    RESULT_LOG="$RESULTS_DIR/${test_id}_${TIMESTAMP}.log"
+    
+    # Print test start information
+    start_test "$test_name" | tee -a "$RESULT_LOG"
+    
+    # Return log file path
+    echo "$RESULT_LOG"
+}
+
+# Function to find the appropriate hydrogen binary (preferring release build)
+find_hydrogen_binary() {
+    local script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    local hydrogen_dir="$( cd "$script_dir/.." && pwd )"
+    
+    if [ -f "$hydrogen_dir/hydrogen_release" ]; then
+        print_info "Using release build for testing"
+        echo "$hydrogen_dir/hydrogen_release"
+    else
+        print_info "Release build not found, using standard build"
+        echo "$hydrogen_dir/hydrogen"
+    fi
+}
+
+# Function to start the hydrogen server with a specific configuration
+start_hydrogen_server() {
+    local hydrogen_bin=$1
+    local config_file=$2
+    local log_file=$3
+    
+    # Start in background
+    print_info "Starting hydrogen server with configuration $(convert_to_relative_path "$config_file")..."
+    
+    # Use provided log file or default to hydrogen_test.log
+    if [ -z "$log_file" ]; then
+        log_file="$SCRIPT_DIR/hydrogen_test.log"
+    fi
+    
+    # Start the server and capture PID
+    $hydrogen_bin "$config_file" > "$log_file" 2>&1 &
+    local server_pid=$!
+    
+    # Wait a bit for startup
+    print_info "Waiting for server to initialize (5 seconds)..."
+    sleep 5
+    
+    # Check if process is still running
+    if kill -0 $server_pid 2>/dev/null; then
+        print_result 0 "Server started successfully with PID $server_pid"
+    else
+        print_result 1 "Server failed to start"
+        return 1
+    fi
+    
+    # Return the PID
+    echo $server_pid
+}
+
+# Function to stop the hydrogen server
+stop_hydrogen_server() {
+    local server_pid=$1
+    local wait_time=${2:-10}  # Default 10 seconds wait time
+    
+    # Check if PID exists
+    if [ -z "$server_pid" ] || ! kill -0 $server_pid 2>/dev/null; then
+        print_warning "No running server with PID $server_pid"
+        return 1
+    fi
+    
+    # Try graceful shutdown
+    print_info "Stopping hydrogen server (PID $server_pid)..."
+    kill -SIGINT $server_pid
+    
+    # Wait for server to stop
+    print_info "Waiting for server to shut down (${wait_time} seconds)..."
+    local count=0
+    while kill -0 $server_pid 2>/dev/null && [ $count -lt $wait_time ]; do
+        sleep 1
+        ((count++))
+    done
+    
+    # Check if server is still running
+    if kill -0 $server_pid 2>/dev/null; then
+        print_warning "Server didn't stop gracefully, forcing termination..."
+        kill -9 $server_pid
+        sleep 2
+        if kill -0 $server_pid 2>/dev/null; then
+            print_result 1 "Failed to stop server"
+            return 1
+        fi
+    fi
+    
+    print_result 0 "Server stopped successfully"
+    return 0
+}
+
+# Function to validate JSON syntax in a file
+validate_json() {
+    local file="$1"
+    
+    if command -v jq &> /dev/null; then
+        # Use jq if available for proper JSON validation
+        jq . "$file" > /dev/null 2>&1
+        if [ $? -eq 0 ]; then
+            print_result 0 "Response contains valid JSON"
+            return 0
+        else
+            print_result 1 "Response contains invalid JSON"
+            return 1
+        fi
+    else
+        # Fallback: simple check for JSON structure
+        if grep -q "{" "$file" && grep -q "}" "$file"; then
+            print_result 0 "Response appears to be JSON (basic validation only)"
+            return 0
+        else
+            print_result 1 "Response does not appear to be JSON"
+            return 1
+        fi
+    fi
+}
+
+# Function to make a request and validate response
+run_curl_request() {
+    local request_name="$1"
+    local curl_command="$2"
+    local expected_field="$3"
+    local response_file="response_${request_name}.json"
+    local result_log="$4"
+    
+    # If no result log is provided, use stdout
+    if [ -z "$result_log" ]; then
+        result_log="/dev/stdout"
+    fi
+    
+    # Make sure curl command includes --compressed flag and timeout
+    if [[ $curl_command != *"--compressed"* ]]; then
+        curl_command="${curl_command/curl/curl --compressed}"
+    fi
+    
+    # Add timeout if not already present
+    if [[ $curl_command != *"--max-time"* ]] && [[ $curl_command != *"-m "* ]]; then
+        curl_command="${curl_command/curl/curl --max-time 5}"
+    fi
+    
+    print_command "$curl_command" | tee -a "$result_log"
+    eval "$curl_command > $response_file"
+    CURL_STATUS=$?
+    
+    # Check if the request was successful
+    if [ $CURL_STATUS -eq 0 ]; then
+        print_info "Successfully received response:" | tee -a "$result_log"
+        cat "$response_file" | tee -a "$result_log"
+        echo "" | tee -a "$result_log"
+        
+        # Validate that the response contains expected fields
+        if grep -q "$expected_field" "$response_file"; then
+            print_result 0 "Response contains expected field: $expected_field" | tee -a "$result_log"
+            return 0
+        else
+            print_result 1 "Response doesn't contain expected field: $expected_field" | tee -a "$result_log"
+            return 1
+        fi
+    else
+        print_result 1 "Failed to connect to server (curl status: $CURL_STATUS)" | tee -a "$result_log"
+        return $CURL_STATUS
+    fi
+}
+
 # Export the test result to a standardized JSON format for the main summary
 export_test_results() {
     local test_name=$1
