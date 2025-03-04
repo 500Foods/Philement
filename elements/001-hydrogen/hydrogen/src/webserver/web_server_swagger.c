@@ -36,6 +36,8 @@ static void free_swagger_files(void);
 static char* get_server_url(struct MHD_Connection *connection, const WebConfig *config);
 static char* create_dynamic_initializer(const char *base_content, const char *server_url);
 
+void cleanup_swagger_support(void);
+
 bool init_swagger_support(WebConfig *config) {
     if (!config || !config->swagger.enabled) {
         return false;
@@ -137,13 +139,16 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
     if (!file && strlen(url_path) > 3 && 
         strcmp(url_path + strlen(url_path) - 3, ".br") == 0) {
         char base_path[256];
-        strncpy(base_path, url_path, strlen(url_path) - 3);
-        base_path[strlen(url_path) - 3] = '\0';
-        
-        for (size_t i = 0; i < num_swagger_files; i++) {
-            if (strcmp(swagger_files[i].name, base_path) == 0) {
-                file = &swagger_files[i];
-                break;
+        size_t path_len = strlen(url_path);
+        if (path_len - 3 < sizeof(base_path)) {
+            memcpy(base_path, url_path, path_len - 3);
+            base_path[path_len - 3] = '\0';
+            
+            for (size_t i = 0; i < num_swagger_files; i++) {
+                if (strcmp(swagger_files[i].name, base_path) == 0) {
+                    file = &swagger_files[i];
+                    break;
+                }
             }
         }
     }
