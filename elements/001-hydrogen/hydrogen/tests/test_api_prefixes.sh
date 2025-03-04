@@ -396,8 +396,8 @@ test_api_prefix() {
 
 
 # Extract ports from both configurations at the beginning
-DEFAULT_CONFIG_PATH="$(get_config_path "hydrogen_test_api.json")"
-CUSTOM_CONFIG_PATH="$(get_config_path "hydrogen_test_api_prefix.json")"
+DEFAULT_CONFIG_PATH="$(get_config_path "hydrogen_test_api_test_1.json")"
+CUSTOM_CONFIG_PATH="$(get_config_path "hydrogen_test_api_test_2.json")"
 DEFAULT_PORT=$(extract_web_server_port "$DEFAULT_CONFIG_PATH")
 CUSTOM_PORT=$(extract_web_server_port "$CUSTOM_CONFIG_PATH")
 

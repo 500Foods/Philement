@@ -156,7 +156,7 @@ run_all_tests() {
     ensure_server_not_running
     
     # Find and run all other test scripts
-    local test_scripts=$(find "$SCRIPT_DIR" -type f -name "test_*.sh" | grep -v "test_all.sh" | grep -v "test_startup_shutdown.sh" | grep -v "test_compilation.sh" | sort)
+    local test_scripts=$(find "$SCRIPT_DIR" -type f -name "test_*.sh" | grep -v "test_all.sh" | grep -v "test_startup_shutdown.sh" | grep -v "test_compilation.sh" | grep -v "test_template.sh" | sort)
     
     local all_exit_codes=0
     for test_script in $test_scripts; do

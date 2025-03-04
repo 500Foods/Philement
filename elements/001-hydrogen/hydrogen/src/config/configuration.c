@@ -1195,12 +1195,14 @@ AppConfig* load_config(const char* config_path) {
         config->web.api_prefix = get_config_string(api_prefix, "/api");
         log_this("Configuration", "API Prefix: %s", LOG_LEVEL_INFO, config->web.api_prefix);
     } else {
-        // Use defaults if web section is missing
-        config->web.port = DEFAULT_WEB_PORT;
-        config->web.web_root = strdup("/var/www/html");
-        config->web.upload_path = strdup(DEFAULT_UPLOAD_PATH);
-        config->web.upload_dir = strdup(DEFAULT_UPLOAD_DIR);
-        config->web.max_upload_size = DEFAULT_MAX_UPLOAD_SIZE;
+    // Use defaults if web section is missing
+    config->web.port = DEFAULT_WEB_PORT;
+    config->web.web_root = strdup("/var/www/html");
+    config->web.upload_path = strdup(DEFAULT_UPLOAD_PATH);
+    config->web.upload_dir = strdup(DEFAULT_UPLOAD_DIR);
+    config->web.max_upload_size = DEFAULT_MAX_UPLOAD_SIZE;
+    config->web.api_prefix = strdup("/api");  // Default API prefix
+    log_this("Configuration", "API Prefix: %s (default)", LOG_LEVEL_INFO, config->web.api_prefix);
     }
 
     // WebSocket Configuration
