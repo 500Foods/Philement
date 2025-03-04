@@ -34,7 +34,7 @@ static bool extract_swagger_payload(const char *executable_path);
 static bool load_swagger_files_from_tar(const uint8_t *tar_data, size_t tar_size);
 static void free_swagger_files(void);
 static char* get_server_url(struct MHD_Connection *connection, const WebConfig *config);
-static char* create_dynamic_initializer(const char *base_content, const char *server_url);
+static char* create_dynamic_initializer(const char *base_content, const char *server_url, const WebConfig *config);
 
 void cleanup_swagger_support(void);
 
@@ -99,15 +99,40 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
         return MHD_NO;
     }
 
+    // First check if this is exactly the swagger prefix with no trailing slash
+    // If so, redirect to the same URL with a trailing slash
+    // This ensures all relative assets are correctly loaded
+    size_t prefix_len = strlen(config->swagger.prefix);
+    if (strcmp(url, config->swagger.prefix) == 0) {
+        char *redirect_url;
+        if (asprintf(&redirect_url, "%s/", url) != -1) {
+            log_this("WebServer", "Redirecting %s to %s for proper relative path resolution", 
+                    LOG_LEVEL_INFO, url, redirect_url);
+                    
+            struct MHD_Response *response = MHD_create_response_from_buffer(0, NULL, MHD_RESPMEM_PERSISTENT);
+            MHD_add_response_header(response, "Location", redirect_url);
+            free(redirect_url);
+            
+            add_cors_headers(response);
+            enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_MOVED_PERMANENTLY, response);
+            MHD_destroy_response(response);
+            return ret;
+        }
+    }
+
     // Skip past the prefix to get the actual file path
-    const char *url_path = url + strlen(config->swagger.prefix);
+    const char *url_path = url + prefix_len;
     
     // Check if this is a request for the root path
     if (!*url_path || strcmp(url_path, "/") == 0) {
         url_path = "index.html";
     } else if (*url_path == '/') {
-        url_path++; // Skip leading slash
+        url_path++; // Skip leading slash for other paths
     }
+    
+    // Log the URL processing for debugging
+    log_this("WebServer", "Swagger request: Original URL: %s, Processed path: %s", 
+             LOG_LEVEL_INFO, url, url_path);
 
     // Try to find the requested file
     SwaggerFile *file = NULL;
@@ -172,7 +197,7 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
         }
         
         // Create dynamic content with the correct URL
-        dynamic_content = create_dynamic_initializer((const char*)file->data, server_url);
+        dynamic_content = create_dynamic_initializer((const char*)file->data, server_url, config);
         free(server_url);
         
         if (!dynamic_content) {
@@ -464,17 +489,20 @@ static char* get_server_url(struct MHD_Connection *connection,
  * 
  * @param base_content The original initializer content (unused as we generate content from scratch)
  * @param server_url The server's base URL from the incoming request
+ * @param config The web server configuration containing the swagger prefix
  * @return Dynamically allocated string with the modified content, or NULL on error
  */
 static char* create_dynamic_initializer(const char *base_content __attribute__((unused)), 
-                                      const char *server_url) {
+                                      const char *server_url,
+                                      const WebConfig *config) {
     // Create the new initializer content with server URL update
     char *dynamic_content = NULL;
     if (asprintf(&dynamic_content,
         "window.onload = function() {\n"
-        "  fetch('%s/swagger/swagger.json').then(response => response.json()).then(spec => {\n"
+        "  fetch('%s%s/swagger.json').then(response => response.json()).then(spec => {\n"
         "    // Update server URL to match current host\n"
-        "    spec.servers = [{url: '%s/api', description: 'Current server'}];\n"
+        "    // Using configured API prefix instead of hardcoded value\n"
+        "    spec.servers = [{url: '%s%s', description: 'Current server'}];\n"
         "    window.ui = SwaggerUIBundle({\n"
         "      spec: spec,\n"
         "      dom_id: '#swagger-ui',\n"
@@ -494,7 +522,7 @@ static char* create_dynamic_initializer(const char *base_content __attribute__((
         "      docExpansion: \"list\"\n"
         "    });\n"
         "  });\n"
-        "};", server_url, server_url) == -1) {
+        "};", server_url, config->swagger.prefix, server_url, config->api_prefix) == -1) {
         return NULL;
     }
 

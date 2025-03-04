@@ -111,14 +111,31 @@ static enum MHD_Result handle_version_request(struct MHD_Connection *connection)
     return ret;
 }
 
-bool is_api_endpoint(const char *url, char *service, char *endpoint) {
-    // Check if URL starts with /api/
-    if (strncmp(url, "/api/", 5) != 0) {
-        return false;
-    }
+extern WebConfig *server_web_config;
 
-    // Skip "/api/"
-    const char *path = url + 5;
+bool is_api_endpoint(const char *url, char *service, char *endpoint) {
+    // Get pointer to start of path after the prefix
+    const char *path;
+    
+    // Check if URL starts with the configured API prefix
+    if (!server_web_config || !server_web_config->api_prefix) {
+        // Fallback to hardcoded value if configuration is not available
+        if (strncmp(url, "/api/", 5) != 0) {
+            return false;
+        }
+        // Skip "/api/"
+        path = url + 5;
+    } else {
+        // Use the configured API prefix
+        size_t prefix_len = strlen(server_web_config->api_prefix);
+        // Check if URL starts with prefix followed by a slash
+        if (strncmp(url, server_web_config->api_prefix, prefix_len) != 0 || 
+            url[prefix_len] != '/') {
+            return false;
+        }
+        // Skip the prefix and the following slash
+        path = url + prefix_len + 1;
+    }
     
     // Find the next slash
     const char *slash = strchr(path, '/');
@@ -141,6 +158,18 @@ bool is_api_endpoint(const char *url, char *service, char *endpoint) {
     }
 
     return true;
+}
+
+// Helper function to build API paths with the current prefix configuration
+static char* build_api_path(const char* endpoint_path, char* buffer, size_t buffer_size) {
+    if (!server_web_config || !server_web_config->api_prefix) {
+        // Fallback to hardcoded value
+        snprintf(buffer, buffer_size, "/api%s", endpoint_path);
+    } else {
+        // Use configured prefix
+        snprintf(buffer, buffer_size, "%s%s", server_web_config->api_prefix, endpoint_path);
+    }
+    return buffer;
 }
 
 enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
@@ -183,14 +212,23 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
             return handle_swagger_request(connection, url, server_web_config);
         }
         
-        // API endpoints
-        if (strcmp(url, "/api/version") == 0) {
+        // API endpoints - use configurable API prefix
+        char api_path[PATH_MAX];
+        
+        // Version endpoint
+        if (strcmp(url, build_api_path("/version", api_path, sizeof(api_path))) == 0) {
             return handle_version_request(connection);
-        } else if (strcmp(url, "/api/system/info") == 0) {
+        } 
+        // System info endpoint
+        else if (strcmp(url, build_api_path("/system/info", api_path, sizeof(api_path))) == 0) {
             return handle_system_info_request(connection);
-        } else if (strcmp(url, "/api/system/health") == 0) {
+        } 
+        // System health endpoint
+        else if (strcmp(url, build_api_path("/system/health", api_path, sizeof(api_path))) == 0) {
             return handle_system_health_request(connection);
-        } else if (strcmp(url, "/api/system/test") == 0) {
+        } 
+        // System test endpoint
+        else if (strcmp(url, build_api_path("/system/test", api_path, sizeof(api_path))) == 0) {
             return handle_system_test_request(connection, method, upload_data, upload_data_size, con_cls);
         }
 
@@ -221,7 +259,8 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
     // Handle POST requests
     else if (strcmp(method, "POST") == 0) {
         // API endpoints that support POST
-        if (strcmp(url, "/api/system/test") == 0) {
+        char api_path[PATH_MAX];
+        if (strcmp(url, build_api_path("/system/test", api_path, sizeof(api_path))) == 0) {
             return handle_system_test_request(connection, method, upload_data, upload_data_size, con_cls);
         }
         

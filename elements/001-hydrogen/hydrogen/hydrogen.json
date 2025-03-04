@@ -8,7 +8,8 @@
         "WebRoot": "/var/www/html",
         "UploadPath": "/api/upload",
         "UploadDir": "/tmp/hydrogen_uploads",
-        "MaxUploadSize": 2147483648
+        "MaxUploadSize": 2147483648,
+        "ApiPrefix": "/lolol"
     },
     "WebSocket": {
         "Enabled": true,
@@ -161,7 +162,7 @@
     },
     "Swagger": {
         "Enabled": true,
-        "Prefix": "/swagger",
+        "Prefix": "/apidocs",
         "UIOptions": {
             "TryItEnabled": true,
             "AlwaysExpanded": true,

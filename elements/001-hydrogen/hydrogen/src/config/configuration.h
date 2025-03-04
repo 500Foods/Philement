@@ -151,6 +151,7 @@ typedef struct {
     char *upload_path;     // URL path for file uploads
     char *upload_dir;      // Storage location for uploads
     size_t max_upload_size;// Upload size limit for DoS prevention
+    char *api_prefix;      // URL prefix for API endpoints (e.g., "/api")
     struct {
         int enabled;       // Enable/disable Swagger UI
         char *prefix;      // URL prefix for Swagger UI (e.g., "/docs")
