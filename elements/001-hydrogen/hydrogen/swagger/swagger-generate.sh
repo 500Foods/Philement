@@ -19,7 +19,7 @@ NC='\033[0m'  # No Color
 PASS="✅"
 FAIL="❌"
 WARN="⚠️"
-INFO="ℹ️"
+INFO="🛈 "
 
 # Function to convert absolute path to path relative to hydrogen project root
 convert_to_relative_path() {
