@@ -148,11 +148,11 @@ test_tarball_presence() {
         
         local FILE_SIZE=$(stat -c %s "$RELEASE_EXECUTABLE")
         
-        # Check if swagger tarball exists - we can use it to estimate minimum expected size
-        local SWAGGER_TARBALL="$HYDROGEN_DIR/swagger/swaggerui.tar.br"
-        if [ -f "$SWAGGER_TARBALL" ]; then
-            local TARBALL_SIZE=$(stat -c %s "$SWAGGER_TARBALL")
-            print_info "Found Swagger UI tarball (${TARBALL_SIZE} bytes)" | tee -a "$RESULT_LOG"
+        # Check if payload tarball exists - we can use it to estimate minimum expected size
+        local PAYLOAD_TARBALL="$HYDROGEN_DIR/payloads/payload.tar.br.enc"
+        if [ -f "$PAYLOAD_TARBALL" ]; then
+            local TARBALL_SIZE=$(stat -c %s "$PAYLOAD_TARBALL")
+            print_info "Found encrypted payload tarball (${TARBALL_SIZE} bytes)" | tee -a "$RESULT_LOG"
             
             # The executable should be at least as large as the tarball
             # This verifies that there's enough space to contain the tarball
@@ -169,7 +169,7 @@ test_tarball_presence() {
         else
             # If the tarball isn't found, we can still check if the executable is reasonably sized
             print_info "Release executable size: $FILE_SIZE bytes" | tee -a "$RESULT_LOG"
-            print_info "Could not verify against tarball size (swagger/swaggerui.tar.br not found)" | tee -a "$RESULT_LOG"
+            print_info "Could not verify against tarball size (payloads/payload.tar.br.enc not found)" | tee -a "$RESULT_LOG"
         fi
     else
         print_result 1 "Tarball delimiter not found in release executable" | tee -a "$RESULT_LOG"
