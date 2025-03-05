@@ -33,10 +33,64 @@
   ],
   "paths": {
     "/oauth/authorize": {
-      "get\npost": {
+      "get": {
         "summary": "OAuth 2.0 authorization endpoint",
         "description": "Initiates the OAuth 2.0 authorization flow. For GET requests, presents a login UI to the user. For POST requests, processes login data and redirects with an authorization code. Supports multiple response types including 'code' for Authorization Code flow and 'token' for Implicit flow.",
-        "operationId": "authorizeUser",
+        "operationId": "authorizeUserGet",
+        "tags": [
+          "OIDC Service"
+        ],
+        "responses": {
+          "302": {
+            "description": "Response",
+            "content": {
+              "Redirect": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "error_description": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "OAuth 2.0 authorization endpoint",
+        "description": "Initiates the OAuth 2.0 authorization flow. For GET requests, presents a login UI to the user. For POST requests, processes login data and redirects with an authorization code. Supports multiple response types including 'code' for Authorization Code flow and 'token' for Implicit flow.",
+        "operationId": "authorizeUserPost",
         "tags": [
           "OIDC Service"
         ],
@@ -156,10 +210,58 @@
       }
     },
     "/oauth/end-session": {
-      "get\npost": {
+      "get": {
         "summary": "OpenID Connect Session Management endpoint",
         "description": "Implements the OpenID Connect RP-Initiated Logout specification. Allows users to log out and terminate their session with the OpenID Provider. Can also notify Relying Parties (client applications) that the user's session has ended.",
-        "operationId": "endSession",
+        "operationId": "endSessionGet",
+        "tags": [
+          "OIDC Service"
+        ],
+        "responses": {
+          "302": {
+            "description": "Response",
+            "content": {
+              "Redirects": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "error_description": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "OpenID Connect Session Management endpoint",
+        "description": "Implements the OpenID Connect RP-Initiated Logout specification. Allows users to log out and terminate their session with the OpenID Provider. Can also notify Relying Parties (client applications) that the user's session has ended.",
+        "operationId": "endSessionPost",
         "tags": [
           "OIDC Service"
         ],
@@ -209,7 +311,7 @@
       "post": {
         "summary": "OAuth 2.0 token introspection endpoint",
         "description": "Allows authorized clients to determine the active state of a token and its metadata as specified in RFC 7662. Resource servers use this endpoint to validate tokens presented by clients and retrieve associated metadata.",
-        "operationId": "introspectToken",
+        "operationId": "introspectTokenPost",
         "tags": [
           "OIDC Service"
         ],
@@ -375,7 +477,7 @@
       "post": {
         "summary": "Dynamic Client Registration endpoint",
         "description": "Allows clients to register with the OIDC provider, following the OpenID Connect Dynamic Client Registration protocol. The registration metadata is submitted as a JSON document and the server returns client credentials and configuration.",
-        "operationId": "registerClient",
+        "operationId": "registerClientPost",
         "tags": [
           "OIDC Service"
         ],
@@ -468,7 +570,7 @@
       "post": {
         "summary": "OAuth 2.0 token revocation endpoint",
         "description": "Allows clients to notify the authorization server that a token is no longer needed, allowing the server to invalidate the token. This endpoint implements RFC 7009 and supports revocation of both access tokens and refresh tokens.",
-        "operationId": "revokeToken",
+        "operationId": "revokeTokenPost",
         "tags": [
           "OIDC Service"
         ],
@@ -530,7 +632,7 @@
       "post": {
         "summary": "OAuth 2.0 token endpoint",
         "description": "Issues access tokens, refresh tokens, and ID tokens based on the provided grant type. Supports authorization_code, refresh_token, client_credentials, and password grant types. Client authentication is required either via HTTP Basic Authentication or using client_id and client_secret parameters.",
-        "operationId": "issueTokens",
+        "operationId": "issueTokensPost",
         "tags": [
           "OIDC Service"
         ],
@@ -604,7 +706,7 @@
       }
     },
     "/oauth/userinfo": {
-      "get\npost": {
+      "get": {
         "summary": "OpenID Connect UserInfo endpoint",
         "description": "Returns claims about the authenticated end-user. Requires a valid access token with appropriate scopes. The claims returned depend on the scopes associated with the access token and the user's profile data.",
         "operationId": "getUserInfo",
@@ -679,6 +781,128 @@
                     "error_description": {
                       "type": "string",
                       "example": "The access token does not have the required scopes"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "OpenID Connect UserInfo endpoint",
+        "description": "Returns claims about the authenticated end-user. Requires a valid access token with appropriate scopes. The claims returned depend on the scopes associated with the access token and the user's profile data.",
+        "operationId": "getUserInfoPost",
+        "tags": [
+          "OIDC Service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sub": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "given_name": {
+                      "type": "string"
+                    },
+                    "family_name": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "email_verified": {
+                      "type": "boolean"
+                    },
+                    "picture": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "invalid_token"
+                    },
+                    "error_description": {
+                      "type": "string",
+                      "example": "The access token is invalid"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "insufficient_scope"
+                    },
+                    "error_description": {
+                      "type": "string",
+                      "example": "The access token does not have the required scopes"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/config": {
+      "get": {
+        "summary": "Server configuration endpoint",
+        "description": "Returns the server's configuration file in JSON format, brotli compressed if the client supports it.",
+        "operationId": "getSystemConfig",
+        "tags": [
+          "System Service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "The server's configuration file"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Failed to read configuration"
                     }
                   }
                 }
@@ -785,10 +1009,64 @@
       }
     },
     "/system/test": {
-      "get\npost": {
-        "summary": "API diagnostic test endpoint",
-        "description": "Returns diagnostic information useful for testing and debugging API calls. Supports both GET and POST methods to test different request types. The response includes client IP address, authentication details, headers, query parameters, and POST data.",
-        "operationId": "testSystemEndpoint",
+      "get": {
+        "summary": "API diagnostic test endpoint\nAPI diagnostic test endpoint",
+        "description": "Returns diagnostic information useful for testing and debugging API calls. Supports both GET and POST methods to test different request types. The response includes client IP address, authentication details, headers, query parameters, and POST data.\nReturns diagnostic information useful for testing and debugging API calls. Supports both GET and POST methods to test different request types. The response includes client IP address, authentication details, headers, query parameters, and POST data.",
+        "operationId": "testSystemEndpointGetGet",
+        "tags": [
+          "System Service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ip": {
+                      "type": "string",
+                      "example": "192.168.1.100"
+                    },
+                    "jwt_claims": {
+                      "type": "object"
+                    },
+                    "headers": {
+                      "type": "object"
+                    },
+                    "query_params": {
+                      "type": "array"
+                    },
+                    "post_data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Failed to create response"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "API diagnostic test endpoint\nAPI diagnostic test endpoint",
+        "description": "Returns diagnostic information useful for testing and debugging API calls. Supports both GET and POST methods to test different request types. The response includes client IP address, authentication details, headers, query parameters, and POST data.\nReturns diagnostic information useful for testing and debugging API calls. Supports both GET and POST methods to test different request types. The response includes client IP address, authentication details, headers, query parameters, and POST data.",
+        "operationId": "testSystemEndpointGetPost",
         "tags": [
           "System Service"
         ],

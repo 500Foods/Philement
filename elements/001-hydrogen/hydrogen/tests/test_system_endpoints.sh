@@ -154,7 +154,32 @@ run_tests() {
     echo ""
     
     # ====================================================================
-    # PART 2: Test /api/system/info endpoint
+    # PART 2: Test /api/system/config endpoint
+    # ====================================================================
+    print_header "Testing /api/system/config Endpoint"
+    
+    # Test config endpoint with GET request
+    print_header "Test Case: Configuration Retrieval"
+    validate_request "config" "curl -s --max-time 5 -H 'Accept-Encoding: br' ${base_url}/api/system/config" "ServerName"
+    TEST_CONFIG_RESULT=$?
+    
+    # Also validate that it's valid JSON and matches our test config
+    if [ $TEST_CONFIG_RESULT -eq 0 ]; then
+        validate_json "response_config.json"
+        TEST_CONFIG_JSON_RESULT=$?
+        if [ $TEST_CONFIG_JSON_RESULT -eq 0 ]; then
+            ((pass_count++))
+        else
+            ((fail_count++))
+        fi
+    else
+        ((fail_count++))
+        TEST_CONFIG_JSON_RESULT=1
+    fi
+    echo ""
+    
+    # ====================================================================
+    # PART 3: Test /api/system/info endpoint
     # ====================================================================
     print_header "Testing /api/system/info Endpoint"
     
@@ -263,6 +288,10 @@ add_test_result() {
 collect_test_results() {
     # Health endpoint test
     add_test_result "Health Endpoint" ${TEST_HEALTH_RESULT} "GET /api/system/health - Health check response"
+    
+    # Config endpoint tests
+    add_test_result "Config Endpoint - Content" ${TEST_CONFIG_RESULT} "GET /api/system/config - Configuration retrieval"
+    add_test_result "Config Endpoint - JSON Format" ${TEST_CONFIG_JSON_RESULT} "GET /api/system/config - Valid JSON format"
     
     # Info endpoint tests
     add_test_result "Info Endpoint - Content" ${TEST_INFO_RESULT} "GET /api/system/info - System information presence"

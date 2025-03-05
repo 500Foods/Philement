@@ -48,7 +48,8 @@ api/
     ├── system_service.h # System service interface definitions
     ├── health/         # Health check endpoint implementation
     ├── info/           # System information endpoint implementation
-    └── test/           # Test endpoint implementation
+    ├── test/           # Test endpoint implementation
+    └── config/         # Configuration endpoint implementation
 ```
 
 ## API Overview
@@ -62,6 +63,7 @@ Provides endpoints for system-level operations and status monitoring:
 - `/api/system/health` - Health check endpoint for service availability verification
 - `/api/system/info` - System information endpoint for retrieving comprehensive system status
 - `/api/system/test` - Test endpoint for verifying API functionality
+- `/api/system/config` - Configuration endpoint for retrieving server configuration (brotli compressed)
 
 ### OIDC Service
 
@@ -83,14 +85,17 @@ Each API endpoint follows a consistent implementation pattern:
 1. Endpoint handlers are registered with the web server during initialization
 2. Handlers validate request parameters and authorization
 3. The requested operation is performed
-4. Results are formatted as JSON and returned to the client
+4. Results are formatted as JSON and returned using api_send_json_response
 
 API utilities in `api_utils.c` provide common functionality such as:
 
-- Request parameter extraction and validation
-- Response formatting
-- Error handling
-- Authentication verification
+- `api_send_json_response(connection, json_obj, status_code)`: Sends a JSON response with automatic brotli compression when supported by the client
+- `api_extract_query_params(connection)`: Extracts and parses URL query parameters
+- `api_extract_post_data(connection)`: Extracts and parses POST form data
+- `api_get_client_ip(connection)`: Gets the client's IP address
+- `api_extract_jwt_claims(connection, jwt_secret)`: Extracts and validates JWT claims
+- `api_validate_jwt(token, secret)`: Validates a JWT token
+- `api_create_jwt(claims, secret)`: Creates a new JWT token
 
 ## Adding New Endpoints
 

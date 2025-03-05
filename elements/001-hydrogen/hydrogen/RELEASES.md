@@ -2,6 +2,40 @@
 
 <!--
 EDITING GUIDELINES (not visible when rendered):
+-->
+
+## 2025-Mar-05
+
+API:
+
+- Added new System Service/Config endpoint:
+  - Returns server configuration file in JSON format
+  - Uses api_send_json_response for automatic compression
+  - Added proper Swagger documentation and annotations
+  - Added to API documentation in src/api/README.md
+- Improved swagger-generate.sh for API documentation:
+  - Fixed handling of endpoints that support multiple HTTP methods
+  - Enhanced method-specific processing for proper OpenAPI output
+  - Added better logging of detected HTTP methods
+  - Improved variable separation for cleaner processing flow
+
+Testing:
+
+- Enhanced system endpoint testing:
+  - Added config endpoint to test_system_endpoints.sh
+  - Added brotli compression verification in tests
+  - Added JSON validation for configuration response
+  - Added test cases for both compressed and uncompressed responses
+
+Documentation:
+
+- Enhanced API documentation:
+  - Added detailed API utility function documentation
+  - Highlighted api_send_json_response for compression support
+  - Improved endpoint implementation guidance
+
+<!--
+EDITING GUIDELINES (not visible when rendered):
 - Keep entries concise and factual
 - Focus on WHAT changed, not WHY it's good
 - Avoid adjectives like "comprehensive", "robust", "significant"

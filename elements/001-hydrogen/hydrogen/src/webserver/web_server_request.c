@@ -19,6 +19,7 @@
 #include "../utils/utils_threads.h"
 #include "../logging/logging.h"
 #include "../state/state.h"
+#include "../api/system/config/config.h"
 
 static enum MHD_Result serve_file(struct MHD_Connection *connection, const char *file_path) {
     // Check if client accepts Brotli compression
@@ -230,6 +231,10 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
         // System test endpoint
         else if (strcmp(url, build_api_path("/system/test", api_path, sizeof(api_path))) == 0) {
             return handle_system_test_request(connection, method, upload_data, upload_data_size, con_cls);
+        }
+        // System config endpoint
+        else if (strcmp(url, build_api_path("/system/config", api_path, sizeof(api_path))) == 0) {
+            return handle_system_config_request(connection, method, upload_data, upload_data_size, con_cls);
         }
 
         // Try to serve a static file

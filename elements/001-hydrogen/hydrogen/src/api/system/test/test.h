@@ -39,8 +39,16 @@
  */
 //@ swagger:path /api/system/test
 //@ swagger:method GET
+//@ swagger:operationId testSystemEndpointGet
+//@ swagger:tags "System Service"
+//@ swagger:summary API diagnostic test endpoint
+//@ swagger:description Returns diagnostic information useful for testing and debugging API calls. Supports both GET and POST methods to test different request types. The response includes client IP address, authentication details, headers, query parameters, and POST data.
+//@ swagger:response 200 application/json {"type":"object","properties":{"ip":{"type":"string","example":"192.168.1.100"},"jwt_claims":{"type":"object"},"headers":{"type":"object"},"query_params":{"type":"array"},"post_data":{"type":"object"}}}
+//@ swagger:response 500 application/json {"type":"object","properties":{"error":{"type":"string","example":"Failed to create response"}}}
+
+//@ swagger:path /api/system/test
 //@ swagger:method POST
-//@ swagger:operationId testSystemEndpoint
+//@ swagger:operationId testSystemEndpointPost
 //@ swagger:tags "System Service"
 //@ swagger:summary API diagnostic test endpoint
 //@ swagger:description Returns diagnostic information useful for testing and debugging API calls. Supports both GET and POST methods to test different request types. The response includes client IP address, authentication details, headers, query parameters, and POST data.
