@@ -156,6 +156,31 @@ typedef struct {
         int enabled;       // Enable/disable Swagger UI
         char *prefix;      // URL prefix for Swagger UI (e.g., "/docs")
         int payload_available; // Set to 1 if payload is found in executable
+        struct {
+            char *title;       // API title
+            char *description; // API description (supports Markdown)
+            char *version;     // API version
+            struct {
+                char *name;    // Contact name
+                char *email;   // Contact email
+                char *url;     // Contact URL
+            } contact;
+            struct {
+                char *name;    // License name
+                char *url;     // License URL
+            } license;
+        } metadata;
+        struct {
+            int try_it_enabled;
+            int always_expanded;
+            int display_operation_id;
+            int default_models_expand_depth;
+            int default_model_expand_depth;
+            int show_extensions;
+            int show_common_extensions;
+            char *doc_expansion;
+            char *syntax_highlight_theme;
+        } ui_options;
     } swagger;
     
     /* Thread Pool and Connection Settings */

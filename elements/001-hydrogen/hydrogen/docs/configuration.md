@@ -1,260 +1,133 @@
 # Hydrogen Configuration Guide
 
-## Intended Audience
-
-This guide is written for users setting up and managing a Hydrogen 3D printer control server. While some technical concepts are covered, we aim to explain everything in clear, accessible terms. No programming or system administration experience is required to understand and use this guide.
-
 ## Introduction
 
-The Hydrogen server provides network-based control and monitoring for 3D printers. It uses a configuration file to control various aspects of its operation, from basic settings like network ports to advanced features like printer discovery on your network. This guide will help you understand and customize these settings for your needs.
+Hydrogen uses a JSON-based configuration system that allows you to customize all aspects of the server. This guide explains the core concepts of the configuration system. For detailed settings of specific subsystems, please refer to their dedicated configuration guides.
 
-For instructions on running Hydrogen as a system service that starts automatically with your computer, see the [Service Setup Guide](service.md).
+## Configuration File Basics
 
-## Using a Custom Configuration File
+### Default Configuration
 
-By default, Hydrogen looks for its settings in a file named `hydrogen.json` in the same folder as the program. You can use a different configuration file by providing its path as the first argument when starting Hydrogen:
+By default, Hydrogen looks for its settings in `hydrogen.json` in the same directory as the executable. You can specify a different configuration file when starting Hydrogen:
 
 ```bash
 ./hydrogen /path/to/your/config.json
 ```
 
-## Understanding the Configuration Sections
+### File Structure
 
-The configuration file is divided into several sections, each controlling a different aspect of the Hydrogen server. Let's explore what each section does in practical terms.
-
-### Basic Server Settings (Root Level)
-
-These are the fundamental settings that identify your Hydrogen server:
+The configuration file is organized into logical sections, each controlling a different subsystem:
 
 ```json
 {
     "ServerName": "Philement/hydrogen",
-    "LogFile": "/var/log/hydrogen.log"
+    "LogFile": "/var/log/hydrogen.log",
+    "WebServer": { ... },
+    "WebSocket": { ... },
+    "PrintQueue": { ... },
+    "mDNSServer": { ... },
+    "Swagger": { ... },
+    "Terminal": { ... },
+    "Logging": { ... },
+    "SMTPRelay": { ... },
+    "Databases": { ... }
 }
 ```
 
-| Setting | What It Does |
-|---------|-------------|
-| `ServerName` | Gives your printer a unique name, useful if you have multiple printers |
-| `LogFile` | Specifies where to save information about what the server is doing |
+## Subsystem Configuration Guides
 
-### Web Interface Settings (WebServer)
+Each major subsystem has its own detailed configuration guide:
 
-This section controls the web page you use to interact with your printer:
+- [Web Server Configuration](reference/webserver_configuration.md) - HTTP server settings
+- [WebSocket Configuration](reference/websocket_configuration.md) - Real-time updates
+- [Print Queue Configuration](reference/printqueue_configuration.md) - Job management
+- [mDNS Configuration](reference/mdns_configuration.md) - Network discovery
+- [Swagger Configuration](reference/swagger_configuration.md) - API documentation
+- [Terminal Configuration](reference/terminal_configuration.md) - Web terminal
+- [Logging Configuration](reference/logging_configuration.md) - Log management
+- [SMTP Relay Configuration](reference/smtp_configuration.md) - Email handling
+- [Database Configuration](reference/database_configuration.md) - Database connections
+- [System Resources](reference/resources_configuration.md) - Resource management
 
-```json
-{
-    "WebServer": {
-        "Enabled": true,
-        "EnableIPv6": false,
-        "Port": 5000,
-        "WebRoot": "/var/www/html",
-        "UploadPath": "/api/upload",
-        "UploadDir": "/tmp/hydrogen_uploads",
-        "MaxUploadSize": 2147483648,
-        "LogLevel": "WARN"
-    }
-}
-```
+## Using Environment Variables
 
-| Setting | What It Does |
-|---------|-------------|
-| `Enabled` | Turns the web interface on or off |
-| `EnableIPv6` | Allows connections over IPv6 networks |
-| `Port` | The network port number for accessing the web interface |
-| `WebRoot` | Where the web interface files are stored |
-| `UploadPath` | The web address for uploading files to your printer |
-| `UploadDir` | Where uploaded files are stored on your computer |
-| `MaxUploadSize` | The largest file size you can upload (default 2GB) |
-| `LogLevel` | How much information to record about web interface activity |
-
-### Real-Time Updates (WebSocket)
-
-WebSockets allow your web browser to receive instant updates about your printer's status:
-
-```json
-{
-    "WebSocket": {
-        "Enabled": true,
-        "EnableIPv6": false,
-        "Port": 5001,
-        "LogLevel": "NONE"
-    }
-}
-```
-
-| Setting | What It Does |
-|---------|-------------|
-| `Enabled` | Turns real-time updates on or off |
-| `EnableIPv6` | Allows real-time updates over IPv6 networks |
-| `Port` | The network port used for real-time communications |
-| `LogLevel` | How much information to record about real-time updates |
-
-### Print Job Management (PrintQueue)
-
-This section controls how Hydrogen manages your print jobs:
-
-```json
-{
-    "PrintQueue": {
-        "Enabled": true,
-        "LogLevel": "WARN"
-    }
-}
-```
-
-| Setting | What It Does |
-|---------|-------------|
-| `Enabled` | Turns print job management on or off |
-| `LogLevel` | How much information to record about print jobs |
-
-### Network Discovery (mDNS)
-
-mDNS helps your printer be automatically discovered by other devices on your network:
-
-```json
-{
-    "mDNS": {
-        "Enabled": true,
-        "EnableIPv6": true,
-        "DeviceId": "hydrogen-printer",
-        "LogLevel": "ALL",
-        "FriendlyName": "Hydrogen 3D Printer",
-        "Model": "Hydrogen",
-        "Manufacturer": "Philement",
-        "Version": "0.1.0",
-        "Services": [
-            {
-                "Name": "Hydrogen Web Interface",
-                "Type": "_http._tcp",
-                "Port": 5000,
-                "TxtRecords": "path=/api/upload"
-            },
-            {
-                "Name": "Hydrogen OctoPrint Emulation",
-                "Type": "_octoprint._tcp",
-                "Port": 5000,
-                "TxtRecords": "path=/api,version=1.1.0"
-            },
-            {
-                "Name": "Hydrogen WebSocket",
-                "Type": "_websocket._tcp",
-                "Port": 5001,
-                "TxtRecords": "path=/websocket"
-            }
-        ]
-    }
-}
-```
-
-| Setting | What It Does |
-|---------|-------------|
-| `Enabled` | Turns network discovery on or off |
-| `EnableIPv6` | Allows discovery over newer IPv6 networks |
-| `DeviceId` | A unique name for your printer on the network |
-| `FriendlyName` | The name that appears when your printer is discovered |
-| `Model` | Your printer's model name |
-| `Manufacturer` | Your printer's manufacturer |
-| `Version` | The software version |
-| `Services` | List of services your printer advertises on the network |
-
-The `Services` section helps other software find and connect to your printer. For example, the "OctoPrint Emulation" service allows OctoPrint-compatible software to work with your Hydrogen printer.
-
-## Using Environment Variables in Configuration
-
-Hydrogen now supports using environment variables in your configuration file. This allows you to:
-
-1. Keep sensitive settings like API keys secure
-2. Create different configurations for development and production
-3. Share configuration files without exposing system-specific values
-4. Override configuration values without editing the file
+Hydrogen supports using environment variables in your configuration file, providing flexibility and security for sensitive settings.
 
 ### Basic Syntax
 
-To use an environment variable in your configuration file, use the `${env.VARIABLE}` syntax:
+Use the `${env.VARIABLE}` syntax to reference environment variables:
 
 ```json
 {
-  "ServerName": "${env.HYDROGEN_SERVER_NAME}"
+    "ServerName": "${env.HYDROGEN_SERVER_NAME}",
+    "WebServer": {
+        "Port": "${env.HYDROGEN_PORT}"
+    }
 }
 ```
-
-In this example, the `ServerName` will be set to the value of the `HYDROGEN_SERVER_NAME` environment variable. If this environment variable doesn't exist, Hydrogen will fall back to the default value as if the key was missing.
 
 ### Value Type Conversion
 
-Hydrogen intelligently converts environment variable values to the appropriate JSON type:
+Environment variables are automatically converted to appropriate JSON types:
 
-1. **Null Values**: If an environment variable exists but has no value, it's treated as JSON `null`
-2. **Boolean Values**: Values of "true" or "false" (case-insensitive) are converted to JSON boolean values
-3. **Number Values**: Numeric values are converted to JSON numbers
-4. **String Values**: All other values are treated as strings
+1. **Null Values**: Empty environment variables become JSON `null`
+2. **Boolean Values**: "true"/"false" (case-insensitive) become JSON booleans
+3. **Number Values**: Numeric strings become JSON numbers
+4. **String Values**: All other values remain strings
 
 ### Examples
 
-#### Boolean Configuration
-
+#### Boolean Settings
 ```json
 {
-  "WebServer": {
-    "Enabled": "${env.HYDROGEN_WEB_ENABLED}"
-  }
+    "WebServer": {
+        "Enabled": "${env.HYDROGEN_WEB_ENABLED}"
+    }
 }
 ```
+Set `HYDROGEN_WEB_ENABLED=true` to enable the web server.
 
-If you set `HYDROGEN_WEB_ENABLED=true`, the web server will be enabled. Setting it to `false` will disable it.
-
-#### Numeric Configuration
-
+#### Numeric Settings
 ```json
 {
-  "WebServer": {
-    "Port": "${env.HYDROGEN_WEB_PORT}"
-  }
+    "WebServer": {
+        "Port": "${env.HYDROGEN_PORT}"
+    }
 }
 ```
+Set `HYDROGEN_PORT=8080` to change the port number.
 
-If you set `HYDROGEN_WEB_PORT=8080`, the port will be set to 8080 as a number.
-
-#### Server Paths and Directories
-
+#### Path Settings
 ```json
 {
-  "WebServer": {
-    "WebRoot": "${env.HYDROGEN_WEB_ROOT}",
-    "UploadDir": "${env.HYDROGEN_UPLOAD_DIR}"
-  }
+    "LogFile": "${env.HYDROGEN_LOG_PATH}"
 }
 ```
-
-This allows you to configure paths based on your system's directory structure.
+Set `HYDROGEN_LOG_PATH=/var/log/hydrogen.log` to specify the log file location.
 
 ### Common Use Cases
 
 1. **Development vs. Production**:
-
    ```bash
    # Development
-   export HYDROGEN_WEB_PORT=8080
-   export HYDROGEN_UPLOAD_DIR="/tmp/hydrogen_dev"
+   export HYDROGEN_PORT=8080
+   export HYDROGEN_LOG_PATH="/tmp/hydrogen.log"
    
    # Production
-   export HYDROGEN_WEB_PORT=5000
-   export HYDROGEN_UPLOAD_DIR="/var/lib/hydrogen/uploads"
+   export HYDROGEN_PORT=5000
+   export HYDROGEN_LOG_PATH="/var/log/hydrogen.log"
    ```
 
 2. **Sensitive Information**:
-
    ```json
    {
-     "API": {
-       "JWTSecret": "${env.HYDROGEN_JWT_SECRET}"
+     "Databases": {
+       "Password": "${env.HYDROGEN_DB_PASSWORD}"
      }
    }
    ```
 
-3. **Cluster Configuration**:
-
+3. **Host-Specific Settings**:
    ```json
    {
      "ServerName": "${env.HOSTNAME}-hydrogen"
@@ -263,61 +136,49 @@ This allows you to configure paths based on your system's directory structure.
 
 ### Fallback Behavior
 
-If an environment variable referenced in your configuration doesn't exist, Hydrogen will behave as if that configuration key was missing, using the default value for that setting. This means your configuration remains robust even if some environment variables aren't defined.
+If an environment variable is not found, Hydrogen uses the default value for that setting. This ensures your configuration remains robust even when some variables are undefined.
 
-## Understanding Log Levels
+## Security Best Practices
 
-Log levels control how much information Hydrogen records about its operation:
+1. **File Permissions**:
+   - Restrict configuration file access to necessary users
+   - Use appropriate file permissions (e.g., 600)
+   - Keep sensitive settings in environment variables
 
-| Level | When to Use It |
-|-------|-------------|
-| "INFO" | Normal operation - records general activity |
-| "WARN" | Records potential issues (recommended for most users) |
-| "DEBUG" | Detailed information for troubleshooting |
-| "ERROR" | Records only error conditions |
-| "CRITICAL" | Records only serious problems |
-| "ALL" | Records everything (uses more disk space) |
-| "NONE" | Records nothing |
+2. **Environment Variables**:
+   - Use environment variables for secrets
+   - Consider using a secrets management system
+   - Rotate sensitive values periodically
 
-## Keeping Your Printer Secure
+3. **Validation**:
+   - Validate configuration files before deployment
+   - Test with different environment configurations
+   - Monitor for configuration-related errors
 
-Here are some important security tips:
+## Troubleshooting
 
-1. **File Access**: Make sure only necessary users can access your configuration file
-2. **Upload Space**: Ensure you have enough disk space for uploaded files
-3. **Size Limits**: Set reasonable upload size limits to prevent problems
-4. **Network Security**: Consider using a firewall to control access to your printer
+1. **Configuration Not Loading**:
+   - Check file permissions
+   - Verify JSON syntax
+   - Ensure environment variables are set
 
-## Common Issues and Solutions
+2. **Environment Variables Not Working**:
+   - Check variable names and syntax
+   - Verify variable values are properly set
+   - Look for typos in ${env.VARIABLE} references
 
-1. **Can't Connect to Printer**:
-   - Check if the web interface is enabled
-   - Verify the port numbers
-   - Make sure your firewall allows access to the configured ports
-   - If using IPv6, verify EnableIPv6 is set to true in the WebServer section
-
-2. **Can't Upload Files**:
-   - Check if you have enough disk space
-   - Verify the file isn't larger than `MaxUploadSize`
-   - Ensure the upload directory exists and is writable
-
-3. **Real-Time Updates Not Working**:
-   - Verify WebSocket server is enabled
-   - Check if the correct port is being used
-   - If using IPv6, ensure EnableIPv6 is set to true in the WebSocket section
-
-4. **Printer Not Being Discovered**:
-   - Check if mDNS is enabled
-   - Verify your network allows discovery
-   - Check IPv6 settings in all relevant sections (mDNS, WebServer, WebSocket)
-   - Try disabling IPv6 in all sections if your network doesn't support it
+3. **Invalid Settings**:
+   - Check the specific subsystem's configuration guide
+   - Verify value types match expectations
+   - Look for missing required settings
 
 ## Getting Help
 
-If you encounter issues not covered in this guide:
+If you encounter issues:
 
-1. Check the Hydrogen log file for error messages
-2. Try setting the relevant component's `LogLevel` to "DEBUG" for more detailed information
-3. Contact support with the log files and your configuration file
+1. Check the relevant subsystem configuration guide
+2. Enable debug logging for the affected component
+3. Review the log files for error messages
+4. Contact support with configuration and logs
 
-Remember to remove any sensitive information (like API keys) before sharing your configuration file with others.
+Remember to remove sensitive information before sharing configurations.

@@ -76,11 +76,32 @@ The primary payload currently embedded is a highly optimized SwaggerUI implement
   - All packaged in a flat tar structure for efficient serving
 - **Dynamic Server URL**: Automatically adapts to the current server host and protocol
 - **OAuth Support**: Full OAuth 2.0 authorization flow support
-- **SwaggerUI Configuration**:
-  - TryItOut enabled by default
-  - Operation IDs displayed
-  - Optimized model expansion depth
-  - List-style documentation expansion
+- **SwaggerUI Configuration**: All UI options can be configured in `hydrogen.json`:
+  ```json
+  "Swagger": {
+    "Enabled": true,
+    "Prefix": "/swagger",
+    "UIOptions": {
+      "tryItEnabled": true,        // Enable/disable Try It Out by default
+      "displayOperationId": false, // Show/hide operation IDs
+      "defaultModelsExpandDepth": 1, // How deep to expand the models section
+      "defaultModelExpandDepth": 1,  // How deep to expand individual models
+      "showExtensions": false,     // Show/hide vendor extensions
+      "showCommonExtensions": true, // Show/hide common extensions
+      "docExpansion": "list",     // "list", "full", or "none"
+      "syntaxHighlightTheme": "agate" // Code syntax highlighting theme
+    }
+  }
+  ```
+  Each option controls a specific aspect of the UI:
+  - `tryItEnabled`: When true, enables the "Try It Out" feature by default
+  - `displayOperationId`: When false, hides operation IDs from the UI
+  - `defaultModelsExpandDepth`: Controls initial expansion depth of the models section
+  - `defaultModelExpandDepth`: Controls initial expansion depth of individual models
+  - `showExtensions`: Shows vendor-specific OpenAPI extensions when true
+  - `showCommonExtensions`: Shows commonly used OpenAPI extensions when true
+  - `docExpansion`: Controls initial expansion of operations ("list", "full", "none")
+  - `syntaxHighlightTheme`: Theme for code samples and responses
 
 The `payload-generate.sh` script handles downloading, compressing, encrypting, and packaging the payload distribution. Run this script when you want to update or recreate the payload package.
 
