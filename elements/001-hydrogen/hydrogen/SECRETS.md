@@ -13,6 +13,16 @@ Hydrogen uses environment variables to manage sensitive configuration values suc
 
 ### Using Environment Variables in Bash and Zsh
 
+To verify your environment variables are set correctly, use the test script:
+```bash
+# Run the environment variable test
+./tests/test_env_payload.sh
+```
+
+This script validates that:
+1. Required environment variables (PAYLOAD_KEY and PAYLOAD_LOCK) are present
+2. The keys are valid RSA key pairs in the correct format
+
 To set environment variables in Bash or Zsh:
 
 **Temporary (current session only):**

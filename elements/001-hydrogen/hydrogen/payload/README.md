@@ -29,6 +29,12 @@ The Hydrogen project uses a hybrid RSA+AES encryption approach for payloads:
 1. **Key Management**:
    - `PAYLOAD_LOCK` environment variable: Contains the RSA public key used for encryption
    - `PAYLOAD_KEY` environment variable: Contains the RSA private key used for decryption
+   - Use `test_env_payload.sh` to validate environment variables:
+     ```bash
+     # Verify environment variables are set correctly
+     ../tests/test_env_payload.sh
+     ```
+     This test ensures both variables are present and contain valid RSA keys
 
 2. **Encryption Process**:
    - Generates a random AES-256 key for payload encryption

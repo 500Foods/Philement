@@ -93,19 +93,28 @@ A compilation verification script that ensures all components build without erro
 
 ### test_env_payload.sh
 
-Tests the payload system's environment variable handling:
+A validation script that ensures proper configuration of payload encryption environment variables:
 
 ```bash
 ./test_env_payload.sh
 ```
 
 Key features:
-- Tests server behavior with missing PAYLOAD_KEY/LOCK variables
-- Validates handling of invalid key formats
-- Verifies successful payload initialization with valid keys
-- Ensures proper error logging and graceful fallbacks
+- Validates presence of required environment variables (PAYLOAD_KEY and PAYLOAD_LOCK)
+- Verifies RSA key format and validity:
+  - Checks PAYLOAD_KEY is a valid 2048-bit RSA private key
+  - Checks PAYLOAD_LOCK is a valid RSA public key
+- Provides detailed error reporting for:
+  - Missing environment variables
+  - Invalid key formats
+  - Malformed RSA keys
+- Uses standardized formatting from support_utils.sh
+- Creates detailed test logs in the `./results` directory
+- Integrates with test_all.sh for comprehensive test reporting
 
-Key features:
+This test is essential for validating the payload encryption system's configuration before running other payload-related tests.
+
+### test_compilation.sh
 
 - Tests compilation of the main Hydrogen project in all build variants (standard, debug, valgrind)
 - Tests compilation of the OIDC client examples

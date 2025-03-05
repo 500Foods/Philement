@@ -67,7 +67,15 @@ Testing:
     - test_library_dependencies.sh (16 subtests)
     - test_socket_rebind.sh (3 subtests)
     - test_swagger_ui.sh (10 subtests)
+    - test_env_payload.sh (2 subtests)
   - Added comprehensive subtest pass/fail counts to test summary
+
+- Improved test_env_payload.sh for payload environment variables:
+  - Simplified to focus on environment variable validation
+  - Added RSA key format verification
+  - Added detailed error reporting for missing/invalid keys
+  - Updated documentation in tests/README.md and payload/README.md
+  - Integrated with test_all.sh subtest reporting
 
 ## 2025-Mar-03
 
