@@ -6,11 +6,6 @@
 #ifndef HYDROGEN_OIDC_DISCOVERY_H
 #define HYDROGEN_OIDC_DISCOVERY_H
 
-//@ swagger:service OIDC Discovery Service
-//@ swagger:description Provides the OpenID Connect discovery document with server capabilities and endpoint URLs
-//@ swagger:tag oidc OpenID Connect protocol endpoints
-//@ swagger:tag discovery Metadata and capability discovery
-
 // Feature test macros
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
@@ -36,7 +31,7 @@
 //@ swagger:path /.well-known/openid-configuration
 //@ swagger:method GET
 //@ swagger:operationId getOpenIDConfiguration
-//@ swagger:tags oidc,discovery
+//@ swagger:tags "OIDC Service"
 //@ swagger:summary OpenID Connect discovery document
 //@ swagger:description Returns a JSON document containing the OpenID Provider's configuration information including all supported endpoints, scopes, response types, and claims. This document follows the OpenID Connect Discovery 1.0 specification.
 //@ swagger:response 200 application/json {"type":"object","properties":{"issuer":{"type":"string"},"authorization_endpoint":{"type":"string"},"token_endpoint":{"type":"string"},"userinfo_endpoint":{"type":"string"},"jwks_uri":{"type":"string"},"registration_endpoint":{"type":"string"},"scopes_supported":{"type":"array"},"response_types_supported":{"type":"array"},"grant_types_supported":{"type":"array"}}}

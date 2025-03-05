@@ -6,11 +6,6 @@
 #ifndef HYDROGEN_OIDC_USERINFO_H
 #define HYDROGEN_OIDC_USERINFO_H
 
-//@ swagger:service OIDC UserInfo Service
-//@ swagger:description Provides authenticated user information based on access token scopes
-//@ swagger:tag oidc OpenID Connect protocol endpoints
-//@ swagger:tag userinfo User profile information
-
 // Feature test macros
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
@@ -38,7 +33,7 @@
 //@ swagger:method GET
 //@ swagger:method POST
 //@ swagger:operationId getUserInfo
-//@ swagger:tags oidc,userinfo
+//@ swagger:tags "OIDC Service"
 //@ swagger:summary OpenID Connect UserInfo endpoint
 //@ swagger:description Returns claims about the authenticated end-user. Requires a valid access token with appropriate scopes. The claims returned depend on the scopes associated with the access token and the user's profile data.
 //@ swagger:security BearerAuth

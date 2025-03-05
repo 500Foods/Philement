@@ -6,11 +6,6 @@
 #ifndef HYDROGEN_SYSTEM_TEST_H
 #define HYDROGEN_SYSTEM_TEST_H
 
-//@ swagger:service System Test Service
-//@ swagger:description Provides a diagnostic endpoint for testing API functionality
-//@ swagger:tag system System operations
-//@ swagger:tag diagnostics System diagnostics and troubleshooting
-
 // Feature test macros
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
@@ -46,7 +41,7 @@
 //@ swagger:method GET
 //@ swagger:method POST
 //@ swagger:operationId testSystemEndpoint
-//@ swagger:tags system,diagnostics
+//@ swagger:tags "System Service"
 //@ swagger:summary API diagnostic test endpoint
 //@ swagger:description Returns diagnostic information useful for testing and debugging API calls. Supports both GET and POST methods to test different request types. The response includes client IP address, authentication details, headers, query parameters, and POST data.
 //@ swagger:response 200 application/json {"type":"object","properties":{"ip":{"type":"string","example":"192.168.1.100"},"jwt_claims":{"type":"object"},"headers":{"type":"object"},"query_params":{"type":"array"},"post_data":{"type":"object"}}}

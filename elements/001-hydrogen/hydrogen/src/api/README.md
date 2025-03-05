@@ -8,26 +8,31 @@ The Hydrogen API uses Swagger (OpenAPI) annotations to provide structured docume
 
 ### Annotation Structure
 
-Swagger annotations follow this pattern:
+Swagger annotations are organized at two levels:
 
+1. Service Level (in service header files like `system_service.h`):
 ```c
-//@ swagger:service ServiceName
-//@ swagger:description Service description goes here
-//@ swagger:tag tagname Tag description
+//@ swagger:tag "System Service" Provides system-level operations and monitoring
+```
 
-//@ swagger:path /path/to/endpoint
+2. Endpoint Level (in endpoint header files):
+```c
+//@ swagger:path /system/info
 //@ swagger:method GET
-//@ swagger:operationId operationName
-//@ swagger:tags tag1,tag2
-//@ swagger:summary Short summary of what this endpoint does
-//@ swagger:description Longer description with more details
-//@ swagger:response 200 application/json {"type":"object","properties":{...}}
-//@ swagger:response 400 application/json {"type":"object","properties":{...}}
+//@ swagger:summary System information endpoint
+//@ swagger:description Returns comprehensive system information
+//@ swagger:response 200 application/json {"type":"object","properties":{"status":{"type":"string"}}}
+//@ swagger:response 500 application/json {"type":"object","properties":{"error":{"type":"string"}}}
+```
+
+The `operationId` field is optional and can be added if needed:
+```c
+//@ swagger:operationId getSystemInfo
 ```
 
 ### Generating Documentation
 
-The Swagger documentation is generated using the `swagger-generate.sh` script in the `swagger` directory. This script processes the annotations in the source code and generates a `swagger.json` file that can be used with Swagger UI or other API documentation tools.
+The Swagger documentation is generated using the `swagger-generate.sh` script in the `payloads` directory. This script processes the annotations in the source code and generates a `swagger.json` file that can be used with Swagger UI or other API documentation tools.
 
 ## Directory Structure
 
@@ -97,7 +102,7 @@ To add a new endpoint:
 4. Implement the handler function in the implementation file
 5. Register the endpoint in the appropriate service initialization function
 
-See the [Developer Onboarding Guide](../../docs/developer_onboarding.md) for more details on the API implementation pattern.
+See the [Developer Onboarding Guide](../../docs/developer_onboarding.md) for more details on the API implementation pattern. For information about the payload system and Swagger integration, see [Payloads README](../../payloads/README.md).
 
 ## Documentation
 

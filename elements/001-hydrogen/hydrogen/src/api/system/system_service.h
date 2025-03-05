@@ -6,13 +6,10 @@
 #ifndef HYDROGEN_SYSTEM_SERVICE_H
 #define HYDROGEN_SYSTEM_SERVICE_H
 
-//@ swagger:service Hydrogen System API
+//@ swagger:service System Service
 //@ swagger:description System-level API endpoints for monitoring, diagnostics, and information retrieval
 //@ swagger:version 1.0.0
-//@ swagger:tag "System Service" System operations
-//@ swagger:tag monitoring Health monitoring endpoints
-//@ swagger:tag diagnostics System diagnostics and troubleshooting
-//@ swagger:tag info System information and status
+//@ swagger:tag "System Service" Provides system-level operations, monitoring, and diagnostics
 
 // Include all system endpoint headers
 #include "info/info.h"

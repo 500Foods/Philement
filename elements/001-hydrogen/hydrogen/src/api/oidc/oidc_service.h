@@ -6,6 +6,11 @@
 #ifndef HYDROGEN_OIDC_SERVICE_H
 #define HYDROGEN_OIDC_SERVICE_H
 
+//@ swagger:service OIDC Service
+//@ swagger:description OpenID Connect authentication and identity management endpoints
+//@ swagger:version 1.0.0
+//@ swagger:tag "OIDC Service" Provides OpenID Connect protocol endpoints and authentication services
+
 // Feature test macros
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L

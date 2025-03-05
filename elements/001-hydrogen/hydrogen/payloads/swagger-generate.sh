@@ -85,13 +85,23 @@ function find_endpoints() {
             # Process service tags
             if [ -f "${service_dir}/${service_name}_service.h" ]; then
                 grep -E "//@ swagger:tag" "${service_dir}/${service_name}_service.h" | while read -r line; do
-                    tag_name=$(echo "$line" | sed -E 's/.*swagger:tag[[:space:]]+([^[:space:]]+)[[:space:]](.*)/\1/')
-                    tag_desc=$(echo "$line" | sed -E 's/.*swagger:tag[[:space:]]+([^[:space:]]+)[[:space:]](.*)/\2/')
+                    # Extract tag name and description, handling quoted strings
+                    if echo "$line" | grep -q "swagger:tag[[:space:]]*\""; then
+                        # Handle quoted tag names
+                        tag_name=$(echo "$line" | sed -E 's/.*swagger:tag[[:space:]]*"([^"]+)".*/\1/')
+                        tag_desc=$(echo "$line" | sed -E 's/.*swagger:tag[[:space:]]*"[^"]+"[[:space:]]+(.*)/\1/')
+                    else
+                        # Handle unquoted tag names
+                        tag_name=$(echo "$line" | sed -E 's/.*swagger:tag[[:space:]]+([^[:space:]]+)[[:space:]](.*)/\1/')
+                        tag_desc=$(echo "$line" | sed -E 's/.*swagger:tag[[:space:]]+([^[:space:]]+)[[:space:]](.*)/\2/')
+                    fi
                     
                     # Add to tags file if not already present
-                    tag_exists=$(jq --arg name "$tag_name" '.[] | select(.name == $name) | .name' "$TAGS_FILE")
+                    # Remove quotes from tag name for jq processing
+                    clean_tag_name=$(echo "$tag_name" | sed 's/"//g')
+                    tag_exists=$(jq --arg name "$clean_tag_name" '.[] | select(.name == $name) | .name' "$TAGS_FILE")
                     if [ -z "$tag_exists" ]; then
-                        jq --arg name "$tag_name" --arg desc "$tag_desc" \
+                        jq --arg name "$clean_tag_name" --arg desc "$tag_desc" \
                             '. += [{"name": $name, "description": $desc}]' "$TAGS_FILE" > "${TEMP_DIR}/tags_new.json"
                         mv "${TEMP_DIR}/tags_new.json" "$TAGS_FILE"
                         echo -e "  ${GREEN}${INFO} Added tag: ${NC}${tag_name}"
@@ -130,25 +140,14 @@ function find_endpoints() {
                                 method=$(grep -E "//@ swagger:method" "$header_file" | sed -E 's/.*swagger:method[[:space:]]+([^[:space:]]+).*/\1/' || echo "GET")
                                 method=${method,,}  # Convert to lowercase
                                 
-                                # Extract operation ID
+                                # Extract the service tag first
+                                service_tag_file="${TEMP_DIR}/service_tag.txt"
+                                grep -E "//@ swagger:tag" "${service_dir}/${service_name}_service.h" | head -1 | sed -E 's/.*swagger:tag[[:space:]]*"([^"]+)".*/\1/' > "$service_tag_file"
+                                service_tag=$(cat "$service_tag_file")
+                                tag_array="[\"$service_tag\"]"
+
+                                # Only include operationId if explicitly defined
                                 operation_id=$(grep -E "//@ swagger:operationId" "$header_file" | sed -E 's/.*swagger:operationId[[:space:]]+([^[:space:]]+).*/\1/' || echo "")
-                                if [ -z "$operation_id" ]; then
-                                    # Generate from method and path
-                                    operation_id="${method}$(echo "$path" | sed 's/[^a-zA-Z0-9]//g')"
-                                fi
-                                
-                                # Extract tags
-                                tags=$(grep -E "//@ swagger:tags" "$header_file" | sed -E 's/.*swagger:tags[[:space:]]+([^[:space:]]+).*/\1/' || echo "$service_name")
-                                # Convert comma-separated list to JSON array
-                                tag_array="["
-                                IFS=',' read -ra tag_items <<< "$tags"
-                                for i in "${!tag_items[@]}"; do
-                                    if [ "$i" -gt 0 ]; then
-                                        tag_array+=", "
-                                    fi
-                                    tag_array+="\"${tag_items[$i]}\""
-                                done
-                                tag_array+="]"
                                 
                                 # Extract summary
                                 summary=$(grep -E "//@ swagger:summary" "$header_file" | sed -E 's/.*swagger:summary[[:space:]]+([^$]*)/\1/' || echo "$endpoint_name endpoint")
@@ -189,11 +188,15 @@ function find_endpoints() {
                                         schema_part='{"type": "object"}'
                                     fi
                                     
-                                    # Select appropriate description
-                                    if [ "$status" = "200" ]; then
+                                    # Select appropriate description based on status code
+                                    if [ "$status" -ge 200 ] && [ "$status" -lt 300 ]; then
                                         description="Successful operation"
+                                    elif [ "$status" -ge 400 ] && [ "$status" -lt 500 ]; then
+                                        description="Client error"
+                                    elif [ "$status" -ge 500 ]; then
+                                        description="Server error"
                                     else
-                                        description="Error response"
+                                        description="Response"
                                     fi
                                     
                                     # Create a temporary file for the response
@@ -222,20 +225,33 @@ function find_endpoints() {
                                        "$responses_file" > "${responses_file}.tmp" && mv "${responses_file}.tmp" "$responses_file"
                                 fi
                                 
-                                # Build the path item operation object
+                                # Build the operation object based on whether operationId exists
                                 operation_file="${TEMP_DIR}/operation.json"
-                                jq -n --arg summary "$summary" \
-                                      --arg desc "$description" \
-                                      --arg opid "$operation_id" \
-                                      --argjson tags "$tag_array" \
-                                      --slurpfile responses "$responses_file" \
-                                      '{
-                                         "summary": $summary,
-                                         "description": $desc,
-                                         "operationId": $opid,
-                                         "tags": $tags,
-                                         "responses": $responses[0]
-                                       }' > "$operation_file"
+                                if [ -n "$operation_id" ]; then
+                                    jq -n --arg summary "$summary" \
+                                          --arg desc "$description" \
+                                          --arg opid "$operation_id" \
+                                          --argjson tags "$tag_array" \
+                                          --slurpfile responses "$responses_file" \
+                                          '{
+                                             "summary": $summary,
+                                             "description": $desc,
+                                             "operationId": $opid,
+                                             "tags": $tags,
+                                             "responses": $responses[0]
+                                           }' > "$operation_file"
+                                else
+                                    jq -n --arg summary "$summary" \
+                                          --arg desc "$description" \
+                                          --argjson tags "$tag_array" \
+                                          --slurpfile responses "$responses_file" \
+                                          '{
+                                             "summary": $summary,
+                                             "description": $desc,
+                                             "tags": $tags,
+                                             "responses": $responses[0]
+                                           }' > "$operation_file"
+                                fi
                                 
                                 # Add the operation to the path
                                 path_exists=$(jq --arg path "$path" 'has($path)' "$PATHS_FILE")

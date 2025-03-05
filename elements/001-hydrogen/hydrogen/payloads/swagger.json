@@ -23,23 +23,26 @@
   ],
   "tags": [
     {
-      "name": "\"System",
-      "description": "Service\" System operations"
+      "name": "OIDC Service",
+      "description": "Provides OpenID Connect protocol endpoints and authentication services"
+    },
+    {
+      "name": "System Service",
+      "description": "Provides system-level operations, monitoring, and diagnostics"
     }
   ],
   "paths": {
     "/oauth/authorize": {
       "get\npost": {
         "summary": "OAuth 2.0 authorization endpoint",
-        "description": "Handles the OAuth 2.0 authorization code flow for user authentication\nInitiates the OAuth 2.0 authorization flow. For GET requests, presents a login UI to the user. For POST requests, processes login data and redirects with an authorization code. Supports multiple response types including 'code' for Authorization Code flow and 'token' for Implicit flow.",
+        "description": "Initiates the OAuth 2.0 authorization flow. For GET requests, presents a login UI to the user. For POST requests, processes login data and redirects with an authorization code. Supports multiple response types including 'code' for Authorization Code flow and 'token' for Implicit flow.",
         "operationId": "authorizeUser",
         "tags": [
-          "oidc",
-          "authorization"
+          "OIDC Service"
         ],
         "responses": {
           "302": {
-            "description": "Error response",
+            "description": "Response",
             "content": {
               "Redirect": {
                 "schema": {
@@ -49,7 +52,7 @@
             }
           },
           "400": {
-            "description": "Error response",
+            "description": "Client error",
             "content": {
               "application/json": {
                 "schema": {
@@ -67,7 +70,7 @@
             }
           },
           "500": {
-            "description": "Error response",
+            "description": "Server error",
             "content": {
               "application/json": {
                 "schema": {
@@ -88,11 +91,10 @@
     "/.well-known/openid-configuration": {
       "get": {
         "summary": "OpenID Connect discovery document",
-        "description": "Provides the OpenID Connect discovery document with server capabilities and endpoint URLs\nReturns a JSON document containing the OpenID Provider's configuration information including all supported endpoints, scopes, response types, and claims. This document follows the OpenID Connect Discovery 1.0 specification.",
+        "description": "Returns a JSON document containing the OpenID Provider's configuration information including all supported endpoints, scopes, response types, and claims. This document follows the OpenID Connect Discovery 1.0 specification.",
         "operationId": "getOpenIDConfiguration",
         "tags": [
-          "oidc",
-          "discovery"
+          "OIDC Service"
         ],
         "responses": {
           "200": {
@@ -135,7 +137,7 @@
             }
           },
           "500": {
-            "description": "Error response",
+            "description": "Server error",
             "content": {
               "application/json": {
                 "schema": {
@@ -156,15 +158,14 @@
     "/oauth/end-session": {
       "get\npost": {
         "summary": "OpenID Connect Session Management endpoint",
-        "description": "Allows users to log out and terminate their sessions\nImplements the OpenID Connect RP-Initiated Logout specification. Allows users to log out and terminate their session with the OpenID Provider. Can also notify Relying Parties (client applications) that the user's session has ended.",
+        "description": "Implements the OpenID Connect RP-Initiated Logout specification. Allows users to log out and terminate their session with the OpenID Provider. Can also notify Relying Parties (client applications) that the user's session has ended.",
         "operationId": "endSession",
         "tags": [
-          "oidc",
-          "session"
+          "OIDC Service"
         ],
         "responses": {
           "302": {
-            "description": "Error response",
+            "description": "Response",
             "content": {
               "Redirects": {
                 "schema": {
@@ -184,7 +185,7 @@
             }
           },
           "400": {
-            "description": "Error response",
+            "description": "Client error",
             "content": {
               "application/json": {
                 "schema": {
@@ -207,11 +208,10 @@
     "/oauth/introspect": {
       "post": {
         "summary": "OAuth 2.0 token introspection endpoint",
-        "description": "Provides token validation and metadata for resource servers\nAllows authorized clients to determine the active state of a token and its metadata as specified in RFC 7662. Resource servers use this endpoint to validate tokens presented by clients and retrieve associated metadata.",
+        "description": "Allows authorized clients to determine the active state of a token and its metadata as specified in RFC 7662. Resource servers use this endpoint to validate tokens presented by clients and retrieve associated metadata.",
         "operationId": "introspectToken",
         "tags": [
-          "oidc",
-          "introspection"
+          "OIDC Service"
         ],
         "responses": {
           "200": {
@@ -263,7 +263,7 @@
             }
           },
           "401": {
-            "description": "Error response",
+            "description": "Client error",
             "content": {
               "application/json": {
                 "schema": {
@@ -283,7 +283,7 @@
             }
           },
           "400": {
-            "description": "Error response",
+            "description": "Client error",
             "content": {
               "application/json": {
                 "schema": {
@@ -308,11 +308,10 @@
     "/oauth/jwks": {
       "get": {
         "summary": "JSON Web Key Set endpoint",
-        "description": "Provides JSON Web Key Set for token signature verification\nReturns a set of JSON Web Keys (JWK) that represent the public part of the keys used by the OIDC provider to sign tokens. Clients use these keys to verify the signature of tokens issued by the provider.",
+        "description": "Returns a set of JSON Web Keys (JWK) that represent the public part of the keys used by the OIDC provider to sign tokens. Clients use these keys to verify the signature of tokens issued by the provider.",
         "operationId": "getJWKS",
         "tags": [
-          "oidc",
-          "jwks"
+          "OIDC Service"
         ],
         "responses": {
           "200": {
@@ -354,7 +353,7 @@
             }
           },
           "500": {
-            "description": "Error response",
+            "description": "Server error",
             "content": {
               "application/json": {
                 "schema": {
@@ -375,15 +374,14 @@
     "/oauth/register": {
       "post": {
         "summary": "Dynamic Client Registration endpoint",
-        "description": "Allows dynamic registration of OIDC clients\nAllows clients to register with the OIDC provider, following the OpenID Connect Dynamic Client Registration protocol. The registration metadata is submitted as a JSON document and the server returns client credentials and configuration.",
+        "description": "Allows clients to register with the OIDC provider, following the OpenID Connect Dynamic Client Registration protocol. The registration metadata is submitted as a JSON document and the server returns client credentials and configuration.",
         "operationId": "registerClient",
         "tags": [
-          "oidc",
-          "registration"
+          "OIDC Service"
         ],
         "responses": {
           "201": {
-            "description": "Error response",
+            "description": "Successful operation",
             "content": {
               "application/json": {
                 "schema": {
@@ -446,7 +444,7 @@
             }
           },
           "400": {
-            "description": "Error response",
+            "description": "Client error",
             "content": {
               "application/json": {
                 "schema": {
@@ -469,11 +467,10 @@
     "/oauth/revoke": {
       "post": {
         "summary": "OAuth 2.0 token revocation endpoint",
-        "description": "Allows clients to invalidate tokens they no longer need\nAllows clients to notify the authorization server that a token is no longer needed, allowing the server to invalidate the token. This endpoint implements RFC 7009 and supports revocation of both access tokens and refresh tokens.",
+        "description": "Allows clients to notify the authorization server that a token is no longer needed, allowing the server to invalidate the token. This endpoint implements RFC 7009 and supports revocation of both access tokens and refresh tokens.",
         "operationId": "revokeToken",
         "tags": [
-          "oidc",
-          "revocation"
+          "OIDC Service"
         ],
         "responses": {
           "200": {
@@ -487,7 +484,7 @@
             }
           },
           "400": {
-            "description": "Error response",
+            "description": "Client error",
             "content": {
               "application/json": {
                 "schema": {
@@ -507,7 +504,7 @@
             }
           },
           "401": {
-            "description": "Error response",
+            "description": "Client error",
             "content": {
               "application/json": {
                 "schema": {
@@ -532,11 +529,10 @@
     "/oauth/token": {
       "post": {
         "summary": "OAuth 2.0 token endpoint",
-        "description": "Handles OAuth 2.0 token requests and issues access, refresh, and ID tokens\nIssues access tokens, refresh tokens, and ID tokens based on the provided grant type. Supports authorization_code, refresh_token, client_credentials, and password grant types. Client authentication is required either via HTTP Basic Authentication or using client_id and client_secret parameters.",
+        "description": "Issues access tokens, refresh tokens, and ID tokens based on the provided grant type. Supports authorization_code, refresh_token, client_credentials, and password grant types. Client authentication is required either via HTTP Basic Authentication or using client_id and client_secret parameters.",
         "operationId": "issueTokens",
         "tags": [
-          "oidc",
-          "tokens"
+          "OIDC Service"
         ],
         "responses": {
           "200": {
@@ -568,7 +564,7 @@
             }
           },
           "400": {
-            "description": "Error response",
+            "description": "Client error",
             "content": {
               "application/json": {
                 "schema": {
@@ -586,7 +582,7 @@
             }
           },
           "401": {
-            "description": "Error response",
+            "description": "Client error",
             "content": {
               "application/json": {
                 "schema": {
@@ -610,11 +606,10 @@
     "/oauth/userinfo": {
       "get\npost": {
         "summary": "OpenID Connect UserInfo endpoint",
-        "description": "Provides authenticated user information based on access token scopes\nReturns claims about the authenticated end-user. Requires a valid access token with appropriate scopes. The claims returned depend on the scopes associated with the access token and the user's profile data.",
+        "description": "Returns claims about the authenticated end-user. Requires a valid access token with appropriate scopes. The claims returned depend on the scopes associated with the access token and the user's profile data.",
         "operationId": "getUserInfo",
         "tags": [
-          "oidc",
-          "userinfo"
+          "OIDC Service"
         ],
         "responses": {
           "200": {
@@ -651,7 +646,7 @@
             }
           },
           "401": {
-            "description": "Error response",
+            "description": "Client error",
             "content": {
               "application/json": {
                 "schema": {
@@ -671,7 +666,7 @@
             }
           },
           "403": {
-            "description": "Error response",
+            "description": "Client error",
             "content": {
               "application/json": {
                 "schema": {
@@ -696,11 +691,10 @@
     "/system/health": {
       "get": {
         "summary": "Health check endpoint",
-        "description": "Provides system health endpoints for monitoring and diagnostics\nReturns a simple health check response indicating the service is alive. Used primarily by load balancers for health monitoring in distributed deployments.",
+        "description": "Returns a simple health check response indicating the service is alive. Used primarily by load balancers for health monitoring in distributed deployments.",
         "operationId": "getSystemHealth",
         "tags": [
-          "system",
-          "monitoring"
+          "System Service"
         ],
         "responses": {
           "200": {
@@ -720,7 +714,7 @@
             }
           },
           "500": {
-            "description": "Error response",
+            "description": "Server error",
             "content": {
               "application/json": {
                 "schema": {
@@ -741,11 +735,10 @@
     "/system/info": {
       "get": {
         "summary": "System information endpoint",
-        "description": "Provides detailed system information for monitoring and diagnostics\nReturns comprehensive system information in JSON format including hardware details, operating system information, runtime statistics, and version information.",
+        "description": "Returns comprehensive system information in JSON format including hardware details, operating system information, runtime statistics, and version information.",
         "operationId": "getSystemInfo",
         "tags": [
-          "system",
-          "info"
+          "System Service"
         ],
         "responses": {
           "200": {
@@ -773,7 +766,7 @@
             }
           },
           "500": {
-            "description": "Error response",
+            "description": "Server error",
             "content": {
               "application/json": {
                 "schema": {
@@ -794,11 +787,10 @@
     "/system/test": {
       "get\npost": {
         "summary": "API diagnostic test endpoint",
-        "description": "Provides a diagnostic endpoint for testing API functionality\nReturns diagnostic information useful for testing and debugging API calls. Supports both GET and POST methods to test different request types. The response includes client IP address, authentication details, headers, query parameters, and POST data.",
+        "description": "Returns diagnostic information useful for testing and debugging API calls. Supports both GET and POST methods to test different request types. The response includes client IP address, authentication details, headers, query parameters, and POST data.",
         "operationId": "testSystemEndpoint",
         "tags": [
-          "system",
-          "diagnostics"
+          "System Service"
         ],
         "responses": {
           "200": {
@@ -830,7 +822,7 @@
             }
           },
           "500": {
-            "description": "Error response",
+            "description": "Server error",
             "content": {
               "application/json": {
                 "schema": {

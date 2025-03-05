@@ -6,11 +6,6 @@
 #ifndef HYDROGEN_OIDC_REVOCATION_H
 #define HYDROGEN_OIDC_REVOCATION_H
 
-//@ swagger:service OIDC Revocation Service
-//@ swagger:description Allows clients to invalidate tokens they no longer need
-//@ swagger:tag oidc OpenID Connect protocol endpoints
-//@ swagger:tag revocation Token invalidation and revocation
-
 // Feature test macros
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
@@ -40,7 +35,7 @@
 //@ swagger:path /oauth/revoke
 //@ swagger:method POST
 //@ swagger:operationId revokeToken
-//@ swagger:tags oidc,revocation
+//@ swagger:tags "OIDC Service"
 //@ swagger:summary OAuth 2.0 token revocation endpoint
 //@ swagger:description Allows clients to notify the authorization server that a token is no longer needed, allowing the server to invalidate the token. This endpoint implements RFC 7009 and supports revocation of both access tokens and refresh tokens.
 //@ swagger:parameter token string required The token to be revoked

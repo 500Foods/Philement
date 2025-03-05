@@ -6,11 +6,6 @@
 #ifndef HYDROGEN_OIDC_INTROSPECTION_H
 #define HYDROGEN_OIDC_INTROSPECTION_H
 
-//@ swagger:service OIDC Introspection Service
-//@ swagger:description Provides token validation and metadata for resource servers
-//@ swagger:tag oidc OpenID Connect protocol endpoints
-//@ swagger:tag introspection Token validation and inspection
-
 // Feature test macros
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
@@ -40,7 +35,7 @@
 //@ swagger:path /oauth/introspect
 //@ swagger:method POST
 //@ swagger:operationId introspectToken
-//@ swagger:tags oidc,introspection
+//@ swagger:tags "OIDC Service"
 //@ swagger:summary OAuth 2.0 token introspection endpoint
 //@ swagger:description Allows authorized clients to determine the active state of a token and its metadata as specified in RFC 7662. Resource servers use this endpoint to validate tokens presented by clients and retrieve associated metadata.
 //@ swagger:parameter token string required The string value of the token

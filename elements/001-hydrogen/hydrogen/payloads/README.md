@@ -98,24 +98,25 @@ Annotations use the following format:
 
 ### Common Annotations
 
-#### Service-level Annotations
+#### Service-level Annotations (in service header files)
 
 ```c
-//@ swagger:service Service Name
-//@ swagger:description Service description goes here
-//@ swagger:tag tagname Tag description
+//@ swagger:tag "System Service" Provides system-level operations and monitoring
 ```
 
-#### Endpoint Annotations
+#### Endpoint Annotations (in endpoint header files)
 
 ```c
-//@ swagger:path /path/to/endpoint
+//@ swagger:path /system/info
 //@ swagger:method GET
-//@ swagger:method POST
-//@ swagger:operationId operationName
-//@ swagger:tags tag1,tag2
-//@ swagger:summary Short summary of what this endpoint does
-//@ swagger:description Longer description with more details
+//@ swagger:summary System information endpoint
+//@ swagger:description Returns comprehensive system information
+//@ swagger:response 200 application/json {"type":"object","properties":{"status":{"type":"string"}}}
+```
+
+The `operationId` field is optional and can be added if needed:
+```c
+//@ swagger:operationId getSystemInfo
 ```
 
 #### Parameter Annotations
@@ -142,7 +143,7 @@ Annotations use the following format:
 To generate the OpenAPI specification:
 
 ```bash
-cd payload
+cd payloads
 ./swagger-generate.sh
 ```
 
@@ -153,7 +154,7 @@ This will scan the source code for annotations and produce an updated `swagger.j
 To build the encrypted payload:
 
 ```bash
-cd payload
+cd payloads
 export PAYLOAD_LOCK="base64-encoded-rsa-public-key"
 ./payload-generate.sh
 ```
@@ -169,7 +170,7 @@ You can view the API documentation using Swagger UI:
    # Generate the OpenAPI specification
    ./swagger-generate.sh
    
-   # Package and encrypt the payload
+   # Package and encrypt the payloads
    ./payload-generate.sh
    ```
 

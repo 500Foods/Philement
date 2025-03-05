@@ -6,10 +6,6 @@
 #ifndef HYDROGEN_SYSTEM_INFO_H
 #define HYDROGEN_SYSTEM_INFO_H
 
-//@ swagger:service System Information Service
-//@ swagger:description Provides detailed system information for monitoring and diagnostics
-//@ swagger:tag "System Service" System operations
-
 // Feature test macros
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
@@ -47,7 +43,7 @@
 //@ swagger:path /api/system/info
 //@ swagger:method GET
 //@ swagger:operationId getSystemInfo
-//@ swagger:tags system,info
+//@ swagger:tags "System Service"
 //@ swagger:summary System information endpoint
 //@ swagger:description Returns comprehensive system information in JSON format including hardware details, operating system information, runtime statistics, and version information.
 //@ swagger:response 200 application/json {"type":"object","properties":{"hardware":{"type":"object"},"os":{"type":"object"},"runtime":{"type":"object"},"version":{"type":"object"}}}
