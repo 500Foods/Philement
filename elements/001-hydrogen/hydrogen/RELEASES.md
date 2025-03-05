@@ -26,8 +26,25 @@ EDITING GUIDELINES (not visible when rendered):
 
 ## 2025-Mar-04
 
+Web Server:
+
+- Enhanced payload security with encryption:
+  - Implemented RSA+AES hybrid encryption for embedded payload files
+  - Renamed SwaggerUI payload to generic payload.tar.br for future extensibility
+  - Renamed swagger/ directory to payload/ to reflect more general-purpose nature
+  - Added PAYLOAD_LOCK environment variable for encryption (RSA public key)
+  - Added PAYLOAD_KEY environment variable for decryption (RSA private key)
+  - Updated web_server_swagger.c for decryption support
+  - Fixed payload extraction and handling for encrypted content
+
 Configuration:
 
+- Added PayloadKey to configuration structure:
+  - Added payload_key field to AppConfig in configuration.h
+  - Updated configuration.c to parse PayloadKey from config file
+  - Added PayloadKey to hydrogen.json with environment variable support
+  - Modified default configuration to include PayloadKey
+  - Added fallback for missing PayloadKey configuration
 - Fixed API prefix initialization when WebServer section is missing:
   - Added default initialization of api_prefix to "/api" in configuration.c
   - Ensured API endpoints work correctly with minimal configuration

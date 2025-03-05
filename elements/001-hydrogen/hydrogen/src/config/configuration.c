@@ -721,6 +721,9 @@ static double get_config_double(json_t* value, double default_value) {
 int MAX_PRIORITY_LABEL_WIDTH = 9;
 int MAX_SUBSYSTEM_LABEL_WIDTH = 18;
 
+// Global static configuration instance
+static AppConfig *app_config = NULL;
+
 const PriorityLevel DEFAULT_PRIORITY_LEVELS[NUM_PRIORITY_LEVELS] = {
     {0, "ALL"},
     {1, "INFO"},
@@ -730,6 +733,17 @@ const PriorityLevel DEFAULT_PRIORITY_LEVELS[NUM_PRIORITY_LEVELS] = {
     {5, "CRITICAL"},
     {6, "NONE"}
 };
+
+/*
+ * Get the current application configuration
+ * 
+ * Returns a pointer to the current application configuration.
+ * This configuration is loaded by load_config() and stored in a static variable.
+ * The returned pointer should not be modified by the caller.
+ */
+const AppConfig* get_app_config(void) {
+    return app_config;
+}
 
 /*
  * Determine executable location with robust error handling
@@ -849,6 +863,9 @@ void create_default_config(const char* config_path) {
 
     // Server Name
     json_object_set_new(root, "ServerName", json_string("Philement/hydrogen"));
+    
+    // Payload Key (using environment variable by default)
+    json_object_set_new(root, "PayloadKey", json_string("${env.PAYLOAD_KEY}"));
 
     // Log File
     json_object_set_new(root, "LogFile", json_string("/var/log/hydrogen.log"));
@@ -1113,6 +1130,11 @@ void create_default_config(const char* config_path) {
  *    - Maintains configuration versioning
  */
 AppConfig* load_config(const char* config_path) {
+    // Free previous configuration if it exists
+    if (app_config) {
+        // TODO: Implement proper cleanup of AppConfig resources
+        free(app_config);
+    }
     json_error_t error;
     json_t* root = json_load_file(config_path, 0, &error);
 
@@ -1136,6 +1158,9 @@ AppConfig* load_config(const char* config_path) {
         json_decref(root);
         return NULL;
     }
+    
+    // Store the configuration in the global static variable
+    app_config = config;
 
     // Set executable path
     config->executable_path = get_executable_path();
@@ -1154,6 +1179,33 @@ AppConfig* load_config(const char* config_path) {
         log_this("Configuration", "ServerName: (default)", LOG_LEVEL_INFO);
     } else {
         log_this("Configuration", "ServerName: %s", LOG_LEVEL_INFO, config->server_name);
+    }
+    
+    // Payload Key (for payload decryption)
+    json_t* payload_key = json_object_get(root, "PayloadKey");
+    config->payload_key = get_config_string(payload_key, "${env.PAYLOAD_KEY}");
+    // Don't log the actual key value for security reasons
+    if (config->payload_key && strncmp(config->payload_key, "${env.", 6) == 0) {
+        const char* env_var = config->payload_key + 6;
+        size_t env_var_len = strlen(env_var);
+        if (env_var_len > 1 && env_var[env_var_len - 1] == '}') {
+            // Extract the variable name
+            char var_name[256] = {0};
+            // Use a safer approach with explicit size check and manual null termination
+            size_t copy_len = env_var_len - 1 < sizeof(var_name) - 1 ? env_var_len - 1 : sizeof(var_name) - 1;
+            memcpy(var_name, env_var, copy_len);
+            var_name[copy_len] = '\0';
+            
+            if (getenv(var_name)) {
+                log_this("Configuration", "PayloadKey: Using value from %s", LOG_LEVEL_INFO, var_name);
+            } else {
+                log_this("Configuration", "PayloadKey: Environment variable %s not found", LOG_LEVEL_WARN, var_name);
+            }
+        }
+    } else if (config->payload_key) {
+        log_this("Configuration", "PayloadKey: Set from configuration", LOG_LEVEL_INFO);
+    } else {
+        log_this("Configuration", "PayloadKey: Not configured", LOG_LEVEL_WARN);
     }
 
     // Log File
