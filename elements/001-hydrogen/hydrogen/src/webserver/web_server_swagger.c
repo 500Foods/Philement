@@ -207,11 +207,82 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
     // Determine if we should serve compressed content
     bool serve_compressed = file->is_compressed && client_accepts_brotli(connection);
 
-    // If this is swagger-initializer.js, we need to modify it with the correct URL
+    // If this is swagger.json or swagger-initializer.js, we need to modify it
     struct MHD_Response *response;
     char *dynamic_content = NULL;
     
-    if (strcmp(url_path, "swagger-initializer.js") == 0) {
+    if (strcmp(url_path, "swagger.json") == 0) {
+        // Parse the original swagger.json
+        json_error_t error;
+        json_t *spec = json_loadb((const char*)file->data, file->size, 0, &error);
+        if (!spec) {
+            log_this("WebServer", "Failed to parse swagger.json: %s", LOG_LEVEL_ERROR, error.text);
+            return MHD_NO;
+        }
+
+        // Get the info object or create it if it doesn't exist
+        json_t *info = json_object_get(spec, "info");
+        if (!info) {
+            info = json_object();
+            json_object_set_new(spec, "info", info);
+        }
+
+        // Update metadata from config
+        if (config->swagger.metadata.title) {
+            json_object_set_new(info, "title", json_string(config->swagger.metadata.title));
+        }
+        if (config->swagger.metadata.description) {
+            json_object_set_new(info, "description", json_string(config->swagger.metadata.description));
+        }
+        if (config->swagger.metadata.version) {
+            json_object_set_new(info, "version", json_string(config->swagger.metadata.version));
+        }
+
+        // Update contact info if provided
+        if (config->swagger.metadata.contact.name || 
+            config->swagger.metadata.contact.email || 
+            config->swagger.metadata.contact.url) {
+            json_t *contact = json_object();
+            if (config->swagger.metadata.contact.name) {
+                json_object_set_new(contact, "name", json_string(config->swagger.metadata.contact.name));
+            }
+            if (config->swagger.metadata.contact.email) {
+                json_object_set_new(contact, "email", json_string(config->swagger.metadata.contact.email));
+            }
+            if (config->swagger.metadata.contact.url) {
+                json_object_set_new(contact, "url", json_string(config->swagger.metadata.contact.url));
+            }
+            json_object_set_new(info, "contact", contact);
+        }
+
+        // Update license info if provided
+        if (config->swagger.metadata.license.name || config->swagger.metadata.license.url) {
+            json_t *license = json_object();
+            if (config->swagger.metadata.license.name) {
+                json_object_set_new(license, "name", json_string(config->swagger.metadata.license.name));
+            }
+            if (config->swagger.metadata.license.url) {
+                json_object_set_new(license, "url", json_string(config->swagger.metadata.license.url));
+            }
+            json_object_set_new(info, "license", license);
+        }
+
+        // Convert the modified spec back to JSON
+        dynamic_content = json_dumps(spec, JSON_INDENT(2));
+        json_decref(spec);
+
+        if (!dynamic_content) {
+            log_this("WebServer", "Failed to serialize modified swagger.json", LOG_LEVEL_ERROR, NULL);
+            return MHD_NO;
+        }
+
+        response = MHD_create_response_from_buffer(
+            strlen(dynamic_content),
+            dynamic_content,
+            MHD_RESPMEM_MUST_FREE
+        );
+
+    } else if (strcmp(url_path, "swagger-initializer.js") == 0) {
         // Get the server's base URL
         char *server_url = get_server_url(connection, config);
         if (!server_url) {
@@ -942,14 +1013,29 @@ static char* create_dynamic_initializer(const char *base_content __attribute__((
         "        SwaggerUIBundle.plugins.DownloadUrl\n"
         "      ],\n"
         "      layout: \"StandaloneLayout\",\n"
-        "      tryItOutEnabled: true,\n"
-        "      displayOperationId: true,\n"
-        "      defaultModelsExpandDepth: 1,\n"
-        "      defaultModelExpandDepth: 1,\n"
-        "      docExpansion: \"list\"\n"
+        "      tryItOutEnabled: %s,\n"
+        "      displayOperationId: %s,\n"
+        "      defaultModelsExpandDepth: %d,\n"
+        "      defaultModelExpandDepth: %d,\n"
+        "      showExtensions: %s,\n"
+        "      showCommonExtensions: %s,\n"
+        "      docExpansion: \"%s\",\n"
+        "      syntaxHighlight: {\n"
+        "        theme: \"%s\"\n"
+        "      }\n"
         "    });\n"
         "  });\n"
-        "};", server_url, config->swagger.prefix, server_url, config->api_prefix) == -1) {
+        "};", 
+        server_url, config->swagger.prefix, 
+        server_url, config->api_prefix,
+        config->swagger.ui_options.try_it_enabled ? "true" : "false",
+        config->swagger.ui_options.display_operation_id ? "true" : "false",
+        config->swagger.ui_options.default_models_expand_depth,
+        config->swagger.ui_options.default_model_expand_depth,
+        config->swagger.ui_options.show_extensions ? "true" : "false",
+        config->swagger.ui_options.show_common_extensions ? "true" : "false",
+        config->swagger.ui_options.doc_expansion,
+        config->swagger.ui_options.syntax_highlight_theme) == -1) {
         return NULL;
     }
 
