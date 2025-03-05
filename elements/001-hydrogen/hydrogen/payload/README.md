@@ -4,15 +4,16 @@ This directory contains the encrypted payload system for the Hydrogen project, w
 
 ## Overview
 
-The payload system for Hydrogen provides a secure way to embed various assets directly into the executable. The current implementation includes SwaggerUI for API documentation, but the architecture has been designed to accommodate additional payloads in the future.
+The payload system for Hydrogen provides a secure way to embed various assets directly into the executable. The current implementation includes SwaggerUI for API documentation, with a robust hybrid encryption system and optimized compression.
 
 Key features:
 
-- **General-purpose payload system**
-- **RSA+AES hybrid encryption**
-- **Environment variable-based key management**
-- **OpenAPI 3.1.0 compatibility**
-- **Optimized with Brotli compression**
+- **General-purpose payload system** - Designed to handle multiple payload types
+- **RSA+AES hybrid encryption** - Secure key exchange with efficient payload encryption
+- **Environment variable-based key management** - Flexible and secure key distribution
+- **OpenAPI 3.1.0 compatibility** - Full support for latest OpenAPI specification
+- **Optimized with Brotli compression** - High compression ratio for static assets
+- **Dynamic content adaptation** - Server URL and configuration auto-adjustment
 
 ## Directory Contents
 
@@ -42,20 +43,38 @@ The Hydrogen project uses a hybrid RSA+AES encryption approach for payloads:
    - Processes the decrypted payload as normal
 
 4. **File Format**:
-   - `[key_size(4 bytes)] + [encrypted_aes_key] + [encrypted_payload]`
+   ```
+   [key_size(4 bytes)] + [encrypted_aes_key] + [iv(16 bytes)] + [encrypted_payload]
+   ```
+   - key_size: 4-byte header indicating encrypted AES key length
+   - encrypted_aes_key: RSA-encrypted AES-256 key
+   - iv: 16-byte initialization vector for AES-CBC
+   - encrypted_payload: AES-encrypted, Brotli-compressed tar file
 
 ## SwaggerUI Implementation
 
 The primary payload currently embedded is a highly optimized SwaggerUI implementation:
 
-- **SwaggerUI Version**: We use SwaggerUI 5.19.0 with selectively included files
+- **SwaggerUI Version**: SwaggerUI 5.19.0 with selective file inclusion
 - **Optimized Distribution**: 
-  - Static assets (swagger-ui-bundle.js, swagger-ui.css, swagger.json, oauth2-redirect.html) are compressed with Brotli
-  - Dynamic files (index.html, swagger-initializer.js) remain uncompressed for runtime modification
+  - Static assets are Brotli-compressed:
+    - swagger-ui-bundle.js
+    - swagger-ui-standalone-preset.js
+    - swagger-ui.css
+    - oauth2-redirect.html
+  - Dynamic files remain uncompressed for runtime modification:
+    - index.html
+    - swagger-initializer.js
+    - favicon-32x32.png
+    - favicon-16x16.png
   - All packaged in a flat tar structure for efficient serving
-- **Size Optimization**: The compressed distribution is ~345KB, significantly smaller than default SwaggerUI
-- **OAuth Support**: Includes oauth2-redirect.html for OAuth 2.0 authorization flows
-- **SwaggerUI Configuration**: Built-in settings configured for optimal usability (TryItEnabled, AlwaysExpanded)
+- **Dynamic Server URL**: Automatically adapts to the current server host and protocol
+- **OAuth Support**: Full OAuth 2.0 authorization flow support
+- **SwaggerUI Configuration**:
+  - TryItOut enabled by default
+  - Operation IDs displayed
+  - Optimized model expansion depth
+  - List-style documentation expansion
 
 The `payload-generate.sh` script handles downloading, compressing, encrypting, and packaging the payload distribution. Run this script when you want to update or recreate the payload package.
 
