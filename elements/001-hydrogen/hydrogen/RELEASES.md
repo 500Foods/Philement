@@ -2,40 +2,6 @@
 
 <!--
 EDITING GUIDELINES (not visible when rendered):
--->
-
-## 2025-Mar-05
-
-API:
-
-- Added new System Service/Config endpoint:
-  - Returns server configuration file in JSON format
-  - Uses api_send_json_response for automatic compression
-  - Added proper Swagger documentation and annotations
-  - Added to API documentation in src/api/README.md
-- Improved swagger-generate.sh for API documentation:
-  - Fixed handling of endpoints that support multiple HTTP methods
-  - Enhanced method-specific processing for proper OpenAPI output
-  - Added better logging of detected HTTP methods
-  - Improved variable separation for cleaner processing flow
-
-Testing:
-
-- Enhanced system endpoint testing:
-  - Added config endpoint to test_system_endpoints.sh
-  - Added brotli compression verification in tests
-  - Added JSON validation for configuration response
-  - Added test cases for both compressed and uncompressed responses
-
-Documentation:
-
-- Enhanced API documentation:
-  - Added detailed API utility function documentation
-  - Highlighted api_send_json_response for compression support
-  - Improved endpoint implementation guidance
-
-<!--
-EDITING GUIDELINES (not visible when rendered):
 - Keep entries concise and factual
 - Focus on WHAT changed, not WHY it's good
 - Avoid adjectives like "comprehensive", "robust", "significant"
@@ -57,6 +23,49 @@ EDITING GUIDELINES (not visible when rendered):
   - Example: Keep all "Documentation:" entries together, all "API:" entries together, etc.
   - Avoid patterns like "Documentation:"/items, "API:"/items, "Documentation:"/more items
 -->
+
+## 2025-Mar-05
+
+API:
+
+- Fixed segmentation fault in System Config endpoint:
+  - Removed redundant json_decref call that was causing a double-free
+  - Ensured proper JSON object lifecycle management
+  - Maintained compression and response handling functionality
+- Added new System Service/Config endpoint:
+  - Returns server configuration file in JSON format
+  - Uses api_send_json_response for automatic compression
+  - Added proper Swagger documentation and annotations
+  - Added to API documentation in src/api/README.md
+- Refactored System Health and Info endpoints:
+  - Simplified implementation using api_send_json_response
+  - Standardized API response handling across all system endpoints
+  - Improved code maintainability and error handling
+  - Reduced code duplication by eliminating manual compression logic
+- Improved swagger-generate.sh for API documentation:
+  - Fixed handling of endpoints that support multiple HTTP methods
+  - Enhanced method-specific processing for proper OpenAPI output
+  - Added better logging of detected HTTP methods
+  - Improved variable separation for cleaner processing flow
+
+Testing:
+
+- Enhanced system endpoint testing:
+  - Added config endpoint to test_system_endpoints.sh
+  - Added brotli compression verification in tests
+  - Added JSON validation for configuration response
+  - Added test cases for both compressed and uncompressed responses
+- Updated references to old swagger path:
+  - Changed "swagger/swaggerui.tar.br" to "payloads/payload.tar.br.enc" in test_compilation.sh
+  - Updated .gitignore to reference new payload paths
+  - Ensured consistency with existing payload directory structure
+
+Documentation:
+
+- Enhanced API documentation:
+  - Added detailed API utility function documentation
+  - Highlighted api_send_json_response for compression support
+  - Improved endpoint implementation guidance
 
 ## 2025-Mar-04
 
