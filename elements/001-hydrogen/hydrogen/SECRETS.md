@@ -24,13 +24,10 @@ export PAYLOAD_KEY="your-secret-key-here"
 # Multi-line values
 export PAYLOAD_KEY=$(cat <<EOF
 -----BEGIN RSA PRIVATE KEY-----
-MIIBOgIBAAJBAKj34GkxFhD90vcNLYLInFEX6Ppy1tPf9Cnzj4p4WGeKLs1Pt8Qu
-KUpRKfFLfRYC9AIKjbJTWit+CqvjWYzvQwECAwEAAQJAIJLixBy2qpFoS4DSmoEm
-o3qGy0t6z09AIJtH+5OeRV1be+N4cDYJKffGzDa88vQENZiRm0GRq6a+HPGQMd2k
-TQIhAKMSvzIBnni7ot/OSie2TmJLY4SwTQAEvXysE2RbFDYdAiEBCUEaRQnMnbp7
-9mxDXDf6AU0cN/RPBjb9qSHDcWZHGzUCIG2Es59z8ugGrDY+pxLQnwfotadxd+Uy
-v/Ow5T0q5gIJAiEAyS4RaI9YG8EWx/2w0T67ZUVAw8eOMB6BIUg0Xcu+3okCIBOs
-/5OiPgoTdSy7bcF9IGpSE8ZgGKzgYQVZeN97YE00
+Example
+RSA
+Key 
+Here
 -----END RSA PRIVATE KEY-----
 EOF
 )
@@ -87,22 +84,46 @@ export PAYLOAD_LOCK=$(cat public_key.pem | base64 -w 0)
 export PAYLOAD_KEY=$(cat private_key.pem | base64 -w 0)
 ```
 
-> **Note:** The system uses SHA-1 as the digest algorithm for key derivation during the AES encryption/decryption process. This is explicitly specified in both the encryption and decryption code.
-
 ### How the Payload Encryption Works
 
 1. During build time:
-   - A random AES-256 key is generated
-   - The payload (currently containing SwaggerUI) is encrypted with this AES key
-   - The AES key is then encrypted with the RSA public key (PAYLOAD_LOCK)
-   - Both the encrypted AES key and encrypted payload are combined into a single file
-   - This file is appended to the executable
+   - A random AES-256 key is generated for payload encryption
+   - A random 16-byte IV is generated for AES-CBC mode
+   - The payload (currently SwaggerUI) is compressed with Brotli
+   - The compressed payload is encrypted with AES-256-CBC using the random key and IV
+   - The AES key is encrypted with the RSA public key (PAYLOAD_LOCK)
+   - The components are combined into a single file:
+     ```
+     [key_size(4 bytes)] + [encrypted_aes_key] + [iv(16 bytes)] + [encrypted_payload]
+     ```
+   - This file is appended to the executable with a marker
 
 2. During runtime:
    - The application extracts the encrypted data from itself
-   - It uses the RSA private key (PAYLOAD_KEY) to decrypt the AES key
-   - The decrypted AES key is then used to decrypt the payload
-   - The decrypted payload is processed normally
+   - The key size is read from the first 4 bytes
+   - The encrypted AES key is extracted and decrypted using PAYLOAD_KEY
+   - The 16-byte IV is extracted
+   - The encrypted payload is decrypted using AES-256-CBC with the decrypted key and IV
+   - The decrypted payload (Brotli-compressed tar) is decompressed and processed
+
+### Encryption Details
+
+- **AES Configuration**:
+  - Algorithm: AES-256-CBC
+  - Key: 256-bit random key
+  - IV: 16-byte random initialization vector
+  - Padding: PKCS7
+  - Implementation: OpenSSL EVP API
+
+- **RSA Configuration**:
+  - Key Size: 2048 bits
+  - Padding: PKCS1
+  - Implementation: OpenSSL EVP API
+
+- **Compression**:
+  - Algorithm: Brotli
+  - Quality: Maximum (11)
+  - Window Size: 24 (16MB)
 
 This approach provides strong security while maintaining good performance, as AES is efficient for large data while RSA securely protects the smaller AES key.
 

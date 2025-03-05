@@ -104,6 +104,33 @@ The Hydrogen codebase follows a modular structure with consistent patterns:
 
 The shutdown sequence is the reverse of the initialization order to ensure proper resource cleanup.
 
+## Security and Encryption
+
+The Hydrogen project uses several security mechanisms that developers need to be aware of:
+
+### Encryption Systems
+
+1. **Payload Encryption**
+   - RSA+AES hybrid encryption for embedded assets
+   - See [payload/README.md](../payload/README.md) for implementation
+   - Key management documented in [SECRETS.md](../SECRETS.md)
+
+2. **OIDC Security**
+   - RSA key pairs for token signing
+   - AES encryption for sensitive data
+   - See [docs/oidc_integration.md](./oidc_integration.md)
+
+3. **Transport Security**
+   - TLS for HTTP/WebSocket connections
+   - Certificate management
+   - See [docs/reference/network_architecture.md](./reference/network_architecture.md)
+
+### Secrets Management
+
+- Environment variable-based configuration
+- Secure key storage guidelines
+- See [SECRETS.md](../SECRETS.md) for comprehensive documentation
+
 ## Project Glossary
 
 | Term | Definition |
@@ -115,6 +142,8 @@ The shutdown sequence is the reverse of the initialization order to ensure prope
 | Message | Data packet exchanged between components |
 | Endpoint | API access point exposed via HTTP |
 | Resource | System component managed by the service layer |
+| Payload | Encrypted asset embedded in executable |
+| Secret | Sensitive data managed via environment variables |
 
 ## Quick-Reference Implementation Patterns
 

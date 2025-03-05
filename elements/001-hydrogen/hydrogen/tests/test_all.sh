@@ -179,7 +179,18 @@ run_test_with_config() {
 
 # Function to discover and run all tests
 run_all_tests() {
-    # First run compilation test as it's a prerequisite for other tests
+    # First run environment variable test as it's a prerequisite
+    print_header "Running Environment Variable Test" | tee -a "$SUMMARY_LOG"
+    run_test "$SCRIPT_DIR/test_env_payload.sh"
+    local env_exit_code=$?
+    
+    # Only proceed if environment variables are properly set
+    if [ $env_exit_code -ne 0 ]; then
+        print_warning "Environment variable test failed - skipping remaining tests" | tee -a "$SUMMARY_LOG"
+        return $env_exit_code
+    fi
+
+    # Run compilation test next
     print_header "Running Compilation Test" | tee -a "$SUMMARY_LOG"
     run_test "$SCRIPT_DIR/test_compilation.sh"
     local compilation_exit_code=$?
@@ -295,7 +306,18 @@ run_all_tests() {
 
 # Function to run minimal configuration test only
 run_min_configuration_test() {
-    # First run compilation test as it's a prerequisite
+    # First run environment variable test
+    print_header "Running Environment Variable Test" | tee -a "$SUMMARY_LOG"
+    run_test "$SCRIPT_DIR/test_env_payload.sh"
+    local env_exit_code=$?
+    
+    # Only proceed if environment variables are properly set
+    if [ $env_exit_code -ne 0 ]; then
+        print_warning "Environment variable test failed - skipping remaining tests" | tee -a "$SUMMARY_LOG"
+        return $env_exit_code
+    fi
+
+    # Run compilation test next
     print_header "Running Compilation Test" | tee -a "$SUMMARY_LOG"
     run_test "$SCRIPT_DIR/test_compilation.sh"
     local compilation_exit_code=$?
@@ -316,7 +338,18 @@ run_min_configuration_test() {
 
 # Function to run maximal configuration test only
 run_max_configuration_test() {
-    # First run compilation test as it's a prerequisite
+    # First run environment variable test
+    print_header "Running Environment Variable Test" | tee -a "$SUMMARY_LOG"
+    run_test "$SCRIPT_DIR/test_env_payload.sh"
+    local env_exit_code=$?
+    
+    # Only proceed if environment variables are properly set
+    if [ $env_exit_code -ne 0 ]; then
+        print_warning "Environment variable test failed - skipping remaining tests" | tee -a "$SUMMARY_LOG"
+        return $env_exit_code
+    fi
+
+    # Run compilation test next
     print_header "Running Compilation Test" | tee -a "$SUMMARY_LOG"
     run_test "$SCRIPT_DIR/test_compilation.sh"
     local compilation_exit_code=$?
@@ -341,10 +374,31 @@ run_specific_test() {
     
     # Check if the test script exists
     if [ -f "$SCRIPT_DIR/test_${test_name}.sh" ]; then
-        # Run compilation test first as it's usually a prerequisite
-        print_header "Running Compilation Test" | tee -a "$SUMMARY_LOG"
-        run_test "$SCRIPT_DIR/test_compilation.sh"
-        local compilation_exit_code=$?
+        # Run environment variable test first if it's not the test being requested
+        if [ "$test_name" != "env_payload" ]; then
+            print_header "Running Environment Variable Test" | tee -a "$SUMMARY_LOG"
+            run_test "$SCRIPT_DIR/test_env_payload.sh"
+            local env_exit_code=$?
+            
+            # Only proceed if environment variables are properly set
+            if [ $env_exit_code -ne 0 ]; then
+                print_warning "Environment variable test failed - skipping remaining tests" | tee -a "$SUMMARY_LOG"
+                return $env_exit_code
+            fi
+
+            # Run compilation test next if it's not the test being requested
+            if [ "$test_name" != "compilation" ]; then
+                print_header "Running Compilation Test" | tee -a "$SUMMARY_LOG"
+                run_test "$SCRIPT_DIR/test_compilation.sh"
+                local compilation_exit_code=$?
+                
+                # Only proceed if compilation passes
+                if [ $compilation_exit_code -ne 0 ]; then
+                    print_warning "Compilation failed - skipping $test_name test" | tee -a "$SUMMARY_LOG"
+                    return $compilation_exit_code
+                fi
+            fi
+        fi
         
         # Only proceed if compilation passes
         if [ $compilation_exit_code -ne 0 ]; then

@@ -94,15 +94,41 @@ Common error codes:
 
 ## Security
 
-The WebSocket server requires authentication using an API key. Include the key in the connection headers:
+The WebSocket server implements multiple layers of security as documented in [SECRETS.md](./SECRETS.md):
 
+### Transport Security
+- TLS encryption with modern cipher suites (see [network_architecture.md](./reference/network_architecture.md))
+- Certificate validation using system CA store
+- Secure WebSocket protocol (wss://) required in production
+
+### Authentication
+- API key or OIDC token required (see [oidc_architecture.md](./reference/oidc_architecture.md))
+- RSA-signed session tokens with configurable expiration
+- Secure token storage using environment variables
+
+Example connection with API key:
 ```javascript
-const ws = new WebSocket('ws://localhost:5001', 'hydrogen-protocol', {
+const ws = new WebSocket('wss://localhost:5001', 'hydrogen-protocol', {
     headers: {
-        'Authorization': 'Key abc'
+        'Authorization': 'Key ${env.HYDROGEN_API_KEY}'
     }
 });
 ```
+
+Example connection with OIDC token:
+```javascript
+const ws = new WebSocket('wss://localhost:5001', 'hydrogen-protocol', {
+    headers: {
+        'Authorization': 'Bearer ${oidc_token}'
+    }
+});
+```
+
+### Message Security
+- All messages encrypted in transit
+- Input validation and sanitization
+- Protection against replay attacks
+- Rate limiting and abuse prevention
 
 ## Additional Features
 

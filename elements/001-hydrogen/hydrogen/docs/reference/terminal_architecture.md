@@ -76,23 +76,27 @@ The Terminal subsystem is configured through the following settings in hydrogen.
 
 1. **Authentication**
    - Required for all terminal sessions
-   - Integration with system authentication
-   - Session token validation
+   - Integration with OIDC system (see [oidc_architecture.md](./oidc_architecture.md))
+   - RSA-signed session tokens with configurable expiration
+   - Secure token storage (see [SECRETS.md](../SECRETS.md))
 
 2. **Authorization**
-   - Role-based access control
-   - Command restrictions
-   - Environment isolation
+   - Role-based access control with least privilege principle
+   - Command restrictions based on user roles
+   - Environment isolation using PTY containment
+   - Audit logging of all commands
 
 3. **Resource Protection**
-   - Session limits per user
-   - Idle timeout enforcement
-   - Memory usage monitoring
+   - Session limits enforced per user and globally
+   - Configurable idle timeout with automatic cleanup
+   - Memory and CPU usage monitoring
+   - Resource quota enforcement
 
 4. **Data Security**
-   - WebSocket TLS encryption
-   - Input sanitization
-   - Output filtering
+   - WebSocket TLS encryption with modern cipher suites (see [network_architecture.md](./network_architecture.md))
+   - Input sanitization and command filtering
+   - Output filtering for sensitive data
+   - Environment variable protection (see [SECRETS.md](../SECRETS.md))
 
 ## Session Lifecycle
 
