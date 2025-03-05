@@ -152,10 +152,13 @@ Tests the system API endpoints to ensure they respond correctly:
 
 Key features:
 
-- Tests all system API endpoints (health, info, test)
+- Tests all system API endpoints (health, info, config, test)
 - Validates response content and format
 - Verifies proper JSON formatting
-- Tests various request methods:
+- Tests endpoints with different HTTP methods:
+  - GET requests for all endpoints (health, info, config, test)
+  - POST requests for endpoints that support it (currently only test)
+- Tests various request variations:
   - Basic GET requests
   - GET requests with query parameters
   - POST requests with form data (with proper field extraction)
@@ -164,8 +167,11 @@ Key features:
 - Monitors server stability during tests
 - Implements error handling and shell script validation
 - Uses standardized formatting from support_utils.sh
+- Includes verification of Brotli compression for supported endpoints
 
 The test performs individual validation for each endpoint and request type, ensuring that the system correctly processes different types of HTTP requests and properly extracts form data from POST requests. It also monitors for system crashes or instability during the testing process.
+
+> **Note:** The config endpoint testing has been incorporated into test_system_endpoints.sh; there is no separate test_config_endpoint.sh script.
 
 ## Test Configuration Files
 

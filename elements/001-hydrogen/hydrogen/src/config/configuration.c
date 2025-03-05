@@ -1162,7 +1162,8 @@ AppConfig* load_config(const char* config_path) {
     // Store the configuration in the global static variable
     app_config = config;
 
-    // Set executable path
+    // Store paths
+    config->config_file = strdup(config_path);  // Store the config file path
     config->executable_path = get_executable_path();
     if (!config->executable_path) {
         log_this("Configuration", "Failed to get executable path, using default", LOG_LEVEL_INFO);

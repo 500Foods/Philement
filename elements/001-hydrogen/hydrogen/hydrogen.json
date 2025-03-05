@@ -10,7 +10,7 @@
         "UploadPath": "/api/upload",
         "UploadDir": "/tmp/hydrogen_uploads",
         "MaxUploadSize": 2147483648,
-        "ApiPrefix": "/lolol"
+        "ApiPrefix": "/api"
     },
     "WebSocket": {
         "Enabled": true,
