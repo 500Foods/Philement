@@ -167,13 +167,27 @@
         "UIOptions": {
             "TryItEnabled": true,
             "AlwaysExpanded": true,
-            "DisplayOperationId": true,
+            "DisplayOperationId": false,
             "DefaultModelsExpandDepth": 1,
             "DefaultModelExpandDepth": 1,
             "ShowExtensions": false,
             "ShowCommonExtensions": true,
             "DocExpansion": "list",
             "SyntaxHighlightTheme": "agate"
+        },
+        "Metadata": {
+            "Title": "Hydrogen REST API",
+            "Description": "A powerful and flexible API for controlling 3D printers and managing print jobs.\n\n## Features\n\n- Complete printer control and monitoring\n- Print job queue management\n- Real-time status updates via WebSocket\n- OpenID Connect integration\n- Extensive configuration options",
+            "Version": "1.0.0",
+            "Contact": {
+                "Name": "Philement Support",
+                "Email": "api@example.com",
+                "Url": "https://philement.com/support"
+            },
+            "License": {
+                "Name": "MIT",
+                "Url": "https://opensource.org/licenses/MIT"
+            }
         }
     },
     "Terminal": {

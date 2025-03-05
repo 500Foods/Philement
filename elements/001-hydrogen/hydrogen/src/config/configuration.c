@@ -1804,14 +1804,138 @@ AppConfig* load_config(const char* config_path) {
         
         json_t* prefix = json_object_get(swagger, "Prefix");
         config->web.swagger.prefix = get_config_string(prefix, "/docs");
+
+        // Load metadata configuration
+        json_t* metadata = json_object_get(swagger, "Metadata");
+        if (json_is_object(metadata)) {
+            json_t* val;
+            
+            val = json_object_get(metadata, "Title");
+            config->web.swagger.metadata.title = get_config_string(val, "Hydrogen REST API");
+            
+            val = json_object_get(metadata, "Description");
+            config->web.swagger.metadata.description = get_config_string(val, "REST API for the Hydrogen Project");
+            
+            val = json_object_get(metadata, "Version");
+            config->web.swagger.metadata.version = get_config_string(val, VERSION);
+
+            // Contact information
+            json_t* contact = json_object_get(metadata, "Contact");
+            if (json_is_object(contact)) {
+                val = json_object_get(contact, "Name");
+                config->web.swagger.metadata.contact.name = get_config_string(val, "Philement Support");
+                
+                val = json_object_get(contact, "Email");
+                config->web.swagger.metadata.contact.email = get_config_string(val, "api@example.com");
+                
+                val = json_object_get(contact, "Url");
+                config->web.swagger.metadata.contact.url = get_config_string(val, "https://philement.com/support");
+            } else {
+                config->web.swagger.metadata.contact.name = strdup("Philement Support");
+                config->web.swagger.metadata.contact.email = strdup("api@example.com");
+                config->web.swagger.metadata.contact.url = strdup("https://philement.com/support");
+            }
+
+            // License information
+            json_t* license = json_object_get(metadata, "License");
+            if (json_is_object(license)) {
+                val = json_object_get(license, "Name");
+                config->web.swagger.metadata.license.name = get_config_string(val, "MIT");
+                
+                val = json_object_get(license, "Url");
+                config->web.swagger.metadata.license.url = get_config_string(val, "https://opensource.org/licenses/MIT");
+            } else {
+                config->web.swagger.metadata.license.name = strdup("MIT");
+                config->web.swagger.metadata.license.url = strdup("https://opensource.org/licenses/MIT");
+            }
+        } else {
+            // Default metadata
+            config->web.swagger.metadata.title = strdup("Hydrogen REST API");
+            config->web.swagger.metadata.description = strdup("REST API for the Hydrogen Project");
+            config->web.swagger.metadata.version = strdup(VERSION);
+            config->web.swagger.metadata.contact.name = strdup("Philement Support");
+            config->web.swagger.metadata.contact.email = strdup("api@example.com");
+            config->web.swagger.metadata.contact.url = strdup("https://philement.com/support");
+            config->web.swagger.metadata.license.name = strdup("MIT");
+            config->web.swagger.metadata.license.url = strdup("https://opensource.org/licenses/MIT");
+        }
+
+        // Load UI options
+        json_t* ui_options = json_object_get(swagger, "UIOptions");
+        if (json_is_object(ui_options)) {
+            json_t* val;
+            
+            val = json_object_get(ui_options, "TryItEnabled");
+            config->web.swagger.ui_options.try_it_enabled = get_config_bool(val, 1);
+            
+            val = json_object_get(ui_options, "AlwaysExpanded");
+            config->web.swagger.ui_options.always_expanded = get_config_bool(val, 1);
+            
+            val = json_object_get(ui_options, "DisplayOperationId");
+            config->web.swagger.ui_options.display_operation_id = get_config_bool(val, 1);
+            
+            val = json_object_get(ui_options, "DefaultModelsExpandDepth");
+            config->web.swagger.ui_options.default_models_expand_depth = get_config_int(val, 1);
+            
+            val = json_object_get(ui_options, "DefaultModelExpandDepth");
+            config->web.swagger.ui_options.default_model_expand_depth = get_config_int(val, 1);
+            
+            val = json_object_get(ui_options, "ShowExtensions");
+            config->web.swagger.ui_options.show_extensions = get_config_bool(val, 0);
+            
+            val = json_object_get(ui_options, "ShowCommonExtensions");
+            config->web.swagger.ui_options.show_common_extensions = get_config_bool(val, 1);
+            
+            val = json_object_get(ui_options, "DocExpansion");
+            config->web.swagger.ui_options.doc_expansion = get_config_string(val, "list");
+            
+            val = json_object_get(ui_options, "SyntaxHighlightTheme");
+            config->web.swagger.ui_options.syntax_highlight_theme = get_config_string(val, "agate");
+        } else {
+            // Default UI options
+            config->web.swagger.ui_options.try_it_enabled = 1;
+            config->web.swagger.ui_options.always_expanded = 1;
+            config->web.swagger.ui_options.display_operation_id = 1;
+            config->web.swagger.ui_options.default_models_expand_depth = 1;
+            config->web.swagger.ui_options.default_model_expand_depth = 1;
+            config->web.swagger.ui_options.show_extensions = 0;
+            config->web.swagger.ui_options.show_common_extensions = 1;
+            config->web.swagger.ui_options.doc_expansion = strdup("list");
+            config->web.swagger.ui_options.syntax_highlight_theme = strdup("agate");
+        }
         
         log_this("Configuration", "Swagger UI: %s (prefix: %s)", LOG_LEVEL_INFO,
                 config->web.swagger.enabled ? "enabled" : "disabled",
                 config->web.swagger.prefix);
+        log_this("Configuration", "Swagger Metadata: title='%s', version='%s'", LOG_LEVEL_INFO,
+                config->web.swagger.metadata.title,
+                config->web.swagger.metadata.version);
     } else {
         // Default Swagger configuration
         config->web.swagger.enabled = true;
         config->web.swagger.prefix = strdup("/docs");
+        
+        // Default metadata
+        config->web.swagger.metadata.title = strdup("Hydrogen REST API");
+        config->web.swagger.metadata.description = strdup("REST API for the Hydrogen Project");
+        config->web.swagger.metadata.version = strdup(VERSION);
+        config->web.swagger.metadata.contact.name = strdup("Philement Support");
+        config->web.swagger.metadata.contact.email = strdup("api@example.com");
+        config->web.swagger.metadata.contact.url = strdup("https://philement.com/support");
+        config->web.swagger.metadata.license.name = strdup("MIT");
+        config->web.swagger.metadata.license.url = strdup("https://opensource.org/licenses/MIT");
+        
+        // Default UI options
+        config->web.swagger.ui_options.try_it_enabled = 1;
+        config->web.swagger.ui_options.always_expanded = 1;
+        config->web.swagger.ui_options.display_operation_id = 1;
+        config->web.swagger.ui_options.default_models_expand_depth = 1;
+        config->web.swagger.ui_options.default_model_expand_depth = 1;
+        config->web.swagger.ui_options.show_extensions = 0;
+        config->web.swagger.ui_options.show_common_extensions = 1;
+        config->web.swagger.ui_options.doc_expansion = strdup("list");
+        config->web.swagger.ui_options.syntax_highlight_theme = strdup("agate");
+        
         log_this("Configuration", "Using default Swagger configuration", LOG_LEVEL_INFO);
     }
 

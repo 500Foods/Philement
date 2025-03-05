@@ -1,66 +1,82 @@
 # Hydrogen Documentation
 
-Welcome to the Hydrogen Project documentation. This guide will help you understand, configure, and use the Hydrogen 3D printer control server.
+Welcome to the Hydrogen documentation. This guide provides comprehensive information about configuring, using, and maintaining your Hydrogen 3D printer control server.
 
-## Getting Started
+## Quick Start
 
-- [Developer Onboarding Guide](./developer_onboarding.md) - Visual architecture overview and code navigation
-- [Quick Start Guide](./guides/quick-start.md) - Get up and running quickly
-- [Configuration Guide](./reference/configuration.md) - Essential configuration
-- [Thread Monitoring](./thread_monitoring.md) - Performance monitoring
+- [Quick Start Guide](guides/quick-start.md) - Get up and running quickly
+- [Configuration Guide](configuration.md) - Basic configuration concepts
+- [API Documentation](api.md) - REST API reference
 
-## Core Documentation
+## Configuration Guides
 
-### API & Interfaces
+The configuration system is divided into subsystems, each with its own detailed guide:
 
-- [API Documentation](./api.md) - Complete API reference
-- [WebSocket Interface](./web_socket.md) - Real-time communications
-- [mDNS Server](./mdns_server.md) - Network service discovery
-- [System API](./api/system/system_info.md) - System endpoints
-- [OIDC Endpoints](./api/oidc/oidc_endpoints.md) - OpenID Connect authentication endpoints
+### Core Systems
+- [Web Server Configuration](reference/webserver_configuration.md) - HTTP server settings
+- [WebSocket Configuration](reference/websocket_configuration.md) - Real-time updates
+- [Print Queue Configuration](reference/printqueue_configuration.md) - Job management
+- [System Resources](reference/resources_configuration.md) - Resource management
 
-### Features & Components
+### Network & Discovery
+- [mDNS Configuration](reference/mdns_configuration.md) - Network discovery
+- [Network Architecture](reference/network_architecture.md) - Network design
 
-- [Print Queue Management](./print_queue.md) - Managing print jobs
-- [Data Structures](./reference/data_structures.md) - Core data types
-- [Service Management](./service.md) - Service configuration
-- [Shutdown Architecture](./shutdown_architecture.md) - Safe system termination
-- [AI Integration](./ai_integration.md) - AI capabilities and implementations
-- [OIDC Integration](./oidc_integration.md) - OpenID Connect Identity Provider
+### Documentation & API
+- [Swagger Configuration](reference/swagger_configuration.md) - API documentation
+- [API Reference](reference/api.md) - API details
+- [OpenAPI Specification](reference/swagger_architecture.md) - API architecture
 
-### Use Cases
+### Logging & Monitoring
+- [Logging Configuration](reference/logging_configuration.md) - Log management
+- [Terminal Configuration](reference/terminal_configuration.md) - Web terminal
+- [Monitoring Guide](reference/monitoring.md) - System monitoring
 
-- [Home Workshop](./guides/use-cases/home-workshop.md) - Single printer setup
-- [Print Farm](./guides/use-cases/print-farm.md) - Multiple printer management
+### Communication
+- [SMTP Configuration](reference/smtp_configuration.md) - Email notifications
+- [Database Configuration](reference/database_configuration.md) - Data storage
 
-## Development
+## Developer Guides
 
-- [System Architecture](./reference/system_architecture.md) - High-level architecture of the entire system
-- [Coding Guidelines](./coding_guidelines.md) - Development standards
-- [Testing System](./testing.md) - Test configuration and execution
-- [Docker Deployment](./deployment/docker.md) - Container-based deployment
-- [AI in Development](./development/ai_development.md) - How AI is used in the project's development
+- [Developer Onboarding](developer_onboarding.md) - Getting started with development
+- [Coding Guidelines](coding_guidelines.md) - Code standards and practices
+- [Testing Guide](testing.md) - Testing procedures
+- [Release Process](../RELEASES.md) - Release management
 
-### Component Architecture
+## Architecture Documentation
 
-- [Print Queue Architecture](./reference/print_queue_architecture.md) - Detailed internal design of the print queue system
-- [WebSocket Server Architecture](./reference/websocket_architecture.md) - Implementation details of the WebSocket communication layer
-- [Network Interface Architecture](./reference/network_architecture.md) - Network abstraction layer design and implementation
-- [OIDC Architecture](./reference/oidc_architecture.md) - OpenID Connect service design and implementation
+- [System Architecture](reference/system_architecture.md) - Overall system design
+- [Thread Monitoring](thread_monitoring.md) - Thread management
+- [Shutdown Architecture](shutdown_architecture.md) - Shutdown process
+- [WebSocket Architecture](websocket_architecture.md) - WebSocket system
 
-## Contributing
+## Security Documentation
 
-When adding new features to Hydrogen, please:
+- [Security Configuration](reference/security_configuration.md) - Security settings
+- [OIDC Integration](oidc_integration.md) - Authentication
+- [Secrets Management](../SECRETS.md) - Managing sensitive data
 
-1. Update relevant guides and reference documentation
-2. Add examples for new functionality
-3. Include configuration documentation
-4. Update API documentation if applicable
+## Use Cases
 
-## Documentation Updates
+- [Home Workshop](guides/use-cases/home-workshop.md) - Single printer setup
+- [Print Farm](guides/use-cases/print-farm.md) - Multiple printer management
 
-This documentation is actively maintained. For the most up-to-date information:
+## Additional Resources
 
-1. Check the [Configuration Guide](./reference/configuration.md)
-2. Review the [API Documentation](./api.md)
-3. See the [Quick Start Guide](./guides/quick-start.md) for getting started
+- [FAQ](reference/faq.md) - Common questions
+- [Troubleshooting](reference/troubleshooting.md) - Common issues
+- [Glossary](reference/glossary.md) - Terms and definitions
+- [Contributing](../CONTRIBUTING.md) - How to contribute
+
+## Getting Help
+
+If you need assistance:
+
+1. Check the [Troubleshooting Guide](reference/troubleshooting.md)
+2. Search existing [Issues](https://github.com/philement/hydrogen/issues)
+3. Join our [Community Forum](https://forum.philement.com)
+4. Contact [Support](https://philement.com/support)
+
+## License
+
+Hydrogen is licensed under the MIT License. See [LICENSE](../LICENSE) for details.
