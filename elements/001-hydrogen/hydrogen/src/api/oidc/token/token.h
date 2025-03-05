@@ -6,11 +6,6 @@
 #ifndef HYDROGEN_OIDC_TOKEN_H
 #define HYDROGEN_OIDC_TOKEN_H
 
-//@ swagger:service OIDC Token Service
-//@ swagger:description Handles OAuth 2.0 token requests and issues access, refresh, and ID tokens
-//@ swagger:tag oidc OpenID Connect protocol endpoints
-//@ swagger:tag tokens Token issuance and validation
-
 // Feature test macros
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
@@ -40,7 +35,7 @@
 //@ swagger:path /oauth/token
 //@ swagger:method POST
 //@ swagger:operationId issueTokens
-//@ swagger:tags oidc,tokens
+//@ swagger:tags "OIDC Service"
 //@ swagger:summary OAuth 2.0 token endpoint
 //@ swagger:description Issues access tokens, refresh tokens, and ID tokens based on the provided grant type. Supports authorization_code, refresh_token, client_credentials, and password grant types. Client authentication is required either via HTTP Basic Authentication or using client_id and client_secret parameters.
 //@ swagger:parameter grant_type string required The OAuth 2.0 grant type (authorization_code, refresh_token, client_credentials, password)
