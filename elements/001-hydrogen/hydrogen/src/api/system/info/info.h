@@ -8,8 +8,7 @@
 
 //@ swagger:service System Information Service
 //@ swagger:description Provides detailed system information for monitoring and diagnostics
-//@ swagger:tag system System operations
-//@ swagger:tag info System information and status
+//@ swagger:tag "System Service" System operations
 
 // Feature test macros
 #define _GNU_SOURCE

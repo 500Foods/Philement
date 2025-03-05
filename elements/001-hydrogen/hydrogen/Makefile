@@ -157,9 +157,9 @@ payload:
 	@printf "$(BLUE)$(BOLD) Generating Payload Contents$(NORMAL)\n"
 	@printf "$(BLUE)────────────────────────────────────────────────────────────────$(NORMAL)\n"
 	@printf "$(CYAN)$(INFO)  Generating OpenAPI specification...$(NORMAL)\n"
-	@cd payload && ./swagger-generate.sh
+	@cd payloads && ./swagger-generate.sh
 	@printf "$(CYAN)$(INFO)  Packaging payload contents...$(NORMAL)\n"
-	@cd payload && ./payload-generate.sh
+	@cd payloads && ./payload-generate.sh
 	@printf "$(GREEN)$(PASS) $(BOLD)Payload contents generated successfully!$(NORMAL)\n"
 	@printf "$(BLUE)────────────────────────────────────────────────────────────────$(NORMAL)\n"
 
@@ -173,8 +173,8 @@ release: $(RELEASE_TARGET) payload
 	@printf "$(CYAN)$(INFO)  Applying UPX compression to executable...$(NORMAL)\n"
 	@which upx > /dev/null && upx --best $(RELEASE_TARGET) || printf "$(YELLOW)$(WARN) UPX not found, skipping compression$(NORMAL)\n"
 	@printf "$(CYAN)$(INFO)  Appending encrypted payload to release executable...$(NORMAL)\n"
-	@PAYLOAD_SIZE=$$(stat -c %s "payload/payload.tar.br.enc"); \
-	cat $(RELEASE_TARGET) "payload/payload.tar.br.enc" > $(RELEASE_TARGET).tmp; \
+	@PAYLOAD_SIZE=$$(stat -c %s "payloads/payload.tar.br.enc"); \
+	cat $(RELEASE_TARGET) "payloads/payload.tar.br.enc" > $(RELEASE_TARGET).tmp; \
 	printf "<<< HERE BE ME TREASURE >>>" >> $(RELEASE_TARGET).tmp; \
 	printf "$$(printf '%016x' $$PAYLOAD_SIZE | sed 's/\(..\)/\\x\1/g')" >> $(RELEASE_TARGET).tmp; \
 	mv $(RELEASE_TARGET).tmp $(RELEASE_TARGET); \

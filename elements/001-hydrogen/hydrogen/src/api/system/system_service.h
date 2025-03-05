@@ -9,7 +9,7 @@
 //@ swagger:service Hydrogen System API
 //@ swagger:description System-level API endpoints for monitoring, diagnostics, and information retrieval
 //@ swagger:version 1.0.0
-//@ swagger:tag system System operations
+//@ swagger:tag "System Service" System operations
 //@ swagger:tag monitoring Health monitoring endpoints
 //@ swagger:tag diagnostics System diagnostics and troubleshooting
 //@ swagger:tag info System information and status

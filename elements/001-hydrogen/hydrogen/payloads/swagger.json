@@ -23,20 +23,8 @@
   ],
   "tags": [
     {
-      "name": "system",
-      "description": "System operations"
-    },
-    {
-      "name": "monitoring",
-      "description": "Health monitoring endpoints"
-    },
-    {
-      "name": "diagnostics",
-      "description": "System diagnostics and troubleshooting"
-    },
-    {
-      "name": "info",
-      "description": "System information and status"
+      "name": "\"System",
+      "description": "Service\" System operations"
     }
   ],
   "paths": {
