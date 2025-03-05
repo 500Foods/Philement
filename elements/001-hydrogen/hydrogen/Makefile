@@ -125,7 +125,7 @@ PERF_TARGET = hydrogen_perf
 # ──────────────────────────────────────────────────────────────────────────────
 # Phony targets (don't create files with these names)
 # ──────────────────────────────────────────────────────────────────────────────
-.PHONY: all clean debug valgrind release perf all-variants swagger
+.PHONY: all clean debug valgrind release perf all-variants payload
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Default target: only build the standard variant
@@ -150,17 +150,17 @@ all: clean default debug valgrind release perf
 all-variants: all
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Swagger documentation generation
+# Payload generation (including Swagger documentation)
 # ──────────────────────────────────────────────────────────────────────────────
-swagger:
+payload:
 	@printf "$(BLUE)────────────────────────────────────────────────────────────────$(NORMAL)\n"
-	@printf "$(BLUE)$(BOLD) Generating Swagger Documentation$(NORMAL)\n"
+	@printf "$(BLUE)$(BOLD) Generating Payload Contents$(NORMAL)\n"
 	@printf "$(BLUE)────────────────────────────────────────────────────────────────$(NORMAL)\n"
 	@printf "$(CYAN)$(INFO)  Generating OpenAPI specification...$(NORMAL)\n"
-	@cd swagger && ./swagger-generate.sh
-	@printf "$(CYAN)$(INFO)  Packaging SwaggerUI interface...$(NORMAL)\n"
-	@cd swagger && ./swaggerui-generate.sh
-	@printf "$(GREEN)$(PASS) $(BOLD)Swagger documentation generated successfully!$(NORMAL)\n"
+	@cd payload && ./swagger-generate.sh
+	@printf "$(CYAN)$(INFO)  Packaging payload contents...$(NORMAL)\n"
+	@cd payload && ./payload-generate.sh
+	@printf "$(GREEN)$(PASS) $(BOLD)Payload contents generated successfully!$(NORMAL)\n"
 	@printf "$(BLUE)────────────────────────────────────────────────────────────────$(NORMAL)\n"
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -169,17 +169,17 @@ swagger:
 release: BUILD_TYPE = Release
 release: CFLAGS += -s -DNDEBUG -march=x86-64 -flto=auto -fstack-protector -Werror -fno-strict-aliasing
 release: LDFLAGS += -flto=auto -fno-strict-aliasing
-release: $(RELEASE_TARGET) swagger
+release: $(RELEASE_TARGET) payload
 	@printf "$(CYAN)$(INFO)  Applying UPX compression to executable...$(NORMAL)\n"
 	@which upx > /dev/null && upx --best $(RELEASE_TARGET) || printf "$(YELLOW)$(WARN) UPX not found, skipping compression$(NORMAL)\n"
-	@printf "$(CYAN)$(INFO)  Appending Swagger UI to release executable...$(NORMAL)\n"
-	@TAR_SIZE=$$(stat -c %s "swagger/swaggerui.tar.br"); \
-	cat $(RELEASE_TARGET) "swagger/swaggerui.tar.br" > $(RELEASE_TARGET).tmp; \
+	@printf "$(CYAN)$(INFO)  Appending encrypted payload to release executable...$(NORMAL)\n"
+	@PAYLOAD_SIZE=$$(stat -c %s "payload/payload.tar.br.enc"); \
+	cat $(RELEASE_TARGET) "payload/payload.tar.br.enc" > $(RELEASE_TARGET).tmp; \
 	printf "<<< HERE BE ME TREASURE >>>" >> $(RELEASE_TARGET).tmp; \
-	printf "$$(printf '%016x' $$TAR_SIZE | sed 's/\(..\)/\\x\1/g')" >> $(RELEASE_TARGET).tmp; \
+	printf "$$(printf '%016x' $$PAYLOAD_SIZE | sed 's/\(..\)/\\x\1/g')" >> $(RELEASE_TARGET).tmp; \
 	mv $(RELEASE_TARGET).tmp $(RELEASE_TARGET); \
 	chmod +x $(RELEASE_TARGET)
-	@printf "$(GREEN)$(PASS) $(BOLD)Release build with Swagger UI appended successfully!$(NORMAL)\n"
+	@printf "$(GREEN)$(PASS) $(BOLD)Release build with encrypted payload appended successfully!$(NORMAL)\n"
 	@printf "$(BLUE)────────────────────────────────────────────────────────────────$(NORMAL)\n"
 
 

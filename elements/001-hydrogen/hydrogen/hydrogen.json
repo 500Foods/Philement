@@ -1,5 +1,6 @@
 {
     "ServerName": "Philement/hydrogen",
+    "PayloadKey": "${env.PAYLOAD_KEY}",
     "LogFile": "/var/log/hydrogen.log",
     "WebServer": {
         "Enabled": true,
