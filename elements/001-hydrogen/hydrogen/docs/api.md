@@ -2,6 +2,13 @@
 
 This document serves as a table of contents for all available API endpoints in the Hydrogen Project server.
 
+## Security Overview
+
+All sensitive endpoints use encryption and secure key management as documented in [SECRETS.md](../SECRETS.md). For implementation details of the encryption systems, see:
+- [Payload Encryption](../payload/README.md)
+- [OIDC Security](./oidc_integration.md)
+- [Network Security](./reference/network_architecture.md)
+
 ## System Service
 
 Endpoints for system-level operations and monitoring:
@@ -17,22 +24,26 @@ Endpoints for system-level operations and monitoring:
 
 ## OIDC Service
 
-Endpoints for OpenID Connect (OIDC) authentication and identity management:
+Endpoints for OpenID Connect (OIDC) authentication and identity management. All OIDC endpoints use RSA key pairs for signing and AES encryption for sensitive data. See [SECRETS.md](../SECRETS.md) for key management details.
 
 - [Authorization Endpoint](./api/oidc/oidc_endpoints.md#authorization) - GET/POST `/oauth/authorize`  
-  Initiates authentication flows and obtains user consent
-  
+  Initiates authentication flows and obtains user consent  
+  *Uses TLS encryption*
+
 - [Token Endpoint](./api/oidc/oidc_endpoints.md#token) - POST `/oauth/token`  
-  Issues access tokens, ID tokens, and refresh tokens
+  Issues access tokens, ID tokens, and refresh tokens  
+  *Uses RSA signing and AES encryption*
   
 - [UserInfo Endpoint](./api/oidc/oidc_endpoints.md#userinfo) - GET `/oauth/userinfo`  
   Provides authenticated user profile information
   
 - [JSON Web Key Set](./api/oidc/oidc_endpoints.md#jwks) - GET `/oauth/jwks`  
-  Publishes public keys for token validation
-  
+  Publishes public keys for token validation  
+  *RSA public keys for token verification*
+
 - [Token Introspection](./api/oidc/oidc_endpoints.md#introspection) - POST `/oauth/introspect`  
-  Verifies token validity and provides token metadata
+  Verifies token validity and provides token metadata  
+  *Uses RSA verification*
   
 - [Token Revocation](./api/oidc/oidc_endpoints.md#revocation) - POST `/oauth/revoke`  
   Invalidates issued tokens

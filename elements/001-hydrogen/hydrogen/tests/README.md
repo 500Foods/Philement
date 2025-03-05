@@ -91,6 +91,20 @@ A compilation verification script that ensures all components build without erro
 ./test_compilation.sh
 ```
 
+### test_env_payload.sh
+
+Tests the payload system's environment variable handling:
+
+```bash
+./test_env_payload.sh
+```
+
+Key features:
+- Tests server behavior with missing PAYLOAD_KEY/LOCK variables
+- Validates handling of invalid key formats
+- Verifies successful payload initialization with valid keys
+- Ensures proper error logging and graceful fallbacks
+
 Key features:
 
 - Tests compilation of the main Hydrogen project in all build variants (standard, debug, valgrind)
@@ -171,6 +185,15 @@ Purpose: Validate that all subsystems can start and stop correctly, testing the 
 ## Port Configuration
 
 To avoid conflicts between tests that need to bind to network ports, dedicated port ranges are used for different test configurations:
+
+## Environment Variables for Testing
+
+The following environment variables are used by various tests:
+
+| Variable | Purpose | Used By |
+|----------|---------|----------|
+| PAYLOAD_KEY | RSA private key for payload decryption | test_env_payload.sh |
+| PAYLOAD_LOCK | RSA public key for payload encryption | test_env_payload.sh |
 
 | Test                       | Configuration File                   | Web Server Port | WebSocket Port |
 |----------------------------|-------------------------------------|-----------------|----------------|

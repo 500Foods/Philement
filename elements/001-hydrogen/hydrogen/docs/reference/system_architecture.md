@@ -542,38 +542,55 @@ This dependency graph guides:
 
 ## Security Model
 
-Hydrogen implements a multi-layered security approach:
+Hydrogen implements a comprehensive security model with multiple layers of protection. For detailed implementation of encryption and secrets management, see [SECRETS.md](../SECRETS.md).
 
 ```
 ┌───────────────────────────────────────────────────────────────┐
 │ Transport Security                                             │
-│ (TLS encryption for HTTP/WebSocket)                           │
+│ - TLS encryption with modern cipher suites                     │
+│ - Certificate validation with system CA store                  │
+│ - Secure WebSocket protocol (wss://)                          │
 └───────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌───────────────────────────────────────────────────────────────┐
-│ Authentication                                                 │
-│ (API keys, tokens, session validation)                        │
+│ Encryption Layer                                               │
+│ - RSA+AES hybrid encryption for payloads                      │
+│ - Environment-based key management                            │
+│ - Secure credential storage                                   │
 └───────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌───────────────────────────────────────────────────────────────┐
-│ Authorization                                                  │
-│ (Permission checks, resource access control)                  │
+│ Authentication & Authorization                                 │
+│ - OpenID Connect integration                                  │
+│ - RSA-signed JWT tokens                                       │
+│ - Role-based access control                                   │
 └───────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌───────────────────────────────────────────────────────────────┐
-│ Input Validation                                               │
-│ (Request validation, parameter checking)                      │
+│ Data Protection                                                │
+│ - Input validation and sanitization                           │
+│ - AES-256 encryption for sensitive data                       │
+│ - Secure configuration management                             │
 └───────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌───────────────────────────────────────────────────────────────┐
 │ Resource Protection                                            │
-│ (Rate limiting, abuse prevention)                             │
+│ - Rate limiting and abuse prevention                          │
+│ - Session management                                          │
+│ - Audit logging                                              │
 └───────────────────────────────────────────────────────────────┘
 ```
+
+Each security layer is documented in detail:
+- [Network Security](./network_architecture.md)
+- [Payload Encryption](../payload/README.md)
+- [OIDC Security](./oidc_architecture.md)
+- [Database Security](./database_architecture.md)
+- [SMTP Security](./smtp_relay_architecture.md)
 
 ## AI Integration
 
