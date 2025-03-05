@@ -364,6 +364,7 @@ typedef struct {
 
 typedef struct {
     char *server_name;      // Server identification
+    char *payload_key;      // Key for decrypting payload files
     char *executable_path;  // Binary location for resource loading
     char *log_file_path;   // Central log file location
     WebConfig web;         // HTTP server settings
@@ -409,5 +410,8 @@ void create_default_config(const char* config_path);
 // Logging support functions
 const char* get_priority_label(int priority);
 void calculate_max_priority_label_width();
+
+// Get the current application configuration
+const AppConfig* get_app_config(void);
 
 #endif // CONFIGURATION_H

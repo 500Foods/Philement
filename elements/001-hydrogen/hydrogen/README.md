@@ -17,8 +17,9 @@ The following documentation files are available outside of the main docs/ direct
 - [README.md](README.md) - This file, providing project overview and navigation
 - [RECIPE.md](RECIPE.md) - Development guide optimized for AI assistance
 - [RELEASES.md](RELEASES.md) - Version history and release notes
+- [SECRETS.md](SECRETS.md) - Secrets management using environment variables
 - [src/api/README.md](src/api/README.md) - API implementation details
-- [swagger/README.md](swagger/README.md) - API documentation with Swagger/OpenAPI
+- [payload/README.md](payload/README.md) - Payload system with encryption
 - [tests/README.md](tests/README.md) - Testing framework documentation
 - [oidc-client-examples/README.md](oidc-client-examples/README.md) - OIDC example implementations
 
