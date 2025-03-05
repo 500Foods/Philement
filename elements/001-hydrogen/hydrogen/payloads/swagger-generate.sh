@@ -130,146 +130,161 @@ function find_endpoints() {
                             if [ -n "$handler_func" ]; then
                                 echo -e "    ${GREEN}✓ Found handler: ${NC}${handler_func}"
                                 
-                                # Extract path
-                                path=$(grep -E "//@ swagger:path" "$header_file" | sed -E 's/.*swagger:path[[:space:]]+([^[:space:]]+).*/\1/' || echo "/$service_name/$endpoint_name")
-                                
+                                # Extract path and methods
+                                path=$(grep -E "//@ swagger:path" "$header_file" | head -1 | sed -E 's/.*swagger:path[[:space:]]+([^[:space:]]+).*/\1/' || echo "/$service_name/$endpoint_name")
                                 # Remove leading /api/ if present
                                 path=$(echo "$path" | sed 's|^/api||')
-                                
-                                # Extract method
-                                method=$(grep -E "//@ swagger:method" "$header_file" | sed -E 's/.*swagger:method[[:space:]]+([^[:space:]]+).*/\1/' || echo "GET")
-                                method=${method,,}  # Convert to lowercase
-                                
-                                # Extract the service tag first
+
+                                # Extract all methods for this path
+                                readarray -t methods < <(grep -E "//@ swagger:method" "$header_file" | sed -E 's/.*swagger:method[[:space:]]+([^[:space:]]+).*/\1/' | tr '[:upper:]' '[:lower:]')
+
+                                # If no methods found, default to GET
+                                if [ ${#methods[@]} -eq 0 ]; then
+                                    methods=("get")
+                                fi
+
+                                # Extract the service tag first - this is used for all methods
                                 service_tag_file="${TEMP_DIR}/service_tag.txt"
                                 grep -E "//@ swagger:tag" "${service_dir}/${service_name}_service.h" | head -1 | sed -E 's/.*swagger:tag[[:space:]]*"([^"]+)".*/\1/' > "$service_tag_file"
                                 service_tag=$(cat "$service_tag_file")
                                 tag_array="[\"$service_tag\"]"
-
-                                # Only include operationId if explicitly defined
-                                operation_id=$(grep -E "//@ swagger:operationId" "$header_file" | sed -E 's/.*swagger:operationId[[:space:]]+([^[:space:]]+).*/\1/' || echo "")
                                 
-                                # Extract summary
+                                # Extract common info for all methods
                                 summary=$(grep -E "//@ swagger:summary" "$header_file" | sed -E 's/.*swagger:summary[[:space:]]+([^$]*)/\1/' || echo "$endpoint_name endpoint")
-                                
-                                # Extract description
                                 description=$(grep -E "//@ swagger:description" "$header_file" | sed -E 's/.*swagger:description[[:space:]]+([^$]*)/\1/' || echo "")
                                 
-                                # Build responses object
-                                responses_file="${TEMP_DIR}/responses.json"
-                                echo "{}" > "$responses_file"
-                                
-                                # Clear responses file before processing
-                                echo "{}" > "$responses_file"
-                                
-                                # Process each swagger:response annotation
-                                grep -E "//@ swagger:response" "$header_file" | while read -r line; do
-                                    # Extract components from the line
-                                    line_without_prefix=${line#*//@ swagger:response}
-                                    
-                                    # Extract status code (first component)
-                                    status=$(echo "$line_without_prefix" | awk '{print $1}')
-                                    
-                                    # Extract content type (second component)
-                                    content_type=$(echo "$line_without_prefix" | awk '{print $2}')
-                                    
-                                    # Extract schema - get everything after status and content_type
-                                    # Use awk instead of sed to avoid issues with special characters
-                                    schema_part=$(echo "$line_without_prefix" | awk -v s="$status" -v c="$content_type" '{
-                                        for(i=1; i<=NF; i++) {
-                                            if (i>2) {
-                                                printf "%s", (i>3 ? " " : "") $i
-                                            }
-                                        }
-                                    }')
-                                    
-                                    # If schema_part is empty or invalid JSON, provide a default
-                                    if [ -z "$schema_part" ] || ! echo "$schema_part" | jq empty &>/dev/null; then
-                                        schema_part='{"type": "object"}'
-                                    fi
-                                    
-                                    # Select appropriate description based on status code
-                                    if [ "$status" -ge 200 ] && [ "$status" -lt 300 ]; then
-                                        description="Successful operation"
-                                    elif [ "$status" -ge 400 ] && [ "$status" -lt 500 ]; then
-                                        description="Client error"
-                                    elif [ "$status" -ge 500 ]; then
-                                        description="Server error"
-                                    else
-                                        description="Response"
-                                    fi
-                                    
-                                    # Create a temporary file for the response
-                                    resp_temp_file="${TEMP_DIR}/resp_temp.json"
-                                    
-                                    # Create the response object structure
-                                    echo "{" > "$resp_temp_file"
-                                    echo "  \"description\": \"$description\"," >> "$resp_temp_file"
-                                    echo "  \"content\": {" >> "$resp_temp_file"
-                                    echo "    \"$content_type\": {" >> "$resp_temp_file"
-                                    echo "      \"schema\": $schema_part" >> "$resp_temp_file"
-                                    echo "    }" >> "$resp_temp_file"
-                                    echo "  }" >> "$resp_temp_file"
-                                    echo "}" >> "$resp_temp_file"
-                                    
-                                    # Add this response to the responses file by status code
-                                    jq --arg status "$status" \
-                                       --slurpfile resp "$resp_temp_file" \
-                                       '. + {($status): $resp[0]}' \
-                                       "$responses_file" > "${responses_file}.tmp" && mv "${responses_file}.tmp" "$responses_file"
-                                done
-                                
-                                # If no responses were found, add a default 200 response
-                                if [ "$(jq 'length' "$responses_file")" -eq 0 ]; then
-                                    jq '. + {"200": {"description": "Successful operation", "content": {"application/json": {"schema": {"type": "object"}}}}}' \
-                                       "$responses_file" > "${responses_file}.tmp" && mv "${responses_file}.tmp" "$responses_file"
-                                fi
-                                
-                                # Build the operation object based on whether operationId exists
-                                operation_file="${TEMP_DIR}/operation.json"
-                                if [ -n "$operation_id" ]; then
-                                    jq -n --arg summary "$summary" \
-                                          --arg desc "$description" \
-                                          --arg opid "$operation_id" \
-                                          --argjson tags "$tag_array" \
-                                          --slurpfile responses "$responses_file" \
-                                          '{
-                                             "summary": $summary,
-                                             "description": $desc,
-                                             "operationId": $opid,
-                                             "tags": $tags,
-                                             "responses": $responses[0]
-                                           }' > "$operation_file"
-                                else
-                                    jq -n --arg summary "$summary" \
-                                          --arg desc "$description" \
-                                          --argjson tags "$tag_array" \
-                                          --slurpfile responses "$responses_file" \
-                                          '{
-                                             "summary": $summary,
-                                             "description": $desc,
-                                             "tags": $tags,
-                                             "responses": $responses[0]
-                                           }' > "$operation_file"
-                                fi
-                                
-                                # Add the operation to the path
+                                # Create path entry if it doesn't exist yet
                                 path_exists=$(jq --arg path "$path" 'has($path)' "$PATHS_FILE")
-                                if [ "$path_exists" == "true" ]; then
+                                if [ "$path_exists" != "true" ]; then
+                                    jq --arg path "$path" \
+                                       '.[$path] = {}' "$PATHS_FILE" > "${PATHS_FILE}.tmp" && \
+                                       mv "${PATHS_FILE}.tmp" "$PATHS_FILE"
+                                fi
+                                
+                                # Process each method separately
+                                echo -e "    ${YELLOW}✓ Found ${#methods[@]} HTTP methods: ${NC}${BOLD}${methods[*]} ${NC}"
+                                
+                                for method in "${methods[@]}"; do
+                                    echo -e "    ${GREEN}→ Processing ${NC}${BOLD}${method} ${path}${NC}"
+                                    
+                                    # Get method-specific operationId if defined
+                                    # First try direct match with method in annotation
+                                    operation_id=""
+                                    method_op_id=$(grep -E "//@ swagger:operationId.*${method}" "$header_file" | head -1 | sed -E 's/.*swagger:operationId[[:space:]]+([^[:space:]]+).*/\1/' || echo "")
+                                    if [ -n "$method_op_id" ]; then
+                                        operation_id="$method_op_id"
+                                    else
+                                        # Fall back to generic operationId
+                                        generic_op_id=$(grep -E "//@ swagger:operationId" "$header_file" | head -1 | sed -E 's/.*swagger:operationId[[:space:]]+([^[:space:]]+).*/\1/' || echo "")
+                                        if [ -n "$generic_op_id" ]; then
+                                            operation_id="${generic_op_id}${method^}"  # Append capitalized method name
+                                        fi
+                                    fi
+                                    
+                                    # Create a method-specific responses file
+                                    method_responses_file="${TEMP_DIR}/responses_${method}.json"
+                                    echo "{}" > "$method_responses_file"
+                                    
+                                    # Process each swagger:response annotation
+                                    grep -E "//@ swagger:response" "$header_file" | while read -r line; do
+                                        # Extract components from the line
+                                        line_without_prefix=${line#*//@ swagger:response}
+                                        
+                                        # Extract status code (first component)
+                                        status=$(echo "$line_without_prefix" | awk '{print $1}')
+                                        
+                                        # Extract content type (second component)
+                                        content_type=$(echo "$line_without_prefix" | awk '{print $2}')
+                                        
+                                        # Extract schema - get everything after status and content_type
+                                        # Use awk instead of sed to avoid issues with special characters
+                                        schema_part=$(echo "$line_without_prefix" | awk -v s="$status" -v c="$content_type" '{
+                                            for(i=1; i<=NF; i++) {
+                                                if (i>2) {
+                                                    printf "%s", (i>3 ? " " : "") $i
+                                                }
+                                            }
+                                        }')
+                                        
+                                        # If schema_part is empty or invalid JSON, provide a default
+                                        if [ -z "$schema_part" ] || ! echo "$schema_part" | jq empty &>/dev/null; then
+                                            schema_part='{"type": "object"}'
+                                        fi
+                                        
+                                        # Select appropriate description based on status code
+                                        if [ "$status" -ge 200 ] && [ "$status" -lt 300 ]; then
+                                            response_description="Successful operation"
+                                        elif [ "$status" -ge 400 ] && [ "$status" -lt 500 ]; then
+                                            response_description="Client error"
+                                        elif [ "$status" -ge 500 ]; then
+                                            response_description="Server error"
+                                        else
+                                            response_description="Response"
+                                        fi
+                                        
+                                        # Create a temporary file for the response
+                                        resp_temp_file="${TEMP_DIR}/resp_temp_${method}.json"
+                                        
+                                        # Create the response object structure
+                                        echo "{" > "$resp_temp_file"
+                                        echo "  \"description\": \"$response_description\"," >> "$resp_temp_file"
+                                        echo "  \"content\": {" >> "$resp_temp_file"
+                                        echo "    \"$content_type\": {" >> "$resp_temp_file"
+                                        echo "      \"schema\": $schema_part" >> "$resp_temp_file"
+                                        echo "    }" >> "$resp_temp_file"
+                                        echo "  }" >> "$resp_temp_file"
+                                        echo "}" >> "$resp_temp_file"
+                                        
+                                        # Add this response to the method responses file by status code
+                                        jq --arg status "$status" \
+                                           --slurpfile resp "$resp_temp_file" \
+                                           '. + {($status): $resp[0]}' \
+                                           "$method_responses_file" > "${method_responses_file}.tmp" && mv "${method_responses_file}.tmp" "$method_responses_file"
+                                    done # End of response loop
+                                    
+                                    # If no responses were found, add a default 200 response for this method
+                                    if [ "$(jq 'length' "$method_responses_file")" -eq 0 ]; then
+                                        jq '. + {"200": {"description": "Successful operation", "content": {"application/json": {"schema": {"type": "object"}}}}}' \
+                                           "$method_responses_file" > "${method_responses_file}.tmp" && mv "${method_responses_file}.tmp" "$method_responses_file"
+                                    fi
+                                    
+                                    # Build the operation object for this method
+                                    method_operation_file="${TEMP_DIR}/operation_${method}.json"
+                                    if [ -n "$operation_id" ]; then
+                                        jq -n --arg summary "$summary" \
+                                              --arg desc "$description" \
+                                              --arg opid "$operation_id" \
+                                              --argjson tags "$tag_array" \
+                                              --slurpfile responses "$method_responses_file" \
+                                              '{
+                                                 "summary": $summary,
+                                                 "description": $desc,
+                                                 "operationId": $opid,
+                                                 "tags": $tags,
+                                                 "responses": $responses[0]
+                                               }' > "$method_operation_file"
+                                    else
+                                        jq -n --arg summary "$summary" \
+                                              --arg desc "$description" \
+                                              --argjson tags "$tag_array" \
+                                              --slurpfile responses "$method_responses_file" \
+                                              '{
+                                                 "summary": $summary,
+                                                 "description": $desc,
+                                                 "tags": $tags,
+                                                 "responses": $responses[0]
+                                               }' > "$method_operation_file"
+                                    fi
+                                    
+                                    # Add this method's operation to the path
                                     jq --arg path "$path" \
                                        --arg method "$method" \
-                                       --slurpfile operation "$operation_file" \
+                                       --slurpfile operation "$method_operation_file" \
                                        '.[$path] += {($method): $operation[0]}' "$PATHS_FILE" > "${PATHS_FILE}.tmp" && \
                                        mv "${PATHS_FILE}.tmp" "$PATHS_FILE"
-                                else
-                                    jq --arg path "$path" \
-                                       --arg method "$method" \
-                                       --slurpfile operation "$operation_file" \
-                                       '.[$path] = {($method): $operation[0]}' "$PATHS_FILE" > "${PATHS_FILE}.tmp" && \
-                                       mv "${PATHS_FILE}.tmp" "$PATHS_FILE"
-                                fi
-                                
-                                echo -e "    ${GREEN}✓ Added ${NC}${BOLD}${method} ${path}${NC}"
+                                    
+                                    echo -e "    ${GREEN}✓ Added ${NC}${BOLD}${method} ${path}${NC}"
+                                done # End of method loop
                             fi
                         fi
                     done

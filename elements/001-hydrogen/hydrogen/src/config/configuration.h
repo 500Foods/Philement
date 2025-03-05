@@ -392,6 +392,7 @@ typedef struct {
     char *payload_key;      // Key for decrypting payload files
     char *executable_path;  // Binary location for resource loading
     char *log_file_path;   // Central log file location
+    char *config_file;     // Path to the configuration file that was used
     WebConfig web;         // HTTP server settings
     WebSocketConfig websocket; // WebSocket server settings
     mDNSServerConfig mdns_server;       // Service discovery settings
