@@ -6,11 +6,6 @@
 #ifndef HYDROGEN_OIDC_END_SESSION_H
 #define HYDROGEN_OIDC_END_SESSION_H
 
-//@ swagger:service OIDC End Session Service
-//@ swagger:description Allows users to log out and terminate their sessions
-//@ swagger:tag oidc OpenID Connect protocol endpoints
-//@ swagger:tag session Session management and logout
-
 // Feature test macros
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
@@ -41,7 +36,7 @@
 //@ swagger:method GET
 //@ swagger:method POST
 //@ swagger:operationId endSession
-//@ swagger:tags oidc,session
+//@ swagger:tags "OIDC Service"
 //@ swagger:summary OpenID Connect Session Management endpoint
 //@ swagger:description Implements the OpenID Connect RP-Initiated Logout specification. Allows users to log out and terminate their session with the OpenID Provider. Can also notify Relying Parties (client applications) that the user's session has ended.
 //@ swagger:parameter id_token_hint string optional The ID Token previously issued to the client
