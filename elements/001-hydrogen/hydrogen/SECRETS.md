@@ -14,12 +14,14 @@ Hydrogen uses environment variables to manage sensitive configuration values suc
 ### Using Environment Variables in Bash and Zsh
 
 To verify your environment variables are set correctly, use the test script:
+
 ```bash
 # Run the environment variable test
 ./tests/test_env_payload.sh
 ```
 
 This script validates that:
+
 1. Required environment variables (PAYLOAD_KEY and PAYLOAD_LOCK) are present
 2. The keys are valid RSA key pairs in the correct format
 
@@ -49,16 +51,19 @@ export PAYLOAD_KEY=$(cat /path/to/private_key.pem)
 **Persistent (add to shell profile):**
 
 For Bash, add to `~/.bashrc` or `~/.bash_profile`:
+
 ```bash
 export PAYLOAD_KEY="your-secret-key-here"
 ```
 
 For Zsh, add to `~/.zshrc`:
+
 ```bash
 export PAYLOAD_KEY="your-secret-key-here"
 ```
 
 **Applying changes:**
+
 ```bash
 # For current shell session
 source ~/.bashrc   # or ~/.zshrc
@@ -67,6 +72,7 @@ source ~/.bashrc   # or ~/.zshrc
 ```
 
 **For a single command:**
+
 ```bash
 PAYLOAD_KEY="your-secret-key-here" ./hydrogen
 ```
@@ -103,9 +109,11 @@ export PAYLOAD_KEY=$(cat private_key.pem | base64 -w 0)
    - The compressed payload is encrypted with AES-256-CBC using the random key and IV
    - The AES key is encrypted with the RSA public key (PAYLOAD_LOCK)
    - The components are combined into a single file:
-     ```
+
+     ```key
      [key_size(4 bytes)] + [encrypted_aes_key] + [iv(16 bytes)] + [encrypted_payload]
      ```
+
    - This file is appended to the executable with a marker
 
 2. During runtime:
@@ -144,12 +152,14 @@ The Hydrogen project is expected to incorporate additional secrets for various s
 ### Terminal Subsystem
 
 The Terminal feature may require authentication tokens or other credentials that will be managed through environment variables such as:
+
 - `TERMINAL_AUTH_TOKEN`
 - `TERMINAL_SESSION_SECRET`
 
 ### OIDC Integration
 
 The OpenID Connect functionality will require various secrets:
+
 - `OIDC_CLIENT_SECRET`
 - `OIDC_SIGNING_KEY`
 - `OIDC_ENCRYPTION_KEY`

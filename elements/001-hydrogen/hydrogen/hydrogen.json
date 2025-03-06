@@ -3,7 +3,7 @@
     "PayloadKey": "${env.PAYLOAD_KEY}",
     "LogFile": "/var/log/hydrogen.log",
     "WebServer": {
-        "Enabled": true,
+        "Enabled": false,
         "EnableIPv6": true,
         "Port": 5000,
         "WebRoot": "/var/www/html",
@@ -20,7 +20,8 @@
         "ConnectionTimeouts": {
             "ShutdownWaitSeconds": 2,
             "ServiceLoopDelayMs": 50,
-            "ConnectionCleanupMs": 500
+            "ConnectionCleanupMs": 500,
+            "ExitWaitSeconds": 3
         }
     },
     "Network": {

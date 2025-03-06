@@ -54,6 +54,16 @@
 #include "../network/network.h"
 #include "../utils/utils_threads.h"
 
+
+// Application state flags
+extern volatile sig_atomic_t server_starting;
+extern volatile sig_atomic_t server_running;
+extern volatile sig_atomic_t server_stopping;
+
+// Thread synchronization
+extern pthread_cond_t terminate_cond;
+extern pthread_mutex_t terminate_mutex;
+
 // Thread tracking structures
 extern ServiceThreads logging_threads;
 extern ServiceThreads web_threads;
@@ -61,19 +71,16 @@ extern ServiceThreads websocket_threads;
 extern ServiceThreads mdns_server_threads;
 extern ServiceThreads print_threads;
 
-// Application state flags
-extern volatile sig_atomic_t server_starting;
-extern volatile sig_atomic_t server_running;
-extern volatile sig_atomic_t server_stopping;
-extern pthread_cond_t terminate_cond;
-extern pthread_mutex_t terminate_mutex;
-
 // Component shutdown flags
 extern volatile sig_atomic_t log_queue_shutdown;
 extern volatile sig_atomic_t web_server_shutdown;
 extern volatile sig_atomic_t websocket_server_shutdown;
 extern volatile sig_atomic_t mdns_server_system_shutdown;
-extern volatile sig_atomic_t print_queue_shutdown;
+extern volatile sig_atomic_t mdns_client_system_shutdown;
+extern volatile sig_atomic_t smtp_server_system_shutdown;
+extern volatile sig_atomic_t swagger_system_shutdown;
+extern volatile sig_atomic_t terminal_system_shutdown;
+extern volatile sig_atomic_t print_system_shutdown;
 
 // Queue Threads
 extern pthread_t log_thread;
@@ -86,5 +93,8 @@ extern pthread_t print_queue_thread;
 extern AppConfig *app_config;
 extern mdns_server_t *mdns_server;
 extern network_info_t *net_info;
+
+// Core system functions
+void graceful_shutdown(void);
 
 #endif // HYDROGEN_STATE_H

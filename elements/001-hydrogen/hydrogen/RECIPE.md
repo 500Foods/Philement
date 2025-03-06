@@ -26,13 +26,15 @@
   3. Group related changes under a single topic (e.g., "WebSocket Server:", "API Updates:").
   4. Keep it factual and concise—describe **what** changed, not why.
 - **Template**:
-  ```
+
+  ```format
   **Date**: [Insert current Pacific Time date, e.g., 2023-10-25]
   **Topic**: [Brief description, e.g., "Configuration Parsing"]
   **Details**:
   - [Change 1, e.g., "Fixed JSON validation for empty arrays"]
   - [Change 2, e.g., "Added error logging for invalid configs"]
   ```
+
 - **Rules**:
   - No marketing language (e.g., "amazing update").
   - Use the current date—never future dates.
@@ -69,34 +71,28 @@
 ## 🔍 QUICK REFERENCE FOR COMMON TASKS
 
 ### API Changes
+
 - Update ```docs/api.md```.
 - Add tests.
 - Update ```RELEASES.md``` with Pacific Time date.
 - Verify thread safety.
 
 ### Configuration Changes
+
 - Validate JSON syntax.
 - Update documentation.
 - Update ```RELEASES.md``` with Pacific Time date.
 - Test all variants.
 
 ### Thread-Related Changes
+
 - Check mutex ordering and condition variables.
 - Test shutdown sequence.
 - Update ```RELEASES.md``` with Pacific Time date.
 
-## 📝 SPECIAL NOTE FOR AI (e.g., Claude)
-
-- **Read this file at the start of every task.**
-- **Follow every step exactly as written.**
-- If you can’t access the current Pacific Time date:
-  1. Use [INSERT_PACIFIC_TIME_DATE_HERE] in release notes.
-  2. Prompt the user: "Please replace [INSERT_PACIFIC_TIME_DATE_HERE] with the current Pacific Time date (YYYY-MM-DD)."
-- **Do not skip timezone checks or release notes updates—they are mandatory.**
-
 ## PROJECT OVERVIEW
 
-```
+```overview
 project_name: Hydrogen
 primary_language: C
 project_type: Server Framework
@@ -130,7 +126,7 @@ For AI-assisted development, these are the critical files to examine first:
 
 ## REPOSITORY STRUCTURE
 
-```
+```structure
 hydrogen/
 ├── src/                    # Source code
 │   ├── api/                # API endpoints
@@ -191,21 +187,66 @@ hydrogen/
 
 ## RELEASE NOTES GUIDELINES
 
-When editing release notes:
+The project uses a two-level release notes system:
 
-1. **Format Requirements**
-   - Use Pacific Time (America/Vancouver)
-   - Group by topic
-   - Keep entries factual
-   - Focus on WHAT changed
-   - Use collapsible sections by month
-   - Maintain consistent structure
+1. **Main Release Log (`RELEASES.md`)**
+   - Chronological index of all changes
+   - Organized by month and date
+   - Links to detailed daily release notes
 
-2. **Entry Structure**
-   - Topic heading (e.g., "WebSocket Server:", "Testing:")
-   - Bullet points for changes
-   - Group related items
-   - No marketing language
+   ```markdown
+   - March 2025
+     - [2025-Mar-05 (Wed)](docs/releases/2025-03-05.md): API, WebSocket Server, Testing
+     - [2025-Mar-04 (Tue)](docs/releases/2025-03-04.md): Web Server, Configuration
+   ```
+
+2. **Daily Release Notes (`docs/releases/YYYY-MM-DD.md`)**
+   - One file per day with changes
+   - Organized by technical topics
+   - Detailed but concise descriptions
+   - Example structure:
+
+   ```markdown
+   # March 5, 2025
+   
+   ## API
+   - Fixed segmentation fault in System Config endpoint:
+     - Removed redundant json_decref call
+     - Ensured proper JSON object lifecycle
+   
+   ## WebSocket Server
+   - Added configurable ExitWaitSeconds parameter:
+     - Made thread exit wait timeout configurable
+     - Added exit_wait_seconds to config struct
+   ```
+
+3. **Writing Guidelines**
+   - Use Pacific Time (America/Vancouver) for all dates
+   - Focus on technical details, not marketing
+   - Group related changes under appropriate topics
+   - Use nested bullet points for related sub-changes
+   - Keep descriptions factual and specific
+   - Avoid adjectives like "improved", "enhanced", "better"
+   - Document exactly what changed, not why it changed
+   - Include all affected components (API, docs, tests)
+
+4. **Topic Organization**
+   - Use consistent topic headings:
+     - "API:" - API endpoint changes
+     - "WebSocket Server:" - WebSocket functionality
+     - "Web Server:" - HTTP server changes
+     - "Testing:" - Test suite updates
+     - "Documentation:" - Doc changes
+     - "Configuration:" - Config changes
+     - "General Improvements:" - Cross-cutting changes
+   - Group all changes for the same topic together
+   - Order topics by significance/impact
+
+5. **Release Notes Workflow**
+   1. Create new daily file if needed: `docs/releases/YYYY-MM-DD.md`
+   2. Add changes under appropriate topic headings
+   3. Update `RELEASES.md` with link and topic summary
+   4. Verify all dates are in Pacific Time
 
 ## PRIMARY DOCUMENTATION
 
@@ -217,7 +258,7 @@ When editing release notes:
 
 ## PROJECT TERMINOLOGY
 
-```
+```terms
 terms:
   - Queue: "Thread-safe data structure for communication"
   - Service: "Standalone component with thread(s)"

@@ -2,7 +2,7 @@
  * Hydrogen Server
  * 
  * This is the main entry point for the Hydrogen Server.
- * It initializes all system components and starts the main event loop.
+ * 
  */
 
 // Feature test macros
@@ -27,6 +27,7 @@
 extern ServiceThreads logging_threads;
 
 int main(int argc, char *argv[]) {
+
     // Store main thread ID for tracking
     pthread_t main_thread_id = pthread_self();
 
@@ -47,6 +48,7 @@ int main(int argc, char *argv[]) {
     // 2. Provides regular timeouts (every 1 second) for system maintenance tasks
     // 3. Efficiently uses system resources by sleeping when idle
     // 4. Maintains system responsiveness without busy-waiting
+    
     struct timespec ts;
     while (server_running) {
         clock_gettime(CLOCK_REALTIME, &ts);

@@ -259,7 +259,7 @@ compress_static_assets() {
 
 # Create and encrypt payload
 create_tarball() {
-    print_header "Creating Encrypted Payload Package"
+    print_header "Creating Payload Package"
     echo -e "${CYAN}${INFO} Creating payload tarball...${NC}"
     
     # Create flat tar file including only what we need
@@ -292,7 +292,44 @@ create_tarball() {
         echo -e "${RED}${FAIL} Brotli compression failed${NC}"
         exit 1
     fi
-        # Check for PAYLOAD_LOCK environment variable (RSA public key for AES key encryption)
+    
+    # Verify the compressed file
+    if [ ! -f "${TEMP_DIR}/payload.tar.br" ]; then
+        echo -e "${RED}${FAIL} Compressed file not created${NC}"
+        exit 1
+    fi
+    
+    # Log detailed Brotli stream information
+    BR_SIZE=$(stat -c%s "${TEMP_DIR}/payload.tar.br")
+    BR_HEAD_16=$(head -c16 "${TEMP_DIR}/payload.tar.br" | xxd -p | tr -d '\n')
+    BR_TAIL_16=$(tail -c16 "${TEMP_DIR}/payload.tar.br" | xxd -p | tr -d '\n')
+    
+    echo -e "${CYAN}${INFO} Brotli stream validation:${NC}"
+    echo -e "${CYAN}${INFO} - Compressed size: ${BR_SIZE} bytes${NC}"
+    echo -e "${CYAN}${INFO} - Compression ratio: $(echo "scale=2; ${BR_SIZE}*100/$(stat -c%s "${TAR_FILE}")" | bc)%${NC}"
+    echo -e "${CYAN}${INFO} - First 32 bytes: ${BR_HEAD_16}${NC}"
+    echo -e "${CYAN}${INFO} - Last 32 bytes: ${BR_TAIL_16}${NC}"
+    
+    # Test Brotli decompression
+    echo -e "${CYAN}${INFO} Testing Brotli decompression...${NC}"
+    if ! brotli -d "${TEMP_DIR}/payload.tar.br" -o "${TEMP_DIR}/test.tar" 2>/dev/null; then
+        echo -e "${RED}${FAIL} Brotli validation failed - invalid compressed data${NC}"
+        exit 1
+    fi
+    
+    # Compare original and decompressed files
+    if ! cmp -s "${TAR_FILE}" "${TEMP_DIR}/test.tar"; then
+        echo -e "${RED}${FAIL} Brotli validation failed - decompressed data mismatch${NC}"
+        exit 1
+    fi
+    
+    echo -e "${GREEN}${PASS} Brotli compression validated successfully${NC}"
+    rm -f "${TEMP_DIR}/test.tar"
+
+    print_header "Encrypting Payload Package"
+    echo -e "${CYAN}${INFO} Encrypting payload tarball...${NC}"
+
+    # Check for PAYLOAD_LOCK environment variable (RSA public key for AES key encryption)
     if [ -z "${PAYLOAD_LOCK}" ]; then
         echo -e "${RED}${FAIL} Error: PAYLOAD_LOCK environment variable must be set${NC}"
         echo -e "${YELLOW}${INFO} This variable should contain the base64-encoded RSA public key for payload encryption${NC}"
@@ -324,54 +361,6 @@ create_tarball() {
     
     # Get the size of the encrypted AES key
     ENCRYPTED_KEY_SIZE=$(stat -c%s "${TEMP_DIR}/encrypted_aes_key.bin")
-    
-    # Compress the tar with Brotli using explicit settings
-    echo -e "${CYAN}${INFO} Compressing tar file with Brotli...${NC}"
-    echo -e "${CYAN}${INFO} - Quality: 11 (maximum)${NC}"
-    echo -e "${CYAN}${INFO} - Window: 24 (16MB)${NC}"
-    echo -e "${CYAN}${INFO} - Input size: $(stat -c%s "${TAR_FILE}") bytes${NC}"
-    
-    brotli --quality=11 --lgwin=24 --force \
-           "${TAR_FILE}" \
-           -o "${TEMP_DIR}/payload.tar.br"
-    
-    if [ $? -ne 0 ]; then
-        echo -e "${RED}${FAIL} Brotli compression failed${NC}"
-        exit 1
-    fi
-    
-    # Verify the compressed file
-    if [ ! -f "${TEMP_DIR}/payload.tar.br" ]; then
-        echo -e "${RED}${FAIL} Compressed file not created${NC}"
-        exit 1
-    fi
-    
-    # Log detailed Brotli stream information
-    BR_SIZE=$(stat -c%s "${TEMP_DIR}/payload.tar.br")
-    BR_HEAD_32=$(head -c32 "${TEMP_DIR}/payload.tar.br" | xxd -p | tr -d '\n')
-    BR_TAIL_32=$(tail -c32 "${TEMP_DIR}/payload.tar.br" | xxd -p | tr -d '\n')
-    
-    echo -e "${CYAN}${INFO} Brotli stream validation:${NC}"
-    echo -e "${CYAN}${INFO} - Compressed size: ${BR_SIZE} bytes${NC}"
-    echo -e "${CYAN}${INFO} - Compression ratio: $(echo "scale=2; ${BR_SIZE}*100/$(stat -c%s "${TAR_FILE}")" | bc)%${NC}"
-    echo -e "${CYAN}${INFO} - First 32 bytes: ${BR_HEAD_32}${NC}"
-    echo -e "${CYAN}${INFO} - Last 32 bytes: ${BR_TAIL_32}${NC}"
-    
-    # Test Brotli decompression
-    echo -e "${CYAN}${INFO} Testing Brotli decompression...${NC}"
-    if ! brotli -d "${TEMP_DIR}/payload.tar.br" -o "${TEMP_DIR}/test.tar" 2>/dev/null; then
-        echo -e "${RED}${FAIL} Brotli validation failed - invalid compressed data${NC}"
-        exit 1
-    fi
-    
-    # Compare original and decompressed files
-    if ! cmp -s "${TAR_FILE}" "${TEMP_DIR}/test.tar"; then
-        echo -e "${RED}${FAIL} Brotli validation failed - decompressed data mismatch${NC}"
-        exit 1
-    fi
-    
-    echo -e "${GREEN}${PASS} Brotli compression validated successfully${NC}"
-    rm -f "${TEMP_DIR}/test.tar"
 
     # Save pre-encryption validation data
     echo -e "${CYAN}${INFO} Pre-encryption validation:${NC}"
@@ -384,8 +373,8 @@ create_tarball() {
     # Create validation file for debugging
     echo "BROTLI_VALIDATION" > "${TEMP_DIR}/validation.txt"
     echo "Size: ${BR_SIZE}" >> "${TEMP_DIR}/validation.txt"
-    echo "First32: ${BR_HEAD_32}" >> "${TEMP_DIR}/validation.txt"
-    echo "Last32: ${BR_TAIL_32}" >> "${TEMP_DIR}/validation.txt"
+    echo "First16: ${BR_HEAD_16}" >> "${TEMP_DIR}/validation.txt"
+    echo "Last16: ${BR_TAIL_16}" >> "${TEMP_DIR}/validation.txt"
 
     # Encrypt the Brotli-compressed tar with AES using direct key and IV
     echo -e "${CYAN}${INFO} Encrypting compressed tar with AES-256 (direct key/IV)...${NC}"
@@ -409,14 +398,14 @@ create_tarball() {
                 -K "$(xxd -p -c 32 "${TEMP_DIR}/aes_key.bin")" \
                 -iv "$(xxd -p -c 16 "${TEMP_DIR}/aes_iv.bin")"
     
-    # Compare the first 32 bytes
-    VAL_HEAD_32=$(head -c32 "${TEMP_DIR}/validation.br" | xxd -p | tr -d '\n')
-    if [ "${VAL_HEAD_32}" = "${BR_HEAD_32}" ]; then
+    # Compare the first 16 bytes
+    VAL_HEAD_16=$(head -c16 "${TEMP_DIR}/validation.br" | xxd -p | tr -d '\n')
+    if [ "${VAL_HEAD_16}" = "${BR_HEAD_16}" ]; then
         echo -e "${GREEN}${PASS} Encryption validation passed - headers match${NC}"
     else
         echo -e "${RED}${FAIL} Encryption validation failed!${NC}"
-        echo -e "${RED}${INFO} Original : ${BR_HEAD_32}${NC}"
-        echo -e "${RED}${INFO} Decrypted: ${VAL_HEAD_32}${NC}"
+        echo -e "${RED}${INFO} Original : ${BR_HEAD_16}${NC}"
+        echo -e "${RED}${INFO} Decrypted: ${VAL_HEAD_16}${NC}"
         exit 1
     fi
     
@@ -439,7 +428,6 @@ create_tarball() {
     # Append the encrypted payload
     cat "${TEMP_DIR}/temp_payload.enc" >> "${COMPRESSED_TAR_FILE}"
 
-    
     # List the contents of the tarball before encryption
     print_header "Tarball Contents"
     echo -e "${CYAN}${INFO} Listing contents of compressed tarball:${NC}"
@@ -462,28 +450,28 @@ create_tarball() {
     TAR_SIZE=$(stat -c%s "${TAR_FILE}")
     TAR_HEAD=$(head -c5 "${TAR_FILE}" | xxd -p | tr -d '\n')
     TAR_TAIL=$(tail -c5 "${TAR_FILE}" | xxd -p | tr -d '\n')
-    echo -e "  ${GREEN}${INFO} Uncompressed tar:      ${NC}${TAR_SIZE} bytes"
-    echo -e "  ${GREEN}${INFO} First 5 bytes (hex):   ${NC}${TAR_HEAD}"
-    echo -e "  ${GREEN}${INFO} Last 5 bytes (hex):    ${NC}${TAR_TAIL}"
+    echo -e "  ${GREEN}${INFO} Uncompressed tar:         ${NC}${TAR_SIZE} bytes"
+    echo -e "  ${GREEN}${INFO} First 5 bytes (hex):      ${NC}${TAR_HEAD}"
+    echo -e "  ${GREEN}${INFO} Last 5 bytes (hex):       ${NC}${TAR_TAIL}"
     
     # Brotli compressed tar
     BR_SIZE=$(stat -c%s "${TEMP_DIR}/payload.tar.br")
     BR_HEAD=$(head -c5 "${TEMP_DIR}/payload.tar.br" | xxd -p | tr -d '\n')
     BR_TAIL=$(tail -c5 "${TEMP_DIR}/payload.tar.br" | xxd -p | tr -d '\n')
-    echo -e "  ${GREEN}${INFO} Compressed tar (brotli): ${NC}${BR_SIZE} bytes"
-    echo -e "  ${GREEN}${INFO} First 5 bytes (hex):   ${NC}${BR_HEAD}"
-    echo -e "  ${GREEN}${INFO} Last 5 bytes (hex):    ${NC}${BR_TAIL}"
+    echo -e "  ${GREEN}${INFO} Compressed tar (brotli):  ${NC}${BR_SIZE} bytes"
+    echo -e "  ${GREEN}${INFO} First 5 bytes (hex):      ${NC}${BR_HEAD}"
+    echo -e "  ${GREEN}${INFO} Last 5 bytes (hex):       ${NC}${BR_TAIL}"
     
     # Final encrypted payload
     ENC_SIZE=$(stat -c%s "${COMPRESSED_TAR_FILE}")
     ENC_HEAD=$(head -c5 "${COMPRESSED_TAR_FILE}" | xxd -p | tr -d '\n')
     ENC_TAIL=$(tail -c5 "${COMPRESSED_TAR_FILE}" | xxd -p | tr -d '\n')
-    echo -e "  ${GREEN}${INFO} Encrypted payload:     ${NC}${ENC_SIZE} bytes"
-    echo -e "  ${GREEN}${INFO} First 5 bytes (hex):   ${NC}${ENC_HEAD}"
-    echo -e "  ${GREEN}${INFO} Last 5 bytes (hex):    ${NC}${ENC_TAIL}"
+    echo -e "  ${GREEN}${INFO} Encrypted payload:        ${NC}${ENC_SIZE} bytes"
+    echo -e "  ${GREEN}${INFO} First 5 bytes (hex):      ${NC}${ENC_HEAD}"
+    echo -e "  ${GREEN}${INFO} Last 5 bytes (hex):       ${NC}${ENC_TAIL}"
     
     # Log size of encrypted AES key being added
-    echo -e "  ${GREEN}${INFO} Encrypted AES key size: ${NC}${ENCRYPTED_KEY_SIZE} bytes"
+    echo -e "  ${GREEN}${INFO} Encrypted AES key size:   ${NC}${ENCRYPTED_KEY_SIZE} bytes"
     
     echo -e "${GREEN}${PASS} Encrypted payload package is ready for distribution.${NC}"
 }
