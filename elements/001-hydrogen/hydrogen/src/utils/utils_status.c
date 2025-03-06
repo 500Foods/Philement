@@ -58,6 +58,15 @@ static void get_fd_info(int fd, FileDescriptorInfo *info);
 static void get_process_memory(size_t *vmsize, size_t *vmrss, size_t *vmswap);
 static void add_thread_ids_to_service(json_t *service_status, ServiceThreads *threads);
 
+// Helper function to safely truncate strings
+static char* safe_truncate(char* dest, size_t dest_size, const char* src) {
+    size_t src_len = strlen(src);
+    size_t copy_len = src_len < dest_size - 1 ? src_len : dest_size - 1;
+    memcpy(dest, src, copy_len);
+    dest[copy_len] = '\0';
+    return dest;
+}
+
 // Helper function to get socket information from /proc/net files
 static void get_socket_info(int inode, char *proto, int *port) {
     char path[64];  // System path buffer - fixed size for /proc paths
@@ -115,19 +124,21 @@ static void get_fd_info(int fd, FileDescriptorInfo *info) {
     
     // Handle standard streams
     if (fd <= 2) {
-        snprintf(info->type, sizeof(info->type), "stdio");
+        safe_truncate(info->type, sizeof(info->type), "stdio");
         const char *stream_name = (fd == 0) ? "stdin" : (fd == 1) ? "stdout" : "stderr";
-        snprintf(info->description, sizeof(info->description), "%s: terminal", stream_name);
+        char desc[sizeof(info->description)];
+        snprintf(desc, sizeof(desc), "%s: terminal", stream_name);
+        safe_truncate(info->description, sizeof(info->description), desc);
         return;
     }
-    
+
     // Handle socket
     if (S_ISSOCK(st.st_mode)) {
-    char proto[32];  // Protocol name buffer - standard size
+        char proto[32];  // Protocol name buffer - standard size
         int port;
         get_socket_info(st.st_ino, proto, &port);
         
-        snprintf(info->type, sizeof(info->type), "socket");
+        safe_truncate(info->type, sizeof(info->type), "socket");
         if (port > 0) {
             const char *service = "";
             // Use default ports during early initialization
@@ -135,32 +146,38 @@ static void get_fd_info(int fd, FileDescriptorInfo *info) {
             else if (port == DEFAULT_WEBSOCKET_PORT) service = "websocket server";
             else if (port == 5353) service = "mDNS server";  // mDNS port is standard
             
+            char desc[sizeof(info->description)];
             if (service[0]) {
-                snprintf(info->description, sizeof(info->description), 
-                        "socket (%s port %d - %s)", proto, port, service);
+                snprintf(desc, sizeof(desc), "socket (%s port %d - %s)", proto, port, service);
             } else {
-                snprintf(info->description, sizeof(info->description), 
-                        "socket (%s port %d)", proto, port);
+                snprintf(desc, sizeof(desc), "socket (%s port %d)", proto, port);
             }
+            safe_truncate(info->description, sizeof(info->description), desc);
         } else if (strstr(target, "socket:[")) {
             struct sockaddr_storage addr;
             socklen_t addr_len = sizeof(addr);
             if (getsockname(fd, (struct sockaddr*)&addr, &addr_len) == 0) {
                 if (addr.ss_family == AF_UNIX) {
                     struct sockaddr_un *un = (struct sockaddr_un*)&addr;
-                    if (un->sun_path[0])
-                        snprintf(info->description, sizeof(info->description), 
-                                "Unix domain socket: %s", un->sun_path);
-                    else
-                        snprintf(info->description, sizeof(info->description), 
-                                "Unix domain socket: *");
+                    if (un->sun_path[0]) {
+                        // Calculate available space for path
+                        const char* prefix = "Unix domain socket: ";
+                        size_t prefix_len = strlen(prefix);
+                        size_t max_path_len = sizeof(info->description) - prefix_len - 1;
+                        
+                        // Format with bounded length
+                        char desc[sizeof(info->description)];
+                        snprintf(desc, sizeof(desc), "%s%.*s", 
+                               prefix, (int)max_path_len, un->sun_path);
+                        safe_truncate(info->description, sizeof(info->description), desc);
+                    } else {
+                        safe_truncate(info->description, sizeof(info->description), "Unix domain socket: *");
+                    }
                 } else {
-                    snprintf(info->description, sizeof(info->description), 
-                            "socket (inode: %lu)", st.st_ino);
+                    snprintf(info->description, sizeof(info->description), "socket (inode: %lu)", st.st_ino);
                 }
             } else {
-                snprintf(info->description, sizeof(info->description), 
-                        "socket (inode: %lu)", st.st_ino);
+                snprintf(info->description, sizeof(info->description), "socket (inode: %lu)", st.st_ino);
             }
         }
         return;
@@ -168,49 +185,52 @@ static void get_fd_info(int fd, FileDescriptorInfo *info) {
     
     // Handle anonymous inodes
     if (strncmp(target, "anon_inode:", 11) == 0) {
-        snprintf(info->type, sizeof(info->type), "anon_inode");
+        safe_truncate(info->type, sizeof(info->type), "anon_inode");
         const char *anon_type = target + 11;
         if (strcmp(anon_type, "[eventfd]") == 0)
-            snprintf(info->description, sizeof(info->description), "event notification channel");
+            safe_truncate(info->description, sizeof(info->description), "event notification channel");
         else if (strcmp(anon_type, "[eventpoll]") == 0)
-            snprintf(info->description, sizeof(info->description), "epoll instance");
+            safe_truncate(info->description, sizeof(info->description), "epoll instance");
         else if (strcmp(anon_type, "[timerfd]") == 0)
-            snprintf(info->description, sizeof(info->description), "timer notification");
+            safe_truncate(info->description, sizeof(info->description), "timer notification");
         else {
-            // Safely truncate anon_type to fixed size and ensure null-termination
-            char truncated_type[239];  // Fixed size: DEFAULT_FD_DESCRIPTION_SIZE - 17
-            size_t max_copy = sizeof(truncated_type) - 1; // Reserve space for null terminator
-            size_t copy_len = strlen(anon_type) < max_copy ? strlen(anon_type) : max_copy;
-            memcpy(truncated_type, anon_type, copy_len);
-            truncated_type[copy_len] = '\0'; // Ensure null termination
+            // Calculate available space for inode type
+            const char* prefix = "anonymous inode: ";
+            size_t prefix_len = strlen(prefix);
+            size_t max_type_len = sizeof(info->description) - prefix_len - 1;
             
-            snprintf(info->description, sizeof(info->description), "anonymous inode: %s", truncated_type);
+            // Format with bounded length
+            char desc[sizeof(info->description)];
+            snprintf(desc, sizeof(desc), "%s%.*s", 
+                    prefix, (int)max_type_len, anon_type);
+            safe_truncate(info->description, sizeof(info->description), desc);
         }
         return;
     }
     
     // Handle regular files and other types
     if (S_ISREG(st.st_mode)) {
-        snprintf(info->type, sizeof(info->type), "file");
+        safe_truncate(info->type, sizeof(info->type), "file");
+        // Calculate available space for file path
+        const char* prefix = "file: ";
+        size_t prefix_len = strlen(prefix);
+        size_t max_path_len = sizeof(info->description) - prefix_len - 1;
         
-        // Safely truncate target path to fixed size and ensure null-termination
-        char truncated_path[250];  // Fixed size: DEFAULT_FD_DESCRIPTION_SIZE - 6
-        size_t max_copy = sizeof(truncated_path) - 1; // Reserve space for null terminator
-        size_t copy_len = strlen(target) < max_copy ? strlen(target) : max_copy;
-        memcpy(truncated_path, target, copy_len);
-        truncated_path[copy_len] = '\0'; // Ensure null termination
-        
-        snprintf(info->description, sizeof(info->description), "file: %s", truncated_path);
+        // Format with bounded length
+        char desc[sizeof(info->description)];
+        snprintf(desc, sizeof(desc), "%s%.*s", 
+                prefix, (int)max_path_len, target);
+        safe_truncate(info->description, sizeof(info->description), desc);
     } else if (strncmp(target, "/dev/", 5) == 0) {
-        snprintf(info->type, sizeof(info->type), "device");
+        safe_truncate(info->type, sizeof(info->type), "device");
         if (strcmp(target, "/dev/urandom") == 0)
-            snprintf(info->description, sizeof(info->description), "random number source");
+            safe_truncate(info->description, sizeof(info->description), "random number source");
         else {
-            snprintf(info->description, sizeof(info->description), "%s", target);
+            safe_truncate(info->description, sizeof(info->description), target);
         }
     } else {
-        snprintf(info->type, sizeof(info->type), "other");
-        snprintf(info->description, sizeof(info->description), "%s", target);
+        safe_truncate(info->type, sizeof(info->type), "other");
+        safe_truncate(info->description, sizeof(info->description), target);
     }
 }
 

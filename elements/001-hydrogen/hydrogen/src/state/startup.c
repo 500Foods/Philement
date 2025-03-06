@@ -47,7 +47,7 @@
 #include "startup_websocket.h"
 #include "startup_mdns_server.h"
 #include "startup_mdns_client.h"
-#include "startup_smtp_server.h"
+#include "startup_smtp_relay.h"
 #include "startup_swagger.h"
 #include "startup_terminal.h"
 
@@ -61,49 +61,75 @@
 #define BUILD_TYPE "unknown"
 #endif
 
-// Forward declarations
-static void log_app_info(void);
+// External declarations
 extern void close_file_logging(void);
 
-// Log application information
-static void log_app_info(void) {
-    log_this("Initialization", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
-    log_this("Initialization", "Server Name: %s", LOG_LEVEL_INFO, app_config->server_name);
-    log_this("Initialization", "Executable: %s", LOG_LEVEL_INFO, app_config->executable_path);
-    log_this("Initialization", "Version: %s", LOG_LEVEL_INFO, VERSION);
-    log_this("Initialization", "Release: %s", LOG_LEVEL_INFO, RELEASE);
-    log_this("Initialization", "Build Type: %s", LOG_LEVEL_INFO, BUILD_TYPE);
+// Public interface
+int startup_hydrogen(const char* config_path);
+
+// Private declarations
+static void log_early_info(void);
+static void log_config_info(void);
+
+// Log early startup information (before any initialization)
+static void log_early_info(void) {
+    log_group_begin();
+    log_this("Startup", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
+    log_this("Startup", "Starting Hydrogen Server...", LOG_LEVEL_INFO);
+    log_this("Startup", "Version: %s", LOG_LEVEL_INFO, VERSION);
+    log_this("Startup", "Release: %s", LOG_LEVEL_INFO, RELEASE);
+    log_this("Startup", "Build Type: %s", LOG_LEVEL_INFO, BUILD_TYPE);
+    log_this("Startup", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
+    log_group_end();
+}
+
+// Log configuration-dependent information
+static void log_config_info(void) {
+    if (!app_config) return;
+    
+    log_group_begin();
+    log_this("Startup", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
+    log_this("Startup", "Server Name: %s", LOG_LEVEL_INFO, app_config->server_name);
+    log_this("Startup", "Executable: %s", LOG_LEVEL_INFO, app_config->executable_path);
 
     long file_size = get_file_size(app_config->executable_path);
     if (file_size >= 0) {
-        log_this("Initialization", "Size: %ld", LOG_LEVEL_INFO, file_size);
+        log_this("Startup", "Size: %ld", LOG_LEVEL_INFO, file_size);
     } else {
-        log_this("Initialization", "Error: Unable to get file size", LOG_LEVEL_ERROR);
+        log_this("Startup", "Error: Unable to get file size", LOG_LEVEL_ERROR);
     }
 
-    log_this("Initialization", "Log File: %s", LOG_LEVEL_INFO,
-             app_config->log_file_path ? app_config->log_file_path : "None");
-    log_this("Initialization", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
+    log_this("Startup", "Log File: %s", LOG_LEVEL_INFO, 
+            app_config->log_file_path ? app_config->log_file_path : "None");
+    log_this("Startup", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
+    log_group_end();
 }
 
-// Main startup function
-//
-// The startup sequence follows a carefully planned order to ensure system stability:
-// 1. Queue system first - Required by all other components for thread-safe communication
-// 2. Logging second - Essential for debugging startup issues and runtime monitoring
-// 3. Optional systems last - Print queue, web servers, and network services in order of dependency
-//
-// Returns 1 on successful startup, 0 on critical failure
-int startup_hydrogen(const char *config_path) {
+/*
+ * Main startup function implementation
+ * 
+ * The startup sequence follows a carefully planned order to ensure system stability:
+ * 1. Early logging - Capture startup process from the very beginning
+ * 2. Queue system - Required by all other components for thread-safe communication
+ * 3. Logging system - Essential for debugging startup issues and runtime monitoring
+ * 4. Optional systems - Print queue, web servers, and network services in order of dependency
+ *
+ * Returns 1 on successful startup, 0 on critical failure
+ */
+int startup_hydrogen(const char* config_path) {
+
     // First check if we're in shutdown mode - if so, prevent restart
     extern volatile sig_atomic_t server_stopping;
     if (server_stopping) {
         fprintf(stderr, "Preventing application restart during shutdown\n");
         return 0;
     }
-    
-    // Record the server start time first thing
+
+    // Record the server start time
     set_server_start_time();
+
+    // Start logging as early as possible
+    log_early_info();
     
     // Seed random number generator
     srand((unsigned int)time(NULL));
@@ -130,85 +156,83 @@ int startup_hydrogen(const char *config_path) {
         return 0;
     }
 
-    // Check library dependencies first
+    // Check library dependencies
     int critical_dependencies = check_library_dependencies(app_config);
     if (critical_dependencies > 0) {
-        log_this("Initialization", "Found %d missing critical dependencies", LOG_LEVEL_WARN, critical_dependencies);
+        log_this("Startup", "Found %d missing critical dependencies", LOG_LEVEL_WARN, critical_dependencies);
     } else {
-        log_this("Initialization", "All critical dependencies available", LOG_LEVEL_INFO);
+        log_this("Startup", "All critical dependencies available", LOG_LEVEL_INFO);
     }
 
-    // Log application information
-    log_app_info();
+    // // Initialize web server
+    // if (!init_webserver_subsystem()) {
+    //     log_this("Initialization", "Web server failed to start", LOG_LEVEL_ERROR);
+    //     return 0;
+    // }
 
-    // Initialize print queue system
-    if (!init_print_subsystem()) {
-        log_this("Initialization", "Print system failed to start", LOG_LEVEL_ERROR);
-        queue_system_destroy();
-        close_file_logging();
-        return 0;
-    }
+    // // Initialize websocket server
+    // if (!init_websocket_subsystem()) {
+    //     log_this("Initialization", "WebSocket server failed to start", LOG_LEVEL_ERROR);
+    //     return 0;
+    // }
 
-    // Initialize web server
-    if (!init_webserver_subsystem()) {
-        log_this("Initialization", "Web server failed to start", LOG_LEVEL_ERROR);
-        return 0;
-    }
+    // // Initialize mDNS server
+    // if (!init_mdns_server_subsystem()) {
+    //     log_this("Initialization", "mDNS server failed to start", LOG_LEVEL_ERROR);
+    //     return 0;
+    // }
 
-    // Initialize websocket server
-    if (!init_websocket_subsystem()) {
-        log_this("Initialization", "WebSocket server failed to start", LOG_LEVEL_ERROR);
-        return 0;
-    }
+    // // Initialize mDNS client
+    // if (!init_mdns_client_subsystem()) {
+    //     log_this("Initialization", "mDNS client failed to start", LOG_LEVEL_ERROR);
+    //     return 0;
+    // }
 
-    // Initialize mDNS server
-    if (!init_mdns_server_subsystem()) {
-        log_this("Initialization", "mDNS server failed to start", LOG_LEVEL_ERROR);
-        return 0;
-    }
+    // // Initialize SMTP relay
+    // if (!init_smtp_relay_subsystem()) {
+    //     log_this("Initialization", "SMTP relay failed to start", LOG_LEVEL_ERROR);
+    //     return 0;
+    // }
 
-    // Initialize mDNS client
-    if (!init_mdns_client_subsystem()) {
-        log_this("Initialization", "mDNS client failed to start", LOG_LEVEL_ERROR);
-        return 0;
-    }
+    // // Initialize Swagger
+    // if (!init_swagger_subsystem()) {
+    //     log_this("Initialization", "Swagger system failed to start", LOG_LEVEL_ERROR);
+    //     return 0;
+    // }
 
-    // Initialize SMTP server
-    if (!init_smtp_server_subsystem()) {
-        log_this("Initialization", "SMTP server failed to start", LOG_LEVEL_ERROR);
-        return 0;
-    }
+    // // Initialize Terminal
+    // if (!init_terminal_subsystem()) {
+    //     log_this("Initialization", "Terminal system failed to start", LOG_LEVEL_ERROR);
+    //     return 0;
+    // }
 
-    // Initialize Swagger
-    if (!init_swagger_subsystem()) {
-        log_this("Initialization", "Swagger system failed to start", LOG_LEVEL_ERROR);
-        return 0;
-    }
+    // // Initialize print queue system
+    // if (!init_print_subsystem()) {
+    //     log_this("Initialization", "Print system failed to start", LOG_LEVEL_ERROR);
+    //     queue_system_destroy();
+    //     close_file_logging();
+    //     return 0;
+    // }
 
-    // Initialize Terminal
-    if (!init_terminal_subsystem()) {
-        log_this("Initialization", "Terminal system failed to start", LOG_LEVEL_ERROR);
-        return 0;
-    }
 
     // Give threads a moment to launch
     usleep(10000);
 
-    // All services have been started successfully
-    server_starting = 0;  // First set the flag
+    // Log full configuration information now that app_config is available
+    log_config_info();
+
+     // All services have been started successfully
+    server_starting = 0; 
+    server_running = 1; 
     update_server_ready_time();  // Then try to record the time
 
-    // Log final startup message
-    log_this("Initialization", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
-    log_this("Initialization", "Application started", LOG_LEVEL_INFO);
-    log_this("Initialization", "Press Ctrl+C to exit", LOG_LEVEL_INFO);
-    log_this("Initialization", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
-    
-    // Make sure we capture the ready time
-    for (int i = 0; i < 5 && !is_server_ready_time_set(); i++) {
-        usleep(1000);  // Wait 1ms between attempts
-        update_server_ready_time();
-    }
-
+    // Final Startup Message
+    log_group_begin();
+    log_this("Startup", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
+    log_this("Startup", "Application started", LOG_LEVEL_INFO);
+    log_this("Startup", "Press Ctrl+C to exit", LOG_LEVEL_INFO);
+    log_this("Startup", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
+    log_group_end();
+ 
     return 1;
 }

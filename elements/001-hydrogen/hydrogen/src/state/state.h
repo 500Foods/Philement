@@ -77,10 +77,11 @@ extern volatile sig_atomic_t web_server_shutdown;
 extern volatile sig_atomic_t websocket_server_shutdown;
 extern volatile sig_atomic_t mdns_server_system_shutdown;
 extern volatile sig_atomic_t mdns_client_system_shutdown;
-extern volatile sig_atomic_t smtp_server_system_shutdown;
+extern volatile sig_atomic_t smtp_relay_system_shutdown;
 extern volatile sig_atomic_t swagger_system_shutdown;
 extern volatile sig_atomic_t terminal_system_shutdown;
 extern volatile sig_atomic_t print_system_shutdown;
+extern volatile sig_atomic_t print_queue_shutdown;
 
 // Queue Threads
 extern pthread_t log_thread;

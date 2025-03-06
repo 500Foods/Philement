@@ -24,6 +24,13 @@
 
 // Project Libraries
 #include "../config/configuration.h"
+#include "../config/configuration_structs.h"  // For WebServerConfig
+
+// Server configuration defaults
+#define DEFAULT_THREAD_POOL_SIZE 4        // Default number of threads in the pool
+#define DEFAULT_MAX_CONNECTIONS 100       // Maximum concurrent connections
+#define DEFAULT_MAX_CONNECTIONS_PER_IP 10 // Maximum connections per IP address
+#define DEFAULT_CONNECTION_TIMEOUT 60     // Connection timeout in seconds
 
 // Connection info structure shared across modules
 struct ConnectionInfo {
@@ -40,7 +47,7 @@ struct ConnectionInfo {
 };
 
 // Core server functions
-bool init_web_server(WebConfig *web_config);
+bool init_web_server(WebServerConfig *web_config);
 void* run_web_server(void* arg);
 void shutdown_web_server(void);
 
@@ -59,6 +66,6 @@ void request_completed(void *cls, struct MHD_Connection *connection,
 
 // Global server state
 extern struct MHD_Daemon *web_daemon;
-extern WebConfig *server_web_config;
+extern WebServerConfig *server_web_config;
 
 #endif // WEB_SERVER_CORE_H

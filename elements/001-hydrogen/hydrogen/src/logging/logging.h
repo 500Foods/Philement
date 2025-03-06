@@ -72,4 +72,28 @@
  */
 void log_this(const char* subsystem, const char* format, int priority, ...);
 
+/**
+ * Begin a group of log messages that should be output consecutively
+ * 
+ * This function acquires the logging mutex to ensure that multiple log messages
+ * can be written without being interleaved with messages from other threads.
+ * Must be paired with log_group_end().
+ * 
+ * Example usage:
+ *   log_group_begin();
+ *   log_this("Subsystem", "Message 1", LOG_LEVEL_INFO);
+ *   log_this("Subsystem", "Message 2", LOG_LEVEL_INFO);
+ *   log_this("Subsystem", "Message 3", LOG_LEVEL_INFO);
+ *   log_group_end();
+ */
+void log_group_begin(void);
+
+/**
+ * End a group of log messages
+ * 
+ * This function releases the logging mutex acquired by log_group_begin().
+ * Must be called after log_group_begin() to prevent deadlocks.
+ */
+void log_group_end(void);
+
 #endif // LOGGING_H

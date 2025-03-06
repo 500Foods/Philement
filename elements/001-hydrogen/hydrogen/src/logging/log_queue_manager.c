@@ -110,13 +110,25 @@
 #include "../config/configuration.h"
 #include "../utils/utils.h"
 
+// Public interface declarations
+void init_file_logging(const char* log_file_path);
+void close_file_logging(void);
+void* log_queue_manager(void* arg);
+
+// External declarations
 extern volatile sig_atomic_t server_running;
 extern volatile sig_atomic_t server_stopping;
 extern volatile sig_atomic_t log_queue_shutdown;
 extern pthread_cond_t terminate_cond;
 extern pthread_mutex_t terminate_mutex;
 
+// Internal state
 static FILE* log_file = NULL;
+
+// Private function declarations
+static void cleanup_log_queue_manager(void* arg);
+static bool should_log_to_destination(const char* subsystem, int priority, const LoggingDestination* dest);
+static void process_log_message(const char* message, int priority);
 
 // Thread cleanup handler with guaranteed file closure
 //
@@ -165,42 +177,27 @@ static bool should_log_to_destination(const char* subsystem, int priority, const
         return false;
     }
 
-    // Get subsystem-specific level if configured, otherwise use default
+    // Get subsystem-specific level if configured
     int configured_level = dest->DefaultLevel;
     
-    // Flag to track if this is a defined subsystem
-    bool is_defined_subsystem = false;
-    
-    // Check subsystem-specific configuration
+    // Check if this subsystem has a specific configuration
     if (strcmp(subsystem, "ThreadMgmt") == 0) {
         configured_level = dest->Subsystems.ThreadMgmt;
-        is_defined_subsystem = true;
     } else if (strcmp(subsystem, "Shutdown") == 0) {
         configured_level = dest->Subsystems.Shutdown;
-        is_defined_subsystem = true;
     } else if (strcmp(subsystem, "mDNSServer") == 0) {
         configured_level = dest->Subsystems.mDNSServer;
-        is_defined_subsystem = true;
     } else if (strcmp(subsystem, "WebServer") == 0) {
         configured_level = dest->Subsystems.WebServer;
-        is_defined_subsystem = true;
     } else if (strcmp(subsystem, "WebSocket") == 0) {
         configured_level = dest->Subsystems.WebSocket;
-        is_defined_subsystem = true;
     } else if (strcmp(subsystem, "PrintQueue") == 0) {
         configured_level = dest->Subsystems.PrintQueue;
-        is_defined_subsystem = true;
     } else if (strcmp(subsystem, "LogQueueManager") == 0) {
         configured_level = dest->Subsystems.LogQueueManager;
-        is_defined_subsystem = true;
     }
+    // For undefined subsystems, we'll use the destination's DefaultLevel
     
-    // If this is not a defined subsystem (like "Environment" or "Configuration"),
-    // treat it as LOG_LEVEL_ALL by default to ensure all messages are logged
-    if (!is_defined_subsystem) {
-        return true;
-    }
-
     // Special handling for ALL and NONE
     if (configured_level == LOG_LEVEL_ALL) return true;
     if (configured_level == LOG_LEVEL_NONE) return false;
@@ -241,16 +238,16 @@ static void process_log_message(const char* message, int priority) {
         snprintf(log_entry, sizeof(log_entry), "%s  %s  %s  %s\n", timestamp_ms, formatted_priority, formatted_subsystem, details);
 
         // Apply filtering for each destination
-        if (logConsole && should_log_to_destination(subsystem, priority, &app_config->Logging.Console)) {
+        if (logConsole && should_log_to_destination(subsystem, priority, &app_config->Logging.Console.base)) {
             printf("%s", log_entry);
         }
 
-        if (logFile && log_file && should_log_to_destination(subsystem, priority, &app_config->Logging.File)) {
+        if (logFile && log_file && should_log_to_destination(subsystem, priority, &app_config->Logging.File.base)) {
             fputs(log_entry, log_file);
             fflush(log_file);  // Ensure the log is written immediately
         }
 
-        if (logDatabase && should_log_to_destination(subsystem, priority, &app_config->Logging.Database)) {
+        if (logDatabase && should_log_to_destination(subsystem, priority, &app_config->Logging.Database.base)) {
             // TODO: Implement database logging when needed
         }
 

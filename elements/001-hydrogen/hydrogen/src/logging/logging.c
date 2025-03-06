@@ -58,16 +58,24 @@
 #include "../queue/queue.h"
 #include "../utils/utils.h"
 
-// Global configuration
-extern AppConfig* app_config;
+// Public interface declarations
+void log_this(const char* subsystem, const char* format, int priority, ...);
+void log_group_begin(void);
+void log_group_end(void);
 
-// Forward declarations
+// External declarations
+extern AppConfig* app_config;
 extern volatile sig_atomic_t log_queue_shutdown;
 extern pthread_cond_t terminate_cond;
 extern pthread_mutex_t terminate_mutex;
+extern int queue_system_initialized;  // From queue.c
 
-// Internal implementation details
+// Internal state
 static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
+static __thread bool in_log_group = false;  // Thread-local flag for group logging
+
+// Private function declarations
+static void console_log(const char* subsystem, int priority, const char* message);
 
 /*
  * INTERNAL USE ONLY - Do not call directly!
@@ -126,8 +134,21 @@ static void console_log(const char* subsystem, int priority, const char* message
 //    - Priority-based handling
 //    - Subsystem categorization
 //    - Format customization
-void log_this(const char* subsystem, const char* format, int priority, ...) {
+void log_group_begin(void) {
     pthread_mutex_lock(&log_mutex);
+    in_log_group = true;
+}
+
+void log_group_end(void) {
+    in_log_group = false;
+    pthread_mutex_unlock(&log_mutex);
+}
+
+void log_this(const char* subsystem, const char* format, int priority, ...) {
+    // Only lock if we're not already in a group
+    if (!in_log_group) {
+        pthread_mutex_lock(&log_mutex);
+    }
 
     char details[DEFAULT_LOG_ENTRY_SIZE];
     va_list args;
@@ -137,40 +158,44 @@ void log_this(const char* subsystem, const char* format, int priority, ...) {
 
     char json_message[DEFAULT_MAX_LOG_MESSAGE_SIZE];
     
-    // Always log undefined subsystems like "Environment" and "Configuration" to all destinations
-    bool include_all_destinations = (strcmp(subsystem, "Environment") == 0 || 
-                                    strcmp(subsystem, "Configuration") == 0);
-    
+    // Create JSON message with all destinations enabled - let queue manager handle filtering
     snprintf(json_message, sizeof(json_message),
-             "{\"subsystem\":\"%s\",\"details\":\"%s\",\"priority\":%d,\"LogConsole\":true,\"LogFile\":true,\"LogDatabase\":%s}",
-             subsystem, details, priority, include_all_destinations ? "true" : "false");
+             "{\"subsystem\":\"%s\",\"details\":\"%s\",\"priority\":%d,\"LogConsole\":true,\"LogFile\":true,\"LogDatabase\":true}",
+             subsystem, details, priority);
 
-    // Try to use queue system if it's available and running
-    Queue* log_queue = NULL;
+    // During very early startup (before queue system init), always use console
     extern int queue_system_initialized;  // From queue.c
-    
-    // If queue system is initialized and not shutting down, try to use it
-    bool use_console = true;  // Default to using console unless queue succeeds
-    if (queue_system_initialized && !log_queue_shutdown) {
-        log_queue = queue_find("SystemLog");
-        if (log_queue) {
-            if (queue_enqueue(log_queue, json_message, strlen(json_message), priority) == 0) {
-                // Queue succeeded, don't need console fallback
-                use_console = false;
-                // Signal the log queue manager
-                pthread_cond_signal(&terminate_cond);
+    if (!queue_system_initialized) {
+        console_log(subsystem, priority, details);
+    } else {
+        // Try to use queue system if it's running
+        Queue* log_queue = NULL;
+        bool use_console = true;  // Default to using console unless queue succeeds
+        
+        if (!log_queue_shutdown) {
+            log_queue = queue_find("SystemLog");
+            if (log_queue) {
+                if (queue_enqueue(log_queue, json_message, strlen(json_message), priority) == 0) {
+                    // Queue succeeded, don't need console fallback
+                    use_console = false;
+                    // Signal the log queue manager
+                    pthread_cond_signal(&terminate_cond);
+                }
             }
+        }
+
+        // Use console output if:
+        // 1. app_config isn't initialized yet (early startup)
+        // 2. Console logging is enabled and either:
+        //    - Queue isn't available
+        //    - Queue enqueue failed
+        if (!app_config || (app_config->Logging.Console.base.Enabled && use_console)) {
+            console_log(subsystem, priority, details);
         }
     }
 
-    // Use console output based on configuration and fallback conditions:
-    // - Queue system is not initialized
-    // - Queue system is shutting down
-    // - Queue is not found
-    // - Queue enqueue failed
-    if (app_config && app_config->Logging.Console.Enabled && use_console) {
-        console_log(subsystem, priority, details);
+    // Only unlock if we're not in a group
+    if (!in_log_group) {
+        pthread_mutex_unlock(&log_mutex);
     }
-
-    pthread_mutex_unlock(&log_mutex);
 }
