@@ -18,17 +18,24 @@
 #include "../logging/logging.h"
 #include "../state/state.h"
 
-// Thread synchronization mutex
-static pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
+// Public interface declarations
+void init_service_threads(ServiceThreads *threads);
+void add_service_thread(ServiceThreads *threads, pthread_t thread_id);
+void remove_service_thread(ServiceThreads *threads, pthread_t thread_id);
+void update_service_thread_metrics(ServiceThreads *threads);
+ThreadMemoryMetrics get_thread_memory_metrics(ServiceThreads *threads, pthread_t thread_id);
 
-// Global tracking structures (defined in state.c)
+// External declarations
 extern ServiceThreads logging_threads;
 extern ServiceThreads web_threads;
 extern ServiceThreads websocket_threads;
 extern ServiceThreads mdns_server_threads;
 extern ServiceThreads print_threads;
 
-// Forward declarations of static functions
+// Internal state
+static pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+// Private function declarations
 static size_t get_thread_stack_size(pid_t tid);
 
 // Initialize service thread tracking

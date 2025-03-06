@@ -1,6 +1,9 @@
-// Feature test macros
+// Feature test macros must come first
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
+
+// Include core header first for default constants
+#include "web_server_core.h"
 
 // System headers
 #include <sys/types.h>
@@ -13,14 +16,13 @@
 #include <errno.h>
 
 // Project headers
-#include "web_server_core.h"
 #include "web_server_swagger.h"
 #include "../utils/utils_threads.h"
 #include "../logging/logging.h"
 
 // Global server state
 struct MHD_Daemon *web_daemon = NULL;
-WebConfig *server_web_config = NULL;
+WebServerConfig *server_web_config = NULL;
 
 // External state
 extern AppConfig *app_config;
@@ -76,7 +78,7 @@ void add_cors_headers(struct MHD_Response *response) {
     MHD_add_response_header(response, "Access-Control-Allow-Headers", "Content-Type");
 }
 
-bool init_web_server(WebConfig *web_config) {
+bool init_web_server(WebServerConfig *web_config) {
     // Check all shutdown flags atomically
     extern volatile sig_atomic_t server_stopping;
     extern volatile sig_atomic_t web_server_shutdown;

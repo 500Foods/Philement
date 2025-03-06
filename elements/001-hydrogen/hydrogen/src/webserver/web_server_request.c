@@ -112,7 +112,7 @@ static enum MHD_Result handle_version_request(struct MHD_Connection *connection)
     return ret;
 }
 
-extern WebConfig *server_web_config;
+extern WebServerConfig *server_web_config;
 
 bool is_api_endpoint(const char *url, char *service, char *endpoint) {
     // Get pointer to start of path after the prefix

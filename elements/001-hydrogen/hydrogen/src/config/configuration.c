@@ -50,680 +50,23 @@
 
 // Project headers
 #include "configuration.h"
+#include "configuration_env.h"
+#include "configuration_string.h"
+#include "configuration_bool.h"
+#include "configuration_int.h"
+#include "configuration_size.h"
+#include "configuration_double.h"
 #include "../logging/logging.h"
 #include "../utils/utils.h"
 
-/*
- * Resolve environment variable references in configuration values
- * 
- * Processes a string of the form "${env.VARIABLE}" by:
- * 1. Extracting the variable name after "env."
- * 2. Looking up the variable in the environment
- * 3. Converting the value to an appropriate JSON type:
- *    - If variable doesn't exist: return NULL
- *    - If variable exists but is empty: return JSON null
- *    - If variable is "true"/"false" (case insensitive): return JSON boolean
- *    - If variable is a valid number: return JSON integer or real
- *    - Otherwise: return JSON string
- * 
- * Memory Management:
- * - Returns a new JSON value that caller must json_decref
- * - Returns NULL if input is not in "${env.VARIABLE}" format or variable doesn't exist
- */
-static json_t* process_env_variable(const char* value) {
-    if (!value || strncmp(value, "${env.", 6) != 0) {
-        return NULL;
-    }
-    
-    // Find the closing brace
-    const char* closing_brace = strchr(value + 6, '}');
-    if (!closing_brace || *(closing_brace + 1) != '\0') {
-        return NULL;  // Malformed or has trailing characters
-    }
-    
-    // Extract the variable name
-    size_t var_name_len = closing_brace - (value + 6);
-    char* var_name = malloc(var_name_len + 1);
-    if (!var_name) {
-        return NULL;
-    }
-    
-    strncpy(var_name, value + 6, var_name_len);
-    var_name[var_name_len] = '\0';
-    
-        // Look up the environment variable
-        const char* env_value = getenv(var_name);
-        
-        // Log the result of the lookup once, consolidating all information
-        if (env_value) {
-            // Check if this is a sensitive variable (key, password, token, secret)
-            bool is_sensitive = (strstr(var_name, "KEY") != NULL || 
-                             strstr(var_name, "TOKEN") != NULL || 
-                             strstr(var_name, "PASSWORD") != NULL || 
-                             strstr(var_name, "SECRET") != NULL ||
-                             strstr(var_name, "CERT") != NULL);
-        
-            // Create a safe value for logging
-            char safe_value[256];
-            if (is_sensitive && strlen(env_value) > 5) {
-                strncpy(safe_value, env_value, 5);
-                safe_value[5] = '\0';
-                strcat(safe_value, "...");
-            } else {
-                strncpy(safe_value, env_value, sizeof(safe_value) - 1);
-                safe_value[sizeof(safe_value) - 1] = '\0';
-            }
-        
-            // Determine the type 
-            const char* type_str = "string";
-        
-            // If variable exists but is empty, it's null
-            if (env_value[0] == '\0') {
-                type_str = "null";
-            }
-            // Check for boolean values
-            else if (strcasecmp(env_value, "true") == 0 || strcasecmp(env_value, "false") == 0) {
-                type_str = "boolean";
-            }
-            // Check if it's an integer
-            else {
-                char* endptr;
-                strtoll(env_value, &endptr, 10);
-                if (*endptr == '\0') {
-                    type_str = "integer";
-                }
-                // Check if it's a double
-                else {
-                    strtod(env_value, &endptr);
-                    if (*endptr == '\0') {
-                        type_str = "double";
-                    }
-                }
-            }
-            
-            // Single consolidated log message with all the information
-            log_this("Environment", "Variable: %s, Type: %s, Value: '%s'", LOG_LEVEL_INFO, 
-                     var_name, type_str, safe_value);
-            
-        } else {
-            // Just log that the variable wasn't found and we'll be using default
-            log_this("Environment", "Variable: %s not found, using default", LOG_LEVEL_INFO, var_name);
-        }
-    
-    free(var_name);
-    
-    // If variable doesn't exist, return NULL
-    if (!env_value) {
-        return NULL;
-    }
-    
-    // If variable exists but is empty, return JSON null
-    if (env_value[0] == '\0') {
-        log_this("Configuration", "Environment variable value is empty, using NULL", LOG_LEVEL_DEBUG);
-        return json_null();
-    }
-    
-    // Check for boolean values (case insensitive)
-    if (strcasecmp(env_value, "true") == 0) {
-        log_this("Configuration", "Converting environment variable value to boolean true", LOG_LEVEL_DEBUG);
-        return json_true();
-    }
-    if (strcasecmp(env_value, "false") == 0) {
-        log_this("Configuration", "Converting environment variable value to boolean false", LOG_LEVEL_DEBUG);
-        return json_false();
-    }
-    
-    // Check if it's a number
-    char* endptr;
-    // Try parsing as integer first
-    long long int_value = strtoll(env_value, &endptr, 10);
-    if (*endptr == '\0') {
-        // It's a valid integer
-        log_this("Configuration", "Converting environment variable value to integer: %lld", LOG_LEVEL_DEBUG, int_value);
-        return json_integer(int_value);
-    }
-    
-    // Try parsing as double
-    double real_value = strtod(env_value, &endptr);
-    if (*endptr == '\0') {
-        // It's a valid floating point number
-        log_this("Configuration", "Converting environment variable value to real: %f", LOG_LEVEL_DEBUG, real_value);
-        return json_real(real_value);
-    }
-    
-    // Otherwise, treat it as a string
-    log_this("Configuration", "Using environment variable value as string", LOG_LEVEL_DEBUG);
-    return json_string(env_value);
-}
-
-// Function removed - was unused
-
-/*
- * Enhanced get_config_string that properly handles environment variables and logs results
- * 
- * This function:
- * 1. Checks if the value is a JSON string
- * 2. If it's a string with the pattern ${env.VARIABLE}, processes it as an environment variable
- * 3. Handles type conversion and logging for the result
- * 4. Falls back to default value if needed
- */
-static char* get_config_string(json_t* value, const char* default_value) {
-    if (!value) {
-        log_this("Configuration", "Using default string value: %s", LOG_LEVEL_DEBUG, 
-                 default_value ? default_value : "(null)");
-        return default_value ? strdup(default_value) : NULL;
-    }
-    
-    // Handle environment variable substitution for string values
-    if (json_is_string(value)) {
-        const char* str_value = json_string_value(value);
-        
-        // Check if this is an environment variable reference
-        if (str_value && strncmp(str_value, "${env.", 6) == 0) {
-            // Extract the variable name for better error messages
-            const char* closing_brace = strchr(str_value + 6, '}');
-            size_t var_name_len = closing_brace ? (size_t)(closing_brace - (str_value + 6)) : 0;
-            char var_name[256] = ""; // Safe buffer for variable name
-            
-            if (var_name_len > 0 && var_name_len < sizeof(var_name)) {
-                strncpy(var_name, str_value + 6, var_name_len);
-                var_name[var_name_len] = '\0';
-            }
-            
-            json_t* env_value = process_env_variable(str_value);
-            if (env_value) {
-                char* result = NULL;
-                
-                // Convert the environment variable value to a string based on its type
-                if (json_is_string(env_value)) {
-                    const char* env_str = json_string_value(env_value);
-                    log_this("Configuration", "Using environment variable as string: %s", LOG_LEVEL_DEBUG, env_str);
-                    result = strdup(env_str);
-                } else if (json_is_null(env_value)) {
-                    log_this("Configuration", "Environment variable is null, using default: %s", LOG_LEVEL_DEBUG,
-                             default_value ? default_value : "(null)");
-                    result = default_value ? strdup(default_value) : NULL;
-                } else if (json_is_boolean(env_value)) {
-                    const char* bool_str = json_is_true(env_value) ? "true" : "false";
-                    log_this("Configuration", "Converting boolean environment variable to string: %s", LOG_LEVEL_DEBUG, bool_str);
-                    result = strdup(bool_str);
-                } else if (json_is_integer(env_value)) {
-                    char buffer[64];
-                    json_int_t int_val = json_integer_value(env_value);
-                    snprintf(buffer, sizeof(buffer), "%lld", int_val);
-                    log_this("Configuration", "Converting integer environment variable to string: %s", LOG_LEVEL_DEBUG, buffer);
-                    result = strdup(buffer);
-                } else if (json_is_real(env_value)) {
-                    char buffer[64];
-                    double real_val = json_real_value(env_value);
-                    snprintf(buffer, sizeof(buffer), "%f", real_val);
-                    log_this("Configuration", "Converting real environment variable to string: %s", LOG_LEVEL_DEBUG, buffer);
-                    result = strdup(buffer);
-                }
-                
-                json_decref(env_value);
-                if (result) {
-                    return result;
-                }
-            }
-            
-            // Environment variable not found or empty, use default
-            if (var_name[0] != '\0') {
-                log_this("Configuration", "Using default for %s: %s", LOG_LEVEL_INFO,
-                     var_name, default_value ? default_value : "(default)");
-            } else {
-                log_this("Configuration", "Environment variable not found, using default string: %s", LOG_LEVEL_DEBUG,
-                     default_value ? default_value : "(null)");
-            }
-            return default_value ? strdup(default_value) : NULL;
-        }
-        
-        // Not an environment variable, just use the string value without logging
-        return strdup(str_value);
-    }
-    
-    // Handle non-string JSON values by converting to string
-    if (json_is_boolean(value)) {
-        return strdup(json_is_true(value) ? "true" : "false");
-    } else if (json_is_integer(value)) {
-        char buffer[64];
-        snprintf(buffer, sizeof(buffer), "%lld", json_integer_value(value));
-        return strdup(buffer);
-    } else if (json_is_real(value)) {
-        char buffer[64];
-        snprintf(buffer, sizeof(buffer), "%f", json_real_value(value));
-        return strdup(buffer);
-    } else {
-        // For other types or null, use default
-        log_this("Configuration", "JSON value is not convertible to string, using default: %s", LOG_LEVEL_DEBUG,
-                 default_value ? default_value : "(null)");
-        return default_value ? strdup(default_value) : NULL;
-    }
-}
-
-/*
- * Enhanced get_config_bool function that properly handles environment variables and logs results
- */
-static int get_config_bool(json_t* value, int default_value) {
-    if (!value) {
-        log_this("Configuration", "Using default boolean value: %d", LOG_LEVEL_DEBUG, default_value);
-        return default_value;
-    }
-    
-    // Handle environment variable substitution for string values
-    if (json_is_string(value)) {
-        const char* str_value = json_string_value(value);
-        
-        // Check if this is an environment variable reference
-        if (str_value && strncmp(str_value, "${env.", 6) == 0) {
-            json_t* env_value = process_env_variable(str_value);
-            if (env_value) {
-                int result = default_value;
-                
-                if (json_is_boolean(env_value)) {
-                    result = json_boolean_value(env_value);
-                    log_this("Configuration", "Using environment variable as boolean: %s", 
-                             LOG_LEVEL_DEBUG, result ? "true" : "false");
-                } else if (json_is_integer(env_value)) {
-                    result = json_integer_value(env_value) != 0;
-                    log_this("Configuration", "Converting integer environment variable to boolean: %s", 
-                             LOG_LEVEL_DEBUG, result ? "true" : "false");
-                } else if (json_is_real(env_value)) {
-                    result = json_real_value(env_value) != 0.0;
-                    log_this("Configuration", "Converting real environment variable to boolean: %s", 
-                             LOG_LEVEL_DEBUG, result ? "true" : "false");
-                } else if (json_is_string(env_value)) {
-                    const char* env_str = json_string_value(env_value);
-                    if (strcasecmp(env_str, "true") == 0 || strcmp(env_str, "1") == 0) {
-                        result = 1;
-                        log_this("Configuration", "Converting string environment variable '%s' to boolean true", 
-                                 LOG_LEVEL_DEBUG, env_str);
-                    } else if (strcasecmp(env_str, "false") == 0 || strcmp(env_str, "0") == 0) {
-                        result = 0;
-                        log_this("Configuration", "Converting string environment variable '%s' to boolean false", 
-                                 LOG_LEVEL_DEBUG, env_str);
-                    } else {
-                        log_this("Configuration", "String environment variable '%s' is not a valid boolean, using default: %s", 
-                                 LOG_LEVEL_DEBUG, env_str, default_value ? "true" : "false");
-                    }
-                } else {
-                    log_this("Configuration", "Environment variable not a boolean type, using default: %s", 
-                             LOG_LEVEL_DEBUG, default_value ? "true" : "false");
-                }
-                
-                json_decref(env_value);
-                return result;
-            }
-            
-            // Extract the variable name for better error messages
-            const char* closing_brace = strchr(str_value + 6, '}');
-            size_t var_name_len = closing_brace ? (size_t)(closing_brace - (str_value + 6)) : 0;
-            char var_name[256] = ""; // Safe buffer for variable name
-            
-            if (var_name_len > 0 && var_name_len < sizeof(var_name)) {
-                strncpy(var_name, str_value + 6, var_name_len);
-                var_name[var_name_len] = '\0';
-                
-                // Log at INFO level for better visibility and test compatibility
-                log_this("Configuration", "Using default for %s: %s", LOG_LEVEL_INFO,
-                     var_name, default_value ? "true" : "false");
-            } else {
-                log_this("Configuration", "Environment variable not found, using default boolean: %s", 
-                     LOG_LEVEL_DEBUG, default_value ? "true" : "false");
-            }
-            return default_value;
-        }
-        
-        // Not an environment variable, try to convert string to boolean
-        const char* str = json_string_value(value);
-        if (strcasecmp(str, "true") == 0 || strcmp(str, "1") == 0) {
-            log_this("Configuration", "Converting string '%s' to boolean true", LOG_LEVEL_DEBUG, str);
-            return 1;
-        } else if (strcasecmp(str, "false") == 0 || strcmp(str, "0") == 0) {
-            log_this("Configuration", "Converting string '%s' to boolean false", LOG_LEVEL_DEBUG, str);
-            return 0;
-        }
-        
-        log_this("Configuration", "String '%s' is not a valid boolean, using default: %s", 
-                 LOG_LEVEL_DEBUG, str, default_value ? "true" : "false");
-        return default_value;
-    }
-        
-    // Direct JSON value handling
-    if (json_is_boolean(value)) {
-        return json_boolean_value(value);
-    } else if (json_is_integer(value)) {
-        return json_integer_value(value) != 0;
-    } else if (json_is_real(value)) {
-        return json_real_value(value) != 0.0;
-    }
-    
-    log_this("Configuration", "JSON value is not convertible to boolean, using default: %s", 
-             LOG_LEVEL_DEBUG, default_value ? "true" : "false");
-    return default_value;
-}
-
-/*
- * Enhanced get_config_int function that properly handles environment variables and logs results
- */
-static int get_config_int(json_t* value, int default_value) {
-    if (!value) {
-        log_this("Configuration", "Using default integer value: %d", LOG_LEVEL_DEBUG, default_value);
-        return default_value;
-    }
-    
-    // Handle environment variable substitution for string values
-    if (json_is_string(value)) {
-        const char* str_value = json_string_value(value);
-        
-        // Check if this is an environment variable reference
-        if (str_value && strncmp(str_value, "${env.", 6) == 0) {
-            json_t* env_value = process_env_variable(str_value);
-            if (env_value) {
-                int result = default_value;
-                
-                if (json_is_integer(env_value)) {
-                    result = json_integer_value(env_value);
-                    log_this("Configuration", "Using environment variable as integer: %d", LOG_LEVEL_DEBUG, result);
-                } else if (json_is_real(env_value)) {
-                    result = (int)json_real_value(env_value);
-                    log_this("Configuration", "Converting real environment variable to integer: %d", 
-                             LOG_LEVEL_DEBUG, result);
-                } else if (json_is_boolean(env_value)) {
-                    result = json_is_true(env_value) ? 1 : 0;
-                    log_this("Configuration", "Converting boolean environment variable to integer: %d", 
-                             LOG_LEVEL_DEBUG, result);
-                } else if (json_is_string(env_value)) {
-                    // Try to parse as integer
-                    const char* env_str = json_string_value(env_value);
-                    char* endptr;
-                    long val = strtol(env_str, &endptr, 10);
-                    if (*endptr == '\0') {
-                        result = val;
-                        log_this("Configuration", "Converting string environment variable '%s' to integer: %d", 
-                                 LOG_LEVEL_DEBUG, env_str, result);
-                    } else {
-                        log_this("Configuration", "String environment variable '%s' is not a valid integer, using default: %d", 
-                                 LOG_LEVEL_DEBUG, env_str, default_value);
-                    }
-                } else {
-                    log_this("Configuration", "Environment variable not an integer type, using default: %d", 
-                             LOG_LEVEL_DEBUG, default_value);
-                }
-                
-                json_decref(env_value);
-                return result;
-            }
-            
-            // Extract the variable name for better error messages
-            const char* closing_brace = strchr(str_value + 6, '}');
-            size_t var_name_len = closing_brace ? (size_t)(closing_brace - (str_value + 6)) : 0;
-            char var_name[256] = ""; // Safe buffer for variable name
-            
-            if (var_name_len > 0 && var_name_len < sizeof(var_name)) {
-                strncpy(var_name, str_value + 6, var_name_len);
-                var_name[var_name_len] = '\0';
-                
-                // Log at INFO level for better visibility and test compatibility
-                log_this("Configuration", "Using default for %s: %d", LOG_LEVEL_INFO,
-                     var_name, default_value);
-            } else {
-                log_this("Configuration", "Environment variable not found, using default integer: %d", 
-                     LOG_LEVEL_DEBUG, default_value);
-            }
-            return default_value;
-        }
-        
-        // Not an environment variable, try to convert string to integer
-        const char* str = json_string_value(value);
-        char* endptr;
-        long val = strtol(str, &endptr, 10);
-        if (*endptr == '\0') {
-            log_this("Configuration", "Converting string '%s' to integer: %ld", LOG_LEVEL_DEBUG, str, val);
-            return val;
-        }
-        
-        log_this("Configuration", "String '%s' is not a valid integer, using default: %d", 
-                 LOG_LEVEL_DEBUG, str, default_value);
-        return default_value;
-    }
-        
-    // Direct JSON value handling
-    if (json_is_integer(value)) {
-        return json_integer_value(value);
-    } else if (json_is_real(value)) {
-        return (int)json_real_value(value);
-    } else if (json_is_boolean(value)) {
-        return json_is_true(value) ? 1 : 0;
-    }
-    
-    log_this("Configuration", "JSON value is not convertible to integer, using default: %d", 
-             LOG_LEVEL_DEBUG, default_value);
-    return default_value;
-}
-
-/*
- * Enhanced get_config_size function that properly handles environment variables and logs results
- */
-static size_t get_config_size(json_t* value, size_t default_value) {
-    if (!value) {
-        log_this("Configuration", "Using default size value: %zu", LOG_LEVEL_DEBUG, default_value);
-        return default_value;
-    }
-    
-    // Handle environment variable substitution for string values
-    if (json_is_string(value)) {
-        const char* str_value = json_string_value(value);
-        
-        // Check if this is an environment variable reference
-        if (str_value && strncmp(str_value, "${env.", 6) == 0) {
-            json_t* env_value = process_env_variable(str_value);
-            if (env_value) {
-                size_t result = default_value;
-                
-                if (json_is_integer(env_value)) {
-                    json_int_t val = json_integer_value(env_value);
-                    if (val >= 0) {
-                        result = (size_t)val;
-                        log_this("Configuration", "Using environment variable as size_t: %zu", LOG_LEVEL_DEBUG, result);
-                    } else {
-                        log_this("Configuration", "Integer environment variable is negative, using default size: %zu", 
-                                 LOG_LEVEL_DEBUG, default_value);
-                    }
-                } else if (json_is_real(env_value)) {
-                    double val = json_real_value(env_value);
-                    if (val >= 0) {
-                        result = (size_t)val;
-                        log_this("Configuration", "Converting real environment variable to size_t: %zu", 
-                                 LOG_LEVEL_DEBUG, result);
-                    } else {
-                        log_this("Configuration", "Real environment variable is negative, using default size: %zu", 
-                                 LOG_LEVEL_DEBUG, default_value);
-                    }
-                } else if (json_is_string(env_value)) {
-                    // Try to parse as size_t
-                    const char* env_str = json_string_value(env_value);
-                    char* endptr;
-                    unsigned long long val = strtoull(env_str, &endptr, 10);
-                    if (*endptr == '\0') {
-                        result = (size_t)val;
-                        log_this("Configuration", "Converting string environment variable '%s' to size_t: %zu", 
-                                 LOG_LEVEL_DEBUG, env_str, result);
-                    } else {
-                        log_this("Configuration", "String environment variable '%s' is not a valid size_t, using default: %zu", 
-                                 LOG_LEVEL_DEBUG, env_str, default_value);
-                    }
-                } else {
-                    log_this("Configuration", "Environment variable not a size_t type, using default: %zu", 
-                             LOG_LEVEL_DEBUG, default_value);
-                }
-                
-                json_decref(env_value);
-                return result;
-            }
-            
-            // Extract the variable name for better error messages
-            const char* closing_brace = strchr(str_value + 6, '}');
-            size_t var_name_len = closing_brace ? (size_t)(closing_brace - (str_value + 6)) : 0;
-            char var_name[256] = ""; // Safe buffer for variable name
-            
-            if (var_name_len > 0 && var_name_len < sizeof(var_name)) {
-                strncpy(var_name, str_value + 6, var_name_len);
-                var_name[var_name_len] = '\0';
-                
-                // Log at INFO level for better visibility and test compatibility
-                log_this("Configuration", "Using default for %s: %zu", LOG_LEVEL_INFO,
-                     var_name, default_value);
-            } else {
-                log_this("Configuration", "Environment variable not found, using default size: %zu", 
-                     LOG_LEVEL_DEBUG, default_value);
-            }
-            return default_value;
-        }
-        
-        // Not an environment variable, try to convert string to size_t
-        const char* str = json_string_value(value);
-        char* endptr;
-        unsigned long long val = strtoull(str, &endptr, 10);
-        if (*endptr == '\0') {
-            log_this("Configuration", "Converting string '%s' to size_t: %llu", LOG_LEVEL_DEBUG, str, val);
-            return (size_t)val;
-        }
-        
-        log_this("Configuration", "String '%s' is not a valid size_t, using default: %zu", 
-                 LOG_LEVEL_DEBUG, str, default_value);
-        return default_value;
-    }
-        
-    // Direct JSON value handling
-    if (json_is_integer(value)) {
-        json_int_t val = json_integer_value(value);
-        if (val >= 0) {
-            return (size_t)val;
-        }
-        log_this("Configuration", "JSON integer value is negative, using default size: %zu", 
-                 LOG_LEVEL_DEBUG, default_value);
-        return default_value;
-    } else if (json_is_real(value)) {
-        double val = json_real_value(value);
-        if (val >= 0) {
-            return (size_t)val;
-        }
-        log_this("Configuration", "JSON real value is negative, using default size: %zu", 
-                 LOG_LEVEL_DEBUG, default_value);
-        return default_value;
-    }
-    
-    log_this("Configuration", "JSON value is not convertible to size_t, using default: %zu", 
-             LOG_LEVEL_DEBUG, default_value);
-    return default_value;
-}
-
-/*
- * Enhanced get_config_double function that properly handles environment variables and logs results
- */
-static double get_config_double(json_t* value, double default_value) {
-    if (!value) {
-        log_this("Configuration", "Using default double value: %f", LOG_LEVEL_DEBUG, default_value);
-        return default_value;
-    }
-    
-    // Handle environment variable substitution for string values
-    if (json_is_string(value)) {
-        const char* str_value = json_string_value(value);
-        
-        // Check if this is an environment variable reference
-        if (str_value && strncmp(str_value, "${env.", 6) == 0) {
-            json_t* env_value = process_env_variable(str_value);
-            if (env_value) {
-                double result = default_value;
-                
-                if (json_is_real(env_value)) {
-                    result = json_real_value(env_value);
-                    log_this("Configuration", "Using environment variable as double: %f", LOG_LEVEL_DEBUG, result);
-                } else if (json_is_integer(env_value)) {
-                    result = (double)json_integer_value(env_value);
-                    log_this("Configuration", "Converting integer environment variable to double: %f", 
-                             LOG_LEVEL_DEBUG, result);
-                } else if (json_is_boolean(env_value)) {
-                    result = json_is_true(env_value) ? 1.0 : 0.0;
-                    log_this("Configuration", "Converting boolean environment variable to double: %f", 
-                             LOG_LEVEL_DEBUG, result);
-                } else if (json_is_string(env_value)) {
-                    // Try to parse as double
-                    const char* env_str = json_string_value(env_value);
-                    char* endptr;
-                    double val = strtod(env_str, &endptr);
-                    if (*endptr == '\0') {
-                        result = val;
-                        log_this("Configuration", "Converting string environment variable '%s' to double: %f", 
-                                 LOG_LEVEL_DEBUG, env_str, result);
-                    } else {
-                        log_this("Configuration", "String environment variable '%s' is not a valid double, using default: %f", 
-                                 LOG_LEVEL_DEBUG, env_str, default_value);
-                    }
-                } else {
-                    log_this("Configuration", "Environment variable not a double type, using default: %f", 
-                             LOG_LEVEL_DEBUG, default_value);
-                }
-                
-                json_decref(env_value);
-                return result;
-            }
-            
-            // Extract the variable name for better error messages
-            const char* closing_brace = strchr(str_value + 6, '}');
-            size_t var_name_len = closing_brace ? (size_t)(closing_brace - (str_value + 6)) : 0;
-            char var_name[256] = ""; // Safe buffer for variable name
-            
-            if (var_name_len > 0 && var_name_len < sizeof(var_name)) {
-                strncpy(var_name, str_value + 6, var_name_len);
-                var_name[var_name_len] = '\0';
-                
-                // Log at INFO level for better visibility and test compatibility
-                log_this("Configuration", "Using default for %s: %f", LOG_LEVEL_INFO,
-                     var_name, default_value);
-            } else {
-                log_this("Configuration", "Environment variable not found, using default double: %f", 
-                     LOG_LEVEL_DEBUG, default_value);
-            }
-            return default_value;
-        }
-        
-        // Not an environment variable, try to convert string to double
-        const char* str = json_string_value(value);
-        char* endptr;
-        double val = strtod(str, &endptr);
-        if (*endptr == '\0') {
-            log_this("Configuration", "Converting string '%s' to double: %f", LOG_LEVEL_DEBUG, str, val);
-            return val;
-        }
-        
-        log_this("Configuration", "String '%s' is not a valid double, using default: %f", 
-                 LOG_LEVEL_DEBUG, str, default_value);
-        return default_value;
-    }
-        
-    // Direct JSON value handling
-    if (json_is_real(value)) {
-        return json_real_value(value);
-    } else if (json_is_integer(value)) {
-        return (double)json_integer_value(value);
-    } else if (json_is_boolean(value)) {
-        return json_is_true(value) ? 1.0 : 0.0;
-    }
-    
-    log_this("Configuration", "JSON value is not convertible to double, using default: %f", 
-             LOG_LEVEL_DEBUG, default_value);
-    return default_value;
-}
-
+// Global variables
 int MAX_PRIORITY_LABEL_WIDTH = 9;
 int MAX_SUBSYSTEM_LABEL_WIDTH = 18;
 
 // Global static configuration instance
 static AppConfig *app_config = NULL;
 
+// Priority level definitions
 const PriorityLevel DEFAULT_PRIORITY_LEVELS[NUM_PRIORITY_LEVELS] = {
     {0, "ALL"},
     {1, "INFO"},
@@ -831,6 +174,24 @@ char* get_file_modification_time(const char* filename) {
     return time_str;
 }
 
+/*
+ * Calculate maximum width of priority labels
+ * 
+ * Why pre-calculate?
+ * - Ensures consistent log formatting
+ * - Avoids repeated calculations
+ * - Supports dynamic priority systems
+ * - Maintains log readability
+ */
+void calculate_max_priority_label_width() {
+    MAX_PRIORITY_LABEL_WIDTH = 0;
+    for (int i = 0; i < NUM_PRIORITY_LEVELS; i++) {
+        int label_width = strlen(DEFAULT_PRIORITY_LEVELS[i].label);
+        if (label_width > MAX_PRIORITY_LABEL_WIDTH) {
+            MAX_PRIORITY_LABEL_WIDTH = label_width;
+        }
+    }
+}
 
 /*
  * Generate default configuration with secure baseline
@@ -845,7 +206,7 @@ char* get_file_modification_time(const char* filename) {
  * 2. Zero Configuration
  *    - Works out of the box for basic setups
  *    - Reasonable defaults for most environments
- *    - Clear upgrade path from defaults
+ *    - Clear upgrade paths
  * 
  * 3. Discovery Ready
  *    - Standard ports for easy finding
@@ -875,10 +236,10 @@ void create_default_config(const char* config_path) {
     json_object_set_new(web, "Enabled", json_boolean(1));
     json_object_set_new(web, "EnableIPv6", json_boolean(0));  // Default to disabled like mDNS
     json_object_set_new(web, "Port", json_integer(5000));
-    json_object_set_new(web, "WebRoot", json_string("/home/asimard/lithium"));
-    json_object_set_new(web, "UploadPath", json_string("/api/upload"));
-    json_object_set_new(web, "UploadDir", json_string("/tmp/hydrogen_uploads"));
-    json_object_set_new(web, "MaxUploadSize", json_integer(2147483648));
+    json_object_set_new(web, "WebRoot", json_string("/var/www/html"));
+    json_object_set_new(web, "UploadPath", json_string(DEFAULT_UPLOAD_PATH));
+    json_object_set_new(web, "UploadDir", json_string(DEFAULT_UPLOAD_DIR));
+    json_object_set_new(web, "MaxUploadSize", json_integer(DEFAULT_MAX_UPLOAD_SIZE));
     json_object_set_new(root, "WebServer", web);
 
     // Logging Configuration
@@ -913,8 +274,8 @@ void create_default_config(const char* config_path) {
     // WebSocket Configuration
     json_t* websocket = json_object();
     json_object_set_new(websocket, "Enabled", json_boolean(1));
-    json_object_set_new(websocket, "EnableIPv6", json_boolean(0));  // Default to disabled like mDNS
-    json_object_set_new(websocket, "Port", json_integer(5001));
+    json_object_set_new(websocket, "EnableIPv6", json_boolean(0));
+    json_object_set_new(websocket, "Port", json_integer(DEFAULT_WEBSOCKET_PORT));
     json_object_set_new(websocket, "Key", json_string("default_key_change_me"));
     json_object_set_new(websocket, "Protocol", json_string("hydrogen-protocol"));
     json_object_set_new(root, "WebSocket", websocket);
@@ -922,33 +283,26 @@ void create_default_config(const char* config_path) {
     // mDNS Server Configuration
     json_t* mdns_server = json_object();
     json_object_set_new(mdns_server, "Enabled", json_boolean(1));
-    json_object_set_new(mdns_server, "EnableIPv6", json_boolean(0));  // Default to disabled since dev system doesn't support IPv6
+    json_object_set_new(mdns_server, "EnableIPv6", json_boolean(0));
     json_object_set_new(mdns_server, "DeviceId", json_string("hydrogen-printer"));
     json_object_set_new(mdns_server, "FriendlyName", json_string("Hydrogen 3D Printer"));
     json_object_set_new(mdns_server, "Model", json_string("Hydrogen"));
     json_object_set_new(mdns_server, "Manufacturer", json_string("Philement"));
-    json_object_set_new(mdns_server, "Version", json_string("0.1.0"));
+    json_object_set_new(mdns_server, "Version", json_string(VERSION));
 
     json_t* services = json_array();
 
     json_t* http_service = json_object();
     json_object_set_new(http_service, "Name", json_string("hydrogen"));
     json_object_set_new(http_service, "Type", json_string("_http._tcp.local"));
-    json_object_set_new(http_service, "Port", json_integer(5000));
+    json_object_set_new(http_service, "Port", json_integer(DEFAULT_WEB_PORT));
     json_object_set_new(http_service, "TxtRecords", json_string("path=/api/upload"));
     json_array_append_new(services, http_service);
-
-    json_t* octoprint_service = json_object();
-    json_object_set_new(octoprint_service, "Name", json_string("hydrogen"));
-    json_object_set_new(octoprint_service, "Type", json_string("_octoprint._tcp.local"));
-    json_object_set_new(octoprint_service, "Port", json_integer(5000));
-    json_object_set_new(octoprint_service, "TxtRecords", json_string("path=/api,version=1.1.0"));
-    json_array_append_new(services, octoprint_service);
 
     json_t* websocket_service = json_object();
     json_object_set_new(websocket_service, "Name", json_string("Hydrogen"));
     json_object_set_new(websocket_service, "Type", json_string("_websocket._tcp.local"));
-    json_object_set_new(websocket_service, "Port", json_integer(5001));
+    json_object_set_new(websocket_service, "Port", json_integer(DEFAULT_WEBSOCKET_PORT));
     json_object_set_new(websocket_service, "TxtRecords", json_string("path=/websocket"));
     json_array_append_new(services, websocket_service);
 
@@ -984,7 +338,7 @@ void create_default_config(const char* config_path) {
     json_object_set_new(network, "Interfaces", interfaces);
 
     json_t* port_allocation = json_object();
-    json_object_set_new(port_allocation, "StartPort", json_integer(5000));
+    json_object_set_new(port_allocation, "StartPort", json_integer(DEFAULT_WEB_PORT));
     json_object_set_new(port_allocation, "EndPort", json_integer(65535));
     json_t* reserved_ports = json_array();
     json_array_append_new(reserved_ports, json_integer(22));
@@ -1012,18 +366,6 @@ void create_default_config(const char* config_path) {
     
     json_object_set_new(root, "SystemMonitoring", monitoring);
 
-    // Printer Motion Configuration
-    json_t* motion = json_object();
-    json_object_set_new(motion, "MaxLayers", json_integer(DEFAULT_MAX_LAYERS));
-    json_object_set_new(motion, "Acceleration", json_real(DEFAULT_ACCELERATION));
-    json_object_set_new(motion, "ZAcceleration", json_real(DEFAULT_Z_ACCELERATION));
-    json_object_set_new(motion, "EAcceleration", json_real(DEFAULT_E_ACCELERATION));
-    json_object_set_new(motion, "MaxSpeedXY", json_real(DEFAULT_MAX_SPEED_XY));
-    json_object_set_new(motion, "MaxSpeedTravel", json_real(DEFAULT_MAX_SPEED_TRAVEL));
-    json_object_set_new(motion, "MaxSpeedZ", json_real(DEFAULT_MAX_SPEED_Z));
-    json_object_set_new(motion, "ZValuesChunk", json_integer(DEFAULT_Z_VALUES_CHUNK));
-    json_object_set_new(root, "Motion", motion);
-
     // Print Queue Configuration
     json_t* print_queue = json_object();
     json_object_set_new(print_queue, "Enabled", json_boolean(1));
@@ -1047,46 +389,6 @@ void create_default_config(const char* config_path) {
     
     json_object_set_new(root, "PrintQueue", print_queue);
 
-    // OIDC Configuration
-    json_t* oidc = json_object();
-    json_object_set_new(oidc, "Enabled", json_boolean(1));
-    json_object_set_new(oidc, "Issuer", json_string("https://hydrogen.example.com"));
-    
-    // OIDC Endpoints
-    json_t* endpoints = json_object();
-    json_object_set_new(endpoints, "Authorization", json_string("/oauth/authorize"));
-    json_object_set_new(endpoints, "Token", json_string("/oauth/token"));
-    json_object_set_new(endpoints, "Userinfo", json_string("/oauth/userinfo"));
-    json_object_set_new(endpoints, "Jwks", json_string("/oauth/jwks"));
-    json_object_set_new(endpoints, "Introspection", json_string("/oauth/introspect"));
-    json_object_set_new(endpoints, "Revocation", json_string("/oauth/revoke"));
-    json_object_set_new(endpoints, "Registration", json_string("/oauth/register"));
-    json_object_set_new(oidc, "Endpoints", endpoints);
-    
-    // OIDC Key Management
-    json_t* keys = json_object();
-    json_object_set_new(keys, "RotationIntervalDays", json_integer(30));
-    json_object_set_new(keys, "StoragePath", json_string("/var/lib/hydrogen/oidc/keys"));
-    json_object_set_new(keys, "EncryptionEnabled", json_boolean(1));
-    json_object_set_new(oidc, "Keys", keys);
-    
-    // OIDC Token Settings
-    json_t* tokens = json_object();
-    json_object_set_new(tokens, "AccessTokenLifetime", json_integer(3600));        // 1 hour
-    json_object_set_new(tokens, "RefreshTokenLifetime", json_integer(86400 * 30)); // 30 days
-    json_object_set_new(tokens, "IdTokenLifetime", json_integer(3600));            // 1 hour
-    json_object_set_new(oidc, "Tokens", tokens);
-    
-    // OIDC Security Settings
-    json_t* security = json_object();
-    json_object_set_new(security, "RequirePkce", json_boolean(1));
-    json_object_set_new(security, "AllowImplicitFlow", json_boolean(0));
-    json_object_set_new(security, "AllowClientCredentials", json_boolean(1));
-    json_object_set_new(security, "RequireConsent", json_boolean(1));
-    json_object_set_new(oidc, "Security", security);
-    
-    json_object_set_new(root, "OIDC", oidc);
-    
     // API Configuration
     json_t* api = json_object();
     json_object_set_new(api, "JWTSecret", json_string("hydrogen_api_secret_change_me"));
@@ -1135,20 +437,18 @@ AppConfig* load_config(const char* config_path) {
         // TODO: Implement proper cleanup of AppConfig resources
         free(app_config);
     }
+
     json_error_t error;
     json_t* root = json_load_file(config_path, 0, &error);
 
     if (!root) {
-        // Provide detailed error information including line and column number
         log_this("Configuration", "Failed to load config file: %s (line %d, column %d)",
-             LOG_LEVEL_ERROR, error.text, error.line, error.column);
-    
-        // Print a user-friendly error message to stderr for operators
+                 LOG_LEVEL_ERROR, error.text, error.line, error.column);
+        
         fprintf(stderr, "ERROR: Hydrogen configuration file has JSON syntax errors.\n");
         fprintf(stderr, "       %s at line %d, column %d\n", error.text, error.line, error.column);
         fprintf(stderr, "       Please fix the syntax error and try again.\n");
-    
-        // Exit gracefully instead of returning NULL which would cause a segfault
+        
         exit(EXIT_FAILURE);
     }
 
@@ -1158,7 +458,7 @@ AppConfig* load_config(const char* config_path) {
         json_decref(root);
         return NULL;
     }
-    
+
     // Store the configuration in the global static variable
     app_config = config;
 
@@ -1173,7 +473,6 @@ AppConfig* load_config(const char* config_path) {
     // Server Name
     json_t* server_name = json_object_get(root, "ServerName");
     config->server_name = get_config_string(server_name, DEFAULT_SERVER_NAME);
-    // Use "(default)" format for fallback values to match test expectations
     if (json_is_string(server_name) && 
         strncmp(json_string_value(server_name), "${env.", 6) == 0 &&
         !getenv(json_string_value(server_name) + 6)) {
@@ -1185,14 +484,11 @@ AppConfig* load_config(const char* config_path) {
     // Payload Key (for payload decryption)
     json_t* payload_key = json_object_get(root, "PayloadKey");
     config->payload_key = get_config_string(payload_key, "${env.PAYLOAD_KEY}");
-    // Don't log the actual key value for security reasons
     if (config->payload_key && strncmp(config->payload_key, "${env.", 6) == 0) {
         const char* env_var = config->payload_key + 6;
         size_t env_var_len = strlen(env_var);
         if (env_var_len > 1 && env_var[env_var_len - 1] == '}') {
-            // Extract the variable name
             char var_name[256] = {0};
-            // Use a safer approach with explicit size check and manual null termination
             size_t copy_len = env_var_len - 1 < sizeof(var_name) - 1 ? env_var_len - 1 : sizeof(var_name) - 1;
             memcpy(var_name, env_var, copy_len);
             var_name[copy_len] = '\0';
@@ -1219,7 +515,6 @@ AppConfig* load_config(const char* config_path) {
     if (json_is_object(web)) {
         json_t* enabled = json_object_get(web, "Enabled");
         config->web.enabled = get_config_bool(enabled, 1);
-        // Exact format match for test: "WebServer Enabled: true" or "WebServer Enabled: false"
         log_this("Configuration", "WebServer Enabled: %s", LOG_LEVEL_INFO, 
                  config->web.enabled ? "true" : "false");
 
@@ -1228,7 +523,6 @@ AppConfig* load_config(const char* config_path) {
 
         json_t* port = json_object_get(web, "Port");
         config->web.port = get_config_int(port, DEFAULT_WEB_PORT);
-        // Exact format match for test: "WebServer Port: 9000"
         log_this("Configuration", "WebServer Port: %d", LOG_LEVEL_INFO, config->web.port);
 
         json_t* web_root = json_object_get(web, "WebRoot");
@@ -1243,19 +537,17 @@ AppConfig* load_config(const char* config_path) {
         json_t* max_upload_size = json_object_get(web, "MaxUploadSize");
         config->web.max_upload_size = get_config_size(max_upload_size, DEFAULT_MAX_UPLOAD_SIZE);
         
-        // Load API prefix with default of "/api"
         json_t* api_prefix = json_object_get(web, "ApiPrefix");
         config->web.api_prefix = get_config_string(api_prefix, "/api");
         log_this("Configuration", "API Prefix: %s", LOG_LEVEL_INFO, config->web.api_prefix);
     } else {
-    // Use defaults if web section is missing
-    config->web.port = DEFAULT_WEB_PORT;
-    config->web.web_root = strdup("/var/www/html");
-    config->web.upload_path = strdup(DEFAULT_UPLOAD_PATH);
-    config->web.upload_dir = strdup(DEFAULT_UPLOAD_DIR);
-    config->web.max_upload_size = DEFAULT_MAX_UPLOAD_SIZE;
-    config->web.api_prefix = strdup("/api");  // Default API prefix
-    log_this("Configuration", "API Prefix: %s (default)", LOG_LEVEL_INFO, config->web.api_prefix);
+        config->web.port = DEFAULT_WEB_PORT;
+        config->web.web_root = strdup("/var/www/html");
+        config->web.upload_path = strdup(DEFAULT_UPLOAD_PATH);
+        config->web.upload_dir = strdup(DEFAULT_UPLOAD_DIR);
+        config->web.max_upload_size = DEFAULT_MAX_UPLOAD_SIZE;
+        config->web.api_prefix = strdup("/api");
+        log_this("Configuration", "API Prefix: %s (default)", LOG_LEVEL_INFO, config->web.api_prefix);
     }
 
     // WebSocket Configuration
@@ -1273,7 +565,6 @@ AppConfig* load_config(const char* config_path) {
         json_t* key = json_object_get(websocket, "Key");
         config->websocket.key = get_config_string(key, "default_key");
 
-        // Get protocol with fallback to legacy uppercase key
         json_t* protocol = json_object_get(websocket, "protocol");
         if (!protocol) {
             protocol = json_object_get(websocket, "Protocol");  // Try legacy uppercase key
@@ -1281,33 +572,27 @@ AppConfig* load_config(const char* config_path) {
         config->websocket.protocol = get_config_string(protocol, "hydrogen-protocol");
         if (!config->websocket.protocol) {
             log_this("Configuration", "Failed to allocate WebSocket protocol string", LOG_LEVEL_ERROR);
-            // Clean up previously allocated strings
             free(config->websocket.key);
             return NULL;
         }
 
         json_t* max_message_size = json_object_get(websocket, "MaxMessageSize");
-        config->websocket.max_message_size = get_config_size(max_message_size, 10 * 1024 * 1024);  // Default to 10 MB if not specified
+        config->websocket.max_message_size = get_config_size(max_message_size, 10 * 1024 * 1024);
 
-        // Process ConnectionTimeouts section
         json_t* connection_timeouts = json_object_get(websocket, "ConnectionTimeouts");
         if (json_is_object(connection_timeouts)) {
-            // Process ExitWaitSeconds
             json_t* exit_wait_seconds = json_object_get(connection_timeouts, "ExitWaitSeconds");
-            config->websocket.exit_wait_seconds = get_config_int(exit_wait_seconds, 10);  // Default to 10 seconds
+            config->websocket.exit_wait_seconds = get_config_int(exit_wait_seconds, 10);
             log_this("Configuration", "WebSocket Exit Wait Seconds: %d", LOG_LEVEL_INFO, config->websocket.exit_wait_seconds);
         } else {
-            // Default value if ConnectionTimeouts section is missing
             config->websocket.exit_wait_seconds = 10;
         }
-
     } else {
-        // Use defaults if websocket section is missing
         config->websocket.port = DEFAULT_WEBSOCKET_PORT;
         config->websocket.key = strdup("default_key");
         config->websocket.protocol = strdup("hydrogen-protocol");
-        config->websocket.max_message_size = 10 * 1024 * 1024;  // Default to 10 MB
-        config->websocket.exit_wait_seconds = 10;  // Default to 10 seconds
+        config->websocket.max_message_size = 10 * 1024 * 1024;
+        config->websocket.exit_wait_seconds = 10;
     }
 
     // mDNS Server Configuration
@@ -1335,7 +620,7 @@ AppConfig* load_config(const char* config_path) {
         config->mdns_server.version = get_config_string(version, VERSION);
 
         json_t* services = json_object_get(mdns_server, "Services");
-	if (json_is_array(services)) {
+        if (json_is_array(services)) {
             config->mdns_server.num_services = json_array_size(services);
             config->mdns_server.services = calloc(config->mdns_server.num_services, sizeof(mdns_server_service_t));
 
@@ -1351,16 +636,13 @@ AppConfig* load_config(const char* config_path) {
 
                 json_t* port = json_object_get(service, "Port");
                 config->mdns_server.services[i].port = get_config_int(port, DEFAULT_WEB_PORT);
-        
-                // Handle TXT records
+
                 json_t* txt_records = json_object_get(service, "TxtRecords");
                 if (json_is_string(txt_records)) {
-                    // If TxtRecords is a single string, treat it as one record
                     config->mdns_server.services[i].num_txt_records = 1;
                     config->mdns_server.services[i].txt_records = malloc(sizeof(char*));
                     config->mdns_server.services[i].txt_records[0] = get_config_string(txt_records, "");
                 } else if (json_is_array(txt_records)) {
-                    // If TxtRecords is an array, handle multiple records
                     config->mdns_server.services[i].num_txt_records = json_array_size(txt_records);
                     config->mdns_server.services[i].txt_records = malloc(config->mdns_server.services[i].num_txt_records * sizeof(char*));
                     for (size_t j = 0; j < config->mdns_server.services[i].num_txt_records; j++) {
@@ -1368,7 +650,6 @@ AppConfig* load_config(const char* config_path) {
                         config->mdns_server.services[i].txt_records[j] = get_config_string(record, "");
                     }
                 } else {
-                    // If TxtRecords is not present or invalid, set to NULL
                     config->mdns_server.services[i].num_txt_records = 0;
                     config->mdns_server.services[i].txt_records = NULL;
                 }
@@ -1417,7 +698,6 @@ AppConfig* load_config(const char* config_path) {
             config->resources.log_entry_size = get_config_size(val, DEFAULT_LOG_ENTRY_SIZE);
         }
     } else {
-        // Use defaults if section is missing
         config->resources.max_queue_blocks = DEFAULT_MAX_QUEUE_BLOCKS;
         config->resources.queue_hash_size = DEFAULT_QUEUE_HASH_SIZE;
         config->resources.default_capacity = DEFAULT_QUEUE_CAPACITY;
@@ -1453,7 +733,7 @@ AppConfig* load_config(const char* config_path) {
         if (json_is_object(port_allocation)) {
             json_t* val;
             val = json_object_get(port_allocation, "StartPort");
-            config->network.start_port = get_config_int(val, 5000);
+            config->network.start_port = get_config_int(val, DEFAULT_WEB_PORT);
             
             val = json_object_get(port_allocation, "EndPort");
             config->network.end_port = get_config_int(val, 65535);
@@ -1468,12 +748,11 @@ AppConfig* load_config(const char* config_path) {
             }
         }
     } else {
-        // Use defaults if section is missing
         config->network.max_interfaces = DEFAULT_MAX_INTERFACES;
         config->network.max_ips_per_interface = DEFAULT_MAX_IPS_PER_INTERFACE;
         config->network.max_interface_name_length = DEFAULT_MAX_INTERFACE_NAME_LENGTH;
         config->network.max_ip_address_length = DEFAULT_MAX_IP_ADDRESS_LENGTH;
-        config->network.start_port = 5000;
+        config->network.start_port = DEFAULT_WEB_PORT;
         config->network.end_port = 65535;
         config->network.reserved_ports = NULL;
         config->network.reserved_ports_count = 0;
@@ -1508,7 +787,6 @@ AppConfig* load_config(const char* config_path) {
             config->monitoring.load_warning = get_config_double(val, DEFAULT_LOAD_WARNING);
         }
     } else {
-        // Use defaults if section is missing
         config->monitoring.status_update_ms = DEFAULT_STATUS_UPDATE_MS;
         config->monitoring.resource_check_ms = DEFAULT_RESOURCE_CHECK_MS;
         config->monitoring.metrics_update_ms = DEFAULT_METRICS_UPDATE_MS;
@@ -1517,51 +795,11 @@ AppConfig* load_config(const char* config_path) {
         config->monitoring.load_warning = DEFAULT_LOAD_WARNING;
     }
 
-    // Printer Motion Configuration
-    json_t* motion = json_object_get(root, "Motion");
-    if (json_is_object(motion)) {
-        json_t* val;
-        val = json_object_get(motion, "MaxLayers");
-        config->motion.max_layers = get_config_size(val, DEFAULT_MAX_LAYERS);
-        
-        val = json_object_get(motion, "Acceleration");
-        config->motion.acceleration = get_config_double(val, DEFAULT_ACCELERATION);
-        
-        val = json_object_get(motion, "ZAcceleration");
-        config->motion.z_acceleration = get_config_double(val, DEFAULT_Z_ACCELERATION);
-        
-        val = json_object_get(motion, "EAcceleration");
-        config->motion.e_acceleration = get_config_double(val, DEFAULT_E_ACCELERATION);
-        
-        val = json_object_get(motion, "MaxSpeedXY");
-        config->motion.max_speed_xy = get_config_double(val, DEFAULT_MAX_SPEED_XY);
-        
-        val = json_object_get(motion, "MaxSpeedTravel");
-        config->motion.max_speed_travel = get_config_double(val, DEFAULT_MAX_SPEED_TRAVEL);
-        
-        val = json_object_get(motion, "MaxSpeedZ");
-        config->motion.max_speed_z = get_config_double(val, DEFAULT_MAX_SPEED_Z);
-        
-        val = json_object_get(motion, "ZValuesChunk");
-        config->motion.z_values_chunk = get_config_size(val, DEFAULT_Z_VALUES_CHUNK);
-    } else {
-        // Use defaults if section is missing
-        config->motion.max_layers = DEFAULT_MAX_LAYERS;
-        config->motion.acceleration = DEFAULT_ACCELERATION;
-        config->motion.z_acceleration = DEFAULT_Z_ACCELERATION;
-        config->motion.e_acceleration = DEFAULT_E_ACCELERATION;
-        config->motion.max_speed_xy = DEFAULT_MAX_SPEED_XY;
-        config->motion.max_speed_travel = DEFAULT_MAX_SPEED_TRAVEL;
-        config->motion.max_speed_z = DEFAULT_MAX_SPEED_Z;
-        config->motion.z_values_chunk = DEFAULT_Z_VALUES_CHUNK;
-    }
-
     // Print Queue Configuration
     json_t* print_queue = json_object_get(root, "PrintQueue");
     if (json_is_object(print_queue)) {
         json_t* enabled = json_object_get(print_queue, "Enabled");
         config->print_queue.enabled = get_config_bool(enabled, 1);
-        // Exact format match for test: "PrintQueue Enabled: true" or "PrintQueue Enabled: false"
         log_this("Configuration", "PrintQueue Enabled: %s", LOG_LEVEL_INFO, 
                  config->print_queue.enabled ? "true" : "false");
 
@@ -1586,7 +824,6 @@ AppConfig* load_config(const char* config_path) {
             json_t* val;
             val = json_object_get(timeouts, "ShutdownWaitMs");
             config->print_queue.timeouts.shutdown_wait_ms = get_config_size(val, DEFAULT_SHUTDOWN_WAIT_MS);
-            // Exact format match for test: "ShutdownWaitSeconds: 3"
             log_this("Configuration", "ShutdownWaitSeconds: %d", LOG_LEVEL_INFO, 
                     (int)(config->print_queue.timeouts.shutdown_wait_ms / 1000));
             
@@ -1604,7 +841,6 @@ AppConfig* load_config(const char* config_path) {
             config->print_queue.buffers.status_message_size = get_config_size(val, 256);
         }
     } else {
-        // Use defaults if print queue section is missing
         config->print_queue.enabled = 1;
         config->print_queue.priorities.default_priority = 1;
         config->print_queue.priorities.emergency_priority = 0;
@@ -1616,375 +852,16 @@ AppConfig* load_config(const char* config_path) {
         config->print_queue.buffers.status_message_size = 256;
     }
 
-    // Load Logging Configuration
-    json_t* logging = json_object_get(root, "Logging");
-    if (json_is_object(logging)) {
-        // Load logging levels
-        json_t* levels = json_object_get(logging, "Levels");
-        if (json_is_array(levels)) {
-            config->Logging.LevelCount = json_array_size(levels);
-            config->Logging.Levels = calloc(config->Logging.LevelCount, sizeof(struct { int value; const char *name; }));
-            
-            for (size_t i = 0; i < config->Logging.LevelCount; i++) {
-                json_t* level = json_array_get(levels, i);
-                if (json_is_array(level) && json_array_size(level) == 2) {
-                    json_t* value = json_array_get(level, 0);
-                    json_t* name = json_array_get(level, 1);
-                    if (json_is_integer(value) && json_is_string(name)) {
-                        config->Logging.Levels[i].value = json_integer_value(value);
-                        config->Logging.Levels[i].name = strdup(json_string_value(name));
-                    }
-                }
-            }
-        }
-
-        // Load console configuration
-        json_t* console = json_object_get(logging, "Console");
-        if (json_is_object(console)) {
-            json_t* enabled = json_object_get(console, "Enabled");
-            config->Logging.Console.Enabled = json_is_boolean(enabled) ? json_boolean_value(enabled) : 1;
-
-            json_t* default_level = json_object_get(console, "DefaultLevel");
-            config->Logging.Console.DefaultLevel = json_is_integer(default_level) ? json_integer_value(default_level) : LOG_LEVEL_INFO;
-
-            json_t* subsystems = json_object_get(console, "Subsystems");
-            if (json_is_object(subsystems)) {
-                json_t* level;
-                level = json_object_get(subsystems, "ThreadMgmt");
-                config->Logging.Console.Subsystems.ThreadMgmt = json_is_integer(level) ? json_integer_value(level) : LOG_LEVEL_WARN;
-                level = json_object_get(subsystems, "Shutdown");
-                config->Logging.Console.Subsystems.Shutdown = json_is_integer(level) ? json_integer_value(level) : LOG_LEVEL_INFO;
-                level = json_object_get(subsystems, "mDNSServer");
-                config->Logging.Console.Subsystems.mDNSServer = json_is_integer(level) ? json_integer_value(level) : LOG_LEVEL_INFO;
-                level = json_object_get(subsystems, "WebServer");
-                config->Logging.Console.Subsystems.WebServer = json_is_integer(level) ? json_integer_value(level) : LOG_LEVEL_INFO;
-                level = json_object_get(subsystems, "WebSocket");
-                config->Logging.Console.Subsystems.WebSocket = json_is_integer(level) ? json_integer_value(level) : LOG_LEVEL_INFO;
-                level = json_object_get(subsystems, "PrintQueue");
-                config->Logging.Console.Subsystems.PrintQueue = json_is_integer(level) ? json_integer_value(level) : LOG_LEVEL_WARN;
-                level = json_object_get(subsystems, "LogQueueManager");
-                config->Logging.Console.Subsystems.LogQueueManager = json_is_integer(level) ? json_integer_value(level) : LOG_LEVEL_INFO;
-            }
-        }
-    }
-
-    // OIDC Configuration
-    json_t* oidc = json_object_get(root, "OIDC");
-    if (json_is_object(oidc)) {
-        // Basic settings
-        json_t* enabled = json_object_get(oidc, "Enabled");
-        config->oidc.enabled = get_config_bool(enabled, 1);
-        
-        json_t* issuer = json_object_get(oidc, "Issuer");
-        config->oidc.issuer = get_config_string(issuer, "https://hydrogen.example.com");
-        
-        // Endpoints
-        json_t* endpoints = json_object_get(oidc, "Endpoints");
-        if (json_is_object(endpoints)) {
-            json_t* val;
-            
-            val = json_object_get(endpoints, "Authorization");
-            config->oidc.endpoints.authorization = get_config_string(val, "/oauth/authorize");
-            
-            val = json_object_get(endpoints, "Token");
-            config->oidc.endpoints.token = get_config_string(val, "/oauth/token");
-            
-            val = json_object_get(endpoints, "Userinfo");
-            config->oidc.endpoints.userinfo = get_config_string(val, "/oauth/userinfo");
-            
-            val = json_object_get(endpoints, "Jwks");
-            config->oidc.endpoints.jwks = get_config_string(val, "/oauth/jwks");
-            
-            val = json_object_get(endpoints, "Introspection");
-            config->oidc.endpoints.introspection = get_config_string(val, "/oauth/introspect");
-            
-            val = json_object_get(endpoints, "Revocation");
-            config->oidc.endpoints.revocation = get_config_string(val, "/oauth/revoke");
-            
-            val = json_object_get(endpoints, "Registration");
-            config->oidc.endpoints.registration = get_config_string(val, "/oauth/register");
-        } else {
-            // Default endpoints if not specified
-            config->oidc.endpoints.authorization = strdup("/oauth/authorize");
-            config->oidc.endpoints.token = strdup("/oauth/token");
-            config->oidc.endpoints.userinfo = strdup("/oauth/userinfo");
-            config->oidc.endpoints.jwks = strdup("/oauth/jwks");
-            config->oidc.endpoints.introspection = strdup("/oauth/introspect");
-            config->oidc.endpoints.revocation = strdup("/oauth/revoke");
-            config->oidc.endpoints.registration = strdup("/oauth/register");
-        }
-        
-        // Key Management
-        json_t* keys = json_object_get(oidc, "Keys");
-        if (json_is_object(keys)) {
-            json_t* val;
-            
-            val = json_object_get(keys, "RotationIntervalDays");
-            config->oidc.keys.rotation_interval_days = get_config_int(val, 30);
-            
-            val = json_object_get(keys, "StoragePath");
-            config->oidc.keys.storage_path = get_config_string(val, "/var/lib/hydrogen/oidc/keys");
-            
-            val = json_object_get(keys, "EncryptionEnabled");
-            config->oidc.keys.encryption_enabled = get_config_bool(val, 1);
-        } else {
-            // Default key management settings if not specified
-            config->oidc.keys.rotation_interval_days = 30;
-            config->oidc.keys.storage_path = strdup("/var/lib/hydrogen/oidc/keys");
-            config->oidc.keys.encryption_enabled = 1;
-        }
-        
-        // Token Settings
-        json_t* tokens = json_object_get(oidc, "Tokens");
-        if (json_is_object(tokens)) {
-            json_t* val;
-            
-            val = json_object_get(tokens, "AccessTokenLifetime");
-            config->oidc.tokens.access_token_lifetime = get_config_int(val, 3600);
-            
-            val = json_object_get(tokens, "RefreshTokenLifetime");
-            config->oidc.tokens.refresh_token_lifetime = get_config_int(val, 86400 * 30);
-            
-            val = json_object_get(tokens, "IdTokenLifetime");
-            config->oidc.tokens.id_token_lifetime = get_config_int(val, 3600);
-        } else {
-            // Default token settings if not specified
-            config->oidc.tokens.access_token_lifetime = 3600;        // 1 hour
-            config->oidc.tokens.refresh_token_lifetime = 86400 * 30; // 30 days
-            config->oidc.tokens.id_token_lifetime = 3600;            // 1 hour
-        }
-        
-        // Security Settings
-        json_t* security = json_object_get(oidc, "Security");
-        if (json_is_object(security)) {
-            json_t* val;
-            
-            val = json_object_get(security, "RequirePkce");
-            config->oidc.security.require_pkce = get_config_bool(val, 1);
-            
-            val = json_object_get(security, "AllowImplicitFlow");
-            config->oidc.security.allow_implicit_flow = get_config_bool(val, 0);
-            
-            val = json_object_get(security, "AllowClientCredentials");
-            config->oidc.security.allow_client_credentials = get_config_bool(val, 1);
-            
-            val = json_object_get(security, "RequireConsent");
-            config->oidc.security.require_consent = get_config_bool(val, 1);
-        } else {
-            // Default security settings if not specified
-            config->oidc.security.require_pkce = 1;
-            config->oidc.security.allow_implicit_flow = 0;
-            config->oidc.security.allow_client_credentials = 1;
-            config->oidc.security.require_consent = 1;
-        }
-    } else {
-        // Use defaults if OIDC section is missing
-        config->oidc.enabled = 1;
-        config->oidc.issuer = strdup("https://hydrogen.example.com");
-        
-        // Default endpoints
-        config->oidc.endpoints.authorization = strdup("/oauth/authorize");
-        config->oidc.endpoints.token = strdup("/oauth/token");
-        config->oidc.endpoints.userinfo = strdup("/oauth/userinfo");
-        config->oidc.endpoints.jwks = strdup("/oauth/jwks");
-        config->oidc.endpoints.introspection = strdup("/oauth/introspect");
-        config->oidc.endpoints.revocation = strdup("/oauth/revoke");
-        config->oidc.endpoints.registration = strdup("/oauth/register");
-        
-        // Default key management
-        config->oidc.keys.rotation_interval_days = 30;
-        config->oidc.keys.storage_path = strdup("/var/lib/hydrogen/oidc/keys");
-        config->oidc.keys.encryption_enabled = 1;
-        
-        // Default tokens
-        config->oidc.tokens.access_token_lifetime = 3600;        // 1 hour
-        config->oidc.tokens.refresh_token_lifetime = 86400 * 30; // 30 days
-        config->oidc.tokens.id_token_lifetime = 3600;            // 1 hour
-        
-        // Default security
-        config->oidc.security.require_pkce = 1;
-        config->oidc.security.allow_implicit_flow = 0;
-        config->oidc.security.allow_client_credentials = 1;
-        config->oidc.security.require_consent = 1;
-        
-        log_this("Configuration", "Using default OIDC configuration", LOG_LEVEL_INFO);
-    }
-    
-    // Swagger Configuration (top-level)
-    json_t* swagger = json_object_get(root, "Swagger");
-    if (json_is_object(swagger)) {
-        json_t* enabled = json_object_get(swagger, "Enabled");
-        config->web.swagger.enabled = get_config_bool(enabled, 1);
-        
-        json_t* prefix = json_object_get(swagger, "Prefix");
-        config->web.swagger.prefix = get_config_string(prefix, "/docs");
-
-        // Load metadata configuration
-        json_t* metadata = json_object_get(swagger, "Metadata");
-        if (json_is_object(metadata)) {
-            json_t* val;
-            
-            val = json_object_get(metadata, "Title");
-            config->web.swagger.metadata.title = get_config_string(val, "Hydrogen REST API");
-            
-            val = json_object_get(metadata, "Description");
-            config->web.swagger.metadata.description = get_config_string(val, "REST API for the Hydrogen Project");
-            
-            val = json_object_get(metadata, "Version");
-            config->web.swagger.metadata.version = get_config_string(val, VERSION);
-
-            // Contact information
-            json_t* contact = json_object_get(metadata, "Contact");
-            if (json_is_object(contact)) {
-                val = json_object_get(contact, "Name");
-                config->web.swagger.metadata.contact.name = get_config_string(val, "Philement Support");
-                
-                val = json_object_get(contact, "Email");
-                config->web.swagger.metadata.contact.email = get_config_string(val, "api@example.com");
-                
-                val = json_object_get(contact, "Url");
-                config->web.swagger.metadata.contact.url = get_config_string(val, "https://philement.com/support");
-            } else {
-                config->web.swagger.metadata.contact.name = strdup("Philement Support");
-                config->web.swagger.metadata.contact.email = strdup("api@example.com");
-                config->web.swagger.metadata.contact.url = strdup("https://philement.com/support");
-            }
-
-            // License information
-            json_t* license = json_object_get(metadata, "License");
-            if (json_is_object(license)) {
-                val = json_object_get(license, "Name");
-                config->web.swagger.metadata.license.name = get_config_string(val, "MIT");
-                
-                val = json_object_get(license, "Url");
-                config->web.swagger.metadata.license.url = get_config_string(val, "https://opensource.org/licenses/MIT");
-            } else {
-                config->web.swagger.metadata.license.name = strdup("MIT");
-                config->web.swagger.metadata.license.url = strdup("https://opensource.org/licenses/MIT");
-            }
-        } else {
-            // Default metadata
-            config->web.swagger.metadata.title = strdup("Hydrogen REST API");
-            config->web.swagger.metadata.description = strdup("REST API for the Hydrogen Project");
-            config->web.swagger.metadata.version = strdup(VERSION);
-            config->web.swagger.metadata.contact.name = strdup("Philement Support");
-            config->web.swagger.metadata.contact.email = strdup("api@example.com");
-            config->web.swagger.metadata.contact.url = strdup("https://philement.com/support");
-            config->web.swagger.metadata.license.name = strdup("MIT");
-            config->web.swagger.metadata.license.url = strdup("https://opensource.org/licenses/MIT");
-        }
-
-        // Load UI options
-        json_t* ui_options = json_object_get(swagger, "UIOptions");
-        if (json_is_object(ui_options)) {
-            json_t* val;
-            
-            val = json_object_get(ui_options, "TryItEnabled");
-            config->web.swagger.ui_options.try_it_enabled = get_config_bool(val, 1);
-            
-            val = json_object_get(ui_options, "AlwaysExpanded");
-            config->web.swagger.ui_options.always_expanded = get_config_bool(val, 1);
-            
-            val = json_object_get(ui_options, "DisplayOperationId");
-            config->web.swagger.ui_options.display_operation_id = get_config_bool(val, 1);
-            
-            val = json_object_get(ui_options, "DefaultModelsExpandDepth");
-            config->web.swagger.ui_options.default_models_expand_depth = get_config_int(val, 1);
-            
-            val = json_object_get(ui_options, "DefaultModelExpandDepth");
-            config->web.swagger.ui_options.default_model_expand_depth = get_config_int(val, 1);
-            
-            val = json_object_get(ui_options, "ShowExtensions");
-            config->web.swagger.ui_options.show_extensions = get_config_bool(val, 0);
-            
-            val = json_object_get(ui_options, "ShowCommonExtensions");
-            config->web.swagger.ui_options.show_common_extensions = get_config_bool(val, 1);
-            
-            val = json_object_get(ui_options, "DocExpansion");
-            config->web.swagger.ui_options.doc_expansion = get_config_string(val, "list");
-            
-            val = json_object_get(ui_options, "SyntaxHighlightTheme");
-            config->web.swagger.ui_options.syntax_highlight_theme = get_config_string(val, "agate");
-        } else {
-            // Default UI options
-            config->web.swagger.ui_options.try_it_enabled = 1;
-            config->web.swagger.ui_options.always_expanded = 1;
-            config->web.swagger.ui_options.display_operation_id = 1;
-            config->web.swagger.ui_options.default_models_expand_depth = 1;
-            config->web.swagger.ui_options.default_model_expand_depth = 1;
-            config->web.swagger.ui_options.show_extensions = 0;
-            config->web.swagger.ui_options.show_common_extensions = 1;
-            config->web.swagger.ui_options.doc_expansion = strdup("list");
-            config->web.swagger.ui_options.syntax_highlight_theme = strdup("agate");
-        }
-        
-        log_this("Configuration", "Swagger UI: %s (prefix: %s)", LOG_LEVEL_INFO,
-                config->web.swagger.enabled ? "enabled" : "disabled",
-                config->web.swagger.prefix);
-        log_this("Configuration", "Swagger Metadata: title='%s', version='%s'", LOG_LEVEL_INFO,
-                config->web.swagger.metadata.title,
-                config->web.swagger.metadata.version);
-    } else {
-        // Default Swagger configuration
-        config->web.swagger.enabled = true;
-        config->web.swagger.prefix = strdup("/docs");
-        
-        // Default metadata
-        config->web.swagger.metadata.title = strdup("Hydrogen REST API");
-        config->web.swagger.metadata.description = strdup("REST API for the Hydrogen Project");
-        config->web.swagger.metadata.version = strdup(VERSION);
-        config->web.swagger.metadata.contact.name = strdup("Philement Support");
-        config->web.swagger.metadata.contact.email = strdup("api@example.com");
-        config->web.swagger.metadata.contact.url = strdup("https://philement.com/support");
-        config->web.swagger.metadata.license.name = strdup("MIT");
-        config->web.swagger.metadata.license.url = strdup("https://opensource.org/licenses/MIT");
-        
-        // Default UI options
-        config->web.swagger.ui_options.try_it_enabled = 1;
-        config->web.swagger.ui_options.always_expanded = 1;
-        config->web.swagger.ui_options.display_operation_id = 1;
-        config->web.swagger.ui_options.default_models_expand_depth = 1;
-        config->web.swagger.ui_options.default_model_expand_depth = 1;
-        config->web.swagger.ui_options.show_extensions = 0;
-        config->web.swagger.ui_options.show_common_extensions = 1;
-        config->web.swagger.ui_options.doc_expansion = strdup("list");
-        config->web.swagger.ui_options.syntax_highlight_theme = strdup("agate");
-        
-        log_this("Configuration", "Using default Swagger configuration", LOG_LEVEL_INFO);
-    }
-
     // API Configuration
     json_t* api_config = json_object_get(root, "API");
     if (json_is_object(api_config)) {
         json_t* jwt_secret = json_object_get(api_config, "JWTSecret");
         config->api.jwt_secret = get_config_string(jwt_secret, "hydrogen_api_secret_change_me");
     } else {
-        // Use defaults if API section is missing
         config->api.jwt_secret = strdup("hydrogen_api_secret_change_me");
         log_this("Configuration", "Using default API configuration", LOG_LEVEL_INFO);
     }
 
     json_decref(root);
     return config;
-}
-
-
-
-/*
- * Calculate maximum width of priority labels
- * 
- * Why pre-calculate?
- * - Ensures consistent log formatting
- * - Avoids repeated calculations
- * - Supports dynamic priority systems
- * - Maintains log readability
- */
-void calculate_max_priority_label_width() {
-    MAX_PRIORITY_LABEL_WIDTH = 0;
-    for (int i = 0; i < NUM_PRIORITY_LEVELS; i++) {
-        int label_width = strlen(DEFAULT_PRIORITY_LEVELS[i].label);
-        if (label_width > MAX_PRIORITY_LABEL_WIDTH) {
-            MAX_PRIORITY_LABEL_WIDTH = label_width;
-        }
-    }
 }

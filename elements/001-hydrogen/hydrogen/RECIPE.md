@@ -111,7 +111,29 @@ critical_requirements:
   - Release Notes: Required for all changes
   - Thread Safety: Mandatory in all operations
   - Error Handling: Comprehensive cleanup required
+  - Code Organization: Follow standard file structure
 ```
+
+## CODING STANDARDS
+
+All code must follow these organization patterns:
+
+1. Source File Structure:
+   - File-level documentation with purpose and design decisions
+   - Feature test macros (if needed)
+   - Includes (system, standard, third-party, project)
+   - External declarations (extern functions/variables)
+   - Public interface (exposed functions)
+   - Private declarations (static functions)
+   - Implementation
+
+2. Critical Practices:
+   - Thread-safe design for all operations
+   - Comprehensive error handling and cleanup
+   - Clear documentation of "why" decisions
+   - Proper mutex and resource management
+
+Detailed guidelines are in [docs/coding_guidelines.md](docs/coding_guidelines.md).
 
 ## KEY ENTRY POINTS
 
