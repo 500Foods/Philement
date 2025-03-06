@@ -9,8 +9,8 @@
  * - Proper unsigned integer handling
  */
 
-#ifndef CONFIGURATION_SIZE_H
-#define CONFIGURATION_SIZE_H
+#ifndef CONFIG_SIZE_H
+#define CONFIG_SIZE_H
 
 #include <jansson.h>
 #include <stddef.h>
@@ -40,4 +40,4 @@
  */
 size_t get_config_size(json_t* value, size_t default_value);
 
-#endif /* CONFIGURATION_SIZE_H */
+#endif /* CONFIG_SIZE_H */

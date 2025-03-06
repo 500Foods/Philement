@@ -6,8 +6,8 @@
  * environment variable support.
  */
 
-#ifndef CONFIGURATION_STRING_H
-#define CONFIGURATION_STRING_H
+#ifndef CONFIG_STRING_H
+#define CONFIG_STRING_H
 
 #include <jansson.h>
 
@@ -34,4 +34,4 @@
  */
 char* get_config_string(json_t* value, const char* default_value);
 
-#endif /* CONFIGURATION_STRING_H */
+#endif /* CONFIG_STRING_H */

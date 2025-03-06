@@ -18,7 +18,7 @@
 // Project headers
 #include "websocket_server_internal.h"
 #include "../logging/logging.h"
-#include "../config/configuration.h"
+#include "../config/config.h"
 
 // External configuration reference
 extern AppConfig *app_config;

@@ -30,7 +30,7 @@
 #include "utils_queue.h"
 #include "utils_time.h"
 #include "utils_logging.h"
-#include "../config/configuration.h"
+#include "../config/config.h"
 #include "../logging/logging.h"
 
 // Define RELEASE if not provided by compiler

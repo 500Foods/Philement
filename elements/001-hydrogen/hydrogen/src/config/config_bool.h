@@ -6,8 +6,8 @@
  * environment variable support.
  */
 
-#ifndef CONFIGURATION_BOOL_H
-#define CONFIGURATION_BOOL_H
+#ifndef CONFIG_BOOL_H
+#define CONFIG_BOOL_H
 
 #include <jansson.h>
 
@@ -32,4 +32,4 @@
  */
 int get_config_bool(json_t* value, int default_value);
 
-#endif /* CONFIGURATION_BOOL_H */
+#endif /* CONFIG_BOOL_H */

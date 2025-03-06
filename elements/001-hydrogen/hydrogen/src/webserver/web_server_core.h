@@ -23,8 +23,8 @@
 #include <microhttpd.h>
 
 // Project Libraries
-#include "../config/configuration.h"
-#include "../config/configuration_structs.h"  // For WebServerConfig
+#include "../config/config.h"
+#include "../config/config_structs.h"  // For WebServerConfig
 
 // Server configuration defaults
 #define DEFAULT_THREAD_POOL_SIZE 4        // Default number of threads in the pool

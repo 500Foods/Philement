@@ -6,8 +6,8 @@
  * syntax and provides type-safe conversion to various JSON types.
  */
 
-#ifndef CONFIGURATION_ENV_H
-#define CONFIGURATION_ENV_H
+#ifndef CONFIG_ENV_H
+#define CONFIG_ENV_H
 
 #include <jansson.h>
 
@@ -30,4 +30,4 @@
  */
 json_t* process_env_variable(const char* value);
 
-#endif /* CONFIGURATION_ENV_H */
+#endif /* CONFIG_ENV_H */

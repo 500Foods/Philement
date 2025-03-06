@@ -6,8 +6,8 @@
  * type conversion, and environment variable support.
  */
 
-#ifndef CONFIGURATION_DOUBLE_H
-#define CONFIGURATION_DOUBLE_H
+#ifndef CONFIG_DOUBLE_H
+#define CONFIG_DOUBLE_H
 
 #include <jansson.h>
 
@@ -35,4 +35,4 @@
  */
 double get_config_double(json_t* value, double default_value);
 
-#endif /* CONFIGURATION_DOUBLE_H */
+#endif /* CONFIG_DOUBLE_H */
