@@ -11,17 +11,29 @@
 #include "utils_time.h"
 #include "../logging/logging.h"
 
-// Thread synchronization mutex
-static pthread_mutex_t ready_time_mutex = PTHREAD_MUTEX_INITIALIZER;
+// Public interface declarations
+void set_server_start_time(void);
+time_t get_server_start_time(void);
+void update_server_ready_time(void);
+int is_server_ready_time_set(void);
+time_t get_server_ready_time(void);
+void record_shutdown_start_time(void);
+void record_shutdown_end_time(void);
+void format_duration(time_t seconds, char *buffer, size_t buflen);
 
-// Global state tracking
+// External declarations
+extern volatile sig_atomic_t server_starting;
+
+// Internal state
+static pthread_mutex_t ready_time_mutex = PTHREAD_MUTEX_INITIALIZER;
 static struct timespec server_ready_time = {0, 0};  // Protected by ready_time_mutex
 static struct timespec server_start_time = {0, 0};  // Set once at startup
 static struct timespec shutdown_start_time = {0, 0}; // When shutdown begins
 static struct timespec shutdown_end_time = {0, 0};   // When shutdown completes
 
-// External state
-extern volatile sig_atomic_t server_starting;
+// Private function declarations
+static void format_iso_time(time_t t, char *buffer, size_t buflen);
+static double calc_elapsed_time(const struct timespec *end, const struct timespec *start);
 
 // Format time as ISO 8601 UTC timestamp
 static void format_iso_time(time_t t, char *buffer, size_t buflen) {
@@ -93,11 +105,14 @@ void update_server_ready_time(void) {
             time_t now = time(NULL);
             char iso_time[32];
             format_iso_time(now, iso_time, sizeof(iso_time));
-            log_this("Utils", "System started at %s", LOG_LEVEL_INFO, iso_time);
             
             // Calculate and format startup duration using high precision time
             double elapsed = calc_elapsed_time(&server_ready_time, &server_start_time);
-            log_this("Utils", "System startup took %.3fs", LOG_LEVEL_INFO, elapsed);
+
+            log_group_begin();
+            log_this("Startup", "System started at %s", LOG_LEVEL_INFO, iso_time);
+            log_this("Startup", "System startup took %.3fs", LOG_LEVEL_INFO, elapsed);
+            log_group_end();
         }
     }
     pthread_mutex_unlock(&ready_time_mutex);

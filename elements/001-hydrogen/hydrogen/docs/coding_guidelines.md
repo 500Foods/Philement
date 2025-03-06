@@ -4,6 +4,58 @@ This document outlines the C programming guidelines and patterns used in the Hyd
 
 ## Project Structure
 
+### Source File Organization
+
+Each `.c` file should follow this organization:
+
+1. File-level documentation explaining purpose and design decisions
+2. Feature test macros (if needed)
+3. Include directives in this order:
+   - Core system headers
+   - Standard C headers
+   - Third-party libraries
+   - Project headers
+4. Declarations in this order:
+   - External declarations (extern functions/variables from other files)
+   - Public interface (functions exposed to other files)
+   - Private declarations (static functions used only in this file)
+5. Implementation of functions
+
+Example organization:
+
+```c
+/*
+ * Component purpose and design decisions
+ */
+
+// Feature test macros
+#define _GNU_SOURCE
+#define _POSIX_C_SOURCE 200809L
+
+// Core system headers
+#include <sys/types.h>
+#include <pthread.h>
+
+// Standard C headers
+#include <stdio.h>
+#include <stdlib.h>
+
+// Project headers
+#include "component.h"
+
+// External declarations
+extern void global_function(void);
+
+// Public interface
+int component_initialize(void);
+void component_cleanup(void);
+
+// Private declarations
+static void helper_function(void);
+
+// Implementation follows...
+```
+
 ### Header Files
 
 - Each `.c` file should have a corresponding `.h` file (except for main program files)
@@ -548,7 +600,7 @@ For reviewing security-sensitive code:
 
 Example security review checklist item:
 
-```
+```list
 Cryptographic Operations Review:
 - [ ] Uses approved cryptographic libraries
 - [ ] No custom cryptographic implementations

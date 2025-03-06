@@ -36,10 +36,10 @@ static bool swagger_initialized = false;
 // Forward declarations
 static bool load_swagger_files_from_tar(const uint8_t *tar_data, size_t tar_size);
 static void free_swagger_files(void);
-static char* get_server_url(struct MHD_Connection *connection, const WebConfig *config);
-static char* create_dynamic_initializer(const char *base_content, const char *server_url, const WebConfig *config);
+static char* get_server_url(struct MHD_Connection *connection, const WebServerConfig *config);
+static char* create_dynamic_initializer(const char *base_content, const char *server_url, const WebServerConfig *config);
 
-bool init_swagger_support(WebConfig *config) {
+bool init_swagger_support(WebServerConfig *config) {
     // Check all shutdown flags atomically
     extern volatile sig_atomic_t server_stopping;
     extern volatile sig_atomic_t server_starting;
@@ -128,7 +128,7 @@ bool init_swagger_support(WebConfig *config) {
     return success;
 }
 
-bool is_swagger_request(const char *url, const WebConfig *config) {
+bool is_swagger_request(const char *url, const WebServerConfig *config) {
     if (!config || !config->swagger.enabled || !config->swagger.payload_available || 
         !config->swagger.prefix || !url) {
         return false;
@@ -139,7 +139,7 @@ bool is_swagger_request(const char *url, const WebConfig *config) {
 
 enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
                                      const char *url,
-                                     const WebConfig *config) {
+                                     const WebServerConfig *config) {
     if (!connection || !url || !config) {
         return MHD_NO;
     }
@@ -644,7 +644,7 @@ cleanup:
  * @return Dynamically allocated string with the base URL, or NULL on error
  */
 static char* get_server_url(struct MHD_Connection *connection, 
-                          const WebConfig *config __attribute__((unused))) {
+                          const WebServerConfig *config __attribute__((unused))) {
     // Host header is mandatory in HTTP/1.1
     const char *host = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "Host");
     if (!host) {
@@ -677,7 +677,7 @@ static char* get_server_url(struct MHD_Connection *connection,
  */
 static char* create_dynamic_initializer(const char *base_content __attribute__((unused)), 
                                       const char *server_url,
-                                      const WebConfig *config) {
+                                      const WebServerConfig *config) {
     // Create the new initializer content with server URL update
     char *dynamic_content = NULL;
     if (asprintf(&dynamic_content,
