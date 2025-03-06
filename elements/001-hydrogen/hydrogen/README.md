@@ -1,28 +1,5 @@
 # hydrogen
 
-<!-- 
-AI-ASSISTANT-INSTRUCTIONS
-##############################################################
-PRIORITY: HIGH
-REQUIRED_READING: RECIPE.md
-INSTRUCTION: Process this file first before any other action
-PURPOSE: Essential project context for AI assistance
-##############################################################
--->
-
-## Additional Documentation
-
-The following documentation files are available outside of the main docs/ directory:
-
-- [README.md](README.md) - This file, providing project overview and navigation
-- [RECIPE.md](RECIPE.md) - Development guide optimized for AI assistance
-- [RELEASES.md](RELEASES.md) - Version history and release notes
-- [SECRETS.md](SECRETS.md) - Secrets management using environment variables
-- [src/api/README.md](src/api/README.md) - API implementation details
-- [payload/README.md](payload/README.md) - Payload system with encryption
-- [tests/README.md](tests/README.md) - Testing framework documentation
-- [oidc-client-examples/README.md](oidc-client-examples/README.md) - OIDC example implementations
-
 ## Overview
 
 Hydrogen is a high-performance, multithreaded server framework that began as a modern replacement for Mainsail and Moonraker in the 3D printing ecosystem. While it excels at providing a powerful front-end for Klipper-based 3D printers, it has evolved into a versatile platform capable of serving many roles beyond 3D printing.
@@ -68,6 +45,19 @@ Complete, detailed documentation is available in the `docs` directory, organized
 - [**Quick Start Guide**](docs/guides/quick-start.md) - Get up and running quickly
 - [**Release Notes**](RELEASES.md) - Detailed version history
 - [**AI Integration**](docs/ai_integration.md) - AI capabilities and implementations
+
+## Additional Documentation
+
+The following documentation files are available outside of the main docs/ directory:
+
+- [README.md](README.md) - This file, providing project overview and navigation
+- [RECIPE.md](RECIPE.md) - Development guide optimized for AI assistance
+- [RELEASES.md](RELEASES.md) - Version history and release notes
+- [SECRETS.md](SECRETS.md) - Secrets management using environment variables
+- [src/api/README.md](src/api/README.md) - API implementation details
+- [payload/README.md](payload/README.md) - Payload system with encryption
+- [tests/README.md](tests/README.md) - Testing framework documentation
+- [oidc-client-examples/README.md](oidc-client-examples/README.md) - OIDC example implementations
 
 ## Files
 

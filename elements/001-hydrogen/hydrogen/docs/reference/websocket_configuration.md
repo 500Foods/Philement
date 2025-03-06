@@ -37,6 +37,7 @@ Minimal configuration to enable WebSocket support:
 | `ConnectionTimeouts.ShutdownWaitSeconds` | Graceful shutdown wait time | `2` | Optional |
 | `ConnectionTimeouts.ServiceLoopDelayMs` | Service loop delay | `50` | Optional |
 | `ConnectionTimeouts.ConnectionCleanupMs` | Connection cleanup interval | `500` | Optional |
+| `ConnectionTimeouts.ExitWaitSeconds` | Thread exit timeout during shutdown | `10` | Optional |
 
 ## Common Configurations
 

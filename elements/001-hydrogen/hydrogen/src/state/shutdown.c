@@ -91,18 +91,22 @@
 //    - Prevents multiple shutdown attempts
 void inthandler(int signum) {
     (void)signum;
+    static volatile sig_atomic_t already_shutting_down = 0;
+
+    // Prevent reentrancy or multiple calls to shutdown
+    if (already_shutting_down) {
+        return; // Exit immediately if we're already handling shutdown
+    }
+    already_shutting_down = 1;
 
     printf("\n");  // Keep newline for visual separation
-    log_this("Shutdown", LOG_LINE_BREAK, LOG_LEVEL_INFO);
-    log_this("Shutdown", "Cleaning up and shutting down", LOG_LEVEL_INFO);
 
-    // Start timing the shutdown process
-    record_shutdown_start_time();
+    // Set server state flags to prevent reinitialization
+    server_running = 0; // Stop the main loop
+    server_stopping = 1; // Prevent reinitialization during shutdown
 
-    pthread_mutex_lock(&terminate_mutex);
-    server_running = 0;
-    pthread_cond_broadcast(&terminate_cond);
-    pthread_mutex_unlock(&terminate_mutex);
+    // Call graceful shutdown - this will handle all logging and cleanup
+    graceful_shutdown();
 }
 
 // Stop network service advertisement with connection preservation
@@ -278,7 +282,7 @@ static void shutdown_print_system(void) {
     }
 
     log_this("Shutdown", "Initiating Print Queue shutdown", LOG_LEVEL_INFO);
-    print_queue_shutdown = 1;
+    print_system_shutdown = 1;
     pthread_cond_broadcast(&terminate_cond);
     pthread_join(print_queue_thread, NULL);
     shutdown_print_queue();
@@ -364,18 +368,72 @@ static void free_app_config(void) {
 //    - Resource leak prevention
 //    - Cleanup verification
 void graceful_shutdown(void) {
-    log_this("Shutdown", "Starting graceful shutdown sequence", LOG_LEVEL_INFO);
+    // Prevent multiple shutdown sequences using atomic operation
+    static volatile sig_atomic_t shutdown_in_progress = 0;
+    if (!__sync_bool_compare_and_swap(&shutdown_in_progress, 0, 1)) {
+        // If we couldn't set the flag, shutdown is already in progress
+        return;
+    }
     
-    // Signal all threads that shutdown is imminent
+    // Start shutdown sequence with unified logging
+    log_this("Shutdown", LOG_LINE_BREAK, LOG_LEVEL_INFO);
+    log_this("Shutdown", "Cleaning up and shutting down", LOG_LEVEL_INFO);
+    
+    // Start timing the shutdown process
+    record_shutdown_start_time();
+    
+    // Set all shutdown flags atomically before any operations
+    extern volatile sig_atomic_t server_starting;
+    extern volatile sig_atomic_t mdns_server_system_shutdown;
+    extern volatile sig_atomic_t web_server_shutdown;
+    extern volatile sig_atomic_t websocket_server_shutdown;
+    extern volatile sig_atomic_t print_queue_shutdown;
+    extern volatile sig_atomic_t log_queue_shutdown;
+
+    // First ensure all initialization and startup is blocked
+    log_this("Shutdown", "Setting shutdown flags...", LOG_LEVEL_INFO);
+    
+    // Set core state flags first
+    __sync_bool_compare_and_swap(&server_starting, 1, 0);  // Not in startup mode
+    __sync_bool_compare_and_swap(&server_running, 1, 0);   // Stop main loop
+    __sync_bool_compare_and_swap(&server_stopping, 0, 1);  // Prevent reinitialization
+    __sync_synchronize();  // Memory barrier to ensure core flags are visible
+    
+    // Brief delay to ensure core flags take effect
+    usleep(100000);  // 100ms delay
+    
+    // Set all component shutdown flags atomically
+    __sync_bool_compare_and_swap(&mdns_server_system_shutdown, 0, 1);  // Stop mDNS Server
+    __sync_bool_compare_and_swap(&web_server_shutdown, 0, 1);          // Stop web server
+    __sync_bool_compare_and_swap(&websocket_server_shutdown, 0, 1);    // Stop websocket server
+    __sync_bool_compare_and_swap(&print_queue_shutdown, 0, 1);         // Stop print queue
+    __sync_synchronize();  // Memory barrier to ensure component flags are visible
+    
+    // Signal all threads to check shutdown flags
+    log_this("Shutdown", "Notifying all threads of shutdown...", LOG_LEVEL_INFO);
     pthread_mutex_lock(&terminate_mutex);
-    server_running = 0;
-    server_stopping = 1;
     pthread_cond_broadcast(&terminate_cond);
     pthread_mutex_unlock(&terminate_mutex);
-
-    // First stop accepting new connections/requests
+    
+    // Longer delay to ensure all threads notice shutdown flags
+    usleep(500000);  // 500ms delay
+    
+    // Now proceed with orderly shutdown, starting with mDNS Server
     log_this("Shutdown", "Stopping mDNS Server service...", LOG_LEVEL_INFO);
+    
+    // Update thread metrics to check mDNS Server thread status
+    update_service_thread_metrics(&mdns_server_threads);
+    if (mdns_server_threads.thread_count > 0) {
+        log_this("Shutdown", "Waiting for mDNS Server threads to exit...", LOG_LEVEL_INFO);
+        // Additional delay if threads are still active
+        usleep(250000);  // 250ms delay
+    }
+    
+    // Now shutdown the mDNS Server
     shutdown_mdns_server_system();
+    
+    // Brief delay to ensure mDNS Server is fully stopped
+    usleep(250000);  // 250ms delay
     
     log_this("Shutdown", "Stopping web services...", LOG_LEVEL_INFO);
     shutdown_web_systems();
@@ -476,19 +534,23 @@ void graceful_shutdown(void) {
         log_this("Shutdown", "All non-logging threads exited successfully", LOG_LEVEL_INFO);
     }
 
-    // Now safe to stop logging
-    log_this("Shutdown", "Shutting down logging system", LOG_LEVEL_INFO);
+    // Log final status before shutting down logging
+    log_this("Shutdown", "Preparing to shut down logging system", LOG_LEVEL_INFO);
+    
+    // Ensure all previous messages are queued
+    usleep(100000);  // 100ms delay
+    
+    // Signal logging thread to stop accepting new messages
     pthread_mutex_lock(&terminate_mutex);
     log_queue_shutdown = 1;
     pthread_cond_broadcast(&terminate_cond);
     pthread_mutex_unlock(&terminate_mutex);
     
-    // Wait for log thread to finish processing remaining messages
-    log_this("Shutdown", "Waiting for log queue to drain...", LOG_LEVEL_INFO);
-    pthread_join(log_thread, NULL);
+    // Give the logging thread time to process final messages
+    usleep(250000);  // 250ms delay
     
-    // Wait for any pending log operations
-    usleep(500000);  // 500ms delay
+    // Now safe to join the logging thread
+    pthread_join(log_thread, NULL);
     
     // Update all thread metrics one final time
     update_service_thread_metrics(&logging_threads);

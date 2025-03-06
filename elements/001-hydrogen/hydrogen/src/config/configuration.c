@@ -1289,12 +1289,25 @@ AppConfig* load_config(const char* config_path) {
         json_t* max_message_size = json_object_get(websocket, "MaxMessageSize");
         config->websocket.max_message_size = get_config_size(max_message_size, 10 * 1024 * 1024);  // Default to 10 MB if not specified
 
+        // Process ConnectionTimeouts section
+        json_t* connection_timeouts = json_object_get(websocket, "ConnectionTimeouts");
+        if (json_is_object(connection_timeouts)) {
+            // Process ExitWaitSeconds
+            json_t* exit_wait_seconds = json_object_get(connection_timeouts, "ExitWaitSeconds");
+            config->websocket.exit_wait_seconds = get_config_int(exit_wait_seconds, 10);  // Default to 10 seconds
+            log_this("Configuration", "WebSocket Exit Wait Seconds: %d", LOG_LEVEL_INFO, config->websocket.exit_wait_seconds);
+        } else {
+            // Default value if ConnectionTimeouts section is missing
+            config->websocket.exit_wait_seconds = 10;
+        }
+
     } else {
         // Use defaults if websocket section is missing
         config->websocket.port = DEFAULT_WEBSOCKET_PORT;
         config->websocket.key = strdup("default_key");
         config->websocket.protocol = strdup("hydrogen-protocol");
         config->websocket.max_message_size = 10 * 1024 * 1024;  // Default to 10 MB
+        config->websocket.exit_wait_seconds = 10;  // Default to 10 seconds
     }
 
     // mDNS Server Configuration
