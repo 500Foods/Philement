@@ -19,7 +19,7 @@
 #include <ctype.h>
 
 // Project headers
-#include "configuration_env.h"
+#include "config_env.h"
 #include "../logging/logging.h"
 
 json_t* process_env_variable(const char* value) {

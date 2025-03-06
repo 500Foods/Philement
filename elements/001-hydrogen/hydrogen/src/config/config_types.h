@@ -6,8 +6,8 @@
  * environment variable support.
  */
 
-#ifndef CONFIGURATION_TYPES_H
-#define CONFIGURATION_TYPES_H
+#ifndef CONFIG_TYPES_H
+#define CONFIG_TYPES_H
 
 #include <jansson.h>
 #include <stddef.h>
@@ -89,4 +89,4 @@ size_t get_config_size(json_t* value, size_t default_value);
  */
 double get_config_double(json_t* value, double default_value);
 
-#endif /* CONFIGURATION_TYPES_H */
+#endif /* CONFIG_TYPES_H */

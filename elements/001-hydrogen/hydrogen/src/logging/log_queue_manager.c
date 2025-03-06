@@ -107,7 +107,8 @@
 #include "log_queue_manager.h"
 #include "logging.h"
 #include "../queue/queue.h"
-#include "../config/configuration.h"
+#include "../config/config.h"
+#include "../config/config_priority.h"
 #include "../utils/utils.h"
 
 // Public interface declarations

@@ -20,7 +20,7 @@
 #define ID_LEN 5                // Balance of uniqueness and readability
 
 // Include configuration for label widths
-#include "../config/configuration.h"
+#include "../config/config.h"
 
 // ID generation function
 void generate_id(char *buf, size_t len);

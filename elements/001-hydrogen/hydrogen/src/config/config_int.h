@@ -6,8 +6,8 @@
  * environment variable support.
  */
 
-#ifndef CONFIGURATION_INT_H
-#define CONFIGURATION_INT_H
+#ifndef CONFIG_INT_H
+#define CONFIG_INT_H
 
 #include <jansson.h>
 
@@ -35,4 +35,4 @@
  */
 int get_config_int(json_t* value, int default_value);
 
-#endif /* CONFIGURATION_INT_H */
+#endif /* CONFIG_INT_H */

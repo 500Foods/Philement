@@ -18,7 +18,7 @@
 #include "../queue/queue.h"
 #include "../logging/log_queue_manager.h"
 #include "../utils/utils_queue.h"
-#include "../config/configuration.h"
+#include "../config/config.h"
 
 // Forward declarations
 extern void update_queue_limits_from_config(const AppConfig *config);
