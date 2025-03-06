@@ -472,12 +472,18 @@ void stop_websocket_server()
         pthread_cond_broadcast(&ws_context->cond);
         pthread_mutex_unlock(&ws_context->mutex);
         
-        // Wait for server thread with increased timeout
+        // Get configurable exit wait timeout from config
+        extern AppConfig *app_config;
+        int exit_wait = app_config->websocket.exit_wait_seconds > 0 ? 
+                      app_config->websocket.exit_wait_seconds : 10; // Default to 10s if not set
+        
+        // Wait for server thread with configurable timeout
         struct timespec ts;
         clock_gettime(CLOCK_REALTIME, &ts);
-        ts.tv_sec += 10;  // Increased timeout to 10 seconds
+        ts.tv_sec += exit_wait;
         
-        log_this("WebSocket", "Waiting for server thread to exit (timeout: 10s)", LOG_LEVEL_INFO);
+        log_this("WebSocket", "Waiting for server thread to exit (timeout: %ds)", 
+                 LOG_LEVEL_INFO, exit_wait);
         int join_result = pthread_timedjoin_np(ws_context->server_thread, NULL, &ts);
         
         if (join_result == ETIMEDOUT) {

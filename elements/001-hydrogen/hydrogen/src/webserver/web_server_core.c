@@ -77,15 +77,39 @@ void add_cors_headers(struct MHD_Response *response) {
 }
 
 bool init_web_server(WebConfig *web_config) {
+    // Check all shutdown flags atomically
+    extern volatile sig_atomic_t server_stopping;
+    extern volatile sig_atomic_t web_server_shutdown;
+    
+    // Prevent initialization during shutdown
+    if (server_stopping || web_server_shutdown) {
+        log_this("WebServer", "Cannot initialize web server during shutdown", LOG_LEVEL_INFO);
+        return false;
+    }
+
+    // Check if we're already initialized
+    if (web_daemon != NULL) {
+        log_this("WebServer", "Web server already initialized", LOG_LEVEL_WARN);
+        return false;
+    }
+
+    // Double-check shutdown state before proceeding
+    if (server_stopping || web_server_shutdown) {
+        log_this("WebServer", "Shutdown initiated, aborting web server initialization", LOG_LEVEL_INFO);
+        return false;
+    }
+
+    // Store config only after checks pass
     server_web_config = web_config;
 
     // Check port availability before initializing resources
     if (!is_port_available(web_config->port, web_config->enable_ipv6)) {
         log_this("WebServer", "Port %u is not available", LOG_LEVEL_ERROR, web_config->port);
+        server_web_config = NULL;  // Reset config on failure
         return false;
     }
 
-    log_this("WebServer", "Initializing web server", LOG_LEVEL_INFO);
+    log_this("WebServer", "Starting web server initialization", LOG_LEVEL_INFO);
     if (web_config->enable_ipv6) {
         log_this("WebServer", "IPv6 support enabled", LOG_LEVEL_INFO);
     }
@@ -151,11 +175,51 @@ bool init_web_server(WebConfig *web_config) {
 void* run_web_server(void* arg) {
     (void)arg; // Unused parameter
 
+    // Check all shutdown flags atomically
+    extern volatile sig_atomic_t server_stopping;
+    extern volatile sig_atomic_t server_starting;
+    extern volatile sig_atomic_t web_server_shutdown;
+    
+    // Prevent initialization during any shutdown state
+    if (server_stopping || web_server_shutdown) {
+        log_this("WebServer", "Cannot start web server during shutdown", LOG_LEVEL_INFO);
+        return NULL;
+    }
+
+    // Only proceed if we're in startup phase
+    if (!server_starting) {
+        log_this("WebServer", "Cannot start web server outside startup phase", LOG_LEVEL_INFO);
+        return NULL;
+    }
+
+    // Check if we already have a daemon running
+    if (web_daemon != NULL) {
+        log_this("WebServer", "Web server daemon already exists", LOG_LEVEL_WARN);
+        return NULL;
+    }
+
+    // Double-check shutdown state before proceeding with resource allocation
+    if (server_stopping || web_server_shutdown) {
+        log_this("WebServer", "Shutdown initiated, aborting web server startup", LOG_LEVEL_INFO);
+        return NULL;
+    }
+
+    // Triple-check shutdown state before thread registration
+    if (server_stopping || web_server_shutdown || !server_starting) {
+        log_this("WebServer", "Invalid system state, aborting web server startup", LOG_LEVEL_INFO);
+        return NULL;
+    }
+
     log_this("WebServer", "Starting web server", LOG_LEVEL_INFO);
 
-    // Register main web server thread
+    // Register thread only if we're still in startup
     extern ServiceThreads web_threads;
-    add_service_thread(&web_threads, pthread_self());
+    if (server_starting && !server_stopping && !web_server_shutdown) {
+        add_service_thread(&web_threads, pthread_self());
+    } else {
+        log_this("WebServer", "Skipping thread registration - system state changed", LOG_LEVEL_INFO);
+        return NULL;
+    }
     
     // Use internal polling thread with thread pool
     unsigned int flags = MHD_USE_INTERNAL_POLLING_THREAD;
@@ -181,7 +245,9 @@ void* run_web_server(void* arg) {
                                 MHD_OPTION_THREAD_STACK_SIZE, (1024 * 1024), // 1MB stack size
                                 MHD_OPTION_END);
     if (web_daemon == NULL) {
-        log_this("WebServer", "Failed to start web server", LOG_LEVEL_ERROR);
+        log_this("WebServer", "Failed to start web server daemon", LOG_LEVEL_ERROR);
+        server_web_config = NULL;  // Reset config on failure
+        log_this("WebServer", "Web server initialization failed", LOG_LEVEL_DEBUG);
         return NULL;
     }
 
@@ -212,7 +278,12 @@ void* run_web_server(void* arg) {
 }
 
 void shutdown_web_server(void) {
-    log_this("WebServer", "Shutdown: Shutting down web server", LOG_LEVEL_INFO);
+    // Set shutdown flag first to prevent reinitialization
+    extern volatile sig_atomic_t web_server_shutdown;
+    __sync_bool_compare_and_swap(&web_server_shutdown, 0, 1);
+    __sync_synchronize();  // Memory barrier
+
+    log_this("WebServer", "Shutdown: Initiating web server shutdown", LOG_LEVEL_INFO);
     
     // Clean up Swagger resources if enabled
     if (server_web_config && server_web_config->swagger.enabled) {
@@ -220,13 +291,20 @@ void shutdown_web_server(void) {
         log_this("WebServer", "Swagger UI resources cleaned up", LOG_LEVEL_INFO);
     }
     
+    // Stop the web server daemon
     if (web_daemon != NULL) {
+        log_this("WebServer", "Stopping web server daemon", LOG_LEVEL_INFO);
         MHD_stop_daemon(web_daemon);
         web_daemon = NULL;
-        log_this("WebServer", "Web server shut down successfully", LOG_LEVEL_INFO);
+        log_this("WebServer", "Web server daemon stopped", LOG_LEVEL_INFO);
     } else {
         log_this("WebServer", "Web server was not running", LOG_LEVEL_INFO);
     }
+
+    // Clear configuration
+    server_web_config = NULL;
+
+    log_this("WebServer", "Web server shutdown complete", LOG_LEVEL_INFO);
 }
 
 const char* get_upload_path(void) {

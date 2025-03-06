@@ -1,8 +1,66 @@
 # ──────────────────────────────────────────────────────────────────────────────
 # Hydrogen Build System Configuration
 # ──────────────────────────────────────────────────────────────────────────────
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Build Variants Overview
+# ──────────────────────────────────────────────────────────────────────────────
+# 1. Default Build (make)
+#    Directory: build/
+#    Purpose: Standard development
+#    Features:
+#    - O2 optimization level
+#    - Full warnings enabled
+#    - C17 standard support
+#    - Balance of performance and debugging
+#    Use when: Day-to-day development
 #
-# Build strategy prioritizes:
+# 2. Debug Build (make debug)
+#    Directory: build_debug/
+#    Purpose: Bug finding and analysis
+#    Features:
+#    - Debug symbols enabled (-g)
+#    - Address Sanitizer integration
+#    - Stack frame pointers preserved
+#    - No optimization for better debugging
+#    Use when: Tracking down bugs or memory issues
+#
+# 3. Valgrind Build (make valgrind)
+#    Directory: build_valgrind/
+#    Purpose: Memory analysis
+#    Features:
+#    - Debug symbols enabled (-g)
+#    - Valgrind-compatible compilation
+#    - No sanitizers (unlike debug build)
+#    Use when: Deep memory analysis needed
+#
+# 4. Release Build (make release)
+#    Directory: build_release/
+#    Purpose: Production deployment
+#    Features:
+#    - Stripped symbols
+#    - Maximum compatibility (x86-64)
+#    - Link-time optimization
+#    - Stack protection enabled
+#    - UPX compression
+#    - Encrypted payload included
+#    Use when: Building for production/distribution
+#
+# 5. Performance Build (make perf)
+#    Directory: build_perf/
+#    Purpose: Maximum speed
+#    Features:
+#    - O3 optimization level
+#    - Native architecture tuning
+#    - Fast math operations
+#    - Function inlining
+#    - Loop unrolling
+#    - Link-time optimization
+#    Use when: Need maximum runtime performance
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Build Strategy Priorities
+# ──────────────────────────────────────────────────────────────────────────────
 # 1. Code Quality
 #    - Modern C17 standard for latest features
 #    - Strict warning flags for code quality
@@ -27,6 +85,49 @@
 #    - Version management
 #    - Deployment preparation
 #    - Binary compression for minimal footprint
+#
+# ──────────────────────────────────────────────────────────────────────────────
+# External Dependencies
+# ──────────────────────────────────────────────────────────────────────────────
+# 1. Core System Libraries
+#    - pthread (-lpthread)
+#      • POSIX thread support for concurrent operations
+#      • Thread creation, synchronization, and management
+#      • Mutex and condition variable implementations
+#    
+#    - math (-lm)
+#      • Standard C math library
+#      • Mathematical operations and calculations
+#
+# 2. Data Processing
+#    - jansson (-ljansson)
+#      • Fast, reliable JSON parsing and generation
+#      • Memory-safe object handling
+#      • Structured data manipulation
+#
+#    - brotli (-lbrotlienc, -lbrotlidec)
+#      • High-quality compression algorithm
+#      • Encoder for compressing data (-lbrotlienc)
+#      • Decoder for decompressing data (-lbrotlidec)
+#
+# 3. Network Communication
+#    - microhttpd (-lmicrohttpd)
+#      • Lightweight embedded HTTP server
+#      • RESTful API endpoint handling
+#      • HTTP/1.1 protocol implementation
+#
+#    - websockets (-lwebsockets)
+#      • Full-duplex WebSocket communication
+#      • Real-time messaging capabilities
+#      • Automatic connection management
+#
+# 4. Security and Encryption
+#    - OpenSSL (-lssl, -lcrypto)
+#      • TLS/SSL protocol implementation (-lssl)
+#      • Cryptographic functions (-lcrypto)
+#      • Secure communication channels
+#      • Certificate handling
+#      • Random number generation
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Terminal formatting codes
@@ -68,29 +169,6 @@ CFLAGS = -std=c17 -Wall -Wextra -pedantic -O2 -DVERSION=\"$(VERSION)\" -DRELEASE
 # ──────────────────────────────────────────────────────────────────────────────
 # External Dependencies
 # ──────────────────────────────────────────────────────────────────────────────
-#
-# Library selection rationale:
-# 1. Core Functionality
-#    - jansson: Efficient JSON handling with memory safety
-#    - pthread: POSIX thread support for concurrency
-#    - microhttpd: Lightweight embedded HTTP server
-#
-# 2. Security
-#    - ssl/crypto: Industry-standard encryption
-#    - Memory safety features
-#    - Secure random number generation
-#
-# 3. Communication
-#    - websockets: Full-duplex realtime messaging
-#    - Efficient binary protocol support
-#    - Automatic connection management
-#
-# 4. Build Variants
-#    - Dynamic linking (default): Standard shared library usage
-#    - Debug builds for development
-#    - Valgrind builds for memory checking
-#    - Release builds for deployment with maximum optimization
-
 LDFLAGS = -ljansson -lpthread -lmicrohttpd -lm -lssl -lcrypto -lwebsockets -lbrotlienc -lbrotlidec
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -125,7 +203,7 @@ PERF_TARGET = hydrogen_perf
 # ──────────────────────────────────────────────────────────────────────────────
 # Phony targets (don't create files with these names)
 # ──────────────────────────────────────────────────────────────────────────────
-.PHONY: all clean debug valgrind release perf all-variants payload
+.PHONY: all clean debug valgrind release perf
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Default target: only build the standard variant
@@ -136,7 +214,7 @@ default: $(TARGET)
 # ──────────────────────────────────────────────────────────────────────────────
 # Build all variants at once
 # ──────────────────────────────────────────────────────────────────────────────
-all: clean default debug valgrind release perf
+all: clean default debug valgrind release perf payload
 	@printf "\n$(BLUE)────────────────────────────────────────────────────────────────$(NORMAL)\n"
 	@printf "$(GREEN)$(PASS) $(BOLD)All variants built successfully:$(NORMAL)\n"
 	@printf "  $(CYAN)$(INFO)  Default:     $(BOLD)$(TARGET)$(NORMAL)\n"
@@ -145,9 +223,6 @@ all: clean default debug valgrind release perf
 	@printf "  $(CYAN)$(INFO)  Release:     $(BOLD)$(RELEASE_TARGET)$(NORMAL)\n"
 	@printf "  $(CYAN)$(INFO)  Performance: $(BOLD)$(PERF_TARGET)$(NORMAL)\n"
 	@printf "$(BLUE)────────────────────────────────────────────────────────────────$(NORMAL)\n"
-
-# Legacy target for backward compatibility
-all-variants: all
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Payload generation (including Swagger documentation)
@@ -181,7 +256,6 @@ release: $(RELEASE_TARGET) payload
 	chmod +x $(RELEASE_TARGET)
 	@printf "$(GREEN)$(PASS) $(BOLD)Release build with encrypted payload appended successfully!$(NORMAL)\n"
 	@printf "$(BLUE)────────────────────────────────────────────────────────────────$(NORMAL)\n"
-
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Debug build: includes Address Sanitizer and debug symbols
@@ -232,7 +306,6 @@ $(PERF_TARGET): $(PERF_OBJS)
 	@printf "$(CYAN)$(INFO)  Linking performance-optimized build...$(NORMAL)\n"
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-
 # ──────────────────────────────────────────────────────────────────────────────
 # Compilation rules for object files
 # ──────────────────────────────────────────────────────────────────────────────
@@ -260,7 +333,6 @@ $(PERF_DIR)/%.o: $(SRC_DIR)/%.c | $(PERF_DIR)
 	@mkdir -p $(dir $@)
 	@printf "$(CYAN)Compiling$(NORMAL) [Performance] $<\n"
 	@$(CC) $(CFLAGS) -c -o $@ $<
-
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Create build directories if they don't exist
@@ -300,5 +372,6 @@ $(shell mkdir -p $(sort $(dir $(OBJS)) $(dir $(DEBUG_OBJS)) $(dir $(VALGRIND_OBJ
 # ──────────────────────────────────────────────────────────────────────────────
 clean:
 	@printf "$(CYAN)$(INFO)  Cleaning all build artifacts...$(NORMAL)\n"
-	@rm -rf $(BUILD_DIR) $(DEBUG_DIR) $(VALGRIND_DIR) $(RELEASE_DIR) $(PERF_DIR) $(TARGET) $(DEBUG_TARGET) $(VALGRIND_TARGET) $(RELEASE_TARGET) $(PERF_TARGET)
+	@rm -rf $(BUILD_DIR) $(DEBUG_DIR) $(VALGRIND_DIR) $(RELEASE_DIR) $(PERF_DIR) 
+	@rm -rf $(TARGET) $(DEBUG_TARGET) $(VALGRIND_TARGET) $(RELEASE_TARGET) $(PERF_TARGET)
 	@printf "$(GREEN)$(PASS) Clean completed successfully$(NORMAL)\n"

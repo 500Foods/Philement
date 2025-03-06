@@ -241,6 +241,7 @@ typedef struct {
     char *key;             // Authentication key
     char *protocol;        // WebSocket subprotocol identifier
     size_t max_message_size;// Message size limit for memory safety
+    int exit_wait_seconds;  // Wait time in seconds before forcing thread exit
 } WebSocketConfig;
 
 /*
