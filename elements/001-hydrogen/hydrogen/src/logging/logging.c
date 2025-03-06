@@ -54,7 +54,8 @@
 
 // Project headers
 #include "logging.h"
-#include "../config/configuration.h"
+#include "../config/config.h"
+#include "../config/config_priority.h"
 #include "../queue/queue.h"
 #include "../utils/utils.h"
 

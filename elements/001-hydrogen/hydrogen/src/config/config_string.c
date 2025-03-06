@@ -15,8 +15,8 @@
 #include <stdbool.h>
 
 // Project headers
-#include "configuration_string.h"
-#include "configuration_env.h"
+#include "config_string.h"
+#include "config_env.h"
 #include "../logging/logging.h"
 
 char* get_config_string(json_t* value, const char* default_value) {

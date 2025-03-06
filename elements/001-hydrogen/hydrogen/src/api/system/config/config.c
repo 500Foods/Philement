@@ -23,7 +23,7 @@
 #include "config.h"
 #include "../../../api/api_utils.h"
 #include "../../../logging/logging.h"
-#include "../../../config/configuration.h"
+#include "../../../config/config.h"
 
 enum MHD_Result handle_system_config_request(struct MHD_Connection *connection,
                                            const char *method,

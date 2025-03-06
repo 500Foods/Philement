@@ -16,7 +16,7 @@
 #include "../logging/logging.h"
 #include "../utils/utils_time.h"
 #include "../utils/utils_logging.h"
-#include "../config/configuration.h"
+#include "../config/config.h"
 
 // Global configuration
 extern AppConfig* app_config;

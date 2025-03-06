@@ -5,11 +5,24 @@
  * Structures are organized by subsystem for clarity and maintainability.
  */
 
-#ifndef CONFIGURATION_STRUCTS_H
-#define CONFIGURATION_STRUCTS_H
+#ifndef CONFIG_STRUCTS_H
+#define CONFIG_STRUCTS_H
 
 #include <jansson.h>
 #include "../mdns/mdns_server.h"  // For mdns_server_service_t
+#include "config_forward.h"       // For AppConfig forward declaration
+
+// Queue system defaults
+#define DEFAULT_MAX_QUEUE_BLOCKS 1024
+#define DEFAULT_QUEUE_HASH_SIZE 256
+#define DEFAULT_QUEUE_CAPACITY 1000
+#define DEFAULT_MESSAGE_BUFFER_SIZE 4096
+#define DEFAULT_MAX_LOG_MESSAGE_SIZE 1024
+#define DEFAULT_LINE_BUFFER_SIZE 256
+#define DEFAULT_POST_PROCESSOR_BUFFER_SIZE (64 * 1024)
+#define DEFAULT_LOG_BUFFER_SIZE (32 * 1024)
+#define DEFAULT_JSON_MESSAGE_SIZE 8192
+#define DEFAULT_LOG_ENTRY_SIZE 512
 
 // Web server configuration
 typedef struct {
@@ -247,7 +260,7 @@ typedef struct {
 } LoggingConfig;
 
 // Main application configuration
-typedef struct {
+struct AppConfig {
     char* config_file;
     char* executable_path;
     char* server_name;
@@ -265,6 +278,6 @@ typedef struct {
     OIDCConfig oidc;
     APIConfig api;
     LoggingConfig Logging;
-} AppConfig;
+};
 
-#endif /* CONFIGURATION_STRUCTS_H */
+#endif /* CONFIG_STRUCTS_H */

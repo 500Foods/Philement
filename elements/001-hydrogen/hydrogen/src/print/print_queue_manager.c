@@ -82,7 +82,7 @@
 // Project headers
 #include "print_queue_manager.h"
 #include "../queue/queue.h"
-#include "../config/configuration.h"
+#include "../config/config.h"
 #include "../logging/logging.h"
 #include "../utils/utils.h"
 

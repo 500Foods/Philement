@@ -19,10 +19,10 @@
 #include <time.h>
 
 // Project Libraries
-#include "../config/configuration.h"
+#include "../config/config.h"
 #include "../logging/logging.h"
 
-// OIDCConfig is defined in ../config/configuration.h
+// OIDCConfig is defined in ../config/config.h
 // No need to redefine it here
 
 /*

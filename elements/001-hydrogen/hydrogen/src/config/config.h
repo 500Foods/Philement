@@ -28,8 +28,8 @@
  * - Configuration versioning
  */
 
-#ifndef CONFIGURATION_H
-#define CONFIGURATION_H
+#ifndef CONFIG_H
+#define CONFIG_H
 
 // Core system headers
 #include <sys/types.h>
@@ -41,12 +41,12 @@
 #endif
 
 // Project headers for type-specific handling
-#include "configuration_env.h"
-#include "configuration_string.h"
-#include "configuration_bool.h"
-#include "configuration_int.h"
-#include "configuration_size.h"
-#include "configuration_double.h"
+#include "config_env.h"
+#include "config_string.h"
+#include "config_bool.h"
+#include "config_int.h"
+#include "config_size.h"
+#include "config_double.h"
 
 // Default values
 #define DEFAULT_SERVER_NAME "Philement/hydrogen"
@@ -56,18 +56,6 @@
 #define DEFAULT_UPLOAD_PATH "/api/upload"
 #define DEFAULT_UPLOAD_DIR "/tmp/hydrogen_uploads"
 #define DEFAULT_MAX_UPLOAD_SIZE (2ULL * 1024 * 1024 * 1024)  // 2GB
-
-// Queue system defaults
-#define DEFAULT_MAX_QUEUE_BLOCKS 1024
-#define DEFAULT_QUEUE_HASH_SIZE 256
-#define DEFAULT_QUEUE_CAPACITY 1000
-#define DEFAULT_MESSAGE_BUFFER_SIZE 4096
-#define DEFAULT_MAX_LOG_MESSAGE_SIZE 1024
-#define DEFAULT_LINE_BUFFER_SIZE 256
-#define DEFAULT_POST_PROCESSOR_BUFFER_SIZE (64 * 1024)
-#define DEFAULT_LOG_BUFFER_SIZE (32 * 1024)
-#define DEFAULT_JSON_MESSAGE_SIZE 8192
-#define DEFAULT_LOG_ENTRY_SIZE 512
 
 // File descriptor defaults
 #define DEFAULT_FD_TYPE_SIZE 32        // Size for file descriptor type strings
@@ -101,22 +89,8 @@
 #define DEFAULT_MAX_SPEED_Z 10.0
 #define DEFAULT_Z_VALUES_CHUNK 1000
 
-// Priority level definitions
-#define NUM_PRIORITY_LEVELS 7
-
-// Priority label width for formatting
-extern int MAX_PRIORITY_LABEL_WIDTH;
-extern int MAX_SUBSYSTEM_LABEL_WIDTH;
-
-typedef struct {
-    int value;
-    const char* label;
-} PriorityLevel;
-
-extern const PriorityLevel DEFAULT_PRIORITY_LEVELS[NUM_PRIORITY_LEVELS];
-
 // Configuration structures
-#include "configuration_structs.h"
+#include "config_structs.h"
 
 /*
  * Get the current application configuration
@@ -154,34 +128,4 @@ AppConfig* load_config(const char* config_path);
  */
 void create_default_config(const char* config_path);
 
-/*
- * Get executable path with robust error handling
- * 
- * @return Newly allocated string with path or NULL on error
- */
-char* get_executable_path(void);
-
-/*
- * Get file size with proper error detection
- * 
- * @param filename Path to the file
- * @return File size or -1 on error
- */
-long get_file_size(const char* filename);
-
-/*
- * Get file modification time in human-readable format
- * 
- * @param filename Path to the file
- * @return Newly allocated string with timestamp or NULL on error
- */
-char* get_file_modification_time(const char* filename);
-
-/*
- * Calculate maximum width of priority labels
- * 
- * Updates the global MAX_PRIORITY_LABEL_WIDTH variable
- */
-void calculate_max_priority_label_width(void);
-
-#endif /* CONFIGURATION_H */
+#endif /* CONFIG_H */

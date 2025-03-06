@@ -23,7 +23,7 @@
 // Project headers
 #include "web_server_payload.h"
 #include "../logging/logging.h"
-#include "../config/configuration.h"
+#include "../config/config.h"
 
 // Static function declarations
 static bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size,

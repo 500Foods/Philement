@@ -12,7 +12,7 @@
 
 // Project headers
 #include "utils_logging.h"
-#include "../config/configuration.h"
+#include "../config/config.h"
 #include "../logging/logging.h"
 
 // Thread-safe identifier generation with collision resistance

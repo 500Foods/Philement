@@ -31,7 +31,7 @@
 #include "test.h"
 #include "../../../api/api_utils.h"
 #include "../../../logging/logging.h"
-#include "../../../config/configuration.h"
+#include "../../../config/config.h"
 #include "../../../webserver/web_server_core.h"
 
 /**

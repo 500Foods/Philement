@@ -17,8 +17,8 @@
 #include <stdint.h>
 
 // Project headers
-#include "configuration_size.h"
-#include "configuration_env.h"
+#include "config_size.h"
+#include "config_env.h"
 #include "../logging/logging.h"
 
 size_t get_config_size(json_t* value, size_t default_value) {

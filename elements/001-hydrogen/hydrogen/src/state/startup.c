@@ -39,6 +39,7 @@
 #include "../queue/queue.h"
 #include "../utils/utils.h"
 #include "../utils/utils_dependency.h"
+#include "../config/config_filesystem.h"
 
 // Subsystem startup headers
 #include "startup_logging.h"

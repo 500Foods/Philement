@@ -26,7 +26,7 @@
 #include <jansson.h>
 
 // Project headers
-#include "../../../config/configuration.h"
+#include "../../../config/config.h"
 #include "../../../state/state.h"
 
 /**

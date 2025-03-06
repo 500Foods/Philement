@@ -13,7 +13,7 @@
 
 #include <jansson.h>
 #include <time.h>
-#include "../config/configuration.h"
+#include "../config/config.h"
 
 // File descriptor information structure
 typedef struct {

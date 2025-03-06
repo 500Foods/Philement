@@ -15,8 +15,8 @@
 #include <strings.h>  // For strcasecmp
 
 // Project headers
-#include "configuration_bool.h"
-#include "configuration_env.h"
+#include "config_bool.h"
+#include "config_env.h"
 #include "../logging/logging.h"
 
 int get_config_bool(json_t* value, int default_value) {

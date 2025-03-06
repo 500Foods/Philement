@@ -49,7 +49,8 @@
 #include <pthread.h>
 
 // Project headers
-#include "../config/configuration.h"
+#include "../config/config_forward.h"  // For AppConfig type
+#include "../config/config.h"          // For config functions
 #include "../mdns/mdns_server.h"
 #include "../network/network.h"
 #include "../utils/utils_threads.h"

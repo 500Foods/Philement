@@ -17,8 +17,8 @@
 #include <math.h>
 
 // Project headers
-#include "configuration_double.h"
-#include "configuration_env.h"
+#include "config_double.h"
+#include "config_env.h"
 #include "../logging/logging.h"
 
 /*

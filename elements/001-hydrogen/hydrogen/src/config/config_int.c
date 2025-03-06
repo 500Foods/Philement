@@ -16,8 +16,8 @@
 #include <limits.h>
 
 // Project headers
-#include "configuration_int.h"
-#include "configuration_env.h"
+#include "config_int.h"
+#include "config_env.h"
 #include "../logging/logging.h"
 
 int get_config_int(json_t* value, int default_value) {

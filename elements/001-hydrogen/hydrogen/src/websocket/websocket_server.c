@@ -31,7 +31,7 @@
 #include "websocket_server.h"
 #include "websocket_server_internal.h"
 #include "../logging/logging.h"
-#include "../config/configuration.h"
+#include "../config/config.h"
 #include "../utils/utils.h"
 
 // Global server context

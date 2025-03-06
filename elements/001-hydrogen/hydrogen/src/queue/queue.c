@@ -53,7 +53,7 @@
 // Project headers
 #include "queue.h"
 #include "../logging/logging.h"
-#include "../config/configuration.h"
+#include "../config/config.h"
 
 // External configuration
 extern AppConfig *app_config;

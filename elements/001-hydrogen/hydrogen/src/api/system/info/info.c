@@ -28,7 +28,7 @@
 
 // Project headers
 #include "info.h"
-#include "../../../config/configuration.h"
+#include "../../../config/config.h"
 #include "../../../state/state.h"
 #include "../../../logging/logging.h"
 #include "../../../utils/utils.h"

@@ -12,7 +12,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include "../config/configuration.h"
+#include "../config/config.h"
 
 // Structure to hold extracted payload data
 typedef struct {
