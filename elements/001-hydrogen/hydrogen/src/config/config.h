@@ -40,57 +40,56 @@
 #define VERSION "0.1.0"
 #endif
 
-// Project headers for type-specific handling
+// Forward declarations for all configuration types
+#include "config_forward.h"
+
+// Subsystem configurations with struct definitions
+#include "config_webserver.h"
+#include "config_websocket.h"
+#include "config_network.h"
+#include "config_monitoring.h"
+#include "config_print_queue.h"
+#include "config_oidc.h"
+#include "config_resources.h"
+#include "config_mdns.h"
+#include "config_logging.h"
+#include "config_api.h"
+#include "config_motion.h"
+
+// Type-specific handling
 #include "config_env.h"
 #include "config_string.h"
 #include "config_bool.h"
 #include "config_int.h"
 #include "config_size.h"
 #include "config_double.h"
+#include "config_fd.h"
 
-// Default values
+// Core application defaults
 #define DEFAULT_SERVER_NAME "Philement/hydrogen"
-#define DEFAULT_LOG_FILE "/var/log/hydrogen.log"
-#define DEFAULT_WEB_PORT 5000
-#define DEFAULT_WEBSOCKET_PORT 5001
-#define DEFAULT_UPLOAD_PATH "/api/upload"
-#define DEFAULT_UPLOAD_DIR "/tmp/hydrogen_uploads"
-#define DEFAULT_MAX_UPLOAD_SIZE (2ULL * 1024 * 1024 * 1024)  // 2GB
+#define DEFAULT_CONFIG_FILE "/etc/hydrogen/hydrogen.json"
+// Log file path is defined in config_logging_file.h
 
-// File descriptor defaults
-#define DEFAULT_FD_TYPE_SIZE 32        // Size for file descriptor type strings
-#define DEFAULT_FD_DESCRIPTION_SIZE 128 // Size for file descriptor descriptions
-
-// Network defaults
-#define DEFAULT_MAX_INTERFACES 16
-#define DEFAULT_MAX_IPS_PER_INTERFACE 8
-#define DEFAULT_MAX_INTERFACE_NAME_LENGTH 16
-#define DEFAULT_MAX_IP_ADDRESS_LENGTH 40
-
-// System monitoring defaults
-#define DEFAULT_STATUS_UPDATE_MS 1000
-#define DEFAULT_RESOURCE_CHECK_MS 5000
-#define DEFAULT_METRICS_UPDATE_MS 1000
-#define DEFAULT_MEMORY_WARNING_PERCENT 90
-#define DEFAULT_DISK_WARNING_PERCENT 90
-#define DEFAULT_LOAD_WARNING 5.0
-
-// Print queue defaults
-#define DEFAULT_SHUTDOWN_WAIT_MS 3000
-#define DEFAULT_JOB_PROCESSING_TIMEOUT_MS 30000
-
-// Motion system defaults
-#define DEFAULT_MAX_LAYERS 100000
-#define DEFAULT_ACCELERATION 3000.0
-#define DEFAULT_Z_ACCELERATION 100.0
-#define DEFAULT_E_ACCELERATION 10000.0
-#define DEFAULT_MAX_SPEED_XY 500.0
-#define DEFAULT_MAX_SPEED_TRAVEL 500.0
-#define DEFAULT_MAX_SPEED_Z 10.0
-#define DEFAULT_Z_VALUES_CHUNK 1000
-
-// Configuration structures
-#include "config_structs.h"
+// Main application configuration structure
+struct AppConfig {
+    char* config_file;
+    char* executable_path;
+    char* server_name;
+    char* payload_key;
+    char* log_file_path;
+    
+    WebServerConfig web;
+    WebSocketConfig websocket;
+    MDNSServerConfig mdns_server;
+    ResourceConfig resources;
+    NetworkConfig network;
+    MonitoringConfig monitoring;
+    MotionConfig motion;
+    PrintQueueConfig print_queue;
+    OIDCConfig oidc;
+    APIConfig api;
+    LoggingConfig logging;
+};
 
 /*
  * Get the current application configuration

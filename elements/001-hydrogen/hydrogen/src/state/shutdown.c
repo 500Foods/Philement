@@ -74,9 +74,6 @@
 #include "../logging/log_queue_manager.h"    // For close_file_logging()
 #include "../utils/utils.h"
 
-// Log level definitions
-#define LOG_LEVEL_INFO 1
-
 // Signal handler implementing graceful shutdown initiation
 //
 // Design choices for interrupt handling:
@@ -334,12 +331,12 @@ static void free_app_config(void) {
         }
         free(app_config->mdns_server.services);
 
-        // Free Logging config
-        if (app_config->Logging.Levels) {
-            for (size_t i = 0; i < app_config->Logging.LevelCount; i++) {
-                free((void*)app_config->Logging.Levels[i].name);
+        // Free logging config
+        if (app_config->logging.levels) {
+            for (size_t i = 0; i < app_config->logging.level_count; i++) {
+                free((void*)app_config->logging.levels[i].name);
             }
-            free(app_config->Logging.Levels);
+            free(app_config->logging.levels);
         }
 
         free(app_config);

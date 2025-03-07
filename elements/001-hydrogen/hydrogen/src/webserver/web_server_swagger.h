@@ -23,7 +23,8 @@
 
 // Project headers
 #include "../config/config.h"
-#include "../config/config_structs.h"  // For WebServerConfig
+#include "../config/config_webserver.h"  // For WebServerConfig
+#include "../config/config_swagger.h"    // For SwaggerConfig
 
 // Swagger payload marker in executable
 #define SWAGGER_PAYLOAD_MARKER "<<< HERE BE ME TREASURE >>>"
