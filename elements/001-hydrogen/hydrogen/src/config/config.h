@@ -68,15 +68,22 @@
 // Core application defaults
 #define DEFAULT_SERVER_NAME "Philement/hydrogen"
 #define DEFAULT_CONFIG_FILE "/etc/hydrogen/hydrogen.json"
+#define DEFAULT_STARTUP_DELAY 5
 // Log file path is defined in config_logging_file.h
+
+// Server configuration structure
+typedef struct ServerConfig {
+    char* server_name;
+    char* payload_key;
+    char* log_file_path;
+    int startup_delay;
+} ServerConfig;
 
 // Main application configuration structure
 struct AppConfig {
     char* config_file;
     char* executable_path;
-    char* server_name;
-    char* payload_key;
-    char* log_file_path;
+    ServerConfig server;
     
     WebServerConfig web;
     WebSocketConfig websocket;

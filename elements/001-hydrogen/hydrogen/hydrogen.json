@@ -1,7 +1,10 @@
 {
-    "ServerName": "Philement/hydrogen",
-    "PayloadKey": "${env.PAYLOAD_KEY}",
-    "LogFile": "/var/log/hydrogen.log",
+    "Server": {
+      "ServerName": "Philement/hydrogen",
+      "PayloadKey": "${env.PAYLOAD_KEY}",
+      "LogFile": "/var/log/hydrogen.log",
+      "StartupDelay": 5
+    },
     "WebServer": {
         "Enabled": false,
         "EnableIPv6": true,
@@ -211,38 +214,38 @@
         "Connections": {
             "OIDC": {
                 "Type": "postgres",
-                "Host": "{$env.OIDC_DB_HOST}",
-                "Port": "{$env.OIDC_DB_PORT}",
-                "Database": "{$env.OIDC_DB_NAME}",
-                "Username": "{$env.OIDC_DB_USER}",
-                "Password": "{$env.OIDC_DB_PASS}",
+                "Host": "${env.OIDC_DB_HOST}",
+                "Port": "${env.OIDC_DB_PORT}",
+                "Database": "${env.OIDC_DB_NAME}",
+                "Username": "${env.OIDC_DB_USER}",
+                "Password": "${env.OIDC_DB_PASS}",
                 "MaxConnections": 10
             },
             "Acuranzo": {
                 "Type": "postgres",
-                "Host": "{$env.ACURANZO_DB_HOST}",
-                "Port": "{$env.ACURANZO_DB_PORT}",
-                "Database": "{$env.ACURANZO_DB_NAME}",
-                "Username": "{$env.ACURANZO_DB_USER}",
-                "Password": "{$env.ACURANZO_DB_PASS}",
+                "Host": "${env.ACURANZO_DB_HOST}",
+                "Port": "${env.ACURANZO_DB_PORT}",
+                "Database": "${env.ACURANZO_DB_NAME}",
+                "Username": "${env.ACURANZO_DB_USER}",
+                "Password": "${env.ACURANZO_DB_PASS}",
                 "MaxConnections": 10
             },
             "Helium": {
                 "Type": "postgres",
-                "Host": "{$env.HELIUM_DB_HOST}",
-                "Port": "{$env.HELIUM_DB_PORT}",
-                "Database": "{$env.HELIUM_DB_NAME}",
-                "Username": "{$env.HELIUM_DB_USER}",
-                "Password": "{$env.HELIUM_DB_PASS}",
+                "Host": "${env.HELIUM_DB_HOST}",
+                "Port": "${env.HELIUM_DB_PORT}",
+                "Database": "${env.HELIUM_DB_NAME}",
+                "Username": "${env.HELIUM_DB_USER}",
+                "Password": "${env.HELIUM_DB_PASS}",
                 "MaxConnections": 10
             },
             "Canvas": {
                 "Type": "postgres",
-                "Host": "{$env.CANVAS_DB_HOST}",
-                "Port": "{$env.CANVAS_DB_PORT}",
-                "Database": "{$env.CANVAS_DB_NAME}",
-                "Username": "{$env.CANVAS_DB_USER}",
-                "Password": "{$env.CANVAS_DB_PASS}",
+                "Host": "${env.CANVAS_DB_HOST}",
+                "Port": "${env.CANVAS_DB_PORT}",
+                "Database": "${env.CANVAS_DB_NAME}",
+                "Username": "${env.CANVAS_DB_USER}",
+                "Password": "${env.CANVAS_DB_PASS}",
                 "MaxConnections": 10
             }
         }
@@ -258,17 +261,17 @@
         },
         "OutboundServers": [
             {
-                "Host": "{$env.SMTP_SERVER1_HOST}",
-                "Port": "{$env.SMTP_SERVER1_PORT}",
-                "Username": "{$env.SMTP_SERVER1_USER}",
-                "Password": "{$env.SMTP_SERVER1_PASS}",
+                "Host": "${env.SMTP_SERVER1_HOST}",
+                "Port": "${env.SMTP_SERVER1_PORT}",
+                "Username": "${env.SMTP_SERVER1_USER}",
+                "Password": "${env.SMTP_SERVER1_PASS}",
                 "UseTLS": true
             },
             {
-                "Host": "{$env.SMTP_SERVER2_HOST}",
-                "Port": "{$env.SMTP_SERVER2_PORT}",
-                "Username": "{$env.SMTP_SERVER2_USER}",
-                "Password": "{$env.SMTP_SERVER2_PASS}",
+                "Host": "${env.SMTP_SERVER2_HOST}",
+                "Port": "${env.SMTP_SERVER2_PORT}",
+                "Username": "${env.SMTP_SERVER2_USER}",
+                "Password": "${env.SMTP_SERVER2_PASS}",
                 "UseTLS": true
             }
         ]
