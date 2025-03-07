@@ -57,7 +57,7 @@ enum MHD_Result handle_system_config_request(struct MHD_Connection *connection,
     
     // Get the application configuration
     const AppConfig *app_config = get_app_config();
-    if (!app_config || !app_config->config_file) {
+    if (!app_config || !app_config->server.config_file) {
         json_t *error = json_object();
         json_object_set_new(error, "error", json_string("Configuration not available"));
         
@@ -67,11 +67,11 @@ enum MHD_Result handle_system_config_request(struct MHD_Connection *connection,
     }
     
     // Log that we're loading the config file
-    log_this("Config", "Loading configuration from file: %s", LOG_LEVEL_DEBUG, app_config->config_file);
+    log_this("Config", "Loading configuration from file: %s", LOG_LEVEL_DEBUG, app_config->server.config_file);
     
     // Load the raw JSON configuration file
     json_error_t error;
-    json_t *config_json = json_load_file(app_config->config_file, 0, &error);
+    json_t *config_json = json_load_file(app_config->server.config_file, 0, &error);
     
     if (!config_json) {
         json_t *error_obj = json_object();
@@ -92,7 +92,7 @@ enum MHD_Result handle_system_config_request(struct MHD_Connection *connection,
     json_object_set(response_obj, "config", config_json);
     
     // Add metadata about the configuration
-    json_object_set_new(response_obj, "config_file", json_string(app_config->config_file));
+    json_object_set_new(response_obj, "config_file", json_string(app_config->server.config_file));
     
     // Add timing information
     struct timespec end_time;

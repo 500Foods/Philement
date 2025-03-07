@@ -10,6 +10,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <errno.h>
+#include <limits.h>
 
 // Standard C headers
 #include <stdio.h>
@@ -141,11 +142,11 @@ void log_config_section_item(const char* key, const char* format, int level, ...
     va_list args;
     va_start(args, level);
     
-    char value_buffer[64] = {0};
+    char value_buffer[1024] = {0};
     vsnprintf(value_buffer, sizeof(value_buffer), format, args);
     va_end(args);
     
-    char message[1024] = {0};
+    char message[2048] = {0};
     strncat(message, "- ", sizeof(message) - strlen(message) - 1);
     strncat(message, key, sizeof(message) - strlen(message) - 1);
     strncat(message, ": ", sizeof(message) - strlen(message) - 1);
@@ -186,10 +187,10 @@ AppConfig* load_config(const char* config_path) {
     if (!root) {
         log_this("Config", "Failed to load config file: %s (line %d, column %d)",
                  LOG_LEVEL_ERROR, error.text, error.line, error.column);
-        
-        fprintf(stderr, "ERROR: Hydrogen configuration file has JSON syntax errors.\n");
-        fprintf(stderr, "       %s at line %d, column %d\n", error.text, error.line, error.column);
-        fprintf(stderr, "       Please fix the syntax error and try again.\n");
+        log_this("Config", "Hydrogen configuration file has JSON syntax errors",
+                 LOG_LEVEL_ERROR);
+        log_this("Config", "Please fix the syntax error and try again",
+                 LOG_LEVEL_ERROR);
         
         exit(EXIT_FAILURE);
     }
@@ -201,25 +202,13 @@ AppConfig* load_config(const char* config_path) {
         return NULL;
     }
     
-    // Initialize critical defaults that must be set regardless of JSON presence
-    config->web.port = DEFAULT_WEB_PORT;
-    config->websocket.port = DEFAULT_WEBSOCKET_PORT;
-    config->server.startup_delay = DEFAULT_STARTUP_DELAY;
     app_config = config;
-
-    // Store paths
-    config->config_file = strdup(config_path);  // Store the config file path
-    config->executable_path = get_executable_path();
-    if (!config->executable_path) {
-        log_this("Config", "Failed to get executable path, using default", LOG_LEVEL_INFO);
-        config->executable_path = strdup("./hydrogen");
-    }
 
     // Server Configuration
     json_t* server = json_object_get(root, "Server");
     if (json_is_object(server)) {
         log_config_section_header("Server");
-        
+
         // Server Name
         json_t* server_name = json_object_get(server, "ServerName");
         config->server.server_name = get_config_string(server_name, DEFAULT_SERVER_NAME);
@@ -230,7 +219,37 @@ AppConfig* load_config(const char* config_path) {
         } else {
             log_config_section_item("ServerName", "%s", LOG_LEVEL_INFO, config->server.server_name);
         }
+                
+        // Store configuration paths
+        char real_path[PATH_MAX];
         
+        // Config File
+        if (realpath(config_path, real_path) != NULL) {
+            config->server.config_file = strdup(real_path);
+        } else {
+            config->server.config_file = strdup(config_path);
+        }
+        log_config_section_item("ConfigFile", "%s", LOG_LEVEL_INFO, config->server.config_file);
+        
+        // Exec File
+        config->server.exec_file = get_executable_path();
+        if (!config->server.exec_file) {
+            log_this("Config", "Failed to get executable path, using default", LOG_LEVEL_INFO);
+            config->server.exec_file = strdup("./hydrogen");
+        }
+        log_config_section_item("ExecFile", "%s", LOG_LEVEL_INFO, config->server.exec_file);
+
+        // Log File
+        json_t* log_file = json_object_get(server, "LogFile");
+        char* log_path = get_config_string(log_file, DEFAULT_LOG_FILE_PATH);
+        if (realpath(log_path, real_path) != NULL) {
+            config->server.log_file = strdup(real_path);
+            free(log_path);
+        } else {
+            config->server.log_file = log_path;
+        }
+        log_config_section_item("LogFile", "%s", LOG_LEVEL_INFO, config->server.log_file);
+
         // Payload Key (for payload decryption)
         json_t* payload_key = json_object_get(server, "PayloadKey");
         config->server.payload_key = get_config_string(payload_key, "${env.PAYLOAD_KEY}");
@@ -257,11 +276,6 @@ AppConfig* load_config(const char* config_path) {
             log_this("Config", "- PayloadKey: %s", LOG_LEVEL_INFO, config->server.payload_key);
         }
 
-        // Log File
-        json_t* log_file = json_object_get(server, "LogFile");
-        config->server.log_file_path = get_config_string(log_file, DEFAULT_LOG_FILE_PATH);
-        log_config_section_item("LogFile", "%s", LOG_LEVEL_INFO, config->server.log_file_path);
-
         // Startup Delay (in milliseconds)
         json_t* startup_delay = json_object_get(server, "StartupDelay");
         config->server.startup_delay = get_config_int(startup_delay, DEFAULT_STARTUP_DELAY);
@@ -269,14 +283,18 @@ AppConfig* load_config(const char* config_path) {
     } else {
         // Fallback to defaults if Server object is missing
         config->server.server_name = strdup(DEFAULT_SERVER_NAME);
+        config->server.config_file = strdup(DEFAULT_CONFIG_FILE);
+        config->server.exec_file = strdup("./hydrogen");
+        config->server.log_file = strdup(DEFAULT_LOG_FILE_PATH);
         config->server.payload_key = strdup("${env.PAYLOAD_KEY}");
-        config->server.log_file_path = strdup(DEFAULT_LOG_FILE_PATH);
         config->server.startup_delay = DEFAULT_STARTUP_DELAY;
         log_config_section_header("Server");
         log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_WARN);
+        log_config_section_item("ConfigFile", "%s", LOG_LEVEL_INFO, DEFAULT_CONFIG_FILE);
+        log_config_section_item("ExecFile", "%s", LOG_LEVEL_INFO, "./hydrogen");
+        log_config_section_item("LogFile", "%s", LOG_LEVEL_INFO, DEFAULT_LOG_FILE_PATH);
         log_config_section_item("ServerName", "%s", LOG_LEVEL_INFO, DEFAULT_SERVER_NAME);
         log_config_section_item("PayloadKey", "${env.PAYLOAD_KEY}", LOG_LEVEL_INFO);
-        log_config_section_item("LogFile", "%s", LOG_LEVEL_INFO, DEFAULT_LOG_FILE_PATH);
         log_config_section_item("StartupDelay", "%d", LOG_LEVEL_INFO, DEFAULT_STARTUP_DELAY);
     }
 
