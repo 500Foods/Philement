@@ -126,15 +126,15 @@ bool extract_payload(const char *executable_path, const AppConfig *config,
     init_openssl();
 
     // Get the payload key
-    const char *payload_key = config->payload_key;
+    const char *payload_key = config->server.payload_key;
     if (!payload_key) {
         // Check environment variable if configured
-        if (config->payload_key && strncmp(config->payload_key, "${env.", 6) == 0) {
-            const char *end = strchr(config->payload_key + 6, '}');
+        if (config->server.payload_key && strncmp(config->server.payload_key, "${env.", 6) == 0) {
+            const char *end = strchr(config->server.payload_key + 6, '}');
             if (end) {
                 char env_var[256];
-                size_t len = end - (config->payload_key + 6);
-                strncpy(env_var, config->payload_key + 6, len);
+                size_t len = end - (config->server.payload_key + 6);
+                strncpy(env_var, config->server.payload_key + 6, len);
                 env_var[len] = '\0';
                 payload_key = getenv(env_var);
             }

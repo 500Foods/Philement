@@ -69,7 +69,7 @@ static void log_config_info(void) {
     
     log_group_begin();
     log_this("Startup", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
-    log_this("Startup", "Server Name: %s", LOG_LEVEL_INFO, app_config->server_name);
+    log_this("Startup", "Server Name: %s", LOG_LEVEL_INFO, app_config->server.server_name);
     log_this("Startup", "Executable: %s", LOG_LEVEL_INFO, app_config->executable_path);
 
     long file_size = get_file_size(app_config->executable_path);
@@ -80,7 +80,8 @@ static void log_config_info(void) {
     }
 
     log_this("Startup", "Log File: %s", LOG_LEVEL_INFO, 
-            app_config->log_file_path ? app_config->log_file_path : "None");
+            app_config->server.log_file_path ? app_config->server.log_file_path : "None");
+    log_this("Startup", "Startup Delay: %d milliseconds", LOG_LEVEL_INFO, app_config->server.startup_delay);
     log_this("Startup", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
     log_group_end();
 }
@@ -211,8 +212,15 @@ int startup_hydrogen(const char* config_path) {
     //     return 0;
     // }
 
-    // Give threads a moment to launch
-    usleep(10000);
+    // Give threads a moment to launch based on configured startup delay
+    log_this("Startup-Debug", "Using StartupDelay value: %d milliseconds", LOG_LEVEL_DEBUG, app_config->server.startup_delay);
+    if (app_config->server.startup_delay > 0 && app_config->server.startup_delay < 10000) {
+        // Only sleep if within reasonable range (0-10 seconds)
+        usleep(app_config->server.startup_delay * 1000);
+    } else {
+        log_this("Startup", "Warning: StartupDelay value (%d) out of normal range, using default 5ms", LOG_LEVEL_WARN, app_config->server.startup_delay);
+        usleep(5 * 1000); // Use default 5ms
+    }
 
     // Log full configuration information now that app_config is available
     log_config_info();

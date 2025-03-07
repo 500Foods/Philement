@@ -302,9 +302,10 @@ static void shutdown_network(void) {
 // Recursively frees all allocated configuration structures
 static void free_app_config(void) {
     if (app_config) {
-        free(app_config->server_name);
+        free(app_config->server.server_name);
+        free(app_config->server.payload_key);
+        free(app_config->server.log_file_path);
         free(app_config->executable_path);
-        free(app_config->log_file_path);
 
         // Free Web config
         free(app_config->web.web_root);
