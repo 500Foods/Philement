@@ -140,11 +140,11 @@ bool init_web_server(WebServerConfig *web_config) {
     log_this("WebServer", "-> Connection Timeout: %d seconds", LOG_LEVEL_INFO, web_config->connection_timeout);
 
     // Initialize Swagger support if enabled
-    if (web_config->swagger.enabled) {
+    if (web_config->swagger->enabled) {
         log_this("WebServer", "Initializing Swagger UI support", LOG_LEVEL_INFO);
         if (init_swagger_support(web_config)) {
             log_this("WebServer", "-> Swagger UI enabled at prefix: %s", LOG_LEVEL_INFO, 
-                    web_config->swagger.prefix);
+                    web_config->swagger->prefix);
         } else {
             log_this("WebServer", "-> Swagger UI initialization failed", LOG_LEVEL_WARN);
             return false;
@@ -288,7 +288,7 @@ void shutdown_web_server(void) {
     log_this("WebServer", "Shutdown: Initiating web server shutdown", LOG_LEVEL_INFO);
     
     // Clean up Swagger resources if enabled
-    if (server_web_config && server_web_config->swagger.enabled) {
+    if (server_web_config && server_web_config->swagger->enabled) {
         cleanup_swagger_support();
         log_this("WebServer", "Swagger UI resources cleaned up", LOG_LEVEL_INFO);
     }

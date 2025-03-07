@@ -47,9 +47,9 @@
  * DO NOT use raw numbers (0-6) in log calls, use these constants instead.
  */
 #define LOG_LEVEL_ALL      0  /* Log everything - special value, don't use in log calls */
-#define LOG_LEVEL_INFO     1  /* General information, normal operation */
-#define LOG_LEVEL_WARN     2  /* Warning conditions */
-#define LOG_LEVEL_DEBUG    3  /* Debug-level messages */
+#define LOG_LEVEL_DEBUG    1  /* Debug-level messages */
+#define LOG_LEVEL_INFO     2  /* General information, normal operation */
+#define LOG_LEVEL_WARN     3  /* Warning conditions */
 #define LOG_LEVEL_ERROR    4  /* Error conditions */
 #define LOG_LEVEL_CRITICAL 5  /* Critical conditions */
 #define LOG_LEVEL_NONE     6  /* Log nothing - special value, don't use in log calls */

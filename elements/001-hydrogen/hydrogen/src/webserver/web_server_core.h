@@ -24,13 +24,7 @@
 
 // Project Libraries
 #include "../config/config.h"
-#include "../config/config_structs.h"  // For WebServerConfig
-
-// Server configuration defaults
-#define DEFAULT_THREAD_POOL_SIZE 4        // Default number of threads in the pool
-#define DEFAULT_MAX_CONNECTIONS 100       // Maximum concurrent connections
-#define DEFAULT_MAX_CONNECTIONS_PER_IP 10 // Maximum connections per IP address
-#define DEFAULT_CONNECTION_TIMEOUT 60     // Connection timeout in seconds
+#include "../config/config_webserver.h"  // For WebServerConfig
 
 // Connection info structure shared across modules
 struct ConnectionInfo {

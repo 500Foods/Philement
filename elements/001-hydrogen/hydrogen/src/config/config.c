@@ -55,8 +55,22 @@
 #include "config_filesystem.h"
 #include "config_priority.h"
 #include "config_defaults.h"
+
+// Subsystem headers
+#include "config_webserver.h"
+#include "config_websocket.h"
+#include "config_network.h"
+#include "config_monitoring.h"
+#include "config_print_queue.h"
+#include "config_oidc.h"
+#include "config_resources.h"
+#include "config_mdns.h"
+#include "config_logging.h"
+#include "config_api.h"
+
 #include "../logging/logging.h"
 #include "../utils/utils.h"
+
 
 // Global static configuration instance
 static AppConfig *app_config = NULL;
@@ -176,7 +190,7 @@ AppConfig* load_config(const char* config_path) {
 
     // Log File
     json_t* log_file = json_object_get(root, "LogFile");
-    config->log_file_path = get_config_string(log_file, DEFAULT_LOG_FILE);
+    config->log_file_path = get_config_string(log_file, DEFAULT_LOG_FILE_PATH);
     log_this("Configuration", "LogFile: %s", LOG_LEVEL_INFO, config->log_file_path);
 
     // Web Configuration
