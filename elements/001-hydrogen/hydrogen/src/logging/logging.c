@@ -110,31 +110,6 @@ static void console_log(const char* subsystem, int priority, const char* message
 }
 
 // Log a message based on configuration settings
-//
-// Logging system design prioritizes:
-// 1. Thread Safety
-//    - Mutex protection for concurrent access
-//    - Atomic operations for shutdown
-//    - Queue-based message handling
-//    - Safe signal handling
-//
-// 2. Reliability
-//    - Configuration-based routing
-//    - Buffer overflow prevention
-//    - Queue monitoring
-//    - Graceful degradation
-//
-// 3. Performance
-//    - Asynchronous processing
-//    - Efficient JSON formatting
-//    - Minimal blocking time
-//    - Memory reuse
-//
-// 4. Flexibility
-//    - Configuration-driven destinations
-//    - Priority-based handling
-//    - Subsystem categorization
-//    - Format customization
 void log_group_begin(void) {
     pthread_mutex_lock(&log_mutex);
     in_log_group = true;

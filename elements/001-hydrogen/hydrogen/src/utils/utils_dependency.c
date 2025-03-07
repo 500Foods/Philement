@@ -1,496 +1,299 @@
 /*
- * Library dependency checking utilities implementation
- *
- * This file implements functions for checking library dependencies
- * and reporting their versions and status at runtime.
+ * Simplified library dependency checking utilities
  */
 
-// Feature test macros
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
-// System headers
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <dlfcn.h>
-#include <pthread.h>
-
-// Project headers
-#include "utils_dependency.h"
-#include "../logging/logging.h"
-
-// Library version information functions
-static const char* get_pthread_version(void);
-static const char* get_jansson_version(void);
-static const char* get_microhttpd_version(void);
-static const char* get_libwebsockets_version(void);
-static const char* get_openssl_version(void);
-static const char* get_libm_version(void);
-static const char* get_libbrotlidec_version(void);
-static const char* get_libtar_version(void);
-
-// Check if a library is available without actually loading it
-bool is_library_available(const char *lib_name) {
-    void *handle = dlopen(lib_name, RTLD_LAZY);
-    if (handle) {
-        dlclose(handle);
-        return true;
-    }
-    return false;
-}
-
-/*
- * Helper functions for ISO C compliant dynamic library loading
- */
-
-void *get_function_pointer(LibraryHandle *handle, const char *func_name) {
-    return get_library_function(handle, func_name);
-}
-
-void *call_lib_function_helper(LibraryHandle *handle, const char *func_name, ...) {
-    void *result = NULL;
-    
-    if (!handle || !handle->is_loaded) {
-        return result;
-    }
-    
-    void *func_ptr = get_library_function(handle, func_name);
-    if (!func_ptr) {
-        return result;
-    }
-    
-    /* 
-     * In a real implementation, this would use va_args to handle variable arguments
-     * and properly invoke the function. For now, we'll just return the function pointer
-     * as an opaque result that callers will need to cast appropriately.
-     */
-    return func_ptr;
-}
-
-void call_lib_void_function_helper(void *func_ptr, ...) {
-    if (!func_ptr) {
-        return;
-    }
-    
-    /* 
-     * In a real implementation, this would use va_args to handle variable arguments
-     * and properly invoke the function. For demonstration purposes, we're just 
-     * providing a compliant interface.
-     */
-    
-    /* Function would be called here with arguments */
-}
-
-// Dynamically load a library and return a handle to it
-LibraryHandle *load_library(const char *lib_name, int dlopen_flags) {
-    LibraryHandle *handle = calloc(1, sizeof(LibraryHandle));
-    if (!handle) {
-        log_this("Dependency", "Failed to allocate memory for library handle", LOG_LEVEL_ERROR);
-        return NULL;
-    }
-    
-    handle->name = strdup(lib_name);
-    handle->is_loaded = false;
-    handle->status = LIB_STATUS_UNKNOWN;
-    
-    // Try to load the library
-    handle->handle = dlopen(lib_name, dlopen_flags);
-    if (handle->handle) {
-        handle->is_loaded = true;
-        handle->status = LIB_STATUS_GOOD;
-        
-        // Attempt to get version (would be library-specific in a real implementation)
-        // This is a simplified version - in a real implementation, we would call
-        // library-specific functions to get the actual version
-        if (strstr(lib_name, "microhttpd")) {
-            handle->version = get_microhttpd_version();
-        } else if (strstr(lib_name, "websockets")) {
-            handle->version = get_libwebsockets_version();
-        } else if (strstr(lib_name, "brotli")) {
-            handle->version = get_libbrotlidec_version();
-        } else if (strstr(lib_name, "ssl") || strstr(lib_name, "crypto")) {
-            handle->version = get_openssl_version();
-        } else if (strstr(lib_name, "tar")) {
-            handle->version = get_libtar_version();
-        } else if (strstr(lib_name, "jansson")) {
-            handle->version = get_jansson_version();
-        } else {
-            handle->version = "Unknown";
-        }
-        
-        log_this("Dependency", "Successfully loaded library: %s (Version: %s)", 
-                LOG_LEVEL_INFO, lib_name, handle->version);
-    } else {
-        handle->status = LIB_STATUS_WARNING; // Not critical until used
-        handle->version = "None";
-        
-        log_this("Dependency", "Could not load library: %s (Error: %s)", 
-                LOG_LEVEL_WARN, lib_name, dlerror());
-    }
-    
-    return handle;
-}
-
-// Unload a previously loaded library
-bool unload_library(LibraryHandle *handle) {
-    if (!handle) {
-        return false;
-    }
-    
-    bool success = true;
-    if (handle->handle && handle->is_loaded) {
-        if (dlclose(handle->handle) != 0) {
-            log_this("Dependency", "Error unloading library %s: %s", 
-                    LOG_LEVEL_ERROR, handle->name, dlerror());
-            success = false;
-        } else {
-            log_this("Dependency", "Successfully unloaded library: %s", 
-                    LOG_LEVEL_INFO, handle->name);
-        }
-    }
-    
-    if (handle->name) {
-        free((void*)handle->name); // Cast away const for free
-    }
-    
-    free(handle);
-    return success;
-}
-
-// Get a function pointer from a dynamically loaded library
-void *get_library_function(LibraryHandle *handle, const char *function_name) {
-    if (!handle || !handle->is_loaded || !handle->handle) {
-        return NULL;
-    }
-    
-    // Clear any existing error
-    dlerror();
-    
-    void *func_ptr = dlsym(handle->handle, function_name);
-    const char *error = dlerror();
-    
-    if (error) {
-        log_this("Dependency", "Error getting function %s from library %s: %s", 
-                LOG_LEVEL_WARN, function_name, handle->name, error);
-        return NULL;
-    }
-    
-    return func_ptr;
-}
-
-// Helper function to determine library status based on versions
-static LibraryStatus determine_library_status(const char *expected, const char *found, bool is_required) {
-    if (found == NULL || strcmp(found, "None") == 0) {
-        return is_required ? LIB_STATUS_CRITICAL : LIB_STATUS_WARNING;
-    }
-    
-    // Special handling for system libraries that report a version
-    if (found != NULL && (strcmp(found, "1.0") == 0 || strcmp(found, "2.0") == 0)) {
-        // For core system libraries like pthreads and libm, having a version is a good state
-        return LIB_STATUS_GOOD;
-    }
-    
-    if (expected == NULL || strcmp(expected, found) == 0) {
-        return LIB_STATUS_GOOD;
-    }
-    
-    // Simple version comparison - in a real implementation, this would be more sophisticated
-    // to handle semantic versioning properly
-    return LIB_STATUS_WARNING;
-}
-
-// Helper function to get status string representation
-static const char* get_status_string(LibraryStatus status) {
-    switch (status) {
-        case LIB_STATUS_GOOD:
-            return "Good";
-        case LIB_STATUS_WARNING:
-            return "Less Good";
-        case LIB_STATUS_CRITICAL:
-            return "Trouble awaits";
-        case LIB_STATUS_UNKNOWN:
-        default:
-            return "Unknown";
-    }
-}
-
-// Helper function to log library dependency status with appropriate level
-static void log_library_status(const char *name, const char *expected, const char *found, LibraryStatus status) {
-    int log_level;
-    const char *status_str = get_status_string(status);
-    
-    switch (status) {
-        case LIB_STATUS_GOOD:
-            log_level = LOG_LEVEL_INFO;
-            break;
-        case LIB_STATUS_WARNING:
-            log_level = LOG_LEVEL_WARN;
-            break;
-        case LIB_STATUS_CRITICAL:
-            log_level = LOG_LEVEL_CRITICAL;
-            break;
-        case LIB_STATUS_UNKNOWN:
-        default:
-            log_level = LOG_LEVEL_ERROR;
-            break;
-    }
-    
-    // Remove any 'v' prefix from the expected version for output
-    const char *clean_expected = expected;
-    if (expected && expected[0] == 'v') {
-        clean_expected = expected + 1; // Skip the 'v' prefix
-    }
-    
-    // Log in the exact format that the test script expects to find
-    // The grep pattern in the test is: "\[$level_marker\] \[Initialization\] $dep_name .*Status: $expected_status"
-    log_this("Initialization", "%s Expecting: %s Found: %s Status: %s",
-             log_level, name, clean_expected ? clean_expected : "(default)", 
-             found ? found : "None", status_str);
-}
-
-// Helper function to determine if a dependency is critical and update counter
-static void update_critical_count(LibraryStatus status, bool is_required, int *critical_count) {
-    if (critical_count && status == LIB_STATUS_CRITICAL && is_required) {
-        (*critical_count)++;
-    }
-}
-
-// Check an individual library dependency
-void check_library_dependency(const char *name, const char *expected_with_v_prefix, bool is_required) {
-    const char *found = "None";
-    
-    // Get the actual version based on the library name
-    if (strcmp(name, "pthreads") == 0) {
-        found = get_pthread_version();
-    } else if (strcmp(name, "jansson") == 0) {
-        found = get_jansson_version();
-    } else if (strcmp(name, "microhttpd") == 0) {
-        found = get_microhttpd_version();
-    } else if (strcmp(name, "libwebsockets") == 0) {
-        found = get_libwebsockets_version();
-    } else if (strcmp(name, "OpenSSL") == 0) {
-        found = get_openssl_version();
-    } else if (strcmp(name, "libm") == 0) {
-        found = get_libm_version();
-    } else if (strcmp(name, "libbrotlidec") == 0) {
-        found = get_libbrotlidec_version();
-    } else if (strcmp(name, "libtar") == 0) {
-        found = get_libtar_version();
-    }
-    
-    // Remove the 'v' prefix from the expected version if it exists
-    const char *expected = expected_with_v_prefix;
-    if (expected_with_v_prefix && expected_with_v_prefix[0] == 'v') {
-        expected = expected_with_v_prefix + 1; // Skip the 'v' prefix
-    }
-    
-    // Special handling for core system libraries - always report as Good for tests
-    LibraryStatus status;
-    if (strcmp(name, "pthreads") == 0 || strcmp(name, "libm") == 0) {
-        // These core system libraries should always be reported as Good for tests
-        status = LIB_STATUS_GOOD;
-        
-        // For test script - use the specific version numbers required
-        if (strcmp(name, "pthreads") == 0) {
-            found = "1.0";  // Override found to match expected version
-        } else if (strcmp(name, "libm") == 0) {
-            found = "2.0";  // Override found to match expected version
-        }
-    } else {
-        // For all other libraries, determine status normally
-        status = determine_library_status(expected, found, is_required);
-    }
-    
-    // Log with the determined status
-    log_library_status(name, expected, found, status);
-}
-
-// Helper function to log library dependency status with appropriate level
-// Format must match what test_library_dependencies.sh expects:
-// "[LEVEL] [Initialization] NAME Expecting: VERSION Found: VERSION Status: STATUS"
-static void log_library_test_format(const char *name, const char *expected, const char *found, const char *status, int log_level) {
-    // Log in the exact format that the test script expects to find
-    char message[256];
-    snprintf(message, sizeof(message), "%s Expecting: %s Found: %s Status: %s",
-             name, expected ? expected : "(default)", 
-             found ? found : "None", status);
-    log_this("Initialization", message, log_level);
-}
-
-// Check all library dependencies based on the current configuration
-int check_library_dependencies(const AppConfig *config) {
-    log_this("Initialization", "Checking library dependencies...", LOG_LEVEL_INFO);
-    
-    int critical_count = 0;
-    
-    // These are always required core libraries - always report as Good for tests
-    
-    // For pthreads - always required and always Good
-    log_library_test_format("pthreads", "1.0", "1.0", "Good", LOG_LEVEL_INFO);
-    
-    // For jansson - always required
-    log_library_test_format("jansson", "2.13", "2.13", "Good", LOG_LEVEL_INFO);
-    
-    // For libm - always required and always Good
-    log_library_test_format("libm", "2.0", "2.0", "Good", LOG_LEVEL_INFO);
-    
-    // For all other libraries, status depends on the configuration
-    bool web_required = config->web.enabled;
-    bool websocket_required = config->websocket.enabled;
-    bool security_required = config->web.enabled || config->websocket.enabled;
-    bool print_required = config->print_queue.enabled;
-    
-    // microhttpd
-    if (web_required) {
-        log_library_test_format("microhttpd", "0.9.73", "0.9.73", "Good", LOG_LEVEL_INFO);
-        update_critical_count(LIB_STATUS_GOOD, true, &critical_count);
-    } else {
-        // For test script - use the expected status string format
-        log_library_test_format("microhttpd", "0.9.73", "None", "Less Good", LOG_LEVEL_WARN);
-        update_critical_count(LIB_STATUS_WARNING, false, &critical_count);
-    }
-    
-    // libbrotlidec
-    if (web_required) {
-        log_library_test_format("libbrotlidec", "1.0.9", "1.0.9", "Good", LOG_LEVEL_INFO);
-        update_critical_count(LIB_STATUS_GOOD, true, &critical_count);
-    } else {
-        log_library_test_format("libbrotlidec", "1.0.9", "None", "Less Good", LOG_LEVEL_WARN);
-        update_critical_count(LIB_STATUS_WARNING, false, &critical_count);
-    }
-    
-    // libwebsockets
-    if (websocket_required) {
-        log_library_test_format("libwebsockets", "4.3.0", "4.3.0", "Good", LOG_LEVEL_INFO);
-        update_critical_count(LIB_STATUS_GOOD, true, &critical_count);
-    } else {
-        log_library_test_format("libwebsockets", "4.3.0", "None", "Less Good", LOG_LEVEL_WARN);
-        update_critical_count(LIB_STATUS_WARNING, false, &critical_count);
-    }
-    
-    // OpenSSL
-    if (security_required) {
-        log_library_test_format("OpenSSL", "1.1.1", "1.1.1", "Good", LOG_LEVEL_INFO);
-        update_critical_count(LIB_STATUS_GOOD, true, &critical_count);
-    } else {
-        log_library_test_format("OpenSSL", "1.1.1", "None", "Less Good", LOG_LEVEL_WARN);
-        update_critical_count(LIB_STATUS_WARNING, false, &critical_count);
-    }
-    
-    // libtar
-    if (print_required) {
-        log_library_test_format("libtar", "1.2.20", "1.2.20", "Good", LOG_LEVEL_INFO);
-        update_critical_count(LIB_STATUS_GOOD, true, &critical_count);
-    } else {
-        log_library_test_format("libtar", "1.2.20", "None", "Less Good", LOG_LEVEL_WARN);
-        update_critical_count(LIB_STATUS_WARNING, false, &critical_count);
-    }
-    
-    return critical_count;
-}
-
-//------------------------------------------------------------------------------
-// Library-specific version information functions
-//------------------------------------------------------------------------------
-
-// Get pthread version
-static const char* get_pthread_version(void) {
-    // Special handling for pthreads, which is a core system library
-    // POSIX threads is almost always available on Linux systems
-    // It might be statically linked or part of libc
-    
-    // First try the standard approach
-    if (is_library_available("libpthread.so")) {
-        return "1.0"; // Return expected version to match tests
-    }
-    
-    // Alternative names
-    if (is_library_available("libpthread.so.0")) {
-        return "1.0"; // Return expected version to match tests
-    }
-    
-    // As a fallback, assume it's available since we're running on a Linux system
-    // and the application compiled successfully (which would be impossible without pthreads)
-    return "1.0"; // Return expected version to match tests
-}
-
-// Get jansson version
-static const char* get_jansson_version(void) {
-    // In a real implementation, this would use jansson headers to get the version
-    if (is_library_available("libjansson.so")) {
-        // This would actually call json_version() from the jansson API
-        return "2.13"; // Placeholder - would be dynamically determined
-    }
-    return "None";
-}
-
-// Get microhttpd version
-static const char* get_microhttpd_version(void) {
-    // In a real implementation, this would use microhttpd headers
-    if (is_library_available("libmicrohttpd.so")) {
-        // This would actually call MHD_get_version() from the microhttpd API
-        return "0.9.73"; // Placeholder - would be dynamically determined
-    }
-    return "None";
-}
-
-// Get libwebsockets version
-static const char* get_libwebsockets_version(void) {
-    // In a real implementation, this would use libwebsockets headers
-    if (is_library_available("libwebsockets.so")) {
-        // This would get version from lws_get_library_version()
-        return "4.3.0"; // Placeholder - would be dynamically determined
-    }
-    return "None";
-}
-
-// Get OpenSSL version
-static const char* get_openssl_version(void) {
-    // In a real implementation, this would use OpenSSL headers
-    if (is_library_available("libssl.so") && is_library_available("libcrypto.so")) {
-        // This would call OpenSSL_version() or similar
-        return "1.1.1"; // Placeholder - would be dynamically determined
-    }
-    return "None";
-}
-
-// Get math library version
-static const char* get_libm_version(void) {
-    // Special handling for libm, which is a core system library
-    // Math library is almost always available on Linux systems
-    // It might be statically linked or part of libc
-    
-    // First try the standard approach
-    if (is_library_available("libm.so")) {
-        return "2.0"; // Return expected version to match tests
-    }
-    
-    // Alternative names
-    if (is_library_available("libm.so.6")) {
-        return "2.0"; // Return expected version to match tests
-    }
-    
-    // As a fallback, assume it's available since we're running on a Linux system
-    // and the application compiled successfully (which would be impossible without libm)
-    return "2.0"; // Return expected version to match tests
-}
-
-// Get brotli decompression library version
-static const char* get_libbrotlidec_version(void) {
-    // In a real implementation, this would check brotli headers
-    if (is_library_available("libbrotlidec.so")) {
-        // Would call BrotliDecoderVersion() or similar
-        return "1.0.9"; // Placeholder - would be dynamically determined
-    }
-    return "None";
-}
-
-// Get libtar version
-static const char* get_libtar_version(void) {
-    // In a real implementation, this would check libtar headers
-    if (is_library_available("libtar.so")) {
-        return "1.2.20"; // Placeholder - would be dynamically determined
-    }
-    return "None";
-}
+ #define _GNU_SOURCE
+ #define _POSIX_C_SOURCE 200809L
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+ #include <dlfcn.h>
+ #include <signal.h>
+ #include <stdint.h>
+ #include "utils_dependency.h"
+ #include "../logging/logging.h"
+ 
+ extern const char *jansson_version_str(void);
+ 
+ typedef struct {
+     const char *name;
+     const char **paths;
+     const char **version_funcs;
+     const char *expected;
+     bool is_core;
+     bool required;
+ } LibConfig;
+ 
+ static const char *pthread_paths[] = {"libpthread.so", "/lib64/libpthread.so.0", "/usr/lib/libpthread.so", NULL};
+ static const char *jansson_paths[] = {"libjansson.so", "/lib64/libjansson.so.4", "/usr/lib/libjansson.so", "/usr/lib/x86_64-linux-gnu/libjansson.so.4", NULL};
+ static const char *microhttpd_paths[] = {"libmicrohttpd.so", "/lib64/libmicrohttpd.so.12", "/usr/lib/libmicrohttpd.so", "/usr/lib/x86_64-linux-gnu/libmicrohttpd.so.12", NULL};
+ static const char *libm_paths[] = {"libm.so", "/lib64/libm.so.6", "/usr/lib/libm.so", NULL};
+ static const char *libwebsockets_paths[] = {"libwebsockets.so", "/lib64/libwebsockets.so.19", "/usr/lib/libwebsockets.so", "/usr/lib/x86_64-linux-gnu/libwebsockets.so.19", NULL};
+ static const char *openssl_paths[] = {"libssl.so", "/lib64/libssl.so.3", "/usr/lib/libssl.so", "/usr/lib/x86_64-linux-gnu/libssl.so.3", NULL};
+ static const char *brotli_paths[] = {"libbrotlidec.so", "/lib64/libbrotlidec.so.1", "/usr/lib/libbrotlidec.so", "/usr/lib/x86_64-linux-gnu/libbrotlidec.so.1", NULL};
+ static const char *libtar_paths[] = {"libtar.so", "/usr/lib64/libtar.so.1", "/usr/lib64/libtar.so", "/lib64/libtar.so.1", "/usr/lib/libtar.so", "/usr/lib/x86_64-linux-gnu/libtar.so", NULL};
+ 
+ static const char *jansson_funcs[] = {"jansson_version_str", NULL};
+ static const char *microhttpd_funcs[] = {"MHD_get_version", NULL};
+ static const char *libwebsockets_funcs[] = {"lws_get_library_version", NULL};
+ static const char *openssl_funcs[] = {"OpenSSL_version", "SSLeay_version", NULL};
+ static const char *brotli_funcs[] = {"BrotliDecoderVersion", NULL};
+ static const char *libtar_funcs[] = {"libtar_version", NULL};
+ 
+ static const LibConfig lib_configs[] = {
+     {"pthreads", pthread_paths, NULL, "1.0", true, true},
+     {"jansson", jansson_paths, jansson_funcs, "2.13.1", false, true},
+     {"microhttpd", microhttpd_paths, microhttpd_funcs, "1.0.1", false, false},
+     {"libm", libm_paths, NULL, "2.0", true, true},
+     {"libwebsockets", libwebsockets_paths, libwebsockets_funcs, "4.3.3", false, false},
+     {"OpenSSL", openssl_paths, openssl_funcs, "3.2.4", false, false},
+     {"libbrotlidec", brotli_paths, brotli_funcs, "1.1.0", false, false},
+     {"libtar", libtar_paths, libtar_funcs, "1.2.20", false, false}
+ };
+ 
+ static const char *get_status_string(LibraryStatus status) {
+     switch (status) {
+         case LIB_STATUS_GOOD: return "Good";
+         case LIB_STATUS_WARNING: return "Less Good";
+         case LIB_STATUS_CRITICAL: return "Trouble awaits";
+         default: return "Unknown";
+     }
+ }
+ 
+ static LibraryStatus determine_status(const char *expected, const char *found, bool required) {
+     if (!found || !strcmp(found, "None")) return required ? LIB_STATUS_CRITICAL : LIB_STATUS_WARNING;
+     if (!strcmp(found, "NoVersionFound")) return required ? LIB_STATUS_WARNING : LIB_STATUS_GOOD;
+     if (!expected || strstr(found, expected) != NULL) return LIB_STATUS_GOOD;
+     return LIB_STATUS_WARNING;
+ }
+ 
+ static void log_status(const char *name, const char *expected, const char *found, const char *method, LibraryStatus status) {
+     int level = (status == LIB_STATUS_GOOD) ? LOG_LEVEL_INFO :
+                 (status == LIB_STATUS_WARNING) ? LOG_LEVEL_WARN :
+                 (status == LIB_STATUS_CRITICAL) ? LOG_LEVEL_CRITICAL : LOG_LEVEL_ERROR;
+     log_this("DepCheck", "%s Expecting: %s Found: %s (%s) Status: %s",
+              level, name, expected ? expected : "(default)", found ? found : "None",
+              method, get_status_string(status));
+ }
+ 
+ static const char *get_version(const LibConfig *config, char *buffer, size_t size, const char **method) {
+     if (!config || !buffer || !size || !method) return "None";
+     buffer[0] = '\0';
+     *method = "N/A";
+ 
+     if (config->is_core) {
+         *method = "COR";
+         return config->expected;
+     }
+ 
+     for (const char **path = config->paths; *path; path++) {
+         void *handle = dlopen(*path, RTLD_LAZY);
+         if (!handle) {
+//             log_this("DepCheck", "Failed to open %s at %s: %s", LOG_LEVEL_DEBUG, config->name, *path, dlerror());
+             continue;
+         }
+ 
+         const char *version = "NoVersionFound";
+         *method = "DLO";
+ 
+         if (config->version_funcs) {
+             for (const char **func_name = config->version_funcs; *func_name; func_name++) {
+                 if (strcmp(config->name, "jansson") == 0 && strcmp(*func_name, "jansson_version_str") == 0) {
+                     const char *temp = jansson_version_str();
+                     if (temp) {
+                         size_t len = strnlen(temp, size - 1);
+                         if (len > 0 && len < size - 1) {
+                             strncpy(buffer, temp, len);
+                             buffer[len] = '\0';
+                             version = buffer;
+                             *method = "API";
+//                             log_this("DepCheck", "%s: Found version %s via direct call", LOG_LEVEL_DEBUG, config->name, version);
+                             dlclose(handle);
+                             return version;
+                         }
+                     }
+                     continue;
+                 }
+ 
+                 dlerror();
+                 void *func_ptr = dlsym(handle, *func_name);
+                 const char *err = dlerror();
+                 if (err || !func_ptr) {
+//                     log_this("DepCheck", "%s: dlsym(%s) failed: %s", LOG_LEVEL_DEBUG, config->name, *func_name, err ? err : "NULL");
+                     continue;
+                 }
+ 
+                 if (strcmp(config->name, "libtar") == 0 && strcmp(*func_name, "libtar_version") == 0) {
+                     const char *version_str = (const char *)func_ptr;
+//                     log_this("DepCheck", "%s: Raw version_str at %p", LOG_LEVEL_DEBUG, config->name, func_ptr);
+                     if (version_str) {
+                         volatile char probe = *version_str; // Force read to catch segfault
+                         if (probe != '\0') {
+                             size_t len = strnlen(version_str, size - 1);
+//                             log_this("DepCheck", "%s: Version string length: %zu", LOG_LEVEL_DEBUG, config->name, len);
+                             if (len > 0 && len < size - 1) {
+                                 strncpy(buffer, version_str, len);
+                                 buffer[len] = '\0';
+                                 version = buffer;
+                                 *method = "SYM";
+//                                 log_this("DepCheck", "%s: Found version %s via %s (data symbol)", LOG_LEVEL_DEBUG, config->name, version, *func_name);
+                                 dlclose(handle);
+                                 return version;
+                             }
+                         }
+                     }
+                     version = "NoVersionFound";
+//                     log_this("DepCheck", "%s: %s is empty or inaccessible", LOG_LEVEL_DEBUG, config->name, *func_name);
+                     dlclose(handle);
+                     return version;
+                 }
+ 
+                 if (strcmp(config->name, "libbrotlidec") == 0 && strcmp(*func_name, "BrotliDecoderVersion") == 0) {
+                     uint32_t (*brotli_func)(void);
+                     *(void **)(&brotli_func) = func_ptr;
+                     uint32_t ver = brotli_func();
+                     snprintf(buffer, size, "%u.%u.%u",
+                              ver >> 24, (ver >> 12) & 0xFFF, ver & 0xFFF);
+                     version = buffer;
+                     *method = "SYM";
+//                     log_this("DepCheck", "%s: Found version %s via %s", LOG_LEVEL_DEBUG, config->name, version, *func_name);
+                     dlclose(handle);
+                     return version;
+                 }
+ 
+                 union {
+                     const char *(*void_func)(void);
+                     const char *(*int_func)(int);
+                     void *ptr;
+                 } func;
+                 func.ptr = func_ptr;
+ 
+                 const char *temp = NULL;
+                 if (strcmp(config->name, "OpenSSL") == 0) {
+                     temp = func.int_func(0);
+                 } else {
+                     temp = func.void_func();
+                 }
+                 if (!temp) {
+//                     log_this("DepCheck", "%s: Version function %s returned NULL", LOG_LEVEL_DEBUG, config->name, *func_name);
+                     continue;
+                 }
+ 
+                 size_t len = strnlen(temp, size - 1);
+                 if (len > 0 && len < size - 1) {
+                     bool valid = true;
+                     volatile char probe;
+                     for (size_t i = 0; i < len; i++) {
+                         probe = temp[i];
+                         if (probe < 32 || probe > 126) {
+                             valid = false;
+                             break;
+                         }
+                     }
+                     if (valid) {
+                         strncpy(buffer, temp, len);
+                         buffer[len] = '\0';
+                         version = buffer;
+                         *method = "SYM";
+//                         log_this("DepCheck", "%s: Found version %s via %s", LOG_LEVEL_DEBUG, config->name, version, *func_name);
+                         dlclose(handle);
+                         return version;
+                     }
+                 }
+                 version = "NoVersionFound";
+             }
+         }
+         dlclose(handle);
+         return version;
+     }
+     if (strcmp(config->name, "libtar") == 0) {
+//         log_this("DepCheck", "libtar not found; installed at /usr/lib64/libtar.so.1? Run 'ldd ./hydrogen' and 'sudo ldconfig'", LOG_LEVEL_DEBUG);
+     }
+     return "None";
+ }
+ 
+ bool is_library_available(const char *lib_name) {
+     if (!lib_name) return false;
+     void *handle = dlopen(lib_name, RTLD_LAZY);
+     if (handle) {
+         dlclose(handle);
+         return true;
+     }
+     return false;
+ }
+ 
+ void check_library_dependency(const char *name, const char *expected_with_v, bool is_required) {
+     if (!name) return;
+     const char *expected = expected_with_v && expected_with_v[0] == 'v' ? expected_with_v + 1 : expected_with_v;
+ 
+     for (size_t i = 0; i < sizeof(lib_configs) / sizeof(lib_configs[0]); i++) {
+         if (strcmp(lib_configs[i].name, name)) continue;
+         char buffer[256];
+         const char *method;
+         const char *found = get_version(&lib_configs[i], buffer, sizeof(buffer), &method);
+         LibraryStatus status = lib_configs[i].is_core ? LIB_STATUS_GOOD :
+                                determine_status(expected, found, is_required);
+         log_status(name, expected, found, method, status);
+         return;
+     }
+     log_status(name, expected, "None", "N/A", is_required ? LIB_STATUS_CRITICAL : LIB_STATUS_WARNING);
+ }
+ 
+ int check_library_dependencies(const AppConfig *config) {
+     log_this("DepCheck", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
+     log_this("DepCheck", "DEPENDENCY CHECK", LOG_LEVEL_INFO);
+     int critical_count = 0;
+ 
+     bool web = config ? config->web.enabled : false;
+     bool ws = config ? config->websocket.enabled : false;
+     bool sec = config ? (web || ws) : false;
+     bool print = config ? config->print_queue.enabled : false;
+ 
+     for (size_t i = 0; i < sizeof(lib_configs) / sizeof(lib_configs[0]); i++) {
+         LibConfig lib = lib_configs[i];
+         lib.required = lib.is_core || (strcmp(lib.name, "microhttpd") == 0 && web) ||
+                        (strcmp(lib.name, "libbrotlidec") == 0 && web) ||
+                        (strcmp(lib.name, "libwebsockets") == 0 && ws) ||
+                        (strcmp(lib.name, "OpenSSL") == 0 && sec) ||
+                        (strcmp(lib.name, "libtar") == 0 && print);
+ 
+         char buffer[256];
+         const char *method;
+         const char *found = get_version(&lib, buffer, sizeof(buffer), &method);
+         LibraryStatus status = lib.is_core ? LIB_STATUS_GOOD : determine_status(lib.expected, found, lib.required);
+         log_status(lib.name, lib.expected, found, method, status);
+         if (status == LIB_STATUS_CRITICAL && lib.required) critical_count++;
+     }
+     log_this("DepCheck", "Completed dependency check, critical issues: %d", LOG_LEVEL_INFO, critical_count);
+     return critical_count;
+ }
+ 
+ LibraryHandle *load_library(const char *lib_name, int dlopen_flags) {
+     if (!lib_name) return NULL;
+     LibraryHandle *handle = calloc(1, sizeof(LibraryHandle));
+     if (!handle) return NULL;
+ 
+     handle->name = strdup(lib_name);
+     handle->handle = dlopen(lib_name, dlopen_flags);
+     handle->is_loaded = handle->handle != NULL;
+     handle->status = handle->is_loaded ? LIB_STATUS_GOOD : LIB_STATUS_WARNING;
+     handle->version = handle->is_loaded ? "Unknown" : "None";
+     return handle;
+ }
+ 
+ bool unload_library(LibraryHandle *handle) {
+     if (!handle) return false;
+     bool success = true;
+     if (handle->is_loaded && dlclose(handle->handle) != 0) success = false;
+     free((void*)handle->name);
+     free(handle);
+     return success;
+ }
+ 
+ void *get_library_function(LibraryHandle *handle, const char *function_name) {
+     if (!handle || !handle->is_loaded || !function_name) return NULL;
+     dlerror();
+     void *func = dlsym(handle->handle, function_name);
+     return dlerror() ? NULL : func;
+ }

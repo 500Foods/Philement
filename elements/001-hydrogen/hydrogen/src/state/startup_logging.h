@@ -14,10 +14,10 @@ extern "C" {
 /**
  * Initialize logging subsystem
  * 
- * @param config_path Path to the configuration file
+ * Requires app_config to be loaded and available before calling.
  * @return 1 on success, 0 on failure
  */
-int init_logging_subsystem(const char *config_path);
+int init_logging_subsystem(void);
 
 #ifdef __cplusplus
 }

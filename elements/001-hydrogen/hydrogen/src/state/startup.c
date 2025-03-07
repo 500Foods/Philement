@@ -1,25 +1,5 @@
 /*
- * Startup Sequence Handler for Hydrogen 3D Printer Control
- * 
- * Why Careful Startup Sequencing?
- * 1. Safety Requirements
- *    - Ensure printer is in known state
- *    - Verify safety systems before operation
- *    - Initialize emergency stop capability first
- *    - Prevent uncontrolled motion
- * 
- * 2. Component Dependencies
- *    - Queue system enables emergency commands
- *    - Logging captures hardware initialization
- *    - Print queue requires temperature monitoring
- *    - Network services need hardware status
- * 
- * 3. Initialization Order
- *    Why This Sequence?
- *    - Core safety systems first
- *    - Hardware control systems second
- *    - User interface systems last
- *    - Network services after safety checks
+ * Startup Sequence Handler for Hydrogen Server
  */
 
 // Feature test macros
@@ -76,11 +56,10 @@ static void log_config_info(void);
 static void log_early_info(void) {
     log_group_begin();
     log_this("Startup", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
-    log_this("Startup", "Starting Hydrogen Server...", LOG_LEVEL_INFO);
+    log_this("Startup", "HYDROGEN STARTUP", LOG_LEVEL_INFO);
     log_this("Startup", "Version: %s", LOG_LEVEL_INFO, VERSION);
     log_this("Startup", "Release: %s", LOG_LEVEL_INFO, RELEASE);
     log_this("Startup", "Build Type: %s", LOG_LEVEL_INFO, BUILD_TYPE);
-    log_this("Startup", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
     log_group_end();
 }
 
@@ -110,10 +89,11 @@ static void log_config_info(void) {
  * Main startup function implementation
  * 
  * The startup sequence follows a carefully planned order to ensure system stability:
- * 1. Early logging - Capture startup process from the very beginning
- * 2. Queue system - Required by all other components for thread-safe communication
- * 3. Logging system - Essential for debugging startup issues and runtime monitoring
- * 4. Optional systems - Print queue, web servers, and network services in order of dependency
+ * 1. Check core dependencies - Verify required libraries are available
+ * 2. Load configuration - Determine which features are enabled
+ * 3. Initialize queue system - Required for thread-safe communication
+ * 4. Initialize logging - Essential for debugging and monitoring
+ * 5. Initialize services - Each with its own thread management
  *
  * Returns 1 on successful startup, 0 on critical failure
  */
@@ -122,62 +102,77 @@ int startup_hydrogen(const char* config_path) {
     // First check if we're in shutdown mode - if so, prevent restart
     extern volatile sig_atomic_t server_stopping;
     if (server_stopping) {
-        fprintf(stderr, "Preventing application restart during shutdown\n");
+        log_this("Startup", "Preventing application restart during shutdown", LOG_LEVEL_ERROR);
         return 0;
     }
 
     // Record the server start time
     set_server_start_time();
 
-    // Start logging as early as possible
+    // Basic early logging to stderr (no config needed)
     log_early_info();
     
     // Seed random number generator
     srand((unsigned int)time(NULL));
     
-    // Initialize thread tracking
-    extern ServiceThreads logging_threads;
-    extern ServiceThreads web_threads;
-    extern ServiceThreads websocket_threads;
-    extern ServiceThreads mdns_server_threads;
-    extern ServiceThreads print_threads;
+    // 1. Check core library dependencies (before config)
+    int critical_dependencies = check_library_dependencies(NULL);
+    if (critical_dependencies > 0) {
+        log_this("Startup", "Missing core library dependencies", LOG_LEVEL_ERROR);
+        return 0;
+    }
     
-    init_service_threads(&logging_threads);
-    init_service_threads(&web_threads);
-    init_service_threads(&websocket_threads);
-    init_service_threads(&mdns_server_threads);
-    init_service_threads(&print_threads);
+    // 2. Load configuration
+    app_config = load_config(config_path);
+    if (!app_config) {
+        log_this("Startup", "Failed to load configuration", LOG_LEVEL_ERROR);
+        return 0;
+    }
     
-    // Initialize the queue system
+    // 3. Initialize queue system
     queue_system_init();
+    update_queue_limits_from_config(app_config);
     
-    // Initialize logging and configuration
-    if (!init_logging_subsystem(config_path)) {
+    // 4. Initialize logging subsystem
+    // Each service gets its own thread, initialized just before the service starts
+    // This ensures proper resource allocation and startup sequencing
+    extern ServiceThreads logging_threads;
+    init_service_threads(&logging_threads);
+    if (!init_logging_subsystem()) {
         queue_system_destroy();
         return 0;
     }
 
-    // Check library dependencies
-    int critical_dependencies = check_library_dependencies(app_config);
+    // Now that logging is available, check feature-specific dependencies
+    critical_dependencies = check_library_dependencies(app_config);
     if (critical_dependencies > 0) {
-        log_this("Startup", "Found %d missing critical dependencies", LOG_LEVEL_WARN, critical_dependencies);
-    } else {
-        log_this("Startup", "All critical dependencies available", LOG_LEVEL_INFO);
+        log_this("Startup", "Missing libraries required by enabled features", LOG_LEVEL_ERROR);
+        return 0;
     }
 
-    // // Initialize web server
+    // Log successful core initialization
+    log_this("Startup", "Core systems initialized successfully", LOG_LEVEL_INFO);
+
+    // Additional services (web, websocket, mdns, print) are initialized on demand
+    // Each service will initialize its own thread when it starts
+    // This prevents premature thread creation and ensures proper startup order
+
+    // // Initialize web server (with its thread)
+    // init_service_threads(&web_threads);
     // if (!init_webserver_subsystem()) {
     //     log_this("Initialization", "Web server failed to start", LOG_LEVEL_ERROR);
     //     return 0;
     // }
 
-    // // Initialize websocket server
+    // // Initialize websocket server (with its thread)
+    // init_service_threads(&websocket_threads);
     // if (!init_websocket_subsystem()) {
     //     log_this("Initialization", "WebSocket server failed to start", LOG_LEVEL_ERROR);
     //     return 0;
     // }
 
-    // // Initialize mDNS server
+    // // Initialize mDNS server (with its thread)
+    // init_service_threads(&mdns_server_threads);
     // if (!init_mdns_server_subsystem()) {
     //     log_this("Initialization", "mDNS server failed to start", LOG_LEVEL_ERROR);
     //     return 0;
@@ -207,7 +202,8 @@ int startup_hydrogen(const char* config_path) {
     //     return 0;
     // }
 
-    // // Initialize print queue system
+    // // Initialize print queue system (with its thread)
+    // init_service_threads(&print_threads);
     // if (!init_print_subsystem()) {
     //     log_this("Initialization", "Print system failed to start", LOG_LEVEL_ERROR);
     //     queue_system_destroy();
@@ -215,14 +211,13 @@ int startup_hydrogen(const char* config_path) {
     //     return 0;
     // }
 
-
     // Give threads a moment to launch
     usleep(10000);
 
     // Log full configuration information now that app_config is available
     log_config_info();
 
-     // All services have been started successfully
+    // All services have been started successfully
     server_starting = 0; 
     server_running = 1; 
     update_server_ready_time();  // Then try to record the time
