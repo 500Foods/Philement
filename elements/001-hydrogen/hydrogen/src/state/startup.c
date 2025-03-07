@@ -70,9 +70,9 @@ static void log_config_info(void) {
     log_group_begin();
     log_this("Startup", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
     log_this("Startup", "Server Name: %s", LOG_LEVEL_INFO, app_config->server.server_name);
-    log_this("Startup", "Executable: %s", LOG_LEVEL_INFO, app_config->executable_path);
+    log_this("Startup", "Executable: %s", LOG_LEVEL_INFO, app_config->server.exec_file);
 
-    long file_size = get_file_size(app_config->executable_path);
+    long file_size = get_file_size(app_config->server.exec_file);
     if (file_size >= 0) {
         log_this("Startup", "Size: %ld", LOG_LEVEL_INFO, file_size);
     } else {
@@ -80,7 +80,7 @@ static void log_config_info(void) {
     }
 
     log_this("Startup", "Log File: %s", LOG_LEVEL_INFO, 
-            app_config->server.log_file_path ? app_config->server.log_file_path : "None");
+            app_config->server.log_file ? app_config->server.log_file : "None");
     log_this("Startup", "Startup Delay: %d milliseconds", LOG_LEVEL_INFO, app_config->server.startup_delay);
     log_this("Startup", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
     log_group_end();
