@@ -48,7 +48,7 @@ int init_logging_subsystem(void) {
     }
 
     // Initialize file logging
-    init_file_logging(app_config->log_file_path);
+    init_file_logging(app_config->server.log_file_path);
 
     // Launch log queue manager
     if (pthread_create(&log_thread, NULL, log_queue_manager, system_log_queue) != 0) {

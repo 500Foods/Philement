@@ -1,131 +1,123 @@
 /*
  * Integer configuration value handler
  * 
- * This module implements the retrieval and conversion of configuration
- * values to integers, with proper validation and logging.
+ * This module contains routines for extracting integer values from configuration
+ * objects with robust error handling and default value fallbacks.
  */
 
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
 
-// Standard C headers
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 #include <limits.h>
+#include <float.h>
+#include <errno.h>
+#include <ctype.h>
+#include <jansson.h>
 
-// Project headers
-#include "config_int.h"
 #include "config_env.h"
+#include "config_defaults.h"
 #include "../logging/logging.h"
+
+/*
+ * Parse a numeric value with optional unit suffix
+ * Returns the parsed value in the base unit (milliseconds for time, bytes for size)
+ * Returns 0 on parsing failure
+ */
+static int parse_value_with_unit(const char* str_value) {
+    if (!str_value) {
+        return 0;
+    }
+    
+    char* endptr;
+    errno = 0;
+    double val = strtod(str_value, &endptr);
+    
+    if (errno != 0 || val > INT_MAX || val < INT_MIN) {
+        return 0;
+    }
+
+    // Skip whitespace after number
+    while (isspace(*endptr)) endptr++;
+    
+    // No unit suffix, return raw value
+    if (*endptr == '\0') {
+        return (int)val;
+    }
+
+    // Handle time units
+    if (strcasecmp(endptr, "ms") == 0 ||
+        strcasecmp(endptr, "milliseconds") == 0) {
+        return (int)val;
+    }
+    if (strcasecmp(endptr, "s") == 0 ||
+        strcasecmp(endptr, "seconds") == 0) {
+        val *= 1000.0;
+    }
+    else if (strcasecmp(endptr, "min") == 0 ||
+             strcasecmp(endptr, "minutes") == 0) {
+        val *= 60.0 * 1000.0;
+    }
+    
+    if (val > INT_MAX || val < INT_MIN) {
+        return 0;
+    }
+    
+    return (int)val;
+}
 
 int get_config_int(json_t* value, int default_value) {
     if (!value) {
-        log_this("Configuration", "Using default integer value: %d", LOG_LEVEL_DEBUG, default_value);
         return default_value;
     }
-    
-    // Handle environment variable substitution for string values
+
+    // Handle direct integer values - take them as-is
+    if (json_is_integer(value)) {
+        return (int)json_integer_value(value);
+    }
+
+    // Handle real numbers - convert directly
+    if (json_is_real(value)) {
+        double real_val = json_real_value(value);
+        if (real_val > INT_MAX || real_val < INT_MIN) {
+            return default_value;
+        }
+        return (int)real_val;
+    }
+
+    // Handle boolean values
+    if (json_is_boolean(value)) {
+        return json_is_true(value) ? 1 : 0;
+    }
+
+    // Handle null values
+    if (json_is_null(value)) {
+        return default_value;
+    }
+
+    // Handle string values (with units or env vars)
     if (json_is_string(value)) {
         const char* str_value = json_string_value(value);
         
-        // Check if this is an environment variable reference
-        if (str_value && strncmp(str_value, "${env.", 6) == 0) {
-            json_t* env_value = process_env_variable(str_value);
-            if (env_value) {
-                int result = default_value;
-                
-                if (json_is_integer(env_value)) {
-                    result = json_integer_value(env_value);
-                    log_this("Configuration", "Using environment variable as integer: %d", LOG_LEVEL_DEBUG, result);
-                } else if (json_is_real(env_value)) {
-                    result = (int)json_real_value(env_value);
-                    log_this("Configuration", "Converting real environment variable to integer: %d", 
-                             LOG_LEVEL_DEBUG, result);
-                } else if (json_is_boolean(env_value)) {
-                    result = json_is_true(env_value) ? 1 : 0;
-                    log_this("Configuration", "Converting boolean environment variable to integer: %d", 
-                             LOG_LEVEL_DEBUG, result);
-                } else if (json_is_string(env_value)) {
-                    const char* env_str = json_string_value(env_value);
-                    char* endptr;
-                    errno = 0;
-                    long val = strtol(env_str, &endptr, 10);
-                    if (*endptr == '\0' && errno == 0 && val >= INT_MIN && val <= INT_MAX) {
-                        result = (int)val;
-                        log_this("Configuration", "Converting string environment variable '%s' to integer: %d", 
-                                 LOG_LEVEL_DEBUG, env_str, result);
-                    } else {
-                        log_this("Configuration", "String environment variable '%s' is not a valid integer, using default: %d", 
-                                 LOG_LEVEL_DEBUG, env_str, default_value);
-                    }
-                } else {
-                    log_this("Configuration", "Environment variable not an integer type, using default: %d", 
-                             LOG_LEVEL_DEBUG, default_value);
-                }
-                
-                json_decref(env_value);
-                return result;
-            }
-            
-            // Extract the variable name for better error messages
-            const char* closing_brace = strchr(str_value + 6, '}');
-            size_t var_name_len = closing_brace ? (size_t)(closing_brace - (str_value + 6)) : 0;
-            char var_name[256] = ""; // Safe buffer for variable name
-            
-            if (var_name_len > 0 && var_name_len < sizeof(var_name)) {
-                strncpy(var_name, str_value + 6, var_name_len);
-                var_name[var_name_len] = '\0';
-                
-                log_this("Configuration", "Using default for %s: %d", LOG_LEVEL_INFO,
-                     var_name, default_value);
-            } else {
-                log_this("Configuration", "Environment variable not found, using default integer: %d", 
-                     LOG_LEVEL_DEBUG, default_value);
-            }
-            return default_value;
-        }
-        
-        // Not an environment variable, try to convert string to integer
-        const char* str = json_string_value(value);
-        char* endptr;
-        errno = 0;
-        long val = strtol(str, &endptr, 10);
-        if (*endptr == '\0' && errno == 0 && val >= INT_MIN && val <= INT_MAX) {
-            log_this("Configuration", "Converting string '%s' to integer: %ld", LOG_LEVEL_DEBUG, str, val);
-            return (int)val;
-        }
-        
-        log_this("Configuration", "String '%s' is not a valid integer, using default: %d", 
-                 LOG_LEVEL_DEBUG, str, default_value);
-        return default_value;
-    }
-        
-    // Direct JSON value handling
-    if (json_is_integer(value)) {
-        json_int_t val = json_integer_value(value);
-        if (val >= INT_MIN && val <= INT_MAX) {
-            return (int)val;
-        }
-        log_this("Configuration", "Integer value out of range, using default: %d", 
-                 LOG_LEVEL_DEBUG, default_value);
-        return default_value;
-    } else if (json_is_real(value)) {
-        double val = json_real_value(value);
-        if (val >= INT_MIN && val <= INT_MAX) {
-            int result = (int)val;
-            log_this("Configuration", "Converting real %f to integer: %d", LOG_LEVEL_DEBUG, val, result);
+        // Check for environment variable
+        json_t* env_value = process_env_variable(str_value);
+        if (env_value) {
+            int result = get_config_int(env_value, default_value);
+            json_decref(env_value);
             return result;
         }
-        log_this("Configuration", "Real value out of integer range, using default: %d", 
-                 LOG_LEVEL_DEBUG, default_value);
+
+        // Parse string value with potential unit suffix
+        int parsed = parse_value_with_unit(str_value);
+        if (parsed != 0) {
+            return parsed;
+        }
+        
         return default_value;
-    } else if (json_is_boolean(value)) {
-        return json_is_true(value) ? 1 : 0;
     }
-    
-    log_this("Configuration", "JSON value is not convertible to integer, using default: %d", 
-             LOG_LEVEL_DEBUG, default_value);
+
+    // For any other types or unexpected cases, return the default
     return default_value;
 }

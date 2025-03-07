@@ -109,7 +109,7 @@ int init_mdns_server_subsystem(void) {
         snprintf(config_url, sizeof(config_url), "http://localhost:%d", app_config->web.port);
     }
 
-    mdns_server = mdns_server_init(app_config->server_name,
+    mdns_server = mdns_server_init(app_config->server.server_name,
                                  app_config->mdns_server.device_id,
                                  app_config->mdns_server.friendly_name,
                                  app_config->mdns_server.model,

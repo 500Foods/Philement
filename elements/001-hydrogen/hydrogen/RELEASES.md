@@ -25,6 +25,7 @@ EDITING GUIDELINES (not visible when rendered):
 -->
 
 - March 2025
+  - [2025-Mar-07 (Fri)](docs/releases/2025-03-07.md): Code Cleanup, Configuration Structure, Startup Sequence
   - [2025-Mar-06 (Thu)](docs/releases/2025-03-06.md): Configuration System, Documentation
   - [2025-Mar-05 (Wed)](docs/releases/2025-03-05.md): API, WebSocket Server, Web Server, Testing, Documentation, State Management
   - [2025-Mar-04 (Tue)](docs/releases/2025-03-04.md): Web Server, Configuration, Testing

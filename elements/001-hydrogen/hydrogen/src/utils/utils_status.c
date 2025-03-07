@@ -690,7 +690,7 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
     // Logging service
     json_t *logging = json_object();
     json_object_set_new(logging, "enabled", json_true());
-    json_object_set_new(logging, "log_file", json_string(app_config->log_file_path));
+    json_object_set_new(logging, "log_file", json_string(app_config->server.log_file_path));
     
     json_t *logging_status = json_object();
     json_object_set_new(logging_status, "messageCount", json_integer(0));
