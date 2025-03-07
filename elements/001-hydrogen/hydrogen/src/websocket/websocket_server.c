@@ -205,7 +205,7 @@ int init_websocket_server(int port, const char* protocol, const char* key)
     lws_set_log_level(0, NULL);  // Reset logging before context creation
 
     // Configure logging based on numeric level
-    int config_level = app_config->Logging.Console.base.Subsystems.WebSocket;
+    int config_level = app_config->logging.console.subsystems.websocket;
     lws_set_log_level(0, NULL);  // Reset logging
 
     // Map numeric levels to libwebsockets levels

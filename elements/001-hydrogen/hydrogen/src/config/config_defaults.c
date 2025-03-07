@@ -83,11 +83,11 @@ json_t* create_default_websocket_config(void) {
         return NULL;
     }
 
-    json_object_set_new(websocket, "Enabled", json_boolean(1));
-    json_object_set_new(websocket, "EnableIPv6", json_boolean(0));
+    json_object_set_new(websocket, "Enabled", json_boolean(DEFAULT_WEBSOCKET_ENABLED));
+    json_object_set_new(websocket, "EnableIPv6", json_boolean(DEFAULT_WEBSOCKET_ENABLE_IPV6));
     json_object_set_new(websocket, "Port", json_integer(DEFAULT_WEBSOCKET_PORT));
-    json_object_set_new(websocket, "Key", json_string("default_key_change_me"));
-    json_object_set_new(websocket, "Protocol", json_string("hydrogen-protocol"));
+    json_object_set_new(websocket, "Key", json_string(DEFAULT_WEBSOCKET_KEY));
+    json_object_set_new(websocket, "Protocol", json_string(DEFAULT_WEBSOCKET_PROTOCOL));
     json_object_set_new(websocket, "MaxMessageSize", json_integer(10 * 1024 * 1024));
 
     json_t* timeouts = json_object();

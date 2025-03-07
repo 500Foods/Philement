@@ -67,7 +67,7 @@ bool init_swagger_support(WebServerConfig *config) {
     }
 
     // Skip if already initialized or disabled
-    if (swagger_initialized || !config || !config->swagger.enabled) {
+    if (swagger_initialized || !config || !config->swagger->enabled) {
         if (swagger_initialized) {
             log_this("SwaggerUI", "Already initialized", LOG_LEVEL_INFO, NULL);
         }
@@ -92,7 +92,7 @@ bool init_swagger_support(WebServerConfig *config) {
 
     if (!success) {
         log_this("SwaggerUI", "Failed to load UI files", LOG_LEVEL_WARN, NULL);
-        config->swagger.payload_available = false;
+        config->swagger->payload_available = false;
         return false;
     }
 
@@ -101,7 +101,7 @@ bool init_swagger_support(WebServerConfig *config) {
     free_payload(&payload);
 
     // Update configuration based on payload availability
-    config->swagger.payload_available = success;
+    config->swagger->payload_available = success;
     swagger_initialized = success;
     
     if (success) {
@@ -130,12 +130,12 @@ bool init_swagger_support(WebServerConfig *config) {
 }
 
 bool is_swagger_request(const char *url, const WebServerConfig *config) {
-    if (!config || !config->swagger.enabled || !config->swagger.payload_available || 
-        !config->swagger.prefix || !url) {
+    if (!config || !config->swagger->enabled || !config->swagger->payload_available || 
+        !config->swagger->prefix || !url) {
         return false;
     }
 
-    return strncmp(url, config->swagger.prefix, strlen(config->swagger.prefix)) == 0;
+    return strncmp(url, config->swagger->prefix, strlen(config->swagger->prefix)) == 0;
 }
 
 enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
@@ -148,8 +148,8 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
     // First check if this is exactly the swagger prefix with no trailing slash
     // If so, redirect to the same URL with a trailing slash
     // This ensures all relative assets are correctly loaded
-    size_t prefix_len = strlen(config->swagger.prefix);
-    if (strcmp(url, config->swagger.prefix) == 0) {
+    size_t prefix_len = strlen(config->swagger->prefix);
+    if (strcmp(url, config->swagger->prefix) == 0) {
         char *redirect_url;
         if (asprintf(&redirect_url, "%s/", url) != -1) {
             log_this("SwaggerUI", "Redirecting %s to %s for proper relative path resolution", 
@@ -252,41 +252,41 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
         }
 
         // Update metadata from config
-        if (config->swagger.metadata.title) {
-            json_object_set_new(info, "title", json_string(config->swagger.metadata.title));
+        if (config->swagger->metadata.title) {
+            json_object_set_new(info, "title", json_string(config->swagger->metadata.title));
         }
-        if (config->swagger.metadata.description) {
-            json_object_set_new(info, "description", json_string(config->swagger.metadata.description));
+        if (config->swagger->metadata.description) {
+            json_object_set_new(info, "description", json_string(config->swagger->metadata.description));
         }
-        if (config->swagger.metadata.version) {
-            json_object_set_new(info, "version", json_string(config->swagger.metadata.version));
+        if (config->swagger->metadata.version) {
+            json_object_set_new(info, "version", json_string(config->swagger->metadata.version));
         }
 
         // Update contact info if provided
-        if (config->swagger.metadata.contact.name || 
-            config->swagger.metadata.contact.email || 
-            config->swagger.metadata.contact.url) {
+        if (config->swagger->metadata.contact.name || 
+            config->swagger->metadata.contact.email || 
+            config->swagger->metadata.contact.url) {
             json_t *contact = json_object();
-            if (config->swagger.metadata.contact.name) {
-                json_object_set_new(contact, "name", json_string(config->swagger.metadata.contact.name));
+            if (config->swagger->metadata.contact.name) {
+                json_object_set_new(contact, "name", json_string(config->swagger->metadata.contact.name));
             }
-            if (config->swagger.metadata.contact.email) {
-                json_object_set_new(contact, "email", json_string(config->swagger.metadata.contact.email));
+            if (config->swagger->metadata.contact.email) {
+                json_object_set_new(contact, "email", json_string(config->swagger->metadata.contact.email));
             }
-            if (config->swagger.metadata.contact.url) {
-                json_object_set_new(contact, "url", json_string(config->swagger.metadata.contact.url));
+            if (config->swagger->metadata.contact.url) {
+                json_object_set_new(contact, "url", json_string(config->swagger->metadata.contact.url));
             }
             json_object_set_new(info, "contact", contact);
         }
 
         // Update license info if provided
-        if (config->swagger.metadata.license.name || config->swagger.metadata.license.url) {
+        if (config->swagger->metadata.license.name || config->swagger->metadata.license.url) {
             json_t *license = json_object();
-            if (config->swagger.metadata.license.name) {
-                json_object_set_new(license, "name", json_string(config->swagger.metadata.license.name));
+            if (config->swagger->metadata.license.name) {
+                json_object_set_new(license, "name", json_string(config->swagger->metadata.license.name));
             }
-            if (config->swagger.metadata.license.url) {
-                json_object_set_new(license, "url", json_string(config->swagger.metadata.license.url));
+            if (config->swagger->metadata.license.url) {
+                json_object_set_new(license, "url", json_string(config->swagger->metadata.license.url));
             }
             json_object_set_new(info, "license", license);
         }
@@ -712,16 +712,16 @@ static char* create_dynamic_initializer(const char *base_content __attribute__((
         "    });\n"
         "  });\n"
         "};", 
-        server_url, config->swagger.prefix, 
+        server_url, config->swagger->prefix,
         server_url, config->api_prefix,
-        config->swagger.ui_options.try_it_enabled ? "true" : "false",
-        config->swagger.ui_options.display_operation_id ? "true" : "false",
-        config->swagger.ui_options.default_models_expand_depth,
-        config->swagger.ui_options.default_model_expand_depth,
-        config->swagger.ui_options.show_extensions ? "true" : "false",
-        config->swagger.ui_options.show_common_extensions ? "true" : "false",
-        config->swagger.ui_options.doc_expansion,
-        config->swagger.ui_options.syntax_highlight_theme) == -1) {
+        config->swagger->ui_options.try_it_enabled ? "true" : "false",
+        config->swagger->ui_options.display_operation_id ? "true" : "false",
+        config->swagger->ui_options.default_models_expand_depth,
+        config->swagger->ui_options.default_model_expand_depth,
+        config->swagger->ui_options.show_extensions ? "true" : "false",
+        config->swagger->ui_options.show_common_extensions ? "true" : "false",
+        config->swagger->ui_options.doc_expansion,
+        config->swagger->ui_options.syntax_highlight_theme) == -1) {
         return NULL;
     }
 

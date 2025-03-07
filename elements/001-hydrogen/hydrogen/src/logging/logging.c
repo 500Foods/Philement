@@ -190,7 +190,7 @@ void log_this(const char* subsystem, const char* format, int priority, ...) {
         // 2. Console logging is enabled and either:
         //    - Queue isn't available
         //    - Queue enqueue failed
-        if (!app_config || (app_config->Logging.Console.base.Enabled && use_console)) {
+        if (!app_config || (app_config->logging.console.enabled && use_console)) {
             console_log(subsystem, priority, details);
         }
     }

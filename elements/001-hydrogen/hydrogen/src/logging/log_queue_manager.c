@@ -128,7 +128,9 @@ static FILE* log_file = NULL;
 
 // Private function declarations
 static void cleanup_log_queue_manager(void* arg);
-static bool should_log_to_destination(const char* subsystem, int priority, const LoggingDestination* dest);
+static bool should_log_to_console(const char* subsystem, int priority, const LoggingConsoleConfig* config);
+static bool should_log_to_file(const char* subsystem, int priority, const LoggingFileConfig* config);
+static bool should_log_to_database(const char* subsystem, int priority, const LoggingDatabaseConfig* config);
 static void process_log_message(const char* message, int priority);
 
 // Thread cleanup handler with guaranteed file closure
@@ -173,31 +175,97 @@ static void cleanup_log_queue_manager(void* arg) {
 //    - Memory allocation checks
 //    - Partial write detection
 // Check if a message should be logged to a specific destination
-static bool should_log_to_destination(const char* subsystem, int priority, const LoggingDestination* dest) {
-    if (!dest->Enabled) {
+static bool should_log_to_console(const char* subsystem, int priority, const LoggingConsoleConfig* config) {
+    if (!config->enabled) {
         return false;
     }
 
     // Get subsystem-specific level if configured
-    int configured_level = dest->DefaultLevel;
+    int configured_level = config->default_level;
     
     // Check if this subsystem has a specific configuration
-    if (strcmp(subsystem, "ThreadMgmt") == 0) {
-        configured_level = dest->Subsystems.ThreadMgmt;
-    } else if (strcmp(subsystem, "Shutdown") == 0) {
-        configured_level = dest->Subsystems.Shutdown;
-    } else if (strcmp(subsystem, "mDNSServer") == 0) {
-        configured_level = dest->Subsystems.mDNSServer;
-    } else if (strcmp(subsystem, "WebServer") == 0) {
-        configured_level = dest->Subsystems.WebServer;
-    } else if (strcmp(subsystem, "WebSocket") == 0) {
-        configured_level = dest->Subsystems.WebSocket;
-    } else if (strcmp(subsystem, "PrintQueue") == 0) {
-        configured_level = dest->Subsystems.PrintQueue;
-    } else if (strcmp(subsystem, "LogQueueManager") == 0) {
-        configured_level = dest->Subsystems.LogQueueManager;
+    if (strcmp(subsystem, "thread_mgmt") == 0) {
+        configured_level = config->subsystems.thread_mgmt;
+    } else if (strcmp(subsystem, "shutdown") == 0) {
+        configured_level = config->subsystems.shutdown;
+    } else if (strcmp(subsystem, "mdns_server") == 0) {
+        configured_level = config->subsystems.mdns_server;
+    } else if (strcmp(subsystem, "web_server") == 0) {
+        configured_level = config->subsystems.web_server;
+    } else if (strcmp(subsystem, "websocket") == 0) {
+        configured_level = config->subsystems.websocket;
+    } else if (strcmp(subsystem, "print_queue") == 0) {
+        configured_level = config->subsystems.print_queue;
+    } else if (strcmp(subsystem, "log_queue_mgr") == 0) {
+        configured_level = config->subsystems.log_queue_mgr;
     }
     // For undefined subsystems, we'll use the destination's DefaultLevel
+    
+    // Special handling for ALL and NONE
+    if (configured_level == LOG_LEVEL_ALL) return true;
+    if (configured_level == LOG_LEVEL_NONE) return false;
+
+    // For normal levels, message priority must be >= configured level
+    return priority >= configured_level;
+}
+
+static bool should_log_to_file(const char* subsystem, int priority, const LoggingFileConfig* config) {
+    if (!config->enabled) {
+        return false;
+    }
+
+    // Get subsystem-specific level if configured
+    int configured_level = config->default_level;
+    
+    // Check if this subsystem has a specific configuration
+    if (strcmp(subsystem, "thread_mgmt") == 0) {
+        configured_level = config->subsystems.thread_mgmt;
+    } else if (strcmp(subsystem, "shutdown") == 0) {
+        configured_level = config->subsystems.shutdown;
+    } else if (strcmp(subsystem, "mdns_server") == 0) {
+        configured_level = config->subsystems.mdns_server;
+    } else if (strcmp(subsystem, "web_server") == 0) {
+        configured_level = config->subsystems.web_server;
+    } else if (strcmp(subsystem, "websocket") == 0) {
+        configured_level = config->subsystems.websocket;
+    } else if (strcmp(subsystem, "print_queue") == 0) {
+        configured_level = config->subsystems.print_queue;
+    } else if (strcmp(subsystem, "log_queue_mgr") == 0) {
+        configured_level = config->subsystems.log_queue_mgr;
+    }
+    
+    // Special handling for ALL and NONE
+    if (configured_level == LOG_LEVEL_ALL) return true;
+    if (configured_level == LOG_LEVEL_NONE) return false;
+
+    // For normal levels, message priority must be >= configured level
+    return priority >= configured_level;
+}
+
+static bool should_log_to_database(const char* subsystem, int priority, const LoggingDatabaseConfig* config) {
+    if (!config->enabled) {
+        return false;
+    }
+
+    // Get subsystem-specific level if configured
+    int configured_level = config->default_level;
+    
+    // Check if this subsystem has a specific configuration
+    if (strcmp(subsystem, "thread_mgmt") == 0) {
+        configured_level = config->subsystems.thread_mgmt;
+    } else if (strcmp(subsystem, "shutdown") == 0) {
+        configured_level = config->subsystems.shutdown;
+    } else if (strcmp(subsystem, "mdns_server") == 0) {
+        configured_level = config->subsystems.mdns_server;
+    } else if (strcmp(subsystem, "web_server") == 0) {
+        configured_level = config->subsystems.web_server;
+    } else if (strcmp(subsystem, "websocket") == 0) {
+        configured_level = config->subsystems.websocket;
+    } else if (strcmp(subsystem, "print_queue") == 0) {
+        configured_level = config->subsystems.print_queue;
+    } else if (strcmp(subsystem, "log_queue_mgr") == 0) {
+        configured_level = config->subsystems.log_queue_mgr;
+    }
     
     // Special handling for ALL and NONE
     if (configured_level == LOG_LEVEL_ALL) return true;
@@ -239,16 +307,16 @@ static void process_log_message(const char* message, int priority) {
         snprintf(log_entry, sizeof(log_entry), "%s  %s  %s  %s\n", timestamp_ms, formatted_priority, formatted_subsystem, details);
 
         // Apply filtering for each destination
-        if (logConsole && should_log_to_destination(subsystem, priority, &app_config->Logging.Console.base)) {
+        if (logConsole && should_log_to_console(subsystem, priority, &app_config->logging.console)) {
             printf("%s", log_entry);
         }
 
-        if (logFile && log_file && should_log_to_destination(subsystem, priority, &app_config->Logging.File.base)) {
+        if (logFile && log_file && should_log_to_file(subsystem, priority, &app_config->logging.file)) {
             fputs(log_entry, log_file);
             fflush(log_file);  // Ensure the log is written immediately
         }
 
-        if (logDatabase && should_log_to_destination(subsystem, priority, &app_config->Logging.Database.base)) {
+        if (logDatabase && should_log_to_database(subsystem, priority, &app_config->logging.database)) {
             // TODO: Implement database logging when needed
         }
 
