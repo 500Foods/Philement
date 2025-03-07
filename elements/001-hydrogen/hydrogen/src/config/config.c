@@ -115,6 +115,10 @@ const AppConfig* get_app_config(void) {
  *    - Maintains configuration versioning
  */
 AppConfig* load_config(const char* config_path) {
+
+    log_this("Config", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
+    log_this("Config", "CONFIGURATION", LOG_LEVEL_INFO);
+
     // Free previous configuration if it exists
     if (app_config) {
         // TODO: Implement proper cleanup of AppConfig resources
@@ -125,7 +129,7 @@ AppConfig* load_config(const char* config_path) {
     json_t* root = json_load_file(config_path, 0, &error);
 
     if (!root) {
-        log_this("Configuration", "Failed to load config file: %s (line %d, column %d)",
+        log_this("Config", "Failed to load config file: %s (line %d, column %d)",
                  LOG_LEVEL_ERROR, error.text, error.line, error.column);
         
         fprintf(stderr, "ERROR: Hydrogen configuration file has JSON syntax errors.\n");
@@ -137,7 +141,7 @@ AppConfig* load_config(const char* config_path) {
 
     AppConfig* config = calloc(1, sizeof(AppConfig));
     if (!config) {
-        log_this("Configuration", "Failed to allocate memory for config", LOG_LEVEL_DEBUG);
+        log_this("Config", "Failed to allocate memory for config", LOG_LEVEL_DEBUG);
         json_decref(root);
         return NULL;
     }
@@ -149,7 +153,7 @@ AppConfig* load_config(const char* config_path) {
     config->config_file = strdup(config_path);  // Store the config file path
     config->executable_path = get_executable_path();
     if (!config->executable_path) {
-        log_this("Configuration", "Failed to get executable path, using default", LOG_LEVEL_INFO);
+        log_this("Config", "Failed to get executable path, using default", LOG_LEVEL_INFO);
         config->executable_path = strdup("./hydrogen");
     }
 
@@ -159,9 +163,9 @@ AppConfig* load_config(const char* config_path) {
     if (json_is_string(server_name) && 
         strncmp(json_string_value(server_name), "${env.", 6) == 0 &&
         !getenv(json_string_value(server_name) + 6)) {
-        log_this("Configuration", "ServerName: (default)", LOG_LEVEL_INFO);
+        log_this("Config", "ServerName: (default)", LOG_LEVEL_INFO);
     } else {
-        log_this("Configuration", "ServerName: %s", LOG_LEVEL_INFO, config->server_name);
+        log_this("Config", "ServerName: %s", LOG_LEVEL_INFO, config->server_name);
     }
     
     // Payload Key (for payload decryption)
@@ -177,28 +181,28 @@ AppConfig* load_config(const char* config_path) {
             var_name[copy_len] = '\0';
             
             if (getenv(var_name)) {
-                log_this("Configuration", "PayloadKey: Using value from %s", LOG_LEVEL_INFO, var_name);
+                log_this("Config-Env", "PayloadKey: Using value from %s", LOG_LEVEL_INFO, var_name);
             } else {
-                log_this("Configuration", "PayloadKey: Environment variable %s not found", LOG_LEVEL_WARN, var_name);
+                log_this("Config-Env", "PayloadKey: Environment variable %s not found", LOG_LEVEL_WARN, var_name);
             }
         }
     } else if (config->payload_key) {
-        log_this("Configuration", "PayloadKey: Set from configuration", LOG_LEVEL_INFO);
+        log_this("Config", "PayloadKey: Set from configuration", LOG_LEVEL_INFO);
     } else {
-        log_this("Configuration", "PayloadKey: Not configured", LOG_LEVEL_WARN);
+        log_this("COnfig", "PayloadKey: Not configured", LOG_LEVEL_WARN);
     }
 
     // Log File
     json_t* log_file = json_object_get(root, "LogFile");
     config->log_file_path = get_config_string(log_file, DEFAULT_LOG_FILE_PATH);
-    log_this("Configuration", "LogFile: %s", LOG_LEVEL_INFO, config->log_file_path);
+    log_this("Config", "LogFile: %s", LOG_LEVEL_INFO, config->log_file_path);
 
     // Web Configuration
     json_t* web = json_object_get(root, "WebServer");
     if (json_is_object(web)) {
         json_t* enabled = json_object_get(web, "Enabled");
         config->web.enabled = get_config_bool(enabled, 1);
-        log_this("Configuration", "WebServer Enabled: %s", LOG_LEVEL_INFO, 
+        log_this("COnfig", "WebServer Enabled: %s", LOG_LEVEL_INFO, 
                  config->web.enabled ? "true" : "false");
 
         json_t* enable_ipv6 = json_object_get(web, "EnableIPv6");
@@ -206,7 +210,7 @@ AppConfig* load_config(const char* config_path) {
 
         json_t* port = json_object_get(web, "Port");
         config->web.port = get_config_int(port, DEFAULT_WEB_PORT);
-        log_this("Configuration", "WebServer Port: %d", LOG_LEVEL_INFO, config->web.port);
+        log_this("Config", "WebServer Port: %d", LOG_LEVEL_INFO, config->web.port);
 
         json_t* web_root = json_object_get(web, "WebRoot");
         config->web.web_root = get_config_string(web_root, "/var/www/html");
@@ -222,7 +226,7 @@ AppConfig* load_config(const char* config_path) {
         
         json_t* api_prefix = json_object_get(web, "ApiPrefix");
         config->web.api_prefix = get_config_string(api_prefix, "/api");
-        log_this("Configuration", "API Prefix: %s", LOG_LEVEL_INFO, config->web.api_prefix);
+        log_this("Config", "API Prefix: %s", LOG_LEVEL_INFO, config->web.api_prefix);
     } else {
         config->web.port = DEFAULT_WEB_PORT;
         config->web.web_root = strdup("/var/www/html");
@@ -230,7 +234,7 @@ AppConfig* load_config(const char* config_path) {
         config->web.upload_dir = strdup(DEFAULT_UPLOAD_DIR);
         config->web.max_upload_size = DEFAULT_MAX_UPLOAD_SIZE;
         config->web.api_prefix = strdup("/api");
-        log_this("Configuration", "API Prefix: %s (default)", LOG_LEVEL_INFO, config->web.api_prefix);
+        log_this("Config", "API Prefix: %s (default)", LOG_LEVEL_INFO, config->web.api_prefix);
     }
 
     // WebSocket Configuration
@@ -254,7 +258,7 @@ AppConfig* load_config(const char* config_path) {
         }
         config->websocket.protocol = get_config_string(protocol, "hydrogen-protocol");
         if (!config->websocket.protocol) {
-            log_this("Configuration", "Failed to allocate WebSocket protocol string", LOG_LEVEL_ERROR);
+            log_this("Config", "Failed to allocate WebSocket protocol string", LOG_LEVEL_ERROR);
             free(config->websocket.key);
             return NULL;
         }
@@ -266,7 +270,7 @@ AppConfig* load_config(const char* config_path) {
         if (json_is_object(connection_timeouts)) {
             json_t* exit_wait_seconds = json_object_get(connection_timeouts, "ExitWaitSeconds");
             config->websocket.exit_wait_seconds = get_config_int(exit_wait_seconds, 10);
-            log_this("Configuration", "WebSocket Exit Wait Seconds: %d", LOG_LEVEL_INFO, config->websocket.exit_wait_seconds);
+            log_this("Config", "WebSocket Exit Wait Seconds: %d", LOG_LEVEL_INFO, config->websocket.exit_wait_seconds);
         } else {
             config->websocket.exit_wait_seconds = 10;
         }
@@ -483,7 +487,7 @@ AppConfig* load_config(const char* config_path) {
     if (json_is_object(print_queue)) {
         json_t* enabled = json_object_get(print_queue, "Enabled");
         config->print_queue.enabled = get_config_bool(enabled, 1);
-        log_this("Configuration", "PrintQueue Enabled: %s", LOG_LEVEL_INFO, 
+        log_this("Config", "PrintQueue Enabled: %s", LOG_LEVEL_INFO, 
                  config->print_queue.enabled ? "true" : "false");
 
         json_t* queue_settings = json_object_get(print_queue, "QueueSettings");
@@ -507,7 +511,7 @@ AppConfig* load_config(const char* config_path) {
             json_t* val;
             val = json_object_get(timeouts, "ShutdownWaitMs");
             config->print_queue.timeouts.shutdown_wait_ms = get_config_size(val, DEFAULT_SHUTDOWN_WAIT_MS);
-            log_this("Configuration", "ShutdownWaitSeconds: %d", LOG_LEVEL_INFO, 
+            log_this("Config", "ShutdownWaitSeconds: %d", LOG_LEVEL_INFO, 
                     (int)(config->print_queue.timeouts.shutdown_wait_ms / 1000));
             
             val = json_object_get(timeouts, "JobProcessingTimeoutMs");
@@ -542,7 +546,7 @@ AppConfig* load_config(const char* config_path) {
         config->api.jwt_secret = get_config_string(jwt_secret, "hydrogen_api_secret_change_me");
     } else {
         config->api.jwt_secret = strdup("hydrogen_api_secret_change_me");
-        log_this("Configuration", "Using default API configuration", LOG_LEVEL_INFO);
+        log_this("Config", "Using default API configuration", LOG_LEVEL_INFO);
     }
 
     json_decref(root);

@@ -83,9 +83,9 @@
     "Logging": {
         "Levels": [
             [0, "ALL"],
-            [1, "INFO"],
-            [2, "WARN"],
-            [3, "DEBUG"],
+            [1, "DEBUG"],
+            [2, "INFO"],
+            [3, "WARN"],
             [4, "ERROR"],
             [5, "CRITICAL"],
             [6, "NONE"]
@@ -95,6 +95,7 @@
             "DefaultLevel": 1,
             "Subsystems": {
                 "Startup":1,
+                "DepCheck": 2,
                 "Shutdown":1,
                 "Threads":1,
                 "ThreadMgmt": 0,
