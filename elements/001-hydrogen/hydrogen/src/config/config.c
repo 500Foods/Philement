@@ -8,9 +8,11 @@
 
 // Core system headers
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <errno.h>
 #include <limits.h>
+#include <unistd.h>
 
 // Standard C headers
 #include <stdio.h>
@@ -46,6 +48,72 @@
 #include "../logging/logging.h"
 #include "../utils/utils.h"
 
+// Public interface declarations
+const AppConfig* get_app_config(void);
+AppConfig* load_config(const char* cmdline_path);
+
+// Private interface declarations
+static bool is_file_readable(const char* path);
+static bool is_sensitive_value(const char* name);
+static void log_config_section_header(const char* section_name);
+static void log_config_section_item(const char* key, const char* format, int level,
+                                  int is_default, int indent, const char* input_units,
+                                  const char* output_units, ...);
+static char* get_config_string_with_env(const char* json_key, json_t* value, const char* default_value);
+
+/*
+ * Helper function to handle environment variable substitution in config values
+ * 
+ * This function checks if a string value is in "${env.VAR}" format and if so,
+ * processes it using the environment variable handling system. It handles:
+ * - Environment variable resolution
+ * - Type conversion
+ * - Logging with Config-Env subsystem
+ * - Sensitive value masking
+ * 
+ * @param json_key The configuration key name (for logging)
+ * @param value The JSON value to check
+ * @param default_value The default value to use if no value is provided
+ * @return The resolved string value (caller must free)
+ */
+static char* get_config_string_with_env(const char* json_key, json_t* value, const char* default_value) {
+    if (!json_is_string(value)) {
+        return strdup(default_value);
+    }
+
+    const char* str_value = json_string_value(value);
+    if (strncmp(str_value, "${env.", 6) == 0) {
+        // Extract environment variable name
+        const char* env_var = str_value + 6;
+        size_t env_var_len = strlen(env_var);
+        if (env_var_len > 1 && env_var[env_var_len - 1] == '}') {
+            char var_name[256] = {0};
+            strncpy(var_name, env_var, env_var_len - 1);
+            var_name[env_var_len - 1] = '\0';
+
+            const char* env_value = getenv(var_name);
+            if (env_value) {
+                // For sensitive values, truncate in log
+                if (is_sensitive_value(json_key)) {
+                    char safe_value[256];
+                    strncpy(safe_value, env_value, 5);
+                    safe_value[5] = '\0';
+                    strcat(safe_value, "...");
+                    log_this("Config-Env", "- %s: $%s: %s", LOG_LEVEL_INFO, json_key, var_name, safe_value);
+                } else {
+                    log_this("Config-Env", "- %s: $%s: %s", LOG_LEVEL_INFO, json_key, var_name, env_value);
+                }
+                return strdup(env_value);
+            } else {
+                log_this("Config-Env", "- %s: $%s: (not set)", LOG_LEVEL_INFO, json_key, var_name);
+                return strdup(default_value);
+            }
+        }
+    }
+
+    // Not an environment variable, use the value directly
+    return strdup(str_value);
+}
 
 // Global static configuration instance
 static AppConfig *app_config = NULL;
@@ -77,39 +145,6 @@ static bool is_sensitive_value(const char* name) {
 }
     
 
-/*
- * Format a configuration value, truncating sensitive string values
- * 
- * This function formats a configuration value and truncates sensitive strings
- * to 5 characters to avoid logging secrets in full.
- * 
- * @param buffer Output buffer
- * @param buffer_size Size of the output buffer
- * @param name Configuration key name
- * @param format Format string
- * @param args Variable arguments
- */
-void format_config_value(char* buffer, size_t buffer_size, const char* name, const char* format, va_list args) {
-    va_list args_copy;
-    va_copy(args_copy, args);
-    
-    /* Create the formatted value first */
-    char formatted_value[1024] = {0};
-    vsnprintf(formatted_value, sizeof(formatted_value), format, args_copy);
-    va_end(args_copy);
-    
-    /* For sensitive string values, truncate */
-    if (is_sensitive_value(name) && strstr(format, "%s")) {
-        int len = strlen(formatted_value);
-        if (len > 5) {
-            formatted_value[5] = '\0';
-            strncat(formatted_value, "...", sizeof(formatted_value) - strlen(formatted_value) - 1);
-        }
-    }
-    
-    strncpy(buffer, formatted_value, buffer_size);
-    buffer[buffer_size - 1] = '\0';
-}
 
 /*
  * Helper function to log a configuration section header
@@ -119,7 +154,7 @@ void format_config_value(char* buffer, size_t buffer_size, const char* name, con
  * 
  * @param section_name The name of the configuration section
  */
-void log_config_section_header(const char* section_name) {
+static void log_config_section_header(const char* section_name) {
     log_this("Config", "%s", LOG_LEVEL_INFO, section_name);
 }
 
@@ -139,7 +174,7 @@ void log_config_section_header(const char* section_name) {
  * @param output_units The desired display units (e.g., "MB" for megabytes, "s" for seconds)
  * @param ... Variable arguments for the format string
  */
-void log_config_section_item(const char* key, const char* format, int level, int is_default, 
+static void log_config_section_item(const char* key, const char* format, int level, int is_default,
                            int indent, const char* input_units, const char* output_units, ...) {
     if (!key || !format) {
         return;
@@ -229,8 +264,22 @@ const AppConfig* get_app_config(void) {
 /*
  * Load and validate configuration with comprehensive error handling
  */
-AppConfig* load_config(const char* config_path) {
+// Standard system paths to check for configuration
+static const char* const CONFIG_PATHS[] = {
+    "hydrogen.json",
+    "/etc/hydrogen/hydrogen.json",
+    "/usr/local/etc/hydrogen/hydrogen.json"
+};
+static const int NUM_CONFIG_PATHS = sizeof(CONFIG_PATHS) / sizeof(CONFIG_PATHS[0]);
 
+// Helper function to check if a file exists and is readable
+static bool is_file_readable(const char* path) {
+    if (!path) return false;
+    struct stat st;
+    return (stat(path, &st) == 0 && S_ISREG(st.st_mode) && access(path, R_OK) == 0);
+}
+
+AppConfig* load_config(const char* cmdline_path) {
     log_this("Config", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
     log_this("Config", "CONFIGURATION", LOG_LEVEL_INFO);
 
@@ -239,28 +288,94 @@ AppConfig* load_config(const char* config_path) {
         free(app_config);
     }
 
+    json_t* root = NULL;
     json_error_t error;
-    json_t* root = json_load_file(config_path, 0, &error);
+    const char* final_path = NULL;
+    bool explicit_config = false;
 
-    if (!root) {
-        log_this("Config", "Failed to load config file: %s (line %d, column %d)",
-                 LOG_LEVEL_ERROR, error.text, error.line, error.column);
-        log_this("Config", "Hydrogen configuration file has JSON syntax errors",
-                 LOG_LEVEL_ERROR);
-        log_this("Config", "Please fix the syntax error and try again",
-                 LOG_LEVEL_ERROR);
-        
-        exit(EXIT_FAILURE);
+    // First check HYDROGEN_CONFIG environment variable
+    const char* env_path = getenv("HYDROGEN_CONFIG");
+    if (env_path) {
+        explicit_config = true;
+        if (!is_file_readable(env_path)) {
+            log_this("Config", "Environment-specified config file not found: %s", LOG_LEVEL_ERROR, env_path);
+            return NULL;
+        }
+        root = json_load_file(env_path, 0, &error);
+        if (!root) {
+            log_this("Config", "Failed to load environment-specified config: %s (line %d, column %d)",
+                     LOG_LEVEL_ERROR, error.text, error.line, error.column);
+            return NULL;
+        }
+        final_path = env_path;
+        log_this("Config", "Using configuration from environment variable: %s", LOG_LEVEL_INFO, env_path);
     }
 
+    // Then try command line path if provided
+    if (!root && cmdline_path) {
+        explicit_config = true;
+        if (!is_file_readable(cmdline_path)) {
+            log_this("Config", "Command-line specified config file not found: %s", LOG_LEVEL_ERROR, cmdline_path);
+            return NULL;
+        }
+        root = json_load_file(cmdline_path, 0, &error);
+        if (!root) {
+            log_this("Config", "Failed to load command-line specified config: %s (line %d, column %d)",
+                     LOG_LEVEL_ERROR, error.text, error.line, error.column);
+            return NULL;
+        }
+        final_path = cmdline_path;
+        log_this("Config", "Using configuration from command line: %s", LOG_LEVEL_INFO, cmdline_path);
+    }
+
+    // If no explicit config was provided, try standard locations
+    if (!root && !explicit_config) {
+        for (int i = 0; i < NUM_CONFIG_PATHS; i++) {
+            if (is_file_readable(CONFIG_PATHS[i])) {
+                root = json_load_file(CONFIG_PATHS[i], 0, &error);
+                if (root) {
+                    final_path = CONFIG_PATHS[i];
+                    log_this("Config", "Using configuration from: %s", LOG_LEVEL_INFO, final_path);
+                    break;
+                }
+                // If file exists but has errors, try next location
+                log_this("Config", "Skipping %s due to parse errors", LOG_LEVEL_WARN, CONFIG_PATHS[i]);
+            }
+        }
+    }
+
+    // Allocate config structure
     AppConfig* config = calloc(1, sizeof(AppConfig));
     if (!config) {
-        log_this("Config", "Failed to allocate memory for config", LOG_LEVEL_DEBUG);
-        json_decref(root);
+        log_this("Config", "Failed to allocate memory for config", LOG_LEVEL_ERROR);
+        if (root) json_decref(root);
         return NULL;
     }
     
     app_config = config;
+
+    // Set up config path for use in server section
+    const char* config_path = final_path;
+    if (!config_path) {
+        config_path = "Missing... using defaults";
+    }
+
+    // If we found a config file, process it
+    if (root) {
+        log_this("Config", "Using configuration from: %s", LOG_LEVEL_INFO, config_path);
+    } else {
+        log_this("Config", "No configuration file found, using defaults", LOG_LEVEL_WARN);
+        log_this("Config", "Checked locations:", LOG_LEVEL_INFO);
+        if (env_path) {
+            log_this("Config", "  - $HYDROGEN_CONFIG: %s", LOG_LEVEL_INFO, env_path);
+        }
+        if (cmdline_path) {
+            log_this("Config", "  - Command line path: %s", LOG_LEVEL_INFO, cmdline_path);
+        }
+        for (int i = 0; i < NUM_CONFIG_PATHS; i++) {
+            log_this("Config", "  - %s", LOG_LEVEL_INFO, CONFIG_PATHS[i]);
+        }
+    }
 
 
 
@@ -272,14 +387,8 @@ AppConfig* load_config(const char* config_path) {
 
         // Server Name
         json_t* server_name = json_object_get(server, "ServerName");
-        config->server.server_name = get_config_string(server_name, DEFAULT_SERVER_NAME);
-        if (json_is_string(server_name) && 
-            strncmp(json_string_value(server_name), "${env.", 6) == 0 &&
-            !getenv(json_string_value(server_name) + 6)) {
-            log_config_section_item("ServerName", "(default)", LOG_LEVEL_INFO, 1, 0, NULL, NULL);
-        } else {
-            log_config_section_item("ServerName", "%s", LOG_LEVEL_INFO, !server_name, 0, NULL, NULL, config->server.server_name);
-        }
+        config->server.server_name = get_config_string_with_env("ServerName", server_name, DEFAULT_SERVER_NAME);
+        log_config_section_item("ServerName", "%s", LOG_LEVEL_INFO, !server_name, 0, NULL, NULL, config->server.server_name);
                 
         // Store configuration paths
         char real_path[PATH_MAX];
@@ -302,7 +411,7 @@ AppConfig* load_config(const char* config_path) {
 
         // Log File
         json_t* log_file = json_object_get(server, "LogFile");
-        char* log_path = get_config_string(log_file, DEFAULT_LOG_FILE_PATH);
+        char* log_path = get_config_string_with_env("LogFile", log_file, DEFAULT_LOG_FILE_PATH);
         if (realpath(log_path, real_path) != NULL) {
             config->server.log_file = strdup(real_path);
             free(log_path);
@@ -313,29 +422,7 @@ AppConfig* load_config(const char* config_path) {
 
         // Payload Key (for payload decryption)
         json_t* payload_key = json_object_get(server, "PayloadKey");
-        config->server.payload_key = get_config_string(payload_key, "${env.PAYLOAD_KEY}");
-        if (config->server.payload_key && strncmp(config->server.payload_key, "${env.", 6) == 0) {
-            const char* env_var = config->server.payload_key + 6;
-            size_t env_var_len = strlen(env_var);
-            if (env_var_len > 1 && env_var[env_var_len - 1] == '}') {
-                char var_name[256] = {0};
-                strncpy(var_name, env_var, env_var_len - 1);
-                var_name[env_var_len - 1] = '\0';
-                
-                const char* env_value = getenv(var_name);
-                if (env_value) {
-                    char safe_value[256];
-                    strncpy(safe_value, env_value, 5);
-                    safe_value[5] = '\0';
-                    strcat(safe_value, "...");
-                    log_this("Config-Env", "- PayloadKey: $%s: %s", LOG_LEVEL_INFO, var_name, safe_value);
-                } else {
-                    log_this("Config-Env", "- PayloadKey: $%s: (not set)", LOG_LEVEL_INFO, var_name);
-                }
-            }
-        } else if (config->server.payload_key) {
-            log_this("Config", "- PayloadKey: %s", LOG_LEVEL_INFO, config->server.payload_key);
-        }
+        config->server.payload_key = get_config_string_with_env("PayloadKey", payload_key, "${env.PAYLOAD_KEY}");
 
         // Startup Delay (in milliseconds)
         json_t* startup_delay = json_object_get(server, "StartupDelay");
@@ -380,15 +467,15 @@ AppConfig* load_config(const char* config_path) {
         log_config_section_item("Port", "%d", LOG_LEVEL_INFO, !port, 0, NULL, NULL, config->web.port);
 
         json_t* web_root = json_object_get(web, "WebRoot");
-        config->web.web_root = get_config_string(web_root, "/var/www/html");
+        config->web.web_root = get_config_string_with_env("WebRoot", web_root, "/var/www/html");
         log_config_section_item("WebRoot", "%s", LOG_LEVEL_INFO, !web_root, 0, NULL, NULL, config->web.web_root);
 
         json_t* upload_path = json_object_get(web, "UploadPath");
-        config->web.upload_path = get_config_string(upload_path, DEFAULT_UPLOAD_PATH);
+        config->web.upload_path = get_config_string_with_env("UploadPath", upload_path, DEFAULT_UPLOAD_PATH);
         log_config_section_item("UploadPath", "%s", LOG_LEVEL_INFO, !upload_path, 0, NULL, NULL, config->web.upload_path);
 
         json_t* upload_dir = json_object_get(web, "UploadDir");
-        config->web.upload_dir = get_config_string(upload_dir, DEFAULT_UPLOAD_DIR);
+        config->web.upload_dir = get_config_string_with_env("UploadDir", upload_dir, DEFAULT_UPLOAD_DIR);
         log_config_section_item("UploadDir", "%s", LOG_LEVEL_INFO, !upload_dir, 0, NULL, NULL, config->web.upload_dir);
 
         json_t* max_upload_size = json_object_get(web, "MaxUploadSize");
@@ -396,7 +483,7 @@ AppConfig* load_config(const char* config_path) {
         log_config_section_item("MaxUploadSize", "%zu", LOG_LEVEL_INFO, !max_upload_size, 0, "B", "MB", config->web.max_upload_size);
         
         json_t* api_prefix = json_object_get(web, "ApiPrefix");
-        config->web.api_prefix = get_config_string(api_prefix, "/api");
+        config->web.api_prefix = get_config_string_with_env("ApiPrefix", api_prefix, "/api");
         log_config_section_item("ApiPrefix", "%s", LOG_LEVEL_INFO, !api_prefix, 0, NULL, NULL, config->web.api_prefix);
     } else {
         config->web.port = DEFAULT_WEB_PORT;
@@ -432,35 +519,13 @@ AppConfig* load_config(const char* config_path) {
         log_config_section_item("Port", "%d", LOG_LEVEL_INFO, !port, 0, NULL, NULL, config->websocket.port);
 
         json_t* key = json_object_get(websocket, "Key");
-        config->websocket.key = get_config_string(key, "default_key");
-        if (config->websocket.key && strncmp(config->websocket.key, "${env.", 6) == 0) {
-            const char* env_var = config->websocket.key + 6;
-            size_t env_var_len = strlen(env_var);
-            if (env_var_len > 1 && env_var[env_var_len - 1] == '}') {
-                char var_name[256] = {0};
-                strncpy(var_name, env_var, env_var_len - 1);
-                var_name[env_var_len - 1] = '\0';
-                
-                const char* env_value = getenv(var_name);
-                if (env_value) {
-                    char safe_value[256];
-                    strncpy(safe_value, env_value, 5);
-                    safe_value[5] = '\0';
-                    strcat(safe_value, "...");
-                    log_this("Config-Env", "- Key: $%s: %s", LOG_LEVEL_INFO, var_name, safe_value);
-                } else {
-                    log_this("Config-Env", "- Key: $%s: (not set)", LOG_LEVEL_INFO, var_name);
-                }
-            }
-        } else if (config->websocket.key) {
-            log_this("Config", "- Key: %s", LOG_LEVEL_INFO, config->websocket.key);
-        }
+        config->websocket.key = get_config_string_with_env("Key", key, "default_key");
 
         json_t* protocol = json_object_get(websocket, "protocol");
         if (!protocol) {
             protocol = json_object_get(websocket, "Protocol");  // Try legacy uppercase key
         }
-        config->websocket.protocol = get_config_string(protocol, "hydrogen-protocol");
+        config->websocket.protocol = get_config_string_with_env("Protocol", protocol, "hydrogen-protocol");
         if (!config->websocket.protocol) {
             log_config_section_item("Protocol", "Failed to allocate string", LOG_LEVEL_ERROR, 1, 0, NULL, NULL);
             free(config->websocket.key);
@@ -512,23 +577,23 @@ AppConfig* load_config(const char* config_path) {
                  config->mdns_server.enable_ipv6 ? "true" : "false");
 
         json_t* device_id = json_object_get(mdns_server, "DeviceId");
-        config->mdns_server.device_id = get_config_string(device_id, "hydrogen-printer");
+        config->mdns_server.device_id = get_config_string_with_env("DeviceId", device_id, "hydrogen-printer");
         log_config_section_item("DeviceId", "%s", LOG_LEVEL_INFO, !device_id, 0, NULL, NULL, config->mdns_server.device_id);
 
         json_t* friendly_name = json_object_get(mdns_server, "FriendlyName");
-        config->mdns_server.friendly_name = get_config_string(friendly_name, "Hydrogen 3D Printer");
+        config->mdns_server.friendly_name = get_config_string_with_env("FriendlyName", friendly_name, "Hydrogen 3D Printer");
         log_config_section_item("FriendlyName", "%s", LOG_LEVEL_INFO, !friendly_name, 0, NULL, NULL, config->mdns_server.friendly_name);
 
         json_t* model = json_object_get(mdns_server, "Model");
-        config->mdns_server.model = get_config_string(model, "Hydrogen");
+        config->mdns_server.model = get_config_string_with_env("Model", model, "Hydrogen");
         log_config_section_item("Model", "%s", LOG_LEVEL_INFO, !model, 0, NULL, NULL, config->mdns_server.model);
 
         json_t* manufacturer = json_object_get(mdns_server, "Manufacturer");
-        config->mdns_server.manufacturer = get_config_string(manufacturer, "Philement");
+        config->mdns_server.manufacturer = get_config_string_with_env("Manufacturer", manufacturer, "Philement");
         log_config_section_item("Manufacturer", "%s", LOG_LEVEL_INFO, !manufacturer, 0, NULL, NULL, config->mdns_server.manufacturer);
 
         json_t* version = json_object_get(mdns_server, "Version");
-        config->mdns_server.version = get_config_string(version, VERSION);
+        config->mdns_server.version = get_config_string_with_env("Version", version, VERSION);
         log_config_section_item("Version", "%s", LOG_LEVEL_INFO, !version, 0, NULL, NULL, config->mdns_server.version);
         
         json_t* services = json_object_get(mdns_server, "Services");
@@ -541,10 +606,10 @@ AppConfig* load_config(const char* config_path) {
                 if (!json_is_object(service)) continue;
                 // Get service properties
                 json_t* name = json_object_get(service, "Name");
-                config->mdns_server.services[i].name = get_config_string(name, "hydrogen");
+                config->mdns_server.services[i].name = get_config_string_with_env("Name", name, "hydrogen");
                 
                 json_t* type = json_object_get(service, "Type");
-                config->mdns_server.services[i].type = get_config_string(type, "_http._tcp.local");
+                config->mdns_server.services[i].type = get_config_string_with_env("Type", type, "_http._tcp.local");
 
                 json_t* port = json_object_get(service, "Port");
                 config->mdns_server.services[i].port = get_config_int(port, DEFAULT_WEB_PORT);
@@ -559,13 +624,13 @@ AppConfig* load_config(const char* config_path) {
                 if (json_is_string(txt_records)) {
                     config->mdns_server.services[i].num_txt_records = 1;
                     config->mdns_server.services[i].txt_records = malloc(sizeof(char*));
-                    config->mdns_server.services[i].txt_records[0] = get_config_string(txt_records, "");
+                    config->mdns_server.services[i].txt_records[0] = get_config_string_with_env("TxtRecord", txt_records, "");
                 } else if (json_is_array(txt_records)) {
                     config->mdns_server.services[i].num_txt_records = json_array_size(txt_records);
                     config->mdns_server.services[i].txt_records = malloc(config->mdns_server.services[i].num_txt_records * sizeof(char*));
                     for (size_t j = 0; j < config->mdns_server.services[i].num_txt_records; j++) {
                         json_t* record = json_array_get(txt_records, j);
-                        config->mdns_server.services[i].txt_records[j] = get_config_string(record, "");
+                        config->mdns_server.services[i].txt_records[j] = get_config_string_with_env("TxtRecord", record, "");
                     }
                 } else {
                     config->mdns_server.services[i].num_txt_records = 0;
@@ -846,7 +911,7 @@ AppConfig* load_config(const char* config_path) {
         log_config_section_header("API");
         
         json_t* jwt_secret = json_object_get(api_config, "JWTSecret");
-        config->api.jwt_secret = get_config_string(jwt_secret, "hydrogen_api_secret_change_me");
+        config->api.jwt_secret = get_config_string_with_env("JWTSecret", jwt_secret, "hydrogen_api_secret_change_me");
         log_config_section_item("JWTSecret", "%s", LOG_LEVEL_INFO, 
             strcmp(config->api.jwt_secret, "hydrogen_api_secret_change_me") == 0, 0, NULL, NULL,
             strcmp(config->api.jwt_secret, "hydrogen_api_secret_change_me") == 0 ? "(default)" : "configured");

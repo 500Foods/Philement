@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
     
     // Load configuration and initialize all system components
     // Components are started in a specific order to handle dependencies
-    char* config_path = (argc > 1) ? argv[1] : "hydrogen.json";
+    char* config_path = (argc > 1) ? argv[1] : NULL;
     if (!startup_hydrogen(config_path)) {
         return 1;
     }
