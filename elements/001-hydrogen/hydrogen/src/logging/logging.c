@@ -74,9 +74,10 @@ extern int queue_system_initialized;  // From queue.c
 // Internal state
 static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 static __thread bool in_log_group = false;  // Thread-local flag for group logging
+static unsigned long log_counter = 0;  // Global log counter
 
 // Private function declarations
-static void console_log(const char* subsystem, int priority, const char* message);
+static void console_log(const char* subsystem, int priority, const char* message, unsigned long current_count);
 
 /*
  * INTERNAL USE ONLY - Do not call directly!
@@ -90,7 +91,12 @@ static void console_log(const char* subsystem, int priority, const char* message
  * - Output routing
  * - Thread safety
  */
-static void console_log(const char* subsystem, int priority, const char* message) {
+static void console_log(const char* subsystem, int priority, const char* message, unsigned long current_count) {
+    // Format the counter as two 3-digit numbers
+    char counter_prefix[16];
+    snprintf(counter_prefix, sizeof(counter_prefix), "[ %03lu %03lu ]", 
+             (current_count / 1000) % 1000, current_count % 1000);
+
     char formatted_priority[MAX_PRIORITY_LABEL_WIDTH + 5];
     snprintf(formatted_priority, sizeof(formatted_priority), "[ %-*s ]", MAX_PRIORITY_LABEL_WIDTH, get_priority_label(priority));
 
@@ -101,12 +107,12 @@ static void console_log(const char* subsystem, int priority, const char* message
     struct timeval tv;
     struct tm* tm_info;
     gettimeofday(&tv, NULL);
-    tm_info = localtime(&tv.tv_sec);
+    tm_info = gmtime(&tv.tv_sec);
     strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", tm_info);
-    char timestamp_ms[36];
-    snprintf(timestamp_ms, sizeof(timestamp_ms), "%s.%03d", timestamp, (int)(tv.tv_usec / 1000));
+    char timestamp_ms[48];  // Increased buffer size for safety
+    snprintf(timestamp_ms, sizeof(timestamp_ms), "%s.%03dZ", timestamp, (int)(tv.tv_usec / 1000));
 
-    fprintf(stderr, "%s  %s  %s  %s\n", timestamp_ms, formatted_priority, formatted_subsystem, message);
+    fprintf(stderr, "%s  %s  %s  %s  %s\n", counter_prefix, timestamp_ms, formatted_priority, formatted_subsystem, message);
 }
 
 // Log a message based on configuration settings
@@ -132,17 +138,21 @@ void log_this(const char* subsystem, const char* format, int priority, ...) {
     vsnprintf(details, sizeof(details), format, args);
     va_end(args);
 
+    // Get single counter value for both JSON and console output
+    unsigned long current_count = __atomic_fetch_add(&log_counter, 1, __ATOMIC_SEQ_CST);
+    unsigned long counter_high = (current_count / 1000) % 1000;
+    unsigned long counter_low = current_count % 1000;
+
     char json_message[DEFAULT_MAX_LOG_MESSAGE_SIZE];
-    
-    // Create JSON message with all destinations enabled - let queue manager handle filtering
+    // Create JSON message with all destinations enabled and counter values
     snprintf(json_message, sizeof(json_message),
-             "{\"subsystem\":\"%s\",\"details\":\"%s\",\"priority\":%d,\"LogConsole\":true,\"LogFile\":true,\"LogDatabase\":true}",
-             subsystem, details, priority);
+             "{\"subsystem\":\"%s\",\"details\":\"%s\",\"priority\":%d,\"counter_high\":%lu,\"counter_low\":%lu,\"LogConsole\":true,\"LogFile\":true,\"LogDatabase\":true}",
+             subsystem, details, priority, counter_high, counter_low);
 
     // During very early startup (before queue system init), always use console
     extern int queue_system_initialized;  // From queue.c
     if (!queue_system_initialized) {
-        console_log(subsystem, priority, details);
+        console_log(subsystem, priority, details, current_count);
     } else {
         // Try to use queue system if it's running
         Queue* log_queue = NULL;
@@ -166,7 +176,7 @@ void log_this(const char* subsystem, const char* format, int priority, ...) {
         //    - Queue isn't available
         //    - Queue enqueue failed
         if (!app_config || (app_config->logging.console.enabled && use_console)) {
-            console_log(subsystem, priority, details);
+            console_log(subsystem, priority, details, current_count);
         }
     }
 
