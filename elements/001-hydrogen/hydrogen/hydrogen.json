@@ -85,13 +85,13 @@
     },
     "Logging": {
         "Levels": [
-            [0, "ALL"],
+            [0, "TRACE"],
             [1, "DEBUG"],
-            [2, "INFO"],
-            [3, "WARN"],
-            [4, "ERROR"],
-            [5, "CRITICAL"],
-            [6, "NONE"]
+            [3, "STATE"],
+            [2, "CHECK"],
+            [4, "ALERT"],
+            [5, "ERROR"],
+            [6, "FATAL"]
         ],
         "Console": {
             "Enabled": true,
