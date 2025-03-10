@@ -446,6 +446,175 @@ AppConfig* load_config(const char* cmdline_path) {
         log_config_section_item("StartupDelay", "%d", LOG_LEVEL_INFO, 1, 0, "ms", "ms", DEFAULT_STARTUP_DELAY);
     }
 
+    // Logging Configuration
+    json_t* logging = json_object_get(root, "Logging");
+    if (json_is_object(logging)) {
+        log_config_section_header("Logging");
+
+        // Log Levels
+        json_t* levels = json_object_get(logging, "Levels");
+        if (json_is_array(levels)) {
+            size_t level_count = json_array_size(levels);
+            log_config_section_item("LogLevels", "%zu configured", LOG_LEVEL_INFO, 0, 0, NULL, NULL, level_count);
+            
+            for (size_t i = 0; i < level_count; i++) {
+                json_t* level = json_array_get(levels, i);
+                if (json_is_array(level) && json_array_size(level) == 2) {
+                    int num = json_integer_value(json_array_get(level, 0));
+                    const char* name = json_string_value(json_array_get(level, 1));
+                    log_config_section_item("Level", "[%d] %s", LOG_LEVEL_INFO, 0, 1, NULL, NULL, num, name);
+                }
+            }
+        }
+
+        // Console Logging
+        json_t* console = json_object_get(logging, "Console");
+        if (json_is_object(console)) {
+            json_t* enabled = json_object_get(console, "Enabled");
+            bool console_enabled = get_config_bool(enabled, true);
+            log_config_section_item("Console", "%s", LOG_LEVEL_INFO, !enabled, 0, NULL, NULL, 
+                console_enabled ? "enabled" : "disabled");
+
+            if (console_enabled) {
+                json_t* default_level = json_object_get(console, "DefaultLevel");
+                int console_default = get_config_int(default_level, 1);
+                log_config_section_item("DefaultLevel", "%d", LOG_LEVEL_INFO, !default_level, 1, NULL, NULL, console_default);
+
+                json_t* subsystems = json_object_get(console, "Subsystems");
+                if (json_is_object(subsystems)) {
+                    log_config_section_item("Subsystems", "Configured", LOG_LEVEL_INFO, 0, 1, NULL, NULL);
+                    const char* key;
+                    json_t* value;
+                    json_object_foreach(subsystems, key, value) {
+                        int level = json_integer_value(value);
+                        log_config_section_item(key, "%d", LOG_LEVEL_INFO, 0, 2, NULL, NULL, level);
+                    }
+                }
+            }
+        }
+
+        // Database Logging
+        json_t* database = json_object_get(logging, "Database");
+        if (json_is_object(database)) {
+            json_t* enabled = json_object_get(database, "Enabled");
+            bool db_enabled = get_config_bool(enabled, true);
+            log_config_section_item("Database", "%s", LOG_LEVEL_INFO, !enabled, 0, NULL, NULL,
+                db_enabled ? "enabled" : "disabled");
+
+            if (db_enabled) {
+                json_t* default_level = json_object_get(database, "DefaultLevel");
+                int db_default = get_config_int(default_level, 4);
+                log_config_section_item("DefaultLevel", "%d", LOG_LEVEL_INFO, !default_level, 1, NULL, NULL, db_default);
+
+                json_t* conn_string = json_object_get(database, "ConnectionString");
+                const char* db_conn = json_string_value(conn_string);
+                log_config_section_item("ConnectionString", "%s", LOG_LEVEL_INFO, !conn_string, 1, NULL, NULL,
+                    db_conn ? db_conn : "sqlite:///var/lib/hydrogen/logs.db");
+
+                json_t* subsystems = json_object_get(database, "Subsystems");
+                if (json_is_object(subsystems)) {
+                    log_config_section_item("Subsystems", "Configured", LOG_LEVEL_INFO, 0, 1, NULL, NULL);
+                    const char* key;
+                    json_t* value;
+                    json_object_foreach(subsystems, key, value) {
+                        int level = json_integer_value(value);
+                        log_config_section_item(key, "%d", LOG_LEVEL_INFO, 0, 2, NULL, NULL, level);
+                    }
+                }
+            }
+        }
+
+        // File Logging
+        json_t* file = json_object_get(logging, "File");
+        if (json_is_object(file)) {
+            json_t* enabled = json_object_get(file, "Enabled");
+            bool file_enabled = get_config_bool(enabled, true);
+            log_config_section_item("File", "%s", LOG_LEVEL_INFO, !enabled, 0, NULL, NULL,
+                file_enabled ? "enabled" : "disabled");
+
+            if (file_enabled) {
+                json_t* default_level = json_object_get(file, "DefaultLevel");
+                int file_default = get_config_int(default_level, 1);
+                log_config_section_item("DefaultLevel", "%d", LOG_LEVEL_INFO, !default_level, 1, NULL, NULL, file_default);
+
+                json_t* path = json_object_get(file, "Path");
+                const char* file_path = json_string_value(path);
+                log_config_section_item("Path", "%s", LOG_LEVEL_INFO, !path, 1, NULL, NULL,
+                    file_path ? file_path : "/var/log/hydrogen.log");
+
+                json_t* subsystems = json_object_get(file, "Subsystems");
+                if (json_is_object(subsystems)) {
+                    log_config_section_item("Subsystems", "Configured", LOG_LEVEL_INFO, 0, 1, NULL, NULL);
+                    const char* key;
+                    json_t* value;
+                    json_object_foreach(subsystems, key, value) {
+                        int level = json_integer_value(value);
+                        log_config_section_item(key, "%d", LOG_LEVEL_INFO, 0, 2, NULL, NULL, level);
+                    }
+                }
+            }
+        }
+    } else {
+        log_config_section_header("Logging");
+        log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_WARN, 1, 0, NULL, NULL);
+    }
+                
+        // Store configuration paths
+        char real_path[PATH_MAX];
+        
+        // Config File
+        if (realpath(config_path, real_path) != NULL) {
+            config->server.config_file = strdup(real_path);
+        } else {
+            config->server.config_file = strdup(config_path);
+        }
+        log_config_section_item("ConfigFile", "%s", LOG_LEVEL_INFO, 0, 0, NULL, NULL, config->server.config_file);
+        
+        // Exec File
+        config->server.exec_file = get_executable_path();
+        if (!config->server.exec_file) {
+            log_this("Config", "Failed to get executable path, using default", LOG_LEVEL_INFO);
+            config->server.exec_file = strdup("./hydrogen");
+        }
+        log_config_section_item("ExecFile", "%s", LOG_LEVEL_INFO, 0, 0, NULL, NULL, config->server.exec_file);
+
+        // Log File
+        json_t* log_file = json_object_get(server, "LogFile");
+        char* log_path = get_config_string_with_env("LogFile", log_file, DEFAULT_LOG_FILE_PATH);
+        if (realpath(log_path, real_path) != NULL) {
+            config->server.log_file = strdup(real_path);
+            free(log_path);
+        } else {
+            config->server.log_file = log_path;
+        }
+        log_config_section_item("LogFile", "%s", LOG_LEVEL_INFO, !log_file, 0, NULL, NULL, config->server.log_file);
+
+        // Payload Key (for payload decryption)
+        json_t* payload_key = json_object_get(server, "PayloadKey");
+        config->server.payload_key = get_config_string_with_env("PayloadKey", payload_key, "${env.PAYLOAD_KEY}");
+
+        // Startup Delay (in milliseconds)
+        json_t* startup_delay = json_object_get(server, "StartupDelay");
+        config->server.startup_delay = get_config_int(startup_delay, DEFAULT_STARTUP_DELAY);
+        log_config_section_item("StartupDelay", "%d", LOG_LEVEL_INFO, !startup_delay, 0, "ms", "ms", config->server.startup_delay);
+    } else {
+        // Fallback to defaults if Server object is missing
+        config->server.server_name = strdup(DEFAULT_SERVER_NAME);
+        config->server.config_file = strdup(DEFAULT_CONFIG_FILE);
+        config->server.exec_file = strdup("./hydrogen");
+        config->server.log_file = strdup(DEFAULT_LOG_FILE_PATH);
+        config->server.payload_key = strdup("MISSING");
+        config->server.startup_delay = DEFAULT_STARTUP_DELAY;
+        log_config_section_header("Server");
+        log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_WARN, 1, 0, NULL, NULL);
+        log_config_section_item("ConfigFile", "%s", LOG_LEVEL_INFO, 1, 0, NULL, NULL, DEFAULT_CONFIG_FILE);
+        log_config_section_item("ExecFile", "%s", LOG_LEVEL_INFO, 1, 0, NULL, NULL, "./hydrogen");
+        log_config_section_item("LogFile", "%s", LOG_LEVEL_INFO, 1, 0, NULL, NULL, DEFAULT_LOG_FILE_PATH);
+        log_config_section_item("ServerName", "%s", LOG_LEVEL_INFO, 1, 0, NULL, NULL, DEFAULT_SERVER_NAME);
+        log_config_section_item("PayloadKey", "MISSING", LOG_LEVEL_INFO, 1, 0, NULL, NULL);
+        log_config_section_item("StartupDelay", "%d", LOG_LEVEL_INFO, 1, 0, "ms", "ms", DEFAULT_STARTUP_DELAY);
+    }
+
     
     // Web Configuration
     json_t* web = json_object_get(root, "WebServer");
