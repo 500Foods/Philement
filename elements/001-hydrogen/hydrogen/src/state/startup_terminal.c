@@ -39,13 +39,13 @@ int init_terminal_subsystem(void) {
 
     // Prevent initialization during any shutdown state
     if (server_stopping || terminal_system_shutdown) {
-        log_this("Initialization", "Cannot initialize Terminal during shutdown", LOG_LEVEL_INFO);
+        log_this("Initialization", "Cannot initialize Terminal during shutdown", LOG_LEVEL_STATE);
         return 0;
     }
 
     // Only proceed if we're in startup phase
     if (!server_starting) {
-        log_this("Initialization", "Cannot initialize Terminal outside startup phase", LOG_LEVEL_INFO);
+        log_this("Initialization", "Cannot initialize Terminal outside startup phase", LOG_LEVEL_STATE);
         return 0;
     }
 
@@ -62,7 +62,7 @@ int init_terminal_subsystem(void) {
     }
 
     // TODO: Add configuration support for Terminal
-    log_this("Initialization", "Terminal configuration support needs implementation", LOG_LEVEL_INFO);
+    log_this("Initialization", "Terminal configuration support needs implementation", LOG_LEVEL_STATE);
 
     // Initialize terminal I/O
     if (!init_terminal_io()) {
@@ -84,7 +84,7 @@ int init_terminal_subsystem(void) {
         return 0;
     }
 
-    log_this("Initialization", "Terminal system initialized successfully", LOG_LEVEL_INFO);
+    log_this("Initialization", "Terminal system initialized successfully", LOG_LEVEL_STATE);
     return 1;
 }
 
@@ -96,7 +96,7 @@ static int init_terminal_io(void) {
     // - Set up input buffering
     // - Initialize output formatting
     // - Configure signal handling
-    log_this("Initialization", "Terminal I/O initialization stub - needs implementation", LOG_LEVEL_INFO);
+    log_this("Initialization", "Terminal I/O initialization stub - needs implementation", LOG_LEVEL_STATE);
     return 1;
 }
 
@@ -108,7 +108,7 @@ static int setup_terminal_handlers(void) {
     // - Set up SIGTERM handling
     // - Configure SIGWINCH for window resizing
     // - Initialize custom signal handlers
-    log_this("Initialization", "Terminal handler setup stub - needs implementation", LOG_LEVEL_INFO);
+    log_this("Initialization", "Terminal handler setup stub - needs implementation", LOG_LEVEL_STATE);
     return 1;
 }
 
@@ -120,6 +120,6 @@ static int start_terminal_thread(void) {
     // - Set up input event loop
     // - Configure output refresh
     // - Start status monitoring
-    log_this("Initialization", "Terminal thread startup stub - needs implementation", LOG_LEVEL_INFO);
+    log_this("Initialization", "Terminal thread startup stub - needs implementation", LOG_LEVEL_STATE);
     return 1;
 }

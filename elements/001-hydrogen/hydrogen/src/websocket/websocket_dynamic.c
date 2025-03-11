@@ -144,7 +144,7 @@ int init_websocket_server_dynamic(int port, const char *protocol, const char *ke
     // This would be done through your existing WebSocket server implementation
     
     log_this("WebSocket", "WebSocket server initialized successfully with dynamic loading", 
-            LOG_LEVEL_INFO);
+            LOG_LEVEL_STATE);
     
     return 0;
 }
@@ -196,7 +196,7 @@ int start_websocket_server_dynamic(void) {
         return -1;
     }
     
-    log_this("WebSocket", "WebSocket server started successfully", LOG_LEVEL_INFO);
+    log_this("WebSocket", "WebSocket server started successfully", LOG_LEVEL_STATE);
     return 0;
 }
 
@@ -232,7 +232,7 @@ void shutdown_websocket_server_dynamic(void) {
         // Call the properly cast destroy function (placeholder for actual implementation)
         // In a real implementation, you would pass the stored context
         destroy_context(NULL);
-        log_this("WebSocket", "WebSocket server shutdown successfully", LOG_LEVEL_INFO);
+        log_this("WebSocket", "WebSocket server shutdown successfully", LOG_LEVEL_STATE);
     } else {
         log_this("WebSocket", "Required function 'lws_context_destroy' not found", 
                 LOG_LEVEL_WARN);
@@ -264,7 +264,7 @@ static bool initialize_dynamic_websocket_library(void) {
     // Check if loading was successful
     if (websocket_lib && websocket_lib->is_loaded) {
         log_this("WebSocket", "Successfully loaded %s (Version: %s)", 
-                LOG_LEVEL_INFO, WEBSOCKET_LIB, websocket_lib->version);
+                LOG_LEVEL_STATE, WEBSOCKET_LIB, websocket_lib->version);
         return true;
     } else {
         log_this("WebSocket", "Failed to load %s - WebSocket functionality will be disabled", 

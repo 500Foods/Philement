@@ -85,7 +85,7 @@ bool init_web_server(WebServerConfig *web_config) {
     
     // Prevent initialization during shutdown
     if (server_stopping || web_server_shutdown) {
-        log_this("WebServer", "Cannot initialize web server during shutdown", LOG_LEVEL_INFO);
+        log_this("WebServer", "Cannot initialize web server during shutdown", LOG_LEVEL_STATE);
         return false;
     }
 
@@ -97,7 +97,7 @@ bool init_web_server(WebServerConfig *web_config) {
 
     // Double-check shutdown state before proceeding
     if (server_stopping || web_server_shutdown) {
-        log_this("WebServer", "Shutdown initiated, aborting web server initialization", LOG_LEVEL_INFO);
+        log_this("WebServer", "Shutdown initiated, aborting web server initialization", LOG_LEVEL_STATE);
         return false;
     }
 
@@ -111,14 +111,14 @@ bool init_web_server(WebServerConfig *web_config) {
         return false;
     }
 
-    log_this("WebServer", "Starting web server initialization", LOG_LEVEL_INFO);
+    log_this("WebServer", "Starting web server initialization", LOG_LEVEL_STATE);
     if (web_config->enable_ipv6) {
-        log_this("WebServer", "IPv6 support enabled", LOG_LEVEL_INFO);
+        log_this("WebServer", "IPv6 support enabled", LOG_LEVEL_STATE);
     }
-    log_this("WebServer", "-> Port: %u", LOG_LEVEL_INFO, server_web_config->port);
-    log_this("WebServer", "-> WebRoot: %s", LOG_LEVEL_INFO, server_web_config->web_root);
-    log_this("WebServer", "-> Upload Path: %s", LOG_LEVEL_INFO, server_web_config->upload_path);
-    log_this("WebServer", "-> Upload Dir: %s", LOG_LEVEL_INFO, server_web_config->upload_dir);
+    log_this("WebServer", "-> Port: %u", LOG_LEVEL_STATE, server_web_config->port);
+    log_this("WebServer", "-> WebRoot: %s", LOG_LEVEL_STATE, server_web_config->web_root);
+    log_this("WebServer", "-> Upload Path: %s", LOG_LEVEL_STATE, server_web_config->upload_path);
+    log_this("WebServer", "-> Upload Dir: %s", LOG_LEVEL_STATE, server_web_config->upload_dir);
 
     // Initialize thread pool and connection settings with defaults if not set
     if (web_config->thread_pool_size == 0) {
@@ -134,16 +134,16 @@ bool init_web_server(WebServerConfig *web_config) {
         web_config->connection_timeout = DEFAULT_CONNECTION_TIMEOUT;
     }
 
-    log_this("WebServer", "-> Thread Pool Size: %d", LOG_LEVEL_INFO, web_config->thread_pool_size);
-    log_this("WebServer", "-> Max Connections: %d", LOG_LEVEL_INFO, web_config->max_connections);
-    log_this("WebServer", "-> Max Connections Per IP: %d", LOG_LEVEL_INFO, web_config->max_connections_per_ip);
-    log_this("WebServer", "-> Connection Timeout: %d seconds", LOG_LEVEL_INFO, web_config->connection_timeout);
+    log_this("WebServer", "-> Thread Pool Size: %d", LOG_LEVEL_STATE, web_config->thread_pool_size);
+    log_this("WebServer", "-> Max Connections: %d", LOG_LEVEL_STATE, web_config->max_connections);
+    log_this("WebServer", "-> Max Connections Per IP: %d", LOG_LEVEL_STATE, web_config->max_connections_per_ip);
+    log_this("WebServer", "-> Connection Timeout: %d seconds", LOG_LEVEL_STATE, web_config->connection_timeout);
 
     // Initialize Swagger support if enabled
     if (web_config->swagger->enabled) {
-        log_this("WebServer", "Initializing Swagger UI support", LOG_LEVEL_INFO);
+        log_this("WebServer", "Initializing Swagger UI support", LOG_LEVEL_STATE);
         if (init_swagger_support(web_config)) {
-            log_this("WebServer", "-> Swagger UI enabled at prefix: %s", LOG_LEVEL_INFO, 
+            log_this("WebServer", "-> Swagger UI enabled at prefix: %s", LOG_LEVEL_STATE, 
                     web_config->swagger->prefix);
         } else {
             log_this("WebServer", "-> Swagger UI initialization failed", LOG_LEVEL_WARN);
@@ -161,7 +161,7 @@ bool init_web_server(WebServerConfig *web_config) {
             log_this("WebServer", error_buffer, LOG_LEVEL_DEBUG);
             return false;
         }
-        log_this("WebServer", "Created upload directory", LOG_LEVEL_INFO);
+        log_this("WebServer", "Created upload directory", LOG_LEVEL_STATE);
     } else {
         log_this("WebServer", "Upload directory already exists", LOG_LEVEL_WARN);
     }
@@ -184,13 +184,13 @@ void* run_web_server(void* arg) {
     
     // Prevent initialization during any shutdown state
     if (server_stopping || web_server_shutdown) {
-        log_this("WebServer", "Cannot start web server during shutdown", LOG_LEVEL_INFO);
+        log_this("WebServer", "Cannot start web server during shutdown", LOG_LEVEL_STATE);
         return NULL;
     }
 
     // Only proceed if we're in startup phase
     if (!server_starting) {
-        log_this("WebServer", "Cannot start web server outside startup phase", LOG_LEVEL_INFO);
+        log_this("WebServer", "Cannot start web server outside startup phase", LOG_LEVEL_STATE);
         return NULL;
     }
 
@@ -202,24 +202,24 @@ void* run_web_server(void* arg) {
 
     // Double-check shutdown state before proceeding with resource allocation
     if (server_stopping || web_server_shutdown) {
-        log_this("WebServer", "Shutdown initiated, aborting web server startup", LOG_LEVEL_INFO);
+        log_this("WebServer", "Shutdown initiated, aborting web server startup", LOG_LEVEL_STATE);
         return NULL;
     }
 
     // Triple-check shutdown state before thread registration
     if (server_stopping || web_server_shutdown || !server_starting) {
-        log_this("WebServer", "Invalid system state, aborting web server startup", LOG_LEVEL_INFO);
+        log_this("WebServer", "Invalid system state, aborting web server startup", LOG_LEVEL_STATE);
         return NULL;
     }
 
-    log_this("WebServer", "Starting web server", LOG_LEVEL_INFO);
+    log_this("WebServer", "Starting web server", LOG_LEVEL_STATE);
 
     // Register thread only if we're still in startup
     extern ServiceThreads web_threads;
     if (server_starting && !server_stopping && !web_server_shutdown) {
         add_service_thread(&web_threads, pthread_self());
     } else {
-        log_this("WebServer", "Skipping thread registration - system state changed", LOG_LEVEL_INFO);
+        log_this("WebServer", "Skipping thread registration - system state changed", LOG_LEVEL_STATE);
         return NULL;
     }
     
@@ -227,11 +227,11 @@ void* run_web_server(void* arg) {
     unsigned int flags = MHD_USE_INTERNAL_POLLING_THREAD;
     if (server_web_config->enable_ipv6) {
         flags |= MHD_USE_DUAL_STACK;
-        log_this("WebServer", "Starting with IPv6 dual-stack support", LOG_LEVEL_INFO);
+        log_this("WebServer", "Starting with IPv6 dual-stack support", LOG_LEVEL_STATE);
     }
 
-    log_this("WebServer", "Setting SO_REUSEADDR to enable immediate socket rebinding", LOG_LEVEL_INFO);
-    log_this("WebServer", "Using thread pool with %d threads", LOG_LEVEL_INFO, server_web_config->thread_pool_size);
+    log_this("WebServer", "Setting SO_REUSEADDR to enable immediate socket rebinding", LOG_LEVEL_STATE);
+    log_this("WebServer", "Using thread pool with %d threads", LOG_LEVEL_STATE, server_web_config->thread_pool_size);
     
     // Start the daemon with thread pool configuration
     web_daemon = MHD_start_daemon(flags, 
@@ -272,9 +272,9 @@ void* run_web_server(void* arg) {
 
     char port_info[64];
     snprintf(port_info, sizeof(port_info), "Web server bound to port: %u", actual_port);
-    log_this("WebServer", port_info, LOG_LEVEL_INFO);
+    log_this("WebServer", port_info, LOG_LEVEL_STATE);
 
-    log_this("WebServer", "Web server started successfully", LOG_LEVEL_INFO);
+    log_this("WebServer", "Web server started successfully", LOG_LEVEL_STATE);
 
     return NULL;
 }
@@ -285,28 +285,28 @@ void shutdown_web_server(void) {
     __sync_bool_compare_and_swap(&web_server_shutdown, 0, 1);
     __sync_synchronize();  // Memory barrier
 
-    log_this("WebServer", "Shutdown: Initiating web server shutdown", LOG_LEVEL_INFO);
+    log_this("WebServer", "Shutdown: Initiating web server shutdown", LOG_LEVEL_STATE);
     
     // Clean up Swagger resources if enabled
     if (server_web_config && server_web_config->swagger->enabled) {
         cleanup_swagger_support();
-        log_this("WebServer", "Swagger UI resources cleaned up", LOG_LEVEL_INFO);
+        log_this("WebServer", "Swagger UI resources cleaned up", LOG_LEVEL_STATE);
     }
     
     // Stop the web server daemon
     if (web_daemon != NULL) {
-        log_this("WebServer", "Stopping web server daemon", LOG_LEVEL_INFO);
+        log_this("WebServer", "Stopping web server daemon", LOG_LEVEL_STATE);
         MHD_stop_daemon(web_daemon);
         web_daemon = NULL;
-        log_this("WebServer", "Web server daemon stopped", LOG_LEVEL_INFO);
+        log_this("WebServer", "Web server daemon stopped", LOG_LEVEL_STATE);
     } else {
-        log_this("WebServer", "Web server was not running", LOG_LEVEL_INFO);
+        log_this("WebServer", "Web server was not running", LOG_LEVEL_STATE);
     }
 
     // Clear configuration
     server_web_config = NULL;
 
-    log_this("WebServer", "Web server shutdown complete", LOG_LEVEL_INFO);
+    log_this("WebServer", "Web server shutdown complete", LOG_LEVEL_STATE);
 }
 
 const char* get_upload_path(void) {

@@ -55,10 +55,10 @@ static void log_env_value(const char* var_name, const char* env_value) {
         strncpy(safe_value, env_value, 5);
         safe_value[5] = '\0';
         strcat(safe_value, "...");
-        log_this("Config-Env", "- %s: $%s: %s", LOG_LEVEL_INFO, 
+        log_this("Config-Env", "- %s: $%s: %s", LOG_LEVEL_STATE, 
                  var_name, var_name, safe_value);
     } else {
-        log_this("Config-Env", "- %s: $%s: %s", LOG_LEVEL_INFO, 
+        log_this("Config-Env", "- %s: $%s: %s", LOG_LEVEL_STATE, 
                  var_name, var_name, env_value);
     }
 }
@@ -91,7 +91,7 @@ json_t* process_env_variable(const char* value) {
     if (env_value) {
         log_env_value(var_name, env_value);
     } else {
-        log_this("Config-Env", "- %s: $%s: (not set)", LOG_LEVEL_INFO, 
+        log_this("Config-Env", "- %s: $%s: (not set)", LOG_LEVEL_STATE, 
                  var_name, var_name);
     }
     

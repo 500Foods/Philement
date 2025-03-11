@@ -97,7 +97,7 @@ void handle_status_request(struct lws *wsi)
         return;
     }
 
-    log_this("WebSocket", "Preparing status response", LOG_LEVEL_INFO);
+    log_this("WebSocket", "Preparing status response", LOG_LEVEL_STATE);
 
     // Safely copy metrics under lock
     pthread_mutex_lock(&ws_context->mutex);
@@ -115,14 +115,14 @@ void handle_status_request(struct lws *wsi)
     json_decref(root);
 
     size_t len = strlen(response_str);
-    log_this("WebSocket", "Status response: %s", LOG_LEVEL_INFO, response_str);
+    log_this("WebSocket", "Status response: %s", LOG_LEVEL_STATE, response_str);
 
     // Prepare and send WebSocket message
     unsigned char *buf = malloc(LWS_PRE + len);
     if (buf) {
         memcpy(buf + LWS_PRE, response_str, len);
         int written = lws_write(wsi, buf + LWS_PRE, len, LWS_WRITE_TEXT);
-        log_this("WebSocket", "Wrote %d bytes to WebSocket", LOG_LEVEL_INFO, written);
+        log_this("WebSocket", "Wrote %d bytes to WebSocket", LOG_LEVEL_STATE, written);
         free(buf);
     } else {
         log_this("WebSocket", "Failed to allocate buffer for response", LOG_LEVEL_ERROR);

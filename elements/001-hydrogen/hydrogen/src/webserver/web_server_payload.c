@@ -58,14 +58,14 @@ bool extract_payload(const char *executable_path, const AppConfig *config,
     // Prevent extraction during shutdown
     if (server_stopping || web_server_shutdown) {
         log_this("PayloadHandler", "Skipping payload extraction - system is shutting down", 
-                LOG_LEVEL_INFO, NULL);
+                LOG_LEVEL_STATE, NULL);
         return false;
     }
 
     // Only allow extraction during startup or normal operation
     if (!server_starting && !server_running) {
         log_this("PayloadHandler", "Skipping payload extraction - system not in proper state", 
-                LOG_LEVEL_INFO, NULL);
+                LOG_LEVEL_STATE, NULL);
         return false;
     }
 
@@ -100,7 +100,7 @@ bool extract_payload(const char *executable_path, const AppConfig *config,
     const char *marker_pos = memmem(file_data, st.st_size, marker, strlen(marker));
     if (!marker_pos) {
         munmap(file_data, st.st_size);
-        log_this("PayloadHandler", "No payload marker found in executable", LOG_LEVEL_INFO, NULL);
+        log_this("PayloadHandler", "No payload marker found in executable", LOG_LEVEL_STATE, NULL);
         return false;
     }
 
@@ -120,7 +120,7 @@ bool extract_payload(const char *executable_path, const AppConfig *config,
 
     // The encrypted payload is before the marker
     const uint8_t *encrypted_data = (uint8_t*)marker_pos - payload_size;
-    log_this("PayloadHandler", "Found encrypted payload: %zu bytes", LOG_LEVEL_INFO, payload_size);
+    log_this("PayloadHandler", "Found encrypted payload: %zu bytes", LOG_LEVEL_STATE, payload_size);
 
     // Initialize OpenSSL
     init_openssl();
@@ -220,11 +220,11 @@ static bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size
     memcpy(iv, encrypted_data + 4 + key_size, 16);
 
     // Log payload structure details
-    log_this("PayloadHandler", "Payload structure:", LOG_LEVEL_INFO, NULL);
-    log_this("PayloadHandler", "- Total size: %zu bytes", LOG_LEVEL_INFO, encrypted_size);
-    log_this("PayloadHandler", "- Key size: %u bytes", LOG_LEVEL_INFO, key_size);
-    log_this("PayloadHandler", "- IV: 16 bytes", LOG_LEVEL_INFO, NULL);
-    log_this("PayloadHandler", "- Encrypted payload: %zu bytes", LOG_LEVEL_INFO, 
+    log_this("PayloadHandler", "Payload structure:", LOG_LEVEL_STATE, NULL);
+    log_this("PayloadHandler", "- Total size: %zu bytes", LOG_LEVEL_STATE, encrypted_size);
+    log_this("PayloadHandler", "- Key size: %u bytes", LOG_LEVEL_STATE, key_size);
+    log_this("PayloadHandler", "- IV: 16 bytes", LOG_LEVEL_STATE, NULL);
+    log_this("PayloadHandler", "- Encrypted payload: %zu bytes", LOG_LEVEL_STATE, 
              encrypted_size - 4 - key_size - 16);
 
     // Decode private key from base64
@@ -316,7 +316,7 @@ static bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size
     }
 
     *decrypted_size += final_len;
-    log_this("PayloadHandler", "Payload decrypted successfully (%zu bytes)", LOG_LEVEL_INFO, *decrypted_size);
+    log_this("PayloadHandler", "Payload decrypted successfully (%zu bytes)", LOG_LEVEL_STATE, *decrypted_size);
     success = true;
 
 cleanup:

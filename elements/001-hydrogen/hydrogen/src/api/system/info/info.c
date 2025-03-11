@@ -53,7 +53,7 @@ extern volatile sig_atomic_t websocket_server_shutdown;
 // Includes CORS headers for cross-origin access
 enum MHD_Result handle_system_info_request(struct MHD_Connection *connection)
 {
-    log_this("SystemService/info", "Handling info endpoint request", LOG_LEVEL_INFO);
+    log_this("SystemService/info", "Handling info endpoint request", LOG_LEVEL_STATE);
     
     struct utsname system_info;
     if (uname(&system_info) < 0)

@@ -48,20 +48,20 @@ bool init_swagger_support(WebServerConfig *config) {
     
     // Prevent initialization during shutdown
     if (server_stopping || web_server_shutdown) {
-        log_this("SwaggerUI", "Cannot initialize Swagger UI during shutdown", LOG_LEVEL_INFO, NULL);
+        log_this("SwaggerUI", "Cannot initialize Swagger UI during shutdown", LOG_LEVEL_STATE, NULL);
         swagger_initialized = false;  // Reset initialization flag during shutdown
         return false;
     }
 
     // Only proceed if we're in startup phase and not shutting down
     if (!server_starting || server_stopping || web_server_shutdown) {
-        log_this("SwaggerUI", "Cannot initialize - invalid system state", LOG_LEVEL_INFO, NULL);
+        log_this("SwaggerUI", "Cannot initialize - invalid system state", LOG_LEVEL_STATE, NULL);
         return false;
     }
 
     // Double-check shutdown state before proceeding
     if (server_stopping || web_server_shutdown) {
-        log_this("SwaggerUI", "Shutdown initiated, aborting Swagger UI initialization", LOG_LEVEL_INFO, NULL);
+        log_this("SwaggerUI", "Shutdown initiated, aborting Swagger UI initialization", LOG_LEVEL_STATE, NULL);
         swagger_initialized = false;  // Reset initialization flag
         return false;
     }
@@ -69,7 +69,7 @@ bool init_swagger_support(WebServerConfig *config) {
     // Skip if already initialized or disabled
     if (swagger_initialized || !config || !config->swagger->enabled) {
         if (swagger_initialized) {
-            log_this("SwaggerUI", "Already initialized", LOG_LEVEL_INFO, NULL);
+            log_this("SwaggerUI", "Already initialized", LOG_LEVEL_STATE, NULL);
         }
         return swagger_initialized;
     }
@@ -105,7 +105,7 @@ bool init_swagger_support(WebServerConfig *config) {
     swagger_initialized = success;
     
     if (success) {
-        log_this("SwaggerUI", "Files available:", LOG_LEVEL_INFO, NULL);
+        log_this("SwaggerUI", "Files available:", LOG_LEVEL_STATE, NULL);
         
         // Log each file's details
         for (size_t i = 0; i < num_swagger_files; i++) {
@@ -118,7 +118,7 @@ bool init_swagger_support(WebServerConfig *config) {
                 snprintf(size_display, sizeof(size_display), "%.1fM", swagger_files[i].size / (1024.0 * 1024.0));
             }
             
-            log_this("SwaggerUI", "-> %s (%s%s)", LOG_LEVEL_INFO,
+            log_this("SwaggerUI", "-> %s (%s%s)", LOG_LEVEL_STATE,
                     swagger_files[i].name, size_display, 
                     swagger_files[i].is_compressed ? ", compressed" : "");
         }
@@ -153,7 +153,7 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
         char *redirect_url;
         if (asprintf(&redirect_url, "%s/", url) != -1) {
             log_this("SwaggerUI", "Redirecting %s to %s for proper relative path resolution", 
-                    LOG_LEVEL_INFO, url, redirect_url);
+                    LOG_LEVEL_STATE, url, redirect_url);
                     
             struct MHD_Response *response = MHD_create_response_from_buffer(0, NULL, MHD_RESPMEM_PERSISTENT);
             MHD_add_response_header(response, "Location", redirect_url);
@@ -178,7 +178,7 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
     
     // Log the URL processing for debugging
     log_this("SwaggerUI", "Request: Original URL: %s, Processed path: %s", 
-             LOG_LEVEL_INFO, url, url_path);
+             LOG_LEVEL_STATE, url, url_path);
 
     // Try to find the requested file
     SwaggerFile *file = NULL;
@@ -448,7 +448,7 @@ static bool load_swagger_files_from_tar(const uint8_t *tar_data, size_t tar_size
     }
 
     // Log buffer allocation
-    log_this("SwaggerUI", "Allocated decompression buffer: %zu bytes", LOG_LEVEL_INFO, buffer_size);
+    log_this("SwaggerUI", "Allocated decompression buffer: %zu bytes", LOG_LEVEL_STATE, buffer_size);
     
     // Set up streaming variables
     const uint8_t* next_in = tar_data;
@@ -467,17 +467,17 @@ static bool load_swagger_files_from_tar(const uint8_t *tar_data, size_t tar_size
     for (size_t i = 0; i < 32 && i < tar_size; i++) {
         sprintf(debug_bytes_end + (i * 3), "%02x ", tar_data[tar_size - 32 + i]);
     }
-    log_this("SwaggerUI", "Decompression input analysis:", LOG_LEVEL_INFO, NULL);
-    log_this("SwaggerUI", "- Input size: %zu bytes", LOG_LEVEL_INFO, tar_size);
-    log_this("SwaggerUI", "- First 32 bytes: %s", LOG_LEVEL_INFO, debug_bytes);
-    log_this("SwaggerUI", "- Last 32 bytes: %s", LOG_LEVEL_INFO, debug_bytes_end);
-    log_this("SwaggerUI", "- Decompression buffer: %zu bytes", LOG_LEVEL_INFO, buffer_size);
+    log_this("SwaggerUI", "Decompression input analysis:", LOG_LEVEL_STATE, NULL);
+    log_this("SwaggerUI", "- Input size: %zu bytes", LOG_LEVEL_STATE, tar_size);
+    log_this("SwaggerUI", "- First 32 bytes: %s", LOG_LEVEL_STATE, debug_bytes);
+    log_this("SwaggerUI", "- Last 32 bytes: %s", LOG_LEVEL_STATE, debug_bytes_end);
+    log_this("SwaggerUI", "- Decompression buffer: %zu bytes", LOG_LEVEL_STATE, buffer_size);
 
     // Check if this looks like a tar file already
     if (tar_size > 262 && memcmp(tar_data + 257, "ustar", 5) == 0) {
         log_this("SwaggerUI", "Input appears to be uncompressed tar (ustar magic detected)", 
-                 LOG_LEVEL_INFO, NULL);
-        log_this("SwaggerUI", "Skipping Brotli decompression", LOG_LEVEL_INFO, NULL);
+                 LOG_LEVEL_STATE, NULL);
+        log_this("SwaggerUI", "Skipping Brotli decompression", LOG_LEVEL_STATE, NULL);
         // Copy the tar data directly
         memcpy(decompressed_data, tar_data, tar_size);
         buffer_size = tar_size;
@@ -486,9 +486,9 @@ static bool load_swagger_files_from_tar(const uint8_t *tar_data, size_t tar_size
     }
 
     // Log Brotli decompression parameters
-    log_this("SwaggerUI", "Starting Brotli decompression with:", LOG_LEVEL_INFO, NULL);
-    log_this("SwaggerUI", "- Large window: enabled", LOG_LEVEL_INFO, NULL);
-    log_this("SwaggerUI", "- Initial buffer: %zu bytes", LOG_LEVEL_INFO, buffer_size);
+    log_this("SwaggerUI", "Starting Brotli decompression with:", LOG_LEVEL_STATE, NULL);
+    log_this("SwaggerUI", "- Large window: enabled", LOG_LEVEL_STATE, NULL);
+    log_this("SwaggerUI", "- Initial buffer: %zu bytes", LOG_LEVEL_STATE, buffer_size);
     
     // Decompress in chunks
     do {
@@ -534,9 +534,9 @@ static bool load_swagger_files_from_tar(const uint8_t *tar_data, size_t tar_size
         sprintf(decompressed_bytes_end + (i * 3), "%02x ", decompressed_data[buffer_size - 32 + i]);
     }
     log_this("SwaggerUI", "Decompression successful: %zu bytes -> %zu bytes",
-             LOG_LEVEL_INFO, tar_size, buffer_size);
-    log_this("SwaggerUI", "Decompressed data first 32 bytes: %s", LOG_LEVEL_INFO, decompressed_bytes);
-    log_this("SwaggerUI", "Decompressed data last 32 bytes: %s", LOG_LEVEL_INFO, decompressed_bytes_end);
+             LOG_LEVEL_STATE, tar_size, buffer_size);
+    log_this("SwaggerUI", "Decompressed data first 32 bytes: %s", LOG_LEVEL_STATE, decompressed_bytes);
+    log_this("SwaggerUI", "Decompressed data last 32 bytes: %s", LOG_LEVEL_STATE, decompressed_bytes_end);
     
 cleanup:
     BrotliDecoderDestroyInstance(decoder);

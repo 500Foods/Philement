@@ -364,7 +364,7 @@ void create_default_config(const char* config_path) {
                  LOG_LEVEL_ERROR, config_path);
     } else {
         log_this("Configuration", "Created default config at %s", 
-                 LOG_LEVEL_INFO, config_path);
+                 LOG_LEVEL_STATE, config_path);
     }
 
     json_decref(root);

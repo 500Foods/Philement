@@ -50,7 +50,7 @@ int ws_handle_connection_established(struct lws *wsi, WebSocketSessionData *sess
     pthread_mutex_unlock(&ws_context->mutex);
 
     log_this("WebSocket", "New connection established (active: %d, total: %d)",
-             LOG_LEVEL_INFO,
+             LOG_LEVEL_STATE,
              ws_context->active_connections,
              ws_context->total_connections);
 
@@ -76,7 +76,7 @@ int ws_handle_connection_closed(struct lws *wsi, WebSocketSessionData *session)
         
         // Log closure with remaining count
         log_this("WebSocket", "Connection closed (remaining active: %d)",
-                 LOG_LEVEL_INFO,
+                 LOG_LEVEL_STATE,
                  ws_context->active_connections);
     }
 
@@ -87,7 +87,7 @@ int ws_handle_connection_closed(struct lws *wsi, WebSocketSessionData *session)
     // During shutdown, broadcast to all waiting threads when last connection closes
     if (ws_context->shutdown) {
         if (ws_context->active_connections == 0) {
-            log_this("WebSocket", "Last connection closed during shutdown", LOG_LEVEL_INFO);
+            log_this("WebSocket", "Last connection closed during shutdown", LOG_LEVEL_STATE);
             pthread_cond_broadcast(&ws_context->cond);
         } else {
             log_this("WebSocket", "Connection closed during shutdown (%d remaining)",
@@ -130,7 +130,7 @@ void ws_update_client_info(struct lws *wsi, WebSocketSessionData *session)
     }
 
     log_this("WebSocket", "Client connected - IP: %s, App: %s, Client: %s",
-             LOG_LEVEL_INFO,
+             LOG_LEVEL_STATE,
              session->request_ip,
              session->request_app,
              session->request_client);

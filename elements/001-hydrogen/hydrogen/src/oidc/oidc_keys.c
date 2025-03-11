@@ -35,7 +35,7 @@ struct OIDCKeyContext {
 OIDCKeyContext* init_oidc_key_management(const char *storage_path, 
                                         bool encryption_enabled, 
                                         int rotation_interval_days) {
-    log_this("OIDC Keys", "Initializing key management", LOG_LEVEL_INFO);
+    log_this("OIDC Keys", "Initializing key management", LOG_LEVEL_STATE);
     
     OIDCKeyContext *context = (OIDCKeyContext*)calloc(1, sizeof(OIDCKeyContext));
     if (!context) {
@@ -55,7 +55,7 @@ OIDCKeyContext* init_oidc_key_management(const char *storage_path,
     context->encryption_enabled = encryption_enabled;
     context->rotation_interval = rotation_interval_days;
     
-    log_this("OIDC Keys", "Key management initialized successfully", LOG_LEVEL_INFO);
+    log_this("OIDC Keys", "Key management initialized successfully", LOG_LEVEL_STATE);
     return context;
 }
 
@@ -69,7 +69,7 @@ void cleanup_oidc_key_management(OIDCKeyContext *context) {
         return;
     }
     
-    log_this("OIDC Keys", "Cleaning up key management", LOG_LEVEL_INFO);
+    log_this("OIDC Keys", "Cleaning up key management", LOG_LEVEL_STATE);
     
     if (context->storage_path) {
         free(context->storage_path);
@@ -78,7 +78,7 @@ void cleanup_oidc_key_management(OIDCKeyContext *context) {
     // Clean up any other allocated resources
     
     free(context);
-    log_this("OIDC Keys", "Key management cleanup completed", LOG_LEVEL_INFO);
+    log_this("OIDC Keys", "Key management cleanup completed", LOG_LEVEL_STATE);
 }
 
 /**
@@ -93,7 +93,7 @@ char* oidc_generate_jwks(OIDCKeyContext *context) {
         return NULL;
     }
     
-    log_this("OIDC Keys", "Generating JWKS document", LOG_LEVEL_INFO);
+    log_this("OIDC Keys", "Generating JWKS document", LOG_LEVEL_STATE);
     
     // This is a stub implementation that returns a minimal valid JWKS
     char *jwks = strdup("{"

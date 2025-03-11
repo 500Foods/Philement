@@ -55,11 +55,11 @@ static void log_config_info(void);
 // Log early startup information (before any initialization)
 static void log_early_info(void) {
     log_group_begin();
-    log_this("Startup", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
-    log_this("Startup", "HYDROGEN STARTUP", LOG_LEVEL_INFO);
-    log_this("Startup", "Version: %s", LOG_LEVEL_INFO, VERSION);
-    log_this("Startup", "Release: %s", LOG_LEVEL_INFO, RELEASE);
-    log_this("Startup", "Build Type: %s", LOG_LEVEL_INFO, BUILD_TYPE);
+    log_this("Startup", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+    log_this("Startup", "HYDROGEN STARTUP", LOG_LEVEL_STATE);
+    log_this("Startup", "Version: %s", LOG_LEVEL_STATE, VERSION);
+    log_this("Startup", "Release: %s", LOG_LEVEL_STATE, RELEASE);
+    log_this("Startup", "Build Type: %s", LOG_LEVEL_STATE, BUILD_TYPE);
     log_group_end();
 }
 
@@ -68,21 +68,21 @@ static void log_config_info(void) {
     if (!app_config) return;
     
     log_group_begin();
-    log_this("Startup", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
-    log_this("Startup", "Server Name: %s", LOG_LEVEL_INFO, app_config->server.server_name);
-    log_this("Startup", "Executable: %s", LOG_LEVEL_INFO, app_config->server.exec_file);
+    log_this("Startup", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+    log_this("Startup", "Server Name: %s", LOG_LEVEL_STATE, app_config->server.server_name);
+    log_this("Startup", "Executable: %s", LOG_LEVEL_STATE, app_config->server.exec_file);
 
     long file_size = get_file_size(app_config->server.exec_file);
     if (file_size >= 0) {
-        log_this("Startup", "Size: %ld", LOG_LEVEL_INFO, file_size);
+        log_this("Startup", "Size: %ld", LOG_LEVEL_STATE, file_size);
     } else {
         log_this("Startup", "Error: Unable to get file size", LOG_LEVEL_ERROR);
     }
 
-    log_this("Startup", "Log File: %s", LOG_LEVEL_INFO, 
+    log_this("Startup", "Log File: %s", LOG_LEVEL_STATE, 
             app_config->server.log_file ? app_config->server.log_file : "None");
-    log_this("Startup", "Startup Delay: %d milliseconds", LOG_LEVEL_INFO, app_config->server.startup_delay);
-    log_this("Startup", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
+    log_this("Startup", "Startup Delay: %d milliseconds", LOG_LEVEL_STATE, app_config->server.startup_delay);
+    log_this("Startup", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
     log_group_end();
 }
 
@@ -152,7 +152,7 @@ int startup_hydrogen(const char* config_path) {
     }
 
     // Log successful core initialization
-    log_this("Startup", "Core systems initialized successfully", LOG_LEVEL_INFO);
+    log_this("Startup", "Core systems initialized successfully", LOG_LEVEL_STATE);
 
     // Additional services (web, websocket, mdns, print) are initialized on demand
     // Each service will initialize its own thread when it starts
@@ -232,10 +232,10 @@ int startup_hydrogen(const char* config_path) {
 
     // Final Startup Message
     log_group_begin();
-    log_this("Startup", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
-    log_this("Startup", "Application started", LOG_LEVEL_INFO);
-    log_this("Startup", "Press Ctrl+C to exit", LOG_LEVEL_INFO);
-    log_this("Startup", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
+    log_this("Startup", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+    log_this("Startup", "Application started", LOG_LEVEL_STATE);
+    log_this("Startup", "Press Ctrl+C to exit", LOG_LEVEL_STATE);
+    log_this("Startup", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
     log_group_end();
  
     return 1;

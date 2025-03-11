@@ -60,7 +60,7 @@ void add_service_thread(ServiceThreads *threads, pthread_t thread_id) {
         if (server_running) {
             snprintf(msg, sizeof(msg), "Added thread %lu (tid: %d), new count: %d", 
                      (unsigned long)thread_id, tid, threads->thread_count);
-            log_this("ThreadMgmt", msg, LOG_LEVEL_INFO);
+            log_this("ThreadMgmt", msg, LOG_LEVEL_STATE);
         } else {
             snprintf(msg, sizeof(msg), "Thread added, count: %d", threads->thread_count);
             log_this("ThreadMgmt", msg, LOG_LEVEL_WARN);
@@ -88,7 +88,7 @@ void remove_service_thread(ServiceThreads *threads, pthread_t thread_id) {
             if (server_running) {
                 snprintf(msg, sizeof(msg), "Removed thread %lu, new count: %d", 
                          (unsigned long)thread_id, threads->thread_count);
-                log_this("ThreadMgmt", msg, LOG_LEVEL_INFO);
+                log_this("ThreadMgmt", msg, LOG_LEVEL_STATE);
             } else {
                 snprintf(msg, sizeof(msg), "Thread removed, count: %d", threads->thread_count);
                 log_this("ThreadMgmt", msg, LOG_LEVEL_WARN);
