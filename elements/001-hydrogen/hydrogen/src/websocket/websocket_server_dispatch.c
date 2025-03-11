@@ -47,10 +47,10 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 
                 pthread_mutex_unlock(&ws_context->mutex);
                 
-                log_this("WebSocket", "Protocol cleanup complete", LOG_LEVEL_INFO);
+                log_this("WebSocket", "Protocol cleanup complete", LOG_LEVEL_STATE);
             } else {
                 // Context already cleaned up, which is also valid
-                log_this("WebSocket", "Protocol destroy with no context", LOG_LEVEL_INFO);
+                log_this("WebSocket", "Protocol destroy with no context", LOG_LEVEL_STATE);
             }
         }
         return 0;
@@ -84,7 +84,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                     // During shutdown, some sessions might be already cleaned up
                     if (!session) {
                         log_this("WebSocket", "Connection cleanup with no session during shutdown", 
-                                LOG_LEVEL_INFO, true, true, true);
+                                LOG_LEVEL_STATE, true, true, true);
                         return 0;
                     }
                     int result = ws_handle_connection_closed(wsi, session);
@@ -93,7 +93,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                         pthread_mutex_lock(&ws_context->mutex);
                         if (ws_context->active_connections == 0) {
                             log_this("WebSocket", "Last connection closed, notifying waiters", 
-                                    LOG_LEVEL_INFO, true, true, true);
+                                    LOG_LEVEL_STATE, true, true, true);
                             pthread_cond_broadcast(&ws_context->cond);
                         }
                         pthread_mutex_unlock(&ws_context->mutex);
@@ -123,7 +123,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 // During shutdown, log but don't error on missing session
                 if (!session) {
                     log_this("WebSocket", "Ignoring callback %d during shutdown (no session)", 
-                            LOG_LEVEL_INFO, true, true, true, reason);
+                            LOG_LEVEL_STATE, true, true, true, reason);
                 }
                 return -1;  // Silently reject other callbacks during shutdown
         }
@@ -197,7 +197,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
         // Unhandled Callbacks
         default:
             // Log unhandled callback for debugging
-            log_this("WebSocket", "Unhandled callback reason: %d", LOG_LEVEL_INFO, reason);
+            log_this("WebSocket", "Unhandled callback reason: %d", LOG_LEVEL_STATE, reason);
             return 0;  // Accept unhandled callbacks during normal operation
     }
 }

@@ -48,7 +48,7 @@
  */
 #define LOG_LEVEL_ALL      0  /* Log everything - special value, don't use in log calls */
 #define LOG_LEVEL_DEBUG    1  /* Debug-level messages */
-#define LOG_LEVEL_INFO     2  /* General information, normal operation */
+#define LOG_LEVEL_STATE     2  /* General information, normal operation */
 #define LOG_LEVEL_WARN     3  /* Warning conditions */
 #define LOG_LEVEL_ERROR    4  /* Error conditions */
 #define LOG_LEVEL_CRITICAL 5  /* Critical conditions */
@@ -81,9 +81,9 @@ void log_this(const char* subsystem, const char* format, int priority, ...);
  * 
  * Example usage:
  *   log_group_begin();
- *   log_this("Subsystem", "Message 1", LOG_LEVEL_INFO);
- *   log_this("Subsystem", "Message 2", LOG_LEVEL_INFO);
- *   log_this("Subsystem", "Message 3", LOG_LEVEL_INFO);
+ *   log_this("Subsystem", "Message 1", LOG_LEVEL_STATE);
+ *   log_this("Subsystem", "Message 2", LOG_LEVEL_STATE);
+ *   log_this("Subsystem", "Message 3", LOG_LEVEL_STATE);
  *   log_group_end();
  */
 void log_group_begin(void);

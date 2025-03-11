@@ -193,7 +193,7 @@ static int create_multicast_socket(int family, const char *group, const char *if
         }
     }
 
-    log_this("mDNSServer", "Created multicast socket on interface %s", LOG_LEVEL_INFO, if_name);
+    log_this("mDNSServer", "Created multicast socket on interface %s", LOG_LEVEL_STATE, if_name);
     return sockfd;
 }
 
@@ -417,7 +417,7 @@ void mdns_server_send_announcement(mdns_server_t *mdns_server, const network_inf
                 log_this("mDNSServer", "Failed to send IPv4 announcement on %s: %s", LOG_LEVEL_DEBUG,
                         iface->if_name, strerror(errno));
             } else {
-                log_this("mDNSServer", "Sent IPv4 announcement on %s", LOG_LEVEL_INFO, iface->if_name);
+                log_this("mDNSServer", "Sent IPv4 announcement on %s", LOG_LEVEL_STATE, iface->if_name);
             }
         }
 
@@ -427,7 +427,7 @@ void mdns_server_send_announcement(mdns_server_t *mdns_server, const network_inf
                 log_this("mDNSServer", "Failed to send IPv6 announcement on %s: %s", LOG_LEVEL_WARN,
                         iface->if_name, strerror(errno));
             } else {
-                log_this("mDNSServer", "Sent IPv6 announcement on %s", LOG_LEVEL_INFO, iface->if_name);
+                log_this("mDNSServer", "Sent IPv6 announcement on %s", LOG_LEVEL_STATE, iface->if_name);
             }
         }
     }
@@ -438,7 +438,7 @@ void *mdns_server_announce_loop(void *arg) {
     mdns_server_t *mdns_server = thread_arg->mdns_server;
     add_service_thread(&mdns_server_threads, pthread_self());
 
-    log_this("mDNSServer", "mDNS Server announce loop started", LOG_LEVEL_INFO);
+    log_this("mDNSServer", "mDNS Server announce loop started", LOG_LEVEL_STATE);
 
     int initial_announcements = 3; // Initial burst
     int interval = 1; // Start with 1-second intervals
@@ -465,7 +465,7 @@ void *mdns_server_announce_loop(void *arg) {
         }
     }
 
-    log_this("mDNSServer", "Shutdown: mDNS Server announce loop exiting", LOG_LEVEL_INFO);
+    log_this("mDNSServer", "Shutdown: mDNS Server announce loop exiting", LOG_LEVEL_STATE);
     remove_service_thread(&mdns_server_threads, pthread_self());
     free(thread_arg);
     return NULL;
@@ -478,7 +478,7 @@ void *mdns_server_responder_loop(void *arg) {
     char name[256];
 
     add_service_thread(&mdns_server_threads, pthread_self());
-    log_this("mDNSServer", "mDNS Server responder loop started", LOG_LEVEL_INFO);
+    log_this("mDNSServer", "mDNS Server responder loop started", LOG_LEVEL_STATE);
 
     // Create pollfd array for all interface sockets
     struct pollfd *fds = malloc(sizeof(struct pollfd) * mdns_server->num_interfaces * 2); // 2 sockets per interface (v4/v6)
@@ -574,7 +574,7 @@ void *mdns_server_responder_loop(void *arg) {
         }
     }
 
-    log_this("mDNSServer", "Shutdown: mDNS Server responder loop exiting", LOG_LEVEL_INFO);
+    log_this("mDNSServer", "Shutdown: mDNS Server responder loop exiting", LOG_LEVEL_STATE);
     remove_service_thread(&mdns_server_threads, pthread_self());
     free(thread_arg);
     return NULL;
@@ -708,7 +708,7 @@ mdns_server_t *mdns_server_init(const char *app_name, const char *id, const char
         goto cleanup;
     }
 
-    log_this("mDNSServer", "mDNS Server initialized with hostname: %s", LOG_LEVEL_INFO, mdns_server->hostname);
+    log_this("mDNSServer", "mDNS Server initialized with hostname: %s", LOG_LEVEL_STATE, mdns_server->hostname);
     free_network_info(net_info);
     return mdns_server;
 
@@ -767,13 +767,13 @@ static void close_mdns_server_interfaces(mdns_server_t *mdns_server) {
         
         // Close sockets first
         if (iface->sockfd_v4 >= 0) {
-            log_this("mDNSServer", "Closing IPv4 socket on interface %s", LOG_LEVEL_INFO, iface->if_name);
+            log_this("mDNSServer", "Closing IPv4 socket on interface %s", LOG_LEVEL_STATE, iface->if_name);
             close(iface->sockfd_v4);
             iface->sockfd_v4 = -1;
         }
         
         if (iface->sockfd_v6 >= 0) {
-            log_this("mDNSServer", "Closing IPv6 socket on interface %s", LOG_LEVEL_INFO, iface->if_name);
+            log_this("mDNSServer", "Closing IPv6 socket on interface %s", LOG_LEVEL_STATE, iface->if_name);
             close(iface->sockfd_v6);
             iface->sockfd_v6 = -1;
         }
@@ -783,7 +783,7 @@ static void close_mdns_server_interfaces(mdns_server_t *mdns_server) {
 void mdns_server_shutdown(mdns_server_t *mdns_server) {
     if (!mdns_server) return;
 
-    log_this("mDNSServer", "Shutdown: Initiating mDNS Server shutdown", LOG_LEVEL_INFO);
+    log_this("mDNSServer", "Shutdown: Initiating mDNS Server shutdown", LOG_LEVEL_STATE);
     
     // Wait for any active threads to notice the shutdown flag
     // This ensures they don't access mdns_server after we free it
@@ -793,7 +793,7 @@ void mdns_server_shutdown(mdns_server_t *mdns_server) {
     // Check for active threads before proceeding
     if (mdns_server_threads.thread_count > 0) {
         log_this("mDNSServer", "Waiting for %d mDNS Server threads to exit", 
-                LOG_LEVEL_INFO, mdns_server_threads.thread_count);
+                LOG_LEVEL_STATE, mdns_server_threads.thread_count);
                 
         // Wait with timeout for threads to exit
         for (int i = 0; i < 10 && mdns_server_threads.thread_count > 0; i++) {
@@ -847,7 +847,7 @@ void mdns_server_shutdown(mdns_server_t *mdns_server) {
                         log_this("mDNSServer", "Failed to send IPv4 goodbye on %s: %s", LOG_LEVEL_WARN,
                                 iface->if_name, strerror(errno));
                     } else {
-                        log_this("mDNSServer", "Sent IPv4 goodbye packet %d/3 on %s", LOG_LEVEL_INFO, i+1, iface->if_name);
+                        log_this("mDNSServer", "Sent IPv4 goodbye packet %d/3 on %s", LOG_LEVEL_STATE, i+1, iface->if_name);
                     }
                 }
                 if (iface->sockfd_v6 >= 0) {
@@ -855,7 +855,7 @@ void mdns_server_shutdown(mdns_server_t *mdns_server) {
                         log_this("mDNSServer", "Failed to send IPv6 goodbye on %s: %s", LOG_LEVEL_WARN,
                                 iface->if_name, strerror(errno));
                     } else {
-                        log_this("mDNSServer", "Sent IPv6 goodbye packet %d/3 on %s", LOG_LEVEL_INFO, i+1, iface->if_name);
+                        log_this("mDNSServer", "Sent IPv6 goodbye packet %d/3 on %s", LOG_LEVEL_STATE, i+1, iface->if_name);
                     }
                 }
                 usleep(250000); // 250ms per RFC 6762
@@ -868,7 +868,7 @@ void mdns_server_shutdown(mdns_server_t *mdns_server) {
     }
     
     // Close all sockets before freeing memory
-    log_this("mDNSServer", "Closing mDNS Server sockets", LOG_LEVEL_INFO);
+    log_this("mDNSServer", "Closing mDNS Server sockets", LOG_LEVEL_STATE);
     close_mdns_server_interfaces(mdns_server);
     
     // Final check for active threads
@@ -880,7 +880,7 @@ void mdns_server_shutdown(mdns_server_t *mdns_server) {
     
     // Brief delay to ensure no threads are accessing resources
     usleep(200000);  // 200ms delay
-    log_this("mDNSServer", "Freeing mDNS Server resources", LOG_LEVEL_INFO);
+    log_this("mDNSServer", "Freeing mDNS Server resources", LOG_LEVEL_STATE);
     
     // Free interfaces
     if (mdns_server->interfaces) {
@@ -924,5 +924,5 @@ void mdns_server_shutdown(mdns_server_t *mdns_server) {
     // Finally free the server structure
     free(mdns_server);
     
-    log_this("mDNSServer", "Shutdown: mDNS Server shutdown complete", LOG_LEVEL_INFO);
+    log_this("mDNSServer", "Shutdown: mDNS Server shutdown complete", LOG_LEVEL_STATE);
 }

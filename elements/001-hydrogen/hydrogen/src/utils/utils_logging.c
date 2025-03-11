@@ -39,7 +39,7 @@ void generate_id(char *buf, size_t len) {
 const char* get_priority_label(int priority) {
     switch (priority) {
         case LOG_LEVEL_ALL:      return "ALL";
-        case LOG_LEVEL_INFO:     return "INFO";
+        case LOG_LEVEL_STATE:     return "INFO";
         case LOG_LEVEL_WARN:     return "WARN";
         case LOG_LEVEL_DEBUG:    return "DEBUG";
         case LOG_LEVEL_ERROR:    return "ERROR";

@@ -38,27 +38,27 @@ int init_mdns_server_subsystem(void) {
 
     // Prevent initialization during any shutdown state
     if (server_stopping || mdns_server_system_shutdown) {
-        log_this("Initialization", "Cannot initialize mDNS Server during shutdown", LOG_LEVEL_INFO);
+        log_this("Initialization", "Cannot initialize mDNS Server during shutdown", LOG_LEVEL_STATE);
         return 0;
     }
 
     // Only proceed if we're in startup phase
     if (!server_starting) {
-        log_this("Initialization", "Cannot initialize mDNS Server outside startup phase", LOG_LEVEL_INFO);
+        log_this("Initialization", "Cannot initialize mDNS Server outside startup phase", LOG_LEVEL_STATE);
         return 0;
     }
 
     // Initialize mDNS with validated configuration
-    log_this("Initialization", "Starting mDNS Server initialization", LOG_LEVEL_INFO);
+    log_this("Initialization", "Starting mDNS Server initialization", LOG_LEVEL_STATE);
 
     // Check shutdown state again before proceeding with resource allocation
     if (server_stopping || mdns_server_system_shutdown) {
-        log_this("Initialization", "Shutdown initiated, aborting mDNS Server initialization", LOG_LEVEL_INFO);
+        log_this("Initialization", "Shutdown initiated, aborting mDNS Server initialization", LOG_LEVEL_STATE);
         return 0;
     }
 
     if (!app_config->mdns_server.enabled) {
-        log_this("Initialization", "mDNS Server disabled in configuration", LOG_LEVEL_INFO);
+        log_this("Initialization", "mDNS Server disabled in configuration", LOG_LEVEL_STATE);
         return 1; // Not an error if disabled
     }
 
@@ -88,7 +88,7 @@ int init_mdns_server_subsystem(void) {
                     if (actual_port > 0 && actual_port <= 65535) {
                         memcpy(&filtered_services[filtered_count], &app_config->mdns_server.services[i], sizeof(mdns_server_service_t));
                         filtered_services[filtered_count].port = (uint16_t)actual_port;
-                        log_this("Initialization", "Setting WebSocket mDNS service port to %d", LOG_LEVEL_INFO, actual_port);
+                        log_this("Initialization", "Setting WebSocket mDNS service port to %d", LOG_LEVEL_STATE, actual_port);
                         filtered_count++;
                     } else {
                         log_this("Initialization", "Invalid WebSocket port: %d, skipping mDNS service", LOG_LEVEL_DEBUG, actual_port);
@@ -154,6 +154,6 @@ int init_mdns_server_subsystem(void) {
 
     free(filtered_services);  // Safe to free after mdns_server_init has copied the data
 
-    log_this("Initialization", "mDNS Server initialized successfully", LOG_LEVEL_INFO);
+    log_this("Initialization", "mDNS Server initialized successfully", LOG_LEVEL_STATE);
     return 1;
 }

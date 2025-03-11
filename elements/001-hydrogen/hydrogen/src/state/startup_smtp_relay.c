@@ -35,18 +35,18 @@ int init_smtp_relay_subsystem(void) {
 
     // Prevent initialization during any shutdown state
     if (server_stopping || smtp_relay_system_shutdown) {
-        log_this("Initialization", "Cannot initialize SMTP Relay during shutdown", LOG_LEVEL_INFO);
+        log_this("Initialization", "Cannot initialize SMTP Relay during shutdown", LOG_LEVEL_STATE);
         return 0;
     }
 
     // Only proceed if we're in startup phase
     if (!server_starting) {
-        log_this("Initialization", "Cannot initialize SMTP Relay outside startup phase", LOG_LEVEL_INFO);
+        log_this("Initialization", "Cannot initialize SMTP Relay outside startup phase", LOG_LEVEL_STATE);
         return 0;
     }
 
     // TODO: Add configuration support for SMTP relay
-    log_this("Initialization", "SMTP Relay configuration support needs implementation", LOG_LEVEL_INFO);
+    log_this("Initialization", "SMTP Relay configuration support needs implementation", LOG_LEVEL_STATE);
 
     // Initialize network info first
     net_info = get_network_info();
@@ -70,7 +70,7 @@ int init_smtp_relay_subsystem(void) {
         return 0;
     }
 
-    log_this("Initialization", "SMTP Relay initialized successfully", LOG_LEVEL_INFO);
+    log_this("Initialization", "SMTP Relay initialized successfully", LOG_LEVEL_STATE);
     return 1;
 }
 
@@ -82,7 +82,7 @@ static int init_smtp_relay(void) {
     // - Set up email templates
     // - Initialize mail queues
     // - Configure security settings
-    log_this("Initialization", "SMTP Relay initialization stub - needs implementation", LOG_LEVEL_INFO);
+    log_this("Initialization", "SMTP Relay initialization stub - needs implementation", LOG_LEVEL_STATE);
     return 1;
 }
 
@@ -93,6 +93,6 @@ static int start_smtp_relay_thread(void) {
     // - Start mail processing thread
     // - Initialize connection pool
     // - Set up event handlers
-    log_this("Initialization", "SMTP Relay thread startup stub - needs implementation", LOG_LEVEL_INFO);
+    log_this("Initialization", "SMTP Relay thread startup stub - needs implementation", LOG_LEVEL_STATE);
     return 1;
 }

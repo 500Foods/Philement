@@ -400,10 +400,10 @@ if (!net_info) {
 }
 
 // Log discovered interfaces
-log_this("Network", "Discovered %d network interfaces", LOG_LEVEL_INFO, net_info->interface_count);
+log_this("Network", "Discovered %d network interfaces", LOG_LEVEL_STATE, net_info->interface_count);
 for (int i = 0; i < net_info->interface_count; i++) {
     network_interface_t* iface = net_info->interfaces[i];
-    log_this("Network", "Interface %s: %s %s", LOG_LEVEL_INFO, 
+    log_this("Network", "Interface %s: %s %s", LOG_LEVEL_STATE, 
              iface->if_name, 
              iface->has_ipv4 ? iface->ipv4_addr_str : "No IPv4",
              iface->is_up ? "UP" : "DOWN");
@@ -462,7 +462,7 @@ network_status_t check_network_status(network_info_t* net_info) {
     
     switch (status) {
         case NETWORK_STATUS_CONNECTED:
-            log_this("Network", "Network is fully connected", LOG_LEVEL_INFO, true, false, false);
+            log_this("Network", "Network is fully connected", LOG_LEVEL_STATE, true, false, false);
             break;
             
         case NETWORK_STATUS_LOCAL_ONLY:

@@ -10,7 +10,7 @@
 static const char* DEFAULT_LEVEL_NAMES[] = {
     "ALL",      // LOG_LEVEL_ALL (0)
     "DEBUG",    // LOG_LEVEL_DEBUG (1)
-    "INFO",     // LOG_LEVEL_INFO (2)
+    "INFO",     // LOG_LEVEL_STATE (2)
     "WARNING",  // LOG_LEVEL_WARNING (3)
     "ERROR",    // LOG_LEVEL_ERROR (4)
     "CRITICAL", // LOG_LEVEL_CRITICAL (5)

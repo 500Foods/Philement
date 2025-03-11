@@ -101,7 +101,7 @@ static void cleanup_print_queue_manager(void* arg) {
     // Remove this thread from tracking before cleanup
     remove_service_thread(&print_threads, pthread_self());
     
-    log_this("PrintQueueManager", "Shutdown: Cleaning up Print Queue Manager", LOG_LEVEL_INFO);
+    log_this("PrintQueueManager", "Shutdown: Cleaning up Print Queue Manager", LOG_LEVEL_STATE);
     // Add any necessary cleanup code here
 }
 
@@ -135,7 +135,7 @@ static void process_print_job(const char* job_data) {
              new_filename ? new_filename : "unknown",
              original_filename ? original_filename : "unknown",
              (long long)file_size);
-    log_this("PrintQueueManager", log_buffer, LOG_LEVEL_INFO);
+    log_this("PrintQueueManager", log_buffer, LOG_LEVEL_STATE);
 
     // TODO: Implement actual print job processing here
 
@@ -153,7 +153,7 @@ int init_print_queue(void) {
         log_this("PrintQueueManager", "Failed to create PrintQueue", LOG_LEVEL_ERROR);
         return 0;
     }
-    log_this("PrintQueueManager", "PrintQueue created successfully", LOG_LEVEL_INFO);
+    log_this("PrintQueueManager", "PrintQueue created successfully", LOG_LEVEL_STATE);
     return 1;
 }
 
@@ -171,7 +171,7 @@ void* print_queue_manager(void* arg) {
 
     pthread_cleanup_push(cleanup_print_queue_manager, NULL);
 
-    log_this("PrintQueueManager", "Print queue manager started", LOG_LEVEL_INFO);
+    log_this("PrintQueueManager", "Print queue manager started", LOG_LEVEL_STATE);
 
     while (!print_queue_shutdown) {
         pthread_mutex_lock(&terminate_mutex);
@@ -181,7 +181,7 @@ void* print_queue_manager(void* arg) {
         pthread_mutex_unlock(&terminate_mutex);
 
         if (print_queue_shutdown) {
-            log_this("PrintQueueManager", "Shutdown: Print Queue shutdown signal received, processing remaining jobs", LOG_LEVEL_INFO);
+            log_this("PrintQueueManager", "Shutdown: Print Queue shutdown signal received, processing remaining jobs", LOG_LEVEL_STATE);
         }
 
         while (queue_size(print_queue) > 0) {
@@ -195,7 +195,7 @@ void* print_queue_manager(void* arg) {
         }
     }
 
-    log_this("PrintQueueManager", "Shutdown: Print Queue Manager exiting", LOG_LEVEL_INFO);
+    log_this("PrintQueueManager", "Shutdown: Print Queue Manager exiting", LOG_LEVEL_STATE);
 
     pthread_cleanup_pop(1);
     return NULL;
@@ -207,7 +207,7 @@ void* print_queue_manager(void* arg) {
 // 3. Preserves remaining jobs in queue
 // 4. Performs resource cleanup
 void shutdown_print_queue() {
-    log_this("PrintQueueManager", "Shutdown: Initiating Print Queue shutdown", LOG_LEVEL_INFO);
+    log_this("PrintQueueManager", "Shutdown: Initiating Print Queue shutdown", LOG_LEVEL_STATE);
 
     print_queue_shutdown = 1;
     pthread_cond_broadcast(&terminate_cond);
@@ -217,14 +217,14 @@ void shutdown_print_queue() {
 
     // Drain remaining jobs
     size_t remaining = queue_size(print_queue);
-    log_this("PrintQueueManager", "Shutdown: Remaining jobs in print queue: %zu", LOG_LEVEL_INFO, remaining);
+    log_this("PrintQueueManager", "Shutdown: Remaining jobs in print queue: %zu", LOG_LEVEL_STATE, remaining);
 
     while (queue_size(print_queue) > 0) {
         size_t size;
         int priority;
         char* job = queue_dequeue(print_queue, &size, &priority);
         if (job) {
-            log_this("PrintQueueManager", "Shutdown: Drained job: %s", LOG_LEVEL_INFO, job);
+            log_this("PrintQueueManager", "Shutdown: Drained job: %s", LOG_LEVEL_STATE, job);
             free(job);
         }
     }
@@ -233,5 +233,5 @@ void shutdown_print_queue() {
     if (print_queue) {
         queue_clear(print_queue);
     }
-    log_this("PrintQueueManager", "Shutdown: Print Queue shutdown complete", LOG_LEVEL_INFO);
+    log_this("PrintQueueManager", "Shutdown: Print Queue shutdown complete", LOG_LEVEL_STATE);
 }

@@ -18,7 +18,7 @@
 // Log level definitions - match logging.h values
 #define LOG_LEVEL_ALL      0  /* Log everything - special value */
 #define LOG_LEVEL_DEBUG    1  /* Debug-level messages */
-#define LOG_LEVEL_INFO     2  /* General information, normal operation */
+#define LOG_LEVEL_STATE     2  /* General information, normal operation */
 #define LOG_LEVEL_WARNING  3  /* Warning conditions */
 #define LOG_LEVEL_ERROR    4  /* Error conditions */
 #define LOG_LEVEL_CRITICAL 5  /* Critical conditions */

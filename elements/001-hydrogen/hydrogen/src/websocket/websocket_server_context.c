@@ -89,7 +89,7 @@ WebSocketServerContext* ws_context_create(int port, const char* protocol, const 
     ctx->message_length = 0;
     ctx->lws_context = NULL;  // Will be set during server initialization
 
-    log_this("WebSocket", "Server context created successfully", LOG_LEVEL_INFO);
+    log_this("WebSocket", "Server context created successfully", LOG_LEVEL_STATE);
     return ctx;
 }
 
@@ -137,7 +137,7 @@ void ws_context_destroy(WebSocketServerContext* ctx)
         extern ServiceThreads websocket_threads;
         update_service_thread_metrics(&websocket_threads);
         if (websocket_threads.thread_count > 0) {
-            log_this("WebSocket", "Waiting for %d threads to exit", LOG_LEVEL_INFO,
+            log_this("WebSocket", "Waiting for %d threads to exit", LOG_LEVEL_STATE,
                     websocket_threads.thread_count);
             
             // Give threads a chance to exit cleanly
@@ -184,7 +184,7 @@ void ws_context_destroy(WebSocketServerContext* ctx)
     // Free the context itself
     free(ctx);
 
-    log_this("WebSocket", "Server context destroyed", LOG_LEVEL_INFO);
+    log_this("WebSocket", "Server context destroyed", LOG_LEVEL_STATE);
     
     // Final delay to allow any pending logs to be processed
     usleep(100000);  // 100ms delay

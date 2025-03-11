@@ -72,7 +72,7 @@ int ws_handle_receive(struct lws *wsi, WebSocketSessionData *session, void *in, 
     pthread_mutex_unlock(&ws_context->mutex);
 
     // Log the complete message for debugging
-    log_this("WebSocket", "Processing complete message", LOG_LEVEL_INFO);
+    log_this("WebSocket", "Processing complete message", LOG_LEVEL_STATE);
 
     // Parse JSON message
     json_error_t error;
@@ -89,10 +89,10 @@ int ws_handle_receive(struct lws *wsi, WebSocketSessionData *session, void *in, 
 
     if (json_is_string(type_json)) {
         const char *type = json_string_value(type_json);
-        log_this("WebSocket", "Processing message type: %s", LOG_LEVEL_INFO, type);
+        log_this("WebSocket", "Processing message type: %s", LOG_LEVEL_STATE, type);
         result = handle_message_type(wsi, type);
     } else {
-        log_this("WebSocket", "Missing or invalid 'type' in request", LOG_LEVEL_INFO);
+        log_this("WebSocket", "Missing or invalid 'type' in request", LOG_LEVEL_STATE);
     }
 
     json_decref(root);
@@ -102,12 +102,12 @@ int ws_handle_receive(struct lws *wsi, WebSocketSessionData *session, void *in, 
 static int handle_message_type(struct lws *wsi, const char *type)
 {
     if (strcmp(type, "status") == 0) {
-        log_this("WebSocket", "Handling status request", LOG_LEVEL_INFO);
+        log_this("WebSocket", "Handling status request", LOG_LEVEL_STATE);
         handle_status_request(wsi);
         return 0;
     }
 
-    log_this("WebSocket", "Unknown message type: %s", LOG_LEVEL_INFO, type);
+    log_this("WebSocket", "Unknown message type: %s", LOG_LEVEL_STATE, type);
     return -1;
 }
 

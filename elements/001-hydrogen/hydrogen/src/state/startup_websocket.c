@@ -33,25 +33,25 @@ int init_websocket_subsystem(void) {
 
     // Prevent initialization during any shutdown state
     if (server_stopping || websocket_server_shutdown) {
-        log_this("Initialization", "Cannot initialize WebSocket server during shutdown", LOG_LEVEL_INFO);
+        log_this("Initialization", "Cannot initialize WebSocket server during shutdown", LOG_LEVEL_STATE);
         return 0;
     }
 
     // Only proceed if we're in startup phase
     if (!server_starting) {
-        log_this("Initialization", "Cannot initialize WebSocket server outside startup phase", LOG_LEVEL_INFO);
+        log_this("Initialization", "Cannot initialize WebSocket server outside startup phase", LOG_LEVEL_STATE);
         return 0;
     }
 
     // Double-check shutdown state before proceeding
     if (server_stopping || websocket_server_shutdown) {
-        log_this("Initialization", "Shutdown initiated, aborting WebSocket server initialization", LOG_LEVEL_INFO);
+        log_this("Initialization", "Shutdown initiated, aborting WebSocket server initialization", LOG_LEVEL_STATE);
         return 0;
     }
 
     // Initialize WebSocket server if enabled
     if (!app_config->websocket.enabled) {
-        log_this("Initialization", "WebSocket server disabled in configuration", LOG_LEVEL_INFO);
+        log_this("Initialization", "WebSocket server disabled in configuration", LOG_LEVEL_STATE);
         return 1; // Not an error if disabled
     }
 
@@ -67,7 +67,7 @@ int init_websocket_subsystem(void) {
         return 0;
     }
 
-    log_this("Initialization", "WebSocket server initialized successfully", LOG_LEVEL_INFO);
+    log_this("Initialization", "WebSocket server initialized successfully", LOG_LEVEL_STATE);
     return 1;
 }
 

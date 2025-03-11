@@ -38,18 +38,18 @@ int init_swagger_subsystem(void) {
 
     // Prevent initialization during any shutdown state
     if (server_stopping || swagger_system_shutdown) {
-        log_this("Initialization", "Cannot initialize Swagger during shutdown", LOG_LEVEL_INFO);
+        log_this("Initialization", "Cannot initialize Swagger during shutdown", LOG_LEVEL_STATE);
         return 0;
     }
 
     // Only proceed if we're in startup phase
     if (!server_starting) {
-        log_this("Initialization", "Cannot initialize Swagger outside startup phase", LOG_LEVEL_INFO);
+        log_this("Initialization", "Cannot initialize Swagger outside startup phase", LOG_LEVEL_STATE);
         return 0;
     }
 
     // TODO: Add configuration support for Swagger
-    log_this("Initialization", "Swagger configuration support needs implementation", LOG_LEVEL_INFO);
+    log_this("Initialization", "Swagger configuration support needs implementation", LOG_LEVEL_STATE);
 
     // Verify web server is running since Swagger UI depends on it
     if (!is_web_server_running()) {
@@ -70,7 +70,7 @@ int init_swagger_subsystem(void) {
         return 0;
     }
 
-    log_this("Initialization", "Swagger system initialized successfully", LOG_LEVEL_INFO);
+    log_this("Initialization", "Swagger system initialized successfully", LOG_LEVEL_STATE);
     return 1;
 }
 
@@ -82,7 +82,7 @@ static int init_swagger_docs(void) {
     // - Initialize Swagger UI assets
     // - Set up documentation endpoints
     // - Configure authentication for docs
-    log_this("Initialization", "Swagger documentation initialization stub - needs implementation", LOG_LEVEL_INFO);
+    log_this("Initialization", "Swagger documentation initialization stub - needs implementation", LOG_LEVEL_STATE);
     return 1;
 }
 
@@ -94,6 +94,6 @@ static int setup_swagger_routes(void) {
     // - Set up UI serving routes
     // - Configure API explorer endpoints
     // - Set up schema validation middleware
-    log_this("Initialization", "Swagger route setup stub - needs implementation", LOG_LEVEL_INFO);
+    log_this("Initialization", "Swagger route setup stub - needs implementation", LOG_LEVEL_STATE);
     return 1;
 }

@@ -60,7 +60,7 @@ bool init_oidc_service(OIDCConfig *config) {
     oidc_context->shutting_down = false;
 
     // Initialize key management
-    log_this("OIDC", "Initializing key management", LOG_LEVEL_INFO);
+    log_this("OIDC", "Initializing key management", LOG_LEVEL_STATE);
     oidc_context->key_context = init_oidc_key_management(
         config->keys.storage_path,
         config->keys.encryption_enabled,
@@ -74,7 +74,7 @@ bool init_oidc_service(OIDCConfig *config) {
     }
 
     // Initialize token service
-    log_this("OIDC", "Initializing token service", LOG_LEVEL_INFO);
+    log_this("OIDC", "Initializing token service", LOG_LEVEL_STATE);
     oidc_context->token_context = init_oidc_token_service(
         oidc_context->key_context,
         config->tokens.access_token_lifetime,
@@ -90,7 +90,7 @@ bool init_oidc_service(OIDCConfig *config) {
     }
 
     // Initialize user management
-    log_this("OIDC", "Initializing user management", LOG_LEVEL_INFO);
+    log_this("OIDC", "Initializing user management", LOG_LEVEL_STATE);
     oidc_context->user_context = init_oidc_user_management(
         5, // max_failed_attempts
         true, // require_email_verification
@@ -106,7 +106,7 @@ bool init_oidc_service(OIDCConfig *config) {
     }
 
     // Initialize client registry
-    log_this("OIDC", "Initializing client registry", LOG_LEVEL_INFO);
+    log_this("OIDC", "Initializing client registry", LOG_LEVEL_STATE);
     oidc_context->client_context = init_oidc_client_registry();
     if (!oidc_context->client_context) {
         log_this("OIDC", "Failed to initialize client registry", LOG_LEVEL_ERROR);
@@ -119,7 +119,7 @@ bool init_oidc_service(OIDCConfig *config) {
     }
 
     // Initialize API endpoints
-    log_this("OIDC", "Initializing API endpoints", LOG_LEVEL_INFO);
+    log_this("OIDC", "Initializing API endpoints", LOG_LEVEL_STATE);
     if (!init_oidc_endpoints(oidc_context)) {
         log_this("OIDC", "Failed to initialize API endpoints", LOG_LEVEL_ERROR);
         cleanup_oidc_client_registry(oidc_context->client_context);
@@ -132,7 +132,7 @@ bool init_oidc_service(OIDCConfig *config) {
     }
 
     oidc_context->initialized = true;
-    log_this("OIDC", "OIDC service initialized successfully", LOG_LEVEL_INFO);
+    log_this("OIDC", "OIDC service initialized successfully", LOG_LEVEL_STATE);
     return true;
 }
 
@@ -147,7 +147,7 @@ void shutdown_oidc_service(void) {
     }
 
     oidc_context->shutting_down = true;
-    log_this("OIDC", "Shutting down OIDC service", LOG_LEVEL_INFO);
+    log_this("OIDC", "Shutting down OIDC service", LOG_LEVEL_STATE);
 
     // Clean up components in reverse initialization order
     cleanup_oidc_endpoints();
@@ -159,7 +159,7 @@ void shutdown_oidc_service(void) {
     free(oidc_context);
     oidc_context = NULL;
     
-    log_this("OIDC", "OIDC service shutdown complete", LOG_LEVEL_INFO);
+    log_this("OIDC", "OIDC service shutdown complete", LOG_LEVEL_STATE);
 }
 
 /*
@@ -205,7 +205,7 @@ char* oidc_process_authorization_request(const char *client_id, const char *redi
     }
 
     // Log authorization request
-    log_this("OIDC", "Processing authorization request for client %s", LOG_LEVEL_INFO, client_id);
+    log_this("OIDC", "Processing authorization request for client %s", LOG_LEVEL_STATE, client_id);
 
     // TODO: Implement actual authorization flow
     // This would handle:
@@ -251,7 +251,7 @@ char* oidc_process_token_request(const char *grant_type, const char *code,
 
     // Log token request
     log_this("OIDC", "Processing token request with grant_type %s for client %s", 
-            LOG_LEVEL_INFO, grant_type, client_id);
+            LOG_LEVEL_STATE, grant_type, client_id);
 
     // TODO: Implement actual token request handling
     // This would handle:
@@ -283,7 +283,7 @@ char* oidc_process_userinfo_request(const char *access_token) {
     }
 
     // Log userinfo request
-    log_this("OIDC", "Processing userinfo request", LOG_LEVEL_INFO);
+    log_this("OIDC", "Processing userinfo request", LOG_LEVEL_STATE);
 
     // TODO: Implement actual userinfo request handling
     // This would handle:
@@ -320,7 +320,7 @@ char* oidc_process_introspection_request(const char *token, const char *token_ty
     }
 
     // Log introspection request
-    log_this("OIDC", "Processing introspection request for client %s", LOG_LEVEL_INFO, client_id);
+    log_this("OIDC", "Processing introspection request for client %s", LOG_LEVEL_STATE, client_id);
 
     // TODO: Implement actual introspection request handling
     // This would handle:
@@ -357,7 +357,7 @@ bool oidc_process_revocation_request(const char *token, const char *token_type_h
     }
 
     // Log revocation request
-    log_this("OIDC", "Processing revocation request for client %s", LOG_LEVEL_INFO, client_id);
+    log_this("OIDC", "Processing revocation request for client %s", LOG_LEVEL_STATE, client_id);
 
     // TODO: Implement actual revocation request handling
     // This would handle:
@@ -384,7 +384,7 @@ char* oidc_generate_discovery_document(void) {
     }
 
     // Log discovery document request
-    log_this("OIDC", "Generating discovery document", LOG_LEVEL_INFO);
+    log_this("OIDC", "Generating discovery document", LOG_LEVEL_STATE);
 
     // Build discovery document
     char *issuer = oidc_context->config.issuer;
@@ -460,7 +460,7 @@ char* oidc_generate_jwks_document(void) {
     }
 
     // Log JWKS document request
-    log_this("OIDC", "Generating JWKS document", LOG_LEVEL_INFO);
+    log_this("OIDC", "Generating JWKS document", LOG_LEVEL_STATE);
 
     // Get key context
     OIDCKeyContext *key_context = (OIDCKeyContext *)oidc_context->key_context;

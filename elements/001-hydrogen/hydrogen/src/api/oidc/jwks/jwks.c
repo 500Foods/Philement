@@ -24,7 +24,7 @@
  * @return MHD_Result indicating success or failure
  */
 enum MHD_Result handle_oidc_jwks_endpoint(struct MHD_Connection *connection) {
-    log_this("OIDC JWKS", "Handling JWKS endpoint request", LOG_LEVEL_INFO);
+    log_this("OIDC JWKS", "Handling JWKS endpoint request", LOG_LEVEL_STATE);
     
     // Generate JWKS document
     char *jwks = oidc_generate_jwks_document();

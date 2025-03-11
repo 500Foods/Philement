@@ -66,8 +66,8 @@ void record_shutdown_end_time(void) {
     double elapsed = calc_elapsed_time(&shutdown_end_time, &shutdown_start_time);
     
     // Log timestamp and duration
-    log_this("Utils", "System shutdown initiated at %s", LOG_LEVEL_INFO, iso_time);
-    log_this("Utils", "System shutdown took %.3fs", LOG_LEVEL_INFO, elapsed);
+    log_this("Utils", "System shutdown initiated at %s", LOG_LEVEL_STATE, iso_time);
+    log_this("Utils", "System shutdown took %.3fs", LOG_LEVEL_STATE, elapsed);
 }
 
 // Get the server start time
@@ -110,8 +110,8 @@ void update_server_ready_time(void) {
             double elapsed = calc_elapsed_time(&server_ready_time, &server_start_time);
 
             log_group_begin();
-            log_this("Startup", "System started at %s", LOG_LEVEL_INFO, iso_time);
-            log_this("Startup", "System startup took %.3fs", LOG_LEVEL_INFO, elapsed);
+            log_this("Startup", "System started at %s", LOG_LEVEL_STATE, iso_time);
+            log_this("Startup", "System startup took %.3fs", LOG_LEVEL_STATE, elapsed);
             log_group_end();
         }
     }

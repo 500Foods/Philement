@@ -37,7 +37,7 @@ enum MHD_Result handle_oidc_revocation_endpoint(struct MHD_Connection *connectio
     (void)upload_data_size;
     (void)con_cls;
     
-    log_this("OIDC Revocation", "Handling revocation endpoint request", LOG_LEVEL_INFO);
+    log_this("OIDC Revocation", "Handling revocation endpoint request", LOG_LEVEL_STATE);
     
     // Only POST is allowed for revocation endpoint
     if (strcmp(method, "POST") != 0) {

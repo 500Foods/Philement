@@ -35,7 +35,7 @@ struct OIDCUserContext {
 OIDCUserContext* init_oidc_user_management(int max_failed_attempts,
                                         bool require_email_verification,
                                         int password_min_length) {
-    log_this("OIDC Users", "Initializing user management", LOG_LEVEL_INFO);
+    log_this("OIDC Users", "Initializing user management", LOG_LEVEL_STATE);
     
     OIDCUserContext *context = (OIDCUserContext*)calloc(1, sizeof(OIDCUserContext));
     if (!context) {
@@ -49,7 +49,7 @@ OIDCUserContext* init_oidc_user_management(int max_failed_attempts,
     context->require_email_verification = require_email_verification;
     context->password_min_length = password_min_length;
     
-    log_this("OIDC Users", "User management initialized successfully", LOG_LEVEL_INFO);
+    log_this("OIDC Users", "User management initialized successfully", LOG_LEVEL_STATE);
     return context;
 }
 
@@ -63,7 +63,7 @@ void cleanup_oidc_user_management(OIDCUserContext *context) {
         return;
     }
     
-    log_this("OIDC Users", "Cleaning up user management", LOG_LEVEL_INFO);
+    log_this("OIDC Users", "Cleaning up user management", LOG_LEVEL_STATE);
     
     // Clean up user storage resources
     if (context->user_storage) {
@@ -71,7 +71,7 @@ void cleanup_oidc_user_management(OIDCUserContext *context) {
     }
     
     free(context);
-    log_this("OIDC Users", "User management cleanup completed", LOG_LEVEL_INFO);
+    log_this("OIDC Users", "User management cleanup completed", LOG_LEVEL_STATE);
 }
 
 /**
@@ -95,7 +95,7 @@ OIDCAuthResult oidc_authenticate_user(OIDCUserContext *context,
         return result;
     }
     
-    log_this("OIDC Users", "Authenticating user", LOG_LEVEL_INFO);
+    log_this("OIDC Users", "Authenticating user", LOG_LEVEL_STATE);
     
     // This is a stub implementation that always succeeds for "test_user"
     if (strcmp(username, "test_user") == 0) {
@@ -144,7 +144,7 @@ char* oidc_create_user(OIDCUserContext *context,
         return NULL;
     }
     
-    log_this("OIDC Users", "Creating new user", LOG_LEVEL_INFO);
+    log_this("OIDC Users", "Creating new user", LOG_LEVEL_STATE);
     
     // This is a stub implementation that returns a dummy user ID
     char *user_id = strdup("user_12345");
@@ -170,7 +170,7 @@ char* oidc_get_user_info(OIDCUserContext *context, const char *user_id) {
         return NULL;
     }
     
-    log_this("OIDC Users", "Retrieving user info", LOG_LEVEL_INFO);
+    log_this("OIDC Users", "Retrieving user info", LOG_LEVEL_STATE);
     
     // This is a stub implementation that returns a minimal valid user info
     char *user_info = strdup("{"
@@ -206,7 +206,7 @@ int oidc_update_user(OIDCUserContext *context,
         return -1;
     }
     
-    log_this("OIDC Users", "Updating user", LOG_LEVEL_INFO);
+    log_this("OIDC Users", "Updating user", LOG_LEVEL_STATE);
     
     // This is a stub implementation that always succeeds
     return 0;
