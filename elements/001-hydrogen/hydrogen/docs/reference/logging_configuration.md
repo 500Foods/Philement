@@ -12,13 +12,13 @@ Minimal configuration for logging:
 {
     "Logging": {
         "Levels": [
-            [0, "ALL"],
-            [1, "INFO"],
-            [2, "WARN"],
-            [3, "DEBUG"],
+            [0, "TRACE"],
+            [1, "DEBUG"],
+            [2, "STATE"],
+            [3, "ALERT"],
             [4, "ERROR"],
-            [5, "CRITICAL"],
-            [6, "NONE"]
+            [5, "FATAL"],
+            [6, "QUIET"]
         ],
         "Console": {
             "Enabled": true,
@@ -37,13 +37,13 @@ Minimal configuration for logging:
 
 | Level | Value | Description | Use Case |
 |-------|-------|-------------|----------|
-| `ALL` | 0 | All messages | Development debugging |
-| `INFO` | 1 | Normal operations | General status |
-| `WARN` | 2 | Potential issues | Production monitoring |
-| `DEBUG` | 3 | Detailed information | Troubleshooting |
+| `TRACE` | 0 | All messages | Development debugging |
+| `DEBUG` | 1 | Detailed information | Troubleshooting |
+| `STATE` | 2 | Normal operations | General status |
+| `ALERT` | 3 | Potential issues | Production monitoring |
 | `ERROR` | 4 | Error conditions | Error tracking |
-| `CRITICAL` | 5 | Serious problems | Critical issues |
-| `NONE` | 6 | No logging | Disable specific components |
+| `FATAL` | 5 | Serious problems | Critical issues |
+| `QUIET` | 6 | No logging | Disable specific components |
 
 ## Output Destinations
 

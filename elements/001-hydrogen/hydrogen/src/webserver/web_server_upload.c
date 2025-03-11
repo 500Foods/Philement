@@ -83,7 +83,7 @@ enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind kind,
                 con_info->last_logged_mb = con_info->total_size / (100 * 1024 * 1024);
                 char progress_log[DEFAULT_LOG_BUFFER_SIZE];  // Use configured log buffer size
                 snprintf(progress_log, sizeof(progress_log), "Upload progress: %zu MB", con_info->last_logged_mb * 100);
-                log_this("WebServer", progress_log, LOG_LEVEL_WARN);
+                log_this("WebServer", progress_log, LOG_LEVEL_ALERT);
             }
         }
     } else if (0 == strcmp(key, "print")) {
@@ -95,7 +95,7 @@ enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind kind,
         // Log unknown keys
         char log_buffer[DEFAULT_LOG_BUFFER_SIZE];  // Use configured log buffer size
         snprintf(log_buffer, sizeof(log_buffer), "Received unknown key in form data: %s", key);
-        log_this("WebServer", log_buffer, LOG_LEVEL_WARN);
+        log_this("WebServer", log_buffer, LOG_LEVEL_ALERT);
     }
 
     return MHD_YES;
@@ -191,7 +191,7 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
             con_info->response_sent = true;
             return ret;
         } else {
-            log_this("WebServer", "File upload failed or no file was uploaded", LOG_LEVEL_WARN);
+            log_this("WebServer", "File upload failed or no file was uploaded", LOG_LEVEL_ALERT);
             const char *error_response = "{\"error\": \"File upload failed\", \"done\": false}";
             struct MHD_Response *response = MHD_create_response_from_buffer(strlen(error_response),
                                             (void*)error_response, MHD_RESPMEM_PERSISTENT);

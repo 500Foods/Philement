@@ -466,11 +466,11 @@ network_status_t check_network_status(network_info_t* net_info) {
             break;
             
         case NETWORK_STATUS_LOCAL_ONLY:
-            log_this("Network", "Network has only local connectivity", LOG_LEVEL_WARNING, true, false, false);
+            log_this("Network", "Network has only local connectivity", LOG_LEVEL_ALERTING, true, false, false);
             break;
             
         case NETWORK_STATUS_LIMITED:
-            log_this("Network", "Network has limited connectivity", LOG_LEVEL_WARNING, true, false, false);
+            log_this("Network", "Network has limited connectivity", LOG_LEVEL_ALERTING, true, false, false);
             break;
             
         case NETWORK_STATUS_DISCONNECTED:
@@ -478,7 +478,7 @@ network_status_t check_network_status(network_info_t* net_info) {
             break;
             
         default:
-            log_this("Network", "Network status is unknown", LOG_LEVEL_WARNING, true, false, false);
+            log_this("Network", "Network status is unknown", LOG_LEVEL_ALERTING, true, false, false);
             break;
     }
     
@@ -516,7 +516,7 @@ void update_network_info(network_info_t* net_info) {
             iface->last_updated = now;
         }
     } else {
-        log_this("Network", "Failed to update network information", LOG_LEVEL_WARNING, true, true, false);
+        log_this("Network", "Failed to update network information", LOG_LEVEL_ALERTING, true, true, false);
     }
 }
 ```

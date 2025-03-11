@@ -91,7 +91,7 @@ int ws_handle_connection_closed(struct lws *wsi, WebSocketSessionData *session)
             pthread_cond_broadcast(&ws_context->cond);
         } else {
             log_this("WebSocket", "Connection closed during shutdown (%d remaining)",
-                     LOG_LEVEL_WARN, ws_context->active_connections);
+                     LOG_LEVEL_ALERT, ws_context->active_connections);
         }
     }
 

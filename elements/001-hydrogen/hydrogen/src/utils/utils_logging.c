@@ -13,6 +13,8 @@
 // Project headers
 #include "utils_logging.h"
 #include "../config/config.h"
+#include "../config/config_priority.h"
+#include "../config/config_logging.h"
 #include "../logging/logging.h"
 
 // Thread-safe identifier generation with collision resistance
@@ -37,15 +39,22 @@ void generate_id(char *buf, size_t len) {
 
 // Get the string representation of a log priority level
 const char* get_priority_label(int priority) {
-    switch (priority) {
-        case LOG_LEVEL_ALL:      return "ALL";
-        case LOG_LEVEL_STATE:     return "INFO";
-        case LOG_LEVEL_WARN:     return "WARN";
-        case LOG_LEVEL_DEBUG:    return "DEBUG";
-        case LOG_LEVEL_ERROR:    return "ERROR";
-        case LOG_LEVEL_CRITICAL: return "CRITICAL";
-        case LOG_LEVEL_NONE:     return "NONE";
-        default:                 return "UNKNOWN";
+    // Get the application configuration
+    const AppConfig* config = get_app_config();
+    
+    // If we have a valid config, use the custom log level names if defined
+    if (config) {
+        const char* level_name = config_logging_get_level_name(&config->logging, priority);
+        if (level_name) {
+            return level_name;
+        }
     }
+    
+    // Fallback to default priority levels if config is not available
+    if (priority >= 0 && priority < NUM_PRIORITY_LEVELS) {
+        return DEFAULT_PRIORITY_LEVELS[priority].label;
+    }
+    
+    return DEFAULT_PRIORITY_LEVELS[LOG_LEVEL_TRACE].label; // Default to TRACE for invalid values
 }
 

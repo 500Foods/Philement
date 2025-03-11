@@ -97,7 +97,7 @@ static enum MHD_Result handle_version_request(struct MHD_Connection *connection)
             return ret;
         } else {
             // Compression failed, fallback to uncompressed
-            log_this("WebServer", "Brotli compression failed, serving uncompressed response", LOG_LEVEL_WARN);
+            log_this("WebServer", "Brotli compression failed, serving uncompressed response", LOG_LEVEL_ALERT);
         }
     }
     

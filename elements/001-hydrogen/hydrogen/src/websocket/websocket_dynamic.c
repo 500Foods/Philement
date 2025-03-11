@@ -70,7 +70,7 @@ int init_websocket_server_dynamic(int port, const char *protocol, const char *ke
     // First, try to load the libwebsockets library
     if (!initialize_dynamic_websocket_library()) {
         log_this("WebSocket", "Cannot initialize WebSocket server - libwebsockets not available", 
-                LOG_LEVEL_WARN);
+                LOG_LEVEL_ALERT);
         // This is not a critical error - the application can still run without WebSockets
         return -1;
     }
@@ -101,7 +101,7 @@ int init_websocket_server_dynamic(int port, const char *protocol, const char *ke
     
     // Check if we have the required function pointers
     if (!create_info || !create_context) {
-        log_this("WebSocket", "Required functions not found in libwebsockets", LOG_LEVEL_WARN);
+        log_this("WebSocket", "Required functions not found in libwebsockets", LOG_LEVEL_ALERT);
         cleanup_dynamic_websocket_library();
         return -1;
     }
@@ -163,7 +163,7 @@ int start_websocket_server_dynamic(void) {
     // Check if library is loaded
     if (!websocket_lib || !websocket_lib->is_loaded) {
         log_this("WebSocket", "Cannot start WebSocket server - library not loaded", 
-                LOG_LEVEL_WARN);
+                LOG_LEVEL_ALERT);
         return -1;
     }
     
@@ -180,7 +180,7 @@ int start_websocket_server_dynamic(void) {
     
     if (!start_server) {
         log_this("WebSocket", "Required function 'lws_start_server' not found", 
-                LOG_LEVEL_WARN);
+                LOG_LEVEL_ALERT);
         return -1;
     }
     
@@ -235,7 +235,7 @@ void shutdown_websocket_server_dynamic(void) {
         log_this("WebSocket", "WebSocket server shutdown successfully", LOG_LEVEL_STATE);
     } else {
         log_this("WebSocket", "Required function 'lws_context_destroy' not found", 
-                LOG_LEVEL_WARN);
+                LOG_LEVEL_ALERT);
     }
     
     // Cleanup and unload the library
@@ -268,7 +268,7 @@ static bool initialize_dynamic_websocket_library(void) {
         return true;
     } else {
         log_this("WebSocket", "Failed to load %s - WebSocket functionality will be disabled", 
-                LOG_LEVEL_WARN, WEBSOCKET_LIB);
+                LOG_LEVEL_ALERT, WEBSOCKET_LIB);
         return false;
     }
 }
@@ -309,7 +309,7 @@ int example_get_websocket_connection_count(void) {
     } else {
         // Fallback behavior
         log_this("WebSocket", "Function lws_get_connection_count not available - using fallback", 
-                LOG_LEVEL_WARN);
+                LOG_LEVEL_ALERT);
     }
     
     return result;
@@ -326,7 +326,7 @@ void example_websocket_log_connections(void) {
     if (!websocket_lib || !websocket_lib->is_loaded) {
         // Fallback behavior
         log_this("WebSocket", "WebSocket library not loaded - using fallback", 
-                LOG_LEVEL_WARN);
+                LOG_LEVEL_ALERT);
         return;
     }
     
@@ -342,6 +342,6 @@ void example_websocket_log_connections(void) {
     } else {
         // Fallback behavior
         log_this("WebSocket", "Function lws_log_connections not available - using fallback", 
-                LOG_LEVEL_WARN);
+                LOG_LEVEL_ALERT);
     }
 }
