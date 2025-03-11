@@ -32,19 +32,19 @@ int init_print_subsystem(void) {
 
     // Prevent initialization during any shutdown state
     if (server_stopping || print_system_shutdown) {
-        log_this("Initialization", "Cannot initialize Print system during shutdown", LOG_LEVEL_INFO);
+        log_this("Initialization", "Cannot initialize Print system during shutdown", LOG_LEVEL_STATE);
         return 0;
     }
 
     // Only proceed if we're in startup phase
     if (!server_starting) {
-        log_this("Initialization", "Cannot initialize Print system outside startup phase", LOG_LEVEL_INFO);
+        log_this("Initialization", "Cannot initialize Print system outside startup phase", LOG_LEVEL_STATE);
         return 0;
     }
 
     // Check if print queue is enabled in configuration
     if (!app_config->print_queue.enabled) {
-        log_this("Initialization", "Print Queue system disabled in configuration", LOG_LEVEL_INFO);
+        log_this("Initialization", "Print Queue system disabled in configuration", LOG_LEVEL_STATE);
         return 1; // Not an error if disabled
     }
 
@@ -61,6 +61,6 @@ int init_print_subsystem(void) {
         return 0;
     }
 
-    log_this("Initialization", "Print Queue system initialized successfully", LOG_LEVEL_INFO);
+    log_this("Initialization", "Print Queue system initialized successfully", LOG_LEVEL_STATE);
     return 1;
 }

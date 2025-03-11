@@ -152,7 +152,7 @@ bool compress_with_brotli(const uint8_t *input, size_t input_size,
              "Brotli(level=%d): %zu bytes → %zu bytes, ratio: %.2f%%, compression: %.2f%%, time: %.3f ms", 
              compression_level, input_size, *output_size, ratio * 100.0f, compression_percent, elapsed_ms);
     
-    log_this("Brotli", stats, LOG_LEVEL_INFO);
+    log_this("Brotli", stats, LOG_LEVEL_STATE);
     
     return true;
 }

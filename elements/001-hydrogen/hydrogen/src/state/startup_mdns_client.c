@@ -35,18 +35,18 @@ int init_mdns_client_subsystem(void) {
 
     // Prevent initialization during any shutdown state
     if (server_stopping || mdns_client_system_shutdown) {
-        log_this("Initialization", "Cannot initialize mDNS Client during shutdown", LOG_LEVEL_INFO);
+        log_this("Initialization", "Cannot initialize mDNS Client during shutdown", LOG_LEVEL_STATE);
         return 0;
     }
 
     // Only proceed if we're in startup phase
     if (!server_starting) {
-        log_this("Initialization", "Cannot initialize mDNS Client outside startup phase", LOG_LEVEL_INFO);
+        log_this("Initialization", "Cannot initialize mDNS Client outside startup phase", LOG_LEVEL_STATE);
         return 0;
     }
 
     // TODO: Add configuration support for mDNS client
-    log_this("Initialization", "mDNS Client configuration support needs implementation", LOG_LEVEL_INFO);
+    log_this("Initialization", "mDNS Client configuration support needs implementation", LOG_LEVEL_STATE);
 
     // Initialize network info first
     net_info = get_network_info();
@@ -70,7 +70,7 @@ int init_mdns_client_subsystem(void) {
         return 0;
     }
 
-    log_this("Initialization", "mDNS Client initialized successfully", LOG_LEVEL_INFO);
+    log_this("Initialization", "mDNS Client initialized successfully", LOG_LEVEL_STATE);
     return 1;
 }
 
@@ -78,7 +78,7 @@ int init_mdns_client_subsystem(void) {
 // This is a stub that will need to be implemented
 static int init_mdns_client(void) {
     // TODO: Implement mDNS client initialization
-    log_this("Initialization", "mDNS Client initialization stub - needs implementation", LOG_LEVEL_INFO);
+    log_this("Initialization", "mDNS Client initialization stub - needs implementation", LOG_LEVEL_STATE);
     return 1;
 }
 
@@ -86,6 +86,6 @@ static int init_mdns_client(void) {
 // This is a stub that will need to be implemented
 static int start_mdns_client_thread(void) {
     // TODO: Implement mDNS client thread startup
-    log_this("Initialization", "mDNS Client thread startup stub - needs implementation", LOG_LEVEL_INFO);
+    log_this("Initialization", "mDNS Client thread startup stub - needs implementation", LOG_LEVEL_STATE);
     return 1;
 }

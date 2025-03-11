@@ -62,7 +62,7 @@ enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind kind,
 
                 char log_buffer[DEFAULT_LOG_BUFFER_SIZE];  // Use configured log buffer size
                 snprintf(log_buffer, sizeof(log_buffer), "Starting file upload: %s", filename);
-                log_this("WebServer", log_buffer, LOG_LEVEL_INFO);
+                log_this("WebServer", log_buffer, LOG_LEVEL_STATE);
             }
         }
 
@@ -90,7 +90,7 @@ enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind kind,
         // Handle the 'print' field
         con_info->print_after_upload = (0 == strcmp(data, "true"));
         log_this("WebServer", con_info->print_after_upload ? "Print after upload: enabled" : "Print after upload: disabled", 
-                LOG_LEVEL_INFO);
+                LOG_LEVEL_STATE);
     } else {
         // Log unknown keys
         char log_buffer[DEFAULT_LOG_BUFFER_SIZE];  // Use configured log buffer size
@@ -154,7 +154,7 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
                 Queue* print_queue = queue_find("PrintQueue");
                 if (print_queue) {
                     queue_enqueue(print_queue, print_job_str, strlen(print_job_str), 0);
-                    log_this("WebServer", "Added print job to queue", LOG_LEVEL_INFO);
+                    log_this("WebServer", "Added print job to queue", LOG_LEVEL_STATE);
                 } else {
                     log_this("WebServer", "Failed to find PrintQueue", LOG_LEVEL_DEBUG);
                 }
@@ -167,15 +167,15 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
             json_decref(print_job);
 
             char complete_log[DEFAULT_LOG_BUFFER_SIZE];  // Use configured log buffer size
-            log_this("WebServer", "File upload completed:", LOG_LEVEL_INFO);
+            log_this("WebServer", "File upload completed:", LOG_LEVEL_STATE);
             snprintf(complete_log, sizeof(complete_log), " -> Source: %s", con_info->original_filename);
-            log_this("WebServer", complete_log, LOG_LEVEL_INFO);
+            log_this("WebServer", complete_log, LOG_LEVEL_STATE);
             snprintf(complete_log, sizeof(complete_log), " ->  Local: %s", con_info->new_filename);
-            log_this("WebServer", complete_log, LOG_LEVEL_INFO);
+            log_this("WebServer", complete_log, LOG_LEVEL_STATE);
             snprintf(complete_log, sizeof(complete_log), " ->   Size: %zu bytes", con_info->total_size);
-            log_this("WebServer", complete_log, LOG_LEVEL_INFO);
+            log_this("WebServer", complete_log, LOG_LEVEL_STATE);
             snprintf(complete_log, sizeof(complete_log), " ->  Print: %s", con_info->print_after_upload ? "true" : "false");
-            log_this("WebServer", complete_log, LOG_LEVEL_INFO);
+            log_this("WebServer", complete_log, LOG_LEVEL_STATE);
 
             // Send response
             const char *response_text = "{\"files\": {\"local\": {\"name\": \"%s\", \"origin\": \"local\"}}, \"done\": true}";

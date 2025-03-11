@@ -69,7 +69,7 @@
  }
  
  static void log_status(const char *name, const char *expected, const char *found, const char *method, LibraryStatus status) {
-     int level = (status == LIB_STATUS_GOOD) ? LOG_LEVEL_INFO :
+     int level = (status == LIB_STATUS_GOOD) ? LOG_LEVEL_STATE :
                  (status == LIB_STATUS_WARNING) ? LOG_LEVEL_WARN :
                  (status == LIB_STATUS_CRITICAL) ? LOG_LEVEL_CRITICAL : LOG_LEVEL_ERROR;
      log_this("DepCheck", "%s Expecting: %s Found: %s (%s) Status: %s",
@@ -241,8 +241,8 @@
  }
  
  int check_library_dependencies(const AppConfig *config) {
-     log_this("DepCheck", "%s", LOG_LEVEL_INFO, LOG_LINE_BREAK);
-     log_this("DepCheck", "DEPENDENCY CHECK", LOG_LEVEL_INFO);
+     log_this("DepCheck", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+     log_this("DepCheck", "DEPENDENCY CHECK", LOG_LEVEL_STATE);
      int critical_count = 0;
  
      bool web = config ? config->web.enabled : false;
@@ -265,7 +265,7 @@
          log_status(lib.name, lib.expected, found, method, status);
          if (status == LIB_STATUS_CRITICAL && lib.required) critical_count++;
      }
-     log_this("DepCheck", "Completed dependency check, critical issues: %d", LOG_LEVEL_INFO, critical_count);
+     log_this("DepCheck", "Completed dependency check, critical issues: %d", LOG_LEVEL_STATE, critical_count);
      return critical_count;
  }
  

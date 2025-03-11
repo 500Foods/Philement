@@ -32,7 +32,7 @@
 // Includes CORS headers for cross-origin access
 enum MHD_Result handle_system_health_request(struct MHD_Connection *connection)
 {
-    log_this("SystemService/health", "Handling health endpoint request", LOG_LEVEL_INFO);
+    log_this("SystemService/health", "Handling health endpoint request", LOG_LEVEL_STATE);
     
     // Create a simple JSON response with health status
     json_t *root = json_object();

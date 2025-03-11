@@ -125,7 +125,7 @@ double get_config_double(json_t* value, double default_value) {
                 strncpy(var_name, str_value + 6, var_name_len);
                 var_name[var_name_len] = '\0';
                 
-                log_this("Configuration", "Using default for %s: %f", LOG_LEVEL_INFO,
+                log_this("Configuration", "Using default for %s: %f", LOG_LEVEL_STATE,
                      var_name, default_value);
             } else {
                 log_this("Configuration", "Environment variable not found, using default double: %f", 

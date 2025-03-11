@@ -37,7 +37,7 @@ enum MHD_Result handle_oidc_introspection_endpoint(struct MHD_Connection *connec
     (void)upload_data_size;
     (void)con_cls;
     
-    log_this("OIDC Introspection", "Handling introspection endpoint request", LOG_LEVEL_INFO);
+    log_this("OIDC Introspection", "Handling introspection endpoint request", LOG_LEVEL_STATE);
     
     // Only POST is allowed for introspection endpoint
     if (strcmp(method, "POST") != 0) {

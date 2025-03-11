@@ -57,7 +57,7 @@ int ws_handle_authentication(struct lws *wsi, WebSocketSessionData *session, con
     // Authentication successful
     session->authenticated = true;
     log_this("WebSocket", "Client authenticated successfully: %s (%s)",
-             LOG_LEVEL_INFO, true, true, true,
+             LOG_LEVEL_STATE, true, true, true,
              session->request_ip,
              session->request_app);
 

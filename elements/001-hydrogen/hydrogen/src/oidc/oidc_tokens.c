@@ -42,7 +42,7 @@ OIDCTokenContext* init_oidc_token_service(OIDCKeyContext *key_context,
                                         int access_token_lifetime,
                                         int refresh_token_lifetime,
                                         int id_token_lifetime) {
-    log_this("OIDC Tokens", "Initializing token service", LOG_LEVEL_INFO);
+    log_this("OIDC Tokens", "Initializing token service", LOG_LEVEL_STATE);
     
     if (!key_context) {
         log_this("OIDC Tokens", "Cannot initialize token service: Invalid key context", LOG_LEVEL_ERROR);
@@ -63,7 +63,7 @@ OIDCTokenContext* init_oidc_token_service(OIDCKeyContext *key_context,
     // Initialize token storage (stub implementation)
     context->token_storage = NULL;
     
-    log_this("OIDC Tokens", "Token service initialized successfully", LOG_LEVEL_INFO);
+    log_this("OIDC Tokens", "Token service initialized successfully", LOG_LEVEL_STATE);
     return context;
 }
 
@@ -77,7 +77,7 @@ void cleanup_oidc_token_service(OIDCTokenContext *context) {
         return;
     }
     
-    log_this("OIDC Tokens", "Cleaning up token service", LOG_LEVEL_INFO);
+    log_this("OIDC Tokens", "Cleaning up token service", LOG_LEVEL_STATE);
     
     // The key_context is owned by the caller, don't free it here
     
@@ -87,7 +87,7 @@ void cleanup_oidc_token_service(OIDCTokenContext *context) {
     }
     
     free(context);
-    log_this("OIDC Tokens", "Token service cleanup completed", LOG_LEVEL_INFO);
+    log_this("OIDC Tokens", "Token service cleanup completed", LOG_LEVEL_STATE);
 }
 
 /**
@@ -106,7 +106,7 @@ char* oidc_generate_access_token(OIDCTokenContext *context,
         return NULL;
     }
     
-    log_this("OIDC Tokens", "Generating access token", LOG_LEVEL_INFO);
+    log_this("OIDC Tokens", "Generating access token", LOG_LEVEL_STATE);
     
     // This is a stub implementation that returns a minimal valid token
     char *token = strdup("eyJhbGciOiJSUzI1NiIsImtpZCI6Imh5ZHJvZ2VuLWRlZmF1bHQta2V5In0.eyJzdWIiOiJzdHViLXVzZXItaWQiLCJhdWQiOiJzdHViLWNsaWVudC1pZCIsImV4cCI6MTcyNTQ3MjQwMCwiaWF0IjoxNzE1NzEyMDAyLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIn0.example-signature");
@@ -138,7 +138,7 @@ char* oidc_generate_refresh_token(OIDCTokenContext *context,
         return NULL;
     }
     
-    log_this("OIDC Tokens", "Generating refresh token", LOG_LEVEL_INFO);
+    log_this("OIDC Tokens", "Generating refresh token", LOG_LEVEL_STATE);
     
     // This is a stub implementation
     char *token = strdup("refresh-token-stub");
@@ -165,7 +165,7 @@ char* oidc_generate_id_token(OIDCTokenContext *context,
         return NULL;
     }
     
-    log_this("OIDC Tokens", "Generating ID token", LOG_LEVEL_INFO);
+    log_this("OIDC Tokens", "Generating ID token", LOG_LEVEL_STATE);
     
     // This is a stub implementation that returns a minimal valid token
     char *token = strdup("eyJhbGciOiJSUzI1NiIsImtpZCI6Imh5ZHJvZ2VuLWRlZmF1bHQta2V5In0.eyJzdWIiOiJzdHViLXVzZXItaWQiLCJhdWQiOiJzdHViLWNsaWVudC1pZCIsImV4cCI6MTcyNTQ3MjQwMCwiaWF0IjoxNzE1NzEyMDAyLCJub25jZSI6InN0dWItbm9uY2UifQ.example-signature");
@@ -192,7 +192,7 @@ bool oidc_validate_access_token(OIDCTokenContext *context, const char *access_to
         return false;
     }
     
-    log_this("OIDC Tokens", "Validating access token", LOG_LEVEL_INFO);
+    log_this("OIDC Tokens", "Validating access token", LOG_LEVEL_STATE);
     
     // This is a stub implementation that always returns success
     // If claims output parameter is provided, set a stub claims structure
@@ -217,7 +217,7 @@ bool oidc_validate_refresh_token(OIDCTokenContext *context, const char *refresh_
         return false;
     }
     
-    log_this("OIDC Tokens", "Validating refresh token", LOG_LEVEL_INFO);
+    log_this("OIDC Tokens", "Validating refresh token", LOG_LEVEL_STATE);
     
     // This is a stub implementation that always returns success
     return true;
@@ -244,7 +244,7 @@ bool oidc_revoke_token(OIDCTokenContext *context,
     /* Mark token_type_hint as intentionally unused in this stub implementation */
     (void)token_type_hint;
     
-    log_this("OIDC Tokens", "Revoking token", LOG_LEVEL_INFO);
+    log_this("OIDC Tokens", "Revoking token", LOG_LEVEL_STATE);
     
     // This is a stub implementation that always returns success
     return true;
