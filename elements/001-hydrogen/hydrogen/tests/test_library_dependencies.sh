@@ -59,11 +59,11 @@ check_dependency_log() {
     # Determine the expected log level marker based on level number
     local level_marker=""
     if [ "$expected_level" == "1" ]; then
-        level_marker="INFO"
+        level_marker="STATE"
     elif [ "$expected_level" == "2" ]; then
-        level_marker="WARN"
+        level_marker="ALERT"
     elif [ "$expected_level" == "5" ]; then
-        level_marker="CRITICAL"
+        level_marker="FATAL"
     else
         level_marker="ERROR"
     fi

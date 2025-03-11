@@ -91,7 +91,7 @@ bool init_swagger_support(WebServerConfig *config) {
     free(executable_path);
 
     if (!success) {
-        log_this("SwaggerUI", "Failed to load UI files", LOG_LEVEL_WARN, NULL);
+        log_this("SwaggerUI", "Failed to load UI files", LOG_LEVEL_ALERT, NULL);
         config->swagger->payload_available = false;
         return false;
     }
@@ -123,7 +123,7 @@ bool init_swagger_support(WebServerConfig *config) {
                     swagger_files[i].is_compressed ? ", compressed" : "");
         }
     } else {
-        log_this("SwaggerUI", "Failed to load UI files from payload", LOG_LEVEL_WARN, NULL);
+        log_this("SwaggerUI", "Failed to load UI files from payload", LOG_LEVEL_ALERT, NULL);
     }
 
     return success;

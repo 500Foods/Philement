@@ -159,7 +159,7 @@ static int create_multicast_socket(int family, const char *group, const char *if
     if (setsockopt(sockfd, family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6,
                    family == AF_INET ? IP_MULTICAST_LOOP : IPV6_MULTICAST_LOOP,
                    &loop, sizeof(loop)) < 0) {
-        log_this("mDNSServer", "Failed to enable multicast loop: %s", LOG_LEVEL_WARN, strerror(errno));
+        log_this("mDNSServer", "Failed to enable multicast loop: %s", LOG_LEVEL_ALERT, strerror(errno));
     }
 
     if (family == AF_INET) {
@@ -309,7 +309,7 @@ static void _mdns_server_build_interface_announcement(uint8_t *packet, size_t *p
         
         size_t total_len = name_len + 1 + stype_len + 6;
         if (total_len >= sizeof(full_service_name)) {
-            log_this("mDNSServer", "Service name too long: %s.%s.local truncated", LOG_LEVEL_WARN,
+            log_this("mDNSServer", "Service name too long: %s.%s.local truncated", LOG_LEVEL_ALERT,
                      mdns_server->services[i].name, service_type);
             name_len = max_name_len < name_len ? max_name_len : name_len;
             stype_len = max_type_len < stype_len ? max_type_len : stype_len;
@@ -328,7 +328,7 @@ static void _mdns_server_build_interface_announcement(uint8_t *packet, size_t *p
 
     *packet_len = ptr - packet;
     if (*packet_len > 1500) {
-        log_this("mDNSServer", "Warning: Packet size %zu exceeds typical MTU (1500)", LOG_LEVEL_WARN, *packet_len);
+        log_this("mDNSServer", "Warning: Packet size %zu exceeds typical MTU (1500)", LOG_LEVEL_ALERT, *packet_len);
     }
 }
 
@@ -424,7 +424,7 @@ void mdns_server_send_announcement(mdns_server_t *mdns_server, const network_inf
         // Send IPv6 announcement
         if (iface->sockfd_v6 >= 0) {
             if (sendto(iface->sockfd_v6, packet, packet_len, 0, (struct sockaddr *)&addr_v6, sizeof(addr_v6)) < 0) {
-                log_this("mDNSServer", "Failed to send IPv6 announcement on %s: %s", LOG_LEVEL_WARN,
+                log_this("mDNSServer", "Failed to send IPv6 announcement on %s: %s", LOG_LEVEL_ALERT,
                         iface->if_name, strerror(errno));
             } else {
                 log_this("mDNSServer", "Sent IPv6 announcement on %s", LOG_LEVEL_STATE, iface->if_name);
@@ -803,7 +803,7 @@ void mdns_server_shutdown(mdns_server_t *mdns_server) {
         
         if (mdns_server_threads.thread_count > 0) {
             log_this("mDNSServer", "Warning: %d mDNS Server threads still active", 
-                   LOG_LEVEL_WARN, mdns_server_threads.thread_count);
+                   LOG_LEVEL_ALERT, mdns_server_threads.thread_count);
         }
     }
     
@@ -844,7 +844,7 @@ void mdns_server_shutdown(mdns_server_t *mdns_server) {
             for (int i = 0; i < 3; i++) {
                 if (iface->sockfd_v4 >= 0) {
                     if (sendto(iface->sockfd_v4, packet, packet_len, 0, (struct sockaddr *)&addr_v4, sizeof(addr_v4)) < 0) {
-                        log_this("mDNSServer", "Failed to send IPv4 goodbye on %s: %s", LOG_LEVEL_WARN,
+                        log_this("mDNSServer", "Failed to send IPv4 goodbye on %s: %s", LOG_LEVEL_ALERT,
                                 iface->if_name, strerror(errno));
                     } else {
                         log_this("mDNSServer", "Sent IPv4 goodbye packet %d/3 on %s", LOG_LEVEL_STATE, i+1, iface->if_name);
@@ -852,7 +852,7 @@ void mdns_server_shutdown(mdns_server_t *mdns_server) {
                 }
                 if (iface->sockfd_v6 >= 0) {
                     if (sendto(iface->sockfd_v6, packet, packet_len, 0, (struct sockaddr *)&addr_v6, sizeof(addr_v6)) < 0) {
-                        log_this("mDNSServer", "Failed to send IPv6 goodbye on %s: %s", LOG_LEVEL_WARN,
+                        log_this("mDNSServer", "Failed to send IPv6 goodbye on %s: %s", LOG_LEVEL_ALERT,
                                 iface->if_name, strerror(errno));
                     } else {
                         log_this("mDNSServer", "Sent IPv6 goodbye packet %d/3 on %s", LOG_LEVEL_STATE, i+1, iface->if_name);
@@ -875,7 +875,7 @@ void mdns_server_shutdown(mdns_server_t *mdns_server) {
     update_service_thread_metrics(&mdns_server_threads);
     if (mdns_server_threads.thread_count > 0) {
         log_this("mDNSServer", "Warning: Proceeding with cleanup with %d threads still active", 
-                LOG_LEVEL_WARN, mdns_server_threads.thread_count);
+                LOG_LEVEL_ALERT, mdns_server_threads.thread_count);
     }
     
     // Brief delay to ensure no threads are accessing resources

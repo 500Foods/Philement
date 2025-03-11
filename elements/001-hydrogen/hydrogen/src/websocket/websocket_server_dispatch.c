@@ -38,7 +38,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 // Log any remaining connections
                 if (ws_context->active_connections > 0) {
                     log_this("WebSocket", "Protocol destroy with %d active connections",
-                            LOG_LEVEL_WARN, true, true, true, ws_context->active_connections);
+                            LOG_LEVEL_ALERT, true, true, true, ws_context->active_connections);
                 }
                 
                 // Force clear connections and notify all waiting threads
@@ -158,7 +158,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 char buf[256];
                 int length = lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_AUTHORIZATION);
                 if (length <= 0) {
-                    log_this("WebSocket", "Missing authorization header", LOG_LEVEL_WARN);
+                    log_this("WebSocket", "Missing authorization header", LOG_LEVEL_ALERT);
                     return -1;
                 }
 

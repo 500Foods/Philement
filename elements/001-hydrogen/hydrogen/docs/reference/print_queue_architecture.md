@@ -358,7 +358,7 @@ if (!print_queue_add_job(queue, job)) {
 
 // Analyze G-code (asynchronous)
 if (!beryllium_analyze_file(job->file_path, job->job_id, beryllium_callback)) {
-    log_this("PrintQueue", "Failed to start G-code analysis", LOG_LEVEL_WARNING, true, true, true);
+    log_this("PrintQueue", "Failed to start G-code analysis", LOG_LEVEL_ALERTING, true, true, true);
     // Job is still queued, but without analysis data
 }
 

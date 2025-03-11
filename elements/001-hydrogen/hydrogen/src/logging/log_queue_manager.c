@@ -202,8 +202,8 @@ static bool should_log_to_console(const char* subsystem, int priority, const Log
     // For undefined subsystems, we'll use the destination's DefaultLevel
     
     // Special handling for ALL and NONE
-    if (configured_level == LOG_LEVEL_ALL) return true;
-    if (configured_level == LOG_LEVEL_NONE) return false;
+    if (configured_level == LOG_LEVEL_TRACE) return true;
+    if (configured_level == LOG_LEVEL_QUIET) return false;
 
     // For normal levels, message priority must be >= configured level
     return priority >= configured_level;
@@ -235,8 +235,8 @@ static bool should_log_to_file(const char* subsystem, int priority, const Loggin
     }
     
     // Special handling for ALL and NONE
-    if (configured_level == LOG_LEVEL_ALL) return true;
-    if (configured_level == LOG_LEVEL_NONE) return false;
+    if (configured_level == LOG_LEVEL_TRACE) return true;
+    if (configured_level == LOG_LEVEL_QUIET) return false;
 
     // For normal levels, message priority must be >= configured level
     return priority >= configured_level;
@@ -268,8 +268,8 @@ static bool should_log_to_database(const char* subsystem, int priority, const Lo
     }
     
     // Special handling for ALL and NONE
-    if (configured_level == LOG_LEVEL_ALL) return true;
-    if (configured_level == LOG_LEVEL_NONE) return false;
+    if (configured_level == LOG_LEVEL_TRACE) return true;
+    if (configured_level == LOG_LEVEL_QUIET) return false;
 
     // For normal levels, message priority must be >= configured level
     return priority >= configured_level;

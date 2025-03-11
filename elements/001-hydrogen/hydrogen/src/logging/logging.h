@@ -46,15 +46,15 @@
  * These match the levels defined in the configuration file.
  * DO NOT use raw numbers (0-6) in log calls, use these constants instead.
  */
-#define LOG_LEVEL_ALL      0  /* Log everything - special value, don't use in log calls */
-#define LOG_LEVEL_DEBUG    1  /* Debug-level messages */
-#define LOG_LEVEL_STATE     2  /* General information, normal operation */
-#define LOG_LEVEL_WARN     3  /* Warning conditions */
-#define LOG_LEVEL_ERROR    4  /* Error conditions */
-#define LOG_LEVEL_CRITICAL 5  /* Critical conditions */
-#define LOG_LEVEL_NONE     6  /* Log nothing - special value, don't use in log calls */
+#define LOG_LEVEL_TRACE   0  /* Log everything possible */
+#define LOG_LEVEL_DEBUG   1  /* Debug-level messages */
+#define LOG_LEVEL_STATE   2  /* General information, normal operation */
+#define LOG_LEVEL_ALERT   3  /* Pay attention to these, not deal-breakers */
+#define LOG_LEVEL_ERROR   4  /* Likely need to do something here */
+#define LOG_LEVEL_FATAL   5  /* Can't continue  */
+#define LOG_LEVEL_QUIET   6  /* Used primarily for logging UI work */
 
-#define LOG_LINE_BREAK "――――――――――――――――――――――――――"
+#define LOG_LINE_BREAK "――――――――――――――――――――――――――――――――――――――――"
 
 /*
  * Primary logging function - use this for all logging needs

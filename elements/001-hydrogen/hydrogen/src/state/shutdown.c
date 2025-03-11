@@ -204,14 +204,14 @@ static void shutdown_web_systems(void) {
             pthread_mutex_lock(&ws_context->mutex);
             while (ws_context->active_connections > 0) {
                 if (pthread_cond_timedwait(&ws_context->cond, &ws_context->mutex, &wait_time) == ETIMEDOUT) {
-                    log_this("Shutdown", "Timeout waiting for connections, forcing cleanup", LOG_LEVEL_WARN);
+                    log_this("Shutdown", "Timeout waiting for connections, forcing cleanup", LOG_LEVEL_ALERT);
                     break;
                 }
             }
             pthread_mutex_unlock(&ws_context->mutex);
             
         // EMERGENCY BYPASS: Skip standard cleanup to avoid libwebsockets hang
-        log_this("Shutdown", "EMERGENCY BYPASS: Skipping standard WebSocket cleanup", LOG_LEVEL_WARN);
+        log_this("Shutdown", "EMERGENCY BYPASS: Skipping standard WebSocket cleanup", LOG_LEVEL_ALERT);
         
         // Set a process-wide emergency timeout
         pid_t current_pid = getpid();
@@ -240,13 +240,13 @@ static void shutdown_web_systems(void) {
                 
                 // Cancel service one last time
                 if (ws_context->lws_context) {
-                    log_this("Shutdown", "Force cancelling libwebsockets service", LOG_LEVEL_WARN);
+                    log_this("Shutdown", "Force cancelling libwebsockets service", LOG_LEVEL_ALERT);
                     lws_cancel_service(ws_context->lws_context);
                 }
                 pthread_mutex_unlock(&ws_context->mutex);
                 
                 // Do NOT call lws_context_destroy as it hangs
-                log_this("Shutdown", "SKIPPING libwebsockets context destruction", LOG_LEVEL_WARN);
+                log_this("Shutdown", "SKIPPING libwebsockets context destruction", LOG_LEVEL_ALERT);
                 ws_context = NULL;  // Just discard the pointer
             }
             
@@ -263,7 +263,7 @@ static void shutdown_web_systems(void) {
         update_service_thread_metrics(&websocket_threads);
         if (websocket_threads.thread_count > 0) {
             log_this("Shutdown", "Warning: %d WebSocket threads still active", 
-                    LOG_LEVEL_WARN, websocket_threads.thread_count);
+                    LOG_LEVEL_ALERT, websocket_threads.thread_count);
         }
         
         log_this("Shutdown", "WebSocket server shutdown complete", LOG_LEVEL_STATE);
@@ -528,7 +528,7 @@ void graceful_shutdown(void) {
 
     if (threads_active && web_threads.thread_count + websocket_threads.thread_count + 
         mdns_server_threads.thread_count + print_threads.thread_count > 0) {
-        log_this("Shutdown", "Some non-logging threads did not exit cleanly", LOG_LEVEL_WARN);
+        log_this("Shutdown", "Some non-logging threads did not exit cleanly", LOG_LEVEL_ALERT);
     } else {
         log_this("Shutdown", "All non-logging threads exited successfully", LOG_LEVEL_STATE);
     }
@@ -658,7 +658,7 @@ void graceful_shutdown(void) {
         char msg[4096];
         snprintf(msg, sizeof(msg), "%d non-main thread(s) still active:%s", 
                 non_main_threads, thread_info);
-        log_this("Shutdown", msg, LOG_LEVEL_WARN);
+        log_this("Shutdown", msg, LOG_LEVEL_ALERT);
         
         // One final attempt to signal threads
         pthread_mutex_lock(&terminate_mutex);
@@ -670,7 +670,7 @@ void graceful_shutdown(void) {
         
         // Force cleanup if threads are still stuck
         if (has_uninterruptible) {
-            log_this("Shutdown", "Some threads are in uninterruptible state, forcing cleanup", LOG_LEVEL_WARN);
+            log_this("Shutdown", "Some threads are in uninterruptible state, forcing cleanup", LOG_LEVEL_ALERT);
             // Let the OS clean up remaining threads
             _exit(0);
         }
