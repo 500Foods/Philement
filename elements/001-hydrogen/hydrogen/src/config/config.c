@@ -24,26 +24,26 @@
 // Project headers
 #include "config.h"
 #include "config_env.h"
-#include "config_string.h"
-#include "config_bool.h"
-#include "config_int.h"
-#include "config_size.h"
-#include "config_double.h"
+#include "types/config_string.h"
+#include "types/config_bool.h"
+#include "types/config_int.h"
+#include "types/config_size.h"
+#include "types/config_double.h"
 #include "config_filesystem.h"
 #include "config_priority.h"
 #include "config_defaults.h"
 
 // Subsystem headers
-#include "config_webserver.h"
-#include "config_websocket.h"
-#include "config_network.h"
-#include "config_monitoring.h"
-#include "config_print_queue.h"
-#include "config_oidc.h"
-#include "config_resources.h"
-#include "config_mdns.h"
-#include "config_logging.h"
-#include "config_api.h"
+#include "webserver/config_webserver.h"
+#include "websocket/config_websocket.h"
+#include "network/config_network.h"
+#include "monitor/config_monitoring.h"
+#include "print/config_print_queue.h"
+#include "oidc/config_oidc.h"
+#include "resources/config_resources.h"
+#include "mdns/config_mdns.h"
+#include "logging/config_logging.h"
+#include "restapi/config_api.h"
 
 #include "../logging/logging.h"
 #include "../utils/utils.h"
@@ -418,6 +418,8 @@ AppConfig* load_config(const char* cmdline_path) {
         json_t* startup_delay = json_object_get(server, "StartupDelay");
         config->server.startup_delay = get_config_int(startup_delay, DEFAULT_STARTUP_DELAY);
         log_config_section_item("StartupDelay", "%d", LOG_LEVEL_STATE, !startup_delay, 0, "ms", "ms", config->server.startup_delay);
+        
+        // We'll add the logging file path and database connection here once we process the logging section
     } else {
         // Fallback to defaults if Server object is missing
         config->server.server_name = strdup(DEFAULT_SERVER_NAME);
@@ -447,6 +449,7 @@ AppConfig* load_config(const char* cmdline_path) {
             json_decref(root);
             return NULL;
         }
+        
 
         // Log Levels
         json_t* levels = json_object_get(logging, "Levels");
@@ -507,13 +510,50 @@ AppConfig* load_config(const char* cmdline_path) {
 
                 json_t* subsystems = json_object_get(console, "Subsystems");
                 if (json_is_object(subsystems)) {
-                    log_config_section_item("Subsystems", "Configured", LOG_LEVEL_STATE, 0, 1, NULL, NULL);
-                    const char* key;
-                    json_t* value;
-                    json_object_foreach(subsystems, key, value) {
-                        int level = json_integer_value(value);
-                        log_config_section_item(key, "%s", LOG_LEVEL_STATE, 0, 2, NULL, NULL,
-                            config_logging_get_level_name(&config->logging, level));
+                    // Get subsystem count
+                    size_t subsystem_count = json_object_size(subsystems);
+                    log_config_section_item("Subsystems", "%zu Configured", LOG_LEVEL_STATE, 0, 1, NULL, NULL, subsystem_count);
+                    
+                    // Sort subsystems alphabetically
+                    const char** keys = malloc(subsystem_count * sizeof(char*));
+                    if (keys) {
+                        size_t i = 0;
+                        const char* key;
+                        json_t* value;
+                        
+                        // Collect keys
+                        json_object_foreach(subsystems, key, value) {
+                            keys[i++] = key;
+                        }
+                        
+                        // Sort keys (simple bubble sort)
+                        for (size_t i = 0; i < subsystem_count - 1; i++) {
+                            for (size_t j = 0; j < subsystem_count - i - 1; j++) {
+                                if (strcmp(keys[j], keys[j + 1]) > 0) {
+                                    const char* temp = keys[j];
+                                    keys[j] = keys[j + 1];
+                                    keys[j + 1] = temp;
+                                }
+                            }
+                        }
+                        
+                        // Display sorted subsystems
+                        for (size_t i = 0; i < subsystem_count; i++) {
+                            int level = json_integer_value(json_object_get(subsystems, keys[i]));
+                            log_config_section_item(keys[i], "%s", LOG_LEVEL_STATE, 0, 2, NULL, NULL,
+                                config_logging_get_level_name(&config->logging, level));
+                        }
+                        
+                        free(keys);
+                    } else {
+                        // If malloc fails, fall back to unsorted display
+                        const char* key;
+                        json_t* value;
+                        json_object_foreach(subsystems, key, value) {
+                            int level = json_integer_value(value);
+                            log_config_section_item(key, "%s", LOG_LEVEL_STATE, 0, 2, NULL, NULL,
+                                config_logging_get_level_name(&config->logging, level));
+                        }
                     }
                 }
             }
@@ -535,20 +575,56 @@ AppConfig* load_config(const char* cmdline_path) {
                 log_config_section_item("DefaultLevel", "%s", LOG_LEVEL_STATE, !default_level, 1, NULL, NULL,
                     config_logging_get_level_name(&config->logging, config->logging.file.default_level));
 
-                json_t* path = json_object_get(file, "Path");
-                config->logging.file.file_path = get_config_string_with_env("Path", path, DEFAULT_LOG_FILE_PATH);
-                log_config_section_item("Path", "%s", LOG_LEVEL_STATE, !path, 1, NULL, NULL,
-                    config->logging.file.file_path);
+                // Use the log file path from the Server section to ensure consistency
+                // This maintains compatibility for code that might use config->logging.file.file_path
+                config->logging.file.file_path = strdup(config->server.log_file);
 
                 json_t* subsystems = json_object_get(file, "Subsystems");
                 if (json_is_object(subsystems)) {
-                    log_config_section_item("Subsystems", "Configured", LOG_LEVEL_STATE, 0, 1, NULL, NULL);
-                    const char* key;
-                    json_t* value;
-                    json_object_foreach(subsystems, key, value) {
-                        int level = json_integer_value(value);
-                        log_config_section_item(key, "%s", LOG_LEVEL_STATE, 0, 2, NULL, NULL,
-                            config_logging_get_level_name(&config->logging, level));
+                    // Get subsystem count
+                    size_t subsystem_count = json_object_size(subsystems);
+                    log_config_section_item("Subsystems", "%zu Configured", LOG_LEVEL_STATE, 0, 1, NULL, NULL, subsystem_count);
+                    
+                    // Sort subsystems alphabetically
+                    const char** keys = malloc(subsystem_count * sizeof(char*));
+                    if (keys) {
+                        size_t i = 0;
+                        const char* key;
+                        json_t* value;
+                        
+                        // Collect keys
+                        json_object_foreach(subsystems, key, value) {
+                            keys[i++] = key;
+                        }
+                        
+                        // Sort keys (simple bubble sort)
+                        for (size_t i = 0; i < subsystem_count - 1; i++) {
+                            for (size_t j = 0; j < subsystem_count - i - 1; j++) {
+                                if (strcmp(keys[j], keys[j + 1]) > 0) {
+                                    const char* temp = keys[j];
+                                    keys[j] = keys[j + 1];
+                                    keys[j + 1] = temp;
+                                }
+                            }
+                        }
+                        
+                        // Display sorted subsystems
+                        for (size_t i = 0; i < subsystem_count; i++) {
+                            int level = json_integer_value(json_object_get(subsystems, keys[i]));
+                            log_config_section_item(keys[i], "%s", LOG_LEVEL_STATE, 0, 2, NULL, NULL,
+                                config_logging_get_level_name(&config->logging, level));
+                        }
+                        
+                        free(keys);
+                    } else {
+                        // If malloc fails, fall back to unsorted display
+                        const char* key;
+                        json_t* value;
+                        json_object_foreach(subsystems, key, value) {
+                            int level = json_integer_value(value);
+                            log_config_section_item(key, "%s", LOG_LEVEL_STATE, 0, 2, NULL, NULL,
+                                config_logging_get_level_name(&config->logging, level));
+                        }
                     }
                 }
             }
@@ -573,28 +649,69 @@ AppConfig* load_config(const char* cmdline_path) {
                 json_t* conn_string = json_object_get(database, "ConnectionString");
                 config->logging.database.connection_string = get_config_string_with_env("ConnectionString", 
                     conn_string, "sqlite:///var/lib/hydrogen/logs.db");
-                log_config_section_item("ConnectionString", "%s", LOG_LEVEL_STATE, !conn_string, 1, NULL, NULL,
+                
+                // Display connection string in Server section
+                log_config_section_header("Server");
+                log_config_section_item("LoggingDatabaseConnection", "%s", LOG_LEVEL_STATE, !conn_string, 0, NULL, NULL,
                     config->logging.database.connection_string);
 
                 json_t* subsystems = json_object_get(database, "Subsystems");
                 if (json_is_object(subsystems)) {
-                    log_config_section_item("Subsystems", "Configured", LOG_LEVEL_STATE, 0, 1, NULL, NULL);
-                    const char* key;
-                    json_t* value;
-                    json_object_foreach(subsystems, key, value) {
-                        int level = json_integer_value(value);
-                        log_config_section_item(key, "%s", LOG_LEVEL_STATE, 0, 2, NULL, NULL,
-                            config_logging_get_level_name(&config->logging, level));
+                    // Get subsystem count
+                    size_t subsystem_count = json_object_size(subsystems);
+                    log_config_section_item("Subsystems", "%zu Configured", LOG_LEVEL_STATE, 0, 1, NULL, NULL, subsystem_count);
+                    
+                    // Sort subsystems alphabetically
+                    const char** keys = malloc(subsystem_count * sizeof(char*));
+                    if (keys) {
+                        size_t i = 0;
+                        const char* key;
+                        json_t* value;
+                        
+                        // Collect keys
+                        json_object_foreach(subsystems, key, value) {
+                            keys[i++] = key;
+                        }
+                        
+                        // Sort keys (simple bubble sort)
+                        for (size_t i = 0; i < subsystem_count - 1; i++) {
+                            for (size_t j = 0; j < subsystem_count - i - 1; j++) {
+                                if (strcmp(keys[j], keys[j + 1]) > 0) {
+                                    const char* temp = keys[j];
+                                    keys[j] = keys[j + 1];
+                                    keys[j + 1] = temp;
+                                }
+                            }
+                        }
+                        
+                        // Display sorted subsystems
+                        for (size_t i = 0; i < subsystem_count; i++) {
+                            int level = json_integer_value(json_object_get(subsystems, keys[i]));
+                            log_config_section_item(keys[i], "%s", LOG_LEVEL_STATE, 0, 2, NULL, NULL,
+                                config_logging_get_level_name(&config->logging, level));
+                        }
+                        
+                        free(keys);
+                    } else {
+                        // If malloc fails, fall back to unsorted display
+                        const char* key;
+                        json_t* value;
+                        json_object_foreach(subsystems, key, value) {
+                            int level = json_integer_value(value);
+                            log_config_section_item(key, "%s", LOG_LEVEL_STATE, 0, 2, NULL, NULL,
+                                config_logging_get_level_name(&config->logging, level));
+                        }
                     }
                 }
             }
         }
 
+
         // Validate the logging configuration
-        if (config_logging_validate(&config->logging) != 0) {
-            log_this("Config", "Invalid logging configuration", LOG_LEVEL_ERROR);
-            json_decref(root);
-            return NULL;
+        int validation_result = config_logging_validate(&config->logging);
+        if (validation_result != 0) {
+            // Log the issue with more detail but don't abort
+            log_this("Config", "Note: Logging configuration does not follow recommended practices (code %d) but will continue", LOG_LEVEL_ALERT, validation_result);
         }
     } else {
         log_config_section_header("Logging");
@@ -609,6 +726,13 @@ AppConfig* load_config(const char* cmdline_path) {
     }
 
     
+    /**
+     * Section: WebServer Configuration
+     * 
+     * This could be extracted to a separate function like:
+     * process_webserver_config(json_t* root, AppConfig* config)
+     * Which could be defined in config_webserver.c
+     */
     // Web Configuration
     json_t* web = json_object_get(root, "WebServer");
     if (json_is_object(web)) {
@@ -643,10 +767,6 @@ AppConfig* load_config(const char* cmdline_path) {
         json_t* max_upload_size = json_object_get(web, "MaxUploadSize");
         config->web.max_upload_size = get_config_size(max_upload_size, DEFAULT_MAX_UPLOAD_SIZE);
         log_config_section_item("MaxUploadSize", "%zu", LOG_LEVEL_STATE, !max_upload_size, 0, "B", "MB", config->web.max_upload_size);
-        
-        json_t* api_prefix = json_object_get(web, "ApiPrefix");
-        config->web.api_prefix = get_config_string_with_env("ApiPrefix", api_prefix, "/api");
-        log_config_section_item("ApiPrefix", "%s", LOG_LEVEL_STATE, !api_prefix, 0, NULL, NULL, config->web.api_prefix);
     } else {
         config->web.port = DEFAULT_WEB_PORT;
         config->web.web_root = strdup("/var/www/html");
@@ -658,9 +778,160 @@ AppConfig* load_config(const char* cmdline_path) {
         log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_ALERT, 1, 0, NULL, NULL);
         log_config_section_item("Enabled", "true", LOG_LEVEL_STATE, 1, 0, NULL, NULL);
         log_config_section_item("Port", "%d", LOG_LEVEL_STATE, 1, 0, NULL, NULL, DEFAULT_WEB_PORT);
-        log_config_section_item("ApiPrefix", "%s", LOG_LEVEL_STATE, 1, 0, NULL, NULL, config->web.api_prefix);
     }
 
+    /**
+     * Section: RESTAPI Configuration
+     * 
+     * This could be extracted to a separate function like:
+     * process_restapi_config(json_t* root, AppConfig* config)
+     * Which could be defined in config_api.c
+     */
+    // REST API Configuration
+    json_t* restapi = json_object_get(root, "RESTAPI");
+    if (json_is_object(restapi)) {
+        log_config_section_header("RESTAPI");
+        
+        json_t* enabled = json_object_get(restapi, "Enabled");
+        bool rest_enabled = get_config_bool(enabled, true);
+        log_config_section_item("Enabled", "%s", LOG_LEVEL_STATE, !enabled, 0, NULL, NULL,
+                rest_enabled ? "true" : "false");
+        
+        // ApiPrefix (stored in WebServer struct for compatibility)
+        json_t* api_prefix = json_object_get(restapi, "ApiPrefix");
+        config->web.api_prefix = get_config_string_with_env("ApiPrefix", api_prefix, "/api");
+        log_config_section_item("ApiPrefix", "%s", LOG_LEVEL_STATE, !api_prefix, 0, NULL, NULL, config->web.api_prefix);
+        
+        json_t* jwt_secret = json_object_get(restapi, "JWTSecret");
+        if (jwt_secret) {
+            config->api.jwt_secret = get_config_string_with_env("JWTSecret", jwt_secret, "hydrogen_api_secret_change_me");
+            log_config_section_item("JWTSecret", "%s", LOG_LEVEL_STATE, 
+                strcmp(config->api.jwt_secret, "hydrogen_api_secret_change_me") == 0, 0, NULL, NULL,
+                strcmp(config->api.jwt_secret, "hydrogen_api_secret_change_me") == 0 ? "(default)" : "configured");
+        }
+    } else {
+        // Check legacy API section for backward compatibility
+        json_t* api_config = json_object_get(root, "API");
+        if (json_is_object(api_config)) {
+            log_config_section_header("RESTAPI");
+            log_config_section_item("Enabled", "true", LOG_LEVEL_STATE, 1, 0, NULL, NULL);
+            
+            // Try to get ApiPrefix from WebServer section for backwards compatibility
+            json_t* web_api_prefix = json_object_get(web, "ApiPrefix");
+            if (web_api_prefix) {
+                config->web.api_prefix = get_config_string_with_env("ApiPrefix", web_api_prefix, "/api");
+                log_config_section_item("ApiPrefix", "%s", LOG_LEVEL_STATE, 0, 0, NULL, NULL, config->web.api_prefix);
+            } else {
+                config->web.api_prefix = strdup("/api");
+                log_config_section_item("ApiPrefix", "%s", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "/api");
+            }
+            
+            json_t* jwt_secret = json_object_get(api_config, "JWTSecret");
+            config->api.jwt_secret = get_config_string_with_env("JWTSecret", jwt_secret, "hydrogen_api_secret_change_me");
+            log_config_section_item("JWTSecret", "%s", LOG_LEVEL_STATE, 
+                strcmp(config->api.jwt_secret, "hydrogen_api_secret_change_me") == 0, 0, NULL, NULL,
+                strcmp(config->api.jwt_secret, "hydrogen_api_secret_change_me") == 0 ? "(default)" : "configured");
+        } else {
+            config->api.jwt_secret = strdup("hydrogen_api_secret_change_me");
+            config->web.api_prefix = strdup("/api");
+            log_config_section_header("RESTAPI");
+            log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_ALERT, 1, 0, NULL, NULL);
+            log_config_section_item("Enabled", "true", LOG_LEVEL_STATE, 1, 0, NULL, NULL);
+            log_config_section_item("ApiPrefix", "%s", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "/api");
+        }
+    }
+    
+    /**
+     * Note: Consider extracting this section to a separate file like config_swagger.c
+     */
+    // Swagger Configuration
+    json_t* swagger = json_object_get(root, "Swagger");
+    if (json_is_object(swagger)) {
+        log_config_section_header("Swagger");
+        
+        json_t* enabled = json_object_get(swagger, "Enabled");
+        bool swagger_enabled = get_config_bool(enabled, true);
+        log_config_section_item("Enabled", "%s", LOG_LEVEL_STATE, !enabled, 0, NULL, NULL,
+                swagger_enabled ? "true" : "false");
+        
+        json_t* prefix = json_object_get(swagger, "Prefix");
+        char* swagger_prefix = get_config_string_with_env("Prefix", prefix, "/apidocs");
+        log_config_section_item("Prefix", "%s", LOG_LEVEL_STATE, !prefix, 0, NULL, NULL, swagger_prefix);
+        free(swagger_prefix);
+        
+        json_t* ui_options = json_object_get(swagger, "UIOptions");
+        if (json_is_object(ui_options)) {
+            log_config_section_item("UIOptions", "Configured", LOG_LEVEL_STATE, 0, 0, NULL, NULL);
+            
+            json_t* try_it = json_object_get(ui_options, "TryItEnabled");
+            if (json_is_boolean(try_it)) {
+                log_config_section_item("TryItEnabled", "%s", LOG_LEVEL_STATE, 0, 1, NULL, NULL,
+                    json_is_true(try_it) ? "true" : "false");
+            }
+        }
+        
+        json_t* metadata = json_object_get(swagger, "Metadata");
+        if (json_is_object(metadata)) {
+            log_config_section_item("Metadata", "Configured", LOG_LEVEL_STATE, 0, 0, NULL, NULL);
+            
+            json_t* title = json_object_get(metadata, "Title");
+            if (json_is_string(title)) {
+                log_config_section_item("Title", "%s", LOG_LEVEL_STATE, 0, 1, NULL, NULL, 
+                    json_string_value(title));
+            }
+            
+            json_t* version = json_object_get(metadata, "Version");
+            if (json_is_string(version)) {
+                log_config_section_item("Version", "%s", LOG_LEVEL_STATE, 0, 1, NULL, NULL, 
+                    json_string_value(version));
+            }
+        }
+    } else {
+        log_config_section_header("Swagger");
+        log_config_section_item("Status", "Section missing", LOG_LEVEL_ALERT, 1, 0, NULL, NULL);
+    }
+    
+    /**
+     * Note: Consider extracting this section to a separate file like config_terminal.c
+     */
+    // Terminal Configuration
+    json_t* terminal = json_object_get(root, "Terminal");
+    if (json_is_object(terminal)) {
+        log_config_section_header("Terminal");
+        
+        json_t* enabled = json_object_get(terminal, "Enabled");
+        bool terminal_enabled = get_config_bool(enabled, true);
+        log_config_section_item("Enabled", "%s", LOG_LEVEL_STATE, !enabled, 0, NULL, NULL,
+                terminal_enabled ? "true" : "false");
+        
+        json_t* web_path = json_object_get(terminal, "WebPath");
+        char* terminal_path = get_config_string_with_env("WebPath", web_path, "/terminal");
+        log_config_section_item("WebPath", "%s", LOG_LEVEL_STATE, !web_path, 0, NULL, NULL, terminal_path);
+        free(terminal_path);
+        
+        json_t* shell_cmd = json_object_get(terminal, "ShellCommand");
+        char* terminal_shell = get_config_string_with_env("ShellCommand", shell_cmd, "/bin/bash");
+        log_config_section_item("ShellCommand", "%s", LOG_LEVEL_STATE, !shell_cmd, 0, NULL, NULL, terminal_shell);
+        free(terminal_shell);
+        
+        json_t* max_sessions = json_object_get(terminal, "MaxSessions");
+        if (json_is_integer(max_sessions)) {
+            log_config_section_item("MaxSessions", "%d", LOG_LEVEL_STATE, 0, 0, NULL, NULL, 
+                json_integer_value(max_sessions));
+        } else {
+            log_config_section_item("MaxSessions", "%d", LOG_LEVEL_STATE, 1, 0, NULL, NULL, 4);
+        }
+        
+        json_t* idle_timeout = json_object_get(terminal, "IdleTimeoutSeconds");
+        if (json_is_integer(idle_timeout)) {
+            log_config_section_item("IdleTimeoutSeconds", "%d", LOG_LEVEL_STATE, 0, 0, NULL, NULL, 
+                json_integer_value(idle_timeout));
+        }
+    } else {
+        log_config_section_header("Terminal");
+        log_config_section_item("Status", "Section missing", LOG_LEVEL_ALERT, 1, 0, NULL, NULL);
+    }
+    
     // WebSocket Configuration
     json_t* websocket = json_object_get(root, "WebSocket");
     if (json_is_object(websocket)) {
@@ -1067,20 +1338,265 @@ AppConfig* load_config(const char* cmdline_path) {
         log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_ALERT, 1, 0, NULL, NULL);
     }
 
-    // API Configuration
-    json_t* api_config = json_object_get(root, "API");
-    if (json_is_object(api_config)) {
-        log_config_section_header("API");
+    // RESTAPI Configuration (replacing API section)
+    json_t* restapi_config = json_object_get(root, "RESTAPI");
+    if (json_is_object(restapi_config)) {
+        log_config_section_header("RESTAPI");
         
-        json_t* jwt_secret = json_object_get(api_config, "JWTSecret");
+        json_t* enabled = json_object_get(restapi_config, "Enabled");
+        bool rest_enabled = get_config_bool(enabled, true);
+        log_config_section_item("Enabled", "%s", LOG_LEVEL_STATE, !enabled, 0, NULL, NULL,
+                rest_enabled ? "true" : "false");
+        
+        json_t* jwt_secret = json_object_get(restapi_config, "JWTSecret");
         config->api.jwt_secret = get_config_string_with_env("JWTSecret", jwt_secret, "hydrogen_api_secret_change_me");
-        log_config_section_item("JWTSecret", "%s", LOG_LEVEL_STATE, 
-            strcmp(config->api.jwt_secret, "hydrogen_api_secret_change_me") == 0, 0, NULL, NULL,
-            strcmp(config->api.jwt_secret, "hydrogen_api_secret_change_me") == 0 ? "(default)" : "configured");
+        
+        if (jwt_secret || strcmp(config->api.jwt_secret, "hydrogen_api_secret_change_me") != 0) {
+            log_config_section_item("JWTSecret", "%s", LOG_LEVEL_STATE, 
+                strcmp(config->api.jwt_secret, "hydrogen_api_secret_change_me") == 0, 0, NULL, NULL,
+                strcmp(config->api.jwt_secret, "hydrogen_api_secret_change_me") == 0 ? "(default)" : "configured");
+        }
+        
+        // ApiPrefix already handled in earlier section
     } else {
-        config->api.jwt_secret = strdup("hydrogen_api_secret_change_me");
-        log_config_section_header("API");
-        log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_ALERT, 1, 0, NULL, NULL);
+        // Check legacy API section
+        json_t* api_config = json_object_get(root, "API");
+        if (json_is_object(api_config)) {
+            log_config_section_header("RESTAPI");
+            
+            json_t* jwt_secret = json_object_get(api_config, "JWTSecret");
+            config->api.jwt_secret = get_config_string_with_env("JWTSecret", jwt_secret, "hydrogen_api_secret_change_me");
+            log_config_section_item("JWTSecret", "%s", LOG_LEVEL_STATE, 
+                strcmp(config->api.jwt_secret, "hydrogen_api_secret_change_me") == 0, 0, NULL, NULL,
+                strcmp(config->api.jwt_secret, "hydrogen_api_secret_change_me") == 0 ? "(default)" : "configured");
+        } else {
+            config->api.jwt_secret = strdup("hydrogen_api_secret_change_me");
+            log_config_section_header("RESTAPI");
+            log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_ALERT, 1, 0, NULL, NULL);
+        }
+    }
+
+    // Databases Configuration
+    json_t* databases = json_object_get(root, "Databases");
+    if (json_is_object(databases)) {
+        log_config_section_header("Databases");
+        
+        // DefaultWorkers 
+        json_t* default_workers = json_object_get(databases, "DefaultWorkers");
+        int default_workers_value = 1;  // Default value
+        if (json_is_integer(default_workers)) {
+            default_workers_value = json_integer_value(default_workers);
+            log_config_section_item("DefaultWorkers", "%d", LOG_LEVEL_STATE, 0, 0, NULL, NULL, default_workers_value);
+        } else {
+            log_config_section_item("DefaultWorkers", "%d", LOG_LEVEL_STATE, 1, 0, NULL, NULL, default_workers_value);
+        }
+        
+        json_t* connections = json_object_get(databases, "Connections");
+        if (json_is_object(connections)) {
+            // Get connection count and display
+            size_t conn_count = json_object_size(connections);
+            log_config_section_item("Connections", "%zu Configured", LOG_LEVEL_STATE, 0, 0, NULL, NULL, conn_count);
+            
+            // Get connection names and sort them
+            const char** conn_names = malloc(conn_count * sizeof(char*));
+            if (conn_names) {
+                size_t i = 0;
+                const char* name;
+                json_t* conn;
+                
+                // Collect connection names
+                json_object_foreach(connections, name, conn) {
+                    conn_names[i++] = name;
+                }
+                
+                // Sort names (simple bubble sort)
+                for (size_t i = 0; i < conn_count - 1; i++) {
+                    for (size_t j = 0; j < conn_count - i - 1; j++) {
+                        if (strcmp(conn_names[j], conn_names[j + 1]) > 0) {
+                            const char* temp = conn_names[j];
+                            conn_names[j] = conn_names[j + 1];
+                            conn_names[j + 1] = temp;
+                        }
+                    }
+                }
+                
+                // Display each database connection
+                for (size_t i = 0; i < conn_count; i++) {
+                    json_t* conn = json_object_get(connections, conn_names[i]);
+                    log_config_section_item(conn_names[i], "", LOG_LEVEL_STATE, 0, 1, NULL, NULL);
+                    
+                    json_t* type = json_object_get(conn, "Type");
+                    if (json_is_string(type)) {
+                        log_config_section_item("Type", "%s", LOG_LEVEL_STATE, 0, 2, NULL, NULL, json_string_value(type));
+                    }
+                    
+                    json_t* host = json_object_get(conn, "Host");
+                    if (json_is_string(host)) {
+                        log_config_section_item("Host", "%s", LOG_LEVEL_STATE, 0, 2, NULL, NULL, json_string_value(host));
+                    }
+                    
+                    json_t* port = json_object_get(conn, "Port");
+                    if (json_is_string(port)) {
+                        log_config_section_item("Port", "%s", LOG_LEVEL_STATE, 0, 2, NULL, NULL, json_string_value(port));
+                    } else if (json_is_integer(port)) {
+                        log_config_section_item("Port", "%d", LOG_LEVEL_STATE, 0, 2, NULL, NULL, json_integer_value(port));
+                    }
+                    
+                    json_t* database = json_object_get(conn, "Database");
+                    if (json_is_string(database)) {
+                        log_config_section_item("Database", "%s", LOG_LEVEL_STATE, 0, 2, NULL, NULL, json_string_value(database));
+                    }
+                    
+                    // Don't log username/password directly for security
+                    json_t* username = json_object_get(conn, "Username");
+                    if (json_is_string(username)) {
+                        log_config_section_item("Username", "configured", LOG_LEVEL_STATE, 0, 2, NULL, NULL);
+                    }
+                    
+                    // Enabled state for this database
+                    json_t* enabled = json_object_get(conn, "Enabled");
+                    bool db_enabled = get_config_bool(enabled, true);
+                    log_config_section_item("Enabled", "%s", LOG_LEVEL_STATE, !enabled, 2, NULL, NULL,
+                        db_enabled ? "true" : "false");
+                    
+                    // Workers for this database (use DefaultWorkers if not specified)
+                    json_t* workers = json_object_get(conn, "Workers");
+                    if (json_is_integer(workers)) {
+                        log_config_section_item("Workers", "%d", LOG_LEVEL_STATE, 0, 2, NULL, NULL, json_integer_value(workers));
+                    } else {
+                        log_config_section_item("Workers", "%d", LOG_LEVEL_STATE, 1, 2, NULL, NULL, default_workers_value);
+                    }
+                    
+                    json_t* max_conn = json_object_get(conn, "MaxConnections");
+                    if (json_is_integer(max_conn)) {
+                        log_config_section_item("MaxConnections", "%d", LOG_LEVEL_STATE, 0, 2, NULL, NULL, json_integer_value(max_conn));
+                    }
+                }
+                
+                free(conn_names);
+            } else {
+                // If memory allocation fails, display without sorting
+                const char* name;
+                json_t* conn;
+                json_object_foreach(connections, name, conn) {
+                    log_config_section_item(name, "configured", LOG_LEVEL_STATE, 0, 1, NULL, NULL);
+                }
+            }
+        }
+    } else {
+        log_config_section_header("Databases");
+        log_config_section_item("Status", "Section missing", LOG_LEVEL_ALERT, 1, 0, NULL, NULL);
+    }
+
+    
+    // MailRelay Configuration
+    json_t* mail_relay = json_object_get(root, "MailRelay");
+    // Also check for common typo with space
+    if (!json_is_object(mail_relay)) {
+        mail_relay = json_object_get(root, " MailRelay");
+    }
+    
+    if (json_is_object(mail_relay)) {
+        log_config_section_header("MailRelay");
+        
+        json_t* enabled = json_object_get(mail_relay, "Enabled");
+        bool mail_relay_enabled = get_config_bool(enabled, true);
+        log_config_section_item("Enabled", "%s", LOG_LEVEL_STATE, !enabled, 0, NULL, NULL,
+                mail_relay_enabled ? "true" : "false");
+        
+        json_t* listen_port = json_object_get(mail_relay, "ListenPort");
+        if (json_is_integer(listen_port)) {
+            log_config_section_item("ListenPort", "%d", LOG_LEVEL_STATE, 0, 0, NULL, NULL, 
+                json_integer_value(listen_port));
+        }
+        
+        json_t* workers = json_object_get(mail_relay, "Workers");
+        if (json_is_integer(workers)) {
+            log_config_section_item("Workers", "%d", LOG_LEVEL_STATE, 0, 0, NULL, NULL, 
+                json_integer_value(workers));
+        }
+        
+        json_t* outbound_servers = json_object_get(mail_relay, "OutboundServers");
+        if (json_is_array(outbound_servers)) {
+            size_t server_count = json_array_size(outbound_servers);
+            log_config_section_item("OutboundServers", "%zu Configured", LOG_LEVEL_STATE, 0, 0, NULL, NULL, server_count);
+            
+            for (size_t i = 0; i < server_count && i < 3; i++) {  // Limit to 3 for display
+                json_t* server = json_array_get(outbound_servers, i);
+                if (!json_is_object(server)) continue;
+                
+                log_config_section_item("Server", "%d", LOG_LEVEL_STATE, 0, 1, NULL, NULL, (int)i + 1);
+                
+                json_t* host = json_object_get(server, "Host");
+                if (json_is_string(host)) {
+                    log_config_section_item("Host", "%s", LOG_LEVEL_STATE, 0, 2, NULL, NULL, 
+                        json_string_value(host));
+                }
+            }
+            
+            if (server_count > 3) {
+                log_config_section_item("Note", "%zu additional servers not shown", LOG_LEVEL_STATE, 0, 1, NULL, NULL, 
+                    server_count - 3);
+            }
+        }
+    } else {
+        log_config_section_header("MailRelay");
+        log_config_section_item("Status", "Section missing", LOG_LEVEL_ALERT, 1, 0, NULL, NULL);
+    }
+    
+    // mDNSClient Configuration
+    json_t* mdns_client = json_object_get(root, "mDNSClient");
+    if (json_is_object(mdns_client)) {
+        log_config_section_header("mDNSClient");
+        
+        json_t* enabled = json_object_get(mdns_client, "Enabled");
+        bool mdns_client_enabled = get_config_bool(enabled, true);
+        log_config_section_item("Enabled", "%s", LOG_LEVEL_STATE, !enabled, 0, NULL, NULL,
+                mdns_client_enabled ? "true" : "false");
+        
+        json_t* enable_ipv6 = json_object_get(mdns_client, "EnableIPv6");
+        bool mdns_client_ipv6 = get_config_bool(enable_ipv6, true);
+        log_config_section_item("EnableIPv6", "%s", LOG_LEVEL_STATE, !enable_ipv6, 0, NULL, NULL,
+                mdns_client_ipv6 ? "true" : "false");
+        
+        json_t* scan_interval = json_object_get(mdns_client, "ScanIntervalMs");
+        if (json_is_integer(scan_interval)) {
+            log_config_section_item("ScanInterval", "%d", LOG_LEVEL_STATE, 0, 0, NULL, NULL, 
+                json_integer_value(scan_interval));
+        }
+        
+        json_t* service_types = json_object_get(mdns_client, "ServiceTypes");
+        if (json_is_array(service_types)) {
+            size_t type_count = json_array_size(service_types);
+            log_config_section_item("ServiceTypes", "%zu Configured", LOG_LEVEL_STATE, 0, 0, NULL, NULL, type_count);
+            
+            for (size_t i = 0; i < type_count; i++) {
+                json_t* type = json_array_get(service_types, i);
+                if (json_is_string(type)) {
+                    log_config_section_item("Type", "%s", LOG_LEVEL_STATE, 0, 1, NULL, NULL, 
+                        json_string_value(type));
+                }
+            }
+        }
+        
+        json_t* health_check = json_object_get(mdns_client, "HealthCheck");
+        if (json_is_object(health_check)) {
+            log_config_section_item("HealthCheck", "Configured", LOG_LEVEL_STATE, 0, 0, NULL, NULL);
+            
+            json_t* health_enabled = json_object_get(health_check, "Enabled");
+            bool health_check_enabled = get_config_bool(health_enabled, true);
+            log_config_section_item("Enabled", "%s", LOG_LEVEL_STATE, !health_enabled, 1, NULL, NULL,
+                    health_check_enabled ? "true" : "false");
+            
+            json_t* interval = json_object_get(health_check, "IntervalMs");
+            if (json_is_integer(interval)) {
+                log_config_section_item("Interval", "%d", LOG_LEVEL_STATE, 0, 1, NULL, NULL, 
+                    json_integer_value(interval));
+            }
+        }
+    } else {
+        log_config_section_header("mDNSClient");
+        log_config_section_item("Status", "Section missing", LOG_LEVEL_ALERT, 1, 0, NULL, NULL);
     }
 
     json_decref(root);

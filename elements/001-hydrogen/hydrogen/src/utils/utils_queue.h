@@ -14,7 +14,7 @@
 #include <stddef.h>
 
 #include "../config/config_forward.h"  // For AppConfig forward declaration
-#include "../config/config_resources.h"  // For queue-related constants
+#include "../config/resources/config_resources.h"  // For queue-related constants
 
 // Default values for early initialization
 #define MAX_QUEUE_BLOCKS 128  // Maximum possible blocks

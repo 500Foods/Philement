@@ -12,8 +12,11 @@
         "WebRoot": "/var/www/html",
         "UploadPath": "/api/upload",
         "UploadDir": "/tmp/hydrogen_uploads",
-        "MaxUploadSize": 2147483648,
-        "ApiPrefix": "/api"
+        "MaxUploadSize": 2147483648
+    },
+    "RESTAPI":{
+      "Enabled": true,
+      "ApiPrefix": "/api"
     },
     "WebSocket": {
         "Enabled": true,
@@ -122,7 +125,6 @@
         "Database": {
             "Enabled": true,
             "DefaultLevel": 4,
-            "ConnectionString": "sqlite:///var/lib/hydrogen/logs.db",
             "Subsystems": {
                 "Startup":1,
                 "Shutdown":1,
@@ -148,7 +150,6 @@
         "File": {
             "Enabled": true,
             "DefaultLevel": 1,
-            "Path": "/var/log/hydrogen.log",
             "Subsystems": {
                 "Startup":1,
                 "Shutdown":1,
@@ -210,47 +211,66 @@
         "BufferSize": 4096
     },
     "Databases": {
-        "Workers": 1,
+        "DefaultWorkers": 1,
         "Connections": {
+            "Log": {
+                "Enabled": true,
+                "Type": "postgres",
+                "Host": "${env.LOG_DB_HOST}",
+                "Port": "${env.LOG_DB_PORT}",
+                "Database": "${env.LOG_DB_NAME}",
+                "Username": "${env.LOG_DB_USER}",
+                "Password": "${env.LOG_DB_PASS}",
+                "MaxConnections": 10,
+                "Workers": 1
+            },
             "OIDC": {
+                "Enabled": true,
                 "Type": "postgres",
                 "Host": "${env.OIDC_DB_HOST}",
                 "Port": "${env.OIDC_DB_PORT}",
                 "Database": "${env.OIDC_DB_NAME}",
                 "Username": "${env.OIDC_DB_USER}",
                 "Password": "${env.OIDC_DB_PASS}",
-                "MaxConnections": 10
+                "MaxConnections": 10,
+                "Workers": 1
             },
             "Acuranzo": {
+                "Enabled": true,
                 "Type": "postgres",
                 "Host": "${env.ACURANZO_DB_HOST}",
                 "Port": "${env.ACURANZO_DB_PORT}",
                 "Database": "${env.ACURANZO_DB_NAME}",
                 "Username": "${env.ACURANZO_DB_USER}",
                 "Password": "${env.ACURANZO_DB_PASS}",
-                "MaxConnections": 10
+                "MaxConnections": 10,
+                "Workers": 1
             },
             "Helium": {
+                "Enabled": true,
                 "Type": "postgres",
                 "Host": "${env.HELIUM_DB_HOST}",
                 "Port": "${env.HELIUM_DB_PORT}",
                 "Database": "${env.HELIUM_DB_NAME}",
                 "Username": "${env.HELIUM_DB_USER}",
                 "Password": "${env.HELIUM_DB_PASS}",
-                "MaxConnections": 10
+                "MaxConnections": 10,
+                "Workers": 1
             },
             "Canvas": {
+                "Enabled": true,
                 "Type": "postgres",
                 "Host": "${env.CANVAS_DB_HOST}",
                 "Port": "${env.CANVAS_DB_PORT}",
                 "Database": "${env.CANVAS_DB_NAME}",
                 "Username": "${env.CANVAS_DB_USER}",
                 "Password": "${env.CANVAS_DB_PASS}",
-                "MaxConnections": 10
+                "MaxConnections": 10,
+                "Workers": 1
             }
         }
     },
-    "SMTPRelay": {
+    " MailRelay": {
         "Enabled": true,
         "ListenPort": 587,
         "Workers": 2,
