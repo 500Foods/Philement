@@ -14,7 +14,7 @@
 #include "utils_logging.h"
 #include "../config/config.h"
 #include "../config/config_priority.h"
-#include "../config/config_logging.h"
+#include "../config/logging/config_logging.h"
 #include "../logging/logging.h"
 
 // Thread-safe identifier generation with collision resistance

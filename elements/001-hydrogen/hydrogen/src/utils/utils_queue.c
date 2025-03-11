@@ -9,7 +9,7 @@
 #include "utils_queue.h"
 #include "../logging/logging.h"
 #include "../config/config.h"
-#include "../config/config_resources.h"
+#include "../config/resources/config_resources.h"
 
 // Global queue memory tracking
 QueueMemoryMetrics log_queue_memory;
