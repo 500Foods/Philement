@@ -460,25 +460,41 @@ AppConfig* load_config(const char* cmdline_path) {
             for (size_t i = 0; i < level_count; i++) {
                 json_t* level = json_array_get(levels, i);
                 if (json_is_array(level) && json_array_size(level) == 2) {
-                    int num = json_integer_value(json_array_get(level, 0));
                     const char* name = json_string_value(json_array_get(level, 1));
-                    log_config_section_item("Level", "[%d] %s", LOG_LEVEL_INFO, 0, 1, NULL, NULL, num, name);
+                    log_config_section_item("Level", "%s", LOG_LEVEL_INFO, 0, 1, NULL, NULL, name);
                 }
             }
+        }
+
+        // Helper function to get level name
+        const char* get_level_name(int level_num) {
+            if (json_is_array(levels)) {
+                for (size_t i = 0; i < json_array_size(levels); i++) {
+                    json_t* level = json_array_get(levels, i);
+                    if (json_is_array(level) && json_array_size(level) == 2) {
+                        if (json_integer_value(json_array_get(level, 0)) == level_num) {
+                            return json_string_value(json_array_get(level, 1));
+                        }
+                    }
+                }
+            }
+            return "DEBUG";  // Default if not found
         }
 
         // Console Logging
         json_t* console = json_object_get(logging, "Console");
         if (json_is_object(console)) {
+            log_config_section_item("Console", "", LOG_LEVEL_INFO, 0, 0, NULL, NULL);
+            
             json_t* enabled = json_object_get(console, "Enabled");
             bool console_enabled = get_config_bool(enabled, true);
-            log_config_section_item("Console", "%s", LOG_LEVEL_INFO, !enabled, 0, NULL, NULL, 
-                console_enabled ? "enabled" : "disabled");
+            log_config_section_item("Enabled", "%s", LOG_LEVEL_INFO, !enabled, 1, NULL, NULL, 
+                console_enabled ? "true" : "false");
 
             if (console_enabled) {
                 json_t* default_level = json_object_get(console, "DefaultLevel");
-                int console_default = get_config_int(default_level, 1);
-                log_config_section_item("DefaultLevel", "%d", LOG_LEVEL_INFO, !default_level, 1, NULL, NULL, console_default);
+                int level_num = get_config_int(default_level, 1);
+                log_config_section_item("DefaultLevel", "%s", LOG_LEVEL_INFO, !default_level, 1, NULL, NULL, get_level_name(level_num));
 
                 json_t* subsystems = json_object_get(console, "Subsystems");
                 if (json_is_object(subsystems)) {
@@ -486,39 +502,8 @@ AppConfig* load_config(const char* cmdline_path) {
                     const char* key;
                     json_t* value;
                     json_object_foreach(subsystems, key, value) {
-                        int level = json_integer_value(value);
-                        log_config_section_item(key, "%d", LOG_LEVEL_INFO, 0, 2, NULL, NULL, level);
-                    }
-                }
-            }
-        }
-
-        // Database Logging
-        json_t* database = json_object_get(logging, "Database");
-        if (json_is_object(database)) {
-            json_t* enabled = json_object_get(database, "Enabled");
-            bool db_enabled = get_config_bool(enabled, true);
-            log_config_section_item("Database", "%s", LOG_LEVEL_INFO, !enabled, 0, NULL, NULL,
-                db_enabled ? "enabled" : "disabled");
-
-            if (db_enabled) {
-                json_t* default_level = json_object_get(database, "DefaultLevel");
-                int db_default = get_config_int(default_level, 4);
-                log_config_section_item("DefaultLevel", "%d", LOG_LEVEL_INFO, !default_level, 1, NULL, NULL, db_default);
-
-                json_t* conn_string = json_object_get(database, "ConnectionString");
-                const char* db_conn = json_string_value(conn_string);
-                log_config_section_item("ConnectionString", "%s", LOG_LEVEL_INFO, !conn_string, 1, NULL, NULL,
-                    db_conn ? db_conn : "sqlite:///var/lib/hydrogen/logs.db");
-
-                json_t* subsystems = json_object_get(database, "Subsystems");
-                if (json_is_object(subsystems)) {
-                    log_config_section_item("Subsystems", "Configured", LOG_LEVEL_INFO, 0, 1, NULL, NULL);
-                    const char* key;
-                    json_t* value;
-                    json_object_foreach(subsystems, key, value) {
-                        int level = json_integer_value(value);
-                        log_config_section_item(key, "%d", LOG_LEVEL_INFO, 0, 2, NULL, NULL, level);
+                        int level_num = json_integer_value(value);
+                        log_config_section_item(key, "%s", LOG_LEVEL_INFO, 0, 2, NULL, NULL, get_level_name(level_num));
                     }
                 }
             }
@@ -527,15 +512,17 @@ AppConfig* load_config(const char* cmdline_path) {
         // File Logging
         json_t* file = json_object_get(logging, "File");
         if (json_is_object(file)) {
+            log_config_section_item("File", "", LOG_LEVEL_INFO, 0, 0, NULL, NULL);
+            
             json_t* enabled = json_object_get(file, "Enabled");
             bool file_enabled = get_config_bool(enabled, true);
-            log_config_section_item("File", "%s", LOG_LEVEL_INFO, !enabled, 0, NULL, NULL,
-                file_enabled ? "enabled" : "disabled");
+            log_config_section_item("Enabled", "%s", LOG_LEVEL_INFO, !enabled, 1, NULL, NULL,
+                file_enabled ? "true" : "false");
 
             if (file_enabled) {
                 json_t* default_level = json_object_get(file, "DefaultLevel");
-                int file_default = get_config_int(default_level, 1);
-                log_config_section_item("DefaultLevel", "%d", LOG_LEVEL_INFO, !default_level, 1, NULL, NULL, file_default);
+                int level_num = get_config_int(default_level, 1);
+                log_config_section_item("DefaultLevel", "%s", LOG_LEVEL_INFO, !default_level, 1, NULL, NULL, get_level_name(level_num));
 
                 json_t* path = json_object_get(file, "Path");
                 const char* file_path = json_string_value(path);
@@ -548,8 +535,41 @@ AppConfig* load_config(const char* cmdline_path) {
                     const char* key;
                     json_t* value;
                     json_object_foreach(subsystems, key, value) {
-                        int level = json_integer_value(value);
-                        log_config_section_item(key, "%d", LOG_LEVEL_INFO, 0, 2, NULL, NULL, level);
+                        int level_num = json_integer_value(value);
+                        log_config_section_item(key, "%s", LOG_LEVEL_INFO, 0, 2, NULL, NULL, get_level_name(level_num));
+                    }
+                }
+            }
+        }
+
+        // Database Logging
+        json_t* database = json_object_get(logging, "Database");
+        if (json_is_object(database)) {
+            log_config_section_item("Database", "", LOG_LEVEL_INFO, 0, 0, NULL, NULL);
+            
+            json_t* enabled = json_object_get(database, "Enabled");
+            bool db_enabled = get_config_bool(enabled, true);
+            log_config_section_item("Enabled", "%s", LOG_LEVEL_INFO, !enabled, 1, NULL, NULL,
+                db_enabled ? "true" : "false");
+
+            if (db_enabled) {
+                json_t* default_level = json_object_get(database, "DefaultLevel");
+                int level_num = get_config_int(default_level, 4);
+                log_config_section_item("DefaultLevel", "%s", LOG_LEVEL_INFO, !default_level, 1, NULL, NULL, get_level_name(level_num));
+
+                json_t* conn_string = json_object_get(database, "ConnectionString");
+                const char* db_conn = json_string_value(conn_string);
+                log_config_section_item("ConnectionString", "%s", LOG_LEVEL_INFO, !conn_string, 1, NULL, NULL,
+                    db_conn ? db_conn : "sqlite:///var/lib/hydrogen/logs.db");
+
+                json_t* subsystems = json_object_get(database, "Subsystems");
+                if (json_is_object(subsystems)) {
+                    log_config_section_item("Subsystems", "Configured", LOG_LEVEL_INFO, 0, 1, NULL, NULL);
+                    const char* key;
+                    json_t* value;
+                    json_object_foreach(subsystems, key, value) {
+                        int level_num = json_integer_value(value);
+                        log_config_section_item(key, "%s", LOG_LEVEL_INFO, 0, 2, NULL, NULL, get_level_name(level_num));
                     }
                 }
             }
