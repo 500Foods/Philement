@@ -21,7 +21,7 @@ nitro_config_t *nitro_config_load(const char *app_name) {
     root = json_load_file(filename, 0, &error);
 
     if (!root) {
-        nitro_log("INFO", "No config file found, using defaults");
+        nitro_log("STATE", "No config file found, using defaults");
         char id_buf[NITRO_ID_LEN + 1];
         nitro_generate_id(id_buf, sizeof(id_buf));
 

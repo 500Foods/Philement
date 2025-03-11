@@ -126,7 +126,7 @@ void ws_context_destroy(WebSocketServerContext* ctx)
         pthread_mutex_lock(&ctx->mutex);
         while (ctx->active_connections > 0) {
             if (pthread_cond_timedwait(&ctx->cond, &ctx->mutex, &wait_time) == ETIMEDOUT) {
-                log_this("WebSocket", "Timeout waiting for cleanup, forcing shutdown", LOG_LEVEL_WARN);
+                log_this("WebSocket", "Timeout waiting for cleanup, forcing shutdown", LOG_LEVEL_ALERT);
                 ctx->active_connections = 0;  // Force clear any remaining connections
                 break;
             }
@@ -148,7 +148,7 @@ void ws_context_destroy(WebSocketServerContext* ctx)
             
             // Force any remaining threads to exit
             if (websocket_threads.thread_count > 0) {
-                log_this("WebSocket", "Forcing %d threads to exit", LOG_LEVEL_WARN,
+                log_this("WebSocket", "Forcing %d threads to exit", LOG_LEVEL_ALERT,
                         websocket_threads.thread_count);
                 for (int i = 0; i < websocket_threads.thread_count; i++) {
                     pthread_t thread = websocket_threads.thread_ids[i];
@@ -167,7 +167,7 @@ void ws_context_destroy(WebSocketServerContext* ctx)
         update_service_thread_metrics(&websocket_threads);
         if (websocket_threads.thread_count > 0) {
             log_this("WebSocket", "Warning: %d threads remain after context destruction",
-                    LOG_LEVEL_WARN, websocket_threads.thread_count);
+                    LOG_LEVEL_ALERT, websocket_threads.thread_count);
         }
     }
 

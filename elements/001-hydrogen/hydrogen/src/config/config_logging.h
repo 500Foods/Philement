@@ -16,13 +16,13 @@
 #include "config_forward.h"
 
 // Log level definitions - match logging.h values
-#define LOG_LEVEL_ALL      0  /* Log everything - special value */
+#define LOG_LEVEL_TRACE      0  /* Log everything - special value */
 #define LOG_LEVEL_DEBUG    1  /* Debug-level messages */
 #define LOG_LEVEL_STATE     2  /* General information, normal operation */
-#define LOG_LEVEL_WARNING  3  /* Warning conditions */
+#define LOG_LEVEL_ALERT  3  /* Warning conditions */
 #define LOG_LEVEL_ERROR    4  /* Error conditions */
-#define LOG_LEVEL_CRITICAL 5  /* Critical conditions */
-#define LOG_LEVEL_NONE     6  /* Log nothing - special value */
+#define LOG_LEVEL_FATAL 5  /* Critical conditions */
+#define LOG_LEVEL_QUIET     6  /* Log nothing - special value */
 
 // Default values
 #define DEFAULT_LOG_LEVEL_COUNT 7  // Include ALL and NONE levels
@@ -33,7 +33,7 @@ struct LoggingConfig {
     size_t level_count;
     struct {
         int value;              // Numeric level value
-        const char* name;       // Level name (e.g., "DEBUG", "INFO")
+        const char* name;       // Level name 
     }* levels;                  // Array of level definitions
 
     // Logging destinations

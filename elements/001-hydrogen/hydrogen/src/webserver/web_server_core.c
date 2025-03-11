@@ -91,7 +91,7 @@ bool init_web_server(WebServerConfig *web_config) {
 
     // Check if we're already initialized
     if (web_daemon != NULL) {
-        log_this("WebServer", "Web server already initialized", LOG_LEVEL_WARN);
+        log_this("WebServer", "Web server already initialized", LOG_LEVEL_ALERT);
         return false;
     }
 
@@ -146,7 +146,7 @@ bool init_web_server(WebServerConfig *web_config) {
             log_this("WebServer", "-> Swagger UI enabled at prefix: %s", LOG_LEVEL_STATE, 
                     web_config->swagger->prefix);
         } else {
-            log_this("WebServer", "-> Swagger UI initialization failed", LOG_LEVEL_WARN);
+            log_this("WebServer", "-> Swagger UI initialization failed", LOG_LEVEL_ALERT);
             return false;
         }
     }
@@ -154,7 +154,7 @@ bool init_web_server(WebServerConfig *web_config) {
     // Create upload directory if it doesn't exist
     struct stat st = {0};
     if (stat(server_web_config->upload_dir, &st) == -1) {
-        log_this("WebServer", "Upload directory does not exist, attempting to create", LOG_LEVEL_WARN);
+        log_this("WebServer", "Upload directory does not exist, attempting to create", LOG_LEVEL_ALERT);
         if (mkdir(server_web_config->upload_dir, 0700) != 0) {
             char error_buffer[256];
             snprintf(error_buffer, sizeof(error_buffer), "Failed to create upload directory: %s", strerror(errno));
@@ -163,7 +163,7 @@ bool init_web_server(WebServerConfig *web_config) {
         }
         log_this("WebServer", "Created upload directory", LOG_LEVEL_STATE);
     } else {
-        log_this("WebServer", "Upload directory already exists", LOG_LEVEL_WARN);
+        log_this("WebServer", "Upload directory already exists", LOG_LEVEL_ALERT);
     }
 
     return true;
@@ -196,7 +196,7 @@ void* run_web_server(void* arg) {
 
     // Check if we already have a daemon running
     if (web_daemon != NULL) {
-        log_this("WebServer", "Web server daemon already exists", LOG_LEVEL_WARN);
+        log_this("WebServer", "Web server daemon already exists", LOG_LEVEL_ALERT);
         return NULL;
     }
 

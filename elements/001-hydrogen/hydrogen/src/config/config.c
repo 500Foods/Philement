@@ -328,7 +328,7 @@ AppConfig* load_config(const char* cmdline_path) {
                     break;
                 }
                 // If file exists but has errors, try next location
-                log_this("Config", "Skipping %s due to parse errors", LOG_LEVEL_WARN, CONFIG_PATHS[i]);
+                log_this("Config", "Skipping %s due to parse errors", LOG_LEVEL_ALERT, CONFIG_PATHS[i]);
             }
         }
     }
@@ -353,7 +353,7 @@ AppConfig* load_config(const char* cmdline_path) {
     if (root) {
         log_this("Config", "Using configuration from: %s", LOG_LEVEL_STATE, config_path);
     } else {
-        log_this("Config", "No configuration file found, using defaults", LOG_LEVEL_WARN);
+        log_this("Config", "No configuration file found, using defaults", LOG_LEVEL_ALERT);
         log_this("Config", "Checked locations:", LOG_LEVEL_STATE);
         if (env_path) {
             log_this("Config", "  - $HYDROGEN_CONFIG: %s", LOG_LEVEL_STATE, env_path);
@@ -427,7 +427,7 @@ AppConfig* load_config(const char* cmdline_path) {
         config->server.payload_key = strdup("MISSING");
         config->server.startup_delay = DEFAULT_STARTUP_DELAY;
         log_config_section_header("Server");
-        log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_WARN, 1, 0, NULL, NULL);
+        log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_ALERT, 1, 0, NULL, NULL);
         log_config_section_item("ConfigFile", "%s", LOG_LEVEL_STATE, 1, 0, NULL, NULL, DEFAULT_CONFIG_FILE);
         log_config_section_item("ExecFile", "%s", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "./hydrogen");
         log_config_section_item("LogFile", "%s", LOG_LEVEL_STATE, 1, 0, NULL, NULL, DEFAULT_LOG_FILE_PATH);
@@ -480,20 +480,10 @@ AppConfig* load_config(const char* cmdline_path) {
                 return NULL;
             }
 
-            // Default level definitions
-            struct { int value; const char* name; } default_levels[] = {
-                {LOG_LEVEL_ALL, "ALL"},
-                {LOG_LEVEL_DEBUG, "DEBUG"},
-                {LOG_LEVEL_STATE, "STATE"},
-                {LOG_LEVEL_WARNING, "WARNING"},
-                {LOG_LEVEL_ERROR, "ERROR"},
-                {LOG_LEVEL_CRITICAL, "CRITICAL"},
-                {LOG_LEVEL_NONE, "NONE"}
-            };
-
+            // Use DEFAULT_PRIORITY_LEVELS directly from config_priority.c
             for (size_t i = 0; i < DEFAULT_LOG_LEVEL_COUNT; i++) {
-                config->logging.levels[i].value = default_levels[i].value;
-                config->logging.levels[i].name = strdup(default_levels[i].name);
+                config->logging.levels[i].value = DEFAULT_PRIORITY_LEVELS[i].value;
+                config->logging.levels[i].name = strdup(DEFAULT_PRIORITY_LEVELS[i].label);
                 log_config_section_item("Level", "%s (%d)", LOG_LEVEL_STATE, 1, 1, NULL, NULL,
                     config->logging.levels[i].name, config->logging.levels[i].value);
             }
@@ -608,7 +598,7 @@ AppConfig* load_config(const char* cmdline_path) {
         }
     } else {
         log_config_section_header("Logging");
-        log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_WARN, 1, 0, NULL, NULL);
+        log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_ALERT, 1, 0, NULL, NULL);
         
         // Initialize with defaults
         if (config_logging_init(&config->logging) != 0) {
@@ -665,7 +655,7 @@ AppConfig* load_config(const char* cmdline_path) {
         config->web.max_upload_size = DEFAULT_MAX_UPLOAD_SIZE;
         config->web.api_prefix = strdup("/api");
         log_config_section_header("WebServer");
-        log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_WARN, 1, 0, NULL, NULL);
+        log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_ALERT, 1, 0, NULL, NULL);
         log_config_section_item("Enabled", "true", LOG_LEVEL_STATE, 1, 0, NULL, NULL);
         log_config_section_item("Port", "%d", LOG_LEVEL_STATE, 1, 0, NULL, NULL, DEFAULT_WEB_PORT);
         log_config_section_item("ApiPrefix", "%s", LOG_LEVEL_STATE, 1, 0, NULL, NULL, config->web.api_prefix);
@@ -727,7 +717,7 @@ AppConfig* load_config(const char* cmdline_path) {
         config->websocket.exit_wait_seconds = 10;
         
         log_config_section_header("WebSocket");
-        log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_WARN, 1, 0, NULL, NULL);
+        log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_ALERT, 1, 0, NULL, NULL);
         log_config_section_item("Enabled", "true", LOG_LEVEL_STATE, 1, 0, NULL, NULL);
         log_config_section_item("Port", "%d", LOG_LEVEL_STATE, 1, 0, NULL, NULL, DEFAULT_WEBSOCKET_PORT);
         log_config_section_item("Protocol", "%s", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "hydrogen-protocol");
@@ -812,7 +802,7 @@ AppConfig* load_config(const char* cmdline_path) {
         }
     } else {
         log_config_section_header("mDNSServer");
-        log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_WARN, 1, 0, NULL, NULL);
+        log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_ALERT, 1, 0, NULL, NULL);
     }
 
     // System Resources Configuration
@@ -884,7 +874,7 @@ AppConfig* load_config(const char* cmdline_path) {
         config->resources.log_entry_size = DEFAULT_LOG_ENTRY_SIZE;
         
         log_config_section_header("SystemResources");
-        log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_WARN, 1, 0, NULL, NULL);
+        log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_ALERT, 1, 0, NULL, NULL);
     }
 
     // Network Configuration
@@ -947,7 +937,7 @@ AppConfig* load_config(const char* cmdline_path) {
         config->network.reserved_ports_count = 0;
         
         log_config_section_header("Network");
-        log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_WARN, 1, 0, NULL, NULL);
+        log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_ALERT, 1, 0, NULL, NULL);
     }
 
     // System Monitoring Configuration
@@ -999,7 +989,7 @@ AppConfig* load_config(const char* cmdline_path) {
         config->monitoring.load_warning = DEFAULT_LOAD_WARNING;
         
         log_config_section_header("SystemMonitoring");
-        log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_WARN, 1, 0, NULL, NULL);
+        log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_ALERT, 1, 0, NULL, NULL);
     }
 
     // Print Queue Configuration
@@ -1074,7 +1064,7 @@ AppConfig* load_config(const char* cmdline_path) {
         config->print_queue.buffers.status_message_size = 256;
         
         log_config_section_header("PrintQueue");
-        log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_WARN, 1, 0, NULL, NULL);
+        log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_ALERT, 1, 0, NULL, NULL);
     }
 
     // API Configuration
@@ -1090,7 +1080,7 @@ AppConfig* load_config(const char* cmdline_path) {
     } else {
         config->api.jwt_secret = strdup("hydrogen_api_secret_change_me");
         log_config_section_header("API");
-        log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_WARN, 1, 0, NULL, NULL);
+        log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_ALERT, 1, 0, NULL, NULL);
     }
 
     json_decref(root);

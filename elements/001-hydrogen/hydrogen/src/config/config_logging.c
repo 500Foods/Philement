@@ -2,21 +2,11 @@
  * Logging Configuration Implementation
  */
 
+// Project headers
 #include <stdlib.h>
 #include <string.h>
 #include "config_logging.h"
-
-// Default log level names - must match order in config_logging.h
-static const char* DEFAULT_LEVEL_NAMES[] = {
-    "ALL",      // LOG_LEVEL_ALL (0)
-    "DEBUG",    // LOG_LEVEL_DEBUG (1)
-    "INFO",     // LOG_LEVEL_STATE (2)
-    "WARNING",  // LOG_LEVEL_WARNING (3)
-    "ERROR",    // LOG_LEVEL_ERROR (4)
-    "CRITICAL", // LOG_LEVEL_CRITICAL (5)
-    "NONE"      // LOG_LEVEL_NONE (6)
-};
-
+#include "config_priority.h"
 int config_logging_init(LoggingConfig* config) {
     if (!config) {
         return -1;
@@ -30,10 +20,10 @@ int config_logging_init(LoggingConfig* config) {
         return -1;
     }
 
-    // Set up default log levels
+    // Set up default log levels using centralized DEFAULT_PRIORITY_LEVELS
     for (size_t i = 0; i < config->level_count; i++) {
-        config->levels[i].value = i;  // Levels start at 0 (ALL) through 6 (NONE)
-        config->levels[i].name = DEFAULT_LEVEL_NAMES[i];
+        config->levels[i].value = DEFAULT_PRIORITY_LEVELS[i].value;
+        config->levels[i].name = DEFAULT_PRIORITY_LEVELS[i].label;
     }
 
     // Initialize logging destinations

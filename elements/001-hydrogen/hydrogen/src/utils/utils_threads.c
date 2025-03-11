@@ -63,7 +63,7 @@ void add_service_thread(ServiceThreads *threads, pthread_t thread_id) {
             log_this("ThreadMgmt", msg, LOG_LEVEL_STATE);
         } else {
             snprintf(msg, sizeof(msg), "Thread added, count: %d", threads->thread_count);
-            log_this("ThreadMgmt", msg, LOG_LEVEL_WARN);
+            log_this("ThreadMgmt", msg, LOG_LEVEL_ALERT);
         }
     } else {
         log_this("ThreadMgmt", "Failed to add thread: MAX_SERVICE_THREADS reached", LOG_LEVEL_DEBUG);
@@ -91,7 +91,7 @@ void remove_service_thread(ServiceThreads *threads, pthread_t thread_id) {
                 log_this("ThreadMgmt", msg, LOG_LEVEL_STATE);
             } else {
                 snprintf(msg, sizeof(msg), "Thread removed, count: %d", threads->thread_count);
-                log_this("ThreadMgmt", msg, LOG_LEVEL_WARN);
+                log_this("ThreadMgmt", msg, LOG_LEVEL_ALERT);
             }
             break;
         }

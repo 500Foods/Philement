@@ -132,7 +132,7 @@ static void custom_lws_log(int level, const char *line)
     // During shutdown, use log_this with console-only output
     if (ws_context && ws_context->shutdown) {
         int priority = (level == LLL_ERR) ? LOG_LEVEL_DEBUG : 
-                      (level == LLL_WARN) ? LOG_LEVEL_WARN : LOG_LEVEL_STATE;
+                      (level == LLL_WARN) ? LOG_LEVEL_ALERT : LOG_LEVEL_STATE;
         log_this("WebSocket", line, priority);
         return;
     }
@@ -141,10 +141,10 @@ static void custom_lws_log(int level, const char *line)
     int priority;
     switch (level) {
         case LLL_ERR:    priority = LOG_LEVEL_DEBUG; break;
-        case LLL_WARN:   priority = LOG_LEVEL_WARN; break;
+        case LLL_WARN:   priority = LOG_LEVEL_ALERT; break;
         case LLL_NOTICE:
         case LLL_INFO:   priority = LOG_LEVEL_STATE; break;
-        default:         priority = LOG_LEVEL_WARN; break;
+        default:         priority = LOG_LEVEL_ALERT; break;
     }
     
     // Remove trailing newline if present
@@ -292,7 +292,7 @@ int init_websocket_server(int port, const char* protocol, const char* key)
             if (bind(sock, (struct sockaddr*)&addr, sizeof(addr)) == 0) {
                 // Port is available but vhost creation failed for other reasons
                 close(sock);
-                log_this("WebSocket", "Port %d is available but vhost creation failed", LOG_LEVEL_WARN, try_port);
+                log_this("WebSocket", "Port %d is available but vhost creation failed", LOG_LEVEL_ALERT, try_port);
             } else {
                 close(sock);
                 log_this("WebSocket", "Port %d is in use, trying next port", LOG_LEVEL_STATE, try_port);
@@ -370,7 +370,7 @@ static void *websocket_server_run(void *arg)
                 // Force close any remaining connections
                 if (ws_context->active_connections > 0) {
                     log_this("WebSocket", "Forcing close of %d remaining connections", 
-                            LOG_LEVEL_WARN, true, true, true, ws_context->active_connections);
+                            LOG_LEVEL_ALERT, true, true, true, ws_context->active_connections);
                     lws_cancel_service(ws_context->lws_context);
                     ws_context->active_connections = 0;  // Force reset
                 }
@@ -455,7 +455,7 @@ void stop_websocket_server()
         // Force close all connections immediately
         pthread_mutex_lock(&ws_context->mutex);
         if (ws_context->active_connections > 0) {
-            log_this("WebSocket", "Forcing close of %d connections", LOG_LEVEL_WARN,
+            log_this("WebSocket", "Forcing close of %d connections", LOG_LEVEL_ALERT,
                     true, true, true, ws_context->active_connections);
             ws_context->active_connections = 0;  // Force reset connection counter
         }
@@ -487,7 +487,7 @@ void stop_websocket_server()
         int join_result = pthread_timedjoin_np(ws_context->server_thread, NULL, &ts);
         
         if (join_result == ETIMEDOUT) {
-            log_this("WebSocket", "Primary thread join timed out, trying final cancellation", LOG_LEVEL_WARN);
+            log_this("WebSocket", "Primary thread join timed out, trying final cancellation", LOG_LEVEL_ALERT);
             
             // Signal cancellation more aggressively
             pthread_cancel(ws_context->server_thread);
@@ -581,7 +581,7 @@ void cleanup_websocket_server()
     pthread_mutex_lock(&ws_context->mutex);
     if (ws_context->active_connections > 0) {
         log_this("WebSocket", "Forcing close of %d connections during cleanup", 
-                LOG_LEVEL_WARN, true, true, true, ws_context->active_connections);
+                LOG_LEVEL_ALERT, true, true, true, ws_context->active_connections);
         ws_context->active_connections = 0;
     }
     
@@ -611,13 +611,13 @@ void cleanup_websocket_server()
     
     if (websocket_threads.thread_count > 0) {
         log_this("WebSocket", "Found %d active websocket threads, forcing termination", 
-                LOG_LEVEL_WARN, true, true, true, websocket_threads.thread_count);
+                LOG_LEVEL_ALERT, true, true, true, websocket_threads.thread_count);
         
         // Force cancel all tracked threads
         for (int i = 0; i < websocket_threads.thread_count; i++) {
             pthread_t thread = websocket_threads.thread_ids[i];
             if (thread != 0) {
-                log_this("WebSocket", "Cancelling thread %lu", LOG_LEVEL_WARN, 
+                log_this("WebSocket", "Cancelling thread %lu", LOG_LEVEL_ALERT, 
                         true, true, true, (unsigned long)thread);
                 pthread_cancel(thread);
             }
@@ -628,7 +628,7 @@ void cleanup_websocket_server()
         
         // Clear thread tracking completely
         websocket_threads.thread_count = 0;
-        log_this("WebSocket", "Forced all thread tracking to clear", LOG_LEVEL_WARN);
+        log_this("WebSocket", "Forced all thread tracking to clear", LOG_LEVEL_ALERT);
     }
     
     // NOW nullify the global pointer after thread cleanup
@@ -648,7 +648,7 @@ void cleanup_websocket_server()
     
     if (pthread_create(&cleanup_thread, NULL, context_destroy_thread, &cleanup_data) != 0) {
         // Thread creation failed, clean up and fall back to direct destruction
-        log_this("WebSocket", "Failed to create cleanup thread, destroying directly", LOG_LEVEL_WARN);
+        log_this("WebSocket", "Failed to create cleanup thread, destroying directly", LOG_LEVEL_ALERT);
         pthread_mutex_destroy(&cleanup_data.mutex);
         pthread_cond_destroy(&cleanup_data.cond);
         

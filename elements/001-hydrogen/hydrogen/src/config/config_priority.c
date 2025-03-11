@@ -35,18 +35,18 @@
 #include "../logging/logging.h"
 
 // Global variables
-int MAX_PRIORITY_LABEL_WIDTH = 9;    // Default minimum width
+int MAX_PRIORITY_LABEL_WIDTH = 5;    // All log level names are 5 characters
 int MAX_SUBSYSTEM_LABEL_WIDTH = 18;  // Default minimum width
 
 // Priority level definitions
 const PriorityLevel DEFAULT_PRIORITY_LEVELS[NUM_PRIORITY_LEVELS] = {
-    {0, "ALL"},
-    {1, "INFO"},
-    {2, "WARN"},
-    {3, "DEBUG"},
+    {0, "TRACE"},
+    {1, "DEBUG"},
+    {2, "STATE"},
+    {3, "ALERT"},
     {4, "ERROR"},
-    {5, "CRITICAL"},
-    {6, "NONE"}
+    {5, "FATAL"},
+    {6, "QUIET"}
 };
 
 /*

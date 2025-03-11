@@ -218,7 +218,7 @@ int startup_hydrogen(const char* config_path) {
         // Only sleep if within reasonable range (0-10 seconds)
         usleep(app_config->server.startup_delay * 1000);
     } else {
-        log_this("Startup", "Warning: StartupDelay value (%d) out of normal range, using default 5ms", LOG_LEVEL_WARN, app_config->server.startup_delay);
+        log_this("Startup", "Warning: StartupDelay value (%d) out of normal range, using default 5ms", LOG_LEVEL_ALERT, app_config->server.startup_delay);
         usleep(5 * 1000); // Use default 5ms
     }
 

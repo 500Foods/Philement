@@ -36,7 +36,7 @@ int ws_handle_authentication(struct lws *wsi, WebSocketSessionData *session, con
 
     // Check if the authorization scheme is correct
     if (strncmp(auth_header, HYDROGEN_AUTH_SCHEME " ", strlen(HYDROGEN_AUTH_SCHEME) + 1) != 0) {
-        log_this("WebSocket", "Invalid authentication scheme", LOG_LEVEL_WARN);
+        log_this("WebSocket", "Invalid authentication scheme", LOG_LEVEL_ALERT);
         return -1;
     }
 
@@ -48,7 +48,7 @@ int ws_handle_authentication(struct lws *wsi, WebSocketSessionData *session, con
     
     if (strcmp(key, ws_context->auth_key) != 0) {
         log_this("WebSocket", "Authentication failed for client %s (%s)",
-                 LOG_LEVEL_WARN, true, true, true,
+                 LOG_LEVEL_ALERT, true, true, true,
                  session->request_ip,
                  session->request_app);
         return -1;

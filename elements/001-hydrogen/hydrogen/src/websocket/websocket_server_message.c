@@ -38,7 +38,7 @@ int ws_handle_receive(struct lws *wsi, WebSocketSessionData *session, void *in, 
 
     // Verify authentication
     if (!ws_is_authenticated(session)) {
-        log_this("WebSocket", "Received data from unauthenticated connection", LOG_LEVEL_WARN);
+        log_this("WebSocket", "Received data from unauthenticated connection", LOG_LEVEL_ALERT);
         return -1;
     }
 
@@ -49,7 +49,7 @@ int ws_handle_receive(struct lws *wsi, WebSocketSessionData *session, void *in, 
     if (ws_context->message_length + len > ws_context->max_message_size) {
         pthread_mutex_unlock(&ws_context->mutex);
         log_this("WebSocket", "Message too large (max size: %zu bytes)", 
-                 LOG_LEVEL_WARN, true, true, true,
+                 LOG_LEVEL_ALERT, true, true, true,
                  ws_context->max_message_size);
         ws_context->message_length = 0; // Reset buffer
         return -1;
@@ -79,7 +79,7 @@ int ws_handle_receive(struct lws *wsi, WebSocketSessionData *session, void *in, 
     json_t *root = json_loads((const char *)ws_context->message_buffer, 0, &error);
     
     if (!root) {
-        log_this("WebSocket", "Error parsing JSON: %s", LOG_LEVEL_WARN, error.text);
+        log_this("WebSocket", "Error parsing JSON: %s", LOG_LEVEL_ALERT, error.text);
         return 0;
     }
 

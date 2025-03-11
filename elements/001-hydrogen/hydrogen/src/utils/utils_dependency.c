@@ -70,8 +70,8 @@
  
  static void log_status(const char *name, const char *expected, const char *found, const char *method, LibraryStatus status) {
      int level = (status == LIB_STATUS_GOOD) ? LOG_LEVEL_STATE :
-                 (status == LIB_STATUS_WARNING) ? LOG_LEVEL_WARN :
-                 (status == LIB_STATUS_CRITICAL) ? LOG_LEVEL_CRITICAL : LOG_LEVEL_ERROR;
+                 (status == LIB_STATUS_WARNING) ? LOG_LEVEL_ALERT :
+                 (status == LIB_STATUS_CRITICAL) ? LOG_LEVEL_FATAL : LOG_LEVEL_ERROR;
      log_this("DepCheck", "%s Expecting: %s Found: %s (%s) Status: %s",
               level, name, expected ? expected : "(default)", found ? found : "None",
               method, get_status_string(status));

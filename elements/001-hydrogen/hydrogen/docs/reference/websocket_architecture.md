@@ -529,7 +529,7 @@ int process_websocket_message(websocket_server_context_t* context,
     json_error_t error;
     json_t* root = json_loads(message, 0, &error);
     if (!root) {
-        log_this("WebSocket", "Invalid JSON: %s", LOG_LEVEL_WARNING, error.text);
+        log_this("WebSocket", "Invalid JSON: %s", LOG_LEVEL_ALERTING, error.text);
         return -1;
     }
     
@@ -541,7 +541,7 @@ int process_websocket_message(websocket_server_context_t* context,
     
     // Verify authentication
     if (!websocket_verify_auth(connection, root)) {
-        log_this("WebSocket", "Authentication failed for message", LOG_LEVEL_WARNING, true, true, true);
+        log_this("WebSocket", "Authentication failed for message", LOG_LEVEL_ALERTING, true, true, true);
         json_decref(root);
         return -1;
     }
@@ -554,7 +554,7 @@ int process_websocket_message(websocket_server_context_t* context,
         if (handler) {
             result = handler->process_command(connection, action, data);
         } else {
-            log_this("WebSocket", "No handler for channel: %s", LOG_LEVEL_WARNING, channel);
+            log_this("WebSocket", "No handler for channel: %s", LOG_LEVEL_ALERTING, channel);
         }
     } else if (strcmp(type, "ack") == 0) {
         // Process acknowledgment

@@ -364,7 +364,7 @@ char *api_create_jwt(json_t *claims, const char *secret) {
     
     // TODO: Implement actual JWT creation with the provided secret
     // This is a stub for now
-    log_this("API Utils", "JWT creation not fully implemented", LOG_LEVEL_WARN);
+    log_this("API Utils", "JWT creation not fully implemented", LOG_LEVEL_ALERT);
     
     return strdup("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkR1bW15IFRva2VuIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c");
 }
