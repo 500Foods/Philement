@@ -1,10 +1,12 @@
-/*
- * File Descriptor Configuration
- *
- * Defines constants and types for file descriptor management.
- * These are used by the status reporting system to track open
- * file descriptors and their purposes.
- */
+// NOLINT
+//
+// File Descriptor Configuration
+//
+// Defines constants and types for file descriptor management.
+// These are used by the status reporting system to track open
+// file descriptors and their purposes.
+///
+
 
 #ifndef HYDROGEN_CONFIG_FD_H
 #define HYDROGEN_CONFIG_FD_H
@@ -22,4 +24,4 @@
 #define FD_TYPE_SIGNALFD "signalfd"
 #define FD_TYPE_OTHER "other"
 
-#endif /* HYDROGEN_CONFIG_FD_H */
+#endif //  HYDROGEN_CONFIG_FD_H 
