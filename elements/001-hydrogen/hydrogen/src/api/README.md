@@ -10,12 +10,14 @@ The Hydrogen API uses Swagger (OpenAPI) annotations to provide structured docume
 
 Swagger annotations are organized at two levels:
 
-1. Service Level (in service header files like `system_service.h`):
+#### Service Level (in service header files like `system_service.h`)
+
 ```c
 //@ swagger:tag "System Service" Provides system-level operations and monitoring
 ```
 
-2. Endpoint Level (in endpoint header files):
+#### Endpoint Level (in endpoint header files)
+
 ```c
 //@ swagger:path /system/info
 //@ swagger:method GET
@@ -26,6 +28,7 @@ Swagger annotations are organized at two levels:
 ```
 
 The `operationId` field is optional and can be added if needed:
+
 ```c
 //@ swagger:operationId getSystemInfo
 ```

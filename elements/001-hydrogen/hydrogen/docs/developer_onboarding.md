@@ -4,20 +4,20 @@ This guide is designed to help new developers quickly understand the Hydrogen pr
 
 ## Visual Architecture Overview
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Hydrogen Server Core                         │
+```diagram
+┌────────────────────────────────────────────────────────────────┐
+│                     Hydrogen Server Core                       │
 ├─────────────┬─────────────┬─────────────────┬──────────────────┤
 │  Web Server │  WebSocket  │  mDNS Discovery │  Service Manager │
 │    (HTTP)   │   Server    │     Service     │                  │
 ├─────────────┴─────────────┴─────────────────┴──────────────────┤
-│                      Queue System                               │
+│                      Queue System                              │
 ├─────────────┬─────────────┬─────────────────┬──────────────────┤
 │    Print    │  Logging    │    Network      │ State Management │
 │   Service   │   System    │     Layer       │                  │
 ├─────────────┴─────────────┴─────────────────┴──────────────────┤
-│                Configuration & Utility Layer                    │
-└─────────────────────────────────────────────────────────────────┘
+│                Configuration & Utility Layer                   │
+└────────────────────────────────────────────────────────────────┘
 ```
 
 ### Key Component Relationships
@@ -67,7 +67,7 @@ The Hydrogen codebase follows a modular structure with consistent patterns:
 
 ## Component Dependency Map
 
-```
+```diagram
        ┌────────────┐
        │ hydrogen.c │
        └─────┬──────┘
@@ -79,7 +79,7 @@ The Hydrogen codebase follows a modular structure with consistent patterns:
 ┌────────────┼────────────┬────────────────┬───────────────┐
 ▼            ▼            ▼                ▼               ▼
 ┌──────────┐ ┌──────────┐ ┌──────────────┐ ┌─────────────┐ ┌─────────────┐
-│ logging  │ │ config   │ │ web_server   │ │ websocket  │ │ mdns_server │
+│ logging  │ │ config   │ │ web_server   │ │ websocket   │ │ mdns_server │
 └──────────┘ └──────────┘ └──────┬───────┘ └─────┬───────┘ └─────────────┘
                                  │               │
                                  ▼               ▼

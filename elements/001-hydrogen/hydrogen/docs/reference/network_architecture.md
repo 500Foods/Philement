@@ -19,30 +19,30 @@ This abstraction layer is critical for Hydrogen's cross-platform compatibility a
 
 The Network Interface layer follows a layered architecture with clear platform abstraction:
 
-```
-┌─────────────────────────────────────────────────┐
+```diagram
+┌──────────────────────────────────────────────────┐
 │               Application Layer                  │
-│  ┌───────────────┐  ┌───────────────────────┐   │
+│  ┌───────────────┐  ┌────────────────────────┐   │
 │  │ mDNS Service  │  │ WebSocket/HTTP Servers │   │
-│  └───────┬───────┘  └───────────┬───────────┘   │
-│          │                      │               │
-│          ▼                      ▼               │
-│  ┌───────────────────────────────────────────┐  │
-│  │       Network Interface Abstraction       │  │
-│  └─────────────────────┬─────────────────────┘  │
-│                        │                        │
-└────────────────────────┼────────────────────────┘
+│  └───────┬───────┘  └───────────┬────────────┘   │
+│          │                      │                │
+│          ▼                      ▼                │
+│  ┌────────────────────────────────────────────┐  │
+│  │       Network Interface Abstraction        │  │
+│  └─────────────────────┬──────────────────────┘  │
+│                        │                         │
+└────────────────────────┼─────────────────────────┘
                          │
                          ▼
-┌─────────────────────────────────────────────────┐
+┌──────────────────────────────────────────────────┐
 │            Platform-Specific Layer               │
 │                                                  │
-│  ┌────────────────┐      ┌────────────────┐     │
-│  │  Linux Network │      │ Other Platform │     │
-│  │ Implementation │      │ Implementations│     │
-│  └────────────────┘      └────────────────┘     │
+│  ┌────────────────┐      ┌────────────────┐      │
+│  │  Linux Network │      │ Other Platform │      │
+│  │ Implementation │      │ Implementations│      │
+│  └────────────────┘      └────────────────┘      │
 │                                                  │
-└─────────────────────────────────────────────────┘
+└──────────────────────────────────────────────────┘
 ```
 
 ### Key Components
@@ -118,12 +118,12 @@ typedef enum {
 
 The Network Interface layer manages data flow across multiple layers:
 
-```
+```diagram
 ┌───────────────┐      ┌────────────────┐      ┌───────────────┐
 │ Interface     │      │ Network        │      │ Application   │
 │ Hardware      │─────►│ Interface      │─────►│ Services      │
 └───────────────┘      │ Abstraction    │      └───────────────┘
-       ▲                └────────────────┘             │
+       ▲               └────────────────┘              │
        │                        │                      │
        │                        ▼                      │
        │                ┌────────────────┐             │
@@ -156,13 +156,13 @@ The Network Interface layer manages data flow across multiple layers:
 
 The Network Interface layer follows a systematic discovery process:
 
-```
+```diagram
 ┌───────────────┐     ┌───────────────┐     ┌───────────────┐
 │ Enumerate     │────►│ Initialize    │────►│ Get Interface │
 │ Interfaces    │     │ Structures    │     │ Details       │
 └───────────────┘     └───────────────┘     └───────┬───────┘
-                                                   │
-                                                   ▼
+                                                    │
+                                                    ▼
 ┌───────────────┐     ┌───────────────┐     ┌───────────────┐
 │ Return        │◄────┤ Build Network │◄────┤ Process       │
 │ Info Structure│     │ Info Structure│     │ Address Info  │
@@ -170,6 +170,7 @@ The Network Interface layer follows a systematic discovery process:
 ```
 
 This process handles:
+
 - Physical and virtual interfaces
 - Active and inactive interfaces
 - IPv4 and IPv6 addresses
@@ -181,28 +182,28 @@ This process handles:
 
 The Network Interface layer implements a consistent abstraction model:
 
-```
+```diagram
 ┌─────────────────────────────────────────────────┐
-│          Network Interface Public API            │
-│                                                  │
+│          Network Interface Public API           │
+│                                                 │
 │  ┌────────────────┐     ┌─────────────────┐     │
-│  │ network_init() │     │ network_update() │     │
+│  │ network_init() │     │ network_update() │    │
 │  └────────────────┘     └─────────────────┘     │
-│                                                  │
+│                                                 │
 │  ┌────────────────┐     ┌─────────────────┐     │
-│  │ network_free() │     │ network_status() │     │
+│  │ network_free() │     │ network_status() │    │
 │  └────────────────┘     └─────────────────┘     │
 └─────────────────────────────────────────────────┘
                       │
                       │ (Internal Redirection)
                       ▼
 ┌─────────────────────────────────────────────────┐
-│          Platform Implementation Layer           │
-│                                                  │
+│          Platform Implementation Layer          │
+│                                                 │
 │  ┌─────────────────┐     ┌─────────────────┐    │
 │  │  linux_init()   │     │  linux_update() │    │
 │  └─────────────────┘     └─────────────────┘    │
-│                                                  │
+│                                                 │
 │  ┌─────────────────┐     ┌─────────────────┐    │
 │  │  linux_free()   │     │  linux_status() │    │
 │  └─────────────────┘     └─────────────────┘    │
@@ -210,6 +211,7 @@ The Network Interface layer implements a consistent abstraction model:
 ```
 
 This separation provides several advantages:
+
 - Clean separation between interface and implementation
 - Platform-specific code isolation
 - Simplified porting to new platforms
@@ -244,7 +246,7 @@ The Network Interface layer implements comprehensive thread safety:
 
 The Network Interface layer implements a sophisticated interface selection algorithm:
 
-```
+```diagram
 ┌───────────────────────┐
 │  Start Selection      │
 └───────────┬───────────┘
@@ -281,6 +283,7 @@ The Network Interface layer implements a sophisticated interface selection algor
 ```
 
 This algorithm ensures:
+
 - Optimal interface selection for services
 - Consistent behavior across system restarts
 - Appropriate interfaces for different services
@@ -309,7 +312,7 @@ The Network Interface layer provides comprehensive IPv6 support:
 
 The Network Interface layer directly integrates with the mDNS server component:
 
-```
+```diagram
 ┌───────────────┐         ┌───────────────┐         ┌───────────────┐
 │    Network    │         │     mDNS      │         │  Application  │
 │   Interface   │◄────────┤    Server     │◄────────┤   Services    │
@@ -331,6 +334,7 @@ The Network Interface layer directly integrates with the mDNS server component:
 ```
 
 Integration points include:
+
 - Interface selection for service advertising
 - Network status change notifications
 - Interface binding for multicast operations

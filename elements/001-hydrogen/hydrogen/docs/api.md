@@ -5,6 +5,7 @@ This document serves as a table of contents for all available API endpoints in t
 ## Security Overview
 
 All sensitive endpoints use encryption and secure key management as documented in [SECRETS.md](../SECRETS.md). For implementation details of the encryption systems, see:
+
 - [Payload Encryption](../payload/README.md)
 - [OIDC Security](./oidc_integration.md)
 - [Network Security](./reference/network_architecture.md)

@@ -63,6 +63,7 @@ The `UIOptions` section allows you to customize how the documentation is display
 ## Common Configurations
 
 ### Basic Developer View
+
 ```json
 {
     "Swagger": {
@@ -75,9 +76,11 @@ The `UIOptions` section allows you to customize how the documentation is display
     }
 }
 ```
+
 Best for developers who need technical details and want to see all operations.
 
 ### Simplified User View
+
 ```json
 {
     "Swagger": {
@@ -90,9 +93,11 @@ Best for developers who need technical details and want to see all operations.
     }
 }
 ```
+
 Better for users who just need to understand the API basics.
 
 ### Testing-Focused View
+
 ```json
 {
     "Swagger": {
@@ -105,14 +110,17 @@ Better for users who just need to understand the API basics.
     }
 }
 ```
+
 Optimized for API testing and integration work.
 
 ## Accessing the Documentation
 
 Once configured, access your API documentation at:
-```
+
+```URL
 http://your-server:port/swagger/
 ```
+
 Replace `your-server` and `port` with your server's address and configured port.
 
 ## Security Considerations

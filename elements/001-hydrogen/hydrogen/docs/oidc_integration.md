@@ -16,9 +16,9 @@ This functionality will provide a secure, standards-compliant authentication and
 
 The OIDC implementation will follow Hydrogen's existing architectural patterns while adding new components specific to identity management and authentication flows.
 
-```
+```diagram
 ┌───────────────────────────────────────────────────────────────┐
-│                     Application Layer                          │
+│                     Application Layer                         │
 │                                                               │
 │   ┌───────────┐   ┌───────────┐   ┌───────────┐   ┌────────┐  │
 │   │ Print     │   │ Web       │   │ WebSocket │   │ OIDC   │  │
@@ -29,7 +29,7 @@ The OIDC implementation will follow Hydrogen's existing architectural patterns w
                           │               
                           ▼               
                 ┌─────────────────────────┐
-                │    Identity Services     │
+                │    Identity Services    │
                 │  ┌─────────────────────┐│
                 │  │- User Management    ││
                 │  │- Client Registry    ││
@@ -116,7 +116,7 @@ The following endpoints will be implemented:
 
 ### Authentication Flow (Authorization Code)
 
-```
+```diagram
 ┌─────────┐          ┌────────────┐          ┌────────────┐          ┌────────────┐
 │  User   │          │  Client    │          │  Hydrogen  │          │  Resource  │
 │ Browser │          │ Application│          │  OIDC IdP  │          │  Server    │
@@ -124,7 +124,7 @@ The following endpoints will be implemented:
      │                     │                       │                       │
      │                     │                       │                       │
      │                     │ Authorization Request │                       │
-     │                     │─────────────────────►│                       │
+     │                     │──────────────────────►│                       │
      │                     │                       │                       │
      │ Authentication and  │                       │                       │
      │ Consent Redirect    │                       │                       │
@@ -132,31 +132,31 @@ The following endpoints will be implemented:
      │                     │                       │                       │
      │ User Authenticates  │                       │                       │
      │ and Grants Consent  │                       │                       │
-     │────────────────────┼───────────────────────►                       │
+     │─────────────────────┼───────────────────────►                       │
      │                     │                       │                       │
      │                     │ Authorization Code    │                       │
-     │                     │◄─────────────────────┤                       │
+     │                     │◄──────────────────────┤                       │
      │                     │                       │                       │
      │                     │ Token Request         │                       │
      │                     │ (with auth code)      │                       │
-     │                     │─────────────────────►│                       │
+     │                     │──────────────────────►│                       │
      │                     │                       │                       │
      │                     │ ID Token +            │                       │
      │                     │ Access Token          │                       │
-     │                     │◄─────────────────────┤                       │
+     │                     │◄──────────────────────┤                       │
      │                     │                       │                       │
      │                     │ Resource Request      │                       │
      │                     │ (with access token)   │                       │
-     │                     │─────────────────────────────────────────────►│
+     │                     │──────────────────────────────────────────────►│
      │                     │                       │                       │
      │                     │ Protected Resource    │                       │
-     │                     │◄─────────────────────────────────────────────┤
+     │                     │◄──────────────────────────────────────────────┤
      │                     │                       │                       │
 ```
 
 ### Token Validation Flow
 
-```
+```diagram
 ┌────────────┐          ┌────────────┐          ┌────────────┐
 │  Client    │          │  Resource  │          │  Hydrogen  │
 │ Application│          │  Server    │          │  OIDC IdP  │
@@ -264,7 +264,7 @@ The following endpoints will be implemented:
 
 ## File Structure
 
-```
+```files
 src/
 ├── oidc/                       # OIDC implementation
 │   ├── oidc_service.c          # Core OIDC service

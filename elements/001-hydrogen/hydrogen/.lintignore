@@ -1,0 +1,30 @@
+# Hydrogen Linting Exclusions
+# This file contains patterns for files to exclude from linting checks.
+# Each line should contain one pattern. Empty lines and lines starting with # are ignored.
+# Patterns use bash glob syntax (same as .gitignore).
+#
+# Examples:
+# *.min.js        # Exclude all minified JavaScript files
+# vendor/*        # Exclude everything in the vendor directory
+# test_*.json     # Exclude test JSON files
+# !test_api.json  # Re-include a specific test JSON file
+
+# Build directories (these are also excluded by default in the test script)
+build/*
+build_debug/*
+build_perf/*
+build_release/*
+build_valgrind/*
+
+# Test artifacts
+tests/logs/*
+tests/results/*
+tests/diagnostics/*
+tests/config*
+
+# Generated files
+src/config/config/*.inc
+
+# Example of excluding specific files that might need special handling
+src/config/config_defaults.c
+src/config/config_env.c

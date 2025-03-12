@@ -42,6 +42,7 @@ Minimal configuration to start the web server:
 ## Common Configurations
 
 ### Basic Development Setup
+
 ```json
 {
     "WebServer": {
@@ -55,6 +56,7 @@ Minimal configuration to start the web server:
 ```
 
 ### Production Setup
+
 ```json
 {
     "WebServer": {
@@ -70,6 +72,7 @@ Minimal configuration to start the web server:
 ```
 
 ### Minimal Memory Setup
+
 ```json
 {
     "WebServer": {
@@ -97,6 +100,7 @@ You can use environment variables for any setting:
 ```
 
 Common environment variable configurations:
+
 ```bash
 # Development
 export HYDROGEN_PORT=8080
@@ -147,7 +151,8 @@ export HYDROGEN_UPLOAD_DIR="/var/lib/hydrogen/uploads"
 
 ### Diagnostic Steps
 
-1. Enable debug logging:
+#### Enable debug logging
+
 ```json
 {
     "WebServer": {
@@ -156,12 +161,14 @@ export HYDROGEN_UPLOAD_DIR="/var/lib/hydrogen/uploads"
 }
 ```
 
-2. Check port availability:
+#### Check port availability
+
 ```bash
 netstat -tuln | grep 5000
 ```
 
-3. Verify directory permissions:
+#### Verify directory permissions
+
 ```bash
 ls -la /var/www/html
 ls -la /tmp/hydrogen_uploads

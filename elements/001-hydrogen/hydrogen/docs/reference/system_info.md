@@ -14,13 +14,13 @@ The `/api/system/health` endpoint provides a simple health check mechanism used 
 **Method:** GET  
 **Content-Type:** application/json
 
-### Example Request
+### Example Request 1
 
 ```bash
 curl http://localhost:5000/api/system/health
 ```
 
-### Example Response
+### Example Response 1
 
 ```json
 {
@@ -51,13 +51,13 @@ curl http://localhost:5000/api/system/health
 **Method:** GET  
 **Content-Type:** application/json
 
-## Example Request
+## Example Request 2
 
 ```bash
 curl http://localhost:5000/api/system/info
 ```
 
-## Example Response
+## Example Response 2
 
 ```json
 {
@@ -105,11 +105,13 @@ curl http://localhost:5000/api/system/info
 ## Response Fields Explanation
 
 ### Version Information
+
 - **version**: Contains server version details
   - `server`: The version of the Hydrogen server software
   - `api`: The version of the API specification
 
 ### System Information
+
 - **system**: Operating system details
   - `sysname`: Name of the operating system
   - `nodename`: Network node hostname
@@ -118,6 +120,7 @@ curl http://localhost:5000/api/system/info
   - `machine`: Hardware architecture type
 
 ### Server Status
+
 - **status**: Current server status and resource usage
   - `running`: Boolean indicating if server is operational
   - `shutting_down`: Boolean indicating if server is shutting down

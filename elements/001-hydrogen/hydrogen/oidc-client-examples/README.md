@@ -89,16 +89,19 @@ make help
 Alternatively, you can compile each example manually with GCC or a compatible C compiler:
 
 **Authorization Code Flow:**
+
 ```bash
 gcc -o auth_code_flow auth_code_flow.c -lcurl -lcrypto -lmicrohttpd -ljansson
 ```
 
 **Client Credentials Flow:**
+
 ```bash
 gcc -o client_credentials client_credentials.c -lcurl -ljansson
 ```
 
 **Resource Owner Password Flow:**
+
 ```bash
 gcc -o password_flow password_flow.c -lcurl -ljansson
 ```
@@ -117,6 +120,7 @@ The most common and secure flow for applications with a server-side component:
 8. When the access token expires, the refresh token can be used to get a new one
 
 **Features of our implementation:**
+
 - PKCE (Proof Key for Code Exchange) for enhanced security
 - State parameter for CSRF protection
 - Proper token validation
@@ -124,11 +128,13 @@ The most common and secure flow for applications with a server-side component:
 - Organized error handling
 
 **Usage:**
-```
+
+```bash
 ./auth_code_flow
 ```
 
 The application will:
+
 1. Print a URL to visit in your browser
 2. Start a callback server on localhost
 3. Wait for the authorization code from the OIDC provider
@@ -146,17 +152,20 @@ Used for service-to-service authentication without user involvement:
 3. Service uses the access token to access protected resources
 
 **Features of our implementation:**
+
 - Secure client authentication
 - Token validation
 - Structured error handling
 - JSON parsing of responses
 
 **Usage:**
-```
+
+```bash
 ./client_credentials
 ```
 
 The application will:
+
 1. Request an access token using client credentials
 2. Validate the received token
 3. Make a sample API call with the access token
@@ -172,6 +181,7 @@ Used for trusted first-party applications where the application directly collect
 5. When the access token expires, the refresh token can be used to get a new one
 
 **Features of our implementation:**
+
 - Secure handling of user credentials
 - Token validation
 - Refresh token support
@@ -179,11 +189,13 @@ Used for trusted first-party applications where the application directly collect
 - JSON parsing of responses
 
 **Usage:**
-```
+
+```bash
 ./password_flow <username> <password>
 ```
 
 The application will:
+
 1. Request tokens using the provided credentials
 2. Validate the received tokens
 3. Make a sample API call with the access token
@@ -198,6 +210,7 @@ Our JavaScript examples are single-page HTML applications that can be opened dir
 This example implements the Authorization Code flow with PKCE for browser-based applications:
 
 **Features:**
+
 - PKCE for enhanced security
 - State parameter for CSRF protection
 - Secure token storage in browser session storage
@@ -205,6 +218,7 @@ This example implements the Authorization Code flow with PKCE for browser-based 
 - Clean UI with status indicators
 
 **Usage:**
+
 1. Open `auth_code_flow.html` in a browser
 2. Update the configuration settings (endpoints, client ID, etc.)
 3. Click "Start Authorization Flow"
@@ -256,6 +270,7 @@ When using these examples in your own applications, keep these security best pra
 ### Access Token
 
 JWT format with claims like:
+
 ```json
 {
   "iss": "https://hydrogen.example.com",
@@ -271,6 +286,7 @@ JWT format with claims like:
 ### ID Token
 
 JWT format with user identity claims:
+
 ```json
 {
   "iss": "https://hydrogen.example.com",

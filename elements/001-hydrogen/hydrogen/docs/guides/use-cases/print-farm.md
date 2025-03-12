@@ -5,6 +5,7 @@ This guide covers setting up and managing multiple 3D printers with Hydrogen in 
 ## Architecture Overview
 
 ### Basic Setup
+
 - One Hydrogen instance per printer
 - Central management server
 - Shared network storage (recommended)
@@ -15,7 +16,8 @@ This guide covers setting up and managing multiple 3D printers with Hydrogen in 
 ### Network Configuration
 
 1. **Network Planning**
-   ```
+
+   ```diagram
    Print Farm Network (192.168.1.0/24)
    ├── Management Server (192.168.1.10)
    ├── Printer 1 (192.168.1.101)
@@ -31,6 +33,7 @@ This guide covers setting up and managing multiple 3D printers with Hydrogen in 
 ### Printer Configuration
 
 1. **Individual Printer Setup**
+
    ```json
    {
      "ServerName": "printer-01",
@@ -45,6 +48,7 @@ This guide covers setting up and managing multiple 3D printers with Hydrogen in 
    ```
 
 2. **Management Server Setup**
+
    ```json
    {
      "ServerName": "print-manager",
@@ -68,6 +72,7 @@ This guide covers setting up and managing multiple 3D printers with Hydrogen in 
 ### Job Distribution Methods
 
 1. **Round Robin**
+
    ```json
    {
      "LoadBalancing": {
@@ -78,6 +83,7 @@ This guide covers setting up and managing multiple 3D printers with Hydrogen in 
    ```
 
 2. **Printer Capability Matching**
+
    ```json
    {
      "LoadBalancing": {
@@ -97,6 +103,7 @@ This guide covers setting up and managing multiple 3D printers with Hydrogen in 
    ```
 
 3. **Queue-Based Distribution**
+
    ```json
    {
      "LoadBalancing": {
@@ -108,6 +115,7 @@ This guide covers setting up and managing multiple 3D printers with Hydrogen in 
    ```
 
 ### Optimization Settings
+
 ```json
 {
   "QueueOptimization": {
@@ -127,6 +135,7 @@ This guide covers setting up and managing multiple 3D printers with Hydrogen in 
 ### Material Profiles
 
 1. **Central Material Database**
+
    ```json
    {
      "MaterialManagement": {
@@ -152,6 +161,7 @@ This guide covers setting up and managing multiple 3D printers with Hydrogen in 
    ```
 
 2. **Printer-Specific Overrides**
+
    ```json
    {
      "PrinterMaterialOverrides": {
@@ -169,6 +179,7 @@ This guide covers setting up and managing multiple 3D printers with Hydrogen in 
 ### Material Tracking
 
 1. **Inventory Management**
+
    ```json
    {
      "MaterialTracking": {
@@ -181,6 +192,7 @@ This guide covers setting up and managing multiple 3D printers with Hydrogen in 
    ```
 
 2. **Usage Monitoring**
+
    ```json
    {
      "UsageTracking": {
@@ -196,6 +208,7 @@ This guide covers setting up and managing multiple 3D printers with Hydrogen in 
 ### Centralized Monitoring
 
 1. **System Metrics**
+
    ```json
    {
      "Monitoring": {
@@ -211,6 +224,7 @@ This guide covers setting up and managing multiple 3D printers with Hydrogen in 
    ```
 
 2. **Alert Configuration**
+
    ```json
    {
      "Alerts": {
@@ -228,6 +242,7 @@ This guide covers setting up and managing multiple 3D printers with Hydrogen in 
 ### Maintenance Schedule
 
 1. **Automated Maintenance**
+
    ```json
    {
      "Maintenance": {

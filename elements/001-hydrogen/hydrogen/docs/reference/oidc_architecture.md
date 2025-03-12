@@ -16,25 +16,25 @@ The Hydrogen OIDC service implements a standards-compliant OpenID Connect Identi
 
 The OIDC service is implemented as a layered architecture with the following components:
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                   OIDC Service Interface                     │
-│   (oidc_service.h/c - Main entry point and lifecycle mgmt)  │
-└───────────────┬───────────────┬───────────────┬─────────────┘
-                │               │               │
-┌───────────────▼───┐ ┌─────────▼───────┐ ┌─────▼─────────────┐
-│  Token Service    │ │  Client Registry │ │ User Management   │
-│ (oidc_tokens.h/c) │ │ (oidc_clients.h/c)│ │  (oidc_users.h/c)  │
-└─────────┬─────────┘ └────────┬─────────┘ └─────────┬─────────┘
-          │                    │                     │
-          │           ┌────────▼─────────┐           │
-          └───────────►   Key Management ◄───────────┘
+```diagram
+┌───────────────────────────────────────────────────────────────┐
+│                   OIDC Service Interface                      │
+│   (oidc_service.h/c - Main entry point and lifecycle mgmt)    │
+└───────────────┬───────────────┬─────────────────┬─────────────┘
+                │               │                 │
+┌───────────────▼───┐ ┌─────────▼─────────┐ ┌─────▼─────────────┐
+│  Token Service    │ │  Client Registry  │ │ User Management   │
+│ (oidc_tokens.h/c) │ │ (oidc_clients.h/c)│ │  (oidc_users.h/c) │
+└─────────┬─────────┘ └────────┬──────────┘ └─────────┬─────────┘
+          │                    │                      │
+          │           ┌────────▼──────────┐           │
+          └───────────►   Key Management  ◄───────────┘
                       │  (oidc_keys.h/c)  │
                       └────────┬──────────┘
                                │
 ┌──────────────────────────────▼──────────────────────────────┐
-│                      Core Services                           │
-│      (Configuration, Logging, Utilities, Storage, etc.)      │
+│                      Core Services                          │
+│      (Configuration, Logging, Utilities, Storage, etc.)     │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -110,9 +110,9 @@ The OIDC service handles several distinct flows based on the OAuth 2.0 and OIDC 
 4. Client exchanges code for tokens via token endpoint
 5. Client receives access token, refresh token, and ID token
 
-```
+```diagram
 ┌──────┐              ┌───────┐               ┌──────────────┐
-│Client│              │Browser│               │Hydrogen OIDC  │
+│Client│              │Browser│               │Hydrogen OIDC │
 └──┬───┘              └───┬───┘               └───────┬──────┘
    │                      │                           │
    │                      │                           │
@@ -120,16 +120,16 @@ The OIDC service handles several distinct flows based on the OAuth 2.0 and OIDC 
    │─────────────────────>                            │
    │                      │                           │
    │                      │   GET /oauth/authorize    │
-   │                      │─────────────────────────>│
+   │                      │──────────────────────────>│
    │                      │                           │
    │                      │      Login Form           │
-   │                      │<─────────────────────────│
+   │                      │<──────────────────────────│
    │                      │                           │
    │                      │   User Login & Consent    │
-   │                      │─────────────────────────>│
+   │                      │──────────────────────────>│
    │                      │                           │
    │                      │   Code in Redirect        │
-   │                      │<─────────────────────────│
+   │                      │<──────────────────────────│
    │                      │                           │
    │   Code Returned      │                           │
    │<─────────────────────│                           │
@@ -148,9 +148,9 @@ The OIDC service handles several distinct flows based on the OAuth 2.0 and OIDC 
 2. Service validates client authentication
 3. Access token is returned to client
 
-```
+```diagram
 ┌──────┐                              ┌──────────────┐
-│Client│                              │Hydrogen OIDC  │
+│Client│                              │Hydrogen OIDC │
 └──┬───┘                              └───────┬──────┘
    │                                          │
    │    POST /oauth/token (credentials)       │
@@ -168,6 +168,7 @@ The OIDC service issues several types of tokens:
 ### Access Token
 
 JWT format with claims:
+
 ```json
 {
   "iss": "https://hydrogen.example.com",
@@ -183,6 +184,7 @@ JWT format with claims:
 ### ID Token
 
 JWT format with claims:
+
 ```json
 {
   "iss": "https://hydrogen.example.com",

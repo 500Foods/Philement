@@ -53,21 +53,27 @@ Each connection in `Connections` supports:
 ## Database Types
 
 ### OIDC Database
+
 Stores OpenID Connect data:
+
 - Client registrations
 - Access tokens
 - Refresh tokens
 - User information
 
 ### Logging Database
+
 Stores application logs:
+
 - System events
 - Error logs
 - Audit trails
 - Performance metrics
 
 ### Application Database
+
 Stores application-specific data:
+
 - Print job history
 - System settings
 - User preferences
@@ -76,6 +82,7 @@ Stores application-specific data:
 ## Common Configurations
 
 ### Development Setup
+
 ```json
 {
     "Databases": {
@@ -105,6 +112,7 @@ Stores application-specific data:
 ```
 
 ### Production Setup
+
 ```json
 {
     "Databases": {
@@ -134,6 +142,7 @@ Stores application-specific data:
 ```
 
 ### High-Availability Setup
+
 ```json
 {
     "Databases": {
@@ -180,6 +189,7 @@ You can use environment variables for sensitive settings:
 ```
 
 Common environment variable configurations:
+
 ```bash
 # Development
 export OIDC_DB_HOST="localhost"
@@ -199,18 +209,21 @@ export OIDC_DB_PASS="strong_password"
 ## Connection Management
 
 ### Connection Pooling
+
 - Maintains connection pools
 - Handles connection lifecycle
 - Manages pool size
 - Implements connection timeouts
 
 ### Health Checks
+
 - Monitors connection status
 - Performs periodic checks
 - Handles reconnection
 - Reports connection health
 
 ### Load Balancing
+
 - Distributes database load
 - Manages read replicas
 - Handles failover
@@ -280,17 +293,20 @@ export OIDC_DB_PASS="strong_password"
 
 ### Diagnostic Steps
 
-1. Test database connection:
+#### Test database connection
+
 ```bash
 psql -h $OIDC_DB_HOST -U $OIDC_DB_USER -d $OIDC_DB_NAME
 ```
 
-2. Check connection status:
+#### Check connection status
+
 ```bash
 curl http://your-printer:5000/api/system/db/status
 ```
 
-3. Monitor connections:
+### Monitor connections
+
 ```bash
 curl http://your-printer:5000/api/system/db/connections
 ```

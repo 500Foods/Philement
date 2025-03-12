@@ -135,6 +135,7 @@ Each subsystem can have its own log level:
 ## Common Configurations
 
 ### Development Setup
+
 ```json
 {
     "Logging": {
@@ -157,6 +158,7 @@ Each subsystem can have its own log level:
 ```
 
 ### Production Setup
+
 ```json
 {
     "Logging": {
@@ -184,6 +186,7 @@ Each subsystem can have its own log level:
 ```
 
 ### Minimal Logging Setup
+
 ```json
 {
     "Logging": {
@@ -216,6 +219,7 @@ You can use environment variables for log paths and levels:
 ```
 
 Common environment variable configurations:
+
 ```bash
 # Development
 export HYDROGEN_LOG_PATH="./hydrogen.log"
@@ -232,7 +236,7 @@ export HYDROGEN_LOG_LEVEL=2
 
 Configure your system's logrotate:
 
-```
+```logrotate
 /var/log/hydrogen.log {
     daily
     rotate 7
@@ -247,6 +251,7 @@ Configure your system's logrotate:
 ### Permissions
 
 Set appropriate file permissions:
+
 ```bash
 # Create log directory
 sudo mkdir -p /var/log/hydrogen
@@ -296,17 +301,20 @@ sudo chmod 750 /var/log/hydrogen
 
 ### Diagnostic Steps
 
-1. Check log file permissions:
+#### Check log file permissions
+
 ```bash
 ls -la /var/log/hydrogen.log
 ```
 
-2. Monitor log file growth:
+#### Monitor log file growth
+
 ```bash
 watch -n1 "du -h /var/log/hydrogen.log"
 ```
 
-3. View real-time logs:
+#### View real-time logs
+
 ```bash
 tail -f /var/log/hydrogen.log
 ```

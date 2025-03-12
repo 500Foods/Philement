@@ -97,16 +97,19 @@ Common error codes:
 The WebSocket server implements multiple layers of security as documented in [SECRETS.md](./SECRETS.md):
 
 ### Transport Security
+
 - TLS encryption with modern cipher suites (see [network_architecture.md](./reference/network_architecture.md))
 - Certificate validation using system CA store
 - Secure WebSocket protocol (wss://) required in production
 
 ### Authentication
+
 - API key or OIDC token required (see [oidc_architecture.md](./reference/oidc_architecture.md))
 - RSA-signed session tokens with configurable expiration
 - Secure token storage using environment variables
 
 Example connection with API key:
+
 ```javascript
 const ws = new WebSocket('wss://localhost:5001', 'hydrogen-protocol', {
     headers: {
@@ -116,6 +119,7 @@ const ws = new WebSocket('wss://localhost:5001', 'hydrogen-protocol', {
 ```
 
 Example connection with OIDC token:
+
 ```javascript
 const ws = new WebSocket('wss://localhost:5001', 'hydrogen-protocol', {
     headers: {
@@ -125,6 +129,7 @@ const ws = new WebSocket('wss://localhost:5001', 'hydrogen-protocol', {
 ```
 
 ### Message Security
+
 - All messages encrypted in transit
 - Input validation and sanitization
 - Protection against replay attacks

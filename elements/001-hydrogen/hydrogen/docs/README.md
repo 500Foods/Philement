@@ -13,26 +13,31 @@ Welcome to the Hydrogen documentation. This guide provides comprehensive informa
 The configuration system is divided into subsystems, each with its own detailed guide:
 
 ### Core Systems
+
 - [Web Server Configuration](reference/webserver_configuration.md) - HTTP server settings
 - [WebSocket Configuration](reference/websocket_configuration.md) - Real-time updates
 - [Print Queue Configuration](reference/printqueue_configuration.md) - Job management
 - [System Resources](reference/resources_configuration.md) - Resource management
 
 ### Network & Discovery
+
 - [mDNS Configuration](reference/mdns_configuration.md) - Network discovery
 - [Network Architecture](reference/network_architecture.md) - Network design
 
 ### Documentation & API
+
 - [Swagger Configuration](reference/swagger_configuration.md) - API documentation
 - [API Reference](reference/api.md) - API details
 - [OpenAPI Specification](reference/swagger_architecture.md) - API architecture
 
 ### Logging & Monitoring
+
 - [Logging Configuration](reference/logging_configuration.md) - Log management
 - [Terminal Configuration](reference/terminal_configuration.md) - Web terminal
 - [Monitoring Guide](reference/monitoring.md) - System monitoring
 
 ### Communication
+
 - [SMTP Configuration](reference/smtp_configuration.md) - Email notifications
 - [Database Configuration](reference/database_configuration.md) - Data storage
 

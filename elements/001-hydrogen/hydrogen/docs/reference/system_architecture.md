@@ -6,9 +6,9 @@ This document provides a high-level overview of the Hydrogen system architecture
 
 Hydrogen is designed as a modular, multi-layered architecture that prioritizes performance, scalability, and reliability. The system follows a service-oriented design where specialized components handle specific responsibilities while communicating through well-defined interfaces.
 
-```
+```diagram
 ┌───────────────────────────────────────────────────────────────┐
-│                     Application Layer                          │
+│                     Application Layer                         │
 │                                                               │
 │   ┌───────────────┐   ┌───────────────┐   ┌───────────────┐   │
 │   │   Print Queue │   │  Web Server   │   │   WebSocket   │   │
@@ -24,28 +24,29 @@ Hydrogen is designed as a modular, multi-layered architecture that prioritizes p
 │   │   Swagger     │                                           │
 │   │      UI       │                                           │
 │   └───────┬───────┘                                           │
+│                                                               │
 │           │                   │                   │           │
 │           │                   │                   │           │
 │           ▼                   ▼                   ▼           │
 │   ┌─────────────────────────────────────────────────────┐     │
-│   │                   Core Services                      │     │
+│   │                   Core Services                     │     │
 │   │                                                     │     │
 │   │   ┌───────────┐   ┌───────────┐   ┌───────────┐     │     │
 │   │   │  Queue    │   │  mDNS     │   │  System   │     │     │
 │   │   │  System   │   │  Server   │   │  Service  │     │     │
 │   │   └───────────┘   └─────┬─────┘   └───────────┘     │     │
-│   │                         │                            │     │
-│   │                   ┌─────┴─────┐                      │     │
-│   │                   │   mDNS    │                      │     │
-│   │                   │  Client   │                      │     │
-│   │                   └───────────┘                      │     │
+│   │                         │                           │     │
+│   │                   ┌─────┴─────┐                     │     │
+│   │                   │   mDNS    │                     │     │
+│   │                   │  Client   │                     │     │
+│   │                   └───────────┘                     │     │
 │   │                                                     │     │
 │   └─────────────────────────────────────────────────────┘     │
 │                             │                                 │
 │                             │                                 │
 │                             ▼                                 │
 │   ┌─────────────────────────────────────────────────────┐     │
-│   │                  System Foundation                   │     │
+│   │                  System Foundation                  │     │
 │   │                                                     │     │
 │   │   ┌───────────┐   ┌───────────┐   ┌───────────┐     │     │
 │   │   │ Logging   │   │  State    │   │  Network  │     │     │
@@ -97,7 +98,7 @@ These components implement the primary user-facing features of Hydrogen, leverag
 
 ### Print Queue System
 
-```
+```diagram
 ┌───────────────┐         ┌───────────────┐         ┌───────────────┐
 │  Web Server   │         │  Print Queue  │         │  Printer      │
 │  (REST API)   │────────►│   Manager     │────────►│  Controller   │
@@ -115,7 +116,7 @@ The [Print Queue Architecture](./print_queue_architecture.md) document provides 
 
 ### WebSocket Communication
 
-```
+```diagram
 ┌───────────────┐         ┌───────────────┐         ┌───────────────┐
 │    Client     │◄────┬───┤   WebSocket   │─────────┤ System Events │
 │  Applications │     │   │    Server     │         └───────────────┘
@@ -132,7 +133,7 @@ The [WebSocket Server Architecture](./websocket_architecture.md) document provid
 
 ### Network Management
 
-```
+```diagram
 ┌───────────────┐         ┌───────────────┐         ┌───────────────┐
 │ mDNS Server   │         │   Network     │         │  WebSocket/   │
 │               │◄────────┤   Interface   │────────►│  HTTP Servers │
@@ -149,10 +150,10 @@ The [Network Interface Architecture](./network_architecture.md) document provide
 
 ### Terminal System
 
-```
+```diagram
 ┌───────────────┐         ┌───────────────┐         ┌───────────────┐
 │  Web Server   │         │   Terminal    │         │    PTY        │
-│  (xterm.js)   │────────►│   Server     │────────►│   Session     │
+│  (xterm.js)   │────────►│   Server      │────────►│   Session     │
 └───────────────┘         └───────┬───────┘         └───────────────┘
                                   │
                                   │
@@ -164,6 +165,7 @@ The [Network Interface Architecture](./network_architecture.md) document provide
 ```
 
 The Terminal subsystem provides web-based terminal access through:
+
 - xterm.js frontend served by the web server
 - WebSocket-based bidirectional communication
 - PTY session management for shell access
@@ -171,7 +173,7 @@ The Terminal subsystem provides web-based terminal access through:
 
 ### Database Management
 
-```
+```diagram
 ┌───────────────┐         ┌───────────────┐         ┌───────────────┐
 │   Service     │         │   Database    │         │   Postgres    │
 │   Components  │────────►│   Manager     │────────►│   Databases   │
@@ -186,6 +188,7 @@ The Terminal subsystem provides web-based terminal access through:
 ```
 
 The Database subsystem provides:
+
 - Connection pooling for multiple databases
 - Worker thread management for query processing
 - Environment variable-based configuration
@@ -193,7 +196,7 @@ The Database subsystem provides:
 
 ### SMTP Relay System
 
-```
+```diagram
 ┌───────────────┐         ┌───────────────┐         ┌───────────────┐
 │   Inbound     │         │   SMTPRelay   │         │   Outbound    │
 │   SMTP        │────────►│   Server      │────────►│   SMTP        │
@@ -208,6 +211,7 @@ The Database subsystem provides:
 ```
 
 The SMTP Relay subsystem provides:
+
 - Inbound SMTP server on configurable port
 - Message queuing with retry capabilities
 - Multiple outbound SMTP server support
@@ -215,10 +219,10 @@ The SMTP Relay subsystem provides:
 
 ### Swagger Documentation
 
-```
+```diagram
 ┌───────────────┐         ┌───────────────┐         ┌───────────────┐
 │   Web Server  │         │   Swagger     │         │   OpenAPI     │
-│   (UI)        │────────►│   UI         │────────►│   Spec        │
+│   (UI)        │────────►│   UI          │────────►│   Spec        │
 └───────────────┘         └───────┬───────┘         └───────────────┘
                                   │
                                   │
@@ -230,6 +234,7 @@ The SMTP Relay subsystem provides:
 ```
 
 The Swagger subsystem provides:
+
 - OpenAPI 3.1 specification support
 - Interactive API documentation
 - Built-in API testing capabilities
@@ -241,7 +246,7 @@ Hydrogen implements several consistent data flow patterns across the system:
 
 ### 1. Command and Control Flow
 
-```
+```diagram
 ┌───────────┐     ┌───────────┐     ┌───────────┐     ┌───────────┐
 │  Client   │────►│ Web/WS    │────►│ Service   │────►│ System    │
 │ Request   │     │ Server    │     │ Component │     │ Resource  │
@@ -257,7 +262,7 @@ This pattern is used for handling user commands to control system behavior, such
 
 ### 2. Event Notification Flow
 
-```
+```diagram
 ┌───────────┐     ┌───────────┐     ┌───────────┐     ┌───────────┐
 │ System    │────►│ Event     │────►│ WebSocket │────►│ Client    │
 │ Component │     │ Generator │     │ Server    │     │ Subscriber│
@@ -268,7 +273,7 @@ This pattern is used for real-time notifications of system events, such as print
 
 ### 3. Service Discovery Flow
 
-```
+```diagram
 ┌───────────┐     ┌───────────┐     ┌───────────┐
 │ System    │────►│  mDNS     │────►│ Network   │
 │ Services  │     │ Publisher │     │           │
@@ -288,16 +293,16 @@ This pattern enables automatic discovery of Hydrogen instances on the local netw
 
 Hydrogen uses a multi-threaded architecture with the following key thread groups:
 
-```
+```diagram
 ┌─────────────────────────────────────────────────────┐
-│ Main Thread                                          │
+│ Main Thread                                         │
 │ ┌───────────────────────────────────────────────┐   │
 │ │ Initialization / Shutdown Coordination        │   │
 │ └───────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────┘
 
 ┌─────────────────────┐ ┌─────────────────────┐ ┌─────────────────────┐
-│ Web Server Thread    │ │ WebSocket Thread    │ │ mDNS Server Thread  │
+│ Web Server Thread   │ │ WebSocket Thread    │ │ mDNS Server Thread  │
 │ ┌─────────────────┐ │ │ ┌─────────────────┐ │ │ ┌─────────────────┐ │
 │ │ HTTP Request    │ │ │ │ WebSocket       │ │ │ │ mDNS Service    │ │
 │ │ Processing      │ │ │ │ Communication   │ │ │ │ Advertisement   │ │
@@ -305,7 +310,7 @@ Hydrogen uses a multi-threaded architecture with the following key thread groups
 └─────────────────────┘ └─────────────────────┘ └─────────────────────┘
 
 ┌─────────────────────┐ ┌─────────────────────┐ ┌─────────────────────┐
-│ Print Queue Thread   │ │ Logging Thread      │ │ Worker Threads      │
+│ Print Queue Thread  │ │ Logging Thread      │ │ Worker Threads      │
 │ ┌─────────────────┐ │ │ ┌─────────────────┐ │ │ ┌─────────────────┐ │
 │ │ Job Scheduling  │ │ │ │ Log Message     │ │ │ │ Task-specific   │ │
 │ │ & Management    │ │ │ │ Processing      │ │ │ │ Processing      │ │
@@ -326,7 +331,7 @@ See the [Thread Monitoring](../thread_monitoring.md) document for details on mon
 
 The Hydrogen startup sequence follows a careful, dependency-aware ordering:
 
-```
+```diagram
 ┌─────────────┐
 │  Start Main │
 └──────┬──────┘
@@ -356,7 +361,7 @@ The Hydrogen startup sequence follows a careful, dependency-aware ordering:
 └──────┬──────┘      └──────┬──────┘      └──────┬──────┘
        │                    │                    │
        │                    ▼                    │
-       │             ┌─────────────┐             │
+       │            ┌─────────────┐              │
        └────────────┤ Start Print │◄─────────────┘
                     │ Queue       │
                     └──────┬──────┘
@@ -374,6 +379,7 @@ The Hydrogen startup sequence follows a careful, dependency-aware ordering:
 ```
 
 This sequence ensures that each component has its dependencies available before initialization. For example:
+
 - The logging system must be available before any component that produces logs
 - Core services must be running before components that depend on them
 - The WebSocket server depends on the web server for its HTTP upgrade mechanism
@@ -382,7 +388,7 @@ This sequence ensures that each component has its dependencies available before 
 
 Hydrogen implements a carefully orchestrated shutdown sequence to ensure resources are released properly:
 
-```
+```diagram
 ┌─────────────┐
 │  Signal     │
 │  Handler    │
@@ -410,6 +416,7 @@ Hydrogen implements a carefully orchestrated shutdown sequence to ensure resourc
 ```
 
 The shutdown sequence follows the reverse of the startup sequence, ensuring dependencies are respected. For example:
+
 - Application services are stopped before core services
 - Network connections are closed before network resources are freed
 - Log system is the last to shut down
@@ -424,7 +431,7 @@ Hydrogen employs several consistent architectural patterns across components:
 
 Queue-based communication is used extensively to decouple components and provide thread safety:
 
-```
+```diagram
 ┌───────────┐      ┌───────────┐      ┌───────────┐
 │ Producer  │─────►│ Thread-   │─────►│ Consumer  │
 │ Thread    │      │ Safe Queue│      │ Thread    │
@@ -432,6 +439,7 @@ Queue-based communication is used extensively to decouple components and provide
 ```
 
 This pattern is implemented in:
+
 - Log message processing
 - Print job management
 - WebSocket message delivery
@@ -440,23 +448,24 @@ This pattern is implemented in:
 
 Components follow a consistent service manager pattern:
 
-```
+```diagram
 ┌─────────────────────────────────────────────────┐
-│ Service Manager                                  │
-│                                                  │
+│ Service Manager                                 │
+│                                                 │
 │  ┌────────────┐     ┌────────────┐              │
 │  │ Initialize │     │ Shutdown   │              │
 │  └────────────┘     └────────────┘              │
-│                                                  │
+│                                                 │
 │  ┌────────────┐     ┌────────────┐              │
 │  │ Worker     │     │ Resource   │              │
 │  │ Thread     │     │ Management │              │
 │  └────────────┘     └────────────┘              │
-│                                                  │
+│                                                 │
 └─────────────────────────────────────────────────┘
 ```
 
 This pattern provides consistent:
+
 - Initialization/shutdown sequences
 - Thread management
 - Resource tracking
@@ -466,7 +475,7 @@ This pattern provides consistent:
 
 Components are configured through a consistent JSON configuration structure:
 
-```
+```diagram
 ┌───────────┐      ┌───────────┐      ┌───────────┐
 │ JSON      │─────►│ Config    │─────►│ Component │
 │ Config    │      │ Validator │      │ Behavior  │
@@ -474,6 +483,7 @@ Components are configured through a consistent JSON configuration structure:
 ```
 
 This pattern enables:
+
 - Runtime behavior customization
 - Consistent validation
 - Default values
@@ -483,14 +493,15 @@ This pattern enables:
 
 Platform-specific code is isolated behind abstraction layers:
 
-```
-┌───────────┐      ┌───────────┐      ┌───────────┐
-│ Component │─────►│ Abstraction│─────►│ Platform  │
-│ Logic     │      │ Layer     │      │ Specific  │
-└───────────┘      └───────────┘      └───────────┘
+```diagram
+┌───────────┐      ┌─────────────┐      ┌───────────┐
+│ Component │─────►│ Abstraction │─────►│ Platform  │
+│ Logic     │      │ Layer       │      │ Specific  │
+└───────────┘      └─────────────┘      └───────────┘
 ```
 
 This pattern facilitates:
+
 - Cross-platform compatibility
 - Testability through mock implementations
 - Clear separation of concerns
@@ -499,7 +510,7 @@ This pattern facilitates:
 
 Hydrogen services have the following dependency relationships:
 
-```
+```diagram
                       ┌───────────┐
                       │ Logging   │
                       │ System    │
@@ -535,6 +546,7 @@ Hydrogen services have the following dependency relationships:
 ```
 
 This dependency graph guides:
+
 - Initialization order during startup
 - Shutdown sequence
 - Error propagation
@@ -544,17 +556,17 @@ This dependency graph guides:
 
 Hydrogen implements a comprehensive security model with multiple layers of protection. For detailed implementation of encryption and secrets management, see [SECRETS.md](../SECRETS.md).
 
-```
+```diagram
 ┌───────────────────────────────────────────────────────────────┐
-│ Transport Security                                             │
-│ - TLS encryption with modern cipher suites                     │
-│ - Certificate validation with system CA store                  │
+│ Transport Security                                            │
+│ - TLS encryption with modern cipher suites                    │
+│ - Certificate validation with system CA store                 │
 │ - Secure WebSocket protocol (wss://)                          │
 └───────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌───────────────────────────────────────────────────────────────┐
-│ Encryption Layer                                               │
+│ Encryption Layer                                              │
 │ - RSA+AES hybrid encryption for payloads                      │
 │ - Environment-based key management                            │
 │ - Secure credential storage                                   │
@@ -562,7 +574,7 @@ Hydrogen implements a comprehensive security model with multiple layers of prote
                               │
                               ▼
 ┌───────────────────────────────────────────────────────────────┐
-│ Authentication & Authorization                                 │
+│ Authentication & Authorization                                │
 │ - OpenID Connect integration                                  │
 │ - RSA-signed JWT tokens                                       │
 │ - Role-based access control                                   │
@@ -570,7 +582,7 @@ Hydrogen implements a comprehensive security model with multiple layers of prote
                               │
                               ▼
 ┌───────────────────────────────────────────────────────────────┐
-│ Data Protection                                                │
+│ Data Protection                                               │
 │ - Input validation and sanitization                           │
 │ - AES-256 encryption for sensitive data                       │
 │ - Secure configuration management                             │
@@ -578,14 +590,15 @@ Hydrogen implements a comprehensive security model with multiple layers of prote
                               │
                               ▼
 ┌───────────────────────────────────────────────────────────────┐
-│ Resource Protection                                            │
+│ Resource Protection                                           │
 │ - Rate limiting and abuse prevention                          │
 │ - Session management                                          │
-│ - Audit logging                                              │
+│ - Audit logging                                               │
 └───────────────────────────────────────────────────────────────┘
 ```
 
 Each security layer is documented in detail:
+
 - [Network Security](./network_architecture.md)
 - [Payload Encryption](../payload/README.md)
 - [OIDC Security](./oidc_architecture.md)
@@ -596,9 +609,9 @@ Each security layer is documented in detail:
 
 AI capabilities are integrated throughout the Hydrogen architecture:
 
-```
+```diagram
 ┌───────────────────────────────────────────────────────────────┐
-│                     Application Layer                          │
+│                     Application Layer                         │
 │                                                               │
 │   ┌───────────┐   ┌───────────┐   ┌───────────┐   ┌────────┐  │
 │   │ Print     │   │ Web       │   │ WebSocket │   │ AI     │  │
@@ -609,15 +622,15 @@ AI capabilities are integrated throughout the Hydrogen architecture:
 │                         │               │                     │
 └─────────────────────────┼───────────────┼─────────────────────┘
                           │               │
-                ┌─────────┴───────────────┴──────────┐
-                │         AI Services Layer          │
+                ┌─────────┴───────────────┴─────────┐
+                │         AI Services Layer         │
                 │  ┌─────────────────────────────┐  │
                 │  │ - Print Analysis            │  │
                 │  │ - Prediction Models         │  │
                 │  │ - Optimization Algorithms   │  │
                 │  │ - Natural Language          │  │
                 │  └─────────────────────────────┘  │
-                └────────────────────────────────────┘
+                └───────────────────────────────────┘
 ```
 
 See the [AI Integration](../ai_integration.md) document for detailed information about AI capabilities.
@@ -658,7 +671,7 @@ Client->WebSocket Server: acknowledgment
 
 The Hydrogen source code is organized in a modular structure that reflects the architecture:
 
-```
+```files
 src/
 ├── api/             # API implementation
 │   └── system/      # System API endpoints

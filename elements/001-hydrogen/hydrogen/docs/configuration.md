@@ -78,6 +78,7 @@ Environment variables are automatically converted to appropriate JSON types:
 ### Examples
 
 #### Boolean Settings
+
 ```json
 {
     "WebServer": {
@@ -85,9 +86,11 @@ Environment variables are automatically converted to appropriate JSON types:
     }
 }
 ```
+
 Set `HYDROGEN_WEB_ENABLED=true` to enable the web server.
 
 #### Numeric Settings
+
 ```json
 {
     "WebServer": {
@@ -95,19 +98,23 @@ Set `HYDROGEN_WEB_ENABLED=true` to enable the web server.
     }
 }
 ```
+
 Set `HYDROGEN_PORT=8080` to change the port number.
 
 #### Path Settings
+
 ```json
 {
     "LogFile": "${env.HYDROGEN_LOG_PATH}"
 }
 ```
+
 Set `HYDROGEN_LOG_PATH=/var/log/hydrogen.log` to specify the log file location.
 
 ### Common Use Cases
 
 1. **Development vs. Production**:
+
    ```bash
    # Development
    export HYDROGEN_PORT=8080
@@ -119,6 +126,7 @@ Set `HYDROGEN_LOG_PATH=/var/log/hydrogen.log` to specify the log file location.
    ```
 
 2. **Sensitive Information**:
+
    ```json
    {
      "Databases": {
@@ -128,6 +136,7 @@ Set `HYDROGEN_LOG_PATH=/var/log/hydrogen.log` to specify the log file location.
    ```
 
 3. **Host-Specific Settings**:
+
    ```json
    {
      "ServerName": "${env.HOSTNAME}-hydrogen"

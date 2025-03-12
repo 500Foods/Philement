@@ -208,6 +208,12 @@ These tools are required when building or developing with the Hydrogen codebase:
 - [brotli](https://github.com/google/brotli) - Modern compression algorithm
 - [jq](https://stedolan.github.io/jq/) - Command-line JSON processor
 - [upx](https://upx.github.io/) - Executable compressor for release builds
+- [markdownlint](https://github.com/DavidAnson/markdownlint) - Markdown file linting and style checking
+- [jsonlint](https://github.com/zaach/jsonlint) - JSON file validation and formatting
+- [cppcheck](https://cppcheck.sourceforge.io/) - Static analysis for C/C++ code
+- [eslint](https://eslint.org/) - JavaScript code linting and style checking
+- [stylelint](https://stylelint.io/) - CSS/SCSS linting and style checking
+- [htmlhint](https://htmlhint.com/) - HTML code linting and validation
 - C compiler and build tools (gcc/clang, make)
 
 ### Runtime Dependencies

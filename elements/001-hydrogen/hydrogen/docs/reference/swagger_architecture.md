@@ -4,13 +4,13 @@ The Swagger UI subsystem provides interactive API documentation through OpenAPI 
 
 ## System Overview
 
-```
+```diagram
 ┌───────────────────────────────────────────────────────────────┐
-│                     Swagger UI System                          │
+│                     Swagger UI System                         │
 │                                                               │
 │   ┌───────────────┐         ┌───────────────┐                 │
 │   │   Web Server  │         │   Swagger     │                 │
-│   │   (Static)    │────────►│   UI         │                 │
+│   │   (Static)    │────────►│   UI          │                 │
 │   └───────────────┘         └───────┬───────┘                 │
 │                                     │                         │
 │                                     ▼                         │
@@ -31,24 +31,28 @@ The Swagger UI subsystem provides interactive API documentation through OpenAPI 
 ## Key Components
 
 ### Web Server Integration
+
 - Static file serving
 - URL routing
 - Asset compression
 - Cache management
 
 ### Swagger UI
+
 - Interactive documentation
 - API exploration
 - Request building
 - Response visualization
 
 ### OpenAPI Specification
+
 - API definition
 - Endpoint documentation
 - Schema validation
 - Security definitions
 
 ### API Explorer
+
 - Endpoint navigation
 - Schema inspection
 - Authentication handling
@@ -133,18 +137,21 @@ API Endpoints->Try-It Console: Return responses
 ## Asset Management
 
 ### Static Files
+
 - HTML templates
 - JavaScript bundles
 - CSS stylesheets
 - Image resources
 
 ### Compression
+
 - Brotli compression
 - Static compression
 - Dynamic compression
 - Cache headers
 
 ### Caching
+
 - Browser caching
 - Server caching
 - ETags
@@ -153,18 +160,21 @@ API Endpoints->Try-It Console: Return responses
 ## Integration Points
 
 ### Web Server
+
 - Static file serving
 - URL routing
 - Compression
 - Caching
 
 ### API System
+
 - Endpoint documentation
 - Request handling
 - Response formatting
 - Error management
 
 ### Authentication
+
 - Security schemes
 - Token handling
 - Authorization flows
@@ -233,18 +243,21 @@ API Endpoints->Try-It Console: Return responses
 ## OpenAPI Integration
 
 ### Specification Generation
+
 - Annotation processing
 - Schema generation
 - Documentation extraction
 - Validation rules
 
 ### Documentation Organization
+
 - Tag grouping
 - Operation sorting
 - Model organization
 - Security definitions
 
 ### Interactive Features
+
 - Request builder
 - Response viewer
 - Schema explorer

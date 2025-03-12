@@ -76,6 +76,7 @@ Minimal configuration for system resources:
 ## Common Configurations
 
 ### Development Setup
+
 ```json
 {
     "SystemResources": {
@@ -107,6 +108,7 @@ Minimal configuration for system resources:
 ```
 
 ### Production Setup
+
 ```json
 {
     "SystemResources": {
@@ -138,6 +140,7 @@ Minimal configuration for system resources:
 ```
 
 ### High-Performance Setup
+
 ```json
 {
     "SystemResources": {
@@ -185,6 +188,7 @@ You can use environment variables for thresholds and intervals:
 ```
 
 Common environment variable configurations:
+
 ```bash
 # Development
 export MEMORY_WARNING_THRESHOLD=80
@@ -200,18 +204,21 @@ export LOAD_WARNING_THRESHOLD=5.0
 ## Resource Management
 
 ### Queue Management
+
 - Dynamic queue allocation
 - Memory block management
 - Hash table optimization
 - Queue capacity control
 
 ### Buffer Management
+
 - Buffer pool allocation
 - Size optimization
 - Memory efficiency
 - Buffer reuse
 
 ### System Monitoring
+
 - Resource usage tracking
 - Performance metrics
 - Warning thresholds
@@ -301,17 +308,20 @@ export LOAD_WARNING_THRESHOLD=5.0
 
 ### Diagnostic Steps
 
-1. Check resource usage:
+#### Check resource usage
+
 ```bash
 curl http://your-printer:5000/api/system/resources
 ```
 
-2. Monitor queues:
+#### Monitor queues
+
 ```bash
 curl http://your-printer:5000/api/system/queues
 ```
 
-3. View system metrics:
+#### View system metrics
+
 ```bash
 curl http://your-printer:5000/api/system/metrics
 ```
