@@ -9,6 +9,7 @@ threadinfo.sh <executable_name>
 ```
 
 For example:
+
 ```bash
 threadinfo.sh hydrogen
 ```
@@ -293,7 +294,7 @@ echo "The total memory footprint combines both in-RAM (RSS) and swapped pages."
 
 ## Sample Output
 
-```
+```log
 === Memory Footprint for hydrogen (PID: 1265598) ===
 Total Virtual Memory: 472328 kB
 Memory In Use: 14028 kB (RAM: 14028 kB, Swap: 0 kB)
@@ -348,13 +349,17 @@ The total memory footprint combines both in-RAM (RSS) and swapped pages.
 The script provides detailed information about the Hydrogen server process in several sections:
 
 ### Memory Footprint
+
 Shows the overall memory usage of the process, including:
+
 - Total Virtual Memory allocated
 - Memory actually in use (Resident Set Size)
 - Percentage of system RAM used
 
 ### Thread Information
+
 Lists all threads in the process with:
+
 - Thread ID (TID)
 - CPU usage percentage
 - Stack size
@@ -362,18 +367,23 @@ Lists all threads in the process with:
 - Current state
 
 ### Memory Distribution
+
 Shows detailed memory statistics:
+
 - Rss (Resident Set Size): Physical memory used
 - Pss (Proportional Set Size): RSS adjusted for shared pages
 - Swap: Memory in swap space
 
 ### File Descriptor Information
+
 Lists all open file descriptors with:
+
 - FD number
 - Type (stdio, socket, file, etc.)
 - Detailed description
 
 ### Resource Limits
+
 Shows the maximum number of files the process can open.
 
 ## Relationship to /api/system/info
@@ -381,6 +391,7 @@ Shows the maximum number of files the process can open.
 This script provides a more detailed view of the information available through the `/api/system/info` endpoint. While the API provides a high-level overview suitable for monitoring and automation, this script offers deeper insights useful for debugging and performance analysis.
 
 The script is particularly useful for:
+
 - Debugging memory issues
 - Analyzing thread behavior
 - Investigating file descriptor usage

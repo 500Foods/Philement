@@ -197,6 +197,116 @@ Example:
  */
 ```
 
+## Code Quality and Linting
+
+The project uses automated linting tools to enforce code quality and consistency. These tools are integrated into our test harness (`test_z_codebase.sh`) and run as part of our continuous integration process.
+
+### Linting Tools
+
+1. **C/C++ Code (cppcheck)**
+   - Static analysis for C/C++ source files
+   - Detects common programming errors
+   - Enforces project coding standards
+   - Checks memory management and resource handling
+
+2. **Markdown Files (markdownlint)**
+   - Ensures consistent documentation formatting
+   - Uses `.lintignore-markdown` for configuration
+   - Enforces documentation standards and readability
+   - Maintains consistent heading hierarchy
+
+3. **JSON Files (jsonlint)**
+   - Validates JSON file syntax and structure
+   - Ensures proper formatting and indentation
+   - Catches common configuration errors
+   - Reports precise error locations
+
+4. **JavaScript Files (eslint)**
+   - Enforces JavaScript coding standards
+   - Checks for potential runtime errors
+   - Maintains consistent code style
+   - Supports modern JavaScript features
+
+5. **CSS Files (stylelint)**
+   - Ensures consistent CSS formatting
+   - Catches common styling errors
+   - Enforces style guide rules
+   - Validates property values
+
+6. **HTML Files (htmlhint)**
+   - Validates HTML syntax
+   - Enforces accessibility standards
+   - Checks for common markup issues
+   - Ensures proper tag nesting
+
+### Linting Configuration Files
+
+The project uses two configuration files to control linting behavior:
+
+1. **.lintignore**
+   - Located in the project root directory
+   - Uses glob patterns to specify exclusions
+   - Applied to all linting tools except Markdown
+   - Example patterns:
+
+     ```files
+     build/*           # Exclude build directories
+     tests/config*     # Exclude test configurations
+     src/config/*.inc  # Exclude generated includes
+     ```
+
+2. **.lintignore-markdown**
+   - Located in the project root directory
+   - Specific configuration for Markdown files
+   - Controls Markdown-specific rules
+   - Maintains documentation consistency
+
+### Running Lint Checks
+
+Linting is integrated into our test suite and can be run in two ways:
+
+```bash
+# Run all tests including linting
+./tests/test_all.sh
+
+# Run only linting checks
+./tests/test_z_codebase.sh
+```
+
+The test harness provides:
+
+- Comprehensive linting across all file types
+- Clear error reporting with file locations
+- Warnings for missing file types (expected for HTML/CSS/JS initially)
+- Proper exclusion handling via .lintignore files
+- Concise error messages for quick problem identification
+
+### Adding Lint Exclusions
+
+To exclude files from linting:
+
+1. Edit `.lintignore` for general exclusions:
+
+   ```files
+   # Add glob patterns, one per line
+   path/to/exclude/*
+   specific/file.ext
+   ```
+
+2. Edit `.lintignore-markdown` for Markdown-specific rules:
+
+   ```list
+   # Configure Markdown-specific exclusions
+   # and rule customizations
+   ```
+
+Remember:
+
+- Use glob patterns similar to .gitignore
+- Add comments to explain non-obvious exclusions
+- Keep exclusions minimal and justified
+- Review exclusions periodically
+
 ## Build System
 
 The project uses Make for building. Key targets:

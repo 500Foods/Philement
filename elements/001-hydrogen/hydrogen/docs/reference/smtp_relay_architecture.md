@@ -4,9 +4,9 @@ The SMTP Relay subsystem provides a sophisticated email processing system with q
 
 ## System Overview
 
-```
+```diagram
 ┌───────────────────────────────────────────────────────────────┐
-│                     SMTP Relay System                          │
+│                     SMTP Relay System                         │
 │                                                               │
 │   ┌───────────────┐         ┌───────────────┐                 │
 │   │   Inbound     │         │   Message     │                 │
@@ -31,24 +31,28 @@ The SMTP Relay subsystem provides a sophisticated email processing system with q
 ## Key Components
 
 ### Inbound SMTP Server
+
 - Message reception
 - Protocol compliance
 - Authentication handling
 - Rate limiting
 
 ### Message Queue
+
 - Message storage
 - Retry management
 - Priority handling
 - Load balancing
 
 ### Content Transform
+
 - Message modification
 - Logo enhancement
 - Content filtering
 - Format conversion
 
 ### Outbound Routing
+
 - Server selection
 - Connection management
 - Delivery tracking
@@ -163,18 +167,21 @@ Outbound Server->Destination: Deliver message
 ## Integration Points
 
 ### Queue System
+
 - Message storage
 - Priority handling
 - Retry management
 - Status tracking
 
 ### Worker Threads
+
 - Message processing
 - Content transformation
 - Delivery management
 - Error handling
 
 ### Monitoring System
+
 - Queue metrics
 - Server status
 - Performance monitoring

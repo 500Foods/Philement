@@ -4,9 +4,9 @@ The mDNS Client subsystem provides service discovery and monitoring capabilities
 
 ## System Overview
 
-```
+```diagram
 ┌───────────────────────────────────────────────────────────────┐
-│                     mDNS Client System                         │
+│                     mDNS Client System                        │
 │                                                               │
 │   ┌───────────────┐         ┌───────────────┐                 │
 │   │   Service     │         │   Service     │                 │
@@ -31,40 +31,39 @@ The mDNS Client subsystem provides service discovery and monitoring capabilities
 ## Key Components
 
 ### Service Scanner
+
 - Periodic network scanning
 - Service type filtering
 - Discovery protocol handling
 - Initial service detection
 
 ### Service Monitor
+
 - Real-time service tracking
 - State change detection
 - Service metadata updates
 - Event generation
 
 ### Service Registry
+
 - Service state storage
 - Service metadata caching
 - Query interface
 - State persistence
 
 ### Health Checker
+
 - Service availability testing
 - Response time monitoring
 - Error detection
 - Health status tracking
 
 ### Event Dispatcher
+
 - Service state notifications
 - Health status updates
 - Load balancer events
 - System notifications
-
-### Load Balancer
-- Service selection
-- Load distribution
-- Failover handling
-- Health-aware routing
 
 ## Configuration
 
@@ -154,18 +153,21 @@ EventDispatcher->LoadBalancer: Update service pool
 ## Integration Points
 
 ### mDNS Server
+
 - Service verification
 - State coordination
 - Event synchronization
 - Health monitoring
 
 ### Network Interface
+
 - Service discovery
 - Protocol handling
 - Connection management
 - Error detection
 
 ### Load Balancer
+
 - Service selection
 - Health status
 - Availability updates
@@ -234,18 +236,21 @@ EventDispatcher->LoadBalancer: Update service pool
 ## Service Types
 
 ### Standard Services
+
 - HTTP servers
 - WebSocket endpoints
 - OctoPrint instances
 - Hydrogen nodes
 
 ### Load Balancers
+
 - HTTP load balancers
 - WebSocket balancers
 - Print job distributors
 - Service proxies
 
 ### Custom Services
+
 - User-defined types
 - Special protocols
 - Test services
@@ -254,6 +259,7 @@ EventDispatcher->LoadBalancer: Update service pool
 ## Health Checking
 
 ### Methods
+
 1. **TCP Connection**
    - Port availability
    - Connection time
@@ -273,6 +279,7 @@ EventDispatcher->LoadBalancer: Update service pool
    - Extended validation
 
 ### Metrics
+
 - Response time
 - Success rate
 - Error frequency
@@ -281,6 +288,7 @@ EventDispatcher->LoadBalancer: Update service pool
 ## Event System
 
 ### Event Types
+
 1. **Discovery Events**
    - Service found
    - Service lost
@@ -300,6 +308,7 @@ EventDispatcher->LoadBalancer: Update service pool
    - Error occurred
 
 ### Event Handling
+
 - Asynchronous processing
 - Priority queuing
 - Error recovery
@@ -308,6 +317,7 @@ EventDispatcher->LoadBalancer: Update service pool
 ## Load Balancing
 
 ### Strategies
+
 1. **Round Robin**
    - Simple distribution
    - Equal weighting
@@ -327,6 +337,7 @@ EventDispatcher->LoadBalancer: Update service pool
    - Dynamic adjustment
 
 ### Failover
+
 - Health monitoring
 - Service switching
 - State preservation

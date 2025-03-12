@@ -16,8 +16,8 @@ The WebSocket server is a core component of Hydrogen that provides real-time bid
 
 The WebSocket server follows a layered architecture with clear separation of concerns:
 
-```
-┌─────────────────────────────────────────────────┐
+```diagram
+┌──────────────────────────────────────────────────┐
 │               WebSocket Server                   │
 │                                                  │
 │   ┌────────────┐    ┌────────────┐    ┌───────┐  │
@@ -31,13 +31,13 @@ The WebSocket server follows a layered architecture with clear separation of con
 │   │  Handler   │    │            │    │Service│  │
 │   └────────────┘    └────────────┘    └───────┘  │
 │                                                  │
-└─────────────────────────────────────────────────┘
-           │                  │               │
-           ▼                  ▼               ▼
-┌──────────────┐     ┌─────────────┐    ┌──────────┐
-│ libwebsockets │     │ Application │    │  System  │
-│     Core      │     │  Services   │    │  Status  │
-└──────────────┘     └─────────────┘    └──────────┘
+└──────────────────────────────────────────────────┘
+           │                │               │
+           ▼                ▼               ▼
+┌───────────────┐    ┌─────────────┐    ┌──────────┐
+│ libwebsockets │    │ Application │    │  System  │
+│     Core      │    │  Services   │    │  Status  │
+└───────────────┘    └─────────────┘    └──────────┘
 ```
 
 ### Key Components
@@ -51,22 +51,22 @@ The WebSocket server follows a layered architecture with clear separation of con
 
 ## Data Flow
 
-```
-┌───────────┐         ┌───────────────┐         ┌────────────┐
+```diagram
+┌───────────┐         ┌───────────────┐         ┌─────────────┐
 │  Client   │         │   WebSocket   │         │ Application │
-│  Browser  │◄────────┤    Server     ├────────►│  Services  │
-└─────┬─────┘         └───────┬───────┘         └────────────┘
+│  Browser  │◄────────┤    Server     ├────────►│  Services   │
+└─────┬─────┘         └───────┬───────┘         └─────────────┘
       │                       │                        │
       │                       │                        │
       │                       ▼                        │
       │               ┌───────────────┐                │
       │               │  Connection   │                │
-      │◄──────────────┤   Context    ├───────────────►│
+      │◄──────────────┤   Context     ├───────────────►│
       │               └───────────────┘                │
       │                                                │
       │               ┌───────────────┐                │
       │               │    System     │                │
-      └──────────────►│    Events    │◄───────────────┘
+      └──────────────►│    Events     │◄───────────────┘
                       └───────────────┘
 ```
 
@@ -141,7 +141,7 @@ WebSocket messages follow a consistent structure to ensure proper routing and pr
 
 The WebSocket server implements a multi-layer authentication system:
 
-```
+```diagram
 ┌─────────────┐    ┌────────────────┐    ┌─────────────┐
 │  Initial    │    │   Session      │    │  Message    │
 │ Handshake   │───►│ Authentication │───►│ Validation  │
@@ -173,7 +173,7 @@ The WebSocket server implements a multi-layer authentication system:
 
 WebSocket connections follow a defined state machine:
 
-```
+```diagram
 ┌───────────┐      ┌───────────┐      ┌───────────┐
 │ Connecting│─────►│ Verifying │─────►│Established│
 └─────┬─────┘      └─────┬─────┘      └─────┬─────┘
@@ -204,6 +204,7 @@ WebSocket connections follow a defined state machine:
 ```
 
 Each state transition triggers specific actions:
+
 - **Connecting → Verifying**: Initial connection validation
 - **Verifying → Established**: Authentication succeeded
 - **Established → Connected**: Session context created
@@ -217,18 +218,18 @@ Each state transition triggers specific actions:
 
 The WebSocket server employs a sophisticated thread safety model:
 
-```
+```diagram
 ┌──────────────────────────────────────────────────────┐
-│ WebSocket Server Main Thread                          │
+│ WebSocket Server Main Thread                         │
 │ ┌─────────────────────────────────────────────────┐  │
-│ │ Connection Management / Initial Authentication   │  │
+│ │ Connection Management / Initial Authentication  │  │
 │ └─────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────┘
                           │
                           │ (libwebsockets event loop)
                           ▼
 ┌──────────────────────────────────────────────────────┐
-│ Service Thread Pool                                   │
+│ Service Thread Pool                                  │
 │ ┌─────────────┐  ┌─────────────┐  ┌─────────────┐    │
 │ │   Message   │  │ Connection  │  │    Auth     │    │
 │ │  Processing │  │  Handling   │  │  Validation │    │
@@ -238,7 +239,7 @@ The WebSocket server employs a sophisticated thread safety model:
                           │ (thread-safe queues)
                           ▼
 ┌──────────────────────────────────────────────────────┐
-│ Application Service Threads                           │
+│ Application Service Threads                          │
 │ ┌─────────────┐  ┌─────────────┐  ┌─────────────┐    │
 │ │    Print    │  │   System    │  │    File     │    │
 │ │   Service   │  │   Service   │  │   Service   │    │
@@ -270,7 +271,8 @@ Key thread safety mechanisms:
 The WebSocket server implements careful memory management:
 
 1. **Connection Context Lifecycle**:
-   ```
+
+   ```diagram
    ┌───────────┐     ┌───────────┐     ┌───────────┐
    │ Allocate  │────►│  In Use   │────►│ Marked for│
    │ Context   │     │           │     │ Deletion  │
@@ -327,17 +329,17 @@ The WebSocket server has multiple configuration options:
 
 The WebSocket server is built on top of libwebsockets, with careful integration:
 
-```
+```diagram
 ┌─────────────────────────────────────────────────┐
-│             Hydrogen WebSocket Server            │
-│                                                  │
+│             Hydrogen WebSocket Server           │
+│                                                 │
 │  ┌───────────────┐        ┌──────────────────┐  │
-│  │ Hydrogen API  │        │ Connection Mgmt   │  │
+│  │ Hydrogen API  │        │ Connection Mgmt  │  │
 │  └───────┬───────┘        └────────┬─────────┘  │
 │          │                         │            │
 │          ▼                         ▼            │
 │  ┌───────────────────────────────────────────┐  │
-│  │           Integration Layer                │  │
+│  │           Integration Layer               │  │
 │  └───────────────────┬───────────────────────┘  │
 │                      │                          │
 └──────────────────────┼──────────────────────────┘
@@ -375,7 +377,7 @@ Key integration points:
 
 The WebSocket server implements a sophisticated event dispatching system:
 
-```
+```diagram
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │  Event Source   │───►│  Event Router   │───►│ Channel Filter  │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
@@ -394,6 +396,7 @@ The WebSocket server implements a sophisticated event dispatching system:
 ```
 
 This system enables:
+
 - Topic-based subscriptions
 - Client-specific filtering
 - Guaranteed delivery

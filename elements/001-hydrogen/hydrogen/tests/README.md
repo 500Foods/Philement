@@ -83,9 +83,40 @@ The script:
 - Dynamically discovers and runs all test_*.sh scripts
 - Generates a comprehensive summary of all test results with visual pass/fail indicators
 
+### test_z_codebase.sh
+
+A comprehensive codebase analysis test that enforces code quality standards:
+
+```bash
+./test_z_codebase.sh
+```
+
+Key features:
+
+- Enforces source code line count limits (1000 lines maximum)
+- Performs multi-language linting:
+  - C/H/Inc files with cppcheck
+  - Markdown with markdownlint
+  - JSON with jsonlint
+  - JavaScript with eslint
+  - CSS with stylelint
+  - HTML with htmlhint
+- Detects large files (>25KB)
+- Analyzes and cleans Makefiles
+- Provides detailed test reporting
+- Integrates with test_all.sh for comprehensive results
+
+This test runs last in the sequence (hence the 'z' prefix) to perform final code quality checks after all other tests have passed.
+
 ### test_compilation.sh
 
 A compilation verification script that ensures all components build without errors or warnings:
+
+- Tests compilation of the main Hydrogen project in all build variants (standard, debug, valgrind)
+- Tests compilation of the OIDC client examples
+- Treats warnings as errors using strict compiler flags (-Wall -Wextra -Werror -pedantic)
+- Creates detailed build logs in the `./results` directory
+- Fails fast if any component fails to compile
 
 ```bash
 ./test_compilation.sh
@@ -100,6 +131,7 @@ A validation script that ensures proper configuration of payload encryption envi
 ```
 
 Key features:
+
 - Validates presence of required environment variables (PAYLOAD_KEY and PAYLOAD_LOCK)
 - Verifies RSA key format and validity:
   - Checks PAYLOAD_KEY is a valid 2048-bit RSA private key
@@ -113,16 +145,6 @@ Key features:
 - Integrates with test_all.sh for comprehensive test reporting
 
 This test is essential for validating the payload encryption system's configuration before running other payload-related tests.
-
-### test_compilation.sh
-
-- Tests compilation of the main Hydrogen project in all build variants (standard, debug, valgrind)
-- Tests compilation of the OIDC client examples
-- Treats warnings as errors using strict compiler flags (-Wall -Wextra -Werror -pedantic)
-- Creates detailed build logs in the `./results` directory
-- Fails fast if any component fails to compile
-
-This test runs as the first test in the test sequence since other tests won't be meaningful if components don't compile correctly.
 
 ### test_startup_shutdown.sh
 

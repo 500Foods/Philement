@@ -30,10 +30,12 @@ The Hydrogen project uses a hybrid RSA+AES encryption approach for payloads:
    - `PAYLOAD_LOCK` environment variable: Contains the RSA public key used for encryption
    - `PAYLOAD_KEY` environment variable: Contains the RSA private key used for decryption
    - Use `test_env_payload.sh` to validate environment variables:
+
      ```bash
      # Verify environment variables are set correctly
      ../tests/test_env_payload.sh
      ```
+
      This test ensures both variables are present and contain valid RSA keys
 
 2. **Encryption Process**:
@@ -49,9 +51,11 @@ The Hydrogen project uses a hybrid RSA+AES encryption approach for payloads:
    - Processes the decrypted payload as normal
 
 4. **File Format**:
-   ```
+
+   ```diagram
    [key_size(4 bytes)] + [encrypted_aes_key] + [iv(16 bytes)] + [encrypted_payload]
    ```
+
    - key_size: 4-byte header indicating encrypted AES key length
    - encrypted_aes_key: RSA-encrypted AES-256 key
    - iv: 16-byte initialization vector for AES-CBC
@@ -62,7 +66,7 @@ The Hydrogen project uses a hybrid RSA+AES encryption approach for payloads:
 The primary payload currently embedded is a highly optimized SwaggerUI implementation:
 
 - **SwaggerUI Version**: SwaggerUI 5.19.0 with selective file inclusion
-- **Optimized Distribution**: 
+- **Optimized Distribution**:
   - Static assets are Brotli-compressed:
     - swagger-ui-bundle.js
     - swagger-ui-standalone-preset.js
@@ -77,6 +81,7 @@ The primary payload currently embedded is a highly optimized SwaggerUI implement
 - **Dynamic Server URL**: Automatically adapts to the current server host and protocol
 - **OAuth Support**: Full OAuth 2.0 authorization flow support
 - **SwaggerUI Configuration**: All UI options can be configured in `hydrogen.json`:
+
   ```json
   "Swagger": {
     "Enabled": true,
@@ -93,6 +98,7 @@ The primary payload currently embedded is a highly optimized SwaggerUI implement
     }
   }
   ```
+
   Each option controls a specific aspect of the UI:
   - `tryItEnabled`: When true, enables the "Try It Out" feature by default
   - `displayOperationId`: When false, hides operation IDs from the UI
@@ -136,6 +142,7 @@ Annotations use the following format:
 ```
 
 The `operationId` field is optional and can be added if needed:
+
 ```c
 //@ swagger:operationId getSystemInfo
 ```
@@ -187,6 +194,7 @@ If `PAYLOAD_LOCK` is not set, the script will generate a test key pair for devel
 You can view the API documentation using Swagger UI:
 
 1. Generate the required files (if not already done):
+
    ```bash
    # Generate the OpenAPI specification
    ./swagger-generate.sh
@@ -196,6 +204,7 @@ You can view the API documentation using Swagger UI:
    ```
 
 2. Ensure Swagger is enabled in `hydrogen.json` configuration:
+
    ```json
    "Swagger": {
      "Enabled": true,
@@ -206,18 +215,20 @@ You can view the API documentation using Swagger UI:
    ```
 
 3. Set the PAYLOAD_KEY environment variable for decryption:
+
    ```bash
    export PAYLOAD_KEY="base64-encoded-rsa-private-key"
    ```
 
 4. Start the Hydrogen server:
+
    ```bash
    cd ..
    make run
    ```
 
 5. Access SwaggerUI in your browser:
-   - Default URL: http://localhost:8080/swagger/
+   - Default URL: <http://localhost:8080/swagger/>
    - The UI will automatically load the API specification
    - Try out endpoints directly from the interface
 

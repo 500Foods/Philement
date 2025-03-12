@@ -78,6 +78,7 @@ The Print Queue uses a priority-based system where lower numbers indicate higher
 ## Common Configurations
 
 ### Basic Development Setup
+
 ```json
 {
     "PrintQueue": {
@@ -98,6 +99,7 @@ The Print Queue uses a priority-based system where lower numbers indicate higher
 ```
 
 ### Production Setup
+
 ```json
 {
     "PrintQueue": {
@@ -122,6 +124,7 @@ The Print Queue uses a priority-based system where lower numbers indicate higher
 ```
 
 ### High-Performance Setup
+
 ```json
 {
     "PrintQueue": {
@@ -161,6 +164,7 @@ You can use environment variables for any setting:
 ```
 
 Common environment variable configurations:
+
 ```bash
 # Development
 export HYDROGEN_QUEUE_ENABLED=true
@@ -234,7 +238,8 @@ The Print Queue system provides several management features:
 
 ### Diagnostic Steps
 
-1. Enable debug logging:
+#### Enable debug logging
+
 ```json
 {
     "PrintQueue": {
@@ -243,12 +248,14 @@ The Print Queue system provides several management features:
 }
 ```
 
-2. Monitor queue status:
+#### Monitor queue status
+
 ```bash
 curl http://your-printer:5000/api/queue/status
 ```
 
-3. Check queue metrics:
+#### Check queue metrics
+
 ```bash
 curl http://your-printer:5000/api/queue/metrics
 ```

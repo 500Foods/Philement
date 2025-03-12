@@ -20,6 +20,7 @@ This guide provides detailed instructions for setting up Hydrogen in a home work
 ### Local Network Access
 
 1. **Enable mDNS Discovery**
+
    ```json
    {
      "mDNS": {
@@ -37,6 +38,7 @@ This guide provides detailed instructions for setting up Hydrogen in a home work
 ### External Access
 
 1. **Reverse Proxy Setup (Using Nginx)**
+
    ```nginx
    server {
        listen 80;
@@ -62,6 +64,7 @@ This guide provides detailed instructions for setting up Hydrogen in a home work
 ### Configuration Backup
 
 1. **Essential Files**
+
    ```bash
    /etc/hydrogen/
    ├── hydrogen.json
@@ -70,6 +73,7 @@ This guide provides detailed instructions for setting up Hydrogen in a home work
    ```
 
 2. **Automated Backup Script**
+
    ```bash
    #!/bin/bash
    BACKUP_DIR="/backup/hydrogen"
@@ -86,7 +90,9 @@ This guide provides detailed instructions for setting up Hydrogen in a home work
    ```
 
 ### Print History Backup
+
 - Enable automatic backups in configuration:
+
   ```json
   {
     "Backup": {
@@ -103,6 +109,7 @@ This guide provides detailed instructions for setting up Hydrogen in a home work
 ### Email Notifications
 
 1. **Configure SMTP Settings**
+
    ```json
    {
      "Notifications": {
@@ -129,6 +136,7 @@ This guide provides detailed instructions for setting up Hydrogen in a home work
 ### Mobile Notifications
 
 1. **Configure Push Notifications**
+
    ```json
    {
      "Notifications": {
@@ -147,6 +155,7 @@ This guide provides detailed instructions for setting up Hydrogen in a home work
 ### System Health Checks
 
 1. **Enable Health Monitoring**
+
    ```json
    {
      "Monitoring": {
@@ -171,6 +180,7 @@ This guide provides detailed instructions for setting up Hydrogen in a home work
 ### Temperature Monitoring
 
 1. **Configure Temperature Alerts**
+
    ```json
    {
      "TemperatureMonitoring": {
@@ -188,6 +198,7 @@ This guide provides detailed instructions for setting up Hydrogen in a home work
 ## Maintenance
 
 ### Regular Tasks
+
 1. Check and update firmware
 2. Verify backup integrity
 3. Review log files
@@ -195,7 +206,9 @@ This guide provides detailed instructions for setting up Hydrogen in a home work
 5. Check physical connections
 
 ### Log Rotation
+
 Configure log rotation to manage disk space:
+
 ```json
 {
   "Logging": {
@@ -227,6 +240,7 @@ Configure log rotation to manage disk space:
    - Monitor network bandwidth
 
 ### Getting Help
+
 1. Check system logs
 2. Review [Configuration Guide](../../reference/configuration.md)
 3. Search existing issues

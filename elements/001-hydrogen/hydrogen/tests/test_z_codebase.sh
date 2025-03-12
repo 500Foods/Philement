@@ -6,9 +6,49 @@
 # 2. Runs 'make clean' for each Makefile found
 # 3. Analyzes source code files (.c, .h, .inc, .md) for line counts
 # 4. Lists non-source files > 10KB
+# 5. Performs linting on various file types
 #
 # Usage: ./test_z_codebase.sh
 #
+
+# Default exclude patterns for linting (can be overridden by .lintignore)
+LINT_EXCLUDES=(
+    "build/*"
+    "build_debug/*"
+    "build_perf/*"
+    "build_release/*"
+    "build_valgrind/*"
+    "tests/logs/*"
+    "tests/results/*"
+    "tests/diagnostics/*"
+)
+
+# Function to check if a file should be excluded from linting
+should_exclude() {
+    local file="$1"
+    local lint_ignore="$HYDROGEN_DIR/.lintignore"
+    
+    # Check .lintignore file first if it exists
+    if [ -f "$lint_ignore" ]; then
+        while IFS= read -r pattern; do
+            # Skip empty lines and comments
+            [[ -z "$pattern" || "$pattern" == \#* ]] && continue
+            # Handle both exact matches and glob patterns
+            if [[ "$file" == $pattern || "$file" == */$pattern ]]; then
+                return 0 # Exclude
+            fi
+        done < "$lint_ignore"
+    fi
+    
+    # Check default excludes
+    for pattern in "${LINT_EXCLUDES[@]}"; do
+        if [[ "$file" == *"$pattern"* ]]; then
+            return 0 # Exclude
+        fi
+    done
+    
+    return 1 # Do not exclude
+}
 
 # Get the directory where this script is located and set up paths
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -341,9 +381,298 @@ list_large_files() {
     return 0
 }
 
-# ====================================================================
-# STEP 4: Run Tests
-# ====================================================================
+# Function to run linting tests
+run_linting_tests() {
+    print_header "5. Running Linting Tests" | tee -a "$RESULT_LOG"
+    local lint_result=0
+    local lint_temp_log=$(mktemp)
+
+    # Function to display limited error output
+    display_limited_output() {
+        local output_file="$1"
+        local total_lines=$(wc -l < "$output_file")
+        if [ $total_lines -gt 100 ]; then
+            head -n 100 "$output_file" | tee -a "$RESULT_LOG"
+            print_warning "Output truncated. Showing 100 of $total_lines lines." | tee -a "$RESULT_LOG"
+        else
+            cat "$output_file" | tee -a "$RESULT_LOG"
+        fi
+    }
+
+    # C/H/Inc files with cppcheck
+    print_info "Linting C/H/Inc files with cppcheck..." | tee -a "$RESULT_LOG"
+    local cppcheck_fails=0
+    local cppcheck_temp=$(mktemp)
+    local c_file_count=0
+    while read -r file; do
+        if ! should_exclude "$file"; then
+            ((c_file_count++))
+            # Capture cppcheck output and errors
+            if ! cppcheck --enable=all --quiet --inline-suppr --template="{file}:{line}:{column}: {severity}: {message} ({id})" "$file" 2>> "$cppcheck_temp"; then
+                cppcheck_fails=1
+            fi
+        fi
+    done < <(find "$HYDROGEN_DIR" -type f \( -name "*.c" -o -name "*.h" -o -name "*.inc" \))
+    # Count total cppcheck issues and display them
+    if [ -s "$cppcheck_temp" ]; then
+        local issue_count=$(wc -l < "$cppcheck_temp")
+        cppcheck_fails=$issue_count
+        print_warning "cppcheck found $issue_count issues in $c_file_count files:" | tee -a "$RESULT_LOG"
+        display_limited_output "$cppcheck_temp"
+        lint_result=1
+    else
+        print_info "No cppcheck issues found in $c_file_count files" | tee -a "$RESULT_LOG"
+    fi
+    rm -f "$cppcheck_temp"
+    > "$lint_temp_log"  # Clear log for next linter
+    
+    # Add cppcheck results
+    TEST_NAMES+=("Lint C/H/Inc Files")
+    TEST_RESULTS+=($([[ $cppcheck_fails -eq 0 ]] && echo 0 || echo 1))
+    if [ $cppcheck_fails -eq 0 ]; then
+        TEST_DETAILS+=("No issues found in $c_file_count files")
+    else
+        TEST_DETAILS+=("Found $cppcheck_fails issues in $c_file_count files")
+    fi
+
+    # Markdown files with markdownlint
+    print_info "Linting Markdown files with markdownlint..." | tee -a "$RESULT_LOG"
+    local md_fails=0
+    local md_temp=$(mktemp)
+    local md_file_count=0
+    while read -r file; do
+        if ! should_exclude "$file"; then
+            ((md_file_count++))
+            if ! markdownlint --config "$HYDROGEN_DIR/.lintignore-markdown" "$file" 2> "$md_temp"; then
+                # Count each line as a separate issue
+                local issue_count=$(wc -l < "$md_temp")
+                md_fails=$((md_fails + issue_count))
+                cat "$md_temp" >> "$lint_temp_log"
+            fi
+        fi
+    done < <(find "$HYDROGEN_DIR" -type f -name "*.md")
+    rm -f "$md_temp"
+    
+    if [ -s "$lint_temp_log" ]; then
+        print_warning "markdownlint found $md_fails issues in $md_file_count files:" | tee -a "$RESULT_LOG"
+        display_limited_output "$lint_temp_log"
+        lint_result=1
+    else
+        print_info "No markdownlint issues found in $md_file_count files" | tee -a "$RESULT_LOG"
+    fi
+    > "$lint_temp_log"  # Clear log for next linter
+
+    # Add markdownlint results
+    TEST_NAMES+=("Lint Markdown Files")
+    TEST_RESULTS+=($([[ $md_fails -eq 0 ]] && echo 0 || echo 1))
+    if [ $md_fails -eq 0 ]; then
+        TEST_DETAILS+=("No issues found in $md_file_count files")
+    else
+        TEST_DETAILS+=("Found $md_fails issues in $md_file_count files")
+    fi
+
+    # JSON files with jsonlint
+    print_info "Linting JSON files with jsonlint..." | tee -a "$RESULT_LOG"
+    local json_fails=0
+    local json_count=0
+    while read -r file; do
+        if ! should_exclude "$file"; then
+            ((json_count++))
+            # Create a temporary file for this specific JSON file's errors
+            local json_error_log=$(mktemp)
+            if ! jsonlint -q "$file" 2> "$json_error_log"; then
+                json_fails=$((json_fails + 1))
+                # Get just the first 4 lines of the error
+                local rel_path=$(convert_to_relative_path "$file")
+                rel_path=${rel_path#hydrogen/}
+                print_warning "JSON error in file: $rel_path" >> "$lint_temp_log"
+                head -n 4 "$json_error_log" >> "$lint_temp_log"
+                echo "" >> "$lint_temp_log"  # Add blank line between errors
+            fi
+            rm -f "$json_error_log"
+        fi
+    done < <(find "$HYDROGEN_DIR" -type f -name "*.json")
+    
+    if [ $json_count -eq 0 ]; then
+        print_warning "No JSON files found to lint" | tee -a "$RESULT_LOG"
+    elif [ -s "$lint_temp_log" ]; then
+        print_warning "jsonlint found $json_fails issues in $json_count files:" | tee -a "$RESULT_LOG"
+        display_limited_output "$lint_temp_log"
+        lint_result=1
+    else
+        print_info "No jsonlint issues found in $json_count files" | tee -a "$RESULT_LOG"
+    fi
+    > "$lint_temp_log"  # Clear log for next linter
+    
+    # Add jsonlint results
+    TEST_NAMES+=("Lint JSON Files")
+    TEST_RESULTS+=($([[ $json_fails -eq 0 ]] && echo 0 || echo 1))
+    if [ $json_count -eq 0 ]; then
+        TEST_DETAILS+=("No files found to lint")
+    elif [ $json_fails -eq 0 ]; then
+        TEST_DETAILS+=("No issues found in $json_count files")
+    else
+        TEST_DETAILS+=("Found $json_fails issues in $json_count files")
+    fi
+
+    # JavaScript files with eslint
+    print_info "Linting JavaScript files with eslint..." | tee -a "$RESULT_LOG"
+    local js_fails=0
+    local js_count=0
+    while read -r file; do
+        if ! should_exclude "$file"; then
+            ((js_count++))
+            if ! eslint --quiet "$file" 2>> "$lint_temp_log"; then
+                js_fails=$((js_fails + 1))
+            fi
+        fi
+    done < <(find "$HYDROGEN_DIR" -type f -name "*.js" -o -name "*.jsx" -o -name "*.ts" -o -name "*.tsx")
+    
+    if [ $js_count -eq 0 ]; then
+        print_warning "No JavaScript files found to lint (this is expected for now)" | tee -a "$RESULT_LOG"
+    elif [ -s "$lint_temp_log" ]; then
+        print_warning "eslint found $js_fails issues in $js_count files:" | tee -a "$RESULT_LOG"
+        display_limited_output "$lint_temp_log"
+        lint_result=1
+    else
+        print_info "No eslint issues found in $js_count files" | tee -a "$RESULT_LOG"
+    fi
+    > "$lint_temp_log"  # Clear log for next linter
+    
+    # Add eslint results
+    TEST_NAMES+=("Lint JavaScript Files")
+    TEST_RESULTS+=($([[ $js_fails -eq 0 ]] && echo 0 || echo 1))
+    if [ $js_count -eq 0 ]; then
+        TEST_DETAILS+=("No files found to lint (expected)")
+    elif [ $js_fails -eq 0 ]; then
+        TEST_DETAILS+=("No issues found in $js_count files")
+    else
+        TEST_DETAILS+=("Found $js_fails issues in $js_count files")
+    fi
+
+    # CSS files with stylelint
+    print_info "Linting CSS files with stylelint..." | tee -a "$RESULT_LOG"
+    local css_fails=0
+    local css_count=0
+    while read -r file; do
+        if ! should_exclude "$file"; then
+            ((css_count++))
+            if ! stylelint "$file" 2>> "$lint_temp_log"; then
+                css_fails=$((css_fails + 1))
+            fi
+        fi
+    done < <(find "$HYDROGEN_DIR" -type f -name "*.css" -o -name "*.scss" -o -name "*.sass")
+    
+    if [ $css_count -eq 0 ]; then
+        print_warning "No CSS files found to lint (this is expected for now)" | tee -a "$RESULT_LOG"
+    elif [ -s "$lint_temp_log" ]; then
+        print_warning "stylelint found $css_fails issues in $css_count files:" | tee -a "$RESULT_LOG"
+        display_limited_output "$lint_temp_log"
+        lint_result=1
+    else
+        print_info "No stylelint issues found in $css_count files" | tee -a "$RESULT_LOG"
+    fi
+    > "$lint_temp_log"  # Clear log for next linter
+    
+    # Add stylelint results
+    TEST_NAMES+=("Lint CSS Files")
+    TEST_RESULTS+=($([[ $css_fails -eq 0 ]] && echo 0 || echo 1))
+    if [ $css_count -eq 0 ]; then
+        TEST_DETAILS+=("No files found to lint (expected)")
+    elif [ $css_fails -eq 0 ]; then
+        TEST_DETAILS+=("No issues found in $css_count files")
+    else
+        TEST_DETAILS+=("Found $css_fails issues in $css_count files")
+    fi
+
+    # HTML files with htmlhint
+    print_info "Linting HTML files with htmlhint..." | tee -a "$RESULT_LOG"
+    local html_fails=0
+    local html_count=0
+    while read -r file; do
+        if ! should_exclude "$file"; then
+            ((html_count++))
+            if ! htmlhint "$file" 2>> "$lint_temp_log"; then
+                html_fails=$((html_fails + 1))
+            fi
+        fi
+    done < <(find "$HYDROGEN_DIR" -type f -name "*.html" -o -name "*.htm")
+    
+    if [ $html_count -eq 0 ]; then
+        print_warning "No HTML files found to lint (this is expected for now)" | tee -a "$RESULT_LOG"
+    elif [ -s "$lint_temp_log" ]; then
+        print_warning "htmlhint found $html_fails issues in $html_count files:" | tee -a "$RESULT_LOG"
+        display_limited_output "$lint_temp_log"
+        lint_result=1
+    else
+        print_info "No htmlhint issues found in $html_count files" | tee -a "$RESULT_LOG"
+    fi
+    > "$lint_temp_log"  # Clear log for next linter
+    
+    # Add htmlhint results
+    TEST_NAMES+=("Lint HTML Files")
+    TEST_RESULTS+=($([[ $html_fails -eq 0 ]] && echo 0 || echo 1))
+    if [ $html_count -eq 0 ]; then
+        TEST_DETAILS+=("No files found to lint (expected)")
+    elif [ $html_fails -eq 0 ]; then
+        TEST_DETAILS+=("No issues found in $html_count files")
+    else
+        TEST_DETAILS+=("Found $html_fails issues in $html_count files")
+    fi
+
+    # Run cloc analysis
+    print_header "6. Running Code Line Count Analysis" | tee -a "$RESULT_LOG"
+    print_info "Analyzing code lines by language..." | tee -a "$RESULT_LOG"
+    
+    # Create temporary file for cloc output
+    local cloc_output=$(mktemp)
+    
+    # Save current directory
+    local start_dir=$(pwd)
+    
+    # Change to project root directory
+    cd "$HYDROGEN_DIR" || {
+        print_warning "Failed to change to project directory for cloc analysis" | tee -a "$RESULT_LOG"
+        TEST_NAMES+=("Code Line Count Analysis")
+        TEST_RESULTS+=(1)
+        TEST_DETAILS+=("Failed to analyze code lines - directory access error")
+        return $lint_result
+    }
+    
+    # Run cloc with specific locale settings to ensure consistent output
+    if env LC_ALL=en_US.UTF_8 LC_TIME= LC_ALL= LANG= LANGUAGE= cloc . --quiet > "$cloc_output" 2>&1; then
+        # Display cloc output without the banner
+        tail -n +2 "$cloc_output" | tee -a "$RESULT_LOG"
+        
+        # Extract summary statistics
+        local total_files=$(grep "SUM:" "$cloc_output" | awk '{print $2}')
+        local total_blank=$(grep "SUM:" "$cloc_output" | awk '{print $3}')
+        local total_comment=$(grep "SUM:" "$cloc_output" | awk '{print $4}')
+        local total_code=$(grep "SUM:" "$cloc_output" | awk '{print $5}')
+        
+        # Add to test results
+        TEST_NAMES+=("Code Line Count Analysis")
+        TEST_RESULTS+=(0)
+        TEST_DETAILS+=("Found $total_files files with $total_code lines of code ($total_blank blank, $total_comment comment)")
+    else
+        print_warning "Failed to run cloc analysis" | tee -a "$RESULT_LOG"
+        TEST_NAMES+=("Code Line Count Analysis")
+        TEST_RESULTS+=(1)
+        TEST_DETAILS+=("Failed to analyze code lines")
+    fi
+    
+    rm -f "$cloc_output"
+    
+    # Return to start directory
+    cd "$start_dir" || {
+        print_warning "Failed to return to start directory after cloc analysis" | tee -a "$RESULT_LOG"
+    }
+    
+    # Cleanup
+    rm -f "$lint_temp_log"
+    
+    return $lint_result
+}
 
 # Function to run all test cases
 run_tests() {
@@ -351,6 +680,7 @@ run_tests() {
     run_make_clean
     analyze_source_files
     list_large_files
+    run_linting_tests
     return $TEST_RESULT
 }
 

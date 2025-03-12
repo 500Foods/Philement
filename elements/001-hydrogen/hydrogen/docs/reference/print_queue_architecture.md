@@ -16,7 +16,7 @@ The Print Queue is a core component of Hydrogen responsible for managing 3D prin
 
 The Print Queue follows a modular design pattern with clear separation of concerns:
 
-```
+```diagram
 ┌───────────────────────┐
 │   Print Queue Manager │
 │  ┌─────────────────┐  │
@@ -46,18 +46,18 @@ The Print Queue follows a modular design pattern with clear separation of concer
 
 The Print Queue maintains a strict data flow to ensure thread safety and system integrity:
 
-```
+```diagram
 ┌─────────────┐         ┌───────────────┐         ┌─────────────┐
 │  REST API   │         │ Print Queue   │         │   Printer   │
 │  Endpoints  │◄────────┤   Manager     ├────────►│   Control   │
-└─────────────┘         └───────┬───────┘         └─────────────┘
+└─────────────┘         └──────┬────────┘         └─────────────┘
                                │
                         ┌──────▼──────┐
                         │  Internal   │
                         │   Queue     │
                         └──────┬──────┘
                                │
-┌─────────────┐         ┌─────▼──────┐         ┌─────────────┐
+┌─────────────┐         ┌──────▼─────┐         ┌─────────────┐
 │  WebSocket  │         │  State     │         │    File     │
 │  Updates    │◄────────┤  Updates   ├────────►│   Storage   │
 └─────────────┘         └────────────┘         └─────────────┘
@@ -67,12 +67,12 @@ The Print Queue maintains a strict data flow to ensure thread safety and system 
    - Job submission via REST API
    - Control commands via WebSocket API
    - File uploads via HTTP handlers
-   
+
 2. **Processing Operations**:
    - State transitions through the state machine
    - G-code analysis via Beryllium
    - Resource allocation decisions
-   
+
 3. **Output Operations**:
    - Print commands to printer control systems
    - Status updates to WebSocket clients
@@ -82,12 +82,12 @@ The Print Queue maintains a strict data flow to ensure thread safety and system 
 
 Print jobs follow a well-defined state machine that ensures clear status tracking:
 
-```
-                         ┌──────────┐
-                         │ Uploaded │
-                         └────┬─────┘
-                              │
-                              ▼
+```diagram
+                        ┌──────────┐
+                        │ Uploaded │
+                        └────┬─────┘
+                             │
+                             ▼
 ┌──────────┐           ┌───────────┐           ┌─────────┐
 │  Failed  │◄──────────┤  Queued   ├──────────►│ Paused  │
 └──────────┘           └─────┬─────┘           └────┬────┘
@@ -109,6 +109,7 @@ Print jobs follow a well-defined state machine that ensures clear status trackin
 ```
 
 Each state transition triggers specific actions:
+
 - **Uploaded → Queued**: Job validation and queue positioning
 - **Queued → Preparing**: Resource allocation and printer preparation
 - **Preparing → Printing**: Printer connection and initial commands
@@ -178,7 +179,7 @@ The Print Queue behavior can be extensively customized through configuration:
 
 The Print Queue integrates with Beryllium (G-code analyzer) for intelligent job processing:
 
-```
+```diagram
 ┌───────────────┐                  ┌───────────────┐
 │  Print Queue  │                  │   Beryllium   │
 │   Manager     │                  │   Analyzer    │
@@ -196,13 +197,14 @@ The Print Queue integrates with Beryllium (G-code analyzer) for intelligent job 
         │ 4. Parameter Data                │
         │◄─────────────────────────────────┤
         │                                  │
-┌───────▼───────┐                  ┌───────▼───────┐
-│  Queue Entry  │                  │  File Cache   │
-│  With Metadata│                  │               │
-└───────────────┘                  └───────────────┘
+┌───────▼────────┐                 ┌───────▼───────┐
+│  Queue Entry   │                 │  File Cache   │
+│  With Metadata │                 │               │
+└────────────────┘                 └───────────────┘
 ```
 
 Beryllium provides the Print Queue with:
+
 - Estimated print time
 - Material usage calculations
 - Print parameter settings
@@ -248,18 +250,18 @@ The Print Queue exposes both REST and WebSocket interfaces:
 
 The Print Queue implements a sophisticated concurrency model:
 
-```
+```diagram
 ┌───────────────────────────────────────────────────┐
 │ Print Queue Manager Thread                        │
 │                                                   │
-│  ┌─────────────────┐      ┌─────────────────┐    │
-│  │ Command Handler │      │  Event Emitter  │    │
-│  └────────┬────────┘      └────────▲────────┘    │
-│           │                        │             │
-│           ▼                        │             │
-│  ┌─────────────────────────────────────────┐     │
-│  │            Work Queue                   │     │
-│  └─────────────────────────────────────────┘     │
+│  ┌─────────────────┐      ┌─────────────────┐     │
+│  │ Command Handler │      │  Event Emitter  │     │
+│  └────────┬────────┘      └────────▲────────┘     │
+│           │                        │              │
+│           ▼                        │              │
+│  ┌─────────────────────────────────────────┐      │
+│  │            Work Queue                   │      │
+│  └─────────────────────────────────────────┘      │
 │                                                   │
 └───────────────────────────────────────────────────┘
                      │
@@ -275,6 +277,7 @@ The Print Queue implements a sophisticated concurrency model:
 ```
 
 Key aspects of this model:
+
 - Main thread handles queue operations and event propagation
 - Worker threads manage individual printer connections
 - Thread pools scale based on connected printer count
