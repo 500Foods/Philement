@@ -107,6 +107,7 @@ docker run -p 8080:8080 hydrogen
 ## Development Tips
 
 - For development and debugging, you can add additional development tools:
+
   ```dockerfile
   RUN apk add --no-cache \
       gdb \
@@ -114,12 +115,14 @@ docker run -p 8080:8080 hydrogen
   ```
 
 - To use the debug build:
+
   ```dockerfile
   RUN make debug
   CMD ["./hydrogen_debug"]
   ```
 
 - For Valgrind testing:
+
   ```dockerfile
   RUN make valgrind
   CMD ["valgrind", "./hydrogen_valgrind"]

@@ -159,4 +159,3 @@ This guide will help you get Hydrogen up and running quickly with a basic config
 
 - [Home Workshop Setup](./use-cases/home-workshop.md)
 - [Print Farm Configuration](./use-cases/print-farm.md)
-

@@ -5,11 +5,13 @@ This document outlines the C programming guidelines and patterns used in the Hyd
 ## Project Structure
 
 ### Header Files
+
 - Each `.c` file should have a corresponding `.h` file (except for main program files)
 - Use header guards in all header files
 - Keep interface declarations in headers, implementations in source files
 
 Example header guard:
+
 ```c
 #ifndef HYDROGEN_COMPONENT_H
 #define HYDROGEN_COMPONENT_H
@@ -22,6 +24,7 @@ Example header guard:
 ## Required Feature Test Macros
 
 At the start of source files that use POSIX features:
+
 ```c
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
@@ -32,6 +35,7 @@ These must come before any includes.
 ## Standard Library Usage
 
 ### Common Standard Headers
+
 ```c
 #include <signal.h>    // Signal handling
 #include <pthread.h>   // POSIX threading
@@ -44,6 +48,7 @@ These must come before any includes.
 ```
 
 ### Project-Specific Headers
+
 ```c
 #include "logging.h"   // Logging functions
 #include "state.h"     // State management
@@ -58,6 +63,7 @@ These must come before any includes.
 4. Clean up resources on error paths
 
 Example:
+
 ```c
 if (operation_failed) {
     log_this("Component", "Operation failed: specific reason", 3, true, false, true);
@@ -74,6 +80,7 @@ if (operation_failed) {
 4. Follow consistent locking order to prevent deadlocks
 
 Example:
+
 ```c
 pthread_mutex_lock(&resource_mutex);
 // Access shared resource
@@ -83,11 +90,13 @@ pthread_mutex_unlock(&resource_mutex);
 ## Logging Conventions
 
 Use the project's logging system with appropriate severity levels:
+
 ```c
 log_this("Component", "Message", severity, to_console, to_file, to_websocket);
 ```
 
 Severity levels for logging in code:
+
 - 1: INFO - General operational information, startup messages, and normal operations
 - 2: WARN - Warning conditions that don't prevent operation but require attention
 - 3: DEBUG - Detailed debug-level information for troubleshooting
@@ -97,11 +106,13 @@ Severity levels for logging in code:
 IMPORTANT: The values 0 (ALL) and 6 (NONE) are special values used only for log filtering in configuration files. They must never be used in log_this() calls. Many existing calls using level 0 should be changed to level 1 (INFO).
 
 Default log filtering by output:
+
 - Console: Level 1 (INFO) and above
 - Database: Level 4 (ERROR) and above
 - File: Level 1 (INFO) and above
 
 Example of correct usage:
+
 ```c
 // Correct: Startup/operational info uses INFO level
 log_this("WebServer", "Server started on port 5000", 1, true, true, true);
@@ -123,6 +134,7 @@ log_this("Initialization", "Failed to load configuration", 5, true, true, true);
 ```
 
 Example:
+
 ```c
 // Correct usage for operational info
 log_this("WebServer", "Server started on port 5000", 1, true, true, false);
@@ -142,6 +154,7 @@ log_this("WebSocket", "Failed to establish connection", 4, true, true, false);
 4. Consider using static allocation for fixed-size resources
 
 Example:
+
 ```c
 void* ptr = malloc(size);
 if (!ptr) {
@@ -154,12 +167,14 @@ if (!ptr) {
 
 ### JSON Output Formatting
 
-1. **Percentage Values**
-   - Format all percentage values as strings with exactly 3 decimal places
-   - This applies to all metrics that represent percentages (CPU usage, memory usage, etc.)
-   - Use consistent formatting across all JSON responses for API consistency
-   
+#### Percentage Values
+
+- Format all percentage values as strings with exactly 3 decimal places
+- This applies to all metrics that represent percentages (CPU usage, memory usage, etc.)
+- Use consistent formatting across all JSON responses for API consistency
+
 Example:
+
 ```c
 // Correct percentage formatting
 char percent_str[16];
@@ -168,15 +183,17 @@ json_object_set_new(obj, "usage_percent", json_string(percent_str));
 ```
 
 Why This Matters:
+
 - Ensures consistent precision across all percentage metrics
 - Maintains API compatibility and predictability
 - Allows accurate tracking of small changes in resource usage
 - Prevents floating-point representation issues in JSON
 
-2. **Numeric Values**
-   - Use integers for byte counts and absolute values
-   - Use strings for formatted durations and timestamps
-   - Document any special formatting requirements in the relevant function
+#### Numeric Values
+
+- Use integers for byte counts and absolute values
+- Use strings for formatted durations and timestamps
+- Document any special formatting requirements in the relevant function
 
 ## Code Documentation
 
@@ -189,6 +206,7 @@ Why This Matters:
    - Error conditions
 
 Example:
+
 ```c
 /*
  * Why This Architecture Matters:
@@ -205,6 +223,7 @@ Example:
 ## Build System
 
 The project uses Make for building. Key targets:
+
 - `make` - Build the project
 - `make debug` - Build with debug symbols
 - `make clean` - Clean build artifacts
@@ -215,7 +234,8 @@ The project uses Make for building. Key targets:
 ### Directory Structure
 
 Documentation is organized into three main categories:
-```
+
+```files
 docs/
 ├── reference/          # Technical reference documentation
 │   ├── api.md         # API specifications

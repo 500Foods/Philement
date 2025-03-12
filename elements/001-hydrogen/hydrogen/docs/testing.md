@@ -20,12 +20,14 @@ The current testing system provides validation at two key levels:
 2. **Startup/Shutdown Testing** - Validates successful initialization and termination of the system
 
 The compilation testing is a critical first step because it:
+
 - Ensures code quality through strict compiler warnings
 - Verifies all build variants work correctly (standard, debug, valgrind)
-- Confirms OIDC client examples build successfully 
+- Confirms OIDC client examples build successfully
 - Prevents downstream issues from broken compilation
 
 The startup/shutdown testing is essential because:
+
 - It verifies that all components initialize and terminate properly
 - It ensures resources are correctly allocated and released
 - It confirms that interdependent subsystems interact correctly
@@ -190,7 +192,7 @@ After running a test, examine the generated logs for these key indicators:
 
 Key log patterns to look for:
 
-```
+```log
 [Initialization] Application started         # Successful startup
 [Initialization] WebServer initialized       # Component startup success
 [Shutdown] Initiating WebServer shutdown     # Orderly shutdown begins
@@ -200,7 +202,7 @@ Key log patterns to look for:
 
 Warning signs to investigate:
 
-```
+```log
 [Initialization] Failed to initialize...     # Startup failure
 [Shutdown] Some threads did not exit cleanly # Shutdown issue
 [Shutdown] ... thread(s) still active        # Resource leak

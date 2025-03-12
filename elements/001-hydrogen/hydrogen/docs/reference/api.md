@@ -26,6 +26,7 @@ curl http://localhost:5000/api/system/health
 **Content-Type:** application/json
 
 Response example:
+
 ```json
 {
     "status": "Yes, I'm alive, thanks!"
@@ -45,6 +46,7 @@ curl http://localhost:5000/api/version
 **Content-Type:** application/json
 
 Response example:
+
 ```json
 {
     "api": "0.1",
@@ -68,6 +70,7 @@ curl http://localhost:5000/api/queue/status
 **Content-Type:** application/json
 
 Response example:
+
 ```json
 {
     "active_jobs": 1,
@@ -105,6 +108,7 @@ curl -X POST -H "Content-Type: application/json" \
 **Content-Type:** application/json
 
 Request body:
+
 ```json
 {
     "filename": "part.gcode",
@@ -129,6 +133,7 @@ curl -X PUT -H "Content-Type: application/json" \
 **Content-Type:** application/json
 
 Request body:
+
 ```json
 {
     "job_id": "job_124",

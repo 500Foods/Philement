@@ -13,6 +13,7 @@ For complete configuration options including IPv6 support and logging settings, 
 ## Status Updates
 
 The WebSocket server provides real-time status information including:
+
 - Server uptime
 - Active connections
 - Total connections
@@ -82,6 +83,7 @@ Error responses follow this format:
 ```
 
 Common error codes:
+
 - `auth_failed`: Authentication failure
 - `invalid_message`: Malformed message
 - `server_error`: Internal server error
@@ -101,6 +103,7 @@ const ws = new WebSocket('ws://localhost:5001', 'hydrogen-protocol', {
 ## Additional Features
 
 More WebSocket features will be documented here as they are implemented, including:
+
 - Print job status updates
 - Temperature monitoring
 - Command interface
@@ -109,6 +112,7 @@ More WebSocket features will be documented here as they are implemented, includi
 ## Contributing
 
 When adding new WebSocket features:
+
 1. Document the message format
 2. Include connection examples
 3. Update security requirements if changed

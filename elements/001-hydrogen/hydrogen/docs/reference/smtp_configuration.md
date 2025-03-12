@@ -61,6 +61,7 @@ Each server in `OutboundServers` supports:
 ## Common Configurations
 
 ### Basic Development Setup
+
 ```json
 {
     "SMTPRelay": {
@@ -84,6 +85,7 @@ Each server in `OutboundServers` supports:
 ```
 
 ### Production Setup
+
 ```json
 {
     "SMTPRelay": {
@@ -116,6 +118,7 @@ Each server in `OutboundServers` supports:
 ```
 
 ### High-Availability Setup
+
 ```json
 {
     "SMTPRelay": {
@@ -167,6 +170,7 @@ You can use environment variables for sensitive settings:
 ```
 
 Common environment variable configurations:
+
 ```bash
 # Development
 export SMTP_HOST="localhost"
@@ -265,17 +269,20 @@ The SMTP Relay supports HTML email templates for:
 
 ### Diagnostic Steps
 
-1. Test SMTP connection:
+#### Test SMTP connection
+
 ```bash
 telnet smtp.example.com 587
 ```
 
-2. Check relay status:
+#### Check relay status
+
 ```bash
 curl http://your-printer:5000/api/smtp/status
 ```
 
-3. Monitor queue:
+#### Monitor queue
+
 ```bash
 curl http://your-printer:5000/api/smtp/queue
 ```

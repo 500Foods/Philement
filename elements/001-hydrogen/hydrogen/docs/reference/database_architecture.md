@@ -4,9 +4,9 @@ The Database subsystem provides a robust, multi-database management system with 
 
 ## System Overview
 
-```
+```diagram
 ┌───────────────────────────────────────────────────────────────┐
-│                     Database System                            │
+│                     Database System                           │
 │                                                               │
 │   ┌───────────────┐         ┌───────────────┐                 │
 │   │   Service     │         │   Database    │                 │
@@ -36,24 +36,28 @@ The Database subsystem provides a robust, multi-database management system with 
 ## Key Components
 
 ### Database Manager
+
 - Connection pool management
 - Worker thread coordination
 - Configuration handling
 - Error management
 
 ### Connection Pool
+
 - Connection lifecycle management
 - Connection reuse optimization
 - Pool size management
 - Health monitoring
 
 ### Worker Threads
+
 - Query execution
 - Transaction management
 - Resource cleanup
 - Error handling
 
 ### Database Instances
+
 - OIDC: Authentication and authorization data
 - Acuranzo: Application-specific data
 - Helium: System management data
@@ -185,18 +189,21 @@ Database Manager->Connection Pool: Return connection
 ## Integration Points
 
 ### Service Components
+
 - Query requests
 - Transaction management
 - Error handling
 - Connection lifecycle
 
-### Worker Threads
+### Worker Thread Handling
+
 - Query execution
 - Connection management
 - Resource allocation
 - Error handling
 
 ### Monitoring System
+
 - Connection metrics
 - Performance monitoring
 - Resource utilization

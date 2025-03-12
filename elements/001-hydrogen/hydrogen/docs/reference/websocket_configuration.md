@@ -42,6 +42,7 @@ Minimal configuration to enable WebSocket support:
 ## Common Configurations
 
 ### Basic Development Setup
+
 ```json
 {
     "WebSocket": {
@@ -54,6 +55,7 @@ Minimal configuration to enable WebSocket support:
 ```
 
 ### Production Setup
+
 ```json
 {
     "WebSocket": {
@@ -72,6 +74,7 @@ Minimal configuration to enable WebSocket support:
 ```
 
 ### High-Performance Setup
+
 ```json
 {
     "WebSocket": {
@@ -100,6 +103,7 @@ You can use environment variables for any setting:
 ```
 
 Common environment variable configurations:
+
 ```bash
 # Development
 export HYDROGEN_WS_PORT=8081
@@ -158,7 +162,8 @@ The WebSocket server handles several types of messages:
 
 ### Diagnostic Steps
 
-1. Enable debug logging:
+#### Enable debug logging
+
 ```json
 {
     "WebSocket": {
@@ -167,12 +172,14 @@ The WebSocket server handles several types of messages:
 }
 ```
 
-2. Check port availability:
+#### Check port availability
+
 ```bash
 netstat -tuln | grep 5001
 ```
 
-3. Monitor connections:
+#### Monitor connections
+
 ```bash
 netstat -an | grep 5001 | wc -l
 ```
@@ -180,6 +187,7 @@ netstat -an | grep 5001 | wc -l
 ## Client Integration
 
 Example JavaScript client connection:
+
 ```javascript
 const ws = new WebSocket('ws://your-printer:5001/websocket');
 

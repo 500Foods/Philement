@@ -4,9 +4,9 @@ The Terminal subsystem provides secure, web-based terminal access to the Hydroge
 
 ## System Overview
 
-```
+```diagram
 ┌───────────────────────────────────────────────────────────────┐
-│                     Terminal System                            │
+│                     Terminal System                           │
 │                                                               │
 │   ┌───────────────┐         ┌───────────────┐                 │
 │   │   xterm.js    │         │   Terminal    │                 │
@@ -25,24 +25,28 @@ The Terminal subsystem provides secure, web-based terminal access to the Hydroge
 ## Key Components
 
 ### Frontend (xterm.js)
+
 - Web-based terminal emulator
 - Full terminal feature support
 - Configurable appearance and behavior
 - WebSocket-based communication
 
 ### Terminal Server
+
 - Session management and lifecycle control
 - User authentication and authorization
 - Resource limits enforcement
 - Configuration handling
 
 ### PTY Manager
+
 - PTY session creation and management
 - Shell process spawning and control
 - Input/output stream handling
 - Resource cleanup
 
 ### WebSocket Integration
+
 - Bidirectional real-time communication
 - Binary data support for terminal I/O
 - Session persistence
@@ -151,18 +155,21 @@ Terminal Server->Client: Connection established
 ## Integration Points
 
 ### Web Server
+
 - Serves xterm.js frontend
 - Handles initial HTTP requests
 - Manages static assets
 - Processes WebSocket upgrades
 
 ### WebSocket Server
+
 - Maintains terminal sessions
 - Handles binary data transfer
 - Manages connection lifecycle
 - Provides error handling
 
 ### Authentication System
+
 - User verification
 - Session validation
 - Permission checking

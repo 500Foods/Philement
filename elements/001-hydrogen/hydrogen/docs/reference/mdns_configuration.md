@@ -56,6 +56,7 @@ Each service in the `Services` array can have:
 Hydrogen supports several standard service types:
 
 1. **HTTP Interface**:
+
    ```json
    {
        "Name": "Hydrogen_Web_Interface",
@@ -66,6 +67,7 @@ Hydrogen supports several standard service types:
    ```
 
 2. **OctoPrint Compatibility**:
+
    ```json
    {
        "Name": "Hydrogen_OctoPrint",
@@ -76,6 +78,7 @@ Hydrogen supports several standard service types:
    ```
 
 3. **WebSocket Updates**:
+
    ```json
    {
        "Name": "Hydrogen_WebSocket",
@@ -88,6 +91,7 @@ Hydrogen supports several standard service types:
 ## Common Configurations
 
 ### Basic Development Setup
+
 ```json
 {
     "mDNSServer": {
@@ -107,6 +111,7 @@ Hydrogen supports several standard service types:
 ```
 
 ### Production Setup
+
 ```json
 {
     "mDNSServer": {
@@ -143,6 +148,7 @@ Hydrogen supports several standard service types:
 ```
 
 ### Multiple Printer Setup
+
 ```json
 {
     "mDNSServer": {
@@ -175,6 +181,7 @@ You can use environment variables for any setting:
 ```
 
 Common environment variable configurations:
+
 ```bash
 # Development
 export HYDROGEN_DEVICE_ID="hydrogen-dev"
@@ -240,7 +247,8 @@ export HYDROGEN_FRIENDLY_NAME="Production Printer"
 
 ### Diagnostic Steps
 
-1. Enable debug logging:
+#### Enable debug logging
+
 ```json
 {
     "mDNSServer": {
@@ -249,7 +257,8 @@ export HYDROGEN_FRIENDLY_NAME="Production Printer"
 }
 ```
 
-2. Test service discovery:
+#### Test service discovery
+
 ```bash
 # Linux/macOS
 avahi-browse -ar
@@ -258,7 +267,8 @@ avahi-browse -ar
 dns-sd -B _http._tcp
 ```
 
-3. Verify service registration:
+#### Verify service registration
+
 ```bash
 dns-sd -L "Hydrogen_Web_Interface" _http._tcp local.
 ```
