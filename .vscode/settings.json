@@ -1,6 +1,7 @@
 {
   "markdownlint.config": {
     "MD033": false,
+    "MD047": false,
     "default": true
   },
   "C_Cpp.files.exclude": {

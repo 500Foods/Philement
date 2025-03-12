@@ -1,15 +1,11 @@
 # Hydrogen Linting Exclusions
+
 # This file contains patterns for files to exclude from linting checks.
 # Each line should contain one pattern. Empty lines and lines starting with # are ignored.
 # Patterns use bash glob syntax (same as .gitignore).
-#
-# Examples:
-# *.min.js        # Exclude all minified JavaScript files
-# vendor/*        # Exclude everything in the vendor directory
-# test_*.json     # Exclude test JSON files
-# !test_api.json  # Re-include a specific test JSON file
 
 # Build directories (these are also excluded by default in the test script)
+# A 'make clean' is also done in the codebase test prior to running lints
 build/*
 build_debug/*
 build_perf/*
@@ -22,13 +18,12 @@ tests/results/*
 tests/diagnostics/*
 
 # Configuration files for testing have one that deliberately has an 
-# error - to test the error-handling code at startup - so we exclude it here
+# error - to test the error-handling code at startup - so we exclude it here.
+# Note that there is a test that specifically checks for this error, so
+# if this is removed, that test will fail. As a fnunny side note, AI tools
+# like to correct the error in the file whenever they get a chance!
 tests/configs/hydrogen_test_json.json
 
 # The project contains C files that are snippet includes - not something that
 # can reallistically be linted on their own. Just standard jansson JSON though.
 src/config/config/*.inc
-
-# Example of excluding specific files that might need special handling
-src/config/config_defaults.c
-src/config/config_env.c
