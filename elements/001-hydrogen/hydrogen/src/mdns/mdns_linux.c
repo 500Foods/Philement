@@ -270,6 +270,14 @@ static uint8_t *write_dns_txt_record(uint8_t *ptr, const char *name, char **txt_
 
 static void _mdns_server_build_interface_announcement(uint8_t *packet, size_t *packet_len, const char *hostname, 
                                              const mdns_server_t *mdns_server, uint32_t ttl, const mdns_server_interface_t *iface) {
+    if (!iface) {
+        log_this("mDNSServer", "Warning: NULL interface passed to announcement builder", LOG_LEVEL_ALERT);
+        // Initialize header with zeros and return minimum packet
+        dns_header_t *header = (dns_header_t *)packet;
+        memset(header, 0, sizeof(dns_header_t));
+        *packet_len = sizeof(dns_header_t);
+        return;
+    }
     dns_header_t *header = (dns_header_t *)packet;
     header->id = 0;
     header->flags = htons(MDNS_FLAG_RESPONSE | MDNS_FLAG_AUTHORITATIVE);
@@ -344,6 +352,12 @@ void mdns_server_build_announcement(uint8_t *packet, size_t *packet_len, const c
                 break;
             }
         }
+    }
+
+    if (!matching_iface && mdns_server->num_interfaces > 0) {
+        // Fall back to the first available interface if no match found
+        log_this("mDNSServer", "No matching interface found, using first available", LOG_LEVEL_ALERT);
+        matching_iface = &mdns_server->interfaces[0];
     }
 
     // Use the interface-specific announcement builder

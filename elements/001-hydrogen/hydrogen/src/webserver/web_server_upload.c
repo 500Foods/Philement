@@ -333,9 +333,18 @@ char* extract_preview_image(const char* filename) {
         if (in_thumbnail && line[0] == ';') {
             size_t len = strlen(line);
             if (len > 2) {
-                image_data = realloc(image_data, image_size + len - 2);
-                memcpy(image_data + image_size, line + 2, len - 3);  // -3 to remove newline
-                image_size += len - 3;
+                char *temp = realloc(image_data, image_size + len - 2);
+                if (temp != NULL) {
+                    image_data = temp;
+                    memcpy(image_data + image_size, line + 2, len - 3);  // -3 to remove newline
+                    image_size += len - 3;
+                } else {
+                    // Realloc failed, free original memory to avoid leak
+                    free(image_data);
+                    image_data = NULL;
+                    log_this("WebServer", "Memory allocation failed during image extraction", LOG_LEVEL_DEBUG);
+                    break;
+                }
             }
         }
     }
@@ -343,10 +352,19 @@ char* extract_preview_image(const char* filename) {
     fclose(file);
 
     if (image_data) {
-        image_data = realloc(image_data, image_size + 1);
-        image_data[image_size] = '\0';
+        char *temp = realloc(image_data, image_size + 1);
+        if (temp != NULL) {
+            image_data = temp;
+            image_data[image_size] = '\0';
 
-        // Create a data URL
+            // Create a data URL
+        } else {
+            // Realloc failed, free original memory to avoid leak
+            free(image_data);
+            image_data = NULL;
+            log_this("WebServer", "Memory allocation failed during image finalization", LOG_LEVEL_DEBUG);
+            return NULL;
+        }
         char *data_url = malloc(image_size * 4 / 3 + 50); // Allocate enough space for the prefix and the base64 data
         sprintf(data_url, "data:image/png;base64,%s", image_data);
         free(image_data);

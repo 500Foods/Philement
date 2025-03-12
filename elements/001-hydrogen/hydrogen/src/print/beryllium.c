@@ -265,8 +265,8 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
             char *name_end = strchr(name_start, ' ');
             if (name_end) {
                 int name_length = name_end - name_start;
-                object_infos = realloc(object_infos, (num_objects + 1) * sizeof(ObjectInfo));
-                if (object_infos == NULL) {
+                ObjectInfo *temp = realloc(object_infos, (num_objects + 1) * sizeof(ObjectInfo));
+                if (temp == NULL) {
                     log_this("Beryllium", "Memory reallocation failed for object_infos", LOG_LEVEL_ERROR);
                     free(stats.object_times);
                     stats.object_times = NULL;
@@ -278,6 +278,7 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
                     stats.success = false;
                     return stats;
                 }
+                object_infos = temp;
                 object_infos[num_objects].name = strndup(name_start, name_length);
 	    //printf("Object defined: %s\n",object_infos[num_objects].name);
                 if (object_infos[num_objects].name == NULL) {

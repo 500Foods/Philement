@@ -117,21 +117,21 @@ OIDCAuthResult oidc_authenticate_user(OIDCUserContext *context,
  * 
  * @param context User context
  * @param username Username for new account
- * @param password Password for new account
  * @param email Email address for new account
- * @param full_name User's full name
- * @param role User's role
+ * @param password Password for new account
+ * @param given_name User's first name
+ * @param family_name User's last name
  * @return User ID if successful, NULL otherwise
  */
 char* oidc_create_user(OIDCUserContext *context,
                      const char *username,
-                     const char *password,
                      const char *email,
-                     const char *full_name,
-                     const char *role) {
+                     const char *password,
+                     const char *given_name,
+                     const char *family_name) {
     /* Mark unused parameters */
-    (void)full_name;
-    (void)role;
+    (void)given_name;
+    (void)family_name;
     
     if (!context || !username || !password || !email) {
         log_this("OIDC Users", "Invalid parameters for user creation", LOG_LEVEL_ERROR);

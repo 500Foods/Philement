@@ -249,11 +249,11 @@ static void get_process_memory(size_t *vmsize, size_t *vmrss, size_t *vmswap) {
     char line[256];  // Fixed size for /proc/self/status entries
     while (fgets(line, sizeof(line), status)) {
         if (strncmp(line, "VmSize:", 7) == 0) {
-            sscanf(line, "VmSize: %zu", vmsize);
+            sscanf(line, "VmSize: %20zu", vmsize);
         } else if (strncmp(line, "VmRSS:", 6) == 0) {
-            sscanf(line, "VmRSS: %zu", vmrss);
+            sscanf(line, "VmRSS: %20zu", vmrss);
         } else if (strncmp(line, "VmSwap:", 7) == 0) {
-            sscanf(line, "VmSwap: %zu", vmswap);
+            sscanf(line, "VmSwap: %20zu", vmswap);
         }
     }
     
@@ -345,7 +345,7 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
             if (strncmp(line, "cpu", 3) == 0) {
                 char cpu[32];  // CPU identifier buffer
                 long long user, nice, system_time, idle, iowait, irq, softirq, steal;
-                sscanf(line, "%s %lld %lld %lld %lld %lld %lld %lld %lld",
+                sscanf(line, "%31s %lld %lld %lld %lld %lld %lld %lld %lld",
                        cpu, &user, &nice, &system_time, &idle, &iowait, &irq, &softirq, &steal);
                 
                 // CPU usage is reported as a string with 3 decimal places for consistent precision

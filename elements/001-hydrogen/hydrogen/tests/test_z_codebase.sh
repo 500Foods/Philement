@@ -399,42 +399,55 @@ run_linting_tests() {
         fi
     }
 
-    # C/H/Inc files with cppcheck
-    print_info "Linting C/H/Inc files with cppcheck..." | tee -a "$RESULT_LOG"
+    # C files with support_cppcheck.sh
+    print_info "Linting C files with support_cppcheck.sh..." | tee -a "$RESULT_LOG"
     local cppcheck_fails=0
     local cppcheck_temp=$(mktemp)
     local c_file_count=0
-    while read -r file; do
-        if ! should_exclude "$file"; then
-            ((c_file_count++))
-            # Capture cppcheck output and errors
-            if ! cppcheck --enable=all --quiet --inline-suppr --template="{file}:{line}:{column}: {severity}: {message} ({id})" "$file" 2>> "$cppcheck_temp"; then
-                cppcheck_fails=1
-            fi
-        fi
-    done < <(find "$HYDROGEN_DIR" -type f \( -name "*.c" -o -name "*.h" -o -name "*.inc" \))
-    # Count total cppcheck issues and display them
-    if [ -s "$cppcheck_temp" ]; then
-        local issue_count=$(wc -l < "$cppcheck_temp")
+    
+    # Count all C files, excluding build directories and test artifacts
+    c_file_count=$(find "$HYDROGEN_DIR" -type f \( -name "*.c" -o -name "*.h" -o -name "*.inc" \) \
+        -not -path "*/build*/*" \
+        -not -path "*/tests/logs/*" \
+        -not -path "*/tests/results/*" \
+        -not -path "*/tests/diagnostics/*" | wc -l)
+    print_info "Found $c_file_count C files to check" | tee -a "$RESULT_LOG"
+    
+    # Run support_cppcheck.sh and capture output
+    local output
+    output=$("$SCRIPT_DIR/support_cppcheck.sh" "$HYDROGEN_DIR" 2>&1)
+    echo "$output" | tee -a "$RESULT_LOG"
+    
+    # Simply count the number of lines that represent issues
+    local issue_count=0
+    issue_count=$(echo "$output" | grep -v "^🛈" | grep -c "/" || echo 0)
+    # Make sure we have a clean integer
+    issue_count=$(echo "$issue_count" | tr -d '[:space:]')
+    
+    if [ "$issue_count" -gt 0 ]; then
         cppcheck_fails=$issue_count
-        print_warning "cppcheck found $issue_count issues in $c_file_count files:" | tee -a "$RESULT_LOG"
-        display_limited_output "$cppcheck_temp"
         lint_result=1
+        print_result 1 "cppcheck found $issue_count issues in $c_file_count files" | tee -a "$RESULT_LOG"
     else
         print_info "No cppcheck issues found in $c_file_count files" | tee -a "$RESULT_LOG"
+    fi
+
+    # Add cppcheck results
+    TEST_NAMES+=("Lint C Files")
+    if [ "$issue_count" -eq 0 ]; then
+        TEST_RESULTS+=(0)
+    else
+        TEST_RESULTS+=(1)
+    fi
+    if [ "$issue_count" -eq 0 ]; then
+        TEST_DETAILS+=("No issues found in $c_file_count files")
+    else
+        TEST_DETAILS+=("Found $issue_count issues in $c_file_count files")
     fi
     rm -f "$cppcheck_temp"
     > "$lint_temp_log"  # Clear log for next linter
     
-    # Add cppcheck results
-    TEST_NAMES+=("Lint C/H/Inc Files")
-    TEST_RESULTS+=($([[ $cppcheck_fails -eq 0 ]] && echo 0 || echo 1))
-    if [ $cppcheck_fails -eq 0 ]; then
-        TEST_DETAILS+=("No issues found in $c_file_count files")
-    else
-        TEST_DETAILS+=("Found $cppcheck_fails issues in $c_file_count files")
-    fi
-
+   
     # Markdown files with markdownlint
     print_info "Linting Markdown files with markdownlint..." | tee -a "$RESULT_LOG"
     local md_fails=0
