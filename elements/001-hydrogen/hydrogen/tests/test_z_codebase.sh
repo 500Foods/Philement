@@ -78,6 +78,68 @@ RESULT_LOG="$RESULTS_DIR/codebase_test_${TIMESTAMP}.log"
 start_test "$TEST_NAME" | tee "$RESULT_LOG"
 
 # ====================================================================
+# Display information about linting exclusions
+# ====================================================================
+
+# Function to extract and display linting exclusion summary
+display_linting_exclusions() {
+    print_header "Linting Exclusions Information" | tee -a "$RESULT_LOG"
+    print_info "NOTE: The linting tests include various exclusions that may impact results." | tee -a "$RESULT_LOG"
+    echo "" | tee -a "$RESULT_LOG"
+    
+    # Extract summaries from each lintignore file
+    local general_summary=""
+    local c_summary=""
+    local markdown_summary=""
+    
+    # Function to clean up summary text
+    clean_summary() {
+        # Remove SUMMARY line, trailing hash marks, and "Used by" lines
+        echo "$1" | grep -v "SUMMARY" | grep -v "Used by" | sed 's/^# /  /' | sed 's/#$//'
+    }
+    
+    # Extract summary from .lintignore if it exists
+    if [ -f "$HYDROGEN_DIR/.lintignore" ]; then
+        general_summary=$(grep -A 5 "SUMMARY" "$HYDROGEN_DIR/.lintignore" 2>/dev/null || echo "No summary found.")
+        if [ -z "$general_summary" ]; then
+            general_summary="Excludes build directories, test artifacts, certain test configs, and snippet includes."
+        fi
+    fi
+    
+    # Extract summary from .lintignore-c if it exists
+    if [ -f "$HYDROGEN_DIR/.lintignore-c" ]; then
+        c_summary=$(grep -A 6 "SUMMARY" "$HYDROGEN_DIR/.lintignore-c" 2>/dev/null || echo "No summary found.")
+        if [ -z "$c_summary" ]; then
+            c_summary="C specific linting suppressions and configuration options."
+        fi
+    fi
+    
+    # Extract summary from .lintignore-markdown if it exists
+    if [ -f "$HYDROGEN_DIR/.lintignore-markdown" ]; then
+        markdown_summary=$(grep -A 5 "SUMMARY" "$HYDROGEN_DIR/.lintignore-markdown" 2>/dev/null || echo "No summary found.")
+        if [ -z "$markdown_summary" ]; then
+            markdown_summary="Disables certain Markdown linting rules (line length, HTML tags, EOF newline)."
+        fi
+    fi
+    
+    # Display the summaries
+    print_info "General Linting Exclusions (.lintignore):" | tee -a "$RESULT_LOG"
+    clean_summary "$general_summary" | tee -a "$RESULT_LOG"
+    
+    print_info "C Linting Exclusions (.lintignore-c):" | tee -a "$RESULT_LOG"
+    clean_summary "$c_summary" | tee -a "$RESULT_LOG"
+    
+    print_info "Markdown Linting Exclusions (.lintignore-markdown):" | tee -a "$RESULT_LOG"
+    clean_summary "$markdown_summary" | tee -a "$RESULT_LOG"
+    
+    print_info "For more details, see tests/README.md and the respective .lintignore files." | tee -a "$RESULT_LOG"
+    echo "" | tee -a "$RESULT_LOG"
+}
+
+# Display linting exclusions information
+display_linting_exclusions
+
+# ====================================================================
 # STEP 2: Initialize test variables
 # ====================================================================
 
@@ -653,7 +715,7 @@ run_linting_tests() {
     }
     
     # Run cloc with specific locale settings to ensure consistent output
-    if env LC_ALL=en_US.UTF_8 LC_TIME= LC_ALL= LANG= LANGUAGE= cloc . --quiet > "$cloc_output" 2>&1; then
+    if env LC_ALL=en_US.UTF_8 LC_TIME= LC_ALL= LANG= LANGUAGE= cloc . --quiet --force-lang="C,inc" > "$cloc_output" 2>&1; then
         # Display cloc output without the banner
         tail -n +2 "$cloc_output" | tee -a "$RESULT_LOG"
         

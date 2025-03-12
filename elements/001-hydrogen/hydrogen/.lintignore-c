@@ -1,6 +1,15 @@
 # Cppcheck Configuration File (.lintignore-c)
 # This file contains settings and suppressions for cppcheck.
 # Lines starting with # are comments. Use key=value for settings or standalone commands for suppressions.
+#
+# SUMMARY: This configuration excludes several common C warning types from cppcheck, including:
+# - System include file warnings
+# - Variable scope/usage warnings (unusedVariable, variableScope)
+# - Const parameter/pointer warnings (constParameterCallback, constVariablePointer)
+# - Redundant condition/initialization warnings
+# - Null pointer and arithmetic checks
+#
+# Used by support_cppcheck.sh and test_z_codebase.sh for C code linting.
 
 # Enable specific checks
 enable=style,warning,performance,portability
