@@ -64,13 +64,13 @@ There are countless tools, frameworks, coding styles, conventions, languages, an
 [![Count Lines of Code](https://github.com/500Foods/Philement/actions/workflows/main.yml/badge.svg)](https://github.com/500Foods/Philement/actions/workflows/main.yml)
 <!--CLOC-START -->
 ```
-Last updated at 2025-03-12 02:18:33 UTC
+Last updated at 2025-03-12 04:53:14 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 C                              117           3823           4636          17000
-Markdown                       116           3235             29          13956
-Bourne Shell                    23           1097           1193           4242
+Markdown                       120           3608             29          14201
+Bourne Shell                    23           1131           1226           4505
 C/C++ Header                   108            952           4069           2333
 JSON                             5              0              0           1531
 HTML                             5            114             23            650
@@ -83,9 +83,9 @@ CSS                              2              3              2             38
 YAML                             2              8             13             37
 JavaScript                       1              3              0             25
 -------------------------------------------------------------------------------
-SUM:                           409           9586          11014          40874
+SUM:                           413           9993          11047          41382
 -------------------------------------------------------------------------------
-21 Files were skipped (duplicate, binary, or without source code):
+23 Files were skipped (duplicate, binary, or without source code):
   gitignore: 4
   jpg: 3
   png: 3
@@ -98,6 +98,8 @@ SUM:                           409           9586          11014          40874
   js: 1
   json: 1
   license: 1
+  lintignore-markdown: 1
+  lintignore: 1
 ```
 <!--CLOC-END-->
 
