@@ -224,7 +224,61 @@ These libraries are required for Hydrogen to run:
 - [jansson](https://github.com/akheron/jansson) - Efficient and memory-safe JSON parsing/generation
 - [microhttpd](https://www.gnu.org/software/libmicrohttpd/) - Lightweight embedded HTTP server
 - [libwebsockets](https://github.com/warmcat/libwebsockets) - Full-duplex WebSocket communication
-- [OpenSSL](https://www.openssl.org/) (libssl/libcrypto) - Industry-standard encryption and security
+- [OpenSSL](https://www.openssl.org/) (libssl/libcrypto) - Industry-standard encryption and .security
 - [libm](https://www.gnu.org/software/libc/manual/html_node/Mathematics.html) - Mathematical operations support
 - [libbrotlidec](https://github.com/google/brotli) - Brotli decompression library
 - [libtar](https://github.com/tklauser/libtar) - TAR file manipulation
+
+### Environment Variables
+
+Environment variables provide a flexible way to configure Hydrogen without modifying its configuration files. Any configuration value can be substituted with an environment variable using the `${env.VARIABLE_NAME}` syntax, making it easy to adapt settings across different environments. The following variables are used in the default configuration:
+
+**Configuration File Location:**
+
+- `HYDROGEN_CONFIG` - Override the default configuration file location
+
+**Server Settings:**
+
+- `PAYLOAD_KEY` - Key used for encrypting payload data
+
+**Database Connections:**
+For each database (Log, OIDC, Acuranzo, Helium, Canvas), the following variables are used:
+
+- `*_DB_HOST` - Database server hostname
+- `*_DB_PORT` - Database server port
+- `*_DB_NAME` - Database name
+- `*_DB_USER` - Database username
+- `*_DB_PASS` - Database password
+
+Example for Log database:
+
+- `LOG_DB_HOST` - Log database server hostname
+- `LOG_DB_PORT` - Log database server port
+- `LOG_DB_NAME` - Log database name
+- `LOG_DB_USER` - Log database username
+- `LOG_DB_PASS` - Log database password
+
+**Mail Relay Configuration:**
+For each SMTP server (up to 2 servers supported):
+
+- `SMTP_SERVER1_HOST` - Primary SMTP server hostname
+- `SMTP_SERVER1_PORT` - Primary SMTP server port
+- `SMTP_SERVER1_USER` - Primary SMTP server username
+- `SMTP_SERVER1_PASS` - Primary SMTP server password
+- `SMTP_SERVER2_*` - Same variables for secondary SMTP server
+
+To use these variables in the configuration file, use the format `${env.VARIABLE_NAME}`. For example:
+
+```json
+{
+    "Server": {
+        "PayloadKey": "${env.PAYLOAD_KEY}"
+    },
+    "Databases": {
+        "Log": {
+            "Host": "${env.LOG_DB_HOST}",
+            "Port": "${env.LOG_DB_PORT}"
+        }
+    }
+}
+```
