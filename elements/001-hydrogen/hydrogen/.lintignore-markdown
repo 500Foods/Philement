@@ -1,3 +1,10 @@
-# .markdownlintrc
+# .markdownlintrc - exclude these rules
+
+# Line lengths over 80 characters
 MD013: false
+
+# Injecting raw HTML tags
 MD033: false
+
+# Newline at the end of the file
+MD047: false
