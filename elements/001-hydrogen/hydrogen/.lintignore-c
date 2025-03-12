@@ -1,0 +1,39 @@
+# Cppcheck Configuration File (.lintignore-c)
+# This file contains settings and suppressions for cppcheck.
+# Lines starting with # are comments. Use key=value for settings or standalone commands for suppressions.
+
+# Enable specific checks
+enable=style,warning,performance,portability
+
+# Include paths (adjust these to your system)
+include=/usr/include
+include=/usr/local/include
+
+# Check level
+check-level=normal
+
+# Template for output
+template={file}:{line}:{column}: {severity}: {message} ({id})
+
+# Suppress specific warnings
+suppress=missingIncludeSystem
+suppress=variableScope
+suppress=unreadVariable
+suppress=constParameterCallback
+suppress=constVariablePointer
+suppress=unusedStructMember
+suppress=normalCheckLevelMaxBranches
+suppress=shadowVariable
+suppress=knownConditionTrueFalse
+suppress=redundantCondition
+suppress=varFuncNullUB
+suppress=redundantInitialization
+suppress=unsignedLessThanZero
+suppress=nullPointerRedundantCheck
+suppress=nullPointerArithmeticRedundantCheck
+suppress=constParameterPointer
+suppress=redundantAssignment
+
+# Additional options
+option=--inline-suppr
+option=--quiet

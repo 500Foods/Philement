@@ -202,6 +202,7 @@ The following documentation files are available outside of the main docs/ direct
 
 These tools are required when building or developing with the Hydrogen codebase:
 
+- C compiler and build tools (gcc and friends)
 - [curl](https://curl.se/) - Data transfer tool for downloading dependencies
 - [tar](https://www.gnu.org/software/tar/) - Archiving utility (typically part of core utils)
 - [wget](https://www.gnu.org/software/wget/) - Alternative network downloader
@@ -214,7 +215,6 @@ These tools are required when building or developing with the Hydrogen codebase:
 - [eslint](https://eslint.org/) - JavaScript code linting and style checking
 - [stylelint](https://stylelint.io/) - CSS/SCSS linting and style checking
 - [htmlhint](https://htmlhint.com/) - HTML code linting and validation
-- C compiler and build tools (gcc/clang, make)
 
 ### Runtime Dependencies
 
