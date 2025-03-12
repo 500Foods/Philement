@@ -2,5 +2,8 @@
   "markdownlint.config": {
     "MD033": false,
     "default": true
-  }
+  },
+  "C_Cpp.files.exclude": {
+    "/elements/001-hydrogen/hydrogen/src/config/config/*.inc": true
+}
 }
