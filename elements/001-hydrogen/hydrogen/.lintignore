@@ -1,5 +1,13 @@
 # Hydrogen Linting Exclusions
 
+# SUMMARY: This configuration excludes several file types from linting:
+# - Build directories (debug, release, perf, valgrind builds)
+# - Test artifacts (logs, results, diagnostics)
+# - Test configuration with deliberate error (for testing error handling)
+# - C snippet includes for JSON handling that aren't meant to be linted independently
+#
+# Used by test_z_codebase.sh for documentation quality checks.
+
 # This file contains patterns for files to exclude from linting checks.
 # Each line should contain one pattern. Empty lines and lines starting with # are ignored.
 # Patterns use bash glob syntax (same as .gitignore).
