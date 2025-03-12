@@ -25,6 +25,7 @@ EDITING GUIDELINES (not visible when rendered):
 -->
 
 - March 2025
+  - [2025-Mar-12 (Wed)](docs/releases/2025-03-12.md): Code Quality, Testing
   - [2025-Mar-11 (Mon)](docs/releases/2025-03-11.md): Configuration System, WebSocket Server, System Architecture, Web Server
   - [2025-Mar-10 (Sun)](docs/releases/2025-03-10.md): Configuration System, Network Infrastructure, OIDC Service, Testing Framework
   - [2025-Mar-09 (Sat)](docs/releases/2025-03-09.md): Network Infrastructure, Documentation System, SMTP Relay

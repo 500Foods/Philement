@@ -59,6 +59,95 @@ Key features:
 - Runs until the process exits or specified duration expires
 - Generates statistics to help identify resource issues
 
+### support_cppcheck.sh
+
+A wrapper script that provides standardized C/C++ code analysis using cppcheck:
+
+```bash
+./support_cppcheck.sh [directory_to_check]
+```
+
+Key features:
+
+- Integrates with project-specific linting configurations:
+  - Uses .lintignore for file exclusions
+  - Uses .lintignore-c for cppcheck-specific settings
+- Supports multiple configuration options through .lintignore-c:
+  - enable=<checks> - Enable specific check categories
+  - include=<path> - Add include paths
+  - check-level=<level> - Set checking level
+  - template=<format> - Customize error output format
+  - suppress=<id> - Suppress specific warning types
+  - option=<value> - Pass additional cppcheck options
+- Processes files individually for accurate error reporting
+- Handles path resolution and exclusions robustly
+
+## Linting Configuration Files
+
+The project uses several configuration files to control linting behavior:
+
+### .lintignore
+
+Global file exclusion patterns for all linting tools:
+
+```text
+# Example .lintignore
+build/*              # Exclude build directories
+tests/logs/*         # Exclude test logs
+src/config/*.inc     # Exclude specific file types
+```
+
+- Uses glob patterns similar to .gitignore
+- Supports comments and empty lines
+- Can exclude specific files or entire directories
+- Applied to all linting operations
+
+### .lintignore-c
+
+C/C++ specific linting configuration for cppcheck:
+
+```text
+# Enable specific checks
+enable=style,warning,performance,portability
+
+# Include paths
+include=/usr/include
+include=/usr/local/include
+
+# Checking level
+check-level=normal
+
+# Output template
+template={file}:{line}:{column}: {severity}: {message} ({id})
+
+# Suppress specific warnings
+suppress=missingIncludeSystem
+suppress=variableScope
+```
+
+- Controls cppcheck behavior and reporting
+- Configures enabled checks and suppressions
+- Sets include paths and output formatting
+- Used by support_cppcheck.sh and test_z_codebase.sh
+
+### .lintignore-markdown
+
+Markdown linting configuration:
+
+```text
+# Example .lintignore-markdown
+{
+  "default": true,
+  "MD013": false,     # Disable line length checks
+  "MD033": false      # Allow inline HTML
+}
+```
+
+- Controls markdownlint behavior
+- Enables/disables specific rules
+- Configures rule-specific settings
+- Used by test_z_codebase.sh for documentation checks
+
 ## Test Scripts
 
 ### test_all.sh

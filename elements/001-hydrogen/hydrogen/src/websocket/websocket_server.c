@@ -149,13 +149,18 @@ static void custom_lws_log(int level, const char *line)
     
     // Remove trailing newline if present
     char *log_line = strdup(line);
-    size_t len = strlen(log_line);
-    if (len > 0 && log_line[len-1] == '\n') {
-        log_line[len-1] = '\0';
+    if (log_line) {
+        size_t len = strlen(log_line);
+        if (len > 0 && log_line[len-1] == '\n') {
+            log_line[len-1] = '\0';
+        }
+        
+        log_this("WebSocket", log_line, priority);
+        free(log_line);
+    } else {
+        // If memory allocation fails, use the original line
+        log_this("WebSocket", line, priority);
     }
-    
-    log_this("WebSocket", log_line, priority);
-    free(log_line);
 }
 
 // Initialize the WebSocket server

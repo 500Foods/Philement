@@ -111,7 +111,7 @@ static size_t get_thread_stack_size(pid_t tid) {
     size_t stack_size = 0;
     while (fgets(line, sizeof(line), status)) {
         if (strncmp(line, "VmStk:", 6) == 0) {
-            sscanf(line, "VmStk: %zu", &stack_size);
+            sscanf(line, "VmStk: %20zu", &stack_size);
             break;
         }
     }
