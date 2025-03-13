@@ -180,26 +180,7 @@ static bool should_log_to_console(const char* subsystem, int priority, const Log
         return false;
     }
 
-    // Get subsystem-specific level if configured
-    int configured_level = config->default_level;
-    
-    // Check if this subsystem has a specific configuration
-    if (strcmp(subsystem, "thread_mgmt") == 0) {
-        configured_level = config->subsystems.thread_mgmt;
-    } else if (strcmp(subsystem, "shutdown") == 0) {
-        configured_level = config->subsystems.shutdown;
-    } else if (strcmp(subsystem, "mdns_server") == 0) {
-        configured_level = config->subsystems.mdns_server;
-    } else if (strcmp(subsystem, "web_server") == 0) {
-        configured_level = config->subsystems.web_server;
-    } else if (strcmp(subsystem, "websocket") == 0) {
-        configured_level = config->subsystems.websocket;
-    } else if (strcmp(subsystem, "print_queue") == 0) {
-        configured_level = config->subsystems.print_queue;
-    } else if (strcmp(subsystem, "log_queue_mgr") == 0) {
-        configured_level = config->subsystems.log_queue_mgr;
-    }
-    // For undefined subsystems, we'll use the destination's DefaultLevel
+    int configured_level = get_subsystem_level_console(config, subsystem);
     
     // Special handling for ALL and NONE
     if (configured_level == LOG_LEVEL_TRACE) return true;
@@ -214,25 +195,7 @@ static bool should_log_to_file(const char* subsystem, int priority, const Loggin
         return false;
     }
 
-    // Get subsystem-specific level if configured
-    int configured_level = config->default_level;
-    
-    // Check if this subsystem has a specific configuration
-    if (strcmp(subsystem, "thread_mgmt") == 0) {
-        configured_level = config->subsystems.thread_mgmt;
-    } else if (strcmp(subsystem, "shutdown") == 0) {
-        configured_level = config->subsystems.shutdown;
-    } else if (strcmp(subsystem, "mdns_server") == 0) {
-        configured_level = config->subsystems.mdns_server;
-    } else if (strcmp(subsystem, "web_server") == 0) {
-        configured_level = config->subsystems.web_server;
-    } else if (strcmp(subsystem, "websocket") == 0) {
-        configured_level = config->subsystems.websocket;
-    } else if (strcmp(subsystem, "print_queue") == 0) {
-        configured_level = config->subsystems.print_queue;
-    } else if (strcmp(subsystem, "log_queue_mgr") == 0) {
-        configured_level = config->subsystems.log_queue_mgr;
-    }
+    int configured_level = get_subsystem_level_file(config, subsystem);
     
     // Special handling for ALL and NONE
     if (configured_level == LOG_LEVEL_TRACE) return true;
@@ -247,25 +210,7 @@ static bool should_log_to_database(const char* subsystem, int priority, const Lo
         return false;
     }
 
-    // Get subsystem-specific level if configured
-    int configured_level = config->default_level;
-    
-    // Check if this subsystem has a specific configuration
-    if (strcmp(subsystem, "thread_mgmt") == 0) {
-        configured_level = config->subsystems.thread_mgmt;
-    } else if (strcmp(subsystem, "shutdown") == 0) {
-        configured_level = config->subsystems.shutdown;
-    } else if (strcmp(subsystem, "mdns_server") == 0) {
-        configured_level = config->subsystems.mdns_server;
-    } else if (strcmp(subsystem, "web_server") == 0) {
-        configured_level = config->subsystems.web_server;
-    } else if (strcmp(subsystem, "websocket") == 0) {
-        configured_level = config->subsystems.websocket;
-    } else if (strcmp(subsystem, "print_queue") == 0) {
-        configured_level = config->subsystems.print_queue;
-    } else if (strcmp(subsystem, "log_queue_mgr") == 0) {
-        configured_level = config->subsystems.log_queue_mgr;
-    }
+    int configured_level = get_subsystem_level_database(config, subsystem);
     
     // Special handling for ALL and NONE
     if (configured_level == LOG_LEVEL_TRACE) return true;

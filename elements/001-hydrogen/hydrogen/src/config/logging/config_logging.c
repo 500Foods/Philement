@@ -67,9 +67,10 @@ static int validate_log_levels(const LoggingConfig* config) {
         return -1;
     }
 
-    // Verify levels match defined values and have names
+    // Verify levels are valid (0-6) and have names
     for (size_t i = 0; i < config->level_count; i++) {
-        if (config->levels[i].value != (int)i ||  // Values 0 through 6
+        if (config->levels[i].value < 0 || 
+            config->levels[i].value > 6 ||
             !config->levels[i].name ||
             !config->levels[i].name[0]) {
             return -1;
@@ -103,29 +104,7 @@ int config_logging_validate(const LoggingConfig* config) {
         return -1;
     }
 
-    // Validate relationships between destinations
-    
-    // If database logging is enabled, file logging should also be enabled
-    // as a fallback mechanism
-    if (config->database.enabled && !config->file.enabled) {
-        return -1;
-    }
-
-    // Console and file logging should have compatible levels
-    // to ensure important messages aren't missed
-    if (config->console.enabled && config->file.enabled) {
-        if (config->console.default_level > config->file.default_level) {
-            return -1;
-        }
-    }
-
-    // Database logging should not have a lower level than file logging
-    // to prevent database spam
-    if (config->database.enabled && config->file.enabled) {
-        if (config->database.default_level < config->file.default_level) {
-            return -1;
-        }
-    }
+    // Each output path is independent, no relationships enforced
 
     return 0;
 }

@@ -66,14 +66,119 @@ Use the `${env.VARIABLE}` syntax to reference environment variables:
 }
 ```
 
-### Value Type Conversion
+### Value Type Conversion and Logging
 
-Environment variables are automatically converted to appropriate JSON types:
+Environment variables and configuration values are processed with type conversion and consistent logging:
 
-1. **Null Values**: Empty environment variables become JSON `null`
-2. **Boolean Values**: "true"/"false" (case-insensitive) become JSON booleans
-3. **Number Values**: Numeric strings become JSON numbers
-4. **String Values**: All other values remain strings
+1. **Integer Values**:
+
+   ```json
+   {
+       "StartupDelay": "${env.STARTUP_DELAY}",
+       "Port": "${env.PORT}"
+   }
+   ```
+
+   When environment variable is set:
+
+   ```log
+   ― StartupDelay: $STARTUP_DELAY: 5000
+   ```
+
+   When not set (using default):
+
+   ```log
+   ― StartupDelay: $STARTUP_DELAY: not set, using 5 *
+   ```
+
+2. **Boolean Values**:
+
+   ```json
+   {
+       "Enabled": "${env.FEATURE_ENABLED}"
+   }
+   ```
+
+   When environment variable is set:
+
+   ```log
+   ― Enabled: $FEATURE_ENABLED: true
+   ```
+
+   When not set (using default):
+
+   ```log
+   ― Enabled: $FEATURE_ENABLED: not set, using false *
+   ```
+
+3. **String Values**:
+
+   ```json
+   {
+       "ServerName": "${env.SERVER_NAME}"
+   }
+   ```
+
+   When environment variable is set:
+
+   ```log
+   ― ServerName: $SERVER_NAME: my-server
+   ```
+
+   When not set (using default):
+
+   ```log
+   ― ServerName: $SERVER_NAME: not set, using Philement/hydrogen *
+   ```
+
+4. **Sensitive Values**:
+
+   ```json
+   {
+       "PayloadKey": "${env.PAYLOAD_KEY}"
+   }
+   ```
+
+   Values are automatically truncated in logs:
+
+   ```log
+   ― PayloadKey: $PAYLOAD_KEY: LS0tL...
+   ```
+
+   When not set:
+
+   ```log
+   ― PayloadKey: $PAYLOAD_KEY: not set, using Missing Key *
+   ```
+
+### Logging Format
+
+Configuration values are logged with clear source attribution:
+
+1. **Direct JSON Values**:
+
+   ```log
+   ― Key: value                    (Config subsystem)
+   ```
+
+2. **Environment Variables**:
+
+   ```log
+   ― Key: $VAR: value             (Config-Env subsystem)
+   ― Key: $VAR: not set, using default *  (Config-Env subsystem)
+   ```
+
+3. **Default Values**:
+
+   ```log
+   ― Key: value *                 (Config subsystem)
+   ```
+
+4. **Sensitive Values**:
+
+   ```log
+   ― Key: $VAR: LS0tL...          (Config-Env subsystem)
+   ```
 
 ### Examples
 

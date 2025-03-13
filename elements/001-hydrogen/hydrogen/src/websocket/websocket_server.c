@@ -210,7 +210,18 @@ int init_websocket_server(int port, const char* protocol, const char* key)
     lws_set_log_level(0, NULL);  // Reset logging before context creation
 
     // Configure logging based on numeric level
-    int config_level = app_config->logging.console.subsystems.websocket;
+    // TODO: Move this to a dedicated LibLogLevel in the WebSockets config section
+    // rather than using the console output path's subsystem configuration
+    int config_level = LOG_LEVEL_STATE;  // Default to STATE level
+    
+    // Look up WebSockets-Lib subsystem level if configured
+    for (size_t i = 0; i < app_config->logging.console.subsystem_count; i++) {
+        if (strcmp(app_config->logging.console.subsystems[i].name, "WebSockets-Lib") == 0) {
+            config_level = app_config->logging.console.subsystems[i].level;
+            break;
+        }
+    }
+    
     lws_set_log_level(0, NULL);  // Reset logging
 
     // Map numeric levels to libwebsockets levels
