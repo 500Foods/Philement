@@ -31,9 +31,7 @@ if (json_is_object(restapi)) {
     json_t* jwt_secret = json_object_get(restapi, "JWTSecret");
     if (jwt_secret) {
         config->api.jwt_secret = get_config_string_with_env("JWTSecret", jwt_secret, "hydrogen_api_secret_change_me");
-        log_config_section_item("JWTSecret", "%s", LOG_LEVEL_STATE, 
-            strcmp(config->api.jwt_secret, "hydrogen_api_secret_change_me") == 0, 0, NULL, NULL,
-            strcmp(config->api.jwt_secret, "hydrogen_api_secret_change_me") == 0 ? "(default)" : "configured");
+        // JWT Secret logging removed for security reasons
     }
 } else {
     // Check legacy API section for backward compatibility
@@ -54,9 +52,7 @@ if (json_is_object(restapi)) {
         
         json_t* jwt_secret = json_object_get(api_config, "JWTSecret");
         config->api.jwt_secret = get_config_string_with_env("JWTSecret", jwt_secret, "hydrogen_api_secret_change_me");
-        log_config_section_item("JWTSecret", "%s", LOG_LEVEL_STATE, 
-            strcmp(config->api.jwt_secret, "hydrogen_api_secret_change_me") == 0, 0, NULL, NULL,
-            strcmp(config->api.jwt_secret, "hydrogen_api_secret_change_me") == 0 ? "(default)" : "configured");
+        // JWT Secret logging removed for security reasons
     } else {
         config->api.jwt_secret = strdup("hydrogen_api_secret_change_me");
         config->web.api_prefix = strdup("/api");
