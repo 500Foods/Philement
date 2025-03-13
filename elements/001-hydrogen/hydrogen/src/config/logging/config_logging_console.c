@@ -15,14 +15,9 @@ int config_logging_console_init(LoggingConsoleConfig* config) {
     config->enabled = DEFAULT_CONSOLE_ENABLED;
     config->default_level = DEFAULT_CONSOLE_LOG_LEVEL;
 
-    // Initialize subsystem log levels
-    config->subsystems.thread_mgmt = DEFAULT_CONSOLE_THREAD_MGMT_LEVEL;
-    config->subsystems.shutdown = DEFAULT_CONSOLE_SHUTDOWN_LEVEL;
-    config->subsystems.mdns_server = DEFAULT_CONSOLE_MDNS_SERVER_LEVEL;
-    config->subsystems.web_server = DEFAULT_CONSOLE_WEB_SERVER_LEVEL;
-    config->subsystems.websocket = DEFAULT_CONSOLE_WEBSOCKET_LEVEL;
-    config->subsystems.print_queue = DEFAULT_CONSOLE_PRINT_QUEUE_LEVEL;
-    config->subsystems.log_queue_mgr = DEFAULT_CONSOLE_LOG_QUEUE_LEVEL;
+    // Initialize subsystem array
+    config->subsystem_count = 0;
+    config->subsystems = NULL;
 
     return 0;
 }
@@ -30,6 +25,14 @@ int config_logging_console_init(LoggingConsoleConfig* config) {
 void config_logging_console_cleanup(LoggingConsoleConfig* config) {
     if (!config) {
         return;
+    }
+
+    // Free subsystem array
+    if (config->subsystems) {
+        for (size_t i = 0; i < config->subsystem_count; i++) {
+            free(config->subsystems[i].name);
+        }
+        free(config->subsystems);
     }
 
     // Zero out the structure
@@ -42,13 +45,21 @@ static int validate_log_level(int level) {
 
 static int validate_subsystem_levels(const LoggingConsoleConfig* config) {
     // Validate all subsystem log levels
-    return validate_log_level(config->subsystems.thread_mgmt) &&
-           validate_log_level(config->subsystems.shutdown) &&
-           validate_log_level(config->subsystems.mdns_server) &&
-           validate_log_level(config->subsystems.web_server) &&
-           validate_log_level(config->subsystems.websocket) &&
-           validate_log_level(config->subsystems.print_queue) &&
-           validate_log_level(config->subsystems.log_queue_mgr);
+    for (size_t i = 0; i < config->subsystem_count; i++) {
+        if (!validate_log_level(config->subsystems[i].level)) {
+            return 0;  // Return false if any level is invalid
+        }
+    }
+    return 1;  // All levels valid
+}
+
+int get_subsystem_level_console(const LoggingConsoleConfig* config, const char* subsystem) {
+    for (size_t i = 0; i < config->subsystem_count; i++) {
+        if (strcmp(config->subsystems[i].name, subsystem) == 0) {
+            return config->subsystems[i].level;
+        }
+    }
+    return config->default_level;  // Return default if subsystem not found
 }
 
 int config_logging_console_validate(const LoggingConsoleConfig* config) {
@@ -68,24 +79,7 @@ int config_logging_console_validate(const LoggingConsoleConfig* config) {
             return -1;
         }
 
-        // Validate relationships between log levels
-        
-        // Critical subsystems should not have lower log level than default
-        if (config->subsystems.shutdown < config->default_level ||
-            config->subsystems.thread_mgmt < config->default_level) {
-            return -1;
-        }
-
-        // Log queue manager should have at least info level when enabled
-        if (config->subsystems.log_queue_mgr < 2) {  // 2 = Info level
-            return -1;
-        }
-
-        // Web server and WebSocket should have matching log levels
-        // since they are tightly coupled
-        if (config->subsystems.web_server != config->subsystems.websocket) {
-            return -1;
-        }
+        // Each subsystem can have its own level
     }
 
     return 0;

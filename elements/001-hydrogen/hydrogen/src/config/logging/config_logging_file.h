@@ -12,6 +12,7 @@
 
 // Project headers
 #include "../config_forward.h"
+#include "config_logging_console.h"  // For SubsystemConfig definition
 
 // Default values
 #define DEFAULT_FILE_LOGGING_ENABLED 1
@@ -19,15 +20,6 @@
 #define DEFAULT_LOG_FILE_PATH "/var/log/hydrogen.log"
 #define DEFAULT_MAX_FILE_SIZE (100 * 1024 * 1024)  // 100MB
 #define DEFAULT_ROTATE_FILES 5                      // Keep 5 rotated files
-
-// Subsystem default log levels (same as console for consistency)
-#define DEFAULT_FILE_THREAD_MGMT_LEVEL 2
-#define DEFAULT_FILE_SHUTDOWN_LEVEL 2
-#define DEFAULT_FILE_MDNS_SERVER_LEVEL 2
-#define DEFAULT_FILE_WEB_SERVER_LEVEL 2
-#define DEFAULT_FILE_WEBSOCKET_LEVEL 2
-#define DEFAULT_FILE_PRINT_QUEUE_LEVEL 2
-#define DEFAULT_FILE_LOG_QUEUE_LEVEL 2
 
 // Validation limits
 #define MIN_LOG_LEVEL 1           // Debug
@@ -45,16 +37,9 @@ struct LoggingFileConfig {
     size_t max_file_size;  // Maximum size before rotation
     int rotate_files;      // Number of rotated files to keep
     
-    // Subsystem-specific log levels
-    struct {
-        int thread_mgmt;      // Thread management logging
-        int shutdown;         // Shutdown process logging
-        int mdns_server;      // mDNS server logging
-        int web_server;       // Web server logging
-        int websocket;        // WebSocket logging
-        int print_queue;      // Print queue logging
-        int log_queue_mgr;    // Log queue manager logging
-    } subsystems;
+    // Dynamic subsystem configuration
+    size_t subsystem_count;
+    SubsystemConfig* subsystems;  // Array of subsystem configurations
 };
 
 /*
@@ -102,5 +87,17 @@ void config_logging_file_cleanup(LoggingFileConfig* config);
  * - If file size or rotation settings are invalid
  */
 int config_logging_file_validate(const LoggingFileConfig* config);
+
+/*
+ * Get the log level for a specific subsystem
+ *
+ * This function looks up the log level for a given subsystem in the configuration.
+ * If the subsystem is not found, it returns the default level.
+ *
+ * @param config Pointer to LoggingFileConfig structure
+ * @param subsystem Name of the subsystem to look up
+ * @return Log level for the subsystem, or default_level if not found
+ */
+int get_subsystem_level_file(const LoggingFileConfig* config, const char* subsystem);
 
 #endif /* HYDROGEN_CONFIG_LOGGING_FILE_H */

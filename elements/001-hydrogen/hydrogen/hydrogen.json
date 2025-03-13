@@ -16,11 +16,13 @@
     },
     "RESTAPI":{
       "Enabled": true,
-      "ApiPrefix": "/api"
+      "ApiPrefix": "/api",
+      "JWTSecret":"${env.JWT_SECRET}"
     },
     "WebSocket": {
         "Enabled": true,
         "EnableIPv6": true,
+        "LibLogLevel": 2,
         "Port": 5001,
         "MaxMessageSize": 2048,
         "ConnectionTimeouts": {
@@ -90,8 +92,8 @@
         "Levels": [
             [0, "TRACE"],
             [1, "DEBUG"],
-            [3, "STATE"],
-            [2, "CHECK"],
+            [2, "STATE"],
+            [3, "CHECK"],
             [4, "ALERT"],
             [5, "ERROR"],
             [6, "FATAL"]
@@ -270,14 +272,13 @@
             }
         }
     },
-    " MailRelay": {
+    "MailRelay": {
         "Enabled": true,
         "ListenPort": 587,
         "Workers": 2,
         "QueueSettings": {
             "MaxQueueSize": 1000,
-            "RetryAttempts": 3,
-            "RetryDelaySeconds": 300
+            "RetryAttempts": 3,            "RetryDelaySeconds": 300
         },
         "OutboundServers": [
             {

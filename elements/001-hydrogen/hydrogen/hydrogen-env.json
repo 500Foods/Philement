@@ -1,0 +1,357 @@
+{
+    "Server": {
+        "ServerName": "${env.SERVER_SERVERNAME}",
+        "PayloadKey": "${env.SERVER_PAYLOADKEY}",
+        "LogFile": "${env.SERVER_LOGFILE}",
+        "StartupDelay": "${env.SERVER_STARTUPDELAY}"
+    },
+    "WebServer": {
+        "Enabled": "${env.WEBSERVER_ENABLED}",
+        "EnableIPv6": "${env.WEBSERVER_ENABLEIPV6}",
+        "Port": "${env.WEBSERVER_PORT}",
+        "WebRoot": "${env.WEBSERVER_WEBROOT}",
+        "UploadPath": "${env.WEBSERVER_UPLOADPATH}",
+        "UploadDir": "${env.WEBSERVER_UPLOADDIR}",
+        "MaxUploadSize": "${env.WEBSERVER_MAXUPLOADSIZE}"
+    },
+    "RESTAPI": {
+        "Enabled": "${env.RESTAPI_ENABLED}",
+        "ApiPrefix": "${env.RESTAPI_APIPREFIX}",
+        "JWTSecret": "${env.RESTAPI_JWTSECRET}"
+    },
+    "WebSocket": {
+        "Enabled": "${env.WEBSOCKET_ENABLED}",
+        "EnableIPv6": "${env.WEBSOCKET_ENABLEIPV6}",
+        "Port": "${env.WEBSOCKET_PORT}",
+        "LibLogLevel": "${env.WEBSOCKET_LIBLOGLEVEL}",
+        "MaxMessageSize": "${env.WEBSOCKET_MAXMESSAGESIZE}",
+        "ConnectionTimeouts": {
+            "ShutdownWaitSeconds": "${env.WEBSOCKET_CONNECTIONTIMEOUTS_SHUTDOWNWAITSECONDS}",
+            "ServiceLoopDelayMs": "${env.WEBSOCKET_CONNECTIONTIMEOUTS_SERVICELOOPDELAYMS}",
+            "ConnectionCleanupMs": "${env.WEBSOCKET_CONNECTIONTIMEOUTS_CONNECTIONCLEANUPMS}",
+            "ExitWaitSeconds": "${env.WEBSOCKET_CONNECTIONTIMEOUTS_EXITWAITSECONDS}"
+        }
+    },
+    "Network": {
+        "Interfaces": {
+            "MaxInterfaces": "${env.NETWORK_INTERFACES_MAXINTERFACES}",
+            "MaxIPsPerInterface": "${env.NETWORK_INTERFACES_MAXIPSPERINTERFACE}",
+            "MaxInterfaceNameLength": "${env.NETWORK_INTERFACES_MAXINTERFACENAMELENGTH}",
+            "MaxIPAddressLength": "${env.NETWORK_INTERFACES_MAXIPADDRESSLENGTH}"
+        },
+        "PortAllocation": {
+            "StartPort": "${env.NETWORK_PORTALLOCATION_STARTPORT}",
+            "EndPort": "${env.NETWORK_PORTALLOCATION_ENDPORT}",
+            "ReservedPorts": [
+                "${env.NETWORK_PORTALLOCATION_RESERVEDPORTS_1}",
+                "${env.NETWORK_PORTALLOCATION_RESERVEDPORTS_2}",
+                "${env.NETWORK_PORTALLOCATION_RESERVEDPORTS_3}"
+            ],
+            "RetryAttempts": "${env.NETWORK_PORTALLOCATION_RETRYATTEMPTS}"
+        }
+    },
+    "SystemResources": {
+        "Queues": {
+            "MaxQueueBlocks": "${env.SYSTEMRESOURCES_QUEUES_MAXQUEUEBLOCKS}",
+            "QueueHashSize": "${env.SYSTEMRESOURCES_QUEUES_QUEUEHASHSIZE}",
+            "DefaultQueueCapacity": "${env.SYSTEMRESOURCES_QUEUES_DEFAULTQUEUECAPACITY}"
+        },
+        "Buffers": {
+            "DefaultMessageBuffer": "${env.SYSTEMRESOURCES_BUFFERS_DEFAULTMESSAGEBUFFER}",
+            "MaxLogMessageSize": "${env.SYSTEMRESOURCES_BUFFERS_MAXLOGMESSAGESIZE}",
+            "PathBufferSize": "${env.SYSTEMRESOURCES_BUFFERS_PATHBUFFERSIZE}",
+            "LineBufferSize": "${env.SYSTEMRESOURCES_BUFFERS_LINEBUFFERSIZE}"
+        }
+    },
+    "SystemMonitoring": {
+        "Intervals": {
+            "StatusUpdateMs": "${env.SYSTEMMONITORING_INTERVALS_STATUSUPDATEMS}",
+            "ResourceCheckMs": "${env.SYSTEMMONITORING_INTERVALS_RESOURCECHECKMS}",
+            "MetricsUpdateMs": "${env.SYSTEMMONITORING_INTERVALS_METRICSUPDATEMS}"
+        },
+        "Thresholds": {
+            "MemoryWarningPercent": "${env.SYSTEMMONITORING_THRESHOLDS_MEMORYWARNINGPERCENT}",
+            "DiskSpaceWarningPercent": "${env.SYSTEMMONITORING_THRESHOLDS_DISKSPACEWARNINGPERCENT}",
+            "LoadAverageWarning": "${env.SYSTEMMONITORING_THRESHOLDS_LOADAVERAGEWARNING}"
+        }
+    },
+    "PrintQueue": {
+        "Enabled": "${env.PRINTQUEUE_ENABLED}",
+        "QueueSettings": {
+            "DefaultPriority": "${env.PRINTQUEUE_QUEUESETTINGS_DEFAULTPRIORITY}",
+            "EmergencyPriority": "${env.PRINTQUEUE_QUEUESETTINGS_EMERGENCYPRIORITY}",
+            "MaintenancePriority": "${env.PRINTQUEUE_QUEUESETTINGS_MAINTENANCEPRIORITY}",
+            "SystemPriority": "${env.PRINTQUEUE_QUEUESETTINGS_SYSTEMPRIORITY}"
+        },
+        "Timeouts": {
+            "ShutdownWaitMs": "${env.PRINTQUEUE_TIMEOUTS_SHUTDOWNWAITMS}",
+            "JobProcessingTimeoutMs": "${env.PRINTQUEUE_TIMEOUTS_JOBPROCESSINGTIMEOUTMS}"
+        },
+        "Buffers": {
+            "JobMessageSize": "${env.PRINTQUEUE_BUFFERS_JOBMESSAGESIZE}",
+            "StatusMessageSize": "${env.PRINTQUEUE_BUFFERS_STATUSMESSAGESIZE}"
+        }
+    },
+    "Logging": {
+        "Levels": [
+            ["${env.LOGGING_LEVELS_0_LEVEL}", "${env.LOGGING_LEVELS_0_NAME}"],
+            ["${env.LOGGING_LEVELS_1_LEVEL}", "${env.LOGGING_LEVELS_1_NAME}"],
+            ["${env.LOGGING_LEVELS_2_LEVEL}", "${env.LOGGING_LEVELS_2_NAME}"],
+            ["${env.LOGGING_LEVELS_3_LEVEL}", "${env.LOGGING_LEVELS_3_NAME}"],
+            ["${env.LOGGING_LEVELS_4_LEVEL}", "${env.LOGGING_LEVELS_4_NAME}"],
+            ["${env.LOGGING_LEVELS_5_LEVEL}", "${env.LOGGING_LEVELS_5_NAME}"],
+            ["${env.LOGGING_LEVELS_6_LEVEL}", "${env.LOGGING_LEVELS_6_NAME}"]
+        ],
+        "Console": {
+            "Enabled": "${env.LOGGING_CONSOLE_ENABLED}",
+            "DefaultLevel": "${env.LOGGING_CONSOLE_DEFAULTLEVEL}",
+            "Subsystems": {
+                "Startup": "${env.LOGGING_CONSOLE_SUBSYSTEMS_STARTUP}",
+                "DepCheck": "${env.LOGGING_CONSOLE_SUBSYSTEMS_DEPCHECK}",
+                "Shutdown": "${env.LOGGING_CONSOLE_SUBSYSTEMS_SHUTDOWN}",
+                "Threads": "${env.LOGGING_CONSOLE_SUBSYSTEMS_THREADS}",
+                "ThreadMgmt": "${env.LOGGING_CONSOLE_SUBSYSTEMS_THREADMGMT}",
+                "mDNSServer": "${env.LOGGING_CONSOLE_SUBSYSTEMS_MDNSSERVER}",
+                "WebServer": "${env.LOGGING_CONSOLE_SUBSYSTEMS_WEBSERVER}",
+                "WebSocket": "${env.LOGGING_CONSOLE_SUBSYSTEMS_WEBSOCKET}",
+                "PrintQueue": "${env.LOGGING_CONSOLE_SUBSYSTEMS_PRINTQUEUE}",
+                "LogQueueManager": "${env.LOGGING_CONSOLE_SUBSYSTEMS_LOGQUEUEMANAGER}",
+                "Main": "${env.LOGGING_CONSOLE_SUBSYSTEMS_MAIN}",
+                "QueueSystem": "${env.LOGGING_CONSOLE_SUBSYSTEMS_QUEUESYSTEM}",
+                "SystemService": "${env.LOGGING_CONSOLE_SUBSYSTEMS_SYSTEMSERVICE}",
+                "Utils": "${env.LOGGING_CONSOLE_SUBSYSTEMS_UTILS}",
+                "MemoryMetrics": "${env.LOGGING_CONSOLE_SUBSYSTEMS_MEMORYMETRICS}",
+                "Beryllium": "${env.LOGGING_CONSOLE_SUBSYSTEMS_BERYLLIUM}",
+                "Configuration": "${env.LOGGING_CONSOLE_SUBSYSTEMS_CONFIGURATION}",
+                "API": "${env.LOGGING_CONSOLE_SUBSYSTEMS_API}",
+                "Initialization": "${env.LOGGING_CONSOLE_SUBSYSTEMS_INITIALIZATION}",
+                "Network": "${env.LOGGING_CONSOLE_SUBSYSTEMS_NETWORK}"
+            }
+        },
+        "Database": {
+            "Enabled": "${env.LOGGING_DATABASE_ENABLED}",
+            "DefaultLevel": "${env.LOGGING_DATABASE_DEFAULTLEVEL}",
+            "Subsystems": {
+                "Startup": "${env.LOGGING_DATABASE_SUBSYSTEMS_STARTUP}",
+                "Shutdown": "${env.LOGGING_DATABASE_SUBSYSTEMS_SHUTDOWN}",
+                "Threads": "${env.LOGGING_DATABASE_SUBSYSTEMS_THREADS}",
+                "ThreadMgmt": "${env.LOGGING_DATABASE_SUBSYSTEMS_THREADMGMT}",
+                "mDNSServer": "${env.LOGGING_DATABASE_SUBSYSTEMS_MDNSSERVER}",
+                "WebServer": "${env.LOGGING_DATABASE_SUBSYSTEMS_WEBSERVER}",
+                "WebSocket": "${env.LOGGING_DATABASE_SUBSYSTEMS_WEBSOCKET}",
+                "PrintQueue": "${env.LOGGING_DATABASE_SUBSYSTEMS_PRINTQUEUE}",
+                "LogQueueManager": "${env.LOGGING_DATABASE_SUBSYSTEMS_LOGQUEUEMANAGER}",
+                "Main": "${env.LOGGING_DATABASE_SUBSYSTEMS_MAIN}",
+                "QueueSystem": "${env.LOGGING_DATABASE_SUBSYSTEMS_QUEUESYSTEM}",
+                "SystemService": "${env.LOGGING_DATABASE_SUBSYSTEMS_SYSTEMSERVICE}",
+                "Utils": "${env.LOGGING_DATABASE_SUBSYSTEMS_UTILS}",
+                "MemoryMetrics": "${env.LOGGING_DATABASE_SUBSYSTEMS_MEMORYMETRICS}",
+                "Beryllium": "${env.LOGGING_DATABASE_SUBSYSTEMS_BERYLLIUM}",
+                "Configuration": "${env.LOGGING_DATABASE_SUBSYSTEMS_CONFIGURATION}",
+                "API": "${env.LOGGING_DATABASE_SUBSYSTEMS_API}",
+                "Initialization": "${env.LOGGING_DATABASE_SUBSYSTEMS_INITIALIZATION}",
+                "Network": "${env.LOGGING_DATABASE_SUBSYSTEMS_NETWORK}"
+            }
+        },
+        "File": {
+            "Enabled": "${env.LOGGING_FILE_ENABLED}",
+            "DefaultLevel": "${env.LOGGING_FILE_DEFAULTLEVEL}",
+            "Subsystems": {
+                "Startup": "${env.LOGGING_FILE_SUBSYSTEMS_STARTUP}",
+                "Shutdown": "${env.LOGGING_FILE_SUBSYSTEMS_SHUTDOWN}",
+                "Threads": "${env.LOGGING_FILE_SUBSYSTEMS_THREADS}",
+                "ThreadMgmt": "${env.LOGGING_FILE_SUBSYSTEMS_THREADMGMT}",
+                "mDNSServer": "${env.LOGGING_FILE_SUBSYSTEMS_MDNSSERVER}",
+                "WebServer": "${env.LOGGING_FILE_SUBSYSTEMS_WEBSERVER}",
+                "WebSocket": "${env.LOGGING_FILE_SUBSYSTEMS_WEBSOCKET}",
+                "PrintQueue": "${env.LOGGING_FILE_SUBSYSTEMS_PRINTQUEUE}",
+                "LogQueueManager": "${env.LOGGING_FILE_SUBSYSTEMS_LOGQUEUEMANAGER}",
+                "Main": "${env.LOGGING_FILE_SUBSYSTEMS_MAIN}",
+                "QueueSystem": "${env.LOGGING_FILE_SUBSYSTEMS_QUEUESYSTEM}",
+                "SystemService": "${env.LOGGING_FILE_SUBSYSTEMS_SYSTEMSERVICE}",
+                "Utils": "${env.LOGGING_FILE_SUBSYSTEMS_UTILS}",
+                "MemoryMetrics": "${env.LOGGING_FILE_SUBSYSTEMS_MEMORYMETRICS}",
+                "Beryllium": "${env.LOGGING_FILE_SUBSYSTEMS_BERYLLIUM}",
+                "Configuration": "${env.LOGGING_FILE_SUBSYSTEMS_CONFIGURATION}",
+                "API": "${env.LOGGING_FILE_SUBSYSTEMS_API}",
+                "Initialization": "${env.LOGGING_FILE_SUBSYSTEMS_INITIALIZATION}",
+                "Network": "${env.LOGGING_FILE_SUBSYSTEMS_NETWORK}"
+            }
+        }
+    },
+    "Swagger": {
+        "Enabled": "${env.SWAGGER_ENABLED}",
+        "Prefix": "${env.SWAGGER_PREFIX}",
+        "UIOptions": {
+            "TryItEnabled": "${env.SWAGGER_UIOPTIONS_TRYITENABLED}",
+            "AlwaysExpanded": "${env.SWAGGER_UIOPTIONS_ALWAYSEXPANDED}",
+            "DisplayOperationId": "${env.SWAGGER_UIOPTIONS_DISPLAYOPERATIONID}",
+            "DefaultModelsExpandDepth": "${env.SWAGGER_UIOPTIONS_DEFAULTMODELSEXPANDDEPTH}",
+            "DefaultModelExpandDepth": "${env.SWAGGER_UIOPTIONS_DEFAULTMODELEXPANDDEPTH}",
+            "ShowExtensions": "${env.SWAGGER_UIOPTIONS_SHOWEXTENSIONS}",
+            "ShowCommonExtensions": "${env.SWAGGER_UIOPTIONS_SHOWCOMMONEXTENSIONS}",
+            "DocExpansion": "${env.SWAGGER_UIOPTIONS_DOCEXPANSION}",
+            "SyntaxHighlightTheme": "${env.SWAGGER_UIOPTIONS_SYNTAXHIGHLIGHTTHEME}"
+        },
+        "Metadata": {
+            "Title": "${env.SWAGGER_METADATA_TITLE}",
+            "Description": "${env.SWAGGER_METADATA_DESCRIPTION}",
+            "Version": "${env.SWAGGER_METADATA_VERSION}",
+            "Contact": {
+                "Name": "${env.SWAGGER_METADATA_CONTACT_NAME}",
+                "Email": "${env.SWAGGER_METADATA_CONTACT_EMAIL}",
+                "Url": "${env.SWAGGER_METADATA_CONTACT_URL}"
+            },
+            "License": {
+                "Name": "${env.SWAGGER_METADATA_LICENSE_NAME}",
+                "Url": "${env.SWAGGER_METADATA_LICENSE_URL}"
+            }
+        }
+    },
+    "Terminal": {
+        "Enabled": "${env.TERMINAL_ENABLED}",
+        "WebPath": "${env.TERMINAL_WEBPATH}",
+        "ShellCommand": "${env.TERMINAL_SHELLCOMMAND}",
+        "MaxSessions": "${env.TERMINAL_MAXSESSIONS}",
+        "IdleTimeoutSeconds": "${env.TERMINAL_IDLETIMEOUTSECONDS}",
+        "BufferSize": "${env.TERMINAL_BUFFERSIZE}"
+    },
+    "Databases": {
+        "DefaultWorkers": "${env.DATABASES_DEFAULTWORKERS}",
+        "Connections": {
+            "Log": {
+                "Enabled": "${env.DATABASES_CONNECTIONS_LOG_ENABLED}",
+                "Type": "${env.DATABASES_CONNECTIONS_LOG_TYPE}",
+                "Host": "${env.DATABASES_CONNECTIONS_LOG_HOST}",
+                "Port": "${env.DATABASES_CONNECTIONS_LOG_PORT}",
+                "Database": "${env.DATABASES_CONNECTIONS_LOG_DATABASE}",
+                "Username": "${env.DATABASES_CONNECTIONS_LOG_USERNAME}",
+                "Password": "${env.DATABASES_CONNECTIONS_LOG_PASSWORD}",
+                "MaxConnections": "${env.DATABASES_CONNECTIONS_LOG_MAXCONNECTIONS}",
+                "Workers": "${env.DATABASES_CONNECTIONS_LOG_WORKERS}"
+            },
+            "OIDC": {
+                "Enabled": "${env.DATABASES_CONNECTIONS_OIDC_ENABLED}",
+                "Type": "${env.DATABASES_CONNECTIONS_OIDC_TYPE}",
+                "Host": "${env.DATABASES_CONNECTIONS_OIDC_HOST}",
+                "Port": "${env.DATABASES_CONNECTIONS_OIDC_PORT}",
+                "Database": "${env.DATABASES_CONNECTIONS_OIDC_DATABASE}",
+                "Username": "${env.DATABASES_CONNECTIONS_OIDC_USERNAME}",
+                "Password": "${env.DATABASES_CONNECTIONS_OIDC_PASSWORD}",
+                "MaxConnections": "${env.DATABASES_CONNECTIONS_OIDC_MAXCONNECTIONS}",
+                "Workers": "${env.DATABASES_CONNECTIONS_OIDC_WORKERS}"
+            },
+            "Acuranzo": {
+                "Enabled": "${env.DATABASES_CONNECTIONS_ACURANZO_ENABLED}",
+                "Type": "${env.DATABASES_CONNECTIONS_ACURANZO_TYPE}",
+                "Host": "${env.DATABASES_CONNECTIONS_ACURANZO_HOST}",
+                "Port": "${env.DATABASES_CONNECTIONS_ACURANZO_PORT}",
+                "Database": "${env.DATABASES_CONNECTIONS_ACURANZO_DATABASE}",
+                "Username": "${env.DATABASES_CONNECTIONS_ACURANZO_USERNAME}",
+                "Password": "${env.DATABASES_CONNECTIONS_ACURANZO_PASSWORD}",
+                "MaxConnections": "${env.DATABASES_CONNECTIONS_ACURANZO_MAXCONNECTIONS}",
+                "Workers": "${env.DATABASES_CONNECTIONS_ACURANZO_WORKERS}"
+            },
+            "Helium": {
+                "Enabled": "${env.DATABASES_CONNECTIONS_HELIUM_ENABLED}",
+                "Type": "${env.DATABASES_CONNECTIONS_HELIUM_TYPE}",
+                "Host": "${env.DATABASES_CONNECTIONS_HELIUM_HOST}",
+                "Port": "${env.DATABASES_CONNECTIONS_HELIUM_PORT}",
+                "Database": "${env.DATABASES_CONNECTIONS_HELIUM_DATABASE}",
+                "Username": "${env.DATABASES_CONNECTIONS_HELIUM_USERNAME}",
+                "Password": "${env.DATABASES_CONNECTIONS_HELIUM_PASSWORD}",
+                "MaxConnections": "${env.DATABASES_CONNECTIONS_HELIUM_MAXCONNECTIONS}",
+                "Workers": "${env.DATABASES_CONNECTIONS_HELIUM_WORKERS}"
+            },
+            "Canvas": {
+                "Enabled": "${env.DATABASES_CONNECTIONS_CANVAS_ENABLED}",
+                "Type": "${env.DATABASES_CONNECTIONS_CANVAS_TYPE}",
+                "Host": "${env.DATABASES_CONNECTIONS_CANVAS_HOST}",
+                "Port": "${env.DATABASES_CONNECTIONS_CANVAS_PORT}",
+                "Database": "${env.DATABASES_CONNECTIONS_CANVAS_DATABASE}",
+                "Username": "${env.DATABASES_CONNECTIONS_CANVAS_USERNAME}",
+                "Password": "${env.DATABASES_CONNECTIONS_CANVAS_PASSWORD}",
+                "MaxConnections": "${env.DATABASES_CONNECTIONS_CANVAS_MAXCONNECTIONS}",
+                "Workers": "${env.DATABASES_CONNECTIONS_CANVAS_WORKERS}"
+            }
+        }
+    },
+    "MailRelay": {
+        "Enabled": "${env.MAILRELAY_ENABLED}",
+        "ListenPort": "${env.MAILRELAY_LISTENPORT}",
+        "Workers": "${env.MAILRELAY_WORKERS}",
+        "QueueSettings": {
+            "MaxQueueSize": "${env.MAILRELAY_QUEUESETTINGS_MAXQUEUESIZE}",
+            "RetryAttempts": "${env.MAILRELAY_QUEUESETTINGS_RETRYATTEMPTS}",
+            "RetryDelaySeconds": "${env.MAILRELAY_QUEUESETTINGS_RETRYDELAYSECONDS}"
+        },
+        "OutboundServers": [
+            {
+                "Host": "${env.MAILRELAY_OUTBOUNDSERVERS_1_HOST}",
+                "Port": "${env.MAILRELAY_OUTBOUNDSERVERS_1_PORT}",
+                "Username": "${env.MAILRELAY_OUTBOUNDSERVERS_1_USERNAME}",
+                "Password": "${env.MAILRELAY_OUTBOUNDSERVERS_1_PASSWORD}",
+                "UseTLS": "${env.MAILRELAY_OUTBOUNDSERVERS_1_USETLS}"
+            },
+            {
+                "Host": "${env.MAILRELAY_OUTBOUNDSERVERS_2_HOST}",
+                "Port": "${env.MAILRELAY_OUTBOUNDSERVERS_2_PORT}",
+                "Username": "${env.MAILRELAY_OUTBOUNDSERVERS_2_USERNAME}",
+                "Password": "${env.MAILRELAY_OUTBOUNDSERVERS_2_PASSWORD}",
+                "UseTLS": "${env.MAILRELAY_OUTBOUNDSERVERS_2_USETLS}"
+            }
+        ]
+    },
+    "mDNSClient": {
+        "Enabled": "${env.MDNSCLIENT_ENABLED}",
+        "EnableIPv6": "${env.MDNSCLIENT_ENABLEIPV6}",
+        "ScanIntervalMs": "${env.MDNSCLIENT_SCANINTERVALMS}",
+        "ServiceTypes": [
+            "${env.MDNSCLIENT_SERVICETYPES_1}",
+            "${env.MDNSCLIENT_SERVICETYPES_2}",
+            "${env.MDNSCLIENT_SERVICETYPES_3}",
+            "${env.MDNSCLIENT_SERVICETYPES_4}"
+        ],
+        "MonitoredServices": {
+            "OwnServices": "${env.MDNSCLIENT_MONITOREDSERVICES_OWNSERVICES}",
+            "LoadBalancers": "${env.MDNSCLIENT_MONITOREDSERVICES_LOADBALANCERS}",
+            "PrinterServices": "${env.MDNSCLIENT_MONITOREDSERVICES_PRINTERSERVICES}",
+            "CustomServices": []
+        },
+        "HealthCheck": {
+            "Enabled": "${env.MDNSCLIENT_HEALTHCHECK_ENABLED}",
+            "IntervalMs": "${env.MDNSCLIENT_HEALTHCHECK_INTERVALMS}",
+            "TimeoutMs": "${env.MDNSCLIENT_HEALTHCHECK_TIMEOUTMS}",
+            "RetryCount": "${env.MDNSCLIENT_HEALTHCHECK_RETRYCOUNT}"
+        }
+    },
+    "mDNSServer": {
+        "Enabled": "${env.MDNSSERVER_ENABLED}",
+        "EnableIPv6": "${env.MDNSSERVER_ENABLEIPV6}",
+        "DeviceId": "${env.MDNSSERVER_DEVICEID}",
+        "FriendlyName": "${env.MDNSSERVER_FRIENDLYNAME}",
+        "Model": "${env.MDNSSERVER_MODEL}",
+        "Manufacturer": "${env.MDNSSERVER_MANUFACTURER}",
+        "Version": "${env.MDNSSERVER_VERSION}",
+        "Services": [
+            {
+                "Name": "${env.MDNSSERVER_SERVICES_1_NAME}",
+                "Type": "${env.MDNSSERVER_SERVICES_1_TYPE}",
+                "Port": "${env.MDNSSERVER_SERVICES_1_PORT}",
+                "TxtRecords": "${env.MDNSSERVER_SERVICES_1_TXTRECORDS}"
+            },
+            {
+                "Name": "${env.MDNSSERVER_SERVICES_2_NAME}",
+                "Type": "${env.MDNSSERVER_SERVICES_2_TYPE}",
+                "Port": "${env.MDNSSERVER_SERVICES_2_PORT}",
+                "TxtRecords": "${env.MDNSSERVER_SERVICES_2_TXTRECORDS}"
+            },
+            {
+                "Name": "${env.MDNSSERVER_SERVICES_3_NAME}",
+                "Type": "${env.MDNSSERVER_SERVICES_3_TYPE}",
+                "Port": "${env.MDNSSERVER_SERVICES_3_PORT}",
+                "TxtRecords": "${env.MDNSSERVER_SERVICES_3_TXTRECORDS}"
+            }
+        ]
+    }
+}

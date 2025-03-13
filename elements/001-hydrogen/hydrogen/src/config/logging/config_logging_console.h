@@ -15,34 +15,24 @@
 #define DEFAULT_CONSOLE_ENABLED 1
 #define DEFAULT_CONSOLE_LOG_LEVEL 2  // Info level
 
-// Subsystem default log levels
-#define DEFAULT_CONSOLE_THREAD_MGMT_LEVEL 2
-#define DEFAULT_CONSOLE_SHUTDOWN_LEVEL 2
-#define DEFAULT_CONSOLE_MDNS_SERVER_LEVEL 2
-#define DEFAULT_CONSOLE_WEB_SERVER_LEVEL 2
-#define DEFAULT_CONSOLE_WEBSOCKET_LEVEL 2
-#define DEFAULT_CONSOLE_PRINT_QUEUE_LEVEL 2
-#define DEFAULT_CONSOLE_LOG_QUEUE_LEVEL 2
-
 // Validation limits
 #define MIN_LOG_LEVEL 1  // Debug
 #define MAX_LOG_LEVEL 5  // Critical
+
+// Subsystem configuration structure
+typedef struct {
+    char* name;           // Subsystem name (dynamically allocated)
+    int level;           // Log level for this subsystem
+} SubsystemConfig;
 
 // Console logging configuration structure
 struct LoggingConsoleConfig {
     int enabled;           // Whether console logging is enabled
     int default_level;     // Default log level for all subsystems
     
-    // Subsystem-specific log levels
-    struct {
-        int thread_mgmt;      // Thread management logging
-        int shutdown;         // Shutdown process logging
-        int mdns_server;      // mDNS server logging
-        int web_server;       // Web server logging
-        int websocket;        // WebSocket logging
-        int print_queue;      // Print queue logging
-        int log_queue_mgr;    // Log queue manager logging
-    } subsystems;
+    // Dynamic subsystem configuration
+    size_t subsystem_count;
+    SubsystemConfig* subsystems;  // Array of subsystem configurations
 };
 
 /*
@@ -86,5 +76,17 @@ void config_logging_console_cleanup(LoggingConsoleConfig* config);
  * - If enabled but invalid configuration
  */
 int config_logging_console_validate(const LoggingConsoleConfig* config);
+
+/*
+ * Get the log level for a specific subsystem
+ *
+ * This function looks up the log level for a given subsystem in the configuration.
+ * If the subsystem is not found, it returns the default level.
+ *
+ * @param config Pointer to LoggingConsoleConfig structure
+ * @param subsystem Name of the subsystem to look up
+ * @return Log level for the subsystem, or default_level if not found
+ */
+int get_subsystem_level_console(const LoggingConsoleConfig* config, const char* subsystem);
 
 #endif /* HYDROGEN_CONFIG_LOGGING_CONSOLE_H */

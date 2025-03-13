@@ -2,8 +2,7 @@
  * Database Logging Configuration
  *
  * Defines the configuration structure and defaults for database logging.
- * This includes settings for database connection, batching, and
- * subsystem-specific logging.
+ * This includes settings for database connections and subsystem-specific logging.
  */
 
 #ifndef HYDROGEN_CONFIG_LOGGING_DATABASE_H
@@ -13,70 +12,51 @@
 
 // Project headers
 #include "../config_forward.h"
+#include "config_logging_console.h"  // For SubsystemConfig definition
 
 // Default values
-#define DEFAULT_DB_LOGGING_ENABLED 0  // Disabled by default
-#define DEFAULT_DB_LOG_LEVEL 2        // Info level
-#define DEFAULT_DB_TABLE "hydrogen_logs"
-#define DEFAULT_DB_BATCH_SIZE 100
-#define DEFAULT_DB_FLUSH_INTERVAL_MS 5000  // 5 seconds
-
-// Default connection string (empty, must be configured)
-#define DEFAULT_DB_CONNECTION_STRING ""
-
-// Subsystem default log levels (same as other destinations)
-#define DEFAULT_DB_THREAD_MGMT_LEVEL 2
-#define DEFAULT_DB_SHUTDOWN_LEVEL 2
-#define DEFAULT_DB_MDNS_SERVER_LEVEL 2
-#define DEFAULT_DB_WEB_SERVER_LEVEL 2
-#define DEFAULT_DB_WEBSOCKET_LEVEL 2
-#define DEFAULT_DB_PRINT_QUEUE_LEVEL 2
-#define DEFAULT_DB_LOG_QUEUE_LEVEL 2
+#define DEFAULT_DATABASE_LOGGING_ENABLED 1
+#define DEFAULT_DATABASE_LOG_LEVEL 4  // Error level by default for DB
+#define DEFAULT_DATABASE_BATCH_SIZE 100
+#define DEFAULT_DATABASE_FLUSH_INTERVAL 1000  // ms
+#define DEFAULT_DATABASE_CONNECTION_STRING "sqlite:///var/lib/hydrogen/logs.db"
+#define DEFAULT_DATABASE_TABLE "system_logs"
 
 // Validation limits
-#define MIN_LOG_LEVEL 1                // Debug
-#define MAX_LOG_LEVEL 5                // Critical
+#define MIN_LOG_LEVEL 1
+#define MAX_LOG_LEVEL 5
 #define MIN_BATCH_SIZE 1
 #define MAX_BATCH_SIZE 1000
-#define MIN_FLUSH_INTERVAL_MS 100      // 100ms minimum
-#define MAX_FLUSH_INTERVAL_MS 60000    // 1 minute maximum
+#define MIN_FLUSH_INTERVAL 100    // ms
+#define MAX_FLUSH_INTERVAL 10000  // ms
+#define MAX_CONNECTION_STRING_LENGTH 256
 #define MAX_TABLE_NAME_LENGTH 64
-#define MAX_CONNECTION_STRING_LENGTH 1024
 
 // Database logging configuration structure
 struct LoggingDatabaseConfig {
-    int enabled;                // Whether database logging is enabled
-    int default_level;          // Default log level for all subsystems
-    char* connection_string;    // Database connection string
-    char* table_name;          // Table name for log entries
-    int batch_size;            // Number of logs to batch before writing
-    int flush_interval_ms;     // How often to flush logs to database
+    int enabled;           // Whether database logging is enabled
+    int default_level;     // Default log level for all subsystems
+    size_t batch_size;     // Number of records to batch before writing
+    int flush_interval;    // Maximum time between writes (ms)
+    char* connection_string;  // Database connection string
+    char* table_name;        // Table name for log entries
     
-    // Subsystem-specific log levels
-    struct {
-        int thread_mgmt;      // Thread management logging
-        int shutdown;         // Shutdown process logging
-        int mdns_server;      // mDNS server logging
-        int web_server;       // Web server logging
-        int websocket;        // WebSocket logging
-        int print_queue;      // Print queue logging
-        int log_queue_mgr;    // Log queue manager logging
-    } subsystems;
+    // Dynamic subsystem configuration
+    size_t subsystem_count;
+    SubsystemConfig* subsystems;  // Array of subsystem configurations
 };
 
 /*
  * Initialize database logging configuration with default values
  *
  * This function initializes a new LoggingDatabaseConfig structure with
- * default values. Note that database logging is disabled by default and
- * requires explicit configuration of connection string.
+ * default values that provide reasonable logging settings.
  *
  * @param config Pointer to LoggingDatabaseConfig structure to initialize
  * @return 0 on success, -1 on failure
  *
  * Error conditions:
  * - If config is NULL
- * - If memory allocation fails for strings
  */
 int config_logging_database_init(LoggingDatabaseConfig* config);
 
@@ -96,10 +76,9 @@ void config_logging_database_cleanup(LoggingDatabaseConfig* config);
  *
  * This function performs comprehensive validation of the configuration:
  * - Verifies all log levels are within valid ranges
- * - Validates connection string format
- * - Checks table name is valid
- * - Validates batch and flush settings
+ * - Validates batch size and flush interval settings
  * - Validates subsystem log level relationships
+ * - Checks connection string and table name
  *
  * @param config Pointer to LoggingDatabaseConfig structure to validate
  * @return 0 if valid, -1 if invalid
@@ -107,9 +86,21 @@ void config_logging_database_cleanup(LoggingDatabaseConfig* config);
  * Error conditions:
  * - If config is NULL
  * - If any log level is outside valid range
- * - If enabled but connection string is missing/invalid
- * - If batch or flush settings are invalid
+ * - If enabled but batch settings are invalid
+ * - If connection string or table name is invalid
  */
 int config_logging_database_validate(const LoggingDatabaseConfig* config);
+
+/*
+ * Get the log level for a specific subsystem
+ *
+ * This function looks up the log level for a given subsystem in the configuration.
+ * If the subsystem is not found, it returns the default level.
+ *
+ * @param config Pointer to LoggingDatabaseConfig structure
+ * @param subsystem Name of the subsystem to look up
+ * @return Log level for the subsystem, or default_level if not found
+ */
+int get_subsystem_level_database(const LoggingDatabaseConfig* config, const char* subsystem);
 
 #endif /* HYDROGEN_CONFIG_LOGGING_DATABASE_H */

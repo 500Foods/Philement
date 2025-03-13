@@ -34,6 +34,7 @@
 // Core system headers
 #include <sys/types.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 // Version information
 #ifndef VERSION
@@ -132,5 +133,18 @@ AppConfig* load_config(const char* config_path);
  * @param config_path Path where configuration should be created
  */
 void create_default_config(const char* config_path);
+
+/*
+ * Helper function to handle environment variable logging
+ * This function is exported for use by config_env.c
+ * 
+ * @param key_name The configuration key name
+ * @param var_name The environment variable name
+ * @param env_value The value from the environment variable
+ * @param default_value The default value if not set
+ * @param is_sensitive Whether this contains sensitive information
+ */
+void log_config_env_value(const char* key_name, const char* var_name, const char* env_value, 
+                       const char* default_value, bool is_sensitive);
 
 #endif /* CONFIG_H */

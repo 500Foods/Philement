@@ -15,28 +15,23 @@ int config_logging_database_init(LoggingDatabaseConfig* config) {
     }
 
     // Initialize basic settings
-    config->enabled = DEFAULT_DB_LOGGING_ENABLED;
-    config->default_level = DEFAULT_DB_LOG_LEVEL;
-    config->batch_size = DEFAULT_DB_BATCH_SIZE;
-    config->flush_interval_ms = DEFAULT_DB_FLUSH_INTERVAL_MS;
+    config->enabled = DEFAULT_DATABASE_LOGGING_ENABLED;
+    config->default_level = DEFAULT_DATABASE_LOG_LEVEL;
+    config->batch_size = DEFAULT_DATABASE_BATCH_SIZE;
+    config->flush_interval = DEFAULT_DATABASE_FLUSH_INTERVAL;
 
     // Initialize strings
-    config->connection_string = strdup(DEFAULT_DB_CONNECTION_STRING);
-    config->table_name = strdup(DEFAULT_DB_TABLE);
+    config->connection_string = strdup(DEFAULT_DATABASE_CONNECTION_STRING);
+    config->table_name = strdup(DEFAULT_DATABASE_TABLE);
     
     if (!config->connection_string || !config->table_name) {
         config_logging_database_cleanup(config);
         return -1;
     }
 
-    // Initialize subsystem log levels
-    config->subsystems.thread_mgmt = DEFAULT_DB_THREAD_MGMT_LEVEL;
-    config->subsystems.shutdown = DEFAULT_DB_SHUTDOWN_LEVEL;
-    config->subsystems.mdns_server = DEFAULT_DB_MDNS_SERVER_LEVEL;
-    config->subsystems.web_server = DEFAULT_DB_WEB_SERVER_LEVEL;
-    config->subsystems.websocket = DEFAULT_DB_WEBSOCKET_LEVEL;
-    config->subsystems.print_queue = DEFAULT_DB_PRINT_QUEUE_LEVEL;
-    config->subsystems.log_queue_mgr = DEFAULT_DB_LOG_QUEUE_LEVEL;
+    // Initialize subsystem array
+    config->subsystem_count = 0;
+    config->subsystems = NULL;
 
     return 0;
 }
@@ -50,6 +45,14 @@ void config_logging_database_cleanup(LoggingDatabaseConfig* config) {
     free(config->connection_string);
     free(config->table_name);
 
+    // Free subsystem array
+    if (config->subsystems) {
+        for (size_t i = 0; i < config->subsystem_count; i++) {
+            free(config->subsystems[i].name);
+        }
+        free(config->subsystems);
+    }
+
     // Zero out the structure
     memset(config, 0, sizeof(LoggingDatabaseConfig));
 }
@@ -60,13 +63,12 @@ static int validate_log_level(int level) {
 
 static int validate_subsystem_levels(const LoggingDatabaseConfig* config) {
     // Validate all subsystem log levels
-    return validate_log_level(config->subsystems.thread_mgmt) &&
-           validate_log_level(config->subsystems.shutdown) &&
-           validate_log_level(config->subsystems.mdns_server) &&
-           validate_log_level(config->subsystems.web_server) &&
-           validate_log_level(config->subsystems.websocket) &&
-           validate_log_level(config->subsystems.print_queue) &&
-           validate_log_level(config->subsystems.log_queue_mgr);
+    for (size_t i = 0; i < config->subsystem_count; i++) {
+        if (!validate_log_level(config->subsystems[i].level)) {
+            return 0;  // Return false if any level is invalid
+        }
+    }
+    return 1;  // All levels valid
 }
 
 static int validate_table_name(const char* name) {
@@ -107,6 +109,15 @@ static int validate_connection_string(const char* conn_str) {
     return 0;
 }
 
+int get_subsystem_level_database(const LoggingDatabaseConfig* config, const char* subsystem) {
+    for (size_t i = 0; i < config->subsystem_count; i++) {
+        if (strcmp(config->subsystems[i].name, subsystem) == 0) {
+            return config->subsystems[i].level;
+        }
+    }
+    return config->default_level;  // Return default if subsystem not found
+}
+
 int config_logging_database_validate(const LoggingDatabaseConfig* config) {
     if (!config) {
         return -1;
@@ -141,33 +152,16 @@ int config_logging_database_validate(const LoggingDatabaseConfig* config) {
         }
 
         // Validate flush interval
-        if (config->flush_interval_ms < MIN_FLUSH_INTERVAL_MS ||
-            config->flush_interval_ms > MAX_FLUSH_INTERVAL_MS) {
+        if (config->flush_interval < MIN_FLUSH_INTERVAL ||
+            config->flush_interval > MAX_FLUSH_INTERVAL) {
             return -1;
         }
 
-        // Validate relationships between log levels
-        
-        // Critical subsystems should not have lower log level than default
-        if (config->subsystems.shutdown < config->default_level ||
-            config->subsystems.thread_mgmt < config->default_level) {
-            return -1;
-        }
-
-        // Log queue manager should have at least info level when enabled
-        if (config->subsystems.log_queue_mgr < 2) {  // 2 = Info level
-            return -1;
-        }
-
-        // Web server and WebSocket should have matching log levels
-        // since they are tightly coupled
-        if (config->subsystems.web_server != config->subsystems.websocket) {
-            return -1;
-        }
+        // Each subsystem can have its own level, no relationships enforced
 
         // Batch size and flush interval relationship
         // Ensure we don't flush too frequently with large batches
-        if (config->batch_size > 100 && config->flush_interval_ms < 1000) {
+        if (config->batch_size > 100 && config->flush_interval < 1000) {
             return -1;
         }
     }

@@ -59,28 +59,39 @@ if (json_is_object(databases)) {
                     log_config_section_item("Type", "%s", LOG_LEVEL_STATE, 0, 2, NULL, NULL, json_string_value(type));
                 }
                 
+                // Process host with environment variable support and default
                 json_t* host = json_object_get(conn, "Host");
-                if (json_is_string(host)) {
-                    log_config_section_item("Host", "%s", LOG_LEVEL_STATE, 0, 2, NULL, NULL, json_string_value(host));
-                }
+                char* host_value = get_config_string_with_env("Host", host, "localhost");
+                log_config_section_item("Host", "%s", LOG_LEVEL_STATE, !host, 2, NULL, NULL, host_value);
+                free(host_value);
                 
+                // Process port with environment variable support and default
                 json_t* port = json_object_get(conn, "Port");
-                if (json_is_string(port)) {
-                    log_config_section_item("Port", "%s", LOG_LEVEL_STATE, 0, 2, NULL, NULL, json_string_value(port));
-                } else if (json_is_integer(port)) {
+                if (json_is_integer(port)) {
                     log_config_section_item("Port", "%d", LOG_LEVEL_STATE, 0, 2, NULL, NULL, json_integer_value(port));
+                } else {
+                    char* port_value = get_config_string_with_env("Port", port, "5432"); // Default postgres port
+                    log_config_section_item("Port", "%s", LOG_LEVEL_STATE, !port, 2, NULL, NULL, port_value);
+                    free(port_value);
                 }
                 
+                // Process database name with environment variable support and default
                 json_t* database = json_object_get(conn, "Database");
-                if (json_is_string(database)) {
-                    log_config_section_item("Database", "%s", LOG_LEVEL_STATE, 0, 2, NULL, NULL, json_string_value(database));
-                }
+                char* db_value = get_config_string_with_env("Database", database, conn_names[i]);
+                log_config_section_item("Database", "%s", LOG_LEVEL_STATE, !database, 2, NULL, NULL, db_value);
+                free(db_value);
                 
-                // Don't log username/password directly for security
+                // Process username with environment variable support but don't show actual value for security
                 json_t* username = json_object_get(conn, "Username");
-                if (json_is_string(username)) {
-                    log_config_section_item("Username", "configured", LOG_LEVEL_STATE, 0, 2, NULL, NULL);
-                }
+                char* username_value = get_config_string_with_env("Username", username, "postgres"); // Default postgres username
+                // Just log that it's configured, not the actual value
+                log_config_section_item("Username", "configured", LOG_LEVEL_STATE, !username, 2, NULL, NULL);
+                free(username_value);
+                
+                // Process password but don't log it at all (security)
+                json_t* password = json_object_get(conn, "Password");
+                char* password_value = get_config_string_with_env("Password", password, "");
+                free(password_value); // Just process and free, don't log
                 
                 // Enabled state for this database
                 json_t* enabled = json_object_get(conn, "Enabled");

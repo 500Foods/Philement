@@ -43,11 +43,43 @@ if (json_is_object(mail_relay)) {
             
             log_config_section_item("Server", "%d", LOG_LEVEL_STATE, 0, 1, NULL, NULL, (int)i + 1);
             
+            // Create a server-specific key for clearer context
+            char server_key[32];
+            snprintf(server_key, sizeof(server_key), "SMTP_SERVER%zu", i+1);
+            
+            // Host with environment variable support
             json_t* host = json_object_get(server, "Host");
-            if (json_is_string(host)) {
-                log_config_section_item("Host", "%s", LOG_LEVEL_STATE, 0, 2, NULL, NULL, 
-                    json_string_value(host));
+            char* host_value = get_config_string_with_env("Host", host, "smtp.example.com");
+            log_config_section_item("Host", "%s", LOG_LEVEL_STATE, !host, 2, NULL, NULL, host_value);
+            free(host_value);
+            
+            // Port with environment variable support
+            json_t* port = json_object_get(server, "Port");
+            if (json_is_integer(port)) {
+                log_config_section_item("Port", "%d", LOG_LEVEL_STATE, 0, 2, NULL, NULL, json_integer_value(port));
+            } else {
+                char* port_value = get_config_string_with_env("Port", port, "25"); // Default SMTP port
+                log_config_section_item("Port", "%s", LOG_LEVEL_STATE, !port, 2, NULL, NULL, port_value);
+                free(port_value);
             }
+            
+            // Username with environment variable support
+            json_t* username = json_object_get(server, "Username");
+            char* username_value = get_config_string_with_env("Username", username, "");
+            if (username_value && strlen(username_value) > 0) {
+                log_config_section_item("Username", "configured", LOG_LEVEL_STATE, 0, 2, NULL, NULL);
+            }
+            free(username_value);
+            
+            // Password with environment variable support (not logged)
+            json_t* password = json_object_get(server, "Password");
+            char* password_value = get_config_string_with_env("Password", password, "");
+            free(password_value); // Just process and free, don't log
+            
+            json_t* useTLS = json_object_get(server, "UseTLS");
+            bool tls_enabled = get_config_bool(useTLS, true);
+            log_config_section_item("UseTLS", "%s", LOG_LEVEL_STATE, !useTLS, 2, NULL, NULL,
+                tls_enabled ? "true" : "false");
         }
         
         if (server_count > 3) {
