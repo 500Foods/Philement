@@ -1,0 +1,44 @@
+name: Sync Hydrogen to Private Repo
+
+on:
+  push:
+    branches:
+      - main  # Change this if your default branch is different (e.g., 'master')
+    paths:
+      - 'elements/001-hydrogen/hydrogen/**'  # Triggers on changes in this folder and subfolders
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Public Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for commit tracking
+
+      - name: Set Up Git
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+
+      - name: Clone Private Repo
+        run: |
+          git clone https://x-access-token:${{ secrets.LB_SYNC_TOKEN }}@github.com/lanboss-ltd/Acuranzo-Server-C.git
+          cd Acuranzo-Server-C
+
+      - name: Sync Hydrogen Folder
+        run: |
+          cd Acuranzo-Server-C
+          # Clear and copy the hydrogen folder
+          rm -rf hydrogen  # Remove existing hydrogen folder (adjust if needed)
+          mkdir -p hydrogen
+          cp -r ../elements/001-hydrogen/hydrogen/* hydrogen/
+
+          # Stage changes
+          git add hydrogen
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Sync hydrogen from 500Foods/Philement to LB: $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git push
+          fi
