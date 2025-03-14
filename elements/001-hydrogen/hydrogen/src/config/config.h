@@ -54,7 +54,8 @@
 #include "resources/config_resources.h"
 #include "mdns/config_mdns.h"
 #include "logging/config_logging.h"
-#include "restapi/config_api.h"
+#include "api/config_api.h"
+#include "notify/config_notify.h"
 #include "print/config_motion.h"
 
 // Type-specific handling
@@ -95,6 +96,7 @@ struct AppConfig {
     PrintQueueConfig print_queue;
     OIDCConfig oidc;
     APIConfig api;
+    NotifyConfig notify;
     LoggingConfig logging;
 };
 

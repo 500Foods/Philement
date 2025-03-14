@@ -11,6 +11,7 @@
 #include "config_logging_console.h"
 #include "config_logging_file.h"
 #include "config_logging_database.h"
+#include "config_logging_notify.h"
 
 // Project headers
 #include "../config_forward.h"
@@ -40,6 +41,7 @@ struct LoggingConfig {
     LoggingConsoleConfig console;   // Console output settings
     LoggingFileConfig file;         // File output settings
     LoggingDatabaseConfig database; // Database output settings
+    LoggingNotifyConfig notify;     // Notification output settings
 };
 
 /*
