@@ -107,26 +107,24 @@ if (json_is_object(logging)) {
                 }
                 config->logging.levels[i].name = name;
                 
-                // Log level with environment info
-                if (json_is_string(level_value) || json_is_string(level_name)) {
-                    const char* env_val = json_is_string(level_value) ? json_string_value(level_value) : NULL;
-                    const char* env_name = json_is_string(level_name) ? json_string_value(level_name) : NULL;
-                    
-                    if (env_val && strncmp(env_val, "${env.", 6) == 0) {
-                        env_val = env_val + 6;
-                        env_val = env_val + strlen(env_val) - 1;  // Remove trailing }
+                // Log level info
+                if (json_is_string(level_name) && strncmp(json_string_value(level_name), "${env.", 6) == 0) {
+                    // Handle environment variable format
+                    const char* env_name = json_string_value(level_name);
+                    size_t len = strlen(env_name) - 7;  // Remove ${env. and }
+                    char* clean_name = malloc(len + 1);
+                    if (clean_name) {
+                        strncpy(clean_name, env_name + 6, len);
+                        clean_name[len] = '\0';
+                        log_config_section_item("Level", "$%s: not set, using %s *", 
+                            LOG_LEVEL_STATE, true, 1, NULL, NULL, "Config-Env",
+                            clean_name,
+                            config->logging.levels[i].name);
+                        free(clean_name);
                     }
-                    if (env_name && strncmp(env_name, "${env.", 6) == 0) {
-                        env_name = env_name + 6;
-                        env_name = env_name + strlen(env_name) - 1;  // Remove trailing }
-                    }
-                    
-                    log_config_section_item("Level", "Level: LogLevel %s: (not set) %d * %s: (not set) %s *", 
-                        LOG_LEVEL_STATE, true, 1, NULL, NULL, "Config-Env",
-                        env_val ? env_val : "N/A", config->logging.levels[i].value,
-                        env_name ? env_name : "N/A", config->logging.levels[i].name);
                 } else {
-                    log_config_section_item("Level", "LogLevel %d: %s", LOG_LEVEL_STATE, is_default, 1, NULL, NULL, "Config",
+                    // Direct value format
+                    log_config_section_item("Level", "%d: %s", LOG_LEVEL_STATE, is_default, 1, NULL, NULL, "Config",
                         config->logging.levels[i].value, config->logging.levels[i].name);
                 }
             }
@@ -233,40 +231,49 @@ if (json_is_object(logging)) {
                 config->logging.notify.default_level = level_value;
             }
 
-            // Log configuration on separate lines
-            if (json_is_string(enabled)) {
+            // Log enabled status
+            if (json_is_string(enabled) && strncmp(json_string_value(enabled), "${env.", 6) == 0) {
                 const char* env_val = json_string_value(enabled);
-                if (strncmp(env_val, "${env.", 6) == 0) {
-                    log_config_section_item("Enabled", "$%.*s: (not set) %s *", LOG_LEVEL_STATE, true, 1, NULL, NULL, "Config",
-                        (int)(strlen(env_val) - 7), env_val + 6,
-                        is_enabled ? "true" : "false");
+                size_t len = strlen(env_val) - 7;
+                char* clean_name = malloc(len + 1);
+                if (clean_name) {
+                    strncpy(clean_name, env_val + 6, len);
+                    clean_name[len] = '\0';
+                    log_config_section_item("Enabled", "$%s: not set, using %s *", 
+                        LOG_LEVEL_STATE, true, 1, NULL, NULL, "Config-Env",
+                        clean_name, is_enabled ? "true" : "false");
+                    free(clean_name);
                 }
             } else {
                 log_config_section_item("Enabled", "%s", LOG_LEVEL_STATE, !enabled, 1, NULL, NULL, "Config",
                     is_enabled ? "true" : "false");
             }
 
-            if (json_is_string(default_level)) {
+            // Log default level
+            if (json_is_string(default_level) && strncmp(json_string_value(default_level), "${env.", 6) == 0) {
                 const char* env_val = json_string_value(default_level);
-                if (strncmp(env_val, "${env.", 6) == 0) {
-                    log_config_section_item("LogLevel", "$%.*s: (not set) %s *", LOG_LEVEL_STATE, true, 1, NULL, NULL, "Config",
-                        (int)(strlen(env_val) - 7), env_val + 6,
-                        config_logging_get_level_name(&config->logging, level_value));
+                size_t len = strlen(env_val) - 7;
+                char* clean_name = malloc(len + 1);
+                if (clean_name) {
+                    strncpy(clean_name, env_val + 6, len);
+                    clean_name[len] = '\0';
+                    log_config_section_item("LogLevel", "$%s: not set, using %s *", 
+                        LOG_LEVEL_STATE, true, 1, NULL, NULL, "Config-Env",
+                        clean_name, config_logging_get_level_name(&config->logging, level_value));
+                    free(clean_name);
                 }
             } else {
                 log_config_section_item("LogLevel", "%s", LOG_LEVEL_STATE, !default_level, 1, NULL, NULL, "Config",
                     config_logging_get_level_name(&config->logging, level_value));
             }
 
-            // Process subsystems if present
-            json_t* subsystems = json_object_get(output, "Subsystems");
-            if (json_is_object(subsystems)) {
-                size_t subsystem_count = json_object_size(subsystems);
-                log_config_section_item("Subsystems", "%zu configured", LOG_LEVEL_STATE, 0, 1, NULL, NULL, "Config",
-                    subsystem_count);
-
-                // Allocate subsystem array
-                SubsystemConfig* subsystem_array = calloc(subsystem_count, sizeof(SubsystemConfig));
+                // Process subsystems if present
+                json_t* subsystems = json_object_get(output, "Subsystems");
+                if (json_is_object(subsystems)) {
+                    size_t subsystem_count = json_object_size(subsystems);
+                    log_config_section_item("Subsystems", "%zu configured", LOG_LEVEL_STATE, 0, 1, NULL, NULL, "Config",
+                        subsystem_count);
+                    SubsystemConfig* subsystem_array = calloc(subsystem_count, sizeof(SubsystemConfig));
                 if (!subsystem_array) {
                     log_this("Config", "Failed to allocate subsystem array", LOG_LEVEL_ERROR);
                     // Cleanup already allocated resources
@@ -345,8 +352,26 @@ if (json_is_object(logging)) {
                         }
                         subsystem_array[j].level = level;
 
-                        log_config_section_item(keys[j], "%s", LOG_LEVEL_STATE, 0, 2, NULL, NULL, "Config",
-                            config_logging_get_level_name(&config->logging, level));
+                        // Log subsystem level with proper indentation
+                        if (json_is_string(level_value) && strncmp(json_string_value(level_value), "${env.", 6) == 0) {
+                            // Handle environment variable format
+                            const char* env_val = json_string_value(level_value);
+                            size_t len = strlen(env_val) - 7;  // Remove ${env. and }
+                            char* clean_name = malloc(len + 1);
+                            if (clean_name) {
+                                strncpy(clean_name, env_val + 6, len);
+                                clean_name[len] = '\0';
+                                log_config_section_item(keys[j], "$%s: not set, using %s *", 
+                                    LOG_LEVEL_STATE, true, 2, NULL, NULL, "Config-Env",
+                                    clean_name, 
+                                    config_logging_get_level_name(&config->logging, level));
+                                free(clean_name);
+                            }
+                        } else {
+                            // Direct value format with proper indentation
+                            log_config_section_item(keys[j], "%s", LOG_LEVEL_STATE, 0, 2, NULL, NULL, "Config",
+                                config_logging_get_level_name(&config->logging, level));
+                        }
                     }
                     
                     // Store subsystem array in appropriate output config
@@ -412,7 +437,7 @@ if (json_is_object(logging)) {
             return NULL;
         }
         config->logging.levels[i].name = name;
-        log_config_section_item("Level", "LogLevel %d: %s", LOG_LEVEL_STATE, 1, 1, NULL, NULL, "Config",
+        log_config_section_item("Level", "%d: %s", LOG_LEVEL_STATE, 1, 1, NULL, NULL, "Config",
             config->logging.levels[i].value, config->logging.levels[i].name);
     }
 }
