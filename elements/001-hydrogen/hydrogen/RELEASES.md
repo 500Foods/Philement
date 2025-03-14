@@ -25,6 +25,8 @@ EDITING GUIDELINES (not visible when rendered):
 -->
 
 - March 2025
+  - [2025-Mar-14 (Wed)](docs/releases/2025-03-14.md): Repo Work
+  - [2025-Mar-13 (Wed)](docs/releases/2025-03-13.md): Config work
   - [2025-Mar-12 (Wed)](docs/releases/2025-03-12.md): Code Quality, Testing
   - [2025-Mar-11 (Mon)](docs/releases/2025-03-11.md): Configuration System, WebSocket Server, System Architecture, Web Server
   - [2025-Mar-10 (Sun)](docs/releases/2025-03-10.md): Configuration System, Network Infrastructure, OIDC Service, Testing Framework
