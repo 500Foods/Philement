@@ -43,7 +43,8 @@
 #include "resources/config_resources.h"
 #include "mdns/config_mdns.h"
 #include "logging/config_logging.h"
-#include "restapi/config_api.h"
+#include "api/config_api.h"
+#include "notify/config_notify.h"
 
 #include "../logging/logging.h"
 #include "../utils/utils.h"
@@ -420,8 +421,11 @@ AppConfig* load_config(const char* cmdline_path) {
     // WebServer Configuration
     // #include "config/json_webserver.inc"
 
-    // RESTAPI Configuration
-    // #include "config/json_restapi.inc"
+    // API Configuration
+    #include "config/json_api.inc"
+
+    // Notify Configuration
+    #include "config/json_notify.inc"
     
     // Swagger Configuration
     // #include "config/json_swagger.inc"

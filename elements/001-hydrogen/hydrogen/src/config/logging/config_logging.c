@@ -42,6 +42,11 @@ int config_logging_init(LoggingConfig* config) {
         return -1;
     }
 
+    if (config_logging_notify_init(&config->notify) != 0) {
+        config_logging_cleanup(config);
+        return -1;
+    }
+
     return 0;
 }
 
@@ -57,6 +62,7 @@ void config_logging_cleanup(LoggingConfig* config) {
     config_logging_console_cleanup(&config->console);
     config_logging_file_cleanup(&config->file);
     config_logging_database_cleanup(&config->database);
+    config_logging_notify_cleanup(&config->notify);
 
     // Zero out the structure
     memset(config, 0, sizeof(LoggingConfig));
@@ -93,14 +99,16 @@ int config_logging_validate(const LoggingConfig* config) {
     // Validate all logging destinations
     if (config_logging_console_validate(&config->console) != 0 ||
         config_logging_file_validate(&config->file) != 0 ||
-        config_logging_database_validate(&config->database) != 0) {
+        config_logging_database_validate(&config->database) != 0 ||
+        config_logging_notify_validate(&config->notify) != 0) {
         return -1;
     }
 
     // Ensure at least one logging destination is enabled
     if (!config->console.enabled &&
         !config->file.enabled &&
-        !config->database.enabled) {
+        !config->database.enabled &&
+        !config->notify.enabled) {
         return -1;
     }
 

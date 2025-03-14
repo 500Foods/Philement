@@ -158,8 +158,8 @@ if (json_is_object(logging)) {
     }
 
     // Process output configurations
-    const char* outputs[] = {"Console", "File", "Database"};
-    for (size_t i = 0; i < 3; i++) {
+    const char* outputs[] = {"Console", "File", "Database", "Notify"};
+    for (size_t i = 0; i < 4; i++) {
         json_t* output = json_object_get(logging, outputs[i]);
         if (json_is_object(output)) {
             log_config_section_item(outputs[i], "", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config");
@@ -228,6 +228,9 @@ if (json_is_object(logging)) {
             } else if (strcmp(outputs[i], "Database") == 0) {
                 config->logging.database.enabled = is_enabled;
                 config->logging.database.default_level = level_value;
+            } else if (strcmp(outputs[i], "Notify") == 0) {
+                config->logging.notify.enabled = is_enabled;
+                config->logging.notify.default_level = level_value;
             }
 
             // Log configuration on separate lines
@@ -356,6 +359,25 @@ if (json_is_object(logging)) {
                     } else if (strcmp(outputs[i], "Database") == 0) {
                         config->logging.database.subsystem_count = subsystem_count;
                         config->logging.database.subsystems = subsystem_array;
+                    } else if (strcmp(outputs[i], "Notify") == 0) {
+                        config->logging.notify.subsystem_count = subsystem_count;
+                        // Convert subsystem array to notify format
+                        // Allocate array using LoggingNotifyConfig's subsystem type
+                        config->logging.notify.subsystems = calloc(subsystem_count, 
+                            sizeof(*config->logging.notify.subsystems));
+                        
+                        if (!config->logging.notify.subsystems) {
+                            log_this("Config", "Failed to allocate notify subsystems", LOG_LEVEL_ERROR);
+                            free(subsystem_array);
+                            return NULL;
+                        }
+
+                        // Copy data directly into notify config
+                        for (size_t j = 0; j < subsystem_count; j++) {
+                            config->logging.notify.subsystems[j].name = subsystem_array[j].name;
+                            config->logging.notify.subsystems[j].level = subsystem_array[j].level;
+                        }
+                        free(subsystem_array);  // Original array no longer needed
                     }
                     
                     free(keys);

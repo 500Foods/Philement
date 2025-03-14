@@ -109,6 +109,7 @@
 #include "../queue/queue.h"
 #include "../config/config.h"
 #include "../config/config_priority.h"
+#include "../config/logging/config_logging_notify.h"
 #include "../utils/utils.h"
 
 // Public interface declarations
@@ -131,6 +132,7 @@ static void cleanup_log_queue_manager(void* arg);
 static bool should_log_to_console(const char* subsystem, int priority, const LoggingConsoleConfig* config);
 static bool should_log_to_file(const char* subsystem, int priority, const LoggingFileConfig* config);
 static bool should_log_to_database(const char* subsystem, int priority, const LoggingDatabaseConfig* config);
+static bool should_log_to_notify(const char* subsystem, int priority, const LoggingNotifyConfig* config);
 static void process_log_message(const char* message, int priority);
 
 // Thread cleanup handler with guaranteed file closure
@@ -205,6 +207,21 @@ static bool should_log_to_file(const char* subsystem, int priority, const Loggin
     return priority >= configured_level;
 }
 
+static bool should_log_to_notify(const char* subsystem, int priority, const LoggingNotifyConfig* config) {
+    if (!config->enabled) {
+        return false;
+    }
+
+    int configured_level = get_subsystem_level_notify(config, subsystem);
+    
+    // Special handling for ALL and NONE
+    if (configured_level == LOG_LEVEL_TRACE) return true;
+    if (configured_level == LOG_LEVEL_QUIET) return false;
+
+    // For normal levels, message priority must be >= configured level
+    return priority >= configured_level;
+}
+
 static bool should_log_to_database(const char* subsystem, int priority, const LoggingDatabaseConfig* config) {
     if (!config->enabled) {
         return false;
@@ -232,6 +249,7 @@ static void process_log_message(const char* message, int priority) {
         bool logConsole = json_boolean_value(json_object_get(json, "LogConsole"));
         bool logDatabase = json_boolean_value(json_object_get(json, "LogDatabase"));
         bool logFile = json_boolean_value(json_object_get(json, "LogFile"));
+        bool logNotify = json_boolean_value(json_object_get(json, "LogNotify"));
 
         char formatted_priority[MAX_PRIORITY_LABEL_WIDTH + 5];
         snprintf(formatted_priority, sizeof(formatted_priority), "[ %-*s ]", MAX_PRIORITY_LABEL_WIDTH, get_priority_label(priority));
@@ -263,6 +281,23 @@ static void process_log_message(const char* message, int priority) {
 
         if (logDatabase && should_log_to_database(subsystem, priority, &app_config->logging.database)) {
             // TODO: Implement database logging when needed
+        }
+
+        if (logNotify && should_log_to_notify(subsystem, priority, &app_config->logging.notify)) {
+            // Get the configured notifier type
+            const char* notifier = app_config->notify.notifier;
+            if (notifier && strcmp(notifier, "SMTP") == 0 && app_config->notify.smtp.host) {
+                // Format message for email
+                char subject[256];
+                snprintf(subject, sizeof(subject), "[%s] %s Alert", 
+                        app_config->server.server_name ? app_config->server.server_name : "Hydrogen",
+                        priority >= LOG_LEVEL_ERROR ? "Error" : "Warning");
+
+                // TODO: Call SMTP send function (to be implemented in notify subsystem)
+                // For now, we'll log that we would send a notification
+                fprintf(stderr, "Would send SMTP notification to %s: Subject: %s, Message: %s", 
+                        app_config->notify.smtp.host, subject, log_entry);
+            }
         }
 
         json_decref(json);
