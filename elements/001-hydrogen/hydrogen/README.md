@@ -282,3 +282,52 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
     }
 }
 ```
+## Latest Test Results
+
+Generated on: Mon Mar 17 15:56:04 PDT 2025
+
+### Summary
+
+| Metric | Value |
+| ------ | ----- |
+| Total Tests | 13 |
+| Passed | 0 |
+| Failed | 0 |
+| Skipped | 13 |
+| Total Subtests | 0 |
+| Passed Subtests | 0 |
+| Failed Subtests | 0 |
+| Runtime | 0m 3s |
+
+### Individual Test Results
+
+| Test | Status | Details |
+| ---- | ------ | ------- |
+| env_payload | ⏭️ Skipped | Test was skipped  |
+| compilation | ⏭️ Skipped | Test was skipped  |
+| startup_shutdown | ⏭️ Skipped | Test was skipped  |
+| api_prefixes | ⏭️ Skipped | Test was skipped  |
+| dynamic_loading | ⏭️ Skipped | Test was skipped  |
+| env_payload | ⏭️ Skipped | Test was skipped  |
+| env_variables | ⏭️ Skipped | Test was skipped  |
+| json_error_handling | ⏭️ Skipped | Test was skipped  |
+| library_dependencies | ⏭️ Skipped | Test was skipped  |
+| socket_rebind | ⏭️ Skipped | Test was skipped  |
+| swagger_ui | ⏭️ Skipped | Test was skipped  |
+| system_endpoints | ⏭️ Skipped | Test was skipped  |
+| z_codebase | ⏭️ Skipped | Test was skipped  |
+## Repository Information
+
+Generated via cloc: Mon Mar 17 15:56:04 PDT 2025
+
+| Language | Files | Blank Lines | Comment Lines | Code Lines |
+| -------- | ----- | ----------- | ------------- | ---------- |
+| C | 116 | 3328 | 4970 | 14664 |
+| Markdown | 95 | 3514 | 27 | 12632 |
+| JSON | 17 | 0 | 0 | 4798 |
+| Bourne | Shell | 21 | 1183 | 1230 |
+| C/C++ | Header | 95 | 888 | 4184 |
+| HTML | 1 | 74 | 0 | 493 |
+| Text | 1 | 0 | 0 | 472 |
+| make | 2 | 50 | 211 | 201 |
+| **Total** | **348** | **9037** | **10622** | **40136** |
