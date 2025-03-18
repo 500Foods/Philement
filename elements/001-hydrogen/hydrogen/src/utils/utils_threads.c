@@ -15,8 +15,13 @@
 // Project headers
 #include "utils_threads.h"
 #include "utils_logging.h"
-#include "../logging/logging.h"
+#include "../logging/logging.h"  // For LOG_LEVEL constants
 #include "../state/state.h"
+
+// Log level constants from logging.h
+#ifndef LOG_LEVEL_STATE
+#error "LOG_LEVEL_STATE not defined - logging.h not properly included"
+#endif
 
 // Public interface declarations
 void init_service_threads(ServiceThreads *threads);
@@ -56,15 +61,12 @@ void add_service_thread(ServiceThreads *threads, pthread_t thread_id) {
         threads->thread_tids[threads->thread_count] = tid;
         threads->thread_count++;
         char msg[128];
-        // Only show thread ID details at debug level during shutdown
-        if (server_running) {
-            snprintf(msg, sizeof(msg), "Added thread %lu (tid: %d), new count: %d", 
+            // Use log group to ensure consistent formatting
+            log_group_begin();
+            snprintf(msg, sizeof(msg), "Thread %lu (tid: %d) added, count: %d", 
                      (unsigned long)thread_id, tid, threads->thread_count);
             log_this("ThreadMgmt", msg, LOG_LEVEL_STATE);
-        } else {
-            snprintf(msg, sizeof(msg), "Thread added, count: %d", threads->thread_count);
-            log_this("ThreadMgmt", msg, LOG_LEVEL_ALERT);
-        }
+            log_group_end();
     } else {
         log_this("ThreadMgmt", "Failed to add thread: MAX_SERVICE_THREADS reached", LOG_LEVEL_DEBUG);
     }
@@ -72,27 +74,34 @@ void add_service_thread(ServiceThreads *threads, pthread_t thread_id) {
 }
 
 // Remove a thread from service tracking
+// If skip_logging is true, don't generate log messages (used during shutdown)
+static void remove_thread_internal(ServiceThreads *threads, int index, bool skip_logging) {
+    pthread_t thread_id = threads->thread_ids[index];
+    
+    // Move last thread to this position
+    threads->thread_count--;
+    if (index < threads->thread_count) {
+        threads->thread_ids[index] = threads->thread_ids[threads->thread_count];
+        threads->thread_tids[index] = threads->thread_tids[threads->thread_count];
+        threads->thread_metrics[index] = threads->thread_metrics[threads->thread_count];
+    }
+
+    // Only log if not skipping and early in shutdown (when app_config still exists)
+    if (!skip_logging) {
+        char msg[128];
+        log_group_begin();
+        snprintf(msg, sizeof(msg), "Thread %lu removed, count: %d", 
+                 (unsigned long)thread_id, threads->thread_count);
+        log_this("ThreadMgmt", msg, LOG_LEVEL_STATE);
+        log_group_end();
+    }
+}
+
 void remove_service_thread(ServiceThreads *threads, pthread_t thread_id) {
     pthread_mutex_lock(&thread_mutex);
     for (int i = 0; i < threads->thread_count; i++) {
         if (pthread_equal(threads->thread_ids[i], thread_id)) {
-            // Move last thread to this position
-            threads->thread_count--;
-            if (i < threads->thread_count) {
-                threads->thread_ids[i] = threads->thread_ids[threads->thread_count];
-                threads->thread_tids[i] = threads->thread_tids[threads->thread_count];
-                threads->thread_metrics[i] = threads->thread_metrics[threads->thread_count];
-            }
-            char msg[128];
-            // Only show thread ID details at debug level during shutdown
-            if (server_running) {
-                snprintf(msg, sizeof(msg), "Removed thread %lu, new count: %d", 
-                         (unsigned long)thread_id, threads->thread_count);
-                log_this("ThreadMgmt", msg, LOG_LEVEL_STATE);
-            } else {
-                snprintf(msg, sizeof(msg), "Thread removed, count: %d", threads->thread_count);
-                log_this("ThreadMgmt", msg, LOG_LEVEL_ALERT);
-            }
+            remove_thread_internal(threads, i, false);
             break;
         }
     }
@@ -135,12 +144,7 @@ void update_service_thread_metrics(ServiceThreads *threads) {
         // Check if thread is alive
         if (kill(tid, 0) != 0) {
             // Thread is dead, remove it
-            threads->thread_count--;
-            if (i < threads->thread_count) {
-                threads->thread_ids[i] = threads->thread_ids[threads->thread_count];
-                threads->thread_tids[i] = threads->thread_tids[threads->thread_count];
-                threads->thread_metrics[i] = threads->thread_metrics[threads->thread_count];
-            }
+            remove_thread_internal(threads, i, true);  // Skip logging during metrics update
             i--; // Reprocess this index
             continue;
         }
