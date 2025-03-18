@@ -24,6 +24,7 @@
 // Project headers
 #include "config.h"
 #include "config_env.h"
+#include "config_utils.h"
 #include "types/config_string.h"
 #include "types/config_bool.h"
 #include "types/config_int.h"
@@ -46,83 +47,65 @@
 #include "api/config_api.h"
 #include "notify/config_notify.h"
 
+// Core system headers
 #include "../logging/logging.h"
 #include "../utils/utils.h"
 
-// Public interface declarations
-const AppConfig* get_app_config(void);
-AppConfig* load_config(const char* cmdline_path);
-
-// Private interface declarations
-static bool is_file_readable(const char* path);
-static bool is_sensitive_value(const char* name);
-static void log_config_section_header(const char* section_name);
-static void log_config_section_item(const char* key, const char* format, int level,
-                                  int is_default, int indent, const char* input_units,
-                                  const char* output_units, const char* subsystem, ...);
-static char* get_config_string_with_env(const char* json_key, json_t* value, const char* default_value);
-
-/*
- * Helper function to handle environment variable substitution in config values
- * 
- * This function checks if a string value is in "${env.VAR}" format and if so,
- * processes it using the environment variable handling system. It handles:
- * - Environment variable resolution
- * - Type conversion
- * - Logging with Config-Env subsystem
- * - Sensitive value masking
- * 
- * @param json_key The configuration key name (for logging)
- * @param value The JSON value to check
- * @param default_value The default value to use if no value is provided
- * @return The resolved string value (caller must free)
- */
-static char* get_config_string_with_env(const char* json_key, json_t* value, const char* default_value) {
-    if (!json_is_string(value)) {
-        char* result = strdup(default_value);
-        log_config_section_item(json_key, "%s *", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config", default_value);
-        return result;
-    }
-
-    const char* str_value = json_string_value(value);
-    if (strncmp(str_value, "${env.", 6) == 0) {
-        // Extract environment variable name
-        const char* env_var = str_value + 6;
-        size_t env_var_len = strlen(env_var);
-        if (env_var_len > 1 && env_var[env_var_len - 1] == '}') {
-            char var_name[256] = {0};
-            strncpy(var_name, env_var, env_var_len - 1);
-            var_name[env_var_len - 1] = '\0';
-
-            const char* env_value = getenv(var_name);
-            char* result;
-            if (env_value) {
-                result = strdup(env_value);
-                // For sensitive values, truncate in log
-                if (is_sensitive_value(json_key)) {
-                    char safe_value[256];
-                    snprintf(safe_value, sizeof(safe_value), "$%s: %.5s...", var_name, env_value);
-                    log_config_section_item(json_key, "%s", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config-Env", safe_value);
-                } else {
-                    log_config_section_item(json_key, "$%s: %s", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config-Env", var_name, env_value);
-                }
-            } else {
-                // When env var is not set, we use default value - mark with single asterisk
-                result = strdup(default_value);
-                log_config_section_item(json_key, "$%s: not set, using %s", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config-Env", var_name, default_value);
-            }
-            return result;
-        }
-    }
-
-    // Not an environment variable, log and return the value
-    char* result = strdup(str_value);
-    log_config_section_item(json_key, "%s", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config", str_value);
-    return result;
-}
+// JSON loading functions
+#include "config/json_server.h"
+#include "config/json_logging.h"
+#include "config/json_webserver.h"
+#include "config/json_websocket.h"
+#include "config/json_api.h"
+#include "config/json_swagger.h"
+#include "config/json_mdns_server.h"
+#include "config/json_resources.h"
+#include "config/json_monitoring.h"
+#include "config/json_network.h"
+#include "config/json_notify.h"
+#include "config/json_terminal.h"
+#include "config/json_mdns_client.h"
+#include "config/json_print_queue.h"
+#include "config/json_mail_relay.h"
+#include "config/json_databases.h"
 
 // Global static configuration instance
 static AppConfig *app_config = NULL;
+
+// Standard system paths to check for configuration
+static const char* const CONFIG_PATHS[] = {
+    "hydrogen.json",
+    "/etc/hydrogen/hydrogen.json",
+    "/usr/local/etc/hydrogen/hydrogen.json"
+};
+static const int NUM_CONFIG_PATHS = sizeof(CONFIG_PATHS) / sizeof(CONFIG_PATHS[0]);
+
+// Function forward declarations
+const AppConfig* get_app_config(void);
+AppConfig* load_config(const char* cmdline_path);
+static bool is_file_readable(const char* path);
+bool is_sensitive_value(const char* name);
+void log_config_section_header(const char* section_name);
+void log_config_section_item(const char* key, const char* format, int level,
+                                  int is_default, int indent, const char* input_units,
+                                  const char* output_units, const char* subsystem, ...);
+char* get_config_string_with_env(const char* json_key, json_t* value, const char* default_value);
+void log_config_env_value(const char* key_name, const char* var_name, const char* env_value, 
+                       const char* default_value, bool is_sensitive);
+
+// Forward declarations for other JSON configuration loading functions
+
+/*
+ * Helper function to check if a file exists and is readable
+ * 
+ * @param path The path to check
+ * @return true if the file exists and is readable, false otherwise
+ */
+static bool is_file_readable(const char* path) {
+    if (!path) return false;
+    struct stat st;
+    return (stat(path, &st) == 0 && S_ISREG(st.st_mode) && access(path, R_OK) == 0);
+}
 
 /*
  * Helper function to detect sensitive configuration values
@@ -133,7 +116,7 @@ static AppConfig *app_config = NULL;
  * @param name The configuration key name
  * @return true if the name contains a sensitive term, false otherwise
  */
-static bool is_sensitive_value(const char* name) {
+bool is_sensitive_value(const char* name) {
     if (!name) return false;
     
     const char* sensitive_terms[] = {
@@ -149,40 +132,6 @@ static bool is_sensitive_value(const char* name) {
     
     return false;
 }
-    
-
-
-/*
- * Helper function to handle environment variable logging
- * This function is exported for use by config_env.c
- * 
- * @param key_name The configuration key name
- * @param var_name The environment variable name
- * @param env_value The value from the environment variable
- * @param default_value The default value if not set
- * @param is_sensitive Whether this contains sensitive information
- */
-void log_config_env_value(const char* key_name, const char* var_name, const char* env_value, 
-                       const char* default_value, bool is_sensitive) {
-    if (!var_name) return;
-
-    if (env_value) {
-        if (is_sensitive) {
-            // For sensitive values, truncate to 5 chars
-            char safe_value[256];
-            strncpy(safe_value, env_value, 5);
-            safe_value[5] = '\0';
-            strcat(safe_value, "...");
-            log_this("Config-Env", "― %s: $%s: %s", LOG_LEVEL_STATE, key_name, var_name, safe_value);
-        } else {
-            log_this("Config-Env", "― %s: $%s: %s", LOG_LEVEL_STATE, key_name, var_name, env_value);
-        }
-    } else if (default_value) {
-        log_this("Config-Env", "― %s: $%s: (not set) %s *", LOG_LEVEL_STATE, key_name, var_name, default_value);
-    } else {
-        log_this("Config-Env", "― %s: $%s: (not set)", LOG_LEVEL_STATE, key_name, var_name);
-    }
-}
 
 /*
  * Helper function to log a configuration section header
@@ -192,7 +141,7 @@ void log_config_env_value(const char* key_name, const char* var_name, const char
  * 
  * @param section_name The name of the configuration section
  */
-static void log_config_section_header(const char* section_name) {
+void log_config_section_header(const char* section_name) {
     log_this("Config", "%s", LOG_LEVEL_STATE, section_name);
 }
 
@@ -212,7 +161,7 @@ static void log_config_section_header(const char* section_name) {
  * @param output_units The desired display units (e.g., "MB" for megabytes, "s" for seconds)
  * @param ... Variable arguments for the format string
  */
-static void log_config_section_item(const char* key, const char* format, int level, int is_default,
+void log_config_section_item(const char* key, const char* format, int level, int is_default,
                            int indent, const char* input_units, const char* output_units, 
                            const char* subsystem, ...) {
     if (!key || !format) {
@@ -287,26 +236,107 @@ static void log_config_section_item(const char* key, const char* format, int lev
     log_this(subsystem ? subsystem : "Config", "%s", level, message);
 }
 
+/*
+ * Helper function to handle environment variable substitution in config values
+ * 
+ * This function checks if a string value is in "${env.VAR}" format and if so,
+ * processes it using the environment variable handling system. It handles:
+ * - Environment variable resolution
+ * - Type conversion
+ * - Logging with Config-Env subsystem
+ * - Sensitive value masking
+ * 
+ * @param json_key The configuration key name (for logging)
+ * @param value The JSON value to check
+ * @param default_value The default value to use if no value is provided
+ * @return The resolved string value (caller must free)
+ */
+char* get_config_string_with_env(const char* json_key, json_t* value, const char* default_value) {
+    if (!json_is_string(value)) {
+        char* result = strdup(default_value);
+        log_config_section_item(json_key, "%s *", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config", default_value);
+        return result;
+    }
 
+    const char* str_value = json_string_value(value);
+    if (strncmp(str_value, "${env.", 6) == 0) {
+        // Extract environment variable name
+        const char* env_var = str_value + 6;
+        size_t env_var_len = strlen(env_var);
+        if (env_var_len > 1 && env_var[env_var_len - 1] == '}') {
+            char var_name[256] = {0};
+            strncpy(var_name, env_var, env_var_len - 1);
+            var_name[env_var_len - 1] = '\0';
+
+            const char* env_value = getenv(var_name);
+            char* result;
+            if (env_value) {
+                result = strdup(env_value);
+                // For sensitive values, truncate in log
+                if (is_sensitive_value(json_key)) {
+                    char safe_value[256];
+                    snprintf(safe_value, sizeof(safe_value), "$%s: %.5s...", var_name, env_value);
+                    log_config_section_item(json_key, "%s", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config-Env", safe_value);
+                } else {
+                    log_config_section_item(json_key, "$%s: %s", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config-Env", var_name, env_value);
+                }
+            } else {
+                // When env var is not set, we use default value - mark with single asterisk
+                result = strdup(default_value);
+                log_config_section_item(json_key, "$%s: not set, using %s", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config-Env", var_name, default_value);
+            }
+            return result;
+        }
+    }
+
+    // Not an environment variable, log and return the value
+    char* result = strdup(str_value);
+    log_config_section_item(json_key, "%s", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config", str_value);
+    return result;
+}
+
+/*
+ * Helper function to handle environment variable logging
+ * This function is exported for use by config_env.c
+ * 
+ * @param key_name The configuration key name
+ * @param var_name The environment variable name
+ * @param env_value The value from the environment variable
+ * @param default_value The default value if not set
+ * @param is_sensitive Whether this contains sensitive information
+ */
+void log_config_env_value(const char* key_name, const char* var_name, const char* env_value, 
+                       const char* default_value, bool is_sensitive) {
+    if (!var_name) return;
+
+    if (env_value) {
+        if (is_sensitive) {
+            // For sensitive values, truncate to 5 chars
+            char safe_value[256];
+            strncpy(safe_value, env_value, 5);
+            safe_value[5] = '\0';
+            strcat(safe_value, "...");
+            log_this("Config-Env", "― %s: $%s: %s", LOG_LEVEL_STATE, key_name, var_name, safe_value);
+        } else {
+            log_this("Config-Env", "― %s: $%s: %s", LOG_LEVEL_STATE, key_name, var_name, env_value);
+        }
+    } else if (default_value) {
+        log_this("Config-Env", "― %s: $%s: (not set) %s *", LOG_LEVEL_STATE, key_name, var_name, default_value);
+    } else {
+        log_this("Config-Env", "― %s: $%s: (not set)", LOG_LEVEL_STATE, key_name, var_name);
+    }
+}
 
 /*
  * Load and validate configuration with comprehensive error handling
+ * 
+ * This function loads the configuration from a file specified by the command line,
+ * environment variable, or standard locations. It validates the configuration and
+ * returns a pointer to the configuration structure.
+ * 
+ * @param cmdline_path The path to the configuration file specified on the command line
+ * @return Pointer to the loaded configuration, or NULL on error
  */
-// Standard system paths to check for configuration
-static const char* const CONFIG_PATHS[] = {
-    "hydrogen.json",
-    "/etc/hydrogen/hydrogen.json",
-    "/usr/local/etc/hydrogen/hydrogen.json"
-};
-static const int NUM_CONFIG_PATHS = sizeof(CONFIG_PATHS) / sizeof(CONFIG_PATHS[0]);
-
-// Helper function to check if a file exists and is readable
-static bool is_file_readable(const char* path) {
-    if (!path) return false;
-    struct stat st;
-    return (stat(path, &st) == 0 && S_ISREG(st.st_mode) && access(path, R_OK) == 0);
-}
-
 AppConfig* load_config(const char* cmdline_path) {
     log_this("Config", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
     log_this("Config", "CONFIGURATION", LOG_LEVEL_STATE);
@@ -404,54 +434,104 @@ AppConfig* load_config(const char* cmdline_path) {
     }
 
     // Server Configuration
-    #include "config/json_server.inc"
+    // #include "config/json_server.inc"
+    if (!load_json_server(root, config, config_path)) {
+        if (root) json_decref(root);
+        return NULL;
+    }
 
     // Logging Configuration
-    #include "config/json_logging.inc"
+    // #include "config/json_logging.inc"
+    if (!load_json_logging(root, config)) {
+        if (root) json_decref(root);
+        return NULL;
+    }
 
     // System Resources Configuration
-    // #include "config/json_resources.inc"
+    if (!load_json_resources(root, config)) {
+        if (root) json_decref(root);
+        return NULL;
+    }
     
     // System Monitoring Configuration
-    // #include "config/json_monitoring.inc"
-
+    if (!load_json_monitoring(root, config)) {
+        if (root) json_decref(root);
+        return NULL;
+    }
+    
     // Network Configuration
-    // #include "config/json_network.inc"
+    if (!load_json_network(root, config)) {
+        if (root) json_decref(root);
+        return NULL;
+    }
 
     // WebServer Configuration
-    // #include "config/json_webserver.inc"
+    if (!load_json_webserver(root, config)) {
+        if (root) json_decref(root);
+        return NULL;
+    }
 
     // API Configuration
-    // #include "config/json_api.inc"
+    if (!load_json_api(root, config)) {
+        if (root) json_decref(root);
+        return NULL;
+    }
 
     // Notify Configuration
-    // #include "config/json_notify.inc"
+    if (!load_json_notify(root, config)) {
+        if (root) json_decref(root);
+        return NULL;
+    }
     
     // Swagger Configuration
-    // #include "config/json_swagger.inc"
+    if (!load_json_swagger(root, config)) {
+        if (root) json_decref(root);
+        return NULL;
+    }
     
     // WebSocket Configuration
-    // #include "config/json_websocket.inc"
+    if (!load_json_websocket(root, config)) {
+        if (root) json_decref(root);
+        return NULL;
+    }
 
     // Terminal Configuration
-    // #include "config/json_terminal.inc"
+    if (!load_json_terminal(root, config)) {
+        if (root) json_decref(root);
+        return NULL;
+    }
 
     // mDNS Server Configuration
-    // #include "config/json_mdns_server.inc"
+    if (!load_json_mdns_server(root, config)) {
+        if (root) json_decref(root);
+        return NULL;
+    }
 
     // mDNSClient Configuration
-    // #include "config/json_mdns_client.inc"
+    if (!load_json_mdns_client(root, config)) {
+        if (root) json_decref(root);
+        return NULL;
+    }
 
     // MailRelay Configuration
-    // #include "config/json_mail_relay.inc"
+    if (!load_json_mail_relay(root, config)) {
+        if (root) json_decref(root);
+        return NULL;
+    }
 
     // Databases Configuration
-    // #include "config/json_databases.inc"
+    if (!load_json_databases(root, config)) {
+        if (root) json_decref(root);
+        return NULL;
+    }
 
     // Print Queue Configuration
-    // #include "config/json_print_queue.inc"
+    if (!load_json_print_queue(root, config)) {
+        if (root) json_decref(root);
+        return NULL;
+    }
 
-    json_decref(root);
+    if (root) json_decref(root);
     
     return config;
 }

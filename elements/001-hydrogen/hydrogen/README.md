@@ -285,7 +285,7 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Mon Mar 17 17:30:48 PDT 2025
+Generated on: Tue Mar 18 04:52:41 PDT 2025
 
 ### Summary
 
@@ -296,9 +296,9 @@ Generated on: Mon Mar 17 17:30:48 PDT 2025
 | Failed | 5 |
 | Skipped | 0 |
 | Total Subtests | 87 |
-| Passed Subtests | 35 |
-| Failed Subtests | 52 |
-| Runtime | 4m 25s |
+| Passed Subtests | 37 |
+| Failed Subtests | 50 |
+| Runtime | 4m 48s |
 
 ### Individual Test Results
 
@@ -306,7 +306,7 @@ Generated on: Mon Mar 17 17:30:48 PDT 2025
 | ---- | ------ | ------- |
 | env_payload | ✅ Passed | Test completed without errors (2 of 2 subtests passed) |
 | compilation | ✅ Passed | Test completed without errors (7 of 7 subtests passed) |
-| startup_shutdown | ✅ Passed | Both min and max configuration tests passed (4 of 6 subtests passed) |
+| startup_shutdown | ✅ Passed | Both min and max configuration tests passed (6 of 6 subtests passed) |
 | api_prefixes | ❌ Failed | Test failed with errors (0 of 10 subtests passed) |
 | dynamic_loading | ❌ Failed | Test failed with errors (1 of 7 subtests passed) |
 | env_payload | ✅ Passed | Test completed without errors (2 of 2 subtests passed) |
@@ -320,16 +320,16 @@ Generated on: Mon Mar 17 17:30:48 PDT 2025
 
 ## Repository Information
 
-Generated via cloc: Mon Mar 17 17:30:48 PDT 2025
+Generated via cloc: Tue Mar 18 04:52:41 PDT 2025
 
 | Language | Files | Blank Lines | Comment Lines | Code Lines |
 | -------- | ----- | ----------- | ------------- | ---------- |
-| C | 118 | 3374 | 5036 | 14822 |
+| C | 132 | 3629 | 5222 | 16226 |
 | Markdown | 95 | 3518 | 27 | 12629 |
 | JSON | 17 | 0 | 0 | 4798 |
 | Bourne | Shell | 21 | 1183 | 1230 |
-| C/C++ | Header | 96 | 894 | 4197 |
-| Text | 11 | 2 | 0 | 1194 |
+| C/C++ | Header | 113 | 950 | 4321 |
+| Text | 13 | 2 | 0 | 1605 |
 | HTML | 1 | 74 | 0 | 493 |
 | make | 2 | 50 | 211 | 201 |
-| **Total** | **361** | **9095** | **10701** | **41019** |
+| **Total** | **394** | **9406** | **11011** | **42959** |
