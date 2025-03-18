@@ -107,8 +107,9 @@ jobs:
             # Commit all changes, preserving the original commit message
             git commit -m "Sync hydrogen to private repo: $FILE_COUNT files updated"
             
-            # Push to the private repo
-            git push
+            # Push to the private repo with explicit URL
+            echo "Pushing changes to private repository..."
+            git push https://x-access-token:${{ secrets.LB_SYNC_TOKEN }}@github.com/lanboss-ltd/Acuranzo-Server-C.git main
             
             # Get the new HEAD commit SHA
             AFTER_SHA=$(git rev-parse HEAD)
