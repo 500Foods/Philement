@@ -1,4 +1,4 @@
-# Hydrogen (C app, REST API, etc)
+# Hydrogen (C app, REST API, WebServer, WebSockets, etc)
 
 ## Overview
 
