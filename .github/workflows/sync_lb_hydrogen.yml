@@ -63,6 +63,10 @@ jobs:
       - name: Clone Private Repo
         run: |
           git clone https://x-access-token:${{ secrets.LB_SYNC_TOKEN }}@github.com/lanboss-ltd/Acuranzo-Server-C.git /tmp/private-repo
+          
+          # Set origin remote for the private repo to be used for pushing
+          cd /tmp/private-repo
+          git remote set-url origin https://x-access-token:${{ secrets.LB_SYNC_TOKEN }}@github.com/lanboss-ltd/Acuranzo-Server-C.git
 
       - name: Sync Repository with History
         id: sync
