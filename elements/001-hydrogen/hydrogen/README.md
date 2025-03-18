@@ -1,4 +1,4 @@
-# Hydrogen (C app, REST API, WebServer, WebSockets, OIDC, Database, MailRelay, etc)
+# Hydrogen (C app, REST API, WebServer, WebSockets, OIDC, Database, MailRelay, etc.)
 
 ## Overview
 
