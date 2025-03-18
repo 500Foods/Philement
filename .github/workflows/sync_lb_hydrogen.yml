@@ -3,9 +3,17 @@ name: Sync Hydrogen to Private Repo
 on:
   push:
     branches:
-      - main  # Change this if your default branch is different (e.g., 'master')
+      - main
     paths:
-      - 'elements/001-hydrogen/hydrogen/**'  # Triggers on changes in this folder and subfolders
+      - 'elements/001-hydrogen/hydrogen/**'
+
+# Prevent concurrent runs
+concurrency:
+  group: sync-hydrogen
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   sync:
@@ -14,31 +22,134 @@ jobs:
       - name: Checkout Public Repo
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Full history for commit tracking
+          fetch-depth: 0  # Full history needed for preserving commits
+
+      - name: Install git-filter-repo
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git-filter-repo
 
       - name: Set Up Git
         run: |
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
 
+      # Create a new branch with only the hydrogen directory and its history
+      - name: Extract Hydrogen Directory with History
+        id: extract
+        run: |
+          # Create a temporary directory to hold the filtered repo
+          mkdir -p /tmp/hydrogen-filtered
+          cd /tmp/hydrogen-filtered
+          
+          # Initialize a new git repo
+          git init
+          
+          # Add the original repo as a remote
+          git remote add origin ${{ github.workspace }}
+          
+          # Fetch all branches and tags
+          git fetch origin
+          
+          # Create a local branch tracking the remote main branch
+          git checkout -b main origin/main
+          
+          # Use git-filter-repo to extract only the hydrogen directory with history
+          git filter-repo --path elements/001-hydrogen/hydrogen/ --path-rename elements/001-hydrogen/hydrogen/:/ --force
+          
+          # Set the filtered repo directory to be used in next steps
+          echo "filtered_repo=/tmp/hydrogen-filtered" >> $GITHUB_OUTPUT
+
       - name: Clone Private Repo
         run: |
-          git clone https://x-access-token:${{ secrets.LB_SYNC_TOKEN }}@github.com/lanboss-ltd/Acuranzo-Server-C.git
-          cd Acuranzo-Server-C
+          git clone https://x-access-token:${{ secrets.LB_SYNC_TOKEN }}@github.com/lanboss-ltd/Acuranzo-Server-C.git /tmp/private-repo
 
-      - name: Sync Hydrogen Folder
+      - name: Sync Repository with History
+        id: sync
         run: |
-          cd Acuranzo-Server-C
-          # Clear and copy the hydrogen folder
-          rm -rf hydrogen  # Remove existing hydrogen folder (adjust if needed)
-          mkdir -p hydrogen
-          cp -r ../elements/001-hydrogen/hydrogen/* hydrogen/
-
-          # Stage changes
-          git add hydrogen
+          cd /tmp/private-repo
+          
+          # Store the current HEAD commit SHA for later comparison
+          BEFORE_SHA=$(git rev-parse HEAD || echo "initial")
+          
+          # Remove everything except .git directory
+          find . -mindepth 1 -not -path "./.git*" -delete
+          
+          # Copy everything from the filtered repo (excluding .git)
+          cp -r /tmp/hydrogen-filtered/. .
+          find . -name '.git*' -prune -o -type f -print | wc -l > /tmp/file_count
+          
+          # Stage all changes
+          git add -A
+          
           if git diff --staged --quiet; then
             echo "No changes to commit"
+            echo "status=unchanged" >> $GITHUB_OUTPUT
           else
-            git commit -m "Sync hydrogen from 500Foods/Philement to LB: $(date -u +'%Y-%m-%d %H:%M UTC')"
+            # Get number of files changed
+            FILE_COUNT=$(cat /tmp/file_count)
+            
+            # Commit all changes, preserving the original commit message
+            git commit -m "Sync hydrogen to private repo: $FILE_COUNT files updated"
+            
+            # Push to the private repo
             git push
+            
+            # Get the new HEAD commit SHA
+            AFTER_SHA=$(git rev-parse HEAD)
+            
+            # Get the commit range for the log
+            if [ "$BEFORE_SHA" = "initial" ]; then
+              COMMIT_RANGE="$AFTER_SHA"
+            else
+              COMMIT_RANGE="$BEFORE_SHA..$AFTER_SHA"
+            fi
+            
+            # Generate a commit log for the email
+            git log --pretty=format:"%h - %s (%an)" $COMMIT_RANGE > /tmp/commit_log
+            
+            echo "status=updated" >> $GITHUB_OUTPUT
+            echo "file_count=$FILE_COUNT" >> $GITHUB_OUTPUT
           fi
+
+      # Email notification step
+      - name: Send Email Notification
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_SERVER }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USER }}
+          password: ${{ secrets.SMTP_PASS }}
+          from: ${{ secrets.SENDER_EMAIL }}
+          to: ${{ secrets.TARGET_EMAIL }}
+          subject: "Hydrogen Sync: ${{ steps.sync.outputs.status == 'updated' && 'SUCCESS' || 'NO CHANGES' }}"
+          body: |
+            GitHub Action: Sync Hydrogen to Private Repo
+            Status: ${{ steps.sync.outputs.status == 'updated' && 'SUCCESS' || 'NO CHANGES' }}
+            
+            ${{ steps.sync.outputs.status == 'updated' && format('Files Updated: {0}', steps.sync.outputs.file_count) || 'No files were changed' }}
+            
+            ${{ steps.sync.outputs.status == 'updated' && 'Recent commits:' || '' }}
+            ${{ steps.sync.outputs.status == 'updated' && join(fromJSON(toJSON(github.event.commits.*.message)), '\n') || '' }}
+            
+            ${{ steps.sync.outputs.status == 'updated' && format('View action run: https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) || '' }}
+
+      # Notification if any step fails
+      - name: Send Failure Email Notification
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_SERVER }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USER }}
+          password: ${{ secrets.SMTP_PASS }}
+          from: ${{ secrets.SENDER_EMAIL }}
+          to: ${{ secrets.TARGET_EMAIL }}
+          subject: "Hydrogen Sync: FAILED"
+          body: |
+            GitHub Action: Sync Hydrogen to Private Repo
+            Status: FAILED
+            
+            The workflow failed during execution. Please check the workflow logs for details.
+            
+            View action run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
