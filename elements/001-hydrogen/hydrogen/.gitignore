@@ -1,3 +1,8 @@
+# Distribution outputs
+bin/
+dist/
+web/
+
 # Build outputs
 build/
 build_debug/

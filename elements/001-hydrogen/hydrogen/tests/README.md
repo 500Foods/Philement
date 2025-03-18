@@ -166,13 +166,9 @@ A test orchestration script that executes tests with different configurations an
 
 # Skip actual test execution (for quick README updates)
 ./test_all.sh --skip-tests
-
-# Update README.md with test results
-./test_all.sh --update-readme
-
-# Skip tests and update README in one command
-./test_all.sh --skip-tests --update-readme
 ```
+
+Test results and repository statistics are automatically added to the project README.md after running tests.
 
 The script:
 
@@ -181,7 +177,7 @@ The script:
 - Dynamically discovers and runs all test_*.sh scripts
 - Generates a comprehensive summary of all test results with visual pass/fail indicators
 - Can skip execution while showing what would run (--skip-tests)
-- Can update README.md with test results and code statistics (--update-readme)
+- Always updates README.md with test results and code statistics
 
 ### test_z_codebase.sh
 
@@ -380,6 +376,7 @@ If you want to quickly update the project README with test results without runni
 ```
 
 This will:
+
 - Register all tests as "skipped" without executing them
 - Generate a test summary showing what tests would run
 - Add a "Latest Test Results" section to the project README.md

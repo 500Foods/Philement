@@ -20,6 +20,7 @@
 #include "../utils/utils.h"
 #include "../utils/utils_dependency.h"
 #include "../config/config_filesystem.h"
+#include "../config/launch/launch.h"
 
 // Subsystem startup headers
 #include "startup_logging.h"
@@ -130,30 +131,42 @@ int startup_hydrogen(const char* config_path) {
         return 0;
     }
     
-    // 3. Initialize queue system
-    queue_system_init();
-    update_queue_limits_from_config(app_config);
-    
-    // 4. Initialize logging subsystem
-    // Each service gets its own thread, initialized just before the service starts
-    // This ensures proper resource allocation and startup sequencing
-    extern ServiceThreads logging_threads;
-    init_service_threads(&logging_threads);
-    if (!init_logging_subsystem()) {
-        queue_system_destroy();
-        return 0;
-    }
-
-    // Now that logging is available, check feature-specific dependencies
-    critical_dependencies = check_library_dependencies(app_config);
-    if (critical_dependencies > 0) {
-        log_this("Startup", "Missing libraries required by enabled features", LOG_LEVEL_ERROR);
-        return 0;
-    }
-
-    // Log successful core initialization
+    // Log successful core initialization - this will use direct console output 
+    // because the queue system is not initialized yet
     log_this("Startup", "Core systems initialized successfully", LOG_LEVEL_STATE);
 
+    // 3. Perform launch readiness checks for all subsystems
+    // This ensures all prerequisites are met before attempting to start any services
+    bool launch_ready = check_all_launch_readiness();
+    
+    // Only initialize queue system and threads if at least one subsystem passed the readiness check
+    if (launch_ready) {
+        // Initialize queue system
+        queue_system_init();
+        update_queue_limits_from_config(app_config);
+        
+        // Initialize logging subsystem with threads
+        extern ServiceThreads logging_threads;
+        init_service_threads(&logging_threads);
+        if (!init_logging_subsystem()) {
+            queue_system_destroy();
+            return 0;
+        }
+
+        // Now that logging is available, check feature-specific dependencies
+        critical_dependencies = check_library_dependencies(app_config);
+        if (critical_dependencies > 0) {
+            log_this("Startup", "Missing libraries required by enabled features", LOG_LEVEL_ERROR);
+            return 0;
+        }
+    } else {
+        // If no subsystems are ready, log warning and continue without launching threads
+        log_this("Startup", "One or more subsystems failed launch readiness checks", LOG_LEVEL_ALERT);
+        log_this("Startup", "System will continue without launching any subsystems", LOG_LEVEL_ALERT);
+    }
+
+    // 4. Launch subsystems that are ready (only if they pass readiness checks)
+    // Note: Currently all subsystems are commented out, so none will launch
     // Additional services (web, websocket, mdns, print) are initialized on demand
     // Each service will initialize its own thread when it starts
     // This prevents premature thread creation and ensures proper startup order

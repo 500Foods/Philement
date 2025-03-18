@@ -91,14 +91,30 @@ static void console_log(const char* subsystem, int priority, const char* message
  * - Output routing
  * - Thread safety
  */
+// Fallback priority labels for when config is unavailable
+static const char* get_fallback_priority_label(int priority) {
+    static const char* fallback_labels[] = {
+        "TRACE", "DEBUG", "STATE", "ALERT", "ERROR", "FATAL", "QUIET"
+    };
+    if (priority >= 0 && priority <= LOG_LEVEL_QUIET) {
+        return fallback_labels[priority];
+    }
+    return fallback_labels[LOG_LEVEL_STATE];  // Default to STATE
+}
+
 static void console_log(const char* subsystem, int priority, const char* message, unsigned long current_count) {
     // Format the counter as two 3-digit numbers
     char counter_prefix[16];
     snprintf(counter_prefix, sizeof(counter_prefix), "[ %03lu %03lu ]", 
              (current_count / 1000) % 1000, current_count % 1000);
 
+    // Use fallback labels if config system is unavailable
+    const char* priority_label = (!app_config || !app_config->logging.levels) 
+                               ? get_fallback_priority_label(priority)
+                               : get_priority_label(priority);
+
     char formatted_priority[MAX_PRIORITY_LABEL_WIDTH + 5];
-    snprintf(formatted_priority, sizeof(formatted_priority), "[ %-*s ]", MAX_PRIORITY_LABEL_WIDTH, get_priority_label(priority));
+    snprintf(formatted_priority, sizeof(formatted_priority), "[ %-*s ]", MAX_PRIORITY_LABEL_WIDTH, priority_label);
 
     char formatted_subsystem[MAX_SUBSYSTEM_LABEL_WIDTH + 5];
     snprintf(formatted_subsystem, sizeof(formatted_subsystem), "[ %-*s ]", MAX_SUBSYSTEM_LABEL_WIDTH, subsystem);
@@ -127,6 +143,19 @@ void log_group_end(void) {
 }
 
 void log_this(const char* subsystem, const char* format, int priority, ...) {
+    // Validate inputs and normalize priority level early
+    if (!subsystem) subsystem = "Unknown";
+    if (!format) format = "No message";
+    
+    // Ensure priority is valid, defaulting to STATE if:
+    // 1. Priority is out of bounds
+    // 2. Priority is corrupted (e.g., during shutdown)
+    // 3. app_config is not available
+    if (priority < LOG_LEVEL_TRACE || priority > LOG_LEVEL_QUIET || 
+        !app_config || !app_config->logging.levels) {
+        priority = LOG_LEVEL_STATE;
+    }
+
     // Only lock if we're not already in a group
     if (!in_log_group) {
         pthread_mutex_lock(&log_mutex);
