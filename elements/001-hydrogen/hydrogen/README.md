@@ -1,4 +1,4 @@
-# Hydrogen
+# Hydrogen (C app, REST API, etc)
 
 ## Overview
 
