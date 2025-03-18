@@ -1,4 +1,4 @@
-# hydrogen
+# Hydrogen
 
 ## Overview
 
