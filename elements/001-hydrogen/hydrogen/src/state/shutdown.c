@@ -73,6 +73,10 @@
 #include "../print/print_queue_manager.h"  // For shutdown_print_queue()
 #include "../logging/log_queue_manager.h"    // For close_file_logging()
 #include "../utils/utils.h"
+#include "../utils/utils_threads.h"
+
+// Flag from utils_threads.c to suppress thread management logging during final shutdown
+extern volatile sig_atomic_t final_shutdown_mode;
 
 // Signal handler implementing graceful shutdown initiation
 //
@@ -128,12 +132,19 @@ static void shutdown_mdns_server_system(void) {
         return;
     }
 
+    // Check if the mDNS server thread was actually created
+    update_service_thread_metrics(&mdns_server_threads);
+    if (mdns_server_threads.thread_count == 0) {
+        log_this("Shutdown", "mDNS Server was not started, skipping shutdown", LOG_LEVEL_STATE);
+        return;
+    }
+
     log_this("Shutdown", "Initiating mDNS Server shutdown", LOG_LEVEL_STATE);
     mdns_server_system_shutdown = 1;
     pthread_cond_broadcast(&terminate_cond);
     
     // Get the thread arguments before joining
-    void *thread_arg;
+    void *thread_arg = NULL;
     pthread_join(mdns_server_thread, &thread_arg);
     
     // Clean up mDNS Server resources
@@ -162,111 +173,123 @@ static void shutdown_web_systems(void) {
 
     // Shutdown web server if it was enabled
     if (app_config->web.enabled) {
-        log_this("Shutdown", "Initiating Web Server shutdown", LOG_LEVEL_STATE);
-        web_server_shutdown = 1;
-        pthread_cond_broadcast(&terminate_cond);
-        pthread_join(web_thread, NULL);
-        shutdown_web_server();
-        log_this("Shutdown", "Web Server shutdown complete", LOG_LEVEL_STATE);
+        // Check if the web server thread was actually created
+        update_service_thread_metrics(&web_threads);
+        if (web_threads.thread_count == 0) {
+            log_this("Shutdown", "Web Server was not started, skipping shutdown", LOG_LEVEL_STATE);
+        } else {
+            log_this("Shutdown", "Initiating Web Server shutdown", LOG_LEVEL_STATE);
+            web_server_shutdown = 1;
+            pthread_cond_broadcast(&terminate_cond);
+            pthread_join(web_thread, NULL);
+            shutdown_web_server();
+            log_this("Shutdown", "Web Server shutdown complete", LOG_LEVEL_STATE);
+        }
     }
 
     // Shutdown WebSocket server if it was enabled
     if (app_config->websocket.enabled) {
-        log_this("Shutdown", "Initiating WebSocket server shutdown", LOG_LEVEL_STATE);
-        
-        // Signal shutdown to all subsystems
-        websocket_server_shutdown = 1;
-        pthread_cond_broadcast(&terminate_cond);
-
-        // First attempt: Give connections time to close gracefully
-        log_this("Shutdown", "Waiting for WebSocket connections to close gracefully", LOG_LEVEL_STATE);
-        usleep(2000000);  // 2s initial delay
-
-        // Stop the server and wait for thread exit
-        log_this("Shutdown", "Stopping WebSocket server", LOG_LEVEL_STATE);
-        stop_websocket_server();
-
-        // Second phase: Force close any remaining connections
-        log_this("Shutdown", "Forcing close of any remaining connections", LOG_LEVEL_STATE);
-        extern WebSocketServerContext *ws_context;  // Declare external context
-        if (ws_context) {
-            // Set shutdown flag and cancel service to interrupt any blocking operations
-            ws_context->shutdown = 1;
-            if (ws_context->lws_context) {
-                lws_cancel_service(ws_context->lws_context);
-            }
+        // Check if the websocket server thread was actually created
+        update_service_thread_metrics(&websocket_threads);
+        if (websocket_threads.thread_count == 0) {
+            log_this("Shutdown", "WebSocket Server was not started, skipping shutdown", LOG_LEVEL_STATE);
+        } else {
+            log_this("Shutdown", "Initiating WebSocket server shutdown", LOG_LEVEL_STATE);
             
-            // Wait for any remaining threads with timeout
-            struct timespec wait_time;
-            clock_gettime(CLOCK_REALTIME, &wait_time);
-            wait_time.tv_sec += 1;  // 1s timeout
+            // Signal shutdown to all subsystems
+            websocket_server_shutdown = 1;
+            pthread_cond_broadcast(&terminate_cond);
 
-            pthread_mutex_lock(&ws_context->mutex);
-            while (ws_context->active_connections > 0) {
-                if (pthread_cond_timedwait(&ws_context->cond, &ws_context->mutex, &wait_time) == ETIMEDOUT) {
-                    log_this("Shutdown", "Timeout waiting for connections, forcing cleanup", LOG_LEVEL_ALERT);
-                    break;
-                }
-            }
-            pthread_mutex_unlock(&ws_context->mutex);
-            
-        // EMERGENCY BYPASS: Skip standard cleanup to avoid libwebsockets hang
-        log_this("Shutdown", "EMERGENCY BYPASS: Skipping standard WebSocket cleanup", LOG_LEVEL_ALERT);
-        
-        // Set a process-wide emergency timeout
-        pid_t current_pid = getpid();
-        pid_t child_pid = fork();
-        
-        if (child_pid == 0) {
-            // Child process: wait and then force kill parent if still running
-            sleep(3);  // Give parent 3 seconds to complete cleanup
-            
-            // Check if parent still exists
-            if (kill(current_pid, 0) == 0) {
-                log_this("Shutdown", "CRITICAL: Force terminating parent process", LOG_LEVEL_ERROR);
-                kill(current_pid, SIGKILL);  // Force kill if parent is still running
-            }
-            exit(0);  // Child exits
-        } else if (child_pid > 0) {
-            // Parent: Continue with minimal cleanup
-            
-            // Attempt minimal resource cleanup without entering libwebsockets network code
-            extern WebSocketServerContext *ws_context;
-            if (ws_context != NULL) {
-                // Forcibly free critical resources without full cleanup
-                pthread_mutex_lock(&ws_context->mutex);
-                ws_context->shutdown = 1;  // Ensure shutdown flag is set
-                ws_context->active_connections = 0;  // Force reset connections
-                
-                // Cancel service one last time
+            // First attempt: Give connections time to close gracefully
+            log_this("Shutdown", "Waiting for WebSocket connections to close gracefully", LOG_LEVEL_STATE);
+            usleep(2000000);  // 2s initial delay
+
+            // Stop the server and wait for thread exit
+            log_this("Shutdown", "Stopping WebSocket server", LOG_LEVEL_STATE);
+            stop_websocket_server();
+
+            // Second phase: Force close any remaining connections
+            log_this("Shutdown", "Forcing close of any remaining connections", LOG_LEVEL_STATE);
+            extern WebSocketServerContext *ws_context;  // Declare external context
+            if (ws_context) {
+                // Set shutdown flag and cancel service to interrupt any blocking operations
+                ws_context->shutdown = 1;
                 if (ws_context->lws_context) {
-                    log_this("Shutdown", "Force cancelling libwebsockets service", LOG_LEVEL_ALERT);
                     lws_cancel_service(ws_context->lws_context);
+                }
+                
+                // Wait for any remaining threads with timeout
+                struct timespec wait_time;
+                clock_gettime(CLOCK_REALTIME, &wait_time);
+                wait_time.tv_sec += 1;  // 1s timeout
+
+                pthread_mutex_lock(&ws_context->mutex);
+                while (ws_context->active_connections > 0) {
+                    if (pthread_cond_timedwait(&ws_context->cond, &ws_context->mutex, &wait_time) == ETIMEDOUT) {
+                        log_this("Shutdown", "Timeout waiting for connections, forcing cleanup", LOG_LEVEL_ALERT);
+                        break;
+                    }
                 }
                 pthread_mutex_unlock(&ws_context->mutex);
                 
-                // Do NOT call lws_context_destroy as it hangs
-                log_this("Shutdown", "SKIPPING libwebsockets context destruction", LOG_LEVEL_ALERT);
-                ws_context = NULL;  // Just discard the pointer
+                // EMERGENCY BYPASS: Skip standard cleanup to avoid libwebsockets hang
+                log_this("Shutdown", "EMERGENCY BYPASS: Skipping standard WebSocket cleanup", LOG_LEVEL_ALERT);
+                
+                // Set a process-wide emergency timeout
+                pid_t current_pid = getpid();
+                pid_t child_pid = fork();
+        
+                if (child_pid == 0) {
+                    // Child process: wait and then force kill parent if still running
+                    sleep(3);  // Give parent 3 seconds to complete cleanup
+                    
+                    // Check if parent still exists
+                    if (kill(current_pid, 0) == 0) {
+                        log_this("Shutdown", "CRITICAL: Force terminating parent process", LOG_LEVEL_ERROR);
+                        kill(current_pid, SIGKILL);  // Force kill if parent is still running
+                    }
+                    exit(0);  // Child exits
+                } else if (child_pid > 0) {
+                    // Parent: Continue with minimal cleanup
+                    
+                    // Attempt minimal resource cleanup without entering libwebsockets network code
+                    extern WebSocketServerContext *ws_context;
+                    if (ws_context != NULL) {
+                        // Forcibly free critical resources without full cleanup
+                        pthread_mutex_lock(&ws_context->mutex);
+                        ws_context->shutdown = 1;  // Ensure shutdown flag is set
+                        ws_context->active_connections = 0;  // Force reset connections
+                        
+                        // Cancel service one last time
+                        if (ws_context->lws_context) {
+                            log_this("Shutdown", "Force cancelling libwebsockets service", LOG_LEVEL_ALERT);
+                            lws_cancel_service(ws_context->lws_context);
+                        }
+                        pthread_mutex_unlock(&ws_context->mutex);
+                        
+                        // Do NOT call lws_context_destroy as it hangs
+                        log_this("Shutdown", "SKIPPING libwebsockets context destruction", LOG_LEVEL_ALERT);
+                        ws_context = NULL;  // Just discard the pointer
+                    }
+                    
+                    // Force clear any websocket thread tracking
+                    extern ServiceThreads websocket_threads;
+                    websocket_threads.thread_count = 0;
+                    
+                    log_this("Shutdown", "Emergency WebSocket cleanup completed", LOG_LEVEL_STATE);
+                }
+            }
+
+            // Update thread metrics one final time
+            extern ServiceThreads websocket_threads;
+            update_service_thread_metrics(&websocket_threads);
+            if (websocket_threads.thread_count > 0) {
+                log_this("Shutdown", "Warning: %d WebSocket threads still active", 
+                        LOG_LEVEL_ALERT, websocket_threads.thread_count);
             }
             
-            // Force clear any websocket thread tracking
-            extern ServiceThreads websocket_threads;
-            websocket_threads.thread_count = 0;
-            
-            log_this("Shutdown", "Emergency WebSocket cleanup completed", LOG_LEVEL_STATE);
+            log_this("Shutdown", "WebSocket server shutdown complete", LOG_LEVEL_STATE);
         }
-        }
-
-        // Update thread metrics one final time
-        extern ServiceThreads websocket_threads;
-        update_service_thread_metrics(&websocket_threads);
-        if (websocket_threads.thread_count > 0) {
-            log_this("Shutdown", "Warning: %d WebSocket threads still active", 
-                    LOG_LEVEL_ALERT, websocket_threads.thread_count);
-        }
-        
-        log_this("Shutdown", "WebSocket server shutdown complete", LOG_LEVEL_STATE);
     }
 }
 
@@ -275,6 +298,13 @@ static void shutdown_web_systems(void) {
 // Waits for queue manager thread to process shutdown
 static void shutdown_print_system(void) {
     if (!app_config->print_queue.enabled) {
+        return;
+    }
+
+    // Check if the print queue thread was actually created
+    update_service_thread_metrics(&print_threads);
+    if (print_threads.thread_count == 0) {
+        log_this("Shutdown", "Print Queue was not started, skipping shutdown", LOG_LEVEL_STATE);
         return;
     }
 
@@ -453,10 +483,31 @@ void graceful_shutdown(void) {
     extern ServiceThreads mdns_server_threads;
     extern ServiceThreads print_threads;
 
-    // If no subsystems are running, we can skip most of the shutdown sequence
+    // If no subsystems are running, log it and proceed with minimal shutdown
     if (!logging_threads.thread_count && !web_threads.thread_count && 
         !websocket_threads.thread_count && !mdns_server_threads.thread_count && 
         !print_threads.thread_count) {
+        // Record final timing statistics and log final messages
+        record_shutdown_end_time();
+        log_this("Shutdown", "No active subsystems detected", LOG_LEVEL_STATE);
+        log_this("Shutdown", "Performing minimal shutdown sequence", LOG_LEVEL_STATE);
+        
+        // Set the flag before the final message to prevent any thread management logs
+        final_shutdown_mode = 1;
+        
+        // Longer delay to ensure all thread cleanup operations have completed
+        // This ensures "Shutdown complete" truly represents a completed state
+        usleep(1500000);  // 1.5s delay for final cleanup
+        
+        // Log the final shutdown message as the absolute last message
+        log_this("Shutdown", "Shutdown complete", LOG_LEVEL_STATE);
+        
+        // Force flush stdout to ensure the message is visible in redirected output
+        fflush(stdout);
+        
+        // Small delay to ensure the final log message is fully processed
+        usleep(250000);  // 250ms delay to ensure message is captured
+        
         // Just clean up config and exit
         free_app_config();
         return;
@@ -693,14 +744,10 @@ void graceful_shutdown(void) {
         log_this("Shutdown", "All non-main threads exited successfully", LOG_LEVEL_STATE);
     }
 
-    // Record final timing statistics and log final messages
+    // Record final timing statistics
     record_shutdown_end_time();
-    log_this("Shutdown", "Shutdown complete", LOG_LEVEL_STATE);
 
-    // Brief delay to ensure log message is processed
-    usleep(100000);
-
-    // Now safe to destroy synchronization primitives
+    // Clean up synchronization primitives
     pthread_mutex_lock(&terminate_mutex);
     pthread_cond_broadcast(&terminate_cond);
     pthread_mutex_unlock(&terminate_mutex);
@@ -712,4 +759,22 @@ void graceful_shutdown(void) {
 
     // Free configuration last since other components might need it
     free_app_config();
+
+    // Now that all cleanup is done and no more logging can occur from other threads,
+    // set the final shutdown mode flag to suppress thread management logging
+    // during the processing of the final shutdown message
+    final_shutdown_mode = 1;
+    
+    // Longer delay to ensure all thread cleanup operations have completed
+    // This ensures "Shutdown complete" truly represents a completed state
+    usleep(1500000);  // 1.5s delay for final cleanup
+    
+    // Log the final shutdown message
+    log_this("Shutdown", "Shutdown complete", LOG_LEVEL_STATE);
+    
+    // Force flush stdout to ensure the message is visible in redirected output
+    fflush(stdout);
+    
+    // Small delay to ensure the final log message is fully processed
+    usleep(250000);  // 250ms delay to ensure message is captured
 }
