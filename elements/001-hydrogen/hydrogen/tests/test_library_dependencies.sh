@@ -70,15 +70,15 @@ check_dependency_log() {
     
     # Look for the dependency message in the log, ignoring timestamp
     if [ "$is_required" = "true" ]; then
-        # For required libraries, accept INFO level with Good status
-        if grep -q ".*\[ INFO      \]  \[ Initialization     \]  $dep_name.*Status: Good" "$log_file"; then
-            print_test_item 0 "$test_name" "Found $dep_name with expected level INFO"
+        # For required libraries, accept STATE level with Good status
+        if grep -q ".*\[ STATE \]  \[ DepCheck           \]  $dep_name.*Status: Good" "$log_file"; then
+            print_test_item 0 "$test_name" "Found $dep_name with expected level STATE"
             PASSED_TESTS=$((PASSED_TESTS + 1))
             return 0
         fi
     else
         # For optional libraries, accept either status since we're on dev machine
-        if grep -q ".*\[ \(INFO\|WARN\)      \]  \[ Initialization     \]  $dep_name.*Status: \(Good\|Less Good\)" "$log_file"; then
+        if grep -q ".*\[ \(STATE\|WARN\) \]  \[ DepCheck           \]  $dep_name.*Status: \(Good\|Less Good\)" "$log_file"; then
             print_test_item 0 "$test_name" "Found $dep_name with valid status"
             PASSED_TESTS=$((PASSED_TESTS + 1))
             return 0

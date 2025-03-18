@@ -285,20 +285,20 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Tue Mar 18 04:52:41 PDT 2025
+Generated on: Tue Mar 18 12:50:54 PDT 2025
 
 ### Summary
 
 | Metric | Value |
 | ------ | ----- |
 | Total Tests | 13 |
-| Passed | 8 |
-| Failed | 5 |
+| Passed | 9 |
+| Failed | 4 |
 | Skipped | 0 |
 | Total Subtests | 87 |
-| Passed Subtests | 37 |
-| Failed Subtests | 50 |
-| Runtime | 4m 48s |
+| Passed Subtests | 53 |
+| Failed Subtests | 34 |
+| Runtime | 4m 46s |
 
 ### Individual Test Results
 
@@ -312,7 +312,7 @@ Generated on: Tue Mar 18 04:52:41 PDT 2025
 | env_payload | ✅ Passed | Test completed without errors (2 of 2 subtests passed) |
 | env_variables | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
 | json_error_handling | ✅ Passed | Test completed without errors (2 of 2 subtests passed) |
-| library_dependencies | ❌ Failed | Test failed with errors (0 of 16 subtests passed) |
+| library_dependencies | ✅ Passed | Test completed without errors (16 of 16 subtests passed) |
 | socket_rebind | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
 | swagger_ui | ❌ Failed | Test failed with errors (2 of 10 subtests passed) |
 | system_endpoints | ❌ Failed | Test failed with errors (1 of 11 subtests passed) |
@@ -320,7 +320,7 @@ Generated on: Tue Mar 18 04:52:41 PDT 2025
 
 ## Repository Information
 
-Generated via cloc: Tue Mar 18 04:52:41 PDT 2025
+Generated via cloc: Tue Mar 18 12:50:54 PDT 2025
 
 | Language | Files | Blank Lines | Comment Lines | Code Lines |
 | -------- | ----- | ----------- | ------------- | ---------- |
