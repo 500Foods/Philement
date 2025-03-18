@@ -37,6 +37,10 @@ extern ServiceThreads websocket_threads;
 extern ServiceThreads mdns_server_threads;
 extern ServiceThreads print_threads;
 
+// Flag to indicate we're in final shutdown mode - no more thread management logging
+// This will be set just before logging the final "Shutdown complete" message
+volatile sig_atomic_t final_shutdown_mode = 0;
+
 // Internal state
 static pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -60,13 +64,17 @@ void add_service_thread(ServiceThreads *threads, pthread_t thread_id) {
         threads->thread_ids[threads->thread_count] = thread_id;
         threads->thread_tids[threads->thread_count] = tid;
         threads->thread_count++;
-        char msg[128];
+        
+        // Only log if not in final shutdown mode
+        if (!final_shutdown_mode) {
+            char msg[128];
             // Use log group to ensure consistent formatting
             log_group_begin();
             snprintf(msg, sizeof(msg), "Thread %lu (tid: %d) added, count: %d", 
                      (unsigned long)thread_id, tid, threads->thread_count);
             log_this("ThreadMgmt", msg, LOG_LEVEL_STATE);
             log_group_end();
+        }
     } else {
         log_this("ThreadMgmt", "Failed to add thread: MAX_SERVICE_THREADS reached", LOG_LEVEL_DEBUG);
     }
@@ -86,8 +94,8 @@ static void remove_thread_internal(ServiceThreads *threads, int index, bool skip
         threads->thread_metrics[index] = threads->thread_metrics[threads->thread_count];
     }
 
-    // Only log if not skipping and early in shutdown (when app_config still exists)
-    if (!skip_logging) {
+    // Only log if not skipping, not in final shutdown, and early in shutdown (when app_config still exists)
+    if (!skip_logging && !final_shutdown_mode) {
         char msg[128];
         log_group_begin();
         snprintf(msg, sizeof(msg), "Thread %lu removed, count: %d", 
