@@ -103,7 +103,8 @@
 ```
 
 ## REPOSITORY MAP
-```
+
+```diagram
 hydrogen/
 ├── src/                # Source code
 │   ├── api/            # API endpoints (oidc/,system/)
@@ -126,6 +127,7 @@ hydrogen/
 ```
 
 ## CODING EXAMPLES
+
 ```c
 // Error handling
 if(error){log_this("Component","Error details",4,true,true,true);cleanup();return false;}

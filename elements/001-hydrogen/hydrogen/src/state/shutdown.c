@@ -446,23 +446,38 @@ void graceful_shutdown(void) {
     // Give threads a moment to process their shutdown flags
     usleep(1000000);  // 1s delay
 
-    // Now safe to stop logging since other components are done
-    log_this("Shutdown", "Subsystem shutdown completed", LOG_LEVEL_STATE);    
-    log_this("Shutdown", LOG_LINE_BREAK, LOG_LEVEL_STATE);
-
-    // Check remaining threads before logging shutdown
+    // Check if any subsystems were actually running
     extern ServiceThreads logging_threads;
     extern ServiceThreads web_threads;
     extern ServiceThreads websocket_threads;
     extern ServiceThreads mdns_server_threads;
     extern ServiceThreads print_threads;
+
+    // If no subsystems are running, we can skip most of the shutdown sequence
+    if (!logging_threads.thread_count && !web_threads.thread_count && 
+        !websocket_threads.thread_count && !mdns_server_threads.thread_count && 
+        !print_threads.thread_count) {
+        // Just clean up config and exit
+        free_app_config();
+        return;
+    }
+
+    // Otherwise proceed with normal shutdown for active subsystems
+    log_this("Shutdown", "Subsystem shutdown completed", LOG_LEVEL_STATE);    
+    log_this("Shutdown", LOG_LINE_BREAK, LOG_LEVEL_STATE);
+
+    // Check remaining threads before logging shutdown
+    extern ServiceThreads web_threads;
+    extern ServiceThreads websocket_threads;
+    extern ServiceThreads mdns_server_threads;
+    extern ServiceThreads print_threads;
     
-    // Update thread metrics to clean up any dead threads
+    // Only update metrics for initialized threads
     update_service_thread_metrics(&logging_threads);
-    update_service_thread_metrics(&web_threads);
-    update_service_thread_metrics(&websocket_threads);
-    update_service_thread_metrics(&mdns_server_threads);
-    update_service_thread_metrics(&print_threads);
+    if (web_threads.thread_count > 0) update_service_thread_metrics(&web_threads);
+    if (websocket_threads.thread_count > 0) update_service_thread_metrics(&websocket_threads);
+    if (mdns_server_threads.thread_count > 0) update_service_thread_metrics(&mdns_server_threads);
+    if (print_threads.thread_count > 0) update_service_thread_metrics(&print_threads);
     
     // Only show thread status if there are remaining threads
     if (logging_threads.thread_count > 0 || web_threads.thread_count > 0 ||

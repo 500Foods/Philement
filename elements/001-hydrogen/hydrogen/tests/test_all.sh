@@ -3,7 +3,7 @@
 # Hydrogen Test Runner
 # Executes all tests with standardized formatting and generates a summary report
 #
-# Usage: ./test_all.sh [test_name|min|max|all] [--skip-tests] [--update-readme]
+# Usage: ./test_all.sh [test_name|min|max|all] [--skip-tests]
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -611,10 +611,8 @@ print_summary_statistics() {
     echo "  • tests/support_monitor_resources.sh <pid> [sec] - Monitor CPU/memory usage of a process" | tee -a "$SUMMARY_LOG"
     echo "" | tee -a "$SUMMARY_LOG"
     
-    # Generate README section if requested
-    if [ "$UPDATE_README" = true ]; then
-        generate_readme_section
-    fi
+    # Always generate README section
+    generate_readme_section
 }
 
 # Function to run cloc and generate repository information
@@ -798,6 +796,7 @@ generate_readme_section() {
         
         # Append new sections
         cat "$readme_section_file" >> "$readme_file"
+        echo "" >> "$readme_file"
         cat "$repo_info_file" >> "$readme_file"
         print_result 0 "Added test results and repository statistics to $readme_path" | tee -a "$SUMMARY_LOG"
     else
@@ -808,20 +807,17 @@ generate_readme_section() {
 # Parse command line arguments
 TEST_TYPE=${1:-"all"}  # Default to "all" if not specified
 SKIP_TESTS=false
-UPDATE_README=false
+UPDATE_README=true  # Always update README by default
 
-# Check if --skip-tests or --update-readme is provided as any argument
+# Check if --skip-tests is provided as any argument
 for arg in "$@"; do
     if [ "$arg" == "--skip-tests" ]; then
         SKIP_TESTS=true
     fi
-    if [ "$arg" == "--update-readme" ]; then
-        UPDATE_README=true
-    fi
 done
 
-# If the first argument is --skip-tests or --update-readme, set TEST_TYPE to "all"
-if [ "$TEST_TYPE" == "--skip-tests" ] || [ "$TEST_TYPE" == "--update-readme" ]; then
+# If the first argument is --skip-tests, set TEST_TYPE to "all"
+if [ "$TEST_TYPE" == "--skip-tests" ]; then
     TEST_TYPE="all"
 fi
 
@@ -856,13 +852,12 @@ case "$TEST_TYPE" in
             EXIT_CODE=$?
         else
             print_warning "Invalid test type or test name: $TEST_TYPE" | tee -a "$SUMMARY_LOG"
-            echo "Usage: $0 [test_name|min|max|all] [--skip-tests] [--update-readme]" | tee -a "$SUMMARY_LOG"
+            echo "Usage: $0 [test_name|min|max|all] [--skip-tests]" | tee -a "$SUMMARY_LOG"
             echo "  test_name: Run a specific test (e.g., compilation, startup_shutdown)" | tee -a "$SUMMARY_LOG"
             echo "  min: Run with minimal configuration only" | tee -a "$SUMMARY_LOG"
             echo "  max: Run with maximal configuration only" | tee -a "$SUMMARY_LOG"
             echo "  all: Run all tests (default)" | tee -a "$SUMMARY_LOG"
             echo "  --skip-tests: Skip actual test execution, just show what tests would run" | tee -a "$SUMMARY_LOG"
-            echo "  --update-readme: Update README.md with latest test results" | tee -a "$SUMMARY_LOG"
             EXIT_CODE=1
         fi
         ;;
