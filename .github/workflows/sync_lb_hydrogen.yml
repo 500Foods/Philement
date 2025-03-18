@@ -62,11 +62,22 @@ jobs:
 
       - name: Clone Private Repo
         run: |
+          # Clone the private repo
           git clone https://x-access-token:${{ secrets.LB_SYNC_TOKEN }}@github.com/lanboss-ltd/Acuranzo-Server-C.git /tmp/private-repo
           
-          # Set origin remote for the private repo to be used for pushing
+          # Ensure the remote is properly configured
           cd /tmp/private-repo
-          git remote set-url origin https://x-access-token:${{ secrets.LB_SYNC_TOKEN }}@github.com/lanboss-ltd/Acuranzo-Server-C.git
+          echo "Configuring git remote for pushing..."
+          git remote -v
+          
+          # First remove any existing origin remote to avoid conflicts
+          git remote remove origin || echo "No origin remote to remove"
+          
+          # Add the remote with proper authentication
+          git remote add origin https://x-access-token:${{ secrets.LB_SYNC_TOKEN }}@github.com/lanboss-ltd/Acuranzo-Server-C.git
+          
+          # Verify remote configuration
+          git remote -v
 
       - name: Sync Repository with History
         id: sync
