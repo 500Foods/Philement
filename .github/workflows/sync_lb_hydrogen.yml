@@ -55,7 +55,7 @@ jobs:
           git checkout -b main origin/main
           
           # Use git-filter-repo to extract only the hydrogen directory with history
-          git filter-repo --path elements/001-hydrogen/hydrogen/ --path-rename elements/001-hydrogen/hydrogen/:. --force
+          git filter-repo --path elements/001-hydrogen/hydrogen/ --path-rename elements/001-hydrogen/hydrogen/:./ --force
           
           # Set the filtered repo directory to be used in next steps
           echo "filtered_repo=/tmp/hydrogen-filtered" >> $GITHUB_OUTPUT
