@@ -25,6 +25,8 @@ extern void update_queue_limits_from_config(const AppConfig *config);
 
 // External declarations
 extern ServiceThreads logging_threads;
+extern pthread_t log_thread;
+extern volatile sig_atomic_t log_queue_shutdown;
 
 // Initialize logging system and create log queue
 // This is a critical system component - failure here will prevent startup
@@ -35,10 +37,8 @@ int init_logging_subsystem(void) {
         log_this("Startup", "Configuration must be loaded before initializing logging", LOG_LEVEL_ERROR);
         return 0;
     }
-
     // Initialize thread tracking for logging
     init_service_threads(&logging_threads);
-
     // Create the SystemLog queue with configured attributes
     QueueAttributes system_log_attrs = {0};
     Queue* system_log_queue = queue_create("SystemLog", &system_log_attrs);
@@ -46,10 +46,8 @@ int init_logging_subsystem(void) {
         log_this("Startup", "Failed to create SystemLog queue", LOG_LEVEL_ERROR);
         return 0;
     }
-
     // Initialize file logging
     init_file_logging(app_config->server.log_file);
-
     // Launch log queue manager
     if (pthread_create(&log_thread, NULL, log_queue_manager, system_log_queue) != 0) {
         log_this("Startup", "Failed to start log queue manager thread", LOG_LEVEL_DEBUG);
@@ -58,4 +56,24 @@ int init_logging_subsystem(void) {
     }
 
     return 1;
+}
+
+/*
+ * Shut down the logging subsystem.
+ * This should be called during system shutdown to ensure clean termination
+ * of the logging thread and proper cleanup of resources.
+ */
+void shutdown_logging_subsystem(void) {
+    log_this("Shutdown", "Shutting down logging subsystem", LOG_LEVEL_STATE);
+    
+    // Signal the logging thread to stop
+    log_queue_shutdown = 1;
+    
+    // Wait for the thread to exit (already done in the main shutdown sequence)
+    // pthread_join(log_thread, NULL);
+    
+    // Close file logging
+    close_file_logging();
+    
+    log_this("Shutdown", "Logging subsystem shutdown complete", LOG_LEVEL_STATE);
 }

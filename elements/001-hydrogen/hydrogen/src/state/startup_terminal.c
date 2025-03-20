@@ -123,3 +123,24 @@ static int start_terminal_thread(void) {
     log_this("Initialization", "Terminal thread startup stub - needs implementation", LOG_LEVEL_STATE);
     return 1;
 }
+
+/*
+ * Shut down the terminal subsystem.
+ * This should be called during system shutdown to ensure clean termination
+ * of terminal operations and proper cleanup of resources.
+ */
+void shutdown_terminal(void) {
+    log_this("Shutdown", "Shutting down Terminal subsystem", LOG_LEVEL_STATE);
+    
+    // Set the shutdown flag to stop any ongoing operations
+    extern volatile sig_atomic_t terminal_system_shutdown;
+    terminal_system_shutdown = 1;
+    
+    // TODO: Implement proper resource cleanup for terminal
+    // - Close terminal I/O
+    // - Stop terminal thread
+    // - Free resources
+    // - Release signal handlers
+    
+    log_this("Shutdown", "Terminal subsystem shutdown complete", LOG_LEVEL_STATE);
+}

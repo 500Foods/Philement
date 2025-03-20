@@ -32,6 +32,20 @@ extern "C" {
  */
 int init_swagger_subsystem(void);
 
+/**
+ * Shut down the Swagger subsystem
+ * 
+ * This function performs cleanup and shutdown of the Swagger documentation system.
+ * It ensures proper resource release and termination of documentation services.
+ * 
+ * Actions performed:
+ * - Unregister API routes
+ * - Close documentation endpoints
+ * - Free documentation resources
+ * - Clean up temporary files
+ */
+void shutdown_swagger(void);
+
 #ifdef __cplusplus
 }
 #endif

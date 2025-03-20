@@ -3,6 +3,7 @@
  * 
  * This module coordinates pre-launch checks for all subsystems.
  * It ensures that dependencies are met and reports readiness status.
+ * It also registers subsystems in the registry as they pass their launch checks.
  */
 
 #define _GNU_SOURCE
@@ -15,24 +16,41 @@
 
 #include "launch.h"
 #include "../../logging/logging.h"
+#include "../../state/subsystem_registry.h"
+#include "../../state/subsystem_registry_integration.h"
+#include "../../state/startup_logging.h"
+#include "../../state/startup_terminal.h"
+#include "../../state/startup_mdns_client.h"
+#include "../../state/startup_smtp_relay.h"
+#include "../../state/startup_swagger.h"
+
+// External declarations for thread structures
+extern ServiceThreads logging_threads;
+extern pthread_t log_thread;
+extern volatile sig_atomic_t log_queue_shutdown;
+
+// For subsystems that remain unregistered, we use system shutdown flags
+extern volatile sig_atomic_t terminal_system_shutdown;
+extern volatile sig_atomic_t mdns_client_system_shutdown;
+extern volatile sig_atomic_t smtp_relay_system_shutdown;
+extern volatile sig_atomic_t swagger_system_shutdown;
 
 // Forward declarations for subsystem readiness checks
 extern LaunchReadiness check_logging_launch_readiness(void);
-// Add additional checks here as they are implemented:
+extern LaunchReadiness check_terminal_launch_readiness(void);
+extern LaunchReadiness check_mdns_client_launch_readiness(void);
+extern LaunchReadiness check_smtp_relay_launch_readiness(void);
+extern LaunchReadiness check_swagger_launch_readiness(void);
+// Additional checks to be implemented in the future:
 // extern LaunchReadiness check_webserver_launch_readiness(void);
 // extern LaunchReadiness check_websocket_launch_readiness(void);
 // extern LaunchReadiness check_print_launch_readiness(void);
-// etc.
 
 // Log all messages from a readiness check
 static void log_readiness_messages(const LaunchReadiness* readiness) {
     if (!readiness || !readiness->messages) return;
     
-    // Log subsystem header
-    log_this("Launch", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    log_this("Launch", "Subsystem: %s", LOG_LEVEL_STATE, readiness->subsystem);
-    
-    // Log each message
+    // Log each message (first message is the subsystem name)
     for (int i = 0; readiness->messages[i] != NULL; i++) {
         int level = LOG_LEVEL_STATE;
         
@@ -41,19 +59,16 @@ static void log_readiness_messages(const LaunchReadiness* readiness) {
             level = LOG_LEVEL_ALERT;
         }
         
-        log_this("Launch", "  %s", level, readiness->messages[i]);
+        // Print the message directly (formatting is already in the message)
+        log_this("Launch", "%s", level, readiness->messages[i]);
     }
-    
-    // Log overall status
-    log_this("Launch", "Status: %s", readiness->ready ? LOG_LEVEL_STATE : LOG_LEVEL_ALERT, 
-             readiness->ready ? "Ready" : "Not Ready");
 }
 
-// Check if all subsystems are ready to launch
+// Check if any subsystems are ready to launch and register them in the registry
 bool check_all_launch_readiness(void) {
-    bool all_ready = true;
+    bool any_subsystem_ready = false;
     
-    // Begin LAUNCH READINESS logging section
+    // Begin LAUNCH READINESS logging section - only one dashed line as requested
     log_group_begin();
     log_this("Launch", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
     log_this("Launch", "LAUNCH READINESS", LOG_LEVEL_STATE);
@@ -61,25 +76,120 @@ bool check_all_launch_readiness(void) {
     // Check logging subsystem
     LaunchReadiness logging_readiness = check_logging_launch_readiness();
     log_readiness_messages(&logging_readiness);
-    all_ready &= logging_readiness.ready;
     
-    // Add additional subsystem checks here as they are implemented
-    // LaunchReadiness webserver_readiness = check_webserver_launch_readiness();
-    // log_readiness_messages(&webserver_readiness);
-    // all_ready &= webserver_readiness.ready;
-    // 
-    // LaunchReadiness websocket_readiness = check_websocket_launch_readiness();
-    // log_readiness_messages(&websocket_readiness);
-    // all_ready &= websocket_readiness.ready;
-    // etc.
+    // Register logging subsystem if it's ready
+    if (logging_readiness.ready) {
+        any_subsystem_ready = true;
+        int logging_id = register_subsystem_from_launch(
+            "Logging",
+            &logging_threads,
+            &log_thread,
+            &log_queue_shutdown,
+            init_logging_subsystem,
+            shutdown_logging_subsystem
+        );
+        
+        // Add dependencies identified during readiness check
+        if (logging_id >= 0) {
+            add_dependency_from_launch(logging_id, "ConfigSystem");
+        }
+    }
     
-    // Log overall launch status
-    log_this("Launch", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+    // Check terminal subsystem
+    LaunchReadiness terminal_readiness = check_terminal_launch_readiness();
+    log_readiness_messages(&terminal_readiness);
+    
+    // Register terminal subsystem if it's ready (for now, it won't be)
+    if (terminal_readiness.ready) {
+        any_subsystem_ready = true;
+        int terminal_id = register_subsystem_from_launch(
+            "Terminal",
+            NULL,  // No thread structure for now
+            NULL,  // No thread handle for now
+            &terminal_system_shutdown,
+            init_terminal_subsystem,
+            shutdown_terminal
+        );
+        
+        // Add dependencies identified during readiness check
+        if (terminal_id >= 0) {
+            add_dependency_from_launch(terminal_id, "WebServer");
+            add_dependency_from_launch(terminal_id, "WebSockets");
+        }
+    }
+    
+    // Check mdns client subsystem
+    LaunchReadiness mdns_client_readiness = check_mdns_client_launch_readiness();
+    log_readiness_messages(&mdns_client_readiness);
+    
+    // Register mdns client subsystem if it's ready (for now, it won't be)
+    if (mdns_client_readiness.ready) {
+        any_subsystem_ready = true;
+        int mdns_client_id = register_subsystem_from_launch(
+            "MDNSClient",
+            NULL,  // No thread structure for now
+            NULL,  // No thread handle for now
+            &mdns_client_system_shutdown,
+            init_mdns_client_subsystem,
+            shutdown_mdns_client
+        );
+        
+        // Add dependencies identified during readiness check
+        if (mdns_client_id >= 0) {
+            add_dependency_from_launch(mdns_client_id, "NetworkSystem");
+        }
+    }
+    
+    // Check smtp relay subsystem
+    LaunchReadiness smtp_relay_readiness = check_smtp_relay_launch_readiness();
+    log_readiness_messages(&smtp_relay_readiness);
+    
+    // Register smtp relay subsystem if it's ready (for now, it won't be)
+    if (smtp_relay_readiness.ready) {
+        any_subsystem_ready = true;
+        int smtp_relay_id = register_subsystem_from_launch(
+            "SMTPRelay",
+            NULL,  // No thread structure for now
+            NULL,  // No thread handle for now
+            &smtp_relay_system_shutdown,
+            init_smtp_relay_subsystem,
+            shutdown_smtp_relay
+        );
+        
+        // Add dependencies identified during readiness check
+        if (smtp_relay_id >= 0) {
+            add_dependency_from_launch(smtp_relay_id, "NetworkSystem");
+        }
+    }
+    
+    // Check swagger subsystem
+    LaunchReadiness swagger_readiness = check_swagger_launch_readiness();
+    log_readiness_messages(&swagger_readiness);
+    
+    // Register swagger subsystem if it's ready (for now, it won't be)
+    if (swagger_readiness.ready) {
+        any_subsystem_ready = true;
+        int swagger_id = register_subsystem_from_launch(
+            "Swagger",
+            NULL,  // No thread structure for now
+            NULL,  // No thread handle for now
+            &swagger_system_shutdown,
+            init_swagger_subsystem,
+            shutdown_swagger
+        );
+        
+        // Add dependencies identified during readiness check
+        if (swagger_id >= 0) {
+            add_dependency_from_launch(swagger_id, "WebServer");
+        }
+    }
+    
+    // Log overall launch status - no second dashed line
     log_this("Launch", "Overall Launch Status: %s", 
-             all_ready ? LOG_LEVEL_STATE : LOG_LEVEL_ALERT,
-             all_ready ? "Go for Launch" : "No-Go for Launch");
-    log_this("Launch", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+             any_subsystem_ready ? LOG_LEVEL_STATE : LOG_LEVEL_ALERT,
+             any_subsystem_ready ? "At least one subsystem ready" : "No subsystems ready");
     log_group_end();
     
-    return all_ready;
+    // Change to report if ANY subsystem is ready, not ALL
+    return any_subsystem_ready;
 }

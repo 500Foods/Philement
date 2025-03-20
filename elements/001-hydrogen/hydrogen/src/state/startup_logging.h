@@ -19,6 +19,14 @@ extern "C" {
  */
 int init_logging_subsystem(void);
 
+/**
+ * Shutdown logging subsystem
+ * 
+ * Releases all resources allocated by the logging subsystem.
+ * This is called during server shutdown to ensure proper cleanup.
+ */
+void shutdown_logging_subsystem(void);
+
 #ifdef __cplusplus
 }
 #endif

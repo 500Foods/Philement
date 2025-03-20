@@ -74,6 +74,8 @@
 #include "../logging/log_queue_manager.h"    // For close_file_logging()
 #include "../utils/utils.h"
 #include "../utils/utils_threads.h"
+#include "subsystem_registry.h"
+#include "../state/subsystem_registry_integration.h"
 
 // Flag from utils_threads.c to suppress thread management logging during final shutdown
 extern volatile sig_atomic_t final_shutdown_mode;
@@ -411,6 +413,21 @@ void graceful_shutdown(void) {
     // Start timing the shutdown process
     record_shutdown_start_time();
     
+    // Update subsystem registry for shutdown
+    update_subsystem_registry_on_shutdown();
+    
+    // Generate and log subsystem status report
+    char* status_buffer = NULL;
+    if (get_running_subsystems_status(&status_buffer)) {
+        log_group_begin();
+        log_this("Shutdown", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        log_this("Shutdown", "SUBSYSTEMS BEING SHUT DOWN:", LOG_LEVEL_STATE);
+        log_this("Shutdown", "%s", LOG_LEVEL_STATE, status_buffer);
+        log_this("Shutdown", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        log_group_end();
+        free(status_buffer);
+    }
+    
     // Set all shutdown flags atomically before any operations
     extern volatile sig_atomic_t server_starting;
     extern volatile sig_atomic_t mdns_server_system_shutdown;
@@ -460,18 +477,28 @@ void graceful_shutdown(void) {
     
     // Now shutdown the mDNS Server
     shutdown_mdns_server_system();
+    update_subsystem_after_shutdown("MDNSServer");
     
     // Brief delay to ensure mDNS Server is fully stopped
     usleep(250000);  // 250ms delay
     
     log_this("Shutdown", "Stopping web services...", LOG_LEVEL_STATE);
     shutdown_web_systems();
+    update_subsystem_after_shutdown("WebServer");
+    update_subsystem_after_shutdown("WebSocket");
     
     log_this("Shutdown", "Stopping print system...", LOG_LEVEL_STATE);
     shutdown_print_system();
+    update_subsystem_after_shutdown("PrintQueue");
     
     log_this("Shutdown", "Cleaning up network...", LOG_LEVEL_STATE);
     shutdown_network();
+    
+    // Update any remaining subsystems
+    update_subsystem_after_shutdown("SMTPRelay");
+    update_subsystem_after_shutdown("Swagger");
+    update_subsystem_after_shutdown("Terminal");
+    update_subsystem_after_shutdown("MDNSClient");
 
     // Give threads a moment to process their shutdown flags
     usleep(1000000);  // 1s delay
@@ -516,6 +543,9 @@ void graceful_shutdown(void) {
     // Otherwise proceed with normal shutdown for active subsystems
     log_this("Shutdown", "Subsystem shutdown completed", LOG_LEVEL_STATE);    
     log_this("Shutdown", LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    
+    // Final subsystem status check
+    update_subsystem_registry_on_shutdown();
 
     // Check remaining threads before logging shutdown
     extern ServiceThreads web_threads;
@@ -759,6 +789,9 @@ void graceful_shutdown(void) {
 
     // Free configuration last since other components might need it
     free_app_config();
+    
+    // Update logging subsystem in registry before final shutdown
+    update_subsystem_after_shutdown("Logging");
 
     // Now that all cleanup is done and no more logging can occur from other threads,
     // set the final shutdown mode flag to suppress thread management logging
