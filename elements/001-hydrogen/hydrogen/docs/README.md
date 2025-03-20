@@ -51,6 +51,7 @@ The configuration system is divided into subsystems, each with its own detailed 
 ## Architecture Documentation
 
 - [System Architecture](reference/system_architecture.md) - Overall system design
+- [Subsystem Registry Architecture](reference/subsystem_registry_architecture.md) - Subsystem lifecycle management
 - [Thread Monitoring](thread_monitoring.md) - Thread management
 - [Shutdown Architecture](shutdown_architecture.md) - Shutdown process
 - [WebSocket Architecture](websocket_architecture.md) - WebSocket system

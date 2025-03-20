@@ -36,6 +36,20 @@ extern "C" {
  */
 int init_terminal_subsystem(void);
 
+/**
+ * Shut down the terminal subsystem
+ * 
+ * This function performs cleanup and shutdown of the terminal system.
+ * It ensures proper resource release and termination of terminal operations.
+ * 
+ * Actions performed:
+ * - Close terminal I/O
+ * - Stop terminal thread
+ * - Free allocated resources
+ * - Release signal handlers
+ */
+void shutdown_terminal(void);
+
 #ifdef __cplusplus
 }
 #endif
