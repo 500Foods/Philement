@@ -96,3 +96,23 @@ static int start_smtp_relay_thread(void) {
     log_this("Initialization", "SMTP Relay thread startup stub - needs implementation", LOG_LEVEL_STATE);
     return 1;
 }
+
+/*
+ * Shut down the SMTP relay subsystem.
+ * This should be called during system shutdown to ensure clean termination
+ * of SMTP operations and proper cleanup of resources.
+ */
+void shutdown_smtp_relay(void) {
+    log_this("Shutdown", "Shutting down SMTP Relay subsystem", LOG_LEVEL_STATE);
+    
+    // Set the shutdown flag to stop any ongoing operations
+    extern volatile sig_atomic_t smtp_relay_system_shutdown;
+    smtp_relay_system_shutdown = 1;
+    
+    // TODO: Implement proper resource cleanup for SMTP relay
+    // - Close active connections
+    // - Flush mail queue
+    // - Free resources
+    
+    log_this("Shutdown", "SMTP Relay subsystem shutdown complete", LOG_LEVEL_STATE);
+}

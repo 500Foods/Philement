@@ -54,6 +54,7 @@
 #include "../mdns/mdns_server.h"
 #include "../network/network.h"
 #include "../utils/utils_threads.h"
+#include "subsystem_registry.h"        // Subsystem registry
 
 
 // Application state flags
@@ -98,5 +99,11 @@ extern network_info_t *net_info;
 
 // Core system functions
 void graceful_shutdown(void);
+
+// Subsystem registry integration functions
+void register_standard_subsystems(void);
+void update_subsystem_registry_on_startup(void);
+void update_subsystem_registry_on_shutdown(void);
+bool get_running_subsystems_status(char** status_buffer);
 
 #endif // HYDROGEN_STATE_H

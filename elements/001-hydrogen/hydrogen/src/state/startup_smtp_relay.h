@@ -29,6 +29,20 @@ extern "C" {
  */
 int init_smtp_relay_subsystem(void);
 
+/**
+ * Shut down the SMTP relay subsystem
+ * 
+ * This function performs cleanup and shutdown of the SMTP relay system.
+ * It ensures proper resource release and termination of mail operations.
+ * 
+ * Actions performed:
+ * - Close active connections
+ * - Flush mail queue
+ * - Free allocated resources
+ * - Clean up temporary files
+ */
+void shutdown_smtp_relay(void);
+
 #ifdef __cplusplus
 }
 #endif

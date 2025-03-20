@@ -427,7 +427,39 @@ See the [Shutdown Architecture](../shutdown_architecture.md) document for detail
 
 Hydrogen employs several consistent architectural patterns across components:
 
-### 1. Thread-Safe Queues
+### 1. Subsystem Registry
+
+The Subsystem Registry provides a centralized mechanism for managing the lifecycle and dependencies of all components:
+
+```diagram
+┌───────────────────────────────────────────────────────────────┐
+│                   Subsystem Registry                          │
+│                                                               │
+│   ┌───────────────┐   ┌───────────────┐   ┌───────────────┐   │
+│   │   Subsystem   │   │   Subsystem   │   │   Subsystem   │   │
+│   │   Info #1     │   │   Info #2     │   │   Info #3     │   │
+│   └───────────────┘   └───────────────┘   └───────────────┘   │
+│                                                               │
+│   ┌─────────────────────────────────────────────────────┐     │
+│   │              Registry Operations                     │     │
+│   │  • Register Subsystem                               │     │
+│   │  • Start/Stop Subsystem                             │     │
+│   │  • Manage Dependencies                              │     │
+│   │  • Track State Changes                              │     │
+│   └─────────────────────────────────────────────────────┘     │
+└───────────────────────────────────────────────────────────────┘
+```
+
+This pattern enables:
+
+- Centralized subsystem lifecycle management
+- Dependency-aware startup and shutdown sequences
+- Runtime monitoring of subsystem health
+- Structured status reporting
+
+See the [Subsystem Registry Architecture](./subsystem_registry_architecture.md) document for detailed information.
+
+### 2. Thread-Safe Queues
 
 Queue-based communication is used extensively to decouple components and provide thread safety:
 

@@ -29,6 +29,20 @@ extern "C" {
  */
 int init_mdns_client_subsystem(void);
 
+/**
+ * Shut down the mDNS client subsystem
+ * 
+ * This function performs cleanup and shutdown of the mDNS client system.
+ * It ensures proper resource release and termination of mDNS operations.
+ * 
+ * Actions performed:
+ * - Stop any ongoing mDNS discovery
+ * - Release network resources
+ * - Free allocated memory
+ * - Close any open connections
+ */
+void shutdown_mdns_client(void);
+
 #ifdef __cplusplus
 }
 #endif

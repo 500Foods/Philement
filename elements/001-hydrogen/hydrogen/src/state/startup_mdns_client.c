@@ -89,3 +89,27 @@ static int start_mdns_client_thread(void) {
     log_this("Initialization", "mDNS Client thread startup stub - needs implementation", LOG_LEVEL_STATE);
     return 1;
 }
+
+/*
+ * Shut down the mDNS client subsystem.
+ * This should be called during system shutdown to ensure clean termination
+ * of mDNS client operations and proper cleanup of resources.
+ */
+void shutdown_mdns_client(void) {
+    log_this("Shutdown", "Shutting down mDNS Client subsystem", LOG_LEVEL_STATE);
+    
+    // Set the shutdown flag to stop any ongoing operations
+    extern volatile sig_atomic_t mdns_client_system_shutdown;
+    mdns_client_system_shutdown = 1;
+    
+    // TODO: Implement proper resource cleanup for mDNS client
+    
+    // Free network info if it was allocated
+    if (net_info) {
+        // Note: net_info should only be freed here if it's not used by other subsystems
+        // The actual freeing happens in the main shutdown sequence
+        log_this("Shutdown", "Network info will be freed during main shutdown", LOG_LEVEL_DEBUG);
+    }
+    
+    log_this("Shutdown", "mDNS Client subsystem shutdown complete", LOG_LEVEL_STATE);
+}

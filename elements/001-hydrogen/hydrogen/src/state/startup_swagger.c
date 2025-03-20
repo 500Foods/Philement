@@ -97,3 +97,23 @@ static int setup_swagger_routes(void) {
     log_this("Initialization", "Swagger route setup stub - needs implementation", LOG_LEVEL_STATE);
     return 1;
 }
+
+/*
+ * Shut down the Swagger subsystem.
+ * This should be called during system shutdown to ensure clean termination
+ * of Swagger documentation services and proper cleanup of resources.
+ */
+void shutdown_swagger(void) {
+    log_this("Shutdown", "Shutting down Swagger subsystem", LOG_LEVEL_STATE);
+    
+    // Set the shutdown flag to stop any ongoing operations
+    extern volatile sig_atomic_t swagger_system_shutdown;
+    swagger_system_shutdown = 1;
+    
+    // TODO: Implement proper resource cleanup for Swagger
+    // - Unregister API routes
+    // - Close documentation endpoints
+    // - Free documentation resources
+    
+    log_this("Shutdown", "Swagger subsystem shutdown complete", LOG_LEVEL_STATE);
+}

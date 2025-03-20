@@ -21,6 +21,8 @@
 #include "../utils/utils_dependency.h"
 #include "../config/config_filesystem.h"
 #include "../config/launch/launch.h"
+#include "subsystem_registry.h"
+#include "subsystem_registry_integration.h"
 
 // Subsystem startup headers
 #include "startup_logging.h"
@@ -134,9 +136,13 @@ int startup_hydrogen(const char* config_path) {
     // Log successful core initialization - this will use direct console output 
     // because the queue system is not initialized yet
     log_this("Startup", "Core systems initialized successfully", LOG_LEVEL_STATE);
-
+    
+    // Initialize registry as its own subsystem first
+    initialize_registry_subsystem();
+    
     // 3. Perform launch readiness checks for all subsystems
-    // This ensures all prerequisites are met before attempting to start any services
+    // This builds the registry by registering subsystems at their decision points
+    // Each subsystem is added to the registry if it passes its readiness check
     bool launch_ready = check_all_launch_readiness();
     
     // Only initialize queue system and threads if at least one subsystem passed the readiness check
@@ -145,6 +151,10 @@ int startup_hydrogen(const char* config_path) {
         queue_system_init();
         update_queue_limits_from_config(app_config);
         
+        // Begin LAUNCH section for logging subsystem
+        log_this("Startup", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        log_this("Startup", "LAUNCH: Logging", LOG_LEVEL_STATE);
+        
         // Initialize logging subsystem with threads
         extern ServiceThreads logging_threads;
         init_service_threads(&logging_threads);
@@ -152,6 +162,9 @@ int startup_hydrogen(const char* config_path) {
             queue_system_destroy();
             return 0;
         }
+        
+        // Update logging subsystem state in registry
+        update_subsystem_on_startup("Logging", true);
 
         // Now that logging is available, check feature-specific dependencies
         critical_dependencies = check_library_dependencies(app_config);
@@ -159,6 +172,9 @@ int startup_hydrogen(const char* config_path) {
             log_this("Startup", "Missing libraries required by enabled features", LOG_LEVEL_ERROR);
             return 0;
         }
+        
+        // Additional LAUNCH sections would be added here for other subsystems
+        // as they are implemented and pass their launch readiness checks
     } else {
         // If no subsystems are ready, log warning and continue without launching threads
         log_this("Startup", "One or more subsystems failed launch readiness checks", LOG_LEVEL_ALERT);
@@ -238,10 +254,24 @@ int startup_hydrogen(const char* config_path) {
     // Log full configuration information now that app_config is available
     log_config_info();
 
+    // Synchronize registry with actual running subsystems
+    update_subsystem_registry_on_startup();
+    
     // All services have been started successfully
     server_starting = 0; 
     server_running = 1; 
     update_server_ready_time();  // Then try to record the time
+    
+    // Generate and log subsystem status report
+    char* status_buffer = NULL;
+    if (get_running_subsystems_status(&status_buffer)) {
+        log_group_begin();
+        log_this("Startup", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        log_this("Startup", "%s", LOG_LEVEL_STATE, status_buffer);
+        log_this("Startup", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        log_group_end();
+        free(status_buffer);
+    }
 
     // Final Startup Message
     log_group_begin();

@@ -246,8 +246,37 @@ Common shutdown issues and solutions:
    - Hardware drivers may need special shutdown handling
    - Check for device-specific cleanup requirements
 
+## Subsystem Registry Integration
+
+The Subsystem Registry plays a crucial role in the shutdown process by managing dependencies and coordinating the shutdown sequence:
+
+1. **Dependency-Aware Termination**:
+   - Subsystems are shut down in reverse dependency order
+   - The registry prevents termination of subsystems that others depend on
+   - Ensures all dependent subsystems are stopped before their dependencies
+
+2. **State Tracking**:
+   - Registry maintains real-time state information for all subsystems
+   - Each subsystem transitions through states: RUNNING → STOPPING → INACTIVE
+   - State transitions are logged and timestamped for diagnostics
+
+3. **Centralized Shutdown Control**:
+   - `update_subsystem_registry_on_shutdown()` coordinates shutdown of all registered subsystems
+   - Registry ensures all subsystems receive shutdown signals
+   - Verifies all subsystems have terminated properly
+
+4. **Shutdown Sequence Management**:
+   - Registry maintains a consistent shutdown order based on dependencies
+   - Components with no dependents are stopped first
+   - Core systems with many dependents are stopped last
+
+The registry provides real-time monitoring of the shutdown progress, allowing the main shutdown sequence to adapt to conditions and ensure all subsystems are properly terminated.
+
+For detailed information about the Subsystem Registry design and implementation, see the [Subsystem Registry Architecture](./reference/subsystem_registry_architecture.md) document.
+
 ## References
 
+- [Subsystem Registry Architecture](./reference/subsystem_registry_architecture.md) - Subsystem lifecycle management
 - [Thread Monitoring](./thread_monitoring.md) - Detailed thread diagnostic information
 - [WebSocket Interface](./web_socket.md) - WebSocket server shutdown implementation
 - [mDNS Server](./mdns_server.md) - mDNS server shutdown implementation
