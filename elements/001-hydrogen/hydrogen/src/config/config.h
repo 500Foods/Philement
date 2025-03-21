@@ -59,7 +59,7 @@
 #include "print/config_motion.h"
 
 // Type-specific handling
-#include "config_env.h"
+#include "env/config_env.h"
 #include "types/config_string.h"
 #include "types/config_bool.h"
 #include "types/config_int.h"

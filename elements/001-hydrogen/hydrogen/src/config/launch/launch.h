@@ -26,6 +26,9 @@ LaunchReadiness check_terminal_launch_readiness(void);
 LaunchReadiness check_mdns_client_launch_readiness(void);
 LaunchReadiness check_smtp_relay_launch_readiness(void);
 LaunchReadiness check_swagger_launch_readiness(void);
+LaunchReadiness check_webserver_launch_readiness(void);
+LaunchReadiness check_websocket_launch_readiness(void);
+LaunchReadiness check_print_launch_readiness(void);
 
 // Run all launch readiness checks in the correct order
 // Returns true if all required subsystems are ready to launch

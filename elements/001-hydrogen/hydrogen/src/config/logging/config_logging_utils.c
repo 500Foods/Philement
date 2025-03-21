@@ -21,8 +21,9 @@
 #include <stdbool.h>
 
 // Project headers
-#include "config_utils.h"
-#include "../logging/logging.h"
+#include "../config_utils.h"
+#include "../../logging/logging.h"
+#include "config_logging_utils.h"
 
 /*
  * Helper function to log a configuration section header

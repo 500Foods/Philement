@@ -269,9 +269,16 @@ size_t stop_all_subsystems_in_dependency_order(void) {
         
         pthread_mutex_lock(&subsystem_registry.mutex);
         
-        // First, identify leaf subsystems (those with no dependents)
-        bool is_leaf[MAX_SUBSYSTEMS] = {false};
+        // Allocate array to track leaf subsystems based on current count
+        bool* is_leaf = calloc(subsystem_registry.count, sizeof(bool));
         int leaf_count = 0;
+        
+        // Handle allocation failure
+        if (!is_leaf) {
+            log_this("Shutdown", "Failed to allocate memory for leaf subsystem tracking", LOG_LEVEL_ERROR);
+            pthread_mutex_unlock(&subsystem_registry.mutex);
+            return stopped_count;
+        }
         
         for (int i = 0; i < subsystem_registry.count; i++) {
             SubsystemInfo* subsystem = &subsystem_registry.subsystems[i];
@@ -311,6 +318,9 @@ size_t stop_all_subsystems_in_dependency_order(void) {
                 }
             }
         }
+        
+        // Free the dynamically allocated array
+        free(is_leaf);
         
         // Brief delay between iterations
         if (any_stopped) {

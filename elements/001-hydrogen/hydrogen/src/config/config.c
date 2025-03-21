@@ -23,7 +23,7 @@
 
 // Project headers
 #include "config.h"
-#include "config_env.h"
+#include "env/config_env.h"
 #include "env/config_env_utils.h"
 #include "config_utils.h"
 #include "types/config_string.h"
@@ -31,7 +31,7 @@
 #include "types/config_int.h"
 #include "types/config_size.h"
 #include "types/config_double.h"
-#include "config_filesystem.h"
+#include "files/config_filesystem.h"
 #include "files/config_file_utils.h"
 #include "security/config_sensitive.h"
 #include "config_priority.h"

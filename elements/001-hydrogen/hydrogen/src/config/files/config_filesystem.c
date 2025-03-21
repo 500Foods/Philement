@@ -47,10 +47,7 @@
 
 // Project headers
 #include "config_filesystem.h"
-#include "../logging/logging.h"
-
-// External declarations
-// None required - no external functions used beyond standard library
+#include "../../logging/logging.h"
 
 // Public interface
 char* get_executable_path(void);
