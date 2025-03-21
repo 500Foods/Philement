@@ -13,7 +13,7 @@ build_valgrind/
 # Temporary generated files
 payloads/swagger.json
 payloads/payload.tar.br.enc
-
+cd 
 # Log files
 *.log
 *.log.*
