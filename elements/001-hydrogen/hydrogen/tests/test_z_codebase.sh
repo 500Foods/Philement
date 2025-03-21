@@ -4,7 +4,7 @@
 # This test performs various analysis tasks on the codebase:
 # 1. Locates and lists all Makefiles in the project
 # 2. Runs 'make clean' for each Makefile found
-# 3. Analyzes source code files (.c, .h, .inc, .md) for line counts
+# 3. Analyzes source code files (.c, .h, .md, .sh) for line counts
 # 4. Lists non-source files > 10KB
 # 5. Performs linting on various file types
 #
@@ -156,6 +156,11 @@ MAKEFILES_LIST=$(mktemp)
 SOURCE_FILES_LIST=$(mktemp)
 LARGE_FILES_LIST=$(mktemp)
 LINE_COUNT_FILE=$(mktemp)
+# Additional temporary files for file type specific lists
+MD_FILES_LIST=$(mktemp)
+C_FILES_LIST=$(mktemp)
+H_FILES_LIST=$(mktemp)
+SH_FILES_LIST=$(mktemp)
 
 # ====================================================================
 # STEP 3: Test implementation
@@ -281,10 +286,10 @@ run_make_clean() {
 # Function to analyze source code files
 analyze_source_files() {
     print_header "3. Analyzing Source Code Files" | tee -a "$RESULT_LOG"
-    print_info "Finding all .c, .h, .inc and .md files..." | tee -a "$RESULT_LOG"
+    print_info "Finding all .c, .h, .md, and .sh files..." | tee -a "$RESULT_LOG"
     
-    # Find all .c, .h, .inc and .md files and write to the list file
-    find "$HYDROGEN_DIR" -type f \( -name "*.c" -o -name "*.h" -o -name "*.inc" -o -name "*.md" \) | sort > "$SOURCE_FILES_LIST"
+    # Find all .c, .h, .md, and .sh files and write to the list file
+    find "$HYDROGEN_DIR" -type f \( -name "*.c" -o -name "*.h" -o -name "*.md" -o -name "*.sh" \) | sort > "$SOURCE_FILES_LIST"
     
     # Count the total number of source files
     SOURCE_FILE_COUNT=$(wc -l < "$SOURCE_FILES_LIST")
@@ -365,9 +370,51 @@ analyze_source_files() {
     print_info "900-999 Lines: ${LINE_COUNT_BINS["900-999"]} files" | tee -a "$RESULT_LOG"
     print_info "1000+ Lines: ${LINE_COUNT_BINS["1000+"]} files" | tee -a "$RESULT_LOG"
     
-    # Show the top 10 largest files
-    print_info "Top 10 Largest Source Files:" | tee -a "$RESULT_LOG"
-    head -n 10 "$LINE_COUNT_FILE" | while read -r line; do
+    # Show the top 20 largest files
+    print_info "Top 20 Largest Source Files:" | tee -a "$RESULT_LOG"
+    head -n 20 "$LINE_COUNT_FILE" | while read -r line; do
+        local count path
+        read -r count path <<< "$line"
+        path=${path#hydrogen/}
+        print_info "  $count lines: $path" | tee -a "$RESULT_LOG"
+    done
+    
+    # Filter files by type and sort by line count
+    grep "\.md$" "$LINE_COUNT_FILE" > "$MD_FILES_LIST"
+    grep "\.c$" "$LINE_COUNT_FILE" > "$C_FILES_LIST"
+    grep "\.h$" "$LINE_COUNT_FILE" > "$H_FILES_LIST"
+    grep "\.sh$" "$LINE_COUNT_FILE" > "$SH_FILES_LIST"
+    
+    # Show the top 20 .md files
+    print_info "Top 20 Markdown (.md) Files:" | tee -a "$RESULT_LOG"
+    head -n 20 "$MD_FILES_LIST" | while read -r line; do
+        local count path
+        read -r count path <<< "$line"
+        path=${path#hydrogen/}
+        print_info "  $count lines: $path" | tee -a "$RESULT_LOG"
+    done
+    
+    # Show the top 20 .c files
+    print_info "Top 20 C (.c) Files:" | tee -a "$RESULT_LOG"
+    head -n 20 "$C_FILES_LIST" | while read -r line; do
+        local count path
+        read -r count path <<< "$line"
+        path=${path#hydrogen/}
+        print_info "  $count lines: $path" | tee -a "$RESULT_LOG"
+    done
+    
+    # Show the top 20 .h files
+    print_info "Top 20 Header (.h) Files:" | tee -a "$RESULT_LOG"
+    head -n 20 "$H_FILES_LIST" | while read -r line; do
+        local count path
+        read -r count path <<< "$line"
+        path=${path#hydrogen/}
+        print_info "  $count lines: $path" | tee -a "$RESULT_LOG"
+    done
+    
+    # Show the top 20 .sh files
+    print_info "Top 20 Shell Script (.sh) Files:" | tee -a "$RESULT_LOG"
+    head -n 20 "$SH_FILES_LIST" | while read -r line; do
         local count path
         read -r count path <<< "$line"
         path=${path#hydrogen/}
@@ -407,8 +454,8 @@ list_large_files() {
     print_header "4. Listing Large Non-Source Files (>25KB)" | tee -a "$RESULT_LOG"
     print_info "Finding all files >25KB excluding source and documentation files..." | tee -a "$RESULT_LOG"
     
-    # Find all files >25KB excluding .c, .h, .inc, .md files, Makefiles, and files under tests/
-    find "$HYDROGEN_DIR" -type f -size +25k -not \( -path "*/tests/*" -o -name "*.c" -o -name "*.h" -o -name "*.inc" -o -name "*.md" -o -name "Makefile" \) | sort > "$LARGE_FILES_LIST"
+    # Find all files >25KB excluding .c, .h, .md, .sh files, Makefiles, and files under tests/
+    find "$HYDROGEN_DIR" -type f -size +25k -not \( -path "*/tests/*" -o -name "*.c" -o -name "*.h" -o -name "*.md" -o -name "*.sh" -o -name "Makefile" \) | sort > "$LARGE_FILES_LIST"
     
     # Count the number of large files
     LARGE_FILE_COUNT=$(wc -l < "$LARGE_FILES_LIST")
@@ -468,7 +515,7 @@ run_linting_tests() {
     local c_file_count=0
     
     # Count all C files, excluding build directories and test artifacts
-    c_file_count=$(find "$HYDROGEN_DIR" -type f \( -name "*.c" -o -name "*.h" -o -name "*.inc" \) \
+    c_file_count=$(find "$HYDROGEN_DIR" -type f \( -name "*.c" -o -name "*.h" \) \
         -not -path "*/build*/*" \
         -not -path "*/tests/logs/*" \
         -not -path "*/tests/results/*" \
@@ -778,7 +825,7 @@ cp "$LARGE_FILES_LIST" "$RESULTS_DIR/large_files_${TIMESTAMP}.txt"
 print_info "Large files list saved to: $(convert_to_relative_path "$RESULTS_DIR/large_files_${TIMESTAMP}.txt")" | tee -a "$RESULT_LOG"
 
 # Clean up temporary files
-rm -f "$MAKEFILES_LIST" "$SOURCE_FILES_LIST" "$LARGE_FILES_LIST" "$LINE_COUNT_FILE" response_*.json
+rm -f "$MAKEFILES_LIST" "$SOURCE_FILES_LIST" "$LARGE_FILES_LIST" "$LINE_COUNT_FILE" "$MD_FILES_LIST" "$C_FILES_LIST" "$H_FILES_LIST" "$SH_FILES_LIST" response_*.json
 
 # ====================================================================
 # STEP 6: Report Results
