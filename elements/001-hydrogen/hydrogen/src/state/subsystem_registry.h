@@ -139,6 +139,14 @@ bool is_subsystem_running_by_name(const char* name);
 SubsystemState get_subsystem_state(int subsystem_id);
 
 /*
+ * Update the registry after a subsystem has been shut down.
+ * This should be called after a subsystem's shutdown function has completed.
+ *
+ * @param subsystem_name Name of the subsystem that was shut down
+ */
+void update_subsystem_after_shutdown(const char* subsystem_name);
+
+/*
  * Add a dependency to a subsystem.
  *
  * @param subsystem_id ID of the subsystem

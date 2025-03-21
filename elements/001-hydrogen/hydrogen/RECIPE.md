@@ -60,7 +60,25 @@
     "debug": "make debug: debug symbols - build_debug/",
     "perf": "make perf: max optimization/LTO - build_perf/",
     "release": "make release: production - build_release/",
-    "valgrind": "make valgrind: memory analysis - build_valgrind/"
+    "valgrind": "make valgrind: memory analysis - build_valgrind/",
+    "trial": "make trial: clean build with focused error/warning output, runs shutdown test on success"
+  },
+  "build_quality": {
+    "requirements": [
+      "All code changes must pass 'make trial' with no warnings or errors",
+      "Tasks are not considered complete until 'make trial' runs cleanly",
+      "Use 'make trial' to quickly identify and fix compilation issues",
+      "All changes must pass the shutdown test (automatically run after clean trial build)",
+      "Clean shutdown behavior is critical and verified for all code changes"
+    ],
+    "workflow": [
+      "Make code changes",
+      "Run 'make trial' to check for warnings/errors",
+      "Fix any issues that are reported",
+      "Repeat until build is clean",
+      "Ensure shutdown test passes (automatically run after clean build)",
+      "Only then mark task as complete"
+    ]
   },
   "linting": {
     "tools": {

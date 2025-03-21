@@ -285,20 +285,20 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Tue Mar 18 12:50:54 PDT 2025
+Generated on: Thu Mar 20 20:50:06 PDT 2025
 
 ### Summary
 
 | Metric | Value |
 | ------ | ----- |
-| Total Tests | 13 |
-| Passed | 9 |
+| Total Tests | 15 |
+| Passed | 11 |
 | Failed | 4 |
 | Skipped | 0 |
-| Total Subtests | 87 |
-| Passed Subtests | 53 |
+| Total Subtests | 92 |
+| Passed Subtests | 58 |
 | Failed Subtests | 34 |
-| Runtime | 4m 46s |
+| Runtime | 5m 3s |
 
 ### Individual Test Results
 
@@ -313,6 +313,8 @@ Generated on: Tue Mar 18 12:50:54 PDT 2025
 | env_variables | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
 | json_error_handling | ✅ Passed | Test completed without errors (2 of 2 subtests passed) |
 | library_dependencies | ✅ Passed | Test completed without errors (16 of 16 subtests passed) |
+| shutdown_only | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
+| signals | ✅ Passed | Test completed without errors (4 of 4 subtests passed) |
 | socket_rebind | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
 | swagger_ui | ❌ Failed | Test failed with errors (2 of 10 subtests passed) |
 | system_endpoints | ❌ Failed | Test failed with errors (1 of 11 subtests passed) |
@@ -320,16 +322,16 @@ Generated on: Tue Mar 18 12:50:54 PDT 2025
 
 ## Repository Information
 
-Generated via cloc: Tue Mar 18 12:50:54 PDT 2025
+Generated via cloc: Thu Mar 20 20:50:06 PDT 2025
 
 | Language | Files | Blank Lines | Comment Lines | Code Lines |
 | -------- | ----- | ----------- | ------------- | ---------- |
-| C | 132 | 3629 | 5222 | 16226 |
-| Markdown | 95 | 3518 | 27 | 12629 |
+| C | 138 | 3907 | 5530 | 17085 |
+| Markdown | 96 | 3661 | 27 | 13114 |
+| Bourne | Shell | 23 | 1268 | 1301 |
 | JSON | 17 | 0 | 0 | 4798 |
-| Bourne | Shell | 21 | 1183 | 1230 |
-| C/C++ | Header | 113 | 950 | 4321 |
-| Text | 13 | 2 | 0 | 1605 |
+| C/C++ | Header | 115 | 1000 | 4561 |
+| Text | 11 | 4 | 0 | 1650 |
 | HTML | 1 | 74 | 0 | 493 |
-| make | 2 | 50 | 211 | 201 |
-| **Total** | **394** | **9406** | **11011** | **42959** |
+| make | 2 | 51 | 214 | 212 |
+| **Total** | **403** | **9965** | **11633** | **44802** |

@@ -15,32 +15,32 @@ The Subsystem Registry provides a structured approach to subsystem management wi
 This architecture enables Hydrogen to maintain a robust and fault-tolerant system by enforcing proper initialization sequences, dependency checking, and controlled shutdown processes.
 
 ```diagram
-┌───────────────────────────────────────────────────────────────┐
-│                   Subsystem Registry                          │
-│                                                               │
-│   ┌───────────────┐   ┌───────────────┐   ┌───────────────┐   │
-│   │   Subsystem   │   │   Subsystem   │   │   Subsystem   │   │
-│   │   Info #1     │   │   Info #2     │   │   Info #3     │   │
-│   └───────┬───────┘   └───────┬───────┘   └───────┬───────┘   │
-│           │                   │                   │           │
-│           └───────────────────┼───────────────────┘           │
-│                               │                               │
-│                               ▼                               │
-│   ┌─────────────────────────────────────────────────────┐     │
-│   │              Registry Operations                     │     │
-│   │                                                     │     │
-│   │   ┌───────────┐   ┌───────────┐   ┌───────────┐     │     │
-│   │   │ Register  │   │  Start    │   │   Stop    │     │     │
-│   │   │ Subsystem │   │ Subsystem │   │ Subsystem │     │     │
-│   │   └───────────┘   └───────────┘   └───────────┘     │     │
-│   │                                                     │     │
-│   │   ┌───────────┐   ┌───────────┐   ┌───────────┐     │     │
-│   │   │   Add     │   │  Check    │   │  Update   │     │     │
-│   │   │ Dependency│   │Dependencies│  │   State   │     │     │
-│   │   └───────────┘   └───────────┘   └───────────┘     │     │
-│   └─────────────────────────────────────────────────────┘     │
-│                                                               │
-└───────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                    Subsystem Registry                       │
+│                                                             │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐      │
+│  │  Subsystem  │    │  Subsystem  │    │  Subsystem  │      │
+│  │   Info #1   │    │   Info #2   │    │   Info #3   │      │
+│  └──────┬──────┘    └──────┬──────┘    └──────┬──────┘      │
+│         │                  │                  │             │
+│         └──────────────────┼──────────────────┘             │
+│                            │                                │
+│                            ▼                                │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │               Registry Operations                     │  │
+│  │                                                       │  │
+│  │  ┌─────────────┐   ┌─────────────┐   ┌─────────────┐  │  │
+│  │  │  Register   │   │    Start    │   │    Stop     │  │  │
+│  │  │  Subsystem  │   │  Subsystem  │   │  Subsystem  │  │  │
+│  │  └─────────────┘   └─────────────┘   └─────────────┘  │  │
+│  │                                                       │  │
+│  │  ┌─────────────┐   ┌──────────────┐   ┌─────────────┐ │  │
+│  │  │    Add      │   │    Check     │   │   Update    │ │  │
+│  │  │ Dependency  │   │ Dependencies │   │    State    │ │  │
+│  │  └─────────────┘   └──────────────┘   └─────────────┘ │  │
+│  └───────────────────────────────────────────────────────┘  │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ## Core Components
@@ -286,7 +286,7 @@ The registry provides comprehensive status reporting through:
 
 Example status output:
 
-```
+```log
 SUBSYSTEM STATUS REPORT
 --------------------------------------------------
 Subsystem: Logging - State: Running - Time: 01:23:45
