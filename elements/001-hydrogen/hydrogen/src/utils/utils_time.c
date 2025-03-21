@@ -20,6 +20,8 @@ time_t get_server_ready_time(void);
 void record_shutdown_start_time(void);
 void record_shutdown_end_time(void);
 void format_duration(time_t seconds, char *buffer, size_t buflen);
+const char* get_system_start_time_string(void);
+double calculate_startup_time(void);
 
 // External declarations
 extern volatile sig_atomic_t server_starting;
@@ -132,4 +134,39 @@ time_t get_server_ready_time(void) {
     time_t ready_time = server_ready_time.tv_sec;
     pthread_mutex_unlock(&ready_time_mutex);
     return ready_time;
+}
+
+// Get the formatted server start time string
+const char* get_system_start_time_string(void) {
+    static char time_buffer[32]; // Static buffer for thread safety
+    time_t start_time = get_server_start_time();
+    if (start_time > 0) {
+        format_iso_time(start_time, time_buffer, sizeof(time_buffer));
+    } else {
+        snprintf(time_buffer, sizeof(time_buffer), "unknown");
+    }
+    return time_buffer;
+}
+
+// Calculate startup time (duration from start to ready)
+double calculate_startup_time(void) {
+    // Return 0 if times aren't set yet
+    if (server_start_time.tv_sec == 0) {
+        return 0.0;
+    }
+    
+    pthread_mutex_lock(&ready_time_mutex);
+    
+    // If ready time isn't set, use current time
+    struct timespec end_time;
+    if (server_ready_time.tv_sec == 0) {
+        clock_gettime(CLOCK_MONOTONIC, &end_time);
+    } else {
+        end_time = server_ready_time;
+    }
+    
+    double elapsed = calc_elapsed_time(&end_time, &server_start_time);
+    pthread_mutex_unlock(&ready_time_mutex);
+    
+    return elapsed;
 }

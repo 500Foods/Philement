@@ -1,5 +1,5 @@
 /*
- * Safe Shutdown Sequence for 3D Printer Control
+ * Safe Shutdown and Signal Handling for 3D Printer Control
  * 
  * Why Careful Shutdown Matters:
  * 1. Hardware Protection
@@ -22,12 +22,12 @@
  *    - Release file handles
  *    - Clear queued operations
  * 
- * 4. Emergency Handling
+ * 4. Signal Handling
  *    Why These Features?
- *    - Immediate stop capability
- *    - Hardware protection
+ *    - SIGINT: Clean shutdown (Ctrl+C)
+ *    - SIGTERM: Clean shutdown (kill)
+ *    - SIGHUP: Restart with config reload
  *    - State preservation
- *    - Error logging
  * 
  * 5. System Integrity
  *    Why This Approach?
@@ -42,9 +42,16 @@
 
 #include <signal.h>
 
-// Handle interrupt signals (Ctrl+C) with safe shutdown sequence
-// Coordinates emergency stops and graceful termination
-void inthandler(int signum);
+// Flag indicating if a restart was requested (e.g., via SIGHUP)
+extern volatile sig_atomic_t restart_requested;
+
+// Handle various signals (SIGINT, SIGTERM, SIGHUP)
+// Coordinates emergency stops, graceful termination, and restart
+void signal_handler(int signum);
+
+// Restart the application after graceful shutdown
+// Re-reads configuration and reinitializes all subsystems
+int restart_hydrogen(const char* config_path);
 
 // Perform coordinated shutdown of all system components
 // Ensures safe hardware state and resource cleanup

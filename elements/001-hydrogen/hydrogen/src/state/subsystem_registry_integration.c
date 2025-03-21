@@ -51,23 +51,20 @@ extern void shutdown_terminal(void);
 extern int init_print_subsystem(void);
 extern void shutdown_print_queue(void);
 
-// Helper function to register a standard subsystem (marked __attribute__((unused)) to silence warning)
-static int register_standard_subsystem(const char* name, ServiceThreads* threads, 
-                                     pthread_t* main_thread, volatile sig_atomic_t* shutdown_flag,
-                                     int (*init_function)(void), void (*shutdown_function)(void)) __attribute__((unused));
+// Forward declarations of static functions
+static bool stop_subsystem_and_dependents(int subsystem_id);
 
-static int register_standard_subsystem(const char* name, ServiceThreads* threads, 
-                                     pthread_t* main_thread, volatile sig_atomic_t* shutdown_flag,
-                                     int (*init_function)(void), void (*shutdown_function)(void)) {
-    int subsys_id = register_subsystem(name, threads, main_thread, shutdown_flag, 
-                                      init_function, shutdown_function);
-    
-    if (subsys_id == -1) {
-        log_this("SubsysReg", "Failed to register standard subsystem '%s'", LOG_LEVEL_ERROR, name);
+/*
+ * Update the registry after a subsystem has been shut down.
+ * This should be called after a subsystem's shutdown function has completed.
+ */
+void update_subsystem_after_shutdown(const char* subsystem_name) {
+    int id = get_subsystem_id_by_name(subsystem_name);
+    if (id >= 0) {
+        update_subsystem_state(id, SUBSYSTEM_INACTIVE);
     }
-    
-    return subsys_id;
 }
+
 
 /*
  * Register a single subsystem based on its launch readiness result.
@@ -125,13 +122,8 @@ bool add_dependency_from_launch(int subsystem_id, const char* dependency_name) {
  * This initializes the registry itself as the first subsystem.
  */
 void initialize_registry_subsystem(void) {
-    log_this("Launch", "------------------------------", LOG_LEVEL_STATE);
-    log_this("Launch", "LAUNCH: Registry Subsystem", LOG_LEVEL_STATE);
-    
     // Initialize the registry
     init_subsystem_registry();
-    
-    log_this("Launch", "  Subsystem registry initialized", LOG_LEVEL_STATE);
 }
 
 /*
@@ -205,14 +197,129 @@ void update_subsystem_on_shutdown(const char* subsystem_name) {
 }
 
 /*
- * Update the registry after a subsystem has stopped during shutdown.
- * This should be called after a subsystem's shutdown function has returned.
+ * Stop a subsystem and all its dependents safely.
+ * Returns true if successful, false if any shutdown failed.
  */
-void update_subsystem_after_shutdown(const char* subsystem_name) {
-    int id = get_subsystem_id_by_name(subsystem_name);
-    if (id >= 0) {
-        update_subsystem_state(id, SUBSYSTEM_INACTIVE);
+static bool stop_subsystem_and_dependents(int subsystem_id) {
+    SubsystemInfo* subsystem = &subsystem_registry.subsystems[subsystem_id];
+    bool success = true;
+    
+    // Lock the registry while checking dependencies
+    pthread_mutex_lock(&subsystem_registry.mutex);
+    
+    // First check if any other running subsystems depend on this one
+    for (int i = 0; i < subsystem_registry.count; i++) {
+        SubsystemInfo* other = &subsystem_registry.subsystems[i];
+        if (other->state == SUBSYSTEM_RUNNING) {
+            for (int j = 0; j < other->dependency_count; j++) {
+                if (strcmp(other->dependencies[j], subsystem->name) == 0) {
+                    // Found a dependent - stop it first
+                    pthread_mutex_unlock(&subsystem_registry.mutex);
+                    success &= stop_subsystem_and_dependents(i);
+                    pthread_mutex_lock(&subsystem_registry.mutex);
+                }
+            }
+        }
     }
+    
+    // Now safe to stop this subsystem
+    if (subsystem->state == SUBSYSTEM_RUNNING) {
+        log_this("Shutdown", "Stopping subsystem '%s'", LOG_LEVEL_STATE, subsystem->name);
+        
+        // Mark as stopping
+        update_subsystem_state(subsystem_id, SUBSYSTEM_STOPPING);
+        
+        // Release lock before calling shutdown function
+        pthread_mutex_unlock(&subsystem_registry.mutex);
+        
+        // Call shutdown function if available
+        if (subsystem->shutdown_function) {
+            subsystem->shutdown_function();
+        }
+        
+        // Wait for thread exit if applicable
+        if (subsystem->main_thread && *subsystem->main_thread != 0) {
+            pthread_join(*subsystem->main_thread, NULL);
+            *subsystem->main_thread = 0;
+        }
+        
+        // Reacquire lock to update final state
+        pthread_mutex_lock(&subsystem_registry.mutex);
+        
+        // Mark as inactive
+        update_subsystem_state(subsystem_id, SUBSYSTEM_INACTIVE);
+        success = true;
+    }
+    
+    pthread_mutex_unlock(&subsystem_registry.mutex);
+    return success;
+}
+
+/*
+ * Stop all subsystems in dependency-aware order.
+ * Returns the number of subsystems successfully stopped.
+ */
+size_t stop_all_subsystems_in_dependency_order(void) {
+    size_t stopped_count = 0;
+    bool any_stopped;
+    
+    // Keep trying until no more subsystems can be stopped
+    do {
+        any_stopped = false;
+        
+        pthread_mutex_lock(&subsystem_registry.mutex);
+        
+        // First, identify leaf subsystems (those with no dependents)
+        bool is_leaf[MAX_SUBSYSTEMS] = {false};
+        int leaf_count = 0;
+        
+        for (int i = 0; i < subsystem_registry.count; i++) {
+            SubsystemInfo* subsystem = &subsystem_registry.subsystems[i];
+            if (subsystem->state == SUBSYSTEM_RUNNING) {
+                bool has_dependents = false;
+                
+                // Check if any other running subsystem depends on this one
+                for (int j = 0; j < subsystem_registry.count; j++) {
+                    if (i != j && subsystem_registry.subsystems[j].state == SUBSYSTEM_RUNNING) {
+                        for (int k = 0; k < subsystem_registry.subsystems[j].dependency_count; k++) {
+                            if (strcmp(subsystem_registry.subsystems[j].dependencies[k], subsystem->name) == 0) {
+                                has_dependents = true;
+                                break;
+                            }
+                        }
+                        if (has_dependents) break;
+                    }
+                }
+                
+                if (!has_dependents) {
+                    is_leaf[i] = true;
+                    leaf_count++;
+                }
+            }
+        }
+        
+        pthread_mutex_unlock(&subsystem_registry.mutex);
+        
+        // Now stop all leaf subsystems
+        if (leaf_count > 0) {
+            for (int i = 0; i < subsystem_registry.count; i++) {
+                if (is_leaf[i]) {
+                    if (stop_subsystem_and_dependents(i)) {
+                        stopped_count++;
+                        any_stopped = true;
+                    }
+                }
+            }
+        }
+        
+        // Brief delay between iterations
+        if (any_stopped) {
+            usleep(100000);  // 100ms
+        }
+        
+    } while (any_stopped);
+    
+    return stopped_count;
 }
 
 /*

@@ -44,6 +44,11 @@ print_warning() {
     echo -e "${YELLOW}${WARN_ICON} $1${NC}"
 }
 
+# Function to print an error message
+print_error() {
+    echo -e "${RED}${FAIL_ICON} $1${NC}"
+}
+
 # Function to print an informational message
 print_info() {
     echo -e "${CYAN}${INFO_ICON} $1${NC}"

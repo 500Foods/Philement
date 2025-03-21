@@ -48,7 +48,7 @@ void init_subsystem_registry(void) {
     
     pthread_mutex_unlock(&subsystem_registry.mutex);
     
-    log_this("SubsysReg", "Subsystem registry initialized", LOG_LEVEL_STATE);
+    // Registry initialization handled silently - output will be managed by launch system
 }
 
 /*

@@ -26,4 +26,8 @@ void record_shutdown_end_time(void);
 // Time formatting
 void format_duration(time_t seconds, char *buffer, size_t buflen);
 
+// Startup timing helpers
+const char* get_system_start_time_string(void);
+double calculate_startup_time(void);
+
 #endif // UTILS_TIME_H

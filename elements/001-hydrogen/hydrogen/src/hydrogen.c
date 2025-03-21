@@ -31,9 +31,21 @@ int main(int argc, char *argv[]) {
     // Store main thread ID for tracking
     pthread_t main_thread_id = pthread_self();
 
-    // Set up interrupt handler for clean shutdown on Ctrl+C
-    // This ensures all components get a chance to clean up their resources
-    signal(SIGINT, inthandler);
+    // Set up signal handlers for clean shutdown and restart using sigaction
+    // - SIGINT (Ctrl+C): Clean shutdown
+    // - SIGTERM: Clean shutdown (identical to SIGINT)
+    // - SIGHUP: Restart with config reload
+    struct sigaction sa;
+    sa.sa_handler = signal_handler;
+    sigfillset(&sa.sa_mask);  // Block all signals during handler execution
+    sa.sa_flags = SA_RESTART | SA_NODEFER;  // Automatically restart interrupted system calls and allow signal reentry
+    
+    if (sigaction(SIGINT, &sa, NULL) == -1 ||
+        sigaction(SIGTERM, &sa, NULL) == -1 ||
+        sigaction(SIGHUP, &sa, NULL) == -1) {
+        fprintf(stderr, "Failed to set up signal handlers\n");
+        return 1;
+    }
     
     // Load configuration and initialize all system components
     // Components are started in a specific order to handle dependencies

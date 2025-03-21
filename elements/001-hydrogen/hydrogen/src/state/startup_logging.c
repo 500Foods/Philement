@@ -28,17 +28,23 @@ extern ServiceThreads logging_threads;
 extern pthread_t log_thread;
 extern volatile sig_atomic_t log_queue_shutdown;
 
+// Forward declarations for dependency checking
+extern int check_library_dependencies(const AppConfig *config);
+
 // Initialize logging system and create log queue
 // This is a critical system component - failure here will prevent startup
 // The log queue provides thread-safe logging for all other components
 // Assumes app_config is already loaded and available
 int init_logging_subsystem(void) {
+    // Don't output "LAUNCH: Logging" message here - it's now handled in startup.c
+    
     if (!app_config) {
         log_this("Startup", "Configuration must be loaded before initializing logging", LOG_LEVEL_ERROR);
         return 0;
     }
-    // Initialize thread tracking for logging
-    init_service_threads(&logging_threads);
+    
+    // Initialize thread tracking for logging (already done in startup.c)
+    // Avoid re-initializing as it causes duplicate messages
     // Create the SystemLog queue with configured attributes
     QueueAttributes system_log_attrs = {0};
     Queue* system_log_queue = queue_create("SystemLog", &system_log_attrs);
@@ -69,11 +75,14 @@ void shutdown_logging_subsystem(void) {
     // Signal the logging thread to stop
     log_queue_shutdown = 1;
     
-    // Wait for the thread to exit (already done in the main shutdown sequence)
-    // pthread_join(log_thread, NULL);
+    // Wait for the thread to exit
+    pthread_join(log_thread, NULL);
     
     // Close file logging
     close_file_logging();
     
     log_this("Shutdown", "Logging subsystem shutdown complete", LOG_LEVEL_STATE);
+    
+    // Force exit if we reached this point but the app isn't exiting cleanly
+    exit(0);
 }

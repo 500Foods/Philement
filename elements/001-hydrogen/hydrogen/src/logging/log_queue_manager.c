@@ -270,8 +270,15 @@ static void process_log_message(const char* message, int priority) {
         snprintf(log_entry, sizeof(log_entry), "%s  %s  %s  %s\n", timestamp_ms, formatted_priority, formatted_subsystem, details);
 
         // Apply filtering for each destination
+        // Prevent duplicate console output for thread management messages (which are already output directly)
         if (logConsole && should_log_to_console(subsystem, priority, &app_config->logging.console)) {
-            printf("%s", log_entry);
+            // Skip console output for ThreadMgmt and LogQueueManager messages during startup 
+            // to avoid duplicate output with different timestamp formats
+            if (!(strcmp(subsystem, "ThreadMgmt") == 0 || 
+                 (strcmp(subsystem, "LogQueueManager") == 0 && 
+                  strstr(details, "Log queue manager started") != NULL))) {
+                printf("%s", log_entry);
+            }
         }
 
         if (logFile && log_file && should_log_to_file(subsystem, priority, &app_config->logging.file)) {
