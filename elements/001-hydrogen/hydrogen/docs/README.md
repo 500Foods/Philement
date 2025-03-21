@@ -52,8 +52,15 @@ The configuration system is divided into subsystems, each with its own detailed 
 
 - [System Architecture](reference/system_architecture.md) - Overall system design
 - [Subsystem Registry Architecture](reference/subsystem_registry_architecture.md) - Subsystem lifecycle management
+- [Launch System Architecture](reference/launch_system_architecture.md) - Subsystem launch go/no-go process
 - [Thread Monitoring](thread_monitoring.md) - Thread management
 - [Shutdown Architecture](shutdown_architecture.md) - Shutdown process
+
+### Subsystem Documentation
+
+- [WebServer Subsystem](reference/webserver_subsystem.md) - Web server implementation details
+- [WebSocket Subsystem](reference/websocket_subsystem.md) - WebSocket server implementation details
+- [Print Subsystem](reference/print_subsystem.md) - Print queue implementation details
 - [WebSocket Architecture](websocket_architecture.md) - WebSocket system
 
 ## Security Documentation

@@ -55,7 +55,7 @@
 #include <net/if.h> // For if_nametoindex
 #include <poll.h>
 
-#include "../config/keys.h"
+#include "../config/security/keys.h"
 #include "mdns_server.h"
 #include "../utils/utils.h"
 #include "../logging/logging.h"

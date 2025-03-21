@@ -23,11 +23,25 @@
 #include "../../state/startup_mdns_client.h"
 #include "../../state/startup_smtp_relay.h"
 #include "../../state/startup_swagger.h"
+#include "../../state/startup_webserver.h"
+#include "../../state/startup_websocket.h"
+#include "../../state/startup_print.h"
 
 // External declarations for thread structures
 extern ServiceThreads logging_threads;
 extern pthread_t log_thread;
 extern volatile sig_atomic_t log_queue_shutdown;
+
+extern ServiceThreads web_threads;
+extern pthread_t web_thread;
+extern volatile sig_atomic_t web_server_shutdown;
+
+extern ServiceThreads websocket_threads;
+extern volatile sig_atomic_t websocket_server_shutdown;
+
+extern ServiceThreads print_threads;
+extern pthread_t print_queue_thread;
+extern volatile sig_atomic_t print_system_shutdown;
 
 // For subsystems that remain unregistered, we use system shutdown flags
 extern volatile sig_atomic_t terminal_system_shutdown;
@@ -41,10 +55,14 @@ extern LaunchReadiness check_terminal_launch_readiness(void);
 extern LaunchReadiness check_mdns_client_launch_readiness(void);
 extern LaunchReadiness check_smtp_relay_launch_readiness(void);
 extern LaunchReadiness check_swagger_launch_readiness(void);
-// Additional checks to be implemented in the future:
-// extern LaunchReadiness check_webserver_launch_readiness(void);
-// extern LaunchReadiness check_websocket_launch_readiness(void);
-// extern LaunchReadiness check_print_launch_readiness(void);
+extern LaunchReadiness check_webserver_launch_readiness(void);
+extern LaunchReadiness check_websocket_launch_readiness(void);
+extern LaunchReadiness check_print_launch_readiness(void);
+
+// External declarations for subsystem shutdown functions
+extern void shutdown_web_server(void);
+extern void stop_websocket_server(void);
+extern void shutdown_print_queue(void);
 
 // Check Subsystem Registry readiness
 static LaunchReadiness check_subsystem_registry_readiness(void) {
@@ -214,6 +232,73 @@ bool check_all_launch_readiness(void) {
         // Add dependencies identified during readiness check
         if (swagger_id >= 0) {
             add_dependency_from_launch(swagger_id, "WebServer");
+        }
+    }
+    
+    // Check webserver subsystem
+    LaunchReadiness webserver_readiness = check_webserver_launch_readiness();
+    log_readiness_messages(&webserver_readiness);
+    
+    // Register webserver subsystem if it's ready
+    if (webserver_readiness.ready) {
+        any_subsystem_ready = true;
+        int webserver_id = register_subsystem_from_launch(
+            "WebServer",
+            &web_threads,
+            &web_thread,
+            &web_server_shutdown,
+            init_webserver_subsystem,
+            shutdown_web_server
+        );
+        
+        // Add dependencies identified during readiness check
+        if (webserver_id >= 0) {
+            add_dependency_from_launch(webserver_id, "Logging");
+        }
+    }
+    
+    // Check websocket subsystem
+    LaunchReadiness websocket_readiness = check_websocket_launch_readiness();
+    log_readiness_messages(&websocket_readiness);
+    
+    // Register websocket subsystem if it's ready
+    if (websocket_readiness.ready) {
+        any_subsystem_ready = true;
+        int websocket_id = register_subsystem_from_launch(
+            "WebSocket",
+            &websocket_threads,
+            NULL,  // No direct thread handle available
+            &websocket_server_shutdown,
+            init_websocket_subsystem,
+            stop_websocket_server
+        );
+        
+        // Add dependencies identified during readiness check
+        if (websocket_id >= 0) {
+            add_dependency_from_launch(websocket_id, "Logging");
+        }
+    }
+    
+    // Check print subsystem
+    LaunchReadiness print_readiness = check_print_launch_readiness();
+    log_readiness_messages(&print_readiness);
+    
+    // Register print subsystem if it's ready
+    if (print_readiness.ready) {
+        any_subsystem_ready = true;
+        int print_id = register_subsystem_from_launch(
+            "PrintQueue",
+            &print_threads,
+            &print_queue_thread,
+            &print_system_shutdown,
+            init_print_subsystem,
+            shutdown_print_queue
+        );
+        
+        // Add dependencies identified during readiness check
+        if (print_id >= 0) {
+            add_dependency_from_launch(print_id, "Logging");
+            // Queue system is a prerequisite but not a formal dependency
         }
     }
     
