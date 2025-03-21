@@ -164,7 +164,7 @@ BUILD_TYPE = Regular
 # Compiler selection and optimization flags
 # ──────────────────────────────────────────────────────────────────────────────
 CC = gcc
-CFLAGS = -std=c17 -Wall -Wextra -pedantic -O2 -DVERSION=\"$(VERSION)\" -DRELEASE=\"$(RELEASE)\" -DBUILD_TYPE=\"$(BUILD_TYPE)\"
+CFLAGS = -std=c17 -Wall -Wextra -pedantic -Werror -O2 -DVERSION=\"$(VERSION)\" -DRELEASE=\"$(RELEASE)\" -DBUILD_TYPE=\"$(BUILD_TYPE)\"
 
 # ──────────────────────────────────────────────────────────────────────────────
 # External Dependencies
@@ -203,13 +203,26 @@ PERF_TARGET = hydrogen_perf
 # ──────────────────────────────────────────────────────────────────────────────
 # Phony targets (don't create files with these names)
 # ──────────────────────────────────────────────────────────────────────────────
-.PHONY: all clean debug valgrind release perf
+.PHONY: all clean debug valgrind release perf trial
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Default target: only build the standard variant
 # ──────────────────────────────────────────────────────────────────────────────
 default: $(TARGET)
 	@printf "$(GREEN)$(PASS) $(BOLD)Hydrogen$(NORMAL) $(GREEN)built successfully$(NORMAL)\n"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Trial build: clean build with focused error/warning output
+# ──────────────────────────────────────────────────────────────────────────────
+trial:
+	@printf "$(CYAN)$(INFO) Starting trial build (warnings and errors only)...$(NORMAL)\n"
+	@$(MAKE) clean > /dev/null 2>&1
+	@BUILD_OUTPUT=$$($(MAKE) default 2>&1); \
+	echo "$$BUILD_OUTPUT" | grep -E "warning:|undefined reference|error:|ld returned|built successfully" --color=always || true; \
+	if echo "$$BUILD_OUTPUT" | grep -q "built successfully" && ! echo "$$BUILD_OUTPUT" | grep -q -E "warning:|error:|undefined reference|ld returned"; then \
+		printf "\n$(CYAN)$(INFO) Build successful with no warnings/errors. Running shutdown test...$(NORMAL)\n"; \
+		./tests/test_shutdown_only.sh; \
+	fi
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Build all variants at once
@@ -311,7 +324,9 @@ $(PERF_TARGET): $(PERF_OBJS)
 # ──────────────────────────────────────────────────────────────────────────────
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
 	@mkdir -p $(dir $@)
-	@printf "$(CYAN)Compiling$(NORMAL) $<\n"
+	@if [ "$(MAKECMDGOALS)" != "trial" ]; then \
+		printf "$(CYAN)Compiling$(NORMAL) $<\n"; \
+	fi
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
 $(DEBUG_DIR)/%.o: $(SRC_DIR)/%.c | $(DEBUG_DIR)

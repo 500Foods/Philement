@@ -46,6 +46,29 @@ extern LaunchReadiness check_swagger_launch_readiness(void);
 // extern LaunchReadiness check_websocket_launch_readiness(void);
 // extern LaunchReadiness check_print_launch_readiness(void);
 
+// Check Subsystem Registry readiness
+static LaunchReadiness check_subsystem_registry_readiness(void) {
+    LaunchReadiness readiness = {0};
+    
+    // Always ready - this is our first and most basic subsystem
+    readiness.ready = true;
+    
+    // Allocate space for messages (including NULL terminator)
+    readiness.messages = malloc(4 * sizeof(char*));
+    if (!readiness.messages) {
+        readiness.ready = false;
+        return readiness;
+    }
+    
+    // Add messages in the standard format used by other subsystems
+    readiness.messages[0] = strdup("Subsystem Registry");
+    readiness.messages[1] = strdup("  Go:      Subsystem Registry Initialized");
+    readiness.messages[2] = strdup("  Decide:  Go For Launch of Subsystem Registry");
+    readiness.messages[3] = NULL;
+    
+    return readiness;
+}
+
 // Log all messages from a readiness check
 static void log_readiness_messages(const LaunchReadiness* readiness) {
     if (!readiness || !readiness->messages) return;
@@ -68,10 +91,20 @@ static void log_readiness_messages(const LaunchReadiness* readiness) {
 bool check_all_launch_readiness(void) {
     bool any_subsystem_ready = false;
     
-    // Begin LAUNCH READINESS logging section - only one dashed line as requested
+    // Begin LAUNCH READINESS logging section
     log_group_begin();
     log_this("Launch", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
     log_this("Launch", "LAUNCH READINESS", LOG_LEVEL_STATE);
+    
+    // First check the Subsystem Registry readiness
+    LaunchReadiness registry_readiness = check_subsystem_registry_readiness();
+    log_readiness_messages(&registry_readiness);
+    
+    // Initialize the registry subsystem
+    if (registry_readiness.ready) {
+        any_subsystem_ready = true;
+        initialize_registry_subsystem();
+    }
     
     // Check logging subsystem
     LaunchReadiness logging_readiness = check_logging_launch_readiness();
@@ -184,10 +217,6 @@ bool check_all_launch_readiness(void) {
         }
     }
     
-    // Log overall launch status - no second dashed line
-    log_this("Launch", "Overall Launch Status: %s", 
-             any_subsystem_ready ? LOG_LEVEL_STATE : LOG_LEVEL_ALERT,
-             any_subsystem_ready ? "At least one subsystem ready" : "No subsystems ready");
     log_group_end();
     
     // Change to report if ANY subsystem is ready, not ALL
