@@ -16,16 +16,16 @@
 
 #include "launch.h"
 #include "../../logging/logging.h"
-#include "../../state/subsystem_registry.h"
-#include "../../state/subsystem_registry_integration.h"
-#include "../../state/startup_logging.h"
-#include "../../state/startup_terminal.h"
-#include "../../state/startup_mdns_client.h"
-#include "../../state/startup_smtp_relay.h"
-#include "../../state/startup_swagger.h"
-#include "../../state/startup_webserver.h"
-#include "../../state/startup_websocket.h"
-#include "../../state/startup_print.h"
+#include "../../state/registry/subsystem_registry.h"
+#include "../../state/registry/subsystem_registry_integration.h"
+#include "../../state/startup/startup_logging.h"
+#include "../../state/startup/startup_terminal.h"
+#include "../../state/startup/startup_mdns_client.h"
+#include "../../state/startup/startup_smtp_relay.h"
+#include "../../state/startup/startup_swagger.h"
+#include "../../state/startup/startup_webserver.h"
+#include "../../state/startup/startup_websocket.h"
+#include "../../state/startup/startup_print.h"
 
 // External declarations for thread structures
 extern ServiceThreads logging_threads;

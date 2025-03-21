@@ -24,7 +24,7 @@
 #include <pthread.h>
 
 // Project includes
-#include "../utils/utils_threads.h"
+#include "../../utils/utils_threads.h"
 
 // Constants
 // Maximum dependencies per subsystem (could be made dynamic in the future)

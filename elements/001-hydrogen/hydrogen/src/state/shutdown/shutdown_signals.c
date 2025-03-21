@@ -19,7 +19,7 @@
 
 // Project headers
 #include "shutdown_internal.h"
-#include "../logging/logging.h"
+#include "../../logging/logging.h"
 
 // Signal-related state flags
 volatile sig_atomic_t restart_requested = 0;

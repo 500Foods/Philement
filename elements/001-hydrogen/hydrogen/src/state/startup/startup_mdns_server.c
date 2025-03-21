@@ -14,11 +14,11 @@
 #include <pthread.h>
 #include <signal.h>
 
-#include "../state/state.h"
-#include "../logging/logging.h"
-#include "../mdns/mdns_server.h"
-#include "../network/network.h"
-#include "../websocket/websocket_server.h"
+#include "../state.h"
+#include "../../logging/logging.h"
+#include "../../mdns/mdns_server.h"
+#include "../../network/network.h"
+#include "../../websocket/websocket_server.h"
 
 // Forward declarations
 extern int get_websocket_port(void);

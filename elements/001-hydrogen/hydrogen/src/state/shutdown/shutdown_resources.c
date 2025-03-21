@@ -15,8 +15,8 @@
 
 // Project headers
 #include "shutdown_internal.h"
-#include "../logging/logging.h"
-#include "../network/network.h"
+#include "../../logging/logging.h"
+#include "../../network/network.h"
 
 // Clean up network resources
 // Called after all network-using components are stopped

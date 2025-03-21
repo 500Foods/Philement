@@ -285,7 +285,7 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Fri Mar 21 13:44:01 PDT 2025
+Generated on: Fri Mar 21 16:44:48 PDT 2025
 
 ### Summary
 
@@ -298,7 +298,7 @@ Generated on: Fri Mar 21 13:44:01 PDT 2025
 | Total Subtests | 92 |
 | Passed Subtests | 58 |
 | Failed Subtests | 34 |
-| Runtime | 5m 52s |
+| Runtime | 5m 49s |
 
 ### Individual Test Results
 
@@ -322,16 +322,16 @@ Generated on: Fri Mar 21 13:44:01 PDT 2025
 
 ## Repository Information
 
-Generated via cloc: Fri Mar 21 13:44:01 PDT 2025
+Generated via cloc: Fri Mar 21 16:44:48 PDT 2025
 
 | Language | Files | Blank Lines | Comment Lines | Code Lines |
 | -------- | ----- | ----------- | ------------- | ---------- |
-| C | 146 | 3925 | 5611 | 17125 |
-| Markdown | 104 | 3694 | 27 | 13251 |
+| C | 148 | 4001 | 5679 | 17467 |
+| Markdown | 108 | 4030 | 27 | 14543 |
 | Bourne | Shell | 23 | 1273 | 1307 |
 | JSON | 17 | 0 | 0 | 4798 |
-| C/C++ | Header | 120 | 1027 | 4659 |
-| Text | 12 | 4 | 0 | 1693 |
+| C/C++ | Header | 120 | 1030 | 4681 |
+| Text | 11 | 4 | 0 | 1738 |
 | HTML | 1 | 74 | 0 | 493 |
 | make | 2 | 51 | 214 | 212 |
-| **Total** | **425** | **10048** | **11818** | **45101** |
+| **Total** | **430** | **10463** | **11908** | **46789** |

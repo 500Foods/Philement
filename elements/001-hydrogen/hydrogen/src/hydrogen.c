@@ -19,8 +19,8 @@
 // Project headers
 #include "logging/logging.h"
 #include "state/state.h"
-#include "state/startup.h"
-#include "state/shutdown.h"
+#include "state/startup/startup.h"
+#include "state/shutdown/shutdown.h"
 #include "utils/utils_threads.h"
 
 // External thread tracking structures

@@ -1,5 +1,5 @@
 /*
- * Web Server Swagger Support
+ * Swagger Support
  * 
  * Provides functionality for serving Swagger UI documentation:
  * - Payload detection and extraction from executable
@@ -7,8 +7,8 @@
  * - Request routing and handling
  */
 
-#ifndef WEB_SERVER_SWAGGER_H
-#define WEB_SERVER_SWAGGER_H
+#ifndef SWAGGER_H
+#define SWAGGER_H
 
 // Feature test macros
 #define _GNU_SOURCE
@@ -72,4 +72,4 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
  */
 void cleanup_swagger_support(void);
 
-#endif // WEB_SERVER_SWAGGER_H
+#endif // SWAGGER_H

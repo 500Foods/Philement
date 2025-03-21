@@ -71,6 +71,7 @@ volatile sig_atomic_t websocket_shutdown = 0;
 ```
 
 The server creates:
+
 - A main listener thread that manages the upgrade from HTTP to WebSocket
 - Worker threads to handle client connections
 - A dispatch thread for message routing
