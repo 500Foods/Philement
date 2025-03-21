@@ -13,10 +13,10 @@
 #include <brotli/decode.h>
 
 // Project headers
-#include "web_server_swagger.h"
-#include "web_server_core.h"
-#include "web_server_compression.h"
-#include "web_server_payload.h"
+#include "swagger.h"
+#include "../webserver/web_server_core.h"
+#include "../webserver/web_server_compression.h"
+#include "../payload/payload.h"
 #include "../logging/logging.h"
 #include "../config/config.h"
 #include "../config/files/config_filesystem.h"

@@ -14,9 +14,9 @@
 #include <pthread.h>
 #include <signal.h>
 
-#include "../state/state.h"
-#include "../logging/logging.h"
-#include "../websocket/websocket_server.h"
+#include "../state.h"
+#include "../../logging/logging.h"
+#include "../../websocket/websocket_server.h"
 
 // Initialize WebSocket server system
 // Requires: Logging system

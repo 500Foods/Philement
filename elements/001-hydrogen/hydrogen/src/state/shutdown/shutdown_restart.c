@@ -17,8 +17,8 @@
 
 // Project headers
 #include "shutdown_internal.h"
-#include "../logging/logging.h"
-#include "startup.h"  // For startup_hydrogen()
+#include "../../logging/logging.h"
+#include "../startup/startup.h"  // For startup_hydrogen()
 
 // External declaration for startup function
 extern int startup_hydrogen(const char* config_path);

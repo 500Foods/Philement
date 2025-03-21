@@ -6,8 +6,8 @@
  * to allow reuse for other components that may need payload functionality.
  */
 
-#ifndef WEB_SERVER_PAYLOAD_H
-#define WEB_SERVER_PAYLOAD_H
+#ifndef PAYLOAD_H
+#define PAYLOAD_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -42,4 +42,4 @@ bool extract_payload(const char *executable_path,
  */
 void free_payload(PayloadData *payload);
 
-#endif /* WEB_SERVER_PAYLOAD_H */
+#endif /* PAYLOAD_H */

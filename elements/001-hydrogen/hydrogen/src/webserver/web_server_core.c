@@ -16,7 +16,7 @@
 #include <errno.h>
 
 // Project headers
-#include "web_server_swagger.h"
+#include "../swagger/swagger.h"
 #include "../utils/utils_threads.h"
 #include "../logging/logging.h"
 

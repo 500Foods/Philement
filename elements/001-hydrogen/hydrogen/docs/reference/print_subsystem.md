@@ -73,6 +73,7 @@ volatile sig_atomic_t print_queue_shutdown = 0;
 ```
 
 The system creates:
+
 - A main queue management thread
 - Worker threads for each active print job
 - A persistence thread for state management

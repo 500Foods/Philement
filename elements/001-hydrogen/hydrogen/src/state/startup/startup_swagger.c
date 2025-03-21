@@ -14,10 +14,10 @@
 #include <pthread.h>
 #include <signal.h>
 
-#include "../state/state.h"
-#include "../logging/logging.h"
-#include "../webserver/web_server.h"
-#include "../webserver/web_server_swagger.h"
+#include "../state.h"
+#include "../../logging/logging.h"
+#include "../../webserver/web_server.h"
+#include "../../swagger/swagger.h"
 
 // Forward declarations for functions that will need to be implemented
 extern int is_web_server_running(void);

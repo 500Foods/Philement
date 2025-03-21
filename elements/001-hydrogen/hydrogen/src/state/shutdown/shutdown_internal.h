@@ -20,10 +20,10 @@
 
 // Project headers
 #include "shutdown.h"
-#include "state.h"
-#include "subsystem_registry.h"
-#include "subsystem_registry_integration.h"
-#include "../utils/utils_time.h"
+#include "../state.h"
+#include "../registry/subsystem_registry.h"
+#include "../registry/subsystem_registry_integration.h"
+#include "../../utils/utils_time.h"
 
 // Shared flags and state for shutdown coordination
 extern volatile sig_atomic_t restart_requested;

@@ -54,7 +54,7 @@
 #include "../mdns/mdns_server.h"
 #include "../network/network.h"
 #include "../utils/utils_threads.h"
-#include "subsystem_registry.h"        // Subsystem registry
+#include "registry/subsystem_registry.h"  // Subsystem registry
 
 
 // Application state flags

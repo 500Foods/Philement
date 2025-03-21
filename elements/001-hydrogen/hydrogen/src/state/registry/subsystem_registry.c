@@ -18,8 +18,8 @@
 
 // Project includes
 #include "subsystem_registry.h"
-#include "../logging/logging.h"
-#include "../utils/utils_threads.h"
+#include "../../logging/logging.h"
+#include "../../utils/utils_threads.h"
 
 // Global registry instance
 SubsystemRegistry subsystem_registry = { 

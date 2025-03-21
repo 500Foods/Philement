@@ -17,11 +17,11 @@
 #include <time.h>
 
 // Project includes
-#include "state.h"
+#include "../state.h"
 #include "subsystem_registry.h"
-#include "../logging/logging.h"
-#include "../utils/utils.h"
-#include "../utils/utils_threads.h"
+#include "../../logging/logging.h"
+#include "../../utils/utils.h"
+#include "../../utils/utils_threads.h"
 
 // Subsystem init/shutdown declarations
 extern int init_logging_subsystem(void);

@@ -13,10 +13,10 @@
 #include <pthread.h>
 #include <signal.h>
 
-#include "../state/state.h"
-#include "../logging/logging.h"
-#include "../queue/queue.h"
-#include "../print/print_queue_manager.h"
+#include "../state.h"
+#include "../../logging/logging.h"
+#include "../../queue/queue.h"
+#include "../../print/print_queue_manager.h"
 
 // Initialize print queue system
 // Requires: Logging system, Queue system

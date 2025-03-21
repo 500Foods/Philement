@@ -13,12 +13,12 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-#include "../state/state.h"
-#include "../logging/logging.h"
-#include "../queue/queue.h"
-#include "../logging/log_queue_manager.h"
-#include "../utils/utils_queue.h"
-#include "../config/config.h"
+#include "../state.h"
+#include "../../logging/logging.h"
+#include "../../queue/queue.h"
+#include "../../logging/log_queue_manager.h"
+#include "../../utils/utils_queue.h"
+#include "../../config/config.h"
 
 // Forward declarations
 extern void update_queue_limits_from_config(const AppConfig *config);
