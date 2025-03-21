@@ -23,7 +23,9 @@
 
 // Global registry instance
 SubsystemRegistry subsystem_registry = { 
+    .subsystems = NULL,
     .count = 0,
+    .capacity = 0,
     .mutex = PTHREAD_MUTEX_INITIALIZER
 };
 
@@ -37,13 +39,56 @@ static const char* state_strings[] = {
 };
 
 /*
+ * Grow the registry capacity to accommodate more subsystems.
+ * Must be called with the registry mutex locked.
+ * 
+ * @param new_capacity The new capacity to grow to
+ * @return true if successful, false if allocation failed
+ */
+static bool grow_registry(int new_capacity) {
+    if (new_capacity <= subsystem_registry.capacity) {
+        return true;  // Already large enough
+    }
+    
+    // Allocate a new, larger array
+    SubsystemInfo* new_subsystems = realloc(subsystem_registry.subsystems, 
+                                         new_capacity * sizeof(SubsystemInfo));
+    if (!new_subsystems) {
+        // Memory allocation failed
+        return false;
+    }
+    
+    // Initialize the new elements to zero
+    if (subsystem_registry.capacity > 0) {
+        memset(&new_subsystems[subsystem_registry.capacity], 0, 
+              (new_capacity - subsystem_registry.capacity) * sizeof(SubsystemInfo));
+    }
+    
+    // Update the registry
+    subsystem_registry.subsystems = new_subsystems;
+    subsystem_registry.capacity = new_capacity;
+    
+    return true;
+}
+
+/*
  * Initialize the subsystem registry.
  */
 void init_subsystem_registry(void) {
     pthread_mutex_lock(&subsystem_registry.mutex);
     
+    // Free any existing allocation (just in case)
+    if (subsystem_registry.subsystems) {
+        free(subsystem_registry.subsystems);
+        subsystem_registry.subsystems = NULL;
+    }
+    
+    // Allocate the initial registry capacity
+    if (!grow_registry(INITIAL_REGISTRY_CAPACITY)) {
+        log_this("SubsysReg", "Failed to allocate subsystem registry", LOG_LEVEL_ERROR);
+    }
+    
     // Reset the registry to empty state
-    memset(subsystem_registry.subsystems, 0, sizeof(subsystem_registry.subsystems));
     subsystem_registry.count = 0;
     
     pthread_mutex_unlock(&subsystem_registry.mutex);
@@ -64,12 +109,19 @@ int register_subsystem(const char* name, ServiceThreads* threads,
     
     pthread_mutex_lock(&subsystem_registry.mutex);
     
-    // Check if we've reached the maximum number of subsystems
-    if (subsystem_registry.count >= MAX_SUBSYSTEMS) {
-        log_this("SubsysReg", "Cannot register subsystem '%s': maximum number reached", 
-                LOG_LEVEL_ERROR, name);
-        pthread_mutex_unlock(&subsystem_registry.mutex);
-        return -1;
+    // Check if we need to grow the registry
+    if (subsystem_registry.count >= subsystem_registry.capacity) {
+        // Double the capacity
+        int new_capacity = (subsystem_registry.capacity == 0) ? 
+                           INITIAL_REGISTRY_CAPACITY : 
+                           (subsystem_registry.capacity * 2);
+        
+        if (!grow_registry(new_capacity)) {
+            log_this("SubsysReg", "Cannot register subsystem '%s': memory allocation failed", 
+                    LOG_LEVEL_ERROR, name);
+            pthread_mutex_unlock(&subsystem_registry.mutex);
+            return -1;
+        }
     }
     
     // Check if a subsystem with this name already exists

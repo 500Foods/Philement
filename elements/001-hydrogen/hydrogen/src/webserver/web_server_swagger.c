@@ -19,7 +19,7 @@
 #include "web_server_payload.h"
 #include "../logging/logging.h"
 #include "../config/config.h"
-#include "../config/config_filesystem.h"
+#include "../config/files/config_filesystem.h"
 
 // Structure to hold in-memory Swagger files
 typedef struct {

@@ -18,7 +18,7 @@
 #include "launch.h"
 #include "../../logging/logging.h"
 #include "../../config/config.h"
-#include "../../config/config_filesystem.h"
+#include "../../config/files/config_filesystem.h"
 
 // External declarations
 extern AppConfig* app_config;

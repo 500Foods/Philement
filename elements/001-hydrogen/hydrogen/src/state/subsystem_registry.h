@@ -27,8 +27,11 @@
 #include "../utils/utils_threads.h"
 
 // Constants
-#define MAX_SUBSYSTEMS 16
+// Maximum dependencies per subsystem (could be made dynamic in the future)
 #define MAX_DEPENDENCIES 8
+
+// Initial capacity for the subsystem registry
+#define INITIAL_REGISTRY_CAPACITY 8
 
 // Subsystem state enum
 typedef enum {
@@ -59,8 +62,9 @@ typedef struct {
 
 // Registry structure
 typedef struct {
-    SubsystemInfo subsystems[MAX_SUBSYSTEMS];
-    int count;
+    SubsystemInfo* subsystems;     // Dynamically allocated array of subsystems
+    int count;                     // Number of registered subsystems
+    int capacity;                  // Current capacity of the subsystems array
     pthread_mutex_t mutex;         // For thread-safe access
 } SubsystemRegistry;
 
