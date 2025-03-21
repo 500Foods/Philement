@@ -13,9 +13,9 @@
 #include <pthread.h>
 #include <signal.h>
 
-#include "../state/state.h"
-#include "../logging/logging.h"
-#include "../network/network.h"
+#include "../state.h"
+#include "../../logging/logging.h"
+#include "../../network/network.h"
 
 // Forward declarations for functions that will need to be implemented
 static int init_mdns_client(void);

@@ -21,7 +21,7 @@
 #include <openssl/evp.h>
 
 // Project headers
-#include "web_server_payload.h"
+#include "payload.h"
 #include "../logging/logging.h"
 #include "../config/config.h"
 

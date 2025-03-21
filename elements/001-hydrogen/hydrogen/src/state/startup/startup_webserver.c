@@ -14,9 +14,9 @@
 #include <pthread.h>
 #include <signal.h>
 
-#include "../state/state.h"
-#include "../logging/logging.h"
-#include "../webserver/web_server.h"
+#include "../state.h"
+#include "../../logging/logging.h"
+#include "../../webserver/web_server.h"
 
 // Initialize web server system
 // Requires: Logging system

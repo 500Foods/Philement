@@ -66,11 +66,11 @@
 
 // Project headers
 #include "shutdown_internal.h"
-#include "../logging/logging.h"
-#include "../queue/queue.h"
-#include "../utils/utils.h"
-#include "../utils/utils_threads.h"
-#include "../utils/utils_time.h"
+#include "../../logging/logging.h"
+#include "../../queue/queue.h"
+#include "../../utils/utils.h"
+#include "../../utils/utils_threads.h"
+#include "../../utils/utils_time.h"
 
 // Flag from utils_threads.c to suppress thread management logging during final shutdown
 extern volatile sig_atomic_t final_shutdown_mode;

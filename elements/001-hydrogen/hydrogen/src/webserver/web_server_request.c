@@ -15,7 +15,7 @@
 #include "web_server_core.h"
 #include "web_server_upload.h"
 #include "web_server_compression.h"
-#include "web_server_swagger.h"
+#include "../swagger/swagger.h"
 #include "../utils/utils_threads.h"
 #include "../logging/logging.h"
 #include "../state/state.h"
