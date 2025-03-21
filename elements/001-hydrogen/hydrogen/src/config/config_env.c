@@ -1,11 +1,9 @@
 /*
- * Environment variable handling for configuration system
+ * Environment variable handling for configuration system - Adapter File
  * 
- * This module handles:
- * - Environment variable resolution
- * - Type conversion from environment values
- * - Secure handling of sensitive values
- * - Logging of variable access
+ * This file acts as an adapter to forward calls to the implementation
+ * in the env/ subdirectory. This maintains backward compatibility while
+ * allowing us to modularize the code.
  */
 
 #define _GNU_SOURCE
@@ -14,104 +12,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-#include <ctype.h>
 #include <jansson.h>
 
 #include "config_env.h"
-#include "config.h"  // For log_config_env_value
-#include "../logging/logging.h"
+#include "logging/config_logging.h"
+
+// Forward declaration of the actual implementation
+extern json_t* env_process_env_variable(const char* value);
 
 /*
- * Helper function to detect sensitive configuration values
- * Returns true if the name contains sensitive terms like "key", "token", etc.
+ * Adapter function that forwards to the actual implementation in env/config_env.c
+ * 
+ * This maintains backward compatibility with existing code that calls
+ * process_env_variable() directly.
  */
-static bool is_sensitive_value(const char* name) {
-    if (!name) return false;
-    
-    const char* sensitive_terms[] = {
-        "key", "token", "pass", "secret", "auth", "cred", "cert", "jwt"
-    };
-    const int num_terms = sizeof(sensitive_terms) / sizeof(sensitive_terms[0]);
-    
-    for (int i = 0; i < num_terms; i++) {
-        if (strcasestr(name, sensitive_terms[i])) {
-            return true;
-        }
-    }
-    
-    return false;
-}
-
-
 json_t* process_env_variable(const char* value) {
-    const char* key_name = "EnvVar"; // Default key name for logging when not part of a specific config
-    if (!value || strncmp(value, "${env.", 6) != 0) {
-        return NULL;
-    }
-    
-    // Find the closing brace
-    const char* closing_brace = strchr(value + 6, '}');
-    if (!closing_brace || *(closing_brace + 1) != '\0') {
-        return NULL;  // Malformed or has trailing characters
-    }
-    
-    // Extract the variable name
-    size_t var_name_len = closing_brace - (value + 6);
-    char* var_name = malloc(var_name_len + 1);
-    if (!var_name) {
-        return NULL;
-    }
-    
-    strncpy(var_name, value + 6, var_name_len);
-    var_name[var_name_len] = '\0';
-    
-    // Look up the environment variable
-    const char* env_value = getenv(var_name);
-    
-    // Log the environment variable access
-    if (env_value) {
-        log_config_env_value(key_name, var_name, env_value, NULL, is_sensitive_value(var_name));
-    } else {
-        log_config_env_value(key_name, var_name, NULL, NULL, false);
-        free(var_name);
-        return NULL;
-    }
-    
-    if (env_value[0] == '\0') {
-        free(var_name);
-        return json_null();
-    }
-    
-    // Check for boolean values (case insensitive)
-    if (strcasecmp(env_value, "true") == 0) {
-        free(var_name);
-        return json_true();
-    }
-    if (strcasecmp(env_value, "false") == 0) {
-        free(var_name);
-        return json_false();
-    }
-    
-    // Check if it's a number
-    char* endptr;
-    // Try parsing as integer first
-    long long int_value = strtoll(env_value, &endptr, 10);
-    if (*endptr == '\0') {
-        // It's a valid integer
-        free(var_name);
-        return json_integer(int_value);
-    }
-    
-    // Try parsing as double
-    double real_value = strtod(env_value, &endptr);
-    if (*endptr == '\0') {
-        // It's a valid floating point number
-        free(var_name);
-        return json_real(real_value);
-    }
-    
-    // Otherwise, treat it as a string
-    free(var_name);
-    return json_string(env_value);
+    // Simply forward to the implementation in env/config_env.c
+    return env_process_env_variable(value);
 }
