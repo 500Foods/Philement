@@ -31,8 +31,10 @@ temp_*
 *.tmp
 
 # Executables
+# FYI: hydrogen_naked is the release build without the payload
 hydrogen
 hydrogen_debug
+hydrogen_naked
 hydrogen_perf
 hydrogen_release
 hydrogen_valgrind
