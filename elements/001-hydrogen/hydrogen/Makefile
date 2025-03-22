@@ -259,7 +259,18 @@ release: CFLAGS += -s -DNDEBUG -march=x86-64 -flto=auto -fstack-protector -Werro
 release: LDFLAGS += -flto=auto -fno-strict-aliasing
 release: $(RELEASE_TARGET) payload
 	@printf "$(CYAN)$(INFO)  Applying UPX compression to executable...$(NORMAL)\n"
-	@which upx > /dev/null && upx --best $(RELEASE_TARGET) || printf "$(YELLOW)$(WARN) UPX not found, skipping compression$(NORMAL)\n"
+	@if ! which upx > /dev/null; then \
+		printf "$(YELLOW)$(WARN) UPX not found, skipping compression$(NORMAL)\n"; \
+	else \
+		UPX_OUTPUT=$$(upx --best $(RELEASE_TARGET) 2>&1); \
+		if echo "$$UPX_OUTPUT" | grep -q "AlreadyPackedException"; then \
+			printf "$(YELLOW)$(WARN) File already packed with UPX, skipping compression$(NORMAL)\n"; \
+		else \
+			echo "$$UPX_OUTPUT"; \
+		fi; \
+	fi
+	@printf "$(CYAN)$(INFO)  Creating UPX-compressed copy as hydrogen_naked...$(NORMAL)\n"
+	@cp $(RELEASE_TARGET) hydrogen_naked
 	@printf "$(CYAN)$(INFO)  Appending encrypted payload to release executable...$(NORMAL)\n"
 	@PAYLOAD_SIZE=$$(stat -c %s "payloads/payload.tar.br.enc"); \
 	cat $(RELEASE_TARGET) "payloads/payload.tar.br.enc" > $(RELEASE_TARGET).tmp; \
@@ -388,5 +399,5 @@ $(shell mkdir -p $(sort $(dir $(OBJS)) $(dir $(DEBUG_OBJS)) $(dir $(VALGRIND_OBJ
 clean:
 	@printf "$(CYAN)$(INFO)  Cleaning all build artifacts...$(NORMAL)\n"
 	@rm -rf $(BUILD_DIR) $(DEBUG_DIR) $(VALGRIND_DIR) $(RELEASE_DIR) $(PERF_DIR) 
-	@rm -rf $(TARGET) $(DEBUG_TARGET) $(VALGRIND_TARGET) $(RELEASE_TARGET) $(PERF_TARGET)
+	@rm -rf $(TARGET) $(DEBUG_TARGET) $(VALGRIND_TARGET) $(RELEASE_TARGET) $(PERF_TARGET) hydrogen_naked
 	@printf "$(GREEN)$(PASS) Clean completed successfully$(NORMAL)\n"
