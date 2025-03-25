@@ -61,20 +61,23 @@ static void add_header_message(const char* subsystem_name) {
 // Add a Go/No-Go message with proper indentation
 static void add_go_message(const char* prefix, const char* format, ...) {
     if (message_count < NETWORK_MAX_MESSAGES) {
-        // Calculate the size needed for the prefix part
-        size_t prefix_len = strlen(prefix) + 10; // "  prefix:      " is about 10 chars plus prefix length
-        
         // Ensure we have enough space for the formatted message
-        char temp[NETWORK_MESSAGE_LENGTH - prefix_len];
+        char temp[NETWORK_MESSAGE_LENGTH - 20]; // Reserve space for prefix and formatting
         
         va_list args;
         va_start(args, format);
         vsnprintf(temp, sizeof(temp), format, args);
         va_end(args);
         
-        // Now format the full message with prefix
-        snprintf(network_messages[message_count], NETWORK_MESSAGE_LENGTH, 
-                 "  %s:      %s", prefix, temp);
+        // Now format the full message with prefix, adjusting spacing based on prefix length
+        if (strcmp(prefix, "No-Go") == 0) {
+            // "No-Go" is 3 characters longer than "Go", so use 3 fewer spaces
+            snprintf(network_messages[message_count], NETWORK_MESSAGE_LENGTH, 
+                     "  %s:   %s", prefix, temp);
+        } else {
+            snprintf(network_messages[message_count], NETWORK_MESSAGE_LENGTH, 
+                     "  %s:      %s", prefix, temp);
+        }
         
         message_pointers[message_count] = network_messages[message_count];
         message_count++;
@@ -120,12 +123,12 @@ static bool is_interface_configured(const AppConfig* app_config, const char* int
     
     // Check if the interface is in the available_interfaces array
     for (size_t i = 0; i < app_config->network.available_interfaces_count; i++) {
-        if (app_config->network.available_interfaces[i].interface_name &&
-            strcmp(interface_name, app_config->network.available_interfaces[i].interface_name) == 0) {
-            
-            // Interface is explicitly configured
-            *is_available = app_config->network.available_interfaces[i].available;
-            return true;  // Explicitly configured
+        if (app_config->network.available_interfaces[i].interface_name) {
+            if (strcmp(interface_name, app_config->network.available_interfaces[i].interface_name) == 0) {
+                // Interface is explicitly configured
+                *is_available = app_config->network.available_interfaces[i].available;
+                return true;  // Explicitly configured
+            }
         }
     }
     
@@ -134,21 +137,6 @@ static bool is_interface_configured(const AppConfig* app_config, const char* int
     return false;          // Not explicitly configured
 }
 
-// Get the configuration status message for an interface
-static const char* get_config_status(const AppConfig* app_config, const char* interface_name) {
-    bool is_available = true;
-    bool is_configured = is_interface_configured(app_config, interface_name, &is_available);
-    
-    if (is_configured) {
-        if (is_available) {
-            return "enabled in config";
-        } else {
-            return "disabled in config";
-        }
-    } else {
-        return "not in config - enabled by default";
-    }
-}
 
 // Check network subsystem launch readiness
 LaunchReadiness check_network_launch_readiness(void) {
@@ -243,6 +231,39 @@ LaunchReadiness check_network_launch_readiness(void) {
     
     add_go_message("Go", "%d network interfaces available", network_info->count);
     
+    // Count and list interfaces from the JSON configuration
+    int json_interfaces_count = 0;
+    if (app_config) {
+        if (app_config->network.available_interfaces && app_config->network.available_interfaces_count > 0) {
+            json_interfaces_count = app_config->network.available_interfaces_count;
+            
+            // Report the count of interfaces found in JSON
+            if (json_interfaces_count > 0) {
+                add_go_message("Go", "%d network interfaces configured:", json_interfaces_count);
+            } else {
+                add_go_message("No-Go", "No network interfaces found in JSON configuration");
+            }
+            for (size_t i = 0; i < app_config->network.available_interfaces_count; i++) {
+                if (app_config->network.available_interfaces[i].interface_name) {
+                    const char* interface_name = app_config->network.available_interfaces[i].interface_name;
+                    bool is_available = app_config->network.available_interfaces[i].available;
+                    
+                    if (is_available) {
+                        add_go_message("Go", "Available: %s is enabled", interface_name);
+                    } else {
+                        add_go_message("No-Go", "Available: %s is disabled", interface_name);
+                    }
+                }
+            }
+        } else {
+            // No interfaces found in JSON configuration
+            add_go_message("No-Go", "No network interfaces found in JSON configuration");
+        }
+    } else {
+        // No app_config available
+        add_go_message("No-Go", "No configuration loaded, cannot check JSON configuration");
+    }
+    
     // Check each interface
     int up_interfaces = 0;
     for (int i = 0; i < network_info->count; i++) {
@@ -251,17 +272,27 @@ LaunchReadiness check_network_launch_readiness(void) {
         
         // Check if the interface is configured in the Available section
         bool is_available = true;
-        // Get the configuration status message directly
-        const char* config_status = get_config_status(app_config, interface->name);
+        bool is_configured = is_interface_configured(app_config, interface->name, &is_available);
+        
+        // Get the configuration status message based on the result
+        const char* config_status;
+        if (is_configured) {
+            if (is_available) {
+                config_status = "enabled in config";
+            } else {
+                config_status = "disabled in config";
+            }
+        } else {
+            config_status = "not in config - enabled by default";
+        }
         
         if (is_up) {
-            // Interface is up
             if (is_available) {
-                // Interface is up and available
+                // Interface is up and available in config (or not in config but default available)
                 up_interfaces++;
                 add_go_message("Go", "Interface %s is up (%s)", interface->name, config_status);
             } else {
-                // Interface is up but not available
+                // Interface is up but disabled in config - this is a No-Go condition
                 add_go_message("No-Go", "Interface %s is up but %s", interface->name, config_status);
             }
         } else {
@@ -271,11 +302,12 @@ LaunchReadiness check_network_launch_readiness(void) {
     }
     
     // Make final decision
+    // An interface is considered "Go" if it's up AND not disabled in the config
     if (up_interfaces > 0) {
-        add_decision_message("Go For Launch of Network Subsystem (%d interfaces up)", up_interfaces);
+        add_decision_message("Go For Launch of Network Subsystem (%d interfaces ready)", up_interfaces);
         overall_readiness = true;
     } else {
-        add_decision_message("No-Go For Launch of Network Subsystem (no interfaces up)");
+        add_decision_message("No-Go For Launch of Network Subsystem (no interfaces ready)");
         overall_readiness = false;
     }
     
