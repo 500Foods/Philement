@@ -3,6 +3,9 @@
  *
  * This module implements a centralized registry for tracking the state
  * of all server subsystems with thread-safe operations.
+ * 
+ * The registry starts with an empty array of subsystems and is populated
+ * dynamically as subsystems are registered during launch readiness checks.
  */
 
 // Feature test macros
@@ -21,7 +24,7 @@
 #include "../../logging/logging.h"
 #include "../../utils/utils_threads.h"
 
-// Global registry instance
+// Global registry instance - initialized with empty array
 SubsystemRegistry subsystem_registry = { 
     .subsystems = NULL,
     .count = 0,
@@ -51,17 +54,26 @@ static bool grow_registry(int new_capacity) {
     }
     
     // Allocate a new, larger array
-    SubsystemInfo* new_subsystems = realloc(subsystem_registry.subsystems, 
-                                         new_capacity * sizeof(SubsystemInfo));
+    SubsystemInfo* new_subsystems = NULL;
+    
+    if (subsystem_registry.subsystems == NULL) {
+        // First allocation
+        new_subsystems = calloc(new_capacity, sizeof(SubsystemInfo));
+    } else {
+        // Grow existing array
+        new_subsystems = realloc(subsystem_registry.subsystems, 
+                               new_capacity * sizeof(SubsystemInfo));
+        
+        // Initialize the new elements to zero
+        if (new_subsystems) {
+            memset(&new_subsystems[subsystem_registry.capacity], 0, 
+                  (new_capacity - subsystem_registry.capacity) * sizeof(SubsystemInfo));
+        }
+    }
+    
     if (!new_subsystems) {
         // Memory allocation failed
         return false;
-    }
-    
-    // Initialize the new elements to zero
-    if (subsystem_registry.capacity > 0) {
-        memset(&new_subsystems[subsystem_registry.capacity], 0, 
-              (new_capacity - subsystem_registry.capacity) * sizeof(SubsystemInfo));
     }
     
     // Update the registry
@@ -83,17 +95,15 @@ void init_subsystem_registry(void) {
         subsystem_registry.subsystems = NULL;
     }
     
-    // Allocate the initial registry capacity
-    if (!grow_registry(INITIAL_REGISTRY_CAPACITY)) {
-        log_this("SubsysReg", "Failed to allocate subsystem registry", LOG_LEVEL_ERROR);
-    }
-    
-    // Reset the registry to empty state
+    // Start with an empty array - don't allocate until needed
+    subsystem_registry.subsystems = NULL;
     subsystem_registry.count = 0;
+    subsystem_registry.capacity = 0;
     
     pthread_mutex_unlock(&subsystem_registry.mutex);
     
-    // Registry initialization handled silently - output will be managed by launch system
+    // Registry initialization is now handled silently - no debug message needed
+    // Output is managed by the launch system through the Go/No-Go process
 }
 
 /*
@@ -111,7 +121,7 @@ int register_subsystem(const char* name, ServiceThreads* threads,
     
     // Check if we need to grow the registry
     if (subsystem_registry.count >= subsystem_registry.capacity) {
-        // Double the capacity
+        // Double the capacity or use initial capacity if empty
         int new_capacity = (subsystem_registry.capacity == 0) ? 
                            INITIAL_REGISTRY_CAPACITY : 
                            (subsystem_registry.capacity * 2);
@@ -126,7 +136,8 @@ int register_subsystem(const char* name, ServiceThreads* threads,
     
     // Check if a subsystem with this name already exists
     for (int i = 0; i < subsystem_registry.count; i++) {
-        if (strcmp(subsystem_registry.subsystems[i].name, name) == 0) {
+        if (subsystem_registry.subsystems[i].name && 
+            strcmp(subsystem_registry.subsystems[i].name, name) == 0) {
             log_this("SubsysReg", "Subsystem '%s' already registered", LOG_LEVEL_ERROR, name);
             pthread_mutex_unlock(&subsystem_registry.mutex);
             return -1;
@@ -149,11 +160,14 @@ int register_subsystem(const char* name, ServiceThreads* threads,
     
     pthread_mutex_unlock(&subsystem_registry.mutex);
     
-    log_this("SubsysReg", "Registered subsystem '%s' with ID %d", LOG_LEVEL_STATE, name, id);
+    // Skip logging for Network subsystem to avoid redundant messages
+    // The "Decide" line in the launch readiness output already indicates the subsystem's status
+    if (strcmp(name, "Network") != 0) {
+        log_this("SubsysReg", "Registered subsystem '%s' with ID %d", LOG_LEVEL_STATE, name, id);
+    }
     
     return id;
 }
-
 /*
  * Update the state of a subsystem with proper locking.
  */

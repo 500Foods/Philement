@@ -8,6 +8,7 @@
  * 2. Dependency management between subsystems
  * 3. Dynamic starting/stopping of subsystems after initial startup
  * 4. Comprehensive status reporting during shutdown
+ * 5. Dynamic registration of subsystems with names provided through the registration system
  */
 
 #ifndef SUBSYSTEM_REGISTRY_H

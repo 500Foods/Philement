@@ -55,6 +55,15 @@
             "EndPort": 65535,
             "ReservedPorts": [22, 80, 443],
             "RetryAttempts": 5
+        },
+        "Available": {
+            "lo": true,
+            "wg0": false,
+            "vnet0": false,
+            "vnet1": false,
+            "vnet2": false,
+            "vnet3": false,
+            "vnet4": false
         }
     },
     "SystemResources": {
