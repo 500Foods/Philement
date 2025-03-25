@@ -116,6 +116,49 @@
     "Message": "Inter-component data packet",
     "Endpoint": "HTTP API access point",
     "Resource": "Managed system component"
+  },
+  "launch_readiness": {
+    "overview": "Subsystem launch readiness checks verify all prerequisites are met before initialization",
+    "importance": ["Prevents cascading failures", "Ensures clean startup", "Provides clear status reporting", "Facilitates dependency management"],
+    "function_structure": {
+      "signature": "LaunchReadiness check_SUBSYSTEM_launch_readiness(void)",
+      "return": "LaunchReadiness struct with subsystem name, ready status, and message array",
+      "pattern": ["Check system state", "Verify configuration", "Check dependencies", "Validate resources", "Build message array", "Return readiness struct"]
+    },
+    "common_checks": {
+      "system_state": "Check server_stopping, server_starting, server_running flags to prevent initialization during shutdown",
+      "configuration": "Verify required configuration is loaded and valid",
+      "dependencies": "Check that required subsystems are running",
+      "resources": "Verify access to required files, network resources, etc.",
+      "environment": "Check environment variables and system capabilities"
+    },
+    "message_format": {
+      "subsystem_name": "First message is just the subsystem name",
+      "go_messages": "  Go:      Check Description (details)",
+      "no_go_messages": "  No-Go:   Check Description (reason for failure)",
+      "decide_message": "  Decide:  Go/No-Go For Launch of SUBSYSTEM Subsystem"
+    },
+    "best_practices": [
+      "Mirror actual initialization logic in readiness checks",
+      "Use get_executable_path() instead of hardcoded paths",
+      "Check system state flags first and return early if in shutdown",
+      "Keep output concise and focused on essential information",
+      "Validate all critical dependencies",
+      "Free all allocated resources before returning",
+      "Use consistent spacing in message formatting"
+    ],
+    "implementation_steps": [
+      "Study the subsystem's initialization code to understand prerequisites",
+      "Identify all external dependencies (other subsystems, files, etc.)",
+      "Create a check_SUBSYSTEM_launch_readiness function in the appropriate file",
+      "Implement checks in order of importance (system state, config, dependencies, etc.)",
+      "Add the function to launch.c in the check_all_launch_readiness function",
+      "Test with both valid and invalid configurations"
+    ],
+    "example_files": [
+      "src/config/launch/launch-payload.c: Payload subsystem",
+      "src/config/launch/launch.c: Main launch readiness orchestration"
+    ]
   }
 }
 ```
