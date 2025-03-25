@@ -10,6 +10,12 @@
 #include "../network/config_network.h"
 #include "json_network.h"
 
+// Define a type that matches the anonymous structure in NetworkConfig
+typedef struct {
+    char* interface_name;      // Name of the interface (e.g., "eth0")
+    bool available;            // Whether the interface is available for use
+} interface_availability_t;
+
 bool load_json_network(json_t* root, AppConfig* config) {
     // Network Configuration
     json_t* network = json_object_get(root, "Network");
@@ -155,11 +161,67 @@ bool load_json_network(json_t* root, AppConfig* config) {
             }
         }
         
+        // Save a copy of the available interfaces before validation
+        interface_availability_t* saved_interfaces = NULL;
+        size_t saved_count = 0;
+        
+        if (config->network.available_interfaces && config->network.available_interfaces_count > 0) {
+            // Allocate memory for the saved interfaces
+            saved_interfaces = malloc(config->network.available_interfaces_count * sizeof(interface_availability_t));
+            if (saved_interfaces) {
+                // Initialize the array
+                memset(saved_interfaces, 0, config->network.available_interfaces_count * sizeof(interface_availability_t));
+                
+                // Copy each interface
+                for (size_t i = 0; i < config->network.available_interfaces_count; i++) {
+                    if (config->network.available_interfaces[i].interface_name) {
+                        size_t name_len = strlen(config->network.available_interfaces[i].interface_name) + 1;
+                        saved_interfaces[i].interface_name = malloc(name_len);
+                        if (saved_interfaces[i].interface_name) {
+                            strcpy(saved_interfaces[i].interface_name, config->network.available_interfaces[i].interface_name);
+                            saved_interfaces[i].available = config->network.available_interfaces[i].available;
+                            saved_count++;
+                        }
+                    }
+                }
+            }
+        }
+        
         // Validate configuration
-        if (config_network_validate(&config->network) != 0) {
+        int validation_result = config_network_validate(&config->network);
+        
+        if (validation_result != 0) {
             log_config_section_item("Status", "Invalid configuration, using defaults", LOG_LEVEL_ERROR, 1, 0, NULL, NULL, "Config");
+            
             config_network_cleanup(&config->network);
             config_network_init(&config->network);
+            
+            // Restore the saved interfaces
+            if (saved_interfaces && saved_count > 0) {
+                // Free any existing interfaces
+                if (config->network.available_interfaces) {
+                    for (size_t i = 0; i < config->network.available_interfaces_count; i++) {
+                        if (config->network.available_interfaces[i].interface_name) {
+                            free(config->network.available_interfaces[i].interface_name);
+                        }
+                    }
+                    free(config->network.available_interfaces);
+                }
+                
+                // Set the saved interfaces with a cast to handle type incompatibility
+                config->network.available_interfaces = (void*)saved_interfaces;
+                config->network.available_interfaces_count = saved_count;
+            }
+        } else {
+            // Free the saved interfaces if validation succeeded
+            if (saved_interfaces) {
+                for (size_t i = 0; i < saved_count; i++) {
+                    if (saved_interfaces[i].interface_name) {
+                        free(saved_interfaces[i].interface_name);
+                    }
+                }
+                free(saved_interfaces);
+            }
         }
         
         return true;
