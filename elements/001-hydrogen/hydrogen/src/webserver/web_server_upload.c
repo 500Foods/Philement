@@ -1,7 +1,3 @@
-// Feature test macros must come first
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
 // System headers
 #include <sys/time.h>
 #include <stdlib.h>

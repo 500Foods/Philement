@@ -8,10 +8,6 @@
 #ifndef OIDC_CLIENTS_H
 #define OIDC_CLIENTS_H
 
-// Feature test macros
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
 // Standard Libraries
 #include <stdbool.h>
 

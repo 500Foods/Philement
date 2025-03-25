@@ -7,9 +7,6 @@
  * - Protocol flow handling
  */
 
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
 // Standard Libraries
 #include <stdio.h>
 #include <stdlib.h>

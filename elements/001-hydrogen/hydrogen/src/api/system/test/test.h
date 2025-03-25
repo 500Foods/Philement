@@ -6,10 +6,6 @@
 #ifndef HYDROGEN_SYSTEM_TEST_H
 #define HYDROGEN_SYSTEM_TEST_H
 
-// Feature test macros
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
 // Network headers
 #include <microhttpd.h>
 

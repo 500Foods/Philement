@@ -40,10 +40,6 @@
 #ifndef HYDROGEN_STATE_H
 #define HYDROGEN_STATE_H
 
-// Feature test macros
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
 // Core system headers
 #include <signal.h>
 #include <pthread.h>

@@ -1,54 +1,6 @@
 /*
  * Safety-Critical State Management for 3D Printer Control
  * 
- * Why Centralized State Management?
- * 1. Safety Requirements
- *    - Emergency stop coordination
- *    - Temperature limit enforcement
- *    - Motion boundary checking
- *    - End-stop signal handling
- * 
- * 2. Hardware State Tracking
- *    Why This Matters?
- *    - Prevent conflicting movements
- *    - Monitor thermal stability
- *    - Track filament flow
- *    - Detect sensor failures
- * 
- * 3. Real-Time Coordination
- *    Why So Critical?
- *    - Synchronize multiple motors
- *    - Balance heating elements
- *    - Control cooling systems
- *    - Time sensitive operations
- * 
- * 4. Error Recovery
- *    Why This Approach?
- *    - Safe failure modes
- *    - Preserve print progress
- *    - Protect mechanical parts
- *    - Enable manual recovery
- * 
- * 5. Resource Protection
- *    Why These Safeguards?
- *    - Prevent heater runaway
- *    - Avoid motor overload
- *    - Monitor power systems
- *    - Track resource usage
- * 
- * 6. Operational Modes
- *    Why Multiple Modes?
- *    - Normal printing state
- *    - Emergency stop state
- *    - Maintenance mode
- *    - Calibration state
- * 
- * 7. State Transitions
- *    Why So Careful?
- *    - Validate temperature changes
- *    - Ensure safe motion paths
- *    - Coordinate tool changes
- *    - Handle power events
  */
 
 #include "state.h"

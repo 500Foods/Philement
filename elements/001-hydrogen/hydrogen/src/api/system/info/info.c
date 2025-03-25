@@ -5,10 +5,6 @@
  * for monitoring and diagnostics.
  */
 
-// Feature test macros
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
 // Core system headers
 #include <sys/types.h>
 #include <sys/utsname.h>

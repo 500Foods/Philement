@@ -15,10 +15,6 @@
 //@ swagger:server https://api.example.com/api Production server
 //@ swagger:security bearerAuth JWT authentication
 
-// Feature test macros
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
 // Network headers
 #include <microhttpd.h>
 #include <sys/socket.h>

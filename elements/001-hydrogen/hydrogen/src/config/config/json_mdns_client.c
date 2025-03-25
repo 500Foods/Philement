@@ -2,10 +2,6 @@
  * mDNS Client configuration JSON parsing
  */
 
-// Feature test macros
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
 #include <jansson.h>
 #include <stdbool.h>
 #include <string.h>

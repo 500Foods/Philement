@@ -5,9 +5,6 @@
  * It manages 3D printer job queues and print processing.
  */
 
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>

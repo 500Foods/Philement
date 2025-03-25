@@ -9,17 +9,16 @@ This document outlines the C programming guidelines and patterns used in the Hyd
 Each `.c` file should follow this organization:
 
 1. File-level documentation explaining purpose and design decisions
-2. Feature test macros (if needed)
-3. Include directives in this order:
+2. Include directives in this order:
    - Core system headers
    - Standard C headers
    - Third-party libraries
    - Project headers
-4. Declarations in this order:
+3. Declarations in this order:
    - External declarations (extern functions/variables from other files)
    - Public interface (functions exposed to other files)
    - Private declarations (static functions used only in this file)
-5. Implementation of functions
+4. Implementation of functions
 
 Example organization:
 
@@ -27,10 +26,6 @@ Example organization:
 /*
  * Component purpose and design decisions
  */
-
-// Feature test macros
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
 
 // Core system headers
 #include <sys/types.h>
@@ -72,17 +67,6 @@ Example header guard:
 
 #endif // HYDROGEN_COMPONENT_H
 ```
-
-## Required Feature Test Macros
-
-At the start of source files that use POSIX features:
-
-```c
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-```
-
-These must come before any includes.
 
 ## Standard Library Usage
 

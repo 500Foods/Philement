@@ -1,7 +1,3 @@
-// Feature test macros must come first
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
 // Include core header first for default constants
 #include "web_server_core.h"
 

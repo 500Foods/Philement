@@ -8,10 +8,6 @@
 #ifndef SUBSYSTEM_REGISTRY_INTEGRATION_H
 #define SUBSYSTEM_REGISTRY_INTEGRATION_H
 
-// Feature test macros
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
 // System includes
 #include <stdbool.h>
 

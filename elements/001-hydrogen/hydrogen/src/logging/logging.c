@@ -1,42 +1,6 @@
 /*
  * Hydrogen Server Logging System
- * 
- * Why Advanced Logging in 3D Printing?
- * 1. Print Quality Monitoring
- *    - Track temperature fluctuations
- *    - Monitor motion events
- *    - Record material flow
- *    - Detect anomalies
- * 
- * 2. Safety Critical Events
- *    - Emergency stops
- *    - Temperature excursions
- *    - Motor stalls
- *    - Power issues
- * 
- * 3. Performance Analysis
- *    - Print timing accuracy
- *    - System responsiveness
- *    - Resource utilization
- *    - Command latency
- * 
- * 4. Diagnostic Support
- *    - Error tracing
- *    - Event correlation
- *    - State transitions
- *    - Configuration changes
- * 
- * Implementation Features:
- * - Thread-safe design for concurrent access
- * - JSON formatting for structured analysis
- * - Multiple output targets (console/DB/file)
- * - Priority-based message handling
- * - Asynchronous queue processing
  */
-
-// Feature test macros
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
 
 // Core system headers
 #include <sys/types.h>
