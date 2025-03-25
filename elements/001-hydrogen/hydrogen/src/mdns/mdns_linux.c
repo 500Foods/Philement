@@ -5,39 +5,7 @@
  * announcements. The implementation provides automatic network presence
  * for Hydrogen printers with the following features:
  * 
- * Network Management:
- * - Dual-stack IPv4/IPv6 support
- * - Multicast socket configuration
- * - Interface monitoring and selection
- * - Automatic port selection and binding
- * 
- * DNS Protocol:
- * - Standard-compliant packet construction
- * - Resource record management (A, AAAA, PTR, SRV, TXT)
- * - Query handling and response generation
- * - Name compression for efficiency
- * 
- * Service Management:
- * - Multiple service registration
- * - Service metadata via TXT records
- * - Dynamic port assignment
- * - Service instance naming
- * 
- * Reliability Features:
- * - Probing for name conflicts
- * - Automatic service re-announcement
- * - Goodbye packets on shutdown
- * - Error recovery mechanisms
- * 
- * Thread Safety:
- * - Mutex-protected shared resources
- * - Safe shutdown coordination
- * - Resource cleanup verification
  */
-
-// Feature test macros must come first
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
 
 #include <sys/types.h>
 #include <time.h>
@@ -52,7 +20,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include <errno.h>
-#include <net/if.h> // For if_nametoindex
+#include <net/if.h> 
 #include <poll.h>
 
 #include "../config/security/keys.h"

@@ -23,10 +23,6 @@
  * - Read-only access after initialization
  */
 
-// Feature test macros
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
 // Standard C headers
 #include <string.h>
 

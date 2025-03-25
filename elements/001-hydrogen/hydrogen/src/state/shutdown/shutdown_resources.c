@@ -6,10 +6,6 @@
  * and configuration structures.
  */
 
-// Feature test macros
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
 // Core system headers
 #include <stdlib.h>
 

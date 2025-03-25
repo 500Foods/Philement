@@ -5,40 +5,7 @@
  * This implementation focuses on thread safety, performance, and reliability
  * through careful synchronization and resource management.
  * 
- * Implementation Strategy:
- * - Hash table with chaining for queue lookup
- * - Lock-based thread synchronization
- * - Two-phase locking for complex operations
- * - Resource cleanup on errors
- * 
- * Synchronization Patterns:
- * - System mutex for queue creation/deletion
- * - Per-queue mutex for operations
- * - Condition variables for blocking ops
- * - Lock ordering to prevent deadlocks
- * 
- * Memory Management:
- * - Defensive allocation checks
- * - Cleanup on partial failures
- * - Buffer overflow prevention
- * - Memory usage tracking
- * 
- * Error Handling:
- * - Input validation
- * - Resource allocation checks
- * - Partial operation rollback
- * - Error logging
- * 
- * Performance Considerations:
- * - Minimized critical sections
- * - Efficient hash function
- * - Optimized memory operations
- * - Lock-free reads where safe
  */
-
-// Feature test macros
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
 
 // Core system headers
 #include <sys/types.h>

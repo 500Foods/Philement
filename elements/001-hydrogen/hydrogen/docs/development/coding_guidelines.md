@@ -21,17 +21,6 @@ Example header guard:
 #endif // HYDROGEN_COMPONENT_H
 ```
 
-## Required Feature Test Macros
-
-At the start of source files that use POSIX features:
-
-```c
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-```
-
-These must come before any includes.
-
 ## Standard Library Usage
 
 ### Common Standard Headers

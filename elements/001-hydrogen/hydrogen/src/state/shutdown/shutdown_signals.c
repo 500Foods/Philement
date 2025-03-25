@@ -5,10 +5,6 @@
  * initiates the appropriate shutdown or restart actions.
  */
 
-// Feature test macros
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
 // Core system headers
 #include <stdio.h>
 #include <stdlib.h>

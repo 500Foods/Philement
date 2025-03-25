@@ -7,10 +7,6 @@
  * - Compressing data on-the-fly
  */
 
-// Feature test macros
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
 // System headers
 #include <sys/stat.h>
 #include <string.h>

@@ -5,10 +5,6 @@
  * for the service, used for monitoring and health checks.
  */
 
-// Feature test macros
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
 // Network headers
 #include <microhttpd.h>
 

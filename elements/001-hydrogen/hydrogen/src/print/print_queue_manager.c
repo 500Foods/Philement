@@ -1,67 +1,7 @@
 /*
  * Print Job Management System for 3D Printer Control
  * 
- * Why Robust Job Management Matters:
- * 1. Print Quality Assurance
- *    - Job validation and preprocessing
- *    - Parameter verification
- *    - Resource availability checks
- *    - Quality monitoring
- * 
- * 2. Safety Considerations
- *    Why These Checks?
- *    - Temperature limits
- *    - Material compatibility
- *    - Hardware readiness
- *    - Emergency handling
- * 
- * 3. Resource Management
- *    Why This Matters?
- *    - Long print durations
- *    - Material consumption
- *    - Power management
- *    - System resources
- * 
- * 4. Job Prioritization
- *    Why Priority Queuing?
- *    - Emergency stops
- *    - Maintenance tasks
- *    - User priorities
- *    - System tasks
- * 
- * 5. Error Recovery
- *    Why These Features?
- *    - Print failure handling
- *    - State preservation
- *    - Job resumption
- *    - Resource cleanup
- * 
- * Implementation Features:
- * - Thread-safe queue system
- * - Priority-based processing
- * - Resource monitoring
- * - Status tracking
- * 
- * Job Processing Pipeline:
- * 1. Validation Phase
- *    - G-code analysis
- *    - Resource checks
- *    - Safety verification
- * 
- * 2. Execution Phase
- *    - Real-time monitoring
- *    - Status updates
- *    - Error detection
- * 
- * 3. Completion Phase
- *    - Resource cleanup
- *    - State updates
- *    - Job archiving
  */
-
-// Feature test macros must come first
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
 
 // Core system headers
 #include <sys/types.h>

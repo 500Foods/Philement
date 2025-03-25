@@ -9,10 +9,6 @@
  * - JSON response formatting
  */
 
-// Feature test macros
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
 #include "api_utils.h"
 #include "../logging/logging.h"
 #include "../oidc/oidc_tokens.h"

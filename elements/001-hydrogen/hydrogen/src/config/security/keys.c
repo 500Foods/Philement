@@ -1,44 +1,6 @@
 /*
  * Security System for 3D Printer Control
- * 
- * Why Strong Security Matters:
- * 1. Machine Safety
- *    - Prevent unauthorized commands
- *    - Protect against malicious G-code
- *    - Control access to heating elements
- *    - Safeguard motion systems
- * 
- * 2. Network Security
- *    Why Cryptographic Quality?
- *    - Remote access protection
- *    - Command authentication
- *    - Session management
- *    - API security
- * 
- * 3. Key Management
- *    Why These Practices?
- *    - Secure key generation
- *    - Safe key storage
- *    - Key rotation policies
- *    - Access control
- * 
- * 4. Integration Points
- *    Why Comprehensive Security?
- *    - WebSocket authentication
- *    - API authorization
- *    - Configuration protection
- *    - Audit logging
- * 
- * Implementation Features:
- * - OpenSSL CSPRNG for randomness
- * - Secure memory handling
- * - Error detection
- * - Safe key encoding
  */
-
-// Feature test macros
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
 
 // Standard C headers
 #include <stdio.h>

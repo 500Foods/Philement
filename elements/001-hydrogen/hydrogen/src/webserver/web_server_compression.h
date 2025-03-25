@@ -10,10 +10,6 @@
 #ifndef WEB_SERVER_COMPRESSION_H
 #define WEB_SERVER_COMPRESSION_H
 
-// Feature test macros
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
 // System headers
 #include <stdbool.h>
 #include <stdlib.h>

@@ -5,10 +5,6 @@
  * The actual endpoint implementations are in their specific subdirectories.
  */
 
-// Feature test macros
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
 // Project headers
 #include "system_service.h"
 #include "../../logging/logging.h"
