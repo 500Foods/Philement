@@ -79,8 +79,8 @@ The following documentation files are available outside of the main docs/ direct
 <details>
 <summary><b>Configuration Management</b></summary>
 
-- [src/config/configuration.c](src/config/configuration.c) Handles loading and managing configuration settings
-- [src/config/configuration.h](src/config/configuration.h) Defines configuration-related structures and constants
+- [src/config/config.c](src/config/config.c) Handles loading and managing configuration settings
+- [src/config/config.h](src/config/config.h) Defines configuration-related structures and constants
 - [src/config/keys.c](src/config/keys.c) Implements cryptographic key generation and management
 - [src/config/keys.h](src/config/keys.h) Header file for cryptographic operations
 
@@ -122,10 +122,10 @@ The following documentation files are available outside of the main docs/ direct
 <details>
 <summary><b>State Management</b></summary>
 
-- [src/state/shutdown.c](src/state/shutdown.c) Graceful system shutdown coordination
-- [src/state/shutdown.h](src/state/shutdown.h) Shutdown procedure definitions
-- [src/state/startup.c](src/state/startup.c) System initialization and service startup
-- [src/state/startup.h](src/state/startup.h) Startup sequence definitions
+- [src/state/shutdown/shutdown.c](src/state/shutdown/shutdown.c) Graceful system shutdown coordination
+- [src/state/shutdown/shutdown.h](src/state/shutdown/shutdown.h) Shutdown procedure definitions
+- [src/state/startup/startup.c](src/state/startup/startup.c) System initialization and service startup
+- [src/state/startup/startup.h](src/state/startup/startup.h) Startup sequence definitions
 - [src/state/state.c](src/state/state.c) Global state management implementation
 - [src/state/state.h](src/state/state.h) State tracking interface
 
@@ -133,10 +133,10 @@ The following documentation files are available outside of the main docs/ direct
 <details>
 <summary><b>Tests</b></summary>
 
-- [tests/analyze_stuck_threads.sh](tests/analyze_stuck_threads.sh) Script for analyzing thread deadlocks
-- [tests/run_tests.sh](tests/run_tests.sh) Script for executing test suites
+- [tests/support_analyze_stuck_threads.sh](tests/support_analyze_stuck_threads.sh) Script for analyzing thread deadlocks
+- [tests/test_all.sh](tests/test_all.sh) Script for executing test suites
 - [tests/test_startup_shutdown.sh](tests/test_startup_shutdown.sh) Tests for startup/shutdown procedures
-- [tests/monitor_resources.sh](tests/monitor_resources.sh) Script for monitoring system resource usage
+- [tests/support_monitor_resources.sh](tests/support_monitor_resources.sh) Script for monitoring system resource usage
 - [tests/README.md](tests/README.md) Testing documentation
 
 </details>
@@ -285,7 +285,7 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Mon Mar 24 23:00:26 PDT 2025
+Generated on: Tue Mar 25 03:44:24 PDT 2025
 
 ### Summary
 
@@ -298,7 +298,7 @@ Generated on: Mon Mar 24 23:00:26 PDT 2025
 | Total Subtests | 92 |
 | Passed Subtests | 58 |
 | Failed Subtests | 34 |
-| Runtime | 6m 10s |
+| Runtime | 5m 59s |
 
 ### Individual Test Results
 
@@ -322,16 +322,16 @@ Generated on: Mon Mar 24 23:00:26 PDT 2025
 
 ## Repository Information
 
-Generated via cloc: Mon Mar 24 23:00:26 PDT 2025
+Generated via cloc: Tue Mar 25 03:44:24 PDT 2025
 
 | Language | Files | Blank Lines | Comment Lines | Code Lines |
 | -------- | ----- | ----------- | ------------- | ---------- |
-| C | 134 | 3897 | 5441 | 16812 |
-| Markdown | 108 | 4030 | 27 | 14586 |
+| C | 135 | 3848 | 5011 | 16851 |
+| Markdown | 108 | 4021 | 27 | 14568 |
 | Bourne | Shell | 23 | 1273 | 1307 |
-| JSON | 17 | 0 | 0 | 4798 |
-| C/C++ | Header | 121 | 1034 | 4700 |
-| Text | 11 | 4 | 0 | 1785 |
+| JSON | 17 | 0 | 0 | 4807 |
+| C/C++ | Header | 123 | 1017 | 4721 |
+| Text | 10 | 4 | 0 | 1344 |
 | HTML | 1 | 74 | 0 | 493 |
-| make | 2 | 51 | 214 | 223 |
-| **Total** | **417** | **10363** | **11689** | **46241** |
+| make | 2 | 51 | 214 | 224 |
+| **Total** | **419** | **10288** | **11280** | **45795** |
