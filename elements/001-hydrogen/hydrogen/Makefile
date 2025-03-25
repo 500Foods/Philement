@@ -165,6 +165,7 @@ BUILD_TYPE = Regular
 # ──────────────────────────────────────────────────────────────────────────────
 CC = gcc
 CFLAGS = -std=c17 -Wall -Wextra -pedantic -Werror -O2 -DVERSION=\"$(VERSION)\" -DRELEASE=\"$(RELEASE)\" -DBUILD_TYPE=\"$(BUILD_TYPE)\"
+CFLAGS += -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L
 
 # ──────────────────────────────────────────────────────────────────────────────
 # External Dependencies

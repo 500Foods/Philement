@@ -1,44 +1,6 @@
 /*
  * Real-time Status Monitoring for 3D Printer Control
- * 
- * Why Real-time Monitoring Matters:
- * 1. Print Quality Assurance
- *    - Temperature stability tracking
- *    - Layer adhesion monitoring
- *    - Extrusion rate verification
- *    - Motion system health
- * 
- * 2. Safety Monitoring
- *    Why Continuous Updates?
- *    - Early problem detection
- *    - Emergency stop validation
- *    - Temperature excursion alerts
- *    - Power system monitoring
- * 
- * 3. Performance Metrics
- *    Why Track These?
- *    - Print progress accuracy
- *    - System responsiveness
- *    - Resource utilization
- *    - Connection health
- * 
- * 4. Client Communication
- *    Why Structured Data?
- *    - UI responsiveness
- *    - Mobile app integration
- *    - Data logging systems
- *    - Analytics platforms
- * 
- * Implementation Features:
- * - JSON-formatted messages
- * - Real-time metric updates
- * - Memory-efficient design
- * - Error recovery paths
  */
-
-// Feature test macros
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
 
 // Core system headers
 #include <sys/types.h>

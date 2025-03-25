@@ -6,9 +6,6 @@
  * It also registers subsystems in the registry as they pass their launch checks.
  */
 
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>

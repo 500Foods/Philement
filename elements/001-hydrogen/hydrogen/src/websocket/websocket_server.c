@@ -8,10 +8,6 @@
  * - Status monitoring
  */
 
-// Feature Test Macros
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
 // System headers
 #include <sys/types.h>
 #include <sys/socket.h>

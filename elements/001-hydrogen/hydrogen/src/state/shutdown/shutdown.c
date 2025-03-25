@@ -1,59 +1,7 @@
 /*
  * Safety-Critical Shutdown Handler for 3D Printer Control
  * 
- * Why Careful Shutdown Sequencing?
- * 1. Hardware Safety
- *    - Cool heating elements safely
- *    - Park print head away from bed
- *    - Disable stepper motors properly
- *    - Prevent material damage
- * 
- * 2. Print Job Handling
- *    Why So Critical?
- *    - Save print progress state
- *    - Enable job recovery
- *    - Preserve material
- *    - Document failure point
- * 
- * 3. Temperature Management
- *    Why This Sequence?
- *    - Gradual heater shutdown
- *    - Monitor cooling progress
- *    - Prevent thermal shock
- *    - Protect hot components
- * 
- * 4. Motion Control
- *    Why These Steps?
- *    - Complete current movements
- *    - Prevent axis binding
- *    - Secure loose filament
- *    - Home axes if safe
- * 
- * 5. Emergency Handling
- *    Why So Robust?
- *    - Handle power loss
- *    - Process emergency stops
- *    - Manage thermal runaway
- *    - Log critical events
- * 
- * 6. Resource Management
- *    Why This Order?
- *    - Save configuration state
- *    - Close network connections
- *    - Free system resources
- *    - Verify cleanup completion
- * 
- * 7. User Communication
- *    Why Keep Users Informed?
- *    - Display shutdown progress
- *    - Indicate safe states
- *    - Report error conditions
- *    - Guide recovery steps
  */
-
-// Feature test macros
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
 
 // Core system headers
 #include <stdio.h>

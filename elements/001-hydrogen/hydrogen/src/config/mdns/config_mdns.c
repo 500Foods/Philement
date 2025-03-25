@@ -11,8 +11,6 @@
  * - Memory management follows strict allocation/cleanup patterns
  */
 
-#define _GNU_SOURCE  // For strdup
-
 // Core system headers
 #include <sys/types.h>
 

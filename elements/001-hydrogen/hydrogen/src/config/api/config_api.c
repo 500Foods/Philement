@@ -2,10 +2,6 @@
  * API Configuration Implementation
  */
 
-// Feature test macros
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
 #include <stdlib.h>
 #include <string.h>
 #include "config_api.h"

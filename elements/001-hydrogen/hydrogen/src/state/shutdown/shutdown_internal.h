@@ -9,10 +9,6 @@
 #ifndef HYDROGEN_SHUTDOWN_INTERNAL_H
 #define HYDROGEN_SHUTDOWN_INTERNAL_H
 
-// Feature test macros
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
 // Core system headers
 #include <signal.h>
 #include <pthread.h>

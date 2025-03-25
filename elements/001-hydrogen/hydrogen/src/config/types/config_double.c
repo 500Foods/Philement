@@ -6,9 +6,6 @@
  * and logging.
  */
 
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
 // Standard C headers
 #include <stdio.h>
 #include <stdlib.h>

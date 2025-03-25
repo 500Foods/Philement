@@ -11,10 +11,6 @@
 //@ swagger:version 1.0.0
 //@ swagger:tag "OIDC Service" Provides OpenID Connect protocol endpoints and authentication services
 
-// Feature test macros
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
 // Standard Libraries
 #include <stdbool.h>
 #include <stdlib.h>

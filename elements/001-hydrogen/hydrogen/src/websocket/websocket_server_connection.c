@@ -8,9 +8,6 @@
  * - Thread registration and metrics
  */
 
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
 // System headers
 #include <string.h>
 #include <unistd.h>

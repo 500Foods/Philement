@@ -5,11 +5,7 @@
  * for development and debugging, including caller information, headers, and parameters.
  */
 
-// Feature test macros
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
-// Network headers
+ // Network headers
 #include <microhttpd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>

@@ -2,8 +2,6 @@
  * Database Logging Configuration Implementation
  */
 
-#define _GNU_SOURCE  // For strdup
-
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>

@@ -1,45 +1,7 @@
 /*
  * G-code Analysis System for High-Quality 3D Printing
  * 
- * Why Sophisticated G-code Analysis?
- * 1. Print Quality
- *    - Validate motion constraints
- *    - Detect potential issues
- *    - Ensure proper layering
- *    - Prevent under/over-extrusion
- * 
- * 2. Motion Planning
- *    Why This Matters?
- *    - Prevent mechanical stress
- *    - Optimize print speed
- *    - Reduce vibration
- *    - Maintain accuracy
- * 
- * 3. Resource Management
- *    Why Track These?
- *    - Material usage estimation
- *    - Print time prediction
- *    - Power consumption
- *    - Maintenance scheduling
- * 
- * 4. Safety Features
- *    Why These Checks?
- *    - Prevent axis crashes
- *    - Monitor temperatures
- *    - Track tool changes
- *    - Validate commands
- * 
- * 5. Performance Design
- *    Why So Optimized?
- *    - Handle large files
- *    - Real-time analysis
- *    - Memory efficiency
- *    - Fast parsing
  */
-
-// Feature test macros must come first
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
 
 // Core system headers
 #include <sys/types.h>

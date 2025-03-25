@@ -11,10 +11,6 @@
 #ifndef OIDC_KEYS_H
 #define OIDC_KEYS_H
 
-// Feature test macros
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
 // Standard Libraries
 #include <stdbool.h>
 #include <stdlib.h>
