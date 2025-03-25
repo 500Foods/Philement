@@ -31,6 +31,10 @@ int config_network_init(NetworkConfig* config) {
         return -1;
     }
     config->reserved_ports_count = 0;
+    
+    // Initialize available interfaces array
+    config->available_interfaces = NULL;
+    config->available_interfaces_count = 0;
 
     return 0;
 }
@@ -42,6 +46,14 @@ void config_network_cleanup(NetworkConfig* config) {
 
     // Free reserved ports array
     free(config->reserved_ports);
+    
+    // Free available interfaces array
+    if (config->available_interfaces) {
+        for (size_t i = 0; i < config->available_interfaces_count; i++) {
+            free(config->available_interfaces[i].interface_name);
+        }
+        free(config->available_interfaces);
+    }
 
     // Zero out the structure
     memset(config, 0, sizeof(NetworkConfig));
