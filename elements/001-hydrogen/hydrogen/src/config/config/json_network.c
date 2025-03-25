@@ -4,6 +4,7 @@
 
 #include <jansson.h>
 #include <stdbool.h>
+#include <string.h>
 #include "../config.h"
 #include "../config_utils.h"
 #include "../network/config_network.h"
@@ -92,6 +93,64 @@ bool load_json_network(json_t* root, AppConfig* config) {
                     } else {
                         log_config_section_item("ReservedPorts", "Memory allocation failed", LOG_LEVEL_ERROR, 0, 1, NULL, NULL, "Config");
                     }
+                }
+            }
+        }
+        
+        // Interface Availability Settings
+        json_t* available = json_object_get(network, "Available");
+        if (json_is_object(available)) {
+            log_config_section_item("Available", "Configured", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config");
+            
+            // First clean up any existing available interfaces
+            if (config->network.available_interfaces) {
+                for (size_t i = 0; i < config->network.available_interfaces_count; i++) {
+                    if (config->network.available_interfaces[i].interface_name) {
+                        free(config->network.available_interfaces[i].interface_name);
+                    }
+                }
+                free(config->network.available_interfaces);
+                config->network.available_interfaces = NULL;
+                config->network.available_interfaces_count = 0;
+            }
+            
+            // Count the number of interfaces in the Available object
+            size_t count = json_object_size(available);
+            if (count > 0) {
+                // Allocate memory for available interfaces
+                config->network.available_interfaces = malloc(count * sizeof(*config->network.available_interfaces));
+                if (config->network.available_interfaces) {
+                    // Initialize the array
+                    memset(config->network.available_interfaces, 0, count * sizeof(*config->network.available_interfaces));
+                    
+                    // Add each available interface
+                    const char* key;
+                    json_t* value;
+                    size_t index = 0;
+                    
+                    json_object_foreach(available, key, value) {
+                        if (json_is_boolean(value)) {
+                            // Allocate memory for the interface name
+                            size_t key_len = strlen(key) + 1;
+                            config->network.available_interfaces[index].interface_name = malloc(key_len);
+                            if (config->network.available_interfaces[index].interface_name) {
+                                strcpy(config->network.available_interfaces[index].interface_name, key);
+                                // Set the availability
+                                config->network.available_interfaces[index].available = json_boolean_value(value);
+                                
+                                // Log the interface availability
+                                log_config_section_item("Interface", "%s: %s", LOG_LEVEL_STATE, 0, 1, NULL, NULL, "Config",
+                                                       key, config->network.available_interfaces[index].available ? "enabled" : "disabled");
+                                
+                                index++;
+                            }
+                        }
+                    }
+                    
+                    // Update the count
+                    config->network.available_interfaces_count = index;
+                } else {
+                    log_config_section_item("Available", "Memory allocation failed", LOG_LEVEL_ERROR, 0, 1, NULL, NULL, "Config");
                 }
             }
         }

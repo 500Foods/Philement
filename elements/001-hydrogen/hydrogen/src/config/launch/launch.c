@@ -26,6 +26,7 @@
 #include "../../state/startup/startup_webserver.h"
 #include "../../state/startup/startup_websocket.h"
 #include "../../state/startup/startup_print.h"
+#include "launch-network.h"
 
 // External declarations for thread structures
 extern ServiceThreads logging_threads;
@@ -48,6 +49,7 @@ extern volatile sig_atomic_t terminal_system_shutdown;
 extern volatile sig_atomic_t mdns_client_system_shutdown;
 extern volatile sig_atomic_t smtp_relay_system_shutdown;
 extern volatile sig_atomic_t swagger_system_shutdown;
+extern volatile sig_atomic_t network_system_shutdown;
 
 // Forward declarations for subsystem readiness checks
 extern LaunchReadiness check_logging_launch_readiness(void);
@@ -59,11 +61,14 @@ extern LaunchReadiness check_webserver_launch_readiness(void);
 extern LaunchReadiness check_websocket_launch_readiness(void);
 extern LaunchReadiness check_print_launch_readiness(void);
 extern LaunchReadiness check_payload_launch_readiness(void);
+extern LaunchReadiness check_network_launch_readiness(void);
 
-// External declarations for subsystem shutdown functions
+// External declarations for subsystem initialization and shutdown functions
 extern void shutdown_web_server(void);
 extern void stop_websocket_server(void);
 extern void shutdown_print_queue(void);
+extern int init_network_subsystem(void);
+extern void shutdown_network_subsystem(void);
 
 // Check Subsystem Registry readiness
 static LaunchReadiness check_subsystem_registry_readiness(void) {
@@ -133,6 +138,25 @@ bool check_all_launch_readiness(void) {
     // but we do track readiness
     if (payload_readiness.ready) {
         any_subsystem_ready = true;
+    }
+    
+    // Check network subsystem - moved up to maintain consistent ordering
+    LaunchReadiness network_readiness = check_network_launch_readiness();
+    log_readiness_messages(&network_readiness);
+    
+    // Register network subsystem if ready
+    if (network_readiness.ready) {
+        any_subsystem_ready = true;
+        
+        // Register the network subsystem - no dependencies to add
+        register_subsystem_from_launch(
+            "Network",
+            NULL,  // No thread structure for now
+            NULL,  // No thread handle for now
+            &network_system_shutdown,
+            init_network_subsystem,
+            shutdown_network_subsystem
+        );
     }
     
     // Check logging subsystem
@@ -314,17 +338,23 @@ bool check_all_launch_readiness(void) {
     }
     
     // Store all readiness results for the LAUNCH section
-    LaunchReadiness readiness_results[] = {
-        registry_readiness,
-        payload_readiness,
-        logging_readiness,
-        terminal_readiness,
-        mdns_client_readiness,
-        smtp_relay_readiness,
-        swagger_readiness,
-        webserver_readiness,
-        websocket_readiness,
-        print_readiness
+    // Only store the subsystem name and ready status, not the messages
+    // as they might be invalidated after the readiness checks
+    struct {
+        const char* subsystem;
+        bool ready;
+    } readiness_results[] = {
+        { registry_readiness.subsystem, registry_readiness.ready },
+        { payload_readiness.subsystem, payload_readiness.ready },
+        { network_readiness.subsystem, network_readiness.ready },
+        { logging_readiness.subsystem, logging_readiness.ready },
+        { terminal_readiness.subsystem, terminal_readiness.ready },
+        { mdns_client_readiness.subsystem, mdns_client_readiness.ready },
+        { smtp_relay_readiness.subsystem, smtp_relay_readiness.ready },
+        { swagger_readiness.subsystem, swagger_readiness.ready },
+        { webserver_readiness.subsystem, webserver_readiness.ready },
+        { websocket_readiness.subsystem, websocket_readiness.ready },
+        { print_readiness.subsystem, print_readiness.ready }
     };
     
     // Add LAUNCH section with Go/No-Go decisions
@@ -337,14 +367,16 @@ bool check_all_launch_readiness(void) {
     
     // Log the rest of the subsystems
     for (size_t i = 1; i < sizeof(readiness_results) / sizeof(readiness_results[0]); i++) {
-        const LaunchReadiness* result = &readiness_results[i];
-        if (result && result->subsystem) {
-            // Log Go/No-Go status and subsystem name on a single line with proper alignment
-            if (result->ready) {
-                log_this("Launch", "  Go:      %s", LOG_LEVEL_STATE, result->subsystem);
-            } else {
-                log_this("Launch", "  No-Go:   %s", LOG_LEVEL_ALERT, result->subsystem);
-            }
+        // Skip if subsystem name is NULL
+        if (!readiness_results[i].subsystem) {
+            continue;
+        }
+        
+        // Log Go/No-Go status and subsystem name on a single line with proper alignment
+        if (readiness_results[i].ready) {
+            log_this("Launch", "  Go:      %s", LOG_LEVEL_STATE, readiness_results[i].subsystem);
+        } else {
+            log_this("Launch", "  No-Go:   %s", LOG_LEVEL_ALERT, readiness_results[i].subsystem);
         }
     }
     

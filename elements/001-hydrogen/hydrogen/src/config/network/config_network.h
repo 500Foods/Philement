@@ -9,6 +9,7 @@
 #define HYDROGEN_CONFIG_NETWORK_H
 
 #include <stddef.h>
+#include <stdbool.h>  // Added for bool type
 
 // Project headers
 #include "../../network/network.h"  // For MAX_INTERFACES
@@ -49,6 +50,13 @@ struct NetworkConfig {
     // Reserved ports management
     int* reserved_ports;           // Array of reserved port numbers
     size_t reserved_ports_count;   // Number of reserved ports
+    
+    // Interface availability configuration
+    struct {
+        char* interface_name;      // Name of the interface (e.g., "eth0")
+        bool available;            // Whether the interface is available for use
+    }* available_interfaces;       // Array of interface availability settings
+    size_t available_interfaces_count; // Number of interfaces with availability settings
 };
 
 /*

@@ -75,17 +75,14 @@ int register_subsystem_from_launch(const char* name, ServiceThreads* threads,
                                    pthread_t* main_thread, volatile sig_atomic_t* shutdown_flag,
                                    int (*init_function)(void), void (*shutdown_function)(void)) {
     
-    log_this("Launch", "------------------------------", LOG_LEVEL_STATE);
-    log_this("Launch", "LAUNCH: %s", LOG_LEVEL_STATE, name);
-    
-    // Register the subsystem
+    // Register the subsystem - no need for additional logging as the "Decide" line
+    // in the launch readiness output already indicates the subsystem's status
     int subsys_id = register_subsystem(name, threads, main_thread, shutdown_flag, 
                                       init_function, shutdown_function);
     
-    if (subsys_id >= 0) {
-        log_this("Launch", "  Registered subsystem '%s' with ID %d", LOG_LEVEL_STATE, name, subsys_id);
-    } else {
-        log_this("Launch", "  Failed to register subsystem '%s'", LOG_LEVEL_ERROR, name);
+    // Only log errors, as successful registration is already indicated by the "Decide" line
+    if (subsys_id < 0) {
+        log_this("Launch", "Failed to register subsystem '%s'", LOG_LEVEL_ERROR, name);
     }
     
     return subsys_id;
