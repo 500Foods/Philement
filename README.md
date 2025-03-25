@@ -64,7 +64,7 @@ There are countless tools, frameworks, coding styles, conventions, languages, an
 [![Count Lines of Code](https://github.com/500Foods/Philement/actions/workflows/main.yml/badge.svg)](https://github.com/500Foods/Philement/actions/workflows/main.yml)
 <!--CLOC-START -->
 ```
-Last updated at 2025-03-25 06:03:11 UTC
+Last updated at 2025-03-25 06:04:47 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
@@ -85,12 +85,11 @@ JavaScript                       1              3              0             25
 -------------------------------------------------------------------------------
 SUM:                           483          11528          11840          48715
 -------------------------------------------------------------------------------
-23 Files were skipped (duplicate, binary, or without source code):
+21 Files were skipped (duplicate, binary, or without source code):
   gitignore: 4
   jpg: 3
   png: 3
   dproj: 2
-  jpeg: 2
   ggignore: 1
   gitattributes: 1
   ico: 1
