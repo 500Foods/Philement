@@ -58,6 +58,7 @@ extern LaunchReadiness check_swagger_launch_readiness(void);
 extern LaunchReadiness check_webserver_launch_readiness(void);
 extern LaunchReadiness check_websocket_launch_readiness(void);
 extern LaunchReadiness check_print_launch_readiness(void);
+extern LaunchReadiness check_payload_launch_readiness(void);
 
 // External declarations for subsystem shutdown functions
 extern void shutdown_web_server(void);
@@ -122,6 +123,16 @@ bool check_all_launch_readiness(void) {
     if (registry_readiness.ready) {
         any_subsystem_ready = true;
         initialize_registry_subsystem();
+    }
+    
+    // Check payload subsystem
+    LaunchReadiness payload_readiness = check_payload_launch_readiness();
+    log_readiness_messages(&payload_readiness);
+    
+    // No need to register payload subsystem as it's not a standalone service
+    // but we do track readiness
+    if (payload_readiness.ready) {
+        any_subsystem_ready = true;
     }
     
     // Check logging subsystem
