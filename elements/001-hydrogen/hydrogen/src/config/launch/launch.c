@@ -313,6 +313,63 @@ bool check_all_launch_readiness(void) {
         }
     }
     
+    // Store all readiness results for the LAUNCH section
+    LaunchReadiness readiness_results[] = {
+        registry_readiness,
+        payload_readiness,
+        logging_readiness,
+        terminal_readiness,
+        mdns_client_readiness,
+        smtp_relay_readiness,
+        swagger_readiness,
+        webserver_readiness,
+        websocket_readiness,
+        print_readiness
+    };
+    
+    // Add LAUNCH section with Go/No-Go decisions
+    log_this("Launch", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+    log_this("Launch", "LAUNCH", LOG_LEVEL_STATE);
+    
+    // Log Go/No-Go status for each subsystem - one line per subsystem
+    // Ensure Subsystem Registry is first and is a Go
+    log_this("Launch", "  Go:      Subsystem Registry", LOG_LEVEL_STATE);
+    
+    // Log the rest of the subsystems
+    for (size_t i = 1; i < sizeof(readiness_results) / sizeof(readiness_results[0]); i++) {
+        const LaunchReadiness* result = &readiness_results[i];
+        if (result && result->subsystem) {
+            // Log Go/No-Go status and subsystem name on a single line with proper alignment
+            if (result->ready) {
+                log_this("Launch", "  Go:      %s", LOG_LEVEL_STATE, result->subsystem);
+            } else {
+                log_this("Launch", "  No-Go:   %s", LOG_LEVEL_ALERT, result->subsystem);
+            }
+        }
+    }
+    
+    // Count how many subsystems were checked and how many passed
+    size_t total_checked = sizeof(readiness_results) / sizeof(readiness_results[0]);
+    size_t total_ready = 0;
+    size_t total_not_ready = 0;
+    
+    for (size_t i = 0; i < total_checked; i++) {
+        if (readiness_results[i].ready) {
+            total_ready++;
+        } else {
+            total_not_ready++;
+        }
+    }
+    
+    // Add SUBSYSTEM REGISTRY section with counts - switch to Subsystem-Registry category
+    log_this("Subsystem-Registry", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+    log_this("Subsystem-Registry", "SUBSYSTEM REGISTRY", LOG_LEVEL_STATE);
+    
+    // Log the counts
+    log_this("Subsystem-Registry", "- %zu Subsystems Registered", LOG_LEVEL_STATE, total_checked);
+    log_this("Subsystem-Registry", "- %zu Subsystems Enabled", LOG_LEVEL_STATE, total_ready);
+    log_this("Subsystem-Registry", "- %zu Subsystems Disabled", LOG_LEVEL_STATE, total_not_ready);
+    
     log_group_end();
     
     // Change to report if ANY subsystem is ready, not ALL
