@@ -1,5 +1,5 @@
 /*
- * WebSocket configuration JSON parsing
+ * WebSocketServer configuration JSON parsing
  */
 
 // Core system headers
@@ -31,10 +31,10 @@
 #include "../../utils/utils.h"
 
 bool load_json_websocket(json_t* root, AppConfig* config) {
-    // WebSocket Configuration
-    json_t* websocket = json_object_get(root, "WebSocket");
+    // WebSocketServer Configuration
+    json_t* websocket = json_object_get(root, "WebSocketServer");
     if (json_is_object(websocket)) {
-        log_config_section_header("WebSocket");
+        log_config_section_header("WebSocketServer");
 
         // Initialize defaults if this is the first time
         if (config->websocket.key == NULL) {
@@ -115,16 +115,16 @@ bool load_json_websocket(json_t* root, AppConfig* config) {
 
             // Validate configuration
             if (config->websocket.max_message_size < 1024) {
-                log_this("Config", "WebSocket MaxMessageSize must be at least 1KB", LOG_LEVEL_ERROR);
+                log_this("Config", "WebSocketServer MaxMessageSize must be at least 1KB", LOG_LEVEL_ERROR);
                 return false;
             }
             if (config->websocket.exit_wait_seconds < 1) {
-                log_this("Config", "WebSocket ExitWaitSeconds must be at least 1 second", LOG_LEVEL_ERROR);
+                log_this("Config", "WebSocketServer ExitWaitSeconds must be at least 1 second", LOG_LEVEL_ERROR);
                 return false;
             }
         }
     } else {
-        log_config_section_header("WebSocket");
+        log_config_section_header("WebSocketServer");
         log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_ALERT, 1, 0, NULL, NULL, "Config");
         
         // Initialize with defaults

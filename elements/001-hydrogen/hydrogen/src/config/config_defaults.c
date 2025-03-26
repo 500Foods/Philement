@@ -64,7 +64,7 @@ json_t* create_default_web_config(void) {
 }
 
 /*
- * Generate default WebSocket configuration
+ * Generate default WebSocketServer configuration
  * 
  * Why these defaults?
  * - Secure protocol settings
@@ -75,7 +75,7 @@ json_t* create_default_web_config(void) {
 json_t* create_default_websocket_config(void) {
     json_t* websocket = json_object();
     if (!websocket) {
-        log_this("Configuration", "Failed to create WebSocket config object", LOG_LEVEL_ERROR);
+        log_this("Configuration", "Failed to create WebSocketServer config object", LOG_LEVEL_ERROR);
         return NULL;
     }
 
@@ -346,7 +346,7 @@ void create_default_config(const char* config_path) {
 
     // Add subsystems to root (with error checking)
     if (web) json_object_set_new(root, "WebServer", web);
-    if (websocket) json_object_set_new(root, "WebSocket", websocket);
+    if (websocket) json_object_set_new(root, "WebSocketServer", websocket);
     if (mdns) json_object_set_new(root, "mDNSServer", mdns);
     if (resources) json_object_set_new(root, "SystemResources", resources);
     if (network) json_object_set_new(root, "Network", network);
