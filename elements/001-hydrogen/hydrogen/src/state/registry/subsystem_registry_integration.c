@@ -35,8 +35,8 @@ extern void mdns_server_shutdown(mdns_server_t* server);
 extern int init_mdns_client_subsystem(void);
 extern void shutdown_mdns_client(void);
 
-extern int init_smtp_relay_subsystem(void);
-extern void shutdown_smtp_relay(void);
+extern int init_mail_relay_subsystem(void);
+extern void shutdown_mail_relay(void);
 
 extern int init_swagger_subsystem(void);
 extern void shutdown_swagger(void);
@@ -89,19 +89,19 @@ int register_subsystem_from_launch(const char* name, ServiceThreads* threads,
  * This is called during the Launch Go/No-Go process for each dependency identified.
  */
 bool add_dependency_from_launch(int subsystem_id, const char* dependency_name) {
-    const char* subsystem_name = NULL;
+    // const char* subsystem_name = NULL;
     
-    // Get the subsystem name for logging
-    if (subsystem_id >= 0 && subsystem_id < subsystem_registry.count) {
-        subsystem_name = subsystem_registry.subsystems[subsystem_id].name;
-    }
+    // // Get the subsystem name for logging
+    // if (subsystem_id >= 0 && subsystem_id < subsystem_registry.count) {
+    //     subsystem_name = subsystem_registry.subsystems[subsystem_id].name;
+    // }
     
     // Add the dependency
     bool result = add_subsystem_dependency(subsystem_id, dependency_name);
     
     if (result) {
-        log_this("Launch", "  Added dependency '%s' to subsystem '%s'", LOG_LEVEL_STATE, 
-                dependency_name, subsystem_name ? subsystem_name : "Unknown");
+        // log_this("Launch", "  Added dependency '%s' to subsystem '%s'", LOG_LEVEL_STATE, 
+        //         dependency_name, subsystem_name ? subsystem_name : "Unknown");
     } else {
         log_this("Launch", "  Failed to add dependency '%s' to subsystem", LOG_LEVEL_ERROR, 
                 dependency_name);
@@ -161,9 +161,9 @@ void update_subsystem_registry_on_startup(void) {
     update_subsystem_on_startup("MDNSClient", 
                               app_config && !mdns_client_system_shutdown);
     
-    // SMTP Relay - No thread, check if not shutdown
-    update_subsystem_on_startup("SMTPRelay", 
-                              app_config && !smtp_relay_system_shutdown);
+    // Mail Relay - No thread, check if not shutdown
+    update_subsystem_on_startup("MailRelay", 
+                              app_config && !mail_relay_system_shutdown);
     
     // Swagger - No thread, check if not shutdown
     update_subsystem_on_startup("Swagger", 
@@ -346,8 +346,8 @@ void update_subsystem_registry_on_shutdown(void) {
     // Check Swagger
     update_subsystem_after_shutdown("Swagger");
     
-    // Check SMTP Relay
-    update_subsystem_after_shutdown("SMTPRelay");
+    // Check Mail Relay
+    update_subsystem_after_shutdown("MailRelay");
     
     // Check mDNS Client
     update_subsystem_after_shutdown("MDNSClient");

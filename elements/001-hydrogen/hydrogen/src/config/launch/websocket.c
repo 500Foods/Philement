@@ -51,7 +51,7 @@ LaunchReadiness check_websocket_launch_readiness(void) {
     }
     
     // Add subsystem name as first message
-    add_message("WebSocket");
+    add_message("WebSocketServer");
     
     // Check 1: Configuration loaded
     bool config_loaded = (app_config != NULL);
@@ -107,14 +107,14 @@ LaunchReadiness check_websocket_launch_readiness(void) {
     
     // Final decision
     if (overall_readiness) {
-        add_message("  Decide:  Go For Launch of WebSocket Subsystem");
+        add_message("  Decide:  Go For Launch of WebSocketServer Subsystem");
     } else {
-        add_message("  Decide:  No-Go For Launch of WebSocket Subsystem");
+        add_message("  Decide:  No-Go For Launch of WebSocketServer Subsystem");
     }
     
     // Build the readiness structure
     LaunchReadiness readiness = {
-        .subsystem = "WebSocket",
+        .subsystem = "WebSocketServer",
         .ready = overall_readiness,
         .messages = websocket_messages
     };

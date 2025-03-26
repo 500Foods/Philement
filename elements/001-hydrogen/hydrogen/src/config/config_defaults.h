@@ -32,7 +32,7 @@
  * 
  * Creates a new configuration file with secure defaults for all subsystems:
  * - Web server configuration
- * - WebSocket settings
+ * - WebSocketServer settings
  * - mDNS server setup
  * - System resources
  * - Network configuration
@@ -58,14 +58,14 @@ void create_default_config(const char* config_path);
 json_t* create_default_web_config(void);
 
 /*
- * Generate default WebSocket configuration
+ * Generate default WebSocketServer configuration
  * 
- * Creates secure defaults for WebSocket:
+ * Creates secure defaults for WebSocketServer:
  * - Secure protocol settings
  * - Message size limits
  * - Connection timeouts
  * 
- * @return JSON object with WebSocket configuration or NULL on error
+ * @return JSON object with WebSocketServer configuration or NULL on error
  */
 json_t* create_default_websocket_config(void);
 

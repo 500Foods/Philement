@@ -17,7 +17,7 @@
         }
     },
     "WebServer": {
-        "Enabled": false,
+        "Enabled": true,
         "EnableIPv6": true,
         "Port": 5000,
         "WebRoot": "/var/www/html",
@@ -30,7 +30,7 @@
       "APIPrefix": "/api",
       "JWTSecret":"${env.JWT_SECRET}"
     },
-    "WebSocket": {
+    "WebSocketServer": {
         "Enabled": true,
         "EnableIPv6": true,
         "LibLogLevel": 2,
@@ -150,7 +150,7 @@
             }
         },
         "Database": {
-            "Enabled": true,
+            "Enabled": false,
             "DefaultLevel": 4,
             "Subsystems": {
                 "API": 4,
@@ -181,7 +181,7 @@
             }
         },
         "File": {
-            "Enabled": true,
+            "Enabled": false,
             "DefaultLevel": 1,
             "Subsystems": {
                 "API": 1,
@@ -212,7 +212,7 @@
             }
         },
         "Notify": {
-            "Enabled": true,
+            "Enabled": false,
             "DefaultLevel": 1,
             "Subsystems": {
                 "API": 1,
