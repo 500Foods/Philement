@@ -20,7 +20,10 @@
 void shutdown_network(void) {
     // Use different subsystem name based on operation for clarity throughout the process
     const char* subsystem = restart_requested ? "Restart" : "Shutdown";
-    log_this(subsystem, "Freeing network info", LOG_LEVEL_STATE);
+    // Suppress unused variable warning
+    (void)subsystem;
+    // Comment out log message for cleaner shutdown sequence
+    // log_this(subsystem, "Freeing network info", LOG_LEVEL_STATE);
     if (net_info) {
         free_network_info(net_info);
         net_info = NULL;
