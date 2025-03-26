@@ -22,6 +22,7 @@ time_t get_server_ready_time(void);
 // Shutdown timing
 void record_shutdown_start_time(void);
 void record_shutdown_end_time(void);
+double calculate_shutdown_time(void);
 
 // Time formatting
 void format_duration(time_t seconds, char *buffer, size_t buflen);

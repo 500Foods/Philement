@@ -397,9 +397,9 @@ bool check_all_launch_readiness(void) {
         { print_readiness.subsystem, print_readiness.ready }
     };
     
-    // Add LAUNCH section with Go/No-Go decisions
+    // Add STARTUP COMPLETE section with Go/No-Go decisions
     log_this("Launch", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    log_this("Launch", "LAUNCH", LOG_LEVEL_STATE);
+    log_this("Launch", "STARTUP COMPLETE", LOG_LEVEL_STATE);
     
     // Log Go/No-Go status for each subsystem - one line per subsystem
     // Ensure Subsystem Registry is first and is a Go
@@ -433,14 +433,37 @@ bool check_all_launch_readiness(void) {
         }
     }
     
-    // Add SUBSYSTEM REGISTRY section with counts - switch to Subsystem-Registry category
+    // Add LAUNCH: SUBSYSTEM REGISTRY section with counts - switch to Subsystem-Registry category
     log_this("Subsystem-Registry", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    log_this("Subsystem-Registry", "SUBSYSTEM REGISTRY", LOG_LEVEL_STATE);
+    log_this("Subsystem-Registry", "LAUNCH: SUBSYSTEM REGISTRY", LOG_LEVEL_STATE);
     
     // Log the counts
     log_this("Subsystem-Registry", "- %zu Subsystems Registered", LOG_LEVEL_STATE, total_checked);
     log_this("Subsystem-Registry", "- %zu Subsystems Enabled", LOG_LEVEL_STATE, total_ready);
     log_this("Subsystem-Registry", "- %zu Subsystems Disabled", LOG_LEVEL_STATE, total_not_ready);
+    
+    // Add sections for each subsystem that is ready to launch
+    // Skip Subsystem Registry as it's already covered in the LAUNCH: SUBSYSTEM REGISTRY section
+    for (size_t i = 1; i < sizeof(readiness_results) / sizeof(readiness_results[0]); i++) {
+        // Skip if subsystem name is NULL or not ready
+        if (!readiness_results[i].subsystem || !readiness_results[i].ready) {
+            continue;
+        }
+        
+        // Add a section for this subsystem using the subsystem name as the category
+        // and making the title all caps
+        log_this(readiness_results[i].subsystem, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        log_this(readiness_results[i].subsystem, "LAUNCH: %s", LOG_LEVEL_STATE, readiness_results[i].subsystem);
+        log_this(readiness_results[i].subsystem, "  %s ready for launch", LOG_LEVEL_STATE, readiness_results[i].subsystem);
+        // Note: Actual launch code would be executed here when implemented
+    }
+    
+    // Add LAUNCH REVIEW section
+    log_this("Launch", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+    log_this("Launch", "LAUNCH REVIEW", LOG_LEVEL_STATE);
+    log_this("Launch", "  Total subsystems checked: %zu", LOG_LEVEL_STATE, total_checked);
+    log_this("Launch", "  Subsystems ready for launch: %zu", LOG_LEVEL_STATE, total_ready);
+    log_this("Launch", "  Subsystems not ready: %zu", LOG_LEVEL_STATE, total_not_ready);
     
     log_group_end();
     

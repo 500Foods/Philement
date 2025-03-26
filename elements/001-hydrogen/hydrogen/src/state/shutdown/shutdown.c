@@ -11,6 +11,7 @@
 #include <pthread.h>
 #include <fcntl.h>
 #include <time.h>
+#include <sys/time.h>  // For struct timeval and gettimeofday()
 
 // Project headers
 #include "shutdown_internal.h"
@@ -19,6 +20,7 @@
 #include "../../utils/utils.h"
 #include "../../utils/utils_threads.h"
 #include "../../utils/utils_time.h"
+#include "../../config/launch/landing.h"
 
 // Flag from utils_threads.c to suppress thread management logging during final shutdown
 extern volatile sig_atomic_t final_shutdown_mode;
@@ -89,6 +91,14 @@ void graceful_shutdown(void) {
         log_group_end();
         free(status_buffer);
     }
+    
+    // Perform landing readiness checks for all subsystems
+    // This is similar to launch readiness checks but for shutdown
+    bool landing_ready = check_all_landing_readiness();
+    
+    if (!landing_ready) {
+        log_this(subsystem, "No subsystems ready for landing, proceeding with standard shutdown", LOG_LEVEL_ALERT);
+    }
 
     // Set core state flags
     log_this(subsystem, "Setting core state flags...", LOG_LEVEL_STATE);
@@ -99,14 +109,100 @@ void graceful_shutdown(void) {
 
     // Brief delay for flags to take effect
     usleep(100000);  // 100ms
+    
+    // Add LANDING sections for each subsystem in reverse order of startup
+    // For now, we'll just log the sections without actually stopping the subsystems
+    // The actual stopping is still handled by stop_all_subsystems_in_dependency_order()
+    
+    // Print Queue subsystem
+    if (is_subsystem_running_by_name("PrintQueue")) {
+        log_this("PrintQueue", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        log_this("PrintQueue", "LANDING: PRINTQUEUE", LOG_LEVEL_STATE);
+        log_this("PrintQueue", "- Preparing to free PrintQueue resources", LOG_LEVEL_STATE);
+    }
+    
+    // Mail Relay subsystem
+    if (is_subsystem_running_by_name("MailRelay")) {
+        log_this("MailRelay", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        log_this("MailRelay", "LANDING: MAILRELAY", LOG_LEVEL_STATE);
+        log_this("MailRelay", "- Preparing to free MailRelay resources", LOG_LEVEL_STATE);
+    }
+    
+    // mDNS Client subsystem
+    if (is_subsystem_running_by_name("mDNSClient")) {
+        log_this("mDNSClient", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        log_this("mDNSClient", "LANDING: MDNSCLIENT", LOG_LEVEL_STATE);
+        log_this("mDNSClient", "- Preparing to free mDNSClient resources", LOG_LEVEL_STATE);
+    }
+    
+    // mDNS Server subsystem
+    if (is_subsystem_running_by_name("mDNSServer")) {
+        log_this("mDNSServer", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        log_this("mDNSServer", "LANDING: MDNSSERVER", LOG_LEVEL_STATE);
+        log_this("mDNSServer", "- Preparing to free mDNSServer resources", LOG_LEVEL_STATE);
+    }
+    
+    // Terminal subsystem
+    if (is_subsystem_running_by_name("Terminal")) {
+        log_this("Terminal", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        log_this("Terminal", "LANDING: TERMINAL", LOG_LEVEL_STATE);
+        log_this("Terminal", "- Preparing to free Terminal resources", LOG_LEVEL_STATE);
+    }
+    
+    // WebSocket subsystem
+    if (is_subsystem_running_by_name("WebSocketServer")) {
+        log_this("WebSocketServer", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        log_this("WebSocketServer", "LANDING: WEBSOCKETSERVER", LOG_LEVEL_STATE);
+        log_this("WebSocketServer", "- Preparing to free WebSocketServer resources", LOG_LEVEL_STATE);
+    }
+    
+    // Swagger subsystem
+    if (is_subsystem_running_by_name("Swagger")) {
+        log_this("Swagger", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        log_this("Swagger", "LANDING: SWAGGER", LOG_LEVEL_STATE);
+        log_this("Swagger", "- Preparing to free Swagger resources", LOG_LEVEL_STATE);
+    }
+    
+    // API subsystem (part of WebServer)
+    // No separate landing section as it's part of WebServer
+    
+    // WebServer subsystem
+    if (is_subsystem_running_by_name("WebServer")) {
+        log_this("WebServer", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        log_this("WebServer", "LANDING: WEBSERVER", LOG_LEVEL_STATE);
+        log_this("WebServer", "- Preparing to free WebServer resources", LOG_LEVEL_STATE);
+    }
+    
+    // Logging subsystem
+    if (is_subsystem_running_by_name("Logging")) {
+        log_this("Logging", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        log_this("Logging", "LANDING: LOGGING", LOG_LEVEL_STATE);
+        log_this("Logging", "- Preparing to free Logging resources", LOG_LEVEL_STATE);
+    }
+    
+    // Network subsystem
+    if (is_subsystem_running_by_name("Network")) {
+        log_this("Network", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        log_this("Network", "LANDING: NETWORK", LOG_LEVEL_STATE);
+        log_this("Network", "- Preparing to free Network resources", LOG_LEVEL_STATE);
+    }
+    
+    // Payload subsystem
+    // No separate landing section as it's not a standalone service
+    
+    // Subsystem Registry
+    log_this("Subsystem-Registry", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+    log_this("Subsystem-Registry", "LANDING: SUBSYSTEM REGISTRY", LOG_LEVEL_STATE);
+    log_this("Subsystem-Registry", "- Preparing to free Subsystem Registry resources", LOG_LEVEL_STATE);
 
+    // Comment out these logs for now as they disrupt the clean shutdown sequence
     // Stop all subsystems in dependency order
-    size_t stopped_count = stop_all_subsystems_in_dependency_order();
-    log_this(subsystem, "Primary %s phase complete (%zu subsystems stopped)", 
-             LOG_LEVEL_STATE, restart_requested ? "restart" : "shutdown", stopped_count);
+    /* size_t stopped_count = */ stop_all_subsystems_in_dependency_order();
+    // log_this(subsystem, "Primary %s phase complete (%zu subsystems stopped)", 
+    //          LOG_LEVEL_STATE, restart_requested ? "restart" : "shutdown", stopped_count);
 
     // Clean up network resources
-    log_this(subsystem, "Cleaning up network resources...", LOG_LEVEL_STATE);
+    // log_this(subsystem, "Cleaning up network resources...", LOG_LEVEL_STATE);
     shutdown_network();
     usleep(250000);  // 250ms delay for cleanup
 
@@ -123,7 +219,64 @@ void graceful_shutdown(void) {
     if (!any_subsystems_running) {
         // Clean shutdown achieved
         record_shutdown_end_time();
-        log_this(subsystem, "All subsystems stopped successfully", LOG_LEVEL_STATE);
+        // Comment out log message for cleaner shutdown sequence
+        // log_this(subsystem, "All subsystems stopped successfully", LOG_LEVEL_STATE);
+        
+        // Add LANDED section with timing information
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        
+        // Calculate shutdown time
+        double shutdown_time = calculate_shutdown_time();
+        
+        // Format current time with ISO 8601 format including milliseconds
+        time_t current_time = tv.tv_sec;
+        struct tm* current_tm = gmtime(&current_time);
+        char current_time_str[64];
+        strftime(current_time_str, sizeof(current_time_str), "%Y-%m-%dT%H:%M:%S", current_tm);
+        
+        // Add milliseconds to current time
+        int current_ms = tv.tv_usec / 1000;
+        char temp_str[64];
+        snprintf(temp_str, sizeof(temp_str), ".%03dZ", current_ms);
+        strcat(current_time_str, temp_str);
+        
+        // Calculate start time by subtracting shutdown time from current time
+        // For seconds part
+        time_t start_sec = tv.tv_sec;
+        long start_usec = tv.tv_usec;
+        
+        // Adjust for whole seconds in shutdown_time
+        start_sec -= (time_t)shutdown_time;
+        
+        // Adjust for fractional seconds in shutdown_time
+        long shutdown_usec = (long)((shutdown_time - (int)shutdown_time) * 1000000);
+        if (start_usec < shutdown_usec) {
+            start_sec--;
+            start_usec += 1000000;
+        }
+        start_usec -= shutdown_usec;
+        
+        // Format start time
+        struct tm* start_tm = gmtime(&start_sec);
+        char start_time_str[64];
+        strftime(start_time_str, sizeof(start_time_str), "%Y-%m-%dT%H:%M:%S", start_tm);
+        
+        // Add milliseconds to start time
+        int start_ms = start_usec / 1000;
+        snprintf(temp_str, sizeof(temp_str), ".%03dZ", start_ms);
+        strcat(start_time_str, temp_str);
+        
+        // Log LANDED section
+        log_group_begin();
+        log_this(subsystem, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        log_this(subsystem, "LANDED", LOG_LEVEL_STATE);
+        log_this(subsystem, "- System shutdown began: %s", LOG_LEVEL_STATE, start_time_str);
+        log_this(subsystem, "- System shutdown ended: %s", LOG_LEVEL_STATE, current_time_str);
+        log_this(subsystem, "- Shutdown elapsed time: %.3fs", LOG_LEVEL_STATE, shutdown_time);
+        log_this(subsystem, "- Application stopped", LOG_LEVEL_STATE);
+        log_this(subsystem, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        log_group_end();
         
         // Done with shutdown sequence, decide whether to restart or exit
         if (!restart_requested) {
