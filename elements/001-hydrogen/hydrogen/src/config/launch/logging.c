@@ -40,6 +40,20 @@ static void add_message(const char* format, ...) {
     }
 }
 
+// Helper function to get log level name
+static const char* get_log_level_name(int level) {
+    switch (level) {
+        case 0: return "TRACE";
+        case 1: return "DEBUG";
+        case 2: return "INFO";
+        case 3: return "WARN";
+        case 4: return "ERROR";
+        case 5: return "FATAL";
+        case 6: return "QUIET";
+        default: return "UNKNOWN";
+    }
+}
+
 // Check if the logging subsystem is ready to launch
 LaunchReadiness check_logging_launch_readiness(void) {
     bool overall_readiness = true;
@@ -53,70 +67,90 @@ LaunchReadiness check_logging_launch_readiness(void) {
     // Add subsystem name as first message
     add_message("Logging");
     
-    // Check 1: Configuration loaded
+    // Track which output destinations are enabled and properly configured
+    bool console_ready = false;
+    bool file_ready = false;
+    bool database_ready = false;
+    bool notify_ready = false;
+    
+    // Only proceed with checks if configuration is loaded
     bool config_loaded = (app_config != NULL);
     if (config_loaded) {
-        add_message("  Go:      Configuration (loaded)");
+        // Check 1: Console Output
+        if (app_config->logging.console.enabled && app_config->logging.console.default_level >= 0 && app_config->logging.console.default_level <= 5) {
+            add_message("  Go:      Console Output (enabled, default: %s, %zu subsystems)", 
+                       get_log_level_name(app_config->logging.console.default_level),
+                       app_config->logging.console.subsystem_count);
+            console_ready = true;
+        } else if (!app_config->logging.console.enabled) {
+            add_message("  No-Go:   Console Output (disabled, default: %s, %zu subsystems)", 
+                       get_log_level_name(app_config->logging.console.default_level),
+                       app_config->logging.console.subsystem_count);
+        } else {
+            add_message("  No-Go:   Console Output (invalid level: %d)", 
+                       app_config->logging.console.default_level);
+        }
+        
+        // Check 2: File Output - Skip detailed check for now
+        if (app_config->logging.file.enabled && app_config->server.log_file) {
+            add_message("  Go:      File Output (enabled, default: %s, %zu subsystems)", 
+                       get_log_level_name(app_config->logging.file.default_level),
+                       app_config->logging.file.subsystem_count);
+            file_ready = true;
+        } else {
+            add_message("  No-Go:   File Output (disabled, default: %s, %zu subsystems)", 
+                       get_log_level_name(app_config->logging.file.default_level),
+                       app_config->logging.file.subsystem_count);
+        }
+        
+        // Check 3: Database Output
+        if (app_config->logging.database.enabled) {
+            add_message("  Go:      Database Output (enabled, default: %s, %zu subsystems)", 
+                       get_log_level_name(app_config->logging.database.default_level),
+                       app_config->logging.database.subsystem_count);
+            database_ready = true;
+        } else {
+            add_message("  No-Go:   Database Output (disabled, default: %s, %zu subsystems)", 
+                       get_log_level_name(app_config->logging.database.default_level),
+                       app_config->logging.database.subsystem_count);
+        }
+        
+        // Check 4: Notify Output
+        if (app_config->logging.notify.enabled) {
+            add_message("  Go:      Notify Output (enabled, default: %s, %zu subsystems)", 
+                       get_log_level_name(app_config->logging.notify.default_level),
+                       app_config->logging.notify.subsystem_count);
+            notify_ready = true;
+        } else {
+            add_message("  No-Go:   Notify Output (disabled, default: %s, %zu subsystems)", 
+                       get_log_level_name(app_config->logging.notify.default_level),
+                       app_config->logging.notify.subsystem_count);
+        }
     } else {
         add_message("  No-Go:   Configuration (not loaded)");
         overall_readiness = false;
     }
     
-    // Only proceed with other checks if configuration is loaded
-    if (config_loaded) {
-        // Check 2: File Output
-        if (app_config->server.log_file) {
-            char* log_dir = strdup(app_config->server.log_file);
-            if (log_dir) {
-                // Get the directory part of the path
-                char* last_slash = strrchr(log_dir, '/');
-                if (last_slash) {
-                    *last_slash = '\0'; // Truncate at the last slash to get directory
-                    
-                    // Check if directory exists and is writable
-                    if (access(log_dir, F_OK) == 0 && access(log_dir, W_OK) == 0) {
-                        add_message("  Go:      File Output (%s, writable)", log_dir);
-                    } else {
-                        add_message("  No-Go:   File Output (%s error, not writable)", log_dir);
-                        overall_readiness = false;
-                    }
-                }
-                free(log_dir);
-            }
-        } else {
-            add_message("  Go:      File Output (disabled, using console only)");
-        }
-        
-        // Check 3: Database Output
-        if (app_config->logging.database.enabled) {
-            // In a real implementation, we would check database credentials here
-            add_message("  Go:      Database Output (credential check, enabled)");
-        } else {
-            add_message("  Go:      Database Output (disabled, not required)");
-        }
-        
-        // Check 4: Console Output
-        if (app_config->logging.console.default_level < 0 || app_config->logging.console.default_level > 5) {
-            add_message("  No-Go:   Console Output (invalid level: %d)", app_config->logging.console.default_level);
-            overall_readiness = false;
-        } else {
-            add_message("  Go:      Console Output (environment check, level %d)", app_config->logging.console.default_level);
-        }
-        
-        // Check 5: Notification Output
-        if (app_config->logging.notify.enabled) {
-            // In a real implementation, we would check mail configuration here
-            add_message("  Go:      Notification Output (mail config, enabled)");
-        } else {
-            add_message("  Go:      Notification Output (disabled, not required)");
-        }
-    }
+    // Final decision - Go if ANY output destination is ready
+    bool any_output_ready = console_ready || file_ready || database_ready || notify_ready;
+    
+    // Build the list of enabled outputs for the decision message
+    char enabled_outputs[100] = "";
+    if (console_ready) strcat(enabled_outputs, "Console");
+    if (console_ready && (file_ready || database_ready || notify_ready)) strcat(enabled_outputs, " ");
+    if (file_ready) strcat(enabled_outputs, "File");
+    if (file_ready && (database_ready || notify_ready)) strcat(enabled_outputs, " ");
+    if (database_ready) strcat(enabled_outputs, "Database");
+    if (database_ready && notify_ready) strcat(enabled_outputs, " ");
+    if (notify_ready) strcat(enabled_outputs, "Notify");
     
     // Final decision
-    if (overall_readiness) {
-        add_message("  Decide:   Go For Launch of Logging Subsystem");
+    if (any_output_ready) {
+        add_message("  Decide:  Go For Launch of Logging Subsystem (%s)", enabled_outputs);
+        overall_readiness = true;
     } else {
-        add_message("  Decide:   No-Go For Launch of Logging Subsystem");
+        add_message("  Decide:  No-Go For Launch of Logging Subsystem (no valid outputs)");
+        overall_readiness = false;
     }
     
     // Build the readiness structure

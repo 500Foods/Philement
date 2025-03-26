@@ -14,12 +14,12 @@
         "UploadDir": "${env.WEBSERVER_UPLOADDIR}",
         "MaxUploadSize": "${env.WEBSERVER_MAXUPLOADSIZE}"
     },
-    "RESTAPI": {
+    "API": {
         "Enabled": "${env.RESTAPI_ENABLED}",
         "ApiPrefix": "${env.RESTAPI_APIPREFIX}",
         "JWTSecret": "${env.RESTAPI_JWTSECRET}"
     },
-    "WebSocket": {
+    "WebSocketServer": {
         "Enabled": "${env.WEBSOCKET_ENABLED}",
         "EnableIPv6": "${env.WEBSOCKET_ENABLEIPV6}",
         "Port": "${env.WEBSOCKET_PORT}",

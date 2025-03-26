@@ -6,7 +6,7 @@
 #include "../config.h"
 
 /*
- * Load websocket configuration from JSON
+ * Load WebSocketServer configuration from JSON
  * 
  * @param root The root JSON object
  * @param config The configuration structure to populate

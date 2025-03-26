@@ -48,7 +48,7 @@ LaunchReadiness check_mdns_client_launch_readiness(void) {
     }
     
     // Add subsystem name as first message
-    add_message("MDNSClient");
+    add_message("mDNSClient");
     
     // Check 1: Enabled
     add_message("  No-Go:   Enabled (check)");
@@ -65,17 +65,17 @@ LaunchReadiness check_mdns_client_launch_readiness(void) {
     add_message("  No-Go:   Network Status (check)");
     
     // Check 4: MDNS Server Dependency
-    add_message("  No-Go:   MDNS Server (dependency check)");
+    add_message("  No-Go:   mDNSServer (dependency check)");
     
     // Check 5: Logging Dependency
     add_message("  Go:      Logging (dependency check)");
     
     // Final decision - always No-Go for now
-    add_message("  Decide:  No-Go For Launch of MDNS Client Subsystem");
+    add_message("  Decide:  No-Go For Launch of mDNSClient Subsystem");
     
     // Build the readiness structure
     LaunchReadiness readiness = {
-        .subsystem = "MDNSClient",
+        .subsystem = "mDNSClient",
         .ready = overall_readiness,
         .messages = mdns_client_messages
     };

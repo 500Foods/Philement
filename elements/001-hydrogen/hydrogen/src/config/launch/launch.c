@@ -17,8 +17,9 @@
 #include "../../state/registry/subsystem_registry_integration.h"
 #include "../../state/startup/startup_logging.h"
 #include "../../state/startup/startup_terminal.h"
+#include "../../state/startup/startup_mdns_server.h"
 #include "../../state/startup/startup_mdns_client.h"
-#include "../../state/startup/startup_smtp_relay.h"
+#include "../../state/startup/startup_mail_relay.h"
 #include "../../state/startup/startup_swagger.h"
 #include "../../state/startup/startup_webserver.h"
 #include "../../state/startup/startup_websocket.h"
@@ -43,22 +44,25 @@ extern volatile sig_atomic_t print_system_shutdown;
 
 // For subsystems that remain unregistered, we use system shutdown flags
 extern volatile sig_atomic_t terminal_system_shutdown;
+extern volatile sig_atomic_t mdns_server_system_shutdown;
 extern volatile sig_atomic_t mdns_client_system_shutdown;
-extern volatile sig_atomic_t smtp_relay_system_shutdown;
+extern volatile sig_atomic_t mail_relay_system_shutdown;
 extern volatile sig_atomic_t swagger_system_shutdown;
 extern volatile sig_atomic_t network_system_shutdown;
 
 // Forward declarations for subsystem readiness checks
 extern LaunchReadiness check_logging_launch_readiness(void);
 extern LaunchReadiness check_terminal_launch_readiness(void);
+extern LaunchReadiness check_mdns_server_launch_readiness(void);
 extern LaunchReadiness check_mdns_client_launch_readiness(void);
-extern LaunchReadiness check_smtp_relay_launch_readiness(void);
+extern LaunchReadiness check_mail_relay_launch_readiness(void);
 extern LaunchReadiness check_swagger_launch_readiness(void);
 extern LaunchReadiness check_webserver_launch_readiness(void);
 extern LaunchReadiness check_websocket_launch_readiness(void);
 extern LaunchReadiness check_print_launch_readiness(void);
 extern LaunchReadiness check_payload_launch_readiness(void);
 extern LaunchReadiness check_network_launch_readiness(void);
+extern LaunchReadiness check_api_launch_readiness(void);
 
 // External declarations for subsystem initialization and shutdown functions
 extern void shutdown_web_server(void);
@@ -66,6 +70,10 @@ extern void stop_websocket_server(void);
 extern void shutdown_print_queue(void);
 extern int init_network_subsystem(void);
 extern void shutdown_network_subsystem(void);
+extern int init_mdns_server_subsystem(void);
+extern void shutdown_mdns_server(void);
+extern int init_mail_relay_subsystem(void);
+extern void shutdown_mail_relay(void);
 
 // Check Subsystem Registry readiness
 static LaunchReadiness check_subsystem_registry_readiness(void) {
@@ -163,18 +171,94 @@ bool check_all_launch_readiness(void) {
     // Register logging subsystem if it's ready
     if (logging_readiness.ready) {
         any_subsystem_ready = true;
-        int logging_id = register_subsystem_from_launch(
-            "Logging",
-            &logging_threads,
-            &log_thread,
-            &log_queue_shutdown,
-            init_logging_subsystem,
-            shutdown_logging_subsystem
+        // Temporarily disable logging subsystem launch to prevent crashes
+        // int logging_id = register_subsystem_from_launch(
+        //     "Logging",
+        //     &logging_threads,
+        //     &log_thread,
+        //     &log_queue_shutdown,
+        //     init_logging_subsystem,
+        //     shutdown_logging_subsystem
+        // );
+        // 
+        // // Add dependencies identified during readiness check
+        // if (logging_id >= 0) {
+        //     add_dependency_from_launch(logging_id, "ConfigSystem");
+        // }
+    }
+    
+    // Check webserver subsystem - moved up after logging
+    LaunchReadiness webserver_readiness = check_webserver_launch_readiness();
+    log_readiness_messages(&webserver_readiness);
+    
+    // Register webserver subsystem if it's ready
+    if (webserver_readiness.ready) {
+        any_subsystem_ready = true;
+        int webserver_id = register_subsystem_from_launch(
+            "WebServer",
+            &web_threads,
+            &web_thread,
+            &web_server_shutdown,
+            init_webserver_subsystem,
+            shutdown_web_server
         );
         
         // Add dependencies identified during readiness check
-        if (logging_id >= 0) {
-            add_dependency_from_launch(logging_id, "ConfigSystem");
+        if (webserver_id >= 0) {
+            add_dependency_from_launch(webserver_id, "Network");
+        }
+    }
+    
+    // Check API subsystem
+    LaunchReadiness api_readiness = check_api_launch_readiness();
+    log_readiness_messages(&api_readiness);
+    
+    // API subsystem doesn't need to be registered as it's part of the WebServer
+    if (api_readiness.ready) {
+        any_subsystem_ready = true;
+    }
+    
+    // Check swagger subsystem
+    LaunchReadiness swagger_readiness = check_swagger_launch_readiness();
+    log_readiness_messages(&swagger_readiness);
+    
+    // Register swagger subsystem if it's ready (for now, it won't be)
+    if (swagger_readiness.ready) {
+        any_subsystem_ready = true;
+        int swagger_id = register_subsystem_from_launch(
+            "Swagger",
+            NULL,  // No thread structure for now
+            NULL,  // No thread handle for now
+            &swagger_system_shutdown,
+            init_swagger_subsystem,
+            shutdown_swagger
+        );
+        
+        // Add dependencies identified during readiness check
+        if (swagger_id >= 0) {
+            add_dependency_from_launch(swagger_id, "WebServer");
+        }
+    }
+    
+    // Check websocket subsystem
+    LaunchReadiness websocket_readiness = check_websocket_launch_readiness();
+    log_readiness_messages(&websocket_readiness);
+    
+    // Register websocket subsystem if it's ready
+    if (websocket_readiness.ready) {
+        any_subsystem_ready = true;
+        int websocket_id = register_subsystem_from_launch(
+            "WebSocketServer",
+            &websocket_threads,
+            NULL,  // No direct thread handle available
+            &websocket_server_shutdown,
+            init_websocket_subsystem,
+            stop_websocket_server
+        );
+        
+        // Add dependencies identified during readiness check
+        if (websocket_id >= 0) {
+            add_dependency_from_launch(websocket_id, "Logging");
         }
     }
     
@@ -201,6 +285,28 @@ bool check_all_launch_readiness(void) {
         }
     }
     
+    // Check mdns server subsystem
+    LaunchReadiness mdns_server_readiness = check_mdns_server_launch_readiness();
+    log_readiness_messages(&mdns_server_readiness);
+    
+    // Register mdns server subsystem if it's ready
+    if (mdns_server_readiness.ready) {
+        any_subsystem_ready = true;
+        int mdns_server_id = register_subsystem_from_launch(
+            "mDNSServer",
+            NULL,  // No thread structure for now
+            NULL,  // No thread handle for now
+            &mdns_server_system_shutdown,
+            init_mdns_server_subsystem,
+            shutdown_mdns_server
+        );
+        
+        // Add dependencies identified during readiness check
+        if (mdns_server_id >= 0) {
+            add_dependency_from_launch(mdns_server_id, "Network");
+        }
+    }
+    
     // Check mdns client subsystem
     LaunchReadiness mdns_client_readiness = check_mdns_client_launch_readiness();
     log_readiness_messages(&mdns_client_readiness);
@@ -209,7 +315,7 @@ bool check_all_launch_readiness(void) {
     if (mdns_client_readiness.ready) {
         any_subsystem_ready = true;
         int mdns_client_id = register_subsystem_from_launch(
-            "MDNSClient",
+            "mDNSClient",
             NULL,  // No thread structure for now
             NULL,  // No thread handle for now
             &mdns_client_system_shutdown,
@@ -223,91 +329,25 @@ bool check_all_launch_readiness(void) {
         }
     }
     
-    // Check smtp relay subsystem
-    LaunchReadiness smtp_relay_readiness = check_smtp_relay_launch_readiness();
-    log_readiness_messages(&smtp_relay_readiness);
+    // Check mail relay subsystem
+    LaunchReadiness mail_relay_readiness = check_mail_relay_launch_readiness();
+    log_readiness_messages(&mail_relay_readiness);
     
-    // Register smtp relay subsystem if it's ready (for now, it won't be)
-    if (smtp_relay_readiness.ready) {
+    // Register mail relay subsystem if it's ready (for now, it won't be)
+    if (mail_relay_readiness.ready) {
         any_subsystem_ready = true;
-        int smtp_relay_id = register_subsystem_from_launch(
-            "SMTPRelay",
+        int mail_relay_id = register_subsystem_from_launch(
+            "MailRelay",
             NULL,  // No thread structure for now
             NULL,  // No thread handle for now
-            &smtp_relay_system_shutdown,
-            init_smtp_relay_subsystem,
-            shutdown_smtp_relay
+            &mail_relay_system_shutdown,
+            init_mail_relay_subsystem,
+            shutdown_mail_relay
         );
         
         // Add dependencies identified during readiness check
-        if (smtp_relay_id >= 0) {
-            add_dependency_from_launch(smtp_relay_id, "NetworkSystem");
-        }
-    }
-    
-    // Check swagger subsystem
-    LaunchReadiness swagger_readiness = check_swagger_launch_readiness();
-    log_readiness_messages(&swagger_readiness);
-    
-    // Register swagger subsystem if it's ready (for now, it won't be)
-    if (swagger_readiness.ready) {
-        any_subsystem_ready = true;
-        int swagger_id = register_subsystem_from_launch(
-            "Swagger",
-            NULL,  // No thread structure for now
-            NULL,  // No thread handle for now
-            &swagger_system_shutdown,
-            init_swagger_subsystem,
-            shutdown_swagger
-        );
-        
-        // Add dependencies identified during readiness check
-        if (swagger_id >= 0) {
-            add_dependency_from_launch(swagger_id, "WebServer");
-        }
-    }
-    
-    // Check webserver subsystem
-    LaunchReadiness webserver_readiness = check_webserver_launch_readiness();
-    log_readiness_messages(&webserver_readiness);
-    
-    // Register webserver subsystem if it's ready
-    if (webserver_readiness.ready) {
-        any_subsystem_ready = true;
-        int webserver_id = register_subsystem_from_launch(
-            "WebServer",
-            &web_threads,
-            &web_thread,
-            &web_server_shutdown,
-            init_webserver_subsystem,
-            shutdown_web_server
-        );
-        
-        // Add dependencies identified during readiness check
-        if (webserver_id >= 0) {
-            add_dependency_from_launch(webserver_id, "Logging");
-        }
-    }
-    
-    // Check websocket subsystem
-    LaunchReadiness websocket_readiness = check_websocket_launch_readiness();
-    log_readiness_messages(&websocket_readiness);
-    
-    // Register websocket subsystem if it's ready
-    if (websocket_readiness.ready) {
-        any_subsystem_ready = true;
-        int websocket_id = register_subsystem_from_launch(
-            "WebSocket",
-            &websocket_threads,
-            NULL,  // No direct thread handle available
-            &websocket_server_shutdown,
-            init_websocket_subsystem,
-            stop_websocket_server
-        );
-        
-        // Add dependencies identified during readiness check
-        if (websocket_id >= 0) {
-            add_dependency_from_launch(websocket_id, "Logging");
+        if (mail_relay_id >= 0) {
+            add_dependency_from_launch(mail_relay_id, "NetworkSystem");
         }
     }
     
@@ -337,6 +377,7 @@ bool check_all_launch_readiness(void) {
     // Store all readiness results for the LAUNCH section
     // Only store the subsystem name and ready status, not the messages
     // as they might be invalidated after the readiness checks
+    // Store all readiness results for the LAUNCH section in the same order as the checks
     struct {
         const char* subsystem;
         bool ready;
@@ -345,12 +386,14 @@ bool check_all_launch_readiness(void) {
         { payload_readiness.subsystem, payload_readiness.ready },
         { network_readiness.subsystem, network_readiness.ready },
         { logging_readiness.subsystem, logging_readiness.ready },
-        { terminal_readiness.subsystem, terminal_readiness.ready },
-        { mdns_client_readiness.subsystem, mdns_client_readiness.ready },
-        { smtp_relay_readiness.subsystem, smtp_relay_readiness.ready },
-        { swagger_readiness.subsystem, swagger_readiness.ready },
         { webserver_readiness.subsystem, webserver_readiness.ready },
+        { api_readiness.subsystem, api_readiness.ready },
+        { swagger_readiness.subsystem, swagger_readiness.ready },
         { websocket_readiness.subsystem, websocket_readiness.ready },
+        { terminal_readiness.subsystem, terminal_readiness.ready },
+        { mdns_server_readiness.subsystem, mdns_server_readiness.ready },
+        { mdns_client_readiness.subsystem, mdns_client_readiness.ready },
+        { mail_relay_readiness.subsystem, mail_relay_readiness.ready },
         { print_readiness.subsystem, print_readiness.ready }
     };
     

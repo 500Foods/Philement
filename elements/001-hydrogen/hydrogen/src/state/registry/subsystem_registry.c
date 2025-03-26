@@ -156,11 +156,8 @@ int register_subsystem(const char* name, ServiceThreads* threads,
     
     pthread_mutex_unlock(&subsystem_registry.mutex);
     
-    // Skip logging for Network subsystem to avoid redundant messages
-    // The "Decide" line in the launch readiness output already indicates the subsystem's status
-    if (strcmp(name, "Network") != 0) {
-        log_this("SubsysReg", "Registered subsystem '%s' with ID %d", LOG_LEVEL_STATE, name, id);
-    }
+    // The "Decide" line in the launch readiness output already strongly implies the subsystem's status
+    // log_this("SubsysReg", "Registered subsystem '%s' with ID %d", LOG_LEVEL_STATE, name, id);
     
     return id;
 }
@@ -454,8 +451,8 @@ bool add_subsystem_dependency(int subsystem_id, const char* dependency_name) {
                 subsystem->dependency_count++;
                 success = true;
                 
-                log_this("SubsysReg", "Added dependency '%s' to subsystem '%s'", 
-                        LOG_LEVEL_STATE, dependency_name, subsystem->name);
+                // log_this("SubsysReg", "Added dependency '%s' to subsystem '%s'", 
+                //         LOG_LEVEL_STATE, dependency_name, subsystem->name);
             }
         }
     }
