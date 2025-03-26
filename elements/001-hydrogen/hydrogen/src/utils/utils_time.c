@@ -2,6 +2,12 @@
 #include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
+#include <time.h>
+
+// Fallback definition for CLOCK_MONOTONIC if not defined
+#ifndef CLOCK_MONOTONIC
+#define CLOCK_MONOTONIC 1
+#endif
 
 // Project headers
 #include "utils_time.h"
@@ -15,6 +21,7 @@ int is_server_ready_time_set(void);
 time_t get_server_ready_time(void);
 void record_shutdown_start_time(void);
 void record_shutdown_end_time(void);
+double calculate_shutdown_time(void);
 void format_duration(time_t seconds, char *buffer, size_t buflen);
 const char* get_system_start_time_string(void);
 double calculate_startup_time(void);
@@ -62,10 +69,12 @@ void record_shutdown_end_time(void) {
     
     // Calculate elapsed time
     double elapsed = calc_elapsed_time(&shutdown_end_time, &shutdown_start_time);
+    // Suppress unused variable warning
+    (void)elapsed;
     
-    // Log timestamp and duration
-    log_this("Utils", "System shutdown initiated at %s", LOG_LEVEL_STATE, iso_time);
-    log_this("Utils", "System shutdown took %.3fs", LOG_LEVEL_STATE, elapsed);
+    // Comment out log messages for cleaner shutdown sequence
+    // log_this("Utils", "System shutdown initiated at %s", LOG_LEVEL_STATE, iso_time);
+    // log_this("Utils", "System shutdown took %.3fs", LOG_LEVEL_STATE, elapsed);
 }
 
 // Get the server start time
@@ -163,6 +172,26 @@ double calculate_startup_time(void) {
     
     double elapsed = calc_elapsed_time(&end_time, &server_start_time);
     pthread_mutex_unlock(&ready_time_mutex);
+    
+    return elapsed;
+}
+
+// Calculate shutdown time (duration from shutdown start to end)
+double calculate_shutdown_time(void) {
+    // Return 0 if times aren't set yet
+    if (shutdown_start_time.tv_sec == 0) {
+        return 0.0;
+    }
+    
+    // If end time isn't set, use current time
+    struct timespec end_time;
+    if (shutdown_end_time.tv_sec == 0) {
+        clock_gettime(CLOCK_MONOTONIC, &end_time);
+    } else {
+        end_time = shutdown_end_time;
+    }
+    
+    double elapsed = calc_elapsed_time(&end_time, &shutdown_start_time);
     
     return elapsed;
 }

@@ -8,6 +8,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#include <sys/time.h>  // For struct timeval and gettimeofday()
 
 // Project headers
 #include "../state.h"
@@ -50,7 +51,7 @@ int startup_hydrogen(const char* config_path);
 
 // Private declarations
 static void log_early_info(void);
-static void log_config_info(void);
+// static void log_config_info(void); // Commented out as part of cleanup
 
 // Log early startup information (before any initialization)
 static void log_early_info(void) {
@@ -63,7 +64,8 @@ static void log_early_info(void) {
     log_group_end();
 }
 
-// Log configuration-dependent information
+// Log configuration-dependent information - commented out as part of cleanup
+/*
 static void log_config_info(void) {
     if (!app_config) return;
     
@@ -85,6 +87,7 @@ static void log_config_info(void) {
     // Remove the final separator line at the end of config info
     log_group_end();
 }
+*/
 
 /*
  * Main startup function implementation
@@ -150,6 +153,12 @@ int startup_hydrogen(const char* config_path) {
         queue_system_init();
         update_queue_limits_from_config(app_config);
         
+        // Comment out logging initialization as per task requirements
+        // We're setting up the framework but not actually launching subsystems yet
+        
+        // NOTE: This is commented out to prevent the actual initialization,
+        // but in a real system, this would be needed for proper operation
+        /*
         // Add separator before LAUNCH: Logging
         log_this("Startup", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
         log_this("Startup", "LAUNCH: Logging", LOG_LEVEL_STATE);
@@ -164,6 +173,7 @@ int startup_hydrogen(const char* config_path) {
         
         // Update logging subsystem state in registry
         update_subsystem_on_startup("Logging", true);
+        */
 
         // Additional LAUNCH sections would be added here for other subsystems
         // as they are implemented and pass their launch readiness checks
@@ -242,32 +252,85 @@ int startup_hydrogen(const char* config_path) {
         usleep(5 * 1000);
     }
     
-    // Log full configuration information now that app_config is available
-    // (log_config_info has its own log_group calls, so we don't wrap it)
-    log_config_info();
+    // Comment out config info logging as per cleanup task
+    // log_config_info();
 
-    // Synchronize registry with actual running subsystems
-    update_subsystem_registry_on_startup();
+    // Comment out registry synchronization since we're not actually starting any subsystems
+    // update_subsystem_registry_on_startup();
     
     // All services have been started successfully
     server_starting = 0; 
     server_running = 1; 
-    update_server_ready_time();  // Then try to record the time
     
-    // Remove status lines (lines 418, 421 and blank line after 421)
+    // Comment out update_server_ready_time() to prevent duplicate time logging
+    // update_server_ready_time();
     
-    // Only log the system start time and startup duration
-    log_group_begin();
-    log_this("Startup", "System started at %s", LOG_LEVEL_STATE, 
-            get_system_start_time_string());
-    log_this("Startup", "System startup took %.3fs", LOG_LEVEL_STATE, 
-            calculate_startup_time());
-    log_group_end();
-
     // Final Startup Message - in its own group
     log_group_begin();
     log_this("Startup", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    log_this("Startup", "Application started", LOG_LEVEL_STATE);
+    log_this("Startup", "STARTUP COMPLETE", LOG_LEVEL_STATE);
+    
+    // Comment out as per cleanup task - these lines are no longer needed
+    /*
+    // Format times with millisecond precision
+    char start_time_str[64];
+    char current_time_str[64];
+    
+    // Get current time
+    time_t current_time = time(NULL);
+    struct tm* current_tm = gmtime(&current_time);
+    */
+    
+    // Get current time with microsecond precision
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    
+    // Calculate startup time
+    double startup_time = calculate_startup_time();
+    
+    // Format current time with ISO 8601 format including milliseconds
+    time_t current_time = tv.tv_sec;
+    struct tm* current_tm = gmtime(&current_time);
+    char current_time_str[64];
+    strftime(current_time_str, sizeof(current_time_str), "%Y-%m-%dT%H:%M:%S", current_tm);
+    
+    // Add milliseconds to current time
+    int current_ms = tv.tv_usec / 1000;
+    char temp_str[64];
+    snprintf(temp_str, sizeof(temp_str), ".%03dZ", current_ms);
+    strcat(current_time_str, temp_str);
+    
+    // Calculate start time by subtracting startup time from current time
+    // For seconds part
+    time_t start_sec = tv.tv_sec;
+    long start_usec = tv.tv_usec;
+    
+    // Adjust for whole seconds in startup_time
+    start_sec -= (time_t)startup_time;
+    
+    // Adjust for fractional seconds in startup_time
+    long startup_usec = (long)((startup_time - (int)startup_time) * 1000000);
+    if (start_usec < startup_usec) {
+        start_sec--;
+        start_usec += 1000000;
+    }
+    start_usec -= startup_usec;
+    
+    // Format start time
+    struct tm* start_tm = gmtime(&start_sec);
+    char start_time_str[64];
+    strftime(start_time_str, sizeof(start_time_str), "%Y-%m-%dT%H:%M:%S", start_tm);
+    
+    // Add milliseconds to start time
+    int start_ms = start_usec / 1000;
+    snprintf(temp_str, sizeof(temp_str), ".%03dZ", start_ms);
+    strcat(start_time_str, temp_str);
+    
+    // Log times with consistent fixed-length text and hyphens for formatting
+    log_this("Startup", "- System startup began: %s", LOG_LEVEL_STATE, start_time_str);
+    log_this("Startup", "- Current system clock: %s", LOG_LEVEL_STATE, current_time_str);
+    log_this("Startup", "- Startup elapsed time: %.3fs", LOG_LEVEL_STATE, startup_time);
+    log_this("Startup", "- Application started", LOG_LEVEL_STATE);
     
     // Display restart count if application has been restarted
     if (restart_count > 0) {
