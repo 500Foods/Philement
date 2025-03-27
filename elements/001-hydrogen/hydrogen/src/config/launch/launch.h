@@ -22,6 +22,7 @@ typedef struct {
 
 // Check if individual subsystems are ready to launch
 LaunchReadiness check_logging_launch_readiness(void);
+LaunchReadiness check_database_launch_readiness(void);
 LaunchReadiness check_terminal_launch_readiness(void);
 LaunchReadiness check_mdns_client_launch_readiness(void);
 LaunchReadiness check_smtp_relay_launch_readiness(void);

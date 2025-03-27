@@ -42,4 +42,24 @@ bool extract_payload(const char *executable_path,
  */
 void free_payload(PayloadData *payload);
 
+/**
+ * Launch the payload subsystem
+ * 
+ * This function extracts and processes the payload from the executable.
+ * All logging output is tagged with the "Payload" category.
+ * 
+ * @param config Application configuration containing the payload key
+ * @param marker Marker string that identifies the payload
+ * @return true if payload was successfully launched, false otherwise
+ */
+bool launch_payload(const AppConfig *config, const char *marker);
+
+/**
+ * Clean up OpenSSL resources
+ * 
+ * This function cleans up resources allocated by OpenSSL during payload processing.
+ * It should be called during shutdown to prevent memory leaks.
+ */
+void cleanup_openssl(void);
+
 #endif /* PAYLOAD_H */

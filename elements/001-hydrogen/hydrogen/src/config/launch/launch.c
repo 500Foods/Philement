@@ -12,6 +12,7 @@
 #include <string.h>
 
 #include "launch.h"
+#include "launch-payload.h"
 #include "../../logging/logging.h"
 #include "../../state/registry/subsystem_registry.h"
 #include "../../state/registry/subsystem_registry_integration.h"
@@ -52,6 +53,7 @@ extern volatile sig_atomic_t network_system_shutdown;
 
 // Forward declarations for subsystem readiness checks
 extern LaunchReadiness check_logging_launch_readiness(void);
+extern LaunchReadiness check_database_launch_readiness(void);
 extern LaunchReadiness check_terminal_launch_readiness(void);
 extern LaunchReadiness check_mdns_server_launch_readiness(void);
 extern LaunchReadiness check_mdns_client_launch_readiness(void);
@@ -139,10 +141,21 @@ bool check_all_launch_readiness(void) {
     LaunchReadiness payload_readiness = check_payload_launch_readiness();
     log_readiness_messages(&payload_readiness);
     
-    // No need to register payload subsystem as it's not a standalone service
-    // but we do track readiness
+    // Register payload subsystem if it's ready
     if (payload_readiness.ready) {
         any_subsystem_ready = true;
+        
+        // Register the payload subsystem - no thread structure or shutdown flag
+        // as it's not a long-running service, but we need to register it
+        // so we can track its state in the registry
+        register_subsystem_from_launch(
+            "Payload",
+            NULL,  // No thread structure
+            NULL,  // No thread handle
+            NULL,  // No shutdown flag
+            NULL,  // No init function (handled separately)
+            free_payload_resources   // Add shutdown function to properly clean up resources
+        );
     }
     
     // Check network subsystem - moved up to maintain consistent ordering
@@ -187,7 +200,16 @@ bool check_all_launch_readiness(void) {
         // }
     }
     
-    // Check webserver subsystem - moved up after logging
+    // Check database subsystem
+    LaunchReadiness database_readiness = check_database_launch_readiness();
+    log_readiness_messages(&database_readiness);
+    
+    // Database subsystem doesn't need to be registered as it's not a standalone service
+    if (database_readiness.ready) {
+        any_subsystem_ready = true;
+    }
+    
+    // Check webserver subsystem - moved up after logging and database
     LaunchReadiness webserver_readiness = check_webserver_launch_readiness();
     log_readiness_messages(&webserver_readiness);
     
@@ -386,6 +408,7 @@ bool check_all_launch_readiness(void) {
         { payload_readiness.subsystem, payload_readiness.ready },
         { network_readiness.subsystem, network_readiness.ready },
         { logging_readiness.subsystem, logging_readiness.ready },
+        { database_readiness.subsystem, database_readiness.ready },
         { webserver_readiness.subsystem, webserver_readiness.ready },
         { api_readiness.subsystem, api_readiness.ready },
         { swagger_readiness.subsystem, swagger_readiness.ready },
@@ -453,16 +476,95 @@ bool check_all_launch_readiness(void) {
         // Add a section for this subsystem using the subsystem name as the category
         // and making the title all caps
         log_this(readiness_results[i].subsystem, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-        log_this(readiness_results[i].subsystem, "LAUNCH: %s", LOG_LEVEL_STATE, readiness_results[i].subsystem);
-        log_this(readiness_results[i].subsystem, "  %s ready for launch", LOG_LEVEL_STATE, readiness_results[i].subsystem);
-        // Note: Actual launch code would be executed here when implemented
+        
+        // Special case for Payload - use all caps for the title
+        if (strcmp(readiness_results[i].subsystem, "Payload") == 0) {
+            log_this(readiness_results[i].subsystem, "LAUNCH: PAYLOAD", LOG_LEVEL_STATE);
+        } else {
+            log_this(readiness_results[i].subsystem, "LAUNCH: %s", LOG_LEVEL_STATE, readiness_results[i].subsystem);
+            log_this(readiness_results[i].subsystem, "  %s ready for launch", LOG_LEVEL_STATE, readiness_results[i].subsystem);
+        }
+        
+        // Launch the subsystem if it's the Payload subsystem
+        if (strcmp(readiness_results[i].subsystem, "Payload") == 0) {
+            // Launch the payload subsystem
+            if (launch_payload_subsystem()) {
+                log_this("Payload", "Payload subsystem launched successfully", LOG_LEVEL_STATE);
+            } else {
+                log_this("Payload", "Failed to launch payload subsystem", LOG_LEVEL_ERROR);
+            }
+        }
+        // Note: Actual launch code for other subsystems would be executed here when implemented
     }
     
     // Add LAUNCH REVIEW section
     log_this("Launch", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
     log_this("Launch", "LAUNCH REVIEW", LOG_LEVEL_STATE);
-    log_this("Launch", "  Total subsystems checked: %zu", LOG_LEVEL_STATE, total_checked);
+    log_this("Launch", "  Total subsystems available: %zu", LOG_LEVEL_STATE, total_checked);
     log_this("Launch", "  Subsystems ready for launch: %zu", LOG_LEVEL_STATE, total_ready);
+    
+    // List all subsystems that were ready for launch
+    for (size_t i = 0; i < sizeof(readiness_results) / sizeof(readiness_results[0]); i++) {
+        // Skip if subsystem name is NULL or not ready
+        if (!readiness_results[i].subsystem || !readiness_results[i].ready) {
+            continue;
+        }
+        
+        // Get the subsystem ID
+        int subsys_id = get_subsystem_id_by_name(readiness_results[i].subsystem);
+        
+        // For registered subsystems, show detailed status
+        if (subsys_id >= 0) {
+            // Get the current state
+            SubsystemState state = get_subsystem_state(subsys_id);
+            
+            // Determine the launch status and log level
+            const char* status_text;
+            int log_level;
+            
+            if (state == SUBSYSTEM_RUNNING) {
+                // For running subsystems, get additional details
+                time_t now = time(NULL);
+                time_t running_time = now - subsystem_registry.subsystems[subsys_id].state_changed;
+                int hours = running_time / 3600;
+                int minutes = (running_time % 3600) / 60;
+                int seconds = running_time % 60;
+                
+                // Get thread count if available
+                int thread_count = 0;
+                if (subsystem_registry.subsystems[subsys_id].threads) {
+                    thread_count = subsystem_registry.subsystems[subsys_id].threads->thread_count;
+                }
+                
+                // Format the status text with running time and thread count
+                char status_buffer[128];
+                snprintf(status_buffer, sizeof(status_buffer), 
+                         "%s - Running for %02d:%02d:%02d - Threads: %d", 
+                         readiness_results[i].subsystem, hours, minutes, seconds, thread_count);
+                
+                log_this("Launch", "  - %s", LOG_LEVEL_STATE, status_buffer);
+            } else {
+                // For non-running subsystems, show simple status
+                if (state == SUBSYSTEM_STARTING) {
+                    status_text = "Launching";
+                    log_level = LOG_LEVEL_STATE;
+                } else if (state == SUBSYSTEM_ERROR) {
+                    status_text = "Failed";
+                    log_level = LOG_LEVEL_ERROR;
+                } else {
+                    status_text = "Pending";
+                    log_level = LOG_LEVEL_ALERT;
+                }
+                
+                log_this("Launch", "  - %s: %s", log_level, readiness_results[i].subsystem, status_text);
+            }
+        } else {
+            // For non-registered subsystems that are ready, show as ready
+            log_this("Launch", "  - %s: Ready", LOG_LEVEL_STATE, readiness_results[i].subsystem);
+        }
+    }
+    
+    // Show count of subsystems not ready at the end
     log_this("Launch", "  Subsystems not ready: %zu", LOG_LEVEL_STATE, total_not_ready);
     
     log_group_end();
