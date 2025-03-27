@@ -12,6 +12,7 @@
 #include <string.h>
 
 #include "landing.h"
+#include "launch-payload.h"
 #include "../../logging/logging.h"
 #include "../../state/registry/subsystem_registry.h"
 #include "../../state/registry/subsystem_registry_integration.h"
@@ -20,6 +21,7 @@
 static LandingReadiness check_print_landing_readiness(void);
 static LandingReadiness check_mail_relay_landing_readiness(void);
 static LandingReadiness check_mdns_client_landing_readiness(void);
+static LandingReadiness check_database_landing_readiness(void);
 static LandingReadiness check_mdns_server_landing_readiness(void);
 static LandingReadiness check_terminal_landing_readiness(void);
 static LandingReadiness check_websocket_landing_readiness(void);
@@ -307,6 +309,30 @@ static LandingReadiness check_mdns_client_landing_readiness(void) {
     return readiness;
 }
 
+// Check Database landing readiness
+static LandingReadiness check_database_landing_readiness(void) {
+    LandingReadiness readiness = {0};
+    readiness.subsystem = "Database";
+    
+    // Always ready for now
+    readiness.ready = true;
+    
+    // Allocate space for messages (including NULL terminator)
+    readiness.messages = malloc(4 * sizeof(char*));
+    if (!readiness.messages) {
+        readiness.ready = false;
+        return readiness;
+    }
+    
+    // Add messages in the standard format
+    readiness.messages[0] = strdup("Database");
+    readiness.messages[1] = strdup("  Go:      Database Ready for Landing");
+    readiness.messages[2] = strdup("  Decide:  Go For Landing of Database");
+    readiness.messages[3] = NULL;
+    
+    return readiness;
+}
+
 // Check Mail Relay landing readiness
 static LandingReadiness check_mail_relay_landing_readiness(void) {
     LandingReadiness readiness = {0};
@@ -456,6 +482,14 @@ bool check_all_landing_readiness(void) {
     }
     free_landing_readiness_messages(&webserver_readiness);
     
+    // Check database subsystem
+    LandingReadiness database_readiness = check_database_landing_readiness();
+    log_readiness_messages(&database_readiness);
+    if (database_readiness.ready) {
+        any_subsystem_ready = true;
+    }
+    free_landing_readiness_messages(&database_readiness);
+    
     // Check logging subsystem
     LandingReadiness logging_readiness = check_logging_landing_readiness();
     log_readiness_messages(&logging_readiness);
@@ -477,6 +511,16 @@ bool check_all_landing_readiness(void) {
     log_readiness_messages(&payload_readiness);
     if (payload_readiness.ready) {
         any_subsystem_ready = true;
+        
+        // Add LANDING: PAYLOAD section
+        log_this("Payload", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        log_this("Payload", "LANDING: PAYLOAD", LOG_LEVEL_STATE);
+        log_this("Payload", "  Freeing payload resources...", LOG_LEVEL_STATE);
+        
+        // Free resources allocated during payload launch
+        free_payload_resources();
+        
+        log_this("Payload", "  Payload resources freed successfully", LOG_LEVEL_STATE);
     }
     free_landing_readiness_messages(&payload_readiness);
     
@@ -493,7 +537,7 @@ bool check_all_landing_readiness(void) {
     log_this("Landing", "LANDING REVIEW", LOG_LEVEL_STATE);
     
     // Count how many subsystems were checked
-    const int total_checked = 13; // Total number of subsystems we check
+    const int total_checked = 14; // Total number of subsystems we check
     
     log_this("Landing", "  Total subsystems checked: %d", LOG_LEVEL_STATE, total_checked);
     log_this("Landing", "  Subsystems ready for landing: %s", LOG_LEVEL_STATE, 

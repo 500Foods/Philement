@@ -1,4 +1,4 @@
-/*
+    /*
  * Payload Subsystem Launch Readiness Check
  * 
  * This module verifies that all prerequisites for the payload subsystem
@@ -23,6 +23,8 @@
 #include "../../logging/logging.h"
 #include "../../config/config.h"
 #include "../../config/files/config_filesystem.h"
+#include "../../state/registry/subsystem_registry_integration.h"
+#include "../../payload/payload.h"
 
 // External declarations
 extern AppConfig* app_config;
@@ -183,6 +185,9 @@ static bool is_payload_attached(const char* executable_path, const char* marker,
     return result;
 }
 
+// Forward declaration for the launch_payload function from payload.c
+extern bool launch_payload(const AppConfig *config, const char *marker);
+
 // Check if the payload subsystem is ready to launch
 LaunchReadiness check_payload_launch_readiness(void) {
     bool overall_readiness = true;
@@ -330,4 +335,54 @@ LaunchReadiness check_payload_launch_readiness(void) {
     };
     
     return readiness;
+}
+
+/**
+ * Launch the payload subsystem
+ * 
+ * This function launches the payload subsystem by extracting and
+ * processing the payload from the executable.
+ * 
+ * @return true if payload was successfully launched, false otherwise
+ */
+bool launch_payload_subsystem(void) {
+    // Launch the payload directly without additional logging
+    bool success = launch_payload(app_config, DEFAULT_PAYLOAD_MARKER);
+    
+    if (success) {
+        // Register the payload subsystem in the registry
+        update_subsystem_on_startup("Payload", true);
+    } else {
+        log_this("Payload", "Failed to launch payload subsystem", LOG_LEVEL_ERROR);
+        // Register the payload subsystem in the registry as failed
+        update_subsystem_on_startup("Payload", false);
+    }
+    
+    return success;
+}
+
+/**
+ * Free resources allocated during payload launch
+ * 
+ * This function frees any resources allocated during the payload launch phase.
+ * It should be called during the LANDING: PAYLOAD phase of the application.
+ * After freeing resources, it unregisters the Payload subsystem to prevent
+ * it from being stopped again during the LANDING: SUBSYSTEM REGISTRY phase.
+ */
+void free_payload_resources(void) {
+    // Free any resources allocated during payload launch
+    log_this("Payload", "Freeing payload resources", LOG_LEVEL_STATE);
+    
+    // Call the payload cleanup function
+    cleanup_openssl();
+    
+    log_this("Payload", "Payload resources freed", LOG_LEVEL_STATE);
+    
+    // Update the Payload subsystem state to inactive to prevent it from being stopped again
+    // during the LANDING: SUBSYSTEM REGISTRY phase
+    int subsys_id = get_subsystem_id_by_name("Payload");
+    if (subsys_id >= 0) {
+        update_subsystem_state(subsys_id, SUBSYSTEM_INACTIVE);
+        log_this("Payload", "Payload subsystem marked as inactive", LOG_LEVEL_STATE);
+    }
 }
