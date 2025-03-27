@@ -338,23 +338,40 @@ bool stop_subsystem(int subsystem_id) {
     log_this("SubsysReg", "Stopping subsystem '%s'", LOG_LEVEL_STATE, subsystem->name);
     
     // Set the shutdown flag if provided
+    log_this("SubsysReg", "DEBUG: '%s' - Before setting shutdown flag", LOG_LEVEL_DEBUG, subsystem->name);
     if (subsystem->shutdown_flag) {
         *subsystem->shutdown_flag = 1;
+        log_this("SubsysReg", "DEBUG: '%s' - Shutdown flag set", LOG_LEVEL_DEBUG, subsystem->name);
+    } else {
+        log_this("SubsysReg", "DEBUG: '%s' - No shutdown flag to set", LOG_LEVEL_DEBUG, subsystem->name);
     }
     
     // Call the shutdown function if provided
+    log_this("SubsysReg", "DEBUG: '%s' - Before calling shutdown function", LOG_LEVEL_DEBUG, subsystem->name);
     if (subsystem->shutdown_function) {
+        log_this("SubsysReg", "DEBUG: '%s' - Calling shutdown function", LOG_LEVEL_DEBUG, subsystem->name);
         subsystem->shutdown_function();
+        log_this("SubsysReg", "DEBUG: '%s' - Shutdown function completed", LOG_LEVEL_DEBUG, subsystem->name);
+    } else {
+        log_this("SubsysReg", "DEBUG: '%s' - No shutdown function to call", LOG_LEVEL_DEBUG, subsystem->name);
     }
     
     // Wait for the main thread to exit if provided
+    log_this("SubsysReg", "DEBUG: '%s' - Before waiting for main thread", LOG_LEVEL_DEBUG, subsystem->name);
     if (subsystem->main_thread && *subsystem->main_thread != 0) {
+        log_this("SubsysReg", "DEBUG: '%s' - Joining thread %lu", LOG_LEVEL_DEBUG, 
+                subsystem->name, (unsigned long)*subsystem->main_thread);
         pthread_join(*subsystem->main_thread, NULL);
         *subsystem->main_thread = 0;
+        log_this("SubsysReg", "DEBUG: '%s' - Thread joined successfully", LOG_LEVEL_DEBUG, subsystem->name);
+    } else {
+        log_this("SubsysReg", "DEBUG: '%s' - No main thread to join", LOG_LEVEL_DEBUG, subsystem->name);
     }
     
     // Update state to inactive
+    log_this("SubsysReg", "DEBUG: '%s' - Before updating state to inactive", LOG_LEVEL_DEBUG, subsystem->name);
     update_subsystem_state(subsystem_id, SUBSYSTEM_INACTIVE);
+    log_this("SubsysReg", "DEBUG: '%s' - State updated to inactive", LOG_LEVEL_DEBUG, subsystem->name);
     
     log_this("SubsysReg", "Subsystem '%s' stopped successfully", LOG_LEVEL_STATE, subsystem->name);
     

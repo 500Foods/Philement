@@ -25,4 +25,22 @@
  */
 LaunchReadiness check_payload_launch_readiness(void);
 
+/**
+ * Launch the payload subsystem
+ * 
+ * This function launches the payload subsystem by extracting and
+ * processing the payload from the executable.
+ * 
+ * @return true if payload was successfully launched, false otherwise
+ */
+bool launch_payload_subsystem(void);
+
+/**
+ * Free resources allocated during payload launch
+ * 
+ * This function frees any resources allocated during the payload launch phase.
+ * It should be called during the LANDING: PAYLOAD phase of the application.
+ */
+void free_payload_resources(void);
+
 #endif /* LAUNCH_PAYLOAD_H */

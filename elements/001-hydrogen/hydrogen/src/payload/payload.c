@@ -20,12 +20,14 @@
 #include "payload.h"
 #include "../logging/logging.h"
 #include "../config/config.h"
+#include "../config/files/config_filesystem.h"
 
 // Static function declarations
 static bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size,
                           const char *private_key_b64, uint8_t **decrypted_data,
                           size_t *decrypted_size);
 static void init_openssl(void);
+static bool process_payload_data(const PayloadData *payload);
 
 // Initialize OpenSSL once at startup
 static void init_openssl(void) {
@@ -37,11 +39,39 @@ static void init_openssl(void) {
     }
 }
 
+/**
+ * Clean up OpenSSL resources
+ * 
+ * This function cleans up resources allocated by OpenSSL during payload processing.
+ * It should be called during shutdown to prevent memory leaks.
+ * It is safe to call this function multiple times as it will only clean up
+ * resources once.
+ */
+void cleanup_openssl(void) {
+    static bool cleaned_up = false;
+    
+    // Only clean up once
+    if (cleaned_up) {
+        log_this("Payload", "OpenSSL resources already cleaned up", LOG_LEVEL_STATE);
+        return;
+    }
+    
+    // Clean up OpenSSL resources
+    EVP_cleanup();
+    ERR_free_strings();
+    
+    // Set the flag to indicate resources have been cleaned up
+    cleaned_up = true;
+    
+    // Log the cleanup
+    log_this("Payload", "OpenSSL resources cleaned up", LOG_LEVEL_STATE);
+}
+
 bool extract_payload(const char *executable_path, const AppConfig *config,
                     const char *marker, PayloadData *payload) {
     // Validate parameters
     if (!executable_path || !config || !marker || !payload) {
-        log_this("PayloadHandler", "Invalid parameters for payload extraction", LOG_LEVEL_ERROR, NULL);
+        log_this("Payload", "Invalid parameters for payload extraction", LOG_LEVEL_ERROR, NULL);
         return false;
     }
 
@@ -53,14 +83,14 @@ bool extract_payload(const char *executable_path, const AppConfig *config,
 
     // Prevent extraction during shutdown
     if (server_stopping || web_server_shutdown) {
-        log_this("PayloadHandler", "Skipping payload extraction - system is shutting down", 
+        log_this("Payload", "Skipping payload extraction - system is shutting down", 
                 LOG_LEVEL_STATE, NULL);
         return false;
     }
 
     // Only allow extraction during startup or normal operation
     if (!server_starting && !server_running) {
-        log_this("PayloadHandler", "Skipping payload extraction - system not in proper state", 
+        log_this("Payload", "Skipping payload extraction - system not in proper state", 
                 LOG_LEVEL_STATE, NULL);
         return false;
     }
@@ -71,7 +101,7 @@ bool extract_payload(const char *executable_path, const AppConfig *config,
     // Open the executable
     int fd = open(executable_path, O_RDONLY);
     if (fd == -1) {
-        log_this("PayloadHandler", "Failed to open executable", LOG_LEVEL_ERROR, NULL);
+        log_this("Payload", "Failed to open executable", LOG_LEVEL_ERROR, NULL);
         return false;
     }
 
@@ -79,7 +109,7 @@ bool extract_payload(const char *executable_path, const AppConfig *config,
     struct stat st;
     if (fstat(fd, &st) == -1) {
         close(fd);
-        log_this("PayloadHandler", "Failed to get executable size", LOG_LEVEL_ERROR, NULL);
+        log_this("Payload", "Failed to get executable size", LOG_LEVEL_ERROR, NULL);
         return false;
     }
 
@@ -88,7 +118,7 @@ bool extract_payload(const char *executable_path, const AppConfig *config,
     close(fd);
 
     if (file_data == MAP_FAILED) {
-        log_this("PayloadHandler", "Failed to map executable", LOG_LEVEL_ERROR, NULL);
+        log_this("Payload", "Failed to map executable", LOG_LEVEL_ERROR, NULL);
         return false;
     }
 
@@ -96,7 +126,7 @@ bool extract_payload(const char *executable_path, const AppConfig *config,
     const char *marker_pos = memmem(file_data, st.st_size, marker, strlen(marker));
     if (!marker_pos) {
         munmap(file_data, st.st_size);
-        log_this("PayloadHandler", "No payload marker found in executable", LOG_LEVEL_STATE, NULL);
+        log_this("Payload", "No payload marker found in executable", LOG_LEVEL_STATE, NULL);
         return false;
     }
 
@@ -109,14 +139,14 @@ bool extract_payload(const char *executable_path, const AppConfig *config,
 
     // Validate payload size
     if (payload_size == 0 || payload_size > (size_t)(marker_pos - (char*)file_data)) {
-        log_this("PayloadHandler", "Invalid payload size or corrupted payload", LOG_LEVEL_ERROR, NULL);
+        log_this("Payload", "Invalid payload size or corrupted payload", LOG_LEVEL_ERROR, NULL);
         munmap(file_data, st.st_size);
         return false;
     }
 
     // The encrypted payload is before the marker
     const uint8_t *encrypted_data = (uint8_t*)marker_pos - payload_size;
-    log_this("PayloadHandler", "Found encrypted payload: %zu bytes", LOG_LEVEL_STATE, payload_size);
+    log_this("Payload", "Found encrypted payload: %zu bytes", LOG_LEVEL_STATE, payload_size);
 
     // Initialize OpenSSL
     init_openssl();
@@ -138,7 +168,7 @@ bool extract_payload(const char *executable_path, const AppConfig *config,
     }
 
     if (!payload_key) {
-        log_this("PayloadHandler", "No valid payload key available", LOG_LEVEL_ERROR, NULL);
+        log_this("Payload", "No valid payload key available", LOG_LEVEL_ERROR, NULL);
         munmap(file_data, st.st_size);
         return false;
     }
@@ -153,7 +183,7 @@ bool extract_payload(const char *executable_path, const AppConfig *config,
     munmap(file_data, st.st_size);
 
     if (!success) {
-        log_this("PayloadHandler", "Failed to decrypt payload", LOG_LEVEL_ERROR, NULL);
+        log_this("Payload", "Failed to decrypt payload", LOG_LEVEL_ERROR, NULL);
         return false;
     }
 
@@ -170,6 +200,216 @@ void free_payload(PayloadData *payload) {
         free(payload->data);
         memset(payload, 0, sizeof(PayloadData));
     }
+}
+
+/**
+ * Process the payload data
+ * 
+ * This function processes the extracted payload data, for example by
+ * decompressing it if needed.
+ * 
+ * @param payload The payload data to process
+ * @return true if payload was successfully processed, false otherwise
+ */
+static bool process_payload_data(const PayloadData *payload) {
+    if (!payload || !payload->data || payload->size == 0) {
+        log_this("Payload", "Invalid payload data", LOG_LEVEL_ERROR);
+        return false;
+    }
+
+    // Log payload information
+    log_this("Payload", "Processing payload: %zu bytes", LOG_LEVEL_STATE, payload->size);
+
+    // Check if payload is compressed
+    if (payload->is_compressed) {
+        log_this("Payload", "Payload is compressed (Brotli)", LOG_LEVEL_STATE);
+        
+        // Use Brotli streaming API for decompression
+        BrotliDecoderState* decoder = BrotliDecoderCreateInstance(NULL, NULL, NULL);
+        if (!decoder) {
+            log_this("Payload", "Failed to create Brotli decoder", LOG_LEVEL_ERROR);
+            return false;
+        }
+        
+        // Initial buffer size - we'll grow it if needed
+        size_t buffer_size = payload->size * 4;  // Start with 4x the compressed size
+        uint8_t* decompressed_data = malloc(buffer_size);
+        if (!decompressed_data) {
+            log_this("Payload", "Failed to allocate memory for decompressed data", LOG_LEVEL_ERROR);
+            BrotliDecoderDestroyInstance(decoder);
+            return false;
+        }
+        
+        // Set up input/output parameters
+        const uint8_t* next_in = payload->data;
+        size_t available_in = payload->size;
+        uint8_t* next_out = decompressed_data;
+        size_t available_out = buffer_size;
+        size_t total_out = 0;
+        
+        // Decompress until done
+        BrotliDecoderResult result;
+        do {
+            result = BrotliDecoderDecompressStream(
+                decoder,
+                &available_in, &next_in,
+                &available_out, &next_out,
+                &total_out);
+                
+            if (result == BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT) {
+                // Need more output space
+                size_t current_position = next_out - decompressed_data;
+                buffer_size *= 2;
+                uint8_t* new_buffer = realloc(decompressed_data, buffer_size);
+                if (!new_buffer) {
+                    log_this("Payload", "Failed to resize decompression buffer", LOG_LEVEL_ERROR);
+                    free(decompressed_data);
+                    BrotliDecoderDestroyInstance(decoder);
+                    return false;
+                }
+                
+                decompressed_data = new_buffer;
+                next_out = decompressed_data + current_position;
+                available_out = buffer_size - current_position;
+            } else if (result == BROTLI_DECODER_RESULT_ERROR) {
+                log_this("Payload", "Brotli decompression error: %s", 
+                        LOG_LEVEL_ERROR, BrotliDecoderErrorString(BrotliDecoderGetErrorCode(decoder)));
+                free(decompressed_data);
+                BrotliDecoderDestroyInstance(decoder);
+                return false;
+            }
+        } while (result != BROTLI_DECODER_RESULT_SUCCESS);
+        
+        // Clean up decoder
+        BrotliDecoderDestroyInstance(decoder);
+        
+        log_this("Payload", "Payload decompressed successfully (%zu bytes)", LOG_LEVEL_STATE, total_out);
+        
+        // Parse the tar file to count files and total size
+        if (total_out > 512) { // Minimum size for a valid tar file
+            size_t pos = 0;
+            size_t file_count = 0;
+            size_t total_file_size = 0;
+            
+            // Process tar headers
+            while (pos + 512 <= total_out) {
+                const uint8_t* header = decompressed_data + pos;
+                
+                // Check for end of archive (empty block)
+                bool is_empty = true;
+                for (int i = 0; i < 512; i++) {
+                    if (header[i] != 0) {
+                        is_empty = false;
+                        break;
+                    }
+                }
+                if (is_empty) {
+                    break;
+                }
+                
+                // Extract file size from octal representation in header
+                char size_str[13] = {0};
+                memcpy(size_str, header + 124, 12);
+                size_t file_size = 0;
+                sscanf(size_str, "%zo", &file_size);
+                
+                // Get file name for logging
+                char file_name[101] = {0};
+                memcpy(file_name, header, 100);
+                file_name[100] = '\0';  // Ensure null termination
+                
+                // Only count regular files (type flag '0' or '\0')
+                char type_flag = header[156];
+                if (type_flag == '0' || type_flag == '\0') {
+                    file_count++;
+                    total_file_size += file_size;
+                }
+                
+                // Move to next file entry (header + data, rounded up to 512-byte boundary)
+                size_t data_blocks = (file_size + 511) / 512;
+                pos += 512 + (data_blocks * 512);
+                
+                // Safety check
+                if (pos > total_out) {
+                    break;
+                }
+            }
+            
+            log_this("Payload", "Payload contains %zu files (total size: %zu bytes)", 
+                    LOG_LEVEL_STATE, file_count, total_file_size);
+        }
+        
+        // Free the decompressed data
+        free(decompressed_data);
+    }
+    
+    return true;
+}
+
+/**
+ * Launch the payload subsystem
+ * 
+ * This function extracts and processes the payload from the executable.
+ * All logging output is tagged with the "Payload" category.
+ * 
+ * @param config Application configuration containing the payload key
+ * @param marker Marker string that identifies the payload
+ * @return true if payload was successfully launched, false otherwise
+ */
+bool launch_payload(const AppConfig *config, const char *marker) {
+    // Validate parameters
+    if (!config || !marker) {
+        log_this("Payload", "Invalid parameters for payload launch", LOG_LEVEL_ERROR);
+        return false;
+    }
+
+    // Check all state flags atomically
+    extern volatile sig_atomic_t server_stopping;
+    extern volatile sig_atomic_t server_running;
+    extern volatile sig_atomic_t server_starting;
+    extern volatile sig_atomic_t web_server_shutdown;
+
+    // Prevent launch during shutdown
+    if (server_stopping || web_server_shutdown) {
+        log_this("Payload", "Skipping payload launch - system is shutting down", LOG_LEVEL_STATE);
+        return false;
+    }
+
+    // Only allow launch during startup or normal operation
+    if (!server_starting && !server_running) {
+        log_this("Payload", "Skipping payload launch - system not in proper state", LOG_LEVEL_STATE);
+        return false;
+    }
+
+    // Get executable path
+    char *executable_path = get_executable_path();
+    if (!executable_path) {
+        log_this("Payload", "Failed to get executable path", LOG_LEVEL_ERROR);
+        return false;
+    }
+
+    // Extract the payload
+    PayloadData payload = {0};
+    bool success = extract_payload(executable_path, config, marker, &payload);
+    free(executable_path);
+
+    if (!success) {
+        log_this("Payload", "Failed to extract payload", LOG_LEVEL_ERROR);
+        return false;
+    }
+
+    // Process the payload
+    success = process_payload_data(&payload);
+    
+    // Free the payload data
+    free_payload(&payload);
+    
+    if (!success) {
+        log_this("Payload", "Failed to process payload", LOG_LEVEL_ERROR);
+        return false;
+    }
+    
+    return true;
 }
 
 static bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size,
@@ -208,7 +448,7 @@ static bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size
                         ((uint32_t)encrypted_data[3]);
 
     if (key_size == 0 || key_size > 1024 || key_size + 20 >= encrypted_size) {
-        log_this("PayloadHandler", "Invalid payload structure", LOG_LEVEL_ERROR, NULL);
+        log_this("Payload", "Invalid payload structure", LOG_LEVEL_ERROR, NULL);
         return false;
     }
 
@@ -216,11 +456,11 @@ static bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size
     memcpy(iv, encrypted_data + 4 + key_size, 16);
 
     // Log payload structure details
-    log_this("PayloadHandler", "Payload structure:", LOG_LEVEL_STATE, NULL);
-    log_this("PayloadHandler", "- Total size: %zu bytes", LOG_LEVEL_STATE, encrypted_size);
-    log_this("PayloadHandler", "- Key size: %u bytes", LOG_LEVEL_STATE, key_size);
-    log_this("PayloadHandler", "- IV: 16 bytes", LOG_LEVEL_STATE, NULL);
-    log_this("PayloadHandler", "- Encrypted payload: %zu bytes", LOG_LEVEL_STATE, 
+    log_this("Payload", "Payload structure:", LOG_LEVEL_STATE, NULL);
+    log_this("Payload", "- Total size: %zu bytes", LOG_LEVEL_STATE, encrypted_size);
+    log_this("Payload", "- Key size: %u bytes", LOG_LEVEL_STATE, key_size);
+    log_this("Payload", "- IV: 16 bytes", LOG_LEVEL_STATE, NULL);
+    log_this("Payload", "- Encrypted payload: %zu bytes", LOG_LEVEL_STATE, 
              encrypted_size - 4 - key_size - 16);
 
     // Decode private key from base64
@@ -246,7 +486,7 @@ static bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size
     // Load and verify private key
     pkey = PEM_read_bio_PrivateKey(bio, NULL, NULL, NULL);
     if (!pkey) {
-        log_this("PayloadHandler", "Failed to load private key", LOG_LEVEL_ERROR, NULL);
+        log_this("Payload", "Failed to load private key", LOG_LEVEL_ERROR, NULL);
         goto cleanup;
     }
 
@@ -265,13 +505,13 @@ static bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size
 
     // Decrypt the AES key
     if (EVP_PKEY_decrypt(pkey_ctx, aes_key, &aes_key_len, encrypted_data + 4, key_size) <= 0) {
-        log_this("PayloadHandler", "Failed to decrypt AES key", LOG_LEVEL_ERROR, NULL);
+        log_this("Payload", "Failed to decrypt AES key", LOG_LEVEL_ERROR, NULL);
         goto cleanup;
     }
 
     // Verify AES key length
     if (aes_key_len != 32) {
-        log_this("PayloadHandler", "Invalid AES key length", LOG_LEVEL_ERROR, NULL);
+        log_this("Payload", "Invalid AES key length", LOG_LEVEL_ERROR, NULL);
         goto cleanup;
     }
 
@@ -285,7 +525,7 @@ static bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size
 
     if (!EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, aes_key, iv) ||
         !EVP_CIPHER_CTX_set_padding(ctx, 1)) {
-        log_this("PayloadHandler", "Failed to initialize AES decryption", LOG_LEVEL_ERROR, NULL);
+        log_this("Payload", "Failed to initialize AES decryption", LOG_LEVEL_ERROR, NULL);
         goto cleanup;
     }
 
@@ -295,7 +535,7 @@ static bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size
 
     // Decrypt payload
     if (!EVP_DecryptUpdate(ctx, *decrypted_data, &len, encrypted_payload, encrypted_payload_size)) {
-        log_this("PayloadHandler", "Failed to decrypt payload", LOG_LEVEL_ERROR, NULL);
+        log_this("Payload", "Failed to decrypt payload", LOG_LEVEL_ERROR, NULL);
         free(*decrypted_data);
         *decrypted_data = NULL;
         goto cleanup;
@@ -305,14 +545,14 @@ static bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size
 
     // Finalize decryption
     if (!EVP_DecryptFinal_ex(ctx, *decrypted_data + len, &final_len)) {
-        log_this("PayloadHandler", "Failed to finalize decryption", LOG_LEVEL_ERROR, NULL);
+        log_this("Payload", "Failed to finalize decryption", LOG_LEVEL_ERROR, NULL);
         free(*decrypted_data);
         *decrypted_data = NULL;
         goto cleanup;
     }
 
     *decrypted_size += final_len;
-    log_this("PayloadHandler", "Payload decrypted successfully (%zu bytes)", LOG_LEVEL_STATE, *decrypted_size);
+    log_this("Payload", "Payload decrypted successfully (%zu bytes)", LOG_LEVEL_STATE, *decrypted_size);
     success = true;
 
 cleanup:
