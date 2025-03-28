@@ -1,6 +1,32 @@
 # Launch System Architecture
 
-This document describes the Launch System architecture in Hydrogen, detailing the go/no-go decision process for subsystems and how it integrates with the Subsystem Registry.
+This document describes the Launch System architecture in Hydrogen, which manages pre-launch checks to ensure subsystem dependencies are met before attempting to start each component. The system evaluates each subsystem's prerequisites and determines whether it's safe to proceed with initialization.
+
+## Subsystem Launch Documentation
+
+Detailed launch process documentation for each subsystem:
+
+| Subsystem | Description | Documentation |
+|-----------|-------------|---------------|
+| PAYLOAD | Manages embedded payloads, minimal dependencies | [Launch Process](launch/payload_subsystem.md) |
+| WebServer | HTTP services, depends on Network | [Launch Process](launch/webserver_subsystem.md) |
+| Network | Network connectivity foundation | [Coming Soon] |
+| Logging | System-wide logging services | [Coming Soon] |
+| Database | Data persistence layer | [Coming Soon] |
+| WebSocket | Real-time communication | [Coming Soon] |
+| Terminal | Command interface | [Coming Soon] |
+| mDNS Server/Client | Service discovery | [Coming Soon] |
+| Mail Relay | Email services | [Coming Soon] |
+| Print Queue | Print job management | [Coming Soon] |
+| Swagger | API documentation | [Coming Soon] |
+
+Each subsystem's documentation details:
+- Complete launch process flow
+- Launch readiness checks
+- Landing (shutdown) process
+- Error handling
+- Logging practices
+- Integration points
 
 ## Overview
 
@@ -48,47 +74,172 @@ The Launch System follows a phased approach to subsystem initialization:
 
 ## Launch Readiness Process
 
-The Launch System implements a thorough readiness check process for each subsystem:
+The Launch System implements a thorough readiness check process for each subsystem. This process follows a progressive validation pattern where critical checks are performed first to fail fast and avoid unnecessary work.
 
 ```diagram
 ┌─────────────────┐        ┌─────────────────┐        ┌─────────────────┐
-│  Configuration  │        │   Dependency    │        │   Resources     │
+│  System State   │        │  Configuration  │        │   Resources     │
 │     Check       ├───────►│     Check       ├───────►│     Check       │
 └─────────────────┘        └─────────────────┘        └─────────────────┘
                                                                │
                                                                ▼
 ┌─────────────────┐        ┌─────────────────┐        ┌─────────────────┐
-│   Final "Go"    │◄───────┤  State Check    │◄───────┤  System Check   │
-│    Decision     │        │                 │        │                 │
+│   Final "Go"    │◄───────┤  Dependencies   │◄───────┤  Subsystem      │
+│    Decision     │        │     Check       │        │  Specific       │
 └─────────────────┘        └─────────────────┘        └─────────────────┘
 ```
 
-Each subsystem undergoes these standard checks:
+### Why This Order Matters
 
-1. **Configuration Check**: Verifies all required configuration values are present and valid
-2. **Dependency Check**: Confirms all dependencies are available and properly initialized
-3. **Resources Check**: Ensures required system resources (memory, disk space, etc.) are available
-4. **System Check**: Verifies system-wide conditions are favorable for the subsystem
-5. **State Check**: Confirms the subsystem is not already in a shutdown state
-6. **Final Decision**: Aggregates all checks into a final go/no-go decision
+1. **System State First**: Checks if system is stopping/starting/running
+   - Prevents wasted work during shutdown
+   - Ensures consistent system state
+   - Example: Payload subsystem exits early if server_stopping is true
 
-## Go/No-Go Decision Logic
+2. **Configuration Second**: Verifies config is loaded and valid
+   - Required for most other checks
+   - Validates essential parameters
+   - Example: Payload key configuration check
 
-The go/no-go decision process is implemented through a series of readiness check functions:
+3. **Resources Third**: Checks system resources
+   - File system access
+   - Memory availability
+   - Network ports (if needed)
+   - Example: Payload checks executable readability
+
+4. **Subsystem-Specific Fourth**: Custom validation
+   - Unique requirements per subsystem
+   - Complex validation logic
+   - Example: Payload searches for marker in executable
+
+5. **Dependencies Fifth**: Verify other subsystems
+   - Only check if previous validations pass
+   - Prevents cascade of error messages
+   - Example: WebServer checks if Logging is running
+
+6. **Final Decision**: Aggregate all results
+   - Clear Go/No-Go decision
+   - Detailed status messages
+   - Example: "Go/No-Go For Launch of X Subsystem"
+
+### Best Practices for Launch Readiness
+
+1. **Early Exit Pattern**
+   ```c
+   // Check system state first
+   if (server_stopping || web_server_shutdown) {
+       add_message("No-Go: System shutting down");
+       return (LaunchReadiness){.ready = false, ...};
+   }
+   
+   // Check configuration next
+   if (!app_config) {
+       add_message("No-Go: Configuration not loaded");
+       return (LaunchReadiness){.ready = false, ...};
+   }
+   ```
+
+2. **Performance Optimization**
+   ```c
+   // Example from Payload: Check end of file first
+   size_t tail_search_size = file_size < 64 ? file_size : 64;
+   marker_pos = memmem(data + file_size - tail_search_size, 
+                      tail_search_size, marker, strlen(marker));
+   
+   // Only search whole file if not found in tail
+   if (!marker_pos) {
+       marker_pos = memmem(data, file_size, marker, strlen(marker));
+   }
+   ```
+
+3. **Clear Status Messages**
+   ```c
+   // Format for consistency
+   add_message("  Go:      Check Description (details)");
+   add_message("  No-Go:   Check Description (reason)");
+   add_message("  Decide:  Go/No-Go For Launch of X Subsystem");
+   ```
+
+4. **Resource Management**
+   ```c
+   char* path = get_executable_path();
+   if (path) {
+       // Use path...
+       free(path);  // Clean up allocated resources
+       path = NULL; // Prevent use-after-free
+   }
+   ```
+
+## Launch and Landing Phases
+
+The launch system operates in two distinct phases:
+
+### LAUNCH Phase
+- Performs readiness checks
+- Initializes subsystem resources
+- Registers with subsystem registry
+- Example from Payload:
+  ```c
+  bool launch_payload_subsystem(void) {
+      // Launch core functionality
+      bool success = launch_payload(app_config, DEFAULT_PAYLOAD_MARKER);
+      
+      // Register success/failure
+      if (success) {
+          update_subsystem_on_startup("Payload", true);
+      } else {
+          log_this("Payload", "Launch failed", LOG_LEVEL_ERROR);
+          update_subsystem_on_startup("Payload", false);
+      }
+      return success;
+  }
+  ```
+
+### LANDING Phase
+- Graceful shutdown of subsystem
+- Cleanup of allocated resources
+- Unregisters from subsystem registry
+- Example from Payload:
+  ```c
+  void free_payload_resources(void) {
+      log_this("Payload", "Freeing resources", LOG_LEVEL_STATE);
+      cleanup_openssl();  // Subsystem-specific cleanup
+      
+      // Prevent double-cleanup during registry shutdown
+      int id = get_subsystem_id_by_name("Payload");
+      if (id >= 0) {
+          update_subsystem_state(id, SUBSYSTEM_INACTIVE);
+      }
+  }
+  ```
 
 ```c
-typedef struct LaunchReadiness {
-    const char* subsystem_name;
-    bool go_config;            // Configuration is valid
-    bool go_dependencies;      // Dependencies are available
-    bool go_resources;         // Resources are available
-    bool go_system;            // System conditions are favorable
-    bool go_state;             // Not in shutdown state
-    bool go_final;             // Final decision
-    char* status_messages[6];  // Status messages for each check
+// Core structure for launch readiness results
+typedef struct {
+    const char* subsystem;  // Name of the subsystem
+    bool ready;            // Is the subsystem ready to launch?
+    const char** messages; // Array of readiness messages (NULL-terminated)
 } LaunchReadiness;
 
-bool check_subsystem_launch_readiness(LaunchReadiness* readiness);
+// Example readiness check implementation
+LaunchReadiness check_subsystem_launch_readiness(void) {
+    LaunchReadiness result = {
+        .subsystem = "ExampleSubsystem",
+        .ready = false,
+        .messages = NULL
+    };
+    
+    // Allocate message array (NULL-terminated)
+    result.messages = malloc(4 * sizeof(char*));
+    if (result.messages) {
+        result.messages[0] = strdup("ExampleSubsystem");
+        result.messages[1] = strdup("  Go:      System check passed");
+        result.messages[2] = strdup("  Decide:  Ready for launch");
+        result.messages[3] = NULL;  // NULL terminator
+    }
+    
+    return result;
+}
 ```
 
 Each subsystem has a specific readiness check function that:
@@ -129,56 +280,116 @@ The integration process follows these steps:
 3. **Dependency Declaration**: Dependencies are declared to the registry
 4. **Initialization**: Subsystem is initialized through the registry
 
-## Launch Sequence
+## Launch Sequence and Logging
 
-The complete launch sequence in Hydrogen follows this flow:
+The launch sequence in Hydrogen is carefully orchestrated and thoroughly logged for debugging and monitoring. The sequence follows this flow:
 
 ```diagram
 ┌─────────────────────┐
-│  Server Start       │
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
-│  Load Configuration │
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
-│ Initialize Registry │
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
-│  Check All Launch   │
-│    Readiness        │
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐  No  ┌─────────────────────┐
-│  All Checks Pass?   ├─────►│  Log Failures and   │
-└──────────┬──────────┘      │  Continue with      │
-           │ Yes             │  Available Subsys.  │
-           ▼                 └─────────────────────┘
-┌─────────────────────┐
-│ Register Subsystems │
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
-│  Start Subsystems   │
-│  (Dependency Order) │
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
-│  Enter Main Loop    │
+│  Server Start       │ ─────┐
+└──────────┬──────────┘      │
+           │                  │
+           ▼                  │
+┌─────────────────────┐      │
+│  Begin Launch       │      │ LAUNCH READINESS
+│  Readiness Logging  │      │ - Subsystem checks
+└──────────┬──────────┘      │ - Detailed status
+           │                  │
+           ▼                  │
+┌─────────────────────┐      │
+│  Load Configuration │      │
+└──────────┬──────────┘      │
+           │                  │
+           ▼                  │
+┌─────────────────────┐      │
+│ Initialize Registry │      │
+└──────────┬──────────┘      │
+           │                  │
+           ▼                  │
+┌─────────────────────┐      │
+│  Check All Launch   │      │
+│    Readiness        │      │
+└──────────┬──────────┘      │
+           │                  ▼
+           ▼            ┌─────────────────┐
+┌─────────────────────┐│ STARTUP COMPLETE │
+│  Process Results    ││ - Go/No-Go status│
+└──────────┬──────────┘│ - Per subsystem  │
+           │           └─────────────────┘
+           ▼                  ▲
+┌─────────────────────┐      │
+│ Register Subsystems │      │
+└──────────┬──────────┘      │ LAUNCH REVIEW
+           │                  │ - Total counts
+           ▼                  │ - Running time
+┌─────────────────────┐      │ - Thread counts
+│  Start Subsystems   │      │
+│  (Dependency Order) │      │
+└──────────┬──────────┘      │
+           │                  │
+           ▼                  │
+┌─────────────────────┐      │
+│  Enter Main Loop    │ ─────┘
 └─────────────────────┘
 ```
 
-## Implementation Files
+### Launch Order and Dependencies
 
-The Launch System is implemented in these primary files:
+The launch system follows a specific order to ensure proper initialization:
+
+1. **Subsystem Registry** (First, Always)
+   - Core component for tracking all other subsystems
+   - Must be ready before any other subsystem
+
+2. **Payload** (Early)
+   - Minimal dependencies
+   - Required for other subsystems
+
+3. **Network** (Foundation)
+   - Required by many other subsystems
+   - Handles basic connectivity
+
+4. **Core Services**
+   - Logging
+   - Database
+   - Configuration
+
+5. **Web Infrastructure**
+   - WebServer (depends on Network)
+   - API Layer
+   - Swagger Documentation
+
+6. **Additional Services**
+   - WebSocket (depends on Logging)
+   - Terminal (depends on WebServer, WebSocket)
+   - mDNS Server/Client (depends on Network)
+   - Mail Relay (depends on Network)
+   - Print Queue (depends on Logging)
+
+### Launch Status Tracking
+
+The launch system maintains detailed status information:
+
+```c
+// Example status tracking for running subsystems
+if (state == SUBSYSTEM_RUNNING) {
+    time_t running_time = now - subsystem_registry.subsystems[id].state_changed;
+    int thread_count = subsystem_registry.subsystems[id].threads->thread_count;
+    
+    log_this("Launch", "  - %s - Running for %02d:%02d:%02d - Threads: %d",
+             LOG_LEVEL_STATE, subsystem_name, hours, minutes, seconds, thread_count);
+}
+```
+
+Key metrics tracked:
+- Running time per subsystem
+- Thread count for multi-threaded subsystems
+- Current state (STARTING, RUNNING, ERROR)
+- Dependency satisfaction status
+
+### Implementation Files and Structure
+
+The Launch System is implemented across several key files:
 
 | File | Purpose |
 |------|---------|

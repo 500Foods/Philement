@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 // Project headers
 #include "utils.h"
@@ -28,4 +31,76 @@ static void init_all_service_threads(void) {
     init_service_threads(&websocket_threads);
     init_service_threads(&mdns_server_threads);
     init_service_threads(&print_threads);
+}
+
+/**
+ * Format a number with thousands separators
+ * Thread-safe as long as different buffers are used
+ */
+char* format_number_with_commas(size_t n, char* formatted, size_t size) {
+    if (!formatted || size < 2) return NULL;
+    
+    // Convert to temporary string
+    char temp[32];
+    snprintf(temp, sizeof(temp), "%zu", n);
+    
+    // Get the length
+    size_t len = strlen(temp);
+    size_t j = 0;
+    
+    // Add commas
+    for (size_t i = 0; i < len; i++) {
+        // Check buffer space (including null terminator)
+        if (j >= size - 1) {
+            formatted[size-1] = '\0';
+            return formatted;
+        }
+        
+        // Add comma every 3 digits from the right
+        if (i > 0 && (len - i) % 3 == 0) {
+            formatted[j++] = ',';
+            
+            // Check buffer again after adding comma
+            if (j >= size - 1) {
+                formatted[size-1] = '\0';
+                return formatted;
+            }
+        }
+        formatted[j++] = temp[i];
+    }
+    
+    // Null terminate
+    formatted[j] = '\0';
+    
+    return formatted;
+}
+
+/**
+ * Add a formatted message to a message array
+ * Thread-safe if different message arrays are used
+ */
+bool add_message_to_array(const char** messages, int max_messages, int* count, const char* format, ...) {
+    if (!messages || !count || *count >= max_messages - 1 || !format) {
+        return false;
+    }
+    
+    va_list args;
+    va_start(args, format);
+    char* message = NULL;
+    
+    // Format the message
+    if (vasprintf(&message, format, args) == -1) {
+        va_end(args);
+        return false;
+    }
+    va_end(args);
+    
+    if (message) {
+        messages[*count] = message;
+        (*count)++;
+        messages[*count] = NULL; // Maintain NULL termination
+        return true;
+    }
+    
+    return false;
 }
