@@ -25,6 +25,13 @@ EDITING GUIDELINES (not visible when rendered):
 -->
 
 - March 2025
+  - [2025-Mar-28 (Fri)](docs/releases/2025-03-28.md): Launch System Architecture, Thread Management, Subsystem Integration
+  - [2025-Mar-27 (Thu)](docs/releases/2025-03-27.md): System Integration, Performance Monitoring, Testing
+  - [2025-Mar-26 (Wed)](docs/releases/2025-03-26.md): Subsystem Integration, State Management, Registry System
+  - [2025-Mar-25 (Tue)](docs/releases/2025-03-25.md): Thread Management, Thread Safety, Resource Management
+  - [2025-Mar-24 (Mon)](docs/releases/2025-03-24.md): Logging System, Monitoring, Resource Management
+  - [2025-Mar-23 (Sun)](docs/releases/2025-03-23.md): WebServer Subsystem, Error Handling, Integration
+  - [2025-Mar-22 (Sat)](docs/releases/2025-03-22.md): Launch System, System Architecture, Documentation
   - [2025-Mar-21 (Fri)](docs/releases/2025-03-21.md): Configuration System, File Handling, Environment Integration
   - [2025-Mar-20 (Thu)](docs/releases/2025-03-20.md): System Control, Signal Management, Startup Handling, Logging Improvements
   - [2025-Mar-19 (Wed)](docs/releases/2025-03-19.md): Subsystem Management, Shutdown Functions, Documentation, Error Handling
