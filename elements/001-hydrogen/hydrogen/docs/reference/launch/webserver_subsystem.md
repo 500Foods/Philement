@@ -24,9 +24,9 @@ The WebServer subsystem provides HTTP services and serves as a foundation for ot
            ▼
 ┌─────────────────────┐
 │  Config Check       │
-│  - Enabled         │
-│  - Valid port      │
-│  - Valid paths     │
+│  - Enabled          │
+│  - Valid port       │
+│  - Valid paths      │
 └──────────┬──────────┘
            │
            ▼
@@ -40,13 +40,13 @@ The WebServer subsystem provides HTTP services and serves as a foundation for ot
 ┌─────────────────────┐
 │  Resource Check     │
 │  - Port available   │
-│  - File limits     │
+│  - File limits      │
 └──────────┬──────────┘
            │
            ▼
 ┌─────────────────────┐
-│  Launch Decision    │──────┐
-└──────────┬──────────┘      │
+│  Launch Decision    │───────┐
+└──────────┬──────────┘       │
            │                  │
            ▼                  ▼
     [Success Path]     [Failure Path]

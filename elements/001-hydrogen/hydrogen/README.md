@@ -285,7 +285,7 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Wed Mar 26 18:17:44 PDT 2025
+Generated on: Thu Mar 27 23:36:29 PDT 2025
 
 ### Summary
 
@@ -296,9 +296,9 @@ Generated on: Wed Mar 26 18:17:44 PDT 2025
 | Failed | 4 |
 | Skipped | 0 |
 | Total Subtests | 92 |
-| Passed Subtests | 58 |
-| Failed Subtests | 34 |
-| Runtime | 6m 16s |
+| Passed Subtests | 57 |
+| Failed Subtests | 35 |
+| Runtime | 6m 40s |
 
 ### Individual Test Results
 
@@ -318,20 +318,20 @@ Generated on: Wed Mar 26 18:17:44 PDT 2025
 | socket_rebind | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
 | swagger_ui | ❌ Failed | Test failed with errors (2 of 10 subtests passed) |
 | system_endpoints | ❌ Failed | Test failed with errors (1 of 11 subtests passed) |
-| z_codebase | ✅ Passed | Test completed without errors (12 of 12 subtests passed) |
+| z_codebase | ✅ Passed | Test completed without errors (11 of 12 subtests passed) |
 
 ## Repository Information
 
-Generated via cloc: Wed Mar 26 18:17:44 PDT 2025
+Generated via cloc: Thu Mar 27 23:36:29 PDT 2025
 
 | Language | Files | Blank Lines | Comment Lines | Code Lines |
 | -------- | ----- | ----------- | ------------- | ---------- |
-| C | 141 | 4214 | 5514 | 18183 |
-| Markdown | 108 | 4021 | 27 | 14568 |
-| Bourne | Shell | 23 | 1273 | 1307 |
+| C | 143 | 4290 | 5608 | 18534 |
+| Markdown | 111 | 4165 | 27 | 15266 |
+| Bourne | Shell | 24 | 1274 | 1307 |
 | JSON | 17 | 0 | 0 | 4807 |
-| C/C++ | Header | 125 | 1033 | 4795 |
-| Text | 10 | 4 | 0 | 1517 |
+| C/C++ | Header | 127 | 1048 | 4852 |
+| Text | 10 | 4 | 0 | 1578 |
 | HTML | 1 | 74 | 0 | 493 |
 | make | 2 | 51 | 214 | 224 |
-| **Total** | **427** | **10670** | **11857** | **47329** |
+| **Total** | **435** | **10906** | **12008** | **48460** |
