@@ -166,11 +166,30 @@ void graceful_shutdown(void) {
     // API subsystem (part of WebServer)
     // No separate landing section as it's part of WebServer
     
-    // WebServer subsystem
+    // WebServer subsystem - ensure it completes before registry
     if (is_subsystem_running_by_name("WebServer")) {
         log_this("WebServer", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
         log_this("WebServer", "LANDING: WEBSERVER", LOG_LEVEL_STATE);
         log_this("WebServer", "- Preparing to free WebServer resources", LOG_LEVEL_STATE);
+        
+        // Stop WebServer specifically and wait for completion
+        int webserver_id = get_subsystem_id_by_name("WebServer");
+        if (webserver_id >= 0) {
+            stop_subsystem(webserver_id);
+            
+            // Wait for WebServer to fully stop
+            int wait_count = 0;
+            while (is_subsystem_running(webserver_id) && wait_count < 10) {
+                usleep(100000);  // 100ms
+                wait_count++;
+            }
+            
+            if (!is_subsystem_running(webserver_id)) {
+                log_this("WebServer", "- WebServer resources freed successfully", LOG_LEVEL_STATE);
+            } else {
+                log_this("WebServer", "- WebServer failed to stop cleanly", LOG_LEVEL_ERROR);
+            }
+        }
     }
     
     // Logging subsystem
@@ -195,16 +214,21 @@ void graceful_shutdown(void) {
     log_this("Subsystem-Registry", "LANDING: SUBSYSTEM REGISTRY", LOG_LEVEL_STATE);
     log_this("Subsystem-Registry", "- Preparing to free Subsystem Registry resources", LOG_LEVEL_STATE);
 
-    // Comment out these logs for now as they disrupt the clean shutdown sequence
-    // Stop all subsystems in dependency order
-    /* size_t stopped_count = */ stop_all_subsystems_in_dependency_order();
-    // log_this(subsystem, "Primary %s phase complete (%zu subsystems stopped)", 
-    //          LOG_LEVEL_STATE, restart_requested ? "restart" : "shutdown", stopped_count);
+    // Stop all remaining subsystems in dependency order
+    size_t stopped_count = 0;
+    stopped_count = stop_all_subsystems_in_dependency_order();
+    log_this(subsystem, "Primary %s phase complete (%zu subsystems stopped)", 
+             LOG_LEVEL_STATE, restart_requested ? "restart" : "shutdown", stopped_count);
 
     // Clean up network resources
-    // log_this(subsystem, "Cleaning up network resources...", LOG_LEVEL_STATE);
+    log_this(subsystem, "Cleaning up network resources...", LOG_LEVEL_STATE);
     shutdown_network();
     usleep(250000);  // 250ms delay for cleanup
+
+    // Add LANDING COMPLETE section
+    log_this("Landing", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+    log_this("Landing", "LANDING COMPLETE", LOG_LEVEL_STATE);
+    log_this("Landing", "  All subsystems landed successfully", LOG_LEVEL_STATE);
 
     // Check for any remaining running subsystems using registry
     bool any_subsystems_running = false;
@@ -331,7 +355,7 @@ void graceful_shutdown(void) {
         // Check subsystem states through registry
         for (int i = 0; i < subsystem_registry.count; i++) {
             if (is_subsystem_running(i)) {
-                active_count++;
+                active_count = active_count + 1;
                 subsystems_active = true;
             }
         }
