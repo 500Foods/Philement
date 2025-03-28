@@ -6,14 +6,32 @@
  * from the WebSocket subsystem.
  */
 
+// Network constants
+#ifndef NI_MAXHOST
+#define NI_MAXHOST 1025
+#endif
+
+#ifndef NI_NUMERICHOST
+#define NI_NUMERICHOST 0x02
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
 #include <signal.h>
+#include <time.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <ifaddrs.h>
 
 #include "../state.h"
 #include "../../logging/logging.h"
 #include "../../webserver/web_server.h"
+
+// External declarations
+extern volatile sig_atomic_t server_starting;
+extern AppConfig* app_config;
+extern pthread_t web_thread;
 
 // Initialize web server system
 // Requires: Logging system
@@ -57,12 +75,103 @@ int init_webserver_subsystem(void) {
         return 0;
     }
 
-    if (pthread_create(&web_thread, NULL, run_web_server, NULL) != 0) {
+    // Create and register the web server thread
+    pthread_attr_t thread_attr;
+    pthread_attr_init(&thread_attr);
+    pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_JOINABLE);
+
+    // Register thread before creation
+    extern ServiceThreads web_threads;
+    
+    if (pthread_create(&web_thread, &thread_attr, run_web_server, NULL) != 0) {
         log_this("Initialization", "Failed to start web server thread", LOG_LEVEL_ERROR);
+        pthread_attr_destroy(&thread_attr);
+        shutdown_web_server();
+        return 0;
+    }
+    pthread_attr_destroy(&thread_attr);
+
+    // Register thread and wait for initialization
+    add_service_thread(&web_threads, web_thread);
+    
+    // Wait for server to fully initialize (up to 10 seconds)
+    struct timespec wait_time = {0, 100000000}; // 100ms intervals
+    int max_tries = 100; // 10 seconds total
+    int tries = 0;
+    bool server_ready = false;
+
+    log_this("Initialization", "Waiting for web server to initialize...", LOG_LEVEL_STATE);
+    
+    while (tries < max_tries) {
+        nanosleep(&wait_time, NULL);
+        
+        // Check if web daemon is running and bound to port
+        extern struct MHD_Daemon *web_daemon;
+        if (web_daemon != NULL) {
+            const union MHD_DaemonInfo *info = MHD_get_daemon_info(web_daemon, MHD_DAEMON_INFO_BIND_PORT);
+            if (info != NULL && info->port > 0) {
+                // Get connection info
+                const union MHD_DaemonInfo *conn_info = MHD_get_daemon_info(web_daemon, MHD_DAEMON_INFO_CURRENT_CONNECTIONS);
+                unsigned int num_connections = conn_info ? conn_info->num_connections : 0;
+                
+                // Get thread info
+                const union MHD_DaemonInfo *thread_info = MHD_get_daemon_info(web_daemon, MHD_DAEMON_INFO_FLAGS);
+                bool using_threads = thread_info && (thread_info->flags & MHD_USE_THREAD_PER_CONNECTION);
+                
+                log_this("Initialization", "Web server status:", LOG_LEVEL_STATE);
+                log_this("Initialization", "-> Bound to port: %u", LOG_LEVEL_STATE, info->port);
+                log_this("Initialization", "-> Active connections: %u", LOG_LEVEL_STATE, num_connections);
+                log_this("Initialization", "-> Thread mode: %s", LOG_LEVEL_STATE, 
+                        using_threads ? "Thread per connection" : "Single thread");
+                log_this("Initialization", "-> IPv6: %s", LOG_LEVEL_STATE, 
+                        app_config->web.enable_ipv6 ? "enabled" : "disabled");
+                log_this("Initialization", "-> Max connections: %d", LOG_LEVEL_STATE, 
+                        app_config->web.max_connections);
+                
+                // Log network interfaces
+                log_this("Initialization", "Network interfaces:", LOG_LEVEL_STATE);
+                struct ifaddrs *ifaddr, *ifa;
+                if (getifaddrs(&ifaddr) != -1) {
+                    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+                        if (ifa->ifa_addr == NULL)
+                            continue;
+
+                        int family = ifa->ifa_addr->sa_family;
+                        if (family == AF_INET || (family == AF_INET6 && app_config->web.enable_ipv6)) {
+                            char host[NI_MAXHOST];
+                            int s = getnameinfo(ifa->ifa_addr,
+                                             (family == AF_INET) ? sizeof(struct sockaddr_in) :
+                                                                 sizeof(struct sockaddr_in6),
+                                             host, NI_MAXHOST,
+                                             NULL, 0, NI_NUMERICHOST);
+                            if (s == 0) {
+                                log_this("Initialization", "-> %s: %s (%s)", LOG_LEVEL_STATE,
+                                        ifa->ifa_name, host,
+                                        (family == AF_INET) ? "IPv4" : "IPv6");
+                            }
+                        }
+                    }
+                    freeifaddrs(ifaddr);
+                }
+                
+                server_ready = true;
+                break;
+            }
+        }
+        tries++;
+        
+        if (tries % 10 == 0) { // Log every second
+            log_this("Initialization", "Still waiting for web server... (%d seconds)", LOG_LEVEL_STATE, tries / 10);
+        }
+    }
+
+    if (!server_ready) {
+        log_this("Initialization", "Web server failed to start within timeout", LOG_LEVEL_ERROR);
         shutdown_web_server();
         return 0;
     }
 
+    log_this("Initialization", "Web server thread created and registered", LOG_LEVEL_STATE);
     log_this("Initialization", "Web server initialized successfully", LOG_LEVEL_STATE);
     return 1;
 }

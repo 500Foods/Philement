@@ -1,3 +1,12 @@
+// Network constants
+#ifndef NI_MAXHOST
+#define NI_MAXHOST 1025
+#endif
+
+#ifndef NI_NUMERICHOST
+#define NI_NUMERICHOST 0x02
+#endif
+
 // Include core header first for default constants
 #include "web_server_core.h"
 
@@ -6,10 +15,14 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+#include <ifaddrs.h>
+#include <netdb.h>
 #include <pthread.h>
 #include <signal.h>
 #include <string.h>
 #include <errno.h>
+#include <unistd.h>
 
 // Project headers
 #include "../swagger/swagger.h"
@@ -208,29 +221,57 @@ void* run_web_server(void* arg) {
         return NULL;
     }
 
-    log_this("WebServer", "Starting web server", LOG_LEVEL_STATE);
-
-    // Register thread only if we're still in startup
-    extern ServiceThreads web_threads;
-    if (server_starting && !server_stopping && !web_server_shutdown) {
-        add_service_thread(&web_threads, pthread_self());
-    } else {
-        log_this("WebServer", "Skipping thread registration - system state changed", LOG_LEVEL_STATE);
+    log_this("WebServer", "Starting web server daemon", LOG_LEVEL_STATE);
+    
+    // Initialize network interface logging
+    log_this("WebServer", "Initializing network interfaces", LOG_LEVEL_STATE);
+    struct ifaddrs *ifaddr, *ifa;
+    if (getifaddrs(&ifaddr) == -1) {
+        log_this("WebServer", "Failed to get interface addresses", LOG_LEVEL_ERROR);
         return NULL;
     }
+
+    // Log available interfaces and their addresses
+    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr == NULL)
+            continue;
+
+        int family = ifa->ifa_addr->sa_family;
+        if (family == AF_INET || (family == AF_INET6 && server_web_config->enable_ipv6)) {
+            char host[NI_MAXHOST];
+            int s = getnameinfo(ifa->ifa_addr,
+                              (family == AF_INET) ? sizeof(struct sockaddr_in) :
+                                                  sizeof(struct sockaddr_in6),
+                              host, NI_MAXHOST,
+                              NULL, 0, NI_NUMERICHOST);
+            if (s == 0) {
+                log_this("WebServer", "Interface %s: %s (%s)", LOG_LEVEL_STATE,
+                        ifa->ifa_name, host,
+                        (family == AF_INET) ? "IPv4" : "IPv6");
+            }
+        }
+    }
+    freeifaddrs(ifaddr);
+
+    // Configure server flags for proper thread handling
+    unsigned int flags = MHD_USE_INTERNAL_POLLING_THREAD;  // Base flag for internal polling
     
-    // Use internal polling thread with thread pool
-    unsigned int flags = MHD_USE_INTERNAL_POLLING_THREAD;
+    // Add thread pool support
+    flags |= MHD_USE_SELECT_INTERNALLY;
+    
     if (server_web_config->enable_ipv6) {
         flags |= MHD_USE_DUAL_STACK;
         log_this("WebServer", "Starting with IPv6 dual-stack support", LOG_LEVEL_STATE);
     }
 
     log_this("WebServer", "Setting SO_REUSEADDR to enable immediate socket rebinding", LOG_LEVEL_STATE);
-    log_this("WebServer", "Using thread pool with %d threads", LOG_LEVEL_STATE, server_web_config->thread_pool_size);
+    log_this("WebServer", "Using internal polling thread with select", LOG_LEVEL_STATE);
+    log_this("WebServer", "Maximum connections: %d", LOG_LEVEL_STATE, server_web_config->max_connections);
+    log_this("WebServer", "Maximum connections per IP: %d", LOG_LEVEL_STATE, server_web_config->max_connections_per_ip);
+    log_this("WebServer", "Connection timeout: %d seconds", LOG_LEVEL_STATE, server_web_config->connection_timeout);
     
-    // Start the daemon with thread pool configuration
-    web_daemon = MHD_start_daemon(flags, 
+    // Start the daemon with proper thread configuration
+    web_daemon = MHD_start_daemon(flags | MHD_USE_DEBUG | MHD_USE_ERROR_LOG,
                                 server_web_config->port, 
                                 NULL, NULL,
                                 &handle_request, NULL,

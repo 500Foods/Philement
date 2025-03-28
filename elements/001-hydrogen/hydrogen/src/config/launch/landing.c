@@ -10,12 +10,15 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <sys/time.h>
+#include <time.h>
 
 #include "landing.h"
 #include "launch-payload.h"
 #include "../../logging/logging.h"
 #include "../../state/registry/subsystem_registry.h"
 #include "../../state/registry/subsystem_registry_integration.h"
+#include "../../utils/utils_time.h"  // For calculate_shutdown_time()
 
 // Forward declarations for subsystem landing readiness checks
 static LandingReadiness check_print_landing_readiness(void);
@@ -145,21 +148,42 @@ static LandingReadiness check_logging_landing_readiness(void) {
 static LandingReadiness check_webserver_landing_readiness(void) {
     LandingReadiness readiness = {0};
     readiness.subsystem = "WebServer";
-    
-    // Always ready for now
-    readiness.ready = true;
+    readiness.ready = false;
     
     // Allocate space for messages (including NULL terminator)
     readiness.messages = malloc(4 * sizeof(char*));
     if (!readiness.messages) {
-        readiness.ready = false;
         return readiness;
     }
-    
-    // Add messages in the standard format
-    readiness.messages[0] = strdup("WebServer");
-    readiness.messages[1] = strdup("  Go:      WebServer Ready for Landing");
-    readiness.messages[2] = strdup("  Decide:  Go For Landing of WebServer");
+
+    // Check if WebServer is actually running
+    if (!is_subsystem_running_by_name("WebServer")) {
+        readiness.messages[0] = strdup("WebServer");
+        readiness.messages[1] = strdup("  No-Go:   WebServer not running");
+        readiness.messages[2] = strdup("  Decide:  No-Go For Landing of WebServer");
+        readiness.messages[3] = NULL;
+        return readiness;
+    }
+
+    // Check if WebServer threads are in a stoppable state
+    int webserver_id = get_subsystem_id_by_name("WebServer");
+    if (webserver_id >= 0) {
+        SubsystemInfo* webserver = &subsystem_registry.subsystems[webserver_id];
+        if (webserver->threads && webserver->threads->thread_count > 0) {
+            readiness.ready = true;
+            readiness.messages[0] = strdup("WebServer");
+            readiness.messages[1] = strdup("  Go:      WebServer threads ready for shutdown");
+            readiness.messages[2] = strdup("  Decide:  Go For Landing of WebServer");
+        } else {
+            readiness.messages[0] = strdup("WebServer");
+            readiness.messages[1] = strdup("  No-Go:   WebServer threads not accessible");
+            readiness.messages[2] = strdup("  Decide:  No-Go For Landing of WebServer");
+        }
+    } else {
+        readiness.messages[0] = strdup("WebServer");
+        readiness.messages[1] = strdup("  No-Go:   WebServer not found in registry");
+        readiness.messages[2] = strdup("  Decide:  No-Go For Landing of WebServer");
+    }
     readiness.messages[3] = NULL;
     
     return readiness;
@@ -536,12 +560,37 @@ bool check_all_landing_readiness(void) {
     log_this("Landing", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
     log_this("Landing", "LANDING REVIEW", LOG_LEVEL_STATE);
     
-    // Count how many subsystems were checked
+    // Count how many subsystems were checked and how many are ready
     const int total_checked = 14; // Total number of subsystems we check
+    int ready_count = 0;
+    
+    // Count ready subsystems
+    for (int i = 0; i < subsystem_registry.count; i++) {
+        if (subsystem_registry.subsystems[i].state == SUBSYSTEM_INACTIVE) {
+            ready_count++;
+        }
+    }
     
     log_this("Landing", "  Total subsystems checked: %d", LOG_LEVEL_STATE, total_checked);
-    log_this("Landing", "  Subsystems ready for landing: %s", LOG_LEVEL_STATE, 
-             any_subsystem_ready ? "Yes" : "No");
+    log_this("Landing", "  Subsystems ready for landing: %s (%d/%d)", LOG_LEVEL_STATE, 
+             any_subsystem_ready ? "Yes" : "No", ready_count, total_checked);
+    
+    // Add LANDING COMPLETE section if all subsystems are ready
+    if (ready_count == total_checked) {
+        log_this("Landing", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        log_this("Landing", "LANDING COMPLETE", LOG_LEVEL_STATE);
+        
+        // Calculate and log shutdown timing
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        double shutdown_time = calculate_shutdown_time();
+        
+        log_this("Landing", "  Shutdown Duration: %.3fs", LOG_LEVEL_STATE, shutdown_time);
+        log_this("Landing", "  All subsystems landed successfully", LOG_LEVEL_STATE);
+        
+        // Signal completion to shutdown handler
+        log_this("Landing", "  Proceeding with final cleanup", LOG_LEVEL_STATE);
+    }
     
     log_group_end();
     

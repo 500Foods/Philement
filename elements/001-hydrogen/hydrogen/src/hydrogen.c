@@ -5,7 +5,13 @@
  * 
  */
 
+#define _POSIX_C_SOURCE 200809L
+
 // Standard C headers
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/time.h>
+#include <sys/signal.h>
 #include <signal.h>
 #include <pthread.h>
 #include <errno.h>
@@ -22,10 +28,13 @@
 // External thread tracking structures
 extern ServiceThreads logging_threads;
 
+// Global main thread ID for thread tracking
+pthread_t main_thread_id;
+
 int main(int argc, char *argv[]) {
 
     // Store main thread ID for tracking
-    pthread_t main_thread_id = pthread_self();
+    main_thread_id = pthread_self();
 
     // Set up signal handlers for clean shutdown and restart using sigaction
     // - SIGINT (Ctrl+C): Clean shutdown

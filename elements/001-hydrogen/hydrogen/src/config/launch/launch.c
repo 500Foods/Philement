@@ -13,6 +13,8 @@
 
 #include "launch.h"
 #include "launch-payload.h"
+#include "launch-threads.h"
+#include "launch-webserver.h"
 #include "../../logging/logging.h"
 #include "../../state/registry/subsystem_registry.h"
 #include "../../state/registry/subsystem_registry_integration.h"
@@ -31,7 +33,9 @@
 extern ServiceThreads logging_threads;
 extern pthread_t log_thread;
 extern volatile sig_atomic_t log_queue_shutdown;
-
+extern ServiceThreads system_threads;  // Thread tracking for system threads
+extern int launch_threads_subsystem(void);
+extern void free_threads_resources(void);
 extern ServiceThreads web_threads;
 extern pthread_t web_thread;
 extern volatile sig_atomic_t web_server_shutdown;
@@ -63,6 +67,7 @@ extern LaunchReadiness check_webserver_launch_readiness(void);
 extern LaunchReadiness check_websocket_launch_readiness(void);
 extern LaunchReadiness check_print_launch_readiness(void);
 extern LaunchReadiness check_payload_launch_readiness(void);
+extern LaunchReadiness check_threads_launch_readiness(void);
 extern LaunchReadiness check_network_launch_readiness(void);
 extern LaunchReadiness check_api_launch_readiness(void);
 
@@ -157,8 +162,27 @@ bool check_all_launch_readiness(void) {
             free_payload_resources   // Add shutdown function to properly clean up resources
         );
     }
+
+    // Check threads subsystem
+    LaunchReadiness threads_readiness = check_threads_launch_readiness();
+    log_readiness_messages(&threads_readiness);
     
-    // Check network subsystem - moved up to maintain consistent ordering
+    // Register threads subsystem if it's ready
+    if (threads_readiness.ready) {
+        any_subsystem_ready = true;
+        
+        // Register the threads subsystem
+        register_subsystem_from_launch(
+            "Threads",
+            &system_threads,  // Thread tracking structure
+            NULL,  // No dedicated thread
+            NULL,  // No shutdown flag needed
+            launch_threads_subsystem,
+            free_threads_resources
+        );
+    }
+    
+    // Check network subsystem
     LaunchReadiness network_readiness = check_network_launch_readiness();
     log_readiness_messages(&network_readiness);
     
@@ -406,6 +430,7 @@ bool check_all_launch_readiness(void) {
     } readiness_results[] = {
         { registry_readiness.subsystem, registry_readiness.ready },
         { payload_readiness.subsystem, payload_readiness.ready },
+        { threads_readiness.subsystem, threads_readiness.ready },
         { network_readiness.subsystem, network_readiness.ready },
         { logging_readiness.subsystem, logging_readiness.ready },
         { database_readiness.subsystem, database_readiness.ready },
@@ -485,13 +510,20 @@ bool check_all_launch_readiness(void) {
             log_this(readiness_results[i].subsystem, "  %s ready for launch", LOG_LEVEL_STATE, readiness_results[i].subsystem);
         }
         
-        // Launch the subsystem if it's the Payload subsystem
+        // Launch the subsystem if it's the Payload or WebServer subsystem
         if (strcmp(readiness_results[i].subsystem, "Payload") == 0) {
             // Launch the payload subsystem
             if (launch_payload_subsystem()) {
                 log_this("Payload", "Payload subsystem launched successfully", LOG_LEVEL_STATE);
             } else {
                 log_this("Payload", "Failed to launch payload subsystem", LOG_LEVEL_ERROR);
+            }
+        } else if (strcmp(readiness_results[i].subsystem, "WebServer") == 0) {
+            // Launch the webserver subsystem
+            if (launch_webserver_subsystem()) {
+                log_this("WebServer", "WebServer subsystem launched successfully", LOG_LEVEL_STATE);
+            } else {
+                log_this("WebServer", "Failed to launch WebServer subsystem", LOG_LEVEL_ERROR);
             }
         }
         // Note: Actual launch code for other subsystems would be executed here when implemented

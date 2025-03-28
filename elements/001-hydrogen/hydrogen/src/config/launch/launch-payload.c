@@ -25,6 +25,7 @@
 #include "../../config/files/config_filesystem.h"
 #include "../../state/registry/subsystem_registry_integration.h"
 #include "../../payload/payload.h"
+#include "../../utils/utils.h"
 
 // External declarations
 extern AppConfig* app_config;
@@ -38,52 +39,9 @@ extern volatile sig_atomic_t web_server_shutdown;
 // Default payload marker (from Swagger implementation)
 #define DEFAULT_PAYLOAD_MARKER "<<< HERE BE ME TREASURE >>>"
 
-// Static message array for readiness check results
+// Message array for readiness check results
 static const char* payload_messages[15]; // Up to 15 messages plus NULL terminator
 static int message_count = 0;
-
-// Helper function to format a number with thousands separators
-static char* format_with_commas(size_t n) {
-    static char formatted[32];
-    char temp[32];
-    int i = 0, j = 0;
-    
-    // Convert to string
-    snprintf(temp, sizeof(temp), "%zu", n);
-    
-    // Get the length
-    int len = strlen(temp);
-    
-    // Add commas
-    for (i = 0; i < len; i++) {
-        // Add comma every 3 digits from the right
-        if (i > 0 && (len - i) % 3 == 0) {
-            formatted[j++] = ',';
-        }
-        formatted[j++] = temp[i];
-    }
-    
-    // Null terminate
-    formatted[j] = '\0';
-    
-    return formatted;
-}
-
-// Add a message to the messages array
-static void add_message(const char* format, ...) {
-    if (message_count >= 14) return; // Leave room for NULL terminator
-    
-    va_list args;
-    va_start(args, format);
-    char* message = NULL;
-    vasprintf(&message, format, args);
-    va_end(args);
-    
-    if (message) {
-        payload_messages[message_count++] = message;
-        payload_messages[message_count] = NULL; // Ensure NULL termination
-    }
-}
 
 // Function to check if a payload is attached to the executable
 static bool is_payload_attached(const char* executable_path, const char* marker, size_t* payload_size) {
@@ -199,11 +157,12 @@ LaunchReadiness check_payload_launch_readiness(void) {
     }
     
     // Add subsystem name as first message
-    add_message("Payload");
+    add_message_to_array(payload_messages, 15, &message_count, "Payload");
     
     // Check 0: System state
     if (server_stopping || web_server_shutdown) {
-        add_message("  No-Go:   System State (shutdown in progress)");
+        add_message_to_array(payload_messages, 15, &message_count,
+                           "  No-Go:   System State (shutdown in progress)");
         overall_readiness = false;
         
         // Build the readiness structure with minimal checks during shutdown
@@ -217,7 +176,8 @@ LaunchReadiness check_payload_launch_readiness(void) {
     }
     
     if (!server_starting && !server_running) {
-        add_message("  No-Go:   System State (not in startup or running state)");
+        add_message_to_array(payload_messages, 15, &message_count,
+                           "  No-Go:   System State (not in startup or running state)");
         overall_readiness = false;
         
         // Build the readiness structure with minimal checks during invalid state
@@ -256,7 +216,9 @@ LaunchReadiness check_payload_launch_readiness(void) {
         // Check 3: Is the payload accessible? (Only if payload is attached)
         if (payload_attached) {
             if (access(executable_path, R_OK) != 0) {
-                add_message("  No-Go:   Payload Accessibility (executable not readable: %s)", strerror(errno));
+                add_message_to_array(payload_messages, 15, &message_count,
+                                   "  No-Go:   Payload Accessibility (executable not readable: %s)", 
+                                   strerror(errno));
                 overall_readiness = false;
             }
         }
@@ -265,7 +227,8 @@ LaunchReadiness check_payload_launch_readiness(void) {
         free(executable_path);
         executable_path = NULL;
     } else {
-        add_message("  No-Go:   Executable Path (failed to determine)");
+        add_message_to_array(payload_messages, 15, &message_count,
+                           "  No-Go:   Executable Path (failed to determine)");
         overall_readiness = false;
     }
     
@@ -273,9 +236,13 @@ LaunchReadiness check_payload_launch_readiness(void) {
     // Report payload status
     if (payload_attached) {
         // Format payload size with thousands separators for readability
-        add_message("  Go:      Payload (found, %s bytes)", format_with_commas(payload_size));
+        char formatted_size[32];
+        format_number_with_commas(payload_size, formatted_size, sizeof(formatted_size));
+        add_message_to_array(payload_messages, 15, &message_count, 
+                           "  Go:      Payload (found, %s bytes)", formatted_size);
     } else {
-        add_message("  No-Go:   Payload (not found)");
+        add_message_to_array(payload_messages, 15, &message_count, 
+                           "  No-Go:   Payload (not found)");
         overall_readiness = false;
     }
     
@@ -296,24 +263,31 @@ LaunchReadiness check_payload_launch_readiness(void) {
                     const char* env_value = getenv(env_var);
                     if (env_value && strlen(env_value) > 0) {
                         key_available = true;
-                        add_message("  Go:      Decryption Key (from environment: %s)", env_var);
+                        add_message_to_array(payload_messages, 15, &message_count,
+                                           "  Go:      Decryption Key (from environment: %s)", env_var);
                     } else {
-                        add_message("  No-Go:   Decryption Key (environment variable %s not set)", env_var);
+                        add_message_to_array(payload_messages, 15, &message_count,
+                                           "  No-Go:   Decryption Key (environment variable %s not set)", env_var);
                     }
                 } else {
-                    add_message("  No-Go:   Decryption Key (environment variable name too long)");
+                    add_message_to_array(payload_messages, 15, &message_count,
+                                       "  No-Go:   Decryption Key (environment variable name too long)");
                 }
             } else {
-                add_message("  No-Go:   Decryption Key (malformed environment variable reference)");
+                add_message_to_array(payload_messages, 15, &message_count,
+                                   "  No-Go:   Decryption Key (malformed environment variable reference)");
             }
         } else if (strcmp(payload_key, "Missing Key") != 0 && strlen(payload_key) > 0) {
             key_available = true;
-            add_message("  Go:      Decryption Key (direct configuration)");
+            add_message_to_array(payload_messages, 15, &message_count,
+                               "  Go:      Decryption Key (direct configuration)");
         } else {
-            add_message("  No-Go:   Decryption Key (default placeholder value)");
+            add_message_to_array(payload_messages, 15, &message_count,
+                               "  No-Go:   Decryption Key (default placeholder value)");
         }
     } else {
-        add_message("  No-Go:   Decryption Key (not configured)");
+        add_message_to_array(payload_messages, 15, &message_count,
+                           "  No-Go:   Decryption Key (not configured)");
     }
     
     if (!key_available) {
@@ -322,9 +296,11 @@ LaunchReadiness check_payload_launch_readiness(void) {
     
     // Final decision
     if (overall_readiness) {
-        add_message("  Decide:  Go For Launch of Payload Subsystem");
+        add_message_to_array(payload_messages, 15, &message_count,
+                           "  Decide:  Go For Launch of Payload Subsystem");
     } else {
-        add_message("  Decide:  No-Go For Launch of Payload Subsystem");
+        add_message_to_array(payload_messages, 15, &message_count,
+                           "  Decide:  No-Go For Launch of Payload Subsystem");
     }
     
     // Build the readiness structure

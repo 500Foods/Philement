@@ -1,5 +1,14 @@
 # HYDROGEN
 
+🚨 **CRITICAL BUILD REQUIREMENT** 🚨
+Before marking ANY code changes as complete:
+1. Run `make trial`
+2. Ensure NO warnings or errors
+3. Verify shutdown test passes
+4. Only then consider the task done
+
+⚠️ This is a mandatory step - no exceptions! See "build_quality" section below for details.
+
 ```json
 {
   "project": {
