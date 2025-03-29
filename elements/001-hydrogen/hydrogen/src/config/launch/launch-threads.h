@@ -11,6 +11,7 @@
 
 #include "../config.h"
 #include "launch.h"
+#include "../../utils/utils_threads.h"
 
 // Forward declarations
 struct AppConfig;  // Forward declaration of AppConfig
@@ -32,5 +33,10 @@ int launch_threads_subsystem(void);
  * @brief Clean up thread tracking resources during shutdown
  */
 void free_threads_resources(void);
+
+/**
+ * @brief Report current thread status including main and service threads
+ */
+void report_thread_status(void);
 
 #endif /* LAUNCH_THREADS_H */
