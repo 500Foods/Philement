@@ -14,16 +14,19 @@
 
 // Local includes
 #include "launch.h"
+#include "launch-network.h"
 
 // Project includes
 #include "../logging/logging.h"
 #include "../utils/utils_logging.h"
 #include "../state/registry/subsystem_registry.h"
 #include "../state/registry/subsystem_registry_integration.h"
+
 // Forward declarations for subsystem readiness checks
-static LaunchReadiness check_subsystem_registry_readiness(void);
+LaunchReadiness check_subsystem_registry_readiness(void);
 LaunchReadiness check_payload_launch_readiness(void);
 LaunchReadiness check_threads_launch_readiness(void);
+LaunchReadiness check_network_launch_readiness(void);
 LaunchReadiness check_api_launch_readiness(void);
 LaunchReadiness check_database_launch_readiness(void);
 LaunchReadiness check_logging_launch_readiness(void);
@@ -56,7 +59,7 @@ static void log_readiness_messages(const LaunchReadiness* readiness) {
 }
 
 // Check Subsystem Registry readiness
-static LaunchReadiness check_subsystem_registry_readiness(void) {
+LaunchReadiness check_subsystem_registry_readiness(void) {
     LaunchReadiness readiness = {0};
     
     // Always ready - this is our first and most basic subsystem
@@ -142,12 +145,10 @@ ReadinessResults handle_readiness_checks(void) {
     }
     index++;
     
-    // Network Dependencies
-    
-    // Check API subsystem
-    readiness = check_api_launch_readiness();
+    // Check Network subsystem
+    readiness = check_network_launch_readiness();
     log_readiness_messages(&readiness);
-    results.results[index].subsystem = "API";
+    results.results[index].subsystem = "Network";
     results.results[index].ready = readiness.ready;
     if (readiness.ready) results.total_ready++;
     else results.total_not_ready++;
@@ -160,42 +161,6 @@ ReadinessResults handle_readiness_checks(void) {
         free(readiness.messages);
     }
     index++;
-    
-    // Check WebServer subsystem
-    readiness = check_webserver_launch_readiness();
-    log_readiness_messages(&readiness);
-    results.results[index].subsystem = "WebServer";
-    results.results[index].ready = readiness.ready;
-    if (readiness.ready) results.total_ready++;
-    else results.total_not_ready++;
-    results.total_checked++;
-    // Free messages
-    if (readiness.messages) {
-        for (int i = 0; readiness.messages[i] != NULL; i++) {
-            free((void*)readiness.messages[i]);
-        }
-        free(readiness.messages);
-    }
-    index++;
-    
-    // Check WebSocket subsystem
-    readiness = check_websocket_launch_readiness();
-    log_readiness_messages(&readiness);
-    results.results[index].subsystem = "WebSocket";
-    results.results[index].ready = readiness.ready;
-    if (readiness.ready) results.total_ready++;
-    else results.total_not_ready++;
-    results.total_checked++;
-    // Free messages
-    if (readiness.messages) {
-        for (int i = 0; readiness.messages[i] != NULL; i++) {
-            free((void*)readiness.messages[i]);
-        }
-        free(readiness.messages);
-    }
-    index++;
-    
-    // Core Services
     
     // Check Database subsystem
     readiness = check_database_launch_readiness();
@@ -213,11 +178,130 @@ ReadinessResults handle_readiness_checks(void) {
         free(readiness.messages);
     }
     index++;
-    
+
     // Check Logging subsystem
     readiness = check_logging_launch_readiness();
     log_readiness_messages(&readiness);
     results.results[index].subsystem = "Logging";
+    results.results[index].ready = readiness.ready;
+    if (readiness.ready) results.total_ready++;
+    else results.total_not_ready++;
+    results.total_checked++;
+    // Free messages
+    if (readiness.messages) {
+        for (int i = 0; readiness.messages[i] != NULL; i++) {
+            free((void*)readiness.messages[i]);
+        }
+        free(readiness.messages);
+    }
+    index++;
+
+    // Check WebServer subsystem
+    readiness = check_webserver_launch_readiness();
+    log_readiness_messages(&readiness);
+    results.results[index].subsystem = "WebServer";
+    results.results[index].ready = readiness.ready;
+    if (readiness.ready) results.total_ready++;
+    else results.total_not_ready++;
+    results.total_checked++;
+    // Free messages
+    if (readiness.messages) {
+        for (int i = 0; readiness.messages[i] != NULL; i++) {
+            free((void*)readiness.messages[i]);
+        }
+        free(readiness.messages);
+    }
+    index++;
+
+    // Check API subsystem
+    readiness = check_api_launch_readiness();
+    log_readiness_messages(&readiness);
+    results.results[index].subsystem = "API";
+    results.results[index].ready = readiness.ready;
+    if (readiness.ready) results.total_ready++;
+    else results.total_not_ready++;
+    results.total_checked++;
+    // Free messages
+    if (readiness.messages) {
+        for (int i = 0; readiness.messages[i] != NULL; i++) {
+            free((void*)readiness.messages[i]);
+        }
+        free(readiness.messages);
+    }
+    index++;
+    
+    // Check Swagger subsystem
+    readiness = check_swagger_launch_readiness();
+    log_readiness_messages(&readiness);
+    results.results[index].subsystem = "Swagger";
+    results.results[index].ready = readiness.ready;
+    if (readiness.ready) results.total_ready++;
+    else results.total_not_ready++;
+    results.total_checked++;
+    // Free messages
+    if (readiness.messages) {
+        for (int i = 0; readiness.messages[i] != NULL; i++) {
+            free((void*)readiness.messages[i]);
+        }
+        free(readiness.messages);
+    }
+    index++;
+
+    // Check WebSocket subsystem
+    readiness = check_websocket_launch_readiness();
+    log_readiness_messages(&readiness);
+    results.results[index].subsystem = "WebSockmakeet";
+    results.results[index].ready = readiness.ready;
+    if (readiness.ready) results.total_ready++;
+    else results.total_not_ready++;
+    results.total_checked++;
+    // Free messages
+    if (readiness.messages) {
+        for (int i = 0; readiness.messages[i] != NULL; i++) {
+            free((void*)readiness.messages[i]);
+        }
+        free(readiness.messages);
+    }
+    index++;
+
+    // Check Terminal subsystem
+    readiness = check_terminal_launch_readiness();
+    log_readiness_messages(&readiness);
+    results.results[index].subsystem = "Terminal";
+    results.results[index].ready = readiness.ready;
+    if (readiness.ready) results.total_ready++;
+    else results.total_not_ready++;
+    results.total_checked++;
+    // Free messages
+    if (readiness.messages) {
+        for (int i = 0; readiness.messages[i] != NULL; i++) {
+            free((void*)readiness.messages[i]);
+        }
+        free(readiness.messages);
+    }
+    index++;
+        
+    // Check mDNS Server subsystem
+    readiness = check_mdns_server_launch_readiness();
+    log_readiness_messages(&readiness);
+    results.results[index].subsystem = "mDNS Server";
+    results.results[index].ready = readiness.ready;
+    if (readiness.ready) results.total_ready++;
+    else results.total_not_ready++;
+    results.total_checked++;
+    // Free messages
+    if (readiness.messages) {
+        for (int i = 0; readiness.messages[i] != NULL; i++) {
+            free((void*)readiness.messages[i]);
+        }
+        free(readiness.messages);
+    }
+    index++;
+    
+    // Check mDNS Client subsystem
+    readiness = check_mdns_client_launch_readiness();
+    log_readiness_messages(&readiness);
+    results.results[index].subsystem = "mDNS Client";
     results.results[index].ready = readiness.ready;
     if (readiness.ready) results.total_ready++;
     else results.total_not_ready++;
@@ -248,42 +332,6 @@ ReadinessResults handle_readiness_checks(void) {
     }
     index++;
     
-    // Auxiliary Services
-    
-    // Check mDNS Client subsystem
-    readiness = check_mdns_client_launch_readiness();
-    log_readiness_messages(&readiness);
-    results.results[index].subsystem = "mDNS Client";
-    results.results[index].ready = readiness.ready;
-    if (readiness.ready) results.total_ready++;
-    else results.total_not_ready++;
-    results.total_checked++;
-    // Free messages
-    if (readiness.messages) {
-        for (int i = 0; readiness.messages[i] != NULL; i++) {
-            free((void*)readiness.messages[i]);
-        }
-        free(readiness.messages);
-    }
-    index++;
-    
-    // Check mDNS Server subsystem
-    readiness = check_mdns_server_launch_readiness();
-    log_readiness_messages(&readiness);
-    results.results[index].subsystem = "mDNS Server";
-    results.results[index].ready = readiness.ready;
-    if (readiness.ready) results.total_ready++;
-    else results.total_not_ready++;
-    results.total_checked++;
-    // Free messages
-    if (readiness.messages) {
-        for (int i = 0; readiness.messages[i] != NULL; i++) {
-            free((void*)readiness.messages[i]);
-        }
-        free(readiness.messages);
-    }
-    index++;
-    
     // Check Print subsystem
     readiness = check_print_launch_readiness();
     log_readiness_messages(&readiness);
@@ -300,40 +348,6 @@ ReadinessResults handle_readiness_checks(void) {
         free(readiness.messages);
     }
     index++;
-    
-    // Check Swagger subsystem
-    readiness = check_swagger_launch_readiness();
-    log_readiness_messages(&readiness);
-    results.results[index].subsystem = "Swagger";
-    results.results[index].ready = readiness.ready;
-    if (readiness.ready) results.total_ready++;
-    else results.total_not_ready++;
-    results.total_checked++;
-    // Free messages
-    if (readiness.messages) {
-        for (int i = 0; readiness.messages[i] != NULL; i++) {
-            free((void*)readiness.messages[i]);
-        }
-        free(readiness.messages);
-    }
-    index++;
-    
-    // Check Terminal subsystem
-    readiness = check_terminal_launch_readiness();
-    log_readiness_messages(&readiness);
-    results.results[index].subsystem = "Terminal";
-    results.results[index].ready = readiness.ready;
-    if (readiness.ready) results.total_ready++;
-    else results.total_not_ready++;
-    results.total_checked++;
-    // Free messages
-    if (readiness.messages) {
-        for (int i = 0; readiness.messages[i] != NULL; i++) {
-            free((void*)readiness.messages[i]);
-        }
-        free(readiness.messages);
-    }
-    index++;
-    
+   
     return results;
 }

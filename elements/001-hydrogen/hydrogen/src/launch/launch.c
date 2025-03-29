@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <ctype.h>
 
 // Local includes
 #include "launch.h"
@@ -54,6 +55,19 @@ extern volatile sig_atomic_t server_running;
 // Private declarations
 static void log_early_info(void);
 
+// Convert subsystem name to uppercase
+static char* get_uppercase_name(const char* name) {
+    size_t len = strlen(name);
+    char* upper = malloc(len + 1);
+    if (!upper) return NULL;
+    
+    for (size_t i = 0; i < len; i++) {
+        upper[i] = toupper((unsigned char)name[i]);
+    }
+    upper[len] = '\0';
+    return upper;
+}
+
 // Log early startup information (before any initialization)
 static void log_early_info(void) {
     log_group_begin();
@@ -70,17 +84,85 @@ bool check_all_launch_readiness(void) {
     // Record launch start time
     time_t start_time = time(NULL);
     
-    // Begin launch sequence
-    log_this("Launch", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    log_this("Launch", "BEGIN LAUNCH SEQUENCE", LOG_LEVEL_STATE);
-    
     // Phase 1: Check readiness of all subsystems
     ReadinessResults results = handle_readiness_checks();
     
     // Phase 2: Execute launch plan
     bool launch_success = handle_launch_plan(&results);
     
-    // Phase 3: Review launch status
+
+    // Phase 3: Launch approved subsystems
+    if (launch_success) {
+        log_this("Launch", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        
+        // Launch critical subsystems first
+        for (size_t i = 0; i < results.total_checked; i++) {
+            const char* subsystem = results.results[i].subsystem;
+            bool is_ready = results.results[i].ready;
+            
+            if (!is_ready) continue;
+            
+            bool is_critical = (strcmp(subsystem, "Registry") == 0 ||
+                              strcmp(subsystem, "Threads") == 0 ||
+                              strcmp(subsystem, "Network") == 0);
+            
+            if (is_critical) {
+                char* upper_name = get_uppercase_name(subsystem);
+                if (!upper_name) {
+                    log_this("Launch", "Memory allocation failed", LOG_LEVEL_ERROR);
+                    return false;
+                }
+                
+                // Log subsystem name first
+                log_this("Launch", "%s", LOG_LEVEL_STATE, upper_name);
+                
+                // Initialize critical subsystems
+                bool init_ok = false;
+                if (strcmp(subsystem, "Network") == 0) {
+                    init_ok = (init_network_subsystem() == 0);
+                } else if (strcmp(subsystem, "Threads") == 0) {
+                    init_ok = (launch_threads_subsystem() == 0);
+                }
+                
+                if (init_ok) {
+                    log_this("Launch", "  Go:      %s subsystem initialized", LOG_LEVEL_STATE, upper_name);
+                    log_this("Launch", "  Decide:  Go For Launch of %s Subsystem", LOG_LEVEL_STATE, upper_name);
+                } else {
+                    log_this("Launch", "  No-Go:   %s subsystem initialization failed", LOG_LEVEL_ERROR, upper_name);
+                    free(upper_name);
+                    return false;
+                }
+                
+                free(upper_name);
+            }
+        }
+        
+        // Log non-critical subsystems
+        for (size_t i = 0; i < results.total_checked; i++) {
+            const char* subsystem = results.results[i].subsystem;
+            bool is_ready = results.results[i].ready;
+            
+            bool is_critical = (strcmp(subsystem, "Registry") == 0 ||
+                              strcmp(subsystem, "Threads") == 0 ||
+                              strcmp(subsystem, "Network") == 0);
+            
+            if (is_ready && !is_critical) {
+                char* upper_name = get_uppercase_name(subsystem);
+                if (!upper_name) {
+                    log_this("Launch", "Memory allocation failed", LOG_LEVEL_ERROR);
+                    return false;
+                }
+                
+                log_this("Launch", "%s", LOG_LEVEL_STATE, upper_name);
+                log_this("Launch", "  Go:      %s subsystem ready", LOG_LEVEL_STATE, upper_name);
+                log_this("Launch", "  Decide:  Go For Launch of %s Subsystem", LOG_LEVEL_STATE, upper_name);
+                
+                free(upper_name);
+            }
+        }
+    }
+    
+    // Phase 4: Review launch status
     handle_launch_review(&results, start_time);
     
     // Return overall launch success
