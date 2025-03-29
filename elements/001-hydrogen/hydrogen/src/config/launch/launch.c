@@ -177,7 +177,7 @@ bool check_all_launch_readiness(void) {
             &system_threads,  // Thread tracking structure
             NULL,  // No dedicated thread
             NULL,  // No shutdown flag needed
-            launch_threads_subsystem,
+            launch_threads_subsystem,  // Use the subsystem's init function
             free_threads_resources
         );
     }
@@ -510,13 +510,20 @@ bool check_all_launch_readiness(void) {
             log_this(readiness_results[i].subsystem, "  %s ready for launch", LOG_LEVEL_STATE, readiness_results[i].subsystem);
         }
         
-        // Launch the subsystem if it's the Payload or WebServer subsystem
+        // Launch the subsystem if it's the Payload, Threads, or WebServer subsystem
         if (strcmp(readiness_results[i].subsystem, "Payload") == 0) {
             // Launch the payload subsystem
             if (launch_payload_subsystem()) {
                 log_this("Payload", "Payload subsystem launched successfully", LOG_LEVEL_STATE);
             } else {
                 log_this("Payload", "Failed to launch payload subsystem", LOG_LEVEL_ERROR);
+            }
+        } else if (strcmp(readiness_results[i].subsystem, "Threads") == 0) {
+            // Launch the threads subsystem
+            if (launch_threads_subsystem()) {
+                log_this("Threads", "Threads subsystem launched successfully", LOG_LEVEL_STATE);
+            } else {
+                log_this("Threads", "Failed to launch Threads subsystem", LOG_LEVEL_ERROR);
             }
         } else if (strcmp(readiness_results[i].subsystem, "WebServer") == 0) {
             // Launch the webserver subsystem
