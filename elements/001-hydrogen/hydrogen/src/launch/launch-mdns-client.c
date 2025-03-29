@@ -52,12 +52,12 @@ LaunchReadiness check_mdns_client_launch_readiness(void) {
     return readiness;
 }
 
-// Initialize the mDNS client subsystem
-int init_mdns_client_subsystem(void) {
+// Launch the mDNS client subsystem
+int launch_mdns_client_subsystem(void) {
     // Reset shutdown flag
     mdns_client_system_shutdown = 0;
     
-    // Initialize mDNS client system
+    // Launch mDNS client system
     // Currently a placeholder as system is under development
-    return 0;
+    return 0;  // Return 0 for now as system is under development
 }

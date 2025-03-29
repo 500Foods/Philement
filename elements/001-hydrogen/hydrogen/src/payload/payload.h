@@ -43,6 +43,29 @@ bool extract_payload(const char *executable_path,
 void free_payload(PayloadData *payload);
 
 /**
+ * Check if a payload exists in the executable
+ * 
+ * This function performs a lightweight check for a payload marker and validates
+ * basic payload structure. It doesn't perform decryption or decompression.
+ * 
+ * @param marker The marker string to search for
+ * @param size If payload is found, will contain its size
+ * @return true if valid payload found, false otherwise
+ */
+bool check_payload_exists(const char *marker, size_t *size);
+
+/**
+ * Validate a payload decryption key
+ * 
+ * This function checks if the provided key is valid for payload decryption.
+ * For environment variables, it checks if the variable exists and has a value.
+ * 
+ * @param key The key to validate (can be direct or ${env.VAR} format)
+ * @return true if key is valid, false otherwise
+ */
+bool validate_payload_key(const char *key);
+
+/**
  * Launch the payload subsystem
  * 
  * This function extracts and processes the payload from the executable.

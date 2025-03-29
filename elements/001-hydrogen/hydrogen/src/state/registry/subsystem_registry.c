@@ -172,11 +172,11 @@ void update_subsystem_state(int subsystem_id, SubsystemState new_state) {
         
         // Only log if the state is actually changing
         if (subsystem->state != new_state) {
-            log_this("SubsysReg", "Subsystem '%s' changing state: %s -> %s", 
-                    LOG_LEVEL_STATE, 
-                    subsystem->name,
-                    state_strings[subsystem->state], 
-                    state_strings[new_state]);
+            // log_this("SubsysReg", "Subsystem '%s' changing state: %s -> %s", 
+            //         LOG_LEVEL_STATE, 
+            //         subsystem->name,
+            //         state_strings[subsystem->state], 
+            //         state_strings[new_state]);
             
             subsystem->state = new_state;
             subsystem->state_changed = time(NULL);
@@ -251,7 +251,7 @@ bool start_subsystem(int subsystem_id) {
     
     pthread_mutex_unlock(&subsystem_registry.mutex);
     
-    log_this("SubsysReg", "Starting subsystem '%s'", LOG_LEVEL_STATE, subsystem->name);
+    // log_this("SubsysReg", "Starting subsystem '%s'", LOG_LEVEL_STATE, subsystem->name);
     
     // Call the initialization function
     bool success = false;
@@ -266,7 +266,7 @@ bool start_subsystem(int subsystem_id) {
     // Update the state based on the result
     if (success) {
         update_subsystem_state(subsystem_id, SUBSYSTEM_RUNNING);
-        log_this("SubsysReg", "Subsystem '%s' started successfully", LOG_LEVEL_STATE, subsystem->name);
+        // log_this("SubsysReg", "Subsystem '%s' started successfully", LOG_LEVEL_STATE, subsystem->name);
     } else {
         update_subsystem_state(subsystem_id, SUBSYSTEM_ERROR);
         log_this("SubsysReg", "Failed to start subsystem '%s'", LOG_LEVEL_ERROR, subsystem->name);

@@ -66,8 +66,5 @@ LandingReadiness check_api_landing_readiness(void) {
     return readiness;
 }
 
-// No explicit shutdown needed as API is part of WebServer
-// Function provided for consistency with other subsystems
-void shutdown_api(void) {
-    log_this("API", "API routes cleanup complete", LOG_LEVEL_STATE);
-}
+// Use shutdown function from launch-api.c
+extern void shutdown_api(void);

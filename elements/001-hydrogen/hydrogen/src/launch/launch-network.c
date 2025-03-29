@@ -28,12 +28,12 @@ extern volatile sig_atomic_t web_server_shutdown;
 // Network subsystem shutdown flag
 volatile int network_system_shutdown = 0;
 
-// Network subsystem initialization function
-int init_network_subsystem(void) {
+// Network subsystem launch function
+int launch_network_subsystem(void) {
     log_this("Network", "Initializing network subsystem", LOG_LEVEL_STATE);
     // Network subsystem is already initialized by the get_network_info() function
     // No additional initialization is needed
-    return 0;
+    return 1;  // Return 1 for success as per standard
 }
 
 // Network subsystem shutdown function

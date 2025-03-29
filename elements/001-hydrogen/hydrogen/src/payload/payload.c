@@ -29,6 +29,95 @@ static bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size
 static void init_openssl(void);
 static bool process_payload_data(const PayloadData *payload);
 
+/**
+ * Check if a payload exists in the executable
+ * 
+ * This function checks for a payload marker and validates basic payload structure.
+ * It's a lightweight check that doesn't perform decryption or decompression.
+ * 
+ * @param marker The marker string to search for
+ * @param size If payload is found, will contain its size
+ * @return true if valid payload found, false otherwise
+ */
+bool check_payload_exists(const char *marker, size_t *size) {
+    if (!marker || !size) return false;
+    
+    char *executable_path = get_executable_path();
+    if (!executable_path) return false;
+    
+    int fd = open(executable_path, O_RDONLY);
+    free(executable_path);
+    
+    if (fd == -1) return false;
+    
+    struct stat st;
+    if (fstat(fd, &st) == -1) {
+        close(fd);
+        return false;
+    }
+    
+    void *file_data = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    close(fd);
+    
+    if (file_data == MAP_FAILED) return false;
+    
+    bool result = false;
+    const char *marker_pos = memmem(file_data, st.st_size, marker, strlen(marker));
+    
+    if (marker_pos && st.st_size > 0) {
+        size_t file_size = (size_t)st.st_size;
+        size_t marker_offset = (size_t)(marker_pos - (char*)file_data);
+        if (marker_offset + strlen(marker) + 8 <= file_size) {
+            const uint8_t *size_bytes = (uint8_t*)(marker_pos + strlen(marker));
+            *size = 0;
+            for (int i = 0; i < 8; i++) {
+                *size = (*size << 8) | size_bytes[i];
+            }
+            
+            if (*size > 0 && *size <= 100 * 1024 * 1024 && *size <= marker_offset) {
+                result = true;
+            }
+        }
+    }
+    
+    munmap(file_data, st.st_size);
+    return result;
+}
+
+/**
+ * Validate a payload decryption key
+ * 
+ * This function checks if the provided key is valid for payload decryption.
+ * For environment variables, it checks if the variable exists and has a value.
+ * 
+ * @param key The key to validate (can be direct or ${env.VAR} format)
+ * @return true if key is valid, false otherwise
+ */
+bool validate_payload_key(const char *key) {
+    if (!key || strcmp(key, "Missing Key") == 0 || strlen(key) == 0) {
+        return false;
+    }
+    
+    // Check if it's an environment variable reference
+    if (strncmp(key, "${env.", 6) == 0) {
+        const char *end = strchr(key + 6, '}');
+        if (!end) return false;
+        
+        size_t len = end - (key + 6);
+        if (len == 0 || len > 255) return false;
+        
+        char env_var[256];
+        strncpy(env_var, key + 6, len);
+        env_var[len] = '\0';
+        
+        const char *env_value = getenv(env_var);
+        return (env_value && strlen(env_value) > 0);
+    }
+    
+    // Direct key value - just check it's not empty
+    return true;
+}
+
 // Initialize OpenSSL once at startup
 static void init_openssl(void) {
     static bool initialized = false;

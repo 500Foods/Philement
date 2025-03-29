@@ -27,6 +27,13 @@
  */
 LaunchReadiness check_network_launch_readiness(void);
 
+/**
+ * Launch the network subsystem
+ * 
+ * @return 1 on success, 0 on failure
+ */
+int launch_network_subsystem(void);
+
 /*
  * Network subsystem shutdown flag
  * This flag is used to signal the network subsystem to shut down

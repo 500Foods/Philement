@@ -45,12 +45,12 @@ LaunchReadiness check_swagger_launch_readiness(void) {
     return readiness;
 }
 
-// Initialize the swagger subsystem
-int init_swagger_subsystem(void) {
+// Launch the swagger subsystem
+int launch_swagger_subsystem(void) {
     // Reset shutdown flag
     swagger_system_shutdown = 0;
     
-    // Initialize swagger system
+    // Launch swagger system
     // Currently a placeholder as system is under development
-    return 0;
+    return 0;  // Return 0 for now as system is under development
 }
