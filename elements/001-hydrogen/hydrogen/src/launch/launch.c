@@ -5,6 +5,24 @@
  * - launch_readiness.c - Handles readiness checks
  * - launch_plan.c - Coordinates launch sequence
  * - launch_review.c - Reports launch status
+ *
+ * Standard Subsystem Order:
+ * When listing or processing subsystems, the following order should be maintained:
+ * 1. Subsystem Registry (manages all other subsystems)
+ * 2. Payload
+ * 3. Threads
+ * 4. Network
+ * 5. Database
+ * 6. Logging
+ * 7. WebServer
+ * 8. API
+ * 9. Swagger
+ * 10. WebSockets
+ * 11. Terminal
+ * 12. mDNS Server
+ * 13. mDNS Client
+ * 14. MailRelay
+ * 15. Print
  */
 
 // System includes
@@ -32,6 +50,38 @@
 #include "../state/registry/subsystem_registry.h"
 #include "../state/registry/subsystem_registry_integration.h"
 
+// Launch subsystem includes (in standard order)
+#include "launch-payload.h"
+#include "launch-threads.h"
+#include "launch-network.h"
+#include "launch-database.h"
+#include "launch-logging.h"
+#include "launch-webserver.h"
+#include "launch-api.h"
+#include "launch-swagger.h"
+#include "launch-websocket.h"
+#include "launch-terminal.h"
+#include "launch-mdns-server.h"
+#include "launch-mdns-client.h"
+#include "launch-mail-relay.h"
+#include "launch-print.h"
+
+// External declarations for subsystem launch functions (in standard order)
+extern int launch_payload_subsystem(void);      // from launch-payload.c
+extern int launch_threads_subsystem(void);      // from launch-threads.c
+extern int launch_network_subsystem(void);      // from launch-network.c
+extern int launch_database_subsystem(void);     // from launch-database.c
+extern int launch_logging_subsystem(void);      // from launch-logging.c
+extern int launch_webserver_subsystem(void);    // from launch-webserver.c
+extern int launch_api_subsystem(void);          // from launch-api.c
+extern int launch_swagger_subsystem(void);      // from launch-swagger.c
+extern int launch_websocket_subsystem(void);    // from launch-websocket.c
+extern int launch_terminal_subsystem(void);     // from launch-terminal.c
+extern int launch_mdns_server_subsystem(void);  // from launch-mdns-server.c
+extern int launch_mdns_client_subsystem(void);  // from launch-mdns-client.c
+extern int launch_mail_relay_subsystem(void);   // from launch-mail-relay.c
+extern int launch_print_subsystem(void);        // from launch-print.c
+
 // External declarations from config.h
 extern AppConfig* app_config;
 
@@ -54,6 +104,8 @@ extern volatile sig_atomic_t server_running;
 
 // Private declarations
 static void log_early_info(void);
+static bool launch_approved_subsystems(ReadinessResults* results);
+static char* get_uppercase_name(const char* name);
 
 // Convert subsystem name to uppercase
 static char* get_uppercase_name(const char* name) {
@@ -67,6 +119,81 @@ static char* get_uppercase_name(const char* name) {
     upper[len] = '\0';
     return upper;
 }
+
+/*
+ * Launch approved subsystems in registry order
+ * Each subsystem's specific launch code is in its own launch-*.c file
+ */
+static bool launch_approved_subsystems(ReadinessResults* results) {
+    if (!results) return false;
+    
+    bool all_launched = true;
+    
+    // Launch subsystems in registry order
+    for (size_t i = 0; i < results->total_checked; i++) {
+        const char* subsystem = results->results[i].subsystem;
+        bool is_ready = results->results[i].ready;
+        
+        if (!is_ready) continue;
+        
+        char* upper_name = get_uppercase_name(subsystem);
+        if (!upper_name) {
+            log_this("Launch", "Memory allocation failed", LOG_LEVEL_ERROR);
+            return false;
+        }
+        
+        // Get subsystem ID and update state to starting
+        int subsystem_id = get_subsystem_id_by_name(subsystem);
+        if (subsystem_id < 0) {
+            free(upper_name);
+            continue;
+        }
+        update_subsystem_state(subsystem_id, SUBSYSTEM_STARTING);
+        
+        // Initialize subsystem using its specific launch function
+        bool init_ok = false;
+        
+        // Each subsystem has its own launch function in its respective launch-*.c file
+        if (strcmp(subsystem, "Payload") == 0) {
+            init_ok = (launch_payload_subsystem() == 1);
+        } else if (strcmp(subsystem, "Threads") == 0) {
+            init_ok = (launch_threads_subsystem() == 1);
+        } else if (strcmp(subsystem, "Network") == 0) {
+            init_ok = (launch_network_subsystem() == 1);
+        } else if (strcmp(subsystem, "Database") == 0) {
+            init_ok = (launch_database_subsystem() == 1);
+        } else if (strcmp(subsystem, "Logging") == 0) {
+            init_ok = (launch_logging_subsystem() == 1);
+        } else if (strcmp(subsystem, "WebServer") == 0) {
+            init_ok = (launch_webserver_subsystem() == 1);
+        } else if (strcmp(subsystem, "API") == 0) {
+            init_ok = (launch_api_subsystem() == 1);
+        } else if (strcmp(subsystem, "Swagger") == 0) {
+            init_ok = (launch_swagger_subsystem() == 1);
+        } else if (strcmp(subsystem, "WebSockets") == 0) {
+            init_ok = (launch_websocket_subsystem() == 1);
+        } else if (strcmp(subsystem, "Terminal") == 0) {
+            init_ok = (launch_terminal_subsystem() == 1);
+        } else if (strcmp(subsystem, "mDNS Server") == 0) {
+            init_ok = (launch_mdns_server_subsystem() == 1);
+        } else if (strcmp(subsystem, "mDNS Client") == 0) {
+            init_ok = (launch_mdns_client_subsystem() == 1);
+        } else if (strcmp(subsystem, "MailRelay") == 0) {
+            init_ok = (launch_mail_relay_subsystem() == 1);
+        } else if (strcmp(subsystem, "Print") == 0) {
+            init_ok = (launch_print_subsystem() == 1);
+        }
+        
+        // Update registry state based on result
+        update_subsystem_state(subsystem_id, init_ok ? SUBSYSTEM_RUNNING : SUBSYSTEM_ERROR);
+        all_launched &= init_ok;
+        
+        free(upper_name);
+    }
+    
+    return all_launched;
+}
+
 
 // Log early startup information (before any initialization)
 static void log_early_info(void) {
@@ -84,85 +211,31 @@ bool check_all_launch_readiness(void) {
     // Record launch start time
     time_t start_time = time(NULL);
     
-    // Phase 1: Check readiness of all subsystems
+    /*
+     * Phase 1: Check readiness of all subsystems
+     * The Subsystem Registry is checked first, as it's required for all other subsystems
+     */
     ReadinessResults results = handle_readiness_checks();
     
-    // Phase 2: Execute launch plan
+    /*
+     * Phase 2: Execute launch plan
+     * Create a sequence based on dependencies, not subsystem importance
+     */
     bool launch_success = handle_launch_plan(&results);
     
-
-    // Phase 3: Launch approved subsystems
+    /*
+     * Phase 3: Launch approved subsystems in registry order
+     * Each subsystem's specific launch code is in its own launch-*.c file
+     */
     if (launch_success) {
-        log_this("Launch", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-        
-        // Launch critical subsystems first
-        for (size_t i = 0; i < results.total_checked; i++) {
-            const char* subsystem = results.results[i].subsystem;
-            bool is_ready = results.results[i].ready;
-            
-            if (!is_ready) continue;
-            
-            bool is_critical = (strcmp(subsystem, "Registry") == 0 ||
-                              strcmp(subsystem, "Threads") == 0 ||
-                              strcmp(subsystem, "Network") == 0);
-            
-            if (is_critical) {
-                char* upper_name = get_uppercase_name(subsystem);
-                if (!upper_name) {
-                    log_this("Launch", "Memory allocation failed", LOG_LEVEL_ERROR);
-                    return false;
-                }
-                
-                // Log subsystem name first
-                log_this("Launch", "%s", LOG_LEVEL_STATE, upper_name);
-                
-                // Initialize critical subsystems
-                bool init_ok = false;
-                if (strcmp(subsystem, "Network") == 0) {
-                    init_ok = (init_network_subsystem() == 0);
-                } else if (strcmp(subsystem, "Threads") == 0) {
-                    init_ok = (launch_threads_subsystem() == 0);
-                }
-                
-                if (init_ok) {
-                    log_this("Launch", "  Go:      %s subsystem initialized", LOG_LEVEL_STATE, upper_name);
-                    log_this("Launch", "  Decide:  Go For Launch of %s Subsystem", LOG_LEVEL_STATE, upper_name);
-                } else {
-                    log_this("Launch", "  No-Go:   %s subsystem initialization failed", LOG_LEVEL_ERROR, upper_name);
-                    free(upper_name);
-                    return false;
-                }
-                
-                free(upper_name);
-            }
-        }
-        
-        // Log non-critical subsystems
-        for (size_t i = 0; i < results.total_checked; i++) {
-            const char* subsystem = results.results[i].subsystem;
-            bool is_ready = results.results[i].ready;
-            
-            bool is_critical = (strcmp(subsystem, "Registry") == 0 ||
-                              strcmp(subsystem, "Threads") == 0 ||
-                              strcmp(subsystem, "Network") == 0);
-            
-            if (is_ready && !is_critical) {
-                char* upper_name = get_uppercase_name(subsystem);
-                if (!upper_name) {
-                    log_this("Launch", "Memory allocation failed", LOG_LEVEL_ERROR);
-                    return false;
-                }
-                
-                log_this("Launch", "%s", LOG_LEVEL_STATE, upper_name);
-                log_this("Launch", "  Go:      %s subsystem ready", LOG_LEVEL_STATE, upper_name);
-                log_this("Launch", "  Decide:  Go For Launch of %s Subsystem", LOG_LEVEL_STATE, upper_name);
-                
-                free(upper_name);
-            }
-        }
+        // log_this("Launch", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        launch_success = launch_approved_subsystems(&results);
     }
     
-    // Phase 4: Review launch status
+    /*
+     * Phase 4: Review launch status
+     * Verify all subsystems launched successfully and collect metrics
+     */
     handle_launch_review(&results, start_time);
     
     // Return overall launch success

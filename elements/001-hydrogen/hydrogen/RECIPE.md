@@ -126,6 +126,90 @@ Before marking ANY code changes as complete:
     "Endpoint": "HTTP API access point",
     "Resource": "Managed system component"
   },
+  "launch_system": {
+    "overview": "The launch system manages subsystem initialization through a carefully orchestrated process",
+    "quick_reference": {
+      "core_concepts": [
+        "Subsystem Registry is first - it manages all other subsystems",
+        "Launch code (launch.c) is lightweight orchestration only",
+        "Subsystem code lives in separate launch-*.c files",
+        "Dependencies determine order, no subsystem hierarchy",
+        "Landing (in landing/*.c) mirrors launch in reverse"
+      ],
+      "standardized_order": {
+        "description": "When listing or processing subsystems, always use this standard order:",
+        "order": [
+          "1. Subsystem Registry (manages all other subsystems)",
+          "2. Payload",
+          "3. Threads",
+          "4. Network",
+          "5. Database",
+          "6. Logging",
+          "7. WebServer",
+          "8. API",
+          "9. Swagger",
+          "10. WebSockets",
+          "11. Terminal",
+          "12. mDNS Server",
+          "13. mDNS Client",
+          "14. MailRelay",
+          "15. Print"
+        ]
+      },
+      "file_organization": {
+        "launch.c": "Main orchestration and coordination",
+        "launch-*.c": "One file per subsystem with specific launch code",
+        "launch.h": "Public interface and shared structures",
+        "landing/*.c": "Mirror of launch files for shutdown"
+      },
+      "key_functions": {
+        "check_all_launch_readiness": "Phase 1: Verify subsystems can start",
+        "handle_launch_plan": "Phase 2: Create launch sequence",
+        "launch_approved_subsystems": "Phase 3: Start in dependency order",
+        "handle_launch_review": "Phase 4: Verify launch success"
+      },
+      "subsystem_files": {
+        "launch-threads.c": "Thread management subsystem",
+        "launch-network.c": "Network connectivity subsystem",
+        "launch-webserver.c": "Web server subsystem",
+        "(etc)": "One file per subsystem"
+      }
+    },
+    "phases": {
+      "1_readiness": {
+        "what": "Check readiness of all subsystems",
+        "how": "Each subsystem has check_*_launch_readiness() function",
+        "where": "Implemented in respective launch-*.c files",
+        "first": "Subsystem Registry checked first, must pass"
+      },
+      "2_planning": {
+        "what": "Create launch sequence based on dependencies",
+        "how": "Use registry to determine correct order",
+        "where": "Coordinated in launch.c",
+        "key": "Dependencies determine order, not importance"
+      },
+      "3_execution": {
+        "what": "Launch subsystems that passed readiness",
+        "how": "Call subsystem-specific launch functions",
+        "where": "Code in respective launch-*.c files",
+        "order": "Based on dependencies via registry"
+      },
+      "4_review": {
+        "what": "Verify successful launch of all subsystems",
+        "how": "Check final states and collect metrics",
+        "where": "Coordinated in launch.c",
+        "result": "System ready for operation"
+      }
+    },
+    "subsystem_organization": {
+      "registry_first": "Subsystem Registry initializes first as it manages all other subsystems",
+      "code_separation": {
+        "orchestration": "src/launch/launch.c coordinates the overall process",
+        "subsystems": "src/launch/launch-*.c contains subsystem-specific code",
+        "readiness": "Each subsystem has its own launch readiness check"
+      }
+    }
+  },
   "launch_readiness": {
     "overview": "Subsystem launch readiness checks verify all prerequisites are met before initialization",
     "importance": ["Prevents cascading failures", "Ensures clean startup", "Provides clear status reporting", "Facilitates dependency management"],
@@ -140,6 +224,12 @@ Before marking ANY code changes as complete:
       "dependencies": "Check that required subsystems are running",
       "resources": "Verify access to required files, network resources, etc.",
       "environment": "Check environment variables and system capabilities"
+    },
+    "landing_relationship": {
+      "overview": "Landing process mirrors launch in reverse order",
+      "implementation": "src/landing/ contains mirror implementations of launch files",
+      "purpose": "Ensures clean shutdown by freeing resources in correct order",
+      "structure": "Follows same separation of concerns as launch system"
     },
     "message_format": {
       "subsystem_name": "First message is just the subsystem name",
@@ -171,6 +261,32 @@ Before marking ANY code changes as complete:
   }
 }
 ```
+
+## Subsystem Order
+
+When listing or processing subsystems, the following order must be maintained:
+
+1. Subsystem Registry (manages all other subsystems)
+2. Payload
+3. Threads
+4. Network
+5. Database
+6. Logging
+7. WebServer
+8. API
+9. Swagger
+10. WebSockets
+11. Terminal
+12. mDNS Server
+13. mDNS Client
+14. MailRelay
+15. Print
+
+This order reflects the dependency chain and must be followed in:
+- Code organization (includes, declarations)
+- Launch sequence
+- Documentation
+- Any other context where subsystems are listed or processed
 
 ## REPOSITORY MAP
 

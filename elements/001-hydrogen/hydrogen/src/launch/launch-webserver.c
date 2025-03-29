@@ -64,7 +64,7 @@ LaunchReadiness check_webserver_launch_readiness(void) {
     return readiness;
 }
 
-// Initialize web server system
+// Launch web server system
 // Requires: Logging system
 //
 // The web server handles HTTP/REST API requests for configuration and control.
@@ -73,7 +73,7 @@ LaunchReadiness check_webserver_launch_readiness(void) {
 // 2. Enhance reliability through isolation
 // 3. Support flexible deployment
 // 4. Enable different security policies
-int init_webserver_subsystem(void) {
+int launch_webserver_subsystem(void) {
     extern volatile sig_atomic_t server_stopping;
     extern volatile sig_atomic_t web_server_shutdown;
 

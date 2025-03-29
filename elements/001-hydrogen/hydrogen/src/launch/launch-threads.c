@@ -51,13 +51,13 @@ void report_thread_status(void) {
     // Update memory metrics
     update_service_thread_metrics(&system_threads);
     
-    snprintf(msg, sizeof(msg), "  Thread status: %d total (%d service thread%s + main thread)", 
+    snprintf(msg, sizeof(msg), "- Threads status: %d total (%d service thread%s + main thread)", 
              system_threads.thread_count, non_main_threads,
              non_main_threads == 1 ? "" : "s");
     log_this("Threads", msg, LOG_LEVEL_STATE);
     
     // Report memory usage
-    snprintf(msg, sizeof(msg), "  Memory usage: %.2f MB virtual, %.2f MB resident", 
+    snprintf(msg, sizeof(msg), "- Memory usage: %.2f MB virtual, %.2f MB resident", 
              system_threads.virtual_memory / (1024.0 * 1024.0),
              system_threads.resident_memory / (1024.0 * 1024.0));
     log_this("Threads", msg, LOG_LEVEL_STATE);
@@ -90,8 +90,28 @@ LaunchReadiness check_threads_launch_readiness(void) {
         result.messages[3] = NULL;
         return result;
     }
+
+    // Register with subsystem registry during readiness check if needed
+    if (get_subsystem_id_by_name("Threads") < 0) {
+        register_subsystem_from_launch(
+            "Threads",
+            &system_threads,
+            &main_thread_id,
+            &threads_shutdown_flag,
+            NULL,
+            NULL
+        );
+    }
+
+    // Initialize thread tracking if not already done
+    if (system_threads.thread_count == 0) {
+        init_service_threads(&system_threads);
+        add_service_thread(&system_threads, main_thread_id);
+        result.messages[1] = strdup("  Go:      Thread tracking initialized");
+    } else {
+        result.messages[1] = strdup("  Go:      Thread tracking ready");
+    }
     
-    result.messages[1] = strdup("  Go:      Ready for launch");
     result.messages[2] = strdup("  Decide:  Go For Launch of Threads");
     result.messages[3] = NULL;
     
@@ -104,34 +124,32 @@ LaunchReadiness check_threads_launch_readiness(void) {
  * @returns 1 if initialization successful, 0 otherwise
  */
 int launch_threads_subsystem(void) {
-    // Check if already running
-    int threads_id = get_subsystem_id_by_name("Threads");
-    if (threads_id >= 0 && get_subsystem_state(threads_id) == SUBSYSTEM_RUNNING) {
-        log_this("Threads", "Thread subsystem already running", LOG_LEVEL_STATE);
-        return 1;
+
+    // Log initialization first - so we know an attempt was made
+    log_this("Threads", LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this("Threads", "LAUNCH: THREADS", LOG_LEVEL_STATE);
+    
+    // Verify thread tracking is initialized
+    if (system_threads.thread_count == 0) {
+        // Not initialized during readiness check, initialize now
+        init_service_threads(&system_threads);
+        add_service_thread(&system_threads, main_thread_id);
+        
+        if (system_threads.thread_count != 1) {
+            log_this("Threads", "Failed to add main thread to tracking", LOG_LEVEL_ERROR);
+            return 0;
+        }
     }
     
-    // Initialize thread tracking
-    init_service_threads(&system_threads);
-    add_service_thread(&system_threads, main_thread_id);
+    // Get subsystem ID and update state to running
+    int threads_id = get_subsystem_id_by_name("Threads");
+    update_subsystem_state(threads_id, SUBSYSTEM_RUNNING);
     
-    // Register and update subsystem state
-    update_subsystem_on_startup("Threads", true);
-    
-    // Log initialization and status with clear thread monitoring information
-    log_this("Threads", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    log_this("Threads", "LAUNCH: THREADS", LOG_LEVEL_STATE);
-    log_this("Threads", "  Thread management system initialized", LOG_LEVEL_STATE);
-    log_this("Threads", "  Thread subsystem has been initialized", LOG_LEVEL_STATE);
-    log_this("Threads", "  Currently monitoring 1 thread (main thread)", LOG_LEVEL_STATE);
-    log_this("Threads", "  Thread mutex initialized and ready", LOG_LEVEL_STATE);
-    log_this("Threads", "  Thread tracking capabilities:", LOG_LEVEL_STATE);
-    log_this("Threads", "    - Service thread registration", LOG_LEVEL_STATE);
-    log_this("Threads", "    - Memory metrics monitoring", LOG_LEVEL_STATE);
-    log_this("Threads", "    - Thread status reporting", LOG_LEVEL_STATE);
-    log_this("Threads", "    - Automatic cleanup on exit", LOG_LEVEL_STATE);
+    // Log initialization status with proper format
+    log_this("Threads", "- Threads initialized", LOG_LEVEL_STATE);
+    log_this("Threads", "- Main thread registered for monitoring", LOG_LEVEL_STATE);
+    log_this("Threads", "- Threads mutex initialized and ready", LOG_LEVEL_STATE);
     report_thread_status();
-    log_this("Threads", "  Threads subsystem running", LOG_LEVEL_STATE);
     
     return 1;
 }

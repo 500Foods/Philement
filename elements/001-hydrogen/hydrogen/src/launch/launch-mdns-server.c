@@ -47,8 +47,8 @@ LaunchReadiness check_mdns_server_launch_readiness(void) {
     return readiness;
 }
 
-// Initialize the mDNS server subsystem
-int init_mdns_server_subsystem(void) {
+// Launch the mDNS server subsystem
+int launch_mdns_server_subsystem(void) {
     // Reset shutdown flag
     mdns_server_system_shutdown = 0;
     

@@ -46,12 +46,12 @@ LaunchReadiness check_terminal_launch_readiness(void) {
     return readiness;
 }
 
-// Initialize the terminal subsystem
-int init_terminal_subsystem(void) {
+// Launch the terminal subsystem
+int launch_terminal_subsystem(void) {
     // Reset shutdown flag
     terminal_system_shutdown = 0;
     
-    // Initialize terminal system
+    // Launch terminal system
     // Currently a placeholder as system is under development
-    return 0;
+    return 0;  // Return 0 for now as system is under development
 }

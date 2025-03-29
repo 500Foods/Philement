@@ -1,15 +1,30 @@
 /*
- * Launch Readiness Subsystem
+ * Launch System Header
  * 
- * This module manages pre-launch checks to ensure subsystem dependencies
- * are met before attempting to start each component.
+ * This module defines the interfaces for the launch system and its subsystems.
+ * All subsystem initialization functions follow the pattern launch_*_subsystem
+ * and return 1 on success, 0 on failure.
  * 
- * The launch readiness system evaluates each subsystem's prerequisites
- * and determines whether it's safe to proceed with initialization.
+ * Subsystems are organized in the following standard order:
+ * 1. Subsystem Registry
+ * 2. Payload
+ * 3. Threads
+ * 4. Network
+ * 5. Database
+ * 6. Logging
+ * 7. WebServer
+ * 8. API
+ * 9. Swagger
+ * 10. WebSockets
+ * 11. Terminal
+ * 12. mDNS Server
+ * 13. mDNS Client
+ * 14. MailRelay
+ * 15. Print
  */
 
-#ifndef LAUNCH_READINESS_H
-#define LAUNCH_READINESS_H
+#ifndef LAUNCH_H
+#define LAUNCH_H
 
 // System includes
 #include <stdbool.h>
@@ -50,80 +65,71 @@ typedef struct {
 } ReadinessResults;
 
 // Core launch functions
-
-// Perform readiness checks on all subsystems
 ReadinessResults handle_readiness_checks(void);
-
-// Coordinate the overall launch sequence
 bool check_all_launch_readiness(void);
-
-// Execute the launch plan and make Go/No-Go decisions
 bool handle_launch_plan(const ReadinessResults* results);
-
-// Review and report final launch status
 void handle_launch_review(const ReadinessResults* results, time_t start_time);
-
-// Check if individual subsystems are ready to launch
-LaunchReadiness check_logging_launch_readiness(void);
-LaunchReadiness check_database_launch_readiness(void);
-LaunchReadiness check_terminal_launch_readiness(void);
-LaunchReadiness check_mdns_server_launch_readiness(void);
-LaunchReadiness check_mdns_client_launch_readiness(void);
-LaunchReadiness check_mail_relay_launch_readiness(void);
-LaunchReadiness check_swagger_launch_readiness(void);
-LaunchReadiness check_webserver_launch_readiness(void);
-LaunchReadiness check_websocket_launch_readiness(void);
-LaunchReadiness check_print_launch_readiness(void);
-LaunchReadiness check_payload_launch_readiness(void);
-LaunchReadiness check_threads_launch_readiness(void);
-LaunchReadiness check_network_launch_readiness(void);
-LaunchReadiness check_api_launch_readiness(void);
-
-
-// Subsystem initialization and shutdown functions
-void free_payload_resources(void);
-int launch_threads_subsystem(void);  // Returns 1 on success, 0 on failure
-void free_threads_resources(void);
 
 // Main system startup function
 int startup_hydrogen(const char* config_path);
 
-// Network subsystem
-int init_network_subsystem(void);
+// Subsystem readiness checks (in standard order)
+LaunchReadiness check_payload_launch_readiness(void);
+LaunchReadiness check_threads_launch_readiness(void);
+LaunchReadiness check_network_launch_readiness(void);
+LaunchReadiness check_database_launch_readiness(void);
+LaunchReadiness check_logging_launch_readiness(void);
+LaunchReadiness check_webserver_launch_readiness(void);
+LaunchReadiness check_api_launch_readiness(void);
+LaunchReadiness check_swagger_launch_readiness(void);
+LaunchReadiness check_websocket_launch_readiness(void);
+LaunchReadiness check_terminal_launch_readiness(void);
+LaunchReadiness check_mdns_server_launch_readiness(void);
+LaunchReadiness check_mdns_client_launch_readiness(void);
+LaunchReadiness check_mail_relay_launch_readiness(void);
+LaunchReadiness check_print_launch_readiness(void);
+
+// Subsystem launch functions (in standard order)
+int launch_payload_subsystem(void);
+void free_payload_resources(void);
+
+int launch_threads_subsystem(void);
+void free_threads_resources(void);
+
+int launch_network_subsystem(void);
 void shutdown_network_subsystem(void);
 
-// Web server subsystem
-int init_webserver_subsystem(void);
+int launch_database_subsystem(void);
+void shutdown_database_subsystem(void);
+
+int launch_logging_subsystem(void);
+void shutdown_logging_subsystem(void);
+
+int launch_webserver_subsystem(void);
 void shutdown_web_server(void);
 
-// WebSocket subsystem
-int init_websocket_subsystem(void);
-void stop_websocket_server(void);
+int launch_api_subsystem(void);
+void shutdown_api(void);
 
-// Terminal subsystem
-int init_terminal_subsystem(void);
-void shutdown_terminal(void);
-
-// mDNS subsystems
-int init_mdns_server_subsystem(void);
-void shutdown_mdns_server(void);
-int init_mdns_client_subsystem(void);
-void shutdown_mdns_client(void);
-
-// Mail relay subsystem
-int init_mail_relay_subsystem(void);
-void shutdown_mail_relay(void);
-
-// Swagger subsystem
-int init_swagger_subsystem(void);
+int launch_swagger_subsystem(void);
 void shutdown_swagger(void);
 
-// Print subsystem
-int init_print_subsystem(void);
+int launch_websocket_subsystem(void);
+void stop_websocket_server(void);
+
+int launch_terminal_subsystem(void);
+void shutdown_terminal(void);
+
+int launch_mdns_server_subsystem(void);
+void shutdown_mdns_server(void);
+
+int launch_mdns_client_subsystem(void);
+void shutdown_mdns_client(void);
+
+int launch_mail_relay_subsystem(void);
+void shutdown_mail_relay(void);
+
+int launch_print_subsystem(void);
 void shutdown_print_queue(void);
 
-// Launch functions for individual subsystems
-bool launch_payload_subsystem(void);
-int launch_webserver_subsystem(void);
-
-#endif /* LAUNCH_READINESS_H */
+#endif /* LAUNCH_H */

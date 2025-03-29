@@ -52,8 +52,5 @@ LandingReadiness check_database_landing_readiness(void) {
     return readiness;
 }
 
-// No explicit shutdown needed as this is not a standalone service
-// Function provided for consistency with other subsystems
-void shutdown_database(void) {
-    log_this("Database", "Database configuration cleanup complete", LOG_LEVEL_STATE);
-}
+// Use shutdown function from launch-database.c
+extern void shutdown_database(void);

@@ -1,18 +1,22 @@
 # Subsystem Registry Architecture
 
-The Subsystem Registry is a centralized mechanism for managing the lifecycle and dependencies of all subsystems within the Hydrogen server. This document provides a comprehensive overview of the registry's design, implementation, and usage patterns.
+The Subsystem Registry is the foundational subsystem of Hydrogen, being the first to be checked for launch readiness and the first to be registered. It provides the core infrastructure for managing all other subsystems throughout their lifecycle, from launch through operation to landing (shutdown).
 
 ## Overview
 
-The Subsystem Registry provides a structured approach to subsystem management with the following key capabilities:
+The Subsystem Registry is unique in being both a subsystem itself and the manager of all subsystems. As the first subsystem to be initialized, it provides these key capabilities:
 
-1. **Centralized Registration**: Maintains a single source of truth for all subsystems
-2. **State Tracking**: Monitors the state of each subsystem (inactive, starting, running, stopping, error)
-3. **Dependency Management**: Enforces rules about subsystem dependencies
-4. **Lifecycle Control**: Provides standard interfaces for starting and stopping subsystems
-5. **Status Reporting**: Offers comprehensive system status information
+1. **First Subsystem**: First to be checked for launch readiness and registered
+2. **Centralized Registration**: Maintains a single source of truth for all subsystems
+3. **State Tracking**: Monitors the state of each subsystem (inactive, starting, running, stopping, error)
+4. **Dependency Management**: Enforces rules about subsystem dependencies
+5. **Lifecycle Control**: Provides standard interfaces for starting and stopping subsystems
+6. **Status Reporting**: Offers comprehensive system status information
 
-This architecture enables Hydrogen to maintain a robust and fault-tolerant system by enforcing proper initialization sequences, dependency checking, and controlled shutdown processes.
+This architecture enables Hydrogen to maintain a robust and fault-tolerant system by:
+- Ensuring proper initialization sequence starting with the registry itself
+- Managing subsystem dependencies without imposing hierarchy of importance
+- Coordinating both launch and landing processes in the correct order
 
 ```diagram
 ┌─────────────────────────────────────────────────────────────┐

@@ -31,9 +31,9 @@ LaunchReadiness check_payload_launch_readiness(void);
  * This function launches the payload subsystem by extracting and
  * processing the payload from the executable.
  * 
- * @return true if payload was successfully launched, false otherwise
+ * @return 1 if payload was successfully launched, 0 on failure
  */
-bool launch_payload_subsystem(void);
+int launch_payload_subsystem(void);
 
 /**
  * Free resources allocated during payload launch

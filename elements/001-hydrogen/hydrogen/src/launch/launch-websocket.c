@@ -51,7 +51,7 @@ LaunchReadiness check_websocket_launch_readiness(void) {
     return readiness;
 }
 
-// Initialize WebSocket server system
+// Launch WebSocket server system
 // Requires: Logging system
 //
 // The WebSocket server provides real-time status updates and monitoring.
@@ -60,7 +60,7 @@ LaunchReadiness check_websocket_launch_readiness(void) {
 // 2. Enhance reliability through isolation
 // 3. Support flexible deployment
 // 4. Enable different security policies
-int init_websocket_subsystem(void) {
+int launch_websocket_subsystem(void) {
     extern volatile sig_atomic_t server_stopping;
     extern volatile sig_atomic_t websocket_server_shutdown;
 

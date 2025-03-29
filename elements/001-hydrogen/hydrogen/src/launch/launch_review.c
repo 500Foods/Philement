@@ -67,10 +67,21 @@ void handle_launch_review(const ReadinessResults* results, time_t start_time) {
             state = info ? info->state : SUBSYSTEM_INACTIVE;
         }
         
+        // Determine status based on readiness and state
+        const char* status;
+        if (state == SUBSYSTEM_RUNNING) {
+            status = "Running";
+        } else if (state == SUBSYSTEM_ERROR) {
+            status = "Pending";  // Launch attempted but failed
+        } else if (!is_ready) {
+            status = "Not Launched";  // Was no-go for launch
+        } else {
+            status = subsystem_state_to_string(state);  // Other states
+        }
+        
         // Log subsystem details
         log_this("Launch", "%s:", LOG_LEVEL_STATE, subsystem);
-        log_this("Launch", "  Status:        %s", LOG_LEVEL_STATE,
-                is_ready ? "Running" : "Not Running");
+        log_this("Launch", "  Status:        %s", LOG_LEVEL_STATE, status);
         log_this("Launch", "  Thread Count:  %d", LOG_LEVEL_STATE, thread_count);
         log_this("Launch", "  State:         %s", LOG_LEVEL_STATE,
                 subsystem_state_to_string(state));

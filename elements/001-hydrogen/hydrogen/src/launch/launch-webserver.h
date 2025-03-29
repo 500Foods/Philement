@@ -12,12 +12,12 @@
 /**
  * Launch the webserver subsystem
  * 
- * This function launches the webserver subsystem by initializing
- * the webserver and registering it in the subsystem registry.
+ * This function launches the webserver subsystem by setting up
+ * the HTTP server and registering it in the subsystem registry.
  * 
- * @return true if webserver was successfully launched, false otherwise
+ * @return 1 on success, 0 on failure
  */
-bool launch_webserver_subsystem(void);
+int launch_webserver_subsystem(void);
 
 /**
  * Free resources allocated during webserver launch

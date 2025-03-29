@@ -45,12 +45,12 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
     return readiness;
 }
 
-// Initialize the mail relay subsystem
-int init_mail_relay_subsystem(void) {
+// Launch the mail relay subsystem
+int launch_mail_relay_subsystem(void) {
     // Reset shutdown flag
     mail_relay_system_shutdown = 0;
     
-    // Initialize mail relay system
+    // Launch mail relay system
     // Currently a placeholder as system is under development
-    return 0;
+    return 0;  // Return 0 for now as system is under development
 }

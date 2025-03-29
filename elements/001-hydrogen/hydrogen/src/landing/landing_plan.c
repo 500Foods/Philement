@@ -61,9 +61,10 @@ bool handle_landing_plan(const ReadinessResults* results) {
         log_this("Landing", "%s: %s", LOG_LEVEL_STATE, 
                 subsystem, is_ready ? "Go" : "No-Go");
         
-        // Shut down ready subsystems
+        // Shut down ready subsystems - reverse order of launch
         if (is_ready) {
             if (strcmp(subsystem, "API") == 0) shutdown_api();
+            else if (strcmp(subsystem, "Print Queue") == 0) shutdown_print_queue();
             else if (strcmp(subsystem, "Database") == 0) shutdown_database();
             else if (strcmp(subsystem, "Terminal") == 0) shutdown_terminal();
             else if (strcmp(subsystem, "mDNS Server") == 0) shutdown_mdns_server();
@@ -72,7 +73,6 @@ bool handle_landing_plan(const ReadinessResults* results) {
             else if (strcmp(subsystem, "Swagger") == 0) shutdown_swagger();
             else if (strcmp(subsystem, "WebServer") == 0) shutdown_webserver();
             else if (strcmp(subsystem, "WebSocket") == 0) shutdown_websocket();
-            else if (strcmp(subsystem, "Print Queue") == 0) shutdown_print_queue();
             else if (strcmp(subsystem, "Payload") == 0) shutdown_payload();
         }
     }

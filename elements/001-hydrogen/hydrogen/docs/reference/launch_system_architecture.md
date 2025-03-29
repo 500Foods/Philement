@@ -1,21 +1,41 @@
 # Launch System Architecture
 
-This document describes the Launch System architecture in Hydrogen, which manages pre-launch checks to ensure subsystem dependencies are met before attempting to start each component. The system evaluates each subsystem's prerequisites and determines whether it's safe to proceed with initialization.
+This document describes the Launch System architecture in Hydrogen, which manages the initialization of subsystems through a carefully orchestrated process. The system is designed around a lightweight orchestration layer that coordinates subsystem-specific launch code, with the Subsystem Registry serving as the foundation for all other subsystems.
 
-## Subsystem Launch Documentation
+## Core Design Principles
 
-Detailed launch process documentation for each subsystem:
+1. **Subsystem Registry First**: The Subsystem Registry is the first component to be checked and registered, as it provides the foundation for managing all other subsystems.
+
+2. **Separation of Concerns**:
+   - `launch.c`: Lightweight orchestration of the launch process
+   - `launch-*.c`: Individual files containing subsystem-specific launch code
+   - Each subsystem maintains its own launch readiness checks
+
+3. **Dependency-Based Ordering**:
+   - Subsystems are launched in order based on their dependencies
+   - No inherent hierarchy of importance
+   - Later subsystems can rely on services provided by earlier ones
+
+4. **Mirror Landing Process**:
+   - Landing (shutdown) process mirrors launch in reverse order
+   - Implemented in parallel structure under src/landing/
+   - Ensures resources are freed in the correct order
+
+## Launch Process Documentation
+
+Each subsystem's launch process is documented separately:
 
 | Subsystem | Description | Documentation |
 |-----------|-------------|---------------|
-| PAYLOAD | Manages embedded payloads, minimal dependencies | [Launch Process](launch/payload_subsystem.md) |
-| WebServer | HTTP services, depends on Network | [Launch Process](launch/webserver_subsystem.md) |
-| Network | Network connectivity foundation | [Coming Soon] |
-| Logging | System-wide logging services | [Coming Soon] |
-| Database | Data persistence layer | [Coming Soon] |
+| Registry | Foundation for subsystem management | [Launch Process](launch/registry_subsystem.md) |
+| Payload | Manages embedded payloads | [Launch Process](launch/payload_subsystem.md) |
+| WebServer | HTTP services | [Launch Process](launch/webserver_subsystem.md) |
+| Network | Network connectivity | [Coming Soon] |
+| Logging | System-wide logging | [Coming Soon] |
+| Database | Data persistence | [Coming Soon] |
 | WebSocket | Real-time communication | [Coming Soon] |
 | Terminal | Command interface | [Coming Soon] |
-| mDNS Server/Client | Service discovery | [Coming Soon] |
+| mDNS | Service discovery | [Coming Soon] |
 | Mail Relay | Email services | [Coming Soon] |
 | Print Queue | Print job management | [Coming Soon] |
 | Swagger | API documentation | [Coming Soon] |
@@ -28,42 +48,56 @@ Each subsystem's documentation details:
 - Logging practices
 - Integration points
 
-## Overview
+## Launch System Phases
 
-The Launch System is a critical component of Hydrogen that manages the controlled initialization of server subsystems through a series of readiness checks. It implements a go/no-go decision process to ensure:
+The launch process follows four distinct phases:
 
-- Subsystems only start when their dependencies and requirements are met
-- Failed subsystems don't cause cascading failures
-- The server starts in a consistent and predictable state
-- Configuration errors are detected early in the startup process
+1. **Readiness Check Phase**
+   - Each subsystem's readiness is verified
+   - Checks include system state, configuration, dependencies
+   - Registry readiness checked first
 
-The Launch System works in tandem with the Subsystem Registry to orchestrate a well-coordinated server startup sequence.
+2. **Launch Plan Phase**
+   - Plan created based on readiness results
+   - Dependencies ordered correctly
+   - Failed subsystems excluded
+
+3. **Launch Execution Phase**
+   - Subsystems launched in registry order
+   - Each subsystem registered upon successful launch
+   - Failures handled gracefully
+
+4. **Review Phase**
+   - Final status of all subsystems verified
+   - Launch metrics collected
+   - System ready for operation
 
 ## System Architecture
 
-The Launch System follows a phased approach to subsystem initialization:
+The Launch System's architecture emphasizes clean separation of concerns:
 
 ```diagram
 ┌──────────────────────────────────────────────────────────────┐
 │                      Launch System                           │
 │                                                              │
 │  ┌─────────────────┐     ┌─────────────────┐                 │
-│  │ Launch Readiness│────►│  Launch Go/No-Go│                 │
-│  │    Checks       │     │    Decision     │                 │
+│  │    Subsystem    │────►│   Launch Plan   │                 │
+│  │    Registry     │     │    Creation     │                 │
 │  └─────────────────┘     └────────┬────────┘                 │
-│                                   │                          │
-│                                   ▼                          │
-│          ┌─────────────────────────────────────────┐         │
-│          │          Subsystem Registry             │         │
-│          │                                         │         │
-│          │  ┌─────────────┐     ┌─────────────┐    │         │
-│          │  │  Register   │     │   Start     │    │         │
-│          │  │  Subsystem  │────►│  Subsystem  │    │         │
-│          │  └─────────────┘     └─────────────┘    │         │
-│          │                                         │         │
-│          └─────────────────────────────────────────┘         │
+│          ▲                        │                          │
+│          │                        ▼                          │
+│  ┌───────┴───────┐     ┌─────────────────┐                  │
+│  │   Readiness   │◄────┤    Launch       │                  │
+│  │    Checks     │     │   Execution     │                  │
+│  └───────────────┘     └─────────────────┘                  │
 │                                                              │
 └──────────────────────────────────────────────────────────────┘
+
+File Organization:
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────┐
+│    launch.c     │────►│  launch-*.c     │────►│ landing-*.c │
+│  Orchestration  │     │ Subsystem Code  │     │   Mirror    │
+└─────────────────┘     └─────────────────┘     └─────────────┘
 ```
 
 ### Key Components

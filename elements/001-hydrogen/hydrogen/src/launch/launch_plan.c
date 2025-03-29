@@ -44,7 +44,6 @@ bool handle_launch_plan(const ReadinessResults* results) {
     }
     
     // Process each subsystem
-    bool all_critical_ready = true;
     for (size_t i = 0; i < results->total_checked; i++) {
         const char* subsystem = results->results[i].subsystem;
         bool is_ready = results->results[i].ready;
@@ -53,23 +52,6 @@ bool handle_launch_plan(const ReadinessResults* results) {
         log_this("Launch", "%s %s", LOG_LEVEL_STATE, 
                 is_ready ? "  Go:    " : "  No-Go: ", subsystem);
         
-        // Check if this is a critical subsystem
-        bool is_critical = (strcmp(subsystem, "Registry") == 0 ||
-                          strcmp(subsystem, "Threads") == 0 ||
-                          strcmp(subsystem, "Network") == 0);
-        
-        if (is_critical && !is_ready) {
-            all_critical_ready = false;
-            log_this("Launch", "No-Go: Critical subsystem %s not ready", 
-                    LOG_LEVEL_ALERT, subsystem);
-        }
-    }
-    
-    // Final launch decision
-    if (!all_critical_ready) {
-        log_this("Launch", "LAUNCH PLAN: No-Go - Critical systems not ready", 
-                LOG_LEVEL_ALERT);
-        return false;
     }
     
     log_this("Launch", "LAUNCH PLAN: Go for launch", LOG_LEVEL_STATE);
