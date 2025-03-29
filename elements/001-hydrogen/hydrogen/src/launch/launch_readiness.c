@@ -22,22 +22,22 @@
 #include "../state/registry/subsystem_registry.h"
 #include "../state/registry/subsystem_registry_integration.h"
 
-// Forward declarations for subsystem readiness checks
+// Forward declarations for subsystem readiness checks (in standard order)
 LaunchReadiness check_subsystem_registry_readiness(void);
 LaunchReadiness check_payload_launch_readiness(void);
 LaunchReadiness check_threads_launch_readiness(void);
 LaunchReadiness check_network_launch_readiness(void);
-LaunchReadiness check_api_launch_readiness(void);
 LaunchReadiness check_database_launch_readiness(void);
 LaunchReadiness check_logging_launch_readiness(void);
-LaunchReadiness check_mail_relay_launch_readiness(void);
-LaunchReadiness check_mdns_client_launch_readiness(void);
-LaunchReadiness check_mdns_server_launch_readiness(void);
-LaunchReadiness check_print_launch_readiness(void);
-LaunchReadiness check_swagger_launch_readiness(void);
-LaunchReadiness check_terminal_launch_readiness(void);
 LaunchReadiness check_webserver_launch_readiness(void);
+LaunchReadiness check_api_launch_readiness(void);
+LaunchReadiness check_swagger_launch_readiness(void);
 LaunchReadiness check_websocket_launch_readiness(void);
+LaunchReadiness check_terminal_launch_readiness(void);
+LaunchReadiness check_mdns_server_launch_readiness(void);
+LaunchReadiness check_mdns_client_launch_readiness(void);
+LaunchReadiness check_mail_relay_launch_readiness(void);
+LaunchReadiness check_print_launch_readiness(void);
 
 
 // Log all messages from a readiness check
@@ -250,7 +250,7 @@ ReadinessResults handle_readiness_checks(void) {
     // Check WebSocket subsystem
     readiness = check_websocket_launch_readiness();
     log_readiness_messages(&readiness);
-    results.results[index].subsystem = "WebSockmakeet";
+    results.results[index].subsystem = "WebSocket";
     results.results[index].ready = readiness.ready;
     if (readiness.ready) results.total_ready++;
     else results.total_not_ready++;

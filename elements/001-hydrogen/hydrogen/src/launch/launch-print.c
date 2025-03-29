@@ -50,8 +50,8 @@ LaunchReadiness check_print_launch_readiness(void) {
     return readiness;
 }
 
-// Initialize the print subsystem
-int init_print_subsystem(void) {
+// Launch the print subsystem
+int launch_print_subsystem(void) {
     // Reset shutdown flag
     print_system_shutdown = 0;
     
