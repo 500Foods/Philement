@@ -185,7 +185,7 @@ PERF_DIR = build_perf
 # ──────────────────────────────────────────────────────────────────────────────
 # Source and object files for different build configurations
 # ──────────────────────────────────────────────────────────────────────────────
-SRCS = $(shell find $(SRC_DIR) -type f -name '*.c')
+SRCS = $(shell find $(SRC_DIR) -type f -name '*.c' -not -path '*/state/startup/*')
 OBJS = $(patsubst $(SRC_DIR)/%,$(BUILD_DIR)/%,$(SRCS:.c=.o))
 DEBUG_OBJS = $(patsubst $(SRC_DIR)/%,$(DEBUG_DIR)/%,$(SRCS:.c=.o))
 VALGRIND_OBJS = $(patsubst $(SRC_DIR)/%,$(VALGRIND_DIR)/%,$(SRCS:.c=.o))
