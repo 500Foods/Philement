@@ -50,8 +50,8 @@ bool handle_launch_plan(const ReadinessResults* results) {
         bool is_ready = results->results[i].ready;
         
         // Log subsystem status
-        log_this("Launch", "%s: %s", LOG_LEVEL_STATE, 
-                subsystem, is_ready ? "Go" : "No-Go");
+        log_this("Launch", "%s %s", LOG_LEVEL_STATE, 
+                is_ready ? "  Go:    " : "  No-Go: ", subsystem);
         
         // Check if this is a critical subsystem
         bool is_critical = (strcmp(subsystem, "Registry") == 0 ||
