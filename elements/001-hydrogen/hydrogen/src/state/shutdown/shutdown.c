@@ -20,7 +20,7 @@
 #include "../../utils/utils.h"
 #include "../../utils/utils_threads.h"
 #include "../../utils/utils_time.h"
-#include "../../config/launch/landing.h"
+#include "../../landing/landing.h"
 
 // Flag from utils_threads.c to suppress thread management logging during final shutdown
 extern volatile sig_atomic_t final_shutdown_mode;

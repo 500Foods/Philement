@@ -1,0 +1,84 @@
+/*
+ * Landing Swagger Subsystem
+ * 
+ * This module handles the landing (shutdown) sequence for the Swagger subsystem.
+ * It provides functions for:
+ * - Checking Swagger landing readiness
+ * - Managing Swagger shutdown
+ * 
+ * Dependencies:
+ * - Must wait for WebServer subsystem to be ready for shutdown
+ */
+
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+#include <signal.h>
+
+#include "landing.h"
+#include "landing_readiness.h"
+#include "../logging/logging.h"
+#include "../utils/utils_logging.h"
+#include "../state/registry/subsystem_registry.h"
+#include "../state/registry/subsystem_registry_integration.h"
+
+// External declarations
+extern volatile sig_atomic_t swagger_system_shutdown;
+
+// Check if the swagger subsystem is ready to land
+LandingReadiness check_swagger_landing_readiness(void) {
+    LandingReadiness readiness = {0};
+    readiness.subsystem = "Swagger";
+    
+    // Allocate space for messages (including NULL terminator)
+    readiness.messages = malloc(5 * sizeof(char*));
+    if (!readiness.messages) {
+        readiness.ready = false;
+        return readiness;
+    }
+    
+    // Add initial subsystem identifier
+    readiness.messages[0] = strdup("Swagger");
+    
+    // Check if swagger is actually running
+    if (!is_subsystem_running_by_name("Swagger")) {
+        readiness.ready = false;
+        readiness.messages[1] = strdup("  No-Go:   Swagger not running");
+        readiness.messages[2] = strdup("  Decide:  No-Go For Landing of Swagger");
+        readiness.messages[3] = NULL;
+        return readiness;
+    }
+    
+    // Check WebServer dependency
+    bool webserver_ready = is_subsystem_running_by_name("WebServer");
+    if (!webserver_ready) {
+        readiness.ready = false;
+        readiness.messages[1] = strdup("  No-Go:   WebServer subsystem not running");
+        readiness.messages[2] = strdup("  Decide:  No-Go For Landing of Swagger");
+        readiness.messages[3] = NULL;
+        return readiness;
+    }
+    
+    // All checks passed
+    readiness.ready = true;
+    readiness.messages[1] = strdup("  Go:      Swagger ready for shutdown");
+    readiness.messages[2] = strdup("  Go:      WebServer ready for shutdown");
+    readiness.messages[3] = strdup("  Decide:  Go For Landing of Swagger");
+    readiness.messages[4] = NULL;
+    
+    return readiness;
+}
+
+// Shutdown the swagger subsystem
+void shutdown_swagger(void) {
+    log_this("Swagger", "Beginning Swagger shutdown sequence", LOG_LEVEL_STATE);
+    
+    // Signal shutdown
+    swagger_system_shutdown = 1;
+    log_this("Swagger", "Signaled Swagger system to stop", LOG_LEVEL_STATE);
+    
+    // Cleanup resources
+    // Additional cleanup will be added as needed
+    
+    log_this("Swagger", "Swagger shutdown complete", LOG_LEVEL_STATE);
+}

@@ -20,7 +20,7 @@
 #include "../registry/subsystem_registry.h"
 #include "../registry/subsystem_registry_integration.h"
 #include "../../utils/utils_time.h"
-#include "../../config/launch/landing.h"
+#include "../../landing/landing.h"
 
 // Shared flags and state for shutdown coordination
 extern volatile sig_atomic_t restart_requested;
