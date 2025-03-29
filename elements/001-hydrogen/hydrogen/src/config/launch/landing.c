@@ -15,10 +15,60 @@
 
 #include "landing.h"
 #include "launch-payload.h"
+#include "launch-threads.h"
 #include "../../logging/logging.h"
 #include "../../state/registry/subsystem_registry.h"
 #include "../../state/registry/subsystem_registry_integration.h"
 #include "../../utils/utils_time.h"  // For calculate_shutdown_time()
+#include "../../utils/utils_threads.h"
+
+// External declarations from launch-threads.c
+extern ServiceThreads system_threads;
+extern pthread_t main_thread_id;
+
+// Check Threads landing readiness
+static LandingReadiness check_threads_landing_readiness(void) {
+    LandingReadiness readiness = {0};
+    readiness.subsystem = "threads";
+    readiness.ready = false;
+    
+    // Allocate space for messages (including NULL terminator)
+    readiness.messages = malloc(5 * sizeof(char*));
+    if (!readiness.messages) {
+        return readiness;
+    }
+    
+    readiness.messages[0] = strdup("threads");
+    
+    // Count non-main threads
+    int non_main_threads = 0;
+    for (int i = 0; i < system_threads.thread_count; i++) {
+        if (!pthread_equal(system_threads.thread_ids[i], main_thread_id)) {
+            non_main_threads++;
+        }
+    }
+    
+    char thread_msg[128];
+    snprintf(thread_msg, sizeof(thread_msg), "  %s:      Active threads: %d (main + %d other%s)", 
+             non_main_threads > 0 ? "No-Go" : "Go",
+             system_threads.thread_count,
+             non_main_threads,
+             non_main_threads == 1 ? "" : "s");
+    
+    readiness.messages[1] = strdup(thread_msg);
+    
+    if (non_main_threads > 0) {
+        readiness.messages[2] = strdup("  No-Go:   Service threads still running");
+        readiness.messages[3] = strdup("  Decide:  No-Go For Landing of threads");
+    } else {
+        readiness.messages[2] = strdup("  Go:      Ready for landing");
+        readiness.messages[3] = strdup("  Decide:  Go For Landing of threads");
+        readiness.ready = true;
+    }
+    
+    readiness.messages[4] = NULL;
+    return readiness;
+}
 
 // Forward declarations for subsystem landing readiness checks
 static LandingReadiness check_print_landing_readiness(void);
@@ -35,6 +85,7 @@ static LandingReadiness check_logging_landing_readiness(void);
 static LandingReadiness check_network_landing_readiness(void);
 static LandingReadiness check_payload_landing_readiness(void);
 static LandingReadiness check_subsystem_registry_landing_readiness(void);
+static LandingReadiness check_threads_landing_readiness(void);
 
 // Free the messages in a LandingReadiness struct
 void free_landing_readiness_messages(LandingReadiness* readiness) {
@@ -522,14 +573,6 @@ bool check_all_landing_readiness(void) {
     }
     free_landing_readiness_messages(&logging_readiness);
     
-    // Check network subsystem
-    LandingReadiness network_readiness = check_network_landing_readiness();
-    log_readiness_messages(&network_readiness);
-    if (network_readiness.ready) {
-        any_subsystem_ready = true;
-    }
-    free_landing_readiness_messages(&network_readiness);
-    
     // Check payload subsystem
     LandingReadiness payload_readiness = check_payload_landing_readiness();
     log_readiness_messages(&payload_readiness);
@@ -548,6 +591,33 @@ bool check_all_landing_readiness(void) {
     }
     free_landing_readiness_messages(&payload_readiness);
     
+    // Check threads subsystem
+    LandingReadiness threads_readiness = check_threads_landing_readiness();
+    log_readiness_messages(&threads_readiness);
+    if (threads_readiness.ready) {
+        any_subsystem_ready = true;
+        
+        // Add LANDING: THREADS section
+        log_this("Threads", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        log_this("Threads", "LANDING: THREADS", LOG_LEVEL_STATE);
+        report_thread_status();
+        log_this("Threads", "  Waiting for service threads to complete...", LOG_LEVEL_STATE);
+        
+        // Wait for service threads and clean up
+        free_threads_resources();
+        
+        log_this("Threads", "  All threads landed successfully", LOG_LEVEL_STATE);
+    }
+    free_landing_readiness_messages(&threads_readiness);
+    
+    // Check network subsystem
+    LandingReadiness network_readiness = check_network_landing_readiness();
+    log_readiness_messages(&network_readiness);
+    if (network_readiness.ready) {
+        any_subsystem_ready = true;
+    }
+    free_landing_readiness_messages(&network_readiness);
+    
     // Check Subsystem Registry last
     LandingReadiness registry_readiness = check_subsystem_registry_landing_readiness();
     log_readiness_messages(&registry_readiness);
@@ -561,7 +631,7 @@ bool check_all_landing_readiness(void) {
     log_this("Landing", "LANDING REVIEW", LOG_LEVEL_STATE);
     
     // Count how many subsystems were checked and how many are ready
-    const int total_checked = 14; // Total number of subsystems we check
+    const int total_checked = 15; // Total number of subsystems we check (added Threads)
     int ready_count = 0;
     
     // Count ready subsystems
