@@ -27,8 +27,8 @@
 #include "../utils/utils.h"
 #include "../utils/utils_time.h"
 #include "../threads/threads.h"
-#include "../state/registry/subsystem_registry.h"
-#include "../state/registry/subsystem_registry_integration.h"
+#include "../registry/registry.h"
+#include "../registry/registry_integration.h"
 
 // External declarations
 extern void free_payload_resources(void);
@@ -49,7 +49,7 @@ extern LandingReadiness check_webserver_landing_readiness(void);
 extern LandingReadiness check_logging_landing_readiness(void);
 extern LandingReadiness check_network_landing_readiness(void);
 extern LandingReadiness check_payload_landing_readiness(void);
-extern LandingReadiness check_subsystem_registry_landing_readiness(void);
+extern LandingReadiness check_registry_landing_readiness(void);
 extern LandingReadiness check_threads_landing_readiness(void);
 
 // Free the messages in a LandingReadiness struct
@@ -227,8 +227,8 @@ bool check_all_landing_readiness(void) {
     }
     free_landing_readiness_messages(&network_readiness);
     
-    // Check Subsystem Registry last
-    LandingReadiness registry_readiness = check_subsystem_registry_landing_readiness();
+    // Check Registry last
+    LandingReadiness registry_readiness = check_registry_landing_readiness();
     log_readiness_messages(&registry_readiness);
     if (registry_readiness.ready) {
         any_subsystem_ready = true;

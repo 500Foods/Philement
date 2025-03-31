@@ -19,6 +19,7 @@
 ReadinessResults handle_readiness_checks(void);
 
 // Individual subsystem readiness checks
+LandingReadiness check_registry_landing_readiness(void);
 LandingReadiness check_logging_landing_readiness(void);
 LandingReadiness check_database_landing_readiness(void);
 LandingReadiness check_terminal_landing_readiness(void);
@@ -33,6 +34,5 @@ LandingReadiness check_payload_landing_readiness(void);
 LandingReadiness check_threads_landing_readiness(void);
 LandingReadiness check_network_landing_readiness(void);
 LandingReadiness check_api_landing_readiness(void);
-LandingReadiness check_subsystem_registry_landing_readiness(void);
 
 #endif /* LANDING_READINESS_H */

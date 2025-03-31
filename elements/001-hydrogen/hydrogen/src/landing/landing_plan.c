@@ -22,8 +22,8 @@
 // Project includes
 #include "../logging/logging.h"
 #include "../utils/utils_logging.h"
-#include "../state/registry/subsystem_registry.h"
-#include "../state/registry/subsystem_registry_integration.h"
+#include "../registry/registry.h"
+#include "../registry/registry_integration.h"
 
 // Execute the landing plan and make Go/No-Go decisions
 bool handle_landing_plan(const ReadinessResults* results) {
@@ -106,7 +106,7 @@ bool handle_landing_plan(const ReadinessResults* results) {
         // Shut down critical subsystem
         if (strcmp(subsystem, "Network") == 0) shutdown_network();
         else if (strcmp(subsystem, "Threads") == 0) shutdown_threads();
-        else if (strcmp(subsystem, "Registry") == 0) shutdown_subsystem_registry();
+        else if (strcmp(subsystem, "Registry") == 0) shutdown_registry();
         // Note: Logging is handled last by the main landing sequence
     }
     

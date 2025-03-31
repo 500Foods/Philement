@@ -17,8 +17,8 @@
 // Project headers
 #include "shutdown.h"
 #include "../state.h"
-#include "../registry/subsystem_registry.h"
-#include "../registry/subsystem_registry_integration.h"
+#include "../../registry/registry.h"
+#include "../../registry/registry_integration.h"
 #include "../../utils/utils_time.h"
 #include "../../landing/landing.h"
 
@@ -33,7 +33,7 @@ void signal_handler(int signum);
 // Restart functions - Defined in shutdown_restart.c
 int restart_hydrogen(const char* config_path);
 
-// Subsystem shutdown function - Defined in subsystem_registry_integration.c
+// Subsystem shutdown function - Defined in registry_integration.c
 size_t stop_all_subsystems_in_dependency_order(void);
 
 // Resource cleanup functions - Defined in shutdown_resources.c

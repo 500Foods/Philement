@@ -1,26 +1,38 @@
 /*
  * Launch System Header
  * 
+ * DESIGN PRINCIPLES:
+ * - All subsystems are equal in importance
+ * - No subsystem has inherent priority over others
+ * - Dependencies determine what's needed, not importance
+ * - The processing order below is for consistency only
+ * 
  * This module defines the interfaces for the launch system and its subsystems.
  * All subsystem initialization functions follow the pattern launch_*_subsystem
  * and return 1 on success, 0 on failure.
  * 
- * Subsystems are organized in the following standard order:
- * 1. Subsystem Registry
- * 2. Payload
- * 3. Threads
- * 4. Network
- * 5. Database
- * 6. Logging
- * 7. WebServer
- * 8. API
- * 9. Swagger
- * 10. WebSockets
- * 11. Terminal
- * 12. mDNS Server
- * 13. mDNS Client
- * 14. MailRelay
- * 15. Print
+ * Standard Processing Order (for consistency, not priority):
+ * - Subsystem Registry (processes registrations)
+ * - Payload
+ * - Threads
+ * - Network
+ * - Database
+ * - Logging
+ * - WebServer
+ * - API
+ * - Swagger
+ * - WebSockets
+ * - Terminal
+ * - mDNS Server
+ * - mDNS Client
+ * - MailRelay
+ * - Print
+ * 
+ * Each subsystem:
+ * - Determines its own readiness independently
+ * - Manages its own initialization
+ * - Launches when its dependencies are met
+ * - Is equally important in the system
  */
 
 #ifndef LAUNCH_H
@@ -34,15 +46,8 @@
 #include <pthread.h>
 
 // Project includes
-#include "../state/registry/subsystem_registry.h"
 #include "../threads/threads.h"
-
-// Result of a launch readiness check
-typedef struct {
-    const char* subsystem;  // Name of the subsystem
-    bool ready;             // Is the subsystem ready to launch?
-    const char** messages;  // Array of readiness messages (NULL-terminated)
-} LaunchReadiness;
+#include "../state/state_types.h"  // For SubsystemState and LaunchReadiness
 
 // Structure to track launch status for each subsystem
 typedef struct {

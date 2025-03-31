@@ -10,7 +10,7 @@
 
 #include "launch-logging.h"
 #include "../logging/logging.h"
-#include "../state/registry/subsystem_registry.h"
+#include "../registry/registry.h"
 #include "../state/state.h"
 #include "../config/config.h"
 

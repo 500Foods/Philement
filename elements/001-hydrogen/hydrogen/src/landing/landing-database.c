@@ -16,8 +16,8 @@
 #include "landing_readiness.h"
 #include "../logging/logging.h"
 #include "../utils/utils_logging.h"
-#include "../state/registry/subsystem_registry.h"
-#include "../state/registry/subsystem_registry_integration.h"
+#include "../registry/registry.h"
+#include "../registry/registry_integration.h"
 
 // Check if the database subsystem is ready to land
 LandingReadiness check_database_landing_readiness(void) {

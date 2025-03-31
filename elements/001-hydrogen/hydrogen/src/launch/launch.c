@@ -1,28 +1,49 @@
 /*
  * Launch System Coordinator
  * 
- * This module coordinates the launch sequence using specialized modules:
- * - launch_readiness.c - Handles readiness checks
- * - launch_plan.c - Coordinates launch sequence
- * - launch_review.c - Reports launch status
+ * DESIGN PRINCIPLES:
+ * - All subsystems are equal in importance
+ * - No subsystem is inherently critical or non-critical relative to others
+ * - Dependencies determine what's needed, not importance
+ * - The processing order is for consistency, not priority
  *
- * Standard Subsystem Order:
- * When listing or processing subsystems, the following order should be maintained:
- * 1. Subsystem Registry (manages all other subsystems)
- * 2. Payload
- * 3. Threads
- * 4. Network
- * 5. Database
- * 6. Logging
- * 7. WebServer
- * 8. API
- * 9. Swagger
- * 10. WebSockets
- * 11. Terminal
- * 12. mDNS Server
- * 13. mDNS Client
- * 14. MailRelay
- * 15. Print
+ * LAUNCH SEQUENCE:
+ * 1. Launch Readiness (launch_readiness.c):
+ *    - Determines if each subsystem has what it needs to start
+ *    - No subsystem is prioritized over others
+ *    - Each makes its own Go/No-Go decision
+ *
+ * 2. Launch Plan (launch_plan.c):
+ *    - Summarizes readiness status of all subsystems
+ *    - Creates launch sequence based on dependencies
+ *    - No inherent priority, just dependency order
+ *
+ * 3. Launch Execution (launch.c):
+ *    - Launches each ready subsystem
+ *    - Order is for consistency and dependencies only
+ *    - Each subsystem is equally important
+ *
+ * 4. Launch Review (launch_review.c):
+ *    - Assesses what happened during launch
+ *    - Reports success/failure for each subsystem
+ *    - All outcomes are equally important
+ *
+ * Standard Processing Order (for consistency, not priority):
+ * - 01. Registry (processes registrations)
+ * - 02. Payload
+ * - 03. Threads
+ * - 04. Network
+ * - 05. Database
+ * - 06. Logging
+ * - 07. WebServer
+ * - 08. API
+ * - 09. Swagger
+ * - 10. WebSockets
+ * - 11. Terminal
+ * - 12. mDNS Server
+ * - 13. mDNS Client
+ * - 14. MailRelay
+ * - 15. lPrint
  */
 
 // System includes
@@ -47,8 +68,8 @@
 #include "../config/files/config_filesystem.h"
 #include "../config/config.h"
 #include "../queue/queue.h"
-#include "../state/registry/subsystem_registry.h"
-#include "../state/registry/subsystem_registry_integration.h"
+#include "../registry/registry.h"
+#include "../registry/registry_integration.h"
 
 // Launch subsystem includes (in standard order)
 #include "launch-payload.h"
@@ -211,7 +232,7 @@ bool check_all_launch_readiness(void) {
     
     /*
      * Phase 1: Check readiness of all subsystems
-     * The Subsystem Registry is checked first, as it's required for all other subsystems
+     * The Registry is checked first, as it's required for all other subsystems
      */
     ReadinessResults results = handle_readiness_checks();
     
@@ -287,22 +308,31 @@ int startup_hydrogen(const char* config_path) {
     // Log successful configuration loading
     log_this("Startup", "Configuration loading complete", LOG_LEVEL_STATE);
     
-    // Initialize registry as its own subsystem first
-    initialize_registry_subsystem();
+    // Initialize core systems needed for subsystem operation
+    log_this("Startup", "Initializing core systems...", LOG_LEVEL_STATE);
     
-    // 3. Perform launch readiness checks for all subsystems
-    bool launch_ready = check_all_launch_readiness();
+    // Initialize registry first as it's needed for subsystem tracking
+    initialize_registry();
     
-    // Only initialize queue system and threads if at least one subsystem passed the readiness check
-    if (launch_ready) {
-        // Initialize queue system
-        queue_system_init();
-        update_queue_limits_from_config(app_config);
-    } else {
-        log_this("Startup", "One or more subsystems failed launch readiness checks", LOG_LEVEL_ALERT);
-        log_this("Startup", "System will continue without launching any subsystems", LOG_LEVEL_ALERT);
+    // Initialize queue system for inter-thread communication
+    queue_system_init();
+    update_queue_limits_from_config(app_config);
+    
+    log_this("Startup", "Core systems initialized", LOG_LEVEL_STATE);
+    
+    // Begin launch sequence
+    log_this("Startup", "Starting launch sequence...", LOG_LEVEL_STATE);
+    
+    // 3. Perform launch readiness checks and planning
+    ReadinessResults readiness_results = handle_readiness_checks();
+    bool launch_plan_ok = handle_launch_plan(&readiness_results);
+    
+    // Only proceed if launch plan is approved
+    if (!launch_plan_ok) {
+        log_this("Startup", "Launch plan failed - no subsystems will be started", LOG_LEVEL_ALERT);
+        return 0;
     }
-
+    
     // Apply configured startup delay silently
     if (app_config->server.startup_delay > 0 && app_config->server.startup_delay < 10000) {
         usleep(app_config->server.startup_delay * 1000);
@@ -310,9 +340,20 @@ int startup_hydrogen(const char* config_path) {
         usleep(5 * 1000);
     }
     
-    // All services have been started successfully
-    server_starting = 0; 
-    server_running = 1; 
+    // Launch approved subsystems
+    bool launch_success = launch_approved_subsystems(&readiness_results);
+    
+    // Review launch results
+    handle_launch_review(&readiness_results);
+    
+    // Update server state based on launch success
+    server_starting = 0;
+    server_running = launch_success ? 1 : 0;
+    
+    if (!launch_success) {
+        log_this("Startup", "One or more subsystems failed to launch", LOG_LEVEL_ALERT);
+        return 0;
+    }
     
     // Final Startup Message
     log_group_begin();

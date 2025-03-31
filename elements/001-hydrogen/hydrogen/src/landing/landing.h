@@ -17,7 +17,7 @@
 #include <time.h>
 
 // Project includes
-#include "../state/registry/subsystem_registry.h"
+#include "../registry/registry.h"
 
 // Result of a landing readiness check
 typedef struct {
