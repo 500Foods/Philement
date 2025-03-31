@@ -1,27 +1,64 @@
 /*
  * Landing Network Subsystem
  * 
- * This module handles the landing (shutdown) sequence for the network subsystem.
- * It provides functions for:
- * - Checking network landing readiness
- * - Managing network interface shutdown
- * - Cleaning up network resources
+ * DESIGN PRINCIPLES:
+ * - This file handles network-specific landing logic
+ * - Follows standard landing patterns
+ * - Manages clean network shutdown
+ * - Reports detailed status
+ *
+ * This module provides two main functions:
+ * 1. check_network_landing_readiness - Verifies if network can be landed
+ * 2. land_network_subsystem - Performs actual network shutdown
  */
 
+// System includes
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
+// Project includes
 #include "landing.h"
 #include "landing_readiness.h"
 #include "../logging/logging.h"
-#include "../utils/utils_logging.h"
-#include "../registry/registry.h"
+#include "../network/network.h"
 #include "../registry/registry_integration.h"
+#include "../state/state_types.h"
+#include "../utils/utils_logging.h"
+
+/*
+ * Land the network subsystem
+ * Returns 1 on success, 0 on failure
+ */
+int land_network_subsystem(void) {
+    log_this("Landing", "Landing network subsystem...", LOG_LEVEL_STATE);
+    
+    // Get subsystem ID
+    int subsystem_id = get_subsystem_id_by_name("Network");
+    if (subsystem_id < 0) {
+        log_this("Landing", "Failed to get network subsystem ID", LOG_LEVEL_ERROR);
+        return 0;
+    }
+    
+    // Verify subsystem is in a state that can be landed
+    if (!is_subsystem_running_by_name("Network")) {
+        log_this("Landing", "Network subsystem is not running", LOG_LEVEL_ERROR);
+        return 0;
+    }
+    
+    // Close all network interfaces
+    if (!network_shutdown()) {
+        log_this("Landing", "Failed to shut down network interfaces", LOG_LEVEL_ERROR);
+        return 0;
+    }
+    
+    log_this("Landing", "Network subsystem landed successfully", LOG_LEVEL_STATE);
+    return 1;
+}
 
 // Check if the network subsystem is ready to land
-LandingReadiness check_network_landing_readiness(void) {
-    LandingReadiness readiness = {0};
+LaunchReadiness check_network_landing_readiness(void) {
+    LaunchReadiness readiness = {0};
     readiness.subsystem = "Network";
     
     // Allocate space for messages (including NULL terminator)

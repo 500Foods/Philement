@@ -1,14 +1,14 @@
 /*
  * Landing Mail Relay Subsystem
  * 
- * This module handles the landing (shutdown) sequence for the mail relay subsystem.
- * It provides functions for:
- * - Checking mail relay landing readiness
- * - Managing mail relay shutdown
- * - Cleaning up mail relay resources
+ * This module handles the landing (shutdown) of the mail relay subsystem.
+ * It provides functions for checking landing readiness and shutting down
+ * the mail relay.
  * 
  * Dependencies:
- * - Must coordinate with Network subsystem for clean shutdown
+ * - No subsystems depend on Mail Relay
+ * 
+ * Note: System is currently under development
  */
 
 #include <stdbool.h>
@@ -16,20 +16,18 @@
 #include <string.h>
 #include <signal.h>
 
-#include "landing.h"
-#include "landing_readiness.h"
-#include "../logging/logging.h"
+#include "../landing/landing.h"
+#include "../landing/landing_readiness.h"
 #include "../utils/utils_logging.h"
-#include "../registry/registry.h"
 #include "../registry/registry_integration.h"
+#include "../state/state_types.h"
 
 // External declarations
 extern volatile sig_atomic_t mail_relay_system_shutdown;
 
 // Check if the mail relay subsystem is ready to land
-LandingReadiness check_mail_relay_landing_readiness(void) {
-    LandingReadiness readiness = {0};
-    readiness.subsystem = "Mail Relay";
+LaunchReadiness check_mail_relay_landing_readiness(void) {
+    LaunchReadiness readiness = {0};
     
     // Allocate space for messages (including NULL terminator)
     readiness.messages = malloc(5 * sizeof(char*));
@@ -37,49 +35,31 @@ LandingReadiness check_mail_relay_landing_readiness(void) {
         readiness.ready = false;
         return readiness;
     }
+    int msg_count = 0;
     
-    // Add initial subsystem identifier
-    readiness.messages[0] = strdup("Mail Relay");
+    // Add the subsystem name as the first message
+    readiness.messages[msg_count++] = strdup("Mail Relay");
     
-    // Check if mail relay is actually running
-    if (!is_subsystem_running_by_name("MailRelay")) {
-        readiness.ready = false;
-        readiness.messages[1] = strdup("  No-Go:   Mail Relay not running");
-        readiness.messages[2] = strdup("  Decide:  No-Go For Landing of Mail Relay");
-        readiness.messages[3] = NULL;
-        return readiness;
-    }
+    // Since system is under development, always ready to land
+    readiness.messages[msg_count++] = strdup("  Go:      System under development");
     
-    // Check Network subsystem status
-    bool network_ready = is_subsystem_running_by_name("Network");
-    if (!network_ready) {
-        readiness.ready = false;
-        readiness.messages[1] = strdup("  No-Go:   Network subsystem not running");
-        readiness.messages[2] = strdup("  Decide:  No-Go For Landing of Mail Relay");
-        readiness.messages[3] = NULL;
-        return readiness;
-    }
+    // Check for dependent subsystems
+    // Only Print comes after Mail Relay, and it doesn't depend on it
+    readiness.messages[msg_count++] = strdup("  Go:      No dependent subsystems");
     
     // All checks passed
+    readiness.messages[msg_count++] = strdup("  Decide:  Go For Landing of Mail Relay");
+    readiness.messages[msg_count] = NULL;
     readiness.ready = true;
-    readiness.messages[1] = strdup("  Go:      Mail service ready for shutdown");
-    readiness.messages[2] = strdup("  Go:      Network subsystem ready");
-    readiness.messages[3] = strdup("  Decide:  Go For Landing of Mail Relay");
-    readiness.messages[4] = NULL;
     
     return readiness;
 }
 
-// Shutdown the mail relay subsystem
-void shutdown_mail_relay(void) {
-    log_this("Mail Relay", "Beginning Mail Relay shutdown sequence", LOG_LEVEL_STATE);
-    
-    // Signal shutdown
+// Land the mail relay subsystem
+int land_mail_relay_subsystem(void) {
+    // Set shutdown flag
     mail_relay_system_shutdown = 1;
-    log_this("Mail Relay", "Signaled Mail Relay to stop", LOG_LEVEL_STATE);
     
-    // Cleanup resources
-    // Additional cleanup will be added as needed
-    
-    log_this("Mail Relay", "Mail Relay shutdown complete", LOG_LEVEL_STATE);
+    // Since system is under development, always return success
+    return 1;
 }

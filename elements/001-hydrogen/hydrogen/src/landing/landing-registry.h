@@ -13,28 +13,30 @@
 #include "../config/config.h"
 #include "landing.h"
 #include "../registry/registry.h"
+#include "../state/state_types.h"
 
 // Forward declarations
 struct AppConfig;  // Forward declaration of AppConfig
 
 /**
  * @brief Check if the Registry is ready to land
- * @returns LandingReadiness struct with readiness status and messages
+ * @returns LaunchReadiness struct with readiness status and messages
  * @note AI-guidance: Must verify all other subsystems are inactive
  *       before allowing registry shutdown
  */
-LandingReadiness check_registry_landing_readiness(void);
+LaunchReadiness check_registry_landing_readiness(void);
 
 /**
- * @brief Free resources allocated by the Registry
+ * @brief Land the Registry subsystem
  * 
  * This function frees any resources allocated by the registry.
  * It should be called only after all other subsystems have been
  * shut down and marked as inactive.
  * 
  * @note This is the final cleanup step in the landing sequence
+ * @return int 1 on success, 0 on failure
  */
-void shutdown_registry(void);
+int land_registry_subsystem(void);
 
 /**
  * @brief Report final registry status during landing

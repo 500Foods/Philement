@@ -11,7 +11,7 @@
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
-OIDC_EXAMPLES_DIR="$HYDROGEN_DIR/oidc-client-examples/C"
+OIDC_EXAMPLES_DIR="$HYDROGEN_DIR/examples/C"
 
 # Include the common test utilities
 source "$SCRIPT_DIR/support_utils.sh"
@@ -109,12 +109,12 @@ test_compilation() {
 }
 
 # Clean all build artifacts first
-cd "$HYDROGEN_DIR"
+cd "$HYDROGEN_DIR/src"
 make clean
 cd "$SCRIPT_DIR"
 
 # Test the main Hydrogen project (release build - preferred for deployment)
-test_compilation "Hydrogen main project (release)" "$HYDROGEN_DIR" "make release"
+test_compilation "Hydrogen main project (release)" "$HYDROGEN_DIR/src" "make release"
 
 # Test for tarball presence in release build
 test_tarball_presence() {
@@ -187,16 +187,16 @@ test_tarball_presence() {
 test_tarball_presence
 
 # Test the main Hydrogen project (standard build)
-test_compilation "Hydrogen main project (default)" "$HYDROGEN_DIR" "make"
+test_compilation "Hydrogen main project (default)" "$HYDROGEN_DIR/src" "make"
 
 # Test the main Hydrogen project (debug build)
-test_compilation "Hydrogen main project (debug)" "$HYDROGEN_DIR" "make debug"
+test_compilation "Hydrogen main project (debug)" "$HYDROGEN_DIR/src" "make debug"
 
 # Test the main Hydrogen project (valgrind build)
-test_compilation "Hydrogen main project (valgrind)" "$HYDROGEN_DIR" "make valgrind"
+test_compilation "Hydrogen main project (valgrind)" "$HYDROGEN_DIR/src" "make valgrind"
 
 # Test the main Hydrogen project (performance build)
-test_compilation "Hydrogen main project (perf)" "$HYDROGEN_DIR" "make perf"
+test_compilation "Hydrogen main project (perf)" "$HYDROGEN_DIR/src" "make perf"
 
 # Test the OIDC client examples
 test_compilation "OIDC client examples" "$OIDC_EXAMPLES_DIR" "make all"

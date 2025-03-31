@@ -23,10 +23,11 @@
 #include "../utils/utils_logging.h"
 #include "../registry/registry.h"
 #include "../registry/registry_integration.h"
+#include "../state/state_types.h"
 
 // Check SMTP relay landing readiness
-LandingReadiness check_smtp_relay_landing_readiness(void) {
-    LandingReadiness readiness = {0};
+LaunchReadiness check_smtp_relay_landing_readiness(void) {
+    LaunchReadiness readiness = {0};
     readiness.subsystem = "SMTP Relay";
     
     // Always ready - basic service
@@ -48,10 +49,12 @@ LandingReadiness check_smtp_relay_landing_readiness(void) {
     return readiness;
 }
 
-// Shutdown SMTP relay subsystem
-void shutdown_smtp_relay(void) {
+// Land SMTP relay subsystem
+int land_smtp_relay_subsystem(void) {
     // Basic cleanup - no special requirements
     
     // Log shutdown status
     log_this("SMTP Relay", "SMTP Relay service shutdown complete", LOG_LEVEL_STATE);
+    
+    return 1; // Success
 }

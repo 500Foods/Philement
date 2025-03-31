@@ -24,14 +24,15 @@
 #include "../threads/threads.h"
 #include "../registry/registry.h"
 #include "../registry/registry_integration.h"
+#include "../state/state_types.h"
 
 // External declarations
 extern ServiceThreads mdns_server_threads;
 extern volatile sig_atomic_t mdns_server_system_shutdown;
 
 // Check if the mDNS server subsystem is ready to land
-LandingReadiness check_mdns_server_landing_readiness(void) {
-    LandingReadiness readiness = {0};
+LaunchReadiness check_mdns_server_landing_readiness(void) {
+    LaunchReadiness readiness = {0};
     readiness.subsystem = "mDNS Server";
     
     // Allocate space for messages (including NULL terminator)
@@ -91,8 +92,8 @@ LandingReadiness check_mdns_server_landing_readiness(void) {
     return readiness;
 }
 
-// Shutdown the mDNS server subsystem
-void shutdown_mdns_server(void) {
+// Land the mDNS server subsystem
+int land_mdns_server_subsystem(void) {
     log_this("mDNS Server", "Beginning mDNS Server shutdown sequence", LOG_LEVEL_STATE);
     
     // Signal thread shutdown
@@ -112,4 +113,5 @@ void shutdown_mdns_server(void) {
     init_service_threads(&mdns_server_threads);
     
     log_this("mDNS Server", "mDNS Server shutdown complete", LOG_LEVEL_STATE);
+    return 1; // Success
 }

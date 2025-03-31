@@ -21,10 +21,11 @@
 #include "../utils/utils_logging.h"
 #include "../registry/registry.h"
 #include "../registry/registry_integration.h"
+#include "../state/state_types.h"
 
 // Check if the API subsystem is ready to land
-LandingReadiness check_api_landing_readiness(void) {
-    LandingReadiness readiness = {0};
+LaunchReadiness check_api_landing_readiness(void) {
+    LaunchReadiness readiness = {0};
     readiness.subsystem = "API";
     
     // Allocate space for messages (including NULL terminator)
@@ -66,5 +67,14 @@ LandingReadiness check_api_landing_readiness(void) {
     return readiness;
 }
 
-// Use shutdown function from launch-api.c
+// Forward declaration of the API cleanup function
 extern void shutdown_api(void);
+
+// Land the API subsystem
+int land_api_subsystem(void) {
+    // Call the existing cleanup function
+    shutdown_api();
+    
+    // Return success
+    return 1;
+}

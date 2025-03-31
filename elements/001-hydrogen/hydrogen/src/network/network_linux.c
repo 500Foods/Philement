@@ -6,11 +6,13 @@
 // Core system headers
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/ioctl.h>
 
 // Network headers
+#include <net/if.h>          // Must be first for interface definitions
+#include <linux/if.h>        // Additional interface definitions
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <net/if.h>
 #include <linux/if_packet.h>
 #include <netdb.h>
 #include <ifaddrs.h>
@@ -164,4 +166,92 @@ int find_available_port(int start_port) {
     close(sock);
     log_this("Network", "No available ports found", LOG_LEVEL_DEBUG);
     return -1;
+}
+
+// Gracefully shut down all network interfaces
+//
+// Shutdown strategy:
+// 1. Safety
+//    - Ordered interface shutdown
+//    - Connection termination
+//    - Resource cleanup
+//    - State verification
+//
+// 2. Reliability
+//    - Error handling
+//    - Status tracking
+//    - Fallback options
+//    - Cleanup confirmation
+//
+// 3. Logging
+//    - Progress tracking
+//    - Error reporting
+//    - Status updates
+//    - Final verification
+bool network_shutdown(void) {
+    log_this("Network", "Starting network shutdown...", LOG_LEVEL_STATE);
+    
+    // Get current network interfaces
+    network_info_t *info = get_network_info();
+    if (!info) {
+        log_this("Network", "Failed to get network info for shutdown", LOG_LEVEL_ERROR);
+        return false;
+    }
+    
+    bool success = true;
+    
+    // Close all active sockets for each interface
+    for (int i = 0; i < info->count; i++) {
+        log_this("Network", "Shutting down interface: %s", LOG_LEVEL_STATE, info->interfaces[i].name);
+        
+        // Skip loopback interface
+        if (strcmp(info->interfaces[i].name, "lo") == 0) {
+            continue;
+        }
+        
+        // Create control socket for interface
+        int sock = socket(AF_INET, SOCK_DGRAM, 0);
+        if (sock < 0) {
+            log_this("Network", "Failed to create control socket for %s: %s", 
+                    LOG_LEVEL_ERROR, info->interfaces[i].name, strerror(errno));
+            success = false;
+            continue;
+        }
+        
+        // Bring interface down
+        struct ifreq ifr;
+        memset(&ifr, 0, sizeof(ifr));
+        strncpy(ifr.ifr_name, info->interfaces[i].name, IFNAMSIZ - 1);
+        
+        if (ioctl(sock, SIOCGIFFLAGS, &ifr) < 0) {
+            log_this("Network", "Failed to get interface flags for %s: %s", 
+                    LOG_LEVEL_ERROR, info->interfaces[i].name, strerror(errno));
+            close(sock);
+            success = false;
+            continue;
+        }
+        
+        ifr.ifr_flags &= ~IFF_UP;  // Clear UP flag
+        
+        if (ioctl(sock, SIOCSIFFLAGS, &ifr) < 0) {
+            log_this("Network", "Failed to bring down interface %s: %s", 
+                    LOG_LEVEL_ERROR, info->interfaces[i].name, strerror(errno));
+            success = false;
+        } else {
+            log_this("Network", "Successfully shut down interface %s", 
+                    LOG_LEVEL_STATE, info->interfaces[i].name);
+        }
+        
+        close(sock);
+    }
+    
+    free_network_info(info);
+    
+    if (success) {
+        log_this("Network", "Network shutdown completed successfully", LOG_LEVEL_STATE);
+    } else {
+        log_this("Network", "Network shutdown completed with errors", LOG_LEVEL_ERROR);
+    }
+    
+    return success;
 }

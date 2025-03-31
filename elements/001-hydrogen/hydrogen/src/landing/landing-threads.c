@@ -19,6 +19,7 @@
 #include "../threads/threads.h"
 #include "../registry/registry.h"
 #include "../registry/registry_integration.h"
+#include "../state/state_types.h"
 
 // External declarations for thread tracking
 extern ServiceThreads logging_threads;
@@ -28,8 +29,8 @@ extern ServiceThreads mdns_server_threads;
 extern ServiceThreads print_threads;
 
 // Check if the thread subsystem is ready to land
-LandingReadiness check_threads_landing_readiness(void) {
-    LandingReadiness readiness = {0};
+LaunchReadiness check_threads_landing_readiness(void) {
+    LaunchReadiness readiness = {0};
     readiness.subsystem = "Threads";
     
     // Allocate space for messages (including NULL terminator)
@@ -90,9 +91,11 @@ LandingReadiness check_threads_landing_readiness(void) {
     return readiness;
 }
 
-// Shutdown the thread management subsystem
-void shutdown_threads(void) {
+// Land the thread management subsystem
+int land_threads_subsystem(void) {
     log_this("Threads", "Beginning thread management shutdown sequence", LOG_LEVEL_STATE);
+    
+    bool success = true;
     
     // Clean up web server threads
     if (web_threads.thread_count > 0) {
@@ -128,4 +131,6 @@ void shutdown_threads(void) {
     
     // Update registry that we're done
     update_subsystem_after_shutdown("Threads");
+    
+    return success ? 1 : 0;  // Return 1 for success, 0 for failure
 }

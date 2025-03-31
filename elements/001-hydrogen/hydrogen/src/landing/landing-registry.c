@@ -17,6 +17,7 @@
 #include "../registry/registry.h"
 #include "../registry/registry_integration.h"
 #include "../utils/utils.h"
+#include "../state/state_types.h"
 
 // External declarations
 extern AppConfig* app_config;
@@ -52,8 +53,8 @@ void report_registry_landing_status(void) {
 }
 
 // Check if the Registry is ready to land
-LandingReadiness check_registry_landing_readiness(void) {
-    LandingReadiness readiness = {0};
+LaunchReadiness check_registry_landing_readiness(void) {
+    LaunchReadiness readiness = {0};
     readiness.subsystem = "Registry";
     
     // Allocate space for messages (including NULL terminator)
@@ -110,8 +111,8 @@ LandingReadiness check_registry_landing_readiness(void) {
     return readiness;
 }
 
-// Shutdown the Registry
-void shutdown_registry(void) {
+// Land the Registry subsystem
+int land_registry_subsystem(void) {
     log_this("Registry", "Beginning Registry shutdown sequence", LOG_LEVEL_STATE);
     
     // Report final status
@@ -137,4 +138,6 @@ void shutdown_registry(void) {
     log_this("Registry", "Registry shutdown complete", LOG_LEVEL_STATE);
     log_this("Registry", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
     log_this("Registry", "LANDING COMPLETE", LOG_LEVEL_STATE);
+    
+    return 1; // Success
 }

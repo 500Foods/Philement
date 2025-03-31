@@ -40,9 +40,10 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <net/if.h>      
-#include <netinet/in.h> 
+#include <netinet/in.h>
 
 #ifndef INET_ADDRSTRLEN
 #define INET_ADDRSTRLEN 16
@@ -69,8 +70,17 @@ typedef struct {
     interface_t interfaces[MAX_INTERFACES];
 } network_info_t;
 
+/*
+ * Core network functions
+ * Why These Functions?
+ * - Port management for services
+ * - Network interface discovery
+ * - Resource cleanup
+ * - Graceful shutdown
+ */
 int find_available_port(int start_port);
 network_info_t *get_network_info();
 void free_network_info(network_info_t *info);
+bool network_shutdown(void);  // Gracefully shuts down all network interfaces
 
 #endif // NETWORK_H

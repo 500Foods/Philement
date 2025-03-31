@@ -1,10 +1,49 @@
 /*
  * Landing System Coordinator
  * 
- * This module coordinates the landing (shutdown) sequence using specialized modules:
- * - landing_readiness.c - Handles readiness checks
- * - landing_plan.c - Coordinates landing sequence
- * - landing_review.c - Reports landing status
+ * DESIGN PRINCIPLES:
+ * - This file is a lightweight orchestrator only - no subsystem-specific code
+ * - All subsystems are equal in importance - no hierarchy
+ * - Dependencies determine what's needed, not importance
+ * - Processing order is reverse of launch for consistency
+ *
+ * LANDING SEQUENCE:
+ * 1. Landing Readiness (landing_readiness.c):
+ *    - Determines if each subsystem can be safely landed
+ *    - No subsystem is prioritized over others
+ *    - Each makes its own Go/No-Go decision
+ *
+ * 2. Landing Plan (landing_plan.c):
+ *    - Summarizes readiness status of all subsystems
+ *    - Creates landing sequence based on dependencies
+ *    - No inherent priority, just dependency order
+ *
+ * 3. Landing Execution (landing.c):
+ *    - Lands each ready subsystem
+ *    - Order is reverse of launch for consistency
+ *    - Each subsystem is equally important
+ *
+ * 4. Landing Review (landing_review.c):
+ *    - Assesses what happened during landing
+ *    - Reports success/failure for each subsystem
+ *    - All outcomes are equally important
+ *
+ * Standard Processing Order (reverse of launch):
+ * - 15. Print (last launched, first to land)
+ * - 14. MailRelay
+ * - 13. mDNS Client
+ * - 12. mDNS Server
+ * - 11. Terminal
+ * - 10. WebSockets
+ * - 09. Swagger
+ * - 08. API
+ * - 07. WebServer
+ * - 06. Logging
+ * - 05. Database
+ * - 04. Network
+ * - 03. Threads
+ * - 02. Payload
+ * - 01. Registry (first launched, last to land)
  */
 
 // System includes
@@ -14,6 +53,7 @@
 #include <string.h>
 #include <sys/time.h>
 #include <time.h>
+#include <ctype.h>
 
 // Local includes
 #include "landing.h"
@@ -29,249 +69,151 @@
 #include "../threads/threads.h"
 #include "../registry/registry.h"
 #include "../registry/registry_integration.h"
+#include "../state/state_types.h"
 
-// External declarations
-extern void free_payload_resources(void);
-extern void report_thread_status(void);
-extern void free_threads_resources(void);
+// External declarations for landing orchestration
+extern ReadinessResults handle_landing_readiness(void);
+extern bool handle_landing_plan(const ReadinessResults* results);
+extern void handle_landing_review(const ReadinessResults* results, time_t start_time);
 
-// External declarations for subsystem landing readiness checks
-extern LandingReadiness check_print_landing_readiness(void);
-extern LandingReadiness check_mail_relay_landing_readiness(void);
-extern LandingReadiness check_mdns_client_landing_readiness(void);
-extern LandingReadiness check_database_landing_readiness(void);
-extern LandingReadiness check_mdns_server_landing_readiness(void);
-extern LandingReadiness check_terminal_landing_readiness(void);
-extern LandingReadiness check_websocket_landing_readiness(void);
-extern LandingReadiness check_swagger_landing_readiness(void);
-extern LandingReadiness check_api_landing_readiness(void);
-extern LandingReadiness check_webserver_landing_readiness(void);
-extern LandingReadiness check_logging_landing_readiness(void);
-extern LandingReadiness check_network_landing_readiness(void);
-extern LandingReadiness check_payload_landing_readiness(void);
-extern LandingReadiness check_registry_landing_readiness(void);
-extern LandingReadiness check_threads_landing_readiness(void);
+// External declarations for subsystem landing functions (in reverse launch order)
+extern int land_print_subsystem(void);
+extern int land_mail_relay_subsystem(void);
+extern int land_mdns_client_subsystem(void);
+extern int land_mdns_server_subsystem(void);
+extern int land_terminal_subsystem(void);
+extern int land_websocket_subsystem(void);
+extern int land_swagger_subsystem(void);
+extern int land_api_subsystem(void);
+extern int land_webserver_subsystem(void);
+extern int land_database_subsystem(void);
+extern int land_logging_subsystem(void);
+extern int land_network_subsystem(void);
+extern int land_payload_subsystem(void);
+extern int land_threads_subsystem(void);
+extern int land_registry_subsystem(void);
 
-// Free the messages in a LandingReadiness struct
-void free_landing_readiness_messages(LandingReadiness* readiness) {
-    if (!readiness || !readiness->messages) return;
-    
-    char** messages = (char**)readiness->messages;
-    for (int i = 0; messages[i] != NULL; i++) {
-        free(messages[i]);
-    }
-    
-    free(messages);
-    readiness->messages = NULL;
+// Utility function to get subsystem landing function from registry
+typedef int (*LandingFunction)(void);
+
+static LandingFunction get_landing_function(const char* subsystem_name) {
+    if (strcmp(subsystem_name, "Print") == 0) return land_print_subsystem;
+    if (strcmp(subsystem_name, "MailRelay") == 0) return land_mail_relay_subsystem;
+    if (strcmp(subsystem_name, "mDNS Client") == 0) return land_mdns_client_subsystem;
+    if (strcmp(subsystem_name, "mDNS Server") == 0) return land_mdns_server_subsystem;
+    if (strcmp(subsystem_name, "Terminal") == 0) return land_terminal_subsystem;
+    if (strcmp(subsystem_name, "WebSockets") == 0) return land_websocket_subsystem;
+    if (strcmp(subsystem_name, "Swagger") == 0) return land_swagger_subsystem;
+    if (strcmp(subsystem_name, "API") == 0) return land_api_subsystem;
+    if (strcmp(subsystem_name, "WebServer") == 0) return land_webserver_subsystem;
+    if (strcmp(subsystem_name, "Database") == 0) return land_database_subsystem;
+    if (strcmp(subsystem_name, "Logging") == 0) return land_logging_subsystem;
+    if (strcmp(subsystem_name, "Network") == 0) return land_network_subsystem;
+    if (strcmp(subsystem_name, "Payload") == 0) return land_payload_subsystem;
+    if (strcmp(subsystem_name, "Threads") == 0) return land_threads_subsystem;
+    if (strcmp(subsystem_name, "Registry") == 0) return land_registry_subsystem;
+    return NULL;
 }
 
-// Log all messages from a readiness check
-static void log_readiness_messages(const LandingReadiness* readiness) {
-    if (!readiness || !readiness->messages) return;
+/*
+ * Land approved subsystems in reverse launch order
+ * Each subsystem's specific landing code is in its own landing-*.c file
+ */
+static bool land_approved_subsystems(ReadinessResults* results) {
+    if (!results) return false;
     
-    // Log each message (first message is the subsystem name)
-    for (int i = 0; readiness->messages[i] != NULL; i++) {
-        int level = LOG_LEVEL_STATE;
+    bool all_landed = true;
+    
+    // Land subsystems in reverse launch order
+    for (size_t i = 0; i < results->total_checked; i++) {
+        const char* subsystem = results->results[i].subsystem;
+        bool is_ready = results->results[i].ready;
         
-        // Use appropriate log level based on the message content
-        if (strstr(readiness->messages[i], "No-Go") != NULL) {
-            level = LOG_LEVEL_ALERT;
+        if (!is_ready) continue;
+        
+        // Get subsystem ID and update state to landing
+        int subsystem_id = get_subsystem_id_by_name(subsystem);
+        if (subsystem_id < 0) continue;
+        
+        update_subsystem_state(subsystem_id, SUBSYSTEM_STOPPING);
+        
+        // Get and execute the subsystem's landing function
+        LandingFunction land_func = get_landing_function(subsystem);
+        if (!land_func) {
+            log_this("Landing", "No landing function found for %s", LOG_LEVEL_ERROR, subsystem);
+            continue;
         }
         
-        // Print the message directly (formatting is already in the message)
-        log_this("Landing", "%s", level, readiness->messages[i]);
+        bool land_ok = (land_func() == 1);
+        
+        // Update registry state based on result
+        update_subsystem_state(subsystem_id, land_ok ? SUBSYSTEM_INACTIVE : SUBSYSTEM_ERROR);
+        all_landed &= land_ok;
     }
+    
+    return all_landed;
 }
 
-// Check if all subsystems are ready to land (shutdown)
+/*
+ * Coordinate landing sequence for all subsystems
+ * This is the main orchestration function that follows the same pattern as launch
+ * but in reverse order. Each phase is handled by its own specialized module.
+ */
 bool check_all_landing_readiness(void) {
-    bool any_subsystem_ready = false;
+    // Record landing start time
+    time_t start_time = time(NULL);
     
-    // Begin LANDING READINESS logging section
     log_group_begin();
     log_this("Landing", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    log_this("Landing", "LANDING READINESS", LOG_LEVEL_STATE);
-    
-    // Check subsystems in reverse order of launch
-    
-    // Check print subsystem
-    LandingReadiness print_readiness = check_print_landing_readiness();
-    log_readiness_messages(&print_readiness);
-    if (print_readiness.ready) {
-        any_subsystem_ready = true;
-    }
-    free_landing_readiness_messages(&print_readiness);
-    
-    // Check mail relay subsystem
-    LandingReadiness mail_relay_readiness = check_mail_relay_landing_readiness();
-    log_readiness_messages(&mail_relay_readiness);
-    if (mail_relay_readiness.ready) {
-        any_subsystem_ready = true;
-    }
-    free_landing_readiness_messages(&mail_relay_readiness);
-    
-    // Check mdns client subsystem
-    LandingReadiness mdns_client_readiness = check_mdns_client_landing_readiness();
-    log_readiness_messages(&mdns_client_readiness);
-    if (mdns_client_readiness.ready) {
-        any_subsystem_ready = true;
-    }
-    free_landing_readiness_messages(&mdns_client_readiness);
-    
-    // Check mdns server subsystem
-    LandingReadiness mdns_server_readiness = check_mdns_server_landing_readiness();
-    log_readiness_messages(&mdns_server_readiness);
-    if (mdns_server_readiness.ready) {
-        any_subsystem_ready = true;
-    }
-    free_landing_readiness_messages(&mdns_server_readiness);
-    
-    // Check terminal subsystem
-    LandingReadiness terminal_readiness = check_terminal_landing_readiness();
-    log_readiness_messages(&terminal_readiness);
-    if (terminal_readiness.ready) {
-        any_subsystem_ready = true;
-    }
-    free_landing_readiness_messages(&terminal_readiness);
-    
-    // Check websocket subsystem
-    LandingReadiness websocket_readiness = check_websocket_landing_readiness();
-    log_readiness_messages(&websocket_readiness);
-    if (websocket_readiness.ready) {
-        any_subsystem_ready = true;
-    }
-    free_landing_readiness_messages(&websocket_readiness);
-    
-    // Check swagger subsystem
-    LandingReadiness swagger_readiness = check_swagger_landing_readiness();
-    log_readiness_messages(&swagger_readiness);
-    if (swagger_readiness.ready) {
-        any_subsystem_ready = true;
-    }
-    free_landing_readiness_messages(&swagger_readiness);
-    
-    // Check API subsystem
-    LandingReadiness api_readiness = check_api_landing_readiness();
-    log_readiness_messages(&api_readiness);
-    if (api_readiness.ready) {
-        any_subsystem_ready = true;
-    }
-    free_landing_readiness_messages(&api_readiness);
-    
-    // Check webserver subsystem
-    LandingReadiness webserver_readiness = check_webserver_landing_readiness();
-    log_readiness_messages(&webserver_readiness);
-    if (webserver_readiness.ready) {
-        any_subsystem_ready = true;
-    }
-    free_landing_readiness_messages(&webserver_readiness);
-    
-    // Check database subsystem
-    LandingReadiness database_readiness = check_database_landing_readiness();
-    log_readiness_messages(&database_readiness);
-    if (database_readiness.ready) {
-        any_subsystem_ready = true;
-    }
-    free_landing_readiness_messages(&database_readiness);
-    
-    // Check logging subsystem
-    LandingReadiness logging_readiness = check_logging_landing_readiness();
-    log_readiness_messages(&logging_readiness);
-    if (logging_readiness.ready) {
-        any_subsystem_ready = true;
-    }
-    free_landing_readiness_messages(&logging_readiness);
-    
-    // Check payload subsystem
-    LandingReadiness payload_readiness = check_payload_landing_readiness();
-    log_readiness_messages(&payload_readiness);
-    if (payload_readiness.ready) {
-        any_subsystem_ready = true;
-        
-        // Add LANDING: PAYLOAD section
-        log_this("Payload", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-        log_this("Payload", "LANDING: PAYLOAD", LOG_LEVEL_STATE);
-        log_this("Payload", "  Freeing payload resources...", LOG_LEVEL_STATE);
-        
-        // Free resources allocated during payload launch
-        free_payload_resources();
-        
-        log_this("Payload", "  Payload resources freed successfully", LOG_LEVEL_STATE);
-    }
-    free_landing_readiness_messages(&payload_readiness);
-    
-    // Check threads subsystem
-    LandingReadiness threads_readiness = check_threads_landing_readiness();
-    log_readiness_messages(&threads_readiness);
-    if (threads_readiness.ready) {
-        any_subsystem_ready = true;
-        
-        // Add LANDING: THREADS section
-        log_this("Threads", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-        log_this("Threads", "LANDING: THREADS", LOG_LEVEL_STATE);
-        report_thread_status();
-        log_this("Threads", "  Waiting for service threads to complete...", LOG_LEVEL_STATE);
-        
-        // Wait for service threads and clean up
-        // free_threads_resources();
-        
-        log_this("Threads", "  All threads landed successfully", LOG_LEVEL_STATE);
-    }
-    free_landing_readiness_messages(&threads_readiness);
-    
-    // Check network subsystem
-    LandingReadiness network_readiness = check_network_landing_readiness();
-    log_readiness_messages(&network_readiness);
-    if (network_readiness.ready) {
-        any_subsystem_ready = true;
-    }
-    free_landing_readiness_messages(&network_readiness);
-    
-    // Check Registry last
-    LandingReadiness registry_readiness = check_registry_landing_readiness();
-    log_readiness_messages(&registry_readiness);
-    if (registry_readiness.ready) {
-        any_subsystem_ready = true;
-    }
-    free_landing_readiness_messages(&registry_readiness);
-    
-    // Add LANDING REVIEW section
-    log_this("Landing", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    log_this("Landing", "LANDING REVIEW", LOG_LEVEL_STATE);
-    
-    // Count how many subsystems were checked and how many are ready
-    const int total_checked = 15; // Total number of subsystems we check (added Threads)
-    int ready_count = 0;
-    
-    // Count ready subsystems
-    for (int i = 0; i < subsystem_registry.count; i++) {
-        if (subsystem_registry.subsystems[i].state == SUBSYSTEM_INACTIVE) {
-            ready_count++;
-        }
-    }
-    
-    log_this("Landing", "  Total subsystems checked: %d", LOG_LEVEL_STATE, total_checked);
-    log_this("Landing", "  Subsystems ready for landing: %s (%d/%d)", LOG_LEVEL_STATE, 
-             any_subsystem_ready ? "Yes" : "No", ready_count, total_checked);
-    
-    // Add LANDING COMPLETE section if all subsystems are ready
-    if (ready_count == total_checked) {
-        log_this("Landing", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-        log_this("Landing", "LANDING COMPLETE", LOG_LEVEL_STATE);
-        
-        // Calculate and log shutdown timing
-        struct timeval tv;
-        gettimeofday(&tv, NULL);
-        double shutdown_time = calculate_shutdown_time();
-        
-        log_this("Landing", "  Shutdown Duration: %.3fs", LOG_LEVEL_STATE, shutdown_time);
-        log_this("Landing", "  All subsystems landed successfully", LOG_LEVEL_STATE);
-        
-        // Signal completion to shutdown handler
-        log_this("Landing", "  Proceeding with final cleanup", LOG_LEVEL_STATE);
-    }
-    
+    log_this("Landing", "LANDING SEQUENCE INITIATED", LOG_LEVEL_STATE);
     log_group_end();
     
-    return any_subsystem_ready;
+    /*
+     * Phase 1: Check readiness of all subsystems
+     * Each subsystem determines if it can be safely landed
+     * Handled by landing_readiness.c
+     */
+    ReadinessResults results = handle_landing_readiness();
+    if (!results.any_ready) {
+        log_this("Landing", "No subsystems ready for landing", LOG_LEVEL_ALERT);
+        return false;
+    }
+    
+    /*
+     * Phase 2: Execute landing plan
+     * Create sequence based on dependencies, in reverse launch order
+     * Handled by landing_plan.c
+     */
+    bool landing_success = handle_landing_plan(&results);
+    
+    /*
+     * Phase 3: Land approved subsystems in reverse launch order
+     * Each subsystem's specific landing code is in its own landing-*.c file
+     * This orchestrator only coordinates the process
+     */
+    if (landing_success) {
+        landing_success = land_approved_subsystems(&results);
+    }
+    
+    /*
+     * Phase 4: Review landing status
+     * Verify all subsystems landed successfully and collect metrics
+     * Handled by landing_review.c
+     */
+    handle_landing_review(&results, start_time);
+    
+    // Calculate and log shutdown timing if landing was successful
+    if (landing_success) {
+        double shutdown_time = calculate_shutdown_time();
+        
+        log_group_begin();
+        log_this("Landing", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        log_this("Landing", "LANDING COMPLETE", LOG_LEVEL_STATE);
+        log_this("Landing", "Shutdown Duration: %.3fs", LOG_LEVEL_STATE, shutdown_time);
+        log_this("Landing", "All subsystems landed successfully", LOG_LEVEL_STATE);
+        log_this("Landing", "Proceeding with final cleanup", LOG_LEVEL_STATE);
+        log_group_end();
+    }
+    
+    return landing_success;
 }
