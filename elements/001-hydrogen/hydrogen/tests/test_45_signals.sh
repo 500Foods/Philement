@@ -146,9 +146,10 @@ wait_for_restart() {
         
         # 3. Check for in-process restart flow with correct count
         if grep -q "SIGHUP received, initiating restart" "$log_file" && \
-           grep -q "Cleanup phase complete" "$log_file" && \
+           grep -q "Initiating in-process restart" "$log_file" && \
+           grep -q "Restart count: $expected_count" "$log_file" && \
            grep -q "In-process restart successful" "$log_file" && \
-           grep -q "Restart count: $expected_count" "$log_file"; then
+           grep -q "Restart completed successfully" "$log_file"; then
             print_info "Verified restart via restart flow messages with count $expected_count (PID: $pid)"
             return 0
         fi

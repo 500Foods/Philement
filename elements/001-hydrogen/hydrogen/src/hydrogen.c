@@ -1,12 +1,34 @@
 /**
  * @file hydrogen.c
- * @brief Main entry point for the Hydrogen 3D Printer Control Server
+ * 
+ * @brief Main entry point for the Hydrogen Server
  *
  * This file implements the core server functionality including:
  * - Server initialization and shutdown
  * - Signal handling for graceful termination
  * - Advanced crash handling with detailed core dump generation
  * - Main event loop management
+ * 
+ * Required System Headers:
+ * - <signal.h>: SA_RESTART, SA_NODEFER, SA_SIGINFO, siginfo_t, struct sigaction
+ * - <time.h>: CLOCK_REALTIME
+ * - <limits.h>: PATH_MAX
+ * - <sys/ucontext.h>: ucontext_t, mcontext_t
+ * - <sys/procfs.h>: struct elf_prstatus, struct elf_prpsinfo
+ * 
+ * Register Access:
+ * The code accesses CPU registers through the ucontext_t structure:
+ * - uc_mcontext.gregs: General purpose registers array
+ * - Register values are copied to pr_reg field of struct elf_prstatus
+ * 
+ * Signal Handling:
+ * Three types of signal handlers are used:
+ * 1. Normal termination (SIGINT, SIGTERM, SIGHUP)
+ *    - Uses sa_handler with SA_RESTART | SA_NODEFER
+ * 2. Crash handling (SIGSEGV, SIGABRT, SIGFPE)
+ *    - Uses sa_sigaction with SA_SIGINFO | SA_RESTART
+ * 3. Test handler (SIGUSR1)
+ *    - Uses sa_handler with SA_RESTART
  *
  * The crash handling system captures detailed state information when crashes occur,
  * generating an ELF format core dump with stack traces and register states to aid
@@ -16,33 +38,41 @@
  * initialized before any threads are created. The crash handler is async-signal-safe.
  */
 
+/* Feature test macros - defined here if not already set by Makefile */
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200809L
+#endif
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
+/* System headers - must come first after feature test macros */
+#include <features.h>     /* GNU/glibc features */
+#include <sys/types.h>    /* Basic system types */
+#include <signal.h>       /* Signal handling */
+#include <ucontext.h>     /* Context handling */
+#include <time.h>         /* Time types */
+#include <unistd.h>       /* POSIX system calls */
+#include <linux/limits.h> /* System limits */
+
+/* Extended POSIX headers */
+#include <sys/ucontext.h> /* Context handling */
+#include <sys/procfs.h>   /* Process info */
+#include <sys/time.h>     /* Time structures */
+#include <sys/resource.h> /* Resource limits */
+#include <sys/prctl.h>    /* Process control */
+
+/* Process and threading */
+#include <pthread.h>      /* POSIX threads */
+#include <elf.h>         /* ELF format */
+
 /* Standard C Library */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include <time.h>
 #include <errno.h>
-#include <limits.h>
-
-/* POSIX & System */
-#include <unistd.h>
-#include <pthread.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/prctl.h>
-#include <sys/resource.h>
 #include <libgen.h>
-
-/* Signal Handling & Debug */
-#include <signal.h>
-#include <sys/signal.h>
-#include <ucontext.h>
-#include <sys/ucontext.h>
-#include <elf.h>
-#include <sys/user.h>
-#include <sys/syscall.h>
-#include <linux/limits.h>
 
 /* Internal Headers */
 #include "logging/logging.h"
@@ -50,6 +80,20 @@
 #include "state/startup/startup.h"
 #include "state/shutdown/shutdown.h"
 #include "threads/threads.h"
+
+/* Global Variables and External Declarations */
+/* State flags from state.h */
+extern volatile sig_atomic_t server_running;
+extern pthread_mutex_t terminate_mutex;
+extern pthread_cond_t terminate_cond;
+
+/* Signal handler from shutdown.h */
+extern void signal_handler(int sig);
+
+/* Logging levels from logging.h */
+#ifndef LOG_LEVEL_ERROR
+#define LOG_LEVEL_ERROR 4
+#endif
 
 /* Global Variables */
 extern ServiceThreads logging_threads;
@@ -61,48 +105,6 @@ pthread_t main_thread_id;
  * during crash handling. They follow the ELF specification for core dumps.
  */
 
-/**
- * @brief Process status information for core dump
- * 
- * Contains detailed process state including:
- * - Signal information that caused the crash
- * - Process/thread identifiers
- * - CPU register state at time of crash
- * - Resource usage statistics
- */
-struct elf_prstatus {
-     struct {
-         int si_signo;
-         int si_code;
-         int si_errno;
-     } pr_info;
-     short pr_cursig;
-     unsigned long pr_sigpend;
-     unsigned long pr_sighold;
-     pid_t pr_pid;
-     pid_t pr_ppid;
-     pid_t pr_pgrp;
-     pid_t pr_sid;
-     struct timeval pr_utime, pr_stime, pr_cutime, pr_cstime;
-     struct user_regs_struct pr_reg;
-     int pr_fpvalid;
- };
-
- struct elf_prpsinfo {
-    char pr_state;         // Numeric process state
-    char pr_sname;         // Char representation of pr_state
-    char pr_zomb;          // Zombie status
-    char pr_nice;          // Nice value
-    unsigned long pr_flag; // Process flags
-    uint32_t pr_uid;       // Real user ID
-    uint32_t pr_gid;       // Real group ID
-    int pr_pid;            // Process ID
-    int pr_ppid;           // Parent process ID
-    int pr_pgrp;           // Process group ID
-    int pr_sid;            // Session ID
-    char pr_fname[16];     // Short command name
-    char pr_psargs[80];    // Full command line
-};
 
 /**
  * @brief Handles critical program crashes by generating a detailed core dump
@@ -135,19 +137,19 @@ static void crash_handler(int sig, siginfo_t *info, void *ucontext) {
 
     ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
     if (len == -1) {
-        log_this("Crash", "Failed to read /proc/self/exe: %s", LOG_LEVEL_ERROR, strerror(errno));
+        log_this("Crash", "Failed to read /proc/self/exe: %s", LOG_LEVEL_ERROR, strerror(errno), NULL);
         _exit(128 + sig);
     }
     exe_path[len] = '\0';
 
     int pid = getpid();
     if (strnlen(exe_path, PATH_MAX) + 32 >= sizeof(core_name)) {
-        log_this("Crash", "Path too long for core filename", LOG_LEVEL_ERROR);
+        log_this("Crash", "Path too long for core filename", LOG_LEVEL_ERROR, NULL);
         _exit(128 + sig);
     }
     size_t needed = strlen(exe_path) + strlen(".core.") + 20; // 20 for PID digits + null terminator
     if (needed >= sizeof(core_name)) {
-        log_this("Crash", "Path too long for core filename", LOG_LEVEL_ERROR);
+        log_this("Crash", "Path too long for core filename", LOG_LEVEL_ERROR, NULL);
         _exit(128 + sig);
     }
     snprintf(core_name, sizeof(core_name), "%s.core.%d", exe_path, pid);
@@ -157,7 +159,7 @@ static void crash_handler(int sig, siginfo_t *info, void *ucontext) {
 
     FILE *out = fopen(core_name, "w");
     if (!out) {
-        log_this("Crash", "Failed to open %s: %s", LOG_LEVEL_ERROR, core_name, strerror(errno));
+        log_this("Crash", "Failed to open %s: %s", LOG_LEVEL_ERROR, core_name, strerror(errno), NULL);
         _exit(128 + sig);
     }
 
@@ -165,7 +167,7 @@ static void crash_handler(int sig, siginfo_t *info, void *ucontext) {
     FILE *maps = fopen("/proc/self/maps", "r");
     FILE *mem = fopen("/proc/self/mem", "r");
     if (!maps || !mem) {
-        log_this("Crash", "Failed to open /proc/self/{maps,mem}: %s", LOG_LEVEL_ERROR, strerror(errno));
+        log_this("Crash", "Failed to open /proc/self/{maps,mem}: %s", LOG_LEVEL_ERROR, strerror(errno), NULL);
         if (maps) fclose(maps);
         if (mem) fclose(mem);
         fclose(out);
@@ -263,35 +265,19 @@ static void crash_handler(int sig, siginfo_t *info, void *ucontext) {
     sigset_t pending_signals;
     sigpending(&pending_signals);
 
-    struct elf_prstatus prstatus = {
-        .pr_info = {sig, info->si_code, errno},
-        .pr_cursig = sig,
-        .pr_sigpend = pending_signals.__val[0],
-        .pr_pid = pid,
-        .pr_ppid = getppid(),
-        .pr_pgrp = getpgrp(),
-        .pr_sid = getsid(0),
-        .pr_fpvalid = 0,
-        .pr_reg = {
-            .rip = uc->uc_mcontext.gregs[REG_RIP],
-            .rsp = uc->uc_mcontext.gregs[REG_RSP],
-            .rbp = uc->uc_mcontext.gregs[REG_RBP],
-            .rax = uc->uc_mcontext.gregs[REG_RAX],
-            .rbx = uc->uc_mcontext.gregs[REG_RBX],
-            .rcx = uc->uc_mcontext.gregs[REG_RCX],
-            .rdx = uc->uc_mcontext.gregs[REG_RDX],
-            .rsi = uc->uc_mcontext.gregs[REG_RSI],
-            .rdi = uc->uc_mcontext.gregs[REG_RDI],
-            .r8  = uc->uc_mcontext.gregs[REG_R8],
-            .r9  = uc->uc_mcontext.gregs[REG_R9],
-            .r10 = uc->uc_mcontext.gregs[REG_R10],
-            .r11 = uc->uc_mcontext.gregs[REG_R11],
-            .r12 = uc->uc_mcontext.gregs[REG_R12],
-            .r13 = uc->uc_mcontext.gregs[REG_R13],
-            .r14 = uc->uc_mcontext.gregs[REG_R14],
-            .r15 = uc->uc_mcontext.gregs[REG_R15],
-        }
-    };
+    struct elf_prstatus prstatus;
+    memset(&prstatus, 0, sizeof(prstatus));
+    prstatus.pr_info.si_signo = sig;
+    prstatus.pr_info.si_code = info->si_code;
+    prstatus.pr_info.si_errno = errno;
+    prstatus.pr_cursig = sig;
+    prstatus.pr_sigpend = pending_signals.__val[0];
+    prstatus.pr_pid = pid;
+    prstatus.pr_ppid = getppid();
+    prstatus.pr_pgrp = getpgrp();
+    prstatus.pr_sid = getsid(0);
+    prstatus.pr_fpvalid = 0;
+    memcpy(&prstatus.pr_reg, uc->uc_mcontext.gregs, sizeof(prstatus.pr_reg));
 
     Elf64_Nhdr nhdr1 = {.n_namesz = 4, .n_descsz = sizeof(prstatus), .n_type = NT_PRSTATUS};
     fwrite(&nhdr1, sizeof(nhdr1), 1, out);
@@ -350,7 +336,7 @@ static void crash_handler(int sig, siginfo_t *info, void *ucontext) {
     fclose(mem);
     fclose(out);
 
-    log_this("Crash", "Run: gdb -q %s %s", LOG_LEVEL_ERROR, exe_path, core_name);
+    log_this("Crash", "Run: gdb -q %s %s", LOG_LEVEL_ERROR, exe_path, core_name, NULL);
 
     _exit(128 + sig);
 }
@@ -425,9 +411,10 @@ int main(int argc, char *argv[]) {
       *    - SA_RESTART: Automatically restart interrupted system calls
       */
      struct sigaction sa_crash;
+     memset(&sa_crash, 0, sizeof(sa_crash));
+     sa_crash.sa_flags = SA_SIGINFO | SA_RESTART;
      sa_crash.sa_sigaction = crash_handler;
      sigemptyset(&sa_crash.sa_mask);
-     sa_crash.sa_flags = SA_SIGINFO | SA_RESTART;
      if (sigaction(SIGSEGV, &sa_crash, NULL) == -1 ||
          sigaction(SIGABRT, &sa_crash, NULL) == -1 ||
          sigaction(SIGFPE, &sa_crash, NULL) == -1) {
