@@ -285,20 +285,20 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Mon Mar 31 02:23:51 PDT 2025
+Generated on: Mon Mar 31 03:43:56 PDT 2025
 
 ### Summary
 
 | Metric | Value |
 | ------ | ----- |
-| Total Tests | 15 |
+| Total Tests | 14 |
 | Passed | 10 |
-| Failed | 5 |
+| Failed | 4 |
 | Skipped | 0 |
-| Total Subtests | 89 |
-| Passed Subtests | 52 |
-| Failed Subtests | 37 |
-| Runtime | 6m 1s |
+| Total Subtests | 82 |
+| Passed Subtests | 51 |
+| Failed Subtests | 31 |
+| Runtime | 5m 55s |
 
 ### Individual Test Results
 
@@ -309,7 +309,6 @@ Generated on: Mon Mar 31 02:23:51 PDT 2025
 | 15_startup_shutdown | ✅ Passed | Both min and max configuration tests passed (0 of 0 subtests passed) |
 | 20_shutdown | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
 | 25_library_dependencies | ✅ Passed | Test completed without errors (16 of 16 subtests passed) |
-| 30_dynamic_loading | ❌ Failed | Test failed with errors (1 of 7 subtests passed) |
 | 35_env_variables | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
 | 40_json_error_handling | ✅ Passed | Test completed without errors (2 of 2 subtests passed) |
 | 45_signals | ❌ Failed | Test failed with errors (3 of 4 subtests passed) |
@@ -322,16 +321,16 @@ Generated on: Mon Mar 31 02:23:51 PDT 2025
 
 ## Repository Information
 
-Generated via cloc: Mon Mar 31 02:23:51 PDT 2025
+Generated via cloc: Mon Mar 31 03:43:56 PDT 2025
 
 | Language | Files | Blank Lines | Comment Lines | Code Lines |
 | -------- | ----- | ----------- | ------------- | ---------- |
-| C | 162 | 4438 | 6177 | 19184 |
-| Markdown | 118 | 4229 | 27 | 15621 |
-| Bourne | Shell | 25 | 1354 | 1381 |
+| C | 162 | 4438 | 6229 | 19147 |
+| Markdown | 118 | 4240 | 27 | 15631 |
+| Bourne | Shell | 24 | 1292 | 1332 |
 | JSON | 17 | 0 | 0 | 4807 |
 | C/C++ | Header | 143 | 1147 | 5079 |
-| Text | 16 | 9 | 0 | 1704 |
+| Text | 17 | 9 | 0 | 1705 |
 | HTML | 1 | 74 | 0 | 493 |
 | make | 2 | 51 | 214 | 226 |
-| **Total** | **484** | **11302** | **12878** | **50206** |
+| **Total** | **484** | **11251** | **12881** | **49987** |
