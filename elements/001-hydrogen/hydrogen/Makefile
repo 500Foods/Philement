@@ -34,19 +34,7 @@
 #    - No sanitizers (unlike debug build)
 #    Use when: Deep memory analysis needed
 #
-# 4. Release Build (make release)
-#    Directory: build_release/
-#    Purpose: Production deployment
-#    Features:
-#    - Stripped symbols
-#    - Maximum compatibility (x86-64)
-#    - Link-time optimization
-#    - Stack protection enabled
-#    - UPX compression
-#    - Encrypted payload included
-#    Use when: Building for production/distribution
-#
-# 5. Performance Build (make perf)
+# 4. Performance Build (make perf)
 #    Directory: build_perf/
 #    Purpose: Maximum speed
 #    Features:
@@ -57,6 +45,18 @@
 #    - Loop unrolling
 #    - Link-time optimization
 #    Use when: Need maximum runtime performance
+#
+# 5. Release Build (make release)
+#    Directory: build_release/
+#    Purpose: Production deployment
+#    Features:
+#    - Stripped symbols
+#    - Maximum compatibility (x86-64)
+#    - Link-time optimization
+#    - Stack protection enabled
+#    - UPX compression
+#    - Encrypted payload included
+#    Use when: Building for production/distribution
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Build Strategy Priorities
@@ -164,7 +164,7 @@ BUILD_TYPE = Regular
 # Compiler selection and optimization flags
 # ──────────────────────────────────────────────────────────────────────────────
 CC = gcc
-CFLAGS = -std=c17 -Wall -Wextra -pedantic -Werror -O2 -DVERSION=\"$(VERSION)\" -DRELEASE=\"$(RELEASE)\" -DBUILD_TYPE=\"$(BUILD_TYPE)\"
+CFLAGS = -std=c17 -Wall -Wextra -pedantic -Werror -O2 -g -DVERSION=\"$(VERSION)\" -DRELEASE=\"$(RELEASE)\" -DBUILD_TYPE=\"$(BUILD_TYPE)\"
 CFLAGS += -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -179,8 +179,8 @@ SRC_DIR = src
 BUILD_DIR = build
 DEBUG_DIR = build_debug
 VALGRIND_DIR = build_valgrind
-RELEASE_DIR = build_release
 PERF_DIR = build_perf
+RELEASE_DIR = build_release
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Source and object files for different build configurations
@@ -189,8 +189,8 @@ SRCS = $(shell find $(SRC_DIR) -type f -name '*.c' -not -path '*/state/startup/*
 OBJS = $(patsubst $(SRC_DIR)/%,$(BUILD_DIR)/%,$(SRCS:.c=.o))
 DEBUG_OBJS = $(patsubst $(SRC_DIR)/%,$(DEBUG_DIR)/%,$(SRCS:.c=.o))
 VALGRIND_OBJS = $(patsubst $(SRC_DIR)/%,$(VALGRIND_DIR)/%,$(SRCS:.c=.o))
-RELEASE_OBJS = $(patsubst $(SRC_DIR)/%,$(RELEASE_DIR)/%,$(SRCS:.c=.o))
 PERF_OBJS = $(patsubst $(SRC_DIR)/%,$(PERF_DIR)/%,$(SRCS:.c=.o))
+RELEASE_OBJS = $(patsubst $(SRC_DIR)/%,$(RELEASE_DIR)/%,$(SRCS:.c=.o))
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Build targets
@@ -198,13 +198,13 @@ PERF_OBJS = $(patsubst $(SRC_DIR)/%,$(PERF_DIR)/%,$(SRCS:.c=.o))
 TARGET = hydrogen
 DEBUG_TARGET = hydrogen_debug
 VALGRIND_TARGET = hydrogen_valgrind
-RELEASE_TARGET = hydrogen_release
 PERF_TARGET = hydrogen_perf
+RELEASE_TARGET = hydrogen_release
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Phony targets (don't create files with these names)
 # ──────────────────────────────────────────────────────────────────────────────
-.PHONY: all clean debug valgrind release perf trial
+.PHONY: all clean debug valgrind perf release trial
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Default target: only build the standard variant
@@ -228,14 +228,14 @@ trial:
 # ──────────────────────────────────────────────────────────────────────────────
 # Build all variants at once
 # ──────────────────────────────────────────────────────────────────────────────
-all: clean default debug valgrind release perf payload
+all: clean default debug valgrind perf release payload
 	@printf "\n$(BLUE)────────────────────────────────────────────────────────────────$(NORMAL)\n"
 	@printf "$(GREEN)$(PASS) $(BOLD)All variants built successfully:$(NORMAL)\n"
 	@printf "  $(CYAN)$(INFO)  Default:     $(BOLD)$(TARGET)$(NORMAL)\n"
 	@printf "  $(CYAN)$(INFO)  Debug:       $(BOLD)$(DEBUG_TARGET)$(NORMAL)\n"
 	@printf "  $(CYAN)$(INFO)  Valgrind:    $(BOLD)$(VALGRIND_TARGET)$(NORMAL)\n"
-	@printf "  $(CYAN)$(INFO)  Release:     $(BOLD)$(RELEASE_TARGET)$(NORMAL)\n"
 	@printf "  $(CYAN)$(INFO)  Performance: $(BOLD)$(PERF_TARGET)$(NORMAL)\n"
+	@printf "  $(CYAN)$(INFO)  Release:     $(BOLD)$(RELEASE_TARGET)$(NORMAL)\n"
 	@printf "$(BLUE)────────────────────────────────────────────────────────────────$(NORMAL)\n"
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -303,7 +303,7 @@ valgrind: $(VALGRIND_TARGET)
 # Performance build: maximum runtime performance, hardware-specific optimizations
 # ──────────────────────────────────────────────────────────────────────────────
 perf: BUILD_TYPE = Performance
-perf: CFLAGS += -O3 -march=native -ffast-math -finline-functions -funroll-loops -DNDEBUG
+perf: CFLAGS += -O3 -march=native -ffast-math -finline-functions -funroll-loops -g -DNDEBUG
 perf: LDFLAGS += -flto=auto
 perf: $(PERF_TARGET)
 	@printf "$(GREEN)$(PASS) $(BOLD)Performance-optimized build$(NORMAL) $(GREEN)completed successfully$(NORMAL)\n"
@@ -323,12 +323,12 @@ $(VALGRIND_TARGET): $(VALGRIND_OBJS)
 	@printf "$(CYAN)$(INFO)  Linking valgrind-compatible build...$(NORMAL)\n"
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-$(RELEASE_TARGET): $(RELEASE_OBJS)
-	@printf "$(CYAN)$(INFO)  Linking release build...$(NORMAL)\n"
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
-
 $(PERF_TARGET): $(PERF_OBJS)
 	@printf "$(CYAN)$(INFO)  Linking performance-optimized build...$(NORMAL)\n"
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
+$(RELEASE_TARGET): $(RELEASE_OBJS)
+	@printf "$(CYAN)$(INFO)  Linking release build...$(NORMAL)\n"
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -351,14 +351,14 @@ $(VALGRIND_DIR)/%.o: $(SRC_DIR)/%.c | $(VALGRIND_DIR)
 	@printf "$(CYAN)Compiling$(NORMAL) [Valgrind] $<\n"
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
-$(RELEASE_DIR)/%.o: $(SRC_DIR)/%.c | $(RELEASE_DIR)
-	@mkdir -p $(dir $@)
-	@printf "$(CYAN)Compiling$(NORMAL) [Release] $<\n"
-	@$(CC) $(CFLAGS) -c -o $@ $<
-
 $(PERF_DIR)/%.o: $(SRC_DIR)/%.c | $(PERF_DIR)
 	@mkdir -p $(dir $@)
 	@printf "$(CYAN)Compiling$(NORMAL) [Performance] $<\n"
+	@$(CC) $(CFLAGS) -c -o $@ $<
+
+$(RELEASE_DIR)/%.o: $(SRC_DIR)/%.c | $(RELEASE_DIR)
+	@mkdir -p $(dir $@)
+	@printf "$(CYAN)Compiling$(NORMAL) [Release] $<\n"
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -379,20 +379,20 @@ $(VALGRIND_DIR):
 	@mkdir -p $@
 	@mkdir -p $(VALGRIND_DIR)/api/system
 
-$(RELEASE_DIR):
-	@printf "$(CYAN)$(INFO)  Creating release build directories...$(NORMAL)\n"
-	@mkdir -p $@
-	@mkdir -p $(RELEASE_DIR)/api/system
-
 $(PERF_DIR):
 	@printf "$(CYAN)$(INFO)  Creating performance build directories...$(NORMAL)\n"
 	@mkdir -p $@
 	@mkdir -p $(PERF_DIR)/api/system
 
+$(RELEASE_DIR):
+	@printf "$(CYAN)$(INFO)  Creating release build directories...$(NORMAL)\n"
+	@mkdir -p $@
+	@mkdir -p $(RELEASE_DIR)/api/system
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Create subdirectories for object files
 # ──────────────────────────────────────────────────────────────────────────────
-$(shell mkdir -p $(sort $(dir $(OBJS)) $(dir $(DEBUG_OBJS)) $(dir $(VALGRIND_OBJS)) $(dir $(RELEASE_OBJS)) $(dir $(PERF_OBJS))))
+$(shell mkdir -p $(sort $(dir $(OBJS)) $(dir $(DEBUG_OBJS)) $(dir $(VALGRIND_OBJS)) $(dir $(PERF_OBJS)) $(dir $(RELEASE_OBJS)) )) 
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Clean all build artifacts
@@ -401,4 +401,6 @@ clean:
 	@printf "$(CYAN)$(INFO)  Cleaning all build artifacts...$(NORMAL)\n"
 	@rm -rf $(BUILD_DIR) $(DEBUG_DIR) $(VALGRIND_DIR) $(RELEASE_DIR) $(PERF_DIR) 
 	@rm -rf $(TARGET) $(DEBUG_TARGET) $(VALGRIND_TARGET) $(RELEASE_TARGET) $(PERF_TARGET) hydrogen_naked
+	@printf "$(CYAN)$(INFO)  Removing crash core dumps...$(NORMAL)\n"
+	@find . -name "*.core.*" -type f -delete
 	@printf "$(GREEN)$(PASS) Clean completed successfully$(NORMAL)\n"

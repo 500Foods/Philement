@@ -254,7 +254,7 @@ run_test_with_config() {
 run_all_tests() {
     # First run environment variable test as it's a prerequisite
     print_header "Running Environment Variable Test" | tee -a "$SUMMARY_LOG"
-    run_test "$SCRIPT_DIR/test_env_payload.sh"
+    run_test "$SCRIPT_DIR/test_05_env_payload.sh"
     local env_exit_code=$?
     
     # Only proceed if environment variables are properly set
@@ -265,7 +265,7 @@ run_all_tests() {
 
     # Run compilation test next
     print_header "Running Compilation Test" | tee -a "$SUMMARY_LOG"
-    run_test "$SCRIPT_DIR/test_compilation.sh"
+    run_test "$SCRIPT_DIR/test_10_compilation.sh"
     local compilation_exit_code=$?
     
     # Only proceed with other tests if compilation passes
@@ -279,7 +279,7 @@ run_all_tests() {
     
     if [ "$SKIP_TESTS" = true ]; then
         # Just register the startup_shutdown test as skipped when in skip mode
-        ALL_TEST_NAMES+=("startup_shutdown")
+        ALL_TEST_NAMES+=("15_startup_shutdown")
         ALL_TEST_RESULTS+=(2) # 2 indicates skipped
         ALL_TEST_DETAILS+=("Test was skipped")
         ALL_TEST_SUBTESTS+=(1)
@@ -289,10 +289,10 @@ run_all_tests() {
         # Run with min configuration first - execute but don't record in global results
         print_info "Running with minimal configuration..." | tee -a "$SUMMARY_LOG"
         
-        # Execute test_startup_shutdown.sh directly without using run_test_with_config to avoid recording the individual result
+        # Execute test_15_startup_shutdown.sh directly without using run_test_with_config to avoid recording the individual result
         local config_path_min=$(get_config_path "hydrogen_test_min.json")
-        print_command "$SCRIPT_DIR/test_startup_shutdown.sh $config_path_min" | tee -a "$SUMMARY_LOG"
-        "$SCRIPT_DIR/test_startup_shutdown.sh" "$config_path_min"
+        print_command "$SCRIPT_DIR/test_15_startup_shutdown.sh $config_path_min" | tee -a "$SUMMARY_LOG"
+        "$SCRIPT_DIR/test_15_startup_shutdown.sh" "$config_path_min"
         local min_exit_code=$?
         
         # Get subtest results from min config run
@@ -313,10 +313,10 @@ run_all_tests() {
         # Run with max configuration - execute but don't record in global results
         print_info "Running with maximal configuration..." | tee -a "$SUMMARY_LOG"
         
-        # Execute test_startup_shutdown.sh directly without using run_test_with_config to avoid recording the individual result
+        # Execute test_15_startup_shutdown.sh directly without using run_test_with_config to avoid recording the individual result
         local config_path_max=$(get_config_path "hydrogen_test_max.json")
-        print_command "$SCRIPT_DIR/test_startup_shutdown.sh $config_path_max" | tee -a "$SUMMARY_LOG"
-        "$SCRIPT_DIR/test_startup_shutdown.sh" "$config_path_max"
+        print_command "$SCRIPT_DIR/test_15_startup_shutdown.sh $config_path_max" | tee -a "$SUMMARY_LOG"
+        "$SCRIPT_DIR/test_15_startup_shutdown.sh" "$config_path_max"
         local max_exit_code=$?
         
         # Get subtest results from max config run
@@ -345,14 +345,14 @@ run_all_tests() {
         # Record only the combined test result in the global results
         if [ $combined_exit_code -eq 0 ]; then
             print_result 0 "Combined Startup/Shutdown Test completed successfully" | tee -a "$SUMMARY_LOG"
-            ALL_TEST_NAMES+=("startup_shutdown")
+            ALL_TEST_NAMES+=("15_startup_shutdown")
             ALL_TEST_RESULTS+=(0)
             ALL_TEST_DETAILS+=("Both min and max configuration tests passed")
             ALL_TEST_SUBTESTS+=($combined_total_subtests)
             ALL_TEST_PASSED_SUBTESTS+=($combined_passed_subtests)
         else
             print_result 1 "Combined Startup/Shutdown Test failed" | tee -a "$SUMMARY_LOG"
-            ALL_TEST_NAMES+=("startup_shutdown")
+            ALL_TEST_NAMES+=("15_startup_shutdown")
             ALL_TEST_RESULTS+=(1)
             ALL_TEST_DETAILS+=("One or both configuration tests failed")
             ALL_TEST_SUBTESTS+=($combined_total_subtests)
@@ -363,7 +363,7 @@ run_all_tests() {
     fi
     
     # Find and run all other test scripts
-    local test_scripts=$(find "$SCRIPT_DIR" -type f -name "test_*.sh" | grep -v "test_all.sh" | grep -v "test_startup_shutdown.sh" | grep -v "test_compilation.sh" | grep -v "test_template.sh" | sort)
+    local test_scripts=$(find "$SCRIPT_DIR" -type f -name "test_*.sh" | grep -v "test_00_all.sh" | grep -v "test_05_env_payload.sh" | grep -v "test_15_startup_shutdown.sh" | grep -v "test_10_compilation.sh" | grep -v "test_template.sh" | sort)
     
     local all_exit_codes=0
     for test_script in $test_scripts; do
@@ -396,7 +396,7 @@ run_all_tests() {
 run_min_configuration_test() {
     # First run environment variable test
     print_header "Running Environment Variable Test" | tee -a "$SUMMARY_LOG"
-    run_test "$SCRIPT_DIR/test_env_payload.sh"
+    run_test "$SCRIPT_DIR/test_05_env_payload.sh"
     local env_exit_code=$?
     
     # Only proceed if environment variables are properly set
@@ -407,7 +407,7 @@ run_min_configuration_test() {
 
     # Run compilation test next
     print_header "Running Compilation Test" | tee -a "$SUMMARY_LOG"
-    run_test "$SCRIPT_DIR/test_compilation.sh"
+    run_test "$SCRIPT_DIR/test_10_compilation.sh"
     local compilation_exit_code=$?
     
     # Only proceed if compilation passes
@@ -418,7 +418,7 @@ run_min_configuration_test() {
     
     # Run startup/shutdown test with minimal configuration
     print_header "Running Startup/Shutdown Test (Min Config)" | tee -a "$SUMMARY_LOG"
-    run_test_with_config "$SCRIPT_DIR/test_startup_shutdown.sh" "hydrogen_test_min.json"
+    run_test_with_config "$SCRIPT_DIR/test_15_startup_shutdown.sh" "hydrogen_test_min.json"
     local min_exit_code=$?
     
     return $min_exit_code
@@ -428,7 +428,7 @@ run_min_configuration_test() {
 run_max_configuration_test() {
     # First run environment variable test
     print_header "Running Environment Variable Test" | tee -a "$SUMMARY_LOG"
-    run_test "$SCRIPT_DIR/test_env_payload.sh"
+    run_test "$SCRIPT_DIR/test_05_env_payload.sh"
     local env_exit_code=$?
     
     # Only proceed if environment variables are properly set
@@ -439,7 +439,7 @@ run_max_configuration_test() {
 
     # Run compilation test next
     print_header "Running Compilation Test" | tee -a "$SUMMARY_LOG"
-    run_test "$SCRIPT_DIR/test_compilation.sh"
+    run_test "$SCRIPT_DIR/test_10_compilation.sh"
     local compilation_exit_code=$?
     
     # Only proceed if compilation passes
@@ -450,7 +450,7 @@ run_max_configuration_test() {
     
     # Run startup/shutdown test with maximal configuration
     print_header "Running Startup/Shutdown Test (Max Config)" | tee -a "$SUMMARY_LOG"
-    run_test_with_config "$SCRIPT_DIR/test_startup_shutdown.sh" "hydrogen_test_max.json"
+    run_test_with_config "$SCRIPT_DIR/test_15_startup_shutdown.sh" "hydrogen_test_max.json"
     local max_exit_code=$?
     
     return $max_exit_code
@@ -470,9 +470,9 @@ run_specific_test() {
         fi
         
         # Run environment variable test first if it's not the test being requested
-        if [ "$test_name" != "env_payload" ]; then
+        if [ "$test_name" != "05_env_payload" ]; then
             print_header "Running Environment Variable Test" | tee -a "$SUMMARY_LOG"
-            run_test "$SCRIPT_DIR/test_env_payload.sh"
+            run_test "$SCRIPT_DIR/test_05_env_payload.sh"
             local env_exit_code=$?
             
             # Only proceed if environment variables are properly set
@@ -482,9 +482,9 @@ run_specific_test() {
             fi
 
             # Run compilation test next if it's not the test being requested
-            if [ "$test_name" != "compilation" ]; then
+            if [ "$test_name" != "10_compilation" ]; then
                 print_header "Running Compilation Test" | tee -a "$SUMMARY_LOG"
-                run_test "$SCRIPT_DIR/test_compilation.sh"
+                run_test "$SCRIPT_DIR/test_10_compilation.sh"
                 local compilation_exit_code=$?
                 
                 # Only proceed if compilation passes
