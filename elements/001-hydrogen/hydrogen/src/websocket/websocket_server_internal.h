@@ -21,7 +21,7 @@
 #include <libwebsockets.h>
 
 // Project headers
-#include "../utils/utils_threads.h"  // For ServiceThreads type
+#include "../threads/threads.h"  // Thread management subsystem
 
 // WebSocket server context structure
 typedef struct {

@@ -35,7 +35,7 @@
 
 // Project includes
 #include "../state/registry/subsystem_registry.h"
-#include "../utils/utils_threads.h"
+#include "../threads/threads.h"
 
 // Result of a launch readiness check
 typedef struct {
@@ -68,7 +68,7 @@ typedef struct {
 ReadinessResults handle_readiness_checks(void);
 bool check_all_launch_readiness(void);
 bool handle_launch_plan(const ReadinessResults* results);
-void handle_launch_review(const ReadinessResults* results, time_t start_time);
+void handle_launch_review(const ReadinessResults* results);
 
 // Main system startup function
 int startup_hydrogen(const char* config_path);

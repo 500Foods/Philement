@@ -23,7 +23,7 @@
 // Project includes
 #include "../logging/logging.h"
 #include "../utils/utils_logging.h"
-#include "../utils/utils_threads.h"
+#include "../threads/threads.h"
 #include "../state/registry/subsystem_registry.h"
 #include "../state/registry/subsystem_registry_integration.h"
 

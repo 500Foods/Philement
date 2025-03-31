@@ -49,7 +49,7 @@
 #include "../config/config.h"          // For config functions
 #include "../mdns/mdns_server.h"
 #include "../network/network.h"
-#include "../utils/utils_threads.h"
+#include "../threads/threads.h"        // Thread management subsystem
 #include "registry/subsystem_registry.h"  // Subsystem registry
 
 

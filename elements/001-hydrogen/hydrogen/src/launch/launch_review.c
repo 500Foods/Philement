@@ -22,78 +22,61 @@
 // Project includes
 #include "../logging/logging.h"
 #include "../utils/utils_logging.h"
-#include "../utils/utils_threads.h"
+#include "../threads/threads.h"
 #include "../state/registry/subsystem_registry.h"
 #include "../state/registry/subsystem_registry_integration.h"
 
 // Review and report final launch status
-void handle_launch_review(const ReadinessResults* results, time_t start_time) {
+void handle_launch_review(const ReadinessResults* results) {
     if (!results) return;
     
     // Begin LAUNCH REVIEW logging section
     log_this("Launch", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
     log_this("Launch", "LAUNCH REVIEW", LOG_LEVEL_STATE);
     
-    // Calculate running time
-    time_t current_time = time(NULL);
-    double elapsed_time = difftime(current_time, start_time);
+    // Track launch statistics
+    int total_attempts = 0;
+    int total_running = 0;
     
-    // Log launch timing
-    log_this("Launch", "Launch Time: %.2f seconds", LOG_LEVEL_STATE, elapsed_time);
-    
-    // Log subsystem status summary
-    log_this("Launch", "Total Subsystems:     %d", LOG_LEVEL_STATE, results->total_checked);
-    log_this("Launch", "Launch Success Rate:  %.1f%%", LOG_LEVEL_STATE, 
-             (results->total_ready * 100.0) / results->total_checked);
-    
-    // Log individual subsystem status
-    log_this("Launch", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    log_this("Launch", "Subsystem Status:", LOG_LEVEL_STATE);
-    
+    // Show status for all subsystems
     for (size_t i = 0; i < results->total_checked; i++) {
         const char* subsystem = results->results[i].subsystem;
         bool is_ready = results->results[i].ready;
         
-        // Get subsystem info
-        int subsystem_id = get_subsystem_id_by_name(subsystem);
-        int thread_count = 0;
+        // Get subsystem info with proper NULL checks
         SubsystemState state = SUBSYSTEM_INACTIVE;
+        int subsystem_id = get_subsystem_id_by_name(subsystem);
         
         if (subsystem_id >= 0) {
             SubsystemInfo* info = &subsystem_registry.subsystems[subsystem_id];
-            if (info && info->threads) {
-                thread_count = info->threads->thread_count;
+            if (info) {
+                state = info->state;
             }
-            state = info ? info->state : SUBSYSTEM_INACTIVE;
         }
         
-        // Determine status based on readiness and state
+        // Count attempts and successes
+        if (is_ready) {
+            total_attempts++;
+            if (state == SUBSYSTEM_RUNNING) {
+                total_running++;
+            }
+        }
+        
+        // Determine status message
         const char* status;
-        if (state == SUBSYSTEM_RUNNING) {
-            status = "Running";
-        } else if (state == SUBSYSTEM_ERROR) {
-            status = "Pending";  // Launch attempted but failed
-        } else if (!is_ready) {
-            status = "Not Launched";  // Was no-go for launch
+        if (is_ready) {
+            status = (state == SUBSYSTEM_RUNNING) ? "Running" : "Failed to Launch";
         } else {
-            status = subsystem_state_to_string(state);  // Other states
+            status = "Not Launched";
         }
         
-        // Log subsystem details
-        log_this("Launch", "%s:", LOG_LEVEL_STATE, subsystem);
-        log_this("Launch", "  Status:        %s", LOG_LEVEL_STATE, status);
-        log_this("Launch", "  Thread Count:  %d", LOG_LEVEL_STATE, thread_count);
-        log_this("Launch", "  State:         %s", LOG_LEVEL_STATE,
-                subsystem_state_to_string(state));
+        // Log subsystem status
+        log_this("Launch", "- %-15s %s", LOG_LEVEL_STATE, subsystem, status);
     }
     
-    // Log final summary
-    log_this("Launch", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    if (results->total_ready == results->total_checked) {
-        log_this("Launch", "Launch Complete - All Systems Running", LOG_LEVEL_STATE);
-    } else {
-        log_this("Launch", "Launch Complete - Some Systems Not Running", LOG_LEVEL_ALERT);
-        log_this("Launch", "Running: %d/%d", LOG_LEVEL_STATE,
-                results->total_ready, results->total_checked);
-    }
+    // Log summary statistics
+    log_this("Launch", "Subsystems        %d", LOG_LEVEL_STATE, results->total_checked);
+    log_this("Launch", "Launch Attempts   %d", LOG_LEVEL_STATE, total_attempts);
+    log_this("Launch", "Launch Successes  %d", LOG_LEVEL_STATE, total_running);
+    
 }

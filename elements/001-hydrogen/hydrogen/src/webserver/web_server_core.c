@@ -26,7 +26,7 @@
 
 // Project headers
 #include "../swagger/swagger.h"
-#include "../utils/utils_threads.h"
+#include "../threads/threads.h"
 #include "../logging/logging.h"
 
 // Global server state

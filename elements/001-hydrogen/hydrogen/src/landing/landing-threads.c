@@ -1,69 +1,33 @@
-/**
- * @file landing-threads.c
- * @brief Thread subsystem landing (shutdown) implementation
+/*
+ * Landing Thread Subsystem Implementation
+ * 
+ * This module handles the landing (shutdown) sequence for the thread management subsystem.
+ * As a core subsystem, it must ensure all thread tracking structures are properly cleaned up
+ * and that no threads are left running.
  */
 
-#include <pthread.h>
+#include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
+#include <pthread.h>
 #include <signal.h>
 
+#include "landing.h"
+#include "landing_readiness.h"
 #include "landing-threads.h"
-#include "../utils/utils_threads.h"
-#include "../utils/utils_logging.h"
-#include "../logging/logging.h"  // For LOG_LEVEL constants
-#include "../state/state.h"
-#include "../config/config.h"
+#include "../logging/logging.h"
+#include "../threads/threads.h"
 #include "../state/registry/subsystem_registry.h"
 #include "../state/registry/subsystem_registry_integration.h"
 
-// External declarations
-extern AppConfig* app_config;
-extern ServiceThreads system_threads;
-extern pthread_t main_thread_id;
-extern volatile sig_atomic_t threads_shutdown_flag;
+// External declarations for thread tracking
+extern ServiceThreads logging_threads;
+extern ServiceThreads web_threads;
+extern ServiceThreads websocket_threads;
+extern ServiceThreads mdns_server_threads;
+extern ServiceThreads print_threads;
 
-// Free thread resources during shutdown
-void free_threads_resources(void) {
-    // Free thread tracking resources
-    for (int i = 0; i < system_threads.thread_count; i++) {
-        remove_service_thread(&system_threads, system_threads.thread_ids[i]);
-    }
-    
-    // Reinitialize thread structure
-    init_service_threads(&system_threads);
-    
-    log_this("Threads", "Thread resources freed", LOG_LEVEL_STATE);
-}
-
-// Report thread status during landing sequence
-void report_landing_thread_status(void) {
-    char msg[256];
-    int non_main_threads = 0;
-    
-    // Count non-main threads
-    for (int i = 0; i < system_threads.thread_count; i++) {
-        if (!pthread_equal(system_threads.thread_ids[i], main_thread_id)) {
-            non_main_threads++;
-        }
-    }
-    
-    // Update memory metrics
-    update_service_thread_metrics(&system_threads);
-    
-    snprintf(msg, sizeof(msg), "  Remaining threads: %d total (%d service thread%s + main thread)", 
-             system_threads.thread_count, non_main_threads,
-             non_main_threads == 1 ? "" : "s");
-    log_this("Threads", msg, LOG_LEVEL_STATE);
-    
-    // Report memory usage
-    snprintf(msg, sizeof(msg), "  Memory usage: %.2f MB virtual, %.2f MB resident", 
-             system_threads.virtual_memory / (1024.0 * 1024.0),
-             system_threads.resident_memory / (1024.0 * 1024.0));
-    log_this("Threads", msg, LOG_LEVEL_STATE);
-}
-
-// Check if the Threads subsystem is ready to land
+// Check if the thread subsystem is ready to land
 LandingReadiness check_threads_landing_readiness(void) {
     LandingReadiness readiness = {0};
     readiness.subsystem = "Threads";
@@ -77,85 +41,91 @@ LandingReadiness check_threads_landing_readiness(void) {
     
     // Add initial subsystem identifier
     readiness.messages[0] = strdup("Threads");
+    int msg_idx = 1;
     
-    // Check if threads subsystem is actually running
+    // Check if thread management is actually running
     if (!is_subsystem_running_by_name("Threads")) {
         readiness.ready = false;
-        readiness.messages[1] = strdup("  No-Go:   Threads subsystem not running");
-        readiness.messages[2] = strdup("  Decide:  No-Go For Landing of Threads");
-        readiness.messages[3] = NULL;
+        readiness.messages[msg_idx++] = strdup("  No-Go:   Thread management not running");
+        readiness.messages[msg_idx++] = strdup("  Decide:  No-Go For Landing of Threads");
+        readiness.messages[msg_idx] = NULL;
         return readiness;
     }
     
-    // Count non-main threads
-    int non_main_threads = 0;
-    for (int i = 0; i < system_threads.thread_count; i++) {
-        if (!pthread_equal(system_threads.thread_ids[i], main_thread_id)) {
-            non_main_threads++;
-        }
+    // Check all service thread structures
+    bool all_clear = true;
+    
+    // Only check non-logging threads since logging needs to stay active until the end
+    if (web_threads.thread_count > 0) {
+        readiness.messages[msg_idx++] = strdup("  No-Go:   Web threads still active");
+        all_clear = false;
     }
     
-    // Update memory metrics
-    update_service_thread_metrics(&system_threads);
+    if (websocket_threads.thread_count > 0) {
+        readiness.messages[msg_idx++] = strdup("  No-Go:   WebSocket threads still active");
+        all_clear = false;
+    }
     
-    // Check thread status
-    char thread_msg[128];
-    snprintf(thread_msg, sizeof(thread_msg), "  %s:      Active threads: %d (main + %d other%s)", 
-             non_main_threads > 0 ? "No-Go" : "Go",
-             system_threads.thread_count,
-             non_main_threads,
-             non_main_threads == 1 ? "" : "s");
-    readiness.messages[1] = strdup(thread_msg);
+    if (mdns_server_threads.thread_count > 0) {
+        readiness.messages[msg_idx++] = strdup("  No-Go:   mDNS server threads still active");
+        all_clear = false;
+    }
     
-    if (non_main_threads > 0) {
-        readiness.ready = false;
-        readiness.messages[2] = strdup("  No-Go:   Service threads still running");
-        readiness.messages[3] = strdup("  Decide:  No-Go For Landing of Threads");
-        readiness.messages[4] = NULL;
-    } else {
+    if (print_threads.thread_count > 0) {
+        readiness.messages[msg_idx++] = strdup("  No-Go:   Print threads still active");
+        all_clear = false;
+    }
+    
+    // Final decision
+    if (all_clear) {
         readiness.ready = true;
-        readiness.messages[2] = strdup("  Go:      Only main thread remaining");
-        readiness.messages[3] = strdup("  Go:      Ready for final cleanup");
-        readiness.messages[4] = strdup("  Decide:  Go For Landing of Threads");
-        readiness.messages[5] = NULL;
+        readiness.messages[msg_idx++] = strdup("  Go:      All service threads ready for cleanup");
+        readiness.messages[msg_idx++] = strdup("  Decide:  Go For Landing of Threads");
+    } else {
+        readiness.ready = false;
+        readiness.messages[msg_idx++] = strdup("  Decide:  No-Go For Landing of Threads");
     }
+    readiness.messages[msg_idx] = NULL;
     
     return readiness;
 }
 
-// Shutdown the threads subsystem
+// Shutdown the thread management subsystem
 void shutdown_threads(void) {
-    log_this("Threads", "Beginning Threads shutdown sequence", LOG_LEVEL_STATE);
+    log_this("Threads", "Beginning thread management shutdown sequence", LOG_LEVEL_STATE);
     
-    // Signal thread shutdown
-    threads_shutdown_flag = 1;
-    log_this("Threads", "Signaled thread shutdown", LOG_LEVEL_STATE);
-    
-    // Log current thread count before cleanup
-    log_this("Threads", "Final thread count before cleanup: %d", LOG_LEVEL_STATE, 
-             system_threads.thread_count);
-    
-    // Update metrics one last time
-    update_service_thread_metrics(&system_threads);
-    
-    // First try to wait for non-main threads to complete naturally
-    for (int i = 0; i < system_threads.thread_count; i++) {
-        if (!pthread_equal(system_threads.thread_ids[i], main_thread_id)) {
-            // Check if thread is still alive
-            pid_t tid = system_threads.thread_tids[i];
-            if (kill(tid, 0) == 0) {
-                log_this("Threads", "Waiting for thread %d to complete", LOG_LEVEL_STATE, tid);
-                pthread_join(system_threads.thread_ids[i], NULL);
-                log_this("Threads", "Thread %d completed", LOG_LEVEL_STATE, tid);
-            }
-        }
+    // Clean up web server threads
+    if (web_threads.thread_count > 0) {
+        log_this("Threads", "Warning: %d web threads still active during shutdown", 
+                LOG_LEVEL_STATE, web_threads.thread_count);
+        init_service_threads(&web_threads);
     }
     
-    // Remove main thread from tracking
-    remove_service_thread(&system_threads, main_thread_id);
+    // Clean up websocket threads
+    if (websocket_threads.thread_count > 0) {
+        log_this("Threads", "Warning: %d websocket threads still active during shutdown", 
+                LOG_LEVEL_STATE, websocket_threads.thread_count);
+        init_service_threads(&websocket_threads);
+    }
     
-    // Report final status
-    report_landing_thread_status();
+    // Clean up mDNS server threads
+    if (mdns_server_threads.thread_count > 0) {
+        log_this("Threads", "Warning: %d mDNS server threads still active during shutdown", 
+                LOG_LEVEL_STATE, mdns_server_threads.thread_count);
+        init_service_threads(&mdns_server_threads);
+    }
     
-    log_this("Threads", "Thread subsystem shutdown complete", LOG_LEVEL_STATE);
+    // Clean up print threads
+    if (print_threads.thread_count > 0) {
+        log_this("Threads", "Warning: %d print threads still active during shutdown", 
+                LOG_LEVEL_STATE, print_threads.thread_count);
+        init_service_threads(&print_threads);
+    }
+    
+    // Note: Logging threads are handled last by the logging subsystem shutdown
+    
+    log_this("Threads", "Thread management shutdown complete", LOG_LEVEL_STATE);
+    
+    // Update registry that we're done
+    update_subsystem_after_shutdown("Threads");
 }
