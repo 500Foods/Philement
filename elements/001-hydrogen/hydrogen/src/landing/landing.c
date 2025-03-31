@@ -26,7 +26,7 @@
 #include "../utils/utils_logging.h"
 #include "../utils/utils.h"
 #include "../utils/utils_time.h"
-#include "../utils/utils_threads.h"
+#include "../threads/threads.h"
 #include "../state/registry/subsystem_registry.h"
 #include "../state/registry/subsystem_registry_integration.h"
 
@@ -213,7 +213,7 @@ bool check_all_landing_readiness(void) {
         log_this("Threads", "  Waiting for service threads to complete...", LOG_LEVEL_STATE);
         
         // Wait for service threads and clean up
-        free_threads_resources();
+        // free_threads_resources();
         
         log_this("Threads", "  All threads landed successfully", LOG_LEVEL_STATE);
     }

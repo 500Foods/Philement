@@ -23,7 +23,7 @@
 
 // Project headers
 #include "utils_status.h"
-#include "utils_threads.h"
+#include "../threads/threads.h"
 #include "utils_queue.h"
 #include "utils_time.h"
 #include "utils_logging.h"

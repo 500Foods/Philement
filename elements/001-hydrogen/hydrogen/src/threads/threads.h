@@ -8,8 +8,8 @@
  * - Stack size monitoring
  */
 
-#ifndef UTILS_THREADS_H
-#define UTILS_THREADS_H
+#ifndef THREADS_H
+#define THREADS_H
 
 // System includes
 #include <pthread.h>
@@ -52,4 +52,8 @@ void remove_service_thread(ServiceThreads *threads, pthread_t thread_id);
 void update_service_thread_metrics(ServiceThreads *threads);
 ThreadMemoryMetrics get_thread_memory_metrics(ServiceThreads *threads, pthread_t thread_id);
 
-#endif // UTILS_THREADS_H
+// Thread status and cleanup functions
+void report_thread_status(void);
+void free_threads_resources(void);
+
+#endif // THREADS_H

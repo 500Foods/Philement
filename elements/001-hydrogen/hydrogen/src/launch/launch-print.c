@@ -20,7 +20,7 @@
 
 #include "launch.h"
 #include "../utils/utils_logging.h"
-#include "../utils/utils_threads.h"
+#include "../threads/threads.h"
 
 // External declarations
 extern ServiceThreads print_threads;

@@ -15,7 +15,6 @@
 // Project headers
 #include "websocket_server_internal.h"
 #include "../logging/logging.h"
-#include "../utils/utils_threads.h"
 
 // External reference to the server context
 extern WebSocketServerContext *ws_context;

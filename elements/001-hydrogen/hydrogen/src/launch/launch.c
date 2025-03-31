@@ -208,8 +208,6 @@ static void log_early_info(void) {
 
 // Check readiness of all subsystems and coordinate launch
 bool check_all_launch_readiness(void) {
-    // Record launch start time
-    time_t start_time = time(NULL);
     
     /*
      * Phase 1: Check readiness of all subsystems
@@ -236,7 +234,7 @@ bool check_all_launch_readiness(void) {
      * Phase 4: Review launch status
      * Verify all subsystems launched successfully and collect metrics
      */
-    handle_launch_review(&results, start_time);
+    handle_launch_review(&results);
     
     // Return overall launch success
     return launch_success;
