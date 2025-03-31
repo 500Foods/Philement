@@ -22,8 +22,8 @@
 #include "../logging/logging.h"
 #include "../utils/utils_logging.h"
 #include "../threads/threads.h"
-#include "../state/registry/subsystem_registry.h"
-#include "../state/registry/subsystem_registry_integration.h"
+#include "../registry/registry.h"
+#include "../registry/registry_integration.h"
 
 // External declarations
 extern ServiceThreads mdns_server_threads;

@@ -19,8 +19,8 @@
 #include "landing_readiness.h"
 #include "../logging/logging.h"
 #include "../utils/utils_logging.h"
-#include "../state/registry/subsystem_registry.h"
-#include "../state/registry/subsystem_registry_integration.h"
+#include "../registry/registry.h"
+#include "../registry/registry_integration.h"
 
 // External declarations
 extern volatile sig_atomic_t swagger_system_shutdown;

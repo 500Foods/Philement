@@ -12,8 +12,8 @@
 #include "landing-payload.h"
 #include "../logging/logging.h"
 #include "../config/config.h"
-#include "../state/registry/subsystem_registry.h"
-#include "../state/registry/subsystem_registry_integration.h"
+#include "../registry/registry.h"
+#include "../registry/registry_integration.h"
 #include "../payload/payload.h"
 #include "../utils/utils.h"
 

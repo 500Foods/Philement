@@ -1,6 +1,6 @@
 /**
  * @file landing-registry.c
- * @brief Subsystem Registry landing (shutdown) implementation
+ * @brief Registry landing (shutdown) implementation
  * 
  * This is the final subsystem to shut down. It verifies that all other
  * subsystems have properly shut down before proceeding with its own cleanup.
@@ -14,8 +14,8 @@
 #include "landing-registry.h"
 #include "../logging/logging.h"
 #include "../config/config.h"
-#include "../state/registry/subsystem_registry.h"
-#include "../state/registry/subsystem_registry_integration.h"
+#include "../registry/registry.h"
+#include "../registry/registry_integration.h"
 #include "../utils/utils.h"
 
 // External declarations
@@ -51,8 +51,8 @@ void report_registry_landing_status(void) {
     }
 }
 
-// Check if the Subsystem Registry is ready to land
-LandingReadiness check_subsystem_registry_landing_readiness(void) {
+// Check if the Registry is ready to land
+LandingReadiness check_registry_landing_readiness(void) {
     LandingReadiness readiness = {0};
     readiness.subsystem = "Registry";
     
@@ -110,8 +110,8 @@ LandingReadiness check_subsystem_registry_landing_readiness(void) {
     return readiness;
 }
 
-// Shutdown the Subsystem Registry
-void shutdown_subsystem_registry(void) {
+// Shutdown the Registry
+void shutdown_registry(void) {
     log_this("Registry", "Beginning Registry shutdown sequence", LOG_LEVEL_STATE);
     
     // Report final status

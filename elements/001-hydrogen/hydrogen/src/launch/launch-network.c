@@ -16,6 +16,7 @@
 #include "../config/config.h"
 #include "../network/network.h"
 #include "../logging/logging.h"
+#include "../registry/registry_integration.h"
 #include "launch.h"
 #include "launch-network.h"
 
@@ -113,82 +114,86 @@ static bool is_interface_configured(const AppConfig* app_config, const char* int
 
 // Check network subsystem launch readiness
 LaunchReadiness check_network_launch_readiness(void) {
-    bool overall_readiness = false;
+    LaunchReadiness readiness = {0};
     
     // Allocate space for messages (estimate max needed + NULL terminator)
-    const char** messages = malloc(50 * sizeof(const char*));
-    if (!messages) {
-        return (LaunchReadiness){0};
+    readiness.messages = malloc(50 * sizeof(const char*));
+    if (!readiness.messages) {
+        readiness.ready = false;
+        return readiness;
     }
     int msg_count = 0;
     
     // Add the subsystem name as the first message
-    add_message(messages, &msg_count, strdup("Network"));
+    add_message(readiness.messages, &msg_count, strdup("Network"));
+    
+    // Register dependency on Threads subsystem
+    int network_id = get_subsystem_id_by_name("Network");
+    if (network_id >= 0) {
+        if (!add_dependency_from_launch(network_id, "Threads")) {
+            add_go_message(readiness.messages, &msg_count, "No-Go", "Failed to register Thread dependency");
+            readiness.messages[msg_count] = NULL;
+            readiness.ready = false;
+            readiness.subsystem = "Network";
+            return readiness;
+        }
+        add_go_message(readiness.messages, &msg_count, "Go", "Thread dependency registered");
+    }
     
     // Early return cases with cleanup
     if (server_stopping || web_server_shutdown) {
-        add_go_message(messages, &msg_count, "No-Go", "System shutdown in progress");
-        messages[msg_count] = NULL;
-        return (LaunchReadiness){
-            .subsystem = "Network",
-            .ready = false,
-            .messages = messages
-        };
+        add_go_message(readiness.messages, &msg_count, "No-Go", "System shutdown in progress");
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        readiness.subsystem = "Network";
+        return readiness;
     }
     
     if (!server_starting && !server_running) {
-        add_go_message(messages, &msg_count, "No-Go", "System not in startup or running state");
-        messages[msg_count] = NULL;
-        return (LaunchReadiness){
-            .subsystem = "Network",
-            .ready = false,
-            .messages = messages
-        };
+        add_go_message(readiness.messages, &msg_count, "No-Go", "System not in startup or running state");
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        readiness.subsystem = "Network";
+        return readiness;
     }
     
     const AppConfig* app_config = get_app_config();
     if (!app_config) {
-        add_go_message(messages, &msg_count, "No-Go", "Configuration not loaded");
-        messages[msg_count] = NULL;
-        return (LaunchReadiness){
-            .subsystem = "Network",
-            .ready = false,
-            .messages = messages
-        };
+        add_go_message(readiness.messages, &msg_count, "No-Go", "Configuration not loaded");
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        readiness.subsystem = "Network";
+        return readiness;
     }
     
     network_info_t* network_info = get_network_info();
     if (!network_info) {
-        add_go_message(messages, &msg_count, "No-Go", "Failed to get network information");
-        messages[msg_count] = NULL;
-        return (LaunchReadiness){
-            .subsystem = "Network",
-            .ready = false,
-            .messages = messages
-        };
+        add_go_message(readiness.messages, &msg_count, "No-Go", "Failed to get network information");
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        readiness.subsystem = "Network";
+        return readiness;
     }
     
     if (network_info->count == 0) {
-        add_go_message(messages, &msg_count, "No-Go", "No network interfaces available");
+        add_go_message(readiness.messages, &msg_count, "No-Go", "No network interfaces available");
         free_network_info(network_info);
-        messages[msg_count] = NULL;
-        return (LaunchReadiness){
-            .subsystem = "Network",
-            .ready = false,
-            .messages = messages
-        };
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        readiness.subsystem = "Network";
+        return readiness;
     }
     
-    add_go_message(messages, &msg_count, "Go", "%d network interfaces available", network_info->count);
+    add_go_message(readiness.messages, &msg_count, "Go", "%d network interfaces available", network_info->count);
     
     int json_interfaces_count = 0;
     if (app_config && app_config->network.available_interfaces && app_config->network.available_interfaces_count > 0) {
         json_interfaces_count = app_config->network.available_interfaces_count;
         
         if (json_interfaces_count > 0) {
-            add_go_message(messages, &msg_count, "Go", "%d network interfaces configured:", json_interfaces_count);
+            add_go_message(readiness.messages, &msg_count, "Go", "%d network interfaces configured:", json_interfaces_count);
         } else {
-            add_go_message(messages, &msg_count, "No-Go", "No network interfaces found in JSON configuration");
+            add_go_message(readiness.messages, &msg_count, "No-Go", "No network interfaces found in JSON configuration");
         }
         
         for (size_t i = 0; i < app_config->network.available_interfaces_count; i++) {
@@ -197,14 +202,14 @@ LaunchReadiness check_network_launch_readiness(void) {
                 bool is_available = app_config->network.available_interfaces[i].available;
                 
                 if (is_available) {
-                    add_go_message(messages, &msg_count, "Go", "Available: %s is enabled", interface_name);
+                    add_go_message(readiness.messages, &msg_count, "Go", "Available: %s is enabled", interface_name);
                 } else {
-                    add_go_message(messages, &msg_count, "No-Go", "Available: %s is disabled", interface_name);
+                    add_go_message(readiness.messages, &msg_count, "No-Go", "Available: %s is disabled", interface_name);
                 }
             }
         }
     } else {
-        add_go_message(messages, &msg_count, "No-Go", "No network interfaces found in JSON configuration");
+        add_go_message(readiness.messages, &msg_count, "No-Go", "No network interfaces found in JSON configuration");
     }
     
     int up_interfaces = 0;
@@ -221,29 +226,26 @@ LaunchReadiness check_network_launch_readiness(void) {
         if (is_up) {
             if (is_available) {
                 up_interfaces++;
-                add_go_message(messages, &msg_count, "Go", "Interface %s is up (%s)", interface->name, config_status);
+                add_go_message(readiness.messages, &msg_count, "Go", "Interface %s is up (%s)", interface->name, config_status);
             } else {
-                add_go_message(messages, &msg_count, "No-Go", "Interface %s is up but %s", interface->name, config_status);
+                add_go_message(readiness.messages, &msg_count, "No-Go", "Interface %s is up but %s", interface->name, config_status);
             }
         } else {
-            add_go_message(messages, &msg_count, "No-Go", "Interface %s is down (%s)", interface->name, config_status);
+            add_go_message(readiness.messages, &msg_count, "No-Go", "Interface %s is down (%s)", interface->name, config_status);
         }
     }
     
     if (up_interfaces > 0) {
-        add_decision_message(messages, &msg_count, "Go For Launch of Network Subsystem (%d interfaces ready)", up_interfaces);
-        overall_readiness = true;
+        add_decision_message(readiness.messages, &msg_count, "Go For Launch of Network Subsystem (%d interfaces ready)", up_interfaces);
+        readiness.ready = true;
     } else {
-        add_decision_message(messages, &msg_count, "No-Go For Launch of Network Subsystem (no interfaces ready)");
-        overall_readiness = false;
+        add_decision_message(readiness.messages, &msg_count, "No-Go For Launch of Network Subsystem (no interfaces ready)");
+        readiness.ready = false;
     }
     
     free_network_info(network_info);
-    messages[msg_count] = NULL;
+    readiness.messages[msg_count] = NULL;
+    readiness.subsystem = "Network";
     
-    return (LaunchReadiness){
-        .subsystem = "Network",
-        .ready = overall_readiness,
-        .messages = messages
-    };
+    return readiness;
 }

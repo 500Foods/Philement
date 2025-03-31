@@ -5,7 +5,7 @@
  * As a core subsystem, it provides thread tracking and metrics for all other subsystems.
  * 
  * Dependencies:
- * - Subsystem Registry must be initialized
+ * - Registry must be initialized
  * - No other dependencies (this is a fundamental subsystem)
  */
 
@@ -19,7 +19,7 @@
 #include "../threads/threads.h"
 #include "../logging/logging.h"
 #include "../utils/utils_logging.h"
-#include "../state/registry/subsystem_registry.h"
+#include "../registry/registry.h"
 
 // External declarations for thread tracking
 extern ServiceThreads logging_threads;
