@@ -49,26 +49,6 @@
 #include "../threads/threads.h"
 #include "../state/state_types.h"  // For SubsystemState and LaunchReadiness
 
-// Structure to track launch status for each subsystem
-typedef struct {
-    const char* subsystem;    // Subsystem name
-    bool ready;              // Ready status from readiness check
-    SubsystemState state;    // Current state in registry
-    time_t launch_time;      // When launch started
-} LaunchStatus;
-
-// Structure to hold readiness check results
-typedef struct {
-    struct {
-        const char* subsystem;
-        bool ready;
-    } results[15];  // Must match number of subsystems
-    size_t total_checked;
-    size_t total_ready;
-    size_t total_not_ready;
-    bool any_ready;
-} ReadinessResults;
-
 // Core launch functions
 ReadinessResults handle_readiness_checks(void);
 bool check_all_launch_readiness(void);

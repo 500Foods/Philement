@@ -10,11 +10,12 @@
 
 #include "landing_readiness.h"
 #include "../threads/threads.h"
+#include "../state/state_types.h"
 
 // Check if the thread subsystem is ready to land
-LandingReadiness check_threads_landing_readiness(void);
+LaunchReadiness check_threads_landing_readiness(void);
 
-// Shutdown the thread management subsystem
-void shutdown_threads(void);
+// Land the thread management subsystem
+int land_threads_subsystem(void);
 
 #endif /* LANDING_THREADS_H */

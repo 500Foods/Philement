@@ -1,11 +1,49 @@
 /*
  * Landing Plan System
  * 
- * This module coordinates the landing (shutdown) sequence.
- * It provides functions for:
- * - Making Go/No-Go decisions for each subsystem
- * - Tracking landing status and counts
- * - Coordinating with the registry for subsystem deregistration
+ * DESIGN PRINCIPLES:
+ * - This file is a lightweight orchestrator only - no subsystem-specific code
+ * - All subsystems are equal in importance - no hierarchy
+ * - Dependencies determine what's needed, not importance
+ * - Processing order is reverse of launch for consistency
+ *
+ * PLANNING SEQUENCE:
+ * 1. Status Assessment:
+ *    - Count ready and not-ready subsystems
+ *    - Verify at least one subsystem is ready
+ *    - Log overall readiness status
+ *
+ * 2. Dependency Analysis:
+ *    - Check each subsystem's dependents
+ *    - Ensure dependents are landed or inactive
+ *    - Create safe landing sequence
+ *
+ * 3. Go/No-Go Decision:
+ *    - Evaluate readiness of each subsystem
+ *    - Verify all dependencies are satisfied
+ *    - Make final landing decision
+ *
+ * Standard Processing Order (reverse of launch):
+ * - 15. Print (last launched, first to land)
+ * - 14. MailRelay
+ * - 13. mDNS Client
+ * - 12. mDNS Server
+ * - 11. Terminal
+ * - 10. WebSockets
+ * - 09. Swagger
+ * - 08. API
+ * - 07. WebServer
+ * - 06. Logging
+ * - 05. Database
+ * - 04. Network
+ * - 03. Threads
+ * - 02. Payload
+ * - 01. Registry (first launched, last to land)
+ *
+ * Key Points:
+ * - Each subsystem's landing must wait for its dependents
+ * - Order is reverse of launch to maintain system stability
+ * - All decisions are based on actual dependencies, not importance
  */
 
 // System includes
@@ -25,7 +63,14 @@
 #include "../registry/registry.h"
 #include "../registry/registry_integration.h"
 
-// Execute the landing plan and make Go/No-Go decisions
+// Forward declarations
+static bool check_dependent_states(const char* subsystem, bool* can_land);
+static void log_landing_status(const ReadinessResults* results);
+
+/*
+ * Execute the landing plan and make Go/No-Go decisions
+ * This is the main orchestration function that creates a safe landing sequence
+ */
 bool handle_landing_plan(const ReadinessResults* results) {
     if (!results) return false;
     
@@ -33,10 +78,11 @@ bool handle_landing_plan(const ReadinessResults* results) {
     log_this("Landing", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
     log_this("Landing", "LANDING PLAN", LOG_LEVEL_STATE);
     
-    // Log overall readiness status
-    log_this("Landing", "Total Subsystems Checked: %d", LOG_LEVEL_STATE, results->total_checked);
-    log_this("Landing", "Ready Subsystems:         %d", LOG_LEVEL_STATE, results->total_ready);
-    log_this("Landing", "Not Ready Subsystems:     %d", LOG_LEVEL_STATE, results->total_not_ready);
+    /*
+     * Phase 1: Status Assessment
+     * Log overall readiness status and verify we have subsystems to land
+     */
+    log_landing_status(results);
     
     // Check if any subsystems are ready
     if (!results->any_ready) {
@@ -44,79 +90,87 @@ bool handle_landing_plan(const ReadinessResults* results) {
         return false;
     }
     
-    // First, shut down non-critical subsystems
+    /*
+     * Phase 2: Dependency Analysis
+     * Process all subsystems in reverse launch order
+     * Verify dependencies are satisfied for landing
+     */
+    bool all_dependencies_satisfied = true;
+    
     for (size_t i = 0; i < results->total_checked; i++) {
         const char* subsystem = results->results[i].subsystem;
         bool is_ready = results->results[i].ready;
         
-        // Skip critical subsystems for now
-        bool is_critical = (strcmp(subsystem, "Registry") == 0 ||
-                          strcmp(subsystem, "Threads") == 0 ||
-                          strcmp(subsystem, "Network") == 0 ||
-                          strcmp(subsystem, "Logging") == 0);
+        // Get subsystem ID for dependency checking
+        int subsystem_id = get_subsystem_id_by_name(subsystem);
+        if (subsystem_id < 0) continue;
         
-        if (is_critical) continue;
+        // Check if this subsystem can be landed
+        bool can_land = true;
         
-        // Log subsystem status
-        log_this("Landing", "%s: %s", LOG_LEVEL_STATE, 
-                subsystem, is_ready ? "Go" : "No-Go");
-        
-        // Shut down ready subsystems - reverse order of launch
-        if (is_ready) {
-            if (strcmp(subsystem, "API") == 0) shutdown_api();
-            else if (strcmp(subsystem, "Print Queue") == 0) shutdown_print_queue();
-            else if (strcmp(subsystem, "Database") == 0) shutdown_database();
-            else if (strcmp(subsystem, "Terminal") == 0) shutdown_terminal();
-            else if (strcmp(subsystem, "mDNS Server") == 0) shutdown_mdns_server();
-            else if (strcmp(subsystem, "mDNS Client") == 0) shutdown_mdns_client();
-            else if (strcmp(subsystem, "Mail Relay") == 0) shutdown_mail_relay();
-            else if (strcmp(subsystem, "Swagger") == 0) shutdown_swagger();
-            else if (strcmp(subsystem, "WebServer") == 0) shutdown_webserver();
-            else if (strcmp(subsystem, "WebSocket") == 0) shutdown_websocket();
-            else if (strcmp(subsystem, "Payload") == 0) shutdown_payload();
-        }
-    }
-    
-    // Now handle critical subsystems in reverse dependency order
-    bool critical_success = true;
-    const char* critical_subsystems[] = {"Network", "Threads", "Registry", "Logging"};
-    for (int i = 0; i < 4; i++) {
-        const char* subsystem = critical_subsystems[i];
-        bool is_ready = false;
-        
-        // Find subsystem readiness status
-        for (size_t j = 0; j < results->total_checked; j++) {
-            if (strcmp(results->results[j].subsystem, subsystem) == 0) {
-                is_ready = results->results[j].ready;
-                break;
-            }
+        // Check if all dependents have landed or are inactive
+        if (!check_dependent_states(subsystem, &can_land)) {
+            all_dependencies_satisfied = false;
         }
         
         // Log subsystem status
         log_this("Landing", "%s: %s", LOG_LEVEL_STATE, 
-                subsystem, is_ready ? "Go" : "No-Go");
+                subsystem, (is_ready && can_land) ? "Go" : "No-Go");
         
-        if (!is_ready) {
-            critical_success = false;
-            log_this("Landing", "No-Go: Critical subsystem %s not ready", 
-                    LOG_LEVEL_ALERT, subsystem);
-            continue;
-        }
-        
-        // Shut down critical subsystem
-        if (strcmp(subsystem, "Network") == 0) shutdown_network();
-        else if (strcmp(subsystem, "Threads") == 0) shutdown_threads();
-        else if (strcmp(subsystem, "Registry") == 0) shutdown_registry();
-        // Note: Logging is handled last by the main landing sequence
+        // Track overall readiness
+        all_dependencies_satisfied &= (can_land || !is_ready);
     }
     
-    // Final landing decision
-    if (!critical_success) {
-        log_this("Landing", "LANDING PLAN: No-Go - Critical systems not ready", 
+    /*
+     * Phase 3: Go/No-Go Decision
+     * Make final landing decision based on dependency analysis
+     */
+    if (!all_dependencies_satisfied) {
+        log_this("Landing", "LANDING PLAN: No-Go - Dependencies not satisfied", 
                 LOG_LEVEL_ALERT);
         return false;
     }
     
     log_this("Landing", "LANDING PLAN: Go for landing", LOG_LEVEL_STATE);
     return true;
+}
+
+/*
+ * Check if all dependents of a subsystem have landed or are inactive
+ * Returns true if all dependencies are satisfied
+ */
+static bool check_dependent_states(const char* subsystem, bool* can_land) {
+    for (int j = 0; j < subsystem_registry.count; j++) {
+        const SubsystemInfo* dependent = &subsystem_registry.subsystems[j];
+        
+        // Skip if not a dependent
+        bool is_dependent = false;
+        for (int k = 0; k < dependent->dependency_count; k++) {
+            if (strcmp(dependent->dependencies[k], subsystem) == 0) {
+                is_dependent = true;
+                break;
+            }
+        }
+        if (!is_dependent) continue;
+        
+        // Check dependent's state
+        SubsystemState state = get_subsystem_state(j);
+        if (state != SUBSYSTEM_INACTIVE && state != SUBSYSTEM_ERROR) {
+            *can_land = false;
+            log_this("Landing", "  %s waiting for dependent %s to land", 
+                    LOG_LEVEL_STATE, subsystem, dependent->name);
+            return false;
+        }
+    }
+    return true;
+}
+
+/*
+ * Log the overall landing plan status
+ * Provides a summary of subsystem readiness
+ */
+static void log_landing_status(const ReadinessResults* results) {
+    log_this("Landing", "Total Subsystems Checked: %d", LOG_LEVEL_STATE, results->total_checked);
+    log_this("Landing", "Ready Subsystems:         %d", LOG_LEVEL_STATE, results->total_ready);
+    log_this("Landing", "Not Ready Subsystems:     %d", LOG_LEVEL_STATE, results->total_not_ready);
 }

@@ -23,13 +23,14 @@
 #include "../utils/utils_logging.h"
 #include "../registry/registry.h"
 #include "../registry/registry_integration.h"
+#include "../state/state_types.h"
 
 // External declarations
 extern volatile sig_atomic_t mdns_client_system_shutdown;
 
 // Check if the mDNS client subsystem is ready to land
-LandingReadiness check_mdns_client_landing_readiness(void) {
-    LandingReadiness readiness = {0};
+LaunchReadiness check_mdns_client_landing_readiness(void) {
+    LaunchReadiness readiness = {0};
     readiness.subsystem = "mDNS Client";
     
     // Allocate space for messages (including NULL terminator)
@@ -82,9 +83,10 @@ LandingReadiness check_mdns_client_landing_readiness(void) {
     return readiness;
 }
 
-// Shutdown the mDNS client subsystem
-void shutdown_mdns_client(void) {
+// Land the mDNS client subsystem
+int land_mdns_client_subsystem(void) {
     log_this("mDNS Client", "Beginning mDNS Client shutdown sequence", LOG_LEVEL_STATE);
+    bool success = true;
     
     // Signal shutdown
     mdns_client_system_shutdown = 1;
@@ -96,4 +98,6 @@ void shutdown_mdns_client(void) {
     // Additional cleanup will be added as needed
     
     log_this("mDNS Client", "mDNS Client shutdown complete", LOG_LEVEL_STATE);
+    
+    return success ? 1 : 0;  // Return 1 for success, 0 for failure
 }

@@ -25,6 +25,7 @@
 #include "../threads/threads.h"
 #include "../registry/registry.h"
 #include "../registry/registry_integration.h"
+#include "../state/state_types.h"
 
 // External declarations
 extern ServiceThreads logging_threads;
@@ -47,8 +48,8 @@ static bool check_other_subsystems_complete(void) {
 }
 
 // Check if the logging subsystem is ready to land
-LandingReadiness check_logging_landing_readiness(void) {
-    LandingReadiness readiness = {0};
+LaunchReadiness check_logging_landing_readiness(void) {
+    LaunchReadiness readiness = {0};
     readiness.subsystem = "Logging";
     
     // Allocate space for messages (including NULL terminator)
@@ -105,9 +106,10 @@ LandingReadiness check_logging_landing_readiness(void) {
     return readiness;
 }
 
-// Shutdown the logging subsystem
-void shutdown_logging_subsystem(void) {
+// Land the logging subsystem
+int land_logging_subsystem(void) {
     log_this("Logging", "Beginning Logging shutdown sequence", LOG_LEVEL_STATE);
+    bool success = true;
     
     // Signal thread shutdown
     log_queue_shutdown = 1;
@@ -116,8 +118,12 @@ void shutdown_logging_subsystem(void) {
     // Wait for thread to complete
     if (log_thread) {
         log_this("Logging", "Waiting for Logging thread to complete", LOG_LEVEL_STATE);
-        pthread_join(log_thread, NULL);
-        log_this("Logging", "Logging thread completed", LOG_LEVEL_STATE);
+        if (pthread_join(log_thread, NULL) != 0) {
+            log_this("Logging", "Error waiting for Logging thread", LOG_LEVEL_ERROR);
+            success = false;
+        } else {
+            log_this("Logging", "Logging thread completed", LOG_LEVEL_STATE);
+        }
     }
     
     // Remove the logging thread from tracking
@@ -127,4 +133,6 @@ void shutdown_logging_subsystem(void) {
     init_service_threads(&logging_threads);
     
     log_this("Logging", "Logging shutdown complete", LOG_LEVEL_STATE);
+    
+    return success ? 1 : 0;  // Return 1 for success, 0 for failure
 }

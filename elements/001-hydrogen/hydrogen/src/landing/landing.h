@@ -17,39 +17,9 @@
 #include <time.h>
 
 // Project includes
-#include "../registry/registry.h"
-
-// Result of a landing readiness check
-typedef struct {
-    const char* subsystem;  // Name of the subsystem
-    bool ready;             // Is the subsystem ready to land?
-    const char** messages;  // Array of readiness messages (NULL-terminated)
-} LandingReadiness;
-
-// Structure to track landing status for each subsystem
-typedef struct {
-    const char* subsystem;    // Subsystem name
-    bool ready;              // Ready status from readiness check
-    SubsystemState state;    // Current state in registry
-    time_t landing_time;     // When landing started
-} LandingStatus;
-
-// Structure to hold readiness check results
-typedef struct {
-    struct {
-        const char* subsystem;
-        bool ready;
-    } results[15];  // Must match number of subsystems
-    size_t total_checked;
-    size_t total_ready;
-    size_t total_not_ready;
-    bool any_ready;
-} ReadinessResults;
+#include "../state/state_types.h"  // For shared types
 
 // Core landing functions
 bool check_all_landing_readiness(void);
-
-// Memory management
-void free_landing_readiness_messages(LandingReadiness* readiness);
 
 #endif /* LANDING_H */

@@ -18,10 +18,11 @@
 #include "../utils/utils_logging.h"
 #include "../registry/registry.h"
 #include "../registry/registry_integration.h"
+#include "../state/state_types.h"
 
 // Check if the database subsystem is ready to land
-LandingReadiness check_database_landing_readiness(void) {
-    LandingReadiness readiness = {0};
+LaunchReadiness check_database_landing_readiness(void) {
+    LaunchReadiness readiness = {0};
     readiness.subsystem = "Database";
     
     // Allocate space for messages (including NULL terminator)
@@ -52,5 +53,17 @@ LandingReadiness check_database_landing_readiness(void) {
     return readiness;
 }
 
-// Use shutdown function from launch-database.c
-extern void shutdown_database(void);
+// Land the database subsystem
+int land_database_subsystem(void) {
+    log_this("Database", "Beginning Database shutdown sequence", LOG_LEVEL_STATE);
+    bool success = true;
+    
+    // Since this is just a configuration handler, cleanup is minimal
+    log_this("Database", "Cleaning up database configuration", LOG_LEVEL_STATE);
+    
+    // Additional cleanup will be added as needed
+    
+    log_this("Database", "Database shutdown complete", LOG_LEVEL_STATE);
+    
+    return success ? 1 : 0;  // Return 1 for success, 0 for failure
+}
