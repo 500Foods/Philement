@@ -226,11 +226,53 @@ Before marking ANY code changes as complete:
       "resources": "Verify access to required files, network resources, etc.",
       "environment": "Check environment variables and system capabilities"
     },
-    "landing_relationship": {
-      "overview": "Landing process mirrors launch in reverse order",
+  "landing_relationship": {
+      "overview": "Landing process mirrors launch in reverse order with comprehensive status tracking",
       "implementation": "src/landing/ contains mirror implementations of launch files",
-      "purpose": "Ensures clean shutdown by freeing resources in correct order",
-      "structure": "Follows same separation of concerns as launch system"
+      "purpose": "Ensures clean shutdown by freeing resources in correct order with verification",
+      "structure": "Follows same separation of concerns as launch system",
+      "phases": {
+        "1_status_assessment": {
+          "what": "Evaluate current system state",
+          "how": "Count ready/not-ready subsystems",
+          "where": "Coordinated in landing_plan.c",
+          "key": "Verify at least one subsystem is ready for landing"
+        },
+        "2_dependency_analysis": {
+          "what": "Create safe landing sequence",
+          "how": "Check each subsystem's dependents",
+          "where": "Implemented in landing_plan.c",
+          "key": "Ensure dependents are landed or inactive before proceeding"
+        },
+        "3_go_no_go": {
+          "what": "Make final landing decision",
+          "how": "Evaluate readiness and dependencies",
+          "where": "Coordinated in landing_plan.c",
+          "key": "All dependencies must be satisfied"
+        },
+        "4_review": {
+          "what": "Comprehensive landing verification",
+          "how": [
+            "Calculate total landing duration",
+            "Verify thread cleanup completion",
+            "Report landing success rate",
+            "Detail each subsystem's final state"
+          ],
+          "where": "Implemented in landing_review.c",
+          "metrics": [
+            "Landing duration in seconds",
+            "Thread cleanup status",
+            "Landing success rate percentage",
+            "Individual subsystem states"
+          ]
+        }
+      },
+      "status_reporting": {
+        "timing": "Landing duration tracked and reported",
+        "threads": "Active thread count verified",
+        "success_rate": "Percentage of successfully landed subsystems",
+        "state_detail": "Final state of each subsystem logged"
+      }
     },
     "message_format": {
       "subsystem_name": "First message is just the subsystem name",
