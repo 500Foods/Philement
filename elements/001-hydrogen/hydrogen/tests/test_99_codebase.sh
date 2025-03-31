@@ -527,31 +527,46 @@ run_linting_tests() {
     output=$("$SCRIPT_DIR/support_cppcheck.sh" "$HYDROGEN_DIR" 2>&1)
     echo "$output" | tee -a "$RESULT_LOG"
     
-    # Simply count the number of lines that represent issues
-    local issue_count=0
-    issue_count=$(echo "$output" | grep -v "^🛈" | grep -c "/" || echo 0)
-    # Make sure we have a clean integer
-    issue_count=$(echo "$issue_count" | tr -d '[:space:]')
+    # Check for the expected null pointer warning in crash handler test
+    local expected_warning="src/hydrogen.c:372.*warning: Possible null pointer dereference: ptr"
+    local has_expected=0
+    local other_issues=0
     
-    if [ "$issue_count" -gt 0 ]; then
-        cppcheck_fails=$issue_count
+    # Process each line of output
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^🛈 ]]; then
+            continue  # Skip info lines
+        elif [[ "$line" =~ $expected_warning ]]; then
+            has_expected=1
+        elif [[ "$line" =~ /.*: ]]; then
+            ((other_issues++))
+        fi
+    done <<< "$output"
+    
+    # Evaluate results
+    if [ $other_issues -gt 0 ]; then
+        cppcheck_fails=$other_issues
         lint_result=1
-        print_result 1 "cppcheck found $issue_count issues in $c_file_count files" | tee -a "$RESULT_LOG"
+        print_result 1 "cppcheck found $other_issues unexpected issues in $c_file_count files" | tee -a "$RESULT_LOG"
+    elif [ $has_expected -eq 1 ]; then
+        print_info "Found expected null pointer warning in crash handler test" | tee -a "$RESULT_LOG"
+        print_result 0 "cppcheck validation passed (1 expected warning)" | tee -a "$RESULT_LOG"
     else
         print_info "No cppcheck issues found in $c_file_count files" | tee -a "$RESULT_LOG"
     fi
 
     # Add cppcheck results
     TEST_NAMES+=("Lint C Files")
-    if [ "$issue_count" -eq 0 ]; then
+    if [ $other_issues -eq 0 ]; then
         TEST_RESULTS+=(0)
+        if [ $has_expected -eq 1 ]; then
+            TEST_DETAILS+=("Found 1 expected warning (crash handler test) in $c_file_count files")
+        else
+            TEST_DETAILS+=("No issues found in $c_file_count files")
+        fi
     else
         TEST_RESULTS+=(1)
-    fi
-    if [ "$issue_count" -eq 0 ]; then
-        TEST_DETAILS+=("No issues found in $c_file_count files")
-    else
-        TEST_DETAILS+=("Found $issue_count issues in $c_file_count files")
+        TEST_DETAILS+=("Found $other_issues unexpected issues in $c_file_count files")
     fi
     rm -f "$cppcheck_temp"
     > "$lint_temp_log"  # Clear log for next linter

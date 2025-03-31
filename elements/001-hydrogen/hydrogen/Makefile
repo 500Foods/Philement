@@ -222,7 +222,7 @@ trial:
 	echo "$$BUILD_OUTPUT" | grep -E "warning:|undefined reference|error:|ld returned|built successfully" --color=always || true; \
 	if echo "$$BUILD_OUTPUT" | grep -q "built successfully" && ! echo "$$BUILD_OUTPUT" | grep -q -E "warning:|error:|undefined reference|ld returned"; then \
 		printf "\n$(CYAN)$(INFO) Build successful with no warnings/errors. Running shutdown test...$(NORMAL)\n"; \
-		./tests/test_shutdown_only.sh; \
+		./tests/test_20_shutdown.sh; \
 	fi
 
 # ──────────────────────────────────────────────────────────────────────────────

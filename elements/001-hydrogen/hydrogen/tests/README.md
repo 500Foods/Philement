@@ -164,7 +164,9 @@ Tests are numbered to ensure they run in a specific order:
 
 ## Test Scripts
 
-### test_00_all.sh
+The following tests are listed in numerical order:
+
+### test_00_all.sh (Test Orchestration)
 
 A test orchestration script that executes tests with different configurations and provides a comprehensive summary:
 
@@ -193,7 +195,77 @@ The script:
 - Can skip execution while showing what would run (--skip-tests)
 - Always updates README.md with test results and code statistics
 
-### test_50_crash_handler.sh
+### test_05_env_payload.sh (Environment Variables)
+
+A validation script that ensures proper configuration of payload encryption environment variables:
+
+Key features:
+- Validates presence of required environment variables (PAYLOAD_KEY and PAYLOAD_LOCK)
+- Verifies RSA key format and validity:
+  - Checks PAYLOAD_KEY is a valid 2048-bit RSA private key
+  - Checks PAYLOAD_LOCK is a valid RSA public key
+- Provides detailed error reporting for:
+  - Missing environment variables
+  - Invalid key formats
+  - Malformed RSA keys
+- Uses standardized formatting from support_utils.sh
+- Creates detailed test logs in the `./results` directory
+- Integrates with test_all.sh for comprehensive test reporting
+
+This test is essential for validating the payload encryption system's configuration before running other payload-related tests.
+
+### test_10_compilation.sh (Build Verification)
+
+A compilation verification script that ensures all components build without errors or warnings:
+
+- Tests compilation of the main Hydrogen project in all build variants (standard, debug, valgrind)
+- Tests compilation of the OIDC client examples
+- Treats warnings as errors using strict compiler flags (-Wall -Wextra -Werror -pedantic)
+- Creates detailed build logs in the `./results` directory
+- Fails fast if any component fails to compile
+
+### test_15_startup_shutdown.sh (Core Lifecycle)
+
+The core test script that validates Hydrogen's startup and shutdown sequence:
+
+```bash
+./test_startup_shutdown.sh <config_file.json>
+```
+
+Key features:
+- Launches Hydrogen with a specified configuration
+- Waits for successful startup
+- Initiates a controlled shutdown
+- Monitors for successful completion or timeout
+- Collects detailed diagnostics if shutdown stalls
+- Creates logs in the `./results` directory
+- Uses standardized formatting from support_utils.sh
+
+### test_20_shutdown.sh (Shutdown Handling)
+
+Tests proper shutdown behavior, ensuring resources are released and processes terminate cleanly.
+
+### test_25_library_dependencies.sh (Dependencies)
+
+Verifies all required library dependencies are present and at correct versions.
+
+### test_35_env_variables.sh (Environment Configuration)
+
+Tests handling of environment variables and their impact on server behavior.
+
+### test_40_json_error_handling.sh (Configuration Errors)
+
+Tests handling of malformed JSON configurations and error reporting.
+
+### test_45_signals.sh (Signal Handling)
+
+Tests response to various system signals:
+- SIGINT: Clean shutdown
+- SIGTERM: Clean shutdown
+- SIGHUP: Restart with config reload
+- Multiple signal handling
+
+### test_50_crash_handler.sh (Crash Recovery)
 
 A test script that validates the crash handler's functionality:
 
@@ -219,7 +291,45 @@ Key features:
   - Performance builds: Debug info for profiling
   - Valgrind builds: Full debug info for memory analysis
 
-### test_99_codebase.sh
+### test_55_socket_rebind.sh (Network Ports)
+
+Tests proper handling of socket binding and port reuse, especially after unclean shutdowns.
+
+### test_60_api_prefixes.sh (API Routing)
+
+Tests API routing with different URL prefixes and configurations.
+
+### test_65_system_endpoints.sh (System API)
+
+Tests the system API endpoints to ensure they respond correctly:
+
+Key features:
+- Tests all system API endpoints (health, info, config, test)
+- Validates response content and format
+- Verifies proper JSON formatting
+- Tests endpoints with different HTTP methods:
+  - GET requests for all endpoints (health, info, config, test)
+  - POST requests for endpoints that support it (currently only test)
+- Tests various request variations:
+  - Basic GET requests
+  - GET requests with query parameters
+  - POST requests with form data (with proper field extraction)
+  - POST requests with both query parameters and form data
+- Ensures robust handling of form data in POST requests
+- Monitors server stability during tests
+- Implements error handling and shell script validation
+- Uses standardized formatting from support_utils.sh
+- Includes verification of Brotli compression for supported endpoints
+
+The test performs individual validation for each endpoint and request type, ensuring that the system correctly processes different types of HTTP requests and properly extracts form data from POST requests. It also monitors for system crashes or instability during the testing process.
+
+> **Note:** The config endpoint testing has been incorporated into test_system_endpoints.sh; there is no separate test_config_endpoint.sh script.
+
+### test_70_swagger_ui.sh (Documentation)
+
+Tests Swagger UI integration and API documentation endpoints.
+
+### test_99_codebase.sh (Code Quality)
 
 A comprehensive codebase analysis test that enforces code quality standards:
 
@@ -243,93 +353,6 @@ Key features:
 - Integrates with test_all.sh for comprehensive results
 
 This test runs last in the sequence (hence the 'z' prefix) to perform final code quality checks after all other tests have passed.
-
-### test_compilation.sh
-
-A compilation verification script that ensures all components build without errors or warnings:
-
-- Tests compilation of the main Hydrogen project in all build variants (standard, debug, valgrind)
-- Tests compilation of the OIDC client examples
-- Treats warnings as errors using strict compiler flags (-Wall -Wextra -Werror -pedantic)
-- Creates detailed build logs in the `./results` directory
-- Fails fast if any component fails to compile
-
-```bash
-./test_compilation.sh
-```
-
-### test_env_payload.sh
-
-A validation script that ensures proper configuration of payload encryption environment variables:
-
-```bash
-./test_env_payload.sh
-```
-
-Key features:
-
-- Validates presence of required environment variables (PAYLOAD_KEY and PAYLOAD_LOCK)
-- Verifies RSA key format and validity:
-  - Checks PAYLOAD_KEY is a valid 2048-bit RSA private key
-  - Checks PAYLOAD_LOCK is a valid RSA public key
-- Provides detailed error reporting for:
-  - Missing environment variables
-  - Invalid key formats
-  - Malformed RSA keys
-- Uses standardized formatting from support_utils.sh
-- Creates detailed test logs in the `./results` directory
-- Integrates with test_all.sh for comprehensive test reporting
-
-This test is essential for validating the payload encryption system's configuration before running other payload-related tests.
-
-### test_startup_shutdown.sh
-
-The core test script that validates Hydrogen's startup and shutdown sequence:
-
-```bash
-./test_startup_shutdown.sh <config_file.json>
-```
-
-Key features:
-
-- Launches Hydrogen with a specified configuration
-- Waits for successful startup
-- Initiates a controlled shutdown
-- Monitors for successful completion or timeout
-- Collects detailed diagnostics if shutdown stalls
-- Creates logs in the `./results` directory
-- Uses standardized formatting from support_utils.sh
-
-### test_system_endpoints.sh
-
-Tests the system API endpoints to ensure they respond correctly:
-
-```bash
-./test_system_endpoints.sh
-```
-
-Key features:
-
-- Tests all system API endpoints (health, info, config, test)
-- Validates response content and format
-- Verifies proper JSON formatting
-- Tests endpoints with different HTTP methods:
-  - GET requests for all endpoints (health, info, config, test)
-  - POST requests for endpoints that support it (currently only test)
-- Tests various request variations:
-  - Basic GET requests
-  - GET requests with query parameters
-  - POST requests with form data (with proper field extraction)
-  - POST requests with both query parameters and form data
-- Ensures robust handling of form data in POST requests
-- Monitors server stability during tests
-- Implements error handling and shell script validation
-- Uses standardized formatting from support_utils.sh
-- Includes verification of Brotli compression for supported endpoints
-
-The test performs individual validation for each endpoint and request type, ensuring that the system correctly processes different types of HTTP requests and properly extracts form data from POST requests. It also monitors for system crashes or instability during the testing process.
-
-> **Note:** The config endpoint testing has been incorporated into test_system_endpoints.sh; there is no separate test_config_endpoint.sh script.
 
 ## Test Configuration Files
 
