@@ -41,6 +41,7 @@ Each subsystem's launch process is documented separately:
 | Swagger | API documentation | [Coming Soon] |
 
 Each subsystem's documentation details:
+
 - Complete launch process flow
 - Launch readiness checks
 - Landing (shutdown) process
@@ -159,6 +160,7 @@ The Launch System implements a thorough readiness check process for each subsyst
 ### Best Practices for Launch Readiness
 
 1. **Early Exit Pattern**
+
    ```c
    // Check system state first
    if (server_stopping || web_server_shutdown) {
@@ -174,6 +176,7 @@ The Launch System implements a thorough readiness check process for each subsyst
    ```
 
 2. **Performance Optimization**
+
    ```c
    // Example from Payload: Check end of file first
    size_t tail_search_size = file_size < 64 ? file_size : 64;
@@ -187,6 +190,7 @@ The Launch System implements a thorough readiness check process for each subsyst
    ```
 
 3. **Clear Status Messages**
+
    ```c
    // Format for consistency
    add_message("  Go:      Check Description (details)");
@@ -195,6 +199,7 @@ The Launch System implements a thorough readiness check process for each subsyst
    ```
 
 4. **Resource Management**
+
    ```c
    char* path = get_executable_path();
    if (path) {
@@ -209,10 +214,12 @@ The Launch System implements a thorough readiness check process for each subsyst
 The launch system operates in two distinct phases:
 
 ### LAUNCH Phase
+
 - Performs readiness checks
 - Initializes subsystem resources
 - Registers with subsystem registry
 - Example from Payload:
+
   ```c
   bool launch_payload_subsystem(void) {
       // Launch core functionality
@@ -230,10 +237,12 @@ The launch system operates in two distinct phases:
   ```
 
 ### LANDING Phase
+
 - Graceful shutdown of subsystem
 - Cleanup of allocated resources
 - Unregisters from subsystem registry
 - Example from Payload:
+
   ```c
   void free_payload_resources(void) {
       log_this("Payload", "Freeing resources", LOG_LEVEL_STATE);
@@ -416,6 +425,7 @@ if (state == SUBSYSTEM_RUNNING) {
 ```
 
 Key metrics tracked:
+
 - Running time per subsystem
 - Thread count for multi-threaded subsystems
 - Current state (STARTING, RUNNING, ERROR)

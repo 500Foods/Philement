@@ -2,6 +2,7 @@
 
 🚨 **CRITICAL BUILD REQUIREMENT** 🚨
 Before marking ANY code changes as complete:
+
 1. Run `make trial`
 2. Ensure NO warnings or errors
 3. Verify shutdown test passes
@@ -283,6 +284,7 @@ When listing or processing subsystems, the following order must be maintained:
 15. Print
 
 This order reflects the dependency chain and must be followed in:
+
 - Code organization (includes, declarations)
 - Launch sequence
 - Documentation
