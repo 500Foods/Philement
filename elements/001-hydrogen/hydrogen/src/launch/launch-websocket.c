@@ -20,6 +20,8 @@
 #include "../utils/utils_logging.h"
 #include "../threads/threads.h"
 #include "../websocket/websocket_server.h"
+#include "../config/config.h"
+#include "../registry/registry_integration.h"
 
 // External declarations
 extern ServiceThreads websocket_threads;
@@ -32,21 +34,51 @@ extern volatile sig_atomic_t server_starting;
 LaunchReadiness check_websocket_launch_readiness(void) {
     LaunchReadiness readiness = {0};
     
-    // For initial implementation, mark as ready
-    readiness.ready = true;
-    
     // Allocate space for messages (including NULL terminator)
-    readiness.messages = malloc(4 * sizeof(char*));
+    readiness.messages = malloc(10 * sizeof(char*));
     if (!readiness.messages) {
         readiness.ready = false;
         return readiness;
     }
+    int msg_count = 0;
     
-    // Add messages in the standard format
-    readiness.messages[0] = strdup("WebSocket");
-    readiness.messages[1] = strdup("  Go:      WebSocket System Ready");
-    readiness.messages[2] = strdup("  Decide:  Go For Launch of WebSocket");
-    readiness.messages[3] = NULL;
+    // Add the subsystem name as the first message
+    readiness.messages[msg_count++] = strdup("WebSocket");
+    
+    // Register dependency on Network subsystem
+    int websocket_id = get_subsystem_id_by_name("WebSockets");
+    if (websocket_id >= 0) {
+        if (!add_dependency_from_launch(websocket_id, "Network")) {
+            readiness.messages[msg_count++] = strdup("  No-Go:   Failed to register Network dependency");
+            readiness.messages[msg_count] = NULL;
+            readiness.ready = false;
+            return readiness;
+        }
+        readiness.messages[msg_count++] = strdup("  Go:      Network dependency registered");
+        
+        // Verify Network subsystem is running
+        if (!is_subsystem_running_by_name("Network")) {
+            readiness.messages[msg_count++] = strdup("  No-Go:   Network subsystem not running");
+            readiness.messages[msg_count] = NULL;
+            readiness.ready = false;
+            return readiness;
+        }
+        readiness.messages[msg_count++] = strdup("  Go:      Network subsystem running");
+    }
+    
+    // Check configuration
+    if (!app_config || !app_config->websocket.enabled) {
+        readiness.messages[msg_count++] = strdup("  No-Go:   WebSocket server disabled in configuration");
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        return readiness;
+    }
+    readiness.messages[msg_count++] = strdup("  Go:      WebSocket server enabled in configuration");
+    
+    // All checks passed
+    readiness.messages[msg_count++] = strdup("  Decide:  Go For Launch of WebSocket Subsystem");
+    readiness.messages[msg_count] = NULL;
+    readiness.ready = true;
     
     return readiness;
 }

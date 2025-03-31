@@ -13,7 +13,7 @@ build_valgrind/
 # Temporary generated files
 payloads/swagger.json
 payloads/payload.tar.br.enc
-cd 
+
 # Log files
 *.log
 *.log.*
@@ -31,10 +31,12 @@ temp_*
 *.tmp
 
 # Executables
-# FYI: hydrogen_naked is the release build without the payload
-hydrogen
-hydrogen_debug
-hydrogen_naked
-hydrogen_perf
+hydrogen           
+hydrogen_debug     
+hydrogen_naked     
+hydrogen_perf      
 hydrogen_release
 hydrogen_valgrind
+
+# Crash reports
+*core.*

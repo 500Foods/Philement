@@ -1,12 +1,29 @@
 /*
  * Launch Review System
  * 
- * This module handles the final launch status reporting.
- * It provides functions for:
- * - Reporting launch status for each subsystem
- * - Tracking running time and thread counts
- * - Providing summary statistics
- * - Handling final launch checks
+ * DESIGN PRINCIPLES:
+ * - This file is a lightweight orchestrator only - no subsystem-specific code
+ * - All subsystems are equal in importance - no hierarchy
+ * - Each subsystem's status is independently reported
+ * - Review order matches launch order for consistency only, not priority
+ * 
+ * ROLE:
+ * This module coordinates (but does not judge) the final launch review by:
+ * - Collecting and reporting launch status from each subsystem equally
+ * - Aggregating launch statistics without bias
+ * - Providing a factual launch summary
+ * 
+ * Key Points:
+ * - No subsystem has special status in review
+ * - Each subsystem's outcome is equally important
+ * - Processing order is for consistency only
+ * - The review process is about reporting, not judgment
+ * 
+ * Implementation:
+ * - All subsystem-specific logic belongs in respective launch-*.c files
+ * - State tracking lives in individual subsystem files
+ * - Registry interface used for encapsulation
+ * - Direct registry access minimized
  */
 
 // System includes
@@ -23,8 +40,8 @@
 #include "../logging/logging.h"
 #include "../utils/utils_logging.h"
 #include "../threads/threads.h"
-#include "../state/registry/subsystem_registry.h"
-#include "../state/registry/subsystem_registry_integration.h"
+#include "../registry/registry.h"
+#include "../registry/registry_integration.h"
 
 // Review and report final launch status
 void handle_launch_review(const ReadinessResults* results) {
@@ -43,15 +60,11 @@ void handle_launch_review(const ReadinessResults* results) {
         const char* subsystem = results->results[i].subsystem;
         bool is_ready = results->results[i].ready;
         
-        // Get subsystem info with proper NULL checks
+        // Get subsystem state through registry interface
         SubsystemState state = SUBSYSTEM_INACTIVE;
         int subsystem_id = get_subsystem_id_by_name(subsystem);
-        
         if (subsystem_id >= 0) {
-            SubsystemInfo* info = &subsystem_registry.subsystems[subsystem_id];
-            if (info) {
-                state = info->state;
-            }
+            state = get_subsystem_state(subsystem_id);
         }
         
         // Count attempts and successes

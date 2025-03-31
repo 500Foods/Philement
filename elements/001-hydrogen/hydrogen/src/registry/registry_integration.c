@@ -1,7 +1,7 @@
 /*
- * Subsystem Registry Integration
+ * Registry Integration
  *
- * This module integrates the subsystem registry with the Hydrogen server's
+ * This module integrates the registry with the Hydrogen server's
  * startup and shutdown processes. It registers all standard subsystems
  * and manages their dependencies.
  */
@@ -11,12 +11,29 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
+#include <signal.h>
 
 // Project includes
-#include "../state.h"
-#include "subsystem_registry.h"
-#include "../../logging/logging.h"
-#include "../../utils/utils.h"
+#include "registry_integration.h"
+#include "../logging/logging.h"
+#include "../utils/utils.h"
+#include "../config/config_forward.h"
+#include "../state/state.h"
+
+// External declarations from state.h
+extern AppConfig* app_config;
+extern ServiceThreads logging_threads;
+extern ServiceThreads web_threads;
+extern ServiceThreads websocket_threads;
+extern ServiceThreads mdns_server_threads;
+extern ServiceThreads print_threads;
+
+// Component shutdown flags
+extern volatile sig_atomic_t mdns_client_system_shutdown;
+extern volatile sig_atomic_t mail_relay_system_shutdown;
+extern volatile sig_atomic_t swagger_system_shutdown;
+extern volatile sig_atomic_t terminal_system_shutdown;
 
 // Subsystem init/shutdown declarations
 extern int init_logging_subsystem(void);
@@ -50,32 +67,21 @@ extern void shutdown_print_queue(void);
 static bool stop_subsystem_and_dependents(int subsystem_id);
 
 /*
- * Update the registry after a subsystem has been shut down.
- * This should be called after a subsystem's shutdown function has completed.
+ * Initialize the registry.
  */
-void update_subsystem_after_shutdown(const char* subsystem_name) {
-    int id = get_subsystem_id_by_name(subsystem_name);
-    if (id >= 0) {
-        update_subsystem_state(id, SUBSYSTEM_INACTIVE);
-    }
+void initialize_registry(void) {
+    init_registry();
 }
-
 
 /*
  * Register a single subsystem based on its launch readiness result.
- * This is called during the Launch Go/No-Go process for subsystems that pass.
- * Returns the subsystem ID or -1 if registration failed.
  */
 int register_subsystem_from_launch(const char* name, ServiceThreads* threads, 
-                                   pthread_t* main_thread, volatile sig_atomic_t* shutdown_flag,
-                                   int (*init_function)(void), void (*shutdown_function)(void)) {
-    
-    // Register the subsystem - no need for additional logging as the "Decide" line
-    // in the launch readiness output already indicates the subsystem's status
+                                pthread_t* main_thread, volatile sig_atomic_t* shutdown_flag,
+                                int (*init_function)(void), void (*shutdown_function)(void)) {
     int subsys_id = register_subsystem(name, threads, main_thread, shutdown_flag, 
-                                      init_function, shutdown_function);
+                                    init_function, shutdown_function);
     
-    // Only log errors, as successful registration is already indicated by the "Decide" line
     if (subsys_id < 0) {
         log_this("Launch", "Failed to register subsystem '%s'", LOG_LEVEL_ERROR, name);
     }
@@ -85,24 +91,12 @@ int register_subsystem_from_launch(const char* name, ServiceThreads* threads,
 
 /*
  * Add a dependency for a subsystem from the launch process.
- * This is called during the Launch Go/No-Go process for each dependency identified.
  */
 bool add_dependency_from_launch(int subsystem_id, const char* dependency_name) {
-    // const char* subsystem_name = NULL;
-    
-    // // Get the subsystem name for logging
-    // if (subsystem_id >= 0 && subsystem_id < subsystem_registry.count) {
-    //     subsystem_name = subsystem_registry.subsystems[subsystem_id].name;
-    // }
-    
-    // Add the dependency
     bool result = add_subsystem_dependency(subsystem_id, dependency_name);
     
-    if (result) {
-        // log_this("Launch", "  Added dependency '%s' to subsystem '%s'", LOG_LEVEL_STATE, 
-        //         dependency_name, subsystem_name ? subsystem_name : "Unknown");
-    } else {
-        log_this("Launch", "  Failed to add dependency '%s' to subsystem", LOG_LEVEL_ERROR, 
+    if (!result) {
+        log_this("Launch", "Failed to add dependency '%s' to subsystem", LOG_LEVEL_ERROR, 
                 dependency_name);
     }
     
@@ -110,34 +104,19 @@ bool add_dependency_from_launch(int subsystem_id, const char* dependency_name) {
 }
 
 /*
- * Initialize the registry subsystem.
- * This initializes the registry itself as the first subsystem.
- */
-void initialize_registry_subsystem(void) {
-    // Initialize the registry
-    init_subsystem_registry();
-}
-
-/*
- * Update the registry when a subsystem is started during the startup sequence.
- * This should be called after a subsystem's init function has been called.
+ * Update the registry when a subsystem is started.
  */
 void update_subsystem_on_startup(const char* subsystem_name, bool success) {
     int id = get_subsystem_id_by_name(subsystem_name);
     if (id >= 0) {
-        if (success) {
-            update_subsystem_state(id, SUBSYSTEM_RUNNING);
-        } else {
-            update_subsystem_state(id, SUBSYSTEM_ERROR);
-        }
+        update_subsystem_state(id, success ? SUBSYSTEM_RUNNING : SUBSYSTEM_ERROR);
     }
 }
 
 /*
- * Update the registry with all subsystems that were started during startup.
- * This synchronizes the registry with the actual state of the system.
+ * Update the registry with all started subsystems.
  */
-void update_subsystem_registry_on_startup(void) {
+void update_registry_on_startup(void) {
     // Check each subsystem for evidence it's running
     
     // Logging - Always starts first
@@ -158,19 +137,19 @@ void update_subsystem_registry_on_startup(void) {
     
     // mDNS Client - No thread, check if not shutdown
     update_subsystem_on_startup("MDNSClient", 
-                              app_config && !mdns_client_system_shutdown);
+                            app_config && !mdns_client_system_shutdown);
     
     // Mail Relay - No thread, check if not shutdown
     update_subsystem_on_startup("MailRelay", 
-                              app_config && !mail_relay_system_shutdown);
+                            app_config && !mail_relay_system_shutdown);
     
     // Swagger - No thread, check if not shutdown
     update_subsystem_on_startup("Swagger", 
-                              app_config && !swagger_system_shutdown);
+                            app_config && !swagger_system_shutdown);
     
     // Terminal - No thread, check if not shutdown
     update_subsystem_on_startup("Terminal", 
-                              app_config && !terminal_system_shutdown);
+                            app_config && !terminal_system_shutdown);
     
     // Print Queue
     update_service_thread_metrics(&print_threads);
@@ -178,8 +157,7 @@ void update_subsystem_registry_on_startup(void) {
 }
 
 /*
- * Update the registry when a subsystem is stopping during shutdown.
- * This should be called before a subsystem's shutdown function is called.
+ * Update the registry when a subsystem is stopping.
  */
 void update_subsystem_on_shutdown(const char* subsystem_name) {
     int id = get_subsystem_id_by_name(subsystem_name);
@@ -189,14 +167,22 @@ void update_subsystem_on_shutdown(const char* subsystem_name) {
 }
 
 /*
+ * Update the registry after a subsystem has stopped.
+ */
+void update_subsystem_after_shutdown(const char* subsystem_name) {
+    int id = get_subsystem_id_by_name(subsystem_name);
+    if (id >= 0) {
+        update_subsystem_state(id, SUBSYSTEM_INACTIVE);
+    }
+}
+
+/*
  * Stop a subsystem and all its dependents safely.
- * Returns true if successful, false if any shutdown failed.
  */
 static bool stop_subsystem_and_dependents(int subsystem_id) {
     SubsystemInfo* subsystem = &subsystem_registry.subsystems[subsystem_id];
     bool success = true;
     
-    // Lock the registry while checking dependencies
     pthread_mutex_lock(&subsystem_registry.mutex);
     
     // First check if any other running subsystems depend on this one
@@ -218,27 +204,21 @@ static bool stop_subsystem_and_dependents(int subsystem_id) {
     if (subsystem->state == SUBSYSTEM_RUNNING) {
         log_this("Shutdown", "Stopping subsystem '%s'", LOG_LEVEL_STATE, subsystem->name);
         
-        // Mark as stopping
         update_subsystem_state(subsystem_id, SUBSYSTEM_STOPPING);
         
-        // Release lock before calling shutdown function
         pthread_mutex_unlock(&subsystem_registry.mutex);
         
-        // Call shutdown function if available
         if (subsystem->shutdown_function) {
             subsystem->shutdown_function();
         }
         
-        // Wait for thread exit if applicable
         if (subsystem->main_thread && *subsystem->main_thread != 0) {
             pthread_join(*subsystem->main_thread, NULL);
             *subsystem->main_thread = 0;
         }
         
-        // Reacquire lock to update final state
         pthread_mutex_lock(&subsystem_registry.mutex);
         
-        // Mark as inactive
         update_subsystem_state(subsystem_id, SUBSYSTEM_INACTIVE);
         success = true;
     }
@@ -249,23 +229,19 @@ static bool stop_subsystem_and_dependents(int subsystem_id) {
 
 /*
  * Stop all subsystems in dependency-aware order.
- * Returns the number of subsystems successfully stopped.
  */
 size_t stop_all_subsystems_in_dependency_order(void) {
     size_t stopped_count = 0;
     bool any_stopped;
     
-    // Keep trying until no more subsystems can be stopped
     do {
         any_stopped = false;
         
         pthread_mutex_lock(&subsystem_registry.mutex);
         
-        // Allocate array to track leaf subsystems based on current count
         bool* is_leaf = calloc(subsystem_registry.count, sizeof(bool));
         int leaf_count = 0;
         
-        // Handle allocation failure
         if (!is_leaf) {
             log_this("Shutdown", "Failed to allocate memory for leaf subsystem tracking", LOG_LEVEL_ERROR);
             pthread_mutex_unlock(&subsystem_registry.mutex);
@@ -277,7 +253,6 @@ size_t stop_all_subsystems_in_dependency_order(void) {
             if (subsystem->state == SUBSYSTEM_RUNNING) {
                 bool has_dependents = false;
                 
-                // Check if any other running subsystem depends on this one
                 for (int j = 0; j < subsystem_registry.count; j++) {
                     if (i != j && subsystem_registry.subsystems[j].state == SUBSYSTEM_RUNNING) {
                         for (int k = 0; k < subsystem_registry.subsystems[j].dependency_count; k++) {
@@ -299,7 +274,6 @@ size_t stop_all_subsystems_in_dependency_order(void) {
         
         pthread_mutex_unlock(&subsystem_registry.mutex);
         
-        // Now stop all leaf subsystems
         if (leaf_count > 0) {
             for (int i = 0; i < subsystem_registry.count; i++) {
                 if (is_leaf[i]) {
@@ -311,10 +285,8 @@ size_t stop_all_subsystems_in_dependency_order(void) {
             }
         }
         
-        // Free the dynamically allocated array
         free(is_leaf);
         
-        // Brief delay between iterations
         if (any_stopped) {
             usleep(100000);  // 100ms
         }
@@ -325,12 +297,9 @@ size_t stop_all_subsystems_in_dependency_order(void) {
 }
 
 /*
- * Update the subsystem registry during shutdown.
- * This function marks all subsystems as stopping or inactive.
+ * Update the registry during shutdown.
  */
-void update_subsystem_registry_on_shutdown(void) {
-    // Mark all running subsystems as stopping or inactive based on their thread count
-    
+void update_registry_on_shutdown(void) {
     // Check Print Queue
     update_service_thread_metrics(&print_threads);
     if (print_threads.thread_count > 0) {
@@ -386,17 +355,12 @@ void update_subsystem_registry_on_shutdown(void) {
 
 /*
  * Get a formatted string containing the status of all running subsystems.
- * Caller is responsible for freeing the returned buffer.
- * 
- * @param status_buffer Pointer to a char* where the status buffer will be stored
- * @return true if successful, false otherwise
  */
 bool get_running_subsystems_status(char** status_buffer) {
     if (!status_buffer) {
         return false;
     }
     
-    // Allocate a reasonably sized buffer
     *status_buffer = malloc(4096);
     if (!*status_buffer) {
         return false;
@@ -407,7 +371,6 @@ bool get_running_subsystems_status(char** status_buffer) {
     
     pthread_mutex_lock(&subsystem_registry.mutex);
     
-    // Count running subsystems
     int running_count = 0;
     for (int i = 0; i < subsystem_registry.count; i++) {
         if (subsystem_registry.subsystems[i].state == SUBSYSTEM_RUNNING) {
@@ -415,29 +378,24 @@ bool get_running_subsystems_status(char** status_buffer) {
         }
     }
     
-    // Create header
     sprintf(buffer, "RUNNING SUBSYSTEMS (%d/%d):\n", 
             running_count, subsystem_registry.count);
     
-    // Add each running subsystem
     for (int i = 0; i < subsystem_registry.count; i++) {
         SubsystemInfo* subsystem = &subsystem_registry.subsystems[i];
         
         if (subsystem->state == SUBSYSTEM_RUNNING) {
-            // Calculate time running
             time_t now = time(NULL);
             time_t running_time = now - subsystem->state_changed;
             int hours = running_time / 3600;
             int minutes = (running_time % 3600) / 60;
             int seconds = running_time % 60;
             
-            // Get thread count if available
             int thread_count = 0;
             if (subsystem->threads) {
                 thread_count = subsystem->threads->thread_count;
             }
             
-            // Append to buffer
             char entry[256];
             snprintf(entry, sizeof(entry), "  %s - Running for %02d:%02d:%02d - Threads: %d\n", 
                     subsystem->name, hours, minutes, seconds, thread_count);

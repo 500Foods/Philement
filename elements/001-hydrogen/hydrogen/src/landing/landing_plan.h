@@ -20,8 +20,8 @@
 // Execute the landing plan and make Go/No-Go decisions for shutdown
 bool handle_landing_plan(const ReadinessResults* results);
 
-// Subsystem shutdown functions
-void shutdown_subsystem_registry(void);
+// Shutdown functions
+void shutdown_registry(void);
 void shutdown_payload(void);
 void shutdown_threads(void);
 void shutdown_network(void);

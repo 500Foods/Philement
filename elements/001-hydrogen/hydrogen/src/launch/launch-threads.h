@@ -6,7 +6,7 @@
 #define LAUNCH_THREADS_H
 
 #include "../threads/threads.h"
-#include "../state/registry/subsystem_registry.h"
+#include "../registry/registry.h"
 
 // Thread subsystem launch readiness check
 LaunchReadiness check_threads_launch_readiness(void);

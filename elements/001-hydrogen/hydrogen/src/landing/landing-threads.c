@@ -17,8 +17,8 @@
 #include "landing-threads.h"
 #include "../logging/logging.h"
 #include "../threads/threads.h"
-#include "../state/registry/subsystem_registry.h"
-#include "../state/registry/subsystem_registry_integration.h"
+#include "../registry/registry.h"
+#include "../registry/registry_integration.h"
 
 // External declarations for thread tracking
 extern ServiceThreads logging_threads;

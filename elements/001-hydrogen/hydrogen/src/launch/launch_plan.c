@@ -1,11 +1,28 @@
 /*
  * Launch Plan System
  * 
- * This module coordinates the launch sequence (formerly STARTUP COMPLETE).
- * It provides functions for:
- * - Making Go/No-Go decisions for each subsystem
- * - Tracking launch status and counts
- * - Coordinating with the registry for subsystem registration
+ * DESIGN PRINCIPLES:
+ * - This file is a lightweight orchestrator only - no subsystem-specific code
+ * - All subsystems are equal in importance
+ * - Each subsystem independently determines its own readiness
+ * - Launch order is based on dependencies, not priority
+ * 
+ * ROLE:
+ * This module coordinates (but does not control) the launch sequence by:
+ * - Collecting Go/No-Go decisions from independent subsystems
+ * - Tracking overall launch status
+ * - Enabling launches based on dependencies, not hierarchy
+ * 
+ * Key Points:
+ * - No subsystem has special status or priority
+ * - Each subsystem manages its own readiness check
+ * - Dependencies determine launch order, not importance
+ * - The launch plan is about coordination, not control
+ * 
+ * Implementation:
+ * All subsystem-specific logic belongs in the respective launch-*.c files
+ * (e.g., launch-network.c, launch-webserver.c), maintaining proper
+ * separation of concerns.
  */
 
 // System includes
@@ -21,8 +38,8 @@
 // Project includes
 #include "../logging/logging.h"
 #include "../utils/utils_logging.h"
-#include "../state/registry/subsystem_registry.h"
-#include "../state/registry/subsystem_registry_integration.h"
+#include "../registry/registry.h"
+#include "../registry/registry_integration.h"
 
 // Execute the launch plan and make Go/No-Go decisions
 bool handle_launch_plan(const ReadinessResults* results) {

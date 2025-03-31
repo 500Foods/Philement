@@ -21,8 +21,8 @@
 // Project includes
 #include "../logging/logging.h"
 #include "../utils/utils_logging.h"
-#include "../state/registry/subsystem_registry.h"
-#include "../state/registry/subsystem_registry_integration.h"
+#include "../registry/registry.h"
+#include "../registry/registry_integration.h"
 
 // Check SMTP relay landing readiness
 LandingReadiness check_smtp_relay_landing_readiness(void) {
