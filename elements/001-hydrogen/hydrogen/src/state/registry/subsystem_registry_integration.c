@@ -17,7 +17,6 @@
 #include "subsystem_registry.h"
 #include "../../logging/logging.h"
 #include "../../utils/utils.h"
-#include "../../utils/utils_threads.h"
 
 // Subsystem init/shutdown declarations
 extern int init_logging_subsystem(void);

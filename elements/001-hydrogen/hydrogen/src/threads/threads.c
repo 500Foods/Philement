@@ -9,8 +9,8 @@
 #include <fcntl.h>
 
 // Project headers
-#include "utils_threads.h"
-#include "utils_logging.h"
+#include "threads.h"
+#include "../utils/utils_logging.h"
 #include "../logging/logging.h"  // For LOG_LEVEL constants
 #include "../state/state.h"
 
@@ -68,11 +68,11 @@ void add_service_thread(ServiceThreads *threads, pthread_t thread_id) {
             log_group_begin();
             snprintf(msg, sizeof(msg), "Thread %lu (tid: %d) added, count: %d", 
                      (unsigned long)thread_id, tid, threads->thread_count);
-            log_this("ThreadMgmt", msg, LOG_LEVEL_STATE);
+            log_this("Threads-Manager", msg, LOG_LEVEL_STATE);
             log_group_end();
         }
     } else {
-        log_this("ThreadMgmt", "Failed to add thread: MAX_SERVICE_THREADS reached", LOG_LEVEL_DEBUG);
+        log_this("Threads-Manager", "Failed to add thread: MAX_SERVICE_THREADS reached", LOG_LEVEL_DEBUG);
     }
     pthread_mutex_unlock(&thread_mutex);
 }
@@ -96,7 +96,7 @@ static void remove_thread_internal(ServiceThreads *threads, int index, bool skip
         log_group_begin();
         snprintf(msg, sizeof(msg), "Thread %lu removed, count: %d", 
                  (unsigned long)thread_id, threads->thread_count);
-        log_this("ThreadMgmt", msg, LOG_LEVEL_STATE);
+        log_this("Threads-Manager", msg, LOG_LEVEL_STATE);
         log_group_end();
     }
 }
@@ -186,4 +186,67 @@ ThreadMemoryMetrics get_thread_memory_metrics(ServiceThreads *threads, pthread_t
     pthread_mutex_unlock(&thread_mutex);
     
     return metrics;
+}
+
+// Report status of all service threads
+void report_thread_status(void) {
+    pthread_mutex_lock(&thread_mutex);
+    
+    log_this("Threads", "Thread Status Report:", LOG_LEVEL_STATE);
+    
+    // Report logging threads
+    log_this("Threads", "  Logging Threads: %d active", LOG_LEVEL_STATE, 
+             logging_threads.thread_count);
+    
+    // Report web threads
+    log_this("Threads", "  Web Threads: %d active", LOG_LEVEL_STATE, 
+             web_threads.thread_count);
+    
+    // Report websocket threads
+    log_this("Threads", "  WebSocket Threads: %d active", LOG_LEVEL_STATE, 
+             websocket_threads.thread_count);
+    
+    // Report mdns server threads
+    log_this("Threads", "  mDNS Server Threads: %d active", LOG_LEVEL_STATE, 
+             mdns_server_threads.thread_count);
+    
+    // Report print threads
+    log_this("Threads", "  Print Threads: %d active", LOG_LEVEL_STATE, 
+             print_threads.thread_count);
+    
+    // Calculate total threads
+    int total_threads = logging_threads.thread_count +
+                       web_threads.thread_count +
+                       websocket_threads.thread_count +
+                       mdns_server_threads.thread_count +
+                       print_threads.thread_count;
+    
+    log_this("Threads", "Total Active Threads: %d", LOG_LEVEL_STATE, total_threads);
+    
+    pthread_mutex_unlock(&thread_mutex);
+}
+
+// Free thread-related resources
+void free_threads_resources(void) {
+    pthread_mutex_lock(&thread_mutex);
+    
+    // Set final shutdown mode to prevent excessive logging
+    final_shutdown_mode = 1;
+    
+    // Clean up logging threads
+    init_service_threads(&logging_threads);
+    
+    // Clean up web threads
+    init_service_threads(&web_threads);
+    
+    // Clean up websocket threads
+    init_service_threads(&websocket_threads);
+    
+    // Clean up mdns server threads
+    init_service_threads(&mdns_server_threads);
+    
+    // Clean up print threads
+    init_service_threads(&print_threads);
+    
+    pthread_mutex_unlock(&thread_mutex);
 }

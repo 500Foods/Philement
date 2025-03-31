@@ -285,20 +285,20 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Sat Mar 29 02:16:25 PDT 2025
+Generated on: Sat Mar 29 17:04:42 PDT 2025
 
 ### Summary
 
 | Metric | Value |
 | ------ | ----- |
 | Total Tests | 15 |
-| Passed | 11 |
-| Failed | 4 |
+| Passed | 10 |
+| Failed | 5 |
 | Skipped | 0 |
 | Total Subtests | 92 |
-| Passed Subtests | 57 |
-| Failed Subtests | 35 |
-| Runtime | 5m 35s |
+| Passed Subtests | 56 |
+| Failed Subtests | 36 |
+| Runtime | 6m 2s |
 
 ### Individual Test Results
 
@@ -314,7 +314,7 @@ Generated on: Sat Mar 29 02:16:25 PDT 2025
 | json_error_handling | ✅ Passed | Test completed without errors (2 of 2 subtests passed) |
 | library_dependencies | ✅ Passed | Test completed without errors (16 of 16 subtests passed) |
 | shutdown_only | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
-| signals | ✅ Passed | Test completed without errors (4 of 4 subtests passed) |
+| signals | ❌ Failed | Test failed with errors (3 of 4 subtests passed) |
 | socket_rebind | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
 | swagger_ui | ❌ Failed | Test failed with errors (2 of 10 subtests passed) |
 | system_endpoints | ❌ Failed | Test failed with errors (1 of 11 subtests passed) |
@@ -322,16 +322,16 @@ Generated on: Sat Mar 29 02:16:25 PDT 2025
 
 ## Repository Information
 
-Generated via cloc: Sat Mar 29 02:16:25 PDT 2025
+Generated via cloc: Sat Mar 29 17:04:42 PDT 2025
 
 | Language | Files | Blank Lines | Comment Lines | Code Lines |
 | -------- | ----- | ----------- | ------------- | ---------- |
-| C | 163 | 4394 | 5972 | 18947 |
-| Markdown | 118 | 4210 | 27 | 15431 |
+| C | 162 | 4406 | 6110 | 19016 |
+| Markdown | 118 | 4222 | 27 | 15587 |
 | Bourne | Shell | 24 | 1274 | 1307 |
 | JSON | 17 | 0 | 0 | 4807 |
-| C/C++ | Header | 132 | 1107 | 4979 |
-| Text | 10 | 4 | 0 | 1551 |
+| C/C++ | Header | 142 | 1148 | 5096 |
+| Text | 10 | 4 | 0 | 1521 |
 | HTML | 1 | 74 | 0 | 493 |
 | make | 2 | 51 | 214 | 224 |
-| **Total** | **467** | **11114** | **12499** | **49161** |
+| **Total** | **476** | **11179** | **12754** | **49413** |

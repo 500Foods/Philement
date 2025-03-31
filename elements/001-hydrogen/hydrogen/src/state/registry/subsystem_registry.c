@@ -18,7 +18,7 @@
 // Project includes
 #include "subsystem_registry.h"
 #include "../../logging/logging.h"
-#include "../../utils/utils_threads.h"
+#include "../../threads/threads.h"
 
 // Global registry instance - initialized with empty array
 SubsystemRegistry subsystem_registry = { 
