@@ -69,16 +69,19 @@ The PAYLOAD subsystem is responsible for managing embedded payloads within the H
 The PAYLOAD subsystem performs these checks in sequence:
 
 1. **System State Check**
+
    ```c
    if (server_stopping || web_server_shutdown) {
        add_message("No-Go: System shutting down");
        return false;
    }
    ```
+
    - Ensures system isn't in shutdown
    - Verifies system is starting or running
 
 2. **Configuration Check**
+
    ```c
    const char* payload_key = app_config->server.payload_key;
    if (!payload_key || strcmp(payload_key, "Missing Key") == 0) {
@@ -86,10 +89,12 @@ The PAYLOAD subsystem performs these checks in sequence:
        return false;
    }
    ```
+
    - Verifies configuration is loaded
    - Checks for valid payload key
 
 3. **Executable Check**
+
    ```c
    char* executable_path = get_executable_path();
    if (!executable_path) {
@@ -97,34 +102,40 @@ The PAYLOAD subsystem performs these checks in sequence:
        return false;
    }
    ```
+
    - Gets executable path
    - Verifies file is readable
 
 4. **Payload Search**
+
    ```c
    // Performance optimization: Check last 64 bytes first
    size_t tail_search_size = file_size < 64 ? file_size : 64;
    marker_pos = memmem(data + file_size - tail_search_size, 
                       tail_search_size, marker, strlen(marker));
    ```
+
    - Optimized search starting with last 64 bytes
    - Falls back to full file search if needed
 
 5. **Size Validation**
+
    ```c
    if (*payload_size > 100 * 1024 * 1024) {  // 100MB limit
        add_message("No-Go: Payload size exceeds limit");
        return false;
    }
    ```
+
    - Reads payload size bytes
    - Validates against size limits
 
-### Launch Process
+### Launch Subsystem Process
 
 After passing readiness checks, the PAYLOAD subsystem:
 
 1. **Extracts Payload**
+
    ```c
    bool launch_payload_subsystem(void) {
        bool success = launch_payload(app_config, DEFAULT_PAYLOAD_MARKER);
@@ -136,6 +147,7 @@ After passing readiness checks, the PAYLOAD subsystem:
    ```
 
 2. **Registers with Registry**
+
    ```c
    register_subsystem_from_launch(
        "Payload",

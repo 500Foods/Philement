@@ -14,6 +14,7 @@ The Subsystem Registry is unique in being both a subsystem itself and the manage
 6. **Status Reporting**: Offers comprehensive system status information
 
 This architecture enables Hydrogen to maintain a robust and fault-tolerant system by:
+
 - Ensuring proper initialization sequence starting with the registry itself
 - Managing subsystem dependencies without imposing hierarchy of importance
 - Coordinating both launch and landing processes in the correct order

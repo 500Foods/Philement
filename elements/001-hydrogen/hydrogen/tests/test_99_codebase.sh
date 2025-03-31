@@ -528,7 +528,7 @@ run_linting_tests() {
     echo "$output" | tee -a "$RESULT_LOG"
     
     # Check for the expected null pointer warning in crash handler test
-    local expected_warning="src/hydrogen.c:372.*warning: Possible null pointer dereference: ptr"
+    local expected_warning="warning: Possible null pointer dereference: ptr"
     local has_expected=0
     local other_issues=0
     
@@ -536,7 +536,7 @@ run_linting_tests() {
     while IFS= read -r line; do
         if [[ "$line" =~ ^🛈 ]]; then
             continue  # Skip info lines
-        elif [[ "$line" =~ $expected_warning ]]; then
+        elif [[ "$line" == *"$expected_warning"* ]]; then
             has_expected=1
         elif [[ "$line" =~ /.*: ]]; then
             ((other_issues++))

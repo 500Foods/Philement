@@ -168,7 +168,7 @@ The following tests are listed in numerical order:
 
 ### test_00_all.sh (Test Orchestration)
 
-A test orchestration script that executes tests with different configurations and provides a comprehensive summary:
+A test orchestration script that executes tests in sequence with compilation verification:
 
 ```bash
 # Run all tests
@@ -184,22 +184,30 @@ A test orchestration script that executes tests with different configurations an
 ./test_all.sh --skip-tests
 ```
 
-Test results and repository statistics are automatically added to the project README.md after running tests.
-
-The script:
+Key features:
 
 - Provides formatted output with test results
-- Automatically makes other test scripts executable
-- Dynamically discovers and runs all test_*.sh scripts
-- Generates a comprehensive summary of all test results with visual pass/fail indicators
+- Automatically makes test scripts executable
+- Special handling for test_10_compilation.sh:
+  - Runs first as a prerequisite
+  - Skips remaining tests if compilation fails
+  - Only test with special handling
+- Dynamically discovers and runs all other tests in order
+- Generates comprehensive summary with:
+  - Individual test results and subtest counts
+  - Visual pass/fail indicators
+  - Total test and subtest statistics
 - Can skip execution while showing what would run (--skip-tests)
 - Always updates README.md with test results and code statistics
+
+Test results and repository statistics are automatically added to the project README.md after running tests.
 
 ### test_05_env_payload.sh (Environment Variables)
 
 A validation script that ensures proper configuration of payload encryption environment variables:
 
 Key features:
+
 - Validates presence of required environment variables (PAYLOAD_KEY and PAYLOAD_LOCK)
 - Verifies RSA key format and validity:
   - Checks PAYLOAD_KEY is a valid 2048-bit RSA private key
@@ -226,19 +234,25 @@ A compilation verification script that ensures all components build without erro
 
 ### test_15_startup_shutdown.sh (Core Lifecycle)
 
-The core test script that validates Hydrogen's startup and shutdown sequence:
+A comprehensive test script that validates Hydrogen's startup and shutdown sequence with both minimal and maximal configurations:
 
 ```bash
-./test_startup_shutdown.sh <config_file.json>
+./test_startup_shutdown.sh  # No parameters needed
 ```
 
 Key features:
-- Launches Hydrogen with a specified configuration
-- Waits for successful startup
-- Initiates a controlled shutdown
-- Monitors for successful completion or timeout
-- Collects detailed diagnostics if shutdown stalls
-- Creates logs in the `./results` directory
+
+- Tests both minimal and maximal configurations in sequence
+- Reports 6 subtests (3 per configuration):
+  1. Startup success
+  2. Shutdown timing
+  3. Clean shutdown verification
+- Provides detailed diagnostics collection:
+  - Thread states and stack traces
+  - Open file descriptors
+  - Resource usage
+  - Shutdown sequence analysis
+- Creates organized logs in `./results` directory
 - Uses standardized formatting from support_utils.sh
 
 ### test_20_shutdown.sh (Shutdown Handling)
@@ -260,6 +274,7 @@ Tests handling of malformed JSON configurations and error reporting.
 ### test_45_signals.sh (Signal Handling)
 
 Tests response to various system signals:
+
 - SIGINT: Clean shutdown
 - SIGTERM: Clean shutdown
 - SIGHUP: Restart with config reload
@@ -274,6 +289,7 @@ A test script that validates the crash handler's functionality:
 ```
 
 Key features:
+
 - Tests core dump generation for all build variants (standard, debug, valgrind, perf, release)
 - Verifies core files are created in the executable's directory with format: binary.core.pid
 - Validates debug symbols in non-release builds
@@ -304,6 +320,7 @@ Tests API routing with different URL prefixes and configurations.
 Tests the system API endpoints to ensure they respond correctly:
 
 Key features:
+
 - Tests all system API endpoints (health, info, config, test)
 - Validates response content and format
 - Verifies proper JSON formatting
