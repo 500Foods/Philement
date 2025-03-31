@@ -285,7 +285,7 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Sat Mar 29 17:04:42 PDT 2025
+Generated on: Mon Mar 31 02:23:51 PDT 2025
 
 ### Summary
 
@@ -295,43 +295,43 @@ Generated on: Sat Mar 29 17:04:42 PDT 2025
 | Passed | 10 |
 | Failed | 5 |
 | Skipped | 0 |
-| Total Subtests | 92 |
-| Passed Subtests | 56 |
-| Failed Subtests | 36 |
-| Runtime | 6m 2s |
+| Total Subtests | 89 |
+| Passed Subtests | 52 |
+| Failed Subtests | 37 |
+| Runtime | 6m 1s |
 
 ### Individual Test Results
 
 | Test | Status | Details |
 | ---- | ------ | ------- |
-| env_payload | ✅ Passed | Test completed without errors (2 of 2 subtests passed) |
-| compilation | ✅ Passed | Test completed without errors (7 of 7 subtests passed) |
-| startup_shutdown | ✅ Passed | Both min and max configuration tests passed (6 of 6 subtests passed) |
-| api_prefixes | ❌ Failed | Test failed with errors (0 of 10 subtests passed) |
-| dynamic_loading | ❌ Failed | Test failed with errors (1 of 7 subtests passed) |
-| env_payload | ✅ Passed | Test completed without errors (2 of 2 subtests passed) |
-| env_variables | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
-| json_error_handling | ✅ Passed | Test completed without errors (2 of 2 subtests passed) |
-| library_dependencies | ✅ Passed | Test completed without errors (16 of 16 subtests passed) |
-| shutdown_only | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
-| signals | ❌ Failed | Test failed with errors (3 of 4 subtests passed) |
-| socket_rebind | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
-| swagger_ui | ❌ Failed | Test failed with errors (2 of 10 subtests passed) |
-| system_endpoints | ❌ Failed | Test failed with errors (1 of 11 subtests passed) |
-| z_codebase | ✅ Passed | Test completed without errors (11 of 12 subtests passed) |
+| 05_env_payload | ✅ Passed | Test completed without errors (2 of 2 subtests passed) |
+| 10_compilation | ✅ Passed | Test completed without errors (7 of 7 subtests passed) |
+| 15_startup_shutdown | ✅ Passed | Both min and max configuration tests passed (0 of 0 subtests passed) |
+| 20_shutdown | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
+| 25_library_dependencies | ✅ Passed | Test completed without errors (16 of 16 subtests passed) |
+| 30_dynamic_loading | ❌ Failed | Test failed with errors (1 of 7 subtests passed) |
+| 35_env_variables | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
+| 40_json_error_handling | ✅ Passed | Test completed without errors (2 of 2 subtests passed) |
+| 45_signals | ❌ Failed | Test failed with errors (3 of 4 subtests passed) |
+| 50_crash_handler | ✅ Passed | Test completed without errors (5 of 5 subtests passed) |
+| 55_socket_rebind | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
+| 60_api_prefixes | ❌ Failed | Test failed with errors (0 of 10 subtests passed) |
+| 65_system_endpoints | ❌ Failed | Test failed with errors (1 of 11 subtests passed) |
+| 70_swagger_ui | ❌ Failed | Test failed with errors (2 of 10 subtests passed) |
+| 99_codebase | ✅ Passed | Test completed without errors (10 of 12 subtests passed) |
 
 ## Repository Information
 
-Generated via cloc: Sat Mar 29 17:04:42 PDT 2025
+Generated via cloc: Mon Mar 31 02:23:51 PDT 2025
 
 | Language | Files | Blank Lines | Comment Lines | Code Lines |
 | -------- | ----- | ----------- | ------------- | ---------- |
-| C | 162 | 4406 | 6110 | 19016 |
-| Markdown | 118 | 4222 | 27 | 15587 |
-| Bourne | Shell | 24 | 1274 | 1307 |
+| C | 162 | 4438 | 6177 | 19184 |
+| Markdown | 118 | 4229 | 27 | 15621 |
+| Bourne | Shell | 25 | 1354 | 1381 |
 | JSON | 17 | 0 | 0 | 4807 |
-| C/C++ | Header | 142 | 1148 | 5096 |
-| Text | 10 | 4 | 0 | 1521 |
+| C/C++ | Header | 143 | 1147 | 5079 |
+| Text | 16 | 9 | 0 | 1704 |
 | HTML | 1 | 74 | 0 | 493 |
-| make | 2 | 51 | 214 | 224 |
-| **Total** | **476** | **11179** | **12754** | **49413** |
+| make | 2 | 51 | 214 | 226 |
+| **Total** | **484** | **11302** | **12878** | **50206** |
