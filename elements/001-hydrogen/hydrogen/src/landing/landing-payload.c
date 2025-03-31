@@ -16,14 +16,15 @@
 #include "../registry/registry_integration.h"
 #include "../payload/payload.h"
 #include "../utils/utils.h"
+#include "../state/state_types.h"
 
 // External declarations
 extern AppConfig* app_config;
 extern volatile sig_atomic_t server_stopping;
 
 // Check if the Payload subsystem is ready to land
-LandingReadiness check_payload_landing_readiness(void) {
-    LandingReadiness readiness = {0};
+LaunchReadiness check_payload_landing_readiness(void) {
+    LaunchReadiness readiness = {0};
     readiness.subsystem = "Payload";
     
     // Allocate space for messages (including NULL terminator)
@@ -91,26 +92,29 @@ void free_payload_resources(void) {
         log_this("Payload", "Payload subsystem marked as inactive", LOG_LEVEL_STATE);
     }
     
-log_this("Payload", "Payload cleanup complete", LOG_LEVEL_STATE);
+    log_this("Payload", "Payload cleanup complete", LOG_LEVEL_STATE);
 }
 
 /**
- * Shutdown the payload subsystem
+ * Land the payload subsystem
  * 
  * This function handles the complete shutdown sequence for the payload subsystem.
  * It ensures proper cleanup of resources and updates the subsystem state.
+ * 
+ * @return int 1 on success, 0 on failure
  */
-void shutdown_payload(void) {
+int land_payload_subsystem(void) {
     log_this("Payload", "Beginning Payload shutdown sequence", LOG_LEVEL_STATE);
     
     // Check if payload is running
     if (!is_subsystem_running_by_name("Payload")) {
         log_this("Payload", "Payload not running, skipping shutdown", LOG_LEVEL_STATE);
-        return;
+        return 1;  // Success - nothing to do
     }
     
     // Free payload resources (includes OpenSSL cleanup)
     free_payload_resources();
     
     log_this("Payload", "Payload shutdown complete", LOG_LEVEL_STATE);
+    return 1;  // Success
 }

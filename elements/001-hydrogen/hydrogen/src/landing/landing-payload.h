@@ -12,16 +12,17 @@
 #include "../config/config.h"
 #include "landing.h"
 #include "../payload/payload.h"
+#include "../state/state_types.h"
 
 // Forward declarations
 struct AppConfig;  // Forward declaration of AppConfig
 
 /**
  * @brief Check if the Payload subsystem is ready to land
- * @returns LandingReadiness struct with readiness status and messages
+ * @returns LaunchReadiness struct with readiness status and messages
  * @note AI-guidance: Must verify no active payload operations before shutdown
  */
-LandingReadiness check_payload_landing_readiness(void);
+LaunchReadiness check_payload_landing_readiness(void);
 
 /**
  * @brief Free resources allocated during payload launch
@@ -34,11 +35,13 @@ LandingReadiness check_payload_landing_readiness(void);
 void free_payload_resources(void);
 
 /**
- * @brief Shutdown the payload subsystem
+ * @brief Land the payload subsystem
  * 
  * This function handles the complete shutdown sequence for the payload subsystem.
  * It ensures proper cleanup of resources and updates the subsystem state.
+ * 
+ * @return int 1 on success, 0 on failure
  */
-void shutdown_payload(void);
+int land_payload_subsystem(void);
 
 #endif /* LANDING_PAYLOAD_H */

@@ -175,12 +175,20 @@ LDFLAGS = -ljansson -lpthread -lmicrohttpd -lm -lssl -lcrypto -lwebsockets -lbro
 # ──────────────────────────────────────────────────────────────────────────────
 # Directory structure and file paths
 # ──────────────────────────────────────────────────────────────────────────────
-SRC_DIR = src
-BUILD_DIR = build
-DEBUG_DIR = build_debug
-VALGRIND_DIR = build_valgrind
-PERF_DIR = build_perf
-RELEASE_DIR = build_release
+# Detect if we're being called from the project root or src directory
+ROOT_CALL := $(if $(wildcard src/Makefile),yes,no)
+PREFIX := $(if $(filter yes,$(ROOT_CALL)),src/,)
+SRC_DIR := $(if $(filter yes,$(ROOT_CALL)),src,.)
+
+# Build directories are always relative to SRC_DIR
+BUILD_DIR = $(PREFIX)build
+DEBUG_DIR = $(PREFIX)build_debug
+VALGRIND_DIR = $(PREFIX)build_valgrind
+PERF_DIR = $(PREFIX)build_perf
+RELEASE_DIR = $(PREFIX)build_release
+
+# Executables and resources are relative to the directory containing src/
+BIN_PREFIX := $(if $(filter yes,$(ROOT_CALL)),,../)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Source and object files for different build configurations
@@ -195,11 +203,11 @@ RELEASE_OBJS = $(patsubst $(SRC_DIR)/%,$(RELEASE_DIR)/%,$(SRCS:.c=.o))
 # ──────────────────────────────────────────────────────────────────────────────
 # Build targets
 # ──────────────────────────────────────────────────────────────────────────────
-TARGET = hydrogen
-DEBUG_TARGET = hydrogen_debug
-VALGRIND_TARGET = hydrogen_valgrind
-PERF_TARGET = hydrogen_perf
-RELEASE_TARGET = hydrogen_release
+TARGET = $(BIN_PREFIX)hydrogen
+DEBUG_TARGET = $(BIN_PREFIX)hydrogen_debug
+VALGRIND_TARGET = $(BIN_PREFIX)hydrogen_valgrind
+PERF_TARGET = $(BIN_PREFIX)hydrogen_perf
+RELEASE_TARGET = $(BIN_PREFIX)hydrogen_release
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Phony targets (don't create files with these names)
@@ -222,7 +230,7 @@ trial:
 	echo "$$BUILD_OUTPUT" | grep -E "warning:|undefined reference|error:|ld returned|built successfully" --color=always || true; \
 	if echo "$$BUILD_OUTPUT" | grep -q "built successfully" && ! echo "$$BUILD_OUTPUT" | grep -q -E "warning:|error:|undefined reference|ld returned"; then \
 		printf "\n$(CYAN)$(INFO) Build successful with no warnings/errors. Running shutdown test...$(NORMAL)\n"; \
-		./tests/test_20_shutdown.sh; \
+		$(BIN_PREFIX)tests/test_20_shutdown.sh; \
 	fi
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -246,9 +254,9 @@ payload:
 	@printf "$(BLUE)$(BOLD) Generating Payload Contents$(NORMAL)\n"
 	@printf "$(BLUE)────────────────────────────────────────────────────────────────$(NORMAL)\n"
 	@printf "$(CYAN)$(INFO)  Generating OpenAPI specification...$(NORMAL)\n"
-	@cd payloads && ./swagger-generate.sh
+	@cd $(BIN_PREFIX)payloads && ./swagger-generate.sh
 	@printf "$(CYAN)$(INFO)  Packaging payload contents...$(NORMAL)\n"
-	@cd payloads && ./payload-generate.sh
+	@cd $(BIN_PREFIX)payloads && ./payload-generate.sh
 	@printf "$(GREEN)$(PASS) $(BOLD)Payload contents generated successfully!$(NORMAL)\n"
 	@printf "$(BLUE)────────────────────────────────────────────────────────────────$(NORMAL)\n"
 
@@ -271,10 +279,10 @@ release: $(RELEASE_TARGET) payload
 		fi; \
 	fi
 	@printf "$(CYAN)$(INFO)  Creating UPX-compressed copy as hydrogen_naked...$(NORMAL)\n"
-	@cp $(RELEASE_TARGET) hydrogen_naked
+	@cp $(RELEASE_TARGET) $(BIN_PREFIX)hydrogen_naked
 	@printf "$(CYAN)$(INFO)  Appending encrypted payload to release executable...$(NORMAL)\n"
-	@PAYLOAD_SIZE=$$(stat -c %s "payloads/payload.tar.br.enc"); \
-	cat $(RELEASE_TARGET) "payloads/payload.tar.br.enc" > $(RELEASE_TARGET).tmp; \
+	@PAYLOAD_SIZE=$$(stat -c %s "$(BIN_PREFIX)payloads/payload.tar.br.enc"); \
+	cat $(RELEASE_TARGET) "$(BIN_PREFIX)payloads/payload.tar.br.enc" > $(RELEASE_TARGET).tmp; \
 	printf "<<< HERE BE ME TREASURE >>>" >> $(RELEASE_TARGET).tmp; \
 	printf "$$(printf '%016x' $$PAYLOAD_SIZE | sed 's/\(..\)/\\x\1/g')" >> $(RELEASE_TARGET).tmp; \
 	mv $(RELEASE_TARGET).tmp $(RELEASE_TARGET); \
@@ -366,27 +374,22 @@ $(RELEASE_DIR)/%.o: $(SRC_DIR)/%.c | $(RELEASE_DIR)
 # ──────────────────────────────────────────────────────────────────────────────
 $(BUILD_DIR):
 	@printf "$(CYAN)$(INFO)  Creating build directories...$(NORMAL)\n"
-	@mkdir -p $@
 	@mkdir -p $(BUILD_DIR)/api/system
 
 $(DEBUG_DIR):
 	@printf "$(CYAN)$(INFO)  Creating debug build directories...$(NORMAL)\n"
-	@mkdir -p $@
 	@mkdir -p $(DEBUG_DIR)/api/system
 
 $(VALGRIND_DIR):
 	@printf "$(CYAN)$(INFO)  Creating valgrind build directories...$(NORMAL)\n"
-	@mkdir -p $@
 	@mkdir -p $(VALGRIND_DIR)/api/system
 
 $(PERF_DIR):
 	@printf "$(CYAN)$(INFO)  Creating performance build directories...$(NORMAL)\n"
-	@mkdir -p $@
 	@mkdir -p $(PERF_DIR)/api/system
 
 $(RELEASE_DIR):
 	@printf "$(CYAN)$(INFO)  Creating release build directories...$(NORMAL)\n"
-	@mkdir -p $@
 	@mkdir -p $(RELEASE_DIR)/api/system
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -399,8 +402,8 @@ $(shell mkdir -p $(sort $(dir $(OBJS)) $(dir $(DEBUG_OBJS)) $(dir $(VALGRIND_OBJ
 # ──────────────────────────────────────────────────────────────────────────────
 clean:
 	@printf "$(CYAN)$(INFO)  Cleaning all build artifacts...$(NORMAL)\n"
-	@rm -rf $(BUILD_DIR) $(DEBUG_DIR) $(VALGRIND_DIR) $(RELEASE_DIR) $(PERF_DIR) 
-	@rm -rf $(TARGET) $(DEBUG_TARGET) $(VALGRIND_TARGET) $(RELEASE_TARGET) $(PERF_TARGET) hydrogen_naked
+	@rm -rf $(BUILD_DIR)/ $(DEBUG_DIR)/ $(VALGRIND_DIR)/ $(RELEASE_DIR)/ $(PERF_DIR)/
+	@rm -rf $(TARGET) $(DEBUG_TARGET) $(VALGRIND_TARGET) $(RELEASE_TARGET) $(PERF_TARGET) $(BIN_PREFIX)hydrogen_naked
 	@printf "$(CYAN)$(INFO)  Removing crash core dumps...$(NORMAL)\n"
-	@find . -name "*.core.*" -type f -delete
+	@find .. -name "*.core.*" -type f -delete
 	@printf "$(GREEN)$(PASS) Clean completed successfully$(NORMAL)\n"

@@ -25,6 +25,7 @@
 #include "../threads/threads.h"
 #include "../registry/registry.h"
 #include "../registry/registry_integration.h"
+#include "../state/state_types.h"
 
 // External declarations
 extern ServiceThreads web_threads;
@@ -32,8 +33,8 @@ extern pthread_t web_thread;
 extern volatile sig_atomic_t web_server_shutdown;
 
 // Check if the webserver subsystem is ready to land
-LandingReadiness check_webserver_landing_readiness(void) {
-    LandingReadiness readiness = {0};
+LaunchReadiness check_webserver_landing_readiness(void) {
+    LaunchReadiness readiness = {0};
     readiness.subsystem = "WebServer";
     
     // Allocate space for messages (including NULL terminator)
@@ -79,9 +80,10 @@ LandingReadiness check_webserver_landing_readiness(void) {
     return readiness;
 }
 
-// Shutdown the webserver subsystem
-void shutdown_webserver(void) {
+// Land the webserver subsystem
+int land_webserver_subsystem(void) {
     log_this("WebServer", "Beginning WebServer shutdown sequence", LOG_LEVEL_STATE);
+    bool success = true;
     
     // Signal thread shutdown
     web_server_shutdown = 1;
@@ -90,8 +92,12 @@ void shutdown_webserver(void) {
     // Wait for thread to complete
     if (web_thread) {
         log_this("WebServer", "Waiting for WebServer thread to complete", LOG_LEVEL_STATE);
-        pthread_join(web_thread, NULL);
-        log_this("WebServer", "WebServer thread completed", LOG_LEVEL_STATE);
+        if (pthread_join(web_thread, NULL) != 0) {
+            log_this("WebServer", "Error waiting for WebServer thread", LOG_LEVEL_ERROR);
+            success = false;
+        } else {
+            log_this("WebServer", "WebServer thread completed", LOG_LEVEL_STATE);
+        }
     }
     
     // Remove the web thread from tracking
@@ -101,4 +107,6 @@ void shutdown_webserver(void) {
     init_service_threads(&web_threads);
     
     log_this("WebServer", "WebServer shutdown complete", LOG_LEVEL_STATE);
+    
+    return success ? 1 : 0;  // Return 1 for success, 0 for failure
 }

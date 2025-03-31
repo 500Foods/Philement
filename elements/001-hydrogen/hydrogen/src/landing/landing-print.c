@@ -1,16 +1,14 @@
 /*
  * Landing Print Subsystem
  * 
- * This module handles the landing (shutdown) sequence for the print subsystem.
- * It provides functions for:
- * - Checking print queue landing readiness
- * - Managing print thread shutdown
- * - Cleaning up print resources
+ * This module handles the landing (shutdown) of the print subsystem.
+ * It provides functions for checking landing readiness and shutting down
+ * the print queue.
  * 
- * The print subsystem shutdown handles:
- * - Print job queue cleanup
- * - Print thread termination
- * - Print resource deallocation
+ * The print subsystem landing involves:
+ * - Checking for active print jobs
+ * - Stopping print queue thread
+ * - Freeing print resources
  */
 
 #include <stdbool.h>
@@ -19,66 +17,78 @@
 #include <pthread.h>
 #include <signal.h>
 
-#include "landing.h"
-#include "landing_readiness.h"
-#include "../logging/logging.h"
+#include "../landing/landing.h"
+#include "../landing/landing_readiness.h"
 #include "../utils/utils_logging.h"
 #include "../threads/threads.h"
-#include "../registry/registry.h"
+#include "../config/config.h"
 #include "../registry/registry_integration.h"
+#include "../state/state_types.h"
 
 // External declarations
 extern ServiceThreads print_threads;
 extern pthread_t print_queue_thread;
 extern volatile sig_atomic_t print_system_shutdown;
+extern AppConfig* app_config;
 
 // Check if the print subsystem is ready to land
-LandingReadiness check_print_landing_readiness(void) {
-    LandingReadiness readiness = {0};
-    readiness.subsystem = "Print Queue";
+LaunchReadiness check_print_landing_readiness(void) {
+    LaunchReadiness readiness = {0};
     
     // Allocate space for messages (including NULL terminator)
-    readiness.messages = malloc(5 * sizeof(char*));
+    readiness.messages = malloc(10 * sizeof(char*));
     if (!readiness.messages) {
         readiness.ready = false;
         return readiness;
     }
+    int msg_count = 0;
     
-    // Add initial subsystem identifier
-    readiness.messages[0] = strdup("Print Queue");
+    // Add the subsystem name as the first message
+    readiness.messages[msg_count++] = strdup("Print");
     
-    // Check if print system is actually running
-    if (!is_subsystem_running_by_name("PrintQueue")) {
+    // Check if print subsystem is running
+    if (!is_subsystem_running_by_name("Print")) {
+        readiness.messages[msg_count++] = strdup("  No-Go:   Print subsystem not running");
+        readiness.messages[msg_count] = NULL;
         readiness.ready = false;
-        readiness.messages[1] = strdup("  No-Go:   Print Queue not running");
-        readiness.messages[2] = strdup("  Decide:  No-Go For Landing of Print Queue");
-        readiness.messages[3] = NULL;
         return readiness;
     }
+    readiness.messages[msg_count++] = strdup("  Go:      Print subsystem running");
     
-    // Check thread status
-    bool threads_ready = true;
-    if (print_queue_thread && print_threads.thread_count > 0) {
-        readiness.messages[1] = strdup("  Go:      Print Queue thread ready for shutdown");
-    } else {
-        threads_ready = false;
-        readiness.messages[1] = strdup("  No-Go:   Print Queue thread not accessible");
-    }
-    
-    // Final decision
-    if (threads_ready) {
-        readiness.ready = true;
-        readiness.messages[2] = strdup("  Go:      All resources ready for cleanup");
-        readiness.messages[3] = strdup("  Decide:  Go For Landing of Print Queue");
-    } else {
+    // Check for active print jobs
+    if (print_threads.thread_count > 0) {
+        readiness.messages[msg_count++] = strdup("  No-Go:   Active print jobs in progress");
+        readiness.messages[msg_count] = NULL;
         readiness.ready = false;
-        readiness.messages[2] = strdup("  No-Go:   Resources not ready for cleanup");
-        readiness.messages[3] = strdup("  Decide:  No-Go For Landing of Print Queue");
+        return readiness;
     }
-    readiness.messages[4] = NULL;
+    readiness.messages[msg_count++] = strdup("  Go:      No active print jobs");
+    
+    // Check for dependent subsystems
+    // Print is the last subsystem, so it has no dependents to check
+    readiness.messages[msg_count++] = strdup("  Go:      No dependent subsystems");
+    
+    // All checks passed
+    readiness.messages[msg_count++] = strdup("  Decide:  Go For Landing of Print Subsystem");
+    readiness.messages[msg_count] = NULL;
+    readiness.ready = true;
     
     return readiness;
 }
 
-// Forward declaration of core implementation from print_queue_manager.c
-extern void shutdown_print_queue(void);
+// Land the print subsystem
+int land_print_subsystem(void) {
+    // Set shutdown flag
+    print_system_shutdown = 1;
+    
+    // Wait for print queue thread to complete
+    if (print_queue_thread) {
+        pthread_join(print_queue_thread, NULL);
+    }
+    
+    // Reset thread resources
+    init_service_threads(&print_threads);
+    
+    // Additional cleanup as needed
+    return 1;  // Success
+}

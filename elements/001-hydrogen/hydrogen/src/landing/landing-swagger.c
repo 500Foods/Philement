@@ -21,13 +21,14 @@
 #include "../utils/utils_logging.h"
 #include "../registry/registry.h"
 #include "../registry/registry_integration.h"
+#include "../state/state_types.h"
 
 // External declarations
 extern volatile sig_atomic_t swagger_system_shutdown;
 
 // Check if the swagger subsystem is ready to land
-LandingReadiness check_swagger_landing_readiness(void) {
-    LandingReadiness readiness = {0};
+LaunchReadiness check_swagger_landing_readiness(void) {
+    LaunchReadiness readiness = {0};
     readiness.subsystem = "Swagger";
     
     // Allocate space for messages (including NULL terminator)
@@ -69,8 +70,8 @@ LandingReadiness check_swagger_landing_readiness(void) {
     return readiness;
 }
 
-// Shutdown the swagger subsystem
-void shutdown_swagger(void) {
+// Land the swagger subsystem
+int land_swagger_subsystem(void) {
     log_this("Swagger", "Beginning Swagger shutdown sequence", LOG_LEVEL_STATE);
     
     // Signal shutdown
@@ -81,4 +82,5 @@ void shutdown_swagger(void) {
     // Additional cleanup will be added as needed
     
     log_this("Swagger", "Swagger shutdown complete", LOG_LEVEL_STATE);
+    return 1; // Success
 }

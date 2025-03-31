@@ -23,13 +23,14 @@
 #include "../utils/utils_logging.h"
 #include "../registry/registry.h"
 #include "../registry/registry_integration.h"
+#include "../state/state_types.h"
 
 // External declarations
 extern volatile sig_atomic_t terminal_system_shutdown;
 
 // Check if the terminal subsystem is ready to land
-LandingReadiness check_terminal_landing_readiness(void) {
-    LandingReadiness readiness = {0};
+LaunchReadiness check_terminal_landing_readiness(void) {
+    LaunchReadiness readiness = {0};
     readiness.subsystem = "Terminal";
     
     // Allocate space for messages (including NULL terminator)
@@ -82,9 +83,10 @@ LandingReadiness check_terminal_landing_readiness(void) {
     return readiness;
 }
 
-// Shutdown the terminal subsystem
-void shutdown_terminal(void) {
+// Land the terminal subsystem
+int land_terminal_subsystem(void) {
     log_this("Terminal", "Beginning Terminal shutdown sequence", LOG_LEVEL_STATE);
+    bool success = true;
     
     // Signal shutdown
     terminal_system_shutdown = 1;
@@ -94,4 +96,6 @@ void shutdown_terminal(void) {
     // Additional cleanup will be added as needed
     
     log_this("Terminal", "Terminal shutdown complete", LOG_LEVEL_STATE);
+    
+    return success ? 1 : 0;  // Return 1 for success, 0 for failure
 }

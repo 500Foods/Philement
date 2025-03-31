@@ -22,22 +22,7 @@
 
 // Project includes
 #include "../threads/threads.h"
-
-// Subsystem state enum
-typedef enum {
-    SUBSYSTEM_INACTIVE,  // Not started
-    SUBSYSTEM_STARTING,  // In the process of starting
-    SUBSYSTEM_RUNNING,   // Running normally
-    SUBSYSTEM_STOPPING,  // In the process of stopping
-    SUBSYSTEM_ERROR      // Error state
-} SubsystemState;
-
-// Result of a launch readiness check
-typedef struct {
-    const char* subsystem;  // Name of the subsystem
-    bool ready;             // Is the subsystem ready to launch?
-    const char** messages;  // Array of readiness messages (NULL-terminated)
-} LaunchReadiness;
+#include "../state/state_types.h"  // For shared types
 
 // Constants
 #define MAX_DEPENDENCIES 8

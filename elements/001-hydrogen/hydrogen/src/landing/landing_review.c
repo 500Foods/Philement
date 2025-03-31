@@ -1,12 +1,54 @@
 /*
  * Landing Review System
  * 
- * This module handles the final landing (shutdown) status reporting.
- * It provides functions for:
- * - Reporting landing status for each subsystem
- * - Tracking shutdown time and thread cleanup
- * - Providing summary statistics
- * - Handling final landing checks
+ * DESIGN PRINCIPLES:
+ * - This file is a lightweight orchestrator only - no subsystem-specific code
+ * - All subsystems are equal in importance - no hierarchy
+ * - Status reporting is comprehensive but minimal
+ * - Processing order matches landing sequence
+ *
+ * REVIEW SEQUENCE:
+ * 1. Timing Assessment:
+ *    - Calculate total landing duration
+ *    - Log elapsed time statistics
+ *    - Track shutdown performance
+ *
+ * 2. Thread Analysis:
+ *    - Check for remaining active threads
+ *    - Verify thread cleanup completion
+ *    - Report any cleanup issues
+ *
+ * 3. Status Summary:
+ *    - Report landing success rate
+ *    - Detail each subsystem's final state
+ *    - Provide comprehensive status overview
+ *
+ * 4. Final Report:
+ *    - Summarize overall landing success
+ *    - Report any remaining issues
+ *    - Provide final system state
+ *
+ * Standard Processing Order (matches landing):
+ * - 15. Print (first to land)
+ * - 14. MailRelay
+ * - 13. mDNS Client
+ * - 12. mDNS Server
+ * - 11. Terminal
+ * - 10. WebSockets
+ * - 09. Swagger
+ * - 08. API
+ * - 07. WebServer
+ * - 06. Logging
+ * - 05. Database
+ * - 04. Network
+ * - 03. Threads
+ * - 02. Payload
+ * - 01. Registry (last to land)
+ *
+ * Key Points:
+ * - All subsystems are reviewed equally
+ * - Focus on factual status reporting
+ * - Clear presentation of results
  */
 
 // System includes
@@ -27,14 +69,11 @@
 #include "../registry/registry.h"
 #include "../registry/registry_integration.h"
 
-// Report subsystem landing status
-void report_subsystem_landing_status(const char* subsystem, bool landed) {
-    log_this("Landing", "%s: %s", LOG_LEVEL_STATE,
-             subsystem, landed ? "Landed" : "Landing Failed");
-}
-
-// Report thread cleanup status
-void report_thread_cleanup_status(void) {
+/*
+ * Report thread cleanup status
+ * Verifies all threads have been properly terminated
+ */
+static void report_thread_cleanup_status(void) {
     int active_threads = 0;
     
     // Count active threads across all subsystems
@@ -54,8 +93,11 @@ void report_thread_cleanup_status(void) {
     }
 }
 
-// Report final landing summary
-void report_final_landing_summary(const ReadinessResults* results) {
+/*
+ * Report final landing summary
+ * Provides comprehensive status for all subsystems
+ */
+static void report_final_landing_summary(const ReadinessResults* results) {
     if (!results) return;
     
     // Log subsystem counts
@@ -90,7 +132,11 @@ void report_final_landing_summary(const ReadinessResults* results) {
     }
 }
 
-// Review and report final landing status
+/*
+ * Review and report final landing status
+ * This is the main orchestration function that follows the same pattern as launch
+ * but focuses on status reporting and verification
+ */
 void handle_landing_review(const ReadinessResults* results, time_t start_time) {
     if (!results) return;
     
@@ -98,20 +144,32 @@ void handle_landing_review(const ReadinessResults* results, time_t start_time) {
     log_this("Landing", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
     log_this("Landing", "LANDING REVIEW", LOG_LEVEL_STATE);
     
-    // Calculate landing time
+    /*
+     * Phase 1: Timing Assessment
+     * Calculate and report landing duration
+     */
     time_t current_time = time(NULL);
     double elapsed_time = difftime(current_time, start_time);
     
     // Log landing timing
     log_this("Landing", "Landing Time: %.2f seconds", LOG_LEVEL_STATE, elapsed_time);
     
-    // Report thread cleanup status
+    /*
+     * Phase 2: Thread Analysis
+     * Check for proper thread cleanup
+     */
     report_thread_cleanup_status();
     
-    // Report final landing summary
+    /*
+     * Phase 3: Status Summary
+     * Report comprehensive landing results
+     */
     report_final_landing_summary(results);
     
-    // Log final status
+    /*
+     * Phase 4: Final Report
+     * Provide overall landing assessment
+     */
     log_this("Landing", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
     if (results->total_ready == results->total_checked) {
         log_this("Landing", "Landing Complete - All Systems Landed", LOG_LEVEL_STATE);

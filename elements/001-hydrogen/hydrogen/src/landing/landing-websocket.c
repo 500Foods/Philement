@@ -27,6 +27,7 @@
 #include "../registry/registry_integration.h"
 #include "../websocket/websocket_server.h"
 #include "../utils/utils_dependency.h"
+#include "../state/state_types.h"
 
 // External declarations
 extern ServiceThreads websocket_threads;
@@ -35,8 +36,8 @@ extern volatile sig_atomic_t websocket_server_shutdown;
 extern void cleanup_websocket_server(void);
 
 // Check if the websocket subsystem is ready to land
-LandingReadiness check_websocket_landing_readiness(void) {
-    LandingReadiness readiness = {0};
+LaunchReadiness check_websocket_landing_readiness(void) {
+    LaunchReadiness readiness = {0};
     readiness.subsystem = "WebSocket";
     
     // Allocate space for messages (including NULL terminator)
@@ -82,9 +83,10 @@ LandingReadiness check_websocket_landing_readiness(void) {
     return readiness;
 }
 
-// Shutdown the websocket subsystem
-void shutdown_websocket(void) {
+// Land the websocket subsystem
+int land_websocket_subsystem(void) {
     log_this("WebSocket", "Beginning WebSocket shutdown sequence", LOG_LEVEL_STATE);
+    bool success = true;
     
     // Signal thread shutdown
     websocket_server_shutdown = 1;
@@ -93,8 +95,12 @@ void shutdown_websocket(void) {
     // Wait for thread to complete
     if (websocket_thread) {
         log_this("WebSocket", "Waiting for WebSocket thread to complete", LOG_LEVEL_STATE);
-        pthread_join(websocket_thread, NULL);
-        log_this("WebSocket", "WebSocket thread completed", LOG_LEVEL_STATE);
+        if (pthread_join(websocket_thread, NULL) != 0) {
+            log_this("WebSocket", "Error waiting for WebSocket thread", LOG_LEVEL_ERROR);
+            success = false;
+        } else {
+            log_this("WebSocket", "WebSocket thread completed", LOG_LEVEL_STATE);
+        }
     }
     
     // Remove the websocket thread from tracking
@@ -107,4 +113,6 @@ void shutdown_websocket(void) {
     cleanup_websocket_server();
     
     log_this("WebSocket", "WebSocket shutdown complete", LOG_LEVEL_STATE);
+    
+    return success ? 1 : 0;  // Return 1 for success, 0 for failure
 }
