@@ -63,16 +63,19 @@ The WebServer subsystem provides HTTP services and serves as a foundation for ot
 The WebServer subsystem performs these checks in sequence:
 
 1. **System State Check**
+
    ```c
    if (web_server_shutdown) {
        readiness->status_messages[4] = strdup("No-Go: Subsystem is in shutdown state");
        return false;
    }
    ```
+
    - Verifies not in shutdown state
    - Checks system running status
 
 2. **Configuration Check**
+
    ```c
    if (!app_config->webserver.enabled) {
        readiness->status_messages[0] = strdup("No-Go: WebServer is disabled");
@@ -83,21 +86,25 @@ The WebServer subsystem performs these checks in sequence:
        return false;
    }
    ```
+
    - Checks if enabled in configuration
    - Validates port number
    - Verifies path configurations
 
 3. **Dependency Check**
+
    ```c
    if (!is_subsystem_running_by_name("Network")) {
        readiness->status_messages[1] = strdup("No-Go: Required dependency 'Network' not running");
        return false;
    }
    ```
+
    - Verifies Network subsystem is running
    - Checks Logging subsystem status
 
 4. **Resource Check**
+
    ```c
    // Check port availability
    if (!is_port_available(app_config->webserver.port)) {
@@ -105,14 +112,16 @@ The WebServer subsystem performs these checks in sequence:
        return false;
    }
    ```
+
    - Verifies port availability
    - Checks file descriptor limits
 
-### Launch Process
+### Launch Subsystem Process
 
 After passing readiness checks, the WebServer subsystem:
 
 1. **Initialize Server**
+
    ```c
    bool launch_webserver_subsystem(void) {
        // Initialize core server
@@ -132,6 +141,7 @@ After passing readiness checks, the WebServer subsystem:
    ```
 
 2. **Register with Registry**
+
    ```c
    int webserver_id = register_subsystem_from_launch(
        "WebServer",
