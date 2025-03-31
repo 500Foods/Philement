@@ -148,9 +148,23 @@ Markdown linting configuration:
 - Configures rule-specific settings
 - Used by test_z_codebase.sh for documentation checks
 
+## Test Numbering System
+
+Tests are numbered to ensure they run in a specific order:
+
+- 00-09: Core test infrastructure (e.g., test_00_all.sh)
+- 10-19: Basic functionality (compilation, startup)
+- 20-29: System state management
+- 30-39: Dynamic behavior
+- 40-49: Configuration and error handling
+- 50-59: Crash and recovery handling
+- 60-69: API functionality
+- 70-79: UI and interface tests
+- 90-99: Code quality and final checks
+
 ## Test Scripts
 
-### test_all.sh
+### test_00_all.sh
 
 A test orchestration script that executes tests with different configurations and provides a comprehensive summary:
 
@@ -179,7 +193,33 @@ The script:
 - Can skip execution while showing what would run (--skip-tests)
 - Always updates README.md with test results and code statistics
 
-### test_z_codebase.sh
+### test_50_crash_handler.sh
+
+A test script that validates the crash handler's functionality:
+
+```bash
+./test_50_crash_handler.sh
+```
+
+Key features:
+- Tests core dump generation for all build variants (standard, debug, valgrind, perf, release)
+- Verifies core files are created in the executable's directory with format: binary.core.pid
+- Validates debug symbols in non-release builds
+- Tests crash handler using SIGUSR1 signal to trigger test_crash_handler
+- Performs GDB analysis of core dumps:
+  - Verifies test_crash_handler in backtrace for debug builds
+  - Accepts basic stack trace for release builds
+- Checks crash handler log messages:
+  - "Received SIGUSR1, simulating crash via null dereference"
+  - "Signal 11 received...generating core dump"
+- Preserves core files and logs for failed tests
+- Supports different build types with appropriate expectations:
+  - Debug builds: Full debug info and function names
+  - Release builds: Basic crash info without symbols
+  - Performance builds: Debug info for profiling
+  - Valgrind builds: Full debug info for memory analysis
+
+### test_99_codebase.sh
 
 A comprehensive codebase analysis test that enforces code quality standards:
 
