@@ -54,14 +54,13 @@ extern bool validate_payload_key(const char *key);
  * 
  * @return LaunchReadiness struct with readiness status and messages
  */
-// Static registry ID for the payload subsystem
-static int payload_subsystem_id = -1;
+// Registry ID for the payload subsystem
+int payload_subsystem_id = -1;
 
 // Register the payload subsystem with the registry
 static void register_payload(void) {
-    if (payload_subsystem_id < 0) {
-        payload_subsystem_id = register_subsystem("Payload", NULL, NULL, NULL, NULL, NULL);
-    }
+    // Always register during readiness check
+    payload_subsystem_id = register_subsystem("Payload", NULL, NULL, NULL, NULL, NULL);
 }
 
 LaunchReadiness check_payload_launch_readiness(void) {

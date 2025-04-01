@@ -56,6 +56,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <ctype.h>
+#include <sys/resource.h>
 
 // Local includes
 #include "launch.h"
@@ -64,6 +65,7 @@
 #include "../logging/logging.h"
 #include "../utils/utils_logging.h"
 #include "../utils/utils.h"
+#include "../utils/utils_status.h"
 #include "../utils/utils_dependency.h"
 #include "../config/files/config_filesystem.h"
 #include "../config/config.h"
@@ -456,6 +458,11 @@ int startup_hydrogen(const char* config_path) {
     log_this("Startup", "- System startup began: %s", LOG_LEVEL_STATE, start_time_str);
     log_this("Startup", "- Current system clock: %s", LOG_LEVEL_STATE, current_time_str);
     log_this("Startup", "- Startup elapsed time: %.3fs", LOG_LEVEL_STATE, startup_time);
+    
+    // Log memory usage
+    size_t vmsize = 0, vmrss = 0, vmswap = 0;
+    get_process_memory(&vmsize, &vmrss, &vmswap);
+    log_this("Startup", "- Memory Usage (RSS): %.1f MB", LOG_LEVEL_STATE, vmrss / 1024.0);
     
     // Display restart count and timing if application has been restarted
     if (restart_count > 0) {

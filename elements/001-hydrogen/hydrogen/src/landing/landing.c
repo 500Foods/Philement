@@ -144,30 +144,33 @@ static bool land_approved_subsystems(ReadinessResults* results) {
     
     bool all_landed = true;
     
-    // Land subsystems in reverse launch order
+    // Process all subsystems in reverse launch order
     for (size_t i = 0; i < results->total_checked; i++) {
         const char* subsystem = results->results[i].subsystem;
         bool is_ready = results->results[i].ready;
         
-        if (!is_ready) continue;
+        // Skip Registry - it lands last
+        if (strcmp(subsystem, "Registry") == 0) continue;
         
-        // Get subsystem ID and update state to landing
+        // Get subsystem ID
         int subsystem_id = get_subsystem_id_by_name(subsystem);
         if (subsystem_id < 0) continue;
         
+        // Skip if not ready
+        if (!is_ready) continue;
+        
+        // Update state and attempt landing
         update_subsystem_state(subsystem_id, SUBSYSTEM_STOPPING);
         
         // Get and execute the subsystem's landing function
         LandingFunction land_func = get_landing_function(subsystem);
-        if (!land_func) {
-            log_this("Landing", "No landing function found for %s", LOG_LEVEL_ERROR, subsystem);
-            continue;
-        }
+        if (!land_func) continue;
         
         bool land_ok = (land_func() == 1);
         
-        // Update registry state based on result
+        // Update registry state
         update_subsystem_state(subsystem_id, land_ok ? SUBSYSTEM_INACTIVE : SUBSYSTEM_ERROR);
+        
         all_landed &= land_ok;
     }
     
@@ -247,28 +250,34 @@ bool check_all_landing_readiness(void) {
      */
     handle_landing_review(&results, start_time);
     
-    // Calculate and log timing if landing was successful
-    if (landing_success) {
-        double shutdown_time = calculate_shutdown_time();
-        
-        log_group_begin();
-        log_this(subsystem, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-        log_this(subsystem, "LANDING COMPLETE", LOG_LEVEL_STATE);
-        log_this(subsystem, "%s Duration: %.3fs", LOG_LEVEL_STATE, 
-                restart_requested ? "Restart" : "Shutdown", shutdown_time);
-        log_this(subsystem, "All subsystems landed successfully", LOG_LEVEL_STATE);
-        log_group_end();
-    }   
-
-    // For restart, ensure complete landing before proceeding
+    // For restart, proceed with restart sequence
     if (restart_requested) {
         // Get initial config path from argv[1]
         extern char** get_program_args(void);
         char** argv = get_program_args();
         char* config_path = (argv && argv[1]) ? argv[1] : NULL;
         
-        // Reset server state for restart
-        __sync_bool_compare_and_swap(&server_stopping, 1, 0);  // Clear stopping flag
+        // Land Registry as final step
+        log_this("Landing", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        log_this("Landing", "LANDING: REGISTRY (Final Step)", LOG_LEVEL_STATE);
+        bool registry_ok = land_registry_subsystem();
+        landing_success &= registry_ok;
+        
+        // Calculate and log timing if landing was successful
+        if (landing_success) {
+            double shutdown_time = calculate_shutdown_time();
+            
+            log_group_begin();
+            log_this(subsystem, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+            log_this(subsystem, "LANDING COMPLETE", LOG_LEVEL_STATE);
+            log_this(subsystem, "%s Duration: %.3fs", LOG_LEVEL_STATE, 
+                    restart_requested ? "Restart" : "Shutdown", shutdown_time);
+            log_this(subsystem, "All subsystems landed successfully", LOG_LEVEL_STATE);
+            log_group_end();
+        }
+        
+        // Reset server state for restart AFTER registry landing
+        __sync_bool_compare_and_swap(&server_stopping, 1, 0);
         __sync_bool_compare_and_swap(&server_running, 0, 0);
         __sync_bool_compare_and_swap(&server_starting, 0, 1);
         __sync_synchronize();

@@ -34,4 +34,7 @@ typedef struct {
 json_t* get_system_status_json(const WebSocketMetrics *ws_metrics);
 json_t* get_file_descriptors_json(void);
 
+// Memory tracking functions
+void get_process_memory(size_t *vmsize, size_t *vmrss, size_t *vmswap);
+
 #endif // UTILS_STATUS_H

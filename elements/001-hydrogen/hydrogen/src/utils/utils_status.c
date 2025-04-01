@@ -52,7 +52,6 @@ extern volatile sig_atomic_t server_starting;
 // Forward declarations of static functions
 static void get_socket_info(int inode, char *proto, int *port);
 static void get_fd_info(int fd, FileDescriptorInfo *info);
-static void get_process_memory(size_t *vmsize, size_t *vmrss, size_t *vmswap);
 static void add_thread_ids_to_service(json_t *service_status, ServiceThreads *threads);
 
 // Helper function to safely truncate strings
@@ -232,7 +231,7 @@ static void get_fd_info(int fd, FileDescriptorInfo *info) {
 }
 
 // Get overall process memory from /proc/self/status
-static void get_process_memory(size_t *vmsize, size_t *vmrss, size_t *vmswap) {
+void get_process_memory(size_t *vmsize, size_t *vmrss, size_t *vmswap) {
     *vmsize = 0;
     *vmrss = 0;
     *vmswap = 0;

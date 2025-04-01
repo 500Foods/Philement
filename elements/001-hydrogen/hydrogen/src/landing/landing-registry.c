@@ -23,32 +23,20 @@
 extern AppConfig* app_config;
 extern volatile sig_atomic_t server_stopping;
 
-// Report final registry status during landing
+// Report final registry status during landing (minimal output)
 void report_registry_landing_status(void) {
-    log_this("Registry", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    log_this("Registry", "FINAL REGISTRY STATUS", LOG_LEVEL_STATE);
-    
-    // Count subsystems by state
-    int total_inactive = 0;
     int total_active = 0;
     
     for (int i = 0; i < subsystem_registry.count; i++) {
         SubsystemInfo* info = &subsystem_registry.subsystems[i];
-        if (info->state == SUBSYSTEM_INACTIVE) {
-            total_inactive++;
-        } else {
+        if (info->state != SUBSYSTEM_INACTIVE) {
             total_active++;
-            log_this("Registry", "  Active: %s", LOG_LEVEL_ALERT, info->name);
         }
     }
     
-    // Report counts
-    log_this("Registry", "Total subsystems: %d", LOG_LEVEL_STATE, subsystem_registry.count);
-    log_this("Registry", "Inactive subsystems: %d", LOG_LEVEL_STATE, total_inactive);
+    // Only report if there are active subsystems (potential issue)
     if (total_active > 0) {
-        log_this("Registry", "Active subsystems remaining: %d", LOG_LEVEL_ALERT, total_active);
-    } else {
-        log_this("Registry", "All subsystems inactive", LOG_LEVEL_STATE);
+        log_this("Registry", "Warning: %d subsystems still active", LOG_LEVEL_ALERT, total_active);
     }
 }
 
@@ -111,33 +99,37 @@ LaunchReadiness check_registry_landing_readiness(void) {
     return readiness;
 }
 
-// Land the Registry subsystem
+// Land the Registry subsystem (minimal output)
 int land_registry_subsystem(void) {
-    log_this("Registry", "Beginning Registry shutdown sequence", LOG_LEVEL_STATE);
-    
     // Report final status
     report_registry_landing_status();
     
-    // Free registry resources
-    log_this("Registry", "Freeing registry resources", LOG_LEVEL_STATE);
+    // Lock registry for cleanup
+    pthread_mutex_lock(&subsystem_registry.mutex);
     
-    // Clear all subsystem entries
+    // Reset all subsystem entries to inactive state
     for (int i = 0; i < subsystem_registry.count; i++) {
         SubsystemInfo* info = &subsystem_registry.subsystems[i];
-        if (info->name) {
-            free((void*)info->name);
-            info->name = NULL;
-        }
         info->state = SUBSYSTEM_INACTIVE;
         info->threads = NULL;  // Don't free - owned by subsystems
+        info->main_thread = NULL;
+        info->shutdown_flag = NULL;
+        info->init_function = NULL;
+        info->shutdown_function = NULL;
+        info->dependency_count = 0;
     }
     
-    // Reset registry state
-    subsystem_registry.count = 0;
+    // Free and NULL the subsystems array
+    if (subsystem_registry.subsystems) {
+        free(subsystem_registry.subsystems);
+        subsystem_registry.subsystems = NULL;
+    }
     
-    log_this("Registry", "Registry shutdown complete", LOG_LEVEL_STATE);
-    log_this("Registry", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    log_this("Registry", "LANDING COMPLETE", LOG_LEVEL_STATE);
+    // Reset registry state after freeing memory
+    subsystem_registry.count = 0;
+    subsystem_registry.capacity = 0;
+    
+    pthread_mutex_unlock(&subsystem_registry.mutex);
     
     return 1; // Success
 }

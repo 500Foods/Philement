@@ -37,30 +37,19 @@ LaunchReadiness check_payload_landing_readiness(void) {
     // Add initial subsystem identifier
     readiness.messages[0] = strdup("Payload");
     
-    // Check if payload is actually running
-    if (!is_subsystem_running_by_name("Payload")) {
-        readiness.ready = false;
+    // For landing readiness, we only need to verify if the subsystem is running
+    bool is_running = is_subsystem_running_by_name("Payload");
+    readiness.ready = is_running;
+    
+    if (is_running) {
+        readiness.messages[1] = strdup("  Go:      Payload subsystem is running");
+        readiness.messages[2] = strdup("  Decide:  Go For Landing of Payload");
+        readiness.messages[3] = NULL;
+    } else {
         readiness.messages[1] = strdup("  No-Go:   Payload not running");
         readiness.messages[2] = strdup("  Decide:  No-Go For Landing of Payload");
         readiness.messages[3] = NULL;
-        return readiness;
     }
-    
-    // Check if system is in shutdown state
-    if (!server_stopping) {
-        readiness.ready = false;
-        readiness.messages[1] = strdup("  No-Go:   System not in shutdown state");
-        readiness.messages[2] = strdup("  Decide:  No-Go For Landing of Payload");
-        readiness.messages[3] = NULL;
-        return readiness;
-    }
-    
-    // All checks passed
-    readiness.ready = true;
-    readiness.messages[1] = strdup("  Go:      No active payload operations");
-    readiness.messages[2] = strdup("  Go:      Ready for OpenSSL cleanup");
-    readiness.messages[3] = strdup("  Decide:  Go For Landing of Payload");
-    readiness.messages[4] = NULL;
     
     return readiness;
 }
@@ -74,25 +63,23 @@ LaunchReadiness check_payload_landing_readiness(void) {
  * it from being stopped again during the LANDING: SUBSYSTEM REGISTRY phase.
  */
 void free_payload_resources(void) {
-    // Log the start of payload cleanup
-    log_this("Payload", "Beginning payload resource cleanup", LOG_LEVEL_STATE);
+    // Begin LANDING: PAYLOAD section
+    log_this("Landing", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+    log_this("Landing", "LANDING: PAYLOAD", LOG_LEVEL_STATE);
+    log_this("Landing", "Beginning payload resource cleanup", LOG_LEVEL_STATE);
     
     // Free any resources allocated during payload launch
-    log_this("Payload", "Freeing payload resources", LOG_LEVEL_STATE);
+    log_this("Landing", "  Step 1: Freeing payload resources", LOG_LEVEL_STATE);
     
     // Call the payload cleanup function for OpenSSL
     cleanup_openssl();
-    log_this("Payload", "OpenSSL resources cleaned up", LOG_LEVEL_STATE);
+    log_this("Landing", "  Step 2: OpenSSL resources cleaned up", LOG_LEVEL_STATE);
     
-    // Update the Payload subsystem state to inactive to prevent it from being stopped again
-    // during the LANDING: SUBSYSTEM REGISTRY phase
-    int subsys_id = get_subsystem_id_by_name("Payload");
-    if (subsys_id >= 0) {
-        update_subsystem_state(subsys_id, SUBSYSTEM_INACTIVE);
-        log_this("Payload", "Payload subsystem marked as inactive", LOG_LEVEL_STATE);
-    }
+    // Update the registry that payload has been shut down
+    update_subsystem_after_shutdown("Payload");
+    log_this("Landing", "  Step 3: Payload subsystem marked as inactive", LOG_LEVEL_STATE);
     
-    log_this("Payload", "Payload cleanup complete", LOG_LEVEL_STATE);
+    log_this("Landing", "LANDING: PAYLOAD cleanup complete", LOG_LEVEL_STATE);
 }
 
 /**
@@ -104,17 +91,31 @@ void free_payload_resources(void) {
  * @return int 1 on success, 0 on failure
  */
 int land_payload_subsystem(void) {
-    log_this("Payload", "Beginning Payload shutdown sequence", LOG_LEVEL_STATE);
+    // Begin LANDING: PAYLOAD section
+    log_this("Landing", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+    log_this("Landing", "LANDING: PAYLOAD", LOG_LEVEL_STATE);
     
-    // Check if payload is running
-    if (!is_subsystem_running_by_name("Payload")) {
-        log_this("Payload", "Payload not running, skipping shutdown", LOG_LEVEL_STATE);
+    // Get current subsystem state through registry
+    int subsys_id = get_subsystem_id_by_name("Payload");
+    if (subsys_id < 0 || !is_subsystem_running(subsys_id)) {
+        log_this("Landing", "Payload not running, skipping shutdown", LOG_LEVEL_STATE);
         return 1;  // Success - nothing to do
     }
     
-    // Free payload resources (includes OpenSSL cleanup)
+    // Step 1: Mark as stopping
+    update_subsystem_state(subsys_id, SUBSYSTEM_STOPPING);
+    log_this("Landing", "LANDING: PAYLOAD - Beginning shutdown sequence", LOG_LEVEL_STATE);
+    
+    // Step 2: Free resources and mark as inactive
     free_payload_resources();
     
-    log_this("Payload", "Payload shutdown complete", LOG_LEVEL_STATE);
+    // Step 3: Verify final state for restart capability
+    SubsystemState final_state = get_subsystem_state(subsys_id);
+    if (final_state == SUBSYSTEM_INACTIVE) {
+        log_this("Landing", "LANDING: PAYLOAD - Successfully landed and ready for future restart", LOG_LEVEL_STATE);
+    } else {
+        log_this("Landing", "LANDING: PAYLOAD - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
+                subsystem_state_to_string(final_state));
+    }
     return 1;  // Success
 }

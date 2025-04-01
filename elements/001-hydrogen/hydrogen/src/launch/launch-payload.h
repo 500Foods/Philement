@@ -11,6 +11,14 @@
 #include "launch.h"
 
 /**
+ * Registry ID for the payload subsystem
+ * 
+ * This ID is maintained across the subsystem lifecycle and reset during landing
+ * to ensure proper re-registration during restart.
+ */
+extern int payload_subsystem_id;
+
+/**
  * Check if the payload subsystem is ready to launch
  * 
  * This function performs various checks to determine if all the
