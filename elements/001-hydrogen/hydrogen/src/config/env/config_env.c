@@ -49,11 +49,15 @@ json_t* env_process_env_variable(const char* value) {
     // Look up the environment variable
     const char* env_value = getenv(var_name);
     
-    // Log the environment variable access using the shared is_sensitive_value function
+    // Only log non-PAYLOAD_KEY environment variables
     if (env_value) {
-        log_config_env_value(key_name, var_name, env_value, NULL, is_sensitive_value(var_name));
+        if (strcmp(var_name, "PAYLOAD_KEY") != 0) {
+            log_config_env_value(key_name, var_name, env_value, NULL, is_sensitive_value(var_name));
+        }
     } else {
-        log_config_env_value(key_name, var_name, NULL, NULL, false);
+        if (strcmp(var_name, "PAYLOAD_KEY") != 0) {
+            log_config_env_value(key_name, var_name, NULL, NULL, false);
+        }
         free(var_name);
         return NULL;
     }

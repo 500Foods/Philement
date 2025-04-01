@@ -240,32 +240,22 @@ bool extract_payload(const char *executable_path, const AppConfig *config,
     // Initialize OpenSSL
     init_openssl();
 
-    // Get the payload key
-    const char *payload_key = config->server.payload_key;
-    if (!payload_key) {
-        // Check environment variable if configured
-        if (config->server.payload_key && strncmp(config->server.payload_key, "${env.", 6) == 0) {
-            const char *end = strchr(config->server.payload_key + 6, '}');
-            if (end) {
-                char env_var[256];
-                size_t len = end - (config->server.payload_key + 6);
-                strncpy(env_var, config->server.payload_key + 6, len);
-                env_var[len] = '\0';
-                payload_key = getenv(env_var);
-            }
-        }
-    }
-
-    if (!payload_key) {
+    // Get the payload key directly from config - env vars should already be resolved
+    if (!config->server.payload_key) {
         log_this("Payload", "No valid payload key available", LOG_LEVEL_ERROR, NULL);
         munmap(file_data, st.st_size);
         return false;
     }
 
-    // Decrypt the payload
+    // Log the key snippet we're using (first 5 chars)
+    if (strlen(config->server.payload_key) > 5) {
+        log_this("Payload", "Using key from config: %.5s...", LOG_LEVEL_STATE, config->server.payload_key);
+    }
+
+    // Decrypt the payload using config's key directly
     uint8_t *decrypted_data = NULL;
     size_t decrypted_size = 0;
-    bool success = decrypt_payload(encrypted_data, payload_size, payload_key,
+    bool success = decrypt_payload(encrypted_data, payload_size, config->server.payload_key,
                                  &decrypted_data, &decrypted_size);
 
     // Unmap the executable

@@ -74,12 +74,12 @@
 
 // Server configuration structure
 typedef struct ServerConfig {
-    char* server_name;
-    char* payload_key;
-    char* config_file;
-    char* exec_file;
-    char* log_file;
-    int startup_delay;
+    char* server_name;      // Server identification
+    char* payload_key;      // Key for payload encryption
+    char* config_file;      // Main configuration file path
+    char* exec_file;        // Executable file path
+    char* log_file;        // Log file path
+    int startup_delay;     // Delay before starting services (seconds)
 } ServerConfig;
 
 // Main application configuration structure
