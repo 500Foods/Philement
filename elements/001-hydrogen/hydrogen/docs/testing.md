@@ -220,13 +220,94 @@ The testing system will be expanded with these planned improvements:
 
 ## Adding New Tests
 
-When expanding the testing system:
+The Hydrogen project provides a standardized template (test_template.sh) to help create consistent and comprehensive tests. This template encapsulates best practices and common test patterns derived from existing tests.
 
-1. Create configuration files that focus on specific test scenarios
+### Using the Test Template
+
+1. Start by copying the template:
+
+   ```bash
+   cp tests/test_template.sh tests/test_your_feature.sh
+   chmod +x tests/test_your_feature.sh
+   ```
+
+2. Choose an appropriate test number based on functionality:
+   - 10-19: Basic functionality (compilation, startup)
+   - 20-29: System state management
+   - 30-39: Dynamic behavior
+   - 40-49: Configuration and error handling
+   - 50-59: Crash and recovery handling
+   - 60-69: API functionality
+   - 70-79: UI and interface tests
+   - 90-99: Code quality and final checks
+
+3. The template provides built-in support for:
+   - Basic startup/shutdown validation
+   - API endpoint testing
+   - Signal handling
+   - Resource monitoring
+   - Configuration validation
+
+4. Common test patterns available in the template:
+
+   ```bash
+   # Server lifecycle testing
+   SERVER_PID=$(start_hydrogen_server "$HYDROGEN_BIN" "$CONFIG_FILE" "$LOG_FILE")
+   verify_clean_shutdown $SERVER_PID
+   
+   # API testing
+   test_api_endpoint "/api/system/health" "alive" "GET"
+   test_api_endpoint "/api/system/test" "success" "POST" '{"test":"data"}'
+   
+   # Resource monitoring
+   test_resource_usage 30  # Monitor for 30 seconds
+   
+   # Signal handling
+   test_signal_handling SIGTERM 10
+   ```
+
+### Test Configuration
+
+1. Create configuration files that focus on specific test scenarios:
+   - Use hydrogen_test_min.json for basic functionality
+   - Use hydrogen_test_max.json for full system testing
+   - Create custom configs for specific test requirements
+
 2. Follow the naming pattern: `hydrogen_test_[scenario].json`
-3. Document the test purpose in the [tests/README.md](../tests/README.md)
-4. Ensure configurations use relative paths for portability
-5. Set appropriate logging levels for the components being tested
+
+3. When using custom configurations:
+   - Use unique port numbers (see Port Configuration in tests/README.md)
+   - Document special requirements
+   - Maintain relative paths for portability
+   - Set appropriate logging levels
+
+### Best Practices
+
+1. **Test Organization**
+   - Use clear, descriptive test names
+   - Group related tests into functions
+   - Include setup and cleanup for each test case
+   - Document expected outcomes
+
+2. **Error Handling**
+   - Check server startup success
+   - Include timeouts for operations
+   - Validate all responses
+   - Clean up resources on failure
+
+3. **Resource Management**
+   - Use the --skip-cleanup option during development
+   - Monitor resource usage for memory leaks
+   - Verify clean shutdown
+   - Check for leftover processes
+
+4. **Documentation**
+   - Add detailed comments explaining test purpose
+   - Document any special requirements
+   - Include example usage
+   - Explain configuration requirements
+
+See [tests/README.md](../tests/README.md) for detailed examples and the complete test template documentation.
 
 ## Testing Guidelines
 
