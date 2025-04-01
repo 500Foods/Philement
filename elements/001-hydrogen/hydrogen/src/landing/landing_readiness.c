@@ -122,22 +122,34 @@ ReadinessResults handle_landing_readiness(void) {
     log_this("Landing", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
     log_this("Landing", "LANDING READINESS", LOG_LEVEL_STATE);
     
-    // Check subsystems in reverse launch order
-    process_subsystem_readiness(&results, &index, "Print", check_print_landing_readiness());
-    process_subsystem_readiness(&results, &index, "Mail Relay", check_mail_relay_landing_readiness());
-    process_subsystem_readiness(&results, &index, "mDNS Client", check_mdns_client_landing_readiness());
-    process_subsystem_readiness(&results, &index, "mDNS Server", check_mdns_server_landing_readiness());
-    process_subsystem_readiness(&results, &index, "Terminal", check_terminal_landing_readiness());
-    process_subsystem_readiness(&results, &index, "WebSocket", check_websocket_landing_readiness());
-    process_subsystem_readiness(&results, &index, "Swagger", check_swagger_landing_readiness());
-    process_subsystem_readiness(&results, &index, "API", check_api_landing_readiness());
-    process_subsystem_readiness(&results, &index, "WebServer", check_webserver_landing_readiness());
-    process_subsystem_readiness(&results, &index, "Database", check_database_landing_readiness());
-    process_subsystem_readiness(&results, &index, "Logging", check_logging_landing_readiness());
-    process_subsystem_readiness(&results, &index, "Network", check_network_landing_readiness());
-    process_subsystem_readiness(&results, &index, "Payload", check_payload_landing_readiness());
-    process_subsystem_readiness(&results, &index, "Threads", check_threads_landing_readiness());
-    process_subsystem_readiness(&results, &index, "Registry", check_registry_landing_readiness());
+    // Define subsystem order and readiness check functions
+    struct {
+        const char* name;
+        LaunchReadiness (*check_func)(void);
+    } subsystems[] = {
+        {"Print", check_print_landing_readiness},
+        {"Mail Relay", check_mail_relay_landing_readiness},
+        {"mDNS Client", check_mdns_client_landing_readiness},
+        {"mDNS Server", check_mdns_server_landing_readiness},
+        {"Terminal", check_terminal_landing_readiness},
+        {"WebSocket", check_websocket_landing_readiness},
+        {"Swagger", check_swagger_landing_readiness},
+        {"API", check_api_landing_readiness},
+        {"WebServer", check_webserver_landing_readiness},
+        {"Database", check_database_landing_readiness},
+        {"Logging", check_logging_landing_readiness},
+        {"Network", check_network_landing_readiness},
+        {"Payload", check_payload_landing_readiness},
+        {"Threads", check_threads_landing_readiness},
+        {"Registry", check_registry_landing_readiness}
+    };
+    
+    // Process subsystems in defined order
+    for (size_t i = 0; i < sizeof(subsystems) / sizeof(subsystems[0]); i++) {
+        process_subsystem_readiness(&results, &index, 
+                                  subsystems[i].name, 
+                                  subsystems[i].check_func());
+    }
     
     return results;
 }
