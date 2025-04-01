@@ -29,6 +29,7 @@ void format_duration(time_t seconds, char *buffer, size_t buflen);
 
 // Startup timing helpers
 const char* get_system_start_time_string(void);
-double calculate_startup_time(void);
+double calculate_startup_time(void);     // Time since current startup began
+double calculate_total_runtime(void);    // Time since original startup
 
 #endif // UTILS_TIME_H

@@ -12,7 +12,7 @@
 
 // Project headers
 #include "../state/state.h"
-#include "../state/shutdown/shutdown.h"
+#include "../landing/landing.h"
 #include "../config/config.h"
 #include "../network/network.h"
 #include "../logging/logging.h"

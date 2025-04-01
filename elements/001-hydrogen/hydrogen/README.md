@@ -285,20 +285,20 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Mon Mar 31 04:59:07 PDT 2025
+Generated on: Mon Mar 31 21:08:46 PDT 2025
 
 ### Summary
 
 | Metric | Value |
 | ------ | ----- |
 | Total Tests | 14 |
-| Passed | 10 |
-| Failed | 4 |
+| Passed | 11 |
+| Failed | 3 |
 | Skipped | 0 |
 | Total Subtests | 88 |
-| Passed Subtests | 59 |
-| Failed Subtests | 29 |
-| Runtime | 5m 57s |
+| Passed Subtests | 60 |
+| Failed Subtests | 28 |
+| Runtime | 6m 1s |
 
 ### Individual Test Results
 
@@ -311,7 +311,7 @@ Generated on: Mon Mar 31 04:59:07 PDT 2025
 | 25_library_dependencies | ✅ Passed | Test completed without errors (16 of 16 subtests passed) |
 | 35_env_variables | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
 | 40_json_error_handling | ✅ Passed | Test completed without errors (2 of 2 subtests passed) |
-| 45_signals | ❌ Failed | Test failed with errors (3 of 4 subtests passed) |
+| 45_signals | ✅ Passed | Test completed without errors (4 of 4 subtests passed) |
 | 50_crash_handler | ✅ Passed | Test completed without errors (5 of 5 subtests passed) |
 | 55_socket_rebind | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
 | 60_api_prefixes | ❌ Failed | Test failed with errors (0 of 10 subtests passed) |
@@ -321,16 +321,16 @@ Generated on: Mon Mar 31 04:59:07 PDT 2025
 
 ## Repository Information
 
-Generated via cloc: Mon Mar 31 04:59:07 PDT 2025
+Generated via cloc: Mon Mar 31 21:08:46 PDT 2025
 
 | Language | Files | Blank Lines | Comment Lines | Code Lines |
 | -------- | ----- | ----------- | ------------- | ---------- |
-| C | 162 | 4438 | 6229 | 19147 |
-| Markdown | 118 | 4286 | 27 | 15642 |
-| Bourne | Shell | 24 | 1258 | 1281 |
+| C | 162 | 4498 | 6369 | 19491 |
+| Markdown | 118 | 4286 | 27 | 15684 |
+| Bourne | Shell | 24 | 1258 | 1279 |
 | JSON | 17 | 0 | 0 | 4807 |
-| C/C++ | Header | 143 | 1147 | 5079 |
-| Text | 15 | 9 | 0 | 1697 |
+| C/C++ | Header | 143 | 1145 | 5126 |
+| Text | 15 | 5 | 0 | 1801 |
 | HTML | 1 | 74 | 0 | 493 |
-| make | 2 | 51 | 214 | 226 |
-| **Total** | **482** | **11263** | **12830** | **49859** |
+| make | 2 | 53 | 217 | 224 |
+| **Total** | **482** | **11319** | **13018** | **50357** |
