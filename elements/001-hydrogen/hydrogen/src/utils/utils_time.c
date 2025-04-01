@@ -32,7 +32,8 @@ extern volatile sig_atomic_t server_starting;
 // Internal state
 static pthread_mutex_t ready_time_mutex = PTHREAD_MUTEX_INITIALIZER;
 static struct timespec server_ready_time = {0, 0};  // Protected by ready_time_mutex
-static struct timespec server_start_time = {0, 0};  // Set once at startup
+static struct timespec server_start_time = {0, 0};  // Updated on each startup/restart
+static struct timespec original_start_time = {0, 0}; // Set only on first startup
 static struct timespec shutdown_start_time = {0, 0}; // When shutdown begins
 static struct timespec shutdown_end_time = {0, 0};   // When shutdown completes
 
@@ -82,11 +83,25 @@ time_t get_server_start_time(void) {
     return server_start_time.tv_sec;
 }
 
-// Set the server start time (called once during startup)
+// Set the server start time (handles both initial startup and restarts)
 void set_server_start_time(void) {
-    if (server_start_time.tv_sec == 0) {  // Only set it once
-        clock_gettime(CLOCK_MONOTONIC, &server_start_time);
+    // Get current time
+    struct timespec current_time;
+    clock_gettime(CLOCK_MONOTONIC, &current_time);
+    
+    // If this is first startup, set original start time
+    if (original_start_time.tv_sec == 0) {
+        original_start_time = current_time;
     }
+    
+    // Always update current startup time
+    server_start_time = current_time;
+    
+    // Reset ready time for new startup sequence
+    pthread_mutex_lock(&ready_time_mutex);
+    server_ready_time.tv_sec = 0;
+    server_ready_time.tv_nsec = 0;
+    pthread_mutex_unlock(&ready_time_mutex);
 }
 
 
@@ -153,7 +168,7 @@ const char* get_system_start_time_string(void) {
     return time_buffer;
 }
 
-// Calculate startup time (duration from start to ready)
+// Calculate startup time (duration from current start to ready)
 double calculate_startup_time(void) {
     // Return 0 if times aren't set yet
     if (server_start_time.tv_sec == 0) {
@@ -174,6 +189,20 @@ double calculate_startup_time(void) {
     pthread_mutex_unlock(&ready_time_mutex);
     
     return elapsed;
+}
+
+// Calculate total runtime (duration from original start)
+double calculate_total_runtime(void) {
+    // Return 0 if original start time isn't set
+    if (original_start_time.tv_sec == 0) {
+        return 0.0;
+    }
+    
+    // Get current time
+    struct timespec current_time;
+    clock_gettime(CLOCK_MONOTONIC, &current_time);
+    
+    return calc_elapsed_time(&current_time, &original_start_time);
 }
 
 // Calculate shutdown time (duration from shutdown start to end)

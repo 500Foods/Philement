@@ -77,8 +77,8 @@
 /* Internal Headers */
 #include "logging/logging.h"
 #include "state/state.h"
-#include "state/startup/startup.h"
-#include "state/shutdown/shutdown.h"
+#include "launch/launch.h"
+#include "landing/landing.h"
 #include "threads/threads.h"
 
 /* Global Variables and External Declarations */
@@ -98,6 +98,15 @@ extern void signal_handler(int sig);
 /* Global Variables */
 extern ServiceThreads logging_threads;
 pthread_t main_thread_id;
+
+// Store program arguments for restart
+static int stored_argc;
+static char** stored_argv;
+
+// Get program arguments (used by landing.c for restart)
+char** get_program_args(void) {
+    return stored_argv;
+}
 
 /*
  * ELF Core Dump Structures
@@ -376,6 +385,9 @@ static void test_crash_handler(int sig) {
  * @return 0 on success, 1 on initialization failure
  */
 int main(int argc, char *argv[]) {
+     // Store program arguments for restart
+     stored_argc = argc;
+     stored_argv = argv;
      if (prctl(PR_SET_DUMPABLE, 1) == -1) {
          log_this("Main", "Failed to set dumpable: %s", LOG_LEVEL_ERROR, strerror(errno));
      }

@@ -51,12 +51,16 @@
 #include "../network/network.h"
 #include "../threads/threads.h"        // Thread management subsystem
 #include "../registry/registry.h"      // Registry subsystem
+#include "../landing/landing.h"        // For check_all_landing_readiness
 
 
 // Application state flags
 extern volatile sig_atomic_t server_starting;
 extern volatile sig_atomic_t server_running;
 extern volatile sig_atomic_t server_stopping;
+extern volatile sig_atomic_t restart_requested;
+extern volatile sig_atomic_t handler_flags_reset_needed;  // For signal handler reset tracking
+extern volatile int restart_count;
 
 // Thread synchronization
 extern pthread_cond_t terminate_cond;
@@ -95,6 +99,8 @@ extern network_info_t *net_info;
 
 // Core system functions
 void graceful_shutdown(void);
+void signal_handler(int sig);
+void reset_shutdown_state(void);  // Reset shutdown state after restart
 
 // Registry integration functions
 void register_standard_subsystems(void);
