@@ -71,7 +71,7 @@ Before marking ANY code changes as complete:
     "perf": "make perf: max optimization/LTO - build_perf/",
     "release": "make release: production - build_release/",
     "valgrind": "make valgrind: memory analysis - build_valgrind/",
-    "trial": "make trial: clean build with focused error/warning output, runs shutdown test on success"
+    "trial": "make trial: clean build with focused error/warning output (must be run from src/ directory), runs shutdown test on success"
   },
   "build_quality": {
     "requirements": [
@@ -305,6 +305,67 @@ Before marking ANY code changes as complete:
 }
 ```
 
+## Configuration System
+
+### Configuration Loading Order
+
+The configuration system follows the standard subsystem order, with the "server" section being treated as equivalent to registry in priority. The loading sequence is:
+
+1. Server/Registry (core system settings)
+2. Payload
+3. Threads
+4. Network
+5. Database
+6. Logging
+   - Core logging configuration
+   - Notify (logging output path, like Database/Console/File outputs)
+7. WebServer
+8. API
+9. Swagger
+10. WebSockets
+11. Terminal
+12. mDNS Server
+13. mDNS Client
+14. MailRelay
+15. Print
+
+This order is maintained across:
+- Configuration file processing
+- Default value assignment
+- Environment variable resolution
+- Documentation and code organization
+
+Note: While Database appears both as a subsystem (#5) and as a logging output path, this reflects its dual role in the system. As a subsystem, it provides core database services. As a logging output, it's one of several possible destinations for log messages, alongside Console, File, and Notify outputs.
+
+### Configuration Sources (In Priority Order)
+
+1. Environment Variables (HYDROGEN_CONFIG for file path, subsystem-specific vars)
+2. Command Line Specified Config File
+3. Standard Locations:
+   - ./hydrogen.json
+   - /etc/hydrogen/hydrogen.json
+   - /usr/local/etc/hydrogen/hydrogen.json
+4. Built-in Defaults
+
+### Default Values and Environment Variables
+
+Each configuration section has built-in defaults that are used when:
+- The configuration file is missing
+- A section is missing from the config file
+- Individual settings are omitted
+
+Environment variables can override any configuration value using:
+- Direct environment variables (e.g., HYDROGEN_SERVER_NAME)
+- ${env.VARIABLE_NAME} syntax in JSON values
+
+### Server Configuration Priority
+
+The "server" section in configuration files is treated with the same priority as the registry subsystem (first). This section contains core system settings that affect all other subsystems, including:
+- Server identification
+- File paths
+- System-wide timeouts
+- Core security settings
+
 ## Subsystem Order
 
 When listing or processing subsystems, the following order must be maintained:
@@ -329,6 +390,7 @@ This order reflects the dependency chain and must be followed in:
 
 - Code organization (includes, declarations)
 - Launch sequence
+- Configuration processing
 - Documentation
 - Any other context where subsystems are listed or processed
 

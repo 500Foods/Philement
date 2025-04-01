@@ -42,8 +42,8 @@
  * - 11. Terminal
  * - 12. mDNS Server
  * - 13. mDNS Client
- * - 14. MailRelay
- * - 15. lPrint
+ * - 14. Mail Relay
+ * - 15. Print
  */
 
 // System includes
@@ -384,24 +384,23 @@ int startup_hydrogen(const char* config_path) {
         usleep(5 * 1000);
     }
     
-    // Launch approved subsystems
+    // Launch approved subsystems and continue regardless of failures
     bool launch_success = launch_approved_subsystems(&readiness_results);
     
     // Review launch results
     handle_launch_review(&readiness_results);
     
-    // Update server state based on launch success using atomic operations
-    if (launch_success) {
-        // Set startup time before changing state
-        set_server_start_time();
-        __sync_synchronize();
-        
-        __sync_bool_compare_and_swap(&server_starting, 1, 0);
-        __sync_bool_compare_and_swap(&server_running, 0, 1);
-    } else {
+    // Log if any subsystems failed but continue startup
+    if (!launch_success) {
         log_this("Startup", "One or more subsystems failed to launch", LOG_LEVEL_ALERT);
-        return 0;
     }
+    
+    // Set startup time and update server state
+    set_server_start_time();
+    __sync_synchronize();
+    
+    __sync_bool_compare_and_swap(&server_starting, 1, 0);
+    __sync_bool_compare_and_swap(&server_running, 0, 1);
     
     __sync_synchronize();  // Ensure state changes are visible
     

@@ -26,6 +26,25 @@
 #define CONFIG_DEFAULTS_H
 
 #include <jansson.h>
+#include <sys/stat.h>
+
+// Server defaults
+#define DEFAULT_SERVER_NAME "Philement/hydrogen"
+#define DEFAULT_LOG_FILE_PATH "/var/log/hydrogen.log"
+#define DEFAULT_CONFIG_FILE "/etc/hydrogen/hydrogen.json"
+
+/*
+ * Generate default server configuration
+ * 
+ * Creates secure defaults for the server:
+ * - Core system identification
+ * - Essential paths and locations
+ * - Security settings
+ * - Runtime behavior controls
+ * 
+ * @return JSON object with server configuration or NULL on error
+ */
+json_t* create_default_server_config(void);
 
 /*
  * Generate complete default configuration
