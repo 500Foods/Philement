@@ -79,16 +79,43 @@ Before marking ANY code changes as complete:
       "Tasks are not considered complete until 'make trial' runs cleanly",
       "Use 'make trial' to quickly identify and fix compilation issues",
       "All changes must pass the shutdown test (automatically run after clean trial build)",
-      "Clean shutdown behavior is critical and verified for all code changes"
+      "Clean shutdown behavior is critical and verified for all code changes",
+      "New features must include appropriate tests using the standardized test template"
     ],
     "workflow": [
       "Make code changes",
+      "Create/update tests using test_template.sh as guide",
       "Run 'make trial' to check for warnings/errors",
       "Fix any issues that are reported",
-      "Repeat until build is clean",
+      "Run relevant test suite",
+      "Repeat until build is clean and tests pass",
       "Ensure shutdown test passes (automatically run after clean build)",
       "Only then mark task as complete"
-    ]
+    ],
+    "testing": {
+      "template": "tests/test_template.sh provides standardized patterns for test creation",
+      "patterns": [
+        "Basic startup/shutdown validation",
+        "API endpoint testing",
+        "Signal handling",
+        "Resource monitoring",
+        "Configuration validation"
+      ],
+      "best_practices": [
+        "Use test_template.sh for consistent test structure",
+        "Follow test numbering convention (00-99)",
+        "Include both minimal and maximal configuration testing",
+        "Monitor resource usage during tests",
+        "Verify clean shutdown behavior",
+        "Document test purpose and requirements"
+      ],
+      "documentation": [
+        "See tests/README.md for detailed testing guide",
+        "Review docs/testing.md for testing philosophy",
+        "Check existing tests for examples",
+        "Use test_template.sh comments for guidance"
+      ]
+    }
   },
   "linting": {
     "tools": {
@@ -330,6 +357,7 @@ The configuration system follows the standard subsystem order, with the "server"
 15. Print
 
 This order is maintained across:
+
 - Configuration file processing
 - Default value assignment
 - Environment variable resolution
@@ -350,17 +378,20 @@ Note: While Database appears both as a subsystem (#5) and as a logging output pa
 ### Default Values and Environment Variables
 
 Each configuration section has built-in defaults that are used when:
+
 - The configuration file is missing
 - A section is missing from the config file
 - Individual settings are omitted
 
 Environment variables can override any configuration value using:
+
 - Direct environment variables (e.g., HYDROGEN_SERVER_NAME)
 - ${env.VARIABLE_NAME} syntax in JSON values
 
 ### Server Configuration Priority
 
 The "server" section in configuration files is treated with the same priority as the registry subsystem (first). This section contains core system settings that affect all other subsystems, including:
+
 - Server identification
 - File paths
 - System-wide timeouts
