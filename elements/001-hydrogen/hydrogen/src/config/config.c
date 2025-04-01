@@ -191,99 +191,109 @@ AppConfig* load_config(const char* cmdline_path) {
         }
     }
 
-    // Server Configuration
-    // #include "config/json_server.inc"
+    /*
+     * Configuration loading follows the standard subsystem order.
+     * The "server" section is treated with registry priority (loaded first).
+     * Each section must handle:
+     * - Missing configuration file
+     * - Missing section in config
+     * - Environment variable overrides
+     * - Default values
+     */
+
+    // 1. Server/Registry Configuration (Core System Settings)
     if (!load_json_server(root, config, config_path)) {
         if (root) json_decref(root);
         return NULL;
     }
 
-    // Logging Configuration
-    // #include "config/json_logging.inc"
-    if (!load_json_logging(root, config)) {
-        if (root) json_decref(root);
-        return NULL;
-    }
-
-    // System Resources Configuration
+    // 2. Payload Configuration
+    // Currently part of resources
     if (!load_json_resources(root, config)) {
         if (root) json_decref(root);
         return NULL;
     }
-    
-    // System Monitoring Configuration
+
+    // 3. Threads Configuration
+    // Currently part of monitoring
     if (!load_json_monitoring(root, config)) {
         if (root) json_decref(root);
         return NULL;
     }
-    
-    // Network Configuration
+
+    // 4. Network Configuration
     if (!load_json_network(root, config)) {
         if (root) json_decref(root);
         return NULL;
     }
 
-    // WebServer Configuration
-    if (!load_json_webserver(root, config)) {
-        if (root) json_decref(root);
-        return NULL;
-    }
-
-    // API Configuration
-    if (!load_json_api(root, config)) {
-        if (root) json_decref(root);
-        return NULL;
-    }
-
-    // Notify Configuration
-    if (!load_json_notify(root, config)) {
-        if (root) json_decref(root);
-        return NULL;
-    }
-    
-    // Swagger Configuration
-    if (!load_json_swagger(root, config)) {
-        if (root) json_decref(root);
-        return NULL;
-    }
-    
-    // WebSocket Configuration
-    if (!load_json_websocket(root, config)) {
-        if (root) json_decref(root);
-        return NULL;
-    }
-
-    // Terminal Configuration
-    if (!load_json_terminal(root, config)) {
-        if (root) json_decref(root);
-        return NULL;
-    }
-
-    // mDNS Server Configuration
-    if (!load_json_mdns_server(root, config)) {
-        if (root) json_decref(root);
-        return NULL;
-    }
-
-    // mDNSClient Configuration
-    if (!load_json_mdns_client(root, config)) {
-        if (root) json_decref(root);
-        return NULL;
-    }
-
-    // MailRelay Configuration
-    if (!load_json_mail_relay(root, config)) {
-        if (root) json_decref(root);
-        return NULL;
-    }
-
-    // Databases Configuration
+    // 5. Database Configuration
     if (!load_json_databases(root, config)) {
         if (root) json_decref(root);
         return NULL;
     }
 
-    // Print Queue Configuration
+    // 6. Logging Configuration
+    if (!load_json_logging(root, config)) {
+        if (root) json_decref(root);
+        return NULL;
+    }
+
+    // Notify configuration (logging output path)
+    if (!load_json_notify(root, config)) {
+        if (root) json_decref(root);
+        return NULL;
+    }
+
+    // 7. WebServer Configuration
+    if (!load_json_webserver(root, config)) {
+        if (root) json_decref(root);
+        return NULL;
+    }
+
+    // 8. API Configuration
+    if (!load_json_api(root, config)) {
+        if (root) json_decref(root);
+        return NULL;
+    }
+
+    // 9. Swagger Configuration
+    if (!load_json_swagger(root, config)) {
+        if (root) json_decref(root);
+        return NULL;
+    }
+
+    // 10. WebSocket Configuration
+    if (!load_json_websocket(root, config)) {
+        if (root) json_decref(root);
+        return NULL;
+    }
+
+    // 11. Terminal Configuration
+    if (!load_json_terminal(root, config)) {
+        if (root) json_decref(root);
+        return NULL;
+    }
+
+    // 12. mDNS Server Configuration
+    if (!load_json_mdns_server(root, config)) {
+        if (root) json_decref(root);
+        return NULL;
+    }
+
+    // 13. mDNS Client Configuration
+    if (!load_json_mdns_client(root, config)) {
+        if (root) json_decref(root);
+        return NULL;
+    }
+
+    // 14. Mail Relay Configuration
+    if (!load_json_mail_relay(root, config)) {
+        if (root) json_decref(root);
+        return NULL;
+    }
+
+    // 15. Print Queue Configuration
     if (!load_json_print_queue(root, config)) {
         if (root) json_decref(root);
         return NULL;

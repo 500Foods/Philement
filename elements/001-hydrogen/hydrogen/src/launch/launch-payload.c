@@ -54,6 +54,16 @@ extern bool validate_payload_key(const char *key);
  * 
  * @return LaunchReadiness struct with readiness status and messages
  */
+// Static registry ID for the payload subsystem
+static int payload_subsystem_id = -1;
+
+// Register the payload subsystem with the registry
+static void register_payload(void) {
+    if (payload_subsystem_id < 0) {
+        payload_subsystem_id = register_subsystem("Payload", NULL, NULL, NULL, NULL, NULL);
+    }
+}
+
 LaunchReadiness check_payload_launch_readiness(void) {
     const char** messages = malloc(5 * sizeof(char*));  // Space for 4 messages + NULL
     if (!messages) {
@@ -65,6 +75,9 @@ LaunchReadiness check_payload_launch_readiness(void) {
     
     // First message is subsystem name
     messages[msg_index++] = strdup("Payload");
+    
+    // Register with registry if not already registered
+    register_payload();
     
     // Check system state
     if (server_stopping || web_server_shutdown || (!server_starting && !server_running)) {
@@ -90,9 +103,18 @@ LaunchReadiness check_payload_launch_readiness(void) {
                 messages[msg_index++] = msg;
             }
             
-            if (!validate_payload_key(app_config->server.payload_key)) {
-                messages[msg_index++] = strdup("  No-Go:   Invalid payload key");
+            // Check if we have a valid key from config - it should already be resolved
+            if (!app_config->server.payload_key || !validate_payload_key(app_config->server.payload_key)) {
+                messages[msg_index++] = strdup("  No-Go:   No valid payload key available");
                 ready = false;
+            } else {
+                char* msg = malloc(256);
+                if (msg) {
+                    snprintf(msg, 256, "  Go:      Valid payload key available: %.5s...", app_config->server.payload_key);
+                    messages[msg_index++] = msg;
+                } else {
+                    messages[msg_index++] = strdup("  Go:      Valid payload key available");
+                }
             }
         } else {
             messages[msg_index++] = strdup("  No-Go:   No payload found");

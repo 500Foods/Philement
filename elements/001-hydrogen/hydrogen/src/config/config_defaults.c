@@ -37,6 +37,69 @@
 #include "../logging/logging.h"
 
 /*
+ * Generate default server configuration
+ * 
+ * Why these defaults?
+ * - Core system identification
+ * - Essential paths and locations
+ * - Security settings
+ * - Runtime behavior controls
+ * 
+ * Environment Variables:
+ * - HYDROGEN_SERVER_NAME: Override server name
+ * - HYDROGEN_LOG_PATH: Override log file location
+ * - HYDROGEN_PAYLOAD_KEY: Required for payload decryption
+ * - HYDROGEN_STARTUP_DELAY: Override startup delay (ms)
+ * - HYDROGEN_CONFIG_DIR: Override config directory
+ * - HYDROGEN_DATA_DIR: Override data directory
+ * - HYDROGEN_TEMP_DIR: Override temp directory
+ */
+json_t* create_default_server_config(void) {
+    json_t* server = json_object();
+    if (!server) {
+        log_this("Configuration", "Failed to create server config object", LOG_LEVEL_ERROR);
+        return NULL;
+    }
+
+    // Core Identity
+    json_object_set_new(server, "ServerName", json_string("${env.HYDROGEN_SERVER_NAME:-Philement/hydrogen}"));
+    json_object_set_new(server, "Version", json_string(VERSION));
+    json_object_set_new(server, "BuildType", json_string("${env.BUILD_TYPE:-release}"));
+
+    // Essential Paths
+    json_object_set_new(server, "LogFile", json_string("${env.HYDROGEN_LOG_PATH:-/var/log/hydrogen.log}"));
+    json_object_set_new(server, "ConfigDir", json_string("${env.HYDROGEN_CONFIG_DIR:-/etc/hydrogen}"));
+    json_object_set_new(server, "DataDir", json_string("${env.HYDROGEN_DATA_DIR:-/var/lib/hydrogen}"));
+    json_object_set_new(server, "TempDir", json_string("${env.HYDROGEN_TEMP_DIR:-/tmp/hydrogen}"));
+
+    // Security
+    json_object_set_new(server, "PayloadKey", json_string("${env.HYDROGEN_PAYLOAD_KEY}"));
+    json_object_set_new(server, "FileMode", json_integer(0640));  // rw-r----- default file permissions
+    json_object_set_new(server, "DirMode", json_integer(0750));   // rwxr-x--- default directory permissions
+
+    // Runtime Behavior
+    json_t* startup = json_object();
+    json_object_set_new(startup, "DelayMs", json_string("${env.HYDROGEN_STARTUP_DELAY:-5000}"));
+    json_object_set_new(startup, "MaxAttempts", json_integer(3));
+    json_object_set_new(startup, "RetryDelayMs", json_integer(1000));
+    json_object_set_new(server, "Startup", startup);
+
+    json_t* shutdown = json_object();
+    json_object_set_new(shutdown, "GracePeriodMs", json_integer(5000));
+    json_object_set_new(shutdown, "ForceTimeoutMs", json_integer(10000));
+    json_object_set_new(server, "Shutdown", shutdown);
+
+    // Resource Limits
+    json_t* limits = json_object();
+    json_object_set_new(limits, "MaxLogSize", json_integer(100 * 1024 * 1024));  // 100MB
+    json_object_set_new(limits, "MaxConfigSize", json_integer(1 * 1024 * 1024)); // 1MB
+    json_object_set_new(limits, "MaxTempAge", json_integer(86400));              // 24 hours
+    json_object_set_new(server, "Limits", limits);
+
+    return server;
+}
+
+/*
  * Generate default web server configuration
  * 
  * Why these defaults?
@@ -325,16 +388,11 @@ void create_default_config(const char* config_path) {
         return;
     }
 
-    // Server Name
-    json_object_set_new(root, "ServerName", json_string("Philement/hydrogen"));
-    
-    // Payload Key
-    json_object_set_new(root, "PayloadKey", json_string("${env.PAYLOAD_KEY}"));
+    // Generate server configuration first (registry priority)
+    json_t* server = create_default_server_config();
+    if (server) json_object_set_new(root, "Server", server);
 
-    // Log File
-    json_object_set_new(root, "LogFile", json_string("/var/log/hydrogen.log"));
-
-    // Generate subsystem configurations
+    // Generate other subsystem configurations
     json_t* web = create_default_web_config();
     json_t* websocket = create_default_websocket_config();
     json_t* mdns = create_default_mdns_config();

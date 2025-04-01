@@ -1,3 +1,11 @@
+/* Feature test macros must come first */
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200809L
+#endif
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 /*
  * Real-Time WebSocket Server for 3D Printer Control
  * 
@@ -8,7 +16,8 @@
  * - Status monitoring
  */
 
-// System headers
+/* System headers */
+#include <time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -30,7 +39,10 @@
 #include "../config/config.h"
 #include "../utils/utils.h"
 
-// Global server context
+/* Global variables */
+extern AppConfig* app_config;  // Defined in config.c
+
+/* Global server context */
 WebSocketServerContext *ws_context = NULL;
 
 // Main callback dispatcher for all WebSocket events
@@ -196,8 +208,7 @@ int init_websocket_server(int port, const char* protocol, const char* key)
                   LWS_SERVER_OPTION_SKIP_PROTOCOL_INIT;  // Skip protocol init during context creation
 
     // Configure IPv6 if enabled
-    extern AppConfig *app_config;
-    if (app_config->websocket.enable_ipv6) {
+    if (app_config && app_config->websocket.enable_ipv6) {
         info.options |= LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
         log_this("WebSocket", "IPv6 support enabled", LOG_LEVEL_STATE);
     }

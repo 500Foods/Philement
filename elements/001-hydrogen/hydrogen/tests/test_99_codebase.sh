@@ -872,4 +872,41 @@ export_subtest_results $((PASS_COUNT + FAIL_COUNT)) $PASS_COUNT
 # End the test with final result
 end_test $TEST_RESULT "$TEST_NAME" | tee -a "$RESULT_LOG"
 
+# ====================================================================
+# Final Step: Build Release Version
+# ====================================================================
+
+# Function to build release version
+build_release() {
+    print_header "Building Release Version" | tee -a "$RESULT_LOG"
+    
+    # Save current directory
+    local start_dir=$(pwd)
+    
+    # Change to src directory
+    cd "$HYDROGEN_DIR/src" || {
+        print_result 1 "Failed to change to src directory for release build" | tee -a "$RESULT_LOG"
+        cd "$start_dir"
+        exit 1
+    }
+    
+    # Run make release
+    print_info "Running 'make release'..." | tee -a "$RESULT_LOG"
+    if ! make release > "$RESULTS_DIR/make_release.log" 2>&1; then
+        print_result 1 "make release failed" | tee -a "$RESULT_LOG"
+        cat "$RESULTS_DIR/make_release.log" | tee -a "$RESULT_LOG"
+        cd "$start_dir"
+        exit 1
+    fi
+    
+    print_result 0 "Successfully built release version" | tee -a "$RESULT_LOG"
+    print_info "Release build is available in build_release/" | tee -a "$RESULT_LOG"
+    
+    # Return to start directory
+    cd "$start_dir"
+}
+
+# Build the release version as the final step
+build_release
+
 exit $TEST_RESULT
