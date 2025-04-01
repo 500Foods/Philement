@@ -119,9 +119,18 @@ extern AppConfig* app_config;
 // External declarations
 extern void close_file_logging(void);
 extern volatile sig_atomic_t restart_count;
+extern volatile sig_atomic_t restart_requested;
 extern volatile sig_atomic_t server_stopping;
 extern volatile sig_atomic_t server_starting;
 extern volatile sig_atomic_t server_running;
+
+// Current config path storage
+static char* current_config_path = NULL;
+
+// Get current config path (thread-safe)
+char* get_current_config_path(void) {
+    return current_config_path;
+}
 
 // Private declarations
 static void log_early_info(void);
@@ -280,11 +289,35 @@ int startup_hydrogen(const char* config_path) {
         return 0;
     }
 
-    // Record the server start time
-    set_server_start_time();
+    // For restart, ensure clean state
+    if (restart_requested) {
+        log_this("Startup", "Resetting system state for restart", LOG_LEVEL_STATE);
+        
+        // Reset all subsystem states
+        for (int i = 0; i < subsystem_registry.count; i++) {
+            update_subsystem_state(i, SUBSYSTEM_INACTIVE);
+        }
+        
+        // Ensure clean server state using atomic operations
+        __sync_bool_compare_and_swap(&server_stopping, 1, 0);
+        __sync_bool_compare_and_swap(&server_running, 1, 0);
+        __sync_bool_compare_and_swap(&server_starting, 0, 1);
+        
+        // Force memory barrier to ensure visibility
+        __sync_synchronize();
+    }
 
-    // Basic early logging to stderr (no config needed)
+    // Record current time for logging
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+
+    // Log startup information
     log_early_info();
+    
+    // For restarts, log additional context
+    if (restart_requested) {
+        log_this("Startup", "Performing restart #%d", LOG_LEVEL_STATE, restart_count);
+    }
     
     // Seed random number generator
     srand((unsigned int)time(NULL));
@@ -299,6 +332,17 @@ int startup_hydrogen(const char* config_path) {
     log_this("Startup", "Core dependency checks completed successfully", LOG_LEVEL_STATE);
     
     // 2. Load configuration
+    // Store config path for restart
+    if (config_path) {
+        char* new_path = strdup(config_path);
+        if (new_path) {
+            if (current_config_path) {
+                free(current_config_path);
+            }
+            current_config_path = new_path;
+        }
+    }
+    
     app_config = load_config(config_path);
     if (!app_config) {
         log_this("Startup", "Failed to load configuration", LOG_LEVEL_ERROR);
@@ -346,26 +390,31 @@ int startup_hydrogen(const char* config_path) {
     // Review launch results
     handle_launch_review(&readiness_results);
     
-    // Update server state based on launch success
-    server_starting = 0;
-    server_running = launch_success ? 1 : 0;
-    
-    if (!launch_success) {
+    // Update server state based on launch success using atomic operations
+    if (launch_success) {
+        // Set startup time before changing state
+        set_server_start_time();
+        __sync_synchronize();
+        
+        __sync_bool_compare_and_swap(&server_starting, 1, 0);
+        __sync_bool_compare_and_swap(&server_running, 0, 1);
+    } else {
         log_this("Startup", "One or more subsystems failed to launch", LOG_LEVEL_ALERT);
         return 0;
     }
+    
+    __sync_synchronize();  // Ensure state changes are visible
     
     // Final Startup Message
     log_group_begin();
     log_this("Startup", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
     log_this("Startup", "STARTUP COMPLETE", LOG_LEVEL_STATE);
     
-    // Get current time with microsecond precision
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    
     // Calculate startup time
     double startup_time = calculate_startup_time();
+    
+    // Get current time with microsecond precision
+    gettimeofday(&tv, NULL);
     
     // Format current time with ISO 8601 format including milliseconds
     time_t current_time = tv.tv_sec;
@@ -408,14 +457,38 @@ int startup_hydrogen(const char* config_path) {
     log_this("Startup", "- System startup began: %s", LOG_LEVEL_STATE, start_time_str);
     log_this("Startup", "- Current system clock: %s", LOG_LEVEL_STATE, current_time_str);
     log_this("Startup", "- Startup elapsed time: %.3fs", LOG_LEVEL_STATE, startup_time);
-    log_this("Startup", "- Application started", LOG_LEVEL_STATE);
     
-    // Display restart count if application has been restarted
+    // Display restart count and timing if application has been restarted
     if (restart_count > 0) {
-        log_this("Startup", "Application restarted %d times", LOG_LEVEL_STATE, restart_count);
-        log_this("Restart", "Restart count: %d", LOG_LEVEL_STATE, restart_count);
+        static struct timeval original_start_tv = {0, 0};
+        if (original_start_tv.tv_sec == 0) {
+            // Store first start time with microsecond precision
+            original_start_tv = tv;
+            original_start_tv.tv_sec -= (time_t)startup_time;
+            original_start_tv.tv_usec -= startup_usec;
+            if (original_start_tv.tv_usec < 0) {
+                original_start_tv.tv_sec--;
+                original_start_tv.tv_usec += 1000000;
+            }
+        }
+        
+        // Format original start time with microsecond precision
+        struct tm* orig_tm = gmtime(&original_start_tv.tv_sec);
+        char orig_time_str[64];
+        strftime(orig_time_str, sizeof(orig_time_str), "%Y-%m-%dT%H:%M:%S", orig_tm);
+        int orig_ms = original_start_tv.tv_usec / 1000;
+        snprintf(temp_str, sizeof(temp_str), ".%03dZ", orig_ms);
+        strcat(orig_time_str, temp_str);
+        
+        // Calculate and log total runtime since original start
+        double total_runtime = calculate_total_runtime();
+        
+        log_this("Startup", "- Original launch time: %s", LOG_LEVEL_STATE, orig_time_str);
+        log_this("Startup", "- Overall running time: %.3fs", LOG_LEVEL_STATE, total_runtime);
+        log_this("Startup", "- Application restarts: %d", LOG_LEVEL_STATE, restart_count);
     }
     
+    log_this("Startup", "- Application started", LOG_LEVEL_STATE);
     log_this("Startup", "Press Ctrl+C to exit", LOG_LEVEL_STATE);
     log_this("Startup", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
     log_group_end();

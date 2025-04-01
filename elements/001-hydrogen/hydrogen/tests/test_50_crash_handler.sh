@@ -123,7 +123,7 @@ verify_core_file() {
     local timeout=5
     local found=0
     
-    print_info "Waiting for core file ${binary_name}.core.${pid} in ${HYDROGEN_DIR}..."
+    print_info "Waiting for core file ${binary_name}.core.${pid}..."
     
     # Wait up to 5 seconds for core file to appear
     for ((i=1; i<=timeout; i++)); do
@@ -135,11 +135,11 @@ verify_core_file() {
     done
     
     if [ $found -eq 1 ]; then
-        print_result 0 "Core file ${binary_name}.core.${pid} found in ${HYDROGEN_DIR}"
+        print_result 0 "Core file ${binary_name}.core.${pid} found"
         return 0
     else
-        print_result 1 "Core file ${binary_name}.core.${pid} not found in ${HYDROGEN_DIR} after ${timeout} seconds"
-        ls -l "${HYDROGEN_DIR}"/*.core.* 2>/dev/null || echo "No core files found in ${HYDROGEN_DIR}"
+        print_result 1 "Core file ${binary_name}.core.${pid} not found after ${timeout} seconds"
+        ls -l "${HYDROGEN_DIR}"/*.core.* 2>/dev/null || echo "No core files found"
         return 1
     fi
 }
@@ -218,37 +218,42 @@ run_test_with_build() {
         print_warning "Core dump configuration issues detected, test results may be affected"
     fi
     
+    # Initialize local result variables
+    local core_result=1
+    local log_result=1
+    local gdb_result=1
+    
     # Verify core file creation
     verify_core_file "$binary" $HYDROGEN_PID
-    CORE_FILE_RESULT=$?
+    core_result=$?
     
     # If core file exists, verify its contents
-    if [ $CORE_FILE_RESULT -eq 0 ]; then
+    if [ $core_result -eq 0 ]; then
         local core_file="${HYDROGEN_DIR}/${binary_name}.core.${HYDROGEN_PID}"
         verify_core_file_content "$core_file" "$binary"
         if [ $? -ne 0 ]; then
             print_result 1 "Core file exists but content verification failed"
-            CORE_FILE_RESULT=1
+            core_result=1
         fi
     fi
     
-    if [ $CORE_FILE_RESULT -eq 0 ]; then
+    if [ $core_result -eq 0 ]; then
         # Check for key crash handler messages, ignoring log level/category
         if grep -q "Received SIGUSR1" "$SCRIPT_DIR/hydrogen_crash_test.log" && \
            grep -q "Signal 11 received" "$SCRIPT_DIR/hydrogen_crash_test.log"; then
             print_result 0 "Found crash handler messages"
-            CRASH_LOG_RESULT=0
+            log_result=0
         else
             print_result 1 "Missing crash handler messages"
-            CRASH_LOG_RESULT=1
+            log_result=1
         fi
         
         # Analyze core file with GDB
         local binary_dir=$(dirname "$binary")
         analyze_core_with_gdb "$binary" "${HYDROGEN_DIR}/${binary_name}.core.${HYDROGEN_PID}" "$GDB_OUTPUT_DIR/${binary_name}_${TIMESTAMP}.txt"
-        GDB_ANALYSIS_RESULT=$?
+        gdb_result=$?
         
-        if [ $GDB_ANALYSIS_RESULT -eq 0 ]; then
+        if [ $gdb_result -eq 0 ]; then
             print_info "GDB analysis output:"
             cat "$GDB_OUTPUT_DIR/${binary_name}_${TIMESTAMP}.txt"
         fi
@@ -261,19 +266,24 @@ run_test_with_build() {
     
     # Clean up test files (preserve core files for failed tests)
     rm -f "$SCRIPT_DIR/hydrogen_crash_test.log"
-    if [ $CORE_FILE_RESULT -eq 0 ] && [ $CRASH_LOG_RESULT -eq 0 ] && [ $GDB_ANALYSIS_RESULT -eq 0 ]; then
+    if [ $core_result -eq 0 ] && [ $log_result -eq 0 ] && [ $gdb_result -eq 0 ]; then
         rm -f "${HYDROGEN_DIR}/${binary_name}.core.${HYDROGEN_PID}"
     else
-        print_info "Preserving core file for debugging: ${HYDROGEN_DIR}/${binary_name}.core.${HYDROGEN_PID}"
+        print_info "Preserving core file for debugging: ${binary_name}.core.${HYDROGEN_PID}"
         failed=""
-        [ $CORE_FILE_RESULT -ne 0 ] && failed="${failed}core_file "
-        [ $CRASH_LOG_RESULT -ne 0 ] && failed="${failed}crash_log "
-        [ $GDB_ANALYSIS_RESULT -ne 0 ] && failed="${failed}gdb_analysis"
+        [ $core_result -ne 0 ] && failed="${failed}core_file "
+        [ $log_result -ne 0 ] && failed="${failed}crash_log "
+        [ $gdb_result -ne 0 ] && failed="${failed}gdb_analysis"
         print_info "Failed checks: ${failed# }"
     fi
     
+    # Set global results for the caller
+    CORE_FILE_RESULT=$core_result
+    CRASH_LOG_RESULT=$log_result
+    GDB_ANALYSIS_RESULT=$gdb_result
+    
     # Return success only if all subtests passed
-    if [ $CORE_FILE_RESULT -eq 0 ] && [ $CRASH_LOG_RESULT -eq 0 ] && [ $GDB_ANALYSIS_RESULT -eq 0 ]; then
+    if [ $core_result -eq 0 ] && [ $log_result -eq 0 ] && [ $gdb_result -eq 0 ]; then
         return 0
     else
         return 1
@@ -325,8 +335,8 @@ EOF
     local backtrace_quality=""
     local has_test_crash=0
 
-    # Look for exact test_crash_handler output we expect
-    if grep -q "test_crash_handler.*at src/hydrogen.c:.*" "${gdb_output_file}" && \
+    # Look for test_crash_handler in backtrace
+    if grep -q "test_crash_handler.*at.*hydrogen\.c:[0-9]" "${gdb_output_file}" && \
        grep -q "Program terminated with signal SIGSEGV" "${gdb_output_file}"; then
         has_test_crash=1
         has_backtrace=1
@@ -348,7 +358,7 @@ EOF
         return 0
     else
         print_result 1 "GDB failed to produce useful backtrace"
-        print_info "GDB output preserved at: ${gdb_output_file}"
+        print_info "GDB output preserved at: $(convert_to_relative_path "${gdb_output_file}")"
         return 1
     fi
 }
@@ -380,29 +390,31 @@ GDB_ANALYSIS_RESULT=1
 CRASH_LOG_RESULT=1
 
 # Find all available builds and their descriptions
+declare -A FOUND_BUILDS  # Track which builds we've found
 declare -a BUILDS
 declare -A BUILD_DESCRIPTIONS
 
-# Find standard build first (TARGET = hydrogen)
-if [ -f "$HYDROGEN_DIR/hydrogen" ]; then
-    BUILDS+=("$HYDROGEN_DIR/hydrogen")
-    # Look for description in Makefile comments
-    desc=$(grep -B5 "^TARGET.*=.*hydrogen" "$HYDROGEN_DIR/Makefile" | grep "Purpose:" | sed 's/.*Purpose: //')
-    if [ -n "$desc" ]; then
-        BUILD_DESCRIPTIONS["hydrogen"]="$desc"
-    else
-        BUILD_DESCRIPTIONS["hydrogen"]="Standard development build"
-    fi
-fi
-
-# Parse other build targets from Makefile
+# Parse all build targets from Makefile
 while IFS= read -r line; do
-    if [[ $line =~ ^([A-Z_]+TARGET)[[:space:]]*=[[:space:]]*([[:alnum:]_]+)[[:space:]]*$ ]] && [[ "${BASH_REMATCH[2]}" != "hydrogen" ]]; then
+    if [[ $line =~ ^([A-Z_]*TARGET)[[:space:]]*=[[:space:]]*\$\(BIN_PREFIX\)([[:alnum:]_]+)[[:space:]]*$ ]]; then
         target="${BASH_REMATCH[2]}"
-        if [ -f "$HYDROGEN_DIR/$target" ]; then
+        if [ -f "$HYDROGEN_DIR/$target" ] && [ -z "${FOUND_BUILDS[$target]}" ]; then
+            FOUND_BUILDS[$target]=1
             BUILDS+=("$HYDROGEN_DIR/$target")
-            # Extract description from Makefile comments
-            desc=$(grep -B5 "^${BASH_REMATCH[1]}.*=.*$target" "$HYDROGEN_DIR/Makefile" | grep "Purpose:" | sed 's/.*Purpose: //')
+            # Extract description from build variant comments
+            if [[ "$target" == "hydrogen" ]]; then
+                desc="Standard development build"
+            elif [[ "$target" == "hydrogen_debug" ]]; then
+                desc="Bug finding and analysis"
+            elif [[ "$target" == "hydrogen_valgrind" ]]; then
+                desc="Memory analysis"
+            elif [[ "$target" == "hydrogen_perf" ]]; then
+                desc="Maximum speed"
+            elif [[ "$target" == "hydrogen_release" ]]; then
+                desc="Production deployment"
+            else
+                desc="Build variant: $target"
+            fi
             if [ -n "$desc" ]; then
                 BUILD_DESCRIPTIONS["$target"]="$desc"
             else
@@ -410,7 +422,7 @@ while IFS= read -r line; do
             fi
         fi
     fi
-done < "$HYDROGEN_DIR/Makefile"
+done < "$HYDROGEN_DIR/src/Makefile"
 
 if [ ${#BUILDS[@]} -eq 0 ]; then
     print_result 1 "No hydrogen builds found"
@@ -521,7 +533,7 @@ for build in "${BUILDS[@]}"; do
             [ $CRASH_LOG_RESULT -eq 0 ] && echo -e "      ${GREEN}✓${NC} Crash handler log message verified" || echo -e "      ${RED}✗${NC} Crash handler log message not found"
             [ $GDB_ANALYSIS_RESULT -eq 0 ] && echo -e "      ${GREEN}✓${NC} GDB backtrace analysis successful" || echo -e "      ${RED}✗${NC} GDB backtrace analysis failed"
         fi
-        echo -e "   ${CYAN}Debug Info:${NC} Check ${GDB_OUTPUT_DIR}/${build_name}_${TIMESTAMP}.txt"
+        echo -e "   ${CYAN}Debug Info:${NC} Check $(convert_to_relative_path "${GDB_OUTPUT_DIR}")/${build_name}_${TIMESTAMP}.txt"
     fi
     echo ""
 done

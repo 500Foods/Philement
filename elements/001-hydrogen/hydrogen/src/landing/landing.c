@@ -54,6 +54,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <ctype.h>
+#include <signal.h>
 
 // Local includes
 #include "landing.h"
@@ -69,12 +70,30 @@
 #include "../threads/threads.h"
 #include "../registry/registry.h"
 #include "../registry/registry_integration.h"
+#include "../state/state.h"  // For reset_shutdown_state
 #include "../state/state_types.h"
+#include "../launch/launch.h"
 
 // External declarations for landing orchestration
 extern ReadinessResults handle_landing_readiness(void);
 extern bool handle_landing_plan(const ReadinessResults* results);
 extern void handle_landing_review(const ReadinessResults* results, time_t start_time);
+
+// External declarations for startup
+extern int startup_hydrogen(const char* config_path);
+
+// External signal handling
+extern void signal_handler(int sig);
+
+// External restart control variables
+extern volatile sig_atomic_t restart_requested;
+extern volatile int restart_count;
+extern volatile sig_atomic_t handler_flags_reset_needed;  // From shutdown_signals.c
+
+// External server state flags
+extern volatile sig_atomic_t server_stopping;
+extern volatile sig_atomic_t server_running;
+extern volatile sig_atomic_t server_starting;
 
 // External declarations for subsystem landing functions (in reverse launch order)
 extern int land_print_subsystem(void);
@@ -118,6 +137,7 @@ static LandingFunction get_landing_function(const char* subsystem_name) {
 /*
  * Land approved subsystems in reverse launch order
  * Each subsystem's specific landing code is in its own landing-*.c file
+ * Handles both shutdown and restart scenarios
  */
 static bool land_approved_subsystems(ReadinessResults* results) {
     if (!results) return false;
@@ -159,13 +179,38 @@ static bool land_approved_subsystems(ReadinessResults* results) {
  * This is the main orchestration function that follows the same pattern as launch
  * but in reverse order. Each phase is handled by its own specialized module.
  */
+/*
+ * Signal handlers for SIGHUP and SIGINT
+ */
+void handle_sighup(void) {
+    if (!restart_requested) {
+        restart_requested = 1;
+        restart_count++;
+        log_this("Restart", "SIGHUP received, initiating restart", LOG_LEVEL_STATE);
+        log_this("Restart", "Restart count: %d", LOG_LEVEL_STATE, restart_count);
+    }
+}
+
+void handle_sigint(void) {
+    log_this("Shutdown", "SIGINT received, initiating shutdown", LOG_LEVEL_STATE);
+    __sync_bool_compare_and_swap(&server_running, 1, 0);
+    __sync_bool_compare_and_swap(&server_stopping, 0, 1);
+    __sync_synchronize();
+}
+
+
 bool check_all_landing_readiness(void) {
     // Record landing start time
     time_t start_time = time(NULL);
     
+    // Use appropriate subsystem name based on operation
+    const char* subsystem = restart_requested ? "Restart" : "Landing";
+    
     log_group_begin();
-    log_this("Landing", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    log_this("Landing", "LANDING SEQUENCE INITIATED", LOG_LEVEL_STATE);
+    log_this(subsystem, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+    log_this(subsystem, restart_requested ? 
+        "Initiating graceful restart sequence" : 
+        "LANDING SEQUENCE INITIATED", LOG_LEVEL_STATE);
     log_group_end();
     
     /*
@@ -202,18 +247,74 @@ bool check_all_landing_readiness(void) {
      */
     handle_landing_review(&results, start_time);
     
-    // Calculate and log shutdown timing if landing was successful
+    // Calculate and log timing if landing was successful
     if (landing_success) {
         double shutdown_time = calculate_shutdown_time();
         
         log_group_begin();
-        log_this("Landing", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-        log_this("Landing", "LANDING COMPLETE", LOG_LEVEL_STATE);
-        log_this("Landing", "Shutdown Duration: %.3fs", LOG_LEVEL_STATE, shutdown_time);
-        log_this("Landing", "All subsystems landed successfully", LOG_LEVEL_STATE);
-        log_this("Landing", "Proceeding with final cleanup", LOG_LEVEL_STATE);
+        log_this(subsystem, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        log_this(subsystem, "LANDING COMPLETE", LOG_LEVEL_STATE);
+        log_this(subsystem, "%s Duration: %.3fs", LOG_LEVEL_STATE, 
+                restart_requested ? "Restart" : "Shutdown", shutdown_time);
+        log_this(subsystem, "All subsystems landed successfully", LOG_LEVEL_STATE);
         log_group_end();
+    }   
+
+    // For restart, ensure complete landing before proceeding
+    if (restart_requested) {
+        // Get initial config path from argv[1]
+        extern char** get_program_args(void);
+        char** argv = get_program_args();
+        char* config_path = (argv && argv[1]) ? argv[1] : NULL;
+        
+        // Reset server state for restart
+        __sync_bool_compare_and_swap(&server_stopping, 1, 0);  // Clear stopping flag
+        __sync_bool_compare_and_swap(&server_running, 0, 0);
+        __sync_bool_compare_and_swap(&server_starting, 0, 1);
+        __sync_synchronize();
+        
+        // Log restart sequence start
+        log_this("Restart", "Initiating in-process restart", LOG_LEVEL_STATE);
+        
+        // Reset signal handlers if needed
+        if (handler_flags_reset_needed) {
+            signal(SIGHUP, signal_handler);
+            signal(SIGINT, signal_handler);
+            signal(SIGTERM, signal_handler);
+            handler_flags_reset_needed = 0;
+        }
+        
+        // Perform restart with initial config path
+        bool restart_ok = startup_hydrogen(config_path);
+        
+        if (!restart_ok) {
+            // If restart failed, initiate shutdown
+            log_this("Restart", "Restart failed, initiating shutdown", LOG_LEVEL_ERROR);
+            __sync_bool_compare_and_swap(&server_running, 0, 0);
+            __sync_bool_compare_and_swap(&server_stopping, 0, 1);
+            __sync_synchronize();
+            return false;
+        }
+        
+        // Reset all state flags after successful restart
+        __sync_bool_compare_and_swap(&restart_requested, 1, 0);
+        reset_shutdown_state();  // Reset shutdown_in_progress flag
+        __sync_synchronize();
+        
+        // Update startup time for the new instance
+        set_server_start_time();
+        __sync_synchronize();
+        
+        // log_this("Restart", "In-process restart successful", LOG_LEVEL_STATE);
+        // log_this("Restart", "Restart count: %d", LOG_LEVEL_STATE, restart_count);
+        // log_this("Restart", "Restart completed successfully", LOG_LEVEL_STATE);
+        
+        return true;
+    } else {
+        log_this("Shutdown", "Shutdown complete", LOG_LEVEL_STATE);
+        fflush(stdout);
+        exit(0);  // Exit process after clean shutdown
     }
-    
+        
     return landing_success;
 }

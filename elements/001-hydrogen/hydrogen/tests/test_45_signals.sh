@@ -30,6 +30,9 @@ for func in print_info print_error print_header print_result start_test end_test
     fi
 done
 
+# Test configuration
+RESTART_COUNT=5  # Number of SIGHUP restarts to test
+
 # Configuration and path setup
 # Determine which hydrogen build to use (prefer release build if available)
 cd $(dirname $0)/..
@@ -40,6 +43,8 @@ else
     HYDROGEN_BIN="./hydrogen"
     print_info "Using standard build"
 fi
+
+print_info "Configured to test $RESTART_COUNT restarts"
 
 # Verify executable exists
 if [ ! -f "$HYDROGEN_BIN" ]; then
@@ -129,15 +134,17 @@ wait_for_restart() {
         # Look for key markers indicating successful restart:
         # 1. "Restart completed successfully" message (most reliable)
         if grep -q "Restart completed successfully" "$log_file"; then
-            # Check for expected restart count
-            if grep -q "Restart count: $expected_count" "$log_file"; then
+            # Check for restart count in either format
+            if grep -q "Application restarts: $expected_count" "$log_file" || \
+               grep -q "Restart count: $expected_count" "$log_file"; then
                 print_info "Verified restart completed successfully with count $expected_count (PID: $pid)"
                 return 0
             fi
         fi
         
         # 2. Check for restart sequence completion and startup with correct count
-        if grep -q "Restart count: $expected_count" "$log_file" && \
+        if (grep -q "Application restarts: $expected_count" "$log_file" || \
+            grep -q "Restart count: $expected_count" "$log_file") && \
            grep -q "Initiating graceful restart sequence" "$log_file" && \
            grep -q "Application started" "$log_file"; then
             print_info "Verified restart via restart sequence and startup messages with count $expected_count (PID: $pid)"
@@ -147,7 +154,8 @@ wait_for_restart() {
         # 3. Check for in-process restart flow with correct count
         if grep -q "SIGHUP received, initiating restart" "$log_file" && \
            grep -q "Initiating in-process restart" "$log_file" && \
-           grep -q "Restart count: $expected_count" "$log_file" && \
+           (grep -q "Application restarts: $expected_count" "$log_file" || \
+            grep -q "Restart count: $expected_count" "$log_file") && \
            grep -q "In-process restart successful" "$log_file" && \
            grep -q "Restart completed successfully" "$log_file"; then
             print_info "Verified restart via restart flow messages with count $expected_count (PID: $pid)"
@@ -162,13 +170,16 @@ wait_for_restart() {
             # Look for new hydrogen process
             for new_pid in $(pgrep -f "hydrogen.*$CONFIG_FILE"); do
                 if [ "$new_pid" != "$pid" ] && ps -p $new_pid > /dev/null; then
-                    # Wait for startup message in log
-                    for i in {1..10}; do
+                    # Wait for startup message in log with extended timeout
+                    for i in {1..20}; do
                         if grep -q "Application started" "$log_file" && \
-                           grep -q "Restart count: $expected_count" "$log_file"; then
+                           (grep -q "Application restarts: $expected_count" "$log_file" || \
+                            grep -q "Restart count: $expected_count" "$log_file"); then
                             # Update global PID for cleanup
                             HYDROGEN_PID=$new_pid
                             print_info "Found new process with PID: $new_pid and restart count $expected_count"
+                            # Give extra time for process to stabilize
+                            sleep 2
                             return 0
                         fi
                         sleep 0.5
@@ -248,8 +259,9 @@ print_info "Starting Hydrogen..." | tee -a "$RESULT_LOG"
 $HYDROGEN_BIN "$CONFIG_FILE" > "$LOG_FILE_SIGHUP" 2>&1 &
 HYDROGEN_PID=$!
 
-# Store original PID for reference
+# Store original PID and time for reference
 ORIGINAL_PID=$HYDROGEN_PID
+ORIGINAL_TIME=$(grep -o "System startup began: [0-9:T.-]*Z" "$LOG_FILE_SIGHUP" | cut -d' ' -f4)
 
 if ! wait_for_startup $STARTUP_TIMEOUT "$LOG_FILE_SIGHUP"; then
     print_result 1 "Failed to start Hydrogen" | tee -a "$RESULT_LOG"
@@ -257,67 +269,51 @@ if ! wait_for_startup $STARTUP_TIMEOUT "$LOG_FILE_SIGHUP"; then
     exit 1
 fi
 
-# Test first restart
-print_info "Sending first SIGHUP..." | tee -a "$RESULT_LOG"
-kill -SIGHUP $HYDROGEN_PID || true
+# Test multiple restarts up to RESTART_COUNT
+SIGHUP_TEST=1  # Default to failure
+CURRENT_COUNT=1
 
-# Wait for first restart signal to be logged
-sleep 1
-if ! grep -q "SIGHUP received" "$LOG_FILE_SIGHUP"; then
-    print_error "First SIGHUP signal not received" | tee -a "$RESULT_LOG"
-    kill -9 $HYDROGEN_PID 2>/dev/null
-    SIGHUP_TEST=1
-else
-    print_info "First SIGHUP signal received, waiting for restart..." | tee -a "$RESULT_LOG"
-    if wait_for_restart $HYDROGEN_PID $((SHUTDOWN_TIMEOUT * 2)) 1 "$LOG_FILE_SIGHUP"; then
-        print_info "First restart verified with count 1 (PID: $HYDROGEN_PID)" | tee -a "$RESULT_LOG"
-        
-        # Give system time to stabilize after restart
-        sleep 2
-        
-        # Test second restart
-        print_info "Sending second SIGHUP..." | tee -a "$RESULT_LOG"
-        kill -SIGHUP $HYDROGEN_PID || true
-        
-        # Wait for second restart to complete
-        if wait_for_restart $HYDROGEN_PID $((SHUTDOWN_TIMEOUT * 2)) 2 "$LOG_FILE_SIGHUP"; then
-            print_info "Second restart verified with count 2 (PID: $HYDROGEN_PID)" | tee -a "$RESULT_LOG"
-            
-            # Give system time to stabilize after restart
-            sleep 2
-            
-            # Test third restart
-            print_info "Sending third SIGHUP..." | tee -a "$RESULT_LOG"
-            kill -SIGHUP $HYDROGEN_PID || true
-            
-            # Wait for third restart to complete
-            if wait_for_restart $HYDROGEN_PID $((SHUTDOWN_TIMEOUT * 2)) 3 "$LOG_FILE_SIGHUP"; then
-                print_info "Third restart verified with count 3 (PID: $HYDROGEN_PID)" | tee -a "$RESULT_LOG"
-                print_result 0 "Multiple SIGHUP restarts successful (count verified up to 3)" | tee -a "$RESULT_LOG"
-                SIGHUP_TEST=0
-            else
-                print_result 1 "Third SIGHUP restart failed" | tee -a "$RESULT_LOG"
-                SIGHUP_TEST=1
-            fi
-        else
-            print_result 1 "Second SIGHUP restart failed" | tee -a "$RESULT_LOG"
-            SIGHUP_TEST=1
-        fi
+while [ $CURRENT_COUNT -le $RESTART_COUNT ]; do
+    print_info "Sending SIGHUP #$CURRENT_COUNT of $RESTART_COUNT..." | tee -a "$RESULT_LOG"
+    kill -SIGHUP $HYDROGEN_PID || true
+    
+    # Wait for restart signal to be logged
+    sleep 1
+    if ! grep -q "SIGHUP received" "$LOG_FILE_SIGHUP"; then
+        print_error "SIGHUP signal #$CURRENT_COUNT of $RESTART_COUNT not received" | tee -a "$RESULT_LOG"
+        kill -9 $HYDROGEN_PID 2>/dev/null
+        break
     else
-        print_result 1 "First SIGHUP restart failed" | tee -a "$RESULT_LOG"
-        SIGHUP_TEST=1
+        print_info "SIGHUP signal #$CURRENT_COUNT of $RESTART_COUNT received, waiting for restart..." | tee -a "$RESULT_LOG"
+        if wait_for_restart $HYDROGEN_PID $((SHUTDOWN_TIMEOUT * 2)) $CURRENT_COUNT "$LOG_FILE_SIGHUP"; then
+            print_info "Restart #$CURRENT_COUNT of $RESTART_COUNT verified with count $CURRENT_COUNT (PID: $HYDROGEN_PID)" | tee -a "$RESULT_LOG"
+            
+            # Check if this was the last restart
+            if [ $CURRENT_COUNT -eq $RESTART_COUNT ]; then
+                print_result 0 "Multiple SIGHUP restarts successful (verified $RESTART_COUNT restarts)" | tee -a "$RESULT_LOG"
+                SIGHUP_TEST=0
+                break
+            fi
+            
+            # Increment counter and continue to next restart
+            CURRENT_COUNT=$((CURRENT_COUNT + 1))
+            sleep 2
+        else
+            print_result 1 "SIGHUP restart #$CURRENT_COUNT of $RESTART_COUNT failed" | tee -a "$RESULT_LOG"
+            break
+        fi
     fi
-    
-    # Clean up the restarted process - use || true to ignore errors if process is gone
-    print_info "Cleaning up with SIGTERM to PID $HYDROGEN_PID" | tee -a "$RESULT_LOG"
-    kill -SIGTERM $HYDROGEN_PID 2>/dev/null || true
-    wait_for_shutdown $HYDROGEN_PID $SHUTDOWN_TIMEOUT "$LOG_FILE_SIGHUP" || true
-    
-    # If cleanup failed, try to ensure process is killed
-    if ps -p $HYDROGEN_PID > /dev/null 2>&1; then
-        print_info "Forcibly terminating process" | tee -a "$RESULT_LOG"
-        kill -9 $HYDROGEN_PID 2>/dev/null || true
-    fi
+done
+
+# Clean up the process
+print_info "Cleaning up with SIGTERM to PID $HYDROGEN_PID" | tee -a "$RESULT_LOG"
+kill -SIGTERM $HYDROGEN_PID 2>/dev/null || true
+wait_for_shutdown $HYDROGEN_PID $SHUTDOWN_TIMEOUT "$LOG_FILE_SIGHUP" || true
+
+# If cleanup failed, try to ensure process is killed
+if ps -p $HYDROGEN_PID > /dev/null 2>&1; then
+    print_info "Forcibly terminating process" | tee -a "$RESULT_LOG"
+    kill -9 $HYDROGEN_PID 2>/dev/null || true
 fi
 
 sleep 1

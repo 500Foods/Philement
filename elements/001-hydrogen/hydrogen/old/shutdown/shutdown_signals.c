@@ -1,3 +1,8 @@
+// Define POSIX version before any includes
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200809L
+#endif
+
 /*
  * Signal Handling for Hydrogen Shutdown
  * 
@@ -12,10 +17,14 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <signal.h>
+#include <sys/types.h>
+#include <sys/signal.h>
+#include <features.h>
 
 // Project headers
 #include "shutdown_internal.h"
 #include "../../logging/logging.h"
+#include "../../landing/landing.h"
 
 // Signal-related state flags
 volatile sig_atomic_t restart_requested = 0;
@@ -71,26 +80,22 @@ void signal_handler(int signum) {
     // Handle different signal types with proper signal masking
     switch (signum) {
         case SIGHUP:
-            // Log in format the test expects - use "Restart" subsystem for clarity
-            log_this("Restart", "SIGHUP received, initiating restart", LOG_LEVEL_STATE);
-            printf("\nSIGHUP received, initiating restart\n");
-            fflush(stdout);
-            
-            // Set restart flag and initiate graceful shutdown
-            restart_requested = 1;
-            server_running = 0;
-            server_stopping = 1;
+            // Use landing system's SIGHUP handler
+            handle_sighup();
             graceful_shutdown();  // This will handle restart after cleanup
             break;
 
-        case SIGTERM:
         case SIGINT:
-            log_this("Signal", "%s received, initiating shutdown", LOG_LEVEL_STATE,
-                    signum == SIGTERM ? "SIGTERM" : "SIGINT");
+            // Use landing system's SIGINT handler
+            handle_sigint();
+            graceful_shutdown();  // This will handle shutdown
+            break;
+
+        case SIGTERM:
+            log_this("Signal", "SIGTERM received, initiating shutdown", LOG_LEVEL_STATE);
             // Set server state flags to prevent reinitialization during shutdown
             server_running = 0;
             server_stopping = 1;
-            // Call graceful shutdown - this will handle all logging and cleanup
             graceful_shutdown();
             break;
 
