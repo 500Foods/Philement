@@ -78,59 +78,63 @@ bool handle_landing_plan(const ReadinessResults* results) {
     log_this("Landing", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
     log_this("Landing", "LANDING PLAN", LOG_LEVEL_STATE);
     
-    /*
-     * Phase 1: Status Assessment
-     * Log overall readiness status and verify we have subsystems to land
-     */
+    // Log overall readiness status
     log_landing_status(results);
     
-    // Check if any subsystems are ready
     if (!results->any_ready) {
         log_this("Landing", "No-Go: No subsystems ready for landing", LOG_LEVEL_ALERT);
+        log_this("Landing", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
         return false;
     }
     
-    /*
-     * Phase 2: Dependency Analysis
-     * Process all subsystems in reverse launch order
-     * Verify dependencies are satisfied for landing
-     */
-    bool all_dependencies_satisfied = true;
+    // Define subsystem order (matching landing_readiness.c)
+    const char* expected_order[] = {
+        "Print", "Mail Relay", "mDNS Client", "mDNS Server", "Terminal",
+        "WebSocket", "Swagger", "API", "WebServer", "Database", "Logging",
+        "Network", "Payload", "Threads", "Registry"
+    };
     
-    for (size_t i = 0; i < results->total_checked; i++) {
-        const char* subsystem = results->results[i].subsystem;
-        bool is_ready = results->results[i].ready;
+    // Process subsystems in defined order
+    for (size_t i = 0; i < sizeof(expected_order) / sizeof(expected_order[0]); i++) {
+        const char* subsystem = expected_order[i];
+        
+        // Find subsystem in results
+        bool found = false;
+        bool is_ready = false;
+        
+        for (size_t j = 0; j < results->total_checked; j++) {
+            if (strcmp(results->results[j].subsystem, subsystem) == 0) {
+                found = true;
+                is_ready = results->results[j].ready;
+                break;
+            }
+        }
+        
+        if (!found) {
+            log_this("Landing", "  No-Go: %s", LOG_LEVEL_STATE, subsystem);
+            continue;
+        }
         
         // Get subsystem ID for dependency checking
         int subsystem_id = get_subsystem_id_by_name(subsystem);
-        if (subsystem_id < 0) continue;
+        if (subsystem_id < 0) {
+            log_this("Landing", "  No-Go: %s", LOG_LEVEL_STATE, subsystem);
+            continue;
+        }
         
         // Check if this subsystem can be landed
         bool can_land = true;
+        check_dependent_states(subsystem, &can_land);
         
-        // Check if all dependents have landed or are inactive
-        if (!check_dependent_states(subsystem, &can_land)) {
-            all_dependencies_satisfied = false;
+        // Show Go/No-Go status
+        if (is_ready && can_land) {
+            log_this("Landing", "  Go:    %s", LOG_LEVEL_STATE, subsystem);
+        } else {
+            log_this("Landing", "  No-Go: %s", LOG_LEVEL_STATE, subsystem);
         }
-        
-        // Log subsystem status
-        log_this("Landing", "%s: %s", LOG_LEVEL_STATE, 
-                subsystem, (is_ready && can_land) ? "Go" : "No-Go");
-        
-        // Track overall readiness
-        all_dependencies_satisfied &= (can_land || !is_ready);
     }
     
-    /*
-     * Phase 3: Go/No-Go Decision
-     * Make final landing decision based on dependency analysis
-     */
-    if (!all_dependencies_satisfied) {
-        log_this("Landing", "LANDING PLAN: No-Go - Dependencies not satisfied", 
-                LOG_LEVEL_ALERT);
-        return false;
-    }
-    
+    // Make final landing decision
     log_this("Landing", "LANDING PLAN: Go for landing", LOG_LEVEL_STATE);
     return true;
 }
