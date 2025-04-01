@@ -509,7 +509,9 @@ The testing system follows a logical sequence:
 
 ### Creating New Tests
 
-The recommended approach to create new tests is to use the provided template:
+The recommended approach to create new tests is to use the provided test_template.sh. This template includes examples of common test patterns and best practices derived from existing tests.
+
+#### Getting Started
 
 1. Copy the template file to create a new test:
 
@@ -518,18 +520,151 @@ The recommended approach to create new tests is to use the provided template:
    chmod +x test_your_feature.sh
    ```
 
-2. Modify the new test script:
-   - Set an appropriate test name
-   - Choose or create a suitable configuration file
-   - Implement your specific test cases by replacing the placeholders
-   - Add appropriate validation and result checking
+2. Choose a descriptive name that follows the numbering convention:
+   - 10-19: Basic functionality (compilation, startup)
+   - 20-29: System state management
+   - 30-39: Dynamic behavior
+   - 40-49: Configuration and error handling
+   - 50-59: Crash and recovery handling
+   - 60-69: API functionality
+   - 70-79: UI and interface tests
+   - 90-99: Code quality and final checks
 
-The template standardizes:
+#### Template Features
 
-- Test environment setup and cleanup
-- Server startup and shutdown
-- Configuration file handling
-- Result reporting and formatting
+The template provides several pre-built test patterns:
+
+1. **Basic Startup/Shutdown Testing**
+
+   ```bash
+   # Example: Basic server lifecycle test
+   SERVER_PID=$(start_hydrogen_server "$HYDROGEN_BIN" "$CONFIG_FILE" "$LOG_FILE")
+   test_result=$?
+   stop_hydrogen_server $SERVER_PID 10
+   ```
+
+2. **API Endpoint Testing**
+
+   ```bash
+   # Example: Test both GET and POST endpoints
+   test_api_endpoint "/api/system/health" "alive" "GET"
+   test_api_endpoint "/api/system/test" "success" "POST" '{"test":"data"}'
+   ```
+
+3. **Signal Handling**
+
+   ```bash
+   # Example: Test SIGTERM handling
+   test_signal_handling SIGTERM 10
+   ```
+
+4. **Resource Monitoring**
+
+   ```bash
+   # Example: Monitor resource usage
+   test_resource_usage 10  # Monitor for 10 seconds
+   ```
+
+#### Configuration Selection
+
+The template supports different configuration modes:
+
+1. **Minimal Configuration** (hydrogen_test_min.json)
+   - Use for basic functionality tests
+   - Disables optional subsystems
+   - Fastest test execution
+
+2. **Maximal Configuration** (hydrogen_test_max.json)
+   - Use for comprehensive feature testing
+   - Enables all subsystems
+   - Tests full functionality
+
+3. **Custom Configuration**
+   - Create for specific test requirements
+   - Use unique port numbers (see Port Configuration section)
+   - Document any special requirements
+
+#### Best Practices
+
+1. **Test Organization**
+   - Use clear, descriptive test names
+   - Group related tests into functions
+   - Include setup and cleanup for each test case
+   - Document expected outcomes
+
+2. **Error Handling**
+   - Check server startup success
+   - Include timeouts for operations
+   - Validate all responses
+   - Clean up resources on failure
+
+3. **Resource Management**
+   - Use the --skip-cleanup option during development
+   - Monitor resource usage for memory leaks
+   - Verify clean shutdown
+   - Check for leftover processes
+
+4. **Documentation**
+   - Add detailed comments explaining test purpose
+   - Document any special requirements
+   - Include example usage
+   - Explain configuration requirements
+
+#### Example Usage
+
+```bash
+# Run with minimal configuration
+./test_your_feature.sh --config min
+
+# Run with maximal configuration
+./test_your_feature.sh --config max
+
+# Skip cleanup for debugging
+./test_your_feature.sh --skip-cleanup
+```
+
+#### Common Testing Scenarios
+
+1. **API Testing**
+
+   ```bash
+   # Test endpoint with authentication
+   test_api_endpoint "/api/protected" "success" "GET" "" "Bearer $TOKEN"
+   
+   # Test with query parameters
+   test_api_endpoint "/api/search?query=test" "results"
+   ```
+
+2. **Configuration Validation**
+
+   ```bash
+   # Verify configuration loading
+   check_config_value "server.name" "expected_value"
+   
+   # Test invalid configurations
+   test_invalid_config "malformed.json"
+   ```
+
+3. **Resource Monitoring**
+
+   ```bash
+   # Monitor during high load
+   generate_load &
+   test_resource_usage 30
+   cleanup_load
+   ```
+
+4. **Shutdown Testing**
+
+   ```bash
+   # Test clean shutdown
+   verify_clean_shutdown $SERVER_PID
+   
+   # Test forced shutdown
+   test_signal_handling SIGKILL 5
+   ```
+
+The template provides these patterns as starting points - customize them based on your specific testing needs while maintaining consistency with the existing test suite.
 
 ### Test Template Structure
 
