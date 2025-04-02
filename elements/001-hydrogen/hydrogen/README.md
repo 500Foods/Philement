@@ -285,7 +285,7 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Tue Apr  1 10:25:35 PDT 2025
+Generated on: Tue Apr  1 18:00:46 PDT 2025
 
 ### Summary
 
@@ -298,7 +298,7 @@ Generated on: Tue Apr  1 10:25:35 PDT 2025
 | Total Subtests | 88 |
 | Passed Subtests | 60 |
 | Failed Subtests | 28 |
-| Runtime | 5m 56s |
+| Runtime | 5m 59s |
 
 ### Individual Test Results
 
@@ -321,7 +321,7 @@ Generated on: Tue Apr  1 10:25:35 PDT 2025
 
 ## Repository Information
 
-Generated via cloc: Tue Apr  1 10:25:35 PDT 2025
+Generated via cloc: Tue Apr  1 18:00:46 PDT 2025
 
 | Language | Files | Blank Lines | Comment Lines | Code Lines |
 | -------- | ----- | ----------- | ------------- | ---------- |
@@ -332,5 +332,5 @@ Generated via cloc: Tue Apr  1 10:25:35 PDT 2025
 | C/C++ | Header | 143 | 1149 | 5145 |
 | Text | 15 | 5 | 0 | 1865 |
 | HTML | 1 | 74 | 0 | 493 |
-| make | 2 | 53 | 217 | 224 |
-| **Total** | **482** | **11441** | **13113** | **50851** |
+| make | 2 | 55 | 396 | 223 |
+| **Total** | **482** | **11443** | **13292** | **50850** |
