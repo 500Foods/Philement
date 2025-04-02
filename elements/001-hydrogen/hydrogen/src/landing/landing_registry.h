@@ -1,5 +1,5 @@
 /**
- * @file landing-registry.h
+ * @file landing_registry.h
  * @brief Registry landing (shutdown) readiness checks and cleanup
  *
  * @note AI-guidance: This is the last subsystem to shut down.

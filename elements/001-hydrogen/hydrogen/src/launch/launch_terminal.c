@@ -8,7 +8,7 @@
  * - WebServer subsystem must be initialized and ready
  * - WebSockets subsystem must be initialized and ready
  * 
- * Note: Shutdown functionality has been moved to landing/landing-terminal.c
+ * Note: Shutdown functionality has been moved to landing/landing_terminal.c
  */
 
 #include <stdbool.h>

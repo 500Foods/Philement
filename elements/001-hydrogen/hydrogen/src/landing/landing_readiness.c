@@ -20,8 +20,8 @@
  * - All readiness checks are equally important
  * 
  * Implementation:
- * All subsystem-specific readiness logic belongs in respective landing-*.c
- * files (e.g., landing-network.c, landing-webserver.c), maintaining proper
+ * All subsystem-specific readiness logic belongs in respective landing_*.c
+ * files (e.g., landing_network.c, landing_webserver.c), maintaining proper
  * separation of concerns.
  */
 
@@ -43,21 +43,21 @@
 #include "../state/state_types.h"
 
 // External declarations for subsystem readiness checks (in reverse launch order)
-extern LaunchReadiness check_print_landing_readiness(void);        // from landing-print.c
-extern LaunchReadiness check_mail_relay_landing_readiness(void);   // from landing-mail-relay.c
-extern LaunchReadiness check_mdns_client_landing_readiness(void);  // from landing-mdns-client.c
-extern LaunchReadiness check_mdns_server_landing_readiness(void);  // from landing-mdns-server.c
-extern LaunchReadiness check_terminal_landing_readiness(void);     // from landing-terminal.c
-extern LaunchReadiness check_websocket_landing_readiness(void);    // from landing-websocket.c
-extern LaunchReadiness check_swagger_landing_readiness(void);      // from landing-swagger.c
-extern LaunchReadiness check_api_landing_readiness(void);          // from landing-api.c
-extern LaunchReadiness check_webserver_landing_readiness(void);    // from landing-webserver.c
-extern LaunchReadiness check_database_landing_readiness(void);     // from landing-database.c
-extern LaunchReadiness check_logging_landing_readiness(void);      // from landing-logging.c
-extern LaunchReadiness check_network_landing_readiness(void);      // from landing-network.c
-extern LaunchReadiness check_payload_landing_readiness(void);      // from landing-payload.c
-extern LaunchReadiness check_threads_landing_readiness(void);      // from landing-threads.c
-extern LaunchReadiness check_registry_landing_readiness(void);     // from landing-registry.c
+extern LaunchReadiness check_print_landing_readiness(void);        // from landing_print.c
+extern LaunchReadiness check_mail_relay_landing_readiness(void);   // from landing_mail_relay.c
+extern LaunchReadiness check_mdns_client_landing_readiness(void);  // from landing_mdns_client.c
+extern LaunchReadiness check_mdns_server_landing_readiness(void);  // from landing_mdns_server.c
+extern LaunchReadiness check_terminal_landing_readiness(void);     // from landing_terminal.c
+extern LaunchReadiness check_websocket_landing_readiness(void);    // from landing_websocket.c
+extern LaunchReadiness check_swagger_landing_readiness(void);      // from landing_swagger.c
+extern LaunchReadiness check_api_landing_readiness(void);          // from landing_api.c
+extern LaunchReadiness check_webserver_landing_readiness(void);    // from landing_webserver.c
+extern LaunchReadiness check_database_landing_readiness(void);     // from landing_database.c
+extern LaunchReadiness check_logging_landing_readiness(void);      // from landing_logging.c
+extern LaunchReadiness check_network_landing_readiness(void);      // from landing_network.c
+extern LaunchReadiness check_payload_landing_readiness(void);      // from landing_payload.c
+extern LaunchReadiness check_threads_landing_readiness(void);      // from landing_threads.c
+extern LaunchReadiness check_registry_landing_readiness(void);     // from landing_registry.c
 
 // Forward declarations of static functions
 static void log_readiness_messages(const LaunchReadiness* readiness);
@@ -111,7 +111,7 @@ static void process_subsystem_readiness(ReadinessResults* results, size_t* index
 
 /*
  * Coordinate readiness checks for all subsystems.
- * Each subsystem's specific readiness logic lives in its own landing-*.c file.
+ * Each subsystem's specific readiness logic lives in its own landing_*.c file.
  * Subsystems are checked in reverse launch order.
  */
 ReadinessResults handle_landing_readiness(void) {

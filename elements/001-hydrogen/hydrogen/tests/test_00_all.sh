@@ -297,7 +297,7 @@ run_all_tests() {
 run_min_configuration_test() {
     # First run environment variable test
     print_header "Running Environment Variable Test" | tee -a "$SUMMARY_LOG"
-    run_test "$SCRIPT_DIR/test_05_env_payload.sh"
+    run_test "$SCRIPT_DIR/test_12_env_payload.sh"
     local env_exit_code=$?
     
     # Only proceed if environment variables are properly set
@@ -329,7 +329,7 @@ run_min_configuration_test() {
 run_max_configuration_test() {
     # First run environment variable test
     print_header "Running Environment Variable Test" | tee -a "$SUMMARY_LOG"
-    run_test "$SCRIPT_DIR/test_05_env_payload.sh"
+    run_test "$SCRIPT_DIR/test_12_env_payload.sh"
     local env_exit_code=$?
     
     # Only proceed if environment variables are properly set
@@ -373,7 +373,7 @@ run_specific_test() {
         # Run environment variable test first if it's not the test being requested
         if [ "$test_name" != "05_env_payload" ]; then
             print_header "Running Environment Variable Test" | tee -a "$SUMMARY_LOG"
-            run_test "$SCRIPT_DIR/test_05_env_payload.sh"
+            run_test "$SCRIPT_DIR/test_12_env_payload.sh"
             local env_exit_code=$?
             
             # Only proceed if environment variables are properly set

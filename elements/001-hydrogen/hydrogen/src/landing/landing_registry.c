@@ -1,5 +1,5 @@
 /**
- * @file landing-registry.c
+ * @file landing_registry.c
  * @brief Registry landing (shutdown) implementation
  * 
  * This is the final subsystem to shut down. It verifies that all other
@@ -11,7 +11,7 @@
 #include <string.h>
 #include <signal.h>
 
-#include "landing-registry.h"
+#include "landing_registry.h"
 #include "../logging/logging.h"
 #include "../config/config.h"
 #include "../registry/registry.h"
