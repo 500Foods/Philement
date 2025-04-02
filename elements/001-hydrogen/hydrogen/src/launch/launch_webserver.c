@@ -7,7 +7,7 @@
  * Dependencies:
  * - Network subsystem must be initialized and ready
  * 
- * Note: Shutdown functionality has been moved to landing/landing-webserver.c
+ * Note: Shutdown functionality has been moved to landing/landing_webserver.c
  */
 
 #include <stdio.h>

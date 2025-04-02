@@ -20,8 +20,8 @@
  * - The launch plan is about coordination, not control
  * 
  * Implementation:
- * All subsystem-specific logic belongs in the respective launch-*.c files
- * (e.g., launch-network.c, launch-webserver.c), maintaining proper
+ * All subsystem-specific logic belongs in the respective launch_*.c files
+ * (e.g., launch_network.c, launch_webserver.c), maintaining proper
  * separation of concerns.
  */
 

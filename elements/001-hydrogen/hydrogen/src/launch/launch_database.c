@@ -1,5 +1,5 @@
 /*
- * Logging Subsystem Launch Implementation
+ * Database Subsystem Launch Implementation
  */
 
 #include <stdbool.h>
@@ -8,7 +8,7 @@
 #include <string.h>
 #include <stdarg.h>
 
-#include "launch-logging.h"
+#include "launch_database.h"
 #include "../logging/logging.h"
 #include "../registry/registry.h"
 #include "../state/state.h"
@@ -20,7 +20,7 @@ extern volatile sig_atomic_t server_starting;
 extern volatile sig_atomic_t server_running;
 
 // Shutdown flag
-volatile sig_atomic_t logging_stopping = 0;
+volatile sig_atomic_t database_stopping = 0;
 
 // Helper functions for message formatting
 static void add_message(const char** messages, int* count, const char* message) {
@@ -59,8 +59,8 @@ static void add_decision_message(const char** messages, int* count, const char* 
     add_message(messages, count, strdup(buffer));
 }
 
-// Check logging subsystem launch readiness
-LaunchReadiness check_logging_launch_readiness(void) {
+// Check database subsystem launch readiness
+LaunchReadiness check_database_launch_readiness(void) {
     bool overall_readiness = false;
     
     // Allocate space for messages
@@ -71,14 +71,14 @@ LaunchReadiness check_logging_launch_readiness(void) {
     int msg_count = 0;
     
     // Add the subsystem name as the first message
-    add_message(messages, &msg_count, strdup("Logging"));
+    add_message(messages, &msg_count, strdup("Database"));
     
     // Early return cases with cleanup
     if (server_stopping) {
         add_go_message(messages, &msg_count, "No-Go", "System shutdown in progress");
         messages[msg_count] = NULL;
         return (LaunchReadiness){
-            .subsystem = "Logging",
+            .subsystem = "Database",
             .ready = false,
             .messages = messages
         };
@@ -88,7 +88,7 @@ LaunchReadiness check_logging_launch_readiness(void) {
         add_go_message(messages, &msg_count, "No-Go", "System not in startup or running state");
         messages[msg_count] = NULL;
         return (LaunchReadiness){
-            .subsystem = "Logging",
+            .subsystem = "Database",
             .ready = false,
             .messages = messages
         };
@@ -99,55 +99,55 @@ LaunchReadiness check_logging_launch_readiness(void) {
         add_go_message(messages, &msg_count, "No-Go", "Configuration not loaded");
         messages[msg_count] = NULL;
         return (LaunchReadiness){
-            .subsystem = "Logging",
+            .subsystem = "Database",
             .ready = false,
             .messages = messages
         };
     }
     
     // Basic readiness check - just verify we can get a subsystem ID
-    int subsystem_id = get_subsystem_id_by_name("Logging");
+    int subsystem_id = get_subsystem_id_by_name("Database");
     if (subsystem_id >= 0) {
-        add_go_message(messages, &msg_count, "Go", "Logging subsystem registered");
-        add_decision_message(messages, &msg_count, "Go For Launch of Logging Subsystem");
+        add_go_message(messages, &msg_count, "Go", "Database subsystem registered");
+        add_decision_message(messages, &msg_count, "Go For Launch of Database Subsystem");
         overall_readiness = true;
     } else {
-        add_go_message(messages, &msg_count, "No-Go", "Logging subsystem not registered");
-        add_decision_message(messages, &msg_count, "No-Go For Launch of Logging Subsystem");
+        add_go_message(messages, &msg_count, "No-Go", "Database subsystem not registered");
+        add_decision_message(messages, &msg_count, "No-Go For Launch of Database Subsystem");
         overall_readiness = false;
     }
     
     messages[msg_count] = NULL;
     return (LaunchReadiness){
-        .subsystem = "Logging",
+        .subsystem = "Database",
         .ready = overall_readiness,
         .messages = messages
     };
 }
 
-// Launch the logging subsystem
-int launch_logging_subsystem(void) {
+// Launch the database subsystem
+int launch_database_subsystem(void) {
     // Reset shutdown flag
-    logging_stopping = 0;
+    database_stopping = 0;
     
-    log_this("Logging", "Initializing logging subsystem", LOG_LEVEL_STATE);
+    log_this("Database", "Initializing database subsystem", LOG_LEVEL_STATE);
     
     // Get subsystem ID and update state
-    int subsystem_id = get_subsystem_id_by_name("Logging");
+    int subsystem_id = get_subsystem_id_by_name("Database");
     if (subsystem_id >= 0) {
         update_subsystem_state(subsystem_id, SUBSYSTEM_RUNNING);
-        log_this("Logging", "Logging subsystem initialized", LOG_LEVEL_STATE);
+        log_this("Database", "Database subsystem initialized", LOG_LEVEL_STATE);
         return 1;
     }
     
-    log_this("Logging", "Failed to initialize logging subsystem", LOG_LEVEL_ERROR);
+    log_this("Database", "Failed to initialize database subsystem", LOG_LEVEL_ERROR);
     return 0;
 }
 
-// Shutdown handler - defined in launch-logging.h, implemented here
-void shutdown_logging(void) {
-    if (!logging_stopping) {
-        logging_stopping = 1;
-        log_this("Logging", "Logging subsystem shutting down", LOG_LEVEL_STATE);
+// Shutdown handler - defined in launch_database.h, implemented here
+void shutdown_database(void) {
+    if (!database_stopping) {
+        database_stopping = 1;
+        log_this("Database", "Database subsystem shutting down", LOG_LEVEL_STATE);
     }
 }

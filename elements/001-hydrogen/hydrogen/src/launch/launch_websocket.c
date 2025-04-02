@@ -7,7 +7,7 @@
  * Dependencies:
  * - Network subsystem must be initialized and ready
  * 
- * Note: Shutdown functionality has been moved to landing/landing-websocket.c
+ * Note: Shutdown functionality has been moved to landing/landing_websocket.c
  */
 
 #include <stdio.h>
