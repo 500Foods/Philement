@@ -1,5 +1,5 @@
 /**
- * @file landing-payload.h
+ * @file landing_payload.h
  * @brief Payload subsystem landing (shutdown) readiness checks and cleanup
  *
  * @note AI-guidance: This subsystem must ensure proper cleanup of

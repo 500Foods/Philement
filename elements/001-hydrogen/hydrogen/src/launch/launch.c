@@ -74,36 +74,36 @@
 #include "../registry/registry_integration.h"
 
 // Launch subsystem includes (in standard order)
-#include "launch-payload.h"
-#include "launch-threads.h"
-#include "launch-network.h"
-#include "launch-database.h"
-#include "launch-logging.h"
-#include "launch-webserver.h"
-#include "launch-api.h"
-#include "launch-swagger.h"
-#include "launch-websocket.h"
-#include "launch-terminal.h"
-#include "launch-mdns-server.h"
-#include "launch-mdns-client.h"
-#include "launch-mail-relay.h"
-#include "launch-print.h"
+#include "launch_payload.h"
+#include "launch_threads.h"
+#include "launch_network.h"
+#include "launch_database.h"
+#include "launch_logging.h"
+#include "launch_webserver.h"
+#include "launch_api.h"
+#include "launch_swagger.h"
+#include "launch_websocket.h"
+#include "launch_terminal.h"
+#include "launch_mdns_server.h"
+#include "launch_mdns_client.h"
+#include "launch_mail_relay.h"
+#include "launch_print.h"
 
 // External declarations for subsystem launch functions (in standard order)
-extern int launch_payload_subsystem(void);      // from launch-payload.c
-extern int launch_threads_subsystem(void);      // from launch-threads.c
-extern int launch_network_subsystem(void);      // from launch-network.c
-extern int launch_database_subsystem(void);     // from launch-database.c
-extern int launch_logging_subsystem(void);      // from launch-logging.c
-extern int launch_webserver_subsystem(void);    // from launch-webserver.c
-extern int launch_api_subsystem(void);          // from launch-api.c
-extern int launch_swagger_subsystem(void);      // from launch-swagger.c
-extern int launch_websocket_subsystem(void);    // from launch-websocket.c
-extern int launch_terminal_subsystem(void);     // from launch-terminal.c
-extern int launch_mdns_server_subsystem(void);  // from launch-mdns-server.c
-extern int launch_mdns_client_subsystem(void);  // from launch-mdns-client.c
-extern int launch_mail_relay_subsystem(void);   // from launch-mail-relay.c
-extern int launch_print_subsystem(void);        // from launch-print.c
+extern int launch_payload_subsystem(void);      // from launch_payload.c
+extern int launch_threads_subsystem(void);      // from launch_threads.c
+extern int launch_network_subsystem(void);      // from launch_network.c
+extern int launch_database_subsystem(void);     // from launch_database.c
+extern int launch_logging_subsystem(void);      // from launch_logging.c
+extern int launch_webserver_subsystem(void);    // from launch_webserver.c
+extern int launch_api_subsystem(void);          // from launch_api.c
+extern int launch_swagger_subsystem(void);      // from launch_swagger.c
+extern int launch_websocket_subsystem(void);    // from launch_websocket.c
+extern int launch_terminal_subsystem(void);     // from launch_terminal.c
+extern int launch_mdns_server_subsystem(void);  // from launch_mdns_server.c
+extern int launch_mdns_client_subsystem(void);  // from launch_mdns_client.c
+extern int launch_mail_relay_subsystem(void);   // from launch_mail_relay.c
+extern int launch_print_subsystem(void);        // from launch_print.c
 
 // External declarations from config.h
 extern AppConfig* app_config;
@@ -154,7 +154,7 @@ static char* get_uppercase_name(const char* name) {
 
 /*
  * Launch approved subsystems in registry order
- * Each subsystem's specific launch code is in its own launch-*.c file
+ * Each subsystem's specific launch code is in its own launch_*.c file
  */
 static bool launch_approved_subsystems(ReadinessResults* results) {
     if (!results) return false;
@@ -185,7 +185,7 @@ static bool launch_approved_subsystems(ReadinessResults* results) {
         // Initialize subsystem using its specific launch function
         bool init_ok = false;
         
-        // Each subsystem has its own launch function in its respective launch-*.c file
+        // Each subsystem has its own launch function in its respective launch_*.c file
         if (strcmp(subsystem, "Payload") == 0) {
             init_ok = (launch_payload_subsystem() == 1);
         } else if (strcmp(subsystem, "Threads") == 0) {
@@ -255,7 +255,7 @@ bool check_all_launch_readiness(void) {
     
     /*
      * Phase 3: Launch approved subsystems in registry order
-     * Each subsystem's specific launch code is in its own launch-*.c file
+     * Each subsystem's specific launch code is in its own launch_*.c file
      */
     if (launch_success) {
         // log_this("Launch", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);

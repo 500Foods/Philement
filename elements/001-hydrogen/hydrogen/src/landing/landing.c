@@ -136,7 +136,7 @@ static LandingFunction get_landing_function(const char* subsystem_name) {
 
 /*
  * Land approved subsystems in reverse launch order
- * Each subsystem's specific landing code is in its own landing-*.c file
+ * Each subsystem's specific landing code is in its own landing_*.c file
  * Handles both shutdown and restart scenarios
  */
 static bool land_approved_subsystems(ReadinessResults* results) {
@@ -236,7 +236,7 @@ bool check_all_landing_readiness(void) {
     
     /*
      * Phase 3: Land approved subsystems in reverse launch order
-     * Each subsystem's specific landing code is in its own landing-*.c file
+     * Each subsystem's specific landing code is in its own landing_*.c file
      * This orchestrator only coordinates the process
      */
     if (landing_success) {

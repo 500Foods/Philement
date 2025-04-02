@@ -7,7 +7,7 @@
  * The checks here mirror the extraction logic in src/payload/payload.c
  * to ensure the payload can be successfully extracted later.
  * 
- * Note: Shutdown functionality has been moved to landing/landing-payload.c
+ * Note: Shutdown functionality has been moved to landing/landing_payload.c
  */
 
 #include <stdio.h>
@@ -21,7 +21,7 @@
 #include <signal.h>
 
 #include "launch.h"
-#include "launch-payload.h"
+#include "launch_payload.h"
 #include "../logging/logging.h"
 #include "../config/config.h"
 #include "../config/files/config_filesystem.h"

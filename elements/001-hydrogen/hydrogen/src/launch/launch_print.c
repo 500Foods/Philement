@@ -1,13 +1,15 @@
 /*
- * Launch mDNS Server Subsystem
+ * Launch Print Subsystem
  * 
- * This module handles the initialization of the mDNS server subsystem.
- * It provides functions for checking readiness and launching the mDNS server.
+ * This module handles the initialization of the print subsystem.
+ * It provides functions for checking readiness and launching the print queue.
  * 
- * Dependencies:
- * - Network subsystem must be initialized and ready
+ * The print subsystem manages:
+ * - Print job queuing
+ * - Print thread management
+ * - Print resource allocation
  * 
- * Note: Shutdown functionality has been moved to landing/landing-mdns-server.c
+ * Note: Shutdown functionality has been moved to landing/landing_print.c
  */
 
 #include <stdbool.h>
@@ -23,12 +25,13 @@
 #include "../registry/registry_integration.h"
 
 // External declarations
-extern ServiceThreads mdns_server_threads;
-extern volatile sig_atomic_t mdns_server_system_shutdown;
+extern ServiceThreads print_threads;
+extern pthread_t print_queue_thread;
+extern volatile sig_atomic_t print_system_shutdown;
 extern AppConfig* app_config;
 
-// Check if the mDNS server subsystem is ready to launch
-LaunchReadiness check_mdns_server_launch_readiness(void) {
+// Check if the print subsystem is ready to launch
+LaunchReadiness check_print_launch_readiness(void) {
     LaunchReadiness readiness = {0};
     
     // Allocate space for messages (including NULL terminator)
@@ -40,12 +43,12 @@ LaunchReadiness check_mdns_server_launch_readiness(void) {
     int msg_count = 0;
     
     // Add the subsystem name as the first message
-    readiness.messages[msg_count++] = strdup("mDNS Server");
+    readiness.messages[msg_count++] = strdup("Print");
     
-    // Register dependency on Network subsystem
-    int mdns_id = get_subsystem_id_by_name("mDNS Server");
-    if (mdns_id >= 0) {
-        if (!add_dependency_from_launch(mdns_id, "Network")) {
+    // Register dependency on Network subsystem for remote printing
+    int print_id = get_subsystem_id_by_name("Print");
+    if (print_id >= 0) {
+        if (!add_dependency_from_launch(print_id, "Network")) {
             readiness.messages[msg_count++] = strdup("  No-Go:   Failed to register Network dependency");
             readiness.messages[msg_count] = NULL;
             readiness.ready = false;
@@ -64,29 +67,29 @@ LaunchReadiness check_mdns_server_launch_readiness(void) {
     }
     
     // Check configuration
-    if (!app_config || !app_config->mdns_server.enabled) {
-        readiness.messages[msg_count++] = strdup("  No-Go:   mDNS server disabled in configuration");
+    if (!app_config || !app_config->print_queue.enabled) {
+        readiness.messages[msg_count++] = strdup("  No-Go:   Print queue disabled in configuration");
         readiness.messages[msg_count] = NULL;
         readiness.ready = false;
         return readiness;
     }
-    readiness.messages[msg_count++] = strdup("  Go:      mDNS server enabled in configuration");
+    readiness.messages[msg_count++] = strdup("  Go:      Print queue enabled in configuration");
     
     // All checks passed
-    readiness.messages[msg_count++] = strdup("  Decide:  Go For Launch of mDNS Server Subsystem");
+    readiness.messages[msg_count++] = strdup("  Decide:  Go For Launch of Print Subsystem");
     readiness.messages[msg_count] = NULL;
     readiness.ready = true;
     
     return readiness;
 }
 
-// Launch the mDNS server subsystem
-int launch_mdns_server_subsystem(void) {
+// Launch the print subsystem
+int launch_print_subsystem(void) {
     // Reset shutdown flag
-    mdns_server_system_shutdown = 0;
+    print_system_shutdown = 0;
     
-    // Initialize mDNS server thread structure
-    init_service_threads(&mdns_server_threads);
+    // Initialize print queue thread structure
+    init_service_threads(&print_threads);
     
     // Additional initialization as needed
     return 1;

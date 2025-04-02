@@ -1,13 +1,13 @@
 /*
- * Launch Mail Relay Subsystem
+ * Launch Swagger Subsystem
  * 
- * This module handles the initialization of the mail relay subsystem.
- * It provides functions for checking readiness and launching the mail relay.
+ * This module handles the initialization of the Swagger subsystem.
+ * It provides functions for checking readiness and launching Swagger.
  * 
  * Dependencies:
- * - Network subsystem must be initialized and ready
+ * - WebServer subsystem must be initialized and ready
  * 
- * Note: Shutdown functionality has been moved to landing/landing-mail-relay.c
+ * Note: Shutdown functionality has been moved to landing/landing_swagger.c
  */
 
 #include <stdbool.h>
@@ -19,10 +19,10 @@
 #include "../utils/utils_logging.h"
 
 // External declarations
-extern volatile sig_atomic_t mail_relay_system_shutdown;
+extern volatile sig_atomic_t swagger_system_shutdown;
 
-// Check if the mail relay subsystem is ready to launch
-LaunchReadiness check_mail_relay_launch_readiness(void) {
+// Check if the swagger subsystem is ready to launch
+LaunchReadiness check_swagger_launch_readiness(void) {
     LaunchReadiness readiness = {0};
     
     // For now, mark as not ready as it's under development
@@ -36,21 +36,21 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
     }
     
     // Add messages in the standard format
-    readiness.messages[0] = strdup("Mail Relay");
-    readiness.messages[1] = strdup("  No-Go:   Mail Relay System Not Ready");
+    readiness.messages[0] = strdup("Swagger");
+    readiness.messages[1] = strdup("  No-Go:   Swagger System Not Ready");
     readiness.messages[2] = strdup("  Reason:  Under Development");
-    readiness.messages[3] = strdup("  Decide:  No-Go For Launch of Mail Relay");
+    readiness.messages[3] = strdup("  Decide:  No-Go For Launch of Swagger");
     readiness.messages[4] = NULL;
     
     return readiness;
 }
 
-// Launch the mail relay subsystem
-int launch_mail_relay_subsystem(void) {
+// Launch the swagger subsystem
+int launch_swagger_subsystem(void) {
     // Reset shutdown flag
-    mail_relay_system_shutdown = 0;
+    swagger_system_shutdown = 0;
     
-    // Launch mail relay system
+    // Launch swagger system
     // Currently a placeholder as system is under development
     return 0;  // Return 0 for now as system is under development
 }

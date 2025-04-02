@@ -18,7 +18,7 @@
 #include "../logging/logging.h"
 #include "../registry/registry_integration.h"
 #include "launch.h"
-#include "launch-network.h"
+#include "launch_network.h"
 
 // External system state flags
 extern volatile sig_atomic_t server_stopping;

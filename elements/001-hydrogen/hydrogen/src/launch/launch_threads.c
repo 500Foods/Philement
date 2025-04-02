@@ -15,7 +15,7 @@
 #include <string.h>
 
 #include "launch.h"
-#include "launch-threads.h"
+#include "launch_threads.h"
 #include "../threads/threads.h"
 #include "../logging/logging.h"
 #include "../utils/utils_logging.h"

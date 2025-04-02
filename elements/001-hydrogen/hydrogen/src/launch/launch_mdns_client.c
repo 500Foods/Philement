@@ -14,7 +14,7 @@
  * - Network subsystem must be initialized and ready
  * - Logging system must be operational
  * 
- * Note: Shutdown functionality has been moved to landing/landing-mdns-client.c
+ * Note: Shutdown functionality has been moved to landing/landing_mdns_client.c
  */
 
 #include <stdbool.h>

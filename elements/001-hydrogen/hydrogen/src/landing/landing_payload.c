@@ -1,5 +1,5 @@
 /**
- * @file landing-payload.c
+ * @file landing_payload.c
  * @brief Payload subsystem landing (shutdown) implementation
  */
 
@@ -9,7 +9,7 @@
 #include <unistd.h>
 #include <signal.h>
 
-#include "landing-payload.h"
+#include "landing_payload.h"
 #include "../logging/logging.h"
 #include "../config/config.h"
 #include "../registry/registry.h"

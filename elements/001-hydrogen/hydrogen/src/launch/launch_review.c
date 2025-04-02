@@ -20,7 +20,7 @@
  * - The review process is about reporting, not judgment
  * 
  * Implementation:
- * - All subsystem-specific logic belongs in respective launch-*.c files
+ * - All subsystem-specific logic belongs in respective launch_*.c files
  * - State tracking lives in individual subsystem files
  * - Registry interface used for encapsulation
  * - Direct registry access minimized

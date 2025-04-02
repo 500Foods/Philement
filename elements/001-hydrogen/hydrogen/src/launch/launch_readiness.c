@@ -20,8 +20,8 @@
  * - All readiness checks are equally important
  * 
  * Implementation:
- * All subsystem-specific readiness logic belongs in respective launch-*.c
- * files (e.g., launch-network.c, launch-webserver.c), maintaining proper
+ * All subsystem-specific readiness logic belongs in respective launch_*.c
+ * files (e.g., launch_network.c, launch_webserver.c), maintaining proper
  * separation of concerns.
  *
  * Note: While the registry is checked first for technical reasons,
@@ -37,7 +37,7 @@
 
 // Local includes
 #include "launch.h"
-#include "launch-network.h"
+#include "launch_network.h"
 
 // Project includes
 #include "../logging/logging.h"
@@ -47,20 +47,20 @@
 
 // External declarations for subsystem readiness checks (in standard order)
 extern LaunchReadiness check_registry_readiness(void);  // from registry.c
-extern LaunchReadiness check_payload_launch_readiness(void);      // from launch-payload.c
-extern LaunchReadiness check_threads_launch_readiness(void);      // from launch-threads.c
-extern LaunchReadiness check_network_launch_readiness(void);      // from launch-network.c
-extern LaunchReadiness check_database_launch_readiness(void);     // from launch-database.c
-extern LaunchReadiness check_logging_launch_readiness(void);      // from launch-logging.c
-extern LaunchReadiness check_webserver_launch_readiness(void);    // from launch-webserver.c
-extern LaunchReadiness check_api_launch_readiness(void);          // from launch-api.c
-extern LaunchReadiness check_swagger_launch_readiness(void);      // from launch-swagger.c
-extern LaunchReadiness check_websocket_launch_readiness(void);    // from launch-websocket.c
-extern LaunchReadiness check_terminal_launch_readiness(void);     // from launch-terminal.c
-extern LaunchReadiness check_mdns_server_launch_readiness(void);  // from launch-mdns-server.c
-extern LaunchReadiness check_mdns_client_launch_readiness(void);  // from launch-mdns-client.c
-extern LaunchReadiness check_mail_relay_launch_readiness(void);   // from launch-mail-relay.c
-extern LaunchReadiness check_print_launch_readiness(void);        // from launch-print.c
+extern LaunchReadiness check_payload_launch_readiness(void);      // from launch_payload.c
+extern LaunchReadiness check_threads_launch_readiness(void);      // from launch_threads.c
+extern LaunchReadiness check_network_launch_readiness(void);      // from launch_network.c
+extern LaunchReadiness check_database_launch_readiness(void);     // from launch_database.c
+extern LaunchReadiness check_logging_launch_readiness(void);      // from launch_logging.c
+extern LaunchReadiness check_webserver_launch_readiness(void);    // from launch_webserver.c
+extern LaunchReadiness check_api_launch_readiness(void);          // from launch_api.c
+extern LaunchReadiness check_swagger_launch_readiness(void);      // from launch_swagger.c
+extern LaunchReadiness check_websocket_launch_readiness(void);    // from launch_websocket.c
+extern LaunchReadiness check_terminal_launch_readiness(void);     // from launch_terminal.c
+extern LaunchReadiness check_mdns_server_launch_readiness(void);  // from launch_mdns_server.c
+extern LaunchReadiness check_mdns_client_launch_readiness(void);  // from launch_mdns_client.c
+extern LaunchReadiness check_mail_relay_launch_readiness(void);   // from launch_mail_relay.c
+extern LaunchReadiness check_print_launch_readiness(void);        // from launch_print.c
 
 // Forward declarations of static functions
 static void log_readiness_messages(const LaunchReadiness* readiness);
@@ -113,7 +113,7 @@ static void process_subsystem_readiness(ReadinessResults* results, size_t* index
 
 /*
  * Coordinate readiness checks for all subsystems.
- * Each subsystem's specific readiness logic lives in its own launch-*.c file.
+ * Each subsystem's specific readiness logic lives in its own launch_*.c file.
  */
 ReadinessResults handle_readiness_checks(void) {
     ReadinessResults results = {0};
