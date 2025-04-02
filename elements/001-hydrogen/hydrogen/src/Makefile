@@ -87,8 +87,14 @@
 #    - Binary compression for minimal footprint
 #
 # ──────────────────────────────────────────────────────────────────────────────
-# External Dependencies
+# External Dependencies and Version Requirements
 # ──────────────────────────────────────────────────────────────────────────────
+# Required library versions and compatibility:
+# - jansson >= 2.13: JSON parsing with security fixes
+# - microhttpd >= 0.9.73: TLS 1.3 support
+# - libwebsockets >= 4.2: WebSocket protocol v13
+# - OpenSSL >= 1.1.1: TLS 1.3 compatibility
+# - brotli >= 1.0.9: Improved compression ratios
 # 1. Core System Libraries
 #    - pthread (-lpthread)
 #      • POSIX thread support for concurrent operations
@@ -148,8 +154,19 @@ WARN := ⚠️
 INFO := 🛈
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Version information
+# Version information and build numbering
 # ──────────────────────────────────────────────────────────────────────────────
+# Version components:
+# - MAJOR: Major version for breaking changes
+# - MINOR: Minor version for new features
+# - PATCH: Patch version for bug fixes
+# - BUILD: Automatically incremented based on git history
+#   • Counts total commits in current directory
+#   • Adds 1000 as base offset for production builds
+#   • Format: MAJOR.MINOR.PATCH.BUILD
+#
+# Release timestamp uses UTC for consistent cross-timezone builds
+# Build type is used in version string and affects compilation flags
 MAJOR = 1
 MINOR = 0
 PATCH = 0
@@ -161,8 +178,18 @@ RELEASE = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 BUILD_TYPE = Regular
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Compiler selection and optimization flags
+# Compiler selection and feature configuration
 # ──────────────────────────────────────────────────────────────────────────────
+# Compiler flags explanation:
+# - std=c17: Use modern C standard for advanced features
+# - Wall/Wextra/pedantic: Enable comprehensive warnings
+# - Werror: Treat all warnings as errors
+# - O2: Default optimization level (balance of speed/debugging)
+# - g: Include debug symbols in all builds
+#
+# Feature test macros:
+# - _GNU_SOURCE: Enable GNU extensions (required for some APIs)
+# - _POSIX_C_SOURCE=200809L: Enable POSIX.1-2008 features
 CC = gcc
 CFLAGS = -std=c17 -Wall -Wextra -pedantic -Werror -O2 -g -DVERSION=\"$(VERSION)\" -DRELEASE=\"$(RELEASE)\" -DBUILD_TYPE=\"$(BUILD_TYPE)\"
 CFLAGS += -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L
@@ -173,8 +200,25 @@ CFLAGS += -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L
 LDFLAGS = -ljansson -lpthread -lmicrohttpd -lm -lssl -lcrypto -lwebsockets -lbrotlienc -lbrotlidec
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Directory structure and file paths
+# Directory structure and path handling
 # ──────────────────────────────────────────────────────────────────────────────
+# The build system supports being called from either:
+# 1. Project root directory (hydrogen/)
+# 2. Source directory (hydrogen/src/)
+#
+# Path detection and adjustment:
+# - ROOT_CALL: Detects if make was called from project root
+# - PREFIX: Adjusts paths for build directories
+# - SRC_DIR: Points to the source files
+# - BIN_PREFIX: Ensures executables and resources are placed correctly
+#
+# This allows the build system to work correctly regardless of which
+# directory it was invoked from, maintaining consistent paths for:
+# - Source files
+# - Build artifacts
+# - Test scripts
+# - Resource files
+#
 # Detect if we're being called from the project root or src directory
 ROOT_CALL := $(if $(wildcard src/Makefile),yes,no)
 PREFIX := $(if $(filter yes,$(ROOT_CALL)),src/,)
@@ -191,9 +235,21 @@ RELEASE_DIR = $(PREFIX)build_release
 BIN_PREFIX := $(if $(filter yes,$(ROOT_CALL)),,../)
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Source and object files for different build configurations
+# Source discovery and object file mapping
 # ──────────────────────────────────────────────────────────────────────────────
-SRCS = $(shell find $(SRC_DIR) -type f -name '*.c' -not -path '*/state/startup/*')
+# Source file discovery:
+# - Uses find to locate all .c files recursively
+# - Handles nested directory structures
+# - Maintains relative paths for organization
+#
+# Object file generation:
+# - Preserves directory structure in build directories
+# - Uses pattern substitution for consistent naming
+# - Creates separate objects for each build variant
+#
+# Example transformation:
+# src/api/system/info.c -> build/api/system/info.o
+SRCS = $(shell find $(SRC_DIR) -type f -name '*.c')
 OBJS = $(patsubst $(SRC_DIR)/%,$(BUILD_DIR)/%,$(SRCS:.c=.o))
 DEBUG_OBJS = $(patsubst $(SRC_DIR)/%,$(DEBUG_DIR)/%,$(SRCS:.c=.o))
 VALGRIND_OBJS = $(patsubst $(SRC_DIR)/%,$(VALGRIND_DIR)/%,$(SRCS:.c=.o))
@@ -201,8 +257,17 @@ PERF_OBJS = $(patsubst $(SRC_DIR)/%,$(PERF_DIR)/%,$(SRCS:.c=.o))
 RELEASE_OBJS = $(patsubst $(SRC_DIR)/%,$(RELEASE_DIR)/%,$(SRCS:.c=.o))
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Build targets
+# Build targets and executable naming
 # ──────────────────────────────────────────────────────────────────────────────
+# Target naming convention:
+# - Default: 'hydrogen'
+# - Debug: 'hydrogen_debug'
+# - Valgrind: 'hydrogen_valgrind'
+# - Performance: 'hydrogen_perf'
+# - Release: 'hydrogen_release'
+#
+# All executables are placed relative to the project root
+# using BIN_PREFIX to handle different invocation locations
 TARGET = $(BIN_PREFIX)hydrogen
 DEBUG_TARGET = $(BIN_PREFIX)hydrogen_debug
 VALGRIND_TARGET = $(BIN_PREFIX)hydrogen_valgrind
@@ -210,9 +275,18 @@ PERF_TARGET = $(BIN_PREFIX)hydrogen_perf
 RELEASE_TARGET = $(BIN_PREFIX)hydrogen_release
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Phony targets (don't create files with these names)
+# Phony targets and special build rules
 # ──────────────────────────────────────────────────────────────────────────────
-.PHONY: all clean debug valgrind perf release trial
+# Targets marked as phony for several reasons:
+# - They don't create files matching their names
+# - They should always execute when called
+# - They represent actions rather than files
+#
+# Examples:
+# - 'all': Builds everything but creates no 'all' file
+# - 'clean': Removes files but creates no 'clean' file
+# - 'trial': Runs tests but creates no 'trial' file
+.PHONY: all clean debug valgrind perf release trial clean-executables
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Default target: only build the standard variant
@@ -221,21 +295,49 @@ default: $(TARGET)
 	@printf "$(GREEN)$(PASS) $(BOLD)Hydrogen$(NORMAL) $(GREEN)built successfully$(NORMAL)\n"
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Trial build: clean build with focused error/warning output
+# Trial build: Focused error detection with filtered output
 # ──────────────────────────────────────────────────────────────────────────────
+# This target performs a clean build while filtering the output to show only
+# important messages. It uses a two-stage grep pipeline:
+#
+# Stage 1 (grep -v): Removes noise by filtering out:
+# - Compilation progress messages ("Compiling file.c")
+# - Make directory traversal messages
+# - Info messages and gcc command lines
+#
+# Stage 2 (grep -E): Shows only important messages:
+# - Compiler warnings (warning:)
+# - Compiler errors (error:)
+# - Linker errors (undefined reference, collect2, ld returned)
+# - Success message (built successfully)
+#
+# If the build succeeds with no warnings/errors, it automatically runs
+# the shutdown test to verify basic functionality.
 trial:
 	@printf "$(CYAN)$(INFO) Starting trial build (warnings and errors only)...$(NORMAL)\n"
 	@$(MAKE) clean > /dev/null 2>&1
 	@BUILD_OUTPUT=$$($(MAKE) default 2>&1); \
-	echo "$$BUILD_OUTPUT" | grep -E "warning:|undefined reference|error:|ld returned|built successfully" --color=always || true; \
+	echo "$$BUILD_OUTPUT" | grep -v -E "^[[:space:]]*Compiling|^make(\[[0-9]+\])?: (Entering|Leaving) directory|^[[:space:]]*$(INFO)|^[[:space:]]*gcc" | \
+	grep -E "error:|warning:|undefined reference|collect2|ld returned|built successfully" --color=always || true; \
 	if echo "$$BUILD_OUTPUT" | grep -q "built successfully" && ! echo "$$BUILD_OUTPUT" | grep -q -E "warning:|error:|undefined reference|ld returned"; then \
 		printf "\n$(CYAN)$(INFO) Build successful with no warnings/errors. Running shutdown test...$(NORMAL)\n"; \
 		$(BIN_PREFIX)tests/test_20_shutdown.sh; \
 	fi
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Build all variants at once
+# Build all variants and resources
 # ──────────────────────────────────────────────────────────────────────────────
+# The 'all' target builds every variant in a specific order:
+# 1. clean: Ensures fresh build environment
+# 2. default: Basic development build
+# 3. debug: For bug hunting with sanitizers
+# 4. valgrind: For memory analysis
+# 5. perf: For performance testing
+# 6. release: For production deployment
+# 7. payload: Generates and packages resources
+#
+# Each variant is built with its specific flags and configurations,
+# ensuring a complete test suite across all build types.
 all: clean default debug valgrind perf release payload
 	@printf "\n$(BLUE)────────────────────────────────────────────────────────────────$(NORMAL)\n"
 	@printf "$(GREEN)$(PASS) $(BOLD)All variants built successfully:$(NORMAL)\n"
@@ -247,8 +349,21 @@ all: clean default debug valgrind perf release payload
 	@printf "$(BLUE)────────────────────────────────────────────────────────────────$(NORMAL)\n"
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Payload generation (including Swagger documentation)
+# Payload generation and resource packaging
 # ──────────────────────────────────────────────────────────────────────────────
+# The payload target generates and packages essential resources:
+# 1. OpenAPI/Swagger Documentation
+#    - Generated from source code annotations
+#    - Used for API documentation and testing
+#    - Embedded in release builds for offline access
+#
+# 2. Resource Packaging
+#    - Compresses web UI and documentation
+#    - Encrypts sensitive configuration templates
+#    - Bundles all resources into a single archive
+#
+# The packaged payload is used by both development builds
+# (extracted on demand) and release builds (embedded in binary)
 payload:
 	@printf "$(BLUE)────────────────────────────────────────────────────────────────$(NORMAL)\n"
 	@printf "$(BLUE)$(BOLD) Generating Payload Contents$(NORMAL)\n"
@@ -261,22 +376,41 @@ payload:
 	@printf "$(BLUE)────────────────────────────────────────────────────────────────$(NORMAL)\n"
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Release build: highly optimized with size reduction for deployment
+# Release build: Production-ready binary with embedded resources
 # ──────────────────────────────────────────────────────────────────────────────
+# The release build process involves several steps:
+# 1. Compilation with optimizations:
+#    - Link-time optimization (-flto=auto)
+#    - Stack protection (-fstack-protector)
+#    - x86-64 compatibility (-march=x86-64)
+#    - Strict aliasing disabled (-fno-strict-aliasing)
+#
+# 2. Binary preparation:
+#    - Strips debug symbols (-s)
+#    - Applies UPX compression for size reduction
+#    - Creates an unencrypted copy (hydrogen_naked)
+#
+# 3. Payload integration:
+#    - Appends encrypted payload to the end of the executable
+#    - Adds a marker ("<<< HERE BE ME TREASURE >>>")
+#    - Includes payload size as a 16-byte hex trailer
+#
+# The final binary contains both the executable and its resources,
+# which are extracted at runtime if needed.
+
+clean-executables:
+	@printf "$(CYAN)$(INFO)  Cleaning previous release executables...$(NORMAL)\n"
+	@rm -f $(RELEASE_TARGET) $(BIN_PREFIX)hydrogen_naked
+
 release: BUILD_TYPE = Release
 release: CFLAGS += -s -DNDEBUG -march=x86-64 -flto=auto -fstack-protector -Werror -fno-strict-aliasing
 release: LDFLAGS += -flto=auto -fno-strict-aliasing
-release: $(RELEASE_TARGET) payload
-	@printf "$(CYAN)$(INFO)  Applying UPX compression to executable...$(NORMAL)\n"
+release: clean-executables $(RELEASE_TARGET) payload
+	@printf "$(CYAN)$(INFO)  Applying UPX compression to release executable...$(NORMAL)\n"
 	@if ! which upx > /dev/null; then \
 		printf "$(YELLOW)$(WARN) UPX not found, skipping compression$(NORMAL)\n"; \
 	else \
-		UPX_OUTPUT=$$(upx --best $(RELEASE_TARGET) 2>&1); \
-		if echo "$$UPX_OUTPUT" | grep -q "AlreadyPackedException"; then \
-			printf "$(YELLOW)$(WARN) File already packed with UPX, skipping compression$(NORMAL)\n"; \
-		else \
-			echo "$$UPX_OUTPUT"; \
-		fi; \
+		upx --best $(RELEASE_TARGET); \
 	fi
 	@printf "$(CYAN)$(INFO)  Creating UPX-compressed copy as hydrogen_naked...$(NORMAL)\n"
 	@cp $(RELEASE_TARGET) $(BIN_PREFIX)hydrogen_naked
@@ -317,8 +451,18 @@ perf: $(PERF_TARGET)
 	@printf "$(GREEN)$(PASS) $(BOLD)Performance-optimized build$(NORMAL) $(GREEN)completed successfully$(NORMAL)\n"
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Linking rules for each build configuration
+# Linking rules and build-specific configurations
 # ──────────────────────────────────────────────────────────────────────────────
+# Each build variant has specific linking requirements:
+# - Default: Standard linking with all dependencies
+# - Debug: Includes ASan runtime and debug symbols
+# - Valgrind: Pure debug symbols without sanitizers
+# - Performance: Link-time optimization for speed
+# - Release: Stripped symbols and embedded payload
+#
+# The linking phase combines all object files with their
+# respective libraries, applying build-specific flags and
+# producing the final executable for each variant.
 $(TARGET): $(OBJS)
 	@printf "$(CYAN)$(INFO)  Linking standard build...$(NORMAL)\n"
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
@@ -340,8 +484,20 @@ $(RELEASE_TARGET): $(RELEASE_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Compilation rules for object files
+# Compilation rules with conditional output
 # ──────────────────────────────────────────────────────────────────────────────
+# Each build variant has its own compilation rule that:
+# 1. Creates necessary directories automatically
+# 2. Handles output differently for trial vs normal builds
+# 3. Applies variant-specific compiler flags
+#
+# Output handling:
+# - Trial build: Suppresses "Compiling" messages for cleaner output
+# - Other builds: Shows progress for each compiled file
+# - Debug/Valgrind/Perf/Release: Adds build type to output
+#
+# Directory creation is handled automatically via order-only
+# prerequisites (the '|' in the rule declarations)
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
 	@mkdir -p $(dir $@)
 	@if [ "$(MAKECMDGOALS)" != "trial" ]; then \
@@ -370,8 +526,19 @@ $(RELEASE_DIR)/%.o: $(SRC_DIR)/%.c | $(RELEASE_DIR)
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Create build directories if they don't exist
+# Build directory structure and organization
 # ──────────────────────────────────────────────────────────────────────────────
+# Each build variant maintains its own directory structure:
+# - api/system: Core API implementation modules
+# - Additional subdirectories created as needed
+#
+# Directory creation is handled:
+# 1. During object file compilation (automatic)
+# 2. Via explicit directory targets (fallback)
+# 3. Through the global directory creation rule
+#
+# The api/system path is required for the core API modules
+# and is created by default for all build variants.
 $(BUILD_DIR):
 	@printf "$(CYAN)$(INFO)  Creating build directories...$(NORMAL)\n"
 	@mkdir -p $(BUILD_DIR)/api/system
@@ -398,8 +565,21 @@ $(RELEASE_DIR):
 $(shell mkdir -p $(sort $(dir $(OBJS)) $(dir $(DEBUG_OBJS)) $(dir $(VALGRIND_OBJS)) $(dir $(PERF_OBJS)) $(dir $(RELEASE_OBJS)) )) 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Clean all build artifacts
+# Clean build artifacts and crash dumps
 # ──────────────────────────────────────────────────────────────────────────────
+# Cleaning process:
+# 1. Removes all build directories and their contents
+#    - Includes all build variants (debug, release, etc.)
+#    - Removes generated object files and dependencies
+#
+# 2. Removes all executable variants
+#    - Main executables for each build type
+#    - Includes the unencrypted 'naked' release copy
+#
+# 3. Cleans up crash dumps
+#    - Removes core dumps from crash handler
+#    - Searches one directory up for broader cleanup
+#    - Matches pattern: *.core.* (PID-specific dumps)
 clean:
 	@printf "$(CYAN)$(INFO)  Cleaning all build artifacts...$(NORMAL)\n"
 	@rm -rf $(BUILD_DIR)/ $(DEBUG_DIR)/ $(VALGRIND_DIR)/ $(RELEASE_DIR)/ $(PERF_DIR)/
