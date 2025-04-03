@@ -29,12 +29,71 @@ extern volatile sig_atomic_t web_server_shutdown;
 // Network subsystem shutdown flag
 volatile int network_system_shutdown = 0;
 
+// Registry ID for the network subsystem
+static int network_subsystem_id = -1;
+
+// Register the network subsystem with the registry
+static void register_network(void) {
+    // Always register during readiness check if not already registered
+    if (network_subsystem_id < 0) {
+        network_subsystem_id = register_subsystem("Network", NULL, NULL, NULL,
+                                                (int (*)(void))launch_network_subsystem,
+                                                (void (*)(void))shutdown_network_subsystem);
+    }
+}
+
 // Network subsystem launch function
 int launch_network_subsystem(void) {
-    log_this("Network", "Initializing network subsystem", LOG_LEVEL_STATE);
-    // Network subsystem is already initialized by the get_network_info() function
-    // No additional initialization is needed
-    return 1;  // Return 1 for success as per standard
+    log_this("Network", LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this("Network", "LAUNCH: NETWORK", LOG_LEVEL_STATE);
+    
+    // Step 1: Verify system state
+    if (server_stopping) {
+        log_this("Network", "Cannot initialize network during shutdown", LOG_LEVEL_STATE);
+        return 0;
+    }
+    
+    if (!server_starting && !server_running) {
+        log_this("Network", "Cannot initialize network outside startup/running phase", LOG_LEVEL_STATE);
+        return 0;
+    }
+    
+    // Step 2: Initialize network subsystem
+    log_this("Network", "  Step 1: Initializing network subsystem", LOG_LEVEL_STATE);
+    
+    // Step 3: Enumerate network interfaces
+    log_this("Network", "  Step 2: Enumerating network interfaces", LOG_LEVEL_STATE);
+    network_info_t *info = get_network_info();
+    if (!info) {
+        log_this("Network", "Failed to get network info", LOG_LEVEL_ERROR);
+        return 0;
+    }
+    
+    // Step 4: Test network interfaces
+    log_this("Network", "  Step 3: Testing network interfaces", LOG_LEVEL_STATE);
+    bool ping_success = test_network_interfaces(info);
+    
+    free_network_info(info);
+    
+    if (!ping_success) {
+        log_this("Network", "No network interfaces responded to ping", LOG_LEVEL_ERROR);
+        log_this("Network", "LAUNCH: NETWORK - Failed to launch", LOG_LEVEL_STATE);
+        return 0;
+    }
+    
+    // Step 5: Update registry and verify state
+    log_this("Network", "  Step 4: Updating subsystem registry", LOG_LEVEL_STATE);
+    update_subsystem_on_startup("Network", true);
+    
+    SubsystemState final_state = get_subsystem_state(network_subsystem_id);
+    if (final_state == SUBSYSTEM_RUNNING) {
+        log_this("Network", "LAUNCH: NETWORK - Successfully launched and running", LOG_LEVEL_STATE);
+        return 1;
+    } else {
+        log_this("Network", "LAUNCH: NETWORK - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
+                subsystem_state_to_string(final_state));
+        return 0;
+    }
 }
 
 // Network subsystem shutdown function
@@ -82,37 +141,9 @@ static void add_decision_message(const char** messages, int* count, const char* 
     add_message(messages, count, strdup(buffer));
 }
 
-// Check if an interface is configured in the Available section
-static bool is_interface_configured(const AppConfig* app_config, const char* interface_name, bool* is_available) {
-    if (!app_config) {
-        *is_available = true;  // Default to available if no config
-        return false;          // Not explicitly configured
-    }
-    
-    // Check if the available_interfaces array is NULL
-    if (!app_config->network.available_interfaces || app_config->network.available_interfaces_count == 0) {
-        *is_available = true;  // Default to available if no available_interfaces
-        return false;          // Not explicitly configured
-    }
-    
-    // Check if the interface is in the available_interfaces array
-    for (size_t i = 0; i < app_config->network.available_interfaces_count; i++) {
-        if (app_config->network.available_interfaces[i].interface_name) {
-            if (strcmp(interface_name, app_config->network.available_interfaces[i].interface_name) == 0) {
-                // Interface is explicitly configured
-                *is_available = app_config->network.available_interfaces[i].available;
-                return true;  // Explicitly configured
-            }
-        }
-    }
-    
-    // If not in the configuration, it's not explicitly configured
-    *is_available = true;  // Default to available
-    return false;          // Not explicitly configured
-}
 
 
-// Check network subsystem launch readiness
+// Check if the network subsystem is ready to launch
 LaunchReadiness check_network_launch_readiness(void) {
     LaunchReadiness readiness = {0};
     
@@ -127,10 +158,12 @@ LaunchReadiness check_network_launch_readiness(void) {
     // Add the subsystem name as the first message
     add_message(readiness.messages, &msg_count, strdup("Network"));
     
+    // Register with registry if not already registered
+    register_network();
+    
     // Register dependency on Threads subsystem
-    int network_id = get_subsystem_id_by_name("Network");
-    if (network_id >= 0) {
-        if (!add_dependency_from_launch(network_id, "Threads")) {
+    if (network_subsystem_id >= 0) {
+        if (!add_dependency_from_launch(network_subsystem_id, "Threads")) {
             add_go_message(readiness.messages, &msg_count, "No-Go", "Failed to register Thread dependency");
             readiness.messages[msg_count] = NULL;
             readiness.ready = false;

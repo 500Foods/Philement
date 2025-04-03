@@ -710,7 +710,7 @@ static char* create_dynamic_initializer(const char *base_content __attribute__((
         "  });\n"
         "};", 
         server_url, config->swagger->prefix,
-        server_url, config->api_prefix,
+        server_url, config->api->prefix,
         config->swagger->ui_options.try_it_enabled ? "true" : "false",
         config->swagger->ui_options.display_operation_id ? "true" : "false",
         config->swagger->ui_options.default_models_expand_depth,

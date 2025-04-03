@@ -12,17 +12,17 @@
 #include <jansson.h>
 #include "../config_forward.h"  // For WebServerConfig forward declaration
 #include "../swagger/config_swagger.h"  // For SwaggerConfig
+#include "../api/config_api.h"  // For APIConfig
 
 // Web server configuration structure
 struct WebServerConfig {
-    int enabled;
+    int enable_ipv4;
     int enable_ipv6;
     int port;
     char* web_root;
     char* upload_path;
     char* upload_dir;
     size_t max_upload_size;
-    char* api_prefix;
     
     // Thread pool and connection settings
     int thread_pool_size;
@@ -30,19 +30,19 @@ struct WebServerConfig {
     int max_connections_per_ip;
     int connection_timeout;
 
-    // Reference to Swagger configuration
+    // Reference to subsystem configurations
     SwaggerConfig* swagger;
+    APIConfig* api;
 };
 
 // Default values for web server
-#define DEFAULT_WEB_ENABLED 1
-#define DEFAULT_WEB_ENABLE_IPV6 0
-#define DEFAULT_WEB_PORT 5000
-#define DEFAULT_WEB_ROOT "/var/www/hydrogen"
-#define DEFAULT_UPLOAD_PATH "/api/upload"
+#define DEFAULT_WEB_ENABLE_IPV4 1
+#define DEFAULT_WEB_ENABLE_IPV6 1
+#define DEFAULT_WEB_PORT 7500
+#define DEFAULT_WEB_ROOT "/var/www/html"
+#define DEFAULT_UPLOAD_PATH "/upload"
 #define DEFAULT_UPLOAD_DIR "/tmp/hydrogen_uploads"
 #define DEFAULT_MAX_UPLOAD_SIZE (2ULL * 1024 * 1024 * 1024)  // 2GB
-#define DEFAULT_API_PREFIX "/api"
 
 // Default thread and connection settings
 #define DEFAULT_THREAD_POOL_SIZE 4

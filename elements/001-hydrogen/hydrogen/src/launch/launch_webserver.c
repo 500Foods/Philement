@@ -26,6 +26,8 @@
 #include "../webserver/web_server.h"
 #include "../config/config.h"
 #include "../registry/registry_integration.h"
+#include "../state/state_types.h"
+#include "../config/swagger/config_swagger.h"  // For SwaggerConfig
 
 // Network constants
 #ifndef NI_MAXHOST
@@ -43,57 +45,164 @@ extern volatile sig_atomic_t web_server_shutdown;
 extern AppConfig* app_config;
 extern volatile sig_atomic_t server_starting;
 
+// Registry ID for the webserver subsystem
+int webserver_subsystem_id = -1;
+
+// Register the webserver subsystem with the registry
+static void register_webserver(void) {
+    // Always register during readiness check if not already registered
+    if (webserver_subsystem_id < 0) {
+        webserver_subsystem_id = register_subsystem("WebServer", NULL, NULL, NULL,
+                                                  (int (*)(void))launch_webserver_subsystem,
+                                                  (void (*)(void))shutdown_web_server);
+    }
+}
+
 // Check if the webserver subsystem is ready to launch
 LaunchReadiness check_webserver_launch_readiness(void) {
-    LaunchReadiness readiness = {0};
-    
-    // Allocate space for messages (including NULL terminator)
-    readiness.messages = malloc(10 * sizeof(char*));
-    if (!readiness.messages) {
-        readiness.ready = false;
-        return readiness;
+    const char** messages = malloc(15 * sizeof(char*));  // Space for messages + NULL
+    if (!messages) {
+        return (LaunchReadiness){ .subsystem = "WebServer", .ready = false, .messages = NULL };
     }
-    int msg_count = 0;
     
-    // Add the subsystem name as the first message
-    readiness.messages[msg_count++] = strdup("WebServer");
+    int msg_index = 0;
+    bool ready = true;
     
-    // Register dependency on Network subsystem
-    int webserver_id = get_subsystem_id_by_name("WebServer");
-    if (webserver_id >= 0) {
-        if (!add_dependency_from_launch(webserver_id, "Network")) {
-            readiness.messages[msg_count++] = strdup("  No-Go:   Failed to register Network dependency");
-            readiness.messages[msg_count] = NULL;
-            readiness.ready = false;
-            return readiness;
+    // First message is subsystem name
+    messages[msg_index++] = strdup("WebServer");
+    
+    // Register with registry if not already registered
+    register_webserver();
+    
+    // Register dependencies
+    if (webserver_subsystem_id >= 0) {
+        if (!add_dependency_from_launch(webserver_subsystem_id, "Threads")) {
+            messages[msg_index++] = strdup("  No-Go:   Failed to register Threads dependency");
+            messages[msg_index] = NULL;
+            ready = false;
+            return (LaunchReadiness){ .subsystem = "WebServer", .ready = false, .messages = messages };
         }
-        readiness.messages[msg_count++] = strdup("  Go:      Network dependency registered");
+        messages[msg_index++] = strdup("  Go:      Threads dependency registered");
+
+        if (!add_dependency_from_launch(webserver_subsystem_id, "Network")) {
+            messages[msg_index++] = strdup("  No-Go:   Failed to register Network dependency");
+            messages[msg_index] = NULL;
+            ready = false;
+            return (LaunchReadiness){ .subsystem = "WebServer", .ready = false, .messages = messages };
+        }
+        messages[msg_index++] = strdup("  Go:      Network dependency registered");
+    }
+    
+    // 1. Check Threads subsystem launch readiness
+    LaunchReadiness threads_readiness = check_threads_launch_readiness();
+    if (!threads_readiness.ready) {
+        messages[msg_index++] = strdup("  No-Go:   Threads subsystem not Go for Launch");
+        ready = false;
+    } else {
+        messages[msg_index++] = strdup("  Go:      Threads subsystem Go for Launch");
+    }
+    
+    // 2. Check Network subsystem launch readiness
+    LaunchReadiness network_readiness = check_network_launch_readiness();
+    if (!network_readiness.ready) {
+        messages[msg_index++] = strdup("  No-Go:   Network subsystem not Go for Launch");
+        ready = false;
+    } else {
+        messages[msg_index++] = strdup("  Go:      Network subsystem Go for Launch");
+    }
+    
+    // 3. Check protocol configuration
+    if (!app_config) {
+        messages[msg_index++] = strdup("  No-Go:   Configuration not loaded");
+        ready = false;
+    } else {
+        if (!app_config->web.enable_ipv4 && !app_config->web.enable_ipv6) {
+            messages[msg_index++] = strdup("  No-Go:   No network protocols enabled");
+            ready = false;
+        } else {
+            char* msg = malloc(256);
+            if (msg) {
+                snprintf(msg, 256, "  Go:      Protocols enabled: %s%s%s", 
+                    app_config->web.enable_ipv4 ? "IPv4" : "",
+                    (app_config->web.enable_ipv4 && app_config->web.enable_ipv6) ? " and " : "",
+                    app_config->web.enable_ipv6 ? "IPv6" : "");
+                messages[msg_index++] = msg;
+            }
+        }
         
-        // Verify Network subsystem is running
-        if (!is_subsystem_running_by_name("Network")) {
-            readiness.messages[msg_count++] = strdup("  No-Go:   Network subsystem not running");
-            readiness.messages[msg_count] = NULL;
-            readiness.ready = false;
-            return readiness;
+        // 4 & 5. Check interface availability
+        struct ifaddrs *ifaddr, *ifa;
+        bool ipv4_available = false;
+        bool ipv6_available = false;
+        
+        if (getifaddrs(&ifaddr) != -1) {
+            for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+                if (ifa->ifa_addr == NULL) continue;
+                
+                if (ifa->ifa_addr->sa_family == AF_INET) {
+                    ipv4_available = true;
+                } else if (ifa->ifa_addr->sa_family == AF_INET6) {
+                    ipv6_available = true;
+                }
+            }
+            freeifaddrs(ifaddr);
         }
-        readiness.messages[msg_count++] = strdup("  Go:      Network subsystem running");
+        
+        if (app_config->web.enable_ipv4 && !ipv4_available) {
+            messages[msg_index++] = strdup("  No-Go:   No IPv4 interfaces available");
+            ready = false;
+        } else if (app_config->web.enable_ipv4) {
+            messages[msg_index++] = strdup("  Go:      IPv4 interfaces available");
+        }
+        
+        if (app_config->web.enable_ipv6 && !ipv6_available) {
+            messages[msg_index++] = strdup("  No-Go:   No IPv6 interfaces available");
+            ready = false;
+        } else if (app_config->web.enable_ipv6) {
+            messages[msg_index++] = strdup("  Go:      IPv6 interfaces available");
+        }
+        
+        // 6. Check port number
+        int port = app_config->web.port;
+        if (port != 80 && port != 443 && port <= 1023) {
+            char* msg = malloc(256);
+            if (msg) {
+                snprintf(msg, 256, "  No-Go:   Invalid port number: %d", port);
+                messages[msg_index++] = msg;
+            }
+            ready = false;
+        } else {
+            char* msg = malloc(256);
+            if (msg) {
+                snprintf(msg, 256, "  Go:      Valid port number: %d", port);
+                messages[msg_index++] = msg;
+            }
+        }
+        
+        // 7. Check web root
+        if (!app_config->web.web_root || !strchr(app_config->web.web_root, '/')) {
+            messages[msg_index++] = strdup("  No-Go:   Invalid web root path");
+            ready = false;
+        } else {
+            char* msg = malloc(256);
+            if (msg) {
+                snprintf(msg, 256, "  Go:      Valid web root: %s", app_config->web.web_root);
+                messages[msg_index++] = msg;
+            }
+        }
     }
     
-    // Check configuration
-    if (!app_config || !app_config->web.enabled) {
-        readiness.messages[msg_count++] = strdup("  No-Go:   Web server disabled in configuration");
-        readiness.messages[msg_count] = NULL;
-        readiness.ready = false;
-        return readiness;
-    }
-    readiness.messages[msg_count++] = strdup("  Go:      Web server enabled in configuration");
+    // Final decision
+    messages[msg_index++] = strdup(ready ? 
+        "  Decide:  Go For Launch of WebServer Subsystem" :
+        "  Decide:  No-Go For Launch of WebServer Subsystem");
+    messages[msg_index] = NULL;
     
-    // All checks passed
-    readiness.messages[msg_count++] = strdup("  Decide:  Go For Launch of WebServer Subsystem");
-    readiness.messages[msg_count] = NULL;
-    readiness.ready = true;
-    
-    return readiness;
+    return (LaunchReadiness){
+        .subsystem = "WebServer",
+        .ready = ready,
+        .messages = messages
+    };
 }
 
 // Launch web server system
@@ -109,36 +218,82 @@ int launch_webserver_subsystem(void) {
     extern volatile sig_atomic_t server_stopping;
     extern volatile sig_atomic_t web_server_shutdown;
 
-    // Prevent initialization during any shutdown state
+    log_this("WebServer", LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this("WebServer", "LAUNCH: WEBSERVER", LOG_LEVEL_STATE);
+
+    // Step 1: Verify system state
+    log_this("WebServer", "  Step 1: Verifying system state", LOG_LEVEL_STATE);
+    
     if (server_stopping || web_server_shutdown) {
-        log_this("Initialization", "Cannot initialize web server during shutdown", LOG_LEVEL_STATE);
+        log_this("WebServer", "Cannot initialize web server during shutdown", LOG_LEVEL_STATE);
+        log_this("WebServer", "LAUNCH: WEBSERVER - Failed: System in shutdown", LOG_LEVEL_STATE);
         return 0;
     }
 
-    // Only proceed if we're in startup phase
     if (!server_starting) {
-        log_this("Initialization", "Cannot initialize web server outside startup phase", LOG_LEVEL_STATE);
+        log_this("WebServer", "Cannot initialize web server outside startup phase", LOG_LEVEL_STATE);
+        log_this("WebServer", "LAUNCH: WEBSERVER - Failed: Not in startup phase", LOG_LEVEL_STATE);
         return 0;
     }
 
-    // Double-check shutdown state before proceeding
-    if (server_stopping || web_server_shutdown) {
-        log_this("Initialization", "Shutdown initiated, aborting web server initialization", LOG_LEVEL_STATE);
+    if (!app_config) {
+        log_this("WebServer", "Configuration not loaded", LOG_LEVEL_STATE);
+        log_this("WebServer", "LAUNCH: WEBSERVER - Failed: No configuration", LOG_LEVEL_STATE);
         return 0;
     }
 
-    // Initialize web server if enabled
-    if (!app_config->web.enabled) {
-        log_this("Initialization", "Web server disabled in configuration", LOG_LEVEL_STATE);
+    if (!app_config->web.enable_ipv4 && !app_config->web.enable_ipv6) {
+        log_this("WebServer", "Web server disabled in configuration (no protocols enabled)", LOG_LEVEL_STATE);
+        log_this("WebServer", "LAUNCH: WEBSERVER - Disabled by configuration", LOG_LEVEL_STATE);
         return 1; // Not an error if disabled
     }
 
+    log_this("WebServer", "    System state verified", LOG_LEVEL_STATE);
+
+    // Step 2: Initialize web server
+    log_this("WebServer", "  Step 2: Initializing web server", LOG_LEVEL_STATE);
+    
+    // Ensure swagger config exists before initialization
+    if (!app_config->web.swagger) {
+        log_this("WebServer", "    Note: No Swagger configuration present", LOG_LEVEL_STATE);
+        app_config->web.swagger = calloc(1, sizeof(SwaggerConfig));
+        if (!app_config->web.swagger) {
+            log_this("WebServer", "Failed to allocate Swagger configuration", LOG_LEVEL_ERROR);
+            log_this("WebServer", "LAUNCH: WEBSERVER - Failed: Memory allocation error", LOG_LEVEL_STATE);
+            return 0;
+        }
+        app_config->web.swagger->enabled = false;
+    }
+    
     if (!init_web_server(&app_config->web)) {
-        log_this("Initialization", "Failed to initialize web server", LOG_LEVEL_ERROR);
+        log_this("WebServer", "Failed to initialize web server", LOG_LEVEL_ERROR);
+        log_this("WebServer", "LAUNCH: WEBSERVER - Failed to initialize", LOG_LEVEL_STATE);
         return 0;
     }
 
-    // Create and register the web server thread
+    // Step 3: Log configuration
+    log_this("WebServer", "  Step 3: Verifying configuration", LOG_LEVEL_STATE);
+    log_this("WebServer", "    IPv6 support: %s", LOG_LEVEL_STATE, 
+             app_config->web.enable_ipv6 ? "enabled" : "disabled");
+    log_this("WebServer", "    Port: %d", LOG_LEVEL_STATE, 
+             app_config->web.port);
+    log_this("WebServer", "    WebRoot: %s", LOG_LEVEL_STATE, 
+             app_config->web.web_root);
+    log_this("WebServer", "    Upload Path: %s", LOG_LEVEL_STATE, 
+             app_config->web.upload_path);
+    log_this("WebServer", "    Upload Dir: %s", LOG_LEVEL_STATE, 
+             app_config->web.upload_dir);
+    log_this("WebServer", "    Thread Pool Size: %d", LOG_LEVEL_STATE, 
+             app_config->web.thread_pool_size);
+    log_this("WebServer", "    Max Connections: %d", LOG_LEVEL_STATE, 
+             app_config->web.max_connections);
+    log_this("WebServer", "    Max Connections Per IP: %d", LOG_LEVEL_STATE, 
+             app_config->web.max_connections_per_ip);
+    log_this("WebServer", "    Connection Timeout: %d seconds", LOG_LEVEL_STATE, 
+             app_config->web.connection_timeout);
+
+    // Step 4: Create and register web server thread
+    log_this("WebServer", "  Step 4: Creating web server thread", LOG_LEVEL_STATE);
     pthread_attr_t thread_attr;
     pthread_attr_init(&thread_attr);
     pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_JOINABLE);
@@ -147,7 +302,7 @@ int launch_webserver_subsystem(void) {
     extern ServiceThreads web_threads;
     
     if (pthread_create(&web_thread, &thread_attr, run_web_server, NULL) != 0) {
-        log_this("Initialization", "Failed to start web server thread", LOG_LEVEL_ERROR);
+        log_this("WebServer", "Failed to start web server thread", LOG_LEVEL_ERROR);
         pthread_attr_destroy(&thread_attr);
         shutdown_web_server();
         return 0;
@@ -163,7 +318,7 @@ int launch_webserver_subsystem(void) {
     int tries = 0;
     bool server_ready = false;
 
-    log_this("Initialization", "Waiting for web server to initialize...", LOG_LEVEL_STATE);
+    log_this("WebServer", "  Step 5: Waiting for initialization", LOG_LEVEL_STATE);
     
     while (tries < max_tries) {
         nanosleep(&wait_time, NULL);
@@ -181,18 +336,18 @@ int launch_webserver_subsystem(void) {
                 const union MHD_DaemonInfo *thread_info = MHD_get_daemon_info(web_daemon, MHD_DAEMON_INFO_FLAGS);
                 bool using_threads = thread_info && (thread_info->flags & MHD_USE_THREAD_PER_CONNECTION);
                 
-                log_this("Initialization", "Web server status:", LOG_LEVEL_STATE);
-                log_this("Initialization", "-> Bound to port: %u", LOG_LEVEL_STATE, info->port);
-                log_this("Initialization", "-> Active connections: %u", LOG_LEVEL_STATE, num_connections);
-                log_this("Initialization", "-> Thread mode: %s", LOG_LEVEL_STATE, 
+                log_this("WebServer", "    Server status:", LOG_LEVEL_STATE);
+                log_this("WebServer", "    -> Bound to port: %u", LOG_LEVEL_STATE, info->port);
+                log_this("WebServer", "    -> Active connections: %u", LOG_LEVEL_STATE, num_connections);
+                log_this("WebServer", "    -> Thread mode: %s", LOG_LEVEL_STATE, 
                         using_threads ? "Thread per connection" : "Single thread");
-                log_this("Initialization", "-> IPv6: %s", LOG_LEVEL_STATE, 
+                log_this("WebServer", "    -> IPv6: %s", LOG_LEVEL_STATE, 
                         app_config->web.enable_ipv6 ? "enabled" : "disabled");
-                log_this("Initialization", "-> Max connections: %d", LOG_LEVEL_STATE, 
+                log_this("WebServer", "    -> Max connections: %d", LOG_LEVEL_STATE, 
                         app_config->web.max_connections);
                 
                 // Log network interfaces
-                log_this("Initialization", "Network interfaces:", LOG_LEVEL_STATE);
+                log_this("WebServer", "    Network interfaces:", LOG_LEVEL_STATE);
                 struct ifaddrs *ifaddr, *ifa;
                 if (getifaddrs(&ifaddr) != -1) {
                     for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
@@ -208,7 +363,7 @@ int launch_webserver_subsystem(void) {
                                              host, NI_MAXHOST,
                                              NULL, 0, NI_NUMERICHOST);
                             if (s == 0) {
-                                log_this("Initialization", "-> %s: %s (%s)", LOG_LEVEL_STATE,
+                                log_this("WebServer", "    -> %s: %s (%s)", LOG_LEVEL_STATE,
                                         ifa->ifa_name, host,
                                         (family == AF_INET) ? "IPv4" : "IPv6");
                             }
@@ -224,18 +379,28 @@ int launch_webserver_subsystem(void) {
         tries++;
         
         if (tries % 10 == 0) { // Log every second
-            log_this("Initialization", "Still waiting for web server... (%d seconds)", LOG_LEVEL_STATE, tries / 10);
+            log_this("WebServer", "Still waiting for web server... (%d seconds)", LOG_LEVEL_STATE, tries / 10);
         }
     }
 
     if (!server_ready) {
-        log_this("Initialization", "Web server failed to start within timeout", LOG_LEVEL_ERROR);
+        log_this("WebServer", "Web server failed to start within timeout", LOG_LEVEL_ERROR);
         shutdown_web_server();
         return 0;
     }
 
-    log_this("Initialization", "Web server thread created and registered", LOG_LEVEL_STATE);
-    log_this("Initialization", "Web server initialized successfully", LOG_LEVEL_STATE);
+    // Step 6: Update registry and verify state
+    log_this("WebServer", "  Step 6: Updating subsystem registry", LOG_LEVEL_STATE);
+    update_subsystem_on_startup("WebServer", true);
+    
+    SubsystemState final_state = get_subsystem_state(webserver_subsystem_id);
+    if (final_state == SUBSYSTEM_RUNNING) {
+        log_this("WebServer", "LAUNCH: WEBSERVER - Successfully launched and running", LOG_LEVEL_STATE);
+    } else {
+        log_this("WebServer", "LAUNCH: WEBSERVER - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
+                subsystem_state_to_string(final_state));
+        return 0;
+    }
     return 1;
 }
 
@@ -246,7 +411,7 @@ int is_web_server_running(void) {
     extern volatile sig_atomic_t web_server_shutdown;
     
     // Server is running if:
-    // 1. It's enabled in config
+    // 1. At least one protocol is enabled in config
     // 2. Not in shutdown state
-    return (app_config && app_config->web.enabled && !web_server_shutdown);
+    return (app_config && (app_config->web.enable_ipv4 || app_config->web.enable_ipv6) && !web_server_shutdown);
 }
