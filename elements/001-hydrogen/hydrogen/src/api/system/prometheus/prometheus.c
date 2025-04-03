@@ -28,6 +28,7 @@
 #include "../../../state/state.h"
 #include "../../../logging/logging.h"
 #include "../../../status/status.h"
+#include "../../../status/status_formatters.h"
 #include "../../../websocket/websocket_server_internal.h"
 #include "../../../api/api_utils.h"
 
@@ -52,7 +53,6 @@ enum MHD_Result handle_system_prometheus_request(struct MHD_Connection *connecti
 {
     log_this("SystemService/prometheus", "Handling prometheus endpoint request", LOG_LEVEL_STATE);
     
-    json_t *root = NULL;
     enum MHD_Result result = MHD_NO;
     WebSocketMetrics metrics = {0};
 
@@ -66,16 +66,35 @@ enum MHD_Result handle_system_prometheus_request(struct MHD_Connection *connecti
         pthread_mutex_unlock(&ws_context->mutex);
     }
 
-    // Get complete system status using the utility function
-    root = get_system_status_json(ws_context ? &metrics : NULL);
-    if (!root) {
-        log_this("SystemService/prometheus", "Failed to generate system status", LOG_LEVEL_ERROR);
+    // Get metrics in Prometheus format
+    char *prometheus_output = get_system_status_prometheus(ws_context ? &metrics : NULL);
+    if (!prometheus_output) {
+        log_this("SystemService/prometheus", "Failed to get metrics in Prometheus format", LOG_LEVEL_ERROR);
         return MHD_NO;
     }
 
     // Send response
-    result = api_send_json_response(connection, root, MHD_HTTP_OK);
+    struct MHD_Response *response = MHD_create_response_from_buffer(
+        strlen(prometheus_output),
+        prometheus_output,
+        MHD_RESPMEM_MUST_FREE  // MHD will free prometheus_output
+    );
+
+    if (!response) {
+        free(prometheus_output);
+        return MHD_NO;
+    }
+
+    // Set content type to text/plain for Prometheus
+    MHD_add_response_header(response, "Content-Type", "text/plain; charset=utf-8");
     
-    // Note: api_send_json_response takes ownership of root
+    // Add CORS headers
+    MHD_add_response_header(response, "Access-Control-Allow-Origin", "*");
+    MHD_add_response_header(response, "Access-Control-Allow-Methods", "GET, OPTIONS");
+    MHD_add_response_header(response, "Access-Control-Allow-Headers", "*");
+    
+    result = MHD_queue_response(connection, MHD_HTTP_OK, response);
+    MHD_destroy_response(response);
+    
     return result;
 }

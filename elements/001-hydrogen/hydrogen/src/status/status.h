@@ -1,40 +1,30 @@
 /*
- * System status and metrics reporting utilities.
+ * System Status Interface
  * 
- * Provides functionality for:
- * - System status reporting
- * - File descriptor tracking
- * - Process memory metrics
- * - WebSocket statistics
+ * Provides high-level functions for collecting and formatting system status
+ * information in both JSON and Prometheus formats.
  */
 
 #ifndef STATUS_H
 #define STATUS_H
 
 #include <jansson.h>
-#include <time.h>
-#include "../config/config.h"
+#include "status_core.h"
 
-// File descriptor information structure
-typedef struct {
-    int fd;                 // File descriptor number
-    char type[DEFAULT_FD_TYPE_SIZE];         // Type (socket, file, pipe, etc.)
-    char description[DEFAULT_FD_DESCRIPTION_SIZE]; // Detailed description
-} FileDescriptorInfo;
+// Initialize the status collection system
+void status_init(void);
 
-// WebSocket metrics structure
-typedef struct {
-    time_t server_start_time;  // Server start timestamp
-    int active_connections;    // Current live connections
-    int total_connections;     // Historical connection count
-    int total_requests;        // Total processed requests
-} WebSocketMetrics;
+// Clean up the status collection system
+void status_cleanup(void);
 
-// System status functions
+// Get complete system status in JSON format
+// This is the original format used by the /api/system/info endpoint
+// Returns a new JSON object that must be freed by the caller
 json_t* get_system_status_json(const WebSocketMetrics *ws_metrics);
-json_t* get_file_descriptors_json(void);
 
-// Memory tracking functions
-void get_process_memory(size_t *vmsize, size_t *vmrss, size_t *vmswap);
+// Get system status in Prometheus format
+// Returns a newly allocated string containing metrics in Prometheus format
+// The string must be freed by the caller
+char* get_system_status_prometheus(const WebSocketMetrics *ws_metrics);
 
-#endif // STATUS_H
+#endif /* STATUS_H */

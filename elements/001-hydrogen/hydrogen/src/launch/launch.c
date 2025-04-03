@@ -66,6 +66,7 @@
 #include "../utils/utils_logging.h"
 #include "../utils/utils.h"
 #include "../status/status.h"
+#include "../status/status_process.h"
 #include "../utils/utils_dependency.h"
 #include "../config/files/config_filesystem.h"
 #include "../config/config.h"
