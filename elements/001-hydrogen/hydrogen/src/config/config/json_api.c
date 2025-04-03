@@ -30,55 +30,113 @@
 #include "../../utils/utils.h"
 
 bool load_json_api(json_t* root, AppConfig* config) {
+    // Initialize API configuration with defaults
+    if (config_api_init(&config->api) != 0) {
+        log_this("Config", "Failed to initialize API configuration", LOG_LEVEL_ERROR);
+        return false;
+    }
+
     // API Configuration
     json_t* api_config = json_object_get(root, "API");
     if (json_is_object(api_config)) {
         log_config_section_header("API");
         
         json_t* enabled = json_object_get(api_config, "Enabled");
-        bool api_enabled = get_config_bool(enabled, true);
+        config->api.enabled = get_config_bool(enabled, true);
         log_config_section_item("Enabled", "%s", LOG_LEVEL_STATE, !enabled, 0, NULL, NULL, "Config",
-                api_enabled ? "true" : "false");
+                config->api.enabled ? "true" : "false");
         
-        // ApiPrefix (stored in WebServer struct for compatibility)
+        // API Prefix
         json_t* api_prefix = json_object_get(api_config, "APIPrefix");
-        config->web.api_prefix = get_config_string_with_env("APIPrefix", api_prefix, "/api");
+        char* new_prefix = get_config_string_with_env("APIPrefix", api_prefix, "/api");
+        if (!new_prefix) {
+            log_this("Config", "Failed to allocate API prefix", LOG_LEVEL_ERROR);
+            return false;
+        }
+        free(config->api.prefix);  // Free existing value
+        config->api.prefix = new_prefix;
         log_config_section_item("APIPrefix", "%s", LOG_LEVEL_STATE, !api_prefix, 0, NULL, NULL, "Config",
-            config->web.api_prefix);
+            config->api.prefix);
         
         json_t* jwt_secret = json_object_get(api_config, "JWTSecret");
-        if (jwt_secret) {
-            config->api.jwt_secret = get_config_string_with_env("JWTSecret", jwt_secret, "hydrogen_api_secret_change_me");
-            // JWT Secret logging removed for security reasons
+        char* raw_secret = get_config_string_with_env("JWTSecret", jwt_secret, "${env.JWT_SECRET}");
+        if (!raw_secret) {
+            log_this("Config", "Failed to allocate JWT secret", LOG_LEVEL_ERROR);
+            return false;
         }
+
+        // Process environment variable and store resolved value
+        json_t* resolved = env_process_env_variable(raw_secret);
+        if (resolved && !json_is_null(resolved)) {
+            // Store the resolved value
+            const char* resolved_str = json_string_value(resolved);
+            config->api.jwt_secret = strdup(resolved_str);
+            free(raw_secret);  // Free the raw key since we're using resolved value
+            
+            // Display first 5 chars of resolved secret
+            log_config_section_item("JWTSecret", "$JWT_SECRET: %.5s...", LOG_LEVEL_STATE, 
+                !jwt_secret, 0, NULL, NULL, "Config", resolved_str);
+        } else {
+            // If resolution fails, use raw secret
+            config->api.jwt_secret = raw_secret;
+            log_config_section_item("JWTSecret", "$JWT_SECRET: not set", LOG_LEVEL_STATE,
+                !jwt_secret, 0, NULL, NULL, "Config");
+        }
+        if (resolved) json_decref(resolved);
     } else {
         // Check legacy RESTAPI section for backward compatibility
         json_t* restapi = json_object_get(root, "RESTAPI");
         if (json_is_object(restapi)) {
             log_config_section_header("API");
             log_config_section_item("Status", "Using legacy RESTAPI section", LOG_LEVEL_ALERT, 0, 0, NULL, NULL, "Config");
+            config->api.enabled = true;
             log_config_section_item("Enabled", "true", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config");
             
             json_t* api_prefix = json_object_get(restapi, "ApiPrefix");
             if (api_prefix) {
-                config->web.api_prefix = get_config_string_with_env("ApiPrefix", api_prefix, "/api");
+                config->api.prefix = get_config_string_with_env("ApiPrefix", api_prefix, "/api");
                 log_config_section_item("APIPrefix", "%s", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config",
-                    config->web.api_prefix);
+                    config->api.prefix);
             } else {
-                config->web.api_prefix = strdup("/api");
+                config->api.prefix = strdup("/api");
                 log_config_section_item("APIPrefix", "%s", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config", "/api");
             }
             
             json_t* jwt_secret = json_object_get(restapi, "JWTSecret");
-            config->api.jwt_secret = get_config_string_with_env("JWTSecret", jwt_secret, "hydrogen_api_secret_change_me");
-            // JWT Secret logging removed for security reasons
+            char* raw_secret = get_config_string_with_env("JWTSecret", jwt_secret, "${env.JWT_SECRET}");
+            if (!raw_secret) {
+                log_this("Config", "Failed to allocate JWT secret", LOG_LEVEL_ERROR);
+                return false;
+            }
+
+            // Process environment variable and store resolved value
+            json_t* resolved = env_process_env_variable(raw_secret);
+            if (resolved && !json_is_null(resolved)) {
+                // Store the resolved value
+                const char* resolved_str = json_string_value(resolved);
+                config->api.jwt_secret = strdup(resolved_str);
+                free(raw_secret);  // Free the raw key since we're using resolved value
+                
+                // Display first 5 chars of resolved secret
+                log_config_section_item("JWTSecret", "$JWT_SECRET: %.5s...", LOG_LEVEL_STATE, 
+                    !jwt_secret, 0, NULL, NULL, "Config", resolved_str);
+            } else {
+                // If resolution fails, use raw secret
+                config->api.jwt_secret = raw_secret;
+                log_config_section_item("JWTSecret", "$JWT_SECRET: not set", LOG_LEVEL_STATE,
+                    !jwt_secret, 0, NULL, NULL, "Config");
+            }
+            if (resolved) json_decref(resolved);
         } else {
-            config->api.jwt_secret = strdup("hydrogen_api_secret_change_me");
-            config->web.api_prefix = strdup("/api");
-            log_config_section_header("API");
+            // Using defaults initialized by config_api_init
+            log_config_section_header("API *");
             log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_ALERT, 1, 0, NULL, NULL, "Config");
-            log_config_section_item("Enabled", "true", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config");
-            log_config_section_item("APIPrefix", "%s", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config", "/api");
+            // Defaults already set by config_api_init
+            log_config_section_item("Enabled", "%s *", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config",
+                config->api.enabled ? "true" : "false");
+            log_config_section_item("APIPrefix", "%s *", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config", config->api.prefix);
+            log_config_section_item("JWTSecret", "$JWT_SECRET: %.5s... *", LOG_LEVEL_STATE, 
+                true, 0, NULL, NULL, "Config", config->api.jwt_secret);
         }
     }
     

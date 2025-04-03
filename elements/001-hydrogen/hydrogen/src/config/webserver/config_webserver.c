@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <limits.h>
+#include <linux/limits.h>
 #include "config_webserver.h"
 #include "../types/config_string.h"
 
@@ -29,18 +30,16 @@ int config_webserver_init(WebServerConfig* config) {
     }
 
     // Initialize basic settings
-    config->enabled = DEFAULT_WEB_ENABLED;
+    config->enable_ipv4 = DEFAULT_WEB_ENABLE_IPV4;
     config->enable_ipv6 = DEFAULT_WEB_ENABLE_IPV6;
     config->port = DEFAULT_WEB_PORT;
     
     // Initialize string fields
     config->web_root = strdup(DEFAULT_WEB_ROOT);
-    config->api_prefix = strdup(DEFAULT_API_PREFIX);
     config->upload_path = strdup(DEFAULT_UPLOAD_PATH);
     config->upload_dir = strdup(DEFAULT_UPLOAD_DIR);
     
-    if (!config->web_root || !config->api_prefix || 
-        !config->upload_path || !config->upload_dir) {
+    if (!config->web_root || !config->upload_path || !config->upload_dir) {
         config_webserver_cleanup(config);
         return -1;
     }
@@ -64,7 +63,6 @@ void config_webserver_cleanup(WebServerConfig* config) {
 
     // Free basic string fields
     free(config->web_root);
-    free(config->api_prefix);
     free(config->upload_path);
     free(config->upload_dir);
 
@@ -120,43 +118,14 @@ static int validate_directory(const char* path, int write_access) {
     return 0;
 }
 
-static int validate_api_prefix(const char* prefix) {
-    if (!prefix || !prefix[0]) {
-        return -1;
-    }
-
-    // Must start with /
-    if (prefix[0] != '/') {
-        return -1;
-    }
-
-    // Must not end with / unless it's just "/"
-    size_t len = strlen(prefix);
-    if (len > 1 && prefix[len - 1] == '/') {
-        return -1;
-    }
-
-    // Must not contain spaces or special characters
-    for (size_t i = 0; i < len; i++) {
-        char c = prefix[i];
-        if (!((c >= 'a' && c <= 'z') || 
-              (c >= 'A' && c <= 'Z') || 
-              (c >= '0' && c <= '9') || 
-              c == '/' || c == '-' || c == '_')) {
-            return -1;
-        }
-    }
-
-    return 0;
-}
 
 int config_webserver_validate(const WebServerConfig* config) {
     if (!config) {
         return -1;
     }
 
-    // If web server is enabled, validate all settings
-    if (config->enabled) {
+    // If either IPv4 or IPv6 is enabled, validate all settings
+    if (config->enable_ipv4 || config->enable_ipv6) {
         // Validate port number
         if (config->port < MIN_PORT || config->port > MAX_PORT) {
             return -1;
@@ -180,10 +149,6 @@ int config_webserver_validate(const WebServerConfig* config) {
             return -1;
         }
 
-        // Validate API prefix
-        if (validate_api_prefix(config->api_prefix) != 0) {
-            return -1;
-        }
 
         // Validate upload path
         if (!config->upload_path || !config->upload_path[0] ||

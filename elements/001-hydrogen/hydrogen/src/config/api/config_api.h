@@ -2,22 +2,27 @@
  * API Configuration
  *
  * Defines the configuration structure and defaults for the API subsystem.
- * This includes settings for authentication and security.
+ * This includes settings for API endpoints and routing.
  */
 
 #ifndef HYDROGEN_CONFIG_API_H
 #define HYDROGEN_CONFIG_API_H
 
-// Project headers
-#include "../config_forward.h"
-
-// Default values
-#define DEFAULT_JWT_SECRET "hydrogen_api_secret_change_me"
+#include <stddef.h>
+#include <jansson.h>
+#include "../config_forward.h"  // For APIConfig forward declaration
 
 // API configuration structure
 struct APIConfig {
-    char* jwt_secret;         // Secret for JWT token signing
+    int enabled;           // Whether API endpoints are enabled
+    char* prefix;         // API URL prefix (e.g., "/api")
+    char* jwt_secret;     // Secret key for JWT token signing
 };
+
+// Default values for API configuration
+#define DEFAULT_API_ENABLED 1
+#define DEFAULT_API_PREFIX "/api"
+#define DEFAULT_API_JWT_SECRET "${env.JWT_SECRET}"  // JWT secret loaded from environment variable
 
 /*
  * Initialize API configuration with default values
@@ -30,7 +35,7 @@ struct APIConfig {
  *
  * Error conditions:
  * - If config is NULL
- * - If memory allocation fails for jwt_secret
+ * - If memory allocation fails for any string field
  */
 int config_api_init(APIConfig* config);
 
@@ -48,17 +53,18 @@ void config_api_cleanup(APIConfig* config);
 /*
  * Validate API configuration values
  *
- * This function performs validation of the configuration:
- * - Verifies jwt_secret is set and not empty
- * - Checks for minimum secret length
+ * This function performs comprehensive validation of the configuration:
+ * - Verifies prefix is valid (must start with /)
+ * - Checks enabled flag
+ * - Validates JWT secret is set
  *
  * @param config Pointer to APIConfig structure to validate
  * @return 0 if valid, -1 if invalid
  *
  * Error conditions:
  * - If config is NULL
- * - If jwt_secret is NULL or empty
- * - If jwt_secret is too short
+ * - If prefix is invalid
+ * - If JWT secret is not set
  */
 int config_api_validate(const APIConfig* config);
 

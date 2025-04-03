@@ -670,7 +670,7 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
     // List of enabled services
     json_t *enabled_services = json_array();
     json_array_append_new(enabled_services, json_string("logging"));
-    if (app_config->web.enabled)
+    if (app_config->web.enable_ipv4 || app_config->web.enable_ipv6)
         json_array_append_new(enabled_services, json_string("web"));
     if (app_config->websocket.enabled)
         json_array_append_new(enabled_services, json_string("websocket"));
@@ -699,7 +699,8 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
     
     // Web server configuration
     json_t *web = json_object();
-    json_object_set_new(web, "enabled", json_boolean(app_config->web.enabled));
+    json_object_set_new(web, "enable_ipv4", json_boolean(app_config->web.enable_ipv4));
+    json_object_set_new(web, "enable_ipv6", json_boolean(app_config->web.enable_ipv6));
     json_object_set_new(web, "port", json_integer(app_config->web.port));
     json_object_set_new(web, "upload_path", json_string(app_config->web.upload_path));
     json_object_set_new(web, "max_upload_size", json_integer(app_config->web.max_upload_size));

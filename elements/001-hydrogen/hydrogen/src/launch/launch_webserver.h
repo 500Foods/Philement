@@ -27,4 +27,14 @@ int launch_webserver_subsystem(void);
  */
 void free_webserver_resources(void);
 
+/**
+ * Check if web server is running
+ * 
+ * This function checks if the web server is currently running
+ * and available to handle requests.
+ * 
+ * @return 1 if running, 0 if not running
+ */
+int is_web_server_running(void);
+
 #endif /* HYDROGEN_LAUNCH_WEBSERVER_H */
