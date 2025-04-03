@@ -17,6 +17,7 @@
 // API endpoint handlers
 enum MHD_Result handle_system_info_request(struct MHD_Connection *connection);
 enum MHD_Result handle_system_health_request(struct MHD_Connection *connection);
+enum MHD_Result handle_system_prometheus_request(struct MHD_Connection *connection);
 enum MHD_Result handle_system_test_request(struct MHD_Connection *connection,
                                         const char *method,
                                         const char *upload_data,

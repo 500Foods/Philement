@@ -1,8 +1,8 @@
 /*
- * System Info API Endpoint Implementation
+ * System Prometheus API Endpoint Implementation
  * 
- * Implements the /api/system/info endpoint that provides system information
- * for monitoring and diagnostics.
+ * Implements the /api/system/prometheus endpoint that provides system information
+ * in a format compatible with Prometheus monitoring system.
  */
 
 // Core system headers
@@ -23,7 +23,7 @@
 #include <jansson.h>
 
 // Project headers
-#include "info.h"
+#include "prometheus.h"
 #include "../../../config/config.h"
 #include "../../../state/state.h"
 #include "../../../logging/logging.h"
@@ -42,14 +42,15 @@ extern volatile sig_atomic_t log_queue_shutdown;
 extern volatile sig_atomic_t mdns_server_system_shutdown;
 extern volatile sig_atomic_t websocket_server_shutdown;
 
-// Handle GET /api/system/info requests
-// Returns system information and status in JSON format
+// Handle GET /api/system/prometheus requests
+// Initially returns system information in JSON format (same as /api/system/info)
+// Will be updated in future to return Prometheus-compatible format
 // Success: 200 OK with JSON response
 // Error: 500 Internal Server Error with error details
 // Includes CORS headers for cross-origin access
-enum MHD_Result handle_system_info_request(struct MHD_Connection *connection)
+enum MHD_Result handle_system_prometheus_request(struct MHD_Connection *connection)
 {
-    log_this("SystemService/info", "Handling info endpoint request", LOG_LEVEL_STATE);
+    log_this("SystemService/prometheus", "Handling prometheus endpoint request", LOG_LEVEL_STATE);
     
     json_t *root = NULL;
     enum MHD_Result result = MHD_NO;
@@ -68,7 +69,7 @@ enum MHD_Result handle_system_info_request(struct MHD_Connection *connection)
     // Get complete system status using the utility function
     root = get_system_status_json(ws_context ? &metrics : NULL);
     if (!root) {
-        log_this("SystemService/info", "Failed to generate system status", LOG_LEVEL_ERROR);
+        log_this("SystemService/prometheus", "Failed to generate system status", LOG_LEVEL_ERROR);
         return MHD_NO;
     }
 
