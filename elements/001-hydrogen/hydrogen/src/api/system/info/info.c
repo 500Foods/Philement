@@ -51,37 +51,30 @@ enum MHD_Result handle_system_info_request(struct MHD_Connection *connection)
 {
     log_this("SystemService/info", "Handling info endpoint request", LOG_LEVEL_STATE);
     
-    struct utsname system_info;
-    if (uname(&system_info) < 0)
-    {
-        log_this("SystemService/info", "Failed to get system information", LOG_LEVEL_ERROR);
-        json_t *error = json_object();
-        json_object_set_new(error, "error", json_string("Failed to retrieve system information"));
-        return api_send_json_response(connection, error, MHD_HTTP_INTERNAL_SERVER_ERROR);
+    json_t *root = NULL;
+    enum MHD_Result result = MHD_NO;
+    WebSocketMetrics metrics = {0};
+
+    // Get WebSocket metrics if available
+    if (ws_context) {
+        pthread_mutex_lock(&ws_context->mutex);
+        metrics.server_start_time = ws_context->start_time;
+        metrics.active_connections = ws_context->active_connections;
+        metrics.total_connections = ws_context->total_connections;
+        metrics.total_requests = ws_context->total_requests;
+        pthread_mutex_unlock(&ws_context->mutex);
     }
 
-    // Check WebSocket context availability
-    if (!ws_context) {
-        log_this("SystemService/info", "WebSocket context not available", LOG_LEVEL_ERROR);
-        json_t *error = json_object();
-        json_object_set_new(error, "error", json_string("WebSocket service unavailable"));
-        return api_send_json_response(connection, error, MHD_HTTP_SERVICE_UNAVAILABLE);
+    // Get complete system status using the utility function
+    root = get_system_status_json(ws_context ? &metrics : NULL);
+    if (!root) {
+        log_this("SystemService/info", "Failed to generate system status", LOG_LEVEL_ERROR);
+        return MHD_NO;
     }
 
-    // Safely copy metrics under lock
-    pthread_mutex_lock(&ws_context->mutex);
-    const WebSocketMetrics metrics = {
-        .server_start_time = ws_context->start_time,
-        .active_connections = ws_context->active_connections,
-        .total_connections = ws_context->total_connections,
-        .total_requests = ws_context->total_requests
-    };
-    pthread_mutex_unlock(&ws_context->mutex);
-
-    // Get system status JSON with WebSocket metrics
-    json_t *root = get_system_status_json(&metrics);
+    // Send response
+    result = api_send_json_response(connection, root, MHD_HTTP_OK);
     
-    // Use the common API utility to send the JSON response
-    // This handles compression, content type headers, and CORS automatically
-    return api_send_json_response(connection, root, MHD_HTTP_OK);
+    // Note: api_send_json_response takes ownership of root
+    return result;
 }

@@ -1,0 +1,61 @@
+{
+    "ServerName": "Philement/hydrogen-test-payload"
+    "PayloadKey": "${env.PAYLOAD_KEY}",
+    "PayloadLock": "${env.PAYLOAD_LOCK}",
+    "LogFile": "./logs/hydrogen_test_json.log",
+    "WebServer": {
+        "Enabled": true,
+        "EnableIPv6": false,
+        "Port": 5000,
+        "WebRoot": "./www",
+        "Swagger": {
+            "Enabled": true,
+            "Prefix": "/swagger"
+        }
+    },
+    "Logging": {
+        "Levels": [
+            [0, "ALL"],
+            [1, "INFO"],
+            [2, "WARN"],
+            [3, "DEBUG"],
+            [4, "ERROR"],
+            [5, "CRITICAL"],
+            [6, "NONE"]
+        ],
+        "Console": {
+            "Enabled": true,
+            "DefaultLevel": 0,
+            "Subsystems": {
+                "WebServer": 0,
+                "Configuration": 0,
+                "API": 0,
+                "Initialization": 0
+            }
+        },
+        "File": {
+            "Enabled": true,
+            "DefaultLevel": 0,
+            "Path": "./logs/hydrogen_test_json.log",
+            "Subsystems": {
+                "WebServer": 0,
+                "Configuration": 0,
+                "API": 0,
+                "Initialization": 0
+            }
+        }
+    },
+    "SystemResources": {
+        "Queues": {
+            "MaxQueueBlocks": 128,
+            "QueueHashSize": 256,
+            "DefaultQueueCapacity": 1024
+        },
+        "Buffers": {
+            "DefaultMessageBuffer": 1024,
+            "MaxLogMessageSize": 2048,
+            "PathBufferSize": 256,
+            "LineBufferSize": 512
+        }
+    }
+}

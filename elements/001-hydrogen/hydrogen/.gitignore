@@ -17,7 +17,6 @@ payloads/payload.tar.br.enc
 # Log files
 *.log
 *.log.*
-hydrogen_test*.json
 system_test_*.log
 error_*.log
 

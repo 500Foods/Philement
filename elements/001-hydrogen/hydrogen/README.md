@@ -285,20 +285,20 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Thu Apr  3 11:16:07 PDT 2025
+Generated on: Thu Apr  3 11:50:29 PDT 2025
 
 ### Summary
 
 | Metric | Value |
 | ------ | ----- |
 | Total Tests | 14 |
-| Passed | 11 |
-| Failed | 3 |
+| Passed | 12 |
+| Failed | 2 |
 | Skipped | 0 |
 | Total Subtests | 88 |
-| Passed Subtests | 66 |
-| Failed Subtests | 22 |
-| Runtime | 6m 56s |
+| Passed Subtests | 75 |
+| Failed Subtests | 13 |
+| Runtime | 7m 2s |
 
 ### Individual Test Results
 
@@ -314,23 +314,23 @@ Generated on: Thu Apr  3 11:16:07 PDT 2025
 | 45_signals | ✅ Passed | Test completed without errors (4 of 4 subtests passed) |
 | 50_crash_handler | ✅ Passed | Test completed without errors (5 of 5 subtests passed) |
 | 55_socket_rebind | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
-| 60_api_prefixes | ❌ Failed | Test failed with errors (0 of 10 subtests passed) |
-| 65_system_endpoints | ❌ Failed | Test failed with errors (7 of 11 subtests passed) |
+| 60_api_prefixes | ❌ Failed | Test failed with errors (5 of 10 subtests passed) |
+| 65_system_endpoints | ✅ Passed | Test completed without errors (11 of 11 subtests passed) |
 | 70_swagger_ui | ❌ Failed | Test failed with errors (2 of 10 subtests passed) |
 | 99_codebase | ✅ Passed | Test completed without errors (12 of 12 subtests passed) |
 
 ## Repository Information
 
-Generated via cloc: Thu Apr  3 11:16:07 PDT 2025
+Generated via cloc: Thu Apr  3 11:50:29 PDT 2025
 
 | Language | Files | Blank Lines | Comment Lines | Code Lines |
 | -------- | ----- | ----------- | ------------- | ---------- |
-| C | 162 | 4622 | 6533 | 20093 |
+| C | 162 | 4622 | 6532 | 20087 |
 | Markdown | 118 | 4339 | 27 | 15561 |
 | Bourne | Shell | 24 | 1279 | 1313 |
-| JSON | 17 | 0 | 0 | 4807 |
+| JSON | 17 | 1 | 0 | 4657 |
 | C/C++ | Header | 143 | 1162 | 5223 |
 | Text | 15 | 4 | 0 | 2072 |
 | HTML | 1 | 74 | 0 | 493 |
 | make | 2 | 55 | 396 | 223 |
-| **Total** | **482** | **11535** | **13492** | **51231** |
+| **Total** | **482** | **11536** | **13491** | **51075** |
