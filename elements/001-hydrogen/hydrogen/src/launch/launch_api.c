@@ -1,153 +1,215 @@
 /*
- * API Subsystem Launch Implementation
+ * Launch API Subsystem
+ * 
+ * This module handles the initialization of the API subsystem.
+ * It provides functions for checking readiness and launching the API endpoints.
+ * 
+ * Dependencies:
+ * - WebServer subsystem must be initialized and ready
  */
 
-#include <stdbool.h>
-#include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
 
-#include "launch_api.h"
+#include "launch.h"
+#include "launch_webserver.h"
 #include "../logging/logging.h"
-#include "../registry/registry.h"
-#include "../state/state.h"
+#include "../utils/utils_logging.h"
 #include "../config/config.h"
+#include "../registry/registry_integration.h"
+#include "../state/state_types.h"
+#include "../config/api/config_api.h"
 
-// External system state flags
-extern volatile sig_atomic_t server_stopping;
-extern volatile sig_atomic_t server_starting;
-extern volatile sig_atomic_t server_running;
+// External declarations
+extern AppConfig* app_config;
 
-// Shutdown flag
-volatile sig_atomic_t api_stopping = 0;
+// Registry ID for the API subsystem
+int api_subsystem_id = -1;
 
-// Helper functions for message formatting
-static void add_message(const char** messages, int* count, const char* message) {
-    if (message) {
-        messages[*count] = message;
-        (*count)++;
+// Register the API subsystem with the registry
+static void register_api(void) {
+    // Always register during readiness check if not already registered
+    if (api_subsystem_id < 0) {
+        api_subsystem_id = register_subsystem("API", NULL, NULL, NULL,
+                                            (int (*)(void))launch_api_subsystem,
+                                            NULL);  // No special shutdown needed
     }
 }
 
-static void add_go_message(const char** messages, int* count, const char* prefix, const char* format, ...) {
-    char temp[256];
-    va_list args;
-    va_start(args, format);
-    vsnprintf(temp, sizeof(temp), format, args);
-    va_end(args);
-    
-    char buffer[512];
-    if (strcmp(prefix, "No-Go") == 0) {
-        snprintf(buffer, sizeof(buffer), "  %s:   %s", prefix, temp);
-    } else {
-        snprintf(buffer, sizeof(buffer), "  %s:      %s", prefix, temp);
-    }
-    
-    add_message(messages, count, strdup(buffer));
-}
-
-static void add_decision_message(const char** messages, int* count, const char* format, ...) {
-    char temp[256];
-    va_list args;
-    va_start(args, format);
-    vsnprintf(temp, sizeof(temp), format, args);
-    va_end(args);
-    
-    char buffer[512];
-    snprintf(buffer, sizeof(buffer), "  Decide:  %s", temp);
-    add_message(messages, count, strdup(buffer));
-}
-
-// Check API subsystem launch readiness
+// Check if the API subsystem is ready to launch
 LaunchReadiness check_api_launch_readiness(void) {
-    bool overall_readiness = false;
-    
-    // Allocate space for messages
-    const char** messages = malloc(10 * sizeof(const char*));
+    const char** messages = malloc(10 * sizeof(char*));  // Space for messages + NULL
     if (!messages) {
-        return (LaunchReadiness){0};
-    }
-    int msg_count = 0;
-    
-    // Add the subsystem name as the first message
-    add_message(messages, &msg_count, strdup("API"));
-    
-    // Early return cases with cleanup
-    if (server_stopping) {
-        add_go_message(messages, &msg_count, "No-Go", "System shutdown in progress");
-        messages[msg_count] = NULL;
-        return (LaunchReadiness){
-            .subsystem = "API",
-            .ready = false,
-            .messages = messages
-        };
+        return (LaunchReadiness){ .subsystem = "API", .ready = false, .messages = NULL };
     }
     
-    if (!server_starting && !server_running) {
-        add_go_message(messages, &msg_count, "No-Go", "System not in startup or running state");
-        messages[msg_count] = NULL;
-        return (LaunchReadiness){
-            .subsystem = "API",
-            .ready = false,
-            .messages = messages
-        };
-    }
+    int msg_index = 0;
+    bool ready = true;
     
-    const AppConfig* app_config = get_app_config();
-    if (!app_config) {
-        add_go_message(messages, &msg_count, "No-Go", "Configuration not loaded");
-        messages[msg_count] = NULL;
-        return (LaunchReadiness){
-            .subsystem = "API",
-            .ready = false,
-            .messages = messages
-        };
-    }
+    // First message is subsystem name
+    messages[msg_index++] = strdup("API");
     
-    // Basic readiness check - just verify we can get a subsystem ID
-    int subsystem_id = get_subsystem_id_by_name("API");
-    if (subsystem_id >= 0) {
-        add_go_message(messages, &msg_count, "Go", "API subsystem registered");
-        add_decision_message(messages, &msg_count, "Go For Launch of API Subsystem");
-        overall_readiness = true;
+    // 1. Check WebServer subsystem launch readiness (we depend on it)
+    LaunchReadiness webserver_readiness = check_webserver_launch_readiness();
+    if (!webserver_readiness.ready) {
+        messages[msg_index++] = strdup("  No-Go:   WebServer subsystem not Go for Launch");
+        ready = false;
     } else {
-        add_go_message(messages, &msg_count, "No-Go", "API subsystem not registered");
-        add_decision_message(messages, &msg_count, "No-Go For Launch of API Subsystem");
-        overall_readiness = false;
+        messages[msg_index++] = strdup("  Go:      WebServer subsystem Go for Launch");
     }
     
-    messages[msg_count] = NULL;
+    // 2. Check our configuration
+    if (!app_config) {
+        messages[msg_index++] = strdup("  No-Go:   API configuration not loaded");
+        ready = false;
+    } else {
+        // Check if API is enabled
+        if (!app_config->api.enabled) {
+            messages[msg_index++] = strdup("  No-Go:   API endpoints disabled in configuration");
+            ready = false;
+        } else {
+            messages[msg_index++] = strdup("  Go:      API endpoints enabled");
+        }
+        
+        // Check API prefix
+        if (!app_config->api.prefix || !app_config->api.prefix[0] || 
+            app_config->api.prefix[0] != '/') {
+            messages[msg_index++] = strdup("  No-Go:   Invalid API prefix configuration");
+            ready = false;
+        } else {
+            char* msg = malloc(256);
+            if (msg) {
+                snprintf(msg, 256, "  Go:      Valid API prefix: %s", 
+                        app_config->api.prefix);
+                messages[msg_index++] = msg;
+            }
+        }
+
+        // Check JWT secret
+        if (!app_config->api.jwt_secret || !app_config->api.jwt_secret[0]) {
+            messages[msg_index++] = strdup("  No-Go:   JWT secret not configured");
+            ready = false;
+        } else {
+            messages[msg_index++] = strdup("  Go:      JWT secret configured");
+        }
+    }
+    
+    // Final decision
+    messages[msg_index++] = strdup(ready ? 
+        "  Decide:  Go For Launch of API Subsystem" :
+        "  Decide:  No-Go For Launch of API Subsystem");
+    messages[msg_index] = NULL;
+    
     return (LaunchReadiness){
         .subsystem = "API",
-        .ready = overall_readiness,
+        .ready = ready,
         .messages = messages
     };
 }
 
-// Launch the API subsystem
+// Launch API subsystem
 int launch_api_subsystem(void) {
-    // Reset shutdown flag
-    api_stopping = 0;
+    extern volatile sig_atomic_t server_stopping;
+    extern volatile sig_atomic_t server_starting;
+
+    log_this("API", LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this("API", "LAUNCH: API", LOG_LEVEL_STATE);
+
+    // Register with registry if not already registered
+    register_api();
+
+    // Step 1: Verify system state
+    log_this("API", "  Step 1: Verifying system state", LOG_LEVEL_STATE);
     
-    log_this("API", "Initializing API subsystem", LOG_LEVEL_STATE);
+    if (server_stopping) {
+        log_this("API", "Cannot initialize API during shutdown", LOG_LEVEL_STATE);
+        log_this("API", "LAUNCH: API - Failed: System in shutdown", LOG_LEVEL_STATE);
+        return 0;
+    }
+
+    if (!server_starting) {
+        log_this("API", "Cannot initialize API outside startup phase", LOG_LEVEL_STATE);
+        log_this("API", "LAUNCH: API - Failed: Not in startup phase", LOG_LEVEL_STATE);
+        return 0;
+    }
+
+    if (!app_config) {
+        log_this("API", "API configuration not loaded", LOG_LEVEL_STATE);
+        log_this("API", "LAUNCH: API - Failed: No configuration", LOG_LEVEL_STATE);
+        return 0;
+    }
+
+    if (!app_config->api.enabled) {
+        log_this("API", "API disabled in configuration", LOG_LEVEL_STATE);
+        log_this("API", "LAUNCH: API - Disabled by configuration", LOG_LEVEL_STATE);
+        return 1; // Not an error if disabled
+    }
+
+    log_this("API", "    System state verified", LOG_LEVEL_STATE);
+
+    // Step 2: Initialize API endpoints
+    log_this("API", "  Step 2: Initializing API endpoints", LOG_LEVEL_STATE);
     
-    // Get subsystem ID and update state
-    int subsystem_id = get_subsystem_id_by_name("API");
-    if (subsystem_id >= 0) {
-        update_subsystem_state(subsystem_id, SUBSYSTEM_RUNNING);
-        log_this("API", "API subsystem initialized", LOG_LEVEL_STATE);
-        return 1;
+    // Log configuration
+    log_this("API", "    API Configuration:", LOG_LEVEL_STATE);
+    log_this("API", "    -> Enabled: yes", LOG_LEVEL_STATE);
+    log_this("API", "    -> Prefix: %s", LOG_LEVEL_STATE, 
+             app_config->api.prefix);
+
+    // Step 3: Update registry and verify state
+    log_this("API", "  Step 3: Updating subsystem registry", LOG_LEVEL_STATE);
+    update_subsystem_on_startup("API", true);
+    
+    SubsystemState final_state = get_subsystem_state(api_subsystem_id);
+    if (final_state == SUBSYSTEM_RUNNING) {
+        log_this("API", "LAUNCH: API - Successfully launched and running", LOG_LEVEL_STATE);
+    } else {
+        log_this("API", "LAUNCH: API - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
+                subsystem_state_to_string(final_state));
+        return 0;
     }
     
-    log_this("API", "Failed to initialize API subsystem", LOG_LEVEL_ERROR);
-    return 0;
+    return 1;
 }
 
-// Shutdown handler - defined in launch_api.h, implemented here
+// Check if API is running
+int is_api_running(void) {
+    extern volatile sig_atomic_t server_stopping;
+    
+    // API is running if:
+    // 1. It's enabled in config
+    // 2. Not in shutdown state
+    // 3. WebServer is running
+    return (app_config && 
+            app_config->api.enabled &&
+            !server_stopping &&
+            is_web_server_running());
+}
+
+// Shutdown API subsystem
 void shutdown_api(void) {
-    if (!api_stopping) {
-        api_stopping = 1;
-        log_this("API", "API subsystem shutting down", LOG_LEVEL_STATE);
+    log_this("API", LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this("API", "LANDING: API", LOG_LEVEL_STATE);
+
+    // Step 1: Verify state
+    log_this("API", "  Step 1: Verifying state", LOG_LEVEL_STATE);
+    if (!is_api_running()) {
+        log_this("API", "API already shut down", LOG_LEVEL_STATE);
+        log_this("API", "LANDING: API - Already landed", LOG_LEVEL_STATE);
+        return;
     }
+    log_this("API", "    State verified", LOG_LEVEL_STATE);
+
+    // Step 2: Clean up API resources
+    log_this("API", "  Step 2: Cleaning up API resources", LOG_LEVEL_STATE);
+    
+    // Note: Most API resources are managed by the web server
+    // We mainly need to update our state and logging
+
+    // Step 3: Update registry state
+    log_this("API", "  Step 3: Updating registry state", LOG_LEVEL_STATE);
+    update_subsystem_on_shutdown("API");
+    
+    log_this("API", "LANDING: API - Successfully landed", LOG_LEVEL_STATE);
 }

@@ -7,15 +7,27 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
+#include <sys/time.h>
 
 // Network headers
 #include <net/if.h>          // Must be first for interface definitions
 #include <linux/if.h>        // Additional interface definitions
 #include <netinet/in.h>
+#include <netinet/ip.h>
+#include <netinet/ip_icmp.h>
+#include <netinet/icmp6.h>
 #include <arpa/inet.h>
 #include <linux/if_packet.h>
 #include <netdb.h>
 #include <ifaddrs.h>
+
+// ICMP definitions
+#ifndef ICMP_ECHO
+#define ICMP_ECHO 8
+#endif
+#ifndef ICMP_ECHOREPLY
+#define ICMP_ECHOREPLY 0
+#endif
 
 // Standard C headers
 #include <stdio.h>
@@ -23,11 +35,136 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <time.h>
 
 // Project headers
 #include "network.h"
 #include "../utils/utils.h"
 #include "../logging/logging.h"
+#include "../config/config.h"
+
+#define PING_TIMEOUT_SEC 1
+#define PING_PACKET_SIZE 64
+
+// Check if an interface is configured in the Available section
+bool is_interface_configured(const AppConfig* app_config, const char* interface_name, bool* is_available) {
+    if (!app_config) {
+        *is_available = true;  // Default to available if no config
+        return false;          // Not explicitly configured
+    }
+    
+    // Check if the available_interfaces array is NULL
+    if (!app_config->network.available_interfaces || app_config->network.available_interfaces_count == 0) {
+        *is_available = true;  // Default to available if no available_interfaces
+        return false;          // Not explicitly configured
+    }
+    
+    // Check if the interface is in the available_interfaces array
+    for (size_t i = 0; i < app_config->network.available_interfaces_count; i++) {
+        if (app_config->network.available_interfaces[i].interface_name) {
+            if (strcmp(interface_name, app_config->network.available_interfaces[i].interface_name) == 0) {
+                // Interface is explicitly configured
+                *is_available = app_config->network.available_interfaces[i].available;
+                return true;  // Explicitly configured
+            }
+        }
+    }
+    
+    // If not in the configuration, it's not explicitly configured
+    *is_available = true;  // Default to available
+    return false;          // Not explicitly configured
+}
+
+// Test a single interface with UDP socket
+static bool test_interface(bool is_ipv6, struct ifreq *ifr, int *mtu) {
+    int sockfd;
+    bool success = false;
+    struct timeval tv = {.tv_sec = 1, .tv_usec = 0};
+
+    // Create UDP socket (doesn't require root)
+    if (is_ipv6) {
+        sockfd = socket(AF_INET6, SOCK_DGRAM, 0);
+    } else {
+        sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    }
+
+    if (sockfd < 0) {
+        return false;
+    }
+
+    // Set timeout
+    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+
+    // Get interface flags
+    if (ioctl(sockfd, SIOCGIFFLAGS, ifr) >= 0) {
+        // Check if interface is up and running
+        if ((ifr->ifr_flags & IFF_UP) && (ifr->ifr_flags & IFF_RUNNING)) {
+            success = true;
+        }
+    }
+
+    // Get interface MTU
+    if (ioctl(sockfd, SIOCGIFMTU, ifr) >= 0) {
+        *mtu = ifr->ifr_mtu;
+    }
+
+    close(sockfd);
+    return success;
+}
+
+// Test all network interfaces
+bool test_network_interfaces(network_info_t *info) {
+    if (!info) return false;
+
+    bool success = false;
+    struct ifreq ifr;
+    const AppConfig* app_config = get_app_config();
+    
+    for (int i = 0; i < info->count; i++) {
+        interface_t *iface = &info->interfaces[i];
+        
+        // Skip loopback
+        if (strcmp(iface->name, "lo") == 0) continue;
+
+        // Check if interface is enabled in config
+        bool is_available = true;
+        bool is_configured = is_interface_configured(app_config, iface->name, &is_available);
+        
+        // Skip if explicitly disabled in config
+        if (is_configured && !is_available) {
+            log_this("Network", "Interface %s: skipped (disabled in config)", LOG_LEVEL_STATE,
+                    iface->name);
+            continue;
+        }
+
+        // Prepare interface request structure
+        memset(&ifr, 0, sizeof(ifr));
+        strncpy(ifr.ifr_name, iface->name, IFNAMSIZ - 1);
+
+        for (int j = 0; j < iface->ip_count; j++) {
+            // Determine if IPv6
+            iface->is_ipv6[j] = (strchr(iface->ips[j], ':') != NULL);
+            
+            // Test interface
+            int mtu = 0;
+            bool interface_up = test_interface(iface->is_ipv6[j], &ifr, &mtu);
+            
+            if (interface_up) {
+                success = true;
+                log_this("Network", "Interface %s (%s): up, MTU %d", LOG_LEVEL_STATE,
+                        iface->name,
+                        iface->is_ipv6[j] ? "IPv6" : "IPv4",
+                        mtu);
+            } else {
+                log_this("Network", "Interface %s (%s): down", LOG_LEVEL_STATE,
+                        iface->name,
+                        iface->is_ipv6[j] ? "IPv6" : "IPv4");
+            }
+        }
+    }
+
+    return success;
+}
 
 // Discover and analyze network interfaces with comprehensive enumeration
 //

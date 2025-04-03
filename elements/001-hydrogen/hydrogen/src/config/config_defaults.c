@@ -115,10 +115,10 @@ json_t* create_default_web_config(void) {
         return NULL;
     }
 
-    json_object_set_new(web, "Enabled", json_boolean(1));
-    json_object_set_new(web, "EnableIPv6", json_boolean(0));
+    json_object_set_new(web, "EnableIPv4", json_boolean(1));
+    json_object_set_new(web, "EnableIPv6", json_boolean(1));
     json_object_set_new(web, "Port", json_integer(DEFAULT_WEB_PORT));
-    json_object_set_new(web, "WebRoot", json_string("/var/www/html"));
+    json_object_set_new(web, "WebRoot", json_string(DEFAULT_WEB_ROOT));
     json_object_set_new(web, "UploadPath", json_string(DEFAULT_UPLOAD_PATH));
     json_object_set_new(web, "UploadDir", json_string(DEFAULT_UPLOAD_DIR));
     json_object_set_new(web, "MaxUploadSize", json_integer(DEFAULT_MAX_UPLOAD_SIZE));

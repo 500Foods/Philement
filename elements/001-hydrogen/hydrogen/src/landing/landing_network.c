@@ -31,28 +31,45 @@
  * Returns 1 on success, 0 on failure
  */
 int land_network_subsystem(void) {
-    log_this("Landing", "Landing network subsystem...", LOG_LEVEL_STATE);
+    log_this("Landing", "――――――――――――――――――――――――――――――――――――――――", LOG_LEVEL_STATE);
+    log_this("Landing", "LANDING: NETWORK", LOG_LEVEL_STATE);
     
-    // Get subsystem ID
+    // Step 1: Verify subsystem state
+    log_this("Landing", "  Step 1: Verifying subsystem state", LOG_LEVEL_STATE);
     int subsystem_id = get_subsystem_id_by_name("Network");
     if (subsystem_id < 0) {
         log_this("Landing", "Failed to get network subsystem ID", LOG_LEVEL_ERROR);
+        log_this("Landing", "LANDING: NETWORK - Failed to land", LOG_LEVEL_STATE);
         return 0;
     }
     
-    // Verify subsystem is in a state that can be landed
     if (!is_subsystem_running_by_name("Network")) {
         log_this("Landing", "Network subsystem is not running", LOG_LEVEL_ERROR);
+        log_this("Landing", "LANDING: NETWORK - Failed to land", LOG_LEVEL_STATE);
         return 0;
     }
     
-    // Close all network interfaces
+    // Step 2: Final interface tests
+    log_this("Landing", "  Step 2: Performing final interface tests", LOG_LEVEL_STATE);
+    network_info_t *info = get_network_info();
+    if (info) {
+        test_network_interfaces(info);
+        free_network_info(info);
+    }
+    
+    // Step 3: Shutdown network interfaces
+    log_this("Landing", "  Step 3: Shutting down network interfaces", LOG_LEVEL_STATE);
     if (!network_shutdown()) {
         log_this("Landing", "Failed to shut down network interfaces", LOG_LEVEL_ERROR);
+        log_this("Landing", "LANDING: NETWORK - Failed to land", LOG_LEVEL_STATE);
         return 0;
     }
     
-    log_this("Landing", "Network subsystem landed successfully", LOG_LEVEL_STATE);
+    // Step 4: Update subsystem registry
+    log_this("Landing", "  Step 4: Updating subsystem registry", LOG_LEVEL_STATE);
+    update_subsystem_after_shutdown("Network");
+    
+    log_this("Landing", "LANDING: NETWORK - Successfully landed", LOG_LEVEL_STATE);
     return 1;
 }
 

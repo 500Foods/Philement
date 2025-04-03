@@ -111,28 +111,20 @@ static enum MHD_Result handle_version_request(struct MHD_Connection *connection)
 extern WebServerConfig *server_web_config;
 
 bool is_api_endpoint(const char *url, char *service, char *endpoint) {
-    // Get pointer to start of path after the prefix
-    const char *path;
-    
-    // Check if URL starts with the configured API prefix
-    if (!server_web_config || !server_web_config->api_prefix) {
-        // Fallback to hardcoded value if configuration is not available
-        if (strncmp(url, "/api/", 5) != 0) {
-            return false;
-        }
-        // Skip "/api/"
-        path = url + 5;
-    } else {
-        // Use the configured API prefix
-        size_t prefix_len = strlen(server_web_config->api_prefix);
-        // Check if URL starts with prefix followed by a slash
-        if (strncmp(url, server_web_config->api_prefix, prefix_len) != 0 || 
-            url[prefix_len] != '/') {
-            return false;
-        }
-        // Skip the prefix and the following slash
-        path = url + prefix_len + 1;
+    if (!app_config || !app_config->api.prefix) {
+        log_this("WebServer", "API configuration not available", LOG_LEVEL_ERROR);
+        return false;
     }
+
+    // Use the configured API prefix
+    size_t prefix_len = strlen(app_config->api.prefix);
+    // Check if URL starts with prefix followed by a slash
+    if (strncmp(url, app_config->api.prefix, prefix_len) != 0 || 
+        url[prefix_len] != '/') {
+        return false;
+    }
+    // Skip the prefix and the following slash
+    const char *path = url + prefix_len + 1;
     
     // Find the next slash
     const char *slash = strchr(path, '/');
@@ -159,13 +151,11 @@ bool is_api_endpoint(const char *url, char *service, char *endpoint) {
 
 // Helper function to build API paths with the current prefix configuration
 static char* build_api_path(const char* endpoint_path, char* buffer, size_t buffer_size) {
-    if (!server_web_config || !server_web_config->api_prefix) {
-        // Fallback to hardcoded value
-        snprintf(buffer, buffer_size, "/api%s", endpoint_path);
-    } else {
-        // Use configured prefix
-        snprintf(buffer, buffer_size, "%s%s", server_web_config->api_prefix, endpoint_path);
+    if (!app_config || !app_config->api.prefix) {
+        log_this("WebServer", "API configuration not available", LOG_LEVEL_ERROR);
+        return NULL;
     }
+    snprintf(buffer, buffer_size, "%s%s", app_config->api.prefix, endpoint_path);
     return buffer;
 }
 
@@ -205,8 +195,8 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
     // Handle GET requests
     if (strcmp(method, "GET") == 0) {
         // Check for Swagger UI requests first
-        if (is_swagger_request(url, server_web_config)) {
-            return handle_swagger_request(connection, url, server_web_config);
+        if (is_swagger_request(url, &app_config->web)) {
+            return handle_swagger_request(connection, url, &app_config->web);
         }
         
         // API endpoints - use configurable API prefix
