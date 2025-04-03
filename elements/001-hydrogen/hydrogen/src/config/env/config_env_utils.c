@@ -60,7 +60,7 @@ char* get_config_string_with_env(const char* json_key, json_t* value, const char
                 // For sensitive values, truncate in log
                 if (is_sensitive_value(json_key)) {
                     char safe_value[256];
-                    snprintf(safe_value, sizeof(safe_value), "$%s: %.5s...", var_name, env_value);
+                    snprintf(safe_value, sizeof(safe_value), "$%.200s: %.5s...", var_name, env_value);
                     log_config_section_item(json_key, "%s", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config-Env", safe_value);
                 } else {
                     log_config_section_item(json_key, "$%s: %s", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config-Env", var_name, env_value);
