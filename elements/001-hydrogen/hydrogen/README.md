@@ -285,7 +285,7 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Wed Apr  2 14:31:34 PDT 2025
+Generated on: Thu Apr  3 11:16:07 PDT 2025
 
 ### Summary
 
@@ -296,9 +296,9 @@ Generated on: Wed Apr  2 14:31:34 PDT 2025
 | Failed | 3 |
 | Skipped | 0 |
 | Total Subtests | 88 |
-| Passed Subtests | 60 |
-| Failed Subtests | 28 |
-| Runtime | 6m 48s |
+| Passed Subtests | 66 |
+| Failed Subtests | 22 |
+| Runtime | 6m 56s |
 
 ### Individual Test Results
 
@@ -315,22 +315,22 @@ Generated on: Wed Apr  2 14:31:34 PDT 2025
 | 50_crash_handler | ✅ Passed | Test completed without errors (5 of 5 subtests passed) |
 | 55_socket_rebind | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
 | 60_api_prefixes | ❌ Failed | Test failed with errors (0 of 10 subtests passed) |
-| 65_system_endpoints | ❌ Failed | Test failed with errors (1 of 11 subtests passed) |
+| 65_system_endpoints | ❌ Failed | Test failed with errors (7 of 11 subtests passed) |
 | 70_swagger_ui | ❌ Failed | Test failed with errors (2 of 10 subtests passed) |
 | 99_codebase | ✅ Passed | Test completed without errors (12 of 12 subtests passed) |
 
 ## Repository Information
 
-Generated via cloc: Wed Apr  2 14:31:34 PDT 2025
+Generated via cloc: Thu Apr  3 11:16:07 PDT 2025
 
 | Language | Files | Blank Lines | Comment Lines | Code Lines |
 | -------- | ----- | ----------- | ------------- | ---------- |
-| C | 162 | 4523 | 6411 | 19590 |
+| C | 162 | 4622 | 6533 | 20093 |
 | Markdown | 118 | 4339 | 27 | 15561 |
 | Bourne | Shell | 24 | 1279 | 1313 |
 | JSON | 17 | 0 | 0 | 4807 |
-| C/C++ | Header | 143 | 1149 | 5145 |
-| Text | 14 | 4 | 0 | 1821 |
+| C/C++ | Header | 143 | 1162 | 5223 |
+| Text | 15 | 4 | 0 | 2072 |
 | HTML | 1 | 74 | 0 | 493 |
 | make | 2 | 55 | 396 | 223 |
-| **Total** | **481** | **11423** | **13292** | **50446** |
+| **Total** | **482** | **11535** | **13492** | **51231** |

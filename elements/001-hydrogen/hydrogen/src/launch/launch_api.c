@@ -31,7 +31,7 @@ int api_subsystem_id = -1;
 static void register_api(void) {
     // Always register during readiness check if not already registered
     if (api_subsystem_id < 0) {
-        api_subsystem_id = register_subsystem("API", NULL, NULL, NULL,
+        api_subsystem_id = register_subsystem_from_launch("API", NULL, NULL, NULL,
                                             (int (*)(void))launch_api_subsystem,
                                             NULL);  // No special shutdown needed
     }

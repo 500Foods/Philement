@@ -108,36 +108,45 @@ static void free_thread_resources(void) {
     log_this("Threads", LOG_LINE_BREAK, LOG_LEVEL_STATE);
     log_this("Threads", "LANDING: THREADS - Resource Cleanup", LOG_LEVEL_STATE);
     
-    // Step 1: Clean up web server threads
+    // Step 1: Remove individual threads first
     if (web_threads.thread_count > 0) {
-        log_this("Threads", "  Step 1a: Cleaning up web threads (%d remaining)", 
+        log_this("Threads", "  Step 1a: Removing web threads (%d remaining)", 
                 LOG_LEVEL_STATE, web_threads.thread_count);
-        init_service_threads(&web_threads);
+        for (int i = 0; i < web_threads.thread_count; i++) {
+            remove_service_thread(&web_threads, web_threads.thread_ids[i]);
+        }
     }
     
-    // Step 2: Clean up websocket threads
     if (websocket_threads.thread_count > 0) {
-        log_this("Threads", "  Step 1b: Cleaning up websocket threads (%d remaining)", 
+        log_this("Threads", "  Step 1b: Removing websocket threads (%d remaining)", 
                 LOG_LEVEL_STATE, websocket_threads.thread_count);
-        init_service_threads(&websocket_threads);
+        for (int i = 0; i < websocket_threads.thread_count; i++) {
+            remove_service_thread(&websocket_threads, websocket_threads.thread_ids[i]);
+        }
     }
     
-    // Step 3: Clean up mDNS server threads
     if (mdns_server_threads.thread_count > 0) {
-        log_this("Threads", "  Step 1c: Cleaning up mDNS server threads (%d remaining)", 
+        log_this("Threads", "  Step 1c: Removing mDNS server threads (%d remaining)", 
                 LOG_LEVEL_STATE, mdns_server_threads.thread_count);
-        init_service_threads(&mdns_server_threads);
+        for (int i = 0; i < mdns_server_threads.thread_count; i++) {
+            remove_service_thread(&mdns_server_threads, mdns_server_threads.thread_ids[i]);
+        }
     }
     
-    // Step 4: Clean up print threads
     if (print_threads.thread_count > 0) {
-        log_this("Threads", "  Step 1d: Cleaning up print threads (%d remaining)", 
+        log_this("Threads", "  Step 1d: Removing print threads (%d remaining)", 
                 LOG_LEVEL_STATE, print_threads.thread_count);
-        init_service_threads(&print_threads);
+        for (int i = 0; i < print_threads.thread_count; i++) {
+            remove_service_thread(&print_threads, print_threads.thread_ids[i]);
+        }
     }
+    
+    // Step 2: Free all thread resources
+    log_this("Threads", "  Step 2: Freeing thread resources", LOG_LEVEL_STATE);
+    free_threads_resources();
     
     // Note: Logging threads are handled last by the logging subsystem shutdown
-    log_this("Threads", "  Step 2: Resource cleanup complete", LOG_LEVEL_STATE);
+    log_this("Threads", "  Step 3: Resource cleanup complete", LOG_LEVEL_STATE);
 }
 
 /**
