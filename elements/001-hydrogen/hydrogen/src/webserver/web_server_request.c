@@ -16,6 +16,7 @@
 #include "../logging/logging.h"
 #include "../state/state.h"
 #include "../api/system/config/config.h"
+#include "../api/system/prometheus/prometheus.h"
 
 static enum MHD_Result serve_file(struct MHD_Connection *connection, const char *file_path) {
     // Check if client accepts Brotli compression
@@ -221,6 +222,10 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
         // System config endpoint
         else if (strcmp(url, build_api_path("/system/config", api_path, sizeof(api_path))) == 0) {
             return handle_system_config_request(connection, method, upload_data, upload_data_size, con_cls);
+        }
+        // System prometheus endpoint
+        else if (strcmp(url, build_api_path("/system/prometheus", api_path, sizeof(api_path))) == 0) {
+            return handle_system_prometheus_request(connection);
         }
 
         // Try to serve a static file

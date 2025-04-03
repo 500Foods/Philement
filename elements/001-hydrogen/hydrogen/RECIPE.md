@@ -10,9 +10,9 @@ Run from /src/. Requires:
 ## Project
 
 ```json
-{"name":"Hydrogen","lang":"C","type":"3D Printer Server","arch":"Multithreaded",
-"tech":["POSIX","HTTP/WS","mDNS","Queues","JSON","OIDC","OpenSSL"],
-"critical":["ThreadSafety","ErrorHandling","CodeOrg"]}
+{"name":"Hydrogen","lang":"C","type":"REST API/WebSocket Server","arch":"Multithreaded",
+"tech":["POSIX","HTTP/WS","mDNS","Queues","JSON","SQL","OIDC","OpenSSL","Postgres"],
+"critical":["ErrorHandling","ThreadSafety"]}
 ```
 
 ## Subsystem Order

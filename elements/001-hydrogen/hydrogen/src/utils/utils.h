@@ -22,7 +22,7 @@
 // Include all utility module headers
 #include "../threads/threads.h"  // Thread management subsystem
 #include "utils_queue.h"    // Local include since we're in utils/
-#include "utils_status.h"   // Local include since we're in utils/
+#include "../status/status.h"  // System status subsystem
 #include "utils_time.h"     // Local include since we're in utils/
 #include "utils_logging.h"  // Local include since we're in utils/
 #include "utils_dependency.h"  // Local include since we're in utils/

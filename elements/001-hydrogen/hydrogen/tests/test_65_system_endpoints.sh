@@ -122,6 +122,8 @@ TEST_LOG="$RESULTS_DIR/system_test_${TIMESTAMP}.log"
 TEST_HEALTH_RESULT=1
 TEST_INFO_RESULT=1
 TEST_INFO_JSON_RESULT=1
+TEST_PROMETHEUS_RESULT=1
+TEST_PROMETHEUS_JSON_RESULT=1
 TEST_BASIC_GET_RESULT=1
 TEST_GET_PARAMS_RESULT=1
 TEST_POST_FORM_RESULT=1
@@ -204,7 +206,32 @@ run_tests() {
     echo ""
     
     # ====================================================================
-    # PART 3: Test /api/system/test endpoint
+    # PART 4: Test /api/system/prometheus endpoint
+    # ====================================================================
+    print_header "Testing /api/system/prometheus Endpoint"
+    
+    # Test prometheus endpoint with GET request
+    print_header "Test Case: Prometheus Metrics"
+    validate_request "prometheus" "curl -s --max-time 5 ${base_url}/api/system/prometheus" "system"
+    TEST_PROMETHEUS_RESULT=$?
+    
+    # Also validate that it's valid JSON
+    if [ $TEST_PROMETHEUS_RESULT -eq 0 ]; then
+        validate_json "response_prometheus.json"
+        TEST_PROMETHEUS_JSON_RESULT=$?
+        if [ $TEST_PROMETHEUS_JSON_RESULT -eq 0 ]; then
+            ((pass_count++))
+        else
+            ((fail_count++))
+        fi
+    else
+        ((fail_count++))
+        TEST_PROMETHEUS_JSON_RESULT=1
+    fi
+    echo ""
+
+    # ====================================================================
+    # PART 5: Test /api/system/test endpoint
     # ====================================================================
     print_header "Testing /api/system/test Endpoint"
     
@@ -296,6 +323,10 @@ collect_test_results() {
     # Info endpoint tests
     add_test_result "Info Endpoint - Content" ${TEST_INFO_RESULT} "GET /api/system/info - System information presence"
     add_test_result "Info Endpoint - JSON Format" ${TEST_INFO_JSON_RESULT} "GET /api/system/info - Valid JSON format"
+    
+    # Prometheus endpoint tests
+    add_test_result "Prometheus Endpoint - Content" ${TEST_PROMETHEUS_RESULT} "GET /api/system/prometheus - Metrics presence"
+    add_test_result "Prometheus Endpoint - JSON Format" ${TEST_PROMETHEUS_JSON_RESULT} "GET /api/system/prometheus - Valid JSON format"
     
     # Test endpoint tests
     add_test_result "Test Endpoint - Basic GET" ${TEST_BASIC_GET_RESULT} "GET /api/system/test - Basic request"
