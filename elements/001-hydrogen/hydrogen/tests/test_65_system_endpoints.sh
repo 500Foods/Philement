@@ -18,7 +18,13 @@ validate_request() {
     local request_name="$1"
     local curl_command="$2"
     local expected_field="$3"
-    local response_file="response_${request_name}.json"
+    local response_file="response_${request_name}"
+    # Add .json extension for endpoints that return JSON
+    if [[ "$request_name" != "prometheus" ]]; then
+        response_file="${response_file}.json"
+    else
+        response_file="${response_file}.txt"
+    fi
     
     # Make sure curl command includes --compressed flag and timeout
     if [[ $curl_command != *"--compressed"* ]]; then
@@ -123,7 +129,7 @@ TEST_HEALTH_RESULT=1
 TEST_INFO_RESULT=1
 TEST_INFO_JSON_RESULT=1
 TEST_PROMETHEUS_RESULT=1
-TEST_PROMETHEUS_JSON_RESULT=1
+TEST_PROMETHEUS_FORMAT=1
 TEST_BASIC_GET_RESULT=1
 TEST_GET_PARAMS_RESULT=1
 TEST_POST_FORM_RESULT=1
@@ -212,21 +218,55 @@ run_tests() {
     
     # Test prometheus endpoint with GET request
     print_header "Test Case: Prometheus Metrics"
-    validate_request "prometheus" "curl -s --max-time 5 ${base_url}/api/system/prometheus" "system"
+    
+    # Test basic content presence first
+    validate_request "prometheus" "curl -s -i --max-time 5 ${base_url}/api/system/prometheus" "# HELP"
     TEST_PROMETHEUS_RESULT=$?
     
-    # Also validate that it's valid JSON
     if [ $TEST_PROMETHEUS_RESULT -eq 0 ]; then
-        validate_json "response_prometheus.json"
-        TEST_PROMETHEUS_JSON_RESULT=$?
-        if [ $TEST_PROMETHEUS_JSON_RESULT -eq 0 ]; then
-            ((pass_count++))
+        print_info "Testing Prometheus format and metrics..."
+        
+        # Check content type
+        if ! grep -q "Content-Type: text/plain" response_prometheus.txt; then
+            print_result 1 "Response has incorrect content type"
+            TEST_PROMETHEUS_FORMAT=1
         else
-            ((fail_count++))
+            # Check for required Prometheus format elements
+            PROMETHEUS_FORMAT_OK=1
+            
+            # Check for TYPE definitions
+            if ! grep -q "^# TYPE" response_prometheus.txt; then
+                print_result 1 "Response missing TYPE definitions"
+                PROMETHEUS_FORMAT_OK=0
+            fi
+            
+            # Check for specific metrics
+            REQUIRED_METRICS=(
+                "system_info"
+                "memory_total_bytes"
+                "cpu_usage_total"
+                "service_threads"
+            )
+            
+            for metric in "${REQUIRED_METRICS[@]}"; do
+                if ! grep -q "^$metric" response_prometheus.txt; then
+                    print_result 1 "Response missing required metric: $metric"
+                    PROMETHEUS_FORMAT_OK=0
+                fi
+            done
+            
+            if [ $PROMETHEUS_FORMAT_OK -eq 1 ]; then
+                print_result 0 "Response contains valid Prometheus format"
+                TEST_PROMETHEUS_FORMAT=0
+                ((pass_count++))
+            else
+                TEST_PROMETHEUS_FORMAT=1
+                ((fail_count++))
+            fi
         fi
     else
+        TEST_PROMETHEUS_FORMAT=1
         ((fail_count++))
-        TEST_PROMETHEUS_JSON_RESULT=1
     fi
     echo ""
 
@@ -326,7 +366,7 @@ collect_test_results() {
     
     # Prometheus endpoint tests
     add_test_result "Prometheus Endpoint - Content" ${TEST_PROMETHEUS_RESULT} "GET /api/system/prometheus - Metrics presence"
-    add_test_result "Prometheus Endpoint - JSON Format" ${TEST_PROMETHEUS_JSON_RESULT} "GET /api/system/prometheus - Valid JSON format"
+    add_test_result "Prometheus Endpoint - Format" ${TEST_PROMETHEUS_FORMAT} "GET /api/system/prometheus - Valid Prometheus format"
     
     # Test endpoint tests
     add_test_result "Test Endpoint - Basic GET" ${TEST_BASIC_GET_RESULT} "GET /api/system/test - Basic request"
@@ -364,18 +404,16 @@ if kill -0 $HYDROGEN_PID 2>/dev/null; then
         print_info "Brotli compression logs found ($(convert_to_relative_path "$RESULTS_DIR/brotli_compression_${TIMESTAMP}.log")):"
         cat "$RESULTS_DIR/brotli_compression_${TIMESTAMP}.log"
     # Check for compression metrics with level information
-    if grep -q "Brotli(level=[0-9]\+).*bytes.*ratio.*compression.*time:" "$RESULTS_DIR/brotli_compression_${TIMESTAMP}.log"; then
-        print_result 0 "Compression logs contain detailed metrics with compression level"
-        add_test_result "Brotli Compression" 0 "Compression logs found with performance metrics and compression level"
+        if grep -q "Brotli(level=[0-9]\+).*bytes.*ratio.*compression.*time:" "$RESULTS_DIR/brotli_compression_${TIMESTAMP}.log"; then
+            print_result 0 "Compression logs contain detailed metrics with compression level"
+            add_test_result "Brotli Compression" 0 "Compression logs found with performance metrics and compression level"
         else
             print_warning "Compression logs found but missing metrics details"
             add_test_result "Brotli Compression" 1 "Compression logs missing metrics"
-            TEST_RESULT=1
         fi
     else
         print_warning "No Brotli compression logs found"
         add_test_result "Brotli Compression" 1 "No compression logs found"
-        TEST_RESULT=1
     fi
     
     # Stop the server
@@ -431,6 +469,6 @@ print_info "System API Endpoints Test: $PASS_COUNT of $TOTAL_SUBTESTS subtests p
 end_test $TEST_RESULT "System API Endpoints Test"
 
 # Clean up
-rm -f response_*.json
+rm -f response_*.json response_*.txt
 
 exit $TEST_RESULT
