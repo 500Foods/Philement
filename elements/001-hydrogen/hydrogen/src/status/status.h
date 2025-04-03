@@ -8,8 +8,8 @@
  * - WebSocket statistics
  */
 
-#ifndef UTILS_STATUS_H
-#define UTILS_STATUS_H
+#ifndef STATUS_H
+#define STATUS_H
 
 #include <jansson.h>
 #include <time.h>
@@ -37,4 +37,4 @@ json_t* get_file_descriptors_json(void);
 // Memory tracking functions
 void get_process_memory(size_t *vmsize, size_t *vmrss, size_t *vmswap);
 
-#endif // UTILS_STATUS_H
+#endif // STATUS_H

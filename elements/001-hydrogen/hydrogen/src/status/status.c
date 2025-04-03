@@ -1,4 +1,3 @@
-
 // System headers
 #include <math.h>
 #include <sys/types.h>
@@ -22,11 +21,11 @@
 #include <utmp.h>
 
 // Project headers
-#include "utils_status.h"
+#include "status.h"
 #include "../threads/threads.h"
-#include "utils_queue.h"
-#include "utils_time.h"
-#include "utils_logging.h"
+#include "../utils/utils_queue.h"
+#include "../utils/utils_time.h"
+#include "../utils/utils_logging.h"
 #include "../config/config.h"
 #include "../logging/logging.h"
 

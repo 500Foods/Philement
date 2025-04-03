@@ -14,6 +14,7 @@
 // Include all system endpoint headers
 #include "info/info.h"
 #include "health/health.h"
+#include "prometheus/prometheus.h"
 #include "test/test.h"
 #include "config/config.h"
 
