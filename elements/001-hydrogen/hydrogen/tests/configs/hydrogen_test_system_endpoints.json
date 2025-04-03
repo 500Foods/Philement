@@ -1,0 +1,23 @@
+{
+    "Server": {
+      "ServerName": "Philement/hydrogen",
+      "PayloadKey": "${env.PAYLOAD_KEY}",
+      "LogFile": "/var/log/hydrogen.log",
+      "StartupDelay": 5
+    },
+    "WebServer": {
+        "EnableIPv4": true,
+        "EnableIPv6": false,
+        "Port": 5070,
+        "WebRoot": "./www",
+        "UploadPath": "/api/upload",
+        "UploadDir": "/tmp/hydrogen_test_uploads",
+        "MaxUploadSize": 2147483648
+    },
+    "API":{
+        "Enabled": true,
+        "APIPrefix": "/api",
+        "JWTSecret":"${env.JWT_SECRET}"
+    }
+}    
+    
