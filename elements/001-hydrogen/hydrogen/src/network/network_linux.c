@@ -328,67 +328,28 @@ int find_available_port(int start_port) {
 bool network_shutdown(void) {
     log_this("Network", "Starting network shutdown...", LOG_LEVEL_STATE);
     
-    // Get current network interfaces
+    // Get current network interfaces for status reporting
     network_info_t *info = get_network_info();
     if (!info) {
         log_this("Network", "Failed to get network info for shutdown", LOG_LEVEL_ERROR);
         return false;
     }
     
-    bool success = true;
-    
-    // Close all active sockets for each interface
+    // Log interface status during shutdown
     for (int i = 0; i < info->count; i++) {
-        log_this("Network", "Shutting down interface: %s", LOG_LEVEL_STATE, info->interfaces[i].name);
-        
         // Skip loopback interface
         if (strcmp(info->interfaces[i].name, "lo") == 0) {
             continue;
         }
         
-        // Create control socket for interface
-        int sock = socket(AF_INET, SOCK_DGRAM, 0);
-        if (sock < 0) {
-            log_this("Network", "Failed to create control socket for %s: %s", 
-                    LOG_LEVEL_ERROR, info->interfaces[i].name, strerror(errno));
-            success = false;
-            continue;
-        }
-        
-        // Bring interface down
-        struct ifreq ifr;
-        memset(&ifr, 0, sizeof(ifr));
-        strncpy(ifr.ifr_name, info->interfaces[i].name, IFNAMSIZ - 1);
-        
-        if (ioctl(sock, SIOCGIFFLAGS, &ifr) < 0) {
-            log_this("Network", "Failed to get interface flags for %s: %s", 
-                    LOG_LEVEL_ERROR, info->interfaces[i].name, strerror(errno));
-            close(sock);
-            success = false;
-            continue;
-        }
-        
-        ifr.ifr_flags &= ~IFF_UP;  // Clear UP flag
-        
-        if (ioctl(sock, SIOCSIFFLAGS, &ifr) < 0) {
-            log_this("Network", "Failed to bring down interface %s: %s", 
-                    LOG_LEVEL_ERROR, info->interfaces[i].name, strerror(errno));
-            success = false;
-        } else {
-            log_this("Network", "Successfully shut down interface %s", 
-                    LOG_LEVEL_STATE, info->interfaces[i].name);
-        }
-        
-        close(sock);
+        log_this("Network", "Interface %s: cleaning up application resources", 
+                LOG_LEVEL_STATE, info->interfaces[i].name);
     }
     
+    // Clean up network info
     free_network_info(info);
     
-    if (success) {
-        log_this("Network", "Network shutdown completed successfully", LOG_LEVEL_STATE);
-    } else {
-        log_this("Network", "Network shutdown completed with errors", LOG_LEVEL_ERROR);
-    }
-    
-    return success;
+    // Report successful shutdown - we don't modify system interfaces
+    log_this("Network", "Network subsystem shutdown completed successfully", LOG_LEVEL_STATE);
+    return true;
 }
