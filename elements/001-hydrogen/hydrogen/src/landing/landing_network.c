@@ -38,13 +38,15 @@ int land_network_subsystem(void) {
     log_this("Landing", "  Step 1: Verifying subsystem state", LOG_LEVEL_STATE);
     int subsystem_id = get_subsystem_id_by_name("Network");
     if (subsystem_id < 0) {
-        log_this("Landing", "Failed to get network subsystem ID", LOG_LEVEL_ERROR);
+        log_this("Landing", "Failed to get network subsystem ID", LOG_LEVEL_ALERT);
         log_this("Landing", "LANDING: NETWORK - Failed to land", LOG_LEVEL_STATE);
         return 0;
     }
     
-    if (!is_subsystem_running_by_name("Network")) {
-        log_this("Landing", "Network subsystem is not running", LOG_LEVEL_ERROR);
+    SubsystemState state = get_subsystem_state(subsystem_id);
+    if (state != SUBSYSTEM_RUNNING && state != SUBSYSTEM_STOPPING) {
+        log_this("Landing", "Network subsystem is in invalid state: %s", LOG_LEVEL_ALERT,
+                subsystem_state_to_string(state));
         log_this("Landing", "LANDING: NETWORK - Failed to land", LOG_LEVEL_STATE);
         return 0;
     }
@@ -60,7 +62,7 @@ int land_network_subsystem(void) {
     // Step 3: Shutdown network interfaces
     log_this("Landing", "  Step 3: Shutting down network interfaces", LOG_LEVEL_STATE);
     if (!network_shutdown()) {
-        log_this("Landing", "Failed to shut down network interfaces", LOG_LEVEL_ERROR);
+        log_this("Landing", "Failed to shut down network interfaces", LOG_LEVEL_ALERT);
         log_this("Landing", "LANDING: NETWORK - Failed to land", LOG_LEVEL_STATE);
         return 0;
     }

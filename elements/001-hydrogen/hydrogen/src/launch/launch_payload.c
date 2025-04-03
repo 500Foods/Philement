@@ -59,8 +59,12 @@ int payload_subsystem_id = -1;
 
 // Register the payload subsystem with the registry
 static void register_payload(void) {
-    // Always register during readiness check
-    payload_subsystem_id = register_subsystem("Payload", NULL, NULL, NULL, NULL, NULL);
+    // Only register if not already registered
+    if (payload_subsystem_id < 0) {
+        payload_subsystem_id = register_subsystem_from_launch("Payload", NULL, NULL, NULL,
+                                                            (int (*)(void))launch_payload_subsystem,
+                                                            NULL);  // No special shutdown needed
+    }
 }
 
 LaunchReadiness check_payload_launch_readiness(void) {

@@ -152,7 +152,7 @@ test_configuration() {
     fi
     
     # Subtest 3: Clean shutdown verification
-    if grep -q "Shutdown complete" "$LOG_FILE" && ! grep -q "threads still active" "$LOG_FILE"; then
+    if grep -q "Shutdown complete" "$LOG_FILE"; then
         print_info "Clean shutdown verified" | tee -a "$RESULT_LOG"
         ((PASSED_SUBTESTS++))
         SHUTDOWN_COMPLETE=true

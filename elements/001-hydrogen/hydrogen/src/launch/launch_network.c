@@ -34,11 +34,11 @@ static int network_subsystem_id = -1;
 
 // Register the network subsystem with the registry
 static void register_network(void) {
-    // Always register during readiness check if not already registered
+    // Only register if not already registered
     if (network_subsystem_id < 0) {
-        network_subsystem_id = register_subsystem("Network", NULL, NULL, NULL,
-                                                (int (*)(void))launch_network_subsystem,
-                                                (void (*)(void))shutdown_network_subsystem);
+        network_subsystem_id = register_subsystem_from_launch("Network", NULL, NULL, NULL,
+                                                            (int (*)(void))launch_network_subsystem,
+                                                            (void (*)(void))shutdown_network_subsystem);
     }
 }
 
