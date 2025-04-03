@@ -161,7 +161,7 @@ static void crash_handler(int sig, siginfo_t *info, void *ucontext) {
         log_this("Crash", "Path too long for core filename", LOG_LEVEL_ERROR, NULL);
         _exit(128 + sig);
     }
-    snprintf(core_name, sizeof(core_name), "%s.core.%d", exe_path, pid);
+    snprintf(core_name, sizeof(core_name), "%.*s.core.%d", (int)(sizeof(core_name) - 20), exe_path, pid);
 
     log_this("Crash", "Signal %d received (cause: %d), generating core dump at %s",
              LOG_LEVEL_ERROR, sig, info->si_code, core_name);
