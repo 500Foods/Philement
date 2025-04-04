@@ -70,6 +70,9 @@ CC = gcc
 CFLAGS = -std=c17 -Wall -Wextra -pedantic -Werror -O2 -g -DVERSION=\"$(VERSION)\" -DRELEASE=\"$(RELEASE)\" -DBUILD_TYPE=\"$(BUILD_TYPE)\" -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L -ffunction-sections -fdata-sections
 BASE_LDFLAGS = -ljansson -lpthread -lmicrohttpd -lm -lssl -lcrypto -lwebsockets -lbrotlienc -lbrotlidec
 
+# Reset LD_PRELOAD globally to prevent unwanted library injection (e.g., from NoMachine)
+LD_PRELOAD :=
+
 # Directory structure management
 # Detects if make is called from project root or src directory
 # Adjusts paths accordingly to maintain consistent build structure
@@ -149,15 +152,14 @@ $(TARGET): $(BUILD_DIR)/libhydrogen.a
 trial:
 	@printf "$(CYAN)$(INFO) Starting trial build (warnings and errors only)...$(NORMAL)\n"
 	@$(MAKE) clean > /dev/null 2>&1
-	@$(MAKE) payload > /dev/null 2>&1
-	@BUILD_OUTPUT=$$($(MAKE) release 2>&1); \
+	@BUILD_OUTPUT=$$($(MAKE) default 2>&1); \
 	echo "$$BUILD_OUTPUT" | grep -v -E "^[[:space:]]*Compiling|^make(\[[0-9]+\])?: (Entering|Leaving) directory|^[[:space:]]*$(INFO)|^[[:space:]]*gcc" | \
 	grep -E "error:|warning:|undefined reference|collect2|ld returned|built successfully" --color=always || true; \
-	if echo "$$BUILD_OUTPUT" | grep -q "built successfully"; then \
-        printf "\n$(CYAN)$(INFO) Build successful. Running shutdown test...$(NORMAL)\n"; \
+	if echo "$$BUILD_OUTPUT" | grep -q "built successfully" && ! echo "$$BUILD_OUTPUT" | grep -q -E "warning:|error:|undefined reference|ld returned"; then \
+        printf "\n$(CYAN)$(INFO) Build successful with no warnings/errors. Running shutdown test...$(NORMAL)\n"; \
         $(BIN_PREFIX)tests/test_20_shutdown.sh; \
         printf "\n$(CYAN)$(INFO) Analyzing unused source files...$(NORMAL)\n"; \
-        USED_OBJS=$$(grep -o "build_release/libhydrogen\.a([^)]*\.o)" $(RELEASE_MAP_FILE) | sed 's/build_release\/libhydrogen\.a(\([^)]*\.o\))/\1/' | sort -u); \
+        USED_OBJS=$$(grep -o "build/libhydrogen\.a([^)]*\.o)" $(MAP_FILE) | sed 's/build\/libhydrogen\.a(\([^)]*\.o\))/\1/' | sort -u); \
         ALL_SRCS=$$(echo "$(SRCS)" | tr ' ' '\n' | sort -u); \
         USED_SRCS=$$(for obj in $$USED_OBJS; do echo "$$ALL_SRCS" | grep "/$${obj%.o}\.c"; done | sort -u); \
         UNUSED_SRCS=$$(comm -23 <(echo "$$ALL_SRCS") <(echo "$$USED_SRCS")); \
@@ -235,7 +237,7 @@ $(RELEASE_TARGET): $(RELEASE_DIR)/libhydrogen.a
 # Enables memory error detection and stack trace reporting
 debug: BUILD_TYPE = Debug
 debug: CFLAGS += -fsanitize=address -fno-omit-frame-pointer
-debug: LDFLAGS = -fsanitize=address -Wl,-Map=$(DEBUG_MAP_FILE) -Wl,--gc-sections $(BASE_LDFLAGS)
+debug: LDFLAGS = -lasan -Wl,-Map=$(DEBUG_MAP_FILE) -Wl,--gc-sections -fsanitize=address $(BASE_LDFLAGS)
 debug: $(DEBUG_TARGET)
 	@printf "$(GREEN)$(PASS) $(BOLD)Debug build$(NORMAL) $(GREEN)with AddressSanitizer completed successfully$(NORMAL)\n"
 
