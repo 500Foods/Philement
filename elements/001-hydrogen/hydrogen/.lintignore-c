@@ -1,29 +1,36 @@
 # Cppcheck Configuration File (.lintignore-c)
-# Modified to help identify unused .c files in a large project.
-# Runs with broader checks and logs all processed files for later comparison with build output.
+# This file contains settings and suppressions for cppcheck.
+# Lines starting with # are comments. Use key=value for settings or standalone commands for suppressions.
 #
-# SUMMARY: This config enables all checks, logs every file processed, and keeps key suppressions.
-# Use with a script to compare against Makefile-compiled files.
+# SUMMARY: This configuration excludes several common C warning types from cppcheck, including:
+# - System include file warnings
+# - Variable scope/usage warnings (unusedVariable, variableScope)
+# - Const parameter/pointer warnings (constParameterCallback, constVariablePointer)
+# - Redundant condition/initialization warnings
+# - Null pointer and arithmetic checks
+#
+# Used by support_cppcheck.sh and test_z_codebase.sh for C code linting.
 
-# Enable all checks for maximum visibility
-enable=all
+# Enable specific checks
+enable=style,warning,performance,portability
 
 # Include paths (adjust these to your system)
 include=/usr/include
 include=/usr/local/include
 
 # Check level
-check-level=exhaustive
+check-level=normal
 
-# Custom template to log every file processed (even if no issues)
+# Template for output
 template={file}:{line}:{column}: {severity}: {message} ({id})
-# Add a file-processed marker for scripting
-template-file-processed={file}: PROCESSED
 
-# Suppress specific warnings (kept most of yours, loosened usage-related ones)
+# Suppress specific warnings
 suppress=missingIncludeSystem
+suppress=variableScope
+suppress=unreadVariable
 suppress=constParameterCallback
 suppress=constVariablePointer
+suppress=unusedStructMember
 suppress=normalCheckLevelMaxBranches
 suppress=shadowVariable
 suppress=knownConditionTrueFalse
@@ -39,5 +46,3 @@ suppress=redundantAssignment
 # Additional options
 option=--inline-suppr
 option=--quiet
-option=--file-list=src_files.txt  # Optional: feed it a list of .c files
-option=--output-file=cppcheck_log.txt  # Save output for analysis

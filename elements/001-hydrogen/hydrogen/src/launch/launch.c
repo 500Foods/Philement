@@ -92,7 +92,7 @@
 #include "launch_print.h"
 
 // External declarations for subsystem launch functions (in standard order)
-extern int launch_registry_subsystem(void);     // from launch_registry.c
+extern int launch_registry_subsystem(bool is_restart);     // from launch_registry.c
 extern int launch_payload_subsystem(void);      // from launch_payload.c
 extern int launch_threads_subsystem(void);      // from launch_threads.c
 extern int launch_network_subsystem(void);      // from launch_network.c
@@ -388,7 +388,7 @@ int startup_hydrogen(const char* config_path) {
 
     // Launch Registry first after plan is approved
     log_this("Launch", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    if (!launch_registry_subsystem()) {
+    if (!launch_registry_subsystem(restart_requested)) {
         log_this("Startup", "Failed to launch registry - cannot continue", LOG_LEVEL_ERROR);
         return 0;
     }

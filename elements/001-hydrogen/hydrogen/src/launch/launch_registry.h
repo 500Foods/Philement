@@ -23,8 +23,16 @@ LaunchReadiness check_registry_launch_readiness(void);
  * Note: Registry is pre-initialized before the launch sequence.
  * This primarily handles proper status tracking.
  * 
+ * Behavior differs during restart vs initial launch:
+ * - During restart (is_restart=true): More lenient state verification,
+ *   preserves existing registry state, and won't trigger shutdown on
+ *   unexpected states.
+ * - During initial launch (is_restart=false): Strict state verification,
+ *   requires transition to RUNNING state.
+ * 
+ * @param is_restart true if this is part of a restart sequence
  * @return 1 if launch successful, 0 on failure
  */
-int launch_registry_subsystem(void);
+int launch_registry_subsystem(bool is_restart);
 
 #endif /* LAUNCH_REGISTRY_H */

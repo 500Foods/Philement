@@ -100,34 +100,52 @@ LaunchReadiness check_registry_landing_readiness(void) {
 }
 
 // Land the Registry subsystem (minimal output)
-int land_registry_subsystem(void) {
+// is_restart: true if this is part of a restart sequence
+int land_registry_subsystem(bool is_restart) {
     // Report final status
     report_registry_landing_status();
     
     // Lock registry for cleanup
     pthread_mutex_lock(&subsystem_registry.mutex);
     
-    // Reset all subsystem entries to inactive state
-    for (int i = 0; i < subsystem_registry.count; i++) {
-        SubsystemInfo* info = &subsystem_registry.subsystems[i];
-        info->state = SUBSYSTEM_INACTIVE;
-        info->threads = NULL;  // Don't free - owned by subsystems
-        info->main_thread = NULL;
-        info->shutdown_flag = NULL;
-        info->init_function = NULL;
-        info->shutdown_function = NULL;
-        info->dependency_count = 0;
+    if (is_restart) {
+        // During restart, only reset non-registry subsystems
+        for (int i = 0; i < subsystem_registry.count; i++) {
+            SubsystemInfo* info = &subsystem_registry.subsystems[i];
+            // Preserve the registry's state
+            if (strcmp(info->name, "Registry") != 0) {
+                info->state = SUBSYSTEM_INACTIVE;
+                info->threads = NULL;  // Don't free - owned by subsystems
+                info->main_thread = NULL;
+                info->shutdown_flag = NULL;
+                info->init_function = NULL;
+                info->shutdown_function = NULL;
+                info->dependency_count = 0;
+            }
+        }
+    } else {
+        // Full shutdown - reset everything
+        for (int i = 0; i < subsystem_registry.count; i++) {
+            SubsystemInfo* info = &subsystem_registry.subsystems[i];
+            info->state = SUBSYSTEM_INACTIVE;
+            info->threads = NULL;  // Don't free - owned by subsystems
+            info->main_thread = NULL;
+            info->shutdown_flag = NULL;
+            info->init_function = NULL;
+            info->shutdown_function = NULL;
+            info->dependency_count = 0;
+        }
+        
+        // Free and NULL the subsystems array
+        if (subsystem_registry.subsystems) {
+            free(subsystem_registry.subsystems);
+            subsystem_registry.subsystems = NULL;
+        }
+        
+        // Reset registry state after freeing memory
+        subsystem_registry.count = 0;
+        subsystem_registry.capacity = 0;
     }
-    
-    // Free and NULL the subsystems array
-    if (subsystem_registry.subsystems) {
-        free(subsystem_registry.subsystems);
-        subsystem_registry.subsystems = NULL;
-    }
-    
-    // Reset registry state after freeing memory
-    subsystem_registry.count = 0;
-    subsystem_registry.capacity = 0;
     
     pthread_mutex_unlock(&subsystem_registry.mutex);
     
