@@ -285,20 +285,20 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Fri Apr  4 01:16:52 PDT 2025
+Generated on: Fri Apr  4 03:36:21 PDT 2025
 
 ### Summary
 
 | Metric | Value |
 | ------ | ----- |
 | Total Tests | 14 |
-| Passed | 13 |
-| Failed | 1 |
+| Passed | 14 |
+| Failed | 0 |
 | Skipped | 0 |
 | Total Subtests | 89 |
-| Passed Subtests | 87 |
-| Failed Subtests | 2 |
-| Runtime | 6m 47s |
+| Passed Subtests | 88 |
+| Failed Subtests | 1 |
+| Runtime | 6m 59s |
 
 ### Individual Test Results
 
@@ -311,7 +311,7 @@ Generated on: Fri Apr  4 01:16:52 PDT 2025
 | 25_library_dependencies | ✅ Passed | Test completed without errors (16 of 16 subtests passed) |
 | 35_env_variables | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
 | 40_json_error_handling | ✅ Passed | Test completed without errors (2 of 2 subtests passed) |
-| 45_signals | ❌ Failed | Test failed with errors (3 of 4 subtests passed) |
+| 45_signals | ✅ Passed | Test completed without errors (4 of 4 subtests passed) |
 | 50_crash_handler | ✅ Passed | Test completed without errors (3 of 4 subtests passed) |
 | 55_socket_rebind | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
 | 60_api_prefixes | ✅ Passed | Test completed without errors (10 of 10 subtests passed) |
@@ -321,16 +321,16 @@ Generated on: Fri Apr  4 01:16:52 PDT 2025
 
 ## Repository Information
 
-Generated via cloc: Fri Apr  4 01:16:52 PDT 2025
+Generated via cloc: Fri Apr  4 03:36:21 PDT 2025
 
 | Language | Files | Blank Lines | Comment Lines | Code Lines |
 | -------- | ----- | ----------- | ------------- | ---------- |
-| C | 170 | 4787 | 6739 | 21041 |
+| C | 170 | 4789 | 6747 | 21068 |
 | Markdown | 118 | 4339 | 27 | 15561 |
 | Bourne | Shell | 24 | 1289 | 1324 |
 | JSON | 17 | 1 | 0 | 4774 |
-| C/C++ | Header | 150 | 1241 | 5456 |
-| Text | 14 | 3 | 0 | 2176 |
+| C/C++ | Header | 150 | 1241 | 5470 |
+| Text | 14 | 3 | 0 | 2178 |
 | HTML | 1 | 74 | 0 | 493 |
 | make | 2 | 54 | 103 | 260 |
-| **Total** | **496** | **11788** | **13649** | **52566** |
+| **Total** | **496** | **11790** | **13671** | **52595** |

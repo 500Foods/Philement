@@ -25,7 +25,6 @@ tests/diagnostics/
 tests/results/
 tests/*.log
 response_*.json
-*.html
 temp_*
 *.tmp
 
