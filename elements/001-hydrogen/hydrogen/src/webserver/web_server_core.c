@@ -7,8 +7,16 @@
 #define NI_NUMERICHOST 0x02
 #endif
 
+// Maximum number of registered endpoints
+#define MAX_ENDPOINTS 16
+
 // Include core header first for default constants
 #include "web_server_core.h"
+
+// Endpoint registry
+static WebServerEndpoint registered_endpoints[MAX_ENDPOINTS];
+static size_t endpoint_count = 0;
+static pthread_mutex_t endpoint_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // System headers
 #include <sys/types.h>
@@ -31,6 +39,84 @@
 // Global server state
 struct MHD_Daemon *web_daemon = NULL;
 WebServerConfig *server_web_config = NULL;
+
+// Endpoint registration functions
+bool register_web_endpoint(const WebServerEndpoint* endpoint) {
+    if (!endpoint || !endpoint->prefix || !endpoint->validator || !endpoint->handler) {
+        log_this("WebServer", "Invalid endpoint registration parameters", LOG_LEVEL_ERROR);
+        return false;
+    }
+
+    pthread_mutex_lock(&endpoint_mutex);
+
+    // Check for existing registration with same prefix
+    for (size_t i = 0; i < endpoint_count; i++) {
+        if (strcmp(registered_endpoints[i].prefix, endpoint->prefix) == 0) {
+            pthread_mutex_unlock(&endpoint_mutex);
+            log_this("WebServer", "Endpoint with prefix %s already registered", 
+                    LOG_LEVEL_ERROR, endpoint->prefix);
+            return false;
+        }
+    }
+
+    // Register new endpoint if space available
+    if (endpoint_count < MAX_ENDPOINTS) {
+        registered_endpoints[endpoint_count] = *endpoint;
+        endpoint_count++;
+        log_this("WebServer", "Registered endpoint with prefix: %s", 
+                LOG_LEVEL_STATE, endpoint->prefix);
+        pthread_mutex_unlock(&endpoint_mutex);
+        return true;
+    }
+
+    pthread_mutex_unlock(&endpoint_mutex);
+    log_this("WebServer", "Maximum number of endpoints reached", LOG_LEVEL_ERROR);
+    return false;
+}
+
+void unregister_web_endpoint(const char* prefix) {
+    if (!prefix) return;
+
+    pthread_mutex_lock(&endpoint_mutex);
+
+    // Find and remove endpoint
+    for (size_t i = 0; i < endpoint_count; i++) {
+        if (strcmp(registered_endpoints[i].prefix, prefix) == 0) {
+            // Shift remaining endpoints
+            for (size_t j = i; j < endpoint_count - 1; j++) {
+                registered_endpoints[j] = registered_endpoints[j + 1];
+            }
+            endpoint_count--;
+            log_this("WebServer", "Unregistered endpoint with prefix: %s", 
+                    LOG_LEVEL_STATE, prefix);
+            break;
+        }
+    }
+
+    pthread_mutex_unlock(&endpoint_mutex);
+}
+
+// Get registered endpoint for URL
+const WebServerEndpoint* get_endpoint_for_url(const char* url) {
+    if (!url) return NULL;
+
+    pthread_mutex_lock(&endpoint_mutex);
+    const WebServerEndpoint* matched_endpoint = NULL;
+
+    // Find matching endpoint
+    for (size_t i = 0; i < endpoint_count; i++) {
+        const WebServerEndpoint* endpoint = &registered_endpoints[i];
+        if (strncmp(url, endpoint->prefix, strlen(endpoint->prefix)) == 0) {
+            if (endpoint->validator(url)) {
+                matched_endpoint = endpoint;
+                break;
+            }
+        }
+    }
+
+    pthread_mutex_unlock(&endpoint_mutex);
+    return matched_endpoint;
+}
 
 // External state
 extern AppConfig *app_config;

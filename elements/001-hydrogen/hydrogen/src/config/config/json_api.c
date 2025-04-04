@@ -47,15 +47,15 @@ bool load_json_api(json_t* root, AppConfig* config) {
                 config->api.enabled ? "true" : "false");
         
         // API Prefix
-        json_t* api_prefix = json_object_get(api_config, "APIPrefix");
-        char* new_prefix = get_config_string_with_env("APIPrefix", api_prefix, "/api");
+        json_t* api_prefix = json_object_get(api_config, "Prefix");
+        char* new_prefix = get_config_string_with_env("Prefix", api_prefix, "/api");
         if (!new_prefix) {
             log_this("Config", "Failed to allocate API prefix", LOG_LEVEL_ERROR);
             return false;
         }
         free(config->api.prefix);  // Free existing value
         config->api.prefix = new_prefix;
-        log_config_section_item("APIPrefix", "%s", LOG_LEVEL_STATE, !api_prefix, 0, NULL, NULL, "Config",
+        log_config_section_item("Prefix", "%s", LOG_LEVEL_STATE, !api_prefix, 0, NULL, NULL, "Config",
             config->api.prefix);
         
         json_t* jwt_secret = json_object_get(api_config, "JWTSecret");
@@ -92,14 +92,14 @@ bool load_json_api(json_t* root, AppConfig* config) {
             config->api.enabled = true;
             log_config_section_item("Enabled", "true", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config");
             
-            json_t* api_prefix = json_object_get(restapi, "ApiPrefix");
+            json_t* api_prefix = json_object_get(restapi, "Prefix");
             if (api_prefix) {
-                config->api.prefix = get_config_string_with_env("ApiPrefix", api_prefix, "/api");
-                log_config_section_item("APIPrefix", "%s", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config",
+                config->api.prefix = get_config_string_with_env("Prefix", api_prefix, "/api");
+                log_config_section_item("Prefix", "%s", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config",
                     config->api.prefix);
             } else {
                 config->api.prefix = strdup("/api");
-                log_config_section_item("APIPrefix", "%s", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config", "/api");
+                log_config_section_item("Prefix", "%s", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config", "/api");
             }
             
             json_t* jwt_secret = json_object_get(restapi, "JWTSecret");
@@ -134,7 +134,7 @@ bool load_json_api(json_t* root, AppConfig* config) {
             // Defaults already set by config_api_init
             log_config_section_item("Enabled", "%s *", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config",
                 config->api.enabled ? "true" : "false");
-            log_config_section_item("APIPrefix", "%s *", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config", config->api.prefix);
+            log_config_section_item("Prefix", "%s *", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config", config->api.prefix);
             log_config_section_item("JWTSecret", "$JWT_SECRET: %.5s... *", LOG_LEVEL_STATE, 
                 true, 0, NULL, NULL, "Config", config->api.jwt_secret);
         }

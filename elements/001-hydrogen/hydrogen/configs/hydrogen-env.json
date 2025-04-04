@@ -16,7 +16,7 @@
     },
     "API": {
         "Enabled": "${env.RESTAPI_ENABLED}",
-        "ApiPrefix": "${env.RESTAPI_APIPREFIX}",
+        "Prefix": "${env.RESTAPI_APIPREFIX}",
         "JWTSecret": "${env.RESTAPI_JWTSECRET}"
     },
     "WebSocketServer": {
