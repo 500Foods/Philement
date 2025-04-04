@@ -34,10 +34,10 @@ static bool swagger_initialized = false;
 // Forward declarations
 static bool load_swagger_files_from_tar(const uint8_t *tar_data, size_t tar_size);
 static void free_swagger_files(void);
-static char* get_server_url(struct MHD_Connection *connection, const WebServerConfig *config);
-static char* create_dynamic_initializer(const char *base_content, const char *server_url, const WebServerConfig *config);
+static char* get_server_url(struct MHD_Connection *connection, const SwaggerConfig *config);
+static char* create_dynamic_initializer(const char *base_content, const char *server_url, const SwaggerConfig *config);
 
-bool init_swagger_support(WebServerConfig *config) {
+bool init_swagger_support(SwaggerConfig *config) {
     // Check all shutdown flags atomically
     extern volatile sig_atomic_t server_stopping;
     extern volatile sig_atomic_t server_starting;
@@ -64,7 +64,7 @@ bool init_swagger_support(WebServerConfig *config) {
     }
 
     // Skip if already initialized or disabled
-    if (swagger_initialized || !config || !config->swagger->enabled) {
+    if (swagger_initialized || !config || !config->enabled) {
         if (swagger_initialized) {
             log_this("SwaggerUI", "Already initialized", LOG_LEVEL_STATE, NULL);
         }
@@ -81,7 +81,7 @@ bool init_swagger_support(WebServerConfig *config) {
     // Try to extract Swagger payload using the payload handler
     const AppConfig *app_config = get_app_config();
     PayloadData payload = {0};
-    bool success = extract_payload(executable_path, app_config, SWAGGER_PAYLOAD_MARKER, &payload);
+    bool success = extract_payload(executable_path, app_config, PAYLOAD_MARKER, &payload);
     if (!success) {
         swagger_initialized = false;  // Reset initialization flag on failure
     }
@@ -89,7 +89,7 @@ bool init_swagger_support(WebServerConfig *config) {
 
     if (!success) {
         log_this("SwaggerUI", "Failed to load UI files", LOG_LEVEL_ALERT, NULL);
-        config->swagger->payload_available = false;
+        config->payload_available = false;
         return false;
     }
 
@@ -98,7 +98,7 @@ bool init_swagger_support(WebServerConfig *config) {
     free_payload(&payload);
 
     // Update configuration based on payload availability
-    config->swagger->payload_available = success;
+    config->payload_available = success;
     swagger_initialized = success;
     
     if (success) {
@@ -126,18 +126,32 @@ bool init_swagger_support(WebServerConfig *config) {
     return success;
 }
 
-bool is_swagger_request(const char *url, const WebServerConfig *config) {
-    if (!config || !config->swagger->enabled || !config->swagger->payload_available || 
-        !config->swagger->prefix || !url) {
+bool is_swagger_request(const char *url, const SwaggerConfig *config) {
+    if (!config || !config->enabled || !config->payload_available || 
+        !config->prefix || !url) {
         return false;
     }
 
-    return strncmp(url, config->swagger->prefix, strlen(config->swagger->prefix)) == 0;
+    size_t prefix_len = strlen(config->prefix);
+    
+    // Check exact match (for redirect)
+    if (strcmp(url, config->prefix) == 0) {
+        return true;
+    }
+    
+    // Check with trailing slash
+    if (strcmp(url, config->prefix) == 0 || 
+        (strncmp(url, config->prefix, prefix_len) == 0 && 
+         (url[prefix_len] == '/' || url[prefix_len] == '\0'))) {
+        return true;
+    }
+
+    return false;
 }
 
 enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
                                      const char *url,
-                                     const WebServerConfig *config) {
+                                     const SwaggerConfig *config) {
     if (!connection || !url || !config) {
         return MHD_NO;
     }
@@ -145,8 +159,8 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
     // First check if this is exactly the swagger prefix with no trailing slash
     // If so, redirect to the same URL with a trailing slash
     // This ensures all relative assets are correctly loaded
-    size_t prefix_len = strlen(config->swagger->prefix);
-    if (strcmp(url, config->swagger->prefix) == 0) {
+    size_t prefix_len = strlen(config->prefix);
+    if (strcmp(url, config->prefix) == 0) {
         char *redirect_url;
         if (asprintf(&redirect_url, "%s/", url) != -1) {
             log_this("SwaggerUI", "Redirecting %s to %s for proper relative path resolution", 
@@ -249,41 +263,41 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
         }
 
         // Update metadata from config
-        if (config->swagger->metadata.title) {
-            json_object_set_new(info, "title", json_string(config->swagger->metadata.title));
+        if (config->metadata.title) {
+            json_object_set_new(info, "title", json_string(config->metadata.title));
         }
-        if (config->swagger->metadata.description) {
-            json_object_set_new(info, "description", json_string(config->swagger->metadata.description));
+        if (config->metadata.description) {
+            json_object_set_new(info, "description", json_string(config->metadata.description));
         }
-        if (config->swagger->metadata.version) {
-            json_object_set_new(info, "version", json_string(config->swagger->metadata.version));
+        if (config->metadata.version) {
+            json_object_set_new(info, "version", json_string(config->metadata.version));
         }
 
         // Update contact info if provided
-        if (config->swagger->metadata.contact.name || 
-            config->swagger->metadata.contact.email || 
-            config->swagger->metadata.contact.url) {
+        if (config->metadata.contact.name || 
+            config->metadata.contact.email || 
+            config->metadata.contact.url) {
             json_t *contact = json_object();
-            if (config->swagger->metadata.contact.name) {
-                json_object_set_new(contact, "name", json_string(config->swagger->metadata.contact.name));
+            if (config->metadata.contact.name) {
+                json_object_set_new(contact, "name", json_string(config->metadata.contact.name));
             }
-            if (config->swagger->metadata.contact.email) {
-                json_object_set_new(contact, "email", json_string(config->swagger->metadata.contact.email));
+            if (config->metadata.contact.email) {
+                json_object_set_new(contact, "email", json_string(config->metadata.contact.email));
             }
-            if (config->swagger->metadata.contact.url) {
-                json_object_set_new(contact, "url", json_string(config->swagger->metadata.contact.url));
+            if (config->metadata.contact.url) {
+                json_object_set_new(contact, "url", json_string(config->metadata.contact.url));
             }
             json_object_set_new(info, "contact", contact);
         }
 
         // Update license info if provided
-        if (config->swagger->metadata.license.name || config->swagger->metadata.license.url) {
+        if (config->metadata.license.name || config->metadata.license.url) {
             json_t *license = json_object();
-            if (config->swagger->metadata.license.name) {
-                json_object_set_new(license, "name", json_string(config->swagger->metadata.license.name));
+            if (config->metadata.license.name) {
+                json_object_set_new(license, "name", json_string(config->metadata.license.name));
             }
-            if (config->swagger->metadata.license.url) {
-                json_object_set_new(license, "url", json_string(config->swagger->metadata.license.url));
+            if (config->metadata.license.url) {
+                json_object_set_new(license, "url", json_string(config->metadata.license.url));
             }
             json_object_set_new(info, "license", license);
         }
@@ -642,24 +656,37 @@ cleanup:
  * @return Dynamically allocated string with the base URL, or NULL on error
  */
 static char* get_server_url(struct MHD_Connection *connection, 
-                          const WebServerConfig *config __attribute__((unused))) {
-    // Host header is mandatory in HTTP/1.1
-    const char *host = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "Host");
-    if (!host) {
-        log_this("SwaggerUI", "Missing Host header in request, cannot determine server URL", LOG_LEVEL_ERROR, NULL);
+                          const SwaggerConfig *config __attribute__((unused))) {
+    const AppConfig *app_config = get_app_config();
+    if (!app_config) {
+        log_this("SwaggerUI", "Failed to get app config", LOG_LEVEL_ERROR, NULL);
         return NULL;
     }
 
-    // Determine protocol (https or http) from X-Forwarded-Proto
-    const char *forwarded_proto = MHD_lookup_connection_value(connection, 
-                                                            MHD_HEADER_KIND, 
-                                                            "X-Forwarded-Proto");
-    const char *scheme = (forwarded_proto && strcmp(forwarded_proto, "https") == 0) 
-                        ? "https" : "http";
+    // Get host from header or use localhost
+    const char *host = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "Host");
+    if (!host) {
+        // If no Host header, construct from config
+        char *url = NULL;
+        if (asprintf(&url, "http://localhost:%d", app_config->web.port) == -1) {
+            return NULL;
+        }
+        return url;
+    }
 
-    // Construct the base URL from the request information only
+    // Check if host already includes port
+    if (strchr(host, ':')) {
+        // Host includes port, use as-is
+        char *url = NULL;
+        if (asprintf(&url, "http://%s", host) == -1) {
+            return NULL;
+        }
+        return url;
+    }
+
+    // Add port from config
     char *url = NULL;
-    if (asprintf(&url, "%s://%s", scheme, host) == -1) {
+    if (asprintf(&url, "http://%s:%d", host, app_config->web.port) == -1) {
         return NULL;
     }
     return url;
@@ -675,7 +702,14 @@ static char* get_server_url(struct MHD_Connection *connection,
  */
 static char* create_dynamic_initializer(const char *base_content __attribute__((unused)), 
                                       const char *server_url,
-                                      const WebServerConfig *config) {
+                                      const SwaggerConfig *config) {
+    // Get the API prefix from the global config
+    const AppConfig *app_config = get_app_config();
+    if (!app_config || !app_config->api.prefix) {
+        log_this("SwaggerUI", "API configuration not available", LOG_LEVEL_ERROR, NULL);
+        return NULL;
+    }
+
     // Create the new initializer content with server URL update
     char *dynamic_content = NULL;
     if (asprintf(&dynamic_content,
@@ -709,16 +743,16 @@ static char* create_dynamic_initializer(const char *base_content __attribute__((
         "    });\n"
         "  });\n"
         "};", 
-        server_url, config->swagger->prefix,
-        server_url, config->api->prefix,
-        config->swagger->ui_options.try_it_enabled ? "true" : "false",
-        config->swagger->ui_options.display_operation_id ? "true" : "false",
-        config->swagger->ui_options.default_models_expand_depth,
-        config->swagger->ui_options.default_model_expand_depth,
-        config->swagger->ui_options.show_extensions ? "true" : "false",
-        config->swagger->ui_options.show_common_extensions ? "true" : "false",
-        config->swagger->ui_options.doc_expansion,
-        config->swagger->ui_options.syntax_highlight_theme) == -1) {
+        server_url, config->prefix,
+        server_url, app_config->api.prefix,
+        config->ui_options.try_it_enabled ? "true" : "false",
+        config->ui_options.display_operation_id ? "true" : "false",
+        config->ui_options.default_models_expand_depth,
+        config->ui_options.default_model_expand_depth,
+        config->ui_options.show_extensions ? "true" : "false",
+        config->ui_options.show_common_extensions ? "true" : "false",
+        config->ui_options.doc_expansion,
+        config->ui_options.syntax_highlight_theme) == -1) {
         return NULL;
     }
 

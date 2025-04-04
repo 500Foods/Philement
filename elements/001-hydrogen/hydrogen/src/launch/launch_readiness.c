@@ -46,7 +46,7 @@
 #include "../registry/registry_integration.h"
 
 // External declarations for subsystem readiness checks (in standard order)
-extern LaunchReadiness check_registry_readiness(void);  // from registry.c
+extern LaunchReadiness check_registry_launch_readiness(void);  // from launch_registry.c
 extern LaunchReadiness check_payload_launch_readiness(void);      // from launch_payload.c
 extern LaunchReadiness check_threads_launch_readiness(void);      // from launch_threads.c
 extern LaunchReadiness check_network_launch_readiness(void);      // from launch_network.c
@@ -124,7 +124,7 @@ ReadinessResults handle_readiness_checks(void) {
     log_this("Launch", "LAUNCH READINESS", LOG_LEVEL_STATE);
     
     // Check each subsystem in standard order (registry first for consistency)
-    process_subsystem_readiness(&results, &index, "Registry", check_registry_readiness());
+    process_subsystem_readiness(&results, &index, "Registry", check_registry_launch_readiness());
     
     // Check remaining subsystems
     process_subsystem_readiness(&results, &index, "Payload", check_payload_launch_readiness());

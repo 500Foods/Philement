@@ -9,14 +9,14 @@
 #define CONFIG_SWAGGER_H
 
 // Default values for Swagger UI
-#define DEFAULT_SWAGGER_PREFIX "/swagger"
+#define DEFAULT_SWAGGER_PREFIX "/apidocs"
 #define DEFAULT_SWAGGER_TITLE "Hydrogen API"
 #define DEFAULT_SWAGGER_DESCRIPTION "Hydrogen 3D Printer Control Server API"
 #define DEFAULT_DOC_EXPANSION "list"
 #define DEFAULT_SYNTAX_HIGHLIGHT_THEME "agate"
 
 // Swagger UI configuration structure
-typedef struct {
+typedef struct SwaggerConfig {
     int enabled;
     char* prefix;
     int payload_available;  // Track if swagger payload was loaded

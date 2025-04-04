@@ -10,6 +10,23 @@
         "UploadDir": "/tmp/hydrogen_test_uploads",
         "MaxUploadSize": 2147483648
     },
+    "API": {
+        "Enabled": true,
+        "Prefix": "/api",
+        "JWTSecret": "test-jwt-secret-for-swagger-test-1",
+        "TokenExpireMinutes": 60,
+        "RefreshTokenExpireMinutes": 1440,
+        "Metadata": {
+            "Title": "Hydrogen API",
+            "Description": "Hydrogen 3D Printer Control Server API",
+            "Version": "1.0.0"
+        },
+        "Security": {
+            "Enabled": true,
+            "TokenSecret": "test-jwt-secret-for-swagger-test-1",
+            "TokenExpireMinutes": 60
+        }
+    },
     "WebSocket": {
         "Enabled": true,
         "EnableIPv6": true,

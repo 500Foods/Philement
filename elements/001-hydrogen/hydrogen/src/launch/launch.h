@@ -12,8 +12,8 @@
  * and return 1 on success, 0 on failure.
  * 
  * Standard Processing Order (for consistency, not priority):
- * - Subsystem Registry (processes registrations)
- * - Payload
+ * - 01. Registry (must be first, handles subsystem registration)
+ * - 02. Payload
  * - Threads
  * - Network
  * - Database
@@ -48,6 +48,7 @@
 // Project includes
 #include "../threads/threads.h"
 #include "../state/state_types.h"  // For SubsystemState and LaunchReadiness
+#include "launch_registry.h"       // Registry must be first
 
 // Core launch functions
 ReadinessResults handle_readiness_checks(void);
@@ -59,6 +60,7 @@ void handle_launch_review(const ReadinessResults* results);
 int startup_hydrogen(const char* config_path);
 
 // Subsystem readiness checks (in standard order)
+LaunchReadiness check_registry_launch_readiness(void);  // Must be first
 LaunchReadiness check_payload_launch_readiness(void);
 LaunchReadiness check_threads_launch_readiness(void);
 LaunchReadiness check_network_launch_readiness(void);
@@ -74,7 +76,12 @@ LaunchReadiness check_mdns_client_launch_readiness(void);
 LaunchReadiness check_mail_relay_launch_readiness(void);
 LaunchReadiness check_print_launch_readiness(void);
 
+// Subsystem registration functions
+void register_api(void);
+void register_swagger(void);
+
 // Subsystem launch functions (in standard order)
+int launch_registry_subsystem(void);  // Must be first
 int launch_payload_subsystem(void);
 void free_payload_resources(void);
 

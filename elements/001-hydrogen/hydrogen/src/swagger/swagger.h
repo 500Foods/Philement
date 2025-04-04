@@ -22,28 +22,25 @@
 #include "../config/webserver/config_webserver.h"  // For WebServerConfig
 #include "../config/swagger/config_swagger.h"    // For SwaggerConfig
 
-// Swagger payload marker in executable
-#define SWAGGER_PAYLOAD_MARKER "<<< HERE BE ME TREASURE >>>"
-
 /**
  * Initialize Swagger support
  * 
  * Checks for Swagger payload in executable and extracts it if found.
  * Must be called during server initialization.
  * 
- * @param config The web server configuration
+ * @param config The Swagger configuration
  * @return true if initialization successful, false otherwise
  */
-bool init_swagger_support(WebServerConfig *config);
+bool init_swagger_support(SwaggerConfig *config);
 
 /**
  * Check if a request is for Swagger UI content
  * 
  * @param url The request URL
- * @param config The web server configuration
+ * @param config The Swagger configuration
  * @return true if URL matches Swagger prefix, false otherwise
  */
-bool is_swagger_request(const char *url, const WebServerConfig *config);
+bool is_swagger_request(const char *url, const SwaggerConfig *config);
 
 /**
  * Handle a Swagger UI request
@@ -53,12 +50,12 @@ bool is_swagger_request(const char *url, const WebServerConfig *config);
  * 
  * @param connection The MHD connection
  * @param url The request URL
- * @param config The web server configuration
+ * @param config The Swagger configuration
  * @return MHD_YES if handled successfully, MHD_NO otherwise
  */
 enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
                                      const char *url,
-                                     const WebServerConfig *config);
+                                     const SwaggerConfig *config);
 
 /**
  * Clean up Swagger support

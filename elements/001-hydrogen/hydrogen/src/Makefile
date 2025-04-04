@@ -149,7 +149,8 @@ $(TARGET): $(BUILD_DIR)/libhydrogen.a
 trial:
 	@printf "$(CYAN)$(INFO) Starting trial build (warnings and errors only)...$(NORMAL)\n"
 	@$(MAKE) clean > /dev/null 2>&1
-	@BUILD_OUTPUT=$$($(MAKE) default 2>&1); \
+	@$(MAKE) payload > /dev/null 2>&1
+	@BUILD_OUTPUT=$$($(MAKE) release 2>&1); \
 	echo "$$BUILD_OUTPUT" | grep -v -E "^[[:space:]]*Compiling|^make(\[[0-9]+\])?: (Entering|Leaving) directory|^[[:space:]]*$(INFO)|^[[:space:]]*gcc" | \
 	grep -E "error:|warning:|undefined reference|collect2|ld returned|built successfully" --color=always || true; \
 	if echo "$$BUILD_OUTPUT" | grep -q "built successfully" && ! echo "$$BUILD_OUTPUT" | grep -q -E "warning:|error:|undefined reference|ld returned"; then \
