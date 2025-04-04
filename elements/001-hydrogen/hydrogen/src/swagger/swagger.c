@@ -30,14 +30,33 @@ typedef struct {
 static SwaggerFile *swagger_files = NULL;
 static size_t num_swagger_files = 0;
 static bool swagger_initialized = false;
+static const SwaggerConfig *global_swagger_config = NULL;  // Global config for validator
 
-// Forward declarations
+// Forward declarations and wrapper functions
+bool swagger_url_validator(const char *url) {
+    return is_swagger_request(url, global_swagger_config);
+}
+
+enum MHD_Result swagger_request_handler(void *cls,
+                                      struct MHD_Connection *connection,
+                                      const char *url,
+                                      const char *method __attribute__((unused)),
+                                      const char *version __attribute__((unused)),
+                                      const char *upload_data __attribute__((unused)),
+                                      size_t *upload_data_size __attribute__((unused)),
+                                      void **con_cls __attribute__((unused))) {
+    const SwaggerConfig *config = (const SwaggerConfig *)cls;
+    return handle_swagger_request(connection, url, config);
+}
 static bool load_swagger_files_from_tar(const uint8_t *tar_data, size_t tar_size);
 static void free_swagger_files(void);
 static char* get_server_url(struct MHD_Connection *connection, const SwaggerConfig *config);
 static char* create_dynamic_initializer(const char *base_content, const char *server_url, const SwaggerConfig *config);
 
 bool init_swagger_support(SwaggerConfig *config) {
+    // Store config globally for validator
+    global_swagger_config = config;
+    
     // Check all shutdown flags atomically
     extern volatile sig_atomic_t server_stopping;
     extern volatile sig_atomic_t server_starting;
@@ -139,10 +158,11 @@ bool is_swagger_request(const char *url, const SwaggerConfig *config) {
         return true;
     }
     
-    // Check with trailing slash
-    if (strcmp(url, config->prefix) == 0 || 
-        (strncmp(url, config->prefix, prefix_len) == 0 && 
-         (url[prefix_len] == '/' || url[prefix_len] == '\0'))) {
+    // Check if URL starts with prefix and is followed by either:
+    // - end of string
+    // - a slash (followed by any valid path)
+    if (strncmp(url, config->prefix, prefix_len) == 0 && 
+        (url[prefix_len] == '\0' || url[prefix_len] == '/')) {
         return true;
     }
 
@@ -301,6 +321,44 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
             }
             json_object_set_new(info, "license", license);
         }
+
+        // Get app config for API prefix
+        const AppConfig *app_config = get_app_config();
+        if (!app_config || !app_config->api.prefix) {
+            log_this("SwaggerUI", "API configuration not available", LOG_LEVEL_ERROR, NULL);
+            json_decref(spec);
+            return MHD_NO;
+        }
+
+        // Update servers array with API prefix
+        json_t *servers = json_array();
+        json_t *server = json_object();
+        char *server_url = get_server_url(connection, config);
+        if (!server_url) {
+            json_decref(spec);
+            json_decref(servers);
+            json_decref(server);
+            return MHD_NO;
+        }
+
+        char *full_url;
+        if (asprintf(&full_url, "%s%s", server_url, app_config->api.prefix) == -1) {
+            free(server_url);
+            json_decref(spec);
+            json_decref(servers);
+            json_decref(server);
+            return MHD_NO;
+        }
+        free(server_url);
+
+        json_object_set_new(server, "url", json_string(full_url));
+        json_object_set_new(server, "description", json_string("Current server"));
+        json_array_append_new(servers, server);
+        json_object_set_new(spec, "servers", servers);
+        free(full_url);
+
+        // Log the server URL for debugging
+        log_this("SwaggerUI", "Updated swagger.json with API prefix: %s", LOG_LEVEL_STATE, app_config->api.prefix);
 
         // Convert the modified spec back to JSON
         dynamic_content = json_dumps(spec, JSON_INDENT(2));
@@ -700,7 +758,7 @@ static char* get_server_url(struct MHD_Connection *connection,
  * @param config The web server configuration containing the swagger prefix
  * @return Dynamically allocated string with the modified content, or NULL on error
  */
-static char* create_dynamic_initializer(const char *base_content __attribute__((unused)), 
+static char* create_dynamic_initializer(const char *base_content __attribute__((unused)),
                                       const char *server_url,
                                       const SwaggerConfig *config) {
     // Get the API prefix from the global config
@@ -716,8 +774,11 @@ static char* create_dynamic_initializer(const char *base_content __attribute__((
         "window.onload = function() {\n"
         "  fetch('%s%s/swagger.json').then(response => response.json()).then(spec => {\n"
         "    // Update server URL to match current host\n"
-        "    // Using configured API prefix instead of hardcoded value\n"
-        "    spec.servers = [{url: '%s%s', description: 'Current server'}];\n"
+        "    // Use API prefix from app config\n"
+        "    spec.servers = [{\n"
+        "      url: '%s%s',\n"
+        "      description: 'Current server'\n"
+        "    }];\n"
         "    window.ui = SwaggerUIBundle({\n"
         "      spec: spec,\n"
         "      dom_id: '#swagger-ui',\n"

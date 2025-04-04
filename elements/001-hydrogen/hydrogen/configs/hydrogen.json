@@ -27,7 +27,7 @@
     },
     "API":{
       "Enabled": true,
-      "APIPrefix": "/api",
+      "Prefix": "/api",
       "JWTSecret":"${env.JWT_SECRET}"
     },
     "WebSocketServer": {

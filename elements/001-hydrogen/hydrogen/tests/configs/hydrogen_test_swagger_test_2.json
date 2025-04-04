@@ -8,8 +8,7 @@
         "WebRoot": "./www",
         "UploadPath": "/api/upload",
         "UploadDir": "/tmp/hydrogen_test_uploads",
-        "MaxUploadSize": 2147483648,
-        "ApiPrefix": "/api"
+        "MaxUploadSize": 2147483648
     },
     "API": {
         "Enabled": true,

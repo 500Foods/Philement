@@ -285,20 +285,20 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Thu Apr  3 13:15:21 PDT 2025
+Generated on: Fri Apr  4 00:42:23 PDT 2025
 
 ### Summary
 
 | Metric | Value |
 | ------ | ----- |
 | Total Tests | 14 |
-| Passed | 12 |
-| Failed | 2 |
+| Passed | 11 |
+| Failed | 3 |
 | Skipped | 0 |
-| Total Subtests | 90 |
-| Passed Subtests | 77 |
-| Failed Subtests | 13 |
-| Runtime | 7m 8s |
+| Total Subtests | 89 |
+| Passed Subtests | 81 |
+| Failed Subtests | 8 |
+| Runtime | 7m 23s |
 
 ### Individual Test Results
 
@@ -311,26 +311,26 @@ Generated on: Thu Apr  3 13:15:21 PDT 2025
 | 25_library_dependencies | ✅ Passed | Test completed without errors (16 of 16 subtests passed) |
 | 35_env_variables | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
 | 40_json_error_handling | ✅ Passed | Test completed without errors (2 of 2 subtests passed) |
-| 45_signals | ✅ Passed | Test completed without errors (4 of 4 subtests passed) |
-| 50_crash_handler | ✅ Passed | Test completed without errors (5 of 5 subtests passed) |
+| 45_signals | ❌ Failed | Test failed with errors (3 of 4 subtests passed) |
+| 50_crash_handler | ✅ Passed | Test completed without errors (3 of 4 subtests passed) |
 | 55_socket_rebind | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
-| 60_api_prefixes | ❌ Failed | Test failed with errors (5 of 10 subtests passed) |
+| 60_api_prefixes | ✅ Passed | Test completed without errors (10 of 10 subtests passed) |
 | 65_system_endpoints | ✅ Passed | Test completed without errors (13 of 13 subtests passed) |
-| 70_swagger_ui | ❌ Failed | Test failed with errors (2 of 10 subtests passed) |
-| 99_codebase | ✅ Passed | Test completed without errors (12 of 12 subtests passed) |
+| 70_swagger_ui | ❌ Failed | Test failed with errors (4 of 10 subtests passed) |
+| 99_codebase | ❌ Failed | Test failed with errors (12 of 12 subtests passed) |
 
 ## Repository Information
 
-Generated via cloc: Thu Apr  3 13:15:21 PDT 2025
+Generated via cloc: Fri Apr  4 00:42:23 PDT 2025
 
 | Language | Files | Blank Lines | Comment Lines | Code Lines |
 | -------- | ----- | ----------- | ------------- | ---------- |
-| C | 167 | 4699 | 6604 | 20546 |
+| C | 170 | 4785 | 6738 | 21025 |
 | Markdown | 118 | 4339 | 27 | 15561 |
 | Bourne | Shell | 24 | 1289 | 1324 |
-| JSON | 17 | 1 | 0 | 4657 |
-| C/C++ | Header | 148 | 1219 | 5320 |
-| Text | 15 | 4 | 0 | 2092 |
+| JSON | 17 | 1 | 0 | 4774 |
+| C/C++ | Header | 150 | 1239 | 5437 |
+| Text | 14 | 3 | 0 | 2144 |
 | HTML | 1 | 74 | 0 | 493 |
-| make | 2 | 55 | 396 | 223 |
-| **Total** | **492** | **11680** | **13671** | **51779** |
+| make | 2 | 54 | 103 | 260 |
+| **Total** | **496** | **11784** | **13629** | **52509** |

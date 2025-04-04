@@ -20,6 +20,7 @@
 #include "../registry/registry_integration.h"
 #include "../state/state_types.h"
 #include "../config/api/config_api.h"
+#include "../api/api_service.h"  // For API service initialization
 
 // External declarations
 extern AppConfig* app_config;
@@ -200,16 +201,17 @@ int launch_api_subsystem(void) {
 
     // Step 4: Initialize API endpoints
     log_this("API", "  Step 3: Initializing API endpoints", LOG_LEVEL_STATE);
-    log_this("API", "    Registering routes with prefix: %s", LOG_LEVEL_STATE, 
-             app_config->api.prefix);
-    log_this("API", "      -> /system/info", LOG_LEVEL_STATE);
-    log_this("API", "      -> /system/health", LOG_LEVEL_STATE);
-    log_this("API", "      -> /system/test", LOG_LEVEL_STATE);
-    log_this("API", "      -> /system/config", LOG_LEVEL_STATE);
-    log_this("API", "      -> /system/prometheus", LOG_LEVEL_STATE);
-    log_this("API", "    API endpoints initialized", LOG_LEVEL_STATE);
+    
+    // Initialize and register API endpoints
+    if (!init_api_endpoints()) {
+        log_this("API", "    Failed to initialize API endpoints", LOG_LEVEL_ERROR);
+        log_this("API", "LAUNCH: API - Failed: Endpoint initialization failed", LOG_LEVEL_STATE);
+        return 0;
+    }
+    
+    log_this("API", "    API endpoints initialized successfully", LOG_LEVEL_STATE);
 
-    // Step 4: Update registry and verify state
+    // Step 5: Update registry and verify state
     log_this("API", "  Step 4: Updating subsystem registry", LOG_LEVEL_STATE);
     update_subsystem_on_startup("API", true);
     
@@ -258,8 +260,9 @@ void shutdown_api(void) {
     // Step 2: Clean up API resources
     log_this("API", "  Step 2: Cleaning up API resources", LOG_LEVEL_STATE);
     
-    // Note: Most API resources are managed by the web server
-    // We mainly need to update our state and logging
+    // Clean up API endpoints
+    cleanup_api_endpoints();
+    log_this("API", "    API endpoints cleaned up", LOG_LEVEL_STATE);
 
     // Step 3: Update registry state
     log_this("API", "  Step 3: Updating registry state", LOG_LEVEL_STATE);
