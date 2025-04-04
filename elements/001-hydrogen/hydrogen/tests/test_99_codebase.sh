@@ -866,8 +866,11 @@ done
 # Print summary statistics
 print_test_summary $((PASS_COUNT + FAIL_COUNT)) $PASS_COUNT $FAIL_COUNT | tee -a "$RESULT_LOG"
 
+# Get test name from script name
+TEST_NAME=$(basename "$0" .sh | sed 's/^test_//')
+
 # Export subtest results for test_all.sh to pick up
-export_subtest_results $((PASS_COUNT + FAIL_COUNT)) $PASS_COUNT
+export_subtest_results "$TEST_NAME" $((PASS_COUNT + FAIL_COUNT)) $PASS_COUNT
 
 # End the test with final result
 end_test $TEST_RESULT "$TEST_NAME" | tee -a "$RESULT_LOG"

@@ -56,8 +56,8 @@ test_compilation() {
             # Extract the build variant (between parentheses) without including the closing parenthesis
             local TARGET=$(echo "$COMPONENT" | sed -n 's/.*(\([^)]*\)).*/\1/p')
             if [ "$TARGET" == "default" ]; then
-                # Default build doesn't need a specific target
-                CFLAGS="-Wall -Wextra -Werror -pedantic" make
+                # Default build needs explicit target to avoid confusion with 'all'
+                CFLAGS="-Wall -Wextra -Werror -pedantic" make default
             else
                 CFLAGS="-Wall -Wextra -Werror -pedantic" make $TARGET
             fi
@@ -207,8 +207,11 @@ print_info "Completed at: $(date)" | tee -a "$RESULT_LOG"
 print_info "Test log: $(convert_to_relative_path "$RESULT_LOG")" | tee -a "$RESULT_LOG"
 print_info "Subtest results: $PASS_COUNT of $TOTAL_SUBTESTS subtests passed" | tee -a "$RESULT_LOG"
 
+# Get test name from script name
+TEST_NAME=$(basename "$0" .sh | sed 's/^test_//')
+
 # Export subtest results for test_all.sh to pick up
-export_subtest_results $TOTAL_SUBTESTS $PASS_COUNT
+export_subtest_results "$TEST_NAME" $TOTAL_SUBTESTS $PASS_COUNT
 
 # End test with appropriate result message
 end_test $EXIT_CODE "Compilation Test" | tee -a "$RESULT_LOG"
