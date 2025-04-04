@@ -285,20 +285,20 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Fri Apr  4 04:48:15 PDT 2025
+Generated on: Fri Apr  4 15:54:31 PDT 2025
 
 ### Summary
 
 | Metric | Value |
 | ------ | ----- |
-| Total Tests | 14 |
+| Total Tests | 15 |
 | Passed | 14 |
-| Failed | 0 |
+| Failed | 1 |
 | Skipped | 0 |
-| Total Subtests | 89 |
-| Passed Subtests | 88 |
-| Failed Subtests | 1 |
-| Runtime | 6m 24s |
+| Total Subtests | 111 |
+| Passed Subtests | 109 |
+| Failed Subtests | 2 |
+| Runtime | 6m 0s |
 
 ### Individual Test Results
 
@@ -307,30 +307,31 @@ Generated on: Fri Apr  4 04:48:15 PDT 2025
 | 10_compilation | ✅ Passed | Test completed without errors (7 of 7 subtests passed) |
 | 12_env_payload | ✅ Passed | Test completed without errors (2 of 2 subtests passed) |
 | 15_startup_shutdown | ✅ Passed | Test completed without errors (6 of 6 subtests passed) |
-| 20_shutdown | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
+| 20_shutdown | ✅ Passed | Test completed without errors (5 of 5 subtests passed) |
 | 25_library_dependencies | ✅ Passed | Test completed without errors (16 of 16 subtests passed) |
 | 35_env_variables | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
 | 40_json_error_handling | ✅ Passed | Test completed without errors (2 of 2 subtests passed) |
 | 45_signals | ✅ Passed | Test completed without errors (4 of 4 subtests passed) |
-| 50_crash_handler | ✅ Passed | Test completed without errors (3 of 4 subtests passed) |
+| 50_crash_handler | ✅ Passed | Test completed without errors (20 of 20 subtests passed) |
 | 55_socket_rebind | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
 | 60_api_prefixes | ✅ Passed | Test completed without errors (10 of 10 subtests passed) |
 | 65_system_endpoints | ✅ Passed | Test completed without errors (13 of 13 subtests passed) |
 | 70_swagger_ui | ✅ Passed | Test completed without errors (10 of 10 subtests passed) |
+| 95_leaks_like_a_sieve | ❌ Failed | Test failed with errors (0 of 2 subtests passed) |
 | 99_codebase | ✅ Passed | Test completed without errors (12 of 12 subtests passed) |
 
 ## Repository Information
 
-Generated via cloc: Fri Apr  4 04:48:15 PDT 2025
+Generated via cloc: Fri Apr  4 15:54:31 PDT 2025
 
 | Language | Files | Blank Lines | Comment Lines | Code Lines |
 | -------- | ----- | ----------- | ------------- | ---------- |
 | C | 170 | 4789 | 6747 | 21074 |
-| Markdown | 118 | 4339 | 27 | 15561 |
-| Bourne | Shell | 24 | 1289 | 1327 |
+| Markdown | 118 | 4339 | 27 | 15563 |
+| Bourne | Shell | 25 | 1383 | 1428 |
 | JSON | 17 | 1 | 0 | 4774 |
 | C/C++ | Header | 150 | 1241 | 5470 |
-| Text | 14 | 3 | 0 | 2178 |
+| Text | 19 | 50 | 0 | 2717 |
 | HTML | 1 | 74 | 0 | 493 |
 | make | 2 | 55 | 104 | 260 |
-| **Total** | **496** | **11791** | **13675** | **52604** |
+| **Total** | **502** | **11932** | **13776** | **53434** |

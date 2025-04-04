@@ -83,8 +83,11 @@ if grep -q "Error message contains line and column information" "$RESULT_LOG"; t
     ((PASS_COUNT++))
 fi
 
+# Get test name from script name
+TEST_NAME=$(basename "$0" .sh | sed 's/^test_//')
+
 # Export subtest results for test_all.sh to pick up
-export_subtest_results $TOTAL_SUBTESTS $PASS_COUNT
+export_subtest_results "$TEST_NAME" $TOTAL_SUBTESTS $PASS_COUNT
 
 # Log subtest results
 print_info "JSON Error Handling Test: $PASS_COUNT of $TOTAL_SUBTESTS subtests passed" | tee -a "$RESULT_LOG"

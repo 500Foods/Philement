@@ -94,8 +94,8 @@ run_test() {
         # Read subtest results
         IFS=',' read -r total_subtests passed_subtests < "$subtest_file"
         print_info "Found subtest results: $passed_subtests of $total_subtests subtests passed" | tee -a "$SUMMARY_LOG"
-        # Remove the subtest file after reading
-        rm -f "$subtest_file"
+        # Keep the file for debugging
+        mv "$subtest_file" "${subtest_file}.${TIMESTAMP}"
     else
         # Default to 1 subtest
         total_subtests=1
@@ -104,6 +104,8 @@ run_test() {
         else
             passed_subtests=0
         fi
+        # Create a subtest file for debugging
+        echo "${total_subtests},${passed_subtests}" > "${subtest_file}.${TIMESTAMP}"
     fi
     
     # Record test results
@@ -201,8 +203,8 @@ run_test_with_config() {
         # Read subtest results
         IFS=',' read -r total_subtests passed_subtests < "$subtest_file"
         print_info "Found subtest results: $passed_subtests of $total_subtests subtests passed" | tee -a "$SUMMARY_LOG"
-        # Remove the subtest file after reading
-        rm -f "$subtest_file"
+        # Keep the file for debugging
+        mv "$subtest_file" "${subtest_file}.${TIMESTAMP}"
     else
         # Default to 1 subtest
         total_subtests=1
@@ -211,6 +213,8 @@ run_test_with_config() {
         else
             passed_subtests=0
         fi
+        # Create a subtest file for debugging
+        echo "${total_subtests},${passed_subtests}" > "${subtest_file}.${TIMESTAMP}"
     fi
     
     # Record test results

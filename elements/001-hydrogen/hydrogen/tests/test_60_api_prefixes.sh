@@ -664,8 +664,11 @@ else
     print_result 1 "Some API prefix tests failed"
 fi
 
+# Get test name from script name
+TEST_NAME=$(basename "$0" .sh | sed 's/^test_//')
+
 # Export subtest results for test_all.sh to pick up
-export_subtest_results $TOTAL_SUBTESTS $PASSED_SUBTESTS
+export_subtest_results "$TEST_NAME" $TOTAL_SUBTESTS $PASSED_SUBTESTS
 
 # Log subtest results
 print_info "API Prefix Tests: $PASSED_SUBTESTS of $TOTAL_SUBTESTS subtests passed"

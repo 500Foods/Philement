@@ -185,8 +185,11 @@ print_header "Testing Maximal Configuration" | tee -a "$RESULT_LOG"
 test_configuration "$MAX_CONFIG"
 MAX_RESULT=$?
 
+# Get test name from script name
+TEST_NAME=$(basename "$0" .sh | sed 's/^test_//')
+
 # Export subtest results for test_all.sh
-export_subtest_results $TOTAL_SUBTESTS $PASSED_SUBTESTS
+export_subtest_results "$TEST_NAME" $TOTAL_SUBTESTS $PASSED_SUBTESTS
 
 # Print final summary
 print_header "Test Summary" | tee -a "$RESULT_LOG"
