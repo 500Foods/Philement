@@ -14,7 +14,24 @@
 #include <microhttpd.h>
 #include <stdbool.h>
 
-// API endpoint handlers
+/*
+ * Include API service header for URL validation and request handling.
+ * The API service owns the prefix validation logic (is_api_endpoint) and provides
+ * consistent handling of both default ("/api") and custom (e.g., "/myapi") prefixes.
+ * This allows each subsystem to manage its own URL space while the webserver
+ * acts as a router, delegating requests based on their prefixes.
+ */
+#include "../api/api_service.h"
+
+/*
+ * System API Endpoint Handlers
+ * These handlers process requests to system endpoints after the API service
+ * has validated the URL prefix and extracted the service/endpoint names.
+ * The prefix is determined by app_config->api.prefix, which could be
+ * the default "/api" or a custom prefix. For example, with prefix "/custom":
+ * - /custom/system/health -> handle_system_health_request
+ * - /custom/system/info -> handle_system_info_request
+ */
 enum MHD_Result handle_system_info_request(struct MHD_Connection *connection);
 enum MHD_Result handle_system_health_request(struct MHD_Connection *connection);
 enum MHD_Result handle_system_prometheus_request(struct MHD_Connection *connection);
@@ -23,9 +40,6 @@ enum MHD_Result handle_system_test_request(struct MHD_Connection *connection,
                                         const char *upload_data,
                                         size_t *upload_data_size,
                                         void **con_cls);
-
-// Request utilities (internal)
-bool is_api_endpoint(const char *url, char *service, char *endpoint);
 
 // Main request handler (called by web_server_core)
 enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,

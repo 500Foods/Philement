@@ -34,6 +34,36 @@
 bool init_swagger_support(SwaggerConfig *config);
 
 /**
+ * Validate if a URL is a Swagger request (wrapper for webserver integration)
+ * 
+ * @param url The request URL to validate
+ * @return true if URL is valid for Swagger, false otherwise
+ */
+bool swagger_url_validator(const char *url);
+
+/**
+ * Handle a Swagger request (wrapper for webserver integration)
+ * 
+ * @param cls The SwaggerConfig pointer
+ * @param connection The MHD connection
+ * @param url The request URL
+ * @param method The HTTP method
+ * @param version The HTTP version
+ * @param upload_data Upload data buffer
+ * @param upload_data_size Size of upload data
+ * @param con_cls Connection-specific data
+ * @return MHD_YES if handled successfully, MHD_NO otherwise
+ */
+enum MHD_Result swagger_request_handler(void *cls,
+                                      struct MHD_Connection *connection,
+                                      const char *url,
+                                      const char *method,
+                                      const char *version,
+                                      const char *upload_data,
+                                      size_t *upload_data_size,
+                                      void **con_cls);
+
+/**
  * Check if a request is for Swagger UI content
  * 
  * @param url The request URL

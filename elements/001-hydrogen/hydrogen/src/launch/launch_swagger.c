@@ -27,6 +27,7 @@
 #include "../state/state_types.h"
 #include "../payload/payload.h"
 #include "../swagger/swagger.h"
+#include "../webserver/web_server_core.h"  // For WebServerEndpoint
 
 // Launch system includes
 #include "launch.h"
@@ -274,8 +275,28 @@ int launch_swagger_subsystem(void) {
     }
     log_this("Swagger", "    API subsystem running", LOG_LEVEL_STATE);
 
-    // Register Swagger routes with webserver (files already extracted by payload subsystem)
-    log_this("Swagger", "    Registering routes with prefix: %s", LOG_LEVEL_STATE, 
+    // Initialize Swagger UI support
+    if (!init_swagger_support(app_config->swagger)) {
+        log_this("Swagger", "    Failed to initialize Swagger UI", LOG_LEVEL_ERROR);
+        log_this("Swagger", "LAUNCH: SWAGGER - Failed: UI initialization failed", LOG_LEVEL_STATE);
+        return 0;
+    }
+    log_this("Swagger", "    Swagger UI initialized", LOG_LEVEL_STATE);
+
+    // Register Swagger endpoint with webserver using our static wrapper functions
+    WebServerEndpoint swagger_endpoint = {
+        .prefix = app_config->swagger->prefix,
+        .validator = swagger_url_validator,
+        .handler = swagger_request_handler
+    };
+
+    if (!register_web_endpoint(&swagger_endpoint)) {
+        log_this("Swagger", "    Failed to register Swagger endpoint", LOG_LEVEL_ERROR);
+        log_this("Swagger", "LAUNCH: SWAGGER - Failed: Endpoint registration failed", LOG_LEVEL_STATE);
+        return 0;
+    }
+
+    log_this("Swagger", "    Registered endpoint with prefix: %s", LOG_LEVEL_STATE, 
              app_config->swagger->prefix);
     log_this("Swagger", "      -> /", LOG_LEVEL_STATE);
     log_this("Swagger", "      -> /index.html", LOG_LEVEL_STATE);

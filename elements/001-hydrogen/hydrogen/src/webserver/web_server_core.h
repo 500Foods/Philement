@@ -36,10 +36,29 @@ struct ConnectionInfo {
     bool response_sent;
 };
 
+// Endpoint registration structure
+typedef struct {
+    const char* prefix;           // URL prefix (e.g., "/api")
+    bool (*validator)(const char* url);  // URL validation function
+    enum MHD_Result (*handler)(void *cls,
+                             struct MHD_Connection *connection,
+                             const char *url,
+                             const char *method,
+                             const char *version,
+                             const char *upload_data,
+                             size_t *upload_data_size,
+                             void **con_cls);   // Request handler function
+} WebServerEndpoint;
+
 // Core server functions
 bool init_web_server(WebServerConfig *web_config);
 void* run_web_server(void* arg);
 void shutdown_web_server(void);
+
+// Endpoint registration and lookup
+bool register_web_endpoint(const WebServerEndpoint* endpoint);
+void unregister_web_endpoint(const char* prefix);
+const WebServerEndpoint* get_endpoint_for_url(const char* url);
 
 // Shared utility functions
 void add_cors_headers(struct MHD_Response *response);
