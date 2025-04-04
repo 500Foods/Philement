@@ -238,8 +238,14 @@ char* format_system_status_prometheus(const SystemMetrics *metrics) {
         int written = snprintf(output + offset, buffer_size - offset, __VA_ARGS__); \
         if (written > 0) offset += written; \
         if (offset >= buffer_size - 1024) { \
-            buffer_size *= 2; \
-            output = realloc(output, buffer_size); \
+            size_t new_size = buffer_size * 2; \
+            char *new_buffer = realloc(output, new_size); \
+            if (new_buffer == NULL) { \
+                free(output); \
+                return NULL; \
+            } \
+            output = new_buffer; \
+            buffer_size = new_size; \
         } \
     } while(0)
 

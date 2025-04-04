@@ -29,14 +29,20 @@ LaunchReadiness check_registry_landing_readiness(void);
 /**
  * @brief Land the Registry subsystem
  * 
- * This function frees any resources allocated by the registry.
- * It should be called only after all other subsystems have been
- * shut down and marked as inactive.
+ * This function handles cleanup of the registry subsystem. Its behavior
+ * differs based on whether this is a full shutdown or part of a restart:
  * 
- * @note This is the final cleanup step in the landing sequence
+ * - During restart (is_restart=true): Preserves the Registry's state while
+ *   resetting other subsystems. This ensures the Registry remains functional
+ *   for the subsequent relaunch.
+ * 
+ * - During shutdown (is_restart=false): Performs complete cleanup, freeing
+ *   all resources and resetting all subsystem states.
+ * 
+ * @param is_restart true if this is part of a restart sequence, false for shutdown
  * @return int 1 on success, 0 on failure
  */
-int land_registry_subsystem(void);
+int land_registry_subsystem(bool is_restart);
 
 /**
  * @brief Report final registry status during landing

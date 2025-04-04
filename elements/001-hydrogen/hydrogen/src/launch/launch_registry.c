@@ -56,7 +56,7 @@ LaunchReadiness check_registry_launch_readiness(void) {
 }
 
 // Launch registry subsystem
-int launch_registry_subsystem(void) {
+int launch_registry_subsystem(bool is_restart) {
     log_this("Registry", LOG_LINE_BREAK, LOG_LEVEL_STATE);
     log_this("Registry", "――――――――――――――――――――――――――――――――――――――――", LOG_LEVEL_STATE);
     log_this("Registry", "LAUNCH: REGISTRY", LOG_LEVEL_STATE);
@@ -92,12 +92,27 @@ int launch_registry_subsystem(void) {
     // Step 3: Verify registry state
     log_this("Registry", "  Step 3: Verifying registry state", LOG_LEVEL_STATE);
     SubsystemState final_state = get_subsystem_state(registry_subsystem_id);
-    if (final_state == SUBSYSTEM_RUNNING) {
-        log_this("Registry", "LAUNCH: REGISTRY - Successfully launched and running", LOG_LEVEL_STATE);
+    
+    if (is_restart) {
+        // During restart, we're more lenient about state
+        if (final_state != SUBSYSTEM_ERROR) {
+            // Any non-error state is acceptable during restart
+            log_this("Registry", "LAUNCH: REGISTRY - State during restart: %s", LOG_LEVEL_STATE,
+                    subsystem_state_to_string(final_state));
+            return 1;
+        } else {
+            log_this("Registry", "LAUNCH: REGISTRY - Error state during restart", LOG_LEVEL_ERROR);
+            return 0;
+        }
     } else {
-        log_this("Registry", "LAUNCH: REGISTRY - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
-                subsystem_state_to_string(final_state));
-        return 0;
+        // Normal launch requires RUNNING state
+        if (final_state == SUBSYSTEM_RUNNING) {
+            log_this("Registry", "LAUNCH: REGISTRY - Successfully launched and running", LOG_LEVEL_STATE);
+        } else {
+            log_this("Registry", "LAUNCH: REGISTRY - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
+                    subsystem_state_to_string(final_state));
+            return 0;
+        }
     }
     
     return 1;

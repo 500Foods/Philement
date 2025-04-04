@@ -81,7 +81,7 @@ void register_api(void);
 void register_swagger(void);
 
 // Subsystem launch functions (in standard order)
-int launch_registry_subsystem(void);  // Must be first
+int launch_registry_subsystem(bool is_restart);  // Must be first
 int launch_payload_subsystem(void);
 void free_payload_resources(void);
 

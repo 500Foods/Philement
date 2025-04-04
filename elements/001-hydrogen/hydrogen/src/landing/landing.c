@@ -110,12 +110,17 @@ extern int land_logging_subsystem(void);
 extern int land_network_subsystem(void);
 extern int land_payload_subsystem(void);
 extern int land_threads_subsystem(void);
-extern int land_registry_subsystem(void);
+extern int land_registry_subsystem(bool is_restart);
+
+// Function types for landing operations
+typedef int (*LandingFunction)(void);
+typedef int (*RegistryLandingFunction)(bool);
 
 // Utility function to get subsystem landing function from registry
-typedef int (*LandingFunction)(void);
-
 static LandingFunction get_landing_function(const char* subsystem_name) {
+    // Registry is handled separately due to different signature
+    if (strcmp(subsystem_name, "Registry") == 0) return NULL;
+    
     if (strcmp(subsystem_name, "Print") == 0) return land_print_subsystem;
     if (strcmp(subsystem_name, "MailRelay") == 0) return land_mail_relay_subsystem;
     if (strcmp(subsystem_name, "mDNS Client") == 0) return land_mdns_client_subsystem;
@@ -130,7 +135,6 @@ static LandingFunction get_landing_function(const char* subsystem_name) {
     if (strcmp(subsystem_name, "Network") == 0) return land_network_subsystem;
     if (strcmp(subsystem_name, "Payload") == 0) return land_payload_subsystem;
     if (strcmp(subsystem_name, "Threads") == 0) return land_threads_subsystem;
-    if (strcmp(subsystem_name, "Registry") == 0) return land_registry_subsystem;
     return NULL;
 }
 
@@ -260,7 +264,7 @@ bool check_all_landing_readiness(void) {
         // Land Registry as final step
         log_this("Landing", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
         log_this("Landing", "LANDING: REGISTRY (Final Step)", LOG_LEVEL_STATE);
-        bool registry_ok = land_registry_subsystem();
+        bool registry_ok = land_registry_subsystem(restart_requested);
         landing_success &= registry_ok;
         
         // Calculate and log timing if landing was successful
