@@ -25,7 +25,6 @@
 #include <unistd.h>
 
 // Project headers
-#include "../swagger/swagger.h"
 #include "../threads/threads.h"
 #include "../logging/logging.h"
 
@@ -147,18 +146,6 @@ bool init_web_server(WebServerConfig *web_config) {
     log_this("WebServer", "-> Max Connections: %d", LOG_LEVEL_STATE, web_config->max_connections);
     log_this("WebServer", "-> Max Connections Per IP: %d", LOG_LEVEL_STATE, web_config->max_connections_per_ip);
     log_this("WebServer", "-> Connection Timeout: %d seconds", LOG_LEVEL_STATE, web_config->connection_timeout);
-
-    // Initialize Swagger support if enabled
-    if (web_config->swagger->enabled) {
-        log_this("WebServer", "Initializing Swagger UI support", LOG_LEVEL_STATE);
-        if (init_swagger_support(web_config)) {
-            log_this("WebServer", "-> Swagger UI enabled at prefix: %s", LOG_LEVEL_STATE, 
-                    web_config->swagger->prefix);
-        } else {
-            log_this("WebServer", "-> Swagger UI initialization failed", LOG_LEVEL_ALERT);
-            return false;
-        }
-    }
 
     // Create upload directory if it doesn't exist
     struct stat st = {0};
@@ -323,12 +310,6 @@ void shutdown_web_server(void) {
     __sync_synchronize();  // Memory barrier
 
     log_this("WebServer", "Shutdown: Initiating web server shutdown", LOG_LEVEL_STATE);
-    
-    // Clean up Swagger resources if enabled
-    if (server_web_config && server_web_config->swagger->enabled) {
-        cleanup_swagger_support();
-        log_this("WebServer", "Swagger UI resources cleaned up", LOG_LEVEL_STATE);
-    }
     
     // Stop the web server daemon
     if (web_daemon != NULL) {

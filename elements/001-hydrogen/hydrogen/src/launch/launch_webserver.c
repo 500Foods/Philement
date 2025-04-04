@@ -27,7 +27,6 @@
 #include "../config/config.h"
 #include "../registry/registry_integration.h"
 #include "../state/state_types.h"
-#include "../config/swagger/config_swagger.h"  // For SwaggerConfig
 
 // Network constants
 #ifndef NI_MAXHOST
@@ -252,18 +251,6 @@ int launch_webserver_subsystem(void) {
 
     // Step 2: Initialize web server
     log_this("WebServer", "  Step 2: Initializing web server", LOG_LEVEL_STATE);
-    
-    // Ensure swagger config exists before initialization
-    if (!app_config->web.swagger) {
-        log_this("WebServer", "    Note: No Swagger configuration present", LOG_LEVEL_STATE);
-        app_config->web.swagger = calloc(1, sizeof(SwaggerConfig));
-        if (!app_config->web.swagger) {
-            log_this("WebServer", "Failed to allocate Swagger configuration", LOG_LEVEL_ERROR);
-            log_this("WebServer", "LAUNCH: WEBSERVER - Failed: Memory allocation error", LOG_LEVEL_STATE);
-            return 0;
-        }
-        app_config->web.swagger->enabled = false;
-    }
     
     if (!init_web_server(&app_config->web)) {
         log_this("WebServer", "Failed to initialize web server", LOG_LEVEL_ERROR);

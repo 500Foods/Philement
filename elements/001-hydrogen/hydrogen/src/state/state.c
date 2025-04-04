@@ -4,7 +4,20 @@
  */
 
 #include "state.h"
+#include "state_types.h"
 #include "../logging/logging.h"  // For log_this
+#include <stdlib.h>  // For free
+
+// Memory management implementation
+void free_readiness_messages(LaunchReadiness* readiness) {
+    if (readiness && readiness->messages) {
+        for (size_t i = 0; readiness->messages[i]; i++) {
+            free((void*)readiness->messages[i]);
+        }
+        free(readiness->messages);
+        readiness->messages = NULL;
+    }
+}
 
 // Core state flags
 

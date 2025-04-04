@@ -1008,6 +1008,58 @@
         }
       }
     },
+    "/system/prometheus": {
+      "get": {
+        "summary": "System metrics endpoint (Prometheus)",
+        "description": "Returns system metrics in a format compatible with Prometheus monitoring system",
+        "operationId": "getSystemPrometheus",
+        "tags": [
+          "System Service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "hardware": {
+                      "type": "object"
+                    },
+                    "os": {
+                      "type": "object"
+                    },
+                    "runtime": {
+                      "type": "object"
+                    },
+                    "version": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Failed to create response"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/system/test": {
       "get": {
         "summary": "API diagnostic test endpoint\nAPI diagnostic test endpoint",

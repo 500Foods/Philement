@@ -45,6 +45,8 @@
 #include "config_forward.h"
 
 // Subsystem configurations with struct definitions
+#include "api/config_api.h"          // Must be before dependent configs
+#include "swagger/config_swagger.h"   // Must be before AppConfig
 #include "webserver/config_webserver.h"
 #include "websocket/config_websocket.h"
 #include "network/config_network.h"
@@ -54,7 +56,6 @@
 #include "resources/config_resources.h"
 #include "mdns/config_mdns.h"
 #include "logging/config_logging.h"
-#include "api/config_api.h"
 #include "notify/config_notify.h"
 #include "print/config_motion.h"
 
@@ -98,6 +99,7 @@ struct AppConfig {
     APIConfig api;
     NotifyConfig notify;
     LoggingConfig logging;
+    SwaggerConfig* swagger;  // Pointer to swagger configuration
 };
 
 /*

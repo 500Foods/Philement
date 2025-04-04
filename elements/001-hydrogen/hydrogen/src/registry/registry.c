@@ -20,6 +20,7 @@
 #include "../logging/logging.h"
 #include "../threads/threads.h"
 #include "../launch/launch.h"  // For LaunchReadiness struct
+#include "../launch/launch_registry.h"  // For launch_registry_subsystem
 
 // Global registry instance - initialized with empty array
 SubsystemRegistry subsystem_registry = { 
