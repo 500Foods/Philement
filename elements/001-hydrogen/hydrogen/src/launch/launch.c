@@ -75,6 +75,7 @@
 #include "../registry/registry_integration.h"
 
 // Launch subsystem includes (in standard order)
+#include "launch_registry.h"  // Must be first
 #include "launch_payload.h"
 #include "launch_threads.h"
 #include "launch_network.h"
@@ -91,6 +92,7 @@
 #include "launch_print.h"
 
 // External declarations for subsystem launch functions (in standard order)
+extern int launch_registry_subsystem(void);     // from launch_registry.c
 extern int launch_payload_subsystem(void);      // from launch_payload.c
 extern int launch_threads_subsystem(void);      // from launch_threads.c
 extern int launch_network_subsystem(void);      // from launch_network.c
@@ -162,12 +164,13 @@ static bool launch_approved_subsystems(ReadinessResults* results) {
     
     bool all_launched = true;
     
-    // Launch subsystems in registry order
+    // Launch subsystems in registry order (skip Registry since it's launched separately)
     for (size_t i = 0; i < results->total_checked; i++) {
         const char* subsystem = results->results[i].subsystem;
         bool is_ready = results->results[i].ready;
         
-        if (!is_ready) continue;
+        // Skip if not ready or if it's Registry (already launched)
+        if (!is_ready || strcmp(subsystem, "Registry") == 0) continue;
         
         char* upper_name = get_uppercase_name(subsystem);
         if (!upper_name) {
@@ -175,12 +178,15 @@ static bool launch_approved_subsystems(ReadinessResults* results) {
             return false;
         }
         
-        // Get subsystem ID and update state to starting
+        // Get subsystem ID
         int subsystem_id = get_subsystem_id_by_name(subsystem);
         if (subsystem_id < 0) {
+            log_this("Launch", "Failed to get subsystem ID for '%s'", LOG_LEVEL_ERROR, subsystem);
             free(upper_name);
             continue;
         }
+        
+        // Update state to starting
         update_subsystem_state(subsystem_id, SUBSYSTEM_STARTING);
         
         // Initialize subsystem using its specific launch function
@@ -355,7 +361,7 @@ int startup_hydrogen(const char* config_path) {
     // Log successful configuration loading
     log_this("Startup", "Configuration loading complete", LOG_LEVEL_STATE);
     
-    // Initialize core systems needed for subsystem operation
+    // Initialize and launch core systems
     log_this("Startup", "Initializing core systems...", LOG_LEVEL_STATE);
     
     // Initialize registry first as it's needed for subsystem tracking
@@ -379,7 +385,14 @@ int startup_hydrogen(const char* config_path) {
         log_this("Startup", "Launch plan failed - no subsystems will be started", LOG_LEVEL_ALERT);
         return 0;
     }
-    
+
+    // Launch Registry first after plan is approved
+    log_this("Launch", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+    if (!launch_registry_subsystem()) {
+        log_this("Startup", "Failed to launch registry - cannot continue", LOG_LEVEL_ERROR);
+        return 0;
+    }
+
     // Apply configured startup delay silently
     if (app_config->server.startup_delay > 0 && app_config->server.startup_delay < 10000) {
         usleep(app_config->server.startup_delay * 1000);

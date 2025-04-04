@@ -47,4 +47,7 @@ typedef struct ResourceConfig ResourceConfig;
 // MDNS types
 typedef struct MDNSServerConfig MDNSServerConfig;
 
+// Swagger types
+typedef struct SwaggerConfig SwaggerConfig;
+
 #endif /* CONFIG_FORWARD_H */

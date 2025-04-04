@@ -14,6 +14,9 @@
 #include <stdlib.h>
 #include "../config/config.h"
 
+// Standard marker for identifying payloads in executables
+#define PAYLOAD_MARKER "<<< HERE BE ME TREASURE >>>"
+
 // Structure to hold extracted payload data
 typedef struct {
     uint8_t *data;
