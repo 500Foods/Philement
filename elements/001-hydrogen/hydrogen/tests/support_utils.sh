@@ -486,10 +486,10 @@ EOF
 # Function to save subtest statistics for use by test_all.sh
 # This creates a file that test_all.sh can read to get the actual subtest counts
 export_subtest_results() {
+    local test_name=$1      # Use the passed test name
+    local total_subtests=$2
+    local passed_subtests=$3
     local script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-    local test_name="$(basename "${BASH_SOURCE[1]}" .sh | sed 's/^test_//')"
-    local total_subtests=$1
-    local passed_subtests=$2
     local results_dir="$script_dir/results"
     
     # Create results directory if it doesn't exist

@@ -458,9 +458,15 @@ done
 # Print summary statistics
 print_test_summary $((PASS_COUNT + FAIL_COUNT)) $PASS_COUNT $FAIL_COUNT
 
+# Get test name from script name
+TEST_NAME=$(basename "$0" .sh | sed 's/^test_//')
+
+# Get test name from script name
+TEST_NAME=$(basename "$0" .sh | sed 's/^test_//')
+
 # Export subtest results for test_all.sh to pick up
 TOTAL_SUBTESTS=$((PASS_COUNT + FAIL_COUNT))
-export_subtest_results $TOTAL_SUBTESTS $PASS_COUNT
+export_subtest_results "$TEST_NAME" $TOTAL_SUBTESTS $PASS_COUNT
 
 # Log subtest results
 print_info "System API Endpoints Test: $PASS_COUNT of $TOTAL_SUBTESTS subtests passed"

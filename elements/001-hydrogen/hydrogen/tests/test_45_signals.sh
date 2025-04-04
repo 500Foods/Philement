@@ -364,8 +364,11 @@ PASSED_TESTS=0
 # Print test summary
 print_test_summary $TOTAL_TESTS $PASSED_TESTS $((TOTAL_TESTS - PASSED_TESTS))
 
+# Get test name from script name
+TEST_NAME=$(basename "$0" .sh | sed 's/^test_//')
+
 # Export subtest results for test_all.sh
-export_subtest_results $TOTAL_TESTS $PASSED_TESTS
+export_subtest_results "$TEST_NAME" $TOTAL_TESTS $PASSED_TESTS
 
 # End the test with final result
 if [ $PASSED_TESTS -eq $TOTAL_TESTS ]; then

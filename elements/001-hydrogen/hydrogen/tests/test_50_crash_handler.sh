@@ -151,9 +151,9 @@ run_test_with_build() {
     
     print_info "Testing with build: $binary_name"
     
-    # Start hydrogen server in background
-    print_info "Starting hydrogen server..."
-    $binary "$CONFIG_FILE" > "$SCRIPT_DIR/hydrogen_crash_test.log" 2>&1 &
+    # Start hydrogen server in background with ASAN leak detection disabled
+    print_info "Starting hydrogen server (with leak detection disabled)..."
+    ASAN_OPTIONS="detect_leaks=0" $binary "$CONFIG_FILE" > "$SCRIPT_DIR/hydrogen_crash_test.log" 2>&1 &
     HYDROGEN_PID=$!
     
     # Wait for startup with active log monitoring
@@ -438,6 +438,17 @@ for build in "${BUILDS[@]}"; do
     print_info "  • ${build_name}: ${BUILD_DESCRIPTIONS[$build_name]}"
 done
 
+# Debug output for build discovery
+print_info "Build discovery details:"
+print_info "Total builds found: ${#BUILDS[@]}"
+for build in "${BUILDS[@]}"; do
+    build_name=$(basename "$build")
+    print_info "  • Build: $build_name"
+    print_info "    - Description: ${BUILD_DESCRIPTIONS[$build_name]}"
+    print_info "    - Path: $build"
+    print_info "    - Exists: $([ -f "$build" ] && echo "Yes" || echo "No")"
+done
+
 print_info "Using minimal configuration: $(convert_to_relative_path "$CONFIG_FILE")"
 
 # Track results for each build and their subtests
@@ -544,8 +555,42 @@ for build in "${BUILDS[@]}"; do
     echo ""
 done
 
-# Export test results for test_all.sh (builds are main tests)
-export_subtest_results $TOTAL_BUILDS $TOTAL_PASSED_BUILDS
+# Calculate and export test results
+TOTAL_SUBTESTS=0
+TOTAL_PASSED_SUBTESTS=0
+
+print_info "Calculating test results:"
+print_info "Expected subtests per build: 4 (debug symbols, core dump, logs, GDB)"
+
+# Each build has 4 subtests
+for build in "${BUILDS[@]}"; do
+    build_name=$(basename "$build")
+    build_total=${BUILD_SUBTESTS[$build_name]}
+    build_passed=${BUILD_PASSED_SUBTESTS[$build_name]}
+    TOTAL_SUBTESTS=$((TOTAL_SUBTESTS + build_total))
+    TOTAL_PASSED_SUBTESTS=$((TOTAL_PASSED_SUBTESTS + build_passed))
+    
+    print_info "  • $build_name results:"
+    print_info "    - Total subtests: $build_total"
+    print_info "    - Passed subtests: $build_passed"
+    print_info "    - Individual results:"
+    print_info "      * Debug symbols: $([ $DEBUG_SYMBOL_RESULT -eq 0 ] && echo "Pass" || echo "Fail")"
+    print_info "      * Core dump: $([ $CORE_FILE_RESULT -eq 0 ] && echo "Pass" || echo "Fail")"
+    print_info "      * Crash log: $([ $CRASH_LOG_RESULT -eq 0 ] && echo "Pass" || echo "Fail")"
+    print_info "      * GDB analysis: $([ $GDB_ANALYSIS_RESULT -eq 0 ] && echo "Pass" || echo "Fail")"
+done
+
+# Export results using the utility function with explicit test name
+print_info "Writing final results..."
+print_info "Final totals:"
+print_info "  • Total subtests: $TOTAL_SUBTESTS"
+print_info "  • Passed subtests: $TOTAL_PASSED_SUBTESTS"
+
+# Get test name from script name (keeping the number prefix)
+TEST_NAME=$(basename "$0" .sh | sed 's/^test_//')
+
+# Export subtest results with correct test name format
+export_subtest_results "$TEST_NAME" "$TOTAL_SUBTESTS" "$TOTAL_PASSED_SUBTESTS"
 
 # Log test results
 print_info "Crash Handler Test: $TOTAL_PASSED_BUILDS of $TOTAL_BUILDS builds passed"

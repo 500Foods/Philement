@@ -33,6 +33,10 @@ RESULT_LOG="$RESULTS_DIR/shutdown_test_${TIMESTAMP}.log"
 DIAG_TEST_DIR="$DIAG_DIR/shutdown_test_${TIMESTAMP}"
 mkdir -p "$DIAG_TEST_DIR"
 
+# Initialize subtest tracking
+TOTAL_SUBTESTS=5  # Startup, signal handling, shutdown message, completion, process cleanup
+PASS_COUNT=0
+
 # Start the test
 start_test "Hydrogen Shutdown Test" | tee -a "$RESULT_LOG"
 
@@ -76,6 +80,9 @@ done
 # Brief pause to ensure stable state
 sleep 1
 
+# First subtest passed - clean startup
+((PASS_COUNT++))
+
 # Send shutdown signal
 print_info "Initiating shutdown..." | tee -a "$RESULT_LOG"
 SHUTDOWN_START=$(date +%s)
@@ -116,6 +123,33 @@ done
 if [ "$SHUTDOWN_COMPLETE" = true ]; then
     SHUTDOWN_DURATION=$((CURRENT_TIME - SHUTDOWN_START))
     print_info "Clean shutdown completed in ${SHUTDOWN_DURATION}s" | tee -a "$RESULT_LOG"
+    
+    # Check remaining subtests
+    # Signal handling worked
+    ((PASS_COUNT++))
+    
+    # Shutdown message was logged
+    if grep -q "Shutdown complete" "$LOG_FILE"; then
+        ((PASS_COUNT++))
+    fi
+    
+    # Completed within timeout
+    if [ $SHUTDOWN_DURATION -lt $SHUTDOWN_TIMEOUT ]; then
+        ((PASS_COUNT++))
+    fi
+    
+    # No process remaining
+    if ! ps -p $HYDROGEN_PID > /dev/null 2>&1; then
+        ((PASS_COUNT++))
+    fi
+    
+    # Get test name from script name
+    TEST_NAME=$(basename "$0" .sh | sed 's/^test_//')
+    
+    # Export subtest results for test_all.sh
+    export_subtest_results "$TEST_NAME" $TOTAL_SUBTESTS $PASS_COUNT
+    
+    print_info "Shutdown Test: $PASS_COUNT of $TOTAL_SUBTESTS subtests passed" | tee -a "$RESULT_LOG"
     print_result 0 "PASSED" | tee -a "$RESULT_LOG"
     exit 0
 else

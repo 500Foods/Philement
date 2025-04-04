@@ -233,8 +233,11 @@ if ps -p $SECOND_PID > /dev/null; then
     kill -9 $SECOND_PID 2>/dev/null || true
 fi
 
+# Get test name from script name
+TEST_NAME=$(basename "$0" .sh | sed 's/^test_//')
+
 # Export subtest results for test_all.sh to pick up
-export_subtest_results $TOTAL_SUBTESTS $PASS_COUNT
+export_subtest_results "$TEST_NAME" $TOTAL_SUBTESTS $PASS_COUNT
 
 # Log subtest results
 print_info "Socket Rebind Test: $PASS_COUNT of $TOTAL_SUBTESTS subtests passed" | tee -a "$RESULT_LOG"

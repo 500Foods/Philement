@@ -263,8 +263,11 @@ else
     EXIT_CODE=0
 fi
 
+# Get test name from script name
+TEST_NAME=$(basename "$0" .sh | sed 's/^test_//')
+
 # Export subtest results for test_all.sh to pick up
-export_subtest_results $TOTAL_TESTS $PASSED_TESTS
+export_subtest_results "$TEST_NAME" $TOTAL_TESTS $PASSED_TESTS
 
 # Log subtest results
 print_info "Library Dependencies Test: $PASSED_TESTS of $TOTAL_TESTS subtests passed" | tee -a "$RESULT_LOG"
