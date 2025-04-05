@@ -26,6 +26,7 @@ declare -a ALL_TEST_RESULTS
 declare -a ALL_TEST_DETAILS
 declare -a ALL_TEST_SUBTESTS
 declare -a ALL_TEST_PASSED_SUBTESTS
+declare -a ALL_TEST_DURATIONS
 
 # Start time for test runtime calculation
 START_TIME=$(date +%s)
@@ -67,6 +68,15 @@ register_test_without_executing() {
     return 0
 }
 
+# Function to format duration in HH:MM:SS
+format_duration() {
+    local duration=$1
+    local hours=$((duration / 3600))
+    local minutes=$(((duration % 3600) / 60))
+    local seconds=$((duration % 60))
+    printf "%02d:%02d:%02d" $hours $minutes $seconds
+}
+
 # Function to run a specific test script
 run_test() {
     local test_script="$1"
@@ -75,6 +85,8 @@ run_test() {
         register_test_without_executing "$test_script"
         return 0
     fi
+    
+    local test_start_time=$(date +%s)
     
     local test_name=$(basename "$test_script" .sh | sed 's/^test_//')
     
@@ -109,6 +121,9 @@ run_test() {
     fi
     
     # Record test results
+    local test_end_time=$(date +%s)
+    local test_duration=$((test_end_time - test_start_time))
+    
     if [ $test_exit_code -eq 0 ]; then
         print_result 0 "Test $test_name completed successfully" | tee -a "$SUMMARY_LOG"
         ALL_TEST_NAMES+=("$test_name")
@@ -116,6 +131,7 @@ run_test() {
         ALL_TEST_DETAILS+=("Test completed without errors")
         ALL_TEST_SUBTESTS+=($total_subtests)
         ALL_TEST_PASSED_SUBTESTS+=($passed_subtests)
+        ALL_TEST_DURATIONS+=($test_duration)
     else
         print_result 1 "Test $test_name failed with exit code $test_exit_code" | tee -a "$SUMMARY_LOG"
         ALL_TEST_NAMES+=("$test_name")
@@ -123,6 +139,7 @@ run_test() {
         ALL_TEST_DETAILS+=("Test failed with errors")
         ALL_TEST_SUBTESTS+=($total_subtests)
         ALL_TEST_PASSED_SUBTESTS+=($passed_subtests)
+        ALL_TEST_DURATIONS+=($test_duration)
         
         # Look for the most recent log file for this test
         local log_pattern="*$(echo $test_name | tr '_' '*')*.log"
@@ -187,6 +204,8 @@ run_test_with_config() {
     local config_name=$(basename "$config_file" .json)
     local config_path=$(get_config_path "$config_file")
     
+    local test_start_time=$(date +%s)
+    
     print_header "Running Test: $test_name with config $config_name" | tee -a "$SUMMARY_LOG"
     
     # Execute the test script with config file
@@ -218,6 +237,9 @@ run_test_with_config() {
     fi
     
     # Record test results
+    local test_end_time=$(date +%s)
+    local test_duration=$((test_end_time - test_start_time))
+    
     if [ $test_exit_code -eq 0 ]; then
         print_result 0 "Test $test_name with $config_name completed successfully" | tee -a "$SUMMARY_LOG"
         ALL_TEST_NAMES+=("$test_name ($config_name)")
@@ -225,6 +247,7 @@ run_test_with_config() {
         ALL_TEST_DETAILS+=("Test completed without errors")
         ALL_TEST_SUBTESTS+=($total_subtests)
         ALL_TEST_PASSED_SUBTESTS+=($passed_subtests)
+        ALL_TEST_DURATIONS+=($test_duration)
     else
         print_result 1 "Test $test_name with $config_name failed with exit code $test_exit_code" | tee -a "$SUMMARY_LOG"
         ALL_TEST_NAMES+=("$test_name ($config_name)")
@@ -232,6 +255,7 @@ run_test_with_config() {
         ALL_TEST_DETAILS+=("Test failed with errors")
         ALL_TEST_SUBTESTS+=($total_subtests)
         ALL_TEST_PASSED_SUBTESTS+=($passed_subtests)
+        ALL_TEST_DURATIONS+=($test_duration)
         
         # Look for the most recent log file for this test
         local log_pattern="*$(echo $test_name | tr '_' '*')*.log"
@@ -421,13 +445,20 @@ print_test_item() {
     local result=$1
     local test_name=$2
     local details=$3
+    local duration=$4
+    
+    # Format the duration if provided, otherwise use empty string
+    local duration_str=""
+    if [ -n "$duration" ]; then
+        duration_str="${NC}$(format_duration $duration)${GREEN} "
+    fi
     
     if [ $result -eq 0 ]; then
-        echo -e "${GREEN}${PASS_ICON} ${test_name}${NC} - ${details}"
+        echo -e "${GREEN}${PASS_ICON} ${duration_str}${test_name}${NC} - ${details}"
     elif [ $result -eq 2 ]; then
-        echo -e "${YELLOW}⏭️  ${test_name}${NC} - ${details}"
+        echo -e "${YELLOW}⏭️  ${duration_str}${test_name}${NC} - ${details}"
     else
-        echo -e "${RED}${FAIL_ICON} ${test_name}${NC} - ${details}"
+        echo -e "${RED}${FAIL_ICON} ${duration_str}${test_name}${NC} - ${details}"
     fi
 }
 
@@ -473,7 +504,11 @@ print_summary_statistics() {
         fi
         
         local test_info="${ALL_TEST_NAMES[$i]} ${subtest_info}"
-        print_test_item ${ALL_TEST_RESULTS[$i]} "${test_info}" "${ALL_TEST_DETAILS[$i]}" | tee -a "$SUMMARY_LOG"
+        local duration_str=""
+        if [ ${ALL_TEST_RESULTS[$i]} -ne 2 ]; then  # Don't show duration for skipped tests
+            duration_str="${ALL_TEST_DURATIONS[$i]}"
+        fi
+        print_test_item ${ALL_TEST_RESULTS[$i]} "${test_info}" "${ALL_TEST_DETAILS[$i]}" "$duration_str" | tee -a "$SUMMARY_LOG"
     done
     
     # Calculate total subtests
