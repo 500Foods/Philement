@@ -32,6 +32,4 @@ tests/diagnostics/*
 # like to correct the error in the file whenever they get a chance!
 tests/configs/hydrogen_test_json.json
 
-# The project contains C files that are snippet includes - not something that
-# can reallistically be linted on their own. Just standard jansson JSON though.
-src/config/config/*.inc
+
