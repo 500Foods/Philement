@@ -71,6 +71,7 @@
 #include "../registry/registry.h"
 #include "../registry/registry_integration.h"
 #include "../state/state.h"  // For reset_shutdown_state
+#include "../config/config.h"  // For cleanup_application_config
 #include "../state/state_types.h"
 #include "../launch/launch.h"
 
@@ -324,6 +325,9 @@ bool check_all_landing_readiness(void) {
         
         return true;
     } else {
+        // Clean up application config to prevent memory leaks
+        cleanup_application_config();
+        
         log_this("Shutdown", "Shutdown complete", LOG_LEVEL_STATE);
         fflush(stdout);
         exit(0);  // Exit process after clean shutdown

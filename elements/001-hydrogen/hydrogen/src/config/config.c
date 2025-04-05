@@ -71,6 +71,9 @@
 // Global static configuration instance
 static AppConfig *app_config = NULL;
 
+// Forward declaration for cleanup function
+static void clean_app_config(AppConfig* config);
+
 // Standard system paths to check for configuration
 static const char* const CONFIG_PATHS[] = {
     "hydrogen.json",
@@ -101,6 +104,7 @@ AppConfig* load_config(const char* cmdline_path) {
 
     // Free previous configuration if it exists
     if (app_config) {
+        clean_app_config(app_config);
         free(app_config);
     }
 
@@ -315,4 +319,45 @@ AppConfig* load_config(const char* cmdline_path) {
  */
 const AppConfig* get_app_config(void) {
     return app_config;
+}
+
+/*
+ * Clean up all resources allocated in the AppConfig structure
+ *
+ * This ensures all dynamically allocated memory within the AppConfig
+ * structure is properly freed, preventing memory leaks.
+ *
+ * @param config The config structure to clean up
+ */
+static void clean_app_config(AppConfig* config) {
+    if (!config) return;
+    
+    // Clean up each subsystem's configuration
+    config_logging_cleanup(&config->logging);
+    
+    // Free server config strings
+    free(config->server.server_name);
+    free(config->server.payload_key);
+    free(config->server.config_file);
+    free(config->server.exec_file);
+    free(config->server.log_file);
+    
+    // Free swagger config if allocated
+    if (config->swagger) {
+        free(config->swagger);
+    }
+}
+
+/*
+ * Perform final cleanup of app configuration during shutdown
+ * This function should be called during the shutdown sequence
+ * to prevent memory leaks.
+ */
+void cleanup_application_config(void) {
+    if (app_config) {
+        log_this("Config", "Cleaning up application configuration", LOG_LEVEL_STATE);
+        clean_app_config(app_config);
+        free(app_config);
+        app_config = NULL;
+    }
 }

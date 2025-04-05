@@ -37,8 +37,34 @@ extern volatile sig_atomic_t server_starting;
 extern volatile sig_atomic_t server_stopping;
 extern volatile sig_atomic_t server_running;
 
-// Registry ID for the thread subsystem
+// Registry ID and cached readiness state
 static int thread_subsystem_id = -1;
+static LaunchReadiness cached_readiness = {0};
+static bool readiness_cached = false;
+
+// Forward declarations
+static void clear_cached_readiness(void);
+static void register_threads(void);
+
+// Helper to clear cached readiness
+static void clear_cached_readiness(void) {
+    if (readiness_cached && cached_readiness.messages) {
+        free_readiness_messages(&cached_readiness);
+        readiness_cached = false;
+    }
+}
+
+// Get cached readiness result
+LaunchReadiness get_threads_readiness(void) {
+    if (readiness_cached) {
+        return cached_readiness;
+    }
+    
+    // Perform fresh check and cache result
+    cached_readiness = check_threads_launch_readiness();
+    readiness_cached = true;
+    return cached_readiness;
+}
 
 // Register the thread subsystem with the registry
 static void register_threads(void) {
@@ -48,11 +74,18 @@ static void register_threads(void) {
     }
 }
 
-/**
+/*
  * Check if the thread subsystem is ready to launch
  * 
  * This function performs high-level readiness checks for the thread management
  * subsystem, ensuring all prerequisites are met before launch.
+ * 
+ * Memory Management:
+ * - On error paths: Messages are freed before returning
+ * - On success path: Caller must free messages (typically handled by process_subsystem_readiness)
+ * 
+ * Note: Prefer using get_threads_readiness() instead of calling this directly
+ * to avoid redundant checks and potential memory leaks.
  * 
  * @return LaunchReadiness struct with readiness status and messages
  */
@@ -98,6 +131,11 @@ LaunchReadiness check_threads_launch_readiness(void) {
         "  Decide:  No-Go For Launch of Thread Management");
     readiness.messages[msg_index] = NULL;
     
+    if (!ready) {
+        readiness.messages[msg_index] = NULL;
+        free_readiness_messages(&readiness);
+    }
+    
     readiness.ready = ready;
     return readiness;
 }
@@ -118,6 +156,8 @@ int launch_threads_subsystem(void) {
     log_this("Threads", LOG_LINE_BREAK, LOG_LEVEL_STATE);
     log_this("Threads", "LAUNCH: THREADS", LOG_LEVEL_STATE);
     
+    // Clear any cached readiness before checking final state
+    clear_cached_readiness();
     // Step 1: Verify system state
     if (server_stopping) {
         log_this("Threads", "Cannot initialize thread management during shutdown", LOG_LEVEL_STATE);

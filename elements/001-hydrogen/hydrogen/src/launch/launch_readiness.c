@@ -63,12 +63,13 @@ extern LaunchReadiness check_mail_relay_launch_readiness(void);   // from launch
 extern LaunchReadiness check_print_launch_readiness(void);        // from launch_print.c
 
 // Forward declarations of static functions
-static void log_readiness_messages(const LaunchReadiness* readiness);
+static void log_readiness_messages(LaunchReadiness* readiness);
+static void cleanup_readiness_messages(LaunchReadiness* readiness);
 static void process_subsystem_readiness(ReadinessResults* results, size_t* index,
                                       const char* name, LaunchReadiness readiness);
 
 // Log all messages from a readiness check
-static void log_readiness_messages(const LaunchReadiness* readiness) {
+static void log_readiness_messages(LaunchReadiness* readiness) {
     if (!readiness || !readiness->messages) return;
     
     // Log each message (first message is the subsystem name)
@@ -84,11 +85,28 @@ static void log_readiness_messages(const LaunchReadiness* readiness) {
         log_this("Launch", "%s", level, readiness->messages[i]);
     }
 }
+
+// Clean up all messages from a readiness check
+static void cleanup_readiness_messages(LaunchReadiness* readiness) {
+    if (!readiness || !readiness->messages) return;
+    
+    // Free each message
+    for (int i = 0; readiness->messages[i] != NULL; i++) {
+        free((void*)readiness->messages[i]);
+        readiness->messages[i] = NULL;
+    }
+    
+    // Free the messages array
+    free(readiness->messages);
+    readiness->messages = NULL;
+}
 // Helper function to process a subsystem's readiness check
 static void process_subsystem_readiness(ReadinessResults* results, size_t* index,
                                       const char* name, LaunchReadiness readiness) {
+    // First log all messages
     log_readiness_messages(&readiness);
     
+    // Record results before cleanup
     results->results[*index].subsystem = name;
     results->results[*index].ready = readiness.ready;
     
@@ -100,13 +118,8 @@ static void process_subsystem_readiness(ReadinessResults* results, size_t* index
     }
     results->total_checked++;
     
-    // Free messages
-    if (readiness.messages) {
-        for (int i = 0; readiness.messages[i] != NULL; i++) {
-            free((void*)readiness.messages[i]);
-        }
-        free(readiness.messages);
-    }
+    // Then clean up all messages
+    cleanup_readiness_messages(&readiness);
     
     (*index)++;
 }

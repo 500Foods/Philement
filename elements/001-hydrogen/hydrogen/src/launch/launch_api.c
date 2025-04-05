@@ -14,6 +14,7 @@
 
 #include "launch.h"
 #include "launch_webserver.h"  // For is_web_server_running()
+#include "launch_network.h"    // For get_network_readiness()
 #include "../logging/logging.h"
 #include "../utils/utils_logging.h"
 #include "../config/config.h"
@@ -25,8 +26,34 @@
 // External declarations
 extern AppConfig* app_config;
 
-// Registry ID for the API subsystem
+// Registry ID and cached readiness state
 int api_subsystem_id = -1;
+static LaunchReadiness cached_readiness = {0};
+static bool readiness_cached = false;
+
+// Forward declarations
+static void clear_cached_readiness(void);
+void register_api(void);
+
+// Helper to clear cached readiness
+static void clear_cached_readiness(void) {
+    if (readiness_cached && cached_readiness.messages) {
+        free_readiness_messages(&cached_readiness);
+        readiness_cached = false;
+    }
+}
+
+// Get cached readiness result
+LaunchReadiness get_api_readiness(void) {
+    if (readiness_cached) {
+        return cached_readiness;
+    }
+    
+    // Perform fresh check and cache result
+    cached_readiness = check_api_launch_readiness();
+    readiness_cached = true;
+    return cached_readiness;
+}
 
 // Register the API subsystem with the registry
 void register_api(void) {
@@ -41,7 +68,22 @@ void register_api(void) {
     }
 }
 
-// Check if the API subsystem is ready to launch
+/*
+ * Check if the API subsystem is ready to launch
+ * 
+ * This function performs readiness checks for the API subsystem by:
+ * - Verifying system state and dependencies (Registry, WebServer)
+ * - Checking API configuration (endpoints, prefix, JWT)
+ * 
+ * Memory Management:
+ * - On error paths: Messages are freed before returning
+ * - On success path: Caller must free messages (typically handled by process_subsystem_readiness)
+ * 
+ * Note: Prefer using get_api_readiness() instead of calling this directly
+ * to avoid redundant checks and potential memory leaks.
+ * 
+ * @return LaunchReadiness structure with readiness status and messages
+ */
 LaunchReadiness check_api_launch_readiness(void) {
     const char** messages = malloc(10 * sizeof(char*));  // Space for messages + NULL
     if (!messages) {
@@ -62,25 +104,45 @@ LaunchReadiness check_api_launch_readiness(void) {
         return (LaunchReadiness){ .subsystem = "API", .ready = false, .messages = messages };
     }
     
+    LaunchReadiness readiness = { .subsystem = "API", .ready = false, .messages = messages };
+    
     // 1. Check Registry subsystem readiness (primary dependency)
     LaunchReadiness registry_readiness = check_registry_launch_readiness();
     if (!registry_readiness.ready) {
         messages[msg_index++] = strdup("  No-Go:   Registry subsystem not Go for Launch");
-        ready = false;
-    } else {
-        messages[msg_index++] = strdup("  Go:      Registry subsystem Go for Launch");
+        messages[msg_index] = NULL;
+        readiness.ready = false;
+        free_readiness_messages(&registry_readiness); // Free registry messages
+        free_readiness_messages(&readiness);
+        return readiness;
     }
+    messages[msg_index++] = strdup("  Go:      Registry subsystem Go for Launch");
+    free_readiness_messages(&registry_readiness); // Free registry messages
     
-    // 2. Check WebServer subsystem launch readiness
-    LaunchReadiness webserver_readiness = check_webserver_launch_readiness();
+    // 2. Check Network subsystem readiness (using cached version)
+    LaunchReadiness network_readiness = get_network_readiness();
+    if (!network_readiness.ready) {
+        messages[msg_index++] = strdup("  No-Go:   Network subsystem not Go for Launch");
+        messages[msg_index] = NULL;
+        readiness.ready = false;
+        free_readiness_messages(&readiness);
+        return readiness;
+    }
+    messages[msg_index++] = strdup("  Go:      Network subsystem Go for Launch");
+    
+    // 3. Check WebServer subsystem launch readiness (using cached version)
+    LaunchReadiness webserver_readiness = get_webserver_readiness();
     if (!webserver_readiness.ready) {
         messages[msg_index++] = strdup("  No-Go:   WebServer subsystem not Go for Launch");
-        ready = false;
+        messages[msg_index] = NULL;
+        readiness.ready = false;
+        free_readiness_messages(&readiness);
+        return readiness;
     } else {
         messages[msg_index++] = strdup("  Go:      WebServer subsystem Go for Launch");
     }
     
-    // 2. Check our configuration
+    // 4. Check our configuration
     if (!app_config) {
         messages[msg_index++] = strdup("  No-Go:   API configuration not loaded");
         ready = false;
@@ -122,18 +184,17 @@ LaunchReadiness check_api_launch_readiness(void) {
         "  Decide:  No-Go For Launch of API Subsystem");
     messages[msg_index] = NULL;
     
-    return (LaunchReadiness){
-        .subsystem = "API",
-        .ready = ready,
-        .messages = messages
-    };
+    readiness.ready = ready;
+    readiness.messages = messages;
+    return readiness;
 }
 
 // Launch API subsystem
 int launch_api_subsystem(void) {
     extern volatile sig_atomic_t server_stopping;
     extern volatile sig_atomic_t server_starting;
-
+    // Clear any cached readiness before starting
+    clear_cached_readiness();
     log_this("API", LOG_LINE_BREAK, LOG_LEVEL_STATE);
     log_this("API", "――――――――――――――――――――――――――――――――――――――――", LOG_LEVEL_STATE);
     log_this("API", "LAUNCH: API", LOG_LEVEL_STATE);

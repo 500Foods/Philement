@@ -29,8 +29,34 @@ extern volatile sig_atomic_t web_server_shutdown;
 // Network subsystem shutdown flag
 volatile int network_system_shutdown = 0;
 
-// Registry ID for the network subsystem
+// Registry ID and cached readiness state
 static int network_subsystem_id = -1;
+static LaunchReadiness cached_readiness = {0};
+static bool readiness_cached = false;
+
+// Forward declarations
+static void clear_cached_readiness(void);
+static void register_network(void);
+
+// Helper to clear cached readiness
+static void clear_cached_readiness(void) {
+    if (readiness_cached && cached_readiness.messages) {
+        free_readiness_messages(&cached_readiness);
+        readiness_cached = false;
+    }
+}
+
+// Get cached readiness result
+LaunchReadiness get_network_readiness(void) {
+    if (readiness_cached) {
+        return cached_readiness;
+    }
+    
+    // Perform fresh check and cache result
+    cached_readiness = check_network_launch_readiness();
+    readiness_cached = true;
+    return cached_readiness;
+}
 
 // Register the network subsystem with the registry
 static void register_network(void) {
@@ -41,7 +67,6 @@ static void register_network(void) {
                                                             (void (*)(void))shutdown_network_subsystem);
     }
 }
-
 // Network subsystem launch function
 int launch_network_subsystem(void) {
     log_this("Network", LOG_LINE_BREAK, LOG_LEVEL_STATE);
@@ -86,6 +111,10 @@ int launch_network_subsystem(void) {
     update_subsystem_on_startup("Network", true);
     
     SubsystemState final_state = get_subsystem_state(network_subsystem_id);
+    
+    // Clear any cached readiness before checking final state
+    clear_cached_readiness();
+    
     if (final_state == SUBSYSTEM_RUNNING) {
         log_this("Network", "LAUNCH: NETWORK - Successfully launched and running", LOG_LEVEL_STATE);
         return 1;
@@ -142,6 +171,26 @@ static void add_decision_message(const char** messages, int* count, const char* 
 }
 
 
+/*
+ * Check if the network subsystem is ready to launch
+ * 
+ * This function performs readiness checks for the network subsystem by:
+ * - Verifying system state and dependencies
+ * - Checking network interface availability
+ * - Validating interface configuration
+ * 
+ * Memory Management:
+ * - On error paths: Messages are freed before returning
+ * - On success path: Caller must free messages (typically handled by process_subsystem_readiness)
+ * 
+ * Returns:
+ * LaunchReadiness structure containing:
+ * - ready: true if system is ready to launch
+ * - messages: NULL-terminated array of status messages (must be freed by caller on success path)
+ * - subsystem: Name of the subsystem ("Network")
+ */
+
+
 
 // Check if the network subsystem is ready to launch
 LaunchReadiness check_network_launch_readiness(void) {
@@ -168,6 +217,7 @@ LaunchReadiness check_network_launch_readiness(void) {
             readiness.messages[msg_count] = NULL;
             readiness.ready = false;
             readiness.subsystem = "Network";
+            free_readiness_messages(&readiness);
             return readiness;
         }
         add_go_message(readiness.messages, &msg_count, "Go", "Thread dependency registered");
@@ -179,6 +229,7 @@ LaunchReadiness check_network_launch_readiness(void) {
         readiness.messages[msg_count] = NULL;
         readiness.ready = false;
         readiness.subsystem = "Network";
+        free_readiness_messages(&readiness);
         return readiness;
     }
     
@@ -187,6 +238,7 @@ LaunchReadiness check_network_launch_readiness(void) {
         readiness.messages[msg_count] = NULL;
         readiness.ready = false;
         readiness.subsystem = "Network";
+        free_readiness_messages(&readiness);
         return readiness;
     }
     
@@ -196,6 +248,7 @@ LaunchReadiness check_network_launch_readiness(void) {
         readiness.messages[msg_count] = NULL;
         readiness.ready = false;
         readiness.subsystem = "Network";
+        free_readiness_messages(&readiness);
         return readiness;
     }
     
@@ -205,6 +258,7 @@ LaunchReadiness check_network_launch_readiness(void) {
         readiness.messages[msg_count] = NULL;
         readiness.ready = false;
         readiness.subsystem = "Network";
+        free_readiness_messages(&readiness);
         return readiness;
     }
     
@@ -214,6 +268,7 @@ LaunchReadiness check_network_launch_readiness(void) {
         readiness.messages[msg_count] = NULL;
         readiness.ready = false;
         readiness.subsystem = "Network";
+        free_readiness_messages(&readiness);
         return readiness;
     }
     

@@ -285,20 +285,20 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Fri Apr  4 17:49:36 PDT 2025
+Generated on: Fri Apr  4 19:46:09 PDT 2025
 
 ### Summary
 
 | Metric | Value |
 | ------ | ----- |
 | Total Tests | 15 |
-| Passed | 14 |
-| Failed | 1 |
+| Passed | 12 |
+| Failed | 3 |
 | Skipped | 0 |
-| Total Subtests | 111 |
-| Passed Subtests | 109 |
-| Failed Subtests | 2 |
-| Runtime | 6m 23s |
+| Total Subtests | 107 |
+| Passed Subtests | 101 |
+| Failed Subtests | 6 |
+| Runtime | 6m 42s |
 
 ### Individual Test Results
 
@@ -306,32 +306,32 @@ Generated on: Fri Apr  4 17:49:36 PDT 2025
 | ---- | ------ | ------- |
 | 10_compilation | ✅ Passed | Test completed without errors (7 of 7 subtests passed) |
 | 12_env_payload | ✅ Passed | Test completed without errors (2 of 2 subtests passed) |
-| 15_startup_shutdown | ✅ Passed | Test completed without errors (6 of 6 subtests passed) |
-| 20_shutdown | ✅ Passed | Test completed without errors (5 of 5 subtests passed) |
+| 15_startup_shutdown | ❌ Failed | Test failed with errors (4 of 6 subtests passed) |
+| 20_shutdown | ❌ Failed | Test failed with errors (0 of 1 subtests passed) |
 | 25_library_dependencies | ✅ Passed | Test completed without errors (16 of 16 subtests passed) |
 | 35_env_variables | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
 | 40_json_error_handling | ✅ Passed | Test completed without errors (2 of 2 subtests passed) |
-| 45_signals | ✅ Passed | Test completed without errors (4 of 4 subtests passed) |
+| 45_signals | ❌ Failed | Test failed with errors (1 of 4 subtests passed) |
 | 50_crash_handler | ✅ Passed | Test completed without errors (20 of 20 subtests passed) |
 | 55_socket_rebind | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
 | 60_api_prefixes | ✅ Passed | Test completed without errors (10 of 10 subtests passed) |
 | 65_system_endpoints | ✅ Passed | Test completed without errors (13 of 13 subtests passed) |
 | 70_swagger_ui | ✅ Passed | Test completed without errors (10 of 10 subtests passed) |
-| 95_leaks_like_a_sieve | ❌ Failed | Test failed with errors (0 of 2 subtests passed) |
+| 95_leaks_like_a_sieve | ✅ Passed | Test completed without errors (2 of 2 subtests passed) |
 | 99_codebase | ✅ Passed | Test completed without errors (12 of 12 subtests passed) |
 
 ## Repository Information
 
-Generated via cloc: Fri Apr  4 17:49:36 PDT 2025
+Generated via cloc: Fri Apr  4 19:46:09 PDT 2025
 
 | Language | Files | Blank Lines | Comment Lines | Code Lines |
 | -------- | ----- | ----------- | ------------- | ---------- |
-| C | 169 | 4779 | 6732 | 21064 |
+| C | 169 | 4817 | 6857 | 21258 |
 | Markdown | 118 | 4339 | 27 | 15563 |
 | Bourne | Shell | 25 | 1389 | 1430 |
 | JSON | 17 | 1 | 0 | 4774 |
-| C/C++ | Header | 150 | 1241 | 5470 |
-| Text | 17 | 7 | 0 | 2259 |
+| C/C++ | Header | 150 | 1247 | 5596 |
+| Text | 19 | 10 | 0 | 2378 |
 | HTML | 1 | 74 | 0 | 493 |
 | make | 2 | 55 | 121 | 262 |
-| **Total** | **499** | **11885** | **13780** | **52995** |
+| **Total** | **501** | **11932** | **14031** | **53315** |

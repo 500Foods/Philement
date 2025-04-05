@@ -26,11 +26,14 @@
 #include "../registry/registry.h"
 #include "../registry/registry_integration.h"
 #include "../state/state_types.h"
+#include "../config/config.h"
+#include "../config/logging/config_logging.h"
 
 // External declarations
 extern ServiceThreads logging_threads;
 extern pthread_t log_thread;
 extern volatile sig_atomic_t log_queue_shutdown;
+extern AppConfig* app_config;
 
 // Check if all other subsystems have completed shutdown
 static bool check_other_subsystems_complete(void) {
@@ -131,6 +134,19 @@ int land_logging_subsystem(void) {
     
     // Reinitialize thread structure
     init_service_threads(&logging_threads);
+    
+    // Clean up logging configuration
+    if (app_config) {
+        log_this("Logging", "Cleaning up logging configuration", LOG_LEVEL_STATE);
+        
+        // First explicitly cleanup file config to address 22-byte leak in config_logging_file.c:24
+        config_logging_file_cleanup(&app_config->logging.file);
+        
+        // Then clean up overall logging config to address 112-byte leak in config_logging.c:17
+        config_logging_cleanup(&app_config->logging);
+    } else {
+        log_this("Logging", "Warning: app_config is NULL during logging cleanup", LOG_LEVEL_ALERT);
+    }
     
     log_this("Logging", "Logging shutdown complete", LOG_LEVEL_STATE);
     

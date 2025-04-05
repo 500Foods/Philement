@@ -20,6 +20,8 @@
 #include <ifaddrs.h>
 
 #include "launch.h"
+#include "launch_network.h"
+#include "launch_threads.h"
 #include "../logging/logging.h"
 #include "../utils/utils_logging.h"
 #include "../threads/threads.h"
@@ -44,8 +46,34 @@ extern volatile sig_atomic_t web_server_shutdown;
 extern AppConfig* app_config;
 extern volatile sig_atomic_t server_starting;
 
-// Registry ID for the webserver subsystem
+// Registry ID and cached readiness state
 int webserver_subsystem_id = -1;
+static LaunchReadiness cached_readiness = {0};
+static bool readiness_cached = false;
+
+// Forward declarations
+static void clear_cached_readiness(void);
+static void register_webserver(void);
+
+// Helper to clear cached readiness
+static void clear_cached_readiness(void) {
+    if (readiness_cached && cached_readiness.messages) {
+        free_readiness_messages(&cached_readiness);
+        readiness_cached = false;
+    }
+}
+
+// Get cached readiness result
+LaunchReadiness get_webserver_readiness(void) {
+    if (readiness_cached) {
+        return cached_readiness;
+    }
+    
+    // Perform fresh check and cache result
+    cached_readiness = check_webserver_launch_readiness();
+    readiness_cached = true;
+    return cached_readiness;
+}
 
 // Register the webserver subsystem with the registry
 static void register_webserver(void) {
@@ -57,7 +85,24 @@ static void register_webserver(void) {
     }
 }
 
-// Check if the webserver subsystem is ready to launch
+/*
+ * Check if the webserver subsystem is ready to launch
+ * 
+ * This function performs readiness checks for the webserver subsystem by:
+ * - Verifying system state and dependencies (Threads, Network)
+ * - Checking protocol configuration (IPv4/IPv6)
+ * - Validating interface availability
+ * - Checking port and web root configuration
+ * 
+ * Memory Management:
+ * - On error paths: Messages are freed before returning
+ * - On success path: Caller must free messages (typically handled by process_subsystem_readiness)
+ * 
+ * Note: Prefer using get_webserver_readiness() instead of calling this directly
+ * to avoid redundant checks and potential memory leaks.
+ * 
+ * @return LaunchReadiness structure with readiness status and messages
+ */
 LaunchReadiness check_webserver_launch_readiness(void) {
     const char** messages = malloc(15 * sizeof(char*));  // Space for messages + NULL
     if (!messages) {
@@ -73,36 +118,41 @@ LaunchReadiness check_webserver_launch_readiness(void) {
     // Register with registry if not already registered
     register_webserver();
     
+    LaunchReadiness readiness = { .subsystem = "WebServer", .ready = false, .messages = messages };
+    
     // Register dependencies
     if (webserver_subsystem_id >= 0) {
         if (!add_dependency_from_launch(webserver_subsystem_id, "Threads")) {
             messages[msg_index++] = strdup("  No-Go:   Failed to register Threads dependency");
             messages[msg_index] = NULL;
-            ready = false;
-            return (LaunchReadiness){ .subsystem = "WebServer", .ready = false, .messages = messages };
+            free_readiness_messages(&readiness);
+            return readiness;
         }
         messages[msg_index++] = strdup("  Go:      Threads dependency registered");
 
         if (!add_dependency_from_launch(webserver_subsystem_id, "Network")) {
             messages[msg_index++] = strdup("  No-Go:   Failed to register Network dependency");
             messages[msg_index] = NULL;
-            ready = false;
-            return (LaunchReadiness){ .subsystem = "WebServer", .ready = false, .messages = messages };
+            free_readiness_messages(&readiness);
+            return readiness;
         }
         messages[msg_index++] = strdup("  Go:      Network dependency registered");
     }
     
-    // 1. Check Threads subsystem launch readiness
-    LaunchReadiness threads_readiness = check_threads_launch_readiness();
+    // 1. Check Threads subsystem launch readiness (using cached version)
+    LaunchReadiness threads_readiness = get_threads_readiness();
     if (!threads_readiness.ready) {
         messages[msg_index++] = strdup("  No-Go:   Threads subsystem not Go for Launch");
-        ready = false;
+        messages[msg_index] = NULL;
+        readiness.ready = false;
+        free_readiness_messages(&readiness);
+        return readiness;
     } else {
         messages[msg_index++] = strdup("  Go:      Threads subsystem Go for Launch");
     }
     
-    // 2. Check Network subsystem launch readiness
-    LaunchReadiness network_readiness = check_network_launch_readiness();
+    // 2. Check Network subsystem launch readiness (using cached version)
+    LaunchReadiness network_readiness = get_network_readiness();
     if (!network_readiness.ready) {
         messages[msg_index++] = strdup("  No-Go:   Network subsystem not Go for Launch");
         ready = false;
@@ -203,7 +253,6 @@ LaunchReadiness check_webserver_launch_readiness(void) {
         .messages = messages
     };
 }
-
 // Launch web server system
 // Requires: Logging system
 //
@@ -216,7 +265,8 @@ LaunchReadiness check_webserver_launch_readiness(void) {
 int launch_webserver_subsystem(void) {
     extern volatile sig_atomic_t server_stopping;
     extern volatile sig_atomic_t web_server_shutdown;
-
+    // Clear any cached readiness before checking final state
+    clear_cached_readiness();
     log_this("WebServer", LOG_LINE_BREAK, LOG_LEVEL_STATE);
     log_this("WebServer", "LAUNCH: WEBSERVER", LOG_LEVEL_STATE);
 

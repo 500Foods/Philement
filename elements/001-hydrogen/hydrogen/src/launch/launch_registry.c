@@ -17,42 +17,102 @@
 #include "../registry/registry.h"
 #include "../registry/registry_integration.h"
 
-// Registry ID for self-registration
+// Registry ID
 static int registry_subsystem_id = -1;
 
+// Get registry readiness status
+LaunchReadiness get_registry_readiness(void) {
+    return check_registry_launch_readiness();
+}
 
-// Check if registry is ready to launch
+/*
+ * Check if registry is ready to launch
+ * 
+ * This function performs readiness checks for the registry subsystem.
+ * As the first subsystem in the launch sequence, it has no dependencies
+ * but must still manage its resources properly.
+ * 
+ * Memory Management:
+ * - On error paths: Messages are freed before returning
+ * - On success path: Caller must free messages (typically handled by process_subsystem_readiness)
+ * 
+ * Note: Prefer using get_registry_readiness() instead of calling this directly
+ * to avoid redundant checks and potential memory leaks.
+ * 
+ * @return LaunchReadiness structure with readiness status and messages
+ */
 LaunchReadiness check_registry_launch_readiness(void) {
-    const char** messages = malloc(4 * sizeof(char*));
-    if (!messages) {
-        return (LaunchReadiness){ .subsystem = "Registry", .ready = false, .messages = NULL };
-    }
+    LaunchReadiness readiness = { .subsystem = "Registry", .ready = false, .messages = NULL };
     
+    // Allocate message array and initialize to NULL
+    const char** messages = calloc(4, sizeof(const char*));
+    if (!messages) {
+        return readiness;
+    }
+    readiness.messages = messages;
     int msg_index = 0;
-    messages[msg_index++] = strdup("Registry");
+    
+    // First message is subsystem name
+    messages[msg_index] = strdup("Registry");
+    if (!messages[msg_index]) {
+        free(messages);
+        readiness.messages = NULL;
+        return readiness;
+    }
+    msg_index++;
 
     // Register the registry subsystem during readiness check
     if (registry_subsystem_id < 0) {
         registry_subsystem_id = register_subsystem("Registry", NULL, NULL, NULL,
                                                  NULL,  // No init function needed
                                                  NULL); // No special shutdown needed
-        if (registry_subsystem_id < 0) {
-            messages[msg_index++] = strdup("  No-Go:   Failed to register Registry subsystem");
-            messages[msg_index++] = strdup("  Decide:  No-Go For Launch of Registry");
-            messages[msg_index] = NULL;
-            return (LaunchReadiness){ .subsystem = "Registry", .ready = false, .messages = messages };
-        }
     }
     
-    messages[msg_index++] = strdup("  Go:      Registry initialized");
-    messages[msg_index++] = strdup("  Decide:  Go For Launch of Registry");
-    messages[msg_index] = NULL;
+    // Add appropriate messages based on registration status
+    if (registry_subsystem_id < 0) {
+        messages[msg_index] = strdup("  No-Go:   Failed to register Registry subsystem");
+        if (!messages[msg_index]) {
+            free((void*)messages[0]);
+            free(messages);
+            readiness.messages = NULL;
+            return readiness;
+        }
+        msg_index++;
+        
+        messages[msg_index] = strdup("  Decide:  No-Go For Launch of Registry");
+        if (!messages[msg_index]) {
+            free((void*)messages[0]);
+            free((void*)messages[1]);
+            free(messages);
+            readiness.messages = NULL;
+            return readiness;
+        }
+        msg_index++;
+    } else {
+        messages[msg_index] = strdup("  Go:      Registry initialized");
+        if (!messages[msg_index]) {
+            free((void*)messages[0]);
+            free(messages);
+            readiness.messages = NULL;
+            return readiness;
+        }
+        msg_index++;
+        
+        messages[msg_index] = strdup("  Decide:  Go For Launch of Registry");
+        if (!messages[msg_index]) {
+            free((void*)messages[0]);
+            free((void*)messages[1]);
+            free(messages);
+            readiness.messages = NULL;
+            return readiness;
+        }
+        msg_index++;
+        
+        readiness.ready = true;
+    }
     
-    return (LaunchReadiness){
-        .subsystem = "Registry",
-        .ready = true,
-        .messages = messages
-    };
+    messages[msg_index] = NULL;
+    return readiness;
 }
 
 // Launch registry subsystem
@@ -108,12 +168,11 @@ int launch_registry_subsystem(bool is_restart) {
         // Normal launch requires RUNNING state
         if (final_state == SUBSYSTEM_RUNNING) {
             log_this("Registry", "LAUNCH: REGISTRY - Successfully launched and running", LOG_LEVEL_STATE);
+            return 1;
         } else {
             log_this("Registry", "LAUNCH: REGISTRY - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
                     subsystem_state_to_string(final_state));
             return 0;
         }
     }
-    
-    return 1;
 }

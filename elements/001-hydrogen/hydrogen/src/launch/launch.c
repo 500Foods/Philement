@@ -275,6 +275,16 @@ bool check_all_launch_readiness(void) {
      */
     handle_launch_review(&results);
     
+    // Clean up readiness messages for each subsystem
+    for (size_t i = 0; i < results.total_checked; i++) {
+        LaunchReadiness readiness = {
+            .subsystem = results.results[i].subsystem,
+            .ready = results.results[i].ready,
+            .messages = NULL  // We don't have the messages here
+        };
+        free_readiness_messages(&readiness);
+    }
+    
     // Return overall launch success
     return launch_success;
 }
