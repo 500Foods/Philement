@@ -24,6 +24,7 @@
 
 // Project headers
 #include "prometheus.h"
+#include "../system_service.h"
 #include "../../../config/config.h"
 #include "../../../state/state.h"
 #include "../../../logging/logging.h"
@@ -53,7 +54,6 @@ enum MHD_Result handle_system_prometheus_request(struct MHD_Connection *connecti
 {
     log_this("SystemService/prometheus", "Handling prometheus endpoint request", LOG_LEVEL_STATE);
     
-    enum MHD_Result result = MHD_NO;
     WebSocketMetrics metrics = {0};
 
     // Get WebSocket metrics if available
@@ -93,7 +93,7 @@ enum MHD_Result handle_system_prometheus_request(struct MHD_Connection *connecti
     MHD_add_response_header(response, "Access-Control-Allow-Methods", "GET, OPTIONS");
     MHD_add_response_header(response, "Access-Control-Allow-Headers", "*");
     
-    result = MHD_queue_response(connection, MHD_HTTP_OK, response);
+    enum MHD_Result result = MHD_queue_response(connection, MHD_HTTP_OK, response);
     MHD_destroy_response(response);
     
     return result;

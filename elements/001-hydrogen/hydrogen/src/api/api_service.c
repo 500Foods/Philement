@@ -11,6 +11,7 @@
 #include "../config/config.h"
 #include "../webserver/web_server_core.h"
 #include "system/system_service.h"
+#include "oidc/oidc_service.h"
 
 // External declarations for endpoint handlers
 extern enum MHD_Result handle_system_info_request(struct MHD_Connection *connection);
@@ -30,9 +31,20 @@ extern enum MHD_Result handle_system_prometheus_request(struct MHD_Connection *c
 bool init_api_endpoints(void) {
     log_this("API", "Initializing API endpoints", LOG_LEVEL_STATE);
     
+    // Try to initialize OIDC service, but continue even if it fails
+    bool oidc_initialized = init_oidc_endpoints(NULL);  // NULL for default context
+    if (!oidc_initialized) {
+        log_this("API", "OIDC initialization failed, continuing with system endpoints only", LOG_LEVEL_ERROR);
+    } else {
+        log_this("API", "OIDC endpoints initialized", LOG_LEVEL_STATE);
+    }
+    
     // Register endpoints with the web server
     if (!register_api_endpoints()) {
         log_this("API", "Failed to register API endpoints", LOG_LEVEL_ERROR);
+        if (oidc_initialized) {
+            cleanup_oidc_endpoints();  // Clean up OIDC only if it was initialized
+        }
         return false;
     }
     
@@ -42,6 +54,10 @@ bool init_api_endpoints(void) {
 
 void cleanup_api_endpoints(void) {
     log_this("API", "Cleaning up API endpoints", LOG_LEVEL_STATE);
+    
+    // Clean up OIDC endpoints first
+    cleanup_oidc_endpoints();
+    log_this("API", "OIDC endpoints cleaned up", LOG_LEVEL_STATE);
     
     if (app_config && app_config->api.prefix) {
         unregister_web_endpoint(app_config->api.prefix);
@@ -88,6 +104,12 @@ bool register_api_endpoints(void) {
     log_this("API", "  -> %s/system/test", LOG_LEVEL_STATE, app_config->api.prefix);
     log_this("API", "  -> %s/system/config", LOG_LEVEL_STATE, app_config->api.prefix);
     log_this("API", "  -> %s/system/prometheus", LOG_LEVEL_STATE, app_config->api.prefix);
+    // OIDC endpoints
+    log_this("API", "  -> %s/oidc/authorize", LOG_LEVEL_STATE, app_config->api.prefix);
+    log_this("API", "  -> %s/oidc/token", LOG_LEVEL_STATE, app_config->api.prefix);
+    log_this("API", "  -> %s/oidc/userinfo", LOG_LEVEL_STATE, app_config->api.prefix);
+    log_this("API", "  -> %s/oidc/.well-known/openid-configuration", LOG_LEVEL_STATE, app_config->api.prefix);
+    log_this("API", "  -> %s/oidc/jwks", LOG_LEVEL_STATE, app_config->api.prefix);
     
     return true;
 }
@@ -265,8 +287,14 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
     else if (strcmp(path, "system/prometheus") == 0) {
         return handle_system_prometheus_request(connection);
     }
+    // Handle OIDC endpoints
+    else if (strncmp(path, "oidc/", 5) == 0) {
+        return handle_oidc_request(connection, url, method, version,
+                                 upload_data, upload_data_size, con_cls);
+    }
 
     // Endpoint not found
+    log_this("API", "Endpoint not found: %s", LOG_LEVEL_DEBUG, path);
     const char *error_json = "{\"error\": \"Endpoint not found\"}";
     struct MHD_Response *response = MHD_create_response_from_buffer(
         strlen(error_json), (void*)error_json, MHD_RESPMEM_PERSISTENT);

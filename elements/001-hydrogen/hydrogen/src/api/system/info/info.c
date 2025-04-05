@@ -24,6 +24,7 @@
 
 // Project headers
 #include "info.h"
+#include "../system_service.h"
 #include "../../../config/config.h"
 #include "../../../state/state.h"
 #include "../../../logging/logging.h"
@@ -52,7 +53,6 @@ enum MHD_Result handle_system_info_request(struct MHD_Connection *connection)
     log_this("SystemService/info", "Handling info endpoint request", LOG_LEVEL_STATE);
     
     json_t *root = NULL;
-    enum MHD_Result result = MHD_NO;
     WebSocketMetrics metrics = {0};
 
     // Get WebSocket metrics if available
@@ -72,9 +72,6 @@ enum MHD_Result handle_system_info_request(struct MHD_Connection *connection)
         return MHD_NO;
     }
 
-    // Send response
-    result = api_send_json_response(connection, root, MHD_HTTP_OK);
-    
-    // Note: api_send_json_response takes ownership of root
-    return result;
+    // Send response (api_send_json_response takes ownership of root)
+    return api_send_json_response(connection, root, MHD_HTTP_OK);
 }

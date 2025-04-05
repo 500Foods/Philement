@@ -149,6 +149,23 @@ $(TARGET): $(BUILD_DIR)/libhydrogen.a
 # - Shows only warnings and errors
 # - Detects unused source files
 # - Runs shutdown test
+#
+# Unused file detection:
+# The trial target detects source files that aren't linked into the final executable
+# by comparing object files in the map file against all source files. Files listed
+# in .trial-ignore are filtered out from the warning output.
+#
+# .trial-ignore format:
+# - Lines starting with # are comments explaining why files are ignored
+# - File paths are relative to src/ directory (e.g., ./not_hydrogen.c)
+# - Empty lines are ignored
+#
+# Process:
+# 1. Extract object files that were linked into the final executable from the map file
+# 2. Find all source files in the project
+# 3. Map linked objects back to their source files
+# 4. Read .trial-ignore file to get deliberately unlinked files
+# 5. Compare to find truly unexpected unused files (those not in .trial-ignore)
 trial:
 	@printf "$(CYAN)$(INFO) Starting trial build (warnings and errors only)...$(NORMAL)\n"
 	@$(MAKE) clean > /dev/null 2>&1
@@ -162,13 +179,15 @@ trial:
         USED_OBJS=$$(grep -o "build/libhydrogen\.a([^)]*\.o)" $(MAP_FILE) | sed 's/build\/libhydrogen\.a(\([^)]*\.o\))/\1/' | sort -u); \
         ALL_SRCS=$$(echo "$(SRCS)" | tr ' ' '\n' | sort -u); \
         USED_SRCS=$$(for obj in $$USED_OBJS; do echo "$$ALL_SRCS" | grep "/$${obj%.o}\.c"; done | sort -u); \
+        IGNORED_SRCS=$$(grep -v '^#' $(BIN_PREFIX).trial-ignore | grep -v '^$$' | sed 's|^\./|$(SRC_DIR)/|'); \
         UNUSED_SRCS=$$(comm -23 <(echo "$$ALL_SRCS") <(echo "$$USED_SRCS")); \
-        printf "Debug: USED_OBJS=$$(echo "$$USED_OBJS" | wc -l), ALL_SRCS=$$(echo "$$ALL_SRCS" | wc -l), USED_SRCS=$$(echo "$$USED_SRCS" | wc -l), UNUSED_SRCS=$$(echo "$$UNUSED_SRCS" | wc -l)\n"; \
-        if [ -z "$$UNUSED_SRCS" ]; then \
-            printf "$(GREEN)$(PASS) No unused source files detected$(NORMAL)\n"; \
+        REPORTABLE_SRCS=$$(comm -23 <(echo "$$UNUSED_SRCS") <(echo "$$IGNORED_SRCS" | sort)); \
+        printf "Debug: USED_OBJS=$$(echo "$$USED_OBJS" | wc -l), ALL_SRCS=$$(echo "$$ALL_SRCS" | wc -l), USED_SRCS=$$(echo "$$USED_SRCS" | wc -l), UNUSED_SRCS=$$(echo "$$UNUSED_SRCS" | wc -l), IGNORED_SRCS=$$(echo "$$IGNORED_SRCS" | wc -l)\n"; \
+        if [ -z "$$REPORTABLE_SRCS" ]; then \
+            printf "$(GREEN)$(PASS) No unexpected unused source files detected$(NORMAL)\n"; \
         else \
-            printf "$(YELLOW)$(WARN) Unused source files detected:$(NORMAL)\n"; \
-            echo "$$UNUSED_SRCS" | while read -r file; do \
+            printf "$(YELLOW)$(WARN) Unexpected unused source files detected:$(NORMAL)\n"; \
+            echo "$$REPORTABLE_SRCS" | while read -r file; do \
                 printf "  $(YELLOW)- $$file$(NORMAL)\n"; \
             done; \
         fi; \
