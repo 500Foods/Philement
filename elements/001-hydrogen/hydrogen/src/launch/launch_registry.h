@@ -11,7 +11,26 @@
 #include "launch.h"
 
 /**
+ * Get the registry subsystem's readiness status
+ * 
+ * This function provides a cached readiness check for the registry subsystem.
+ * The result is cached until launch_registry_subsystem() is called, which
+ * clears the cache.
+ * 
+ * Memory Management:
+ * - The returned messages are managed by the caching system
+ * - Do not free the messages in the returned structure
+ * - The cache is automatically cleared during launch
+ * 
+ * @return LaunchReadiness struct with cached readiness status and messages
+ */
+LaunchReadiness get_registry_readiness(void);
+
+/**
  * Check if the registry subsystem is ready to launch
+ * 
+ * Note: Prefer using get_registry_readiness() instead of calling this directly
+ * to avoid redundant checks and potential memory leaks.
  * 
  * @return LaunchReadiness struct with readiness status and messages
  */

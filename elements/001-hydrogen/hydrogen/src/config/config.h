@@ -139,6 +139,13 @@ AppConfig* load_config(const char* config_path);
 void create_default_config(const char* config_path);
 
 /*
+ * Perform final cleanup of app configuration during shutdown
+ * This function should be called during the shutdown sequence
+ * to prevent memory leaks.
+ */
+void cleanup_application_config(void);
+
+/*
  * Helper function to handle environment variable logging
  * This function is exported for use by config_env.c
  * 

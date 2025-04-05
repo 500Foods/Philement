@@ -1,11 +1,5 @@
 Direct Leaks
-- Found: 8
-- Smallest: 22 byte(s)
-- Largest: 400 byte(s)
-- Total: 1182 byte(s)
+- Found: 0
 
 Indirect Leaks
-- Found: 32
-- Smallest: 8 byte(s)
-- Largest: 700 byte(s)
-- Total: 2728 byte(s)
+- Found: 0

@@ -22,7 +22,25 @@
 #define LOG_LINE_BREAK "――――――――――――――――――――――――――――――――――――――――"
 
 /*
- * Check network subsystem launch readiness
+ * Get network subsystem readiness status (cached)
+ *
+ * This function provides a cached version of the network readiness check.
+ * It will return the cached result if available, or perform a new check
+ * if no cached result exists.
+ *
+ * Memory Management:
+ * - The returned LaunchReadiness structure and its messages are managed internally
+ * - Do not free the returned structure or its messages
+ * - Cache is automatically cleared when:
+ *   - The network subsystem is launched
+ *   - The system state changes
+ *
+ * @return LaunchReadiness structure with readiness status and messages (do not free)
+ */
+LaunchReadiness get_network_readiness(void);
+
+/*
+ * Check network subsystem launch readiness (direct check)
  *
  * This function performs the following checks:
  * - System state (shutdown in progress, startup/running state)
@@ -34,6 +52,9 @@
  *   - Ping response time for IPv4/IPv6 addresses
  * - Registry state and dependencies
  * - Final decision based on whether > 0 interfaces are up
+ *
+ * Note: Prefer using get_network_readiness() instead of calling this directly
+ * to avoid redundant checks and potential memory leaks.
  *
  * @return LaunchReadiness structure with readiness status and messages
  */
