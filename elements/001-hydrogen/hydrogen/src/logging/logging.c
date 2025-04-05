@@ -92,7 +92,11 @@ static void console_log(const char* subsystem, int priority, const char* message
     char timestamp_ms[48];  // Increased buffer size for safety
     snprintf(timestamp_ms, sizeof(timestamp_ms), "%s.%03dZ", timestamp, (int)(tv.tv_usec / 1000));
 
-    fprintf(stderr, "%s  %s  %s  %s  %s\n", counter_prefix, timestamp_ms, formatted_priority, formatted_subsystem, message);
+    // Write to stdout for test compatibility and stderr for console visibility
+    fprintf(stdout, "%s  %s  %s  %s  %s\n", counter_prefix, timestamp_ms, formatted_priority, formatted_subsystem, message);
+    
+    // Ensure output is flushed immediately during shutdown
+    fflush(stdout);
 }
 
 // Log a message based on configuration settings
@@ -142,16 +146,27 @@ void log_this(const char* subsystem, const char* format, int priority, ...) {
              "{\"subsystem\":\"%s\",\"details\":\"%s\",\"priority\":%d,\"counter_high\":%lu,\"counter_low\":%lu,\"LogConsole\":true,\"LogFile\":true,\"LogDatabase\":true}",
              subsystem, details, priority, counter_high, counter_low);
 
-    // During very early startup (before queue system init), always use console
-    extern int queue_system_initialized;  // From queue.c
-    if (!queue_system_initialized) {
+    // Check if app_config is NULL (during startup or after cleanup_application_config)
+    // or if this is the final shutdown message
+    // In these cases, always use console_log regardless of queue status
+    if (!app_config || (strcmp(details, "Shutdown complete") == 0)) {
+        // During startup, shutdown, or for final message, always use console output
         console_log(subsystem, priority, details, current_count);
-    } else {
-        // Try to use queue system if it's running
-        Queue* log_queue = NULL;
-        bool use_console = true;  // Default to using console unless queue succeeds
-        
-        if (!log_queue_shutdown) {
+    }
+    // During very early startup (before queue system init), always use console
+    else if (!queue_system_initialized) {
+        console_log(subsystem, priority, details, current_count);
+    } 
+    // Normal operation with initialized queue system
+    else {
+        // During shutdown, always use console output like we do for NULL app_config
+        if (log_queue_shutdown) {
+            console_log(subsystem, priority, details, current_count);
+        } else {
+            // Try to use queue system if it's running
+            Queue* log_queue = NULL;
+            bool use_console = true;  // Default to using console unless queue succeeds
+            
             log_queue = queue_find("SystemLog");
             if (log_queue) {
                 if (queue_enqueue(log_queue, json_message, strlen(json_message), priority) == 0) {
@@ -161,15 +176,11 @@ void log_this(const char* subsystem, const char* format, int priority, ...) {
                     pthread_cond_signal(&terminate_cond);
                 }
             }
-        }
 
-        // Use console output if:
-        // 1. app_config isn't initialized yet (early startup)
-        // 2. Console logging is enabled and either:
-        //    - Queue isn't available
-        //    - Queue enqueue failed
-        if (!app_config || (app_config->logging.console.enabled && use_console)) {
-            console_log(subsystem, priority, details, current_count);
+            // Only check console enabled during normal operation
+            if (use_console && app_config->logging.console.enabled) {
+                console_log(subsystem, priority, details, current_count);
+            }
         }
     }
 
