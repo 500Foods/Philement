@@ -48,6 +48,7 @@ Remember:
 -->
 
 - April 2025
+  - [2025-Apr-05 (Sat)](docs/releases/2025-04-05.md): Logging System, Shutdown System, Release Notes
   - [2025-Apr-04 (Thu)](docs/releases/2025-04-04.md): OIDC Integration, Web Server, Launch System, Testing
   - [2025-Apr-03 (Wed)](docs/releases/2025-04-03.md): Status System, Launch System, Metrics and Monitoring, Configuration
   - [2025-Apr-02 (Tue)](docs/releases/2025-04-02.md): Launch System, Network Infrastructure, Configuration
