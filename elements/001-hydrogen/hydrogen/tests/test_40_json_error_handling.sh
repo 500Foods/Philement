@@ -37,7 +37,8 @@ fi
 print_header "Test 1: Launch with malformed JSON configuration" | tee -a "$RESULT_LOG"
 print_command "$HYDROGEN_BIN $TEST_CONFIG" | tee -a "$RESULT_LOG"
 
-if $HYDROGEN_BIN "$TEST_CONFIG" 2> "$ERROR_OUTPUT"; then
+# Capture both stdout and stderr
+if $HYDROGEN_BIN "$TEST_CONFIG" &> "$ERROR_OUTPUT"; then
     print_result 1 "Application should have exited with an error but didn't" | tee -a "$RESULT_LOG"
     rm -f "$ERROR_OUTPUT"
     end_test 1 "JSON Error Handling Test" | tee -a "$RESULT_LOG"

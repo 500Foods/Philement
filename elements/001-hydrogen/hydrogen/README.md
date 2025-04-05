@@ -285,20 +285,20 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Fri Apr  4 19:46:09 PDT 2025
+Generated on: Sat Apr  5 00:37:09 PDT 2025
 
 ### Summary
 
 | Metric | Value |
 | ------ | ----- |
 | Total Tests | 15 |
-| Passed | 12 |
-| Failed | 3 |
+| Passed | 15 |
+| Failed | 0 |
 | Skipped | 0 |
-| Total Subtests | 107 |
-| Passed Subtests | 101 |
-| Failed Subtests | 6 |
-| Runtime | 6m 42s |
+| Total Subtests | 111 |
+| Passed Subtests | 111 |
+| Failed Subtests | 0 |
+| Runtime | 6m 7s |
 
 ### Individual Test Results
 
@@ -306,12 +306,12 @@ Generated on: Fri Apr  4 19:46:09 PDT 2025
 | ---- | ------ | ------- |
 | 10_compilation | ✅ Passed | Test completed without errors (7 of 7 subtests passed) |
 | 12_env_payload | ✅ Passed | Test completed without errors (2 of 2 subtests passed) |
-| 15_startup_shutdown | ❌ Failed | Test failed with errors (4 of 6 subtests passed) |
-| 20_shutdown | ❌ Failed | Test failed with errors (0 of 1 subtests passed) |
+| 15_startup_shutdown | ✅ Passed | Test completed without errors (6 of 6 subtests passed) |
+| 20_shutdown | ✅ Passed | Test completed without errors (5 of 5 subtests passed) |
 | 25_library_dependencies | ✅ Passed | Test completed without errors (16 of 16 subtests passed) |
 | 35_env_variables | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
 | 40_json_error_handling | ✅ Passed | Test completed without errors (2 of 2 subtests passed) |
-| 45_signals | ❌ Failed | Test failed with errors (1 of 4 subtests passed) |
+| 45_signals | ✅ Passed | Test completed without errors (4 of 4 subtests passed) |
 | 50_crash_handler | ✅ Passed | Test completed without errors (20 of 20 subtests passed) |
 | 55_socket_rebind | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
 | 60_api_prefixes | ✅ Passed | Test completed without errors (10 of 10 subtests passed) |
@@ -322,16 +322,16 @@ Generated on: Fri Apr  4 19:46:09 PDT 2025
 
 ## Repository Information
 
-Generated via cloc: Fri Apr  4 19:46:09 PDT 2025
+Generated via cloc: Sat Apr  5 00:37:09 PDT 2025
 
 | Language | Files | Blank Lines | Comment Lines | Code Lines |
 | -------- | ----- | ----------- | ------------- | ---------- |
-| C | 169 | 4817 | 6857 | 21258 |
+| C | 169 | 4820 | 6862 | 21265 |
 | Markdown | 118 | 4339 | 27 | 15563 |
-| Bourne | Shell | 25 | 1389 | 1430 |
-| JSON | 17 | 1 | 0 | 4774 |
+| Bourne | Shell | 25 | 1389 | 1431 |
+| JSON | 17 | 1 | 0 | 4765 |
 | C/C++ | Header | 150 | 1247 | 5596 |
-| Text | 19 | 10 | 0 | 2378 |
+| Text | 19 | 10 | 0 | 2333 |
 | HTML | 1 | 74 | 0 | 493 |
 | make | 2 | 55 | 121 | 262 |
-| **Total** | **501** | **11932** | **14031** | **53315** |
+| **Total** | **501** | **11935** | **14037** | **53268** |

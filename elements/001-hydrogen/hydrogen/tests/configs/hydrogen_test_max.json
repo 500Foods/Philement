@@ -80,15 +80,6 @@
         }
     },
     "Logging": {
-        "Levels": [
-            [0, "ALL"],
-            [1, "INFO"],
-            [2, "WARN"],
-            [3, "DEBUG"],
-            [4, "ERROR"],
-            [5, "CRITICAL"],
-            [6, "NONE"]
-        ],
         "Console": {
             "Enabled": true,
             "DefaultLevel": 0,

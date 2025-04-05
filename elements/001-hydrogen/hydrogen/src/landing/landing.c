@@ -55,6 +55,7 @@
 #include <time.h>
 #include <ctype.h>
 #include <signal.h>
+#include <unistd.h>  // For usleep
 
 // Local includes
 #include "landing.h"
@@ -325,11 +326,13 @@ bool check_all_landing_readiness(void) {
         
         return true;
     } else {
-        // Clean up application config to prevent memory leaks
-        cleanup_application_config();
         
+        // Clean up application config after logging is complete
+        cleanup_application_config();
+
+        // Log completion message before cleanup
         log_this("Shutdown", "Shutdown complete", LOG_LEVEL_STATE);
-        fflush(stdout);
+               
         exit(0);  // Exit process after clean shutdown
     }
         

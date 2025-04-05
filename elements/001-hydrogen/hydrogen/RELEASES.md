@@ -1,31 +1,62 @@
 # Release Notes
 
 <!--
-EDITING GUIDELINES (not visible when rendered):
+CRITICAL INSTRUCTIONS
+
+Step 1: Gather Changes
+- Use git log to list ALL changed files for the day with the numbers representing the number of lines added or removed:
+  ```
+  git log --since="2025-04-04 00:00" --until="2025-04-04 23:59" --numstat --pretty=format: | awk '{add[$3]+=$1; del[$3]+=$2} END {for (f in add) printf "%d\t%d\t%s\n", add[f], del[f], f}' | sort -rn
+  ```
+- Group files by subsystem/component
+- For each significant component, examine detailed changes. Please request one file at a time as these can be quite large.
+- Any file with more than 25 lines changed should guarantee an entry in the release notes, though lesser changes could qualify
+  ```
+  git log --since="YYYY-MM-DD 00:00" --until="YYYY-MM-DD 23:59" -p -- path/to/component
+  ```
+
+Step 2: Document Changes
 - Keep entries concise and factual
-- Focus on WHAT changed, not WHY it's good
-- Avoid adjectives like "comprehensive", "robust", "significant"
-- Eliminate unnecessary justifications
-- Use fewer words where possible
-- Stick to listing actual changes, not opinions about them
-- This is a technical record, not marketing material
-- Use collapsible sections by month (except for the most recent month)
-  - Wrap older months in <details><summary>YYYY-MMM</summary> and </details> tags
-  - Keep the current/most recent month expanded
-  - This creates a more compact view while maintaining all history
-- Maintain consistent structure for all entries:
-  - Start with a topic heading (e.g., "WebSocket Server:", "Testing:")
-  - Follow with bullet points for specific changes related to that topic
-  - Group related changes under the same topic
-- When adding to an existing date section:
-  - Consolidate entries by topic rather than repeating headers
-  - Reflow content to keep all related items together
-  - Example: Keep all "Documentation:" entries together, all "API:" entries together, etc.
-  - Avoid patterns like "Documentation:"/items, "API:"/items, "Documentation:"/more items
+- Focus on WHAT changed, not WHY
+- Avoid marketing language ("comprehensive", "robust", etc.)
+- Include links to key source files (2-3 per major change)
+- Group related changes under clear topic headings
+
+Step 3: Structure Format
+- Start with topic heading (e.g., "WebSocket Server:", "Testing:")
+- List specific changes as bullet points
+- Include links to significant files in bullet points
+- Example:
+  ```
+  Memory:
+  - Added cleanup handlers [src/landing/landing.c]
+  - Enhanced resource tracking [src/utils/utils.c]
+  ```
+
+Step 4: Quality Checks
+- Verify all major changes are documented
+- Ensure links point to actual changed files
+- Confirm grouping is logical
+- Remove any speculation or marketing language
+- Keep focus on technical changes
+
+Remember:
+- This is a technical record, not marketing
+- Every statement should be backed by commit evidence
+- Include links to 2-3 key files per major change
+- Group by topic to maintain clarity
 -->
 
+- April 2025
+  - [2025-Apr-04 (Thu)](docs/releases/2025-04-04.md): OIDC Integration, Web Server, Launch System, Testing
+  - [2025-Apr-03 (Wed)](docs/releases/2025-04-03.md): Status System, Launch System, Metrics and Monitoring, Configuration
+  - [2025-Apr-02 (Tue)](docs/releases/2025-04-02.md): Launch System, Network Infrastructure, Configuration
+  - [2025-Apr-01 (Mon)](docs/releases/2025-04-01.md): Build System, Testing Framework, Configuration System, Launch/Landing System
 - March 2025
-  - [2025-Mar-28 (Fri)](docs/releases/2025-03-28.md): Launch System Architecture, Thread Management, Subsystem Integration
+  - [2025-Mar-31 (Mon)](docs/releases/2025-03-31.md): Landing System Architecture, Core System, State Management
+  - [2025-Mar-30 (Sun)](docs/releases/2025-03-30.md): Core System, Registry System, Thread Management, Shutdown System
+  - [2025-Mar-29 (Sat)](docs/releases/2025-03-29.md): Launch System, Landing System, Subsystem Architecture
+  - [2025-Mar-28 (Fri)](docs/releases/2025-03-28.md): Thread Management, Launch/Landing Integration, Subsystem Architecture
   - [2025-Mar-27 (Thu)](docs/releases/2025-03-27.md): System Integration, Performance Monitoring, Testing
   - [2025-Mar-26 (Wed)](docs/releases/2025-03-26.md): Subsystem Integration, State Management, Registry System
   - [2025-Mar-25 (Tue)](docs/releases/2025-03-25.md): Thread Management, Thread Safety, Resource Management

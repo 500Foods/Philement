@@ -140,6 +140,7 @@ AppConfig* load_config(const char* cmdline_path) {
         }
         root = json_load_file(cmdline_path, 0, &error);
         if (!root) {
+            dprintf(STDERR_FILENO, "JSON parse error at line %d, column %d: %s\n", error.line, error.column, error.text);
             log_this("Config", "Failed to load command-line specified config: %s (line %d, column %d)",
                      LOG_LEVEL_ERROR, error.text, error.line, error.column);
             return NULL;
