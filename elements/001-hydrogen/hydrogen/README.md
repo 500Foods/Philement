@@ -285,7 +285,7 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Mon Apr  7 23:52:26 PDT 2025
+Generated on: Tue Apr  8 00:47:53 PDT 2025
 
 ### Summary
 
@@ -296,9 +296,9 @@ Generated on: Mon Apr  7 23:52:26 PDT 2025
 | Failed | 0 |
 | Skipped | 0 |
 | Total Subtests | 111 |
-| Passed Subtests | 110 |
-| Failed Subtests | 1 |
-| Runtime | 6m 15s |
+| Passed Subtests | 111 |
+| Failed Subtests | 0 |
+| Runtime | 6m 5s |
 
 ### Individual Test Results
 
@@ -318,20 +318,20 @@ Generated on: Mon Apr  7 23:52:26 PDT 2025
 | 65_system_endpoints | ✅ Passed | Test completed without errors (13 of 13 subtests passed) |
 | 70_swagger_ui | ✅ Passed | Test completed without errors (10 of 10 subtests passed) |
 | 95_leaks_like_a_sieve | ✅ Passed | Test completed without errors (2 of 2 subtests passed) |
-| 99_codebase | ✅ Passed | Test completed without errors (11 of 12 subtests passed) |
+| 99_codebase | ✅ Passed | Test completed without errors (12 of 12 subtests passed) |
 
 ## Repository Information
 
-Generated via cloc: Mon Apr  7 23:52:26 PDT 2025
+Generated via cloc: Tue Apr  8 00:47:53 PDT 2025
 
 | Language | Files | Blank Lines | Comment Lines | Code Lines |
 | -------- | ----- | ----------- | ------------- | ---------- |
 | C | 169 | 4820 | 6862 | 21265 |
-| Markdown | 126 | 4367 | 49 | 15696 |
+| Markdown | 126 | 4402 | 49 | 15698 |
 | Bourne | Shell | 25 | 1389 | 1431 |
 | JSON | 17 | 1 | 0 | 4765 |
 | C/C++ | Header | 150 | 1247 | 5596 |
 | Text | 19 | 10 | 0 | 2331 |
 | HTML | 1 | 74 | 0 | 493 |
 | make | 2 | 55 | 121 | 262 |
-| **Total** | **509** | **11963** | **14059** | **53399** |
+| **Total** | **509** | **11998** | **14059** | **53401** |
