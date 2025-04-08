@@ -48,66 +48,66 @@ Remember:
 -->
 
 - April 2025
-  - [2025-Apr-05 (Sat)](docs/releases/2025-04-05.md): Logging System, Shutdown System, Release Notes
-  - [2025-Apr-04 (Thu)](docs/releases/2025-04-04.md): OIDC Integration, Web Server, Launch System, Testing
-  - [2025-Apr-03 (Wed)](docs/releases/2025-04-03.md): Status System, Launch System, Metrics and Monitoring, Configuration
-  - [2025-Apr-02 (Tue)](docs/releases/2025-04-02.md): Launch System, Network Infrastructure, Configuration
-  - [2025-Apr-01 (Mon)](docs/releases/2025-04-01.md): Build System, Testing Framework, Configuration System, Launch/Landing System
+  - [2025-Apr-05 (Sat)](docs/releases/2025-04/2025-04-05.md): Logging System, Shutdown System, Release Notes
+  - [2025-Apr-04 (Thu)](docs/releases/2025-04/2025-04-04.md): OIDC Integration, Web Server, Launch System, Testing
+  - [2025-Apr-03 (Wed)](docs/releases/2025-04/2025-04-03.md): Status System, Launch System, Metrics and Monitoring, Configuration
+  - [2025-Apr-02 (Tue)](docs/releases/2025-04/2025-04-02.md): Launch System, Network Infrastructure, Configuration
+  - [2025-Apr-01 (Mon)](docs/releases/2025-04/2025-04-01.md): Build System, Testing Framework, Configuration System, Launch/Landing System
 - March 2025
-  - [2025-Mar-31 (Mon)](docs/releases/2025-03-31.md): Landing System Architecture, Core System, State Management
-  - [2025-Mar-30 (Sun)](docs/releases/2025-03-30.md): Core System, Registry System, Thread Management, Shutdown System
-  - [2025-Mar-29 (Sat)](docs/releases/2025-03-29.md): Launch System, Landing System, Subsystem Architecture
-  - [2025-Mar-28 (Fri)](docs/releases/2025-03-28.md): Thread Management, Launch/Landing Integration, Subsystem Architecture
-  - [2025-Mar-27 (Thu)](docs/releases/2025-03-27.md): System Integration, Performance Monitoring, Testing
-  - [2025-Mar-26 (Wed)](docs/releases/2025-03-26.md): Subsystem Integration, State Management, Registry System
-  - [2025-Mar-25 (Tue)](docs/releases/2025-03-25.md): Thread Management, Thread Safety, Resource Management
-  - [2025-Mar-24 (Mon)](docs/releases/2025-03-24.md): Logging System, Monitoring, Resource Management
-  - [2025-Mar-23 (Sun)](docs/releases/2025-03-23.md): WebServer Subsystem, Error Handling, Integration
-  - [2025-Mar-22 (Sat)](docs/releases/2025-03-22.md): Launch System, System Architecture, Documentation
-  - [2025-Mar-21 (Fri)](docs/releases/2025-03-21.md): Configuration System, File Handling, Environment Integration
-  - [2025-Mar-20 (Thu)](docs/releases/2025-03-20.md): System Control, Signal Management, Startup Handling, Logging Improvements
-  - [2025-Mar-19 (Wed)](docs/releases/2025-03-19.md): Subsystem Management, Shutdown Functions, Documentation, Error Handling
-  - [2025-Mar-18 (Tue)](docs/releases/2025-03-18.md): Repository Integration, GitHub Workflows, JSON Configuration, Testing
-  - [2025-Mar-17 (Mon)](docs/releases/2025-03-17.md): System Enhancements, Launch Readiness, Shutdown Process, Testing
-  - [2025-Mar-16 (Sun)](docs/releases/2025-03-16.md): Implementation Preparation, Shutdown System, Restart Functionality, Integration Planning
-  - [2025-Mar-15 (Sat)](docs/releases/2025-03-15.md): Development Planning, Architecture Design, Code Organization
-  - [2025-Mar-14 (Wed)](docs/releases/2025-03-14.md): Repository Infrastructure, GitHub Workflows, Release Documentation
-  - [2025-Mar-13 (Wed)](docs/releases/2025-03-13.md): Configuration System, API Configuration, Logging Configuration
-  - [2025-Mar-12 (Wed)](docs/releases/2025-03-12.md): Code Quality, Testing
-  - [2025-Mar-11 (Mon)](docs/releases/2025-03-11.md): Configuration System, WebSocket Server, System Architecture, Web Server
-  - [2025-Mar-10 (Sun)](docs/releases/2025-03-10.md): Configuration System, Network Infrastructure, OIDC Service, Testing Framework
-  - [2025-Mar-09 (Sat)](docs/releases/2025-03-09.md): Network Infrastructure, Documentation System, SMTP Relay
-  - [2025-Mar-08 (Fri)](docs/releases/2025-03-08.md): Thread Management, Logging System, Service Infrastructure
-  - [2025-Mar-07 (Thu)](docs/releases/2025-03-07.md): Code Cleanup, Configuration Structure, Startup Sequence
-  - [2025-Mar-06 (Thu)](docs/releases/2025-03-06.md): Configuration System, Documentation
-  - [2025-Mar-05 (Wed)](docs/releases/2025-03-05.md): API, WebSocket Server, Web Server, Testing, Documentation, State Management
-  - [2025-Mar-04 (Tue)](docs/releases/2025-03-04.md): Web Server, Configuration, Testing
-  - [2025-Mar-03 (Mon)](docs/releases/2025-03-03.md): Web Server, Testing, Service Discovery
-  - [2025-Mar-02 (Sun)](docs/releases/2025-03-02.md): API Documentation, Build System, Configuration, Testing
-  - [2025-Mar-01 (Sat)](docs/releases/2025-03-01.md): API Architecture, Web Server, Testing, Build System
+  - [2025-Mar-31 (Mon)](docs/releases/2025-03/2025-03-31.md): Landing System Architecture, Core System, State Management
+  - [2025-Mar-30 (Sun)](docs/releases/2025-03/2025-03-30.md): Core System, Registry System, Thread Management, Shutdown System
+  - [2025-Mar-29 (Sat)](docs/releases/2025-03/2025-03-29.md): Launch System, Landing System, Subsystem Architecture
+  - [2025-Mar-28 (Fri)](docs/releases/2025-03/2025-03-28.md): Thread Management, Launch/Landing Integration, Subsystem Architecture
+  - [2025-Mar-27 (Thu)](docs/releases/2025-03/2025-03-27.md): System Integration, Performance Monitoring, Testing
+  - [2025-Mar-26 (Wed)](docs/releases/2025-03/2025-03-26.md): Subsystem Integration, State Management, Registry System
+  - [2025-Mar-25 (Tue)](docs/releases/2025-03/2025-03-25.md): Thread Management, Thread Safety, Resource Management
+  - [2025-Mar-24 (Mon)](docs/releases/2025-03/2025-03-24.md): Logging System, Monitoring, Resource Management
+  - [2025-Mar-23 (Sun)](docs/releases/2025-03/2025-03-23.md): WebServer Subsystem, Error Handling, Integration
+  - [2025-Mar-22 (Sat)](docs/releases/2025-03/2025-03-22.md): Launch System, System Architecture, Documentation
+  - [2025-Mar-21 (Fri)](docs/releases/2025-03/2025-03-21.md): Configuration System, File Handling, Environment Integration
+  - [2025-Mar-20 (Thu)](docs/releases/2025-03/2025-03-20.md): System Control, Signal Management, Startup Handling, Logging Improvements
+  - [2025-Mar-19 (Wed)](docs/releases/2025-03/2025-03-19.md): Subsystem Management, Shutdown Functions, Documentation, Error Handling
+  - [2025-Mar-18 (Tue)](docs/releases/2025-03/2025-03-18.md): Repository Integration, GitHub Workflows, JSON Configuration, Testing
+  - [2025-Mar-17 (Mon)](docs/releases/2025-03/2025-03-17.md): System Enhancements, Launch Readiness, Shutdown Process, Testing
+  - [2025-Mar-16 (Sun)](docs/releases/2025-03/2025-03-16.md): Implementation Preparation, Shutdown System, Restart Functionality, Integration Planning
+  - [2025-Mar-15 (Sat)](docs/releases/2025-03/2025-03-15.md): Development Planning, Architecture Design, Code Organization
+  - [2025-Mar-14 (Wed)](docs/releases/2025-03/2025-03-14.md): Repository Infrastructure, GitHub Workflows, Release Documentation
+  - [2025-Mar-13 (Wed)](docs/releases/2025-03/2025-03-13.md): Configuration System, API Configuration, Logging Configuration
+  - [2025-Mar-12 (Wed)](docs/releases/2025-03/2025-03-12.md): Code Quality, Testing
+  - [2025-Mar-11 (Mon)](docs/releases/2025-03/2025-03-11.md): Configuration System, WebSocket Server, System Architecture, Web Server
+  - [2025-Mar-10 (Sun)](docs/releases/2025-03/2025-03-10.md): Configuration System, Network Infrastructure, OIDC Service, Testing Framework
+  - [2025-Mar-09 (Sat)](docs/releases/2025-03/2025-03-09.md): Network Infrastructure, Documentation System, SMTP Relay
+  - [2025-Mar-08 (Fri)](docs/releases/2025-03/2025-03-08.md): Thread Management, Logging System, Service Infrastructure
+  - [2025-Mar-07 (Thu)](docs/releases/2025-03/2025-03-07.md): Code Cleanup, Configuration Structure, Startup Sequence
+  - [2025-Mar-06 (Thu)](docs/releases/2025-03/2025-03-06.md): Configuration System, Documentation
+  - [2025-Mar-05 (Wed)](docs/releases/2025-03/2025-03-05.md): API, WebSocket Server, Web Server, Testing, Documentation, State Management
+  - [2025-Mar-04 (Tue)](docs/releases/2025-03/2025-03-04.md): Web Server, Configuration, Testing
+  - [2025-Mar-03 (Mon)](docs/releases/2025-03/2025-03-03.md): Web Server, Testing, Service Discovery
+  - [2025-Mar-02 (Sun)](docs/releases/2025-03/2025-03-02.md): API Documentation, Build System, Configuration, Testing
+  - [2025-Mar-01 (Sat)](docs/releases/2025-03/2025-03-01.md): API Architecture, Web Server, Testing, Build System
 
 - February 2025
-  - [2025-Feb-28 (Fri)](docs/releases/2025-02-28.md): Build System, Testing, Code Quality, Configuration, API
-  - [2025-Feb-27 (Thu)](docs/releases/2025-02-27.md): Code Quality, OIDC Service, Testing, Documentation
-  - [2025-Feb-26 (Wed)](docs/releases/2025-02-26.md): Testing, Shutdown Architecture, Documentation
-  - [2025-Feb-25 (Tue)](docs/releases/2025-02-25.md): Testing System, Documentation
-  - [2025-Feb-24 (Mon)](docs/releases/2025-02-24.md): WebSocket Server, mDNS Server, Documentation
-  - [2025-Feb-23 (Sun)](docs/releases/2025-02-23.md): Core System
-  - [2025-Feb-22 (Sat)](docs/releases/2025-02-22.md): Server Management, WebSocket Server, Logging
-  - [2025-Feb-21 (Fri)](docs/releases/2025-02-21.md): Queue System, System Information
-  - [2025-Feb-20 (Thu)](docs/releases/2025-02-20.md): WebSocket Server
-  - [2025-Feb-19 (Wed)](docs/releases/2025-02-19.md): System Status, Documentation
-  - [2025-Feb-18 (Tue)](docs/releases/2025-02-18.md): Network Infrastructure
-  - [2025-Feb-17 (Mon)](docs/releases/2025-02-17.md): Documentation, System Metrics
-  - [2025-Feb-16 (Sun)](docs/releases/2025-02-16.md): Code Quality, Configuration
-  - [2025-Feb-15 (Sat)](docs/releases/2025-02-15.md): Documentation, Configuration
-  - [2025-Feb-14 (Fri)](docs/releases/2025-02-14.md): API Development
-  - [2025-Feb-13 (Thu)](docs/releases/2025-02-13.md): Code Maintenance
-  - [2025-Feb-12 (Wed)](docs/releases/2025-02-12.md): Code Maintenance
-  - [2025-Feb-08 (Fri)](docs/releases/2025-02-08.md): Development Environment
+  - [2025-Feb-28 (Fri)](docs/releases/2025-02/2025-02-28.md): Build System, Testing, Code Quality, Configuration, API
+  - [2025-Feb-27 (Thu)](docs/releases/2025-02/2025-02-27.md): Code Quality, OIDC Service, Testing, Documentation
+  - [2025-Feb-26 (Wed)](docs/releases/2025-02/2025-02-26.md): Testing, Shutdown Architecture, Documentation
+  - [2025-Feb-25 (Tue)](docs/releases/2025-02/2025-02-25.md): Testing System, Documentation
+  - [2025-Feb-24 (Mon)](docs/releases/2025-02/2025-02-24.md): WebSocket Server, mDNS Server, Documentation
+  - [2025-Feb-23 (Sun)](docs/releases/2025-02/2025-02-23.md): Core System
+  - [2025-Feb-22 (Sat)](docs/releases/2025-02/2025-02-22.md): Server Management, WebSocket Server, Logging
+  - [2025-Feb-21 (Fri)](docs/releases/2025-02/2025-02-21.md): Queue System, System Information
+  - [2025-Feb-20 (Thu)](docs/releases/2025-02/2025-02-20.md): WebSocket Server
+  - [2025-Feb-19 (Wed)](docs/releases/2025-02/2025-02-19.md): System Status, Documentation
+  - [2025-Feb-18 (Tue)](docs/releases/2025-02/2025-02-18.md): Network Infrastructure
+  - [2025-Feb-17 (Mon)](docs/releases/2025-02/2025-02-17.md): Documentation, System Metrics
+  - [2025-Feb-16 (Sun)](docs/releases/2025-02/2025-02-16.md): Code Quality, Configuration
+  - [2025-Feb-15 (Sat)](docs/releases/2025-02/2025-02-15.md): Documentation, Configuration
+  - [2025-Feb-14 (Fri)](docs/releases/2025-02/2025-02-14.md): API Development
+  - [2025-Feb-13 (Thu)](docs/releases/2025-02/2025-02-13.md): Code Maintenance
+  - [2025-Feb-12 (Wed)](docs/releases/2025-02/2025-02-12.md): Code Maintenance
+  - [2025-Feb-08 (Fri)](docs/releases/2025-02/2025-02-08.md): Development Environment
 
 - July 2024
-  - [2024-Jul-18 (Thu)](docs/releases/2024-07-18.md): WebSocket Server
-  - [2024-Jul-15 (Mon)](docs/releases/2024-07-15.md): System Improvements
-  - [2024-Jul-11 (Thu)](docs/releases/2024-07-11.md): Network Infrastructure
-  - [2024-Jul-08 (Mon)](docs/releases/2024-07-08.md): Print Service
+  - [2024-Jul-18 (Thu)](docs/releases/2024-07/2024-07-18.md): WebSocket Server
+  - [2024-Jul-15 (Mon)](docs/releases/2024-07/2024-07-15.md): System Improvements
+  - [2024-Jul-11 (Thu)](docs/releases/2024-07/2024-07-11.md): Network Infrastructure
+  - [2024-Jul-08 (Mon)](docs/releases/2024-07/2024-07-08.md): Print Service
