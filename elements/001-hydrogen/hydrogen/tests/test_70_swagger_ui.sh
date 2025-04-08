@@ -12,6 +12,30 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Include the common test utilities
 source "$SCRIPT_DIR/support_utils.sh"
 
+# Function to wait for server to be ready
+wait_for_server() {
+    local base_url="$1"
+    local max_attempts=10  # 5 seconds total (0.5s * 10)
+    local attempt=1
+    
+    print_info "Waiting for server to be ready at $base_url..."
+    
+    while [ $attempt -le $max_attempts ]; do
+        if curl -s --max-time 1 "${base_url}" > /dev/null 2>&1; then
+            print_info "Server is ready after $(( attempt * 5 / 10 )) seconds"
+            return 0
+        fi
+        sleep 0.5
+        ((attempt++))
+    done
+    
+    print_error "Server failed to respond within 5 seconds"
+    return 1
+}
+
+# Initialize test environment and result log
+RESULT_LOG=$(setup_test_environment "Hydrogen Swagger UI Test")
+
 # Create results directory if it doesn't exist
 RESULTS_DIR="$SCRIPT_DIR/results"
 mkdir -p "$RESULTS_DIR"
@@ -136,13 +160,15 @@ test_swagger_ui() {
     "$HYDROGEN_BIN" "$config_file" > "$RESULTS_DIR/hydrogen_test_${test_name}.log" 2>&1 &
     HYDROGEN_PID=$!
 
-    # Wait for the server to start
-    print_info "Waiting for server to initialize (10 seconds)..."
-    sleep 10
-
     # Base URL for all requests
     local base_url="http://localhost:${web_server_port}"
     print_info "Using base URL: $base_url for tests"
+    
+    # Wait for the server to be ready
+    wait_for_server "${base_url}" || {
+        print_error "Server failed to start properly"
+        return 1
+    }
     
     # Test 1: Path with trailing slash should serve index.html
     print_header "Test 1: Access Swagger UI with trailing slash"
@@ -170,17 +196,8 @@ test_swagger_ui() {
     # Check server stability
     if [ -n "$ACTUAL_PID" ]; then
         STABILITY_RESULT=0
-        # Stop the server
-        print_info "Stopping server (PID: $ACTUAL_PID)..."
-        kill $ACTUAL_PID
-        sleep 2
-        
-        # Make sure it's really stopped
-        if kill -0 $ACTUAL_PID 2>/dev/null; then
-            print_warning "Server didn't stop gracefully, forcing termination..."
-            kill -9 $ACTUAL_PID
-            sleep 1
-        fi
+        # Stop the server using utility function
+        stop_hydrogen_server "$ACTUAL_PID" 1
     else
         print_result 1 "ERROR: Server has crashed (segmentation fault)"
         print_info "Server logs:"
@@ -227,7 +244,6 @@ PASS_COUNT=0
 # Ensure clean state
 print_info "Ensuring no existing hydrogen processes are running..."
 pkill -f "hydrogen.*json" 2>/dev/null
-sleep 2
 
 # Test with default Swagger prefix (/swagger) on a dedicated port
 test_swagger_ui "$(get_config_path "hydrogen_test_swagger_test_1.json")" "/swagger" "swagger_default"
@@ -236,7 +252,6 @@ DEFAULT_PREFIX_RESULT=$?
 # Ensure server is stopped before starting next test
 print_info "Making sure all previous servers are stopped..."
 pkill -f "hydrogen.*json" 2>/dev/null
-sleep 2
 
 # Test with custom Swagger prefix (/apidocs) on a different port
 test_swagger_ui "$(get_config_path "hydrogen_test_swagger_test_2.json")" "/apidocs" "swagger_custom"
@@ -262,7 +277,7 @@ TEST_NAME=$(basename "$0" .sh | sed 's/^test_//')
 export_subtest_results "$TEST_NAME" $TOTAL_SUBTESTS $PASS_COUNT
 
 # Log subtest results
-print_info "Swagger UI Test: $PASS_COUNT of $TOTAL_SUBTESTS subtests passed" | tee -a "$RESULT_LOG"
+print_info "Swagger UI Test: $PASS_COUNT of $TOTAL_SUBTESTS subtests passed"
 
 # End the test with final result
 end_test $TEST_RESULT "Swagger UI Test"

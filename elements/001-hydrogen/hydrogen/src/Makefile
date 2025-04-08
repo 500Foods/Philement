@@ -27,6 +27,7 @@
 # make release  : Creates stripped, compressed executable with embedded encrypted payload
 # make payload  : Generates OpenAPI specs and packages payload contents
 # make clean    : Removes all build artifacts and core dumps
+# make cleanish : Same as clean but preserves hydrogen_release and hydrogen_naked
 # make clean-executables : Removes only the executable files (used by release build)
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -85,6 +86,7 @@ VALGRIND_DIR = $(PREFIX)build_valgrind
 PERF_DIR = $(PREFIX)build_perf
 RELEASE_DIR = $(PREFIX)build_release
 BIN_PREFIX := $(if $(filter yes,$(ROOT_CALL)),,../)
+QUIET ?= 0
 
 # Source file discovery and object file mapping
 # Automatically finds all .c files and maps them to their respective build directories
@@ -133,7 +135,9 @@ PERF_MAP_FILE = $(PERF_DIR)/hydrogen_perf.map
 RELEASE_MAP_FILE = $(RELEASE_DIR)/hydrogen_release.map
 
 # Phony targets (targets that don't create files)
-.PHONY: all clean debug valgrind perf release trial clean-executables
+.PHONY: all clean cleanish debug valgrind perf release trial clean-executables
+.PHONY: parallel-test
+parallel-test: $(TARGET) $(DEBUG_TARGET) $(VALGRIND_TARGET) $(PERF_TARGET) $(RELEASE_TARGET)
 
 # Default build target with standard optimizations
 default: $(TARGET)
@@ -195,7 +199,7 @@ trial:
     fi
 
 # Build all variants and generate payload
-all: clean default debug valgrind perf release payload
+all: default debug valgrind perf release payload
 	@printf "\n$(BLUE)────────────────────────────────────────────────────────────────$(NORMAL)\n"
 	@printf "$(GREEN)$(PASS) $(BOLD)All variants built successfully:$(NORMAL)\n"
 	@printf "  $(CYAN)$(INFO)  Default:     $(BOLD)$(TARGET)$(NORMAL)\n"
@@ -293,28 +297,38 @@ $(PERF_TARGET): $(PERF_DIR)/libhydrogen.a
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
 	@mkdir -p $(dir $@)
 	@if [ "$(MAKECMDGOALS)" != "trial" ]; then \
-	    printf "$(CYAN)Compiling$(NORMAL) $<\n"; \
-	fi
+		if [ "$(QUIET)" = "0" ]; then \
+			printf "$(CYAN)Compiling$(NORMAL) $<\n"; \
+		fi \
+ 	fi
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
 $(DEBUG_DIR)/%.o: $(SRC_DIR)/%.c | $(DEBUG_DIR)
 	@mkdir -p $(dir $@)
-	@printf "$(CYAN)Compiling$(NORMAL) [Debug] $<\n"
+	@if [ "$(QUIET)" = "0" ]; then \
+		printf "$(CYAN)Compiling$(NORMAL) [Debug] $<\n"; \
+	fi
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
 $(VALGRIND_DIR)/%.o: $(SRC_DIR)/%.c | $(VALGRIND_DIR)
 	@mkdir -p $(dir $@)
-	@printf "$(CYAN)Compiling$(NORMAL) [Valgrind] $<\n"
+	@if [ "$(QUIET)" = "0" ]; then \
+		printf "$(CYAN)Compiling$(NORMAL) [Valgrind] $<\n"; \
+	fi 
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
 $(PERF_DIR)/%.o: $(SRC_DIR)/%.c | $(PERF_DIR)
 	@mkdir -p $(dir $@)
-	@printf "$(CYAN)Compiling$(NORMAL) [Performance] $<\n"
+	@if [ "$(QUIET)" = "0" ]; then \
+		printf "$(CYAN)Compiling$(NORMAL) [Performance] $<\n"; \
+	fi
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
 $(RELEASE_DIR)/%.o: $(SRC_DIR)/%.c | $(RELEASE_DIR)
 	@mkdir -p $(dir $@)
-	@printf "$(CYAN)Compiling$(NORMAL) [Release] $<\n"
+	@if [ "$(QUIET)" = "0" ]; then \
+		printf "$(CYAN)Compiling$(NORMAL) [Release] $<\n"; \
+	fi
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
 # Build directory creation
@@ -351,3 +365,13 @@ clean:
 	@printf "$(CYAN)$(INFO)  Removing crash core dumps...$(NORMAL)\n"
 	@find .. -name "*.core.*" -type f -delete
 	@printf "$(GREEN)$(PASS) Clean completed successfully$(NORMAL)\n"
+
+# Cleanup preserving release executables
+# Removes all build artifacts and core dumps except hydrogen_release and hydrogen_naked
+cleanish:
+	@printf "$(CYAN)$(INFO)  Cleaning build artifacts (preserving release executables)...$(NORMAL)\n"
+	@rm -rf $(BUILD_DIR)/ $(DEBUG_DIR)/ $(VALGRIND_DIR)/ $(RELEASE_DIR)/ $(PERF_DIR)/
+	@rm -f $(TARGET) $(DEBUG_TARGET) $(VALGRIND_TARGET) $(PERF_TARGET)
+	@printf "$(CYAN)$(INFO)  Removing crash core dumps...$(NORMAL)\n"
+	@find .. -name "*.core.*" -type f -delete
+	@printf "$(GREEN)$(PASS) Cleanish completed successfully (preserved $(BIN_PREFIX)hydrogen_release and $(BIN_PREFIX)hydrogen_naked)$(NORMAL)\n"

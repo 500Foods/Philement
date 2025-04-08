@@ -88,6 +88,27 @@ validate_json() {
     fi
 }
 
+# Function to wait for server to be ready
+wait_for_server() {
+    local base_url="$1"
+    local max_attempts=10  # 5 seconds total (0.5s * 10)
+    local attempt=1
+    
+    print_info "Waiting for server to be ready at $base_url..."
+    
+    while [ $attempt -le $max_attempts ]; do
+        if curl -s --max-time 1 "${base_url}" > /dev/null 2>&1; then
+            print_info "Server is ready after $(( attempt * 5 / 10 )) seconds"
+            return 0
+        fi
+        sleep 0.5
+        ((attempt++))
+    done
+    
+    print_error "Server failed to respond within 5 seconds"
+    return 1
+}
+
 # Function to check if a port is in use
 check_port_in_use() {
     local port=$1
@@ -222,9 +243,6 @@ test_api_prefix() {
     
     print_info "Initial PID: $INIT_PID (from shell)"
     
-    # Wait briefly to allow the process to start
-    sleep 2
-    
     # Find the actual PID using grep
     ACTUAL_PID=$(pgrep -f ".*hydrogen.*$(basename "$config_file")" || echo "")
     
@@ -242,9 +260,12 @@ test_api_prefix() {
         # Get detailed information about the process
         show_process_details "$ACTUAL_PID" "Hydrogen Server"
         
-        # Wait for the server to initialize
-        print_info "Waiting for server to initialize (8 more seconds)..."
-        sleep 8
+        # Wait for the server to be ready
+        local base_url="http://localhost:${web_server_port}"
+        wait_for_server "${base_url}" || {
+            print_error "Server failed to start properly"
+            return 1
+        }
         
         # Verify the process is still running
         if kill -0 $ACTUAL_PID 2>/dev/null; then
@@ -333,42 +354,8 @@ test_api_prefix() {
             netstat -tulnp 2>/dev/null | grep "$ACTUAL_PID" | sed 's/^/    /' || echo "    None found"
         fi
         
-        # Stop the server
-        print_info "Stopping server (PID: $ACTUAL_PID)..."
-        kill $ACTUAL_PID
-        
-        # Monitor shutdown progress
-        for i in {1..5}; do
-            sleep 1
-            if ! kill -0 $ACTUAL_PID 2>/dev/null; then
-                print_info "Server stopped gracefully after $i seconds"
-                break
-            else
-                print_info "Server still shutting down ($i seconds elapsed)..."
-            fi
-        done
-        
-        # Make sure it's really stopped
-        if kill -0 $ACTUAL_PID 2>/dev/null; then
-            print_warning "Server didn't stop gracefully after 5 seconds, sending SIGTERM again..."
-            kill -15 $ACTUAL_PID
-            sleep 2
-            
-            if kill -0 $ACTUAL_PID 2>/dev/null; then
-                print_warning "Server still not responding to SIGTERM, forcing termination with SIGKILL..."
-                kill -9 $ACTUAL_PID
-                sleep 1
-                
-                if kill -0 $ACTUAL_PID 2>/dev/null; then
-                    print_result 1 "ERROR: Failed to terminate server process even with SIGKILL!"
-                    STABILITY_RESULT=1
-                else
-                    print_warning "Server terminated with SIGKILL"
-                fi
-            else
-                print_info "Server stopped with second SIGTERM"
-            fi
-        fi
+        # Stop the server using utility function
+        stop_hydrogen_server "$ACTUAL_PID" 1
         
         # Check for zombie processes
         ZOMBIE_PROCESSES=$(ps -ef | grep -E "defunct.*[h]ydrogen" || echo "")
@@ -493,96 +480,19 @@ if [ "$DEFAULT_PORT" != "$CUSTOM_PORT" ]; then
     fi
 fi
 
-# Add a longer wait period for socket release
+# Wait for ports to be released (reduced timeout)
 print_info "Waiting for TIME_WAIT sockets to clear on ports $DEFAULT_PORT and $CUSTOM_PORT (if any)..."
 WAIT_START=$(date +%s)
-WAIT_TIMEOUT=30  # Maximum seconds to wait
+WAIT_TIMEOUT=5  # Reduced from 30 to 5 seconds since we're actively monitoring
 
-# Wait in a loop until ports are genuinely available or timeout occurs
+# Check ports in a loop with shorter interval
 for i in $(seq 1 $WAIT_TIMEOUT); do
-    DEFAULT_PORT_FREE=true
-    CUSTOM_PORT_FREE=true
-    
-    # Check default port
-    if check_port_in_use $DEFAULT_PORT; then
-        DEFAULT_PORT_FREE=false
+    if ! check_port_in_use $DEFAULT_PORT && \
+       ([ "$DEFAULT_PORT" = "$CUSTOM_PORT" ] || ! check_port_in_use $CUSTOM_PORT); then
+        print_info "All ports are now available"
+        break
     fi
-    
-    # Check custom port if different
-    if [ "$DEFAULT_PORT" != "$CUSTOM_PORT" ] && check_port_in_use $CUSTOM_PORT; then
-        CUSTOM_PORT_FREE=false
-    fi
-    
-    # If both ports are free, we can continue
-    if $DEFAULT_PORT_FREE && $CUSTOM_PORT_FREE; then
-        WAIT_END=$(date +%s)
-        WAIT_DURATION=$((WAIT_END - WAIT_START))
-        print_info "All ports are now available after waiting ${WAIT_DURATION} seconds"
-        
-        # Additional verification for default port
-        IS_DEFAULT_PORT_TRULY_FREE=true
-        if command -v lsof >/dev/null 2>&1; then
-            LSOF_CHECK=$(lsof -i :$DEFAULT_PORT 2>/dev/null)
-            if [ -n "$LSOF_CHECK" ]; then
-                print_warning "lsof still shows port $DEFAULT_PORT in use:"
-                echo "$LSOF_CHECK" | sed 's/^/    /'
-                IS_DEFAULT_PORT_TRULY_FREE=false
-            fi
-        fi
-        
-        # Additional verification for custom port if different
-        IS_CUSTOM_PORT_TRULY_FREE=true
-        if [ "$DEFAULT_PORT" != "$CUSTOM_PORT" ] && command -v lsof >/dev/null 2>&1; then
-            LSOF_CHECK=$(lsof -i :$CUSTOM_PORT 2>/dev/null)
-            if [ -n "$LSOF_CHECK" ]; then
-                print_warning "lsof still shows port $CUSTOM_PORT in use:"
-                echo "$LSOF_CHECK" | sed 's/^/    /'
-                IS_CUSTOM_PORT_TRULY_FREE=false
-            fi
-        fi
-        
-        # If both ports are truly free, break out of the loop
-        if $IS_DEFAULT_PORT_TRULY_FREE && $IS_CUSTOM_PORT_TRULY_FREE; then
-            break
-        fi
-    fi
-    
-    # Report status
-    if ! $DEFAULT_PORT_FREE; then
-        print_info "Waiting for port $DEFAULT_PORT to be released (attempt $i/$WAIT_TIMEOUT)..."
-    fi
-    if [ "$DEFAULT_PORT" != "$CUSTOM_PORT" ] && ! $CUSTOM_PORT_FREE; then
-        print_info "Waiting for port $CUSTOM_PORT to be released (attempt $i/$WAIT_TIMEOUT)..."
-    fi
-    
     sleep 1
-    
-    # Every 5 seconds, try more aggressive cleanup
-    if [ $((i % 5)) -eq 0 ]; then
-        print_info "Attempting more aggressive cleanup..."
-        
-        # Kill any processes that might be using the ports
-        if command -v fuser >/dev/null 2>&1; then
-            if ! $DEFAULT_PORT_FREE; then
-                fuser -k $DEFAULT_PORT/tcp >/dev/null 2>&1 || true
-            fi
-            if [ "$DEFAULT_PORT" != "$CUSTOM_PORT" ] && ! $CUSTOM_PORT_FREE; then
-                fuser -k $CUSTOM_PORT/tcp >/dev/null 2>&1 || true
-            fi
-        fi
-        
-        # Display current socket state
-        if command -v ss >/dev/null 2>&1; then
-            if ! $DEFAULT_PORT_FREE; then
-                print_info "Current socket states for port $DEFAULT_PORT:"
-                ss -tan | grep ":$DEFAULT_PORT" | sed 's/^/    /' || echo "    No sockets found"
-            fi
-            if [ "$DEFAULT_PORT" != "$CUSTOM_PORT" ] && ! $CUSTOM_PORT_FREE; then
-                print_info "Current socket states for port $CUSTOM_PORT:"
-                ss -tan | grep ":$CUSTOM_PORT" | sed 's/^/    /' || echo "    No sockets found"
-            fi
-        fi
-    fi
 done
 
 # Final check before proceeding
