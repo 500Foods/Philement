@@ -197,9 +197,9 @@ find_makefiles() {
     return 0
 }
 
-# Function to run 'make clean' for each Makefile
+# Function to run 'make cleanish' for each Makefile
 run_make_clean() {
-    print_header "2. Running 'make clean' for each Makefile" | tee -a "$RESULT_LOG"
+    print_header "2. Running 'make cleanish' for each Makefile" | tee -a "$RESULT_LOG"
     
     local make_clean_success=0
     local make_clean_fail=0
@@ -226,31 +226,31 @@ run_make_clean() {
             continue
         fi
         
-        print_command "make clean" | tee -a "$RESULT_LOG"
-        if ! make clean > "$temp_log" 2>&1; then
-            # If make clean fails but the directory exists and is accessible,
+        print_command "make cleanish" | tee -a "$RESULT_LOG"
+        if ! make cleanish > "$temp_log" 2>&1; then
+            # If make cleanish fails but the directory exists and is accessible,
             # we'll count it as a non-fatal error
             if [ -d "$makefile_dir" ] && [ -w "$makefile_dir" ]; then
                 local rel_dir=$(convert_to_relative_path "$makefile_dir")
                 rel_dir=${rel_dir#hydrogen/}
-                print_warning "make clean failed in $rel_dir but continuing" | tee -a "$RESULT_LOG"
+                print_warning "make cleanish failed in $rel_dir but continuing" | tee -a "$RESULT_LOG"
                 make_clean_success=$((make_clean_success + 1))
             else
                 local rel_dir=$(convert_to_relative_path "$makefile_dir")
                 rel_dir=${rel_dir#hydrogen/}
-                print_result 1 "make clean failed in $rel_dir" | tee -a "$RESULT_LOG"
+                print_result 1 "make cleanish failed in $rel_dir" | tee -a "$RESULT_LOG"
                 make_clean_fail=$((make_clean_fail + 1))
             fi
         else
             local rel_dir=$(convert_to_relative_path "$makefile_dir")
             rel_dir=${rel_dir#hydrogen/}
-            print_result 0 "Successfully ran make clean in $rel_dir" | tee -a "$RESULT_LOG"
+            print_result 0 "Successfully ran make cleanish in $rel_dir" | tee -a "$RESULT_LOG"
             make_clean_success=$((make_clean_success + 1))
         fi
         
         # Show output if any
         if [ -s "$temp_log" ]; then
-            print_info "make clean output:" | tee -a "$RESULT_LOG"
+            print_info "make cleanish output:" | tee -a "$RESULT_LOG"
             cat "$temp_log" | tee -a "$RESULT_LOG"
         fi
         
@@ -262,21 +262,21 @@ run_make_clean() {
         
     done < "$MAKEFILES_LIST"
     
-    # Report overall make clean results
+    # Report overall make cleanish results
     if [ $make_clean_fail -eq 0 ]; then
-        print_result 0 "Successfully ran 'make clean' for all $make_clean_success Makefiles" | tee -a "$RESULT_LOG"
+        print_result 0 "Successfully ran 'make cleanish' for all $make_clean_success Makefiles" | tee -a "$RESULT_LOG"
         
         # Add to test results
-        TEST_NAMES+=("Run make clean")
+        TEST_NAMES+=("Run make cleanish")
         TEST_RESULTS+=(0)
         TEST_DETAILS+=("Successfully cleaned all $make_clean_success Makefiles")
         return 0
     else
-        # We'll consider it a warning rather than a failure if some make clean operations failed
-        print_warning "Failed to run 'make clean' for $make_clean_fail Makefiles" | tee -a "$RESULT_LOG"
+        # We'll consider it a warning rather than a failure if some make cleanish operations failed
+        print_warning "Failed to run 'make cleanish' for $make_clean_fail Makefiles" | tee -a "$RESULT_LOG"
         
         # Add to test results but don't fail the test
-        TEST_NAMES+=("Run make clean")
+        TEST_NAMES+=("Run make cleanish")
         TEST_RESULTS+=(0)
         TEST_DETAILS+=("Cleaned $make_clean_success of $((make_clean_success + make_clean_fail)) Makefiles")
         return 0
@@ -571,42 +571,65 @@ run_linting_tests() {
     rm -f "$cppcheck_temp"
     > "$lint_temp_log"  # Clear log for next linter
     
-   
-    # Markdown files with markdownlint
-    print_info "Linting Markdown files with markdownlint..." | tee -a "$RESULT_LOG"
-    local md_fails=0
-    local md_temp=$(mktemp)
-    local md_file_count=0
-    while read -r file; do
-        if ! should_exclude "$file"; then
-            ((md_file_count++))
-            if ! markdownlint --config "$HYDROGEN_DIR/.lintignore-markdown" "$file" 2> "$md_temp"; then
-                # Count each line as a separate issue
-                local issue_count=$(wc -l < "$md_temp")
-                md_fails=$((md_fails + issue_count))
-                cat "$md_temp" >> "$lint_temp_log"
-            fi
-        fi
-    done < <(find "$HYDROGEN_DIR" -type f -name "*.md")
-    rm -f "$md_temp"
-    
-    if [ -s "$lint_temp_log" ]; then
-        print_warning "markdownlint found $md_fails issues in $md_file_count files:" | tee -a "$RESULT_LOG"
-        display_limited_output "$lint_temp_log"
-        lint_result=1
-    else
-        print_info "No markdownlint issues found in $md_file_count files" | tee -a "$RESULT_LOG"
-    fi
-    > "$lint_temp_log"  # Clear log for next linter
 
-    # Add markdownlint results
-    TEST_NAMES+=("Lint Markdown Files")
-    TEST_RESULTS+=($([[ $md_fails -eq 0 ]] && echo 0 || echo 1))
-    if [ $md_fails -eq 0 ]; then
-        TEST_DETAILS+=("No issues found in $md_file_count files")
-    else
-        TEST_DETAILS+=("Found $md_fails issues in $md_file_count files")
+# Markdown files with markdownlint
+print_info "Linting Markdown files with markdownlint..." | tee -a "$RESULT_LOG"
+local md_fails=0
+local md_temp=$(mktemp)
+local md_file_count=0
+
+# Cache exclude patterns without read
+mapfile -t exclude_patterns < <(grep -v '^#' "$HYDROGEN_DIR/.lintignore" | sed 's/#.*//;s/^[[:space:]]*//;s/[[:space:]]*$//;/^$/d')
+
+should_exclude() {
+    local file="$1"
+    local abs_file=$(realpath "$file" 2>/dev/null || echo "$file")
+    local rel_file=$(realpath --relative-to="$HYDROGEN_DIR" "$abs_file" 2>/dev/null || echo "$abs_file")
+    for pattern in "${exclude_patterns[@]}"; do
+        [[ "$rel_file" == $pattern ]] && return 0
+    done
+    return 1
+}
+
+# Collect files directly into array, enforce files only
+mapfile -t md_files < <(find "$HYDROGEN_DIR" -type f -name "*.md" -not -path "*/$(basename "$HYDROGEN_DIR/.lintignore")" -exec bash -c 'for f; do [[ -f "$f" ]] && ! should_exclude "$f" && echo "$f"; done' _ {} + 2>/dev/null)
+md_file_count=${#md_files[@]}
+
+# Debug: Log files checked
+echo "Checking ${md_file_count} Markdown files:" >> "$RESULT_LOG"
+printf '%s\n' "${md_files[@]}" >> "$RESULT_LOG"
+
+# Run markdownlint in parallel, unique temp files per process
+if [ "$md_file_count" -gt 0 ]; then
+    printf '%s\n' "${md_files[@]}" | xargs -P12 -I{} bash -c \
+        'md_temp=$(mktemp); \
+         if ! markdownlint --config "'"$HYDROGEN_DIR"'/.lintignore-markdown" "{}" 2> "$md_temp"; then \
+             cat "$md_temp" >> "'"$lint_temp_log"'"; \
+         fi; \
+         rm -f "$md_temp"'
+    if [ -s "$lint_temp_log" ]; then
+        md_fails=$(wc -l < "$lint_temp_log")
     fi
+fi
+rm -f "$md_temp"  # Cleanup original temp (unused)
+
+if [ -s "$lint_temp_log" ]; then
+    print_warning "markdownlint found $md_fails issues in $md_file_count files:" | tee -a "$RESULT_LOG"
+    display_limited_output "$lint_temp_log"
+    lint_result=1
+else
+    print_info "No markdownlint issues found in $md_file_count files" | tee -a "$RESULT_LOG"
+fi
+> "$lint_temp_log"  # Clear log for next linter
+
+# Add markdownlint results
+TEST_NAMES+=("Lint Markdown Files")
+TEST_RESULTS+=($([[ $md_fails -eq 0 ]] && echo 0 || echo 1))
+if [ $md_fails -eq 0 ]; then
+    TEST_DETAILS+=("No issues found in $md_file_count files")
+else
+    TEST_DETAILS+=("Found $md_fails issues in $md_file_count files")
+fi
 
     # JSON files with jsonlint
     print_info "Linting JSON files with jsonlint..." | tee -a "$RESULT_LOG"
@@ -874,42 +897,5 @@ export_subtest_results "$TEST_NAME" $((PASS_COUNT + FAIL_COUNT)) $PASS_COUNT
 
 # End the test with final result
 end_test $TEST_RESULT "$TEST_NAME" | tee -a "$RESULT_LOG"
-
-# ====================================================================
-# Final Step: Build Release Version
-# ====================================================================
-
-# Function to build release version
-build_release() {
-    print_header "Building Release Version" | tee -a "$RESULT_LOG"
-    
-    # Save current directory
-    local start_dir=$(pwd)
-    
-    # Change to src directory
-    cd "$HYDROGEN_DIR/src" || {
-        print_result 1 "Failed to change to src directory for release build" | tee -a "$RESULT_LOG"
-        cd "$start_dir"
-        exit 1
-    }
-    
-    # Run make release
-    print_info "Running 'make release'..." | tee -a "$RESULT_LOG"
-    if ! make release > "$RESULTS_DIR/make_release.log" 2>&1; then
-        print_result 1 "make release failed" | tee -a "$RESULT_LOG"
-        cat "$RESULTS_DIR/make_release.log" | tee -a "$RESULT_LOG"
-        cd "$start_dir"
-        exit 1
-    fi
-    
-    print_result 0 "Successfully built release version" | tee -a "$RESULT_LOG"
-    print_info "Release build is available in build_release/" | tee -a "$RESULT_LOG"
-    
-    # Return to start directory
-    cd "$start_dir"
-}
-
-# Build the release version as the final step
-build_release
 
 exit $TEST_RESULT
