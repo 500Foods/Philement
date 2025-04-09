@@ -53,6 +53,9 @@ clean:
 	rm -f auth_code_flow client_credentials password_flow
 	rm -f auth_code_flow_debug client_credentials_debug password_flow_debug
 	rm -f *.o
+cleanish:	
+	rm -f auth_code_flow_debug client_credentials_debug password_flow_debug
+	rm -f *.o
 
 # Help information
 help:
