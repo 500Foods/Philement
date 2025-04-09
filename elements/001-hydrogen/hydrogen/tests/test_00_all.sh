@@ -563,6 +563,7 @@ generate_repository_info() {
     echo "" >> "$repo_info_file"
     echo "Generated via cloc: $(date)" >> "$repo_info_file"
     echo "" >> "$repo_info_file"
+    echo "\`\`\`" >> "$repo_info_file"
     
     # Save current directory
     local start_dir=$(pwd)
@@ -574,38 +575,8 @@ generate_repository_info() {
     }
     
     # Run cloc with specific locale settings to ensure consistent output
-    local cloc_output=$(mktemp)
-    if env LC_ALL=en_US.UTF_8 LC_TIME= LC_ALL= LANG= LANGUAGE= cloc . --quiet --force-lang="C,inc" > "$cloc_output" 2>&1; then
-        # No Code Summary subtitle per user feedback
-        echo "| Language | Files | Blank Lines | Comment Lines | Code Lines |" >> "$repo_info_file"
-        echo "| -------- | ----- | ----------- | ------------- | ---------- |" >> "$repo_info_file"
-        
-        # Extract each language row
-        grep -v "SUM:" "$cloc_output" | grep -v "^-" | grep -v "Language" | tail -n +2 | while read -r line; do
-            # Parse the line
-            local lang=$(echo $line | awk '{print $1}')
-            local files=$(echo $line | awk '{print $2}')
-            local blank=$(echo $line | awk '{print $3}')
-            local comment=$(echo $line | awk '{print $4}')
-            local code=$(echo $line | awk '{print $5}')
-            
-            # Skip empty lines
-            if [ -z "$lang" ]; then
-                continue
-            fi
-            
-            # Add to markdown table
-            echo "| $lang | $files | $blank | $comment | $code |" >> "$repo_info_file"
-        done
-        
-        # Add the SUM row
-        local sum_line=$(grep "SUM:" "$cloc_output")
-        local total_files=$(echo $sum_line | awk '{print $2}')
-        local total_blank=$(echo $sum_line | awk '{print $3}')
-        local total_comment=$(echo $sum_line | awk '{print $4}')
-        local total_code=$(echo $sum_line | awk '{print $5}')
-        
-        echo "| **Total** | **$total_files** | **$total_blank** | **$total_comment** | **$total_code** |" >> "$repo_info_file"
+    if env LC_ALL=en_US.UTF_8 LC_TIME= LC_ALL= LANG= LANGUAGE= cloc . --quiet --force-lang="C,inc" >> "$repo_info_file" 2>&1; then
+        echo "\`\`\`" >> "$repo_info_file"
         
         print_info "Generated repository information with cloc analysis" | tee -a "$SUMMARY_LOG"
     else
@@ -685,27 +656,33 @@ generate_readme_section() {
     echo "" >> "$readme_section_file"
     echo "### Individual Test Results" >> "$readme_section_file"
     echo "" >> "$readme_section_file"
-    echo "| Test | Status | Details |" >> "$readme_section_file"
-    echo "| ---- | ------ | ------- |" >> "$readme_section_file"
+    echo "| Status | Time | Test | Subs | Pass | Summary |" >> "$readme_section_file"
+    echo "| ------ | ---- | ---- | ---- | ---- | ------- |" >> "$readme_section_file"
     
     for i in "${!ALL_TEST_NAMES[@]}"; do
-        local status
+        local status_icon
         if [ ${ALL_TEST_RESULTS[$i]} -eq 0 ]; then
-            status="✅ Passed"
+            status_icon="✅"
         elif [ ${ALL_TEST_RESULTS[$i]} -eq 2 ]; then
-            status="⏭️ Skipped"
+            status_icon="⏭️"
         else
-            status="❌ Failed"
+            status_icon="❌"
         fi
         
-        local subtest_info
+        local duration_str=""
+        if [ ${ALL_TEST_RESULTS[$i]} -ne 2 ]; then  # Don't show duration for skipped tests
+            duration_str="$(format_duration ${ALL_TEST_DURATIONS[$i]})"
+        fi
+        
+        local test_name=$(echo "${ALL_TEST_NAMES[$i]}" | sed 's/ (.*)$//')  # Remove any parenthetical info
+        local total_subtests=${ALL_TEST_SUBTESTS[$i]}
+        local passed_subtests=${ALL_TEST_PASSED_SUBTESTS[$i]}
+        
         if [ ${ALL_TEST_RESULTS[$i]} -eq 2 ]; then
-            subtest_info=""
+            echo "| $status_icon | - | $test_name | - | - | ${ALL_TEST_DETAILS[$i]} |" >> "$readme_section_file"
         else
-            subtest_info="(${ALL_TEST_PASSED_SUBTESTS[$i]} of ${ALL_TEST_SUBTESTS[$i]} subtests passed)"
+            echo "| $status_icon | $duration_str | $test_name | $total_subtests | $passed_subtests | ${ALL_TEST_DETAILS[$i]} |" >> "$readme_section_file"
         fi
-        
-        echo "| ${ALL_TEST_NAMES[$i]} | ${status} | ${ALL_TEST_DETAILS[$i]} ${subtest_info} |" >> "$readme_section_file"
     done
     
     # No update instructions as per user feedback
