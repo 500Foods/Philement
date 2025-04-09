@@ -113,8 +113,8 @@ $HYDROGEN_BIN "$CONFIG_FILE" > "$SCRIPT_DIR/hydrogen_test.log" 2>&1 &
 HYDROGEN_PID=$!
 
 # Wait for the server to start
-print_info "Waiting for server to initialize (5 seconds)..."
-sleep 5
+print_info "Waiting for server to initialize (2 seconds)..."
+sleep 2
 
 # Create results directory if it doesn't exist
 RESULTS_DIR="$SCRIPT_DIR/results"
@@ -379,8 +379,8 @@ collect_test_results() {
 }
 
 # Wait to check for delayed crashes
-print_info "Waiting 10 seconds to check for delayed crashes..."
-sleep 10
+print_info "Waiting 3 seconds to check for delayed crashes..."
+sleep 3
 
 # Check if the server is still running after waiting
 if kill -0 $HYDROGEN_PID 2>/dev/null; then
@@ -419,7 +419,7 @@ if kill -0 $HYDROGEN_PID 2>/dev/null; then
     # Stop the server
     print_info "Stopping server..."
     kill $HYDROGEN_PID
-    sleep 1
+    sleep 0.5
     
     # Make sure it's really stopped
     if kill -0 $HYDROGEN_PID 2>/dev/null; then
