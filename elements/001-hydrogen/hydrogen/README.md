@@ -285,7 +285,7 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Tue Apr  8 17:31:54 PDT 2025
+Generated on: Tue Apr  8 18:15:36 PDT 2025
 
 ### Summary
 
@@ -296,17 +296,17 @@ Generated on: Tue Apr  8 17:31:54 PDT 2025
 | Failed | 0 |
 | Skipped | 0 |
 | Total Subtests | 105 |
-| Passed Subtests | 104 |
-| Failed Subtests | 1 |
-| Runtime | 2m 27s |
+| Passed Subtests | 105 |
+| Failed Subtests | 0 |
+| Runtime | 2m 28s |
 
 ### Individual Test Results
 
 | Status | Time | Test | Subs | Pass | Summary |
 | ------ | ---- | ---- | ---- | ---- | ------- |
-| ✅ | 00:00:16 | 10_compilation | 1 | 1 | Test completed without errors |
+| ✅ | 00:00:17 | 10_compilation | 1 | 1 | Test completed without errors |
 | ✅ | 00:00:00 | 12_env_payload | 2 | 2 | Test completed without errors |
-| ✅ | 00:00:02 | 15_startup_shutdown | 6 | 6 | Test completed without errors |
+| ✅ | 00:00:03 | 15_startup_shutdown | 6 | 6 | Test completed without errors |
 | ✅ | 00:00:02 | 20_shutdown | 5 | 5 | Test completed without errors |
 | ✅ | 00:00:06 | 25_library_dependencies | 16 | 16 | Test completed without errors |
 | ✅ | 00:00:00 | 35_env_variables | 1 | 1 | Test completed without errors |
@@ -317,27 +317,27 @@ Generated on: Tue Apr  8 17:31:54 PDT 2025
 | ✅ | 00:00:12 | 60_api_prefixes | 10 | 10 | Test completed without errors |
 | ✅ | 00:00:06 | 65_system_endpoints | 13 | 13 | Test completed without errors |
 | ✅ | 00:00:03 | 70_swagger_ui | 10 | 10 | Test completed without errors |
-| ✅ | 00:00:01 | 95_leaks_like_a_sieve | 2 | 2 | Test completed without errors |
-| ✅ | 00:00:15 | 99_codebase | 12 | 11 | Test completed without errors |
+| ✅ | 00:00:02 | 95_leaks_like_a_sieve | 2 | 2 | Test completed without errors |
+| ✅ | 00:00:14 | 99_codebase | 12 | 12 | Test completed without errors |
 
 ## Repository Information
 
-Generated via cloc: Tue Apr  8 17:31:54 PDT 2025
+Generated via cloc: Tue Apr  8 18:15:36 PDT 2025
 
-```
-github.com/AlDanial/cloc v 2.02  T=0.31 s (1667.3 files/s, 259377.7 lines/s)
+```cloc
+github.com/AlDanial/cloc v 2.02  T=0.31 s (1655.2 files/s, 257765.0 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 C                              169           4820           6862          21265
-Markdown                       126           4402             49          15703
-Bourne Shell                    25           1370           1368           5629
+Markdown                       126           4418             49          15761
+Bourne Shell                    25           1371           1369           5634
 JSON                            17              1              0           4765
 C/C++ Header                   150           1247           5596           2885
 Text                            20             10              0           2337
 HTML                             1             74              0            493
 make                             2             56            124            285
 -------------------------------------------------------------------------------
-SUM:                           510          11980          13999          53362
+SUM:                           510          11997          14000          53425
 -------------------------------------------------------------------------------
 ```
