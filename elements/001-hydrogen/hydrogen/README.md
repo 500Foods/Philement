@@ -285,7 +285,7 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Tue Apr  8 17:12:55 PDT 2025
+Generated on: Tue Apr  8 17:31:54 PDT 2025
 
 ### Summary
 
@@ -296,42 +296,48 @@ Generated on: Tue Apr  8 17:12:55 PDT 2025
 | Failed | 0 |
 | Skipped | 0 |
 | Total Subtests | 105 |
-| Passed Subtests | 105 |
-| Failed Subtests | 0 |
-| Runtime | 2m 26s |
+| Passed Subtests | 104 |
+| Failed Subtests | 1 |
+| Runtime | 2m 27s |
 
 ### Individual Test Results
 
-| Test | Status | Details |
-| ---- | ------ | ------- |
-| 10_compilation | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
-| 12_env_payload | ✅ Passed | Test completed without errors (2 of 2 subtests passed) |
-| 15_startup_shutdown | ✅ Passed | Test completed without errors (6 of 6 subtests passed) |
-| 20_shutdown | ✅ Passed | Test completed without errors (5 of 5 subtests passed) |
-| 25_library_dependencies | ✅ Passed | Test completed without errors (16 of 16 subtests passed) |
-| 35_env_variables | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
-| 40_json_error_handling | ✅ Passed | Test completed without errors (2 of 2 subtests passed) |
-| 45_signals | ✅ Passed | Test completed without errors (4 of 4 subtests passed) |
-| 50_crash_handler | ✅ Passed | Test completed without errors (20 of 20 subtests passed) |
-| 55_socket_rebind | ✅ Passed | Test completed without errors (1 of 1 subtests passed) |
-| 60_api_prefixes | ✅ Passed | Test completed without errors (10 of 10 subtests passed) |
-| 65_system_endpoints | ✅ Passed | Test completed without errors (13 of 13 subtests passed) |
-| 70_swagger_ui | ✅ Passed | Test completed without errors (10 of 10 subtests passed) |
-| 95_leaks_like_a_sieve | ✅ Passed | Test completed without errors (2 of 2 subtests passed) |
-| 99_codebase | ✅ Passed | Test completed without errors (12 of 12 subtests passed) |
+| Status | Time | Test | Subs | Pass | Summary |
+| ------ | ---- | ---- | ---- | ---- | ------- |
+| ✅ | 00:00:16 | 10_compilation | 1 | 1 | Test completed without errors |
+| ✅ | 00:00:00 | 12_env_payload | 2 | 2 | Test completed without errors |
+| ✅ | 00:00:02 | 15_startup_shutdown | 6 | 6 | Test completed without errors |
+| ✅ | 00:00:02 | 20_shutdown | 5 | 5 | Test completed without errors |
+| ✅ | 00:00:06 | 25_library_dependencies | 16 | 16 | Test completed without errors |
+| ✅ | 00:00:00 | 35_env_variables | 1 | 1 | Test completed without errors |
+| ✅ | 00:00:00 | 40_json_error_handling | 2 | 2 | Test completed without errors |
+| ✅ | 00:00:21 | 45_signals | 4 | 4 | Test completed without errors |
+| ✅ | 00:00:02 | 50_crash_handler | 20 | 20 | Test completed without errors |
+| ✅ | 00:00:00 | 55_socket_rebind | 1 | 1 | Test completed without errors |
+| ✅ | 00:00:12 | 60_api_prefixes | 10 | 10 | Test completed without errors |
+| ✅ | 00:00:06 | 65_system_endpoints | 13 | 13 | Test completed without errors |
+| ✅ | 00:00:03 | 70_swagger_ui | 10 | 10 | Test completed without errors |
+| ✅ | 00:00:01 | 95_leaks_like_a_sieve | 2 | 2 | Test completed without errors |
+| ✅ | 00:00:15 | 99_codebase | 12 | 11 | Test completed without errors |
 
 ## Repository Information
 
-Generated via cloc: Tue Apr  8 17:12:55 PDT 2025
+Generated via cloc: Tue Apr  8 17:31:54 PDT 2025
 
-| Language | Files | Blank Lines | Comment Lines | Code Lines |
-| -------- | ----- | ----------- | ------------- | ---------- |
-| C | 169 | 4820 | 6862 | 21265 |
-| Markdown | 126 | 4402 | 49 | 15698 |
-| Bourne | Shell | 25 | 1374 | 1374 |
-| JSON | 17 | 1 | 0 | 4765 |
-| C/C++ | Header | 150 | 1247 | 5596 |
-| Text | 20 | 10 | 0 | 2337 |
-| HTML | 1 | 74 | 0 | 493 |
-| make | 2 | 56 | 124 | 285 |
-| **Total** | **510** | **11984** | **14005** | **53370** |
+```
+github.com/AlDanial/cloc v 2.02  T=0.31 s (1667.3 files/s, 259377.7 lines/s)
+-------------------------------------------------------------------------------
+Language                     files          blank        comment           code
+-------------------------------------------------------------------------------
+C                              169           4820           6862          21265
+Markdown                       126           4402             49          15703
+Bourne Shell                    25           1370           1368           5629
+JSON                            17              1              0           4765
+C/C++ Header                   150           1247           5596           2885
+Text                            20             10              0           2337
+HTML                             1             74              0            493
+make                             2             56            124            285
+-------------------------------------------------------------------------------
+SUM:                           510          11980          13999          53362
+-------------------------------------------------------------------------------
+```
