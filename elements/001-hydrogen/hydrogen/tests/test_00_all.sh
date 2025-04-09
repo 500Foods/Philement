@@ -563,7 +563,7 @@ generate_repository_info() {
     echo "" >> "$repo_info_file"
     echo "Generated via cloc: $(date)" >> "$repo_info_file"
     echo "" >> "$repo_info_file"
-    echo "\`\`\`" >> "$repo_info_file"
+    echo "\`\`\`cloc" >> "$repo_info_file"
     
     # Save current directory
     local start_dir=$(pwd)

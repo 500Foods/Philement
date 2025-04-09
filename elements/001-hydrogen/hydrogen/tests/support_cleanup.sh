@@ -17,6 +17,7 @@ cleanup_old_tests() {
     # Define directories to clean
     RESULTS_DIR="$SCRIPT_DIR/results"
     DIAGNOSTICS_DIR="$SCRIPT_DIR/diagnostics"
+    LOGS_DIR="$SCRIPT_DIR/logs"
     
     # Remove all files in results directory
     if [ -d "$RESULTS_DIR" ]; then
@@ -28,6 +29,12 @@ cleanup_old_tests() {
     if [ -d "$DIAGNOSTICS_DIR" ]; then
         rm -rf "$DIAGNOSTICS_DIR"/*
         print_info "Removed old test diagnostics from $(convert_to_relative_path "$DIAGNOSTICS_DIR")"
+    fi
+    
+    # Remove all files in logs directory
+    if [ -d "$LOGS_DIR" ]; then
+        rm -rf "$LOGS_DIR"/*
+        print_info "Removed old test logs from $(convert_to_relative_path "$LOGS_DIR")"
     fi
     
     # Remove any log files in the tests directory

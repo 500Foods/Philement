@@ -25,9 +25,15 @@ This library is sourced by all test scripts to ensure consistent visual presenta
 
 Provides functions for environment cleanup and preparation before running tests:
 
-- Cleans up temporary files and directories
+- Cleans up test output directories:
+  - `./logs/` - Test execution logs
+  - `./results/` - Test results and summaries
+  - `./diagnostics/` - Diagnostic information and analysis
+- Removes temporary files from the test directory
 - Ensures no previous test instances are running
 - Prepares the test environment for consistent execution
+
+This cleanup is automatically performed at the start of test execution via `test_00_all.sh`.
 
 ### support_analyze_stuck_threads.sh
 
@@ -128,7 +134,7 @@ suppress=variableScope
 - Controls cppcheck behavior and reporting
 - Configures enabled checks and suppressions
 - Sets include paths and output formatting
-- Used by support_cppcheck.sh and test_z_codebase.sh
+- Used by support_cppcheck.sh and test_99_codebase.sh
 
 ### .lintignore-markdown
 
@@ -146,7 +152,7 @@ Markdown linting configuration:
 - Controls markdownlint behavior
 - Enables/disables specific rules
 - Configures rule-specific settings
-- Used by test_z_codebase.sh for documentation checks
+- Used by test_99_codebase.sh for documentation checks
 
 ## Test Numbering System
 
@@ -172,20 +178,24 @@ A test orchestration script that executes tests in sequence with compilation ver
 
 ```bash
 # Run all tests
-./test_all.sh all
+./test_00_all.sh all
 
 # Run with minimal configuration only
-./test_all.sh min
+./test_00_all.sh min
 
 # Run with maximal configuration only
-./test_all.sh max
+./test_00_all.sh max
 
 # Skip actual test execution (for quick README updates)
-./test_all.sh --skip-tests
+./test_00_all.sh --skip-tests
 ```
 
 Key features:
 
+- Performs complete cleanup of test output directories before starting:
+  - Cleans `./logs/` directory for test execution logs
+  - Cleans `./results/` directory for test results and summaries
+  - Cleans `./diagnostics/` directory for analysis data
 - Provides formatted output with test results
 - Automatically makes test scripts executable
 - Special handling for test_10_compilation.sh:
@@ -218,7 +228,7 @@ Key features:
   - Malformed RSA keys
 - Uses standardized formatting from support_utils.sh
 - Creates detailed test logs in the `./results` directory
-- Integrates with test_all.sh for comprehensive test reporting
+- Integrates with test_00_all.sh for comprehensive test reporting
 
 This test is essential for validating the payload encryption system's configuration before running other payload-related tests.
 
@@ -346,28 +356,82 @@ The test performs individual validation for each endpoint and request type, ensu
 
 Tests Swagger UI integration and API documentation endpoints.
 
+### test_95_leaks_like_a_sieve.sh (Memory Analysis)
+
+A comprehensive memory leak detection test that monitors resource usage during extended operation:
+
+```bash
+./test_95_leaks_like_a_sieve.sh
+```
+
+Key features:
+
+- Performs extended runtime testing with various operations
+- Monitors memory usage patterns over time
+- Analyzes heap growth and memory allocation patterns
+- Detects resource leaks:
+  - Memory leaks through valgrind integration
+  - File descriptor leaks
+  - Socket handle leaks
+  - Thread resource leaks
+- Creates detailed leak reports in `./logs/` directory
+- Generates leak summaries with:
+  - Allocation backtraces
+  - Resource type statistics
+  - Growth patterns
+- Integrates with test_00_all.sh for automated leak detection
+- Preserves leak analysis logs for debugging
+
+This test helps ensure the application maintains stable resource usage over time and doesn't accumulate leaks during normal operation.
+
 ### test_99_codebase.sh (Code Quality)
 
 A comprehensive codebase analysis test that enforces code quality standards:
 
 ```bash
-./test_z_codebase.sh
+./test_99_codebase.sh
 ```
 
 Key features:
 
-- Enforces source code line count limits (1000 lines maximum)
-- Performs multi-language linting:
-  - C/H/Inc files with cppcheck
-  - Markdown with markdownlint
-  - JSON with jsonlint
-  - JavaScript with eslint
-  - CSS with stylelint
-  - HTML with htmlhint
-- Detects large files (>25KB)
-- Analyzes and cleans Makefiles
-- Provides detailed test reporting
-- Integrates with test_all.sh for comprehensive results
+1. **Linting Configuration Display**:
+   - Shows active linting exclusions from .lintignore files
+   - Displays language-specific configurations
+   - Documents exclusion patterns and their purposes
+
+2. **Source Analysis**:
+   - Enforces source code line count limits (1000 lines maximum)
+   - Provides detailed line count distribution
+   - Lists top files by size for each file type
+   - Identifies files exceeding size limits
+
+3. **Multi-Language Linting**:
+   - C/H files with cppcheck (with special handling for expected warnings)
+   - Markdown files with markdownlint (parallel processing)
+   - JSON files with jsonlint
+   - JavaScript files with eslint
+   - CSS files with stylelint
+   - HTML files with htmlhint
+
+4. **Resource Analysis**:
+   - Detects large files (>25KB)
+   - Analyzes and cleans Makefiles
+   - Performs comprehensive cloc analysis
+   - Generates language-specific statistics
+
+5. **Output Management**:
+   - Truncates large error outputs for readability
+   - Preserves full logs for debugging
+   - Provides categorized error summaries
+   - Maintains separate logs per linter
+
+6. **Special Cases**:
+   - Handles expected null pointer warning in crash handler
+   - Validates test-specific exceptions
+   - Processes parallel markdown linting
+   - Manages build artifact exclusions
+
+The test provides comprehensive analysis while maintaining efficient processing through parallel operations and smart output management.
 
 This test runs last in the sequence (hence the 'z' prefix) to perform final code quality checks after all other tests have passed.
 
@@ -422,7 +486,15 @@ Using different ports for these tests ensures they can run independently without
 
 ## Test Output
 
-All tests now provide standardized output with:
+Test execution produces output in three main directories:
+
+- `./logs/` - Contains detailed execution logs from test runs
+- `./results/` - Stores test results, summaries, and build outputs
+- `./diagnostics/` - Contains analysis data and debugging information
+
+These directories are automatically cleaned at the start of each test run via support_cleanup.sh.
+
+All tests provide standardized output with:
 
 - Consistent colored headers and section breaks
 - Checkmarks (✅) for passed tests
@@ -431,7 +503,7 @@ All tests now provide standardized output with:
 - Info symbols (🛈) for informational messages
 - Detailed test summaries with pass/fail counts
 
-When running the full test suite with `test_all.sh all`, a comprehensive summary is generated showing:
+When running the full test suite with `test_00_all.sh all`, a comprehensive summary is generated showing:
 
 - Individual test results for each component
 - Overall pass/fail statistics
@@ -444,7 +516,7 @@ When running the full test suite with `test_all.sh all`, a comprehensive summary
 To run tests with both configurations using the orchestration script:
 
 ```bash
-./test_all.sh all
+./test_00_all.sh all
 ```
 
 This will run all tests and provide a comprehensive summary of results with standardized formatting.
@@ -452,7 +524,7 @@ This will run all tests and provide a comprehensive summary of results with stan
 If you want to quickly update the project README with test results without running the actual tests:
 
 ```bash
-./test_all.sh --skip-tests --update-readme
+./test_00_all.sh --skip-tests --update-readme
 ```
 
 This will:
@@ -688,6 +760,6 @@ When adding new tests:
 5. Ensure all test configurations use relative paths for portability
 6. Set appropriate log levels for the components being tested
 
-The `test_all.sh` script will automatically discover and run any script named with the "test_" prefix, making it easy to add new tests without modifying the main test runner.
+The `test_00_all.sh` script will automatically discover and run any script named with the "test_" prefix, making it easy to add new tests without modifying the main test runner.
 
 See the [Testing Documentation](../docs/testing.md) for more information about the Hydrogen testing approach.
