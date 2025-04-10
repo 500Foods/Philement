@@ -23,6 +23,7 @@ error_*.log
 # Test generated temporary files
 tests/diagnostics/
 tests/results/
+tests/logs/
 tests/*.log
 response_*.json
 temp_*

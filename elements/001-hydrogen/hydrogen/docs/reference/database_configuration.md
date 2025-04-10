@@ -64,6 +64,7 @@ Each connection in `Connections` supports:
 | `Workers` | Worker threads for this database | DefaultWorkers | When enabled |
 
 \* Default enabled state:
+
 - Acuranzo: true
 - OIDC: false
 - Log: false
@@ -121,6 +122,7 @@ The main application database, enabled by default with environment variable conf
 ### OIDC Database
 
 Stores OpenID Connect data when enabled:
+
 - Client registrations
 - Access tokens
 - Refresh tokens
@@ -129,6 +131,7 @@ Stores OpenID Connect data when enabled:
 ### Log Database
 
 Stores application logs when enabled:
+
 - System events
 - Error logs
 - Audit trails
@@ -137,6 +140,7 @@ Stores application logs when enabled:
 ### Canvas Database
 
 Stores canvas-related data when enabled:
+
 - Drawing data
 - Canvas states
 - User preferences
@@ -144,6 +148,7 @@ Stores canvas-related data when enabled:
 ### Helium Database
 
 Stores Helium-specific data when enabled:
+
 - Integration data
 - Cross-system mappings
 - Helium states
@@ -204,11 +209,13 @@ Stores Helium-specific data when enabled:
 ### Diagnostic Steps
 
 Test database connection:
+
 ```bash
 psql -h $ACURANZO_DB_HOST -U $ACURANZO_DB_USER -d $ACURANZO_DATABASE
 ```
 
 Check connection status:
+
 ```bash
 curl http://localhost:5000/api/system/db/status
 ```
