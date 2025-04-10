@@ -4,6 +4,8 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "../config.h"
+#include "config_oidc.h"
 #include "config_oidc_tokens.h"
 
 int config_oidc_tokens_init(OIDCTokensConfig* config) {

@@ -29,6 +29,7 @@
 #include "../config_defaults.h"
 #include "../../logging/logging.h"
 #include "../../utils/utils.h"
+#include "../logging/config_logging_utils.h"
 
 bool load_json_server(json_t* root, AppConfig* config, const char* config_path) {
     // Server Configuration

@@ -1,28 +1,23 @@
 /*
  * Default configuration generation with secure baselines
  * 
- * Why This Architecture:
- * 1. Modularity
- *    - Each subsystem has dedicated generator
- *    - Clear separation of concerns
- *    - Easy to maintain and extend
- * 
- * 2. Security
- *    - Conservative defaults
- *    - Resource limits
- *    - Access controls
- *    - Secure protocols
- * 
- * 3. Reliability
- *    - Memory management
- *    - Error handling
- *    - Resource cleanup
- *    - Consistent state
- * 
- * Thread Safety:
- * - Functions are not thread-safe
- * - Should only be called during initialization
- * - No shared state between calls
+ * Configuration sections are organized in strict A-P order:
+ * A. Server
+ * B. System
+ * C. Network
+ * D. Database
+ * E. Logging
+ * F. WebServer
+ * G. API
+ * H. Swagger
+ * I. WebSocket
+ * J. Terminal
+ * K. mDNS Server
+ * L. mDNS Client
+ * M. Mail Relay
+ * N. System Resources
+ * O. OIDC
+ * P. Notify
  */
 
 // Standard C headers
@@ -37,24 +32,9 @@
 #include "../logging/logging.h"
 
 /*
- * Generate default server configuration
- * 
- * Why these defaults?
- * - Core system identification
- * - Essential paths and locations
- * - Security settings
- * - Runtime behavior controls
- * 
- * Environment Variables:
- * - HYDROGEN_SERVER_NAME: Override server name
- * - HYDROGEN_LOG_PATH: Override log file location
- * - HYDROGEN_PAYLOAD_KEY: Required for payload decryption
- * - HYDROGEN_STARTUP_DELAY: Override startup delay (ms)
- * - HYDROGEN_CONFIG_DIR: Override config directory
- * - HYDROGEN_DATA_DIR: Override data directory
- * - HYDROGEN_TEMP_DIR: Override temp directory
+ * A. Generate default server configuration
  */
-json_t* create_default_server_config(void) {
+static json_t* create_default_server_config(void) {
     json_t* server = json_object();
     if (!server) {
         log_this("Configuration", "Failed to create server config object", LOG_LEVEL_ERROR);
@@ -74,8 +54,8 @@ json_t* create_default_server_config(void) {
 
     // Security
     json_object_set_new(server, "PayloadKey", json_string("${env.HYDROGEN_PAYLOAD_KEY}"));
-    json_object_set_new(server, "FileMode", json_integer(0640));  // rw-r----- default file permissions
-    json_object_set_new(server, "DirMode", json_integer(0750));   // rwxr-x--- default directory permissions
+    json_object_set_new(server, "FileMode", json_integer(0640));
+    json_object_set_new(server, "DirMode", json_integer(0750));
 
     // Runtime Behavior
     json_t* startup = json_object();
@@ -89,161 +69,41 @@ json_t* create_default_server_config(void) {
     json_object_set_new(shutdown, "ForceTimeoutMs", json_integer(10000));
     json_object_set_new(server, "Shutdown", shutdown);
 
-    // Resource Limits
-    json_t* limits = json_object();
-    json_object_set_new(limits, "MaxLogSize", json_integer(100 * 1024 * 1024));  // 100MB
-    json_object_set_new(limits, "MaxConfigSize", json_integer(1 * 1024 * 1024)); // 1MB
-    json_object_set_new(limits, "MaxTempAge", json_integer(86400));              // 24 hours
-    json_object_set_new(server, "Limits", limits);
-
     return server;
 }
 
 /*
- * Generate default web server configuration
- * 
- * Why these defaults?
- * - Standard ports for easy discovery
- * - Conservative upload limits
- * - Secure file permissions
- * - Clear API structure
+ * B. Generate default system configuration
  */
-json_t* create_default_web_config(void) {
-    json_t* web = json_object();
-    if (!web) {
-        log_this("Configuration", "Failed to create web server config object", LOG_LEVEL_ERROR);
+static json_t* create_default_system_config(void) {
+    json_t* system = json_object();
+    if (!system) {
+        log_this("Configuration", "Failed to create system config object", LOG_LEVEL_ERROR);
         return NULL;
     }
 
-    json_object_set_new(web, "EnableIPv4", json_boolean(1));
-    json_object_set_new(web, "EnableIPv6", json_boolean(1));
-    json_object_set_new(web, "Port", json_integer(DEFAULT_WEB_PORT));
-    json_object_set_new(web, "WebRoot", json_string(DEFAULT_WEB_ROOT));
-    json_object_set_new(web, "UploadPath", json_string(DEFAULT_UPLOAD_PATH));
-    json_object_set_new(web, "UploadDir", json_string(DEFAULT_UPLOAD_DIR));
-    json_object_set_new(web, "MaxUploadSize", json_integer(DEFAULT_MAX_UPLOAD_SIZE));
+    json_object_set_new(system, "Hostname", json_string("${env.HOSTNAME:-hydrogen}"));
+    json_object_set_new(system, "ProcessId", json_integer(0));  // Set at runtime
+    json_object_set_new(system, "StartTime", json_integer(0));  // Set at runtime
 
-    return web;
+    json_t* limits = json_object();
+    json_object_set_new(limits, "MaxCPUPercent", json_integer(80));
+    json_object_set_new(limits, "MaxMemoryMB", json_integer(1024));
+    json_object_set_new(limits, "MaxDiskUsagePercent", json_integer(90));
+    json_object_set_new(system, "Limits", limits);
+
+    json_t* monitoring = json_object();
+    json_object_set_new(monitoring, "Enabled", json_boolean(true));
+    json_object_set_new(monitoring, "IntervalMs", json_integer(5000));
+    json_object_set_new(system, "Monitoring", monitoring);
+
+    return system;
 }
 
 /*
- * Generate default WebSocketServer configuration
- * 
- * Why these defaults?
- * - Secure protocol settings
- * - Standard ports
- * - Conservative message limits
- * - Clear timeouts
+ * C. Generate default network configuration
  */
-json_t* create_default_websocket_config(void) {
-    json_t* websocket = json_object();
-    if (!websocket) {
-        log_this("Configuration", "Failed to create WebSocketServer config object", LOG_LEVEL_ERROR);
-        return NULL;
-    }
-
-    json_object_set_new(websocket, "Enabled", json_boolean(DEFAULT_WEBSOCKET_ENABLED));
-    json_object_set_new(websocket, "EnableIPv6", json_boolean(DEFAULT_WEBSOCKET_ENABLE_IPV6));
-    json_object_set_new(websocket, "Port", json_integer(DEFAULT_WEBSOCKET_PORT));
-    json_object_set_new(websocket, "Key", json_string(DEFAULT_WEBSOCKET_KEY));
-    json_object_set_new(websocket, "Protocol", json_string(DEFAULT_WEBSOCKET_PROTOCOL));
-    json_object_set_new(websocket, "MaxMessageSize", json_integer(10 * 1024 * 1024));
-
-    json_t* timeouts = json_object();
-    json_object_set_new(timeouts, "ExitWaitSeconds", json_integer(10));
-    json_object_set_new(websocket, "ConnectionTimeouts", timeouts);
-
-    return websocket;
-}
-
-/*
- * Generate default mDNS server configuration
- * 
- * Why these defaults?
- * - Standard service discovery
- * - Clear device identification
- * - Multiple service types
- * - Discoverable ports
- */
-json_t* create_default_mdns_config(void) {
-    json_t* mdns = json_object();
-    if (!mdns) {
-        log_this("Configuration", "Failed to create mDNS config object", LOG_LEVEL_ERROR);
-        return NULL;
-    }
-
-    json_object_set_new(mdns, "Enabled", json_boolean(1));
-    json_object_set_new(mdns, "EnableIPv6", json_boolean(0));
-    json_object_set_new(mdns, "DeviceId", json_string("hydrogen-printer"));
-    json_object_set_new(mdns, "FriendlyName", json_string("Hydrogen 3D Printer"));
-    json_object_set_new(mdns, "Model", json_string("Hydrogen"));
-    json_object_set_new(mdns, "Manufacturer", json_string("Philement"));
-    json_object_set_new(mdns, "Version", json_string(VERSION));
-
-    json_t* services = json_array();
-    
-    // HTTP service
-    json_t* http = json_object();
-    json_object_set_new(http, "Name", json_string("hydrogen"));
-    json_object_set_new(http, "Type", json_string("_http._tcp.local"));
-    json_object_set_new(http, "Port", json_integer(DEFAULT_WEB_PORT));
-    json_object_set_new(http, "TxtRecords", json_string("path=/api/upload"));
-    json_array_append_new(services, http);
-
-    // WebSocket service
-    json_t* ws = json_object();
-    json_object_set_new(ws, "Name", json_string("Hydrogen"));
-    json_object_set_new(ws, "Type", json_string("_websocket._tcp.local"));
-    json_object_set_new(ws, "Port", json_integer(DEFAULT_WEBSOCKET_PORT));
-    json_object_set_new(ws, "TxtRecords", json_string("path=/websocket"));
-    json_array_append_new(services, ws);
-
-    json_object_set_new(mdns, "Services", services);
-    return mdns;
-}
-
-/*
- * Generate default system resources configuration
- * 
- * Why these defaults?
- * - Conservative memory usage
- * - Reasonable queue sizes
- * - Safe buffer limits
- * - Clear resource boundaries
- */
-json_t* create_default_resources_config(void) {
-    json_t* resources = json_object();
-    if (!resources) {
-        log_this("Configuration", "Failed to create resources config object", LOG_LEVEL_ERROR);
-        return NULL;
-    }
-
-    json_t* queues = json_object();
-    json_object_set_new(queues, "MaxQueueBlocks", json_integer(DEFAULT_MAX_QUEUE_BLOCKS));
-    json_object_set_new(queues, "QueueHashSize", json_integer(DEFAULT_QUEUE_HASH_SIZE));
-    json_object_set_new(queues, "DefaultQueueCapacity", json_integer(DEFAULT_QUEUE_CAPACITY));
-    json_object_set_new(resources, "Queues", queues);
-
-    json_t* buffers = json_object();
-    json_object_set_new(buffers, "DefaultMessageBuffer", json_integer(DEFAULT_MESSAGE_BUFFER_SIZE));
-    json_object_set_new(buffers, "MaxLogMessageSize", json_integer(DEFAULT_MAX_LOG_MESSAGE_SIZE));
-    json_object_set_new(buffers, "LineBufferSize", json_integer(DEFAULT_LINE_BUFFER_SIZE));
-    json_object_set_new(buffers, "PostProcessorBuffer", json_integer(DEFAULT_POST_PROCESSOR_BUFFER_SIZE));
-    json_object_set_new(resources, "Buffers", buffers);
-
-    return resources;
-}
-
-/*
- * Generate default network configuration
- * 
- * Why these defaults?
- * - Standard interface limits
- * - Safe port ranges
- * - Reserved port protection
- * - Clear boundaries
- */
-json_t* create_default_network_config(void) {
+static json_t* create_default_network_config(void) {
     json_t* network = json_object();
     if (!network) {
         log_this("Configuration", "Failed to create network config object", LOG_LEVEL_ERROR);
@@ -273,113 +133,365 @@ json_t* create_default_network_config(void) {
 }
 
 /*
- * Generate default system monitoring configuration
- * 
- * Why these defaults?
- * - Regular status updates
- * - Resource monitoring
- * - Warning thresholds
- * - Performance metrics
+ * D. Generate default database configuration
  */
-json_t* create_default_monitoring_config(void) {
-    json_t* monitoring = json_object();
-    if (!monitoring) {
-        log_this("Configuration", "Failed to create monitoring config object", LOG_LEVEL_ERROR);
+static json_t* create_default_database_config(void) {
+    json_t* database = json_object();
+    if (!database) {
+        log_this("Configuration", "Failed to create database config object", LOG_LEVEL_ERROR);
         return NULL;
     }
 
-    json_t* intervals = json_object();
-    json_object_set_new(intervals, "StatusUpdateMs", json_integer(DEFAULT_STATUS_UPDATE_MS));
-    json_object_set_new(intervals, "ResourceCheckMs", json_integer(DEFAULT_RESOURCE_CHECK_MS));
-    json_object_set_new(intervals, "MetricsUpdateMs", json_integer(DEFAULT_METRICS_UPDATE_MS));
-    json_object_set_new(monitoring, "Intervals", intervals);
+    json_t* postgres = json_object();
+    json_object_set_new(postgres, "Host", json_string("${env.POSTGRES_HOST:-localhost}"));
+    json_object_set_new(postgres, "Port", json_integer(5432));
+    json_object_set_new(postgres, "Database", json_string("${env.POSTGRES_DB:-hydrogen}"));
+    json_object_set_new(postgres, "User", json_string("${env.POSTGRES_USER:-hydrogen}"));
+    json_object_set_new(postgres, "Password", json_string("${env.POSTGRES_PASSWORD}"));
+    json_object_set_new(postgres, "SSLMode", json_string("prefer"));
+    json_object_set_new(database, "Postgres", postgres);
 
-    json_t* thresholds = json_object();
-    json_object_set_new(thresholds, "MemoryWarningPercent", json_integer(DEFAULT_MEMORY_WARNING_PERCENT));
-    json_object_set_new(thresholds, "DiskSpaceWarningPercent", json_integer(DEFAULT_DISK_WARNING_PERCENT));
-    json_object_set_new(thresholds, "LoadAverageWarning", json_real(DEFAULT_LOAD_WARNING));
-    json_object_set_new(monitoring, "Thresholds", thresholds);
+    json_t* pool = json_object();
+    json_object_set_new(pool, "MinConnections", json_integer(2));
+    json_object_set_new(pool, "MaxConnections", json_integer(10));
+    json_object_set_new(pool, "ConnectionTimeout", json_integer(30));
+    json_object_set_new(database, "Pool", pool);
 
-    return monitoring;
+    return database;
 }
 
 /*
- * Generate default print queue configuration
- * 
- * Why these defaults?
- * - Priority system
- * - Safe timeouts
- * - Message buffers
- * - Queue management
+ * E. Generate default logging configuration
  */
-json_t* create_default_print_queue_config(void) {
-    json_t* print_queue = json_object();
-    if (!print_queue) {
-        log_this("Configuration", "Failed to create print queue config object", LOG_LEVEL_ERROR);
+static json_t* create_default_logging_config(void) {
+    json_t* logging = json_object();
+    if (!logging) {
+        log_this("Configuration", "Failed to create logging config object", LOG_LEVEL_ERROR);
         return NULL;
     }
 
-    json_object_set_new(print_queue, "Enabled", json_boolean(1));
+    json_t* levels = json_array();
+    json_array_append_new(levels, json_pack("{s:s, s:i}", "Name", "TRACE", "Value", 0));
+    json_array_append_new(levels, json_pack("{s:s, s:i}", "Name", "DEBUG", "Value", 1));
+    json_array_append_new(levels, json_pack("{s:s, s:i}", "Name", "STATE", "Value", 2));
+    json_array_append_new(levels, json_pack("{s:s, s:i}", "Name", "ALERT", "Value", 3));
+    json_array_append_new(levels, json_pack("{s:s, s:i}", "Name", "ERROR", "Value", 4));
+    json_array_append_new(levels, json_pack("{s:s, s:i}", "Name", "FATAL", "Value", 5));
+    json_object_set_new(logging, "LogLevels", levels);
 
-    json_t* settings = json_object();
-    json_object_set_new(settings, "DefaultPriority", json_integer(1));
-    json_object_set_new(settings, "EmergencyPriority", json_integer(0));
-    json_object_set_new(settings, "MaintenancePriority", json_integer(2));
-    json_object_set_new(settings, "SystemPriority", json_integer(3));
-    json_object_set_new(print_queue, "QueueSettings", settings);
+    json_t* console = json_object();
+    json_object_set_new(console, "Enabled", json_boolean(true));
+    json_object_set_new(console, "Level", json_string("DEBUG"));
+    json_object_set_new(logging, "Console", console);
 
-    json_t* timeouts = json_object();
-    json_object_set_new(timeouts, "ShutdownWaitMs", json_integer(DEFAULT_SHUTDOWN_WAIT_MS));
-    json_object_set_new(timeouts, "JobProcessingTimeoutMs", json_integer(DEFAULT_JOB_PROCESSING_TIMEOUT_MS));
-    json_object_set_new(print_queue, "Timeouts", timeouts);
+    json_t* file = json_object();
+    json_object_set_new(file, "Enabled", json_boolean(true));
+    json_object_set_new(file, "Level", json_string("STATE"));
+    json_object_set_new(file, "Path", json_string("${env.LOG_FILE:-/var/log/hydrogen.log}"));
+    json_object_set_new(file, "MaxSize", json_integer(10 * 1024 * 1024));  // 10MB
+    json_object_set_new(file, "MaxFiles", json_integer(5));
+    json_object_set_new(logging, "File", file);
 
-    json_t* buffers = json_object();
-    json_object_set_new(buffers, "JobMessageSize", json_integer(256));
-    json_object_set_new(buffers, "StatusMessageSize", json_integer(256));
-    json_object_set_new(print_queue, "Buffers", buffers);
-
-    return print_queue;
+    return logging;
 }
 
 /*
- * Generate default API configuration
- * 
- * Why these defaults?
- * - Secure tokens
- * - Clear warning about defaults
- * - Production-ready settings
- * - Security first
+ * F. Generate default web server configuration
  */
-json_t* create_default_api_config(void) {
+static json_t* create_default_web_config(void) {
+    json_t* web = json_object();
+    if (!web) {
+        log_this("Configuration", "Failed to create web server config object", LOG_LEVEL_ERROR);
+        return NULL;
+    }
+
+    json_object_set_new(web, "EnableIPv4", json_boolean(true));
+    json_object_set_new(web, "EnableIPv6", json_boolean(true));
+    json_object_set_new(web, "Port", json_integer(DEFAULT_WEB_PORT));
+    json_object_set_new(web, "WebRoot", json_string(DEFAULT_WEB_ROOT));
+    json_object_set_new(web, "UploadPath", json_string(DEFAULT_UPLOAD_PATH));
+    json_object_set_new(web, "UploadDir", json_string(DEFAULT_UPLOAD_DIR));
+    json_object_set_new(web, "MaxUploadSize", json_integer(DEFAULT_MAX_UPLOAD_SIZE));
+    json_object_set_new(web, "ThreadPoolSize", json_integer(4));
+    json_object_set_new(web, "MaxConnections", json_integer(100));
+    json_object_set_new(web, "ConnectionTimeout", json_integer(30));
+
+    return web;
+}
+
+/*
+ * G. Generate default API configuration
+ */
+static json_t* create_default_api_config(void) {
     json_t* api = json_object();
     if (!api) {
         log_this("Configuration", "Failed to create API config object", LOG_LEVEL_ERROR);
         return NULL;
     }
 
-    json_object_set_new(api, "JWTSecret", json_string("hydrogen_api_secret_change_me"));
+    json_object_set_new(api, "Enabled", json_boolean(true));
+    json_object_set_new(api, "Prefix", json_string("/api"));
+    json_object_set_new(api, "JWTSecret", json_string("${env.JWT_SECRET}"));
+    json_object_set_new(api, "TokenExpiration", json_integer(3600));  // 1 hour
 
     return api;
 }
 
 /*
+ * H. Generate default Swagger configuration
+ */
+static json_t* create_default_swagger_config(void) {
+    json_t* swagger = json_object();
+    if (!swagger) {
+        log_this("Configuration", "Failed to create Swagger config object", LOG_LEVEL_ERROR);
+        return NULL;
+    }
+
+    json_object_set_new(swagger, "Enabled", json_boolean(true));
+    json_object_set_new(swagger, "Prefix", json_string("/apidocs"));
+
+    json_t* ui = json_object();
+    json_object_set_new(ui, "TryItEnabled", json_boolean(true));
+    json_object_set_new(swagger, "UIOptions", ui);
+
+    json_t* metadata = json_object();
+    json_object_set_new(metadata, "Title", json_string("Hydrogen API"));
+    json_object_set_new(metadata, "Version", json_string(VERSION));
+    json_object_set_new(swagger, "Metadata", metadata);
+
+    return swagger;
+}
+
+/*
+ * I. Generate default WebSocket configuration
+ */
+static json_t* create_default_websocket_config(void) {
+    json_t* websocket = json_object();
+    if (!websocket) {
+        log_this("Configuration", "Failed to create WebSocket config object", LOG_LEVEL_ERROR);
+        return NULL;
+    }
+
+    json_object_set_new(websocket, "Enabled", json_boolean(DEFAULT_WEBSOCKET_ENABLED));
+    json_object_set_new(websocket, "EnableIPv6", json_boolean(DEFAULT_WEBSOCKET_ENABLE_IPV6));
+    json_object_set_new(websocket, "Port", json_integer(DEFAULT_WEBSOCKET_PORT));
+    json_object_set_new(websocket, "Key", json_string(DEFAULT_WEBSOCKET_KEY));
+    json_object_set_new(websocket, "Protocol", json_string(DEFAULT_WEBSOCKET_PROTOCOL));
+    json_object_set_new(websocket, "MaxMessageSize", json_integer(10 * 1024 * 1024));
+
+    json_t* timeouts = json_object();
+    json_object_set_new(timeouts, "ExitWaitSeconds", json_integer(10));
+    json_object_set_new(websocket, "ConnectionTimeouts", timeouts);
+
+    return websocket;
+}
+
+/*
+ * J. Generate default Terminal configuration
+ */
+static json_t* create_default_terminal_config(void) {
+    json_t* terminal = json_object();
+    if (!terminal) {
+        log_this("Configuration", "Failed to create terminal config object", LOG_LEVEL_ERROR);
+        return NULL;
+    }
+
+    json_object_set_new(terminal, "Enabled", json_boolean(true));
+    json_object_set_new(terminal, "WebPath", json_string("/terminal"));
+    json_object_set_new(terminal, "ShellCommand", json_string("/bin/bash"));
+    json_object_set_new(terminal, "MaxSessions", json_integer(4));
+    json_object_set_new(terminal, "IdleTimeoutSeconds", json_integer(300));  // 5 minutes
+
+    return terminal;
+}
+
+/*
+ * K. Generate default mDNS Server configuration
+ */
+static json_t* create_default_mdns_server_config(void) {
+    json_t* mdns = json_object();
+    if (!mdns) {
+        log_this("Configuration", "Failed to create mDNS server config object", LOG_LEVEL_ERROR);
+        return NULL;
+    }
+
+    json_object_set_new(mdns, "Enabled", json_boolean(true));
+    json_object_set_new(mdns, "EnableIPv6", json_boolean(false));
+    json_object_set_new(mdns, "DeviceId", json_string("hydrogen-printer"));
+    json_object_set_new(mdns, "FriendlyName", json_string("Hydrogen 3D Printer"));
+    json_object_set_new(mdns, "Model", json_string("Hydrogen"));
+    json_object_set_new(mdns, "Manufacturer", json_string("Philement"));
+    json_object_set_new(mdns, "Version", json_string(VERSION));
+
+    json_t* services = json_array();
+    json_array_append_new(services, json_pack("{s:s, s:s, s:i, s:s}",
+        "Name", "hydrogen",
+        "Type", "_http._tcp.local",
+        "Port", DEFAULT_WEB_PORT,
+        "TxtRecords", "path=/api/upload"
+    ));
+    json_array_append_new(services, json_pack("{s:s, s:s, s:i, s:s}",
+        "Name", "Hydrogen",
+        "Type", "_websocket._tcp.local",
+        "Port", DEFAULT_WEBSOCKET_PORT,
+        "TxtRecords", "path=/websocket"
+    ));
+    json_object_set_new(mdns, "Services", services);
+
+    return mdns;
+}
+
+/*
+ * L. Generate default mDNS Client configuration
+ */
+static json_t* create_default_mdns_client_config(void) {
+    json_t* mdns = json_object();
+    if (!mdns) {
+        log_this("Configuration", "Failed to create mDNS client config object", LOG_LEVEL_ERROR);
+        return NULL;
+    }
+
+    json_object_set_new(mdns, "Enabled", json_boolean(true));
+    json_object_set_new(mdns, "EnableIPv6", json_boolean(false));
+    json_object_set_new(mdns, "ScanInterval", json_integer(30));  // 30 seconds
+
+    json_t* types = json_array();
+    json_array_append_new(types, json_string("_http._tcp.local"));
+    json_array_append_new(types, json_string("_websocket._tcp.local"));
+    json_object_set_new(mdns, "ServiceTypes", types);
+
+    json_t* health = json_object();
+    json_object_set_new(health, "Enabled", json_boolean(true));
+    json_object_set_new(health, "Interval", json_integer(60));  // 60 seconds
+    json_object_set_new(mdns, "HealthCheck", health);
+
+    return mdns;
+}
+
+/*
+ * M. Generate default Mail Relay configuration
+ */
+static json_t* create_default_mail_relay_config(void) {
+    json_t* mail = json_object();
+    if (!mail) {
+        log_this("Configuration", "Failed to create mail relay config object", LOG_LEVEL_ERROR);
+        return NULL;
+    }
+
+    json_object_set_new(mail, "Enabled", json_boolean(true));
+    json_object_set_new(mail, "ListenPort", json_integer(25));
+    json_object_set_new(mail, "Workers", json_integer(2));
+
+    json_t* servers = json_array();
+    json_t* server = json_object();
+    json_object_set_new(server, "Host", json_string("${env.SMTP_HOST:-smtp.example.com}"));
+    json_object_set_new(server, "Port", json_integer(587));
+    json_object_set_new(server, "Username", json_string("${env.SMTP_USER}"));
+    json_object_set_new(server, "Password", json_string("${env.SMTP_PASS}"));
+    json_object_set_new(server, "UseTLS", json_boolean(true));
+    json_array_append_new(servers, server);
+    json_object_set_new(mail, "OutboundServers", servers);
+
+    return mail;
+}
+
+/*
+ * N. Generate default Print configuration
+ */
+static json_t* create_default_print_config(void) {
+    json_t* print = json_object();
+    if (!print) {
+        log_this("Configuration", "Failed to create print config object", LOG_LEVEL_ERROR);
+        return NULL;
+    }
+
+    json_object_set_new(print, "Enabled", json_boolean(true));
+
+    json_t* settings = json_object();
+    json_object_set_new(settings, "DefaultPriority", json_integer(1));
+    json_object_set_new(settings, "EmergencyPriority", json_integer(0));
+    json_object_set_new(settings, "MaintenancePriority", json_integer(2));
+    json_object_set_new(settings, "SystemPriority", json_integer(3));
+    json_object_set_new(print, "QueueSettings", settings);
+
+    json_t* timeouts = json_object();
+    json_object_set_new(timeouts, "ShutdownWaitMs", json_integer(DEFAULT_SHUTDOWN_WAIT_MS));
+    json_object_set_new(timeouts, "JobProcessingTimeoutMs", json_integer(DEFAULT_JOB_PROCESSING_TIMEOUT_MS));
+    json_object_set_new(print, "Timeouts", timeouts);
+
+    json_t* buffers = json_object();
+    json_object_set_new(buffers, "JobMessageSize", json_integer(256));
+    json_object_set_new(buffers, "StatusMessageSize", json_integer(256));
+    json_object_set_new(print, "Buffers", buffers);
+
+    return print;
+}
+
+/*
+ * N. Generate default System Resources configuration
+ */
+static json_t* create_default_system_resources_config(void) {
+    json_t* resources = json_object();
+    if (!resources) {
+        log_this("Configuration", "Failed to create system resources config object", LOG_LEVEL_ERROR);
+        return NULL;
+    }
+
+    json_t* memory = json_object();
+    json_object_set_new(memory, "MaxHeapSize", json_integer(1024 * 1024 * 1024));  // 1GB
+    json_object_set_new(memory, "MinFreeMemory", json_integer(64 * 1024 * 1024));  // 64MB
+    json_object_set_new(memory, "GCThreshold", json_integer(85));  // 85% usage triggers GC
+    json_object_set_new(resources, "Memory", memory);
+
+    json_t* threads = json_object();
+    json_object_set_new(threads, "MaxThreads", json_integer(100));
+    json_object_set_new(threads, "ThreadStackSize", json_integer(8 * 1024 * 1024));  // 8MB
+    json_object_set_new(threads, "ThreadPoolSize", json_integer(4));
+    json_object_set_new(resources, "Threads", threads);
+
+    json_t* files = json_object();
+    json_object_set_new(files, "MaxOpenFiles", json_integer(1024));
+    json_object_set_new(files, "MaxFileSize", json_integer(100 * 1024 * 1024));  // 100MB
+    json_object_set_new(files, "TempFileLifetime", json_integer(3600));  // 1 hour
+    json_object_set_new(resources, "Files", files);
+
+    return resources;
+}
+
+
+/*
+ * P. Generate default Notify configuration
+ */
+static json_t* create_default_notify_config(void) {
+    json_t* notify = json_object();
+    if (!notify) {
+        log_this("Configuration", "Failed to create notify config object", LOG_LEVEL_ERROR);
+        return NULL;
+    }
+
+    json_object_set_new(notify, "Enabled", json_boolean(true));
+    json_object_set_new(notify, "MaxRetries", json_integer(3));
+    json_object_set_new(notify, "RetryDelayMs", json_integer(1000));
+
+    json_t* channels = json_array();
+    json_array_append_new(channels, json_string("email"));
+    json_array_append_new(channels, json_string("websocket"));
+    json_object_set_new(notify, "Channels", channels);
+
+    json_t* templates = json_object();
+    json_object_set_new(templates, "Path", json_string("${env.NOTIFY_TEMPLATES:-/etc/hydrogen/templates}"));
+    json_object_set_new(templates, "DefaultLang", json_string("en"));
+    json_object_set_new(notify, "Templates", templates);
+
+    return notify;
+}
+
+
+/*
  * Generate complete default configuration
  * 
- * Why this approach?
- * 1. Modularity
- *    - Each subsystem handled separately
- *    - Clear error boundaries
- *    - Independent generation
- * 
- * 2. Error Handling
- *    - Cleanup on any failure
- *    - Clear error reporting
- *    - Safe defaults
- * 
- * 3. Maintainability
- *    - Easy to extend
- *    - Clear structure
- *    - Documented defaults
+ * Creates a complete configuration file with all sections A-P
+ * in the correct order as specified in the header comments.
  */
 void create_default_config(const char* config_path) {
     json_t* root = json_object();
@@ -388,29 +500,50 @@ void create_default_config(const char* config_path) {
         return;
     }
 
-    // Generate server configuration first (registry priority)
-    json_t* server = create_default_server_config();
-    if (server) json_object_set_new(root, "Server", server);
+    // Add sections in A-P order
+    json_t* sections[] = {
+        create_default_server_config(),        // A. Server
+        create_default_system_config(),        // B. System
+        create_default_network_config(),       // C. Network
+        create_default_database_config(),      // D. Database
+        create_default_logging_config(),       // E. Logging
+        create_default_web_config(),          // F. WebServer
+        create_default_api_config(),          // G. API
+        create_default_swagger_config(),       // H. Swagger
+        create_default_websocket_config(),     // I. WebSocket
+        create_default_terminal_config(),      // J. Terminal
+        create_default_mdns_server_config(),   // K. mDNS Server
+        create_default_mdns_client_config(),   // L. mDNS Client
+        create_default_mail_relay_config(),    // M. Mail Relay
+        create_default_print_config(),         // N. Print
+        create_default_system_resources_config(), // O. System Resources
+        create_default_notify_config()         // P. Notify
+    };
 
-    // Generate other subsystem configurations
-    json_t* web = create_default_web_config();
-    json_t* websocket = create_default_websocket_config();
-    json_t* mdns = create_default_mdns_config();
-    json_t* resources = create_default_resources_config();
-    json_t* network = create_default_network_config();
-    json_t* monitoring = create_default_monitoring_config();
-    json_t* print_queue = create_default_print_queue_config();
-    json_t* api = create_default_api_config();
+    const char* section_names[] = {
+        "Server",           // A. Server
+        "System",           // B. System
+        "Network",          // C. Network
+        "Database",         // D. Database
+        "Logging",          // E. Logging
+        "WebServer",        // F. WebServer
+        "API",              // G. API
+        "Swagger",          // H. Swagger
+        "WebSocketServer",  // I. WebSocket
+        "Terminal",         // J. Terminal
+        "mDNSServer",       // K. mDNS Server
+        "mDNSClient",       // L. mDNS Client
+        "MailRelay",        // M. Mail Relay
+        "PrintQueue",       // N. Print
+        "SystemResources",  // O. System Resources
+        "Notify"           // P. Notify
+    };
 
-    // Add subsystems to root (with error checking)
-    if (web) json_object_set_new(root, "WebServer", web);
-    if (websocket) json_object_set_new(root, "WebSocketServer", websocket);
-    if (mdns) json_object_set_new(root, "mDNSServer", mdns);
-    if (resources) json_object_set_new(root, "SystemResources", resources);
-    if (network) json_object_set_new(root, "Network", network);
-    if (monitoring) json_object_set_new(root, "SystemMonitoring", monitoring);
-    if (print_queue) json_object_set_new(root, "PrintQueue", print_queue);
-    if (api) json_object_set_new(root, "API", api);
+    for (size_t i = 0; i < sizeof(sections) / sizeof(sections[0]); i++) {
+        if (sections[i]) {
+            json_object_set_new(root, section_names[i], sections[i]);
+        }
+    }
 
     // Write configuration to file
     if (json_dump_file(root, config_path, JSON_INDENT(4)) != 0) {

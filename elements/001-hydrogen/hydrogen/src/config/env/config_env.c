@@ -19,6 +19,7 @@
 #include "../config_utils.h"
 #include "../security/config_sensitive.h"
 #include "../../logging/logging.h"
+#include "../logging/config_logging_utils.h"
 
 /*
  * Implementation of environment variable resolution

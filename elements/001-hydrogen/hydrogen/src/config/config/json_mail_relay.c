@@ -1,118 +1,170 @@
 /*
- * Mail Relay configuration JSON parsing
+ * Mail Relay JSON Configuration Loading Implementation
  */
 
-// Core system headers
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <time.h>
-#include <errno.h>
-#include <limits.h>
-#include <unistd.h>
-
-// Standard C headers
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-#include <ctype.h>
-
-// Project headers
 #include "json_mail_relay.h"
-#include "../config.h"
+#include "../mailrelay/config_mail_relay.h"
 #include "../env/config_env.h"
-#include "../config_utils.h"
-#include "../types/config_bool.h"
-#include "../types/config_int.h"
+#include "../env/config_env_utils.h"
 #include "../../logging/logging.h"
 
-bool load_json_mail_relay(json_t* root, AppConfig* config __attribute__((unused))) {
-    json_t* mail_relay = json_object_get(root, "MailRelay");
-    // Also check for common typo with space
-    if (!json_is_object(mail_relay)) {
-        mail_relay = json_object_get(root, " MailRelay");
+// Load a single outbound server configuration
+static bool load_outbound_server(json_t* server_json, OutboundServer* server) {
+    if (!server_json || !server) return false;
+
+    // Get host with environment variable substitution
+    json_t* host = json_object_get(server_json, "Host");
+    if (host && json_is_string(host)) {
+        server->Host = get_config_string_with_env("Host", host, NULL);
+        if (!server->Host) return false;
     }
 
-    if (json_is_object(mail_relay)) {
-        log_config_section_header("MailRelay");
-        
-        json_t* enabled = json_object_get(mail_relay, "Enabled");
-        bool mail_relay_enabled = get_config_bool(enabled, true);
-        log_config_section_item("Enabled", "%s", LOG_LEVEL_STATE, !enabled, 0, NULL, NULL, "Config",
-                mail_relay_enabled ? "true" : "false");
-        
-        json_t* listen_port = json_object_get(mail_relay, "ListenPort");
-        if (json_is_integer(listen_port)) {
-            log_config_section_item("ListenPort", "%d", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config", 
-                json_integer_value(listen_port));
-        }
-        
-        json_t* workers = json_object_get(mail_relay, "Workers");
-        if (json_is_integer(workers)) {
-            log_config_section_item("Workers", "%d", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config", 
-                json_integer_value(workers));
-        }
-        
-        json_t* outbound_servers = json_object_get(mail_relay, "OutboundServers");
-        if (json_is_array(outbound_servers)) {
-            size_t server_count = json_array_size(outbound_servers);
-            log_config_section_item("OutboundServers", "%zu Configured", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config", server_count);
-            
-            for (size_t i = 0; i < server_count && i < 3; i++) {  // Limit to 3 for display
-                json_t* server = json_array_get(outbound_servers, i);
-                if (!json_is_object(server)) continue;
-                
-                log_config_section_item("Server", "%d", LOG_LEVEL_STATE, 0, 1, NULL, NULL, "Config", (int)i + 1);
-                
-                // Create a server-specific key for clearer context
-                char server_key[32];
-                snprintf(server_key, sizeof(server_key), "SMTP_SERVER%zu", i+1);
-                
-                // Host with environment variable support
-                json_t* host = json_object_get(server, "Host");
-                char* host_value = get_config_string_with_env("Host", host, "smtp.example.com");
-                log_config_section_item("Host", "%s", LOG_LEVEL_STATE, !host, 2, NULL, NULL, "Config", host_value);
-                free(host_value);
-                
-                // Port with environment variable support
-                json_t* port = json_object_get(server, "Port");
-                if (json_is_integer(port)) {
-                    log_config_section_item("Port", "%d", LOG_LEVEL_STATE, 0, 2, NULL, NULL, "Config", json_integer_value(port));
-                } else {
-                    char* port_value = get_config_string_with_env("Port", port, "25"); // Default SMTP port
-                    log_config_section_item("Port", "%s", LOG_LEVEL_STATE, !port, 2, NULL, NULL, "Config", port_value);
-                    free(port_value);
-                }
-                
-                // Username with environment variable support
-                json_t* username = json_object_get(server, "Username");
-                char* username_value = get_config_string_with_env("Username", username, "");
-                if (username_value && strlen(username_value) > 0) {
-                    log_config_section_item("Username", "configured", LOG_LEVEL_STATE, 0, 2, NULL, NULL, "Config");
-                }
-                free(username_value);
-                
-                // Password with environment variable support (not logged)
-                json_t* password = json_object_get(server, "Password");
-                char* password_value = get_config_string_with_env("Password", password, "");
-                free(password_value); // Just process and free, don't log
-                
-                json_t* useTLS = json_object_get(server, "UseTLS");
-                bool tls_enabled = get_config_bool(useTLS, true);
-                log_config_section_item("UseTLS", "%s", LOG_LEVEL_STATE, !useTLS, 2, NULL, NULL, "Config",
-                    tls_enabled ? "true" : "false");
-            }
-            
-            if (server_count > 3) {
-                log_config_section_item("Note", "%zu additional servers not shown", LOG_LEVEL_STATE, 0, 1, NULL, NULL, "Config", 
-                    server_count - 3);
-            }
-        }
-    } else {
-        log_config_section_header("MailRelay");
-        log_config_section_item("Status", "Section missing", LOG_LEVEL_ALERT, 1, 0, NULL, NULL, "Config");
+    // Get port with environment variable substitution
+    json_t* port = json_object_get(server_json, "Port");
+    if (port && json_is_string(port)) {
+        server->Port = get_config_string_with_env("Port", port, NULL);
+        if (!server->Port) goto error;
     }
-    
-    // No failure conditions, always return true
+
+    // Get username with environment variable substitution
+    json_t* username = json_object_get(server_json, "Username");
+    if (username && json_is_string(username)) {
+        server->Username = get_config_string_with_env("Username", username, NULL);
+        if (!server->Username) goto error;
+    }
+
+    // Get password with environment variable substitution
+    json_t* password = json_object_get(server_json, "Password");
+    if (password && json_is_string(password)) {
+        server->Password = get_config_string_with_env("Password", password, NULL);
+        if (!server->Password) goto error;
+    }
+
+    // Get TLS setting
+    json_t* use_tls = json_object_get(server_json, "UseTLS");
+    if (use_tls && json_is_boolean(use_tls)) {
+        server->UseTLS = json_boolean_value(use_tls);
+    }
+
+    return true;
+
+error:
+    free(server->Host);
+    free(server->Port);
+    free(server->Username);
+    free(server->Password);
+    server->Host = NULL;
+    server->Port = NULL;
+    server->Username = NULL;
+    server->Password = NULL;
+    return false;
+}
+
+// Load queue settings configuration
+static bool load_queue_settings(json_t* queue_json, QueueSettings* queue) {
+    if (!queue_json || !queue) return false;
+
+    // Get max queue size
+    json_t* max_size = json_object_get(queue_json, "MaxQueueSize");
+    if (max_size && json_is_integer(max_size)) {
+        queue->MaxQueueSize = json_integer_value(max_size);
+    }
+
+    // Get retry attempts
+    json_t* retries = json_object_get(queue_json, "RetryAttempts");
+    if (retries && json_is_integer(retries)) {
+        queue->RetryAttempts = json_integer_value(retries);
+    }
+
+    // Get retry delay
+    json_t* delay = json_object_get(queue_json, "RetryDelaySeconds");
+    if (delay && json_is_integer(delay)) {
+        queue->RetryDelaySeconds = json_integer_value(delay);
+    }
+
+    return true;
+}
+
+/*
+ * Load mail relay configuration from JSON
+ */
+bool load_json_mail_relay(json_t* root, AppConfig* config) {
+    if (!config) return false;
+
+    // Initialize with defaults
+    if (config_mailrelay_init(&config->mail_relay) != 0) {
+        log_this("Config", "Failed to initialize mail relay config", LOG_LEVEL_ERROR);
+        return false;
+    }
+
+    // If no JSON, keep defaults
+    if (!root) {
+        log_this("Config", "No JSON provided, using mail relay defaults", LOG_LEVEL_ALERT);
+        return true;
+    }
+
+    // Get mail relay section
+    json_t* mail_relay = json_object_get(root, "MailRelay");
+    if (!mail_relay) {
+        log_this("Config", "No MailRelay section in JSON, using defaults", LOG_LEVEL_ALERT);
+        return true;
+    }
+
+    // Get enabled status
+    json_t* enabled = json_object_get(mail_relay, "Enabled");
+    if (enabled && json_is_boolean(enabled)) {
+        config->mail_relay.Enabled = json_boolean_value(enabled);
+    }
+
+    // Get listen port
+    json_t* port = json_object_get(mail_relay, "ListenPort");
+    if (port && json_is_integer(port)) {
+        config->mail_relay.ListenPort = json_integer_value(port);
+    }
+
+    // Get worker count
+    json_t* workers = json_object_get(mail_relay, "Workers");
+    if (workers && json_is_integer(workers)) {
+        config->mail_relay.Workers = json_integer_value(workers);
+    }
+
+    // Load queue settings
+    json_t* queue = json_object_get(mail_relay, "QueueSettings");
+    if (queue && json_is_object(queue)) {
+        if (!load_queue_settings(queue, &config->mail_relay.Queue)) {
+            log_this("Config", "Failed to load mail relay queue settings", LOG_LEVEL_ERROR);
+            return false;
+        }
+    }
+
+    // Load outbound servers
+    json_t* servers = json_object_get(mail_relay, "OutboundServers");
+    if (servers && json_is_array(servers)) {
+        size_t index;
+        json_t* server;
+
+        config->mail_relay.OutboundServerCount = 0;
+        json_array_foreach(servers, index, server) {
+            if (index >= MAX_OUTBOUND_SERVERS) {
+                log_this("Config", "Too many outbound servers defined (max %d)", LOG_LEVEL_ERROR, MAX_OUTBOUND_SERVERS);
+                break;
+            }
+
+            if (!load_outbound_server(server, &config->mail_relay.Servers[index])) {
+                log_this("Config", "Failed to load outbound server %zu", LOG_LEVEL_ERROR, index);
+                return false;
+            }
+            config->mail_relay.OutboundServerCount++;
+        }
+    }
+
+    // Validate the configuration
+    if (config_mailrelay_validate(&config->mail_relay) != 0) {
+        log_this("Config", "Mail relay configuration validation failed", LOG_LEVEL_ERROR);
+        return false;
+    }
+
     return true;
 }

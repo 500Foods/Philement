@@ -1,53 +1,133 @@
 /*
  * Forward declarations for configuration types
+ *
+ * This header provides forward declarations for all configuration structures
+ * to avoid circular dependencies. The actual structure definitions are in
+ * their respective headers.
+ *
+ * Sections are organized in A-O order:
+ * A. Server
+ * B. Network
+ * C. Database
+ * D. Logging
+ * E. WebServer
+ * F. API
+ * G. Swagger
+ * H. WebSocket
+ * I. Terminal
+ * J. mDNS Server
+ * K. mDNS Client
+ * L. Mail Relay
+ * M. Print
+ * N. Resources
+ * O. OIDC
+ * P. Notify
  */
 
 #ifndef CONFIG_FORWARD_H
 #define CONFIG_FORWARD_H
 
-// Core configuration types
+// Main application configuration structure
+struct AppConfig;
 typedef struct AppConfig AppConfig;
 
-// API and security types
-typedef struct APIConfig APIConfig;
-
-// Web and network types
-typedef struct WebServerConfig WebServerConfig;
-typedef struct WebSocketConfig WebSocketConfig;
-typedef struct NetworkConfig NetworkConfig;
-
-// System monitoring types
+// System Monitoring Configuration
+struct MonitoringConfig;
 typedef struct MonitoringConfig MonitoringConfig;
 
-// Motion types
-typedef struct MotionConfig MotionConfig;
+// A. Server Configuration
+struct ServerConfig;
+typedef struct ServerConfig ServerConfig;
 
-// Print queue types
-typedef struct PrintQueueConfig PrintQueueConfig;
-typedef struct PrintQueuePrioritiesConfig PrintQueuePrioritiesConfig;
-typedef struct PrintQueueTimeoutsConfig PrintQueueTimeoutsConfig;
-typedef struct PrintQueueBuffersConfig PrintQueueBuffersConfig;
+// B. Network Configuration
+struct NetworkConfig;
+typedef struct NetworkConfig NetworkConfig;
 
-// OIDC types
-typedef struct OIDCConfig OIDCConfig;
-typedef struct OIDCEndpointsConfig OIDCEndpointsConfig;
-typedef struct OIDCKeysConfig OIDCKeysConfig;
-typedef struct OIDCTokensConfig OIDCTokensConfig;
-typedef struct OIDCSecurityConfig OIDCSecurityConfig;
+// C. Database Configuration
+struct DatabaseConfig;
+typedef struct DatabaseConfig DatabaseConfig;
 
-// Logging types
+// D. Logging Configuration
+struct LoggingConfig;
 typedef struct LoggingConfig LoggingConfig;
+
+struct LoggingConsoleConfig;
 typedef struct LoggingConsoleConfig LoggingConsoleConfig;
-typedef struct LoggingFileConfig LoggingFileConfig;
+
+struct LoggingDatabaseConfig;
 typedef struct LoggingDatabaseConfig LoggingDatabaseConfig;
 
-// Resource types
-typedef struct ResourceConfig ResourceConfig;
+struct LoggingFileConfig;
+typedef struct LoggingFileConfig LoggingFileConfig;
 
-// MDNS types
+struct LoggingNotifyConfig;
+typedef struct LoggingNotifyConfig LoggingNotifyConfig;
+
+// E. WebServer Configuration
+struct WebServerConfig;
+typedef struct WebServerConfig WebServerConfig;
+
+// F. API Configuration
+struct APIConfig;
+typedef struct APIConfig APIConfig;
+
+// G. Swagger Configuration
+struct SwaggerConfig;
+typedef struct SwaggerConfig SwaggerConfig;
+
+// H. WebSocket Configuration
+struct WebSocketConfig;
+typedef struct WebSocketConfig WebSocketConfig;
+
+// I. Terminal Configuration
+struct TerminalConfig;
+typedef struct TerminalConfig TerminalConfig;
+
+// J. mDNS Server Configuration
+struct MDNSServerConfig;
 typedef struct MDNSServerConfig MDNSServerConfig;
 
-// Swagger types
-typedef struct SwaggerConfig SwaggerConfig;
+// K. mDNS Client Configuration
+struct MDNSClientConfig;
+typedef struct MDNSClientConfig MDNSClientConfig;
+
+// L. Mail Relay Configuration (uses notify infrastructure)
+struct MailRelayConfig;
+
+// M. Print Configuration
+struct PrintQueueConfig;
+typedef struct PrintQueueConfig PrintQueueConfig;
+
+struct PrintQueuePrioritiesConfig;
+typedef struct PrintQueuePrioritiesConfig PrintQueuePrioritiesConfig;
+
+struct PrintQueueTimeoutsConfig;
+typedef struct PrintQueueTimeoutsConfig PrintQueueTimeoutsConfig;
+
+struct PrintQueueBuffersConfig;
+typedef struct PrintQueueBuffersConfig PrintQueueBuffersConfig;
+
+// N. Resources Configuration
+struct ResourceConfig;
+typedef struct ResourceConfig ResourceConfig;
+
+// O. OIDC Configuration
+struct OIDCConfig;
+typedef struct OIDCConfig OIDCConfig;
+
+struct OIDCEndpointsConfig;
+typedef struct OIDCEndpointsConfig OIDCEndpointsConfig;
+
+struct OIDCKeysConfig;
+typedef struct OIDCKeysConfig OIDCKeysConfig;
+
+struct OIDCTokensConfig;
+typedef struct OIDCTokensConfig OIDCTokensConfig;
+
+struct OIDCSecurityConfig;
+typedef struct OIDCSecurityConfig OIDCSecurityConfig;
+
+// P. Notify Configuration
+typedef struct NotifyConfig NotifyConfig;  // Shares infrastructure with Mail Relay
 
 #endif /* CONFIG_FORWARD_H */

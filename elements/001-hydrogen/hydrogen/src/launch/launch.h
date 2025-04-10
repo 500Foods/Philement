@@ -14,19 +14,19 @@
  * Standard Processing Order (for consistency, not priority):
  * - 01. Registry (must be first, handles subsystem registration)
  * - 02. Payload
- * - Threads
- * - Network
- * - Database
- * - Logging
- * - WebServer
- * - API
- * - Swagger
- * - WebSockets
- * - Terminal
- * - mDNS Server
- * - mDNS Client
- * - MailRelay
- * - Print
+ * - 03. Threads
+ * - 04. Network
+ * - 05. Database
+ * - 06. Logging
+ * - 07. WebServer
+ * - 08. API
+ * - 09. Swagger
+ * - 10. WebSockets
+ * - 11. Terminal
+ * - 12. mDNS Server
+ * - 13. mDNS Client
+ * - 14. MailRelay
+ * - 15. Print
  * 
  * Each subsystem:
  * - Determines its own readiness independently

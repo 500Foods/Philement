@@ -25,12 +25,12 @@
  */
 BerylliumConfig beryllium_create_config(const AppConfig *app_config) {
     BerylliumConfig config = {
-        .acceleration = app_config ? app_config->motion.acceleration : DEFAULT_ACCELERATION,
-        .z_acceleration = app_config ? app_config->motion.z_acceleration : DEFAULT_Z_ACCELERATION,
-        .extruder_acceleration = app_config ? app_config->motion.e_acceleration : DEFAULT_E_ACCELERATION,
-        .max_speed_xy = app_config ? app_config->motion.max_speed_xy : DEFAULT_MAX_SPEED_XY,
-        .max_speed_travel = app_config ? app_config->motion.max_speed_travel : DEFAULT_MAX_SPEED_TRAVEL,
-        .max_speed_z = app_config ? app_config->motion.max_speed_z : DEFAULT_MAX_SPEED_Z,
+        .acceleration = app_config ? app_config->print_queue.motion.acceleration : DEFAULT_ACCELERATION,
+        .z_acceleration = app_config ? app_config->print_queue.motion.z_acceleration : DEFAULT_Z_ACCELERATION,
+        .extruder_acceleration = app_config ? app_config->print_queue.motion.e_acceleration : DEFAULT_E_ACCELERATION,
+        .max_speed_xy = app_config ? app_config->print_queue.motion.max_speed_xy : DEFAULT_MAX_SPEED_XY,
+        .max_speed_travel = app_config ? app_config->print_queue.motion.max_speed_travel : DEFAULT_MAX_SPEED_TRAVEL,
+        .max_speed_z = app_config ? app_config->print_queue.motion.max_speed_z : DEFAULT_MAX_SPEED_Z,
         .default_feedrate = DEFAULT_FEEDRATE,  // Not configurable - G-code standard
         .filament_diameter = DEFAULT_FILAMENT_DIAMETER,  // Could be made configurable in future
         .filament_density = DEFAULT_FILAMENT_DENSITY     // Could be made configurable in future

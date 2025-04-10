@@ -13,6 +13,7 @@
 #include "config_print_priorities.h"
 #include "config_print_timeouts.h"
 #include "config_print_buffers.h"
+#include "config_print_motion.h"
 
 // Default values
 #define DEFAULT_PRINT_QUEUE_ENABLED 1
@@ -35,6 +36,7 @@ struct PrintQueueConfig {
     PrintQueuePrioritiesConfig priorities;  // Priority settings
     PrintQueueTimeoutsConfig timeouts;      // Timeout settings
     PrintQueueBuffersConfig buffers;        // Buffer settings
+    MotionConfig motion;                    // Motion control settings
 };
 
 /*
