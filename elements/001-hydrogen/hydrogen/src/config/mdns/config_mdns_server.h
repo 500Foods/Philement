@@ -2,7 +2,10 @@
  * mDNS Server Configuration
  *
  * Defines the configuration structure and defaults for the mDNS server subsystem.
- * This includes settings for device identification and service advertisement.
+ * This includes settings for:
+ * - Device identification
+ * - Service advertisement
+ * - Network protocols
  *
  * Design Decisions:
  * - Default values ensure basic device identification
@@ -11,8 +14,8 @@
  * - Memory management follows strict allocation/cleanup patterns
  */
 
-#ifndef HYDROGEN_CONFIG_MDNS_H
-#define HYDROGEN_CONFIG_MDNS_H
+#ifndef HYDROGEN_CONFIG_MDNS_SERVER_H
+#define HYDROGEN_CONFIG_MDNS_SERVER_H
 
 // Core system headers
 #include <stddef.h>
@@ -22,10 +25,10 @@
 #include "../../mdns/mdns_server.h"  // For mdns_server_service_t
 
 // Default values
-#define DEFAULT_MDNS_DEVICE_ID "hydrogen"
-#define DEFAULT_MDNS_FRIENDLY_NAME "Hydrogen Server"
-#define DEFAULT_MDNS_MODEL "Hydrogen"
-#define DEFAULT_MDNS_MANUFACTURER "Philement"
+#define DEFAULT_MDNS_SERVER_DEVICE_ID "hydrogen"
+#define DEFAULT_MDNS_SERVER_FRIENDLY_NAME "Hydrogen Server"
+#define DEFAULT_MDNS_SERVER_MODEL "Hydrogen"
+#define DEFAULT_MDNS_SERVER_MANUFACTURER "Philement"
 
 // mDNS server configuration structure
 struct MDNSServerConfig {
@@ -39,6 +42,7 @@ struct MDNSServerConfig {
     mdns_server_service_t* services;
     size_t num_services;
 };
+typedef struct MDNSServerConfig MDNSServerConfig;
 
 /*
  * Initialize mDNS server configuration with default values
@@ -54,12 +58,12 @@ struct MDNSServerConfig {
  * - If config is NULL
  * - If memory allocation fails for any string field
  */
-int config_mdns_init(MDNSServerConfig* config);
+int config_mdns_server_init(MDNSServerConfig* config);
 
 /*
  * Free resources allocated for mDNS server configuration
  *
- * This function frees all resources allocated by config_mdns_init.
+ * This function frees all resources allocated by config_mdns_server_init.
  * It safely handles NULL pointers and partial initialization.
  * After cleanup, the structure is zeroed to prevent use-after-free.
  *
@@ -68,7 +72,7 @@ int config_mdns_init(MDNSServerConfig* config);
  *
  * @param config Pointer to MDNSServerConfig structure to cleanup
  */
-void config_mdns_cleanup(MDNSServerConfig* config);
+void config_mdns_server_cleanup(MDNSServerConfig* config);
 
 /*
  * Validate mDNS server configuration values
@@ -86,6 +90,6 @@ void config_mdns_cleanup(MDNSServerConfig* config);
  * - If enabled but required strings are missing or empty
  * - If num_services > 0 but services array is NULL
  */
-int config_mdns_validate(const MDNSServerConfig* config);
+int config_mdns_server_validate(const MDNSServerConfig* config);
 
-#endif /* HYDROGEN_CONFIG_MDNS_H */
+#endif /* HYDROGEN_CONFIG_MDNS_SERVER_H */

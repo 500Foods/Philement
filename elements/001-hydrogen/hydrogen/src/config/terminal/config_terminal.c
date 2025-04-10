@@ -1,12 +1,12 @@
 /*
- * System Monitoring Configuration Implementation
+ * Terminal Configuration Implementation
  */
 
 #include <stdlib.h>
 #include <string.h>
-#include "config_monitoring.h"
+#include "config_terminal.h"
 
-int config_monitoring_init(MonitoringConfig* config) {
+int config_terminal_init(TerminalConfig* config) {
     if (!config) {
         return -1;
     }
@@ -24,13 +24,13 @@ int config_monitoring_init(MonitoringConfig* config) {
     return 0;
 }
 
-void config_monitoring_cleanup(MonitoringConfig* config) {
+void config_terminal_cleanup(TerminalConfig* config) {
     if (!config) {
         return;
     }
 
     // Zero out the structure
-    memset(config, 0, sizeof(MonitoringConfig));
+    memset(config, 0, sizeof(TerminalConfig));
 }
 
 static int validate_interval(size_t interval) {
@@ -48,7 +48,7 @@ static int validate_load(double load) {
            load <= MAX_LOAD_WARNING;
 }
 
-int config_monitoring_validate(const MonitoringConfig* config) {
+int config_terminal_validate(const TerminalConfig* config) {
     if (!config) {
         return -1;
     }

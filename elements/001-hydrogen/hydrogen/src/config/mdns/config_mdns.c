@@ -21,12 +21,12 @@
 #include <stdbool.h>
 
 // Project headers
-#include "config_mdns.h"
+#include "config_mdns_server.h"
 #include "../types/config_string.h"
 #include "../config.h"  // For VERSION
 #include "../../logging/logging.h"
 
-int config_mdns_init(MDNSServerConfig* config) {
+int config_mdns_server_init(MDNSServerConfig* config) {
     if (!config) {
         log_this("mDNS", "Null config pointer provided", LOG_LEVEL_ERROR);
         return -1;
@@ -37,17 +37,17 @@ int config_mdns_init(MDNSServerConfig* config) {
     config->enable_ipv6 = 0;  // IPv6 disabled by default
     
     // Initialize strings with default values
-    config->device_id = strdup(DEFAULT_MDNS_DEVICE_ID);
-    config->friendly_name = strdup(DEFAULT_MDNS_FRIENDLY_NAME);
-    config->model = strdup(DEFAULT_MDNS_MODEL);
-    config->manufacturer = strdup(DEFAULT_MDNS_MANUFACTURER);
+    config->device_id = strdup(DEFAULT_MDNS_SERVER_DEVICE_ID);
+    config->friendly_name = strdup(DEFAULT_MDNS_SERVER_FRIENDLY_NAME);
+    config->model = strdup(DEFAULT_MDNS_SERVER_MODEL);
+    config->manufacturer = strdup(DEFAULT_MDNS_SERVER_MANUFACTURER);
     config->version = strdup(VERSION);
     
     // Verify all string allocations succeeded
     if (!config->device_id || !config->friendly_name || 
         !config->model || !config->manufacturer || !config->version) {
         log_this("mDNS", "Failed to allocate configuration strings", LOG_LEVEL_ERROR);
-        config_mdns_cleanup(config);
+        config_mdns_server_cleanup(config);
         return -1;
     }
 
@@ -58,7 +58,7 @@ int config_mdns_init(MDNSServerConfig* config) {
     return 0;
 }
 
-void config_mdns_cleanup(MDNSServerConfig* config) {
+void config_mdns_server_cleanup(MDNSServerConfig* config) {
     if (!config) {
         return;
     }
@@ -80,7 +80,7 @@ void config_mdns_cleanup(MDNSServerConfig* config) {
     memset(config, 0, sizeof(MDNSServerConfig));
 }
 
-int config_mdns_validate(const MDNSServerConfig* config) {
+int config_mdns_server_validate(const MDNSServerConfig* config) {
     if (!config) {
         log_this("mDNS", "Null config pointer in validation", LOG_LEVEL_ERROR);
         return -1;

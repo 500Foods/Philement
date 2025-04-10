@@ -21,12 +21,8 @@
 #define MAX_REFRESH_TOKEN_LIFETIME 7776000   // 90 days
 #define MAX_ID_TOKEN_LIFETIME 86400          // 24 hours
 
-// OIDC tokens configuration structure
-struct OIDCTokensConfig {
-    int access_token_lifetime;   // Lifetime of access tokens in seconds
-    int refresh_token_lifetime;  // Lifetime of refresh tokens in seconds
-    int id_token_lifetime;      // Lifetime of ID tokens in seconds
-};
+// Forward declaration
+struct OIDCTokensConfig;
 
 /*
  * Initialize OIDC tokens configuration with default values

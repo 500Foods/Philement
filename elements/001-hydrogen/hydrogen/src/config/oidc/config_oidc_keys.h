@@ -16,12 +16,8 @@
 #define DEFAULT_KEY_STORAGE_PATH "/var/lib/hydrogen/oidc/keys"
 #define DEFAULT_KEY_ENCRYPTION_ENABLED 1
 
-// OIDC keys configuration structure
-struct OIDCKeysConfig {
-    int rotation_interval_days;  // How often keys should be rotated
-    char* storage_path;         // Where to store key material
-    int encryption_enabled;     // Whether to encrypt stored keys
-};
+// Forward declaration
+struct OIDCKeysConfig;
 
 /*
  * Initialize OIDC keys configuration with default values

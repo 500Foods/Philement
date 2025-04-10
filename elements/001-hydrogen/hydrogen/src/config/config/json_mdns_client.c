@@ -9,6 +9,7 @@
 #include "../config.h"
 #include "../config_utils.h"
 #include "json_mdns_client.h"
+#include "../logging/config_logging_utils.h"
 
 bool load_json_mdns_client(json_t* root, AppConfig* config __attribute__((unused))) {
     // mDNS Client Configuration

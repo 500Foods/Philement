@@ -1,163 +1,130 @@
 /*
  * Default configuration generation with secure baselines
  * 
- * This module handles the generation of default configurations for all subsystems:
+ * This module handles the generation of default configurations for all subsystems
+ * in strict A-O order:
  * 
- * Why This Design:
- * 1. Separation of Concerns
- *    - Each subsystem has its own default generator
- *    - Clear responsibility boundaries
- *    - Easier to maintain and update
+ * A. Server
+ *    - Core system identification
+ *    - Essential paths and locations
+ *    - Security settings
+ *    - Runtime behavior
  * 
- * 2. Security First
- *    - Conservative file permissions
- *    - Secure network settings
- *    - Resource limits to prevent DoS
- *    - Separate ports for services
+ * B. Network
+ *    - Interface configuration
+ *    - Port allocations
+ *    - Reserved ports
+ *    - Network protocols
  * 
- * 3. Operational Safety
- *    - Reasonable resource limits
- *    - Safe default paths
- *    - Controlled access patterns
- *    - Clear upgrade paths
+ * C. Database
+ *    - Connection settings
+ *    - Pool configuration
+ *    - Security parameters
+ *    - Performance tuning
+ * 
+ * D. Logging
+ *    - Log levels
+ *    - Output targets
+ *    - File rotation
+ *    - Format settings
+ * 
+ * E. WebServer
+ *    - HTTP configuration
+ *    - Upload limits
+ *    - Thread pools
+ *    - Connection management
+ * 
+ * F. API
+ *    - Endpoint configuration
+ *    - Authentication
+ *    - Rate limiting
+ *    - Version control
+ * 
+ * G. Swagger
+ *    - Documentation
+ *    - UI options
+ *    - API exploration
+ *    - Schema validation
+ * 
+ * H. WebSockets
+ *    - Protocol settings
+ *    - Message limits
+ *    - Connection timeouts
+ *    - Security options
+ * 
+ * I. Terminal
+ *    - Shell access
+ *    - Session limits
+ *    - Idle timeouts
+ *    - Command restrictions
+ * 
+ * J. mDNS Server
+ *    - Service advertisement
+ *    - Device discovery
+ *    - Network protocols
+ *    - Service types
+ * 
+ * K. mDNS Client
+ *    - Service discovery
+ *    - Network scanning
+ *    - Health checks
+ *    - Auto-configuration
+ * 
+ * L. MailRelay
+ *    - SMTP settings
+ *    - Server pools
+ *    - Authentication
+ *    - TLS configuration
+ * 
+ * M. Print
+ *    - Queue management
+ *    - Priority system
+ *    - Job processing
+ *    - Status tracking
+ * 
+ * N. Resources
+ *    - Memory limits
+ *    - Buffer sizes
+ *    - Queue capacities
+ *    - System boundaries
+ * 
+ * O. OIDC
+ *    - Identity providers
+ *    - Token management
+ *    - Authentication flows
+ *    - Session handling
  */
 
 #ifndef CONFIG_DEFAULTS_H
 #define CONFIG_DEFAULTS_H
 
-#include <jansson.h>
-#include <sys/stat.h>
-
-// Server defaults
-#define DEFAULT_SERVER_NAME "Philement/hydrogen"
-#define DEFAULT_LOG_FILE_PATH "/var/log/hydrogen.log"
-#define DEFAULT_CONFIG_FILE "/etc/hydrogen/hydrogen.json"
-
-/*
- * Generate default server configuration
- * 
- * Creates secure defaults for the server:
- * - Core system identification
- * - Essential paths and locations
- * - Security settings
- * - Runtime behavior controls
- * 
- * @return JSON object with server configuration or NULL on error
- */
-json_t* create_default_server_config(void);
-
 /*
  * Generate complete default configuration
  * 
- * Creates a new configuration file with secure defaults for all subsystems:
- * - Web server configuration
- * - WebSocketServer settings
- * - mDNS server setup
- * - System resources
- * - Network configuration
- * - System monitoring
- * - Print queue settings
- * - API configuration
+ * Creates a new configuration file with secure defaults for all subsystems
+ * in strict A-O order. Each section is generated with appropriate defaults
+ * considering:
+ * 
+ * - Security First
+ *   • Conservative file permissions
+ *   • Secure network settings
+ *   • Resource limits to prevent DoS
+ *   • Separate ports for services
+ * 
+ * - Operational Safety
+ *   • Reasonable resource limits
+ *   • Safe default paths
+ *   • Controlled access patterns
+ *   • Clear upgrade paths
+ * 
+ * - Environment Awareness
+ *   • Environment variable support
+ *   • System-specific paths
+ *   • Resource availability
+ *   • Platform compatibility
  * 
  * @param config_path Path where configuration should be created
  */
 void create_default_config(const char* config_path);
-
-/*
- * Generate default web server configuration
- * 
- * Creates secure defaults for the web server:
- * - Conservative file permissions
- * - Standard ports
- * - Upload limits
- * - API prefixes
- * 
- * @return JSON object with web server configuration or NULL on error
- */
-json_t* create_default_web_config(void);
-
-/*
- * Generate default WebSocketServer configuration
- * 
- * Creates secure defaults for WebSocketServer:
- * - Secure protocol settings
- * - Message size limits
- * - Connection timeouts
- * 
- * @return JSON object with WebSocketServer configuration or NULL on error
- */
-json_t* create_default_websocket_config(void);
-
-/*
- * Generate default mDNS server configuration
- * 
- * Creates defaults for service discovery:
- * - Device identification
- * - Service advertisements
- * - Network protocols
- * 
- * @return JSON object with mDNS configuration or NULL on error
- */
-json_t* create_default_mdns_config(void);
-
-/*
- * Generate default system resources configuration
- * 
- * Creates defaults for resource management:
- * - Queue settings
- * - Buffer sizes
- * - Memory limits
- * 
- * @return JSON object with resources configuration or NULL on error
- */
-json_t* create_default_resources_config(void);
-
-/*
- * Generate default network configuration
- * 
- * Creates defaults for network settings:
- * - Interface limits
- * - Port allocations
- * - Reserved ports
- * 
- * @return JSON object with network configuration or NULL on error
- */
-json_t* create_default_network_config(void);
-
-/*
- * Generate default system monitoring configuration
- * 
- * Creates defaults for monitoring:
- * - Update intervals
- * - Warning thresholds
- * - Resource checks
- * 
- * @return JSON object with monitoring configuration or NULL on error
- */
-json_t* create_default_monitoring_config(void);
-
-/*
- * Generate default print queue configuration
- * 
- * Creates defaults for print management:
- * - Queue priorities
- * - Processing timeouts
- * - Buffer sizes
- * 
- * @return JSON object with print queue configuration or NULL on error
- */
-json_t* create_default_print_queue_config(void);
-
-/*
- * Generate default API configuration
- * 
- * Creates secure defaults for API:
- * - JWT settings
- * - Security tokens
- * - Access controls
- * 
- * @return JSON object with API configuration or NULL on error
- */
-json_t* create_default_api_config(void);
 
 #endif /* CONFIG_DEFAULTS_H */

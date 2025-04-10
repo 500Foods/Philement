@@ -1,26 +1,6 @@
 /*
  * Priority level management for configuration system
  * 
- * Why This Architecture:
- * 1. Centralization
- *    - Single source of truth for priority definitions
- *    - Consistent formatting across all log outputs
- *    - Unified priority management
- * 
- * 2. Performance
- *    - Pre-calculated widths avoid runtime formatting
- *    - Single calculation during initialization
- *    - Minimal memory footprint
- * 
- * 3. Maintainability
- *    - Clear separation of priority management
- *    - Easy to extend or modify levels
- *    - Consistent formatting rules
- * 
- * Thread Safety:
- * - Initialization is not thread-safe
- * - Should only be called during system startup
- * - Read-only access after initialization
  */
 
 // Standard C headers
@@ -47,22 +27,6 @@ const PriorityLevel DEFAULT_PRIORITY_LEVELS[NUM_PRIORITY_LEVELS] = {
 
 /*
  * Calculate maximum width of priority labels
- * 
- * Why pre-calculate?
- * 1. Performance
- *    - Avoids repeated calculations
- *    - Consistent formatting overhead
- *    - Single calculation at startup
- * 
- * 2. Consistency
- *    - Ensures uniform log formatting
- *    - Maintains log readability
- *    - Supports dynamic priority systems
- * 
- * 3. Maintainability
- *    - Clear formatting rules
- *    - Easy to update or extend
- *    - Centralized width management
  */
 void calculate_max_priority_label_width(void) {
     MAX_PRIORITY_LABEL_WIDTH = 0;

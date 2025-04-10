@@ -40,19 +40,7 @@ extern int MAX_SUBSYSTEM_LABEL_WIDTH;
 // Default priority levels
 extern const PriorityLevel DEFAULT_PRIORITY_LEVELS[NUM_PRIORITY_LEVELS];
 
-/*
- * Calculate maximum width of priority labels
- * 
- * Pre-calculates label widths to ensure consistent log formatting.
- * This avoids repeated calculations and maintains consistent output.
- * 
- * Updates the global MAX_PRIORITY_LABEL_WIDTH variable based on
- * the longest label in DEFAULT_PRIORITY_LEVELS.
- * 
- * Thread Safety:
- * - Not thread safe, should only be called during initialization
- * - Modifies global state (MAX_PRIORITY_LABEL_WIDTH)
- */
-void calculate_max_priority_label_width(void);
+// Calculate maximum width of priority labels 
+ void calculate_max_priority_label_width(void);
 
 #endif /* CONFIG_PRIORITY_H */

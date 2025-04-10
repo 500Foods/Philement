@@ -61,6 +61,28 @@ payloads/       Payload definitions
 tests/          Test framework
 ```
 
+## Configuration
+
+The system uses a JSON-based configuration with robust fallback handling. If sections/keys are missing or no configuration is found, secure defaults are used. Environment variables can override settings.
+
+Configuration sections (in processing order):
+A. Server
+B. Network
+C. Database
+D. Logging
+E. WebServer
+F. API
+G. Swagger
+H. WebSocket
+I. Terminal
+J. mDNS Server
+K. mDNS Client
+L. Mail Relay
+M. Print
+N. Resources
+O. OIDC
+P. Notify
+
 ## Docs
 
 - developer_onboarding.md: Setup

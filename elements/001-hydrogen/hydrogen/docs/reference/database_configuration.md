@@ -2,25 +2,38 @@
 
 ## Overview
 
-The Database component manages connections to various databases used by Hydrogen's subsystems, including OIDC authentication, logging, and application data. This guide explains how to configure database connections through the `Databases` section of your `hydrogen.json` configuration file.
+The Database component manages connections to various databases used by Hydrogen's subsystems. This guide explains how to configure database connections through the `Databases` section of your `hydrogen.json` configuration file.
 
 ## Basic Configuration
 
-Minimal configuration for database support:
+Minimal configuration example:
 
 ```json
 {
     "Databases": {
-        "Workers": 1,
+        "DefaultWorkers": 1,
         "Connections": {
+            "Acuranzo": {
+                "Enabled": true,
+                "Type": "${env.ACURANZO_DB_TYPE}",
+                "Database": "${env.ACURANZO_DB_DATABASE}",
+                "Host": "${env.ACURANZO_DB_HOST}",
+                "Port": "${env.ACURANZO_DB_PORT}",
+                "User": "${env.ACURANZO_DB_USER}",
+                "Pass": "${env.ACURANZO_DB_PASS}",
+                "Workers": 1
+            },
             "OIDC": {
-                "Type": "postgres",
-                "Host": "localhost",
-                "Port": 5432,
-                "Database": "hydrogen_oidc",
-                "Username": "hydrogen",
-                "Password": "${env.OIDC_DB_PASS}",
-                "MaxConnections": 10
+                "Enabled": false
+            },
+            "Log": {
+                "Enabled": false
+            },
+            "Canvas": {
+                "Enabled": false
+            },
+            "Helium": {
+                "Enabled": false
             }
         }
     }
@@ -33,241 +46,141 @@ Minimal configuration for database support:
 
 | Setting | Description | Default | Notes |
 |---------|-------------|---------|-------|
-| `Workers` | Database worker threads | `1` | Required |
-| `LogLevel` | Logging detail level | `"WARN"` | Optional |
+| `DefaultWorkers` | Default worker threads for all databases | `1` | Required |
 
 ### Connection Settings
 
 Each connection in `Connections` supports:
 
-| Setting | Description | Default | Notes |
-|---------|-------------|---------|-------|
-| `Type` | Database type | - | Required ("postgres") |
-| `Host` | Database hostname | - | Required |
-| `Port` | Database port | - | Required |
-| `Database` | Database name | - | Required |
-| `Username` | Authentication username | - | Required |
-| `Password` | Authentication password | - | Required |
-| `MaxConnections` | Connection pool size | `10` | Optional |
+| Setting | Description | Default | Required |
+|---------|-------------|---------|----------|
+| `Enabled` | Enable/disable this database | Varies* | Yes |
+| `Type` | Database type ("postgres") | "postgres" | When enabled |
+| `Database` | Database name | - | When enabled |
+| `Host` | Database hostname | - | When enabled |
+| `Port` | Database port | - | When enabled |
+| `User` | Authentication username | - | When enabled |
+| `Pass` | Authentication password | - | When enabled |
+| `Workers` | Worker threads for this database | DefaultWorkers | When enabled |
+
+\* Default enabled state:
+- Acuranzo: true
+- OIDC: false
+- Log: false
+- Canvas: false
+- Helium: false
+
+## Environment Variables
+
+The Acuranzo database uses environment variables by default:
+
+```bash
+# Acuranzo Database Configuration
+export ACURANZO_DB_TYPE="postgres"
+export ACURANZO_DB_DATABASE="Acuranzo"
+export ACURANZO_DB_HOST="carnival.500foods.com"
+export ACURANZO_DB_PORT="55433"
+export ACURANZO_DB_USER="postgres"
+export ACURANZO_DB_PASS="ForEnglandJames"
+```
+
+## Configuration Output
+
+The configuration system logs each setting with clear attribution:
+
+```log
+Databases
+― DefaultWorkers: 1 *
+― Connections
+  ― Acuranzo
+    ― Type: ${env.ACURANZO_DB_TYPE} *
+    ― Database: ${env.ACURANZO_DB_DATABASE} *
+    ― Host: ${env.ACURANZO_DB_HOST} *
+    ― Port: ${env.ACURANZO_DB_PORT} *
+    ― User: configured *
+    ― Enabled: true *
+    ― Workers: 1 *
+  ― OIDC
+    ― Enabled: false *
+  ― Log
+    ― Enabled: false *
+  ― Canvas
+    ― Enabled: false *
+  ― Helium
+    ― Enabled: false *
+```
+
+An asterisk (*) indicates a default value is being used.
 
 ## Database Types
 
+### Acuranzo Database (Primary)
+
+The main application database, enabled by default with environment variable configuration.
+
 ### OIDC Database
 
-Stores OpenID Connect data:
-
+Stores OpenID Connect data when enabled:
 - Client registrations
 - Access tokens
 - Refresh tokens
 - User information
 
-### Logging Database
+### Log Database
 
-Stores application logs:
-
+Stores application logs when enabled:
 - System events
 - Error logs
 - Audit trails
 - Performance metrics
 
-### Application Database
+### Canvas Database
 
-Stores application-specific data:
-
-- Print job history
-- System settings
+Stores canvas-related data when enabled:
+- Drawing data
+- Canvas states
 - User preferences
-- Statistics
 
-## Common Configurations
+### Helium Database
 
-### Development Setup
-
-```json
-{
-    "Databases": {
-        "Workers": 1,
-        "Connections": {
-            "OIDC": {
-                "Type": "postgres",
-                "Host": "localhost",
-                "Port": 5432,
-                "Database": "hydrogen_oidc_dev",
-                "Username": "hydrogen_dev",
-                "Password": "${env.OIDC_DB_PASS}",
-                "MaxConnections": 5
-            },
-            "Logging": {
-                "Type": "postgres",
-                "Host": "localhost",
-                "Port": 5432,
-                "Database": "hydrogen_logs_dev",
-                "Username": "hydrogen_dev",
-                "Password": "${env.LOGS_DB_PASS}",
-                "MaxConnections": 5
-            }
-        }
-    }
-}
-```
-
-### Production Setup
-
-```json
-{
-    "Databases": {
-        "Workers": 4,
-        "Connections": {
-            "OIDC": {
-                "Type": "postgres",
-                "Host": "${env.OIDC_DB_HOST}",
-                "Port": "${env.OIDC_DB_PORT}",
-                "Database": "${env.OIDC_DB_NAME}",
-                "Username": "${env.OIDC_DB_USER}",
-                "Password": "${env.OIDC_DB_PASS}",
-                "MaxConnections": 20
-            },
-            "Logging": {
-                "Type": "postgres",
-                "Host": "${env.LOGS_DB_HOST}",
-                "Port": "${env.LOGS_DB_PORT}",
-                "Database": "${env.LOGS_DB_NAME}",
-                "Username": "${env.LOGS_DB_USER}",
-                "Password": "${env.LOGS_DB_PASS}",
-                "MaxConnections": 10
-            }
-        }
-    }
-}
-```
-
-### High-Availability Setup
-
-```json
-{
-    "Databases": {
-        "Workers": 8,
-        "Connections": {
-            "OIDC": {
-                "Type": "postgres",
-                "Host": "${env.OIDC_DB_HOST}",
-                "Port": "${env.OIDC_DB_PORT}",
-                "Database": "${env.OIDC_DB_NAME}",
-                "Username": "${env.OIDC_DB_USER}",
-                "Password": "${env.OIDC_DB_PASS}",
-                "MaxConnections": 50,
-                "ReadReplicas": [
-                    {
-                        "Host": "${env.OIDC_DB_REPLICA1_HOST}",
-                        "Port": "${env.OIDC_DB_REPLICA1_PORT}"
-                    }
-                ]
-            }
-        }
-    }
-}
-```
-
-## Environment Variable Support
-
-You can use environment variables for sensitive settings:
-
-```json
-{
-    "Databases": {
-        "Connections": {
-            "OIDC": {
-                "Host": "${env.OIDC_DB_HOST}",
-                "Port": "${env.OIDC_DB_PORT}",
-                "Database": "${env.OIDC_DB_NAME}",
-                "Username": "${env.OIDC_DB_USER}",
-                "Password": "${env.OIDC_DB_PASS}"
-            }
-        }
-    }
-}
-```
-
-Common environment variable configurations:
-
-```bash
-# Development
-export OIDC_DB_HOST="localhost"
-export OIDC_DB_PORT=5432
-export OIDC_DB_NAME="hydrogen_oidc_dev"
-export OIDC_DB_USER="hydrogen_dev"
-export OIDC_DB_PASS="dev_password"
-
-# Production
-export OIDC_DB_HOST="db.example.com"
-export OIDC_DB_PORT=5432
-export OIDC_DB_NAME="hydrogen_oidc"
-export OIDC_DB_USER="hydrogen"
-export OIDC_DB_PASS="strong_password"
-```
-
-## Connection Management
-
-### Connection Pooling
-
-- Maintains connection pools
-- Handles connection lifecycle
-- Manages pool size
-- Implements connection timeouts
-
-### Health Checks
-
-- Monitors connection status
-- Performs periodic checks
-- Handles reconnection
-- Reports connection health
-
-### Load Balancing
-
-- Distributes database load
-- Manages read replicas
-- Handles failover
-- Optimizes query routing
+Stores Helium-specific data when enabled:
+- Integration data
+- Cross-system mappings
+- Helium states
 
 ## Security Considerations
 
 1. **Authentication**:
    - Use strong passwords
-   - Store credentials securely
-   - Use environment variables
+   - Store credentials in environment variables
    - Rotate credentials regularly
 
 2. **Network Security**:
    - Use SSL/TLS connections
    - Configure firewall rules
    - Restrict network access
-   - Monitor connections
 
 3. **Access Control**:
    - Use least privilege accounts
    - Implement role-based access
-   - Audit database access
    - Regular permission review
 
 ## Best Practices
 
 1. **Connection Management**:
-   - Set appropriate pool sizes
+   - Set appropriate worker counts
    - Configure timeouts
-   - Monitor connection usage
    - Handle connection errors
 
 2. **Performance**:
    - Optimize worker count
    - Monitor query performance
-   - Configure statement cache
    - Use connection pooling
 
 3. **Maintenance**:
    - Regular backups
    - Monitor disk space
    - Update statistics
-   - Schedule maintenance
 
 ## Troubleshooting
 
@@ -277,43 +190,31 @@ export OIDC_DB_PASS="strong_password"
    - Check credentials
    - Verify network access
    - Test database status
-   - Check SSL settings
 
 2. **Performance Issues**:
-   - Review pool settings
+   - Review worker settings
    - Check query performance
    - Monitor system resources
-   - Analyze connection usage
 
 3. **Configuration Problems**:
    - Verify environment variables
    - Check connection strings
-   - Validate SSL certificates
    - Review worker settings
 
 ### Diagnostic Steps
 
-#### Test database connection
-
+Test database connection:
 ```bash
-psql -h $OIDC_DB_HOST -U $OIDC_DB_USER -d $OIDC_DB_NAME
+psql -h $ACURANZO_DB_HOST -U $ACURANZO_DB_USER -d $ACURANZO_DATABASE
 ```
 
-#### Check connection status
-
+Check connection status:
 ```bash
-curl http://your-printer:5000/api/system/db/status
-```
-
-### Monitor connections
-
-```bash
-curl http://your-printer:5000/api/system/db/connections
+curl http://localhost:5000/api/system/db/status
 ```
 
 ## Related Documentation
 
-- [OIDC Configuration](oidc_configuration.md) - OIDC setup
-- [Logging Configuration](logging_configuration.md) - Logging setup
-- [Security Configuration](security_configuration.md) - Security settings
-- [Backup Guide](../backup.md) - Database backup procedures
+- [OIDC Configuration](../oidc_configuration.md)
+- [Logging Configuration](../logging_configuration.md)
+- [System Architecture](../system_architecture.md)

@@ -4,43 +4,37 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
+#include "../config.h"
 #include "config_swagger.h"
-#include "../types/config_string.h"
-#include "../config.h"  // For VERSION macro
+#include "../config_utils.h"
+#include "../../logging/logging.h"
+
+static char* strdup_safe(const char* str) {
+    if (!str) return NULL;
+    char* dup = strdup(str);
+    if (!dup) {
+        log_this("Config", "Memory allocation failed", LOG_LEVEL_ERROR);
+    }
+    return dup;
+}
 
 int config_swagger_init(SwaggerConfig* config) {
     if (!config) {
         return -1;
     }
 
-    // Initialize basic settings
-    config->enabled = 1;  // Enabled by default
-    config->prefix = strdup(DEFAULT_SWAGGER_PREFIX);
+    // Initialize main configuration
+    config->enabled = 1;  // Enable by default
+    config->prefix = strdup_safe(DEFAULT_SWAGGER_PREFIX);
     config->payload_available = 0;
 
-    if (!config->prefix) {
-        config_swagger_cleanup(config);
-        return -1;
-    }
-
     // Initialize metadata
-    config->metadata.title = strdup(DEFAULT_SWAGGER_TITLE);
-    config->metadata.description = strdup(DEFAULT_SWAGGER_DESCRIPTION);
-    config->metadata.version = strdup(VERSION);
-    
-    if (!config->metadata.title || !config->metadata.description || 
-        !config->metadata.version) {
-        config_swagger_cleanup(config);
-        return -1;
-    }
-
-    // Initialize contact info with empty values (optional)
+    config->metadata.title = strdup_safe(DEFAULT_SWAGGER_TITLE);
+    config->metadata.description = strdup_safe(DEFAULT_SWAGGER_DESCRIPTION);
+    config->metadata.version = strdup_safe(VERSION);
     config->metadata.contact.name = NULL;
     config->metadata.contact.email = NULL;
     config->metadata.contact.url = NULL;
-
-    // Initialize license info with empty values (optional)
     config->metadata.license.name = NULL;
     config->metadata.license.url = NULL;
 
@@ -51,11 +45,13 @@ int config_swagger_init(SwaggerConfig* config) {
     config->ui_options.default_models_expand_depth = 1;
     config->ui_options.default_model_expand_depth = 1;
     config->ui_options.show_extensions = 0;
-    config->ui_options.show_common_extensions = 0;
-    config->ui_options.doc_expansion = strdup(DEFAULT_DOC_EXPANSION);
-    config->ui_options.syntax_highlight_theme = strdup(DEFAULT_SYNTAX_HIGHLIGHT_THEME);
+    config->ui_options.show_common_extensions = 1;
+    config->ui_options.doc_expansion = strdup_safe(DEFAULT_DOC_EXPANSION);
+    config->ui_options.syntax_highlight_theme = strdup_safe(DEFAULT_SYNTAX_HIGHLIGHT_THEME);
 
-    if (!config->ui_options.doc_expansion || 
+    // Check if any string allocation failed
+    if (!config->prefix || !config->metadata.title || !config->metadata.description ||
+        !config->metadata.version || !config->ui_options.doc_expansion ||
         !config->ui_options.syntax_highlight_theme) {
         config_swagger_cleanup(config);
         return -1;
@@ -69,24 +65,20 @@ void config_swagger_cleanup(SwaggerConfig* config) {
         return;
     }
 
-    // Free basic settings
+    // Free prefix
     free(config->prefix);
-    
-    // Free metadata
+
+    // Free metadata strings
     free(config->metadata.title);
     free(config->metadata.description);
     free(config->metadata.version);
-    
-    // Free contact info
     free(config->metadata.contact.name);
     free(config->metadata.contact.email);
     free(config->metadata.contact.url);
-    
-    // Free license info
     free(config->metadata.license.name);
     free(config->metadata.license.url);
-    
-    // Free UI options
+
+    // Free UI options strings
     free(config->ui_options.doc_expansion);
     free(config->ui_options.syntax_highlight_theme);
 
@@ -99,30 +91,47 @@ int config_swagger_validate(const SwaggerConfig* config) {
         return -1;
     }
 
-    // If Swagger is enabled, validate required fields
-    if (config->enabled) {
-        if (!config->prefix || 
-            !config->metadata.title || 
-            !config->metadata.description || 
-            !config->metadata.version) {
-            return -1;
-        }
+    // Skip validation if Swagger is disabled
+    if (!config->enabled) {
+        return 0;
+    }
 
-        // Validate contact info if partially provided
-        if ((config->metadata.contact.name && !config->metadata.contact.email) || 
-            (!config->metadata.contact.name && config->metadata.contact.email)) {
-            return -1;
-        }
+    // Check required fields
+    if (!config->prefix || strlen(config->prefix) == 0) {
+        log_this("Config", "Swagger prefix is required", LOG_LEVEL_ERROR);
+        return -1;
+    }
 
-        // Validate license info if partially provided
-        if ((config->metadata.license.name && !config->metadata.license.url) || 
-            (!config->metadata.license.name && config->metadata.license.url)) {
-            return -1;
-        }
+    if (!config->metadata.title || strlen(config->metadata.title) == 0) {
+        log_this("Config", "Swagger title is required", LOG_LEVEL_ERROR);
+        return -1;
+    }
 
-        // Validate UI options
-        if (!config->ui_options.doc_expansion || 
-            !config->ui_options.syntax_highlight_theme) {
+    if (!config->metadata.version || strlen(config->metadata.version) == 0) {
+        log_this("Config", "Swagger version is required", LOG_LEVEL_ERROR);
+        return -1;
+    }
+
+    // Validate UI options
+    if (config->ui_options.default_models_expand_depth < 0 || 
+        config->ui_options.default_models_expand_depth > 10) {
+        log_this("Config", "Invalid models expand depth", LOG_LEVEL_ERROR);
+        return -1;
+    }
+
+    if (config->ui_options.default_model_expand_depth < 0 || 
+        config->ui_options.default_model_expand_depth > 10) {
+        log_this("Config", "Invalid model expand depth", LOG_LEVEL_ERROR);
+        return -1;
+    }
+
+    // Validate doc expansion value
+    if (config->ui_options.doc_expansion) {
+        const char* exp = config->ui_options.doc_expansion;
+        if (strcmp(exp, "list") != 0 && 
+            strcmp(exp, "full") != 0 && 
+            strcmp(exp, "none") != 0) {
+            log_this("Config", "Invalid doc expansion value", LOG_LEVEL_ERROR);
             return -1;
         }
     }

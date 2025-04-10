@@ -20,16 +20,8 @@
 #define DEFAULT_OIDC_REVOCATION_PATH "/revoke"
 #define DEFAULT_OIDC_REGISTRATION_PATH "/register"
 
-// OIDC endpoints configuration structure
-struct OIDCEndpointsConfig {
-    char* authorization;    // Authorization endpoint URL
-    char* token;           // Token endpoint URL
-    char* userinfo;        // UserInfo endpoint URL
-    char* jwks;            // JWKS (JSON Web Key Set) endpoint URL
-    char* introspection;   // Token introspection endpoint URL
-    char* revocation;      // Token revocation endpoint URL
-    char* registration;    // Dynamic client registration endpoint URL
-};
+// Forward declaration
+struct OIDCEndpointsConfig;
 
 /*
  * Initialize OIDC endpoints configuration with default values

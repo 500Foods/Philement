@@ -9,6 +9,7 @@
 #include "../config.h"
 #include "../config_utils.h"
 #include "json_terminal.h"  // This references the header in the same directory
+#include "../logging/config_logging_utils.h"
 
 bool load_json_terminal(json_t* root, AppConfig* config __attribute__((unused))) {
     // Terminal Configuration

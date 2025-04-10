@@ -9,6 +9,7 @@
 #include "../config_utils.h"
 #include "../network/config_network.h"
 #include "json_network.h"
+#include "../logging/config_logging_utils.h"
 
 // Define a type that matches the anonymous structure in NetworkConfig
 typedef struct {

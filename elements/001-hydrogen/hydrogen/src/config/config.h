@@ -1,31 +1,37 @@
 /*
  * Configuration management system with robust fallback handling
  * 
- * The configuration system implements several key design principles:
+ * If available, this is intended to read in a JSON configuration with
+ * appropriate sections. If sections are missing, keys are missing, or
+ * if no configuration is found at startup, defaults will be used.
  * 
- * Fault Tolerance:
- * - Graceful fallback to defaults for missing values
- * - Validation of critical parameters
- * - Type checking for all values
- * - Memory allocation failure recovery
+ * Environment variables can also be used to supply key values and some
+ * are used even when no configuration JSON is available, like the tokens
+ * for the payload and the Acuranzo database connection information.
  * 
- * Flexibility:
- * - Runtime configuration changes
- * - Environment-specific overrides
- * - Service-specific settings
- * - Extensible structure
+ * The log should make it *abundantly* clear what is going on, so that
+ * issues with the configuration, or lack of configuration, are obvious.
  * 
- * Security:
- * - Sensitive data isolation
- * - Path validation
- * - Size limits enforcement
- * - Access control settings
+ * The top-level JSON sections we're expecting are the following, and
+ * largely match the order of processing of the subsystems they apply to.
  * 
- * Maintainability:
- * - Centralized default values
- * - Structured error reporting
- * - Clear upgrade paths
- * - Configuration versioning
+ * System Monitoring
+ * A. Server
+ * B. Network
+ * C. Database
+ * D. Logging
+ * E. WebServer
+ * F. API
+ * G. Swagger
+ * H. WebSocket
+ * I. Terminal
+ * J. mDNS Server
+ * K. mDNS Client
+ * L. Mail Relay
+ * M. Print
+ * N. Resources
+ * O. OIDC
+ * P. Notify
  */
 
 #ifndef CONFIG_H
@@ -45,21 +51,24 @@
 #include "config_forward.h"
 
 // Subsystem configurations with struct definitions
-#include "api/config_api.h"          // Must be before dependent configs
-#include "swagger/config_swagger.h"   // Must be before AppConfig
-#include "webserver/config_webserver.h"
-#include "websocket/config_websocket.h"
-#include "network/config_network.h"
-#include "monitor/config_monitoring.h"
-#include "print/config_print_queue.h"
-#include "oidc/config_oidc.h"
-#include "resources/config_resources.h"
-#include "mdns/config_mdns.h"
-#include "logging/config_logging.h"
-#include "notify/config_notify.h"
-#include "print/config_motion.h"
+#include "server/config_server.h"        // A. Server
+#include "network/config_network.h"      // B. Network
+#include "databases/config_databases.h"  // C. Database
+#include "logging/config_logging.h"      // D. Logging
+#include "webserver/config_webserver.h"  // E. WebServer
+#include "api/config_api.h"              // F. API
+#include "swagger/config_swagger.h"      // G. Swagger
+#include "websocket/config_websocket.h"  // H. WebSocket
+#include "terminal/config_terminal.h"    // I. Terminal
+#include "mdns/config_mdns_server.h"     // J. mDNS Server
+#include "mdns/config_mdns_client.h"     // K. mDNS Client
+#include "mailrelay/config_mail_relay.h" // L. Mail Relay
+#include "print/config_print_queue.h"    // M. Print
+#include "resources/config_resources.h"  // N. Resources
+#include "oidc/config_oidc.h"            // O. OIDC
+#include "notify/config_notify.h"        // P. Notify
 
-// Type-specific handling
+// Support for Key/Value values of different types including env vars.
 #include "env/config_env.h"
 #include "types/config_string.h"
 #include "types/config_bool.h"
@@ -68,38 +77,24 @@
 #include "types/config_double.h"
 #include "types/config_fd.h"
 
-// Core application defaults
-#define DEFAULT_SERVER_NAME "Philement/hydrogen"
-#define DEFAULT_CONFIG_FILE "/etc/hydrogen/hydrogen.json"
-#define DEFAULT_STARTUP_DELAY 5
-
-// Server configuration structure
-typedef struct ServerConfig {
-    char* server_name;      // Server identification
-    char* payload_key;      // Key for payload encryption
-    char* config_file;      // Main configuration file path
-    char* exec_file;        // Executable file path
-    char* log_file;        // Log file path
-    int startup_delay;     // Delay before starting services (seconds)
-} ServerConfig;
-
 // Main application configuration structure
 struct AppConfig {
-    ServerConfig server;
-    
-    WebServerConfig web;
-    WebSocketConfig websocket;
-    MDNSServerConfig mdns_server;
-    ResourceConfig resources;
-    NetworkConfig network;
-    MonitoringConfig monitoring;
-    MotionConfig motion;
-    PrintQueueConfig print_queue;
-    OIDCConfig oidc;
-    APIConfig api;
-    NotifyConfig notify;
-    LoggingConfig logging;
-    SwaggerConfig* swagger;  // Pointer to swagger configuration
+    ServerConfig server;           // A. Server configuration
+    NetworkConfig network;         // B. Network configuration
+    DatabaseConfig databases;      // C. Database configuration
+    LoggingConfig logging;         // D. Logging configuration
+    WebServerConfig web;           // E. WebServer configuration
+    APIConfig api;                 // F. API configuration
+    SwaggerConfig* swagger;        // G. Swagger configuration
+    WebSocketConfig websocket;     // H. WebSocket configuration
+    TerminalConfig terminal;       // I. Terminal configuration
+    MDNSServerConfig mdns_server;  // J. mDNS Server configuration
+    MDNSClientConfig mdns_client;  // K. mDNS Client configuration
+    MailRelayConfig mail_relay;    // L. Mail Relay configuration
+    PrintQueueConfig print_queue;  // M. Print configuration
+    ResourceConfig resources;      // N. Resources configuration
+    OIDCConfig oidc;               // O. OIDC configuration
+    NotifyConfig notify;           // P. Notify configuration
 };
 
 /*
@@ -155,7 +150,12 @@ void cleanup_application_config(void);
  * @param default_value The default value if not set
  * @param is_sensitive Whether this contains sensitive information
  */
-void log_config_env_value(const char* key_name, const char* var_name, const char* env_value, 
-                       const char* default_value, bool is_sensitive);
+void log_config_env_value(
+    const char* key_name, 
+    const char* var_name, 
+    const char* env_value, 
+    const char* default_value, 
+    bool is_sensitive
+);
 
 #endif /* CONFIG_H */

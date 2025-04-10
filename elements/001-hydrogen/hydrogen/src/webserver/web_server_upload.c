@@ -44,9 +44,9 @@ enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind kind,
                 char uuid_str[37];
                 generate_uuid(uuid_str);
 
-                char file_path[DEFAULT_LINE_BUFFER_SIZE];  // Use configured line buffer size
-                snprintf(file_path, sizeof(file_path), "%s/%s.gcode", server_web_config->upload_dir, uuid_str);
-                con_info->fp = fopen(file_path, "wb");
+                char temp_path[DEFAULT_LINE_BUFFER_SIZE];
+                snprintf(temp_path, sizeof(temp_path), "%s/%s.gcode", server_web_config->upload_dir, uuid_str);
+                con_info->fp = fopen(temp_path, "wb");
                 if (!con_info->fp) {
                     log_this("WebServer", "Failed to open file for writing", LOG_LEVEL_DEBUG);
                     return MHD_NO;
@@ -54,11 +54,10 @@ enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind kind,
                 free(con_info->original_filename);  // Free previous allocation if any
                 free(con_info->new_filename);       // Free previous allocation if any
                 con_info->original_filename = strdup(filename);
-                con_info->new_filename = strdup(file_path);
+                con_info->new_filename = strdup(temp_path);
 
-                char log_buffer[DEFAULT_LOG_BUFFER_SIZE];  // Use configured log buffer size
-                snprintf(log_buffer, sizeof(log_buffer), "Starting file upload: %s", filename);
-                log_this("WebServer", log_buffer, LOG_LEVEL_STATE);
+                log_this("WebServer", "Starting file upload", LOG_LEVEL_STATE);
+                log_this("WebServer", filename, LOG_LEVEL_STATE);
             }
         }
 
@@ -77,9 +76,10 @@ enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind kind,
             // Log progress every 100MB
             if (con_info->total_size / (100 * 1024 * 1024) > con_info->last_logged_mb) {
                 con_info->last_logged_mb = con_info->total_size / (100 * 1024 * 1024);
-                char progress_log[DEFAULT_LOG_BUFFER_SIZE];  // Use configured log buffer size
-                snprintf(progress_log, sizeof(progress_log), "Upload progress: %zu MB", con_info->last_logged_mb * 100);
-                log_this("WebServer", progress_log, LOG_LEVEL_ALERT);
+                log_this("WebServer", "Upload progress", LOG_LEVEL_ALERT);
+                char progress_str[32];
+                snprintf(progress_str, sizeof(progress_str), "%zu MB", con_info->last_logged_mb * 100);
+                log_this("WebServer", progress_str, LOG_LEVEL_ALERT);
             }
         }
     } else if (0 == strcmp(key, "print")) {
@@ -162,16 +162,17 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
 
             json_decref(print_job);
 
-            char complete_log[DEFAULT_LOG_BUFFER_SIZE];  // Use configured log buffer size
             log_this("WebServer", "File upload completed:", LOG_LEVEL_STATE);
-            snprintf(complete_log, sizeof(complete_log), " -> Source: %s", con_info->original_filename);
-            log_this("WebServer", complete_log, LOG_LEVEL_STATE);
-            snprintf(complete_log, sizeof(complete_log), " ->  Local: %s", con_info->new_filename);
-            log_this("WebServer", complete_log, LOG_LEVEL_STATE);
-            snprintf(complete_log, sizeof(complete_log), " ->   Size: %zu bytes", con_info->total_size);
-            log_this("WebServer", complete_log, LOG_LEVEL_STATE);
-            snprintf(complete_log, sizeof(complete_log), " ->  Print: %s", con_info->print_after_upload ? "true" : "false");
-            log_this("WebServer", complete_log, LOG_LEVEL_STATE);
+            
+            char info_str[DEFAULT_LINE_BUFFER_SIZE];
+            snprintf(info_str, sizeof(info_str), "Source: %s", con_info->original_filename);
+            log_this("WebServer", info_str, LOG_LEVEL_STATE);
+            snprintf(info_str, sizeof(info_str), "Local: %s", con_info->new_filename);
+            log_this("WebServer", info_str, LOG_LEVEL_STATE);
+            snprintf(info_str, sizeof(info_str), "Size: %zu bytes", con_info->total_size);
+            log_this("WebServer", info_str, LOG_LEVEL_STATE);
+            snprintf(info_str, sizeof(info_str), "Print: %s", con_info->print_after_upload ? "true" : "false");
+            log_this("WebServer", info_str, LOG_LEVEL_STATE);
 
             // Send response
             const char *response_text = "{\"files\": {\"local\": {\"name\": \"%s\", \"origin\": \"local\"}}, \"done\": true}";
@@ -313,26 +314,26 @@ char* extract_preview_image(const char* filename) {
         return NULL;
     }
 
-    char line[DEFAULT_LINE_BUFFER_SIZE];  // Use configured line buffer size
     char* image_data = NULL;
     size_t image_size = 0;
     bool in_thumbnail = false;
+    char line_buffer[DEFAULT_LINE_BUFFER_SIZE];
 
-    while (fgets(line, sizeof(line), file)) {
-        if (strstr(line, "; thumbnail begin")) {
+    while (fgets(line_buffer, sizeof(line_buffer), file)) {
+        if (strstr(line_buffer, "; thumbnail begin")) {
             in_thumbnail = true;
             continue;
         }
-        if (strstr(line, "; thumbnail end")) {
+        if (strstr(line_buffer, "; thumbnail end")) {
             break;
         }
-        if (in_thumbnail && line[0] == ';') {
-            size_t len = strlen(line);
+        if (in_thumbnail && line_buffer[0] == ';') {
+            size_t len = strlen(line_buffer);
             if (len > 2) {
                 char *temp = realloc(image_data, image_size + len - 2);
                 if (temp != NULL) {
                     image_data = temp;
-                    memcpy(image_data + image_size, line + 2, len - 3);  // -3 to remove newline
+                    memcpy(image_data + image_size, line_buffer + 2, len - 3);  // -3 to remove newline
                     image_size += len - 3;
                 } else {
                     // Realloc failed, free original memory to avoid leak

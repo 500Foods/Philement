@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include "../config.h"
+#include "config_oidc.h"
 #include "config_oidc_endpoints.h"
 #include "../types/config_string.h"
 

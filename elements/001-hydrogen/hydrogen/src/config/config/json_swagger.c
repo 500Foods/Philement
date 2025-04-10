@@ -28,6 +28,7 @@
 #include "../config_defaults.h"
 #include "../../logging/logging.h"
 #include "../../utils/utils.h"
+#include "../logging/config_logging_utils.h"
 
 bool load_json_swagger(json_t* root, AppConfig* config) {
     if (!config) {

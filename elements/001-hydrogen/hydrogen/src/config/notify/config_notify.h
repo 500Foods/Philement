@@ -14,6 +14,8 @@
 // Default values
 #define DEFAULT_SMTP_PORT 587
 #define DEFAULT_SMTP_TLS true
+#define DEFAULT_SMTP_TIMEOUT 30
+#define DEFAULT_SMTP_MAX_RETRIES 3
 
 // SMTP configuration structure
 typedef struct SMTPConfig {
@@ -22,6 +24,9 @@ typedef struct SMTPConfig {
     char* username;      // SMTP authentication username
     char* password;      // SMTP authentication password
     bool use_tls;        // Whether to use TLS
+    int timeout;         // Connection timeout in seconds
+    int max_retries;     // Maximum number of retry attempts
+    char* from_address;  // Default from address
 } SMTPConfig;
 
 // Notify configuration structure
