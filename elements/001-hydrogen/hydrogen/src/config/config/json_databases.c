@@ -124,7 +124,7 @@ static void process_database_connection(json_t* conn_obj, DatabaseConnection* co
             "${env.ACURANZO_DB_USER}",
             "${env.ACURANZO_DB_PASS}"
         };
-        bool sensitive[] = {false, false, false, true, true};
+        const bool sensitive[] = {false, false, false, true, true};
 
         for (int i = 0; i < 5; i++) {
             json_t* param = json_object_get(conn_obj, params[i]);
