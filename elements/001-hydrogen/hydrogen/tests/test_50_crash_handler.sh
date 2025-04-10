@@ -445,7 +445,7 @@ for build in "${BUILDS[@]}"; do
     build_name=$(basename "$build")
     print_info "  • Build: $build_name"
     print_info "    - Description: ${BUILD_DESCRIPTIONS[$build_name]}"
-    print_info "    - Path: $build"
+    print_info "    - Path: $(convert_to_relative_path "$build")"
     print_info "    - Exists: $([ -f "$build" ] && echo "Yes" || echo "No")"
 done
 

@@ -32,21 +32,24 @@ validate_request() {
         curl_command="${curl_command/curl/curl --max-time 5}"
     fi
     
-    print_command "$curl_command"
+    # Log the full command to test details
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Testing $request_name" >> "$RESULTS_DIR/test_details.log"
+    echo "Command: $curl_command" >> "$RESULTS_DIR/test_details.log"
+    
+    # Execute the command
     eval "$curl_command > $response_file"
     CURL_STATUS=$?
     
     # Check if the request was successful
     if [ $CURL_STATUS -eq 0 ]; then
-        print_info "Successfully received response!"
+        # Log full response to test details
+        {
+            echo "Response received:"
+            cat "$response_file"
+            echo ""
+        } >> "$RESULTS_DIR/test_details.log"
         
-        # Only show a brief excerpt of the response to avoid flooding the output
-        print_info "Response excerpt (first 5 lines):"
-        head -n 5 "$response_file"
-        if [ $(wc -l < "$response_file") -gt 5 ]; then
-            echo "..."
-        fi
-        echo ""
+        print_info "Testing $request_name: Request successful"
         
         # Validate that the response contains expected fields
         if grep -q "$expected_field" "$response_file"; then
@@ -135,27 +138,32 @@ show_process_details() {
         return 1
     fi
     
-    print_info "Process Details for $process_name (PID: $pid):"
+    # Log process details to test_details.log
+    {
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Process Details for $process_name (PID: $pid):"
+        
+        # Command line
+        if [ -e "/proc/$pid/cmdline" ]; then
+            echo "  Command line: $(tr '\0' ' ' < /proc/$pid/cmdline)"
+        else
+            echo "  Command line: $(ps -p $pid -o args= 2>/dev/null || echo "Unknown")"
+        fi
+        
+        # Resource usage
+        if command -v ps >/dev/null 2>&1; then
+            echo "  Resources: $(ps -p $pid -o %cpu,%mem,vsz,rss 2>/dev/null || echo "Unknown")"
+        fi
+        
+        # Status
+        if [ -e "/proc/$pid/status" ]; then
+            echo "  Status:"
+            grep -E '^State:|^Threads:|^VmRSS:|^VmSize:' /proc/$pid/status | sed 's/^/    /'
+        fi
+        echo ""
+    } >> "$RESULTS_DIR/test_details.log"
     
-    # Show command line
-    if [ -e "/proc/$pid/cmdline" ]; then
-        local cmdline=$(tr '\0' ' ' < /proc/$pid/cmdline)
-        print_info "  Command line: $cmdline"
-    else
-        # Fallback to ps
-        print_info "  Command line: $(ps -p $pid -o args= 2>/dev/null || echo "Unknown")"
-    fi
-    
-    # Show resource usage if possible
-    if command -v ps >/dev/null 2>&1; then
-        print_info "  Resources: $(ps -p $pid -o %cpu,%mem,vsz,rss 2>/dev/null || echo "Unknown")"
-    fi
-    
-    # Show status
-    if [ -e "/proc/$pid/status" ]; then
-        print_info "  Status:"
-        grep -E '^State:|^Threads:|^VmRSS:|^VmSize:' /proc/$pid/status | sed 's/^/    /'
-    fi
+    # Only show minimal info in console
+    print_info "Process $process_name (PID: $pid) details logged"
     
     return 0
 }
@@ -179,19 +187,25 @@ test_api_prefix() {
     print_info "  Architecture: $(uname -m)"
     print_info "  Current time: $(date)"
     
-    # Check for port conflicts before starting
-    print_info "Checking if ports are available..."
-    if check_port_in_use $web_server_port; then
-        print_warning "Port $web_server_port appears to be in use! This may cause test failures."
-        print_info "Processes using port $web_server_port:"
-        if command -v lsof >/dev/null 2>&1; then
-            lsof -i :$web_server_port | sed 's/^/    /'
-        elif command -v netstat >/dev/null 2>&1; then
-            netstat -tulnp 2>/dev/null | grep ":$web_server_port " | sed 's/^/    /'
+    # Check for port conflicts and log details
+    print_info "Checking port availability..."
+    {
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Port availability check for $web_server_port:"
+        if check_port_in_use $web_server_port; then
+            echo "WARNING: Port $web_server_port is in use"
+            echo "Processes using port $web_server_port:"
+            if command -v lsof >/dev/null 2>&1; then
+                lsof -i :$web_server_port 2>/dev/null
+            elif command -v netstat >/dev/null 2>&1; then
+                netstat -tulnp 2>/dev/null | grep ":$web_server_port "
+            fi
+            print_warning "Port $web_server_port is in use (see logs for details)"
+        else
+            echo "Port $web_server_port is available"
+            print_info "Port $web_server_port is available"
         fi
-    else
-        print_info "  Port $web_server_port is available"
-    fi
+        echo ""
+    } >> "$RESULTS_DIR/test_details.log"
     
     # Results dictionary to track test results
     local HEALTH_RESULT=1
@@ -232,7 +246,7 @@ test_api_prefix() {
 
     # Start hydrogen server in background with appropriate configuration
     print_info "Starting hydrogen server ($(basename "$HYDROGEN_BIN")) with configuration ($(convert_to_relative_path "$config_file"))..."
-    print_info "Startup command: $HYDROGEN_BIN $config_file"
+    print_info "Startup command: $(convert_to_relative_path "$HYDROGEN_BIN") $(convert_to_relative_path "$config_file")"
     
     # Record process start time
     START_TIME=$(date +%s)
@@ -346,13 +360,32 @@ test_api_prefix() {
         
         STABILITY_RESULT=0
         
-        # Gather network information before stopping
-        print_info "Network connections before shutdown:"
-        if command -v lsof >/dev/null 2>&1; then
-            lsof -p $ACTUAL_PID -i -P 2>/dev/null | sed 's/^/    /' || echo "    None found"
-        elif command -v netstat >/dev/null 2>&1; then
-            netstat -tulnp 2>/dev/null | grep "$ACTUAL_PID" | sed 's/^/    /' || echo "    None found"
-        fi
+        # Log detailed network information and show summary
+        {
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Network connections before shutdown:"
+            if command -v lsof >/dev/null 2>&1; then
+                CONNECTIONS=$(lsof -p $ACTUAL_PID -i -P 2>/dev/null)
+                if [ -n "$CONNECTIONS" ]; then
+                    echo "$CONNECTIONS"
+                    CONNECTION_COUNT=$(echo "$CONNECTIONS" | wc -l)
+                    print_info "Network connections before shutdown: $CONNECTION_COUNT connections"
+                else
+                    echo "No network connections found"
+                    print_info "Network connections before shutdown: 0 connections"
+                fi
+            elif command -v netstat >/dev/null 2>&1; then
+                CONNECTIONS=$(netstat -tulnp 2>/dev/null | grep "$ACTUAL_PID")
+                if [ -n "$CONNECTIONS" ]; then
+                    echo "$CONNECTIONS"
+                    CONNECTION_COUNT=$(echo "$CONNECTIONS" | wc -l)
+                    print_info "Network connections before shutdown: $CONNECTION_COUNT connections"
+                else
+                    echo "No network connections found"
+                    print_info "Network connections before shutdown: 0 connections"
+                fi
+            fi
+            echo ""
+        } >> "$RESULTS_DIR/test_details.log"
         
         # Stop the server using utility function
         stop_hydrogen_server "$ACTUAL_PID" 1
@@ -407,77 +440,86 @@ print_info "Making sure all previous servers are stopped..."
 pkill -f "hydrogen.*json" 2>/dev/null
 sleep 2
 
-# Check for TIME_WAIT sockets and show detailed socket state
-print_info "Checking for sockets in TIME_WAIT state on port $DEFAULT_PORT..."
-if command -v ss &> /dev/null; then
-    # Ensure we get a clean integer count without any extra characters
-    TIME_WAIT_COUNT=$(ss -tan | grep ":$DEFAULT_PORT" | grep -c "TIME-WAIT" 2>/dev/null || echo 0)
-    TIME_WAIT_COUNT=$(echo "$TIME_WAIT_COUNT" | tr -d '[:space:]')
-    if [ -z "$TIME_WAIT_COUNT" ]; then
-        TIME_WAIT_COUNT=0
-    fi
-    
-    if [ "$TIME_WAIT_COUNT" -gt 0 ]; then
-        print_info "Found $TIME_WAIT_COUNT socket(s) in TIME-WAIT state on port $DEFAULT_PORT"
-        ss -tan | grep ":$DEFAULT_PORT" | grep "TIME-WAIT" | sed 's/^/    /'
+# Check for TIME_WAIT sockets and log detailed socket state
+print_info "Checking socket states..."
+{
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Checking TIME_WAIT sockets for port $DEFAULT_PORT"
+    if command -v ss &> /dev/null; then
+        TIME_WAIT_COUNT=$(ss -tan | grep ":$DEFAULT_PORT" | grep -c "TIME-WAIT" 2>/dev/null || echo 0)
+        TIME_WAIT_COUNT=$(echo "$TIME_WAIT_COUNT" | tr -d '[:space:]')
+        [ -z "$TIME_WAIT_COUNT" ] && TIME_WAIT_COUNT=0
         
-        # Set the SO_REUSEADDR option on the next socket by modifying the net.ipv4.tcp_tw_reuse sysctl parameter
-        # This is a temporary change that will help ensure the port can be rebound immediately
-        if command -v sysctl &> /dev/null && [ -w /proc/sys/net/ipv4/tcp_tw_reuse ]; then
-            print_info "Trying to enable tcp_tw_reuse to help with socket rebinding..."
-            OLD_TW_REUSE=$(cat /proc/sys/net/ipv4/tcp_tw_reuse)
-            sudo sysctl -w net.ipv4.tcp_tw_reuse=1 > /dev/null 2>&1 || true
-            print_info "tcp_tw_reuse changed from $OLD_TW_REUSE to $(cat /proc/sys/net/ipv4/tcp_tw_reuse 2>/dev/null || echo 'unknown')"
+        echo "Socket state details (ss):"
+        ss -tan | grep ":$DEFAULT_PORT" || echo "No sockets found"
+        
+        if [ "$TIME_WAIT_COUNT" -gt 0 ]; then
+            echo "Found $TIME_WAIT_COUNT TIME-WAIT socket(s)"
+            if command -v sysctl &> /dev/null && [ -w /proc/sys/net/ipv4/tcp_tw_reuse ]; then
+                OLD_TW_REUSE=$(cat /proc/sys/net/ipv4/tcp_tw_reuse)
+                sudo sysctl -w net.ipv4.tcp_tw_reuse=1 > /dev/null 2>&1
+                echo "tcp_tw_reuse changed from $OLD_TW_REUSE to $(cat /proc/sys/net/ipv4/tcp_tw_reuse 2>/dev/null || echo 'unknown')"
+            fi
+            print_info "Found $TIME_WAIT_COUNT TIME-WAIT socket(s) - see logs for details"
+        else
+            echo "No TIME-WAIT sockets found"
+            print_info "No TIME-WAIT sockets found"
         fi
-    else
-        print_info "No TIME-WAIT sockets found on port $DEFAULT_PORT"
+    elif command -v netstat &> /dev/null; then
+        TIME_WAIT_COUNT=$(netstat -tan | grep ":$DEFAULT_PORT" | grep -c "TIME_WAIT" 2>/dev/null || echo 0)
+        TIME_WAIT_COUNT=$(echo "$TIME_WAIT_COUNT" | tr -d '[:space:]')
+        [ -z "$TIME_WAIT_COUNT" ] && TIME_WAIT_COUNT=0
+        
+        echo "Socket state details (netstat):"
+        netstat -tan | grep ":$DEFAULT_PORT" || echo "No sockets found"
+        
+        if [ "$TIME_WAIT_COUNT" -gt 0 ]; then
+            echo "Found $TIME_WAIT_COUNT TIME-WAIT socket(s)"
+            print_info "Found $TIME_WAIT_COUNT TIME-WAIT socket(s) - see logs for details"
+        else
+            echo "No TIME-WAIT sockets found"
+            print_info "No TIME-WAIT sockets found"
+        fi
     fi
-elif command -v netstat &> /dev/null; then
-    # Ensure we get a clean integer count without any extra characters
-    TIME_WAIT_COUNT=$(netstat -tan | grep ":$DEFAULT_PORT" | grep -c "TIME_WAIT" 2>/dev/null || echo 0)
-    TIME_WAIT_COUNT=$(echo "$TIME_WAIT_COUNT" | tr -d '[:space:]')
-    if [ -z "$TIME_WAIT_COUNT" ]; then
-        TIME_WAIT_COUNT=0
-    fi
-    
-    if [ "$TIME_WAIT_COUNT" -gt 0 ]; then
-        print_info "Found $TIME_WAIT_COUNT socket(s) in TIME_WAIT state on port $DEFAULT_PORT"
-        netstat -tan | grep ":$DEFAULT_PORT" | grep "TIME_WAIT" | sed 's/^/    /'
-    else
-        print_info "No TIME_WAIT sockets found on port $DEFAULT_PORT"
-    fi
-fi
+} >> "$RESULTS_DIR/test_details.log"
 
 # Also check the custom port if it's different from the default
 if [ "$DEFAULT_PORT" != "$CUSTOM_PORT" ]; then
-    print_info "Also checking for sockets in TIME_WAIT state on port $CUSTOM_PORT..."
-    if command -v ss &> /dev/null; then
-        TIME_WAIT_COUNT=$(ss -tan | grep ":$CUSTOM_PORT" | grep -c "TIME-WAIT" 2>/dev/null || echo 0)
-        TIME_WAIT_COUNT=$(echo "$TIME_WAIT_COUNT" | tr -d '[:space:]')
-        if [ -z "$TIME_WAIT_COUNT" ]; then
-            TIME_WAIT_COUNT=0
+    print_info "Checking socket states for custom port..."
+    {
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Checking TIME_WAIT sockets for port $CUSTOM_PORT"
+        if command -v ss &> /dev/null; then
+            TIME_WAIT_COUNT=$(ss -tan | grep ":$CUSTOM_PORT" | grep -c "TIME-WAIT" 2>/dev/null || echo 0)
+            TIME_WAIT_COUNT=$(echo "$TIME_WAIT_COUNT" | tr -d '[:space:]')
+            [ -z "$TIME_WAIT_COUNT" ] && TIME_WAIT_COUNT=0
+            
+            echo "Socket state details (ss):"
+            ss -tan | grep ":$CUSTOM_PORT" || echo "No sockets found"
+            
+            if [ "$TIME_WAIT_COUNT" -gt 0 ]; then
+                echo "Found $TIME_WAIT_COUNT TIME-WAIT socket(s)"
+                print_info "Found $TIME_WAIT_COUNT TIME-WAIT socket(s) - see logs for details"
+            else
+                echo "No TIME-WAIT sockets found"
+                print_info "No TIME-WAIT sockets found"
+            fi
+        elif command -v netstat &> /dev/null; then
+            TIME_WAIT_COUNT=$(netstat -tan | grep ":$CUSTOM_PORT" | grep -c "TIME_WAIT" 2>/dev/null || echo 0)
+            TIME_WAIT_COUNT=$(echo "$TIME_WAIT_COUNT" | tr -d '[:space:]')
+            [ -z "$TIME_WAIT_COUNT" ] && TIME_WAIT_COUNT=0
+            
+            echo "Socket state details (netstat):"
+            netstat -tan | grep ":$CUSTOM_PORT" || echo "No sockets found"
+            
+            if [ "$TIME_WAIT_COUNT" -gt 0 ]; then
+                echo "Found $TIME_WAIT_COUNT TIME-WAIT socket(s)"
+                print_info "Found $TIME_WAIT_COUNT TIME-WAIT socket(s) - see logs for details"
+            else
+                echo "No TIME-WAIT sockets found"
+                print_info "No TIME-WAIT sockets found"
+            fi
         fi
-        
-        if [ "$TIME_WAIT_COUNT" -gt 0 ]; then
-            print_info "Found $TIME_WAIT_COUNT socket(s) in TIME-WAIT state on port $CUSTOM_PORT"
-            ss -tan | grep ":$CUSTOM_PORT" | grep "TIME-WAIT" | sed 's/^/    /'
-        else
-            print_info "No TIME-WAIT sockets found on port $CUSTOM_PORT"
-        fi
-    elif command -v netstat &> /dev/null; then
-        TIME_WAIT_COUNT=$(netstat -tan | grep ":$CUSTOM_PORT" | grep -c "TIME_WAIT" 2>/dev/null || echo 0)
-        TIME_WAIT_COUNT=$(echo "$TIME_WAIT_COUNT" | tr -d '[:space:]')
-        if [ -z "$TIME_WAIT_COUNT" ]; then
-            TIME_WAIT_COUNT=0
-        fi
-        
-        if [ "$TIME_WAIT_COUNT" -gt 0 ]; then
-            print_info "Found $TIME_WAIT_COUNT socket(s) in TIME_WAIT state on port $CUSTOM_PORT"
-            netstat -tan | grep ":$CUSTOM_PORT" | grep "TIME_WAIT" | sed 's/^/    /'
-        else
-            print_info "No TIME_WAIT sockets found on port $CUSTOM_PORT"
-        fi
-    fi
+        echo ""
+    } >> "$RESULTS_DIR/test_details.log"
 fi
 
 # Wait for ports to be released (reduced timeout)
@@ -623,12 +665,19 @@ else
     print_info "Log files backed up to $LOG_BACKUP_DIR/"
 fi
 
-# Final system state
-print_info "Final system state:"
-print_info "  Time: $(date)"
-if command -v free >/dev/null 2>&1; then
-    print_info "  Memory summary:"
-    free -h | sed 's/^/    /'
-fi
+# Log final system state
+{
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Final System State:"
+    echo "Time: $(date)"
+    if command -v free >/dev/null 2>&1; then
+        echo "Memory summary:"
+        free -h
+    fi
+    if command -v uptime >/dev/null 2>&1; then
+        echo "System load:"
+        uptime
+    fi
+} >> "$RESULTS_DIR/test_details.log"
+print_info "Test complete - detailed system state logged"
 
 exit $TEST_RESULT
