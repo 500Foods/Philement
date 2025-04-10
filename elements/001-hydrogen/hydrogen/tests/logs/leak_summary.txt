@@ -1,5 +1,0 @@
-Direct Leaks
-- Found: 0
-
-Indirect Leaks
-- Found: 0
