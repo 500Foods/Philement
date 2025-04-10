@@ -10,6 +10,7 @@
 #include "../config_utils.h"
 #include "../notify/config_notify.h"
 #include "json_notify.h"
+#include "../logging/config_logging_utils.h"
 
 bool load_json_notify(json_t* root, AppConfig* config) {
     // First ensure any existing notification config is cleaned up

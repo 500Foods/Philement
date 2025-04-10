@@ -26,6 +26,7 @@
 #include "../types/config_size.h"
 #include "../print/config_print_queue.h"
 #include "../../logging/logging.h"
+#include "../logging/config_logging_utils.h"
 
 bool load_json_print_queue(json_t* root, AppConfig* config) {
     // Print Queue Configuration

@@ -7,6 +7,8 @@
 #include <strings.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include "../config.h"
+#include "config_oidc.h"
 #include "config_oidc_keys.h"
 #include "../types/config_string.h"
 
