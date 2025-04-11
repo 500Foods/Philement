@@ -93,6 +93,7 @@ typedef struct MDNSClientConfig MDNSClientConfig;
 
 // L. Mail Relay Configuration (uses notify infrastructure)
 struct MailRelayConfig;
+typedef struct MailRelayConfig MailRelayConfig;
 
 // M. Print Configuration
 struct PrintQueueConfig;
@@ -128,6 +129,10 @@ struct OIDCSecurityConfig;
 typedef struct OIDCSecurityConfig OIDCSecurityConfig;
 
 // P. Notify Configuration
-typedef struct NotifyConfig NotifyConfig;  // Shares infrastructure with Mail Relay
+struct NotifyConfig;
+typedef struct NotifyConfig NotifyConfig;
+
+struct SMTPConfig;
+typedef struct SMTPConfig SMTPConfig;
 
 #endif /* CONFIG_FORWARD_H */

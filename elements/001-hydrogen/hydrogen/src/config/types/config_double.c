@@ -15,7 +15,7 @@
 
 // Project headers
 #include "config_double.h"
-#include "../env/config_env.h"
+#include "../config_utils.h"
 #include "../../logging/logging.h"
 
 /*
@@ -77,7 +77,7 @@ double get_config_double(json_t* value, double default_value) {
         
         // Check if this is an environment variable reference
         if (str_value && strncmp(str_value, "${env.", 6) == 0) {
-            json_t* env_value = env_process_env_variable(str_value);
+            json_t* env_value = process_env_variable(str_value);
             if (env_value) {
                 double result = default_value;
                 

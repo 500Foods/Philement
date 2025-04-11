@@ -12,10 +12,6 @@
 #ifndef HYDROGEN_LAUNCH_SWAGGER_H
 #define HYDROGEN_LAUNCH_SWAGGER_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "launch.h"
 
 /**
@@ -47,9 +43,5 @@ int launch_swagger_subsystem(void);
  * @return 1 if running, 0 if not running
  */
 int is_swagger_running(void);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* HYDROGEN_LAUNCH_SWAGGER_H */

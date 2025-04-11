@@ -1,11 +1,11 @@
-// System headers
-#include <string.h>
+/*
+ * Queue Management Implementation
+ */
 
-// Project headers
+#include <string.h>
 #include "utils_queue.h"
 #include "../logging/logging.h"
 #include "../config/config.h"
-#include "../config/resources/config_resources.h"
 
 // Global queue memory tracking
 QueueMemoryMetrics log_queue_memory;
@@ -18,7 +18,7 @@ void init_queue_memory(QueueMemoryMetrics *queue, const AppConfig *config) {
     queue->entry_count = 0;
     queue->metrics.virtual_bytes = 0;
     queue->metrics.resident_bytes = 0;
-    memset(queue->block_sizes, 0, sizeof(size_t) * MAX_QUEUE_BLOCKS);
+    memset(queue->block_sizes, 0, sizeof(size_t) * EARLY_MAX_QUEUE_BLOCKS);
     
     // Set initial limits and initialization state
     if (config) {
@@ -26,8 +26,8 @@ void init_queue_memory(QueueMemoryMetrics *queue, const AppConfig *config) {
         queue->limits.block_limit = config->resources.max_queue_blocks;
         queue->limits.early_init = 0;
     } else {
-        queue->limits.max_blocks = MAX_QUEUE_BLOCKS;
-        queue->limits.block_limit = DEFAULT_BLOCK_LIMIT;
+        queue->limits.max_blocks = EARLY_MAX_QUEUE_BLOCKS;
+        queue->limits.block_limit = EARLY_BLOCK_LIMIT;
         queue->limits.early_init = 1;
     }
 }
