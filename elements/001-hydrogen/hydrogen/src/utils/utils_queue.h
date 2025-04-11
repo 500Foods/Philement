@@ -14,11 +14,11 @@
 #include <stddef.h>
 
 #include "../config/config_forward.h"  // For AppConfig forward declaration
-#include "../config/resources/config_resources.h"  // For queue-related constants
+#include "../config/types/config_queue_constants.h"  // Queue-related constants
 
-// Default values for early initialization
-#define MAX_QUEUE_BLOCKS 128  // Maximum possible blocks
-#define DEFAULT_BLOCK_LIMIT 64  // Default limit during early init
+// Early initialization limits - subset of full configuration
+#define EARLY_MAX_QUEUE_BLOCKS MIN_QUEUE_BLOCKS  // Use minimum from config
+#define EARLY_BLOCK_LIMIT (MIN_QUEUE_BLOCKS / 2) // Half of minimum blocks
 
 // Memory metrics structure
 typedef struct {

@@ -51,25 +51,25 @@
 #include "config_forward.h"
 
 // Subsystem configurations with struct definitions
-#include "server/config_server.h"        // A. Server
-#include "network/config_network.h"      // B. Network
-#include "databases/config_databases.h"  // C. Database
-#include "logging/config_logging.h"      // D. Logging
-#include "webserver/config_webserver.h"  // E. WebServer
-#include "api/config_api.h"              // F. API
-#include "swagger/config_swagger.h"      // G. Swagger
-#include "websocket/config_websocket.h"  // H. WebSocket
-#include "terminal/config_terminal.h"    // I. Terminal
-#include "mdns/config_mdns_server.h"     // J. mDNS Server
-#include "mdns/config_mdns_client.h"     // K. mDNS Client
-#include "mailrelay/config_mail_relay.h" // L. Mail Relay
-#include "print/config_print_queue.h"    // M. Print
-#include "resources/config_resources.h"  // N. Resources
-#include "oidc/config_oidc.h"            // O. OIDC
-#include "notify/config_notify.h"        // P. Notify
+#include "config_server.h"               // A. Server
+#include "config_network.h"              // B. Network
+#include "config_databases.h"            // C. Database
+#include "config_logging.h"              // D. Logging
+#include "config_webserver.h"            // E. WebServer
+#include "config_api.h"                  // F. API
+#include "config_swagger.h"              // G. Swagger
+#include "config_websocket.h"            // H. WebSocket
+#include "config_terminal.h"             // I. Terminal
+#include "config_mdns_server.h"          // J. mDNS Server
+#include "config_mdns_client.h"          // K. mDNS Client
+#include "config_mail_relay.h"           // L. Mail Relay
+#include "config_print.h"                // M. Print
+#include "config_resources.h"            // N. Resources
+#include "config_oidc.h"                 // O. OIDC
+#include "config_notify.h"               // P. Notify
 
 // Support for Key/Value values of different types including env vars.
-#include "env/config_env.h"
+#include "config_utils.h"
 #include "types/config_string.h"
 #include "types/config_bool.h"
 #include "types/config_int.h"
@@ -91,7 +91,7 @@ struct AppConfig {
     MDNSServerConfig mdns_server;  // J. mDNS Server configuration
     MDNSClientConfig mdns_client;  // K. mDNS Client configuration
     MailRelayConfig mail_relay;    // L. Mail Relay configuration
-    PrintQueueConfig print_queue;  // M. Print configuration
+    PrintConfig print;            // M. Print configuration
     ResourceConfig resources;      // N. Resources configuration
     OIDCConfig oidc;               // O. OIDC configuration
     NotifyConfig notify;           // P. Notify configuration
@@ -142,7 +142,7 @@ void cleanup_application_config(void);
 
 /*
  * Helper function to handle environment variable logging
- * This function is exported for use by config_env.c
+ * This function is exported for use by config_utils.c
  * 
  * @param key_name The configuration key name
  * @param var_name The environment variable name

@@ -1,39 +1,91 @@
 /*
  * Configuration utility functions implementation
  * 
- * Provides common utilities used across configuration modules:
- * - Sensitive value detection
- * - Configuration logging
- * - Common configuration patterns
+ * Provides unified configuration processing and utilities:
+ * - High-level config item processing
+ * - Type-safe value handling
+ * - Environment variable resolution
+ * - Logging with proper formatting
  */
 
-// Standard C headers
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdbool.h>
-
-// Project headers
+#include <ctype.h>
 #include <jansson.h>
+
 #include "config_utils.h"
-#include "env/config_env_utils.h"
 #include "../logging/logging.h"
 
-/*
- * Helper function to format integer values for configuration output
-+ * Thread-safe using thread-local storage
-+ */
-static __thread char int_buffer[32];
+// Thread-local storage for formatting
+static __thread char value_buffer[1024];
+static __thread char indent_buffer[32];
 
-const char* format_int_buffer(int value) {
-    snprintf(int_buffer, sizeof(int_buffer), "%d", value);
-    return int_buffer;
+// Helper to check if a string starts with ${env.
+static bool is_env_var_ref(const char* str) {
+    return str && strncmp(str, "${env.", 6) == 0;
 }
 
-/*
- * Helper function to detect sensitive configuration values
- */
+// Extract environment variable name from ${env.NAME} format
+static const char* get_env_var_name(const char* str, char* buffer, size_t buffer_size) {
+    if (!is_env_var_ref(str)) return NULL;
+    
+    const char* start = str + 6;  // Skip "${env."
+    const char* end = strchr(start, '}');
+    if (!end || end <= start) return NULL;
+    
+    size_t len = end - start;
+    if (len >= buffer_size) len = buffer_size - 1;
+    
+    strncpy(buffer, start, len);
+    buffer[len] = '\0';
+    return buffer;
+}
+
+// Create indentation based on path depth
+static const char* get_indent(const char* path) {
+    if (!path) return "";
+    
+    int level = 0;
+    const char* p = path;
+    while ((p = strchr(p, '.')) != NULL) {
+        level++;
+        p++;
+    }
+    
+    // Limit indentation level
+    if (level > 5) level = 5;
+    
+    // Build indentation string
+    char* pos = indent_buffer;
+    for (int i = 0; i < level; i++) {
+        *pos++ = '-';
+        *pos++ = '-';
+    }
+    if (level > 0) {
+        *pos++ = ' ';
+    }
+    *pos = '\0';
+    
+    return indent_buffer;
+}
+
+// Format a value that might be sensitive
+static const char* format_sensitive(const char* value) {
+    if (!value) return "(not set)";
+    
+    size_t len = strlen(value);
+    if (len > 5) {
+        snprintf(value_buffer, sizeof(value_buffer), "%.5s...", value);
+    } else {
+        snprintf(value_buffer, sizeof(value_buffer), "%s...", value);
+    }
+    return value_buffer;
+}
+
+// Check if a name indicates sensitive content
 bool is_sensitive_value(const char* name) {
     if (!name) return false;
     
@@ -42,187 +94,246 @@ bool is_sensitive_value(const char* name) {
         "cert", "jwt", "seed", "private", "hash", "salt",
         "cipher", "encrypt", "signature", "access"
     };
-    const int num_terms = sizeof(sensitive_terms) / sizeof(sensitive_terms[0]);
     
-    for (int i = 0; i < num_terms; i++) {
+    for (size_t i = 0; i < sizeof(sensitive_terms)/sizeof(sensitive_terms[0]); i++) {
         if (strcasestr(name, sensitive_terms[i])) {
             return true;
         }
     }
-    
     return false;
 }
 
-/*
- * Configuration logging utilities
- */
-
-void log_config_section_header(const char* section_name) {
-    if (!section_name) return;
-    log_this("Config", "%s", LOG_LEVEL_STATE, section_name);
+// Format integer for output
+const char* format_int(int value) {
+    snprintf(value_buffer, sizeof(value_buffer), "%d", value);
+    return value_buffer;
 }
 
-void log_config_section_item(const char* key, const char* format, int level, int is_default,
-                           int indent, const char* input_units, const char* output_units, 
-                           const char* subsystem, ...) {
-    if (!key || !format) return;
-    
-    va_list args;
-    va_start(args, subsystem);
-    
-    char value_buffer[1024] = {0};
-    vsnprintf(value_buffer, sizeof(value_buffer), format, args);
-    va_end(args);
-    
-    char message[2048] = {0};
-    
-    // Add indent prefix
-    const char* indents[] = {
-        "― ",
-        "――― ",
-        "――――― ",
-        "――――――― ",
-        "――――――――― "
-    };
-    if (indent >= 0 && indent < 5) {
-        strncat(message, indents[indent], sizeof(message) - strlen(message) - 1);
-    } else {
-        strncat(message, indents[4], sizeof(message) - strlen(message) - 1);
+// Format integer for buffer output (uses same implementation as format_int)
+const char* format_int_buffer(int value) {
+    return format_int(value);
+}
+
+/*
+ * Process environment variable references and convert to appropriate JSON types
+ * Handles type inference and conversion for environment values
+ */
+json_t* process_env_variable(const char* value) {
+    const char* key_name = "EnvVar"; // Default key name for logging when not part of a specific config
+    if (!value || strncmp(value, "${env.", 6) != 0) {
+        return NULL;
     }
     
-    strncat(message, key, sizeof(message) - strlen(message) - 1);
-    strncat(message, ": ", sizeof(message) - strlen(message) - 1);
+    // Find the closing brace
+    const char* closing_brace = strchr(value + 6, '}');
+    if (!closing_brace || *(closing_brace + 1) != '\0') {
+        return NULL;  // Malformed or has trailing characters
+    }
     
-    // Handle unit conversion if units are specified
-    if (input_units && output_units) {
-        double value;
-        if (sscanf(value_buffer, "%lf", &value) == 1) {
-            // Convert based on unit combination
-            if (strcmp(input_units, output_units) != 0) {  // Only convert if units differ
-                switch (input_units[0] | (output_units[0] << 8)) {
-                    case 'B' | ('M' << 8):  // B -> MB
-                        value /= (1024.0 * 1024.0);
-                        snprintf(value_buffer, sizeof(value_buffer), "%.2f", value);
-                        break;
-                    case 'm' | ('s' << 8):  // ms -> s
-                        value /= 1000.0;
-                        snprintf(value_buffer, sizeof(value_buffer), "%.2f", value);
-                        break;
+    // Extract the variable name
+    size_t var_name_len = closing_brace - (value + 6);
+    char* var_name = malloc(var_name_len + 1);
+    if (!var_name) {
+        return NULL;
+    }
+    
+    strncpy(var_name, value + 6, var_name_len);
+    var_name[var_name_len] = '\0';
+    
+    // Look up the environment variable
+    const char* env_value = getenv(var_name);
+    
+    // Only log non-PAYLOAD_KEY environment variables
+    if (env_value) {
+        if (strcmp(var_name, "PAYLOAD_KEY") != 0) {
+            if (is_sensitive_value(var_name)) {
+                char safe_value[256];
+                snprintf(safe_value, sizeof(safe_value), "$%s: ********", var_name);
+                log_config_item(key_name, safe_value, false);
+            } else {
+                char value_buffer[512];
+                snprintf(value_buffer, sizeof(value_buffer), "$%s: %s", var_name, env_value);
+                log_config_item(key_name, value_buffer, false);
+            }
+        }
+    } else {
+        if (strcmp(var_name, "PAYLOAD_KEY") != 0) {
+            char value_buffer[512];
+            snprintf(value_buffer, sizeof(value_buffer), "$%s: not set", var_name);
+            log_config_item(key_name, value_buffer, true);
+        }
+        free(var_name);
+        return NULL;
+    }
+    
+    if (env_value[0] == '\0') {
+        free(var_name);
+        return json_null();
+    }
+    
+    // Check for boolean values (case insensitive)
+    if (strcasecmp(env_value, "true") == 0) {
+        free(var_name);
+        return json_true();
+    }
+    if (strcasecmp(env_value, "false") == 0) {
+        free(var_name);
+        return json_false();
+    }
+    
+    // Check if it's a number
+    char* endptr;
+    // Try parsing as integer first
+    long long int_value = strtoll(env_value, &endptr, 10);
+    if (*endptr == '\0') {
+        // It's a valid integer
+        free(var_name);
+        return json_integer(int_value);
+    }
+    
+    // Try parsing as double
+    double real_value = strtod(env_value, &endptr);
+    if (*endptr == '\0') {
+        // It's a valid floating point number
+        free(var_name);
+        return json_real(real_value);
+    }
+    
+    // Otherwise, treat it as a string
+    free(var_name);
+    return json_string(env_value);
+}
+
+// Format and log a configuration value
+static void log_value(const char* path, const char* value, bool is_default, bool is_sensitive) {
+    if (!path) return;
+    
+    const char* key = strrchr(path, '.');
+    key = key ? key + 1 : path;
+    const char* indent = get_indent(path);
+    
+    // Handle environment variable reference
+    char env_name[256];
+    if (value && is_env_var_ref(value)) {
+        const char* env_var = get_env_var_name(value, env_name, sizeof(env_name));
+        if (env_var) {
+            const char* env_val = getenv(env_var);
+            if (is_sensitive) {
+                log_this("Config", "%s%s {%s}: %s%s", LOG_LEVEL_STATE,
+                        indent, key, env_var,
+                        format_sensitive(env_val ? env_val : "(not set)"),
+                        is_default ? " *" : "");
+            } else {
+                log_this("Config", "%s%s {%s}: %s%s", LOG_LEVEL_STATE,
+                        indent, key, env_var,
+                        env_val ? env_val : "(not set)",
+                        is_default ? " *" : "");
+            }
+            return;
+        }
+    }
+    
+    // Handle regular value
+    if (is_sensitive) {
+        log_this("Config", "%s%s: %s%s", LOG_LEVEL_STATE,
+                indent, key, format_sensitive(value),
+                is_default ? " *" : "");
+    } else {
+        log_this("Config", "%s%s: %s%s", LOG_LEVEL_STATE,
+                indent, key, value ? value : "(not set)",
+                is_default ? " *" : "");
+    }
+}
+
+// Process a configuration value with full context
+bool process_config_value(json_t* root, ConfigValue value, ConfigValueType type,
+                         const char* path, const char* section) {
+    if (!path) return false;
+    
+    // Handle section headers
+    if (type == CONFIG_TYPE_SECTION) {
+        log_this("Config", "%s%s", LOG_LEVEL_STATE,
+                section, root ? "" : " *");
+        return true;
+    }
+    
+    // Get JSON value if config exists
+    json_t* json_val = NULL;
+    if (root) {
+        char* path_copy = strdup(path);
+        if (path_copy) {
+            json_val = root;
+            char* token = strtok(path_copy, ".");
+            while (token && json_is_object(json_val)) {
+                json_val = json_object_get(json_val, token);
+                token = strtok(NULL, ".");
+            }
+            free(path_copy);
+        }
+    }
+    
+    bool using_default = !json_val;
+    bool is_sensitive = (type == CONFIG_TYPE_SENSITIVE) || is_sensitive_value(path);
+    
+    // Process based on type
+    switch (type) {
+        case CONFIG_TYPE_BOOL: {
+            bool val = *value.bool_val;  // Default value
+            if (json_val && json_is_boolean(json_val)) {
+                val = json_boolean_value(json_val);
+                *value.bool_val = val;
+                using_default = false;
+            }
+            log_value(path, val ? "true" : "false", using_default, false);
+            return true;
+        }
+        
+        case CONFIG_TYPE_INT: {
+            int val = *value.int_val;  // Default value
+            if (json_val && json_is_integer(json_val)) {
+                val = (int)json_integer_value(json_val);
+                *value.int_val = val;
+                using_default = false;
+            }
+            snprintf(value_buffer, sizeof(value_buffer), "%d", val);
+            log_value(path, value_buffer, using_default, false);
+            return true;
+        }
+        
+        case CONFIG_TYPE_STRING:
+        case CONFIG_TYPE_SENSITIVE: {
+            char** str_val = value.string_val;
+            const char* json_str = NULL;
+            
+            if (json_val && json_is_string(json_val)) {
+                json_str = json_string_value(json_val);
+                if (json_str) {
+                    if (*str_val) free(*str_val);
+                    *str_val = strdup(json_str);
+                    using_default = false;
                 }
             }
-            strncat(message, value_buffer, sizeof(message) - strlen(message) - 1);
-            strncat(message, " ", sizeof(message) - strlen(message) - 1);
-            strncat(message, output_units, sizeof(message) - strlen(message) - 1);
-        } else {
-            strncat(message, value_buffer, sizeof(message) - strlen(message) - 1);
+            
+            log_value(path, *str_val, using_default, is_sensitive);
+            return true;
         }
-    } else {
-        strncat(message, value_buffer, sizeof(message) - strlen(message) - 1);
-    }
-    
-    // Add asterisk for default values
-    if (is_default) {
-        strncat(message, " *", sizeof(message) - strlen(message) - 1);
-    }
-    
-    log_this(subsystem ? subsystem : "Config", "%s", level, message);
-}
-
-void log_config_env_value(const char* key_name, const char* var_name, const char* env_value, 
-                         const char* default_value, bool is_sensitive) {
-    if (!var_name) return;
-
-    if (env_value) {
-        if (is_sensitive) {
-            char safe_value[256];
-            strncpy(safe_value, env_value, 5);
-            safe_value[5] = '\0';
-            strcat(safe_value, "...");
-            log_this("Config-Env", "― %s: $%s: %s", LOG_LEVEL_STATE, key_name, var_name, safe_value);
-        } else {
-            log_this("Config-Env", "― %s: $%s: %s", LOG_LEVEL_STATE, key_name, var_name, env_value);
-        }
-    } else if (default_value) {
-        log_this("Config-Env", "― %s: $%s: (not set) %s *", LOG_LEVEL_STATE, key_name, var_name, default_value);
-    } else {
-        log_this("Config-Env", "― %s: $%s: (not set)", LOG_LEVEL_STATE, key_name, var_name);
+        
+        default:
+            return false;
     }
 }
 
-/*
- * Common configuration patterns
- */
-
+// Log configuration section
 void log_config_section(const char* section_name, bool using_defaults) {
     if (!section_name) return;
-    log_this("Config", "%s%s", LOG_LEVEL_STATE, section_name, using_defaults ? " *" : "");
+    log_this("Config", "%s%s", LOG_LEVEL_STATE,
+             section_name, using_defaults ? " *" : "");
 }
 
-void log_config_item(const char* key, const char* value, bool is_default, int indent) {
+// Log configuration item
+void log_config_item(const char* key, const char* value, bool is_default) {
     if (!key || !value) return;
-    
-    const char* indents[] = {
-        "― ",
-        "――― ",
-        "――――― ",
-        "――――――― ",
-        "――――――――― "
-    };
-    
-    const char* prefix = (indent >= 0 && indent < 5) ? indents[indent] : indents[4];
-    log_this("Config", "%s%s: %s%s", LOG_LEVEL_STATE, prefix, key, value, 
-             is_default ? " *" : "");
-}
-
-void log_config_sensitive_item(const char* key, const char* value, bool is_default, int indent) {
-    if (!key || !value) return;
-    
-    const char* indents[] = {
-        "― ",
-        "――― ",
-        "――――― ",
-        "――――――― ",
-        "――――――――― "
-    };
-    
-    const char* prefix = (indent >= 0 && indent < 5) ? indents[indent] : indents[4];
-    
-    // Truncate sensitive values to 5 chars + "..."
-    char safe_value[256];
-    strncpy(safe_value, value, 5);
-    safe_value[5] = '\0';
-    strcat(safe_value, "...");
-    
-    log_this("Config", "%s%s: %s%s", LOG_LEVEL_STATE, prefix, key, safe_value,
-             is_default ? " *" : "");
-}
-
-char* process_config_env_var(const char* key, json_t* value, const char* default_value, 
-                           bool is_sensitive, bool is_default) {
-    char* result = get_config_string_with_env(key, value, default_value);
-    if (!result) return NULL;
-
-    // Check if this is an environment variable
-    if (strncmp(result, "${env.", 6) == 0) {
-        const char* env_name = result + 6;
-        size_t len = strlen(env_name);
-        if (len > 1 && env_name[len-1] == '}') {
-            char env_var[256];
-            size_t copy_len = len - 1;
-            if (copy_len >= sizeof(env_var)) {
-                copy_len = sizeof(env_var) - 1;
-            }
-            memcpy(env_var, env_name, copy_len);
-            env_var[copy_len] = '\0';
-            
-            const char* env_val = getenv(env_var);
-            log_config_env_value(key, env_var, env_val, default_value, is_sensitive);
-        }
-    } else if (result[0] != '\0') {
-        log_config_item(key, result, is_default, 1);
-    } else {
-        log_config_item(key, "(not set)", is_default, 1);
-    }
-
-    return result;
+    const char* indent_str = get_indent(key);
+    log_this("Config", "%s%s: %s%s", LOG_LEVEL_STATE,
+             indent_str, value, is_default ? " *" : "");
 }

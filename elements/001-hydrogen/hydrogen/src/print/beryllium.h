@@ -44,16 +44,14 @@
 #include <stdio.h>
 #include <string.h>
 #include "../config/config.h"
+#include "../config/types/config_buffer_constants.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
-// Max length of a G-Code Line - using system default
+// Max length of a G-Code Line
 #define MAX_LINE_LENGTH DEFAULT_LINE_BUFFER_SIZE
-
-// Maximum number of layers - using system default
-#define MAX_LAYERS DEFAULT_MAX_LAYERS
 
 // Default feedrate in mm/min (not configurable as it's a G-code standard)
 #define DEFAULT_FEEDRATE   7500.0
