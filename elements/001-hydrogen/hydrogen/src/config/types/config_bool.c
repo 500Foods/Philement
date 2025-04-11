@@ -13,7 +13,7 @@
 
 // Project headers
 #include "config_bool.h"
-#include "../env/config_env.h"
+#include "../config_utils.h"
 #include "../../logging/logging.h"
 
 int get_config_bool(json_t* value, int default_value) {
@@ -29,7 +29,7 @@ int get_config_bool(json_t* value, int default_value) {
         
         // Check if this is an environment variable reference
         if (str_value && strncmp(str_value, "${env.", 6) == 0) {
-            json_t* env_value = env_process_env_variable(str_value);
+            json_t* env_value = process_env_variable(str_value);
             if (env_value) {
                 int result = default_value;
                 

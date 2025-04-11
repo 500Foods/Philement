@@ -16,7 +16,7 @@
 
 // Project headers
 #include "config_size.h"
-#include "../env/config_env.h"
+#include "../config_utils.h"
 #include "../../logging/logging.h"
 
 /*
@@ -89,7 +89,7 @@ size_t get_config_size(json_t* value, size_t default_value) {
         const char* str_value = json_string_value(value);
         
         // Check for environment variable
-        json_t* env_value = env_process_env_variable(str_value);
+        json_t* env_value = process_env_variable(str_value);
         if (env_value) {
             size_t result = get_config_size(env_value, default_value);
             json_decref(env_value);

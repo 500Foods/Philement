@@ -26,7 +26,7 @@
 #include "../queue/queue.h"
 #include "../config/config.h"
 #include "../config/config_priority.h"
-#include "../config/logging/config_logging_notify.h"
+#include "../config/config_logging_notify.h"
 #include "../utils/utils.h"
 
 // Public interface declarations

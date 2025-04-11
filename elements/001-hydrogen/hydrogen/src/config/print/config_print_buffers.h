@@ -13,13 +13,12 @@
 
 // Project headers
 #include "../config_forward.h"
+#include "../types/config_buffer_constants.h"
 
-// Default buffer sizes (in bytes)
+// Print-specific buffer sizes (in bytes)
 #define DEFAULT_JOB_MESSAGE_SIZE (32 * 1024)     // 32KB
 #define DEFAULT_STATUS_MESSAGE_SIZE (8 * 1024)    // 8KB
 #define DEFAULT_QUEUE_MESSAGE_SIZE (16 * 1024)    // 16KB
-#define DEFAULT_COMMAND_BUFFER_SIZE (4 * 1024)    // 4KB
-#define DEFAULT_RESPONSE_BUFFER_SIZE (16 * 1024)  // 16KB
 
 // Validation limits
 #define MIN_MESSAGE_SIZE (1 * 1024)      // 1KB minimum

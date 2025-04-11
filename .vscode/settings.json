@@ -8,6 +8,7 @@
     "/elements/001-hydrogen/hydrogen/src/config/config/*.inc": true
 },
 "files.associations": {
-  "config_logging_utils.h": "c"
+  "config_logging_utils.h": "c",
+  "config_mdns_server.h": "c"
 }
 }

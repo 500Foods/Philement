@@ -245,7 +245,7 @@
      bool web = config ? (config->web.enable_ipv4 || config->web.enable_ipv6) : false;
      bool ws = config ? config->websocket.enabled : false;
      bool sec = config ? (web || ws) : false;
-     bool print = config ? config->print_queue.enabled : false;
+     bool print = config ? config->print.enabled : false;
  
      for (size_t i = 0; i < sizeof(lib_configs) / sizeof(lib_configs[0]); i++) {
          LibConfig lib = lib_configs[i];

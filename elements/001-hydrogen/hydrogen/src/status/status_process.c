@@ -328,7 +328,7 @@ bool collect_service_metrics(SystemMetrics *metrics, const WebSocketMetrics *ws_
     metrics->mdns.specific.mdns.discovery_count = 0;  // TODO: Implement discovery counting
 
     // Print service
-    metrics->print.enabled = app_config->print_queue.enabled;
+    metrics->print.enabled = app_config->print.enabled;
     convert_thread_metrics(&print_threads, &metrics->print.threads);
     metrics->print.specific.print.queued_jobs = 0;  // TODO: Implement job counting
     metrics->print.specific.print.completed_jobs = 0;

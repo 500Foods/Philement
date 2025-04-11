@@ -27,7 +27,7 @@
 #include "../registry/registry_integration.h"
 #include "../state/state_types.h"
 #include "../config/config.h"
-#include "../config/logging/config_logging.h"
+#include "../config/config_logging.h"
 
 // External declarations
 extern ServiceThreads logging_threads;

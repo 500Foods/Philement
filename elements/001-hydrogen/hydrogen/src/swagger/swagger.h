@@ -19,8 +19,8 @@
 
 // Project headers
 #include "../config/config.h"
-#include "../config/webserver/config_webserver.h"  // For WebServerConfig
-#include "../config/swagger/config_swagger.h"    // For SwaggerConfig
+#include "../config/config_webserver.h"  // For WebServerConfig
+#include "../config/config_swagger.h"    // For SwaggerConfig
 
 /**
  * Initialize Swagger support

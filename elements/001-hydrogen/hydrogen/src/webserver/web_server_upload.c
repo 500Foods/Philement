@@ -6,6 +6,7 @@
 
 // Project headers
 #include "web_server_upload.h"
+#include "../config/types/config_buffer_constants.h"
 #include "web_server_core.h"
 #include "../print/beryllium.h"
 #include "../queue/queue.h"

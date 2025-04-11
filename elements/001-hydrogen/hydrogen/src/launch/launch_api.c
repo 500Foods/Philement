@@ -20,7 +20,7 @@
 #include "../config/config.h"
 #include "../registry/registry_integration.h"
 #include "../state/state_types.h"
-#include "../config/api/config_api.h"
+#include "../config/config_api.h"
 #include "../api/api_service.h"  // For API service initialization
 
 // External declarations

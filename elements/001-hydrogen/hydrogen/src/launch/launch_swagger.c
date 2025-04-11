@@ -18,7 +18,7 @@
 
 // Configuration includes
 #include "../config/config.h"
-#include "../config/swagger/config_swagger.h"
+#include "../config/config_swagger.h"
 
 // Core system includes
 #include "../logging/logging.h"

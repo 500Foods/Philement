@@ -15,7 +15,37 @@ Run from /src/. Requires:
 "critical":["ErrorHandling","ThreadSafety"]}
 ```
 
+## Coding REQUIREMENTS
+
+- Function Prototypes at top of every .c file
+- Grouped/commented include files at the top of every .c/.h file
+- Use log_this outputing anything
+- Update RELEASES.md only when a task is complete
+
+## Configuration
+
+App uses a JSON-based configuration with robust fallback handling. Details in src/config/config.c comments.
+
+A. Server
+B. Network
+C. Database
+D. Logging
+E. WebServer
+F. API
+G. Swagger
+H. WebSocket
+I. Terminal
+J. mDNS Server
+K. mDNS Client
+L. Mail Relay
+M. Print
+N. Resources
+O. OIDC
+P. Notify
+
 ## Subsystem Order
+
+App uses subsystems and a launch/landing system to control them. Details in src/launch/launch.c comments.
 
 1. Registry
 2. Payload
@@ -60,28 +90,6 @@ examples/       Example code
 payloads/       Payload definitions
 tests/          Test framework
 ```
-
-## Configuration
-
-The system uses a JSON-based configuration with robust fallback handling. If sections/keys are missing or no configuration is found, secure defaults are used. Environment variables can override settings.
-
-Configuration sections (in processing order):
-A. Server
-B. Network
-C. Database
-D. Logging
-E. WebServer
-F. API
-G. Swagger
-H. WebSocket
-I. Terminal
-J. mDNS Server
-K. mDNS Client
-L. Mail Relay
-M. Print
-N. Resources
-O. OIDC
-P. Notify
 
 ## Docs
 

@@ -1,22 +1,9 @@
-// Network constants
-#ifndef NI_MAXHOST
-#define NI_MAXHOST 1025
-#endif
-
-#ifndef NI_NUMERICHOST
-#define NI_NUMERICHOST 0x02
-#endif
-
-// Maximum number of registered endpoints
-#define MAX_ENDPOINTS 16
-
-// Include core header first for default constants
-#include "web_server_core.h"
-
-// Endpoint registry
-static WebServerEndpoint registered_endpoints[MAX_ENDPOINTS];
-static size_t endpoint_count = 0;
-static pthread_mutex_t endpoint_mutex = PTHREAD_MUTEX_INITIALIZER;
+/*
+ * Core Web Server Implementation
+ *
+ * Provides the implementation of the web server's core functionality,
+ * including initialization, request handling, and shutdown procedures.
+ */
 
 // System headers
 #include <sys/types.h>
@@ -33,8 +20,27 @@ static pthread_mutex_t endpoint_mutex = PTHREAD_MUTEX_INITIALIZER;
 #include <unistd.h>
 
 // Project headers
+#include "web_server_core.h"
+#include "../config/config_webserver.h"  // For WebServerConfig
 #include "../threads/threads.h"
 #include "../logging/logging.h"
+
+// Network constants
+#ifndef NI_MAXHOST
+#define NI_MAXHOST 1025
+#endif
+
+#ifndef NI_NUMERICHOST
+#define NI_NUMERICHOST 0x02
+#endif
+
+// Maximum number of registered endpoints
+#define MAX_ENDPOINTS 16
+
+// Endpoint registry
+static WebServerEndpoint registered_endpoints[MAX_ENDPOINTS];
+static size_t endpoint_count = 0;
+static pthread_mutex_t endpoint_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // Global server state
 struct MHD_Daemon *web_daemon = NULL;
@@ -209,25 +215,13 @@ bool init_web_server(WebServerConfig *web_config) {
     if (web_config->enable_ipv6) {
         log_this("WebServer", "IPv6 support enabled", LOG_LEVEL_STATE);
     }
+
+    // Log server configuration
+    log_this("WebServer", "Server Configuration:", LOG_LEVEL_STATE);
     log_this("WebServer", "-> Port: %u", LOG_LEVEL_STATE, server_web_config->port);
     log_this("WebServer", "-> WebRoot: %s", LOG_LEVEL_STATE, server_web_config->web_root);
     log_this("WebServer", "-> Upload Path: %s", LOG_LEVEL_STATE, server_web_config->upload_path);
     log_this("WebServer", "-> Upload Dir: %s", LOG_LEVEL_STATE, server_web_config->upload_dir);
-
-    // Initialize thread pool and connection settings with defaults if not set
-    if (web_config->thread_pool_size == 0) {
-        web_config->thread_pool_size = DEFAULT_THREAD_POOL_SIZE;
-    }
-    if (web_config->max_connections == 0) {
-        web_config->max_connections = DEFAULT_MAX_CONNECTIONS;
-    }
-    if (web_config->max_connections_per_ip == 0) {
-        web_config->max_connections_per_ip = DEFAULT_MAX_CONNECTIONS_PER_IP;
-    }
-    if (web_config->connection_timeout == 0) {
-        web_config->connection_timeout = DEFAULT_CONNECTION_TIMEOUT;
-    }
-
     log_this("WebServer", "-> Thread Pool Size: %d", LOG_LEVEL_STATE, web_config->thread_pool_size);
     log_this("WebServer", "-> Max Connections: %d", LOG_LEVEL_STATE, web_config->max_connections);
     log_this("WebServer", "-> Max Connections Per IP: %d", LOG_LEVEL_STATE, web_config->max_connections_per_ip);

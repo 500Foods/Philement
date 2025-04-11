@@ -67,7 +67,7 @@ LaunchReadiness check_print_launch_readiness(void) {
     }
     
     // Check configuration
-    if (!app_config || !app_config->print_queue.enabled) {
+    if (!app_config || !app_config->print.enabled) {
         readiness.messages[msg_count++] = strdup("  No-Go:   Print queue disabled in configuration");
         readiness.messages[msg_count] = NULL;
         readiness.ready = false;
