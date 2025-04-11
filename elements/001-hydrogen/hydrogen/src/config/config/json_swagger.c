@@ -28,7 +28,6 @@
 #include "../config_defaults.h"
 #include "../../logging/logging.h"
 #include "../../utils/utils.h"
-#include "../logging/config_logging_utils.h"
 
 bool load_json_swagger(json_t* root, AppConfig* config) {
     if (!config) {
@@ -50,14 +49,15 @@ bool load_json_swagger(json_t* root, AppConfig* config) {
 
     // Swagger Configuration
     json_t* swagger = json_object_get(root, "Swagger");
-    if (json_is_object(swagger)) {
-        log_config_section_header("Swagger");
-        
+    bool using_defaults = !json_is_object(swagger);
+    
+    log_config_section("Swagger", using_defaults);
+    
+    if (!using_defaults) {
         // Handle Enabled flag
         json_t* enabled = json_object_get(swagger, "Enabled");
         config->swagger->enabled = get_config_bool(enabled, true);
-        log_config_section_item(enabled ? "Enabled" : "Enabled*", "%s", LOG_LEVEL_STATE, !enabled, 0, NULL, NULL, "Config",
-                config->swagger->enabled ? "true" : "false");
+        log_config_item("Enabled", config->swagger->enabled ? "true" : "false", !enabled, 0);
         
         // Handle Prefix
         json_t* prefix = json_object_get(swagger, "Prefix");
@@ -66,62 +66,51 @@ bool load_json_swagger(json_t* root, AppConfig* config) {
             free(config->swagger->prefix);
             config->swagger->prefix = new_prefix;
         }
-        log_config_section_item(prefix ? "Prefix" : "Prefix*", "%s", LOG_LEVEL_STATE, !prefix, 0, NULL, NULL, "Config", 
-                config->swagger->prefix);
+        log_config_item("Prefix", config->swagger->prefix, !prefix, 0);
         
         // Handle UI Options
         json_t* ui_options = json_object_get(swagger, "UIOptions");
         if (json_is_object(ui_options)) {
-            log_config_section_item("UIOptions", "Configured", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config");
+            log_config_item("UIOptions", "Configured", false, 0);
             
             json_t* try_it = json_object_get(ui_options, "TryItEnabled");
             config->swagger->ui_options.try_it_enabled = json_is_boolean(try_it) ? 
                 json_is_true(try_it) : true;
-            log_config_section_item(try_it ? "TryItEnabled" : "TryItEnabled*", "%s", LOG_LEVEL_STATE, !try_it, 1, NULL, NULL, "Config",
-                config->swagger->ui_options.try_it_enabled ? "true" : "false");
+            log_config_item("TryItEnabled", 
+                          config->swagger->ui_options.try_it_enabled ? "true" : "false", 
+                          !try_it, 1);
         }
         
         // Handle Metadata
         json_t* metadata = json_object_get(swagger, "Metadata");
         if (json_is_object(metadata)) {
-            log_config_section_item("Metadata", "Configured", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config");
+            log_config_item("Metadata", "Configured", false, 0);
             
             json_t* title = json_object_get(metadata, "Title");
-            if (json_is_string(title)) {
+            bool using_default_title = !json_is_string(title);
+            if (!using_default_title) {
                 free(config->swagger->metadata.title);
                 config->swagger->metadata.title = strdup(json_string_value(title));
-                log_config_section_item("Title", "%s", LOG_LEVEL_STATE, 0, 1, NULL, NULL, "Config", 
-                    config->swagger->metadata.title);
-            } else {
-                log_config_section_item("Title*", "%s", LOG_LEVEL_STATE, 1, 1, NULL, NULL, "Config", 
-                    config->swagger->metadata.title);
             }
+            log_config_item("Title", config->swagger->metadata.title, using_default_title, 1);
             
             json_t* version = json_object_get(metadata, "Version");
-            if (json_is_string(version)) {
+            bool using_default_version = !json_is_string(version);
+            if (!using_default_version) {
                 free(config->swagger->metadata.version);
                 config->swagger->metadata.version = strdup(json_string_value(version));
-                log_config_section_item("Version", "%s", LOG_LEVEL_STATE, 0, 1, NULL, NULL, "Config", 
-                    config->swagger->metadata.version);
-            } else {
-                log_config_section_item("Version*", "%s", LOG_LEVEL_STATE, 1, 1, NULL, NULL, "Config", 
-                    config->swagger->metadata.version);
             }
+            log_config_item("Version", config->swagger->metadata.version, using_default_version, 1);
         } else {
-            // Log metadata defaults with asterisks when metadata section is missing
-            log_config_section_item("Metadata*", "Using defaults", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config");
-            log_config_section_item("Title*", "%s", LOG_LEVEL_STATE, 1, 1, NULL, NULL, "Config", 
-                config->swagger->metadata.title);
-            log_config_section_item("Version*", "%s", LOG_LEVEL_STATE, 1, 1, NULL, NULL, "Config", 
-                config->swagger->metadata.version);
+            // Log metadata defaults
+            log_config_item("Metadata", "Using defaults", true, 0);
+            log_config_item("Title", config->swagger->metadata.title, true, 1);
+            log_config_item("Version", config->swagger->metadata.version, true, 1);
         }
     } else {
-        // Section missing - use defaults with asterisks
-        log_config_section_header("Swagger*");
-        log_config_section_item("Enabled*", "%s", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config",
-                config->swagger->enabled ? "true" : "false");
-        log_config_section_item("Prefix*", "%s", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config",
-                config->swagger->prefix);
+        // Section missing - use defaults
+        log_config_item("Enabled", config->swagger->enabled ? "true" : "false", true, 0);
+        log_config_item("Prefix", config->swagger->prefix, true, 0);
     }
     
     return true;

@@ -29,16 +29,15 @@
 #include "../config_defaults.h"
 #include "../../logging/logging.h"
 #include "../../utils/utils.h"
-#include "../logging/config_logging_utils.h"
 
 bool load_json_server(json_t* root, AppConfig* config, const char* config_path) {
     // Server Configuration
     json_t* server = json_object_get(root, "Server");
+    bool using_defaults = !json_is_object(server);
     
-    // Log header with asterisk if using defaults
-    log_config_section_header(json_is_object(server) ? "Server" : "Server *");
+    log_config_section("Server", using_defaults);
 
-    if (json_is_object(server)) {
+    if (!using_defaults) {
         // Server Name
         json_t* server_name = json_object_get(server, "ServerName");
         config->server.server_name = get_config_string_with_env("ServerName", server_name, DEFAULT_SERVER_NAME);
@@ -46,9 +45,7 @@ bool load_json_server(json_t* root, AppConfig* config, const char* config_path) 
             log_this("Config", "Failed to allocate server name", LOG_LEVEL_ERROR);
             return false;
         }
-        const char* name_source = server_name ? "(from config)" : "(default)";
-        log_config_section_item("ServerName", "%s %s", LOG_LEVEL_STATE, !server_name, 0, NULL, NULL, "Config",
-            config->server.server_name, name_source);
+        log_config_item("ServerName", config->server.server_name, !server_name, 0);
 
         // Config File (always from filesystem)
         char real_path[PATH_MAX];
@@ -62,8 +59,9 @@ bool load_json_server(json_t* root, AppConfig* config, const char* config_path) 
             free(config->server.server_name);
             return false;
         }
-        log_config_section_item("ConfigFile", "%s (filesystem)", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config",
-            config->server.config_file);
+        char value_buffer[PATH_MAX + 32];
+        snprintf(value_buffer, sizeof(value_buffer), "%s (filesystem)", config->server.config_file);
+        log_config_item("ConfigFile", value_buffer, false, 0);
 
         // Executable File
         config->server.exec_file = strdup("./hydrogen");
@@ -73,8 +71,7 @@ bool load_json_server(json_t* root, AppConfig* config, const char* config_path) 
             free(config->server.config_file);
             return false;
         }
-        log_config_section_item("ExecFile", "%s (default)", LOG_LEVEL_STATE, true, 0, NULL, NULL, "Config",
-            config->server.exec_file);
+        log_config_item("ExecFile", config->server.exec_file, true, 0);
 
         // Log File
         json_t* log_file = json_object_get(server, "LogFile");
@@ -86,9 +83,7 @@ bool load_json_server(json_t* root, AppConfig* config, const char* config_path) 
             free(config->server.exec_file);
             return false;
         }
-        const char* log_source = log_file ? "(from config)" : "(default)";
-        log_config_section_item("LogFile", "%s %s", LOG_LEVEL_STATE, !log_file, 0, NULL, NULL, "Config",
-            config->server.log_file, log_source);
+        log_config_item("LogFile", config->server.log_file, !log_file, 0);
 
         // Payload Key (for payload decryption)
         json_t* payload_key = json_object_get(server, "PayloadKey");
@@ -111,22 +106,22 @@ bool load_json_server(json_t* root, AppConfig* config, const char* config_path) 
             free(raw_key);  // Free the raw key since we're using resolved value
             
             // Display first 5 chars of resolved key
-            log_config_section_item("PayloadKey", "$PAYLOAD_KEY: %.5s...", LOG_LEVEL_STATE, 
-                !payload_key, 0, NULL, NULL, "Config", resolved_str);
+            char safe_value[256];
+            snprintf(safe_value, sizeof(safe_value), "$PAYLOAD_KEY: %s", resolved_str);
+            log_config_sensitive_item("PayloadKey", safe_value, !payload_key, 0);
         } else {
             // If resolution fails, use raw key
             config->server.payload_key = raw_key;
-            log_config_section_item("PayloadKey", "$PAYLOAD_KEY: not set", LOG_LEVEL_STATE,
-                !payload_key, 0, NULL, NULL, "Config");
+            log_config_item("PayloadKey", "$PAYLOAD_KEY: not set", !payload_key, 0);
         }
         if (resolved) json_decref(resolved);
 
         // Startup Delay (in seconds)
         json_t* startup_delay = json_object_get(server, "StartupDelay");
         config->server.startup_delay = get_config_int(startup_delay, DEFAULT_STARTUP_DELAY);
-        const char* delay_source = startup_delay ? "(from config)" : "(default)";
-        log_config_section_item("StartupDelay", "%ds %s", LOG_LEVEL_STATE, !startup_delay, 0, NULL, "seconds", "Config",
-            config->server.startup_delay, delay_source);
+        char delay_buffer[64];
+        snprintf(delay_buffer, sizeof(delay_buffer), "%ss", format_int_buffer(config->server.startup_delay));
+        log_config_item("StartupDelay", delay_buffer, !startup_delay, 0);
         if (config->server.startup_delay < 0) {
             log_this("Config", "StartupDelay cannot be negative", LOG_LEVEL_ERROR);
             free(config->server.server_name);
@@ -141,20 +136,16 @@ bool load_json_server(json_t* root, AppConfig* config, const char* config_path) 
 
         // Set and log each default value
         config->server.server_name = strdup(DEFAULT_SERVER_NAME);
-        log_config_section_item("ServerName", "%s (default)", LOG_LEVEL_STATE, true, 0, NULL, NULL, "Config",
-            config->server.server_name);
+        log_config_item("ServerName", config->server.server_name, true, 0);
 
         config->server.config_file = strdup(DEFAULT_CONFIG_FILE);
-        log_config_section_item("ConfigFile", "%s (default)", LOG_LEVEL_STATE, true, 0, NULL, NULL, "Config",
-            config->server.config_file);
+        log_config_item("ConfigFile", config->server.config_file, true, 0);
 
         config->server.exec_file = strdup("./hydrogen");
-        log_config_section_item("ExecFile", "%s (default)", LOG_LEVEL_STATE, true, 0, NULL, NULL, "Config",
-            config->server.exec_file);
+        log_config_item("ExecFile", config->server.exec_file, true, 0);
 
         config->server.log_file = strdup(DEFAULT_LOG_FILE_PATH);
-        log_config_section_item("LogFile", "%s (default)", LOG_LEVEL_STATE, true, 0, NULL, NULL, "Config",
-            config->server.log_file);
+        log_config_item("LogFile", config->server.log_file, true, 0);
 
         // Handle PayloadKey with potential environment variable
         char* raw_key = strdup("${env.PAYLOAD_KEY}");
@@ -176,19 +167,20 @@ bool load_json_server(json_t* root, AppConfig* config, const char* config_path) 
             free(raw_key);  // Free the raw key since we're using resolved value
             
             // Display first 5 chars of resolved key
-            log_config_section_item("PayloadKey", "$PAYLOAD_KEY: %.5s...", LOG_LEVEL_STATE, 
-                true, 0, NULL, NULL, "Config", resolved_str);
+            char safe_value[256];
+            snprintf(safe_value, sizeof(safe_value), "$PAYLOAD_KEY: %s", resolved_str);
+            log_config_sensitive_item("PayloadKey", safe_value, true, 0);
         } else {
             // If resolution fails, use raw key
             config->server.payload_key = raw_key;
-            log_config_section_item("PayloadKey", "$PAYLOAD_KEY: not set", LOG_LEVEL_STATE,
-                true, 0, NULL, NULL, "Config");
+            log_config_item("PayloadKey", "$PAYLOAD_KEY: not set", true, 0);
         }
         if (resolved) json_decref(resolved);
 
         config->server.startup_delay = DEFAULT_STARTUP_DELAY;
-        log_config_section_item("StartupDelay", "%ds (default)", LOG_LEVEL_STATE, true, 0, NULL, "seconds", "Config",
-            config->server.startup_delay);
+        char delay_buffer[64];
+        snprintf(delay_buffer, sizeof(delay_buffer), "%ss", format_int_buffer(config->server.startup_delay));
+        log_config_item("StartupDelay", delay_buffer, true, 0);
 
         // Validate default allocation
         if (!config->server.server_name || !config->server.config_file || 

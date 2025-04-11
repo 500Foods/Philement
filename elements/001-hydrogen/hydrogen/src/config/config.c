@@ -19,6 +19,74 @@
  * N. Resources
  * O. OIDC
  * P. Notify
+ * 
+ * THE BIG IDEA
+ * 
+ * We have an AppConfig structure that contains all of the configuration information
+ * for our application. This is used by the Launch/Landing system we have for starting
+ * and stopping the individual subsystems, like the webserver for example. Any kind of
+ * setting or configuration information needs to reside solely within this AppConfig
+ * structure. If our app is restarted, this structure is emptied and recreated based
+ * on the currently available configuration information at that time, allowing us to
+ * restart the app to pick up new configuration information.asm
+ * 
+ * In order to populate AppConfig, we typically either want to use defaults which are
+ * hardcoded into our app, here in the config section, or by reading in a JSON config
+ * file that has been structured with sections for each subsystem. There isn't a perfect
+ * 1:1 mapping between subsystems and config sections, so we refer to the subsystems with
+ * numbers and the config sections with letters. There is a great deal of overlap.
+ * 
+ * Now, being JSON, the config files can supply us with JSON datatypes, like strings and
+ * numbers, and sometimes secrets like tokens or passwords. And, importantly, we can also
+ * provide an environment variable (env vars) of the format ${env.VALUE in place of an
+ * actual value. This allows us to use the same config while updating those secrets 
+ * separately, hiding them from our source code entirely. 
+ * 
+ * When our config code is executed, the end goal is to have AppConfig fully populated
+ * and all of the env vars resolved. Note that the defaults we use, either when a JSON
+ * key/value is not found or when a JSON config file itself is not found, may also use
+ * env vars. For example, ${env.PAYLOAD_KEY} is the default value in the Server section
+ * which is used to set the key needed to decrypt the payloads. A user could also choose
+ * to place the key in the config JSON file if they so desired, but without any other
+ * option provided, our app will look to retrieve the key from the environment.asm
+ * 
+ * JSON config files may include the same key/values as the defaults, including with 
+ * env vars. We want to know if a value has been supplied or if one has been used as
+ * a default because one was not supplied. We indicate this in the log by placing an
+ * asterisk at the end of the log entry to indicate that no settting was supplied so
+ * we're using a default value. 
+ * 
+ * If a default value or a key/value from a config is supplied, and an env var is 
+ * referenced, but the env var is not set, we will set the loglevel to ERROR to
+ * reflect this. If the env var is set, but is null or doesn't conform to the 
+ * data type we expect (like a port number) then an ERROR will be logged as well.
+ * NULL strings are not an error normally.
+ * 
+ * Finally when outputing the config information to the log, we're trying to use
+ * a very structured and consistent format as there are potentially going to be
+ * dozens of sections each with potentially dozens of key/value pairs. So being
+ * consistent is important, and also hopefully helps to simplify our code.
+ * 
+ * We also want to keep secrets secret, so if a key/value pair refers to a secret
+ * that might be a token, password, or something similar, we'll output only the
+ * first few characters of that value, so as to be able to verifity it is correct,
+ * rather than the entire value. This is done by using the config_sensitive option.
+ * 
+ * When processing this config information, we process it in a specific order so as
+ * to largely mimic the Launch order, mostly for convenience. JSON of course doesn't
+ * have an official ordering - sections can appear in any order - but for our code
+ * we'll stick to our alphabetic ordering based on the section letters assigned.
+ * 
+ * The config/json_SECTION code is used to centralize the JSON aspects of handling
+ * each section, trying to keep that as simple as possible. We're working towards
+ * getting this code down to one line per JSON key/value pair.
+ * 
+ * The config/SECTION/config_SECTION code is used to handle the initialization or
+ * cleanup of the AppConfig structure for that section. This is where we do the
+ * actual work of setting up the AppConfig structure, including the env var
+ * resolution and default value handling. This is also where we do the validation
+ * of the values, including checking for NULL or empty strings, and checking for
+ * the correct data types. This is also where we do the logging of the values.
  */
 
 // Core system headers

@@ -20,7 +20,6 @@
 #include "../config_utils.h"
 #include "../security/config_sensitive.h"
 #include "../../logging/logging.h"
-#include "../logging/config_logging_utils.h"
 
 /*
  * Helper function to handle environment variable substitution in config values
@@ -40,7 +39,7 @@
 char* get_config_string_with_env(const char* json_key, json_t* value, const char* default_value) {
     if (!json_is_string(value)) {
         char* result = strdup(default_value);
-        log_config_section_item(json_key, "%s *", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config", default_value);
+        log_config_item(json_key, default_value, true, 0);
         return result;
     }
 
@@ -58,18 +57,22 @@ char* get_config_string_with_env(const char* json_key, json_t* value, const char
             char* result;
             if (env_value) {
                 result = strdup(env_value);
-                // For sensitive values, truncate in log
+                // Handle sensitive values
                 if (is_sensitive_value(json_key)) {
-                    char safe_value[256];
-                    snprintf(safe_value, sizeof(safe_value), "$%.200s: %.5s...", var_name, env_value);
-                    log_config_section_item(json_key, "%s", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config-Env", safe_value);
+                    char safe_value[512];
+                    snprintf(safe_value, sizeof(safe_value), "$%s: %s", var_name, env_value);
+                    log_config_sensitive_item(json_key, safe_value, false, 0);
                 } else {
-                    log_config_section_item(json_key, "$%s: %s", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config-Env", var_name, env_value);
+                    char value_buffer[512];
+                    snprintf(value_buffer, sizeof(value_buffer), "$%s: %s", var_name, env_value);
+                    log_config_item(json_key, value_buffer, false, 0);
                 }
             } else {
-                // When env var is not set, we use default value - mark with single asterisk
+                // When env var is not set, use default value
                 result = strdup(default_value);
-                log_config_section_item(json_key, "$%s: not set, using %s", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config-Env", var_name, default_value);
+                char value_buffer[512];
+                snprintf(value_buffer, sizeof(value_buffer), "$%s: not set, using %s", var_name, default_value);
+                log_config_item(json_key, value_buffer, true, 0);
             }
             return result;
         }
@@ -77,6 +80,6 @@ char* get_config_string_with_env(const char* json_key, json_t* value, const char
 
     // Not an environment variable, log and return the value
     char* result = strdup(str_value);
-    log_config_section_item(json_key, "%s", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config", str_value);
+    log_config_item(json_key, str_value, false, 0);
     return result;
 }

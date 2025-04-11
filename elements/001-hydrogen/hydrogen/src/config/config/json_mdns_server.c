@@ -28,54 +28,50 @@
 #include "../config_defaults.h"
 #include "../../logging/logging.h"
 #include "../../utils/utils.h"
-#include "../logging/config_logging_utils.h"
 
 bool load_json_mdns_server(json_t* root, AppConfig* config) {
     // mDNS Server Configuration
     json_t* mdns_server = json_object_get(root, "mDNSServer");
-    if (json_is_object(mdns_server)) {
-        log_config_section_header("mDNSServer");
-        
+    bool using_defaults = !json_is_object(mdns_server);
+    
+    log_config_section("mDNSServer", using_defaults);
+    
+    if (!using_defaults) {
         json_t* enabled = json_object_get(mdns_server, "Enabled");
         config->mdns_server.enabled = get_config_bool(enabled, 1);
-        log_config_section_item("Enabled", "%s", LOG_LEVEL_STATE, !enabled, 0, NULL, NULL, "Config",
-                config->mdns_server.enabled ? "true" : "false");
+        log_config_item("Enabled", config->mdns_server.enabled ? "true" : "false", !enabled, 0);
 
         json_t* enable_ipv6 = json_object_get(mdns_server, "EnableIPv6");
         config->mdns_server.enable_ipv6 = get_config_bool(enable_ipv6, 1);
-        log_config_section_item("EnableIPv6", "%s", LOG_LEVEL_STATE, !enable_ipv6, 0, NULL, NULL, "Config",
-                config->mdns_server.enable_ipv6 ? "true" : "false");
+        log_config_item("EnableIPv6", config->mdns_server.enable_ipv6 ? "true" : "false", !enable_ipv6, 0);
 
         json_t* device_id = json_object_get(mdns_server, "DeviceId");
         config->mdns_server.device_id = get_config_string_with_env("DeviceId", device_id, "hydrogen-printer");
-        log_config_section_item("DeviceId", "%s", LOG_LEVEL_STATE, !device_id, 0, NULL, NULL, "Config",
-            config->mdns_server.device_id);
+        log_config_item("DeviceId", config->mdns_server.device_id, !device_id, 0);
 
         json_t* friendly_name = json_object_get(mdns_server, "FriendlyName");
         config->mdns_server.friendly_name = get_config_string_with_env("FriendlyName", friendly_name, "Hydrogen 3D Printer");
-        log_config_section_item("FriendlyName", "%s", LOG_LEVEL_STATE, !friendly_name, 0, NULL, NULL, "Config",
-            config->mdns_server.friendly_name);
+        log_config_item("FriendlyName", config->mdns_server.friendly_name, !friendly_name, 0);
 
         json_t* model = json_object_get(mdns_server, "Model");
         config->mdns_server.model = get_config_string_with_env("Model", model, "Hydrogen");
-        log_config_section_item("Model", "%s", LOG_LEVEL_STATE, !model, 0, NULL, NULL, "Config",
-            config->mdns_server.model);
+        log_config_item("Model", config->mdns_server.model, !model, 0);
 
         json_t* manufacturer = json_object_get(mdns_server, "Manufacturer");
         config->mdns_server.manufacturer = get_config_string_with_env("Manufacturer", manufacturer, "Philement");
-        log_config_section_item("Manufacturer", "%s", LOG_LEVEL_STATE, !manufacturer, 0, NULL, NULL, "Config",
-            config->mdns_server.manufacturer);
+        log_config_item("Manufacturer", config->mdns_server.manufacturer, !manufacturer, 0);
 
         json_t* version = json_object_get(mdns_server, "Version");
         config->mdns_server.version = get_config_string_with_env("Version", version, VERSION);
-        log_config_section_item("Version", "%s", LOG_LEVEL_STATE, !version, 0, NULL, NULL, "Config",
-            config->mdns_server.version);
+        log_config_item("Version", config->mdns_server.version, !version, 0);
         
         json_t* services = json_object_get(mdns_server, "Services");
         if (json_is_array(services)) {
             config->mdns_server.num_services = json_array_size(services);
-            log_config_section_item("Services", "%zu configured", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config",
-                config->mdns_server.num_services);
+            char services_buffer[64];
+            snprintf(services_buffer, sizeof(services_buffer), "%s configured", 
+                    format_int_buffer(config->mdns_server.num_services));
+            log_config_item("Services", services_buffer, false, 0);
             
             config->mdns_server.services = calloc(config->mdns_server.num_services, sizeof(mdns_server_service_t));
             if (config->mdns_server.services == NULL) {
@@ -98,10 +94,12 @@ bool load_json_mdns_server(json_t* root, AppConfig* config) {
                 config->mdns_server.services[i].port = get_config_int(port, DEFAULT_WEB_PORT);
                 
                 // Log service details after all properties are populated
-                log_config_section_item("Service", "%s: %s on port %d", LOG_LEVEL_STATE, 0, 1, NULL, NULL, "Config",
-                                       config->mdns_server.services[i].name,
-                                       config->mdns_server.services[i].type,
-                                       config->mdns_server.services[i].port);
+                char service_buffer[512];
+                snprintf(service_buffer, sizeof(service_buffer), "%s: %s on port %s",
+                        config->mdns_server.services[i].name,
+                        config->mdns_server.services[i].type,
+                        format_int_buffer(config->mdns_server.services[i].port));
+                log_config_item("Service", service_buffer, false, 1);
 
                 json_t* txt_records = json_object_get(service, "TxtRecords");
                 if (json_is_string(txt_records)) {
@@ -164,8 +162,7 @@ bool load_json_mdns_server(json_t* root, AppConfig* config) {
             config->mdns_server.services = NULL;
         }
     } else {
-        log_config_section_header("mDNSServer");
-        log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_ALERT, 1, 0, NULL, NULL, "Config");
+        log_config_item("Status", "Section missing, using defaults", true, 0);
         
         // Set default values
         config->mdns_server.enabled = 1;
