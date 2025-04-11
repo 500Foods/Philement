@@ -27,92 +27,38 @@
 #include "../types/config_int.h"
 #include "../../logging/logging.h"
 
-// Helper to process and log an environment variable
-static char* process_env_var(const char* key, json_t* value, const char* default_value, bool is_sensitive, bool is_default __attribute__((unused))) {
-    char* result = get_config_string_with_env(key, value, default_value);
-    if (!result) return NULL;
-
-    // Check if this is an environment variable
-    if (strncmp(result, "${env.", 6) == 0) {
-        const char* env_name = result + 6;
-        size_t len = strlen(env_name);
-        if (len > 1 && env_name[len-1] == '}') {
-            // Safely extract env var name
-            char env_var[256];
-            size_t copy_len = len - 1;
-            if (copy_len >= sizeof(env_var)) {
-                copy_len = sizeof(env_var) - 1;
-            }
-            memcpy(env_var, env_name, copy_len);
-            env_var[copy_len] = '\0';
-            
-            const char* env_val = getenv(env_var);
-            if (env_val) {
-                if (is_sensitive) {
-                    log_this("Config", "    ― %s: $%s: %.5s... (%s)", LOG_LEVEL_STATE,
-                            key, env_var, env_val, is_default ? "default" : "from config");
-                } else {
-                    log_this("Config", "    ― %s: $%s: %s (%s)", LOG_LEVEL_STATE,
-                            key, env_var, env_val, is_default ? "default" : "from config");
-                }
-            } else {
-                log_this("Config", "    ― %s: $%s: not set (%s)", LOG_LEVEL_STATE,
-                        key, env_var, is_default ? "default" : "from config");
-            }
-        }
-    } else if (result[0] != '\0') {
-        // Non-empty non-env value
-        if (is_sensitive) {
-            log_this("Config", "    ― %s: %.5s... (%s)", LOG_LEVEL_STATE,
-                    key, result, is_default ? "default" : "from config");
-        } else {
-            log_this("Config", "    ― %s: %s (%s)", LOG_LEVEL_STATE,
-                    key, result, is_default ? "default" : "from config");
-        }
-    } else {
-        // Empty value
-        log_this("Config", "    ― %s: not set (%s)", LOG_LEVEL_STATE,
-                key, is_default ? "default" : "from config");
-    }
-
-    return result;
-}
-
 // Helper to process a database connection from JSON
 static void process_database_connection(json_t* conn_obj, DatabaseConnection* conn, bool is_default __attribute__((unused))) {
     if (!conn_obj || !json_is_object(conn_obj)) {
         // Log default values
-        log_this("Config", "  ― %s (default)", LOG_LEVEL_STATE, conn->name);
+        log_config_item(conn->name, "", true, 1);
         if (conn->enabled) {
-            // Type
-            log_this("Config", "    ― Type: %s (default)", LOG_LEVEL_STATE, conn->type);
+            log_config_item("Type", conn->type, true, 2);
 
             // Process default env vars
-            process_env_var("Database", NULL, "${env.ACURANZO_DATABASE}", false, true);
-            process_env_var("Host", NULL, "${env.ACURANZO_DB_HOST}", false, true);
-            process_env_var("Port", NULL, "${env.ACURANZO_DB_PORT}", false, true);
-            process_env_var("User", NULL, "${env.ACURANZO_DB_USER}", true, true);
-            process_env_var("Pass", NULL, "${env.ACURANZO_DB_PASS}", true, true);
+            process_config_env_var("Database", NULL, "${env.ACURANZO_DATABASE}", false, true);
+            process_config_env_var("Host", NULL, "${env.ACURANZO_DB_HOST}", false, true);
+            process_config_env_var("Port", NULL, "${env.ACURANZO_DB_PORT}", false, true);
+            process_config_env_var("User", NULL, "${env.ACURANZO_DB_USER}", true, true);
+            process_config_env_var("Pass", NULL, "${env.ACURANZO_DB_PASS}", true, true);
 
-            // Workers
-            log_this("Config", "    ― Workers: %d (default)", LOG_LEVEL_STATE, conn->workers);
+            log_config_item("Workers", format_int_buffer(conn->workers), true, 2);
         }
-        log_this("Config", "    ― Enabled: %s (default)", LOG_LEVEL_STATE,
-                conn->enabled ? "true" : "false");
+        log_config_item("Enabled", conn->enabled ? "true" : "false", true, 2);
         return;
     }
 
     // Log from config values
-    log_this("Config", "  ― %s (from config)", LOG_LEVEL_STATE, conn->name);
+    log_config_item(conn->name, "", false, 1);
 
     // Type
     json_t* type = json_object_get(conn_obj, "Type");
-    if (json_is_string(type)) {
+    bool using_default_type = !json_is_string(type);
+    if (!using_default_type) {
         free(conn->type);
         conn->type = strdup(json_string_value(type));
     }
-    log_this("Config", "    ― Type: %s %s", LOG_LEVEL_STATE,
-            conn->type, json_is_string(type) ? "(from config)" : "(default)");
+    log_config_item("Type", conn->type, using_default_type, 2);
 
     if (conn->enabled) {
         // Process each parameter
@@ -138,7 +84,8 @@ static void process_database_connection(json_t* conn_obj, DatabaseConnection* co
                 case 4: param_ptr = &conn->pass; break;
             }
 
-            char* new_val = process_env_var(params[i], param, env_vars[i], sensitive[i], !json_is_string(param));
+            char* new_val = process_config_env_var(params[i], param, env_vars[i], 
+                                                 sensitive[i], !json_is_string(param));
             if (new_val) {
                 free(*param_ptr);
                 *param_ptr = new_val;
@@ -147,45 +94,20 @@ static void process_database_connection(json_t* conn_obj, DatabaseConnection* co
 
         // Workers
         json_t* workers = json_object_get(conn_obj, "Workers");
-        if (json_is_integer(workers)) {
+        bool using_default_workers = !json_is_integer(workers);
+        if (!using_default_workers) {
             conn->workers = json_integer_value(workers);
         }
-        log_this("Config", "    ― Workers: %d %s", LOG_LEVEL_STATE,
-                conn->workers, json_is_integer(workers) ? "(from config)" : "(default)");
+        log_config_item("Workers", format_int_buffer(conn->workers), using_default_workers, 2);
     }
 
     // Enabled
     json_t* enabled = json_object_get(conn_obj, "Enabled");
-    if (json_is_boolean(enabled)) {
+    bool using_default_enabled = !json_is_boolean(enabled);
+    if (!using_default_enabled) {
         conn->enabled = json_boolean_value(enabled);
     }
-    log_this("Config", "    ― Enabled: %s %s", LOG_LEVEL_STATE,
-            conn->enabled ? "true" : "false",
-            json_is_boolean(enabled) ? "(from config)" : "(default)");
-}
-
-// Helper to log a database connection configuration
-static void log_database_connection(const DatabaseConnection* conn, bool is_default) {
-    char indent[16];
-    snprintf(indent, sizeof(indent), "  ― %s", conn->name);
-    log_this("Config", "%s%s", LOG_LEVEL_STATE, indent, is_default ? " (default)" : "");
-
-    if (conn->enabled) {
-        // Environment variables are already logged during processing
-        // Only log non-sensitive defaults here
-        if (is_default) {
-            log_this("Config", "    ― Type: %s (default)", LOG_LEVEL_STATE, conn->type);
-            log_this("Config", "    ― Database: $%s_DATABASE: not set", LOG_LEVEL_STATE, conn->name);
-            log_this("Config", "    ― Host: $%s_DB_HOST: not set", LOG_LEVEL_STATE, conn->name);
-            log_this("Config", "    ― Port: $%s_DB_PORT: not set", LOG_LEVEL_STATE, conn->name);
-            log_this("Config", "    ― User: $%s_DB_USER: not set", LOG_LEVEL_STATE, conn->name);
-            log_this("Config", "    ― Workers: %d (default)", LOG_LEVEL_STATE, conn->workers);
-        }
-    }
-    if (is_default) {
-        log_this("Config", "    ― Enabled: %s (default)", LOG_LEVEL_STATE,
-                conn->enabled ? "true" : "false");
-    }
+    log_config_item("Enabled", conn->enabled ? "true" : "false", using_default_enabled, 2);
 }
 
 bool load_json_databases(json_t* root, AppConfig* config) {
@@ -196,47 +118,46 @@ bool load_json_databases(json_t* root, AppConfig* config) {
     json_t* databases = json_object_get(root, "Databases");
     bool using_defaults = !json_is_object(databases);
 
-    log_this("Config", "Databases%s", LOG_LEVEL_STATE, using_defaults ? " *" : "");
+    log_config_section("Databases", using_defaults);
 
     if (!using_defaults) {
         // Process DefaultWorkers
         json_t* default_workers = json_object_get(databases, "DefaultWorkers");
-        if (json_is_integer(default_workers)) {
+        bool using_default_workers = !json_is_integer(default_workers);
+        if (!using_default_workers) {
             config->databases.default_workers = json_integer_value(default_workers);
         }
-        log_this("Config", "― DefaultWorkers: %d%s", LOG_LEVEL_STATE,
-                 config->databases.default_workers,
-                 !json_is_integer(default_workers) ? " *" : "");
+        log_config_item("DefaultWorkers", 
+                       format_int_buffer(config->databases.default_workers),
+                       using_default_workers, 0);
 
         // Process Connections section
         json_t* connections = json_object_get(databases, "Connections");
         if (json_is_object(connections)) {
-            log_this("Config", "― Connections", LOG_LEVEL_STATE);
+            log_config_item("Connections", "", false, 0);
 
             // Process each known database
             for (int i = 0; i < MAX_DATABASES; i++) {
                 json_t* conn_obj = json_object_get(connections, KNOWN_DATABASES[i]);
-                if (json_is_object(conn_obj)) {
-                    process_database_connection(conn_obj, &config->databases.connections[i], false);
-                    log_database_connection(&config->databases.connections[i], false);
-                } else {
-                    log_database_connection(&config->databases.connections[i], true);
-                }
+                process_database_connection(conn_obj, &config->databases.connections[i], 
+                                         !json_is_object(conn_obj));
             }
         } else {
-            log_this("Config", "― Connections *", LOG_LEVEL_STATE);
+            log_config_item("Connections", "", true, 0);
             // Log default connections
             for (int i = 0; i < MAX_DATABASES; i++) {
-                log_database_connection(&config->databases.connections[i], true);
+                process_database_connection(NULL, &config->databases.connections[i], true);
             }
         }
     } else {
-        log_this("Config", "― Status: Section missing, using defaults", LOG_LEVEL_ALERT);
-        log_this("Config", "― DefaultWorkers: %d *", LOG_LEVEL_STATE, config->databases.default_workers);
-        log_this("Config", "― Connections *", LOG_LEVEL_STATE);
+        log_config_item("Status", "Section missing, using defaults", true, 0);
+        log_config_item("DefaultWorkers", 
+                       format_int_buffer(config->databases.default_workers), 
+                       true, 0);
+        log_config_item("Connections", "", true, 0);
         // Log default connections
         for (int i = 0; i < MAX_DATABASES; i++) {
-            log_database_connection(&config->databases.connections[i], true);
+            process_database_connection(NULL, &config->databases.connections[i], true);
         }
     }
 

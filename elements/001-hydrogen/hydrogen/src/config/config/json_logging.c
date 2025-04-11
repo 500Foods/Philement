@@ -30,12 +30,12 @@
 #include "../logging/config_logging.h"
 #include "../../logging/logging.h"
 #include "../../utils/utils.h"
-#include "../logging/config_logging_utils.h"
-
 bool load_json_logging(json_t* root, AppConfig* config) {
     // Logging Configuration
     json_t* logging = json_object_get(root, "Logging");
-    log_config_section_header("Logging");
+    bool using_defaults = !json_is_object(logging);
+    
+    log_config_section("Logging", using_defaults);
 
     // Initialize logging configuration
     if (config_logging_init(&config->logging) != 0) {
@@ -62,8 +62,10 @@ bool load_json_logging(json_t* root, AppConfig* config) {
                 return false;
             }
 
-            log_config_section_item("LogLevels", "%zu configured", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config", 
-                config->logging.level_count);
+            char count_buffer[64];
+            snprintf(count_buffer, sizeof(count_buffer), "%s configured",
+                    format_int_buffer(config->logging.level_count));
+            log_config_item("LogLevels", count_buffer, false, 0);
             
             for (size_t i = 0; i < config->logging.level_count; i++) {
                 json_t* level = json_array_get(levels, i);
@@ -135,16 +137,19 @@ bool load_json_logging(json_t* root, AppConfig* config) {
                         if (clean_name) {
                             strncpy(clean_name, env_name + 6, len);
                             clean_name[len] = '\0';
-                            log_config_section_item("Level", "$%s: not set, using %s *", 
-                                LOG_LEVEL_STATE, true, 1, NULL, NULL, "Config-Env",
-                                clean_name,
-                                config->logging.levels[i].name);
+                            char level_buffer[256];
+                            snprintf(level_buffer, sizeof(level_buffer), "$%s: not set, using %s *",
+                                    clean_name, config->logging.levels[i].name);
+                            log_config_item("Level", level_buffer, true, 1);
                             free(clean_name);
                         }
                     } else {
                         // Direct value format
-                        log_config_section_item("Level", "%d: %s", LOG_LEVEL_STATE, is_default, 1, NULL, NULL, "Config",
-                            config->logging.levels[i].value, config->logging.levels[i].name);
+                        char level_buffer[256];
+                        snprintf(level_buffer, sizeof(level_buffer), "%s: %s",
+                                format_int_buffer(config->logging.levels[i].value),
+                                config->logging.levels[i].name);
+                        log_config_item("Level", level_buffer, is_default, 1);
                     }
                 }
             }
@@ -169,8 +174,11 @@ bool load_json_logging(json_t* root, AppConfig* config) {
                     return false;
                 }
                 config->logging.levels[i].name = name;
-                log_config_section_item("Level", "LogLevel %d: %s", LOG_LEVEL_STATE, 1, 1, NULL, NULL, "Config",
-                    config->logging.levels[i].value, config->logging.levels[i].name);
+                char level_buffer[256];
+                snprintf(level_buffer, sizeof(level_buffer), "LogLevel %s: %s",
+                        format_int_buffer(config->logging.levels[i].value),
+                        config->logging.levels[i].name);
+                log_config_item("Level", level_buffer, true, 1);
             }
         }
 
@@ -179,7 +187,7 @@ bool load_json_logging(json_t* root, AppConfig* config) {
         for (size_t i = 0; i < 4; i++) {
             json_t* output = json_object_get(logging, outputs[i]);
             if (json_is_object(output)) {
-                log_config_section_item(outputs[i], "", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config");
+                log_config_item(outputs[i], "Configured", false, 0);
                 
                 // Get enabled status and default level (may be environment variables)
                 json_t* enabled = json_object_get(output, "Enabled");
@@ -258,14 +266,14 @@ bool load_json_logging(json_t* root, AppConfig* config) {
                     if (clean_name) {
                         strncpy(clean_name, env_val + 6, len);
                         clean_name[len] = '\0';
-                        log_config_section_item("Enabled", "$%s: not set, using %s *", 
-                            LOG_LEVEL_STATE, true, 1, NULL, NULL, "Config-Env",
-                            clean_name, is_enabled ? "true" : "false");
+                        char enabled_buffer[256];
+                        snprintf(enabled_buffer, sizeof(enabled_buffer), "$%s: not set, using %s *",
+                                clean_name, is_enabled ? "true" : "false");
+                        log_config_item("Enabled", enabled_buffer, true, 1);
                         free(clean_name);
                     }
                 } else {
-                    log_config_section_item("Enabled", "%s", LOG_LEVEL_STATE, !enabled, 1, NULL, NULL, "Config",
-                        is_enabled ? "true" : "false");
+                    log_config_item("Enabled", is_enabled ? "true" : "false", !enabled, 1);
                 }
 
                 // Log default level
@@ -276,22 +284,24 @@ bool load_json_logging(json_t* root, AppConfig* config) {
                     if (clean_name) {
                         strncpy(clean_name, env_val + 6, len);
                         clean_name[len] = '\0';
-                        log_config_section_item("LogLevel", "$%s: not set, using %s *", 
-                            LOG_LEVEL_STATE, true, 1, NULL, NULL, "Config-Env",
-                            clean_name, config_logging_get_level_name(&config->logging, level_value));
+                        char level_buffer[256];
+                        snprintf(level_buffer, sizeof(level_buffer), "$%s: not set, using %s *",
+                                clean_name, config_logging_get_level_name(&config->logging, level_value));
+                        log_config_item("LogLevel", level_buffer, true, 1);
                         free(clean_name);
                     }
                 } else {
-                    log_config_section_item("LogLevel", "%s", LOG_LEVEL_STATE, !default_level, 1, NULL, NULL, "Config",
-                        config_logging_get_level_name(&config->logging, level_value));
+                    log_config_item("LogLevel", config_logging_get_level_name(&config->logging, level_value), !default_level, 1);
                 }
 
                 // Process subsystems if present
                 json_t* subsystems = json_object_get(output, "Subsystems");
                 if (json_is_object(subsystems)) {
                     size_t subsystem_count = json_object_size(subsystems);
-                    log_config_section_item("Subsystems", "%zu configured", LOG_LEVEL_STATE, 0, 1, NULL, NULL, "Config",
-                        subsystem_count);
+                    char count_buffer[64];
+                    snprintf(count_buffer, sizeof(count_buffer), "%s configured",
+                            format_int_buffer(subsystem_count));
+                    log_config_item("Subsystems", count_buffer, false, 1);
                     SubsystemConfig* subsystem_array = calloc(subsystem_count, sizeof(SubsystemConfig));
                     if (!subsystem_array) {
                         log_this("Config", "Failed to allocate subsystem array", LOG_LEVEL_ERROR);
@@ -380,16 +390,15 @@ bool load_json_logging(json_t* root, AppConfig* config) {
                                 if (clean_name) {
                                     strncpy(clean_name, env_val + 6, len);
                                     clean_name[len] = '\0';
-                                    log_config_section_item(keys[j], "$%s: not set, using %s *", 
-                                        LOG_LEVEL_STATE, true, 2, NULL, NULL, "Config-Env",
-                                        clean_name, 
-                                        config_logging_get_level_name(&config->logging, level));
+                                    char level_buffer[256];
+                                    snprintf(level_buffer, sizeof(level_buffer), "$%s: not set, using %s *",
+                                            clean_name, config_logging_get_level_name(&config->logging, level));
+                                    log_config_item(keys[j], level_buffer, true, 2);
                                     free(clean_name);
                                 }
                             } else {
                                 // Direct value format with proper indentation
-                                log_config_section_item(keys[j], "%s", LOG_LEVEL_STATE, 0, 2, NULL, NULL, "Config",
-                                    config_logging_get_level_name(&config->logging, level));
+                                log_config_item(keys[j], config_logging_get_level_name(&config->logging, level), false, 2);
                             }
                         }
                         
@@ -429,12 +438,12 @@ bool load_json_logging(json_t* root, AppConfig* config) {
                 }
             } else {
                 // Log default configuration for this output
-                log_config_section_item(outputs[i], "Using defaults", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config");
+                log_config_item(outputs[i], "Using defaults", true, 0);
             }
         }
     } else {
         // Using all defaults
-        log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_ALERT, 1, 0, NULL, NULL, "Config");
+        log_config_item("Status", "Section missing, using defaults", true, 0);
         
         // Set up default levels
         config->logging.level_count = NUM_PRIORITY_LEVELS;
@@ -456,8 +465,11 @@ bool load_json_logging(json_t* root, AppConfig* config) {
                 return false;
             }
             config->logging.levels[i].name = name;
-            log_config_section_item("Level", "%d: %s", LOG_LEVEL_STATE, 1, 1, NULL, NULL, "Config",
-                config->logging.levels[i].value, config->logging.levels[i].name);
+            char level_buffer[256];
+            snprintf(level_buffer, sizeof(level_buffer), "%s: %s",
+                    format_int_buffer(config->logging.levels[i].value),
+                    config->logging.levels[i].name);
+            log_config_item("Level", level_buffer, true, 1);
         }
     }
 

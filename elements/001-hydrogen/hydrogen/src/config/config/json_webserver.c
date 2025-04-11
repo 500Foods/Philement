@@ -29,31 +29,29 @@
 #include "../config_defaults.h"
 #include "../../logging/logging.h"
 #include "../../utils/utils.h"
-#include "../logging/config_logging_utils.h"
 
 bool load_json_webserver(json_t* root, AppConfig* config) {
     // Web Configuration
     json_t* web = json_object_get(root, "WebServer");
-    if (json_is_object(web)) {
-        log_config_section_header("WebServer");
-        
+    bool using_defaults = !json_is_object(web);
+    
+    log_config_section("WebServer", using_defaults);
+    
+    if (!using_defaults) {
         // Network Settings
         json_t* enable_ipv4 = json_object_get(web, "EnableIPv4");
         config->web.enable_ipv4 = get_config_bool(enable_ipv4, DEFAULT_WEB_ENABLE_IPV4);
-        log_config_section_item("EnableIPv4", "%s%s", LOG_LEVEL_STATE, !enable_ipv4, 0, NULL, NULL, "Config",
-            config->web.enable_ipv4 ? "true" : "false", !enable_ipv4 ? " *" : "");
+        log_config_item("EnableIPv4", config->web.enable_ipv4 ? "true" : "false", !enable_ipv4, 0);
 
         json_t* enable_ipv6 = json_object_get(web, "EnableIPv6");
         config->web.enable_ipv6 = get_config_bool(enable_ipv6, DEFAULT_WEB_ENABLE_IPV6);
-        log_config_section_item("EnableIPv6", "%s%s", LOG_LEVEL_STATE, !enable_ipv6, 0, NULL, NULL, "Config",
-            config->web.enable_ipv6 ? "true" : "false", !enable_ipv6 ? " *" : "");
+        log_config_item("EnableIPv6", config->web.enable_ipv6 ? "true" : "false", !enable_ipv6, 0);
 
         // Only continue if either IPv4 or IPv6 is enabled
         if (config->web.enable_ipv4 || config->web.enable_ipv6) {
             json_t* port = json_object_get(web, "Port");
             config->web.port = get_config_int(port, DEFAULT_WEB_PORT);
-            log_config_section_item("Port", "%d%s", LOG_LEVEL_STATE, !port, 0, NULL, NULL, "Config",
-                config->web.port, !port ? " *" : "");
+            log_config_item("Port", format_int_buffer(config->web.port), !port, 0);
 
             // Path Settings
             json_t* web_root = json_object_get(web, "WebRoot");
@@ -62,8 +60,7 @@ bool load_json_webserver(json_t* root, AppConfig* config) {
                 log_this("Config", "Failed to allocate web root path", LOG_LEVEL_ERROR);
                 return false;
             }
-            log_config_section_item("WebRoot", "%s%s", LOG_LEVEL_STATE, !web_root, 0, NULL, NULL, "Config",
-                config->web.web_root, !web_root ? " *" : "");
+            log_config_item("WebRoot", config->web.web_root, !web_root, 0);
 
             json_t* upload_path = json_object_get(web, "UploadPath");
             config->web.upload_path = get_config_string_with_env("UploadPath", upload_path, DEFAULT_UPLOAD_PATH);
@@ -72,8 +69,7 @@ bool load_json_webserver(json_t* root, AppConfig* config) {
                 free(config->web.web_root);
                 return false;
             }
-            log_config_section_item("UploadPath", "%s%s", LOG_LEVEL_STATE, !upload_path, 0, NULL, NULL, "Config",
-                config->web.upload_path, !upload_path ? " *" : "");
+            log_config_item("UploadPath", config->web.upload_path, !upload_path, 0);
 
             json_t* upload_dir = json_object_get(web, "UploadDir");
             config->web.upload_dir = get_config_string_with_env("UploadDir", upload_dir, DEFAULT_UPLOAD_DIR);
@@ -83,37 +79,36 @@ bool load_json_webserver(json_t* root, AppConfig* config) {
                 free(config->web.upload_path);
                 return false;
             }
-            log_config_section_item("UploadDir", "%s%s", LOG_LEVEL_STATE, !upload_dir, 0, NULL, NULL, "Config",
-                config->web.upload_dir, !upload_dir ? " *" : "");
+            log_config_item("UploadDir", config->web.upload_dir, !upload_dir, 0);
 
             // Upload Size Limit
             json_t* max_upload_size = json_object_get(web, "MaxUploadSize");
             config->web.max_upload_size = get_config_size(max_upload_size, DEFAULT_MAX_UPLOAD_SIZE);
-            log_config_section_item("MaxUploadSize", "%zu%s", LOG_LEVEL_STATE, !max_upload_size, 0, "B", "MB", "Config",
-                config->web.max_upload_size, !max_upload_size ? " *" : "");
+            char size_buffer[64];
+            snprintf(size_buffer, sizeof(size_buffer), "%sMB", 
+                    format_int_buffer(config->web.max_upload_size / (1024 * 1024)));
+            log_config_item("MaxUploadSize", size_buffer, !max_upload_size, 0);
 
 
             // Thread Pool Settings
             json_t* thread_pool_size = json_object_get(web, "ThreadPoolSize");
             config->web.thread_pool_size = get_config_int(thread_pool_size, DEFAULT_THREAD_POOL_SIZE);
-            log_config_section_item("ThreadPoolSize", "%d%s", LOG_LEVEL_STATE, !thread_pool_size, 0, NULL, NULL, "Config",
-                config->web.thread_pool_size, !thread_pool_size ? " *" : "");
+            log_config_item("ThreadPoolSize", format_int_buffer(config->web.thread_pool_size), !thread_pool_size, 0);
 
             // Connection Settings
             json_t* max_connections = json_object_get(web, "MaxConnections");
             config->web.max_connections = get_config_int(max_connections, DEFAULT_MAX_CONNECTIONS);
-            log_config_section_item("MaxConnections", "%d%s", LOG_LEVEL_STATE, !max_connections, 0, NULL, NULL, "Config",
-                config->web.max_connections, !max_connections ? " *" : "");
+            log_config_item("MaxConnections", format_int_buffer(config->web.max_connections), !max_connections, 0);
 
             json_t* max_connections_per_ip = json_object_get(web, "MaxConnectionsPerIP");
             config->web.max_connections_per_ip = get_config_int(max_connections_per_ip, DEFAULT_MAX_CONNECTIONS_PER_IP);
-            log_config_section_item("MaxConnectionsPerIP", "%d%s", LOG_LEVEL_STATE, !max_connections_per_ip, 0, NULL, NULL, "Config",
-                config->web.max_connections_per_ip, !max_connections_per_ip ? " *" : "");
+            log_config_item("MaxConnectionsPerIP", format_int_buffer(config->web.max_connections_per_ip), !max_connections_per_ip, 0);
 
             json_t* connection_timeout = json_object_get(web, "ConnectionTimeout");
             config->web.connection_timeout = get_config_int(connection_timeout, DEFAULT_CONNECTION_TIMEOUT);
-            log_config_section_item("ConnectionTimeout", "%d%s", LOG_LEVEL_STATE, !connection_timeout, 0, "s", "s", "Config",
-                config->web.connection_timeout, !connection_timeout ? " *" : "");
+            char timeout_buffer[64];
+            snprintf(timeout_buffer, sizeof(timeout_buffer), "%ss", format_int_buffer(config->web.connection_timeout));
+            log_config_item("ConnectionTimeout", timeout_buffer, !connection_timeout, 0);
 
             // Validate configuration
             if (config->web.port < 1 || config->web.port > 65535) {
@@ -138,32 +133,28 @@ bool load_json_webserver(json_t* root, AppConfig* config) {
             }
         }
     } else {
-        log_config_section_header("WebServer *");
-        log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_ALERT, 1, 0, NULL, NULL, "Config");
+        log_config_item("Status", "Section missing, using defaults", true, 0);
         
-        // Log all settings with asterisks since they're all defaults
-        log_config_section_item("EnableIPv4", "%s *", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config",
-            DEFAULT_WEB_ENABLE_IPV4 ? "true" : "false");
-        log_config_section_item("EnableIPv6", "%s *", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config",
-            DEFAULT_WEB_ENABLE_IPV6 ? "true" : "false");
-        log_config_section_item("Port", "%d *", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config",
-            DEFAULT_WEB_PORT);
-        log_config_section_item("WebRoot", "%s *", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config",
-            DEFAULT_WEB_ROOT);
-        log_config_section_item("UploadPath", "%s *", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config",
-            DEFAULT_UPLOAD_PATH);
-        log_config_section_item("UploadDir", "%s *", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config",
-            DEFAULT_UPLOAD_DIR);
-        log_config_section_item("MaxUploadSize", "%zu *", LOG_LEVEL_STATE, 1, 0, "B", "MB", "Config",
-            DEFAULT_MAX_UPLOAD_SIZE);
-        log_config_section_item("ThreadPoolSize", "%d *", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config",
-            DEFAULT_THREAD_POOL_SIZE);
-        log_config_section_item("MaxConnections", "%d *", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config",
-            DEFAULT_MAX_CONNECTIONS);
-        log_config_section_item("MaxConnectionsPerIP", "%d *", LOG_LEVEL_STATE, 1, 0, NULL, NULL, "Config",
-            DEFAULT_MAX_CONNECTIONS_PER_IP);
-        log_config_section_item("ConnectionTimeout", "%d *", LOG_LEVEL_STATE, 1, 0, "s", "s", "Config",
-            DEFAULT_CONNECTION_TIMEOUT);
+        // Log all settings with defaults
+        log_config_item("EnableIPv4", DEFAULT_WEB_ENABLE_IPV4 ? "true" : "false", true, 0);
+        log_config_item("EnableIPv6", DEFAULT_WEB_ENABLE_IPV6 ? "true" : "false", true, 0);
+        log_config_item("Port", format_int_buffer(DEFAULT_WEB_PORT), true, 0);
+        log_config_item("WebRoot", DEFAULT_WEB_ROOT, true, 0);
+        log_config_item("UploadPath", DEFAULT_UPLOAD_PATH, true, 0);
+        log_config_item("UploadDir", DEFAULT_UPLOAD_DIR, true, 0);
+
+        char size_buffer[64];
+        snprintf(size_buffer, sizeof(size_buffer), "%sMB", 
+                format_int_buffer(DEFAULT_MAX_UPLOAD_SIZE / (1024 * 1024)));
+        log_config_item("MaxUploadSize", size_buffer, true, 0);
+
+        log_config_item("ThreadPoolSize", format_int_buffer(DEFAULT_THREAD_POOL_SIZE), true, 0);
+        log_config_item("MaxConnections", format_int_buffer(DEFAULT_MAX_CONNECTIONS), true, 0);
+        log_config_item("MaxConnectionsPerIP", format_int_buffer(DEFAULT_MAX_CONNECTIONS_PER_IP), true, 0);
+
+        char timeout_buffer[64];
+        snprintf(timeout_buffer, sizeof(timeout_buffer), "%ss", format_int_buffer(DEFAULT_CONNECTION_TIMEOUT));
+        log_config_item("ConnectionTimeout", timeout_buffer, true, 0);
         
         // Set defaults
         config->web.enable_ipv4 = DEFAULT_WEB_ENABLE_IPV4;

@@ -9,7 +9,6 @@
 #include "../config_utils.h"
 #include "../network/config_network.h"
 #include "json_network.h"
-#include "../logging/config_logging_utils.h"
 
 // Define a type that matches the anonymous structure in NetworkConfig
 typedef struct {
@@ -20,45 +19,47 @@ typedef struct {
 bool load_json_network(json_t* root, AppConfig* config) {
     // Network Configuration
     json_t* network = json_object_get(root, "Network");
-    if (json_is_object(network)) {
-        log_config_section_header("Network");
-        
+    bool using_defaults = !json_is_object(network);
+    
+    log_config_section("Network", using_defaults);
+    
+    if (!using_defaults) {
         // Interface and IP Settings
         json_t* interfaces = json_object_get(network, "Interfaces");
         if (json_is_object(interfaces)) {
-            log_config_section_item("Interfaces", "Configured", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config");
+            log_config_item("Interfaces", "Configured", false, 0);
             
             json_t* val;
             val = json_object_get(interfaces, "MaxInterfaces");
             config->network.max_interfaces = get_config_size(val, DEFAULT_MAX_INTERFACES);
-            log_config_section_item("MaxInterfaces", "%zu", LOG_LEVEL_STATE, !val, 1, NULL, NULL, "Config", config->network.max_interfaces);
+            log_config_item("MaxInterfaces", format_int_buffer(config->network.max_interfaces), !val, 1);
             
             val = json_object_get(interfaces, "MaxIPsPerInterface");
             config->network.max_ips_per_interface = get_config_size(val, DEFAULT_MAX_IPS_PER_INTERFACE);
-            log_config_section_item("MaxIPsPerInterface", "%zu", LOG_LEVEL_STATE, !val, 1, NULL, NULL, "Config", config->network.max_ips_per_interface);
+            log_config_item("MaxIPsPerInterface", format_int_buffer(config->network.max_ips_per_interface), !val, 1);
             
             val = json_object_get(interfaces, "MaxInterfaceNameLength");
             config->network.max_interface_name_length = get_config_size(val, DEFAULT_MAX_INTERFACE_NAME_LENGTH);
-            log_config_section_item("MaxInterfaceNameLength", "%zu", LOG_LEVEL_STATE, !val, 1, NULL, NULL, "Config", config->network.max_interface_name_length);
+            log_config_item("MaxInterfaceNameLength", format_int_buffer(config->network.max_interface_name_length), !val, 1);
             
             val = json_object_get(interfaces, "MaxIPAddressLength");
             config->network.max_ip_address_length = get_config_size(val, DEFAULT_MAX_IP_ADDRESS_LENGTH);
-            log_config_section_item("MaxIPAddressLength", "%zu", LOG_LEVEL_STATE, !val, 1, NULL, NULL, "Config", config->network.max_ip_address_length);
+            log_config_item("MaxIPAddressLength", format_int_buffer(config->network.max_ip_address_length), !val, 1);
         }
         
         // Port Settings
         json_t* ports = json_object_get(network, "Ports");
         if (json_is_object(ports)) {
-            log_config_section_item("Ports", "Configured", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config");
+            log_config_item("Ports", "Configured", false, 0);
             
             json_t* val;
             val = json_object_get(ports, "StartPort");
             config->network.start_port = get_config_int(val, DEFAULT_START_PORT);
-            log_config_section_item("StartPort", "%d", LOG_LEVEL_STATE, !val, 1, NULL, NULL, "Config", config->network.start_port);
+            log_config_item("StartPort", format_int_buffer(config->network.start_port), !val, 1);
             
             val = json_object_get(ports, "EndPort");
             config->network.end_port = get_config_int(val, DEFAULT_END_PORT);
-            log_config_section_item("EndPort", "%d", LOG_LEVEL_STATE, !val, 1, NULL, NULL, "Config", config->network.end_port);
+            log_config_item("EndPort", format_int_buffer(config->network.end_port), !val, 1);
             
             // Reserved Ports
             json_t* reserved = json_object_get(ports, "ReservedPorts");
@@ -74,7 +75,9 @@ bool load_json_network(json_t* root, AppConfig* config) {
                 }
                 
                 size_t count = json_array_size(reserved);
-                log_config_section_item("ReservedPorts", "Count: %zu", LOG_LEVEL_STATE, 0, 1, NULL, NULL, "Config", count);
+                char count_buffer[32];
+                snprintf(count_buffer, sizeof(count_buffer), "Count: %s", format_int_buffer(count));
+                log_config_item("ReservedPorts", count_buffer, false, 1);
                 
                 if (count > 0) {
                     // Allocate memory for reserved ports
@@ -88,9 +91,11 @@ bool load_json_network(json_t* root, AppConfig* config) {
                                 int port = json_integer_value(port_value);
                                 if (port >= MIN_PORT && port <= MAX_PORT) {
                                     config->network.reserved_ports[config->network.reserved_ports_count++] = port;
-                                    log_config_section_item("ReservedPort", "%d", LOG_LEVEL_STATE, 0, 2, NULL, NULL, "Config", port);
+                                    log_config_item("ReservedPort", format_int_buffer(port), false, 2);
                                 } else {
-                                    log_config_section_item("ReservedPort", "Invalid: %d", LOG_LEVEL_ERROR, 0, 2, NULL, NULL, "Config", port);
+                                    char error_buffer[64];
+                                    snprintf(error_buffer, sizeof(error_buffer), "Invalid: %s", format_int_buffer(port));
+                                    log_config_item("ReservedPort", error_buffer, false, 2);
                                 }
                             }
                             
@@ -98,7 +103,7 @@ bool load_json_network(json_t* root, AppConfig* config) {
                             if (config->network.reserved_ports_count >= count) break;
                         }
                     } else {
-                        log_config_section_item("ReservedPorts", "Memory allocation failed", LOG_LEVEL_ERROR, 0, 1, NULL, NULL, "Config");
+                        log_config_item("ReservedPorts", "Memory allocation failed", false, 1);
                     }
                 }
             }
@@ -107,7 +112,7 @@ bool load_json_network(json_t* root, AppConfig* config) {
         // Interface Availability Settings
         json_t* available = json_object_get(network, "Available");
         if (json_is_object(available)) {
-            log_config_section_item("Available", "Configured", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config");
+            log_config_item("Available", "Configured", false, 0);
             
             // First clean up any existing available interfaces
             if (config->network.available_interfaces) {
@@ -146,8 +151,10 @@ bool load_json_network(json_t* root, AppConfig* config) {
                                 config->network.available_interfaces[index].available = json_boolean_value(value);
                                 
                                 // Log the interface availability
-                                log_config_section_item("Interface", "%s: %s", LOG_LEVEL_STATE, 0, 1, NULL, NULL, "Config",
-                                                       key, config->network.available_interfaces[index].available ? "enabled" : "disabled");
+                                char status_buffer[256];
+                                snprintf(status_buffer, sizeof(status_buffer), "%s: %s", key,
+                                       config->network.available_interfaces[index].available ? "enabled" : "disabled");
+                                log_config_item("Interface", status_buffer, false, 1);
                                 
                                 index++;
                             }
@@ -157,7 +164,7 @@ bool load_json_network(json_t* root, AppConfig* config) {
                     // Update the count
                     config->network.available_interfaces_count = index;
                 } else {
-                    log_config_section_item("Available", "Memory allocation failed", LOG_LEVEL_ERROR, 0, 1, NULL, NULL, "Config");
+                    log_config_item("Available", "Memory allocation failed", false, 1);
                 }
             }
         }
@@ -192,7 +199,7 @@ bool load_json_network(json_t* root, AppConfig* config) {
         int validation_result = config_network_validate(&config->network);
         
         if (validation_result != 0) {
-            log_config_section_item("Status", "Invalid configuration, using defaults", LOG_LEVEL_ERROR, 1, 0, NULL, NULL, "Config");
+            log_config_item("Status", "Invalid configuration, using defaults", true, 0);
             
             config_network_cleanup(&config->network);
             config_network_init(&config->network);
@@ -230,8 +237,7 @@ bool load_json_network(json_t* root, AppConfig* config) {
         // Set defaults if no network configuration is provided
         config_network_init(&config->network);
         
-        log_config_section_header("Network");
-        log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_ALERT, 1, 0, NULL, NULL, "Config");
+        log_config_item("Status", "Section missing, using defaults", true, 0);
         return true;
     }
 }

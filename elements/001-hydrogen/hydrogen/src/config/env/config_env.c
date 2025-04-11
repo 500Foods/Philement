@@ -19,7 +19,6 @@
 #include "../config_utils.h"
 #include "../security/config_sensitive.h"
 #include "../../logging/logging.h"
-#include "../logging/config_logging_utils.h"
 
 /*
  * Implementation of environment variable resolution
@@ -53,11 +52,21 @@ json_t* env_process_env_variable(const char* value) {
     // Only log non-PAYLOAD_KEY environment variables
     if (env_value) {
         if (strcmp(var_name, "PAYLOAD_KEY") != 0) {
-            log_config_env_value(key_name, var_name, env_value, NULL, is_sensitive_value(var_name));
+            if (is_sensitive_value(var_name)) {
+                char safe_value[256];
+                snprintf(safe_value, sizeof(safe_value), "$%s: %s", var_name, env_value);
+                log_config_sensitive_item(key_name, safe_value, false, 0);
+            } else {
+                char value_buffer[512];
+                snprintf(value_buffer, sizeof(value_buffer), "$%s: %s", var_name, env_value);
+                log_config_item(key_name, value_buffer, false, 0);
+            }
         }
     } else {
         if (strcmp(var_name, "PAYLOAD_KEY") != 0) {
-            log_config_env_value(key_name, var_name, NULL, NULL, false);
+            char value_buffer[512];
+            snprintf(value_buffer, sizeof(value_buffer), "$%s: not set", var_name);
+            log_config_item(key_name, value_buffer, true, 0);
         }
         free(var_name);
         return NULL;

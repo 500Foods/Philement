@@ -29,13 +29,12 @@
 #include "../config_defaults.h"
 #include "../../logging/logging.h"
 #include "../../utils/utils.h"
-#include "../logging/config_logging_utils.h"
-
 bool load_json_websocket(json_t* root, AppConfig* config) {
     // WebSocketServer Configuration
     json_t* websocket = json_object_get(root, "WebSocketServer");
-    if (json_is_object(websocket)) {
-        log_config_section_header("WebSocketServer");
+    bool using_defaults = !json_is_object(websocket);
+    
+    log_config_section("WebSocketServer", using_defaults);
 
         // Initialize defaults if this is the first time
         if (config->websocket.key == NULL) {
@@ -48,24 +47,22 @@ bool load_json_websocket(json_t* root, AppConfig* config) {
             config->websocket.exit_wait_seconds = DEFAULT_EXIT_WAIT_SECONDS;
         }
 
+    if (!using_defaults) {
         // Basic Properties
         json_t* enabled = json_object_get(websocket, "Enabled");
         config->websocket.enabled = get_config_bool(enabled, config->websocket.enabled);
-        log_config_section_item("Enabled", "%s", LOG_LEVEL_STATE, !enabled, 0, NULL, NULL, "Config",
-            config->websocket.enabled ? "true" : "false");
+        log_config_item("Enabled", config->websocket.enabled ? "true" : "false", !enabled, 0);
 
         if (config->websocket.enabled) {
             // IPv6 Support
             json_t* enable_ipv6 = json_object_get(websocket, "EnableIPv6");
             config->websocket.enable_ipv6 = get_config_bool(enable_ipv6, config->websocket.enable_ipv6);
-            log_config_section_item("EnableIPv6", "%s", LOG_LEVEL_STATE, !enable_ipv6, 0, NULL, NULL, "Config",
-                config->websocket.enable_ipv6 ? "true" : "false");
+            log_config_item("EnableIPv6", config->websocket.enable_ipv6 ? "true" : "false", !enable_ipv6, 0);
 
             // Port Configuration
             json_t* port = json_object_get(websocket, "Port");
             config->websocket.port = get_config_int(port, config->websocket.port);
-            log_config_section_item("Port", "%d", LOG_LEVEL_STATE, !port, 0, NULL, NULL, "Config",
-                config->websocket.port);
+            log_config_item("Port", format_int_buffer(config->websocket.port), !port, 0);
 
             // Security Settings
             json_t* key = json_object_get(websocket, "Key");
@@ -73,8 +70,8 @@ bool load_json_websocket(json_t* root, AppConfig* config) {
             if (new_key) {
                 free(config->websocket.key);
                 config->websocket.key = new_key;
+                log_config_sensitive_item("Key", new_key, !key, 0);
             }
-            // Note: Key value is sensitive, so it's handled by get_config_string_with_env's masking
 
             // Protocol Settings (with legacy support)
             json_t* protocol = json_object_get(websocket, "Protocol");
@@ -90,28 +87,31 @@ bool load_json_websocket(json_t* root, AppConfig* config) {
             if (new_protocol) {
                 free(config->websocket.protocol);
                 config->websocket.protocol = new_protocol;
-                log_config_section_item("Protocol", "%s", LOG_LEVEL_STATE, !protocol, 0, NULL, NULL, "Config",
-                    config->websocket.protocol);
+                log_config_item("Protocol", config->websocket.protocol, !protocol, 0);
             } else {
-                log_config_section_item("Protocol", "Failed to allocate string", LOG_LEVEL_ERROR, 1, 0, NULL, NULL, "Config");
+                log_config_item("Protocol", "Failed to allocate string", true, 0);
                 return false;
             }
 
             // Message Size Limits
             json_t* max_message_size = json_object_get(websocket, "MaxMessageSize");
             config->websocket.max_message_size = get_config_size(max_message_size, config->websocket.max_message_size);
-            log_config_section_item("MaxMessageSize", "%zu", LOG_LEVEL_STATE, !max_message_size, 0, "B", "MB", "Config",
-                config->websocket.max_message_size);
+            char size_buffer[64];
+            snprintf(size_buffer, sizeof(size_buffer), "%sMB", 
+                    format_int_buffer(config->websocket.max_message_size / (1024 * 1024)));
+            log_config_item("MaxMessageSize", size_buffer, !max_message_size, 0);
 
             // Connection Settings
             json_t* connection_timeouts = json_object_get(websocket, "ConnectionTimeouts");
             if (json_is_object(connection_timeouts)) {
-                log_config_section_item("ConnectionTimeouts", "", LOG_LEVEL_STATE, 0, 0, NULL, NULL, "Config");
+                log_config_item("ConnectionTimeouts", "Configured", false, 0);
                 
                 json_t* exit_wait_seconds = json_object_get(connection_timeouts, "ExitWaitSeconds");
                 config->websocket.exit_wait_seconds = get_config_int(exit_wait_seconds, config->websocket.exit_wait_seconds);
-                log_config_section_item("ExitWaitSeconds", "%d", LOG_LEVEL_STATE, !exit_wait_seconds, 1, NULL, NULL, "Config",
-                    config->websocket.exit_wait_seconds);
+                char wait_buffer[64];
+                snprintf(wait_buffer, sizeof(wait_buffer), "%ss", 
+                        format_int_buffer(config->websocket.exit_wait_seconds));
+                log_config_item("ExitWaitSeconds", wait_buffer, !exit_wait_seconds, 1);
             }
 
             // Validate configuration
@@ -125,8 +125,7 @@ bool load_json_websocket(json_t* root, AppConfig* config) {
             }
         }
     } else {
-        log_config_section_header("WebSocketServer");
-        log_config_section_item("Status", "Section missing, using defaults", LOG_LEVEL_ALERT, 1, 0, NULL, NULL, "Config");
+        log_config_item("Status", "Section missing, using defaults", true, 0);
         
         // Initialize with defaults
         config->websocket.enabled = DEFAULT_WEBSOCKET_ENABLED;
