@@ -14,6 +14,7 @@
 #include "../state/state.h"
 #include "../landing/landing.h"
 #include "../config/config.h"
+#include "../config/config_network.h"
 #include "../network/network.h"
 #include "../logging/logging.h"
 #include "../registry/registry_integration.h"
@@ -251,6 +252,87 @@ LaunchReadiness check_network_launch_readiness(void) {
         free_readiness_messages(&readiness);
         return readiness;
     }
+
+    // Get network limits for validation
+    const NetworkLimits* limits = get_network_limits();
+
+    // Validate interface and IP limits
+    if (app_config->network.max_interfaces < limits->min_interfaces ||
+        app_config->network.max_interfaces > limits->max_interfaces) {
+        add_go_message(readiness.messages, &msg_count, "No-Go", 
+            "Invalid max_interfaces: %zu (must be between %zu and %zu)",
+            app_config->network.max_interfaces, limits->min_interfaces, limits->max_interfaces);
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        readiness.subsystem = "Network";
+        free_readiness_messages(&readiness);
+        return readiness;
+    }
+
+    if (app_config->network.max_ips_per_interface < limits->min_ips_per_interface ||
+        app_config->network.max_ips_per_interface > limits->max_ips_per_interface) {
+        add_go_message(readiness.messages, &msg_count, "No-Go", 
+            "Invalid max_ips_per_interface: %zu (must be between %zu and %zu)",
+            app_config->network.max_ips_per_interface, limits->min_ips_per_interface, limits->max_ips_per_interface);
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        readiness.subsystem = "Network";
+        free_readiness_messages(&readiness);
+        return readiness;
+    }
+
+    // Validate name and address length limits
+    if (app_config->network.max_interface_name_length < limits->min_interface_name_length ||
+        app_config->network.max_interface_name_length > limits->max_interface_name_length) {
+        add_go_message(readiness.messages, &msg_count, "No-Go", 
+            "Invalid interface name length: %zu (must be between %zu and %zu)",
+            app_config->network.max_interface_name_length, limits->min_interface_name_length, limits->max_interface_name_length);
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        readiness.subsystem = "Network";
+        free_readiness_messages(&readiness);
+        return readiness;
+    }
+
+    if (app_config->network.max_ip_address_length < limits->min_ip_address_length ||
+        app_config->network.max_ip_address_length > limits->max_ip_address_length) {
+        add_go_message(readiness.messages, &msg_count, "No-Go", 
+            "Invalid IP address length: %zu (must be between %zu and %zu)",
+            app_config->network.max_ip_address_length, limits->min_ip_address_length, limits->max_ip_address_length);
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        readiness.subsystem = "Network";
+        free_readiness_messages(&readiness);
+        return readiness;
+    }
+
+    // Validate port range
+    if (app_config->network.start_port < limits->min_port ||
+        app_config->network.start_port > limits->max_port ||
+        app_config->network.end_port < limits->min_port ||
+        app_config->network.end_port > limits->max_port ||
+        app_config->network.start_port >= app_config->network.end_port) {
+        add_go_message(readiness.messages, &msg_count, "No-Go", 
+            "Invalid port range: %d-%d (must be between %d and %d, start < end)",
+            app_config->network.start_port, app_config->network.end_port, limits->min_port, limits->max_port);
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        readiness.subsystem = "Network";
+        free_readiness_messages(&readiness);
+        return readiness;
+    }
+
+    // Validate reserved ports array
+    if (app_config->network.reserved_ports_count > 0 && !app_config->network.reserved_ports) {
+        add_go_message(readiness.messages, &msg_count, "No-Go", "Reserved ports array is NULL but count > 0");
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        readiness.subsystem = "Network";
+        free_readiness_messages(&readiness);
+        return readiness;
+    }
+
+    add_go_message(readiness.messages, &msg_count, "Go", "Network configuration validated");
     
     network_info_t* network_info = get_network_info();
     if (!network_info) {

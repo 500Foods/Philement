@@ -12,12 +12,12 @@
 // Helper function for URL validation
 static int validate_url(const char* url, const char* field_name) {
     if (!url || strlen(url) == 0) {
-        log_this("Config", "OIDC URL validation failed for field: %s", LOG_LEVEL_ERROR, field_name);
+        log_this("Config-OIDC", "OIDC URL validation failed for field: %s", LOG_LEVEL_ERROR, field_name);
         return -1;
     }
     // Basic URL validation - must start with http:// or https://
     if (strncmp(url, "http://", 7) != 0 && strncmp(url, "https://", 8) != 0) {
-        log_this("Config", "Invalid URL format for field: %s", LOG_LEVEL_ERROR, field_name);
+        log_this("Config-OIDC", "Invalid URL format for field: %s", LOG_LEVEL_ERROR, field_name);
         return -1;
     }
     return 0;
@@ -25,13 +25,13 @@ static int validate_url(const char* url, const char* field_name) {
 
 bool load_oidc_config(json_t* root, AppConfig* config) {
     if (!root || !config) {
-        log_this("Config", "Invalid parameters for OIDC configuration", LOG_LEVEL_ERROR);
+        log_this("Config-OIDC", "Invalid parameters for OIDC configuration", LOG_LEVEL_ERROR);
         return false;
     }
 
     // Initialize with defaults
     if (config_oidc_init(&config->oidc) != 0) {
-        log_this("Config", "Failed to initialize OIDC configuration", LOG_LEVEL_ERROR);
+        log_this("Config-OIDC", "Failed to initialize OIDC configuration", LOG_LEVEL_ERROR);
         return false;
     }
 
@@ -78,20 +78,20 @@ bool load_oidc_config(json_t* root, AppConfig* config) {
         char buffer[32];
 
         // Log configuration (masking sensitive values)
-        log_config_item("Enabled", oidc->enabled ? "true" : "false", false);
-        log_config_item("Issuer", oidc->issuer, false);
-        log_config_item("Client ID", oidc->client_id, false);
-        log_config_item("Client Secret", "********", false);
-        log_config_item("Redirect URI", oidc->redirect_uri, false);
+        log_config_item("Enabled", oidc->enabled ? "true" : "false", false, "OIDC");
+        log_config_item("Issuer", oidc->issuer, false, "OIDC");
+        log_config_item("Client ID", oidc->client_id, false, "OIDC");
+        log_config_item("Client Secret", "********", false, "OIDC");
+        log_config_item("Redirect URI", oidc->redirect_uri, false, "OIDC");
         snprintf(buffer, sizeof(buffer), "%d", oidc->port);
-        log_config_item("Port", buffer, false);
-        log_config_item("Auth Method", oidc->auth_method, false);
-        log_config_item("Scope", oidc->scope, false);
-        log_config_item("Verify SSL", oidc->verify_ssl ? "true" : "false", false);
+        log_config_item("Port", buffer, false, "OIDC");
+        log_config_item("Auth Method", oidc->auth_method, false, "OIDC");
+        log_config_item("Scope", oidc->scope, false, "OIDC");
+        log_config_item("Verify SSL", oidc->verify_ssl ? "true" : "false", false, "OIDC");
 
         // Validate configuration
         if (config_oidc_validate(&config->oidc) != 0) {
-            log_this("Config", "Invalid OIDC configuration", LOG_LEVEL_ERROR);
+            log_this("Config-OIDC", "Invalid OIDC configuration", LOG_LEVEL_ERROR);
             success = false;
         }
     }
@@ -179,17 +179,17 @@ int config_oidc_validate(const OIDCConfig* config) {
 
     // Validate required fields
     if (!config->issuer || strlen(config->issuer) == 0) {
-        log_this("Config", "OIDC issuer is required", LOG_LEVEL_ERROR);
+        log_this("Config-OIDC", "OIDC issuer is required", LOG_LEVEL_ERROR);
         return -1;
     }
 
     if (!config->client_id || strlen(config->client_id) == 0) {
-        log_this("Config", "OIDC client_id is required", LOG_LEVEL_ERROR);
+        log_this("Config-OIDC", "OIDC client_id is required", LOG_LEVEL_ERROR);
         return -1;
     }
 
     if (!config->client_secret || strlen(config->client_secret) == 0) {
-        log_this("Config", "OIDC client_secret is required", LOG_LEVEL_ERROR);
+        log_this("Config-OIDC", "OIDC client_secret is required", LOG_LEVEL_ERROR);
         return -1;
     }
 
@@ -199,23 +199,23 @@ int config_oidc_validate(const OIDCConfig* config) {
 
     // Validate port
     if (config->port < 1024 || config->port > 65535) {
-        log_this("Config", "Invalid OIDC port", LOG_LEVEL_ERROR);
+        log_this("Config-OIDC", "Invalid OIDC port", LOG_LEVEL_ERROR);
         return -1;
     }
 
     // Validate token lifetimes
     if (config->tokens.access_token_lifetime <= 0) {
-        log_this("Config", "Invalid access token lifetime", LOG_LEVEL_ERROR);
+        log_this("Config-OIDC", "Invalid access token lifetime", LOG_LEVEL_ERROR);
         return -1;
     }
 
     if (config->tokens.refresh_token_lifetime <= 0) {
-        log_this("Config", "Invalid refresh token lifetime", LOG_LEVEL_ERROR);
+        log_this("Config-OIDC", "Invalid refresh token lifetime", LOG_LEVEL_ERROR);
         return -1;
     }
 
     if (config->tokens.id_token_lifetime <= 0) {
-        log_this("Config", "Invalid ID token lifetime", LOG_LEVEL_ERROR);
+        log_this("Config-OIDC", "Invalid ID token lifetime", LOG_LEVEL_ERROR);
         return -1;
     }
 

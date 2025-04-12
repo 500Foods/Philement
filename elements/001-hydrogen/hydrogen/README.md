@@ -285,20 +285,20 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Thu Apr 10 18:14:53 PDT 2025
+Generated on: Fri Apr 11 12:22:28 PDT 2025
 
 ### Summary
 
 | Metric | Value |
 | ------ | ----- |
 | Total Tests | 15 |
-| Passed | 15 |
-| Failed | 0 |
+| Passed | 7 |
+| Failed | 8 |
 | Skipped | 0 |
-| Total Subtests | 105 |
-| Passed Subtests | 105 |
-| Failed Subtests | 0 |
-| Runtime | 2m 31s |
+| Total Subtests | 97 |
+| Passed Subtests | 39 |
+| Failed Subtests | 58 |
+| Runtime | 3m 27s |
 
 ### Individual Test Results
 
@@ -306,38 +306,38 @@ Generated on: Thu Apr 10 18:14:53 PDT 2025
 | ------ | ---- | ---- | ---- | ---- | ------- |
 | ✅ | 00:00:17 | 10_compilation | 1 | 1 | Test completed without errors |
 | ✅ | 00:00:00 | 12_env_payload | 2 | 2 | Test completed without errors |
-| ✅ | 00:00:02 | 15_startup_shutdown | 6 | 6 | Test completed without errors |
-| ✅ | 00:00:02 | 20_shutdown | 5 | 5 | Test completed without errors |
-| ✅ | 00:00:06 | 25_library_dependencies | 16 | 16 | Test completed without errors |
+| ❌ | 00:00:00 | 15_startup_shutdown | 6 | 0 | Test failed with errors |
+| ❌ | 00:00:05 | 20_shutdown | 1 | 0 | Test failed with errors |
+| ✅ | 00:00:35 | 25_library_dependencies | 16 | 16 | Test completed without errors |
 | ✅ | 00:00:00 | 35_env_variables | 1 | 1 | Test completed without errors |
 | ✅ | 00:00:00 | 40_json_error_handling | 2 | 2 | Test completed without errors |
-| ✅ | 00:00:21 | 45_signals | 4 | 4 | Test completed without errors |
-| ✅ | 00:00:02 | 50_crash_handler | 20 | 20 | Test completed without errors |
+| ❌ | 00:00:05 | 45_signals | 1 | 0 | Test failed with errors |
+| ❌ | 00:00:20 | 50_crash_handler | 20 | 5 | Test failed with errors |
 | ✅ | 00:00:00 | 55_socket_rebind | 1 | 1 | Test completed without errors |
-| ✅ | 00:00:12 | 60_api_prefixes | 10 | 10 | Test completed without errors |
-| ✅ | 00:00:06 | 65_system_endpoints | 13 | 13 | Test completed without errors |
-| ✅ | 00:00:04 | 70_swagger_ui | 10 | 10 | Test completed without errors |
-| ✅ | 00:00:01 | 95_leaks_like_a_sieve | 2 | 2 | Test completed without errors |
-| ✅ | 00:00:16 | 99_codebase | 12 | 12 | Test completed without errors |
+| ❌ | 00:00:14 | 60_api_prefixes | 10 | 0 | Test failed with errors |
+| ❌ | 00:00:05 | 65_system_endpoints | 12 | 0 | Test failed with errors |
+| ❌ | 00:00:11 | 70_swagger_ui | 10 | 0 | Test failed with errors |
+| ❌ | 00:00:10 | 95_leaks_like_a_sieve | 2 | 0 | Test failed with errors |
+| ✅ | 00:00:15 | 99_codebase | 12 | 11 | Test completed without errors |
 
 ## Repository Information
 
-Generated via cloc: Thu Apr 10 18:14:53 PDT 2025
+Generated via cloc: Fri Apr 11 12:22:28 PDT 2025
 
 ```cloc
-github.com/AlDanial/cloc v 2.02  T=0.30 s (1752.0 files/s, 271959.6 lines/s)
+github.com/AlDanial/cloc v 2.02  T=0.32 s (1504.6 files/s, 245141.9 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C                              174           5026           6949          22022
-Markdown                       126           4413             49          15682
+C                              158           4837           6734          20843
+Markdown                       126           4416             49          15701
 Bourne Shell                    25           1376           1368           5679
 JSON                            17              2              0           4480
-C/C++ Header                   155           1336           5835           3118
-Text                            20             10              0           2342
+C/C++ Header                   141           1318           5810           3108
 HTML                             1             74              0            493
-make                             2             56            124            285
+Text                             4              0              0            479
+make                             2             56            124            283
 -------------------------------------------------------------------------------
-SUM:                           520          12293          14325          54101
+SUM:                           474          12079          14085          51066
 -------------------------------------------------------------------------------
 ```

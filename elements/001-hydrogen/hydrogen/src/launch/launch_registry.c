@@ -16,6 +16,7 @@
 #include "../logging/logging.h"
 #include "../registry/registry.h"
 #include "../registry/registry_integration.h"
+#include "../config/config.h"
 
 // Registry ID
 static int registry_subsystem_id = -1;
@@ -44,8 +45,8 @@ LaunchReadiness get_registry_readiness(void) {
 LaunchReadiness check_registry_launch_readiness(void) {
     LaunchReadiness readiness = { .subsystem = "Registry", .ready = false, .messages = NULL };
     
-    // Allocate message array and initialize to NULL
-    const char** messages = calloc(4, sizeof(const char*));
+    // Allocate message array and initialize to NULL (8 messages max)
+    const char** messages = calloc(10, sizeof(const char*));
     if (!messages) {
         return readiness;
     }
@@ -61,6 +62,67 @@ LaunchReadiness check_registry_launch_readiness(void) {
     }
     msg_index++;
 
+    // Validate server configuration
+    const AppConfig* app_config = get_app_config();
+    if (!app_config) {
+        messages[msg_index++] = strdup("  No-Go:   Failed to access application configuration");
+        messages[msg_index++] = strdup("  Decide:  No-Go For Launch of Registry");
+        messages[msg_index] = NULL;
+        return readiness;
+    }
+
+    const ServerConfig* server = &app_config->server;
+    bool config_valid = true;
+
+    // Validate server name
+    if (!server->server_name || !server->server_name[0]) {
+        messages[msg_index++] = strdup("  No-Go:   Invalid server name (must not be empty)");
+        config_valid = false;
+    } else {
+        messages[msg_index++] = strdup("  Go:      Server name validated");
+    }
+
+    // Validate log file path
+    if (!server->log_file || !server->log_file[0]) {
+        messages[msg_index++] = strdup("  No-Go:   Invalid log file path (must not be empty)");
+        config_valid = false;
+    } else {
+        messages[msg_index++] = strdup("  Go:      Log file path validated");
+    }
+
+    // Validate config file path
+    if (!server->config_file || !server->config_file[0]) {
+        messages[msg_index++] = strdup("  No-Go:   Invalid config file path (must not be empty)");
+        config_valid = false;
+    } else {
+        messages[msg_index++] = strdup("  Go:      Config file path validated");
+    }
+
+    // Validate payload key
+    if (!server->payload_key || !server->payload_key[0]) {
+        messages[msg_index++] = strdup("  No-Go:   Invalid payload key (must not be empty)");
+        config_valid = false;
+    } else {
+        messages[msg_index++] = strdup("  Go:      Payload key validated");
+    }
+
+    // Validate startup delay
+    if (server->startup_delay < 0) {
+        messages[msg_index++] = strdup("  No-Go:   Invalid startup delay (must be non-negative)");
+        config_valid = false;
+    } else {
+        messages[msg_index++] = strdup("  Go:      Startup delay validated");
+    }
+
+    if (!config_valid) {
+        messages[msg_index++] = strdup("  Decide:  No-Go For Launch of Registry: Invalid server configuration");
+        messages[msg_index] = NULL;
+        return readiness;
+    }
+
+    // Add success message for config validation
+    messages[msg_index++] = strdup("  Go:      Server configuration validated");
+
     // Register the registry subsystem during readiness check
     if (registry_subsystem_id < 0) {
         registry_subsystem_id = register_subsystem("Registry", NULL, NULL, NULL,
@@ -70,43 +132,20 @@ LaunchReadiness check_registry_launch_readiness(void) {
     
     // Add appropriate messages based on registration status
     if (registry_subsystem_id < 0) {
-        messages[msg_index] = strdup("  No-Go:   Failed to register Registry subsystem");
-        if (!messages[msg_index]) {
-            free((void*)messages[0]);
-            free(messages);
-            readiness.messages = NULL;
-            return readiness;
+        messages[msg_index++] = strdup("  No-Go:   Failed to register Registry subsystem");
+        messages[msg_index++] = strdup("  Decide:  No-Go For Launch of Registry");
+        messages[msg_index] = NULL;
+
+        // Clean up on failure
+        for (int i = 0; messages[i] != NULL; i++) {
+            free((void*)messages[i]);
         }
-        msg_index++;
-        
-        messages[msg_index] = strdup("  Decide:  No-Go For Launch of Registry");
-        if (!messages[msg_index]) {
-            free((void*)messages[0]);
-            free((void*)messages[1]);
-            free(messages);
-            readiness.messages = NULL;
-            return readiness;
-        }
-        msg_index++;
+        free(messages);
+        readiness.messages = NULL;
+        return readiness;
     } else {
-        messages[msg_index] = strdup("  Go:      Registry initialized");
-        if (!messages[msg_index]) {
-            free((void*)messages[0]);
-            free(messages);
-            readiness.messages = NULL;
-            return readiness;
-        }
-        msg_index++;
-        
-        messages[msg_index] = strdup("  Decide:  Go For Launch of Registry");
-        if (!messages[msg_index]) {
-            free((void*)messages[0]);
-            free((void*)messages[1]);
-            free(messages);
-            readiness.messages = NULL;
-            return readiness;
-        }
-        msg_index++;
+        messages[msg_index++] = strdup("  Go:      Registry initialized");
+        messages[msg_index++] = strdup("  Decide:  Go For Launch of Registry");
         
         readiness.ready = true;
     }

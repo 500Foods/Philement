@@ -20,8 +20,9 @@
 // Server configuration structure (Section A)
 struct ServerConfig {
     char* server_name;      // Server identification
-    char* log_file;         // Log file path
+    char* exec_file;        // Path to executing program
     char* config_file;      // Configuration file path
+    char* log_file;         // Log file path
     char* payload_key;      // Key for payload encryption
     int startup_delay;      // Delay before starting services (seconds)
 };
@@ -32,7 +33,9 @@ typedef struct ServerConfig ServerConfig;
  *
  * This function loads the server configuration from the provided JSON root,
  * applying any environment variable overrides and using secure defaults
- * where values are not specified.
+ * where values are not specified. The executable path is determined
+ * automatically using /proc/self/exe on Linux systems, with a fallback
+ * to a default value on other platforms.
  *
  * @param root JSON root object containing configuration
  * @param config Pointer to AppConfig structure to update
@@ -53,5 +56,17 @@ bool load_server_config(json_t* root, AppConfig* config, const char* config_path
  */
 void config_server_cleanup(ServerConfig* config);
 
+/*
+ * Dump server configuration to logs
+ *
+ * This function dumps the current state of the server configuration
+ * to the logs, following the standard format:
+ * - Key: Value for normal values
+ * - Key {env var}: Value for environment variables
+ * - Key {env var}: Secre..... for sensitive data
+ *
+ * @param config Pointer to ServerConfig structure to dump
+ */
+void dump_server_config(const ServerConfig* config);
 
 #endif /* HYDROGEN_CONFIG_SERVER_H */

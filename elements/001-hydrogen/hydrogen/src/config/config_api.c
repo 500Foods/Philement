@@ -41,7 +41,7 @@ bool load_api_config(json_t* root, AppConfig* config) {
 // Initialize API configuration with default values
 int config_api_init(APIConfig* config) {
     if (!config) {
-        log_this("Config", "API config pointer is NULL", LOG_LEVEL_ERROR);
+        log_this("Config-API", "API config pointer is NULL", LOG_LEVEL_ERROR);
         return -1;
     }
 
@@ -51,14 +51,14 @@ int config_api_init(APIConfig* config) {
     // Allocate and copy default prefix
     config->prefix = strdup("/api");
     if (!config->prefix) {
-        log_this("Config", "Failed to allocate API prefix", LOG_LEVEL_ERROR);
+        log_this("Config-API", "Failed to allocate API prefix", LOG_LEVEL_ERROR);
         return -1;
     }
 
     // Allocate and copy default JWT secret
     config->jwt_secret = strdup("${env.JWT_SECRET}");
     if (!config->jwt_secret) {
-        log_this("Config", "Failed to allocate API JWT secret", LOG_LEVEL_ERROR);
+        log_this("Config-API", "Failed to allocate API JWT secret", LOG_LEVEL_ERROR);
         free(config->prefix);
         config->prefix = NULL;
         return -1;
@@ -91,19 +91,19 @@ void config_api_cleanup(APIConfig* config) {
 // Validate API configuration values
 int config_api_validate(const APIConfig* config) {
     if (!config) {
-        log_this("Config", "API config pointer is NULL", LOG_LEVEL_ERROR);
+        log_this("Config-API", "API config pointer is NULL", LOG_LEVEL_ERROR);
         return -1;
     }
 
     // Validate prefix
     if (!config->prefix || !config->prefix[0] || config->prefix[0] != '/') {
-        log_this("Config", "Invalid API prefix (must start with /)", LOG_LEVEL_ERROR);
+        log_this("Config-API", "Invalid API prefix (must start with /)", LOG_LEVEL_ERROR);
         return -1;
     }
 
     // Validate JWT secret
     if (!config->jwt_secret || !config->jwt_secret[0]) {
-        log_this("Config", "Invalid API JWT secret (must not be empty)", LOG_LEVEL_ERROR);
+        log_this("Config-API", "Invalid API JWT secret (must not be empty)", LOG_LEVEL_ERROR);
         return -1;
     }
 

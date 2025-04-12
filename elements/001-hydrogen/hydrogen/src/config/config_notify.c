@@ -63,7 +63,7 @@ bool load_notify_config(json_t* root, AppConfig* config) {
 // Initialize notification configuration with default values
 int config_notify_init(NotifyConfig* config) {
     if (!config) {
-        log_this("Config", "Notify config pointer is NULL", LOG_LEVEL_ERROR);
+        log_this("Config-Notify", "Notify config pointer is NULL", LOG_LEVEL_ERROR);
         return -1;
     }
 
@@ -73,7 +73,7 @@ int config_notify_init(NotifyConfig* config) {
     // Allocate and copy default notifier
     config->notifier = strdup("none");
     if (!config->notifier) {
-        log_this("Config", "Failed to allocate notifier type", LOG_LEVEL_ERROR);
+        log_this("Config-Notify", "Failed to allocate notifier type", LOG_LEVEL_ERROR);
         return -1;
     }
 
@@ -127,13 +127,13 @@ void config_notify_cleanup(NotifyConfig* config) {
 // Validate notification configuration values
 int config_notify_validate(const NotifyConfig* config) {
     if (!config) {
-        log_this("Config", "Notify config pointer is NULL", LOG_LEVEL_ERROR);
+        log_this("Config-Notify", "Notify config pointer is NULL", LOG_LEVEL_ERROR);
         return -1;
     }
 
     // Validate notifier type
     if (!config->notifier || !config->notifier[0]) {
-        log_this("Config", "Invalid notifier type (must not be empty)", LOG_LEVEL_ERROR);
+        log_this("Config-Notify", "Invalid notifier type (must not be empty)", LOG_LEVEL_ERROR);
         return -1;
     }
 
@@ -141,31 +141,31 @@ int config_notify_validate(const NotifyConfig* config) {
     if (strcmp(config->notifier, "smtp") == 0) {
         // Host is required for SMTP
         if (!config->smtp.host || !config->smtp.host[0]) {
-            log_this("Config", "SMTP host is required when using SMTP notifier", LOG_LEVEL_ERROR);
+            log_this("Config-Notify", "SMTP host is required when using SMTP notifier", LOG_LEVEL_ERROR);
             return -1;
         }
 
         // Port must be valid
         if (config->smtp.port <= 0 || config->smtp.port > 65535) {
-            log_this("Config", "Invalid SMTP port number", LOG_LEVEL_ERROR);
+            log_this("Config-Notify", "Invalid SMTP port number", LOG_LEVEL_ERROR);
             return -1;
         }
 
         // Timeout must be positive
         if (config->smtp.timeout <= 0) {
-            log_this("Config", "Invalid SMTP timeout value", LOG_LEVEL_ERROR);
+            log_this("Config-Notify", "Invalid SMTP timeout value", LOG_LEVEL_ERROR);
             return -1;
         }
 
         // Max retries must be non-negative
         if (config->smtp.max_retries < 0) {
-            log_this("Config", "Invalid SMTP max retries value", LOG_LEVEL_ERROR);
+            log_this("Config-Notify", "Invalid SMTP max retries value", LOG_LEVEL_ERROR);
             return -1;
         }
 
         // From address is required
         if (!config->smtp.from_address || !config->smtp.from_address[0]) {
-            log_this("Config", "SMTP from address is required", LOG_LEVEL_ERROR);
+            log_this("Config-Notify", "SMTP from address is required", LOG_LEVEL_ERROR);
             return -1;
         }
     }

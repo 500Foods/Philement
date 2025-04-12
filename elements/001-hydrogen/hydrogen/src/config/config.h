@@ -158,4 +158,14 @@ void log_config_env_value(
     bool is_sensitive
 );
 
+/*
+ * Debug function to dump the current state of AppConfig
+ * Shows raw configuration values loaded so far, matching JSON structure.
+ * Called after each section load to verify configuration state.
+ * 
+ * @param config Pointer to the AppConfig structure
+ * @param section Current section being processed (or NULL for all)
+ */
+void dumpAppConfig(const AppConfig* config, const char* section);
+
 #endif /* CONFIG_H */

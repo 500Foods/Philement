@@ -158,13 +158,13 @@ int config_mailrelay_validate(const MailRelayConfig* config) {
  */
 bool load_mailrelay_config(json_t* root, AppConfig* config) {
     if (!config) {
-        log_this("Config", "Invalid parameters for mail relay configuration", LOG_LEVEL_ERROR);
+        log_this("Config-MailRelay", "Invalid parameters for mail relay configuration", LOG_LEVEL_ERROR);
         return false;
     }
 
     // Initialize with defaults
     if (config_mailrelay_init(&config->mail_relay) != 0) {
-        log_this("Config", "Failed to initialize mail relay configuration", LOG_LEVEL_ERROR);
+        log_this("Config-MailRelay", "Failed to initialize mail relay configuration", LOG_LEVEL_ERROR);
         return false;
     }
 
@@ -191,7 +191,7 @@ bool load_mailrelay_config(json_t* root, AppConfig* config) {
 
         json_array_foreach(servers, index, server) {
             if (index >= MAX_OUTBOUND_SERVERS) {
-                log_this("Config", "Too many outbound servers configured", LOG_LEVEL_ERROR);
+                log_this("Config-MailRelay", "Too many outbound servers configured", LOG_LEVEL_ERROR);
                 break;
             }
 

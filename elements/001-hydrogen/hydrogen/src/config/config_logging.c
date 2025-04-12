@@ -18,7 +18,7 @@ static int validate_log_levels(const LoggingConfig* config);
 bool load_logging_config(json_t* root, AppConfig* config) {
     // Initialize logging configuration
     if (config_logging_init(&config->logging) != 0) {
-        log_this("Config", "Failed to initialize logging configuration", LOG_LEVEL_ERROR);
+        log_this("Config-Logging", "Failed to initialize logging configuration", LOG_LEVEL_ERROR);
         return false;
     }
 
@@ -45,14 +45,14 @@ bool load_logging_config(json_t* root, AppConfig* config) {
             config->logging.level_count = json_array_size(levels);
             config->logging.levels = calloc(config->logging.level_count, sizeof(*config->logging.levels));
             if (!config->logging.levels) {
-                log_this("Config", "Failed to allocate memory for log levels", LOG_LEVEL_ERROR);
+                log_this("Config-Logging", "Failed to allocate memory for log levels", LOG_LEVEL_ERROR);
                 return false;
             }
 
             char count_buffer[64];
             snprintf(count_buffer, sizeof(count_buffer), "%zu configured",
                     config->logging.level_count);
-            log_config_item("LogLevels", count_buffer, false);
+            log_config_item("LogLevels", count_buffer, false, "Logging");
             
             for (size_t i = 0; i < config->logging.level_count; i++) {
                 json_t* level = json_array_get(levels, i);
@@ -70,7 +70,7 @@ bool load_logging_config(json_t* root, AppConfig* config) {
                     snprintf(level_buffer, sizeof(level_buffer), "%d: %s",
                             config->logging.levels[i].value,
                             config->logging.levels[i].name);
-                    log_config_item("Level", level_buffer, false);
+                    log_config_item("Level", level_buffer, false, "Logging");
                 }
             }
         }
@@ -80,7 +80,7 @@ bool load_logging_config(json_t* root, AppConfig* config) {
         for (size_t i = 0; i < 4; i++) {
             json_t* output = json_object_get(logging, outputs[i]);
             if (json_is_object(output)) {
-                log_config_item(outputs[i], "Configured", false);
+                log_config_item(outputs[i], "Configured", false, "Logging");
                 
                 // Process enabled status and default level
                 if (strcmp(outputs[i], "Console") == 0) {
@@ -106,11 +106,11 @@ bool load_logging_config(json_t* root, AppConfig* config) {
                     char count_buffer[64];
                     snprintf(count_buffer, sizeof(count_buffer), "%zu configured",
                             subsystem_count);
-                    log_config_item("Subsystems", count_buffer, false);
+                    log_config_item("Subsystems", count_buffer, false, outputs[i]);
 
                     SubsystemConfig* subsystem_array = calloc(subsystem_count, sizeof(SubsystemConfig));
                     if (!subsystem_array) {
-                        log_this("Config", "Failed to allocate subsystem array", LOG_LEVEL_ERROR);
+                        log_this("Config-Logging", "Failed to allocate subsystem array", LOG_LEVEL_ERROR);
                         return false;
                     }
 
@@ -120,7 +120,7 @@ bool load_logging_config(json_t* root, AppConfig* config) {
                     json_object_foreach(subsystems, key, value) {
                         subsystem_array[idx].name = strdup(key);
                         if (!subsystem_array[idx].name) {
-                            log_this("Config", "Failed to allocate subsystem name", LOG_LEVEL_ERROR);
+                            log_this("Config-Logging", "Failed to allocate subsystem name", LOG_LEVEL_ERROR);
                             for (size_t j = 0; j < idx; j++) {
                                 free((void*)subsystem_array[j].name);
                             }
@@ -129,7 +129,7 @@ bool load_logging_config(json_t* root, AppConfig* config) {
                         }
 
                         PROCESS_INT(value, &subsystem_array[idx], level, key, "Subsystem");
-                        log_config_item(key, config_logging_get_level_name(&config->logging, subsystem_array[idx].level), false);
+                        log_config_item(key, config_logging_get_level_name(&config->logging, subsystem_array[idx].level), false, outputs[i]);
                         idx++;
                     }
 
@@ -149,16 +149,16 @@ bool load_logging_config(json_t* root, AppConfig* config) {
                     }
                 }
             } else {
-                log_config_item(outputs[i], "Using defaults", true);
+                log_config_item(outputs[i], "No configuration found, using defaults", true, "Logging");
             }
         }
     } else {
-        log_config_item("Status", "Section missing, using defaults", true);
+        log_config_item("Status", "Logging section missing, using defaults", true, "Logging");
     }
 
     // Validate configuration
     if (config_logging_validate(&config->logging) != 0) {
-        log_config_item("Status", "Invalid configuration", true);
+        log_config_item("Status", "Invalid logging configuration", true, "Logging");
         return false;
     }
 

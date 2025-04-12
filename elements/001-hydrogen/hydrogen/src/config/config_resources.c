@@ -62,7 +62,7 @@ bool load_resources_config(json_t* root, AppConfig* config) {
         // Memory limits
         json_t* memory = json_object_get(resources, "Memory");
         if (json_is_object(memory)) {
-            log_config_item("Memory", "Configured", false);
+            log_config_item("Memory", "Configured", false, "SystemResources");
             
             PROCESS_SIZE(memory, config, resources.max_memory_mb, "MaxMemoryMB", "Memory");
             PROCESS_SIZE(memory, config, resources.max_buffer_size, "MaxBufferSize", "Memory");
@@ -72,7 +72,7 @@ bool load_resources_config(json_t* root, AppConfig* config) {
         // Queue settings
         json_t* queues = json_object_get(resources, "Queues");
         if (json_is_object(queues)) {
-            log_config_item("Queues", "Configured", false);
+            log_config_item("Queues", "Configured", false, "SystemResources");
             
             PROCESS_SIZE(queues, config, resources.max_queue_size, "MaxQueueSize", "Queues");
             PROCESS_SIZE(queues, config, resources.max_queue_memory_mb, "MaxQueueMemoryMB", "Queues");
@@ -83,7 +83,7 @@ bool load_resources_config(json_t* root, AppConfig* config) {
         // Thread limits
         json_t* threads = json_object_get(resources, "Threads");
         if (json_is_object(threads)) {
-            log_config_item("Threads", "Configured", false);
+            log_config_item("Threads", "Configured", false, "SystemResources");
             
             PROCESS_INT(threads, config, resources.min_threads, "MinThreads", "Threads");
             PROCESS_INT(threads, config, resources.max_threads, "MaxThreads", "Threads");
@@ -93,7 +93,7 @@ bool load_resources_config(json_t* root, AppConfig* config) {
         // File limits
         json_t* files = json_object_get(resources, "Files");
         if (json_is_object(files)) {
-            log_config_item("Files", "Configured", false);
+            log_config_item("Files", "Configured", false, "SystemResources");
             
             PROCESS_INT(files, config, resources.max_open_files, "MaxOpenFiles", "Files");
             PROCESS_SIZE(files, config, resources.max_file_size_mb, "MaxFileSizeMB", "Files");
@@ -103,7 +103,7 @@ bool load_resources_config(json_t* root, AppConfig* config) {
         // Resource monitoring
         json_t* monitoring = json_object_get(resources, "Monitoring");
         if (json_is_object(monitoring)) {
-            log_config_item("Monitoring", "Configured", false);
+            log_config_item("Monitoring", "Configured", false, "SystemResources");
             
             PROCESS_BOOL(monitoring, config, resources.enforce_limits, "EnforceLimits", "Monitoring");
             PROCESS_BOOL(monitoring, config, resources.log_usage, "LogUsage", "Monitoring");
@@ -112,12 +112,12 @@ bool load_resources_config(json_t* root, AppConfig* config) {
 
         // Validate configuration
         if (config_resources_validate(&config->resources) != 0) {
-            log_config_item("Status", "Invalid configuration, using defaults", true);
+            log_config_item("Status", "Invalid SystemResources configuration, using defaults", true, "SystemResources");
             config->resources = defaults;
             return false;
         }
     } else {
-        log_config_item("Status", "Section missing, using defaults", true);
+        log_config_item("Status", "SystemResources section missing, using defaults", true, "SystemResources");
     }
 
     return true;
