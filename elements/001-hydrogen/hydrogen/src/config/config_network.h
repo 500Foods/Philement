@@ -12,19 +12,22 @@
 #include <stdbool.h>
 #include <jansson.h>
 #include "config_forward.h"  // For AppConfig forward declaration
-#include "../network/network.h"  // For MAX_INTERFACES
 
-// Validation limits
-#define MIN_INTERFACES 1
-// MAX_INTERFACES defined in network.h
-#define MIN_IPS_PER_INTERFACE 1
-#define MAX_IPS_PER_INTERFACE 32
-#define MIN_INTERFACE_NAME_LENGTH 1
-#define MAX_INTERFACE_NAME_LENGTH 32
-#define MIN_IP_ADDRESS_LENGTH 7   // "1.1.1.1"
-#define MAX_IP_ADDRESS_LENGTH 45  // IPv6 with scope
-#define MIN_PORT 1024
-#define MAX_PORT 65535
+// Network validation limits structure
+struct NetworkLimits {
+    size_t min_interfaces;
+    size_t max_interfaces;
+    size_t min_ips_per_interface;
+    size_t max_ips_per_interface;
+    size_t min_interface_name_length;
+    size_t max_interface_name_length;
+    size_t min_ip_address_length;
+    size_t max_ip_address_length;
+    int min_port;
+    int max_port;
+    size_t initial_reserved_ports_capacity;
+};
+typedef struct NetworkLimits NetworkLimits;
 
 // Network configuration structure
 struct NetworkConfig {
@@ -46,17 +49,23 @@ struct NetworkConfig {
     struct {
         char* interface_name;      // Name of the interface (e.g., "eth0")
         bool available;            // Whether the interface is available for use
-    }* available_interfaces;       // Array of interface availability settings
+    }* available_interfaces;       // Array of interface availability settings (sorted by name)
     size_t available_interfaces_count; // Number of interfaces with availability settings
 };
 typedef struct NetworkConfig NetworkConfig;
 
+// Note: Interface names are maintained in sorted order within available_interfaces
+
+// Get the network validation limits
+const NetworkLimits* get_network_limits(void);
+
 /*
- * Load network configuration from JSON
+ * Load network configuration from JSON with validation limits
  *
  * This function loads the network configuration from the provided JSON root,
  * applying any environment variable overrides and using secure defaults
- * where values are not specified.
+ * where values are not specified. All validation is performed during launch
+ * readiness checks.
  *
  * @param root JSON root object containing configuration
  * @param config Pointer to AppConfig structure to update
@@ -91,24 +100,17 @@ int config_network_init(NetworkConfig* config);
 void config_network_cleanup(NetworkConfig* config);
 
 /*
- * Validate network configuration values
+ * Dump network configuration to logs
  *
- * This function performs comprehensive validation of the configuration:
- * - Verifies interface and IP limits are within acceptable ranges
- * - Validates port range settings
- * - Checks reserved ports for validity and conflicts
- * - Ensures length limits are reasonable
+ * This function dumps the current state of the network configuration
+ * to the logs, following the standard format:
+ * - Key: Value for normal values
+ * - Array elements with proper indentation
+ * - Interface availability status
  *
- * @param config Pointer to NetworkConfig structure to validate
- * @return 0 if valid, -1 if invalid
- *
- * Error conditions:
- * - If config is NULL
- * - If any limit is outside valid range
- * - If port ranges are invalid
- * - If reserved ports are invalid or conflict
+ * @param config Pointer to NetworkConfig structure to dump
  */
-int config_network_validate(const NetworkConfig* config);
+void dump_network_config(const NetworkConfig* config);
 
 /*
  * Add a reserved port to the configuration

@@ -16,7 +16,7 @@ static char* strdup_safe(const char* str) {
     if (!str) return NULL;
     char* dup = strdup(str);
     if (!dup) {
-        log_this("Config", "Memory allocation failed", LOG_LEVEL_ERROR);
+        log_this("Config-OIDC", "Memory allocation failed", LOG_LEVEL_ERROR);
     }
     return dup;
 }
@@ -42,20 +42,20 @@ int config_oidc_init(OIDCConfig* config) {
     
     result = config_oidc_endpoints_init(&config->endpoints);
     if (result != 0) {
-        log_this("Config", "Failed to initialize OIDC endpoints", LOG_LEVEL_ERROR);
+        log_this("Config-OIDC", "Failed to initialize OIDC endpoints", LOG_LEVEL_ERROR);
         return -1;
     }
 
     result = config_oidc_keys_init(&config->keys);
     if (result != 0) {
-        log_this("Config", "Failed to initialize OIDC keys", LOG_LEVEL_ERROR);
+        log_this("Config-OIDC", "Failed to initialize OIDC keys", LOG_LEVEL_ERROR);
         config_oidc_endpoints_cleanup(&config->endpoints);
         return -1;
     }
 
     result = config_oidc_tokens_init(&config->tokens);
     if (result != 0) {
-        log_this("Config", "Failed to initialize OIDC tokens", LOG_LEVEL_ERROR);
+        log_this("Config-OIDC", "Failed to initialize OIDC tokens", LOG_LEVEL_ERROR);
         config_oidc_endpoints_cleanup(&config->endpoints);
         config_oidc_keys_cleanup(&config->keys);
         return -1;
@@ -88,12 +88,12 @@ void config_oidc_cleanup(OIDCConfig* config) {
 
 static int validate_url(const char* url, const char* field_name) {
     if (!url || strlen(url) == 0) {
-        log_this("Config", "OIDC URL validation failed for field: %s", LOG_LEVEL_ERROR, field_name);
+        log_this("Config-OIDC", "OIDC URL validation failed for field: %s", LOG_LEVEL_ERROR, field_name);
         return -1;
     }
     // Basic URL validation - must start with http:// or https://
     if (strncmp(url, "http://", 7) != 0 && strncmp(url, "https://", 8) != 0) {
-        log_this("Config", "Invalid URL format for field: %s", LOG_LEVEL_ERROR, field_name);
+        log_this("Config-OIDC", "Invalid URL format for field: %s", LOG_LEVEL_ERROR, field_name);
         return -1;
     }
     return 0;
@@ -111,17 +111,17 @@ int config_oidc_validate(const OIDCConfig* config) {
 
     // Validate required fields
     if (!config->issuer || strlen(config->issuer) == 0) {
-        log_this("Config", "OIDC issuer is required", LOG_LEVEL_ERROR);
+        log_this("Config-OIDC", "OIDC issuer is required", LOG_LEVEL_ERROR);
         return -1;
     }
 
     if (!config->client_id || strlen(config->client_id) == 0) {
-        log_this("Config", "OIDC client_id is required", LOG_LEVEL_ERROR);
+        log_this("Config-OIDC", "OIDC client_id is required", LOG_LEVEL_ERROR);
         return -1;
     }
 
     if (!config->client_secret || strlen(config->client_secret) == 0) {
-        log_this("Config", "OIDC client_secret is required", LOG_LEVEL_ERROR);
+        log_this("Config-OIDC", "OIDC client_secret is required", LOG_LEVEL_ERROR);
         return -1;
     }
 
@@ -131,23 +131,23 @@ int config_oidc_validate(const OIDCConfig* config) {
 
     // Validate port
     if (config->port < 1024 || config->port > 65535) {
-        log_this("Config", "Invalid OIDC port", LOG_LEVEL_ERROR);
+        log_this("Config-OIDC", "Invalid OIDC port", LOG_LEVEL_ERROR);
         return -1;
     }
 
     // Validate sub-components
     if (config_oidc_endpoints_validate(&config->endpoints) != 0) {
-        log_this("Config", "OIDC endpoints validation failed", LOG_LEVEL_ERROR);
+        log_this("Config-OIDC", "OIDC endpoints validation failed", LOG_LEVEL_ERROR);
         return -1;
     }
 
     if (config_oidc_keys_validate(&config->keys) != 0) {
-        log_this("Config", "OIDC keys validation failed", LOG_LEVEL_ERROR);
+        log_this("Config-OIDC", "OIDC keys validation failed", LOG_LEVEL_ERROR);
         return -1;
     }
 
     if (config_oidc_tokens_validate(&config->tokens) != 0) {
-        log_this("Config", "OIDC tokens validation failed", LOG_LEVEL_ERROR);
+        log_this("Config-OIDC", "OIDC tokens validation failed", LOG_LEVEL_ERROR);
         return -1;
     }
 

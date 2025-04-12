@@ -53,13 +53,13 @@ bool load_mdns_server_config(json_t* root, AppConfig* config) {
             char services_buffer[64];
             snprintf(services_buffer, sizeof(services_buffer), "%zu configured", 
                     config->mdns_server.num_services);
-            log_config_item("Services", services_buffer, false);
+            log_config_item("Services", services_buffer, false, "MDNSServer");
 
             if (config->mdns_server.num_services > 0) {
                 config->mdns_server.services = calloc(config->mdns_server.num_services, 
                                                     sizeof(mdns_server_service_t));
                 if (!config->mdns_server.services) {
-                    log_this("Config", "Failed to allocate memory for mDNS services array", LOG_LEVEL_ERROR);
+                    log_this("Config-MDNSServer", "Failed to allocate memory for mDNS services array", LOG_LEVEL_ERROR);
                     config_mdns_server_cleanup(&config->mdns_server);
                     return false;
                 }
@@ -91,7 +91,7 @@ bool load_mdns_server_config(json_t* root, AppConfig* config) {
                             config->mdns_server.services[i].name,
                             config->mdns_server.services[i].type,
                             config->mdns_server.services[i].port);
-                    log_config_item("Service", service_buffer, false);
+                    log_config_item("Service", service_buffer, false, "MDNSServer");
 
                     // Handle TXT records
                     json_t* txt_records = json_object_get(service, "TxtRecords");
@@ -100,7 +100,7 @@ bool load_mdns_server_config(json_t* root, AppConfig* config) {
                         config->mdns_server.services[i].num_txt_records = 1;
                         config->mdns_server.services[i].txt_records = malloc(sizeof(char*));
                         if (!config->mdns_server.services[i].txt_records) {
-                            log_this("Config", "Failed to allocate memory for TXT record", LOG_LEVEL_ERROR);
+                            log_this("Config-MDNSServer", "Failed to allocate memory for TXT record", LOG_LEVEL_ERROR);
                             cleanup_service(&config->mdns_server.services[i]);
                             cleanup_services(config->mdns_server.services, i);
                             config_mdns_server_cleanup(&config->mdns_server);
@@ -113,7 +113,7 @@ bool load_mdns_server_config(json_t* root, AppConfig* config) {
                         config->mdns_server.services[i].txt_records = malloc(
                             config->mdns_server.services[i].num_txt_records * sizeof(char*));
                         if (!config->mdns_server.services[i].txt_records) {
-                            log_this("Config", "Failed to allocate memory for TXT records array", LOG_LEVEL_ERROR);
+                            log_this("Config-MDNSServer", "Failed to allocate memory for TXT records array", LOG_LEVEL_ERROR);
                             cleanup_service(&config->mdns_server.services[i]);
                             cleanup_services(config->mdns_server.services, i);
                             config_mdns_server_cleanup(&config->mdns_server);
@@ -145,7 +145,7 @@ bool load_mdns_server_config(json_t* root, AppConfig* config) {
 // Initialize mDNS server configuration with default values
 int config_mdns_server_init(MDNSServerConfig* config) {
     if (!config) {
-        log_this("Config", "mDNS server config pointer is NULL", LOG_LEVEL_ERROR);
+        log_this("Config-MDNSServer", "mDNS server config pointer is NULL", LOG_LEVEL_ERROR);
         return -1;
     }
 
@@ -163,7 +163,7 @@ int config_mdns_server_init(MDNSServerConfig* config) {
     // Check string allocations
     if (!config->device_id || !config->friendly_name || !config->model || 
         !config->manufacturer || !config->version) {
-        log_this("Config", "Failed to allocate memory for mDNS server strings", LOG_LEVEL_ERROR);
+        log_this("Config-MDNSServer", "Failed to allocate memory for mDNS server strings", LOG_LEVEL_ERROR);
         config_mdns_server_cleanup(config);
         return -1;
     }
@@ -223,34 +223,34 @@ void config_mdns_server_cleanup(MDNSServerConfig* config) {
 // Validate mDNS server configuration values
 int config_mdns_server_validate(const MDNSServerConfig* config) {
     if (!config) {
-        log_this("Config", "mDNS server config pointer is NULL", LOG_LEVEL_ERROR);
+        log_this("Config-MDNSServer", "mDNS server config pointer is NULL", LOG_LEVEL_ERROR);
         return -1;
     }
 
     // Validate required strings if enabled
     if (config->enabled) {
         if (!config->device_id || !config->device_id[0]) {
-            log_this("Config", "Device ID is required when mDNS server is enabled", LOG_LEVEL_ERROR);
+            log_this("Config-MDNSServer", "Device ID is required when mDNS server is enabled", LOG_LEVEL_ERROR);
             return -1;
         }
 
         if (!config->friendly_name || !config->friendly_name[0]) {
-            log_this("Config", "Friendly name is required when mDNS server is enabled", LOG_LEVEL_ERROR);
+            log_this("Config-MDNSServer", "Friendly name is required when mDNS server is enabled", LOG_LEVEL_ERROR);
             return -1;
         }
 
         if (!config->model || !config->model[0]) {
-            log_this("Config", "Model is required when mDNS server is enabled", LOG_LEVEL_ERROR);
+            log_this("Config-MDNSServer", "Model is required when mDNS server is enabled", LOG_LEVEL_ERROR);
             return -1;
         }
 
         if (!config->manufacturer || !config->manufacturer[0]) {
-            log_this("Config", "Manufacturer is required when mDNS server is enabled", LOG_LEVEL_ERROR);
+            log_this("Config-MDNSServer", "Manufacturer is required when mDNS server is enabled", LOG_LEVEL_ERROR);
             return -1;
         }
 
         if (!config->version || !config->version[0]) {
-            log_this("Config", "Version is required when mDNS server is enabled", LOG_LEVEL_ERROR);
+            log_this("Config-MDNSServer", "Version is required when mDNS server is enabled", LOG_LEVEL_ERROR);
             return -1;
         }
     }
@@ -258,30 +258,30 @@ int config_mdns_server_validate(const MDNSServerConfig* config) {
     // Validate services array if present
     if (config->num_services > 0) {
         if (!config->services) {
-            log_this("Config", "Services array is NULL but count is non-zero", LOG_LEVEL_ERROR);
+            log_this("Config-MDNSServer", "Services array is NULL but count is non-zero", LOG_LEVEL_ERROR);
             return -1;
         }
 
         // Validate each service
         for (size_t i = 0; i < config->num_services; i++) {
             if (!config->services[i].name || !config->services[i].name[0]) {
-                log_this("Config", "Service name is required", LOG_LEVEL_ERROR);
+                log_this("Config-MDNSServer", "Service name is required", LOG_LEVEL_ERROR);
                 return -1;
             }
 
             if (!config->services[i].type || !config->services[i].type[0]) {
-                log_this("Config", "Service type is required", LOG_LEVEL_ERROR);
+                log_this("Config-MDNSServer", "Service type is required", LOG_LEVEL_ERROR);
                 return -1;
             }
 
             if (config->services[i].port <= 0 || config->services[i].port > 65535) {
-                log_this("Config", "Invalid service port number", LOG_LEVEL_ERROR);
+                log_this("Config-MDNSServer", "Invalid service port number", LOG_LEVEL_ERROR);
                 return -1;
             }
 
             // Validate TXT records if present
             if (config->services[i].num_txt_records > 0 && !config->services[i].txt_records) {
-                log_this("Config", "TXT records array is NULL but count is non-zero", LOG_LEVEL_ERROR);
+                log_this("Config-MDNSServer", "TXT records array is NULL but count is non-zero", LOG_LEVEL_ERROR);
                 return -1;
             }
         }

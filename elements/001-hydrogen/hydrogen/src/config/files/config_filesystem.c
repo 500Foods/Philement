@@ -82,7 +82,7 @@ char* get_executable_path(void) {
     ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
     
     if (len == -1) {
-        log_this("Configuration", "Error reading /proc/self/exe: %s", 
+        log_this("Config-FileSystem", "Error reading /proc/self/exe: %s", 
                  LOG_LEVEL_ERROR, strerror(errno));
         return NULL;
     }
@@ -91,7 +91,7 @@ char* get_executable_path(void) {
     char* result = strdup(path);
     
     if (!result) {
-        log_this("Configuration", "Memory allocation failed for executable path", 
+        log_this("Config-FileSystem", "Memory allocation failed for executable path", 
                  LOG_LEVEL_ERROR);
         return NULL;
     }
@@ -127,7 +127,7 @@ long get_file_size(const char* filename) {
     struct stat st;
     
     if (!filename) {
-        log_this("Configuration", "NULL filename passed to get_file_size", 
+        log_this("Config-FileSystem", "NULL filename passed to get_file_size", 
                  LOG_LEVEL_ERROR);
         return -1;
     }
@@ -136,7 +136,7 @@ long get_file_size(const char* filename) {
         return st.st_size;
     }
     
-    log_this("Configuration", "Error getting size of %s: %s", 
+    log_this("Config-FileSystem", "Error getting size of %s: %s", 
              LOG_LEVEL_ERROR, filename, strerror(errno));
     return -1;
 }
@@ -169,20 +169,20 @@ char* get_file_modification_time(const char* filename) {
     struct stat st;
     
     if (!filename) {
-        log_this("Configuration", "NULL filename passed to get_file_modification_time", 
+        log_this("Config-FileSystem", "NULL filename passed to get_file_modification_time", 
                  LOG_LEVEL_ERROR);
         return NULL;
     }
     
     if (stat(filename, &st) != 0) {
-        log_this("Configuration", "Error getting stats for %s: %s", 
+        log_this("Config-FileSystem", "Error getting stats for %s: %s", 
                  LOG_LEVEL_ERROR, filename, strerror(errno));
         return NULL;
     }
 
     struct tm* tm_info = localtime(&st.st_mtime);
     if (!tm_info) {
-        log_this("Configuration", "Error converting time for %s", 
+        log_this("Config-FileSystem", "Error converting time for %s", 
                  LOG_LEVEL_ERROR, filename);
         return NULL;
     }
@@ -190,13 +190,13 @@ char* get_file_modification_time(const char* filename) {
     // YYYY-MM-DD HH:MM:SS\0
     char* time_str = malloc(20);
     if (!time_str) {
-        log_this("Configuration", "Memory allocation failed for time string", 
+        log_this("Config-FileSystem", "Memory allocation failed for time string", 
                  LOG_LEVEL_ERROR);
         return NULL;
     }
 
     if (strftime(time_str, 20, "%Y-%m-%d %H:%M:%S", tm_info) == 0) {
-        log_this("Configuration", "Error formatting time for %s", 
+        log_this("Config-FileSystem", "Error formatting time for %s", 
                  LOG_LEVEL_ERROR, filename);
         free(time_str);
         return NULL;

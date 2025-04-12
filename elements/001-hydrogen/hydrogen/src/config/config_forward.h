@@ -31,10 +31,6 @@
 struct AppConfig;
 typedef struct AppConfig AppConfig;
 
-// System Monitoring Configuration
-struct MonitoringConfig;
-typedef struct MonitoringConfig MonitoringConfig;
-
 // A. Server Configuration
 struct ServerConfig;
 typedef struct ServerConfig ServerConfig;

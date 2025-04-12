@@ -99,6 +99,7 @@ RELEASE_OBJS = $(patsubst $(SRC_DIR)/%,$(RELEASE_DIR)/%,$(SRCS:.c=.o))
 
 # Static library creation for each build variant
 # These archives contain all object files for their respective builds
+.DEFAULT_GOAL := default
 $(BUILD_DIR)/libhydrogen.a: $(OBJS)
 	@printf "$(CYAN)$(INFO)  Creating archive for standard build...$(NORMAL)\n"
 	$(AR) rcs $@ $^
@@ -135,18 +136,15 @@ PERF_MAP_FILE = $(PERF_DIR)/hydrogen_perf.map
 RELEASE_MAP_FILE = $(RELEASE_DIR)/hydrogen_release.map
 
 # Phony targets (targets that don't create files)
-.PHONY: all clean cleanish debug valgrind perf release trial clean-executables
-.PHONY: parallel-test
-parallel-test: $(TARGET) $(DEBUG_TARGET) $(VALGRIND_TARGET) $(PERF_TARGET) $(RELEASE_TARGET)
+.PHONY: all clean cleanish debug valgrind perf release trial clean-executables default
 
 # Default build target with standard optimizations
 default: $(TARGET)
 	@printf "$(GREEN)$(PASS) $(BOLD)Hydrogen$(NORMAL) $(GREEN)built successfully$(NORMAL)\n"
 
-$(TARGET): LDFLAGS = -Wl,-Map=$(MAP_FILE) -Wl,--gc-sections $(BASE_LDFLAGS)
 $(TARGET): $(BUILD_DIR)/libhydrogen.a
 	@printf "$(CYAN)$(INFO)  Linking standard build...$(NORMAL)\n"
-	$(CC) $(CFLAGS) -o $@ -L$(BUILD_DIR) -lhydrogen $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ -L$(BUILD_DIR) -lhydrogen -Wl,-Map=$(MAP_FILE) -Wl,--gc-sections $(BASE_LDFLAGS)
 
 # Trial build with advanced diagnostics
 # - Suppresses routine build messages
@@ -335,23 +333,23 @@ $(RELEASE_DIR)/%.o: $(SRC_DIR)/%.c | $(RELEASE_DIR)
 # Creates the necessary directory structure for each build variant
 $(BUILD_DIR):
 	@printf "$(CYAN)$(INFO)  Creating build directories...$(NORMAL)\n"
-	@mkdir -p $(BUILD_DIR)/api/system
+	@mkdir -p $(BUILD_DIR)
 
 $(DEBUG_DIR):
 	@printf "$(CYAN)$(INFO)  Creating debug build directories...$(NORMAL)\n"
-	@mkdir -p $(DEBUG_DIR)/api/system
+	@mkdir -p $(DEBUG_DIR)
 
 $(VALGRIND_DIR):
 	@printf "$(CYAN)$(INFO)  Creating valgrind build directories...$(NORMAL)\n"
-	@mkdir -p $(VALGRIND_DIR)/api/system
+	@mkdir -p $(VALGRIND_DIR)
 
 $(PERF_DIR):
 	@printf "$(CYAN)$(INFO)  Creating performance build directories...$(NORMAL)\n"
-	@mkdir -p $(PERF_DIR)/api/system
+	@mkdir -p $(PERF_DIR)
 
 $(RELEASE_DIR):
 	@printf "$(CYAN)$(INFO)  Creating release build directories...$(NORMAL)\n"
-	@mkdir -p $(RELEASE_DIR)/api/system
+	@mkdir -p $(RELEASE_DIR)
 
 # Ensure all required subdirectories exist
 $(shell mkdir -p $(sort $(dir $(OBJS)) $(dir $(DEBUG_OBJS)) $(dir $(VALGRIND_OBJS)) $(dir $(PERF_OBJS)) $(dir $(RELEASE_OBJS)) ))

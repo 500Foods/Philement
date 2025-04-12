@@ -21,13 +21,13 @@
 
 bool load_webserver_config(json_t* root, AppConfig* config) {
     if (!root || !config) {
-        log_this("Config", "Invalid parameters for web server configuration", LOG_LEVEL_ERROR);
+        log_this("Config-WebServer", "Invalid parameters for web server configuration", LOG_LEVEL_ERROR);
         return false;
     }
 
     // Initialize with defaults
     if (config_webserver_init(&config->web) != 0) {
-        log_this("Config", "Failed to initialize web server configuration", LOG_LEVEL_ERROR);
+        log_this("Config-WebServer", "Failed to initialize web server configuration", LOG_LEVEL_ERROR);
         return false;
     }
 
@@ -55,27 +55,27 @@ bool load_webserver_config(json_t* root, AppConfig* config) {
         char buffer[32];
 
         // Log configuration
-        log_config_item("IPv4 Enabled", web->enable_ipv4 ? "true" : "false", false);
-        log_config_item("IPv6 Enabled", web->enable_ipv6 ? "true" : "false", false);
+        log_config_item("IPv4 Enabled", web->enable_ipv4 ? "true" : "false", false, "WebServer");
+        log_config_item("IPv6 Enabled", web->enable_ipv6 ? "true" : "false", false, "WebServer");
         snprintf(buffer, sizeof(buffer), "%d", web->port);
-        log_config_item("Port", buffer, false);
-        log_config_item("Web Root", web->web_root, false);
-        log_config_item("Upload Path", web->upload_path, false);
-        log_config_item("Upload Directory", web->upload_dir, false);
+        log_config_item("Port", buffer, false, "WebServer");
+        log_config_item("Web Root", web->web_root, false, "WebServer");
+        log_config_item("Upload Path", web->upload_path, false, "WebServer");
+        log_config_item("Upload Directory", web->upload_dir, false, "WebServer");
         snprintf(buffer, sizeof(buffer), "%zu", web->max_upload_size);
-        log_config_item("Max Upload Size", buffer, false);
+        log_config_item("Max Upload Size", buffer, false, "WebServer");
         snprintf(buffer, sizeof(buffer), "%d", web->thread_pool_size);
-        log_config_item("Thread Pool Size", buffer, false);
+        log_config_item("Thread Pool Size", buffer, false, "WebServer");
         snprintf(buffer, sizeof(buffer), "%d", web->max_connections);
-        log_config_item("Max Connections", buffer, false);
+        log_config_item("Max Connections", buffer, false, "WebServer");
         snprintf(buffer, sizeof(buffer), "%d", web->max_connections_per_ip);
-        log_config_item("Max Connections per IP", buffer, false);
+        log_config_item("Max Connections per IP", buffer, false, "WebServer");
         snprintf(buffer, sizeof(buffer), "%d", web->connection_timeout);
-        log_config_item("Connection Timeout", buffer, false);
+        log_config_item("Connection Timeout", buffer, false, "WebServer");
 
         // Validate configuration
         if (config_webserver_validate(&config->web) != 0) {
-            log_this("Config", "Invalid web server configuration", LOG_LEVEL_ERROR);
+            log_this("Config-WebServer", "Invalid web server configuration", LOG_LEVEL_ERROR);
             success = false;
         }
     }
@@ -141,45 +141,45 @@ int config_webserver_validate(const WebServerConfig* config) {
 
     // At least one protocol must be enabled
     if (!config->enable_ipv4 && !config->enable_ipv6) {
-        log_this("Config", "At least one IP protocol must be enabled", LOG_LEVEL_ERROR);
+        log_this("Config-WebServer", "At least one IP protocol must be enabled", LOG_LEVEL_ERROR);
         return -1;
     }
 
     // Validate port range
     if (config->port < MIN_PORT || config->port > MAX_PORT) {
-        log_this("Config", "Port number out of valid range", LOG_LEVEL_ERROR);
+        log_this("Config-WebServer", "Port number out of valid range", LOG_LEVEL_ERROR);
         return -1;
     }
 
     // Validate paths
     if (!config->web_root || !config->upload_path || !config->upload_dir) {
-        log_this("Config", "Required paths not configured", LOG_LEVEL_ERROR);
+        log_this("Config-WebServer", "Required paths not configured", LOG_LEVEL_ERROR);
         return -1;
     }
 
     // Validate thread pool size
     if (config->thread_pool_size < MIN_THREAD_POOL_SIZE || 
         config->thread_pool_size > MAX_THREAD_POOL_SIZE) {
-        log_this("Config", "Thread pool size out of valid range", LOG_LEVEL_ERROR);
+        log_this("Config-WebServer", "Thread pool size out of valid range", LOG_LEVEL_ERROR);
         return -1;
     }
 
     // Validate connection settings
     if (config->max_connections < MIN_CONNECTIONS || 
         config->max_connections > MAX_CONNECTIONS) {
-        log_this("Config", "Max connections out of valid range", LOG_LEVEL_ERROR);
+        log_this("Config-WebServer", "Max connections out of valid range", LOG_LEVEL_ERROR);
         return -1;
     }
 
     if (config->max_connections_per_ip < MIN_CONNECTIONS_PER_IP || 
         config->max_connections_per_ip > MAX_CONNECTIONS_PER_IP) {
-        log_this("Config", "Max connections per IP out of valid range", LOG_LEVEL_ERROR);
+        log_this("Config-WebServer", "Max connections per IP out of valid range", LOG_LEVEL_ERROR);
         return -1;
     }
 
     if (config->connection_timeout < MIN_CONNECTION_TIMEOUT || 
         config->connection_timeout > MAX_CONNECTION_TIMEOUT) {
-        log_this("Config", "Connection timeout out of valid range", LOG_LEVEL_ERROR);
+        log_this("Config-WebServer", "Connection timeout out of valid range", LOG_LEVEL_ERROR);
         return -1;
     }
 
