@@ -104,15 +104,69 @@ LaunchReadiness check_database_launch_readiness(void) {
             .messages = messages
         };
     }
+
+    // Validate database configuration
+    const DatabaseConfig* db_config = &app_config->databases;
     
-    // Basic readiness check - just verify we can get a subsystem ID
+    // Check default workers
+    if (db_config->default_workers < 1 || db_config->default_workers > 32) {
+        add_go_message(messages, &msg_count, "No-Go", "Invalid default worker count");
+        overall_readiness = false;
+    } else {
+        add_go_message(messages, &msg_count, "Go", "Default worker count valid: %d", db_config->default_workers);
+    }
+
+    add_go_message(messages, &msg_count, "Go", "Connection count: %d", db_config->connection_count);
+    
+    // Validate each enabled connection
+    bool connections_valid = true;
+    for (int i = 0; i < db_config->connection_count; i++) {
+        const DatabaseConnection* conn = &db_config->connections[i];
+        
+        if (!conn->name || strlen(conn->name) < 1 || strlen(conn->name) > 64) {
+            add_go_message(messages, &msg_count, "No-Go", "Invalid database name for connection %d", i);
+            connections_valid = false;
+            continue;
+        }
+
+        if (conn->enabled) {
+            bool conn_valid = true;
+            
+            if (!conn->type || strlen(conn->type) < 1 || strlen(conn->type) > 32) {
+                add_go_message(messages, &msg_count, "No-Go", "Invalid database type for %s", conn->name);
+                conn_valid = false;
+            }
+
+            if (!conn->database || !conn->host || !conn->port || !conn->user || !conn->pass) {
+                add_go_message(messages, &msg_count, "No-Go", "Missing required fields for %s", conn->name);
+                conn_valid = false;
+            }
+
+            if (conn->workers < 1 || conn->workers > 32) {
+                add_go_message(messages, &msg_count, "No-Go", "Invalid worker count for %s", conn->name);
+                conn_valid = false;
+            }
+
+            if (conn_valid) {
+                add_go_message(messages, &msg_count, "Go", "Database %s configuration valid", conn->name);
+            } else {
+                connections_valid = false;
+            }
+        } else {
+            add_go_message(messages, &msg_count, "Go", "Database %s disabled", conn->name);
+        }
+    }
+
+    // Basic readiness check - verify subsystem registration and config validity
     int subsystem_id = get_subsystem_id_by_name("Database");
-    if (subsystem_id >= 0) {
+    if (subsystem_id >= 0 && connections_valid) {
         add_go_message(messages, &msg_count, "Go", "Database subsystem registered");
         add_decision_message(messages, &msg_count, "Go For Launch of Database Subsystem");
         overall_readiness = true;
     } else {
-        add_go_message(messages, &msg_count, "No-Go", "Database subsystem not registered");
+        if (subsystem_id < 0) {
+            add_go_message(messages, &msg_count, "No-Go", "Database subsystem not registered");
+        }
         add_decision_message(messages, &msg_count, "No-Go For Launch of Database Subsystem");
         overall_readiness = false;
     }

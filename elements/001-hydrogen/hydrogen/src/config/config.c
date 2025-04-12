@@ -160,35 +160,35 @@ AppConfig* load_config(const char* cmdline_path) {
     if (env_path) {
         explicit_config = true;
         if (!is_file_readable(env_path)) {
-            log_this("Config", "Environment-specified config file not found: %s", LOG_LEVEL_ERROR, env_path);
+            log_this("Config", "― Env config file not found: %s", LOG_LEVEL_ERROR, env_path);
             return NULL;
         }
         root = json_load_file(env_path, 0, &error);
         if (!root) {
-            log_this("Config", "Failed to load environment-specified config: %s (line %d, column %d)",
+            log_this("Config", "― Failed to load env config: %s (line %d, column %d)",
                      LOG_LEVEL_ERROR, error.text, error.line, error.column);
             return NULL;
         }
         final_path = env_path;
-        log_this("Config", "Using configuration from environment variable: %s", LOG_LEVEL_STATE, env_path);
+        log_this("Config", "― Using env config: %s", LOG_LEVEL_STATE, env_path);
     }
 
     // Then try command line path if provided
     if (!root && cmdline_path) {
         explicit_config = true;
         if (!is_file_readable(cmdline_path)) {
-            log_this("Config", "Command-line specified config file not found: %s", LOG_LEVEL_ERROR, cmdline_path);
+            log_this("Config", "― Param config file not found: %s", LOG_LEVEL_ERROR, cmdline_path);
             return NULL;
         }
         root = json_load_file(cmdline_path, 0, &error);
         if (!root) {
-            dprintf(STDERR_FILENO, "JSON parse error at line %d, column %d: %s\n", error.line, error.column, error.text);
-            log_this("Config", "Failed to load command-line specified config: %s (line %d, column %d)",
+            dprintf(STDERR_FILENO, "― JSON parse error at line %d, column %d: %s\n", error.line, error.column, error.text);
+            log_this("Config", "― Failed to load param config: %s (line %d, column %d)",
                      LOG_LEVEL_ERROR, error.text, error.line, error.column);
             return NULL;
         }
         final_path = cmdline_path;
-        log_this("Config", "Using configuration from command line: %s", LOG_LEVEL_STATE, cmdline_path);
+        log_this("Config", "― Using param config: %s", LOG_LEVEL_STATE, cmdline_path);
     }
 
     // If no explicit config was provided, try standard locations
@@ -198,11 +198,11 @@ AppConfig* load_config(const char* cmdline_path) {
                 root = json_load_file(CONFIG_PATHS[i], 0, &error);
                 if (root) {
                     final_path = CONFIG_PATHS[i];
-                    log_this("Config", "Using configuration from: %s", LOG_LEVEL_STATE, final_path);
+                    log_this("Config", "― Using config from: %s", LOG_LEVEL_STATE, final_path);
                     break;
                 }
                 // If file exists but has errors, try next location
-                log_this("Config", "Skipping %s due to parse errors", LOG_LEVEL_ALERT, CONFIG_PATHS[i]);
+                log_this("Config", "― Skipping %s due to parse errors", LOG_LEVEL_ALERT, CONFIG_PATHS[i]);
             }
         }
     }
@@ -210,7 +210,7 @@ AppConfig* load_config(const char* cmdline_path) {
     // Allocate config structure
     AppConfig* config = calloc(1, sizeof(AppConfig));
     if (!config) {
-        log_this("Config", "Failed to allocate memory for config", LOG_LEVEL_ERROR);
+        log_this("Config", "― Failed to allocate memory for config", LOG_LEVEL_ERROR);
         if (root) json_decref(root);
         return NULL;
     }
@@ -220,21 +220,21 @@ AppConfig* load_config(const char* cmdline_path) {
     // Set up config path for use in server section
     const char* config_path = final_path;
     if (!config_path) {
-        config_path = "Missing... using defaults";
+        config_path = "― Missing... using defaults";
     }
 
     // If no config file was found, log the checked locations
     if (!root) {
-        log_this("Config", "No configuration file found, using defaults", LOG_LEVEL_ALERT);
-        log_this("Config", "Checked locations:", LOG_LEVEL_STATE);
+        log_this("Config", "― No configuration file found, using defaults", LOG_LEVEL_ALERT);
+        log_this("Config", "― Checked locations:", LOG_LEVEL_STATE);
         if (env_path) {
-            log_this("Config", "  - $HYDROGEN_CONFIG: %s", LOG_LEVEL_STATE, env_path);
+            log_this("Config", "――― $HYDROGEN_CONFIG: %s", LOG_LEVEL_STATE, env_path);
         }
         if (cmdline_path) {
-            log_this("Config", "  - Command line path: %s", LOG_LEVEL_STATE, cmdline_path);
+            log_this("Config", "――― Command line path: %s", LOG_LEVEL_STATE, cmdline_path);
         }
         for (int i = 0; i < NUM_CONFIG_PATHS; i++) {
-            log_this("Config", "  - %s", LOG_LEVEL_STATE, CONFIG_PATHS[i]);
+            log_this("Config", "――― %s", LOG_LEVEL_STATE, CONFIG_PATHS[i]);
         }
     }
 
@@ -254,6 +254,7 @@ AppConfig* load_config(const char* cmdline_path) {
         if (root) json_decref(root);
         return NULL;
     }
+    //dumpAppConfig(config, "Server");  // Show just server section
 
     // B. Network Configuration
     if (!load_network_config(root, config)) {
@@ -266,6 +267,8 @@ AppConfig* load_config(const char* cmdline_path) {
         if (root) json_decref(root);
         return NULL;
     }
+
+    dumpAppConfig(config, NULL);  // Show complete config after network
 
     // D. Logging Configuration
     if (!load_logging_config(root, config)) {
@@ -348,6 +351,202 @@ AppConfig* load_config(const char* cmdline_path) {
     if (root) json_decref(root);
     
     return config;
+}
+// Count UTF-8 characters
+static size_t utf8_char_count(const char* str) {
+    size_t chars = 0;
+    while (*str) {
+        if ((*str & 0xC0) != 0x80) { // Start byte
+            chars++;
+        }
+        str++;
+    }
+    return chars;
+}
+
+// Truncate to N UTF-8 characters
+static void utf8_truncate(char* str, size_t max_chars) {
+    size_t chars = 0;
+    char* pos = str;
+    char* last_valid = str; // Track start of last complete character
+
+    while (*pos) {
+        if ((*pos & 0xC0) != 0x80) { // Start byte
+            if (chars < max_chars) {
+                last_valid = pos; // Update last valid character start
+                chars++;
+            } else {
+                break;
+            }
+        }
+        pos++;
+    }
+    *last_valid = '\0'; // Truncate at start of last valid character
+}
+
+static void format_section_header(char* buffer, size_t size, const char* letter, const char* name) {
+    if (!buffer || !letter || !name || size <= strlen(LOG_LINE_BREAK)) {
+        if (buffer) buffer[0] = '\0';
+        return;
+    }
+
+    // Get LOG_LINE_BREAK's character count
+    size_t target_char_count = utf8_char_count(LOG_LINE_BREAK);
+    if (size <= strlen(LOG_LINE_BREAK)) {
+        buffer[0] = '\0';
+        return;
+    }
+
+    // Build: 3 emdashes + space + title + space + LOG_LINE_BREAK
+    char temp[256] = {0};
+    snprintf(temp, sizeof(temp), "――― %s. %s %s", letter, name, LOG_LINE_BREAK);
+
+    // Uppercase title (between 3 emdashes + space and next space)
+    size_t title_start = 10; // 3 * 3 + 1
+    for (size_t i = title_start; temp[i] && temp[i] != ' '; i++) {
+        temp[i] = toupper(temp[i]);
+    }
+
+    // Truncate to target_char_count characters
+    utf8_truncate(temp, target_char_count);
+
+    // Copy to buffer
+    size_t len = strlen(temp);
+    if (len >= size) {
+        buffer[0] = '\0';
+        return;
+    }
+    memcpy(buffer, temp, len + 1);
+}
+
+/*
+ * Debug function to dump the current state of AppConfig
+ * Shows raw configuration values loaded so far.
+ */
+// Maximum length for section headers
+#define MAX_HEADER_LENGTH 256
+
+void dumpAppConfig(const AppConfig* config, const char* section) {
+    if (!config) {
+        log_this("Config", "Cannot dump NULL config", LOG_LEVEL_TRACE);
+        return;
+    }
+
+    char header[MAX_HEADER_LENGTH];
+
+    // Server section (has implementation)
+    if (!section || strcmp(section, "Server") == 0) {
+        format_section_header(header, sizeof(header), "A", "Server");
+        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
+        dump_server_config(&config->server);
+    }
+
+    // Network section
+    if (!section || strcmp(section, "Network") == 0) {
+        format_section_header(header, sizeof(header), "B", "Network");
+        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
+        dump_network_config(&config->network);
+    }
+
+    // Databases section
+    if (!section || strcmp(section, "Databases") == 0) {
+        format_section_header(header, sizeof(header), "C", "Databases");
+        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
+        if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
+        dump_database_config(&config->databases);
+    }
+
+    // Logging section
+    if (!section || strcmp(section, "Logging") == 0) {
+        format_section_header(header, sizeof(header), "D", "Logging");
+        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
+        if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
+    }
+
+    // WebServer section
+    if (!section || strcmp(section, "WebServer") == 0) {
+        format_section_header(header, sizeof(header), "E", "WebServer");
+        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
+        if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
+    }
+
+    // API section
+    if (!section || strcmp(section, "API") == 0) {
+        format_section_header(header, sizeof(header), "F", "API");
+        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
+        if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
+    }
+
+    // Swagger section
+    if (!section || strcmp(section, "Swagger") == 0) {
+        format_section_header(header, sizeof(header), "G", "Swagger");
+        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
+        if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
+    }
+
+    // WebSocket section
+    if (!section || strcmp(section, "WebSocket") == 0) {
+        format_section_header(header, sizeof(header), "H", "WebSocket");
+        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
+        if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
+    }
+
+    // Terminal section
+    if (!section || strcmp(section, "Terminal") == 0) {
+        format_section_header(header, sizeof(header), "I", "Terminal");
+        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
+        if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
+    }
+
+    // mDNS Server section
+    if (!section || strcmp(section, "mDNS Server") == 0) {
+     
+        format_section_header(header, sizeof(header), "J", "mDNS Server");
+        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
+        if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
+    }
+
+    // mDNS Client section
+    if (!section || strcmp(section, "mDNS Client") == 0) {
+        format_section_header(header, sizeof(header), "K", "mDNS Client");
+        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
+        if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
+    }
+
+    // Mail Relay section
+    if (!section || strcmp(section, "Mail Relay") == 0) {
+        format_section_header(header, sizeof(header), "L", "Mail Relay");
+        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
+        if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
+    }
+
+    // Print section
+    if (!section || strcmp(section, "Print") == 0) {
+        format_section_header(header, sizeof(header), "M", "Print");
+        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
+        if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
+    }
+
+    // Resources section
+    if (!section || strcmp(section, "Resources") == 0) {
+        format_section_header(header, sizeof(header), "N", "Resources");
+        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
+        if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
+    }
+
+    // OIDC section
+    if (!section || strcmp(section, "OIDC") == 0) {
+        format_section_header(header, sizeof(header), "O", "OIDC");
+        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
+        if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
+    }
+
+    // Notify section
+    if (!section || strcmp(section, "Notify") == 0) {
+        format_section_header(header, sizeof(header), "P", "Notify");
+        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
+        if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
+    }
 }
 
 /*

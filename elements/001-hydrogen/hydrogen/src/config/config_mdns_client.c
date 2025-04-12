@@ -53,7 +53,7 @@ bool load_mdns_client_config(json_t* root, AppConfig* config) {
             if (type_count > 0) {
                 config->mdns_client.service_types = calloc(type_count, sizeof(MDNSServiceType));
                 if (!config->mdns_client.service_types) {
-                    log_this("Config", "Failed to allocate service types array", LOG_LEVEL_ERROR);
+                    log_this("Config-MDNSClient", "Failed to allocate service types array", LOG_LEVEL_ERROR);
                     return false;
                 }
                 config->mdns_client.num_service_types = type_count;
@@ -64,12 +64,12 @@ bool load_mdns_client_config(json_t* root, AppConfig* config) {
                         const char* type_str = json_string_value(type);
                         config->mdns_client.service_types[i].type = strdup(type_str);
                         if (!config->mdns_client.service_types[i].type) {
-                            log_this("Config", "Failed to allocate service type string", LOG_LEVEL_ERROR);
+                            log_this("Config-MDNSClient", "Failed to allocate service type string", LOG_LEVEL_ERROR);
                             return false;
                         }
                         config->mdns_client.service_types[i].required = true;
                         config->mdns_client.service_types[i].auto_connect = true;
-                        log_config_item("ServiceType", type_str, false);
+                        log_config_item("ServiceType", type_str, false, "MDNSClient");
                     }
                 }
             }
@@ -87,7 +87,7 @@ bool load_mdns_client_config(json_t* root, AppConfig* config) {
 // Initialize mDNS client configuration with default values
 int config_mdns_client_init(MDNSClientConfig* config) {
     if (!config) {
-        log_this("Config", "mDNS client config pointer is NULL", LOG_LEVEL_ERROR);
+        log_this("Config-MDNSClient", "mDNS client config pointer is NULL", LOG_LEVEL_ERROR);
         return -1;
     }
 
@@ -131,30 +131,30 @@ void config_mdns_client_cleanup(MDNSClientConfig* config) {
 // Validate mDNS client configuration values
 int config_mdns_client_validate(const MDNSClientConfig* config) {
     if (!config) {
-        log_this("Config", "mDNS client config pointer is NULL", LOG_LEVEL_ERROR);
+        log_this("Config-MDNSClient", "mDNS client config pointer is NULL", LOG_LEVEL_ERROR);
         return -1;
     }
 
     // Validate intervals
     if (config->scan_interval <= 0) {
-        log_this("Config", "Invalid scan interval (must be positive)", LOG_LEVEL_ERROR);
+        log_this("Config-MDNSClient", "Invalid scan interval (must be positive)", LOG_LEVEL_ERROR);
         return -1;
     }
 
     if (config->health_check_enabled && config->health_check_interval <= 0) {
-        log_this("Config", "Invalid health check interval (must be positive)", LOG_LEVEL_ERROR);
+        log_this("Config-MDNSClient", "Invalid health check interval (must be positive)", LOG_LEVEL_ERROR);
         return -1;
     }
 
     // Validate service types if configured
     if (config->num_service_types > 0 && !config->service_types) {
-        log_this("Config", "Service types array is NULL but count is non-zero", LOG_LEVEL_ERROR);
+        log_this("Config-MDNSClient", "Service types array is NULL but count is non-zero", LOG_LEVEL_ERROR);
         return -1;
     }
 
     for (size_t i = 0; i < config->num_service_types; i++) {
         if (!config->service_types[i].type || !config->service_types[i].type[0]) {
-            log_this("Config", "Invalid service type at index %zu (must not be empty)", LOG_LEVEL_ERROR, i);
+            log_this("Config-MDNSClient", "Invalid service type at index %zu (must not be empty)", LOG_LEVEL_ERROR, i);
             return -1;
         }
     }

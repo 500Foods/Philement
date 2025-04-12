@@ -2,7 +2,8 @@
  * Database Configuration Implementation
  *
  * Implements the configuration handlers for database operations,
- * including JSON parsing, environment variable handling, and validation.
+ * including JSON parsing and environment variable handling.
+ * Note: Validation moved to launch readiness checks
  */
 
 #include <stdlib.h>
@@ -12,124 +13,128 @@
 #include "config_utils.h"
 #include "../logging/logging.h"
 
-// Known database names in fixed order
-const char* const KNOWN_DATABASES[MAX_DATABASES] = {
-    "Acuranzo",
-    "OIDC",
-    "Log",
-    "Canvas",
-    "Helium"
-};
-
-// Forward declarations for internal functions
-static void init_database_connection(DatabaseConnection* conn, const char* name, bool enabled);
-static void cleanup_database_connection(DatabaseConnection* conn);
-static int validate_database_connection(const DatabaseConnection* conn);
-
-// Public function declarations
-int config_database_validate(const DatabaseConfig* config);
+// Function declarations
+void cleanup_database_connection(DatabaseConnection* conn);
+void dump_database_config(const DatabaseConfig* config);
 
 // Load database configuration from JSON
 bool load_database_config(json_t* root, AppConfig* config) {
-    // Initialize with defaults
-    init_database_config(&config->databases);
-
-    // Process all config items in sequence
     bool success = true;
+    DatabaseConfig* db_config = &config->databases;
 
-    // Process Databases section if present
+    // Initialize database config with defaults
+    memset(db_config, 0, sizeof(DatabaseConfig));
+    db_config->default_workers = 1;
+
+    // Count actual databases in config
+    json_t* connections = json_object_get(json_object_get(root, "Databases"), "Connections");
+    size_t db_count = json_is_object(connections) ? json_object_size(connections) : 1;  // At least Acuranzo
+    db_config->connection_count = db_count;
+
+    // Initialize all database connections with minimal defaults
+    for (size_t i = 0; i < db_count; i++) {
+        DatabaseConnection* conn = &db_config->connections[i];
+        memset(conn, 0, sizeof(DatabaseConnection));
+        conn->enabled = (i == 0);  // Only first one enabled by default
+        conn->workers = 1;
+    }
+
+    // Process Databases section and DefaultWorkers
     success = PROCESS_SECTION(root, "Databases");
-    if (success) {
-        // Process DefaultWorkers
-        success = success && PROCESS_INT(root, &config->databases, default_workers, "Databases.DefaultWorkers", "Databases");
+    success = success && PROCESS_INT(root, db_config, default_workers, "Databases.DefaultWorkers", "Databases");
 
-        // Process Connections section
-        json_t* connections = json_object_get(json_object_get(root, "Databases"), "Connections");
-        if (json_is_object(connections)) {
-            log_config_item("Connections", "Configured", false);
+    // Process Connections section
+    success = PROCESS_SECTION(root, "Databases.Connections");
 
-            // Process each known database
-            for (int i = 0; i < MAX_DATABASES; i++) {
-                json_t* conn_obj = json_object_get(connections, KNOWN_DATABASES[i]);
-                DatabaseConnection* conn = &config->databases.connections[i];
+    // Set up Acuranzo defaults (first database)
+    DatabaseConnection* acuranzo = &db_config->connections[0];
+    acuranzo->name = strdup("Acuranzo");
+    acuranzo->connection_name = strdup("Acuranzo");
 
-                if (json_is_object(conn_obj)) {
-                    log_config_item(KNOWN_DATABASES[i], "", false);
+    // Process Acuranzo section and settings
+    success = PROCESS_SECTION(root, "Databases.Connections.Acuranzo");
+    acuranzo->database = strdup("${env.ACURANZO_DATABASE}");
+    acuranzo->type = strdup("${env.ACURANZO_DB_TYPE}");
+    acuranzo->host = strdup("${env.ACURANZO_DB_HOST}");
+    acuranzo->port = strdup("${env.ACURANZO_DB_PORT}");
+    acuranzo->user = strdup("${env.ACURANZO_DB_USER}");
+    acuranzo->pass = strdup("${env.ACURANZO_DB_PASS}");
+    acuranzo->workers = db_config->default_workers;
+    success = success && PROCESS_BOOL(root, acuranzo, enabled, "Databases.Connections.Acuranzo.Enabled", "Databases");
+    success = success && PROCESS_STRING(root, acuranzo, type, "Databases.Connections.Acuranzo.Type", "Databases");
+    success = success && PROCESS_STRING(root, acuranzo, database, "Databases.Connections.Acuranzo.Database", "Databases");
+    success = success && PROCESS_STRING(root, acuranzo, host, "Databases.Connections.Acuranzo.Host", "Databases");
+    success = success && PROCESS_STRING(root, acuranzo, port, "Databases.Connections.Acuranzo.Port", "Databases");
+    success = success && PROCESS_STRING(root, acuranzo, user, "Databases.Connections.Acuranzo.User", "Databases");
+    success = success && PROCESS_SENSITIVE(root, acuranzo, pass, "Databases.Connections.Acuranzo.Pass", "Databases");
+    success = success && PROCESS_INT(root, acuranzo, workers, "Databases.Connections.Acuranzo.Workers", "Databases");
 
-                    // Process connection settings
-                    success = success && PROCESS_BOOL(conn_obj, conn, enabled, "Enabled", KNOWN_DATABASES[i]);
-                    
-                    if (conn->enabled) {
-                        success = success && PROCESS_STRING(conn_obj, conn, type, "Type", KNOWN_DATABASES[i]);
-                        success = success && PROCESS_INT(conn_obj, conn, workers, "Workers", KNOWN_DATABASES[i]);
+    // Process additional databases
+    if (json_is_object(connections)) {  // Use existing connections variable
+        const char* key;
+        json_t* value;
+        size_t i = 1;  // Start after Acuranzo
+        json_object_foreach(connections, key, value) {
+            if (i >= db_count) break;  // Safety check
+            if (strcmp(key, "Acuranzo") == 0) continue;  // Skip Acuranzo as it's handled separately
 
-                        // Special handling for Acuranzo database
-                        if (strcmp(KNOWN_DATABASES[i], "Acuranzo") == 0) {
-                            success = success && PROCESS_STRING(conn_obj, conn, database, "Database", KNOWN_DATABASES[i]);
-                            if (success && !conn->database) conn->database = strdup("${env.ACURANZO_DATABASE}");
+            DatabaseConnection* conn = &db_config->connections[i];
+            char path[256];
 
-                            success = success && PROCESS_STRING(conn_obj, conn, host, "Host", KNOWN_DATABASES[i]);
-                            if (success && !conn->host) conn->host = strdup("${env.ACURANZO_DB_HOST}");
+            // Add section header for this database
+            snprintf(path, sizeof(path), "Databases.Connections.%s", key);
+            success = success && PROCESS_SECTION(root, path);
 
-                            success = success && PROCESS_STRING(conn_obj, conn, port, "Port", KNOWN_DATABASES[i]);
-                            if (success && !conn->port) conn->port = strdup("${env.ACURANZO_DB_PORT}");
+            // Store the actual connection name from JSON
+            free(conn->name);  // Update both name and connection_name
+            free(conn->connection_name);
+            conn->name = strdup(key);
+            conn->connection_name = strdup(key);
 
-                            success = success && PROCESS_SENSITIVE(conn_obj, conn, user, "User", KNOWN_DATABASES[i]);
-                            if (success && !conn->user) conn->user = strdup("${env.ACURANZO_DB_USER}");
+            snprintf(path, sizeof(path), "Databases.Connections.%s.Enabled", key);
+            success = success && PROCESS_BOOL(root, conn, enabled, path, "Databases");
 
-                            success = success && PROCESS_SENSITIVE(conn_obj, conn, pass, "Pass", KNOWN_DATABASES[i]);
-                            if (success && !conn->pass) conn->pass = strdup("${env.ACURANZO_DB_PASS}");
-                        } else {
-                            success = success && PROCESS_STRING(conn_obj, conn, database, "Database", KNOWN_DATABASES[i]);
-                            success = success && PROCESS_STRING(conn_obj, conn, host, "Host", KNOWN_DATABASES[i]);
-                            success = success && PROCESS_STRING(conn_obj, conn, port, "Port", KNOWN_DATABASES[i]);
-                            success = success && PROCESS_SENSITIVE(conn_obj, conn, user, "User", KNOWN_DATABASES[i]);
-                            success = success && PROCESS_SENSITIVE(conn_obj, conn, pass, "Pass", KNOWN_DATABASES[i]);
-                        }
-                    }
-                } else {
-                    log_config_item(KNOWN_DATABASES[i], "Using defaults", true);
-                }
+            if (success && conn->enabled) {
+                snprintf(path, sizeof(path), "Databases.Connections.%s.Type", key);
+                success = success && PROCESS_STRING(root, conn, type, path, "Databases");
+
+                snprintf(path, sizeof(path), "Databases.Connections.%s.Database", key);
+                success = success && PROCESS_STRING(root, conn, database, path, "Databases");
+
+                snprintf(path, sizeof(path), "Databases.Connections.%s.Host", key);
+                success = success && PROCESS_STRING(root, conn, host, path, "Databases");
+
+                snprintf(path, sizeof(path), "Databases.Connections.%s.Port", key);
+                success = success && PROCESS_STRING(root, conn, port, path, "Databases");
+
+                snprintf(path, sizeof(path), "Databases.Connections.%s.User", key);
+                success = success && PROCESS_STRING(root, conn, user, path, "Databases");
+
+                snprintf(path, sizeof(path), "Databases.Connections.%s.Pass", key);
+                success = success && PROCESS_SENSITIVE(root, conn, pass, path, "Databases");
+
+                snprintf(path, sizeof(path), "Databases.Connections.%s.Workers", key);
+                success = success && PROCESS_INT(root, conn, workers, path, "Databases");
             }
-        } else {
-            log_config_item("Connections", "Using defaults", true);
+            i++;  // Move to next database
         }
     }
 
-    // Validate the configuration if loaded successfully
-    if (success) {
-        success = (config_database_validate(&config->databases) == 0);
-    }
-
-    // Clean up on failure
+    // Clean up and return on failure
     if (!success) {
         cleanup_database_config(&config->databases);
-        init_database_config(&config->databases);
+        return false;
     }
 
     return success;
 }
 
-// Initialize a single database connection with defaults
-static void init_database_connection(DatabaseConnection* conn, const char* name, bool enabled) {
-    if (!conn || !name) return;
-
-    conn->name = strdup(name);
-    conn->enabled = enabled;
-    conn->type = strdup("postgres");  // Default type
-    conn->database = NULL;
-    conn->host = NULL;
-    conn->port = NULL;
-    conn->user = NULL;
-    conn->pass = NULL;
-    conn->workers = 1;  // Default workers
-}
-
 // Clean up a single database connection
-static void cleanup_database_connection(DatabaseConnection* conn) {
+void cleanup_database_connection(DatabaseConnection* conn) {
     if (!conn) return;
 
     free(conn->name);
+    free(conn->connection_name);
     free(conn->type);
     free(conn->database);
     free(conn->host);
@@ -141,37 +146,11 @@ static void cleanup_database_connection(DatabaseConnection* conn) {
     memset(conn, 0, sizeof(DatabaseConnection));
 }
 
-// Initialize database configuration with defaults
-void init_database_config(DatabaseConfig* config) {
-    if (!config) return;
-
-    config->default_workers = 1;  // Default worker count
-    config->connection_count = MAX_DATABASES;
-
-    // Initialize each known database
-    for (int i = 0; i < MAX_DATABASES; i++) {
-        // Acuranzo is enabled by default, others disabled
-        bool enabled = (strcmp(KNOWN_DATABASES[i], "Acuranzo") == 0);
-        init_database_connection(&config->connections[i], KNOWN_DATABASES[i], enabled);
-
-        // Set Acuranzo environment variable defaults
-        if (enabled) {
-            DatabaseConnection* acuranzo = &config->connections[i];
-            free(acuranzo->type);  // Free default type
-            acuranzo->type = strdup("${env.ACURANZO_DB_TYPE}");
-            acuranzo->database = strdup("${env.ACURANZO_DATABASE}");
-            acuranzo->host = strdup("${env.ACURANZO_DB_HOST}");
-            acuranzo->port = strdup("${env.ACURANZO_DB_PORT}");
-            acuranzo->user = strdup("${env.ACURANZO_DB_USER}");
-            acuranzo->pass = strdup("${env.ACURANZO_DB_PASS}");
-        }
-    }
-}
-
 // Clean up database configuration
 void cleanup_database_config(DatabaseConfig* config) {
     if (!config) return;
 
+    // Clean up each connection
     for (int i = 0; i < config->connection_count; i++) {
         cleanup_database_connection(&config->connections[i]);
     }
@@ -180,64 +159,33 @@ void cleanup_database_config(DatabaseConfig* config) {
     memset(config, 0, sizeof(DatabaseConfig));
 }
 
-// Validate a single database connection
-static int validate_database_connection(const DatabaseConnection* conn) {
-    if (!conn) {
-        log_this("Config", "Database connection pointer is NULL", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    if (!conn->name || strlen(conn->name) < 1 || strlen(conn->name) > 64) {
-        log_this("Config", "Invalid database name", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    if (conn->enabled) {
-        // Required fields for enabled databases
-        if (!conn->type || strlen(conn->type) < 1 || strlen(conn->type) > 32) {
-            log_this("Config", "Invalid database type for %s", LOG_LEVEL_ERROR, conn->name);
-            return -1;
-        }
-
-        if (!conn->database || !conn->host || !conn->port || !conn->user || !conn->pass) {
-            log_this("Config", "Missing required fields for enabled database %s", LOG_LEVEL_ERROR, conn->name);
-            return -1;
-        }
-
-        if (conn->workers < 1 || conn->workers > 32) {
-            log_this("Config", "Invalid worker count for %s", LOG_LEVEL_ERROR, conn->name);
-            return -1;
-        }
-    }
-
-    return 0;
-}
-
-// Validate database configuration values
-int config_database_validate(const DatabaseConfig* config) {
+void dump_database_config(const DatabaseConfig* config) {
     if (!config) {
-        log_this("Config", "Database config pointer is NULL", LOG_LEVEL_ERROR);
-        return -1;
+        log_this("Config", "Cannot dump NULL database config", LOG_LEVEL_TRACE);
+        return;
     }
 
-    // Validate default workers
-    if (config->default_workers < 1 || config->default_workers > 32) {
-        log_this("Config", "Invalid default worker count", LOG_LEVEL_ERROR);
-        return -1;
-    }
+    // Dump global settings
+    DUMP_INT("―― DefaultWorkers", config->default_workers);
+    DUMP_INT("―― Connections", config->connection_count);
 
-    // Validate connection count
-    if (config->connection_count != MAX_DATABASES) {
-        log_this("Config", "Invalid connection count", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    // Validate each connection
+    // Dump each connection
     for (int i = 0; i < config->connection_count; i++) {
-        if (validate_database_connection(&config->connections[i]) != 0) {
-            return -1;
+        const DatabaseConnection* conn = &config->connections[i];
+        
+        // Create section header for each database
+        DUMP_TEXT("――", conn->connection_name);
+        
+        // Dump connection details
+        DUMP_BOOL("―――― Enabled", conn->enabled);
+        if (conn->enabled) {
+            DUMP_STRING("―――― Type", conn->type);
+            DUMP_STRING("―――― Database", conn->database);
+            DUMP_STRING("―――― Host", conn->host);
+            DUMP_STRING("―――― Port", conn->port);
+            DUMP_STRING("―――― User", conn->user);
+            DUMP_SECRET("―――― Pass", conn->pass);
+            DUMP_INT("―――― Workers", conn->workers);
         }
     }
-
-    return 0;
 }

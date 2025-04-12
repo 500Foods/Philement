@@ -7,51 +7,51 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "config_server.h"
+#include <unistd.h>
+#include <linux/limits.h>
+
 #include "config.h"
 #include "config_utils.h"
+#include "config_server.h"
 #include "../logging/logging.h"
 
-// Function prototypes for internal functions
-static int config_server_validate(const ServerConfig* config);
-
 // Load server configuration from JSON
+// Note: Validation moved to launch readiness checks
 bool load_server_config(json_t* root, AppConfig* config, const char* config_path) {
     ServerConfig* server = &config->server;
 
     // Initialize with defaults
     *server = (ServerConfig){
         .server_name = strdup("Philement/hydrogen"),
+        .exec_file = NULL,    
+        .config_file = NULL,  
         .log_file = strdup("/var/log/hydrogen/hydrogen.log"),
-        .config_file = strdup(config_path),  // Store the config path
         .payload_key = strdup("${env.PAYLOAD_KEY}"),
         .startup_delay = 5
     };
 
-    // Verify string allocations
-    if (!server->server_name || !server->log_file || !server->config_file || !server->payload_key) {
-        log_this("Config", "Failed to allocate server configuration strings", LOG_LEVEL_ERROR);
-        config_server_cleanup(server);
-        return false;
-    }
-
     // Process all config items in sequence
     bool success = true;
+
+    // Get executable path
+    char exec_path[PATH_MAX];
+    ssize_t len = readlink("/proc/self/exe", exec_path, sizeof(exec_path)-1);
+    if (len != -1) {
+        exec_path[len] = '\0';
+    } else {
+        // Fallback to a reasonable default if readlink fails
+        strncpy(exec_path, "hydrogen", sizeof(exec_path)-1);
+        exec_path[sizeof(exec_path)-1] = '\0';
+    }
 
     // One line per key/value using macros
     success = PROCESS_SECTION(root, "Server");
     success = success && PROCESS_STRING(root, server, server_name, "Server.ServerName", "Server");
+    success = success && PROCESS_STRING_DIRECT(server, exec_file, "Server.ExecFile", "Server", exec_path);
+    success = success && PROCESS_STRING_DIRECT(server, config_file, "Server.ConfigFile", "Server", config_path);
     success = success && PROCESS_STRING(root, server, log_file, "Server.LogFile", "Server");
     success = success && PROCESS_SENSITIVE(root, server, payload_key, "Server.PayloadKey", "Server");
     success = success && PROCESS_INT(root, server, startup_delay, "Server.StartupDelay", "Server");
-
-    // Log config file path
-    log_config_item("ConfigFile", config_path, false);
-
-    // Validate the configuration if loaded successfully
-    if (success) {
-        success = (config_server_validate(&config->server) == 0);
-    }
 
     return success;
 }
@@ -61,7 +61,10 @@ void config_server_cleanup(ServerConfig* config) {
     if (!config) {
         return;
     }
-
+    if (config->exec_file) {
+        free(config->exec_file);
+        config->exec_file = NULL;
+    }
     // Free allocated strings
     if (config->server_name) {
         free(config->server_name);
@@ -87,42 +90,17 @@ void config_server_cleanup(ServerConfig* config) {
     memset(config, 0, sizeof(ServerConfig));
 }
 
-// Validate server configuration values
-static int config_server_validate(const ServerConfig* config) {
+void dump_server_config(const ServerConfig* config) {
     if (!config) {
-        log_this("Config", "Server config pointer is NULL", LOG_LEVEL_ERROR);
-        return -1;
+        log_this("Config", "Cannot dump NULL server config", LOG_LEVEL_TRACE);
+        return;
     }
 
-    // Validate server name
-    if (!config->server_name || !config->server_name[0]) {
-        log_this("Config", "Invalid server name (must not be empty)", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    // Validate log file path
-    if (!config->log_file || !config->log_file[0]) {
-        log_this("Config", "Invalid log file path (must not be empty)", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    // Validate config file path
-    if (!config->config_file || !config->config_file[0]) {
-        log_this("Config", "Invalid config file path (must not be empty)", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    // Validate payload key
-    if (!config->payload_key || !config->payload_key[0]) {
-        log_this("Config", "Invalid payload key (must not be empty)", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    // Validate startup delay
-    if (config->startup_delay < 0) {
-        log_this("Config", "Invalid startup delay (must be non-negative)", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    return 0;
+    // Use DUMP_ macros to show actual AppConfig contents
+    DUMP_STRING("―― server_name", config->server_name);
+    DUMP_STRING("―― exec_file", config->exec_file);
+    DUMP_STRING("―― config_file", config->config_file);
+    DUMP_STRING("―― log_file", config->log_file);
+    DUMP_SECRET("―― payload_key", config->payload_key);
+    DUMP_INT("―― startup_delay", config->startup_delay);
 }

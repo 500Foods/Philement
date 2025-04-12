@@ -149,7 +149,7 @@
                 "mDNSServer": 6
             }
         },
-        "Database": {
+        "Databases": {
             "Enabled": false,
             "DefaultLevel": 4,
             "Subsystems": {
@@ -283,15 +283,24 @@
     "Databases": {
         "DefaultWorkers": 1,
         "Connections": {
+            "Acuranzo": {
+                "Enabled": true,
+                "Type": "postgres",
+                "Host": "${env.ACURANZO_DB_HOST}",
+                "Port": "${env.ACURANZO_DB_PORT}",
+                "Database": "${env.ACURANZO_DB_NAME}",
+                "User": "${env.ACURANZO_DB_USER}",
+                "Pass": "${env.ACURANZO_DB_PASS}",
+                "Workers": 1
+            },
             "Log": {
                 "Enabled": true,
                 "Type": "postgres",
                 "Host": "${env.LOG_DB_HOST}",
                 "Port": "${env.LOG_DB_PORT}",
                 "Database": "${env.LOG_DB_NAME}",
-                "Username": "${env.LOG_DB_USER}",
-                "Password": "${env.LOG_DB_PASS}",
-                "MaxConnections": 10,
+                "User": "${env.LOG_DB_USER}",
+                "Pass": "${env.LOG_DB_PASS}",
                 "Workers": 1
             },
             "OIDC": {
@@ -300,20 +309,8 @@
                 "Host": "${env.OIDC_DB_HOST}",
                 "Port": "${env.OIDC_DB_PORT}",
                 "Database": "${env.OIDC_DB_NAME}",
-                "Username": "${env.OIDC_DB_USER}",
-                "Password": "${env.OIDC_DB_PASS}",
-                "MaxConnections": 10,
-                "Workers": 1
-            },
-            "Acuranzo": {
-                "Enabled": true,
-                "Type": "postgres",
-                "Host": "${env.ACURANZO_DB_HOST}",
-                "Port": "${env.ACURANZO_DB_PORT}",
-                "Database": "${env.ACURANZO_DB_NAME}",
-                "Username": "${env.ACURANZO_DB_USER}",
-                "Password": "${env.ACURANZO_DB_PASS}",
-                "MaxConnections": 10,
+                "User": "${env.OIDC_DB_USER}",
+                "Pass": "${env.OIDC_DB_PASS}",
                 "Workers": 1
             },
             "Helium": {
@@ -322,9 +319,8 @@
                 "Host": "${env.HELIUM_DB_HOST}",
                 "Port": "${env.HELIUM_DB_PORT}",
                 "Database": "${env.HELIUM_DB_NAME}",
-                "Username": "${env.HELIUM_DB_USER}",
-                "Password": "${env.HELIUM_DB_PASS}",
-                "MaxConnections": 10,
+                "User": "${env.HELIUM_DB_USER}",
+                "Pass": "${env.HELIUM_DB_PASS}",
                 "Workers": 1
             },
             "Canvas": {
@@ -332,10 +328,8 @@
                 "Type": "postgres",
                 "Host": "${env.CANVAS_DB_HOST}",
                 "Port": "${env.CANVAS_DB_PORT}",
-                "Database": "${env.CANVAS_DB_NAME}",
-                "Username": "${env.CANVAS_DB_USER}",
-                "Password": "${env.CANVAS_DB_PASS}",
-                "MaxConnections": 10,
+                "User": "${env.CANVAS_DB_USER}",
+                "Pass": "${env.CANVAS_DB_PASS}",
                 "Workers": 1
             }
         }

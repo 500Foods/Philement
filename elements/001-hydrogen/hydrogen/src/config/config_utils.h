@@ -11,6 +11,9 @@
 #include <stdbool.h>
 #include <jansson.h>
 
+// Forward declaration of AppConfig for debugging function
+struct AppConfig;
+
 // Configuration value types with expanded environment variable support
 typedef enum {
     CONFIG_TYPE_SECTION,      // Section header
@@ -149,8 +152,13 @@ char* create_masked_value(const char* value);
 // Log configuration section
 void log_config_section(const char* section_name, bool using_defaults);
 
-// Log configuration item
-void log_config_item(const char* key, const char* value, bool is_default);
+// Log configuration item with section context
+void log_config_item(const char* key, const char* value, bool is_default, const char* section);
+
+// Process a direct configuration value (no JSON lookup)
+bool process_direct_value(ConfigValue value, ConfigValueType type,
+                        const char* path, const char* section,
+                        const char* direct_value);
 
 /*
  * Configuration processing macros
@@ -160,7 +168,21 @@ void log_config_item(const char* key, const char* value, bool is_default);
  */
 #define PROCESS_SECTION(root, section) \
     process_config_value(root, (ConfigValue){0}, CONFIG_TYPE_SECTION, section, section)
+/*
+ * Direct value processing macros
+ * 
+ * These macros handle values that come from outside the JSON config,
+ * such as command line parameters or environment variables.
+ */
+// Process a direct boolean value (no JSON lookup)
+bool process_direct_bool_value(ConfigValue value, const char* path, const char* section, bool direct_value);
 
+#define PROCESS_STRING_DIRECT(config_ptr, field, path, section, value) \
+    process_direct_value((ConfigValue){.string_val = &((config_ptr)->field)}, CONFIG_TYPE_STRING, path, section, value)
+
+#define PROCESS_BOOL_DIRECT(config_ptr, field, path, section, value) \
+    process_direct_bool_value((ConfigValue){.bool_val = &((config_ptr)->field)}, path, section, value)
+    
 #define PROCESS_BOOL(root, config_ptr, field, path, section) \
     process_config_value(root, (ConfigValue){.bool_val = &((config_ptr)->field)}, CONFIG_TYPE_BOOL, path, section)
 
@@ -175,5 +197,56 @@ void log_config_item(const char* key, const char* value, bool is_default);
 
 #define PROCESS_SIZE(root, config_ptr, field, path, section) \
     process_config_value(root, (ConfigValue){.int_val = (int*)&((config_ptr)->field)}, CONFIG_TYPE_INT, path, section)
+
+// Configuration array value
+typedef struct {
+    int* array;           // Pointer to array of integers
+    size_t* count;        // Pointer to array size
+    size_t capacity;      // Maximum array capacity
+} ConfigIntArray;
+
+// Format integer array configuration
+bool process_int_array_config(json_t* root, ConfigIntArray value, const char* path, const char* section);
+
+#define PROCESS_INT_ARRAY(root, config_ptr, array, count, capacity, path, section) \
+    process_int_array_config(root, (ConfigIntArray){.array = (config_ptr)->array, .count = &((config_ptr)->count), .capacity = capacity}, path, section)
+
+// Dump macros for configuration values with safe formatting
+#define DUMP_STRING(name, value) do { \
+    const char* val = (value) ? (value) : "(not set)"; \
+    log_this("Config-Dump", "――― %s: %s", LOG_LEVEL_STATE, (name), val); \
+} while(0)
+
+#define DUMP_STRING2(prefix, name, value) do { \
+    const char* val = (value) ? (value) : "(not set)"; \
+    log_this("Config-Dump", "――― %s %s: %s", LOG_LEVEL_STATE, (prefix), (name), val); \
+} while(0)
+
+#define DUMP_TEXT(value1, value2) \
+    log_this("Config-Dump", "――― %s %s", LOG_LEVEL_STATE, (value1), (value2)); 
+
+#define DUMP_INT(name, value) \
+    log_this("Config-Dump", "――― %s: %d", LOG_LEVEL_STATE, (name), (value))
+
+#define DUMP_BOOL(name, value) \
+    log_this("Config-Dump", "――― %s: %s", LOG_LEVEL_STATE, (name), ((value) ? "true" : "false"))
+
+#define DUMP_SIZE(name, value) \
+    log_this("Config-Dump", "――― %s: %zu", LOG_LEVEL_STATE, (name), (value))
+
+// Dump sensitive values showing only first 5 chars
+#define DUMP_SECRET(name, value) do { \
+    const char* val = (value); \
+    if (!val) { \
+        log_this("Config-Dump", "――― %s: (not set)", LOG_LEVEL_STATE, (name)); \
+    } else if (strlen(val) <= 5) { \
+        log_this("Config-Dump", "――― %s: %s...", LOG_LEVEL_STATE, (name), val); \
+    } else { \
+        char temp[6]; \
+        strncpy(temp, val, 5); \
+        temp[5] = '\0'; \
+        log_this("Config-Dump", "――― %s: %s...", LOG_LEVEL_STATE, (name), temp); \
+    } \
+} while(0)
 
 #endif /* CONFIG_UTILS_H */
