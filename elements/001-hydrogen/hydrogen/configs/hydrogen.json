@@ -17,7 +17,7 @@
         }
     },
     "WebServer": {
-        "Enabled": true,
+        "EnableIPv4": true,
         "EnableIPv6": true,
         "Port": 5000,
         "WebRoot": "/var/www/html",
