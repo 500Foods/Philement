@@ -1,8 +1,8 @@
 /*
  * mDNS Client Configuration Implementation
  *
- * Implements the configuration handlers for the mDNS client subsystem,
- * including JSON parsing, environment variable handling, and validation.
+ * Implements configuration handlers for the mDNS client subsystem,
+ * including JSON parsing, environment variable handling, and cleanup.
  */
 
 #include <stdlib.h>
@@ -14,35 +14,33 @@
 
 // Load mDNS client configuration from JSON
 bool load_mdns_client_config(json_t* root, AppConfig* config) {
-    // Initialize with defaults
-    config->mdns_client = (MDNSClientConfig){
-        .enabled = true,
-        .enable_ipv6 = false,
-        .scan_interval = DEFAULT_MDNS_CLIENT_SCAN_INTERVAL,
-        .max_services = DEFAULT_MDNS_CLIENT_MAX_SERVICES,
-        .retry_count = DEFAULT_MDNS_CLIENT_RETRY_COUNT,
-        .health_check_enabled = true,
-        .health_check_interval = DEFAULT_MDNS_CLIENT_HEALTH_CHECK_INTERVAL,
-        .service_types = NULL,
-        .num_service_types = 0
-    };
-
-    // Process all config items in sequence
     bool success = true;
+    MDNSClientConfig* mdns_config = &config->mdns_client;
+
+    // Initialize with defaults
+    mdns_config->enabled = true;
+    mdns_config->enable_ipv6 = false;
+    mdns_config->scan_interval = 30;  // seconds
+    mdns_config->max_services = 100;
+    mdns_config->retry_count = 3;
+    mdns_config->health_check_enabled = true;
+    mdns_config->health_check_interval = 60;  // seconds
+    mdns_config->service_types = NULL;
+    mdns_config->num_service_types = 0;
 
     // Process main section
     success = PROCESS_SECTION(root, "mDNSClient");
-    success = success && PROCESS_BOOL(root, &config->mdns_client, enabled, "mDNSClient.Enabled", "mDNSClient");
-    success = success && PROCESS_BOOL(root, &config->mdns_client, enable_ipv6, "mDNSClient.EnableIPv6", "mDNSClient");
-    success = success && PROCESS_INT(root, &config->mdns_client, scan_interval, "mDNSClient.ScanIntervalMs", "mDNSClient");
-    success = success && PROCESS_SIZE(root, &config->mdns_client, max_services, "mDNSClient.MaxServices", "mDNSClient");
-    success = success && PROCESS_INT(root, &config->mdns_client, retry_count, "mDNSClient.RetryCount", "mDNSClient");
+    success = success && PROCESS_BOOL(root, mdns_config, enabled, "mDNSClient.Enabled", "MDNSClient");
+    success = success && PROCESS_BOOL(root, mdns_config, enable_ipv6, "mDNSClient.EnableIPv6", "MDNSClient");
+    success = success && PROCESS_INT(root, mdns_config, scan_interval, "mDNSClient.ScanIntervalMs", "MDNSClient");
+    success = success && PROCESS_SIZE(root, mdns_config, max_services, "mDNSClient.MaxServices", "MDNSClient");
+    success = success && PROCESS_INT(root, mdns_config, retry_count, "mDNSClient.RetryCount", "MDNSClient");
 
     // Process health check section
     if (success) {
         success = PROCESS_SECTION(root, "mDNSClient.HealthCheck");
-        success = success && PROCESS_BOOL(root, &config->mdns_client, health_check_enabled, "mDNSClient.HealthCheck.Enabled", "mDNSClient");
-        success = success && PROCESS_INT(root, &config->mdns_client, health_check_interval, "mDNSClient.HealthCheck.IntervalMs", "mDNSClient");
+        success = success && PROCESS_BOOL(root, mdns_config, health_check_enabled, "mDNSClient.HealthCheck.Enabled", "MDNSClient");
+        success = success && PROCESS_INT(root, mdns_config, health_check_interval, "mDNSClient.HealthCheck.IntervalMs", "MDNSClient");
     }
 
     // Process service types array
@@ -50,114 +48,114 @@ bool load_mdns_client_config(json_t* root, AppConfig* config) {
         json_t* service_types = json_object_get(root, "mDNSClient.ServiceTypes");
         if (json_is_array(service_types)) {
             size_t type_count = json_array_size(service_types);
+            log_this("Config-MDNSClient", "――― Service Types: %zu configured", LOG_LEVEL_STATE, type_count);
+
             if (type_count > 0) {
-                config->mdns_client.service_types = calloc(type_count, sizeof(MDNSServiceType));
-                if (!config->mdns_client.service_types) {
+                mdns_config->service_types = calloc(type_count, sizeof(MDNSServiceType));
+                if (!mdns_config->service_types) {
                     log_this("Config-MDNSClient", "Failed to allocate service types array", LOG_LEVEL_ERROR);
                     return false;
                 }
-                config->mdns_client.num_service_types = type_count;
+                mdns_config->num_service_types = type_count;
 
                 for (size_t i = 0; i < type_count; i++) {
                     json_t* type = json_array_get(service_types, i);
-                    if (json_is_string(type)) {
-                        const char* type_str = json_string_value(type);
-                        config->mdns_client.service_types[i].type = strdup(type_str);
-                        if (!config->mdns_client.service_types[i].type) {
-                            log_this("Config-MDNSClient", "Failed to allocate service type string", LOG_LEVEL_ERROR);
-                            return false;
+                    if (!json_is_object(type)) continue;
+
+                    // Process type string
+                    json_t* type_str = json_object_get(type, "Type");
+                    if (json_is_string(type_str)) {
+                        mdns_config->service_types[i].type = strdup(json_string_value(type_str));
+                        if (!mdns_config->service_types[i].type) {
+                            success = false;
+                            break;
                         }
-                        config->mdns_client.service_types[i].required = true;
-                        config->mdns_client.service_types[i].auto_connect = true;
-                        log_config_item("ServiceType", type_str, false, "MDNSClient");
+                        log_this("Config-MDNSClient", "――――― Type: %s", LOG_LEVEL_STATE, 
+                                mdns_config->service_types[i].type);
+                    } else {
+                        mdns_config->service_types[i].type = strdup("_http._tcp.local");
+                        log_this("Config-MDNSClient", "――――― Type: %s (*)", LOG_LEVEL_STATE, 
+                                mdns_config->service_types[i].type);
                     }
+
+                    // Process required flag
+                    json_t* required = json_object_get(type, "Required");
+                    mdns_config->service_types[i].required = json_is_true(required);
+                    log_this("Config-MDNSClient", "――――― Required: %s", LOG_LEVEL_STATE,
+                            mdns_config->service_types[i].required ? "true" : "false");
+
+                    // Process auto_connect flag
+                    json_t* auto_connect = json_object_get(type, "AutoConnect");
+                    mdns_config->service_types[i].auto_connect = json_is_true(auto_connect);
+                    log_this("Config-MDNSClient", "――――― AutoConnect: %s", LOG_LEVEL_STATE,
+                            mdns_config->service_types[i].auto_connect ? "true" : "false");
                 }
             }
         }
     }
 
-    // Validate the configuration if loaded successfully
-    if (success) {
-        success = (config_mdns_client_validate(&config->mdns_client) == 0);
+    if (!success) {
+        cleanup_mdns_client_config(mdns_config);
     }
 
     return success;
 }
 
-// Initialize mDNS client configuration with default values
-int config_mdns_client_init(MDNSClientConfig* config) {
-    if (!config) {
-        log_this("Config-MDNSClient", "mDNS client config pointer is NULL", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    // Set default values
-    config->enabled = true;
-    config->enable_ipv6 = false;
-    config->scan_interval = DEFAULT_MDNS_CLIENT_SCAN_INTERVAL;
-    config->max_services = DEFAULT_MDNS_CLIENT_MAX_SERVICES;
-    config->retry_count = DEFAULT_MDNS_CLIENT_RETRY_COUNT;
-    config->health_check_enabled = true;
-    config->health_check_interval = DEFAULT_MDNS_CLIENT_HEALTH_CHECK_INTERVAL;
-    config->service_types = NULL;
-    config->num_service_types = 0;
-
-    return 0;
-}
-
-// Free resources allocated for mDNS client configuration
-void config_mdns_client_cleanup(MDNSClientConfig* config) {
-    if (!config) {
-        return;
-    }
+// Clean up mDNS client configuration
+void cleanup_mdns_client_config(MDNSClientConfig* config) {
+    if (!config) return;
 
     // Free service types array
     if (config->service_types) {
         for (size_t i = 0; i < config->num_service_types; i++) {
-            if (config->service_types[i].type) {
-                free(config->service_types[i].type);
-                config->service_types[i].type = NULL;
-            }
+            free(config->service_types[i].type);
         }
         free(config->service_types);
-        config->service_types = NULL;
     }
-    config->num_service_types = 0;
 
     // Zero out the structure
     memset(config, 0, sizeof(MDNSClientConfig));
 }
 
-// Validate mDNS client configuration values
-int config_mdns_client_validate(const MDNSClientConfig* config) {
+// Dump mDNS client configuration
+void dump_mdns_client_config(const MDNSClientConfig* config) {
     if (!config) {
-        log_this("Config-MDNSClient", "mDNS client config pointer is NULL", LOG_LEVEL_ERROR);
-        return -1;
+        DUMP_TEXT("", "Cannot dump NULL mDNS client config");
+        return;
     }
 
-    // Validate intervals
-    if (config->scan_interval <= 0) {
-        log_this("Config-MDNSClient", "Invalid scan interval (must be positive)", LOG_LEVEL_ERROR);
-        return -1;
-    }
+    // Dump basic configuration
+    DUMP_BOOL2("――", "Enabled", config->enabled);
+    DUMP_BOOL2("――", "IPv6 Enabled", config->enable_ipv6);
+    
+    char buffer[256];
+    snprintf(buffer, sizeof(buffer), "Scan Interval: %d seconds", config->scan_interval);
+    DUMP_TEXT("――", buffer);
+    snprintf(buffer, sizeof(buffer), "Max Services: %zu", config->max_services);
+    DUMP_TEXT("――", buffer);
+    snprintf(buffer, sizeof(buffer), "Retry Count: %d", config->retry_count);
+    DUMP_TEXT("――", buffer);
 
-    if (config->health_check_enabled && config->health_check_interval <= 0) {
-        log_this("Config-MDNSClient", "Invalid health check interval (must be positive)", LOG_LEVEL_ERROR);
-        return -1;
-    }
+    // Dump health check configuration
+    DUMP_BOOL2("――", "Health Check Enabled", config->health_check_enabled);
+    snprintf(buffer, sizeof(buffer), "Health Check Interval: %d seconds", config->health_check_interval);
+    DUMP_TEXT("――", buffer);
 
-    // Validate service types if configured
-    if (config->num_service_types > 0 && !config->service_types) {
-        log_this("Config-MDNSClient", "Service types array is NULL but count is non-zero", LOG_LEVEL_ERROR);
-        return -1;
-    }
+    // Dump service types
+    snprintf(buffer, sizeof(buffer), "Service Types (%zu)", config->num_service_types);
+    DUMP_TEXT("――", buffer);
 
     for (size_t i = 0; i < config->num_service_types; i++) {
-        if (!config->service_types[i].type || !config->service_types[i].type[0]) {
-            log_this("Config-MDNSClient", "Invalid service type at index %zu (must not be empty)", LOG_LEVEL_ERROR, i);
-            return -1;
-        }
+        const MDNSServiceType* service = &config->service_types[i];
+        
+        snprintf(buffer, sizeof(buffer), "Service Type %zu", i + 1);
+        DUMP_TEXT("――――", buffer);
+        
+        snprintf(buffer, sizeof(buffer), "Type: %s", service->type);
+        DUMP_TEXT("――――――", buffer);
+        snprintf(buffer, sizeof(buffer), "Required: %s", service->required ? "true" : "false");
+        DUMP_TEXT("――――――", buffer);
+        snprintf(buffer, sizeof(buffer), "Auto Connect: %s", service->auto_connect ? "true" : "false");
+        DUMP_TEXT("――――――", buffer);
     }
-
-    return 0;
 }

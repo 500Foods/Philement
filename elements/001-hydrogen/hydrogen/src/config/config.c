@@ -271,9 +271,9 @@ AppConfig* load_config(const char* cmdline_path) {
     LOAD_CONFIG("G", "Swagger",      load_swagger_config);
     LOAD_CONFIG("H", "WebSocket",    load_websocket_config);
     LOAD_CONFIG("I", "Terminal",     load_terminal_config);
-    dumpAppConfig(config, NULL);  // Show complete config after network
     LOAD_CONFIG("J", "mDNS Server",  load_mdns_server_config);
     LOAD_CONFIG("K", "mDNS Client",  load_mdns_client_config);
+    dumpAppConfig(config, NULL);  // Show complete config after network
     LOAD_CONFIG("L", "Mail Relay",   load_mailrelay_config);
     LOAD_CONFIG("M", "Print",        load_print_config);
     LOAD_CONFIG("N", "Resources",    load_resources_config);
@@ -400,9 +400,9 @@ void dumpAppConfig(const AppConfig* config, const char* section) {
     DUMP_CONFIG_SECTION("G", "Swagger",   swagger,   dump_swagger_config);
     DUMP_CONFIG_SECTION("H", "WebSocket", websocket, dump_websocket_config);
     DUMP_CONFIG_SECTION("I", "Terminal", terminal, dump_terminal_config);
+    DUMP_CONFIG_SECTION("J", "mDNS Server", mdns_server, dump_mdns_server_config);
+    DUMP_CONFIG_SECTION("K", "mDNS Client", mdns_client, dump_mdns_client_config);
 
-    DUMP_NOT_IMPLEMENTED("J", "mDNS Server");
-    DUMP_NOT_IMPLEMENTED("K", "mDNS Client");
     DUMP_NOT_IMPLEMENTED("L", "Mail Relay");
     DUMP_NOT_IMPLEMENTED("M", "Print");
     DUMP_NOT_IMPLEMENTED("N", "Resources");
@@ -452,8 +452,8 @@ static void clean_app_config(AppConfig* config) {
     cleanup_swagger_config(&config->swagger);          // G. Swagger Configuration
     cleanup_websocket_config(&config->websocket);      // H. WebSocket Configuration
     cleanup_terminal_config(&config->terminal);        // I. Terminal Configuration
-    // cleanup_mdns_server_config(&config->mdns_server);  // J. mDNS Server Configuration
-    // cleanup_mdns_client_config(&config->mdns_client);  // K. mDNS Client Configuration
+    cleanup_mdns_server_config(&config->mdns_server);  // J. mDNS Server Configuration
+    cleanup_mdns_client_config(&config->mdns_client);  // K. mDNS Client Configuration
     // cleanup_mailrelay_config(&config->mail_relay);     // L. Mail Relay Configuration
     // cleanup_print_config(&config->print);              // M. Print Configuration
     // cleanup_resources_config(&config->resources);      // N. Resources Configuration

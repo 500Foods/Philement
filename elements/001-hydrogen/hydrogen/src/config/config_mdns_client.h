@@ -7,12 +7,6 @@
  * - Network scanning
  * - Health checks
  * - Auto-configuration
- *
- * Design Decisions:
- * - Regular service scanning enabled by default
- * - Health checks for discovered services
- * - IPv6 disabled by default for compatibility
- * - Memory management follows strict allocation/cleanup patterns
  */
 
 #ifndef HYDROGEN_CONFIG_MDNS_CLIENT_H
@@ -22,12 +16,6 @@
 #include <stdbool.h>
 #include <jansson.h>
 #include "config_forward.h"
-
-// Default values
-#define DEFAULT_MDNS_CLIENT_SCAN_INTERVAL 30  // seconds
-#define DEFAULT_MDNS_CLIENT_HEALTH_CHECK_INTERVAL 60  // seconds
-#define DEFAULT_MDNS_CLIENT_MAX_SERVICES 100
-#define DEFAULT_MDNS_CLIENT_RETRY_COUNT 3
 
 // Service type structure
 typedef struct MDNSServiceType {
@@ -69,48 +57,24 @@ typedef struct MDNSClientConfig {
 bool load_mdns_client_config(json_t* root, AppConfig* config);
 
 /*
- * Initialize mDNS client configuration with default values
+ * Dump mDNS client configuration for debugging
  *
- * This function initializes a new MDNSClientConfig structure with default values.
- * It allocates memory for service types array and sets conservative defaults
- * for scanning and health check intervals.
+ * This function outputs the current mDNS client configuration settings
+ * in a structured format with proper indentation.
  *
- * @param config Pointer to MDNSClientConfig structure to initialize
- * @return 0 on success, -1 on failure (memory allocation or null pointer)
- *
- * Error conditions:
- * - If config is NULL
- * - If memory allocation fails for service types array
+ * @param config Pointer to MDNSClientConfig structure to dump
  */
-int config_mdns_client_init(MDNSClientConfig* config);
+void dump_mdns_client_config(const MDNSClientConfig* config);
 
 /*
- * Free resources allocated for mDNS client configuration
+ * Clean up mDNS client configuration
  *
- * This function frees all resources allocated by config_mdns_client_init.
+ * This function frees all resources allocated for the mDNS client configuration.
  * It safely handles NULL pointers and partial initialization.
  * After cleanup, the structure is zeroed to prevent use-after-free.
  *
  * @param config Pointer to MDNSClientConfig structure to cleanup
  */
-void config_mdns_client_cleanup(MDNSClientConfig* config);
-
-/*
- * Validate mDNS client configuration values
- *
- * This function performs comprehensive validation of the configuration:
- * - Verifies intervals are within acceptable ranges
- * - Validates service type configurations
- * - Checks for invalid combinations of settings
- *
- * @param config Pointer to MDNSClientConfig structure to validate
- * @return 0 if valid, -1 if invalid
- *
- * Error conditions:
- * - If config is NULL
- * - If intervals are invalid
- * - If service type configuration is invalid
- */
-int config_mdns_client_validate(const MDNSClientConfig* config);
+void cleanup_mdns_client_config(MDNSClientConfig* config);
 
 #endif /* HYDROGEN_CONFIG_MDNS_CLIENT_H */
