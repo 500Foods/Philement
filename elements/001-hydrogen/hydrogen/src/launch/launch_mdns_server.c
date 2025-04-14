@@ -63,7 +63,7 @@ LaunchReadiness check_mdns_server_launch_readiness(void) {
         readiness.messages[msg_count++] = strdup("  Go:      Network subsystem running");
     }
     
-    // Check configuration
+    // Check basic configuration
     if (!app_config || !app_config->mdns_server.enabled) {
         readiness.messages[msg_count++] = strdup("  No-Go:   mDNS server disabled in configuration");
         readiness.messages[msg_count] = NULL;
@@ -71,7 +71,102 @@ LaunchReadiness check_mdns_server_launch_readiness(void) {
         return readiness;
     }
     readiness.messages[msg_count++] = strdup("  Go:      mDNS server enabled in configuration");
-    
+
+    // Validate required configuration fields
+    const MDNSServerConfig* config = &app_config->mdns_server;
+
+    if (!config->device_id || !config->device_id[0]) {
+        readiness.messages[msg_count++] = strdup("  No-Go:   Device ID is required");
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        return readiness;
+    }
+    readiness.messages[msg_count++] = strdup("  Go:      Device ID configured");
+
+    if (!config->friendly_name || !config->friendly_name[0]) {
+        readiness.messages[msg_count++] = strdup("  No-Go:   Friendly name is required");
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        return readiness;
+    }
+    readiness.messages[msg_count++] = strdup("  Go:      Friendly name configured");
+
+    if (!config->model || !config->model[0]) {
+        readiness.messages[msg_count++] = strdup("  No-Go:   Model is required");
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        return readiness;
+    }
+    readiness.messages[msg_count++] = strdup("  Go:      Model configured");
+
+    if (!config->manufacturer || !config->manufacturer[0]) {
+        readiness.messages[msg_count++] = strdup("  No-Go:   Manufacturer is required");
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        return readiness;
+    }
+    readiness.messages[msg_count++] = strdup("  Go:      Manufacturer configured");
+
+    if (!config->version || !config->version[0]) {
+        readiness.messages[msg_count++] = strdup("  No-Go:   Version is required");
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        return readiness;
+    }
+    readiness.messages[msg_count++] = strdup("  Go:      Version configured");
+
+    // Validate services array if present
+    if (config->num_services > 0) {
+        if (!config->services) {
+            readiness.messages[msg_count++] = strdup("  No-Go:   Services array is NULL but count is non-zero");
+            readiness.messages[msg_count] = NULL;
+            readiness.ready = false;
+            return readiness;
+        }
+        readiness.messages[msg_count++] = strdup("  Go:      Services array allocated");
+
+        // Validate each service
+        for (size_t i = 0; i < config->num_services; i++) {
+            const mdns_server_service_t* service = &config->services[i];
+            char msg_buffer[256];
+
+            if (!service->name || !service->name[0]) {
+                snprintf(msg_buffer, sizeof(msg_buffer), "  No-Go:   Service %zu name is required", i + 1);
+                readiness.messages[msg_count++] = strdup(msg_buffer);
+                readiness.messages[msg_count] = NULL;
+                readiness.ready = false;
+                return readiness;
+            }
+
+            if (!service->type || !service->type[0]) {
+                snprintf(msg_buffer, sizeof(msg_buffer), "  No-Go:   Service %zu type is required", i + 1);
+                readiness.messages[msg_count++] = strdup(msg_buffer);
+                readiness.messages[msg_count] = NULL;
+                readiness.ready = false;
+                return readiness;
+            }
+
+            if (service->port <= 0 || service->port > 65535) {
+                snprintf(msg_buffer, sizeof(msg_buffer), "  No-Go:   Service %zu has invalid port number", i + 1);
+                readiness.messages[msg_count++] = strdup(msg_buffer);
+                readiness.messages[msg_count] = NULL;
+                readiness.ready = false;
+                return readiness;
+            }
+
+            if (service->num_txt_records > 0 && !service->txt_records) {
+                snprintf(msg_buffer, sizeof(msg_buffer), "  No-Go:   Service %zu TXT records array is NULL but count is non-zero", i + 1);
+                readiness.messages[msg_count++] = strdup(msg_buffer);
+                readiness.messages[msg_count] = NULL;
+                readiness.ready = false;
+                return readiness;
+            }
+
+            snprintf(msg_buffer, sizeof(msg_buffer), "  Go:      Service %zu validated", i + 1);
+            readiness.messages[msg_count++] = strdup(msg_buffer);
+        }
+    }
+
     // All checks passed
     readiness.messages[msg_count++] = strdup("  Decide:  Go For Launch of mDNS Server Subsystem");
     readiness.messages[msg_count] = NULL;

@@ -6,12 +6,6 @@
  * - Device identification
  * - Service advertisement
  * - Network protocols
- *
- * Design Decisions:
- * - Default values ensure basic device identification
- * - Services array allows dynamic service registration
- * - IPv6 disabled by default for compatibility
- * - Memory management follows strict allocation/cleanup patterns
  */
 
 #ifndef HYDROGEN_CONFIG_MDNS_SERVER_H
@@ -22,13 +16,6 @@
 #include <jansson.h>
 #include "config_forward.h"
 #include "../mdns/mdns_server.h"  // For mdns_server_service_t
-
-// Default values
-#define DEFAULT_MDNS_SERVER_DEVICE_ID "hydrogen"
-#define DEFAULT_MDNS_SERVER_FRIENDLY_NAME "Hydrogen Server"
-#define DEFAULT_MDNS_SERVER_MODEL "Hydrogen"
-#define DEFAULT_MDNS_SERVER_MANUFACTURER "Philement"
-#define DEFAULT_WEB_PORT 80              // Default HTTP port
 
 // mDNS server configuration structure
 typedef struct MDNSServerConfig {
@@ -57,51 +44,24 @@ typedef struct MDNSServerConfig {
 bool load_mdns_server_config(json_t* root, AppConfig* config);
 
 /*
- * Initialize mDNS server configuration with default values
+ * Dump mDNS server configuration for debugging
  *
- * This function initializes a new MDNSServerConfig structure with default values.
- * It allocates memory for all string fields and initializes the services array
- * to NULL. The configuration is enabled by default with IPv6 disabled.
+ * This function outputs the current mDNS server configuration settings
+ * in a structured format with proper indentation.
  *
- * @param config Pointer to MDNSServerConfig structure to initialize
- * @return 0 on success, -1 on failure (memory allocation or null pointer)
- *
- * Error conditions:
- * - If config is NULL
- * - If memory allocation fails for any string field
+ * @param config Pointer to MDNSServerConfig structure to dump
  */
-int config_mdns_server_init(MDNSServerConfig* config);
+void dump_mdns_server_config(const MDNSServerConfig* config);
 
 /*
- * Free resources allocated for mDNS server configuration
+ * Clean up mDNS server configuration
  *
- * This function frees all resources allocated by config_mdns_server_init.
+ * This function frees all resources allocated for the mDNS server configuration.
  * It safely handles NULL pointers and partial initialization.
  * After cleanup, the structure is zeroed to prevent use-after-free.
  *
- * Note: This will also free the services array if allocated, but not
- * the individual services which should be managed by the mDNS server.
- *
  * @param config Pointer to MDNSServerConfig structure to cleanup
  */
-void config_mdns_server_cleanup(MDNSServerConfig* config);
-
-/*
- * Validate mDNS server configuration values
- *
- * This function performs comprehensive validation of the configuration:
- * - Verifies all required string fields are present and non-empty
- * - Validates services array consistency if services are configured
- * - Checks for invalid combinations of settings
- *
- * @param config Pointer to MDNSServerConfig structure to validate
- * @return 0 if valid, -1 if invalid
- *
- * Error conditions:
- * - If config is NULL
- * - If enabled but required strings are missing or empty
- * - If num_services > 0 but services array is NULL
- */
-int config_mdns_server_validate(const MDNSServerConfig* config);
+void cleanup_mdns_server_config(MDNSServerConfig* config);
 
 #endif /* HYDROGEN_CONFIG_MDNS_SERVER_H */
