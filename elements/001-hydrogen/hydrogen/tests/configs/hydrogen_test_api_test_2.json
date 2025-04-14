@@ -6,10 +6,14 @@
         "Enabled": true,
         "EnableIPv6": false,
         "Port": 5050,
-        "WebRoot": "./www",
+        "WebRoot": "/tmp/www",
         "UploadPath": "/api/upload",
-        "UploadDir": "/tmp/hydrogen_test_uploads",
-        "MaxUploadSize": 2147483648
+        "UploadDir": "/tmp/uploads",
+        "MaxUploadSize": 2147483648,
+        "ThreadPoolSize": 4,
+        "MaxConnections": 100,
+        "MaxConnectionsPerIP": 10,
+        "ConnectionTimeout": 60
     },
     "API": {
         "Enabled": true,
@@ -51,6 +55,9 @@
             "EndPort": 65535,
             "ReservedPorts": [22, 80, 443],
             "RetryAttempts": 5
+        },
+        "Available": {
+            "all": true
         }
     },
     "SystemResources": {

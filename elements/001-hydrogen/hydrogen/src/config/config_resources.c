@@ -5,135 +5,105 @@
 #include <stdlib.h>
 #include <string.h>
 #include <jansson.h>
-#include "config.h"
+#include "config.h"  // For queue and buffer constants
 #include "config_utils.h"
 #include "config_resources.h"
-#include "types/config_queue_constants.h"  // For queue-related constants
-
-// Forward declarations for validation helpers
-static int validate_memory_limits(const ResourceConfig* config);
-static int validate_queue_settings(const ResourceConfig* config);
-static int validate_thread_limits(const ResourceConfig* config);
-static int validate_file_limits(const ResourceConfig* config);
 
 bool load_resources_config(json_t* root, AppConfig* config) {
-    // Initialize with defaults
-    ResourceConfig defaults = {
-        // Memory limits
-        .max_memory_mb = 1024,              // 1GB default
-        .max_buffer_size = 1048576,         // 1MB default
-        .min_buffer_size = 4096,            // 4KB default
+    bool success = true;
+    ResourceConfig* resources_config = &config->resources;
 
-        // Queue settings
-        .max_queue_size = DEFAULT_MAX_QUEUE_SIZE,
-        .max_queue_memory_mb = DEFAULT_MAX_QUEUE_MEMORY_MB,
-        .max_queue_blocks = DEFAULT_MAX_QUEUE_BLOCKS,
-        .queue_timeout_ms = DEFAULT_QUEUE_TIMEOUT_MS,
+    // Zero out the config structure
+    memset(resources_config, 0, sizeof(ResourceConfig));
 
-        // Buffer sizes
-        .post_processor_buffer_size = 65536, // 64KB default
+    // Initialize with secure defaults
+    resources_config->max_memory_mb = 1024;              // 1GB default
+    resources_config->max_buffer_size = 1048576;         // 1MB default
+    resources_config->min_buffer_size = 4096;            // 4KB default
 
-        // Thread limits
-        .min_threads = 4,
-        .max_threads = 32,
-        .thread_stack_size = 65536,         // 64KB default
+    resources_config->max_queue_size = DEFAULT_MAX_QUEUE_SIZE;
+    resources_config->max_queue_memory_mb = DEFAULT_MAX_QUEUE_MEMORY_MB;
+    resources_config->max_queue_blocks = DEFAULT_MAX_QUEUE_BLOCKS;
+    resources_config->queue_timeout_ms = DEFAULT_QUEUE_TIMEOUT_MS;
 
-        // File limits
-        .max_open_files = 1024,
-        .max_file_size_mb = 1024,          // 1GB default
-        .max_log_size_mb = 100,            // 100MB default
+    resources_config->post_processor_buffer_size = 65536; // 64KB default
 
-        // Monitoring settings
-        .enforce_limits = true,
-        .log_usage = true,
-        .check_interval_ms = 5000          // 5 seconds default
-    };
+    resources_config->min_threads = 4;
+    resources_config->max_threads = 32;
+    resources_config->thread_stack_size = 65536;         // 64KB default
 
-    // Copy defaults
-    config->resources = defaults;
+    resources_config->max_open_files = 1024;
+    resources_config->max_file_size_mb = 1024;          // 1GB default
+    resources_config->max_log_size_mb = 100;            // 100MB default
 
-    // System Resources Configuration
-    json_t* resources = json_object_get(root, "SystemResources");
-    bool using_defaults = !json_is_object(resources);
-    
-    log_config_section("SystemResources", using_defaults);
-    
-    if (!using_defaults) {
-        // Memory limits
-        json_t* memory = json_object_get(resources, "Memory");
-        if (json_is_object(memory)) {
-            log_config_item("Memory", "Configured", false, "SystemResources");
-            
-            PROCESS_SIZE(memory, config, resources.max_memory_mb, "MaxMemoryMB", "Memory");
-            PROCESS_SIZE(memory, config, resources.max_buffer_size, "MaxBufferSize", "Memory");
-            PROCESS_SIZE(memory, config, resources.min_buffer_size, "MinBufferSize", "Memory");
-        }
+    resources_config->enforce_limits = true;
+    resources_config->log_usage = true;
+    resources_config->check_interval_ms = 5000;         // 5 seconds default
 
-        // Queue settings
-        json_t* queues = json_object_get(resources, "Queues");
-        if (json_is_object(queues)) {
-            log_config_item("Queues", "Configured", false, "SystemResources");
-            
-            PROCESS_SIZE(queues, config, resources.max_queue_size, "MaxQueueSize", "Queues");
-            PROCESS_SIZE(queues, config, resources.max_queue_memory_mb, "MaxQueueMemoryMB", "Queues");
-            PROCESS_SIZE(queues, config, resources.max_queue_blocks, "MaxQueueBlocks", "Queues");
-            PROCESS_INT(queues, config, resources.queue_timeout_ms, "QueueTimeoutMS", "Queues");
-        }
+    // Process main resources section
+    success = PROCESS_SECTION(root, "Resources");
 
-        // Thread limits
-        json_t* threads = json_object_get(resources, "Threads");
-        if (json_is_object(threads)) {
-            log_config_item("Threads", "Configured", false, "SystemResources");
-            
-            PROCESS_INT(threads, config, resources.min_threads, "MinThreads", "Threads");
-            PROCESS_INT(threads, config, resources.max_threads, "MaxThreads", "Threads");
-            PROCESS_SIZE(threads, config, resources.thread_stack_size, "ThreadStackSize", "Threads");
-        }
-
-        // File limits
-        json_t* files = json_object_get(resources, "Files");
-        if (json_is_object(files)) {
-            log_config_item("Files", "Configured", false, "SystemResources");
-            
-            PROCESS_INT(files, config, resources.max_open_files, "MaxOpenFiles", "Files");
-            PROCESS_SIZE(files, config, resources.max_file_size_mb, "MaxFileSizeMB", "Files");
-            PROCESS_SIZE(files, config, resources.max_log_size_mb, "MaxLogSizeMB", "Files");
-        }
-
-        // Resource monitoring
-        json_t* monitoring = json_object_get(resources, "Monitoring");
-        if (json_is_object(monitoring)) {
-            log_config_item("Monitoring", "Configured", false, "SystemResources");
-            
-            PROCESS_BOOL(monitoring, config, resources.enforce_limits, "EnforceLimits", "Monitoring");
-            PROCESS_BOOL(monitoring, config, resources.log_usage, "LogUsage", "Monitoring");
-            PROCESS_INT(monitoring, config, resources.check_interval_ms, "CheckIntervalMS", "Monitoring");
-        }
-
-        // Validate configuration
-        if (config_resources_validate(&config->resources) != 0) {
-            log_config_item("Status", "Invalid SystemResources configuration, using defaults", true, "SystemResources");
-            config->resources = defaults;
-            return false;
-        }
-    } else {
-        log_config_item("Status", "SystemResources section missing, using defaults", true, "SystemResources");
+    // Process memory section
+    if (success) {
+        success = PROCESS_SECTION(root, "Resources.Memory");
+        success = success && PROCESS_SIZE(root, resources_config, max_memory_mb,
+                                        "Resources.Memory.MaxMemoryMB", "Resources");
+        success = success && PROCESS_SIZE(root, resources_config, max_buffer_size,
+                                        "Resources.Memory.MaxBufferSize", "Resources");
+        success = success && PROCESS_SIZE(root, resources_config, min_buffer_size,
+                                        "Resources.Memory.MinBufferSize", "Resources");
     }
 
-    return true;
-}
-
-int config_resources_init(ResourceConfig* config) {
-    if (!config) {
-        return -1;
+    // Process queue settings
+    if (success) {
+        success = PROCESS_SECTION(root, "Resources.Queues");
+        success = success && PROCESS_SIZE(root, resources_config, max_queue_size,
+                                        "Resources.Queues.MaxQueueSize", "Resources");
+        success = success && PROCESS_SIZE(root, resources_config, max_queue_memory_mb,
+                                        "Resources.Queues.MaxQueueMemoryMB", "Resources");
+        success = success && PROCESS_SIZE(root, resources_config, max_queue_blocks,
+                                        "Resources.Queues.MaxQueueBlocks", "Resources");
+        success = success && PROCESS_INT(root, resources_config, queue_timeout_ms,
+                                       "Resources.Queues.QueueTimeoutMS", "Resources");
     }
 
-    // Zero out the structure
-    memset(config, 0, sizeof(ResourceConfig));
-    return 0;
+    // Process thread limits
+    if (success) {
+        success = PROCESS_SECTION(root, "Resources.Threads");
+        success = success && PROCESS_INT(root, resources_config, min_threads,
+                                       "Resources.Threads.MinThreads", "Resources");
+        success = success && PROCESS_INT(root, resources_config, max_threads,
+                                       "Resources.Threads.MaxThreads", "Resources");
+        success = success && PROCESS_SIZE(root, resources_config, thread_stack_size,
+                                        "Resources.Threads.ThreadStackSize", "Resources");
+    }
+
+    // Process file limits
+    if (success) {
+        success = PROCESS_SECTION(root, "Resources.Files");
+        success = success && PROCESS_INT(root, resources_config, max_open_files,
+                                       "Resources.Files.MaxOpenFiles", "Resources");
+        success = success && PROCESS_SIZE(root, resources_config, max_file_size_mb,
+                                        "Resources.Files.MaxFileSizeMB", "Resources");
+        success = success && PROCESS_SIZE(root, resources_config, max_log_size_mb,
+                                        "Resources.Files.MaxLogSizeMB", "Resources");
+    }
+
+    // Process monitoring settings
+    if (success) {
+        success = PROCESS_SECTION(root, "Resources.Monitoring");
+        success = success && PROCESS_BOOL(root, resources_config, enforce_limits,
+                                        "Resources.Monitoring.EnforceLimits", "Resources");
+        success = success && PROCESS_BOOL(root, resources_config, log_usage,
+                                        "Resources.Monitoring.LogUsage", "Resources");
+        success = success && PROCESS_INT(root, resources_config, check_interval_ms,
+                                       "Resources.Monitoring.CheckIntervalMS", "Resources");
+    }
+
+    return success;
 }
 
-void config_resources_cleanup(ResourceConfig* config) {
+void cleanup_resources_config(ResourceConfig* config) {
     if (!config) {
         return;
     }
@@ -142,99 +112,44 @@ void config_resources_cleanup(ResourceConfig* config) {
     memset(config, 0, sizeof(ResourceConfig));
 }
 
-static int validate_memory_limits(const ResourceConfig* config) {
-    // Basic range checks
-    if (config->max_memory_mb < 64 || config->max_memory_mb > 16384) {  // 64MB to 16GB
-        return -1;
-    }
-
-    if (config->max_buffer_size < config->min_buffer_size) {
-        return -1;
-    }
-
-    if (config->max_buffer_size > (config->max_memory_mb * 1024 * 1024) / 4) {  // Max 1/4 of total memory
-        return -1;
-    }
-
-    return 0;
-}
-
-static int validate_queue_settings(const ResourceConfig* config) {
-    // Queue size and memory checks
-    if (config->max_queue_size < MIN_QUEUE_SIZE || config->max_queue_size > MAX_QUEUE_SIZE) {
-        return -1;
-    }
-
-    if (config->max_queue_memory_mb < MIN_QUEUE_MEMORY_MB || 
-        config->max_queue_memory_mb > MAX_QUEUE_MEMORY_MB ||
-        config->max_queue_memory_mb > config->max_memory_mb / 2) {  // Max 1/2 of total memory
-        return -1;
-    }
-
-    if (config->queue_timeout_ms < MIN_QUEUE_TIMEOUT_MS || 
-        config->queue_timeout_ms > MAX_QUEUE_TIMEOUT_MS) {
-        return -1;
-    }
-
-    if (config->max_queue_blocks < MIN_QUEUE_BLOCKS || 
-        config->max_queue_blocks > MAX_QUEUE_BLOCKS) {
-        return -1;
-    }
-
-    return 0;
-}
-
-static int validate_thread_limits(const ResourceConfig* config) {
-    // Thread count and stack size checks
-    if (config->min_threads < 1 || config->min_threads > config->max_threads) {
-        return -1;
-    }
-
-    if (config->max_threads > 256) {  // Reasonable upper limit
-        return -1;
-    }
-
-    if (config->thread_stack_size < 16384 || config->thread_stack_size > 1048576) {  // 16KB to 1MB
-        return -1;
-    }
-
-    return 0;
-}
-
-static int validate_file_limits(const ResourceConfig* config) {
-    // File descriptor and size checks
-    if (config->max_open_files < 64 || config->max_open_files > 65535) {
-        return -1;
-    }
-
-    if (config->max_file_size_mb > config->max_memory_mb * 2) {  // Max 2x memory size
-        return -1;
-    }
-
-    if (config->max_log_size_mb < 10 || config->max_log_size_mb > 10240) {  // 10MB to 10GB
-        return -1;
-    }
-
-    return 0;
-}
-
-int config_resources_validate(const ResourceConfig* config) {
+void dump_resources_config(const ResourceConfig* config) {
     if (!config) {
-        return -1;
+        DUMP_TEXT("", "Cannot dump NULL resources config");
+        return;
     }
 
-    // Validate each section
-    if (validate_memory_limits(config) != 0 ||
-        validate_queue_settings(config) != 0 ||
-        validate_thread_limits(config) != 0 ||
-        validate_file_limits(config) != 0) {
-        return -1;
-    }
+    // Memory limits
+    DUMP_TEXT("――", "Memory Limits");
+    DUMP_SIZE("――――Max Memory (MB)", config->max_memory_mb);
+    DUMP_SIZE("――――Max Buffer Size", config->max_buffer_size);
+    DUMP_SIZE("――――Min Buffer Size", config->min_buffer_size);
 
-    // Validate monitoring settings
-    if (config->check_interval_ms < 1000 || config->check_interval_ms > 60000) {  // 1s to 1min
-        return -1;
-    }
+    // Queue settings
+    DUMP_TEXT("――", "Queue Settings");
+    DUMP_SIZE("――――Max Queue Size", config->max_queue_size);
+    DUMP_SIZE("――――Max Queue Memory (MB)", config->max_queue_memory_mb);
+    DUMP_SIZE("――――Max Queue Blocks", config->max_queue_blocks);
+    DUMP_INT("――――Queue Timeout (ms)", config->queue_timeout_ms);
 
-    return 0;
+    // Buffer sizes
+    DUMP_TEXT("――", "Buffer Settings");
+    DUMP_SIZE("――――Post Processor Buffer", config->post_processor_buffer_size);
+
+    // Thread limits
+    DUMP_TEXT("――", "Thread Limits");
+    DUMP_INT("――――Min Threads", config->min_threads);
+    DUMP_INT("――――Max Threads", config->max_threads);
+    DUMP_SIZE("――――Thread Stack Size", config->thread_stack_size);
+
+    // File limits
+    DUMP_TEXT("――", "File Limits");
+    DUMP_INT("――――Max Open Files", config->max_open_files);
+    DUMP_SIZE("――――Max File Size (MB)", config->max_file_size_mb);
+    DUMP_SIZE("――――Max Log Size (MB)", config->max_log_size_mb);
+
+    // Monitoring settings
+    DUMP_TEXT("――", "Monitoring Settings");
+    DUMP_BOOL("――――Enforce Limits", config->enforce_limits);
+    DUMP_BOOL("――――Log Usage", config->log_usage);
+    DUMP_INT("――――Check Interval (ms)", config->check_interval_ms);
 }

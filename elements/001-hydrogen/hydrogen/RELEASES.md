@@ -1,5 +1,13 @@
 # Release Notes
 
+## 2025-04-14
+
+- feat(launch): integrate Resources, OIDC, and Notify subsystems (#16, #17, #18)
+  - Added launch/landing support for Resources subsystem
+  - Added launch/landing support for OIDC subsystem
+  - Added launch/landing support for Notify subsystem
+  - Updated documentation in RECIPE.md and launch_system_architecture.md
+
 <!--
 CRITICAL INSTRUCTIONS
 

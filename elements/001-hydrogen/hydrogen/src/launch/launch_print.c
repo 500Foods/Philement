@@ -19,6 +19,7 @@
 #include <signal.h>
 
 #include "launch.h"
+#include "launch_print.h"
 #include "../utils/utils_logging.h"
 #include "../threads/threads.h"
 #include "../config/config.h"
@@ -74,6 +75,133 @@ LaunchReadiness check_print_launch_readiness(void) {
         return readiness;
     }
     readiness.messages[msg_count++] = strdup("  Go:      Print queue enabled in configuration");
+
+    // Validate job limits
+    if (app_config->print.max_queued_jobs < MIN_QUEUED_JOBS || 
+        app_config->print.max_queued_jobs > MAX_QUEUED_JOBS) {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "  No-Go:   Invalid max queued jobs %zu (must be between %d and %d)",
+                app_config->print.max_queued_jobs, MIN_QUEUED_JOBS, MAX_QUEUED_JOBS);
+        readiness.messages[msg_count++] = strdup(msg);
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        return readiness;
+    }
+    readiness.messages[msg_count++] = strdup("  Go:      Max queued jobs within limits");
+
+    if (app_config->print.max_concurrent_jobs < MIN_CONCURRENT_JOBS || 
+        app_config->print.max_concurrent_jobs > MAX_CONCURRENT_JOBS) {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "  No-Go:   Invalid max concurrent jobs %zu (must be between %d and %d)",
+                app_config->print.max_concurrent_jobs, MIN_CONCURRENT_JOBS, MAX_CONCURRENT_JOBS);
+        readiness.messages[msg_count++] = strdup(msg);
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        return readiness;
+    }
+    readiness.messages[msg_count++] = strdup("  Go:      Max concurrent jobs within limits");
+
+    // Validate priorities and spreads
+    const PrintQueuePrioritiesConfig* p = &app_config->print.priorities;
+    if (p->emergency_priority < MIN_PRIORITY || p->emergency_priority > MAX_PRIORITY ||
+        p->default_priority < MIN_PRIORITY || p->default_priority > MAX_PRIORITY ||
+        p->maintenance_priority < MIN_PRIORITY || p->maintenance_priority > MAX_PRIORITY ||
+        p->system_priority < MIN_PRIORITY || p->system_priority > MAX_PRIORITY) {
+        readiness.messages[msg_count++] = strdup("  No-Go:   Priority values outside valid range");
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        return readiness;
+    }
+
+    // Check priority spreads
+    if ((p->emergency_priority - p->system_priority) < MIN_PRIORITY_SPREAD ||
+        (p->system_priority - p->maintenance_priority) < MIN_PRIORITY_SPREAD ||
+        (p->maintenance_priority - p->default_priority) < MIN_PRIORITY_SPREAD) {
+        readiness.messages[msg_count++] = strdup("  No-Go:   Insufficient spread between priority levels");
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        return readiness;
+    }
+    readiness.messages[msg_count++] = strdup("  Go:      Priority settings and spreads valid");
+
+    // Validate timeouts
+    const PrintQueueTimeoutsConfig* t = &app_config->print.timeouts;
+    if (t->shutdown_wait_ms < MIN_SHUTDOWN_WAIT || t->shutdown_wait_ms > MAX_SHUTDOWN_WAIT) {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "  No-Go:   Invalid shutdown wait time %zu ms (must be between %d and %d)",
+                t->shutdown_wait_ms, MIN_SHUTDOWN_WAIT, MAX_SHUTDOWN_WAIT);
+        readiness.messages[msg_count++] = strdup(msg);
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        return readiness;
+    }
+
+    if (t->job_processing_timeout_ms < MIN_JOB_TIMEOUT || t->job_processing_timeout_ms > MAX_JOB_TIMEOUT) {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "  No-Go:   Invalid job timeout %zu ms (must be between %d and %d)",
+                t->job_processing_timeout_ms, MIN_JOB_TIMEOUT, MAX_JOB_TIMEOUT);
+        readiness.messages[msg_count++] = strdup(msg);
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        return readiness;
+    }
+    readiness.messages[msg_count++] = strdup("  Go:      Timeout settings valid");
+
+    // Validate buffers
+    const PrintQueueBuffersConfig* b = &app_config->print.buffers;
+    if (b->job_message_size < MIN_MESSAGE_SIZE || b->job_message_size > MAX_MESSAGE_SIZE) {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "  No-Go:   Invalid job message size %zu (must be between %d and %d)",
+                b->job_message_size, MIN_MESSAGE_SIZE, MAX_MESSAGE_SIZE);
+        readiness.messages[msg_count++] = strdup(msg);
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        return readiness;
+    }
+
+    if (b->status_message_size < MIN_MESSAGE_SIZE || b->status_message_size > MAX_MESSAGE_SIZE) {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "  No-Go:   Invalid status message size %zu (must be between %d and %d)",
+                b->status_message_size, MIN_MESSAGE_SIZE, MAX_MESSAGE_SIZE);
+        readiness.messages[msg_count++] = strdup(msg);
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        return readiness;
+    }
+    readiness.messages[msg_count++] = strdup("  Go:      Buffer settings valid");
+
+    // Validate motion control settings
+    const MotionConfig* m = &app_config->print.motion;
+    if (m->max_speed < MIN_SPEED || m->max_speed > MAX_SPEED) {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "  No-Go:   Invalid max speed %.2f (must be between %.2f and %.2f)",
+                m->max_speed, MIN_SPEED, MAX_SPEED);
+        readiness.messages[msg_count++] = strdup(msg);
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        return readiness;
+    }
+
+    if (m->acceleration < MIN_ACCELERATION || m->acceleration > MAX_ACCELERATION) {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "  No-Go:   Invalid acceleration %.2f (must be between %.2f and %.2f)",
+                m->acceleration, MIN_ACCELERATION, MAX_ACCELERATION);
+        readiness.messages[msg_count++] = strdup(msg);
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        return readiness;
+    }
+
+    if (m->jerk < MIN_JERK || m->jerk > MAX_JERK) {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "  No-Go:   Invalid jerk %.2f (must be between %.2f and %.2f)",
+                m->jerk, MIN_JERK, MAX_JERK);
+        readiness.messages[msg_count++] = strdup(msg);
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        return readiness;
+    }
+    readiness.messages[msg_count++] = strdup("  Go:      Motion control settings valid");
     
     // All checks passed
     readiness.messages[msg_count++] = strdup("  Decide:  Go For Launch of Print Subsystem");
