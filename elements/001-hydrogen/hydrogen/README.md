@@ -285,7 +285,7 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Mon Apr 14 05:55:59 PDT 2025
+Generated on: Mon Apr 14 15:21:25 PDT 2025
 
 ### Summary
 
@@ -295,49 +295,49 @@ Generated on: Mon Apr 14 05:55:59 PDT 2025
 | Passed | 15 |
 | Failed | 0 |
 | Skipped | 0 |
-| Total Subtests | 106 |
-| Passed Subtests | 106 |
+| Total Subtests | 110 |
+| Passed Subtests | 110 |
 | Failed Subtests | 0 |
-| Runtime | 2m 36s |
+| Runtime | 2m 35s |
 
 ### Individual Test Results
 
 | Status | Time | Test | Subs | Pass | Summary |
 | ------ | ---- | ---- | ---- | ---- | ------- |
-| ✅ | 00:00:14 | 10_compilation | 1 | 1 | Test completed without errors |
+| ✅ | 00:00:19 | 10_compilation | 1 | 1 | Test completed without errors |
 | ✅ | 00:00:00 | 12_env_payload | 2 | 2 | Test completed without errors |
-| ✅ | 00:00:03 | 15_startup_shutdown | 6 | 6 | Test completed without errors |
-| ✅ | 00:00:02 | 20_shutdown | 5 | 5 | Test completed without errors |
-| ✅ | 00:00:06 | 25_library_dependencies | 16 | 16 | Test completed without errors |
-| ✅ | 00:00:00 | 35_env_variables | 1 | 1 | Test completed without errors |
+| ✅ | 00:00:02 | 15_startup_shutdown | 6 | 6 | Test completed without errors |
+| ✅ | 00:00:03 | 20_shutdown | 5 | 5 | Test completed without errors |
+| ✅ | 00:00:05 | 25_library_dependencies | 16 | 16 | Test completed without errors |
+| ✅ | 00:00:01 | 35_env_variables | 1 | 1 | Test completed without errors |
 | ✅ | 00:00:00 | 40_json_error_handling | 2 | 2 | Test completed without errors |
 | ✅ | 00:00:24 | 45_signals | 5 | 5 | Test completed without errors |
-| ✅ | 00:00:02 | 50_crash_handler | 20 | 20 | Test completed without errors |
+| ✅ | 00:00:03 | 50_crash_handler | 20 | 20 | Test completed without errors |
 | ✅ | 00:00:00 | 55_socket_rebind | 1 | 1 | Test completed without errors |
 | ✅ | 00:00:12 | 60_api_prefixes | 10 | 10 | Test completed without errors |
-| ✅ | 00:00:06 | 65_system_endpoints | 13 | 13 | Test completed without errors |
+| ✅ | 00:00:06 | 65_system_endpoints | 17 | 17 | Test completed without errors |
 | ✅ | 00:00:03 | 70_swagger_ui | 10 | 10 | Test completed without errors |
 | ✅ | 00:00:03 | 95_leaks_like_a_sieve | 2 | 2 | Test completed without errors |
 | ✅ | 00:00:14 | 99_codebase | 12 | 12 | Test completed without errors |
 
 ## Repository Information
 
-Generated via cloc: Mon Apr 14 05:55:59 PDT 2025
+Generated via cloc: Mon Apr 14 15:21:26 PDT 2025
 
 ```cloc
-github.com/AlDanial/cloc v 2.02  T=0.26 s (1778.9 files/s, 305694.3 lines/s)
+github.com/AlDanial/cloc v 2.02  T=0.26 s (1794.1 files/s, 311137.8 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C                              146           4797           6542          21213
+C                              148           4864           6610          21556
 Markdown                       126           4418             49          15719
-Bourne Shell                    25           1395           1378           5749
+Bourne Shell                    25           1406           1394           5818
 JSON                            17              2              0           4488
-Text                            20              7              0           3531
-C/C++ Header                   125           1224           4907           2941
+Text                            20              7              0           4311
+C/C++ Header                   127           1235           4951           2956
 HTML                             1             74              0            493
 make                             2             56            124            283
 -------------------------------------------------------------------------------
-SUM:                           462          11973          13000          54417
+SUM:                           466          12062          13128          55624
 -------------------------------------------------------------------------------
 ```
