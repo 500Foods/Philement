@@ -31,7 +31,7 @@
 // External declarations
 extern volatile sig_atomic_t server_starting;
 extern AppConfig* app_config;
-extern pthread_t web_thread;
+extern pthread_t webserver_thread;
 
 // Initialize web server system
 // Requires: Logging system
@@ -81,9 +81,9 @@ int init_webserver_subsystem(void) {
     pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_JOINABLE);
 
     // Register thread before creation
-    extern ServiceThreads web_threads;
+    extern ServiceThreads webserver_threads;
     
-    if (pthread_create(&web_thread, &thread_attr, run_web_server, NULL) != 0) {
+    if (pthread_create(&webserver_thread, &thread_attr, run_web_server, NULL) != 0) {
         log_this("Initialization", "Failed to start web server thread", LOG_LEVEL_ERROR);
         pthread_attr_destroy(&thread_attr);
         shutdown_web_server();
@@ -92,7 +92,7 @@ int init_webserver_subsystem(void) {
     pthread_attr_destroy(&thread_attr);
 
     // Register thread and wait for initialization
-    add_service_thread(&web_threads, web_thread);
+    add_service_thread(&webserver_threads, webserver_thread);
     
     // Wait for server to fully initialize (up to 10 seconds)
     struct timespec wait_time = {0, 100000000}; // 100ms intervals
@@ -106,16 +106,16 @@ int init_webserver_subsystem(void) {
         nanosleep(&wait_time, NULL);
         
         // Check if web daemon is running and bound to port
-        extern struct MHD_Daemon *web_daemon;
-        if (web_daemon != NULL) {
-            const union MHD_DaemonInfo *info = MHD_get_daemon_info(web_daemon, MHD_DAEMON_INFO_BIND_PORT);
+        extern struct MHD_Daemon *webserver_daemon;
+        if (webserver_daemon != NULL) {
+            const union MHD_DaemonInfo *info = MHD_get_daemon_info(webserver_daemon, MHD_DAEMON_INFO_BIND_PORT);
             if (info != NULL && info->port > 0) {
                 // Get connection info
-                const union MHD_DaemonInfo *conn_info = MHD_get_daemon_info(web_daemon, MHD_DAEMON_INFO_CURRENT_CONNECTIONS);
+                const union MHD_DaemonInfo *conn_info = MHD_get_daemon_info(webserver_daemon, MHD_DAEMON_INFO_CURRENT_CONNECTIONS);
                 unsigned int num_connections = conn_info ? conn_info->num_connections : 0;
                 
                 // Get thread info
-                const union MHD_DaemonInfo *thread_info = MHD_get_daemon_info(web_daemon, MHD_DAEMON_INFO_FLAGS);
+                const union MHD_DaemonInfo *thread_info = MHD_get_daemon_info(webserver_daemon, MHD_DAEMON_INFO_FLAGS);
                 bool using_threads = thread_info && (thread_info->flags & MHD_USE_THREAD_PER_CONNECTION);
                 
                 log_this("Initialization", "Web server status:", LOG_LEVEL_STATE);

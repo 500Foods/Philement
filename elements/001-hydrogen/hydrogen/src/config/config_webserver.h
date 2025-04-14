@@ -15,7 +15,7 @@
 #include "config_swagger.h"  // For SwaggerConfig
 #include "config_api.h"      // For APIConfig
 
-// Validation limits
+// Validation limits (used by launch readiness check)
 #define MIN_PORT 1024
 #define MAX_PORT 65535
 #define MIN_THREAD_POOL_SIZE 1
@@ -51,16 +51,16 @@ typedef struct WebServerConfig {
 } WebServerConfig;
 
 /*
- * Load web server configuration from JSON
+ * Load web server configuration
  *
- * This function loads and validates the web server configuration from JSON.
- * It handles:
+ * Loads and processes web server configuration from JSON, setting defaults and
+ * handling environment variable overrides. Configuration includes:
  * - Network settings (IPv4/IPv6, port)
  * - Path configurations (web root, upload paths)
  * - Thread pool settings
  * - Connection limits and timeouts
- * - Environment variable overrides
- * - Default values
+ *
+ * All values are logged under the Config-WebServer category.
  *
  * @param root The root JSON object
  * @param config The configuration structure to populate
@@ -69,49 +69,24 @@ typedef struct WebServerConfig {
 bool load_webserver_config(json_t* root, AppConfig* config);
 
 /*
- * Initialize web server configuration with defaults
+ * Dump web server configuration
  *
- * This function initializes a new WebServerConfig structure with default
- * values that provide a secure and performant baseline configuration.
+ * Outputs the current web server configuration state in a structured format.
+ * This is useful for debugging and verification purposes.
  *
- * @param config Pointer to WebServerConfig structure to initialize
- * @return 0 on success, -1 on failure
- *
- * Error conditions:
- * - If config is NULL
- * - If memory allocation fails for any string field
+ * @param config The web server configuration to dump
  */
-int config_webserver_init(WebServerConfig* config);
+void dump_webserver_config(const WebServerConfig* config);
 
 /*
- * Free resources allocated for web server configuration
+ * Clean up web server configuration
  *
- * This function frees all resources allocated by config_webserver_init.
- * It safely handles NULL pointers and partial initialization.
+ * Frees all resources allocated for the web server configuration.
  * After cleanup, the structure is zeroed to prevent use-after-free.
+ * Note: swagger and api configs are owned by AppConfig and cleaned up separately.
  *
- * @param config Pointer to WebServerConfig structure to cleanup
+ * @param config The web server configuration to clean up
  */
 void config_webserver_cleanup(WebServerConfig* config);
-
-/*
- * Validate web server configuration values
- *
- * This function performs comprehensive validation of the configuration:
- * - Verifies all paths exist and are accessible
- * - Validates port number and thread settings
- * - Checks connection limits and timeouts
- * - Ensures upload settings are properly configured
- *
- * @param config Pointer to WebServerConfig structure to validate
- * @return 0 if valid, -1 if invalid
- *
- * Error conditions:
- * - If config is NULL
- * - If enabled but required paths are missing or inaccessible
- * - If any numeric value is out of valid range
- * - If paths create security risks
- */
-int config_webserver_validate(const WebServerConfig* config);
 
 #endif /* HYDROGEN_CONFIG_WEBSERVER_H */

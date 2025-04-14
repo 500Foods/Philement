@@ -30,7 +30,7 @@ extern volatile sig_atomic_t server_starting;
 
 // External service thread structures
 extern ServiceThreads logging_threads;
-extern ServiceThreads web_threads;
+extern ServiceThreads webserver_threads;
 extern ServiceThreads websocket_threads;
 extern ServiceThreads mdns_server_threads;
 extern ServiceThreads print_threads;
@@ -157,7 +157,7 @@ void get_fd_info(int fd, FileDescriptorInfo *info) {
         safe_truncate(info->type, sizeof(info->type), "socket");
         if (port > 0) {
             const char *service = "";
-            if (port == app_config->web.port) service = "web server";
+            if (port == app_config->webserver.port) service = "web server";
             else if (port == app_config->websocket.port) service = "websocket server";
             else if (port == 5353) service = "mDNS server";
             
@@ -292,7 +292,7 @@ void convert_thread_metrics(const ServiceThreads *src, ServiceThreadMetrics *des
 bool collect_service_metrics(SystemMetrics *metrics, const WebSocketMetrics *ws_metrics) {
     // Update all thread metrics first
     update_service_thread_metrics(&logging_threads);
-    update_service_thread_metrics(&web_threads);
+    update_service_thread_metrics(&webserver_threads);
     update_service_thread_metrics(&websocket_threads);
     update_service_thread_metrics(&mdns_server_threads);
     update_service_thread_metrics(&print_threads);
@@ -303,10 +303,10 @@ bool collect_service_metrics(SystemMetrics *metrics, const WebSocketMetrics *ws_
     metrics->logging.specific.logging.message_count = 0;  // TODO: Implement message counting
 
     // Web service
-    metrics->web.enabled = (app_config->web.enable_ipv4 || app_config->web.enable_ipv6);
-    convert_thread_metrics(&web_threads, &metrics->web.threads);
-    metrics->web.specific.web.active_requests = 0;  // TODO: Implement request tracking
-    metrics->web.specific.web.total_requests = 0;
+    metrics->webserver.enabled = (app_config->webserver.enable_ipv4 || app_config->webserver.enable_ipv6);
+    convert_thread_metrics(&webserver_threads, &metrics->webserver.threads);
+    metrics->webserver.specific.webserver.active_requests = 0;  // TODO: Implement request tracking
+    metrics->webserver.specific.webserver.total_requests = 0;
 
     // WebSocket service
     metrics->websocket.enabled = app_config->websocket.enabled;

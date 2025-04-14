@@ -268,8 +268,6 @@ AppConfig* load_config(const char* cmdline_path) {
         return NULL;
     }
 
-    dumpAppConfig(config, NULL);  // Show complete config after network
-
     // D. Logging Configuration
     if (!load_logging_config(root, config)) {
         if (root) json_decref(root);
@@ -281,6 +279,8 @@ AppConfig* load_config(const char* cmdline_path) {
         if (root) json_decref(root);
         return NULL;
     }
+
+    dumpAppConfig(config, NULL);  // Show complete config after network
 
     // F. API Configuration
     if (!load_api_config(root, config)) {
@@ -434,6 +434,9 @@ void dumpAppConfig(const AppConfig* config, const char* section) {
 
     char header[MAX_HEADER_LENGTH];
 
+    format_section_header(header, sizeof(header), "AppConfig Dump Started", "");
+    log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
+
     // Server section (has implementation)
     if (!section || strcmp(section, "Server") == 0) {
         format_section_header(header, sizeof(header), "A", "Server");
@@ -452,7 +455,6 @@ void dumpAppConfig(const AppConfig* config, const char* section) {
     if (!section || strcmp(section, "Databases") == 0) {
         format_section_header(header, sizeof(header), "C", "Databases");
         log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
-        if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
         dump_database_config(&config->databases);
     }
 
@@ -460,14 +462,14 @@ void dumpAppConfig(const AppConfig* config, const char* section) {
     if (!section || strcmp(section, "Logging") == 0) {
         format_section_header(header, sizeof(header), "D", "Logging");
         log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
-        if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
+        dump_logging_config(&config->logging);
     }
 
     // WebServer section
     if (!section || strcmp(section, "WebServer") == 0) {
         format_section_header(header, sizeof(header), "E", "WebServer");
         log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
-        if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
+        dump_webserver_config(&config->webserver);
     }
 
     // API section
@@ -547,6 +549,10 @@ void dumpAppConfig(const AppConfig* config, const char* section) {
         log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
         if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
     }
+
+    format_section_header(header, sizeof(header), "AppConfig Dump Complete", "");
+    log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
+
 }
 
 /*
@@ -576,19 +582,19 @@ static void clean_app_config(AppConfig* config) {
     // Clean up configurations in A-P order
     
     // A. Server Configuration
-    config_server_cleanup(&config->server);
+    cleanup_server_config(&config->server);
 
     // B. Network Configuration
-    config_network_cleanup(&config->network);
+    cleanup_network_config(&config->network);
 
     // C. Database Configuration
     cleanup_database_config(&config->databases);
     
     // D. Logging Configuration
-    config_logging_cleanup(&config->logging);
+    cleanup_logging_config(&config->logging);
 
     // E. WebServer Configuration
-    config_webserver_cleanup(&config->web);
+    config_webserver_cleanup(&config->webserver);
     
     // F. API Configuration
     config_api_cleanup(&config->api);

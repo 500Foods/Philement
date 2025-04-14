@@ -10,6 +10,7 @@
 
 #include <stdbool.h>
 #include <jansson.h>
+#include "../logging/logging.h"
 
 // Forward declaration of AppConfig for debugging function
 struct AppConfig;
@@ -161,28 +162,66 @@ bool process_direct_value(ConfigValue value, ConfigValueType type,
                         const char* direct_value);
 
 /*
- * Configuration processing macros
+ * MACROS
  * 
- * These macros simplify configuration loading to one line per key/value.
- * Used across all configuration sections for consistent processing.
+ * The idea behind the macros is to help simplify the coding for handling JSON. Ideally,
+ * we'd not have any JSON C code (jansson) in any of our src/config/config_SECTION files.
+ * We didn't quite hit that target, but we're close, dramatically reducing the complexity
+ * of how we're handling JSON.
+ * 
+ * There are two sets of macros, and are largely mutually exclusive.
  */
+
+/*
+ * PROCESS_ macros are used by the load_SECTION_config functions exclusively.
+ * These load_SECTION_config functions also should not be using DUMP macros, nor should they
+ * be making any direct calls to log_this themselves. Instead, they should use PROCESS_
+ * macros for all of their work. The general approach of load_SECTION_config is as follows:abort
+ * 
+ * 1) Define the default values for the AppConfig object for that SECTION
+ * 2) Call PROCESS_SECTION to add a header for the SECTION, and optionally
+ *    call it again for any subsections.abort
+ * 3) Call PROCESS_ macros for each of the values in the SECTION.
+ * 
+ * The PROCESS_ macros will then handle the JSON lookup, if available, as well as dealing
+ * with overriding the defaults with JSON-supplied alternatives, resolving env vars, and
+ * everythign else. The PROCESS_ macros will then log the ouutput in a structured way,
+ * with all the fancy indents and the rest of it.abort
+ * 
+ * NOTE: A special case of DIRECT PROCESS_ macros are used in the unusual situation where
+ * we want to set a value directly in AppConfig that doesn't have a corresponding JSON 
+ * key/value. Normally, we'd expect EVERY AppConfig entry to be overridable via JSON
+ * but in config_system, we're setting things like the config file itself, the exec file,
+ * and potentially other options that aren't really things that we'd expect to be in a
+ * JSON configuration file. They shouldn't be used for anything else, so please don't.
+ */
+
+typedef struct {
+    int* array;           // Pointer to array of integers
+    size_t* count;        // Pointer to array size
+    size_t capacity;      // Maximum array capacity
+} ConfigIntArray;
+
+typedef struct {
+    char** array;         // Pointer to array of strings
+    size_t* count;        // Pointer to array size
+    size_t capacity;      // Maximum array capacity
+} ConfigStringArray;
+
+typedef struct {
+    char** element;       // Pointer to string element
+    size_t index;        // Index in the array
+} ConfigArrayElement;
+
+bool process_int_array_config(json_t* root, ConfigIntArray value, const char* path, const char* section);
+bool process_string_array_config(json_t* root, ConfigStringArray value, const char* path, const char* section);
+bool process_direct_bool_value(ConfigValue value, const char* path, const char* section, bool direct_value);
+bool process_level_config(json_t* root, int* level_ptr, const char* level_name, const char* path, const char* section, int default_value);
+bool process_array_element_config(json_t* root, ConfigArrayElement value, const char* path, const char* section);
+
 #define PROCESS_SECTION(root, section) \
     process_config_value(root, (ConfigValue){0}, CONFIG_TYPE_SECTION, section, section)
-/*
- * Direct value processing macros
- * 
- * These macros handle values that come from outside the JSON config,
- * such as command line parameters or environment variables.
- */
-// Process a direct boolean value (no JSON lookup)
-bool process_direct_bool_value(ConfigValue value, const char* path, const char* section, bool direct_value);
-
-#define PROCESS_STRING_DIRECT(config_ptr, field, path, section, value) \
-    process_direct_value((ConfigValue){.string_val = &((config_ptr)->field)}, CONFIG_TYPE_STRING, path, section, value)
-
-#define PROCESS_BOOL_DIRECT(config_ptr, field, path, section, value) \
-    process_direct_bool_value((ConfigValue){.bool_val = &((config_ptr)->field)}, path, section, value)
-    
+ 
 #define PROCESS_BOOL(root, config_ptr, field, path, section) \
     process_config_value(root, (ConfigValue){.bool_val = &((config_ptr)->field)}, CONFIG_TYPE_BOOL, path, section)
 
@@ -198,20 +237,43 @@ bool process_direct_bool_value(ConfigValue value, const char* path, const char* 
 #define PROCESS_SIZE(root, config_ptr, field, path, section) \
     process_config_value(root, (ConfigValue){.int_val = (int*)&((config_ptr)->field)}, CONFIG_TYPE_INT, path, section)
 
-// Configuration array value
-typedef struct {
-    int* array;           // Pointer to array of integers
-    size_t* count;        // Pointer to array size
-    size_t capacity;      // Maximum array capacity
-} ConfigIntArray;
+#define PROCESS_LOOKUP(root, config_ptr, field, path, section, name) \
+    ((process_config_value(root, (ConfigValue){.int_val = &((config_ptr)->field)}, CONFIG_TYPE_INT, path, section) && name) ? true : false)
 
-// Format integer array configuration
-bool process_int_array_config(json_t* root, ConfigIntArray value, const char* path, const char* section);
+#define PROCESS_LEVEL(root, config_ptr, field, path, section, level_name) \
+    process_level_config(root, &((config_ptr)->field), level_name, path, section, (config_ptr)->field)
+
+#define PROCESS_ARRAY_ELEMENT(root, element_ptr, idx, path, section) \
+    process_array_element_config(root, (ConfigArrayElement){.element = (element_ptr), .index = (idx)}, path, section)
 
 #define PROCESS_INT_ARRAY(root, config_ptr, array, count, capacity, path, section) \
     process_int_array_config(root, (ConfigIntArray){.array = (config_ptr)->array, .count = &((config_ptr)->count), .capacity = capacity}, path, section)
 
-// Dump macros for configuration values with safe formatting
+#define PROCESS_STRING_ARRAY(root, config_ptr, array, count, capacity, path, section) \
+    process_string_array_config(root, (ConfigStringArray){.array = (config_ptr)->array, .count = &((config_ptr)->count), .capacity = capacity}, path, section)
+
+#define PROCESS_STRING_DIRECT(config_ptr, field, path, section, value) \
+    process_direct_value((ConfigValue){.string_val = &((config_ptr)->field)}, CONFIG_TYPE_STRING, path, section, value)
+
+#define PROCESS_BOOL_DIRECT(config_ptr, field, path, section, value) \
+    process_direct_bool_value((ConfigValue){.bool_val = &((config_ptr)->field)}, path, section, value)
+
+
+/* 
+ * DEBUG_ macros on the other hand were designed specifically for debugging AppConfig.abort
+ * What we're after here is the means to "peek" into AppConfig and see what is actually there.abort
+ * To accomplish this, there is a separate dump_SECTION_config for each section, largely
+ * mirroring the load_SECTION_config functions. The DUMP macros don't make any changes to
+ * AppConfig, nor do they take any clues from load_SECTION_config. They are supposed to be
+ * a sober second look at the AppConfig object. Too many times to count, load_SECTION_config 
+ * was not doing what it was expected to do, leaving us with AppConfig in an unknown state.abort
+ * Well, unknown to us, anyway. So this is mostly intended as a debugging tool.
+ * 
+ * The DUMP_ macros are a little different in that they don't do the whole indent thing by
+ * themselves, so we have something of a mess with versions where we pass in the indent
+ * explicitly so everything stays nice and pretty.abort
+ */
+
 #define DUMP_STRING(name, value) do { \
     const char* val = (value) ? (value) : "(not set)"; \
     log_this("Config-Dump", "――― %s: %s", LOG_LEVEL_STATE, (name), val); \
@@ -231,10 +293,12 @@ bool process_int_array_config(json_t* root, ConfigIntArray value, const char* pa
 #define DUMP_BOOL(name, value) \
     log_this("Config-Dump", "――― %s: %s", LOG_LEVEL_STATE, (name), ((value) ? "true" : "false"))
 
+#define DUMP_BOOL2(prefix, name, value) \
+    log_this("Config-Dump", "――― %s %s: %s", LOG_LEVEL_STATE, (prefix), (name), ((value) ? "true" : "false"))
+
 #define DUMP_SIZE(name, value) \
     log_this("Config-Dump", "――― %s: %zu", LOG_LEVEL_STATE, (name), (value))
 
-// Dump sensitive values showing only first 5 chars
 #define DUMP_SECRET(name, value) do { \
     const char* val = (value); \
     if (!val) { \
@@ -248,5 +312,8 @@ bool process_int_array_config(json_t* root, ConfigIntArray value, const char* pa
         log_this("Config-Dump", "――― %s: %s...", LOG_LEVEL_STATE, (name), temp); \
     } \
 } while(0)
+
+#define DUMP_LOOKUP(name, value, lookup_name) \
+    log_this("Config-Dump", "――― %s: %d (%s)", LOG_LEVEL_STATE, (name), (value), (lookup_name))
 
 #endif /* CONFIG_UTILS_H */

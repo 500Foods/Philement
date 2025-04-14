@@ -139,11 +139,8 @@ int land_logging_subsystem(void) {
     if (app_config) {
         log_this("Logging", "Cleaning up logging configuration", LOG_LEVEL_STATE);
         
-        // First explicitly cleanup file config to address 22-byte leak in config_logging_file.c:24
-        config_logging_file_cleanup(&app_config->logging.file);
-        
-        // Then clean up overall logging config to address 112-byte leak in config_logging.c:17
-        config_logging_cleanup(&app_config->logging);
+        // Clean up logging config - handles all components including file logging
+        cleanup_logging_config(&app_config->logging);
     } else {
         log_this("Logging", "Warning: app_config is NULL during logging cleanup", LOG_LEVEL_ALERT);
     }

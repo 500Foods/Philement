@@ -26,6 +26,10 @@ static __thread char value_buffer[1024];
 #define MAX_SECTION_LENGTH 248  // 256 - strlen("Config-") - 1
 
 // Extract top-level section name from a dotted path
+// Forward declarations for internal functions
+static const char* get_top_level_section(const char* section);
+static const char* get_indent(const char* path);
+
 static const char* get_top_level_section(const char* section) {
     static __thread char section_buffer[MAX_SECTION_LENGTH + 1];
     
@@ -45,6 +49,61 @@ static const char* get_top_level_section(const char* section) {
     strncpy(section_buffer, section, len);
     section_buffer[len] = '\0';
     return section_buffer;
+}
+
+// Process a log level with its name display
+bool process_level_config(json_t* root, int* level_ptr, const char* level_name, 
+                         const char* path, const char* section, int default_value) {
+    if (!level_ptr || !path || !section) return false;
+
+    // Check if the path exists in JSON
+    bool using_default = true;
+    
+    // Use the provided default_value if specified, otherwise use the current value
+    if (using_default && default_value >= 0) {
+        *level_ptr = default_value;
+    }
+    
+    if (root) {
+        // Parse the path to traverse JSON
+        char* path_copy = strdup(path);
+        if (path_copy) {
+            json_t* json_val = root;
+            char* token = strtok(path_copy, ".");
+            while (token && json_is_object(json_val)) {
+                json_val = json_object_get(json_val, token);
+                token = strtok(NULL, ".");
+            }
+            free(path_copy);
+            
+            // If we found a valid integer value, update the level
+            if (json_val && json_is_integer(json_val)) {
+                *level_ptr = json_integer_value(json_val);
+                using_default = false;
+            }
+        }
+    }
+    
+    // Extract the key name for consistent logging format
+    const char* key = strrchr(path, '.');
+    key = key ? key + 1 : path;
+    
+    // Create log category
+    char category[256];
+    snprintf(category, sizeof(category), "Config-%s", get_top_level_section(section));
+    
+    // Get indentation based on path depth
+    char temp_path[256];
+    snprintf(temp_path, sizeof(temp_path), "%s", path);
+    const char* indent = get_indent(temp_path);
+    
+    // Log with level name format
+    log_this(category, "%s%s: %d (%s)%s", LOG_LEVEL_STATE,
+            indent, key, *level_ptr, 
+            level_name ? level_name : "unknown",
+            using_default ? " *" : "");
+            
+    return true;
 }
 
 // Helper to check if a string starts with ${env.
@@ -72,10 +131,12 @@ static const char* get_env_var_name(const char* str, char* buffer, size_t buffer
 static const char* get_indent(const char* path) {
     if (!path) return "";
     
-    // Count dots, up to max level
+    // Count dots and array indices, up to max level
     int level = 0;
     while (*path && level < 5) {
-        if (*path == '.') level++;
+        if (*path == '.') {
+            level++;
+        }
         path++;
     }
     
@@ -301,6 +362,7 @@ bool process_config_value(json_t* root, ConfigValue value, ConfigValueType type,
     
     // Process based on type
     switch (type) {
+        
         case CONFIG_TYPE_BOOL: {
             bool val = *value.bool_val;  // Default value
             bool using_default = !(json_val && json_is_boolean(json_val));
@@ -438,7 +500,7 @@ void log_config_item(const char* key, const char* value, bool is_default, const 
              indent_str, value, is_default ? " *" : "");
 }
 
-// Format integer array for output
+// Format array output
 static const char* format_int_array(const int* array, size_t count) {
     if (!array || count == 0) {
         return "[none]";  // Show [none] for empty arrays
@@ -473,7 +535,47 @@ static const char* format_int_array(const int* array, size_t count) {
     return "[...]"; // Buffer would overflow
 }
 
-// Process integer array configuration
+// Format string array for output
+static const char* format_string_array(const char** array, size_t count) {
+    if (!array || count == 0) {
+        return "[none]";  // Show [none] for empty arrays
+    }
+
+    // Start with opening bracket
+    size_t pos = 0;
+    value_buffer[pos++] = '[';
+
+    // Add each string
+    for (size_t i = 0; i < count; i++) {
+        // Add comma if not first string
+        if (i > 0) {
+            if (pos >= sizeof(value_buffer) - 2) return "[...]";
+            value_buffer[pos++] = ',';
+            value_buffer[pos++] = ' ';
+        }
+        
+        // Add the string in quotes
+        if (pos >= sizeof(value_buffer) - 3) return "[...]";
+        value_buffer[pos++] = '"';
+        
+        const char* str = array[i] ? array[i] : "(null)";
+        size_t str_len = strlen(str);
+        if (pos + str_len >= sizeof(value_buffer) - 3) return "[...]";
+        
+        strcpy(value_buffer + pos, str);
+        pos += str_len;
+        
+        value_buffer[pos++] = '"';
+    }
+
+    // Add closing bracket
+    if (pos >= sizeof(value_buffer) - 2) return "[...]";
+    value_buffer[pos++] = ']';
+    value_buffer[pos] = '\0';
+    return value_buffer;
+}
+
+// Process array configurations
 bool process_int_array_config(json_t* root, ConfigIntArray value, const char* path, const char* section) {
     if (!path || !value.array || !value.count || value.capacity == 0) {
         return false;
@@ -525,6 +627,136 @@ bool process_int_array_config(json_t* root, ConfigIntArray value, const char* pa
 
     log_this(category, "%s%s: %s%s", LOG_LEVEL_STATE,
             indent, key, format_int_array(value.array, *value.count),
+            using_default ? " *" : "");
+
+    return true;
+}
+
+// Process array element configuration
+bool process_array_element_config(json_t* root, ConfigArrayElement value, const char* path, const char* section) {
+    if (!value.element || !path || !section) return false;
+
+    // Extract the key name for display (last part of path)
+    const char* display_key = strrchr(path, '.');
+    display_key = display_key ? display_key + 1 : path;
+    
+    // Determine log category
+    char category[256];
+    snprintf(category, sizeof(category), "Config-%s", get_top_level_section(section));
+
+    // Get JSON array using path traversal for nested objects
+    json_t* json_val = NULL;
+    bool using_default = true;
+    
+    if (root) {
+        char* path_copy = strdup(path);
+        if (path_copy) {
+            json_val = root;
+            char* token = strtok(path_copy, ".");
+            while (token && json_is_object(json_val)) {
+                json_val = json_object_get(json_val, token);
+                token = strtok(NULL, ".");
+            }
+            free(path_copy);
+        }
+    }
+
+    // Check if we got an array and element
+    const char* str = NULL;
+    if (json_val && json_is_array(json_val)) {
+        // Get element at index
+        json_t* element = json_array_get(json_val, value.index);
+        if (json_is_string(element)) {
+            str = json_string_value(element);
+            if (str) {
+                // Update the element with the JSON value
+                if (*value.element) free(*value.element);
+                *value.element = strdup(str);
+                if (!*value.element) return false;
+                using_default = false;
+            }
+        }
+    }
+
+    // If we're using the default value, get it for logging
+    if (using_default && *value.element) {
+        str = *value.element;
+    }
+
+    // Get indent level for array elements (don't add extra dot)
+    char temp_path[256];
+    snprintf(temp_path, sizeof(temp_path), "%s.", path);
+    const char* indent = get_indent(temp_path);
+
+    // Format array element key with index
+    char key_with_index[256];
+    snprintf(key_with_index, sizeof(key_with_index), "%s[%zu]", display_key, value.index);
+    
+    log_this(category, "%s%s: %s%s", LOG_LEVEL_STATE,
+             indent, key_with_index, str ? str : "(not set)",
+             using_default ? " *" : "");
+    
+    return true;
+}
+
+// Process string array configuration
+bool process_string_array_config(json_t* root, ConfigStringArray value, const char* path, const char* section) {
+    if (!path || !value.array || !value.count || value.capacity == 0) {
+        return false;
+    }
+
+    // Get JSON value if config exists
+    json_t* json_val = NULL;
+    if (root) {
+        char* path_copy = strdup(path);
+        if (path_copy) {
+            json_val = root;
+            char* token = strtok(path_copy, ".");
+            while (token && json_is_object(json_val)) {
+                json_val = json_object_get(json_val, token);
+                token = strtok(NULL, ".");
+            }
+            free(path_copy);
+        }
+    }
+
+    // Default to empty array
+    *value.count = 0;
+    bool using_default = true;
+
+    // Process array if present
+    if (json_val && json_is_array(json_val)) {
+        size_t index;
+        json_t* element;
+        using_default = false;
+
+        json_array_foreach(json_val, index, element) {
+            if (index >= value.capacity) {
+                break;  // Array is full
+            }
+
+            if (json_is_string(element)) {
+                const char* str = json_string_value(element);
+                if (str) {
+                    value.array[index] = strdup(str);
+                    if (value.array[index]) {
+                        (*value.count)++;
+                    }
+                }
+            }
+        }
+    }
+
+    // Log the array with proper indentation
+    const char* indent = get_indent(path);
+    char category[256];
+    snprintf(category, sizeof(category), "Config-%s", get_top_level_section(section));
+
+    const char* key = strrchr(path, '.');
+    key = key ? key + 1 : path;
+
+    log_this(category, "%s%s: %s%s", LOG_LEVEL_STATE,
+            indent, key, format_string_array((const char**)value.array, *value.count),
             using_default ? " *" : "");
 
     return true;

@@ -74,7 +74,7 @@ void request_completed(void *cls, struct MHD_Connection *connection,
                       void **con_cls, enum MHD_RequestTerminationCode toe);
 
 // Global server state
-extern struct MHD_Daemon *web_daemon;
+extern struct MHD_Daemon *webserver_daemon;
 extern WebServerConfig *server_web_config;
 
 #endif // WEB_SERVER_CORE_H

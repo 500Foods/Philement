@@ -190,7 +190,7 @@ int startup_hydrogen(const char* config_path) {
     // This prevents premature thread creation and ensures proper startup order
 
     // // Initialize web server (with its thread)
-    // init_service_threads(&web_threads);
+    // init_service_threads(&webserver_threads);
     // if (!init_webserver_subsystem()) {
     //     log_this("Initialization", "Web server failed to start", LOG_LEVEL_ERROR);
     //     return 0;
