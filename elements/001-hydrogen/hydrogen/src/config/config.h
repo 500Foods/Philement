@@ -206,4 +206,16 @@ void log_config_env_value(
  */
 void dumpAppConfig(const AppConfig* config, const char* section);
 
+/*
+ * Get the current configuration as formatted text
+ * 
+ * Similar to dumpAppConfig but writes to a provided buffer instead of logs.
+ * The caller is responsible for freeing the returned string.
+ * 
+ * @param config Pointer to the AppConfig structure
+ * @param section Current section to format (or NULL for all)
+ * @return Newly allocated string containing the formatted config, or NULL on error
+ */
+char* getAppConfigText(const AppConfig* config, const char* section);
+
 #endif /* CONFIG_H */

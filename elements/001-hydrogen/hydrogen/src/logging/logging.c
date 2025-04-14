@@ -35,13 +35,157 @@ extern pthread_cond_t terminate_cond;
 extern pthread_mutex_t terminate_mutex;
 extern int queue_system_initialized;  // From queue.c
 
+// Rolling buffer size
+#define LOG_BUFFER_SIZE 500
+#define MAX_LOG_LINE_LENGTH DEFAULT_LOG_ENTRY_SIZE
+
 // Internal state
 static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 static __thread bool in_log_group = false;  // Thread-local flag for group logging
 static unsigned long log_counter = 0;  // Global log counter
 
+// Rolling buffer for recent messages
+static struct {
+    char* messages[LOG_BUFFER_SIZE];  // Array of message strings
+    size_t head;                      // Index of newest message
+    size_t count;                     // Number of messages in buffer
+    pthread_mutex_t mutex;            // Buffer mutex
+} log_buffer = {
+    .messages = {NULL},
+    .head = 0,
+    .count = 0,
+    .mutex = PTHREAD_MUTEX_INITIALIZER
+};
+
+// Initialize a message slot in the buffer
+static bool init_message_slot(size_t index) {
+    if (log_buffer.messages[index] == NULL) {
+        log_buffer.messages[index] = malloc(MAX_LOG_LINE_LENGTH);
+        if (!log_buffer.messages[index]) return false;
+    }
+    return true;
+}
+
+// Add a message to the rolling buffer
+static void add_to_buffer(const char* message) {
+    pthread_mutex_lock(&log_buffer.mutex);
+
+    // Initialize or move to next slot
+    size_t index = log_buffer.head;
+    if (!init_message_slot(index)) {
+        pthread_mutex_unlock(&log_buffer.mutex);
+        return;
+    }
+
+    // Copy message to buffer using snprintf for safety
+    snprintf(log_buffer.messages[index], MAX_LOG_LINE_LENGTH, "%s", message);
+
+    // Update head and count
+    log_buffer.head = (log_buffer.head + 1) % LOG_BUFFER_SIZE;
+    if (log_buffer.count < LOG_BUFFER_SIZE) {
+        log_buffer.count++;
+    }
+
+    pthread_mutex_unlock(&log_buffer.mutex);
+}
+
+// Get messages matching a subsystem
+char* log_get_messages(const char* subsystem) {
+    if (!subsystem) return NULL;
+
+    pthread_mutex_lock(&log_buffer.mutex);
+
+    // Calculate total size needed
+    size_t total_size = 0;
+    size_t matches = 0;
+    for (size_t i = 0; i < log_buffer.count; i++) {
+        size_t idx = (log_buffer.head - 1 - i + LOG_BUFFER_SIZE) % LOG_BUFFER_SIZE;
+        if (log_buffer.messages[idx] && strstr(log_buffer.messages[idx], subsystem)) {
+            total_size += strlen(log_buffer.messages[idx]) + 1;  // +1 for newline
+            matches++;
+        }
+    }
+
+    if (matches == 0) {
+        pthread_mutex_unlock(&log_buffer.mutex);
+        return NULL;
+    }
+
+    // Allocate buffer for matching messages
+    char* result = malloc(total_size + 1);  // +1 for null terminator
+    if (!result) {
+        pthread_mutex_unlock(&log_buffer.mutex);
+        return NULL;
+    }
+
+    // Copy matching messages
+    char* pos = result;
+    for (size_t i = 0; i < log_buffer.count; i++) {
+        size_t idx = (log_buffer.head - 1 - i + LOG_BUFFER_SIZE) % LOG_BUFFER_SIZE;
+        if (log_buffer.messages[idx] && strstr(log_buffer.messages[idx], subsystem)) {
+            size_t len = strlen(log_buffer.messages[idx]);
+            memcpy(pos, log_buffer.messages[idx], len);
+            pos[len] = '\n';
+            pos += len + 1;
+        }
+    }
+    *pos = '\0';
+
+    pthread_mutex_unlock(&log_buffer.mutex);
+    return result;
+}
+
+// Get the last N messages
+char* log_get_last_n(size_t count) {
+    pthread_mutex_lock(&log_buffer.mutex);
+
+    // Adjust count if it's larger than available messages
+    if (count > log_buffer.count) {
+        count = log_buffer.count;
+    }
+
+    if (count == 0) {
+        pthread_mutex_unlock(&log_buffer.mutex);
+        return NULL;
+    }
+
+    // Calculate total size needed
+    size_t total_size = 0;
+    for (size_t i = 0; i < count; i++) {
+        size_t idx = (log_buffer.head - 1 - i + LOG_BUFFER_SIZE) % LOG_BUFFER_SIZE;
+        if (log_buffer.messages[idx]) {
+            total_size += strlen(log_buffer.messages[idx]) + 1;  // +1 for newline
+        }
+    }
+
+    // Allocate buffer
+    char* result = malloc(total_size + 1);  // +1 for null terminator
+    if (!result) {
+        pthread_mutex_unlock(&log_buffer.mutex);
+        return NULL;
+    }
+
+    // Copy messages
+    char* pos = result;
+    for (size_t i = 0; i < count; i++) {
+        size_t idx = (log_buffer.head - 1 - i + LOG_BUFFER_SIZE) % LOG_BUFFER_SIZE;
+        if (log_buffer.messages[idx]) {
+            size_t len = strlen(log_buffer.messages[idx]);
+            memcpy(pos, log_buffer.messages[idx], len);
+            pos[len] = '\n';
+            pos += len + 1;
+        }
+    }
+    *pos = '\0';
+
+    pthread_mutex_unlock(&log_buffer.mutex);
+    return result;
+}
+
 // Private function declarations
 static void console_log(const char* subsystem, int priority, const char* message, unsigned long current_count);
+static bool init_message_slot(size_t index);
+static void add_to_buffer(const char* message);
 
 /*
  * INTERNAL USE ONLY - Do not call directly!
@@ -92,12 +236,17 @@ static void console_log(const char* subsystem, int priority, const char* message
     char timestamp_ms[48];  // Increased buffer size for safety
     snprintf(timestamp_ms, sizeof(timestamp_ms), "%s.%03dZ", timestamp, (int)(tv.tv_usec / 1000));
 
-    // Write to stdout for test compatibility and stderr for console visibility
-    fprintf(stdout, "%s  %s  %s  %s  %s\n", counter_prefix, timestamp_ms, formatted_priority, formatted_subsystem, message);
-    
-    // Ensure output is flushed immediately during shutdown
+    // Format the complete log line
+    char log_line[DEFAULT_LOG_ENTRY_SIZE];
+    snprintf(log_line, sizeof(log_line), "%s  %s  %s  %s  %s", 
+             counter_prefix, timestamp_ms, formatted_priority, formatted_subsystem, message);
+
+    // Add to rolling buffer and output
+    add_to_buffer(log_line);
+    fprintf(stdout, "%s\n", log_line);
     fflush(stdout);
 }
+
 
 // Log a message based on configuration settings
 void log_group_begin(void) {

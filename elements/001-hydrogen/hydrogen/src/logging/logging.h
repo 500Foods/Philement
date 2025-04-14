@@ -105,4 +105,26 @@ void log_group_begin(void);
  */
 void log_group_end(void);
 
+/*
+ * Get all log messages matching a subsystem
+ * Returns a newly allocated string containing matching messages
+ * or NULL if no matches or on error
+ * Caller must free the returned string
+ * 
+ * @param subsystem The subsystem to match (e.g., "Config-Dump")
+ * @return Newly allocated string with matching messages or NULL
+ */
+char* log_get_messages(const char* subsystem);
+
+/*
+ * Get the last N log messages
+ * Returns a newly allocated string containing the messages
+ * or NULL if no messages or on error
+ * Caller must free the returned string
+ * 
+ * @param count Number of messages to retrieve
+ * @return Newly allocated string with messages or NULL
+ */
+char* log_get_last_n(size_t count);
+
 #endif // LOGGING_H
