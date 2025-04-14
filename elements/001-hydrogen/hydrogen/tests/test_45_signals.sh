@@ -90,6 +90,46 @@ wait_for_startup() {
     done
 }
 
+# Function to verify config dump
+verify_config_dump() {
+    local log_file=$1
+    local timeout=$2
+    local start_time=$(date +%s)
+    
+    # Wait for dump to start
+    while true; do
+        if [ $(($(date +%s) - start_time)) -ge $timeout ]; then
+            return 1
+        fi
+        
+        if grep -q "APPCONFIG Dump Started" "$log_file"; then
+            break
+        fi
+        
+        sleep 0.2
+    done
+    
+    # Wait for dump to complete
+    while true; do
+        if [ $(($(date +%s) - start_time)) -ge $timeout ]; then
+            return 1
+        fi
+        
+        if grep -q "APPCONFIG Dump Complete" "$log_file"; then
+            # Count lines between start and end
+            local start_line=$(grep -n "APPCONFIG Dump Started" "$log_file" | tail -1 | cut -d: -f1)
+            local end_line=$(grep -n "APPCONFIG Dump Complete" "$log_file" | tail -1 | cut -d: -f1)
+            if [ -n "$start_line" ] && [ -n "$end_line" ]; then
+                local dump_lines=$((end_line - start_line + 1))
+                print_info "Config dump completed with $dump_lines lines"
+                return 0
+            fi
+        fi
+        
+        sleep 0.2
+    done
+}
+
 # Function to wait for shutdown
 wait_for_shutdown() {
     local pid=$1
@@ -353,13 +393,49 @@ else
     MULTI_SIGNAL_TEST=1
 fi
 
+sleep 1
+
+# Test Case 5: SIGUSR2 handling (config dump)
+print_header "Test Case 5: SIGUSR2 Signal Handling (Config Dump)"
+LOG_FILE_SIGUSR2="$LOG_DIR/hydrogen_signal_test_SIGUSR2.log"
+> "$LOG_FILE_SIGUSR2"  # Clear log file
+
+print_info "Starting Hydrogen..." | tee -a "$RESULT_LOG"
+$HYDROGEN_BIN "$CONFIG_FILE" > "$LOG_FILE_SIGUSR2" 2>&1 &
+HYDROGEN_PID=$!
+
+if ! wait_for_startup $STARTUP_TIMEOUT "$LOG_FILE_SIGUSR2"; then
+    print_result 1 "Failed to start Hydrogen" | tee -a "$RESULT_LOG"
+    kill -9 $HYDROGEN_PID 2>/dev/null
+    exit 1
+fi
+
+print_info "Sending SIGUSR2..." | tee -a "$RESULT_LOG"
+kill -SIGUSR2 $HYDROGEN_PID
+
+if verify_config_dump "$LOG_FILE_SIGUSR2" $SHUTDOWN_TIMEOUT; then
+    print_result 0 "SIGUSR2 handled successfully (config dump verified)" | tee -a "$RESULT_LOG"
+    SIGUSR2_TEST=0
+else
+    print_result 1 "SIGUSR2 handling failed" | tee -a "$RESULT_LOG"
+    SIGUSR2_TEST=1
+fi
+
+# Clean up the process
+print_info "Cleaning up with SIGTERM to PID $HYDROGEN_PID" | tee -a "$RESULT_LOG"
+kill -SIGTERM $HYDROGEN_PID 2>/dev/null
+wait_for_shutdown $HYDROGEN_PID $SHUTDOWN_TIMEOUT "$LOG_FILE_SIGUSR2" || true
+
+sleep 1
+
 # Calculate overall test result
-TOTAL_TESTS=4
+TOTAL_TESTS=5
 PASSED_TESTS=0
 [ $SIGINT_TEST -eq 0 ] && ((PASSED_TESTS++))
 [ $SIGTERM_TEST -eq 0 ] && ((PASSED_TESTS++))
 [ $SIGHUP_TEST -eq 0 ] && ((PASSED_TESTS++))
 [ $MULTI_SIGNAL_TEST -eq 0 ] && ((PASSED_TESTS++))
+[ $SIGUSR2_TEST -eq 0 ] && ((PASSED_TESTS++))
 
 # Print test summary
 print_test_summary $TOTAL_TESTS $PASSED_TESTS $((TOTAL_TESTS - PASSED_TESTS))

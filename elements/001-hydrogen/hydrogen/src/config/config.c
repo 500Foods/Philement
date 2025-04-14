@@ -60,14 +60,7 @@
 
 // Project headers
 #include "config.h"
-#include "config_utils.h"
-#include "types/config_string.h"
-#include "types/config_bool.h"
-#include "types/config_int.h"
-#include "types/config_size.h"
-#include "types/config_double.h"
-#include "files/config_filesystem.h"
-#include "files/config_file_utils.h"
+#include "config_utils.h"  // Includes string, fd, and filesystem operations
 #include "config_priority.h"
 
 // Configuration system
@@ -273,15 +266,11 @@ AppConfig* load_config(const char* cmdline_path) {
     LOAD_CONFIG("I", "Terminal",     load_terminal_config);
     LOAD_CONFIG("J", "mDNS Server",  load_mdns_server_config);
     LOAD_CONFIG("K", "mDNS Client",  load_mdns_client_config);
-    dumpAppConfig(config, NULL);  // Show complete config after network
     LOAD_CONFIG("L", "Mail Relay",   load_mailrelay_config);
     LOAD_CONFIG("M", "Print",        load_print_config);
     LOAD_CONFIG("N", "Resources",    load_resources_config);
     LOAD_CONFIG("O", "OIDC",         load_oidc_config);
     LOAD_CONFIG("P", "Notify",       load_notify_config);
-
-
-
 
     #undef LOAD_SERVER_CONFIG
     #undef LOAD_CONFIG
@@ -391,23 +380,22 @@ void dumpAppConfig(const AppConfig* config, const char* section) {
             if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE); \
         }
 
-    DUMP_CONFIG_SECTION("A", "Server",    server,    dump_server_config);
-    DUMP_CONFIG_SECTION("B", "Network",   network,   dump_network_config);
-    DUMP_CONFIG_SECTION("C", "Databases", databases, dump_database_config);
-    DUMP_CONFIG_SECTION("D", "Logging",   logging,   dump_logging_config);
-    DUMP_CONFIG_SECTION("E", "WebServer", webserver, dump_webserver_config);
-    DUMP_CONFIG_SECTION("F", "API",       api,       dump_api_config);
-    DUMP_CONFIG_SECTION("G", "Swagger",   swagger,   dump_swagger_config);
-    DUMP_CONFIG_SECTION("H", "WebSocket", websocket, dump_websocket_config);
-    DUMP_CONFIG_SECTION("I", "Terminal", terminal, dump_terminal_config);
+    DUMP_CONFIG_SECTION("A", "Server",      server,      dump_server_config);
+    DUMP_CONFIG_SECTION("B", "Network",     network,     dump_network_config);
+    DUMP_CONFIG_SECTION("C", "Databases",   databases,   dump_database_config);
+    DUMP_CONFIG_SECTION("D", "Logging",     logging,     dump_logging_config);
+    DUMP_CONFIG_SECTION("E", "WebServer",   webserver,   dump_webserver_config);
+    DUMP_CONFIG_SECTION("F", "API",         api,         dump_api_config);
+    DUMP_CONFIG_SECTION("G", "Swagger",     swagger,     dump_swagger_config);
+    DUMP_CONFIG_SECTION("H", "WebSocket",   websocket,   dump_websocket_config);
+    DUMP_CONFIG_SECTION("I", "Terminal",    terminal,    dump_terminal_config);
     DUMP_CONFIG_SECTION("J", "mDNS Server", mdns_server, dump_mdns_server_config);
     DUMP_CONFIG_SECTION("K", "mDNS Client", mdns_client, dump_mdns_client_config);
-
-    DUMP_NOT_IMPLEMENTED("L", "Mail Relay");
-    DUMP_NOT_IMPLEMENTED("M", "Print");
-    DUMP_NOT_IMPLEMENTED("N", "Resources");
-    DUMP_NOT_IMPLEMENTED("O", "OIDC");
-    DUMP_NOT_IMPLEMENTED("P", "Notify");
+    DUMP_CONFIG_SECTION("L", "Mail Relay",  mail_relay,  dump_mailrelay_config);
+    DUMP_CONFIG_SECTION("M", "Print",       print,       dump_print_config);
+    DUMP_CONFIG_SECTION("N", "Resources",   resources,   dump_resources_config);
+    DUMP_CONFIG_SECTION("O", "OIDC",        oidc,        dump_oidc_config);
+    DUMP_CONFIG_SECTION("P", "Notify",      notify,      dump_notify_config);
 
     #undef DUMP_CONFIG_SECTION
     #undef DUMP_NOT_IMPLEMENTED
@@ -454,11 +442,11 @@ static void clean_app_config(AppConfig* config) {
     cleanup_terminal_config(&config->terminal);        // I. Terminal Configuration
     cleanup_mdns_server_config(&config->mdns_server);  // J. mDNS Server Configuration
     cleanup_mdns_client_config(&config->mdns_client);  // K. mDNS Client Configuration
-    // cleanup_mailrelay_config(&config->mail_relay);     // L. Mail Relay Configuration
-    // cleanup_print_config(&config->print);              // M. Print Configuration
-    // cleanup_resources_config(&config->resources);      // N. Resources Configuration
-    // cleanup_oidc_config(&config->oidc);               // O. OIDC Configuration
-    // cleanup_notify_config(&config->notify);           // P. Notify Configuration
+    cleanup_mailrelay_config(&config->mail_relay);     // L. Mail Relay Configuration
+    cleanup_print_config(&config->print);              // M. Print Configuration
+    cleanup_resources_config(&config->resources);      // N. Resources Configuration
+    cleanup_oidc_config(&config->oidc);                // O. OIDC Configuration
+    cleanup_notify_config(&config->notify);            // P. Notify Configuration
 
 }
 

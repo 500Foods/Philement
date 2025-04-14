@@ -59,19 +59,28 @@ LaunchReadiness get_network_readiness(void) {
     return cached_readiness;
 }
 
-// Register the network subsystem with the registry
+// Register the network subsystem with the registry (for readiness)
 static void register_network(void) {
-    // Only register if not already registered
     if (network_subsystem_id < 0) {
-        network_subsystem_id = register_subsystem_from_launch("Network", NULL, NULL, NULL,
-                                                            (int (*)(void))launch_network_subsystem,
-                                                            (void (*)(void))shutdown_network_subsystem);
+        network_subsystem_id = register_subsystem("Network", NULL, NULL, NULL, NULL, NULL);
     }
 }
+
 // Network subsystem launch function
 int launch_network_subsystem(void) {
     log_this("Network", LOG_LINE_BREAK, LOG_LEVEL_STATE);
     log_this("Network", "LAUNCH: NETWORK", LOG_LEVEL_STATE);
+    
+    // Register with launch handlers if not already registered
+    if (network_subsystem_id < 0) {
+        network_subsystem_id = register_subsystem_from_launch("Network", NULL, NULL, NULL,
+                                                            (int (*)(void))launch_network_subsystem,
+                                                            (void (*)(void))shutdown_network_subsystem);
+        if (network_subsystem_id < 0) {
+            log_this("Network", "Failed to register network subsystem", LOG_LEVEL_ERROR);
+            return 0;
+        }
+    }
     
     // Step 1: Verify system state
     if (server_stopping) {
@@ -205,51 +214,49 @@ LaunchReadiness check_network_launch_readiness(void) {
     }
     int msg_count = 0;
     
+    // Always set the subsystem name
+    readiness.subsystem = "Network";
+    
     // Add the subsystem name as the first message
     add_message(readiness.messages, &msg_count, strdup("Network"));
     
     // Register with registry if not already registered
     register_network();
+    add_go_message(readiness.messages, &msg_count, "Go", "Network subsystem registered");
     
-    // Register dependency on Threads subsystem
-    if (network_subsystem_id >= 0) {
-        if (!add_dependency_from_launch(network_subsystem_id, "Threads")) {
-            add_go_message(readiness.messages, &msg_count, "No-Go", "Failed to register Thread dependency");
-            readiness.messages[msg_count] = NULL;
-            readiness.ready = false;
-            readiness.subsystem = "Network";
-            free_readiness_messages(&readiness);
-            return readiness;
-        }
-        add_go_message(readiness.messages, &msg_count, "Go", "Thread dependency registered");
-    }
-    
-    // Early return cases with cleanup
-    if (server_stopping || web_server_shutdown) {
-        add_go_message(readiness.messages, &msg_count, "No-Go", "System shutdown in progress");
+    // Register Thread dependency - we only need to verify it's ready for launch
+    if (!add_dependency_from_launch(network_subsystem_id, "Threads")) {
+        add_go_message(readiness.messages, &msg_count, "No-Go", "Failed to register Thread dependency");
+        add_decision_message(readiness.messages, &msg_count, "No-Go For Launch of Network Subsystem (dependency registration failed)");
         readiness.messages[msg_count] = NULL;
         readiness.ready = false;
-        readiness.subsystem = "Network";
-        free_readiness_messages(&readiness);
+        return readiness;
+    }
+    add_go_message(readiness.messages, &msg_count, "Go", "Thread dependency registered");
+    
+    // Early return cases
+    if (server_stopping || web_server_shutdown) {
+        add_go_message(readiness.messages, &msg_count, "No-Go", "System shutdown in progress");
+        add_decision_message(readiness.messages, &msg_count, "No-Go For Launch of Network Subsystem (system shutdown)");
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
         return readiness;
     }
     
     if (!server_starting && !server_running) {
         add_go_message(readiness.messages, &msg_count, "No-Go", "System not in startup or running state");
+        add_decision_message(readiness.messages, &msg_count, "No-Go For Launch of Network Subsystem (invalid system state)");
         readiness.messages[msg_count] = NULL;
         readiness.ready = false;
-        readiness.subsystem = "Network";
-        free_readiness_messages(&readiness);
         return readiness;
     }
     
     const AppConfig* app_config = get_app_config();
     if (!app_config) {
         add_go_message(readiness.messages, &msg_count, "No-Go", "Configuration not loaded");
+        add_decision_message(readiness.messages, &msg_count, "No-Go For Launch of Network Subsystem (no configuration)");
         readiness.messages[msg_count] = NULL;
         readiness.ready = false;
-        readiness.subsystem = "Network";
-        free_readiness_messages(&readiness);
         return readiness;
     }
 
@@ -264,8 +271,6 @@ LaunchReadiness check_network_launch_readiness(void) {
             app_config->network.max_interfaces, limits->min_interfaces, limits->max_interfaces);
         readiness.messages[msg_count] = NULL;
         readiness.ready = false;
-        readiness.subsystem = "Network";
-        free_readiness_messages(&readiness);
         return readiness;
     }
 
@@ -276,8 +281,6 @@ LaunchReadiness check_network_launch_readiness(void) {
             app_config->network.max_ips_per_interface, limits->min_ips_per_interface, limits->max_ips_per_interface);
         readiness.messages[msg_count] = NULL;
         readiness.ready = false;
-        readiness.subsystem = "Network";
-        free_readiness_messages(&readiness);
         return readiness;
     }
 
@@ -289,8 +292,6 @@ LaunchReadiness check_network_launch_readiness(void) {
             app_config->network.max_interface_name_length, limits->min_interface_name_length, limits->max_interface_name_length);
         readiness.messages[msg_count] = NULL;
         readiness.ready = false;
-        readiness.subsystem = "Network";
-        free_readiness_messages(&readiness);
         return readiness;
     }
 
@@ -301,8 +302,6 @@ LaunchReadiness check_network_launch_readiness(void) {
             app_config->network.max_ip_address_length, limits->min_ip_address_length, limits->max_ip_address_length);
         readiness.messages[msg_count] = NULL;
         readiness.ready = false;
-        readiness.subsystem = "Network";
-        free_readiness_messages(&readiness);
         return readiness;
     }
 
@@ -317,8 +316,6 @@ LaunchReadiness check_network_launch_readiness(void) {
             app_config->network.start_port, app_config->network.end_port, limits->min_port, limits->max_port);
         readiness.messages[msg_count] = NULL;
         readiness.ready = false;
-        readiness.subsystem = "Network";
-        free_readiness_messages(&readiness);
         return readiness;
     }
 
@@ -327,8 +324,6 @@ LaunchReadiness check_network_launch_readiness(void) {
         add_go_message(readiness.messages, &msg_count, "No-Go", "Reserved ports array is NULL but count > 0");
         readiness.messages[msg_count] = NULL;
         readiness.ready = false;
-        readiness.subsystem = "Network";
-        free_readiness_messages(&readiness);
         return readiness;
     }
 
@@ -339,8 +334,6 @@ LaunchReadiness check_network_launch_readiness(void) {
         add_go_message(readiness.messages, &msg_count, "No-Go", "Failed to get network information");
         readiness.messages[msg_count] = NULL;
         readiness.ready = false;
-        readiness.subsystem = "Network";
-        free_readiness_messages(&readiness);
         return readiness;
     }
     
@@ -349,23 +342,30 @@ LaunchReadiness check_network_launch_readiness(void) {
         free_network_info(network_info);
         readiness.messages[msg_count] = NULL;
         readiness.ready = false;
-        readiness.subsystem = "Network";
-        free_readiness_messages(&readiness);
         return readiness;
     }
     
     add_go_message(readiness.messages, &msg_count, "Go", "%d network interfaces available", network_info->count);
     
+    // Check for "all" interfaces configuration
+    bool all_interfaces_enabled = false;
+    if (app_config && app_config->network.available_interfaces && 
+        app_config->network.available_interfaces_count == 1 &&
+        app_config->network.available_interfaces[0].interface_name &&
+        strcmp(app_config->network.available_interfaces[0].interface_name, "all") == 0 &&
+        app_config->network.available_interfaces[0].available) {
+        all_interfaces_enabled = true;
+        add_go_message(readiness.messages, &msg_count, "Go", "All network interfaces enabled via config");
+    }
+    
+    // Check for specifically configured interfaces if not using "all"
     int json_interfaces_count = 0;
-    if (app_config && app_config->network.available_interfaces && app_config->network.available_interfaces_count > 0) {
+    if (!all_interfaces_enabled && app_config && app_config->network.available_interfaces &&
+        app_config->network.available_interfaces_count > 0) {
         json_interfaces_count = app_config->network.available_interfaces_count;
+        add_go_message(readiness.messages, &msg_count, "Go", "%d network interfaces configured:", json_interfaces_count);
         
-        if (json_interfaces_count > 0) {
-            add_go_message(readiness.messages, &msg_count, "Go", "%d network interfaces configured:", json_interfaces_count);
-        } else {
-            add_go_message(readiness.messages, &msg_count, "No-Go", "No network interfaces found in JSON configuration");
-        }
-        
+        // List specifically configured interfaces
         for (size_t i = 0; i < app_config->network.available_interfaces_count; i++) {
             if (app_config->network.available_interfaces[i].interface_name) {
                 const char* interface_name = app_config->network.available_interfaces[i].interface_name;
@@ -378,20 +378,29 @@ LaunchReadiness check_network_launch_readiness(void) {
                 }
             }
         }
-    } else {
-        add_go_message(readiness.messages, &msg_count, "No-Go", "No network interfaces found in JSON configuration");
+    } else if (!all_interfaces_enabled) {
+        add_go_message(readiness.messages, &msg_count, "Go", "No specific interfaces configured - using defaults");
     }
     
+    // Check each interface's status
     int up_interfaces = 0;
     for (int i = 0; i < network_info->count; i++) {
         interface_t* interface = &network_info->interfaces[i];
         bool is_up = interface->ip_count > 0;
-        bool is_available = true;
-        bool is_configured = is_interface_configured(app_config, interface->name, &is_available);
+        bool is_available = all_interfaces_enabled; // If all interfaces enabled, start with true
         
-        const char* config_status = is_configured ? 
-            (is_available ? "enabled in config" : "disabled in config") :
-            "not in config - enabled by default";
+        // If not all interfaces enabled, check specific configuration
+        if (!all_interfaces_enabled) {
+            bool is_configured = is_interface_configured(app_config, interface->name, &is_available);
+            if (!is_configured) {
+                is_available = true; // Not configured means enabled by default
+            }
+        }
+        
+        const char* config_status = all_interfaces_enabled ? "enabled via all:true" :
+            (is_interface_configured(app_config, interface->name, NULL) ? 
+                (is_available ? "enabled in config" : "disabled in config") :
+                "not in config - enabled by default");
         
         if (is_up) {
             if (is_available) {

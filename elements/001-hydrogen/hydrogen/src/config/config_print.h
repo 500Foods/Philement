@@ -1,7 +1,7 @@
 /*
  * Print Configuration
  *
- * Defines the main configuration structure for the print subsystem.
+ * Defines the configuration structure for the print subsystem.
  * This coordinates all print-related configuration components:
  * - Print queue management
  * - Priority settings
@@ -17,21 +17,39 @@
 #include <stdbool.h>
 #include <jansson.h>
 #include "config_forward.h"
-#include "print/config_print_priorities.h"
-#include "print/config_print_timeouts.h"
-#include "print/config_print_buffers.h"
-#include "print/config_print_motion.h"
 
-// Default values
-#define DEFAULT_PRINT_ENABLED true
-#define DEFAULT_MAX_QUEUED_JOBS 100
-#define DEFAULT_MAX_CONCURRENT_JOBS 4
+// Print queue priorities configuration
+typedef struct PrintQueuePrioritiesConfig {
+    int default_priority;     // Priority for normal print jobs
+    int emergency_priority;   // Priority for emergency jobs
+    int maintenance_priority; // Priority for maintenance tasks
+    int system_priority;      // Priority for system operations
+} PrintQueuePrioritiesConfig;
 
-// Validation limits
-#define MIN_QUEUED_JOBS 1
-#define MAX_QUEUED_JOBS 1000
-#define MIN_CONCURRENT_JOBS 1
-#define MAX_CONCURRENT_JOBS 16
+// Print queue timeouts configuration
+typedef struct PrintQueueTimeoutsConfig {
+    size_t shutdown_wait_ms;          // Time to wait for queue drain on shutdown
+    size_t job_processing_timeout_ms;  // Maximum time for job processing
+} PrintQueueTimeoutsConfig;
+
+// Print queue buffer configuration
+typedef struct PrintQueueBuffersConfig {
+    size_t job_message_size;     // Maximum size of job messages
+    size_t status_message_size;  // Maximum size of status messages
+} PrintQueueBuffersConfig;
+
+// Motion control configuration
+typedef struct MotionConfig {
+    double max_speed;         // Maximum movement speed
+    double max_speed_xy;      // Maximum XY movement speed
+    double max_speed_z;       // Maximum Z movement speed
+    double max_speed_travel;  // Maximum travel speed
+    double acceleration;      // Movement acceleration
+    double z_acceleration;    // Z axis acceleration
+    double e_acceleration;    // Extruder acceleration
+    double jerk;             // Maximum jerk (rate of acceleration change)
+    bool smooth_moves;        // Whether to use acceleration smoothing
+} MotionConfig;
 
 // Print configuration structure
 typedef struct PrintConfig {
@@ -60,22 +78,7 @@ typedef struct PrintConfig {
 bool load_print_config(json_t* root, AppConfig* config);
 
 /*
- * Initialize print configuration with default values
- *
- * This function initializes a new PrintConfig structure and all its
- * subsystem configurations with default values.
- *
- * @param config Pointer to PrintConfig structure to initialize
- * @return 0 on success, -1 on failure
- *
- * Error conditions:
- * - If config is NULL
- * - If any subsystem initialization fails
- */
-int config_print_init(PrintConfig* config);
-
-/*
- * Free resources allocated for print configuration
+ * Clean up print configuration
  *
  * This function cleans up the main print configuration and all its
  * subsystem configurations. It safely handles NULL pointers and partial
@@ -83,25 +86,16 @@ int config_print_init(PrintConfig* config);
  *
  * @param config Pointer to PrintConfig structure to cleanup
  */
-void config_print_cleanup(PrintConfig* config);
+void cleanup_print_config(PrintConfig* config);
 
 /*
- * Validate print configuration values
+ * Dump print configuration for debugging
  *
- * This function performs comprehensive validation of all print settings:
- * - Validates core settings (enabled flag, job limits)
- * - Validates all subsystem configurations
- * - Ensures consistency between subsystem settings
+ * This function outputs the current state of the print configuration
+ * and all its subsystems in a structured format.
  *
- * @param config Pointer to PrintConfig structure to validate
- * @return 0 if valid, -1 if invalid
- *
- * Error conditions:
- * - If config is NULL
- * - If enabled but required settings are missing
- * - If any subsystem validation fails
- * - If settings are inconsistent across subsystems
+ * @param config Pointer to PrintConfig structure to dump
  */
-int config_print_validate(const PrintConfig* config);
+void dump_print_config(const PrintConfig* config);
 
 #endif /* HYDROGEN_CONFIG_PRINT_H */

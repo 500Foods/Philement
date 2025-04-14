@@ -368,6 +368,22 @@ static void test_crash_handler(int sig) {
 }
 
 /**
+ * @brief Signal handler to dump current configuration
+ *
+ * This function is triggered by SIGUSR2 and dumps the current application
+ * configuration to the log. It provides a way to inspect the running
+ * configuration without restarting the server.
+ *
+ * @param sig Signal number (unused, but required for signal handler signature)
+ */
+static void config_dump_handler(int sig) {
+    (void)sig;
+    log_this("Config", "Received SIGUSR2, dumping current configuration", LOG_LEVEL_STATE);
+    const AppConfig* config = get_app_config();
+    dumpAppConfig(config, NULL);
+}
+
+/**
  * @brief Main entry point for the Hydrogen server
  *
  * Initializes the server in the following order:
@@ -434,7 +450,7 @@ int main(int argc, char *argv[]) {
          return 1;
      }
 
-     /* 3. Test signal handler (SIGUSR1)
+     /* 3. Test crash signal handler (SIGUSR1)
       *    - Used for development/testing of crash handler
       *    - Triggers a controlled crash via null pointer dereference
       *    - SA_RESTART: Automatically restart interrupted system calls
@@ -445,6 +461,19 @@ int main(int argc, char *argv[]) {
      sa_test.sa_flags = SA_RESTART;
      if (sigaction(SIGUSR1, &sa_test, NULL) == -1) {
          log_this("Main", "Failed to set test crash signal handler: %s", LOG_LEVEL_ERROR, strerror(errno));
+     }
+
+     /* 4. Config dump signal handler (SIGUSR2)
+      *    - Used to dump current configuration to logs
+      *    - Provides runtime inspection of configuration
+      *    - SA_RESTART: Automatically restart interrupted system calls
+      */
+     struct sigaction sa_dump;
+     sa_dump.sa_handler = config_dump_handler;
+     sigemptyset(&sa_dump.sa_mask);
+     sa_dump.sa_flags = SA_RESTART;
+     if (sigaction(SIGUSR2, &sa_dump, NULL) == -1) {
+         log_this("Main", "Failed to set config dump signal handler: %s", LOG_LEVEL_ERROR, strerror(errno));
      }
 
      char* config_path = (argc > 1) ? argv[1] : NULL;

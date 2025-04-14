@@ -13,8 +13,7 @@
 
 #include <stddef.h>
 
-#include "../config/config_forward.h"  // For AppConfig forward declaration
-#include "../config/types/config_queue_constants.h"  // Queue-related constants
+#include "../config/config.h"  // For AppConfig and queue constants
 
 // Early initialization limits - subset of full configuration
 #define EARLY_MAX_QUEUE_BLOCKS MIN_QUEUE_BLOCKS  // Use minimum from config

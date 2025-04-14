@@ -2,8 +2,14 @@
  * OpenID Connect (OIDC) Configuration
  *
  * Defines the configuration structure and defaults for OIDC integration.
- * This includes settings for identity providers, client credentials,
- * and endpoint configurations.
+ * This includes settings for:
+ * - Identity providers and client credentials
+ * - Endpoint configurations and URLs
+ * - Key management and security settings
+ * - Token lifetimes and algorithms
+ * 
+ * All validation has been moved to launch readiness checks.
+ * Default values are set in code rather than #defines.
  */
 
 #ifndef CONFIG_OIDC_H
@@ -12,13 +18,6 @@
 #include <stdbool.h>
 #include <jansson.h>
 #include "config_forward.h"  // For AppConfig forward declaration
-
-// Default values
-#define DEFAULT_OIDC_ENABLED true
-#define DEFAULT_OIDC_PORT 8443
-#define DEFAULT_TOKEN_EXPIRY 3600        // 1 hour in seconds
-#define DEFAULT_REFRESH_EXPIRY 86400     // 24 hours in seconds
-#define DEFAULT_AUTH_METHOD "client_secret_basic"
 
 // OIDC endpoints configuration
 typedef struct OIDCEndpointsConfig {
@@ -47,8 +46,8 @@ typedef struct OIDCTokensConfig {
     int access_token_lifetime;  // Access token lifetime (seconds)
     int refresh_token_lifetime; // Refresh token lifetime (seconds)
     int id_token_lifetime;      // ID token lifetime (seconds)
-    char* signing_alg;          // Token signing algorithm
-    char* encryption_alg;       // Token encryption algorithm
+    char* signing_alg;          // Token signing algorithm (e.g., RS256)
+    char* encryption_alg;       // Token encryption algorithm (e.g., A256GCM)
 } OIDCTokensConfig;
 
 // Main OIDC configuration structure
@@ -72,54 +71,35 @@ typedef struct OIDCConfig {
 /*
  * Load OIDC configuration from JSON
  *
- * This function loads and validates the OIDC configuration from JSON.
- * It handles:
- * - Core OIDC settings
- * - Endpoint configurations
- * - Key management settings
- * - Token configurations
- * - Environment variable overrides
- * - Default values
+ * This function loads the OIDC configuration from the provided JSON root,
+ * applying any environment variable overrides and using secure defaults
+ * where values are not specified.
  *
- * @param root The JSON root object containing configuration
- * @param config The application configuration structure to populate
- * @return true on success, false on failure
+ * @param root JSON root object containing configuration
+ * @param config Pointer to AppConfig structure to update
+ * @return true if successful, false on error
  */
 bool load_oidc_config(json_t* root, AppConfig* config);
 
 /*
- * Initialize OIDC configuration with default values
+ * Clean up OIDC configuration
  *
- * This function initializes a new OIDCConfig structure with secure
- * defaults suitable for most deployments.
- *
- * @param config Pointer to OIDCConfig structure to initialize
- * @return 0 on success, -1 on failure
- */
-int config_oidc_init(OIDCConfig* config);
-
-/*
- * Free resources allocated for OIDC configuration
- *
- * This function cleans up any resources allocated during initialization
- * or configuration loading.
+ * This function cleans up the OIDC configuration and all its
+ * sub-configurations. It safely handles NULL pointers and partial
+ * initialization.
  *
  * @param config Pointer to OIDCConfig structure to cleanup
  */
-void config_oidc_cleanup(OIDCConfig* config);
+void cleanup_oidc_config(OIDCConfig* config);
 
 /*
- * Validate OIDC configuration values
+ * Dump OIDC configuration for debugging
  *
- * This function performs comprehensive validation of the configuration:
- * - Verifies required fields are present
- * - Validates URLs and endpoints
- * - Checks token expiry times
- * - Ensures auth method is supported
+ * This function outputs the current state of the OIDC configuration
+ * and all its sub-configurations in a structured format.
  *
- * @param config Pointer to OIDCConfig structure to validate
- * @return 0 if valid, -1 if invalid
+ * @param config Pointer to OIDCConfig structure to dump
  */
-int config_oidc_validate(const OIDCConfig* config);
+void dump_oidc_config(const OIDCConfig* config);
 
 #endif /* CONFIG_OIDC_H */

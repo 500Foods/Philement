@@ -39,6 +39,9 @@ Each subsystem's launch process is documented separately:
 | Mail Relay | Email services | [Coming Soon] |
 | Print Queue | Print job management | [Coming Soon] |
 | Swagger | API documentation | [Coming Soon] |
+| Resources | Resource management | [Coming Soon] |
+| OIDC | OpenID Connect services | [Coming Soon] |
+| Notify | Notification services | [Coming Soon] |
 
 Each subsystem's documentation details:
 
@@ -408,6 +411,9 @@ The launch system follows a specific order to ensure proper initialization:
    - mDNS Server/Client (depends on Network)
    - Mail Relay (depends on Network)
    - Print Queue (depends on Logging)
+   - Resources (depends on Logging)
+   - OIDC (depends on WebServer, Database)
+   - Notify (depends on SMTP, Logging)
 
 ### Launch Status Tracking
 
@@ -456,6 +462,9 @@ Each subsystem has its own launch readiness check implementation. The currently 
 | WebServer | `check_webserver_launch_readiness()` | `src/config/launch/webserver.c` |
 | WebSocket | `check_websocket_launch_readiness()` | `src/config/launch/websocket.c` |
 | Print Queue | `check_print_launch_readiness()` | `src/config/launch/print.c` |
+| Resources | `check_resources_launch_readiness()` | `src/config/launch/resources.c` |
+| OIDC | `check_oidc_launch_readiness()` | `src/config/launch/oidc.c` |
+| Notify | `check_notify_launch_readiness()` | `src/config/launch/notify.c` |
 
 ## Example: Launch Readiness Check
 

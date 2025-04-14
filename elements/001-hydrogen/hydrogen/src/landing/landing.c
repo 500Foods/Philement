@@ -327,11 +327,11 @@ bool check_all_landing_readiness(void) {
         return true;
     } else {
         
-        // Clean up application config after logging is complete
-        cleanup_application_config();
-
         // Log completion message before cleanup
         log_this("Shutdown", "Shutdown complete", LOG_LEVEL_STATE);
+        
+        // Clean up application config after all logging is complete
+        cleanup_application_config();
                
         exit(0);  // Exit process after clean shutdown
     }

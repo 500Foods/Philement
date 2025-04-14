@@ -23,7 +23,7 @@
 #include <net/if.h> 
 #include <poll.h>
 
-#include "../config/security/keys.h"
+#include "keys.h"
 #include "mdns_server.h"
 #include "../utils/utils.h"
 #include "../logging/logging.h"

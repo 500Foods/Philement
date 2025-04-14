@@ -20,7 +20,7 @@
 #include "payload.h"
 #include "../logging/logging.h"
 #include "../config/config.h"
-#include "../config/files/config_filesystem.h"
+#include "../config/config_utils.h"  // For filesystem operations
 
 // Static function declarations
 static bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size,

@@ -12,12 +12,6 @@
 #include <jansson.h>
 #include "config_forward.h"
 
-// Default values
-#define DEFAULT_SMTP_PORT 587
-#define DEFAULT_SMTP_TLS true
-#define DEFAULT_SMTP_TIMEOUT 30
-#define DEFAULT_SMTP_MAX_RETRIES 3
-
 // SMTP configuration structure
 typedef struct SMTPConfig {
     char* host;           // SMTP server hostname
@@ -51,46 +45,23 @@ typedef struct NotifyConfig {
 bool load_notify_config(json_t* root, AppConfig* config);
 
 /*
- * Initialize notify configuration with default values
+ * Dump notification configuration
  *
- * This function initializes a new NotifyConfig structure with
- * default values that provide a secure baseline configuration.
+ * This function dumps the current state of the notification configuration
+ * for debugging purposes.
  *
- * @param config Pointer to NotifyConfig structure to initialize
- * @return 0 on success, -1 on failure
- *
- * Error conditions:
- * - If config is NULL
- * - If memory allocation fails
+ * @param config Pointer to NotifyConfig structure to dump
  */
-int config_notify_init(NotifyConfig* config);
+void dump_notify_config(const NotifyConfig* config);
 
 /*
  * Free resources allocated for notify configuration
  *
- * This function frees all resources allocated by config_notify_init.
+ * This function frees all resources allocated during configuration loading.
  * It safely handles NULL pointers and partial initialization.
  *
  * @param config Pointer to NotifyConfig structure to cleanup
  */
-void config_notify_cleanup(NotifyConfig* config);
-
-/*
- * Validate notify configuration values
- *
- * This function performs validation of the configuration:
- * - Verifies enabled status
- * - Validates notifier type
- * - Checks SMTP configuration if enabled
- *
- * @param config Pointer to NotifyConfig structure to validate
- * @return 0 if valid, -1 if invalid
- *
- * Error conditions:
- * - If config is NULL
- * - If notifier type is invalid
- * - If SMTP configuration is invalid when enabled
- */
-int config_notify_validate(const NotifyConfig* config);
+void cleanup_notify_config(NotifyConfig* config);
 
 #endif /* HYDROGEN_CONFIG_NOTIFY_H */

@@ -44,7 +44,10 @@
  * - 13. mDNS Client
  * - 14. Mail Relay
  * - 15. Print
- */
+ * - 16. Resources
+ * - 17. OIDC
+ * - 18. Notify
+  #*/
 
 // System includes
 #include <stdbool.h>
@@ -68,8 +71,8 @@
 #include "../status/status.h"
 #include "../status/status_process.h"
 #include "../utils/utils_dependency.h"
-#include "../config/files/config_filesystem.h"
 #include "../config/config.h"
+#include "../config/config_utils.h"  // For filesystem operations
 #include "../queue/queue.h"
 #include "../registry/registry.h"
 #include "../registry/registry_integration.h"
@@ -90,6 +93,9 @@
 #include "launch_mdns_client.h"
 #include "launch_mail_relay.h"
 #include "launch_print.h"
+#include "launch_resources.h"
+#include "launch_oidc.h"
+#include "launch_notify.h"
 
 // External declarations for subsystem launch functions (in standard order)
 extern int launch_registry_subsystem(bool is_restart);     // from launch_registry.c
@@ -107,6 +113,9 @@ extern int launch_mdns_server_subsystem(void);  // from launch_mdns_server.c
 extern int launch_mdns_client_subsystem(void);  // from launch_mdns_client.c
 extern int launch_mail_relay_subsystem(void);   // from launch_mail_relay.c
 extern int launch_print_subsystem(void);        // from launch_print.c
+extern int launch_resources_subsystem(void);    // from launch_resources.c
+extern int launch_oidc_subsystem(void);         // from launch_oidc.c
+extern int launch_notify_subsystem(void);       // from launch_notify.c
 
 // External declarations from config.h
 extern AppConfig* app_config;
@@ -221,6 +230,12 @@ static bool launch_approved_subsystems(ReadinessResults* results) {
             init_ok = (launch_mail_relay_subsystem() == 1);
         } else if (strcmp(subsystem, "Print") == 0) {
             init_ok = (launch_print_subsystem() == 1);
+        } else if (strcmp(subsystem, "Resources") == 0) {
+            init_ok = (launch_resources_subsystem() == 1);
+        } else if (strcmp(subsystem, "OIDC") == 0) {
+            init_ok = (launch_oidc_subsystem() == 1);
+        } else if (strcmp(subsystem, "Notify") == 0) {
+            init_ok = (launch_notify_subsystem() == 1);
         }
         
         // Update registry state based on result

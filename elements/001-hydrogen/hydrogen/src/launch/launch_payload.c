@@ -24,7 +24,7 @@
  #include "launch_payload.h"
  #include "../logging/logging.h"
  #include "../config/config.h"
- #include "../config/files/config_filesystem.h"
+ #include "../config/config_utils.h"  // For filesystem operations
  #include "../registry/registry_integration.h"
  #include "../payload/payload.h"
  #include "../utils/utils.h"

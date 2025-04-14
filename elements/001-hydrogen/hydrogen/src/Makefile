@@ -257,8 +257,8 @@ $(RELEASE_TARGET): $(RELEASE_DIR)/libhydrogen.a
 # Debug build with AddressSanitizer
 # Enables memory error detection and stack trace reporting
 debug: BUILD_TYPE = Debug
-debug: CFLAGS += -fsanitize=address -fno-omit-frame-pointer
-debug: LDFLAGS = -lasan -Wl,-Map=$(DEBUG_MAP_FILE) -Wl,--gc-sections -fsanitize=address $(BASE_LDFLAGS)
+debug: CFLAGS += -fsanitize=address,leak -fno-omit-frame-pointer
+debug: LDFLAGS = -lasan -Wl,-Map=$(DEBUG_MAP_FILE) -Wl,--gc-sections -fsanitize=address,leak $(BASE_LDFLAGS)
 debug: $(DEBUG_TARGET)
 	@printf "$(GREEN)$(PASS) $(BOLD)Debug build$(NORMAL) $(GREEN)with AddressSanitizer completed successfully$(NORMAL)\n"
 
