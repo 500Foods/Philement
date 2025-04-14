@@ -27,7 +27,7 @@
 
 // External declarations for thread tracking
 extern ServiceThreads logging_threads;
-extern ServiceThreads web_threads;
+extern ServiceThreads webserver_threads;
 extern ServiceThreads websocket_threads;
 extern ServiceThreads mdns_server_threads;
 extern ServiceThreads print_threads;
@@ -172,7 +172,7 @@ int launch_threads_subsystem(void) {
     // Step 2: Initialize thread tracking structures
     log_this("Threads", "  Step 1: Initializing thread tracking structures", LOG_LEVEL_STATE);
     init_service_threads(&logging_threads);
-    init_service_threads(&web_threads);
+    init_service_threads(&webserver_threads);
     init_service_threads(&websocket_threads);
     init_service_threads(&mdns_server_threads);
     init_service_threads(&print_threads);

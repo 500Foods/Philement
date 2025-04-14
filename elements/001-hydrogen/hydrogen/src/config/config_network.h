@@ -97,7 +97,7 @@ int config_network_init(NetworkConfig* config);
  *
  * @param config Pointer to NetworkConfig structure to cleanup
  */
-void config_network_cleanup(NetworkConfig* config);
+void cleanup_network_config(NetworkConfig* config);
 
 /*
  * Dump network configuration to logs

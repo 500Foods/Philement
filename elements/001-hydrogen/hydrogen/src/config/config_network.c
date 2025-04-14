@@ -91,7 +91,7 @@ bool load_network_config(json_t* root, AppConfig* config) {
     // Process network configuration
     success = PROCESS_SECTION(root, "Network");
     if (!success) {
-        config_network_cleanup(&config->network);
+        cleanup_network_config(&config->network);
         return false;
     }
 
@@ -155,7 +155,7 @@ bool load_network_config(json_t* root, AppConfig* config) {
             if (!config->network.available_interfaces) {
                 free(interface_names);
                 log_this("Config-Network", "Failed to allocate interface array", LOG_LEVEL_ERROR);
-                config_network_cleanup(&config->network);
+                cleanup_network_config(&config->network);
                 return false;
             }
 
@@ -170,7 +170,7 @@ bool load_network_config(json_t* root, AppConfig* config) {
                 if (!config->network.available_interfaces[i].interface_name) {
                     free(interface_names);
                     log_this("Config-Network", "Failed to allocate interface name", LOG_LEVEL_ERROR);
-                    config_network_cleanup(&config->network);
+                    cleanup_network_config(&config->network);
                     return false;
                 }
                 config->network.available_interfaces[i].available = is_enabled;
@@ -192,14 +192,14 @@ bool load_network_config(json_t* root, AppConfig* config) {
             config->network.available_interfaces = malloc(sizeof(*config->network.available_interfaces));
             if (!config->network.available_interfaces) {
                 log_this("Config-Network", "Failed to allocate interface array", LOG_LEVEL_ERROR);
-                config_network_cleanup(&config->network);
+                cleanup_network_config(&config->network);
                 return false;
             }
 
             config->network.available_interfaces[0].interface_name = strdup("all");
             if (!config->network.available_interfaces[0].interface_name) {
                 log_this("Config-Network", "Failed to allocate interface name", LOG_LEVEL_ERROR);
-                config_network_cleanup(&config->network);
+                cleanup_network_config(&config->network);
                 return false;
             }
             config->network.available_interfaces[0].available = true;
@@ -211,7 +211,7 @@ bool load_network_config(json_t* root, AppConfig* config) {
         }
 
     if (!success) {
-        config_network_cleanup(&config->network);
+        cleanup_network_config(&config->network);
         return false;
     }
 
@@ -286,7 +286,7 @@ void dump_network_config(const NetworkConfig* config) {
 }
 
 // Free resources allocated for network configuration
-void config_network_cleanup(NetworkConfig* config) {
+void cleanup_network_config(NetworkConfig* config) {
     if (!config) {
         return;
     }

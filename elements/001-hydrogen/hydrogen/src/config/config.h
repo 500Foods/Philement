@@ -83,7 +83,7 @@ struct AppConfig {
     NetworkConfig network;         // B. Network configuration
     DatabaseConfig databases;      // C. Database configuration
     LoggingConfig logging;         // D. Logging configuration
-    WebServerConfig web;           // E. WebServer configuration
+    WebServerConfig webserver;     // E. WebServer configuration
     APIConfig api;                 // F. API configuration
     SwaggerConfig* swagger;        // G. Swagger configuration
     WebSocketConfig websocket;     // H. WebSocket configuration

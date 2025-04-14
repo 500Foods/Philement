@@ -80,8 +80,8 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
 
     // Register connection thread if this is a new request
     if (*con_cls == NULL) {
-        extern ServiceThreads web_threads;
-        add_service_thread(&web_threads, pthread_self());
+        extern ServiceThreads webserver_threads;
+        add_service_thread(&webserver_threads, pthread_self());
         char msg[128];
         snprintf(msg, sizeof(msg), "New connection thread for %s %s", method, url);
         log_this("WebServer", msg, LOG_LEVEL_STATE);
@@ -148,7 +148,7 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
 
         // Try to serve a static file
         char file_path[PATH_MAX];
-        snprintf(file_path, sizeof(file_path), "%s%s", app_config->web.web_root, url);
+        snprintf(file_path, sizeof(file_path), "%s%s", app_config->webserver.web_root, url);
 
         // If the URL ends with a /, append index.html
         if (url[strlen(url) - 1] == '/') {
@@ -212,7 +212,7 @@ void request_completed(void *cls, struct MHD_Connection *connection,
     *con_cls = NULL;
 
     // Remove connection thread from tracking after cleanup
-    extern ServiceThreads web_threads;
-    remove_service_thread(&web_threads, pthread_self());
+    extern ServiceThreads webserver_threads;
+    remove_service_thread(&webserver_threads, pthread_self());
     log_this("WebServer", "Connection thread completed", LOG_LEVEL_STATE);
 }

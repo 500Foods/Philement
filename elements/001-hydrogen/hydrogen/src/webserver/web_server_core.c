@@ -43,7 +43,7 @@ static size_t endpoint_count = 0;
 static pthread_mutex_t endpoint_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // Global server state
-struct MHD_Daemon *web_daemon = NULL;
+struct MHD_Daemon *webserver_daemon = NULL;
 WebServerConfig *server_web_config = NULL;
 
 // Endpoint registration functions
@@ -190,7 +190,7 @@ bool init_web_server(WebServerConfig *web_config) {
     }
 
     // Check if we're already initialized
-    if (web_daemon != NULL) {
+    if (webserver_daemon != NULL) {
         log_this("WebServer", "Web server already initialized", LOG_LEVEL_ALERT);
         return false;
     }
@@ -271,7 +271,7 @@ void* run_web_server(void* arg) {
     }
 
     // Check if we already have a daemon running
-    if (web_daemon != NULL) {
+    if (webserver_daemon != NULL) {
         log_this("WebServer", "Web server daemon already exists", LOG_LEVEL_ALERT);
         return NULL;
     }
@@ -338,7 +338,7 @@ void* run_web_server(void* arg) {
     log_this("WebServer", "Connection timeout: %d seconds", LOG_LEVEL_STATE, server_web_config->connection_timeout);
     
     // Start the daemon with proper thread configuration
-    web_daemon = MHD_start_daemon(flags | MHD_USE_DEBUG | MHD_USE_ERROR_LOG,
+    webserver_daemon = MHD_start_daemon(flags | MHD_USE_DEBUG | MHD_USE_ERROR_LOG,
                                 server_web_config->port, 
                                 NULL, NULL,
                                 &handle_request, NULL,
@@ -350,7 +350,7 @@ void* run_web_server(void* arg) {
                                 MHD_OPTION_LISTENING_ADDRESS_REUSE, 1, // Enable SO_REUSEADDR for port rebinding
                                 MHD_OPTION_THREAD_STACK_SIZE, (1024 * 1024), // 1MB stack size
                                 MHD_OPTION_END);
-    if (web_daemon == NULL) {
+    if (webserver_daemon == NULL) {
         log_this("WebServer", "Failed to start web server daemon", LOG_LEVEL_ERROR);
         server_web_config = NULL;  // Reset config on failure
         log_this("WebServer", "Web server initialization failed", LOG_LEVEL_DEBUG);
@@ -358,19 +358,19 @@ void* run_web_server(void* arg) {
     }
 
     // Check if the web server is actually running
-    const union MHD_DaemonInfo *info = MHD_get_daemon_info(web_daemon, MHD_DAEMON_INFO_BIND_PORT);
+    const union MHD_DaemonInfo *info = MHD_get_daemon_info(webserver_daemon, MHD_DAEMON_INFO_BIND_PORT);
     if (info == NULL) {
         log_this("WebServer", "Failed to get daemon info", LOG_LEVEL_ERROR);
-        MHD_stop_daemon(web_daemon);
-        web_daemon = NULL;
+        MHD_stop_daemon(webserver_daemon);
+        webserver_daemon = NULL;
         return NULL;
     }
 
     unsigned int actual_port = info->port;
     if (actual_port == 0) {
         log_this("WebServer", "Web server failed to bind to the specified port", LOG_LEVEL_ERROR);
-        MHD_stop_daemon(web_daemon);
-        web_daemon = NULL;
+        MHD_stop_daemon(webserver_daemon);
+        webserver_daemon = NULL;
         return NULL;
     }
 
@@ -392,10 +392,10 @@ void shutdown_web_server(void) {
     log_this("WebServer", "Shutdown: Initiating web server shutdown", LOG_LEVEL_STATE);
     
     // Stop the web server daemon
-    if (web_daemon != NULL) {
+    if (webserver_daemon != NULL) {
         log_this("WebServer", "Stopping web server daemon", LOG_LEVEL_STATE);
-        MHD_stop_daemon(web_daemon);
-        web_daemon = NULL;
+        MHD_stop_daemon(webserver_daemon);
+        webserver_daemon = NULL;
         log_this("WebServer", "Web server daemon stopped", LOG_LEVEL_STATE);
     } else {
         log_this("WebServer", "Web server was not running", LOG_LEVEL_STATE);

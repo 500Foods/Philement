@@ -68,7 +68,7 @@ extern pthread_mutex_t terminate_mutex;
 
 // Thread tracking structures
 extern ServiceThreads logging_threads;
-extern ServiceThreads web_threads;
+extern ServiceThreads webserver_threads;
 extern ServiceThreads websocket_threads;
 extern ServiceThreads mdns_server_threads;
 extern ServiceThreads print_threads;
@@ -87,7 +87,7 @@ extern volatile sig_atomic_t print_queue_shutdown;
 
 // Queue Threads
 extern pthread_t log_thread;
-extern pthread_t web_thread;
+extern pthread_t webserver_thread;
 extern pthread_t websocket_thread;
 extern pthread_t mdns_server_thread;
 extern pthread_t print_queue_thread;

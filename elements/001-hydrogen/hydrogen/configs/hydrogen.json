@@ -66,7 +66,7 @@
             "vnet4": false
         }
     },
-    "SystemResources": {
+    "Resources": {
         "Queues": {
             "MaxQueueBlocks": 128,
             "QueueHashSize": 256,
@@ -79,7 +79,7 @@
             "LineBufferSize": 512
         }
     },
-    "SystemMonitoring": {
+    "Monitoring": {
         "Intervals": {
             "StatusUpdateMs": 1000,
             "ResourceCheckMs": 5000,
@@ -91,7 +91,7 @@
             "LoadAverageWarning": 5.0
         }
     },
-    "PrintQueue": {
+    "Print": {
         "Enabled": true,
         "QueueSettings": {
             "DefaultPriority": 1,
@@ -110,17 +110,17 @@
     },
     "Logging": {
         "Levels": [
-            [0, "TRACE"],
-            [1, "DEBUG"],
-            [2, "STATE"],
-            [3, "CHECK"],
-            [4, "ALERT"],
-            [5, "ERROR"],
-            [6, "FATAL"]
+            "TRACING",
+            "DEBUGGING",
+            "STATING",
+            "CHECKING",
+            "ALERTING",
+            "ERRORING",
+            "FATALITY"
         ],
         "Console": {
             "Enabled": true,
-            "DefaultLevel": 1,
+            "DefaultLevel": 0,
             "Subsystems": {
                 "API": 0,
                 "Beryllium": 0,
@@ -149,7 +149,7 @@
                 "mDNSServer": 6
             }
         },
-        "Databases": {
+        "Database": {
             "Enabled": false,
             "DefaultLevel": 4,
             "Subsystems": {

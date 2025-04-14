@@ -121,8 +121,8 @@ Example registration:
 ```c
 int id = register_subsystem(
     "WebServer",            // Subsystem name
-    &web_threads,           // Thread tracking structure
-    &web_thread,            // Main thread handle
+    &webserver_threads,           // Thread tracking structure
+    &webserver_thread,            // Main thread handle
     &web_server_shutdown,   // Shutdown flag
     init_webserver_subsystem, // Initialization function
     shutdown_web_server     // Shutdown function

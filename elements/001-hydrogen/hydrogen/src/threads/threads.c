@@ -28,7 +28,7 @@ ThreadMemoryMetrics get_thread_memory_metrics(ServiceThreads *threads, pthread_t
 
 // External declarations
 extern ServiceThreads logging_threads;
-extern ServiceThreads web_threads;
+extern ServiceThreads webserver_threads;
 extern ServiceThreads websocket_threads;
 extern ServiceThreads mdns_server_threads;
 extern ServiceThreads print_threads;
@@ -200,7 +200,7 @@ void report_thread_status(void) {
     
     // Report web threads
     log_this("Threads", "  Web Threads: %d active", LOG_LEVEL_STATE, 
-             web_threads.thread_count);
+             webserver_threads.thread_count);
     
     // Report websocket threads
     log_this("Threads", "  WebSocket Threads: %d active", LOG_LEVEL_STATE, 
@@ -216,7 +216,7 @@ void report_thread_status(void) {
     
     // Calculate total threads
     int total_threads = logging_threads.thread_count +
-                       web_threads.thread_count +
+                       webserver_threads.thread_count +
                        websocket_threads.thread_count +
                        mdns_server_threads.thread_count +
                        print_threads.thread_count;
@@ -237,7 +237,7 @@ void free_threads_resources(void) {
     init_service_threads(&logging_threads);
     
     // Clean up web threads
-    init_service_threads(&web_threads);
+    init_service_threads(&webserver_threads);
     
     // Clean up websocket threads
     init_service_threads(&websocket_threads);

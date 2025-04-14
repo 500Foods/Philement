@@ -54,7 +54,7 @@ bool load_server_config(json_t* root, AppConfig* config, const char* config_path
  *
  * @param config Pointer to ServerConfig structure to cleanup
  */
-void config_server_cleanup(ServerConfig* config);
+void cleanup_server_config(ServerConfig* config);
 
 /*
  * Dump server configuration to logs
