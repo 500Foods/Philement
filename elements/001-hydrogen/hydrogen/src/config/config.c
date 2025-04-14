@@ -82,7 +82,7 @@
 #include "config_terminal.h"             // I. Terminal
 #include "config_mdns_server.h"          // J. mDNS Server
 #include "config_mdns_client.h"          // K. mDNS Client
-#include "config_mail_relay.h"          // L. Mail Relay
+#include "config_mail_relay.h"           // L. Mail Relay
 #include "config_print.h"                // M. Print
 #include "config_resources.h"            // N. Resources
 #include "config_oidc.h"                 // O. OIDC
@@ -247,106 +247,43 @@ AppConfig* load_config(const char* cmdline_path) {
      * - Default values
      */
 
+    // Macro for server config (special case with extra parameter)
+    #define LOAD_SERVER_CONFIG(letter, name, func, path) \
+        if (!func(root, config, path)) { \
+            if (root) json_decref(root); \
+            return NULL; \
+        }
+
+    // Macro for standard config sections
+    #define LOAD_CONFIG(letter, name, func) \
+        if (!func(root, config)) { \
+            if (root) json_decref(root); \
+            return NULL; \
+        }
+
     // Load configurations in A-P order
-    
-    // A. Server Configuration
-    if (!load_server_config(root, config, config_path)) {
-        if (root) json_decref(root);
-        return NULL;
-    }
-    //dumpAppConfig(config, "Server");  // Show just server section
-
-    // B. Network Configuration
-    if (!load_network_config(root, config)) {
-        if (root) json_decref(root);
-        return NULL;
-    }
-
-    // C. Database Configuration
-    if (!load_database_config(root, config)) {
-        if (root) json_decref(root);
-        return NULL;
-    }
-
-    // D. Logging Configuration
-    if (!load_logging_config(root, config)) {
-        if (root) json_decref(root);
-        return NULL;
-    }
-
-    // E. WebServer Configuration
-    if (!load_webserver_config(root, config)) {
-        if (root) json_decref(root);
-        return NULL;
-    }
+    LOAD_SERVER_CONFIG("A", "Server",       load_server_config, config_path);
+    LOAD_CONFIG("B", "Network",      load_network_config);
+    LOAD_CONFIG("C", "Database",     load_database_config);
+    LOAD_CONFIG("D", "Logging",      load_logging_config);
+    LOAD_CONFIG("E", "WebServer",    load_webserver_config);
+    LOAD_CONFIG("F", "API",          load_api_config);
 
     dumpAppConfig(config, NULL);  // Show complete config after network
 
-    // F. API Configuration
-    if (!load_api_config(root, config)) {
-        if (root) json_decref(root);
-        return NULL;
-    }
+    LOAD_CONFIG("G", "Swagger",      load_swagger_config);
+    LOAD_CONFIG("H", "WebSocket",    load_websocket_config);
+    LOAD_CONFIG("I", "Terminal",     load_terminal_config);
+    LOAD_CONFIG("J", "mDNS Server",  load_mdns_server_config);
+    LOAD_CONFIG("K", "mDNS Client",  load_mdns_client_config);
+    LOAD_CONFIG("L", "Mail Relay",   load_mailrelay_config);
+    LOAD_CONFIG("M", "Print",        load_print_config);
+    LOAD_CONFIG("N", "Resources",    load_resources_config);
+    LOAD_CONFIG("O", "OIDC",         load_oidc_config);
+    LOAD_CONFIG("P", "Notify",       load_notify_config);
 
-    // G. Swagger Configuration
-    if (!load_swagger_config(root, config)) {
-        if (root) json_decref(root);
-        return NULL;
-    }
-
-    // H. WebSocket Configuration
-    if (!load_websocket_config(root, config)) {
-        if (root) json_decref(root);
-        return NULL;
-    }
-
-    // I. Terminal Configuration
-    if (!load_terminal_config(root, config)) {
-        if (root) json_decref(root);
-        return NULL;
-    }
-
-    // J. mDNS Server Configuration
-    if (!load_mdns_server_config(root, config)) {
-        if (root) json_decref(root);
-        return NULL;
-    }
-
-    // K. mDNS Client Configuration
-    if (!load_mdns_client_config(root, config)) {
-        if (root) json_decref(root);
-        return NULL;
-    }
-
-    // L. Mail Relay Configuration
-    if (!load_mailrelay_config(root, config)) {
-        if (root) json_decref(root);
-        return NULL;
-    }
-
-    // M. Print Configuration
-    if (!load_print_config(root, config)) {
-        if (root) json_decref(root);
-        return NULL;
-    }
-
-    // N. Resources Configuration
-    if (!load_resources_config(root, config)) {
-        if (root) json_decref(root);
-        return NULL;
-    }
-
-    // O. OIDC Configuration
-    if (!load_oidc_config(root, config)) {
-        if (root) json_decref(root);
-        return NULL;
-    }
-
-    // P. Notify Configuration
-    if (!load_notify_config(root, config)) {
-        if (root) json_decref(root);
-        return NULL;
-    }
+    #undef LOAD_SERVER_CONFIG
+    #undef LOAD_CONFIG
 
     if (root) json_decref(root);
     
@@ -476,7 +413,7 @@ void dumpAppConfig(const AppConfig* config, const char* section) {
     if (!section || strcmp(section, "API") == 0) {
         format_section_header(header, sizeof(header), "F", "API");
         log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
-        if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
+        dump_api_config(&config->api);
     }
 
     // Swagger section
@@ -580,58 +517,23 @@ static void clean_app_config(AppConfig* config) {
     if (!config) return;
 
     // Clean up configurations in A-P order
-    
-    // A. Server Configuration
-    cleanup_server_config(&config->server);
-
-    // B. Network Configuration
-    cleanup_network_config(&config->network);
-
-    // C. Database Configuration
-    cleanup_database_config(&config->databases);
-    
-    // D. Logging Configuration
-    cleanup_logging_config(&config->logging);
-
-    // E. WebServer Configuration
-    cleanup_webserver_config(&config->webserver);
-    
-    // F. API Configuration
-    config_api_cleanup(&config->api);
-    
-    // G. Swagger Configuration (pointer)
-    if (config->swagger) {
-        config_swagger_cleanup(config->swagger);
-        free(config->swagger);
-        config->swagger = NULL;
-    }
-
-    // H. WebSocket Configuration
-    config_websocket_cleanup(&config->websocket);
-    
-    // I. Terminal Configuration
-    config_terminal_cleanup(&config->terminal);
-
-    // J. mDNS Server Configuration
-    config_mdns_server_cleanup(&config->mdns_server);
-    
-    // K. mDNS Client Configuration
-    config_mdns_client_cleanup(&config->mdns_client);
-
-    // L. Mail Relay Configuration
-    config_mailrelay_cleanup(&config->mail_relay);
-
-    // M. Print Configuration
-    config_print_cleanup(&config->print);
-
-    // N. Resources Configuration
-    config_resources_cleanup(&config->resources);
-
-    // O. OIDC Configuration
-    config_oidc_cleanup(&config->oidc);
-
-    // P. Notify Configuration
-    config_notify_cleanup(&config->notify);
+        
+    cleanup_server_config(&config->server);            // A. Server Configuration
+    cleanup_network_config(&config->network);          // B. Network Configuration
+    cleanup_database_config(&config->databases);       // C. Database Configuration 
+    cleanup_logging_config(&config->logging);          // D. Logging Configuration
+    cleanup_webserver_config(&config->webserver);      // E. WebServer Configuration
+    cleanup_api_config(&config->api);                  // F. API Configuration
+    config_swagger_cleanup(config->swagger);           // G. Swagger Configuration (pointer)
+    config_websocket_cleanup(&config->websocket);      // H. WebSocket Configuration
+    config_terminal_cleanup(&config->terminal);        // I. Terminal Configuration
+    config_mdns_server_cleanup(&config->mdns_server);  // J. mDNS Server Configuration
+    config_mdns_client_cleanup(&config->mdns_client);  // K. mDNS Client Configuration
+    config_mailrelay_cleanup(&config->mail_relay);     // L. Mail Relay Configuration
+    config_print_cleanup(&config->print);              // M. Print Configuration
+    config_resources_cleanup(&config->resources);      // N. Resources Configuration
+    config_oidc_cleanup(&config->oidc);                // O. OIDC Configuration
+    config_notify_cleanup(&config->notify);            // P. Notify Configuration
 
 }
 
