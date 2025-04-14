@@ -18,6 +18,9 @@
 #include "../utils/utils.h"
 #include "../logging/logging.h"
 
+// Memory allocation chunk sizes
+#define Z_VALUES_CHUNK_SIZE 1000  // Initial allocation size for Z values array
+
 /**
  * Create a BerylliumConfig from AppConfig
  * @param app_config The application configuration
@@ -25,15 +28,15 @@
  */
 BerylliumConfig beryllium_create_config(const AppConfig *app_config) {
     BerylliumConfig config = {
-        .acceleration = app_config ? app_config->print.motion.acceleration : DEFAULT_ACCELERATION,
-        .z_acceleration = app_config ? app_config->print.motion.z_acceleration : DEFAULT_Z_ACCELERATION,
-        .extruder_acceleration = app_config ? app_config->print.motion.e_acceleration : DEFAULT_E_ACCELERATION,
-        .max_speed_xy = app_config ? app_config->print.motion.max_speed_xy : DEFAULT_MAX_SPEED_XY,
-        .max_speed_travel = app_config ? app_config->print.motion.max_speed_travel : DEFAULT_MAX_SPEED_TRAVEL,
-        .max_speed_z = app_config ? app_config->print.motion.max_speed_z : DEFAULT_MAX_SPEED_Z,
-        .default_feedrate = DEFAULT_FEEDRATE,  // Not configurable - G-code standard
-        .filament_diameter = DEFAULT_FILAMENT_DIAMETER,  // Could be made configurable in future
-        .filament_density = DEFAULT_FILAMENT_DENSITY     // Could be made configurable in future
+        .acceleration = app_config ? app_config->print.motion.acceleration : 500.0,      // Default acceleration
+        .z_acceleration = app_config ? app_config->print.motion.z_acceleration : 100.0,  // Default Z acceleration
+        .extruder_acceleration = app_config ? app_config->print.motion.e_acceleration : 250.0, // Default extruder acceleration
+        .max_speed_xy = app_config ? app_config->print.motion.max_speed_xy : 100.0,     // Default XY speed
+        .max_speed_travel = app_config ? app_config->print.motion.max_speed_travel : 150.0, // Default travel speed
+        .max_speed_z = app_config ? app_config->print.motion.max_speed_z : 20.0,        // Default Z speed
+        .default_feedrate = 3000.0,  // Not configurable - G-code standard
+        .filament_diameter = 1.75,   // Could be made configurable in future
+        .filament_density = 1.24     // Could be made configurable in future
     };
     return config;
 }
@@ -205,7 +208,7 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
     stats.file_size = ftell(file);
     rewind(file); // Reset the file pointer to the beginning
 
-    double *z_values = calloc(DEFAULT_Z_VALUES_CHUNK, sizeof(double));  // Start with configured chunk size
+    double *z_values = calloc(Z_VALUES_CHUNK_SIZE, sizeof(double));  // Start with configured chunk size
     if (z_values == NULL) {
         log_this("Beryllium", "Memory allocation failed for z_values", LOG_LEVEL_ERROR);
         free(stats.object_times);
@@ -213,7 +216,7 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
         stats.success = false;
         return stats;
     }
-    int z_values_count = 0, z_values_capacity = DEFAULT_Z_VALUES_CHUNK;
+    int z_values_count = 0, z_values_capacity = Z_VALUES_CHUNK_SIZE;
 
 
     while (fgets(line, sizeof(line), file) != NULL) {
@@ -379,7 +382,7 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
 
                 if (!z_exists) {
                     if (z_values_count == z_values_capacity) {
-                        z_values_capacity += DEFAULT_Z_VALUES_CHUNK;
+                        z_values_capacity += Z_VALUES_CHUNK_SIZE;
                         double *new_z_values = realloc(z_values, z_values_capacity * sizeof(double));
                         if (new_z_values == NULL) {
                             log_this("Beryllium", "Memory reallocation failed for z_values", LOG_LEVEL_ERROR);

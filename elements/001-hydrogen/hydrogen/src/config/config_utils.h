@@ -162,6 +162,57 @@ bool process_direct_value(ConfigValue value, ConfigValueType type,
                         const char* direct_value);
 
 /*
+ * Filesystem Operations
+ * These functions provide safe, consistent filesystem access
+ * with proper error handling and memory management.
+ */
+
+/*
+ * Get executable path with robust error handling
+ * 
+ * Uses /proc/self/exe to find the true binary path, which:
+ * - Works with symlinks
+ * - Handles SUID/SGID binaries
+ * - Provides absolute path
+ * - Works regardless of current directory
+ * 
+ * @return Newly allocated string with path
+ * @return NULL on error, with specific error logged
+ * The caller must free the returned string when no longer needed.
+ */
+char* get_executable_path(void);
+
+/*
+ * Get file size with proper error detection
+ * 
+ * Uses stat() to efficiently get file size:
+ * - Avoids opening the file
+ * - Works for special files
+ * - More efficient than seeking
+ * - Atomic size reading
+ * 
+ * @param filename Path to the file to check
+ * @return File size in bytes on success
+ * @return -1 on error, with specific error logged
+ */
+long get_file_size(const char* filename);
+
+/*
+ * Get file modification time in human-readable format
+ * 
+ * Formats the time as: YYYY-MM-DD HH:MM:SS
+ * - ISO 8601-like timestamp for consistency
+ * - Local time for admin readability
+ * - Fixed width for log formatting
+ * 
+ * @param filename Path to the file to check
+ * @return Newly allocated string with timestamp
+ * @return NULL on error, with specific error logged
+ * The caller must free the returned string when no longer needed.
+ */
+char* get_file_modification_time(const char* filename);
+
+/*
  * MACROS
  * 
  * The idea behind the macros is to help simplify the coding for handling JSON. Ideally,
@@ -257,6 +308,9 @@ bool process_array_element_config(json_t* root, ConfigArrayElement value, const 
 
 #define PROCESS_BOOL_DIRECT(config_ptr, field, path, section, value) \
     process_direct_bool_value((ConfigValue){.bool_val = &((config_ptr)->field)}, path, section, value)
+
+#define PROCESS_FLOAT(root, config_ptr, field, path, section) \
+    process_config_value(root, (ConfigValue){.float_val = &((config_ptr)->field)}, CONFIG_TYPE_FLOAT, path, section)
 
 
 /* 

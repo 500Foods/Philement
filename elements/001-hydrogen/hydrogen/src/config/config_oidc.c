@@ -1,5 +1,8 @@
 /*
  * OpenID Connect (OIDC) Configuration Implementation
+ *
+ * Implements configuration loading and management for OIDC integration.
+ * All validation has been moved to launch readiness checks.
  */
 
 #include <stdlib.h>
@@ -9,128 +12,138 @@
 #include "config_utils.h"
 #include "../logging/logging.h"
 
-// Helper function for URL validation
-static int validate_url(const char* url, const char* field_name) {
-    if (!url || strlen(url) == 0) {
-        log_this("Config-OIDC", "OIDC URL validation failed for field: %s", LOG_LEVEL_ERROR, field_name);
-        return -1;
+// Helper function to construct endpoint URL
+static char* construct_endpoint_path(const char* base_path) {
+    if (!base_path) return NULL;
+    char* path = strdup(base_path);
+    if (!path) return NULL;
+    // Ensure path starts with '/'
+    if (path[0] != '/') {
+        char* new_path = malloc(strlen(path) + 2);
+        if (!new_path) {
+            free(path);
+            return NULL;
+        }
+        sprintf(new_path, "/%s", path);
+        free(path);
+        path = new_path;
     }
-    // Basic URL validation - must start with http:// or https://
-    if (strncmp(url, "http://", 7) != 0 && strncmp(url, "https://", 8) != 0) {
-        log_this("Config-OIDC", "Invalid URL format for field: %s", LOG_LEVEL_ERROR, field_name);
-        return -1;
-    }
-    return 0;
+    return path;
 }
 
 bool load_oidc_config(json_t* root, AppConfig* config) {
-    if (!root || !config) {
-        log_this("Config-OIDC", "Invalid parameters for OIDC configuration", LOG_LEVEL_ERROR);
-        return false;
-    }
-
-    // Initialize with defaults
-    if (config_oidc_init(&config->oidc) != 0) {
-        log_this("Config-OIDC", "Failed to initialize OIDC configuration", LOG_LEVEL_ERROR);
-        return false;
-    }
-
     bool success = true;
     OIDCConfig* oidc = &config->oidc;
-    PROCESS_SECTION(root, "OIDC"); {
-        // Core settings
-        PROCESS_BOOL(root, oidc, enabled, "enabled", "OIDC");
-        PROCESS_STRING(root, oidc, issuer, "issuer", "OIDC");
-        PROCESS_STRING(root, oidc, client_id, "client_id", "OIDC");
-        PROCESS_SENSITIVE(root, oidc, client_secret, "client_secret", "OIDC");
-        PROCESS_STRING(root, oidc, redirect_uri, "redirect_uri", "OIDC");
-        PROCESS_INT(root, oidc, port, "port", "OIDC");
-        PROCESS_STRING(root, oidc, auth_method, "auth_method", "OIDC");
-        PROCESS_STRING(root, oidc, scope, "scope", "OIDC");
-        PROCESS_BOOL(root, oidc, verify_ssl, "verify_ssl", "OIDC");
 
-        // Endpoints configuration
-        PROCESS_STRING(root, &oidc->endpoints, authorization, "authorization_endpoint", "OIDC");
-        PROCESS_STRING(root, &oidc->endpoints, token, "token_endpoint", "OIDC");
-        PROCESS_STRING(root, &oidc->endpoints, userinfo, "userinfo_endpoint", "OIDC");
-        PROCESS_STRING(root, &oidc->endpoints, jwks, "jwks_endpoint", "OIDC");
-        PROCESS_STRING(root, &oidc->endpoints, end_session, "end_session_endpoint", "OIDC");
-        PROCESS_STRING(root, &oidc->endpoints, introspection, "introspection_endpoint", "OIDC");
-        PROCESS_STRING(root, &oidc->endpoints, revocation, "revocation_endpoint", "OIDC");
-        PROCESS_STRING(root, &oidc->endpoints, registration, "registration_endpoint", "OIDC");
+    // Zero out the config structure
+    memset(oidc, 0, sizeof(OIDCConfig));
 
-        // Keys configuration
-        PROCESS_SENSITIVE(root, &oidc->keys, signing_key, "signing_key", "OIDC");
-        PROCESS_SENSITIVE(root, &oidc->keys, encryption_key, "encryption_key", "OIDC");
-        PROCESS_STRING(root, &oidc->keys, jwks_uri, "jwks_uri", "OIDC");
-        PROCESS_STRING(root, &oidc->keys, storage_path, "key_storage_path", "OIDC");
-        PROCESS_BOOL(root, &oidc->keys, encryption_enabled, "encryption_enabled", "OIDC");
-        PROCESS_INT(root, &oidc->keys, rotation_interval_days, "key_rotation_interval_days", "OIDC");
+    // Initialize core settings with secure defaults
+    oidc->enabled = true;
+    oidc->port = 8443;
+    oidc->auth_method = strdup("client_secret_basic");
+    oidc->scope = strdup("openid profile email");
+    oidc->verify_ssl = true;
 
-        // Tokens configuration
-        PROCESS_INT(root, &oidc->tokens, access_token_lifetime, "access_token_lifetime", "OIDC");
-        PROCESS_INT(root, &oidc->tokens, refresh_token_lifetime, "refresh_token_lifetime", "OIDC");
-        PROCESS_INT(root, &oidc->tokens, id_token_lifetime, "id_token_lifetime", "OIDC");
-        PROCESS_STRING(root, &oidc->tokens, signing_alg, "token_signing_alg", "OIDC");
-        PROCESS_STRING(root, &oidc->tokens, encryption_alg, "token_encryption_alg", "OIDC");
+    // Initialize endpoints with default paths
+    oidc->endpoints.authorization = construct_endpoint_path("/authorize");
+    oidc->endpoints.token = construct_endpoint_path("/token");
+    oidc->endpoints.userinfo = construct_endpoint_path("/userinfo");
+    oidc->endpoints.jwks = construct_endpoint_path("/jwks");
+    oidc->endpoints.end_session = construct_endpoint_path("/end_session");
+    oidc->endpoints.introspection = construct_endpoint_path("/introspect");
+    oidc->endpoints.revocation = construct_endpoint_path("/revoke");
+    oidc->endpoints.registration = construct_endpoint_path("/register");
 
-        // Buffer for number conversion
-        char buffer[32];
+    // Initialize tokens with secure defaults
+    oidc->tokens.access_token_lifetime = 3600;      // 1 hour
+    oidc->tokens.refresh_token_lifetime = 86400;    // 24 hours
+    oidc->tokens.id_token_lifetime = 3600;         // 1 hour
+    oidc->tokens.signing_alg = strdup("RS256");    // RSA with SHA-256
+    oidc->tokens.encryption_alg = strdup("A256GCM"); // AES-256 GCM
 
-        // Log configuration (masking sensitive values)
-        log_config_item("Enabled", oidc->enabled ? "true" : "false", false, "OIDC");
-        log_config_item("Issuer", oidc->issuer, false, "OIDC");
-        log_config_item("Client ID", oidc->client_id, false, "OIDC");
-        log_config_item("Client Secret", "********", false, "OIDC");
-        log_config_item("Redirect URI", oidc->redirect_uri, false, "OIDC");
-        snprintf(buffer, sizeof(buffer), "%d", oidc->port);
-        log_config_item("Port", buffer, false, "OIDC");
-        log_config_item("Auth Method", oidc->auth_method, false, "OIDC");
-        log_config_item("Scope", oidc->scope, false, "OIDC");
-        log_config_item("Verify SSL", oidc->verify_ssl ? "true" : "false", false, "OIDC");
+    // Initialize keys with secure defaults
+    oidc->keys.encryption_enabled = true;
+    oidc->keys.rotation_interval_days = 30;        // 30 days default
+    oidc->keys.storage_path = strdup("/var/lib/hydrogen/keys");
 
-        // Validate configuration
-        if (config_oidc_validate(&config->oidc) != 0) {
-            log_this("Config-OIDC", "Invalid OIDC configuration", LOG_LEVEL_ERROR);
-            success = false;
-        }
+    // Process main section
+    success = PROCESS_SECTION(root, "OIDC");
+
+    // Process core settings
+    if (success) {
+        success = success && PROCESS_BOOL(root, oidc, enabled, "OIDC.Enabled", "OIDC");
+        success = success && PROCESS_STRING(root, oidc, issuer, "OIDC.Issuer", "OIDC");
+        success = success && PROCESS_STRING(root, oidc, client_id, "OIDC.ClientId", "OIDC");
+        success = success && PROCESS_SENSITIVE(root, oidc, client_secret, "OIDC.ClientSecret", "OIDC");
+        success = success && PROCESS_STRING(root, oidc, redirect_uri, "OIDC.RedirectUri", "OIDC");
+        success = success && PROCESS_INT(root, oidc, port, "OIDC.Port", "OIDC");
+        success = success && PROCESS_STRING(root, oidc, auth_method, "OIDC.AuthMethod", "OIDC");
+        success = success && PROCESS_STRING(root, oidc, scope, "OIDC.Scope", "OIDC");
+        success = success && PROCESS_BOOL(root, oidc, verify_ssl, "OIDC.VerifySSL", "OIDC");
+    }
+
+    // Process endpoints section
+    if (success) {
+        success = PROCESS_SECTION(root, "OIDC.Endpoints");
+        success = success && PROCESS_STRING(root, &oidc->endpoints, authorization,
+                                          "OIDC.Endpoints.Authorization", "OIDC");
+        success = success && PROCESS_STRING(root, &oidc->endpoints, token,
+                                          "OIDC.Endpoints.Token", "OIDC");
+        success = success && PROCESS_STRING(root, &oidc->endpoints, userinfo,
+                                          "OIDC.Endpoints.UserInfo", "OIDC");
+        success = success && PROCESS_STRING(root, &oidc->endpoints, jwks,
+                                          "OIDC.Endpoints.JWKS", "OIDC");
+        success = success && PROCESS_STRING(root, &oidc->endpoints, end_session,
+                                          "OIDC.Endpoints.EndSession", "OIDC");
+        success = success && PROCESS_STRING(root, &oidc->endpoints, introspection,
+                                          "OIDC.Endpoints.Introspection", "OIDC");
+        success = success && PROCESS_STRING(root, &oidc->endpoints, revocation,
+                                          "OIDC.Endpoints.Revocation", "OIDC");
+        success = success && PROCESS_STRING(root, &oidc->endpoints, registration,
+                                          "OIDC.Endpoints.Registration", "OIDC");
+    }
+
+    // Process keys section
+    if (success) {
+        success = PROCESS_SECTION(root, "OIDC.Keys");
+        success = success && PROCESS_SENSITIVE(root, &oidc->keys, signing_key,
+                                             "OIDC.Keys.SigningKey", "OIDC");
+        success = success && PROCESS_SENSITIVE(root, &oidc->keys, encryption_key,
+                                             "OIDC.Keys.EncryptionKey", "OIDC");
+        success = success && PROCESS_STRING(root, &oidc->keys, jwks_uri,
+                                          "OIDC.Keys.JWKSUri", "OIDC");
+        success = success && PROCESS_STRING(root, &oidc->keys, storage_path,
+                                          "OIDC.Keys.StoragePath", "OIDC");
+        success = success && PROCESS_BOOL(root, &oidc->keys, encryption_enabled,
+                                        "OIDC.Keys.EncryptionEnabled", "OIDC");
+        success = success && PROCESS_INT(root, &oidc->keys, rotation_interval_days,
+                                       "OIDC.Keys.RotationIntervalDays", "OIDC");
+    }
+
+    // Process tokens section
+    if (success) {
+        success = PROCESS_SECTION(root, "OIDC.Tokens");
+        success = success && PROCESS_INT(root, &oidc->tokens, access_token_lifetime,
+                                       "OIDC.Tokens.AccessTokenLifetime", "OIDC");
+        success = success && PROCESS_INT(root, &oidc->tokens, refresh_token_lifetime,
+                                       "OIDC.Tokens.RefreshTokenLifetime", "OIDC");
+        success = success && PROCESS_INT(root, &oidc->tokens, id_token_lifetime,
+                                       "OIDC.Tokens.IdTokenLifetime", "OIDC");
+        success = success && PROCESS_STRING(root, &oidc->tokens, signing_alg,
+                                          "OIDC.Tokens.SigningAlg", "OIDC");
+        success = success && PROCESS_STRING(root, &oidc->tokens, encryption_alg,
+                                          "OIDC.Tokens.EncryptionAlg", "OIDC");
     }
 
     if (!success) {
-        config_oidc_cleanup(&config->oidc);
+        cleanup_oidc_config(oidc);
     }
 
     return success;
 }
 
-int config_oidc_init(OIDCConfig* config) {
-    if (!config) {
-        return -1;
-    }
-
-    memset(config, 0, sizeof(OIDCConfig));
-
-    // Initialize main configuration
-    config->enabled = DEFAULT_OIDC_ENABLED;
-    config->port = DEFAULT_OIDC_PORT;
-    config->auth_method = strdup(DEFAULT_AUTH_METHOD);
-    config->scope = strdup("openid profile email");
-    config->verify_ssl = true;
-
-    if (!config->auth_method || !config->scope) {
-        config_oidc_cleanup(config);
-        return -1;
-    }
-
-    // Initialize tokens with defaults
-    config->tokens.access_token_lifetime = DEFAULT_TOKEN_EXPIRY;
-    config->tokens.refresh_token_lifetime = DEFAULT_REFRESH_EXPIRY;
-    config->tokens.id_token_lifetime = DEFAULT_TOKEN_EXPIRY;
-
-    return 0;
-}
-
-void config_oidc_cleanup(OIDCConfig* config) {
+void cleanup_oidc_config(OIDCConfig* config) {
     if (!config) {
         return;
     }
@@ -167,57 +180,49 @@ void config_oidc_cleanup(OIDCConfig* config) {
     memset(config, 0, sizeof(OIDCConfig));
 }
 
-int config_oidc_validate(const OIDCConfig* config) {
+void dump_oidc_config(const OIDCConfig* config) {
     if (!config) {
-        return -1;
+        DUMP_TEXT("", "Cannot dump NULL OIDC config");
+        return;
     }
 
-    // Skip validation if OIDC is disabled
-    if (!config->enabled) {
-        return 0;
-    }
+    // Core settings
+    DUMP_TEXT("――", "Core Settings");
+    DUMP_BOOL("――――Enabled", config->enabled);
+    DUMP_STRING("――――Issuer", config->issuer);
+    DUMP_STRING("――――Client ID", config->client_id);
+    DUMP_SECRET("――――Client Secret", config->client_secret);
+    DUMP_STRING("――――Redirect URI", config->redirect_uri);
+    DUMP_INT("――――Port", config->port);
+    DUMP_STRING("――――Auth Method", config->auth_method);
+    DUMP_STRING("――――Scope", config->scope);
+    DUMP_BOOL("――――Verify SSL", config->verify_ssl);
 
-    // Validate required fields
-    if (!config->issuer || strlen(config->issuer) == 0) {
-        log_this("Config-OIDC", "OIDC issuer is required", LOG_LEVEL_ERROR);
-        return -1;
-    }
+    // Endpoints
+    DUMP_TEXT("――", "Endpoints");
+    DUMP_STRING("――――Authorization", config->endpoints.authorization);
+    DUMP_STRING("――――Token", config->endpoints.token);
+    DUMP_STRING("――――UserInfo", config->endpoints.userinfo);
+    DUMP_STRING("――――JWKS", config->endpoints.jwks);
+    DUMP_STRING("――――End Session", config->endpoints.end_session);
+    DUMP_STRING("――――Introspection", config->endpoints.introspection);
+    DUMP_STRING("――――Revocation", config->endpoints.revocation);
+    DUMP_STRING("――――Registration", config->endpoints.registration);
 
-    if (!config->client_id || strlen(config->client_id) == 0) {
-        log_this("Config-OIDC", "OIDC client_id is required", LOG_LEVEL_ERROR);
-        return -1;
-    }
+    // Keys
+    DUMP_TEXT("――", "Keys");
+    DUMP_SECRET("――――Signing Key", config->keys.signing_key);
+    DUMP_SECRET("――――Encryption Key", config->keys.encryption_key);
+    DUMP_STRING("――――JWKS URI", config->keys.jwks_uri);
+    DUMP_STRING("――――Storage Path", config->keys.storage_path);
+    DUMP_BOOL("――――Encryption Enabled", config->keys.encryption_enabled);
+    DUMP_INT("――――Rotation Interval (days)", config->keys.rotation_interval_days);
 
-    if (!config->client_secret || strlen(config->client_secret) == 0) {
-        log_this("Config-OIDC", "OIDC client_secret is required", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    // Validate URLs
-    if (validate_url(config->issuer, "issuer") != 0) return -1;
-    if (config->redirect_uri && validate_url(config->redirect_uri, "redirect_uri") != 0) return -1;
-
-    // Validate port
-    if (config->port < 1024 || config->port > 65535) {
-        log_this("Config-OIDC", "Invalid OIDC port", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    // Validate token lifetimes
-    if (config->tokens.access_token_lifetime <= 0) {
-        log_this("Config-OIDC", "Invalid access token lifetime", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    if (config->tokens.refresh_token_lifetime <= 0) {
-        log_this("Config-OIDC", "Invalid refresh token lifetime", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    if (config->tokens.id_token_lifetime <= 0) {
-        log_this("Config-OIDC", "Invalid ID token lifetime", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    return 0;
+    // Tokens
+    DUMP_TEXT("――", "Tokens");
+    DUMP_INT("――――Access Token Lifetime", config->tokens.access_token_lifetime);
+    DUMP_INT("――――Refresh Token Lifetime", config->tokens.refresh_token_lifetime);
+    DUMP_INT("――――ID Token Lifetime", config->tokens.id_token_lifetime);
+    DUMP_STRING("――――Signing Algorithm", config->tokens.signing_alg);
+    DUMP_STRING("――――Encryption Algorithm", config->tokens.encryption_alg);
 }

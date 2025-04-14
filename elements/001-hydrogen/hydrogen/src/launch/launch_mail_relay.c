@@ -29,15 +29,32 @@ extern AppConfig* app_config;
 LaunchReadiness check_mail_relay_launch_readiness(void) {
     LaunchReadiness readiness = {0};
     
+    // Calculate maximum possible messages:
+    // Base messages (subsystem, network, config, port, workers, queue settings) = ~12
+    // Per server: 1 success + 4 possible errors = 5 messages per server
+    // Final decision message = 1
+    const int base_messages = 12;
+    const int messages_per_server = 5;
+    const int max_messages = base_messages + (MAX_OUTBOUND_SERVERS * messages_per_server) + 1;
+    
     // Allocate space for messages (including NULL terminator)
-    readiness.messages = malloc(10 * sizeof(char*));
+    readiness.messages = malloc((max_messages + 1) * sizeof(char*));
     if (!readiness.messages) {
         readiness.ready = false;
         return readiness;
     }
     int msg_count = 0;
     
+    // Safety check for message count
+    #define CHECK_MSG_COUNT() \
+        if (msg_count >= max_messages) { \
+            readiness.messages[msg_count] = NULL; \
+            readiness.ready = false; \
+            return readiness; \
+        }
+    
     // Add the subsystem name as the first message
+    CHECK_MSG_COUNT();
     readiness.messages[msg_count++] = strdup("Mail Relay");
     
     // Register dependency on Network subsystem
@@ -49,6 +66,7 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
             readiness.ready = false;
             return readiness;
         }
+        CHECK_MSG_COUNT();
         readiness.messages[msg_count++] = strdup("  Go:      Network dependency registered");
         
         // Verify Network subsystem is running
@@ -58,6 +76,7 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
             readiness.ready = false;
             return readiness;
         }
+        CHECK_MSG_COUNT();
         readiness.messages[msg_count++] = strdup("  Go:      Network subsystem running");
     }
     
@@ -68,6 +87,7 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
         readiness.ready = false;
         return readiness;
     }
+    CHECK_MSG_COUNT();
     readiness.messages[msg_count++] = strdup("  Go:      Mail relay enabled in configuration");
 
     // Validate configuration values
@@ -80,6 +100,7 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
         readiness.ready = false;
         return readiness;
     }
+    CHECK_MSG_COUNT();
     readiness.messages[msg_count++] = strdup("  Go:      Listen port valid");
 
     // Validate worker count
@@ -89,6 +110,7 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
         readiness.ready = false;
         return readiness;
     }
+    CHECK_MSG_COUNT();
     readiness.messages[msg_count++] = strdup("  Go:      Worker count valid");
 
     // Validate queue settings
@@ -98,6 +120,7 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
         readiness.ready = false;
         return readiness;
     }
+    CHECK_MSG_COUNT();
     readiness.messages[msg_count++] = strdup("  Go:      Queue size valid");
 
     if (config->Queue.RetryAttempts < 0) {
@@ -106,6 +129,7 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
         readiness.ready = false;
         return readiness;
     }
+    CHECK_MSG_COUNT();
     readiness.messages[msg_count++] = strdup("  Go:      Retry attempts valid");
 
     if (config->Queue.RetryDelaySeconds <= 0) {
@@ -114,6 +138,7 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
         readiness.ready = false;
         return readiness;
     }
+    CHECK_MSG_COUNT();
     readiness.messages[msg_count++] = strdup("  Go:      Retry delay valid");
 
     // Must have at least one outbound server
@@ -123,6 +148,7 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
         readiness.ready = false;
         return readiness;
     }
+    CHECK_MSG_COUNT();
     readiness.messages[msg_count++] = strdup("  Go:      Server count valid");
 
     // Validate each configured server
@@ -161,11 +187,13 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
             return readiness;
         }
 
+        CHECK_MSG_COUNT();
         snprintf(msg_buffer, sizeof(msg_buffer), "  Go:      Server %d configuration valid", i + 1);
         readiness.messages[msg_count++] = strdup(msg_buffer);
     }
 
     // All checks passed
+    CHECK_MSG_COUNT();
     readiness.messages[msg_count++] = strdup("  Decide:  Go For Launch of Mail Relay Subsystem");
     readiness.messages[msg_count] = NULL;
     readiness.ready = true;

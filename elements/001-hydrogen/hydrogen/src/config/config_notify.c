@@ -2,7 +2,7 @@
  * Notify Configuration Implementation
  *
  * Implements the configuration handlers for the notification subsystem,
- * including JSON parsing, environment variable handling, and validation.
+ * including JSON parsing and environment variable handling.
  */
 
 #include <stdlib.h>
@@ -12,86 +12,45 @@
 #include "config_utils.h"
 #include "../logging/logging.h"
 
-
 // Load notification configuration from JSON
 bool load_notify_config(json_t* root, AppConfig* config) {
-    // Initialize with defaults
-    config->notify = (NotifyConfig){
-        .enabled = true,
-        .notifier = "none",
-        .smtp = {
-            .host = NULL,
-            .port = DEFAULT_SMTP_PORT,
-            .username = NULL,
-            .password = NULL,
-            .use_tls = DEFAULT_SMTP_TLS,
-            .timeout = DEFAULT_SMTP_TIMEOUT,
-            .max_retries = DEFAULT_SMTP_MAX_RETRIES,
-            .from_address = NULL
-        }
-    };
-
-    // Process all config items in sequence
     bool success = true;
+    NotifyConfig* notify_config = &config->notify;
+
+    // Zero out the config structure
+    memset(notify_config, 0, sizeof(NotifyConfig));
+
+    // Set secure defaults directly
+    notify_config->enabled = true;
+    notify_config->notifier = strdup("none");
+    notify_config->smtp.port = 587;
+    notify_config->smtp.use_tls = true;
+    notify_config->smtp.timeout = 30;
+    notify_config->smtp.max_retries = 3;
 
     // Process main notify section
     success = PROCESS_SECTION(root, "Notify");
-    success = success && PROCESS_BOOL(root, &config->notify, enabled, "Notify.Enabled", "Notify");
-    success = success && PROCESS_STRING(root, &config->notify, notifier, "Notify.Notifier", "Notify");
+    success = success && PROCESS_BOOL(root, notify_config, enabled, "Notify.Enabled", "Notify");
+    success = success && PROCESS_STRING(root, notify_config, notifier, "Notify.Notifier", "Notify");
 
     // Process SMTP subsection if present
     if (success) {
         success = PROCESS_SECTION(root, "Notify.SMTP");
-        success = success && PROCESS_STRING(root, &config->notify.smtp, host, "Notify.SMTP.Host", "Notify");
-        success = success && PROCESS_INT(root, &config->notify.smtp, port, "Notify.SMTP.Port", "Notify");
-        success = success && PROCESS_SENSITIVE(root, &config->notify.smtp, username, "Notify.SMTP.Username", "Notify");
-        success = success && PROCESS_SENSITIVE(root, &config->notify.smtp, password, "Notify.SMTP.Password", "Notify");
-        success = success && PROCESS_BOOL(root, &config->notify.smtp, use_tls, "Notify.SMTP.UseTLS", "Notify");
-        success = success && PROCESS_INT(root, &config->notify.smtp, timeout, "Notify.SMTP.Timeout", "Notify");
-        success = success && PROCESS_INT(root, &config->notify.smtp, max_retries, "Notify.SMTP.MaxRetries", "Notify");
-        success = success && PROCESS_STRING(root, &config->notify.smtp, from_address, "Notify.SMTP.FromAddress", "Notify");
-    }
-
-    // Validate the configuration if loaded successfully
-    if (success) {
-        success = (config_notify_validate(&config->notify) == 0);
+        success = success && PROCESS_STRING(root, &notify_config->smtp, host, "Notify.SMTP.Host", "Notify");
+        success = success && PROCESS_INT(root, &notify_config->smtp, port, "Notify.SMTP.Port", "Notify");
+        success = success && PROCESS_SENSITIVE(root, &notify_config->smtp, username, "Notify.SMTP.Username", "Notify");
+        success = success && PROCESS_SENSITIVE(root, &notify_config->smtp, password, "Notify.SMTP.Password", "Notify");
+        success = success && PROCESS_BOOL(root, &notify_config->smtp, use_tls, "Notify.SMTP.UseTLS", "Notify");
+        success = success && PROCESS_INT(root, &notify_config->smtp, timeout, "Notify.SMTP.Timeout", "Notify");
+        success = success && PROCESS_INT(root, &notify_config->smtp, max_retries, "Notify.SMTP.MaxRetries", "Notify");
+        success = success && PROCESS_STRING(root, &notify_config->smtp, from_address, "Notify.SMTP.FromAddress", "Notify");
     }
 
     return success;
 }
 
-// Initialize notification configuration with default values
-int config_notify_init(NotifyConfig* config) {
-    if (!config) {
-        log_this("Config-Notify", "Notify config pointer is NULL", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    // Set default values
-    config->enabled = true;
-    
-    // Allocate and copy default notifier
-    config->notifier = strdup("none");
-    if (!config->notifier) {
-        log_this("Config-Notify", "Failed to allocate notifier type", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    // Initialize SMTP config with defaults
-    config->smtp.host = NULL;
-    config->smtp.port = DEFAULT_SMTP_PORT;
-    config->smtp.username = NULL;
-    config->smtp.password = NULL;
-    config->smtp.use_tls = DEFAULT_SMTP_TLS;
-    config->smtp.timeout = DEFAULT_SMTP_TIMEOUT;
-    config->smtp.max_retries = DEFAULT_SMTP_MAX_RETRIES;
-    config->smtp.from_address = NULL;
-
-    return 0;
-}
-
 // Free resources allocated for notification configuration
-void config_notify_cleanup(NotifyConfig* config) {
+void cleanup_notify_config(NotifyConfig* config) {
     if (!config) {
         return;
     }
@@ -124,51 +83,27 @@ void config_notify_cleanup(NotifyConfig* config) {
     memset(config, 0, sizeof(NotifyConfig));
 }
 
-// Validate notification configuration values
-int config_notify_validate(const NotifyConfig* config) {
+// Dump notification configuration
+void dump_notify_config(const NotifyConfig* config) {
     if (!config) {
-        log_this("Config-Notify", "Notify config pointer is NULL", LOG_LEVEL_ERROR);
-        return -1;
+        DUMP_TEXT("", "Cannot dump NULL notify config");
+        return;
     }
 
-    // Validate notifier type
-    if (!config->notifier || !config->notifier[0]) {
-        log_this("Config-Notify", "Invalid notifier type (must not be empty)", LOG_LEVEL_ERROR);
-        return -1;
+    // Dump main notify settings
+    DUMP_BOOL("Enabled", config->enabled);
+    DUMP_STRING("Notifier", config->notifier);
+
+    // Dump SMTP configuration if notifier is "smtp"
+    if (config->notifier && strcmp(config->notifier, "smtp") == 0) {
+        DUMP_TEXT("――", "SMTP Configuration");
+        DUMP_STRING("―――― Host", config->smtp.host);
+        DUMP_INT("―――― Port", config->smtp.port);
+        DUMP_SECRET("―――― Username", config->smtp.username);
+        DUMP_SECRET("―――― Password", config->smtp.password);
+        DUMP_BOOL("―――― Use TLS", config->smtp.use_tls);
+        DUMP_INT("―――― Timeout", config->smtp.timeout);
+        DUMP_INT("―――― Max Retries", config->smtp.max_retries);
+        DUMP_STRING("―――― From Address", config->smtp.from_address);
     }
-
-    // If SMTP is configured, validate SMTP settings
-    if (strcmp(config->notifier, "smtp") == 0) {
-        // Host is required for SMTP
-        if (!config->smtp.host || !config->smtp.host[0]) {
-            log_this("Config-Notify", "SMTP host is required when using SMTP notifier", LOG_LEVEL_ERROR);
-            return -1;
-        }
-
-        // Port must be valid
-        if (config->smtp.port <= 0 || config->smtp.port > 65535) {
-            log_this("Config-Notify", "Invalid SMTP port number", LOG_LEVEL_ERROR);
-            return -1;
-        }
-
-        // Timeout must be positive
-        if (config->smtp.timeout <= 0) {
-            log_this("Config-Notify", "Invalid SMTP timeout value", LOG_LEVEL_ERROR);
-            return -1;
-        }
-
-        // Max retries must be non-negative
-        if (config->smtp.max_retries < 0) {
-            log_this("Config-Notify", "Invalid SMTP max retries value", LOG_LEVEL_ERROR);
-            return -1;
-        }
-
-        // From address is required
-        if (!config->smtp.from_address || !config->smtp.from_address[0]) {
-            log_this("Config-Notify", "SMTP from address is required", LOG_LEVEL_ERROR);
-            return -1;
-        }
-    }
-
-    return 0;
 }

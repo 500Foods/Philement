@@ -1,8 +1,7 @@
 /*
  * Print Configuration Implementation
  *
- * Implements the configuration handlers for the print subsystem,
- * including JSON parsing, environment variable handling, and validation.
+ * Implements configuration loading and management for the print subsystem.
  */
 
 #include <stdlib.h>
@@ -14,161 +13,169 @@
 
 // Load print configuration from JSON
 bool load_print_config(json_t* root, AppConfig* config) {
-    // Initialize with defaults
-    config->print = (PrintConfig){
-        .enabled = DEFAULT_PRINT_ENABLED,
-        .max_queued_jobs = DEFAULT_MAX_QUEUED_JOBS,
-        .max_concurrent_jobs = DEFAULT_MAX_CONCURRENT_JOBS,
-        .priorities = {
-            .default_priority = 1,
-            .emergency_priority = 0,
-            .maintenance_priority = 2,
-            .system_priority = 3
-        },
-        .timeouts = {
-            .shutdown_wait_ms = DEFAULT_SHUTDOWN_WAIT_MS,
-            .job_processing_timeout_ms = DEFAULT_JOB_PROCESSING_TIMEOUT_MS
-        },
-        .buffers = {
-            .job_message_size = 256,
-            .status_message_size = 256
-        }
-    };
-
-    // Process all config items in sequence
     bool success = true;
+    PrintConfig* print_config = &config->print;
 
-    // Process main section
+    // Zero out the config structure
+    memset(print_config, 0, sizeof(PrintConfig));
+
+    // Initialize with secure defaults
+    print_config->enabled = true;                // Print system enabled by default
+    print_config->max_queued_jobs = 100;         // Default max queued jobs
+    print_config->max_concurrent_jobs = 4;       // Default concurrent jobs
+
+    // Initialize priorities with secure defaults
+    print_config->priorities.default_priority = 50;      // Normal print jobs
+    print_config->priorities.emergency_priority = 100;   // Emergency/critical jobs
+    print_config->priorities.maintenance_priority = 75;  // Maintenance operations
+    print_config->priorities.system_priority = 90;       // System-level operations
+
+    // Initialize timeouts with secure defaults
+    print_config->timeouts.shutdown_wait_ms = 5000;         // 5 second shutdown wait
+    print_config->timeouts.job_processing_timeout_ms = 300000;  // 5 minute job timeout
+
+    // Initialize buffers with secure defaults
+    print_config->buffers.job_message_size = 4096;      // 4KB job messages
+    print_config->buffers.status_message_size = 1024;   // 1KB status messages
+
+    // Initialize motion control with secure defaults
+    print_config->motion.max_speed = 100.0;      // Default max speed
+    print_config->motion.max_speed_xy = 100.0;   // Default XY speed
+    print_config->motion.max_speed_z = 20.0;     // Default Z speed (slower)
+    print_config->motion.max_speed_travel = 150.0; // Default travel speed
+    print_config->motion.acceleration = 500.0;    // Default acceleration
+    print_config->motion.z_acceleration = 100.0;  // Default Z acceleration
+    print_config->motion.e_acceleration = 250.0;  // Default extruder acceleration
+    print_config->motion.jerk = 10.0;            // Default jerk
+    print_config->motion.smooth_moves = true;     // Enable smooth moves by default
+
+    // Process main print section
     success = PROCESS_SECTION(root, "Print");
-    success = success && PROCESS_BOOL(root, &config->print, enabled, "Print.Enabled", "Print");
-    success = success && PROCESS_SIZE(root, &config->print, max_queued_jobs, "Print.MaxQueuedJobs", "Print");
-    success = success && PROCESS_SIZE(root, &config->print, max_concurrent_jobs, "Print.MaxConcurrentJobs", "Print");
+    success = success && PROCESS_BOOL(root, print_config, enabled, "Print.Enabled", "Print");
+    success = success && PROCESS_SIZE(root, print_config, max_queued_jobs, "Print.MaxQueuedJobs", "Print");
+    success = success && PROCESS_SIZE(root, print_config, max_concurrent_jobs, "Print.MaxConcurrentJobs", "Print");
 
-    // Process queue settings section
+    // Process priorities section
     if (success) {
-        success = PROCESS_SECTION(root, "Print.QueueSettings");
-        success = success && PROCESS_INT(root, &config->print.priorities, default_priority, 
-                                       "Print.QueueSettings.DefaultPriority", "Print");
-        success = success && PROCESS_INT(root, &config->print.priorities, emergency_priority,
-                                       "Print.QueueSettings.EmergencyPriority", "Print");
-        success = success && PROCESS_INT(root, &config->print.priorities, maintenance_priority,
-                                       "Print.QueueSettings.MaintenancePriority", "Print");
-        success = success && PROCESS_INT(root, &config->print.priorities, system_priority,
-                                       "Print.QueueSettings.SystemPriority", "Print");
+        success = PROCESS_SECTION(root, "Print.Priorities");
+        success = success && PROCESS_INT(root, &print_config->priorities, default_priority,
+                                       "Print.Priorities.DefaultPriority", "Print");
+        success = success && PROCESS_INT(root, &print_config->priorities, emergency_priority,
+                                       "Print.Priorities.EmergencyPriority", "Print");
+        success = success && PROCESS_INT(root, &print_config->priorities, maintenance_priority,
+                                       "Print.Priorities.MaintenancePriority", "Print");
+        success = success && PROCESS_INT(root, &print_config->priorities, system_priority,
+                                       "Print.Priorities.SystemPriority", "Print");
     }
 
     // Process timeouts section
     if (success) {
         success = PROCESS_SECTION(root, "Print.Timeouts");
-        success = success && PROCESS_SIZE(root, &config->print.timeouts, shutdown_wait_ms,
+        success = success && PROCESS_SIZE(root, &print_config->timeouts, shutdown_wait_ms,
                                         "Print.Timeouts.ShutdownWaitMs", "Print");
-        success = success && PROCESS_SIZE(root, &config->print.timeouts, job_processing_timeout_ms,
+        success = success && PROCESS_SIZE(root, &print_config->timeouts, job_processing_timeout_ms,
                                         "Print.Timeouts.JobProcessingTimeoutMs", "Print");
     }
 
     // Process buffers section
     if (success) {
         success = PROCESS_SECTION(root, "Print.Buffers");
-        success = success && PROCESS_SIZE(root, &config->print.buffers, job_message_size,
+        success = success && PROCESS_SIZE(root, &print_config->buffers, job_message_size,
                                         "Print.Buffers.JobMessageSize", "Print");
-        success = success && PROCESS_SIZE(root, &config->print.buffers, status_message_size,
+        success = success && PROCESS_SIZE(root, &print_config->buffers, status_message_size,
                                         "Print.Buffers.StatusMessageSize", "Print");
     }
 
-    // Validate the configuration if loaded successfully
+    // Process motion control section
     if (success) {
-        success = (config_print_validate(&config->print) == 0);
+        success = PROCESS_SECTION(root, "Print.Motion");
+        success = success && PROCESS_BOOL(root, &print_config->motion, smooth_moves,
+                                        "Print.Motion.SmoothMoves", "Print");
+        
+        // Process motion control floating point values
+        success = success && PROCESS_FLOAT(root, &print_config->motion, max_speed, "Print.Motion.MaxSpeed", "Print");
+        success = success && PROCESS_FLOAT(root, &print_config->motion, max_speed_xy, "Print.Motion.MaxSpeedXY", "Print");
+        success = success && PROCESS_FLOAT(root, &print_config->motion, max_speed_z, "Print.Motion.MaxSpeedZ", "Print");
+        success = success && PROCESS_FLOAT(root, &print_config->motion, max_speed_travel, "Print.Motion.MaxSpeedTravel", "Print");
+        success = success && PROCESS_FLOAT(root, &print_config->motion, acceleration, "Print.Motion.Acceleration", "Print");
+        success = success && PROCESS_FLOAT(root, &print_config->motion, z_acceleration, "Print.Motion.ZAcceleration", "Print");
+        success = success && PROCESS_FLOAT(root, &print_config->motion, e_acceleration, "Print.Motion.EAcceleration", "Print");
+        success = success && PROCESS_FLOAT(root, &print_config->motion, jerk, "Print.Motion.Jerk", "Print");
     }
 
     return success;
 }
 
-// Initialize print configuration with default values
-int config_print_init(PrintConfig* config) {
-    if (!config) {
-        log_this("Config", "Print config pointer is NULL", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    // Set default values
-    config->enabled = DEFAULT_PRINT_ENABLED;
-    config->max_queued_jobs = DEFAULT_MAX_QUEUED_JOBS;
-    config->max_concurrent_jobs = DEFAULT_MAX_CONCURRENT_JOBS;
-
-    // Initialize priorities
-    config->priorities.default_priority = 1;
-    config->priorities.emergency_priority = 0;
-    config->priorities.maintenance_priority = 2;
-    config->priorities.system_priority = 3;
-
-    // Initialize timeouts
-    config->timeouts.shutdown_wait_ms = DEFAULT_SHUTDOWN_WAIT_MS;
-    config->timeouts.job_processing_timeout_ms = DEFAULT_JOB_PROCESSING_TIMEOUT_MS;
-
-    // Initialize buffers
-    config->buffers.job_message_size = 256;
-    config->buffers.status_message_size = 256;
-
-    return 0;
-}
-
-// Free resources allocated for print configuration
-void config_print_cleanup(PrintConfig* config) {
-    if (!config) {
-        return;
-    }
+// Clean up print configuration
+void cleanup_print_config(PrintConfig* config) {
+    if (!config) return;
 
     // Zero out the structure
     memset(config, 0, sizeof(PrintConfig));
 }
 
-// Validate print configuration values
-int config_print_validate(const PrintConfig* config) {
+// Helper function for dumping priority settings
+static void dump_priorities(const PrintQueuePrioritiesConfig* priorities) {
+    DUMP_TEXT("――", "Priorities");
+    DUMP_INT("――――Default Priority", priorities->default_priority);
+    DUMP_INT("――――Emergency Priority", priorities->emergency_priority);
+    DUMP_INT("――――Maintenance Priority", priorities->maintenance_priority);
+    DUMP_INT("――――System Priority", priorities->system_priority);
+}
+
+// Helper function for dumping timeout settings
+static void dump_timeouts(const PrintQueueTimeoutsConfig* timeouts) {
+    DUMP_TEXT("――", "Timeouts");
+    DUMP_SIZE("――――Shutdown Wait (ms)", timeouts->shutdown_wait_ms);
+    DUMP_SIZE("――――Job Processing Timeout (ms)", timeouts->job_processing_timeout_ms);
+}
+
+// Helper function for dumping buffer settings
+static void dump_buffers(const PrintQueueBuffersConfig* buffers) {
+    DUMP_TEXT("――", "Buffers");
+    DUMP_SIZE("――――Job Message Size", buffers->job_message_size);
+    DUMP_SIZE("――――Status Message Size", buffers->status_message_size);
+}
+
+// Helper function for dumping motion control settings with units
+static void dump_motion(const MotionConfig* motion) {
+    DUMP_TEXT("――", "Motion Control");
+    char buffer[32];
+
+    snprintf(buffer, sizeof(buffer), "%.2f mm/s", motion->max_speed);
+    DUMP_TEXT("――――Max Speed", buffer);
+    snprintf(buffer, sizeof(buffer), "%.2f mm/s", motion->max_speed_xy);
+    DUMP_TEXT("――――Max XY Speed", buffer);
+    snprintf(buffer, sizeof(buffer), "%.2f mm/s", motion->max_speed_z);
+    DUMP_TEXT("――――Max Z Speed", buffer);
+    snprintf(buffer, sizeof(buffer), "%.2f mm/s", motion->max_speed_travel);
+    DUMP_TEXT("――――Max Travel Speed", buffer);
+    snprintf(buffer, sizeof(buffer), "%.2f mm/s²", motion->acceleration);
+    DUMP_TEXT("――――Acceleration", buffer);
+    snprintf(buffer, sizeof(buffer), "%.2f mm/s²", motion->z_acceleration);
+    DUMP_TEXT("――――Z Acceleration", buffer);
+    snprintf(buffer, sizeof(buffer), "%.2f mm/s²", motion->e_acceleration);
+    DUMP_TEXT("――――Extruder Acceleration", buffer);
+    snprintf(buffer, sizeof(buffer), "%.2f mm/s³", motion->jerk);
+    DUMP_TEXT("――――Jerk", buffer);
+    DUMP_BOOL("――――Smooth Moves", motion->smooth_moves);
+}
+
+// Dump print configuration for debugging
+void dump_print_config(const PrintConfig* config) {
     if (!config) {
-        log_this("Config", "Print config pointer is NULL", LOG_LEVEL_ERROR);
-        return -1;
+        DUMP_TEXT("", "Cannot dump NULL print config");
+        return;
     }
 
-    // Validate job limits
-    if (config->max_queued_jobs < MIN_QUEUED_JOBS || config->max_queued_jobs > MAX_QUEUED_JOBS) {
-        log_this("Config", "Invalid max queued jobs (must be between %d and %d)", 
-                LOG_LEVEL_ERROR, MIN_QUEUED_JOBS, MAX_QUEUED_JOBS);
-        return -1;
-    }
+    // Dump main settings
+    DUMP_BOOL("Enabled", config->enabled);
+    DUMP_SIZE("Max Queued Jobs", config->max_queued_jobs);
+    DUMP_SIZE("Max Concurrent Jobs", config->max_concurrent_jobs);
 
-    if (config->max_concurrent_jobs < MIN_CONCURRENT_JOBS || config->max_concurrent_jobs > MAX_CONCURRENT_JOBS) {
-        log_this("Config", "Invalid max concurrent jobs (must be between %d and %d)",
-                LOG_LEVEL_ERROR, MIN_CONCURRENT_JOBS, MAX_CONCURRENT_JOBS);
-        return -1;
-    }
-
-    // Validate priorities
-    if (config->priorities.emergency_priority < 0) {
-        log_this("Config", "Invalid emergency priority (must be non-negative)", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    // Validate timeouts
-    if (config->timeouts.shutdown_wait_ms == 0) {
-        log_this("Config", "Invalid shutdown wait time (must be positive)", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    if (config->timeouts.job_processing_timeout_ms == 0) {
-        log_this("Config", "Invalid job processing timeout (must be positive)", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    // Validate buffers
-    if (config->buffers.job_message_size == 0) {
-        log_this("Config", "Invalid job message buffer size (must be positive)", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    if (config->buffers.status_message_size == 0) {
-        log_this("Config", "Invalid status message buffer size (must be positive)", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    return 0;
+    // Dump subsystem configurations
+    dump_priorities(&config->priorities);
+    dump_timeouts(&config->timeouts);
+    dump_buffers(&config->buffers);
+    dump_motion(&config->motion);
 }

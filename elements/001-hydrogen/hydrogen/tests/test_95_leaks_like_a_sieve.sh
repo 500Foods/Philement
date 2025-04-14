@@ -14,11 +14,15 @@ HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 source "$SCRIPT_DIR/support_utils.sh"
 
 # Configuration
-CONFIG_FILE=$(get_config_path "hydrogen_test_min.json")
+CONFIG_FILE=$(get_config_path "hydrogen_test_api_test_1.json")
 if [ ! -f "$CONFIG_FILE" ]; then
     print_result 1 "Configuration file not found: $CONFIG_FILE"
     exit 1
 fi
+
+# Initialize result variables
+DIRECT_RESULT=1
+INDIRECT_RESULT=1
 
 # Process leak report and extract grouped leaks
 extract_leak_info() {
@@ -217,14 +221,14 @@ run_leak_test() {
     local summary_file="$log_dir/leak_summary.txt"
     local details_file="$log_dir/leak_details.txt"
     
-    # Start hydrogen server with ASAN options
-    ASAN_OPTIONS="detect_leaks=1:log_path=$log_file" $binary "$CONFIG_FILE" > "$log_dir/server.log" 2>&1 &
+    # Start hydrogen server with comprehensive ASAN options
+    ASAN_OPTIONS="detect_leaks=1:leak_check_at_exit=1:verbosity=1:log_threads=1:print_stats=1" $binary "$CONFIG_FILE" > "$log_dir/server.log" 2>&1 &
     HYDROGEN_PID=$!
     
     # Wait for startup
-    print_info "Waiting for startup (max 10s)..."
+    print_info "Waiting for startup (max 3s)..."
     STARTUP_START=$(date +%s)
-    STARTUP_TIMEOUT=10
+    STARTUP_TIMEOUT=3
     STARTUP_COMPLETE=false
     
     while true; do
@@ -251,17 +255,36 @@ run_leak_test() {
         sleep 0.2
     done
     
-    # Send SIGINT to trigger clean shutdown
-    print_info "Sending SIGINT to trigger clean shutdown..."
-    kill -INT $HYDROGEN_PID
+    # Let it run briefly and perform some operations
+    print_info "Running operations to trigger potential leaks..."
+    sleep 1
+    
+    # Try some API calls to trigger potential memory operations
+    for i in {1..3}; do
+        curl -s "http://localhost:5030/api/system/info" > /dev/null 2>&1
+        sleep 0.2
+    done
+    
+    # Let memory operations settle
+    sleep 1
+    
+    # Send SIGTERM to trigger shutdown
+    print_info "Sending SIGTERM to trigger shutdown..."
+    kill -TERM $HYDROGEN_PID
     
     # Wait for process to exit
     wait $HYDROGEN_PID
     EXIT_CODE=$?
     
-    # Check if ASAN generated a leak report
-    if [ ! -f "${log_file}.${HYDROGEN_PID}" ]; then
-        print_result 1 "No ASAN leak report found"
+    # Check server.log for ASAN output
+    print_info "Checking server.log for ASAN output..."
+    if grep -q "LeakSanitizer" "$log_dir/server.log"; then
+        print_info "Found ASAN leak detection output in server.log"
+        cp "$log_dir/server.log" "${log_file}.${HYDROGEN_PID}"
+    else
+        print_result 1 "No ASAN leak detection output found in server.log"
+        print_info "Server log contents:"
+        cat "$log_dir/server.log"
         return 1
     fi
     

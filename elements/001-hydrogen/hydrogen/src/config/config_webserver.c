@@ -23,6 +23,10 @@ bool load_webserver_config(json_t* root, AppConfig* config) {
     webserver->enable_ipv6 = false;
     webserver->port = 8080;
     webserver->max_upload_size = 100 * 1024 * 1024;  // 100MB
+    webserver->thread_pool_size = 4;  // Default to 4 threads
+    webserver->max_connections = 100;  // Default to 100 connections
+    webserver->max_connections_per_ip = 10;  // Default to 10 per IP
+    webserver->connection_timeout = 60;  // Default to 60 seconds
     
     // Allocate and set default paths
     webserver->web_root = strdup("/var/www/html");
@@ -41,6 +45,39 @@ bool load_webserver_config(json_t* root, AppConfig* config) {
     success = success && PROCESS_STRING(root, webserver, upload_path, "WebServer.UploadPath", "WebServer");
     success = success && PROCESS_STRING(root, webserver, upload_dir, "WebServer.UploadDir", "WebServer");
     success = success && PROCESS_SIZE(root, webserver, max_upload_size, "WebServer.MaxUploadSize", "WebServer");
+
+    // Process connection settings
+    success = success && PROCESS_INT(root, webserver, thread_pool_size, "WebServer.ThreadPoolSize", "WebServer");
+    success = success && PROCESS_INT(root, webserver, max_connections, "WebServer.MaxConnections", "WebServer");
+    success = success && PROCESS_INT(root, webserver, max_connections_per_ip, "WebServer.MaxConnectionsPerIP", "WebServer");
+    success = success && PROCESS_INT(root, webserver, connection_timeout, "WebServer.ConnectionTimeout", "WebServer");
+
+    // Validate connection settings against limits
+    if (webserver->thread_pool_size < MIN_THREAD_POOL_SIZE || webserver->thread_pool_size > MAX_THREAD_POOL_SIZE) {
+        log_this("Config-WebServer", "Thread pool size must be between %d and %d", LOG_LEVEL_ERROR,
+                MIN_THREAD_POOL_SIZE, MAX_THREAD_POOL_SIZE);
+        success = false;
+    }
+
+    if (webserver->max_connections < MIN_CONNECTIONS || webserver->max_connections > MAX_CONNECTIONS) {
+        log_this("Config-WebServer", "Max connections must be between %d and %d", LOG_LEVEL_ERROR,
+                MIN_CONNECTIONS, MAX_CONNECTIONS);
+        success = false;
+    }
+
+    if (webserver->max_connections_per_ip < MIN_CONNECTIONS_PER_IP || 
+        webserver->max_connections_per_ip > MAX_CONNECTIONS_PER_IP) {
+        log_this("Config-WebServer", "Max connections per IP must be between %d and %d", LOG_LEVEL_ERROR,
+                MIN_CONNECTIONS_PER_IP, MAX_CONNECTIONS_PER_IP);
+        success = false;
+    }
+
+    if (webserver->connection_timeout < MIN_CONNECTION_TIMEOUT || 
+        webserver->connection_timeout > MAX_CONNECTION_TIMEOUT) {
+        log_this("Config-WebServer", "Connection timeout must be between %d and %d seconds", LOG_LEVEL_ERROR,
+                MIN_CONNECTION_TIMEOUT, MAX_CONNECTION_TIMEOUT);
+        success = false;
+    }
 
     return success;
 }
@@ -61,6 +98,13 @@ void dump_webserver_config(const WebServerConfig* config) {
     DUMP_STRING("―― Upload Path", config->upload_path);
     DUMP_STRING("―― Upload Directory", config->upload_dir);
     DUMP_SIZE("―― Max Upload Size", config->max_upload_size);
+
+    // Connection settings
+    DUMP_TEXT("――", "Connection Settings");
+    DUMP_INT("―――― Thread Pool Size", config->thread_pool_size);
+    DUMP_INT("―――― Max Connections", config->max_connections);
+    DUMP_INT("―――― Max Connections Per IP", config->max_connections_per_ip);
+    DUMP_INT("―――― Connection Timeout (seconds)", config->connection_timeout);
 
 }
 
