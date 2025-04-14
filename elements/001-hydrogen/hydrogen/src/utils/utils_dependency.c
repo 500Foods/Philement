@@ -242,7 +242,7 @@
      log_this("DepCheck", "DEPENDENCY CHECK", LOG_LEVEL_STATE);
      int critical_count = 0;
  
-     bool web = config ? (config->web.enable_ipv4 || config->web.enable_ipv6) : false;
+     bool web = config ? (config->webserver.enable_ipv4 || config->webserver.enable_ipv6) : false;
      bool ws = config ? config->websocket.enabled : false;
      bool sec = config ? (web || ws) : false;
      bool print = config ? config->print.enabled : false;

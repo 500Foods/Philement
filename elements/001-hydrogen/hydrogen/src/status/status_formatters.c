@@ -165,23 +165,23 @@ json_t* format_system_status_json(const SystemMetrics *metrics) {
         json_object_set_new(services, "logging", logging);
     }
 
-    // Web service
-    if (metrics->web.enabled) {
-        json_t *web = json_object();
-        json_object_set_new(web, "enabled", json_true());
-        json_t *web_status = json_object();
-        json_object_set_new(web_status, "activeRequests", 
-                          json_integer(metrics->web.specific.web.active_requests));
-        json_object_set_new(web_status, "totalRequests", 
-                          json_integer(metrics->web.specific.web.total_requests));
-        json_object_set_new(web_status, "threads", 
-                          json_integer(metrics->web.threads.thread_count));
-        json_object_set_new(web_status, "virtualMemoryBytes", 
-                          json_integer(metrics->web.threads.virtual_memory));
-        json_object_set_new(web_status, "residentMemoryBytes", 
-                          json_integer(metrics->web.threads.resident_memory));
-        json_object_set_new(web, "status", web_status);
-        json_object_set_new(services, "web", web);
+    // Webserver service
+    if (metrics->webserver.enabled) {
+        json_t *webserver = json_object();
+        json_object_set_new(webserver, "enabled", json_true());
+        json_t *webserver_status = json_object();
+        json_object_set_new(webserver_status, "activeRequests", 
+                          json_integer(metrics->webserver.specific.webserver.active_requests));
+        json_object_set_new(webserver_status, "totalRequests", 
+                          json_integer(metrics->webserver.specific.webserver.total_requests));
+        json_object_set_new(webserver_status, "threads", 
+                          json_integer(metrics->webserver.threads.thread_count));
+        json_object_set_new(webserver_status, "virtualMemoryBytes", 
+                          json_integer(metrics->webserver.threads.virtual_memory));
+        json_object_set_new(webserver_status, "residentMemoryBytes", 
+                          json_integer(metrics->webserver.threads.resident_memory));
+        json_object_set_new(webserver, "status", webserver_status);
+        json_object_set_new(services, "webserver", webserver);
     }
 
     // WebSocket service
@@ -336,21 +336,21 @@ char* format_system_status_prometheus(const SystemMetrics *metrics) {
                metrics->logging.threads.resident_memory);
     }
 
-    if (metrics->web.enabled) {
-        APPEND("service_threads{service=\"web\"} %d\n"
-               "service_virtual_memory_bytes{service=\"web\"} %zu\n"
-               "service_resident_memory_bytes{service=\"web\"} %zu\n"
-               "# HELP web_active_requests Current number of active web requests\n"
-               "# TYPE web_active_requests gauge\n"
-               "web_active_requests %d\n"
-               "# HELP web_requests_total Total number of web requests\n"
-               "# TYPE web_requests_total counter\n"
-               "web_requests_total %d\n",
-               metrics->web.threads.thread_count,
-               metrics->web.threads.virtual_memory,
-               metrics->web.threads.resident_memory,
-               metrics->web.specific.web.active_requests,
-               metrics->web.specific.web.total_requests);
+    if (metrics->webserver.enabled) {
+        APPEND("service_threads{service=\"webserver\"} %d\n"
+               "service_virtual_memory_bytes{service=\"webserver\"} %zu\n"
+               "service_resident_memory_bytes{service=\"webserver\"} %zu\n"
+               "# HELP webserver_active_requests Current number of active webserver requests\n"
+               "# TYPE webserver_active_requests gauge\n"
+               "webserver_active_requests %d\n"
+               "# HELP webserver_requests_total Total number of webserver requests\n"
+               "# TYPE webserver_requests_total counter\n"
+               "webserver_requests_total %d\n",
+               metrics->webserver.threads.thread_count,
+               metrics->webserver.threads.virtual_memory,
+               metrics->webserver.threads.resident_memory,
+               metrics->webserver.specific.webserver.active_requests,
+               metrics->webserver.specific.webserver.total_requests);
     }
 
     if (metrics->websocket.enabled) {

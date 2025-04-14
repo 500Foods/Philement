@@ -24,7 +24,7 @@
 // External declarations from state.h
 extern AppConfig* app_config;
 extern ServiceThreads logging_threads;
-extern ServiceThreads web_threads;
+extern ServiceThreads webserver_threads;
 extern ServiceThreads websocket_threads;
 extern ServiceThreads mdns_server_threads;
 extern ServiceThreads print_threads;
@@ -124,8 +124,8 @@ void update_registry_on_startup(void) {
     update_subsystem_on_startup("Logging", logging_threads.thread_count > 0);
     
     // Web Server
-    update_service_thread_metrics(&web_threads);
-    update_subsystem_on_startup("WebServer", web_threads.thread_count > 0);
+    update_service_thread_metrics(&webserver_threads);
+    update_subsystem_on_startup("WebServer", webserver_threads.thread_count > 0);
     
     // WebSocket
     update_service_thread_metrics(&websocket_threads);
@@ -337,8 +337,8 @@ void update_registry_on_shutdown(void) {
     }
     
     // Check Web Server
-    update_service_thread_metrics(&web_threads);
-    if (web_threads.thread_count > 0) {
+    update_service_thread_metrics(&webserver_threads);
+    if (webserver_threads.thread_count > 0) {
         update_subsystem_on_shutdown("WebServer");
     } else {
         update_subsystem_after_shutdown("WebServer");

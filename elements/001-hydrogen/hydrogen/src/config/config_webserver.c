@@ -11,112 +11,77 @@
 #include "config_utils.h"
 #include "../logging/logging.h"
 
-// Default values
-#define DEFAULT_PORT 8080
-#define DEFAULT_THREAD_POOL_SIZE 4
-#define DEFAULT_MAX_CONNECTIONS 1000
-#define DEFAULT_MAX_CONNECTIONS_PER_IP 100
-#define DEFAULT_CONNECTION_TIMEOUT 60
-#define DEFAULT_MAX_UPLOAD_SIZE (100 * 1024 * 1024)  // 100MB
-
 bool load_webserver_config(json_t* root, AppConfig* config) {
     if (!root || !config) {
-        log_this("Config-WebServer", "Invalid parameters for web server configuration", LOG_LEVEL_ERROR);
         return false;
     }
 
-    // Initialize with defaults
-    if (config_webserver_init(&config->web) != 0) {
-        log_this("Config-WebServer", "Failed to initialize web server configuration", LOG_LEVEL_ERROR);
-        return false;
-    }
+    WebServerConfig* webserver = &config->webserver;
 
-    bool success = true;
-    WebServerConfig* web = &config->web;
-    PROCESS_SECTION(root, "WebServer"); {
-        // Network settings
-        PROCESS_BOOL(root, web, enable_ipv4, "enable_ipv4", "WebServer");
-        PROCESS_BOOL(root, web, enable_ipv6, "enable_ipv6", "WebServer");
-        PROCESS_INT(root, web, port, "port", "WebServer");
+    // Zero out the structure
+    memset(webserver, 0, sizeof(WebServerConfig));
 
-        // Paths
-        PROCESS_STRING(root, web, web_root, "web_root", "WebServer");
-        PROCESS_STRING(root, web, upload_path, "upload_path", "WebServer");
-        PROCESS_STRING(root, web, upload_dir, "upload_dir", "WebServer");
-        PROCESS_SIZE(root, web, max_upload_size, "max_upload_size", "WebServer");
+    // Set defaults directly in the structure
+    webserver->enable_ipv4 = true;
+    webserver->enable_ipv6 = false;
+    webserver->port = 8080;
+    webserver->thread_pool_size = 4;
+    webserver->max_connections = 1000;
+    webserver->max_connections_per_ip = 100;
+    webserver->connection_timeout = 60;
+    webserver->max_upload_size = 100 * 1024 * 1024;  // 100MB
+    
+    // Allocate and set default paths
+    webserver->web_root = strdup("/var/www/html");
+    webserver->upload_path = strdup("/upload");
+    webserver->upload_dir = strdup("/var/uploads");
 
-        // Thread and connection settings
-        PROCESS_INT(root, web, thread_pool_size, "thread_pool_size", "WebServer");
-        PROCESS_INT(root, web, max_connections, "max_connections", "WebServer");
-        PROCESS_INT(root, web, max_connections_per_ip, "max_connections_per_ip", "WebServer");
-        PROCESS_INT(root, web, connection_timeout, "connection_timeout", "WebServer");
+    
+    // Process network settings
+    PROCESS_BOOL(root, webserver, enable_ipv4, "WebServer.enable_ipv4", "WebServer");
+    PROCESS_BOOL(root, webserver, enable_ipv6, "WebServer.enable_ipv6", "WebServer");
+    PROCESS_INT(root, webserver, port, "WebServer.port", "WebServer");
 
-        // Buffer for numeric conversions
-        char buffer[32];
+    // Process paths
+    PROCESS_STRING(root, webserver, web_root, "WebServer.web_root", "WebServer");
+    PROCESS_STRING(root, webserver, upload_path, "WebServer.upload_path", "WebServer");
+    PROCESS_STRING(root, webserver, upload_dir, "WebServer.upload_dir", "WebServer");
+    PROCESS_SIZE(root, webserver, max_upload_size, "WebServer.max_upload_size", "WebServer");
 
-        // Log configuration
-        log_config_item("IPv4 Enabled", web->enable_ipv4 ? "true" : "false", false, "WebServer");
-        log_config_item("IPv6 Enabled", web->enable_ipv6 ? "true" : "false", false, "WebServer");
-        snprintf(buffer, sizeof(buffer), "%d", web->port);
-        log_config_item("Port", buffer, false, "WebServer");
-        log_config_item("Web Root", web->web_root, false, "WebServer");
-        log_config_item("Upload Path", web->upload_path, false, "WebServer");
-        log_config_item("Upload Directory", web->upload_dir, false, "WebServer");
-        snprintf(buffer, sizeof(buffer), "%zu", web->max_upload_size);
-        log_config_item("Max Upload Size", buffer, false, "WebServer");
-        snprintf(buffer, sizeof(buffer), "%d", web->thread_pool_size);
-        log_config_item("Thread Pool Size", buffer, false, "WebServer");
-        snprintf(buffer, sizeof(buffer), "%d", web->max_connections);
-        log_config_item("Max Connections", buffer, false, "WebServer");
-        snprintf(buffer, sizeof(buffer), "%d", web->max_connections_per_ip);
-        log_config_item("Max Connections per IP", buffer, false, "WebServer");
-        snprintf(buffer, sizeof(buffer), "%d", web->connection_timeout);
-        log_config_item("Connection Timeout", buffer, false, "WebServer");
+    // Process thread and connection settings
+    PROCESS_INT(root, webserver, thread_pool_size, "WebServer.thread_pool_size", "WebServer");
+    PROCESS_INT(root, webserver, max_connections, "WebServer.max_connections", "WebServer");
+    PROCESS_INT(root, webserver, max_connections_per_ip, "WebServer.max_connections_per_ip", "WebServer");
+    PROCESS_INT(root, webserver, connection_timeout, "WebServer.connection_timeout", "WebServer");
 
-        // Validate configuration
-        if (config_webserver_validate(&config->web) != 0) {
-            log_this("Config-WebServer", "Invalid web server configuration", LOG_LEVEL_ERROR);
-            success = false;
-        }
-    }
-
-    if (!success) {
-        config_webserver_cleanup(&config->web);
-    }
-
-    return success;
+    return true;
 }
 
-int config_webserver_init(WebServerConfig* config) {
+void dump_webserver_config(const WebServerConfig* config) {
     if (!config) {
-        return -1;
+        DUMP_TEXT("", "Cannot dump NULL web server config");
+        return;
     }
 
-    memset(config, 0, sizeof(WebServerConfig));
+    // Network settings
+    DUMP_TEXT("――", "Network Settings");
+    DUMP_BOOL("IPv4 Enabled", config->enable_ipv4);
+    DUMP_BOOL("IPv6 Enabled", config->enable_ipv6);
+    DUMP_INT("Port", config->port);
 
-    // Network defaults
-    config->enable_ipv4 = true;
-    config->enable_ipv6 = false;
-    config->port = DEFAULT_PORT;
+    // Paths
+    DUMP_TEXT("――", "Paths");
+    DUMP_STRING("Web Root", config->web_root);
+    DUMP_STRING("Upload Path", config->upload_path);
+    DUMP_STRING("Upload Directory", config->upload_dir);
+    DUMP_SIZE("Max Upload Size", config->max_upload_size);
 
-    // Thread and connection defaults
-    config->thread_pool_size = DEFAULT_THREAD_POOL_SIZE;
-    config->max_connections = DEFAULT_MAX_CONNECTIONS;
-    config->max_connections_per_ip = DEFAULT_MAX_CONNECTIONS_PER_IP;
-    config->connection_timeout = DEFAULT_CONNECTION_TIMEOUT;
-    config->max_upload_size = DEFAULT_MAX_UPLOAD_SIZE;
-
-    // Allocate and set default paths
-    config->web_root = strdup("/var/www/html");
-    config->upload_path = strdup("/upload");
-    config->upload_dir = strdup("/var/uploads");
-
-    if (!config->web_root || !config->upload_path || !config->upload_dir) {
-        config_webserver_cleanup(config);
-        return -1;
-    }
-
-    return 0;
+    // Thread and connection settings
+    DUMP_TEXT("――", "Thread and Connection Settings");
+    DUMP_INT("Thread Pool Size", config->thread_pool_size);
+    DUMP_INT("Max Connections", config->max_connections);
+    DUMP_INT("Max Connections per IP", config->max_connections_per_ip);
+    DUMP_INT("Connection Timeout", config->connection_timeout);
 }
 
 void config_webserver_cleanup(WebServerConfig* config) {
@@ -132,56 +97,4 @@ void config_webserver_cleanup(WebServerConfig* config) {
     // and cleaned up separately
 
     memset(config, 0, sizeof(WebServerConfig));
-}
-
-int config_webserver_validate(const WebServerConfig* config) {
-    if (!config) {
-        return -1;
-    }
-
-    // At least one protocol must be enabled
-    if (!config->enable_ipv4 && !config->enable_ipv6) {
-        log_this("Config-WebServer", "At least one IP protocol must be enabled", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    // Validate port range
-    if (config->port < MIN_PORT || config->port > MAX_PORT) {
-        log_this("Config-WebServer", "Port number out of valid range", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    // Validate paths
-    if (!config->web_root || !config->upload_path || !config->upload_dir) {
-        log_this("Config-WebServer", "Required paths not configured", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    // Validate thread pool size
-    if (config->thread_pool_size < MIN_THREAD_POOL_SIZE || 
-        config->thread_pool_size > MAX_THREAD_POOL_SIZE) {
-        log_this("Config-WebServer", "Thread pool size out of valid range", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    // Validate connection settings
-    if (config->max_connections < MIN_CONNECTIONS || 
-        config->max_connections > MAX_CONNECTIONS) {
-        log_this("Config-WebServer", "Max connections out of valid range", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    if (config->max_connections_per_ip < MIN_CONNECTIONS_PER_IP || 
-        config->max_connections_per_ip > MAX_CONNECTIONS_PER_IP) {
-        log_this("Config-WebServer", "Max connections per IP out of valid range", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    if (config->connection_timeout < MIN_CONNECTION_TIMEOUT || 
-        config->connection_timeout > MAX_CONNECTION_TIMEOUT) {
-        log_this("Config-WebServer", "Connection timeout out of valid range", LOG_LEVEL_ERROR);
-        return -1;
-    }
-
-    return 0;
 }

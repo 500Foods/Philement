@@ -47,7 +47,7 @@ volatile sig_atomic_t print_queue_shutdown = 0;
 // System thread handles with lifecycle management
 
 pthread_t log_thread;
-pthread_t web_thread;
+pthread_t webserver_thread;
 pthread_t websocket_thread;
 pthread_t mdns_server_thread;
 pthread_t print_queue_thread;
@@ -55,7 +55,7 @@ pthread_t print_queue_thread;
 // Thread tracking structures 
 
 ServiceThreads logging_threads;
-ServiceThreads web_threads;
+ServiceThreads webserver_threads;
 ServiceThreads websocket_threads;
 ServiceThreads mdns_server_threads;
 ServiceThreads print_threads;

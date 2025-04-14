@@ -1,5 +1,9 @@
 /*
  * Logging Configuration Implementation
+ * 
+ * Implements configuration loading and management for the logging subsystem.
+ * Supports multiple output destinations (Console, File, Database, Notify) with
+ * per-subsystem log levels and environment variable configuration.
  */
 
 #include <stdlib.h>
@@ -7,260 +11,330 @@
 #include <jansson.h>
 #include "config.h"
 #include "config_utils.h"
-#include "config_priority.h"
 #include "config_logging.h"
+#include "config_priority.h"
 #include "../logging/logging.h"
 #include "../utils/utils.h"
 
-// Forward declarations for validation helpers
-static int validate_log_levels(const LoggingConfig* config);
+// Default values for logging destinations
+#define DEFAULT_CONSOLE_ENABLED  true
+#define DEFAULT_FILE_ENABLED     true
+#define DEFAULT_DATABASE_ENABLED false
+#define DEFAULT_NOTIFY_ENABLED   false
 
-bool load_logging_config(json_t* root, AppConfig* config) {
-    // Initialize logging configuration
-    if (config_logging_init(&config->logging) != 0) {
-        log_this("Config-Logging", "Failed to initialize logging configuration", LOG_LEVEL_ERROR);
-        return false;
-    }
+#define DEFAULT_CONSOLE_LEVEL  0 // TRACE
+#define DEFAULT_FILE_LEVEL     1 // DEBUG
+#define DEFAULT_DATABASE_LEVEL 4 // ERROR
+#define DEFAULT_NOTIFY_LEVEL   4 // ERROR
 
-    // Set default state (all outputs enabled, level STATE)
-    config->logging.console.enabled = true;
-    config->logging.file.enabled = true;
-    config->logging.database.enabled = true;
-    config->logging.notify.enabled = true;
-    config->logging.console.default_level = LOG_LEVEL_STATE;
-    config->logging.file.default_level = LOG_LEVEL_STATE;
-    config->logging.database.default_level = LOG_LEVEL_STATE;
-    config->logging.notify.default_level = LOG_LEVEL_STATE;
-
-    // Logging Configuration
-    json_t* logging = json_object_get(root, "Logging");
-    bool using_defaults = !json_is_object(logging);
+// Helper function for initializing subsystems
+static bool init_subsystems(LoggingDestConfig* dest) {
+    dest->subsystems = calloc(2, sizeof(LoggingSubsystem));
+    if (!dest->subsystems) return false;
+    dest->subsystem_count = 2;
     
-    log_config_section("Logging", using_defaults);
+    dest->subsystems[0].name = strdup("Startup");
+    dest->subsystems[0].level = dest->default_level;
+    dest->subsystems[1].name = strdup("Shutdown");
+    dest->subsystems[1].level = dest->default_level;
+    
+    return (dest->subsystems[0].name && dest->subsystems[1].name);
+}
 
-    if (!using_defaults) {
-        // Process log levels if provided
-        json_t* levels = json_object_get(logging, "Levels");
-        if (json_is_array(levels)) {
-            config->logging.level_count = json_array_size(levels);
-            config->logging.levels = calloc(config->logging.level_count, sizeof(*config->logging.levels));
-            if (!config->logging.levels) {
-                log_this("Config-Logging", "Failed to allocate memory for log levels", LOG_LEVEL_ERROR);
-                return false;
-            }
+// Helper function for processing all subsystems
+static bool process_subsystems(json_t* root, LoggingDestConfig* dest, const char* path,
+                             const LoggingConfig* config) {
+    char subsys_path[256];
+    snprintf(subsys_path, sizeof(subsys_path), "%s.Subsystems", path);
+    
+    // Initialize with defaults first
+    if (!init_subsystems(dest)) return false;
+    
+    // Process the subsystems section
+    if (!PROCESS_SECTION(root, subsys_path)) return false;
 
-            char count_buffer[64];
-            snprintf(count_buffer, sizeof(count_buffer), "%zu configured",
-                    config->logging.level_count);
-            log_config_item("LogLevels", count_buffer, false, "Logging");
-            
-            for (size_t i = 0; i < config->logging.level_count; i++) {
-                json_t* level = json_array_get(levels, i);
-                if (json_is_array(level) && json_array_size(level) == 2) {
-                    json_t* level_value = json_array_get(level, 0);
-                    json_t* level_name = json_array_get(level, 1);
-                    
-                    PROCESS_INT(level_value, config, logging.levels[i].value, "Value", "Level");
-                    // Get the name string directly and make a copy
-                    const char* name_str = json_string_value(level_name);
-                    config->logging.levels[i].name = name_str ? strdup(name_str) : NULL;
+    // Get the section name from path
+    const char* section_name = strrchr(path, '.') + 1;
 
-                    // Log level info
-                    char level_buffer[256];
-                    snprintf(level_buffer, sizeof(level_buffer), "%d: %s",
-                            config->logging.levels[i].value,
-                            config->logging.levels[i].name);
-                    log_config_item("Level", level_buffer, false, "Logging");
-                }
-            }
+    // Get subsystems object from JSON
+    json_t* logging = json_object_get(root, "Logging");
+    json_t* subsystems = NULL;
+    if (json_is_object(logging)) {
+        json_t* section = json_object_get(logging, section_name);
+        if (json_is_object(section)) {
+            subsystems = json_object_get(section, "Subsystems");
         }
-
-        // Process output configurations
-        const char* outputs[] = {"Console", "File", "Database", "Notify"};
-        for (size_t i = 0; i < 4; i++) {
-            json_t* output = json_object_get(logging, outputs[i]);
-            if (json_is_object(output)) {
-                log_config_item(outputs[i], "Configured", false, "Logging");
-                
-                // Process enabled status and default level
-                if (strcmp(outputs[i], "Console") == 0) {
-                    PROCESS_BOOL(output, config, logging.console.enabled, "Enabled", "Console");
-                    PROCESS_INT(output, config, logging.console.default_level, "DefaultLevel", "Console");
-                } else if (strcmp(outputs[i], "File") == 0) {
-                    PROCESS_BOOL(output, config, logging.file.enabled, "Enabled", "File");
-                    PROCESS_INT(output, config, logging.file.default_level, "DefaultLevel", "File");
-                    // Use log file path from server section
-                    config->logging.file.file_path = strdup(config->server.log_file);
-                } else if (strcmp(outputs[i], "Database") == 0) {
-                    PROCESS_BOOL(output, config, logging.database.enabled, "Enabled", "Database");
-                    PROCESS_INT(output, config, logging.database.default_level, "DefaultLevel", "Database");
-                } else if (strcmp(outputs[i], "Notify") == 0) {
-                    PROCESS_BOOL(output, config, logging.notify.enabled, "Enabled", "Notify");
-                    PROCESS_INT(output, config, logging.notify.default_level, "DefaultLevel", "Notify");
-                }
-
-                // Process subsystems if present
-                json_t* subsystems = json_object_get(output, "Subsystems");
-                if (json_is_object(subsystems)) {
-                    size_t subsystem_count = json_object_size(subsystems);
-                    char count_buffer[64];
-                    snprintf(count_buffer, sizeof(count_buffer), "%zu configured",
-                            subsystem_count);
-                    log_config_item("Subsystems", count_buffer, false, outputs[i]);
-
-                    SubsystemConfig* subsystem_array = calloc(subsystem_count, sizeof(SubsystemConfig));
-                    if (!subsystem_array) {
-                        log_this("Config-Logging", "Failed to allocate subsystem array", LOG_LEVEL_ERROR);
-                        return false;
-                    }
-
-                    size_t idx = 0;
-                    const char* key;
-                    json_t* value;
-                    json_object_foreach(subsystems, key, value) {
-                        subsystem_array[idx].name = strdup(key);
-                        if (!subsystem_array[idx].name) {
-                            log_this("Config-Logging", "Failed to allocate subsystem name", LOG_LEVEL_ERROR);
-                            for (size_t j = 0; j < idx; j++) {
-                                free((void*)subsystem_array[j].name);
-                            }
-                            free(subsystem_array);
-                            return false;
-                        }
-
-                        PROCESS_INT(value, &subsystem_array[idx], level, key, "Subsystem");
-                        log_config_item(key, config_logging_get_level_name(&config->logging, subsystem_array[idx].level), false, outputs[i]);
-                        idx++;
-                    }
-
-                    // Store subsystem array in appropriate output config
-                    if (strcmp(outputs[i], "Console") == 0) {
-                        config->logging.console.subsystem_count = subsystem_count;
-                        config->logging.console.subsystems = subsystem_array;
-                    } else if (strcmp(outputs[i], "File") == 0) {
-                        config->logging.file.subsystem_count = subsystem_count;
-                        config->logging.file.subsystems = subsystem_array;
-                    } else if (strcmp(outputs[i], "Database") == 0) {
-                        config->logging.database.subsystem_count = subsystem_count;
-                        config->logging.database.subsystems = subsystem_array;
-                    } else if (strcmp(outputs[i], "Notify") == 0) {
-                        config->logging.notify.subsystem_count = subsystem_count;
-                        config->logging.notify.subsystems = subsystem_array;
-                    }
-                }
-            } else {
-                log_config_item(outputs[i], "No configuration found, using defaults", true, "Logging");
-            }
-        }
-    } else {
-        log_config_item("Status", "Logging section missing, using defaults", true, "Logging");
     }
 
-    // Validate configuration
-    if (config_logging_validate(&config->logging) != 0) {
-        log_config_item("Status", "Invalid logging configuration", true, "Logging");
-        return false;
+    // Add any additional subsystems from JSON
+    if (json_is_object(subsystems)) {
+        const char* key;
+        json_t* value;
+        json_object_foreach(subsystems, key, value) {
+            if (!json_is_integer(value)) continue;
+            
+            // Look for existing subsystem
+            bool found = false;
+            for (size_t i = 0; i < dest->subsystem_count; i++) {
+                if (strcmp(dest->subsystems[i].name, key) == 0) {
+                    found = true;
+                    break;
+                }
+            }
+            
+            // Add new subsystem if not found
+            if (!found) {
+                size_t new_index = dest->subsystem_count;
+                LoggingSubsystem* new_subsystems = reallocarray(dest->subsystems, 
+                                                              new_index + 1, sizeof(LoggingSubsystem));
+                if (!new_subsystems) return false;
+                
+                dest->subsystems = new_subsystems;
+                dest->subsystems[new_index].name = strdup(key);
+                if (!dest->subsystems[new_index].name) return false;
+                
+                // Initialize with default level
+                dest->subsystems[new_index].level = dest->default_level;
+                dest->subsystem_count++;
+            }
+        }
+    }
+
+    // Sort subsystems by name (case-insensitive)
+    if (dest->subsystem_count > 1) {
+        for (size_t i = 0; i < dest->subsystem_count - 1; i++) {
+            for (size_t j = 0; j < dest->subsystem_count - i - 1; j++) {
+                if (strcasecmp(dest->subsystems[j].name, dest->subsystems[j + 1].name) > 0) {
+                    // Swap the subsystems
+                    LoggingSubsystem temp = dest->subsystems[j];
+                    dest->subsystems[j] = dest->subsystems[j + 1];
+                    dest->subsystems[j + 1] = temp;
+                }
+            }
+        }
+    }
+
+    // Process each subsystem's level
+    for (size_t i = 0; i < dest->subsystem_count; i++) {
+        char level_path[512];
+        snprintf(level_path, sizeof(level_path), "%s.%s", subsys_path, dest->subsystems[i].name);
+        
+        // Get current level name for display
+        const char* level_name = config_logging_get_level_name(config, dest->subsystems[i].level);
+        
+        // Process the level value and display it
+        if (!process_level_config(root, &dest->subsystems[i].level, level_name, 
+                                level_path, "Logging", dest->default_level)) {
+            return false;
+        }
     }
 
     return true;
 }
 
-int config_logging_init(LoggingConfig* config) {
-    if (!config) {
-        return -1;
+// Helper function for dumping destination config
+static void dump_destination(const LoggingConfig* config, const char* name, const LoggingDestConfig* dest) {
+    // Dump section header
+    DUMP_TEXT("――", name);
+
+    // Dump enabled status
+    DUMP_BOOL2("――――", "Enabled", dest->enabled);
+    
+    // Dump default level
+    const char* level_name = config_logging_get_level_name(config, dest->default_level);
+    char level_str[128];
+    snprintf(level_str, sizeof(level_str), "%s.DefaultLevel: %d (%s)", name,
+            dest->default_level, level_name ? level_name : "unknown");
+    DUMP_TEXT("――――", level_str);
+    
+    // Dump subsystems header
+    DUMP_TEXT("――――", "Subsystems");
+    
+    // Dump each subsystem
+    for (size_t i = 0; i < dest->subsystem_count; i++) {
+        const char* sublevel = config_logging_get_level_name(config, dest->subsystems[i].level);
+        char subsys_str[128];
+        snprintf(subsys_str, sizeof(subsys_str), "%s: %d (%s)", 
+                dest->subsystems[i].name,
+                dest->subsystems[i].level,
+                sublevel ? sublevel : "unknown");
+        DUMP_TEXT("――――――", subsys_str);
     }
-
-    // Initialize log level definitions
-    config->level_count = 0;
-    config->levels = NULL;
-
-    // Initialize logging destinations
-    if (config_logging_console_init(&config->console) != 0 ||
-        config_logging_file_init(&config->file) != 0 ||
-        config_logging_database_init(&config->database) != 0 ||
-        config_logging_notify_init(&config->notify) != 0) {
-        config_logging_cleanup(config);
-        return -1;
-    }
-
-    return 0;
 }
 
-void config_logging_cleanup(LoggingConfig* config) {
-    if (!config) {
-        return;
+// Load logging configuration from JSON
+bool load_logging_config(json_t* root, AppConfig* config) {
+    bool success = true;
+    LoggingConfig* logging_config = &config->logging;
+
+    // Zero out the config structure
+    memset(logging_config, 0, sizeof(LoggingConfig));
+    
+    // Initialize logging destinations with proper defaults
+    logging_config->console.enabled = DEFAULT_CONSOLE_ENABLED;
+    logging_config->console.default_level = DEFAULT_CONSOLE_LEVEL;
+    
+    logging_config->file.enabled = DEFAULT_FILE_ENABLED;
+    logging_config->file.default_level = DEFAULT_FILE_LEVEL;
+    
+    logging_config->database.enabled = DEFAULT_DATABASE_ENABLED;
+    logging_config->database.default_level = DEFAULT_DATABASE_LEVEL;
+    
+    logging_config->notify.enabled = DEFAULT_NOTIFY_ENABLED;
+    logging_config->notify.default_level = DEFAULT_NOTIFY_LEVEL;
+
+
+    // Initialize log levels array
+    logging_config->level_count = NUM_PRIORITY_LEVELS;
+    logging_config->levels = calloc(NUM_PRIORITY_LEVELS, sizeof(LogLevel));
+    if (!logging_config->levels) return false;
+
+    // Set default values from config_priority
+    for (size_t i = 0; i < NUM_PRIORITY_LEVELS; i++) {
+        logging_config->levels[i].value = i;  // Implicit ordering
+        logging_config->levels[i].name = strdup(DEFAULT_PRIORITY_LEVELS[i].label);
+        if (!logging_config->levels[i].name) return false;
     }
 
-    // Free log level definitions
+    // Process main logging section
+    success = PROCESS_SECTION(root, "Logging");
+    
+    // Process levels section
+    success = PROCESS_SECTION(root, "Logging.Levels");
+    
+    // Process each level name individually, allowing JSON/env overrides
+    for (size_t i = 0; i < NUM_PRIORITY_LEVELS; i++) {
+        success = success && PROCESS_ARRAY_ELEMENT(root, &logging_config->levels[i].name, i, "Logging.Levels", "Logging");
+    }
+    
+    // Process each destination's configuration
+    struct {
+        const char* name;
+        LoggingDestConfig* dest;
+    } destinations[] = {
+        {"Console", &logging_config->console},
+        {"File", &logging_config->file},
+        {"Database", &logging_config->database},
+        {"Notify", &logging_config->notify}
+    };
+
+    for (size_t i = 0; i < sizeof(destinations) / sizeof(destinations[0]); i++) {
+        const char* name = destinations[i].name;
+        LoggingDestConfig* dest = destinations[i].dest;
+        char path[64];
+        snprintf(path, sizeof(path), "Logging.%s", name);
+
+        // Process section and enabled status
+        success = success && PROCESS_SECTION(root, path);
+        char enabled_path[128];
+        snprintf(enabled_path, sizeof(enabled_path), "%s.Enabled", path);
+        success = success && PROCESS_BOOL(root, dest, enabled, enabled_path, "Logging");
+
+        // Process default level
+        char level_path[128];
+        snprintf(level_path, sizeof(level_path), "%s.DefaultLevel", path);
+        PROCESS_LEVEL(root, dest, default_level, level_path, "Logging",
+                     config_logging_get_level_name(logging_config, dest->default_level));
+
+        // Process subsystems
+        if (!process_subsystems(root, dest, path, logging_config)) {
+            return false;
+        }
+    }
+
+    return success;
+}
+
+// Clean up logging configuration
+void cleanup_logging_config(LoggingConfig* config) {
+    if (!config) return;
+
+    // Clean up log levels
     if (config->levels) {
         for (size_t i = 0; i < config->level_count; i++) {
-            free((void*)config->levels[i].name);
+            free(config->levels[i].name);
         }
         free(config->levels);
     }
 
-    // Cleanup logging destinations
-    config_logging_console_cleanup(&config->console);
-    config_logging_file_cleanup(&config->file);
-    config_logging_database_cleanup(&config->database);
-    config_logging_notify_cleanup(&config->notify);
+    // Clean up subsystems for each destination
+    for (LoggingDestConfig* dest = &config->console; dest <= &config->notify; dest++) {
+        if (dest->subsystems) {
+            for (size_t i = 0; i < dest->subsystem_count; i++) {
+                free(dest->subsystems[i].name);
+            }
+            free(dest->subsystems);
+        }
+    }
 
     // Zero out the structure
     memset(config, 0, sizeof(LoggingConfig));
 }
 
-static int validate_log_levels(const LoggingConfig* config) {
-    if (!config->levels || config->level_count == 0) {
-        return -1;
-    }
-
-    // Verify levels are valid (0-6) and have names
+const char* config_logging_get_level_name(const LoggingConfig* config, int level) {
+    if (!config || !config->levels) return NULL;
+    
     for (size_t i = 0; i < config->level_count; i++) {
-        if (config->levels[i].value < 0 || 
-            config->levels[i].value > 6 ||
-            !config->levels[i].name ||
-            !config->levels[i].name[0]) {
-            return -1;
+        if (config->levels[i].value == level) {
+            return config->levels[i].name;
         }
     }
-
-    return 0;
+    
+    return NULL;
 }
 
-int config_logging_validate(const LoggingConfig* config) {
+static int get_subsystem_level_internal(const LoggingDestConfig* dest_config, 
+                                      const char* subsystem, int safe_default) {
+    if (!dest_config || !subsystem) return safe_default;
+    
+    for (size_t i = 0; i < dest_config->subsystem_count; i++) {
+        if (dest_config->subsystems[i].name && 
+            strcmp(dest_config->subsystems[i].name, subsystem) == 0) {
+            return dest_config->subsystems[i].level;
+        }
+    }
+    
+    return dest_config->default_level;
+}
+
+int get_subsystem_level_console(const LoggingConfig* config, const char* subsystem) {
+    return config ? get_subsystem_level_internal(&config->console, subsystem, LOG_LEVEL_STATE) 
+                 : LOG_LEVEL_STATE;
+}
+
+int get_subsystem_level_file(const LoggingConfig* config, const char* subsystem) {
+    return config ? get_subsystem_level_internal(&config->file, subsystem, LOG_LEVEL_STATE)
+                 : LOG_LEVEL_STATE;
+}
+
+int get_subsystem_level_database(const LoggingConfig* config, const char* subsystem) {
+    return config ? get_subsystem_level_internal(&config->database, subsystem, LOG_LEVEL_ERROR)
+                 : LOG_LEVEL_ERROR;
+}
+
+int get_subsystem_level_notify(const LoggingConfig* config, const char* subsystem) {
+    return config ? get_subsystem_level_internal(&config->notify, subsystem, LOG_LEVEL_ERROR)
+                 : LOG_LEVEL_ERROR;
+}
+
+void dump_logging_config(const LoggingConfig* config) {
     if (!config) {
-        return -1;
+        DUMP_TEXT("", "Cannot dump NULL logging config");
+        return;
     }
 
-    // Validate log level definitions
-    if (validate_log_levels(config) != 0) {
-        return -1;
+    // Dump log levels
+    DUMP_TEXT("――", "Levels");
+    for (size_t i = 0; i < config->level_count; i++) {
+        char level_str[128];
+        snprintf(level_str, sizeof(level_str), "Levels[%zu]: %s", i, 
+                config->levels[i].name ? config->levels[i].name : "(not set)");
+        DUMP_TEXT("――――", level_str);
     }
 
-    // Validate all logging destinations
-    if (config_logging_console_validate(&config->console) != 0 ||
-        config_logging_file_validate(&config->file) != 0 ||
-        config_logging_database_validate(&config->database) != 0 ||
-        config_logging_notify_validate(&config->notify) != 0) {
-        return -1;
-    }
-
-    // Ensure at least one logging destination is enabled
-    if (!config->console.enabled &&
-        !config->file.enabled &&
-        !config->database.enabled &&
-        !config->notify.enabled) {
-        return -1;
-    }
-
-    return 0;
-}
-
-const char* config_logging_get_level_name(const LoggingConfig* config, int level) {
-    if (!config || !config->levels || level < 0 || 
-        level >= (int)config->level_count) {
-        return NULL;
-    }
-
-    return config->levels[level].name;
+    // Dump each destination configuration
+    dump_destination(config, "Console", &config->console);
+    dump_destination(config, "File", &config->file);
+    dump_destination(config, "Database", &config->database);
+    dump_destination(config, "Notify", &config->notify);
 }

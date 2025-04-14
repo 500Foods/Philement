@@ -24,7 +24,7 @@
 
 // External declarations for thread tracking
 extern ServiceThreads logging_threads;
-extern ServiceThreads web_threads;
+extern ServiceThreads webserver_threads;
 extern ServiceThreads websocket_threads;
 extern ServiceThreads mdns_server_threads;
 extern ServiceThreads print_threads;
@@ -63,7 +63,7 @@ LaunchReadiness check_threads_landing_readiness(void) {
     bool all_clear = true;
     
     // Only check non-logging threads since logging needs to stay active until the end
-    if (web_threads.thread_count > 0) {
+    if (webserver_threads.thread_count > 0) {
         readiness.messages[msg_idx++] = strdup("  No-Go:   Web threads still active");
         all_clear = false;
     }
@@ -109,11 +109,11 @@ static void free_thread_resources(void) {
     log_this("Threads", "LANDING: THREADS - Resource Cleanup", LOG_LEVEL_STATE);
     
     // Step 1: Remove individual threads first
-    if (web_threads.thread_count > 0) {
+    if (webserver_threads.thread_count > 0) {
         log_this("Threads", "  Step 1a: Removing web threads (%d remaining)", 
-                LOG_LEVEL_STATE, web_threads.thread_count);
-        for (int i = 0; i < web_threads.thread_count; i++) {
-            remove_service_thread(&web_threads, web_threads.thread_ids[i]);
+                LOG_LEVEL_STATE, webserver_threads.thread_count);
+        for (int i = 0; i < webserver_threads.thread_count; i++) {
+            remove_service_thread(&webserver_threads, webserver_threads.thread_ids[i]);
         }
     }
     

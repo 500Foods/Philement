@@ -27,7 +27,7 @@ void update_queue_limits_from_config(const AppConfig *config) {
 // Initialize all service thread tracking
 static void init_all_service_threads(void) {
     init_service_threads(&logging_threads);
-    init_service_threads(&web_threads);
+    init_service_threads(&webserver_threads);
     init_service_threads(&websocket_threads);
     init_service_threads(&mdns_server_threads);
     init_service_threads(&print_threads);

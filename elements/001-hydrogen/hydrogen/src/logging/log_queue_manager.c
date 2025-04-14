@@ -26,7 +26,7 @@
 #include "../queue/queue.h"
 #include "../config/config.h"
 #include "../config/config_priority.h"
-#include "../config/config_logging_notify.h"
+#include "../config/config_logging.h"
 #include "../utils/utils.h"
 
 // Public interface declarations
@@ -46,10 +46,10 @@ static FILE* log_file = NULL;
 
 // Private function declarations
 static void cleanup_log_queue_manager(void* arg);
-static bool should_log_to_console(const char* subsystem, int priority, const LoggingConsoleConfig* config);
-static bool should_log_to_file(const char* subsystem, int priority, const LoggingFileConfig* config);
-static bool should_log_to_database(const char* subsystem, int priority, const LoggingDatabaseConfig* config);
-static bool should_log_to_notify(const char* subsystem, int priority, const LoggingNotifyConfig* config);
+static bool should_log_to_console(const char* subsystem, int priority, const LoggingConfig* config);
+static bool should_log_to_file(const char* subsystem, int priority, const LoggingConfig* config);
+static bool should_log_to_database(const char* subsystem, int priority, const LoggingConfig* config);
+static bool should_log_to_notify(const char* subsystem, int priority, const LoggingConfig* config);
 static void process_log_message(const char* message, int priority);
 
 // Thread cleanup handler with guaranteed file closure
@@ -94,8 +94,8 @@ static void cleanup_log_queue_manager(void* arg) {
 //    - Memory allocation checks
 //    - Partial write detection
 // Check if a message should be logged to a specific destination
-static bool should_log_to_console(const char* subsystem, int priority, const LoggingConsoleConfig* config) {
-    if (!config->enabled) {
+static bool should_log_to_console(const char* subsystem, int priority, const LoggingConfig* config) {
+    if (!config->console.enabled) {
         return false;
     }
 
@@ -109,8 +109,8 @@ static bool should_log_to_console(const char* subsystem, int priority, const Log
     return priority >= configured_level;
 }
 
-static bool should_log_to_file(const char* subsystem, int priority, const LoggingFileConfig* config) {
-    if (!config->enabled) {
+static bool should_log_to_file(const char* subsystem, int priority, const LoggingConfig* config) {
+    if (!config->file.enabled) {
         return false;
     }
 
@@ -124,8 +124,8 @@ static bool should_log_to_file(const char* subsystem, int priority, const Loggin
     return priority >= configured_level;
 }
 
-static bool should_log_to_notify(const char* subsystem, int priority, const LoggingNotifyConfig* config) {
-    if (!config->enabled) {
+static bool should_log_to_notify(const char* subsystem, int priority, const LoggingConfig* config) {
+    if (!config->notify.enabled) {
         return false;
     }
 
@@ -139,8 +139,8 @@ static bool should_log_to_notify(const char* subsystem, int priority, const Logg
     return priority >= configured_level;
 }
 
-static bool should_log_to_database(const char* subsystem, int priority, const LoggingDatabaseConfig* config) {
-    if (!config->enabled) {
+static bool should_log_to_database(const char* subsystem, int priority, const LoggingConfig* config) {
+    if (!config->database.enabled) {
         return false;
     }
 
@@ -188,7 +188,7 @@ static void process_log_message(const char* message, int priority) {
 
         // Apply filtering for each destination
         // Prevent duplicate console output for thread management messages (which are already output directly)
-        if (logConsole && should_log_to_console(subsystem, priority, &app_config->logging.console)) {
+        if (logConsole && should_log_to_console(subsystem, priority, &app_config->logging)) {
             // Skip console output for ThreadMgmt and LogQueueManager messages during startup 
             // to avoid duplicate output with different timestamp formats
             if (!(strcmp(subsystem, "ThreadMgmt") == 0 || 
@@ -198,16 +198,16 @@ static void process_log_message(const char* message, int priority) {
             }
         }
 
-        if (logFile && log_file && should_log_to_file(subsystem, priority, &app_config->logging.file)) {
+        if (logFile && log_file && should_log_to_file(subsystem, priority, &app_config->logging)) {
             fputs(log_entry, log_file);
             fflush(log_file);  // Ensure the log is written immediately
         }
 
-        if (logDatabase && should_log_to_database(subsystem, priority, &app_config->logging.database)) {
+        if (logDatabase && should_log_to_database(subsystem, priority, &app_config->logging)) {
             // TODO: Implement database logging when needed
         }
 
-        if (logNotify && should_log_to_notify(subsystem, priority, &app_config->logging.notify)) {
+        if (logNotify && should_log_to_notify(subsystem, priority, &app_config->logging)) {
             // Get the configured notifier type
             const char* notifier = app_config->notify.notifier;
             if (notifier && strcmp(notifier, "SMTP") == 0 && app_config->notify.smtp.host) {

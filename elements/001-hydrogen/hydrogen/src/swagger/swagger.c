@@ -726,7 +726,7 @@ static char* get_server_url(struct MHD_Connection *connection,
     if (!host) {
         // If no Host header, construct from config
         char *url = NULL;
-        if (asprintf(&url, "http://localhost:%d", app_config->web.port) == -1) {
+        if (asprintf(&url, "http://localhost:%d", app_config->webserver.port) == -1) {
             return NULL;
         }
         return url;
@@ -744,7 +744,7 @@ static char* get_server_url(struct MHD_Connection *connection,
 
     // Add port from config
     char *url = NULL;
-    if (asprintf(&url, "http://%s:%d", host, app_config->web.port) == -1) {
+    if (asprintf(&url, "http://%s:%d", host, app_config->webserver.port) == -1) {
         return NULL;
     }
     return url;

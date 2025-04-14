@@ -131,7 +131,7 @@ After passing readiness checks, the WebServer subsystem:
        }
        
        // Start server thread
-       if (pthread_create(&web_thread, NULL, web_server_main, NULL) != 0) {
+       if (pthread_create(&webserver_thread, NULL, web_server_main, NULL) != 0) {
            log_this("WebServer", "Failed to start thread", LOG_LEVEL_ERROR);
            return false;
        }
@@ -145,8 +145,8 @@ After passing readiness checks, the WebServer subsystem:
    ```c
    int webserver_id = register_subsystem_from_launch(
        "WebServer",
-       &web_threads,
-       &web_thread,
+       &webserver_threads,
+       &webserver_thread,
        &web_server_shutdown,
        init_webserver_subsystem,
        shutdown_web_server
@@ -203,8 +203,8 @@ void shutdown_web_server(void) {
     close_all_connections();
     
     // Wait for server thread
-    if (web_thread) {
-        pthread_join(web_thread, NULL);
+    if (webserver_thread) {
+        pthread_join(webserver_thread, NULL);
     }
     
     // Cleanup resources

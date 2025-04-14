@@ -28,8 +28,8 @@
 #include "../state/state_types.h"
 
 // External declarations
-extern ServiceThreads web_threads;
-extern pthread_t web_thread;
+extern ServiceThreads webserver_threads;
+extern pthread_t webserver_thread;
 extern volatile sig_atomic_t web_server_shutdown;
 
 // Check if the webserver subsystem is ready to land
@@ -58,7 +58,7 @@ LaunchReadiness check_webserver_landing_readiness(void) {
     
     // Check thread status
     bool threads_ready = true;
-    if (web_thread && web_threads.thread_count > 0) {
+    if (webserver_thread && webserver_threads.thread_count > 0) {
         readiness.messages[1] = strdup("  Go:      WebServer thread ready for shutdown");
     } else {
         threads_ready = false;
@@ -90,9 +90,9 @@ int land_webserver_subsystem(void) {
     log_this("WebServer", "Signaled WebServer thread to stop", LOG_LEVEL_STATE);
     
     // Wait for thread to complete
-    if (web_thread) {
+    if (webserver_thread) {
         log_this("WebServer", "Waiting for WebServer thread to complete", LOG_LEVEL_STATE);
-        if (pthread_join(web_thread, NULL) != 0) {
+        if (pthread_join(webserver_thread, NULL) != 0) {
             log_this("WebServer", "Error waiting for WebServer thread", LOG_LEVEL_ERROR);
             success = false;
         } else {
@@ -101,10 +101,10 @@ int land_webserver_subsystem(void) {
     }
     
     // Remove the web thread from tracking
-    remove_service_thread(&web_threads, web_thread);
+    remove_service_thread(&webserver_threads, webserver_thread);
     
     // Reinitialize thread structure
-    init_service_threads(&web_threads);
+    init_service_threads(&webserver_threads);
     
     log_this("WebServer", "WebServer shutdown complete", LOG_LEVEL_STATE);
     

@@ -54,10 +54,10 @@ The WebServer uses a thread pool architecture to handle multiple concurrent conn
 
 ```c
 // Web server thread pool
-static ServiceThreads web_threads = {0};
+static ServiceThreads webserver_threads = {0};
 
 // Main thread handle
-static pthread_t web_thread;
+static pthread_t webserver_thread;
 
 // Shutdown flag
 volatile sig_atomic_t web_server_shutdown = 0;
@@ -217,22 +217,22 @@ bool init_webserver_subsystem(void) {
     }
     
     // Initialize thread pool
-    if (!init_web_thread_pool(thread_count)) {
+    if (!init_webserver_thread_pool(thread_count)) {
         log_this("WebServer", "Failed to initialize thread pool", LOG_LEVEL_ERROR);
         close(server_socket);
         return false;
     }
     
     // Start main listener thread
-    if (pthread_create(&web_thread, NULL, web_server_main, NULL) != 0) {
+    if (pthread_create(&webserver_thread, NULL, web_server_main, NULL) != 0) {
         log_this("WebServer", "Failed to create main thread", LOG_LEVEL_ERROR);
-        shutdown_web_thread_pool();
+        shutdown_webserver_thread_pool();
         close(server_socket);
         return false;
     }
     
     // Register with thread tracking
-    register_thread(&web_threads, web_thread, "web_main");
+    register_thread(&webserver_threads, webserver_thread, "webserver_main");
     
     log_this("WebServer", "Initialized on port %d with %d threads", 
             LOG_LEVEL_STATE, port, thread_count);
@@ -256,13 +256,13 @@ void shutdown_web_server(void) {
     }
     
     // Wait for main thread to exit
-    if (web_thread != 0) {
-        pthread_join(web_thread, NULL);
-        web_thread = 0;
+    if (webserver_thread != 0) {
+        pthread_join(webserver_thread, NULL);
+        webserver_thread = 0;
     }
     
     // Shutdown worker thread pool
-    shutdown_web_thread_pool();
+    shutdown_webserver_thread_pool();
     
     log_this("WebServer", "Shutdown complete", LOG_LEVEL_STATE);
 }

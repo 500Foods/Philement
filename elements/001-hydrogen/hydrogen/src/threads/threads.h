@@ -38,7 +38,7 @@ typedef struct {
 
 // Global tracking structures
 extern ServiceThreads logging_threads;
-extern ServiceThreads web_threads;
+extern ServiceThreads webserver_threads;
 extern ServiceThreads websocket_threads;
 extern ServiceThreads mdns_server_threads;
 extern ServiceThreads print_threads;

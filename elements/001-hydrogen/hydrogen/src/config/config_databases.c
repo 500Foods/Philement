@@ -44,7 +44,7 @@ bool load_database_config(json_t* root, AppConfig* config) {
     success = success && PROCESS_INT(root, db_config, default_workers, "Databases.DefaultWorkers", "Databases");
 
     // Process Connections section
-    success = PROCESS_SECTION(root, "Databases.Connections");
+    success = success && PROCESS_SECTION(root, "Databases.Connections");
 
     // Set up Acuranzo defaults (first database)
     DatabaseConnection* acuranzo = &db_config->connections[0];
@@ -52,7 +52,7 @@ bool load_database_config(json_t* root, AppConfig* config) {
     acuranzo->connection_name = strdup("Acuranzo");
 
     // Process Acuranzo section and settings
-    success = PROCESS_SECTION(root, "Databases.Connections.Acuranzo");
+    success = success && PROCESS_SECTION(root, "Databases.Connections.Acuranzo");
     acuranzo->database = strdup("${env.ACURANZO_DATABASE}");
     acuranzo->type = strdup("${env.ACURANZO_DB_TYPE}");
     acuranzo->host = strdup("${env.ACURANZO_DB_HOST}");

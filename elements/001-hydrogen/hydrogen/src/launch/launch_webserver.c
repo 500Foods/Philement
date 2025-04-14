@@ -40,8 +40,8 @@
 #endif
 
 // External declarations
-extern ServiceThreads web_threads;
-extern pthread_t web_thread;
+extern ServiceThreads webserver_threads;
+extern pthread_t webserver_thread;
 extern volatile sig_atomic_t web_server_shutdown;
 extern AppConfig* app_config;
 extern volatile sig_atomic_t server_starting;
@@ -165,16 +165,16 @@ LaunchReadiness check_webserver_launch_readiness(void) {
         messages[msg_index++] = strdup("  No-Go:   Configuration not loaded");
         ready = false;
     } else {
-        if (!app_config->web.enable_ipv4 && !app_config->web.enable_ipv6) {
+        if (!app_config->webserver.enable_ipv4 && !app_config->webserver.enable_ipv6) {
             messages[msg_index++] = strdup("  No-Go:   No network protocols enabled");
             ready = false;
         } else {
             char* msg = malloc(256);
             if (msg) {
                 snprintf(msg, 256, "  Go:      Protocols enabled: %s%s%s", 
-                    app_config->web.enable_ipv4 ? "IPv4" : "",
-                    (app_config->web.enable_ipv4 && app_config->web.enable_ipv6) ? " and " : "",
-                    app_config->web.enable_ipv6 ? "IPv6" : "");
+                    app_config->webserver.enable_ipv4 ? "IPv4" : "",
+                    (app_config->webserver.enable_ipv4 && app_config->webserver.enable_ipv6) ? " and " : "",
+                    app_config->webserver.enable_ipv6 ? "IPv6" : "");
                 messages[msg_index++] = msg;
             }
         }
@@ -197,22 +197,22 @@ LaunchReadiness check_webserver_launch_readiness(void) {
             freeifaddrs(ifaddr);
         }
         
-        if (app_config->web.enable_ipv4 && !ipv4_available) {
+        if (app_config->webserver.enable_ipv4 && !ipv4_available) {
             messages[msg_index++] = strdup("  No-Go:   No IPv4 interfaces available");
             ready = false;
-        } else if (app_config->web.enable_ipv4) {
+        } else if (app_config->webserver.enable_ipv4) {
             messages[msg_index++] = strdup("  Go:      IPv4 interfaces available");
         }
         
-        if (app_config->web.enable_ipv6 && !ipv6_available) {
+        if (app_config->webserver.enable_ipv6 && !ipv6_available) {
             messages[msg_index++] = strdup("  No-Go:   No IPv6 interfaces available");
             ready = false;
-        } else if (app_config->web.enable_ipv6) {
+        } else if (app_config->webserver.enable_ipv6) {
             messages[msg_index++] = strdup("  Go:      IPv6 interfaces available");
         }
         
         // 6. Check port number
-        int port = app_config->web.port;
+        int port = app_config->webserver.port;
         if (port != 80 && port != 443 && port <= 1023) {
             char* msg = malloc(256);
             if (msg) {
@@ -228,14 +228,14 @@ LaunchReadiness check_webserver_launch_readiness(void) {
             }
         }
         
-        // 7. Check web root
-        if (!app_config->web.web_root || !strchr(app_config->web.web_root, '/')) {
+        // 7. Check webserver root
+        if (!app_config->webserver.web_root || !strchr(app_config->webserver.web_root, '/')) {
             messages[msg_index++] = strdup("  No-Go:   Invalid web root path");
             ready = false;
         } else {
             char* msg = malloc(256);
             if (msg) {
-                snprintf(msg, 256, "  Go:      Valid web root: %s", app_config->web.web_root);
+                snprintf(msg, 256, "  Go:      Valid web root: %s", app_config->webserver.web_root);
                 messages[msg_index++] = msg;
             }
         }
@@ -291,7 +291,7 @@ int launch_webserver_subsystem(void) {
         return 0;
     }
 
-    if (!app_config->web.enable_ipv4 && !app_config->web.enable_ipv6) {
+    if (!app_config->webserver.enable_ipv4 && !app_config->webserver.enable_ipv6) {
         log_this("WebServer", "Web server disabled in configuration (no protocols enabled)", LOG_LEVEL_STATE);
         log_this("WebServer", "LAUNCH: WEBSERVER - Disabled by configuration", LOG_LEVEL_STATE);
         return 1; // Not an error if disabled
@@ -302,7 +302,7 @@ int launch_webserver_subsystem(void) {
     // Step 2: Initialize web server
     log_this("WebServer", "  Step 2: Initializing web server", LOG_LEVEL_STATE);
     
-    if (!init_web_server(&app_config->web)) {
+    if (!init_web_server(&app_config->webserver)) {
         log_this("WebServer", "Failed to initialize web server", LOG_LEVEL_ERROR);
         log_this("WebServer", "LAUNCH: WEBSERVER - Failed to initialize", LOG_LEVEL_STATE);
         return 0;
@@ -311,23 +311,23 @@ int launch_webserver_subsystem(void) {
     // Step 3: Log configuration
     log_this("WebServer", "  Step 3: Verifying configuration", LOG_LEVEL_STATE);
     log_this("WebServer", "    IPv6 support: %s", LOG_LEVEL_STATE, 
-             app_config->web.enable_ipv6 ? "enabled" : "disabled");
+             app_config->webserver.enable_ipv6 ? "enabled" : "disabled");
     log_this("WebServer", "    Port: %d", LOG_LEVEL_STATE, 
-             app_config->web.port);
+             app_config->webserver.port);
     log_this("WebServer", "    WebRoot: %s", LOG_LEVEL_STATE, 
-             app_config->web.web_root);
+             app_config->webserver.web_root);
     log_this("WebServer", "    Upload Path: %s", LOG_LEVEL_STATE, 
-             app_config->web.upload_path);
+             app_config->webserver.upload_path);
     log_this("WebServer", "    Upload Dir: %s", LOG_LEVEL_STATE, 
-             app_config->web.upload_dir);
+             app_config->webserver.upload_dir);
     log_this("WebServer", "    Thread Pool Size: %d", LOG_LEVEL_STATE, 
-             app_config->web.thread_pool_size);
+             app_config->webserver.thread_pool_size);
     log_this("WebServer", "    Max Connections: %d", LOG_LEVEL_STATE, 
-             app_config->web.max_connections);
+             app_config->webserver.max_connections);
     log_this("WebServer", "    Max Connections Per IP: %d", LOG_LEVEL_STATE, 
-             app_config->web.max_connections_per_ip);
+             app_config->webserver.max_connections_per_ip);
     log_this("WebServer", "    Connection Timeout: %d seconds", LOG_LEVEL_STATE, 
-             app_config->web.connection_timeout);
+             app_config->webserver.connection_timeout);
 
     // Step 4: Create and register web server thread
     log_this("WebServer", "  Step 4: Creating web server thread", LOG_LEVEL_STATE);
@@ -336,9 +336,9 @@ int launch_webserver_subsystem(void) {
     pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_JOINABLE);
 
     // Register thread before creation
-    extern ServiceThreads web_threads;
+    extern ServiceThreads webserver_threads;
     
-    if (pthread_create(&web_thread, &thread_attr, run_web_server, NULL) != 0) {
+    if (pthread_create(&webserver_thread, &thread_attr, run_web_server, NULL) != 0) {
         log_this("WebServer", "Failed to start web server thread", LOG_LEVEL_ERROR);
         pthread_attr_destroy(&thread_attr);
         shutdown_web_server();
@@ -347,7 +347,7 @@ int launch_webserver_subsystem(void) {
     pthread_attr_destroy(&thread_attr);
 
     // Register thread and wait for initialization
-    add_service_thread(&web_threads, web_thread);
+    add_service_thread(&webserver_threads, webserver_thread);
     
     // Wait for server to fully initialize (up to 10 seconds)
     struct timespec wait_time = {0, 100000000}; // 100ms intervals
@@ -361,16 +361,16 @@ int launch_webserver_subsystem(void) {
         nanosleep(&wait_time, NULL);
         
         // Check if web daemon is running and bound to port
-        extern struct MHD_Daemon *web_daemon;
-        if (web_daemon != NULL) {
-            const union MHD_DaemonInfo *info = MHD_get_daemon_info(web_daemon, MHD_DAEMON_INFO_BIND_PORT);
+        extern struct MHD_Daemon *webserver_daemon;
+        if (webserver_daemon != NULL) {
+            const union MHD_DaemonInfo *info = MHD_get_daemon_info(webserver_daemon, MHD_DAEMON_INFO_BIND_PORT);
             if (info != NULL && info->port > 0) {
                 // Get connection info
-                const union MHD_DaemonInfo *conn_info = MHD_get_daemon_info(web_daemon, MHD_DAEMON_INFO_CURRENT_CONNECTIONS);
+                const union MHD_DaemonInfo *conn_info = MHD_get_daemon_info(webserver_daemon, MHD_DAEMON_INFO_CURRENT_CONNECTIONS);
                 unsigned int num_connections = conn_info ? conn_info->num_connections : 0;
                 
                 // Get thread info
-                const union MHD_DaemonInfo *thread_info = MHD_get_daemon_info(web_daemon, MHD_DAEMON_INFO_FLAGS);
+                const union MHD_DaemonInfo *thread_info = MHD_get_daemon_info(webserver_daemon, MHD_DAEMON_INFO_FLAGS);
                 bool using_threads = thread_info && (thread_info->flags & MHD_USE_THREAD_PER_CONNECTION);
                 
                 log_this("WebServer", "    Server status:", LOG_LEVEL_STATE);
@@ -379,9 +379,9 @@ int launch_webserver_subsystem(void) {
                 log_this("WebServer", "    -> Thread mode: %s", LOG_LEVEL_STATE, 
                         using_threads ? "Thread per connection" : "Single thread");
                 log_this("WebServer", "    -> IPv6: %s", LOG_LEVEL_STATE, 
-                        app_config->web.enable_ipv6 ? "enabled" : "disabled");
+                        app_config->webserver.enable_ipv6 ? "enabled" : "disabled");
                 log_this("WebServer", "    -> Max connections: %d", LOG_LEVEL_STATE, 
-                        app_config->web.max_connections);
+                        app_config->webserver.max_connections);
                 
                 // Log network interfaces
                 log_this("WebServer", "    Network interfaces:", LOG_LEVEL_STATE);
@@ -392,7 +392,7 @@ int launch_webserver_subsystem(void) {
                             continue;
 
                         int family = ifa->ifa_addr->sa_family;
-                        if (family == AF_INET || (family == AF_INET6 && app_config->web.enable_ipv6)) {
+                        if (family == AF_INET || (family == AF_INET6 && app_config->webserver.enable_ipv6)) {
                             char host[NI_MAXHOST];
                             int s = getnameinfo(ifa->ifa_addr,
                                              (family == AF_INET) ? sizeof(struct sockaddr_in) :
@@ -450,5 +450,5 @@ int is_web_server_running(void) {
     // Server is running if:
     // 1. At least one protocol is enabled in config
     // 2. Not in shutdown state
-    return (app_config && (app_config->web.enable_ipv4 || app_config->web.enable_ipv6) && !web_server_shutdown);
+    return (app_config && (app_config->webserver.enable_ipv4 || app_config->webserver.enable_ipv6) && !web_server_shutdown);
 }
