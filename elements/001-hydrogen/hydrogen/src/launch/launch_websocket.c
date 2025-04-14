@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <signal.h>
+#include <string.h>
 
 #include "launch.h"
 #include "../logging/logging.h"
@@ -22,6 +23,70 @@
 #include "../websocket/websocket_server.h"
 #include "../config/config.h"
 #include "../registry/registry_integration.h"
+
+// Validation limits
+#define MIN_PORT 1024
+#define MAX_PORT 65535
+#define MIN_EXIT_WAIT_SECONDS 1
+#define MAX_EXIT_WAIT_SECONDS 60
+#define WEBSOCKET_MIN_MESSAGE_SIZE 1024        // 1KB
+#define WEBSOCKET_MAX_MESSAGE_SIZE 0x40000000  // 1GB
+
+// Helper function prototypes
+static bool validate_protocol(const char* protocol);
+static bool validate_key(const char* key);
+
+// Validate protocol string
+static bool validate_protocol(const char* protocol) {
+    if (!protocol || !protocol[0]) {
+        return false;
+    }
+
+    // Protocol must be a valid identifier:
+    // - Start with letter
+    // - Contain only letters, numbers, and hyphens
+    if (!((protocol[0] >= 'a' && protocol[0] <= 'z') ||
+          (protocol[0] >= 'A' && protocol[0] <= 'Z'))) {
+        return false;
+    }
+
+    for (size_t i = 0; protocol[i]; i++) {
+        char c = protocol[i];
+        if (!((c >= 'a' && c <= 'z') ||
+              (c >= 'A' && c <= 'Z') ||
+              (c >= '0' && c <= '9') ||
+              c == '-')) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// Validate key string
+static bool validate_key(const char* key) {
+    if (!key || !key[0]) {
+        return false;
+    }
+
+    // Key must be:
+    // - At least 8 characters long
+    // - Contain only printable ASCII characters
+    // - No spaces or control characters
+    size_t len = strlen(key);
+    if (len < 8) {
+        return false;
+    }
+
+    for (size_t i = 0; i < len; i++) {
+        char c = key[i];
+        if (c < 33 || c > 126) {  // Non-printable ASCII or space
+            return false;
+        }
+    }
+
+    return true;
+}
 
 // External declarations
 extern ServiceThreads websocket_threads;
@@ -74,6 +139,53 @@ LaunchReadiness check_websocket_launch_readiness(void) {
         return readiness;
     }
     readiness.messages[msg_count++] = strdup("  Go:      WebSocket server enabled in configuration");
+
+    // Validate port number
+    if (app_config->websocket.port < MIN_PORT || app_config->websocket.port > MAX_PORT) {
+        readiness.messages[msg_count++] = strdup("  No-Go:   Invalid port number (must be between 1024-65535)");
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        return readiness;
+    }
+    readiness.messages[msg_count++] = strdup("  Go:      Port number valid");
+
+    // Validate protocol
+    if (!validate_protocol(app_config->websocket.protocol)) {
+        readiness.messages[msg_count++] = strdup("  No-Go:   Invalid protocol format");
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        return readiness;
+    }
+    readiness.messages[msg_count++] = strdup("  Go:      Protocol format valid");
+
+    // Validate key
+    if (!validate_key(app_config->websocket.key)) {
+        readiness.messages[msg_count++] = strdup("  No-Go:   Invalid key format (must be at least 8 printable characters)");
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        return readiness;
+    }
+    readiness.messages[msg_count++] = strdup("  Go:      Key format valid");
+
+    // Validate message size limits
+    if (app_config->websocket.max_message_size < WEBSOCKET_MIN_MESSAGE_SIZE ||
+        app_config->websocket.max_message_size > WEBSOCKET_MAX_MESSAGE_SIZE) {
+        readiness.messages[msg_count++] = strdup("  No-Go:   Invalid message size limits");
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        return readiness;
+    }
+    readiness.messages[msg_count++] = strdup("  Go:      Message size limits valid");
+
+    // Validate exit wait timeout
+    if (app_config->websocket.exit_wait_seconds < MIN_EXIT_WAIT_SECONDS ||
+        app_config->websocket.exit_wait_seconds > MAX_EXIT_WAIT_SECONDS) {
+        readiness.messages[msg_count++] = strdup("  No-Go:   Invalid exit wait timeout (must be between 1-60 seconds)");
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = false;
+        return readiness;
+    }
+    readiness.messages[msg_count++] = strdup("  Go:      Exit wait timeout valid");
     
     // All checks passed
     readiness.messages[msg_count++] = strdup("  Decide:  Go For Launch of WebSocket Subsystem");

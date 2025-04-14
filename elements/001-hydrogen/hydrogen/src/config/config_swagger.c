@@ -14,76 +14,72 @@
 
 // Load Swagger configuration with defaults and environment handling
 bool load_swagger_config(json_t* root, AppConfig* config) {
+    SwaggerConfig* swagger = &config->swagger;
 
+    // Initialize with defaults
+    *swagger = (SwaggerConfig){
+        .enabled = true,
+        .prefix = strdup("/apidocs"),
+        .payload_available = false,
+        .metadata = {
+            .title = strdup("Hydrogen API"),
+            .description = strdup("Hydrogen 3D Printer Control Server API"),
+            .version = strdup(VERSION),
+            .contact = {0},  // Initialize to NULL
+            .license = {0}   // Initialize to NULL
+        },
+        .ui_options = {
+            .try_it_enabled = true,
+            .always_expanded = false,
+            .display_operation_id = false,
+            .default_models_expand_depth = 1,
+            .default_model_expand_depth = 1,
+            .show_extensions = false,
+            .show_common_extensions = true,
+            .doc_expansion = strdup("list"),
+            .syntax_highlight_theme = strdup("agate")
+        }
+    };
 
-    // Process Swagger section
-    bool success = PROCESS_SECTION(root, "Swagger");
-    if (!success) {
-        return false;
-    }
+    // Process all config items in sequence
+    bool success = true;
 
-    // Set defaults and process overrides for basic settings
-    config->swagger.enabled = true;  // Default enabled
-    config->swagger.prefix = strdup("/apidocs");  // Default prefix
-    config->swagger.payload_available = false;  // Default no payload
-
-    success = success && PROCESS_BOOL(root, &config->swagger, enabled, "Swagger.Enabled", "Swagger");
-    success = success && PROCESS_STRING(root, &config->swagger, prefix, "Swagger.Prefix", "Swagger");
+    // Process main section and basic settings
+    success = PROCESS_SECTION(root, "Swagger");
+    success = success && PROCESS_BOOL(root, swagger, enabled, "Swagger.Enabled", "Swagger");
+    success = success && PROCESS_STRING(root, swagger, prefix, "Swagger.Prefix", "Swagger");
 
     // Process metadata section
     success = success && PROCESS_SECTION(root, "Swagger.Metadata");
-    
-    // Set defaults and process overrides for metadata
-    config->swagger.metadata.title = strdup("Hydrogen API");
-    config->swagger.metadata.description = strdup("Hydrogen 3D Printer Control Server API");
-    config->swagger.metadata.version = strdup(VERSION);
-    config->swagger.metadata.contact.name = NULL;
-    config->swagger.metadata.contact.email = NULL;
-    config->swagger.metadata.contact.url = NULL;
-    config->swagger.metadata.license.name = NULL;
-    config->swagger.metadata.license.url = NULL;
-
-    success = success && PROCESS_STRING(root, &config->swagger.metadata, title, "Swagger.Metadata.Title", "Swagger");
-    success = success && PROCESS_STRING(root, &config->swagger.metadata, description, "Swagger.Metadata.Description", "Swagger");
-    success = success && PROCESS_STRING(root, &config->swagger.metadata, version, "Swagger.Metadata.Version", "Swagger");
+    success = success && PROCESS_STRING(root, &swagger->metadata, title, "Swagger.Metadata.Title", "Swagger");
+    success = success && PROCESS_STRING(root, &swagger->metadata, description, "Swagger.Metadata.Description", "Swagger");
+    success = success && PROCESS_STRING(root, &swagger->metadata, version, "Swagger.Metadata.Version", "Swagger");
 
     // Process contact subsection
     success = success && PROCESS_SECTION(root, "Swagger.Metadata.Contact");
-    success = success && PROCESS_STRING(root, &config->swagger.metadata.contact, name, "Swagger.Metadata.Contact.Name", "Swagger");
-    success = success && PROCESS_STRING(root, &config->swagger.metadata.contact, email, "Swagger.Metadata.Contact.Email", "Swagger");
-    success = success && PROCESS_STRING(root, &config->swagger.metadata.contact, url, "Swagger.Metadata.Contact.URL", "Swagger");
+    success = success && PROCESS_STRING(root, &swagger->metadata.contact, name, "Swagger.Metadata.Contact.Name", "Swagger");
+    success = success && PROCESS_STRING(root, &swagger->metadata.contact, email, "Swagger.Metadata.Contact.Email", "Swagger");
+    success = success && PROCESS_STRING(root, &swagger->metadata.contact, url, "Swagger.Metadata.Contact.URL", "Swagger");
 
     // Process license subsection
     success = success && PROCESS_SECTION(root, "Swagger.Metadata.License");
-    success = success && PROCESS_STRING(root, &config->swagger.metadata.license, name, "Swagger.Metadata.License.Name", "Swagger");
-    success = success && PROCESS_STRING(root, &config->swagger.metadata.license, url, "Swagger.Metadata.License.URL", "Swagger");
+    success = success && PROCESS_STRING(root, &swagger->metadata.license, name, "Swagger.Metadata.License.Name", "Swagger");
+    success = success && PROCESS_STRING(root, &swagger->metadata.license, url, "Swagger.Metadata.License.URL", "Swagger");
 
     // Process UI options section
     success = success && PROCESS_SECTION(root, "Swagger.UIOptions");
-
-    // Set defaults and process overrides for UI options
-    config->swagger.ui_options.try_it_enabled = true;
-    config->swagger.ui_options.always_expanded = false;
-    config->swagger.ui_options.display_operation_id = false;
-    config->swagger.ui_options.default_models_expand_depth = 1;
-    config->swagger.ui_options.default_model_expand_depth = 1;
-    config->swagger.ui_options.show_extensions = false;
-    config->swagger.ui_options.show_common_extensions = true;
-    config->swagger.ui_options.doc_expansion = strdup("list");
-    config->swagger.ui_options.syntax_highlight_theme = strdup("agate");
-
-    success = success && PROCESS_BOOL(root, &config->swagger.ui_options, try_it_enabled, "Swagger.UIOptions.TryItEnabled", "Swagger");
-    success = success && PROCESS_BOOL(root, &config->swagger.ui_options, always_expanded, "Swagger.UIOptions.AlwaysExpanded", "Swagger");
-    success = success && PROCESS_BOOL(root, &config->swagger.ui_options, display_operation_id, "Swagger.UIOptions.DisplayOperationId", "Swagger");
-    success = success && PROCESS_INT(root, &config->swagger.ui_options, default_models_expand_depth, "Swagger.UIOptions.DefaultModelsExpandDepth", "Swagger");
-    success = success && PROCESS_INT(root, &config->swagger.ui_options, default_model_expand_depth, "Swagger.UIOptions.DefaultModelExpandDepth", "Swagger");
-    success = success && PROCESS_BOOL(root, &config->swagger.ui_options, show_extensions, "Swagger.UIOptions.ShowExtensions", "Swagger");
-    success = success && PROCESS_BOOL(root, &config->swagger.ui_options, show_common_extensions, "Swagger.UIOptions.ShowCommonExtensions", "Swagger");
-    success = success && PROCESS_STRING(root, &config->swagger.ui_options, doc_expansion, "Swagger.UIOptions.DocExpansion", "Swagger");
-    success = success && PROCESS_STRING(root, &config->swagger.ui_options, syntax_highlight_theme, "Swagger.UIOptions.SyntaxHighlightTheme", "Swagger");
+    success = success && PROCESS_BOOL(root, &swagger->ui_options, try_it_enabled, "Swagger.UIOptions.TryItEnabled", "Swagger");
+    success = success && PROCESS_BOOL(root, &swagger->ui_options, always_expanded, "Swagger.UIOptions.AlwaysExpanded", "Swagger");
+    success = success && PROCESS_BOOL(root, &swagger->ui_options, display_operation_id, "Swagger.UIOptions.DisplayOperationId", "Swagger");
+    success = success && PROCESS_INT(root, &swagger->ui_options, default_models_expand_depth, "Swagger.UIOptions.DefaultModelsExpandDepth", "Swagger");
+    success = success && PROCESS_INT(root, &swagger->ui_options, default_model_expand_depth, "Swagger.UIOptions.DefaultModelExpandDepth", "Swagger");
+    success = success && PROCESS_BOOL(root, &swagger->ui_options, show_extensions, "Swagger.UIOptions.ShowExtensions", "Swagger");
+    success = success && PROCESS_BOOL(root, &swagger->ui_options, show_common_extensions, "Swagger.UIOptions.ShowCommonExtensions", "Swagger");
+    success = success && PROCESS_STRING(root, &swagger->ui_options, doc_expansion, "Swagger.UIOptions.DocExpansion", "Swagger");
+    success = success && PROCESS_STRING(root, &swagger->ui_options, syntax_highlight_theme, "Swagger.UIOptions.SyntaxHighlightTheme", "Swagger");
 
     if (!success) {
-        cleanup_swagger_config(&config->swagger);
+        cleanup_swagger_config(swagger);
     }
 
     return success;
