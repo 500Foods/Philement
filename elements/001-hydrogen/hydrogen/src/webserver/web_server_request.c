@@ -114,11 +114,11 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
     // Handle GET requests
     if (strcmp(method, "GET") == 0) {
         // Check for Swagger UI requests if Swagger is enabled
-        if (app_config && app_config->swagger && app_config->swagger->enabled && 
-            is_swagger_request(url, app_config->swagger)) {
+        if (app_config && app_config->swagger.enabled && 
+            is_swagger_request(url, &app_config->swagger)) {
             // Handle trailing slash redirect for Swagger UI root
             size_t url_len = strlen(url);
-            const char* prefix = app_config->swagger->prefix;
+            const char* prefix = app_config->swagger.prefix;
             size_t prefix_len = strlen(prefix);
             
             if (url_len == prefix_len && strcmp(url, prefix) == 0) {
@@ -132,7 +132,7 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
             }
             
             // Let Swagger subsystem handle its own requests
-            return handle_swagger_request(connection, url, app_config->swagger);
+            return handle_swagger_request(connection, url, &app_config->swagger);
         }
 
     /*

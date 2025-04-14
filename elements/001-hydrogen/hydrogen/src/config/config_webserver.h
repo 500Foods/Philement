@@ -46,8 +46,8 @@ typedef struct WebServerConfig {
     int connection_timeout;
 
     // Reference to subsystem configurations
-    SwaggerConfig* swagger;
-    APIConfig* api;
+    SwaggerConfig swagger;  // G. Swagger configuration
+    APIConfig api;         // F. API configuration
 } WebServerConfig;
 
 /*

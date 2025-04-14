@@ -12,18 +12,6 @@
 #include <jansson.h>
 #include "config_forward.h"  // For AppConfig forward declaration
 
-// Validation limits
-#define MIN_PREFIX_LENGTH 1
-#define MAX_PREFIX_LENGTH 64
-#define MIN_TITLE_LENGTH 1
-#define MAX_TITLE_LENGTH 128
-#define MIN_VERSION_LENGTH 1
-#define MAX_VERSION_LENGTH 32
-#define MIN_DESCRIPTION_LENGTH 0
-#define MAX_DESCRIPTION_LENGTH 1024
-#define MIN_EXPAND_DEPTH 0
-#define MAX_EXPAND_DEPTH 10
-
 // Swagger UI configuration structure
 typedef struct SwaggerConfig {
     bool enabled;
@@ -61,11 +49,13 @@ typedef struct SwaggerConfig {
 } SwaggerConfig;
 
 /*
- * Load Swagger configuration from JSON
+ * Load Swagger configuration with defaults and environment handling
  *
- * This function loads the Swagger configuration from the provided JSON root,
- * applying any environment variable overrides and using secure defaults
- * where values are not specified.
+ * Sets secure defaults for all fields and processes any overrides from:
+ * - JSON configuration
+ * - Environment variables
+ * 
+ * Uses PROCESS_ macros exclusively for all operations.
  *
  * @param root JSON root object containing configuration
  * @param config Pointer to AppConfig structure to update
@@ -74,50 +64,24 @@ typedef struct SwaggerConfig {
 bool load_swagger_config(json_t* root, AppConfig* config);
 
 /*
- * Initialize Swagger configuration with default values
+ * Dump current Swagger configuration state
+ * 
+ * Outputs the current state of the Swagger configuration using
+ * consistent formatting and indentation.
  *
- * This function initializes a new SwaggerConfig structure with default
- * values that provide a secure and usable baseline configuration.
- *
- * @param config Pointer to SwaggerConfig structure to initialize
- * @return 0 on success, -1 on failure
- *
- * Error conditions:
- * - If config is NULL
- * - If memory allocation fails for any string field
+ * @param config Pointer to SwaggerConfig structure
  */
-int config_swagger_init(SwaggerConfig* config);
+void dump_swagger_config(const SwaggerConfig* config);
 
 /*
- * Free resources allocated for Swagger configuration
+ * Clean up Swagger configuration resources
  *
- * This function frees all resources allocated by config_swagger_init.
- * It safely handles NULL pointers and partial initialization.
- * After cleanup, the structure is zeroed to prevent use-after-free.
+ * Frees all allocated memory in the Swagger configuration structure
+ * and zeros it to prevent use-after-free. Safely handles NULL pointers
+ * and partially initialized structures.
  *
  * @param config Pointer to SwaggerConfig structure to cleanup
  */
-void config_swagger_cleanup(SwaggerConfig* config);
-
-/*
- * Validate Swagger configuration values
- *
- * This function performs comprehensive validation of the configuration:
- * - Verifies required fields are present and valid
- * - Validates string lengths
- * - Checks numeric ranges
- * - Validates enumerated values
- *
- * @param config Pointer to SwaggerConfig structure to validate
- * @return 0 if valid, -1 if invalid
- *
- * Error conditions:
- * - If config is NULL
- * - If enabled but required fields are missing
- * - If string lengths exceed limits
- * - If numeric values are out of range
- * - If enumerated values are invalid
- */
-int config_swagger_validate(const SwaggerConfig* config);
+void cleanup_swagger_config(SwaggerConfig* config);
 
 #endif /* CONFIG_SWAGGER_H */
