@@ -24,16 +24,6 @@
 // Forward declarations from other modules
 struct NotifyConfig;
 
-// Default values for mail relay
-#define DEFAULT_MAILRELAY_ENABLED true
-#define DEFAULT_MAILRELAY_LISTEN_PORT 587
-#define DEFAULT_MAILRELAY_WORKERS 2
-
-// Default values for queue settings
-#define DEFAULT_MAILRELAY_MAX_QUEUE_SIZE 1000
-#define DEFAULT_MAILRELAY_RETRY_ATTEMPTS 3
-#define DEFAULT_MAILRELAY_RETRY_DELAY 300  // seconds
-
 // Outbound server configuration
 typedef struct OutboundServer {
     char* Host;          // SMTP server hostname
@@ -65,51 +55,6 @@ typedef struct MailRelayConfig {
 } MailRelayConfig;
 
 /*
- * Initialize mail relay configuration with default values
- *
- * This function initializes a new MailRelayConfig structure with
- * default values that provide a secure baseline configuration.
- *
- * @param config Pointer to MailRelayConfig structure to initialize
- * @return 0 on success, -1 on failure
- *
- * Error conditions:
- * - If config is NULL
- * - If memory allocation fails
- */
-int config_mailrelay_init(MailRelayConfig* config);
-
-/*
- * Free resources allocated for mail relay configuration
- *
- * This function frees all resources allocated by config_mailrelay_init.
- * It safely handles NULL pointers and partial initialization.
- *
- * @param config Pointer to MailRelayConfig structure to cleanup
- */
-void config_mailrelay_cleanup(MailRelayConfig* config);
-
-/*
- * Validate mail relay configuration values
- *
- * This function performs validation of the configuration:
- * - Verifies enabled status and port ranges
- * - Validates worker count
- * - Checks queue settings
- * - Validates outbound server configurations
- *
- * @param config Pointer to MailRelayConfig structure to validate
- * @return 0 if valid, -1 if invalid
- *
- * Error conditions:
- * - If config is NULL
- * - If enabled but no outbound servers configured
- * - If queue settings are invalid
- * - If any outbound server configuration is invalid
- */
-int config_mailrelay_validate(const MailRelayConfig* config);
-
-/*
  * Load mail relay configuration from JSON
  *
  * This function loads the mail relay configuration from the provided JSON root,
@@ -121,5 +66,26 @@ int config_mailrelay_validate(const MailRelayConfig* config);
  * @return true if successful, false on error
  */
 bool load_mailrelay_config(json_t* root, AppConfig* config);
+
+/*
+ * Dump mail relay configuration for debugging
+ *
+ * This function outputs the current mail relay configuration settings
+ * in a structured format with proper indentation.
+ *
+ * @param config Pointer to MailRelayConfig structure to dump
+ */
+void dump_mailrelay_config(const MailRelayConfig* config);
+
+/*
+ * Clean up mail relay configuration
+ *
+ * This function frees all resources allocated for the mail relay configuration.
+ * It safely handles NULL pointers and partial initialization.
+ * After cleanup, the structure is zeroed to prevent use-after-free.
+ *
+ * @param config Pointer to MailRelayConfig structure to cleanup
+ */
+void cleanup_mailrelay_config(MailRelayConfig* config);
 
 #endif /* CONFIG_MAIL_RELAY_H */
