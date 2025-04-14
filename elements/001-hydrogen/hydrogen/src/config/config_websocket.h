@@ -39,49 +39,24 @@ typedef struct WebSocketConfig WebSocketConfig;
 bool load_websocket_config(json_t* root, AppConfig* config);
 
 /*
- * Initialize WebSocket configuration with default values
+ * Dump WebSocket configuration
  *
- * This function initializes a new WebSocketConfig structure with default
- * values that provide a secure and performant baseline configuration.
+ * This function outputs the current WebSocket configuration values
+ * in a formatted way, using consistent indentation and logging categories.
  *
- * @param config Pointer to WebSocketConfig structure to initialize
- * @return 0 on success, -1 on failure
- *
- * Error conditions:
- * - If config is NULL
- * - If memory allocation fails for any string field
+ * @param config Pointer to WebSocketConfig structure to dump
  */
-int config_websocket_init(WebSocketConfig* config);
+void dump_websocket_config(const WebSocketConfig* config);
 
 /*
- * Free resources allocated for WebSocket configuration
+ * Clean up WebSocket configuration
  *
- * This function frees all resources allocated by config_websocket_init.
+ * This function frees all resources allocated during configuration loading.
  * It safely handles NULL pointers and partial initialization.
  * After cleanup, the structure is zeroed to prevent use-after-free.
  *
  * @param config Pointer to WebSocketConfig structure to cleanup
  */
-void config_websocket_cleanup(WebSocketConfig* config);
-
-/*
- * Validate WebSocket configuration values
- *
- * This function performs comprehensive validation of the configuration:
- * - Validates port number (must be between 1024-65535)
- * - Checks protocol and key strings
- * - Verifies message size limits (1KB minimum)
- * - Validates exit wait timeout (1-60 seconds)
- *
- * @param config Pointer to WebSocketConfig structure to validate
- * @return 0 if valid, -1 if invalid
- *
- * Error conditions:
- * - If config is NULL
- * - If enabled but required fields are missing
- * - If any numeric value is out of valid range
- * - If protocol or key strings are invalid
- */
-int config_websocket_validate(const WebSocketConfig* config);
+void cleanup_websocket_config(WebSocketConfig* config);
 
 #endif /* HYDROGEN_CONFIG_WEBSOCKET_H */
