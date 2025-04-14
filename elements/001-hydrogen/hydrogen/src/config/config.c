@@ -594,7 +594,7 @@ static void clean_app_config(AppConfig* config) {
     cleanup_logging_config(&config->logging);
 
     // E. WebServer Configuration
-    config_webserver_cleanup(&config->webserver);
+    cleanup_webserver_config(&config->webserver);
     
     // F. API Configuration
     config_api_cleanup(&config->api);

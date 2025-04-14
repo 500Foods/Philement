@@ -87,6 +87,6 @@ void dump_webserver_config(const WebServerConfig* config);
  *
  * @param config The web server configuration to clean up
  */
-void config_webserver_cleanup(WebServerConfig* config);
+void cleanup_webserver_config(WebServerConfig* config);
 
 #endif /* HYDROGEN_CONFIG_WEBSERVER_H */
