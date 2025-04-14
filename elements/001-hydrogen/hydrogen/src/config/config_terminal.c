@@ -2,83 +2,93 @@
  * Terminal Configuration Implementation
  *
  * Implements the configuration handlers for the terminal subsystem,
- * including JSON parsing, environment variable handling, and validation.
+ * including JSON parsing and environment variable handling.
  */
 
-#include <jansson.h>
-#include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
+#include "config_terminal.h"
 #include "config.h"
 #include "config_utils.h"
-#include "config_terminal.h"
 #include "../logging/logging.h"
 
 bool load_terminal_config(json_t* root, AppConfig* config) {
-    bool success = true;
+    // Initialize with defaults
+    TerminalConfig* terminal = &config->terminal;
+    terminal->enabled = true;  // Enable by default for better UX
+    terminal->max_sessions = 4;  // Conservative default
+    terminal->idle_timeout_seconds = 300;  // 5 minutes idle timeout
     
-    // Terminal Configuration
-    PROCESS_SECTION(root, "Terminal"); {
-        // Process configuration values
-        PROCESS_BOOL(root, &config->terminal, enabled, "Terminal/Enabled", "Terminal");
-        PROCESS_STRING(root, &config->terminal, web_path, "Terminal/WebPath", "Terminal");
-        PROCESS_STRING(root, &config->terminal, shell_command, "Terminal/ShellCommand", "Terminal");
-        PROCESS_INT(root, &config->terminal, max_sessions, "Terminal/MaxSessions", "Terminal");
-        PROCESS_INT(root, &config->terminal, idle_timeout_seconds, "Terminal/IdleTimeoutSeconds", "Terminal");
+    // Initialize string fields with defaults
+    terminal->web_path = strdup("/terminal");  // Standard web path
+    if (!terminal->web_path) {
+        log_this("Terminal", "Failed to allocate web path string", LOG_LEVEL_ERROR);
+        return false;
     }
+
+    terminal->shell_command = strdup("/bin/bash");  // Default shell
+    if (!terminal->shell_command) {
+        log_this("Terminal", "Failed to allocate shell command string", LOG_LEVEL_ERROR);
+        free(terminal->web_path);
+        terminal->web_path = NULL;
+        return false;
+    }
+
+    // Process configuration values
+    bool success = true;
+
+    // Process main section and enabled flag
+    success = PROCESS_SECTION(root, "Terminal");
+    success = success && PROCESS_BOOL(root, terminal, enabled, "Terminal.Enabled", "Terminal");
+    
+    
+        success = success && PROCESS_STRING(root, terminal, web_path, "Terminal.WebPath", "Terminal");
+        success = success && PROCESS_STRING(root, terminal, shell_command, "Terminal.ShellCommand", "Terminal");
+        success = success && PROCESS_INT(root, terminal, max_sessions, "Terminal.MaxSessions", "Terminal");
+        success = success && PROCESS_INT(root, terminal, idle_timeout_seconds, "Terminal.IdleTimeoutSeconds", "Terminal");
     
     return success;
 }
 
-int config_terminal_init(TerminalConfig* config) {
-    if (!config) {
-        return -1;
-    }
-    
-    // Initialize with defaults
-    config->enabled = true;
-    config->web_path = strdup("/terminal");
-    config->shell_command = strdup("/bin/bash");
-    config->max_sessions = 4;
-    config->idle_timeout_seconds = 300;
-    
-    return 0;
-}
-
-void config_terminal_cleanup(TerminalConfig* config) {
+void cleanup_terminal_config(TerminalConfig* config) {
     if (!config) {
         return;
     }
-    
-    // Free allocated strings
+
     free(config->web_path);
     free(config->shell_command);
-    
-    // Reset to defaults
-    config->enabled = false;
-    config->web_path = NULL;
-    config->shell_command = NULL;
-    config->max_sessions = 0;
-    config->idle_timeout_seconds = 0;
+    memset(config, 0, sizeof(TerminalConfig));
 }
 
-int config_terminal_validate(const TerminalConfig* config) {
+void dump_terminal_config(const TerminalConfig* config) {
     if (!config) {
-        return -1;
+        DUMP_TEXT("", "Cannot dump NULL terminal config");
+        return;
     }
+
+    // Dump enabled status
+    DUMP_BOOL2("――", "Enabled", config->enabled);
     
-    // Validate required strings
-    if (!config->web_path || !config->shell_command) {
-        return -1;
-    }
+        char value_str[256];
+        
+        // Web Path
+        snprintf(value_str, sizeof(value_str), "Web Path: %s", 
+                config->web_path ? config->web_path : "(not set)");
+        DUMP_TEXT("――", value_str);
+        
+        // Shell Command
+        snprintf(value_str, sizeof(value_str), "Shell Command: %s",
+                config->shell_command ? config->shell_command : "(not set)");
+        DUMP_TEXT("――", value_str);
+        
+        // Max Sessions
+        snprintf(value_str, sizeof(value_str), "Max Sessions: %d", 
+                config->max_sessions);
+        DUMP_TEXT("――", value_str);
+        
+        // Idle Timeout
+        snprintf(value_str, sizeof(value_str), "Idle Timeout: %d seconds",
+                config->idle_timeout_seconds);
+        DUMP_TEXT("――", value_str);
     
-    // Validate numeric ranges
-    if (config->max_sessions < 1 || config->max_sessions > 100) {
-        return -1;
-    }
-    
-    if (config->idle_timeout_seconds < 60 || config->idle_timeout_seconds > 3600) {
-        return -1;
-    }
-    
-    return 0;
 }

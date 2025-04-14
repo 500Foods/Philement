@@ -2,6 +2,8 @@
  * Terminal Configuration
  *
  * Defines the configuration structure and functions for the terminal subsystem.
+ * Handles configuration of terminal access, web paths, shell commands, and
+ * session management settings.
  */
 
 #ifndef CONFIG_TERMINAL_H
@@ -9,7 +11,7 @@
 
 #include <stdbool.h>
 #include <jansson.h>
-#include "config_forward.h"  // For AppConfig forward declaration
+#include "config_forward.h"
 
 /**
  * Terminal configuration structure
@@ -25,6 +27,9 @@ typedef struct TerminalConfig {
 /**
  * Load terminal configuration from JSON
  * 
+ * Loads and processes terminal configuration settings from the provided JSON,
+ * applying environment variable overrides and defaults as needed.
+ * 
  * @param root The JSON root object containing configuration
  * @param config The application configuration structure to populate
  * @return true on success, false on failure
@@ -32,29 +37,23 @@ typedef struct TerminalConfig {
 bool load_terminal_config(json_t* root, AppConfig* config);
 
 /**
- * Initialize terminal configuration with defaults
+ * Clean up terminal configuration
  * 
- * @param config The configuration structure to initialize
- * @return 0 on success, -1 on failure
- */
-int config_terminal_init(TerminalConfig* config);
-
-/**
- * Free resources allocated by terminal configuration
- * 
- * This function frees all resources allocated by config_terminal_init.
- * It safely handles NULL pointers and partial initialization.
+ * Frees all resources allocated for terminal configuration.
+ * Safely handles NULL pointers and partial initialization.
  * 
  * @param config The configuration structure to cleanup
  */
-void config_terminal_cleanup(TerminalConfig* config);
+void cleanup_terminal_config(TerminalConfig* config);
 
 /**
- * Validate terminal configuration values
+ * Dump terminal configuration for debugging
  * 
- * @param config The configuration structure to validate
- * @return 0 if valid, -1 if invalid
+ * Outputs the current terminal configuration state in a structured format,
+ * matching the JSON structure and showing environment variable usage.
+ * 
+ * @param config The configuration structure to dump
  */
-int config_terminal_validate(const TerminalConfig* config);
+void dump_terminal_config(const TerminalConfig* config);
 
 #endif /* CONFIG_TERMINAL_H */
