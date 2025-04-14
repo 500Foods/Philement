@@ -268,10 +268,10 @@ AppConfig* load_config(const char* cmdline_path) {
     LOAD_CONFIG("D", "Logging",      load_logging_config);
     LOAD_CONFIG("E", "WebServer",    load_webserver_config);
     LOAD_CONFIG("F", "API",          load_api_config);
+    LOAD_CONFIG("G", "Swagger",      load_swagger_config);
 
     dumpAppConfig(config, NULL);  // Show complete config after network
 
-    LOAD_CONFIG("G", "Swagger",      load_swagger_config);
     LOAD_CONFIG("H", "WebSocket",    load_websocket_config);
     LOAD_CONFIG("I", "Terminal",     load_terminal_config);
     LOAD_CONFIG("J", "mDNS Server",  load_mdns_server_config);
@@ -281,6 +281,9 @@ AppConfig* load_config(const char* cmdline_path) {
     LOAD_CONFIG("N", "Resources",    load_resources_config);
     LOAD_CONFIG("O", "OIDC",         load_oidc_config);
     LOAD_CONFIG("P", "Notify",       load_notify_config);
+
+
+
 
     #undef LOAD_SERVER_CONFIG
     #undef LOAD_CONFIG
@@ -374,118 +377,42 @@ void dumpAppConfig(const AppConfig* config, const char* section) {
     format_section_header(header, sizeof(header), "AppConfig Dump Started", "");
     log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
 
-    // Server section (has implementation)
-    if (!section || strcmp(section, "Server") == 0) {
-        format_section_header(header, sizeof(header), "A", "Server");
-        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
-        dump_server_config(&config->server);
-    }
+    // Macro for standard config sections
+    #define DUMP_CONFIG_SECTION(letter, name, field, func) \
+        if (!section || strcmp(section, name) == 0) { \
+            format_section_header(header, sizeof(header), letter, name); \
+            log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header); \
+            func(&config->field); \
+        }
 
-    // Network section
-    if (!section || strcmp(section, "Network") == 0) {
-        format_section_header(header, sizeof(header), "B", "Network");
-        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
-        dump_network_config(&config->network);
-    }
+    // Macro for not yet implemented sections
+    #define DUMP_NOT_IMPLEMENTED(letter, name) \
+        if (!section || strcmp(section, name) == 0) { \
+            format_section_header(header, sizeof(header), letter, name); \
+            log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header); \
+            if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE); \
+        }
 
-    // Databases section
-    if (!section || strcmp(section, "Databases") == 0) {
-        format_section_header(header, sizeof(header), "C", "Databases");
-        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
-        dump_database_config(&config->databases);
-    }
+    DUMP_CONFIG_SECTION("A", "Server",    server,    dump_server_config);
+    DUMP_CONFIG_SECTION("B", "Network",   network,   dump_network_config);
+    DUMP_CONFIG_SECTION("C", "Databases", databases, dump_database_config);
+    DUMP_CONFIG_SECTION("D", "Logging",   logging,   dump_logging_config);
+    DUMP_CONFIG_SECTION("E", "WebServer", webserver, dump_webserver_config);
+    DUMP_CONFIG_SECTION("F", "API",       api,       dump_api_config);
+    DUMP_CONFIG_SECTION("G", "Swagger",   swagger,   dump_swagger_config);
 
-    // Logging section
-    if (!section || strcmp(section, "Logging") == 0) {
-        format_section_header(header, sizeof(header), "D", "Logging");
-        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
-        dump_logging_config(&config->logging);
-    }
+    DUMP_NOT_IMPLEMENTED("H", "WebSocket");
+    DUMP_NOT_IMPLEMENTED("I", "Terminal");
+    DUMP_NOT_IMPLEMENTED("J", "mDNS Server");
+    DUMP_NOT_IMPLEMENTED("K", "mDNS Client");
+    DUMP_NOT_IMPLEMENTED("L", "Mail Relay");
+    DUMP_NOT_IMPLEMENTED("M", "Print");
+    DUMP_NOT_IMPLEMENTED("N", "Resources");
+    DUMP_NOT_IMPLEMENTED("O", "OIDC");
+    DUMP_NOT_IMPLEMENTED("P", "Notify");
 
-    // WebServer section
-    if (!section || strcmp(section, "WebServer") == 0) {
-        format_section_header(header, sizeof(header), "E", "WebServer");
-        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
-        dump_webserver_config(&config->webserver);
-    }
-
-    // API section
-    if (!section || strcmp(section, "API") == 0) {
-        format_section_header(header, sizeof(header), "F", "API");
-        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
-        dump_api_config(&config->api);
-    }
-
-    // Swagger section
-    if (!section || strcmp(section, "Swagger") == 0) {
-        format_section_header(header, sizeof(header), "G", "Swagger");
-        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
-        if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
-    }
-
-    // WebSocket section
-    if (!section || strcmp(section, "WebSocket") == 0) {
-        format_section_header(header, sizeof(header), "H", "WebSocket");
-        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
-        if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
-    }
-
-    // Terminal section
-    if (!section || strcmp(section, "Terminal") == 0) {
-        format_section_header(header, sizeof(header), "I", "Terminal");
-        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
-        if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
-    }
-
-    // mDNS Server section
-    if (!section || strcmp(section, "mDNS Server") == 0) {
-     
-        format_section_header(header, sizeof(header), "J", "mDNS Server");
-        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
-        if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
-    }
-
-    // mDNS Client section
-    if (!section || strcmp(section, "mDNS Client") == 0) {
-        format_section_header(header, sizeof(header), "K", "mDNS Client");
-        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
-        if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
-    }
-
-    // Mail Relay section
-    if (!section || strcmp(section, "Mail Relay") == 0) {
-        format_section_header(header, sizeof(header), "L", "Mail Relay");
-        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
-        if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
-    }
-
-    // Print section
-    if (!section || strcmp(section, "Print") == 0) {
-        format_section_header(header, sizeof(header), "M", "Print");
-        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
-        if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
-    }
-
-    // Resources section
-    if (!section || strcmp(section, "Resources") == 0) {
-        format_section_header(header, sizeof(header), "N", "Resources");
-        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
-        if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
-    }
-
-    // OIDC section
-    if (!section || strcmp(section, "OIDC") == 0) {
-        format_section_header(header, sizeof(header), "O", "OIDC");
-        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
-        if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
-    }
-
-    // Notify section
-    if (!section || strcmp(section, "Notify") == 0) {
-        format_section_header(header, sizeof(header), "P", "Notify");
-        log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
-        if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE);
-    }
+    #undef DUMP_CONFIG_SECTION
+    #undef DUMP_NOT_IMPLEMENTED
 
     format_section_header(header, sizeof(header), "AppConfig Dump Complete", "");
     log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
@@ -524,7 +451,7 @@ static void clean_app_config(AppConfig* config) {
     cleanup_logging_config(&config->logging);          // D. Logging Configuration
     cleanup_webserver_config(&config->webserver);      // E. WebServer Configuration
     cleanup_api_config(&config->api);                  // F. API Configuration
-    config_swagger_cleanup(config->swagger);           // G. Swagger Configuration (pointer)
+    cleanup_swagger_config(&config->swagger);          // G. Swagger Configuration
     config_websocket_cleanup(&config->websocket);      // H. WebSocket Configuration
     config_terminal_cleanup(&config->terminal);        // I. Terminal Configuration
     config_mdns_server_cleanup(&config->mdns_server);  // J. mDNS Server Configuration

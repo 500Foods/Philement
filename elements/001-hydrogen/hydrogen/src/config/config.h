@@ -85,7 +85,7 @@ struct AppConfig {
     LoggingConfig logging;         // D. Logging configuration
     WebServerConfig webserver;     // E. WebServer configuration
     APIConfig api;                 // F. API configuration
-    SwaggerConfig* swagger;        // G. Swagger configuration
+    SwaggerConfig swagger;         // G. Swagger configuration
     WebSocketConfig websocket;     // H. WebSocket configuration
     TerminalConfig terminal;       // I. Terminal configuration
     MDNSServerConfig mdns_server;  // J. mDNS Server configuration
