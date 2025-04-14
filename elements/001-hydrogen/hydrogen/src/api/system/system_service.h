@@ -12,9 +12,11 @@
 //@ swagger:tag "System Service" Provides system-level operations, monitoring, and diagnostics
 
 // Include all system endpoint headers
+#include "appconfig/appconfig.h"
 #include "info/info.h"
 #include "health/health.h"
 #include "prometheus/prometheus.h"
+#include "recent/recent.h"
 #include "test/test.h"
 #include "config/config.h"
 

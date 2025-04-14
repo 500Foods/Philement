@@ -27,6 +27,8 @@ extern enum MHD_Result handle_system_config_request(struct MHD_Connection *conne
                                                  size_t *upload_data_size,
                                                  void **con_cls);
 extern enum MHD_Result handle_system_prometheus_request(struct MHD_Connection *connection);
+extern enum MHD_Result handle_system_appconfig_request(struct MHD_Connection *connection);
+extern enum MHD_Result handle_system_recent_request(struct MHD_Connection *connection);
 
 bool init_api_endpoints(void) {
     log_this("API", "Initializing API endpoints", LOG_LEVEL_STATE);
@@ -104,6 +106,8 @@ bool register_api_endpoints(void) {
     log_this("API", "  -> %s/system/test", LOG_LEVEL_STATE, app_config->api.prefix);
     log_this("API", "  -> %s/system/config", LOG_LEVEL_STATE, app_config->api.prefix);
     log_this("API", "  -> %s/system/prometheus", LOG_LEVEL_STATE, app_config->api.prefix);
+    log_this("API", "  -> %s/system/appconfig", LOG_LEVEL_STATE, app_config->api.prefix);
+    log_this("API", "  -> %s/system/recent", LOG_LEVEL_STATE, app_config->api.prefix);
     // OIDC endpoints
     log_this("API", "  -> %s/oidc/authorize", LOG_LEVEL_STATE, app_config->api.prefix);
     log_this("API", "  -> %s/oidc/token", LOG_LEVEL_STATE, app_config->api.prefix);
@@ -286,6 +290,12 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
     }
     else if (strcmp(path, "system/prometheus") == 0) {
         return handle_system_prometheus_request(connection);
+    }
+    else if (strcmp(path, "system/appconfig") == 0) {
+        return handle_system_appconfig_request(connection);
+    }
+    else if (strcmp(path, "system/recent") == 0) {
+        return handle_system_recent_request(connection);
     }
     // Handle OIDC endpoints
     else if (strncmp(path, "oidc/", 5) == 0) {

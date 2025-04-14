@@ -21,7 +21,7 @@ bool load_webserver_config(json_t* root, AppConfig* config) {
     // Set defaults directly in the structure
     webserver->enable_ipv4 = true;
     webserver->enable_ipv6 = false;
-    webserver->port = 8080;
+    webserver->port = 5000;
     webserver->max_upload_size = 100 * 1024 * 1024;  // 100MB
     webserver->thread_pool_size = 4;  // Default to 4 threads
     webserver->max_connections = 100;  // Default to 100 connections
@@ -29,9 +29,9 @@ bool load_webserver_config(json_t* root, AppConfig* config) {
     webserver->connection_timeout = 60;  // Default to 60 seconds
     
     // Allocate and set default paths
-    webserver->web_root = strdup("/var/www/html");
+    webserver->web_root = strdup("/tmp/hydrogen");
     webserver->upload_path = strdup("/upload");
-    webserver->upload_dir = strdup("/var/uploads");
+    webserver->upload_dir = strdup("/tmp/hydrogen");
 
     success = PROCESS_SECTION(root, "WebServer");
     

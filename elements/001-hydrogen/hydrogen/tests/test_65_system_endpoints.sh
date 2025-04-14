@@ -1,4 +1,4 @@
-#!/bin/bash
+t_0#!/bin/bash
 #
 # System API Endpoints Test
 # Tests all the system API endpoints:
@@ -19,11 +19,11 @@ validate_request() {
     local curl_command="$2"
     local expected_field="$3"
     local response_file="response_${request_name}"
-    # Add .json extension for endpoints that return JSON
-    if [[ "$request_name" != "prometheus" ]]; then
-        response_file="${response_file}.json"
-    else
+    # Add appropriate extension based on endpoint type
+    if [[ "$request_name" == "prometheus" ]] || [[ "$request_name" == "recent" ]] || [[ "$request_name" == "appconfig" ]]; then
         response_file="${response_file}.txt"
+    else
+        response_file="${response_file}.json"
     fi
     
     # Make sure curl command includes --compressed flag and timeout
@@ -43,17 +43,36 @@ validate_request() {
     # Check if the request was successful
     if [ $CURL_STATUS -eq 0 ]; then
         print_info "Successfully received response!"
-        print_info "Response content:"
-        cat "$response_file"
+        
+        # For recent and appconfig endpoints, just show line count
+        if [[ "$request_name" == "recent" ]] || [[ "$request_name" == "appconfig" ]]; then
+            local line_count=$(wc -l < "$response_file")
+            print_info "Response contains $line_count lines"
+        else
+            print_info "Response content:"
+            cat "$response_file"
+        fi
         echo ""
         
         # Validate that the response contains expected fields
-        if grep -q "$expected_field" "$response_file"; then
-            print_result 0 "Response contains expected field: $expected_field"
-            return 0
+        if [[ "$request_name" == "recent" ]]; then
+            # Use fixed string search for recent endpoint
+            if grep -F -q "[" "$response_file"; then
+                print_result 0 "Response contains expected field: log entry"
+                return 0
+            else
+                print_result 1 "Response doesn't contain expected field: log entry"
+                return 1
+            fi
         else
-            print_result 1 "Response doesn't contain expected field: $expected_field"
-            return 1
+            # Normal pattern search for other endpoints
+            if grep -q "$expected_field" "$response_file"; then
+                print_result 0 "Response contains expected field: $expected_field"
+                return 0
+            else
+                print_result 1 "Response doesn't contain expected field: $expected_field"
+                return 1
+            fi
         fi
     else
         print_result 1 "Failed to connect to server (curl status: $CURL_STATUS)"
@@ -124,6 +143,21 @@ mkdir -p "$RESULTS_DIR"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 TEST_LOG="$RESULTS_DIR/system_test_${TIMESTAMP}.log"
 
+# Function to validate line count in text response
+validate_line_count() {
+    local file="$1"
+    local min_lines="$2"
+    local actual_lines=$(wc -l < "$file")
+    
+    if [ "$actual_lines" -gt "$min_lines" ]; then
+        print_result 0 "Response contains $actual_lines lines (more than $min_lines required)"
+        return 0
+    else
+        print_result 1 "Response contains only $actual_lines lines ($min_lines required)"
+        return 1
+    fi
+}
+
 # Initialize test result variables to ensure they're always defined
 TEST_HEALTH_RESULT=1
 TEST_INFO_RESULT=1
@@ -135,6 +169,10 @@ TEST_GET_PARAMS_RESULT=1
 TEST_POST_FORM_RESULT=1
 TEST_POST_PARAMS_RESULT=1
 TEST_STABILITY_RESULT=1
+TEST_RECENT_RESULT=1
+TEST_RECENT_LINES=1
+TEST_APPCONFIG_RESULT=1
+TEST_APPCONFIG_LINES=1
 
 # Function to run all test cases
 run_tests() {
@@ -318,6 +356,56 @@ run_tests() {
         ((fail_count++))
     fi
     echo ""
+
+    # ====================================================================
+    # PART 6: Test /api/system/recent endpoint
+    # ====================================================================
+    print_header "Testing /api/system/recent Endpoint"
+    
+    # Test recent endpoint with GET request
+    print_header "Test Case: Recent Activity Log"
+    validate_request "recent" "curl -s --max-time 5 ${base_url}/api/system/recent" "["
+    TEST_RECENT_RESULT=$?
+    
+    if [ $TEST_RECENT_RESULT -eq 0 ]; then
+        # Validate line count
+        validate_line_count "response_recent.txt" 100
+        TEST_RECENT_LINES=$?
+        if [ $TEST_RECENT_LINES -eq 0 ]; then
+            ((pass_count++))
+        else
+            ((fail_count++))
+        fi
+    else
+        ((fail_count++))
+        TEST_RECENT_LINES=1
+    fi
+    echo ""
+
+    # ====================================================================
+    # PART 7: Test /api/system/appconfig endpoint
+    # ====================================================================
+    print_header "Testing /api/system/appconfig Endpoint"
+    
+    # Test appconfig endpoint with GET request
+    print_header "Test Case: Application Configuration"
+    validate_request "appconfig" "curl -s --max-time 5 ${base_url}/api/system/appconfig" "APPCONFIG"
+    TEST_APPCONFIG_RESULT=$?
+    
+    if [ $TEST_APPCONFIG_RESULT -eq 0 ]; then
+        # Validate line count
+        validate_line_count "response_appconfig.txt" 100
+        TEST_APPCONFIG_LINES=$?
+        if [ $TEST_APPCONFIG_LINES -eq 0 ]; then
+            ((pass_count++))
+        else
+            ((fail_count++))
+        fi
+    else
+        ((fail_count++))
+        TEST_APPCONFIG_LINES=1
+    fi
+    echo ""
     
     # Check server stability
     if kill -0 $HYDROGEN_PID 2>/dev/null; then
@@ -373,6 +461,14 @@ collect_test_results() {
     add_test_result "Test Endpoint - GET with Parameters" ${TEST_GET_PARAMS_RESULT} "GET /api/system/test?param1=value1&param2=value2 - Query parameters"
     add_test_result "Test Endpoint - POST with Form Data" ${TEST_POST_FORM_RESULT} "POST /api/system/test - Form data handling"
     add_test_result "Test Endpoint - POST with Parameters" ${TEST_POST_PARAMS_RESULT} "POST /api/system/test?param1=value1&param2=value2 - Combined parameters"
+    
+    # Recent endpoint tests
+    add_test_result "Recent Endpoint - Content" ${TEST_RECENT_RESULT} "GET /api/system/recent - Activity log presence"
+    add_test_result "Recent Endpoint - Line Count" ${TEST_RECENT_LINES} "GET /api/system/recent - More than 100 lines"
+    
+    # Appconfig endpoint tests
+    add_test_result "Appconfig Endpoint - Content" ${TEST_APPCONFIG_RESULT} "GET /api/system/appconfig - Configuration presence"
+    add_test_result "Appconfig Endpoint - Line Count" ${TEST_APPCONFIG_LINES} "GET /api/system/appconfig - More than 100 lines"
     
     # System stability test
     add_test_result "System Stability" ${TEST_STABILITY_RESULT} "No crashes detected after running all tests"
