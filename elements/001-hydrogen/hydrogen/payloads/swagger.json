@@ -873,6 +873,44 @@
         }
       }
     },
+    "/system/appconfig": {
+      "get": {
+        "summary": "Application configuration endpoint",
+        "description": "Returns the current application configuration settings in plain text format",
+        "operationId": "getSystemAppConfig",
+        "tags": [
+          "System Service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "description": "Current application configuration"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/system/config": {
       "get": {
         "summary": "Server configuration endpoint",
@@ -1051,6 +1089,65 @@
                     "error": {
                       "type": "string",
                       "example": "Failed to create response"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/recent": {
+      "get": {
+        "summary": "Recent log messages endpoint",
+        "description": "Returns the most recent log messages from the system in reverse chronological order",
+        "operationId": "getSystemRecent",
+        "tags": [
+          "System Service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "timestamp": {
+                            "type": "string"
+                          },
+                          "level": {
+                            "type": "string"
+                          },
+                          "component": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
                     }
                   }
                 }
