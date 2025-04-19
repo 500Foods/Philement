@@ -285,7 +285,7 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Mon Apr 14 15:21:25 PDT 2025
+Generated on: Tue Apr 15 13:45:25 PDT 2025
 
 ### Summary
 
@@ -298,14 +298,14 @@ Generated on: Mon Apr 14 15:21:25 PDT 2025
 | Total Subtests | 110 |
 | Passed Subtests | 110 |
 | Failed Subtests | 0 |
-| Runtime | 2m 35s |
+| Runtime | 2m 32s |
 
 ### Individual Test Results
 
 | Status | Time | Test | Subs | Pass | Summary |
 | ------ | ---- | ---- | ---- | ---- | ------- |
-| ✅ | 00:00:19 | 10_compilation | 1 | 1 | Test completed without errors |
-| ✅ | 00:00:00 | 12_env_payload | 2 | 2 | Test completed without errors |
+| ✅ | 00:00:13 | 10_compilation | 1 | 1 | Test completed without errors |
+| ✅ | 00:00:01 | 12_env_payload | 2 | 2 | Test completed without errors |
 | ✅ | 00:00:02 | 15_startup_shutdown | 6 | 6 | Test completed without errors |
 | ✅ | 00:00:03 | 20_shutdown | 5 | 5 | Test completed without errors |
 | ✅ | 00:00:05 | 25_library_dependencies | 16 | 16 | Test completed without errors |
@@ -316,28 +316,28 @@ Generated on: Mon Apr 14 15:21:25 PDT 2025
 | ✅ | 00:00:00 | 55_socket_rebind | 1 | 1 | Test completed without errors |
 | ✅ | 00:00:12 | 60_api_prefixes | 10 | 10 | Test completed without errors |
 | ✅ | 00:00:06 | 65_system_endpoints | 17 | 17 | Test completed without errors |
-| ✅ | 00:00:03 | 70_swagger_ui | 10 | 10 | Test completed without errors |
+| ✅ | 00:00:04 | 70_swagger_ui | 10 | 10 | Test completed without errors |
 | ✅ | 00:00:03 | 95_leaks_like_a_sieve | 2 | 2 | Test completed without errors |
-| ✅ | 00:00:14 | 99_codebase | 12 | 12 | Test completed without errors |
+| ✅ | 00:00:15 | 99_codebase | 12 | 12 | Test completed without errors |
 
 ## Repository Information
 
-Generated via cloc: Mon Apr 14 15:21:26 PDT 2025
+Generated via cloc: Tue Apr 15 13:45:25 PDT 2025
 
 ```cloc
-github.com/AlDanial/cloc v 2.02  T=0.26 s (1794.1 files/s, 311137.8 lines/s)
+github.com/AlDanial/cloc v 2.02  T=0.27 s (1735.9 files/s, 301526.5 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 C                              148           4864           6610          21556
 Markdown                       126           4418             49          15719
 Bourne Shell                    25           1406           1394           5818
-JSON                            17              2              0           4488
+JSON                            17              2              0           4585
 Text                            20              7              0           4311
-C/C++ Header                   127           1235           4951           2956
+C/C++ Header                   127           1237           4981           2956
 HTML                             1             74              0            493
 make                             2             56            124            283
 -------------------------------------------------------------------------------
-SUM:                           466          12062          13128          55624
+SUM:                           466          12064          13158          55721
 -------------------------------------------------------------------------------
 ```
