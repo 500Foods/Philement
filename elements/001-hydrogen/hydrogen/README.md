@@ -285,7 +285,7 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Tue Apr 15 13:45:25 PDT 2025
+Generated on: Tue May  6 12:31:39 PDT 2025
 
 ### Summary
 
@@ -298,34 +298,34 @@ Generated on: Tue Apr 15 13:45:25 PDT 2025
 | Total Subtests | 110 |
 | Passed Subtests | 110 |
 | Failed Subtests | 0 |
-| Runtime | 2m 32s |
+| Runtime | 2m 53s |
 
 ### Individual Test Results
 
 | Status | Time | Test | Subs | Pass | Summary |
 | ------ | ---- | ---- | ---- | ---- | ------- |
-| ✅ | 00:00:13 | 10_compilation | 1 | 1 | Test completed without errors |
-| ✅ | 00:00:01 | 12_env_payload | 2 | 2 | Test completed without errors |
+| ✅ | 00:00:17 | 10_compilation | 1 | 1 | Test completed without errors |
+| ✅ | 00:00:00 | 12_env_payload | 2 | 2 | Test completed without errors |
 | ✅ | 00:00:02 | 15_startup_shutdown | 6 | 6 | Test completed without errors |
 | ✅ | 00:00:03 | 20_shutdown | 5 | 5 | Test completed without errors |
-| ✅ | 00:00:05 | 25_library_dependencies | 16 | 16 | Test completed without errors |
+| ✅ | 00:00:06 | 25_library_dependencies | 16 | 16 | Test completed without errors |
 | ✅ | 00:00:01 | 35_env_variables | 1 | 1 | Test completed without errors |
 | ✅ | 00:00:00 | 40_json_error_handling | 2 | 2 | Test completed without errors |
-| ✅ | 00:00:24 | 45_signals | 5 | 5 | Test completed without errors |
+| ✅ | 00:00:26 | 45_signals | 5 | 5 | Test completed without errors |
 | ✅ | 00:00:03 | 50_crash_handler | 20 | 20 | Test completed without errors |
 | ✅ | 00:00:00 | 55_socket_rebind | 1 | 1 | Test completed without errors |
-| ✅ | 00:00:12 | 60_api_prefixes | 10 | 10 | Test completed without errors |
-| ✅ | 00:00:06 | 65_system_endpoints | 17 | 17 | Test completed without errors |
-| ✅ | 00:00:04 | 70_swagger_ui | 10 | 10 | Test completed without errors |
-| ✅ | 00:00:03 | 95_leaks_like_a_sieve | 2 | 2 | Test completed without errors |
-| ✅ | 00:00:15 | 99_codebase | 12 | 12 | Test completed without errors |
+| ✅ | 00:00:13 | 60_api_prefixes | 10 | 10 | Test completed without errors |
+| ✅ | 00:00:07 | 65_system_endpoints | 17 | 17 | Test completed without errors |
+| ✅ | 00:00:03 | 70_swagger_ui | 10 | 10 | Test completed without errors |
+| ✅ | 00:00:04 | 95_leaks_like_a_sieve | 2 | 2 | Test completed without errors |
+| ✅ | 00:00:24 | 99_codebase | 12 | 12 | Test completed without errors |
 
 ## Repository Information
 
-Generated via cloc: Tue Apr 15 13:45:25 PDT 2025
+Generated via cloc: Tue May  6 12:31:40 PDT 2025
 
 ```cloc
-github.com/AlDanial/cloc v 2.02  T=0.27 s (1735.9 files/s, 301526.5 lines/s)
+github.com/AlDanial/cloc v 2.02  T=0.46 s (1020.7 files/s, 177290.4 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
