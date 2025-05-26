@@ -36,7 +36,7 @@ jobs:
     - run: csplit README.md /\<\!--CLOC/ {1}
     - run: cp xx00 README.md
     - run: echo "<!--CLOC-START -->" >> README.md
-    - run: echo "\`\`\`" >> README.md
+    - run: echo "\`\`\`cloc" >> README.md
     - run: echo "NOW=$(date +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_ENV
     - run: echo "Last updated at ${{ env.NOW }}" >> README.md
     - run: tail -n +2 cloc.txt >> README.md
