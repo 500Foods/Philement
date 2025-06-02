@@ -37,5 +37,4 @@ hydrogen_perf
 hydrogen_release
 hydrogen_valgrind
 
-# Crash reports
-*core.*
+
