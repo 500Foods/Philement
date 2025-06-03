@@ -250,7 +250,7 @@ Environment variables provide a flexible way to configure Hydrogen without modif
 
 **Server Settings:**
 
-- `PAYLOAD_KEY` - Key used for encrypting payload data
+- `PAYLOAD_KEY` - Key used for encrypting payload data (see [payloads/README.md](payloads/README.md) for setup instructions)
 
 **Database Connections:**
 For each database (Log, OIDC, Acuranzo, Helium, Canvas), the following variables are used:
