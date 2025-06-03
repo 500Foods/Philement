@@ -17,10 +17,10 @@ To verify your environment variables are set correctly, use the test script:
 
 ```bash
 # Run the environment variable test
-./tests/test_env_payload.sh
+./tests/test_12_env_payload.sh
 ```
 
-This script validates that:
+This script ([tests/test_12_env_payload.sh](tests/test_12_env_payload.sh)) validates that:
 
 1. Required environment variables (PAYLOAD_KEY and PAYLOAD_LOCK) are present
 2. The keys are valid RSA key pairs in the correct format
