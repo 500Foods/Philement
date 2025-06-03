@@ -18,7 +18,6 @@
 *.jks
 *.keystore
 *secret*
-*credentials*
 *config*.json
 .env
 *.env
