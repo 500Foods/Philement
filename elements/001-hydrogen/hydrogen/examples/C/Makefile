@@ -13,6 +13,8 @@
 #   make password    - Build just the Password flow example
 #   make help        - Display this help information
 
+SHELL := /bin/bash
+
 # Compiler and flags
 CC = gcc
 CFLAGS = -Wall -Wextra -pedantic -O2
