@@ -187,14 +187,20 @@ bool collect_network_metrics(NetworkMetrics *network) {
         snprintf(path, sizeof(path), "/sys/class/net/%s/statistics/rx_bytes", ifa->ifa_name);
         FILE *f = fopen(path, "r");
         if (f) {
-            fscanf(f, "%llu", &iface->rx_bytes);
+            if (fscanf(f, "%llu", &iface->rx_bytes) != 1) {
+                log_this("SystemMetrics", "Failed to read rx_bytes", LOG_LEVEL_ERROR);
+                iface->rx_bytes = 0; // Default value
+            }
             fclose(f);
         }
 
         snprintf(path, sizeof(path), "/sys/class/net/%s/statistics/tx_bytes", ifa->ifa_name);
         f = fopen(path, "r");
         if (f) {
-            fscanf(f, "%llu", &iface->tx_bytes);
+            if (fscanf(f, "%llu", &iface->tx_bytes) != 1) {
+                log_this("SystemMetrics", "Failed to read tx_bytes", LOG_LEVEL_ERROR);
+                iface->tx_bytes = 0; // Default value
+            }
             fclose(f);
         }
 
