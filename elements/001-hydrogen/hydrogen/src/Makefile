@@ -31,6 +31,8 @@
 # make clean-executables : Removes only the executable files (used by release build)
 # ──────────────────────────────────────────────────────────────────────────────
 
+SHELL := /bin/bash
+
 # Terminal output formatting for better readability
 # These ANSI color codes are used throughout the build process to highlight
 # different types of messages and status indicators
