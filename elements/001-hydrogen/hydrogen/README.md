@@ -227,6 +227,13 @@ npm install -g markdownlint jsonlint stylelint htmlhint
 
 NOTE: Latest NodeJS should be used (eg. Node 24)
 
+With that all installed, perform the following steps.
+
+- Generate PAYLOAD_LOCK and PAYLOAD_KEY (see [SECRETS.md](SECRETS.md) for setup instructions)
+- Run `swagger_generate.sh` and `payroll_generate.sh` in the payloads directory
+- Run `make trial` in the `src` folder to perform a trial build
+- Run `tests_00_all.sh` in the `tests` folder to build and test the entire project
+
 ### Runtime Dependencies
 
 These libraries are required for Hydrogen to run:
