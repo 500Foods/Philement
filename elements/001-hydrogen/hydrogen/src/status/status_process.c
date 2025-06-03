@@ -99,7 +99,10 @@ void get_socket_info(int inode, char *proto, int *port) {
         if (!f) continue;
         
         char line[256];  // Fixed size for /proc/net entries
-        fgets(line, sizeof(line), f); // Skip header
+        if (!fgets(line, sizeof(line), f)) { // Skip header
+            fclose(f);
+            continue;
+        }
         
         while (fgets(line, sizeof(line), f)) {
             unsigned local_port;
