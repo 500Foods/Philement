@@ -64,7 +64,7 @@ There are countless tools, frameworks, coding styles, conventions, languages, an
 [![Count Lines of Code](https://github.com/500Foods/Philement/actions/workflows/main.yml/badge.svg)](https://github.com/500Foods/Philement/actions/workflows/main.yml)
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-06-03 10:44:49 UTC
+Last updated at 2025-06-10 00:25:05 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
@@ -76,21 +76,22 @@ C/C++ Header                   141           1315           4991           3193
 HTML                             5            114             23            650
 make                             7            106            140            383
 Python                           1             36              9            195
-YAML                             3             45             39            145
 Text                             1              0              0             75
 Pascal                           4             34             31             72
 Delphi Form                      2              1              0             66
 CSS                              2              3              2             38
+YAML                             2              8             13             37
 JavaScript                       1              3              0             25
 -------------------------------------------------------------------------------
-SUM:                           537          13331          13518          58557
+SUM:                           536          13294          13492          58449
 -------------------------------------------------------------------------------
-24 Files were skipped (duplicate, binary, or without source code):
+25 Files were skipped (duplicate, binary, or without source code):
   gitignore: 4
   jpg: 3
   png: 3
   dproj: 2
   c: 1
+  disabled: 1
   ggignore: 1
   gitattributes: 1
   h: 1
