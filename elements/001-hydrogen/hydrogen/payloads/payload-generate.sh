@@ -2,6 +2,17 @@
 # ──────────────────────────────────────────────────────────────────────────────
 # Encrypted Payload Generator for Hydrogen
 # ──────────────────────────────────────────────────────────────────────────────
+# Script Name: payload-generate.sh
+# Version: 1.2.0
+# Author: Hydrogen Development Team
+# Last Modified: 2025-06-17
+#
+# Version History:
+# 1.0.0 - Initial release with basic payload generation
+# 1.1.0 - Added RSA+AES hybrid encryption support
+# 1.2.0 - Improved modularity, fixed shellcheck warnings, enhanced error handling
+#
+# Description:
 # This script creates an encrypted payload package for the Hydrogen project.
 # Currently, it packages SwaggerUI content, but is designed to be extendable
 # for other payload types in the future. The script:
@@ -10,29 +21,36 @@
 # - Creates an optimized tar file compressed with Brotli
 # - Encrypts the package using RSA+AES hybrid encryption
 # - Cleans up all temporary files
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Display script information
+echo "payload-generate.sh version 1.2.0"
+echo "Encrypted Payload Generator for Hydrogen"
+echo ""
 
 # Terminal formatting codes
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-YELLOW='\033[0;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-MAGENTA='\033[0;35m'
-BOLD='\033[1m'
-NC='\033[0m'  # No Color
+readonly GREEN='\033[0;32m'
+readonly RED='\033[0;31m'
+readonly YELLOW='\033[0;33m'
+readonly BLUE='\033[0;34m'
+readonly CYAN='\033[0;36m'
+readonly MAGENTA='\033[0;35m'
+readonly BOLD='\033[1m'
+readonly NC='\033[0m'  # No Color
 
 # Status symbols
-PASS="✅"
-FAIL="❌"
-WARN="⚠️"
-INFO="🛈 "
+readonly PASS="✅"
+readonly FAIL="❌"
+readonly WARN="⚠️"
+readonly INFO="🛈 "
 
 # Function to convert absolute path to path relative to hydrogen project root
 convert_to_relative_path() {
     local absolute_path="$1"
+    local relative_path
     
     # Extract the part starting from "hydrogen" and keep everything after
-    local relative_path=$(echo "$absolute_path" | sed -n 's|.*/hydrogen/|hydrogen/|p')
+    relative_path=$(echo "$absolute_path" | sed -n 's|.*/hydrogen/|hydrogen/|p')
     
     # If the path contains elements/001-hydrogen/hydrogen but not starting with hydrogen/
     if [ -z "$relative_path" ]; then
@@ -52,48 +70,66 @@ set -e
 
 # Path configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-SWAGGERUI_VERSION="5.19.0"
-SWAGGERUI_DIR="${SCRIPT_DIR}/swaggerui"
-TEMP_DIR=$(mktemp -d)
-TAR_FILE="${SCRIPT_DIR}/payload.tar"
-COMPRESSED_TAR_FILE="${SCRIPT_DIR}/payload.tar.br.enc"
+readonly SCRIPT_DIR
+readonly SWAGGERUI_VERSION="5.19.0"
+readonly SWAGGERUI_DIR="${SCRIPT_DIR}/swaggerui"
+readonly TAR_FILE="${SCRIPT_DIR}/payload.tar"
+readonly COMPRESSED_TAR_FILE="${SCRIPT_DIR}/payload.tar.br.enc"
 
-# Check for required dependencies
+# Create temporary directory
+TEMP_DIR=$(mktemp -d)
+readonly TEMP_DIR
+
+# Function to check for required dependencies
 check_dependencies() {
     local missing_deps=0
     
     # Required for basic operation
-    command -v curl >/dev/null 2>&1 || { echo -e "${RED}${FAIL} Error: curl is required but not installed. Please install curl.${NC}"; missing_deps=1; }
-    command -v tar >/dev/null 2>&1 || { echo -e "${RED}${FAIL} Error: tar is required but not installed. Please install tar.${NC}"; missing_deps=1; }
-    command -v brotli >/dev/null 2>&1 || { echo -e "${RED}${FAIL} Error: brotli is required but not installed. Please install brotli.${NC}"; missing_deps=1; }
+    if ! command -v curl >/dev/null 2>&1; then
+        echo -e "${RED}${FAIL} Error: curl is required but not installed. Please install curl.${NC}"
+        missing_deps=1
+    fi
+    
+    if ! command -v tar >/dev/null 2>&1; then
+        echo -e "${RED}${FAIL} Error: tar is required but not installed. Please install tar.${NC}"
+        missing_deps=1
+    fi
+    
+    if ! command -v brotli >/dev/null 2>&1; then
+        echo -e "${RED}${FAIL} Error: brotli is required but not installed. Please install brotli.${NC}"
+        missing_deps=1
+    fi
     
     # Required for encryption
-    command -v openssl >/dev/null 2>&1 || { echo -e "${RED}${FAIL} Error: openssl is required but not installed. Please install openssl.${NC}"; missing_deps=1; }
+    if ! command -v openssl >/dev/null 2>&1; then
+        echo -e "${RED}${FAIL} Error: openssl is required but not installed. Please install openssl.${NC}"
+        missing_deps=1
+    fi
     
     if [ $missing_deps -ne 0 ]; then
         exit 1
     fi
 }
 
-# Print header function
+# Function to print formatted header
 print_header() {
-    echo -e "\n${BLUE}────────────────────────────────────────────────────────────────${NC}"
-    echo -e "${BLUE}${BOLD} $1 ${NC}"
+    local title="$1"
+    echo -e "
+${BLUE}────────────────────────────────────────────────────────────────${NC}"
+    echo -e "${BLUE}${BOLD} $title ${NC}"
     echo -e "${BLUE}────────────────────────────────────────────────────────────────${NC}"
 }
 
-# Display script info
-print_header "Encrypted Payload Generator for Hydrogen"
-echo -e "${CYAN}${INFO} SwaggerUI Version:       ${NC}${SWAGGERUI_VERSION}"
-echo -e "${CYAN}${INFO} Working directory:       ${NC}$(convert_to_relative_path "${SWAGGERUI_DIR}")"
-echo -e "${CYAN}${INFO} Final encrypted file:    ${NC}$(convert_to_relative_path "${COMPRESSED_TAR_FILE}")"
-echo -e "${CYAN}${INFO} Temporary directory:     ${NC}${TEMP_DIR}"
+# Function to display script information
+display_script_info() {
+    print_header "Encrypted Payload Generator for Hydrogen"
+    echo -e "${CYAN}${INFO} SwaggerUI Version:       ${NC}${SWAGGERUI_VERSION}"
+    echo -e "${CYAN}${INFO} Working directory:       ${NC}$(convert_to_relative_path "${SWAGGERUI_DIR}")"
+    echo -e "${CYAN}${INFO} Final encrypted file:    ${NC}$(convert_to_relative_path "${COMPRESSED_TAR_FILE}")"
+    echo -e "${CYAN}${INFO} Temporary directory:     ${NC}${TEMP_DIR}"
+}
 
-# Check dependencies
-check_dependencies
-
-# Clean up on exit - remove all temporary files and directories
+# Function to clean up temporary files and directories
 cleanup() {
     print_header "Cleanup Process"
     echo -e "${CYAN}${INFO} Cleaning up temporary files and directories...${NC}"
@@ -121,9 +157,65 @@ cleanup() {
     
     echo -e "${GREEN}${PASS} Cleanup completed successfully.${NC}"
 }
-trap cleanup EXIT
 
-# Download and extract SwaggerUI
+# Function to create SwaggerUI index.html
+create_index_html() {
+    local target_file="$1"
+    cat > "$target_file" << 'EOF'
+<!-- HTML for static distribution bundle build -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Hydrogen API Documentation</title>
+    <link rel="stylesheet" type="text/css" href="swagger-ui.css" />
+    <link rel="icon" type="image/png" href="favicon-32x32.png" sizes="32x32" />
+    <link rel="icon" type="image/png" href="favicon-16x16.png" sizes="16x16" />
+    <style>
+      html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }
+      *, *:before, *:after { box-sizing: inherit; }
+      body { margin: 0; background: #fafafa; }
+    </style>
+  </head>
+
+  <body>
+    <div id="swagger-ui"></div>
+    <script src="swagger-ui-bundle.js"></script>
+    <script src="swagger-ui-standalone-preset.js"></script>
+    <script src="swagger-initializer.js"></script>
+  </body>
+</html>
+EOF
+}
+
+# Function to create SwaggerUI initializer
+create_swagger_initializer() {
+    local target_file="$1"
+    cat > "$target_file" << EOF
+window.onload = function() {
+  window.ui = SwaggerUIBundle({
+    url: "swagger.json",
+    dom_id: '#swagger-ui',
+    deepLinking: true,
+    presets: [
+      SwaggerUIBundle.presets.apis,
+      SwaggerUIStandalonePreset
+    ],
+    plugins: [
+      SwaggerUIBundle.plugins.DownloadUrl
+    ],
+    layout: "StandaloneLayout",
+    tryItOutEnabled: true,
+    displayOperationId: true,
+    defaultModelsExpandDepth: 1,
+    defaultModelExpandDepth: 1,
+    docExpansion: "list"
+  });
+};
+EOF
+}
+
+# Function to download and extract SwaggerUI
 download_swaggerui() {
     print_header "Downloading and Extracting SwaggerUI"
     echo -e "${CYAN}${INFO} Downloading SwaggerUI v${SWAGGERUI_VERSION}...${NC}"
@@ -165,69 +257,20 @@ download_swaggerui() {
     fi
     
     # Process dynamic files (to remain uncompressed)
-    cp "${TEMP_DIR}/swagger-ui-${SWAGGERUI_VERSION}/dist/index.html" "${SWAGGERUI_DIR}/"
-    cp "${TEMP_DIR}/swagger-ui-${SWAGGERUI_VERSION}/dist/swagger-initializer.js" "${SWAGGERUI_DIR}/"
     cp "${TEMP_DIR}/swagger-ui-${SWAGGERUI_VERSION}/dist/favicon-32x32.png" "${SWAGGERUI_DIR}/"
     cp "${TEMP_DIR}/swagger-ui-${SWAGGERUI_VERSION}/dist/favicon-16x16.png" "${SWAGGERUI_DIR}/"
     
-    # Customize index.html
+    # Customize index.html and swagger-initializer.js
     echo -e "${CYAN}${INFO} Customizing index.html...${NC}"
-    cat > "${SWAGGERUI_DIR}/index.html" << 'EOF'
-<!-- HTML for static distribution bundle build -->
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <title>Hydrogen API Documentation</title>
-    <link rel="stylesheet" type="text/css" href="swagger-ui.css" />
-    <link rel="icon" type="image/png" href="favicon-32x32.png" sizes="32x32" />
-    <link rel="icon" type="image/png" href="favicon-16x16.png" sizes="16x16" />
-    <style>
-      html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }
-      *, *:before, *:after { box-sizing: inherit; }
-      body { margin: 0; background: #fafafa; }
-    </style>
-  </head>
-
-  <body>
-    <div id="swagger-ui"></div>
-    <script src="swagger-ui-bundle.js"></script>
-    <script src="swagger-ui-standalone-preset.js"></script>
-    <script src="swagger-initializer.js"></script>
-  </body>
-</html>
-EOF
+    create_index_html "${SWAGGERUI_DIR}/index.html"
     
-    # Update swagger-initializer.js to use our settings
     echo -e "${CYAN}${INFO} Customizing swagger-initializer.js with recommended settings...${NC}"
-    cat > "${SWAGGERUI_DIR}/swagger-initializer.js" << EOF
-window.onload = function() {
-  window.ui = SwaggerUIBundle({
-    url: "swagger.json",
-    dom_id: '#swagger-ui',
-    deepLinking: true,
-    presets: [
-      SwaggerUIBundle.presets.apis,
-      SwaggerUIStandalonePreset
-    ],
-    plugins: [
-      SwaggerUIBundle.plugins.DownloadUrl
-    ],
-    layout: "StandaloneLayout",
-    tryItOutEnabled: true,
-    displayOperationId: true,
-    defaultModelsExpandDepth: 1,
-    defaultModelExpandDepth: 1,
-    docExpansion: "list"
-  });
-};
-EOF
-    
+    create_swagger_initializer "${SWAGGERUI_DIR}/swagger-initializer.js"
     
     echo -e "${GREEN}${PASS} SwaggerUI files prepared for packaging.${NC}"
 }
 
-# Apply Brotli compression to static assets
+# Function to apply Brotli compression to static assets
 compress_static_assets() {
     print_header "Compressing Static Assets"
     echo -e "${CYAN}${INFO} Applying Brotli compression to static assets...${NC}"
@@ -257,7 +300,43 @@ compress_static_assets() {
     echo -e "${GREEN}${PASS} Static assets compressed successfully.${NC}"
 }
 
-# Create and encrypt payload
+# Function to validate brotli compression
+validate_brotli_compression() {
+    local compressed_file="$1"
+    local original_file="$2"
+    
+    echo -e "${CYAN}${INFO} Testing Brotli decompression...${NC}"
+    if ! brotli -d "$compressed_file" -o "${TEMP_DIR}/test.tar" 2>/dev/null; then
+        echo -e "${RED}${FAIL} Brotli validation failed - invalid compressed data${NC}"
+        exit 1
+    fi
+    
+    # Compare original and decompressed files
+    if ! cmp -s "$original_file" "${TEMP_DIR}/test.tar"; then
+        echo -e "${RED}${FAIL} Brotli validation failed - decompressed data mismatch${NC}"
+        exit 1
+    fi
+    
+    echo -e "${GREEN}${PASS} Brotli compression validated successfully${NC}"
+    rm -f "${TEMP_DIR}/test.tar"
+}
+
+# Function to create validation files
+create_validation_files() {
+    local br_size="$1"
+    local br_head_16="$2"
+    local br_tail_16="$3"
+    
+    # Create validation file for debugging
+    {
+        echo "BROTLI_VALIDATION"
+        echo "Size: ${br_size}"
+        echo "First16: ${br_head_16}"
+        echo "Last16: ${br_tail_16}"
+    } > "${TEMP_DIR}/validation.txt"
+}
+
+# Function to create and encrypt payload
 create_tarball() {
     print_header "Creating Payload Package"
     echo -e "${CYAN}${INFO} Creating payload tarball...${NC}"
@@ -288,7 +367,8 @@ create_tarball() {
            "${TAR_FILE}" \
            -o "${TEMP_DIR}/payload.tar.br"
     
-    if [ $? -ne 0 ]; then
+    # Check if brotli compression succeeded
+    if ! brotli --quality=11 --lgwin=24 --force "${TAR_FILE}" -o "${TEMP_DIR}/payload.tar.br"; then
         echo -e "${RED}${FAIL} Brotli compression failed${NC}"
         exit 1
     fi
@@ -300,31 +380,24 @@ create_tarball() {
     fi
     
     # Log detailed Brotli stream information
-    BR_SIZE=$(stat -c%s "${TEMP_DIR}/payload.tar.br")
-    BR_HEAD_16=$(head -c16 "${TEMP_DIR}/payload.tar.br" | xxd -p | tr -d '\n')
-    BR_TAIL_16=$(tail -c16 "${TEMP_DIR}/payload.tar.br" | xxd -p | tr -d '\n')
+    local br_size
+    local br_head_16
+    local br_tail_16
+    br_size=$(stat -c%s "${TEMP_DIR}/payload.tar.br")
+    br_head_16=$(head -c16 "${TEMP_DIR}/payload.tar.br" | xxd -p | tr -d '\n')
+    br_tail_16=$(tail -c16 "${TEMP_DIR}/payload.tar.br" | xxd -p | tr -d '\n')
     
     echo -e "${CYAN}${INFO} Brotli stream validation:${NC}"
-    echo -e "${CYAN}${INFO} - Compressed size: ${BR_SIZE} bytes${NC}"
-    echo -e "${CYAN}${INFO} - Compression ratio: $(echo "scale=2; ${BR_SIZE}*100/$(stat -c%s "${TAR_FILE}")" | bc)%${NC}"
-    echo -e "${CYAN}${INFO} - First 32 bytes: ${BR_HEAD_16}${NC}"
-    echo -e "${CYAN}${INFO} - Last 32 bytes: ${BR_TAIL_16}${NC}"
+    echo -e "${CYAN}${INFO} - Compressed size: ${br_size} bytes${NC}"
+    echo -e "${CYAN}${INFO} - Compression ratio: $(echo "scale=2; ${br_size}*100/$(stat -c%s "${TAR_FILE}")" | bc)%${NC}"
+    echo -e "${CYAN}${INFO} - First 32 bytes: ${br_head_16}${NC}"
+    echo -e "${CYAN}${INFO} - Last 32 bytes: ${br_tail_16}${NC}"
     
-    # Test Brotli decompression
-    echo -e "${CYAN}${INFO} Testing Brotli decompression...${NC}"
-    if ! brotli -d "${TEMP_DIR}/payload.tar.br" -o "${TEMP_DIR}/test.tar" 2>/dev/null; then
-        echo -e "${RED}${FAIL} Brotli validation failed - invalid compressed data${NC}"
-        exit 1
-    fi
+    # Validate brotli compression
+    validate_brotli_compression "${TEMP_DIR}/payload.tar.br" "${TAR_FILE}"
     
-    # Compare original and decompressed files
-    if ! cmp -s "${TAR_FILE}" "${TEMP_DIR}/test.tar"; then
-        echo -e "${RED}${FAIL} Brotli validation failed - decompressed data mismatch${NC}"
-        exit 1
-    fi
-    
-    echo -e "${GREEN}${PASS} Brotli compression validated successfully${NC}"
-    rm -f "${TEMP_DIR}/test.tar"
+    # Create validation files
+    create_validation_files "$br_size" "$br_head_16" "$br_tail_16"
 
     print_header "Encrypting Payload Package"
     echo -e "${CYAN}${INFO} Encrypting payload tarball...${NC}"
@@ -337,8 +410,9 @@ create_tarball() {
     fi
 
     # Log first 5 chars of PAYLOAD_LOCK
-    PAYLOAD_LOCK_PREFIX=$(echo "${PAYLOAD_LOCK}" | cut -c1-5)
-    echo -e "${CYAN}${INFO} PAYLOAD_LOCK first 5 chars: ${BOLD}${PAYLOAD_LOCK_PREFIX}${NC}"
+    local payload_lock_prefix
+    payload_lock_prefix=$(echo "${PAYLOAD_LOCK}" | cut -c1-5)
+    echo -e "${CYAN}${INFO} PAYLOAD_LOCK first 5 chars: ${BOLD}${payload_lock_prefix}${NC}"
     
     # Generate a random AES-256 key and IV for encrypting the payload
     echo -e "${CYAN}${INFO} Generating AES-256 key and IV for payload encryption...${NC}"
@@ -360,7 +434,8 @@ create_tarball() {
                    -in "${TEMP_DIR}/aes_key.bin" -out "${TEMP_DIR}/encrypted_aes_key.bin"
     
     # Get the size of the encrypted AES key
-    ENCRYPTED_KEY_SIZE=$(stat -c%s "${TEMP_DIR}/encrypted_aes_key.bin")
+    local encrypted_key_size
+    encrypted_key_size=$(stat -c%s "${TEMP_DIR}/encrypted_aes_key.bin")
 
     # Save pre-encryption validation data
     echo -e "${CYAN}${INFO} Pre-encryption validation:${NC}"
@@ -370,12 +445,6 @@ create_tarball() {
     echo -e "${CYAN}${INFO} - IV: Direct (16 bytes)${NC}"
     echo -e "${CYAN}${INFO} - Padding: PKCS7${NC}"
     
-    # Create validation file for debugging
-    echo "BROTLI_VALIDATION" > "${TEMP_DIR}/validation.txt"
-    echo "Size: ${BR_SIZE}" >> "${TEMP_DIR}/validation.txt"
-    echo "First16: ${BR_HEAD_16}" >> "${TEMP_DIR}/validation.txt"
-    echo "Last16: ${BR_TAIL_16}" >> "${TEMP_DIR}/validation.txt"
-
     # Encrypt the Brotli-compressed tar with AES using direct key and IV
     echo -e "${CYAN}${INFO} Encrypting compressed tar with AES-256 (direct key/IV)...${NC}"
     openssl enc -aes-256-cbc \
@@ -385,10 +454,11 @@ create_tarball() {
                 -iv "$(xxd -p -c 16 "${TEMP_DIR}/aes_iv.bin")"
     
     # Verify encryption size
-    ENC_SIZE=$(stat -c%s "${TEMP_DIR}/temp_payload.enc")
+    local enc_size
+    enc_size=$(stat -c%s "${TEMP_DIR}/temp_payload.enc")
     echo -e "${CYAN}${INFO} Encryption validation:${NC}"
-    echo -e "${CYAN}${INFO} - Original size: ${BR_SIZE} bytes${NC}"
-    echo -e "${CYAN}${INFO} - Encrypted size: ${ENC_SIZE} bytes${NC}"
+    echo -e "${CYAN}${INFO} - Original size: ${br_size} bytes${NC}"
+    echo -e "${CYAN}${INFO} - Encrypted size: ${enc_size} bytes${NC}"
     
     # Quick validation test (decrypt and compare headers)
     echo -e "${CYAN}${INFO} Performing validation test...${NC}"
@@ -399,34 +469,34 @@ create_tarball() {
                 -iv "$(xxd -p -c 16 "${TEMP_DIR}/aes_iv.bin")"
     
     # Compare the first 16 bytes
-    VAL_HEAD_16=$(head -c16 "${TEMP_DIR}/validation.br" | xxd -p | tr -d '\n')
-    if [ "${VAL_HEAD_16}" = "${BR_HEAD_16}" ]; then
+    local val_head_16
+    val_head_16=$(head -c16 "${TEMP_DIR}/validation.br" | xxd -p | tr -d '\n')
+    if [ "${val_head_16}" = "${br_head_16}" ]; then
         echo -e "${GREEN}${PASS} Encryption validation passed - headers match${NC}"
     else
         echo -e "${RED}${FAIL} Encryption validation failed!${NC}"
-        echo -e "${RED}${INFO} Original : ${BR_HEAD_16}${NC}"
-        echo -e "${RED}${INFO} Decrypted: ${VAL_HEAD_16}${NC}"
+        echo -e "${RED}${INFO} Original : ${br_head_16}${NC}"
+        echo -e "${RED}${INFO} Decrypted: ${val_head_16}${NC}"
         exit 1
     fi
     
     # Log the first 16 bytes of the encrypted payload
-    ENC_HEAD_16=$(head -c16 "${TEMP_DIR}/temp_payload.enc" | xxd -p | tr -d '\n')
-    echo -e "${CYAN}${INFO} AES-encrypted payload first 16 bytes: ${NC}${ENC_HEAD_16}"
+    local enc_head_16
+    enc_head_16=$(head -c16 "${TEMP_DIR}/temp_payload.enc" | xxd -p | tr -d '\n')
+    echo -e "${CYAN}${INFO} AES-encrypted payload first 16 bytes: ${NC}${enc_head_16}"
     
     # Combine the encrypted AES key, IV, and encrypted payload
     echo -e "${CYAN}${INFO} Creating final encrypted payload with IV...${NC}"
     
     # Write the size of the encrypted key as a 4-byte binary header
-    printf "%08x" $ENCRYPTED_KEY_SIZE | xxd -r -p > "${COMPRESSED_TAR_FILE}"
+    printf "%08x" "$encrypted_key_size" | xxd -r -p > "${COMPRESSED_TAR_FILE}"
     
-    # Append the encrypted AES key
-    cat "${TEMP_DIR}/encrypted_aes_key.bin" >> "${COMPRESSED_TAR_FILE}"
-    
-    # Append the IV
-    cat "${TEMP_DIR}/aes_iv.bin" >> "${COMPRESSED_TAR_FILE}"
-    
-    # Append the encrypted payload
-    cat "${TEMP_DIR}/temp_payload.enc" >> "${COMPRESSED_TAR_FILE}"
+    # Append the encrypted AES key, IV, and encrypted payload using grouped redirects
+    {
+        cat "${TEMP_DIR}/encrypted_aes_key.bin"
+        cat "${TEMP_DIR}/aes_iv.bin"
+        cat "${TEMP_DIR}/temp_payload.enc"
+    } >> "${COMPRESSED_TAR_FILE}"
 
     # List the contents of the tarball before encryption
     print_header "Tarball Contents"
@@ -447,44 +517,66 @@ create_tarball() {
     echo -e "${BLUE}${BOLD}Distribution file details:${NC}"
     
     # Original tarball
-    TAR_SIZE=$(stat -c%s "${TAR_FILE}")
-    TAR_HEAD=$(head -c5 "${TAR_FILE}" | xxd -p | tr -d '\n')
-    TAR_TAIL=$(tail -c5 "${TAR_FILE}" | xxd -p | tr -d '\n')
-    echo -e "  ${GREEN}${INFO} Uncompressed tar:         ${NC}${TAR_SIZE} bytes"
-    echo -e "  ${GREEN}${INFO} First 5 bytes (hex):      ${NC}${TAR_HEAD}"
-    echo -e "  ${GREEN}${INFO} Last 5 bytes (hex):       ${NC}${TAR_TAIL}"
+    local tar_size tar_head tar_tail
+    tar_size=$(stat -c%s "${TAR_FILE}")
+    tar_head=$(head -c5 "${TAR_FILE}" | xxd -p | tr -d '\n')
+    tar_tail=$(tail -c5 "${TAR_FILE}" | xxd -p | tr -d '\n')
+    echo -e "  ${GREEN}${INFO} Uncompressed tar:         ${NC}${tar_size} bytes"
+    echo -e "  ${GREEN}${INFO} First 5 bytes (hex):      ${NC}${tar_head}"
+    echo -e "  ${GREEN}${INFO} Last 5 bytes (hex):       ${NC}${tar_tail}"
     
     # Brotli compressed tar
-    BR_SIZE=$(stat -c%s "${TEMP_DIR}/payload.tar.br")
-    BR_HEAD=$(head -c5 "${TEMP_DIR}/payload.tar.br" | xxd -p | tr -d '\n')
-    BR_TAIL=$(tail -c5 "${TEMP_DIR}/payload.tar.br" | xxd -p | tr -d '\n')
-    echo -e "  ${GREEN}${INFO} Compressed tar (brotli):  ${NC}${BR_SIZE} bytes"
-    echo -e "  ${GREEN}${INFO} First 5 bytes (hex):      ${NC}${BR_HEAD}"
-    echo -e "  ${GREEN}${INFO} Last 5 bytes (hex):       ${NC}${BR_TAIL}"
+    local br_head_5 br_tail_5
+    br_head_5=$(head -c5 "${TEMP_DIR}/payload.tar.br" | xxd -p | tr -d '\n')
+    br_tail_5=$(tail -c5 "${TEMP_DIR}/payload.tar.br" | xxd -p | tr -d '\n')
+    echo -e "  ${GREEN}${INFO} Compressed tar (brotli):  ${NC}${br_size} bytes"
+    echo -e "  ${GREEN}${INFO} First 5 bytes (hex):      ${NC}${br_head_5}"
+    echo -e "  ${GREEN}${INFO} Last 5 bytes (hex):       ${NC}${br_tail_5}"
     
     # Final encrypted payload
-    ENC_SIZE=$(stat -c%s "${COMPRESSED_TAR_FILE}")
-    ENC_HEAD=$(head -c5 "${COMPRESSED_TAR_FILE}" | xxd -p | tr -d '\n')
-    ENC_TAIL=$(tail -c5 "${COMPRESSED_TAR_FILE}" | xxd -p | tr -d '\n')
-    echo -e "  ${GREEN}${INFO} Encrypted payload:        ${NC}${ENC_SIZE} bytes"
-    echo -e "  ${GREEN}${INFO} First 5 bytes (hex):      ${NC}${ENC_HEAD}"
-    echo -e "  ${GREEN}${INFO} Last 5 bytes (hex):       ${NC}${ENC_TAIL}"
+    local final_enc_size final_enc_head final_enc_tail
+    final_enc_size=$(stat -c%s "${COMPRESSED_TAR_FILE}")
+    final_enc_head=$(head -c5 "${COMPRESSED_TAR_FILE}" | xxd -p | tr -d '\n')
+    final_enc_tail=$(tail -c5 "${COMPRESSED_TAR_FILE}" | xxd -p | tr -d '\n')
+    echo -e "  ${GREEN}${INFO} Encrypted payload:        ${NC}${final_enc_size} bytes"
+    echo -e "  ${GREEN}${INFO} First 5 bytes (hex):      ${NC}${final_enc_head}"
+    echo -e "  ${GREEN}${INFO} Last 5 bytes (hex):       ${NC}${final_enc_tail}"
     
     # Log size of encrypted AES key being added
-    echo -e "  ${GREEN}${INFO} Encrypted AES key size:   ${NC}${ENCRYPTED_KEY_SIZE} bytes"
+    echo -e "  ${GREEN}${INFO} Encrypted AES key size:   ${NC}${encrypted_key_size} bytes"
     
     echo -e "${GREEN}${PASS} Encrypted payload package is ready for distribution.${NC}"
 }
 
-# Main execution
-print_header "Payload Generation Process"
+# Function to display completion summary
+display_completion_summary() {
+    print_header "Generation Complete"
+    echo -e "${GREEN}${PASS} ${BOLD}Encrypted payload generation completed successfully!${NC}"
+    echo -e "${CYAN}${INFO} Encrypted payload created at: ${BOLD}$(convert_to_relative_path "${COMPRESSED_TAR_FILE}")${NC}"
+    echo -e "${YELLOW}${INFO} Cleaning up will occur on exit...${NC}"
+    echo -e "${BLUE}────────────────────────────────────────────────────────────────${NC}"
+}
 
-download_swaggerui
-compress_static_assets
-create_tarball
+# Set up cleanup trap
+trap cleanup EXIT
 
-print_header "Generation Complete"
-echo -e "${GREEN}${PASS} ${BOLD}Encrypted payload generation completed successfully!${NC}"
-echo -e "${CYAN}${INFO} Encrypted payload created at: ${BOLD}$(convert_to_relative_path "${COMPRESSED_TAR_FILE}")${NC}"
-echo -e "${YELLOW}${INFO} Cleaning up will occur on exit...${NC}"
-echo -e "${BLUE}────────────────────────────────────────────────────────────────${NC}"
+# Main execution flow
+main() {
+    # Display script information
+    display_script_info
+    
+    # Check dependencies
+    check_dependencies
+    
+    # Execute main workflow
+    print_header "Payload Generation Process"
+    download_swaggerui
+    compress_static_assets
+    create_tarball
+    
+    # Display completion summary
+    display_completion_summary
+}
+
+# Execute main function
+main "$@"
