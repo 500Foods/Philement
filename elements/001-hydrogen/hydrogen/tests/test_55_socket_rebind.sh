@@ -1,7 +1,19 @@
 #!/bin/bash
 #
+# About this Script
+#
 # Socket Rebinding Test
 # Tests that the SO_REUSEADDR socket option allows immediate rebinding after shutdown
+#
+NAME_SCRIPT="Socket Rebinding Test"
+VERS_SCRIPT="2.0.0"
+
+# VERSION HISTORY
+# 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
+# 1.0.0 - Original version - Basic socket rebinding test functionality
+
+# Display script name and version
+echo "=== $NAME_SCRIPT v$VERS_SCRIPT ==="
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -10,36 +22,39 @@ HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 # Include the common test utilities
 source "$SCRIPT_DIR/support_utils.sh"
 
-# Configuration
-# Prefer release build if available, fallback to standard build
-if [ -f "$HYDROGEN_DIR/hydrogen_release" ]; then
-    HYDROGEN_BIN="$HYDROGEN_DIR/hydrogen_release"
-    print_info "Using release build for testing"
-else
-    HYDROGEN_BIN="$HYDROGEN_DIR/hydrogen"
-    print_info "Using standard build"
-fi
+# Configuration - prefer release build if available, fallback to naked build
+find_hydrogen_binary() {
+    if [ -f "$HYDROGEN_DIR/hydrogen_release" ]; then
+        print_info "Using release build for testing" >&2
+        echo "$HYDROGEN_DIR/hydrogen_release"
+    elif [ -f "$HYDROGEN_DIR/hydrogen" ]; then
+        print_info "Using standard build for testing" >&2
+        echo "$HYDROGEN_DIR/hydrogen"
+    else
+        print_error "No hydrogen binary found in $HYDROGEN_DIR" >&2
+        exit 1
+    fi
+}
 
-CONFIG_FILE=$(get_config_path "hydrogen_test_api.json")
-if [ ! -f "$CONFIG_FILE" ]; then
-    CONFIG_FILE=$(get_config_path "hydrogen_test_max.json")
-    print_info "API test config not found, using max config"
-fi
-
-# Create output directories
-RESULTS_DIR="$SCRIPT_DIR/results"
-mkdir -p "$RESULTS_DIR"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-RESULT_LOG="$RESULTS_DIR/socket_rebind_test_${TIMESTAMP}.log"
+# Function to find appropriate configuration file
+find_config_file() {
+    local config_file
+    config_file=$(get_config_path "hydrogen_test_api.json")
+    if [ ! -f "$config_file" ]; then
+        config_file=$(get_config_path "hydrogen_test_max.json")
+        print_info "API test config not found, using max config"
+    fi
+    echo "$config_file"
+}
 
 # Function to check if a port is in use
 check_port_in_use() {
-    PORT=$1
+    local port="$1"
     if command -v ss &> /dev/null; then
-        ss -tuln | grep ":$PORT " > /dev/null
+        ss -tuln | grep ":$port " > /dev/null
         return $?
     elif command -v netstat &> /dev/null; then
-        netstat -tuln | grep ":$PORT " > /dev/null
+        netstat -tuln | grep ":$port " > /dev/null
         return $?
     else
         echo "Neither ss nor netstat is available"
@@ -49,35 +64,50 @@ check_port_in_use() {
 
 # Function to get the web server port from config
 get_webserver_port() {
-    CONFIG=$1
+    local config="$1"
+    local port
+    
     if command -v jq &> /dev/null; then
         # Use jq if available
-        PORT=$(jq -r '.WebServer.Port // 8080' "$CONFIG" 2>/dev/null)
-        if [ -z "$PORT" ] || [ "$PORT" = "null" ]; then
-            PORT=8080
+        port=$(jq -r '.WebServer.Port // 8080' "$config" 2>/dev/null)
+        if [ -z "$port" ] || [ "$port" = "null" ]; then
+            port=8080
         fi
     else
         # Fallback to grep
-        PORT=$(grep -o '"Port":[[:space:]]*[0-9]*' "$CONFIG" | head -1 | grep -o '[0-9]*')
-        if [ -z "$PORT" ]; then
-            PORT=8080
+        port=$(grep -o '"Port":[[:space:]]*[0-9]*' "$config" | head -1 | grep -o '[0-9]*')
+        if [ -z "$port" ]; then
+            port=8080
         fi
     fi
-    echo $PORT
+    echo "$port"
+}
+
+# Function to safely kill a process with PID validation
+# shellcheck disable=SC2317  # Function is called indirectly via cleanup trap
+safe_kill_process() {
+    local pid="$1"
+    local process_name="$2"
+    
+    # Validate PID is not empty and not zero
+    if [ -z "$pid" ] || [ "$pid" = "0" ]; then
+        return 1
+    fi
+    
+    if ps -p "$pid" > /dev/null 2>&1; then
+        echo "Cleaning up $process_name (PID $pid)..."
+        kill -SIGINT "$pid" 2>/dev/null || kill -9 "$pid" 2>/dev/null
+        return 0
+    fi
+    return 1
 }
 
 # Handle cleanup on script termination
+# shellcheck disable=SC2317  # Function is called indirectly via trap
 cleanup() {
     # Kill any hydrogen processes started by this script
-    if [ ! -z "$FIRST_PID" ] && ps -p $FIRST_PID > /dev/null 2>&1; then
-        echo "Cleaning up first instance (PID $FIRST_PID)..."
-        kill -SIGINT $FIRST_PID 2>/dev/null || kill -9 $FIRST_PID 2>/dev/null
-    fi
-    
-    if [ ! -z "$SECOND_PID" ] && ps -p $SECOND_PID > /dev/null 2>&1; then
-        echo "Cleaning up second instance (PID $SECOND_PID)..."
-        kill -SIGINT $SECOND_PID 2>/dev/null || kill -9 $SECOND_PID 2>/dev/null
-    fi
+    safe_kill_process "$FIRST_PID" "first instance"
+    safe_kill_process "$SECOND_PID" "second instance"
     
     # Save test log if we've started writing it
     if [ -n "$RESULT_LOG" ] && [ -f "$RESULT_LOG" ]; then
@@ -87,8 +117,292 @@ cleanup() {
     exit 0
 }
 
+# Function to validate process is running and bound to port
+# shellcheck disable=SC2317  # Function is called in main execution flow
+validate_instance() {
+    local pid="$1"
+    local port="$2"
+    local instance_name="$3"
+    
+    # Check if PID is empty or invalid
+    if [ -z "$pid" ] || [ "$pid" = "0" ]; then
+        print_result 1 "$instance_name failed to start (invalid PID: '$pid')" | tee -a "$RESULT_LOG"
+        end_test 1 "Socket Rebinding Test" | tee -a "$RESULT_LOG"
+        exit 1
+    fi
+    
+    # Check if process is running
+    if ! ps -p "$pid" > /dev/null 2>&1; then
+        print_result 1 "$instance_name failed to start (PID $pid not running)" | tee -a "$RESULT_LOG"
+        end_test 1 "Socket Rebinding Test" | tee -a "$RESULT_LOG"
+        exit 1
+    fi
+    
+    # Check if port is bound
+    if ! check_port_in_use "$port"; then
+        print_result 1 "$instance_name failed to bind to port $port" | tee -a "$RESULT_LOG"
+        kill "$pid" 2>/dev/null || true
+        end_test 1 "Socket Rebinding Test" | tee -a "$RESULT_LOG"
+        exit 1
+    fi
+    
+    print_info "$instance_name running and bound to port $port" | tee -a "$RESULT_LOG"
+}
+
+# Function to check TIME_WAIT sockets
+# shellcheck disable=SC2317  # Function is called in main execution flow
+check_time_wait_sockets() {
+    local port="$1"
+    local time_wait_count
+    
+    if command -v ss &> /dev/null; then
+        # Ensure we get a clean integer count without any extra characters
+        time_wait_count=$(ss -tan | grep ":$port" | grep -c "TIME-WAIT" 2>/dev/null || echo 0)
+        time_wait_count=$(echo "$time_wait_count" | tr -d '[:space:]')
+        if [ -z "$time_wait_count" ]; then
+            time_wait_count=0
+        fi
+        
+        if [ "$time_wait_count" -gt 0 ]; then
+            print_info "Found $time_wait_count socket(s) in TIME-WAIT state on port $port" | tee -a "$RESULT_LOG"
+            ss -tan | grep ":$port" | grep "TIME-WAIT" | tee -a "$RESULT_LOG"
+        else
+            print_info "No TIME-WAIT sockets found on port $port" | tee -a "$RESULT_LOG"
+        fi
+    elif command -v netstat &> /dev/null; then
+        # Ensure we get a clean integer count without any extra characters
+        time_wait_count=$(netstat -tan | grep ":$port" | grep -c "TIME_WAIT" 2>/dev/null || echo 0)
+        time_wait_count=$(echo "$time_wait_count" | tr -d '[:space:]')
+        if [ -z "$time_wait_count" ]; then
+            time_wait_count=0
+        fi
+        
+        if [ "$time_wait_count" -gt 0 ]; then
+            print_info "Found $time_wait_count socket(s) in TIME_WAIT state on port $port" | tee -a "$RESULT_LOG"
+            netstat -tan | grep ":$port" | grep "TIME_WAIT" | tee -a "$RESULT_LOG"
+        else
+            print_info "No TIME_WAIT sockets found on port $port" | tee -a "$RESULT_LOG"
+        fi
+    else
+        print_warning "Could not check for TIME_WAIT sockets (no ss or netstat)" | tee -a "$RESULT_LOG"
+    fi
+}
+
+# Function to ensure clean test environment
+# shellcheck disable=SC2317  # Function is called in main execution flow
+prepare_test_environment() {
+    local port="$1"
+    
+    # Make sure no Hydrogen instances are running
+    print_info "Ensuring no Hydrogen instances are running..." | tee -a "$RESULT_LOG"
+    pkill -f hydrogen || true
+    sleep 2
+    
+    # Check if port is already in use
+    if check_port_in_use "$port"; then
+        print_warning "Port $port is already in use, attempting to force release..." | tee -a "$RESULT_LOG"
+        pkill -f hydrogen || true
+        sleep 5
+        if check_port_in_use "$port"; then
+            print_result 1 "Port $port is still in use, cannot run test" | tee -a "$RESULT_LOG"
+            end_test 1 "Socket Rebinding Test" | tee -a "$RESULT_LOG"
+            exit 1
+        fi
+    fi
+}
+
+# Function to wait for startup completion by monitoring log
+wait_for_startup() {
+    local log_file="$1"
+    local timeout="$2"
+    local start_time
+    local current_time
+    local elapsed
+    
+    start_time=$(date +%s)
+    
+    while true; do
+        current_time=$(date +%s)
+        elapsed=$((current_time - start_time))
+        
+        if [ "$elapsed" -ge "$timeout" ]; then
+            {
+                print_warning "Startup timeout after ${elapsed}s"
+            } | tee -a "$RESULT_LOG" >&2
+            return 1
+        fi
+        
+        if grep -q "Application started" "$log_file" 2>/dev/null; then
+            {
+                print_info "Startup completed in ${elapsed}s"
+            } | tee -a "$RESULT_LOG" >&2
+            return 0
+        fi
+        
+        sleep 0.2
+    done
+}
+
+# Function to start hydrogen instance
+# shellcheck disable=SC2317  # Function is called in main execution flow
+start_hydrogen_instance() {
+    local hydrogen_bin="$1"
+    local config_file="$2"
+    local instance_name="$3"
+    local log_file="$RESULTS_DIR/${instance_name// /_}_${TIMESTAMP}.log"
+    
+    # Send all informational output to stderr to avoid interfering with PID capture
+    {
+        print_header "Starting Hydrogen ($instance_name)"
+    } | tee -a "$RESULT_LOG" >&2
+    
+    # Check if binary exists and is executable
+    if [ ! -x "$hydrogen_bin" ]; then
+        {
+            print_error "Hydrogen binary not found or not executable: $hydrogen_bin"
+        } | tee -a "$RESULT_LOG" >&2
+        return 1
+    fi
+    
+    # Check if config file exists
+    if [ ! -f "$config_file" ]; then
+        {
+            print_error "Config file not found: $config_file"
+        } | tee -a "$RESULT_LOG" >&2
+        return 1
+    fi
+    
+    # Clean log file
+    true > "$log_file"
+    
+    # Start the process with output to log file
+    "$hydrogen_bin" "$config_file" > "$log_file" 2>&1 &
+    local pid=$!
+    
+    # Verify we got a valid PID
+    if [ -z "$pid" ] || [ "$pid" = "0" ]; then
+        {
+            print_error "Failed to start $instance_name - invalid PID"
+        } | tee -a "$RESULT_LOG" >&2
+        return 1
+    fi
+    
+    {
+        print_info "Started with PID: $pid"
+    } | tee -a "$RESULT_LOG" >&2
+    
+    # Verify process started
+    if ! ps -p "$pid" > /dev/null 2>&1; then
+        {
+            print_error "$instance_name failed to start"
+        } | tee -a "$RESULT_LOG" >&2
+        return 1
+    fi
+    
+    # Wait for startup completion by monitoring log
+    {
+        print_info "Waiting for startup completion (max 15 seconds)..."
+    } | tee -a "$RESULT_LOG" >&2
+    
+    if ! wait_for_startup "$log_file" 15; then
+        {
+            print_error "$instance_name startup failed or timed out"
+            # Show last few lines of log for debugging
+            print_info "Last 10 lines of startup log:"
+            tail -10 "$log_file" || true
+        } | tee -a "$RESULT_LOG" >&2
+        return 1
+    fi
+    
+    # Final verification that process is still running
+    if ! ps -p "$pid" > /dev/null 2>&1; then
+        {
+            print_error "$instance_name (PID $pid) exited after startup"
+        } | tee -a "$RESULT_LOG" >&2
+        return 1
+    fi
+    
+    # Verify port is bound (get port from config)
+    local port
+    port=$(get_webserver_port "$config_file")
+    {
+        print_info "Verifying port $port is bound..."
+    } | tee -a "$RESULT_LOG" >&2
+    
+    # Give a moment for port binding
+    sleep 1
+    
+    if ! check_port_in_use "$port"; then
+        {
+            print_error "$instance_name failed to bind to port $port"
+        } | tee -a "$RESULT_LOG" >&2
+        kill "$pid" 2>/dev/null || true
+        return 1
+    fi
+    
+    {
+        print_info "$instance_name successfully started and bound to port $port"
+    } | tee -a "$RESULT_LOG" >&2
+    
+    # Output PID to stdout for command substitution capture
+    echo "$pid"
+}
+
+# Function to shutdown instance gracefully
+# shellcheck disable=SC2317  # Function is called in main execution flow
+shutdown_instance() {
+    local pid="$1"
+    local instance_name="$2"
+    
+    print_header "Shutting down $instance_name" | tee -a "$RESULT_LOG"
+    
+    # Validate PID before attempting to kill
+    if [ -z "$pid" ] || [ "$pid" = "0" ]; then
+        print_warning "$instance_name has invalid PID ($pid), cannot shutdown" | tee -a "$RESULT_LOG"
+        return 1
+    fi
+    
+    # Check if process is still running before attempting to kill
+    if ! ps -p "$pid" > /dev/null 2>&1; then
+        {
+            print_info "$instance_name (PID $pid) is already terminated"
+        } | tee -a "$RESULT_LOG"
+        return 0
+    fi
+    
+    {
+        print_info "Terminating $instance_name (PID $pid)..."
+    } | tee -a "$RESULT_LOG"
+    
+    kill -SIGINT "$pid"
+    sleep 1
+    
+    # Verify instance has exited
+    if ps -p "$pid" > /dev/null 2>&1; then
+        {
+            print_warning "$instance_name still running, forcing termination..."
+        } | tee -a "$RESULT_LOG"
+        kill -9 "$pid" 2>/dev/null || true
+        sleep 1
+    fi
+    
+    {
+        print_info "$instance_name (PID $pid) termination confirmed"
+    } | tee -a "$RESULT_LOG"
+}
+
 # Set up trap for clean termination
 trap cleanup SIGINT SIGTERM EXIT
+
+# Initialize configuration
+HYDROGEN_BIN=$(find_hydrogen_binary)
+CONFIG_FILE=$(find_config_file)
+
+# Create output directories
+RESULTS_DIR="$SCRIPT_DIR/results"
+mkdir -p "$RESULTS_DIR"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+RESULT_LOG="$RESULTS_DIR/socket_rebind_test_${TIMESTAMP}.log"
 
 # Start the test
 start_test "Socket Rebinding Test" | tee -a "$RESULT_LOG"
@@ -103,122 +417,33 @@ PASS_COUNT=0
 PORT=$(get_webserver_port "$CONFIG_FILE")
 print_info "Web server port: $PORT" | tee -a "$RESULT_LOG"
 
-# Make sure no Hydrogen instances are running
-print_info "Ensuring no Hydrogen instances are running..." | tee -a "$RESULT_LOG"
-pkill -f hydrogen || true
-sleep 2
+# Prepare clean test environment
+prepare_test_environment "$PORT"
 
-# Check if port is already in use
-if check_port_in_use $PORT; then
-    print_warning "Port $PORT is already in use, attempting to force release..." | tee -a "$RESULT_LOG"
-    pkill -f hydrogen || true
-    sleep 5
-    if check_port_in_use $PORT; then
-        print_result 1 "Port $PORT is still in use, cannot run test" | tee -a "$RESULT_LOG"
-        end_test 1 "Socket Rebinding Test" | tee -a "$RESULT_LOG"
-        exit 1
-    fi
-fi
-
-# Start Hydrogen first time
-print_header "Starting Hydrogen (first instance)" | tee -a "$RESULT_LOG"
-$HYDROGEN_BIN "$CONFIG_FILE" > /dev/null 2>&1 &
-FIRST_PID=$!
-print_info "Started with PID: $FIRST_PID" | tee -a "$RESULT_LOG"
-
-# Wait for server to initialize
-sleep 3
-
-# Check if server is running and bound to the port
-if ! ps -p $FIRST_PID > /dev/null; then
-    print_result 1 "First instance failed to start" | tee -a "$RESULT_LOG"
+# Test Phase 1: Start first instance
+if ! FIRST_PID=$(start_hydrogen_instance "$HYDROGEN_BIN" "$CONFIG_FILE" "first instance") || [ -z "$FIRST_PID" ]; then
+    print_result 1 "Failed to start first instance" | tee -a "$RESULT_LOG"
     end_test 1 "Socket Rebinding Test" | tee -a "$RESULT_LOG"
     exit 1
 fi
-
-if ! check_port_in_use $PORT; then
-    print_result 1 "First instance failed to bind to port $PORT" | tee -a "$RESULT_LOG"
-    kill $FIRST_PID 2>/dev/null || true
-    end_test 1 "Socket Rebinding Test" | tee -a "$RESULT_LOG"
-    exit 1
-fi
-
-print_info "First instance running and bound to port $PORT" | tee -a "$RESULT_LOG"
+print_info "First instance running and bound to port $PORT successfully!" | tee -a "$RESULT_LOG"
 # First subtest passed
 ((PASS_COUNT++))
 
-# Shutdown first instance
-print_header "Shutting down first instance" | tee -a "$RESULT_LOG"
-kill -SIGINT $FIRST_PID
-sleep 1
-
-# Verify first instance has exited
-if ps -p $FIRST_PID > /dev/null; then
-    print_warning "First instance still running, forcing termination..." | tee -a "$RESULT_LOG"
-    kill -9 $FIRST_PID 2>/dev/null || true
-    sleep 1
-fi
-
-print_info "First instance has terminated" | tee -a "$RESULT_LOG"
+# Test Phase 2: Shutdown first instance
+shutdown_instance "$FIRST_PID" "first instance"
 # Second subtest passed
 ((PASS_COUNT++))
 
 # Check if socket is in TIME_WAIT state
-if command -v ss &> /dev/null; then
-    # Ensure we get a clean integer count without any extra characters
-    TIME_WAIT_COUNT=$(ss -tan | grep ":$PORT" | grep -c "TIME-WAIT" 2>/dev/null || echo 0)
-    TIME_WAIT_COUNT=$(echo "$TIME_WAIT_COUNT" | tr -d '[:space:]')
-    if [ -z "$TIME_WAIT_COUNT" ]; then
-        TIME_WAIT_COUNT=0
-    fi
-    
-    if [ "$TIME_WAIT_COUNT" -gt 0 ]; then
-        print_info "Found $TIME_WAIT_COUNT socket(s) in TIME-WAIT state on port $PORT" | tee -a "$RESULT_LOG"
-        ss -tan | grep ":$PORT" | grep "TIME-WAIT" | tee -a "$RESULT_LOG"
-    else
-        print_info "No TIME-WAIT sockets found on port $PORT" | tee -a "$RESULT_LOG"
-    fi
-elif command -v netstat &> /dev/null; then
-    # Ensure we get a clean integer count without any extra characters
-    TIME_WAIT_COUNT=$(netstat -tan | grep ":$PORT" | grep -c "TIME_WAIT" 2>/dev/null || echo 0)
-    TIME_WAIT_COUNT=$(echo "$TIME_WAIT_COUNT" | tr -d '[:space:]')
-    if [ -z "$TIME_WAIT_COUNT" ]; then
-        TIME_WAIT_COUNT=0
-    fi
-    
-    if [ "$TIME_WAIT_COUNT" -gt 0 ]; then
-        print_info "Found $TIME_WAIT_COUNT socket(s) in TIME_WAIT state on port $PORT" | tee -a "$RESULT_LOG"
-        netstat -tan | grep ":$PORT" | grep "TIME_WAIT" | tee -a "$RESULT_LOG"
-    else
-        print_info "No TIME_WAIT sockets found on port $PORT" | tee -a "$RESULT_LOG"
-    fi
-else
-    print_warning "Could not check for TIME_WAIT sockets (no ss or netstat)" | tee -a "$RESULT_LOG"
-fi
+check_time_wait_sockets "$PORT"
 
-# Immediately start second instance
-print_header "Starting Hydrogen (second instance - immediate restart)" | tee -a "$RESULT_LOG"
-$HYDROGEN_BIN "$CONFIG_FILE" > /dev/null 2>&1 &
-SECOND_PID=$!
-print_info "Started with PID: $SECOND_PID" | tee -a "$RESULT_LOG"
-
-# Wait for server to initialize
-sleep 3
-
-# Check if second instance is running and bound to the port
-if ! ps -p $SECOND_PID > /dev/null; then
-    print_result 1 "Second instance failed to start" | tee -a "$RESULT_LOG"
+# Test Phase 3: Immediately start second instance
+if ! SECOND_PID=$(start_hydrogen_instance "$HYDROGEN_BIN" "$CONFIG_FILE" "second instance - immediate restart") || [ -z "$SECOND_PID" ]; then
+    print_result 1 "Failed to start second instance" | tee -a "$RESULT_LOG"
     end_test 1 "Socket Rebinding Test" | tee -a "$RESULT_LOG"
     exit 1
 fi
-
-if ! check_port_in_use $PORT; then
-    print_result 1 "Second instance failed to bind to port $PORT" | tee -a "$RESULT_LOG"
-    kill $SECOND_PID 2>/dev/null || true
-    end_test 1 "Socket Rebinding Test" | tee -a "$RESULT_LOG"
-    exit 1
-fi
-
 print_info "Second instance running and bound to port $PORT successfully!" | tee -a "$RESULT_LOG"
 print_info "SO_REUSEADDR is working correctly" | tee -a "$RESULT_LOG"
 # Third subtest passed
@@ -226,11 +451,37 @@ print_info "SO_REUSEADDR is working correctly" | tee -a "$RESULT_LOG"
 
 # Clean up
 print_header "Cleaning up" | tee -a "$RESULT_LOG"
-kill -SIGINT $SECOND_PID 2>/dev/null || true
-sleep 2
-if ps -p $SECOND_PID > /dev/null; then
-    print_warning "Second instance still running, forcing termination..." | tee -a "$RESULT_LOG"
-    kill -9 $SECOND_PID 2>/dev/null || true
+
+# Validate PID before cleanup
+if [ -n "$SECOND_PID" ] && [ "$SECOND_PID" != "0" ]; then
+    # Check if process is still running before attempting to kill
+    if ps -p "$SECOND_PID" > /dev/null 2>&1; then
+        {
+            print_info "Terminating second instance (PID $SECOND_PID)..."
+        } | tee -a "$RESULT_LOG"
+        
+        kill -SIGINT "$SECOND_PID" 2>/dev/null || true
+        sleep 2
+        
+        if ps -p "$SECOND_PID" > /dev/null 2>&1; then
+            {
+                print_warning "Second instance still running, forcing termination..."
+            } | tee -a "$RESULT_LOG"
+            kill -9 "$SECOND_PID" 2>/dev/null || true
+        fi
+        
+        {
+            print_info "Second instance (PID $SECOND_PID) termination confirmed"
+        } | tee -a "$RESULT_LOG"
+    else
+        {
+            print_info "Second instance (PID $SECOND_PID) already terminated"
+        } | tee -a "$RESULT_LOG"
+    fi
+else
+    {
+        print_info "No second instance to clean up"
+    } | tee -a "$RESULT_LOG"
 fi
 
 # Get test name from script name

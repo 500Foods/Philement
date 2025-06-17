@@ -1,15 +1,29 @@
 #!/bin/bash
 #
-# Crash Handler Test
-# Tests that the crash handler correctly generates and formats core dumps
+# Hydrogen Crash Handler Test
+#
+# Tests that the crash handler correctly generates and formats core dumps:
 # - Verifies core file creation
 # - Validates core file format
 # - Checks GDB compatibility
+# - Tests debug symbol handling
+# - Validates crash logging
 #
+NAME_SCRIPT="Hydrogen Crash Handler Test"
+VERS_SCRIPT="2.0.0"
+
+# VERSION HISTORY
+# 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
+
+# Display script name and version
+echo "=== $NAME_SCRIPT v$VERS_SCRIPT ==="
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
+
+# Include the common test utilities
+# shellcheck source=support_utils.sh
 source "$SCRIPT_DIR/support_utils.sh"
 
 # Configuration
@@ -24,7 +38,8 @@ verify_core_dump_config() {
     print_info "Checking core dump configuration..."
     
     # Check core pattern
-    local core_pattern=$(cat /proc/sys/kernel/core_pattern)
+    local core_pattern
+    core_pattern=$(cat /proc/sys/kernel/core_pattern)
     if [[ "$core_pattern" == "core" ]]; then
         print_result 0 "Core pattern is set to default 'core'"
     else
@@ -32,7 +47,8 @@ verify_core_dump_config() {
     fi
     
     # Check core dump size limit
-    local core_limit=$(ulimit -c)
+    local core_limit
+    core_limit=$(ulimit -c)
     if [[ "$core_limit" == "unlimited" || "$core_limit" -gt 0 ]]; then
         print_result 0 "Core dump size limit is adequate ($core_limit)"
     else
@@ -65,8 +81,9 @@ verify_core_file_content() {
     print_info "Verifying core file contents..."
     
     # Check file size and verify it's a core file
-    local core_size=$(stat -c %s "$core_file")
-    if [ $core_size -lt 1024 ]; then
+    local core_size
+    core_size=$(stat -c %s "$core_file")
+    if [ "$core_size" -lt 1024 ]; then
         print_result 1 "Core file is suspiciously small ($core_size bytes)"
         return 1
     fi
@@ -84,7 +101,8 @@ verify_core_file_content() {
 # Function to verify debug symbols are present
 verify_debug_symbols() {
     local binary="$1"
-    local binary_name=$(basename "$binary")
+    local binary_name
+    binary_name=$(basename "$binary")
     local expect_symbols=1
     
     # Release builds should not have debug symbols
@@ -118,7 +136,8 @@ verify_debug_symbols() {
 verify_core_file() {
     local binary="$1"
     local pid="$2"
-    local binary_name=$(basename "$binary")
+    local binary_name
+    binary_name=$(basename "$binary")
     local expected_core="${HYDROGEN_DIR}/${binary_name}.core.${pid}"
     local timeout=5
     local found=0
@@ -147,28 +166,30 @@ verify_core_file() {
 # Function to run test with a specific build
 run_test_with_build() {
     local binary="$1"
-    local binary_name=$(basename "$binary")
+    local binary_name
+    binary_name=$(basename "$binary")
     
     print_info "Testing with build: $binary_name"
     
     # Start hydrogen server in background with ASAN leak detection disabled
     print_info "Starting hydrogen server (with leak detection disabled)..."
-    ASAN_OPTIONS="detect_leaks=0" $binary "$CONFIG_FILE" > "$SCRIPT_DIR/hydrogen_crash_test.log" 2>&1 &
+    ASAN_OPTIONS="detect_leaks=0" "$binary" "$CONFIG_FILE" > "$SCRIPT_DIR/hydrogen_crash_test.log" 2>&1 &
     HYDROGEN_PID=$!
     
     # Wait for startup with active log monitoring
     print_info "Waiting for startup (max 10s)..."
-    STARTUP_START=$(date +%s)
-    STARTUP_TIMEOUT=10
-    STARTUP_COMPLETE=false
+    local startup_start current_time elapsed
+    startup_start=$(date +%s)
+    local startup_timeout=10
+    local startup_complete=false
     
     while true; do
         # Check if we've exceeded the timeout
-        CURRENT_TIME=$(date +%s)
-        ELAPSED=$((CURRENT_TIME - STARTUP_START))
+        current_time=$(date +%s)
+        elapsed=$((current_time - startup_start))
         
-        if [ $ELAPSED -ge $STARTUP_TIMEOUT ]; then
-            print_result 1 "Startup timeout after ${ELAPSED}s"
+        if [ $elapsed -ge $startup_timeout ]; then
+            print_result 1 "Startup timeout after ${elapsed}s"
             return 1
         fi
         
@@ -176,14 +197,14 @@ run_test_with_build() {
         if ! kill -0 $HYDROGEN_PID 2>/dev/null; then
             # This is an expected part of the crash handler test
             print_warning "Server crashed during startup (expected behavior)"
-            STARTUP_COMPLETE=true
+            startup_complete=true
             break
         fi
         
         # Check for startup completion message
         if grep -q "Application started" "$SCRIPT_DIR/hydrogen_crash_test.log"; then
-            STARTUP_COMPLETE=true
-            print_info "Startup completed in ${ELAPSED}s"
+            startup_complete=true
+            print_info "Startup completed in ${elapsed}s"
             break
         fi
         
@@ -191,7 +212,7 @@ run_test_with_build() {
     done
     
     # Verify server is running and startup completed
-    if [ "$STARTUP_COMPLETE" != "true" ]; then
+    if [ "$startup_complete" != "true" ]; then
         print_result 1 "Server failed to start properly"
         return 1
     fi
@@ -204,13 +225,13 @@ run_test_with_build() {
     
     # Wait for process to exit
     wait $HYDROGEN_PID
-    CRASH_EXIT_CODE=$?
+    local crash_exit_code=$?
     
     # Check exit code matches SIGSEGV (11) from the null dereference
-    if [ $CRASH_EXIT_CODE -eq $((128 + 11)) ]; then
+    if [ $crash_exit_code -eq $((128 + 11)) ]; then
         print_info "Process exited with SIGSEGV (expected for crash test)"
     else
-        print_warning "Process exited with unexpected code: $CRASH_EXIT_CODE (expected SIGSEGV)"
+        print_warning "Process exited with unexpected code: $crash_exit_code (expected SIGSEGV)"
         return 1
     fi
     
@@ -227,14 +248,14 @@ run_test_with_build() {
     local gdb_result=1
     
     # Verify core file creation
-    verify_core_file "$binary" $HYDROGEN_PID
+    verify_core_file "$binary" "$HYDROGEN_PID"
     core_result=$?
     
     # If core file exists, verify its contents
     if [ $core_result -eq 0 ]; then
         local core_file="${HYDROGEN_DIR}/${binary_name}.core.${HYDROGEN_PID}"
         verify_core_file_content "$core_file" "$binary"
-        if [ $? -ne 0 ]; then
+        if ! verify_core_file_content "$core_file" "$binary"; then
             print_result 1 "Core file exists but content verification failed"
             core_result=1
         fi
@@ -252,7 +273,6 @@ run_test_with_build() {
         fi
         
         # Analyze core file with GDB
-        local binary_dir=$(dirname "$binary")
         analyze_core_with_gdb "$binary" "${HYDROGEN_DIR}/${binary_name}.core.${HYDROGEN_PID}" "$GDB_OUTPUT_DIR/${binary_name}_${TIMESTAMP}.txt"
         gdb_result=$?
         
@@ -273,7 +293,7 @@ run_test_with_build() {
         rm -f "${HYDROGEN_DIR}/${binary_name}.core.${HYDROGEN_PID}"
     else
         print_info "Preserving core file for debugging: ${binary_name}.core.${HYDROGEN_PID}"
-        failed=""
+        local failed=""
         [ $core_result -ne 0 ] && failed="${failed}core_file "
         [ $log_result -ne 0 ] && failed="${failed}crash_log "
         [ $gdb_result -ne 0 ] && failed="${failed}gdb_analysis"
@@ -298,16 +318,17 @@ analyze_core_with_gdb() {
     local binary="$1"
     local core_file="$2"
     local gdb_output_file="$3"
-    local build_name=$(basename "$binary")
+    local build_name
+    build_name=$(basename "$binary")
     
     # Check for debug info and set GDB flags accordingly
-    local gdb_flags="-q"
+    local gdb_flags
     if readelf --sections "$binary" | grep -q ".debug_info"; then
         print_info "Debug info found in binary, using full output"
-        gdb_flags="-q -ex 'set print frame-arguments all' -ex 'set print object on'"
+        gdb_flags=(-q -ex 'set print frame-arguments all' -ex 'set print object on')
     else
         print_info "No debug info found in binary, using limited output"
-        gdb_flags="-q -ex 'set print frame-arguments none' -ex 'set print object off'"
+        gdb_flags=(-q -ex 'set print frame-arguments none' -ex 'set print object off')
     fi
     
     # Create GDB commands file
@@ -328,14 +349,13 @@ quit
 EOF
     
     print_info "Analyzing core file with GDB..."
-    if ! gdb ${gdb_flags} -batch -x gdb_commands.txt > "${gdb_output_file}" 2> "${gdb_output_file}.stderr"; then
+    if ! gdb "${gdb_flags[@]}" -batch -x gdb_commands.txt > "${gdb_output_file}" 2> "${gdb_output_file}.stderr"; then
         print_warning "GDB exited with error, checking output anyway..."
         cat "${gdb_output_file}.stderr" >> "${gdb_output_file}"
     fi
     
     # Check for test_crash_handler in backtrace
     local has_backtrace=0
-    local backtrace_quality=""
     local has_test_crash=0
 
     # Look for test_crash_handler in backtrace
@@ -343,11 +363,9 @@ EOF
        grep -q "Program terminated with signal SIGSEGV" "${gdb_output_file}"; then
         has_test_crash=1
         has_backtrace=1
-        backtrace_quality="test crash handler found with expected output"
     # For release builds, just check for SIGSEGV
     elif [[ "$build_name" == *"release"* ]] && grep -q "Program terminated with signal SIGSEGV" "${gdb_output_file}"; then
         has_backtrace=1
-        backtrace_quality="basic crash info (release build)"
     fi
 
     # Verify backtrace quality based on build type
@@ -385,7 +403,6 @@ mkdir -p "$RESULTS_DIR" "$GDB_OUTPUT_DIR"
 
 # Store the timestamp for this test run
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-TEST_LOG="$RESULTS_DIR/crash_test_${TIMESTAMP}.log"
 
 # Initialize test result variables
 CORE_FILE_RESULT=1
@@ -500,7 +517,7 @@ for build in "${BUILDS[@]}"; do
     TOTAL_PASSED_SUBTESTS=$((TOTAL_PASSED_SUBTESTS + ${BUILD_PASSED_SUBTESTS[$build_name]}))
     
     # All builds have 4 tests (debug symbols presence/absence, core dump, logs, GDB)
-    if [ ${BUILD_PASSED_SUBTESTS[$build_name]} -eq ${BUILD_SUBTESTS[$build_name]} ]; then
+    if [ "${BUILD_PASSED_SUBTESTS[$build_name]}" -eq "${BUILD_SUBTESTS[$build_name]}" ]; then
         print_result 0 "Build $build_name passed all subtests"
         ((TOTAL_PASSED_BUILDS++))
     else
@@ -515,7 +532,7 @@ echo -e "${BLUE}${BOLD}Test results by build type:${NC}"
 for build in "${BUILDS[@]}"; do
     build_name=$(basename "$build")
     # Determine if all subtests passed
-    if [ ${BUILD_PASSED_SUBTESTS[$build_name]} -eq ${BUILD_SUBTESTS[$build_name]} ]; then
+    if [ "${BUILD_PASSED_SUBTESTS[$build_name]}" -eq "${BUILD_SUBTESTS[$build_name]}" ]; then
         echo -e "${GREEN}${PASS_ICON} ${build_name}${NC}"
         echo -e "   ${CYAN}Description:${NC} ${BUILD_DESCRIPTIONS[$build_name]}"
         echo -e "   ${CYAN}Status:${NC} All checks passed"
@@ -537,18 +554,18 @@ for build in "${BUILDS[@]}"; do
         echo -e "   ${CYAN}Status:${NC} ${BUILD_PASSED_SUBTESTS[$build_name]} of ${BUILD_SUBTESTS[$build_name]} checks passed"
         echo -e "   ${CYAN}Details:${NC}"
         if [[ "$build_name" == *"release"* ]]; then
-            [ $DEBUG_SYMBOL_RESULT -eq 0 ] && echo -e "      • Debug symbols verified (not present)" || echo -e "      ${RED}✗${NC} Debug symbols unexpectedly found"
-            [ $CORE_FILE_RESULT -eq 0 ] && echo -e "      • Core dump generated successfully" || echo -e "      ${RED}✗${NC} Core dump generation failed"
-            [ $CRASH_LOG_RESULT -eq 0 ] && echo -e "      • Crash handler log message verified" || echo -e "      ${RED}✗${NC} Crash handler log message not found"
-            [ $GDB_ANALYSIS_RESULT -eq 0 ] && echo -e "      • GDB backtrace analysis successful" || echo -e "      ${RED}✗${NC} GDB backtrace analysis failed"
+            [ "$DEBUG_SYMBOL_RESULT" -eq 0 ] && echo -e "      • Debug symbols verified (not present)" || echo -e "      ${RED}✗${NC} Debug symbols unexpectedly found"
+            [ "$CORE_FILE_RESULT" -eq 0 ] && echo -e "      • Core dump generated successfully" || echo -e "      ${RED}✗${NC} Core dump generation failed"
+            [ "$CRASH_LOG_RESULT" -eq 0 ] && echo -e "      • Crash handler log message verified" || echo -e "      ${RED}✗${NC} Crash handler log message not found"
+            [ "$GDB_ANALYSIS_RESULT" -eq 0 ] && echo -e "      • GDB backtrace analysis successful" || echo -e "      ${RED}✗${NC} GDB backtrace analysis failed"
         else
-            [ $DEBUG_SYMBOL_RESULT -eq 0 ] && echo -e "      • Debug symbols verified (present)" || echo -e "      ${RED}✗${NC} Debug symbols not found"
-            [ $CORE_FILE_RESULT -eq 0 ] && echo -e "      • Core dump generated successfully" || echo -e "      ${RED}✗${NC} Core dump generation failed"
-            [ $CRASH_LOG_RESULT -eq 0 ] && echo -e "      • Crash handler log message verified" || echo -e "      ${RED}✗${NC} Crash handler log message not found"
-            [ $GDB_ANALYSIS_RESULT -eq 0 ] && echo -e "      • GDB backtrace analysis successful" || echo -e "      ${RED}✗${NC} GDB backtrace analysis failed"
+            [ "$DEBUG_SYMBOL_RESULT" -eq 0 ] && echo -e "      • Debug symbols verified (present)" || echo -e "      ${RED}✗${NC} Debug symbols not found"
+            [ "$CORE_FILE_RESULT" -eq 0 ] && echo -e "      • Core dump generated successfully" || echo -e "      ${RED}✗${NC} Core dump generation failed"
+            [ "$CRASH_LOG_RESULT" -eq 0 ] && echo -e "      • Crash handler log message verified" || echo -e "      ${RED}✗${NC} Crash handler log message not found"
+            [ "$GDB_ANALYSIS_RESULT" -eq 0 ] && echo -e "      • GDB backtrace analysis successful" || echo -e "      ${RED}✗${NC} GDB backtrace analysis failed"
         fi
         # Only show debug info for actual failures
-        if [ ${BUILD_PASSED_SUBTESTS[$build_name]} -lt ${BUILD_SUBTESTS[$build_name]} ]; then
+        if [ "${BUILD_PASSED_SUBTESTS[$build_name]}" -lt "${BUILD_SUBTESTS[$build_name]}" ]; then
             echo -e "   ${CYAN}Debug Info:${NC} Check $(convert_to_relative_path "${GDB_OUTPUT_DIR}")/${build_name}_${TIMESTAMP}.txt"
         fi
     fi
@@ -574,10 +591,10 @@ for build in "${BUILDS[@]}"; do
     print_info "    - Total subtests: $build_total"
     print_info "    - Passed subtests: $build_passed"
     print_info "    - Individual results:"
-    print_info "      * Debug symbols: $([ $DEBUG_SYMBOL_RESULT -eq 0 ] && echo "Pass" || echo "Fail")"
-    print_info "      * Core dump: $([ $CORE_FILE_RESULT -eq 0 ] && echo "Pass" || echo "Fail")"
-    print_info "      * Crash log: $([ $CRASH_LOG_RESULT -eq 0 ] && echo "Pass" || echo "Fail")"
-    print_info "      * GDB analysis: $([ $GDB_ANALYSIS_RESULT -eq 0 ] && echo "Pass" || echo "Fail")"
+    print_info "      * Debug symbols: $([ "$DEBUG_SYMBOL_RESULT" -eq 0 ] && echo "Pass" || echo "Fail")"
+    print_info "      * Core dump: $([ "$CORE_FILE_RESULT" -eq 0 ] && echo "Pass" || echo "Fail")"
+    print_info "      * Crash log: $([ "$CRASH_LOG_RESULT" -eq 0 ] && echo "Pass" || echo "Fail")"
+    print_info "      * GDB analysis: $([ "$GDB_ANALYSIS_RESULT" -eq 0 ] && echo "Pass" || echo "Fail")"
 done
 
 # Export results using the utility function with explicit test name
@@ -615,8 +632,8 @@ rm -f gdb_commands.txt
 # Clean up any remaining core files from successful tests
 for build in "${BUILDS[@]}"; do
     build_name=$(basename "$build")
-    if [ ${BUILD_RESULTS[$build_name]} -eq 0 ]; then
-        rm -f "${HYDROGEN_DIR}/${build_name}.core.*"
+    if [ "${BUILD_RESULTS[$build_name]}" -eq 0 ]; then
+        rm -f "${HYDROGEN_DIR}/${build_name}.core."*
     fi
 done
 
