@@ -1,0 +1,484 @@
+#!/bin/bash
+
+# Markdown link checker script
+# Usage: ./github-md-links.sh <markdown_file> [--debug] [--theme <Red|Blue>]
+# Version: 0.3.9
+# Description: Checks local markdown links in a repository, reports missing links,
+#              and identifies orphaned markdown files.
+
+# Application version
+declare -r APPVERSION="0.3.9"
+
+# Change history
+# 0.1.0 - 2025-06-15 - Initial version with basic link checking and summary output
+# 0.2.0 - 2025-06-15 - Added table output using tables.sh, version display,
+#                       issue count, missing links table, and orphaned files table
+# 0.3.0 - 2025-06-15 - Added --debug flag for verbose logging, improved robustness
+# 0.3.1 - 2025-06-15 - Changed to execute tables.sh instead of sourcing, per domain_info.sh
+# 0.3.2 - 2025-06-15 - Improved find_all_md_files with depth limit, timeout, and error handling
+# 0.3.3 - 2025-06-15 - Enhanced find_all_md_files to avoid symlinks, log errors, and use shorter timeout
+# 0.3.4 - 2025-06-15 - Fixed debug flag handling to pass --debug to tables.sh only when DEBUG=true
+# 0.3.5 - 2025-06-15 - Fixed tables.sh invocation to avoid empty argument, improved debug output separation
+# 0.3.6 - 2025-06-15 - Fixed orphaned files table, empty link counts, added --theme option, added orphaned files to report
+# 0.3.7 - 2025-06-15 - Optimized find_all_md_files with -prune for .git, fixed orphaned files detection
+# 0.3.8 - 2025-06-15 - Fixed find_all_md_files path resolution, reordered -maxdepth, enhanced debug logging
+# 0.3.9 - 2025-06-15 - Fixed repo root detection to use input file's directory, improved path resolution
+
+# Parse arguments
+DEBUG=false
+INPUT_FILE=""
+TABLE_THEME="Red"  # Default theme
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --debug) DEBUG=true; shift ;;
+        --theme)
+            if [[ -n "$2" && "$2" =~ ^(Red|Blue)$ ]]; then
+                TABLE_THEME="$2"
+                shift 2
+            else
+                echo "Error: --theme requires 'Red' or 'Blue'" >&2
+                exit 1
+            fi
+            ;;
+        *) if [[ -z "$INPUT_FILE" ]]; then INPUT_FILE="$1"; shift; else echo "Error: Unknown option: $1" >&2; exit 1; fi ;;
+    esac
+done
+
+# Check if a file parameter is provided
+if [[ -z "$INPUT_FILE" ]]; then
+    echo "Usage: $0 <markdown_file> [--debug] [--theme <Red|Blue>]" >&2
+    exit 1
+fi
+
+# Debug logging function
+debug_log() {
+    [[ "$DEBUG" == "true" ]] && echo "[DEBUG] $(date '+%Y-%m-%d %H:%M:%S'): $*" >&2
+}
+
+debug_log "Starting script with input: $INPUT_FILE, debug: $DEBUG, theme: $TABLE_THEME"
+
+# Check if tables.sh exists
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TABLES_SCRIPT="${SCRIPT_DIR}/support_tables.sh"
+if [[ ! -f "$TABLES_SCRIPT" ]]; then
+    echo "Error: $TABLES_SCRIPT not found" >&2
+    exit 1
+fi
+
+debug_log "Tables script: $TABLES_SCRIPT"
+
+# Check for jq dependency
+if ! command -v jq >/dev/null 2>&1; then
+    echo "Error: jq is required but not installed" >&2
+    exit 1
+fi
+
+# Check for timeout command
+if ! command -v timeout >/dev/null 2>&1; then
+    debug_log "Warning: timeout command not found, proceeding without timeout"
+    TIMEOUT=""
+else
+    TIMEOUT="timeout 10s"
+fi
+
+# Initialize variables
+declare -A checked_files  # Track checked files
+declare -A file_summary  # Store summary: links_total, links_checked, links_missing, rel_file
+declare -a missing_links  # Store missing links: file,link
+declare -a orphaned_files  # Store orphaned files for report
+declare -a queue=("$INPUT_FILE")  # Queue for files to process
+output_file="link_check_report.txt"
+# Set repo root based on input file's directory
+input_dir=$(dirname "$(realpath "$INPUT_FILE")")
+debug_log "Input file directory: $input_dir"
+cd "$input_dir" || { echo "Error: Cannot change to input file directory $input_dir" >&2; exit 1; }
+repo_root=$(git rev-parse --show-toplevel 2>/dev/null || echo "$input_dir")
+debug_log "Repository root: $repo_root"
+
+# Function to extract local markdown links from a file
+extract_links() {
+    local file="$1"
+    debug_log "Extracting links from $file"
+    if [[ ! -r "$file" ]]; then
+        debug_log "File $file is not readable"
+        return 1
+    fi
+    # Match markdown links [text](link)
+    grep -oP '\[.*?\]\(\K[^)]+(?=\))' "$file" 2>/dev/null | sort -u | while read -r link; do
+        debug_log "Found link: $link"
+        # Handle GitHub URLs
+        if [[ "$link" =~ ^https://github.com/[^/]+/[^/]+/blob/main/(.+)$ ]]; then
+            relative_path="${BASH_REMATCH[1]}"
+            debug_log "GitHub URL, relative path: $relative_path"
+            # Only include .md files
+            if [[ "$relative_path" =~ \.md($|#) ]]; then
+                echo "$relative_path"
+            fi
+        # Handle relative local paths
+        elif [[ ! "$link" =~ ^(#|http|ftp|mailto:) ]] && [[ "$link" =~ \.md($|#) ]]; then
+            debug_log "Local relative link: $link"
+            echo "$link"
+        fi
+    done
+}
+
+# Function to resolve relative path to absolute
+resolve_path() {
+    local base_dir="$1"
+    local rel_path="$2"
+    debug_log "Resolving path: $rel_path from $base_dir"
+    # Convert relative path to absolute from base_dir
+    realpath -m "$base_dir/$rel_path" 2>/dev/null
+}
+
+# Function to get path relative to repo root
+relative_to_root() {
+    local abs_path="$1"
+    debug_log "Converting to relative path: $abs_path"
+    # Get path relative to repo_root
+    if [[ -n "$abs_path" ]]; then
+        realpath --relative-to="$repo_root" "$abs_path" 2>/dev/null || echo "$abs_path"
+    else
+        echo ""
+    fi
+}
+
+# Function to process a markdown file
+process_file() {
+    local file="$1"
+    debug_log "Processing file: $file"
+    local abs_file
+    abs_file=$(realpath "$file" 2>/dev/null)
+    debug_log "Absolute file path: $abs_file"
+    
+    # Skip if already checked
+    if [[ -n "${checked_files[$abs_file]}" ]]; then
+        debug_log "File already checked, skipping"
+        return
+    fi
+
+    # Mark file as checked
+    checked_files[$abs_file]=1
+    debug_log "Marked file as checked"
+
+    # Skip if file doesn't exist
+    if [[ ! -f "$abs_file" ]]; then
+        local rel_file
+        rel_file=$(relative_to_root "$abs_file")
+        echo "Warning: File not found: $rel_file" >> "$output_file"
+        debug_log "File not found: $abs_file"
+        return
+    fi
+
+    # Initialize counters for this file
+    local links_total=0 links_checked=0 links_missing=0
+    local base_dir
+    base_dir=$(dirname "$abs_file")
+    local rel_file
+    rel_file=$(relative_to_root "$abs_file")
+    debug_log "Relative file path: $rel_file"
+
+    # Extract and process links
+    while IFS= read -r link; do
+        ((links_total++))
+        debug_log "Processing link: $link"
+        # Resolve link to absolute path (relative to repo root for GitHub links)
+        local abs_link
+        abs_link=$(resolve_path "$repo_root" "$link")
+        debug_log "Resolved link to: $abs_link"
+        # Remove any anchor (#) for file existence check
+        local link_file
+        link_file=$(echo "$abs_link" | sed 's/#.*$//' 2>/dev/null)
+        debug_log "Link file (no anchor): $link_file"
+
+        if [[ -f "$link_file" ]]; then
+            ((links_checked++))
+            debug_log "Link exists"
+            # Add linked markdown file to queue if it's a .md file
+            if [[ "$link_file" =~ \.md$ ]]; then
+                queue+=("$link_file")
+                debug_log "Added to queue: $link_file"
+            fi
+        else
+            ((links_missing++))
+            ((missing_count++))
+            echo "Missing link in $rel_file: $link" >> "$output_file"
+            missing_links+=("$rel_file:$link")
+            debug_log "Missing link: $link in $rel_file"
+        fi
+    done < <(extract_links "$abs_file")
+
+    # Store summary for this file
+    file_summary[$abs_file]="$links_total,$links_checked,$links_missing,$rel_file"
+    debug_log "Stored summary: total=$links_total, checked=$links_checked, missing=$links_missing, file=$rel_file"
+}
+
+# Function to find all .md files in the repo
+find_all_md_files() {
+    debug_log "Finding all .md files in $repo_root"
+    # Use timeout, maxdepth, -P, and -prune to avoid symlinks and .git
+    local find_output="${temp_dir}/find_output.log"
+    local find_errors="${temp_dir}/find_errors.log"
+    $TIMEOUT find -P "$repo_root"  -name .git -prune -o -type f -name "*.md" -print > "$find_output" 2> "$find_errors"
+    local find_status=${PIPESTATUS[0]}
+    
+    # Log find errors if any
+    if [[ -s "$find_errors" && "$DEBUG" == "true" ]]; then
+        debug_log "Find errors: $(cat "$find_errors")"
+    fi
+    
+    # Check if find succeeded
+    if [[ $find_status -ne 0 ]]; then
+        debug_log "Warning: find command failed or timed out, skipping orphaned files"
+        echo "[]" > "$orphaned_data_json"
+        return 1
+    fi
+    
+    # Check if find output is empty
+    if [[ ! -s "$find_output" ]]; then
+        debug_log "Warning: No .md files found in $repo_root"
+        echo "[]" > "$orphaned_data_json"
+        return 1
+    fi
+    
+    # Process find output
+    while IFS= read -r file; do
+        local abs_file
+        abs_file=$(realpath "$file" 2>/dev/null)
+        if [[ -n "$abs_file" ]]; then
+            local rel_file
+            rel_file=$(relative_to_root "$abs_file")
+            if [[ -n "$rel_file" ]]; then
+                debug_log "Found .md file: $rel_file (abs: $abs_file)"
+                echo "$rel_file"
+            else
+                debug_log "Failed to convert $abs_file to relative path"
+            fi
+        else
+            debug_log "Failed to resolve realpath for $file"
+        fi
+    done < "$find_output" | sort -u
+    
+    # Debug checked files
+    if [[ "$DEBUG" == "true" ]]; then
+        debug_log "Checked files:"
+        for abs_file in "${!checked_files[@]}"; do
+            debug_log "  $abs_file"
+        done
+    fi
+    
+    return 0
+}
+
+# Function to generate JSON for reviewed files table
+generate_reviewed_files_json() {
+    local json_file="$1"
+    debug_log "Generating reviewed files JSON: $json_file"
+    echo "[" > "$json_file"
+    local first=true
+    for abs_file in "${!file_summary[@]}"; do
+        IFS=',' read -r total checked missing rel_file <<< "${file_summary[$abs_file]}"
+        debug_log "Adding file to JSON: $rel_file, total=$total, checked=$checked, missing=$missing"
+        if [[ "$first" == "true" ]]; then
+            first=false
+        else
+            echo "," >> "$json_file"
+        fi
+        jq -nc --arg file "$rel_file" --arg total "$total" --arg checked "$checked" --arg missing "$missing" \
+            '{file: $file, total: ($total | tonumber), checked: ($checked | tonumber), missing: ($missing | tonumber)}' >> "$json_file" 2>/dev/null
+    done
+    echo "]" >> "$json_file"
+    debug_log "Reviewed files JSON generated"
+    [[ "$DEBUG" == "true" ]] && debug_log "JSON content: $(cat "$json_file")"
+}
+
+# Function to generate JSON for missing links table
+generate_missing_links_json() {
+    local json_file="$1"
+    debug_log "Generating missing links JSON: $json_file"
+    echo "[" > "$json_file"
+    local first=true
+    for entry in "${missing_links[@]}"; do
+        IFS=':' read -r file link <<< "$entry"
+        debug_log "Adding missing link to JSON: file=$file, link=$link"
+        if [[ "$first" == "true" ]]; then
+            first=false
+        else
+            echo "," >> "$json_file"
+        fi
+        jq -nc --arg file "$file" --arg link "$link" '{file: $file, link: $link}' >> "$json_file" 2>/dev/null
+    done
+    echo "]" >> "$json_file"
+    debug_log "Missing links JSON generated"
+    [[ "$DEBUG" == "true" ]] && debug_log "JSON content: $(cat "$json_file")"
+}
+
+# Function to generate JSON for orphaned files table
+generate_orphaned_files_json() {
+    local json_file="$1"
+    debug_log "Generating orphaned files JSON: $json_file"
+    echo "[" > "$json_file"
+    local first=true
+    while IFS= read -r rel_file; do
+        local abs_file
+        abs_file=$(resolve_path "$repo_root" "$rel_file")
+        debug_log "Checking if $rel_file (abs: $abs_file) is orphaned"
+        if [[ -z "${checked_files[$abs_file]}" ]]; then
+            debug_log "Found orphaned file: $rel_file"
+            orphaned_files+=("$rel_file")
+            if [[ "$first" == "true" ]]; then
+                first=false
+            else
+                echo "," >> "$json_file"
+            fi
+            jq -nc --arg file "$rel_file" '{file: $file}' >> "$json_file" 2>/dev/null
+        else
+            debug_log "$rel_file is checked, not orphaned"
+        fi
+    done < <(find_all_md_files)
+    echo "]" >> "$json_file"
+    debug_log "Orphaned files JSON generated"
+    [[ "$DEBUG" == "true" ]] && debug_log "JSON content: $(cat "$json_file")"
+}
+
+# Function to generate layout JSON for reviewed files table
+generate_reviewed_layout_json() {
+    local json_file="$1"
+    debug_log "Generating reviewed layout JSON: $json_file"
+    jq -n --arg theme "$TABLE_THEME" '{
+        theme: $theme,
+        title: "Reviewed Files Summary",
+        columns: [
+            {header: "File", key: "file", datatype: "text", "summary":"count"},
+            {header: "Total Links", key: "total", datatype: "int", justification: "right", "summary":"sum"},
+            {header: "Found Links", key: "checked", datatype: "int", justification: "right", "summary":"sum"},
+            {header: "Missing Links", key: "missing", datatype: "int", justification: "right","summary":"sum"}
+        ]
+    }' > "$json_file" 2>/dev/null
+    debug_log "Reviewed layout JSON generated"
+    [[ "$DEBUG" == "true" ]] && debug_log "JSON content: $(cat "$json_file")"
+}
+
+# Function to generate layout JSON for missing links table
+generate_missing_layout_json() {
+    local json_file="$1"
+    debug_log "Generating missing layout JSON: $json_file"
+    jq -n --arg theme "$TABLE_THEME" '{
+        theme: $theme,
+        title: "Missing Links",
+        columns: [
+            {header: "File", key: "file", datatype: "text", "summary":"count"},
+            {header: "Missing Link", key: "link", datatype: "text" }
+        ]
+    }' > "$json_file" 2>/dev/null
+    debug_log "Missing layout JSON generated"
+    [[ "$DEBUG" == "true" ]] && debug_log "JSON content: $(cat "$json_file")"
+}
+
+# Function to generate layout JSON for orphaned files table
+generate_orphaned_layout_json() {
+    local json_file="$1"
+    debug_log "Generating orphaned layout JSON: $json_file"
+    jq -n --arg theme "$TABLE_THEME" '{
+        theme: $theme,
+        title: "Orphaned Markdown Files",
+        columns: [
+            {header: "File", key: "file", datatype: "text", "summary":"count"}
+        ]
+    }' > "$json_file" 2>/dev/null
+    debug_log "Orphaned layout JSON generated"
+    [[ "$DEBUG" == "true" ]] && debug_log "JSON content: $(cat "$json_file")"
+}
+
+# Clear or create output file
+debug_log "Clearing output file: $output_file"
+> "$output_file"
+
+# Process queue
+debug_log "Starting queue processing with ${#queue[@]} files"
+while [ ${#queue[@]} -gt 0 ]; do
+    current_file="${queue[0]}"
+    queue=("${queue[@]:1}")
+    debug_log "Queue size: ${#queue[@]}, processing: $current_file"
+    process_file "$current_file"
+done
+debug_log "Queue processing complete"
+
+# Write summary to output file
+debug_log "Writing summary to $output_file"
+echo -e "\n=== Link Check Summary ===" >> "$output_file"
+for abs_file in "${!file_summary[@]}"; do
+    IFS=',' read -r total checked missing rel_file <<< "${file_summary[$abs_file]}"
+    echo "File: $rel_file" >> "$output_file"
+    echo "  Total Links: $total" >> "$output_file"
+    echo "  Checked Links: $checked" >> "$output_file"
+    echo "  Missing Links: $missing" >> "$output_file"
+    echo "" >> "$output_file"
+    debug_log "Wrote summary for $rel_file"
+done
+
+# Write orphaned files to output file
+debug_log "Writing orphaned files to $output_file"
+echo -e "\n=== Orphaned Markdown Files ===" >> "$output_file"
+if [[ ${#orphaned_files[@]} -gt 0 ]]; then
+    for file in "${orphaned_files[@]}"; do
+        echo "File: $file" >> "$output_file"
+    done
+else
+    echo "No orphaned files found" >> "$output_file"
+fi
+echo "" >> "$output_file"
+
+# Generate temporary JSON files
+debug_log "Creating temporary directory"
+temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory" >&2; exit 1; }
+debug_log "Temporary directory: $temp_dir"
+reviewed_data_json="$temp_dir/reviewed_data.json"
+reviewed_layout_json="$temp_dir/reviewed_layout.json"
+missing_data_json="$temp_dir/missing_data.json"
+missing_layout_json="$temp_dir/missing_layout.json"
+orphaned_data_json="$temp_dir/orphaned_data.json"
+orphaned_layout_json="$temp_dir/orphaned_layout.json"
+
+# Generate JSON data and layouts
+generate_reviewed_files_json "$reviewed_data_json"
+generate_reviewed_layout_json "$reviewed_layout_json"
+generate_missing_links_json "$missing_data_json"
+generate_missing_layout_json "$missing_layout_json"
+generate_orphaned_files_json "$orphaned_data_json"
+generate_orphaned_layout_json "$orphaned_layout_json"
+
+# Print version and issue count to stdout
+echo "Markdown Link Checker v$APPVERSION"
+echo "Issues found: $missing_count"
+echo ""
+
+# Render tables to stdout, redirecting tables.sh debug output to a separate file
+[[ "$DEBUG" == "true" ]] && debug_flag="--debug" || debug_flag=""
+tables_debug_log="$temp_dir/tables_debug.log"
+debug_log "Tables.sh debug output will be written to $tables_debug_log"
+
+debug_log "Rendering reviewed files table"
+bash "$TABLES_SCRIPT" "$reviewed_layout_json" "$reviewed_data_json" ${debug_flag:+"$debug_flag"} 2>> "$tables_debug_log"
+echo ""
+if [[ ${#missing_links[@]} -gt 0 ]]; then
+    debug_log "Rendering missing links table"
+    bash "$TABLES_SCRIPT" "$missing_layout_json" "$missing_data_json" ${debug_flag:+"$debug_flag"} 2>> "$tables_debug_log"
+    echo ""
+fi
+debug_log "Rendering orphaned files table"
+bash "$TABLES_SCRIPT" "$orphaned_layout_json" "$orphaned_data_json" ${debug_flag:+"$debug_flag"} 2>> "$tables_debug_log"
+
+# Log tables.sh debug output if any
+if [[ -s "$tables_debug_log" && "$DEBUG" == "true" ]]; then
+    debug_log "Tables.sh debug output: $(cat "$tables_debug_log")"
+fi
+
+# Clean up temporary files
+debug_log "Cleaning up temporary directory: $temp_dir"
+rm -rf "$temp_dir" 2>/dev/null
+
+# Final message
+echo ""
+echo "Link check complete. Detailed report written to $output_file"
+debug_log "Script completed"

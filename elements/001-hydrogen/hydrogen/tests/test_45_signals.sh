@@ -1,16 +1,26 @@
 #!/bin/bash
 #
-# Signal Handling Test
+# Hydrogen Signal Handling Test
+#
 # Tests Hydrogen's signal handling capabilities:
 # - SIGINT: Clean shutdown
 # - SIGTERM: Clean shutdown
 # - SIGHUP: Restart with config reload
+# - SIGUSR2: Configuration dump
 # - Multiple signal handling
 # - Clean shutdown verification
+#
+NAME_SCRIPT="Hydrogen Signal Handling Test"
+VERS_SCRIPT="2.0.0"
+
+# VERSION HISTORY
+# 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
+
+# Display script name and version
+echo "=== $NAME_SCRIPT v$VERS_SCRIPT ==="
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 
 # Include the common test utilities
 UTILS_FILE="$SCRIPT_DIR/support_utils.sh"
@@ -20,11 +30,12 @@ if [ ! -f "$UTILS_FILE" ]; then
 fi
 
 # Source the utilities with absolute path
+# shellcheck source=support_utils.sh
 . "$UTILS_FILE"
 
 # Verify support functions are available
 for func in print_info print_error print_header print_result start_test end_test; do
-    if ! command -v $func >/dev/null 2>&1; then
+    if ! command -v "$func" >/dev/null 2>&1; then
         echo "Error: Required function '$func' not loaded from $UTILS_FILE"
         exit 1
     fi
@@ -35,7 +46,7 @@ RESTART_COUNT=5  # Number of SIGHUP restarts to test
 
 # Configuration and path setup
 # Determine which hydrogen build to use (prefer release build if available)
-cd $(dirname $0)/..
+cd "$(dirname "$0")/.." || exit 1
 if [ -f "./hydrogen_release" ]; then
     HYDROGEN_BIN="./hydrogen_release"
     print_info "Using release build for testing"
@@ -65,7 +76,7 @@ RESULTS_DIR="$SCRIPT_DIR/results"
 DIAG_DIR="$SCRIPT_DIR/diagnostics"
 
 # Create output directories
-mkdir -p "$RESULTS_DIR" "$DIAG_DIR" "$(dirname "$LOG_FILE")"
+mkdir -p "$RESULTS_DIR" "$DIAG_DIR" "$(dirname "$LOG_FILE_SIGINT")"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 RESULT_LOG="$RESULTS_DIR/signal_test_${TIMESTAMP}.log"
 DIAG_TEST_DIR="$DIAG_DIR/signal_test_${TIMESTAMP}"
@@ -75,10 +86,11 @@ mkdir -p "$DIAG_TEST_DIR"
 wait_for_startup() {
     local timeout=$1
     local log_file=$2
-    local start_time=$(date +%s)
+    local start_time
+    start_time=$(date +%s)
     
     while true; do
-        if [ $(($(date +%s) - start_time)) -ge $timeout ]; then
+        if [ $(($(date +%s) - start_time)) -ge "$timeout" ]; then
             return 1
         fi
         
@@ -94,11 +106,12 @@ wait_for_startup() {
 verify_config_dump() {
     local log_file=$1
     local timeout=$2
-    local start_time=$(date +%s)
+    local start_time
+    start_time=$(date +%s)
     
     # Wait for dump to start
     while true; do
-        if [ $(($(date +%s) - start_time)) -ge $timeout ]; then
+        if [ $(($(date +%s) - start_time)) -ge "$timeout" ]; then
             return 1
         fi
         
@@ -111,14 +124,15 @@ verify_config_dump() {
     
     # Wait for dump to complete
     while true; do
-        if [ $(($(date +%s) - start_time)) -ge $timeout ]; then
+        if [ $(($(date +%s) - start_time)) -ge "$timeout" ]; then
             return 1
         fi
         
         if grep -q "APPCONFIG Dump Complete" "$log_file"; then
             # Count lines between start and end
-            local start_line=$(grep -n "APPCONFIG Dump Started" "$log_file" | tail -1 | cut -d: -f1)
-            local end_line=$(grep -n "APPCONFIG Dump Complete" "$log_file" | tail -1 | cut -d: -f1)
+            local start_line end_line
+            start_line=$(grep -n "APPCONFIG Dump Started" "$log_file" | tail -1 | cut -d: -f1)
+            end_line=$(grep -n "APPCONFIG Dump Complete" "$log_file" | tail -1 | cut -d: -f1)
             if [ -n "$start_line" ] && [ -n "$end_line" ]; then
                 local dump_lines=$((end_line - start_line + 1))
                 print_info "Config dump completed with $dump_lines lines"
@@ -135,14 +149,15 @@ wait_for_shutdown() {
     local pid=$1
     local timeout=$2
     local log_file=$3
-    local start_time=$(date +%s)
+    local start_time
+    start_time=$(date +%s)
     
     while true; do
-        if [ $(($(date +%s) - start_time)) -ge $timeout ]; then
+        if [ $(($(date +%s) - start_time)) -ge "$timeout" ]; then
             return 1
         fi
         
-        if ! ps -p $pid > /dev/null; then
+        if ! ps -p "$pid" > /dev/null; then
             if grep -q "Shutdown complete" "$log_file"; then
                 return 0
             else
@@ -160,13 +175,14 @@ wait_for_restart() {
     local timeout=$2
     local expected_count=${3:-1}  # Default to 1 if not specified
     local log_file=$4
-    local start_time=$(date +%s)
+    local start_time
+    start_time=$(date +%s)
     
     # For in-process restart we want to keep examining the log file
     print_info "Waiting for restart (expecting restart count: $expected_count)..."
     
     while true; do
-        if [ $(($(date +%s) - start_time)) -ge $timeout ]; then
+        if [ $(($(date +%s) - start_time)) -ge "$timeout" ]; then
             return 1
         fi
         
@@ -203,15 +219,16 @@ wait_for_restart() {
         fi
         
         # As a backup, still check for process-based restart (in case implementation changes)
-        if ! ps -p $pid > /dev/null; then
+        if ! ps -p "$pid" > /dev/null; then
             # Give time for new process to start
             sleep 2
             
             # Look for new hydrogen process
+            local new_pid
             for new_pid in $(pgrep -f "hydrogen.*$CONFIG_FILE"); do
-                if [ "$new_pid" != "$pid" ] && ps -p $new_pid > /dev/null; then
+                if [ "$new_pid" != "$pid" ] && ps -p "$new_pid" > /dev/null; then
                     # Wait for startup message in log with extended timeout
-                    for i in {1..20}; do
+                    for _ in {1..20}; do
                         if grep -q "Application started" "$log_file" && \
                            (grep -q "Application restarts: $expected_count" "$log_file" || \
                             grep -q "Restart count: $expected_count" "$log_file"); then
@@ -237,7 +254,7 @@ start_test "Hydrogen Signal Handling Test"
 
 # Test Case 1: SIGINT handling
 print_header "Test Case 1: SIGINT Signal Handling"
-> "$LOG_FILE_SIGINT"  # Clear log file
+true > "$LOG_FILE_SIGINT"  # Clear log file
 
 print_info "Starting Hydrogen..." | tee -a "$RESULT_LOG"
 $HYDROGEN_BIN "$CONFIG_FILE" > "$LOG_FILE_SIGINT" 2>&1 &
@@ -265,7 +282,7 @@ sleep 1
 
 # Test Case 2: SIGTERM handling
 print_header "Test Case 2: SIGTERM Signal Handling"
-> "$LOG_FILE_SIGTERM"  # Clear log file
+true > "$LOG_FILE_SIGTERM"  # Clear log file
 
 print_info "Starting Hydrogen..." | tee -a "$RESULT_LOG"
 $HYDROGEN_BIN "$CONFIG_FILE" > "$LOG_FILE_SIGTERM" 2>&1 &
@@ -293,15 +310,14 @@ sleep 1
 
 # Test Case 3: SIGHUP handling (multiple restarts)
 print_header "Test Case 3: SIGHUP Signal Handling (Multiple Restarts)"
-> "$LOG_FILE_SIGHUP"  # Clear log file
+true > "$LOG_FILE_SIGHUP"  # Clear log file
 
 print_info "Starting Hydrogen..." | tee -a "$RESULT_LOG"
 $HYDROGEN_BIN "$CONFIG_FILE" > "$LOG_FILE_SIGHUP" 2>&1 &
 HYDROGEN_PID=$!
 
-# Store original PID and time for reference
-ORIGINAL_PID=$HYDROGEN_PID
-ORIGINAL_TIME=$(grep -o "System startup began: [0-9:T.-]*Z" "$LOG_FILE_SIGHUP" | cut -d' ' -f4)
+# Store original PID for reference
+# ORIGINAL_PID=$HYDROGEN_PID  # Commented out as it's not used in current implementation
 
 if ! wait_for_startup $STARTUP_TIMEOUT "$LOG_FILE_SIGHUP"; then
     print_result 1 "Failed to start Hydrogen" | tee -a "$RESULT_LOG"
@@ -315,17 +331,17 @@ CURRENT_COUNT=1
 
 while [ $CURRENT_COUNT -le $RESTART_COUNT ]; do
     print_info "Sending SIGHUP #$CURRENT_COUNT of $RESTART_COUNT..." | tee -a "$RESULT_LOG"
-    kill -SIGHUP $HYDROGEN_PID || true
+    kill -SIGHUP "$HYDROGEN_PID" || true
     
     # Wait for restart signal to be logged
     sleep 1
     if ! grep -q "SIGHUP received" "$LOG_FILE_SIGHUP"; then
         print_error "SIGHUP signal #$CURRENT_COUNT of $RESTART_COUNT not received" | tee -a "$RESULT_LOG"
-        kill -9 $HYDROGEN_PID 2>/dev/null
+        kill -9 "$HYDROGEN_PID" 2>/dev/null
         break
     else
         print_info "SIGHUP signal #$CURRENT_COUNT of $RESTART_COUNT received, waiting for restart..." | tee -a "$RESULT_LOG"
-        if wait_for_restart $HYDROGEN_PID $((SHUTDOWN_TIMEOUT * 2)) $CURRENT_COUNT "$LOG_FILE_SIGHUP"; then
+        if wait_for_restart "$HYDROGEN_PID" $((SHUTDOWN_TIMEOUT * 2)) "$CURRENT_COUNT" "$LOG_FILE_SIGHUP"; then
             print_info "Restart #$CURRENT_COUNT of $RESTART_COUNT verified with count $CURRENT_COUNT (PID: $HYDROGEN_PID)" | tee -a "$RESULT_LOG"
             
             # Check if this was the last restart
@@ -347,20 +363,20 @@ done
 
 # Clean up the process
 print_info "Cleaning up with SIGTERM to PID $HYDROGEN_PID" | tee -a "$RESULT_LOG"
-kill -SIGTERM $HYDROGEN_PID 2>/dev/null || true
-wait_for_shutdown $HYDROGEN_PID $SHUTDOWN_TIMEOUT "$LOG_FILE_SIGHUP" || true
+kill -SIGTERM "$HYDROGEN_PID" 2>/dev/null || true
+wait_for_shutdown "$HYDROGEN_PID" $SHUTDOWN_TIMEOUT "$LOG_FILE_SIGHUP" || true
 
 # If cleanup failed, try to ensure process is killed
-if ps -p $HYDROGEN_PID > /dev/null 2>&1; then
+if ps -p "$HYDROGEN_PID" > /dev/null 2>&1; then
     print_info "Forcibly terminating process" | tee -a "$RESULT_LOG"
-    kill -9 $HYDROGEN_PID 2>/dev/null || true
+    kill -9 "$HYDROGEN_PID" 2>/dev/null || true
 fi
 
 sleep 1
 
 # Test Case 4: Multiple signal handling
 print_header "Test Case 4: Multiple Signal Handling"
-> "$LOG_FILE_MULTI"  # Clear log file
+true > "$LOG_FILE_MULTI"  # Clear log file
 
 print_info "Starting Hydrogen..." | tee -a "$RESULT_LOG"
 $HYDROGEN_BIN "$CONFIG_FILE" > "$LOG_FILE_MULTI" 2>&1 &
@@ -398,7 +414,7 @@ sleep 1
 # Test Case 5: SIGUSR2 handling (config dump)
 print_header "Test Case 5: SIGUSR2 Signal Handling (Config Dump)"
 LOG_FILE_SIGUSR2="$LOG_DIR/hydrogen_signal_test_SIGUSR2.log"
-> "$LOG_FILE_SIGUSR2"  # Clear log file
+true > "$LOG_FILE_SIGUSR2"  # Clear log file
 
 print_info "Starting Hydrogen..." | tee -a "$RESULT_LOG"
 $HYDROGEN_BIN "$CONFIG_FILE" > "$LOG_FILE_SIGUSR2" 2>&1 &
