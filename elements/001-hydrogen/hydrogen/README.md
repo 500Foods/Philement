@@ -303,59 +303,59 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Tue May  6 12:31:39 PDT 2025
+Generated on: Mon Jun 16 20:18:28 PDT 2025
 
 ### Summary
 
 | Metric | Value |
 | ------ | ----- |
 | Total Tests | 15 |
-| Passed | 15 |
-| Failed | 0 |
+| Passed | 14 |
+| Failed | 1 |
 | Skipped | 0 |
 | Total Subtests | 110 |
-| Passed Subtests | 110 |
-| Failed Subtests | 0 |
-| Runtime | 2m 53s |
+| Passed Subtests | 102 |
+| Failed Subtests | 8 |
+| Runtime | 2m 42s |
 
 ### Individual Test Results
 
 | Status | Time | Test | Subs | Pass | Summary |
 | ------ | ---- | ---- | ---- | ---- | ------- |
-| ✅ | 00:00:17 | 10_compilation | 1 | 1 | Test completed without errors |
+| ✅ | 00:00:25 | 10_compilation | 1 | 1 | Test completed without errors |
 | ✅ | 00:00:00 | 12_env_payload | 2 | 2 | Test completed without errors |
-| ✅ | 00:00:02 | 15_startup_shutdown | 6 | 6 | Test completed without errors |
-| ✅ | 00:00:03 | 20_shutdown | 5 | 5 | Test completed without errors |
+| ✅ | 00:00:03 | 15_startup_shutdown | 6 | 6 | Test completed without errors |
+| ✅ | 00:00:02 | 20_shutdown | 5 | 5 | Test completed without errors |
 | ✅ | 00:00:06 | 25_library_dependencies | 16 | 16 | Test completed without errors |
-| ✅ | 00:00:01 | 35_env_variables | 1 | 1 | Test completed without errors |
+| ✅ | 00:00:00 | 35_env_variables | 1 | 1 | Test completed without errors |
 | ✅ | 00:00:00 | 40_json_error_handling | 2 | 2 | Test completed without errors |
-| ✅ | 00:00:26 | 45_signals | 5 | 5 | Test completed without errors |
-| ✅ | 00:00:03 | 50_crash_handler | 20 | 20 | Test completed without errors |
+| ✅ | 00:00:24 | 45_signals | 5 | 5 | Test completed without errors |
+| ✅ | 00:00:02 | 50_crash_handler | 20 | 20 | Test completed without errors |
 | ✅ | 00:00:00 | 55_socket_rebind | 1 | 1 | Test completed without errors |
-| ✅ | 00:00:13 | 60_api_prefixes | 10 | 10 | Test completed without errors |
-| ✅ | 00:00:07 | 65_system_endpoints | 17 | 17 | Test completed without errors |
-| ✅ | 00:00:03 | 70_swagger_ui | 10 | 10 | Test completed without errors |
-| ✅ | 00:00:04 | 95_leaks_like_a_sieve | 2 | 2 | Test completed without errors |
-| ✅ | 00:00:24 | 99_codebase | 12 | 12 | Test completed without errors |
+| ✅ | 00:00:12 | 60_api_prefixes | 10 | 10 | Test completed without errors |
+| ✅ | 00:00:06 | 65_system_endpoints | 17 | 17 | Test completed without errors |
+| ❌ | 00:00:03 | 70_swagger_ui | 10 | 2 | Test failed with errors |
+| ✅ | 00:00:03 | 95_leaks_like_a_sieve | 2 | 2 | Test completed without errors |
+| ✅ | 00:00:14 | 99_codebase | 12 | 12 | Test completed without errors |
 
 ## Repository Information
 
-Generated via cloc: Tue May  6 12:31:40 PDT 2025
+Generated via cloc: Mon Jun 16 20:18:28 PDT 2025
 
 ```cloc
-github.com/AlDanial/cloc v 2.02  T=0.46 s (1020.7 files/s, 177290.4 lines/s)
+github.com/AlDanial/cloc v 2.02  T=0.29 s (1596.3 files/s, 276724.9 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C                              148           4864           6610          21556
-Markdown                       126           4418             49          15719
+C                              148           4864           6610          21565
+Markdown                       126           4423             49          15732
 Bourne Shell                    25           1406           1394           5818
 JSON                            17              2              0           4585
-Text                            20              7              0           4311
+Text                            20              7              0           4118
 C/C++ Header                   127           1237           4981           2956
 HTML                             1             74              0            493
-make                             2             56            124            283
+make                             2             58            124            285
 -------------------------------------------------------------------------------
-SUM:                           466          12064          13158          55721
+SUM:                           466          12071          13158          55552
 -------------------------------------------------------------------------------
 ```
