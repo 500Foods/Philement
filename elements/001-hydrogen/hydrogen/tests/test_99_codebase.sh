@@ -44,6 +44,8 @@ source "$SCRIPT_DIR/support_utils.sh"
 
 # Initialize test environment
 setup_test_environment() {
+    # Note: TEST_NAME is used by support_utils.sh functions
+    # shellcheck disable=SC2034
     TEST_NAME="$NAME_TEST_99"
     RESULTS_DIR="$SCRIPT_DIR/results"
     mkdir -p "$RESULTS_DIR"
@@ -76,7 +78,7 @@ should_exclude_file() {
     if [ -f "$lint_ignore" ]; then
         while IFS= read -r pattern; do
             [[ -z "$pattern" || "$pattern" == \#* ]] && continue
-            if [[ "$file" == $pattern || "$file" == */$pattern ]]; then
+            if [[ "$file" == "$pattern" || "$file" == */"$pattern" ]]; then
                 return 0 # Exclude
             fi
         done < "$lint_ignore"
@@ -100,7 +102,8 @@ display_linting_info() {
     local exclusion_files=(".lintignore" ".lintignore-c" ".lintignore-markdown" ".lintignore-bash")
     for file in "${exclusion_files[@]}"; do
         if [ -f "$HYDROGEN_DIR/$file" ]; then
-            local summary=$(grep -A 5 "SUMMARY" "$HYDROGEN_DIR/$file" 2>/dev/null | grep -v "SUMMARY" | grep -v "Used by" | sed 's/^# /  /' | sed 's/#$//')
+            local summary
+            summary=$(grep -A 5 "SUMMARY" "$HYDROGEN_DIR/$file" 2>/dev/null | grep -v "SUMMARY" | grep -v "Used by" | sed 's/^# /  /' | sed 's/#$//')
             if [ -n "$summary" ]; then
                 print_info "${file}: $summary" | tee -a "$RESULT_LOG"
             fi
@@ -131,11 +134,13 @@ find_makefiles() {
     print_header "1. Locating Makefiles" | tee -a "$RESULT_LOG"
     
     find "$HYDROGEN_DIR" -type f -name "Makefile" > "$MAKEFILES_LIST"
-    local count=$(wc -l < "$MAKEFILES_LIST")
+    local count
+    count=$(wc -l < "$MAKEFILES_LIST")
     
     print_info "Found $count Makefiles:" | tee -a "$RESULT_LOG"
     while read -r makefile; do
-        local rel_path=$(convert_to_relative_path "$makefile")
+        local rel_path
+        rel_path=$(convert_to_relative_path "$makefile")
         print_info "  - ${rel_path#hydrogen/}" | tee -a "$RESULT_LOG"
     done < "$MAKEFILES_LIST"
     
@@ -149,17 +154,21 @@ run_make_clean() {
     
     local success=0
     local fail=0
-    local start_dir=$(pwd)
+    local start_dir
+    start_dir=$(pwd)
     
     while read -r makefile; do
-        local makefile_dir=$(dirname "$makefile")
-        local rel_dir=$(convert_to_relative_path "$makefile_dir")
+        local makefile_dir
+        makefile_dir=$(dirname "$makefile")
+        local rel_dir
+        rel_dir=$(convert_to_relative_path "$makefile_dir")
         rel_dir=${rel_dir#hydrogen/}
         
         print_info "Processing: $rel_dir" | tee -a "$RESULT_LOG"
         
         if cd "$makefile_dir" 2>/dev/null; then
-            local temp_log="$RESULTS_DIR/make_clean_$(basename "$makefile_dir").log"
+            local temp_log
+            temp_log="$RESULTS_DIR/make_clean_$(basename "$makefile_dir").log"
             if make cleanish > "$temp_log" 2>&1; then
                 print_result 0 "Successfully cleaned $rel_dir" | tee -a "$RESULT_LOG"
                 ((success++))
@@ -184,7 +193,8 @@ analyze_source_files() {
     
     # Find all source files
     find "$HYDROGEN_DIR" -type f \( -name "*.c" -o -name "*.h" -o -name "*.md" -o -name "*.sh" \) | sort > "$SOURCE_FILES_LIST"
-    local total_files=$(wc -l < "$SOURCE_FILES_LIST")
+    local total_files
+    total_files=$(wc -l < "$SOURCE_FILES_LIST")
     
     # Initialize line count bins
     declare -A line_bins=(
@@ -198,24 +208,25 @@ analyze_source_files() {
     
     # Analyze each file
     while read -r file; do
-        local lines=$(wc -l < "$file")
+        local lines
+        lines=$(wc -l < "$file")
         printf "%05d %s\n" "$lines" "$(convert_to_relative_path "$file")" >> "$LINE_COUNT_FILE"
         
         # Categorize by line count
-        if [ $lines -lt 100 ]; then line_bins["000-099"]=$((line_bins["000-099"] + 1))
-        elif [ $lines -lt 200 ]; then line_bins["100-199"]=$((line_bins["100-199"] + 1))
-        elif [ $lines -lt 300 ]; then line_bins["200-299"]=$((line_bins["200-299"] + 1))
-        elif [ $lines -lt 400 ]; then line_bins["300-399"]=$((line_bins["300-399"] + 1))
-        elif [ $lines -lt 500 ]; then line_bins["400-499"]=$((line_bins["400-499"] + 1))
-        elif [ $lines -lt 600 ]; then line_bins["500-599"]=$((line_bins["500-599"] + 1))
-        elif [ $lines -lt 700 ]; then line_bins["600-699"]=$((line_bins["600-699"] + 1))
-        elif [ $lines -lt 800 ]; then line_bins["700-799"]=$((line_bins["700-799"] + 1))
-        elif [ $lines -lt 900 ]; then line_bins["800-899"]=$((line_bins["800-899"] + 1))
-        elif [ $lines -lt 1000 ]; then line_bins["900-999"]=$((line_bins["900-999"] + 1))
+        if [ "$lines" -lt 100 ]; then line_bins["000-099"]=$((line_bins["000-099"] + 1))
+        elif [ "$lines" -lt 200 ]; then line_bins["100-199"]=$((line_bins["100-199"] + 1))
+        elif [ "$lines" -lt 300 ]; then line_bins["200-299"]=$((line_bins["200-299"] + 1))
+        elif [ "$lines" -lt 400 ]; then line_bins["300-399"]=$((line_bins["300-399"] + 1))
+        elif [ "$lines" -lt 500 ]; then line_bins["400-499"]=$((line_bins["400-499"] + 1))
+        elif [ "$lines" -lt 600 ]; then line_bins["500-599"]=$((line_bins["500-599"] + 1))
+        elif [ "$lines" -lt 700 ]; then line_bins["600-699"]=$((line_bins["600-699"] + 1))
+        elif [ "$lines" -lt 800 ]; then line_bins["700-799"]=$((line_bins["700-799"] + 1))
+        elif [ "$lines" -lt 900 ]; then line_bins["800-899"]=$((line_bins["800-899"] + 1))
+        elif [ "$lines" -lt 1000 ]; then line_bins["900-999"]=$((line_bins["900-999"] + 1))
         else
             line_bins["1000+"]=$((line_bins["1000+"] + 1))
             has_oversized=1
-            if [ $lines -gt $largest_lines ]; then
+            if [ "$lines" -gt "$largest_lines" ]; then
                 largest_file=$(convert_to_relative_path "$file")
                 largest_lines=$lines
             fi
@@ -254,7 +265,8 @@ show_top_files_by_type() {
     for i in "${!types[@]}"; do
         local ext="${types[$i]}"
         local label="${labels[$i]}"
-        local temp_file=$(mktemp)
+        local temp_file
+        temp_file=$(mktemp)
         
         grep "\.${ext}$" "$LINE_COUNT_FILE" > "$temp_file"
         print_info "Top 10 $label Files:" | tee -a "$RESULT_LOG"
@@ -275,15 +287,18 @@ find_large_files() {
         -not \( -path "*/tests/*" -o -name "*.c" -o -name "*.h" -o -name "*.md" -o -name "*.sh" -o -name "Makefile" \) \
         | sort > "$LARGE_FILES_LIST"
     
-    local count=$(wc -l < "$LARGE_FILES_LIST")
+    local count
+    count=$(wc -l < "$LARGE_FILES_LIST")
     
-    if [ $count -eq 0 ]; then
+    if [ "$count" -eq 0 ]; then
         print_info "No large files found (excluding source/docs)" | tee -a "$RESULT_LOG"
     else
         print_info "Found $count large files:" | tee -a "$RESULT_LOG"
         while read -r file; do
-            local size=$(du -k "$file" | cut -f1)
-            local rel_path=$(convert_to_relative_path "$file")
+            local size
+            size=$(du -k "$file" | cut -f1)
+            local rel_path
+            rel_path=$(convert_to_relative_path "$file")
             print_info "  ${size}KB: ${rel_path#hydrogen/}" | tee -a "$RESULT_LOG"
         done < "$LARGE_FILES_LIST"
     fi
@@ -294,12 +309,13 @@ find_large_files() {
 # Display limited output for linting results
 display_limited_output() {
     local file="$1"
-    local lines=$(wc -l < "$file")
-    if [ $lines -gt $LINT_OUTPUT_LIMIT ]; then
-        head -n $LINT_OUTPUT_LIMIT "$file" | tee -a "$RESULT_LOG"
+    local lines
+    lines=$(wc -l < "$file")
+    if [ "$lines" -gt "$LINT_OUTPUT_LIMIT" ]; then
+        head -n "$LINT_OUTPUT_LIMIT" "$file" | tee -a "$RESULT_LOG"
         print_warning "Output truncated. Showing $LINT_OUTPUT_LIMIT of $lines lines." | tee -a "$RESULT_LOG"
     else
-        cat "$file" | tee -a "$RESULT_LOG"
+        tee -a "$RESULT_LOG" < "$file"
     fi
 }
 
@@ -307,11 +323,13 @@ display_limited_output() {
 lint_c_files() {
     print_info "Linting C files with cppcheck..." | tee -a "$RESULT_LOG"
     
-    local c_count=$(find "$HYDROGEN_DIR" -type f \( -name "*.c" -o -name "*.h" \) \
+    local c_count
+    c_count=$(find "$HYDROGEN_DIR" -type f \( -name "*.c" -o -name "*.h" \) \
         -not -path "*/build*/*" -not -path "*/tests/logs/*" \
         -not -path "*/tests/results/*" -not -path "*/tests/diagnostics/*" | wc -l)
     
-    local output=$("$SCRIPT_DIR/support_cppcheck.sh" "$HYDROGEN_DIR" 2>&1)
+    local output
+    output=$("$SCRIPT_DIR/support_cppcheck.sh" "$HYDROGEN_DIR" 2>&1)
     echo "$output" | tee -a "$RESULT_LOG"
     
     # Check for expected vs unexpected issues
@@ -342,7 +360,8 @@ lint_c_files() {
 lint_markdown_files() {
     print_info "Linting Markdown files..." | tee -a "$RESULT_LOG"
     
-    local temp_log=$(mktemp)
+    local temp_log
+    temp_log=$(mktemp)
     local md_files=()
     local fails=0
     
@@ -355,14 +374,14 @@ lint_markdown_files() {
     
     local count=${#md_files[@]}
     
-    if [ $count -gt 0 ]; then
+    if [ "$count" -gt 0 ]; then
         # Run markdownlint in parallel
         printf '%s\n' "${md_files[@]}" | xargs -P12 -I{} bash -c \
-            'temp=$(mktemp); \
-             if ! markdownlint --config "'"$HYDROGEN_DIR"'/.lintignore-markdown" "{}" 2> "$temp"; then \
-                 cat "$temp" >> "'"$temp_log"'"; \
+            "temp=\$(mktemp); \
+             if ! markdownlint --config \"$HYDROGEN_DIR/.lintignore-markdown\" \"{}\" 2> \"\$temp\"; then \
+                 cat \"\$temp\" >> \"$temp_log\"; \
              fi; \
-             rm -f "$temp"'
+             rm -f \"\$temp\""
         
         if [ -s "$temp_log" ]; then
             fails=$(wc -l < "$temp_log")
@@ -371,8 +390,11 @@ lint_markdown_files() {
         fi
     fi
     
-    record_test_result "Lint Markdown Files" $([[ $fails -eq 0 ]] && echo 0 || echo 1) \
-        $([[ $fails -eq 0 ]] && echo "No issues in $count files" || echo "Found $fails issues in $count files")
+    if [ "$fails" -eq 0 ]; then
+        record_test_result "Lint Markdown Files" 0 "No issues in $count files"
+    else
+        record_test_result "Lint Markdown Files" 1 "Found $fails issues in $count files"
+    fi
     
     rm -f "$temp_log"
 }
@@ -392,7 +414,7 @@ lint_shell_files() {
         if [ -f "$bash_lintignore" ]; then
             while IFS= read -r pattern; do
                 [[ -z "$pattern" || "$pattern" == \#* ]] && continue
-                [[ "$file" == $pattern || "$file" == */$pattern ]] && return 0
+                [[ "$file" == "$pattern" || "$file" == */"$pattern" ]] && return 0
             done < "$bash_lintignore"
         fi
         return 1
@@ -409,15 +431,16 @@ lint_shell_files() {
     local issues=0
     local files_with_issues=0
     
-    if [ $count -gt 0 ]; then
-        local output=$(mktemp)
+    if [ "$count" -gt 0 ]; then
+        local output
+        output=$(mktemp)
         shellcheck -x -f gcc "${shell_files[@]}" > "$output" 2>&1 || true
         
         # Filter output to show relative paths
         sed "s|$HYDROGEN_DIR/||g" "$output" > "${output}.filtered"
         
         issues=$(wc -l < "${output}.filtered")
-        if [ $issues -gt 0 ]; then
+        if [ "$issues" -gt 0 ]; then
             files_with_issues=$(cut -d: -f1 "${output}.filtered" | sort -u | wc -l)
             print_warning "shellcheck found $issues issues in $files_with_issues files:" | tee -a "$RESULT_LOG"
             display_limited_output "${output}.filtered"
@@ -426,15 +449,20 @@ lint_shell_files() {
         rm -f "$output" "${output}.filtered"
     fi
     
-    local result_code=$([[ $issues -eq 0 ]] && echo 0 || echo 1)
+    local result_code
+    if [ "$issues" -eq 0 ]; then
+        result_code=0
+    else
+        result_code=1
+    fi
     local details
-    if [ $issues -eq 0 ]; then
+    if [ "$issues" -eq 0 ]; then
         details="No issues in $count files"
     else
         details="Found $issues total issues in $files_with_issues of $count files"
     fi
     
-    record_test_result "Lint Shell Script Files" $result_code "$details"
+    record_test_result "Lint Shell Script Files" "$result_code" "$details"
 }
 
 # Run other linting tools (JSON, JS, CSS, HTML)
@@ -447,7 +475,8 @@ lint_other_files() {
         print_info "Linting $label files with $tool..." | tee -a "$RESULT_LOG"
         
         local files=()
-        local temp_log=$(mktemp)
+        local temp_log
+        temp_log=$(mktemp)
         local fails=0
         
         # Build find command for multiple extensions
@@ -467,15 +496,15 @@ lint_other_files() {
         
         local count=${#files[@]}
         
-        if [ $count -gt 0 ]; then
+        if [ "$count" -gt 0 ]; then
             for file in "${files[@]}"; do
                 # Special handling for htmlhint (no --quiet flag)
                 if [ "$tool" = "htmlhint" ]; then
-                    if ! $tool "$file" 2>> "$temp_log"; then
+                    if ! "$tool" "$file" 2>> "$temp_log"; then
                         ((fails++))
                     fi
                 else
-                    if ! $tool --quiet "$file" 2>> "$temp_log"; then
+                    if ! "$tool" --quiet "$file" 2>> "$temp_log"; then
                         ((fails++))
                     fi
                 fi
@@ -490,15 +519,19 @@ lint_other_files() {
         fi
         
         local details
-        if [ $count -eq 0 ]; then
+        if [ "$count" -eq 0 ]; then
             details="No files found (expected)"
-        elif [ $fails -eq 0 ]; then
+        elif [ "$fails" -eq 0 ]; then
             details="No issues in $count files"
         else
             details="Found $fails issues in $count files"
         fi
         
-        record_test_result "Lint $label Files" $([[ $fails -eq 0 ]] && echo 0 || echo 1) "$details"
+        if [ $fails -eq 0 ]; then
+            record_test_result "Lint $label Files" 0 "$details"
+        else
+            record_test_result "Lint $label Files" 1 "$details"
+        fi
         rm -f "$temp_log"
     done
 }
@@ -507,19 +540,26 @@ lint_other_files() {
 run_cloc_analysis() {
     print_header "6. Code Line Count Analysis" | tee -a "$RESULT_LOG"
     
-    local cloc_output=$(mktemp)
-    local start_dir=$(pwd)
+    local cloc_output
+    cloc_output=$(mktemp)
+    local start_dir
+    start_dir=$(pwd)
     
     if cd "$HYDROGEN_DIR" && env LC_ALL=en_US.UTF_8 cloc . --quiet --force-lang="C,inc" > "$cloc_output" 2>&1; then
         tail -n +2 "$cloc_output" | tee -a "$RESULT_LOG"
         
         # Extract summary statistics
-        local stats=$(grep "SUM:" "$cloc_output")
+        local stats
+        stats=$(grep "SUM:" "$cloc_output")
         if [ -n "$stats" ]; then
-            local files=$(echo "$stats" | awk '{print $2}')
-            local code=$(echo "$stats" | awk '{print $5}')
-            local blank=$(echo "$stats" | awk '{print $3}')
-            local comment=$(echo "$stats" | awk '{print $4}')
+            local files
+            files=$(echo "$stats" | awk '{print $2}')
+            local code
+            code=$(echo "$stats" | awk '{print $5}')
+            local blank
+            blank=$(echo "$stats" | awk '{print $3}')
+            local comment
+            comment=$(echo "$stats" | awk '{print $4}')
             record_test_result "Code Line Count Analysis" 0 "Found $files files with $code lines of code ($blank blank, $comment comment)"
         else
             record_test_result "Code Line Count Analysis" 1 "Failed to parse cloc output"
@@ -565,7 +605,7 @@ generate_report() {
     local pass_count=0
     local fail_count=0
     for result in "${TEST_RESULTS[@]}"; do
-        if [ $result -eq 0 ]; then
+        if [ "$result" -eq 0 ]; then
             ((pass_count++))
         else
             ((fail_count++))
@@ -575,14 +615,15 @@ generate_report() {
     # Print individual results
     print_header "Individual Test Results" | tee -a "$RESULT_LOG"
     for i in "${!TEST_NAMES[@]}"; do
-        print_test_item ${TEST_RESULTS[$i]} "${TEST_NAMES[$i]}" "${TEST_DETAILS[$i]}" | tee -a "$RESULT_LOG"
+        print_test_item "${TEST_RESULTS[$i]}" "${TEST_NAMES[$i]}" "${TEST_DETAILS[$i]}" | tee -a "$RESULT_LOG"
     done
     
     # Print summary
     print_test_summary $((pass_count + fail_count)) $pass_count $fail_count | tee -a "$RESULT_LOG"
     
     # Export results for test runner
-    local test_name=$(basename "$0" .sh | sed 's/^test_//')
+    local test_name
+    test_name=$(basename "$0" .sh | sed 's/^test_//')
     export_subtest_results "$test_name" $((pass_count + fail_count)) $pass_count
 }
 
@@ -593,14 +634,14 @@ cleanup() {
 
 # Main execution
 main() {
-    setup_test_environment
+    setup_test_environment "$@"
     display_linting_info
     run_all_tests
     generate_report
     cleanup
     
-    end_test $TEST_RESULT "$(basename "$0" .sh | sed 's/^test_//')" | tee -a "$RESULT_LOG"
-    exit $TEST_RESULT
+    end_test "$TEST_RESULT" "$(basename "$0" .sh | sed 's/^test_//')" | tee -a "$RESULT_LOG"
+    exit "$TEST_RESULT"
 }
 
 # Execute main function

@@ -3,6 +3,16 @@
 # Hydrogen Test Utilities
 # Provides common functions for test scripts to ensure consistent formatting and reporting
 #
+NAME_SCRIPT="Hydrogen Test Utilities"
+VERS_SCRIPT="2.0.0"
+
+# VERSION HISTORY
+# 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
+
+# Function to display script version information
+print_utils_version() {
+    echo "=== $NAME_SCRIPT v$VERS_SCRIPT ==="
+}
 
 # Set up color codes for better readability
 GREEN='\033[0;32m'
@@ -10,7 +20,7 @@ RED='\033[0;31m'
 YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
-MAGENTA='\033[0;35m'
+# MAGENTA='\033[0;35m'  # Currently unused, commented out to avoid SC2034
 BOLD='\033[1m'
 NC='\033[0m' # No Color
 
@@ -32,7 +42,7 @@ print_result() {
     local status=$1
     local message=$2
     
-    if [ $status -eq 0 ]; then
+    if [ "$status" -eq 0 ]; then
         echo -e "${GREEN}${PASS_ICON} $message${NC}"
     else
         echo -e "${RED}${FAIL_ICON} $message${NC}"
@@ -58,7 +68,8 @@ print_info() {
 print_command() {
     # Convert any absolute paths in the command to relative paths
     # Look for paths containing /elements/001-hydrogen/hydrogen/ and convert them
-    local cmd=$(echo "$1" | sed -E "s|/[[:alnum:]/_-]+/elements/001-hydrogen/hydrogen/|hydrogen/|g")
+    local cmd
+    cmd=$(echo "$1" | sed -E "s|/[[:alnum:]/_-]+/elements/001-hydrogen/hydrogen/|hydrogen/|g")
     echo -e "${YELLOW}Executing: $cmd${NC}"
 }
 
@@ -78,7 +89,7 @@ end_test() {
     print_header "Test Summary"
     echo "Completed at: $(date)"
     
-    if [ $test_result -eq 0 ]; then
+    if [ "$test_result" -eq 0 ]; then
         echo -e "${GREEN}${BOLD}${PASS_ICON} OVERALL RESULT: ALL TESTS PASSED${NC}"
     else
         echo -e "${RED}${BOLD}${FAIL_ICON} OVERALL RESULT: ONE OR MORE TESTS FAILED${NC}"
@@ -86,7 +97,7 @@ end_test() {
     echo -e "${BLUE}───────────────────────────────────────────────────────────────────────────────${NC}"
     echo ""
     
-    return $test_result
+    return "$test_result"
 }
 
 # Function to print a test summary with details
@@ -98,7 +109,7 @@ print_test_summary() {
     echo -e "\n${BLUE}${BOLD}Summary Statistics:${NC}"
     echo -e "  Total Tests: $total"
     echo -e "  ${GREEN}Passed: $passed${NC}"
-    if [ $failed -gt 0 ]; then
+    if [ "$failed" -gt 0 ]; then
         echo -e "  ${RED}Failed: $failed${NC}"
     else
         echo -e "  Failed: $failed"
@@ -112,7 +123,7 @@ print_test_item() {
     local name=$2
     local details=$3
     
-    if [ $status -eq 0 ]; then
+    if [ "$status" -eq 0 ]; then
         echo -e "  ${GREEN}${PASS_ICON} PASS${NC}: ${BOLD}$name${NC} - $details"
     else
         echo -e "  ${RED}${FAIL_ICON} FAIL${NC}: ${BOLD}$name${NC} - $details"
@@ -232,7 +243,8 @@ convert_to_relative_path() {
     local absolute_path="$1"
     
     # Extract the part starting from "hydrogen" and keep everything after
-    local relative_path=$(echo "$absolute_path" | sed -n 's|.*/hydrogen/|hydrogen/|p')
+    local relative_path
+    relative_path=$(echo "$absolute_path" | sed -n 's|.*/hydrogen/|hydrogen/|p')
     
     # If the path contains elements/001-hydrogen/hydrogen but not starting with hydrogen/
     if [ -z "$relative_path" ]; then
@@ -251,7 +263,8 @@ convert_to_relative_path() {
 # This centralizes config file access and handles the configs/ subdirectory
 get_config_path() {
     local config_file="$1"
-    local script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    local script_dir
+    script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
     local config_path="$script_dir/configs/$config_file"
     
     echo "$config_path"
@@ -265,15 +278,17 @@ extract_web_server_port() {
     # Extract port using grep and sed (simple approach, could be improved with jq)
     if command -v jq &> /dev/null; then
         # Use jq if available for proper JSON parsing
-        local port=$(jq -r '.WebServer.Port // 5000' "$config_file" 2>/dev/null)
-        if [ $? -eq 0 ] && [ -n "$port" ] && [ "$port" != "null" ]; then
+        local port
+        port=$(jq -r '.WebServer.Port // 5000' "$config_file" 2>/dev/null)
+        if jq -r '.WebServer.Port // 5000' "$config_file" >/dev/null 2>&1 && [ -n "$port" ] && [ "$port" != "null" ]; then
             echo "$port"
             return 0
         fi
     fi
     
     # Fallback method using grep and sed
-    local port=$(grep -o '"Port":[^,}]*' "$config_file" | head -1 | sed 's/"Port":\s*\([0-9]*\)/\1/')
+    local port
+    port=$(grep -o '"Port":[^,}]*' "$config_file" | head -1 | sed 's/"Port":\s*\([0-9]*\)/\1/')
     if [ -n "$port" ]; then
         echo "$port"
         return 0
@@ -287,16 +302,19 @@ extract_web_server_port() {
 # Function to set up the standard test environment
 setup_test_environment() {
     local test_name=$1
+    local script_dir
+    script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
     
     # Create results directory if it doesn't exist
-    RESULTS_DIR="$SCRIPT_DIR/results"
+    RESULTS_DIR="$script_dir/results"
     mkdir -p "$RESULTS_DIR"
     
     # Get timestamp for this test run
     TIMESTAMP=$(date +%Y%m%d_%H%M%S)
     
     # Create a test-specific log file
-    local test_id=$(echo "$test_name" | tr ' ' '_' | tr '[:upper:]' '[:lower:]')
+    local test_id
+    test_id=$(echo "$test_name" | tr ' ' '_' | tr '[:upper:]' '[:lower:]')
     RESULT_LOG="$RESULTS_DIR/${test_id}_${TIMESTAMP}.log"
     
     # Print test start information
@@ -308,8 +326,10 @@ setup_test_environment() {
 
 # Function to find the appropriate hydrogen binary (preferring release build)
 find_hydrogen_binary() {
-    local script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-    local hydrogen_dir="$( cd "$script_dir/.." && pwd )"
+    local script_dir
+    local hydrogen_dir
+    script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    hydrogen_dir="$( cd "$script_dir/.." && pwd )"
     
     if [ -f "$hydrogen_dir/hydrogen_release" ]; then
         print_info "Using release build for testing"
@@ -331,7 +351,9 @@ start_hydrogen_server() {
     
     # Use provided log file or default to hydrogen_test.log
     if [ -z "$log_file" ]; then
-        log_file="$SCRIPT_DIR/hydrogen_test.log"
+        local script_dir
+        script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+        log_file="$script_dir/hydrogen_test.log"
     fi
     
     # Start the server and capture PID
@@ -343,7 +365,7 @@ start_hydrogen_server() {
     sleep 5
     
     # Check if process is still running
-    if kill -0 $server_pid 2>/dev/null; then
+    if kill -0 "$server_pid" 2>/dev/null; then
         print_result 0 "Server started successfully with PID $server_pid"
     else
         print_result 1 "Server failed to start"
@@ -360,29 +382,29 @@ stop_hydrogen_server() {
     local wait_time=${2:-10}  # Default 10 seconds wait time
     
     # Check if PID exists
-    if [ -z "$server_pid" ] || ! kill -0 $server_pid 2>/dev/null; then
+    if [ -z "$server_pid" ] || ! kill -0 "$server_pid" 2>/dev/null; then
         print_warning "No running server with PID $server_pid"
         return 1
     fi
     
     # Try graceful shutdown
     print_info "Stopping hydrogen server (PID $server_pid)..."
-    kill -SIGINT $server_pid
+    kill -SIGINT "$server_pid"
     
     # Wait for server to stop
     print_info "Waiting for server to shut down (${wait_time} seconds)..."
     local count=0
-    while kill -0 $server_pid 2>/dev/null && [ $count -lt $wait_time ]; do
+    while kill -0 "$server_pid" 2>/dev/null && [ "$count" -lt "$wait_time" ]; do
         sleep 1
         ((count++))
     done
     
     # Check if server is still running
-    if kill -0 $server_pid 2>/dev/null; then
+    if kill -0 "$server_pid" 2>/dev/null; then
         print_warning "Server didn't stop gracefully, forcing termination..."
-        kill -9 $server_pid
+        kill -9 "$server_pid"
         sleep 2
-        if kill -0 $server_pid 2>/dev/null; then
+        if kill -0 "$server_pid" 2>/dev/null; then
             print_result 1 "Failed to stop server"
             return 1
         fi
@@ -399,7 +421,7 @@ validate_json() {
     if command -v jq &> /dev/null; then
         # Use jq if available for proper JSON validation
         jq . "$file" > /dev/null 2>&1
-        if [ $? -eq 0 ]; then
+        if jq . "$file" >/dev/null 2>&1; then
             print_result 0 "Response contains valid JSON"
             return 0
         else
@@ -448,7 +470,7 @@ run_curl_request() {
     # Check if the request was successful
     if [ $CURL_STATUS -eq 0 ]; then
         print_info "Successfully received response:" | tee -a "$result_log"
-        cat "$response_file" | tee -a "$result_log"
+        tee -a "$result_log" < "$response_file"
         echo "" | tee -a "$result_log"
         
         # Validate that the response contains expected fields
@@ -489,7 +511,8 @@ export_subtest_results() {
     local test_name=$1      # Use the passed test name
     local total_subtests=$2
     local passed_subtests=$3
-    local script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    local script_dir
+    script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
     local results_dir="$script_dir/results"
     
     # Create results directory if it doesn't exist

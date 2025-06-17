@@ -1,4 +1,18 @@
 #!/bin/bash
+#
+# About this Script
+#
+# Hydrogen CP Check Utility
+# Used to encapsulate the logic for running cppcheck on Hydrogen source files
+#
+NAME_SCRIPT="Hydrogen CPP Check Utility"
+VERS_SCRIPT="2.0.0"
+
+# VERSION HISTORY
+# 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
+
+# Display script name and version
+echo "=== $NAME_SCRIPT v$VERS_SCRIPT ==="
 
 LINTIGNORE=".lintignore"
 LINTIGNORE_C=".lintignore-c"
@@ -27,10 +41,12 @@ done < "$TARGET/$LINTIGNORE"
 
 should_exclude() {
     local file="$1"
-    local abs_file=$(realpath "$file" 2>/dev/null || echo "$file")
-    local rel_file=$(realpath --relative-to="$TARGET" "$abs_file" 2>/dev/null || echo "$abs_file")
+    local abs_file
+    local rel_file
+    abs_file=$(realpath "$file" 2>/dev/null || echo "$file")
+    rel_file=$(realpath --relative-to="$TARGET" "$abs_file" 2>/dev/null || echo "$abs_file")
     for pattern in "${exclude_patterns[@]}"; do
-        [[ "$rel_file" == $pattern ]] && return 0
+        [[ "$rel_file" == "$pattern" ]] && return 0
     done
     return 1
 }
@@ -50,10 +66,13 @@ while IFS='=' read -r key value; do
 done < <(grep -v '^#' "$TARGET/$LINTIGNORE_C" | grep '=')
 
 cppcheck_suppressions=$(grep -v '^#' "$TARGET/$LINTIGNORE_C" | grep '^suppress' | cut -d'=' -f2 | tr '\n' ' ' | sed 's/ $//')
-cppcheck_args+=($cppcheck_suppressions)
+if [ -n "$cppcheck_suppressions" ]; then
+    read -ra suppression_array <<< "$cppcheck_suppressions"
+    cppcheck_args+=("${suppression_array[@]}")
+fi
 
 # Collect files with inline filtering
-files=($(find "$TARGET" -type f \( -name "*.c" -o -name "*.h" -o -name "*.inc" \) -exec bash -c 'for f; do ! should_exclude "$f" && echo "$f"; done' _ {} + 2>/dev/null))
+mapfile -t files < <(find "$TARGET" -type f \( -name "*.c" -o -name "*.h" -o -name "*.inc" \) -exec bash -c 'for f; do ! should_exclude "$f" && echo "$f"; done' _ {} + 2>/dev/null)
 
 if [ ${#files[@]} -gt 0 ]; then
     echo "Running cppcheck on ${#files[@]} files
