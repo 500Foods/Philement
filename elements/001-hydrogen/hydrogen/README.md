@@ -303,20 +303,20 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Tue Jun 17 00:24:14 PDT 2025
+Generated on: Tue Jun 17 01:07:30 PDT 2025
 
 ### Summary
 
 | Metric | Value |
 | ------ | ----- |
 | Total Tests | 15 |
-| Passed | 15 |
-| Failed | 0 |
+| Passed | 14 |
+| Failed | 1 |
 | Skipped | 0 |
 | Total Subtests | 111 |
-| Passed Subtests | 110 |
-| Failed Subtests | 1 |
-| Runtime | 2m 37s |
+| Passed Subtests | 109 |
+| Failed Subtests | 2 |
+| Runtime | 2m 42s |
 
 ### Individual Test Results
 
@@ -324,38 +324,38 @@ Generated on: Tue Jun 17 00:24:14 PDT 2025
 | ------ | ---- | ---- | ---- | ---- | ------- |
 | ✅ | 00:00:15 | 10_compilation | 1 | 1 | Test completed without errors |
 | ✅ | 00:00:00 | 12_env_payload | 2 | 2 | Test completed without errors |
-| ✅ | 00:00:03 | 15_startup_shutdown | 6 | 6 | Test completed without errors |
-| ✅ | 00:00:02 | 20_shutdown | 5 | 5 | Test completed without errors |
+| ✅ | 00:00:02 | 15_startup_shutdown | 6 | 6 | Test completed without errors |
+| ✅ | 00:00:03 | 20_shutdown | 5 | 5 | Test completed without errors |
 | ✅ | 00:00:06 | 25_library_dependencies | 16 | 16 | Test completed without errors |
 | ✅ | 00:00:00 | 35_env_variables | 1 | 1 | Test completed without errors |
 | ✅ | 00:00:00 | 40_json_error_handling | 2 | 2 | Test completed without errors |
-| ✅ | 00:00:24 | 45_signals | 5 | 5 | Test completed without errors |
+| ✅ | 00:00:25 | 45_signals | 5 | 5 | Test completed without errors |
 | ✅ | 00:00:02 | 50_crash_handler | 20 | 20 | Test completed without errors |
 | ✅ | 00:00:00 | 55_socket_rebind | 1 | 1 | Test completed without errors |
 | ✅ | 00:00:12 | 60_api_prefixes | 10 | 10 | Test completed without errors |
 | ✅ | 00:00:06 | 65_system_endpoints | 17 | 17 | Test completed without errors |
-| ✅ | 00:00:04 | 70_swagger_ui | 10 | 10 | Test completed without errors |
+| ✅ | 00:00:03 | 70_swagger_ui | 10 | 10 | Test completed without errors |
 | ✅ | 00:00:03 | 95_leaks_like_a_sieve | 2 | 2 | Test completed without errors |
-| ✅ | 00:00:19 | 99_codebase | 13 | 12 | Test completed without errors |
+| ❌ | 00:00:24 | 99_codebase | 13 | 11 | Test failed with errors |
 
 ## Repository Information
 
-Generated via cloc: Tue Jun 17 00:24:14 PDT 2025
+Generated via cloc: Tue Jun 17 01:07:30 PDT 2025
 
 ```cloc
-github.com/AlDanial/cloc v 2.02  T=0.26 s (1644.8 files/s, 300159.7 lines/s)
+github.com/AlDanial/cloc v 2.02  T=0.27 s (1572.6 files/s, 287097.0 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 C                              126           4428           5804          19897
 Markdown                       126           4449             49          15799
-Bourne Shell                    25           1401           1411           5831
+Bourne Shell                    25           1408           1420           5847
 JSON                            17              2              0           4585
 Text                            20              7              0           4261
 C/C++ Header                   105           1098           4275           2678
 HTML                             1             74              0            493
 make                             2             58            124            285
 -------------------------------------------------------------------------------
-SUM:                           422          11517          11663          53829
+SUM:                           422          11524          11672          53845
 -------------------------------------------------------------------------------
 ```
