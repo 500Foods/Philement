@@ -1,5 +1,7 @@
 #!/bin/bash
 #
+# About this Script
+#
 # Memory Leak Detection Test
 # Tests for memory leaks using ASAN in debug build
 # - Requires debug build with ASAN
@@ -7,6 +9,14 @@
 # - Analyzes and summarizes memory leaks
 # - Fails if any leaks are found
 #
+NAME_SCRIPT="Memory Leak Detection Test"
+VERS_SCRIPT="2.0.0"
+
+# VERSION HISTORY
+# 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
+
+# Display script name and version
+echo "=== $NAME_SCRIPT v$VERS_SCRIPT ==="
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -36,21 +46,20 @@ extract_leak_info() {
     echo "" >> "$output"
     
     # Count total leaks of this type
-    local leak_count=$(grep -c "${type} leak of" "$file")
+    local leak_count
+    leak_count=$(grep -c "${type} leak of" "$file")
     
     # If no leaks, return early
-    if [ $leak_count -eq 0 ]; then
+    if [ "$leak_count" -eq 0 ]; then
         echo "$leak_count:0:0:0"
         return
     fi
     
     # Create temporary files
-    local tmpfile=$(mktemp)
-    local leak_data=$(mktemp)
-    
-    # Create tracking data for grouping
-    declare -A leak_groups
-    declare -A leak_sizes
+    local tmpfile
+    local leak_data
+    tmpfile=$(mktemp)
+    leak_data=$(mktemp)
     
     # Extract all leak blocks
     grep -n "${type} leak of" "$file" | 
@@ -114,7 +123,8 @@ extract_leak_info() {
     fi
     
     # Gather statistics for summary
-    local sizes=$(grep "${type} leak of" "$file" | sed -E "s/.*leak of ([0-9,]+) byte.*/\1/g" | tr -d ',')
+    local sizes
+    sizes=$(grep "${type} leak of" "$file" | sed -E "s/.*leak of ([0-9,]+) byte.*/\1/g" | tr -d ',')
     local total=0
     local smallest=999999
     local largest=0
@@ -124,10 +134,10 @@ extract_leak_info() {
         total=$((total + size))
         
         # Update smallest/largest
-        if [ $size -lt $smallest ]; then
+        if [ "$size" -lt "$smallest" ]; then
             smallest=$size
         fi
-        if [ $size -gt $largest ]; then
+        if [ "$size" -gt "$largest" ]; then
             largest=$size
         fi
     done
@@ -149,8 +159,9 @@ check_direct_leaks() {
     
     # Process direct leaks
     echo "Direct:"
-    > "$details_file"
-    local direct_summary=$(extract_leak_info "Direct" "$log_file" "$details_file")
+    true > "$details_file"
+    local direct_summary
+    direct_summary=$(extract_leak_info "Direct" "$log_file" "$details_file")
     
     # Read summary info
     direct_count=$(echo "$direct_summary" | cut -d: -f1)
@@ -162,7 +173,7 @@ check_direct_leaks() {
     {
         echo "Direct Leaks"
         echo "- Found: $direct_count"
-        if [ $direct_count -gt 0 ]; then
+        if [ "$direct_count" -gt 0 ]; then
             echo "- Smallest: $direct_smallest byte(s)"
             echo "- Largest: $direct_largest byte(s)"
             echo "- Total: $direct_total byte(s)"
@@ -183,8 +194,9 @@ check_indirect_leaks() {
     
     # Process indirect leaks
     echo "Indirect:"
-    > "$details_file"
-    local indirect_summary=$(extract_leak_info "Indirect" "$log_file" "$details_file")
+    true > "$details_file"
+    local indirect_summary
+    indirect_summary=$(extract_leak_info "Indirect" "$log_file" "$details_file")
     
     # Read summary info
     indirect_count=$(echo "$indirect_summary" | cut -d: -f1)
@@ -196,7 +208,7 @@ check_indirect_leaks() {
     {
         echo "Indirect Leaks"
         echo "- Found: $indirect_count"
-        if [ $indirect_count -gt 0 ]; then
+        if [ "$indirect_count" -gt 0 ]; then
             echo "- Smallest: $indirect_smallest byte(s)"
             echo "- Largest: $indirect_largest byte(s)"
             echo "- Total: $indirect_total byte(s)"
@@ -210,7 +222,8 @@ check_indirect_leaks() {
 # Function to run leak test with debug build
 run_leak_test() {
     local binary="$1"
-    local binary_name=$(basename "$binary")
+    local binary_name
+    binary_name=$(basename "$binary")
     
     print_info "Starting leak test with $binary_name..."
     
@@ -229,7 +242,6 @@ run_leak_test() {
     print_info "Waiting for startup (max 3s)..."
     STARTUP_START=$(date +%s)
     STARTUP_TIMEOUT=3
-    STARTUP_COMPLETE=false
     
     while true; do
         CURRENT_TIME=$(date +%s)
@@ -247,7 +259,6 @@ run_leak_test() {
         fi
         
         if grep -q "Application started" "$log_dir/server.log"; then
-            STARTUP_COMPLETE=true
             print_info "Startup completed in ${ELAPSED}s"
             break
         fi
@@ -260,7 +271,7 @@ run_leak_test() {
     sleep 1
     
     # Try some API calls to trigger potential memory operations
-    for i in {1..3}; do
+    for _ in {1..3}; do
         curl -s "http://localhost:5030/api/system/info" > /dev/null 2>&1
         sleep 0.2
     done
@@ -274,7 +285,6 @@ run_leak_test() {
     
     # Wait for process to exit
     wait $HYDROGEN_PID
-    EXIT_CODE=$?
     
     # Check server.log for ASAN output
     print_info "Checking server.log for ASAN output..."
@@ -289,8 +299,8 @@ run_leak_test() {
     fi
     
     # Clear previous results
-    > "$details_file"
-    > "$summary_file"
+    true > "$details_file"
+    true > "$summary_file"
     
     # Check for direct leaks (subtest 1)
     print_header "Checking for direct memory leaks..."

@@ -303,7 +303,7 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Tue Jun 17 03:56:28 PDT 2025
+Generated on: Tue Jun 17 07:16:44 PDT 2025
 
 ### Summary
 
@@ -316,7 +316,7 @@ Generated on: Tue Jun 17 03:56:28 PDT 2025
 | Total Subtests | 111 |
 | Passed Subtests | 110 |
 | Failed Subtests | 1 |
-| Runtime | 2m 41s |
+| Runtime | 2m 43s |
 
 ### Individual Test Results
 
@@ -329,33 +329,33 @@ Generated on: Tue Jun 17 03:56:28 PDT 2025
 | ✅ | 00:00:06 | 25_library_dependencies | 16 | 16 | Test completed without errors |
 | ✅ | 00:00:00 | 35_env_variables | 1 | 1 | Test completed without errors |
 | ✅ | 00:00:00 | 40_json_error_handling | 2 | 2 | Test completed without errors |
-| ✅ | 00:00:24 | 45_signals | 5 | 5 | Test completed without errors |
-| ✅ | 00:00:01 | 50_crash_handler | 20 | 20 | Test completed without errors |
+| ✅ | 00:00:25 | 45_signals | 5 | 5 | Test completed without errors |
+| ✅ | 00:00:02 | 50_crash_handler | 20 | 20 | Test completed without errors |
 | ✅ | 00:00:00 | 55_socket_rebind | 1 | 1 | Test completed without errors |
-| ✅ | 00:00:12 | 60_api_prefixes | 10 | 10 | Test completed without errors |
+| ✅ | 00:00:11 | 60_api_prefixes | 10 | 10 | Test completed without errors |
 | ✅ | 00:00:06 | 65_system_endpoints | 17 | 17 | Test completed without errors |
 | ✅ | 00:00:03 | 70_swagger_ui | 10 | 10 | Test completed without errors |
-| ✅ | 00:00:04 | 95_leaks_like_a_sieve | 2 | 2 | Test completed without errors |
-| ❌ | 00:00:22 | 99_codebase | 13 | 12 | Test failed with errors |
+| ✅ | 00:00:03 | 95_leaks_like_a_sieve | 2 | 2 | Test completed without errors |
+| ❌ | 00:00:24 | 99_codebase | 13 | 12 | Test failed with errors |
 
 ## Repository Information
 
-Generated via cloc: Tue Jun 17 03:56:28 PDT 2025
+Generated via cloc: Tue Jun 17 07:16:44 PDT 2025
 
 ```cloc
-github.com/AlDanial/cloc v 2.02  T=0.26 s (1648.9 files/s, 301706.7 lines/s)
+github.com/AlDanial/cloc v 2.02  T=0.32 s (1339.5 files/s, 247797.2 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 C                              126           4428           5804          19897
 Markdown                       126           4449             49          15799
-Bourne Shell                    25           1444           1400           6007
+Bourne Shell                    25           1571           1652           6488
 JSON                            17              2              0           4585
-Text                            20              7              0           4261
+Text                            20              7              0           4251
 C/C++ Header                   105           1098           4275           2678
 HTML                             1             74              0            493
 make                             2             58            124            285
 -------------------------------------------------------------------------------
-SUM:                           422          11560          11652          54005
+SUM:                           422          11687          11904          54476
 -------------------------------------------------------------------------------
 ```

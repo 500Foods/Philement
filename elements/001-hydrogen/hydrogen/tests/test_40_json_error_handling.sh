@@ -1,7 +1,20 @@
 #!/bin/bash
 #
-# JSON Error Handling Test
-# Tests if the Hydrogen application correctly handles JSON syntax errors in configuration
+# About this Script
+#
+# Hydrogen JSON Error Handling Test
+# Tests if the Hydrogen application correctly handles JSON syntax errors in configuration files
+# and provides meaningful error messages with position information
+#
+NAME_SCRIPT="Hydrogen JSON Error Handling Test"
+VERS_SCRIPT="2.0.0"
+
+# VERSION HISTORY
+# 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
+# 1.0.0 - Original version - Basic JSON error handling test
+
+# Display script name and version
+echo "=== $NAME_SCRIPT v$VERS_SCRIPT ==="
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -54,12 +67,18 @@ print_info "Examining error output..." | tee -a "$RESULT_LOG"
 if grep -q "line" "$ERROR_OUTPUT" && grep -q "column" "$ERROR_OUTPUT"; then
     print_result 0 "Error message contains line and column information" | tee -a "$RESULT_LOG"
     print_info "Error output:" | tee -a "$RESULT_LOG"
-    cat "$ERROR_OUTPUT" | tee -a "$RESULT_LOG"
+    # Display the error output content without complex piping
+    while IFS= read -r line; do
+        echo "$line" | tee -a "$RESULT_LOG"
+    done < "$ERROR_OUTPUT"
     TEST_RESULT=0
 else
     print_result 1 "Error message does not contain line and column information" | tee -a "$RESULT_LOG"
     print_info "Error output:" | tee -a "$RESULT_LOG"
-    cat "$ERROR_OUTPUT" | tee -a "$RESULT_LOG"
+    # Display the error output content without complex piping
+    while IFS= read -r line; do
+        echo "$line" | tee -a "$RESULT_LOG"
+    done < "$ERROR_OUTPUT"
     TEST_RESULT=1
 fi
 
