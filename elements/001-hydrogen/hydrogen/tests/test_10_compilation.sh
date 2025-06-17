@@ -1,8 +1,19 @@
 #!/bin/bash
 #
+# About this Script
+#
 # Hydrogen Compilation Test Script
 # Tests that all components compile without errors or warnings
 #
+NAME_SCRIPT="Hydrogen Compilation Test"
+VERS_SCRIPT="2.0.0"
+
+# VERSION HISTORY
+# 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
+
+# Display script name and version
+echo "=== $NAME_SCRIPT v$VERS_SCRIPT ==="
+
 # This test verifies that:
 # 1. The main Hydrogen project compiles cleanly with all build variants
 # 2. The OIDC client examples compile cleanly
@@ -32,44 +43,77 @@ PASS_COUNT=0
 # Start the test
 start_test "Hydrogen Compilation Test" | tee -a "$RESULT_LOG"
 
+# Function to safely change directory with error handling
+safe_cd() {
+    local target_dir="$1"
+    if ! cd "$target_dir"; then
+        print_error "Failed to change directory to $target_dir"
+        EXIT_CODE=1
+        return 1
+    fi
+    return 0
+}
+
+# Function to get file size safely
+get_file_size() {
+    local file_path="$1"
+    local size
+    if size=$(stat -c %s "$file_path" 2>/dev/null); then
+        echo "$size"
+        return 0
+    else
+        echo "0"
+        return 1
+    fi
+}
+
 # Test function for compilation (used only for OIDC examples)
 test_compilation() {
-    local COMPONENT=$1
-    local BUILD_DIR=$2
-    local BUILD_CMD=$3
+    local component="$1"
+    local build_dir="$2"
+    local build_cmd="$3"
     
-    print_header "Testing compilation of $COMPONENT" | tee -a "$RESULT_LOG"
-    print_info "Build command: $BUILD_CMD" | tee -a "$RESULT_LOG"
-    print_info "Working directory: $(convert_to_relative_path "$BUILD_DIR")" | tee -a "$RESULT_LOG"
+    print_header "Testing compilation of $component" | tee -a "$RESULT_LOG"
+    print_info "Build command: $build_cmd" | tee -a "$RESULT_LOG"
+    print_info "Working directory: $(convert_to_relative_path "$build_dir")" | tee -a "$RESULT_LOG"
     
-    cd "$BUILD_DIR"
+    if ! safe_cd "$build_dir"; then
+        return 1
+    fi
     
-    local START_TIME=$(date +%s)
-    local TEMP_LOG="$RESULTS_DIR/build_${COMPONENT//\//_}_${TIMESTAMP}.log"
+    local start_time
+    local temp_log
+    start_time=$(date +%s)
+    temp_log="$RESULTS_DIR/build_${component//\//_}_${TIMESTAMP}.log"
     
-    CFLAGS="-Wall -Wextra -Werror -pedantic" make all > "$TEMP_LOG" 2>&1
-    local BUILD_RESULT=$?
+    CFLAGS="-Wall -Wextra -Werror -pedantic" make all > "$temp_log" 2>&1
+    local build_result=$?
     
-    local END_TIME=$(date +%s)
-    local DURATION=$((END_TIME - START_TIME))
+    local end_time
+    local duration
+    end_time=$(date +%s)
+    duration=$((end_time - start_time))
     
-    if [ $BUILD_RESULT -eq 0 ]; then
-        print_result 0 "$COMPONENT compiled successfully in ${DURATION}s" | tee -a "$RESULT_LOG"
-        if ! grep -q "warning:" "$TEMP_LOG"; then
+    if [ $build_result -eq 0 ]; then
+        print_result 0 "$component compiled successfully in ${duration}s" | tee -a "$RESULT_LOG"
+        if ! grep -q "warning:" "$temp_log"; then
             print_info "No warnings detected" | tee -a "$RESULT_LOG"
             ((PASS_COUNT++))
         else
             print_warning "Warnings detected:" | tee -a "$RESULT_LOG"
-            grep "warning:" "$TEMP_LOG" | tee -a "$RESULT_LOG"
+            grep "warning:" "$temp_log" | tee -a "$RESULT_LOG"
             EXIT_CODE=1
         fi
     else
-        print_result 1 "$COMPONENT compilation failed" | tee -a "$RESULT_LOG"
-        grep -E "error:|warning:" "$TEMP_LOG" | tee -a "$RESULT_LOG"
+        print_result 1 "$component compilation failed" | tee -a "$RESULT_LOG"
+        grep -E "error:|warning:" "$temp_log" | tee -a "$RESULT_LOG"
         EXIT_CODE=1
     fi
     
-    cd "$SCRIPT_DIR"
+    if ! safe_cd "$SCRIPT_DIR"; then
+        return 1
+    fi
+    return 0
 }
 
 # Test for tarball presence in release build
@@ -77,37 +121,40 @@ test_tarball_presence() {
     print_header "Testing Swagger UI tarball presence in release build" | tee -a "$RESULT_LOG"
     print_info "Checking for tarball delimiter in release executable" | tee -a "$RESULT_LOG"
     
-    local RELEASE_EXECUTABLE="$HYDROGEN_DIR/hydrogen_release"
+    local release_executable="$HYDROGEN_DIR/hydrogen_release"
     
-    if [ ! -f "$RELEASE_EXECUTABLE" ]; then
-        print_result 1 "Release executable not found at $RELEASE_EXECUTABLE" | tee -a "$RESULT_LOG"
+    if [ ! -f "$release_executable" ]; then
+        print_result 1 "Release executable not found at $release_executable" | tee -a "$RESULT_LOG"
         EXIT_CODE=1
-        return
+        return 1
     fi
     
-    local TEMP_STRINGS=$(mktemp)
-    strings "$RELEASE_EXECUTABLE" > "$TEMP_STRINGS"
+    local temp_strings
+    temp_strings=$(mktemp)
+    strings "$release_executable" > "$temp_strings"
     
-    if grep -q "<<< HERE BE ME TREASURE >>>" "$TEMP_STRINGS"; then
+    if grep -q "<<< HERE BE ME TREASURE >>>" "$temp_strings"; then
         print_result 0 "Tarball delimiter found in release executable" | tee -a "$RESULT_LOG"
         
-        local FILE_SIZE=$(stat -c %s "$RELEASE_EXECUTABLE")
-        local PAYLOAD_TARBALL="$HYDROGEN_DIR/payloads/payload.tar.br.enc"
+        local file_size
+        local payload_tarball="$HYDROGEN_DIR/payloads/payload.tar.br.enc"
+        file_size=$(get_file_size "$release_executable")
         
-        if [ -f "$PAYLOAD_TARBALL" ]; then
-            local TARBALL_SIZE=$(stat -c %s "$PAYLOAD_TARBALL")
-            print_info "Found encrypted payload tarball (${TARBALL_SIZE} bytes)" | tee -a "$RESULT_LOG"
+        if [ -f "$payload_tarball" ]; then
+            local tarball_size
+            tarball_size=$(get_file_size "$payload_tarball")
+            print_info "Found encrypted payload tarball (${tarball_size} bytes)" | tee -a "$RESULT_LOG"
             
-            if [ $FILE_SIZE -ge $TARBALL_SIZE ]; then
-                print_result 0 "Release executable size ($FILE_SIZE bytes) is sufficient to contain the tarball ($TARBALL_SIZE bytes)" | tee -a "$RESULT_LOG"
+            if [ "$file_size" -ge "$tarball_size" ]; then
+                print_result 0 "Release executable size ($file_size bytes) is sufficient to contain the tarball ($tarball_size bytes)" | tee -a "$RESULT_LOG"
                 print_info "Release build correctly includes the Swagger UI tarball" | tee -a "$RESULT_LOG"
                 ((PASS_COUNT++))
             else
-                print_result 1 "Release executable size ($FILE_SIZE bytes) is too small to contain the tarball ($TARBALL_SIZE bytes)" | tee -a "$RESULT_LOG"
+                print_result 1 "Release executable size ($file_size bytes) is too small to contain the tarball ($tarball_size bytes)" | tee -a "$RESULT_LOG"
                 EXIT_CODE=1
             fi
         else
-            print_info "Release executable size: $FILE_SIZE bytes" | tee -a "$RESULT_LOG"
+            print_info "Release executable size: $file_size bytes" | tee -a "$RESULT_LOG"
             print_info "Could not verify against tarball size (payloads/payload.tar.br.enc not found)" | tee -a "$RESULT_LOG"
         fi
     else
@@ -116,64 +163,86 @@ test_tarball_presence() {
         EXIT_CODE=1
     fi
     
-    rm -f "$TEMP_STRINGS"
+    rm -f "$temp_strings"
+    return 0
 }
 
-# Run parallel builds
-print_header "Running all builds in parallel" | tee -a "$RESULT_LOG"
-
-cd "$HYDROGEN_DIR/src"
-
-START_TIME=$(date +%s)
-
-# Run builds using exact command structure from working example
-make clean >/dev/null 2>&1 && (make -j24 default QUIET=1 >/dev/null 2>&1 & \
-                              make -j24 debug QUIET=1 >/dev/null 2>&1 & \
-                              make -j24 valgrind QUIET=1 >/dev/null 2>&1 & \
-                              make -j24 perf QUIET=1 >/dev/null 2>&1 & \
-                              make -j24 release QUIET=1 >/dev/null 2>&1 & \
-                              wait)
-
-END_TIME=$(date +%s)
-DURATION=$((END_TIME - START_TIME))
-
-print_info "All parallel builds completed in ${DURATION}s" | tee -a "$RESULT_LOG"
-
-# Check build results
-for TYPE in default debug valgrind perf release; do
-    if [ "$TYPE" = "default" ]; then
-        EXEC="$HYDROGEN_DIR/hydrogen"
-    else
-        EXEC="$HYDROGEN_DIR/hydrogen_$TYPE"
+# Function to run parallel builds with proper error handling
+run_parallel_builds() {
+    print_header "Running all builds in parallel" | tee -a "$RESULT_LOG"
+    
+    if ! safe_cd "$HYDROGEN_DIR/src"; then
+        return 1
     fi
     
-    if [ -f "$EXEC" ] && [ -x "$EXEC" ]; then
-        print_result 0 "Hydrogen main project ($TYPE) compiled successfully" | tee -a "$RESULT_LOG"
-        ((PASS_COUNT++))
-    else
-        print_result 1 "Hydrogen main project ($TYPE) compilation failed" | tee -a "$RESULT_LOG"
-        EXIT_CODE=1
+    local start_time
+    start_time=$(date +%s)
+    
+    # Run builds using exact command structure from working example
+    make clean >/dev/null 2>&1 && (make -j24 default QUIET=1 >/dev/null 2>&1 & \
+                                  make -j24 debug QUIET=1 >/dev/null 2>&1 & \
+                                  make -j24 valgrind QUIET=1 >/dev/null 2>&1 & \
+                                  make -j24 perf QUIET=1 >/dev/null 2>&1 & \
+                                  make -j24 release QUIET=1 >/dev/null 2>&1 & \
+                                  wait)
+    
+    local end_time
+    local duration
+    end_time=$(date +%s)
+    duration=$((end_time - start_time))
+    
+    print_info "All parallel builds completed in ${duration}s" | tee -a "$RESULT_LOG"
+    
+    # Check build results
+    for type in default debug valgrind perf release; do
+        local exec_path
+        if [ "$type" = "default" ]; then
+            exec_path="$HYDROGEN_DIR/hydrogen"
+        else
+            exec_path="$HYDROGEN_DIR/hydrogen_$type"
+        fi
+        
+        if [ -f "$exec_path" ] && [ -x "$exec_path" ]; then
+            print_result 0 "Hydrogen main project ($type) compiled successfully" | tee -a "$RESULT_LOG"
+            ((PASS_COUNT++))
+        else
+            print_result 1 "Hydrogen main project ($type) compilation failed" | tee -a "$RESULT_LOG"
+            EXIT_CODE=1
+        fi
+    done
+    
+    if ! safe_cd "$SCRIPT_DIR"; then
+        return 1
     fi
-done
+    return 0
+}
 
-cd "$SCRIPT_DIR"
+# Main execution flow
+main() {
+    # Run parallel builds
+    run_parallel_builds
+    
+    # Test tarball presence
+    test_tarball_presence
+    
+    # Build OIDC examples
+    test_compilation "OIDC client examples" "$OIDC_EXAMPLES_DIR" "make all QUIET=1"
+    
+    # Print final summary
+    print_header "Compilation Test Summary" | tee -a "$RESULT_LOG"
+    print_info "Completed at: $(date)" | tee -a "$RESULT_LOG"
+    print_info "Test log: $(convert_to_relative_path "$RESULT_LOG")" | tee -a "$RESULT_LOG"
+    print_info "Subtest results: $PASS_COUNT of $TOTAL_SUBTESTS subtests passed" | tee -a "$RESULT_LOG"
+    
+    # Export subtest results for test_all.sh to pick up
+    export_subtest_results "compilation" $TOTAL_SUBTESTS $PASS_COUNT
+    
+    # End test with appropriate result message
+    end_test $EXIT_CODE "Compilation Test" | tee -a "$RESULT_LOG"
+    
+    return $EXIT_CODE
+}
 
-# Test tarball presence
-test_tarball_presence
-
-# Build OIDC examples
-test_compilation "OIDC client examples" "$OIDC_EXAMPLES_DIR" "make all QUIET=1"
-
-# Print final summary
-print_header "Compilation Test Summary" | tee -a "$RESULT_LOG"
-print_info "Completed at: $(date)" | tee -a "$RESULT_LOG"
-print_info "Test log: $(convert_to_relative_path "$RESULT_LOG")" | tee -a "$RESULT_LOG"
-print_info "Subtest results: $PASS_COUNT of $TOTAL_SUBTESTS subtests passed" | tee -a "$RESULT_LOG"
-
-# Export subtest results for test_all.sh to pick up
-export_subtest_results "compilation" $TOTAL_SUBTESTS $PASS_COUNT
-
-# End test with appropriate result message
-end_test $EXIT_CODE "Compilation Test" | tee -a "$RESULT_LOG"
-
-exit $EXIT_CODE
+# Execute main function and exit with its return code
+main
+exit $?
