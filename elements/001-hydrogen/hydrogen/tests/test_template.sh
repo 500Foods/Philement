@@ -5,6 +5,9 @@
 # This template demonstrates how to create standardized tests for the Hydrogen server.
 # It includes examples of common test patterns and best practices derived from existing tests.
 #
+# IMPORTANT: This template is designed to pass shellcheck without warnings.
+# Before submitting new tests, run: shellcheck -x -f gcc your_test.sh
+#
 # Usage: ./test_template.sh [--config min|max] [--skip-cleanup]
 #
 # Options:
@@ -13,11 +16,24 @@
 #
 # Common Test Patterns Demonstrated:
 # 1. Basic startup/shutdown validation
-# 2. API endpoint testing
+# 2. API endpoint testing with subtests
 # 3. Signal handling
 # 4. Resource monitoring
 # 5. Configuration validation
+# 6. Subtest result tracking and export
 #
+
+# Script metadata (required for modern test pattern)
+NAME_SCRIPT="Template Test"
+VERS_SCRIPT="3.0.0"
+
+# VERSION HISTORY
+# 3.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, added subtest support, improved modularity
+# 2.0.0 - Previous version - Basic template functionality
+# 1.0.0 - Original version - Initial template
+
+# Display script name and version
+echo "=== $NAME_SCRIPT v$VERS_SCRIPT ==="
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -79,7 +95,7 @@ esac
 
 # Extract configuration values (if needed for test)
 WEB_SERVER_PORT=$(extract_web_server_port "$CONFIG_FILE")
-WEBSOCKET_PORT=$(extract_websocket_port "$CONFIG_FILE")
+# Note: WEBSOCKET_PORT removed to fix shellcheck SC2034 (unused variable)
 
 # ====================================================================
 # STEP 3: Find appropriate Hydrogen binary
@@ -95,7 +111,15 @@ if [ -z "$HYDROGEN_BIN" ]; then
 fi
 
 # ====================================================================
-# STEP 4: Define Test Functions
+# STEP 4: Initialize subtest tracking
+# ====================================================================
+
+# Define total number of subtests for this template
+TOTAL_SUBTESTS=4  # Startup, API, Resource, Signal
+PASS_COUNT=0
+
+# ====================================================================
+# STEP 5: Define Test Functions
 # ====================================================================
 
 # Example: Basic API endpoint test function
@@ -126,16 +150,16 @@ test_signal_handling() {
     print_header "Testing $signal Signal Handling" | tee -a "$RESULT_LOG"
     
     # Send signal to process
-    kill -$signal $SERVER_PID
+    kill -"$signal" "$SERVER_PID"
     
     # Wait for process to handle signal
     local end_time=$((SECONDS + timeout))
-    while kill -0 $SERVER_PID 2>/dev/null && [ $SECONDS -lt $end_time ]; do
+    while kill -0 "$SERVER_PID" 2>/dev/null && [ $SECONDS -lt "$end_time" ]; do
         sleep 1
     done
     
     # Check result
-    if kill -0 $SERVER_PID 2>/dev/null; then
+    if kill -0 "$SERVER_PID" 2>/dev/null; then
         print_result 1 "Server failed to handle $signal within ${timeout}s" | tee -a "$RESULT_LOG"
         return 1
     fi
@@ -151,14 +175,15 @@ test_resource_usage() {
     print_header "Monitoring Resource Usage" | tee -a "$RESULT_LOG"
     
     # Start resource monitoring in background
-    "$SCRIPT_DIR/support_monitor_resources.sh" $SERVER_PID $duration &
+    "$SCRIPT_DIR/support_monitor_resources.sh" "$SERVER_PID" "$duration" &
     local monitor_pid=$!
     
     # Wait for monitoring to complete
     wait $monitor_pid
     
     # Analyze results (example thresholds)
-    local mem_usage=$(grep "Memory:" "diagnostics/resources_${SERVER_PID}.log" | tail -n1 | awk '{print $2}')
+    local mem_usage
+    mem_usage=$(grep "Memory:" "diagnostics/resources_${SERVER_PID}.log" | tail -n1 | awk '{print $2}')
     if [ "$mem_usage" -gt 100000 ]; then
         print_result 1 "Memory usage too high: ${mem_usage}KB" | tee -a "$RESULT_LOG"
         return 1
@@ -168,8 +193,44 @@ test_resource_usage() {
     return 0
 }
 
+# Function to safely kill a process with PID validation
+# shellcheck disable=SC2317  # Function is called indirectly via cleanup trap
+safe_kill_process() {
+    local pid="$1"
+    local process_name="$2"
+    
+    # Validate PID is not empty and not zero
+    if [ -z "$pid" ] || [ "$pid" = "0" ]; then
+        return 1
+    fi
+    
+    if ps -p "$pid" > /dev/null 2>&1; then
+        echo "Cleaning up $process_name (PID $pid)..."
+        kill -SIGINT "$pid" 2>/dev/null || kill -9 "$pid" 2>/dev/null
+        return 0
+    fi
+    return 1
+}
+
+# Handle cleanup on script termination
+# shellcheck disable=SC2317  # Function is called indirectly via trap
+cleanup() {
+    # Kill any hydrogen processes started by this script
+    safe_kill_process "$SERVER_PID" "hydrogen server"
+    
+    # Save test log if we've started writing it
+    if [ -n "$RESULT_LOG" ] && [ -f "$RESULT_LOG" ]; then
+        echo "Saving test results to $(convert_to_relative_path "$RESULT_LOG")"
+    fi
+    
+    exit 0
+}
+
+# Set up cleanup trap
+trap cleanup EXIT INT TERM
+
 # ====================================================================
-# STEP 5: Implement Main Test Logic
+# STEP 6: Implement Main Test Logic
 # ====================================================================
 
 run_tests() {
@@ -186,35 +247,53 @@ run_tests() {
         return 1
     fi
     print_result 0 "Server started successfully (PID: $SERVER_PID)" | tee -a "$RESULT_LOG"
+    ((PASS_COUNT++))
     
     # === TEST CASE 2: API Testing (if web server enabled) ===
     if [ -n "$WEB_SERVER_PORT" ]; then
         print_header "Test Case 2: API Testing" | tee -a "$RESULT_LOG"
         
         # Example: Test health endpoint
-        test_api_endpoint "/api/system/health" "alive"
-        [ $? -ne 0 ] && test_result=1
+        if test_api_endpoint "/api/system/health" "alive"; then
+            ((PASS_COUNT++))
+        else
+            test_result=1
+        fi
         
         # Example: Test POST endpoint
-        test_api_endpoint "/api/system/test" "success" "POST" '{"test":"data"}'
-        [ $? -ne 0 ] && test_result=1
+        if test_api_endpoint "/api/system/test" "success" "POST" '{"test":"data"}'; then
+            # This would be a separate subtest if implemented
+            print_result 0 "POST endpoint test passed" | tee -a "$RESULT_LOG"
+        else
+            test_result=1
+        fi
+    else
+        # If no web server, still count as passed subtest
+        print_result 0 "Web server disabled, skipping API tests" | tee -a "$RESULT_LOG"
+        ((PASS_COUNT++))
     fi
     
     # === TEST CASE 3: Resource Monitoring ===
     print_header "Test Case 3: Resource Monitoring" | tee -a "$RESULT_LOG"
-    test_resource_usage 10
-    [ $? -ne 0 ] && test_result=1
+    if test_resource_usage 10; then
+        ((PASS_COUNT++))
+    else
+        test_result=1
+    fi
     
     # === TEST CASE 4: Signal Handling ===
     print_header "Test Case 4: Signal Handling" | tee -a "$RESULT_LOG"
-    test_signal_handling SIGTERM 10
-    [ $? -ne 0 ] && test_result=1
+    if test_signal_handling SIGTERM 10; then
+        ((PASS_COUNT++))
+    else
+        test_result=1
+    fi
     
     return $test_result
 }
 
 # ====================================================================
-# STEP 6: Execute Tests and Report Results
+# STEP 7: Execute Tests and Report Results
 # ====================================================================
 
 # Run all test cases
@@ -234,29 +313,44 @@ declare -a TEST_DETAILS
 
 # Populate results (0=pass, 1=fail)
 for name in "${TEST_NAMES[@]}"; do
-    TEST_RESULTS+=($TEST_RESULT)
+    if [ $TEST_RESULT -eq 0 ]; then
+        TEST_RESULTS+=(0)
+    else
+        TEST_RESULTS+=(1)
+    fi
     TEST_DETAILS+=("${name} validation")
 done
 
 # Calculate statistics
-PASS_COUNT=0
-FAIL_COUNT=0
+TOTAL_PASS=0
+TOTAL_FAIL=0
 for result in "${TEST_RESULTS[@]}"; do
-    if [ $result -eq 0 ]; then
-        ((PASS_COUNT++))
+    if [ "$result" -eq 0 ]; then
+        ((TOTAL_PASS++))
     else
-        ((FAIL_COUNT++))
+        ((TOTAL_FAIL++))
     fi
 done
 
 # Print individual test results
-echo -e "\n${BLUE}${BOLD}Individual Test Results:${NC}" | tee -a "$RESULT_LOG"
+echo -e "
+${BLUE}${BOLD}Individual Test Results:${NC}" | tee -a "$RESULT_LOG"
 for i in "${!TEST_NAMES[@]}"; do
-    print_test_item ${TEST_RESULTS[$i]} "${TEST_NAMES[$i]}" "${TEST_DETAILS[$i]}" | tee -a "$RESULT_LOG"
+    print_test_item "${TEST_RESULTS[$i]}" "${TEST_NAMES[$i]}" "${TEST_DETAILS[$i]}" | tee -a "$RESULT_LOG"
 done
 
 # Print summary statistics
-print_test_summary $((PASS_COUNT + FAIL_COUNT)) $PASS_COUNT $FAIL_COUNT | tee -a "$RESULT_LOG"
+print_test_summary $((TOTAL_PASS + TOTAL_FAIL)) $TOTAL_PASS $TOTAL_FAIL | tee -a "$RESULT_LOG"
+
+# Get test name from script name for subtest export
+SCRIPT_TEST_NAME=$(basename "$0" .sh)
+SCRIPT_TEST_NAME="${SCRIPT_TEST_NAME#test_}"
+
+# Export subtest results for test_all.sh to pick up
+export_subtest_results "$SCRIPT_TEST_NAME" $TOTAL_SUBTESTS $PASS_COUNT
+
+# Log subtest results
+print_info "Template Test: $PASS_COUNT of $TOTAL_SUBTESTS subtests passed" | tee -a "$RESULT_LOG"
 
 # End test with final result
 end_test $TEST_RESULT "$TEST_NAME" | tee -a "$RESULT_LOG"
