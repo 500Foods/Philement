@@ -780,6 +780,76 @@ fi
         TEST_DETAILS+=("Found $html_fails issues in $html_count files")
     fi
 
+    # Shell script files with shellcheck
+    print_info "Linting Shell script files with shellcheck..." | tee -a "$RESULT_LOG"
+    local sh_fails=0
+    local sh_count=0
+    local bash_lintignore="$HYDROGEN_DIR/.lintignore-bash"
+    
+    # Function to check bash-specific exclusions
+    should_exclude_bash() {
+        local file="$1"
+        
+        # First check general exclusions
+        if should_exclude "$file"; then
+            return 0
+        fi
+        
+        # Check bash-specific .lintignore-bash file if it exists
+        if [ -f "$bash_lintignore" ]; then
+            while IFS= read -r pattern; do
+                # Skip empty lines and comments
+                [[ -z "$pattern" || "$pattern" == \#* ]] && continue
+                # Handle both exact matches and glob patterns
+                if [[ "$file" == $pattern || "$file" == */$pattern ]]; then
+                    return 0 # Exclude
+                fi
+            done < "$bash_lintignore"
+        fi
+        
+        return 1 # Do not exclude
+    }
+    
+    while read -r file; do
+        if ! should_exclude_bash "$file"; then
+            ((sh_count++))
+            # Create a temporary file for this specific shell script's errors
+            local sh_error_log=$(mktemp)
+            if ! shellcheck -f gcc "$file" 2> "$sh_error_log"; then
+                sh_fails=$((sh_fails + 1))
+                # Get the shellcheck output
+                local rel_path=$(convert_to_relative_path "$file")
+                rel_path=${rel_path#hydrogen/}
+                print_warning "Shellcheck issues in file: $rel_path" >> "$lint_temp_log"
+                cat "$sh_error_log" >> "$lint_temp_log"
+                echo "" >> "$lint_temp_log"  # Add blank line between errors
+            fi
+            rm -f "$sh_error_log"
+        fi
+    done < <(find "$HYDROGEN_DIR" -type f -name "*.sh")
+    
+    if [ $sh_count -eq 0 ]; then
+        print_warning "No shell script files found to lint" | tee -a "$RESULT_LOG"
+    elif [ -s "$lint_temp_log" ]; then
+        print_warning "shellcheck found $sh_fails issues in $sh_count files:" | tee -a "$RESULT_LOG"
+        display_limited_output "$lint_temp_log"
+        lint_result=1
+    else
+        print_info "No shellcheck issues found in $sh_count files" | tee -a "$RESULT_LOG"
+    fi
+    > "$lint_temp_log"  # Clear log for next linter
+    
+    # Add shellcheck results
+    TEST_NAMES+=("Lint Shell Script Files")
+    TEST_RESULTS+=($([[ $sh_fails -eq 0 ]] && echo 0 || echo 1))
+    if [ $sh_count -eq 0 ]; then
+        TEST_DETAILS+=("No files found to lint")
+    elif [ $sh_fails -eq 0 ]; then
+        TEST_DETAILS+=("No issues found in $sh_count files")
+    else
+        TEST_DETAILS+=("Found $sh_fails issues in $sh_count files")
+    fi
+
     # Run cloc analysis
     print_header "6. Running Code Line Count Analysis" | tee -a "$RESULT_LOG"
     print_info "Analyzing code lines by language..." | tee -a "$RESULT_LOG"
