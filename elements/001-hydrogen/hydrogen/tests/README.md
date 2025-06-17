@@ -570,6 +570,99 @@ To track resource usage during a test:
 
 This helps identify memory leaks, resource exhaustion, or usage patterns that might contribute to shutdown issues.
 
+## Developing New Tests
+
+All new test scripts must follow standardized conventions to ensure consistency, maintainability, and quality across the test suite.
+
+### Required Standards for New Tests
+
+#### 1. Version and Title Headers
+
+Every test script **MUST** include version and title variables at the top:
+
+```bash
+#!/bin/bash
+#
+# VERSION_TEST_XX="1.0.0"
+# TITLE_TEST_XX="Descriptive Test Name"
+#
+# CHANGE HISTORY:
+# v1.0.0 - YYYY-MM-DD - Initial version with [brief description]
+#
+# [Rest of script header comments]
+
+VERSION_TEST_XX="1.0.0"
+TITLE_TEST_XX="Descriptive Test Name"
+```
+
+Replace `XX` with your test number (e.g., `VERSION_TEST_65` for test_65_system_endpoints.sh).
+
+#### 2. Change History Section
+
+Include a CHANGE HISTORY section near the top that tracks:
+
+- Version numbers (semantic versioning: MAJOR.MINOR.PATCH)
+- Dates of changes (YYYY-MM-DD format)
+- Brief description of what changed
+
+Example:
+
+```bash
+# CHANGE HISTORY:
+# v1.2.1 - 2025-06-17 - Fixed timeout handling in API tests
+# v1.2.0 - 2025-06-15 - Added support for custom headers
+# v1.1.0 - 2025-06-10 - Enhanced error reporting
+# v1.0.0 - 2025-06-01 - Initial version with basic functionality
+```
+
+#### 3. Shellcheck Compliance
+
+All test scripts **MUST** pass shellcheck validation without errors or warnings:
+
+```bash
+# Validate your script before committing
+shellcheck test_your_script.sh
+```
+
+Common shellcheck requirements:
+
+- Quote all variable expansions: `"$variable"` not `$variable`
+- Use `[[ ]]` for conditionals instead of `[ ]`
+- Declare arrays properly: `declare -a array_name`
+- Use `$(command)` instead of backticks
+- Handle exit codes explicitly
+- Use proper error handling with `set -e` or explicit checks
+
+#### 4. Title Display
+
+Display the test title and version at the beginning of execution:
+
+```bash
+# Print header with version
+print_header "$TITLE_TEST_XX v$VERSION_TEST_XX" | tee "$SUMMARY_LOG"
+```
+
+### Development Workflow
+
+1. **Start with Template**: Copy `test_template.sh` as your starting point
+2. **Add Headers**: Include version, title, and change history sections
+3. **Implement Logic**: Write your test functionality
+4. **Validate**: Run shellcheck to ensure compliance
+5. **Test**: Verify the script works correctly
+6. **Document**: Update this README with your test description
+
+### Quality Assurance
+
+Before submitting new tests:
+
+- [ ] Version and title variables are defined
+- [ ] Change history section is present and up-to-date
+- [ ] Script passes `shellcheck` without errors/warnings
+- [ ] Test displays title and version on execution
+- [ ] Test follows existing naming conventions (test_NN_description.sh)
+- [ ] Test integrates properly with `test_00_all.sh`
+- [ ] Documentation is added to this README
+
 ## Extending Testing
 
 The testing system follows a logical sequence:
