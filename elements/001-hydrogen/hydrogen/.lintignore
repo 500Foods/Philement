@@ -1,29 +1,19 @@
 # Hydrogen Linting Exclusions
 
-# SUMMARY: This configuration excludes several file types from linting
-
+# SUMMARY: This configuration excludes several file types from linting:
 # - Build directories (debug, release, perf, valgrind builds)
-
 # - Test artifacts (logs, results, diagnostics)
-
 # - Test configuration with deliberate error (for testing error handling)
-
 # - C snippet includes for JSON handling that aren't meant to be linted independently
-
 #
+# Used by test_99_codebase.sh for documentation quality checks.
 
-# Used by test_99_codebase.sh for documentation quality checks
-
-# This file contains patterns for files to exclude from linting checks
-
-# Each line should contain one pattern. Empty lines and lines starting with # are ignored
-
-# Patterns use bash glob syntax (same as .gitignore)
+# This file contains patterns for files to exclude from linting checks.
+# Each line should contain one pattern. Empty lines and lines starting with # are ignored.
+# Patterns use bash glob syntax (same as .gitignore).
 
 # Build directories (these are also excluded by default in the test script)
-
 # A 'make clean' is also done in the codebase test prior to running lints
-
 build/*
 build_debug/*
 build_perf/*
@@ -31,24 +21,17 @@ build_release/*
 build_valgrind/*
 
 # Test artifacts
-
 tests/logs/*
 tests/results/*
 tests/diagnostics/*
 
 # Specific test result files that don't need to follow standalone markdown rules
-
 tests/results/latest_test_results.md
 tests/results/repository_info.md
 
-# Configuration files for testing have one that deliberately has an
-
-# error - to test the error-handling code at startup - so we exclude it here
-
+# Configuration files for testing have one that deliberately has an 
+# error - to test the error-handling code at startup - so we exclude it here.
 # Note that there is a test that specifically checks for this error, so
-
 # if this is removed, that test will fail. As a fnunny side note, AI tools
-
-# like to correct the error in the file whenever they get a chance
-
+# like to correct the error in the file whenever they get a chance!
 tests/configs/hydrogen_test_json.json
