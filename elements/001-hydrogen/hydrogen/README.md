@@ -54,6 +54,7 @@ The following documentation files are available outside of the main docs/ direct
 - [RECIPE.md](RECIPE.md) - Development guide optimized for AI assistance
 - [RELEASES.md](RELEASES.md) - Version history and release notes
 - [SECRETS.md](SECRETS.md) - Secrets management using environment variables
+- [SITEMAP.md](SITEMAP.md) - Index to all of the Markdown files in this repository
 - [src/api/README.md](src/api/README.md) - API implementation details
 - [payload/README.md](payload/README.md) - Payload system with encryption
 - [tests/README.md](tests/README.md) - Testing framework documentation
@@ -303,29 +304,29 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
 
 ## Latest Test Results
 
-Generated on: Tue Jun 17 11:54:25 PDT 2025
+Generated on: Wed Jun 18 18:10:50 PDT 2025
 
 ### Summary
 
 | Metric | Value |
 | ------ | ----- |
 | Total Tests | 15 |
-| Passed | 14 |
-| Failed | 1 |
+| Passed | 15 |
+| Failed | 0 |
 | Skipped | 0 |
 | Total Subtests | 111 |
-| Passed Subtests | 109 |
-| Failed Subtests | 2 |
-| Runtime | 2m 44s |
+| Passed Subtests | 111 |
+| Failed Subtests | 0 |
+| Runtime | 2m 54s |
 
 ### Individual Test Results
 
 | Status | Time | Test | Subs | Pass | Summary |
 | ------ | ---- | ---- | ---- | ---- | ------- |
-| ✅ | 00:00:14 | 10_compilation | 1 | 1 | Test completed without errors |
+| ✅ | 00:00:17 | 10_compilation | 1 | 1 | Test completed without errors |
 | ✅ | 00:00:00 | 12_env_payload | 2 | 2 | Test completed without errors |
-| ✅ | 00:00:03 | 15_startup_shutdown | 6 | 6 | Test completed without errors |
-| ✅ | 00:00:02 | 20_shutdown | 5 | 5 | Test completed without errors |
+| ✅ | 00:00:02 | 15_startup_shutdown | 6 | 6 | Test completed without errors |
+| ✅ | 00:00:03 | 20_shutdown | 5 | 5 | Test completed without errors |
 | ✅ | 00:00:06 | 25_library_dependencies | 16 | 16 | Test completed without errors |
 | ✅ | 00:00:00 | 35_env_variables | 1 | 1 | Test completed without errors |
 | ✅ | 00:00:00 | 40_json_error_handling | 2 | 2 | Test completed without errors |
@@ -334,28 +335,28 @@ Generated on: Tue Jun 17 11:54:25 PDT 2025
 | ✅ | 00:00:00 | 55_socket_rebind | 1 | 1 | Test completed without errors |
 | ✅ | 00:00:13 | 60_api_prefixes | 10 | 10 | Test completed without errors |
 | ✅ | 00:00:06 | 65_system_endpoints | 17 | 17 | Test completed without errors |
-| ✅ | 00:00:04 | 70_swagger | 10 | 10 | Test completed without errors |
+| ✅ | 00:00:03 | 70_swagger | 10 | 10 | Test completed without errors |
 | ✅ | 00:00:03 | 95_leaks_like_a_sieve | 2 | 2 | Test completed without errors |
-| ❌ | 00:00:23 | 99_codebase | 13 | 11 | Test failed with errors |
+| ✅ | 00:00:29 | 99_codebase | 13 | 13 | Test completed without errors |
 
 ## Repository Information
 
-Generated via cloc: Tue Jun 17 11:54:25 PDT 2025
+Generated via cloc: Wed Jun 18 18:10:50 PDT 2025
 
 ```cloc
-github.com/AlDanial/cloc v 2.02  T=0.32 s (1343.2 files/s, 254531.3 lines/s)
+github.com/AlDanial/cloc v 2.02  T=0.28 s (1543.7 files/s, 292254.1 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 C                              126           4428           5804          19897
-Markdown                       126           4449             49          15799
-Bourne Shell                    29           1902           2038           8604
+Markdown                       127           4494             49          15983
+Bourne Shell                    33           1917           2065           9017
 JSON                            17              2              0           4585
-Text                            21             11              0           4262
+Text                            20              7              0           4262
 C/C++ Header                   105           1098           4275           2678
 HTML                             1             74              0            493
 make                             2             58            124            285
 -------------------------------------------------------------------------------
-SUM:                           427          12022          12290          56603
+SUM:                           431          12078          12317          57200
 -------------------------------------------------------------------------------
 ```

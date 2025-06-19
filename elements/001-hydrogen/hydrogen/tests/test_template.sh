@@ -18,7 +18,7 @@
 # 1. Basic startup/shutdown validation
 # 2. API endpoint testing with subtests
 # 3. Signal handling
-# 4. Resource monitoring
+# 4. Resource monitoringi
 # 5. Configuration validation
 # 6. Subtest result tracking and export
 #
