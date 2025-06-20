@@ -2,27 +2,28 @@
 
 # Markdown link checker script
 # Usage: ./github-md-links.sh <markdown_file> [--debug] [--theme <Red|Blue>]
-# Version: 0.3.9
+# Version: 0.4.0
 # Description: Checks local markdown links in a repository, reports missing links,
 #              and identifies orphaned markdown files.
 
 # Application version
-declare -r APPVERSION="0.3.9"
+declare -r APPVERSION="0.4.0"
 
 # Change history
-# 0.1.0 - 2025-06-15 - Initial version with basic link checking and summary output
+# 0.4.0 - 2025-06-19 - Updated link checking to recognize existing folders as valid links
+# 0.3.9 - 2025-06-15 - Fixed repo root detection to use input file's directory, improved path resolution
+# 0.3.8 - 2025-06-15 - Fixed find_all_md_files path resolution, reordered -maxdepth, enhanced debug logging
+# 0.3.7 - 2025-06-15 - Optimized find_all_md_files with -prune for .git, fixed orphaned files detection
+# 0.3.6 - 2025-06-15 - Fixed orphaned files table, empty link counts, added --theme option, added orphaned files to report
+# 0.3.5 - 2025-06-15 - Fixed tables.sh invocation to avoid empty argument, improved debug output separation
+# 0.3.4 - 2025-06-15 - Fixed debug flag handling to pass --debug to tables.sh only when DEBUG=true
+# 0.3.3 - 2025-06-15 - Enhanced find_all_md_files to avoid symlinks, log errors, and use shorter timeout
+# 0.3.2 - 2025-06-15 - Improved find_all_md_files with depth limit, timeout, and error handling
+# 0.3.1 - 2025-06-15 - Changed to execute tables.sh instead of sourcing, per domain_info.sh
+# 0.3.0 - 2025-06-15 - Added --debug flag for verbose logging, improved robustness
 # 0.2.0 - 2025-06-15 - Added table output using tables.sh, version display,
 #                       issue count, missing links table, and orphaned files table
-# 0.3.0 - 2025-06-15 - Added --debug flag for verbose logging, improved robustness
-# 0.3.1 - 2025-06-15 - Changed to execute tables.sh instead of sourcing, per domain_info.sh
-# 0.3.2 - 2025-06-15 - Improved find_all_md_files with depth limit, timeout, and error handling
-# 0.3.3 - 2025-06-15 - Enhanced find_all_md_files to avoid symlinks, log errors, and use shorter timeout
-# 0.3.4 - 2025-06-15 - Fixed debug flag handling to pass --debug to tables.sh only when DEBUG=true
-# 0.3.5 - 2025-06-15 - Fixed tables.sh invocation to avoid empty argument, improved debug output separation
-# 0.3.6 - 2025-06-15 - Fixed orphaned files table, empty link counts, added --theme option, added orphaned files to report
-# 0.3.7 - 2025-06-15 - Optimized find_all_md_files with -prune for .git, fixed orphaned files detection
-# 0.3.8 - 2025-06-15 - Fixed find_all_md_files path resolution, reordered -maxdepth, enhanced debug logging
-# 0.3.9 - 2025-06-15 - Fixed repo root detection to use input file's directory, improved path resolution
+# 0.1.0 - 2025-06-15 - Initial version with basic link checking and summary output
 
 # Parse arguments
 DEBUG=false
@@ -255,7 +256,7 @@ process_file() {
         link_file="${abs_link%%#*}"
         debug_log "Link file (no anchor): $link_file"
 
-        if [[ -f "$link_file" ]]; then
+        if [[ -f "$link_file" ]] || [[ -d "$link_file" ]]; then
             ((links_checked++))
             debug_log "Link exists"
             # Add linked markdown file to queue only if it's a .md file and not marked as non_md
