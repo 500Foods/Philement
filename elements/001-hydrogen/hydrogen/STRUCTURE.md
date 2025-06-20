@@ -49,86 +49,132 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [src/config/config.c](src/config/config.c) - Core configuration system
 - [src/config/config.h](src/config/config.h) - Configuration structures and constants
 - [src/config/config_forward.h](src/config/config_forward.h) - Forward declarations
-- [src/config/config_api.c](src/config/config_api.h) - API configuration
-- [src/config/config_databases.c](src/config/config_databases.h) - Database configuration
-- [src/config/config_logging.c](src/config/config_logging.h) - Logging configuration
-- [src/config/config_mail_relay.c](src/config/config_mail_relay.h) - Mail relay configuration
-- [src/config/config_mdns_client.c](src/config/config_mdns_client.h) - mDNS client configuration
-- [src/config/config_mdns_server.c](src/config/config_mdns_server.h) - mDNS server configuration
-- [src/config/config_network.c](src/config/config_network.h) - Network configuration
-- [src/config/config_notify.c](src/config/config_notify.h) - Notification configuration
-- [src/config/config_oidc.c](src/config/config_oidc.h) - OIDC configuration
-- [src/config/config_print.c](src/config/config_print.h) - Print subsystem configuration
+- [src/config/config_api.c](src/config/config_api.c) - API configuration implementation
+- [src/config/config_api.h](src/config/config_api.h) - API configuration interface definitions
+- [src/config/config_databases.c](src/config/config_databases.c) - Database configuration implementation
+- [src/config/config_databases.h](src/config/config_databases.h) - Database configuration interface definitions
+- [src/config/config_logging.c](src/config/config_logging.c) - Logging configuration implementation
+- [src/config/config_logging.h](src/config/config_logging.h) - Logging configuration interface definitions
+- [src/config/config_mail_relay.c](src/config/config_mail_relay.c) - Mail relay configuration implementation
+- [src/config/config_mail_relay.h](src/config/config_mail_relay.h) - Mail relay configuration interface definitions
+- [src/config/config_mdns_client.c](src/config/config_mdns_client.c) - mDNS client configuration implementation
+- [src/config/config_mdns_client.h](src/config/config_mdns_client.h) - mDNS client configuration interface definitions
+- [src/config/config_mdns_server.c](src/config/config_mdns_server.c) - mDNS server configuration implementation
+- [src/config/config_mdns_server.h](src/config/config_mdns_server.h) - mDNS server configuration interface definitions
+- [src/config/config_network.c](src/config/config_network.c) - Network configuration implementation
+- [src/config/config_network.h](src/config/config_network.h) - Network configuration interface definitions
+- [src/config/config_notify.c](src/config/config_notify.c) - Notification configuration implementation
+- [src/config/config_notify.h](src/config/config_notify.h) - Notification configuration interface definitions
+- [src/config/config_oidc.c](src/config/config_oidc.c) - OIDC configuration implementation
+- [src/config/config_oidc.h](src/config/config_oidc.h) - OIDC configuration interface definitions
+- [src/config/config_print.c](src/config/config_print.c) - Print subsystem configuration implementation
+- [src/config/config_print.h](src/config/config_print.h) - Print subsystem configuration interface definitions
 - [src/config/config_print_priorities.h](src/config/config_print_priorities.h) - Print priority definitions
-- [src/config/config_priority.c](src/config/config_priority.h) - Priority management
-- [src/config/config_resources.c](src/config/config_resources.h) - Resource configuration
-- [src/config/config_server.c](src/config/config_server.h) - Server configuration
-- [src/config/config_swagger.c](src/config/config_swagger.h) - Swagger configuration
-- [src/config/config_terminal.c](src/config/config_terminal.h) - Terminal configuration
-- [src/config/config_utils.c](src/config/config_utils.h) - Configuration utilities
-- [src/config/config_webserver.c](src/config/config_webserver.h) - Web server configuration
-- [src/config/config_websocket.c](src/config/config_websocket.h) - WebSocket configuration
+- [src/config/config_priority.c](src/config/config_priority.c) - Priority management implementation
+- [src/config/config_priority.h](src/config/config_priority.h) - Priority management interface definitions
+- [src/config/config_resources.c](src/config/config_resources.c) - Resource configuration implementation
+- [src/config/config_resources.h](src/config/config_resources.h) - Resource configuration interface definitions
+- [src/config/config_server.c](src/config/config_server.c) - Server configuration implementation
+- [src/config/config_server.h](src/config/config_server.h) - Server configuration interface definitions
+- [src/config/config_swagger.c](src/config/config_swagger.c) - Swagger configuration implementation
+- [src/config/config_swagger.h](src/config/config_swagger.h) - Swagger configuration interface definitions
+- [src/config/config_terminal.c](src/config/config_terminal.c) - Terminal configuration implementation
+- [src/config/config_terminal.h](src/config/config_terminal.h) - Terminal configuration interface definitions
+- [src/config/config_utils.c](src/config/config_utils.c) - Configuration utilities implementation
+- [src/config/config_utils.h](src/config/config_utils.h) - Configuration utilities interface definitions
+- [src/config/config_webserver.c](src/config/config_webserver.c) - Web server configuration implementation
+- [src/config/config_webserver.h](src/config/config_webserver.h) - Web server configuration interface definitions
+- [src/config/config_websocket.c](src/config/config_websocket.c) - WebSocket configuration implementation
+- [src/config/config_websocket.h](src/config/config_websocket.h) - WebSocket configuration interface definitions
 
 </details>
 
 <details>
 <summary><b>Launch System</b></summary>
 
-- [src/launch/launch.c](src/launch/launch.h) - Core launch system coordination
-- [src/launch/launch_api.c](src/launch/launch_api.h) - API subsystem launch
-- [src/launch/launch_database.c](src/launch/launch_database.h) - Database subsystem launch
-- [src/launch/launch_logging.c](src/launch/launch_logging.h) - Logging subsystem launch
-- [src/launch/launch_mail_relay.c](src/launch/launch_mail_relay.h) - Mail relay launch
-- [src/launch/launch_mdns_client.c](src/launch/launch_mdns_client.h) - mDNS client launch
-- [src/launch/launch_mdns_server.c](src/launch/launch_mdns_server.h) - mDNS server launch
-- [src/launch/launch_network.c](src/launch/launch_network.h) - Network subsystem launch
-- [src/launch/launch_notify.c](src/launch/launch_notify.h) - Notification subsystem launch
-- [src/launch/launch_oidc.c](src/launch/launch_oidc.h) - OIDC subsystem launch
-- [src/launch/launch_payload.c](src/launch/launch_payload.h) - Payload subsystem launch
-- [src/launch/launch_plan.c](src/launch/launch_plan.h) - Launch planning system
-- [src/launch/launch_print.c](src/launch/launch_print.h) - Print subsystem launch
-- [src/launch/launch_readiness.c](src/launch/launch_readiness.h) - Readiness checks
-- [src/launch/launch_registry.c](src/launch/launch_registry.h) - Registry subsystem launch
-- [src/launch/launch_resources.c](src/launch/launch_resources.h) - Resource subsystem launch
-- [src/launch/launch_review.c](src/launch/launch_review.h) - Launch review system
-- [src/launch/launch_swagger.c](src/launch/launch_swagger.h) - Swagger subsystem launch
-- [src/launch/launch_terminal.c](src/launch/launch_terminal.h) - Terminal subsystem launch
-- [src/launch/launch_threads.c](src/launch/launch_threads.h) - Thread subsystem launch
-- [src/launch/launch_webserver.c](src/launch/launch_webserver.h) - Web server launch
-- [src/launch/launch_websocket.c](src/launch/launch_websocket.h) - WebSocket subsystem launch
+- [src/launch/launch.c](src/launch/launch.c) - Core launch system coordination
+- [src/launch/launch.h](src/launch/launch.h) - Launch system interface definitions
+- [src/launch/launch_api.c](src/launch/launch_api.c) - API subsystem launch
+- [src/launch/launch_api.h](src/launch/launch_api.h) - API launch interface definitions
+- [src/launch/launch_database.c](src/launch/launch_database.c) - Database subsystem launch
+- [src/launch/launch_database.h](src/launch/launch_database.h) - Database launch interface definitions
+- [src/launch/launch_logging.c](src/launch/launch_logging.c) - Logging subsystem launch
+- [src/launch/launch_logging.h](src/launch/launch_logging.h) - Logging launch interface definitions
+- [src/launch/launch_mail_relay.c](src/launch/launch_mail_relay.c) - Mail relay launch
+- [src/launch/launch_mail_relay.h](src/launch/launch_mail_relay.h) - Mail relay launch interface definitions
+- [src/launch/launch_mdns_client.c](src/launch/launch_mdns_client.c) - mDNS client launch
+- [src/launch/launch_mdns_client.h](src/launch/launch_mdns_client.h) - mDNS client launch interface definitions
+- [src/launch/launch_mdns_server.c](src/launch/launch_mdns_server.c) - mDNS server launch
+- [src/launch/launch_mdns_server.h](src/launch/launch_mdns_server.h) - mDNS server launch interface definitions
+- [src/launch/launch_network.c](src/launch/launch_network.c) - Network subsystem launch
+- [src/launch/launch_network.h](src/launch/launch_network.h) - Network launch interface definitions
+- [src/launch/launch_notify.c](src/launch/launch_notify.c) - Notification subsystem launch
+- [src/launch/launch_notify.h](src/launch/launch_notify.h) - Notification launch interface definitions
+- [src/launch/launch_oidc.c](src/launch/launch_oidc.c) - OIDC subsystem launch
+- [src/launch/launch_oidc.h](src/launch/launch_oidc.h) - OIDC launch interface definitions
+- [src/launch/launch_payload.c](src/launch/launch_payload.c) - Payload subsystem launch
+- [src/launch/launch_payload.h](src/launch/launch_payload.h) - Payload launch interface definitions
+- [src/launch/launch_plan.c](src/launch/launch_plan.c) - Launch planning system
+- [src/launch/launch_print.c](src/launch/launch_print.c) - Print subsystem launch
+- [src/launch/launch_print.h](src/launch/launch_print.h) - Print launch interface definitions
+- [src/launch/launch_readiness.c](src/launch/launch_readiness.c) - Readiness checks
+- [src/launch/launch_registry.c](src/launch/launch_registry.c) - Registry subsystem launch
+- [src/launch/launch_registry.h](src/launch/launch_registry.h) - Registry launch interface definitions
+- [src/launch/launch_resources.c](src/launch/launch_resources.c) - Resource subsystem launch
+- [src/launch/launch_resources.h](src/launch/launch_resources.h) - Resource launch interface definitions
+- [src/launch/launch_review.c](src/launch/launch_review.c) - Launch review system
+- [src/launch/launch_swagger.c](src/launch/launch_swagger.c) - Swagger subsystem launch
+- [src/launch/launch_swagger.h](src/launch/launch_swagger.h) - Swagger launch interface definitions
+- [src/launch/launch_terminal.c](src/launch/launch_terminal.c) - Terminal subsystem launch
+- [src/launch/launch_terminal.h](src/launch/launch_terminal.h) - Terminal launch interface definitions
+- [src/launch/launch_threads.c](src/launch/launch_threads.c) - Thread subsystem launch
+- [src/launch/launch_threads.h](src/launch/launch_threads.h) - Thread launch interface definitions
+- [src/launch/launch_webserver.c](src/launch/launch_webserver.c) - Web server launch
+- [src/launch/launch_webserver.h](src/launch/launch_webserver.h) - Web server launch interface definitions
+- [src/launch/launch_websocket.c](src/launch/launch_websocket.c) - WebSocket subsystem launch
+- [src/launch/launch_websocket.h](src/launch/launch_websocket.h) - WebSocket launch interface definitions
 
 </details>
 
 <details>
 <summary><b>Landing System (Shutdown)</b></summary>
 
-- [src/landing/landing.c](src/landing/landing.h) - Core landing system coordination
-- [src/landing/landing_api.c](src/landing/landing_api.h) - API subsystem shutdown
-- [src/landing/landing_database.c](src/landing/landing_database.h) - Database subsystem shutdown
-- [src/landing/landing_logging.c](src/landing/landing_logging.h) - Logging subsystem shutdown
-- [src/landing/landing_mail_relay.c](src/landing/landing_mail_relay.h) - Mail relay shutdown
-- [src/landing/landing_mdns_client.c](src/landing/landing_mdns_client.h) - mDNS client shutdown
-- [src/landing/landing_mdns_server.c](src/landing/landing_mdns_server.h) - mDNS server shutdown
-- [src/landing/landing_network.c](src/landing/landing_network.h) - Network subsystem shutdown
-- [src/landing/landing_payload.c](src/landing/landing_payload.h) - Payload subsystem shutdown
-- [src/landing/landing_plan.c](src/landing/landing_plan.h) - Landing planning system
-- [src/landing/landing_print.c](src/landing/landing_print.h) - Print subsystem shutdown
-- [src/landing/landing_readiness.c](src/landing/landing_readiness.h) - Shutdown readiness checks
-- [src/landing/landing_registry.c](src/landing/landing_registry.h) - Registry subsystem shutdown
-- [src/landing/landing_review.c](src/landing/landing_review.h) - Landing review system
-- [src/landing/landing_swagger.c](src/landing/landing_swagger.h) - Swagger subsystem shutdown
-- [src/landing/landing_terminal.c](src/landing/landing_terminal.h) - Terminal subsystem shutdown
-- [src/landing/landing_threads.c](src/landing/landing_threads.h) - Thread subsystem shutdown
-- [src/landing/landing_webserver.c](src/landing/landing_webserver.h) - Web server shutdown
-- [src/landing/landing_websocket.c](src/landing/landing_websocket.h) - WebSocket subsystem shutdown
+- [src/landing/landing.c](src/landing/landing.c) - Core landing system coordination
+- [src/landing/landing.h](src/landing/landing.h) - Landing system interface definitions
+- [src/landing/landing_api.c](src/landing/landing_api.c) - API subsystem shutdown
+- [src/landing/landing_database.c](src/landing/landing_database.c) - Database subsystem shutdown
+- [src/landing/landing_logging.c](src/landing/landing_logging.c) - Logging subsystem shutdown
+- [src/landing/landing_mail_relay.c](src/landing/landing_mail_relay.c) - Mail relay shutdown
+- [src/landing/landing_mdns_client.c](src/landing/landing_mdns_client.c) - mDNS client shutdown
+- [src/landing/landing_mdns_server.c](src/landing/landing_mdns_server.c) - mDNS server shutdown
+- [src/landing/landing_network.c](src/landing/landing_network.c) - Network subsystem shutdown
+- [src/landing/landing_payload.c](src/landing/landing_payload.c) - Payload subsystem shutdown
+- [src/landing/landing_payload.h](src/landing/landing_payload.h) - Payload shutdown interface definitions
+- [src/landing/landing_plan.c](src/landing/landing_plan.c) - Landing planning system
+- [src/landing/landing_plan.h](src/landing/landing_plan.h) - Landing planning interface definitions
+- [src/landing/landing_print.c](src/landing/landing_print.c) - Print subsystem shutdown
+- [src/landing/landing_readiness.c](src/landing/landing_readiness.c) - Shutdown readiness checks
+- [src/landing/landing_readiness.h](src/landing/landing_readiness.h) - Readiness check interface definitions
+- [src/landing/landing_registry.c](src/landing/landing_registry.c) - Registry subsystem shutdown
+- [src/landing/landing_registry.h](src/landing/landing_registry.h) - Registry shutdown interface definitions
+- [src/landing/landing_review.c](src/landing/landing_review.c) - Landing review system
+- [src/landing/landing_review.h](src/landing/landing_review.h) - Landing review interface definitions
+- [src/landing/landing_swagger.c](src/landing/landing_swagger.c) - Swagger subsystem shutdown
+- [src/landing/landing_terminal.c](src/landing/landing_terminal.c) - Terminal subsystem shutdown
+- [src/landing/landing_threads.c](src/landing/landing_threads.c) - Thread subsystem shutdown
+- [src/landing/landing_threads.h](src/landing/landing_threads.h) - Thread shutdown interface definitions
+- [src/landing/landing_webserver.c](src/landing/landing_webserver.c) - Web server shutdown
+- [src/landing/landing_websocket.c](src/landing/landing_websocket.c) - WebSocket subsystem shutdown
 
 </details>
 
 <details>
 <summary><b>Logging System</b></summary>
 
-- [src/logging/logging.c](src/logging/logging.h) - Core logging system implementation
-- [src/logging/log_queue_manager.c](src/logging/log_queue_manager.h) - Thread-safe log message queue handler
+- [src/logging/logging.c](src/logging/logging.c) - Core logging system implementation
+- [src/logging/logging.h](src/logging/logging.h) - Logging system interface definitions
+- [src/logging/log_queue_manager.c](src/logging/log_queue_manager.c) - Thread-safe log message queue handler
+- [src/logging/log_queue_manager.h](src/logging/log_queue_manager.h) - Log queue manager interface definitions
 
 </details>
 
@@ -139,55 +185,68 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [src/network/network_linux.c](src/network/network_linux.c) - Linux network stack implementation
 - [src/mdns/mdns_server.h](src/mdns/mdns_server.h) - Service discovery interface definitions
 - [src/mdns/mdns_linux.c](src/mdns/mdns_linux.c) - Linux-specific mDNS implementation
-- [src/mdns/keys.c](src/mdns/keys.h) - mDNS cryptographic key management
+- [src/mdns/keys.c](src/mdns/keys.c) - mDNS cryptographic key management implementation
+- [src/mdns/keys.h](src/mdns/keys.h) - mDNS cryptographic key management interface definitions
 
 </details>
 
 <details>
 <summary><b>OIDC Authentication</b></summary>
 
-- [src/oidc/oidc_service.c](src/oidc/oidc_service.h) - Core OIDC service implementation
-- [src/oidc/oidc_clients.c](src/oidc/oidc_clients.h) - OIDC client management
-- [src/oidc/oidc_keys.c](src/oidc/oidc_keys.h) - OIDC cryptographic key handling
-- [src/oidc/oidc_tokens.c](src/oidc/oidc_tokens.h) - OIDC token management
-- [src/oidc/oidc_users.c](src/oidc/oidc_users.h) - OIDC user management
+- [src/oidc/oidc_service.c](src/oidc/oidc_service.c) - Core OIDC service implementation
+- [src/oidc/oidc_service.h](src/oidc/oidc_service.h) - OIDC service interface definitions
+- [src/oidc/oidc_clients.c](src/oidc/oidc_clients.c) - OIDC client management implementation
+- [src/oidc/oidc_clients.h](src/oidc/oidc_clients.h) - OIDC client management interface definitions
+- [src/oidc/oidc_keys.c](src/oidc/oidc_keys.c) - OIDC cryptographic key handling implementation
+- [src/oidc/oidc_keys.h](src/oidc/oidc_keys.h) - OIDC cryptographic key handling interface definitions
+- [src/oidc/oidc_tokens.c](src/oidc/oidc_tokens.c) - OIDC token management implementation
+- [src/oidc/oidc_tokens.h](src/oidc/oidc_tokens.h) - OIDC token management interface definitions
+- [src/oidc/oidc_users.c](src/oidc/oidc_users.c) - OIDC user management implementation
+- [src/oidc/oidc_users.h](src/oidc/oidc_users.h) - OIDC user management interface definitions
 
 </details>
 
 <details>
 <summary><b>Payload Management</b></summary>
 
-- [src/payload/payload.c](src/payload/payload.h) - Payload system implementation
+- [src/payload/payload.c](src/payload/payload.c) - Payload system implementation
+- [src/payload/payload.h](src/payload/payload.h) - Payload system interface definitions
 
 </details>
 
 <details>
 <summary><b>Print Management</b></summary>
 
-- [src/print/print_queue_manager.c](src/print/print_queue_manager.h) - 3D print job scheduling and management
-- [src/print/beryllium.c](src/print/beryllium.h) - G-code analysis functionality
+- [src/print/print_queue_manager.c](src/print/print_queue_manager.c) - 3D print job scheduling and management implementation
+- [src/print/print_queue_manager.h](src/print/print_queue_manager.h) - 3D print job scheduling and management interface definitions
+- [src/print/beryllium.c](src/print/beryllium.c) - G-code analysis functionality implementation
+- [src/print/beryllium.h](src/print/beryllium.h) - G-code analysis functionality interface definitions
 
 </details>
 
 <details>
 <summary><b>Queue System</b></summary>
 
-- [src/queue/queue.c](src/queue/queue.h) - Generic thread-safe queue implementation
+- [src/queue/queue.c](src/queue/queue.c) - Generic thread-safe queue implementation
+- [src/queue/queue.h](src/queue/queue.h) - Generic thread-safe queue interface definitions
 
 </details>
 
 <details>
 <summary><b>Registry System</b></summary>
 
-- [src/registry/registry.c](src/registry/registry.h) - Subsystem registry implementation
-- [src/registry/registry_integration.c](src/registry/registry_integration.h) - Registry integration utilities
+- [src/registry/registry.c](src/registry/registry.c) - Subsystem registry implementation
+- [src/registry/registry.h](src/registry/registry.h) - Subsystem registry interface definitions
+- [src/registry/registry_integration.c](src/registry/registry_integration.c) - Registry integration utilities implementation
+- [src/registry/registry_integration.h](src/registry/registry_integration.h) - Registry integration utilities interface definitions
 
 </details>
 
 <details>
 <summary><b>State Management</b></summary>
 
-- [src/state/state.c](src/state/state.h) - Global state management implementation
+- [src/state/state.c](src/state/state.c) - Global state management implementation
+- [src/state/state.h](src/state/state.h) - Global state management interface definitions
 - [src/state/state_types.h](src/state/state_types.h) - State type definitions
 
 </details>
@@ -195,44 +254,58 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 <details>
 <summary><b>Status System</b></summary>
 
-- [src/status/status.c](src/status/status.h) - Core status system
-- [src/status/status_core.c](src/status/status_core.h) - Status core functionality
-- [src/status/status_formatters.c](src/status/status_formatters.h) - Status output formatters
-- [src/status/status_process.c](src/status/status_process.h) - Process status monitoring
-- [src/status/status_system.c](src/status/status_system.h) - System status monitoring
+- [src/status/status.c](src/status/status.c) - Core status system implementation
+- [src/status/status.h](src/status/status.h) - Core status system interface definitions
+- [src/status/status_core.c](src/status/status_core.c) - Status core functionality implementation
+- [src/status/status_core.h](src/status/status_core.h) - Status core functionality interface definitions
+- [src/status/status_formatters.c](src/status/status_formatters.c) - Status output formatters implementation
+- [src/status/status_formatters.h](src/status/status_formatters.h) - Status output formatters interface definitions
+- [src/status/status_process.c](src/status/status_process.c) - Process status monitoring implementation
+- [src/status/status_process.h](src/status/status_process.h) - Process status monitoring interface definitions
+- [src/status/status_system.c](src/status/status_system.c) - System status monitoring implementation
+- [src/status/status_system.h](src/status/status_system.h) - System status monitoring interface definitions
 
 </details>
 
 <details>
 <summary><b>Swagger Documentation</b></summary>
 
-- [src/swagger/swagger.c](src/swagger/swagger.h) - Swagger API documentation system
+- [src/swagger/swagger.c](src/swagger/swagger.c) - Swagger API documentation system implementation
+- [src/swagger/swagger.h](src/swagger/swagger.h) - Swagger API documentation system interface definitions
 
 </details>
 
 <details>
 <summary><b>Thread Management</b></summary>
 
-- [src/threads/threads.c](src/threads/threads.h) - Thread management system
+- [src/threads/threads.c](src/threads/threads.c) - Thread management system implementation
+- [src/threads/threads.h](src/threads/threads.h) - Thread management system interface definitions
 
 </details>
 
 <details>
 <summary><b>Utility Functions</b></summary>
 
-- [src/utils/utils.c](src/utils/utils.h) - Common utility functions
-- [src/utils/utils_dependency.c](src/utils/utils_dependency.h) - Dependency management utilities
-- [src/utils/utils_logging.c](src/utils/utils_logging.h) - Extended logging utilities
-- [src/utils/utils_queue.c](src/utils/utils_queue.h) - Queue manipulation utilities
-- [src/utils/utils_time.c](src/utils/utils_time.h) - Time handling utilities
+- [src/utils/utils.c](src/utils/utils.c) - Common utility functions implementation
+- [src/utils/utils.h](src/utils/utils.h) - Common utility functions interface definitions
+- [src/utils/utils_dependency.c](src/utils/utils_dependency.c) - Dependency management utilities implementation
+- [src/utils/utils_dependency.h](src/utils/utils_dependency.h) - Dependency management utilities interface definitions
+- [src/utils/utils_logging.c](src/utils/utils_logging.c) - Extended logging utilities implementation
+- [src/utils/utils_logging.h](src/utils/utils_logging.h) - Extended logging utilities interface definitions
+- [src/utils/utils_queue.c](src/utils/utils_queue.c) - Queue manipulation utilities implementation
+- [src/utils/utils_queue.h](src/utils/utils_queue.h) - Queue manipulation utilities interface definitions
+- [src/utils/utils_time.c](src/utils/utils_time.c) - Time handling utilities implementation
+- [src/utils/utils_time.h](src/utils/utils_time.h) - Time handling utilities interface definitions
 
 </details>
 
 <details>
 <summary><b>Web Server</b></summary>
 
-- [src/webserver/web_server_core.c](src/webserver/web_server_core.h) - Core HTTP server implementation
-- [src/webserver/web_server_compression.c](src/webserver/web_server_compression.h) - HTTP compression support
+- [src/webserver/web_server_core.c](src/webserver/web_server_core.c) - Core HTTP server implementation
+- [src/webserver/web_server_core.h](src/webserver/web_server_core.h) - Core HTTP server interface definitions
+- [src/webserver/web_server_compression.c](src/webserver/web_server_compression.c) - HTTP compression support implementation
+- [src/webserver/web_server_compression.h](src/webserver/web_server_compression.h) - HTTP compression support interface definitions
 - [src/webserver/web_server.h](src/webserver/web_server.h) - Web server interface
 
 </details>
@@ -240,7 +313,8 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 <details>
 <summary><b>WebSocket Server</b></summary>
 
-- [src/websocket/websocket_server.c](src/websocket/websocket_server.h) - WebSocket server core implementation
+- [src/websocket/websocket_server.c](src/websocket/websocket_server.c) - WebSocket server core implementation
+- [src/websocket/websocket_server.h](src/websocket/websocket_server.h) - WebSocket server core interface definitions
 - [src/websocket/websocket_server_internal.h](src/websocket/websocket_server_internal.h) - Internal WebSocket definitions
 - [src/websocket/websocket_server_auth.c](src/websocket/websocket_server_auth.c) - WebSocket authentication system
 - [src/websocket/websocket_server_connection.c](src/websocket/websocket_server_connection.c) - Connection lifecycle handler
@@ -541,12 +615,14 @@ hydrogen/
 The Hydrogen project follows a modular architecture with clear separation of concerns:
 
 ### Launch/Landing System
+
 - **Launch**: Systematic startup of all subsystems in dependency order
 - **Landing**: Graceful shutdown in reverse order
 - **Registry**: Central coordination of all subsystems
 - **Phases**: Readiness → Plan → Execute → Review
 
 ### Subsystem Order (from RECIPE.md)
+
 1. Registry - Central subsystem coordination
 2. Payload - Payload management system
 3. Threads - Thread management and monitoring
@@ -567,6 +643,7 @@ The Hydrogen project follows a modular architecture with clear separation of con
 18. Notify - Notification system
 
 ### Key Features
+
 - **Thread Safety**: All components designed for multi-threaded operation
 - **Configuration**: JSON-based configuration with robust fallback handling
 - **Logging**: Comprehensive logging with multiple levels and thread-safe queues
@@ -575,6 +652,7 @@ The Hydrogen project follows a modular architecture with clear separation of con
 - **Security**: OIDC authentication, encrypted payloads, and secure key management
 
 ### Build Targets
+
 - `trial`: Required clean build with full test suite (must pass)
 - `debug`: Debug build with symbols
 - `perf`: Performance-optimized build
