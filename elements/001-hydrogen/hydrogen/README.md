@@ -36,271 +36,48 @@ Hydrogen is currently designed for technical users who:
 - Basic understanding of WebSocket and REST API concepts
 - Command-line proficiency for configuration and maintenance
 
-## Documentation
+## Table of Contents
 
-Complete, detailed documentation is available in the `docs` directory, organized by topic:
+### Core Documentation
 
-- [**Main Documentation**](docs/README.md) - Start here for a comprehensive overview
-- [**Developer Onboarding Guide**](docs/developer_onboarding.md) - Visual architecture overview and code navigation to expedite project understanding
+- [**Project Structure**](STRUCTURE.md) - Complete file organization and architecture overview
+- [**Build Environment**](SETUP.md) - Build and runtime requirements, environment setup
+- [**Development Guide**](RECIPE.md) - Development guide optimized for AI assistance
+- [**Release Notes**](RELEASES.md) - Detailed version history and changes
+- [**Secrets Management**](SECRETS.md) - Environment variables and security configuration
+- [**Site Map**](SITEMAP.md) - Index to all Markdown files in this repository
+
+### Main Documentation
+
+- [**Documentation Hub**](docs/README.md) - Start here for comprehensive overview
+- [**Developer Onboarding**](docs/developer_onboarding.md) - Visual architecture overview and code navigation
 - [**Quick Start Guide**](docs/guides/quick-start.md) - Get up and running quickly
-- [**Release Notes**](RELEASES.md) - Detailed version history
 - [**AI Integration**](docs/ai_integration.md) - AI capabilities and implementations
 
-## Additional Documentation
+### Technical References
 
-The following documentation files are available outside of the main docs/ directory:
+- [**API Documentation**](docs/api.md) - REST API reference and implementation details
+- [**Configuration Guide**](docs/configuration.md) - System configuration and settings
+- [**Data Structures**](docs/data_structures.md) - Core data structures and interfaces
+- [**Testing Framework**](docs/testing.md) - Testing documentation and procedures
 
-- [README.md](README.md) - This file, providing project overview and navigation
-- [RECIPE.md](RECIPE.md) - Development guide optimized for AI assistance
-- [RELEASES.md](RELEASES.md) - Version history and release notes
-- [SECRETS.md](SECRETS.md) - Secrets management using environment variables
-- [SITEMAP.md](SITEMAP.md) - Index to all of the Markdown files in this repository
-- [src/api/README.md](src/api/README.md) - API implementation details
-- [payload/README.md](payload/README.md) - Payload system with encryption
-- [tests/README.md](tests/README.md) - Testing framework documentation
-- [oidc-client-examples/README.md](oidc-client-examples/README.md) - OIDC example implementations
+### Architecture & Design
 
-## Files
+- [**Service Architecture**](docs/service.md) - Service management and lifecycle
+- [**Shutdown Architecture**](docs/shutdown_architecture.md) - Graceful shutdown procedures
+- [**Thread Monitoring**](docs/thread_monitoring.md) - Thread management and monitoring
+- [**WebSocket Implementation**](docs/web_socket.md) - WebSocket server architecture
+- [**mDNS Server**](docs/mdns_server.md) - Service discovery implementation
+- [**Print Queue System**](docs/print_queue.md) - 3D printing queue management
+- [**OIDC Integration**](docs/oidc_integration.md) - OpenID Connect authentication
+- [**System Information**](docs/system_info.md) - System monitoring and reporting
 
-<details>
-<summary><b>Project Folder</b></summary>
+### Examples & Implementation
 
-- [hydrogen.json](hydrogen.json) Configuration file for the Hydrogen server
-- [Makefile](Makefile) Build instructions for compiling the Hydrogen program
-- [src/hydrogen.c](src/hydrogen.c) Main entry point and core system initialization
-
-</details>
-<details>
-<summary><b>API Components</b></summary>
-
-- [src/api/system/system_service.c](src/api/system/system_service.c) System service implementation
-- [src/api/system/system_service.h](src/api/system/system_service.h) System service interface
-
-</details>
-<details>
-<summary><b>Configuration Management</b></summary>
-
-- [src/config/config.c](src/config/config.c) Handles loading and managing configuration settings
-- [src/config/config.h](src/config/config.h) Defines configuration-related structures and constants
-- [src/config/keys.c](src/config/keys.c) Implements cryptographic key generation and management
-- [src/config/keys.h](src/config/keys.h) Header file for cryptographic operations
-
-</details>
-<details>
-<summary><b>Logging System</b></summary>
-
-- [src/logging/logging.c](src/logging/logging.c) Core logging system implementation
-- [src/logging/logging.h](src/logging/logging.h) Logging interface and configuration
-- [src/logging/log_queue_manager.c](src/logging/log_queue_manager.c) Thread-safe log message queue handler
-- [src/logging/log_queue_manager.h](src/logging/log_queue_manager.h) Log queue management interface
-
-</details>
-<details>
-<summary><b>Network Services</b></summary>
-
-- [src/mdns/mdns_server.h](src/mdns/mdns_server.h) Service discovery interface definitions
-- [src/mdns/mdns_linux.c](src/mdns/mdns_linux.c) Linux-specific mDNS implementation
-- [src/network/network.h](src/network/network.h) Network interface abstractions
-- [src/network/network_linux.c](src/network/network_linux.c) Linux network stack implementation
-
-</details>
-<details>
-<summary><b>Print Management</b></summary>
-
-- [src/print/beryllium.c](src/print/beryllium.c) Implements G-code analysis functionality
-- [src/print/beryllium.h](src/print/beryllium.h) Header file for G-code analysis declarations
-- [src/print/print_queue_manager.c](src/print/print_queue_manager.c) 3D print job scheduling and management
-- [src/print/print_queue_manager.h](src/print/print_queue_manager.h) Print queue interface
-
-</details>
-<details>
-<summary><b>Queue System</b></summary>
-
-- [src/queue/queue.c](src/queue/queue.c) Generic thread-safe queue implementation
-- [src/queue/queue.h](src/queue/queue.h) Queue data structure interface
-
-</details>
-<details>
-<summary><b>State Management</b></summary>
-
-- [src/state/shutdown/shutdown.c](src/state/shutdown/shutdown.c) Graceful system shutdown coordination
-- [src/state/shutdown/shutdown.h](src/state/shutdown/shutdown.h) Shutdown procedure definitions
-- [src/state/startup/startup.c](src/state/startup/startup.c) System initialization and service startup
-- [src/state/startup/startup.h](src/state/startup/startup.h) Startup sequence definitions
-- [src/state/state.c](src/state/state.c) Global state management implementation
-- [src/state/state.h](src/state/state.h) State tracking interface
-
-</details>
-<details>
-<summary><b>Tests</b></summary>
-
-- [tests/support_analyze_stuck_threads.sh](tests/support_analyze_stuck_threads.sh) Script for analyzing thread deadlocks
-- [tests/test_all.sh](tests/test_all.sh) Script for executing test suites
-- [tests/test_startup_shutdown.sh](tests/test_startup_shutdown.sh) Tests for startup/shutdown procedures
-- [tests/support_monitor_resources.sh](tests/support_monitor_resources.sh) Script for monitoring system resource usage
-- [tests/README.md](tests/README.md) Testing documentation
-
-</details>
-<details>
-<summary><b>Utility Functions</b></summary>
-
-- [src/utils/utils.c](src/utils/utils.c) Common utility functions
-- [src/utils/utils.h](src/utils/utils.h) Utility function declarations
-- [src/utils/utils_logging.c](src/utils/utils_logging.c) Extended logging utilities
-- [src/utils/utils_logging.h](src/utils/utils_logging.h) Logging utility interfaces
-- [src/utils/utils_queue.c](src/utils/utils_queue.c) Queue manipulation utilities
-- [src/utils/utils_queue.h](src/utils/utils_queue.h) Queue utility interfaces
-- [src/utils/utils_status.c](src/utils/utils_status.c) Status reporting utilities
-- [src/utils/utils_status.h](src/utils/utils_status.h) Status utility interfaces
-- [src/utils/utils_threads.c](src/utils/utils_threads.c) Thread management utilities
-- [src/utils/utils_threads.h](src/utils/utils_threads.h) Threading utility interfaces
-- [src/utils/utils_time.c](src/utils/utils_time.c) Time handling utilities
-- [src/utils/utils_time.h](src/utils/utils_time.h) Time utility interfaces
-
-</details>
-<details>
-<summary><b>Web Server</b></summary>
-
-- [src/webserver/web_server_core.c](src/webserver/web_server_core.c) Core HTTP server implementation
-- [src/webserver/web_server_core.h](src/webserver/web_server_core.h) HTTP server interface
-- [src/webserver/web_server_print.h](src/webserver/web_server_print.h) 3D printing endpoint definitions
-- [src/webserver/web_server_request.c](src/webserver/web_server_request.c) HTTP request handling
-- [src/webserver/web_server_request.h](src/webserver/web_server_request.h) Request processing interface
-- [src/webserver/web_server_upload.c](src/webserver/web_server_upload.c) File upload handling
-- [src/webserver/web_server_upload.h](src/webserver/web_server_upload.h) Upload processing interface
-
-</details>
-<details>
-<summary><b>WebSocket Server</b></summary>
-
-- [src/websocket/websocket_server.c](src/websocket/websocket_server.c) WebSocket server core implementation
-- [src/websocket/websocket_server.h](src/websocket/websocket_server.h) WebSocket server public interface
-- [src/websocket/websocket_server_internal.h](src/websocket/websocket_server_internal.h) Internal WebSocket definitions
-- [src/websocket/websocket_server_auth.c](src/websocket/websocket_server_auth.c) WebSocket authentication system
-- [src/websocket/websocket_server_connection.c](src/websocket/websocket_server_connection.c) Connection lifecycle handler
-- [src/websocket/websocket_server_context.c](src/websocket/websocket_server_context.c) Server context management
-- [src/websocket/websocket_server_dispatch.c](src/websocket/websocket_server_dispatch.c) Message routing system
-- [src/websocket/websocket_server_message.c](src/websocket/websocket_server_message.c) Message processing engine
-- [src/websocket/websocket_server_status.c](src/websocket/websocket_server_status.c) Status reporting implementation
-
-</details>
-<details>
-<!-- AI-ASSISTANT-ATTENTION: OIDC client examples require careful review of docs/oidc_integration.md and docs/reference/oidc_architecture.md first -->
-<summary><b>OIDC Client Examples</b></summary>
-
-- [oidc-client-examples/README.md](oidc-client-examples/README.md) Overview of OIDC example implementations
-- [oidc-client-examples/C/auth_code_flow.c](oidc-client-examples/C/auth_code_flow.c) Authorization Code flow example in C
-- [oidc-client-examples/C/client_credentials.c](oidc-client-examples/C/client_credentials.c) Client Credentials flow example in C
-- [oidc-client-examples/C/password_flow.c](oidc-client-examples/C/password_flow.c) Resource Owner Password flow example in C
-- [oidc-client-examples/C/Makefile](oidc-client-examples/C/Makefile) Makefile for building C examples
-- [oidc-client-examples/JavaScript/auth_code_flow.html](oidc-client-examples/JavaScript/auth_code_flow.html) Authorization Code flow example in JavaScript
-
-</details>
-
-## System Dependencies
-
-### Build-time Dependencies
-
-These tools are required when building or developing with the Hydrogen codebase:
-
-- C compiler and build tools (gcc and friends)
-- [curl](https://curl.se/) - Data transfer tool for downloading dependencies
-- [tar](https://www.gnu.org/software/tar/) - Archiving utility (typically part of core utils)
-- [wget](https://www.gnu.org/software/wget/) - Alternative network downloader
-- [brotli](https://github.com/google/brotli) - Modern compression algorithm
-- [jq](https://stedolan.github.io/jq/) - Command-line JSON processor
-- [upx](https://upx.github.io/) - Executable compressor for release builds
-- [cloc](https://github.com/AlDanial/cloc) - Count Lines of code
-- [markdownlint](https://github.com/DavidAnson/markdownlint) - Markdown file linting and style checking
-- [jsonlint](https://github.com/zaach/jsonlint) - JSON file validation and formatting
-- [cppcheck](https://cppcheck.sourceforge.io/) - Static analysis for C/C++ code
-- [eslint](https://eslint.org/) - JavaScript code linting and style checking
-- [stylelint](https://stylelint.io/) - CSS/SCSS linting and style checking
-- [htmlhint](https://htmlhint.com/) - HTML code linting and validation
-
-### Example Ubuntu Build Environment
-
-```bash
-sudo apt update
-sudo apt install -y build-essential wget curl jq nodejs npm cloc libjansson-dev libmicrohttpd-dev libssl-dev libwebsockets-dev libbrotli-dev upx-ucl valgrind cppcheck eslint
-npm install -g markdownlint jsonlint stylelint htmlhint
-```
-
-NOTE: Latest NodeJS should be used (eg. Node 24)
-
-With that all installed, perform the following steps.
-
-- Generate PAYLOAD_LOCK and PAYLOAD_KEY (see [SECRETS.md](SECRETS.md) for setup instructions)
-- Run `swagger_generate.sh` and `payroll_generate.sh` in the payloads directory
-- Run `make trial` in the `src` folder to perform a trial build
-- Run `tests_00_all.sh` in the `tests` folder to build and test the entire project
-
-### Runtime Dependencies
-
-These libraries are required for Hydrogen to run:
-
-- [pthreads](https://pubs.opengroup.org/onlinepubs/7908799/xsh/pthread.h.html) - POSIX thread support for concurrent operations
-- [jansson](https://github.com/akheron/jansson) - Efficient and memory-safe JSON parsing/generation
-- [microhttpd](https://www.gnu.org/software/libmicrohttpd/) - Lightweight embedded HTTP server
-- [libwebsockets](https://github.com/warmcat/libwebsockets) - Full-duplex WebSocket communication
-- [OpenSSL](https://www.openssl.org/) (libssl/libcrypto) - Industry-standard encryption and .security
-- [libm](https://www.gnu.org/software/libc/manual/html_node/Mathematics.html) - Mathematical operations support
-- [libbrotlidec](https://github.com/google/brotli) - Brotli decompression library
-- [libtar](https://github.com/tklauser/libtar) - TAR file manipulation
-
-### Environment Variables
-
-Environment variables provide a flexible way to configure Hydrogen without modifying its configuration files. Any configuration value can be substituted with an environment variable using the `${env.VARIABLE_NAME}` syntax, making it easy to adapt settings across different environments. The following variables are used in the default configuration:
-
-**Configuration File Location:**
-
-- `HYDROGEN_CONFIG` - Override the default configuration file location
-
-**Server Settings:**
-
-- `PAYLOAD_KEY` - Key used for encrypting payload data (see [SECRETS.md](SECRETS.md) for setup instructions)
-
-**Database Connections:**
-For each database (Log, OIDC, Acuranzo, Helium, Canvas), the following variables are used:
-
-- `*_DB_HOST` - Database server hostname
-- `*_DB_PORT` - Database server port
-- `*_DB_NAME` - Database name
-- `*_DB_USER` - Database username
-- `*_DB_PASS` - Database password
-
-Example for Log database:
-
-- `LOG_DB_HOST` - Log database server hostname
-- `LOG_DB_PORT` - Log database server port
-- `LOG_DB_NAME` - Log database name
-- `LOG_DB_USER` - Log database username
-- `LOG_DB_PASS` - Log database password
-
-**Mail Relay Configuration:**
-For each SMTP server (up to 2 servers supported):
-
-- `SMTP_SERVER1_HOST` - Primary SMTP server hostname
-- `SMTP_SERVER1_PORT` - Primary SMTP server port
-- `SMTP_SERVER1_USER` - Primary SMTP server username
-- `SMTP_SERVER1_PASS` - Primary SMTP server password
-- `SMTP_SERVER2_*` - Same variables for secondary SMTP server
-
-To use these variables in the configuration file, use the format `${env.VARIABLE_NAME}`. For example:
-
-```json
-{
-    "Server": {
-        "PayloadKey": "${env.PAYLOAD_KEY}"
-    },
-    "Databases": {
-        "Log": {
-            "Host": "${env.LOG_DB_HOST}",
-            "Port": "${env.LOG_DB_PORT}"
-        }
-    }
-}
-```
+- [**Examples Overview**](examples/README.md) - Code examples and implementations
+- [**API Implementation**](src/api/README.md) - API implementation details
+- [**Payload System**](payloads/README.md) - Payload system with encryption
+- [**Testing Suite**](tests/README.md) - Test framework and procedures
 
 ## Latest Test Results
 
@@ -359,4 +136,3 @@ make                             2             58            124            285
 -------------------------------------------------------------------------------
 SUM:                           431          12078          12317          57200
 -------------------------------------------------------------------------------
-```

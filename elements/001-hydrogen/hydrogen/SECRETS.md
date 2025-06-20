@@ -168,7 +168,7 @@ All these secrets will follow the same environment variable pattern documented h
 
 ## References and Resources
 
-- [README.md](./README.md): Main project documentation
-- [payload/README.md](./payload/README.md): Payload system details
+- [README.md](README.md): Main project documentation
+- [payload/README.md](payloads/README.md): Payload system details
 - [OpenSSL Documentation](https://www.openssl.org/docs/)
 - [RSA and AES Hybrid Encryption](https://en.wikipedia.org/wiki/Hybrid_cryptosystem)
