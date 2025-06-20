@@ -1,174 +1,137 @@
-# Secrets Management in Hydrogen
+# Welcome to Secrets Management in Hydrogen
 
-This document explains how secrets are managed in the Hydrogen project using environment variables, with a particular focus on the encrypted payload system.
+Hello! If you're new to the Hydrogen project or not very tech-savvy, don't worry. This guide is designed to help you understand and set up the essential security components for Hydrogen in a simple, step-by-step way. We're going to focus on setting up two important pieces: **PAYLOAD_LOCK** and **PAYLOAD_KEY**. These help protect sensitive information in our project. Let's get started!
 
-## Environment Variables for Secrets Management
+## What Are Secrets and Why Do They Matter?
 
-Hydrogen uses environment variables to manage sensitive configuration values such as encryption keys, authentication tokens, and other secrets. This approach provides several advantages:
+In the Hydrogen project, "secrets" are like special keys or passwords that keep sensitive information safe. Instead of writing these secrets directly into our code (which could be risky), we store them in a way that only the right people or systems can access them. This guide will walk you through setting up your secrets so that Hydrogen can work securely.
 
-1. **Security**: Secrets aren't stored in the codebase or configuration files
-2. **Separation of concerns**: Code and configuration are separate from sensitive credentials
-3. **Environment-specific values**: Different environments (development, testing, production) can use different secrets
-4. **Compatibility**: Works across different platforms and deployment methods
+## Step-by-Step Guide to Setting Up Your Secrets
 
-### Using Environment Variables in Bash and Zsh
+We're going to create and set up two secrets called **PAYLOAD_LOCK** and **PAYLOAD_KEY**. Think of PAYLOAD_LOCK as a lock that secures data when we build the project, and PAYLOAD_KEY as the key that unlocks it when the project runs. Here's how to do it:
 
-To verify your environment variables are set correctly, use the test script:
+### Step 1: Make Sure You Have the Right Tools
+
+To create these secrets, you'll need a tool called **OpenSSL**. It's like a Swiss Army knife for security tasks. Most computers running Linux or macOS already have it installed. If you're on Windows, you might need to install it (you can download it from a trusted source or use a tool like Git Bash which includes OpenSSL).
+
+To check if you have OpenSSL, open a terminal or command prompt and type:
 
 ```bash
-# Run the environment variable test
-./tests/test_12_env_payload.sh
+openssl version
 ```
 
-This script ([tests/test_12_env_payload.sh](tests/test_12_env_payload.sh)) validates that:
+If it shows a version number, you're good to go! If not, ask a friend or search online for "install OpenSSL on [your operating system]."
 
-1. Required environment variables (PAYLOAD_KEY and PAYLOAD_LOCK) are present
-2. The keys are valid RSA key pairs in the correct format
+### Step 2: Create Your Secret Keys
 
-To set environment variables in Bash or Zsh:
+Now, let's create the two keys using OpenSSL. Open your terminal or command prompt and follow these steps carefully. We'll do this in a temporary folder to keep things organized.
 
-**Temporary (current session only):**
+1. **Create a temporary folder to store your keys:**
 
-```bash
-# Simple assignment
-export PAYLOAD_KEY="your-secret-key-here"
+   ```bash
+   mkdir temp_keys
+   cd temp_keys
+   ```
 
-# Multi-line values
-export PAYLOAD_KEY=$(cat <<EOF
------BEGIN RSA PRIVATE KEY-----
-Example
-RSA
-Key 
-Here
------END RSA PRIVATE KEY-----
-EOF
-)
+2. **Generate a private key (this is PAYLOAD_KEY):**
 
-# Reading from a file
-export PAYLOAD_KEY=$(cat /path/to/private_key.pem)
-```
+   ```bash
+   openssl genrsa -out private_key.pem 2048
+   ```
 
-**Persistent (add to shell profile):**
+   This creates a file called `private_key.pem` which holds your private key. Keep this safe—it's like the key to your house!
 
-For Bash, add to `~/.bashrc` or `~/.bash_profile`:
+3. **Generate a public key (this is PAYLOAD_LOCK):**
 
-```bash
-export PAYLOAD_KEY="your-secret-key-here"
-```
+   ```bash
+   openssl rsa -in private_key.pem -pubout -out public_key.pem
+   ```
 
-For Zsh, add to `~/.zshrc`:
+   This creates a file called `public_key.pem` which holds your public key. This is like the lock that matches your key.
+
+### Step 3: Set Up Your Secrets for Hydrogen
+
+Now that you have your keys, we need to tell Hydrogen where to find them. We do this by setting "environment variables"—think of them as little notes your computer keeps to remember important information.
+
+Here’s how to set them for the current session (they’ll disappear when you restart your computer):
 
 ```bash
-export PAYLOAD_KEY="your-secret-key-here"
-```
-
-**Applying changes:**
-
-```bash
-# For current shell session
-source ~/.bashrc   # or ~/.zshrc
-
-# For new shell sessions, changes take effect automatically
-```
-
-**For a single command:**
-
-```bash
-PAYLOAD_KEY="your-secret-key-here" ./hydrogen
-```
-
-## Encrypted Payload System
-
-The Hydrogen project uses an RSA+AES hybrid encryption system to secure embedded payloads. This system requires two environment variables:
-
-1. **PAYLOAD_LOCK**: The RSA public key used during build to encrypt payload contents
-2. **PAYLOAD_KEY**: The RSA private key used during runtime to decrypt payload contents
-
-### Generating Keys for the Payload System
-
-Generate a suitable RSA key pair using OpenSSL:
-
-```bash
-# Generate a 2048-bit RSA private key
-openssl genrsa -out private_key.pem 2048
-
-# Extract the public key
-openssl rsa -in private_key.pem -pubout -out public_key.pem
-
-# Set environment variables
 export PAYLOAD_LOCK=$(cat public_key.pem | base64 -w 0)
 export PAYLOAD_KEY=$(cat private_key.pem | base64 -w 0)
 ```
 
-### How the Payload Encryption Works
+What does this do? It reads the contents of your key files, turns them into a format Hydrogen can understand, and stores them in PAYLOAD_LOCK and PAYLOAD_KEY.
 
-1. During build time:
-   - A random AES-256 key is generated for payload encryption
-   - A random 16-byte IV is generated for AES-CBC mode
-   - The payload (currently SwaggerUI) is compressed with Brotli
-   - The compressed payload is encrypted with AES-256-CBC using the random key and IV
-   - The AES key is encrypted with the RSA public key (PAYLOAD_LOCK)
-   - The components are combined into a single file:
+If you want these settings to stick around even after restarting your computer, you’ll need to add them to a special file:
 
-     ```key
-     [key_size(4 bytes)] + [encrypted_aes_key] + [iv(16 bytes)] + [encrypted_payload]
-     ```
+- **For Bash users** (common on Linux or Git Bash on Windows), open `~/.bashrc` or `~/.bash_profile` in a text editor and add those two `export` lines.
+- **For Zsh users** (common on macOS), open `~/.zshrc` in a text editor and add the lines.
 
-   - This file is appended to the executable with a marker
+After adding them, run `source ~/.bashrc` (or `~/.zshrc`) to apply the changes.
 
-2. During runtime:
-   - The application extracts the encrypted data from itself
-   - The key size is read from the first 4 bytes
-   - The encrypted AES key is extracted and decrypted using PAYLOAD_KEY
-   - The 16-byte IV is extracted
-   - The encrypted payload is decrypted using AES-256-CBC with the decrypted key and IV
-   - The decrypted payload (Brotli-compressed tar) is decompressed and processed
+### Step 4: Test That Everything Works
 
-### Encryption Details
+Hydrogen comes with a handy test to make sure your secrets are set up correctly. Run this command:
 
-- **AES Configuration**:
-  - Algorithm: AES-256-CBC
-  - Key: 256-bit random key
-  - IV: 16-byte random initialization vector
-  - Padding: PKCS7
-  - Implementation: OpenSSL EVP API
+```bash
+./tests/test_12_env_payload.sh
+```
 
-- **RSA Configuration**:
-  - Key Size: 2048 bits
-  - Padding: PKCS1
-  - Implementation: OpenSSL EVP API
+If everything is set up right, you’ll see a success message. If something’s wrong, it will tell you what needs fixing. Don’t hesitate to ask for help if you’re stuck!
 
-- **Compression**:
-  - Algorithm: Brotli
-  - Quality: Maximum (11)
-  - Window Size: 24 (16MB)
+### Step 5: Clean Up
 
-This approach provides strong security while maintaining good performance, as AES is efficient for large data while RSA securely protects the smaller AES key.
+Once you’ve set up your secrets, you don’t need the temporary files anymore. You can delete the `temp_keys` folder to keep things tidy:
 
-## Future Secret Management
+```bash
+cd ..
+rm -rf temp_keys
+```
 
-The Hydrogen project is expected to incorporate additional secrets for various subsystems:
+## Keeping Your Secrets Safe
 
-### Terminal Subsystem
+Remember, your PAYLOAD_KEY (the private key) is very important. Don’t share it with anyone or commit it to version control (like Git). If you think it’s been compromised, generate a new pair of keys by following the steps above again.
 
-The Terminal feature may require authentication tokens or other credentials that will be managed through environment variables such as:
+## For Curious Minds: How Does This Work Behind the Scenes?
 
-- `TERMINAL_AUTH_TOKEN`
-- `TERMINAL_SESSION_SECRET`
+If you’re interested in the technical details of how Hydrogen uses these secrets to protect data, we’ve got a section just for you. This part is optional and a bit more advanced, so feel free to skip it if you’re just getting started.
 
-### OIDC Integration
+### The Magic of Encryption in Hydrogen
 
-The OpenID Connect functionality will require various secrets:
+Hydrogen uses a clever system to keep data safe, combining two types of security: **RSA** and **AES**. Here’s a simple breakdown:
 
-- `OIDC_CLIENT_SECRET`
-- `OIDC_SIGNING_KEY`
-- `OIDC_ENCRYPTION_KEY`
+- When we build Hydrogen, PAYLOAD_LOCK (the public key) helps lock up sensitive data so no one can peek at it.
+- When Hydrogen runs, PAYLOAD_KEY (the private key) unlocks that data so the program can use it.
 
-All these secrets will follow the same environment variable pattern documented here.
+Here’s a more detailed look at the process:
 
-## References and Resources
+1. **During Build Time:**
+   - A random secret code (AES key) is created just for this build.
+   - The data we want to protect (like a web interface) is squeezed down small (compressed) and then locked with this AES key.
+   - The AES key itself is locked with PAYLOAD_LOCK, so even it is protected.
+   - Everything is bundled together and added to the Hydrogen program.
 
-- [README.md](README.md): Main project documentation
-- [payload/README.md](payloads/README.md): Payload system details
-- [OpenSSL Documentation](https://www.openssl.org/docs/)
-- [RSA and AES Hybrid Encryption](https://en.wikipedia.org/wiki/Hybrid_cryptosystem)
+2. **During Run Time:**
+   - Hydrogen finds the locked data inside itself.
+   - It uses PAYLOAD_KEY to unlock the AES key.
+   - With the AES key, it unlocks the actual data, expands it, and uses it.
+
+This double-locking system means that even if someone gets a piece of the puzzle, they can’t see the whole picture without PAYLOAD_KEY.
+
+### Technical Specs (For Experts)
+
+- **AES Details**: Uses AES-256-CBC, a strong encryption method with a random 256-bit key and a 16-byte random start value (IV). It’s like a super-secure safe.
+- **RSA Details**: Uses 2048-bit keys with PKCS1 padding, a trusted way to protect smaller pieces of data like the AES key.
+- **Compression**: Data is squeezed with Brotli at maximum quality to make it smaller before locking.
+
+## What’s Next for Secrets in Hydrogen?
+
+As Hydrogen grows, we’ll add more secrets for different features, like authentication for a terminal system or secure logins with OpenID Connect. They’ll all follow the same idea of using environment variables to keep things safe.
+
+## Need More Help or Info?
+
+- Check out [README.md](README.md) for general info on Hydrogen.
+- Look at [payloads/README.md](payloads/README.md) for more on the payload system.
+- Visit the [OpenSSL Documentation](https://www.openssl.org/docs/) if you’re curious about the tools we used.
+
+If you have questions or run into trouble, don’t hesitate to ask someone on the team or look for help online. We’re all in this together!

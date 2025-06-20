@@ -110,19 +110,32 @@ To add a new endpoint:
 4. Implement the handler function in the implementation file
 5. Register the endpoint in the appropriate service initialization function
 
-See the [Developer Onboarding Guide](../../docs/developer_onboarding.md) for more details on the API implementation pattern. For information about the payload system and Swagger integration, see [Payloads README](../../payloads/README.md).
+See the [Developer Onboarding Guide](/docs/developer_onboarding.md) for more details on the API implementation pattern. For information about the payload system and Swagger integration, see [Payloads README](/payloads/README.md).
 
 ## Documentation
 
 For comprehensive API documentation, refer to:
 
-- [API Documentation](../../docs/api.md) - Complete API reference
-- [System API Documentation](../../docs/api/system/system_info.md) - System endpoint details
-- [OIDC API Documentation](../../docs/api/oidc/oidc_endpoints.md) - OIDC endpoint details
+- [API Documentation](/docs/api.md) - Complete API reference
 
 ## Testing
 
 API endpoints can be tested using:
 
-- The [test_system_endpoints.sh](../../tests/test_system_endpoints.sh) script for system endpoints
-- OIDC client examples in the [oidc-client-examples](../../oidc-client-examples/) directory for OIDC endpoints
+### Example API Call
+
+To quickly test the `/api/system/health` endpoint, you can use `curl` from the command line:
+
+```bash
+curl -X GET "http://your-hydrogen-server:port/api/system/health"
+```
+
+This should return a JSON response indicating the health status of the system.
+
+## Versioning
+
+The Hydrogen API currently does not implement explicit versioning. All endpoints are considered part of the current stable release unless otherwise noted. Check the [RELEASES.md](/RELEASES.md) for information on API changes in each release.
+
+## Tests
+
+- The [test_65_system_endpoints.sh](/tests/test_65_system_endpoints.sh) script for system endpoints

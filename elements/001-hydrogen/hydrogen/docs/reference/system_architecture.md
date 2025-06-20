@@ -586,7 +586,7 @@ This dependency graph guides:
 
 ## Security Model
 
-Hydrogen implements a comprehensive security model with multiple layers of protection. For detailed implementation of encryption and secrets management, see [SECRETS.md](../SECRETS.md).
+Hydrogen implements a comprehensive security model with multiple layers of protection. For detailed implementation of encryption and secrets management, see [SECRETS.md](/SECRETS.md).
 
 ```diagram
 ┌───────────────────────────────────────────────────────────────┐
@@ -632,7 +632,7 @@ Hydrogen implements a comprehensive security model with multiple layers of prote
 Each security layer is documented in detail:
 
 - [Network Security](./network_architecture.md)
-- [Payload Encryption](../payload/README.md)
+- [Payload Encryption](/payloads/README.md)
 - [OIDC Security](./oidc_architecture.md)
 - [Database Security](./database_architecture.md)
 - [SMTP Security](./smtp_relay_architecture.md)

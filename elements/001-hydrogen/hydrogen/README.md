@@ -81,59 +81,60 @@ Hydrogen is currently designed for technical users who:
 
 ## Latest Test Results
 
-Generated on: Fri Jun 20 00:32:25 PDT 2025
+Generated on: Fri Jun 20 07:08:30 PDT 2025
 
 ### Summary
 
 | Metric | Value |
 | ------ | ----- |
-| Total Tests | 15 |
-| Passed | 14 |
-| Failed | 1 |
+| Total Tests | 16 |
+| Passed | 16 |
+| Failed | 0 |
 | Skipped | 0 |
-| Total Subtests | 111 |
-| Passed Subtests | 110 |
-| Failed Subtests | 1 |
-| Runtime | 2m 53s |
+| Total Subtests | 115 |
+| Passed Subtests | 115 |
+| Failed Subtests | 0 |
+| Runtime | 3m 15s |
 
 ### Individual Test Results
 
 | Status | Time | Test | Subs | Pass | Summary |
 | ------ | ---- | ---- | ---- | ---- | ------- |
-| ✅ | 00:00:15 | 10_compilation | 1 | 1 | Test completed without errors |
+| ✅ | 00:00:16 | 10_compilation | 1 | 1 | Test completed without errors |
 | ✅ | 00:00:00 | 12_env_payload | 2 | 2 | Test completed without errors |
 | ✅ | 00:00:03 | 15_startup_shutdown | 6 | 6 | Test completed without errors |
-| ✅ | 00:00:03 | 20_shutdown | 5 | 5 | Test completed without errors |
+| ✅ | 00:00:02 | 20_shutdown | 5 | 5 | Test completed without errors |
 | ✅ | 00:00:06 | 25_library_dependencies | 16 | 16 | Test completed without errors |
 | ✅ | 00:00:00 | 35_env_variables | 1 | 1 | Test completed without errors |
 | ✅ | 00:00:00 | 40_json_error_handling | 2 | 2 | Test completed without errors |
-| ✅ | 00:00:25 | 45_signals | 5 | 5 | Test completed without errors |
+| ✅ | 00:00:24 | 45_signals | 5 | 5 | Test completed without errors |
 | ✅ | 00:00:02 | 50_crash_handler | 20 | 20 | Test completed without errors |
 | ✅ | 00:00:00 | 55_socket_rebind | 1 | 1 | Test completed without errors |
-| ✅ | 00:00:12 | 60_api_prefixes | 10 | 10 | Test completed without errors |
+| ✅ | 00:00:14 | 60_api_prefixes | 10 | 10 | Test completed without errors |
 | ✅ | 00:00:06 | 65_system_endpoints | 17 | 17 | Test completed without errors |
 | ✅ | 00:00:04 | 70_swagger | 10 | 10 | Test completed without errors |
 | ✅ | 00:00:03 | 95_leaks_like_a_sieve | 2 | 2 | Test completed without errors |
-| ❌ | 00:00:29 | 99_codebase | 13 | 12 | Test failed with errors |
+| ✅ | 00:00:16 | 98_check_links | 4 | 4 | Test completed without errors |
+| ✅ | 00:00:32 | 99_codebase | 13 | 13 | Test completed without errors |
 
 ## Repository Information
 
-Generated via cloc: Fri Jun 20 00:32:25 PDT 2025
+Generated via cloc: Fri Jun 20 07:08:30 PDT 2025
 
 ```cloc
-github.com/AlDanial/cloc v 2.02  T=0.28 s (1539.0 files/s, 291935.5 lines/s)
+github.com/AlDanial/cloc v 2.02  T=0.29 s (1543.2 files/s, 281104.7 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 C                              126           4428           5804          19897
-Markdown                       129           4601             48          16419
-Bourne Shell                    33           1917           2066           9017
+Markdown                       147           4660             48          16310
+Bourne Shell                    34           1957           2129           9136
 JSON                            17              2              0           4585
-Text                            20              7              0           4258
+Text                            20              7              0           4287
 C/C++ Header                   105           1098           4275           2678
 HTML                             1             74              0            493
 make                             2             58            124            285
 -------------------------------------------------------------------------------
-SUM:                           433          12185          12317          57632
+SUM:                           452          12284          12380          57671
 -------------------------------------------------------------------------------
 ```

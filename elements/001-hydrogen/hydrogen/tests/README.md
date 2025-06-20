@@ -384,6 +384,28 @@ Key features:
 
 This test helps ensure the application maintains stable resource usage over time and doesn't accumulate leaks during normal operation.
 
+### test_98_check_links.sh (Markdown Links Check)
+
+A test script that validates markdown links in the documentation using support_sitemap.sh:
+
+```bash
+./test_98_check_links.sh
+```
+
+Key features:
+
+- Runs support_sitemap.sh to check for missing links and orphaned markdown files
+- Evaluates results with subtests:
+  - Overall execution (pass if no issues found)
+  - Markdown files count (always pass, informational)
+  - Missing links check (pass if zero)
+  - Orphaned files check (pass if zero)
+- Provides detailed reporting of link issues
+- Integrates with test_00_all.sh for automated documentation validation
+- Creates test logs in `./results/` directory for review
+
+This test ensures the documentation remains consistent and all links are valid, helping maintain high-quality project documentation.
+
 ### test_99_codebase.sh (Code Quality)
 
 A comprehensive codebase analysis test that enforces code quality standards:
