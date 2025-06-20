@@ -55,14 +55,14 @@ Two primary test configurations have been created:
 - **Purpose**: Test core system startup/shutdown without optional subsystems
 - **Enabled Systems**: Core systems only
 - **Logging**: Maximum verbosity (ALL) across all subsystems
-- **Location**: [tests/hydrogen_test_min.json](../tests/hydrogen_test_min.json)
+- **Location**: [tests/hydrogen_test_min.json](/tests/configs/hydrogen_test_min.json)
 
 ### Maximal Configuration (hydrogen_test_max.json)
 
 - **Purpose**: Test complete system startup/shutdown with all subsystems
 - **Enabled Systems**: All available subsystems (WebServer, WebSocket, PrintQueue, mDNSServer)
 - **Logging**: Maximum verbosity (ALL) across all subsystems
-- **Location**: [tests/hydrogen_test_max.json](../tests/hydrogen_test_max.json)
+- **Location**: [tests/hydrogen_test_max.json](/tests/configs/hydrogen_test_max.json)
 
 ## Running Tests
 

@@ -710,4 +710,4 @@ Cryptographic Operations Review:
 - [Configuration Guide](./configuration.md)
 - [Service Documentation](./service.md)
 - [OIDC Architecture](./reference/oidc_architecture.md)
-- [Security Best Practices](./security_best_practices.md)
+- [Security Best Practices](/docs/security_best_practices.md)

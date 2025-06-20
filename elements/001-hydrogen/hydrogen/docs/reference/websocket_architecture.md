@@ -579,4 +579,4 @@ int process_websocket_message(websocket_server_context_t* context,
 - [WebSocket Interface](../web_socket.md) - General WebSocket documentation
 - [API Documentation](../reference/api.md) - API endpoints that integrate with WebSockets
 - [Configuration Guide](../reference/configuration.md) - Configuration options
-- [Security Overview](../security.md) - Security considerations
+- [Security Overview](/docs/reference/security.md) - Security considerations
