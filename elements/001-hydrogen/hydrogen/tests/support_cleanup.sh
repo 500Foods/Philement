@@ -22,9 +22,10 @@ source "$SCRIPT_DIR/support_utils.sh"
 
 # Configuration constants
 readonly DEFAULT_HYDROGEN_PORT=5000
-readonly GRACEFUL_SHUTDOWN_TIMEOUT=5
-readonly FINAL_CLEANUP_DELAY=2
-readonly PORT_RELEASE_TIMEOUT=10
+readonly GRACEFUL_SHUTDOWN_TIMEOUT=2
+readonly FINAL_CLEANUP_DELAY=1
+readonly PORT_RELEASE_TIMEOUT=3
+readonly QUICK_PORT_CHECK_TIMEOUT=1
 
 # Validate directory path before cleanup operations
 validate_cleanup_directory() {
@@ -155,21 +156,31 @@ check_port_usage() {
     return "$port_count"
 }
 
-# Wait for port to be released
+# Wait for port to be released with optimized timing
 wait_for_port_release() {
     local port="$1"
+    local quick_mode="${2:-false}"
     
     if check_port_usage "$port"; then
         local port_count=$?
         if [ "$port_count" -gt 0 ]; then
-            print_warning "Port $port is still in use ($port_count connections), waiting for release..."
-            sleep $PORT_RELEASE_TIMEOUT
+            local timeout=$PORT_RELEASE_TIMEOUT
+            if [ "$quick_mode" = "true" ]; then
+                timeout=$QUICK_PORT_CHECK_TIMEOUT
+            fi
             
-            # Check again after waiting
+            print_warning "Port $port is still in use ($port_count connections), waiting ${timeout}s for release..."
+            sleep $timeout
+            
+            # Quick recheck after waiting
             if check_port_usage "$port"; then
                 local final_count=$?
                 if [ "$final_count" -gt 0 ]; then
-                    print_warning "Port $port still has $final_count connections after timeout"
+                    if [ "$quick_mode" = "true" ]; then
+                        print_info "Port $port still has $final_count connections (quick check)"
+                    else
+                        print_warning "Port $port still has $final_count connections after timeout"
+                    fi
                 else
                     print_info "Port $port has been released"
                 fi
@@ -180,11 +191,11 @@ wait_for_port_release() {
     fi
 }
 
-# Function to ensure the Hydrogen server isn't running
+# Function to ensure the Hydrogen server isn't running (optimized)
 ensure_server_not_running() {
-    print_info "Checking for running Hydrogen instances..."
+    local quick_mode="${1:-false}"
     
-    # Get initial list of Hydrogen processes
+    # Quick process check first
     local hydrogen_pids
     hydrogen_pids=$(get_hydrogen_processes)
     
@@ -203,16 +214,24 @@ ensure_server_not_running() {
                 print_info "All processes shut down gracefully"
             fi
         fi
+        
+        # Check and wait for port release (full timeout when processes were found)
+        wait_for_port_release $DEFAULT_HYDROGEN_PORT false
+        
+        # Final cleanup delay to ensure resources are released
+        sleep $FINAL_CLEANUP_DELAY
+        print_info "Resource cleanup complete"
     else
-        print_info "No running Hydrogen processes found"
+        # No processes found - do quick port check only
+        if [ "$quick_mode" = "true" ]; then
+            # Skip port check entirely in quick mode when no processes found
+            print_info "No Hydrogen processes found (quick check)"
+        else
+            # Quick port check with minimal timeout
+            wait_for_port_release $DEFAULT_HYDROGEN_PORT true
+            print_info "No Hydrogen processes found, port check complete"
+        fi
     fi
-    
-    # Check and wait for port release
-    wait_for_port_release $DEFAULT_HYDROGEN_PORT
-    
-    # Final cleanup delay to ensure resources are released
-    sleep $FINAL_CLEANUP_DELAY
-    print_info "Resource cleanup complete"
 }
 
 # Function to make scripts executable
@@ -317,7 +336,7 @@ full_cleanup() {
     print_info "$NAME_SCRIPT v$VERS_SCRIPT - Starting full cleanup..."
     
     # Stop any running servers
-    ensure_server_not_running
+    ensure_server_not_running false
     
     # Clean up old test artifacts
     cleanup_old_tests

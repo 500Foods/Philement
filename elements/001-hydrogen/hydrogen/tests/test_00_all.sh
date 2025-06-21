@@ -10,6 +10,8 @@ NAME_TEST_00="Hydrogen Test Runner"
 VERS_TEST_00="1.0.3"
 
 # VERSION HISTORY
+# 1.0.5 - 2025-06-20 - Adjusted timeouts to reduce test_00_all.sh overhead execution time, minor tweaks
+# 1.0.4 - 2025-06-20 - Added test execution time, upgraded timing to millisecond precision
 # 1.0.3 - 2025-06-17 - Major refactoring: eliminated code duplication, improved modularity, enhanced comments
 # 1.0.2 - 2025-06-16 - Version history and title added
 # 1.0.1 - 2025-06-16 - Changes to support shellcheck validation
@@ -43,8 +45,26 @@ declare -a ALL_TEST_SUBTESTS
 declare -a ALL_TEST_PASSED_SUBTESTS
 declare -a ALL_TEST_DURATIONS
 
-# Start time for test runtime calculation
-START_TIME=$(date +%s)
+# Start time for test runtime calculation with millisecond precision if possible
+if date --version >/dev/null 2>&1; then
+    START_TIME=$(date +%s.%N)
+else
+    START_TIME=$(date +%s)
+fi
+
+    # Check for --help option first, before any output or processing
+    for arg in "$@"; do
+        if [ "$arg" == "--help" ] || [ "$arg" == "-h" ]; then
+        echo "Usage: $0 [test_name|min|max|all] [--skip-tests] [--help|-h]"
+        echo "  test_name: Run a specific test (e.g., compilation, startup_shutdown)"
+        echo "  min: Run with minimal configuration only"
+        echo "  max: Run with maximal configuration only"
+        echo "  all: Run all tests (default)"
+        echo "  --skip-tests: Skip actual test execution, just show what tests would run"
+        echo "  --help|-h: Display this help message"
+        exit 0
+    fi
+done
 
 # Print header with version
 print_header "$NAME_TEST_00 v$VERS_TEST_00" | tee "$SUMMARY_LOG"
@@ -58,13 +78,26 @@ ensure_server_not_running
 # Make all test scripts executable
 make_scripts_executable
 
-# Helper function to format duration in HH:MM:SS
+# Helper function to format duration in HH:MM:SS or HH:MM:SS.FFF if milliseconds are available
 format_duration() {
     local duration=$1
-    local hours=$((duration / 3600))
-    local minutes=$(((duration % 3600) / 60))
-    local seconds=$((duration % 60))
-    printf "%02d:%02d:%02d" $hours $minutes $seconds
+    if [[ "$duration" =~ \. ]]; then
+        # Duration includes milliseconds
+        IFS='.' read -r secs millis <<< "$duration"
+        local hours=$((secs / 3600))
+        local minutes=$(((secs % 3600) / 60))
+        local seconds=$((secs % 60))
+        # Extract first 3 digits of milliseconds if available, remove leading zeros
+        local ms=${millis:0:3}
+        ms=$((10#${ms:-0}))  # Force decimal interpretation to avoid octal error
+        printf "%02d:%02d:%02d.%03d" $hours $minutes $seconds "$ms"
+    else
+        # Duration is in whole seconds
+        local hours=$((duration / 3600))
+        local minutes=$(((duration % 3600) / 60))
+        local seconds=$((duration % 60))
+        printf "%02d:%02d:%02d" $hours $minutes $seconds
+    fi
 }
 
 # Helper function to handle subtest results file processing
@@ -186,7 +219,11 @@ run_test_internal() {
     fi
     
     local test_start_time
-    test_start_time=$(date +%s)
+    if date --version >/dev/null 2>&1; then
+        test_start_time=$(date +%s.%N)
+    else
+        test_start_time=$(date +%s)
+    fi
     
     # Extract test name from script filename
     local test_name
@@ -225,8 +262,18 @@ run_test_internal() {
     
     # Calculate test duration
     local test_end_time
-    test_end_time=$(date +%s)
-    local test_duration=$((test_end_time - test_start_time))
+    if date --version >/dev/null 2>&1; then
+        test_end_time=$(date +%s.%N)
+        # Calculate duration with milliseconds if possible
+        if [[ "$test_start_time" =~ \. && "$test_end_time" =~ \. ]]; then
+            test_duration=$(echo "$test_end_time - $test_start_time" | bc)
+        else
+            test_duration=$((test_end_time - test_start_time))
+        fi
+    else
+        test_end_time=$(date +%s)
+        test_duration=$((test_end_time - test_start_time))
+    fi
     
     # Record results and handle success/failure reporting
     if [ $test_exit_code -eq $TEST_RESULT_PASS ]; then
@@ -242,9 +289,9 @@ run_test_internal() {
     
     echo "" | tee -a "$SUMMARY_LOG"
     
-    # Ensure server cleanup only when not in skip mode
+    # Ensure server cleanup only when not in skip mode (quick mode for inter-test cleanup)
     if [ "$SKIP_TESTS" = false ]; then
-        ensure_server_not_running
+        ensure_server_not_running true
     fi
     
     return $test_exit_code
@@ -274,11 +321,12 @@ run_all_tests() {
     fi
     
     # Find and run all test scripts in sorted order, excluding special cases
-    local test_scripts
-    test_scripts=$(find "$SCRIPT_DIR" -type f -name "test_*.sh" | grep -v "test_00_all.sh" | grep -v "test_10_compilation.sh" | grep -v "test_template.sh" | sort)
-    
     local all_exit_codes=0
-    for test_script in $test_scripts; do
+    local test_scripts_list
+    test_scripts_list=$(find "$SCRIPT_DIR" -type f -name "test_*.sh" | grep -v "test_00_all.sh" | grep -v "test_10_compilation.sh" | grep -v "test_template.sh" | sort)
+    # Removed unused variables test_scripts and all_exit_codes_inner
+    while IFS= read -r test_script; do
+        if [ -n "$test_script" ]; then
         run_test "$test_script"
         local test_exit_code=$?
         
@@ -287,12 +335,13 @@ run_all_tests() {
             all_exit_codes=1
         fi
         
-        # Ensure server cleanup between tests (unless in skip mode)
+        # Ensure server cleanup between tests (unless in skip mode) - use quick mode
         if [ "$SKIP_TESTS" = false ]; then
-            ensure_server_not_running
+            ensure_server_not_running true
         fi
-        echo "" | tee -a "$SUMMARY_LOG"
-    done
+            echo "" | tee -a "$SUMMARY_LOG"
+        fi
+    done <<< "$test_scripts_list"
     
     # Calculate overall result based on compilation and individual test results
     if [ "$SKIP_TESTS" = true ]; then
@@ -454,11 +503,19 @@ calculate_test_statistics() {
     
     # Calculate runtime
     local end_time
-    end_time=$(date +%s)
-    local total_runtime=$((end_time - START_TIME))
-    local runtime_min=$((total_runtime / 60))
-    local runtime_sec=$((total_runtime % 60))
-    local runtime_formatted="${runtime_min}m ${runtime_sec}s"
+    if date --version >/dev/null 2>&1; then
+        end_time=$(date +%s.%N)
+        if [[ "$START_TIME" =~ \. && "$end_time" =~ \. ]]; then
+            total_runtime=$(echo "$end_time - $START_TIME" | bc)
+        else
+            total_runtime=$((end_time - START_TIME))
+        fi
+    else
+        end_time=$(date +%s)
+        total_runtime=$((end_time - START_TIME))
+    fi
+    local runtime_formatted
+    runtime_formatted=$(format_duration "$total_runtime")
     
     # Return values via global variables (bash limitation workaround)
     STATS_PASS_COUNT=$pass_count
@@ -473,7 +530,7 @@ calculate_test_statistics() {
 
 # Function to print individual test results
 print_individual_test_results() {
-    echo -e "\n${BLUE}${BOLD}Individual Test Results:${NC}" | tee -a "$SUMMARY_LOG"
+    echo -e "${BLUE}${BOLD}Individual Test Results:${NC}" | tee -a "$SUMMARY_LOG"
     for i in "${!ALL_TEST_NAMES[@]}"; do
         # Add subtest count to the details
         local total_subtests=${ALL_TEST_SUBTESTS[$i]}
@@ -517,6 +574,18 @@ print_summary_statistics() {
     echo -e "Passed subtests: ${STATS_PASSED_SUBTESTS}" | tee -a "$SUMMARY_LOG"
     echo -e "Failed subtests: ${STATS_FAILED_SUBTESTS}" | tee -a "$SUMMARY_LOG"
     echo -e "Test runtime: ${STATS_RUNTIME}" | tee -a "$SUMMARY_LOG"
+    # Calculate total test execution time (sum of individual test durations)
+    local total_execution=0.0
+    for duration in "${ALL_TEST_DURATIONS[@]}"; do
+        if [[ "$duration" =~ \. ]]; then
+            total_execution=$(echo "$total_execution + $duration" | bc)
+        else
+            total_execution=$(echo "$total_execution + $duration" | bc)
+        fi
+    done
+    local execution_formatted
+    execution_formatted=$(format_duration "$total_execution")
+    echo -e "Test execution: ${execution_formatted}" | tee -a "$SUMMARY_LOG"
     echo "" | tee -a "$SUMMARY_LOG"
     
     # Print overall result with appropriate formatting
@@ -528,13 +597,6 @@ print_summary_statistics() {
         echo -e "${RED}${BOLD}${FAIL_ICON} OVERALL RESULT: ONE OR MORE TESTS FAILED${NC}" | tee -a "$SUMMARY_LOG"
     fi
     echo -e "${BLUE}───────────────────────────────────────────────────────────────────────────────${NC}" | tee -a "$SUMMARY_LOG"
-    
-    # Tips for additional diagnostics
-    echo "" | tee -a "$SUMMARY_LOG"
-    echo "Diagnostic Tools:" | tee -a "$SUMMARY_LOG"
-    echo "  • tests/support_analyze_stuck_threads.sh <pid>   - Analyze thread deadlocks or hangs" | tee -a "$SUMMARY_LOG"
-    echo "  • tests/support_monitor_resources.sh <pid> [sec] - Monitor CPU/memory usage of a process" | tee -a "$SUMMARY_LOG"
-    echo "" | tee -a "$SUMMARY_LOG"
     
     # Always generate README section
     generate_readme_section
@@ -658,10 +720,10 @@ generate_readme_section() {
     if [ -f "$readme_file" ]; then
         # Remove existing sections if they exist
         if grep -q "^## Latest Test Results" "$readme_file"; then
-            local temp_file
-            temp_file=$(mktemp)
-            sed '/^## Latest Test Results/,/^## /{ /^## Latest Test Results/d; /^## /!d; }' "$readme_file" > "$temp_file"
-            sed -i '/^## Repository Information/,/^## /{ /^## Repository Information/d; /^## /!d; }' "$temp_file"
+    local temp_file
+    temp_file=$(mktemp)
+    sed '/^## Latest Test Results/,/^## /{ /^## Latest Test Results/d; /^## /!d; }' "$readme_file" > "$temp_file"
+    sed -i '/^## Repository Information/,/^## /{ /^## Repository Information/d; /^## /!d; }' "$temp_file"
             mv "$temp_file" "$readme_file"
         fi
         
@@ -676,6 +738,8 @@ generate_readme_section() {
         print_warning "README.md not found at $readme_file" | tee -a "$SUMMARY_LOG"
     fi
 }
+
+# Removed duplicate --help check as it is now handled earlier in the script
 
 # Parse command line arguments
 TEST_TYPE=${1:-"all"}  # Default to "all" if not specified
@@ -737,6 +801,7 @@ esac
 
 # Print overall summary
 print_header "Test Summary" | tee -a "$SUMMARY_LOG"
+echo "Started at: $(date -d @"$START_TIME")" | tee -a "$SUMMARY_LOG"
 echo "Completed at: $(date)" | tee -a "$SUMMARY_LOG"
 echo "Summary log: $(convert_to_relative_path "$SUMMARY_LOG")" | tee -a "$SUMMARY_LOG"
 echo "" | tee -a "$SUMMARY_LOG"
