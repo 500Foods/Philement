@@ -81,7 +81,7 @@ Hydrogen is currently designed for technical users who:
 
 ## Latest Test Results
 
-Generated on: Fri Jun 20 20:31:29 PDT 2025
+Generated on: Mon Jun 23 00:59:57 PDT 2025
 
 ### Summary
 
@@ -94,47 +94,47 @@ Generated on: Fri Jun 20 20:31:29 PDT 2025
 | Total Subtests | 115 |
 | Passed Subtests | 115 |
 | Failed Subtests | 0 |
-| Runtime | 00:02:05.331 |
+| Runtime | 00:02:06.834 |
 
 ### Individual Test Results
 
 | Status | Time | Test | Subs | Pass | Summary |
 | ------ | ---- | ---- | ---- | ---- | ------- |
-| ✅ | 00:00:14.927 | 10_compilation | 1 | 1 | Test completed without errors |
-| ✅ | 00:00:00.094 | 12_env_payload | 2 | 2 | Test completed without errors |
-| ✅ | 00:00:02.658 | 15_startup_shutdown | 6 | 6 | Test completed without errors |
-| ✅ | 00:00:02.310 | 20_shutdown | 5 | 5 | Test completed without errors |
-| ✅ | 00:00:05.864 | 25_library_dependencies | 16 | 16 | Test completed without errors |
-| ✅ | 00:00:00.092 | 35_env_variables | 1 | 1 | Test completed without errors |
-| ✅ | 00:00:00.089 | 40_json_error_handling | 2 | 2 | Test completed without errors |
-| ✅ | 00:00:24.257 | 45_signals | 5 | 5 | Test completed without errors |
-| ✅ | 00:00:01.837 | 50_crash_handler | 20 | 20 | Test completed without errors |
+| ✅ | 00:00:14.335 | 10_compilation | 1 | 1 | Test completed without errors |
+| ✅ | 00:00:00.095 | 12_env_payload | 2 | 2 | Test completed without errors |
+| ✅ | 00:00:02.630 | 15_startup_shutdown | 6 | 6 | Test completed without errors |
+| ✅ | 00:00:02.303 | 20_shutdown | 5 | 5 | Test completed without errors |
+| ✅ | 00:00:05.874 | 25_library_dependencies | 16 | 16 | Test completed without errors |
+| ✅ | 00:00:00.087 | 35_env_variables | 1 | 1 | Test completed without errors |
+| ✅ | 00:00:00.098 | 40_json_error_handling | 2 | 2 | Test completed without errors |
+| ✅ | 00:00:24.241 | 45_signals | 5 | 5 | Test completed without errors |
+| ✅ | 00:00:01.910 | 50_crash_handler | 20 | 20 | Test completed without errors |
 | ✅ | 00:00:00.093 | 55_socket_rebind | 1 | 1 | Test completed without errors |
-| ✅ | 00:00:12.043 | 60_api_prefixes | 10 | 10 | Test completed without errors |
-| ✅ | 00:00:05.999 | 65_system_endpoints | 17 | 17 | Test completed without errors |
-| ✅ | 00:00:03.965 | 70_swagger | 10 | 10 | Test completed without errors |
-| ✅ | 00:00:03.113 | 95_leaks_like_a_sieve | 2 | 2 | Test completed without errors |
-| ✅ | 00:00:16.270 | 98_check_links | 4 | 4 | Test completed without errors |
-| ✅ | 00:00:29.799 | 99_codebase | 13 | 13 | Test completed without errors |
+| ✅ | 00:00:11.912 | 60_api_prefixes | 10 | 10 | Test completed without errors |
+| ✅ | 00:00:06.014 | 65_system_endpoints | 17 | 17 | Test completed without errors |
+| ✅ | 00:00:04.458 | 70_swagger | 10 | 10 | Test completed without errors |
+| ✅ | 00:00:03.122 | 95_leaks_like_a_sieve | 2 | 2 | Test completed without errors |
+| ✅ | 00:00:17.904 | 98_check_links | 4 | 4 | Test completed without errors |
+| ✅ | 00:00:29.856 | 99_codebase | 13 | 13 | Test completed without errors |
 
 ## Repository Information
 
-Generated via cloc: Fri Jun 20 20:31:29 PDT 2025
+Generated via cloc: Mon Jun 23 00:59:57 PDT 2025
 
 ```cloc
-github.com/AlDanial/cloc v 2.02  T=0.31 s (1453.3 files/s, 264994.8 lines/s)
+github.com/AlDanial/cloc v 2.02  T=0.28 s (1628.7 files/s, 290255.1 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 C                              126           4428           5804          19897
-Markdown                       147           4660             48          16310
+Markdown                       158           4685             48          16371
 Bourne Shell                    34           1958           2141           9207
 JSON                            17              2              0           4585
-Text                            20              7              0           4283
+Text                            20              7              0           4294
 C/C++ Header                   105           1098           4275           2678
 HTML                             1             74              0            493
 make                             2             58            124            285
 -------------------------------------------------------------------------------
-SUM:                           452          12285          12392          57738
+SUM:                           463          12310          12392          57810
 -------------------------------------------------------------------------------
 ```
