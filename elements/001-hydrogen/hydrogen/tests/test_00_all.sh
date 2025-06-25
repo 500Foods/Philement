@@ -602,6 +602,48 @@ print_summary_statistics() {
     generate_readme_section
 }
 
+# Function to check if a file should be excluded (mirroring logic from test_99_codebase.sh)
+should_exclude_file() {
+    local file="$1"
+    local lint_ignore="$SCRIPT_DIR/../.lintignore"
+    local rel_file="${file#"$SCRIPT_DIR/.."/}"
+    
+    # Check .lintignore file first if it exists
+    if [ -f "$lint_ignore" ]; then
+        while IFS= read -r pattern; do
+            [[ -z "$pattern" || "$pattern" == \#* ]] && continue
+            shopt -s extglob
+            if [[ "$rel_file" == @($pattern) ]]; then
+                shopt -u extglob
+                return 0 # Exclude
+            fi
+            shopt -u extglob
+        done < "$lint_ignore"
+    fi
+    
+    # Check default excludes
+    local LINT_EXCLUDES=(
+        "build/*"
+        "build_debug/*"
+        "build_perf/*"
+        "build_release/*"
+        "build_valgrind/*"
+        "tests/logs/*"
+        "tests/results/*"
+        "tests/diagnostics/*"
+    )
+    for pattern in "${LINT_EXCLUDES[@]}"; do
+        shopt -s extglob
+        if [[ "$rel_file" == @($pattern) ]]; then
+            shopt -u extglob
+            return 0 # Exclude
+        fi
+        shopt -u extglob
+    done
+    
+    return 1 # Do not exclude
+}
+
 # Function to run cloc and generate repository information
 generate_repository_info() {
     local repo_info_file="$RESULTS_DIR/repository_info.md"
@@ -623,17 +665,24 @@ generate_repository_info() {
         return 1
     }
     
-    # Create a temporary exclude list based on .lintignore
+    # Create a temporary exclude list based on .lintignore and default excludes using the same logic as test_99_codebase.sh
     local exclude_list
     exclude_list=$(mktemp)
     : > "$exclude_list"
-    local lint_ignore="$SCRIPT_DIR/../.lintignore"
-    if [ -f "$lint_ignore" ]; then
-        while IFS= read -r pattern; do
-            [[ -z "$pattern" || "$pattern" == \#* ]] && continue
-            echo "$pattern" >> "$exclude_list"
-        done < "$lint_ignore"
-    fi
+    local start_dir
+    start_dir=$(pwd)
+    cd "$SCRIPT_DIR/.." || {
+        print_warning "Failed to change to project directory for exclude list generation" | tee -a "$SUMMARY_LOG"
+        return 1
+    }
+    while read -r file; do
+        if should_exclude_file "$file"; then
+            echo "${file#"$SCRIPT_DIR/.."/}" >> "$exclude_list"
+        fi
+    done < <(find "$SCRIPT_DIR/.." -type f | sort)
+    cd "$start_dir" || {
+        print_warning "Failed to return to start directory after exclude list generation" | tee -a "$SUMMARY_LOG"
+    }
     
     # Run cloc with specific locale settings and exclude list
     if env LC_ALL=en_US.UTF_8 LC_TIME= LC_ALL= LANG= LANGUAGE= cloc . --quiet --force-lang="C,inc" --exclude-list-file="$exclude_list" >> "$repo_info_file" 2>&1; then
