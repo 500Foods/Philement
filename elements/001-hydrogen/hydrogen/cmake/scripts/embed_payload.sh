@@ -23,20 +23,20 @@ if [ -z "$EXECUTABLE" ] || [ -z "$PAYLOAD_FILE" ]; then
 fi
 
 if [ ! -f "$EXECUTABLE" ]; then
-    printf "${RED}${FAIL} Executable not found: $EXECUTABLE${NORMAL}\n"
+    printf "%s%s Executable not found: %s%s\n" "$RED" "$FAIL" "$EXECUTABLE" "$NORMAL"
     exit 1
 fi
 
 if [ ! -f "$PAYLOAD_FILE" ]; then
-    printf "${RED}${FAIL} Payload file not found: $PAYLOAD_FILE${NORMAL}\n"
+    printf "%s%s Payload file not found: %s%s\n" "$RED" "$FAIL" "$PAYLOAD_FILE" "$NORMAL"
     exit 1
 fi
 
-printf "${CYAN}${INFO} Embedding encrypted payload into executable...${NORMAL}\n"
+printf "%s%s Embedding encrypted payload into executable...%s\n" "$CYAN" "$INFO" "$NORMAL"
 
 # Get payload size
 PAYLOAD_SIZE=$(stat -c %s "$PAYLOAD_FILE")
-echo $PAYLOAD_SIZE
+echo "$PAYLOAD_SIZE"
 
 # Create temporary file
 TEMP_FILE="${EXECUTABLE}.tmp"
@@ -46,10 +46,10 @@ cat "$EXECUTABLE" "$PAYLOAD_FILE" > "$TEMP_FILE"
 printf "<<< HERE BE ME TREASURE >>>" >> "$TEMP_FILE"
 
 # Append payload size as 8-byte binary (little-endian)
-printf '%016x' $PAYLOAD_SIZE | xxd -r -p >> "$TEMP_FILE"
+printf '%016x' "$PAYLOAD_SIZE" | xxd -r -p >> "$TEMP_FILE"
 
 # Replace original executable
 mv "$TEMP_FILE" "$EXECUTABLE"
 chmod +x "$EXECUTABLE"
 
-printf "${GREEN}${PASS} Payload embedded successfully (${PAYLOAD_SIZE} bytes)${NORMAL}\n"
+printf "%s%s Payload embedded successfully (%s bytes)%s\n" "$GREEN" "$PASS" "$PAYLOAD_SIZE" "$NORMAL"

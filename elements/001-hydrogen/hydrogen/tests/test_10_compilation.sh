@@ -86,15 +86,7 @@ test_compilation() {
     start_time=$(date +%s)
     temp_log="$RESULTS_DIR/build_${component//\//_}_${TIMESTAMP}.log"
     
-    CFLAGS="-Wall -Wextra -Werror -pedantic" make all > "$temp_log" 2>&1
-    local build_result=$?
-    
-    local end_time
-    local duration
-    end_time=$(date +%s)
-    duration=$((end_time - start_time))
-    
-    if [ $build_result -eq 0 ]; then
+    if CFLAGS="-Wall -Wextra -Werror -pedantic" make all > "$temp_log" 2>&1; then
         print_result 0 "$component compiled successfully in ${duration}s" | tee -a "$RESULT_LOG"
         if ! grep -q "warning:" "$temp_log"; then
             print_info "No warnings detected" | tee -a "$RESULT_LOG"
@@ -109,6 +101,11 @@ test_compilation() {
         grep -E "error:|warning:" "$temp_log" | tee -a "$RESULT_LOG"
         EXIT_CODE=1
     fi
+    
+    local end_time
+    local duration
+    end_time=$(date +%s)
+    duration=$((end_time - start_time))
     
     if ! safe_cd "$SCRIPT_DIR"; then
         return 1
@@ -183,8 +180,7 @@ run_parallel_builds() {
     # Remove existing build directory to start fresh
     if [ -d "build" ]; then
         print_info "Removing existing build directory for a fresh start..." | tee -a "$RESULT_LOG"
-        rm -rf build >> "$temp_log" 2>&1
-        if [ $? -ne 0 ]; then
+        if ! rm -rf build >> "$temp_log" 2>&1; then
             print_result 1 "Failed to remove existing build directory, check log for details: $(convert_to_relative_path "$temp_log")" | tee -a "$RESULT_LOG"
             EXIT_CODE=1
             return 1
