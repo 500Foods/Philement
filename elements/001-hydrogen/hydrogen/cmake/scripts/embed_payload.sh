@@ -44,8 +44,8 @@ TEMP_FILE="${EXECUTABLE}.tmp"
 cat "$EXECUTABLE" "$PAYLOAD_FILE" > "$TEMP_FILE"
 printf "<<< HERE BE ME TREASURE >>>" >> "$TEMP_FILE"
 
-# Append payload size as 8-byte hex (little-endian)
-printf "$(printf '%016x' $PAYLOAD_SIZE | sed 's/\(..\)/\\x\1/g')" >> "$TEMP_FILE"
+# Append payload size as 8-byte binary (little-endian)
+printf "%08x" $PAYLOAD_SIZE | xxd -r -p >> "$TEMP_FILE"
 
 # Replace original executable
 mv "$TEMP_FILE" "$EXECUTABLE"
