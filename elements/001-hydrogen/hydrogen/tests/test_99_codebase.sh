@@ -73,22 +73,29 @@ setup_test_environment() {
 should_exclude_file() {
     local file="$1"
     local lint_ignore="$HYDROGEN_DIR/.lintignore"
+    local rel_file="${file#"$HYDROGEN_DIR"/}"
     
     # Check .lintignore file first if it exists
     if [ -f "$lint_ignore" ]; then
         while IFS= read -r pattern; do
             [[ -z "$pattern" || "$pattern" == \#* ]] && continue
-            if [[ "$file" == "$pattern" || "$file" == */"$pattern" ]]; then
+            shopt -s extglob
+            if [[ "$rel_file" == @($pattern) ]]; then
+                shopt -u extglob
                 return 0 # Exclude
             fi
+            shopt -u extglob
         done < "$lint_ignore"
     fi
     
     # Check default excludes
     for pattern in "${LINT_EXCLUDES[@]}"; do
-        if [[ "$file" == *"$pattern"* ]]; then
+        shopt -s extglob
+        if [[ "$rel_file" == @($pattern) ]]; then
+            shopt -u extglob
             return 0 # Exclude
         fi
+        shopt -u extglob
     done
     
     return 1 # Do not exclude
@@ -191,8 +198,13 @@ run_make_clean() {
 analyze_source_files() {
     print_header "3. Analyzing Source Code Files" | tee -a "$RESULT_LOG"
     
-    # Find all source files
-    find "$HYDROGEN_DIR" -type f \( -name "*.c" -o -name "*.h" -o -name "*.md" -o -name "*.sh" \) | sort > "$SOURCE_FILES_LIST"
+    # Find all source files, excluding those in .lintignore
+    : > "$SOURCE_FILES_LIST"
+    while read -r file; do
+        if ! should_exclude_file "$file"; then
+            echo "$file" >> "$SOURCE_FILES_LIST"
+        fi
+    done < <(find "$HYDROGEN_DIR" -type f \( -name "*.c" -o -name "*.h" -o -name "*.md" -o -name "*.sh" \) | sort)
     local total_files
     total_files=$(wc -l < "$SOURCE_FILES_LIST")
     
@@ -283,9 +295,14 @@ show_top_files_by_type() {
 find_large_files() {
     print_header "4. Finding Large Non-Source Files (>$LARGE_FILE_THRESHOLD)" | tee -a "$RESULT_LOG"
     
-    find "$HYDROGEN_DIR" -type f -size "+$LARGE_FILE_THRESHOLD" \
+    : > "$LARGE_FILES_LIST"
+    while read -r file; do
+        if ! should_exclude_file "$file"; then
+            echo "$file" >> "$LARGE_FILES_LIST"
+        fi
+    done < <(find "$HYDROGEN_DIR" -type f -size "+$LARGE_FILE_THRESHOLD" \
         -not \( -path "*/tests/*" -o -name "*.c" -o -name "*.h" -o -name "*.md" -o -name "*.sh" -o -name "Makefile" \) \
-        | sort > "$LARGE_FILES_LIST"
+        | sort)
     
     local count
     count=$(wc -l < "$LARGE_FILES_LIST")
@@ -487,12 +504,23 @@ lint_other_files() {
         done
         find_args=("${find_args[@]:0:${#find_args[@]}-1}")  # Remove last -o
         
-        # Collect files
+        # Collect files, excluding those in .lintignore
         while read -r file; do
             if ! should_exclude_file "$file"; then
                 files+=("$file")
             fi
         done < <(find "$HYDROGEN_DIR" -type f \( "${find_args[@]}" \))
+        
+        # For eslint, apply additional filtering if needed to ensure no excluded files are processed
+        if [ "$tool" = "eslint" ]; then
+            local filtered_files=()
+            for file in "${files[@]}"; do
+                if ! should_exclude_file "$file"; then
+                    filtered_files+=("$file")
+                fi
+            done
+            files=("${filtered_files[@]}")
+        fi
         
         local count=${#files[@]}
         
@@ -501,6 +529,15 @@ lint_other_files() {
                 # Special handling for htmlhint (no --quiet flag)
                 if [ "$tool" = "htmlhint" ]; then
                     if ! "$tool" "$file" 2>> "$temp_log"; then
+                        ((fails++))
+                    fi
+                elif [ "$tool" = "eslint" ]; then
+                    # Check if eslint config exists, otherwise skip with a warning
+                    if ! eslint --print-config "$file" >/dev/null 2>&1; then
+                        print_warning "eslint config not found for $file, skipping..." | tee -a "$RESULT_LOG"
+                        continue
+                    fi
+                    if ! "$tool" --quiet "$file" 2>> "$temp_log"; then
                         ((fails++))
                     fi
                 else
