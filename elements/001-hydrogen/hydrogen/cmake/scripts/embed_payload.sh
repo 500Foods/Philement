@@ -36,6 +36,7 @@ printf "${CYAN}${INFO} Embedding encrypted payload into executable...${NORMAL}\n
 
 # Get payload size
 PAYLOAD_SIZE=$(stat -c %s "$PAYLOAD_FILE")
+echo $PAYLOAD_SIZE
 
 # Create temporary file
 TEMP_FILE="${EXECUTABLE}.tmp"
@@ -45,7 +46,7 @@ cat "$EXECUTABLE" "$PAYLOAD_FILE" > "$TEMP_FILE"
 printf "<<< HERE BE ME TREASURE >>>" >> "$TEMP_FILE"
 
 # Append payload size as 8-byte binary (little-endian)
-printf "%08x" $PAYLOAD_SIZE | xxd -r -p >> "$TEMP_FILE"
+printf '%016x' $PAYLOAD_SIZE | xxd -r -p >> "$TEMP_FILE"
 
 # Replace original executable
 mv "$TEMP_FILE" "$EXECUTABLE"
