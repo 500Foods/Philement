@@ -9,6 +9,7 @@ build_debug/
 build_perf/
 build_release/
 build_valgrind/
+build_unity_tests/
 
 # Temporary generated files
 payloads/swagger.json
