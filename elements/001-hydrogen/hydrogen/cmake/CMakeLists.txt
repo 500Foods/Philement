@@ -92,6 +92,15 @@ else()
     set(GIT_COMMIT_COUNT 0)
 endif()
 
+# Add a custom target to check if version needs updating
+add_custom_target(check_version
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈 Checking if version number needs updating..."
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/check_version.sh "${CMAKE_CURRENT_SOURCE_DIR}/.." "${GIT_COMMIT_COUNT}"
+    COMMAND ${CMAKE_COMMAND} -E echo "✅ Version check completed."
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Checking if version number needs updating based on git commits"
+)
+
 math(EXPR HYDROGEN_BUILD_NUMBER "${GIT_COMMIT_COUNT} + 1000")
 set(HYDROGEN_VERSION "${HYDROGEN_VERSION_MAJOR}.${HYDROGEN_VERSION_MINOR}.${HYDROGEN_VERSION_PATCH}.${HYDROGEN_BUILD_NUMBER}")
 
@@ -306,10 +315,12 @@ hydrogen_add_executable_target(hydrogen_release_exe "Release"
     "-flto=auto -fno-strict-aliasing"
 )
 
-# Build all variants
+# Build all variants with parallel execution
 add_custom_target(all_variants
     DEPENDS hydrogen hydrogen_debug hydrogen_valgrind hydrogen_perf hydrogen_release payload
     COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈 Building all variants in parallel where possible..."
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target hydrogen hydrogen_debug hydrogen_valgrind hydrogen_perf hydrogen_release payload --parallel
     COMMAND ${CMAKE_COMMAND} -E echo "✅ All variants built successfully!"
     COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
     COMMAND ${CMAKE_COMMAND} -E echo "  Default:     $<TARGET_FILE:hydrogen>"
@@ -319,7 +330,7 @@ add_custom_target(all_variants
     COMMAND ${CMAKE_COMMAND} -E echo "  Release:     /home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/hydrogen_release"
     COMMAND ${CMAKE_COMMAND} -E echo "  Naked:       /home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/hydrogen_naked"
     COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
-    COMMENT "Building all variants"
+    COMMENT "Building all variants with parallel execution"
 )
 
 # Trial build target
