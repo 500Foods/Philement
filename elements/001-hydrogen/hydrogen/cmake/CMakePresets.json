@@ -9,8 +9,9 @@
         {
             "name": "default",
             "displayName": "Default Configuration",
-            "description": "Default build configuration with RelWithDebInfo",
-            "binaryDir": "${sourceDir}/build",
+            "description": "Default build configuration with RelWithDebInfo using Ninja for faster builds",
+            "binaryDir": "${sourceDir}/../build",
+            "generator": "Ninja",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "RelWithDebInfo",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
@@ -19,8 +20,9 @@
         {
             "name": "debug",
             "displayName": "Debug Configuration",
-            "description": "Debug build with AddressSanitizer",
-            "binaryDir": "${sourceDir}/build-debug",
+            "description": "Debug build with AddressSanitizer using Ninja",
+            "binaryDir": "${sourceDir}/../build-debug",
+            "generator": "Ninja",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
@@ -29,8 +31,9 @@
         {
             "name": "release",
             "displayName": "Release Configuration", 
-            "description": "Optimized release build",
-            "binaryDir": "${sourceDir}/build-release",
+            "description": "Optimized release build using Ninja",
+            "binaryDir": "${sourceDir}/../build-release",
+            "generator": "Ninja",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
@@ -39,8 +42,9 @@
         {
             "name": "valgrind",
             "displayName": "Valgrind Configuration",
-            "description": "Build optimized for Valgrind analysis",
-            "binaryDir": "${sourceDir}/build-valgrind",
+            "description": "Build optimized for Valgrind analysis using Ninja",
+            "binaryDir": "${sourceDir}/../build-valgrind",
+            "generator": "Ninja",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
@@ -49,8 +53,9 @@
         {
             "name": "performance",
             "displayName": "Performance Configuration",
-            "description": "Maximum performance build with aggressive optimizations",
-            "binaryDir": "${sourceDir}/build-perf",
+            "description": "Maximum performance build with aggressive optimizations using Ninja",
+            "binaryDir": "${sourceDir}/../build-perf",
+            "generator": "Ninja",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
@@ -59,8 +64,9 @@
         {
             "name": "ci",
             "displayName": "CI Configuration",
-            "description": "Configuration for continuous integration",
-            "binaryDir": "${sourceDir}/build-ci",
+            "description": "Configuration for continuous integration using Ninja",
+            "binaryDir": "${sourceDir}/../build-ci",
+            "generator": "Ninja",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
@@ -71,70 +77,70 @@
         {
             "name": "default",
             "displayName": "Default Build",
-            "description": "Build default hydrogen target",
+            "description": "Build default hydrogen target with Ninja",
             "configurePreset": "default",
             "targets": ["hydrogen"]
         },
         {
             "name": "debug",
             "displayName": "Debug Build",
-            "description": "Build debug variant with AddressSanitizer",
+            "description": "Build debug variant with AddressSanitizer using Ninja",
             "configurePreset": "debug",
             "targets": ["hydrogen_debug"]
         },
         {
             "name": "release",
             "displayName": "Release Build", 
-            "description": "Build release variant",
+            "description": "Build release variant with Ninja",
             "configurePreset": "release",
             "targets": ["hydrogen_release"]
         },
         {
             "name": "valgrind",
             "displayName": "Valgrind Build",
-            "description": "Build valgrind-compatible variant",
+            "description": "Build valgrind-compatible variant with Ninja",
             "configurePreset": "valgrind",
             "targets": ["hydrogen_valgrind"]
         },
         {
             "name": "performance",
             "displayName": "Performance Build",
-            "description": "Build performance-optimized variant",
+            "description": "Build performance-optimized variant with Ninja",
             "configurePreset": "performance",
             "targets": ["hydrogen_perf"]
         },
         {
             "name": "all-variants",
             "displayName": "All Variants",
-            "description": "Build all hydrogen variants",
+            "description": "Build all hydrogen variants with Ninja for maximum parallelism",
             "configurePreset": "default",
             "targets": ["all_variants"]
         },
         {
             "name": "trial",
             "displayName": "Trial Build",
-            "description": "Run diagnostic trial build",
+            "description": "Run diagnostic trial build with Ninja",
             "configurePreset": "default",
             "targets": ["trial"]
         },
         {
             "name": "payload",
             "displayName": "Payload Generation",
-            "description": "Generate OpenAPI specs and payload",
+            "description": "Generate OpenAPI specs and payload with Ninja",
             "configurePreset": "default",
             "targets": ["payload"]
         },
         {
             "name": "release-enhanced",
             "displayName": "Enhanced Release",
-            "description": "Create UPX-compressed release with embedded payload",
+            "description": "Create UPX-compressed release with embedded payload using Ninja",
             "configurePreset": "release",
             "targets": ["release_enhanced"]
         },
         {
             "name": "ci",
             "displayName": "CI Build",
-            "description": "Complete CI build with all variants and tests",
+            "description": "Complete CI build with all variants and tests using Ninja",
             "configurePreset": "ci",
             "targets": ["all_variants", "trial"]
         }
@@ -143,19 +149,19 @@
         {
             "name": "default",
             "displayName": "Default Tests",
-            "description": "Run all tests with default configuration",
+            "description": "Run all tests with default configuration using Ninja",
             "configurePreset": "default"
         },
         {
             "name": "debug",
             "displayName": "Debug Tests",
-            "description": "Run tests with debug build",
+            "description": "Run tests with debug build using Ninja",
             "configurePreset": "debug"
         },
         {
             "name": "valgrind",
             "displayName": "Valgrind Tests",
-            "description": "Run tests under Valgrind",
+            "description": "Run tests under Valgrind with Ninja build",
             "configurePreset": "valgrind",
             "execution": {
                 "jobs": 1
@@ -164,7 +170,7 @@
         {
             "name": "ci",
             "displayName": "CI Tests",
-            "description": "Run all tests for continuous integration",
+            "description": "Run all tests for continuous integration using Ninja",
             "configurePreset": "ci"
         }
     ]

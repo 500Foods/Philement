@@ -167,24 +167,42 @@ test_tarball_presence() {
     return 0
 }
 
-# Function to run parallel builds with proper error handling
+# Function to run parallel builds with proper error handling using CMake
 run_parallel_builds() {
-    print_header "Running all builds in parallel" | tee -a "$RESULT_LOG"
+    print_header "Running all builds in parallel with CMake" | tee -a "$RESULT_LOG"
     
-    if ! safe_cd "$HYDROGEN_DIR/src"; then
+    if ! safe_cd "$HYDROGEN_DIR"; then
         return 1
     fi
     
     local start_time
     start_time=$(date +%s)
     
-    # Run builds using exact command structure from working example
-    make clean >/dev/null 2>&1 && (make -j24 default QUIET=1 >/dev/null 2>&1 & \
-                                  make -j24 debug QUIET=1 >/dev/null 2>&1 & \
-                                  make -j24 valgrind QUIET=1 >/dev/null 2>&1 & \
-                                  make -j24 perf QUIET=1 >/dev/null 2>&1 & \
-                                  make -j24 release QUIET=1 >/dev/null 2>&1 & \
-                                  wait)
+    # Clean previous builds, configure from scratch, and build all variants using CMake
+    local temp_log="$RESULTS_DIR/cmake_build_${TIMESTAMP}.log"
+    # Remove existing build directory to start fresh
+    if [ -d "build" ]; then
+        print_info "Removing existing build directory for a fresh start..." | tee -a "$RESULT_LOG"
+        rm -rf build >> "$temp_log" 2>&1
+        if [ $? -ne 0 ]; then
+            print_result 1 "Failed to remove existing build directory, check log for details: $(convert_to_relative_path "$temp_log")" | tee -a "$RESULT_LOG"
+            EXIT_CODE=1
+            return 1
+        fi
+    fi
+    # Configure build system
+    print_info "Configuring CMake build system..." | tee -a "$RESULT_LOG"
+    cmake -S cmake --preset default > "$temp_log" 2>&1
+    local config_result=$?
+    if [ $config_result -ne 0 ]; then
+        print_result 1 "CMake configuration failed, check log for details: $(convert_to_relative_path "$temp_log")" | tee -a "$RESULT_LOG"
+        EXIT_CODE=1
+        return 1
+    fi
+    # Now build all variants
+    cmake --build build --target all_variants --parallel >> "$temp_log" 2>&1
+    
+    local build_result=$?
     
     local end_time
     local duration
@@ -192,6 +210,9 @@ run_parallel_builds() {
     duration=$((end_time - start_time))
     
     print_info "All parallel builds completed in ${duration}s" | tee -a "$RESULT_LOG"
+    if [ $build_result -ne 0 ]; then
+        print_warning "CMake build process returned non-zero exit code, check log for details: $(convert_to_relative_path "$temp_log")" | tee -a "$RESULT_LOG"
+    fi
     
     # Check build results
     for type in default debug valgrind perf release; do
