@@ -38,7 +38,10 @@ HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 source "$SCRIPT_DIR/support_utils.sh"
 
 # Configuration
-if [ -f "$HYDROGEN_DIR/hydrogen_release" ]; then
+if [ -n "$1" ] && [ -f "$1" ]; then
+    HYDROGEN_BIN="$1"
+    print_info "Using provided build for testing: $1"
+elif [ -f "$HYDROGEN_DIR/hydrogen_release" ]; then
     HYDROGEN_BIN="$HYDROGEN_DIR/hydrogen_release"
     print_info "Using release build for testing"
 else
