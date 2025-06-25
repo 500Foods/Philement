@@ -579,10 +579,20 @@ run_cloc_analysis() {
     
     local cloc_output
     cloc_output=$(mktemp)
+    local exclude_list
+    exclude_list=$(mktemp)
     local start_dir
     start_dir=$(pwd)
     
-    if cd "$HYDROGEN_DIR" && env LC_ALL=en_US.UTF_8 cloc . --quiet --force-lang="C,inc" > "$cloc_output" 2>&1; then
+    # Generate exclude list based on .lintignore and default excludes
+    : > "$exclude_list"
+    while read -r file; do
+        if should_exclude_file "$file"; then
+            echo "${file#"$HYDROGEN_DIR"/}" >> "$exclude_list"
+        fi
+    done < <(find "$HYDROGEN_DIR" -type f | sort)
+    
+    if cd "$HYDROGEN_DIR" && env LC_ALL=en_US.UTF_8 cloc . --quiet --force-lang="C,inc" --exclude-list-file="$exclude_list" > "$cloc_output" 2>&1; then
         tail -n +2 "$cloc_output" | tee -a "$RESULT_LOG"
         
         # Extract summary statistics
@@ -607,7 +617,7 @@ run_cloc_analysis() {
     fi
     
     cd "$start_dir" || exit 1
-    rm -f "$cloc_output"
+    rm -f "$cloc_output" "$exclude_list"
 }
 
 # Run comprehensive linting tests
