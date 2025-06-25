@@ -30,6 +30,9 @@ response_*.json
 temp_*
 *.tmp
 
+# Don't need to copy this around, thanks
+tests/unity/framework/
+
 # Executables
 hydrogen           
 hydrogen_debug     
