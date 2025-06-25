@@ -8,14 +8,15 @@ if [ $# -ne 2 ]; then
     exit 1
 fi
 
-PROJECT_ROOT="$1"
+# shellcheck disable=SC2034
+PROJECT_ROOT="$1"  # Kept for potential future use or reconfiguration command
 CURRENT_COMMIT_COUNT="$2"
 
 # Get the latest git commit count
 LATEST_COMMIT_COUNT=$(git log --oneline | wc -l)
 
 # Check if we are in a git repository
-if [ $? -ne 0 ]; then
+if ! git log --oneline >/dev/null 2>&1; then
     echo "⚠️ Warning: Not in a git repository or git not installed. Cannot check commit count."
     echo "Using provided commit count: $CURRENT_COMMIT_COUNT"
     exit 0

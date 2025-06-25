@@ -27,7 +27,7 @@ fi
 
 cd "$BUILD_DIR"
 
-printf "${CYAN}${INFO} Starting trial build (warnings and errors only)...${NORMAL}\n"
+printf "%s%s Starting trial build (warnings and errors only)...%s\n" "$CYAN" "$INFO" "$NORMAL"
 
 # Clean previous build
 cmake --build . --target clean >/dev/null 2>&1 || true
@@ -41,23 +41,23 @@ grep -E "error:|warning:|undefined reference|collect2|ld returned|built successf
 
 # Check if build was successful
 if echo "$BUILD_OUTPUT" | grep -q "completed successfully" && ! echo "$BUILD_OUTPUT" | grep -q -E "warning:|error:|undefined reference|ld returned"; then
-    printf "\n${CYAN}${INFO} Build successful with no warnings/errors. Copying binary to root directory for testing...${NORMAL}\n"
+    printf "\n%s%s Build successful with no warnings/errors. Copying binary to root directory for testing...%s\n" "$CYAN" "$INFO" "$NORMAL"
     cp "$BUILD_DIR/hydrogen" "$SOURCE_DIR/../hydrogen"
-    printf "\n${CYAN}${INFO} Running shutdown test...${NORMAL}\n"
+    printf "\n%s%s Running shutdown test...%s\n" "$CYAN" "$INFO" "$NORMAL"
     
 # Run shutdown test if available
 if [ -f "$SOURCE_DIR/../tests/test_20_shutdown.sh" ]; then
     "$SOURCE_DIR/../tests/test_20_shutdown.sh"
 else
-    printf "${YELLOW}${WARN} Shutdown test script not found${NORMAL}\n"
+    printf "%s%s Shutdown test script not found%s\n" "$YELLOW" "$WARN" "$NORMAL"
 fi
     
-    printf "\n${CYAN}${INFO} Analyzing unused source files...${NORMAL}\n"
+    printf "\n%s%s Analyzing unused source files...%s\n" "$CYAN" "$INFO" "$NORMAL"
     
     # Check for unused source files using the map file
     MAP_FILE="$BUILD_DIR/hydrogen.map"
     if [ -f "$MAP_FILE" ]; then
-        printf "${CYAN}${INFO} Analyzing map file for used source files...${NORMAL}\n"
+        printf "%s%s Analyzing map file for used source files...%s\n" "$CYAN" "$INFO" "$NORMAL"
         
         # Extract CMake object file paths from the map file
         # These have the format: CMakeFiles/hydrogen.dir/full/path/to/source.c.o
@@ -65,19 +65,19 @@ fi
         
         # Show sample of object/source references for debugging
         if [ -n "$USED_OBJS" ]; then
-            printf "${CYAN}${INFO} Sample of object/source references from map file (first 5):${NORMAL}\n"
+            printf "%s%s Sample of object/source references from map file (first 5):%s\n" "$CYAN" "$INFO" "$NORMAL"
             echo "$USED_OBJS" | head -n 5 | while read -r ref; do
-                printf "  ${CYAN}- $ref${NORMAL}\n"
+                printf "  %s- %s%s\n" "$CYAN" "$ref" "$NORMAL"
             done
         else
-            printf "${YELLOW}${WARN} No CMake object file references found in map file.${NORMAL}\n"
+            printf "%s%s No CMake object file references found in map file.%s\n" "$YELLOW" "$WARN" "$NORMAL"
         fi
         
         # Find all source files
         ALL_SRCS=$(find "$SOURCE_DIR/../src" -name "*.c" | sed "s|$SOURCE_DIR/../||g" | sort)
         
-        printf "${CYAN}${INFO} Total source files found: $(echo "$ALL_SRCS" | wc -l)${NORMAL}\n"
-        printf "${CYAN}${INFO} Total object/source references in map: $(echo "$USED_OBJS" | wc -l)${NORMAL}\n"
+        printf "%s%s Total source files found: %s%s\n" "$CYAN" "$INFO" "$(echo "$ALL_SRCS" | wc -l)" "$NORMAL"
+        printf "%s%s Total object/source references in map: %s%s\n" "$CYAN" "$INFO" "$(echo "$USED_OBJS" | wc -l)" "$NORMAL"
         
         # Map used objects back to source files
         USED_SRCS=""
@@ -93,7 +93,7 @@ fi
         done
         USED_SRCS=$(echo -e "$USED_SRCS" | grep -v "^$" | sort -u)
         
-        printf "${CYAN}${INFO} Total matched source files: $(echo "$USED_SRCS" | wc -l)${NORMAL}\n"
+        printf "%s%s Total matched source files: %s%s\n" "$CYAN" "$INFO" "$(echo "$USED_SRCS" | wc -l)" "$NORMAL"
         
         # Read ignored files
         IGNORED_SRCS=""
@@ -107,25 +107,25 @@ fi
         else
             IGNORED_COUNT=0
         fi
-        printf "${CYAN}${INFO} Total ignored files: $IGNORED_COUNT${NORMAL}\n"
+        printf "%s%s Total ignored files: %s%s\n" "$CYAN" "$INFO" "$IGNORED_COUNT" "$NORMAL"
         
         # Find unused sources
         UNUSED_SRCS=$(comm -23 <(echo "$ALL_SRCS") <(echo "$USED_SRCS"))
         REPORTABLE_SRCS=$(comm -23 <(echo "$UNUSED_SRCS") <(echo "$IGNORED_SRCS" | sort))
         
         if [ -z "$REPORTABLE_SRCS" ]; then
-            printf "${GREEN}${PASS} No unexpected unused source files detected${NORMAL}\n"
+            printf "%s%s No unexpected unused source files detected%s\n" "$GREEN" "$PASS" "$NORMAL"
         else
-            printf "${YELLOW}${WARN} Unexpected unused source files detected:${NORMAL}\n"
+            printf "%s%s Unexpected unused source files detected:%s\n" "$YELLOW" "$WARN" "$NORMAL"
             echo "$REPORTABLE_SRCS" | while read -r file; do
                 if [ -n "$file" ]; then
-                    printf "  ${YELLOW}- $file${NORMAL}\n"
+                    printf "  %s- %s%s\n" "$YELLOW" "$file" "$NORMAL"
                 fi
             done
         fi
     else
-        printf "${YELLOW}${WARN} Map file not found, skipping unused file analysis${NORMAL}\n"
+        printf "%s%s Map file not found, skipping unused file analysis%s\n" "$YELLOW" "$WARN" "$NORMAL"
     fi
     
-    printf "${BLUE}────────────────────────────────────────────────────────────────${NORMAL}\n"
+    printf "%s────────────────────────────────────────────────────────────────%s\n" "$BLUE" "$NORMAL"
 fi

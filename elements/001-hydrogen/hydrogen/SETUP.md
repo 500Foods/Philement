@@ -20,6 +20,8 @@ These tools are required when building or developing with the Hydrogen codebase:
 - [eslint](https://eslint.org/) - JavaScript code linting and style checking
 - [stylelint](https://stylelint.io/) - CSS/SCSS linting and style checking
 - [htmlhint](https://htmlhint.com/) - HTML code linting and validation
+- [cmake](https://cmake.org/) - Build system
+- [ninja](https://ninja-build.org/) - Faster build system
 
 ## Example Ubuntu Build Environment
 
@@ -35,7 +37,6 @@ With that all installed, perform the following steps.
 
 - Generate PAYLOAD_LOCK and PAYLOAD_KEY (see [SECRETS.md](SECRETS.md) for setup instructions)
 - Run `swagger_generate.sh` and `payroll_generate.sh` in the payloads directory
-- Run `make trial` in the `src` folder to perform a trial build
 - Run `tests_00_all.sh` in the `tests` folder to build and test the entire project
 
 ## Runtime Dependencies

@@ -28,12 +28,12 @@ fi
 
 # Check if UPX is available
 if ! command -v upx >/dev/null 2>&1; then
-    printf "${YELLOW}${WARN} UPX not found, skipping compression${NORMAL}\n"
+    printf "%s%s UPX not found, skipping compression%s\n" "$YELLOW" "$WARN" "$NORMAL"
     exit 0
 fi
 
 # Apply UPX compression
-printf "${CYAN}${INFO} Applying UPX compression with --best option...${NORMAL}\n"
+printf "%s%s Applying UPX compression with --best option...%s\n" "$CYAN" "$INFO" "$NORMAL"
 upx --best "$EXECUTABLE"
 
-printf "${GREEN}${PASS} UPX compression completed successfully${NORMAL}\n"
+printf "%s%s UPX compression completed successfully%s\n" "$GREEN" "$PASS" "$NORMAL"
