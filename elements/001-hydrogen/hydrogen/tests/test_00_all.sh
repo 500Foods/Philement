@@ -623,8 +623,20 @@ generate_repository_info() {
         return 1
     }
     
-    # Run cloc with specific locale settings to ensure consistent output
-    if env LC_ALL=en_US.UTF_8 LC_TIME= LC_ALL= LANG= LANGUAGE= cloc . --quiet --force-lang="C,inc" >> "$repo_info_file" 2>&1; then
+    # Create a temporary exclude list based on .lintignore
+    local exclude_list
+    exclude_list=$(mktemp)
+    : > "$exclude_list"
+    local lint_ignore="$SCRIPT_DIR/../.lintignore"
+    if [ -f "$lint_ignore" ]; then
+        while IFS= read -r pattern; do
+            [[ -z "$pattern" || "$pattern" == \#* ]] && continue
+            echo "$pattern" >> "$exclude_list"
+        done < "$lint_ignore"
+    fi
+    
+    # Run cloc with specific locale settings and exclude list
+    if env LC_ALL=en_US.UTF_8 LC_TIME= LC_ALL= LANG= LANGUAGE= cloc . --quiet --force-lang="C,inc" --exclude-list-file="$exclude_list" >> "$repo_info_file" 2>&1; then
         echo "\`\`\`" >> "$repo_info_file"
         print_info "Generated repository information with cloc analysis" | tee -a "$SUMMARY_LOG"
     else
@@ -635,6 +647,9 @@ generate_repository_info() {
         } >> "$repo_info_file"
         print_warning "Failed to run cloc analysis for repository information" | tee -a "$SUMMARY_LOG"
     fi
+    
+    # Clean up temporary file
+    rm -f "$exclude_list"
     
     # Return to start directory
     cd "$start_dir" || {
