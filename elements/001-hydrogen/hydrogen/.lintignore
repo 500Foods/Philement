@@ -19,11 +19,15 @@ build_debug/*
 build_perf/*
 build_release/*
 build_valgrind/*
+build_unity_tests/*
 
 # Test artifacts
 tests/logs/*
 tests/results/*
 tests/diagnostics/*
+
+# Unity test framework files
+tests/unity/framework/*
 
 # Specific test result files that don't need to follow standalone markdown rules
 tests/results/latest_test_results.md
