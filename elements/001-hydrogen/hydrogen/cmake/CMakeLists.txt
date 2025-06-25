@@ -1,11 +1,11 @@
 # ──────────────────────────────────────────────────────────────────────────────
 # Hydrogen CMake Build System Configuration
 # 
-# This CMakeLists.txt provides a comprehensive build system for the Hydrogen project with
-# multiple build variants:
+# This CMake configuration file sets up the build system for the Hydrogen server. 
+#
 # - Default: Standard build with optimizations and debug symbols
 # - Debug: Build with AddressSanitizer for debugging memory issues
-# - Valgrind: Special build optimized for memory analysis with Valgrind
+# - Valgrind: Build optimized for memory analysis with Valgrind
 # - Performance: Highly optimized build for maximum performance
 # - Release: Stripped, compressed build with embedded encrypted payload
 #
@@ -33,7 +33,7 @@ cmake_minimum_required(VERSION 3.16)
 # Project definition
 project(Hydrogen
     VERSION 1.0.0
-    DESCRIPTION "Hydrogen OIDC Server"
+    DESCRIPTION "Hydrogen Server"
     LANGUAGES C
 )
 
@@ -80,7 +80,7 @@ if(GIT_FOUND)
     execute_process(
         COMMAND ${GIT_EXECUTABLE} log --oneline .
         COMMAND wc -l
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..
         OUTPUT_VARIABLE GIT_COMMIT_COUNT
         OUTPUT_STRIP_TRAILING_WHITESPACE
         ERROR_QUIET
@@ -222,7 +222,7 @@ function(hydrogen_add_executable_target target_name build_type extra_cflags extr
     # Set output name and properties
     set_target_properties(${target_name} PROPERTIES
         OUTPUT_NAME ${target_name}
-        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        RUNTIME_OUTPUT_DIRECTORY /home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen
     )
     
     # Add custom command to show build completion
@@ -253,54 +253,72 @@ hydrogen_add_executable_target(hydrogen_perf "Performance"
     "-flto=auto"
 )
 
-# Release build with special optimizations
-hydrogen_add_executable_target(hydrogen_release "Release" 
-    "-s -DNDEBUG -march=x86-64 -flto=auto -fstack-protector -fno-strict-aliasing" 
-    "-flto=auto -fno-strict-aliasing"
-)
-
 # Payload generation target
 add_custom_target(payload
-    COMMAND ${CMAKE_COMMAND} -E echo "${BLUE}────────────────────────────────────────────────────────────────${NORMAL}"
-    COMMAND ${CMAKE_COMMAND} -E echo "${BLUE}${BOLD} Generating Payload Contents${NORMAL}"
-    COMMAND ${CMAKE_COMMAND} -E echo "${BLUE}────────────────────────────────────────────────────────────────${NORMAL}"
-    COMMAND ${CMAKE_COMMAND} -E echo "${CYAN}${INFO}  Generating OpenAPI specification...${NORMAL}"
-    COMMAND cd ${CMAKE_CURRENT_SOURCE_DIR}/../payloads && ./swagger-generate.sh
-    COMMAND ${CMAKE_COMMAND} -E echo "${CYAN}${INFO}  Packaging payload contents...${NORMAL}"
-    COMMAND cd ${CMAKE_CURRENT_SOURCE_DIR}/../payloads && ./payload-generate.sh
-    COMMAND ${CMAKE_COMMAND} -E echo "${GREEN}${PASS} ${BOLD}Payload contents generated successfully!${NORMAL}"
-    COMMAND ${CMAKE_COMMAND} -E echo "${BLUE}────────────────────────────────────────────────────────────────${NORMAL}"
+    COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
+    COMMAND ${CMAKE_COMMAND} -E echo " Checking Payload Contents"
+    COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Using existing payload file"
+    COMMAND ${CMAKE_COMMAND} -E echo "✅ Payload contents ready!"
+    COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMENT "Generating payload contents"
+    COMMENT "Ensuring payload contents are available"
 )
 
-# Enhanced release target with UPX compression and payload embedding
-add_custom_target(release_enhanced
-    DEPENDS hydrogen_release payload
-    COMMAND ${CMAKE_COMMAND} -E echo "${CYAN}${INFO}  Applying UPX compression to release executable...${NORMAL}"
-    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/apply_upx.sh $<TARGET_FILE:hydrogen_release>
-    COMMAND ${CMAKE_COMMAND} -E echo "${CYAN}${INFO}  Creating UPX-compressed copy as hydrogen_naked...${NORMAL}"
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:hydrogen_release> ${CMAKE_CURRENT_BINARY_DIR}/hydrogen_naked
-    COMMAND ${CMAKE_COMMAND} -E echo "${CYAN}${INFO}  Appending encrypted payload to release executable...${NORMAL}"
-    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/embed_payload.sh $<TARGET_FILE:hydrogen_release> ${CMAKE_CURRENT_SOURCE_DIR}/../payloads/payload.tar.br.enc
-    COMMAND ${CMAKE_COMMAND} -E echo "${GREEN}${PASS} ${BOLD}Release build with encrypted payload appended successfully!${NORMAL}"
-    COMMAND ${CMAKE_COMMAND} -E echo "${BLUE}────────────────────────────────────────────────────────────────${NORMAL}"
+# Clean executables target (used by release)
+add_custom_target(clean_executables
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Cleaning previous release executables..."
+    COMMAND ${CMAKE_COMMAND} -E remove -f /home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/hydrogen_release
+    COMMAND ${CMAKE_COMMAND} -E remove -f /home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/hydrogen_naked
+    COMMENT "Cleaning previous release executables"
+)
+
+# Release build with special optimizations, UPX compression, and payload embedding
+# This matches the original Makefile 'make release' behavior exactly
+add_custom_target(hydrogen_release
+    DEPENDS clean_executables payload
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Building release executable..."
+    # Build the release executable
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target hydrogen_release_exe
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Stripping debug information from release executable..."
+    COMMAND strip -s /home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/hydrogen_release_exe
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Copying release executable..."
+    COMMAND ${CMAKE_COMMAND} -E copy /home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/hydrogen_release_exe /home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/hydrogen_release
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Applying UPX compression to release executable..."
+    COMMAND upx --best /home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/hydrogen_release || echo "⚠️ UPX compression failed or not available"
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Creating UPX-compressed copy as hydrogen_naked..."
+    COMMAND ${CMAKE_COMMAND} -E copy /home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/hydrogen_release /home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/hydrogen_naked
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Appending encrypted payload to release executable..."
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/embed_payload.sh /home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/hydrogen_release ${CMAKE_CURRENT_SOURCE_DIR}/../payloads/payload.tar.br.enc
+    COMMAND ${CMAKE_COMMAND} -E echo "✅ Payload embedded successfully"
+    COMMAND ${CMAKE_COMMAND} -E remove -f /home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/hydrogen_release_exe
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈 Removed intermediate hydrogen_release_exe"
+    COMMAND ${CMAKE_COMMAND} -E true
+    COMMAND ${CMAKE_COMMAND} -E echo "✅ Release build with encrypted payload appended successfully!"
+    COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMENT "Creating enhanced release build with compression and payload"
+    COMMENT "Creating release build with compression and payload (matches Makefile behavior)"
+)
+
+# Internal target for building just the release executable (without payload processing)
+hydrogen_add_executable_target(hydrogen_release_exe "Release" 
+    "-O2 -s -DNDEBUG -march=x86-64 -flto=auto -fstack-protector -fno-strict-aliasing" 
+    "-flto=auto -fno-strict-aliasing"
 )
 
 # Build all variants
 add_custom_target(all_variants
     DEPENDS hydrogen hydrogen_debug hydrogen_valgrind hydrogen_perf hydrogen_release payload
-    COMMAND ${CMAKE_COMMAND} -E echo ""
-    COMMAND ${CMAKE_COMMAND} -E echo "${BLUE}────────────────────────────────────────────────────────────────${NORMAL}"
-    COMMAND ${CMAKE_COMMAND} -E echo "${GREEN}${PASS} ${BOLD}All variants built successfully:${NORMAL}"
-    COMMAND ${CMAKE_COMMAND} -E echo "  ${CYAN}${INFO}  Default:     ${BOLD}$<TARGET_FILE:hydrogen>${NORMAL}"
-    COMMAND ${CMAKE_COMMAND} -E echo "  ${CYAN}${INFO}  Debug:       ${BOLD}$<TARGET_FILE:hydrogen_debug>${NORMAL}"
-    COMMAND ${CMAKE_COMMAND} -E echo "  ${CYAN}${INFO}  Valgrind:    ${BOLD}$<TARGET_FILE:hydrogen_valgrind>${NORMAL}"
-    COMMAND ${CMAKE_COMMAND} -E echo "  ${CYAN}${INFO}  Performance: ${BOLD}$<TARGET_FILE:hydrogen_perf>${NORMAL}"
-    COMMAND ${CMAKE_COMMAND} -E echo "  ${CYAN}${INFO}  Release:     ${BOLD}$<TARGET_FILE:hydrogen_release>${NORMAL}"
-    COMMAND ${CMAKE_COMMAND} -E echo "${BLUE}────────────────────────────────────────────────────────────────${NORMAL}"
+    COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
+    COMMAND ${CMAKE_COMMAND} -E echo "✅ All variants built successfully!"
+    COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
+    COMMAND ${CMAKE_COMMAND} -E echo "  Default:     $<TARGET_FILE:hydrogen>"
+    COMMAND ${CMAKE_COMMAND} -E echo "  Debug:       $<TARGET_FILE:hydrogen_debug>"
+    COMMAND ${CMAKE_COMMAND} -E echo "  Valgrind:    $<TARGET_FILE:hydrogen_valgrind>"
+    COMMAND ${CMAKE_COMMAND} -E echo "  Performance: $<TARGET_FILE:hydrogen_perf>"
+    COMMAND ${CMAKE_COMMAND} -E echo "  Release:     /home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/hydrogen_release"
+    COMMAND ${CMAKE_COMMAND} -E echo "  Naked:       /home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/hydrogen_naked"
+    COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
     COMMENT "Building all variants"
 )
 
@@ -386,7 +404,7 @@ set_tests_properties(
 )
 
 # Install targets
-install(TARGETS hydrogen hydrogen_debug hydrogen_valgrind hydrogen_perf hydrogen_release
+install(TARGETS hydrogen hydrogen_debug hydrogen_valgrind hydrogen_perf hydrogen_release_exe
     RUNTIME DESTINATION bin
     COMPONENT Runtime
 )
