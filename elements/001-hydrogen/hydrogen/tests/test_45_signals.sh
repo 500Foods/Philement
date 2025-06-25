@@ -65,8 +65,8 @@ fi
 
 # Use absolute path for config file to ensure it works after restart
 CONFIG_FILE="$(cd "$SCRIPT_DIR/configs" && pwd)/hydrogen_test_min.json"
-STARTUP_TIMEOUT=5     # Shorter timeout for startup
-SHUTDOWN_TIMEOUT=10   # Shorter timeout for shutdown
+STARTUP_TIMEOUT=3     # Reduced timeout for startup
+SHUTDOWN_TIMEOUT=7    # Reduced timeout for shutdown
 LOG_DIR="$SCRIPT_DIR/logs"
 LOG_FILE_SIGINT="$LOG_DIR/hydrogen_signal_test_SIGINT.log"
 LOG_FILE_SIGTERM="$LOG_DIR/hydrogen_signal_test_SIGTERM.log"
@@ -221,7 +221,7 @@ wait_for_restart() {
         # As a backup, still check for process-based restart (in case implementation changes)
         if ! ps -p "$pid" > /dev/null; then
             # Give time for new process to start
-            sleep 2
+            sleep 0.5
             
             # Look for new hydrogen process
             local new_pid
@@ -278,7 +278,7 @@ else
     SIGINT_TEST=1
 fi
 
-sleep 1
+sleep 0.5
 
 # Test Case 2: SIGTERM handling
 print_header "Test Case 2: SIGTERM Signal Handling"
@@ -306,7 +306,7 @@ else
     SIGTERM_TEST=1
 fi
 
-sleep 1
+sleep 0.5
 
 # Test Case 3: SIGHUP handling (multiple restarts)
 print_header "Test Case 3: SIGHUP Signal Handling (Multiple Restarts)"
@@ -353,7 +353,7 @@ while [ $CURRENT_COUNT -le $RESTART_COUNT ]; do
             
             # Increment counter and continue to next restart
             CURRENT_COUNT=$((CURRENT_COUNT + 1))
-            sleep 2
+            sleep 0.5
         else
             print_result 1 "SIGHUP restart #$CURRENT_COUNT of $RESTART_COUNT failed" | tee -a "$RESULT_LOG"
             break
@@ -372,7 +372,7 @@ if ps -p "$HYDROGEN_PID" > /dev/null 2>&1; then
     kill -9 "$HYDROGEN_PID" 2>/dev/null || true
 fi
 
-sleep 1
+sleep 0.5
 
 # Test Case 4: Multiple signal handling
 print_header "Test Case 4: Multiple Signal Handling"
@@ -409,7 +409,7 @@ else
     MULTI_SIGNAL_TEST=1
 fi
 
-sleep 1
+sleep 0.5
 
 # Test Case 5: SIGUSR2 handling (config dump)
 print_header "Test Case 5: SIGUSR2 Signal Handling (Config Dump)"
