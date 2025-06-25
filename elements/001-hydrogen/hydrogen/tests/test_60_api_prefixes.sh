@@ -104,7 +104,7 @@ validate_json() {
 # Function to wait for server to be ready
 wait_for_server() {
     local base_url="$1"
-    local max_attempts=10  # 5 seconds total (0.5s * 10)
+    local max_attempts=6   # 3 seconds total (0.5s * 6)
     local attempt=1
     
     print_info "Waiting for server to be ready at $base_url..."
@@ -491,7 +491,7 @@ check_socket_states() {
 wait_for_ports_available() {
     local default_port="$1"
     local custom_port="$2"
-    local wait_timeout=5  # Reduced from 30 to 5 seconds since we're actively monitoring
+    local wait_timeout=3  # Reduced to 3 seconds to speed up testing
     
     print_info "Waiting for TIME_WAIT sockets to clear on ports $default_port and $custom_port (if any)..."
     
@@ -612,7 +612,7 @@ print_info "Custom configuration will use port: $CUSTOM_PORT"
 # Ensure clean state
 print_info "Ensuring no existing hydrogen processes are running..."
 pkill -f "hydrogen.*json" 2>/dev/null
-sleep 2
+sleep 0.5
 
 # Test with default configuration (/api prefix)
 test_api_prefix "$DEFAULT_CONFIG_PATH" "/api" "default"
@@ -621,7 +621,7 @@ DEFAULT_PREFIX_RESULT=$?
 # Ensure server is stopped before starting next test
 print_info "Making sure all previous servers are stopped..."
 pkill -f "hydrogen.*json" 2>/dev/null
-sleep 2
+sleep 0.5
 
 # Check for TIME_WAIT sockets and log detailed socket state
 check_socket_states "$DEFAULT_PORT" "default port"
@@ -638,7 +638,7 @@ wait_for_ports_available "$DEFAULT_PORT" "$CUSTOM_PORT"
 perform_final_port_checks "$DEFAULT_PORT" "$CUSTOM_PORT"
 
 # Add a small delay to ensure system stability before starting the next test
-sleep 3
+sleep 1
 
 # Test with custom API prefix configuration (/myapi prefix)
 test_api_prefix "$CUSTOM_CONFIG_PATH" "/myapi" "custom"
