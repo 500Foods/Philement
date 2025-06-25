@@ -1,0 +1,171 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 16,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "default",
+            "displayName": "Default Configuration",
+            "description": "Default build configuration with RelWithDebInfo",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        },
+        {
+            "name": "debug",
+            "displayName": "Debug Configuration",
+            "description": "Debug build with AddressSanitizer",
+            "binaryDir": "${sourceDir}/build-debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        },
+        {
+            "name": "release",
+            "displayName": "Release Configuration", 
+            "description": "Optimized release build",
+            "binaryDir": "${sourceDir}/build-release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        },
+        {
+            "name": "valgrind",
+            "displayName": "Valgrind Configuration",
+            "description": "Build optimized for Valgrind analysis",
+            "binaryDir": "${sourceDir}/build-valgrind",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        },
+        {
+            "name": "performance",
+            "displayName": "Performance Configuration",
+            "description": "Maximum performance build with aggressive optimizations",
+            "binaryDir": "${sourceDir}/build-perf",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        },
+        {
+            "name": "ci",
+            "displayName": "CI Configuration",
+            "description": "Configuration for continuous integration",
+            "binaryDir": "${sourceDir}/build-ci",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "default",
+            "displayName": "Default Build",
+            "description": "Build default hydrogen target",
+            "configurePreset": "default",
+            "targets": ["hydrogen"]
+        },
+        {
+            "name": "debug",
+            "displayName": "Debug Build",
+            "description": "Build debug variant with AddressSanitizer",
+            "configurePreset": "debug",
+            "targets": ["hydrogen_debug"]
+        },
+        {
+            "name": "release",
+            "displayName": "Release Build", 
+            "description": "Build release variant",
+            "configurePreset": "release",
+            "targets": ["hydrogen_release"]
+        },
+        {
+            "name": "valgrind",
+            "displayName": "Valgrind Build",
+            "description": "Build valgrind-compatible variant",
+            "configurePreset": "valgrind",
+            "targets": ["hydrogen_valgrind"]
+        },
+        {
+            "name": "performance",
+            "displayName": "Performance Build",
+            "description": "Build performance-optimized variant",
+            "configurePreset": "performance",
+            "targets": ["hydrogen_perf"]
+        },
+        {
+            "name": "all-variants",
+            "displayName": "All Variants",
+            "description": "Build all hydrogen variants",
+            "configurePreset": "default",
+            "targets": ["all_variants"]
+        },
+        {
+            "name": "trial",
+            "displayName": "Trial Build",
+            "description": "Run diagnostic trial build",
+            "configurePreset": "default",
+            "targets": ["trial"]
+        },
+        {
+            "name": "payload",
+            "displayName": "Payload Generation",
+            "description": "Generate OpenAPI specs and payload",
+            "configurePreset": "default",
+            "targets": ["payload"]
+        },
+        {
+            "name": "release-enhanced",
+            "displayName": "Enhanced Release",
+            "description": "Create UPX-compressed release with embedded payload",
+            "configurePreset": "release",
+            "targets": ["release_enhanced"]
+        },
+        {
+            "name": "ci",
+            "displayName": "CI Build",
+            "description": "Complete CI build with all variants and tests",
+            "configurePreset": "ci",
+            "targets": ["all_variants", "trial"]
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "default",
+            "displayName": "Default Tests",
+            "description": "Run all tests with default configuration",
+            "configurePreset": "default"
+        },
+        {
+            "name": "debug",
+            "displayName": "Debug Tests",
+            "description": "Run tests with debug build",
+            "configurePreset": "debug"
+        },
+        {
+            "name": "valgrind",
+            "displayName": "Valgrind Tests",
+            "description": "Run tests under Valgrind",
+            "configurePreset": "valgrind",
+            "execution": {
+                "jobs": 1
+            }
+        },
+        {
+            "name": "ci",
+            "displayName": "CI Tests",
+            "description": "Run all tests for continuous integration",
+            "configurePreset": "ci"
+        }
+    ]
+}
