@@ -30,7 +30,7 @@ jobs:
     - name: Count Lines of Code (cloc)
       uses: djdefi/cloc-action@main
       with:
-        options: --force-lang=Pascal,inc --report-file=cloc.txt --ignored=cloc-ignored.txt  
+        options: --force-lang=Pascal,inc --report-file=cloc.txt --ignored=cloc-ignored.txt --exclude-list-file=.lintignore
 
     # Copy the new cloc.txt contents into the README.md file at the appropriate spot
     - run: csplit README.md /\<\!--CLOC/ {1}
