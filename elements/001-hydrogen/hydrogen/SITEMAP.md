@@ -12,6 +12,10 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [SITEMAP.md](SITEMAP.md): This file
 - [STRUCTURE.md](STRUCTURE.md): Describes the file layout for the project
 
+## Folder: /cmake
+
+- [README.md](cmake/README.md): Description of the CMake build system
+
 ## Folder: /docs
 
 - [README.md](docs/README.md): Links valid: No - multiple missing files in reference/ subdirectory: faq.md, troubleshooting.md, glossary.md, monitoring.md, terminal_configuration.md, security_configuration.md, and others
