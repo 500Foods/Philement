@@ -88,23 +88,38 @@ run_unity_tests() {
         return 1
     fi
     
-    # Find all test files in unity directory to count subtests
-    local test_files=("${UNITY_DIR}/test_*.c")
-    TOTAL_SUBTESTS=${#test_files[@]}
-    print_info "Found $TOTAL_SUBTESTS Unity test files to run as subtests." | tee -a "$RESULT_LOG"
+    # Initially set TOTAL_SUBTESTS based on test files for informational purposes, searching only in the top-level unity directory
+    local test_files=()
+    mapfile -t test_files < <(find "$UNITY_DIR" -maxdepth 1 -type f -name "test_*.c")
+    print_info "Found ${#test_files[@]} Unity test files in top-level unity directory." | tee -a "$RESULT_LOG"
+    
+    # TOTAL_SUBTESTS will be updated based on actual tests run by ctest
+    TOTAL_SUBTESTS=0
+    print_info "Running Unity tests to determine total subtests..." | tee -a "$RESULT_LOG"
     
     cd "$build_dir" || { print_error "Failed to change to build directory: $build_dir" | tee -a "$RESULT_LOG"; return 1; }
     ctest --output-on-failure | tee "$LOG_FILE"
     local ctest_result=$?
     cd "$SCRIPT_DIR" || { print_error "Failed to return to script directory: $SCRIPT_DIR" | tee -a "$RESULT_LOG"; return 1; }
     
-    # Parse test results from ctest output
+    # Parse test results from ctest output to count total and passed tests
     PASSED_SUBTESTS=0
+    TOTAL_SUBTESTS=0
     while IFS= read -r line; do
-        if [[ $line =~ "Test passed" ]]; then
+        if [[ $line =~ "Passed" ]]; then
             ((PASSED_SUBTESTS++))
+            ((TOTAL_SUBTESTS++))
+        elif [[ $line =~ "Failed" ]]; then
+            ((TOTAL_SUBTESTS++))
+        elif [[ $line =~ "Test #" ]]; then
+            # If the line contains "Test #", it indicates a test execution line
+            # This is a fallback to ensure we count all tests if "Failed" isn't explicitly mentioned
+            if [[ ! $line =~ "Passed" ]]; then
+                ((TOTAL_SUBTESTS++))
+            fi
         fi
     done < "$LOG_FILE"
+    print_info "Found $TOTAL_SUBTESTS Unity tests run as subtests." | tee -a "$RESULT_LOG"
     
     if [ $ctest_result -eq 0 ]; then
         print_info "All Unity tests passed." | tee -a "$RESULT_LOG"
@@ -135,7 +150,7 @@ fi
 TEST_NAME=$(basename "$0" .sh | sed 's/^test_//')
 
 # Export subtest results for test_all.sh
-export_subtest_results "$TEST_NAME" $TOTAL_SUBTESTS $PASSED_SUBTESTS
+export_subtest_results "$TEST_NAME" "$TOTAL_SUBTESTS" "$PASSED_SUBTESTS"
 
 # Print final summary
 print_header "Test Summary" | tee -a "$RESULT_LOG"

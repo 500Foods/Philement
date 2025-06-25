@@ -41,12 +41,14 @@ done < "$TARGET/$LINTIGNORE"
 
 should_exclude() {
     local file="$1"
-    local abs_file
-    local rel_file
-    abs_file=$(realpath "$file" 2>/dev/null || echo "$file")
-    rel_file=$(realpath --relative-to="$TARGET" "$abs_file" 2>/dev/null || echo "$abs_file")
+    local rel_file="${file#"$TARGET"/}"
     for pattern in "${exclude_patterns[@]}"; do
-        [[ "$rel_file" == "$pattern" ]] && return 0
+        shopt -s extglob
+        if [[ "$rel_file" == @($pattern) ]]; then
+            shopt -u extglob
+            return 0
+        fi
+        shopt -u extglob
     done
     return 1
 }
@@ -71,8 +73,14 @@ if [ -n "$cppcheck_suppressions" ]; then
     cppcheck_args+=("${suppression_array[@]}")
 fi
 
-# Collect files with inline filtering
-mapfile -t files < <(find "$TARGET" -type f \( -name "*.c" -o -name "*.h" -o -name "*.inc" \) -exec bash -c 'for f; do ! should_exclude "$f" && echo "$f"; done' _ {} + 2>/dev/null)
+# Collect files with inline filtering using grep -v for exclusions
+find_cmd="find \"$TARGET\" -type f \( -name \"*.c\" -o -name \"*.h\" -o -name \"*.inc\" \)"
+for pattern in "${exclude_patterns[@]}"; do
+    # Convert glob pattern to grep pattern
+    grep_pattern="${pattern//\*/.*}"
+    find_cmd="$find_cmd | grep -v \"$grep_pattern\""
+done
+mapfile -t files < <(eval "$find_cmd")
 
 if [ ${#files[@]} -gt 0 ]; then
     echo "Running cppcheck on ${#files[@]} files
