@@ -2,7 +2,7 @@
 
 ## Overview
 
-Hydrogen is a high-performance, multithreaded server framework that began as a modern replacement for Mainsail and Moonraker in the 3D printing ecosystem. While it excels at providing a powerful front-end for Klipper-based 3D printers, it has evolved into a versatile platform capable of serving many roles beyond 3D printing.
+Hydrogen is a high-performance, multithreaded server framework that began as an idea for a modern replacement for Mainsail and Moonraker in the 3D printing ecosystem. It has since evolved into a versatile platform capable of serving many roles beyond 3D printing.
 
 At its heart, Hydrogen features a robust queue system and a sophisticated service management architecture. Core services include:
 
@@ -13,7 +13,7 @@ At its heart, Hydrogen features a robust queue system and a sophisticated servic
 - Print Server: Offers complete 3D printer control and monitoring capabilities
 - OIDC Provider: Implements OpenID Connect protocol for secure authentication and authorization
 
-Whether you're managing a single 3D printer, orchestrating a large print farm, or building a high-performance web application, Hydrogen provides the foundation you need. Its modular architecture and emphasis on performance make it a versatile tool for both Philement projects and broader applications.
+Whether you're managing a single 3D printer, orchestrating a large print farm, or building a high-performance web application, Hydrogen provides the foundation you need. Its modular architecture and emphasis on performance make it an ideal elemental core for both Philement projects and broader applications.
 
 ## Intended Audience & Requirements
 
@@ -26,26 +26,18 @@ Hydrogen is currently designed for technical users who:
 
 **Platform Support:**
 
-- Primary Platform: Linux-based systems
-- Future Support: While we plan to expand platform support in the future, Hydrogen is currently optimized for and tested primarily on Linux systems
-
-**Technical Prerequisites:**
-
-- Linux operating system
-- Familiarity with building and running server applications
-- Basic understanding of WebSocket and REST API concepts
-- Command-line proficiency for configuration and maintenance
+- Primary Platform: Linux-based systems - Fedora and Ubuntu to start with.
 
 ## Table of Contents
 
 ### Core Documentation
 
+- [**Development Guide**](RECIPE.md) - Development guide optimized for AI assistance
 - [**Project Structure**](STRUCTURE.md) - Complete file organization and architecture overview
 - [**Build Environment**](SETUP.md) - Build and runtime requirements, environment setup
-- [**Development Guide**](RECIPE.md) - Development guide optimized for AI assistance
-- [**Release Notes**](RELEASES.md) - Detailed version history and changes
 - [**Secrets Management**](SECRETS.md) - Environment variables and security configuration
-- [**Site Map**](SITEMAP.md) - Index to all Markdown files in this repository
+- [**Release Notes**](RELEASES.md) - Detailed version history and changes
+- [**Markdown Site Map**](SITEMAP.md) - Index to all Markdown files in this repository
 
 ### Main Documentation
 
@@ -81,7 +73,7 @@ Hydrogen is currently designed for technical users who:
 
 ## Latest Test Results
 
-Generated on: Wed Jun 25 07:24:09 PDT 2025
+Generated on: Wed Jun 25 17:04:11 PDT 2025
 
 ### Summary
 
@@ -94,41 +86,41 @@ Generated on: Wed Jun 25 07:24:09 PDT 2025
 | Total Subtests | 118 |
 | Passed Subtests | 118 |
 | Failed Subtests | 0 |
-| Runtime | 00:01:52.754 |
+| Runtime | 00:01:49.520 |
 
 ### Individual Test Results
 
 | Status | Time | Test | Subs | Pass | Summary |
 | ------ | ---- | ---- | ---- | ---- | ------- |
-| ✅ | 00:00:11.672 | 10_compilation | 1 | 1 | Test completed without errors |
-| ✅ | 00:00:00.123 | 12_env_payload | 2 | 2 | Test completed without errors |
-| ✅ | 00:00:02.665 | 15_startup_shutdown | 6 | 6 | Test completed without errors |
-| ✅ | 00:00:02.297 | 20_shutdown | 5 | 5 | Test completed without errors |
-| ✅ | 00:00:05.856 | 25_library_dependencies | 16 | 16 | Test completed without errors |
-| ✅ | 00:00:00.178 | 30_unity_tests | 3 | 3 | Test completed without errors |
-| ✅ | 00:00:00.088 | 35_env_variables | 1 | 1 | Test completed without errors |
-| ✅ | 00:00:00.092 | 40_json_error_handling | 2 | 2 | Test completed without errors |
-| ✅ | 00:00:16.267 | 45_signals | 5 | 5 | Test completed without errors |
-| ✅ | 00:00:01.946 | 50_crash_handler | 20 | 20 | Test completed without errors |
-| ✅ | 00:00:00.090 | 55_socket_rebind | 1 | 1 | Test completed without errors |
-| ✅ | 00:00:08.482 | 60_api_prefixes | 10 | 10 | Test completed without errors |
-| ✅ | 00:00:06.016 | 65_system_endpoints | 17 | 17 | Test completed without errors |
-| ✅ | 00:00:03.953 | 70_swagger | 10 | 10 | Test completed without errors |
-| ✅ | 00:00:03.110 | 95_leaks_like_a_sieve | 2 | 2 | Test completed without errors |
-| ✅ | 00:00:18.208 | 98_check_links | 4 | 4 | Test completed without errors |
-| ✅ | 00:00:29.704 | 99_codebase | 13 | 13 | Test completed without errors |
+| ✅ | 00:00:10.330 | 10_compilation | 1 | 1 | Test completed without errors |
+| ✅ | 00:00:00.090 | 12_env_payload | 2 | 2 | Test completed without errors |
+| ✅ | 00:00:02.621 | 15_startup_shutdown | 6 | 6 | Test completed without errors |
+| ✅ | 00:00:02.292 | 20_shutdown | 5 | 5 | Test completed without errors |
+| ✅ | 00:00:05.840 | 25_library_dependencies | 16 | 16 | Test completed without errors |
+| ✅ | 00:00:00.174 | 30_unity_tests | 3 | 3 | Test completed without errors |
+| ✅ | 00:00:00.084 | 35_env_variables | 1 | 1 | Test completed without errors |
+| ✅ | 00:00:00.083 | 40_json_error_handling | 2 | 2 | Test completed without errors |
+| ✅ | 00:00:16.182 | 45_signals | 5 | 5 | Test completed without errors |
+| ✅ | 00:00:01.799 | 50_crash_handler | 20 | 20 | Test completed without errors |
+| ✅ | 00:00:00.087 | 55_socket_rebind | 1 | 1 | Test completed without errors |
+| ✅ | 00:00:06.694 | 60_api_prefixes | 10 | 10 | Test completed without errors |
+| ✅ | 00:00:06.013 | 65_system_endpoints | 17 | 17 | Test completed without errors |
+| ✅ | 00:00:03.944 | 70_swagger | 10 | 10 | Test completed without errors |
+| ✅ | 00:00:03.107 | 95_leaks_like_a_sieve | 2 | 2 | Test completed without errors |
+| ✅ | 00:00:18.098 | 98_check_links | 4 | 4 | Test completed without errors |
+| ✅ | 00:00:30.181 | 99_codebase | 13 | 13 | Test completed without errors |
 
 ## Repository Information
 
-Generated via cloc: Wed Jun 25 07:24:09 PDT 2025
+Generated via cloc: Wed Jun 25 17:04:11 PDT 2025
 
 ```cloc
-github.com/AlDanial/cloc v 2.02  T=0.34 s (1320.1 files/s, 233472.2 lines/s)
+github.com/AlDanial/cloc v 2.02  T=0.36 s (1253.3 files/s, 221631.5 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 C                              129           4452           5849          19953
-Markdown                       157           4812             48          16659
+Markdown                       157           4812             48          16651
 Bourne Shell                    39           2044           2228           9606
 JSON                            17              2              0           4701
 C/C++ Header                   105           1098           4275           2678
@@ -136,6 +128,6 @@ HTML                             1             74              0            493
 CMake                            2             65             95            340
 make                             2             58            124            285
 -------------------------------------------------------------------------------
-SUM:                           452          12605          12619          54715
+SUM:                           452          12605          12619          54707
 -------------------------------------------------------------------------------
 ```
