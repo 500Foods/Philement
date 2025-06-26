@@ -11,14 +11,14 @@ set -e
 
 BUILD_DIR="$1"
 SOURCE_DIR="$2"
-CYAN='\033[0;36m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-BLUE='\033[0;34m'
-NORMAL='\033[0m'
-INFO='🛈'
-PASS='✅'
-WARN='⚠️'
+CYAN=''
+GREEN=''
+YELLOW=''
+BLUE=''
+NORMAL=''
+INFO='[INFO]'
+PASS='[PASS]'
+WARN='[WARN]'
 
 if [ -z "$BUILD_DIR" ] || [ -z "$SOURCE_DIR" ]; then
     echo "Usage: $0 <build_dir> <source_dir>"
@@ -42,7 +42,14 @@ grep -E "error:|warning:|undefined reference|collect2|ld returned|built successf
 # Check if build was successful
 if echo "$BUILD_OUTPUT" | grep -q "completed successfully" && ! echo "$BUILD_OUTPUT" | grep -q -E "warning:|error:|undefined reference|ld returned"; then
     printf "\n%s%s Build successful with no warnings/errors. Copying binary to root directory for testing...%s\n" "$CYAN" "$INFO" "$NORMAL"
-    cp "$BUILD_DIR/hydrogen" "$SOURCE_DIR/../hydrogen"
+    if [ -f "$BUILD_DIR/hydrogen" ]; then
+        cp "$BUILD_DIR/hydrogen" "$SOURCE_DIR/../hydrogen"
+    elif [ -f "$SOURCE_DIR/../hydrogen" ]; then
+        printf "%s%s Binary already exists in root directory, using existing binary.%s\n" "$CYAN" "$INFO" "$NORMAL"
+    else
+        printf "%s%s Error: Binary not found in build or root directory.%s\n" "$YELLOW" "$WARN" "$NORMAL"
+        exit 1
+    fi
     printf "\n%s%s Running shutdown test...%s\n" "$CYAN" "$INFO" "$NORMAL"
     
 # Run shutdown test if available
@@ -63,13 +70,8 @@ fi
         # These have the format: CMakeFiles/hydrogen.dir/full/path/to/source.c.o
         USED_OBJS=$(grep -oE "CMakeFiles/hydrogen\.dir/[^[:space:]]*\.c\.o" "$MAP_FILE" | sort -u)
         
-        # Show sample of object/source references for debugging
-        if [ -n "$USED_OBJS" ]; then
-            printf "%s%s Sample of object/source references from map file (first 5):%s\n" "$CYAN" "$INFO" "$NORMAL"
-            echo "$USED_OBJS" | head -n 5 | while read -r ref; do
-                printf "  %s- %s%s\n" "$CYAN" "$ref" "$NORMAL"
-            done
-        else
+        # Skip showing sample of object/source references as it's no longer needed for debugging
+        if [ -z "$USED_OBJS" ]; then
             printf "%s%s No CMake object file references found in map file.%s\n" "$YELLOW" "$WARN" "$NORMAL"
         fi
         

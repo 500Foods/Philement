@@ -30,16 +30,16 @@ Hydrogen is currently designed for technical users who:
 
 ## Table of Contents
 
-### Core Documentation
+### Getting Started
 
-- [**Development Guide**](RECIPE.md) - Development guide optimized for AI assistance
+- [**AI Recipe**](RECIPE.md) - Development guide optimized for AI assistance
 - [**Project Structure**](STRUCTURE.md) - Complete file organization and architecture overview
 - [**Build Environment**](SETUP.md) - Build and runtime requirements, environment setup
 - [**Secrets Management**](SECRETS.md) - Environment variables and security configuration
 - [**Release Notes**](RELEASES.md) - Detailed version history and changes
 - [**Markdown Site Map**](SITEMAP.md) - Index to all Markdown files in this repository
 
-### Main Documentation
+### Core Documentation
 
 - [**Documentation Hub**](docs/README.md) - Start here for comprehensive overview
 - [**Developer Onboarding**](docs/developer_onboarding.md) - Visual architecture overview and code navigation

@@ -1,7 +1,11 @@
 # HYDROGEN
 
-🚨 **CRITICAL: `make trial` MUST PASS** 🚨
-Run from /src/. Requires:
+🚨 **CRITICAL: Trial Build with CMake MUST PASS** 🚨
+Run the following command from the project root to set up and perform the trial build using the predefined preset:
+```
+cd elements/001-hydrogen/hydrogen/cmake && cmake -S . -B ../build --preset default && cmake --build ../build --preset default && cmake --build ../build --preset trial
+```
+Requires:
 
 1. No warnings/errors
 2. Shutdown test passes
@@ -119,9 +123,11 @@ log_this("Component", "Failed: reason", LOG_LEVEL_ERROR, true, true, true);
 
 ## Builds
 
-trial: Required, clean + tests
-debug: Debug symbols
-perf: Optimized
-release: Production
-valgrind: Memory check
-default: Standard
+Use CMake presets or build configurations for different build types. Refer to `CMakePresets.json` for details.
+
+- **trial**: Required, clean build with tests
+- **debug**: Includes debug symbols for troubleshooting
+- **perf**: Optimized for performance analysis
+- **release**: Optimized for production use
+- **valgrind**: Configured for memory checking with Valgrind
+- **default**: Standard build configuration
