@@ -11,6 +11,20 @@ Requires:
 2. Shutdown test passes
 3. Only then done
 
+**Important Note on Build Process:**
+Always run the trial build first after making any code changes to ensure there are no errors or warnings. Only proceed with other build types (like debug, release, etc.) after the trial build passes successfully. This approach helps catch issues early and maintains the integrity of the codebase.
+
+**Building and Running the Release Version:**
+To build the release version of Hydrogen for production deployment, which includes optimizations and embedded payload, run the following command from the project root:
+```
+cd elements/001-hydrogen/hydrogen/cmake && cmake -B ../build && cmake --build ../build --target hydrogen_release
+```
+After building, to run the release executable and verify features like Swagger, use:
+```
+cd elements/001-hydrogen/hydrogen && ./hydrogen_release
+```
+This ensures you are using the optimized release build with all configured features enabled.
+
 ## Project
 
 ```json
