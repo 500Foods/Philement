@@ -317,6 +317,10 @@ bool check_all_launch_readiness(void) {
  * Returns 1 on successful startup, 0 on critical failure
  */
 int startup_hydrogen(const char* config_path) {
+    // Capture the start time as early as possible
+    struct timeval start_tv;
+    gettimeofday(&start_tv, NULL);
+    
     // First check if we're in shutdown mode - if so, prevent restart
     if (server_stopping) {
         log_this("Startup", "Preventing application restart during shutdown", LOG_LEVEL_ERROR);
@@ -449,26 +453,30 @@ int startup_hydrogen(const char* config_path) {
     log_group_begin();
     log_this("Startup", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
     log_this("Startup", "STARTUP COMPLETE", LOG_LEVEL_STATE);
-    log_this("Startup", "- Version: %s", LOG_LEVEL_STATE, VERSION);
-    log_this("Startup", "- Release: %s", LOG_LEVEL_STATE, RELEASE);
-    log_this("Startup", "- Build Type: %s", LOG_LEVEL_STATE, BUILD_TYPE);
+    log_this("Startup", "- Version Information", LOG_LEVEL_STATE);
+    log_this("Startup", "    Version: %s", LOG_LEVEL_STATE, VERSION);
+    log_this("Startup", "    Release: %s", LOG_LEVEL_STATE, RELEASE);
+    log_this("Startup", "    Build Type: %s", LOG_LEVEL_STATE, BUILD_TYPE);
+    log_this("Startup", "- Services Information", LOG_LEVEL_STATE);
     
     // Log server URLs if subsystems are running
     if (is_subsystem_running_by_name("WebServer")) {
-        log_this("Startup", "- Web Server running: http://localhost:%d", LOG_LEVEL_STATE, app_config->webserver.port);
+        log_this("Startup", "    Web Server running: http://localhost:%d", LOG_LEVEL_STATE, app_config->webserver.port);
     }
     if (is_subsystem_running_by_name("API")) {
-        log_this("Startup", "- API Server running: http://localhost:%d%s", LOG_LEVEL_STATE, app_config->webserver.port, app_config->api.prefix);
+        log_this("Startup", "    API Server running: http://localhost:%d%s", LOG_LEVEL_STATE, app_config->webserver.port, app_config->api.prefix);
     }
     if (is_subsystem_running_by_name("Swagger")) {
-        log_this("Startup", "- Swagger running: http://localhost:%d%s", LOG_LEVEL_STATE, app_config->webserver.port, app_config->swagger.prefix);
+        log_this("Startup", "    Swagger running: http://localhost:%d%s", LOG_LEVEL_STATE, app_config->webserver.port, app_config->swagger.prefix);
     }
     
-    // Calculate startup time
-    double startup_time = calculate_startup_time();
-    
+    log_this("Startup", "- Performance Information", LOG_LEVEL_STATE);
+    // Log times with consistent fixed-length text and hyphens for formatting
     // Get current time with microsecond precision
     gettimeofday(&tv, NULL);
+    
+    // Calculate startup time using the difference between current time and start time
+    double startup_time = (tv.tv_sec - start_tv.tv_sec) + (tv.tv_usec - start_tv.tv_usec) / 1000000.0;
     
     // Format current time with ISO 8601 format including milliseconds
     time_t current_time = tv.tv_sec;
@@ -482,53 +490,32 @@ int startup_hydrogen(const char* config_path) {
     snprintf(temp_str, sizeof(temp_str), ".%03dZ", current_ms);
     strcat(current_time_str, temp_str);
     
-    // Calculate start time by subtracting startup time from current time
-    time_t start_sec = tv.tv_sec;
-    long start_usec = tv.tv_usec;
-    
-    // Adjust for whole seconds in startup_time
-    start_sec -= (time_t)startup_time;
-    
-    // Adjust for fractional seconds in startup_time
-    long startup_usec = (long)((startup_time - (int)startup_time) * 1000000);
-    if (start_usec < startup_usec) {
-        start_sec--;
-        start_usec += 1000000;
-    }
-    start_usec -= startup_usec;
-    
-    // Format start time
+    // Format start time from the captured start_tv
+    time_t start_sec = start_tv.tv_sec;
     struct tm* start_tm = gmtime(&start_sec);
     char start_time_str[64];
     strftime(start_time_str, sizeof(start_time_str), "%Y-%m-%dT%H:%M:%S", start_tm);
     
     // Add milliseconds to start time
-    int start_ms = start_usec / 1000;
+    int start_ms = start_tv.tv_usec / 1000;
     snprintf(temp_str, sizeof(temp_str), ".%03dZ", start_ms);
     strcat(start_time_str, temp_str);
     
-    // Log times with consistent fixed-length text and hyphens for formatting
-    log_this("Startup", "- System startup began: %s", LOG_LEVEL_STATE, start_time_str);
-    log_this("Startup", "- Current system clock: %s", LOG_LEVEL_STATE, current_time_str);
-    log_this("Startup", "- Startup elapsed time: %.3fs", LOG_LEVEL_STATE, startup_time);
+    log_this("Startup", "    System startup began: %s", LOG_LEVEL_STATE, start_time_str);
+    log_this("Startup", "    Current system clock: %s", LOG_LEVEL_STATE, current_time_str);
+    log_this("Startup", "    Startup elapsed time: %.3fs", LOG_LEVEL_STATE, startup_time);
     
     // Log memory usage
     size_t vmsize = 0, vmrss = 0, vmswap = 0;
     get_process_memory(&vmsize, &vmrss, &vmswap);
-    log_this("Startup", "- Memory Usage (RSS): %.1f MB", LOG_LEVEL_STATE, vmrss / 1024.0);
+    log_this("Startup", "    Memory Usage (RSS): %.1f MB", LOG_LEVEL_STATE, vmrss / 1024.0);
     
     // Display restart count and timing if application has been restarted
     if (restart_count > 0) {
         static struct timeval original_start_tv = {0, 0};
         if (original_start_tv.tv_sec == 0) {
             // Store first start time with microsecond precision
-            original_start_tv = tv;
-            original_start_tv.tv_sec -= (time_t)startup_time;
-            original_start_tv.tv_usec -= startup_usec;
-            if (original_start_tv.tv_usec < 0) {
-                original_start_tv.tv_sec--;
-                original_start_tv.tv_usec += 1000000;
-            }
+            original_start_tv = start_tv;
         }
         
         // Format original start time with microsecond precision
@@ -542,9 +529,9 @@ int startup_hydrogen(const char* config_path) {
         // Calculate and log total runtime since original start
         double total_runtime = calculate_total_runtime();
         
-        log_this("Startup", "- Original launch time: %s", LOG_LEVEL_STATE, orig_time_str);
-        log_this("Startup", "- Overall running time: %.3fs", LOG_LEVEL_STATE, total_runtime);
-        log_this("Startup", "- Application restarts: %d", LOG_LEVEL_STATE, restart_count);
+        log_this("Startup", "    Original launch time: %s", LOG_LEVEL_STATE, orig_time_str);
+        log_this("Startup", "    Overall running time: %.3fs", LOG_LEVEL_STATE, total_runtime);
+        log_this("Startup", "    Application restarts: %d", LOG_LEVEL_STATE, restart_count);
     }
     
     log_this("Startup", "- Application started", LOG_LEVEL_STATE);
