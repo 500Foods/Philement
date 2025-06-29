@@ -27,7 +27,9 @@ These tools are required when building or developing with the Hydrogen codebase:
 
 ```bash
 sudo apt update
-sudo apt install -y build-essential wget curl jq nodejs npm cloc libjansson-dev libmicrohttpd-dev libssl-dev libwebsockets-dev libbrotli-dev upx-ucl valgrind cppcheck eslint
+sudo apt install -y build-essential wget curl jq nodejs npm cloc ninja-build upx-ucl brotli
+sudo apt install -y libjansson-dev libmicrohttpd-dev libssl-dev libwebsockets-dev libbrotli-dev libcurl-openssl-dev
+sudp apt install -y valgrind cppcheck eslint
 npm install -g markdownlint jsonlint stylelint htmlhint
 ```
 
