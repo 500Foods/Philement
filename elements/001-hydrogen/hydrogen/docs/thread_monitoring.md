@@ -316,7 +316,7 @@ Pss:               11490 kB
 Swap:                  0 kB
 
 === File Descriptor Information ===
-Count: 15 file descriptors
+Count: 13 file descriptors
 
 Detailed FD List:
 FD     Type       Description
@@ -333,9 +333,7 @@ FD     Type       Description
 9      socket     socket (TCP port 5002 - websocket server)
 10     socket     socket (TCP6 port 5002 - websocket server)
 11     socket     socket (UDP port 5353 - mDNS)
-42     file       file: /home/asimard/.config/Code/logs/20250217T160357/ptyhost.log
 43     socket     Unix domain socket: *
-103    file       file: /usr/share/code/v8_context_snapshot.bin
 
 === Resource Limits ===
 Max open files            524288               524288               files
