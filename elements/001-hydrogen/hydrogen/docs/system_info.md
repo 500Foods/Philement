@@ -170,19 +170,9 @@ curl http://localhost:5000/api/system/info
         "description": "/proc/1265598/fd"
       },
       {
-        "fd": 959787552,
-        "type": "file",
-        "description": "file: /home/asimard/.config/Code/logs/20250217T160357/ptyhost.log"
-      },
-      {
         "fd": 859320369,
         "type": "socket",
         "description": "Unix domain socket: roc/net/udp6"
-      },
-      {
-        "fd": 859320369,
-        "type": "file",
-        "description": "file: /usr/share/code/v8_context_snapshot.bin"
       }
     ]
   },

@@ -231,7 +231,7 @@ function(hydrogen_add_executable_target target_name build_type extra_cflags extr
     # Set output name and properties
     set_target_properties(${target_name} PROPERTIES
         OUTPUT_NAME ${target_name}
-        RUNTIME_OUTPUT_DIRECTORY /home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..
     )
     
     # Add custom command to show build completion
@@ -277,8 +277,8 @@ add_custom_target(payload
 # Clean executables target (used by release)
 add_custom_target(clean_executables
     COMMAND ${CMAKE_COMMAND} -E echo "🛈  Cleaning previous release executables..."
-    COMMAND ${CMAKE_COMMAND} -E remove -f /home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/hydrogen_release
-    COMMAND ${CMAKE_COMMAND} -E remove -f /home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/hydrogen_naked
+    COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_release
+    COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_naked
     COMMENT "Cleaning previous release executables"
 )
 
@@ -290,17 +290,17 @@ add_custom_target(hydrogen_release
     # Build the release executable
     COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target hydrogen_release_exe
     COMMAND ${CMAKE_COMMAND} -E echo "🛈  Stripping debug information from release executable..."
-    COMMAND strip -s /home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/hydrogen_release_exe
+    COMMAND strip -s ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_release_exe
     COMMAND ${CMAKE_COMMAND} -E echo "🛈  Copying release executable..."
-    COMMAND ${CMAKE_COMMAND} -E copy /home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/hydrogen_release_exe /home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/hydrogen_release
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_release_exe ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_release
     COMMAND ${CMAKE_COMMAND} -E echo "🛈  Applying UPX compression to release executable..."
-    COMMAND upx --best /home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/hydrogen_release || echo "⚠️ UPX compression failed or not available"
+    COMMAND upx --best ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_release || echo "⚠️ UPX compression failed or not available"
     COMMAND ${CMAKE_COMMAND} -E echo "🛈  Creating UPX-compressed copy as hydrogen_naked..."
-    COMMAND ${CMAKE_COMMAND} -E copy /home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/hydrogen_release /home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/hydrogen_naked
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_release ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_naked
     COMMAND ${CMAKE_COMMAND} -E echo "🛈  Appending encrypted payload to release executable..."
-    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/embed_payload.sh /home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/hydrogen_release ${CMAKE_CURRENT_SOURCE_DIR}/../payloads/payload.tar.br.enc
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/embed_payload.sh ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_release ${CMAKE_CURRENT_SOURCE_DIR}/../payloads/payload.tar.br.enc
     COMMAND ${CMAKE_COMMAND} -E echo "✅ Payload embedded successfully"
-    COMMAND ${CMAKE_COMMAND} -E remove -f /home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/hydrogen_release_exe
+    COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_release_exe
     COMMAND ${CMAKE_COMMAND} -E echo "🛈 Removed intermediate hydrogen_release_exe"
     COMMAND ${CMAKE_COMMAND} -E true
     COMMAND ${CMAKE_COMMAND} -E echo "✅ Release build with encrypted payload appended successfully!"
@@ -327,8 +327,8 @@ add_custom_target(all_variants
     COMMAND ${CMAKE_COMMAND} -E echo "  Debug:       $<TARGET_FILE:hydrogen_debug>"
     COMMAND ${CMAKE_COMMAND} -E echo "  Valgrind:    $<TARGET_FILE:hydrogen_valgrind>"
     COMMAND ${CMAKE_COMMAND} -E echo "  Performance: $<TARGET_FILE:hydrogen_perf>"
-    COMMAND ${CMAKE_COMMAND} -E echo "  Release:     /home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/hydrogen_release"
-    COMMAND ${CMAKE_COMMAND} -E echo "  Naked:       /home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/hydrogen_naked"
+    COMMAND ${CMAKE_COMMAND} -E echo "  Release:     ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_release"
+    COMMAND ${CMAKE_COMMAND} -E echo "  Naked:       ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_naked"
     COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
     COMMENT "Building all variants with parallel execution"
 )
