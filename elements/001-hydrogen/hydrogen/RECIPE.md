@@ -2,9 +2,11 @@
 
 🚨 **CRITICAL: Trial Build with CMake MUST PASS** 🚨
 Run the following command from the project root to set up and perform the trial build using the predefined preset:
-```
+
+```bash
 cd elements/001-hydrogen/hydrogen/cmake && cmake -S . -B ../build --preset default && cmake --build ../build --preset default && cmake --build ../build --preset trial
 ```
+
 Requires:
 
 1. No warnings/errors
@@ -16,13 +18,17 @@ Always run the trial build first after making any code changes to ensure there a
 
 **Building and Running the Release Version:**
 To build the release version of Hydrogen for production deployment, which includes optimizations and embedded payload, run the following command from the project root:
-```
+
+```bash
 cd elements/001-hydrogen/hydrogen/cmake && cmake -B ../build && cmake --build ../build --target hydrogen_release
 ```
+
 After building, to run the release executable and verify features like Swagger, use:
-```
+
+```bash
 cd elements/001-hydrogen/hydrogen && ./hydrogen_release
 ```
+
 This ensures you are using the optimized release build with all configured features enabled.
 
 ## Project
