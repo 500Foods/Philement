@@ -449,6 +449,20 @@ int startup_hydrogen(const char* config_path) {
     log_group_begin();
     log_this("Startup", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
     log_this("Startup", "STARTUP COMPLETE", LOG_LEVEL_STATE);
+    log_this("Startup", "- Version: %s", LOG_LEVEL_STATE, VERSION);
+    log_this("Startup", "- Release: %s", LOG_LEVEL_STATE, RELEASE);
+    log_this("Startup", "- Build Type: %s", LOG_LEVEL_STATE, BUILD_TYPE);
+    
+    // Log server URLs if subsystems are running
+    if (is_subsystem_running_by_name("WebServer")) {
+        log_this("Startup", "- Web Server running: http://localhost:%d", LOG_LEVEL_STATE, app_config->webserver.port);
+    }
+    if (is_subsystem_running_by_name("API")) {
+        log_this("Startup", "- API Server running: http://localhost:%d%s", LOG_LEVEL_STATE, app_config->webserver.port, app_config->api.prefix);
+    }
+    if (is_subsystem_running_by_name("Swagger")) {
+        log_this("Startup", "- Swagger running: http://localhost:%d%s", LOG_LEVEL_STATE, app_config->webserver.port, app_config->swagger.prefix);
+    }
     
     // Calculate startup time
     double startup_time = calculate_startup_time();
