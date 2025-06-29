@@ -1,13 +1,5 @@
 # Release Notes
 
-## 2025-04-14
-
-- feat(launch): integrate Resources, OIDC, and Notify subsystems (#16, #17, #18)
-  - Added launch/landing support for Resources subsystem
-  - Added launch/landing support for OIDC subsystem
-  - Added launch/landing support for Notify subsystem
-  - Updated documentation in RECIPE.md and launch_system_architecture.md
-
 <!--
 CRITICAL INSTRUCTIONS
 
@@ -56,6 +48,9 @@ Remember:
 -->
 
 - June 2025
+  - [2025-Jun-29 (Sun)](docs/releases/2025-06/2025-06-29.md): Launch System, Documentation
+  - [2025-Jun-28 (Sat)](docs/releases/2025-06/2025-06-28.md): Launch System, Documentation
+  - [2025-Jun-25 (Wed)](docs/releases/2025-06/2025-06-25.md): CMake Build System, Unity Testing, Documentation
   - [2025-Jun-23 (Mon)](docs/releases/2025-06/2025-06-23.md): Documentation
   - [2025-Jun-20 (Fri)](docs/releases/2025-06/2025-06-20.md): Testing, Documentation
   - [2025-Jun-19 (Thu)](docs/releases/2025-06/2025-06-19.md): Documentation
