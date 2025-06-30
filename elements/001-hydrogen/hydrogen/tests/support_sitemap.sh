@@ -205,14 +205,37 @@ process_file() {
         return
     fi
 
+    # Check if file should be excluded based on .lintignore patterns
+    local rel_file
+    rel_file=$(relative_to_root "$abs_file")
+    local ignore_file="$repo_root/.lintignore"
+    local ignore_patterns=()
+    
+    if [[ -f "$ignore_file" ]]; then
+        debug_log "Checking ignore patterns from $ignore_file for $rel_file"
+        while IFS= read -r line; do
+            # Skip empty lines and comments
+            if [[ -n "$line" && ! "$line" =~ ^[[:space:]]*# ]]; then
+                ignore_patterns+=("$line")
+            fi
+        done < "$ignore_file"
+        for pattern in "${ignore_patterns[@]}"; do
+            shopt -s extglob
+            if [[ "$rel_file" == @($pattern) || "/$rel_file" == @($pattern) ]]; then
+                shopt -u extglob
+                debug_log "Skipping file due to .lintignore pattern '$pattern': $rel_file"
+                return
+            fi
+            shopt -u extglob
+        done
+    fi
+
     # Mark file as checked
     checked_files[$abs_file]=1
     debug_log "Marked file as checked"
 
     # Skip if file doesn't exist
     if [[ ! -f "$abs_file" ]]; then
-        local rel_file
-        rel_file=$(relative_to_root "$abs_file")
         if [[ "$NOREPORT" != "true" ]]; then
             echo "Warning: File not found: $rel_file" >> "$output_file"
         fi
@@ -224,8 +247,6 @@ process_file() {
     local links_total=0 links_checked=0 links_missing=0
     local base_dir
     base_dir=$(dirname "$abs_file")
-    local rel_file
-    rel_file=$(relative_to_root "$abs_file")
     debug_log "Relative file path: $rel_file"
 
     # Extract and process links
@@ -282,18 +303,38 @@ process_file() {
     debug_log "Stored summary: total=$links_total, checked=$links_checked, missing=$links_missing, file=$rel_file"
 }
 
-# Function to find all .md files in the repo
+# Function to find all .md files in the repo, honoring .lintignore exclusions
 find_all_md_files() {
     debug_log "Finding all .md files in $repo_root"
     # Use timeout, maxdepth, -P, and -prune to avoid symlinks and .git
     local find_output="${temp_dir}/find_output.log"
     local find_errors="${temp_dir}/find_errors.log"
-    $TIMEOUT find -P "$repo_root"  -name .git -prune -o -type f -name "*.md" -print > "$find_output" 2> "$find_errors"
+    local ignore_file="$repo_root/.lintignore"
+    local ignore_patterns=()
+    
+    # Read ignore patterns from .lintignore if it exists
+    if [[ -f "$ignore_file" ]]; then
+        debug_log "Reading ignore patterns from $ignore_file"
+        while IFS= read -r line; do
+            # Skip empty lines and comments
+            if [[ -n "$line" && ! "$line" =~ ^[[:space:]]*# ]]; then
+                ignore_patterns+=("$line")
+                debug_log "Added ignore pattern: $line"
+            fi
+        done < "$ignore_file"
+    else
+        debug_log "No .lintignore file found at $ignore_file"
+    fi
+    
+    # Execute find command to get all markdown files, excluding .git directory
+    local find_cmd="$TIMEOUT find -P \"$repo_root\" -name .git -prune -o -type f -name \"*.md\" -print"
+    debug_log "Executing find command: $find_cmd"
+    eval "$find_cmd" > "$find_output" 2> "$find_errors"
     local find_status=${PIPESTATUS[0]}
     
     # Log find errors if any
     if [[ -s "$find_errors" && "$DEBUG" == "true" ]]; then
-        debug_log "Find errors: $(cat "$find_errors")"
+        debug_log "Find errors: $(cat \"$find_errors\")"
     fi
     
     # Check if find succeeded
@@ -310,7 +351,7 @@ find_all_md_files() {
         return 1
     fi
     
-    # Process find output
+    # Process find output and filter out ignored files
     while IFS= read -r file; do
         local abs_file
         abs_file=$(realpath "$file" 2>/dev/null)
@@ -318,8 +359,22 @@ find_all_md_files() {
             local rel_file
             rel_file=$(relative_to_root "$abs_file")
             if [[ -n "$rel_file" ]]; then
-                debug_log "Found .md file: $rel_file (abs: $abs_file)"
-                echo "$rel_file"
+                local excluded=false
+                for pattern in "${ignore_patterns[@]}"; do
+                    shopt -s extglob
+                    # Ensure pattern matching works for paths with or without leading slash
+                    if [[ "$rel_file" == @($pattern) || "/$rel_file" == @($pattern) ]]; then
+                        shopt -u extglob
+                        debug_log "Excluding file due to .lintignore pattern '$pattern': $rel_file"
+                        excluded=true
+                        break
+                    fi
+                    shopt -u extglob
+                done
+                if [[ "$excluded" == false ]]; then
+                    debug_log "Found .md file: $rel_file (abs: $abs_file)"
+                    echo "$rel_file"
+                fi
             else
                 debug_log "Failed to convert $abs_file to relative path"
             fi

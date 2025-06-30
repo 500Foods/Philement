@@ -273,6 +273,24 @@ Tests proper shutdown behavior, ensuring resources are released and processes te
 
 Verifies all required library dependencies are present and at correct versions.
 
+### test_30_unity_tests.sh (Unit Tests)
+
+A test script that runs unit tests for the Hydrogen project using the Unity testing framework:
+
+```bash
+./test_30_unity_tests.sh
+```
+
+Key features:
+
+- Automatically downloads the Unity framework if not present in `tests/unity/framework/Unity/`.
+- Compiles and executes unit tests written in C for core components.
+- Treats each test file as a subtest for detailed reporting.
+- Provides comprehensive test results and diagnostics in `./results/` and `./logs/` directories.
+- Integrates with `test_00_all.sh` for automated test execution.
+
+For more detailed information on the Unity framework and manual installation instructions, refer to the [Unity Test Framework README](./unity/README.md).
+
 ### test_35_env_variables.sh (Environment Configuration)
 
 Tests handling of environment variables and their impact on server behavior.

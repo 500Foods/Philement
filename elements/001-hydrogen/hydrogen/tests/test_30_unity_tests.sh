@@ -138,8 +138,7 @@ download_unity_framework() {
         print_info "Unity framework not found in $unity_dir. Downloading now..." | tee -a "$RESULT_LOG"
         mkdir -p "$framework_dir"
         if command -v curl >/dev/null 2>&1; then
-            curl -L https://github.com/ThrowTheSwitch/Unity/archive/refs/heads/master.zip -o "$framework_dir/unity.zip"
-            if [ $? -eq 0 ]; then
+            if curl -L https://github.com/ThrowTheSwitch/Unity/archive/refs/heads/master.zip -o "$framework_dir/unity.zip"; then
                 unzip "$framework_dir/unity.zip" -d "$framework_dir/"
                 mv "$framework_dir/Unity-master" "$unity_dir"
                 rm "$framework_dir/unity.zip"
@@ -150,8 +149,7 @@ download_unity_framework() {
                 return 1
             fi
         elif command -v git >/dev/null 2>&1; then
-            git clone https://github.com/ThrowTheSwitch/Unity.git "$unity_dir"
-            if [ $? -eq 0 ]; then
+            if git clone https://github.com/ThrowTheSwitch/Unity.git "$unity_dir"; then
                 print_info "Unity framework cloned successfully to $unity_dir." | tee -a "$RESULT_LOG"
                 return 0
             else
