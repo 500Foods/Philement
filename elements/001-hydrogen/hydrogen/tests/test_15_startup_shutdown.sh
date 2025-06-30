@@ -47,7 +47,7 @@ find_hydrogen_binary() {
 }
 
 # Configuration
-if ! HYDROGEN_BIN=$(find_hydrogen_binary); then
+if ! HYDROGEN_BIN=$(find_hydrogen_binary "$HYDROGEN_DIR"); then
     exit 1
 fi
 

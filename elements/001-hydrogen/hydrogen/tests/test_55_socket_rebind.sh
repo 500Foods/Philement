@@ -4,11 +4,13 @@
 #
 # Socket Rebinding Test
 # Tests that the SO_REUSEADDR socket option allows immediate rebinding after shutdown
+# with active HTTP connections that create TIME_WAIT sockets
 #
 NAME_SCRIPT="Socket Rebinding Test"
-VERS_SCRIPT="2.0.0"
+VERS_SCRIPT="3.0.0"
 
 # VERSION HISTORY
+# 3.0.0 - 2025-06-30 - Enhanced to make actual HTTP requests, creating proper TIME_WAIT conditions for realistic testing
 # 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
 # 1.0.0 - Original version - Basic socket rebinding test functionality
 
@@ -21,6 +23,7 @@ HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 
 # Include the common test utilities
 source "$SCRIPT_DIR/support_utils.sh"
+source "$SCRIPT_DIR/support_timewait.sh"
 
 # Configuration - prefer release build if available, fallback to naked build
 find_hydrogen_binary() {
@@ -149,43 +152,13 @@ validate_instance() {
     print_info "$instance_name running and bound to port $port" | tee -a "$RESULT_LOG"
 }
 
-# Function to check TIME_WAIT sockets
+# Function to check TIME_WAIT sockets (wrapper for logging)
 # shellcheck disable=SC2317  # Function is called in main execution flow
 check_time_wait_sockets() {
     local port="$1"
-    local time_wait_count
     
-    if command -v ss &> /dev/null; then
-        # Ensure we get a clean integer count without any extra characters
-        time_wait_count=$(ss -tan | grep ":$port" | grep -c "TIME-WAIT" 2>/dev/null || echo 0)
-        time_wait_count=$(echo "$time_wait_count" | tr -d '[:space:]')
-        if [ -z "$time_wait_count" ]; then
-            time_wait_count=0
-        fi
-        
-        if [ "$time_wait_count" -gt 0 ]; then
-            print_info "Found $time_wait_count socket(s) in TIME-WAIT state on port $port" | tee -a "$RESULT_LOG"
-            ss -tan | grep ":$port" | grep "TIME-WAIT" | tee -a "$RESULT_LOG"
-        else
-            print_info "No TIME-WAIT sockets found on port $port" | tee -a "$RESULT_LOG"
-        fi
-    elif command -v netstat &> /dev/null; then
-        # Ensure we get a clean integer count without any extra characters
-        time_wait_count=$(netstat -tan | grep ":$port" | grep -c "TIME_WAIT" 2>/dev/null || echo 0)
-        time_wait_count=$(echo "$time_wait_count" | tr -d '[:space:]')
-        if [ -z "$time_wait_count" ]; then
-            time_wait_count=0
-        fi
-        
-        if [ "$time_wait_count" -gt 0 ]; then
-            print_info "Found $time_wait_count socket(s) in TIME_WAIT state on port $port" | tee -a "$RESULT_LOG"
-            netstat -tan | grep ":$port" | grep "TIME_WAIT" | tee -a "$RESULT_LOG"
-        else
-            print_info "No TIME_WAIT sockets found on port $port" | tee -a "$RESULT_LOG"
-        fi
-    else
-        print_warning "Could not check for TIME_WAIT sockets (no ss or netstat)" | tee -a "$RESULT_LOG"
-    fi
+    # Use the robust function from support_timewait.sh and log the output
+    check_time_wait_sockets_robust "$port" | tee -a "$RESULT_LOG"
 }
 
 # Function to ensure clean test environment
@@ -395,7 +368,7 @@ shutdown_instance() {
 trap cleanup SIGINT SIGTERM EXIT
 
 # Initialize configuration
-HYDROGEN_BIN=$(find_hydrogen_binary)
+HYDROGEN_BIN=$(find_hydrogen_binary "$HYDROGEN_DIR")
 CONFIG_FILE=$(find_config_file)
 
 # Create output directories
@@ -427,6 +400,29 @@ if ! FIRST_PID=$(start_hydrogen_instance "$HYDROGEN_BIN" "$CONFIG_FILE" "first i
     exit 1
 fi
 print_info "First instance running and bound to port $PORT successfully!" | tee -a "$RESULT_LOG"
+
+# Make HTTP requests to create active connections (and thus TIME_WAIT sockets on shutdown)
+print_header "Making HTTP requests to create active connections" | tee -a "$RESULT_LOG"
+BASE_URL="http://localhost:$PORT"
+
+# Wait for server to be ready
+print_info "Waiting for server to be ready..." | tee -a "$RESULT_LOG"
+sleep 2
+
+# Make requests to common web files to ensure connections are established
+print_info "Requesting index.html..." | tee -a "$RESULT_LOG"
+curl -s --max-time 5 "$BASE_URL/" > "$RESULTS_DIR/index_response_${TIMESTAMP}.html" 2>/dev/null || true
+
+print_info "Requesting favicon.ico..." | tee -a "$RESULT_LOG"
+curl -s --max-time 5 "$BASE_URL/favicon.ico" > "$RESULTS_DIR/favicon_response_${TIMESTAMP}.ico" 2>/dev/null || true
+
+# Make a few more requests to ensure multiple connections
+print_info "Making additional requests to establish multiple connections..." | tee -a "$RESULT_LOG"
+curl -s --max-time 5 "$BASE_URL/robots.txt" > /dev/null 2>&1 || true
+curl -s --max-time 5 "$BASE_URL/sitemap.xml" > /dev/null 2>&1 || true
+
+print_info "HTTP requests completed - connections established" | tee -a "$RESULT_LOG"
+
 # First subtest passed
 ((PASS_COUNT++))
 

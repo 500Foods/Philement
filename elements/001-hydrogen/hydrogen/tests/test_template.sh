@@ -103,7 +103,8 @@ WEB_SERVER_PORT=$(extract_web_server_port "$CONFIG_FILE")
 
 # Automatically find the best available Hydrogen binary
 # Priority: release > debug > standard > valgrind
-HYDROGEN_BIN=$(find_hydrogen_binary)
+HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
+HYDROGEN_BIN=$(find_hydrogen_binary "$HYDROGEN_DIR")
 
 if [ -z "$HYDROGEN_BIN" ]; then
     print_error "Could not find Hydrogen binary" | tee -a "$RESULT_LOG"

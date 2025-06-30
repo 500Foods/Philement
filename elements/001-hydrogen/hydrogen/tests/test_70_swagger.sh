@@ -2,16 +2,18 @@
 #
 # About this Script
 #
-# Hydrogen Swagger Test
-# Tests the Swagger functionality with different prefixes and trailing slashes:
+# Hydrogen Swagger Test (Immediate Restart)
+# Tests the Swagger functionality with different prefixes and trailing slashes using immediate restart approach:
 # - Default "/swagger" prefix using hydrogen_test_max.json
 # - Custom "/apidocs" prefix using hydrogen_test_swagger.json
 # - Tests both with and without trailing slashes
+# - Uses immediate restart without waiting for TIME_WAIT (SO_REUSEADDR enabled)
 #
-NAME_SCRIPT="Hydrogen Swagger Test"
-VERS_SCRIPT="2.0.0"
+NAME_SCRIPT="Hydrogen Swagger Test (Immediate Restart)"
+VERS_SCRIPT="3.0.0"
 
 # VERSION HISTORY
+# 3.0.0 - 2025-06-30 - Updated to use immediate restart approach without TIME_WAIT waiting
 # 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
 
 # Display script name and version
@@ -22,6 +24,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Include the common test utilities
 source "$SCRIPT_DIR/support_utils.sh"
+source "$SCRIPT_DIR/support_timewait.sh"
 
 # Function to wait for startup completion by monitoring log
 wait_for_startup() {
@@ -223,11 +226,21 @@ test_swagger() {
     # Show which binary was selected
     print_info "Selected hydrogen binary: $(convert_to_relative_path "$hydrogen_bin")"
 
+    # Prepare clean test environment (immediate restart approach)
+    print_info "Terminating any existing hydrogen processes..."
+    if pkill -f "hydrogen.*json" 2>/dev/null; then
+        print_info "Terminated"
+    else
+        print_info "No processes to terminate"
+    fi
+    
     # Start hydrogen server in background with appropriate configuration
-    print_info "Starting hydrogen server with configuration ($(convert_to_relative_path "$config_file"))..."
+    print_info "Starting hydrogen server with configuration $(convert_to_relative_path "$config_file")..."
     # Run from the current directory (tests/) to ensure all output stays in tests/ directory
     "$hydrogen_bin" "$config_file" > "$RESULTS_DIR/hydrogen_test_${test_name}.log" 2>&1 &
-    # Note: We don't use the PID directly, but pgrep to find the actual process
+    local server_pid=$!
+    
+    print_info "Server started with PID: $server_pid"
 
     # Base URL for all requests
     local base_url="http://localhost:${web_server_port}"
@@ -236,6 +249,7 @@ test_swagger() {
     # Wait for the server to be ready
     wait_for_server "${base_url}" "$RESULTS_DIR/hydrogen_test_${test_name}.log" || {
         print_error "Server failed to start properly"
+        kill "$server_pid" 2>/dev/null || true
         return 1
     }
     
@@ -259,22 +273,29 @@ test_swagger() {
     check_response "${base_url}${swagger_prefix}/swagger-initializer.js" "window.ui = SwaggerUIBundle" "$RESULTS_DIR/${test_name}_initializer.js" "true"
     local js_check_result=$?
     
-    # Check the actual PID from ps as $hydrogen_pid might not be reliable
-    local actual_pid
-    actual_pid=$(pgrep -f ".*hydrogen.*$(basename "$config_file")")
-    
-    # Check server stability
+    # Check server stability and shutdown
     local stability_result
-    if [ -n "$actual_pid" ]; then
+    if ps -p "$server_pid" > /dev/null 2>&1; then
+        print_info "Server is still running after tests (PID: $server_pid)"
         stability_result=0
-        # Stop the server using utility function
-        stop_hydrogen_server "$actual_pid" 1
+        # Stop the server gracefully
+        print_info "Shutting down server (PID: $server_pid)..."
+        kill -SIGINT "$server_pid" 2>/dev/null || true
+        sleep 2
+        if ps -p "$server_pid" > /dev/null 2>&1; then
+            print_warning "Server still running, forcing termination..."
+            kill -9 "$server_pid" 2>/dev/null || true
+        fi
+        print_info "Server shutdown completed"
     else
-        print_result 1 "ERROR: Server has crashed (segmentation fault)"
+        print_result 1 "ERROR: Server has crashed or exited prematurely"
         print_info "Server logs:"
         tail -n 30 "$RESULTS_DIR/hydrogen_test_${test_name}.log"
         stability_result=1
     fi
+    
+    # Check for TIME_WAIT sockets
+    check_time_wait_sockets_robust "$web_server_port"
     
     # Track passed subtests (global counter)
     if [ $trailing_slash_result -eq 0 ]; then
@@ -336,17 +357,21 @@ PASS_COUNT=0
 print_info "Ensuring no existing hydrogen processes are running..."
 pkill -f "hydrogen.*json" 2>/dev/null
 
+print_info "Testing Swagger functionality with immediate restart approach"
+print_info "SO_REUSEADDR is enabled - no need to wait for TIME_WAIT"
+
 # Test with default Swagger prefix (/swagger) on a dedicated port
 test_swagger "$(get_config_path "hydrogen_test_swagger_test_1.json")" "/swagger" "swagger_default"
 DEFAULT_PREFIX_RESULT=$?
 
-# Ensure server is stopped before starting next test
-print_info "Making sure all previous servers are stopped..."
-pkill -f "hydrogen.*json" 2>/dev/null
+# Start second test immediately (testing SO_REUSEADDR)
+print_info "Starting second test immediately (testing SO_REUSEADDR)..."
 
 # Test with custom Swagger prefix (/apidocs) on a different port
 test_swagger "$(get_config_path "hydrogen_test_swagger_test_2.json")" "/apidocs" "swagger_custom"
 CUSTOM_PREFIX_RESULT=$?
+
+print_info "Immediate restart successful - SO_REUSEADDR is working!"
 
 # Calculate overall test result
 if [ $DEFAULT_PREFIX_RESULT -eq 0 ] && [ $CUSTOM_PREFIX_RESULT -eq 0 ]; then

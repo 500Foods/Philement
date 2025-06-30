@@ -325,20 +325,7 @@ setup_test_environment() {
 }
 
 # Function to find the appropriate hydrogen binary (preferring release build)
-find_hydrogen_binary() {
-    local script_dir
-    local hydrogen_dir
-    script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-    hydrogen_dir="$( cd "$script_dir/.." && pwd )"
-    
-    if [ -f "$hydrogen_dir/hydrogen_release" ]; then
-        print_info "Using release build for testing"
-        echo "$hydrogen_dir/hydrogen_release"
-    else
-        print_info "Release build not found, using standard build"
-        echo "$hydrogen_dir/hydrogen"
-    fi
-}
+# Removed duplicate find_hydrogen_binary function - using the one at line 536
 
 # Function to start the hydrogen server with a specific configuration
 start_hydrogen_server() {
@@ -524,4 +511,218 @@ export_subtest_results() {
     
     print_info "Exported subtest results: ${passed_subtests} of ${total_subtests} subtests passed"
     return 0
+}
+
+# ============================================================================
+# ROBUST SERVER MANAGEMENT FUNCTIONS (from test_55)
+# These functions provide reliable server startup and shutdown with proper
+# process validation, graceful shutdown, and adequate wait times
+# ============================================================================
+
+# Function to find appropriate hydrogen binary
+find_hydrogen_binary() {
+    local hydrogen_dir="$1"
+    if [ -f "$hydrogen_dir/hydrogen_release" ]; then
+        print_info "Using release build for testing" >&2
+        echo "$hydrogen_dir/hydrogen_release"
+    elif [ -f "$hydrogen_dir/hydrogen" ]; then
+        print_info "Using standard build for testing" >&2
+        echo "$hydrogen_dir/hydrogen"
+    else
+        print_error "No hydrogen binary found in $hydrogen_dir" >&2
+        return 1
+    fi
+}
+
+# Function to wait for startup completion by monitoring log
+wait_for_startup() {
+    local log_file="$1"
+    local timeout="$2"
+    local start_time
+    local current_time
+    local elapsed
+    
+    start_time=$(date +%s)
+    
+    while true; do
+        current_time=$(date +%s)
+        elapsed=$((current_time - start_time))
+        
+        if [ "$elapsed" -ge "$timeout" ]; then
+            print_warning "Startup timeout after ${elapsed}s" >&2
+            return 1
+        fi
+        
+        if grep -q "Application started" "$log_file" 2>/dev/null; then
+            print_info "Startup completed in ${elapsed}s" >&2
+            return 0
+        fi
+        
+        sleep 0.2
+    done
+}
+
+# Load TIME_WAIT socket management utilities
+SCRIPT_DIR_UTILS="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source "$SCRIPT_DIR_UTILS/support_timewait.sh"
+
+# Function to start hydrogen instance (robust version from test_55)
+start_hydrogen_instance_robust() {
+    local hydrogen_bin="$1"
+    local config_file="$2"
+    local instance_name="$3"
+    local results_dir="$4"
+    local timestamp="$5"
+    local log_file="$results_dir/${instance_name// /_}_${timestamp}.log"
+    
+    # Send all informational output to stderr to avoid interfering with PID capture
+    print_header "Starting Hydrogen ($instance_name)" >&2
+    
+    # Check if binary exists and is executable
+    if [ ! -x "$hydrogen_bin" ]; then
+        print_error "Hydrogen binary not found or not executable: $hydrogen_bin" >&2
+        return 1
+    fi
+    
+    # Check if config file exists
+    if [ ! -f "$config_file" ]; then
+        print_error "Config file not found: $config_file" >&2
+        return 1
+    fi
+    
+    # Clean log file
+    true > "$log_file"
+    
+    # Start the process with output to log file
+    # shellcheck disable=SC2086  # Variables are quoted individually; shellcheck flags this due to redirect
+    "$hydrogen_bin" "$config_file" > "$log_file" 2>&1 &
+    local pid=$!
+    
+    # Verify we got a valid PID
+    if [ -z "$pid" ] || [ "$pid" = "0" ]; then
+        print_error "Failed to start $instance_name - invalid PID" >&2
+        return 1
+    fi
+    
+    print_info "Started with PID: $pid" >&2
+    
+    # Verify process started
+    if ! ps -p "$pid" > /dev/null 2>&1; then
+        print_error "$instance_name failed to start" >&2
+        return 1
+    fi
+    
+    # Wait for startup completion by monitoring log
+    print_info "Waiting for startup completion (max 15 seconds)..." >&2
+    
+    if ! wait_for_startup "$log_file" 15; then
+        print_error "$instance_name startup failed or timed out" >&2
+        print_info "Last 10 lines of startup log:" >&2
+        tail -10 "$log_file" || true >&2
+        return 1
+    fi
+    
+    # Final verification that process is still running
+    if ! ps -p "$pid" > /dev/null 2>&1; then
+        print_error "$instance_name (PID $pid) exited after startup" >&2
+        return 1
+    fi
+    
+    # Verify port is bound (get port from config)
+    local port
+    port=$(get_webserver_port "$config_file")
+    print_info "Verifying port $port is bound..." >&2
+    
+    # Give a moment for port binding
+    sleep 1
+    
+    if ! check_port_in_use_robust "$port"; then
+        print_error "$instance_name failed to bind to port $port" >&2
+        kill "$pid" 2>/dev/null || true
+        return 1
+    fi
+    
+    print_info "$instance_name successfully started and bound to port $port" >&2
+    
+    # Output PID to stdout for command substitution capture
+    echo "$pid"
+}
+
+# Function to shutdown instance gracefully (robust version from test_55)
+shutdown_instance_robust() {
+    local pid="$1"
+    local instance_name="$2"
+    
+    print_header "Shutting down $instance_name"
+    
+    # Validate PID before attempting to kill
+    if [ -z "$pid" ] || [ "$pid" = "0" ]; then
+        print_warning "$instance_name has invalid PID ($pid), cannot shutdown"
+        return 1
+    fi
+    
+    # Check if process is still running before attempting to kill
+    if ! ps -p "$pid" > /dev/null 2>&1; then
+        print_info "$instance_name (PID $pid) is already terminated"
+        return 0
+    fi
+    
+    print_info "Terminating $instance_name (PID $pid)..."
+    
+    kill -SIGINT "$pid"
+    sleep 1
+    
+    # Verify instance has exited
+    if ps -p "$pid" > /dev/null 2>&1; then
+        print_warning "$instance_name still running, forcing termination..."
+        kill -9 "$pid" 2>/dev/null || true
+        sleep 1
+    fi
+    
+    print_info "$instance_name (PID $pid) termination confirmed"
+}
+
+# Function to get the web server port from config (if not already defined)
+get_webserver_port() {
+    local config="$1"
+    local port
+    
+    if command -v jq &> /dev/null; then
+        # Use jq if available
+        port=$(jq -r '.WebServer.Port // 8080' "$config" 2>/dev/null)
+        if [ -z "$port" ] || [ "$port" = "null" ]; then
+            port=8080
+        fi
+    else
+        # Fallback to grep
+        port=$(grep -o '"Port":[[:space:]]*[0-9]*' "$config" | head -1 | grep -o '[0-9]*')
+        if [ -z "$port" ]; then
+            port=8080
+        fi
+    fi
+    echo "$port"
+}
+
+# Function to ensure clean test environment (robust version)
+prepare_test_environment_robust() {
+    local port="$1"
+    
+    # Make sure no Hydrogen instances are running
+    print_info "Ensuring no Hydrogen instances are running..."
+    pkill -f hydrogen || true
+    sleep 2
+    
+    # Check if port is already in use and wait for it to become available
+    if check_port_in_use_robust "$port"; then
+        print_warning "Port $port is already in use, waiting for it to become available..."
+        if ! wait_for_port_available "$port" 30; then
+            print_warning "Port $port is still in use, attempting to force release..."
+            pkill -f hydrogen || true
+            sleep 5
+            if check_port_in_use_robust "$port"; then
+                print_result 1 "Port $port is still in use, cannot run test"
+                return 1
+            fi
+        fi
+    fi
 }
