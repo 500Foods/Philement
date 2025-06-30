@@ -130,9 +130,56 @@ run_unity_tests() {
     return $ctest_result
 }
 
+# Function to download Unity framework if missing
+download_unity_framework() {
+    local framework_dir="$UNITY_DIR/framework"
+    local unity_dir="$framework_dir/Unity"
+    if [ ! -d "$unity_dir" ]; then
+        print_info "Unity framework not found in $unity_dir. Downloading now..." | tee -a "$RESULT_LOG"
+        mkdir -p "$framework_dir"
+        if command -v curl >/dev/null 2>&1; then
+            curl -L https://github.com/ThrowTheSwitch/Unity/archive/refs/heads/master.zip -o "$framework_dir/unity.zip"
+            if [ $? -eq 0 ]; then
+                unzip "$framework_dir/unity.zip" -d "$framework_dir/"
+                mv "$framework_dir/Unity-master" "$unity_dir"
+                rm "$framework_dir/unity.zip"
+                print_info "Unity framework downloaded and extracted successfully to $unity_dir." | tee -a "$RESULT_LOG"
+                return 0
+            else
+                print_error "Failed to download Unity framework with curl." | tee -a "$RESULT_LOG"
+                return 1
+            fi
+        elif command -v git >/dev/null 2>&1; then
+            git clone https://github.com/ThrowTheSwitch/Unity.git "$unity_dir"
+            if [ $? -eq 0 ]; then
+                print_info "Unity framework cloned successfully to $unity_dir." | tee -a "$RESULT_LOG"
+                return 0
+            else
+                print_error "Failed to clone Unity framework with git." | tee -a "$RESULT_LOG"
+                return 1
+            fi
+        else
+            print_error "Neither curl nor git is available to download the Unity framework." | tee -a "$RESULT_LOG"
+            return 1
+        fi
+    else
+        print_info "Unity framework already exists in $unity_dir." | tee -a "$RESULT_LOG"
+        return 0
+    fi
+}
+
 # Compile and run tests
 COMPILE_RESULT=0
 TEST_RESULT=0
+DOWNLOAD_RESULT=0
+
+print_header "Checking Unity Framework" | tee -a "$RESULT_LOG"
+download_unity_framework
+DOWNLOAD_RESULT=$?
+
+if [ $DOWNLOAD_RESULT -ne 0 ]; then
+    print_error "Failed to download Unity framework, proceeding may fail." | tee -a "$RESULT_LOG"
+fi
 
 print_header "Compiling Unity Tests" | tee -a "$RESULT_LOG"
 compile_unity_tests
