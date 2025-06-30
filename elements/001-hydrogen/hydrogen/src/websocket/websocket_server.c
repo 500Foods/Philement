@@ -205,13 +205,16 @@ int init_websocket_server(int port, const char* protocol, const char* key)
     info.uid = -1;
     info.user = ws_context;  // Set context as user data
     info.options = LWS_SERVER_OPTION_EXPLICIT_VHOSTS |
-                  LWS_SERVER_OPTION_SKIP_PROTOCOL_INIT;  // Skip protocol init during context creation
+                  LWS_SERVER_OPTION_SKIP_PROTOCOL_INIT |  // Skip protocol init during context creation
+                  LWS_SERVER_OPTION_ALLOW_LISTEN_SHARE;   // Enable SO_REUSEADDR for immediate rebinding
 
     // Configure IPv6 if enabled
     if (app_config && app_config->websocket.enable_ipv6) {
         info.options |= LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
         log_this("WebSocket", "IPv6 support enabled", LOG_LEVEL_STATE);
     }
+
+    log_this("WebSocket", "Configuring SO_REUSEADDR for immediate socket rebinding via LWS_SERVER_OPTION_ALLOW_LISTEN_SHARE", LOG_LEVEL_STATE);
 
     // Set context user data
     lws_set_log_level(0, NULL);  // Reset logging before context creation
@@ -290,7 +293,7 @@ int init_websocket_server(int port, const char* protocol, const char* key)
         memset(&vhost_info, 0, sizeof(vhost_info));
         vhost_info.port = try_port;
         vhost_info.protocols = protocols;
-        vhost_info.options = vhost_options;
+        vhost_info.options = vhost_options | LWS_SERVER_OPTION_ALLOW_LISTEN_SHARE;  // Enable SO_REUSEADDR
         vhost_info.iface = app_config->websocket.enable_ipv6 ? "::" : "0.0.0.0";
         vhost_info.vhost_name = "hydrogen";  // Set explicit vhost name
         vhost_info.keepalive_timeout = 60;   // Set explicit keepalive
