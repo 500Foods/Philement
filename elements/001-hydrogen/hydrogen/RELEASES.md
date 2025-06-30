@@ -48,6 +48,7 @@ Remember:
 -->
 
 - June 2025
+  - [2025-Jun-30 (Mon)](docs/releases/2025-06/2025-06-30.md): Unity Testing Framework, Testing Documentation
   - [2025-Jun-29 (Sun)](docs/releases/2025-06/2025-06-29.md): Launch System, Documentation
   - [2025-Jun-28 (Sat)](docs/releases/2025-06/2025-06-28.md): Launch System, Documentation
   - [2025-Jun-25 (Wed)](docs/releases/2025-06/2025-06-25.md): CMake Build System, Unity Testing, Documentation
