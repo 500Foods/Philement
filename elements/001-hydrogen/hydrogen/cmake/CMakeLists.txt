@@ -242,24 +242,24 @@ function(hydrogen_add_executable_target target_name build_type extra_cflags extr
 endfunction()
 
 # Default build target
-hydrogen_add_executable_target(hydrogen "Regular" "-O2 -g" "")
+hydrogen_add_executable_target(hydrogen "Regular" "-O2 -g" "-no-pie")
 
 # Debug build with AddressSanitizer
 hydrogen_add_executable_target(hydrogen_debug "Debug" 
     "-fsanitize=address,leak -fno-omit-frame-pointer" 
-    "-lasan -fsanitize=address,leak"
+    "-lasan -fsanitize=address,leak -no-pie"
 )
 
 # Valgrind-compatible build
 hydrogen_add_executable_target(hydrogen_valgrind "Valgrind-Compatible" 
     "-O0" 
-    ""
+    "-no-pie"
 )
 
 # Performance-optimized build
 hydrogen_add_executable_target(hydrogen_perf "Performance" 
     "-O3 -march=native -ffast-math -finline-functions -funroll-loops -DNDEBUG" 
-    "-flto=auto"
+    "-flto=auto -no-pie"
 )
 
 # Payload generation target
