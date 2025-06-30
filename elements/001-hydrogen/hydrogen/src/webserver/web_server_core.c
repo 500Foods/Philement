@@ -139,6 +139,13 @@ static bool is_port_available(int port, bool check_ipv6) {
     // Check IPv4
     int sock_v4 = socket(AF_INET, SOCK_STREAM, 0);
     if (sock_v4 != -1) {
+        // Enable SO_REUSEADDR to match the actual server behavior
+        int reuse = 1;
+        if (setsockopt(sock_v4, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) {
+            log_this("WebServer", "Failed to set SO_REUSEADDR on IPv4 test socket: %s", 
+                    LOG_LEVEL_ALERT, strerror(errno));
+        }
+
         struct sockaddr_in addr;
         addr.sin_family = AF_INET;
         addr.sin_port = htons(port);
@@ -146,6 +153,15 @@ static bool is_port_available(int port, bool check_ipv6) {
 
         int result = bind(sock_v4, (struct sockaddr*)&addr, sizeof(addr));
         ipv4_ok = (result == 0);
+        
+        if (!ipv4_ok) {
+            log_this("WebServer", "IPv4 port %d availability check failed: %s", 
+                    LOG_LEVEL_STATE, port, strerror(errno));
+        } else {
+            log_this("WebServer", "IPv4 port %d is available (SO_REUSEADDR enabled)", 
+                    LOG_LEVEL_STATE, port);
+        }
+        
         close(sock_v4);
     }
 
@@ -153,6 +169,13 @@ static bool is_port_available(int port, bool check_ipv6) {
     if (check_ipv6) {
         int sock_v6 = socket(AF_INET6, SOCK_STREAM, 0);
         if (sock_v6 != -1) {
+            // Enable SO_REUSEADDR to match the actual server behavior
+            int reuse = 1;
+            if (setsockopt(sock_v6, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) {
+                log_this("WebServer", "Failed to set SO_REUSEADDR on IPv6 test socket: %s", 
+                        LOG_LEVEL_ALERT, strerror(errno));
+            }
+
             struct sockaddr_in6 addr;
             addr.sin6_family = AF_INET6;
             addr.sin6_port = htons(port);
@@ -164,6 +187,15 @@ static bool is_port_available(int port, bool check_ipv6) {
 
             int result = bind(sock_v6, (struct sockaddr*)&addr, sizeof(addr));
             ipv6_ok = (result == 0);
+            
+            if (!ipv6_ok) {
+                log_this("WebServer", "IPv6 port %d availability check failed: %s", 
+                        LOG_LEVEL_STATE, port, strerror(errno));
+            } else {
+                log_this("WebServer", "IPv6 port %d is available (SO_REUSEADDR enabled)", 
+                        LOG_LEVEL_STATE, port);
+            }
+            
             close(sock_v6);
         }
         return ipv6_ok;

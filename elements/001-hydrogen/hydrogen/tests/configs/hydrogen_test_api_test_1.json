@@ -5,7 +5,7 @@
     "WebServer": {
         "Enabled": true,
         "EnableIPv6": false,
-        "Port": 5030,
+        "Port": 5040,
         "WebRoot": "/tmp/www",
         "UploadPath": "/api/upload",
         "UploadDir": "/tmp/uploads",
@@ -35,7 +35,7 @@
     "WebSocket": {
         "Enabled": true,
         "EnableIPv6": false,
-        "Port": 5031,
+        "Port": 5041,
         "MaxMessageSize": 2048,
         "ConnectionTimeouts": {
             "ShutdownWaitSeconds": 2,
@@ -51,7 +51,7 @@
             "MaxIPAddressLength": 46
         },
         "PortAllocation": {
-            "StartPort": 5030,
+            "StartPort": 5040,
             "EndPort": 65535,
             "ReservedPorts": [22, 80, 443],
             "RetryAttempts": 5
