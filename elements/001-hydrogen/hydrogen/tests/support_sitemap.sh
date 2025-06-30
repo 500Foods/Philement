@@ -7,9 +7,10 @@
 #              and identifies orphaned markdown files.
 
 # Application version
-declare -r APPVERSION="0.4.0"
+declare -r APPVERSION="0.4.1"
 
 # Change history
+# 0.4.1 - 2025-06-30 - Enhanced .lintignore exclusion handling, fixed shellcheck warning for command execution
 # 0.4.0 - 2025-06-19 - Updated link checking to recognize existing folders as valid links
 # 0.3.9 - 2025-06-15 - Fixed repo root detection to use input file's directory, improved path resolution
 # 0.3.8 - 2025-06-15 - Fixed find_all_md_files path resolution, reordered -maxdepth, enhanced debug logging
@@ -329,12 +330,13 @@ find_all_md_files() {
     # Execute find command to get all markdown files, excluding .git directory
     local find_cmd="$TIMEOUT find -P \"$repo_root\" -name .git -prune -o -type f -name \"*.md\" -print"
     debug_log "Executing find command: $find_cmd"
-    eval "$find_cmd" > "$find_output" 2> "$find_errors"
-    local find_status=${PIPESTATUS[0]}
+    # Use a here-string to safely execute the command without word splitting issues
+    bash -c "$find_cmd" > "$find_output" 2> "$find_errors"
+    local find_status=$?
     
     # Log find errors if any
     if [[ -s "$find_errors" && "$DEBUG" == "true" ]]; then
-        debug_log "Find errors: $(cat \"$find_errors\")"
+        debug_log "Find errors: $(cat "$find_errors")"
     fi
     
     # Check if find succeeded
