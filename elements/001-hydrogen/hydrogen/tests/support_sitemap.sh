@@ -22,8 +22,7 @@ declare -r APPVERSION="0.4.1"
 # 0.3.2 - 2025-06-15 - Improved find_all_md_files with depth limit, timeout, and error handling
 # 0.3.1 - 2025-06-15 - Changed to execute tables.sh instead of sourcing, per domain_info.sh
 # 0.3.0 - 2025-06-15 - Added --debug flag for verbose logging, improved robustness
-# 0.2.0 - 2025-06-15 - Added table output using tables.sh, version display,
-#                       issue count, missing links table, and orphaned files table
+# 0.2.0 - 2025-06-15 - Added table output using tables.sh, version display, issue count, missing links table, and orphaned files table
 # 0.1.0 - 2025-06-15 - Initial version with basic link checking and summary output
 
 # Parse arguments
