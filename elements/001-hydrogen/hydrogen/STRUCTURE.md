@@ -544,7 +544,6 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/diagnostics/](tests/diagnostics/) - Test diagnostic outputs
 - [tests/logs/](tests/logs/) - Test execution logs
 - [tests/results/](tests/results/) - Test result archives and reports
-- [tests/results/gdb_analysis/](tests/results/gdb_analysis/) - GDB analysis results
 
 </details>
 
