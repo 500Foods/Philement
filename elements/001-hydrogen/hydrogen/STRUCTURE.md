@@ -23,7 +23,6 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 <summary><b>Main Entry Point</b></summary>
 
 - [src/hydrogen.c](src/hydrogen.c) - Main entry point and core system initialization
-- [src/Makefile](src/Makefile) - Build instructions and compilation targets
 - [src/not_hydrogen.c](src/not_hydrogen.c) - Error handler test file
 
 </details>
@@ -447,7 +446,6 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [examples/C/auth_code_flow.c](examples/C/auth_code_flow.c) - Authorization Code flow example in C
 - [examples/C/client_credentials.c](examples/C/client_credentials.c) - Client Credentials flow example in C
 - [examples/C/password_flow.c](examples/C/password_flow.c) - Resource Owner Password flow example in C
-- [examples/C/Makefile](examples/C/Makefile) - Makefile for building C examples
 - [examples/JavaScript/auth_code_flow.html](examples/JavaScript/auth_code_flow.html) - Authorization Code flow example in JavaScript
 
 </details>
@@ -508,21 +506,20 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 <details>
 <summary><b>Test Configuration</b></summary>
 
-- [tests/configs/](tests/configs/) - Test-specific configuration files
-  - [hydrogen_test_api_prefix.json](tests/configs/hydrogen_test_api_prefix.json) - API prefix test config
-  - [hydrogen_test_api_test_1.json](tests/configs/hydrogen_test_api_test_1.json) - API test configuration 1
-  - [hydrogen_test_api_test_2.json](tests/configs/hydrogen_test_api_test_2.json) - API test configuration 2
-  - [hydrogen_test_api.json](tests/configs/hydrogen_test_api.json) - General API test config
-  - [hydrogen_test_env.json](tests/configs/hydrogen_test_env.json) - Environment test config
-  - [hydrogen_test_json.json](tests/configs/hydrogen_test_json.json) - JSON handling test config
-  - [hydrogen_test_max.json](tests/configs/hydrogen_test_max.json) - Maximum feature test config
-  - [hydrogen_test_min.json](tests/configs/hydrogen_test_min.json) - Minimal feature test config
-  - [hydrogen_test_swagger_default_port.json](tests/configs/hydrogen_test_swagger_default_port.json) - Swagger default port config
-  - [hydrogen_test_swagger_port.json](tests/configs/hydrogen_test_swagger_port.json) - Swagger port test config
-  - [hydrogen_test_swagger_test_1.json](tests/configs/hydrogen_test_swagger_test_1.json) - Swagger test configuration 1
-  - [hydrogen_test_swagger_test_2.json](tests/configs/hydrogen_test_swagger_test_2.json) - Swagger test configuration 2
-  - [hydrogen_test_swagger.json](tests/configs/hydrogen_test_swagger.json) - General Swagger test config
-  - [hydrogen_test_system_endpoints.json](tests/configs/hydrogen_test_system_endpoints.json) - System endpoints test config
+- [hydrogen_test_api_prefix.json](tests/configs/hydrogen_test_api_prefix.json) - API prefix test config
+- [hydrogen_test_api_test_1.json](tests/configs/hydrogen_test_api_test_1.json) - API test configuration 1
+- [hydrogen_test_api_test_2.json](tests/configs/hydrogen_test_api_test_2.json) - API test configuration 2
+- [hydrogen_test_api.json](tests/configs/hydrogen_test_api.json) - General API test config
+- [hydrogen_test_env.json](tests/configs/hydrogen_test_env.json) - Environment test config
+- [hydrogen_test_json.json](tests/configs/hydrogen_test_json.json) - JSON handling test config
+- [hydrogen_test_max.json](tests/configs/hydrogen_test_max.json) - Maximum feature test config
+- [hydrogen_test_min.json](tests/configs/hydrogen_test_min.json) - Minimal feature test config
+- [hydrogen_test_swagger_default_port.json](tests/configs/hydrogen_test_swagger_default_port.json) - Swagger default port config
+- [hydrogen_test_swagger_port.json](tests/configs/hydrogen_test_swagger_port.json) - Swagger port test config
+- [hydrogen_test_swagger_test_1.json](tests/configs/hydrogen_test_swagger_test_1.json) - Swagger test configuration 1
+- [hydrogen_test_swagger_test_2.json](tests/configs/hydrogen_test_swagger_test_2.json) - Swagger test configuration 2
+- [hydrogen_test_swagger.json](tests/configs/hydrogen_test_swagger.json) - General Swagger test config
+- [hydrogen_test_system_endpoints.json](tests/configs/hydrogen_test_system_endpoints.json) - System endpoints test config
 
 </details>
 

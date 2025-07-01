@@ -48,7 +48,6 @@
  * - Typically does not receive refresh tokens (tokens are short-lived and reacquired)
  * - Focuses on application-level permissions rather than user-level permissions
  */
-#define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
 
 #include <stdio.h>

@@ -1,13 +1,14 @@
 # ──────────────────────────────────────────────────────────────────────────────
 # Hydrogen CMake Build System Configuration
 # 
-# This CMake configuration file sets up the build system for the Hydrogen server. 
+# This CMake configuration file sets up the build system for the Hydrogen server and example programs.
 #
 # - Default: Standard build with optimizations and debug symbols
 # - Debug: Build with AddressSanitizer for debugging memory issues
 # - Valgrind: Build optimized for memory analysis with Valgrind
 # - Performance: Highly optimized build for maximum performance
 # - Release: Stripped, compressed build with embedded encrypted payload
+# - Examples: Builds for OIDC client examples (Authorization Code, Client Credentials, Password flows)
 #
 # Key features:
 # - Automatic version numbering based on git commits
@@ -26,6 +27,14 @@
 # cmake --build . --target payload           : Generates OpenAPI specs and packages payload contents
 # cmake --build . --target all_variants      : Builds all variants (default, debug, valgrind, perf, release) and generates payload
 # cmake --build . --target trial             : Runs a test build showing only warnings/errors, checks for unused files, runs shutdown test
+# cmake --build . --target auth_code_flow    : Builds the Authorization Code flow example
+# cmake --build . --target client_credentials: Builds the Client Credentials flow example
+# cmake --build . --target password_flow     : Builds the Resource Owner Password flow example
+# cmake --build . --target all_examples      : Builds all example programs
+# ──────────────────────────────────────────────────────────────────────────────
+# Change History
+# ──────────────────────────────────────────────────────────────────────────────
+# 2025-07-01: Added targets for building OIDC client example programs (auth_code_flow, client_credentials, password_flow) with regular and debug builds. Updated help and clean targets to include examples.
 # ──────────────────────────────────────────────────────────────────────────────
 
 cmake_minimum_required(VERSION 3.16)
@@ -315,6 +324,106 @@ hydrogen_add_executable_target(hydrogen_release_exe "Release"
     "-flto=auto -fno-strict-aliasing"
 )
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Example Programs for Hydrogen OIDC Client
+# 
+# This section defines targets for building the example programs located in
+# examples/C/. These mirror the functionality of the Makefile in that directory.
+# - auth_code_flow: Authorization Code flow with PKCE
+# - client_credentials: Client Credentials flow
+# - password_flow: Resource Owner Password flow
+# 
+# Available CMake targets for examples:
+# cmake --build . --target auth_code_flow          : Builds the Authorization Code flow example
+# cmake --build . --target client_credentials      : Builds the Client Credentials flow example
+# cmake --build . --target password_flow           : Builds the Resource Owner Password flow example
+# cmake --build . --target auth_code_flow_debug    : Builds the Authorization Code flow example with debug symbols
+# cmake --build . --target client_credentials_debug: Builds the Client Credentials flow example with debug symbols
+# cmake --build . --target password_flow_debug     : Builds the Resource Owner Password flow example with debug symbols
+# cmake --build . --target all_examples            : Builds all example programs
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Find required libraries for examples
+find_package(CURL REQUIRED)
+
+# Function to add an executable target for example programs
+function(hydrogen_add_example_target target_name source_file build_type extra_cflags extra_ldflags libraries)
+    # Create the executable
+    add_executable(${target_name} "${CMAKE_CURRENT_SOURCE_DIR}/../examples/C/${source_file}")
+    
+    # Set include directories
+    target_include_directories(${target_name} PRIVATE ${HYDROGEN_INCLUDE_DIRS})
+    
+    # Set base compile options
+    target_compile_options(${target_name} PRIVATE ${HYDROGEN_BASE_CFLAGS})
+    
+    # Add extra compile flags if provided
+    if(extra_cflags)
+        separate_arguments(extra_cflags_list UNIX_COMMAND "${extra_cflags}")
+        target_compile_options(${target_name} PRIVATE ${extra_cflags_list})
+    endif()
+    
+    # Set compile definitions
+    target_compile_definitions(${target_name} PRIVATE
+        VERSION="${HYDROGEN_VERSION}"
+        RELEASE="${HYDROGEN_RELEASE}"
+        BUILD_TYPE="${build_type}"
+    )
+    
+    # Link libraries
+    target_link_libraries(${target_name} PRIVATE ${libraries})
+    
+    # Add extra link flags if provided
+    if(extra_ldflags)
+        separate_arguments(extra_ldflags_list UNIX_COMMAND "${extra_ldflags}")
+        target_link_options(${target_name} PRIVATE ${extra_ldflags_list})
+    endif()
+    
+    # Set output name and properties
+    set_target_properties(${target_name} PROPERTIES
+        OUTPUT_NAME ${target_name}
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../examples/C
+    )
+    
+    # Add custom command to show build completion
+    add_custom_command(TARGET ${target_name} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E echo "${GREEN}${PASS} ${BOLD}${build_type} example build${NORMAL} ${GREEN}completed successfully: ${target_name}${NORMAL}"
+        VERBATIM
+    )
+endfunction()
+
+# Example libraries (using jansson, curl, and OpenSSL which are already found)
+set(EXAMPLE_LIBS
+    ${CURL_LIBRARIES}
+    ${JANSSON_LIBRARIES}
+    OpenSSL::SSL
+    OpenSSL::Crypto
+    ${MICROHTTPD_LIBRARIES}
+)
+
+# Authorization Code Flow example
+hydrogen_add_example_target(auth_code_flow "auth_code_flow.c" "Regular" "-O2 -g" "" "${EXAMPLE_LIBS}")
+
+# Client Credentials Flow example
+hydrogen_add_example_target(client_credentials "client_credentials.c" "Regular" "-O2 -g" "" "${EXAMPLE_LIBS}")
+
+# Resource Owner Password Flow example
+hydrogen_add_example_target(password_flow "password_flow.c" "Regular" "-O2 -g" "" "${EXAMPLE_LIBS}")
+
+# Debug versions of examples
+hydrogen_add_example_target(auth_code_flow_debug "auth_code_flow.c" "Debug" "-fsanitize=address,leak -fno-omit-frame-pointer" "-lasan -fsanitize=address,leak" "${EXAMPLE_LIBS}")
+
+hydrogen_add_example_target(client_credentials_debug "client_credentials.c" "Debug" "-fsanitize=address,leak -fno-omit-frame-pointer" "-lasan -fsanitize=address,leak" "${EXAMPLE_LIBS}")
+
+hydrogen_add_example_target(password_flow_debug "password_flow.c" "Debug" "-fsanitize=address,leak -fno-omit-frame-pointer" "-lasan -fsanitize=address,leak" "${EXAMPLE_LIBS}")
+
+# Target to build all examples
+add_custom_target(all_examples
+    DEPENDS auth_code_flow client_credentials password_flow
+    COMMAND ${CMAKE_COMMAND} -E echo "✅ All examples built successfully"
+    COMMENT "Building all OIDC client examples"
+)
+
 # Build all variants with parallel execution
 add_custom_target(all_variants
     DEPENDS hydrogen hydrogen_debug hydrogen_valgrind hydrogen_perf hydrogen_release payload
@@ -354,8 +463,14 @@ add_custom_target(cleanish
     COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:hydrogen_debug>
     COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:hydrogen_valgrind>
     COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:hydrogen_perf>
+    COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:auth_code_flow>
+    COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:client_credentials>
+    COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:password_flow>
+    COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:auth_code_flow_debug>
+    COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:client_credentials_debug>
+    COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:password_flow_debug>
     COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_BINARY_DIR}/*.map
-    COMMAND ${CMAKE_COMMAND} -E echo "${GREEN}${PASS} Cleanish completed successfully (preserved hydrogen_release and hydrogen_naked)${NORMAL}"
+    COMMAND ${CMAKE_COMMAND} -E echo "✅ Cleanish completed successfully - preserved hydrogen_release and hydrogen_naked"
     COMMENT "Cleaning build artifacts (preserving release executables)"
 )
 
@@ -373,6 +488,10 @@ add_custom_target(cmake_help
     COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}payload${NORMAL}           - Generate OpenAPI specs and payload"
     COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}all_variants${NORMAL}      - Build all variants"
     COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}trial${NORMAL}             - Run trial build with diagnostics"
+    COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}auth_code_flow${NORMAL}    - Build Authorization Code flow example"
+    COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}client_credentials${NORMAL} - Build Client Credentials flow example"
+    COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}password_flow${NORMAL}     - Build Resource Owner Password flow example"
+    COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}all_examples${NORMAL}      - Build all example programs"
     COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}clean_all${NORMAL}         - Remove all build artifacts"
     COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}cleanish${NORMAL}          - Clean preserving release executables"
     COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}cmake_help${NORMAL}        - Display this help information"
@@ -381,6 +500,7 @@ add_custom_target(cmake_help
     COMMAND ${CMAKE_COMMAND} -E echo "  cmake --build . --target hydrogen"
     COMMAND ${CMAKE_COMMAND} -E echo "  cmake --build . --target all_variants"
     COMMAND ${CMAKE_COMMAND} -E echo "  cmake --build . --target trial"
+    COMMAND ${CMAKE_COMMAND} -E echo "  cmake --build . --target all_examples"
     COMMAND ${CMAKE_COMMAND} -E echo ""
     COMMENT "Displaying help information"
 )
