@@ -2,7 +2,7 @@
 #
 # Hydrogen Codebase Analysis Test
 # Performs comprehensive analysis of the codebase including:
-# - Makefile discovery and cleaning
+# - Build system cleaning using CMake
 # - Source code analysis and line counting
 # - Large file detection
 # - Multi-language linting validation
@@ -14,6 +14,7 @@ NAME_TEST_99="Hydrogen Codebase Analysis Test"
 VERS_TEST_99="2.0.0"
 
 # VERSION HISTORY
+# 2.0.1 - 2025-07-01 - Updated to use CMake cleanish target instead of Makefile discovery and cleaning
 # 2.0.0 - 2025-06-17 - Major refactoring: improved modularity, reduced script size, enhanced comments
 # 1.0.1 - 2025-06-16 - Added comprehensive linting support for multiple languages
 # 1.0.0 - 2025-06-15 - Initial version with basic codebase analysis
@@ -136,62 +137,35 @@ record_test_result() {
     fi
 }
 
-# Find and list all Makefiles in the project
-find_makefiles() {
-    print_header "1. Locating Makefiles" | tee -a "$RESULT_LOG"
-    
-    find "$HYDROGEN_DIR" -type f -name "Makefile" > "$MAKEFILES_LIST"
-    local count
-    count=$(wc -l < "$MAKEFILES_LIST")
-    
-    print_info "Found $count Makefiles:" | tee -a "$RESULT_LOG"
-    while read -r makefile; do
-        local rel_path
-        rel_path=$(convert_to_relative_path "$makefile")
-        print_info "  - ${rel_path#hydrogen/}" | tee -a "$RESULT_LOG"
-    done < "$MAKEFILES_LIST"
-    
-    print_result 0 "$count Makefiles located successfully" | tee -a "$RESULT_LOG"
-    record_test_result "Locate Makefiles" 0 "Found $count Makefiles"
-}
-
-# Run make cleanish for each Makefile
-run_make_clean() {
-    print_header "2. Running 'make cleanish' for Makefiles" | tee -a "$RESULT_LOG"
+# Run CMake cleanish target for the Hydrogen project
+run_cmake_clean() {
+    print_header "1. Running 'cmake --build build --target cleanish' for Hydrogen Project" | tee -a "$RESULT_LOG"
     
     local success=0
     local fail=0
     local start_dir
     start_dir=$(pwd)
     
-    while read -r makefile; do
-        local makefile_dir
-        makefile_dir=$(dirname "$makefile")
-        local rel_dir
-        rel_dir=$(convert_to_relative_path "$makefile_dir")
-        rel_dir=${rel_dir#hydrogen/}
-        
-        print_info "Processing: $rel_dir" | tee -a "$RESULT_LOG"
-        
-        if cd "$makefile_dir" 2>/dev/null; then
-            local temp_log
-            temp_log="$RESULTS_DIR/make_clean_$(basename "$makefile_dir").log"
-            if make cleanish > "$temp_log" 2>&1; then
-                print_result 0 "Successfully cleaned $rel_dir" | tee -a "$RESULT_LOG"
-                ((success++))
-            else
-                print_warning "Clean failed in $rel_dir (continuing)" | tee -a "$RESULT_LOG"
-                ((success++))  # Count as success since it's non-fatal
-            fi
-            cd "$start_dir" || exit 1
+    print_info "Processing: Hydrogen Project" | tee -a "$RESULT_LOG"
+    
+    if cd "$HYDROGEN_DIR" 2>/dev/null; then
+        local temp_log
+        temp_log="$RESULTS_DIR/cmake_clean_hydrogen.log"
+        if cmake --build build --target cleanish > "$temp_log" 2>&1; then
+            print_result 0 "Successfully cleaned Hydrogen project" | tee -a "$RESULT_LOG"
+            ((success++))
         else
-            print_result 1 "Failed to access $rel_dir" | tee -a "$RESULT_LOG"
-            ((fail++))
+            print_warning "Clean failed for Hydrogen project (continuing)" | tee -a "$RESULT_LOG"
+            ((success++))  # Count as success since it's non-fatal
         fi
-    done < "$MAKEFILES_LIST"
+        cd "$start_dir" || exit 1
+    else
+        print_result 1 "Failed to access Hydrogen project directory" | tee -a "$RESULT_LOG"
+        ((fail++))
+    fi
     
     local total=$((success + fail))
-    record_test_result "Run make cleanish" 0 "Cleaned $success of $total Makefiles"
+    record_test_result "Run CMake cleanish" 0 "Cleaned $success of $total projects"
 }
 
 # Analyze source code files and generate statistics
@@ -633,8 +607,7 @@ run_linting_tests() {
 
 # Main test execution function
 run_all_tests() {
-    find_makefiles
-    run_make_clean
+    run_cmake_clean
     analyze_source_files
     find_large_files
     run_linting_tests

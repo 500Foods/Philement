@@ -13,6 +13,7 @@ NAME_SCRIPT="Hydrogen Crash Handler Test"
 VERS_SCRIPT="2.0.0"
 
 # VERSION HISTORY
+# 2.0.1 - 2025-07-01 - Updated to use predefined CMake build variants instead of parsing Makefile
 # 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
 
 # Display script name and version
@@ -414,35 +415,33 @@ declare -A FOUND_BUILDS  # Track which builds we've found
 declare -a BUILDS
 declare -A BUILD_DESCRIPTIONS
 
-# Parse all build targets from Makefile
-while IFS= read -r line; do
-    if [[ $line =~ ^([A-Z_]*TARGET)[[:space:]]*=[[:space:]]*\$\(BIN_PREFIX\)([[:alnum:]_]+)[[:space:]]*$ ]]; then
-        target="${BASH_REMATCH[2]}"
-        if [ -f "$HYDROGEN_DIR/$target" ] && [ -z "${FOUND_BUILDS[$target]}" ]; then
-            FOUND_BUILDS[$target]=1
-            BUILDS+=("$HYDROGEN_DIR/$target")
-            # Extract description from build variant comments
-            if [[ "$target" == "hydrogen" ]]; then
-                desc="Standard development build"
-            elif [[ "$target" == "hydrogen_debug" ]]; then
-                desc="Bug finding and analysis"
-            elif [[ "$target" == "hydrogen_valgrind" ]]; then
-                desc="Memory analysis"
-            elif [[ "$target" == "hydrogen_perf" ]]; then
-                desc="Maximum speed"
-            elif [[ "$target" == "hydrogen_release" ]]; then
-                desc="Production deployment"
-            else
-                desc="Build variant: $target"
-            fi
-            if [ -n "$desc" ]; then
-                BUILD_DESCRIPTIONS["$target"]="$desc"
-            else
-                BUILD_DESCRIPTIONS["$target"]="Build variant: $target"
-            fi
+# Define expected build variants based on CMake targets
+declare -a BUILD_VARIANTS=("hydrogen" "hydrogen_debug" "hydrogen_valgrind" "hydrogen_perf" "hydrogen_release")
+for target in "${BUILD_VARIANTS[@]}"; do
+    if [ -f "$HYDROGEN_DIR/$target" ] && [ -z "${FOUND_BUILDS[$target]}" ]; then
+        FOUND_BUILDS[$target]=1
+        BUILDS+=("$HYDROGEN_DIR/$target")
+        # Assign description based on build variant
+        if [[ "$target" == "hydrogen" ]]; then
+            desc="Standard development build"
+        elif [[ "$target" == "hydrogen_debug" ]]; then
+            desc="Bug finding and analysis"
+        elif [[ "$target" == "hydrogen_valgrind" ]]; then
+            desc="Memory analysis"
+        elif [[ "$target" == "hydrogen_perf" ]]; then
+            desc="Maximum speed"
+        elif [[ "$target" == "hydrogen_release" ]]; then
+            desc="Production deployment"
+        else
+            desc="Build variant: $target"
+        fi
+        if [ -n "$desc" ]; then
+            BUILD_DESCRIPTIONS["$target"]="$desc"
+        else
+            BUILD_DESCRIPTIONS["$target"]="Build variant: $target"
         fi
     fi
-done < "$HYDROGEN_DIR/src/Makefile"
+done
 
 if [ ${#BUILDS[@]} -eq 0 ]; then
     print_result 1 "No hydrogen builds found"
