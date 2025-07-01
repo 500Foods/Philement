@@ -9,6 +9,7 @@ NAME_SCRIPT="Hydrogen Compilation Test"
 VERS_SCRIPT="2.0.0"
 
 # VERSION HISTORY
+# 2.0.1 - 2025-07-01 - Updated to use CMake for building OIDC client examples instead of Makefile
 # 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
 
 # Display script name and version
@@ -22,7 +23,6 @@ echo "=== $NAME_SCRIPT v$VERS_SCRIPT ==="
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
-OIDC_EXAMPLES_DIR="$HYDROGEN_DIR/examples/C"
 
 # Include the common test utilities
 source "$SCRIPT_DIR/support_utils.sh"
@@ -71,7 +71,7 @@ get_file_size() {
 test_compilation() {
     local component="$1"
     local build_dir="$2"
-    local build_cmd="$3"
+    local build_cmd="cmake --build build --target all_examples --parallel"
     
     print_header "Testing compilation of $component" | tee -a "$RESULT_LOG"
     print_info "Build command: $build_cmd" | tee -a "$RESULT_LOG"
@@ -81,12 +81,19 @@ test_compilation() {
         return 1
     fi
     
+    # Ensure build directory exists
+    if [ ! -d "build" ]; then
+        print_info "Build directory not found, creating it..." | tee -a "$RESULT_LOG"
+        mkdir -p build
+        cmake -S cmake -B build
+    fi
+    
     local start_time
     local temp_log
     start_time=$(date +%s)
     temp_log="$RESULTS_DIR/build_${component//\//_}_${TIMESTAMP}.log"
     
-    if CFLAGS="-Wall -Wextra -Werror -pedantic" make all > "$temp_log" 2>&1; then
+    if eval "$build_cmd" > "$temp_log" 2>&1; then
         print_result 0 "$component compiled successfully in ${duration}s" | tee -a "$RESULT_LOG"
         if ! grep -q "warning:" "$temp_log"; then
             print_info "No warnings detected" | tee -a "$RESULT_LOG"
@@ -242,8 +249,8 @@ main() {
     # Test tarball presence
     test_tarball_presence
     
-    # Build OIDC examples
-    test_compilation "OIDC client examples" "$OIDC_EXAMPLES_DIR" "make all QUIET=1"
+    # Build OIDC examples using CMake
+    test_compilation "OIDC client examples" "$HYDROGEN_DIR" "cmake --build build --target all_examples --parallel"
     
     # Print final summary
     print_header "Compilation Test Summary" | tee -a "$RESULT_LOG"

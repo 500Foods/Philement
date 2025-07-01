@@ -47,6 +47,9 @@ Remember:
 - Group by topic to maintain clarity
 -->
 
+- July 2025
+  - [2025-Jul-01 (Tue)](docs/releases/2025-07/2025-07-01.md): CMake Build System, OIDC Examples
+
 - June 2025
   - [2025-Jun-30 (Mon)](docs/releases/2025-06/2025-06-30.md): Unity Testing Framework, Testing Documentation
   - [2025-Jun-29 (Sun)](docs/releases/2025-06/2025-06-29.md): Launch System, Documentation
