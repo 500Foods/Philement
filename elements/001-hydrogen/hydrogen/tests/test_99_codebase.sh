@@ -516,6 +516,7 @@ lint_other_files() {
                     fi
                 else
                     if ! "$tool" --quiet "$file" 2>> "$temp_log"; then
+                         echo "$file"
                         ((fails++))
                     fi
                 fi
