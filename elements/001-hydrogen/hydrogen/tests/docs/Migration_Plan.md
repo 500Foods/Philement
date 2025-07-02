@@ -132,7 +132,7 @@ This table will be updated as migration progresses to reflect the current status
 | test_00_all.sh                   | Test    | Not Migrated     | To be updated last.                       | -                  |
 | test_10_compilation.sh           | Test    | Migrated         | Successfully migrated to use lib/ scripts | 2025-07-02         |
 | test_12_env_payload.sh           | Test    | Migrated         | Successfully migrated to use lib/ scripts | 2025-07-02         |
-| test_15_startup_shutdown.sh      | Test    | Not Migrated     |                                           | -                  |
+| test_15_startup_shutdown.sh      | Test    | Migrated         | Successfully migrated to use lib/ scripts | 2025-07-02         |
 | test_20_shutdown.sh              | Test    | Not Migrated     |                                           | -                  |
 | test_25_library_dependencies.sh  | Test    | Not Migrated     |                                           | -                  |
 | test_30_unity_tests.sh           | Test    | Not Migrated     |                                           | -                  |
@@ -205,3 +205,11 @@ This table will be updated as migration progresses to reflect the current status
   - Displaying actual commands in EXEC lines enhances transparency and aids debugging, making test execution more understandable.
   - Repetitive test logic, such as tracking passed/failed checks, can be abstracted into reusable functions in 'framework.sh' to streamline test scripts.
   - Continuous user feedback during migration helps refine the approach, ensuring the final structure meets expectations and addresses issues promptly.
+
+### test_15_startup_shutdown.sh
+
+- **Migration Date**: 2025-07-02
+- **Lessons Learned**:
+  - Creating domain-specific libraries (e.g., lifecycle.sh) is crucial for complex test scenarios like application lifecycle management to encapsulate specialized functionality such as process startup, shutdown, and monitoring.
+  - Dynamic process management, including PID tracking and diagnostics capture, is essential for runtime behavior tests and should be prioritized in library design for similar tests.
+  - Detailed diagnostics and logging are vital for debugging failures in lifecycle tests, requiring robust mechanisms to capture process state and log activity during test execution.

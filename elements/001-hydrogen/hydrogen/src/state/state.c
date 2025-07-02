@@ -92,6 +92,9 @@ void signal_handler(int sig) {
             __sync_bool_compare_and_swap(&server_running, 1, 0);
             __sync_bool_compare_and_swap(&server_stopping, 0, 1);
             __sync_synchronize();
+            
+            // Wake up the main event loop immediately
+            pthread_cond_signal(&terminate_cond);
             break;
     }
 }

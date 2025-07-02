@@ -237,10 +237,10 @@ print_command() {
     # Convert any absolute paths in the command to relative paths
     local cmd
     cmd=$(echo "$1" | sed -E "s|/[[:alnum:]/_-]+/elements/001-hydrogen/hydrogen/|hydrogen/|g")
-    # Truncate command to approximately 100 characters
+    # Truncate command to approximately 200 characters
     local truncated_cmd
-    if [ ${#cmd} -gt 100 ]; then
-        truncated_cmd="${cmd:0:97}..."
+    if [ ${#cmd} -gt 200 ]; then
+        truncated_cmd="${cmd:0:197}..."
     else
         truncated_cmd="$cmd"
     fi
@@ -281,7 +281,7 @@ print_warning() {
     prefix=$(get_test_prefix)
     local elapsed
     elapsed=$(get_elapsed_time)
-    echo -e "  ${prefix}   ${elapsed}   ${YELLOW}${WARN_ICON} WARN${NC}   ${1}"
+    echo -e "  ${prefix}   ${elapsed}   ${YELLOW}${WARN_ICON}  WARN${NC}   ${1}"
 }
 
 # Function to print error messages

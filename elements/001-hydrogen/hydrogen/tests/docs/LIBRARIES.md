@@ -27,6 +27,7 @@ These libraries were created as part of the test suite migration to replace supp
 - **[File Utils Library](file_utils.md)** - Documentation for `file_utils.sh`, providing file and path manipulation functions for test scripts. [Script](../lib/file_utils.sh)
 - **[Test Framework Library](framework.md)** - Documentation for `framework.sh`, providing test lifecycle management and result tracking functions. [Script](../lib/framework.sh)
 - **[Environment Utils Library](env_utils.md)** - Documentation for `env_utils.sh`, providing environment variable handling and validation functions for test scripts. [Script](../lib/env_utils.sh)
+- **[Lifecycle Management Library](lifecycle.md)** - Documentation for `lifecycle.sh`, providing functions for managing the lifecycle of the Hydrogen application during testing. [Script](../lib/lifecycle.sh)
 
 ## Future Libraries
 
