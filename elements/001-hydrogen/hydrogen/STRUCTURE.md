@@ -497,7 +497,6 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/support_cppcheck.sh](tests/support_cppcheck.sh) - Static code analysis
 - [tests/support_monitor_resources.sh](tests/support_monitor_resources.sh) - Resource monitoring
 - [tests/support_sitemap.sh](tests/support_sitemap.sh) - Sitemap generation
-- [tests/support_tables_test_01_basic.sh](tests/support_tables_test_01_basic.sh) - Basic table tests
 - [tests/support_tables.sh](tests/support_tables.sh) - Table support utilities
 - [tests/support_utils.sh](tests/support_utils.sh) - General test utilities
 
