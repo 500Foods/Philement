@@ -136,7 +136,7 @@ This table will be updated as migration progresses to reflect the current status
 | test_20_shutdown.sh              | Test    | Migrated         | Successfully migrated to use lib/ scripts, added validate_config_file function for single config validation, corrected subtest count for accurate reporting | 2025-07-02         |
 | test_25_library_dependencies.sh  | Test    | Migrated         | Successfully migrated to use lib/ scripts, fixed parameter order issues in start_hydrogen calls, corrected function signatures, and resolved subtest counting for accurate dependency testing | 2025-07-02         |
 | test_30_unity_tests.sh           | Test    | Migrated         | Successfully migrated to use lib/ scripts, updated log_output.sh with DATA icon and pale yellow color for output visibility, adjusted subtest naming to 'Enumerate Unity Tests' for clarity | 2025-07-02         |
-| test_35_env_variables.sh         | Test    | Not Migrated     |                                           | -                  |
+| test_35_env_variables.sh         | Test    | Migrated         | Successfully migrated to use lib/ scripts, restructured to match test 15 pattern with proper library function usage, added missing environment utility functions | 2025-07-02         |
 | test_40_json_error_handling.sh   | Test    | Not Migrated     |                                           | -                  |
 | test_45_signals.sh               | Test    | Not Migrated     |                                           | -                  |
 | test_50_crash_handler.sh         | Test    | Not Migrated     |                                           | -                  |
@@ -178,7 +178,10 @@ This table will be updated as migration progresses to reflect the current status
 - **New Functions Added**:
   - `check_env_var` - Checks if an environment variable is set and non-empty.
   - `validate_rsa_key` - Validates the format of RSA keys (private or public).
-- **Usage**: Used by test scripts to ensure required environment variables are set and valid, particularly for payload security configurations.
+  - `set_type_conversion_environment` - Sets environment variables for testing type conversion (string to boolean, number, etc.).
+  - `set_validation_test_environment` - Sets environment variables with invalid values for testing validation logic.
+- **Usage**: Used by test scripts to ensure required environment variables are set and valid, particularly for payload security configurations and environment variable substitution testing.
+- **Version**: Updated to 1.1.0 on 2025-07-02 for test_35_env_variables.sh migration support.
 
 ## User Review Feedback
 
@@ -241,3 +244,18 @@ This table will be updated as migration progresses to reflect the current status
   - **Library Functions Handle Edge Cases**: Library functions like `start_hydrogen` already handle timing extraction, job control message suppression, and proper error handling. Custom implementations often miss these details.
   - **Version Information Extraction**: Log parsing can extract detailed version information (Expected vs Found versions) from dependency checks, providing much more valuable output than simple pass/fail results.
   - **Migration Approach**: When migrating tests, first identify what library functions exist, then adapt the test to use them. Don't start by copying old custom code patterns.
+
+### test_35_env_variables.sh
+
+- **Migration Date**: 2025-07-02
+- **Lessons Learned**:
+  - **🚨 CRITICAL: Structural Consistency is Essential**: Test 35 was initially marked as "migrated" but didn't follow the standardized structure established in test 15. This highlighted the importance of not just using library functions, but following the complete structural pattern for consistency across all tests.
+  - **Follow Established Patterns**: When a reference test (like test 15) establishes a clean, standardized pattern, all subsequent tests should follow the same structure: header format, variable organization, library sourcing, subtest management, and main execution flow.
+  - **Avoid Custom Implementations**: Test 35 initially had custom functions like `run_basic_env_test()`, `run_fallback_test()`, etc., instead of using the standardized `run_lifecycle_test()` function from lifecycle.sh. This violated the principle of code reuse and consistency.
+  - **Library Function Completeness**: When migrating specialized tests, ensure all required utility functions are available in the appropriate library scripts. Test 35 required additional environment setup functions (`set_type_conversion_environment`, `set_validation_test_environment`) that needed to be added to env_utils.sh.
+  - **Subtest Count Accuracy**: The `TOTAL_SUBTESTS` count must accurately reflect the actual number of subtests being executed. Test 35 was adjusted from 10 to 12 subtests to match the actual test structure.
+  - **Migration Verification**: Just because a test is marked as "migrated" doesn't mean it follows the established patterns. Regular verification against reference tests (like test 15) is essential to ensure true consistency.
+  - **Environment Variable Testing Strategy**: Environment variable tests should use the standardized lifecycle testing approach with different environment configurations rather than custom startup/shutdown implementations.
+  - **🚨 CRITICAL: Avoid Duplicate PASS/FAIL Results**: When library functions already generate PASS/FAIL results (like `validate_config_file`), the calling test should not add duplicate results. Only increment the pass counter and add informational messages. This ensures each subtest has exactly one PASS/FAIL line.
+  - **Subtest Count Verification**: After migration, always verify that the actual number of subtests executed matches the `TOTAL_SUBTESTS` declaration. Use the test output to count the actual subtests (35-001, 35-002, etc.) and adjust accordingly.
+  - **Library Function Result Handling**: When using library functions that generate their own results, understand what they output before adding additional result lines. Check the library function implementation to see if it calls `print_result`.
