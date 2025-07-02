@@ -199,7 +199,7 @@ run_check() {
     fi
 }
 
-# Function to evaluate test results and update pass count
+# Function to evaluate test results and update pass count with output
 evaluate_test_result() {
     local test_name="$1"
     local failed_checks="$2"
@@ -221,6 +221,21 @@ evaluate_test_result() {
         fi
         eval "$exit_code_var=1"
     fi
+}
+
+# Function to evaluate test results silently (no output, just update counts)
+evaluate_test_result_silent() {
+    local test_name="$1"
+    local failed_checks="$2"
+    local pass_count_var="$3"
+    local exit_code_var="$4"
+    
+    if [ "$failed_checks" -eq 0 ]; then
+        eval "$pass_count_var=\$((\${$pass_count_var} + 1))"
+    else
+        eval "$exit_code_var=1"
+    fi
+    # Intentionally not calling print_result to avoid duplicate PASS messages
 }
 
 # Function to generate an HTML summary report for a test
