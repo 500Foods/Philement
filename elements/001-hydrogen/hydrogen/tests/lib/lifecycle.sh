@@ -308,6 +308,193 @@ capture_process_diagnostics() {
     fi
 }
 
+# Function to configure Hydrogen binary, preferring release build if available
+configure_hydrogen_binary() {
+    local hydrogen_dir="${1:-}"
+    if [ -z "$hydrogen_dir" ]; then
+        local script_dir
+        script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+        hydrogen_dir="$( cd "$script_dir/../.." && pwd )"
+    fi
+    
+    if [ -f "$hydrogen_dir/hydrogen_release" ]; then
+        HYDROGEN_BIN="$hydrogen_dir/hydrogen_release"
+        if command -v print_message >/dev/null 2>&1; then
+            print_message "Using release build for testing: $HYDROGEN_BIN"
+        else
+            echo "INFO: Using release build for testing: $HYDROGEN_BIN"
+        fi
+    else
+        HYDROGEN_BIN="$hydrogen_dir/hydrogen"
+        if command -v print_message >/dev/null 2>&1; then
+            print_message "Using standard build for testing: $HYDROGEN_BIN"
+        else
+            echo "INFO: Using standard build for testing: $HYDROGEN_BIN"
+        fi
+    fi
+    
+    if [ ! -x "$HYDROGEN_BIN" ]; then
+        if command -v print_error >/dev/null 2>&1; then
+            print_error "Hydrogen binary not found or not executable: $HYDROGEN_BIN"
+        else
+            echo "ERROR: Hydrogen binary not found or not executable: $HYDROGEN_BIN"
+        fi
+        return 1
+    fi
+    return 0
+}
+
+# Function to initialize test environment and logging
+initialize_test_environment() {
+    local results_dir="$1"
+    local test_log_file="$2"
+    local timestamp
+    
+    if [ -z "$results_dir" ]; then
+        local script_dir
+        script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+        results_dir="$script_dir/../results"
+    fi
+    
+    mkdir -p "$results_dir"
+    timestamp=$(date +%Y%m%d_%H%M%S)
+    RESULT_LOG="$results_dir/env_variables_test_${timestamp}.log"
+    
+    if [ -n "$test_log_file" ]; then
+        TEST_LOG_FILE="$test_log_file"
+    else
+        TEST_LOG_FILE="./hydrogen_env_test.log"
+    fi
+    
+    # Clean up any existing log file
+    rm -f "$TEST_LOG_FILE"
+    
+    if command -v print_message >/dev/null 2>&1; then
+        print_message "Test environment initialized with log file: $RESULT_LOG"
+    else
+        echo "INFO: Test environment initialized with log file: $RESULT_LOG"
+    fi
+    return 0
+}
+
+# Function to ensure no Hydrogen instances are running
+ensure_no_hydrogen_running() {
+    if command -v print_message >/dev/null 2>&1; then
+        print_message "Ensuring no Hydrogen instances are running..."
+    else
+        echo "INFO: Ensuring no Hydrogen instances are running..."
+    fi
+    pkill -f hydrogen || true
+    sleep 2
+    return 0
+}
+
+# Function to start Hydrogen with environment variables and wait for initialization
+start_hydrogen_with_env() {
+    local output_file="$1"
+    local test_name="$2"
+    local config_file="$3"
+    
+    if [ -z "$HYDROGEN_BIN" ]; then
+        if ! configure_hydrogen_binary ""; then
+            return 1
+        fi
+    fi
+    
+    if [ -z "$config_file" ]; then
+        if command -v print_error >/dev/null 2>&1; then
+            print_error "Configuration file parameter is required"
+        else
+            echo "ERROR: Configuration file parameter is required"
+        fi
+        return 1
+    fi
+    
+    if [ ! -f "$config_file" ]; then
+        if command -v print_error >/dev/null 2>&1; then
+            print_error "Configuration file not found: $config_file"
+        else
+            echo "ERROR: Configuration file not found: $config_file"
+        fi
+        return 1
+    fi
+    
+    if command -v print_message >/dev/null 2>&1; then
+        print_message "Starting Hydrogen with $test_name..."
+    else
+        echo "INFO: Starting Hydrogen with $test_name..."
+    fi
+    
+    $HYDROGEN_BIN "$config_file" > "$output_file" 2>&1 &
+    HYDROGEN_PID=$!
+    
+    if command -v print_message >/dev/null 2>&1; then
+        print_message "Started with PID: $HYDROGEN_PID"
+    else
+        echo "INFO: Started with PID: $HYDROGEN_PID"
+    fi
+    
+    # Wait for server to initialize
+    sleep 5
+    
+    # Check if server is running
+    if ! ps -p "$HYDROGEN_PID" > /dev/null; then
+        if command -v print_error >/dev/null 2>&1; then
+            print_error "Hydrogen failed to start with $test_name"
+        else
+            echo "ERROR: Hydrogen failed to start with $test_name"
+        fi
+        cat "$output_file"
+        return 1
+    fi
+    
+    if command -v print_message >/dev/null 2>&1; then
+        print_message "Hydrogen started successfully"
+    else
+        echo "INFO: Hydrogen started successfully"
+    fi
+    return 0
+}
+
+# Function to kill Hydrogen process if running
+kill_hydrogen_process() {
+    if [ -n "$HYDROGEN_PID" ] && ps -p "$HYDROGEN_PID" > /dev/null 2>&1; then
+        if command -v print_message >/dev/null 2>&1; then
+            print_message "Cleaning up Hydrogen (PID $HYDROGEN_PID)..."
+        else
+            echo "INFO: Cleaning up Hydrogen (PID $HYDROGEN_PID)..."
+        fi
+        kill -SIGINT "$HYDROGEN_PID" 2>/dev/null || kill -9 "$HYDROGEN_PID" 2>/dev/null
+        sleep 1
+        HYDROGEN_PID=""
+    fi
+    return 0
+}
+
+# Function to verify log file exists
+verify_log_file_exists() {
+    local log_file="$1"
+    if [ -z "$log_file" ]; then
+        log_file="$TEST_LOG_FILE"
+    fi
+    
+    if [ ! -f "$log_file" ]; then
+        if command -v print_error >/dev/null 2>&1; then
+            print_error "Log file was not created at $log_file"
+        else
+            echo "ERROR: Log file was not created at $log_file"
+        fi
+        return 1
+    else
+        if command -v print_message >/dev/null 2>&1; then
+            print_message "Log file was created successfully at $log_file"
+        else
+            echo "INFO: Log file was created successfully at $log_file"
+        fi
+        return 0
+    fi
+}
+
 # Function to validate configuration files
 validate_config_files() {
     local min_config="$1"
