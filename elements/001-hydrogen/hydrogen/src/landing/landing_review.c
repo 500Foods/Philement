@@ -152,7 +152,7 @@ void handle_landing_review(const ReadinessResults* results, time_t start_time) {
     double elapsed_time = difftime(current_time, start_time);
     
     // Log landing timing
-    log_this("Landing", "Landing Time: %.2f seconds", LOG_LEVEL_STATE, elapsed_time);
+    log_this("Landing", "Shutdown elapsed time: %.3fs", LOG_LEVEL_STATE, elapsed_time);
     
     /*
      * Phase 2: Thread Analysis
