@@ -6,6 +6,7 @@
 # including starting and stopping the application with various configurations.
 #
 # VERSION HISTORY
+# 1.2.1 - 2025-07-02 - Updated find_hydrogen_binary to use relative paths in log messages to avoid exposing user information
 # 1.2.0 - 2025-07-02 - Added validate_config_file function for single configuration validation
 # 1.1.0 - 2025-07-02 - Added validate_config_files, setup_output_directories, and run_lifecycle_test functions for enhanced modularity
 # 1.0.0 - 2025-07-02 - Initial version with start and stop functions
@@ -20,7 +21,21 @@ find_hydrogen_binary() {
     hydrogen_dir=$(realpath "$hydrogen_dir" 2>/dev/null || echo "$hydrogen_dir")
     
     # Log to stderr to avoid contaminating the return value
-    print_message "Searching for Hydrogen binary in: $hydrogen_dir" >&2
+    # Convert to relative path for cleaner logging
+    local relative_dir
+    if command -v convert_to_relative_path >/dev/null 2>&1; then
+        relative_dir=$(convert_to_relative_path "$hydrogen_dir")
+    else
+        # Fallback: extract just the hydrogen part
+        relative_dir=$(echo "$hydrogen_dir" | sed -n 's|.*/hydrogen$|hydrogen|p')
+        if [ -z "$relative_dir" ]; then
+            relative_dir=$(echo "$hydrogen_dir" | sed -n 's|.*/elements/001-hydrogen/hydrogen|hydrogen|p')
+        fi
+        if [ -z "$relative_dir" ]; then
+            relative_dir="hydrogen"
+        fi
+    fi
+    print_message "Searching for Hydrogen binary in: $relative_dir" >&2
     
     # First check for release build
     hydrogen_bin="$hydrogen_dir/hydrogen_release"
