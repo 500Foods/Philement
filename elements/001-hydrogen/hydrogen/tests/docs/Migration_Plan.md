@@ -134,8 +134,8 @@ This table will be updated as migration progresses to reflect the current status
 | test_12_env_payload.sh           | Test    | Migrated         | Successfully migrated to use lib/ scripts | 2025-07-02         |
 | test_15_startup_shutdown.sh      | Test    | Migrated         | Successfully migrated to use lib/ scripts | 2025-07-02         |
 | test_20_shutdown.sh              | Test    | Migrated         | Successfully migrated to use lib/ scripts, added validate_config_file function for single config validation, corrected subtest count for accurate reporting | 2025-07-02         |
-| test_25_library_dependencies.sh  | Test    | Not Migrated     |                                           | -                  |
-| test_30_unity_tests.sh           | Test    | Not Migrated     |                                           | -                  |
+| test_25_library_dependencies.sh  | Test    | Migrated         | Successfully migrated to use lib/ scripts, fixed parameter order issues in start_hydrogen calls, corrected function signatures, and resolved subtest counting for accurate dependency testing | 2025-07-02         |
+| test_30_unity_tests.sh           | Test    | Migrated         | Successfully migrated to use lib/ scripts, updated log_output.sh with DATA icon and pale yellow color for output visibility, adjusted subtest naming to 'Enumerate Unity Tests' for clarity | 2025-07-02         |
 | test_35_env_variables.sh         | Test    | Not Migrated     |                                           | -                  |
 | test_40_json_error_handling.sh   | Test    | Not Migrated     |                                           | -                  |
 | test_45_signals.sh               | Test    | Not Migrated     |                                           | -                  |
@@ -221,3 +221,23 @@ This table will be updated as migration progresses to reflect the current status
   - Ensuring accurate function names and signatures from library scripts is critical to avoid runtime errors during test execution.
   - Adjusting the total subtest count (`TOTAL_SUBTESTS`) to match the actual number of executed subtests is necessary for consistent reporting, especially when tests are run through an orchestrator.
   - Adding modular functions to library scripts (e.g., `validate_config_file` for single configuration validation) supports varied test requirements and enhances reusability across different test scripts.
+
+### test_30_unity_tests.sh
+
+- **Migration Date**: 2025-07-02
+- **Lessons Learned**:
+  - Migrating tests that involve external frameworks like Unity requires careful integration with existing library functions for output and diagnostics to maintain consistency in reporting.
+  - Dynamic subtest counting based on runtime results (e.g., from `ctest` output) is essential for accurate test reporting when the number of tests isn't fixed.
+  - Preserving specialized functionality like framework downloading and compilation within the test script can be necessary if not generalizable to other tests, but should still use library functions for logging and result reporting.
+
+### test_25_library_dependencies.sh
+
+- **Migration Date**: 2025-07-02
+- **Lessons Learned**:
+  - **🚨 CRITICAL: Library Function Reuse Priority**: Always start by identifying which existing library functions can be used before writing custom implementations. Test 25 initially used custom startup/shutdown code that duplicated functionality already available in `start_hydrogen` and `stop_hydrogen` from lifecycle.sh. This violated the core principle of the migration project: code reuse and consistency.
+  - **Process Management Consistency**: Use library functions like `start_hydrogen` and `stop_hydrogen` for all process lifecycle management. These functions properly handle job control, timing extraction, and error conditions without the "Killed" messages that appear with custom implementations.
+  - **Avoid Reinventing the Wheel**: When a test has specialized needs (like dependency checking), combine the specialized logic with existing library functions rather than reimplementing common functionality like process startup/shutdown.
+  - **Configuration Path Issues**: Always verify config file paths are correct - test configs are in `tests/configs/` not `hydrogen/configs/`. Empty or invalid config files cause "failed to load configuration" errors.
+  - **Library Functions Handle Edge Cases**: Library functions like `start_hydrogen` already handle timing extraction, job control message suppression, and proper error handling. Custom implementations often miss these details.
+  - **Version Information Extraction**: Log parsing can extract detailed version information (Expected vs Found versions) from dependency checks, providing much more valuable output than simple pass/fail results.
+  - **Migration Approach**: When migrating tests, first identify what library functions exist, then adapt the test to use them. Don't start by copying old custom code patterns.
