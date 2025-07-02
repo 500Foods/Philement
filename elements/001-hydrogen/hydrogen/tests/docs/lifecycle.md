@@ -8,6 +8,7 @@ This document provides detailed information about the functions available in `li
 
 ## Version History
 
+- **1.2.0** - 2025-07-02 - Added `validate_config_file` function for single configuration validation.
 - **1.1.0** - 2025-07-02 - Added `validate_config_files`, `setup_output_directories`, and `run_lifecycle_test` functions for enhanced modularity.
 - **1.0.0** - 2025-07-02 - Initial version with start and stop functions.
 
@@ -132,6 +133,23 @@ This document provides detailed information about the functions available in `li
 
   ```bash
   if validate_config_files "$MIN_CONFIG" "$MAX_CONFIG"; then
+      ((PASS_COUNT++))
+  else
+      EXIT_CODE=1
+  fi
+  ```
+
+### validate_config_file
+
+- **Purpose**: Validates the existence of a single configuration file required for testing.
+- **Parameters**:
+  - `config_file`: Path to the configuration file.
+- **Returns**: Success if the configuration file exists; otherwise, failure.
+- **Usage**: Ensures a single configuration file is present before running tests, useful for tests that only require one configuration.
+- **Example**:
+
+  ```bash
+  if validate_config_file "$MIN_CONFIG"; then
       ((PASS_COUNT++))
   else
       EXIT_CODE=1

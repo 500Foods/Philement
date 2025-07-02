@@ -6,6 +6,7 @@
 # including starting and stopping the application with various configurations.
 #
 # VERSION HISTORY
+# 1.2.0 - 2025-07-02 - Added validate_config_file function for single configuration validation
 # 1.1.0 - 2025-07-02 - Added validate_config_files, setup_output_directories, and run_lifecycle_test functions for enhanced modularity
 # 1.0.0 - 2025-07-02 - Initial version with start and stop functions
 #
@@ -319,6 +320,21 @@ validate_config_files() {
         return 0
     else
         print_result 1 "One or more configuration files not found"
+        return 1
+    fi
+}
+
+# Function to validate a single configuration file
+validate_config_file() {
+    local config_file="$1"
+    
+    print_message "Checking configuration file: $config_file"
+    print_command "test -f \"$config_file\""
+    if [ -f "$config_file" ]; then
+        print_result 0 "Configuration file found"
+        return 0
+    else
+        print_result 1 "Configuration file not found"
         return 1
     fi
 }

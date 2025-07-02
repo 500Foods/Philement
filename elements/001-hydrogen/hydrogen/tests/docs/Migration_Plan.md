@@ -133,7 +133,7 @@ This table will be updated as migration progresses to reflect the current status
 | test_10_compilation.sh           | Test    | Migrated         | Successfully migrated to use lib/ scripts | 2025-07-02         |
 | test_12_env_payload.sh           | Test    | Migrated         | Successfully migrated to use lib/ scripts | 2025-07-02         |
 | test_15_startup_shutdown.sh      | Test    | Migrated         | Successfully migrated to use lib/ scripts | 2025-07-02         |
-| test_20_shutdown.sh              | Test    | Not Migrated     |                                           | -                  |
+| test_20_shutdown.sh              | Test    | Migrated         | Successfully migrated to use lib/ scripts, added validate_config_file function for single config validation, corrected subtest count for accurate reporting | 2025-07-02         |
 | test_25_library_dependencies.sh  | Test    | Not Migrated     |                                           | -                  |
 | test_30_unity_tests.sh           | Test    | Not Migrated     |                                           | -                  |
 | test_35_env_variables.sh         | Test    | Not Migrated     |                                           | -                  |
@@ -213,3 +213,11 @@ This table will be updated as migration progresses to reflect the current status
   - Creating domain-specific libraries (e.g., lifecycle.sh) is crucial for complex test scenarios like application lifecycle management to encapsulate specialized functionality such as process startup, shutdown, and monitoring.
   - Dynamic process management, including PID tracking and diagnostics capture, is essential for runtime behavior tests and should be prioritized in library design for similar tests.
   - Detailed diagnostics and logging are vital for debugging failures in lifecycle tests, requiring robust mechanisms to capture process state and log activity during test execution.
+
+### test_20_shutdown.sh
+
+- **Migration Date**: 2025-07-02
+- **Lessons Learned**:
+  - Ensuring accurate function names and signatures from library scripts is critical to avoid runtime errors during test execution.
+  - Adjusting the total subtest count (`TOTAL_SUBTESTS`) to match the actual number of executed subtests is necessary for consistent reporting, especially when tests are run through an orchestrator.
+  - Adding modular functions to library scripts (e.g., `validate_config_file` for single configuration validation) supports varied test requirements and enhances reusability across different test scripts.
