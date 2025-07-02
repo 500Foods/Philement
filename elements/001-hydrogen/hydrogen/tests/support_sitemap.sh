@@ -102,6 +102,7 @@ fi
 
 # Initialize variables
 declare -A checked_files  # Track checked files
+declare -A linked_files   # Track files that have been linked to
 declare -A file_summary  # Store summary: links_total, links_checked, links_missing, rel_file
 declare -a missing_links  # Store missing links: file,link
 declare -a orphaned_files  # Store orphaned files for report
@@ -130,9 +131,9 @@ extract_links() {
         debug_log "File $file is not readable"
         return 1
     fi
-    # Match markdown links [text](link), excluding those in code blocks
-    # Use a negative lookbehind and lookahead to avoid links within backticks
-    grep -oP "(?<!\`)\[.*?\]\(\K[^)]+(?=\))(?![^\`]*\`)" "$file" 2>/dev/null | sort -u | while read -r link; do
+    # Extract markdown links [text](link) and get just the link part
+    # Use non-greedy matching to get individual links
+    grep -o '\[[^]]*\]([^)]*)' "$file" 2>/dev/null | sed 's/.*](\([^)]*\)).*/\1/' | sort -u | while read -r link; do
         debug_log "Found link: $link"
         # Handle GitHub URLs
         if [[ "$link" =~ ^https://github.com/[^/]+/[^/]+/blob/main/(.+)$ ]]; then
@@ -280,6 +281,11 @@ process_file() {
         if [[ -f "$link_file" ]] || [[ -d "$link_file" ]]; then
             ((links_checked++))
             debug_log "Link exists"
+            # Mark this file as linked to (for orphan detection)
+            if [[ "$link_file" =~ \.md$ ]]; then
+                linked_files[$link_file]=1
+                debug_log "Marked as linked: $link_file"
+            fi
             # Add linked markdown file to queue only if it's a .md file and not marked as non_md
             if [[ "$link_file" =~ \.md$ && ! "$link" =~ ^non_md: ]]; then
                 queue+=("$link_file")
@@ -462,8 +468,8 @@ generate_orphaned_files_json() {
         local abs_file
         abs_file=$(resolve_path "$repo_root" "$rel_file")
         debug_log "Checking if $rel_file (abs: $abs_file) is orphaned"
-        if [[ -z "${checked_files[$abs_file]}" ]]; then
-            debug_log "Found orphaned file: $rel_file"
+        if [[ -z "${checked_files[$abs_file]}" && -z "${linked_files[$abs_file]}" ]]; then
+            debug_log "Found orphaned file: $rel_file (not checked and not linked)"
             orphaned_files+=("$rel_file")
             if [[ "$first" == "true" ]]; then
                 first=false
@@ -472,7 +478,12 @@ generate_orphaned_files_json() {
             fi
             jq -nc --arg file "$rel_file" '{file: $file}' >> "$temp_file" 2>/dev/null
         else
-            debug_log "$rel_file is checked, not orphaned"
+            if [[ -n "${checked_files[$abs_file]}" ]]; then
+                debug_log "$rel_file is checked, not orphaned"
+            fi
+            if [[ -n "${linked_files[$abs_file]}" ]]; then
+                debug_log "$rel_file is linked to, not orphaned"
+            fi
         fi
     done < <(find_all_md_files)
     echo "]" >> "$temp_file"
