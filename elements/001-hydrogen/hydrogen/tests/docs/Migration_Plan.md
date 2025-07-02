@@ -28,10 +28,10 @@ These scripts perform specific tests for the Hydrogen project and will be update
 | test_25_library_dependencies.sh  | Test   | Not Migrated     |                                            |
 | test_30_unity_tests.sh           | Test   | Not Migrated     |                                            |
 | test_35_env_variables.sh         | Test   | Not Migrated     |                                            |
-| test_40_json_error_handling.sh   | Test   | Not Migrated     |                                            |
-| test_45_signals.sh               | Test   | Not Migrated     |                                            |
+| test_40_json_error_handling.sh   | Test   | Migrated         | Successfully migrated to use lib/ scripts |
+| test_45_signals.sh               | Test   | Migrated         | Successfully migrated to use lib/ scripts |
 | test_50_crash_handler.sh         | Test   | Not Migrated     |                                            |
-| test_55_socket_rebind.sh         | Test   | Not Migrated     |                                            |
+| test_55_socket_rebind.sh         | Test   | Migrated         | Successfully migrated to use lib/ scripts |
 | test_60_api_prefixes.sh          | Test   | Not Migrated     |                                            |
 | test_65_system_endpoints.sh      | Test   | Not Migrated     |                                            |
 | test_70_swagger.sh               | Test   | Not Migrated     |                                            |
@@ -137,10 +137,10 @@ This table will be updated as migration progresses to reflect the current status
 | test_25_library_dependencies.sh  | Test    | Migrated         | Successfully migrated to use lib/ scripts, fixed parameter order issues in start_hydrogen calls, corrected function signatures, and resolved subtest counting for accurate dependency testing | 2025-07-02         |
 | test_30_unity_tests.sh           | Test    | Migrated         | Successfully migrated to use lib/ scripts, updated log_output.sh with DATA icon and pale yellow color for output visibility, adjusted subtest naming to 'Enumerate Unity Tests' for clarity | 2025-07-02         |
 | test_35_env_variables.sh         | Test    | Migrated         | Successfully migrated to use lib/ scripts, restructured to match test 15 pattern with proper library function usage, added missing environment utility functions | 2025-07-02         |
-| test_40_json_error_handling.sh   | Test    | Not Migrated     |                                           | -                  |
-| test_45_signals.sh               | Test    | Not Migrated     |                                           | -                  |
-| test_50_crash_handler.sh         | Test    | Not Migrated     |                                           | -                  |
-| test_55_socket_rebind.sh         | Test    | Not Migrated     |                                           | -                  |
+| test_40_json_error_handling.sh   | Test    | Migrated         | Successfully migrated to use lib/ scripts, restructured to follow test 15 pattern with proper library function usage, maintains JSON error handling validation with line/column position checking | 2025-07-02         |
+| test_45_signals.sh               | Test    | Migrated         | Successfully migrated to use lib/ scripts, restructured to follow established pattern with comprehensive signal handling tests for SIGINT, SIGTERM, SIGHUP, SIGUSR2, and multiple signals | 2025-07-02         |
+| test_50_crash_handler.sh         | Test    | Migrated         | Successfully migrated to use lib/ scripts, comprehensive crash handler testing for multiple build variants with core dump generation, GDB analysis, and crash logging validation | 2025-07-02         |
+| test_55_socket_rebind.sh         | Test    | Migrated         | Successfully migrated to use lib/ scripts, created network_utils.sh library for TIME_WAIT socket management, comprehensive socket rebinding test with HTTP connection establishment | 2025-07-02         |
 | test_60_api_prefixes.sh          | Test    | Not Migrated     |                                           | -                  |
 | test_65_system_endpoints.sh      | Test    | Not Migrated     |                                           | -                  |
 | test_70_swagger.sh               | Test    | Not Migrated     |                                           | -                  |
@@ -259,3 +259,53 @@ This table will be updated as migration progresses to reflect the current status
   - **🚨 CRITICAL: Avoid Duplicate PASS/FAIL Results**: When library functions already generate PASS/FAIL results (like `validate_config_file`), the calling test should not add duplicate results. Only increment the pass counter and add informational messages. This ensures each subtest has exactly one PASS/FAIL line.
   - **Subtest Count Verification**: After migration, always verify that the actual number of subtests executed matches the `TOTAL_SUBTESTS` declaration. Use the test output to count the actual subtests (35-001, 35-002, etc.) and adjust accordingly.
   - **Library Function Result Handling**: When using library functions that generate their own results, understand what they output before adding additional result lines. Check the library function implementation to see if it calls `print_result`.
+
+### test_40_json_error_handling.sh
+
+- **Migration Date**: 2025-07-02
+- **Lessons Learned**:
+  - **Error Handling Tests Pattern**: Tests that expect application failure (like JSON syntax error handling) follow the same structural pattern as success tests, but with inverted logic - success is when the application fails as expected.
+  - **Error Output Capture**: When testing error conditions, capture both stdout and stderr to a temporary file for analysis, then display the content through `print_output()` for consistent formatting and logging.
+  - **Negative Testing Integration**: Negative tests (expecting failures) integrate seamlessly with the standard library functions - `find_hydrogen_binary()`, `validate_config_file()`, etc. still work normally, only the main test logic expects failure.
+  - **File Cleanup Strategy**: Temporary files should be cleaned up after use, but permanent result files should be saved to the results directory with descriptive names for later analysis.
+  - **Error Message Validation**: When validating error messages contain specific information (like line/column numbers), use simple grep patterns rather than complex parsing to maintain reliability across different error message formats.
+  - **Test Configuration Reuse**: Existing malformed configuration files can be reused effectively - the `hydrogen_test_json.json` file with its intentional missing comma serves as a perfect test case for JSON error handling.
+  - **Subtest Structure for Error Tests**: Error handling tests typically have 4 subtests: binary validation, config validation, error execution test, and error message content validation - this provides comprehensive coverage while maintaining the standard pattern.
+  - **🚨 CRITICAL: Privacy and Security in Log Output**: During Test 40 migration, discovered that library functions were logging full absolute paths (e.g., `/home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen`) which could expose user information. Updated `find_hydrogen_binary()` in lifecycle.sh to use relative paths (`hydrogen`) instead. This is a security best practice that should be applied to all library functions that log paths.
+  - **Path Sanitization Strategy**: When logging paths in library functions, always convert absolute paths to relative paths using `convert_to_relative_path()` or fallback regex patterns. This prevents accidental exposure of user directory structures, usernames, or system information in test logs that might be shared or stored.
+
+### test_45_signals.sh
+
+- **Migration Date**: 2025-07-02
+- **Lessons Learned**:
+  - **Signal Testing Complexity**: Signal handling tests require specialized functions for different signal types and behaviors. While the standard library functions work for basic startup/shutdown, signal-specific functions are needed for restart detection, config dumps, and multiple signal handling.
+  - **Custom Signal Functions**: Created specialized functions (`wait_for_signal_startup`, `wait_for_signal_shutdown`, `wait_for_restart_completion`, `verify_config_dump`) within the test rather than adding them to libraries, as they are highly specific to signal testing scenarios.
+  - **Multiple Log Files Strategy**: Signal tests benefit from separate log files for each signal type (SIGINT, SIGTERM, SIGHUP, SIGUSR2, multiple) to isolate behavior and enable parallel analysis of different signal handling paths.
+  - **Restart vs Shutdown Logic**: SIGHUP restart testing requires different validation logic than shutdown signals - looking for restart completion markers and restart counts rather than shutdown completion messages.
+  - **Signal Timing Considerations**: Signal tests need longer timeouts and more careful timing management due to the asynchronous nature of signal processing and the complexity of restart sequences.
+  - **Test Verification Strategy**: Added a comprehensive verification subtest that checks all signal test log files for proper completion markers, providing an overall assessment of signal handling capability.
+  - **Parallel Execution Ready**: Each signal test uses timestamped log files and independent processes, making the test suitable for parallel execution without interference between different signal test scenarios.
+  - **Comprehensive Coverage**: The test covers all major signal types (SIGINT, SIGTERM, SIGHUP, SIGUSR2) plus edge cases (multiple signals, multiple restarts), providing thorough validation of signal handling robustness.
+  - **🚨 CRITICAL: Eliminate Artificial Delays**: During Test 45 optimization, discovered the test had numerous `sleep` statements (5x `sleep 1` between test cases, `sleep 0.1` in signal sequences, `sleep 1` in restart loops) that were dramatically slowing execution. Removing all artificial delays reduced test time from ~14+ seconds to much faster execution while maintaining full reliability. **LESSON: Always use natural timing mechanisms (log file monitoring, process state checking, timeout-based waiting) instead of arbitrary delays.**
+  - **Performance vs Reliability**: Proper timeout-based waiting with 0.2s polling intervals provides both fast execution and reliable state detection. Artificial delays are both slower and less reliable than monitoring actual system state changes.
+  - **Natural Timing Mechanisms**: Use `grep -q` checks on log files, `ps -p` process monitoring, and timeout-based loops instead of fixed delays. This makes tests both faster and more robust to timing variations across different systems.
+
+### test_50_crash_handler.sh
+
+- **Migration Date**: 2025-07-02
+- **Lessons Learned**:
+  - **Multi-Build Testing Strategy**: Crash handler tests require testing multiple build variants (hydrogen, hydrogen_debug, hydrogen_valgrind, hydrogen_perf, hydrogen_release) with different expectations for each build type. Dynamic subtest calculation based on available builds ensures accurate reporting.
+  - **Build-Specific Expectations**: Different build types have different debug symbol expectations - release builds should NOT have debug symbols, while development builds should. Test logic must adapt expectations based on build type rather than applying uniform criteria.
+  - **Core Dump System Integration**: Core dump testing requires system-level configuration verification (core pattern, ulimit settings) and may need runtime adjustments. Tests should verify and attempt to configure core dump settings rather than assuming they're correct.
+  - **GDB Analysis Complexity**: GDB analysis must handle both debug and release builds differently. Debug builds can provide detailed backtraces with function names and line numbers, while release builds may only provide basic crash information. Test validation should match these capabilities.
+  - **Crash Triggering Methodology**: Using SIGUSR1 to trigger a controlled crash (null pointer dereference) provides predictable crash behavior for testing. The test must distinguish between startup crashes (failures) and intentional test crashes (expected behavior).
+  - **Resource Management for Crash Tests**: Core files should be preserved for failed tests (for debugging) but cleaned up for successful tests (to avoid disk space issues). Log files and GDB output should always be preserved in the results directory.
+  - **ASAN Integration**: Address Sanitizer (ASAN) leak detection must be disabled (`ASAN_OPTIONS="detect_leaks=0"`) for crash tests since intentional crashes will always appear as leaks. This prevents false positives in crash testing scenarios.
+  - **Comprehensive Validation**: Each build requires 4 subtests (debug symbols, core file generation, crash logging, GDB analysis) to thoroughly validate crash handling capability. This provides detailed feedback on which aspects of crash handling work correctly.
+  - **System Tool Dependencies**: Crash testing depends on system tools (readelf, gdb, ps, ulimit) being available and functioning correctly. Tests should verify tool availability and provide meaningful error messages when tools are missing.
+  - **Parallel Execution Considerations**: Crash tests use timestamped files and independent processes, making them suitable for parallel execution. However, core dump system settings are global, so parallel crash tests might interfere with each other's core dump configuration.
+  - **🚨 CRITICAL: Shell Scripting Scope Rules**: During Test 50 debugging, encountered "local: can only be used in a function" error when `local successful_builds=0` was used in main script scope instead of inside a function. **LESSON: The `local` keyword can ONLY be used inside functions, never in the main script scope.** Always use regular variable declarations (`variable=value`) in main script scope and reserve `local` for function-scoped variables.
+  - **Variable Scope Best Practices**: When migrating tests, pay careful attention to variable scope. Use `local` inside functions to prevent variable pollution, but use regular declarations in main script scope. This is especially important when refactoring code from functions to main script or vice versa.
+  - **Testing and Validation**: Always run migrated tests immediately after migration to catch shell scripting errors early. Simple syntax errors like incorrect `local` usage can be caught quickly with test execution, preventing issues from propagating to other tests or CI/CD systems.
+  - **Shellcheck Integration**: Always run `shellcheck -x -f gcc test_script.sh` after migration to catch shell scripting issues. Common fixes include: removing unused variables, adding proper quoting around variable expansions (`"$VARIABLE"` instead of `$VARIABLE`), and ensuring proper variable scope usage.
+  - **Code Quality Standards**: Maintain high code quality by addressing all shellcheck warnings. This includes proper quoting, unused variable cleanup, and adherence to shell scripting best practices. Clean shellcheck output indicates production-ready code.

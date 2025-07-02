@@ -1,117 +1,129 @@
 #!/bin/bash
 #
-# About this Script
-#
-# Hydrogen JSON Error Handling Test
+# Test 40: Hydrogen JSON Error Handling Test
 # Tests if the Hydrogen application correctly handles JSON syntax errors in configuration files
 # and provides meaningful error messages with position information
 #
-NAME_SCRIPT="Hydrogen JSON Error Handling Test"
-VERS_SCRIPT="2.0.0"
-
 # VERSION HISTORY
+# 3.0.0 - 2025-07-02 - Complete rewrite to use new modular test libraries
 # 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
 # 1.0.0 - Original version - Basic JSON error handling test
-
-# Display script name and version
-echo "=== $NAME_SCRIPT v$VERS_SCRIPT ==="
+#
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 
-# Include the common test utilities
-source "$SCRIPT_DIR/support_utils.sh"
+# Source the new modular test libraries
+source "$SCRIPT_DIR/lib/log_output.sh"
+source "$SCRIPT_DIR/lib/file_utils.sh"
+source "$SCRIPT_DIR/lib/framework.sh"
+source "$SCRIPT_DIR/lib/lifecycle.sh"
 
-# Create output directories
+# Test configuration
+TEST_NAME="Hydrogen JSON Error Handling Test"
+SCRIPT_VERSION="3.0.0"
+EXIT_CODE=0
+TOTAL_SUBTESTS=4
+PASS_COUNT=0
+
+# Auto-extract test number and set up environment
+TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
+set_test_number "$TEST_NUMBER"
+reset_subtest_counter
+
+# Print beautiful test header
+print_test_header "$TEST_NAME" "$SCRIPT_VERSION"
+
+# Set up results directory
 RESULTS_DIR="$SCRIPT_DIR/results"
 mkdir -p "$RESULTS_DIR"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-RESULT_LOG="$RESULTS_DIR/json_error_test_${TIMESTAMP}.log"
+RESULT_LOG="$RESULTS_DIR/test_${TEST_NUMBER}_${TIMESTAMP}.log"
 ERROR_OUTPUT="$RESULTS_DIR/json_error_output_${TIMESTAMP}.txt"
 
-# Start the test
-start_test "JSON Error Handling Test" | tee -a "$RESULT_LOG"
+# Navigate to the project root (one level up from tests directory)
+if ! navigate_to_project_root "$SCRIPT_DIR"; then
+    print_error "Failed to navigate to project root directory"
+    exit 1
+fi
 
-# Use the permanent test file with a JSON syntax error (missing comma)
-TEST_CONFIG=$(get_config_path "hydrogen_test_json.json")
-print_info "Using test file with JSON syntax error (missing comma)" | tee -a "$RESULT_LOG"
-
-# Determine which hydrogen build to use (prefer release build if available)
-if [ -f "$HYDROGEN_DIR/hydrogen_release" ]; then
-    HYDROGEN_BIN="$HYDROGEN_DIR/hydrogen_release"
-    print_info "Using release build for testing" | tee -a "$RESULT_LOG"
+# Validate Hydrogen Binary
+next_subtest
+print_subtest "Validate Hydrogen Binary"
+HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
+if HYDROGEN_BIN=$(find_hydrogen_binary "$HYDROGEN_DIR"); then
+    print_message "Using Hydrogen binary: $HYDROGEN_BIN"
+    print_result 0 "Hydrogen binary found and validated"
+    ((PASS_COUNT++))
 else
-    HYDROGEN_BIN="$HYDROGEN_DIR/hydrogen"
-    print_info "Standard build will be used" | tee -a "$RESULT_LOG"
+    print_result 1 "Failed to find Hydrogen binary"
+    EXIT_CODE=1
+fi
+
+# Test configuration with JSON syntax error (missing comma)
+TEST_CONFIG=$(get_config_path "hydrogen_test_json.json")
+
+# Validate configuration file exists
+next_subtest
+print_subtest "Validate Test Configuration File"
+if validate_config_file "$TEST_CONFIG"; then
+    print_message "Using test file with JSON syntax error (missing comma)"
+    ((PASS_COUNT++))
+else
+    EXIT_CODE=1
 fi
 
 # Test 1: Run hydrogen with malformed config - should fail
-print_header "Test 1: Launch with malformed JSON configuration" | tee -a "$RESULT_LOG"
-print_command "$HYDROGEN_BIN $TEST_CONFIG" | tee -a "$RESULT_LOG"
+next_subtest
+print_subtest "Launch with Malformed JSON Configuration"
+print_message "Testing configuration: $(basename "$TEST_CONFIG" .json)"
+print_command "$(basename "$HYDROGEN_BIN") $(basename "$TEST_CONFIG")"
 
 # Capture both stdout and stderr
-if $HYDROGEN_BIN "$TEST_CONFIG" &> "$ERROR_OUTPUT"; then
-    print_result 1 "Application should have exited with an error but didn't" | tee -a "$RESULT_LOG"
-    rm -f "$ERROR_OUTPUT"
-    end_test 1 "JSON Error Handling Test" | tee -a "$RESULT_LOG"
-    exit 1
+if "$HYDROGEN_BIN" "$TEST_CONFIG" &> "$ERROR_OUTPUT"; then
+    print_result 1 "Application should have exited with an error but didn't"
+    EXIT_CODE=1
 else
-    print_result 0 "Application exited with error as expected" | tee -a "$RESULT_LOG"
+    print_result 0 "Application exited with error as expected"
+    ((PASS_COUNT++))
 fi
 
 # Test 2: Check error output for line and column information
-print_header "Test 2: Verify error message contains position information" | tee -a "$RESULT_LOG"
-print_info "Examining error output..." | tee -a "$RESULT_LOG"
+next_subtest
+print_subtest "Verify Error Message Contains Position Information"
+print_message "Examining error output..."
 
 if grep -q "line" "$ERROR_OUTPUT" && grep -q "column" "$ERROR_OUTPUT"; then
-    print_result 0 "Error message contains line and column information" | tee -a "$RESULT_LOG"
-    print_info "Error output:" | tee -a "$RESULT_LOG"
-    # Display the error output content without complex piping
+    print_result 0 "Error message contains line and column information"
+    print_message "Error output:"
+    # Display the error output content
     while IFS= read -r line; do
-        echo "$line" | tee -a "$RESULT_LOG"
+        print_output "$line"
     done < "$ERROR_OUTPUT"
-    TEST_RESULT=0
+    ((PASS_COUNT++))
 else
-    print_result 1 "Error message does not contain line and column information" | tee -a "$RESULT_LOG"
-    print_info "Error output:" | tee -a "$RESULT_LOG"
-    # Display the error output content without complex piping
+    print_result 1 "Error message does not contain line and column information"
+    print_message "Error output:"
+    # Display the error output content
     while IFS= read -r line; do
-        echo "$line" | tee -a "$RESULT_LOG"
+        print_output "$line"
     done < "$ERROR_OUTPUT"
-    TEST_RESULT=1
+    EXIT_CODE=1
 fi
 
 # Save error output to results directory
 cp "$ERROR_OUTPUT" "$RESULTS_DIR/json_error_full_${TIMESTAMP}.txt"
-print_info "Full error output saved to: $(convert_to_relative_path "$RESULTS_DIR/json_error_full_${TIMESTAMP}.txt")" | tee -a "$RESULT_LOG"
+print_message "Full error output saved to: $(convert_to_relative_path "$RESULTS_DIR/json_error_full_${TIMESTAMP}.txt")"
 
-# Clean up
+# Clean up temporary error output file
 rm -f "$ERROR_OUTPUT"
 
-# Track subtest results
-TOTAL_SUBTESTS=2  # Malformed JSON test and Error Position test
-PASS_COUNT=0
+# Export results for test_all.sh integration
+export_subtest_results "40_json_error_handling" $TOTAL_SUBTESTS $PASS_COUNT > /dev/null
 
-# First test - Application exits with error when given malformed JSON
-if ! grep -q "Application should have exited with an error but didn't" "$RESULT_LOG"; then
-    ((PASS_COUNT++))
-fi
+# Print completion table
+print_test_completion "$TEST_NAME"
 
-# Second test - Error message contains position information
-if grep -q "Error message contains line and column information" "$RESULT_LOG"; then
-    ((PASS_COUNT++))
-fi
+end_test $EXIT_CODE $TOTAL_SUBTESTS $PASS_COUNT > /dev/null
 
-# Get test name from script name
-TEST_NAME=$(basename "$0" .sh | sed 's/^test_//')
-
-# Export subtest results for test_all.sh to pick up
-export_subtest_results "$TEST_NAME" $TOTAL_SUBTESTS $PASS_COUNT
-
-# Log subtest results
-print_info "JSON Error Handling Test: $PASS_COUNT of $TOTAL_SUBTESTS subtests passed" | tee -a "$RESULT_LOG"
-
-# End test with appropriate exit code
-end_test $TEST_RESULT "JSON Error Handling Test" | tee -a "$RESULT_LOG"
-exit $TEST_RESULT
+exit $EXIT_CODE
