@@ -21,7 +21,7 @@ These scripts perform specific tests for the Hydrogen project and will be update
 | Script Name                       | Type   | Migration Status | Notes                                      |
 |-----------------------------------|--------|------------------|--------------------------------------------|
 | test_00_all.sh                   | Test   | Not Migrated     | To be updated last as per user request.    |
-| test_10_compilation.sh           | Test   | Not Migrated     | Planned as the first script to update.     |
+| test_10_compilation.sh           | Test   | Migrated         | Successfully migrated to use lib/ scripts. |
 | test_12_env_payload.sh           | Test   | Not Migrated     |                                            |
 | test_15_startup_shutdown.sh      | Test   | Not Migrated     |                                            |
 | test_20_shutdown.sh              | Test   | Not Migrated     |                                            |
@@ -75,6 +75,7 @@ These scripts are already in the 'lib/' directory and may be integrated or expan
 1. **Preparation**:
    - Create a backup of the entire 'tests/' directory before starting any migration to prevent loss of functionality.
    - Review the next test script to be migrated (starting with 'test_10_compilation.sh') to understand its dependencies on 'support_*.sh' scripts and any custom code.
+   - Run `shellcheck -x -f gcc <script.sh>` on the script to identify and address any shell scripting issues or warnings before migration.
 
 2. **Creating New 'lib/' Scripts**:
    - Analyze 'support_*.sh' scripts to identify functionalities that can be modularized.
@@ -129,8 +130,8 @@ This table will be updated as migration progresses to reflect the current status
 | Script Name                       | Type    | Migration Status | Notes                                      | Date Updated       |
 |-----------------------------------|---------|------------------|--------------------------------------------|--------------------|
 | test_00_all.sh                   | Test    | Not Migrated     | To be updated last.                       | -                  |
-| test_10_compilation.sh           | Test    | Not Migrated     | Planned as first to update.               | -                  |
-| test_12_env_payload.sh           | Test    | Not Migrated     |                                           | -                  |
+| test_10_compilation.sh           | Test    | Migrated         | Successfully migrated to use lib/ scripts | 2025-07-02         |
+| test_12_env_payload.sh           | Test    | Migrated         | Successfully migrated to use lib/ scripts | 2025-07-02         |
 | test_15_startup_shutdown.sh      | Test    | Not Migrated     |                                           | -                  |
 | test_20_shutdown.sh              | Test    | Not Migrated     |                                           | -                  |
 | test_25_library_dependencies.sh  | Test    | Not Migrated     |                                           | -                  |
@@ -157,40 +158,50 @@ This table will be updated as migration progresses to reflect the current status
 | support_timewait.sh              | Support | Not Migrated     | To be modularized into 'lib/' scripts.    | -                  |
 | support_utils.sh                 | Support | Not Migrated     | To be modularized into 'lib/' scripts.    | -                  |
 
-### New 'lib/' Scripts Documentation
+## New 'lib/' Scripts Documentation
 
-This section will document new scripts created in the 'lib/' directory as part of the migration. Each entry will include the script's purpose, key functions, and usage instructions.
+### log_output.sh Updates
 
-- **No new 'lib/' scripts created yet.**
-  - *Details will be added as scripts are created during migration.*
+- **Purpose**: Provides consistent logging, formatting, and display functions for test scripts.
+- **New Function Added**: `format_file_size` - Formats file sizes with thousands separators for better readability in output.
+- **Usage**: Used by test scripts to format output of file sizes, ensuring consistency across all test logs.
 
-### Refactored Code Documentation
+### framework.sh Updates
 
-This section will document repetitive or custom code refactored from 'test_*.sh' or 'support_*.sh' scripts into new 'lib/' functions.
+- **Purpose**: Provides test lifecycle management and result tracking functions.
+- **New Function Added**: `navigate_to_project_root` - Navigates to the project root directory, ensuring scripts operate from the correct location.
+- **Usage**: Used by test scripts to set up the environment by navigating to the project root before executing test operations.
 
-- **No code refactored yet.**
-  - *Details will be added as code is refactored during migration.*
+### env_utils.sh Updates
 
-### User Review Feedback
+- **Purpose**: Provides functions for environment variable handling and validation.
+- **New Functions Added**:
+  - `check_env_var` - Checks if an environment variable is set and non-empty.
+  - `validate_rsa_key` - Validates the format of RSA keys (private or public).
+- **Usage**: Used by test scripts to ensure required environment variables are set and valid, particularly for payload security configurations.
 
-This section will capture user feedback on updated scripts and new 'lib/' scripts to ensure the system aligns with the desired architecture.
+## User Review Feedback
 
-- **No feedback recorded yet.**
-  - *Feedback will be added after each review cycle during migration.*
+- **2025-07-02**: User feedback on initial migration of `test_10_compilation.sh` emphasized the importance of modularizing scripts into the 'lib/' directory, refactoring repetitive code, and ensuring parallel test execution support. This feedback has been integrated into the migration plan.
+- **2025-07-02**: User requested that new functions be placed in existing relevant 'lib/' scripts rather than creating generically named files like `test_utils.sh`. As a result, functions were redistributed to `log_output.sh` and `framework.sh`, and `test_utils.sh` was removed.
 
-## Summary of Remaining Tasks
+## Lessons Learned from Migrated Scripts
 
-As of the creation of this document, all scripts are listed as "Not Migrated." The initial focus will be on updating 'test_10_compilation.sh' as the first test script. Subsequent tasks include:
+### test_10_compilation.sh
 
-- Creating new modular 'lib/' scripts based on functionalities in 'support_*.sh' scripts.
-- Identifying and refactoring repetitive code in test and support scripts.
-- Updating each test script to use the new 'lib/' scripts, ensuring support for parallel execution.
-- Reviewing changes with the user after each update to incorporate feedback.
+- **Migration Date**: 2025-07-02
+- **Lessons Learned**:
+  - Modularizing scripts into the 'lib/' directory improves maintainability and reusability of code.
+  - Refactoring repetitive code into functions (e.g., file size formatting, directory navigation) reduces duplication and enhances consistency.
+  - Ensuring parallel test execution support requires careful management of resource naming and independent operation, which should be considered in future migrations.
+  - Detailed documentation and user feedback integration are crucial for aligning the migration with user expectations and system architecture goals.
 
-This document will be updated after each migration step to reflect the current status, new scripts, refactored code, and user feedback.
+### test_12_env_payload.sh
 
-## Related Documentation
-
-- [TESTS.md](TESTS.md) - Table of Contents for all test script documentation.
-- [LIBRARIES.md](LIBRARIES.md) - Table of Contents for modular library scripts in the 'lib/' directory.
-- [README.md](../README.md) - Main documentation for the Hydrogen test suite.
+- **Migration Date**: 2025-07-02
+- **Lessons Learned**:
+  - Properly scoping variables within functions is essential to avoid errors like 'local' variable usage outside functions.
+  - All console output must be routed through logging functions (e.g., log_output.sh) to maintain consistency and prevent unexpected messages.
+  - Displaying actual commands in EXEC lines enhances transparency and aids debugging, making test execution more understandable.
+  - Repetitive test logic, such as tracking passed/failed checks, can be abstracted into reusable functions in 'framework.sh' to streamline test scripts.
+  - Continuous user feedback during migration helps refine the approach, ensuring the final structure meets expectations and addresses issues promptly.
