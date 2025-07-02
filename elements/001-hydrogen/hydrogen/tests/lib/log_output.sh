@@ -8,6 +8,7 @@ NAME_SCRIPT="Hydrogen Log Output Library"
 VERS_SCRIPT="2.0.0"
 
 # VERSION HISTORY
+# 2.1.0 - 2025-07-02 - Added DATA_ICON and updated DATA_COLOR to pale yellow (256-color palette) for test_30_unity_tests.sh
 # 2.0.0 - 2025-07-02 - Complete rewrite with numbered output system
 # 1.0.0 - 2025-07-02 - Initial creation from support_utils.sh migration
 
@@ -33,6 +34,7 @@ YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 BOLD='\033[1m'
+DATA_COLOR='\033[38;5;229m' # Pale, soft yellow from 256-color palette for DATA lines
 NC='\033[0m' # No Color
 
 # Icons/symbols for test results
@@ -40,6 +42,7 @@ PASS_ICON="✅"
 FAIL_ICON="✖️"
 WARN_ICON="⚠️"
 INFO_ICON="ℹ️"
+DATA_ICON="▶▶"
 
 # Function to set the current test number (e.g., "10" for test_10_compilation.sh)
 set_test_number() {
@@ -253,7 +256,12 @@ print_output() {
     prefix=$(get_test_prefix)
     local elapsed
     elapsed=$(get_elapsed_time)
-    echo -e "  ${prefix}   ${elapsed}   ${CYAN}OUT${NC}   ${1}"
+    local message="$1"
+    message=$(echo "$message" | sed -E "s|\/home\/asimard\/Projects\/Philement\/elements\/001-hydrogen\/|hydrogen/|g")
+    # Skip output if message is empty or contains only whitespace
+    if [[ -n "$message" && ! "$message" =~ ^[[:space:]]*$ ]]; then
+        echo -e "  ${prefix}   ${elapsed}   ${DATA_COLOR}${DATA_ICON} DATA   ${message}${NC}"
+    fi
 }
 
 # Function to print test results

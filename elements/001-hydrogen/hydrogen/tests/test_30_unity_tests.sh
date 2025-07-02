@@ -1,214 +1,211 @@
 #!/bin/bash
 #
-# Hydrogen Unity Tests Script
+# Test 30: Hydrogen Unity Tests
 # Runs unit tests using the Unity framework, treating each test file as a subtest
 #
-NAME_SCRIPT="Hydrogen Unity Tests"
-VERS_SCRIPT="1.0.0"
-
 # VERSION HISTORY
+# 2.0.0 - 2025-07-02 - Complete rewrite to use new modular test libraries
 # 1.0.0 - 2025-06-25 - Initial version for running Unity tests
-
-# Display script name and version
-echo "=== $NAME_SCRIPT v$VERS_SCRIPT ==="
+#
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"  # Used for potential future path references
 
-# Include the common test utilities
-source "$SCRIPT_DIR/support_utils.sh"
+# Source the new modular test libraries
+source "$SCRIPT_DIR/lib/log_output.sh"
+source "$SCRIPT_DIR/lib/file_utils.sh"
+source "$SCRIPT_DIR/lib/framework.sh"
+source "$SCRIPT_DIR/lib/lifecycle.sh"
+
+# Test configuration
+TEST_NAME="Hydrogen Unity Tests"
+SCRIPT_VERSION="2.0.0"
+EXIT_CODE=0
+TOTAL_SUBTESTS=0
+PASS_COUNT=0
+
+# Auto-extract test number and set up environment
+TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
+set_test_number "$TEST_NUMBER"
+reset_subtest_counter
+
+# Print beautiful test header
+print_test_header "$TEST_NAME" "$SCRIPT_VERSION"
+
+# Set up results directory
+RESULTS_DIR="$SCRIPT_DIR/results"
+mkdir -p "$RESULTS_DIR"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+RESULT_LOG="$RESULTS_DIR/test_${TEST_NUMBER}_${TIMESTAMP}.log"
+
+# Navigate to the project root (one level up from tests directory)
+if ! navigate_to_project_root "$SCRIPT_DIR"; then
+    print_error "Failed to navigate to project root directory"
+    exit 1
+fi
 
 # Configuration
+HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 UNITY_DIR="$SCRIPT_DIR/unity"
-RESULTS_DIR="$SCRIPT_DIR/results"
 DIAG_DIR="$SCRIPT_DIR/diagnostics"
 LOG_FILE="$SCRIPT_DIR/logs/unity_tests.log"
+DIAG_TEST_DIR="$DIAG_DIR/unity_tests_${TIMESTAMP}"
 
 # Create output directories
-create_output_directories() {
-    local dirs=("$RESULTS_DIR" "$DIAG_DIR" "$(dirname "$LOG_FILE")")
-    local dir
-    
-    for dir in "${dirs[@]}"; do
-        if ! mkdir -p "$dir"; then
-            print_error "Failed to create directory: $dir"
-            return 1
-        fi
-    done
-    return 0
-}
-
-if ! create_output_directories; then
-    exit 1
+next_subtest
+print_subtest "Create Output Directories"
+if setup_output_directories "$RESULTS_DIR" "$DIAG_DIR" "$LOG_FILE" "$DIAG_TEST_DIR"; then
+    ((PASS_COUNT++))
+else
+    EXIT_CODE=1
 fi
-
-# Generate timestamp and result paths
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-RESULT_LOG="${RESULTS_DIR}/unity_tests_${TIMESTAMP}.log"
-DIAG_TEST_DIR="${DIAG_DIR}/unity_tests_${TIMESTAMP}"
-
-if ! mkdir -p "$DIAG_TEST_DIR"; then
-    print_error "Failed to create diagnostics directory: $DIAG_TEST_DIR"
-    exit 1
-fi
-
-# Initialize test counters
-TOTAL_SUBTESTS=0
-PASSED_SUBTESTS=0
-
-# Start the test
-start_test "Hydrogen Unity Tests" | tee -a "$RESULT_LOG"
-
-# Function to compile Unity tests
-compile_unity_tests() {
-    print_info "Compiling Unity tests..." | tee -a "$RESULT_LOG"
-    local build_dir="$HYDROGEN_DIR/build_unity_tests"
-    mkdir -p "$build_dir"
-    cd "$build_dir" || { print_error "Failed to change to build directory: $build_dir" | tee -a "$RESULT_LOG"; return 1; }
-    cmake "$UNITY_DIR" || { print_error "CMake configuration failed for Unity tests" | tee -a "$RESULT_LOG"; return 1; }
-    cmake --build . || { print_error "Build failed for Unity tests" | tee -a "$RESULT_LOG"; return 1; }
-    cd "$SCRIPT_DIR" || { print_error "Failed to return to script directory: $SCRIPT_DIR" | tee -a "$RESULT_LOG"; return 1; }
-    print_info "Unity tests compiled successfully." | tee -a "$RESULT_LOG"
-    return 0
-}
-
-# Function to run Unity tests
-run_unity_tests() {
-    print_header "Running Unity Tests" | tee -a "$RESULT_LOG"
-    
-    if [ ! -d "$UNITY_DIR" ]; then
-        print_error "Unity test directory not found: $UNITY_DIR" | tee -a "$RESULT_LOG"
-        return 1
-    fi
-    
-    local build_dir="$HYDROGEN_DIR/build_unity_tests"
-    if [ ! -d "$build_dir" ]; then
-        print_error "Build directory not found: $build_dir" | tee -a "$RESULT_LOG"
-        return 1
-    fi
-    
-    # Initially set TOTAL_SUBTESTS based on test files for informational purposes, searching only in the top-level unity directory
-    local test_files=()
-    mapfile -t test_files < <(find "$UNITY_DIR" -maxdepth 1 -type f -name "test_*.c")
-    print_info "Found ${#test_files[@]} Unity test files in top-level unity directory." | tee -a "$RESULT_LOG"
-    
-    # TOTAL_SUBTESTS will be updated based on actual tests run by ctest
-    TOTAL_SUBTESTS=0
-    print_info "Running Unity tests to determine total subtests..." | tee -a "$RESULT_LOG"
-    
-    cd "$build_dir" || { print_error "Failed to change to build directory: $build_dir" | tee -a "$RESULT_LOG"; return 1; }
-    ctest --output-on-failure | tee "$LOG_FILE"
-    local ctest_result=$?
-    cd "$SCRIPT_DIR" || { print_error "Failed to return to script directory: $SCRIPT_DIR" | tee -a "$RESULT_LOG"; return 1; }
-    
-    # Parse test results from ctest output to count total and passed tests
-    PASSED_SUBTESTS=0
-    TOTAL_SUBTESTS=0
-    while IFS= read -r line; do
-        if [[ $line =~ "Passed" ]]; then
-            ((PASSED_SUBTESTS++))
-            ((TOTAL_SUBTESTS++))
-        elif [[ $line =~ "Failed" ]]; then
-            ((TOTAL_SUBTESTS++))
-        elif [[ $line =~ "Test #" ]]; then
-            # If the line contains "Test #", it indicates a test execution line
-            # This is a fallback to ensure we count all tests if "Failed" isn't explicitly mentioned
-            if [[ ! $line =~ "Passed" ]]; then
-                ((TOTAL_SUBTESTS++))
-            fi
-        fi
-    done < "$LOG_FILE"
-    print_info "Found $TOTAL_SUBTESTS Unity tests run as subtests." | tee -a "$RESULT_LOG"
-    
-    if [ $ctest_result -eq 0 ]; then
-        print_info "All Unity tests passed." | tee -a "$RESULT_LOG"
-    else
-        print_warning "Some Unity tests failed. Check $LOG_FILE for details." | tee -a "$RESULT_LOG"
-    fi
-    
-    return $ctest_result
-}
 
 # Function to download Unity framework if missing
 download_unity_framework() {
     local framework_dir="$UNITY_DIR/framework"
     local unity_dir="$framework_dir/Unity"
     if [ ! -d "$unity_dir" ]; then
-        print_info "Unity framework not found in $unity_dir. Downloading now..." | tee -a "$RESULT_LOG"
+        print_message "Unity framework not found in $unity_dir. Downloading now..."
         mkdir -p "$framework_dir"
         if command -v curl >/dev/null 2>&1; then
             if curl -L https://github.com/ThrowTheSwitch/Unity/archive/refs/heads/master.zip -o "$framework_dir/unity.zip"; then
                 unzip "$framework_dir/unity.zip" -d "$framework_dir/"
                 mv "$framework_dir/Unity-master" "$unity_dir"
                 rm "$framework_dir/unity.zip"
-                print_info "Unity framework downloaded and extracted successfully to $unity_dir." | tee -a "$RESULT_LOG"
+                print_result 0 "Unity framework downloaded and extracted successfully to $unity_dir."
                 return 0
             else
-                print_error "Failed to download Unity framework with curl." | tee -a "$RESULT_LOG"
+                print_result 1 "Failed to download Unity framework with curl."
                 return 1
             fi
         elif command -v git >/dev/null 2>&1; then
             if git clone https://github.com/ThrowTheSwitch/Unity.git "$unity_dir"; then
-                print_info "Unity framework cloned successfully to $unity_dir." | tee -a "$RESULT_LOG"
+                print_result 0 "Unity framework cloned successfully to $unity_dir."
                 return 0
             else
-                print_error "Failed to clone Unity framework with git." | tee -a "$RESULT_LOG"
+                print_result 1 "Failed to clone Unity framework with git."
                 return 1
             fi
         else
-            print_error "Neither curl nor git is available to download the Unity framework." | tee -a "$RESULT_LOG"
+            print_result 1 "Neither curl nor git is available to download the Unity framework."
             return 1
         fi
     else
-        print_info "Unity framework already exists in $unity_dir." | tee -a "$RESULT_LOG"
+        print_message "Unity framework already exists in $unity_dir."
         return 0
     fi
 }
 
+# Function to compile Unity tests
+compile_unity_tests() {
+    next_subtest
+    print_subtest "Compile Unity Tests"
+    print_message "Compiling Unity tests..."
+    local build_dir="$HYDROGEN_DIR/build_unity_tests"
+    local temp_log="$DIAG_TEST_DIR/compile_log.txt"
+    mkdir -p "$build_dir"
+    mkdir -p "$(dirname "$temp_log")"
+    cd "$build_dir" || { print_result 1 "Failed to change to build directory: ${build_dir#"$SCRIPT_DIR"/..}"; return 1; }
+    cmake "$UNITY_DIR" > "$temp_log" 2>&1 || { print_result 1 "CMake configuration failed for Unity tests"; while IFS= read -r line; do print_output "$line"; done < "$temp_log"; return 1; }
+    while IFS= read -r line; do print_output "$line"; done < "$temp_log"
+    cmake --build . >> "$temp_log" 2>&1 || { print_result 1 "Build failed for Unity tests"; while IFS= read -r line; do print_output "$line"; done < "$temp_log"; return 1; }
+    while IFS= read -r line; do print_output "$line"; done < "$temp_log"
+    cd "$SCRIPT_DIR" || { print_result 1 "Failed to return to script directory: ${SCRIPT_DIR#"$SCRIPT_DIR"/..}"; return 1; }
+    print_result 0 "Unity tests compiled successfully."
+    return 0
+}
+
+# Function to run Unity tests
+run_unity_tests() {
+    next_subtest
+    print_subtest "Enumerate Unity Tests"
+    print_message "Enumerating Unity Tests"
+    
+    if [ ! -d "$UNITY_DIR" ]; then
+        print_result 1 "Unity test directory not found: ${UNITY_DIR#"$SCRIPT_DIR"/..}"
+        return 1
+    fi
+    
+    local build_dir="$HYDROGEN_DIR/build_unity_tests"
+    if [ ! -d "$build_dir" ]; then
+        print_result 1 "Build directory not found: ${build_dir#"$SCRIPT_DIR"/..}"
+        return 1
+    fi
+    
+    # Initially set TOTAL_SUBTESTS based on test files for informational purposes
+    local test_files=()
+    mapfile -t test_files < <(find "$UNITY_DIR" -maxdepth 1 -type f -name "test_*.c")
+    print_message "Found ${#test_files[@]} Unity test files in top-level unity directory."
+    
+    # Get list of test names using ctest -N
+    cd "$build_dir" || { print_result 1 "Failed to change to build directory: ${build_dir#"$SCRIPT_DIR"/..}"; return 1; }
+    local test_list=()
+    mapfile -t test_list < <(ctest -N | grep "Test #" | awk '{print $3}')
+    TOTAL_SUBTESTS=${#test_list[@]}
+    print_message "Found $TOTAL_SUBTESTS Unity tests to run as subtests."
+    print_result 0 "Unity test enumeration completed."
+    
+    # Run each test individually to display as subtest
+    local test_name
+    PASS_COUNT=0
+    true > "$LOG_FILE"  # Clear log file
+    local temp_test_log="$DIAG_TEST_DIR/test_output.txt"
+    mkdir -p "$(dirname "$temp_test_log")"
+    for test_name in "${test_list[@]}"; do
+        next_subtest
+        print_subtest "Unity Test: $test_name"
+        true > "$temp_test_log"  # Clear temporary log for this test
+        ctest -R "^$test_name$" --output-on-failure > "$temp_test_log" 2>&1
+        while IFS= read -r line; do
+            # Replace absolute paths with relative paths
+            line=${line//"/home/asimard/Projects/Philement/elements/001-hydrogen/"//hydrogen/}
+            print_output "$line"
+        done < "$temp_test_log"
+        if grep -q "Passed" "$temp_test_log"; then
+            print_result 0 "$test_name passed."
+            ((PASS_COUNT++))
+        else
+            print_result 1 "$test_name failed. Check ${LOG_FILE#"$SCRIPT_DIR"/..} for details."
+            EXIT_CODE=1
+        fi
+        cat "$temp_test_log" >> "$LOG_FILE"
+    done
+    
+    cd "$SCRIPT_DIR" || { print_result 1 "Failed to return to script directory: ${SCRIPT_DIR#"$SCRIPT_DIR"/..}"; return 1; }
+    
+    # Summary line removed as per feedback; final table reports the details
+    :
+    
+    return $EXIT_CODE
+}
+
+# Check and download Unity framework
+next_subtest
+print_subtest "Check Unity Framework"
+if download_unity_framework; then
+    print_result 0 "Unity framework check passed."
+    ((PASS_COUNT++))
+else
+    print_result 1 "Unity framework check failed."
+    EXIT_CODE=1
+fi
+
 # Compile and run tests
-COMPILE_RESULT=0
-TEST_RESULT=0
-DOWNLOAD_RESULT=0
-
-print_header "Checking Unity Framework" | tee -a "$RESULT_LOG"
-download_unity_framework
-DOWNLOAD_RESULT=$?
-
-if [ $DOWNLOAD_RESULT -ne 0 ]; then
-    print_error "Failed to download Unity framework, proceeding may fail." | tee -a "$RESULT_LOG"
-fi
-
-print_header "Compiling Unity Tests" | tee -a "$RESULT_LOG"
-compile_unity_tests
-COMPILE_RESULT=$?
-
-if [ $COMPILE_RESULT -eq 0 ]; then
-    run_unity_tests
-    TEST_RESULT=$?
+if compile_unity_tests; then
+    if ! run_unity_tests; then
+        EXIT_CODE=1
+    fi
 else
-    print_error "Compilation failed, skipping test execution" | tee -a "$RESULT_LOG"
-    TEST_RESULT=1
+    print_error "Compilation failed, skipping test execution"
+    EXIT_CODE=1
 fi
 
-# Get test name from script name
-TEST_NAME=$(basename "$0" .sh | sed 's/^test_//')
+# Export results for test_all.sh integration
+export_subtest_results "30_unity_tests" "$TOTAL_SUBTESTS" "$PASS_COUNT" > /dev/null
 
-# Export subtest results for test_all.sh
-export_subtest_results "$TEST_NAME" "$TOTAL_SUBTESTS" "$PASSED_SUBTESTS"
+# Print completion table
+print_test_completion "$TEST_NAME"
 
-# Print final summary
-print_header "Test Summary" | tee -a "$RESULT_LOG"
-print_info "Total subtests: $TOTAL_SUBTESTS" | tee -a "$RESULT_LOG"
-print_info "Passed subtests: $PASSED_SUBTESTS" | tee -a "$RESULT_LOG"
+end_test "$EXIT_CODE" "$TOTAL_SUBTESTS" "$PASS_COUNT" > /dev/null
 
-# Determine final exit status
-if [ $COMPILE_RESULT -eq 0 ] && [ $TEST_RESULT -eq 0 ]; then
-    print_result 0 "All Unity tests passed (placeholder)" | tee -a "$RESULT_LOG"
-    end_test 0 "Unity Tests" | tee -a "$RESULT_LOG"
-    exit 0
-else
-    print_result 1 "One or more Unity tests failed or compilation issues occurred" | tee -a "$RESULT_LOG"
-    end_test 1 "Unity Tests" | tee -a "$RESULT_LOG"
-    exit 1
-fi
+exit $EXIT_CODE
