@@ -1,0 +1,148 @@
+Missing link in ../../docs/testing.md: /tests/configs/hydrogen_test_max.json
+Missing link in ../../docs/testing.md: /tests/configs/hydrogen_test_min.json
+
+=== Link Check Summary ===
+File: test_15_startup_shutdown.md
+  Total Links: 4
+  Checked Links: 4
+  Missing Links: 0
+
+File: ../../docs/testing.md
+  Total Links: 3
+  Checked Links: 1
+  Missing Links: 2
+
+File: test_70_swagger_ui.md
+  Total Links: 4
+  Checked Links: 4
+  Missing Links: 0
+
+File: ../unity/README.md
+  Total Links: 0
+  Checked Links: 0
+  Missing Links: 0
+
+File: test_12_env_payload.md
+  Total Links: 4
+  Checked Links: 4
+  Missing Links: 0
+
+File: tables_config.md
+  Total Links: 5
+  Checked Links: 5
+  Missing Links: 0
+
+File: test_20_shutdown.md
+  Total Links: 4
+  Checked Links: 4
+  Missing Links: 0
+
+File: test_10_compilation.md
+  Total Links: 4
+  Checked Links: 4
+  Missing Links: 0
+
+File: test_30_unity_tests.md
+  Total Links: 5
+  Checked Links: 5
+  Missing Links: 0
+
+File: test_00_all.md
+  Total Links: 4
+  Checked Links: 4
+  Missing Links: 0
+
+File: tables_data.md
+  Total Links: 5
+  Checked Links: 5
+  Missing Links: 0
+
+File: test_35_env_variables.md
+  Total Links: 4
+  Checked Links: 4
+  Missing Links: 0
+
+File: test_50_crash_handler.md
+  Total Links: 4
+  Checked Links: 4
+  Missing Links: 0
+
+File: TESTS.md
+  Total Links: 37
+  Checked Links: 37
+  Missing Links: 0
+
+File: test_99_codebase.md
+  Total Links: 4
+  Checked Links: 4
+  Missing Links: 0
+
+File: Migration_Plan.md
+  Total Links: 3
+  Checked Links: 3
+  Missing Links: 0
+
+File: test_40_json_error_handling.md
+  Total Links: 4
+  Checked Links: 4
+  Missing Links: 0
+
+File: tables_datatypes.md
+  Total Links: 5
+  Checked Links: 5
+  Missing Links: 0
+
+File: test_60_api_prefixes.md
+  Total Links: 4
+  Checked Links: 4
+  Missing Links: 0
+
+File: test_45_signals.md
+  Total Links: 4
+  Checked Links: 4
+  Missing Links: 0
+
+File: test_95_thread_monitoring.md
+  Total Links: 4
+  Checked Links: 4
+  Missing Links: 0
+
+File: ../README.md
+  Total Links: 4
+  Checked Links: 4
+  Missing Links: 0
+
+File: test_65_mdns.md
+  Total Links: 4
+  Checked Links: 4
+  Missing Links: 0
+
+File: tables_render.md
+  Total Links: 5
+  Checked Links: 5
+  Missing Links: 0
+
+File: test_55_socket_rebind.md
+  Total Links: 4
+  Checked Links: 4
+  Missing Links: 0
+
+File: LIBRARIES.md
+  Total Links: 13
+  Checked Links: 13
+  Missing Links: 0
+
+File: test_25_library_dependencies.md
+  Total Links: 4
+  Checked Links: 4
+  Missing Links: 0
+
+File: tables_themes.md
+  Total Links: 5
+  Checked Links: 5
+  Missing Links: 0
+
+
+=== Orphaned Markdown Files ===
+No orphaned files found
+
