@@ -715,6 +715,18 @@ generate_readme_section() {
     # Calculate statistics for README generation
     calculate_test_statistics
     
+    # Calculate total test execution time (sum of individual test durations)
+    local total_execution=0.0
+    for duration in "${ALL_TEST_DURATIONS[@]}"; do
+        if [[ "$duration" =~ \. ]]; then
+            total_execution=$(echo "$total_execution + $duration" | bc)
+        else
+            total_execution=$(echo "$total_execution + $duration" | bc)
+        fi
+    done
+    local execution_formatted
+    execution_formatted=$(format_duration "$total_execution")
+    
     {
         echo "## Latest Test Results"
         echo ""
@@ -732,6 +744,7 @@ generate_readme_section() {
         echo "| Passed Subtests | ${STATS_PASSED_SUBTESTS} |"
         echo "| Failed Subtests | ${STATS_FAILED_SUBTESTS} |"
         echo "| Runtime | ${STATS_RUNTIME} |"
+        echo "| Execution | ${execution_formatted} |"
         echo ""
         echo "### Individual Test Results"
         echo ""
