@@ -1,19 +1,13 @@
 #!/bin/bash
 #
-# Test 00: Hydrogen Test Suite Runner
+# Test 00: Test Suite Runner
 # Executes all tests in sequence and generates a summary report
 #
-# Usage: ./test_00_all.sh [test_name|min|max|all] [--skip-tests] [--help]
+# Usage: ./test_00_all.sh [test_name1 test_name2 ...] [--skip-tests] [--help]
 #
 # VERSION HISTORY
+# 3.0.1 - 2025-07-03 - Enhanced --help to list test names, suppressed non-table output, updated history
 # 3.0.0 - 2025-07-02 - Complete rewrite to use lib/ scripts, simplified orchestration approach
-# 2.0.0 - 2025-07-02 - Migrated to use lib/ scripts, following established test pattern
-# 1.0.5 - 2025-06-20 - Adjusted timeouts to reduce test_00_all.sh overhead execution time, minor tweaks
-# 1.0.4 - 2025-06-20 - Added test execution time, upgraded timing to millisecond precision
-# 1.0.3 - 2025-06-17 - Major refactoring: eliminated code duplication, improved modularity, enhanced comments
-# 1.0.2 - 2025-06-16 - Version history and title added
-# 1.0.1 - 2025-06-16 - Changes to support shellcheck validation
-# 1.0.0 - 2025-06-16 - Version history started
 #
 
 # Get the directory where this script is located
@@ -29,11 +23,12 @@ source "$SCRIPT_DIR/lib/framework.sh"
 source "$SCRIPT_DIR/lib/cloc.sh"
 
 # Test configuration
-TEST_NAME="Hydrogen Test Suite Runner"
-SCRIPT_VERSION="3.0.0"
+TEST_NAME="Test Suite Runner"
+SCRIPT_VERSION="3.0.1"
 
-# Set up test numbering for header (test 00)
-set_test_number "00"
+# Auto-extract test number and set up environment
+TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
+set_test_number "$TEST_NUMBER"
 reset_subtest_counter
 
 # Arrays to track test results
@@ -67,9 +62,10 @@ for arg in "$@"; do
     esac
 done
 
-# If no test arguments provided, default to "all"
+# If no test arguments provided, run all tests by default
 if [ ${#TEST_ARGS[@]} -eq 0 ]; then
-    TEST_ARGS=("all")
+    # No specific tests provided, so run all tests
+    :
 fi
 
 # Function to update README.md with test results
@@ -118,13 +114,13 @@ update_readme_with_results() {
                 echo ""
                 echo "| Metric | Value |"
                 echo "| ------ | ----- |"
-            echo "| Total Tests | $total_tests |"
-            echo "| Passed | $total_tests |"
-            echo "| Failed | 0 |"
-            echo "| Skipped | 0 |"
-            echo "| Total Subtests | $total_subtests |"
-            echo "| Passed Subtests | $total_passed |"
-            echo "| Failed Subtests | $total_failed |"
+                echo "| Total Tests | $total_tests |"
+                echo "| Passed | $total_tests |"
+                echo "| Failed | 0 |"
+                echo "| Skipped | 0 |"
+                echo "| Total Subtests | $total_subtests |"
+                echo "| Passed Subtests | $total_passed |"
+                echo "| Failed Subtests | $total_failed |"
                 echo "| Elapsed Time | $TOTAL_ELAPSED_FORMATTED |"
                 echo "| Running Time | $TOTAL_RUNNING_TIME_FORMATTED |"
                 echo ""
@@ -224,23 +220,73 @@ show_help() {
     echo ""
     echo "Arguments:"
     echo "  test_name    Run specific tests (e.g., 10_compilation, 70_swagger)"
-    echo "  min          Run with minimal configuration only"
-    echo "  max          Run with maximal configuration only"
-    echo "  all          Run all tests (default)"
     echo ""
     echo "Options:"
     echo "  --skip-tests Skip actual test execution, just show what tests would run"
     echo "  --help       Show this help message"
     echo ""
+    echo "Available Tests:"
+    for test_script in "${TEST_SCRIPTS[@]}"; do
+        local test_name
+        test_name=$(basename "$test_script" .sh | sed 's/test_//')
+        echo "  $test_name"
+    done
+    echo ""
     echo "Examples:"
     echo "  $0                                    # Run all tests"
-    echo "  $0 10_compilation                     # Run only the compilation test"
-    echo "  $0 10_compilation 70_swagger          # Run compilation and swagger tests"
-    echo "  $0 45_signals 50_crash_handler        # Run signals and crash handler tests"
-    echo "  $0 all --skip-tests                   # Show all tests that would run"
+    if [ ${#TEST_SCRIPTS[@]} -ge 1 ]; then
+        local first_test
+        first_test=$(basename "${TEST_SCRIPTS[0]}" .sh | sed 's/test_//')
+        echo "  $0 $first_test                        # Run only the first test"
+    else
+        echo "  $0 <test_name>                        # Run a specific test"
+    fi
+    if [ ${#TEST_SCRIPTS[@]} -ge 2 ]; then
+        local random_index1=$((RANDOM % ${#TEST_SCRIPTS[@]}))
+        local random_index2=$((RANDOM % ${#TEST_SCRIPTS[@]}))
+        while [ $random_index2 -eq $random_index1 ]; do
+            random_index2=$((RANDOM % ${#TEST_SCRIPTS[@]}))
+        done
+        local random_test1
+        random_test1=$(basename "${TEST_SCRIPTS[$random_index1]}" .sh | sed 's/test_//')
+        local random_test2
+        random_test2=$(basename "${TEST_SCRIPTS[$random_index2]}" .sh | sed 's/test_//')
+        echo "  $0 $random_test1 $random_test2        # Run two specific tests"
+    else
+        echo "  $0 <test1> <test2>                    # Run two specific tests"
+    fi
     echo ""
     exit 0
 }
+
+# Get list of all test scripts, excluding test_00_all.sh and test_template.sh
+# Run test_10_compilation.sh first, then all others in order, ending with test_99_codebase.sh
+TEST_SCRIPTS=()
+
+# Add test_10_compilation.sh first if it exists
+if [ -f "$SCRIPT_DIR/test_10_compilation.sh" ]; then
+    TEST_SCRIPTS+=("$SCRIPT_DIR/test_10_compilation.sh")
+fi
+
+# Add all other tests except 00, 10, and template
+while IFS= read -r script; do
+    if [[ "$script" != *"test_00_all.sh" ]] && [[ "$script" != *"test_10_compilation.sh" ]] && [[ "$script" != *"test_template.sh" ]]; then
+        TEST_SCRIPTS+=("$script")
+    fi
+done < <(find "$SCRIPT_DIR" -name "test_*.sh" -type f | sort)
+
+# Ensure test_99_codebase.sh is last if it exists
+if [ -f "$SCRIPT_DIR/test_99_codebase.sh" ]; then
+    # Remove test_99_codebase.sh from the array if it's there
+    for i in "${!TEST_SCRIPTS[@]}"; do
+        if [[ "${TEST_SCRIPTS[$i]}" == *"test_99_codebase.sh" ]]; then
+            unset 'TEST_SCRIPTS[i]'
+        fi
+    done
+    # Re-index array and add test_99 at the end
+    TEST_SCRIPTS=("${TEST_SCRIPTS[@]}")
+    TEST_SCRIPTS+=("$SCRIPT_DIR/test_99_codebase.sh")
+fi
 
 # Check for help flag
 for arg in "$@"; do
@@ -262,15 +308,6 @@ START_TIME=$(date +%s.%N 2>/dev/null || date +%s)
 
 # Print beautiful test suite header in blue
 print_test_suite_header "$TEST_NAME" "$SCRIPT_VERSION"
-
-# Show what mode we're running in
-if [ "$SKIP_TESTS" = true ]; then
-    echo "Mode: Dry run (--skip-tests enabled)"
-else
-    echo "Mode: Full execution"
-fi
-echo "Test arguments: ${TEST_ARGS[*]}"
-echo ""
 
 # Function to run a single test and capture results
 run_single_test() {
@@ -377,20 +414,6 @@ run_specific_test() {
     return 0
 }
 
-# Function to run tests with minimal configuration
-run_min_configuration_test() {
-    echo "Running tests with minimal configuration..."
-    # For now, just run all tests - this could be enhanced to use specific configs
-    run_all_tests
-}
-
-# Function to run tests with maximal configuration  
-run_max_configuration_test() {
-    echo "Running tests with maximal configuration..."
-    # For now, just run all tests - this could be enhanced to use specific configs
-    run_all_tests
-}
-
 # Function to run all tests
 run_all_tests() {
     local overall_exit_code=0
@@ -404,80 +427,23 @@ run_all_tests() {
     return $overall_exit_code
 }
 
-# Get list of all test scripts, excluding test_00_all.sh and test_template.sh
-# Run test_10_compilation.sh first, then all others in order, ending with test_99_codebase.sh
-TEST_SCRIPTS=()
-
-# Add test_10_compilation.sh first if it exists
-if [ -f "$SCRIPT_DIR/test_10_compilation.sh" ]; then
-    TEST_SCRIPTS+=("$SCRIPT_DIR/test_10_compilation.sh")
-fi
-
-# Add all other tests except 00, 10, and template
-while IFS= read -r script; do
-    if [[ "$script" != *"test_00_all.sh" ]] && [[ "$script" != *"test_10_compilation.sh" ]] && [[ "$script" != *"test_template.sh" ]]; then
-        TEST_SCRIPTS+=("$script")
-    fi
-done < <(find "$SCRIPT_DIR" -name "test_*.sh" -type f | sort)
-
-# Ensure test_99_codebase.sh is last if it exists
-if [ -f "$SCRIPT_DIR/test_99_codebase.sh" ]; then
-    # Remove test_99_codebase.sh from the array if it's there
-    for i in "${!TEST_SCRIPTS[@]}"; do
-        if [[ "${TEST_SCRIPTS[$i]}" == *"test_99_codebase.sh" ]]; then
-            unset 'TEST_SCRIPTS[i]'
-        fi
-    done
-    # Re-index array and add test_99 at the end
-    TEST_SCRIPTS=("${TEST_SCRIPTS[@]}")
-    TEST_SCRIPTS+=("$SCRIPT_DIR/test_99_codebase.sh")
-fi
-
 # Execute tests based on command line arguments
 OVERALL_EXIT_CODE=0
 
-# Process each test argument
-for test_arg in "${TEST_ARGS[@]}"; do
-    case "$test_arg" in
-        "min")
-            echo "Running tests with minimal configuration..."
-            if ! run_min_configuration_test; then
-                OVERALL_EXIT_CODE=1
-            fi
-            ;;
-        "max")
-            echo "Running tests with maximal configuration..."
-            if ! run_max_configuration_test; then
-                OVERALL_EXIT_CODE=1
-            fi
-            ;;
-        "all")
-            echo "Running all tests..."
-            if ! run_all_tests; then
-                OVERALL_EXIT_CODE=1
-            fi
-            ;;
-        *)
-            # Check if it's a specific test name
-            echo "Running specific test: $test_arg"
-            if ! run_specific_test "$test_arg"; then
-                OVERALL_EXIT_CODE=1
-                echo ""
-                echo "Usage: $0 [test_name1 test_name2 ...] [--skip-tests] [--help]"
-                echo "  test_name: Run specific tests (e.g., 10_compilation 70_swagger)"
-                echo "  min: Run with minimal configuration only"
-                echo "  max: Run with maximal configuration only"
-                echo "  all: Run all tests (default)"
-                echo "  --skip-tests: Skip actual test execution, just show what tests would run"
-                echo "  --help: Show help message"
-                echo ""
-                echo "Examples:"
-                echo "  $0 10_compilation 70_swagger    # Run compilation and swagger tests"
-                echo "  $0 all --skip-tests             # Show all tests that would run"
-            fi
-            ;;
-    esac
-done
+# If no specific tests provided, run all tests
+if [ ${#TEST_ARGS[@]} -eq 0 ]; then
+    if ! run_all_tests; then
+        OVERALL_EXIT_CODE=1
+    fi
+else
+    # Process each test argument
+    for test_arg in "${TEST_ARGS[@]}"; do
+        # Check if it's a specific test name
+        if ! run_specific_test "$test_arg"; then
+            OVERALL_EXIT_CODE=1
+        fi
+    done
+fi
 
 # Calculate total elapsed time
 END_TIME=$(date +%s.%N 2>/dev/null || date +%s)
@@ -509,7 +475,7 @@ data_json="$temp_dir/summary_data.json"
 # "Elapsed: $TOTAL_ELAPSED_FORMATTED | Running: $TOTAL_RUNNING_TIME_FORMATTED",
 cat > "$layout_json" << EOF
 {
-    "title": "Hydrogen Test Suite Results",
+    "title": "Test Suite Results",
     "footer": "Elapsed: $TOTAL_ELAPSED_FORMATTED ─── Running: $TOTAL_RUNNING_TIME_FORMATTED",
     "footer_position": "right",
     "columns": [
@@ -598,15 +564,6 @@ echo "]" >> "$data_json"
 tables_script="$SCRIPT_DIR/lib/tables.sh"
 if [[ -f "$tables_script" ]]; then
     bash "$tables_script" "$layout_json" "$data_json" 2>/dev/null
-else
-    echo "Warning: tables.sh not found, using fallback formatting"
-    # Simple fallback table
-    printf "%-8s %-50s %8s %8s %8s %11s\n" "Test #" "Test Name" "Tests" "Pass" "Fail" "Elapsed"
-    echo "==============================================================================="
-    for i in "${!TEST_NUMBERS[@]}"; do
-        test_id="${TEST_NUMBERS[$i]}-000"
-        printf "%-8s %-50s %8s %8s %8s %11s\n" "$test_id" "${TEST_NAMES[$i]}" "${TEST_SUBTESTS[$i]}" "${TEST_PASSED[$i]}" "${TEST_FAILED[$i]}" "${TEST_ELAPSED[$i]}"
-    done
 fi
 
 # Clean up temporary files
@@ -616,33 +573,5 @@ rm -rf "$temp_dir" 2>/dev/null
 if [ "$SKIP_TESTS" = false ]; then
     update_readme_with_results
 fi
-
-echo ""
-echo "Completed at: $(date)"
-echo "Total elapsed time: $TOTAL_ELAPSED_FORMATTED"
-echo "Total running time: $TOTAL_RUNNING_TIME_FORMATTED"
-
-# Calculate summary statistics
-TOTAL_TESTS=${#TEST_NUMBERS[@]}
-TOTAL_SUBTESTS=0
-TOTAL_PASSED=0
-TOTAL_FAILED=0
-
-for i in "${!TEST_SUBTESTS[@]}"; do
-    TOTAL_SUBTESTS=$((TOTAL_SUBTESTS + TEST_SUBTESTS[i]))
-    TOTAL_PASSED=$((TOTAL_PASSED + TEST_PASSED[i]))
-    TOTAL_FAILED=$((TOTAL_FAILED + TEST_FAILED[i]))
-done
-
-echo ""
-echo "Summary: $TOTAL_TESTS tests, $TOTAL_SUBTESTS subtests, $TOTAL_PASSED passed, $TOTAL_FAILED failed"
-
-if [ $OVERALL_EXIT_CODE -eq 0 ]; then
-    echo "Result: ALL TESTS PASSED"
-else
-    echo "Result: SOME TESTS FAILED"
-fi
-
-echo "==============================================================================="
 
 exit $OVERALL_EXIT_CODE

@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# Test 45: Hydrogen Signal Handling Test
-# Tests Hydrogen's signal handling capabilities including SIGINT, SIGTERM, SIGHUP, SIGUSR2, and multiple signals
+# Test 45: Signal Handling
+# Tests signal handling capabilities including SIGINT, SIGTERM, SIGHUP, SIGUSR2, and multiple signals
 #
 # VERSION HISTORY
 # 3.0.1 - 2025-07-02 - Performance optimization: removed all artificial delays (sleep statements) for dramatically faster execution while maintaining reliability
@@ -20,7 +20,7 @@ source "$SCRIPT_DIR/lib/framework.sh"
 source "$SCRIPT_DIR/lib/lifecycle.sh"
 
 # Test configuration
-TEST_NAME="Hydrogen Signal Handling Test"
+TEST_NAME="Signal Handling"
 SCRIPT_VERSION="3.0.1"
 EXIT_CODE=0
 TOTAL_SUBTESTS=9
@@ -54,7 +54,7 @@ fi
 
 # Validate Hydrogen Binary
 next_subtest
-print_subtest "Validate Hydrogen Binary"
+print_subtest "Locate Hydrogen Binary"
 HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 if HYDROGEN_BIN=$(find_hydrogen_binary "$HYDROGEN_DIR"); then
     print_message "Using Hydrogen binary: $(basename "$HYDROGEN_BIN")"
@@ -480,7 +480,9 @@ cp "$LOG_FILE_MULTI" "$RESULTS_DIR/multi_signal_test_${TIMESTAMP}.log" 2>/dev/nu
 print_message "Signal test logs saved to results directory"
 
 # Export results for test_all.sh integration
-export_subtest_results "45_signals" $TOTAL_SUBTESTS $PASS_COUNT > /dev/null
+# Derive test name from script filename for consistency with test_00_all.sh
+TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
+export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "$TOTAL_SUBTESTS" "$PASS_COUNT" > /dev/null
 
 # Print completion table
 print_test_completion "$TEST_NAME"

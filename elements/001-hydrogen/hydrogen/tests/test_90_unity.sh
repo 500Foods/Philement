@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Test 30: Hydrogen Unity Tests
+# Test: Unity 
 # Runs unit tests using the Unity framework, treating each test file as a subtest
 #
 # VERSION HISTORY
@@ -18,7 +18,7 @@ source "$SCRIPT_DIR/lib/framework.sh"
 source "$SCRIPT_DIR/lib/lifecycle.sh"
 
 # Test configuration
-TEST_NAME="Hydrogen Unity Tests"
+TEST_NAME="Unity"
 SCRIPT_VERSION="2.0.0"
 EXIT_CODE=0
 TOTAL_SUBTESTS=0
@@ -132,25 +132,25 @@ run_unity_tests() {
         return 1
     fi
     
-    # Initially set TOTAL_SUBTESTS based on test files for informational purposes
-    local test_files=()
-    mapfile -t test_files < <(find "$UNITY_DIR" -maxdepth 1 -type f -name "test_*.c")
-    print_message "Found ${#test_files[@]} Unity test files in top-level unity directory."
-    
     # Get list of test names using ctest -N
     cd "$build_dir" || { print_result 1 "Failed to change to build directory: ${build_dir#"$SCRIPT_DIR"/..}"; return 1; }
     local test_list=()
     mapfile -t test_list < <(ctest -N | grep "Test #" | awk '{print $3}')
-    TOTAL_SUBTESTS=${#test_list[@]}
-    print_message "Found $TOTAL_SUBTESTS Unity tests to run as subtests."
+    local unity_test_count=${#test_list[@]}
+    # Initialize TOTAL_SUBTESTS to account for initial subtests (4 up to this point: Create Output Directories, Check Unity Framework, Compile Unity Tests, Enumerate Unity Tests)
+    TOTAL_SUBTESTS=4
+    TOTAL_SUBTESTS=$((TOTAL_SUBTESTS + unity_test_count))
     print_result 0 "Unity test enumeration completed."
+    ((PASS_COUNT++))
+    
+    local INITIAL_PASS_COUNT=$PASS_COUNT
     
     # Run each test individually to display as subtest
     local test_name
-    PASS_COUNT=0
     true > "$LOG_FILE"  # Clear log file
     local temp_test_log="$DIAG_TEST_DIR/test_output.txt"
     mkdir -p "$(dirname "$temp_test_log")"
+    PASS_COUNT=0  # Reset for counting Unity tests only in loop
     for test_name in "${test_list[@]}"; do
         next_subtest
         print_subtest "Unity Test: $test_name"
@@ -173,6 +173,9 @@ run_unity_tests() {
     
     cd "$SCRIPT_DIR" || { print_result 1 "Failed to return to script directory: ${SCRIPT_DIR#"$SCRIPT_DIR"/..}"; return 1; }
     
+    # Update total PASS_COUNT to include passes from initial subtests and Unity tests
+    PASS_COUNT=$((INITIAL_PASS_COUNT + PASS_COUNT))
+    
     # Summary line removed as per feedback; final table reports the details
     :
     
@@ -192,6 +195,7 @@ fi
 
 # Compile and run tests
 if compile_unity_tests; then
+    ((PASS_COUNT++))
     if ! run_unity_tests; then
         EXIT_CODE=1
     fi
@@ -201,7 +205,9 @@ else
 fi
 
 # Export results for test_all.sh integration
-export_subtest_results "30_unity_tests" "$TOTAL_SUBTESTS" "$PASS_COUNT" > /dev/null
+# Derive test name from script filename for consistency with test_00_all.sh
+TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
+export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "$TOTAL_SUBTESTS" "$PASS_COUNT" > /dev/null
 
 # Print completion table
 print_test_completion "$TEST_NAME"

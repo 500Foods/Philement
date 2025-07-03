@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# Test 20: Hydrogen Shutdown Test
-# Tests the shutdown functionality of the Hydrogen application with a minimal configuration
+# Test 20: Shutdown
+# Tests the shutdown functionality of the application with a minimal configuration
 #
 # VERSION HISTORY
 # 2.0.0 - 2025-07-02 - Complete rewrite to use new modular test libraries
@@ -19,7 +19,7 @@ source "$SCRIPT_DIR/lib/framework.sh"
 source "$SCRIPT_DIR/lib/lifecycle.sh"
 
 # Test configuration
-TEST_NAME="Hydrogen Shutdown Test"
+TEST_NAME="Shutdown"
 SCRIPT_VERSION="2.0.0"
 EXIT_CODE=0
 TOTAL_SUBTESTS=6
@@ -47,7 +47,7 @@ fi
 
 # Validate Hydrogen Binary
 next_subtest
-print_subtest "Validate Hydrogen Binary"
+print_subtest "Locate Hydrogen Binary"
 HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 if HYDROGEN_BIN=$(find_hydrogen_binary "$HYDROGEN_DIR"); then
     print_message "Using Hydrogen binary: $HYDROGEN_BIN"
@@ -94,7 +94,9 @@ config_name=$(basename "$MIN_CONFIG" .json)
 run_lifecycle_test "$MIN_CONFIG" "$config_name" "$DIAG_TEST_DIR" "$STARTUP_TIMEOUT" "$SHUTDOWN_TIMEOUT" "$SHUTDOWN_ACTIVITY_TIMEOUT" "$HYDROGEN_BIN" "$LOG_FILE" "PASS_COUNT" "EXIT_CODE"
 
 # Export results for test_all.sh integration
-export_subtest_results "20_shutdown" $TOTAL_SUBTESTS $PASS_COUNT > /dev/null
+# Derive test name from script filename for consistency with test_00_all.sh
+TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
+export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "$TOTAL_SUBTESTS" "$PASS_COUNT" > /dev/null
 
 # Print completion table
 print_test_completion "$TEST_NAME"

@@ -381,14 +381,40 @@ make_http_requests() {
         echo "INFO: Making HTTP requests to create active connections"
     fi
     
-    # Wait for server to be ready
+    # Extract port from base_url (assumes format like http://localhost:8080)
+    local port
+    port=$(echo "$base_url" | grep -oE ':[0-9]+' | tr -d ':' || echo "80")
+    
+    # Wait for server to be ready by checking if the port is in use
     if command -v print_message >/dev/null 2>&1; then
         print_message "Waiting for server to be ready..."
     else
         echo "INFO: Waiting for server to be ready..."
     fi
-    # Brief wait for server to be ready
-    sleep 1
+    local max_wait_seconds=5
+    local check_interval=0.2
+    local elapsed=0.0
+    while [ "$(echo "$elapsed < $max_wait_seconds" | bc)" -eq 1 ]; do
+        if check_port_in_use "$port"; then
+            local elapsed_ms
+            elapsed_ms=$(echo "scale=0; $elapsed * 1000" | bc)
+            if command -v print_message >/dev/null 2>&1; then
+                print_message "Server is ready on port $port after ${elapsed_ms}ms"
+            else
+                echo "INFO: Server is ready on port $port after ${elapsed_ms}ms"
+            fi
+            break
+        fi
+        sleep "$check_interval"
+        elapsed=$(echo "$elapsed + $check_interval" | bc)
+    done
+    if [ "$(echo "$elapsed >= $max_wait_seconds" | bc)" -eq 1 ]; then
+        if command -v print_warning >/dev/null 2>&1; then
+            print_warning "Server did not become ready on port $port within ${max_wait_seconds}s"
+        else
+            echo "WARNING: Server did not become ready on port $port within ${max_wait_seconds}s" >&2
+        fi
+    fi
     
     # Make requests to common web files to ensure connections are established
     if command -v print_message >/dev/null 2>&1; then

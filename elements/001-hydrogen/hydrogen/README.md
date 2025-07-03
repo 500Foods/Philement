@@ -73,7 +73,7 @@ Hydrogen is currently designed for technical users who:
 
 ## Latest Test Results
 
-Generated on: Wed Jul  2 18:46:20 PDT 2025
+Generated on: Thu Jul  3 13:14:18 PDT 2025
 
 ### Summary
 
@@ -83,51 +83,50 @@ Generated on: Wed Jul  2 18:46:20 PDT 2025
 | Passed | 17 |
 | Failed | 0 |
 | Skipped | 0 |
-| Total Subtests | 163 |
-| Passed Subtests | 163 |
+| Total Subtests | 167 |
+| Passed Subtests | 167 |
 | Failed Subtests | 0 |
-| Elapsed Time | 00:01:30.164 |
-| Running Time | 00:01:29.649 |
+| Elapsed Time | 00:01:30.977 |
+| Running Time | 00:01:30.480 |
 
 ### Individual Test Results
 
 | Status | Time | Test | Tests | Pass | Fail | Summary |
 | ------ | ---- | ---- | ----- | ---- | ---- | ------- |
-| ✅ | 00:00:09.397 | 10_compilation | 13 | 13 | 0 | Test completed without errors |
-| ✅ | 00:00:00.878 | 12_env_payload | 2 | 2 | 0 | Test completed without errors |
-| ✅ | 00:00:01.442 | 15_startup_shutdown | 9 | 9 | 0 | Test completed without errors |
-| ✅ | 00:00:01.136 | 20_shutdown | 6 | 6 | 0 | Test completed without errors |
-| ✅ | 00:00:01.214 | 25_library_dependencies | 13 | 13 | 0 | Test completed without errors |
-| ✅ | 00:00:01.236 | 30_unity_tests | 3 | 3 | 0 | Test completed without errors |
-| ✅ | 00:00:02.024 | 35_env_variables | 16 | 16 | 0 | Test completed without errors |
-| ✅ | 00:00:01.049 | 40_json_error_handling | 4 | 4 | 0 | Test completed without errors |
-| ✅ | 00:00:02.817 | 45_signals | 9 | 9 | 0 | Test completed without errors |
-| ✅ | 00:00:03.811 | 50_crash_handler | 22 | 22 | 0 | Test completed without errors |
-| ✅ | 00:00:02.615 | 55_socket_rebind | 7 | 7 | 0 | Test completed without errors |
-| ✅ | 00:00:02.160 | 60_api_prefixes | 10 | 10 | 0 | Test completed without errors |
-| ✅ | 00:00:02.189 | 65_system_endpoints | 18 | 18 | 0 | Test completed without errors |
-| ✅ | 00:00:02.111 | 70_swagger | 13 | 13 | 0 | Test completed without errors |
-| ✅ | 00:00:02.068 | 95_leaks_like_a_sieve | 4 | 4 | 0 | Test completed without errors |
-| ✅ | 00:00:23.199 | 98_check_links | 4 | 4 | 0 | Test completed without errors |
-| ✅ | 00:00:30.303 | 99_codebase | 10 | 10 | 0 | Test completed without errors |
+| ✅ | 00:00:09.512 | 10_compilation | 13 | 13 | 0 | Test completed without errors |
+| ✅ | 00:00:00.875 | 12_env_payload | 2 | 2 | 0 | Test completed without errors |
+| ✅ | 00:00:02.040 | 14_env_variables | 16 | 16 | 0 | Test completed without errors |
+| ✅ | 00:00:01.231 | 16_library_dependencies | 13 | 13 | 0 | Test completed without errors |
+| ✅ | 00:00:01.051 | 18_json_error_handling | 4 | 4 | 0 | Test completed without errors |
+| ✅ | 00:00:01.135 | 20_shutdown | 6 | 6 | 0 | Test completed without errors |
+| ✅ | 00:00:01.409 | 22_startup_shutdown | 9 | 9 | 0 | Test completed without errors |
+| ✅ | 00:00:02.820 | 24_signals | 9 | 9 | 0 | Test completed without errors |
+| ✅ | 00:00:03.831 | 26_crash_handler | 22 | 22 | 0 | Test completed without errors |
+| ✅ | 00:00:01.704 | 28_socket_rebind | 7 | 7 | 0 | Test completed without errors |
+| ✅ | 00:00:02.180 | 30_api_prefixes | 10 | 10 | 0 | Test completed without errors |
+| ✅ | 00:00:02.231 | 32_system_endpoints | 18 | 18 | 0 | Test completed without errors |
+| ✅ | 00:00:02.128 | 34_swagger | 13 | 13 | 0 | Test completed without errors |
+| ✅ | 00:00:01.211 | 90_unity | 7 | 7 | 0 | Test completed without errors |
+| ✅ | 00:00:02.069 | 96_leaks_like_a_sieve | 4 | 4 | 0 | Test completed without errors |
+| ✅ | 00:00:23.727 | 98_check_links | 4 | 4 | 0 | Test completed without errors |
+| ✅ | 00:00:31.326 | 99_codebase | 10 | 10 | 0 | Test completed without errors |
 
 ## Repository Information
 
-Generated via cloc: Wed Jul  2 18:46:20 PDT 2025
+Generated via cloc: Thu Jul  3 13:14:18 PDT 2025
 
 ```cloc
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
+Markdown                       196           6295             48          20087
 C                              129           4459           5851          19980
-Markdown                       197           5901             48          19159
-Bourne Shell                    42           1646           1796           9194
+Bourne Shell                    42           1639           1795           9183
 JSON                            17              2              0           4701
 C/C++ Header                   105           1098           4275           2678
 HTML                             1             74              0            493
 CMake                            2             84            139            397
-Text                             1             26              0             97
 -------------------------------------------------------------------------------
-SUM:                           494          13290          12109          56699
+SUM:                           492          13651          12108          57519
 -------------------------------------------------------------------------------
 ```

@@ -1,8 +1,6 @@
 #!/bin/bash
 #
-# About this Script
-#
-# Hydrogen System API Endpoints Test
+# Test: System API Endpoints
 # Tests all the system API endpoints:
 # - /api/system/test: Tests request handling with various parameters
 # - /api/system/health: Tests the health check endpoint
@@ -270,7 +268,7 @@ print_test_header "$NAME_SCRIPT" "$VERS_SCRIPT"
 
 # Subtest 1: Find Hydrogen binary
 next_subtest
-print_subtest "Find Hydrogen Binary"
+print_subtest "Locate Hydrogen Binary"
 if HYDROGEN_BIN=$(find_hydrogen_binary "$HYDROGEN_DIR"); then
     print_result 0 "Hydrogen binary found: $(basename "$HYDROGEN_BIN")"
     ((PASS_COUNT++))
@@ -597,8 +595,10 @@ else
     print_message "Tests failed, preserving log files for analysis in $RESULTS_DIR/"
 fi
 
-# Export subtest results for test_all.sh
-export_subtest_results "65_system_endpoints" $TOTAL_SUBTESTS $PASS_COUNT
+# Export results for test_all.sh integration
+# Derive test name from script filename for consistency with test_00_all.sh
+TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
+export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "$TOTAL_SUBTESTS" "$PASS_COUNT" > /dev/null
 
 # Print test completion summary
 print_test_completion "$NAME_SCRIPT"

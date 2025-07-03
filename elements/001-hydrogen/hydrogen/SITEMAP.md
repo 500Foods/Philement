@@ -178,13 +178,55 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 
 ## Folder: /src/api
 
-- [README.md](src/api/README.md): Links valid: No - link to ../../docs/api/oidc/oidc_endpoints.md not found, link to ../../tests/test_system_endpoints.sh not found, link to ../../oidc-client-examples/ not found
+- [README.md](src/api/README.md): Links valid: No - link to ../../docs/api/oidc/oidc_endpoints.md not found, link to ../../tests/test_32_system_endpoints.sh should be ../../tests/test_32_system_endpoints.sh, link to ../../oidc-client-examples/ not found
 
 ## Folder: /tests
 
-- [README.md](tests/README.md): Links valid: Yes
+- [README.md](tests/README.md): Links valid: Yes - Testing documentation and procedures
+
+### Folder: /tests/docs
+
+- [env_utils.md](tests/docs/env_utils.md): Environment utility functions documentation
+- [file_utils.md](tests/docs/file_utils.md): File utility functions documentation
+- [framework.md](tests/docs/framework.md): Testing framework overview and architecture
+- [github-sitemap.md](tests/docs/github-sitemap.md): GitHub repository sitemap
+- [LIBRARIES.md](tests/docs/LIBRARIES.md): Table of Contents for modular library scripts in the 'lib/' directory
+- [lifecycle.md](tests/docs/lifecycle.md): Test lifecycle management documentation
+- [log_output.md](tests/docs/log_output.md): Log output formatting and analysis
+- [network_utils.md](tests/docs/network_utils.md): Network utility functions documentation
+- [tables_config.md](tests/docs/tables_config.md): Table configuration documentation
+- [tables_data.md](tests/docs/tables_data.md): Table data management documentation
+- [tables_datatypes.md](tests/docs/tables_datatypes.md): Table data types documentation
+- [tables_render.md](tests/docs/tables_render.md): Table rendering documentation
+- [tables_themes.md](tests/docs/tables_themes.md): Table themes and styling documentation
+- [tables.md](tests/docs/tables.md): Table system overview documentation
+- [test_00_all.md](tests/docs/test_00_all.md): Test orchestration and execution framework
+- [test_10_compilation.md](tests/docs/test_10_compilation.md): Compilation and build verification tests
+- [test_12_env_payload.md](tests/docs/test_12_env_payload.md): Environment payload testing
+- [test_14_env_variables.md](tests/docs/test_14_env_variables.md): Environment variable validation
+- [test_16_library_dependencies.md](tests/docs/test_16_library_dependencies.md): Library dependency verification
+- [test_18_json_error_handling.md](tests/docs/test_18_json_error_handling.md): JSON error handling tests
+- [test_20_shutdown.md](tests/docs/test_20_shutdown.md): Shutdown sequence testing
+- [test_22_startup_shutdown.md](tests/docs/test_22_startup_shutdown.md): Startup and shutdown lifecycle tests
+- [test_24_signals.md](tests/docs/test_24_signals.md): Signal handling tests
+- [test_26_crash_handler.md](tests/docs/test_26_crash_handler.md): Crash handling and recovery tests
+- [test_28_socket_rebind.md](tests/docs/test_28_socket_rebind.md): Socket rebinding tests
+- [test_30_api_prefixes.md](tests/docs/test_30_api_prefixes.md): API prefix configuration tests
+- [test_32_system_endpoints.md](tests/docs/test_32_system_endpoints.md): System endpoint functionality tests
+- [test_34_swagger.md](tests/docs/test_34_swagger.md): Swagger documentation tests
+- [test_90_unity.md](tests/docs/test_90_unity.md): Unity testing framework integration
+- [test_96_leaks_like_a_sieve.md](tests/docs/test_96_leaks_like_a_sieve.md): Memory leak detection tests
+- [test_98_check_links.md](tests/docs/test_98_check_links.md): Link validation tests
+- [test_99_codebase.md](tests/docs/test_99_codebase.md): Codebase quality and analysis tests
+
+### Folder: /tests/results
+
 - [latest_test_results.md](tests/results/latest_test_results.md): Links valid: Yes
 - [repository_info.md](tests/results/repository_info.md): Links valid: Yes
+
+### Folder: /tests/unity
+
+Unity testing framework integration
 
 ## Folder: tests/unity/framework/Unity
 

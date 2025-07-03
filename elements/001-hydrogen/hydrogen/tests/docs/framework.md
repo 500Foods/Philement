@@ -312,5 +312,4 @@ This library replaces the following functions from `support_utils.sh`:
 
 - [Log Output Library](log_output.md) - Output formatting and logging
 - [File Utils Library](file_utils.md) - File and path utilities
-- [Migration Plan](Migration_Plan.md) - Overall migration strategy
 - [LIBRARIES.md](LIBRARIES.md) - Library index

@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Test 25: Hydrogen Library Dependencies
+# Test 25: Library Dependencies
 # Tests the library dependency checking system added to initialization
 #
 # VERSION HISTORY
@@ -19,7 +19,7 @@ source "$SCRIPT_DIR/lib/framework.sh"
 source "$SCRIPT_DIR/lib/lifecycle.sh"
 
 # Test configuration
-TEST_NAME="Hydrogen Library Dependencies"
+TEST_NAME="Library Dependencies"
 SCRIPT_VERSION="2.0.0"
 EXIT_CODE=0
 TOTAL_SUBTESTS=13
@@ -54,7 +54,7 @@ STARTUP_TIMEOUT=10
 
 # Validate Hydrogen Binary
 next_subtest
-print_subtest "Validate Hydrogen Binary"
+print_subtest "Locate Hydrogen Binary"
 if HYDROGEN_BIN=$(find_hydrogen_binary "$HYDROGEN_DIR" 2>/dev/null); then
     print_message "Using Hydrogen binary: $(basename "$HYDROGEN_BIN")"
     print_result 0 "Hydrogen binary found and validated"
@@ -164,7 +164,9 @@ check_dependency_log "libbrotlidec" "$LOG_FILE"
 check_dependency_log "libtar" "$LOG_FILE"
 
 # Export results for test_all.sh integration
-export_subtest_results "25_library_dependencies" $TOTAL_SUBTESTS $PASS_COUNT > /dev/null
+# Derive test name from script filename for consistency with test_00_all.sh
+TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
+export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "$TOTAL_SUBTESTS" "$PASS_COUNT" > /dev/null
 
 # Print completion table
 print_test_completion "$TEST_NAME"

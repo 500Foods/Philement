@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Test 99: Hydrogen Codebase Analysis Test
+# Test: Static Codebase Analysis
 # Performs comprehensive analysis of the codebase including:
 # - Build system cleaning using CMake
 # - Source code analysis and line counting
@@ -25,7 +25,7 @@ source "$SCRIPT_DIR/lib/framework.sh"
 source "$SCRIPT_DIR/lib/cloc.sh"
 
 # Test configuration
-TEST_NAME="Hydrogen Codebase Analysis Test"
+TEST_NAME="Static Codebase Analysis"
 SCRIPT_VERSION="3.0.0"
 EXIT_CODE=0
 TOTAL_SUBTESTS=10
@@ -701,7 +701,9 @@ print_result 0 "Analysis results saved successfully"
 ((PASS_COUNT++))
 
 # Export results for test_all.sh integration
-export_subtest_results "99_codebase" $TOTAL_SUBTESTS $PASS_COUNT > /dev/null
+# Derive test name from script filename for consistency with test_00_all.sh
+TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
+export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "$TOTAL_SUBTESTS" "$PASS_COUNT" > /dev/null
 
 # Print completion table
 print_test_completion "$TEST_NAME"
