@@ -3,15 +3,15 @@
 # Hydrogen Test Suite - File Utilities Library
 # Provides file and path manipulation functions for test scripts
 #
-NAME_SCRIPT="Hydrogen File Utilities Library"
-VERS_SCRIPT="1.0.0"
+FILE_UTILS_NAME="Hydrogen File Utilities Library"
+FILE_UTILS_VERSION="1.0.0"
 
 # VERSION HISTORY
 # 1.0.0 - 2025-07-02 - Initial creation from support_utils.sh migration
 
 # Function to display script version information
 print_file_utils_version() {
-    echo "=== $NAME_SCRIPT v$VERS_SCRIPT ==="
+    echo "=== $FILE_UTILS_NAME v$FILE_UTILS_VERSION ==="
 }
 
 # Function to convert absolute path to path relative to hydrogen project root

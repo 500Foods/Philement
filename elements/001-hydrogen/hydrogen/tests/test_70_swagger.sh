@@ -2,403 +2,362 @@
 #
 # About this Script
 #
-# Hydrogen Swagger Test (Immediate Restart)
-# Tests the Swagger functionality with different prefixes and trailing slashes using immediate restart approach:
-# - Default "/swagger" prefix using hydrogen_test_max.json
-# - Custom "/apidocs" prefix using hydrogen_test_swagger.json
+# Hydrogen Swagger Test
+# Tests the Swagger functionality with different prefixes and trailing slashes:
+# - Default "/swagger" prefix using hydrogen_test_swagger_test_1.json
+# - Custom "/apidocs" prefix using hydrogen_test_swagger_test_2.json
 # - Tests both with and without trailing slashes
+# - Tests JavaScript file loading and content validation
 # - Uses immediate restart without waiting for TIME_WAIT (SO_REUSEADDR enabled)
 #
-NAME_SCRIPT="Hydrogen Swagger Test (Immediate Restart)"
+NAME_SCRIPT="Hydrogen Swagger Test"
 VERS_SCRIPT="3.0.0"
 
 # VERSION HISTORY
-# 3.0.0 - 2025-06-30 - Updated to use immediate restart approach without TIME_WAIT waiting
+# 3.0.0 - 2025-07-02 - Migrated to use lib/ scripts, following established test patterns
 # 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
-
-# Display script name and version
-echo "=== $NAME_SCRIPT v$VERS_SCRIPT ==="
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 
-# Include the common test utilities
-source "$SCRIPT_DIR/support_utils.sh"
-source "$SCRIPT_DIR/support_timewait.sh"
+# Source the library scripts
+source "$SCRIPT_DIR/lib/log_output.sh"
+source "$SCRIPT_DIR/lib/framework.sh"
+source "$SCRIPT_DIR/lib/file_utils.sh"
+source "$SCRIPT_DIR/lib/lifecycle.sh"
+source "$SCRIPT_DIR/lib/network_utils.sh"
 
-# Function to wait for startup completion by monitoring log
-wait_for_startup() {
-    local log_file="$1"
-    local timeout="$2"
-    local start_time
-    local current_time
-    local elapsed
-    
-    start_time=$(date +%s)
-    
-    while true; do
-        current_time=$(date +%s)
-        elapsed=$((current_time - start_time))
-        
-        if [ "$elapsed" -ge "$timeout" ]; then
-            print_error "Startup timeout after ${elapsed}s"
-            return 1
-        fi
-        
-        if grep -q "Application started" "$log_file" 2>/dev/null; then
-            print_info "Startup completed in ${elapsed}s"
-            return 0
-        fi
-        
-        sleep 0.5
-    done
-}
+# Initialize test environment
+RESULTS_DIR="$SCRIPT_DIR/results"
+mkdir -p "$RESULTS_DIR"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+# Auto-extract test number and set up environment
+TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
+set_test_number "$TEST_NUMBER"
+reset_subtest_counter
+
+# Test configuration
+TOTAL_SUBTESTS=13  # 3 prerequisites + 5 tests for each of 2 configurations
+PASS_COUNT=0
+EXIT_CODE=0
 
 # Function to wait for server to be ready
-wait_for_server() {
+wait_for_server_ready() {
     local base_url="$1"
-    local log_file="$2"
-    local max_attempts=60  # 60 seconds total (1s * 60)
+    local max_attempts=100   # 20 seconds total (0.2s * 100)
     local attempt=1
     
-    print_info "Waiting for server to be ready at $base_url..."
+    print_message "Waiting for server to be ready at $base_url..."
     
-    # First wait for startup completion by monitoring log
-    if [ -n "$log_file" ] && [ -f "$log_file" ]; then
-        print_info "Monitoring startup log for completion..."
-        if wait_for_startup "$log_file" 10; then
-            print_info "Server startup completed, verifying connectivity..."
-        else
-            print_error "Server startup failed or timed out"
-            return 1
-        fi
-    fi
-    
-    # Then verify connectivity
     while [ $attempt -le $max_attempts ]; do
-        if curl -s --max-time 2 "${base_url}" > /dev/null 2>&1; then
-            print_info "Server is ready after $attempt seconds"
+        if curl -s --max-time 2 "${base_url}" >/dev/null 2>&1; then
+            print_message "Server is ready after $(( attempt * 2 / 10 )) seconds"
             return 0
         fi
-        sleep 1
+        sleep 0.2
         ((attempt++))
     done
     
-    print_error "Server failed to respond within 60 seconds"
+    print_error "Server failed to respond within 20 seconds"
     return 1
 }
 
-# Function to check if an HTTP response contains expected content
-check_response() {
+# Function to check HTTP response content
+check_response_content() {
     local url="$1"
     local expected_content="$2"
     local response_file="$3"
     local follow_redirects="$4"
     
-    local curl_cmd="curl -s --max-time 5"
+    local curl_cmd="curl -s --max-time 10"
     if [ "$follow_redirects" = "true" ]; then
         curl_cmd="$curl_cmd -L"
     fi
+    curl_cmd="$curl_cmd --compressed"
     
-    print_command "$curl_cmd $url"
-    eval "$curl_cmd $url > $response_file"
-    local curl_status=$?
-    
-    if [ $curl_status -eq 0 ]; then
-        print_info "Successfully received response from $url"
+    print_command "$curl_cmd \"$url\""
+    if eval "$curl_cmd \"$url\" > \"$response_file\""; then
+        print_message "Successfully received response from $url"
         
-        # Check content (show limited output)
-        print_info "Response excerpt (first 5 lines):"
-        head -n 5 "$response_file"
+        # Show response excerpt
         local line_count
         line_count=$(wc -l < "$response_file")
-        if [ "$line_count" -gt 5 ]; then
-            echo "..."
-        fi
+        print_message "Response contains $line_count lines"
         
-        # Check content
+        # Check for expected content
         if grep -q "$expected_content" "$response_file"; then
             print_result 0 "Response contains expected content: $expected_content"
             return 0
         else
             print_result 1 "Response doesn't contain expected content: $expected_content"
+            print_message "Response excerpt (first 10 lines):"
+            head -n 10 "$response_file" | while IFS= read -r line; do
+                print_output "$line"
+            done
             return 1
         fi
     else
-        print_result 1 "Failed to connect to server at $url (curl status: $curl_status)"
-        return $curl_status
+        print_result 1 "Failed to connect to server at $url"
+        return 1
     fi
 }
 
-# Function to check if an HTTP redirect is returned
-check_redirect() {
+# Function to check HTTP redirect
+check_redirect_response() {
     local url="$1"
     local expected_location="$2"
     local redirect_file="$3"
     
-    print_command "curl -v -s --max-time 5 -o /dev/null $url"
-    curl -v -s --max-time 5 -o /dev/null "$url" 2> "$redirect_file"
-    local curl_status=$?
-    
-    if [ $curl_status -eq 0 ]; then
-        print_info "Successfully received response from $url"
+    print_command "curl -v -s --max-time 10 -o /dev/null \"$url\""
+    if curl -v -s --max-time 10 -o /dev/null "$url" 2> "$redirect_file"; then
+        print_message "Successfully received response from $url"
         
-        # Check if it's a redirect (show limited output)
-        print_info "Response header excerpt (relevant parts):"
-        grep -E "< HTTP/|< Location:" "$redirect_file"
-        
-        # Check if it's a redirect
+        # Check for redirect
         if grep -q "< HTTP/1.1 301" "$redirect_file" && grep -q "< Location: $expected_location" "$redirect_file"; then
             print_result 0 "Response is a 301 redirect to $expected_location"
             return 0
         else
             print_result 1 "Response is not a redirect to $expected_location"
+            print_message "Response headers:"
+            grep -E "< HTTP/|< Location:" "$redirect_file" | while IFS= read -r line; do
+                print_output "$line"
+            done
             return 1
         fi
     else
-        print_result 1 "Failed to connect to server at $url (curl status: $curl_status)"
-        return $curl_status
-    fi
-}
-
-# Function to find hydrogen binary
-find_hydrogen_binary() {
-    local project_root="$1"
-    local relative_root="$2"
-    
-    # Find the correct hydrogen binary - prefer release build
-    local hydrogen_bin=""
-    
-    # First check for binaries in the project root
-    if [ -f "$project_root/hydrogen_release" ]; then
-        hydrogen_bin="$project_root/hydrogen_release"
-        print_info "Using release build for testing" >&2
-    elif [ -f "$project_root/hydrogen" ]; then
-        hydrogen_bin="$project_root/hydrogen"
-        print_info "Using standard build" >&2
-    elif [ -f "$project_root/hydrogen_debug" ]; then
-        hydrogen_bin="$project_root/hydrogen_debug"
-        print_info "Using debug build for testing" >&2
-    elif [ -f "$project_root/hydrogen_perf" ]; then
-        hydrogen_bin="$project_root/hydrogen_perf"
-        print_info "Using performance build for testing" >&2
-    elif [ -f "$project_root/hydrogen_valgrind" ]; then
-        hydrogen_bin="$project_root/hydrogen_valgrind"
-        print_info "Using valgrind build for testing" >&2
-    else
-        print_result 1 "ERROR: Could not find any hydrogen executable variant" >&2
-        print_info "Working directory: $relative_root" >&2
-        print_info "Available files:" >&2
-        # Use find instead of ls | grep to avoid SC2010
-        find "$project_root" -maxdepth 1 -name "*hydrogen*" -type f >&2
+        print_result 1 "Failed to connect to server at $url"
         return 1
     fi
-    
-    echo "$hydrogen_bin"
-    return 0
 }
 
 # Function to test Swagger UI with a specific configuration
-test_swagger() {
+test_swagger_configuration() {
     local config_file="$1"
     local swagger_prefix="$2"
     local test_name="$3"
+    local config_number="$4"
     
-    print_header "Testing Swagger UI: $swagger_prefix (using $test_name)"
+    print_message "Testing Swagger UI: $swagger_prefix (using $test_name)"
     
-    # Extract the WebServer port from the configuration file
-    local web_server_port
-    web_server_port=$(extract_web_server_port "$config_file")
-    print_info "Using WebServer port: $web_server_port from configuration"
+    # Extract port from configuration
+    local server_port
+    server_port=$(get_webserver_port "$config_file")
+    print_message "Configuration will use port: $server_port"
     
-    # Determine the project root directory without changing the current directory
-    local project_root
-    project_root="$(cd "$(dirname "$0")/.." && pwd)"
-    local relative_root
-    relative_root="$(convert_to_relative_path "$project_root")"
+    # Global variables for server management
+    local hydrogen_pid=""
+    local server_log="$RESULTS_DIR/swagger_${test_name}_${TIMESTAMP}.log"
+    local base_url="http://localhost:$server_port"
     
-    # Find the correct hydrogen binary
-    local hydrogen_bin
-    if ! hydrogen_bin=$(find_hydrogen_binary "$project_root" "$relative_root"); then
-        return 1
-    fi
+    # Start server
+    local subtest_start=$(((config_number - 1) * 5 + 1))
     
-    # Show which binary was selected
-    print_info "Selected hydrogen binary: $(convert_to_relative_path "$hydrogen_bin")"
-
-    # Prepare clean test environment (immediate restart approach)
-    print_info "Terminating any existing hydrogen processes..."
-    if pkill -f "hydrogen.*json" 2>/dev/null; then
-        print_info "Terminated"
+    # Subtest: Start server
+    next_subtest
+    print_subtest "Start Hydrogen Server (Config $config_number)"
+    if hydrogen_pid=$(start_hydrogen "$config_file" "$server_log" 15 "$HYDROGEN_BIN") && [ -n "$hydrogen_pid" ]; then
+        print_result 0 "Server started successfully with PID: $hydrogen_pid"
+        ((PASS_COUNT++))
     else
-        print_info "No processes to terminate"
+        print_result 1 "Failed to start server"
+        EXIT_CODE=1
+        # Skip remaining subtests for this configuration
+        for i in {2..5}; do
+            next_subtest
+            print_subtest "Subtest $((subtest_start + i - 1)) (Skipped)"
+            print_result 1 "Skipped due to server startup failure"
+        done
+        return 1
     fi
     
-    # Start hydrogen server in background with appropriate configuration
-    print_info "Starting hydrogen server with configuration $(convert_to_relative_path "$config_file")..."
-    # Run from the current directory (tests/) to ensure all output stays in tests/ directory
-    "$hydrogen_bin" "$config_file" > "$RESULTS_DIR/hydrogen_test_${test_name}.log" 2>&1 &
-    local server_pid=$!
-    
-    print_info "Server started with PID: $server_pid"
-
-    # Base URL for all requests
-    local base_url="http://localhost:${web_server_port}"
-    print_info "Using base URL: $base_url for tests"
-    
-    # Wait for the server to be ready
-    wait_for_server "${base_url}" "$RESULTS_DIR/hydrogen_test_${test_name}.log" || {
-        print_error "Server failed to start properly"
-        kill "$server_pid" 2>/dev/null || true
-        return 1
-    }
-    
-    # Test 1: Path with trailing slash should serve index.html
-    print_header "Test 1: Access Swagger UI with trailing slash"
-    check_response "${base_url}${swagger_prefix}/" "swagger-ui" "$RESULTS_DIR/${test_name}_response_trailing_slash.html" "true"
-    local trailing_slash_result=$?
-    
-    # Test 2: Path without trailing slash should redirect to trailing slash
-    print_header "Test 2: Access Swagger UI without trailing slash (should redirect)"
-    check_redirect "${base_url}${swagger_prefix}" "${swagger_prefix}/" "$RESULTS_DIR/${test_name}_redirect_headers.txt"
-    local no_trailing_slash_result=$?
-    
-    # Test 3: Check main page content
-    print_header "Test 3: Verify Swagger UI content loads correctly"
-    check_response "${base_url}${swagger_prefix}/" "swagger-ui" "$RESULTS_DIR/${test_name}_response_content.html" "true"
-    local content_check_result=$?
-    
-    # Test 4: Check for JavaScript files
-    print_header "Test 4: Verify JavaScript files load correctly"
-    check_response "${base_url}${swagger_prefix}/swagger-initializer.js" "window.ui = SwaggerUIBundle" "$RESULTS_DIR/${test_name}_initializer.js" "true"
-    local js_check_result=$?
-    
-    # Check server stability and shutdown
-    local stability_result
-    if ps -p "$server_pid" > /dev/null 2>&1; then
-        print_info "Server is still running after tests (PID: $server_pid)"
-        stability_result=0
-        # Stop the server gracefully
-        print_info "Shutting down server (PID: $server_pid)..."
-        kill -SIGINT "$server_pid" 2>/dev/null || true
-        sleep 2
-        if ps -p "$server_pid" > /dev/null 2>&1; then
-            print_warning "Server still running, forcing termination..."
-            kill -9 "$server_pid" 2>/dev/null || true
+    # Wait for server to be ready
+    if [ -n "$hydrogen_pid" ] && ps -p "$hydrogen_pid" > /dev/null 2>&1; then
+        if ! wait_for_server_ready "$base_url"; then
+            print_result 1 "Server failed to become ready"
+            EXIT_CODE=1
+            # Skip remaining subtests
+            for i in {2..5}; do
+                next_subtest
+                print_subtest "Subtest $((subtest_start + i - 1)) (Skipped)"
+                print_result 1 "Skipped due to server readiness failure"
+            done
+            return 1
         fi
-        print_info "Server shutdown completed"
+    fi
+    
+    # Subtest: Test Swagger UI with trailing slash
+    next_subtest
+    print_subtest "Access Swagger UI with trailing slash (Config $config_number)"
+    if [ -n "$hydrogen_pid" ] && ps -p "$hydrogen_pid" > /dev/null 2>&1; then
+        if check_response_content "${base_url}${swagger_prefix}/" "swagger-ui" "$RESULTS_DIR/${test_name}_trailing_slash_${TIMESTAMP}.html" "true"; then
+            ((PASS_COUNT++))
+        else
+            EXIT_CODE=1
+        fi
     else
-        print_result 1 "ERROR: Server has crashed or exited prematurely"
-        print_info "Server logs:"
-        tail -n 30 "$RESULTS_DIR/hydrogen_test_${test_name}.log"
-        stability_result=1
+        print_result 1 "Server not running for trailing slash test"
+        EXIT_CODE=1
     fi
     
-    # Check for TIME_WAIT sockets
-    check_time_wait_sockets_robust "$web_server_port"
-    
-    # Track passed subtests (global counter)
-    if [ $trailing_slash_result -eq 0 ]; then
-        ((PASS_COUNT++))
-    fi
-    if [ $no_trailing_slash_result -eq 0 ]; then
-        ((PASS_COUNT++))
-    fi
-    if [ $content_check_result -eq 0 ]; then
-        ((PASS_COUNT++))
-    fi
-    if [ $js_check_result -eq 0 ]; then
-        ((PASS_COUNT++))
-    fi
-    if [ $stability_result -eq 0 ]; then
-        ((PASS_COUNT++))
-    fi
-    
-    # Calculate overall result
-    if [ $trailing_slash_result -eq 0 ] && [ $no_trailing_slash_result -eq 0 ] && 
-       [ $content_check_result -eq 0 ] && [ $js_check_result -eq 0 ] && 
-       [ $stability_result -eq 0 ]; then
-        print_result 0 "All tests for Swagger UI prefix '$swagger_prefix' passed successfully"
-        return 0
+    # Subtest: Test redirect without trailing slash
+    next_subtest
+    print_subtest "Access Swagger UI without trailing slash (Config $config_number)"
+    if [ -n "$hydrogen_pid" ] && ps -p "$hydrogen_pid" > /dev/null 2>&1; then
+        if check_redirect_response "${base_url}${swagger_prefix}" "${swagger_prefix}/" "$RESULTS_DIR/${test_name}_redirect_${TIMESTAMP}.txt"; then
+            ((PASS_COUNT++))
+        else
+            EXIT_CODE=1
+        fi
     else
-        print_result 1 "Some tests for Swagger UI prefix '$swagger_prefix' failed"
-        return 1
+        print_result 1 "Server not running for redirect test"
+        EXIT_CODE=1
     fi
+    
+    # Subtest: Verify Swagger UI content
+    next_subtest
+    print_subtest "Verify Swagger UI content loads (Config $config_number)"
+    if [ -n "$hydrogen_pid" ] && ps -p "$hydrogen_pid" > /dev/null 2>&1; then
+        if check_response_content "${base_url}${swagger_prefix}/" "swagger-ui" "$RESULTS_DIR/${test_name}_content_${TIMESTAMP}.html" "true"; then
+            ((PASS_COUNT++))
+        else
+            EXIT_CODE=1
+        fi
+    else
+        print_result 1 "Server not running for content test"
+        EXIT_CODE=1
+    fi
+    
+    # Subtest: Test JavaScript files
+    next_subtest
+    print_subtest "Verify JavaScript files load (Config $config_number)"
+    if [ -n "$hydrogen_pid" ] && ps -p "$hydrogen_pid" > /dev/null 2>&1; then
+        if check_response_content "${base_url}${swagger_prefix}/swagger-initializer.js" "window.ui = SwaggerUIBundle" "$RESULTS_DIR/${test_name}_initializer_${TIMESTAMP}.js" "true"; then
+            ((PASS_COUNT++))
+        else
+            EXIT_CODE=1
+        fi
+    else
+        print_result 1 "Server not running for JavaScript test"
+        EXIT_CODE=1
+    fi
+    
+    # Stop the server
+    if [ -n "$hydrogen_pid" ]; then
+        print_message "Stopping server..."
+        if stop_hydrogen "$hydrogen_pid" "$server_log" 10 5 "$RESULTS_DIR"; then
+            print_message "Server stopped successfully"
+        else
+            print_warning "Server shutdown had issues"
+        fi
+        
+        # Check TIME_WAIT sockets
+        check_time_wait_sockets "$server_port"
+    fi
+    
+    return 0
 }
 
-# Function to cleanup remaining processes
-cleanup_remaining_processes() {
-    print_info "Cleaning up any remaining server processes..."
-    pkill -f "hydrogen.*json" 2>/dev/null
+# Handle cleanup on script interruption (not normal exit)
+# shellcheck disable=SC2317  # Function is invoked indirectly via trap
+cleanup() {
+    print_message "Cleaning up any remaining Hydrogen processes..."
+    pkill -f "hydrogen.*json" 2>/dev/null || true
+    exit "$EXIT_CODE"
 }
 
-# Function to cleanup response files
-cleanup_response_files() {
-    rm -f "$RESULTS_DIR"/*_response_*.html "$RESULTS_DIR"/*_redirect_*.txt "$RESULTS_DIR"/*_initializer.js "$RESULTS_DIR"/hydrogen_test_*.log
-}
+# Set up trap for interruption only (not normal exit)
+trap cleanup SIGINT SIGTERM
 
 # Main execution starts here
+print_test_header "$NAME_SCRIPT" "$VERS_SCRIPT"
 
-# Initialize test environment and result log
-RESULT_LOG=$(setup_test_environment "Hydrogen Swagger UI Test")
-
-# Create results directory if it doesn't exist
-RESULTS_DIR="$SCRIPT_DIR/results"
-mkdir -p "$RESULTS_DIR"
-
-# Start the test
-start_test "Hydrogen Swagger UI Test"
-
-# Initialize subtest tracking
-TOTAL_SUBTESTS=10  # 5 tests for each of 2 configurations
-PASS_COUNT=0
-
-# Ensure clean state
-print_info "Ensuring no existing hydrogen processes are running..."
-pkill -f "hydrogen.*json" 2>/dev/null
-
-print_info "Testing Swagger functionality with immediate restart approach"
-print_info "SO_REUSEADDR is enabled - no need to wait for TIME_WAIT"
-
-# Test with default Swagger prefix (/swagger) on a dedicated port
-test_swagger "$(get_config_path "hydrogen_test_swagger_test_1.json")" "/swagger" "swagger_default"
-DEFAULT_PREFIX_RESULT=$?
-
-# Start second test immediately (testing SO_REUSEADDR)
-print_info "Starting second test immediately (testing SO_REUSEADDR)..."
-
-# Test with custom Swagger prefix (/apidocs) on a different port
-test_swagger "$(get_config_path "hydrogen_test_swagger_test_2.json")" "/apidocs" "swagger_custom"
-CUSTOM_PREFIX_RESULT=$?
-
-print_info "Immediate restart successful - SO_REUSEADDR is working!"
-
-# Calculate overall test result
-if [ $DEFAULT_PREFIX_RESULT -eq 0 ] && [ $CUSTOM_PREFIX_RESULT -eq 0 ]; then
-    TEST_RESULT=0
-    print_result 0 "All Swagger UI tests passed successfully"
+# Subtest 1: Find Hydrogen binary
+next_subtest
+print_subtest "Find Hydrogen Binary"
+if HYDROGEN_BIN=$(find_hydrogen_binary "$HYDROGEN_DIR"); then
+    print_result 0 "Hydrogen binary found: $(basename "$HYDROGEN_BIN")"
+    ((PASS_COUNT++))
 else
-    TEST_RESULT=1
-    print_result 1 "Some Swagger UI tests failed"
+    print_result 1 "Hydrogen binary not found"
+    EXIT_CODE=1
 fi
 
-# Cleanup remaining processes
-cleanup_remaining_processes
+# Configuration files for testing
+CONFIG_1="$(get_config_path "hydrogen_test_swagger_test_1.json")"
+CONFIG_2="$(get_config_path "hydrogen_test_swagger_test_2.json")"
 
-# Get test name from script name
-TEST_NAME=$(basename "$0" .sh)
-TEST_NAME="${TEST_NAME#test_}"
+# Subtest 2: Validate first configuration file
+next_subtest
+print_subtest "Validate Configuration File 1"
+if validate_config_file "$CONFIG_1"; then
+    ((PASS_COUNT++))
+else
+    EXIT_CODE=1
+fi
 
-# Export subtest results for test_all.sh to pick up
-export_subtest_results "$TEST_NAME" $TOTAL_SUBTESTS $PASS_COUNT
+# Subtest 3: Validate second configuration file
+next_subtest
+print_subtest "Validate Configuration File 2"
+if validate_config_file "$CONFIG_2"; then
+    ((PASS_COUNT++))
+else
+    EXIT_CODE=1
+fi
 
-# Log subtest results
-print_info "Swagger UI Test: $PASS_COUNT of $TOTAL_SUBTESTS subtests passed"
+# Only proceed with Swagger tests if prerequisites are met
+if [ $EXIT_CODE -eq 0 ]; then
+    # Ensure clean state
+    print_message "Ensuring no existing Hydrogen processes are running..."
+    pkill -f "hydrogen.*json" 2>/dev/null || true
+    
+    print_message "Testing Swagger functionality with immediate restart approach"
+    print_message "SO_REUSEADDR is enabled - no need to wait for TIME_WAIT"
+    
+    # Test with default Swagger prefix (/swagger)
+    test_swagger_configuration "$CONFIG_1" "/swagger" "swagger_default" 1
+    
+    # Test with custom Swagger prefix (/apidocs) - immediate restart
+    print_message "Starting second test immediately (testing SO_REUSEADDR)..."
+    test_swagger_configuration "$CONFIG_2" "/apidocs" "swagger_custom" 2
+    
+    print_message "Immediate restart successful - SO_REUSEADDR is working!"
+    
+else
+    # Skip Swagger tests if prerequisites failed
+    print_message "Skipping Swagger tests due to prerequisite failures"
+    # Account for skipped subtests (8 remaining: 4 for each configuration)
+    for i in {4..11}; do
+        next_subtest
+        print_subtest "Subtest $i (Skipped)"
+        print_result 1 "Skipped due to prerequisite failures"
+    done
+    EXIT_CODE=1
+fi
 
-# End the test with final result
-end_test $TEST_RESULT "Swagger UI Test"
+# Calculate overall test result
+if [ $PASS_COUNT -eq $TOTAL_SUBTESTS ]; then
+    FINAL_RESULT=0
+else
+    FINAL_RESULT=1
+fi
 
-# Clean up response files
-cleanup_response_files
+# Clean up response files but preserve logs if test failed
+rm -f "$RESULTS_DIR"/*_trailing_slash_*.html "$RESULTS_DIR"/*_redirect_*.txt "$RESULTS_DIR"/*_content_*.html "$RESULTS_DIR"/*_initializer_*.js
 
-exit $TEST_RESULT
+# Only remove logs if tests were successful
+if [ $FINAL_RESULT -eq 0 ]; then
+    print_message "Tests passed, cleaning up log files..."
+    rm -f "$RESULTS_DIR"/swagger_*_*.log
+else
+    print_message "Tests failed, preserving log files for analysis in $RESULTS_DIR/"
+fi
+
+# Export subtest results for test_all.sh
+export_subtest_results "70_swagger" $TOTAL_SUBTESTS $PASS_COUNT
+
+# Print test completion summary
+print_test_completion "$NAME_SCRIPT"
+
+exit $FINAL_RESULT

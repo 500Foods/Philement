@@ -1,222 +1,199 @@
 #!/bin/bash
 #
-# Hydrogen Markdown Links Check Test
-# Runs support_sitemap.sh to check markdown links and evaluates results with subtests.
+# Test 98: Hydrogen Markdown Links Check Test
+# Runs github-sitemap.sh to check markdown links and evaluates results with subtests
 #
-# Usage: ./test_98_check_links.sh
-#
-# This test checks for missing links and orphaned markdown files in the documentation.
-# Subtests:
-# - Overall execution (pass if support_sitemap.sh returns 0)
-# - Number of markdown files (always pass, informational)
-# - Number of missing links (pass if zero)
-# - Number of orphaned files (pass if zero)
-#
-
-# Script metadata
-NAME_TEST="Markdown Links Check Test"
-VERS_TEST="1.0.0"
-
 # VERSION HISTORY
+# 2.0.0 - 2025-07-02 - Migrated to use lib/ scripts, following established test pattern
 # 1.0.0 - 2025-06-20 - Initial version with subtests for markdown link checking
-
-# Display script name and version
-echo "=== $NAME_TEST v$VERS_TEST ==="
+#
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Include the common test utilities
-source "$SCRIPT_DIR/support_utils.sh"
+# Source the new modular test libraries
+source "$SCRIPT_DIR/lib/log_output.sh"
+source "$SCRIPT_DIR/lib/file_utils.sh"
+source "$SCRIPT_DIR/lib/framework.sh"
+
+# Test configuration
+TEST_NAME="Markdown Links Check Test"
+SCRIPT_VERSION="2.0.0"
+EXIT_CODE=0
+TOTAL_SUBTESTS=4
+PASS_COUNT=0
+
+# Auto-extract test number and set up environment
+TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
+set_test_number "$TEST_NUMBER"
+reset_subtest_counter
+
+# Print beautiful test header
+print_test_header "$TEST_NAME" "$SCRIPT_VERSION"
+
+# Set up results directory
+RESULTS_DIR="$SCRIPT_DIR/results"
+mkdir -p "$RESULTS_DIR"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+RESULT_LOG="$RESULTS_DIR/test_${TEST_NUMBER}_${TIMESTAMP}.log"
+
+# Navigate to the project root (one level up from tests directory)
+if ! navigate_to_project_root "$SCRIPT_DIR"; then
+    print_error "Failed to navigate to project root directory"
+    exit 1
+fi
+
+# Test configuration
+SITEMAP_SCRIPT="tests/lib/github-sitemap.sh"
+TARGET_README="README.md"
 
 # These are expected to exist, but are missing mid-test_00_all.sh
 # We're just ensuring that they exist so sitemap doesn't complain
-mkdir -p results
-touch results/repository_info.md
-touch results/latest_test_results.md
+mkdir -p tests/results
+touch tests/results/repository_info.md
+touch tests/results/latest_test_results.md
 
-# ====================================================================
-# STEP 1: Set up the test environment
-# ====================================================================
+# Subtest 1: Validate sitemap script availability
+next_subtest
+print_subtest "Validate GitHub Sitemap Script"
 
-# Set up test environment with descriptive name
-TEST_NAME="Markdown Links Check"
-RESULT_LOG="results/markdown_links_check_$(date +%Y%m%d_%H%M%S).log"
-mkdir -p "results"
-touch "$RESULT_LOG"
-
-# ====================================================================
-# STEP 2: Initialize subtest tracking
-# ====================================================================
-
-# Define total number of subtests
-TOTAL_SUBTESTS=4  # Overall, Markdown Files, Missing Links, Orphaned Files
-PASS_COUNT=0
-missing_links=0
-orphaned_files=0
-
-# ====================================================================
-# STEP 3: Run support_sitemap.sh and evaluate results
-# ====================================================================
-
-run_sitemap_check() {
-    print_header "Running Markdown Link Check" | tee -a "$RESULT_LOG"
-    
-    # Create a temporary file to capture output
-    local temp_output
-    temp_output=$(mktemp)
-    
-    # Run support_sitemap.sh with --noreport and --quiet to minimize output
-    bash "$SCRIPT_DIR/support_sitemap.sh" "../README.md" --noreport --quiet > "$temp_output" 2>&1
-    local exit_code=$?
-    
-    # Initialize counts
-    local md_files=0
-    
-    # Parse output for counts (if needed, though with --quiet we rely on exit code primarily)
-    # From support_sitemap.sh code, exit code is total issues (missing + orphaned)
-    if [ $exit_code -eq 0 ]; then
-        print_result 0 "support_sitemap.sh executed successfully with no issues" | tee -a "$RESULT_LOG"
-        ((PASS_COUNT++))
+if [ ! -f "$SITEMAP_SCRIPT" ]; then
+    print_result 1 "GitHub sitemap script not found: $SITEMAP_SCRIPT"
+    EXIT_CODE=1
+else
+    if [ ! -f "$TARGET_README" ]; then
+        print_result 1 "Target README file not found: $TARGET_README"
+        EXIT_CODE=1
     else
-        print_result 1 "support_sitemap.sh found issues (exit code: $exit_code)" | tee -a "$RESULT_LOG"
+        print_result 0 "GitHub sitemap script and target README found"
+        ((PASS_COUNT++))
     fi
+fi
+
+# Skip remaining tests if prerequisites failed
+if [ $EXIT_CODE -ne 0 ]; then
+    print_warning "Prerequisites failed - skipping markdown link check"
     
-    # Parse the output to extract counts from the tables using the corner characters as markers
-    # Main table for total markdown files (always present)
-    md_files_line=$(grep -B 1 "╰" "$temp_output" | grep "│" | head -n 1 | cut -c23-30 | tr -d ' ')
-    if [ -n "$md_files_line" ]; then
-        md_files=$md_files_line
-    fi
-    if [ -z "$md_files" ]; then
-        md_files="unknown"
-    fi
+    # Export results for test_all.sh integration
+    export_subtest_results "98_check_links" $TOTAL_SUBTESTS $PASS_COUNT > /dev/null
     
-    # Check for presence of Missing Links and Orphaned Files tables using headers
-    missing_links_present=$(grep -A 2 "╭" "$temp_output" | grep -c "Missing")
-    orphaned_files_present=$(grep -A 2 "╭" "$temp_output" | grep -c "Orphaned")
+    # Print completion table
+    print_test_completion "$TEST_NAME"
     
-    # Initialize counts
-    missing_links=0
-    orphaned_files=0
-    
-    # Extract counts from tables based on their order after the main table
-    # Get all lines before bottom corners that contain numbers, excluding the markdown files count
-    count_lines=$(grep -B 1 "╰" "$temp_output" | grep "│" | grep -v "$md_files" | cut -c23-30 | tr -d ' ')
-    if [ -n "$count_lines" ]; then
-        IFS=$'\n' read -d '' -r -a counts <<< "$count_lines"
-        if [ "$missing_links_present" -gt 0 ] && [ ${#counts[@]} -gt 0 ]; then
-            missing_links=${counts[0]}
-        fi
-        if [ "$orphaned_files_present" -gt 0 ] && [ ${#counts[@]} -gt 1 ]; then
-            orphaned_files=${counts[1]}
-        elif [ "$orphaned_files_present" -gt 0 ] && [ ${#counts[@]} -eq 1 ]; then
-            orphaned_files=${counts[0]}
-        fi
-    fi
-    
-    # Subtest 1: Markdown Files Count (always pass)
-    print_header "Subtest 1: Markdown Files Count" | tee -a "$RESULT_LOG"
-    print_result 0 "Found $md_files markdown files" | tee -a "$RESULT_LOG"
+    exit $EXIT_CODE
+fi
+
+# Subtest 2: Run markdown link check
+next_subtest
+print_subtest "Execute Markdown Link Check"
+
+# Create temporary file to capture output
+TEMP_OUTPUT=$(mktemp)
+MARKDOWN_RESULT_LOG="$RESULTS_DIR/markdown_links_check_${TIMESTAMP}.log"
+
+print_message "Running markdown link check on $TARGET_README..."
+print_command "bash $SITEMAP_SCRIPT $TARGET_README --noreport --quiet"
+
+# Run github-sitemap.sh with --noreport and --quiet to minimize output
+bash "$SITEMAP_SCRIPT" "$TARGET_README" --noreport --quiet > "$TEMP_OUTPUT" 2>&1
+SITEMAP_EXIT_CODE=$?
+
+# Copy output to result log
+cp "$TEMP_OUTPUT" "$MARKDOWN_RESULT_LOG"
+
+# Display the output
+print_message "Sitemap check output:"
+while IFS= read -r line; do
+    print_output "$line"
+done < "$TEMP_OUTPUT"
+
+if [ $SITEMAP_EXIT_CODE -eq 0 ]; then
+    print_result 0 "Markdown link check executed successfully with no issues"
     ((PASS_COUNT++))
-    
-    # Subtest 2: Missing Links Check
-    print_header "Subtest 2: Missing Links Check" | tee -a "$RESULT_LOG"
-    if [ "$missing_links" -eq 0 ]; then
-        print_result 0 "No missing links found" | tee -a "$RESULT_LOG"
-        ((PASS_COUNT++))
-    else
-        print_result 1 "Found $missing_links missing links" | tee -a "$RESULT_LOG"
-    fi
-    
-    # Subtest 3: Orphaned Files Check
-    print_header "Subtest 3: Orphaned Files Check" | tee -a "$RESULT_LOG"
-    if [ "$orphaned_files" -eq 0 ]; then
-        print_result 0 "No orphaned markdown files found" | tee -a "$RESULT_LOG"
-        ((PASS_COUNT++))
-    else
-        print_result 1 "Found $orphaned_files orphaned markdown files" | tee -a "$RESULT_LOG"
-    fi
-    
-    # Append full output to log for reference (even with --quiet, it's informative)
-    print_header "Full Output of support_sitemap.sh" | tee -a "$RESULT_LOG"
-    tee -a "$RESULT_LOG" < "$temp_output"
-    print_header "End of Full Output" | tee -a "$RESULT_LOG"
-    
-    # Clean up
-    rm -f "$temp_output"
-    
-    return $exit_code
-}
-
-# ====================================================================
-# STEP 4: Execute Tests and Report Results
-# ====================================================================
-
-# Run all test cases
-run_tests() {
-    local test_result=0
-    run_sitemap_check
-    test_result=$?
-    return $test_result
-}
-
-run_tests
-TEST_RESULT=$?
-
-# Collect test results for reporting
-declare -a TEST_NAMES=("Overall Execution" "Markdown Files" "Missing Links" "Orphaned Files")
-declare -a TEST_RESULTS
-declare -a TEST_DETAILS
-
-# Populate results (0=pass, 1=fail)
-TEST_RESULTS=(0 0 0 0)  # Default to pass
-TEST_DETAILS=("support_sitemap.sh execution" "Count of markdown files" "Check for missing links" "Check for orphaned files")
-
-# Adjust based on actual results
-if [ $TEST_RESULT -ne 0 ]; then
-    TEST_RESULTS[0]=1
-fi
-# Set subtest results based on actual counts from run_sitemap_check
-if [ "$missing_links" -ne 0 ]; then
-    TEST_RESULTS[2]=1  # Missing Links fail if count is non-zero
-fi
-if [ "$orphaned_files" -ne 0 ]; then
-    TEST_RESULTS[3]=1  # Orphaned Files fail if count is non-zero
+else
+    print_result 1 "Markdown link check found issues (exit code: $SITEMAP_EXIT_CODE)"
+    EXIT_CODE=1
 fi
 
-# Calculate statistics
-TOTAL_PASS=0
-TOTAL_FAIL=0
-for result in "${TEST_RESULTS[@]}"; do
-    if [ "$result" -eq 0 ]; then
-        ((TOTAL_PASS++))
-    else
-        ((TOTAL_FAIL++))
+# Subtest 3: Parse and validate missing links count
+next_subtest
+print_subtest "Validate Missing Links Count"
+
+# Parse the output to extract counts from the tables
+# Look for "Issues found:" line to get the total issue count
+ISSUES_FOUND=$(grep "Issues found:" "$TEMP_OUTPUT" | sed 's/Issues found: //' || echo "0")
+if [ -z "$ISSUES_FOUND" ]; then
+    ISSUES_FOUND="0"
+fi
+
+# Extract missing links count from the summary row at the bottom of the table
+# Look for the summary row that shows totals
+MISSING_LINKS_COUNT=0
+if grep -q "│.*│.*│.*│.*│" "$TEMP_OUTPUT"; then
+    # Get the last data row (summary row) and extract the missing links column (5th column)
+    SUMMARY_ROW=$(grep "│.*│.*│.*│.*│" "$TEMP_OUTPUT" | tail -1)
+    if [ -n "$SUMMARY_ROW" ]; then
+        # Extract the 5th column (Missing Links) from the summary row
+        MISSING_LINKS_COUNT=$(echo "$SUMMARY_ROW" | awk -F'│' '{gsub(/[[:space:]]/, "", $6); print $6}' | grep -o '[0-9]*' || echo "0")
+        if [ -z "$MISSING_LINKS_COUNT" ]; then
+            MISSING_LINKS_COUNT=0
+        fi
     fi
-done
+fi
 
-# Print individual test results
-echo -e "
-${BLUE}${BOLD}Individual Test Results:${NC}" | tee -a "$RESULT_LOG"
-for i in "${!TEST_NAMES[@]}"; do
-    print_test_item "${TEST_RESULTS[$i]}" "${TEST_NAMES[$i]}" "${TEST_DETAILS[$i]}" | tee -a "$RESULT_LOG"
-done
+print_message "Missing links found: $MISSING_LINKS_COUNT"
 
-# Print summary statistics
-print_test_summary $((TOTAL_PASS + TOTAL_FAIL)) $TOTAL_PASS $TOTAL_FAIL | tee -a "$RESULT_LOG"
+if [ "$MISSING_LINKS_COUNT" -eq 0 ]; then
+    print_result 0 "No missing links found"
+    ((PASS_COUNT++))
+else
+    print_result 1 "Found $MISSING_LINKS_COUNT missing links"
+    EXIT_CODE=1
+fi
 
-# Get test name from script name for subtest export
-SCRIPT_TEST_NAME=$(basename "$0" .sh)
-SCRIPT_TEST_NAME="${SCRIPT_TEST_NAME#test_}"
+# Subtest 4: Parse and validate orphaned files count
+next_subtest
+print_subtest "Validate Orphaned Files Count"
 
-# Export subtest results for test_all.sh to pick up, including markdown count in details
-export_subtest_results "$SCRIPT_TEST_NAME" $TOTAL_SUBTESTS $PASS_COUNT "${TEST_DETAILS[1]}"
+# Try to extract orphaned files count from table data
+ORPHANED_FILES_COUNT=0
+if grep -q "Orphaned Markdown Files" "$TEMP_OUTPUT"; then
+    # Count the number of data rows in the orphaned files table (excluding headers and borders)
+    ORPHANED_FILES_COUNT=$(grep -A 100 "Orphaned Markdown Files" "$TEMP_OUTPUT" | grep -c "│.*│" | head -1 || echo "0")
+    # Subtract 1 for the header row if present
+    if [ "$ORPHANED_FILES_COUNT" -gt 0 ]; then
+        ORPHANED_FILES_COUNT=$((ORPHANED_FILES_COUNT - 1))
+    fi
+    # Ensure non-negative
+    if [ "$ORPHANED_FILES_COUNT" -lt 0 ]; then
+        ORPHANED_FILES_COUNT=0
+    fi
+fi
 
-# Log subtest results
-print_info "Markdown Links Check: $PASS_COUNT of $TOTAL_SUBTESTS subtests passed" | tee -a "$RESULT_LOG"
+print_message "Orphaned files found: $ORPHANED_FILES_COUNT"
 
-# End test with final result
-end_test $TEST_RESULT "$TEST_NAME" | tee -a "$RESULT_LOG"
+if [ "$ORPHANED_FILES_COUNT" -eq 0 ]; then
+    print_result 0 "No orphaned markdown files found"
+    ((PASS_COUNT++))
+else
+    print_result 1 "Found $ORPHANED_FILES_COUNT orphaned markdown files"
+    EXIT_CODE=1
+fi
 
-exit $TEST_RESULT
+# Clean up temporary file
+rm -f "$TEMP_OUTPUT"
+
+# Display summary information
+print_message "Link check summary:"
+print_output "Total issues found: $ISSUES_FOUND"
+print_output "Missing links: $MISSING_LINKS_COUNT"
+print_output "Orphaned files: $ORPHANED_FILES_COUNT"
+print_output "Detailed report saved to: $MARKDOWN_RESULT_LOG"
+
+# Export results for test_all.sh integration
+export_subtest_results "98_check_links" $TOTAL_SUBTESTS $PASS_COUNT > /dev/null
+
+# Print completion table
+print_test_completion "$TEST_NAME"
+
+exit $EXIT_CODE

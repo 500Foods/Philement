@@ -20,7 +20,7 @@ These scripts perform specific tests for the Hydrogen project and will be update
 
 | Script Name                       | Type   | Migration Status | Notes                                      |
 |-----------------------------------|--------|------------------|--------------------------------------------|
-| test_00_all.sh                   | Test   | Not Migrated     | To be updated last as per user request.    |
+| test_00_all.sh                   | Test   | Migrated         | Successfully migrated to use lib/ scripts, simplified orchestration approach with clean table summary |
 | test_10_compilation.sh           | Test   | Migrated         | Successfully migrated to use lib/ scripts. |
 | test_12_env_payload.sh           | Test   | Not Migrated     |                                            |
 | test_15_startup_shutdown.sh      | Test   | Not Migrated     |                                            |
@@ -129,7 +129,7 @@ This table will be updated as migration progresses to reflect the current status
 
 | Script Name                       | Type    | Migration Status | Notes                                      | Date Updated       |
 |-----------------------------------|---------|------------------|--------------------------------------------|--------------------|
-| test_00_all.sh                   | Test    | Not Migrated     | To be updated last.                       | -                  |
+| test_00_all.sh                   | Test    | Migrated         | Successfully migrated to use lib/ scripts, simplified orchestration approach with clean table summary | 2025-07-02         |
 | test_10_compilation.sh           | Test    | Migrated         | Successfully migrated to use lib/ scripts | 2025-07-02         |
 | test_12_env_payload.sh           | Test    | Migrated         | Successfully migrated to use lib/ scripts | 2025-07-02         |
 | test_15_startup_shutdown.sh      | Test    | Migrated         | Successfully migrated to use lib/ scripts | 2025-07-02         |
@@ -141,12 +141,12 @@ This table will be updated as migration progresses to reflect the current status
 | test_45_signals.sh               | Test    | Migrated         | Successfully migrated to use lib/ scripts, restructured to follow established pattern with comprehensive signal handling tests for SIGINT, SIGTERM, SIGHUP, SIGUSR2, and multiple signals | 2025-07-02         |
 | test_50_crash_handler.sh         | Test    | Migrated         | Successfully migrated to use lib/ scripts, comprehensive crash handler testing for multiple build variants with core dump generation, GDB analysis, and crash logging validation | 2025-07-02         |
 | test_55_socket_rebind.sh         | Test    | Migrated         | Successfully migrated to use lib/ scripts, created network_utils.sh library for TIME_WAIT socket management, comprehensive socket rebinding test with HTTP connection establishment | 2025-07-02         |
-| test_60_api_prefixes.sh          | Test    | Not Migrated     |                                           | -                  |
-| test_65_system_endpoints.sh      | Test    | Not Migrated     |                                           | -                  |
-| test_70_swagger.sh               | Test    | Not Migrated     |                                           | -                  |
-| test_95_leaks_like_a_sieve.sh    | Test    | Not Migrated     |                                           | -                  |
-| test_98_check_links.sh           | Test    | Not Migrated     |                                           | -                  |
-| test_99_codebase.sh              | Test    | Not Migrated     |                                           | -                  |
+| test_60_api_prefixes.sh          | Test    | Migrated         | Successfully migrated to use lib/ scripts, comprehensive API prefix testing with immediate restart approach, proper TIME_WAIT socket management, and standardized test structure | 2025-07-02         |
+| test_65_system_endpoints.sh      | Test    | Migrated         | Successfully migrated to use lib/ scripts, comprehensive system API endpoint testing with JSON validation, Prometheus format validation, POST/GET parameter testing, line count validation, and Brotli compression log analysis | 2025-07-02         |
+| test_70_swagger.sh               | Test    | Migrated         | Successfully migrated to use lib/ scripts, comprehensive Swagger UI testing with multiple prefixes, redirect validation, JavaScript file loading, and immediate restart capability testing | 2025-07-02         |
+| test_95_leaks_like_a_sieve.sh    | Test    | Migrated         | Successfully migrated to use lib/ scripts, comprehensive memory leak detection with ASAN, optimized delays for faster execution, fixed integer comparison errors, and proper leak analysis reporting | 2025-07-02         |
+| test_98_check_links.sh           | Test    | Migrated         | Successfully migrated to use lib/ scripts, fixed incorrect results directory creation, corrected missing links count parsing logic to properly extract from summary row instead of counting table rows | 2025-07-02         |
+| test_99_codebase.sh              | Test    | Migrated         | Successfully migrated to use lib/ scripts, restructured to follow test 15 pattern with proper library function usage, updated all function calls from old support script style to new library style, maintains comprehensive codebase analysis with linting validation | 2025-07-02         |
 | test_template.sh                 | Test    | Not Migrated     |                                           | -                  |
 | support_analyze_stuck_threads.sh | Support | Not Migrated     | To be modularized into 'lib/' scripts.    | -                  |
 | support_cleanup.sh               | Support | Not Migrated     | To be modularized into 'lib/' scripts.    | -                  |
@@ -309,3 +309,87 @@ This table will be updated as migration progresses to reflect the current status
   - **Testing and Validation**: Always run migrated tests immediately after migration to catch shell scripting errors early. Simple syntax errors like incorrect `local` usage can be caught quickly with test execution, preventing issues from propagating to other tests or CI/CD systems.
   - **Shellcheck Integration**: Always run `shellcheck -x -f gcc test_script.sh` after migration to catch shell scripting issues. Common fixes include: removing unused variables, adding proper quoting around variable expansions (`"$VARIABLE"` instead of `$VARIABLE`), and ensuring proper variable scope usage.
   - **Code Quality Standards**: Maintain high code quality by addressing all shellcheck warnings. This includes proper quoting, unused variable cleanup, and adherence to shell scripting best practices. Clean shellcheck output indicates production-ready code.
+
+### test_60_api_prefixes.sh
+
+- **Migration Date**: 2025-07-02
+- **Lessons Learned**:
+  - **API Testing Pattern**: API endpoint testing follows a consistent pattern: validate request, check response content, validate JSON structure, and verify server stability. This pattern can be reused across different API testing scenarios.
+  - **Immediate Restart Strategy**: Tests that use SO_REUSEADDR for immediate restart (without waiting for TIME_WAIT) require careful validation that the feature is working correctly. The test should explicitly verify that immediate restart succeeds to confirm SO_REUSEADDR functionality.
+  - **Configuration-Based Testing**: When testing different configurations (like API prefixes), extract configuration-specific values (ports, prefixes) early and display them for clarity. This helps with debugging and understanding test behavior.
+  - **Comprehensive Endpoint Coverage**: API prefix tests should cover multiple endpoint types (health, info, test) to ensure the prefix configuration affects all API routes consistently. Each endpoint type may have different response characteristics that need validation.
+  - **Server Readiness Validation**: Always implement proper server readiness checks before attempting API requests. A simple connectivity test with appropriate timeout prevents false failures due to server startup timing.
+  - **Graceful Failure Handling**: When server startup fails, all dependent subtests should be explicitly marked as skipped with clear reasoning. This provides accurate subtest counts and prevents confusion about test coverage.
+  - **Network Utilities Integration**: Leverage network_utils.sh functions for TIME_WAIT socket management and port checking. These functions provide consistent network state validation across different test scenarios.
+  - **Response File Management**: Use timestamped response files to prevent conflicts in parallel execution, but clean them up after successful tests to avoid disk space accumulation. Preserve them for failed tests to aid debugging.
+  - **JSON Validation Strategy**: Separate JSON structure validation from content validation. First verify the response contains expected content, then validate JSON syntax. This provides more specific error information when issues occur.
+  - **Subtest Structure for API Tests**: API tests benefit from a clear subtest structure: prerequisites (binary, config), then per-configuration testing blocks. Each configuration should test multiple aspects (endpoints, stability) for comprehensive coverage.
+
+### test_65_system_endpoints.sh
+
+- **Migration Date**: 2025-07-02
+- **Lessons Learned**:
+  - **Comprehensive API Testing Pattern**: System endpoint tests require extensive validation across multiple dimensions: content validation, format validation (JSON/Prometheus), HTTP method testing (GET/POST), parameter handling, and specialized endpoint behaviors (line counts, compression logs).
+  - **Multi-Format Response Handling**: Different endpoints return different formats (JSON, plain text, Prometheus metrics) requiring specialized validation functions. The test successfully handles JSON validation with jq, Prometheus format validation with specific metric checks, and text response line count validation.
+  - **HTTP Method Diversity**: Testing both GET and POST methods with various parameter combinations (query parameters, form data, combined parameters) ensures comprehensive coverage of API request handling capabilities.
+  - **Header Inclusion Strategy**: Prometheus endpoint testing required special handling with `-i` flag to include headers for content-type validation, demonstrating the need for endpoint-specific request strategies.
+  - **Specialized Validation Functions**: Created focused validation functions (`validate_json_response`, `validate_line_count`, `validate_prometheus_format`) that can be reused across different endpoint tests while maintaining specific validation logic.
+  - **Log Analysis Integration**: The test includes server log analysis for both error detection and feature validation (Brotli compression), providing comprehensive system behavior assessment beyond just API response validation.
+  - **Response File Management**: Implemented smart file extension handling (.json vs .txt) based on endpoint type, with timestamped files for parallel execution safety and appropriate cleanup strategies.
+  - **Error Tolerance with Warnings**: The test properly handles expected errors (OIDC initialization failures, missing subsystems) by displaying them as warnings rather than failures, focusing on actual API functionality rather than configuration completeness.
+  - **Prometheus Metrics Validation**: Implemented comprehensive Prometheus format validation including content-type checking, TYPE definition verification, and specific metric presence validation (system_info, memory_total_bytes, cpu_usage_total, service_threads).
+  - **Scalable Test Structure**: With 18 subtests covering 7 different endpoints plus validation steps, the test demonstrates how to structure large-scale API testing while maintaining clarity and proper error handling for each component.
+  - **🚨 CRITICAL: Clean Log Output Formatting**: When displaying multi-line external content (like server logs), each line must be processed individually through `print_output()` using a `while IFS= read -r line` loop. This ensures each log line gets its own properly formatted DATA entry instead of dumping raw multi-line content that breaks the clean log format. This maintains the professional appearance and readability of test output.
+  - **🚨 CRITICAL: Eliminate Artificial Delays**: Test 65 initially had artificial delays (`sleep 0.5` in server readiness polling, `sleep 3` after shutdown) that were slowing execution. Removing these delays and using proper natural timing mechanisms (0.2s polling intervals, relying on `stop_hydrogen` function verification) reduced test time from ~4.7s to ~1.7s (64% improvement) while maintaining full reliability. **LESSON: Always use natural timing mechanisms (log monitoring, process state checking, timeout-based waiting) instead of arbitrary delays.**
+
+### test_70_swagger.sh
+
+- **Migration Date**: 2025-07-02
+- **Lessons Learned**:
+  - **Multi-Configuration Testing Pattern**: Swagger UI tests require testing multiple configurations with different prefixes (/swagger vs /apidocs) to ensure the system handles various URL routing scenarios correctly. Each configuration should be tested independently with its own server instance and port.
+  - **HTTP Redirect Validation**: Swagger UI endpoints must handle both trailing slash and non-trailing slash URLs correctly. The test validates that accessing `/swagger` redirects (301) to `/swagger/` and that both URLs serve the expected content, ensuring proper URL normalization.
+  - **JavaScript Asset Loading**: Beyond HTML content validation, Swagger UI tests must verify that JavaScript assets (swagger-initializer.js) load correctly and contain expected initialization code. This ensures the interactive UI components will function properly.
+  - **Specialized Response Validation Functions**: Created focused validation functions (`check_response_content`, `check_redirect_response`) that handle different HTTP response types (content vs redirects) with appropriate curl flags and validation logic for reuse across multiple endpoint tests.
+  - **Configuration-Specific Testing**: Each Swagger configuration uses different ports and prefixes, requiring dynamic port extraction and URL construction. The test demonstrates how to handle multiple configurations systematically while maintaining clear separation between test scenarios.
+  - **Immediate Restart Capability Testing**: The test validates SO_REUSEADDR functionality by performing immediate restarts between configurations without waiting for TIME_WAIT socket cleanup, confirming the server's ability to rebind ports quickly for efficient testing.
+  - **Comprehensive Subtest Structure**: With 13 subtests (3 prerequisites + 5 tests per configuration), the test demonstrates how to structure multi-configuration testing while maintaining accurate subtest counting and clear progress reporting.
+  - **Response File Organization**: Implemented systematic response file naming with configuration-specific prefixes (swagger_default, swagger_custom) and test-type suffixes (trailing_slash, redirect, content, initializer) for clear organization and parallel execution safety.
+  - **Error Handling with Graceful Degradation**: When server startup fails for one configuration, the test properly skips remaining subtests for that configuration while continuing with other configurations, providing partial test results rather than complete failure.
+  - **TIME_WAIT Socket Monitoring**: The test includes TIME_WAIT socket monitoring after each configuration to verify network state and demonstrate that immediate restart works despite socket states, providing valuable debugging information for network-related issues.
+
+## Recent Improvements (2025-07-02)
+
+### Automatic Test Number Extraction
+
+**Updated Tests**: test_60_api_prefixes.sh, test_65_system_endpoints.sh, test_70_swagger.sh
+
+All recently migrated tests have been updated to use the automatic test number extraction mechanism following the pattern established in test_55_socket_rebind.sh:
+
+**Before**:
+
+```bash
+# Set up test numbering
+set_test_number "70"
+reset_subtest_counter
+```
+
+**After**:
+
+```bash
+# Auto-extract test number and set up environment
+TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
+set_test_number "$TEST_NUMBER"
+reset_subtest_counter
+```
+
+**Benefits**:
+
+- **Eliminates hardcoded test numbers**: Test number is automatically extracted from the script filename (e.g., "test_70_swagger.sh" → "70")
+- **Reduces maintenance overhead**: No need to manually update test numbers when renaming or reorganizing test files
+- **Prevents inconsistencies**: Eliminates the possibility of mismatched test numbers between filename and internal configuration
+- **Follows established pattern**: Consistent with the approach used in test_55_socket_rebind.sh and other properly structured tests
+- **Future-proof**: Makes test scripts more resilient to organizational changes
+
+**Implementation**: The `extract_test_number()` function is provided by `log_output.sh` and automatically parses the test number from `${BASH_SOURCE[0]}` (the script's own filename).
+
+**Verification**: All updated tests (60, 65, 70) have been tested and confirmed to work correctly with the automatic test number extraction, maintaining their full functionality while improving maintainability.

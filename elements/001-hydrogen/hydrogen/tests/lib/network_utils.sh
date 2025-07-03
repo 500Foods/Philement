@@ -3,15 +3,15 @@
 # Hydrogen Test Suite - Network Utilities Library
 # Provides network-related functions for test scripts, including TIME_WAIT socket management
 #
-NAME_SCRIPT="Hydrogen Network Utilities Library"
-VERS_SCRIPT="2.0.0"
+NETWORK_UTILS_NAME="Hydrogen Network Utilities Library"
+NETWORK_UTILS_VERSION="2.0.0"
 
 # VERSION HISTORY
 # 2.0.0 - 2025-07-02 - Initial creation from support_timewait.sh migration for test_55_socket_rebind.sh
 
 # Function to display script version information
 print_network_utils_version() {
-    echo "=== $NAME_SCRIPT v$VERS_SCRIPT ==="
+    echo "=== $NETWORK_UTILS_NAME v$NETWORK_UTILS_VERSION ==="
 }
 
 # Function to check if a port is in use (robust version)

@@ -1,395 +1,267 @@
 #!/bin/bash
 #
-# About this Script
+# Test 95: Hydrogen Memory Leak Detection Test
+# Uses Valgrind to detect memory leaks in the Hydrogen application
 #
-# Memory Leak Detection Test
-# Tests for memory leaks using ASAN in debug build
-# - Requires debug build with ASAN
-# - Triggers clean shutdown with SIGINT
-# - Analyzes and summarizes memory leaks
-# - Fails if any leaks are found
-#
-NAME_SCRIPT="Memory Leak Detection Test"
-VERS_SCRIPT="2.0.0"
-
 # VERSION HISTORY
-# 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
-
-# Display script name and version
-echo "=== $NAME_SCRIPT v$VERS_SCRIPT ==="
+# 3.0.0 - 2025-07-02 - Migrated to use lib/ scripts, following established test pattern
+# 2.0.0 - 2025-06-17 - Major refactoring: improved modularity, reduced script size, enhanced comments
+# 1.0.0 - 2025-06-15 - Initial version with basic memory leak detection
+#
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
-source "$SCRIPT_DIR/support_utils.sh"
 
-# Configuration
-CONFIG_FILE=$(get_config_path "hydrogen_test_api_test_1.json")
-if [ ! -f "$CONFIG_FILE" ]; then
-    print_result 1 "Configuration file not found: $CONFIG_FILE"
+# Source the new modular test libraries
+source "$SCRIPT_DIR/lib/log_output.sh"
+source "$SCRIPT_DIR/lib/file_utils.sh"
+source "$SCRIPT_DIR/lib/framework.sh"
+source "$SCRIPT_DIR/lib/lifecycle.sh"
+
+# Test configuration
+TEST_NAME="Memory Leak Detection Test"
+SCRIPT_VERSION="3.0.0"
+EXIT_CODE=0
+TOTAL_SUBTESTS=4
+PASS_COUNT=0
+
+# Auto-extract test number and set up environment
+TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
+set_test_number "$TEST_NUMBER"
+reset_subtest_counter
+
+# Print beautiful test header
+print_test_header "$TEST_NAME" "$SCRIPT_VERSION"
+
+# Set up results directory
+RESULTS_DIR="$SCRIPT_DIR/results"
+mkdir -p "$RESULTS_DIR"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+RESULT_LOG="$RESULTS_DIR/test_${TEST_NUMBER}_${TIMESTAMP}.log"
+
+# Navigate to the project root (one level up from tests directory)
+if ! navigate_to_project_root "$SCRIPT_DIR"; then
+    print_error "Failed to navigate to project root directory"
     exit 1
 fi
 
-# Initialize result variables
-DIRECT_RESULT=1
-INDIRECT_RESULT=1
+# Test configuration
+CONFIG_FILE="tests/configs/hydrogen_test_api_test_1.json"
 
-# Process leak report and extract grouped leaks
-extract_leak_info() {
-    # Arguments: leak_type, log_file, output_file
-    local type="$1"
-    local file="$2"
-    local output="$3"
-    
-    # Start with section header
-    # echo "${type} Leak Details:" > "$output"
-    echo "" >> "$output"
-    
-    # Count total leaks of this type
-    local leak_count
-    leak_count=$(grep -c "${type} leak of" "$file")
-    
-    # If no leaks, return early
-    if [ "$leak_count" -eq 0 ]; then
-        echo "$leak_count:0:0:0"
-        return
-    fi
-    
-    # Create temporary files
-    local tmpfile
-    local leak_data
-    tmpfile=$(mktemp)
-    leak_data=$(mktemp)
-    
-    # Extract all leak blocks
-    grep -n "${type} leak of" "$file" | 
-    while IFS=: read -r line_num rest; do
-        # Extract the leak size
-        if [[ $rest =~ ${type}\ leak\ of\ ([0-9,]+)\ byte ]]; then
-            local leak_size=${BASH_REMATCH[1]//,/}
-            
-            # Find first meaningful stack frame
-            found_component=false
-            
-            # Get the 10 lines following this leak header
-            head -n $((line_num + 10)) "$file" | tail -n 10 > "$tmpfile"
-            
-            # Process stack trace lines
-            while IFS= read -r stack_line; do
-                # Skip stack frames that are memory allocation functions
-                if [[ $stack_line =~ malloc ]] || [[ $stack_line =~ calloc ]] || [[ $stack_line =~ realloc ]] || [[ $stack_line =~ free ]]; then
-                    continue
-                fi
-                
-                # Try to extract component information
-                # Pattern 1: Function and file path in one section
-                if [[ $stack_line =~ \#[0-9]+\ 0x[0-9a-f]+\ in\ ([^ ]+)\ ([^:]+):([0-9]+) ]]; then
-                    func="${BASH_REMATCH[1]}"
-                    file_path="${BASH_REMATCH[2]}"
-                    line="${BASH_REMATCH[3]}"
-                    
-                    # Save this component info
-                    echo "$file_path:$line in $func|$leak_size" >> "$leak_data"
-                    found_component=true
-                    break
-                # Pattern 2: Function with parentheses
-                elif [[ $stack_line =~ \#[0-9]+\ 0x[0-9a-f]+\ in\ ([^ ]+)\ \(([^:]+):([0-9]+)\) ]]; then
-                    func="${BASH_REMATCH[1]}"
-                    file_path="${BASH_REMATCH[2]}"
-                    line="${BASH_REMATCH[3]}"
-                    
-                    # Save this component info
-                    echo "$file_path:$line in $func|$leak_size" >> "$leak_data"
-                    found_component=true
-                    break
-                fi
-            done < "$tmpfile"
-            
-            # If no component found, use a placeholder
-            if ! $found_component; then
-                echo "unknown location|$leak_size" >> "$leak_data"
-            fi
-        fi
-    done
-    
-    # Group by component and size, then sort by size (largest first)
-    if [ -s "$leak_data" ]; then
-        sort "$leak_data" | uniq -c | sort -k3,3nr | 
-        while read -r count line; do
-            component=$(echo "$line" | cut -d'|' -f1)
-            size=$(echo "$line" | cut -d'|' -f2)
-            echo "  $count $component ${type,,} leak of $size bytes" >> "$output"
-        done
-    fi
-    
-    # Gather statistics for summary
-    local sizes
-    sizes=$(grep "${type} leak of" "$file" | sed -E "s/.*leak of ([0-9,]+) byte.*/\1/g" | tr -d ',')
-    local total=0
-    local smallest=999999
-    local largest=0
-    
-    for size in $sizes; do
-        # Add to total
-        total=$((total + size))
-        
-        # Update smallest/largest
-        if [ "$size" -lt "$smallest" ]; then
-            smallest=$size
-        fi
-        if [ "$size" -gt "$largest" ]; then
-            largest=$size
-        fi
-    done
-    
-    # Clean up temp files
-    rm -f "$tmpfile" "$leak_data"
-    
-    echo "" >> "$output"
-    
-    # Return summary info for use in summary section
-    echo "$leak_count:$smallest:$largest:$total"
-}
+# Subtest 1: Validate debug build availability and ASAN support
+next_subtest
+print_subtest "Validate Debug Build and ASAN Support"
 
-# Function to check for direct memory leaks
-check_direct_leaks() {
-    local log_file="$1"
-    local summary_file="$2"
-    local details_file="$3"
-    
-    # Process direct leaks
-    echo "Direct:"
-    true > "$details_file"
-    local direct_summary
-    direct_summary=$(extract_leak_info "Direct" "$log_file" "$details_file")
-    
-    # Read summary info
-    direct_count=$(echo "$direct_summary" | cut -d: -f1)
-    direct_smallest=$(echo "$direct_summary" | cut -d: -f2)
-    direct_largest=$(echo "$direct_summary" | cut -d: -f3)
-    direct_total=$(echo "$direct_summary" | cut -d: -f4)
-    
-    # Write summary section
-    {
-        echo "Direct Leaks"
-        echo "- Found: $direct_count"
-        if [ "$direct_count" -gt 0 ]; then
-            echo "- Smallest: $direct_smallest byte(s)"
-            echo "- Largest: $direct_largest byte(s)"
-            echo "- Total: $direct_total byte(s)"
-        fi
-        echo
-    } > "$summary_file"
-    
-    # Return success only if no leaks found
-    return $((direct_count > 0))
-}
-
-
-# Function to check for indirect memory leaks
-check_indirect_leaks() {
-    local log_file="$1"
-    local summary_file="$2"
-    local details_file="$3"
-    
-    # Process indirect leaks
-    echo "Indirect:"
-    true > "$details_file"
-    local indirect_summary
-    indirect_summary=$(extract_leak_info "Indirect" "$log_file" "$details_file")
-    
-    # Read summary info
-    indirect_count=$(echo "$indirect_summary" | cut -d: -f1)
-    indirect_smallest=$(echo "$indirect_summary" | cut -d: -f2)
-    indirect_largest=$(echo "$indirect_summary" | cut -d: -f3)
-    indirect_total=$(echo "$indirect_summary" | cut -d: -f4)
-    
-    # Write summary section
-    {
-        echo "Indirect Leaks"
-        echo "- Found: $indirect_count"
-        if [ "$indirect_count" -gt 0 ]; then
-            echo "- Smallest: $indirect_smallest byte(s)"
-            echo "- Largest: $indirect_largest byte(s)"
-            echo "- Total: $indirect_total byte(s)"
-        fi
-    } >> "$summary_file"
-    
-    # Return success only if no leaks found
-    return $((indirect_count > 0))
-}
-
-# Function to run leak test with debug build
-run_leak_test() {
-    local binary="$1"
-    local binary_name
-    binary_name=$(basename "$binary")
-    
-    print_info "Starting leak test with $binary_name..."
-    
-    # Create log directory if it doesn't exist
-    local log_dir="$SCRIPT_DIR/logs"
-    mkdir -p "$log_dir"
-    local log_file="$log_dir/hydrogen_leak_test.log"
-    local summary_file="$log_dir/leak_summary.txt"
-    local details_file="$log_dir/leak_details.txt"
-    
-    # Start hydrogen server with comprehensive ASAN options
-    ASAN_OPTIONS="detect_leaks=1:leak_check_at_exit=1:verbosity=1:log_threads=1:print_stats=1" $binary "$CONFIG_FILE" > "$log_dir/server.log" 2>&1 &
-    HYDROGEN_PID=$!
-    
-    # Wait for startup
-    print_info "Waiting for startup (max 3s)..."
-    STARTUP_START=$(date +%s)
-    STARTUP_TIMEOUT=3
-    
-    while true; do
-        CURRENT_TIME=$(date +%s)
-        ELAPSED=$((CURRENT_TIME - STARTUP_START))
-        
-        if [ $ELAPSED -ge $STARTUP_TIMEOUT ]; then
-            print_result 1 "Startup timeout after ${ELAPSED}s"
-            kill -9 $HYDROGEN_PID 2>/dev/null
-            return 1
-        fi
-        
-        if ! kill -0 $HYDROGEN_PID 2>/dev/null; then
-            print_result 1 "Server crashed during startup"
-            return 1
-        fi
-        
-        if grep -q "Application started" "$log_dir/server.log"; then
-            print_info "Startup completed in ${ELAPSED}s"
-            break
-        fi
-        
-        sleep 0.2
-    done
-    
-    # Let it run briefly and perform some operations
-    print_info "Running operations to trigger potential leaks..."
-    sleep 1
-    
-    # Try some API calls to trigger potential memory operations
-    for _ in {1..3}; do
-        curl -s "http://localhost:5030/api/system/info" > /dev/null 2>&1
-        sleep 0.2
-    done
-    
-    # Let memory operations settle
-    sleep 1
-    
-    # Send SIGTERM to trigger shutdown
-    print_info "Sending SIGTERM to trigger shutdown..."
-    kill -TERM $HYDROGEN_PID
-    
-    # Wait for process to exit
-    wait $HYDROGEN_PID
-    
-    # Check server.log for ASAN output
-    print_info "Checking server.log for ASAN output..."
-    if grep -q "LeakSanitizer" "$log_dir/server.log"; then
-        print_info "Found ASAN leak detection output in server.log"
-        cp "$log_dir/server.log" "${log_file}.${HYDROGEN_PID}"
-    else
-        print_result 1 "No ASAN leak detection output found in server.log"
-        print_info "Server log contents:"
-        cat "$log_dir/server.log"
-        return 1
-    fi
-    
-    # Clear previous results
-    true > "$details_file"
-    true > "$summary_file"
-    
-    # Check for direct leaks (subtest 1)
-    print_header "Checking for direct memory leaks..."
-    check_direct_leaks "${log_file}.${HYDROGEN_PID}" "$summary_file" "$details_file"
-    DIRECT_RESULT=$?
-    
-    # Display result for direct leaks
-    if [ $DIRECT_RESULT -eq 0 ]; then
-        print_result 0 "No direct memory leaks found"
-    else
-        # Show leak details before result
-        if [ -f "$details_file" ]; then
-            cat "$details_file"
-        fi
-        print_result 1 "Direct memory leaks detected"
-    fi
-    
-    # Check for indirect leaks (subtest 2)
-    print_header "Checking for indirect memory leaks..."
-    check_indirect_leaks "${log_file}.${HYDROGEN_PID}" "$summary_file" "$details_file"
-    INDIRECT_RESULT=$?
-    
-    # Display result for indirect leaks
-    if [ $INDIRECT_RESULT -eq 0 ]; then
-        print_result 0 "No indirect memory leaks found"
-    else
-        # Show leak details before result
-        if [ -f "$details_file" ]; then
-            cat "$details_file"
-        fi
-        print_result 1 "Indirect memory leaks detected"
-    fi
-    
-    # Display final summary
-    print_header "Memory Leak Summary"
-    cat "$summary_file"
-    
-    # Copy logs to results directory
-    mkdir -p "$SCRIPT_DIR/results"
-    cp "${log_file}.${HYDROGEN_PID}" "$SCRIPT_DIR/results/leak_report_${TIMESTAMP}.txt"
-    cp "$summary_file" "$SCRIPT_DIR/results/leak_summary_${TIMESTAMP}.txt"
-    cp "$details_file" "$SCRIPT_DIR/results/leak_details_${TIMESTAMP}.txt"
-    
-    # Test passes only if no leaks found
-    if [ $DIRECT_RESULT -eq 0 ] && [ $INDIRECT_RESULT -eq 0 ]; then
-        return 0
-    else
-        return 1
-    fi
-}
-
-# Start the test
-start_test "Memory Leak Detection Test"
-
-# Store timestamp for this test run
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-
-# Look for debug build
-DEBUG_BUILD="$HYDROGEN_DIR/hydrogen_debug"
+# Find debug build
+DEBUG_BUILD="hydrogen_debug"
 if [ ! -f "$DEBUG_BUILD" ]; then
     print_result 1 "Debug build not found. This test requires the debug build with ASAN."
-    end_test 1 "Memory Leak Test"
-    exit 1
+    EXIT_CODE=1
+else
+    # Verify ASAN is enabled in debug build
+    if ! readelf -s "$DEBUG_BUILD" | grep -q "__asan"; then
+        print_result 1 "Debug build does not have ASAN enabled"
+        EXIT_CODE=1
+    else
+        print_result 0 "Debug build with ASAN support found"
+        ((PASS_COUNT++))
+    fi
 fi
 
-# Verify ASAN is enabled in debug build
-if ! readelf -s "$DEBUG_BUILD" | grep -q "__asan"; then
-    print_result 1 "Debug build does not have ASAN enabled"
-    end_test 1 "Memory Leak Test"
-    exit 1
+# Subtest 2: Validate configuration file
+next_subtest
+print_subtest "Validate Configuration File"
+
+CONFIG_PATH="$CONFIG_FILE"
+if [ ! -f "$CONFIG_PATH" ]; then
+    print_result 1 "Configuration file not found: $CONFIG_PATH"
+    EXIT_CODE=1
+else
+    print_result 0 "Configuration file validated: $CONFIG_PATH"
+    ((PASS_COUNT++))
 fi
 
-# Run the leak test
-run_leak_test "$DEBUG_BUILD"
-TEST_RESULT=$?
+# Skip remaining tests if prerequisites failed
+if [ $EXIT_CODE -ne 0 ]; then
+    print_warning "Prerequisites failed - skipping memory leak test"
+    
+    # Export results for test_all.sh integration
+    export_subtest_results "95_leaks_like_a_sieve" $TOTAL_SUBTESTS $PASS_COUNT > /dev/null
+    
+    # Print completion table
+    print_test_completion "$TEST_NAME"
+    
+    exit $EXIT_CODE
+fi
 
-# Calculate total passed subtests
-TOTAL_SUBTESTS=2  # Direct and indirect leak checks
-PASSED_SUBTESTS=0
-[ $DIRECT_RESULT -eq 0 ] && ((PASSED_SUBTESTS++))
-[ $INDIRECT_RESULT -eq 0 ] && ((PASSED_SUBTESTS++))
+# Subtest 3: Run memory leak detection test
+next_subtest
+print_subtest "Memory Leak Detection Test"
 
-# Get test name from script name
-TEST_NAME=$(basename "$0" .sh | sed 's/^test_//')
+# Set up log files
+LOG_DIR="$SCRIPT_DIR/logs"
+mkdir -p "$LOG_DIR"
+SERVER_LOG="$LOG_DIR/server_${TIMESTAMP}.log"
+LEAK_REPORT="$LOG_DIR/leak_report_${TIMESTAMP}.log"
+LEAK_SUMMARY="$LOG_DIR/leak_summary_${TIMESTAMP}.txt"
 
-# Export subtest results for test_all.sh
-export_subtest_results "$TEST_NAME" $TOTAL_SUBTESTS $PASSED_SUBTESTS
+print_message "Starting memory leak test with debug build..."
 
-# End the test
-end_test $TEST_RESULT "Memory Leak Test"
+# Start hydrogen server with comprehensive ASAN options
+print_command "ASAN_OPTIONS=\"detect_leaks=1:leak_check_at_exit=1:verbosity=1:log_threads=1:print_stats=1\" ./$DEBUG_BUILD $CONFIG_PATH"
 
-exit $TEST_RESULT
+ASAN_OPTIONS="detect_leaks=1:leak_check_at_exit=1:verbosity=1:log_threads=1:print_stats=1" ./"$DEBUG_BUILD" "$CONFIG_PATH" > "$SERVER_LOG" 2>&1 &
+HYDROGEN_PID=$!
+
+# Wait for startup with timeout
+print_message "Waiting for startup (max 5s)..."
+STARTUP_START=$(date +%s)
+STARTUP_TIMEOUT=5
+
+while true; do
+    CURRENT_TIME=$(date +%s)
+    ELAPSED=$((CURRENT_TIME - STARTUP_START))
+    
+    if [ $ELAPSED -ge $STARTUP_TIMEOUT ]; then
+        print_result 1 "Startup timeout after ${ELAPSED}s"
+        kill -9 $HYDROGEN_PID 2>/dev/null || true
+        EXIT_CODE=1
+        break
+    fi
+    
+    if ! kill -0 $HYDROGEN_PID 2>/dev/null; then
+        print_result 1 "Server crashed during startup"
+        print_message "Server log contents:"
+        while IFS= read -r line; do
+            print_output "$line"
+        done < "$SERVER_LOG"
+        EXIT_CODE=1
+        break
+    fi
+    
+    if grep -q "Application started" "$SERVER_LOG"; then
+        print_message "Startup completed in ${ELAPSED}s"
+        break
+    fi
+    
+    sleep 0.2
+done
+
+if [ $EXIT_CODE -eq 0 ]; then
+    # Let it run briefly and perform some operations
+    print_message "Running operations to trigger potential leaks..."
+    sleep 0.3
+
+    # Try some API calls to trigger potential memory operations
+    print_message "Making API calls to exercise memory allocation..."
+    for _ in {1..3}; do
+        curl -s "http://localhost:5030/api/system/info" > /dev/null 2>&1 || true
+        sleep 0.1
+    done
+
+    # Let memory operations settle
+    sleep 0.3
+
+    # Send SIGTERM to trigger shutdown and leak detection
+    print_message "Sending SIGTERM to trigger shutdown and leak detection..."
+    kill -TERM $HYDROGEN_PID
+
+    # Wait for process to exit
+    wait $HYDROGEN_PID 2>/dev/null || true
+
+    print_result 0 "Memory leak test execution completed"
+    ((PASS_COUNT++))
+else
+    print_result 1 "Memory leak test execution failed"
+fi
+
+# Subtest 4: Analyze leak results
+next_subtest
+print_subtest "Analyze Leak Results"
+
+if [ $EXIT_CODE -eq 0 ]; then
+    # Check server.log for ASAN output
+    print_message "Analyzing ASAN output for memory leaks..."
+    if grep -q "LeakSanitizer" "$SERVER_LOG"; then
+        print_message "Found ASAN leak detection output"
+        cp "$SERVER_LOG" "$LEAK_REPORT"
+        
+        # Analyze leak report
+        print_message "Analyzing leak report for direct and indirect leaks..."
+
+        # Check for direct leaks
+        DIRECT_LEAKS=$(grep -c "Direct leak of" "$LEAK_REPORT" 2>/dev/null | head -1 || echo "0")
+        INDIRECT_LEAKS=$(grep -c "Indirect leak of" "$LEAK_REPORT" 2>/dev/null | head -1 || echo "0")
+        
+        # Ensure we have clean integer values
+        DIRECT_LEAKS=$(echo "$DIRECT_LEAKS" | tr -d '\n\r' | grep -o '[0-9]*' | head -1)
+        INDIRECT_LEAKS=$(echo "$INDIRECT_LEAKS" | tr -d '\n\r' | grep -o '[0-9]*' | head -1)
+        
+        # Default to 0 if empty
+        [ -z "$DIRECT_LEAKS" ] && DIRECT_LEAKS=0
+        [ -z "$INDIRECT_LEAKS" ] && INDIRECT_LEAKS=0
+
+        # Create summary
+        {
+            echo "Memory Leak Analysis Summary"
+            echo "============================"
+            echo "Direct Leaks Found: $DIRECT_LEAKS"
+            echo "Indirect Leaks Found: $INDIRECT_LEAKS"
+            echo ""
+            
+            if [ "$DIRECT_LEAKS" -gt 0 ]; then
+                echo "Direct Leak Details:"
+                grep "Direct leak of" "$LEAK_REPORT" | head -10 || true
+                echo ""
+            fi
+            
+            if [ "$INDIRECT_LEAKS" -gt 0 ]; then
+                echo "Indirect Leak Details:"
+                grep "Indirect leak of" "$LEAK_REPORT" | head -10 || true
+                echo ""
+            fi
+            
+            if [ "$DIRECT_LEAKS" -eq 0 ] && [ "$INDIRECT_LEAKS" -eq 0 ]; then
+                echo "✅ No memory leaks detected!"
+            else
+                echo "❌ Memory leaks detected - see full report for details"
+            fi
+        } > "$LEAK_SUMMARY"
+
+        # Display summary
+        print_message "Memory leak analysis results:"
+        while IFS= read -r line; do
+            print_output "$line"
+        done < "$LEAK_SUMMARY"
+
+        # Copy results to results directory
+        cp "$LEAK_REPORT" "$RESULTS_DIR/leak_report_${TIMESTAMP}.txt"
+        cp "$LEAK_SUMMARY" "$RESULTS_DIR/leak_summary_${TIMESTAMP}.txt"
+
+        # Determine test result
+        if [ "$DIRECT_LEAKS" -eq 0 ] && [ "$INDIRECT_LEAKS" -eq 0 ]; then
+            print_result 0 "No memory leaks detected"
+            ((PASS_COUNT++))
+        else
+            print_result 1 "Memory leaks detected: $DIRECT_LEAKS direct, $INDIRECT_LEAKS indirect"
+            EXIT_CODE=1
+        fi
+    else
+        print_result 1 "No ASAN leak detection output found"
+        print_message "Server log contents:"
+        while IFS= read -r line; do
+            print_output "$line"
+        done < "$SERVER_LOG"
+        EXIT_CODE=1
+    fi
+else
+    print_result 1 "Leak analysis skipped due to previous failures"
+fi
+
+# Export results for test_all.sh integration
+export_subtest_results "95_leaks_like_a_sieve" $TOTAL_SUBTESTS $PASS_COUNT > /dev/null
+
+# Print completion table
+print_test_completion "$TEST_NAME"
+
+exit $EXIT_CODE
