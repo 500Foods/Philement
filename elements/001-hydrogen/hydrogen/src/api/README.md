@@ -138,4 +138,4 @@ The Hydrogen API currently does not implement explicit versioning. All endpoints
 
 ## Tests
 
-- The [test_65_system_endpoints.sh](/tests/test_65_system_endpoints.sh) script for system endpoints
+- The [test_32_system_endpoints.sh](/tests/test_32_system_endpoints.sh) script for system endpoints

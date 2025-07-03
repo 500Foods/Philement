@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Test 50: Hydrogen Crash Handler Test
+# Test 50: Crash Handler
 # Tests that the crash handler correctly generates and formats core dumps
 #
 # VERSION HISTORY
@@ -19,7 +19,7 @@ source "$SCRIPT_DIR/lib/framework.sh"
 source "$SCRIPT_DIR/lib/lifecycle.sh"
 
 # Test configuration
-TEST_NAME="Hydrogen Crash Handler Test"
+TEST_NAME="Crash Handler"
 SCRIPT_VERSION="3.0.0"
 EXIT_CODE=0
 TOTAL_SUBTESTS=0  # Will be calculated dynamically based on builds found
@@ -618,7 +618,9 @@ done
 print_message "Summary: $successful_builds/${#BUILDS[@]} builds passed all crash handler tests"
 
 # Export results for test_all.sh integration
-export_subtest_results "50_crash_handler" $TOTAL_SUBTESTS $PASS_COUNT > /dev/null
+# Derive test name from script filename for consistency with test_00_all.sh
+TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
+export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "$TOTAL_SUBTESTS" "$PASS_COUNT" > /dev/null
 
 # Print completion table
 print_test_completion "$TEST_NAME"

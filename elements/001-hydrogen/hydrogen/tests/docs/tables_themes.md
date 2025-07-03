@@ -37,8 +37,5 @@ To use the theme management functions from this library in a test script:
 
 ## Related Documentation
 
-- [LIBRARIES.md](LIBRARIES.md) - Table of Contents for all library documentation.
-- [TESTS.md](TESTS.md) - Table of Contents for all test script documentation.
-- [Migration Plan](Migration_Plan.md) - Overview of the test suite overhaul strategy.
 - [README.md](../README.md) - Main documentation for the Hydrogen test suite.
-- [Script](../lib/tables_themes.sh) - Link to the library script for navigation on GitHub.
+- [LIBRARIES.md](LIBRARIES.md) - Table of Contents for all library documentation.

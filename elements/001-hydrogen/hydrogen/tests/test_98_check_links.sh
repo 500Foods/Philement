@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Test 98: Hydrogen Markdown Links Check Test
+# Test: Markdown Links Check
 # Runs github-sitemap.sh to check markdown links and evaluates results with subtests
 #
 # VERSION HISTORY
@@ -17,7 +17,7 @@ source "$SCRIPT_DIR/lib/file_utils.sh"
 source "$SCRIPT_DIR/lib/framework.sh"
 
 # Test configuration
-TEST_NAME="Markdown Links Check Test"
+TEST_NAME="Markdown Links Check"
 SCRIPT_VERSION="2.0.0"
 EXIT_CODE=0
 TOTAL_SUBTESTS=4
@@ -191,7 +191,9 @@ print_output "Orphaned files: $ORPHANED_FILES_COUNT"
 print_output "Detailed report saved to: $MARKDOWN_RESULT_LOG"
 
 # Export results for test_all.sh integration
-export_subtest_results "98_check_links" $TOTAL_SUBTESTS $PASS_COUNT > /dev/null
+# Derive test name from script filename for consistency with test_00_all.sh
+TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
+export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "$TOTAL_SUBTESTS" "$PASS_COUNT" > /dev/null
 
 # Print completion table
 print_test_completion "$TEST_NAME"

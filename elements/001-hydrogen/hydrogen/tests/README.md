@@ -563,8 +563,50 @@ The `test_00_all.sh` script will automatically discover and run any script named
 
 See the [Testing Documentation](../docs/testing.md) for more information about the Hydrogen testing approach.
 
-## Related Documentation
+## Test Documentation
 
-- [Libraries Documentation](docs/LIBRARIES.md) - Table of Contents for modular library scripts in the 'lib/' directory.
-- [Migration Plan](docs/Migration_Plan.md) - Strategy and tracking for the test suite overhaul and modularization process.
-- [Test Scripts Documentation](docs/TESTS.md) - Table of Contents for all test script documentation.
+The following test documentation files are available in the `docs/` directory:
+
+### Test Script Documentation
+
+- [test_00_all.md](docs/test_00_all.md) - Test orchestration and execution framework
+- [test_10_compilation.md](docs/test_10_compilation.md) - Compilation and build verification tests
+- [test_12_env_payload.md](docs/test_12_env_payload.md) - Environment payload testing
+- [test_14_env_variables.md](docs/test_14_env_variables.md) - Environment variable validation
+- [test_16_library_dependencies.md](docs/test_16_library_dependencies.md) - Library dependency verification
+- [test_18_json_error_handling.md](docs/test_18_json_error_handling.md) - JSON error handling tests
+- [test_20_shutdown.md](docs/test_20_shutdown.md) - Shutdown sequence testing
+- [test_22_startup_shutdown.md](docs/test_22_startup_shutdown.md) - Startup and shutdown lifecycle tests
+- [test_24_signals.md](docs/test_24_signals.md) - Signal handling tests
+- [test_26_crash_handler.md](docs/test_26_crash_handler.md) - Crash handling and recovery tests
+- [test_28_socket_rebind.md](docs/test_28_socket_rebind.md) - Socket rebinding tests
+- [test_30_api_prefixes.md](docs/test_30_api_prefixes.md) - API prefix configuration tests
+- [test_32_system_endpoints.md](docs/test_32_system_endpoints.md) - System endpoint functionality tests
+- [test_34_swagger.md](docs/test_34_swagger.md) - Swagger documentation tests
+- [test_90_unity.md](docs/test_90_unity.md) - Unity testing framework integration
+- [test_96_leaks_like_a_sieve.md](docs/test_96_leaks_like_a_sieve.md) - Memory leak detection tests
+- [test_98_check_links.md](docs/test_98_check_links.md) - Link validation tests
+- [test_99_codebase.md](docs/test_99_codebase.md) - Codebase quality and analysis tests
+
+### Framework and Utility Documentation
+
+- [framework.md](docs/framework.md) - Testing framework overview and architecture
+- [lifecycle.md](docs/lifecycle.md) - Test lifecycle management
+- [log_output.md](docs/log_output.md) - Log output formatting and analysis
+- [env_utils.md](docs/env_utils.md) - Environment utility functions
+- [file_utils.md](docs/file_utils.md) - File utility functions
+- [network_utils.md](docs/network_utils.md) - Network utility functions
+
+### Table System Documentation
+
+- [tables.md](docs/tables.md) - Table system overview
+- [tables_config.md](docs/tables_config.md) - Table configuration
+- [tables_data.md](docs/tables_data.md) - Table data management
+- [tables_datatypes.md](docs/tables_datatypes.md) - Table data types
+- [tables_render.md](docs/tables_render.md) - Table rendering
+- [tables_themes.md](docs/tables_themes.md) - Table themes and styling
+
+### Project Documentation
+
+- [LIBRARIES.md](docs/LIBRARIES.md) - Table of Contents for modular library scripts in the 'lib/' directory
+- [github-sitemap.md](docs/github-sitemap.md) - GitHub repository sitemap

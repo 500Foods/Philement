@@ -1,9 +1,9 @@
 #!/bin/bash
 #
-# Test 10: Hydrogen Compilation Test
-# Tests compilation of the Hydrogen project using CMake
+# Test 10: Compilation
+# Tests compilation of the project using CMake
 #
-# This test verifies that the Hydrogen project can be compiled successfully
+# This test verifies that the project can be compiled successfully
 # using the CMake build system with various configurations.
 #
 # VERSION HISTORY
@@ -20,7 +20,7 @@ source "$SCRIPT_DIR/lib/file_utils.sh"
 source "$SCRIPT_DIR/lib/framework.sh"
 
 # Test configuration
-TEST_NAME="Hydrogen Compilation Test"
+TEST_NAME="Compilation"
 SCRIPT_VERSION="2.0.0"
 EXIT_CODE=0
 TOTAL_SUBTESTS=13
@@ -250,7 +250,9 @@ fi
 evaluate_test_result_silent "Verify examples executables" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
 
 # Export results for test_all.sh integration
-export_subtest_results "10_compilation" $TOTAL_SUBTESTS $PASS_COUNT
+# Derive test name from script filename for consistency with test_00_all.sh
+TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
+export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "$TOTAL_SUBTESTS" "$PASS_COUNT" > /dev/null
 
 # Print completion table
 print_test_completion "$TEST_NAME"
