@@ -8,6 +8,7 @@
 # - Multi-language linting validation
 #
 # VERSION HISTORY
+# 3.1.0 - 2025-07-03 - Added dynamic core detection and parallelization for cppcheck and shellcheck
 # 3.0.0 - 2025-07-02 - Migrated to use lib/ scripts, following established test pattern
 # 2.0.1 - 2025-07-01 - Updated to use CMake cleanish target instead of Makefile discovery and cleaning
 # 2.0.0 - 2025-06-17 - Major refactoring: improved modularity, reduced script size, enhanced comments
@@ -26,7 +27,7 @@ source "$SCRIPT_DIR/lib/cloc.sh"
 
 # Test configuration
 TEST_NAME="Static Codebase Analysis"
-SCRIPT_VERSION="3.0.0"
+SCRIPT_VERSION="3.1.0"
 EXIT_CODE=0
 TOTAL_SUBTESTS=10
 PASS_COUNT=0
@@ -36,8 +37,14 @@ TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
 set_test_number "$TEST_NUMBER"
 reset_subtest_counter
 
+# Detect available cores for optimal parallelization
+CORES=$(nproc 2>/dev/null || echo 1)
+
 # Print beautiful test header
 print_test_header "$TEST_NAME" "$SCRIPT_VERSION"
+
+# Display core detection info
+print_message "Detected $CORES CPU cores for parallel processing"
 
 # Set up results directory
 RESULTS_DIR="$SCRIPT_DIR/results"
@@ -376,7 +383,7 @@ run_cppcheck() {
     if [ ${#files[@]} -gt 0 ]; then
         # Don't use print_message here as it will be captured in the output
         # The calling function will report the file count
-        cppcheck -j24 --quiet "${cppcheck_args[@]}" "${files[@]}" 2>&1
+        cppcheck -j"$CORES" --quiet "${cppcheck_args[@]}" "${files[@]}" 2>&1
     else
         # Return empty output if no files to check
         echo ""
@@ -533,7 +540,19 @@ if command -v shellcheck >/dev/null 2>&1; then
         
         # Check non-test shell scripts from project root
         if [ ${#OTHER_SHELL_FILES[@]} -gt 0 ]; then
-            shellcheck -x -f gcc "${OTHER_SHELL_FILES[@]}" >> "$TEMP_OUTPUT" 2>&1 || true
+            if [ "$CORES" -gt 1 ] && [ ${#OTHER_SHELL_FILES[@]} -gt 2 ]; then
+                # Use parallel processing with smaller batches for better load balancing
+                # Process 1-2 files per job to maximize CPU utilization
+                batch_size=1
+                if [ ${#OTHER_SHELL_FILES[@]} -gt "$((CORES * 2))" ]; then
+                    batch_size=2
+                fi
+                printf '%s\n' "${OTHER_SHELL_FILES[@]}" | \
+                xargs -n "$batch_size" -P "$CORES" shellcheck -x -f gcc >> "$TEMP_OUTPUT" 2>&1 || true
+            else
+                # Use single shellcheck call for small file counts or single core
+                shellcheck -x -f gcc "${OTHER_SHELL_FILES[@]}" >> "$TEMP_OUTPUT" 2>&1 || true
+            fi
         fi
         
         # Check test shell scripts from tests directory
@@ -545,7 +564,19 @@ if command -v shellcheck >/dev/null 2>&1; then
             done
             
             # Run shellcheck from tests directory for proper path resolution
-            (cd tests && shellcheck -x -f gcc "${TEST_FILES_RELATIVE[@]}") >> "$TEMP_OUTPUT" 2>&1 || true
+            if [ "$CORES" -gt 1 ] && [ ${#TEST_FILES_RELATIVE[@]} -gt 2 ]; then
+                # Use parallel processing with smaller batches for better load balancing
+                # Process 1-2 files per job to maximize CPU utilization
+                test_batch_size=1
+                if [ ${#TEST_FILES_RELATIVE[@]} -gt "$((CORES * 2))" ]; then
+                    test_batch_size=2
+                fi
+                (cd tests && printf '%s\n' "${TEST_FILES_RELATIVE[@]}" | \
+                 xargs -n "$test_batch_size" -P "$CORES" shellcheck -x -f gcc) >> "$TEMP_OUTPUT" 2>&1 || true
+            else
+                # Use single shellcheck call for small file counts or single core
+                (cd tests && shellcheck -x -f gcc "${TEST_FILES_RELATIVE[@]}") >> "$TEMP_OUTPUT" 2>&1 || true
+            fi
         fi
         
         # Filter output to show clean relative paths
