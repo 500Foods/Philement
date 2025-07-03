@@ -1,14 +1,9 @@
 #!/bin/bash
 #
-# About this Script
-#
-# Socket Rebinding Test
+# Test: Socket Rebinding
 # Tests that the SO_REUSEADDR socket option allows immediate rebinding after shutdown
 # with active HTTP connections that create TIME_WAIT sockets
 #
-NAME_SCRIPT="Socket Rebinding Test"
-VERS_SCRIPT="2.0.0"
-
 # VERSION HISTORY
 # 4.0.0 - 2025-07-02 - Migrated to use lib/ scripts, following established patterns from other migrated tests
 # 3.0.0 - 2025-06-30 - Enhanced to make actual HTTP requests, creating proper TIME_WAIT conditions for realistic testing
@@ -27,7 +22,7 @@ source "$SCRIPT_DIR/lib/lifecycle.sh"
 source "$SCRIPT_DIR/lib/network_utils.sh"
 
 # Re-set our script name after sourcing libraries (they may override NAME_SCRIPT)
-NAME_SCRIPT="Socket Rebinding Test"
+NAME_SCRIPT="Socket Rebinding"
 VERS_SCRIPT="2.0.0"
 
 # Auto-extract test number and set up environment
@@ -250,8 +245,10 @@ if [ -n "$SECOND_PID" ] && [ "$SECOND_PID" != "0" ]; then
     fi
 fi
 
-# Export subtest results for test_all.sh
-export_subtest_results "55_socket_rebind" $TOTAL_SUBTESTS $PASS_COUNT > /dev/null
+# Export results for test_all.sh integration
+# Derive test name from script filename for consistency with test_00_all.sh
+TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
+export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "$TOTAL_SUBTESTS" "$PASS_COUNT" > /dev/null
 
 # Test completion - no additional PASS/FAIL result needed here
 

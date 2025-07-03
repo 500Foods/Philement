@@ -1,8 +1,6 @@
 #!/bin/bash
 #
-# About this Script
-#
-# Hydrogen API Prefix Test (Immediate Restart)
+# Test: API Prefix
 # Tests the API endpoints with different API prefix configurations using immediate restart approach:
 # - Default "/api" prefix using standard hydrogen_test_api.json
 # - Custom "/myapi" prefix using hydrogen_test_api_prefix.json
@@ -112,7 +110,7 @@ print_test_header "$NAME_SCRIPT" "$VERS_SCRIPT"
 
 # Subtest 1: Find Hydrogen binary
 next_subtest
-print_subtest "Find Hydrogen Binary"
+print_subtest "Locate Hydrogen Binary"
 if HYDROGEN_BIN=$(find_hydrogen_binary "$HYDROGEN_DIR"); then
     print_result 0 "Hydrogen binary found: $(basename "$HYDROGEN_BIN")"
     ((PASS_COUNT++))
@@ -326,10 +324,14 @@ else
     print_message "Tests failed, preserving log files for analysis in $RESULTS_DIR/"
 fi
 
-# Export subtest results for test_all.sh
-export_subtest_results "60_api_prefixes" $TOTAL_SUBTESTS $PASS_COUNT
+# Export results for test_all.sh integration
+# Derive test name from script filename for consistency with test_00_all.sh
+TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
+export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "$TOTAL_SUBTESTS" "$PASS_COUNT" > /dev/null
 
 # Print test completion summary
 print_test_completion "$NAME_SCRIPT"
+
+end_test "$FINAL_RESULT" "$TOTAL_SUBTESTS" "$PASS_COUNT" > /dev/null
 
 exit $FINAL_RESULT

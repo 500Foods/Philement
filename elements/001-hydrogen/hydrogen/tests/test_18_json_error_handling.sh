@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# Test 40: Hydrogen JSON Error Handling Test
-# Tests if the Hydrogen application correctly handles JSON syntax errors in configuration files
+# Test 40: JSON Error Handling
+# Tests if the application correctly handles JSON syntax errors in configuration files
 # and provides meaningful error messages with position information
 #
 # VERSION HISTORY
@@ -20,7 +20,7 @@ source "$SCRIPT_DIR/lib/framework.sh"
 source "$SCRIPT_DIR/lib/lifecycle.sh"
 
 # Test configuration
-TEST_NAME="Hydrogen JSON Error Handling Test"
+TEST_NAME="JSON Error Handling"
 SCRIPT_VERSION="3.0.0"
 EXIT_CODE=0
 TOTAL_SUBTESTS=4
@@ -49,7 +49,7 @@ fi
 
 # Validate Hydrogen Binary
 next_subtest
-print_subtest "Validate Hydrogen Binary"
+print_subtest "Locate Hydrogen Binary"
 HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 if HYDROGEN_BIN=$(find_hydrogen_binary "$HYDROGEN_DIR"); then
     print_message "Using Hydrogen binary: $HYDROGEN_BIN"
@@ -119,7 +119,9 @@ print_message "Full error output saved to: $(convert_to_relative_path "$RESULTS_
 rm -f "$ERROR_OUTPUT"
 
 # Export results for test_all.sh integration
-export_subtest_results "40_json_error_handling" $TOTAL_SUBTESTS $PASS_COUNT > /dev/null
+# Derive test name from script filename for consistency with test_00_all.sh
+TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
+export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "$TOTAL_SUBTESTS" "$PASS_COUNT" > /dev/null
 
 # Print completion table
 print_test_completion "$TEST_NAME"

@@ -472,18 +472,20 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_00_all.sh](tests/test_00_all.sh) - Master test runner
 - [tests/test_10_compilation.sh](tests/test_10_compilation.sh) - Compilation tests
 - [tests/test_12_env_payload.sh](tests/test_12_env_payload.sh) - Environment and payload tests
-- [tests/test_15_startup_shutdown.sh](tests/test_15_startup_shutdown.sh) - Startup/shutdown tests
+- [tests/test_14_env_variables.sh](tests/test_14_env_variables.sh) - Environment variable tests
+- [tests/test_16_library_dependencies.sh](tests/test_16_library_dependencies.sh) - Library dependency tests
+- [tests/test_18_json_error_handling.sh](tests/test_18_json_error_handling.sh) - JSON error handling tests
 - [tests/test_20_shutdown.sh](tests/test_20_shutdown.sh) - Shutdown-specific tests
-- [tests/test_25_library_dependencies.sh](tests/test_25_library_dependencies.sh) - Library dependency tests
-- [tests/test_35_env_variables.sh](tests/test_35_env_variables.sh) - Environment variable tests
-- [tests/test_40_json_error_handling.sh](tests/test_40_json_error_handling.sh) - JSON error handling tests
-- [tests/test_45_signals.sh](tests/test_45_signals.sh) - Signal handling tests
-- [tests/test_50_crash_handler.sh](tests/test_50_crash_handler.sh) - Crash handler tests
-- [tests/test_55_socket_rebind.sh](tests/test_55_socket_rebind.sh) - Socket rebinding tests
-- [tests/test_60_api_prefixes.sh](tests/test_60_api_prefixes.sh) - API prefix tests
-- [tests/test_65_system_endpoints.sh](tests/test_65_system_endpoints.sh) - System endpoint tests
-- [tests/test_70_swagger.sh](tests/test_70_swagger.sh) - Swagger functionality tests
-- [tests/test_95_leaks_like_a_sieve.sh](tests/test_95_leaks_like_a_sieve.sh) - Memory leak tests
+- [tests/test_22_startup_shutdown.sh](tests/test_22_startup_shutdown.sh) - Startup/shutdown tests
+- [tests/test_24_signals.sh](tests/test_24_signals.sh) - Signal handling tests
+- [tests/test_26_crash_handler.sh](tests/test_26_crash_handler.sh) - Crash handler tests
+- [tests/test_28_socket_rebind.sh](tests/test_28_socket_rebind.sh) - Socket rebinding tests
+- [tests/test_30_api_prefixes.sh](tests/test_30_api_prefixes.sh) - API prefix tests
+- [tests/test_32_system_endpoints.sh](tests/test_32_system_endpoints.sh) - System endpoint tests
+- [tests/test_34_swagger.sh](tests/test_34_swagger.sh) - Swagger functionality tests
+- [tests/test_90_unity.sh](tests/test_90_unity.sh) - Unity framework tests
+- [tests/test_96_leaks_like_a_sieve.sh](tests/test_96_leaks_like_a_sieve.sh) - Memory leak tests
+- [tests/test_98_check_links.sh](tests/test_98_check_links.sh) - Link validation tests
 - [tests/test_99_codebase.sh](tests/test_99_codebase.sh) - Codebase analysis tests
 
 </details>
@@ -512,6 +514,15 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 <summary><b>Test Libraries</b></summary>
 
 - [tests/lib/](tests/lib/) - Test library functions
+  - [cloc.sh](tests/lib/cloc.sh) - Code line counting utilities
+  - [env_utils.sh](tests/lib/env_utils.sh) - Environment variable utilities
+  - [file_utils.sh](tests/lib/file_utils.sh) - File manipulation utilities
+  - [framework.sh](tests/lib/framework.sh) - Core testing framework
+  - [github-sitemap.sh](tests/lib/github-sitemap.sh) - GitHub sitemap utilities
+  - [lifecycle.sh](tests/lib/lifecycle.sh) - Test lifecycle management
+  - [log_output.sh](tests/lib/log_output.sh) - Log output formatting
+  - [network_utils.sh](tests/lib/network_utils.sh) - Network testing utilities
+  - [tables.sh](tests/lib/tables.sh) - Table utilities main module
   - [tables_config.sh](tests/lib/tables_config.sh) - Table configuration utilities
   - [tables_data.sh](tests/lib/tables_data.sh) - Table data handling
   - [tables_datatypes.sh](tests/lib/tables_datatypes.sh) - Table data type utilities

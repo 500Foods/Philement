@@ -30,17 +30,7 @@ These libraries were created as part of the test suite migration to replace supp
 - **[Lifecycle Management Library](lifecycle.md)** - Documentation for `lifecycle.sh`, providing functions for managing the lifecycle of the Hydrogen application during testing. [Script](../lib/lifecycle.sh)
 - **[Network Utilities Library](network_utils.md)** - Documentation for `network_utils.sh`, providing network-related functions including TIME_WAIT socket management for test scripts. [Script](../lib/network_utils.sh)
 
-## Future Libraries
-
-As part of the test suite overhaul, additional libraries will be created by modularizing functionalities from remaining 'support_*.sh' scripts. Documentation for these new libraries will be added here as they are developed.
-
-- *Placeholder for future libraries to be added during migration.*
-
 ## Related Documentation
 
-.
-
-- [Migration Plan](Migration_Plan.md) - Overview of the test suite overhaul strategy, including the process for creating and documenting new libraries.
-- [TESTS.md](TESTS.md) - Table of Contents for all test script documentation.
 - [README.md](../README.md) - Main documentation for the Hydrogen test suite.
 - [Tables Core Library](tables.md) - Documentation for the main table rendering library.

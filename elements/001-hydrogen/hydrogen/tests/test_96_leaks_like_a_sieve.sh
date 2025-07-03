@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Test 95: Hydrogen Memory Leak Detection Test
+# Test 95: Memory Leak Detection
 # Uses Valgrind to detect memory leaks in the Hydrogen application
 #
 # VERSION HISTORY
@@ -19,7 +19,7 @@ source "$SCRIPT_DIR/lib/framework.sh"
 source "$SCRIPT_DIR/lib/lifecycle.sh"
 
 # Test configuration
-TEST_NAME="Memory Leak Detection Test"
+TEST_NAME="Memory Leak Detection"
 SCRIPT_VERSION="3.0.0"
 EXIT_CODE=0
 TOTAL_SUBTESTS=4
@@ -259,7 +259,9 @@ else
 fi
 
 # Export results for test_all.sh integration
-export_subtest_results "95_leaks_like_a_sieve" $TOTAL_SUBTESTS $PASS_COUNT > /dev/null
+# Derive test name from script filename for consistency with test_00_all.sh
+TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
+export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "$TOTAL_SUBTESTS" "$PASS_COUNT" > /dev/null
 
 # Print completion table
 print_test_completion "$TEST_NAME"

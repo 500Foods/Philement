@@ -281,5 +281,4 @@ Additional functions were added from test_10_compilation.sh:
 
 - [Log Output Library](log_output.md) - Output formatting and logging
 - [Test Framework Library](framework.md) - Test lifecycle management
-- [Migration Plan](Migration_Plan.md) - Overall migration strategy
 - [LIBRARIES.md](LIBRARIES.md) - Library index

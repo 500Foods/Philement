@@ -485,14 +485,12 @@ EOF
     local tables_script="$script_dir/tables.sh"
     if [[ -f "$tables_script" ]]; then
         bash "$tables_script" "$layout_json" "$data_json" 2>/dev/null
-        echo ""
     else
         # Fallback to manual formatting if tables.sh not found
         echo -e "${BLUE}${BOLD}Test Completion Summary${NC}"
         echo -e "${BLUE}Test: ${CURRENT_TEST_NUMBER}-000 $test_name${NC}"
         echo -e "${BLUE}Subtests: $total_subtests, Passed: $TEST_PASSED_COUNT, Failed: $TEST_FAILED_COUNT${NC}"
         echo -e "${BLUE}Elapsed: ${elapsed_time}s${NC}"
-        echo ""
     fi
     
     # Clean up temporary files
@@ -516,7 +514,6 @@ print_test_summary() {
         echo -e "${RED}${FAIL_ICON} OVERALL RESULT: SOME TESTS FAILED${NC}"
     fi
     echo -e "${BLUE}${BOLD}───────────────────────────────────────────────────────────────────────────────${NC}"
-    echo ""
     # Suppress ShellCheck warnings for unused parameters
     # shellcheck disable=SC2034
     local dummy_total=$total

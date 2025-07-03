@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# Test 12: Hydrogen Payload Environment Variables Test
-# Tests environment variable handling for the Hydrogen payload system
+# Test 12: Payload Environment Variables
+# Tests environment variable handling for the payload system
 # Validates that required payload environment variables are present and valid
 #
 # VERSION HISTORY
@@ -19,7 +19,7 @@ source "$SCRIPT_DIR/lib/framework.sh"
 source "$SCRIPT_DIR/lib/env_utils.sh"
 
 # Test configuration
-TEST_NAME="Hydrogen Payload Environment Variables Test"
+TEST_NAME="Payload Environment Variables"
 SCRIPT_VERSION="3.0.0"
 EXIT_CODE=0
 TOTAL_SUBTESTS=2
@@ -101,8 +101,10 @@ test_rsa_key_format() {
 
 test_rsa_key_format
 
-# Export results for test_all.sh integration, suppressing output
-export_subtest_results "12_env_payload" $TOTAL_SUBTESTS $PASS_COUNT > /dev/null
+# Export results for test_all.sh integration
+# Derive test name from script filename for consistency with test_00_all.sh
+TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
+export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "$TOTAL_SUBTESTS" "$PASS_COUNT" > /dev/null
 
 # Print completion table
 print_test_completion "$TEST_NAME"
