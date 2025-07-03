@@ -73,7 +73,7 @@ Hydrogen is currently designed for technical users who:
 
 ## Latest Test Results
 
-Generated on: Wed Jul  2 14:47:17 PDT 2025
+Generated on: Wed Jul  2 18:15:14 PDT 2025
 
 ### Summary
 
@@ -83,52 +83,60 @@ Generated on: Wed Jul  2 14:47:17 PDT 2025
 | Passed | 17 |
 | Failed | 0 |
 | Skipped | 0 |
-| Total Subtests | 159 |
-| Passed Subtests | 159 |
+| Total Subtests | 163 |
+| Passed Subtests | 163 |
 | Failed Subtests | 0 |
-| Runtime | 00:01:53.537 |
-| Execution | 00:01:52.245 |
+| Elapsed Time | 00:01:33.618 |
+| Running Time | 00:01:33.090 |
 
 ### Individual Test Results
 
-| Status | Time | Test | Subs | Pass | Summary |
-| ------ | ---- | ---- | ---- | ---- | ------- |
-| ✅ | 00:00:09.737 | 10_compilation | 13 | 13 | Test completed without errors |
-| ✅ | 00:00:00.901 | 12_env_payload | 2 | 2 | Test completed without errors |
-| ✅ | 00:00:01.444 | 15_startup_shutdown | 9 | 9 | Test completed without errors |
-| ✅ | 00:00:01.138 | 20_shutdown | 6 | 6 | Test completed without errors |
-| ✅ | 00:00:01.219 | 25_library_dependencies | 13 | 13 | Test completed without errors |
-| ✅ | 00:00:01.254 | 30_unity_tests | 3 | 3 | Test completed without errors |
-| ✅ | 00:00:02.075 | 35_env_variables | 16 | 16 | Test completed without errors |
-| ✅ | 00:00:01.124 | 40_json_error_handling | 4 | 4 | Test completed without errors |
-| ✅ | 00:00:02.851 | 45_signals | 9 | 9 | Test completed without errors |
-| ✅ | 00:00:03.858 | 50_crash_handler | 22 | 22 | Test completed without errors |
-| ✅ | 00:00:02.659 | 55_socket_rebind | 7 | 7 | Test completed without errors |
-| ✅ | 00:00:05.330 | 60_api_prefixes | 10 | 10 | Test completed without errors |
-| ✅ | 00:00:06.004 | 65_system_endpoints | 17 | 17 | Test completed without errors |
-| ✅ | 00:00:06.006 | 70_swagger | 10 | 10 | Test completed without errors |
-| ✅ | 00:00:02.907 | 95_leaks_like_a_sieve | 2 | 2 | Test completed without errors |
-| ✅ | 00:00:21.745 | 98_check_links | 4 | 4 | Test completed without errors |
-| ✅ | 00:00:41.986 | 99_codebase | 12 | 12 | Test completed without errors |
+| Status | Time | Test | Tests | Pass | Fail | Summary |
+| ------ | ---- | ---- | ----- | ---- | ---- | ------- |
+| ✅ | 00:00:09.757 | 10_compilation | 13 | 13 | 0 | Test completed without errors |
+| ✅ | 00:00:00.931 | 12_env_payload | 2 | 2 | 0 | Test completed without errors |
+| ✅ | 00:00:01.485 | 15_startup_shutdown | 9 | 9 | 0 | Test completed without errors |
+| ✅ | 00:00:01.207 | 20_shutdown | 6 | 6 | 0 | Test completed without errors |
+| ✅ | 00:00:01.249 | 25_library_dependencies | 13 | 13 | 0 | Test completed without errors |
+| ✅ | 00:00:01.294 | 30_unity_tests | 3 | 3 | 0 | Test completed without errors |
+| ✅ | 00:00:02.090 | 35_env_variables | 16 | 16 | 0 | Test completed without errors |
+| ✅ | 00:00:01.101 | 40_json_error_handling | 4 | 4 | 0 | Test completed without errors |
+| ✅ | 00:00:02.862 | 45_signals | 9 | 9 | 0 | Test completed without errors |
+| ✅ | 00:00:03.891 | 50_crash_handler | 22 | 22 | 0 | Test completed without errors |
+| ✅ | 00:00:02.629 | 55_socket_rebind | 7 | 7 | 0 | Test completed without errors |
+| ✅ | 00:00:02.262 | 60_api_prefixes | 10 | 10 | 0 | Test completed without errors |
+| ✅ | 00:00:02.168 | 65_system_endpoints | 18 | 18 | 0 | Test completed without errors |
+| ✅ | 00:00:02.133 | 70_swagger | 13 | 13 | 0 | Test completed without errors |
+| ✅ | 00:00:02.079 | 95_leaks_like_a_sieve | 4 | 4 | 0 | Test completed without errors |
+| ✅ | 00:00:23.554 | 98_check_links | 4 | 4 | 0 | Test completed without errors |
+| ✅ | 00:00:32.398 | 99_codebase | 10 | 10 | 0 | Test completed without errors |
 
 ## Repository Information
 
-Generated via cloc: Wed Jul  2 14:47:17 PDT 2025
+Generated via cloc: Wed Jul  2 18:15:14 PDT 2025
 
 ```cloc
-github.com/AlDanial/cloc v 2.02  T=0.35 s (1423.5 files/s, 240760.2 lines/s)
+github.com/AlDanial/cloc v 2.02  T=0.96 s (1288.2 files/s, 277241.7 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C                              129           4459           5851          19980
-Markdown                       197           5813             48          18726
-Bourne Shell                    51           2215           2420          11499
-JSON                            17              2              0           4701
-C/C++ Header                   105           1098           4275           2678
-HTML                             1             74              0            493
-CMake                            2             84            139            397
-Text                             1             26              0             97
+Text                           559            277              0         147191
+C                              186           6970           6664          34145
+Markdown                       213           6950             48          21516
+Bourne Shell                    41           1625           1774           9110
+JSON                            20              3              0           8394
+C/C++ Header                   124           1433           4844           4491
+Ruby                            16            499            349           3393
+YAML                            22             57            147           1776
+CMake                           22            196            246           1049
+make                             6            128            108            554
+HTML                             2             74              0            494
+Python                           5             59             51            244
+Meson                           10             33             44            144
+ERB                              1              0              0             37
+INI                              1              6              0             21
+TypeScript                       4              0              0              8
 -------------------------------------------------------------------------------
-SUM:                           503          13771          12733          58571
+SUM:                          1232          18310          14275         232567
 -------------------------------------------------------------------------------
 ```

@@ -4,8 +4,8 @@
 # Provides test lifecycle management and result tracking functions
 # Integrates with numbered output system from log_output.sh
 #
-NAME_SCRIPT="Hydrogen Test Framework Library"
-VERS_SCRIPT="2.0.0"
+FRAMEWORK_NAME="Hydrogen Test Framework Library"
+FRAMEWORK_VERSION="2.0.0"
 
 # VERSION HISTORY
 # 2.0.0 - 2025-07-02 - Updated to integrate with numbered output system
@@ -13,7 +13,7 @@ VERS_SCRIPT="2.0.0"
 
 # Function to display script version information
 print_test_framework_version() {
-    echo "=== $NAME_SCRIPT v$VERS_SCRIPT ==="
+    echo "=== $FRAMEWORK_NAME v$FRAMEWORK_VERSION ==="
 }
 
 # Function to start a test run with proper header and numbering
@@ -145,12 +145,7 @@ export_subtest_results() {
     local subtest_file="$results_dir/subtest_${test_name}.txt"
     echo "${total_subtests},${passed_subtests}" > "$subtest_file"
     
-    # Use the new print_message function
-    if command -v print_message >/dev/null 2>&1; then
-        print_message "Exported subtest results: ${passed_subtests} of ${total_subtests} subtests passed to ${subtest_file}"
-    else
-        echo "INFO: Exported subtest results: ${passed_subtests} of ${total_subtests} subtests passed to ${subtest_file}"
-    fi
+    # Export silently - no need to announce this internal operation
     return 0
 }
 
@@ -326,6 +321,86 @@ EOF
     fi
     return 0
 }
+
+# Test suite management functions
+start_test_suite() {
+    local test_name="$1"
+    # Initialize test tracking variables
+    PASSED_TESTS=0
+    FAILED_TESTS=0
+    CURRENT_SUBTEST=0
+    
+    # Print suite header if log_output.sh is available
+    if command -v print_info >/dev/null 2>&1; then
+        print_info "Starting test suite: $test_name"
+    else
+        echo "INFO: Starting test suite: $test_name"
+    fi
+}
+
+end_test_suite() {
+    local total_tests=$((PASSED_TESTS + FAILED_TESTS))
+    
+    if command -v print_info >/dev/null 2>&1; then
+        print_info "Test suite completed"
+        print_info "Total tests: $total_tests, Passed: $PASSED_TESTS, Failed: $FAILED_TESTS"
+    else
+        echo "INFO: Test suite completed"
+        echo "INFO: Total tests: $total_tests, Passed: $PASSED_TESTS, Failed: $FAILED_TESTS"
+    fi
+}
+
+# Test counting functions
+increment_passed_tests() {
+    PASSED_TESTS=$((PASSED_TESTS + 1))
+}
+
+increment_failed_tests() {
+    FAILED_TESTS=$((FAILED_TESTS + 1))
+}
+
+get_passed_tests() {
+    echo "$PASSED_TESTS"
+}
+
+get_failed_tests() {
+    echo "$FAILED_TESTS"
+}
+
+get_total_tests() {
+    echo $((PASSED_TESTS + FAILED_TESTS))
+}
+
+get_exit_code() {
+    if [ "$FAILED_TESTS" -gt 0 ]; then
+        echo 1
+    else
+        echo 0
+    fi
+}
+
+# Subtest management functions
+print_subtest_header() {
+    local subtest_name="$1"
+    CURRENT_SUBTEST=$((CURRENT_SUBTEST + 1))
+    
+    if command -v print_subtest_header >/dev/null 2>&1; then
+        print_subtest_header "$subtest_name"
+    else
+        echo ""
+        echo "--- Subtest $CURRENT_SUBTEST: $subtest_name ---"
+    fi
+}
+
+skip_remaining_subtests() {
+    local reason="$1"
+    if command -v print_warning >/dev/null 2>&1; then
+        print_warning "Skipping remaining subtests: $reason"
+    else
+        echo "WARNING: Skipping remaining subtests: $reason"
+    fi
+}
+
 
 # Legacy compatibility functions (deprecated)
 print_header() {
