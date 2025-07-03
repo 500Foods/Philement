@@ -608,15 +608,15 @@ Debug messages are sent to stderr and include:
 
 The `tst/` directory contains an extensive suite of test files that demonstrate various features and ensure reliability:
 
-- [`tables_test_01_basic.sh`](tst/tables_test_01_basic.sh): Basic functionality tests
-- [`tables_test_02_summary.sh`](tst/tables_test_02_summary.sh): Summary calculation tests
-- [`tables_test_03_wrapping.sh`](tst/tables_test_03_wrapping.sh): Text wrapping functionality tests
-- [`tables_test_04_complex.sh`](tst/tables_test_04_complex.sh): Complex table rendering tests
-- [`tables_test_05_titles.sh`](tst/tables_test_05_titles.sh): Title positioning tests
-- [`tables_test_06_title_positions.sh`](tst/tables_test_06_title_positions.sh): Additional title positioning scenarios
-- [`tables_test_07_footers.sh`](tst/tables_test_07_footers.sh): Footer functionality tests
-- [`tables_test_08_footer_positions.sh`](tst/tables_test_08_footer_positions.sh): Additional footer positioning scenarios
-- [`tables_test_09_showcase.sh`](tst/tables_test_09_showcase.sh): Comprehensive feature showcase
+- [`tables_test_01_basic.sh`](../lib/tables-tests/tables_test_01_basic.sh): Basic functionality tests
+- [`tables_test_02_summary.sh`](../lib/tables-tests/tables_test_02_summary.sh): Summary calculation tests
+- [`tables_test_03_wrapping.sh`](../lib/tables-tests/tables_test_03_wrapping.sh): Text wrapping functionality tests
+- [`tables_test_04_complex.sh`](../lib/tables-tests/tables_test_04_complex.sh): Complex table rendering tests
+- [`tables_test_05_titles.sh`](../lib/tables-tests/tables_test_05_titles.sh): Title positioning tests
+- [`tables_test_06_title_positions.sh`](../lib/tables-tests/tables_test_06_title_positions.sh): Additional title positioning scenarios
+- [`tables_test_07_footers.sh`](../lib/tables-tests/tables_test_07_footers.sh): Footer functionality tests
+- [`tables_test_08_footer_positions.sh`](../lib/tables-tests/tables_test_08_footer_positions.sh): Additional footer positioning scenarios
+- [`tables_test_09_showcase.sh`](../lib/tables-tests/tables_test_09_showcase.sh): Comprehensive feature showcase
 
 ### Creating Test Cases
 

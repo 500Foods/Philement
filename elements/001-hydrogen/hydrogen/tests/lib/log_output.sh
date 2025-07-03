@@ -1,16 +1,34 @@
 #!/bin/bash
 #
-# Hydrogen Test Suite - Log Output Library
+# Test Suite - Log Output Library
 # Provides consistent logging, formatting, and display functions for test scripts
 # ALL output must go through functions in this library - zero exceptions
 #
-LOG_OUTPUT_NAME="Hydrogen Log Output Library"
-LOG_OUTPUT_VERSION="2.0.0"
-
+# OVERVIEW:
+# This library provides a comprehensive logging system for test scripts with:
+# - Consistent color-coded output with icons
+# - Test/subtest numbering and timing
+# - Beautiful table-based headers and completion summaries
+# - Automatic test statistics tracking
+#
+# USAGE:
+# 1. Source this library in your test script
+# 2. Call extract_test_number() and set_test_number() to initialize
+# 3. Use print_* functions for all output
+# 4. Call print_test_completion() at the end
+#
 # VERSION HISTORY
-# 2.1.0 - 2025-07-02 - Added DATA_ICON and updated DATA_COLOR to pale yellow (256-color palette) for test_30_unity_tests.sh
+# 3.0.3 - 2025-07-03 - Applied color consistency to all output types (DATA, EXEC, PASS, FAIL)
+# 3.0.2 - 2025-07-03 - Completely removed legacy functions (print_header, print_info)
+# 3.0.1 - 2025-07-03 - Enhanced documentation, removed unused functions, improved comments
+# 3.0.0 - 2025-07-03 - General overhaul of colors and icons, removed legacy functions, etc.
+# 2.1.0 - 2025-07-02 - Added DATA_ICON and updated DATA_COLOR to pale yellow (256-color palette)
 # 2.0.0 - 2025-07-02 - Complete rewrite with numbered output system
 # 1.0.0 - 2025-07-02 - Initial creation from support_utils.sh migration
+
+#==============================================================================
+# GLOBAL VARIABLES AND CONSTANTS
+#==============================================================================
 
 # Global variables for test/subtest numbering
 CURRENT_TEST_NUMBER=""
@@ -22,27 +40,30 @@ TEST_START_TIME=""
 TEST_PASSED_COUNT=0
 TEST_FAILED_COUNT=0
 
-# Function to display script version information
-print_log_output_version() {
-    echo "=== $LOG_OUTPUT_NAME v$LOG_OUTPUT_VERSION ==="
-}
+# Icon-specific colors for consistent theming
+PASS_COLOR='\033[0;32m'     # Green
+FAIL_COLOR='\033[0;31m'     # Red
+WARN_COLOR='\033[0;33m'     # Yellow
+INFO_COLOR='\033[0;36m'     # Cyan
+DATA_COLOR='\033[38;5;229m' # Pale, soft yellow from 256-color palette
+EXEC_COLOR='\033[0;33m'     # Yellow
+TEST_COLOR='\033[0;34m'     # Blue
 
-# Set up color codes for better readability
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-YELLOW='\033[0;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
+# Other formatting codes
 BOLD='\033[1m'
-DATA_COLOR='\033[38;5;229m' # Pale, soft yellow from 256-color palette for DATA lines
 NC='\033[0m' # No Color
 
-# Icons/symbols for test results
-PASS_ICON="✅"
-FAIL_ICON="✖️"
-WARN_ICON="⚠️"
-INFO_ICON="ℹ️"
-DATA_ICON="▶▶"
+# Rounded rectangle icons with colors matching label themes (double-wide)
+PASS_ICON="${PASS_COLOR}\U2587\U2587${NC}"
+FAIL_ICON="${FAIL_COLOR}\U2587\U2587${NC}"
+WARN_ICON="${WARN_COLOR}\U2587\U2587${NC}"
+INFO_ICON="${INFO_COLOR}\U2587\U2587${NC}"
+DATA_ICON="${DATA_COLOR}\U2587\U2587${NC}"
+EXEC_ICON="${EXEC_COLOR}\U2587\U2587${NC}"
+
+#==============================================================================
+# TEST NUMBERING AND TIMING FUNCTIONS
+#==============================================================================
 
 # Function to set the current test number (e.g., "10" for test_10_compilation.sh)
 set_test_number() {
@@ -128,6 +149,10 @@ format_file_size() {
     echo "$file_size" | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta'
 }
 
+#==============================================================================
+# HEADER AND COMPLETION FUNCTIONS
+#==============================================================================
+
 # Function to print beautiful test header using tables.sh
 print_test_header() {
     local test_name="$1"
@@ -144,10 +169,8 @@ print_test_header() {
     
     # Create the test header content
     local test_id="${CURRENT_TEST_NUMBER}-000"
-    local left_content="$test_id $test_name"
-    local right_content="v$script_version $timestamp"
-    local full_content="$left_content - $right_content"
-    
+
+
     # Create temporary files for tables.sh
     local temp_dir
     temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory" >&2; return 1; }
@@ -201,26 +224,10 @@ EOF
     local tables_script="$script_dir/tables.sh"
     if [[ -f "$tables_script" ]]; then
         bash "$tables_script" "$layout_json" "$data_json" 2>/dev/null
-    else
-        # Fallback to manual formatting if tables.sh not found
-        echo -e "${BLUE}${BOLD}╭──────────────────────────────────────────────────────────────────────────────────────────────────╮${NC}"
-        echo -e "${BLUE}${BOLD}│ ${full_content} │${NC}"
-        echo -e "${BLUE}${BOLD}╰──────────────────────────────────────────────────────────────────────────────────────────────────╯${NC}"
     fi
     
     # Clean up temporary files
     rm -rf "$temp_dir" 2>/dev/null
-}
-
-# Function to print test headers (main test level) - legacy version
-print_test() {
-    local test_name="$1"
-    echo ""
-    echo -e "${BLUE}${BOLD}═══════════════════════════════════════════════════════════════════════════════${NC}"
-    echo -e "${BLUE}${BOLD}TEST ${CURRENT_TEST_NUMBER}: ${test_name}${NC}"
-    echo -e "${BLUE}${BOLD}═══════════════════════════════════════════════════════════════════════════════${NC}"
-    echo -e "${BLUE}Started at: $(date)${NC}"
-    echo ""
 }
 
 # Function to print subtest headers
@@ -228,8 +235,12 @@ print_subtest() {
     local subtest_name="$1"
     local elapsed
     elapsed=$(get_elapsed_time)
-    echo -e "${BLUE}${BOLD}  ${CURRENT_TEST_NUMBER}-${CURRENT_SUBTEST_NUMBER}   ${elapsed}   ${subtest_name}${NC}"
+    echo -e "${TEST_COLOR}${BOLD}  ${CURRENT_TEST_NUMBER}-${CURRENT_SUBTEST_NUMBER}   ${elapsed}   ${subtest_name}${NC}"
 }
+
+#==============================================================================
+# CORE OUTPUT FUNCTIONS
+#==============================================================================
 
 # Function to print commands that will be executed
 print_command() {
@@ -247,7 +258,7 @@ print_command() {
     else
         truncated_cmd="$cmd"
     fi
-    echo -e "  ${prefix}   ${elapsed}   ${YELLOW}➡️  EXEC${NC}   ${truncated_cmd}"
+    echo -e "  ${prefix}   ${elapsed}   ${EXEC_COLOR}${EXEC_ICON} ${EXEC_COLOR}EXEC${NC}   ${EXEC_COLOR}${truncated_cmd}${NC}"
 }
 
 # Function to print command output
@@ -260,7 +271,7 @@ print_output() {
     message=$(echo "$message" | sed -E "s|\/home\/asimard\/Projects\/Philement\/elements\/001-hydrogen\/|hydrogen/|g")
     # Skip output if message is empty or contains only whitespace
     if [[ -n "$message" && ! "$message" =~ ^[[:space:]]*$ ]]; then
-        echo -e "  ${prefix}   ${elapsed}   ${DATA_COLOR}${DATA_ICON} DATA   ${message}${NC}"
+        echo -e "  ${prefix}   ${elapsed}   ${DATA_COLOR}${DATA_ICON} ${DATA_COLOR}DATA${NC}   ${DATA_COLOR}${message}${NC}"
     fi
 }
 
@@ -277,9 +288,9 @@ print_result() {
     record_test_result "$status"
     
     if [ "$status" -eq 0 ]; then
-        echo -e "  ${prefix}   ${elapsed}   ${GREEN}${PASS_ICON} PASS${NC}   ${message}"
+        echo -e "  ${prefix}   ${elapsed}   ${PASS_COLOR}${PASS_ICON} ${PASS_COLOR}PASS${NC}   ${PASS_COLOR}${message}${NC}"
     else
-        echo -e "  ${prefix}   ${elapsed}   ${RED}${FAIL_ICON}  FAIL${NC}   ${message}"
+        echo -e "  ${prefix}   ${elapsed}   ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}FAIL${NC}   ${FAIL_COLOR}${message}${NC}"
     fi
 }
 
@@ -289,7 +300,7 @@ print_warning() {
     prefix=$(get_test_prefix)
     local elapsed
     elapsed=$(get_elapsed_time)
-    echo -e "  ${prefix}   ${elapsed}   ${YELLOW}${WARN_ICON}  WARN${NC}   ${1}"
+    echo -e "  ${prefix}   ${elapsed}   ${WARN_COLOR}${WARN_ICON} ${WARN_COLOR}WARN${NC}   ${1}"
 }
 
 # Function to print error messages
@@ -298,7 +309,7 @@ print_error() {
     prefix=$(get_test_prefix)
     local elapsed
     elapsed=$(get_elapsed_time)
-    echo -e "  ${prefix}   ${elapsed}   ${RED}${FAIL_ICON}  ERROR${NC}   ${1}"
+    echo -e "  ${prefix}   ${elapsed}   ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}ERROR${NC}   ${1}"
 }
 
 # Function to print informational messages
@@ -312,7 +323,7 @@ print_message() {
     if command -v convert_to_relative_path >/dev/null 2>&1; then
         message=$(echo "$message" | sed -E "s|/[[:alnum:]/_-]+/elements/001-hydrogen/hydrogen/|hydrogen/|g")
     fi
-    echo -e "  ${prefix}   ${elapsed}   ${CYAN}${INFO_ICON}  INFO${NC}   ${message}"
+    echo -e "  ${prefix}   ${elapsed}   ${INFO_COLOR}${INFO_ICON} ${INFO_COLOR}INFO${NC}   ${message}"
 }
 
 # Function to print newlines (controlled spacing)
@@ -391,11 +402,6 @@ EOF
     local tables_script="$script_dir/tables.sh"
     if [[ -f "$tables_script" ]]; then
         bash "$tables_script" "$layout_json" "$data_json" 2>/dev/null
-    else
-        # Fallback to manual formatting if tables.sh not found
-        echo -e "${BLUE}${BOLD}╭──────────────────────────────────────────────────────────────────────────────────────────────────╮${NC}"
-        echo -e "${BLUE}${BOLD}│ ${test_id} ${test_name} - v${script_version} ${timestamp} │${NC}"
-        echo -e "${BLUE}${BOLD}╰──────────────────────────────────────────────────────────────────────────────────────────────────╯${NC}"
     fi
     
     # Clean up temporary files
@@ -485,40 +491,10 @@ EOF
     local tables_script="$script_dir/tables.sh"
     if [[ -f "$tables_script" ]]; then
         bash "$tables_script" "$layout_json" "$data_json" 2>/dev/null
-    else
-        # Fallback to manual formatting if tables.sh not found
-        echo -e "${BLUE}${BOLD}Test Completion Summary${NC}"
-        echo -e "${BLUE}Test: ${CURRENT_TEST_NUMBER}-000 $test_name${NC}"
-        echo -e "${BLUE}Subtests: $total_subtests, Passed: $TEST_PASSED_COUNT, Failed: $TEST_FAILED_COUNT${NC}"
-        echo -e "${BLUE}Elapsed: ${elapsed_time}s${NC}"
     fi
     
     # Clean up temporary files
     rm -rf "$temp_dir" 2>/dev/null
-}
-
-# Function to print test summary at the end (legacy version)
-print_test_summary() {
-    local total=$1
-    local passed=$2
-    local failed=$3
-    
-    echo ""
-    echo -e "${BLUE}${BOLD}───────────────────────────────────────────────────────────────────────────────${NC}"
-    echo -e "${BLUE}${BOLD}Test Summary${NC}"
-    echo -e "${BLUE}${BOLD}───────────────────────────────────────────────────────────────────────────────${NC}"
-    echo -e "${BLUE}Completed at: $(date)${NC}"
-    if [ "$failed" -eq 0 ]; then
-        echo -e "${GREEN}${PASS_ICON} OVERALL RESULT: ALL TESTS PASSED${NC}"
-    else
-        echo -e "${RED}${FAIL_ICON} OVERALL RESULT: SOME TESTS FAILED${NC}"
-    fi
-    echo -e "${BLUE}${BOLD}───────────────────────────────────────────────────────────────────────────────${NC}"
-    # Suppress ShellCheck warnings for unused parameters
-    # shellcheck disable=SC2034
-    local dummy_total=$total
-    # shellcheck disable=SC2034
-    local dummy_passed=$passed
 }
 
 # Function to print individual test items in a summary
@@ -530,19 +506,8 @@ print_test_item() {
     prefix=$(get_test_prefix)
     
     if [ "$status" -eq 0 ]; then
-        echo -e "${prefix} ${GREEN}${PASS_ICON} PASS${NC} ${BOLD}$name${NC} - $details"
+        echo -e "${prefix} ${PASS_COLOR}${PASS_ICON} ${PASS_COLOR}PASS${NC} ${BOLD}$name${NC} - $details"
     else
-        echo -e "${prefix} ${RED}${FAIL_ICON} FAIL${NC} ${BOLD}$name${NC} - $details"
+        echo -e "${prefix} ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}FAIL${NC} ${BOLD}$name${NC} - $details"
     fi
-}
-
-# Legacy compatibility functions (deprecated - use specific functions above)
-print_header() {
-    print_warning "print_header() is deprecated - use print_test() or print_subtest()"
-    print_test "$1"
-}
-
-print_info() {
-    print_warning "print_info() is deprecated - use print_message()"
-    print_message "$1"
 }
