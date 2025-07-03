@@ -421,7 +421,7 @@ print_header "$TITLE_TEST_XX v$VERSION_TEST_XX" | tee "$SUMMARY_LOG"
 
 ### Development Workflow
 
-1. **Start with Template**: Copy `test_template.sh` as your starting point
+1. **Start with Template**: Copy another scirpt sas your starting point
 2. **Add Headers**: Include version, title, and change history sections
 3. **Implement Logic**: Write your test functionality
 4. **Validate**: Run shellcheck to ensure compliance
@@ -449,16 +449,12 @@ The testing system follows a logical sequence:
 3. **API Testing**: Test system endpoints to verify API functionality
 4. **Specialized Testing**: Finally perform any feature-specific tests
 
-### Creating New Tests
+### Getting Started
 
-The recommended approach to create new tests is to use the provided test_template.sh. This template includes examples of common test patterns and best practices derived from existing tests.
-
-#### Getting Started
-
-1. Copy the template file to create a new test:
+1. Copy an existing test file to create a new test:
 
    ```bash
-   cp test_template.sh test_your_feature.sh
+   cp test_15_startup_shutdown.sh test_your_feature.sh
    chmod +x test_your_feature.sh
    ```
 
@@ -472,61 +468,7 @@ The recommended approach to create new tests is to use the provided test_templat
    - 70-79: UI and interface tests
    - 90-99: Code quality and final checks
 
-#### Template Features
-
-The template provides several pre-built test patterns:
-
-1. **Basic Startup/Shutdown Testing**
-
-   ```bash
-   # Example: Basic server lifecycle test
-   SERVER_PID=$(start_hydrogen_server "$HYDROGEN_BIN" "$CONFIG_FILE" "$LOG_FILE")
-   test_result=$?
-   stop_hydrogen_server $SERVER_PID 10
-   ```
-
-2. **API Endpoint Testing**
-
-   ```bash
-   # Example: Test both GET and POST endpoints
-   test_api_endpoint "/api/system/health" "alive" "GET"
-   test_api_endpoint "/api/system/test" "success" "POST" '{"test":"data"}'
-   ```
-
-3. **Signal Handling**
-
-   ```bash
-   # Example: Test SIGTERM handling
-   test_signal_handling SIGTERM 10
-   ```
-
-4. **Resource Monitoring**
-
-   ```bash
-   # Example: Monitor resource usage
-   test_resource_usage 10  # Monitor for 10 seconds
-   ```
-
-#### Configuration Selection
-
-The template supports different configuration modes:
-
-1. **Minimal Configuration** (hydrogen_test_min.json)
-   - Use for basic functionality tests
-   - Disables optional subsystems
-   - Fastest test execution
-
-2. **Maximal Configuration** (hydrogen_test_max.json)
-   - Use for comprehensive feature testing
-   - Enables all subsystems
-   - Tests full functionality
-
-3. **Custom Configuration**
-   - Create for specific test requirements
-   - Use unique port numbers (see Port Configuration section)
-   - Document any special requirements
-
-#### Best Practices
+### Best Practices
 
 1. **Test Organization**
    - Use clear, descriptive test names
@@ -552,7 +494,7 @@ The template supports different configuration modes:
    - Include example usage
    - Explain configuration requirements
 
-#### Example Usage
+### Example Usage
 
 ```bash
 # Run with minimal configuration
@@ -565,7 +507,7 @@ The template supports different configuration modes:
 ./test_your_feature.sh --skip-cleanup
 ```
 
-#### Common Testing Scenarios
+### Common Testing Scenarios
 
 1. **API Testing**
 
@@ -605,19 +547,6 @@ The template supports different configuration modes:
    # Test forced shutdown
    test_signal_handling SIGKILL 5
    ```
-
-The template provides these patterns as starting points - customize them based on your specific testing needs while maintaining consistency with the existing test suite.
-
-### Test Template Structure
-
-The `test_template.sh` script provides a standard structure for all tests:
-
-1. **Environment Setup**: Sets up directories, logging, and timestamps
-2. **Test Configuration**: Selects the appropriate configuration file
-3. **Binary Selection**: Automatically finds the appropriate Hydrogen binary
-4. **Test Implementation**: Contains the specific test cases
-5. **Result Collection**: Tracks and reports test results
-6. **Cleanup**: Ensures resources are properly released
 
 ### General Guidelines
 

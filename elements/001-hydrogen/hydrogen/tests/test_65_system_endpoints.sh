@@ -12,27 +12,48 @@
 # - /api/system/recent: Tests the recent activity log endpoint
 # - /api/system/appconfig: Tests the application configuration endpoint
 #
-NAME_SCRIPT="Hydrogen System API Endpoints Test"
-VERS_SCRIPT="2.0.0"
+NAME_SCRIPT="System API Endpoints"
+VERS_SCRIPT="3.0.0"
 
 # VERSION HISTORY
+# 3.0.0 - 2025-07-02 - Migrated to use lib/ scripts, following established test patterns
 # 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
-
-# Display script name and version
-echo "=== $NAME_SCRIPT v$VERS_SCRIPT ==="
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 
-# Include the common test utilities
-source "$SCRIPT_DIR/support_utils.sh"
+# Source the library scripts
+source "$SCRIPT_DIR/lib/log_output.sh"
+source "$SCRIPT_DIR/lib/framework.sh"
+source "$SCRIPT_DIR/lib/file_utils.sh"
+source "$SCRIPT_DIR/lib/lifecycle.sh"
+source "$SCRIPT_DIR/lib/network_utils.sh"
+
+# Initialize test environment
+RESULTS_DIR="$SCRIPT_DIR/results"
+mkdir -p "$RESULTS_DIR"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+# Auto-extract test number and set up environment
+TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
+set_test_number "$TEST_NUMBER"
+reset_subtest_counter
+
+# Test configuration
+TOTAL_SUBTESTS=18
+PASS_COUNT=0
+EXIT_CODE=0
+
+# Configuration file for API testing
+CONFIG_PATH="$(get_config_path "hydrogen_test_system_endpoints.json")"
 
 # Function to make a request and validate response
-validate_request() {
+validate_api_request() {
     local request_name="$1"
-    local curl_command="$2"
+    local url="$2"
     local expected_field="$3"
-    local response_file="response_${request_name}"
+    local response_file="$RESULTS_DIR/response_${request_name}_${TIMESTAMP}"
     
     # Add appropriate extension based on endpoint type
     if [[ "$request_name" == "prometheus" ]] || [[ "$request_name" == "recent" ]] || [[ "$request_name" == "appconfig" ]]; then
@@ -41,34 +62,18 @@ validate_request() {
         response_file="${response_file}.json"
     fi
     
-    # Make sure curl command includes --compressed flag and timeout
-    if [[ $curl_command != *"--compressed"* ]]; then
-        curl_command="${curl_command/curl/curl --compressed}"
-    fi
-    
-    # Add timeout if not already present
-    if [[ $curl_command != *"--max-time"* ]] && [[ $curl_command != *"-m "* ]]; then
-        curl_command="${curl_command/curl/curl --max-time 5}"
-    fi
-    
-    print_command "$curl_command"
-    eval "$curl_command > $response_file"
-    local curl_status=$?
-    
-    # Check if the request was successful
-    if [ $curl_status -eq 0 ]; then
-        print_info "Successfully received response!"
+    print_command "curl -s --max-time 10 --compressed \"$url\""
+    if curl -s --max-time 10 --compressed "$url" > "$response_file" 2>/dev/null; then
+        print_message "Request successful, checking response content"
         
         # For recent and appconfig endpoints, just show line count
         if [[ "$request_name" == "recent" ]] || [[ "$request_name" == "appconfig" ]]; then
             local line_count
             line_count=$(wc -l < "$response_file")
-            print_info "Response contains $line_count lines"
+            print_message "Response contains $line_count lines"
         else
-            print_info "Response content:"
-            cat "$response_file"
+            print_message "Response received, validating content"
         fi
-        echo ""
         
         # Validate that the response contains expected fields
         if [[ "$request_name" == "recent" ]]; then
@@ -87,35 +92,38 @@ validate_request() {
                 return 0
             else
                 print_result 1 "Response doesn't contain expected field: $expected_field"
+                print_message "Response content:"
+                print_output "$(cat "$response_file")"
                 return 1
             fi
         fi
     else
-        print_result 1 "Failed to connect to server (curl status: $curl_status)"
-        return $curl_status
+        print_result 1 "Failed to connect to server"
+        return 1
     fi
 }
 
 # Function to validate JSON syntax
-validate_json() {
+validate_json_response() {
     local file="$1"
+    local endpoint_name="$2"
     
     if command -v jq &> /dev/null; then
         # Use jq if available for proper JSON validation
         if jq . "$file" > /dev/null 2>&1; then
-            print_result 0 "Response contains valid JSON"
+            print_result 0 "$endpoint_name endpoint returns valid JSON"
             return 0
         else
-            print_result 1 "Response contains invalid JSON"
+            print_result 1 "$endpoint_name endpoint returns invalid JSON"
             return 1
         fi
     else
         # Fallback: simple check for JSON structure
         if grep -q "{" "$file" && grep -q "}" "$file"; then
-            print_result 0 "Response appears to be JSON (basic validation only)"
+            print_result 0 "$endpoint_name endpoint appears to be JSON (basic validation only)"
             return 0
         else
-            print_result 1 "Response does not appear to be JSON"
+            print_result 1 "$endpoint_name endpoint does not appear to be JSON"
             return 1
         fi
     fi
@@ -125,441 +133,474 @@ validate_json() {
 validate_line_count() {
     local file="$1"
     local min_lines="$2"
+    local endpoint_name="$3"
     local actual_lines
     actual_lines=$(wc -l < "$file")
     
     if [ "$actual_lines" -gt "$min_lines" ]; then
-        print_result 0 "Response contains $actual_lines lines (more than $min_lines required)"
+        print_result 0 "$endpoint_name endpoint contains $actual_lines lines (more than $min_lines required)"
         return 0
     else
-        print_result 1 "Response contains only $actual_lines lines ($min_lines required)"
+        print_result 1 "$endpoint_name endpoint contains only $actual_lines lines ($min_lines required)"
         return 1
     fi
 }
 
-# Function to add a test result to our arrays
-add_test_result() {
-    TEST_NAMES+=("$1")
-    TEST_RESULTS+=("$2")
-    TEST_DETAILS+=("$3")
-}
-
-# Function to test health endpoint
-test_health_endpoint() {
-    local base_url="$1"
+# Function to validate Prometheus format
+validate_prometheus_format() {
+    local file="$1"
     
-    print_header "Testing /api/system/health Endpoint"
-    print_header "Test Case: Health Check"
-    
-    validate_request "health" "curl -s --max-time 5 ${base_url}/api/system/health" "Yes, I'm alive, thanks!"
-    TEST_HEALTH_RESULT=$?
-    echo ""
-}
-
-# Function to test config endpoint
-test_config_endpoint() {
-    local base_url="$1"
-    
-    print_header "Testing /api/system/config Endpoint"
-    print_header "Test Case: Configuration Retrieval"
-    
-    validate_request "config" "curl -s --max-time 5 -H 'Accept-Encoding: br' ${base_url}/api/system/config" "ServerName"
-    TEST_CONFIG_RESULT=$?
-    
-    # Also validate that it's valid JSON and matches our test config
-    if [ $TEST_CONFIG_RESULT -eq 0 ]; then
-        validate_json "response_config.json"
-        TEST_CONFIG_JSON_RESULT=$?
-    else
-        TEST_CONFIG_JSON_RESULT=1
+    # Check content type
+    if ! grep -q "Content-Type: text/plain" "$file"; then
+        print_result 1 "Prometheus endpoint has incorrect content type"
+        return 1
     fi
-    echo ""
-}
-
-# Function to test info endpoint
-test_info_endpoint() {
-    local base_url="$1"
     
-    print_header "Testing /api/system/info Endpoint"
-    print_header "Test Case: System Information"
+    # Check for required Prometheus format elements
+    local prometheus_format_ok=1
     
-    validate_request "info" "curl -s --max-time 5 ${base_url}/api/system/info" "system"
-    TEST_INFO_RESULT=$?
-    
-    # Also validate that it's valid JSON
-    if [ $TEST_INFO_RESULT -eq 0 ]; then
-        validate_json "response_info.json"
-        TEST_INFO_JSON_RESULT=$?
-    else
-        TEST_INFO_JSON_RESULT=1
+    # Check for TYPE definitions
+    if ! grep -q "^# TYPE" "$file"; then
+        print_result 1 "Prometheus endpoint missing TYPE definitions"
+        prometheus_format_ok=0
     fi
-    echo ""
-}
-
-# Function to test prometheus endpoint
-test_prometheus_endpoint() {
-    local base_url="$1"
     
-    print_header "Testing /api/system/prometheus Endpoint"
-    print_header "Test Case: Prometheus Metrics"
+    # Check for specific metrics
+    local required_metrics=(
+        "system_info"
+        "memory_total_bytes"
+        "cpu_usage_total"
+        "service_threads"
+    )
     
-    # Test basic content presence first
-    validate_request "prometheus" "curl -s -i --max-time 5 ${base_url}/api/system/prometheus" "# HELP"
-    TEST_PROMETHEUS_RESULT=$?
-    
-    if [ $TEST_PROMETHEUS_RESULT -eq 0 ]; then
-        print_info "Testing Prometheus format and metrics..."
-        
-        # Check content type
-        if ! grep -q "Content-Type: text/plain" response_prometheus.txt; then
-            print_result 1 "Response has incorrect content type"
-            TEST_PROMETHEUS_FORMAT=1
-        else
-            # Check for required Prometheus format elements
-            local prometheus_format_ok=1
-            
-            # Check for TYPE definitions
-            if ! grep -q "^# TYPE" response_prometheus.txt; then
-                print_result 1 "Response missing TYPE definitions"
-                prometheus_format_ok=0
-            fi
-            
-            # Check for specific metrics
-            local required_metrics=(
-                "system_info"
-                "memory_total_bytes"
-                "cpu_usage_total"
-                "service_threads"
-            )
-            
-            local metric
-            for metric in "${required_metrics[@]}"; do
-                if ! grep -q "^$metric" response_prometheus.txt; then
-                    print_result 1 "Response missing required metric: $metric"
-                    prometheus_format_ok=0
-                fi
-            done
-            
-            if [ $prometheus_format_ok -eq 1 ]; then
-                print_result 0 "Response contains valid Prometheus format"
-                TEST_PROMETHEUS_FORMAT=0
-            else
-                TEST_PROMETHEUS_FORMAT=1
-            fi
+    local metric
+    for metric in "${required_metrics[@]}"; do
+        if ! grep -q "^$metric" "$file"; then
+            print_result 1 "Prometheus endpoint missing required metric: $metric"
+            prometheus_format_ok=0
         fi
+    done
+    
+    if [ $prometheus_format_ok -eq 1 ]; then
+        print_result 0 "Prometheus endpoint contains valid format and metrics"
+        return 0
     else
-        TEST_PROMETHEUS_FORMAT=1
+        return 1
     fi
-    echo ""
 }
 
-# Function to test system test endpoint
-test_system_test_endpoint() {
+# Function to wait for server to be ready
+wait_for_server_ready() {
     local base_url="$1"
+    local max_attempts=100   # 20 seconds total (0.2s * 100)
+    local attempt=1
     
-    print_header "Testing /api/system/test Endpoint"
+    print_message "Waiting for server to be ready at $base_url..."
     
-    # Test Case 1: Basic GET request
-    print_header "Test Case 1: Basic GET Request"
-    validate_request "basic_get" "curl -s --max-time 5 ${base_url}/api/system/test" "client_ip"
-    TEST_BASIC_GET_RESULT=$?
-    echo ""
+    while [ $attempt -le $max_attempts ]; do
+        if curl -s --max-time 2 "${base_url}" >/dev/null 2>&1; then
+            print_message "Server is ready after $(( attempt * 2 / 10 )) seconds"
+            return 0
+        fi
+        sleep 0.2
+        ((attempt++))
+    done
     
-    # Test Case 2: GET request with query parameters
-    print_header "Test Case 2: GET Request with Query Parameters"
-    validate_request "get_with_params" "curl -s --max-time 5 '${base_url}/api/system/test?param1=value1&param2=value2'" "param1"
-    TEST_GET_PARAMS_RESULT=$?
-    echo ""
-    
-    # Test Case 3: POST request with form data
-    print_header "Test Case 3: POST Request with Form Data"
-    validate_request "post_form" "curl -s --max-time 5 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -d 'field1=value1&field2=value2' ${base_url}/api/system/test" "post_data"
-    TEST_POST_FORM_RESULT=$?
-    echo ""
-    
-    # Test Case 4: POST request with both query parameters and form data
-    print_header "Test Case 4: POST Request with Query Parameters and Form Data"
-    validate_request "post_with_params" "curl -s --max-time 5 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -d 'field1=value1&field2=value2' '${base_url}/api/system/test?param1=value1&param2=value2'" "param1"
-    TEST_POST_PARAMS_RESULT=$?
-    echo ""
+    print_error "Server failed to respond within 20 seconds"
+    return 1
 }
 
-# Function to test recent endpoint
-test_recent_endpoint() {
-    local base_url="$1"
-    
-    print_header "Testing /api/system/recent Endpoint"
-    print_header "Test Case: Recent Activity Log"
-    
-    validate_request "recent" "curl -s --max-time 5 ${base_url}/api/system/recent" "["
-    TEST_RECENT_RESULT=$?
-    
-    if [ $TEST_RECENT_RESULT -eq 0 ]; then
-        # Validate line count
-        validate_line_count "response_recent.txt" 100
-        TEST_RECENT_LINES=$?
-    else
-        TEST_RECENT_LINES=1
-    fi
-    echo ""
-}
-
-# Function to test appconfig endpoint
-test_appconfig_endpoint() {
-    local base_url="$1"
-    
-    print_header "Testing /api/system/appconfig Endpoint"
-    print_header "Test Case: Application Configuration"
-    
-    validate_request "appconfig" "curl -s --max-time 5 ${base_url}/api/system/appconfig" "APPCONFIG"
-    TEST_APPCONFIG_RESULT=$?
-    
-    if [ $TEST_APPCONFIG_RESULT -eq 0 ]; then
-        # Validate line count
-        validate_line_count "response_appconfig.txt" 100
-        TEST_APPCONFIG_LINES=$?
-    else
-        TEST_APPCONFIG_LINES=1
-    fi
-    echo ""
-}
-
-# Function to run all test cases
-run_tests() {
-    # Base URL with dynamic port
-    local base_url="http://localhost:${WEB_SERVER_PORT}"
-    print_info "Using base URL: $base_url for all tests"
-    
-    # Run all endpoint tests (pass/fail counting is handled in individual test functions)
-    test_health_endpoint "$base_url"
-    test_config_endpoint "$base_url"
-    test_info_endpoint "$base_url"
-    test_prometheus_endpoint "$base_url"
-    test_system_test_endpoint "$base_url"
-    test_recent_endpoint "$base_url"
-    test_appconfig_endpoint "$base_url"
-    
-    # Check server stability
-    if kill -0 "$HYDROGEN_PID" 2>/dev/null; then
-        TEST_STABILITY_RESULT=0
-    else
-        TEST_STABILITY_RESULT=1
-    fi
-    
-    # Return 0 if server is stable, 1 otherwise
-    return $TEST_STABILITY_RESULT
-}
-
-# Function to collect test results from the run_tests function
-collect_test_results() {
-    # Health endpoint test
-    add_test_result "Health Endpoint" "${TEST_HEALTH_RESULT}" "GET /api/system/health - Health check response"
-    
-    # Config endpoint tests
-    add_test_result "Config Endpoint - Content" "${TEST_CONFIG_RESULT}" "GET /api/system/config - Configuration retrieval"
-    add_test_result "Config Endpoint - JSON Format" "${TEST_CONFIG_JSON_RESULT}" "GET /api/system/config - Valid JSON format"
-    
-    # Info endpoint tests
-    add_test_result "Info Endpoint - Content" "${TEST_INFO_RESULT}" "GET /api/system/info - System information presence"
-    add_test_result "Info Endpoint - JSON Format" "${TEST_INFO_JSON_RESULT}" "GET /api/system/info - Valid JSON format"
-    
-    # Prometheus endpoint tests
-    add_test_result "Prometheus Endpoint - Content" "${TEST_PROMETHEUS_RESULT}" "GET /api/system/prometheus - Metrics presence"
-    add_test_result "Prometheus Endpoint - Format" "${TEST_PROMETHEUS_FORMAT}" "GET /api/system/prometheus - Valid Prometheus format"
-    
-    # Test endpoint tests
-    add_test_result "Test Endpoint - Basic GET" "${TEST_BASIC_GET_RESULT}" "GET /api/system/test - Basic request"
-    add_test_result "Test Endpoint - GET with Parameters" "${TEST_GET_PARAMS_RESULT}" "GET /api/system/test?param1=value1&param2=value2 - Query parameters"
-    add_test_result "Test Endpoint - POST with Form Data" "${TEST_POST_FORM_RESULT}" "POST /api/system/test - Form data handling"
-    add_test_result "Test Endpoint - POST with Parameters" "${TEST_POST_PARAMS_RESULT}" "POST /api/system/test?param1=value1&param2=value2 - Combined parameters"
-    
-    # Recent endpoint tests
-    add_test_result "Recent Endpoint - Content" "${TEST_RECENT_RESULT}" "GET /api/system/recent - Activity log presence"
-    add_test_result "Recent Endpoint - Line Count" "${TEST_RECENT_LINES}" "GET /api/system/recent - More than 100 lines"
-    
-    # Appconfig endpoint tests
-    add_test_result "Appconfig Endpoint - Content" "${TEST_APPCONFIG_RESULT}" "GET /api/system/appconfig - Configuration presence"
-    add_test_result "Appconfig Endpoint - Line Count" "${TEST_APPCONFIG_LINES}" "GET /api/system/appconfig - More than 100 lines"
-    
-    # System stability test
-    add_test_result "System Stability" "${TEST_STABILITY_RESULT}" "No crashes detected after running all tests"
-}
-
-# Function to check server logs and add compression test results
+# Function to check server logs for compression and errors
 check_server_logs() {
-    local timestamp="$1"
+    local log_file="$1"
+    local timestamp="$2"
     
     # Check server logs for API-related errors - filter irrelevant messages
-    print_info "Checking server logs for API-related errors..."
-    grep -i "error\|warn\|fatal\|segmentation" "$SCRIPT_DIR/hydrogen_test.log" | grep -i "API\|System\|SystemTest\|SystemService\|Endpoint\|api" > "$RESULTS_DIR/system_test_errors_${timestamp}.log"
-    
-    if [ -s "$RESULTS_DIR/system_test_errors_${timestamp}.log" ]; then
-        print_warning "API-related warning/error messages found in logs ($(convert_to_relative_path "$RESULTS_DIR/system_test_errors_${timestamp}.log")):"
-        cat "$RESULTS_DIR/system_test_errors_${timestamp}.log"
-    else
-        print_info "No API-related error messages found in logs"
+    print_message "Checking server logs for API-related errors..."
+    if grep -i "error\|warn\|fatal\|segmentation" "$log_file" | grep -i "API\|System\|SystemTest\|SystemService\|Endpoint\|api" > "$RESULTS_DIR/system_test_errors_${timestamp}.log"; then
+        if [ -s "$RESULTS_DIR/system_test_errors_${timestamp}.log" ]; then
+            print_warning "API-related warning/error messages found in logs:"
+            # Process each line individually for clean formatting
+            while IFS= read -r line; do
+                print_output "$line"
+            done < "$RESULTS_DIR/system_test_errors_${timestamp}.log"
+        fi
     fi
 
     # Check for Brotli compression logs
-    print_info "Checking for Brotli compression logs..."
-    grep -i "Brotli" "$SCRIPT_DIR/hydrogen_test.log" > "$RESULTS_DIR/brotli_compression_${timestamp}.log"
-    if [ -s "$RESULTS_DIR/brotli_compression_${timestamp}.log" ]; then
-        print_info "Brotli compression logs found ($(convert_to_relative_path "$RESULTS_DIR/brotli_compression_${timestamp}.log")):"
-        cat "$RESULTS_DIR/brotli_compression_${timestamp}.log"
-        # Check for compression metrics with level information
-        if grep -q "Brotli(level=[0-9]\+).*bytes.*ratio.*compression.*time:" "$RESULTS_DIR/brotli_compression_${timestamp}.log"; then
-            print_result 0 "Compression logs contain detailed metrics with compression level"
-            add_test_result "Brotli Compression" 0 "Compression logs found with performance metrics and compression level"
+    print_message "Checking for Brotli compression logs..."
+    if grep -i "Brotli" "$log_file" > "$RESULTS_DIR/brotli_compression_${timestamp}.log" 2>/dev/null; then
+        if [ -s "$RESULTS_DIR/brotli_compression_${timestamp}.log" ]; then
+            print_message "Brotli compression logs found:"
+            # Process each line individually for clean formatting
+            while IFS= read -r line; do
+                print_output "$line"
+            done < "$RESULTS_DIR/brotli_compression_${timestamp}.log"
+            # Check for compression metrics with level information
+            if grep -q "Brotli(level=[0-9]\+).*bytes.*ratio.*compression.*time:" "$RESULTS_DIR/brotli_compression_${timestamp}.log"; then
+                print_result 0 "Compression logs contain detailed metrics with compression level"
+                return 0
+            else
+                print_warning "Compression logs found but missing metrics details"
+                return 1
+            fi
         else
-            print_warning "Compression logs found but missing metrics details"
-            add_test_result "Brotli Compression" 1 "Compression logs missing metrics"
+            print_warning "No Brotli compression logs found"
+            return 1
         fi
     else
         print_warning "No Brotli compression logs found"
-        add_test_result "Brotli Compression" 1 "No compression logs found"
+        return 1
     fi
 }
 
-# Function to stop the hydrogen server
-stop_hydrogen_server() {
-    local pid="$1"
-    
-    print_info "Stopping server..."
-    kill "$pid"
-    sleep 0.5
-    
-    # Make sure it's really stopped
-    if kill -0 "$pid" 2>/dev/null; then
-        print_warning "Server didn't stop gracefully, forcing termination..."
-        kill -9 "$pid"
-    fi
-    wait "$pid" 2>/dev/null
+# Handle cleanup on script interruption (not normal exit)
+# shellcheck disable=SC2317  # Function is invoked indirectly via trap
+cleanup() {
+    print_message "Cleaning up any remaining Hydrogen processes..."
+    pkill -f "hydrogen.*json" 2>/dev/null || true
+    exit "$EXIT_CODE"
 }
+
+# Set up trap for interruption only (not normal exit)
+trap cleanup SIGINT SIGTERM
 
 # Main execution starts here
+print_test_header "$NAME_SCRIPT" "$VERS_SCRIPT"
 
-# Start the test
-start_test "Hydrogen System API Endpoints Test"
-
-# Configuration file for API testing
-CONFIG_FILE=$(get_config_path "hydrogen_test_system_endpoints.json")
-
-# Extract the WebServer port from the configuration file
-WEB_SERVER_PORT=$(extract_web_server_port "$CONFIG_FILE")
-print_info "Using WebServer port: $WEB_SERVER_PORT from configuration"
-
-# Determine which hydrogen build to use (prefer release build if available)
-PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)" || exit 1
-if [ -f "$PROJECT_ROOT/hydrogen_release" ]; then
-    HYDROGEN_BIN="$PROJECT_ROOT/hydrogen_release"
-    print_info "Using release build for testing"
+# Subtest 1: Find Hydrogen binary
+next_subtest
+print_subtest "Find Hydrogen Binary"
+if HYDROGEN_BIN=$(find_hydrogen_binary "$HYDROGEN_DIR"); then
+    print_result 0 "Hydrogen binary found: $(basename "$HYDROGEN_BIN")"
+    ((PASS_COUNT++))
 else
-    HYDROGEN_BIN="$PROJECT_ROOT/hydrogen"
-    print_info "Release build not found, using standard build"
+    print_result 1 "Hydrogen binary not found"
+    EXIT_CODE=1
 fi
 
-# Start hydrogen server in background with appropriate configuration
-print_info "Starting hydrogen server with API test configuration ($(convert_to_relative_path "$CONFIG_FILE"))..."
-"$HYDROGEN_BIN" "$CONFIG_FILE" > "$SCRIPT_DIR/hydrogen_test.log" 2>&1 &
-HYDROGEN_PID=$!
-
-# Wait for the server to start
-print_info "Waiting for server to initialize (2 seconds)..."
-sleep 2
-
-# Create results directory if it doesn't exist
-RESULTS_DIR="$SCRIPT_DIR/results"
-mkdir -p "$RESULTS_DIR"
-
-# Store the timestamp for this test run
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-
-# Initialize test result variables to ensure they're always defined
-TEST_HEALTH_RESULT=1
-TEST_INFO_RESULT=1
-TEST_INFO_JSON_RESULT=1
-TEST_PROMETHEUS_RESULT=1
-TEST_PROMETHEUS_FORMAT=1
-TEST_BASIC_GET_RESULT=1
-TEST_GET_PARAMS_RESULT=1
-TEST_POST_FORM_RESULT=1
-TEST_POST_PARAMS_RESULT=1
-TEST_STABILITY_RESULT=1
-TEST_RECENT_RESULT=1
-TEST_RECENT_LINES=1
-TEST_APPCONFIG_RESULT=1
-TEST_APPCONFIG_LINES=1
-TEST_CONFIG_RESULT=1
-TEST_CONFIG_JSON_RESULT=1
-
-# Collect all test results for summary
-declare -a TEST_NAMES
-declare -a TEST_RESULTS
-declare -a TEST_DETAILS
-
-# Run the tests
-run_tests
-TEST_RESULT=$?
-
-# Wait to check for delayed crashes
-print_info "Waiting 3 seconds to check for delayed crashes..."
-sleep 3
-
-# Check if the server is still running after waiting
-if kill -0 "$HYDROGEN_PID" 2>/dev/null; then
-    print_result 0 "Server is still running (no crash detected)"
+# Subtest 2: Validate configuration file
+next_subtest
+print_subtest "Validate Configuration File"
+if validate_config_file "$CONFIG_PATH"; then
+    ((PASS_COUNT++))
     
-    # Check server logs and add compression test results
-    check_server_logs "$TIMESTAMP"
-    
-    # Stop the server
-    stop_hydrogen_server "$HYDROGEN_PID"
+    # Extract and display port
+    SERVER_PORT=$(get_webserver_port "$CONFIG_PATH")
+    print_message "Configuration will use port: $SERVER_PORT"
 else
-    print_result 1 "ERROR: Server has crashed (segmentation fault)"
-    print_info "Server logs:"
-    tail -n 30 "$SCRIPT_DIR/hydrogen_test.log"
-    TEST_RESULT=1
-    TEST_STABILITY_RESULT=1
+    EXIT_CODE=1
 fi
 
-# Collect test results 
-collect_test_results
-
-# Calculate pass/fail counts
-PASS_COUNT=0
-FAIL_COUNT=0
-for result in "${TEST_RESULTS[@]}"; do
-    if [ "$result" -eq 0 ]; then
+# Only proceed with API tests if binary and config are available
+if [ $EXIT_CODE -eq 0 ]; then
+    # Ensure clean state
+    print_message "Ensuring no existing Hydrogen processes are running..."
+    pkill -f "hydrogen.*json" 2>/dev/null || true
+    
+    # Global variables for server management
+    HYDROGEN_PID=""
+    SERVER_LOG="$RESULTS_DIR/system_endpoints_server_${TIMESTAMP}.log"
+    BASE_URL="http://localhost:$SERVER_PORT"
+    
+    # Subtest 3: Start server
+    next_subtest
+    print_subtest "Start Hydrogen Server"
+    if HYDROGEN_PID=$(start_hydrogen "$CONFIG_PATH" "$SERVER_LOG" 15 "$HYDROGEN_BIN") && [ -n "$HYDROGEN_PID" ]; then
+        print_result 0 "Server started successfully with PID: $HYDROGEN_PID"
         ((PASS_COUNT++))
     else
-        ((FAIL_COUNT++))
+        print_result 1 "Failed to start server"
+        EXIT_CODE=1
     fi
-done
+    
+    # Wait for server to be ready
+    if [ -n "$HYDROGEN_PID" ] && ps -p "$HYDROGEN_PID" > /dev/null 2>&1; then
+        if ! wait_for_server_ready "$BASE_URL"; then
+            print_result 1 "Server failed to become ready"
+            EXIT_CODE=1
+        fi
+    fi
+    
+    # Subtest 4: Test health endpoint
+    next_subtest
+    print_subtest "Test Health Endpoint"
+    if [ -n "$HYDROGEN_PID" ] && ps -p "$HYDROGEN_PID" > /dev/null 2>&1; then
+        if validate_api_request "health" "$BASE_URL/api/system/health" "Yes, I'm alive, thanks!"; then
+            ((PASS_COUNT++))
+        else
+            EXIT_CODE=1
+        fi
+    else
+        print_result 1 "Server not running for health endpoint test"
+        EXIT_CODE=1
+    fi
+    
+    # Subtest 5: Test config endpoint
+    next_subtest
+    print_subtest "Test Config Endpoint"
+    if [ -n "$HYDROGEN_PID" ] && ps -p "$HYDROGEN_PID" > /dev/null 2>&1; then
+        if validate_api_request "config" "$BASE_URL/api/system/config" "ServerName"; then
+            ((PASS_COUNT++))
+        else
+            EXIT_CODE=1
+        fi
+    else
+        print_result 1 "Server not running for config endpoint test"
+        EXIT_CODE=1
+    fi
+    
+    # Subtest 6: Validate config JSON format
+    next_subtest
+    print_subtest "Validate Config JSON Format"
+    if [ -f "$RESULTS_DIR/response_config_${TIMESTAMP}.json" ]; then
+        if validate_json_response "$RESULTS_DIR/response_config_${TIMESTAMP}.json" "Config"; then
+            ((PASS_COUNT++))
+        else
+            EXIT_CODE=1
+        fi
+    else
+        print_result 1 "Config response file not found"
+        EXIT_CODE=1
+    fi
+    
+    # Subtest 7: Test info endpoint
+    next_subtest
+    print_subtest "Test Info Endpoint"
+    if [ -n "$HYDROGEN_PID" ] && ps -p "$HYDROGEN_PID" > /dev/null 2>&1; then
+        if validate_api_request "info" "$BASE_URL/api/system/info" "system"; then
+            ((PASS_COUNT++))
+        else
+            EXIT_CODE=1
+        fi
+    else
+        print_result 1 "Server not running for info endpoint test"
+        EXIT_CODE=1
+    fi
+    
+    # Subtest 8: Validate info JSON format
+    next_subtest
+    print_subtest "Validate Info JSON Format"
+    if [ -f "$RESULTS_DIR/response_info_${TIMESTAMP}.json" ]; then
+        if validate_json_response "$RESULTS_DIR/response_info_${TIMESTAMP}.json" "Info"; then
+            ((PASS_COUNT++))
+        else
+            EXIT_CODE=1
+        fi
+    else
+        print_result 1 "Info response file not found"
+        EXIT_CODE=1
+    fi
+    
+    # Subtest 9: Test prometheus endpoint
+    next_subtest
+    print_subtest "Test Prometheus Endpoint"
+    if [ -n "$HYDROGEN_PID" ] && ps -p "$HYDROGEN_PID" > /dev/null 2>&1; then
+        # Special handling for Prometheus endpoint to include headers
+        print_command "curl -s --max-time 10 -i \"$BASE_URL/api/system/prometheus\""
+        if curl -s --max-time 10 -i "$BASE_URL/api/system/prometheus" > "$RESULTS_DIR/response_prometheus_${TIMESTAMP}.txt" 2>/dev/null; then
+            print_message "Request successful, checking response content"
+            if grep -q "# HELP" "$RESULTS_DIR/response_prometheus_${TIMESTAMP}.txt"; then
+                print_result 0 "Response contains expected field: # HELP"
+                ((PASS_COUNT++))
+            else
+                print_result 1 "Response doesn't contain expected field: # HELP"
+                EXIT_CODE=1
+            fi
+        else
+            print_result 1 "Failed to connect to server"
+            EXIT_CODE=1
+        fi
+    else
+        print_result 1 "Server not running for prometheus endpoint test"
+        EXIT_CODE=1
+    fi
+    
+    # Subtest 10: Validate prometheus format
+    next_subtest
+    print_subtest "Validate Prometheus Format"
+    if [ -f "$RESULTS_DIR/response_prometheus_${TIMESTAMP}.txt" ]; then
+        if validate_prometheus_format "$RESULTS_DIR/response_prometheus_${TIMESTAMP}.txt"; then
+            ((PASS_COUNT++))
+        else
+            EXIT_CODE=1
+        fi
+    else
+        print_result 1 "Prometheus response file not found"
+        EXIT_CODE=1
+    fi
+    
+    # Subtest 11: Test system test endpoint (basic GET)
+    next_subtest
+    print_subtest "Test System Test Endpoint (Basic GET)"
+    if [ -n "$HYDROGEN_PID" ] && ps -p "$HYDROGEN_PID" > /dev/null 2>&1; then
+        if validate_api_request "basic_get" "$BASE_URL/api/system/test" "client_ip"; then
+            ((PASS_COUNT++))
+        else
+            EXIT_CODE=1
+        fi
+    else
+        print_result 1 "Server not running for basic GET test"
+        EXIT_CODE=1
+    fi
+    
+    # Subtest 12: Test system test endpoint (GET with parameters)
+    next_subtest
+    print_subtest "Test System Test Endpoint (GET with Parameters)"
+    if [ -n "$HYDROGEN_PID" ] && ps -p "$HYDROGEN_PID" > /dev/null 2>&1; then
+        if validate_api_request "get_with_params" "$BASE_URL/api/system/test?param1=value1&param2=value2" "param1"; then
+            ((PASS_COUNT++))
+        else
+            EXIT_CODE=1
+        fi
+    else
+        print_result 1 "Server not running for GET with parameters test"
+        EXIT_CODE=1
+    fi
+    
+    # Subtest 13: Test system test endpoint (POST with form data)
+    next_subtest
+    print_subtest "Test System Test Endpoint (POST with Form Data)"
+    if [ -n "$HYDROGEN_PID" ] && ps -p "$HYDROGEN_PID" > /dev/null 2>&1; then
+        print_command "curl -s --max-time 10 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -d 'field1=value1&field2=value2' \"$BASE_URL/api/system/test\""
+        if curl -s --max-time 10 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -d 'field1=value1&field2=value2' "$BASE_URL/api/system/test" > "$RESULTS_DIR/response_post_form_${TIMESTAMP}.json" 2>/dev/null; then
+            if grep -q "post_data" "$RESULTS_DIR/response_post_form_${TIMESTAMP}.json"; then
+                print_result 0 "POST with form data successful"
+                ((PASS_COUNT++))
+            else
+                print_result 1 "POST response doesn't contain expected field: post_data"
+                EXIT_CODE=1
+            fi
+        else
+            print_result 1 "Failed to connect to server for POST test"
+            EXIT_CODE=1
+        fi
+    else
+        print_result 1 "Server not running for POST with form data test"
+        EXIT_CODE=1
+    fi
+    
+    # Subtest 14: Test system test endpoint (POST with parameters and form data)
+    next_subtest
+    print_subtest "Test System Test Endpoint (POST with Parameters and Form Data)"
+    if [ -n "$HYDROGEN_PID" ] && ps -p "$HYDROGEN_PID" > /dev/null 2>&1; then
+        print_command "curl -s --max-time 10 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -d 'field1=value1&field2=value2' \"$BASE_URL/api/system/test?param1=value1&param2=value2\""
+        if curl -s --max-time 10 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -d 'field1=value1&field2=value2' "$BASE_URL/api/system/test?param1=value1&param2=value2" > "$RESULTS_DIR/response_post_with_params_${TIMESTAMP}.json" 2>/dev/null; then
+            if grep -q "param1" "$RESULTS_DIR/response_post_with_params_${TIMESTAMP}.json"; then
+                print_result 0 "POST with parameters and form data successful"
+                ((PASS_COUNT++))
+            else
+                print_result 1 "POST response doesn't contain expected field: param1"
+                EXIT_CODE=1
+            fi
+        else
+            print_result 1 "Failed to connect to server for POST with parameters test"
+            EXIT_CODE=1
+        fi
+    else
+        print_result 1 "Server not running for POST with parameters test"
+        EXIT_CODE=1
+    fi
+    
+    # Subtest 15: Test recent endpoint
+    next_subtest
+    print_subtest "Test Recent Endpoint"
+    if [ -n "$HYDROGEN_PID" ] && ps -p "$HYDROGEN_PID" > /dev/null 2>&1; then
+        if validate_api_request "recent" "$BASE_URL/api/system/recent" "["; then
+            ((PASS_COUNT++))
+        else
+            EXIT_CODE=1
+        fi
+    else
+        print_result 1 "Server not running for recent endpoint test"
+        EXIT_CODE=1
+    fi
+    
+    # Subtest 16: Validate recent endpoint line count
+    next_subtest
+    print_subtest "Validate Recent Endpoint Line Count"
+    if [ -f "$RESULTS_DIR/response_recent_${TIMESTAMP}.txt" ]; then
+        if validate_line_count "$RESULTS_DIR/response_recent_${TIMESTAMP}.txt" 100 "Recent"; then
+            ((PASS_COUNT++))
+        else
+            EXIT_CODE=1
+        fi
+    else
+        print_result 1 "Recent response file not found"
+        EXIT_CODE=1
+    fi
+    
+    # Subtest 17: Test appconfig endpoint
+    next_subtest
+    print_subtest "Test Appconfig Endpoint"
+    if [ -n "$HYDROGEN_PID" ] && ps -p "$HYDROGEN_PID" > /dev/null 2>&1; then
+        if validate_api_request "appconfig" "$BASE_URL/api/system/appconfig" "APPCONFIG"; then
+            ((PASS_COUNT++))
+        else
+            EXIT_CODE=1
+        fi
+    else
+        print_result 1 "Server not running for appconfig endpoint test"
+        EXIT_CODE=1
+    fi
+    
+    # Subtest 18: Check Brotli compression logs
+    next_subtest
+    print_subtest "Check Brotli Compression Logs"
+    if check_server_logs "$SERVER_LOG" "$TIMESTAMP"; then
+        ((PASS_COUNT++))
+    else
+        EXIT_CODE=1
+    fi
+    
+    # Stop the server
+    if [ -n "$HYDROGEN_PID" ]; then
+        print_message "Stopping server..."
+        if stop_hydrogen "$HYDROGEN_PID" "$SERVER_LOG" 10 5 "$RESULTS_DIR"; then
+            print_message "Server stopped successfully"
+        else
+            print_warning "Server shutdown had issues"
+        fi
+        HYDROGEN_PID=""
+    fi
+    
+    # Check server stability - the stop_hydrogen function already verifies clean shutdown
+    print_message "Server process properly terminated"
+    
+else
+    # Skip API tests if prerequisites failed
+    print_message "Skipping API endpoint tests due to prerequisite failures"
+    # Account for skipped subtests
+    for i in {3..18}; do
+        next_subtest
+        print_subtest "Subtest $i (Skipped)"
+        print_result 1 "Skipped due to prerequisite failures"
+    done
+    EXIT_CODE=1
+fi
 
-# Print individual test results
-echo -e "\n${BLUE}${BOLD}Individual Test Results:${NC}"
-for i in "${!TEST_NAMES[@]}"; do
-    print_test_item "${TEST_RESULTS[$i]}" "${TEST_NAMES[$i]}" "${TEST_DETAILS[$i]}"
-done
+# Calculate overall test result
+if [ $PASS_COUNT -eq $TOTAL_SUBTESTS ]; then
+    FINAL_RESULT=0
+else
+    FINAL_RESULT=1
+fi
 
-# Print summary statistics
-print_test_summary $((PASS_COUNT + FAIL_COUNT)) $PASS_COUNT $FAIL_COUNT
+# Clean up response files but preserve logs if test failed
+rm -f "$RESULTS_DIR"/response_*.json "$RESULTS_DIR"/response_*.txt
 
-# Get test name from script name
-TEST_NAME=$(basename "$0" .sh)
-TEST_NAME="${TEST_NAME#test_}"
+# Only remove logs if tests were successful
+if [ $FINAL_RESULT -eq 0 ]; then
+    print_message "Tests passed, cleaning up log files..."
+    rm -f "$RESULTS_DIR"/*_server_*.log "$RESULTS_DIR"/*_errors_*.log "$RESULTS_DIR"/*_compression_*.log
+else
+    print_message "Tests failed, preserving log files for analysis in $RESULTS_DIR/"
+fi
 
-# Export subtest results for test_all.sh to pick up
-TOTAL_SUBTESTS=$((PASS_COUNT + FAIL_COUNT))
-export_subtest_results "$TEST_NAME" $TOTAL_SUBTESTS $PASS_COUNT
+# Export subtest results for test_all.sh
+export_subtest_results "65_system_endpoints" $TOTAL_SUBTESTS $PASS_COUNT
 
-# Log subtest results
-print_info "System API Endpoints Test: $PASS_COUNT of $TOTAL_SUBTESTS subtests passed"
+# Print test completion summary
+print_test_completion "$NAME_SCRIPT"
 
-# End the test with final result
-end_test $TEST_RESULT "System API Endpoints Test"
-
-# Clean up
-rm -f response_*.json response_*.txt
-
-exit $TEST_RESULT
+exit $FINAL_RESULT

@@ -485,20 +485,6 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_70_swagger.sh](tests/test_70_swagger.sh) - Swagger functionality tests
 - [tests/test_95_leaks_like_a_sieve.sh](tests/test_95_leaks_like_a_sieve.sh) - Memory leak tests
 - [tests/test_99_codebase.sh](tests/test_99_codebase.sh) - Codebase analysis tests
-- [tests/test_template.sh](tests/test_template.sh) - Test script template
-
-</details>
-
-<details>
-<summary><b>Support Scripts</b></summary>
-
-- [tests/support_analyze_stuck_threads.sh](tests/support_analyze_stuck_threads.sh) - Thread deadlock analysis
-- [tests/support_cleanup.sh](tests/support_cleanup.sh) - Test cleanup utilities
-- [tests/support_cppcheck.sh](tests/support_cppcheck.sh) - Static code analysis
-- [tests/support_monitor_resources.sh](tests/support_monitor_resources.sh) - Resource monitoring
-- [tests/support_sitemap.sh](tests/support_sitemap.sh) - Sitemap generation
-- [tests/support_tables.sh](tests/support_tables.sh) - Table support utilities
-- [tests/support_utils.sh](tests/support_utils.sh) - General test utilities
 
 </details>
 

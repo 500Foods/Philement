@@ -4,8 +4,8 @@
 # Provides consistent logging, formatting, and display functions for test scripts
 # ALL output must go through functions in this library - zero exceptions
 #
-NAME_SCRIPT="Hydrogen Log Output Library"
-VERS_SCRIPT="2.0.0"
+LOG_OUTPUT_NAME="Hydrogen Log Output Library"
+LOG_OUTPUT_VERSION="2.0.0"
 
 # VERSION HISTORY
 # 2.1.0 - 2025-07-02 - Added DATA_ICON and updated DATA_COLOR to pale yellow (256-color palette) for test_30_unity_tests.sh
@@ -24,7 +24,7 @@ TEST_FAILED_COUNT=0
 
 # Function to display script version information
 print_log_output_version() {
-    echo "=== $NAME_SCRIPT v$VERS_SCRIPT ==="
+    echo "=== $LOG_OUTPUT_NAME v$LOG_OUTPUT_VERSION ==="
 }
 
 # Set up color codes for better readability
@@ -318,6 +318,88 @@ print_message() {
 # Function to print newlines (controlled spacing)
 print_newline() {
     echo ""
+}
+
+# Function to print beautiful test suite runner header using tables.sh with blue theme
+print_test_suite_header() {
+    local test_name="$1"
+    local script_version="$2"
+    local script_dir
+    script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    
+    # Start the test timer
+    start_test_timer
+    
+    # Create timestamp with milliseconds
+    local timestamp
+    timestamp=$(date '+%Y-%m-%d %H:%M:%S.%3N')
+    
+    # Create the test header content
+    local test_id="${CURRENT_TEST_NUMBER}-000"
+    
+    # Create temporary files for tables.sh
+    local temp_dir
+    temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory" >&2; return 1; }
+    local layout_json="$temp_dir/suite_header_layout.json"
+    local data_json="$temp_dir/suite_header_data.json"
+    
+    # Create layout JSON with proper columns and blue theme
+    cat > "$layout_json" << EOF
+{
+    "theme": "Blue",
+    "columns": [
+        {
+            "header": "Test #",
+            "key": "test_id",
+            "datatype": "text"
+        },
+        {
+            "header": "Test Title",
+            "key": "test_name",
+            "datatype": "text",
+            "width": 50
+        },
+        {
+            "header": "Version",
+            "key": "version",
+            "datatype": "text",
+            "width": 12
+        },
+        {
+            "header": "Started",
+            "key": "timestamp",
+            "datatype": "text",
+            "justification": "right"
+        }
+    ]
+}
+EOF
+
+    # Create data JSON with the test information
+    cat > "$data_json" << EOF
+[
+    {
+        "test_id": "$test_id",
+        "test_name": "$test_name",
+        "version": "v$script_version",
+        "timestamp": "$timestamp"
+    }
+]
+EOF
+    
+    # Use tables.sh to render the header
+    local tables_script="$script_dir/tables.sh"
+    if [[ -f "$tables_script" ]]; then
+        bash "$tables_script" "$layout_json" "$data_json" 2>/dev/null
+    else
+        # Fallback to manual formatting if tables.sh not found
+        echo -e "${BLUE}${BOLD}╭──────────────────────────────────────────────────────────────────────────────────────────────────╮${NC}"
+        echo -e "${BLUE}${BOLD}│ ${test_id} ${test_name} - v${script_version} ${timestamp} │${NC}"
+        echo -e "${BLUE}${BOLD}╰──────────────────────────────────────────────────────────────────────────────────────────────────╯${NC}"
+    fi
+    
+    # Clean up temporary files
+    rm -rf "$temp_dir" 2>/dev/null
 }
 
 # Function to print beautiful test completion table using tables.sh

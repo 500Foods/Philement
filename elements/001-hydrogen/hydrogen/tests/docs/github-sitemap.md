@@ -1,70 +1,99 @@
-# GitHub Sitemap Library Documentation
+# GitHub Sitemap Script
 
 ## Overview
 
-The `github-sitemap.sh` script is a utility for checking local markdown links within a repository. It identifies missing links, reports on orphaned markdown files (files not linked to by any other markdown file), and generates a detailed sitemap report. This tool is essential for maintaining documentation integrity by ensuring all links are valid and all files are accessible through the documentation structure.
+**github-sitemap.sh** is a Bash script designed to analyze and maintain the integrity of markdown documentation within a GitHub repository. It automates the process of checking links and mapping file relationships in markdown files, helping repository maintainers ensure their documentation is accurate and well-connected.
 
-## Usage
+## What It Does
 
-To use the GitHub Sitemap script, run it with a markdown file as the starting point for link checking:
+The script provides a detailed analysis of markdown files in a repository with the following features:
+
+- **Markdown Link Checking**: Scans markdown files to identify local links and verifies if they point to existing files or directories. It flags broken or missing links for correction.
+- **Orphaned File Detection**: Identifies markdown files that are not linked to by any other markdown file in the repository, helping to uncover disconnected or overlooked documentation.
+- **Detailed Reporting**: Generates structured reports and tables summarizing the status of links and listing orphaned files. These outputs provide clear insights into the documentation structure.
+- **Customizable Output**: Supports options to adjust the level of detail and presentation, including `--debug` for verbose logging, `--quiet` to minimize output, `--noreport` to skip report file creation, and `--theme` to select table color schemes (Red or Blue).
+
+## How It Works
+
+The script operates by recursively scanning a specified directory (or the current directory if none is provided) for markdown files. It performs the following steps:
+
+1. **File Discovery**: Uses `find` to locate all markdown files (`.md`) while excluding irrelevant directories like `.git`. It builds a list of files to analyze.
+2. **Link Extraction and Validation**: Reads each markdown file, extracts local links using regular expressions, and checks if the linked paths exist as files or directories within the repository.
+3. **Relationship Mapping**: Tracks which files link to others and identifies files that have no incoming links (orphaned files).
+4. **Report Generation**: Outputs results to the console with optional tables for visual clarity. If enabled, it saves a detailed report to a file (e.g., `sitemap_report.txt`) for later reference.
+
+The script handles both relative and absolute links by resolving paths based on the location of the markdown file containing the link. It also includes error handling and dependency checks to ensure reliable operation.
+
+## How to Use It in Your Repository
+
+To use `github-sitemap.sh` in your own GitHub repository, follow these steps:
+
+1. **Download or Clone the Script**: Obtain the script by downloading it from this repository or cloning the entire repository to your local machine.
+2. **Place the Script in Your Repository**: Copy `github-sitemap.sh` to a suitable location within your repository, such as a `scripts/` or `tools/` directory.
+3. **Make It Executable**: Run `chmod +x github-sitemap.sh` to ensure the script can be executed on Unix-like systems (Linux, macOS).
+4. **Run the Script**: Execute the script from the command line. You can specify a directory to analyze or let it default to the current directory:
+
+   ```bash
+   ./github-sitemap.sh [directory]
+   ```
+
+   - Replace `[directory]` with the path to the directory containing your markdown files if you want to analyze a specific subset of your repository.
+5. **Review the Output**: The script will display a summary of its findings, including counts of broken links and orphaned files. If tables are enabled, it will show detailed lists. Check the optional report file (e.g., `sitemap_report.txt`) if you did not use the `--noreport` option.
+6. **Customize Behavior with Options**: Use command-line flags to tailor the script's operation to your needs:
+   - `--debug`: Enable detailed logging for troubleshooting.
+   - `--quiet`: Suppress non-essential output for a cleaner display.
+   - `--noreport`: Prevent the creation of a report file.
+   - `--theme Red` or `--theme Blue`: Choose a color scheme for table output.
+   Example:
+
+   ```bash
+   ./github-sitemap.sh --theme Blue --quiet
+   ```
+
+7. **Integrate into Workflows**: Consider adding the script to your CI/CD pipeline or a cron job to regularly check documentation integrity. For example, you could create a GitHub Action to run the script on every push or pull request to catch issues early.
+
+## Requirements
+
+- **Bash**: The script requires a Bash environment, available on Linux, macOS, and Windows (via WSL or Git Bash).
+- **Dependencies**: The script checks for necessary tools like `find`, `grep`, and `jq` (for JSON processing). Ensure these are installed on your system.
+- **Custom Library**: The script uses a custom `tables.sh` library for rendering output tables. Ensure this library is accessible or bundled with the script if you move it to another repository.
+
+## Limitations
+
+- The script focuses on local links within markdown files and does not validate external URLs.
+- It assumes a standard GitHub repository structure and may require adjustments for non-standard setups.
+- Performance may vary with very large repositories due to the recursive nature of file discovery.
+
+## Output Example
+
+When run, the script might produce output like this (simplified for brevity):
 
 ```bash
-./github-sitemap.sh <markdown_file> [--debug] [--quiet] [--noreport] [--help] [--theme <Red|Blue>]
+Analyzing markdown files in ./docs...
+Total Files: 25
+Broken Links: 3
+Orphaned Files: 5
+
+Missing Links:
+| File                 | Broken Link          |
+|----------------------|----------------------|
+| ./docs/setup.md      | ./docs/missing.md    |
+| ./docs/guide.md      | ./docs/old.md        |
+
+Orphaned Files:
+| File                 |
+|----------------------|
+| ./docs/unlinked.md   |
+| ./docs/hidden.md     |
 ```
 
-### Options
+A more detailed report may be saved to a file if the `--noreport` option is not used.
 
-- `--debug`: Enable debug logging for detailed output during execution.
-- `--quiet`: Suppress non-table output, displaying only the summary tables.
-- `--noreport`: Prevent the creation of a report file, useful for quick checks.
-- `--help`: Display usage instructions and options.
-- `--theme <Red|Blue>`: Set the table theme for output rendering (default is Red).
+## Use Cases
 
-## Functionality
+- **Documentation Maintenance**: Regularly run the script to ensure all links in your documentation are valid and no files are orphaned.
+- **Repository Cleanup**: Use the orphaned file detection to identify and remove or reorganize outdated documentation.
+- **Onboarding Contributors**: Provide new contributors with a clear map of documentation structure by sharing the script's reports.
+- **Pre-Release Checks**: Include the script in pre-release checklists to verify documentation integrity before a new version is published.
 
-- **Link Checking**: Recursively checks all local markdown links starting from the specified file, verifying their existence.
-- **Missing Links Report**: Lists all links that point to non-existent files or directories.
-- **Orphaned Files Detection**: Identifies markdown files within the repository that are not linked to by any other markdown file.
-- **Report Generation**: Outputs a detailed report to `sitemap_report.txt` in the working directory, unless `--noreport` is specified.
-- **Table Output**: Utilizes `tables.sh` to render summary tables for reviewed files, missing links, and orphaned files.
-
-## Integration
-
-This script integrates with `tables.sh` for rendering output tables, ensuring a visually appealing and organized presentation of results. Ensure `tables.sh` is present in the same directory as `github-sitemap.sh` for proper functionality.
-
-## Examples
-
-Check links starting from a specific markdown file with debug output:
-
-```bash
-./github-sitemap.sh README.md --debug
-```
-
-Generate a report with a Blue theme for tables:
-
-```bash
-./github-sitemap.sh README.md --theme Blue
-```
-
-## Version History
-
-- **0.4.1** (2025-06-30): Enhanced .lintignore exclusion handling, fixed shellcheck warning for command execution.
-- **0.4.0** (2025-06-19): Updated link checking to recognize existing folders as valid links.
-- **0.3.9** (2025-06-15): Fixed repo root detection to use input file's directory, improved path resolution.
-- **0.3.8** (2025-06-15): Fixed find_all_md_files path resolution, reordered -maxdepth, enhanced debug logging.
-- **0.3.7** (2025-06-15): Optimized find_all_md_files with -prune for .git, fixed orphaned files detection.
-- **0.3.6** (2025-06-15): Fixed orphaned files table, empty link counts, added --theme option, added orphaned files to report.
-- **0.3.5** (2025-06-15): Fixed tables.sh invocation to avoid empty argument, improved debug output separation.
-- **0.3.4** (2025-06-15): Fixed debug flag handling to pass --debug to tables.sh only when DEBUG=true.
-- **0.3.3** (2025-06-15): Enhanced find_all_md_files to avoid symlinks, log errors, and use shorter timeout.
-- **0.3.2** (2025-06-15): Improved find_all_md_files with depth limit, timeout, and error handling.
-- **0.3.1** (2025-06-15): Changed to execute tables.sh instead of sourcing, per domain_info.sh.
-- **0.3.0** (2025-06-15): Added --debug flag for verbose logging, improved robustness.
-- **0.2.0** (2025-06-15): Added table output using tables.sh, version display, issue count, missing links table, and orphaned files table.
-- **0.1.0** (2025-06-15): Initial version with basic link checking and summary output.
-
-## Related Documentation
-
-- [Tables Library](tables.md) - Documentation for the table rendering library used by this script.
-- [LIBRARIES.md](LIBRARIES.md) - Central Table of Contents for all test suite library documentation.
-- [Script](../lib/github-sitemap.sh) - Direct link to the script source.
+By incorporating `github-sitemap.sh` into your workflow, you can maintain a high-quality, navigable documentation structure for your GitHub repository.
