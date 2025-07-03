@@ -2,7 +2,15 @@
 
 ## Overview
 
-The Test Framework Library (`lib/test_framework.sh`) provides test lifecycle management and result tracking functions for test scripts in the Hydrogen test suite. This library was created as part of the migration from `support_utils.sh` to modular, focused scripts.
+The Test Framework Library (`framework.sh`) provides test lifecycle management and result tracking functions for test scripts in the Hydrogen test suite. This library was created as part of the migration from `support_utils.sh` to modular, focused scripts and integrates with the numbered output system from log_output.sh.
+
+## Library Information
+
+- **Script**: `../lib/framework.sh`
+- **Version**: 2.0.0
+- **Created**: 2025-07-02
+- **Updated**: 2025-07-02 - Integrated with numbered output system
+- **Purpose**: Extracted from support_utils.sh migration to provide modular test framework functionality
 
 ## Purpose
 
@@ -22,36 +30,73 @@ The Test Framework Library (`lib/test_framework.sh`) provides test lifecycle man
 
 ## Functions
 
+### Core Functions
+
+#### `print_test_framework_version()`
+
+Displays the library name and version information.
+
+**Usage:**
+
+```bash
+print_test_framework_version
+```
+
 ### Test Lifecycle Management
 
-#### `start_test(test_name)`
+#### `start_test(test_name, script_version, script_path)`
 
-Starts a test run with a properly formatted header and timestamp.
+Starts a test run with proper header and numbering integration.
 
 **Parameters:**
 
-- `test_name` - The name of the test being started
+- `test_name`: Name of the test being started
+- `script_version`: Version of the test script
+- `script_path`: Path to the test script (for auto-extracting test number)
 
 **Features:**
 
-- Uses print_header() from log_output.sh for consistent formatting
-- Records start timestamp
+- Auto-extracts test number from script filename
+- Integrates with numbered output system from log_output.sh
+- Sets test number and resets subtest counter
 - Provides fallback formatting if log_output.sh not available
 
-**Example:**
+**Usage:**
 
 ```bash
-start_test "Hydrogen Compilation Test"
+start_test "Hydrogen Compilation Test" "1.0.0" "$0"
 ```
 
-#### `end_test(test_result, test_name)`
+#### `start_subtest(subtest_name, subtest_number)`
 
-Ends a test run with a summary and final result display.
+Starts a subtest with proper header and numbering.
 
 **Parameters:**
 
-- `test_result` - Exit code (0 for success, non-zero for failure)
-- `test_name` - The name of the test being ended
+- `subtest_name`: Name of the subtest
+- `subtest_number`: Number of the subtest
+
+**Features:**
+
+- Sets subtest number in log_output.sh
+- Provides consistent subtest formatting
+- Integrates with numbered output system
+
+**Usage:**
+
+```bash
+start_subtest "Build Debug Variant" "1"
+```
+
+#### `end_test(test_result, total_subtests, passed_subtests)`
+
+Ends a test run with proper summary and statistics.
+
+**Parameters:**
+
+- `test_result`: Exit code (0 for success, non-zero for failure)
+- `total_subtests`: Total number of subtests executed
+- `passed_subtests`: Number of subtests that passed
 
 **Returns:**
 
@@ -59,42 +104,71 @@ Ends a test run with a summary and final result display.
 
 **Features:**
 
-- Displays completion timestamp
-- Shows overall pass/fail result with appropriate formatting
-- Uses colors and icons from log_output.sh when available
+- Calculates failed subtests automatically
+- Uses print_test_summary() from log_output.sh
+- Provides fallback formatting if log_output.sh not available
 
-**Example:**
+**Usage:**
 
 ```bash
-end_test $EXIT_CODE "Compilation Test"
+end_test $EXIT_CODE $TOTAL_SUBTESTS $PASS_COUNT
 ```
 
 ### Environment Setup
 
-#### `setup_test_environment(test_name)`
+#### `setup_test_environment(test_name, test_number)`
 
 Sets up the standard test environment with directories and log files.
 
 **Parameters:**
 
-- `test_name` - The name of the test for log file naming
+- `test_name`: Name of the test for log file naming
+- `test_number`: Test number for file naming
 
 **Returns:**
 
-- Path to the created log file
+- Path to the created log file (echoed to stdout)
 
 **Features:**
 
 - Creates results directory if it doesn't exist
-- Generates timestamp-based log file names
+- Generates timestamp-based log file names with test ID
 - Automatically calls start_test() and logs to file
 - Sets up global variables (RESULTS_DIR, TIMESTAMP, RESULT_LOG)
 
-**Example:**
+**Usage:**
 
 ```bash
-log_file=$(setup_test_environment "My Test")
+log_file=$(setup_test_environment "Compilation Test" "10")
 echo "Test log: $log_file"
+```
+
+#### `navigate_to_project_root(script_dir)`
+
+Navigates to the project root directory from the test script location.
+
+**Parameters:**
+
+- `script_dir`: Directory where the test script is located
+
+**Returns:**
+
+- `0`: Success
+- `1`: Failure
+
+**Features:**
+
+- Uses safe_cd() from file_utils.sh if available
+- Provides error messaging through print_error() if available
+- Handles navigation failures gracefully
+
+**Usage:**
+
+```bash
+script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+if navigate_to_project_root "$script_dir"; then
+    echo "Successfully navigated to project root"
+fi
 ```
 
 ### Result Tracking and Export
@@ -105,17 +179,18 @@ Exports subtest statistics for use by test_all.sh.
 
 **Parameters:**
 
-- `test_name` - Name of the test (used for file naming)
-- `total_subtests` - Total number of subtests executed
-- `passed_subtests` - Number of subtests that passed
+- `test_name`: Name of the test (used for file naming)
+- `total_subtests`: Total number of subtests executed
+- `passed_subtests`: Number of subtests that passed
 
 **Features:**
 
-- Creates a results file that test_all.sh can read
-- Enables accurate aggregation of test results
-- Provides informational output about export
+- Creates results file in format: `subtest_${test_name}.txt`
+- Stores data as comma-separated values: `total,passed`
+- Operates silently (no output announcements)
+- Creates results directory if it doesn't exist
 
-**Example:**
+**Usage:**
 
 ```bash
 export_subtest_results "compilation" 7 6
@@ -127,21 +202,105 @@ Exports test results to a standardized JSON format.
 
 **Parameters:**
 
-- `test_name` - Name of the test
-- `result` - Test result (0 for pass, non-zero for fail)
-- `details` - Additional details about the test
-- `output_file` - Path to the JSON output file
+- `test_name`: Name of the test
+- `result`: Test result (0 for pass, non-zero for fail)
+- `details`: Additional details about the test
+- `output_file`: Path to the JSON output file
 
 **Features:**
 
-- Creates structured JSON output
-- Includes timestamp information
+- Creates structured JSON output with timestamp
 - Suitable for automated processing
+- Includes test status and details
 
-**Example:**
+**Usage:**
 
 ```bash
 export_test_results "Compilation Test" 0 "All variants built successfully" "results.json"
+```
+
+### Check and Evaluation Functions
+
+#### `run_check(check_name, check_command, passed_checks_var, failed_checks_var)`
+
+Runs a check and tracks pass/fail counts with output.
+
+**Parameters:**
+
+- `check_name`: Descriptive name of the check
+- `check_command`: Command to execute for the check
+- `passed_checks_var`: Variable name to increment on pass
+- `failed_checks_var`: Variable name to increment on fail
+
+**Returns:**
+
+- `0`: Check passed
+- `1`: Check failed
+
+**Features:**
+
+- Prints the command being executed
+- Provides visual feedback (✓ or ✗) with appropriate messaging
+- Updates pass/fail counters automatically
+- Uses print_message/print_warning from log_output.sh when available
+
+**Usage:**
+
+```bash
+PASSED=0
+FAILED=0
+run_check "File exists" "[ -f 'myfile.txt' ]" "PASSED" "FAILED"
+```
+
+#### `evaluate_test_result(test_name, failed_checks, pass_count_var, exit_code_var)`
+
+Evaluates test results and updates pass count with output.
+
+**Parameters:**
+
+- `test_name`: Name of the test being evaluated
+- `failed_checks`: Number of failed checks
+- `pass_count_var`: Variable name to increment on overall pass
+- `exit_code_var`: Variable name to set to 1 on overall fail
+
+**Features:**
+
+- Prints PASSED/FAILED result with appropriate formatting
+- Updates pass count only on success
+- Sets exit code on failure
+- Uses print_result() from log_output.sh when available
+
+**Usage:**
+
+```bash
+PASS_COUNT=0
+EXIT_CODE=0
+evaluate_test_result "Compilation" $FAILED_CHECKS "PASS_COUNT" "EXIT_CODE"
+```
+
+#### `evaluate_test_result_silent(test_name, failed_checks, pass_count_var, exit_code_var)`
+
+Evaluates test results silently (no output, just update counts).
+
+**Parameters:**
+
+- `test_name`: Name of the test being evaluated
+- `failed_checks`: Number of failed checks
+- `pass_count_var`: Variable name to increment on overall pass
+- `exit_code_var`: Variable name to set to 1 on overall fail
+
+**Features:**
+
+- Updates counters without producing output
+- Avoids duplicate PASS messages
+- Useful for batch processing
+
+**Usage:**
+
+```bash
+PASS_COUNT=0
+EXIT_CODE=0
+evaluate_test_result_silent "Compilation" $FAILED_CHECKS "PASS_COUNT" "EXIT_CODE"
 ```
 
 ### Report Generation
@@ -152,32 +311,137 @@ Generates an HTML summary report from a test log file.
 
 **Parameters:**
 
-- `result_file` - Path to the test log file
+- `result_file`: Path to the test log file
 
 **Features:**
 
 - Creates HTML file with same base name as log file
-- Includes CSS styling for professional appearance
-- Provides structured layout for test results
+- Includes comprehensive CSS styling for professional appearance
+- Provides structured layout with test numbers and color coding
 - Includes timestamp and metadata
+- Handles missing log files gracefully
 
-**Example:**
+**Usage:**
 
 ```bash
 generate_html_report "$RESULT_LOG"
 ```
 
-### Utility Functions
+### Test Suite Management
 
-#### `print_test_framework_version()`
+#### `start_test_suite(test_name)`
 
-Displays the library version information.
+Initializes a test suite with tracking variables.
 
-**Example:**
+**Parameters:**
+
+- `test_name`: Name of the test suite
+
+**Features:**
+
+- Initializes PASSED_TESTS, FAILED_TESTS, CURRENT_SUBTEST variables
+- Provides informational output about suite start
+- Uses print_info() from log_output.sh when available
+
+**Usage:**
 
 ```bash
-print_test_framework_version
+start_test_suite "Hydrogen Complete Test Suite"
 ```
+
+#### `end_test_suite()`
+
+Completes a test suite and displays summary statistics.
+
+**Features:**
+
+- Calculates total tests from PASSED_TESTS + FAILED_TESTS
+- Displays comprehensive summary
+- Uses print_info() from log_output.sh when available
+
+**Usage:**
+
+```bash
+end_test_suite
+```
+
+### Test Counting Functions
+
+#### `increment_passed_tests()`
+
+Increments the PASSED_TESTS counter.
+
+#### `increment_failed_tests()`
+
+Increments the FAILED_TESTS counter.
+
+#### `get_passed_tests()`
+
+Returns the current value of PASSED_TESTS.
+
+#### `get_failed_tests()`
+
+Returns the current value of FAILED_TESTS.
+
+#### `get_total_tests()`
+
+Returns the sum of PASSED_TESTS + FAILED_TESTS.
+
+#### `get_exit_code()`
+
+Returns 1 if FAILED_TESTS > 0, otherwise returns 0.
+
+### Subtest Management
+
+#### `print_subtest_header(subtest_name)`
+
+Prints a subtest header and increments the CURRENT_SUBTEST counter.
+
+**Parameters:**
+
+- `subtest_name`: Name of the subtest
+
+**Features:**
+
+- Auto-increments CURRENT_SUBTEST counter
+- Uses print_subtest_header() from log_output.sh when available
+- Provides fallback formatting
+
+**Usage:**
+
+```bash
+print_subtest_header "Build Debug Variant"
+```
+
+#### `skip_remaining_subtests(reason)`
+
+Prints a warning about skipping remaining subtests.
+
+**Parameters:**
+
+- `reason`: Reason for skipping subtests
+
+**Features:**
+
+- Uses print_warning() from log_output.sh when available
+- Provides clear indication of test skipping
+
+**Usage:**
+
+```bash
+skip_remaining_subtests "Build environment not available"
+```
+
+### Legacy Compatibility
+
+#### `print_header()` (Deprecated)
+
+Legacy function that issues a deprecation warning.
+
+**Features:**
+
+- Warns users to migrate to start_test() or start_subtest()
+- Maintains backward compatibility temporarily
 
 ## Usage
 
@@ -306,6 +570,7 @@ This library replaces the following functions from `support_utils.sh`:
 
 ## Version History
 
+- **2.0.0** (2025-07-02) - Updated to integrate with numbered output system
 - **1.0.0** (2025-07-02) - Initial creation from support_utils.sh migration
 
 ## Related Documentation

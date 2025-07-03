@@ -153,3 +153,53 @@
   ```bash
   convert_to_relative_path "/home/user/projects/elements/001-hydrogen/hydrogen/tests/results/log.txt"
   # Output: hydrogen/tests/results/log.txt
+  ```
+
+### set_type_conversion_environment()
+
+- **Purpose**: Sets environment variables specifically for testing type conversion functionality.
+- **Parameters**: None
+- **Returns**: None (outputs confirmation message)
+- **Usage**: Used to test how Hydrogen handles type conversion from string environment variables to appropriate data types (boolean, number, float).
+- **Example**:
+
+  ```bash
+  set_type_conversion_environment
+  # Output: Type conversion environment variables for Hydrogen test have been set
+  ```
+
+- **Variables Set**:
+  - `H_SERVER_NAME="hydrogen-type-test"`
+  - `H_WEB_ENABLED="TRUE"` (uppercase, should convert to boolean true)
+  - `H_WEB_PORT="8080"` (string that should convert to number)
+  - `H_MEMORY_WARNING="75"` (string that should convert to number)
+  - `H_LOAD_WARNING="2.5"` (string that should convert to float)
+  - `H_PRINT_QUEUE_ENABLED="FALSE"` (uppercase, should convert to boolean false)
+  - `H_CONSOLE_LOG_LEVEL="0"`
+  - `H_SHUTDOWN_WAIT="5"`
+  - `H_MAX_QUEUE_BLOCKS="128"`
+  - `H_DEFAULT_QUEUE_CAPACITY="1024"`
+
+### set_validation_test_environment()
+
+- **Purpose**: Sets environment variables with intentionally invalid values for testing validation functionality.
+- **Parameters**: None
+- **Returns**: None (outputs confirmation message)
+- **Usage**: Used to test how Hydrogen handles invalid or edge-case environment variable values and validates input properly.
+- **Example**:
+
+  ```bash
+  set_validation_test_environment
+  # Output: Validation test environment variables for Hydrogen test have been set
+  ```
+
+- **Variables Set**:
+  - `H_SERVER_NAME="hydrogen-validation-test"`
+  - `H_WEB_ENABLED="yes"` (non-standard boolean value)
+  - `H_WEB_PORT="invalid"` (invalid port number)
+  - `H_MEMORY_WARNING="150"` (invalid percentage >100)
+  - `H_LOAD_WARNING="-1.0"` (invalid negative load)
+  - `H_PRINT_QUEUE_ENABLED="maybe"` (invalid boolean)
+  - `H_CONSOLE_LOG_LEVEL="debug"` (string instead of number)
+  - `H_SHUTDOWN_WAIT="0"` (edge case: zero timeout)
+  - `H_MAX_QUEUE_BLOCKS="0"` (edge case: zero blocks)

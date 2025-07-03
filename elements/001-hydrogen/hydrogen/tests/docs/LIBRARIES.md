@@ -23,6 +23,7 @@ This is an adapted version of the Tables script from [Scripts](https://github.co
 
 These libraries were created as part of the test suite migration to replace support_utils.sh with modular, focused scripts.
 
+- **[CLOC Library](cloc.md)** - Documentation for `cloc.sh`, providing code analysis and line counting functionality with linting integration for test scripts. [Script](../lib/cloc.sh)
 - **[Log Output Library](log_output.md)** - Documentation for `log_output.sh`, providing consistent logging, formatting, and display functions for test scripts. [Script](../lib/log_output.sh)
 - **[File Utils Library](file_utils.md)** - Documentation for `file_utils.sh`, providing file and path manipulation functions for test scripts. [Script](../lib/file_utils.sh)
 - **[Test Framework Library](framework.md)** - Documentation for `framework.sh`, providing test lifecycle management and result tracking functions. [Script](../lib/framework.sh)
