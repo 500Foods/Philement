@@ -104,11 +104,13 @@ run_cloc_analysis() {
     # Create temporary files
     local cloc_output
     local exclude_list
+    local enhanced_output
     cloc_output=$(mktemp) || return 1
     exclude_list=$(mktemp) || return 1
+    enhanced_output=$(mktemp) || return 1
     
     # Ensure cleanup on exit
-    trap 'rm -f "$cloc_output" "$exclude_list"' RETURN
+    trap 'rm -f "$cloc_output" "$exclude_list" "$enhanced_output"' EXIT
     
     # Generate exclude list
     if ! generate_cloc_exclude_list "$base_dir" "$lint_ignore_file" "$exclude_list"; then
@@ -118,11 +120,86 @@ run_cloc_analysis() {
     
     # Run cloc with proper environment and parameters
     if (cd "$base_dir" && env LC_ALL=en_US.UTF_8 cloc . --quiet --force-lang="C,inc" --exclude-list-file="$exclude_list" > "$cloc_output" 2>&1); then
-        # Skip the first line (header) and output the results
-        if [ -n "$output_file" ]; then
-            tail -n +2 "$cloc_output" > "$output_file"
+        # Skip the first line (header) and process the results
+        tail -n +2 "$cloc_output" > "$enhanced_output"
+        
+        # Calculate CodeDoc and CodeComment ratios
+        local c_code=0 c_comment=0
+        local header_code=0 header_comment=0
+        local cmake_code=0 cmake_comment=0
+        local shell_code=0 shell_comment=0
+        local markdown_code=0
+        
+        # Parse cloc output to extract values
+        while IFS= read -r line; do
+            # Skip empty lines and separator lines
+            [[ -z "$line" || "$line" =~ ^-+$ ]] && continue
+            
+            # Skip SUM line for now (we'll process it separately if needed)
+            [[ "$line" =~ ^SUM: ]] && continue
+            
+            # Use awk to parse the line more reliably
+            local lang files comment code
+            lang=$(echo "$line" | awk '{$1=$1; for(i=1;i<=NF-4;i++) printf "%s ", $i; print ""}' | sed 's/ *$//')
+            files=$(echo "$line" | awk '{print $(NF-3)}')
+            comment=$(echo "$line" | awk '{print $(NF-1)}')
+            code=$(echo "$line" | awk '{print $NF}')
+            
+            # Only process lines that have numeric values
+            if [[ "$files" =~ ^[0-9]+$ && "$code" =~ ^[0-9]+$ && "$comment" =~ ^[0-9]+$ ]]; then
+                case "$lang" in
+                    "C") 
+                        c_code=$code
+                        c_comment=$comment
+                        ;;
+                    "C/C++ Header")
+                        header_code=$code
+                        header_comment=$comment
+                        ;;
+                    "CMake")
+                        cmake_code=$code
+                        cmake_comment=$comment
+                        ;;
+                    "Bourne Shell")
+                        shell_code=$code
+                        shell_comment=$comment
+                        ;;
+                    "Markdown")
+                        markdown_code=$code
+                        ;;
+                esac
+            fi
+        done < "$enhanced_output"
+        
+        # Calculate totals for the 4 code languages
+        local total_code=$((c_code + header_code + cmake_code + shell_code))
+        local total_comment=$((c_comment + header_comment + cmake_comment + shell_comment))
+        
+        # Calculate ratios
+        local codedoc_ratio=""
+        local codecomment_ratio=""
+        
+        if [ "$markdown_code" -gt 0 ]; then
+            codedoc_ratio=$(awk "BEGIN {printf \"%.1f\", $total_code / $markdown_code}")
         else
-            tail -n +2 "$cloc_output"
+            codedoc_ratio="N/A"
+        fi
+        
+        if [ "$total_comment" -gt 0 ]; then
+            codecomment_ratio=$(awk "BEGIN {printf \"%.1f\", $total_code / $total_comment}")
+        else
+            codecomment_ratio="N/A"
+        fi
+        
+        # Output the original cloc results
+        if [ -n "$output_file" ]; then
+            cat "$enhanced_output" > "$output_file"
+            echo "" >> "$output_file"
+            echo "CodeDoc: $codedoc_ratio    CodeComment: $codecomment_ratio" >> "$output_file"
+        else
+            cat "$enhanced_output"
+            echo ""
+            echo "CodeDoc: $codedoc_ratio    CodeComment: $codecomment_ratio"
         fi
         return 0
     else
