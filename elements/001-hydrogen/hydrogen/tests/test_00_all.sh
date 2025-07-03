@@ -26,6 +26,7 @@ source "$SCRIPT_DIR/lib/tables_render.sh"
 source "$SCRIPT_DIR/lib/tables_themes.sh"
 source "$SCRIPT_DIR/lib/log_output.sh"
 source "$SCRIPT_DIR/lib/framework.sh"
+source "$SCRIPT_DIR/lib/cloc.sh"
 
 # Test configuration
 TEST_NAME="Hydrogen Test Suite Runner"
@@ -162,76 +163,10 @@ update_readme_with_results() {
                 echo "Generated via cloc: $timestamp"
                 echo ""
                 
-                # Run cloc if available (using same method as test 99)
-                if command -v cloc >/dev/null 2>&1; then
-                    echo '```cloc'
-                    
-                    # Generate exclude list based on .lintignore and default excludes (same as test 99)
-                    local exclude_list
-                    exclude_list=$(mktemp)
-                    
-                    # Function to check if file should be excluded (exact same logic as test 99)
-                    should_exclude_cloc() {
-                        local file="$1"
-                        local rel_file="${file#./}"  # Remove leading ./
-                        
-                        # Default exclude patterns for linting (same as test 99)
-                        local default_excludes=(
-                            "build/*"
-                            "build_debug/*"
-                            "build_perf/*"
-                            "build_release/*"
-                            "build_valgrind/*"
-                            "tests/logs/*"
-                            "tests/results/*"
-                            "tests/diagnostics/*"
-                        )
-                        
-                        # Check .lintignore file first if it exists
-                        if [ -f "$SCRIPT_DIR/../.lintignore" ]; then
-                            while IFS= read -r pattern; do
-                                [[ -z "$pattern" || "$pattern" == \#* ]] && continue
-                                # Remove trailing /* if present for directory matching
-                                local clean_pattern="${pattern%/\*}"
-                                
-                                # Check if file matches pattern exactly or is within a directory pattern
-                                if [[ "$rel_file" == "$pattern" ]] || [[ "$rel_file" == "$clean_pattern"/* ]]; then
-                                    return 0 # Exclude
-                                fi
-                            done < "$SCRIPT_DIR/../.lintignore"
-                        fi
-                        
-                        # Check default excludes (same as test 99)
-                        for pattern in "${default_excludes[@]}"; do
-                            local clean_pattern="${pattern%/\*}"
-                            if [[ "$rel_file" == "$pattern" ]] || [[ "$rel_file" == "$clean_pattern"/* ]]; then
-                                return 0 # Exclude
-                            fi
-                        done
-                        
-                        return 1 # Do not exclude
-                    }
-                    
-                    # Generate exclude list
-                    : > "$exclude_list"
-                    while read -r file; do
-                        if should_exclude_cloc "$file"; then
-                            echo "${file#./}" >> "$exclude_list"
-                        fi
-                    done < <(find "$SCRIPT_DIR/.." -type f | sort)
-                    
-                    # Run cloc with same parameters as test 99
-                    (cd "$SCRIPT_DIR/.." && env LC_ALL=en_US.UTF_8 cloc . --quiet --force-lang="C,inc" --exclude-list-file="$exclude_list" 2>/dev/null) || echo "cloc command failed"
-                    
-                    # Clean up
-                    rm -f "$exclude_list"
-                    
-                    echo '```'
-                else
-                    echo '```'
-                    echo "cloc not available"
-                    echo '```'
-                fi
+                # Use shared cloc library function, ensuring we're in the project root directory
+                pushd "$SCRIPT_DIR/.." > /dev/null || return 1
+                generate_cloc_for_readme "." ".lintignore"
+                popd > /dev/null || return 1
             } >> "$temp_readme"
             continue
         elif [[ "$in_test_results" == true || "$in_individual_results" == true || "$in_repo_info" == true ]]; then
