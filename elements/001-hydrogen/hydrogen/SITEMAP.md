@@ -186,6 +186,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 
 ### Folder: /tests/docs
 
+- [cloc.md](tests/docs/cloc.md): CLOC (Count Lines of Code) library documentation for code analysis and line counting functionality
 - [env_utils.md](tests/docs/env_utils.md): Environment utility functions documentation
 - [file_utils.md](tests/docs/file_utils.md): File utility functions documentation
 - [framework.md](tests/docs/framework.md): Testing framework overview and architecture

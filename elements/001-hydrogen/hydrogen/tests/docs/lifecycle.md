@@ -8,6 +8,7 @@ This document provides detailed information about the functions available in `li
 
 ## Version History
 
+- **1.2.1** - 2025-07-02 - Updated `find_hydrogen_binary` to use relative paths in log messages to avoid exposing user information.
 - **1.2.0** - 2025-07-02 - Added `validate_config_file` function for single configuration validation.
 - **1.1.0** - 2025-07-02 - Added `validate_config_files`, `setup_output_directories`, and `run_lifecycle_test` functions for enhanced modularity.
 - **1.0.0** - 2025-07-02 - Initial version with start and stop functions.
@@ -197,3 +198,164 @@ This document provides detailed information about the functions available in `li
   ```bash
   config_name=$(basename "$MIN_CONFIG" .json)
   run_lifecycle_test "$MIN_CONFIG" "$config_name" "$DIAG_TEST_DIR" "$STARTUP_TIMEOUT" "$SHUTDOWN_TIMEOUT" "$SHUTDOWN_ACTIVITY_TIMEOUT" "$HYDROGEN_BIN" "$LOG_FILE" "PASS_COUNT" "EXIT_CODE"
+  ```
+
+### configure_hydrogen_binary
+
+- **Purpose**: Configures the Hydrogen binary path, preferring release build if available.
+- **Parameters**:
+  - `hydrogen_dir`: Optional directory to search for the binary (defaults to script's parent directory).
+- **Returns**: Sets the global `HYDROGEN_BIN` variable and returns success if binary is found and executable.
+- **Usage**: Sets up the binary path for use in tests, automatically choosing the best available build.
+- **Example**:
+
+  ```bash
+  if configure_hydrogen_binary "$HYDROGEN_DIR"; then
+      print_message "Hydrogen binary configured: $HYDROGEN_BIN"
+  else
+      print_error "Failed to configure Hydrogen binary"
+      exit 1
+  fi
+  ```
+
+### initialize_test_environment
+
+- **Purpose**: Initializes the test environment and logging setup.
+- **Parameters**:
+  - `results_dir`: Directory for test results (optional, defaults to ../results).
+  - `test_log_file`: Path to the test log file (optional, defaults to ./hydrogen_env_test.log).
+- **Returns**: Sets global variables `RESULT_LOG` and `TEST_LOG_FILE` and creates necessary directories.
+- **Usage**: Sets up the test environment with proper logging and result directories.
+- **Example**:
+
+  ```bash
+  initialize_test_environment "$RESULTS_DIR" "$TEST_LOG_FILE"
+  ```
+
+### ensure_no_hydrogen_running
+
+- **Purpose**: Ensures no Hydrogen instances are running before starting tests.
+- **Parameters**: None.
+- **Returns**: Always returns success after attempting to kill any running Hydrogen processes.
+- **Usage**: Cleans up any existing Hydrogen processes to ensure a clean test environment.
+- **Example**:
+
+  ```bash
+  ensure_no_hydrogen_running
+  ```
+
+### start_hydrogen_with_env
+
+- **Purpose**: Starts Hydrogen with environment variables and waits for initialization.
+- **Parameters**:
+  - `output_file`: File to capture Hydrogen output.
+  - `test_name`: Name of the test for logging purposes.
+  - `config_file`: Configuration file to use.
+- **Returns**: Sets global `HYDROGEN_PID` variable and returns success if Hydrogen starts successfully.
+- **Usage**: Alternative startup function that focuses on environment variable testing.
+- **Example**:
+
+  ```bash
+  if start_hydrogen_with_env "$OUTPUT_FILE" "Environment Test" "$CONFIG_FILE"; then
+      print_result 0 "Hydrogen started with environment variables"
+  else
+      print_result 1 "Failed to start Hydrogen with environment variables"
+  fi
+  ```
+
+### kill_hydrogen_process
+
+- **Purpose**: Kills the Hydrogen process if it's running.
+- **Parameters**: None (uses global `HYDROGEN_PID` variable).
+- **Returns**: Always returns success after attempting to kill the process.
+- **Usage**: Cleanup function to ensure Hydrogen is stopped, typically used in test cleanup.
+- **Example**:
+
+  ```bash
+  kill_hydrogen_process
+  ```
+
+### verify_log_file_exists
+
+- **Purpose**: Verifies that a log file was created successfully.
+- **Parameters**:
+  - `log_file`: Path to the log file to check (optional, defaults to `TEST_LOG_FILE`).
+- **Returns**: Success if the log file exists; otherwise, failure.
+- **Usage**: Validates that Hydrogen created the expected log file during execution.
+- **Example**:
+
+  ```bash
+  if verify_log_file_exists "$TEST_LOG_FILE"; then
+      print_result 0 "Log file created successfully"
+  else
+      print_result 1 "Log file was not created"
+  fi
+  ```
+
+## Dependencies
+
+This library depends on the following:
+
+- **log_output.sh**: For consistent output formatting and error reporting
+- **Standard Unix utilities**: `ps`, `kill`, `pgrep`, `stat`, `mkdir`, `sleep`
+- **Optional utilities**: `lsof` (for enhanced diagnostics)
+
+## Global Variables
+
+The library uses and sets several global variables:
+
+- `HYDROGEN_BIN`: Path to the Hydrogen binary
+- `HYDROGEN_PID`: Process ID of the running Hydrogen instance
+- `RESULT_LOG`: Path to the test result log file
+- `TEST_LOG_FILE`: Path to the Hydrogen application log file
+
+## Error Handling
+
+The library provides comprehensive error handling:
+
+- **Process validation**: Checks that processes start and stop correctly
+- **Timeout handling**: Implements timeouts for startup and shutdown operations
+- **Diagnostic capture**: Collects process information when operations fail
+- **Graceful cleanup**: Ensures processes are properly terminated even on failure
+
+## Usage Patterns
+
+### Basic Lifecycle Test
+
+```bash
+#!/bin/bash
+source "lib/log_output.sh"
+source "lib/lifecycle.sh"
+
+# Configure binary
+configure_hydrogen_binary
+
+# Start Hydrogen
+if hydrogen_pid=$(start_hydrogen "$CONFIG_FILE" "$LOG_FILE" 30 "$HYDROGEN_BIN"); then
+    # Run tests...
+    
+    # Stop Hydrogen
+    stop_hydrogen "$hydrogen_pid" "$LOG_FILE" 10 5 "$DIAG_DIR"
+fi
+```
+
+### Environment Variable Testing
+
+```bash
+#!/bin/bash
+source "lib/log_output.sh"
+source "lib/lifecycle.sh"
+
+# Initialize environment
+initialize_test_environment
+ensure_no_hydrogen_running
+
+# Start with environment variables
+if start_hydrogen_with_env "$OUTPUT_FILE" "Env Test" "$CONFIG_FILE"; then
+    # Verify log file
+    verify_log_file_exists
+    
+    # Cleanup
+    kill_hydrogen_process
+fi
+```

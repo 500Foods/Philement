@@ -567,4 +567,10 @@ draw_table layout.json data.json
 
 ## Version Information
 
+- **Current Version**: 1.0.2
+- **Version History**:
+  - 1.0.2 - Added help functionality and version history section
+  - 1.0.1 - Fixed shellcheck issues (SC2004, SC2155)
+  - 1.0.0 - Initial release with table rendering functionality
+
 Use `./tables.sh --version` to see the current version and `./tables.sh --help` for usage information.
