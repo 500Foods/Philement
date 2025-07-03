@@ -400,13 +400,3 @@ skip_remaining_subtests() {
         echo "WARNING: Skipping remaining subtests: $reason"
     fi
 }
-
-
-# Legacy compatibility functions (deprecated)
-print_header() {
-    if command -v print_warning >/dev/null 2>&1; then
-        print_warning "print_header() is deprecated - use start_test() or start_subtest()"
-    else
-        echo "WARNING: print_header() is deprecated - use start_test() or start_subtest()"
-    fi
-}

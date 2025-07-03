@@ -2,46 +2,71 @@
 
 ## Overview
 
-The Log Output Library (`log_output.sh`) provides consistent logging, formatting, and display functions for test scripts in the Hydrogen test suite. This library was created as part of the migration from `support_utils.sh` to modular, focused scripts and features a complete rewrite with numbered output system.
+The Log Output Library (`log_output.sh`) provides consistent logging, formatting, and display functions for test scripts in the Hydrogen test suite. This library features a comprehensive logging system with color-coded output, test numbering, timing, and beautiful table-based headers.
 
 ## Library Information
 
 - **Script**: `../lib/log_output.sh`
-- **Version**: 2.0.0 (with 2.1.0 features)
+- **Version**: 3.0.3
 - **Created**: 2025-07-02
-- **Updated**: 2025-07-02 - Complete rewrite with numbered output system
-- **Purpose**: Extracted from support_utils.sh migration to provide modular logging functionality
+- **Updated**: 2025-07-03 - Applied color consistency to all output types, removed legacy functions
+- **Purpose**: Provides modular logging functionality with modern numbered output system
 
 ## Purpose
 
 - Standardize output formatting across all test scripts
 - Provide consistent color coding and iconography
 - Enable clear visual distinction between different types of messages
-- Support both terminal and log file output
+- Support test numbering, timing, and statistics tracking
+- Generate beautiful table-based headers and completion summaries
 
 ## Key Features
 
-- **Color-coded output** with fallback for non-color terminals
-- **Consistent iconography** for different message types
-- **Formatted headers** for test sections
-- **Summary reporting** functions
-- **Command display** with path normalization
+- **Color-coded output** with consistent theming
+- **Rounded rectangle icons** for different message types
+- **Test/subtest numbering** with automatic incrementing
+- **Precise timing** with millisecond accuracy
+- **Statistics tracking** for pass/fail counts
+- **Beautiful table headers** using tables.sh integration
+- **Path normalization** for cleaner output
+- **Command truncation** for readability
+
+## Global Variables and Constants
+
+### Test Numbering
+
+- `CURRENT_TEST_NUMBER` - Current test number (e.g., "10")
+- `CURRENT_SUBTEST_NUMBER` - Current subtest number (e.g., "001")
+- `SUBTEST_COUNTER` - Auto-incrementing subtest counter
+
+### Timing and Statistics
+
+- `TEST_START_TIME` - Test start time with millisecond precision
+- `TEST_PASSED_COUNT` - Number of passed tests
+- `TEST_FAILED_COUNT` - Number of failed tests
+
+### Colors and Icons
+
+- **PASS_COLOR**: Green (`\033[0;32m`)
+- **FAIL_COLOR**: Red (`\033[0;31m`)
+- **WARN_COLOR**: Yellow (`\033[0;33m`)
+- **INFO_COLOR**: Cyan (`\033[0;36m`)
+- **DATA_COLOR**: Pale yellow (`\033[38;5;229m`) - 256-color palette
+- **EXEC_COLOR**: Yellow (`\033[0;33m`)
+- **TEST_COLOR**: Blue (`\033[0;34m`)
+
+All icons are rounded rectangles (██) with matching colors:
+
+- **PASS_ICON**: Green rectangles
+- **FAIL_ICON**: Red rectangles
+- **WARN_ICON**: Yellow rectangles
+- **INFO_ICON**: Cyan rectangles
+- **DATA_ICON**: Pale yellow rectangles
+- **EXEC_ICON**: Yellow rectangles
 
 ## Functions
 
-### Core Functions
-
-#### `print_log_output_version()`
-
-Displays the library name and version information.
-
-**Usage:**
-
-```bash
-print_log_output_version
-```
-
-### Test Numbering and Tracking
+### Test Numbering and Timing Functions
 
 #### `set_test_number(number)`
 
@@ -87,7 +112,8 @@ Extracts the test number from a script filename using regex pattern matching.
 **Usage:**
 
 ```bash
-test_num=$(extract_test_number "$0")
+TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
+set_test_number "$TEST_NUMBER"
 ```
 
 #### `next_subtest()`
@@ -103,7 +129,7 @@ Increments the subtest counter and sets the current subtest number in 3-digit fo
 
 ```bash
 next_subtest
-echo "Current subtest: $CURRENT_SUBTEST_NUMBER"
+print_subtest "Check CMake Availability"
 ```
 
 #### `reset_subtest_counter()`
@@ -132,8 +158,6 @@ Gets the current test prefix for output formatting.
 prefix=$(get_test_prefix)
 echo "Current prefix: $prefix"
 ```
-
-### Timing and Statistics
 
 #### `start_test_timer()`
 
@@ -210,34 +234,11 @@ size=$(format_file_size "1234567")
 echo "File size: $size bytes"
 ```
 
-### Color and Icon Definitions
-
-The library defines standard colors and icons used throughout the test suite:
-
-```bash
-# Colors
-GREEN='\033[0;32m'           # Success messages
-RED='\033[0;31m'             # Error messages  
-YELLOW='\033[0;33m'          # Warning messages
-BLUE='\033[0;34m'            # Headers and info
-CYAN='\033[0;36m'            # Informational messages
-BOLD='\033[1m'               # Bold text
-DATA_COLOR='\033[38;5;229m'  # Pale yellow for DATA lines (256-color)
-NC='\033[0m'                 # No color (reset)
-
-# Icons
-PASS_ICON="✅"               # Success indicator
-FAIL_ICON="✖️"               # Failure indicator
-WARN_ICON="⚠️"               # Warning indicator
-INFO_ICON="ℹ️"               # Information indicator
-DATA_ICON="▶▶"               # Data output indicator
-```
-
-### Test Header Functions
+### Header and Completion Functions
 
 #### `print_test_header(test_name, script_version)`
 
-Prints a beautiful test header using tables.sh with proper columns for Test#, Test Title, Version, and Started timestamp.
+Prints a beautiful test header using tables.sh with proper columns.
 
 **Parameters:**
 
@@ -250,32 +251,12 @@ Prints a beautiful test header using tables.sh with proper columns for Test#, Te
 - Automatically starts test timer
 - Creates timestamp with milliseconds
 - Includes test ID in format "XX-000"
-- Provides fallback formatting if tables.sh not available
+- Shows Test#, Test Title, Version, and Started columns
 
 **Usage:**
 
 ```bash
 print_test_header "Hydrogen Compilation Test" "1.0.0"
-```
-
-#### `print_test(test_name)` (Legacy)
-
-Prints a test header in legacy format with decorative borders.
-
-**Parameters:**
-
-- `test_name`: Name of the test
-
-**Features:**
-
-- Legacy function for backward compatibility
-- Uses simple border formatting
-- Includes timestamp
-
-**Usage:**
-
-```bash
-print_test "My Test Suite"
 ```
 
 #### `print_subtest(subtest_name)`
@@ -290,7 +271,7 @@ Prints a formatted subtest header with timing and numbering.
 
 - Shows current test-subtest number (e.g., "10-001")
 - Displays elapsed time since test start
-- Uses blue color formatting
+- Uses blue color formatting with bold text
 
 **Usage:**
 
@@ -319,6 +300,27 @@ Prints a test suite header using tables.sh with blue theme.
 print_test_suite_header "Complete Test Suite" "2.0.0"
 ```
 
+#### `print_test_completion(test_name)`
+
+Prints a beautiful test completion table using tables.sh with comprehensive statistics.
+
+**Parameters:**
+
+- `test_name`: Name of the test
+
+**Features:**
+
+- Uses tables.sh with blue theme for professional formatting
+- Shows Test#, Test Name, Tests (total), Pass, Fail, and Elapsed columns
+- Automatically calculates statistics from recorded results
+- Displays elapsed time in SSS.ZZZ format
+
+**Usage:**
+
+```bash
+print_test_completion "Hydrogen Compilation Test"
+```
+
 ### Core Output Functions
 
 #### `print_command(command)`
@@ -334,7 +336,8 @@ Prints a command that will be executed with path normalization and truncation.
 - Shows test prefix and elapsed time
 - Converts absolute paths to relative paths
 - Truncates commands longer than 200 characters
-- Uses yellow color with arrow icon (➡️ EXEC)
+- Uses yellow color with EXEC icon (██ EXEC)
+- **NEW**: Command content is now colored to match icon and label
 
 **Usage:**
 
@@ -355,7 +358,8 @@ Prints command output or data with special formatting.
 - Shows test prefix and elapsed time
 - Converts absolute paths to relative paths
 - Skips empty or whitespace-only messages
-- Uses pale yellow color with data icon (▶▶ DATA)
+- Uses pale yellow color with DATA icon (██ DATA)
+- **NEW**: Message content is now colored to match icon and label
 
 **Usage:**
 
@@ -376,7 +380,8 @@ Prints a test result with appropriate icon and color coding.
 
 - Shows test prefix and elapsed time
 - Records result for statistics tracking
-- Uses green/red color with pass/fail icons
+- Uses green/red color with pass/fail icons (██ PASS/██ FAIL)
+- **NEW**: Result message content is now colored to match icon and label
 - Automatically updates TEST_PASSED_COUNT/TEST_FAILED_COUNT
 
 **Usage:**
@@ -397,7 +402,7 @@ Prints a warning message with yellow color and warning icon.
 **Features:**
 
 - Shows test prefix and elapsed time
-- Uses yellow color with warning icon (⚠️ WARN)
+- Uses yellow color with warning icon (██ WARN)
 
 **Usage:**
 
@@ -416,7 +421,7 @@ Prints an error message with red color and error icon.
 **Features:**
 
 - Shows test prefix and elapsed time
-- Uses red color with error icon (✖️ ERROR)
+- Uses red color with error icon (██ ERROR)
 
 **Usage:**
 
@@ -436,7 +441,7 @@ Prints an informational message with cyan color and info icon.
 
 - Shows test prefix and elapsed time
 - Converts absolute paths to relative paths when available
-- Uses cyan color with info icon (ℹ️ INFO)
+- Uses cyan color with info icon (██ INFO)
 
 **Usage:**
 
@@ -452,53 +457,6 @@ Prints a controlled newline for spacing.
 
 ```bash
 print_newline
-```
-
-### Test Completion Functions
-
-#### `print_test_completion(test_name)`
-
-Prints a beautiful test completion table using tables.sh with comprehensive statistics.
-
-**Parameters:**
-
-- `test_name`: Name of the test
-
-**Features:**
-
-- Uses tables.sh with blue theme for professional formatting
-- Shows Test#, Test Name, Tests (total), Pass, Fail, and Elapsed columns
-- Automatically calculates statistics from recorded results
-- Displays elapsed time in SSS.ZZZ format
-- Provides fallback formatting if tables.sh not available
-
-**Usage:**
-
-```bash
-print_test_completion "Hydrogen Compilation Test"
-```
-
-#### `print_test_summary(total, passed, failed)` (Legacy)
-
-Prints a formatted summary of test results in legacy format.
-
-**Parameters:**
-
-- `total`: Total number of tests
-- `passed`: Number of passed tests  
-- `failed`: Number of failed tests
-
-**Features:**
-
-- Legacy function for backward compatibility
-- Uses decorative borders
-- Shows overall pass/fail result
-- Includes completion timestamp
-
-**Usage:**
-
-```bash
-print_test_summary 10 8 2
 ```
 
 #### `print_test_item(status, name, details)`
@@ -523,96 +481,95 @@ Prints an individual test item in a summary list.
 print_test_item 0 "Compilation Test" "All variants built successfully"
 ```
 
-### Legacy Compatibility Functions
-
-#### `print_header(message)` (Deprecated)
-
-Legacy function that issues a deprecation warning and calls print_test().
-
-**Parameters:**
-
-- `message`: The header text to display
-
-**Features:**
-
-- Issues deprecation warning
-- Calls print_test() for backward compatibility
-
-**Usage:**
-
-```bash
-print_header "Running Tests"  # Will show deprecation warning
-```
-
-#### `print_info(message)` (Deprecated)
-
-Legacy function that issues a deprecation warning and calls print_message().
-
-**Parameters:**
-
-- `message`: The informational message
-
-**Features:**
-
-- Issues deprecation warning
-- Calls print_message() for backward compatibility
-
-**Usage:**
-
-```bash
-print_info "Starting process"  # Will show deprecation warning
-```
-
 ## Usage
 
-### Basic Usage
+### Standard Test Script Pattern
 
 ```bash
 #!/bin/bash
-# Source the log output library
-source "lib/log_output.sh"
 
-# Use the functions
-print_header "My Test Suite"
-print_info "Starting tests..."
-print_result 0 "Test completed successfully"
+# Source the log output library
+source "$(dirname "${BASH_SOURCE[0]}")/lib/log_output.sh"
+
+# Initialize test numbering
+TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
+set_test_number "$TEST_NUMBER"
+reset_subtest_counter
+
+# Print test header
+print_test_header "My Test Suite" "1.0.0"
+
+# Run subtests
+next_subtest
+print_subtest "First Test"
+print_message "Starting first test..."
+print_result 0 "First test passed"
+
+next_subtest
+print_subtest "Second Test"
+print_command "some-command --option"
+print_output "Command output here"
+print_result 0 "Second test passed"
+
+# Print completion summary
+print_test_completion "My Test Suite"
 ```
 
 ### Integration with Other Libraries
 
-The Log Output Library is designed to be sourced first, as other libraries may depend on its functions:
+The Log Output Library should be sourced first, as other libraries may depend on its functions:
 
 ```bash
 #!/bin/bash
 # Source libraries in order
 source "lib/log_output.sh"      # First - provides output functions
 source "lib/file_utils.sh"      # Second - may use print_* functions
-source "lib/test_framework.sh"  # Third - uses output functions
+source "lib/framework.sh"       # Third - uses output functions
 ```
+
+## Output Format
+
+All output follows a consistent format:
+
+```log
+  XX-YYY   SSS.ZZZ   ██ TYPE   message content
+```
+
+Where:
+
+- `XX-YYY`: Test and subtest number (e.g., "10-001")
+- `SSS.ZZZ`: Elapsed time in seconds with milliseconds (e.g., "001.234")
+- `██ TYPE`: Colored icon and type label (PASS, FAIL, WARN, ERROR, INFO, DATA, EXEC)
+- `message content`: The actual message
 
 ## Dependencies
 
-- **None** - This library has no external dependencies
-- **Terminal support** - Colors and icons work best in modern terminals
+- **tables.sh** - For beautiful table formatting (optional, provides fallback)
+- **bc** - For precise floating-point time calculations
 - **Bash 4.0+** - Uses modern bash features
+- **Terminal support** - Colors and icons work best in modern terminals
 
-## Migration Notes
+## Migration from Legacy Code
 
-This library replaces the following functions from `support_utils.sh`:
+This library completely replaces legacy functions. The following functions have been **REMOVED**:
 
-- All color definitions (GREEN, RED, YELLOW, etc.)
-- All icon definitions (PASS_ICON, FAIL_ICON, etc.)
-- `print_header()`, `print_result()`, `print_info()`, `print_warning()`, `print_error()`
-- `print_command()`, `print_test_summary()`, `print_test_item()`
+- ~~`print_header()`~~ - Use `print_test_header()` or `print_subtest()`
+- ~~`print_info()`~~ - Use `print_message()`
+
+All legacy functions have been completely removed as of version 3.0.2.
 
 ## Version History
 
-- **2.1.0** (2025-07-02) - Added DATA_ICON and updated DATA_COLOR to pale yellow (256-color palette) for test_30_unity_tests.sh
+- **3.0.3** (2025-07-03) - Applied color consistency to all output types (DATA, EXEC, PASS, FAIL)
+- **3.0.2** (2025-07-03) - Completely removed legacy functions (print_header, print_info)
+- **3.0.1** (2025-07-03) - Enhanced documentation, removed unused functions, improved comments
+- **3.0.0** (2025-07-03) - General overhaul of colors and icons, removed legacy functions
+- **2.1.0** (2025-07-02) - Added DATA_ICON and updated DATA_COLOR to pale yellow (256-color palette)
 - **2.0.0** (2025-07-02) - Complete rewrite with numbered output system
 - **1.0.0** (2025-07-02) - Initial creation from support_utils.sh migration
 
 ## Related Documentation
 
+- [Framework Library](framework.md) - Test lifecycle management
 - [File Utils Library](file_utils.md) - File and path utilities
-- [Test Framework Library](framework.md) - Test lifecycle management
 - [LIBRARIES.md](LIBRARIES.md) - Library index
