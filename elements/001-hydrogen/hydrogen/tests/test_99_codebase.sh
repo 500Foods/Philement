@@ -22,6 +22,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/lib/log_output.sh"
 source "$SCRIPT_DIR/lib/file_utils.sh"
 source "$SCRIPT_DIR/lib/framework.sh"
+source "$SCRIPT_DIR/lib/cloc.sh"
 
 # Test configuration
 TEST_NAME="Hydrogen Codebase Analysis Test"
@@ -635,45 +636,32 @@ fi
 next_subtest
 print_subtest "Code Line Count Analysis (cloc)"
 
-if command -v cloc >/dev/null 2>&1; then
-    CLOC_OUTPUT=$(mktemp)
-    EXCLUDE_LIST=$(mktemp)
+CLOC_OUTPUT=$(mktemp)
+
+if run_cloc_analysis "." ".lintignore" "$CLOC_OUTPUT"; then
+    print_message "Code line count analysis results:"
+    while IFS= read -r line; do
+        print_output "$line"
+    done < "$CLOC_OUTPUT"
     
-    # Generate exclude list based on .lintignore and default excludes
-    : > "$EXCLUDE_LIST"
-    while read -r file; do
-        if should_exclude_file "$file"; then
-            echo "${file#./}" >> "$EXCLUDE_LIST"
-        fi
-    done < <(find . -type f | sort)
-    
-    if env LC_ALL=en_US.UTF_8 cloc . --quiet --force-lang="C,inc" --exclude-list-file="$EXCLUDE_LIST" > "$CLOC_OUTPUT" 2>&1; then
-        print_message "Code line count analysis results:"
-        tail -n +2 "$CLOC_OUTPUT" | while IFS= read -r line; do
-            print_output "$line"
-        done
-        
-        # Extract summary statistics
-        STATS=$(grep "SUM:" "$CLOC_OUTPUT")
-        if [ -n "$STATS" ]; then
-            FILES_COUNT=$(echo "$STATS" | awk '{print $2}')
-            CODE_LINES=$(echo "$STATS" | awk '{print $5}')
-            print_result 0 "Found $FILES_COUNT files with $CODE_LINES lines of code"
-            ((PASS_COUNT++))
-        else
-            print_result 1 "Failed to parse cloc output"
-            EXIT_CODE=1
-        fi
+    # Extract summary statistics
+    STATS=$(extract_cloc_stats "$CLOC_OUTPUT")
+    if [ -n "$STATS" ]; then
+        IFS=',' read -r files_part lines_part <<< "$STATS"
+        FILES_COUNT=$(echo "$files_part" | cut -d':' -f2)
+        CODE_LINES=$(echo "$lines_part" | cut -d':' -f2)
+        print_result 0 "Found $FILES_COUNT files with $CODE_LINES lines of code"
+        ((PASS_COUNT++))
     else
-        print_result 1 "Failed to run cloc analysis"
+        print_result 1 "Failed to parse cloc output"
         EXIT_CODE=1
     fi
-    
-    rm -f "$CLOC_OUTPUT" "$EXCLUDE_LIST"
 else
     print_result 0 "cloc not available (skipped)"
     ((PASS_COUNT++))
 fi
+
+rm -f "$CLOC_OUTPUT"
 
 # Subtest 9: File count summary
 next_subtest
