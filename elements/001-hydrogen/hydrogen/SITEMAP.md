@@ -198,6 +198,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [tables_config.md](tests/docs/tables_config.md): Table configuration documentation
 - [tables_data.md](tests/docs/tables_data.md): Table data management documentation
 - [tables_datatypes.md](tests/docs/tables_datatypes.md): Table data types documentation
+- [tables_developer.md](tests/docs/tables_developer.md): Technical documentation for developers wanting to extend or customize the tables.sh system
 - [tables_render.md](tests/docs/tables_render.md): Table rendering documentation
 - [tables_themes.md](tests/docs/tables_themes.md): Table themes and styling documentation
 - [tables.md](tests/docs/tables.md): Table system overview documentation

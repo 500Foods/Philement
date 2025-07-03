@@ -14,6 +14,7 @@ This is an adapted version of the Tables script from [Scripts](https://github.co
 - **[Tables Datatypes Library](tables_datatypes.md)** - Documentation for `tables_datatypes.sh`, focusing on defining and validating data types for tables. [Script](../lib/tables_datatypes.sh)
 - **[Tables Render Library](tables_render.md)** - Documentation for `tables_render.sh`, focusing on rendering and displaying tables. [Script](../lib/tables_render.sh)
 - **[Tables Themes Library](tables_themes.md)** - Documentation for `tables_themes.sh`, focusing on visual themes and styling for tables. [Script](../lib/tables_themes.sh)
+- **[Tables Developer Guide](tables_developer.md)** - Technical documentation for developers wanting to extend or customize the tables.sh system with new features, themes, and data types.
 
 ## GitHub Sitemap Library
 
