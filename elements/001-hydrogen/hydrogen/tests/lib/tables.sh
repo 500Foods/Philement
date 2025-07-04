@@ -31,7 +31,6 @@ get_display_length() {
 }
 format_with_commas() {
     local num="$1"
-    # Use bash parameter expansion to add commas
     local result="$num"
     while [[ $result =~ ^([0-9]+)([0-9]{3}.*) ]]; do
         result="${BASH_REMATCH[1]},${BASH_REMATCH[2]}"
@@ -129,12 +128,10 @@ format_kmem() {
 }
 format_display_value() {
     local value="$1" null_value="$2" zero_value="$3" datatype="$4" format="$5" string_limit="$6" wrap_mode="$7" wrap_char="$8" justification="$9"
-    
     local validate_fn="${DATATYPE_HANDLERS[${datatype}_validate]}" format_fn="${DATATYPE_HANDLERS[${datatype}_format]}"
     value=$("$validate_fn" "$value")
     local display_value
     display_value=$("$format_fn" "$value" "$format" "$string_limit" "$wrap_mode" "$wrap_char" "$justification")
-    
     if [[ "$value" == "null" ]]; then
         case "$null_value" in
             0) display_value="0" ;;
