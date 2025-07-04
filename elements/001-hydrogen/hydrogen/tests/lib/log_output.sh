@@ -1,6 +1,12 @@
 #!/bin/bash
 #
 # Test Suite - Log Output Library
+
+# Guard clause to prevent multiple sourcing
+if [[ -n "$LOG_OUTPUT_SH_GUARD" ]]; then
+    return 0
+fi
+export LOG_OUTPUT_SH_GUARD="true"
 # Provides consistent logging, formatting, and display functions for test scripts
 # ALL output must go through functions in this library - zero exceptions
 #
@@ -170,15 +176,59 @@ print_test_header() {
     # Create the test header content
     local test_id="${CURRENT_TEST_NUMBER}-000"
 
-
-    # Create temporary files for tables.sh
-    local temp_dir
-    temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory" >&2; return 1; }
-    local layout_json="$temp_dir/header_layout.json"
-    local data_json="$temp_dir/header_data.json"
-    
-    # Create layout JSON with proper columns
-    cat > "$layout_json" << EOF
+    # Check if tables.sh is sourced for performance optimization
+    if [[ "$TABLES_SOURCED" == "true" ]]; then
+        # Use sourced function directly with JSON strings
+        local layout_json_content='{
+            "columns": [
+                {
+                    "header": "Test #",
+                    "key": "test_id",
+                    "datatype": "text"
+                },
+                {
+                    "header": "Test Title",
+                    "key": "test_name",
+                    "datatype": "text",
+                    "width": 50
+                },
+                {
+                    "header": "Version",
+                    "key": "version",
+                    "datatype": "text",
+                    "width": 12
+                },
+                {
+                    "header": "Started",
+                    "key": "timestamp",
+                    "datatype": "text",
+                    "justification": "right"
+                }
+            ]
+        }'
+        
+        local data_json_content='[
+            {
+                "test_id": "'"$test_id"'",
+                "test_name": "'"$test_name"'",
+                "version": "v'"$script_version"'",
+                "timestamp": "'"$timestamp"'"
+            }
+        ]'
+        
+        # Use sourced tables.sh function directly
+        tables_render_from_json "$layout_json_content" "$data_json_content"
+    else
+        echo "Falling back to external tables.sh process for header rendering" >&2
+        print_message "Falling back to external tables.sh process for header rendering"
+        # Fall back to external process for backward compatibility
+        local temp_dir
+        temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory" >&2; return 1; }
+        local layout_json="$temp_dir/header_layout.json"
+        local data_json="$temp_dir/header_data.json"
+        
+        # Create layout JSON with proper columns
+        cat > "$layout_json" << EOF
 {
     "columns": [
         {
@@ -208,8 +258,8 @@ print_test_header() {
 }
 EOF
 
-    # Create data JSON with the test information
-    cat > "$data_json" << EOF
+        # Create data JSON with the test information
+        cat > "$data_json" << EOF
 [
     {
         "test_id": "$test_id",
@@ -219,15 +269,16 @@ EOF
     }
 ]
 EOF
-    
-    # Use tables.sh to render the header
-    local tables_script="$script_dir/tables.sh"
-    if [[ -f "$tables_script" ]]; then
-        bash "$tables_script" "$layout_json" "$data_json" 2>/dev/null
+        
+        # Use tables.sh to render the header
+        local tables_script="$script_dir/tables.sh"
+        if [[ -f "$tables_script" ]]; then
+            bash "$tables_script" "$layout_json" "$data_json" 2>/dev/null
+        fi
+        
+        # Clean up temporary files
+        rm -rf "$temp_dir" 2>/dev/null
     fi
-    
-    # Clean up temporary files
-    rm -rf "$temp_dir" 2>/dev/null
 }
 
 # Function to print subtest headers
@@ -348,14 +399,58 @@ print_test_suite_header() {
     # Create the test header content
     local test_id="${CURRENT_TEST_NUMBER}-000"
     
-    # Create temporary files for tables.sh
-    local temp_dir
-    temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory" >&2; return 1; }
-    local layout_json="$temp_dir/suite_header_layout.json"
-    local data_json="$temp_dir/suite_header_data.json"
-    
-    # Create layout JSON with proper columns and blue theme
-    cat > "$layout_json" << EOF
+    # Check if tables.sh is sourced for performance optimization
+    if [[ "$TABLES_SOURCED" == "true" ]]; then
+        # Use sourced function directly with JSON strings
+        local layout_json_content='{
+            "theme": "Blue",
+            "columns": [
+                {
+                    "header": "Test #",
+                    "key": "test_id",
+                    "datatype": "text"
+                },
+                {
+                    "header": "Test Title",
+                    "key": "test_name",
+                    "datatype": "text",
+                    "width": 50
+                },
+                {
+                    "header": "Version",
+                    "key": "version",
+                    "datatype": "text",
+                    "width": 12
+                },
+                {
+                    "header": "Started",
+                    "key": "timestamp",
+                    "datatype": "text",
+                    "justification": "right"
+                }
+            ]
+        }'
+        
+        local data_json_content='[
+            {
+                "test_id": "'"$test_id"'",
+                "test_name": "'"$test_name"'",
+                "version": "v'"$script_version"'",
+                "timestamp": "'"$timestamp"'"
+            }
+        ]'
+        
+        # Use sourced tables.sh function directly
+        tables_render_from_json "$layout_json_content" "$data_json_content"
+    else
+        # Fall back to external process for backward compatibility
+        local temp_dir
+        temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory" >&2; return 1; }
+        local layout_json="$temp_dir/suite_header_layout.json"
+        local data_json="$temp_dir/suite_header_data.json"
+        
+        # Create layout JSON with proper columns and blue theme
+        cat > "$layout_json" << EOF
 {
     "theme": "Blue",
     "columns": [
@@ -386,8 +481,8 @@ print_test_suite_header() {
 }
 EOF
 
-    # Create data JSON with the test information
-    cat > "$data_json" << EOF
+        # Create data JSON with the test information
+        cat > "$data_json" << EOF
 [
     {
         "test_id": "$test_id",
@@ -397,15 +492,16 @@ EOF
     }
 ]
 EOF
-    
-    # Use tables.sh to render the header
-    local tables_script="$script_dir/tables.sh"
-    if [[ -f "$tables_script" ]]; then
-        bash "$tables_script" "$layout_json" "$data_json" 2>/dev/null
+        
+        # Use tables.sh to render the header
+        local tables_script="$script_dir/tables.sh"
+        if [[ -f "$tables_script" ]]; then
+            bash "$tables_script" "$layout_json" "$data_json" 2>/dev/null
+        fi
+        
+        # Clean up temporary files
+        rm -rf "$temp_dir" 2>/dev/null
     fi
-    
-    # Clean up temporary files
-    rm -rf "$temp_dir" 2>/dev/null
 }
 
 # Function to print beautiful test completion table using tables.sh
@@ -419,14 +515,76 @@ print_test_completion() {
     local elapsed_time
     elapsed_time=$(get_elapsed_time)
     
-    # Create temporary files for tables.sh
-    local temp_dir
-    temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory" >&2; return 1; }
-    local layout_json="$temp_dir/completion_layout.json"
-    local data_json="$temp_dir/completion_data.json"
-    
-    # Create layout JSON with proper columns
-    cat > "$layout_json" << EOF
+    # Check if tables.sh is sourced for performance optimization
+    if [[ "$TABLES_SOURCED" == "true" ]]; then
+        # Use sourced function directly with JSON strings
+        local layout_json_content='{
+            "theme": "Blue",
+            "columns": [
+                {
+                    "header": "Test #",
+                    "key": "test_id",
+                    "datatype": "text"
+                },
+                {
+                    "header": "Test Name",
+                    "key": "test_name",
+                    "datatype": "text",
+                    "width": 50    
+                },
+                {
+                    "header": "Tests",
+                    "key": "total_subtests",
+                    "datatype": "int",
+                    "justification": "right",
+                    "width": 8
+                },
+                {
+                    "header": "Pass",
+                    "key": "passed",
+                    "datatype": "int",
+                    "justification": "right",
+                    "width": 8
+                },
+                {
+                    "header": "Fail",
+                    "key": "failed",
+                    "datatype": "int",
+                    "justification": "right",
+                    "width": 8
+                },
+                {
+                    "header": "Elapsed",
+                    "key": "elapsed",
+                    "datatype": "text",
+                    "justification": "right",
+                    "width": 11
+                }
+            ]
+        }'
+        
+        local data_json_content='[
+            {
+                "test_id": "'"${CURRENT_TEST_NUMBER}-000"'",
+                "test_name": "'"$test_name"'",
+                "total_subtests": '"$total_subtests"',
+                "passed": '"$TEST_PASSED_COUNT"',
+                "failed": '"$TEST_FAILED_COUNT"',
+                "elapsed": "'"${elapsed_time}s"'"
+            }
+        ]'
+        
+        # Use sourced tables.sh function directly
+        tables_render_from_json "$layout_json_content" "$data_json_content"
+    else
+        # Fall back to external process for backward compatibility
+        local temp_dir
+        temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory" >&2; return 1; }
+        local layout_json="$temp_dir/completion_layout.json"
+        local data_json="$temp_dir/completion_data.json"
+        
+        # Create layout JSON with proper columns
+        cat > "$layout_json" << EOF
 {
     "theme": "Blue",
     "columns": [
@@ -473,8 +631,8 @@ print_test_completion() {
 }
 EOF
 
-    # Create data JSON with the test completion information
-    cat > "$data_json" << EOF
+        # Create data JSON with the test completion information
+        cat > "$data_json" << EOF
 [
     {
         "test_id": "${CURRENT_TEST_NUMBER}-000",
@@ -486,15 +644,16 @@ EOF
     }
 ]
 EOF
-    
-    # Use tables.sh to render the completion table
-    local tables_script="$script_dir/tables.sh"
-    if [[ -f "$tables_script" ]]; then
-        bash "$tables_script" "$layout_json" "$data_json" 2>/dev/null
+        
+        # Use tables.sh to render the completion table
+        local tables_script="$script_dir/tables.sh"
+        if [[ -f "$tables_script" ]]; then
+            bash "$tables_script" "$layout_json" "$data_json" 2>/dev/null
+        fi
+        
+        # Clean up temporary files
+        rm -rf "$temp_dir" 2>/dev/null
     fi
-    
-    # Clean up temporary files
-    rm -rf "$temp_dir" 2>/dev/null
 }
 
 # Function to print individual test items in a summary
