@@ -523,12 +523,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
   - [log_output.sh](tests/lib/log_output.sh) - Log output formatting
   - [network_utils.sh](tests/lib/network_utils.sh) - Network testing utilities
   - [tables.sh](tests/lib/tables.sh) - Table utilities main module
-  - [tables_config.sh](tests/lib/tables_config.sh) - Table configuration utilities
-  - [tables_data.sh](tests/lib/tables_data.sh) - Table data handling
-  - [tables_datatypes.sh](tests/lib/tables_datatypes.sh) - Table data type utilities
-  - [tables_render.sh](tests/lib/tables_render.sh) - Table rendering functions
-  - [tables_themes.sh](tests/lib/tables_themes.sh) - Table theming utilities
-
+  
 </details>
 
 <details>
