@@ -66,6 +66,7 @@ WARN_ICON="${WARN_COLOR}\U2587\U2587${NC}"
 INFO_ICON="${INFO_COLOR}\U2587\U2587${NC}"
 DATA_ICON="${DATA_COLOR}\U2587\U2587${NC}"
 EXEC_ICON="${EXEC_COLOR}\U2587\U2587${NC}"
+TEST_ICON="${TEST_COLOR}\U2587\U2587${NC}"
 
 #==============================================================================
 # TEST NUMBERING AND TIMING FUNCTIONS
@@ -286,7 +287,7 @@ print_subtest() {
     local subtest_name="$1"
     local elapsed
     elapsed=$(get_elapsed_time)
-    echo -e "${TEST_COLOR}${BOLD}  ${CURRENT_TEST_NUMBER}-${CURRENT_SUBTEST_NUMBER}   ${elapsed}   ${subtest_name}${NC}"
+    echo -e "  ${TEST_COLOR}${CURRENT_TEST_NUMBER}-${CURRENT_SUBTEST_NUMBER}   ${elapsed}   ${NC}${TEST_ICON}${TEST_COLOR} TEST   ${subtest_name}${NC}"
 }
 
 #==============================================================================
