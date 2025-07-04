@@ -12,10 +12,23 @@
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Source the new modular test libraries
-source "$SCRIPT_DIR/lib/log_output.sh"
+# Source the new modular test libraries with guard clauses
+if [[ -z "$TABLES_SH_GUARD" ]] || ! command -v tables_render_from_json >/dev/null 2>&1; then
+# shellcheck source=tests/lib/tables.sh
+    source "$SCRIPT_DIR/lib/tables.sh"
+    export TABLES_SOURCED=true
+fi
+
+if [[ -z "$LOG_OUTPUT_SH_GUARD" ]]; then
+# shellcheck source=tests/lib/log_output.sh
+    source "$SCRIPT_DIR/lib/log_output.sh"
+fi
+
+# shellcheck source=tests/lib/file_utils.sh
 source "$SCRIPT_DIR/lib/file_utils.sh"
+# shellcheck source=tests/lib/framework.sh
 source "$SCRIPT_DIR/lib/framework.sh"
+# shellcheck source=tests/lib/lifecycle.sh
 source "$SCRIPT_DIR/lib/lifecycle.sh"
 
 # Test configuration
@@ -266,4 +279,9 @@ export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "$TOTAL_SUBTESTS" "$P
 # Print completion table
 print_test_completion "$TEST_NAME"
 
-exit $EXIT_CODE
+# Return status code if sourced, exit if run standalone
+if [[ "$RUNNING_IN_TEST_SUITE" == "true" ]]; then
+    return $EXIT_CODE
+else
+    exit $EXIT_CODE
+fi

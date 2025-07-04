@@ -14,13 +14,18 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Source the table rendering libraries for the summary
-source "$SCRIPT_DIR/lib/tables_config.sh"
-source "$SCRIPT_DIR/lib/tables_data.sh"
-source "$SCRIPT_DIR/lib/tables_render.sh"
-source "$SCRIPT_DIR/lib/tables_themes.sh"
+# shellcheck source=tests/lib/tables.sh
+source "$SCRIPT_DIR/lib/tables.sh"
+# shellcheck source=tests/lib/log_output.sh
 source "$SCRIPT_DIR/lib/log_output.sh"
+# shellcheck source=tests/lib/framework.sh
 source "$SCRIPT_DIR/lib/framework.sh"
+# shellcheck source=tests/lib/cloc.sh
 source "$SCRIPT_DIR/lib/cloc.sh"
+
+# Set flag to indicate tables.sh is sourced for performance optimization
+export TABLES_SOURCED=true
+echo "TABLES_SOURCED set to: $TABLES_SOURCED in test_00_all.sh"
 
 # Test configuration
 TEST_NAME="Test Suite Runner"
@@ -336,8 +341,12 @@ run_single_test() {
     local test_start
     test_start=$(date +%s.%N 2>/dev/null || date +%s)
     
-    # Run the test and capture exit code
-    "$test_script"
+    # Set environment variable to indicate running in test suite context
+    export RUNNING_IN_TEST_SUITE="true"
+    
+    # Source the test script instead of running it as a separate process
+    # shellcheck disable=SC1090  # Can't follow non-constant source
+    source "$test_script"
     local exit_code=$?
     
     # Calculate elapsed time
@@ -373,9 +382,10 @@ run_single_test() {
             passed_subtests=$([ $exit_code -eq 0 ] && echo 1 || echo 0)
         }
     else
-        # Default based on exit code
+        # Default based on exit code if no file found
         total_subtests=1
         passed_subtests=$([ $exit_code -eq 0 ] && echo 1 || echo 0)
+        echo "Warning: No subtest result file found for test ${test_number}"
     fi
     
     # Calculate failed subtests
@@ -465,18 +475,11 @@ done
 TOTAL_ELAPSED_FORMATTED=$(format_time_duration "$TOTAL_ELAPSED")
 TOTAL_RUNNING_TIME_FORMATTED=$(format_time_duration "$TOTAL_RUNNING_TIME")
 
-# Generate summary table using the table libraries
-# Create temporary files for tables.sh
-temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory" >&2; exit 1; }
-layout_json="$temp_dir/summary_layout.json"
-data_json="$temp_dir/summary_data.json"
-
-# Create layout JSON with column summaries
-# "Elapsed: $TOTAL_ELAPSED_FORMATTED | Running: $TOTAL_RUNNING_TIME_FORMATTED",
-cat > "$layout_json" << EOF
-{
+# Generate summary table using the sourced table libraries
+# Create layout JSON string
+layout_json_content='{
     "title": "Test Suite Results",
-    "footer": "Elapsed: $TOTAL_ELAPSED_FORMATTED ─── Running: $TOTAL_RUNNING_TIME_FORMATTED",
+    "footer": "Elapsed: '"$TOTAL_ELAPSED_FORMATTED"' ─── Running: '"$TOTAL_RUNNING_TIME_FORMATTED"'",
     "footer_position": "right",
     "columns": [
         {
@@ -534,40 +537,32 @@ cat > "$layout_json" << EOF
             "summary": "sum"
         }
     ]
-}
-EOF
+}'
 
-# Create data JSON
-echo "[" > "$data_json"
+# Create data JSON string
+data_json_content="["
 for i in "${!TEST_NUMBERS[@]}"; do
     test_id="${TEST_NUMBERS[$i]}-000"
     # Calculate group (tens digit) from test number
     group=$((${TEST_NUMBERS[$i]} / 10))
     if [ "$i" -gt 0 ]; then
-        echo "," >> "$data_json"
+        data_json_content+=","
     fi
-    cat >> "$data_json" << EOF
+    data_json_content+='
     {
-        "group": $group,
-        "test_id": "$test_id",
-        "test_name": "${TEST_NAMES[$i]}",
-        "tests": ${TEST_SUBTESTS[$i]},
-        "pass": ${TEST_PASSED[$i]},
-        "fail": ${TEST_FAILED[$i]},
-        "elapsed": ${TEST_ELAPSED[$i]}
-    }
-EOF
+        "group": '"$group"',
+        "test_id": "'"$test_id"'",
+        "test_name": "'"${TEST_NAMES[$i]}"'",
+        "tests": '"${TEST_SUBTESTS[$i]}"',
+        "pass": '"${TEST_PASSED[$i]}"',
+        "fail": '"${TEST_FAILED[$i]}"',
+        "elapsed": '"${TEST_ELAPSED[$i]}"'
+    }'
 done
-echo "]" >> "$data_json"
+data_json_content+="]"
 
-# Use tables.sh to render the summary table
-tables_script="$SCRIPT_DIR/lib/tables.sh"
-if [[ -f "$tables_script" ]]; then
-    bash "$tables_script" "$layout_json" "$data_json" 2>/dev/null
-fi
-
-# Clean up temporary files
-rm -rf "$temp_dir" 2>/dev/null
+# Use sourced tables.sh function to render the summary table directly
+tables_render_from_json "$layout_json_content" "$data_json_content"
 
 # Update README.md with test results (only if not in skip mode)
 if [ "$SKIP_TESTS" = false ]; then

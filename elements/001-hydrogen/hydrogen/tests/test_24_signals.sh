@@ -13,10 +13,23 @@
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Source the new modular test libraries
-source "$SCRIPT_DIR/lib/log_output.sh"
+# Source the new modular test libraries with guard clauses
+if [[ -z "$TABLES_SH_GUARD" ]] || ! command -v tables_render_from_json >/dev/null 2>&1; then
+# shellcheck source=tests/lib/tables.sh
+    source "$SCRIPT_DIR/lib/tables.sh"
+    export TABLES_SOURCED=true
+fi
+
+if [[ -z "$LOG_OUTPUT_SH_GUARD" ]]; then
+# shellcheck source=tests/lib/log_output.sh
+    source "$SCRIPT_DIR/lib/log_output.sh"
+fi
+
+# shellcheck source=tests/lib/file_utils.sh
 source "$SCRIPT_DIR/lib/file_utils.sh"
+# shellcheck source=tests/lib/framework.sh
 source "$SCRIPT_DIR/lib/framework.sh"
+# shellcheck source=tests/lib/lifecycle.sh
 source "$SCRIPT_DIR/lib/lifecycle.sh"
 
 # Test configuration
@@ -474,7 +487,7 @@ fi
 cp "$LOG_FILE_SIGINT" "$RESULTS_DIR/sigint_test_${TIMESTAMP}.log" 2>/dev/null || true
 cp "$LOG_FILE_SIGTERM" "$RESULTS_DIR/sigterm_test_${TIMESTAMP}.log" 2>/dev/null || true
 cp "$LOG_FILE_SIGHUP" "$RESULTS_DIR/sighup_test_${TIMESTAMP}.log" 2>/dev/null || true
-cp "$LOG_FILE_SIGUSR2" "$RESULTS_DIR/sigusr2_test_${TIMESTAMP}.log" 2>/dev/null || true
+cp "$LOG_FILE_SIGUSR2" "$RESULTS_DIR/sigusr2_test_${TIMESTAMP}.log" 2>/dev/null || tru
 cp "$LOG_FILE_MULTI" "$RESULTS_DIR/multi_signal_test_${TIMESTAMP}.log" 2>/dev/null || true
 
 print_message "Signal test logs saved to results directory"
@@ -489,4 +502,9 @@ print_test_completion "$TEST_NAME"
 
 end_test $EXIT_CODE $TOTAL_SUBTESTS $PASS_COUNT > /dev/null
 
-exit $EXIT_CODE
+# Return status code if sourced, exit if run standalone
+if [[ "$RUNNING_IN_TEST_SUITE" == "true" ]]; then
+    return $EXIT_CODE
+else
+    exit $EXIT_CODE
+fi

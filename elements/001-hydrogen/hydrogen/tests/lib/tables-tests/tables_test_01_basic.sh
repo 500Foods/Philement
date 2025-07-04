@@ -93,7 +93,7 @@ EOF
 
 echo "Test 1-A: Integer and Text datatypes with different justifications"
 echo "----------------------------------------------------------------"
-"$tables_script" "$layout_file" "$data_file" 
+"$tables_script" "$layout_file" "$data_file" --debug
 
 
 # Test 1-B: Numeric datatypes - int, num, float (Theme: Blue)

@@ -14,11 +14,25 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 
-# Source the library scripts
-source "$SCRIPT_DIR/lib/log_output.sh"
+# Source the library scripts with guard clauses
+if [[ -z "$TABLES_SH_GUARD" ]] || ! command -v tables_render_from_json >/dev/null 2>&1; then
+# shellcheck source=tests/lib/tables.sh
+    source "$SCRIPT_DIR/lib/tables.sh"
+    export TABLES_SOURCED=true
+fi
+
+if [[ -z "$LOG_OUTPUT_SH_GUARD" ]]; then
+# shellcheck source=tests/lib/log_output.sh
+    source "$SCRIPT_DIR/lib/log_output.sh"
+fi
+
+# shellcheck source=tests/lib/framework.sh
 source "$SCRIPT_DIR/lib/framework.sh"
+# shellcheck source=tests/lib/file_utils.sh
 source "$SCRIPT_DIR/lib/file_utils.sh"
+# shellcheck source=tests/lib/lifecycle.sh
 source "$SCRIPT_DIR/lib/lifecycle.sh"
+# shellcheck source=tests/lib/network_utils.sh
 source "$SCRIPT_DIR/lib/network_utils.sh"
 
 # Re-set our script name after sourcing libraries (they may override NAME_SCRIPT)
@@ -257,4 +271,9 @@ print_test_completion "$NAME_SCRIPT"
 
 end_test $EXIT_CODE $TOTAL_SUBTESTS $PASS_COUNT > /dev/null
 
-exit $EXIT_CODE
+# Return status code if sourced, exit if run standalone
+if [[ "$RUNNING_IN_TEST_SUITE" == "true" ]]; then
+    return $EXIT_CODE
+else
+    exit $EXIT_CODE
+fi
