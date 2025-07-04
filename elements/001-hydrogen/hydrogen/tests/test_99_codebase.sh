@@ -63,9 +63,6 @@ CORES=$(nproc 2>/dev/null || echo 1)
 # Print beautiful test header
 print_test_header "$TEST_NAME" "$SCRIPT_VERSION"
 
-# Display core detection info
-print_message "Detected $CORES CPU cores for parallel processing"
-
 # Set up results directory
 RESULTS_DIR="$SCRIPT_DIR/results"
 mkdir -p "$RESULTS_DIR"
@@ -167,6 +164,9 @@ display_linting_info() {
 # Subtest 1: Run CMake cleanish target for the Hydrogen project
 next_subtest
 print_subtest "CMake Clean Build Artifacts"
+
+# Display core detection info (now properly associated with subtest 99-001)
+print_message "Detected $CORES CPU cores for parallel processing"
 
 display_linting_info
 

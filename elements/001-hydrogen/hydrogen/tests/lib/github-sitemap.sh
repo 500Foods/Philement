@@ -1,43 +1,89 @@
 #!/bin/bash
 
-# Markdown link checker script
-# Usage: ./github-md-links.sh <markdown_file> [--debug] [--theme <Red|Blue>]
-# Version: 0.4.0
-# Description: Checks local markdown links in a repository, reports missing links,
-#              and identifies orphaned markdown files.
+# Markdown link checker script - xargs Parallel Processing Version
+# Usage: ./github-sitemap-xargs.sh <markdown_file> [--debug] [--theme <Red|Blue>] [--profile] [--jobs <N>]
+# Version: 0.7.0
+# Description: Checks local markdown links in a repository using xargs parallel processing
 
 # Application version
-declare -r APPVERSION="0.4.1"
+declare -r APPVERSION="0.7.0"
 
-# Change history
-# 0.4.1 - 2025-06-30 - Enhanced .lintignore exclusion handling, fixed shellcheck warning for command execution
-# 0.4.0 - 2025-06-19 - Updated link checking to recognize existing folders as valid links
-# 0.3.9 - 2025-06-15 - Fixed repo root detection to use input file's directory, improved path resolution
-# 0.3.8 - 2025-06-15 - Fixed find_all_md_files path resolution, reordered -maxdepth, enhanced debug logging
-# 0.3.7 - 2025-06-15 - Optimized find_all_md_files with -prune for .git, fixed orphaned files detection
-# 0.3.6 - 2025-06-15 - Fixed orphaned files table, empty link counts, added --theme option, added orphaned files to report
-# 0.3.5 - 2025-06-15 - Fixed tables.sh invocation to avoid empty argument, improved debug output separation
-# 0.3.4 - 2025-06-15 - Fixed debug flag handling to pass --debug to tables.sh only when DEBUG=true
-# 0.3.3 - 2025-06-15 - Enhanced find_all_md_files to avoid symlinks, log errors, and use shorter timeout
-# 0.3.2 - 2025-06-15 - Improved find_all_md_files with depth limit, timeout, and error handling
-# 0.3.1 - 2025-06-15 - Changed to execute tables.sh instead of sourcing, per domain_info.sh
-# 0.3.0 - 2025-06-15 - Added --debug flag for verbose logging, improved robustness
-# 0.2.0 - 2025-06-15 - Added table output using tables.sh, version display, issue count, missing links table, and orphaned files table
-# 0.1.0 - 2025-06-15 - Initial version with basic link checking and summary output
+# Auto-detect optimal number of jobs
+detect_cpu_count() {
+    local cpu_count
+    if command -v nproc >/dev/null 2>&1; then
+        cpu_count=$(nproc)
+    elif [[ -r /proc/cpuinfo ]]; then
+        cpu_count=$(grep -c ^processor /proc/cpuinfo)
+    elif command -v sysctl >/dev/null 2>&1; then
+        cpu_count=$(sysctl -n hw.ncpu 2>/dev/null || echo 1)
+    else
+        cpu_count=1
+    fi
+    
+    # Use CPU count but cap at 8 for reasonable performance
+    if [[ "$cpu_count" -gt 8 ]]; then
+        echo 8
+    else
+        echo "$cpu_count"
+    fi
+}
+
+# Performance timing functions
+declare -A timing_data
+timing_start() {
+    local name="$1"
+    timing_data["${name}_start"]=$(date +%s%N)
+}
+
+timing_end() {
+    local name="$1"
+    local start_time="${timing_data["${name}_start"]}"
+    if [[ -n "$start_time" ]]; then
+        local end_time
+        end_time=$(date +%s%N)
+        local duration=$(( (end_time - start_time) / 1000000 ))
+        timing_data["${name}_duration"]=$duration
+        [[ "$PROFILE" == "true" ]] && echo "[PROFILE] $name: ${duration}ms" >&2
+    fi
+}
 
 # Parse arguments
 DEBUG=false
 INPUT_FILE=""
-TABLE_THEME="Red"  # Default theme
+IGNORE_FILE=""
+TABLE_THEME="Red"
 QUIET=false
 NOREPORT=false
 HELP=false
+PROFILE=false
+JOBS=""  # Will be set later if not specified
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --debug) DEBUG=true; shift ;;
         --quiet) QUIET=true; shift ;;
         --noreport) NOREPORT=true; shift ;;
         --help) HELP=true; shift ;;
+        --profile) PROFILE=true; shift ;;
+        --ignore)
+            if [[ -n "$2" ]]; then
+                IGNORE_FILE="$2"
+                shift 2
+            else
+                echo "Error: --ignore requires a file path" >&2
+                exit 1
+            fi
+            ;;
+        --jobs)
+            if [[ -n "$2" && "$2" =~ ^[0-9]+$ ]]; then
+                JOBS="$2"
+                shift 2
+            else
+                echo "Error: --jobs requires a number" >&2
+                exit 1
+            fi
+            ;;
         --theme)
             if [[ -n "$2" && "$2" =~ ^(Red|Blue)$ ]]; then
                 TABLE_THEME="$2"
@@ -53,19 +99,22 @@ done
 
 # Check if help is requested
 if [[ "$HELP" == "true" ]]; then
-    echo "Usage: $0 <markdown_file> [--debug] [--quiet] [--noreport] [--help] [--theme <Red|Blue>]"
+    echo "Usage: $0 <markdown_file> [--debug] [--quiet] [--noreport] [--help] [--theme <Red|Blue>] [--profile] [--jobs <N>] [--ignore <file>]"
     echo "Options:"
     echo "  --debug      Enable debug logging"
     echo "  --quiet      Display only tables, suppress other output"
     echo "  --noreport   Do not create a report file"
     echo "  --help       Display this help message"
     echo "  --theme      Set table theme to 'Red' or 'Blue' (default: Red)"
+    echo "  --profile    Enable performance profiling"
+    echo "  --jobs       Number of parallel jobs (default: auto-detected $(detect_cpu_count))"
+    echo "  --ignore     Specify a file with ignore patterns (like .lintignore)"
     exit 0
 fi
 
 # Check if a file parameter is provided
 if [[ -z "$INPUT_FILE" ]]; then
-    echo "Usage: $0 <markdown_file> [--debug] [--quiet] [--noreport] [--help] [--theme <Red|Blue>]" >&2
+    echo "Usage: $0 <markdown_file> [options]" >&2
     exit 1
 fi
 
@@ -74,9 +123,14 @@ debug_log() {
     [[ "$DEBUG" == "true" ]] && echo "[DEBUG] $(date '+%Y-%m-%d %H:%M:%S'): $*" >&2
 }
 
-debug_log "Starting script with input: $INPUT_FILE, debug: $DEBUG, theme: $TABLE_THEME"
+timing_start "total_execution"
+timing_start "initialization"
 
-# Check if tables.sh exists
+if [[ "$DEBUG" == "true" ]]; then
+    debug_log "Starting xargs parallel script with \"$JOBS\" jobs (auto-detected: $(detect_cpu_count) CPUs)"
+fi
+
+# Check dependencies
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TABLES_SCRIPT="${SCRIPT_DIR}/tables.sh"
 if [[ ! -f "$TABLES_SCRIPT" ]]; then
@@ -84,241 +138,69 @@ if [[ ! -f "$TABLES_SCRIPT" ]]; then
     exit 1
 fi
 
-debug_log "Tables script: $TABLES_SCRIPT"
-
-# Check for jq dependency
 if ! command -v jq >/dev/null 2>&1; then
     echo "Error: jq is required but not installed" >&2
     exit 1
 fi
 
-# Check for timeout command
-if ! command -v timeout >/dev/null 2>&1; then
-    debug_log "Warning: timeout command not found, proceeding without timeout"
-    TIMEOUT=""
-else
-    TIMEOUT="timeout 10s"
+if ! command -v xargs >/dev/null 2>&1; then
+    echo "Error: xargs is required but not found" >&2
+    exit 1
 fi
 
 # Initialize variables
-declare -A checked_files  # Track checked files
-declare -A linked_files   # Track files that have been linked to
-declare -A file_summary  # Store summary: links_total, links_checked, links_missing, rel_file
-declare -a missing_links  # Store missing links: file,link
-declare -a orphaned_files  # Store orphaned files for report
-declare -a queue=("$INPUT_FILE")  # Queue for files to process
-# Store the original working directory at the start of the script
+declare -A file_exists_cache
+declare -A checked_files
+declare -A file_summary
+declare -a missing_links
+declare -a orphaned_files
+missing_count=0
+
+# Store the original working directory
+declare original_dir
 original_dir=$(pwd)
 output_file="$original_dir/sitemap_report.txt"
-debug_log "Original working directory: $original_dir"
+
 # Set repo root based on input file's directory
-# First, resolve the absolute path of the input file relative to the original directory
+declare input_dir
 if [[ "$INPUT_FILE" == /* ]]; then
     input_dir=$(dirname "$INPUT_FILE")
 else
-    input_dir=$(cd "$original_dir" && cd "$(dirname "$INPUT_FILE")" && pwd)
+    input_dir=$(cd "$original_dir" && realpath -m "$(dirname "$INPUT_FILE")" 2>/dev/null)
 fi
-debug_log "Input file directory: $input_dir"
-cd "$input_dir" || { echo "Error: Cannot change to input file directory $input_dir" >&2; exit 1; }
+if [[ -z "$input_dir" ]]; then
+    echo "Error: Cannot resolve input file directory for $INPUT_FILE" >&2
+    exit 1
+fi
+if ! cd "$input_dir" 2>/dev/null; then
+    echo "Error: Cannot change to input file directory $input_dir for $INPUT_FILE" >&2
+    exit 1
+fi
 repo_root="$input_dir"
-debug_log "Repository root set to input file directory: $repo_root"
+debug_log "Set repo root to $repo_root for input file $INPUT_FILE"
 
-# Function to extract local markdown links from a file
-extract_links() {
-    local file="$1"
-    debug_log "Extracting links from $file"
-    if [[ ! -r "$file" ]]; then
-        debug_log "File $file is not readable"
-        return 1
-    fi
-    # Extract markdown links [text](link) and get just the link part
-    # Use non-greedy matching to get individual links
-    grep -o '\[[^]]*\]([^)]*)' "$file" 2>/dev/null | sed 's/.*](\([^)]*\)).*/\1/' | sort -u | while read -r link; do
-        debug_log "Found link: $link"
-        # Handle GitHub URLs
-        if [[ "$link" =~ ^https://github.com/[^/]+/[^/]+/blob/main/(.+)$ ]]; then
-            relative_path="${BASH_REMATCH[1]}"
-            debug_log "GitHub URL detected, extracted relative path: $relative_path"
-            # Only include .md files for traversal
-            if [[ "$relative_path" =~ \.md($|#) ]]; then
-                debug_log "Link is a markdown file, including for traversal: $relative_path"
-                echo "$relative_path"
-            else
-                debug_log "Link is not a markdown file, counting but not traversing: $relative_path"
-                # Count non-md GitHub links but don't traverse
-                echo "non_md:$relative_path"
-            fi
-        # Handle relative local paths
-        elif [[ ! "$link" =~ ^(#|http|ftp|mailto:) ]]; then
-            debug_log "Local relative link detected: $link"
-            # Only include .md files for traversal
-            if [[ "$link" =~ \.md($|#) ]]; then
-                debug_log "Local link is a markdown file, including for traversal: $link"
-                echo "$link"
-            else
-                debug_log "Local link is not a markdown file, counting but not traversing: $link"
-                # Count non-md local links but don't traverse
-                echo "non_md:$link"
-            fi
-        else
-            debug_log "Link does not match criteria (not GitHub or local), skipping: $link"
-        fi
-    done
-}
+timing_end "initialization"
 
-# Function to resolve relative path to absolute
-resolve_path() {
-    local base_dir="$1"
-    local rel_path="$2"
-    debug_log "Resolving path: $rel_path from $base_dir"
-    # Convert relative path to absolute from base_dir
-    realpath -m "$base_dir/$rel_path" 2>/dev/null
-}
-
-# Function to get path relative to repo root
-relative_to_root() {
-    local abs_path="$1"
-    debug_log "Converting to relative path: $abs_path"
-    # Get path relative to repo_root
-    if [[ -n "$abs_path" ]]; then
-        realpath --relative-to="$repo_root" "$abs_path" 2>/dev/null || echo "$abs_path"
-    else
-        echo ""
-    fi
-}
-
-# Function to process a markdown file
-process_file() {
-    local file="$1"
-    debug_log "Processing file: $file"
-    local abs_file
-    # Resolve absolute path relative to the original directory or repository root
-    if [[ "$file" == /* ]]; then
-        abs_file="$file"
-    else
-        abs_file=$(cd "$original_dir" && cd "$(dirname "$file")" && pwd)/$(basename "$file")
-    fi
-    debug_log "Absolute file path: $abs_file"
-    
-    # Skip if already checked
-    if [[ -n "${checked_files[$abs_file]}" ]]; then
-        debug_log "File already checked, skipping"
-        return
-    fi
-
-    # Check if file should be excluded based on .lintignore patterns
-    local rel_file
-    rel_file=$(relative_to_root "$abs_file")
-    local ignore_file="$repo_root/.lintignore"
+# Build file existence cache with optimized find
+timing_start "build_file_cache"
+build_file_cache() {
+    debug_log "Building file existence cache"
+    local cache_count=0
     local ignore_patterns=()
     
-    if [[ -f "$ignore_file" ]]; then
-        debug_log "Checking ignore patterns from $ignore_file for $rel_file"
-        while IFS= read -r line; do
-            # Skip empty lines and comments
-            if [[ -n "$line" && ! "$line" =~ ^[[:space:]]*# ]]; then
-                ignore_patterns+=("$line")
-            fi
-        done < "$ignore_file"
-        for pattern in "${ignore_patterns[@]}"; do
-            shopt -s extglob
-            if [[ "$rel_file" == @($pattern) || "/$rel_file" == @($pattern) ]]; then
-                shopt -u extglob
-                debug_log "Skipping file due to .lintignore pattern '$pattern': $rel_file"
-                return
-            fi
-            shopt -u extglob
-        done
-    fi
-
-    # Mark file as checked
-    checked_files[$abs_file]=1
-    debug_log "Marked file as checked"
-
-    # Skip if file doesn't exist
-    if [[ ! -f "$abs_file" ]]; then
-        if [[ "$NOREPORT" != "true" ]]; then
-            echo "Warning: File not found: $rel_file" >> "$output_file"
-        fi
-        debug_log "File not found: $abs_file"
-        return
-    fi
-
-    # Initialize counters for this file
-    local links_total=0 links_checked=0 links_missing=0
-    local base_dir
-    base_dir=$(dirname "$abs_file")
-    debug_log "Relative file path: $rel_file"
-
-    # Extract and process links
-    while IFS= read -r link; do
-        ((links_total++))
-        debug_log "Processing link: $link"
-        local actual_link="$link"
-        # Check if it's a non-md link (counted but not traversed)
-        if [[ "$link" =~ ^non_md:(.+)$ ]]; then
-            actual_link="${BASH_REMATCH[1]}"
-            debug_log "Non-md link, will count but not traverse: $actual_link"
-        fi
-        # Resolve link to absolute path
-        local abs_link
-        # For GitHub links, use repo_root as base
-        if [[ "$actual_link" =~ ^https://github.com/[^/]+/[^/]+/blob/main/(.+)$ ]]; then
-            abs_link=$(resolve_path "$repo_root" "${BASH_REMATCH[1]}")
-        # For absolute local paths starting with '/', use repo_root
-        elif [[ "$actual_link" =~ ^/ ]]; then
-            abs_link=$(resolve_path "$repo_root" "$actual_link")
-        # For relative local paths, use the directory of the current file as base
+    # Read ignore patterns from specified ignore file or default to .lintignore in same dir as input file
+    local ignore_file=""
+    if [[ -n "$IGNORE_FILE" ]]; then
+        if [[ "$IGNORE_FILE" == /* ]]; then
+            ignore_file="$IGNORE_FILE"
         else
-            abs_link=$(resolve_path "$base_dir" "$actual_link")
+            ignore_file="$original_dir/$IGNORE_FILE"
         fi
-        debug_log "Resolved link to: $abs_link"
-        # Remove any anchor (#) for file existence check
-        local link_file
-        link_file="${abs_link%%#*}"
-        debug_log "Link file (no anchor): $link_file"
-
-        if [[ -f "$link_file" ]] || [[ -d "$link_file" ]]; then
-            ((links_checked++))
-            debug_log "Link exists"
-            # Mark this file as linked to (for orphan detection)
-            if [[ "$link_file" =~ \.md$ ]]; then
-                linked_files[$link_file]=1
-                debug_log "Marked as linked: $link_file"
-            fi
-            # Add linked markdown file to queue only if it's a .md file and not marked as non_md
-            if [[ "$link_file" =~ \.md$ && ! "$link" =~ ^non_md: ]]; then
-                queue+=("$link_file")
-                debug_log "Added to queue: $link_file"
-            else
-                debug_log "Link is not for traversal (non-md or marked as non_md)"
-            fi
-        else
-            ((links_missing++))
-            ((missing_count++))
-            if [[ "$NOREPORT" != "true" ]]; then
-                echo "Missing link in $rel_file: $actual_link" >> "$output_file"
-            fi
-            missing_links+=("$rel_file:$actual_link")
-            debug_log "Missing link: $actual_link in $rel_file"
-        fi
-    done < <(extract_links "$abs_file")
-
-    # Store summary for this file
-    file_summary[$abs_file]="$links_total,$links_checked,$links_missing,$rel_file"
-    debug_log "Stored summary: total=$links_total, checked=$links_checked, missing=$links_missing, file=$rel_file"
-}
-
-# Function to find all .md files in the repo, honoring .lintignore exclusions
-find_all_md_files() {
-    debug_log "Finding all .md files in $repo_root"
-    # Use timeout, maxdepth, -P, and -prune to avoid symlinks and .git
-    local find_output="${temp_dir}/find_output.log"
-    local find_errors="${temp_dir}/find_errors.log"
-    local ignore_file="$repo_root/.lintignore"
-    local ignore_patterns=()
+    else
+        # Default to .lintignore in the same directory as the input markdown file
+        ignore_file="$repo_root/.lintignore"
+    fi
     
-    # Read ignore patterns from .lintignore if it exists
     if [[ -f "$ignore_file" ]]; then
         debug_log "Reading ignore patterns from $ignore_file"
         while IFS= read -r line; do
@@ -329,175 +211,410 @@ find_all_md_files() {
             fi
         done < "$ignore_file"
     else
-        debug_log "No .lintignore file found at $ignore_file"
+        debug_log "No ignore file found at $ignore_file"
     fi
     
-    # Execute find command to get all markdown files, excluding .git directory
-    local find_cmd="$TIMEOUT find -P \"$repo_root\" -name .git -prune -o -type f -name \"*.md\" -print"
-    debug_log "Executing find command: $find_cmd"
-    # Use a here-string to safely execute the command without word splitting issues
-    bash -c "$find_cmd" > "$find_output" 2> "$find_errors"
-    local find_status=$?
+    # Single find command with optimized output
+    while IFS= read -r -d '' entry; do
+        local path="${entry%:*}"
+        local type="${entry#*:}"
+        local rel_path=""
+        if [[ "$path" == "$repo_root"* ]]; then
+            rel_path="${path#"$repo_root"/}"
+        else
+            rel_path="$path"
+        fi
+        
+        local excluded=false
+        for pattern in "${ignore_patterns[@]}"; do
+            shopt -s extglob
+            if [[ "$rel_path" == @($pattern) || "/$rel_path" == @($pattern) ]]; then
+                shopt -u extglob
+                debug_log "Excluding file due to ignore pattern '$pattern': $rel_path"
+                excluded=true
+                break
+            fi
+            shopt -u extglob
+        done
+        
+        if [[ "$excluded" == false ]]; then
+            file_exists_cache["$path"]="$type"
+            ((cache_count++))
+        fi
+    done < <(find "$repo_root" -name .git -prune -o \( -type f -printf '%p:f\0' \) -o \( -type d -printf '%p:d\0' \) 2>/dev/null)
     
-    # Log find errors if any
-    if [[ -s "$find_errors" && "$DEBUG" == "true" ]]; then
-        debug_log "Find errors: $(cat "$find_errors")"
-    fi
+    debug_log "Built file existence cache with $cache_count entries"
+}
+
+build_file_cache
+timing_end "build_file_cache"
+
+# Optimized file processing function for xargs
+process_file_batch() {
+    local cache_file="$1"
+    local repo_root="$2"
+    local original_dir="$3"
+    local results_file="$4"
     
-    # Check if find succeeded
-    if [[ $find_status -ne 0 ]]; then
-        debug_log "Warning: find command failed or timed out, skipping orphaned files"
-        echo "[]" > "$orphaned_data_json"
+    # Load cache once per batch
+    declare -A local_cache
+    declare -A processed_files
+    while IFS=':' read -r path type; do
+        local_cache["$path"]="$type"
+    done < "$cache_file"
+    
+    # Fast file existence check
+    file_exists() {
+        local path="$1"
+        # Check exact path first
+        [[ -n "${local_cache[$path]}" ]] && return 0
+        
+        # If path ends with /, try without the trailing slash (for directory links)
+        if [[ "$path" == */ ]]; then
+            local path_no_slash="${path%/}"
+            [[ -n "${local_cache[$path_no_slash]}" ]] && return 0
+        fi
+        
+        # If path doesn't end with /, try with trailing slash (for directory links)
+        if [[ "$path" != */ ]]; then
+            local path_with_slash="$path/"
+            [[ -n "${local_cache[$path_with_slash]}" ]] && return 0
+        fi
+        
         return 1
-    fi
+    }
     
-    # Check if find output is empty
-    if [[ ! -s "$find_output" ]]; then
-        debug_log "Warning: No .md files found in $repo_root"
-        echo "[]" > "$orphaned_data_json"
-        return 1
-    fi
-    
-    # Process find output and filter out ignored files
-    while IFS= read -r file; do
-        local abs_file
-        abs_file=$(realpath "$file" 2>/dev/null)
-        if [[ -n "$abs_file" ]]; then
-            local rel_file
-            rel_file=$(relative_to_root "$abs_file")
-            if [[ -n "$rel_file" ]]; then
-                local excluded=false
-                for pattern in "${ignore_patterns[@]}"; do
+    # Check if a path should be ignored based on patterns
+    should_ignore_path() {
+        local path="$1"
+        local rel_path=""
+        if [[ "$path" == "$repo_root"* ]]; then
+            rel_path="${path#"$repo_root"/}"
+        else
+            rel_path="$path"
+        fi
+        
+        # Read ignore patterns from the same file used in main script
+        local ignore_file=""
+        if [[ -n "$IGNORE_FILE" ]]; then
+            if [[ "$IGNORE_FILE" == /* ]]; then
+                ignore_file="$IGNORE_FILE"
+            else
+                ignore_file="$original_dir/$IGNORE_FILE"
+            fi
+        else
+            ignore_file="$repo_root/.lintignore"
+        fi
+        
+        if [[ -f "$ignore_file" ]]; then
+            while IFS= read -r line; do
+                # Skip empty lines and comments
+                if [[ -n "$line" && ! "$line" =~ ^[[:space:]]*# ]]; then
                     shopt -s extglob
-                    # Ensure pattern matching works for paths with or without leading slash
-                    if [[ "$rel_file" == @($pattern) || "/$rel_file" == @($pattern) ]]; then
+                    if [[ "$rel_path" == @($line) || "/$rel_path" == @($line) || "$rel_path/" == @($line) || "/$rel_path/" == @($line) ]]; then
                         shopt -u extglob
-                        debug_log "Excluding file due to .lintignore pattern '$pattern': $rel_file"
-                        excluded=true
-                        break
+                        return 0  # Should ignore
                     fi
                     shopt -u extglob
-                done
-                if [[ "$excluded" == false ]]; then
-                    debug_log "Found .md file: $rel_file (abs: $abs_file)"
-                    echo "$rel_file"
+                fi
+            done < "$ignore_file"
+        fi
+        
+        return 1  # Should not ignore
+    }
+    
+    # Optimized link extraction
+    extract_links() {
+        local file="$1"
+        [[ ! -r "$file" ]] && return 1
+        
+        # Ultra-fast link extraction using optimized grep pipeline
+        grep -oE '\[([^]]*)\]\(([^)]+)\)' "$file" 2>/dev/null | \
+        sed -n 's/.*(\([^)]*\)).*/\1/p' | \
+        awk '!seen[$0]++' | \
+        while IFS= read -r link; do
+            # Skip external links quickly
+            case "$link" in
+                \#*|http*|ftp*|mailto:*) continue ;;
+            esac
+            
+            # Process GitHub and local links
+            if [[ "$link" =~ ^https://github.com/[^/]+/[^/]+/blob/main/(.+)$ ]]; then
+                local relative_path="${BASH_REMATCH[1]}"
+                if [[ "$relative_path" =~ \.md($|#) ]]; then
+                    echo "$relative_path"
+                else
+                    echo "non_md:$relative_path"
                 fi
             else
-                debug_log "Failed to convert $abs_file to relative path"
+                if [[ "$link" =~ \.md($|#) ]]; then
+                    echo "$link"
+                else
+                    echo "non_md:$link"
+                fi
             fi
-        else
-            debug_log "Failed to resolve realpath for $file"
-        fi
-    done < "$find_output" | sort -u
-    
-    # Debug checked files
-    if [[ "$DEBUG" == "true" ]]; then
-        debug_log "Checked files:"
-        for abs_file in "${!checked_files[@]}"; do
-            debug_log "  $abs_file"
         done
-    fi
+    }
     
-    return 0
+    # Process each file from stdin
+    while IFS= read -r file; do
+        [[ -z "$file" ]] && continue
+        
+        # Resolve absolute path efficiently
+        local abs_file
+        if [[ "$file" == /* ]]; then
+            abs_file="$file"
+        else
+            abs_file=$(cd "$original_dir" && cd "$(dirname "$file")" && pwd)
+            abs_file="$abs_file/$(basename "$file")"
+        fi
+        
+        # Skip if file doesn't exist
+        file_exists "$abs_file" || continue
+        
+        local base_dir
+        base_dir=$(dirname "$abs_file")
+        local rel_file
+        if [[ "$abs_file" == "$repo_root"* ]]; then
+            rel_file="${abs_file#"$repo_root"/}"
+        else
+            rel_file="$abs_file"
+        fi
+        
+        # Skip if file is already processed
+        if [[ -n "${processed_files[$abs_file]}" ]]; then
+            debug_log "File already processed, skipping: $rel_file"
+            continue
+        fi
+        
+        local links_total=0 links_checked=0 links_missing=0
+        local linked_files=()
+        local missing_list=()
+        
+        # Process all links
+        while IFS= read -r link; do
+            ((links_total++))
+            local actual_link="$link"
+            local traverse=true
+            
+            if [[ "$link" =~ ^non_md:(.+)$ ]]; then
+                actual_link="${BASH_REMATCH[1]}"
+                traverse=false
+            fi
+            
+            # Resolve link path with optimized logic
+            local abs_link
+            if [[ "$actual_link" =~ ^https://github.com/[^/]+/[^/]+/blob/main/(.+)$ ]]; then
+                abs_link="$repo_root/${BASH_REMATCH[1]}"
+            elif [[ "$actual_link" == /* ]]; then
+                abs_link="$repo_root$actual_link"
+            else
+                abs_link="$base_dir/$actual_link"
+            fi
+            
+            # Normalize path efficiently (only when needed)
+            case "$abs_link" in
+                */./*|*/../*) abs_link=$(realpath -m "$abs_link" 2>/dev/null) ;;
+            esac
+            
+            local link_file="${abs_link%%#*}"
+            
+            if file_exists "$link_file"; then
+                ((links_checked++))
+                if [[ "$traverse" == "true" && "$link_file" =~ \.md$ ]]; then
+                    linked_files+=("$link_file")
+                fi
+            else
+                # Check if the missing link should be ignored
+                if should_ignore_path "$link_file"; then
+                    # Treat ignored missing links as checked to avoid reporting them
+                    ((links_checked++))
+                else
+                    ((links_missing++))
+                    missing_list+=("$rel_file:$actual_link")
+                fi
+            fi
+        done < <(extract_links "$abs_file")
+        
+        # Output results in structured format
+        echo "SUMMARY:$abs_file:$links_total:$links_checked:$links_missing:$rel_file" >> "$results_file"
+        for missing in "${missing_list[@]}"; do
+            echo "MISSING:$missing" >> "$results_file"
+        done
+        for linked in "${linked_files[@]}"; do
+            echo "LINKED:$linked" >> "$results_file"
+        done
+    done
 }
 
-# Function to generate JSON for reviewed files table with sorting
+export -f process_file_batch
+
+# Clear output file if needed
+if [[ "$NOREPORT" != "true" ]]; then
+    : > "$output_file"
+fi
+
+# Create temporary files for parallel processing
+timing_start "parallel_setup"
+temp_dir=$(mktemp -d) || { echo "Error: Failed to create temporary directory" >&2; exit 1; }
+cache_file="$temp_dir/file_cache.txt"
+results_file="$temp_dir/results.txt"
+files_to_process="$temp_dir/files_list.txt"
+
+# Initialize results file
+: > "$results_file"
+
+# Export cache to file
+for path in "${!file_exists_cache[@]}"; do
+    echo "$path:${file_exists_cache[$path]}"
+done > "$cache_file"
+
+debug_log "Parallel setup complete"
+timing_end "parallel_setup"
+
+# Process files in parallel using xargs
+timing_start "parallel_processing"
+
+# Set JOBS if not specified by user
+if [[ -z "$JOBS" ]]; then
+    JOBS=$(detect_cpu_count)
+fi
+
+debug_log "Starting parallel processing with $JOBS jobs using xargs"
+
+# Start with input file and iteratively discover linked files
+declare -A processed_files
+echo "$INPUT_FILE" > "$files_to_process"
+processed_files["$INPUT_FILE"]=1
+
+iteration=0
+while [[ -s "$files_to_process" ]]; do
+    ((iteration++))
+    debug_log "Processing iteration $iteration with $(wc -l < "$files_to_process") files"
+    
+    # Process current batch in parallel using xargs
+    xargs -P "$JOBS" -I {} bash -c "process_file_batch \"\$1\" \"\$2\" \"\$3\" \"\$4\" <<< \"\$5\"" _ "$cache_file" "$repo_root" "$original_dir" "$results_file" {} < "$files_to_process"
+    
+    # Extract newly discovered files from results
+    new_files_temp="$temp_dir/new_files_$iteration.txt"
+    : > "$new_files_temp"
+    
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^LINKED:(.+)$ ]]; then
+            linked_file="${BASH_REMATCH[1]}"
+            if [[ -z "${processed_files[$linked_file]}" ]]; then
+                processed_files["$linked_file"]=1
+                echo "$linked_file" >> "$new_files_temp"
+            fi
+        fi
+    done < "$results_file"
+    
+    # Update files to process for next iteration
+    if [[ -s "$new_files_temp" ]]; then
+        mv "$new_files_temp" "$files_to_process"
+        debug_log "Discovered $(wc -l < "$files_to_process") new files"
+    else
+        : > "$files_to_process"
+        debug_log "No new files discovered, processing complete"
+    fi
+done
+
+timing_end "parallel_processing"
+
+# Process results
+timing_start "process_results"
+debug_log "Processing parallel results"
+
+while IFS= read -r line; do
+    if [[ "$line" =~ ^SUMMARY:([^:]+):([^:]+):([^:]+):([^:]+):(.+)$ ]]; then
+        abs_file="${BASH_REMATCH[1]}"
+        total="${BASH_REMATCH[2]}"
+        checked="${BASH_REMATCH[3]}"
+        missing="${BASH_REMATCH[4]}"
+        rel_file="${BASH_REMATCH[5]}"
+        
+        file_summary["$abs_file"]="$total,$checked,$missing,$rel_file"
+        checked_files["$abs_file"]=1
+        ((missing_count += missing))
+        
+    elif [[ "$line" =~ ^MISSING:(.+)$ ]]; then
+        missing_links+=("${BASH_REMATCH[1]}")
+        if [[ "$NOREPORT" != "true" ]]; then
+            IFS=':' read -r file link <<< "${BASH_REMATCH[1]}"
+            echo "Missing link in $file: $link" >> "$output_file"
+        fi
+    fi
+done < "$results_file"
+
+# Find orphaned files
+for path in "${!file_exists_cache[@]}"; do
+    if [[ "$path" == *.md && "${file_exists_cache[$path]}" == "f" ]]; then
+        if [[ -z "${checked_files[$path]}" ]]; then
+            rel_file=""
+            if [[ "$path" == "$repo_root"* ]]; then
+                rel_file="${path#"$repo_root"/}"
+            else
+                rel_file="$path"
+            fi
+            orphaned_files+=("$rel_file")
+        fi
+    fi
+done
+
+timing_end "process_results"
+
+# Generate JSON and render tables
+timing_start "json_generation"
+
+# Generate JSON functions (optimized)
 generate_reviewed_files_json() {
     local json_file="$1"
-    local temp_file="$temp_dir/reviewed_temp.json"
-    debug_log "Generating reviewed files JSON: $json_file"
-    echo "[" > "$temp_file"
-    local first=true
+    local json_data=""
     for abs_file in "${!file_summary[@]}"; do
         IFS=',' read -r total checked missing rel_file <<< "${file_summary[$abs_file]}"
-        debug_log "Adding file to temp JSON: $rel_file, total=$total, checked=$checked, missing=$missing"
-        if [[ "$first" == "true" ]]; then
-            first=false
-        else
-            echo "," >> "$temp_file"
-        fi
-        # Extract the folder path (excluding the filename)
         folder_path=$(dirname "$rel_file")
-        if [[ "$folder_path" == "." ]]; then
-            folder_path="."
+        [[ "$folder_path" == "." ]] && folder_path="."
+        
+        if [[ -n "$json_data" ]]; then
+            json_data+=","
         fi
-        jq -nc --arg file "$rel_file" --arg folder "$folder_path" --arg total "$total" --arg checked "$checked" --arg missing "$missing" \
-            '{file: $file, folder: $folder, total: ($total | tonumber), checked: ($checked | tonumber), missing: ($missing | tonumber)}' >> "$temp_file" 2>/dev/null
+        json_data+="{\"file\":\"$rel_file\",\"folder\":\"$folder_path\",\"total\":$total,\"checked\":$checked,\"missing\":$missing}"
     done
-    echo "]" >> "$temp_file"
-    debug_log "Sorting reviewed files JSON"
-    # Sort the JSON array by a modified path that inserts 'A' before filenames to prioritize files over folders
-    jq -c 'sort_by(.file | split("/") | . as $parts | {path: $parts, modified_path: (if ($parts | length > 0 and ($parts[-1] | test("\\."))) then ($parts[:-1] + ["A" + $parts[-1]]) else $parts end | join("/"))} | .modified_path)' "$temp_file" > "$json_file"
-    debug_log "Reviewed files JSON generated and sorted"
-    [[ "$DEBUG" == "true" ]] && debug_log "JSON content: $(cat "$json_file")"
+    
+    echo "[$json_data]" | jq -c 'sort_by(.file | split("/") | . as $parts | {path: $parts, modified_path: (if ($parts | length > 0 and ($parts[-1] | test("\\."))) then ($parts[:-1] + ["A" + $parts[-1]]) else $parts end | join("/"))} | .modified_path)' > "$json_file"
 }
 
-# Function to generate JSON for missing links table with sorting
 generate_missing_links_json() {
     local json_file="$1"
-    local temp_file="$temp_dir/missing_temp.json"
-    debug_log "Generating missing links JSON: $json_file"
-    echo "[" > "$temp_file"
-    local first=true
+    local json_data=""
     for entry in "${missing_links[@]}"; do
         IFS=':' read -r file link <<< "$entry"
-        debug_log "Adding missing link to temp JSON: file=$file, link=$link"
-        if [[ "$first" == "true" ]]; then
-            first=false
-        else
-            echo "," >> "$temp_file"
+        if [[ -n "$json_data" ]]; then
+            json_data+=","
         fi
-        jq -nc --arg file "$file" --arg link "$link" '{file: $file, link: $link}' >> "$temp_file" 2>/dev/null
+        link_escaped="${link//\"/\\\"}"
+        json_data+="{\"file\":\"$file\",\"link\":\"$link_escaped\"}"
     done
-    echo "]" >> "$temp_file"
-    debug_log "Sorting missing links JSON"
-    # Sort the JSON array by a modified path that inserts 'A' before filenames to prioritize files over folders
-    jq -c 'sort_by(.file | split("/") | . as $parts | {path: $parts, modified_path: (if ($parts | length > 0 and ($parts[-1] | test("\\."))) then ($parts[:-1] + ["A" + $parts[-1]]) else $parts end | join("/"))} | .modified_path)' "$temp_file" > "$json_file"
-    debug_log "Missing links JSON generated and sorted"
-    [[ "$DEBUG" == "true" ]] && debug_log "JSON content: $(cat "$json_file")"
+    
+    echo "[$json_data]" | jq -c 'sort_by(.file)' > "$json_file"
 }
 
-# Function to generate JSON for orphaned files table with sorting
 generate_orphaned_files_json() {
     local json_file="$1"
-    local temp_file="$temp_dir/orphaned_temp.json"
-    debug_log "Generating orphaned files JSON: $json_file"
-    echo "[" > "$temp_file"
-    local first=true
-    while IFS= read -r rel_file; do
-        local abs_file
-        abs_file=$(resolve_path "$repo_root" "$rel_file")
-        debug_log "Checking if $rel_file (abs: $abs_file) is orphaned"
-        if [[ -z "${checked_files[$abs_file]}" && -z "${linked_files[$abs_file]}" ]]; then
-            debug_log "Found orphaned file: $rel_file (not checked and not linked)"
-            orphaned_files+=("$rel_file")
-            if [[ "$first" == "true" ]]; then
-                first=false
-            else
-                echo "," >> "$temp_file"
-            fi
-            jq -nc --arg file "$rel_file" '{file: $file}' >> "$temp_file" 2>/dev/null
-        else
-            if [[ -n "${checked_files[$abs_file]}" ]]; then
-                debug_log "$rel_file is checked, not orphaned"
-            fi
-            if [[ -n "${linked_files[$abs_file]}" ]]; then
-                debug_log "$rel_file is linked to, not orphaned"
-            fi
+    local json_data=""
+    for rel_file in "${orphaned_files[@]}"; do
+        if [[ -n "$json_data" ]]; then
+            json_data+=","
         fi
-    done < <(find_all_md_files)
-    echo "]" >> "$temp_file"
-    debug_log "Sorting orphaned files JSON"
-    # Sort the JSON array by a modified path that inserts 'A' before filenames to prioritize files over folders
-    jq -c 'sort_by(.file | split("/") | . as $parts | {path: $parts, modified_path: (if ($parts | length > 0 and ($parts[-1] | test("\\."))) then ($parts[:-1] + ["A" + $parts[-1]]) else $parts end | join("/"))} | .modified_path)' "$temp_file" > "$json_file"
-    debug_log "Orphaned files JSON generated and sorted"
-    [[ "$DEBUG" == "true" ]] && debug_log "JSON content: $(cat "$json_file")"
+        json_data+="{\"file\":\"$rel_file\"}"
+    done
+    
+    echo "[$json_data]" | jq -c 'sort_by(.file)' > "$json_file"
 }
 
-# Function to generate layout JSON for reviewed files table
+# Layout generation functions
 generate_reviewed_layout_json() {
     local json_file="$1"
-    debug_log "Generating reviewed layout JSON: $json_file"
     jq -n --arg theme "$TABLE_THEME" '{
         theme: $theme,
         title: "Reviewed Files Summary",
@@ -509,14 +626,10 @@ generate_reviewed_layout_json() {
             {header: "Missing Links", key: "missing", datatype: "int", justification: "right","summary":"sum"}
         ]
     }' > "$json_file" 2>/dev/null
-    debug_log "Reviewed layout JSON generated"
-    [[ "$DEBUG" == "true" ]] && debug_log "JSON content: $(cat "$json_file")"
 }
 
-# Function to generate layout JSON for missing links table
 generate_missing_layout_json() {
     local json_file="$1"
-    debug_log "Generating missing layout JSON: $json_file"
     jq -n --arg theme "$TABLE_THEME" '{
         theme: $theme,
         title: "Missing Links",
@@ -525,14 +638,10 @@ generate_missing_layout_json() {
             {header: "Missing Link", key: "link", datatype: "text" }
         ]
     }' > "$json_file" 2>/dev/null
-    debug_log "Missing layout JSON generated"
-    [[ "$DEBUG" == "true" ]] && debug_log "JSON content: $(cat "$json_file")"
 }
 
-# Function to generate layout JSON for orphaned files table
 generate_orphaned_layout_json() {
     local json_file="$1"
-    debug_log "Generating orphaned layout JSON: $json_file"
     jq -n --arg theme "$TABLE_THEME" '{
         theme: $theme,
         title: "Orphaned Markdown Files",
@@ -540,62 +649,9 @@ generate_orphaned_layout_json() {
             {header: "File", key: "file", datatype: "text", "summary":"count"}
         ]
     }' > "$json_file" 2>/dev/null
-    debug_log "Orphaned layout JSON generated"
-    [[ "$DEBUG" == "true" ]] && debug_log "JSON content: $(cat "$json_file")"
 }
 
-# Clear or create output file unless noreport is enabled
-if [[ "$NOREPORT" != "true" ]]; then
-    debug_log "Clearing output file: $output_file"
-    : > "$output_file"
-else
-    debug_log "Report generation skipped due to --noreport option"
-fi
-
-# Process queue
-debug_log "Starting queue processing with ${#queue[@]} files"
-while [ ${#queue[@]} -gt 0 ]; do
-    current_file="${queue[0]}"
-    queue=("${queue[@]:1}")
-    debug_log "Queue size: ${#queue[@]}, processing: $current_file"
-    process_file "$current_file"
-done
-debug_log "Queue processing complete"
-
-# Write summary and orphaned files to output file if noreport is not enabled
-if [[ "$NOREPORT" != "true" ]]; then
-    debug_log "Writing summary to $output_file"
-    {
-        echo -e "\n=== Link Check Summary ==="
-        for abs_file in "${!file_summary[@]}"; do
-            IFS=',' read -r total checked missing rel_file <<< "${file_summary[$abs_file]}"
-            echo "File: $rel_file"
-            echo "  Total Links: $total"
-            echo "  Checked Links: $checked"
-            echo "  Missing Links: $missing"
-            echo ""
-            debug_log "Wrote summary for $rel_file"
-        done
-        
-        debug_log "Writing orphaned files to $output_file"
-        echo -e "\n=== Orphaned Markdown Files ==="
-        if [[ ${#orphaned_files[@]} -gt 0 ]]; then
-            for file in "${orphaned_files[@]}"; do
-                echo "File: $file"
-            done
-        else
-            echo "No orphaned files found"
-        fi
-        echo ""
-    } >> "$output_file"
-else
-    debug_log "Skipping writing summary and orphaned files due to --noreport option"
-fi
-
-# Generate temporary JSON files
-debug_log "Creating temporary directory"
-temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory" >&2; exit 1; }
-debug_log "Temporary directory: $temp_dir"
+# Generate JSON files
 reviewed_data_json="$temp_dir/reviewed_data.json"
 reviewed_layout_json="$temp_dir/reviewed_layout.json"
 missing_data_json="$temp_dir/missing_data.json"
@@ -603,7 +659,6 @@ missing_layout_json="$temp_dir/missing_layout.json"
 orphaned_data_json="$temp_dir/orphaned_data.json"
 orphaned_layout_json="$temp_dir/orphaned_layout.json"
 
-# Generate JSON data and layouts
 generate_reviewed_files_json "$reviewed_data_json"
 generate_reviewed_layout_json "$reviewed_layout_json"
 generate_missing_links_json "$missing_data_json"
@@ -611,41 +666,51 @@ generate_missing_layout_json "$missing_layout_json"
 generate_orphaned_files_json "$orphaned_data_json"
 generate_orphaned_layout_json "$orphaned_layout_json"
 
-# Print version and issue count to stdout unless quiet mode is enabled
+timing_end "json_generation"
+
+# Output results
 if [[ "$QUIET" != "true" ]]; then
-    echo "Markdown Link Checker v$APPVERSION"
+    echo "Markdown Link Checker v$APPVERSION (xargs Parallel Mode - $JOBS jobs)"
     echo "Issues found: $missing_count"
     echo ""
 fi
 
-# Render tables to stdout, redirecting tables.sh debug output to a separate file
+# Render tables
+timing_start "table_rendering"
 [[ "$DEBUG" == "true" ]] && debug_flag="--debug" || debug_flag=""
-tables_debug_log="$temp_dir/tables_debug.log"
-debug_log "Tables.sh debug output will be written to $tables_debug_log"
 
-debug_log "Rendering reviewed files table"
-bash "$TABLES_SCRIPT" "$reviewed_layout_json" "$reviewed_data_json" ${debug_flag:+"$debug_flag"} 2>> "$tables_debug_log"
+bash "$TABLES_SCRIPT" "$reviewed_layout_json" "$reviewed_data_json" ${debug_flag:+"$debug_flag"}
 if [[ ${#missing_links[@]} -gt 0 ]]; then
-    debug_log "Rendering missing links table"
-    bash "$TABLES_SCRIPT" "$missing_layout_json" "$missing_data_json" ${debug_flag:+"$debug_flag"} 2>> "$tables_debug_log"
+    bash "$TABLES_SCRIPT" "$missing_layout_json" "$missing_data_json" ${debug_flag:+"$debug_flag"}
 fi
 if [[ ${#orphaned_files[@]} -gt 0 ]]; then
-    debug_log "Rendering orphaned files table"
-    bash "$TABLES_SCRIPT" "$orphaned_layout_json" "$orphaned_data_json" ${debug_flag:+"$debug_flag"} 2>> "$tables_debug_log"
-else
-    debug_log "No orphaned files, skipping table rendering"
+    bash "$TABLES_SCRIPT" "$orphaned_layout_json" "$orphaned_data_json" ${debug_flag:+"$debug_flag"}
+fi
+timing_end "table_rendering"
+
+# Write summary to report file
+if [[ "$NOREPORT" != "true" ]]; then
+    {
+        echo -e "\n=== Link Check Summary ==="
+        echo "Files processed: ${#checked_files[@]}"
+        echo "Total missing links: $missing_count"
+        echo "Orphaned files: ${#orphaned_files[@]}"
+        echo ""
+        
+        if [[ ${#orphaned_files[@]} -gt 0 ]]; then
+            echo "=== Orphaned Markdown Files ==="
+            for file in "${orphaned_files[@]}"; do
+                echo "File: $file"
+            done
+            echo ""
+        fi
+    } >> "$output_file"
 fi
 
-# Log tables.sh debug output if any
-if [[ -s "$tables_debug_log" && "$DEBUG" == "true" ]]; then
-    debug_log "Tables.sh debug output: $(cat "$tables_debug_log")"
-fi
-
-# Clean up temporary files
-debug_log "Cleaning up temporary directory: $temp_dir"
+# Clean up
 rm -rf "$temp_dir" 2>/dev/null
 
-# Final message unless quiet mode is enabled
+# Final message
 if [[ "$QUIET" != "true" ]]; then
     echo ""
     if [[ "$NOREPORT" != "true" ]]; then
@@ -654,7 +719,23 @@ if [[ "$QUIET" != "true" ]]; then
         echo "Link check complete. Report generation skipped due to --noreport option"
     fi
 fi
-# Calculate total issues for return code
+
+timing_end "total_execution"
+
+# Performance summary
+if [[ "$PROFILE" == "true" ]]; then
+    echo "" >&2
+    echo "[PROFILE] Performance Summary (xargs Parallel Mode - $JOBS jobs):" >&2
+    echo "[PROFILE] Total execution: ${timing_data[total_execution_duration]}ms" >&2
+    echo "[PROFILE] Initialization: ${timing_data[initialization_duration]}ms" >&2
+    echo "[PROFILE] Build file cache: ${timing_data[build_file_cache_duration]}ms" >&2
+    echo "[PROFILE] Parallel setup: ${timing_data[parallel_setup_duration]}ms" >&2
+    echo "[PROFILE] Parallel processing: ${timing_data[parallel_processing_duration]}ms" >&2
+    echo "[PROFILE] Process results: ${timing_data[process_results_duration]}ms" >&2
+    echo "[PROFILE] JSON generation: ${timing_data[json_generation_duration]}ms" >&2
+    echo "[PROFILE] Table rendering: ${timing_data[table_rendering_duration]}ms" >&2
+fi
+
+# Exit with issue count
 total_issues=$((missing_count + ${#orphaned_files[@]}))
-debug_log "Script completed with $total_issues issues (missing: $missing_count, orphaned: ${#orphaned_files[@]})"
 exit $total_issues
