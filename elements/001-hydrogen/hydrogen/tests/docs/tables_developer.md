@@ -47,6 +47,8 @@ The main execution flow follows these steps:
 6. Process data rows, update column widths, calculate summaries
 7. Render the table (title, borders, headers, data rows, summaries, footer)
 
+Additionally, the script can now be sourced in other scripts to directly call its functions for programmatic table rendering, allowing for seamless integration into custom workflows.
+
 Here's a visualization of the data flow:
 
 ```diagram
@@ -667,9 +669,10 @@ test_new_feature() {
 
 ## Version History
 
+- **1.2.0**: Consolidated script to under 1,000 lines for improved maintainability, added new feature to source the script and call functions directly for programmatic table rendering
 - **1.1.0**: Added Avg summary type, enhanced wrap functionality, expanded datatype support for summaries, increased test coverage, and passed shellcheck with no errors or warnings
 - **1.0.2**: Added help functionality and version history section
 - **1.0.1**: Fixed shellcheck issues (SC2004, SC2155)
 - **1.0.0**: Initial release with table rendering functionality
 
-The current implementation includes title/footer support, enhanced theming, the `num` datatype with thousands separators, comprehensive summary calculations including averages, advanced text wrapping options, and support for column visibility to hide specific columns from display.
+The current implementation includes title/footer support, enhanced theming, the `num` datatype with thousands separators, comprehensive summary calculations including averages, advanced text wrapping options, support for column visibility to hide specific columns from display, and the ability to source the script for direct function calls.

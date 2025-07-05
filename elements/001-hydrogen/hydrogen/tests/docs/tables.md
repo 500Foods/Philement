@@ -100,6 +100,35 @@ Each theme includes specific colors for:
 - **Footer**: Footer text
 - **Text**: Regular data content
 
+#### Detailed Theme Information
+
+The Tables Themes Library provides a comprehensive theme system for the `tables.sh` framework, managing visual appearance with customizable themes that define colors and ASCII characters for all table elements.
+
+##### Key Features
+
+- **Multiple Themes**: Pre-defined Red and Blue themes
+- **Color Management**: ANSI color codes for different elements
+- **Unicode Characters**: Box-drawing characters for professional appearance
+- **Theme Switching**: Dynamic theme changes during runtime
+- **Extensible Design**: Easy to add new themes
+
+##### Available Themes
+
+- **Red Theme**: Uses red borders (`\033[0;31m`), with Green captions (`\033[0;32m`), Bright White headers and summaries (`\033[1;37m`), Cyan footers (`\033[0;36m`), and default text color.
+- **Blue Theme**: Uses blue borders (`\033[0;34m`), with Blue captions (`\033[0;34m`), Bright White headers and summaries (`\033[1;37m`), Cyan footers (`\033[0;36m`), and default text color.
+
+##### Theme Structure
+
+Each theme is defined as an associative array with color elements (border, caption, header, footer, summary, text) and border characters (corners, lines, junctions).
+
+##### Functions
+
+- **get_theme**: Updates the active theme based on the theme name ("Red" or "Blue"). It supports case-insensitive names and falls back to Red for unknown themes.
+
+##### Extending Themes
+
+Users can define new themes by creating new associative arrays with custom color schemes and updating the `get_theme` function to recognize the new theme.
+
 ### Title and Footer Support
 
 Tables can include optional titles and footers with flexible positioning:
@@ -479,9 +508,9 @@ This example shows how to use the `visible: false` property to hide a column fro
 
 In this example, the "Hidden Data" column is not displayed in the table output, even though the data is present in the JSON file.
 
-## Using in Scripts
+## Using in Scripts (New Feature)
 
-You can source tables.sh in your own scripts to use its functions:
+A powerful new feature in `tables.sh` allows you to source the script directly in your own scripts and call its functions to render tables programmatically. This enables seamless integration into your workflows:
 
 ```bash
 #!/usr/bin/env bash

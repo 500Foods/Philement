@@ -2,7 +2,7 @@
 
 ## Overview
 
-The GitHub Sitemap Library (`lib/github-sitemap.sh`) is a comprehensive markdown link checker script designed to analyze and maintain the integrity of markdown documentation within a GitHub repository. It automates the process of checking links and mapping file relationships in markdown files.
+The GitHub Sitemap Library (`github-sitemap.sh`) is a comprehensive markdown link checker script designed to analyze and maintain the integrity of markdown documentation within a GitHub repository. It automates the process of checking links and mapping file relationships in markdown files using parallel processing for enhanced performance.
 
 ## Purpose
 
@@ -18,14 +18,15 @@ The GitHub Sitemap Library (`lib/github-sitemap.sh`) is a comprehensive markdown
 - **Orphaned File Detection** - Identifies unlinked markdown files
 - **Detailed Reporting** - Generates comprehensive reports and tables
 - **Customizable Output** - Multiple output options and themes
-- **Exclusion Support** - Honors `.lintignore` patterns for file exclusion
-- **Queue-based Processing** - Efficiently processes linked files
+- **Exclusion Support** - Honors `.lintignore` patterns or custom ignore files for file exclusion
+- **Parallel Processing** - Utilizes `xargs` for faster processing with configurable job counts
+- **Performance Profiling** - Measures and reports execution times for different stages
 
 ## Script Information
 
-- **Version**: 0.4.1
+- **Version**: 0.7.0
 - **Usage**: `./github-sitemap.sh <markdown_file> [options]`
-- **Description**: Checks local markdown links in a repository, reports missing links, and identifies orphaned markdown files
+- **Description**: Checks local markdown links in a repository using parallel processing, reports missing links, and identifies orphaned markdown files
 
 ## Command Line Options
 
@@ -40,6 +41,9 @@ The GitHub Sitemap Library (`lib/github-sitemap.sh`) is a comprehensive markdown
 - `--noreport` - Do not create a report file
 - `--help` - Display help message and exit
 - `--theme <Red|Blue>` - Set table theme (default: Red)
+- `--profile` - Enable performance profiling
+- `--jobs <N>` - Specify the number of parallel jobs (default: auto-detected based on CPU count)
+- `--ignore <file>` - Specify a custom file with ignore patterns (overrides default `.lintignore`)
 
 ### Usage Examples
 
@@ -56,6 +60,15 @@ The GitHub Sitemap Library (`lib/github-sitemap.sh`) is a comprehensive markdown
 # Skip report file generation
 ./github-sitemap.sh README.md --noreport
 
+# Enable performance profiling
+./github-sitemap.sh README.md --profile
+
+# Specify number of parallel jobs
+./github-sitemap.sh README.md --jobs 4
+
+# Use a custom ignore file
+./github-sitemap.sh README.md --ignore custom_ignore.txt
+
 # Show help
 ./github-sitemap.sh --help
 ```
@@ -64,13 +77,13 @@ The GitHub Sitemap Library (`lib/github-sitemap.sh`) is a comprehensive markdown
 
 ### Processing Pipeline
 
-1. **Initialization** - Parse arguments and validate dependencies
-2. **File Processing** - Start with input file and process queue
-3. **Link Extraction** - Extract markdown links using regex patterns
-4. **Link Validation** - Check if linked files/directories exist
-5. **Queue Management** - Add linked markdown files to processing queue
+1. **Initialization** - Parse arguments, validate dependencies, and set up parallel processing parameters
+2. **File Cache Building** - Build a cache of file existence for faster lookups
+3. **Parallel Processing Setup** - Prepare temporary files and export cache for parallel jobs
+4. **Link Extraction and Validation** - Extract markdown links and check if linked files/directories exist using `xargs` for parallel execution
+5. **Iterative Discovery** - Process linked markdown files in multiple iterations to cover the full network of links
 6. **Orphan Detection** - Find markdown files not linked by others
-7. **Report Generation** - Create tables and optional report file
+7. **Report Generation** - Create tables, performance summaries, and optional report file
 
 ### Link Types Supported
 
@@ -94,10 +107,10 @@ The GitHub Sitemap Library (`lib/github-sitemap.sh`) is a comprehensive markdown
 
 ### File Discovery and Exclusion
 
-The script uses `.lintignore` patterns to exclude files:
+The script uses `.lintignore` patterns by default or a custom ignore file specified via `--ignore` to exclude files:
 
 ```bash
-# Example .lintignore patterns
+# Example ignore patterns
 *.tmp
 build/
 docs/generated/*
@@ -105,35 +118,84 @@ docs/generated/*
 
 **Exclusion Logic:**
 
-- Reads patterns from `.lintignore` in repository root
+- Reads patterns from `.lintignore` in repository root or a specified ignore file
 - Skips empty lines and comments (starting with `#`)
 - Uses bash extended globbing for pattern matching
 - Applies to both processing and orphan detection
 
 ## Global Variables
 
-### Tracking Arrays
+### Tracking Arrays and Associative Arrays
 
 ```bash
-declare -A checked_files    # Track processed files
-declare -A linked_files     # Track files that have been linked to
-declare -A file_summary     # Store file statistics
-declare -a missing_links    # Store missing link entries
-declare -a orphaned_files   # Store orphaned file list
-declare -a queue           # Processing queue
+declare -A file_exists_cache  # Cache of file existence for performance
+declare -A checked_files      # Track processed files
+declare -A file_summary       # Store file statistics
+declare -a missing_links      # Store missing link entries
+declare -a orphaned_files     # Store orphaned file list
+declare -A timing_data        # Store performance timing data
 ```
 
 ### Configuration Variables
 
 ```bash
 DEBUG=false           # Debug logging flag
-QUIET=false          # Quiet output mode
-NOREPORT=false       # Skip report file creation
-TABLE_THEME="Red"    # Table color theme
-APPVERSION="0.4.1"   # Script version
+QUIET=false           # Quiet output mode
+NOREPORT=false        # Skip report file creation
+TABLE_THEME="Red"     # Table color theme
+APPVERSION="0.7.0"    # Script version
+PROFILE=false         # Performance profiling flag
+JOBS=""               # Number of parallel jobs (auto-detected if not set)
+IGNORE_FILE=""        # Custom ignore file path
 ```
 
 ## Core Functions
+
+### detect_cpu_count
+
+Detects the optimal number of parallel jobs based on CPU count.
+
+**Returns:**
+
+- Number of CPUs or a capped value (max 8) for reasonable performance
+
+**Features:**
+
+- Uses `nproc`, `/proc/cpuinfo`, or `sysctl` for CPU detection
+- Caps at 8 jobs to balance performance and system load
+
+### timing_start and timing_end
+
+Records performance timing for different stages of execution.
+
+**Parameters:**
+
+- `name` - Name of the timing stage
+
+**Features:**
+
+- Stores start and end times in nanoseconds
+- Calculates duration in milliseconds
+- Outputs profiling data if `--profile` is enabled
+
+### process_file_batch
+
+Optimized function for processing a batch of files in parallel via `xargs`.
+
+**Parameters:**
+
+- `cache_file` - File containing the file existence cache
+- `repo_root` - Repository root directory
+- `original_dir` - Original working directory
+- `results_file` - File to store processing results
+- Reads file paths from stdin for processing
+
+**Features:**
+
+- Loads file cache for fast existence checks
+- Extracts and validates links from markdown files
+- Outputs structured results for summary, missing links, and linked files
+- Handles ignore patterns within parallel processes
 
 ### extract_links
 
@@ -155,85 +217,15 @@ Extracts local markdown links from a file using regex patterns.
 - Filters out external URLs and fragments
 - Only includes `.md` files for traversal
 
-**Example:**
+### build_file_cache
 
-```bash
-links=$(extract_links "README.md")
-```
-
-### resolve_path
-
-Converts relative paths to absolute paths from a base directory.
-
-**Parameters:**
-
-- `base_dir` - Base directory for resolution
-- `rel_path` - Relative path to resolve
-
-**Returns:**
-
-- Absolute path via stdout
-
-**Example:**
-
-```bash
-abs_path=$(resolve_path "/repo/docs" "../README.md")
-```
-
-### relative_to_root
-
-Converts absolute paths to paths relative to repository root.
-
-**Parameters:**
-
-- `abs_path` - Absolute path to convert
-
-**Returns:**
-
-- Relative path via stdout
-
-**Example:**
-
-```bash
-rel_path=$(relative_to_root "/repo/docs/guide.md")
-# Returns: docs/guide.md
-```
-
-### process_file
-
-Main function to process a single markdown file.
-
-**Parameters:**
-
-- `file` - Path to the markdown file to process
-
-**Side Effects:**
-
-- Updates `checked_files`, `linked_files`, `file_summary`
-- Adds entries to `missing_links` for broken links
-- Adds linked markdown files to processing queue
+Builds a cache of file existence for performance optimization.
 
 **Features:**
 
-- Checks `.lintignore` exclusion patterns
-- Validates all extracted links
-- Tracks statistics (total, checked, missing links)
-- Handles both files and directories as valid targets
-
-### find_all_md_files
-
-Discovers all markdown files in the repository.
-
-**Returns:**
-
-- Outputs relative file paths to stdout
-
-**Features:**
-
-- Uses `find` with timeout and depth limits
-- Excludes `.git` directories and symlinks
-- Honors `.lintignore` exclusion patterns
-- Provides error handling and logging
+- Uses a single `find` command to populate the cache
+- Applies ignore patterns during cache building
+- Stores file and directory types for quick lookup
 
 ### generate_*_json Functions
 
@@ -304,7 +296,7 @@ When `--noreport` is not used, creates `sitemap_report.txt` with:
 - Link check summary for each file
 - List of missing links with file locations
 - List of orphaned markdown files
-- Detailed statistics and warnings
+- Detailed statistics and performance metrics (if profiling is enabled)
 
 ## Dependencies
 
@@ -315,10 +307,7 @@ When `--noreport` is not used, creates `sitemap_report.txt` with:
 - **find** - File discovery with exclusion support
 - **grep** - Pattern matching for link extraction
 - **realpath** - Path resolution and normalization
-
-### Optional Tools
-
-- **timeout** - Command timeout support (warns if missing)
+- **xargs** - Parallel processing of files
 
 ### Custom Dependencies
 
@@ -348,10 +337,10 @@ When `--noreport` is not used, creates `sitemap_report.txt` with:
 
 ## Performance Considerations
 
-- **Queue-based Processing** - Avoids duplicate file processing
-- **Timeout Support** - Prevents hanging on large repositories
-- **Depth Limits** - Controls find command scope
-- **Pattern Exclusion** - Reduces processing overhead
+- **Parallel Processing with xargs** - Significantly speeds up processing of large repositories by utilizing multiple CPU cores
+- **File Existence Cache** - Reduces disk I/O by caching file system lookups
+- **Iterative Processing** - Efficiently handles linked file discovery in batches
+- **Profiling Option** - Allows detailed performance analysis to identify bottlenecks
 
 ## Integration Patterns
 
@@ -359,7 +348,7 @@ When `--noreport` is not used, creates `sitemap_report.txt` with:
 
 ```bash
 # Check documentation in CI pipeline
-./github-sitemap.sh README.md --quiet --noreport
+./github-sitemap.sh README.md --quiet --noreport --jobs 4
 exit_code=$?
 if [[ $exit_code -gt 0 ]]; then
     echo "Documentation issues found: $exit_code"
@@ -378,12 +367,13 @@ fi
 ### Regular Maintenance
 
 ```bash
-# Weekly documentation check
-./github-sitemap.sh README.md --theme Blue > weekly_report.txt
+# Weekly documentation check with profiling
+./github-sitemap.sh README.md --theme Blue --profile > weekly_report.txt
 ```
 
 ## Version History
 
+- **0.7.0** (2025-07-04) - Major performance overhaul with `xargs` parallel processing, added `--profile`, `--jobs`, and `--ignore` options
 - **0.4.1** (2025-06-30) - Enhanced .lintignore exclusion handling, fixed shellcheck warning
 - **0.4.0** (2025-06-19) - Updated link checking to recognize existing folders as valid links
 - **0.3.9** (2025-06-15) - Fixed repo root detection, improved path resolution
@@ -404,9 +394,11 @@ fi
 1. **Start with main documentation** - Use README.md or main index file
 2. **Use appropriate themes** - Choose Red or Blue based on preference
 3. **Enable debug for troubleshooting** - Use `--debug` for detailed logging
-4. **Maintain .lintignore** - Exclude generated or temporary files
-5. **Regular checks** - Integrate into development workflow
-6. **Review orphaned files** - Regularly check for unlinked documentation
+4. **Maintain ignore patterns** - Exclude generated or temporary files using `.lintignore` or custom ignore files
+5. **Optimize parallel jobs** - Adjust `--jobs` based on system capabilities for optimal performance
+6. **Regular checks** - Integrate into development workflow
+7. **Review orphaned files** - Regularly check for unlinked documentation
+8. **Profile performance** - Use `--profile` to analyze execution time on large repositories
 
 ## Troubleshooting
 
@@ -420,22 +412,17 @@ fi
 **No markdown files found:**
 
 - Verify repository structure
-- Check .lintignore exclusions
+- Check ignore file exclusions
 - Enable debug mode for detailed logging
 
-**Timeout errors:**
+**Performance issues:**
 
-- Large repositories may need timeout adjustments
-- Consider excluding large directories
+- Adjust the number of jobs with `--jobs` if processing is too slow or overloading the system
+- Use `--profile` to identify slow stages
+- Consider excluding large directories in ignore patterns
 
 **Path resolution errors:**
 
 - Ensure proper file permissions
 - Check for broken symlinks
 - Verify repository structure
-
-## Related Documentation
-
-- [Tables Library](tables.md) - Table rendering system used for output
-- [Framework Library](framework.md) - Testing framework integration
-- [LIBRARIES.md](LIBRARIES.md) - Complete library documentation index

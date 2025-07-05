@@ -48,6 +48,9 @@ Remember:
 -->
 
 - July 2025
+  - [2025-Jul-04 (Fri)](docs/releases/2025-07/2025-07-04.md): Testing Updates
+  - [2025-Jul-03 (Thu)](docs/releases/2025-07/2025-07-03.md): Documentation, Testing Updates
+  - [2025-Jul-02 (Wed)](docs/releases/2025-07/2025-07-02.md): Testing Framework, Documentation
   - [2025-Jul-01 (Tue)](docs/releases/2025-07/2025-07-01.md): CMake Build System, OIDC Examples
 
 - June 2025

@@ -168,6 +168,33 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [2025-04-04.md](docs/releases/2025-04/2025-04-04.md)
 - [2025-04-05.md](docs/releases/2025-04/2025-04-05.md)
 
+### Folder: /docs/releases/2025-05
+
+- [2025-05-06.md](docs/releases/2025-05/2025-05-06.md)
+
+### Folder: /docs/releases/2025-06
+
+- [2025-06-01.md](docs/releases/2025-06/2025-06-01.md)
+- [2025-06-03.md](docs/releases/2025-06/2025-06-03.md)
+- [2025-06-09.md](docs/releases/2025-06/2025-06-09.md)
+- [2025-06-16.md](docs/releases/2025-06/2025-06-16.md)
+- [2025-06-17.md](docs/releases/2025-06/2025-06-17.md)
+- [2025-06-18.md](docs/releases/2025-06/2025-06-18.md)
+- [2025-06-19.md](docs/releases/2025-06/2025-06-19.md)
+- [2025-06-20.md](docs/releases/2025-06/2025-06-20.md)
+- [2025-06-23.md](docs/releases/2025-06/2025-06-23.md)
+- [2025-06-25.md](docs/releases/2025-06/2025-06-25.md)
+- [2025-06-28.md](docs/releases/2025-06/2025-06-28.md)
+- [2025-06-29.md](docs/releases/2025-06/2025-06-29.md)
+- [2025-06-30.md](docs/releases/2025-06/2025-06-30.md)
+
+### Folder: /docs/releases/2025-07
+
+- [2025-07-01.md](docs/releases/2025-07/2025-07-01.md)
+- [2025-07-02.md](docs/releases/2025-07/2025-07-02.md)
+- [2025-07-03.md](docs/releases/2025-07/2025-07-03.md)
+- [2025-07-04.md](docs/releases/2025-07/2025-07-04.md)
+
 ## Folder: /examples
 
 - [README.md](examples/README.md): Links valid: Yes
@@ -195,13 +222,9 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [lifecycle.md](tests/docs/lifecycle.md): Test lifecycle management documentation
 - [log_output.md](tests/docs/log_output.md): Log output formatting and analysis
 - [network_utils.md](tests/docs/network_utils.md): Network utility functions documentation
-- [tables_config.md](tests/docs/tables_config.md): Table configuration documentation
-- [tables_data.md](tests/docs/tables_data.md): Table data management documentation
-- [tables_datatypes.md](tests/docs/tables_datatypes.md): Table data types documentation
-- [tables_developer.md](tests/docs/tables_developer.md): Technical documentation for developers wanting to extend or customize the tables.sh system
-- [tables_render.md](tests/docs/tables_render.md): Table rendering documentation
-- [tables_themes.md](tests/docs/tables_themes.md): Table themes and styling documentation
 - [tables.md](tests/docs/tables.md): Table system overview documentation
+- [tables_developer.md](tests/docs/tables_developer.md): Documentation for developers wanting to extend or customize the tables.sh system
+- [tables_technical.md](tests/docs/tables_technical.md): Technical information for those who want to make the most of the tables.sh system
 - [test_00_all.md](tests/docs/test_00_all.md): Test orchestration and execution framework
 - [test_01_compilation.md](tests/docs/test_01_compilation.md): Compilation and build verification tests
 - [test_12_env_payload.md](tests/docs/test_12_env_payload.md): Environment payload testing

@@ -588,25 +588,6 @@ The following test documentation files are available in the `docs/` directory:
 - [test_96_leaks_like_a_sieve.md](docs/test_96_leaks_like_a_sieve.md) - Memory leak detection tests
 - [test_99_codebase.md](docs/test_99_codebase.md) - Codebase quality and analysis tests
 
-### Framework and Utility Documentation
-
-- [framework.md](docs/framework.md) - Testing framework overview and architecture
-- [lifecycle.md](docs/lifecycle.md) - Test lifecycle management
-- [log_output.md](docs/log_output.md) - Log output formatting and analysis
-- [env_utils.md](docs/env_utils.md) - Environment utility functions
-- [file_utils.md](docs/file_utils.md) - File utility functions
-- [network_utils.md](docs/network_utils.md) - Network utility functions
-
-### Table System Documentation
-
-- [tables.md](docs/tables.md) - Table system overview
-- [tables_config.md](docs/tables_config.md) - Table configuration
-- [tables_data.md](docs/tables_data.md) - Table data management
-- [tables_datatypes.md](docs/tables_datatypes.md) - Table data types
-- [tables_render.md](docs/tables_render.md) - Table rendering
-- [tables_themes.md](docs/tables_themes.md) - Table themes and styling
-
 ### Project Documentation
 
 - [LIBRARIES.md](docs/LIBRARIES.md) - Table of Contents for modular library scripts in the 'lib/' directory
-- [github-sitemap.md](docs/github-sitemap.md) - GitHub repository sitemap
