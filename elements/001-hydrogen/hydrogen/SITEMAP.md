@@ -203,7 +203,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [tables_themes.md](tests/docs/tables_themes.md): Table themes and styling documentation
 - [tables.md](tests/docs/tables.md): Table system overview documentation
 - [test_00_all.md](tests/docs/test_00_all.md): Test orchestration and execution framework
-- [test_10_compilation.md](tests/docs/test_10_compilation.md): Compilation and build verification tests
+- [test_01_compilation.md](tests/docs/test_01_compilation.md): Compilation and build verification tests
 - [test_12_env_payload.md](tests/docs/test_12_env_payload.md): Environment payload testing
 - [test_14_env_variables.md](tests/docs/test_14_env_variables.md): Environment variable validation
 - [test_16_library_dependencies.md](tests/docs/test_16_library_dependencies.md): Library dependency verification
@@ -216,9 +216,9 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [test_30_api_prefixes.md](tests/docs/test_30_api_prefixes.md): API prefix configuration tests
 - [test_32_system_endpoints.md](tests/docs/test_32_system_endpoints.md): System endpoint functionality tests
 - [test_34_swagger.md](tests/docs/test_34_swagger.md): Swagger documentation tests
-- [test_90_unity.md](tests/docs/test_90_unity.md): Unity testing framework integration
+- [test_90_check_links.md](tests/docs/test_90_check_links.md): Link validation tests
+- [test_92_unity.md](tests/docs/test_92_unity.md): Unity testing framework integration
 - [test_96_leaks_like_a_sieve.md](tests/docs/test_96_leaks_like_a_sieve.md): Memory leak detection tests
-- [test_98_check_links.md](tests/docs/test_98_check_links.md): Link validation tests
 - [test_99_codebase.md](tests/docs/test_99_codebase.md): Codebase quality and analysis tests
 
 ### Folder: /tests/results
