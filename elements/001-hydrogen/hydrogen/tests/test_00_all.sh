@@ -1,11 +1,12 @@
 #!/bin/bash
 #
 # Test 00: Test Suite Runner
-# Executes all tests in sequence and generates a summary report
+# Executes all tests in parallel batches or sequentially and generates a summary report
 #
-# Usage: ./test_00_all.sh [test_name1 test_name2 ...] [--skip-tests] [--help]
+# Usage: ./test_00_all.sh [test_name1 test_name2 ...] [--skip-tests] [--sequential] [--help]
 #
 # VERSION HISTORY
+# 4.0.0 - 2025-07-04 - Added dynamic parallel execution with group-based batching for significant performance improvement
 # 3.0.1 - 2025-07-03 - Enhanced --help to list test names, suppressed non-table output, updated history
 # 3.0.0 - 2025-07-02 - Complete rewrite to use lib/ scripts, simplified orchestration approach
 #
@@ -25,11 +26,10 @@ source "$SCRIPT_DIR/lib/cloc.sh"
 
 # Set flag to indicate tables.sh is sourced for performance optimization
 export TABLES_SOURCED=true
-echo "TABLES_SOURCED set to: $TABLES_SOURCED in test_00_all.sh"
 
 # Test configuration
 TEST_NAME="Test Suite Runner"
-SCRIPT_VERSION="3.0.1"
+SCRIPT_VERSION="4.0.0"
 
 # Auto-extract test number and set up environment
 TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
@@ -50,6 +50,7 @@ mkdir -p "$RESULTS_DIR"
 
 # Command line argument parsing
 SKIP_TESTS=false
+SEQUENTIAL_MODE=false
 TEST_ARGS=()
 
 # Parse all arguments
@@ -57,6 +58,9 @@ for arg in "$@"; do
     case "$arg" in
         --skip-tests)
             SKIP_TESTS=true
+            ;;
+        --sequential)
+            SEQUENTIAL_MODE=true
             ;;
         --help|-h)
             # Help will be handled later
@@ -187,7 +191,8 @@ update_readme_with_results() {
     
     # Replace original README with updated version
     if mv "$temp_readme" "$readme_file"; then
-        echo "Updated README.md with test results"
+        # echo "Updated README.md with test results"
+        :
     else
         echo "Error: Failed to update README.md"
         rm -f "$temp_readme"
@@ -221,14 +226,19 @@ format_time_duration() {
 
 # Function to show help
 show_help() {
-    echo "Usage: $0 [test_name1 test_name2 ...] [--skip-tests] [--help]"
+    echo "Usage: $0 [test_name1 test_name2 ...] [--skip-tests] [--sequential] [--help]"
     echo ""
     echo "Arguments:"
-    echo "  test_name    Run specific tests (e.g., 10_compilation, 70_swagger)"
+    echo "  test_name    Run specific tests (e.g., 01_compilation, 98_check_links)"
     echo ""
     echo "Options:"
     echo "  --skip-tests Skip actual test execution, just show what tests would run"
+    echo "  --sequential Run tests sequentially instead of in parallel batches (default: parallel)"
     echo "  --help       Show this help message"
+    echo ""
+    echo "Execution Modes:"
+    echo "  Default:     Tests run in parallel batches grouped by tens digit (0x, 1x, 2x, etc.)"
+    echo "  Sequential:  Tests run one at a time in numerical order (original behavior)"
     echo ""
     echo "Available Tests:"
     for test_script in "${TEST_SCRIPTS[@]}"; do
@@ -238,7 +248,8 @@ show_help() {
     done
     echo ""
     echo "Examples:"
-    echo "  $0                                    # Run all tests"
+    echo "  $0                                    # Run all tests in parallel batches"
+    echo "  $0 --sequential                       # Run all tests sequentially"
     if [ ${#TEST_SCRIPTS[@]} -ge 1 ]; then
         local first_test
         first_test=$(basename "${TEST_SCRIPTS[0]}" .sh | sed 's/test_//')
@@ -265,17 +276,19 @@ show_help() {
 }
 
 # Get list of all test scripts, excluding test_00_all.sh and test_template.sh
-# Run test_10_compilation.sh first, then all others in order, ending with test_99_codebase.sh
+# Run compilation test first, then all others in order, ending with test_99_codebase.sh
 TEST_SCRIPTS=()
 
-# Add test_10_compilation.sh first if it exists
-if [ -f "$SCRIPT_DIR/test_10_compilation.sh" ]; then
+# Add compilation test first if it exists (check both 01 and 10 for compatibility)
+if [ -f "$SCRIPT_DIR/test_01_compilation.sh" ]; then
+    TEST_SCRIPTS+=("$SCRIPT_DIR/test_01_compilation.sh")
+elif [ -f "$SCRIPT_DIR/test_10_compilation.sh" ]; then
     TEST_SCRIPTS+=("$SCRIPT_DIR/test_10_compilation.sh")
 fi
 
-# Add all other tests except 00, 10, and template
+# Add all other tests except 00, 01, 10, and template
 while IFS= read -r script; do
-    if [[ "$script" != *"test_00_all.sh" ]] && [[ "$script" != *"test_10_compilation.sh" ]] && [[ "$script" != *"test_template.sh" ]]; then
+    if [[ "$script" != *"test_00_all.sh" ]] && [[ "$script" != *"test_01_compilation.sh" ]] && [[ "$script" != *"test_10_compilation.sh" ]] && [[ "$script" != *"test_template.sh" ]]; then
         TEST_SCRIPTS+=("$script")
     fi
 done < <(find "$SCRIPT_DIR" -name "test_*.sh" -type f | sort)
@@ -402,6 +415,80 @@ run_single_test() {
     return $exit_code
 }
 
+# Function to run a single test in parallel mode with output capture
+run_single_test_parallel() {
+    local test_script="$1"
+    local temp_result_file="$2"
+    local temp_output_file="$3"
+    local test_number
+    local test_name
+    
+    # Extract test number and name from script filename
+    test_number=$(basename "$test_script" .sh | sed 's/test_//' | sed 's/_.*//')
+    test_name=$(basename "$test_script" .sh | sed 's/test_[0-9]*_//' | tr '_' ' ' | sed 's/\b\w/\U&/g')
+    
+    # Record start time for this test
+    local test_start
+    test_start=$(date +%s.%N 2>/dev/null || date +%s)
+    
+    # Set environment variable to indicate running in test suite context
+    export RUNNING_IN_TEST_SUITE="true"
+    
+    # Capture all output from the test
+    {
+        # Source the test script instead of running it as a separate process
+        # shellcheck disable=SC1090  # Can't follow non-constant source
+        source "$test_script"
+    } > "$temp_output_file" 2>&1
+    local exit_code=$?
+    
+    # Calculate elapsed time
+    local test_end
+    test_end=$(date +%s.%N 2>/dev/null || date +%s)
+    local elapsed
+    if [[ "$test_start" =~ \. && "$test_end" =~ \. ]]; then
+        elapsed=$(echo "$test_end - $test_start" | bc 2>/dev/null || echo "$((test_end - test_start))")
+    else
+        elapsed=$((test_end - test_start))
+    fi
+    
+    # Format elapsed time (without 's' suffix for table summation)
+    local elapsed_formatted
+    if [[ "$elapsed" =~ \. ]]; then
+        elapsed_formatted=$(printf "%.3f" "$elapsed")
+    else
+        elapsed_formatted="$elapsed"
+    fi
+    
+    # Look for subtest results file
+    local total_subtests=1
+    local passed_subtests=0
+    
+    # Find the most recent subtest file for this test
+    local latest_subtest_file
+    latest_subtest_file=$(find "$RESULTS_DIR" -name "subtest_${test_number}_*.txt" -type f 2>/dev/null | sort -r | head -1)
+    
+    if [ -n "$latest_subtest_file" ] && [ -f "$latest_subtest_file" ]; then
+        # Read subtest results
+        IFS=',' read -r total_subtests passed_subtests < "$latest_subtest_file" 2>/dev/null || {
+            total_subtests=1
+            passed_subtests=$([ $exit_code -eq 0 ] && echo 1 || echo 0)
+        }
+    else
+        # Default based on exit code if no file found
+        total_subtests=1
+        passed_subtests=$([ $exit_code -eq 0 ] && echo 1 || echo 0)
+    fi
+    
+    # Calculate failed subtests
+    local failed_subtests=$((total_subtests - passed_subtests))
+    
+    # Write results to temporary file for collection by main process
+    echo "$test_number|$test_name|$total_subtests|$passed_subtests|$failed_subtests|$elapsed_formatted|$exit_code" > "$temp_result_file"
+    
+    return $exit_code
+}
+
 # Function to run a specific test by name
 run_specific_test() {
     local test_name="$1"
@@ -424,7 +511,125 @@ run_specific_test() {
     return 0
 }
 
-# Function to run all tests
+# Function to run all tests in parallel batches
+run_all_tests_parallel() {
+    local overall_exit_code=0
+    
+    # Create associative array to group tests by tens digit
+    declare -A test_groups
+    
+    # Group tests dynamically by tens digit
+    for test_script in "${TEST_SCRIPTS[@]}"; do
+        local test_number
+        test_number=$(basename "$test_script" .sh | sed 's/test_//' | sed 's/_.*//')
+        local group=$((test_number / 10))
+        
+        if [ -z "${test_groups[$group]}" ]; then
+            test_groups[$group]="$test_script"
+        else
+            test_groups[$group]="${test_groups[$group]} $test_script"
+        fi
+    done
+    
+    # Execute groups in numerical order
+    for group in $(printf '%s\n' "${!test_groups[@]}" | sort -n); do
+        # shellcheck disable=SC2206  # We want word splitting here for the array
+        local group_tests=(${test_groups[$group]})
+        
+        # Handle skip mode
+        if [ "$SKIP_TESTS" = true ]; then
+            for test_script in "${group_tests[@]}"; do
+                run_single_test "$test_script"
+            done
+            continue
+        fi
+        
+        # If only one test in group, run it normally
+        if [ ${#group_tests[@]} -eq 1 ]; then
+            if ! run_single_test "${group_tests[0]}"; then
+                overall_exit_code=1
+            fi
+            continue
+        fi
+        
+        # Multiple tests in group: run first one live, others in background
+        local first_test="${group_tests[0]}"
+        local remaining_tests=("${group_tests[@]:1}")
+        
+        # Create temporary files for background tests
+        local temp_result_files=()
+        local temp_output_files=()
+        local pids=()
+        
+        # Start background tests (all except first)
+        for test_script in "${remaining_tests[@]}"; do
+            local temp_result_file
+            local temp_output_file
+            temp_result_file=$(mktemp)
+            temp_output_file=$(mktemp)
+            temp_result_files+=("$temp_result_file")
+            temp_output_files+=("$temp_output_file")
+            
+            # Run test in background
+            run_single_test_parallel "$test_script" "$temp_result_file" "$temp_output_file" &
+            pids+=($!)
+        done
+        
+        # Run first test in foreground (shows output immediately)
+        if ! run_single_test "$first_test"; then
+            overall_exit_code=1
+        fi
+        
+        # Wait for all background tests to complete
+        local group_exit_code=0
+        for i in "${!pids[@]}"; do
+            if ! wait "${pids[$i]}"; then
+                group_exit_code=1
+                overall_exit_code=1
+            fi
+        done
+        
+        # Display outputs from background tests in order
+        for i in "${!remaining_tests[@]}"; do
+            local temp_output_file="${temp_output_files[$i]}"
+            if [ -f "$temp_output_file" ] && [ -s "$temp_output_file" ]; then
+                # Display the captured output
+                cat "$temp_output_file"
+            fi
+            # Clean up output file
+            rm -f "$temp_output_file"
+        done
+        
+        # Collect results from background tests
+        for i in "${!remaining_tests[@]}"; do
+            local temp_result_file="${temp_result_files[$i]}"
+            if [ -f "$temp_result_file" ] && [ -s "$temp_result_file" ]; then
+                # Read results from temporary file
+                IFS='|' read -r test_number test_name total_subtests passed_subtests failed_subtests elapsed_formatted exit_code < "$temp_result_file"
+                
+                # Store results in global arrays
+                TEST_NUMBERS+=("$test_number")
+                TEST_NAMES+=("$test_name")
+                TEST_SUBTESTS+=("$total_subtests")
+                TEST_PASSED+=("$passed_subtests")
+                TEST_FAILED+=("$failed_subtests")
+                TEST_ELAPSED+=("$elapsed_formatted")
+            fi
+            
+            # Clean up result file
+            rm -f "$temp_result_file"
+        done
+        
+        # Clear arrays for next group
+        temp_result_files=()
+        temp_output_files=()
+        pids=()
+    done
+    
+    return $overall_exit_code
+}
+
+# Function to run all tests (sequential - original behavior)
 run_all_tests() {
     local overall_exit_code=0
     
@@ -442,11 +647,18 @@ OVERALL_EXIT_CODE=0
 
 # If no specific tests provided, run all tests
 if [ ${#TEST_ARGS[@]} -eq 0 ]; then
-    if ! run_all_tests; then
-        OVERALL_EXIT_CODE=1
+    # Choose execution mode based on --sequential flag
+    if [ "$SEQUENTIAL_MODE" = true ]; then
+        if ! run_all_tests; then
+            OVERALL_EXIT_CODE=1
+        fi
+    else
+        if ! run_all_tests_parallel; then
+            OVERALL_EXIT_CODE=1
+        fi
     fi
 else
-    # Process each test argument
+    # Process each test argument (always sequential for specific tests)
     for test_arg in "${TEST_ARGS[@]}"; do
         # Check if it's a specific test name
         if ! run_specific_test "$test_arg"; then
@@ -467,7 +679,11 @@ fi
 TOTAL_RUNNING_TIME=0
 for i in "${!TEST_ELAPSED[@]}"; do
     if [[ "${TEST_ELAPSED[$i]}" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
-        TOTAL_RUNNING_TIME=$(awk "BEGIN {print ($TOTAL_RUNNING_TIME + ${TEST_ELAPSED[$i]})}")
+        if command -v bc >/dev/null 2>&1; then
+            TOTAL_RUNNING_TIME=$(echo "$TOTAL_RUNNING_TIME + ${TEST_ELAPSED[$i]}" | bc)
+        else
+            TOTAL_RUNNING_TIME=$(awk "BEGIN {print ($TOTAL_RUNNING_TIME + ${TEST_ELAPSED[$i]}); exit}")
+        fi
     fi
 done
 

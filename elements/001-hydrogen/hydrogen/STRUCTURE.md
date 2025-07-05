@@ -470,7 +470,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 
 - [tests/README.md](tests/README.md) - Testing documentation and procedures
 - [tests/test_00_all.sh](tests/test_00_all.sh) - Master test runner
-- [tests/test_10_compilation.sh](tests/test_10_compilation.sh) - Compilation tests
+- [tests/test_01_compilation.sh](tests/test_01_compilation.sh) - Compilation tests
 - [tests/test_12_env_payload.sh](tests/test_12_env_payload.sh) - Environment and payload tests
 - [tests/test_14_env_variables.sh](tests/test_14_env_variables.sh) - Environment variable tests
 - [tests/test_16_library_dependencies.sh](tests/test_16_library_dependencies.sh) - Library dependency tests
@@ -483,9 +483,9 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_30_api_prefixes.sh](tests/test_30_api_prefixes.sh) - API prefix tests
 - [tests/test_32_system_endpoints.sh](tests/test_32_system_endpoints.sh) - System endpoint tests
 - [tests/test_34_swagger.sh](tests/test_34_swagger.sh) - Swagger functionality tests
-- [tests/test_90_unity.sh](tests/test_90_unity.sh) - Unity framework tests
+- [tests/test_90_check_links.sh](tests/test_90_check_links.sh) - Link validation tests
+- [tests/test_92_unity.sh](tests/test_92_unity.sh) - Unity framework tests
 - [tests/test_96_leaks_like_a_sieve.sh](tests/test_96_leaks_like_a_sieve.sh) - Memory leak tests
-- [tests/test_98_check_links.sh](tests/test_98_check_links.sh) - Link validation tests
 - [tests/test_99_codebase.sh](tests/test_99_codebase.sh) - Codebase analysis tests
 
 </details>
