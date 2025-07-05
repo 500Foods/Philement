@@ -1,593 +1,163 @@
-# Hydrogen Testing
+# Hydrogen Testing Framework
 
-This directory contains configuration files and test scripts for validating the Hydrogen 3D printer control server.
+This directory contains the comprehensive testing framework for the Hydrogen 3D printer control server. It includes test scripts, configuration files, support utilities, and detailed documentation for validating the functionality, performance, and reliability of the Hydrogen system.
 
-## Support Utilities
+## Overview
 
-### support_utils.sh
+The Hydrogen testing framework is designed to ensure the robustness and correctness of the server through a structured suite of tests. These tests cover various aspects including compilation, startup/shutdown sequences, API functionality, system endpoints, and code quality checks.
 
-A shared library of utilities that standardizes the formatting and output of all test scripts:
+## Core Components
 
-```bash
-source support_utils.sh
-```
+### Test Suite Runner (test_00_all.sh)
 
-Key features:
+**test_00_all.sh** is the central orchestration script for executing the entire test suite. It manages the execution of all test scripts, either in parallel batches or sequentially, and generates a comprehensive summary of results.
 
-- Provides consistent colored output for all tests
-- Standardizes formatting of test headers and results with checkmarks/X marks
-- Implements common test flow with start_test and end_test functions
-- Supports consistent summary generation across all tests
+- **Version**: 4.0.0 (Last updated: 2025-07-04)
+- **Key Features**:
+  - Executes tests in parallel batches grouped by tens digit (e.g., 0x, 1x, 2x) for improved performance, or sequentially if specified.
+  - Supports skipping test execution for quick summary generation or README updates.
+  - Automatically updates the project README.md with test results and repository statistics using the `cloc` tool.
+  - Provides detailed output with test status, subtest counts, pass/fail statistics, and elapsed time.
+- **Usage**:
 
-This library is sourced by all test scripts to ensure consistent visual presentation and reporting.
+  ```bash
+  # Run all tests in parallel batches
+  ./test_00_all.sh
 
-### support_cleanup.sh
+  # Run all tests sequentially
+  ./test_00_all.sh --sequential
 
-Provides functions for environment cleanup and preparation before running tests:
+  # Run specific tests
+  ./test_00_all.sh 01_compilation 22_startup_shutdown
 
-- Cleans up test output directories:
-  - `./logs/` - Test execution logs
-  - `./results/` - Test results and summaries
-  - `./diagnostics/` - Diagnostic information and analysis
-- Removes temporary files from the test directory
-- Ensures no previous test instances are running
-- Prepares the test environment for consistent execution
-
-This cleanup is automatically performed at the start of test execution via `test_00_all.sh`.
-
-### support_analyze_stuck_threads.sh
-
-A diagnostic tool that analyzes thread states to help diagnose shutdown stalls:
-
-```bash
-./support_analyze_stuck_threads.sh <hydrogen_pid>
-```
-
-Key features:
-
-- Examines all threads in a running process
-- Identifies problematic thread states (especially uninterruptible sleep)
-- Captures kernel stacks, wait channel info, and syscall information
-- Outputs detailed diagnostics to the `./diagnostics` directory
-
-### support_monitor_resources.sh
-
-A resource monitoring tool for tracking process metrics:
-
-```bash
-./support_monitor_resources.sh <hydrogen_pid> [duration_seconds]
-```
-
-Key features:
-
-- Tracks memory, CPU, thread count, and file descriptor usage
-- Takes periodic snapshots of detailed process state
-- Runs until the process exits or specified duration expires
-- Generates statistics to help identify resource issues
-
-### support_cppcheck.sh
-
-A wrapper script that provides standardized C/C++ code analysis using cppcheck:
-
-```bash
-./support_cppcheck.sh [directory_to_check]
-```
-
-Key features:
-
-- Integrates with project-specific linting configurations:
-  - Uses .lintignore for file exclusions
-  - Uses .lintignore-c for cppcheck-specific settings
-- Supports multiple configuration options through .lintignore-c:
-  - enable=<checks> - Enable specific check categories
-  - include=<path> - Add include paths
-  - check-level=<level> - Set checking level
-  - template=<format> - Customize error output format
-  - suppress=<id> - Suppress specific warning types
-  - option=<value> - Pass additional cppcheck options
-- Processes files individually for accurate error reporting
-- Handles path resolution and exclusions robustly
-
-## Linting Configuration Files
-
-The project uses several configuration files to control linting behavior:
-
-### .lintignore
-
-Global file exclusion patterns for all linting tools:
-
-```text
-# Example .lintignore
-build/*              # Exclude build directories
-tests/logs/*         # Exclude test logs
-src/config/*.inc     # Exclude specific file types
-```
-
-- Uses glob patterns similar to .gitignore
-- Supports comments and empty lines
-- Can exclude specific files or entire directories
-- Applied to all linting operations
-
-### .lintignore-c
-
-C/C++ specific linting configuration for cppcheck:
-
-```text
-# Enable specific checks
-enable=style,warning,performance,portability
-
-# Include paths
-include=/usr/include
-include=/usr/local/include
-
-# Checking level
-check-level=normal
-
-# Output template
-template={file}:{line}:{column}: {severity}: {message} ({id})
-
-# Suppress specific warnings
-suppress=missingIncludeSystem
-suppress=variableScope
-```
-
-- Controls cppcheck behavior and reporting
-- Configures enabled checks and suppressions
-- Sets include paths and output formatting
-- Used by support_cppcheck.sh and test_99_codebase.sh
-
-### .lintignore-markdown
-
-Markdown linting configuration:
-
-```text
-# Example .lintignore-markdown
-{
-  "default": true,
-  "MD013": false,     # Disable line length checks
-  "MD033": false      # Allow inline HTML
-}
-```
-
-- Controls markdownlint behavior
-- Enables/disables specific rules
-- Configures rule-specific settings
-- Used by test_99_codebase.sh for documentation checks
-
-## Test Numbering System
-
-Tests are numbered to ensure they run in a specific order:
-
-- 00-09: Core test infrastructure (e.g., test_00_all.sh)
-- 10-19: Basic functionality (compilation, startup)
-- 20-29: System state management
-- 30-39: Dynamic behavior
-- 40-49: Configuration and error handling
-- 50-59: Crash and recovery handling
-- 60-69: API functionality
-- 70-79: UI and interface tests
-- 90-99: Code quality and final checks
+  # Skip test execution and update README
+  ./test_00_all.sh --skip-tests
+  ```
 
 ## Test Scripts
 
-The following tests are listed in numerical order:
+Below is a list of all test scripts currently available in the suite, ordered numerically:
 
-### test_00_all.sh (Test Orchestration)
+- **test_00_all.sh**: Test suite runner for orchestrating all tests (described above).
+- **test_01_compilation.sh**: Verifies successful compilation and build processes.
+- **test_12_env_payload.sh**: Tests environment payload handling.
+- **test_14_env_variables.sh**: Validates environment variable configurations.
+- **test_16_library_dependencies.sh**: Checks for required library dependencies.
+- **test_18_json_error_handling.sh**: Tests JSON configuration error handling.
+- **test_20_shutdown.sh**: Focuses on shutdown sequence correctness.
+- **test_22_startup_shutdown.sh**: Validates complete startup and shutdown lifecycles.
+- **test_24_signals.sh**: Tests signal handling (e.g., SIGINT, SIGTERM).
+- **test_26_crash_handler.sh**: Verifies crash handling and recovery mechanisms.
+- **test_28_socket_rebind.sh**: Tests socket rebinding behavior.
+- **test_30_api_prefixes.sh**: Validates API prefix configurations.
+- **test_32_system_endpoints.sh**: Tests system endpoint functionality.
+- **test_34_swagger.sh**: Verifies Swagger documentation and UI integration.
+- **test_90_check_links.sh**: Validates links in documentation.
+- **test_92_unity.sh**: Integrates Unity testing framework for unit tests.
+- **test_96_leaks_like_a_sieve.sh**: Detects memory leaks and resource issues.
+- **test_99_codebase.sh**: Performs codebase quality analysis and linting.
 
-A test orchestration script that executes tests in sequence with compilation verification:
+## Configuration Files
 
-```bash
-# Run all tests
-./test_00_all.sh all
+The `configs/` directory contains JSON files for various test scenarios:
 
-# Run with minimal configuration only
-./test_00_all.sh min
+- **hydrogen_test_min.json**: Minimal configuration for testing core functionality with optional subsystems disabled.
+- **hydrogen_test_max.json**: Maximal configuration with all subsystems enabled for full feature testing.
+- **hydrogen_test_api_*.json**: Configurations for API-related tests with different prefixes and settings.
+- **hydrogen_test_swagger_*.json**: Configurations for testing Swagger UI and documentation endpoints.
+- **hydrogen_test_system_endpoints.json**: Configuration for testing system endpoints.
 
-# Run with maximal configuration only
-./test_00_all.sh max
+### Port Configuration
 
-# Skip actual test execution (for quick README updates)
-./test_00_all.sh --skip-tests
-```
+To prevent conflicts, tests use dedicated port ranges for different configurations:
 
-Key features:
+| Test Configuration          | Config File                              | Web Server Port | WebSocket Port |
+|-----------------------------|------------------------------------------|-----------------|----------------|
+| Default Min/Max             | hydrogen_test_min.json                   | 5000            | 5001           |
+|                             | hydrogen_test_max.json                   | 5000            | 5001           |
+| API Prefix Test             | hydrogen_test_api_test_1.json            | 5030            | 5031           |
+|                             | hydrogen_test_api_test_2.json            | 5050            | 5051           |
+| Swagger UI Test (Default)   | hydrogen_test_swagger_test_1.json        | 5040            | 5041           |
+| Swagger UI Test (Custom)    | hydrogen_test_swagger_test_2.json        | 5060            | 5061           |
+| System Endpoints Test       | hydrogen_test_system_endpoints.json      | 5070            | 5071           |
 
-- Performs complete cleanup of test output directories before starting:
-  - Cleans `./logs/` directory for test execution logs
-  - Cleans `./results/` directory for test results and summaries
-  - Cleans `./diagnostics/` directory for analysis data
-- Provides formatted output with test results
-- Automatically makes test scripts executable
-- Special handling for test_10_compilation.sh:
-  - Runs first as a prerequisite
-  - Skips remaining tests if compilation fails
-  - Only test with special handling
-- Dynamically discovers and runs all other tests in order
-- Generates comprehensive summary with:
-  - Individual test results and subtest counts
-  - Visual pass/fail indicators
-  - Total test and subtest statistics
-- Can skip execution while showing what would run (--skip-tests)
-- Always updates README.md with test results and code statistics
+## Linting Configurations
 
-Test results and repository statistics are automatically added to the project README.md after running tests.
+Linting behavior is controlled by configuration files to ensure code quality:
 
-## Test Configuration Files
+- **.lintignore**: Global exclusion patterns for all linting tools.
+- **.lintignore-c**: C/C++ specific configurations for `cppcheck`, defining enabled checks and suppressions.
+- **.lintignore-markdown**: Markdown linting rules for documentation consistency.
 
-### hydrogen_test_min.json
+## Test Output Directories
 
-This configuration file provides a **minimal** setup for testing the core functionality of the Hydrogen server:
+Test execution generates output in the following directories, which are cleaned at the start of each run:
 
-- Disables all optional subsystems (WebServer, WebSocket, PrintQueue, mDNSServer)
-- Enables maximum logging (level 0/"ALL") for all subsystems across all logging destinations
-- Uses relative paths for logs and database files to simplify testing
-- Maintains the core SystemResources and NetworkMonitoring configurations
+- **./logs/**: Detailed execution logs for each test run.
+- **./results/**: Summaries, build outputs, and result data.
+- **./diagnostics/**: Diagnostic data and analysis for debugging issues.
 
-Purpose: Test the basic startup and shutdown sequence with only core systems running, verifying that the essential components initialize and terminate properly without optional subsystems.
+## Documentation
 
-### hydrogen_test_max.json
+Detailed documentation for each test script and library is available in the `docs/` directory:
 
-This configuration file provides a **maximal** setup to test the full feature set of the Hydrogen server:
-
-- Enables all subsystems (WebServer, WebSocket, PrintQueue, mDNSServer)
-- Enables maximum logging (level 0/"ALL") for all subsystems across all logging destinations
-- Includes test services for mDNS service advertisement
-- Uses relative paths for logs and database files to simplify testing
-
-Purpose: Validate that all subsystems can start and stop correctly, testing the complete initialization and shutdown process with all features enabled.
-
-## Port Configuration
-
-To avoid conflicts between tests that need to bind to network ports, dedicated port ranges are used for different test configurations:
-
-## Environment Variables for Testing
-
-The following environment variables are used by various tests:
-
-| Variable | Purpose | Used By |
-|----------|---------|----------|
-| PAYLOAD_KEY | RSA private key for payload decryption | test_env_payload.sh |
-| PAYLOAD_LOCK | RSA public key for payload encryption | test_env_payload.sh |
-
-| Test                       | Configuration File                   | Web Server Port | WebSocket Port |
-|----------------------------|-------------------------------------|-----------------|----------------|
-| Default Min/Max            | hydrogen_test_min.json              | 5000            | 5001           |
-|                            | hydrogen_test_max.json              | 5000            | 5001           |
-| API Prefix Test            | hydrogen_test_api_test_1.json       | 5030            | 5031           |
-|                            | hydrogen_test_api_test_2.json       | 5050            | 5051           |
-| Swagger UI Test (Default)  | hydrogen_test_swagger_test_1.json   | 5040            | 5041           |
-| Swagger UI Test (Custom)   | hydrogen_test_swagger_test_2.json   | 5060            | 5061           |
-| System Endpoints Test      | hydrogen_test_system_endpoints.json | 5070            | 5071           |
-
-Using different ports for these tests ensures they can run independently without socket binding conflicts, especially in scenarios where a socket might not be released immediately after a test completes (e.g., due to TIME_WAIT state). This improves test reliability and avoids false failures due to port conflicts.
-
-## Test Output
-
-Test execution produces output in three main directories:
-
-- `./logs/` - Contains detailed execution logs from test runs
-- `./results/` - Stores test results, summaries, and build outputs
-- `./diagnostics/` - Contains analysis data and debugging information
-
-These directories are automatically cleaned at the start of each test run via support_cleanup.sh.
-
-All tests provide standardized output with:
-
-- Consistent colored headers and section breaks
-- Checkmarks (✅) for passed tests
-- X marks (❌) for failed tests
-- Warning symbols (⚠️) for tests that pass with warnings
-- Info symbols (🛈) for informational messages
-- Detailed test summaries with pass/fail counts
-
-When running the full test suite with `test_00_all.sh all`, a comprehensive summary is generated showing:
-
-- Individual test results for each component
-- Overall pass/fail statistics
-- Final pass/fail determination
-
-## Usage Examples
-
-### Basic Testing
-
-To run tests with both configurations using the orchestration script:
-
-```bash
-./test_00_all.sh all
-```
-
-This will run all tests and provide a comprehensive summary of results with standardized formatting.
-
-If you want to quickly update the project README with test results without running the actual tests:
-
-```bash
-./test_00_all.sh --skip-tests --update-readme
-```
-
-This will:
-
-- Register all tests as "skipped" without executing them
-- Generate a test summary showing what tests would run
-- Add a "Latest Test Results" section to the project README.md
-- Add a "Repository Information" section with code statistics from cloc
-
-### Manual Testing
-
-You can manually run Hydrogen with the test configurations:
-
-```bash
-# Run directly with minimal configuration 
-../hydrogen ./hydrogen_test_min.json
-
-# Run directly with maximal configuration
-../hydrogen ./hydrogen_test_max.json
-```
-
-### Diagnosing Shutdown Stalls
-
-If Hydrogen stalls during shutdown:
-
-1. Note the process ID (PID) from the test output
-2. Run the thread analyzer to identify stuck threads:
-
-   ```bash
-   ./support_analyze_stuck_threads.sh <hydrogen_pid>
-   ```
-
-3. Check for threads in uninterruptible sleep (D state)
-4. Examine the wait channels to identify what resources threads are waiting on
-
-### Monitoring Resource Usage
-
-To track resource usage during a test:
-
-```bash
-./support_monitor_resources.sh <hydrogen_pid> 60  # Monitor for 60 seconds
-```
-
-This helps identify memory leaks, resource exhaustion, or usage patterns that might contribute to shutdown issues.
+- **test_00_all.md**: Documentation for the test suite runner.
+- **test_01_compilation.md** to **test_99_codebase.md**: Individual test script documentation.
+- **LIBRARIES.md**: Overview of modular library scripts in the `lib/` directory.
+- Additional guides and reference materials for test framework components.
 
 ## Developing New Tests
 
-All new test scripts must follow standardized conventions to ensure consistency, maintainability, and quality across the test suite.
+When creating new test scripts, adhere to the following standards:
 
-### Required Standards for New Tests
+1. **Naming Convention**: Use `test_NN_descriptive_name.sh` following the numbering system.
+2. **Headers**: Include version, title, and change history at the top of the script.
+3. **Shellcheck Compliance**: Ensure scripts pass `shellcheck` validation for quality and consistency.
+4. **Integration**: Ensure compatibility with `test_00_all.sh` for automatic discovery and execution.
+5. **Documentation**: Add corresponding documentation in the `docs/` directory and update this README.md.
 
-#### 1. Version and Title Headers
+### Workflow for New Tests
 
-Every test script **MUST** include version and title variables at the top:
+1. Copy an existing test script as a template.
+2. Modify the script with necessary test logic and headers.
+3. Validate with `shellcheck` to ensure compliance.
+4. Test the script independently before integrating into the suite.
+5. Document the test purpose and usage in the `docs/` directory.
 
-```bash
-#!/bin/bash
-#
-# VERSION_TEST_XX="1.0.0"
-# TITLE_TEST_XX="Descriptive Test Name"
-#
-# VERSION HISTORY:
-# v1.0.0 - YYYY-MM-DD - Initial version with [brief description]
-#
-# [Rest of script header comments]
+## Usage Examples
 
-VERSION_TEST_XX="1.0.0"
-TITLE_TEST_XX="Descriptive Test Name"
-```
-
-Replace `XX` with your test number (e.g., `VERSION_TEST_65` for test_65_system_endpoints.sh).
-
-#### 2. Change History Section
-
-Include a CHANGE HISTORY section near the top that tracks:
-
-- Version numbers (semantic versioning: MAJOR.MINOR.PATCH)
-- Dates of changes (YYYY-MM-DD format)
-- Brief description of what changed
-
-Example:
+### Running the Full Test Suite
 
 ```bash
-# CHANGE HISTORY:
-# v1.2.1 - 2025-06-17 - Fixed timeout handling in API tests
-# v1.2.0 - 2025-06-15 - Added support for custom headers
-# v1.1.0 - 2025-06-10 - Enhanced error reporting
-# v1.0.0 - 2025-06-01 - Initial version with basic functionality
+# Run all tests in parallel batches (default mode)
+./test_00_all.sh all
+
+# Run all tests sequentially
+./test_00_all.sh --sequential
 ```
 
-#### 3. Shellcheck Compliance
-
-All test scripts **MUST** pass shellcheck validation without errors or warnings:
+### Running Specific Tests
 
 ```bash
-# Validate your script before committing
-shellcheck test_your_script.sh
+# Run specific tests sequentially
+./test_00_all.sh 01_compilation 22_startup_shutdown
 ```
 
-Common shellcheck requirements:
-
-- Quote all variable expansions: `"$variable"` not `$variable`
-- Use `[[ ]]` for conditionals instead of `[ ]`
-- Declare arrays properly: `declare -a array_name`
-- Use `$(command)` instead of backticks
-- Handle exit codes explicitly
-- Use proper error handling with `set -e` or explicit checks
-
-#### 4. Title Display
-
-Display the test title and version at the beginning of execution:
+### Skipping Test Execution
 
 ```bash
-# Print header with version
-print_header "$TITLE_TEST_XX v$VERSION_TEST_XX" | tee "$SUMMARY_LOG"
+# Skip test execution but update README with what would run
+./test_00_all.sh --skip-tests
 ```
 
-### Development Workflow
-
-1. **Start with Template**: Copy another scirpt sas your starting point
-2. **Add Headers**: Include version, title, and change history sections
-3. **Implement Logic**: Write your test functionality
-4. **Validate**: Run shellcheck to ensure compliance
-5. **Test**: Verify the script works correctly
-6. **Document**: Update this README with your test description
-
-### Quality Assurance
-
-Before submitting new tests:
-
-- [ ] Version and title variables are defined
-- [ ] Change history section is present and up-to-date
-- [ ] Script passes `shellcheck` without errors/warnings
-- [ ] Test displays title and version on execution
-- [ ] Test follows existing naming conventions (test_NN_description.sh)
-- [ ] Test integrates properly with `test_00_all.sh`
-- [ ] Documentation is added to this README
-
-## Extending Testing
-
-The testing system follows a logical sequence:
-
-1. **Compilation Testing**: First verify all components build successfully
-2. **Startup/Shutdown Testing**: Then test the application's lifecycle management
-3. **API Testing**: Test system endpoints to verify API functionality
-4. **Specialized Testing**: Finally perform any feature-specific tests
-
-### Getting Started
-
-1. Copy an existing test file to create a new test:
-
-   ```bash
-   cp test_15_startup_shutdown.sh test_your_feature.sh
-   chmod +x test_your_feature.sh
-   ```
-
-2. Choose a descriptive name that follows the numbering convention:
-   - 10-19: Basic functionality (compilation, startup)
-   - 20-29: System state management
-   - 30-39: Dynamic behavior
-   - 40-49: Configuration and error handling
-   - 50-59: Crash and recovery handling
-   - 60-69: API functionality
-   - 70-79: UI and interface tests
-   - 90-99: Code quality and final checks
-
-### Best Practices
-
-1. **Test Organization**
-   - Use clear, descriptive test names
-   - Group related tests into functions
-   - Include setup and cleanup for each test case
-   - Document expected outcomes
-
-2. **Error Handling**
-   - Check server startup success
-   - Include timeouts for operations
-   - Validate all responses
-   - Clean up resources on failure
-
-3. **Resource Management**
-   - Use the --skip-cleanup option during development
-   - Monitor resource usage for memory leaks
-   - Verify clean shutdown
-   - Check for leftover processes
-
-4. **Documentation**
-   - Add detailed comments explaining test purpose
-   - Document any special requirements
-   - Include example usage
-   - Explain configuration requirements
-
-### Example Usage
+### Manual Testing with Configurations
 
 ```bash
-# Run with minimal configuration
-./test_your_feature.sh --config min
+# Run Hydrogen with minimal configuration
+../hydrogen ./configs/hydrogen_test_min.json
 
-# Run with maximal configuration
-./test_your_feature.sh --config max
-
-# Skip cleanup for debugging
-./test_your_feature.sh --skip-cleanup
+# Run Hydrogen with maximal configuration
+../hydrogen ./configs/hydrogen_test_max.json
 ```
 
-### Common Testing Scenarios
-
-1. **API Testing**
-
-   ```bash
-   # Test endpoint with authentication
-   test_api_endpoint "/api/protected" "success" "GET" "" "Bearer $TOKEN"
-   
-   # Test with query parameters
-   test_api_endpoint "/api/search?query=test" "results"
-   ```
-
-2. **Configuration Validation**
-
-   ```bash
-   # Verify configuration loading
-   check_config_value "server.name" "expected_value"
-   
-   # Test invalid configurations
-   test_invalid_config "malformed.json"
-   ```
-
-3. **Resource Monitoring**
-
-   ```bash
-   # Monitor during high load
-   generate_load &
-   test_resource_usage 30
-   cleanup_load
-   ```
-
-4. **Shutdown Testing**
-
-   ```bash
-   # Test clean shutdown
-   verify_clean_shutdown $SERVER_PID
-   
-   # Test forced shutdown
-   test_signal_handling SIGKILL 5
-   ```
-
-### General Guidelines
-
-When adding new tests:
-
-1. Create descriptively named test scripts that start with "test_" (e.g., test_feature.sh)
-2. Create any needed support functions in files that start with "support_" (e.g., support_feature_utils.sh)
-3. Use the standardized utility functions from `support_utils.sh` to minimize boilerplate
-4. Document the purpose and expected outcomes in this README
-5. Ensure all test configurations use relative paths for portability
-6. Set appropriate log levels for the components being tested
-
-The `test_00_all.sh` script will automatically discover and run any script named with the "test_" prefix, making it easy to add new tests without modifying the main test runner.
-
-See the [Testing Documentation](../docs/testing.md) for more information about the Hydrogen testing approach.
-
-## Test Documentation
-
-The following test documentation files are available in the `docs/` directory:
-
-### Test Script Documentation
-
-- [test_00_all.md](docs/test_00_all.md) - Test orchestration and execution framework
-- [test_01_compilation.md](docs/test_01_compilation.md) - Compilation and build verification tests
-- [test_12_env_payload.md](docs/test_12_env_payload.md) - Environment payload testing
-- [test_14_env_variables.md](docs/test_14_env_variables.md) - Environment variable validation
-- [test_16_library_dependencies.md](docs/test_16_library_dependencies.md) - Library dependency verification
-- [test_18_json_error_handling.md](docs/test_18_json_error_handling.md) - JSON error handling tests
-- [test_20_shutdown.md](docs/test_20_shutdown.md) - Shutdown sequence testing
-- [test_22_startup_shutdown.md](docs/test_22_startup_shutdown.md) - Startup and shutdown lifecycle tests
-- [test_24_signals.md](docs/test_24_signals.md) - Signal handling tests
-- [test_26_crash_handler.md](docs/test_26_crash_handler.md) - Crash handling and recovery tests
-- [test_28_socket_rebind.md](docs/test_28_socket_rebind.md) - Socket rebinding tests
-- [test_30_api_prefixes.md](docs/test_30_api_prefixes.md) - API prefix configuration tests
-- [test_32_system_endpoints.md](docs/test_32_system_endpoints.md) - System endpoint functionality tests
-- [test_34_swagger.md](docs/test_34_swagger.md) - Swagger documentation tests
-- [test_90_check_links.md](docs/test_90_check_links.md) - Link validation tests
-- [test_92_unity.md](docs/test_92_unity.md) - Unity testing framework integration
-- [test_96_leaks_like_a_sieve.md](docs/test_96_leaks_like_a_sieve.md) - Memory leak detection tests
-- [test_99_codebase.md](docs/test_99_codebase.md) - Codebase quality and analysis tests
-
-### Project Documentation
-
-- [LIBRARIES.md](docs/LIBRARIES.md) - Table of Contents for modular library scripts in the 'lib/' directory
+For more detailed information on the Hydrogen testing approach, refer to the [Testing Documentation](../docs/testing.md).

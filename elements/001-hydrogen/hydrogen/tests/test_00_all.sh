@@ -321,11 +321,51 @@ for arg in "$@"; do
 done
 
 
+# Function to perform cleanup before test execution
+perform_cleanup() {
+    # Silently perform cleanup before test execution
+    
+    # Define directories to clean
+    local dirs_to_clean=(
+        "$SCRIPT_DIR/logs"
+        "$SCRIPT_DIR/results"
+        "$SCRIPT_DIR/diagnostics"
+        "$SCRIPT_DIR/../build"
+        "$SCRIPT_DIR/../build_unity_tests"
+    )
+    
+    # Remove directories and their contents silently
+    for dir in "${dirs_to_clean[@]}"; do
+        if [ -d "$dir" ]; then
+            rm -rf "$dir" > /dev/null 2>&1
+        fi
+    done
+    
+    # Remove hydrogen executables silently
+    local hydrogen_exe="$SCRIPT_DIR/../hydrogen"
+    if [ -f "$hydrogen_exe" ]; then
+        rm -f "$hydrogen_exe" > /dev/null 2>&1
+    fi
+    
+    # Run CMake clean if CMakeLists.txt exists, silently
+    local cmake_dir="$SCRIPT_DIR/../cmake"
+    if [ -f "$cmake_dir/CMakeLists.txt" ]; then
+        cd "$cmake_dir" > /dev/null 2>&1 || return 1
+        cmake --build . --target clean > /dev/null 2>&1
+        cd "$SCRIPT_DIR" > /dev/null 2>&1 || return 1
+    fi
+}
+
 # Get start time
 START_TIME=$(date +%s.%N 2>/dev/null || date +%s)
 
 # Print beautiful test suite header in blue
 print_test_suite_header "$TEST_NAME" "$SCRIPT_VERSION"
+
+# Perform cleanup before starting tests (unless skipping tests)
+if [ "$SKIP_TESTS" = false ]; then
+    perform_cleanup
+fi
 
 # Function to run a single test and capture results
 run_single_test() {
