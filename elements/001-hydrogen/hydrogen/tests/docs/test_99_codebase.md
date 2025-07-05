@@ -191,7 +191,6 @@ To run this test individually:
 ## Related Documentation
 
 - [test_00_all.md](test_00_all.md) - Main test suite documentation
-- [test_98_check_links.md](test_98_check_links.md) - Documentation link validation
 - [LIBRARIES.md](LIBRARIES.md) - Modular library documentation
 - [testing.md](../../docs/testing.md) - Overall testing strategy
 - [coding_guidelines.md](../../docs/coding_guidelines.md) - Code quality standards
