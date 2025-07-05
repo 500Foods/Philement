@@ -570,7 +570,7 @@ The following test documentation files are available in the `docs/` directory:
 ### Test Script Documentation
 
 - [test_00_all.md](docs/test_00_all.md) - Test orchestration and execution framework
-- [test_10_compilation.md](docs/test_10_compilation.md) - Compilation and build verification tests
+- [test_01_compilation.md](docs/test_01_compilation.md) - Compilation and build verification tests
 - [test_12_env_payload.md](docs/test_12_env_payload.md) - Environment payload testing
 - [test_14_env_variables.md](docs/test_14_env_variables.md) - Environment variable validation
 - [test_16_library_dependencies.md](docs/test_16_library_dependencies.md) - Library dependency verification
@@ -583,9 +583,9 @@ The following test documentation files are available in the `docs/` directory:
 - [test_30_api_prefixes.md](docs/test_30_api_prefixes.md) - API prefix configuration tests
 - [test_32_system_endpoints.md](docs/test_32_system_endpoints.md) - System endpoint functionality tests
 - [test_34_swagger.md](docs/test_34_swagger.md) - Swagger documentation tests
-- [test_90_unity.md](docs/test_90_unity.md) - Unity testing framework integration
+- [test_90_check_links.md](docs/test_90_check_links.md) - Link validation tests
+- [test_92_unity.md](docs/test_92_unity.md) - Unity testing framework integration
 - [test_96_leaks_like_a_sieve.md](docs/test_96_leaks_like_a_sieve.md) - Memory leak detection tests
-- [test_98_check_links.md](docs/test_98_check_links.md) - Link validation tests
 - [test_99_codebase.md](docs/test_99_codebase.md) - Codebase quality and analysis tests
 
 ### Framework and Utility Documentation
