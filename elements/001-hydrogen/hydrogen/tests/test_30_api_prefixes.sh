@@ -6,7 +6,7 @@
 # - Custom "/myapi" prefix using hydrogen_test_api_prefix.json
 # - Uses immediate restart without waiting for TIME_WAIT (SO_REUSEADDR enabled)
 #
-NAME_SCRIPT="API Prefix"
+TEST_NAME="API Prefix"
 VERS_SCRIPT="5.0.0"
 
 # VERSION HISTORY
@@ -341,10 +341,10 @@ fi
 # Export results for test_all.sh integration
 # Derive test name from script filename for consistency with test_00_all.sh
 TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
-export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "$TOTAL_SUBTESTS" "$PASS_COUNT" > /dev/null
+export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "$TOTAL_SUBTESTS" "$PASS_COUNT" "$TEST_NAME" > /dev/null
 
 # Print test completion summary
-print_test_completion "$NAME_SCRIPT"
+print_test_completion "$TEST_NAME"
 
 end_test "$FINAL_RESULT" "$TOTAL_SUBTESTS" "$PASS_COUNT" > /dev/null
 

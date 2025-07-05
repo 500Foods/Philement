@@ -373,9 +373,9 @@ run_single_test() {
     local test_number
     local test_name
     
-    # Extract test number and name from script filename
+    # Extract test number from script filename
     test_number=$(basename "$test_script" .sh | sed 's/test_//' | sed 's/_.*//')
-    test_name=$(basename "$test_script" .sh | sed 's/test_[0-9]*_//' | tr '_' ' ' | sed 's/\b\w/\U&/g')
+    test_name=""
     
     # Handle skip mode
     if [ "$SKIP_TESTS" = true ]; then
@@ -429,15 +429,17 @@ run_single_test() {
     latest_subtest_file=$(find "$RESULTS_DIR" -name "subtest_${test_number}_*.txt" -type f 2>/dev/null | sort -r | head -1)
     
     if [ -n "$latest_subtest_file" ] && [ -f "$latest_subtest_file" ]; then
-        # Read subtest results
-        IFS=',' read -r total_subtests passed_subtests < "$latest_subtest_file" 2>/dev/null || {
+        # Read subtest results and test name
+        IFS=',' read -r total_subtests passed_subtests test_name < "$latest_subtest_file" 2>/dev/null || {
             total_subtests=1
             passed_subtests=$([ $exit_code -eq 0 ] && echo 1 || echo 0)
+            test_name=$(basename "$test_script" .sh | sed 's/test_[0-9]*_//' | tr '_' ' ' | sed 's/\b\w/\U&/g')
         }
     else
         # Default based on exit code if no file found
         total_subtests=1
         passed_subtests=$([ $exit_code -eq 0 ] && echo 1 || echo 0)
+        test_name=$(basename "$test_script" .sh | sed 's/test_[0-9]*_//' | tr '_' ' ' | sed 's/\b\w/\U&/g')
         echo "Warning: No subtest result file found for test ${test_number}"
     fi
     
@@ -463,9 +465,9 @@ run_single_test_parallel() {
     local test_number
     local test_name
     
-    # Extract test number and name from script filename
+    # Extract test number from script filename
     test_number=$(basename "$test_script" .sh | sed 's/test_//' | sed 's/_.*//')
-    test_name=$(basename "$test_script" .sh | sed 's/test_[0-9]*_//' | tr '_' ' ' | sed 's/\b\w/\U&/g')
+    test_name=""
     
     # Record start time for this test
     local test_start
@@ -509,15 +511,17 @@ run_single_test_parallel() {
     latest_subtest_file=$(find "$RESULTS_DIR" -name "subtest_${test_number}_*.txt" -type f 2>/dev/null | sort -r | head -1)
     
     if [ -n "$latest_subtest_file" ] && [ -f "$latest_subtest_file" ]; then
-        # Read subtest results
-        IFS=',' read -r total_subtests passed_subtests < "$latest_subtest_file" 2>/dev/null || {
+        # Read subtest results and test name
+        IFS=',' read -r total_subtests passed_subtests test_name < "$latest_subtest_file" 2>/dev/null || {
             total_subtests=1
             passed_subtests=$([ $exit_code -eq 0 ] && echo 1 || echo 0)
+            test_name=$(basename "$test_script" .sh | sed 's/test_[0-9]*_//' | tr '_' ' ' | sed 's/\b\w/\U&/g')
         }
     else
         # Default based on exit code if no file found
         total_subtests=1
         passed_subtests=$([ $exit_code -eq 0 ] && echo 1 || echo 0)
+        test_name=$(basename "$test_script" .sh | sed 's/test_[0-9]*_//' | tr '_' ' ' | sed 's/\b\w/\U&/g')
     fi
     
     # Calculate failed subtests

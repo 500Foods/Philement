@@ -10,7 +10,7 @@
 # - /api/system/recent: Tests the recent activity log endpoint
 # - /api/system/appconfig: Tests the application configuration endpoint
 #
-NAME_SCRIPT="System API Endpoints"
+TEST_NAME="System API Endpoints"
 VERS_SCRIPT="3.0.0"
 
 # VERSION HISTORY
@@ -612,10 +612,10 @@ fi
 # Export results for test_all.sh integration
 # Derive test name from script filename for consistency with test_00_all.sh
 TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
-export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "$TOTAL_SUBTESTS" "$PASS_COUNT" > /dev/null
+export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "$TOTAL_SUBTESTS" "$PASS_COUNT" "$TEST_NAME" > /dev/null
 
 # Print test completion summary
-print_test_completion "$NAME_SCRIPT"
+print_test_completion "$TEST_NAME"
 
 # Return status code if sourced, exit if run standalone
 if [[ "$RUNNING_IN_TEST_SUITE" == "true" ]]; then

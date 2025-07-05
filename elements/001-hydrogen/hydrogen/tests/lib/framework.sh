@@ -129,11 +129,12 @@ navigate_to_project_root() {
     return 0
 }
 
-# Function to save subtest statistics for use by test_all.sh
+# Function to save subtest statistics and test name for use by test_all.sh
 export_subtest_results() {
-    local test_name=$1
+    local test_id=$1
     local total_subtests=$2
     local passed_subtests=$3
+    local test_name=$4
     local script_dir
     script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
     local results_dir="$script_dir/../results"
@@ -142,8 +143,8 @@ export_subtest_results() {
     mkdir -p "$results_dir"
     
     # Create the subtest results file with the correct test name format
-    local subtest_file="$results_dir/subtest_${test_name}.txt"
-    echo "${total_subtests},${passed_subtests}" > "$subtest_file"
+    local subtest_file="$results_dir/subtest_${test_id}.txt"
+    echo "${total_subtests},${passed_subtests},${test_name}" > "$subtest_file"
     
     # Export silently - no need to announce this internal operation
     return 0
