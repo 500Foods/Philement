@@ -153,7 +153,12 @@ get_elapsed_time() {
 # Function to format file size with thousands separators
 format_file_size() {
     local file_size="$1"
-    echo "$file_size" | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta'
+    # Use printf with thousands separator if available, otherwise return as-is
+    if command -v printf >/dev/null 2>&1; then
+        printf "%'d" "$file_size" 2>/dev/null || echo "$file_size"
+    else
+        echo "$file_size"
+    fi
 }
 
 #==============================================================================

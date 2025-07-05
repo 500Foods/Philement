@@ -15,16 +15,18 @@ print_cloc_lib_version() {
 }
 
 # Default exclude patterns for linting (can be overridden by .lintignore)
-readonly DEFAULT_LINT_EXCLUDES=(
-    "build/*"
-    "build_debug/*"
-    "build_perf/*"
-    "build_release/*"
-    "build_valgrind/*"
-    "tests/logs/*"
-    "tests/results/*"
-    "tests/diagnostics/*"
-)
+if [ -z "${DEFAULT_LINT_EXCLUDES+x}" ]; then
+    readonly DEFAULT_LINT_EXCLUDES=(
+        "build/*"
+        "build_debug/*"
+        "build_perf/*"
+        "build_release/*"
+        "build_valgrind/*"
+        "tests/logs/*"
+        "tests/results/*"
+        "tests/diagnostics/*"
+    )
+fi
 
 # Function to check if a file should be excluded from linting/cloc analysis
 should_exclude_file() {
