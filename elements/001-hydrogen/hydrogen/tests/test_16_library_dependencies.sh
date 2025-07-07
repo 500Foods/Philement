@@ -71,7 +71,8 @@ STARTUP_TIMEOUT=10
 # Validate Hydrogen Binary
 next_subtest
 print_subtest "Locate Hydrogen Binary"
-if HYDROGEN_BIN=$(find_hydrogen_binary "$HYDROGEN_DIR" 2>/dev/null); then
+# shellcheck disable=SC2153  # HYDROGEN_BIN is set by find_hydrogen_binary function
+if find_hydrogen_binary "$HYDROGEN_DIR" "HYDROGEN_BIN"; then
     print_message "Using Hydrogen binary: $(basename "$HYDROGEN_BIN")"
     print_result 0 "Hydrogen binary found and validated"
     ((PASS_COUNT++))
@@ -140,32 +141,8 @@ check_dependency_log() {
 }
 
 # Start Hydrogen for dependency checking
-next_subtest
-print_subtest "Start Hydrogen for Dependency Check"
 config_name=$(basename "$MINIMAL_CONFIG" .json)
-print_message "Testing configuration: $config_name"
-
-# Use library function to start Hydrogen
-if hydrogen_pid=$(start_hydrogen "$MINIMAL_CONFIG" "$LOG_FILE" "$STARTUP_TIMEOUT" "$HYDROGEN_BIN") && [ -n "$hydrogen_pid" ]; then
-    print_result 0 "Hydrogen started and dependency checks completed"
-    ((PASS_COUNT++))
-else
-    print_result 1 "Failed to start Hydrogen for dependency checking"
-    EXIT_CODE=1
-fi
-
-# Stop Hydrogen after dependency checking
-if [ -n "$hydrogen_pid" ]; then
-    next_subtest
-    print_subtest "Stop Hydrogen after Dependency Check"
-    if stop_hydrogen "$hydrogen_pid" "$LOG_FILE" "$SHUTDOWN_TIMEOUT" "$SHUTDOWN_ACTIVITY_TIMEOUT" "$DIAG_TEST_DIR"; then
-        print_result 0 "Hydrogen shutdown completed successfully"
-        ((PASS_COUNT++))
-    else
-        print_result 1 "Failed to stop Hydrogen cleanly"
-        EXIT_CODE=1
-    fi
-fi
+run_lifecycle_test "$MINIMAL_CONFIG" "$config_name" "$DIAG_TEST_DIR" "$STARTUP_TIMEOUT" "$SHUTDOWN_TIMEOUT" "$SHUTDOWN_ACTIVITY_TIMEOUT" "$HYDROGEN_BIN" "$LOG_FILE" "PASS_COUNT" "EXIT_CODE"
 
 # Analyze logs for dependency checks
 print_message "Checking dependency logs for library dependency detection"

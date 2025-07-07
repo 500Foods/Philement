@@ -171,9 +171,27 @@ test_swagger_configuration() {
     # Subtest: Start server
     next_subtest
     print_subtest "Start Hydrogen Server (Config $config_number)"
-    if hydrogen_pid=$(start_hydrogen "$config_file" "$server_log" 15 "$HYDROGEN_BIN") && [ -n "$hydrogen_pid" ]; then
-        print_result 0 "Server started successfully with PID: $hydrogen_pid"
-        ((PASS_COUNT++))
+    
+    # Use a temporary variable name that won't conflict
+    local temp_pid_var="HYDROGEN_PID_$$_$config_number"
+    # shellcheck disable=SC2153  # HYDROGEN_BIN is set by find_hydrogen_binary function
+    if start_hydrogen_with_pid "$config_file" "$server_log" 15 "$HYDROGEN_BIN" "$temp_pid_var"; then
+        # Get the PID from the temporary variable
+        hydrogen_pid=$(eval "echo \$$temp_pid_var")
+        if [ -n "$hydrogen_pid" ]; then
+            print_result 0 "Server started successfully with PID: $hydrogen_pid"
+            ((PASS_COUNT++))
+        else
+            print_result 1 "Failed to start server - no PID returned"
+            EXIT_CODE=1
+            # Skip remaining subtests for this configuration
+            for i in {2..5}; do
+                next_subtest
+                print_subtest "Subtest $((subtest_start + i - 1)) (Skipped)"
+                print_result 1 "Skipped due to server startup failure"
+            done
+            return 1
+        fi
     else
         print_result 1 "Failed to start server"
         EXIT_CODE=1
@@ -285,12 +303,12 @@ cleanup() {
 trap cleanup SIGINT SIGTERM
 
 # Main execution starts here
-print_test_header "$NAME_SCRIPT" "$SCRIPT_VERSION"
+print_test_header "$TEST_NAME" "$SCRIPT_VERSION"
 
 # Subtest 1: Find Hydrogen binary
 next_subtest
 print_subtest "Locate Hydrogen Binary"
-if HYDROGEN_BIN=$(find_hydrogen_binary "$HYDROGEN_DIR"); then
+if find_hydrogen_binary "$HYDROGEN_DIR" "HYDROGEN_BIN"; then
     print_result 0 "Hydrogen binary found: $(basename "$HYDROGEN_BIN")"
     ((PASS_COUNT++))
 else

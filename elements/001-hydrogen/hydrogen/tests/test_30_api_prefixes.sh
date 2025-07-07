@@ -127,7 +127,8 @@ print_test_header "$NAME_SCRIPT" "$SCRIPT_VERSION"
 # Subtest 1: Find Hydrogen binary
 next_subtest
 print_subtest "Locate Hydrogen Binary"
-if HYDROGEN_BIN=$(find_hydrogen_binary "$HYDROGEN_DIR"); then
+# shellcheck disable=SC2153  # HYDROGEN_BIN is set by find_hydrogen_binary function
+if find_hydrogen_binary "$HYDROGEN_DIR" "HYDROGEN_BIN"; then
     print_result 0 "Hydrogen binary found: $(basename "$HYDROGEN_BIN")"
     ((PASS_COUNT++))
 else
@@ -170,7 +171,7 @@ if [ $EXIT_CODE -eq 0 ]; then
     next_subtest
     print_subtest "Start Server with Default API Prefix (/api)"
     DEFAULT_LOG="$RESULTS_DIR/default_server_${TIMESTAMP}.log"
-    if HYDROGEN_PID=$(start_hydrogen "$DEFAULT_CONFIG_PATH" "$DEFAULT_LOG" 15 "$HYDROGEN_BIN") && [ -n "$HYDROGEN_PID" ]; then
+    if start_hydrogen_with_pid "$DEFAULT_CONFIG_PATH" "$DEFAULT_LOG" 15 "$HYDROGEN_BIN" "HYDROGEN_PID" && [ -n "$HYDROGEN_PID" ]; then
         print_result 0 "Server started successfully with PID: $HYDROGEN_PID"
         ((PASS_COUNT++))
     else
@@ -244,7 +245,7 @@ if [ $EXIT_CODE -eq 0 ]; then
     next_subtest
     print_subtest "Start Server with Custom API Prefix (/myapi)"
     CUSTOM_LOG="$RESULTS_DIR/custom_server_${TIMESTAMP}.log"
-    if HYDROGEN_PID=$(start_hydrogen "$CUSTOM_CONFIG_PATH" "$CUSTOM_LOG" 15 "$HYDROGEN_BIN") && [ -n "$HYDROGEN_PID" ]; then
+    if start_hydrogen_with_pid "$CUSTOM_CONFIG_PATH" "$CUSTOM_LOG" 15 "$HYDROGEN_BIN" "HYDROGEN_PID" && [ -n "$HYDROGEN_PID" ]; then
         print_result 0 "Server started successfully with PID: $HYDROGEN_PID"
         ((PASS_COUNT++))
     else

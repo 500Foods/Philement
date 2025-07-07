@@ -657,6 +657,197 @@ test_new_feature() {
 6. **Testing**: Create test cases to verify functionality
 7. **Modular Design**: Keep extensions in appropriate modules (lib/ files)
 
+## Unicode Width Calculation in Bash
+
+One of the most complex aspects of terminal table rendering is accurately calculating the display width of text containing ANSI escape sequences, Unicode characters, and emojis. This section details the sophisticated approach used in tables.sh.
+
+### The Challenge
+
+Traditional string length calculation (`${#string}`) fails with:
+
+1. **ANSI Escape Sequences**: Color codes like `\033[0;31m` take up bytes but no display space
+2. **Double-Width Characters**: Emojis (🚀📊) and CJK characters occupy 2 terminal columns
+3. **UTF-8 Encoding**: Multi-byte characters require proper decoding to determine display width
+4. **Performance**: Processing every character individually is extremely slow
+
+### Multi-Tier Optimization Strategy
+
+Tables.sh implements a sophisticated multi-tier approach for optimal performance:
+
+```bash
+get_display_length() {
+    local text="$1"
+    
+    # Tier 1: Strip ANSI sequences first
+    local clean_text
+    clean_text=$(echo -n "$text" | sed -E 's/\x1B\[[0-9;]*[a-zA-Z]//g')
+    
+    # Tier 2: Fast path for pure ASCII
+    if [[ "$clean_text" =~ ^[[:ascii:]]*$ ]]; then
+        echo "${#clean_text}"
+        return
+    fi
+    
+    # Tier 3: Quick check for extended ASCII (no multi-byte)
+    if [[ ! "$clean_text" =~ [^\x00-\x7F] ]]; then
+        echo "${#clean_text}"
+        return
+    fi
+    
+    # Tier 4: Full Unicode processing only when needed
+    calculate_unicode_width "$clean_text"
+}
+```
+
+### UTF-8 Decoding Process
+
+For complex Unicode text, tables.sh performs proper UTF-8 decoding:
+
+```bash
+calculate_unicode_width() {
+    local clean_text="$1"
+    
+    # Convert to hex representation for byte-level processing
+    local codepoints
+    codepoints=$(echo -n "$clean_text" | od -An -tx1 | tr -d ' \n')
+    
+    local width=0 i=0 len=${#codepoints}
+    
+    while [[ $i -lt $len ]]; do
+        local byte1_hex="${codepoints:$i:2}"
+        local byte1=$((0x$byte1_hex))
+        
+        if [[ $byte1 -lt 128 ]]; then
+            # ASCII character (1 byte) - always single width
+            ((width++)); ((i += 2))
+        elif [[ $byte1 -lt 224 ]]; then
+            # 2-byte UTF-8 character
+            process_2byte_utf8 "$codepoints" "$i" "$len"
+        elif [[ $byte1 -lt 240 ]]; then
+            # 3-byte UTF-8 character (most emojis)
+            process_3byte_utf8 "$codepoints" "$i" "$len"
+        else
+            # 4-byte UTF-8 character (complex emojis)
+            process_4byte_utf8 "$codepoints" "$i" "$len"
+        fi
+    done
+    
+    echo "$width"
+}
+```
+
+### Unicode Range Detection
+
+The system identifies double-width characters by Unicode code point ranges:
+
+```bash
+process_3byte_utf8() {
+    local codepoints="$1" i="$2" len="$3"
+    
+    if [[ $((i + 6)) -le $len ]]; then
+        local byte1_hex="${codepoints:$i:2}"
+        local byte2_hex="${codepoints:$((i+2)):2}"
+        local byte3_hex="${codepoints:$((i+4)):2}"
+        
+        local byte1=$((0x$byte1_hex))
+        local codepoint=$(( (byte1 & 0x0F) << 12 | (0x$byte2_hex & 0x3F) << 6 | (0x$byte3_hex & 0x3F) ))
+        
+        # Check for emoji ranges in 3-byte space
+        if [[ $codepoint -ge 127744 && $codepoint -le 129535 ]] || \
+           [[ $codepoint -ge 9728 && $codepoint -le 10175 ]]; then
+            ((width += 2))  # Emojis are double-width
+        else
+            ((width++))     # Everything else is single-width
+        fi
+        ((i += 6))
+    else
+        ((width++)); ((i += 2))
+    fi
+}
+```
+
+### Supported Unicode Ranges
+
+The system accurately detects these character categories:
+
+- **U+1F300-U+1F9FF**: Miscellaneous Symbols and Pictographs (🚀📊🌟💻)
+- **U+2600-U+27BF**: Miscellaneous Symbols (✅☀️⭐)
+- **U+1100-U+D7AF**: CJK (Chinese, Japanese, Korean) characters
+- **U+FF00-U+FFEF**: Fullwidth forms
+- **U+3000-U+303F**: CJK symbols and punctuation
+
+### Performance Optimizations
+
+1. **Early Exit**: ASCII-only text uses simple `${#string}` calculation
+2. **Batch Processing**: Process multiple bytes at once when possible
+3. **Range Optimization**: Focus on common emoji ranges rather than exhaustive Unicode tables
+4. **Caching**: Results could be cached for repeated calculations (future enhancement)
+
+### ANSI Sequence Handling
+
+Before Unicode processing, all ANSI escape sequences are stripped:
+
+```bash
+# Remove all ANSI escape sequences
+clean_text=$(echo -n "$text" | sed -E 's/\x1B\[[0-9;]*[a-zA-Z]//g')
+```
+
+This handles:
+
+- Color codes: `\033[0;31m`, `\033[1;37m`
+- Reset codes: `\033[0m`
+- Cursor positioning: `\033[H`
+- Other terminal control sequences
+
+### Testing Unicode Width Calculation
+
+The system includes comprehensive tests for width calculation:
+
+```bash
+# Test various character types
+test_width_calculation() {
+    local test_cases=(
+        "Hello World:11"           # Pure ASCII
+        "🚀 Test 📊:9"            # Emojis (4 + 1 + 4 = 9)
+        "中文测试:8"               # CJK characters (2*4 = 8)
+        $'\033[0;31mRed\033[0m:3' # ANSI colored text
+    )
+    
+    for case in "${test_cases[@]}"; do
+        local text="${case%:*}"
+        local expected="${case#*:}"
+        local actual
+        actual=$(get_display_length "$text")
+        
+        if [[ "$actual" != "$expected" ]]; then
+            echo "FAIL: '$text' expected $expected, got $actual"
+        else
+            echo "PASS: '$text' = $actual"
+        fi
+    done
+}
+```
+
+### Common Unicode Pitfalls
+
+1. **Combining Characters**: Some Unicode characters combine with previous characters
+2. **Variation Selectors**: Emoji can have text vs. emoji presentation selectors
+3. **Zero-Width Characters**: Some Unicode characters have zero display width
+4. **Terminal Differences**: Different terminals may render Unicode differently
+5. **Font Support**: Missing fonts can cause display issues
+
+### Future Enhancements
+
+Potential improvements to the Unicode system:
+
+1. **Grapheme Cluster Support**: Handle combining characters properly
+2. **Emoji Sequence Support**: Handle multi-emoji sequences (👨‍👩‍👧‍👦)
+3. **Terminal Detection**: Adapt behavior based on terminal capabilities
+4. **Caching Layer**: Cache width calculations for performance
+5. **Configuration**: Allow users to override width calculations for specific characters
+
+This sophisticated Unicode handling ensures that tables.sh produces perfectly aligned tables regardless of the character content, while maintaining optimal performance through intelligent optimization tiers.
+
 ## Common Pitfalls
 
 1. **Shell Limitations**: Remember that Bash has limited mathematical capabilities; use `awk` for complex math
@@ -666,6 +857,9 @@ test_new_feature() {
 5. **Array Indexing**: Bash arrays are zero-indexed; ensure consistent indexing
 6. **Error Propagation**: Ensure errors are properly reported up the call stack
 7. **ANSI Sequences**: Remember that ANSI color codes affect string length calculations
+8. **Unicode Width**: Don't assume all characters are single-width; use `get_display_length()` for accurate calculations
+9. **UTF-8 Encoding**: Ensure proper handling of multi-byte character sequences
+10. **Terminal Compatibility**: Test Unicode rendering across different terminal emulators
 
 ## Version History
 

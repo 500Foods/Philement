@@ -6,6 +6,7 @@
 # Usage: ./test_00_all.sh [test_name1 test_name2 ...] [--skip-tests] [--sequential] [--help]
 
 # CHANGELOG
+# 4.0.1 - 2025-07-07 - Fixed how individual test elapsed times are stored and accessed
 # 4.0.1 - 2025-07-07 - Added missing shellcheck justifications
 # 4.0.0 - 2025-07-04 - Added dynamic parallel execution with group-based batching for significant performance improvement
 # 3.0.1 - 2025-07-03 - Enhanced --help to list test names, suppressed non-table output, updated history
@@ -205,6 +206,11 @@ format_time_duration() {
     local seconds="$1"
     local hours minutes secs milliseconds
     
+    # Handle seconds that start with a decimal point (e.g., ".492")
+    if [[ "$seconds" =~ ^\. ]]; then
+        seconds="0$seconds"
+    fi
+    
     # Handle decimal seconds
     if [[ "$seconds" =~ ^([0-9]+)\.([0-9]+)$ ]]; then
         secs="${BASH_REMATCH[1]}"
@@ -379,14 +385,15 @@ run_single_test() {
     
     # Handle skip mode
     if [ "$SKIP_TESTS" = true ]; then
-        echo "Would run: $test_script"
-        # Store skipped test results
+        # Extract test name from script filename (same logic as normal mode)
+        test_name=$(basename "$test_script" .sh | sed 's/test_[0-9]*_//' | tr '_' ' ' | sed 's/\b\w/\U&/g')
+        # Store skipped test results (don't print "Would run" message)
         TEST_NUMBERS+=("$test_number")
         TEST_NAMES+=("$test_name")
         TEST_SUBTESTS+=(1)
         TEST_PASSED+=(0)
         TEST_FAILED+=(0)
-        TEST_ELAPSED+=("0.000")
+        TEST_ELAPSED+=("0")
         return 0
     fi
     
@@ -402,45 +409,41 @@ run_single_test() {
     source "$test_script"
     local exit_code=$?
     
-    # Calculate elapsed time
-    local test_end
-    test_end=$(date +%s.%N 2>/dev/null || date +%s)
-    local elapsed
-    if [[ "$test_start" =~ \. && "$test_end" =~ \. ]]; then
-        elapsed=$(echo "$test_end - $test_start" | bc 2>/dev/null || echo "$((test_end - test_start))")
-    else
-        elapsed=$((test_end - test_start))
-    fi
+    # Don't calculate elapsed time here - we'll get it from the subtest result file
+    # This eliminates the timing discrepancy by using a single source of truth
+    local elapsed_formatted="0.000"
     
-    # Format elapsed time (without 's' suffix for table summation)
-    local elapsed_formatted
-    if [[ "$elapsed" =~ \. ]]; then
-        elapsed_formatted=$(printf "%.3f" "$elapsed")
-    else
-        elapsed_formatted="$elapsed"
-    fi
-    
-    # Look for subtest results file
+    # Look for subtest results file written by the individual test
     local total_subtests=1
     local passed_subtests=0
+    local test_name_for_file
+    test_name_for_file=$(basename "$test_script" .sh | sed 's/test_[0-9]*_//' | tr '_' ' ' | sed 's/\b\w/\U&/g')
     
     # Find the most recent subtest file for this test
     local latest_subtest_file
     latest_subtest_file=$(find "$RESULTS_DIR" -name "subtest_${test_number}_*.txt" -type f 2>/dev/null | sort -r | head -1)
     
     if [ -n "$latest_subtest_file" ] && [ -f "$latest_subtest_file" ]; then
-        # Read subtest results and test name
-        IFS=',' read -r total_subtests passed_subtests test_name < "$latest_subtest_file" 2>/dev/null || {
+        # Read subtest results, test name, and elapsed time from the file
+        IFS=',' read -r total_subtests passed_subtests test_name file_elapsed_time < "$latest_subtest_file" 2>/dev/null || {
             total_subtests=1
             passed_subtests=$([ $exit_code -eq 0 ] && echo 1 || echo 0)
-            test_name=$(basename "$test_script" .sh | sed 's/test_[0-9]*_//' | tr '_' ' ' | sed 's/\b\w/\U&/g')
+            test_name="$test_name_for_file"
+            file_elapsed_time="0.000"
         }
+        
+        # Use file elapsed time - this is the SINGLE SOURCE OF TRUTH from log_output.sh
+        elapsed_formatted="$file_elapsed_time"
     else
         # Default based on exit code if no file found
         total_subtests=1
         passed_subtests=$([ $exit_code -eq 0 ] && echo 1 || echo 0)
-        test_name=$(basename "$test_script" .sh | sed 's/test_[0-9]*_//' | tr '_' ' ' | sed 's/\b\w/\U&/g')
-        echo "Warning: No subtest result file found for test ${test_number}"
+        test_name="$test_name_for_file"
+        elapsed_formatted="0.000"
+        # Suppress warning when stdout is redirected
+        if [ -t 1 ]; then
+            echo "Warning: No subtest result file found for test ${test_number}"
+        fi
     fi
     
     # Calculate failed subtests
@@ -484,44 +487,37 @@ run_single_test_parallel() {
     } > "$temp_output_file" 2>&1
     local exit_code=$?
     
-    # Calculate elapsed time
-    local test_end
-    test_end=$(date +%s.%N 2>/dev/null || date +%s)
-    local elapsed
-    if [[ "$test_start" =~ \. && "$test_end" =~ \. ]]; then
-        elapsed=$(echo "$test_end - $test_start" | bc 2>/dev/null || echo "$((test_end - test_start))")
-    else
-        elapsed=$((test_end - test_start))
-    fi
+    # Don't calculate elapsed time here either - use file's elapsed time for consistency
+    # This ensures parallel execution also uses single source of truth
+    local elapsed_formatted="0.000"
     
-    # Format elapsed time (without 's' suffix for table summation)
-    local elapsed_formatted
-    if [[ "$elapsed" =~ \. ]]; then
-        elapsed_formatted=$(printf "%.3f" "$elapsed")
-    else
-        elapsed_formatted="$elapsed"
-    fi
-    
-    # Look for subtest results file
+    # Look for subtest results file written by the individual test
     local total_subtests=1
     local passed_subtests=0
+    local test_name_for_file
+    test_name_for_file=$(basename "$test_script" .sh | sed 's/test_[0-9]*_//' | tr '_' ' ' | sed 's/\b\w/\U&/g')
     
     # Find the most recent subtest file for this test
     local latest_subtest_file
     latest_subtest_file=$(find "$RESULTS_DIR" -name "subtest_${test_number}_*.txt" -type f 2>/dev/null | sort -r | head -1)
     
     if [ -n "$latest_subtest_file" ] && [ -f "$latest_subtest_file" ]; then
-        # Read subtest results and test name
-        IFS=',' read -r total_subtests passed_subtests test_name < "$latest_subtest_file" 2>/dev/null || {
+        # Read subtest results, test name, and elapsed time from the file
+        IFS=',' read -r total_subtests passed_subtests test_name file_elapsed_time < "$latest_subtest_file" 2>/dev/null || {
             total_subtests=1
             passed_subtests=$([ $exit_code -eq 0 ] && echo 1 || echo 0)
-            test_name=$(basename "$test_script" .sh | sed 's/test_[0-9]*_//' | tr '_' ' ' | sed 's/\b\w/\U&/g')
+            test_name="$test_name_for_file"
+            file_elapsed_time="0.000"
         }
+        
+        # Use file elapsed time - SINGLE SOURCE OF TRUTH from log_output.sh
+        elapsed_formatted="$file_elapsed_time"
     else
         # Default based on exit code if no file found
         total_subtests=1
         passed_subtests=$([ $exit_code -eq 0 ] && echo 1 || echo 0)
-        test_name=$(basename "$test_script" .sh | sed 's/test_[0-9]*_//' | tr '_' ' ' | sed 's/\b\w/\U&/g')
+        test_name="$test_name_for_file"
+        elapsed_formatted="0.000"
     fi
     
     # Calculate failed subtests
@@ -714,7 +710,11 @@ fi
 # Calculate total elapsed time
 END_TIME=$(date +%s.%N 2>/dev/null || date +%s)
 if [[ "$START_TIME" =~ \. ]] && [[ "$END_TIME" =~ \. ]]; then
-    TOTAL_ELAPSED=$(echo "$END_TIME - $START_TIME" | bc 2>/dev/null || echo "$((END_TIME - START_TIME))")
+    TOTAL_ELAPSED=$(echo "$END_TIME - $START_TIME" | bc 2>/dev/null || echo "0")
+    # Ensure TOTAL_ELAPSED is not empty or starts with a dot
+    if [[ -z "$TOTAL_ELAPSED" || "$TOTAL_ELAPSED" =~ ^\. ]]; then
+        TOTAL_ELAPSED="0"
+    fi
 else
     TOTAL_ELAPSED=$((END_TIME - START_TIME))
 fi
@@ -722,11 +722,16 @@ fi
 # Calculate total running time (sum of all test execution times)
 TOTAL_RUNNING_TIME=0
 for i in "${!TEST_ELAPSED[@]}"; do
-    if [[ "${TEST_ELAPSED[$i]}" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+    elapsed_time="${TEST_ELAPSED[$i]}"
+    # Handle elapsed times that might start with a dot (e.g., ".460")
+    if [[ "$elapsed_time" =~ ^\. ]]; then
+        elapsed_time="0$elapsed_time"
+    fi
+    if [[ "$elapsed_time" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
         if command -v bc >/dev/null 2>&1; then
-            TOTAL_RUNNING_TIME=$(echo "$TOTAL_RUNNING_TIME + ${TEST_ELAPSED[$i]}" | bc)
+            TOTAL_RUNNING_TIME=$(echo "$TOTAL_RUNNING_TIME + $elapsed_time" | bc)
         else
-            TOTAL_RUNNING_TIME=$(awk "BEGIN {print ($TOTAL_RUNNING_TIME + ${TEST_ELAPSED[$i]}); exit}")
+            TOTAL_RUNNING_TIME=$(awk "BEGIN {print ($TOTAL_RUNNING_TIME + $elapsed_time); exit}")
         fi
     fi
 done
@@ -739,7 +744,7 @@ TOTAL_RUNNING_TIME_FORMATTED=$(format_time_duration "$TOTAL_RUNNING_TIME")
 # Create layout JSON string
 layout_json_content='{
     "title": "Test Suite Results",
-    "footer": "Elapsed: '"$TOTAL_ELAPSED_FORMATTED"' ─── Running: '"$TOTAL_RUNNING_TIME_FORMATTED"'",
+    "footer": "Running: '"$TOTAL_RUNNING_TIME_FORMATTED"' ——— Elapsed: '"$TOTAL_ELAPSED_FORMATTED"'",
     "footer_position": "right",
     "columns": [
         {
@@ -789,7 +794,7 @@ layout_json_content='{
             "summary": "sum"
         },
         {
-            "header": "Elapsed",
+            "header": "Duration",
             "key": "elapsed",
             "datatype": "float",
             "width": 11,

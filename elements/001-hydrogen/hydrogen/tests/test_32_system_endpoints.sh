@@ -285,7 +285,8 @@ print_test_header "$NAME_SCRIPT" "$SCRIPT_VERSION"
 # Subtest 1: Find Hydrogen binary
 next_subtest
 print_subtest "Locate Hydrogen Binary"
-if HYDROGEN_BIN=$(find_hydrogen_binary "$HYDROGEN_DIR"); then
+# shellcheck disable=SC2153  # HYDROGEN_BIN is set by find_hydrogen_binary function
+if find_hydrogen_binary "$HYDROGEN_DIR" "HYDROGEN_BIN"; then
     print_result 0 "Hydrogen binary found: $(basename "$HYDROGEN_BIN")"
     ((PASS_COUNT++))
 else
@@ -320,7 +321,7 @@ if [ $EXIT_CODE -eq 0 ]; then
     # Subtest 3: Start server
     next_subtest
     print_subtest "Start Hydrogen Server"
-    if HYDROGEN_PID=$(start_hydrogen "$CONFIG_PATH" "$SERVER_LOG" 15 "$HYDROGEN_BIN") && [ -n "$HYDROGEN_PID" ]; then
+    if start_hydrogen_with_pid "$CONFIG_PATH" "$SERVER_LOG" 15 "$HYDROGEN_BIN" HYDROGEN_PID && [ -n "$HYDROGEN_PID" ]; then
         print_result 0 "Server started successfully with PID: $HYDROGEN_PID"
         ((PASS_COUNT++))
     else
