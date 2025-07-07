@@ -4,13 +4,14 @@
 # Runs github-sitemap.sh to check markdown links and evaluates results with subtests
 
 # CHANGELOG
+# 2.0.2 - 2025-07-07 - Fixed extraction logic for missing links and orphaned files counts with ANSI color code handling
 # 2.0.1 - 2025-07-06 - Added missing shellcheck justifications
 # 2.0.0 - 2025-07-02 - Migrated to use lib/ scripts, following established test pattern
 # 1.0.0 - 2025-06-20 - Initial version with subtests for markdown link checking
 
 # Test configuration
 TEST_NAME="Markdown Links Check"
-SCRIPT_VERSION="2.0.1"
+SCRIPT_VERSION="2.0.2"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -140,18 +141,15 @@ if [ -z "$ISSUES_FOUND" ]; then
     ISSUES_FOUND="0"
 fi
 
-# Extract missing links count from the summary row at the bottom of the table
-# Look for the summary row that shows totals
+# Extract missing links count using corner-detection algorithm
 MISSING_LINKS_COUNT=0
-if grep -q "│.*│.*│.*│.*│" "$TEMP_OUTPUT"; then
-    # Get the last data row (summary row) and extract the missing links column (5th column)
-    SUMMARY_ROW=$(grep "│.*│.*│.*│.*│" "$TEMP_OUTPUT" | tail -1)
-    if [ -n "$SUMMARY_ROW" ]; then
-        # Extract the 5th column (Missing Links) from the summary row
-        MISSING_LINKS_COUNT=$(echo "$SUMMARY_ROW" | awk -F'│' '{gsub(/[[:space:]]/, "", $6); print $6}' | grep -o '[0-9]*' || echo "0")
-        if [ -z "$MISSING_LINKS_COUNT" ]; then
-            MISSING_LINKS_COUNT=0
-        fi
+if grep -q "Missing Links" "$TEMP_OUTPUT"; then
+    # Capture the line immediately before the closing character ╰
+    LINE_BEFORE_CLOSE=$(grep -A 100 "Missing Links" "$TEMP_OUTPUT" | grep -B 1 "╰" | head -1)
+    # Extract the number by removing ANSI color codes, Unicode delimiters, trimming whitespace, and using grep for simplicity
+    MISSING_LINKS_COUNT=$(echo "$LINE_BEFORE_CLOSE" | sed 's/\x1B\[[0-9;]*[JKmsu]//g' | sed 's/│//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | grep -o '[0-9]\+' | head -1 || echo "0")
+    if [ -z "$MISSING_LINKS_COUNT" ]; then
+        MISSING_LINKS_COUNT=0
     fi
 fi
 
@@ -169,17 +167,14 @@ fi
 next_subtest
 print_subtest "Validate Orphaned Files Count"
 
-# Try to extract orphaned files count from table data
+# Try to extract orphaned files count using corner-detection algorithm
 ORPHANED_FILES_COUNT=0
 if grep -q "Orphaned Markdown Files" "$TEMP_OUTPUT"; then
-    # Count the number of data rows in the orphaned files table (excluding headers and borders)
-    ORPHANED_FILES_COUNT=$(grep -A 100 "Orphaned Markdown Files" "$TEMP_OUTPUT" | grep -c "│.*│" | head -1 || echo "0")
-    # Subtract 1 for the header row if present
-    if [ "$ORPHANED_FILES_COUNT" -gt 0 ]; then
-        ORPHANED_FILES_COUNT=$((ORPHANED_FILES_COUNT - 1))
-    fi
-    # Ensure non-negative
-    if [ "$ORPHANED_FILES_COUNT" -lt 0 ]; then
+    # Capture the line immediately before the closing character ╰
+    LINE_BEFORE_CLOSE=$(grep -A 100 "Orphaned Markdown Files" "$TEMP_OUTPUT" | grep -B 1 "╰" | head -1)
+    # Extract the number by removing ANSI color codes, Unicode delimiters, trimming whitespace, and using grep for simplicity
+    ORPHANED_FILES_COUNT=$(echo "$LINE_BEFORE_CLOSE" | sed 's/\x1B\[[0-9;]*[JKmsu]//g' | sed 's/│//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | grep -o '[0-9]\+' | head -1 || echo "0")
+    if [ -z "$ORPHANED_FILES_COUNT" ]; then
         ORPHANED_FILES_COUNT=0
     fi
 fi
@@ -203,6 +198,21 @@ print_output "Total issues found: $ISSUES_FOUND"
 print_output "Missing links: $MISSING_LINKS_COUNT"
 print_output "Orphaned files: $ORPHANED_FILES_COUNT"
 print_output "Detailed report saved to: $MARKDOWN_RESULT_LOG"
+
+# Validate counts against exit code from github-sitemap.sh for debugging
+# Ensure counts are numeric before performing arithmetic
+if ! [[ "$MISSING_LINKS_COUNT" =~ ^[0-9]+$ ]]; then
+    MISSING_LINKS_COUNT=0
+fi
+if ! [[ "$ORPHANED_FILES_COUNT" =~ ^[0-9]+$ ]]; then
+    ORPHANED_FILES_COUNT=0
+fi
+TOTAL_EXTRACTED_ISSUES=$((MISSING_LINKS_COUNT + ORPHANED_FILES_COUNT))
+if [ "$TOTAL_EXTRACTED_ISSUES" -eq "$SITEMAP_EXIT_CODE" ]; then
+    print_message "Validation: Extracted counts match sitemap exit code ($TOTAL_EXTRACTED_ISSUES issues)"
+else
+    print_warning "Validation: Extracted counts ($TOTAL_EXTRACTED_ISSUES) do not match sitemap exit code ($SITEMAP_EXIT_CODE)"
+fi
 
 # Export results for test_all.sh integration
 # Derive test name from script filename for consistency with test_00_all.sh
