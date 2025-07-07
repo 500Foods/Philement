@@ -1,19 +1,21 @@
 #!/bin/bash
-#
+
 # Test: API Prefix
 # Tests the API endpoints with different API prefix configurations using immediate restart approach:
 # - Default "/api" prefix using standard hydrogen_test_api.json
 # - Custom "/myapi" prefix using hydrogen_test_api_prefix.json
 # - Uses immediate restart without waiting for TIME_WAIT (SO_REUSEADDR enabled)
-#
-TEST_NAME="API Prefix"
-VERS_SCRIPT="5.0.0"
 
-# VERSION HISTORY
+# CHANGELOG
+# 5.0.1 - 2025-07-06 - Added missing shellcheck justifications
 # 5.0.0 - 2025-07-02 - Migrated to use lib/ scripts, following established test patterns
 # 4.0.0 - 2025-06-30 - Updated to use immediate restart approach without TIME_WAIT waiting
 # 3.0.0 - 2025-06-30 - Refactored to use robust server management functions from test_55
 # 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
+
+# Test Configuration
+TEST_NAME="API Prefix"
+SCRIPT_VERSION="5.0.1"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -21,23 +23,23 @@ HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 
 # Source the library scripts with guard clauses
 if [[ -z "$TABLES_SH_GUARD" ]] || ! command -v tables_render_from_json >/dev/null 2>&1; then
-# shellcheck source=tests/lib/tables.sh
+    # shellcheck source=tests/lib/tables.sh # Resolve path statically
     source "$SCRIPT_DIR/lib/tables.sh"
     export TABLES_SOURCED=true
 fi
 
 if [[ -z "$LOG_OUTPUT_SH_GUARD" ]]; then
-# shellcheck source=tests/lib/log_output.sh
+    # shellcheck source=tests/lib/log_output.sh # Resolve path statically
     source "$SCRIPT_DIR/lib/log_output.sh"
 fi
 
-# shellcheck source=tests/lib/framework.sh
+# shellcheck source=tests/lib/framework.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/framework.sh"
-# shellcheck source=tests/lib/file_utils.sh
+# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/file_utils.sh"
-# shellcheck source=tests/lib/lifecycle.sh
+# shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/lifecycle.sh"
-# shellcheck source=tests/lib/network_utils.sh
+# shellcheck source=tests/lib/network_utils.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/network_utils.sh"
 
 # Initialize test environment
@@ -120,7 +122,7 @@ cleanup() {
 trap cleanup SIGINT SIGTERM
 
 # Main execution starts here
-print_test_header "$NAME_SCRIPT" "$VERS_SCRIPT"
+print_test_header "$NAME_SCRIPT" "$SCRIPT_VERSION"
 
 # Subtest 1: Find Hydrogen binary
 next_subtest

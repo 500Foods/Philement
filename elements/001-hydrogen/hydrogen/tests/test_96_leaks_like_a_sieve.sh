@@ -1,39 +1,41 @@
 #!/bin/bash
-#
-# Test 95: Memory Leak Detection
+
+# Test: Memory Leak Detection
 # Uses Valgrind to detect memory leaks in the Hydrogen application
-#
-# VERSION HISTORY
+
+# CHANGELOG
+# 3.0.1 - 2025-07-06 - Added missing shellcheck justifications
 # 3.0.0 - 2025-07-02 - Migrated to use lib/ scripts, following established test pattern
 # 2.0.0 - 2025-06-17 - Major refactoring: improved modularity, reduced script size, enhanced comments
 # 1.0.0 - 2025-06-15 - Initial version with basic memory leak detection
-#
+
+# Test configuration
+TEST_NAME="Memory Leak Detection"
+SCRIPT_VERSION="3.0.1"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Source the new modular test libraries with guard clauses
 if [[ -z "$TABLES_SH_GUARD" ]] || ! command -v tables_render_from_json >/dev/null 2>&1; then
-# shellcheck source=tests/lib/tables.sh
+    # shellcheck source=tests/lib/tables.sh  # Resolve path statically
     source "$SCRIPT_DIR/lib/tables.sh"
     export TABLES_SOURCED=true
 fi
 
 if [[ -z "$LOG_OUTPUT_SH_GUARD" ]]; then
-# shellcheck source=tests/lib/log_output.sh
+    # shellcheck source=tests/lib/log_output.sh # Resolve path statically
     source "$SCRIPT_DIR/lib/log_output.sh"
 fi
 
-# shellcheck source=tests/lib/file_utils.sh
+# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/file_utils.sh"
-# shellcheck source=tests/lib/framework.sh
+# shellcheck source=tests/lib/framework.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/framework.sh"
-# shellcheck source=tests/lib/lifecycle.sh
+# shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/lifecycle.sh"
 
 # Test configuration
-TEST_NAME="Memory Leak Detection"
-SCRIPT_VERSION="3.0.0"
 EXIT_CODE=0
 TOTAL_SUBTESTS=4
 PASS_COUNT=0
