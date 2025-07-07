@@ -4,6 +4,7 @@
 # Runs github-sitemap.sh to check markdown links and evaluates results with subtests
 
 # CHANGELOG
+# 2.0.3 - 2025-07-07 - Fixed table detection to distinguish between column headers and dedicated issue tables
 # 2.0.2 - 2025-07-07 - Fixed extraction logic for missing links and orphaned files counts with ANSI color code handling
 # 2.0.1 - 2025-07-06 - Added missing shellcheck justifications
 # 2.0.0 - 2025-07-02 - Migrated to use lib/ scripts, following established test pattern
@@ -11,7 +12,7 @@
 
 # Test configuration
 TEST_NAME="Markdown Links Check"
-SCRIPT_VERSION="2.0.2"
+SCRIPT_VERSION="2.0.3"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -143,13 +144,38 @@ fi
 
 # Extract missing links count using corner-detection algorithm
 MISSING_LINKS_COUNT=0
-if grep -q "Missing Links" "$TEMP_OUTPUT"; then
-    # Capture the line immediately before the closing character ╰
-    LINE_BEFORE_CLOSE=$(grep -A 100 "Missing Links" "$TEMP_OUTPUT" | grep -B 1 "╰" | head -1)
-    # Extract the number by removing ANSI color codes, Unicode delimiters, trimming whitespace, and using grep for simplicity
-    MISSING_LINKS_COUNT=$(echo "$LINE_BEFORE_CLOSE" | sed 's/\x1B\[[0-9;]*[JKmsu]//g' | sed 's/│//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | grep -o '[0-9]\+' | head -1 || echo "0")
-    if [ -z "$MISSING_LINKS_COUNT" ]; then
-        MISSING_LINKS_COUNT=0
+# Look for a dedicated "Missing Links" table (not just a column header)
+# Check if there's a line that contains only "Missing Links" after cleaning
+MISSING_LINKS_TABLE_FOUND=false
+while IFS= read -r line; do
+    # Clean the line of ANSI codes and delimiters
+    CLEANED_LINE=$(echo "$line" | sed 's/\x1B\[[0-9;]*[JKmsu]//g' | sed 's/│//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
+    # Check if this line contains only "Missing Links" (dedicated table title)
+    if [[ "$CLEANED_LINE" == "Missing Links" ]]; then
+        MISSING_LINKS_TABLE_FOUND=true
+        break
+    fi
+done < "$TEMP_OUTPUT"
+
+if [ "$MISSING_LINKS_TABLE_FOUND" = true ]; then
+    # Find the line number of the dedicated "Missing Links" table title
+    MISSING_LINKS_LINE=$(grep -n "Missing Links" "$TEMP_OUTPUT" | while IFS=: read -r line_num line_content; do
+        CLEANED_LINE=$(echo "$line_content" | sed 's/\x1B\[[0-9;]*[JKmsu]//g' | sed 's/│//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
+        if [[ "$CLEANED_LINE" == "Missing Links" ]]; then
+            echo "$line_num"
+            break
+        fi
+    done)
+    
+    # Extract content from the dedicated Missing Links table only
+    if [ -n "$MISSING_LINKS_LINE" ]; then
+        # Get lines starting from the Missing Links table title
+        LINE_BEFORE_CLOSE=$(tail -n +$MISSING_LINKS_LINE "$TEMP_OUTPUT" | grep -B 1 "╰" | head -1)
+        # Extract the number by removing ANSI color codes, Unicode delimiters, trimming whitespace, and using grep for simplicity
+        MISSING_LINKS_COUNT=$(echo "$LINE_BEFORE_CLOSE" | sed 's/\x1B\[[0-9;]*[JKmsu]//g' | sed 's/│//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | grep -o '[0-9]\+' | head -1 || echo "0")
+        if [ -z "$MISSING_LINKS_COUNT" ]; then
+            MISSING_LINKS_COUNT=0
+        fi
     fi
 fi
 
@@ -169,13 +195,38 @@ print_subtest "Validate Orphaned Files Count"
 
 # Try to extract orphaned files count using corner-detection algorithm
 ORPHANED_FILES_COUNT=0
-if grep -q "Orphaned Markdown Files" "$TEMP_OUTPUT"; then
-    # Capture the line immediately before the closing character ╰
-    LINE_BEFORE_CLOSE=$(grep -A 100 "Orphaned Markdown Files" "$TEMP_OUTPUT" | grep -B 1 "╰" | head -1)
-    # Extract the number by removing ANSI color codes, Unicode delimiters, trimming whitespace, and using grep for simplicity
-    ORPHANED_FILES_COUNT=$(echo "$LINE_BEFORE_CLOSE" | sed 's/\x1B\[[0-9;]*[JKmsu]//g' | sed 's/│//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | grep -o '[0-9]\+' | head -1 || echo "0")
-    if [ -z "$ORPHANED_FILES_COUNT" ]; then
-        ORPHANED_FILES_COUNT=0
+# Look for a dedicated "Orphaned Markdown Files" table (not just a column header)
+# Check if there's a line that contains only "Orphaned Markdown Files" after cleaning
+ORPHANED_FILES_TABLE_FOUND=false
+while IFS= read -r line; do
+    # Clean the line of ANSI codes and delimiters
+    CLEANED_LINE=$(echo "$line" | sed 's/\x1B\[[0-9;]*[JKmsu]//g' | sed 's/│//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
+    # Check if this line contains only "Orphaned Markdown Files" (dedicated table title)
+    if [[ "$CLEANED_LINE" == "Orphaned Markdown Files" ]]; then
+        ORPHANED_FILES_TABLE_FOUND=true
+        break
+    fi
+done < "$TEMP_OUTPUT"
+
+if [ "$ORPHANED_FILES_TABLE_FOUND" = true ]; then
+    # Find the line number of the dedicated "Orphaned Markdown Files" table title
+    ORPHANED_FILES_LINE=$(grep -n "Orphaned Markdown Files" "$TEMP_OUTPUT" | while IFS=: read -r line_num line_content; do
+        CLEANED_LINE=$(echo "$line_content" | sed 's/\x1B\[[0-9;]*[JKmsu]//g' | sed 's/│//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
+        if [[ "$CLEANED_LINE" == "Orphaned Markdown Files" ]]; then
+            echo "$line_num"
+            break
+        fi
+    done)
+    
+    # Extract content from the dedicated Orphaned Files table only
+    if [ -n "$ORPHANED_FILES_LINE" ]; then
+        # Get lines starting from the Orphaned Files table title
+        LINE_BEFORE_CLOSE=$(tail -n +$ORPHANED_FILES_LINE "$TEMP_OUTPUT" | grep -B 1 "╰" | head -1)
+        # Extract the number by removing ANSI color codes, Unicode delimiters, trimming whitespace, and using grep for simplicity
+        ORPHANED_FILES_COUNT=$(echo "$LINE_BEFORE_CLOSE" | sed 's/\x1B\[[0-9;]*[JKmsu]//g' | sed 's/│//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | grep -o '[0-9]\+' | head -1 || echo "0")
+        if [ -z "$ORPHANED_FILES_COUNT" ]; then
+            ORPHANED_FILES_COUNT=0
+        fi
     fi
 fi
 
