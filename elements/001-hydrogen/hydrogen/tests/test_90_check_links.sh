@@ -170,7 +170,7 @@ if [ "$MISSING_LINKS_TABLE_FOUND" = true ]; then
     # Extract content from the dedicated Missing Links table only
     if [ -n "$MISSING_LINKS_LINE" ]; then
         # Get lines starting from the Missing Links table title
-        LINE_BEFORE_CLOSE=$(tail -n +$MISSING_LINKS_LINE "$TEMP_OUTPUT" | grep -B 1 "╰" | head -1)
+        LINE_BEFORE_CLOSE=$(tail -n +"$MISSING_LINKS_LINE" "$TEMP_OUTPUT" | grep -B 1 "╰" | head -1)
         # Extract the number by removing ANSI color codes, Unicode delimiters, trimming whitespace, and using grep for simplicity
         MISSING_LINKS_COUNT=$(echo "$LINE_BEFORE_CLOSE" | sed 's/\x1B\[[0-9;]*[JKmsu]//g' | sed 's/│//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | grep -o '[0-9]\+' | head -1 || echo "0")
         if [ -z "$MISSING_LINKS_COUNT" ]; then
@@ -221,7 +221,7 @@ if [ "$ORPHANED_FILES_TABLE_FOUND" = true ]; then
     # Extract content from the dedicated Orphaned Files table only
     if [ -n "$ORPHANED_FILES_LINE" ]; then
         # Get lines starting from the Orphaned Files table title
-        LINE_BEFORE_CLOSE=$(tail -n +$ORPHANED_FILES_LINE "$TEMP_OUTPUT" | grep -B 1 "╰" | head -1)
+        LINE_BEFORE_CLOSE=$(tail -n +"$ORPHANED_FILES_LINE" "$TEMP_OUTPUT" | grep -B 1 "╰" | head -1)
         # Extract the number by removing ANSI color codes, Unicode delimiters, trimming whitespace, and using grep for simplicity
         ORPHANED_FILES_COUNT=$(echo "$LINE_BEFORE_CLOSE" | sed 's/\x1B\[[0-9;]*[JKmsu]//g' | sed 's/│//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | grep -o '[0-9]\+' | head -1 || echo "0")
         if [ -z "$ORPHANED_FILES_COUNT" ]; then

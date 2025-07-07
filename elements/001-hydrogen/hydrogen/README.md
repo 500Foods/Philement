@@ -73,7 +73,7 @@ Hydrogen is currently designed for technical users who:
 
 ## Latest Test Results
 
-Generated on: Mon Jul  7 02:38:04 PDT 2025
+Generated on: Mon Jul  7 02:46:02 PDT 2025
 
 ### Summary
 
@@ -84,36 +84,36 @@ Generated on: Mon Jul  7 02:38:04 PDT 2025
 | Failed | 0 |
 | Skipped | 0 |
 | Total Subtests | 168 |
-| Passed Subtests | 167 |
-| Failed Subtests | 1 |
-| Elapsed Time | 00:00:35.973 |
-| Running Time | 00:01:11.453 |
+| Passed Subtests | 168 |
+| Failed Subtests | 0 |
+| Elapsed Time | 00:00:34.346 |
+| Running Time | 00:01:08.249 |
 
 ### Individual Test Results
 
 | Status | Time | Test | Tests | Pass | Fail | Summary |
 | ------ | ---- | ---- | ----- | ---- | ---- | ------- |
-| ✅ | 00:00:11.814 | 01_compilation | 13 | 13 | 0 | Test completed without errors |
-| ✅ | 00:00:00.976 | 12_payload_env_vars | 2 | 2 | 0 | Test completed without errors |
-| ✅ | 00:00:02.127 | 14_env_var_substitution | 16 | 16 | 0 | Test completed without errors |
-| ✅ | 00:00:01.342 | 16_library_dependencies | 13 | 13 | 0 | Test completed without errors |
-| ✅ | 00:00:01.158 | 18_json_error_handling | 4 | 4 | 0 | Test completed without errors |
-| ✅ | 00:00:01.356 | 20_shutdown | 6 | 6 | 0 | Test completed without errors |
-| ✅ | 00:00:01.639 | 22_startup/shutdown | 9 | 9 | 0 | Test completed without errors |
-| ✅ | 00:00:03.031 | 24_signal_handling | 9 | 9 | 0 | Test completed without errors |
-| ✅ | 00:00:03.092 | 26_crash_handler | 22 | 22 | 0 | Test completed without errors |
-| ✅ | 00:00:01.819 | 28_socket_rebinding | 7 | 7 | 0 | Test completed without errors |
-| ✅ | 00:00:02.287 | 30_api_prefix | 10 | 10 | 0 | Test completed without errors |
-| ✅ | 00:00:02.294 | 32_system_api_endpoints | 18 | 18 | 0 | Test completed without errors |
-| ✅ | 00:00:02.223 | 34_swagger | 13 | 13 | 0 | Test completed without errors |
-| ✅ | 00:00:16.181 | 90_markdown_links_check | 4 | 4 | 0 | Test completed without errors |
-| ✅ | 00:00:02.191 | 92_unity | 7 | 7 | 0 | Test completed without errors |
-| ✅ | 00:00:02.464 | 96_memory_leak_detection | 4 | 4 | 0 | Test completed without errors |
-| ❌ | 00:00:15.459 | 99_static_codebase_analysis | 11 | 10 | 1 | Test failed with errors |
+| ✅ | 00:00:10.979 | 01_compilation | 13 | 13 | 0 | Test completed without errors |
+| ✅ | 00:00:00.931 | 12_payload_env_vars | 2 | 2 | 0 | Test completed without errors |
+| ✅ | 00:00:02.065 | 14_env_var_substitution | 16 | 16 | 0 | Test completed without errors |
+| ✅ | 00:00:01.320 | 16_library_dependencies | 13 | 13 | 0 | Test completed without errors |
+| ✅ | 00:00:01.095 | 18_json_error_handling | 4 | 4 | 0 | Test completed without errors |
+| ✅ | 00:00:01.332 | 20_shutdown | 6 | 6 | 0 | Test completed without errors |
+| ✅ | 00:00:01.626 | 22_startup/shutdown | 9 | 9 | 0 | Test completed without errors |
+| ✅ | 00:00:03.014 | 24_signal_handling | 9 | 9 | 0 | Test completed without errors |
+| ✅ | 00:00:03.502 | 26_crash_handler | 22 | 22 | 0 | Test completed without errors |
+| ✅ | 00:00:01.806 | 28_socket_rebinding | 7 | 7 | 0 | Test completed without errors |
+| ✅ | 00:00:02.228 | 30_api_prefix | 10 | 10 | 0 | Test completed without errors |
+| ✅ | 00:00:02.238 | 32_system_api_endpoints | 18 | 18 | 0 | Test completed without errors |
+| ✅ | 00:00:02.167 | 34_swagger | 13 | 13 | 0 | Test completed without errors |
+| ✅ | 00:00:15.081 | 90_markdown_links_check | 4 | 4 | 0 | Test completed without errors |
+| ✅ | 00:00:02.276 | 92_unity | 7 | 7 | 0 | Test completed without errors |
+| ✅ | 00:00:02.528 | 96_memory_leak_detection | 4 | 4 | 0 | Test completed without errors |
+| ✅ | 00:00:14.061 | 99_static_codebase_analysis | 11 | 11 | 0 | Test completed without errors |
 
 ## Repository Information
 
-Generated via cloc: Mon Jul  7 02:38:04 PDT 2025
+Generated via cloc: Mon Jul  7 02:46:02 PDT 2025
 
 ```cloc
 -------------------------------------------------------------------------------
