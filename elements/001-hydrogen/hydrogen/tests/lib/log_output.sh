@@ -1,5 +1,6 @@
 #!/bin/bash
-#
+
+# tests/lib/log_output.sh
 # Test Suite - Log Output Library
 
 # Guard clause to prevent multiple sourcing
@@ -7,23 +8,25 @@ if [[ -n "$LOG_OUTPUT_SH_GUARD" ]]; then
     return 0
 fi
 export LOG_OUTPUT_SH_GUARD="true"
+
 # Provides consistent logging, formatting, and display functions for test scripts
 # ALL output must go through functions in this library - zero exceptions
-#
+
 # OVERVIEW:
 # This library provides a comprehensive logging system for test scripts with:
 # - Consistent color-coded output with icons
 # - Test/subtest numbering and timing
 # - Beautiful table-based headers and completion summaries
 # - Automatic test statistics tracking
-#
+
 # USAGE:
 # 1. Source this library in your test script
 # 2. Call extract_test_number() and set_test_number() to initialize
 # 3. Use print_* functions for all output
 # 4. Call print_test_completion() at the end
-#
+
 # VERSION HISTORY
+# 3.1.0 - 2025-07-07 - Restructured how test elapsed times are stored and accessed
 # 3.0.4 - 2025-07-06 - Added mechanism to handle absolute paths in log output
 # 3.0.3 - 2025-07-03 - Applied color consistency to all output types (DATA, EXEC, PASS, FAIL)
 # 3.0.2 - 2025-07-03 - Completely removed legacy functions (print_header, print_info)
@@ -37,6 +40,14 @@ export LOG_OUTPUT_SH_GUARD="true"
 # GLOBAL VARIABLES AND CONSTANTS
 #==============================================================================
 
+LOG_OUTPUT_NAME="Log Output Library"
+LOG_OUTPUT_VERSION="3.1.0"
+
+# Function to display script version information
+print_log_output_version() {
+    echo "$LOG_OUTPUT_NAME v$LOG_OUTPUT_VERSION"
+}
+
 # Global variables for test/subtest numbering
 CURRENT_TEST_NUMBER=""
 CURRENT_SUBTEST_NUMBER=""
@@ -46,6 +57,8 @@ SUBTEST_COUNTER=0
 TEST_START_TIME=""
 TEST_PASSED_COUNT=0
 TEST_FAILED_COUNT=0
+TEST_ELAPSED_TIME=""
+declare -a TEST_ELAPSED_TIMES
 
 # Variable for absolute path replacement
 ABSOLUTE_ROOT=""
@@ -60,8 +73,10 @@ EXEC_COLOR='\033[0;33m'     # Yellow
 TEST_COLOR='\033[0;34m'     # Blue
 
 # Other formatting codes
-BOLD='\033[1m'
-NC='\033[0m' # No Color
+if [[ -z "${BOLD:-}" ]]; then
+    BOLD='\033[1m'
+    NC='\033[0m' # No Color
+fi
 
 # Rounded rectangle icons with colors matching label themes (double-wide)
 PASS_ICON="${PASS_COLOR}\U2587\U2587${NC}"
@@ -178,16 +193,38 @@ record_test_result() {
     fi
 }
 
-# Function to calculate elapsed time in SSS.ZZZ format with at least three leading zeros for seconds
+# Function to calculate elapsed time in SSS.ZZZ format for console output
 get_elapsed_time() {
     if [ -n "$TEST_START_TIME" ]; then
         local end_time
         end_time=$(date +%s.%3N)
         local elapsed
         elapsed=$(echo "$end_time - $TEST_START_TIME" | bc -l 2>/dev/null || echo "0.000")
-        printf "%07.3f" "$elapsed"
+        # Format as SSS.ZZZ (seconds.milliseconds with zero padding)
+        local seconds
+        local milliseconds
+        seconds=$(echo "$elapsed" | cut -d. -f1)
+        milliseconds=$(echo "$elapsed" | cut -d. -f2)
+        # Ensure milliseconds is exactly 3 digits, pad or truncate as needed
+        milliseconds="${milliseconds}000"  # Add padding
+        milliseconds="${milliseconds:0:3}" # Truncate to 3 digits
+        # Format with zero padding for seconds (3 digits)
+        printf "%03d.%s" "$seconds" "$milliseconds"
     else
         echo "000.000"
+    fi
+}
+
+# Function to calculate elapsed time in decimal format for table output
+get_elapsed_time_decimal() {
+    if [ -n "$TEST_START_TIME" ]; then
+        local end_time
+        end_time=$(date +%s.%3N)
+        local elapsed
+        elapsed=$(echo "$end_time - $TEST_START_TIME" | bc -l 2>/dev/null || echo "0.000")
+        printf "%.3f" "$elapsed"
+    else
+        echo "0.000"
     fi
 }
 
@@ -266,11 +303,11 @@ print_test_header() {
         # Use sourced tables.sh function directly
         tables_render_from_json "$layout_json_content" "$data_json_content"
     else
-        echo "Falling back to external tables.sh process for header rendering" >&2
+        echo "Falling back to external tables.sh process for header rendering"
         print_message "Falling back to external tables.sh process for header rendering"
         # Fall back to external process for backward compatibility
         local temp_dir
-        temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory" >&2; return 1; }
+        temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory"; return 1; }
         local layout_json="$temp_dir/header_layout.json"
         local data_json="$temp_dir/header_data.json"
         
@@ -428,11 +465,6 @@ print_message() {
     echo -e "  ${prefix}   ${elapsed}   ${INFO_COLOR}${INFO_ICON} ${INFO_COLOR}INFO${NC}   ${message}"
 }
 
-# Function to print newlines (controlled spacing)
-print_newline() {
-    echo ""
-}
-
 # Function to print beautiful test suite runner header using tables.sh with blue theme
 print_test_suite_header() {
     local test_name="$1"
@@ -496,7 +528,7 @@ print_test_suite_header() {
     else
         # Fall back to external process for backward compatibility
         local temp_dir
-        temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory" >&2; return 1; }
+        temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory"; return 1; }
         local layout_json="$temp_dir/suite_header_layout.json"
         local data_json="$temp_dir/suite_header_data.json"
         
@@ -564,9 +596,17 @@ print_test_completion() {
     # Calculate totals and elapsed time
     local total_subtests=$((TEST_PASSED_COUNT + TEST_FAILED_COUNT))
     local elapsed_time
-    elapsed_time=$(get_elapsed_time)
     local processed_name
     processed_name=$(process_message "$test_name")
+    
+    # Calculate elapsed time once and store it for consistent use - this is the SINGLE SOURCE OF TRUTH
+    # Use decimal format for table output
+    if [[ -z "${TEST_ELAPSED_TIMES[CURRENT_TEST_NUMBER]}" ]]; then
+        elapsed_time=$(get_elapsed_time_decimal)
+        TEST_ELAPSED_TIMES[CURRENT_TEST_NUMBER]="$elapsed_time"
+    else
+        elapsed_time="${TEST_ELAPSED_TIMES[CURRENT_TEST_NUMBER]}"
+    fi
     
     # Check if tables.sh is sourced for performance optimization
     if [[ "$TABLES_SOURCED" == "true" ]]; then
@@ -607,9 +647,9 @@ print_test_completion() {
                     "width": 8
                 },
                 {
-                    "header": "Elapsed",
+                    "header": "Duration",
                     "key": "elapsed",
-                    "datatype": "text",
+                    "datatype": "float",
                     "justification": "right",
                     "width": 11
                 }
@@ -623,13 +663,42 @@ print_test_completion() {
                 "total_subtests": '"$total_subtests"',
                 "passed": '"$TEST_PASSED_COUNT"',
                 "failed": '"$TEST_FAILED_COUNT"',
-                "elapsed": "'"${elapsed_time}s"'"
+                "elapsed": "'${elapsed_time}'"
             }
         ]'
         
         # Use sourced tables.sh function directly
         tables_render_from_json "$layout_json_content" "$data_json_content"
-    else
+    fi
+    
+    # Write elapsed time to the subtest result file if running in test suite
+    # Use the SAME elapsed_time value that was calculated above - no additional calls to get_elapsed_time
+    if [[ -n "$RUNNING_IN_TEST_SUITE" && "$RUNNING_IN_TEST_SUITE" == "true" ]]; then
+        # Use absolute path approach since individual tests may change working directory
+        # Find the tests directory by using the script location from BASH_SOURCE
+        local script_dir
+        script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+        local tests_dir
+        # If we're in tests/lib, go up one level to tests
+        if [[ "$(basename "$script_dir")" == "lib" ]]; then
+            tests_dir="$(dirname "$script_dir")"
+        else
+            # Otherwise assume we're already in tests
+            tests_dir="$script_dir"
+        fi
+        local results_dir="$tests_dir/results"
+        mkdir -p "$results_dir" 2>/dev/null
+        # Use the elapsed_time that was already calculated above - SINGLE SOURCE OF TRUTH
+        local file_elapsed_time="$elapsed_time"
+        # Write the elapsed time to a result file with a timestamp
+        local timestamp
+        timestamp=$(date +%s.%3N 2>/dev/null || date +%s)
+        local subtest_file="$results_dir/subtest_${CURRENT_TEST_NUMBER}_${timestamp}.txt"
+        echo "$total_subtests,$TEST_PASSED_COUNT,$test_name,$file_elapsed_time" > "$subtest_file" 2>/dev/null
+    fi
+    
+    # If tables.sh is not sourced, handle rendering after file writing
+    if [[ "$TABLES_SOURCED" != "true" ]]; then
         # Fall back to external process for backward compatibility
         local temp_dir
         temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory" >&2; return 1; }
@@ -674,9 +743,9 @@ print_test_completion() {
             "width": 8
         },
         {
-            "header": "Elapsed",
+            "header": "Duration",
             "key": "elapsed",
-            "datatype": "text",
+            "datatype": "float",
             "justification": "right",
             "width": 11
         }
@@ -684,7 +753,9 @@ print_test_completion() {
 }
 EOF
 
-        # Create data JSON with the test completion information
+        # Create data JSON with the test completion information, using the SAME elapsed time
+        # that was calculated at the top of this function - SINGLE SOURCE OF TRUTH
+        local display_elapsed_time="$elapsed_time"
         cat > "$data_json" << EOF
 [
     {
@@ -693,7 +764,7 @@ EOF
         "total_subtests": $total_subtests,
         "passed": $TEST_PASSED_COUNT,
         "failed": $TEST_FAILED_COUNT,
-        "elapsed": "${elapsed_time}s"
+        "elapsed": "$display_elapsed_time"
     }
 ]
 EOF

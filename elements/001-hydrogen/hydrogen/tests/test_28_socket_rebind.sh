@@ -15,7 +15,7 @@
 TEST_NAME="Socket Rebinding"
 SCRIPT_VERSION="4.0.1"
 
-# Get the directory where this script is located
+# Get the directory where this script is located0
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 
@@ -98,7 +98,7 @@ next_subtest
 print_subtest "Find Hydrogen binary and configuration" | tee -a "$RESULT_LOG"
 
 # Find Hydrogen binary
-if ! HYDROGEN_BIN=$(find_hydrogen_binary "$HYDROGEN_DIR") || [ -z "$HYDROGEN_BIN" ]; then
+if ! find_hydrogen_binary "$HYDROGEN_DIR" "HYDROGEN_BIN" || [ -z "$HYDROGEN_BIN" ]; then
     print_result 1 "Failed to find Hydrogen binary"
     print_test_completion "$TEST_NAME"
     exit 1
@@ -164,7 +164,7 @@ print_subtest "Start first Hydrogen instance" | tee -a "$RESULT_LOG"
 
 # Start first instance using lifecycle.sh
 FIRST_LOG="$RESULTS_DIR/first_instance_${TIMESTAMP}.log"
-if FIRST_PID=$(start_hydrogen "$CONFIG_FILE" "$FIRST_LOG" 15 "$HYDROGEN_BIN") && [ -n "$FIRST_PID" ]; then
+if start_hydrogen_with_pid "$CONFIG_FILE" "$FIRST_LOG" 15 "$HYDROGEN_BIN" "FIRST_PID" && [ -n "$FIRST_PID" ]; then
     print_result 0 "First instance started successfully (PID: $FIRST_PID)"
     ((PASS_COUNT++))
     
@@ -225,7 +225,7 @@ print_subtest "Start second instance immediately (SO_REUSEADDR test)" | tee -a "
 
 # Start second instance immediately using lifecycle.sh
 SECOND_LOG="$RESULTS_DIR/second_instance_${TIMESTAMP}.log"
-if SECOND_PID=$(start_hydrogen "$CONFIG_FILE" "$SECOND_LOG" 15 "$HYDROGEN_BIN") && [ -n "$SECOND_PID" ]; then
+if start_hydrogen_with_pid "$CONFIG_FILE" "$SECOND_LOG" 15 "$HYDROGEN_BIN" "SECOND_PID" && [ -n "$SECOND_PID" ]; then
     print_result 0 "Second instance started successfully (PID: $SECOND_PID) - SO_REUSEADDR working!"
     print_message "Immediate rebinding after shutdown works correctly" | tee -a "$RESULT_LOG"
     ((PASS_COUNT++))
