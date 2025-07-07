@@ -1,19 +1,22 @@
 #!/bin/bash
-#
-# Hydrogen Test Suite - Test Framework Library
+
+# tests/lib/framework.sh
+# Test Framework Library
+
 # Provides test lifecycle management and result tracking functions
 # Integrates with numbered output system from log_output.sh
-#
-FRAMEWORK_NAME="Hydrogen Test Framework Library"
-FRAMEWORK_VERSION="2.0.0"
 
-# VERSION HISTORY
+# CHANGELOG
+# 2.1.0 - 2025-07-07 - Restructured how test elapsed times are stored and accessed
 # 2.0.0 - 2025-07-02 - Updated to integrate with numbered output system
 # 1.0.0 - 2025-07-02 - Initial creation from support_utils.sh migration
 
+FRAMEWORK_NAME="Test Framework Library"
+FRAMEWORK_VERSION="2.1.0"
+
 # Function to display script version information
 print_test_framework_version() {
-    echo "=== $FRAMEWORK_NAME v$FRAMEWORK_VERSION ==="
+    echo "$FRAMEWORK_NAME v$FRAMEWORK_VERSION"
 }
 
 # Function to start a test run with proper header and numbering
@@ -130,23 +133,19 @@ navigate_to_project_root() {
 }
 
 # Function to save subtest statistics and test name for use by test_all.sh
+# NOTE: This function is now a no-op since print_test_completion() handles file writing
+# to ensure single source of truth for timing. Kept for backward compatibility.
 export_subtest_results() {
     local test_id=$1
     local total_subtests=$2
     local passed_subtests=$3
     local test_name=$4
-    local script_dir
-    script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-    local results_dir="$script_dir/../results"
     
-    # Create results directory if it doesn't exist
-    mkdir -p "$results_dir"
+    # This function no longer writes files to avoid duplicate file creation
+    # with different timing values. File writing is now handled exclusively
+    # by print_test_completion() in log_output.sh for single source of truth.
     
-    # Create the subtest results file with the correct test name format
-    local subtest_file="$results_dir/subtest_${test_id}.txt"
-    echo "${total_subtests},${passed_subtests},${test_name}" > "$subtest_file"
-    
-    # Export silently - no need to announce this internal operation
+    # Return silently - no need to announce this internal operation
     return 0
 }
 
