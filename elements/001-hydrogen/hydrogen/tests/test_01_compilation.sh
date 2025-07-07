@@ -1,41 +1,43 @@
 #!/bin/bash
-#
-# Test 10: Compilation
+
+# Test: Compilation
 # Tests compilation of the project using CMake
-#
+
 # This test verifies that the project can be compiled successfully
 # using the CMake build system with various configurations.
-#
-# VERSION HISTORY
+
+# CHANGELOG
+# 2.0.1 - 2025-07-06 - Added missing shellcheck justifications
 # 2.0.0 - 2025-07-02 - Complete rewrite to use new modular test libraries
 # 1.0.0 - Initial version
-#
+
+# Test configuration
+TEST_NAME="Compilation"
+SCRIPT_VERSION="2.0.1"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Only source tables.sh if not already loaded (check guard variable)
 if [[ -z "$TABLES_SH_GUARD" ]] || ! command -v tables_render_from_json >/dev/null 2>&1; then
-# shellcheck source=tests/lib/tables.sh
+    # shellcheck source=tests/lib/tables.sh # Resolve path statically
     source "$SCRIPT_DIR/lib/tables.sh"
     export TABLES_SOURCED=true
 fi
 
 # Only source log_output.sh if not already loaded (check guard variable)
 if [[ -z "$LOG_OUTPUT_SH_GUARD" ]]; then
-# shellcheck source=tests/lib/log_output.sh
+    # shellcheck source=tests/lib/log_output.sh # Resolve path statically
     source "$SCRIPT_DIR/lib/log_output.sh"
 fi
 
 # Source other modular test libraries (always needed, not provided by test suite)
-# shellcheck source=tests/lib/file_utils.sh
+# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/file_utils.sh"
-# shellcheck source=tests/lib/framework.sh
+# shellcheck source=tests/lib/framework.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/framework.sh"
 
 # Test configuration
-TEST_NAME="Compilation"
-SCRIPT_VERSION="2.0.0"
 EXIT_CODE=0
 TOTAL_SUBTESTS=13
 PASS_COUNT=0

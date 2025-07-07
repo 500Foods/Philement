@@ -8,7 +8,7 @@ if [ $# -ne 2 ]; then
     exit 1
 fi
 
-# shellcheck disable=SC2034
+# shellcheck disable=SC2034  # Variable is unused but kept for potential future use or reconfiguration command
 PROJECT_ROOT="$1"  # Kept for potential future use or reconfiguration command
 CURRENT_COMMIT_COUNT="$2"
 

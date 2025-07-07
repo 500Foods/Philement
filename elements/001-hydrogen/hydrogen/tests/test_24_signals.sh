@@ -1,40 +1,42 @@
 #!/bin/bash
-#
-# Test 45: Signal Handling
+
+# Test: Signal Handling
 # Tests signal handling capabilities including SIGINT, SIGTERM, SIGHUP, SIGUSR2, and multiple signals
-#
+
 # VERSION HISTORY
+# 3.0.2 - 2025-07-06 - Added missing shellcheck justifications
 # 3.0.1 - 2025-07-02 - Performance optimization: removed all artificial delays (sleep statements) for dramatically faster execution while maintaining reliability
 # 3.0.0 - 2025-07-02 - Complete rewrite to use new modular test libraries
 # 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
 # 1.0.0 - Original version - Basic signal handling test
-#
+
+# Test configuration
+TEST_NAME="Signal Handling"
+SCRIPT_VERSION="3.0.1"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Source the new modular test libraries with guard clauses
 if [[ -z "$TABLES_SH_GUARD" ]] || ! command -v tables_render_from_json >/dev/null 2>&1; then
-# shellcheck source=tests/lib/tables.sh
+    # shellcheck source=tests/lib/tables.sh # Resolve path statically
     source "$SCRIPT_DIR/lib/tables.sh"
     export TABLES_SOURCED=true
 fi
 
 if [[ -z "$LOG_OUTPUT_SH_GUARD" ]]; then
-# shellcheck source=tests/lib/log_output.sh
+    # shellcheck source=tests/lib/log_output.sh # Resolve path statically
     source "$SCRIPT_DIR/lib/log_output.sh"
 fi
 
-# shellcheck source=tests/lib/file_utils.sh
+# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/file_utils.sh"
-# shellcheck source=tests/lib/framework.sh
+# shellcheck source=tests/lib/framework.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/framework.sh"
-# shellcheck source=tests/lib/lifecycle.sh
+# shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/lifecycle.sh"
 
 # Test configuration
-TEST_NAME="Signal Handling"
-SCRIPT_VERSION="3.0.1"
 EXIT_CODE=0
 TOTAL_SUBTESTS=9
 PASS_COUNT=0
