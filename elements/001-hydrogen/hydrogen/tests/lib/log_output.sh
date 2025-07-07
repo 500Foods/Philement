@@ -24,6 +24,7 @@ export LOG_OUTPUT_SH_GUARD="true"
 # 4. Call print_test_completion() at the end
 #
 # VERSION HISTORY
+# 3.0.4 - 2025-07-06 - Added mechanism to handle absolute paths in log output
 # 3.0.3 - 2025-07-03 - Applied color consistency to all output types (DATA, EXEC, PASS, FAIL)
 # 3.0.2 - 2025-07-03 - Completely removed legacy functions (print_header, print_info)
 # 3.0.1 - 2025-07-03 - Enhanced documentation, removed unused functions, improved comments
@@ -46,6 +47,9 @@ TEST_START_TIME=""
 TEST_PASSED_COUNT=0
 TEST_FAILED_COUNT=0
 
+# Variable for absolute path replacement
+ABSOLUTE_ROOT=""
+
 # Icon-specific colors for consistent theming
 PASS_COLOR='\033[0;32m'     # Green
 FAIL_COLOR='\033[0;31m'     # Red
@@ -67,6 +71,43 @@ INFO_ICON="${INFO_COLOR}\U2587\U2587${NC}"
 DATA_ICON="${DATA_COLOR}\U2587\U2587${NC}"
 EXEC_ICON="${EXEC_COLOR}\U2587\U2587${NC}"
 TEST_ICON="${TEST_COLOR}\U2587\U2587${NC}"
+
+#==============================================================================
+# PATH HANDLING FUNCTIONS
+#==============================================================================
+
+# Function to set the absolute root to the project root (two levels up from the script path)
+# Usage: set_absolute_root <script_path>
+set_absolute_root() {
+  local script_path="$1"
+  if [[ -n "$script_path" && "$script_path" == /* ]]; then
+    local script_dir
+    script_dir="$(dirname "$script_path")"
+    local project_root
+    project_root="$(dirname "$(dirname "$script_dir")")/"
+    ABSOLUTE_ROOT="$project_root"
+  else
+    ABSOLUTE_ROOT=""
+  fi
+  export ABSOLUTE_ROOT
+}
+
+# Function to process a message and replace full paths with relative paths
+# Usage: process_message <message>
+process_message() {
+  local message="$1"
+  local processed="$message"
+  if [[ -n "$ABSOLUTE_ROOT" ]]; then
+    processed="${message//$ABSOLUTE_ROOT/}"
+  fi
+  echo "$processed"
+}
+
+# Set the absolute root based on the current script's directory (assuming this is sourced from a test script)
+# This ensures ABSOLUTE_ROOT is set early to the project root (two levels up from tests/lib)
+if [[ "${BASH_SOURCE[0]}" == /* ]]; then
+  set_absolute_root "${BASH_SOURCE[0]}"
+fi
 
 #==============================================================================
 # TEST NUMBERING AND TIMING FUNCTIONS
@@ -292,7 +333,9 @@ print_subtest() {
     local subtest_name="$1"
     local elapsed
     elapsed=$(get_elapsed_time)
-    echo -e "  ${TEST_COLOR}${CURRENT_TEST_NUMBER}-${CURRENT_SUBTEST_NUMBER}   ${elapsed}   ${NC}${TEST_ICON}${TEST_COLOR} TEST   ${subtest_name}${NC}"
+    local processed_name
+    processed_name=$(process_message "$subtest_name")
+    echo -e "  ${TEST_COLOR}${CURRENT_TEST_NUMBER}-${CURRENT_SUBTEST_NUMBER}   ${elapsed}   ${NC}${TEST_ICON}${TEST_COLOR} TEST   ${processed_name}${NC}"
 }
 
 #==============================================================================
@@ -305,9 +348,8 @@ print_command() {
     prefix=$(get_test_prefix)
     local elapsed
     elapsed=$(get_elapsed_time)
-    # Convert any absolute paths in the command to relative paths
     local cmd
-    cmd=$(echo "$1" | sed -E "s|/[[:alnum:]/_-]+/elements/001-hydrogen/hydrogen/|hydrogen/|g")
+    cmd=$(process_message "$1")
     # Truncate command to approximately 200 characters
     local truncated_cmd
     if [ ${#cmd} -gt 200 ]; then
@@ -324,8 +366,8 @@ print_output() {
     prefix=$(get_test_prefix)
     local elapsed
     elapsed=$(get_elapsed_time)
-    local message="$1"
-    message=$(echo "$message" | sed -E "s|\/home\/asimard\/Projects\/Philement\/elements\/001-hydrogen\/|hydrogen/|g")
+    local message
+    message=$(process_message "$1")
     # Skip output if message is empty or contains only whitespace
     if [[ -n "$message" && ! "$message" =~ ^[[:space:]]*$ ]]; then
         echo -e "  ${prefix}   ${elapsed}   ${DATA_COLOR}${DATA_ICON} ${DATA_COLOR}DATA${NC}   ${DATA_COLOR}${message}${NC}"
@@ -340,14 +382,16 @@ print_result() {
     prefix=$(get_test_prefix)
     local elapsed
     elapsed=$(get_elapsed_time)
+    local processed_message
+    processed_message=$(process_message "$message")
     
     # Record the result for statistics
     record_test_result "$status"
     
     if [ "$status" -eq 0 ]; then
-        echo -e "  ${prefix}   ${elapsed}   ${PASS_COLOR}${PASS_ICON} ${PASS_COLOR}PASS${NC}   ${PASS_COLOR}${message}${NC}"
+        echo -e "  ${prefix}   ${elapsed}   ${PASS_COLOR}${PASS_ICON} ${PASS_COLOR}PASS${NC}   ${PASS_COLOR}${processed_message}${NC}"
     else
-        echo -e "  ${prefix}   ${elapsed}   ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}FAIL${NC}   ${FAIL_COLOR}${message}${NC}"
+        echo -e "  ${prefix}   ${elapsed}   ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}FAIL${NC}   ${FAIL_COLOR}${processed_message}${NC}"
     fi
 }
 
@@ -357,7 +401,9 @@ print_warning() {
     prefix=$(get_test_prefix)
     local elapsed
     elapsed=$(get_elapsed_time)
-    echo -e "  ${prefix}   ${elapsed}   ${WARN_COLOR}${WARN_ICON} ${WARN_COLOR}WARN${NC}   ${1}"
+    local message
+    message=$(process_message "$1")
+    echo -e "  ${prefix}   ${elapsed}   ${WARN_COLOR}${WARN_ICON} ${WARN_COLOR}WARN${NC}   ${message}"
 }
 
 # Function to print error messages
@@ -366,7 +412,9 @@ print_error() {
     prefix=$(get_test_prefix)
     local elapsed
     elapsed=$(get_elapsed_time)
-    echo -e "  ${prefix}   ${elapsed}   ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}ERROR${NC}   ${1}"
+    local message
+    message=$(process_message "$1")
+    echo -e "  ${prefix}   ${elapsed}   ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}ERROR${NC}   ${message}"
 }
 
 # Function to print informational messages
@@ -375,11 +423,8 @@ print_message() {
     prefix=$(get_test_prefix)
     local elapsed
     elapsed=$(get_elapsed_time)
-    # Convert absolute paths to relative paths if convert_to_relative_path function is available
-    local message="$1"
-    if command -v convert_to_relative_path >/dev/null 2>&1; then
-        message=$(echo "$message" | sed -E "s|/[[:alnum:]/_-]+/elements/001-hydrogen/hydrogen/|hydrogen/|g")
-    fi
+    local message
+    message=$(process_message "$1")
     echo -e "  ${prefix}   ${elapsed}   ${INFO_COLOR}${INFO_ICON} ${INFO_COLOR}INFO${NC}   ${message}"
 }
 
@@ -520,6 +565,8 @@ print_test_completion() {
     local total_subtests=$((TEST_PASSED_COUNT + TEST_FAILED_COUNT))
     local elapsed_time
     elapsed_time=$(get_elapsed_time)
+    local processed_name
+    processed_name=$(process_message "$test_name")
     
     # Check if tables.sh is sourced for performance optimization
     if [[ "$TABLES_SOURCED" == "true" ]]; then
@@ -572,7 +619,7 @@ print_test_completion() {
         local data_json_content='[
             {
                 "test_id": "'"${CURRENT_TEST_NUMBER}-000"'",
-                "test_name": "'"$test_name"'",
+                "test_name": "'"$processed_name"'",
                 "total_subtests": '"$total_subtests"',
                 "passed": '"$TEST_PASSED_COUNT"',
                 "failed": '"$TEST_FAILED_COUNT"',
@@ -642,7 +689,7 @@ EOF
 [
     {
         "test_id": "${CURRENT_TEST_NUMBER}-000",
-        "test_name": "$test_name",
+        "test_name": "$processed_name",
         "total_subtests": $total_subtests,
         "passed": $TEST_PASSED_COUNT,
         "failed": $TEST_FAILED_COUNT,
@@ -669,10 +716,14 @@ print_test_item() {
     local details=$3
     local prefix
     prefix=$(get_test_prefix)
+    local processed_name
+    processed_name=$(process_message "$name")
+    local processed_details
+    processed_details=$(process_message "$details")
     
     if [ "$status" -eq 0 ]; then
-        echo -e "${prefix} ${PASS_COLOR}${PASS_ICON} ${PASS_COLOR}PASS${NC} ${BOLD}$name${NC} - $details"
+        echo -e "${prefix} ${PASS_COLOR}${PASS_ICON} ${PASS_COLOR}PASS${NC} ${BOLD}$processed_name${NC} - $processed_details"
     else
-        echo -e "${prefix} ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}FAIL${NC} ${BOLD}$name${NC} - $details"
+        echo -e "${prefix} ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}FAIL${NC} ${BOLD}$processed_name${NC} - $processed_details"
     fi
 }
