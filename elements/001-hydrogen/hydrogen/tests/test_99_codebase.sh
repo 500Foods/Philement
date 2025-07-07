@@ -1,13 +1,14 @@
 #!/bin/bash
-#
+
 # Test: Static Codebase Analysis
 # Performs comprehensive analysis of the codebase including:
 # - Build system cleaning using CMake
 # - Source code analysis and line counting
 # - Large file detection
 # - Multi-language linting validation
-#
-# VERSION HISTORY
+
+# CHANGELOG
+# 3.9.0 - 2025-07-07 - Added new test for shellcheck exception justifications as Subtest 7
 # 3.8.0 - 2025-07-04 - Removed shellcheck suppressions and fixed underlying issues (SC2269, SC2317) per user preference
 # 3.7.0 - 2025-07-04 - Added shellcheck suppressions for SC2034, SC2086 globally to address warnings across all scripts
 # 3.6.0 - 2025-07-04 - Added shellcheck suppressions for SC2034, SC2317 to address remaining warnings in script
@@ -20,35 +21,36 @@
 # 2.0.0 - 2025-06-17 - Major refactoring: improved modularity, reduced script size, enhanced comments
 # 1.0.1 - 2025-06-16 - Added comprehensive linting support for multiple languages
 # 1.0.0 - 2025-06-15 - Initial version with basic codebase analysis
-#
+
+# Test configuration
+TEST_NAME="Static Codebase Analysis"
+SCRIPT_VERSION="3.9.0"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Source the new modular test libraries with guard clauses
 if [[ -z "$TABLES_SH_GUARD" ]] || ! command -v tables_render_from_json >/dev/null 2>&1; then
-# shellcheck source=tests/lib/tables.sh
+    # shellcheck source=tests/lib/tables.sh # Resolve path statically
     source "$SCRIPT_DIR/lib/tables.sh"
     export TABLES_SOURCED=true
 fi
 
 if [[ -z "$LOG_OUTPUT_SH_GUARD" ]]; then
-# shellcheck source=tests/lib/log_output.sh
+    # shellcheck source=tests/lib/log_output.sh # Resolve path statically
     source "$SCRIPT_DIR/lib/log_output.sh"
 fi
 
-# shellcheck source=tests/lib/file_utils.sh
+# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/file_utils.sh"
-# shellcheck source=tests/lib/framework.sh
+# shellcheck source=tests/lib/framework.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/framework.sh"
-# shellcheck source=tests/lib/cloc.sh
+# shellcheck source=tests/lib/cloc.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/cloc.sh"
 
 # Test configuration
-TEST_NAME="Static Codebase Analysis"
-SCRIPT_VERSION="3.8.0"
 EXIT_CODE=0
-TOTAL_SUBTESTS=10
+TOTAL_SUBTESTS=11
 PASS_COUNT=0
 RESULT_LOG=""
 
@@ -563,7 +565,7 @@ if command -v shellcheck >/dev/null 2>&1; then
         # This eliminates directory switching overhead while maintaining optimal load balancing
         # Large files (>400 lines) get processed individually
         # Medium files (100-400 lines) get processed in groups of 3-4  
-        # Small files (<100 lines) get processed in larger batches (8-12)
+        # Small files (<100 lines) get processed in larger batches (8-12 files per job)
         
         # Function to get file line count
         get_line_count() {
@@ -642,7 +644,63 @@ else
     ((PASS_COUNT++))
 fi
 
-# Subtest 7: Lint JSON files
+# Subtest 7: Shellcheck Exception Justification Check
+next_subtest
+print_subtest "Shellcheck Exception Justification Check"
+
+print_message "Checking for shellcheck directives in shell scripts..."
+
+SHELLCHECK_DIRECTIVE_TOTAL=0
+SHELLCHECK_DIRECTIVE_WITH_JUSTIFICATION=0
+SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION=0
+
+# Reuse the SHELL_FILES array from the previous subtest if available
+if [ ${#SHELL_FILES[@]} -eq 0 ]; then
+    SHELL_FILES=()
+    while read -r file; do
+        if ! should_exclude_file "$file"; then
+            SHELL_FILES+=("$file")
+        fi
+    done < <(find . -type f -name "*.sh")
+fi
+
+SHELL_COUNT=${#SHELL_FILES[@]}
+
+if [ "$SHELL_COUNT" -gt 0 ]; then
+    print_message "Analyzing $SHELL_COUNT shell scripts for shellcheck directives..."
+    for file in "${SHELL_FILES[@]}"; do
+        # Find lines with shellcheck directives (allowing leading whitespace)
+        while IFS= read -r line; do
+            if [[ "$line" =~ ^[[:space:]]*"# shellcheck" ]]; then
+                ((SHELLCHECK_DIRECTIVE_TOTAL++))
+                # Check if there's a justification (additional comment after the directive)
+                if [[ "$line" =~ ^[[:space:]]*"# shellcheck"[[:space:]]+[^[:space:]]+[[:space:]]+"#".* ]]; then
+                    ((SHELLCHECK_DIRECTIVE_WITH_JUSTIFICATION++))
+                else
+                    ((SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION++))
+                    print_output "No justification found in $file: $line"
+                fi
+            fi
+        done < <(grep "^[[:space:]]*# shellcheck" "$file")
+    done
+    
+    print_message "INFO: Total shellcheck directives: $SHELLCHECK_DIRECTIVE_TOTAL"
+    print_message "INFO: Directives with justification: $SHELLCHECK_DIRECTIVE_WITH_JUSTIFICATION"
+    print_message "INFO: Directives without justification: $SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION"
+    
+    if [ "$SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION" -eq 0 ]; then
+        print_result 0 "All $SHELLCHECK_DIRECTIVE_TOTAL shellcheck directives have justifications"
+        ((PASS_COUNT++))
+    else
+        print_result 1 "Found $SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION shellcheck directives without justifications"
+        EXIT_CODE=1
+    fi
+else
+    print_result 0 "No shell scripts found to check for shellcheck directives"
+    ((PASS_COUNT++))
+fi
+
+# Subtest 8: Lint JSON files
 next_subtest
 print_subtest "JSON Linting"
 
@@ -696,7 +754,7 @@ else
     ((PASS_COUNT++))
 fi
 
-# Subtest 8: Code line count analysis with cloc
+# Subtest 9: Code line count analysis with cloc
 next_subtest
 print_subtest "Code Line Count Analysis (cloc)"
 
@@ -727,7 +785,7 @@ fi
 
 rm -f "$CLOC_OUTPUT"
 
-# Subtest 9: File count summary
+# Subtest 10: File count summary
 next_subtest
 print_subtest "File Count Summary"
 
@@ -749,7 +807,7 @@ print_output "Shell scripts: $SH_FILES"
 print_result 0 "File count analysis completed"
 ((PASS_COUNT++))
 
-# Subtest 10: Save analysis results
+# Subtest 11: Save analysis results
 next_subtest
 print_subtest "Save Analysis Results"
 

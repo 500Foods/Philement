@@ -1,35 +1,35 @@
 #!/bin/bash
-#
-# Test 00: Test Suite Runner
+
+# Test: Test Suite Runner
 # Executes all tests in parallel batches or sequentially and generates a summary report
-#
+
 # Usage: ./test_00_all.sh [test_name1 test_name2 ...] [--skip-tests] [--sequential] [--help]
-#
-# VERSION HISTORY
+
+# CHANGELOG
+# 4.0.1 - 2025-07-07 - Added missing shellcheck justifications
 # 4.0.0 - 2025-07-04 - Added dynamic parallel execution with group-based batching for significant performance improvement
 # 3.0.1 - 2025-07-03 - Enhanced --help to list test names, suppressed non-table output, updated history
 # 3.0.0 - 2025-07-02 - Complete rewrite to use lib/ scripts, simplified orchestration approach
-#
+
+# Test configuration
+TEST_NAME="Test Suite Runner"
+SCRIPT_VERSION="4.0.1"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Source the table rendering libraries for the summary
-# shellcheck source=tests/lib/tables.sh
+# shellcheck source=tests/lib/tables.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/tables.sh"
-# shellcheck source=tests/lib/log_output.sh
+# shellcheck source=tests/lib/log_output.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/log_output.sh"
-# shellcheck source=tests/lib/framework.sh
+# shellcheck source=tests/lib/framework.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/framework.sh"
-# shellcheck source=tests/lib/cloc.sh
+# shellcheck source=tests/lib/cloc.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/cloc.sh"
 
 # Set flag to indicate tables.sh is sourced for performance optimization
 export TABLES_SOURCED=true
-
-# Test configuration
-TEST_NAME="Test Suite Runner"
-SCRIPT_VERSION="4.0.0"
 
 # Auto-extract test number and set up environment
 TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")

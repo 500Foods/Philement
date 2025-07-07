@@ -1,14 +1,19 @@
 #!/bin/bash
-#
+
 # Test: Socket Rebinding
 # Tests that the SO_REUSEADDR socket option allows immediate rebinding after shutdown
 # with active HTTP connections that create TIME_WAIT sockets
-#
-# VERSION HISTORY
+
+# CHANGELOG
+# 4.0.1 - 2025-07-06 - Added missing shellcheck justifications
 # 4.0.0 - 2025-07-02 - Migrated to use lib/ scripts, following established patterns from other migrated tests
 # 3.0.0 - 2025-06-30 - Enhanced to make actual HTTP requests, creating proper TIME_WAIT conditions for realistic testing
 # 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
 # 1.0.0 - Original version - Basic socket rebinding test functionality
+
+# Test Configuration
+TEST_NAME="Socket Rebinding"
+SCRIPT_VERSION="4.0.1"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -16,28 +21,24 @@ HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 
 # Source the library scripts with guard clauses
 if [[ -z "$TABLES_SH_GUARD" ]] || ! command -v tables_render_from_json >/dev/null 2>&1; then
-# shellcheck source=tests/lib/tables.sh
+    # shellcheck source=tests/lib/tables.sh # Resolve path statically
     source "$SCRIPT_DIR/lib/tables.sh"
     export TABLES_SOURCED=true
 fi
 
 if [[ -z "$LOG_OUTPUT_SH_GUARD" ]]; then
-# shellcheck source=tests/lib/log_output.sh
+    # shellcheck source=tests/lib/log_output.sh # Resolve path statically
     source "$SCRIPT_DIR/lib/log_output.sh"
 fi
 
-# shellcheck source=tests/lib/framework.sh
+# shellcheck source=tests/lib/framework.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/framework.sh"
-# shellcheck source=tests/lib/file_utils.sh
+# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/file_utils.sh"
-# shellcheck source=tests/lib/lifecycle.sh
+# shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/lifecycle.sh"
-# shellcheck source=tests/lib/network_utils.sh
+# shellcheck source=tests/lib/network_utils.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/network_utils.sh"
-
-# Re-set our script name after sourcing libraries (they may override NAME_SCRIPT)
-NAME_SCRIPT="Socket Rebinding"
-VERS_SCRIPT="2.0.0"
 
 # Auto-extract test number and set up environment
 TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
@@ -45,7 +46,7 @@ set_test_number "$TEST_NUMBER"
 reset_subtest_counter
 
 # Print beautiful test header
-print_test_header "$NAME_SCRIPT" "$VERS_SCRIPT"
+print_test_header "$TEST_NAME" "$SCRIPT_VERSION"
 
 # Create output directories
 RESULTS_DIR="$SCRIPT_DIR/results"
@@ -99,7 +100,7 @@ print_subtest "Find Hydrogen binary and configuration" | tee -a "$RESULT_LOG"
 # Find Hydrogen binary
 if ! HYDROGEN_BIN=$(find_hydrogen_binary "$HYDROGEN_DIR") || [ -z "$HYDROGEN_BIN" ]; then
     print_result 1 "Failed to find Hydrogen binary"
-    print_test_completion "$NAME_SCRIPT"
+    print_test_completion "$TEST_NAME"
     exit 1
 fi
 
@@ -112,7 +113,7 @@ fi
 
 if [ ! -f "$CONFIG_FILE" ]; then
     print_result 1 "No suitable configuration file found"
-    print_test_completion "$NAME_SCRIPT"
+    print_test_completion "$TEST_NAME"
     exit 1
 fi
 
@@ -176,7 +177,7 @@ if FIRST_PID=$(start_hydrogen "$CONFIG_FILE" "$FIRST_LOG" 15 "$HYDROGEN_BIN") &&
 else
     print_result 1 "Failed to start first instance"
     EXIT_CODE=1
-    print_test_completion "$NAME_SCRIPT"
+    print_test_completion "$TEST_NAME"
     export_subtest_results "55_socket_rebind" $TOTAL_SUBTESTS $PASS_COUNT
     exit 1
 fi
@@ -267,7 +268,7 @@ export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "$TOTAL_SUBTESTS" "$P
 # Test completion - no additional PASS/FAIL result needed here
 
 # Print completion table
-print_test_completion "$NAME_SCRIPT"
+print_test_completion "$TEST_NAME"
 
 end_test $EXIT_CODE $TOTAL_SUBTESTS $PASS_COUNT > /dev/null
 

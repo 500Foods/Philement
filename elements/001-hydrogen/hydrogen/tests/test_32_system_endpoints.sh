@@ -1,5 +1,5 @@
 #!/bin/bash
-#
+
 # Test: System API Endpoints
 # Tests all the system API endpoints:
 # - /api/system/test: Tests request handling with various parameters
@@ -9,13 +9,15 @@
 # - /api/system/prometheus: Tests the Prometheus metrics endpoint
 # - /api/system/recent: Tests the recent activity log endpoint
 # - /api/system/appconfig: Tests the application configuration endpoint
-#
-TEST_NAME="System API Endpoints"
-VERS_SCRIPT="3.0.0"
 
-# VERSION HISTORY
+# CHANGELOG
+# 3.0.1 - 2025-07-06 - Added missing shellcheck justifications
 # 3.0.0 - 2025-07-02 - Migrated to use lib/ scripts, following established test patterns
 # 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
+
+# Test Configuration
+TEST_NAME="System API Endpoints"
+SCRIPT_VERSION="3.0.1"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -23,23 +25,23 @@ HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 
 # Source the library scripts with guard clauses
 if [[ -z "$TABLES_SH_GUARD" ]] || ! command -v tables_render_from_json >/dev/null 2>&1; then
-    # shellcheck source=tests/lib/tables.sh
+    # shellcheck source=tests/lib/tables.sh # Resolve path statically
     source "$SCRIPT_DIR/lib/tables.sh"
     export TABLES_SOURCED=true
 fi
 
 if [[ -z "$LOG_OUTPUT_SH_GUARD" ]]; then
-    # shellcheck source=tests/lib/log_output.sh
+    # shellcheck source=tests/lib/log_output.sh # Resolve path statically
     source "$SCRIPT_DIR/lib/log_output.sh"
 fi
 
-# shellcheck source=tests/lib/framework.sh
+# shellcheck source=tests/lib/framework.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/framework.sh"
-# shellcheck source=tests/lib/file_utils.sh
+# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/file_utils.sh"
-# shellcheck source=tests/lib/lifecycle.sh
+# shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/lifecycle.sh"
-# shellcheck source=tests/lib/network_utils.sh
+# shellcheck source=tests/lib/network_utils.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/network_utils.sh"
 
 # Initialize test environment
@@ -278,7 +280,7 @@ cleanup() {
 trap cleanup SIGINT SIGTERM
 
 # Main execution starts here
-print_test_header "$NAME_SCRIPT" "$VERS_SCRIPT"
+print_test_header "$NAME_SCRIPT" "$SCRIPT_VERSION"
 
 # Subtest 1: Find Hydrogen binary
 next_subtest

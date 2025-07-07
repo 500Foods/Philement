@@ -1,40 +1,42 @@
 #!/bin/bash
-#
-# Test 12: Payload Environment Variables
+
+# Test 12: Payload Env Vars
 # Tests environment variable handling for the payload system
 # Validates that required payload environment variables are present and valid
-#
+
 # VERSION HISTORY
+# 3.0.1 - 2025-07-06 - Added missing shellcheck justifications
 # 3.0.0 - 2025-07-02 - Complete rewrite to use new modular test libraries
 # 2.0.0 - 2025-06-17 - Major refactoring: improved modularity, enhanced comments, added version tracking
 # 1.0.0 - Initial version - Basic environment variable validation
-#
 
+# Test configuration
+TEST_NAME="Payload Env Vars"
+SCRIPT_VERSION="3.0.1"
+# 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Only source tables.sh if not already loaded (check guard variable)
 if [[ -z "$TABLES_SH_GUARD" ]] || ! command -v tables_render_from_json >/dev/null 2>&1; then
-# shellcheck source=tests/lib/tables.sh
+    # shellcheck source=tests/lib/tables.sh # Resolve path statically
     source "$SCRIPT_DIR/lib/tables.sh"
     export TABLES_SOURCED=true
 fi
 
 # Only source log_output.sh if not already loaded (check guard variable)
 if [[ -z "$LOG_OUTPUT_SH_GUARD" ]]; then
-# shellcheck source=tests/lib/log_output.sh
+    # shellcheck source=tests/lib/log_output.sh # Resolve path statically
     source "$SCRIPT_DIR/lib/log_output.sh"
 fi
 
 # Source other modular test libraries (always needed, not provided by test suite)
-# shellcheck source=tests/lib/framework.sh
+# shellcheck source=tests/lib/framework.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/framework.sh"
-# shellcheck source=tests/lib/env_utils.sh
+# shellcheck source=tests/lib/env_utils.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/env_utils.sh"
 
 # Test configuration
-TEST_NAME="Payload Environment Variables"
-SCRIPT_VERSION="3.0.0"
 EXIT_CODE=0
 TOTAL_SUBTESTS=2
 PASS_COUNT=0
