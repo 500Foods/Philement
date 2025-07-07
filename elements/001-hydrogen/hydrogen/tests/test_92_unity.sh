@@ -4,6 +4,7 @@
 # Runs unit tests using the Unity framework, treating each test file as a subtest
 #
 # VERSION HISTORY
+# 2.0.1 - 2025-07-06 - Removed hardcoded absolute path; now handled by log_output.sh
 # 2.0.0 - 2025-07-02 - Complete rewrite to use new modular test libraries
 # 1.0.0 - 2025-06-25 - Initial version for running Unity tests
 #
@@ -32,7 +33,7 @@ source "$SCRIPT_DIR/lib/lifecycle.sh"
 
 # Test configuration
 TEST_NAME="Unity"
-SCRIPT_VERSION="2.0.0"
+SCRIPT_VERSION="2.0.1"
 EXIT_CODE=0
 TOTAL_SUBTESTS=0
 PASS_COUNT=0
@@ -170,8 +171,6 @@ run_unity_tests() {
         true > "$temp_test_log"  # Clear temporary log for this test
         ctest -R "^$test_name$" --output-on-failure > "$temp_test_log" 2>&1
         while IFS= read -r line; do
-            # Replace absolute paths with relative paths
-            line=${line//"/home/asimard/Projects/Philement/elements/001-hydrogen/"//hydrogen/}
             print_output "$line"
         done < "$temp_test_log"
         if grep -q "Passed" "$temp_test_log"; then
