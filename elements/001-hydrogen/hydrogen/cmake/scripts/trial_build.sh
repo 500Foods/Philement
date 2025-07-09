@@ -53,8 +53,8 @@ if echo "$BUILD_OUTPUT" | grep -q "completed successfully" && ! echo "$BUILD_OUT
     printf "\n%s%s Running shutdown test...%s\n" "$CYAN" "$INFO" "$NORMAL"
     
 # Run shutdown test if available
-if [ -f "$SOURCE_DIR/../tests/test_20_shutdown.sh" ]; then
-    "$SOURCE_DIR/../tests/test_20_shutdown.sh"
+if [ -f "$SOURCE_DIR/../tests/test_26_shutdown.sh" ]; then
+    "$SOURCE_DIR/../tests/test_26_shutdown.sh"
 else
     printf "%s%s Shutdown test script not found%s\n" "$YELLOW" "$WARN" "$NORMAL"
 fi

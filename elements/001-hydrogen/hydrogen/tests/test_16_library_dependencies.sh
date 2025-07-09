@@ -17,13 +17,6 @@ SCRIPT_VERSION="2.0.0"
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Source the new modular test libraries with guard clauses
-if [[ -z "$TABLES_SH_GUARD" ]] || ! command -v tables_render_from_json >/dev/null 2>&1; then
-    # shellcheck source=tests/lib/tables.sh # Resolve path statically
-    source "$SCRIPT_DIR/lib/tables.sh"
-    export TABLES_SOURCED=true
-fi
-
 if [[ -z "$LOG_OUTPUT_SH_GUARD" ]]; then
     # shellcheck source=tests/lib/log_output.sh # Resolve path statically
     source "$SCRIPT_DIR/lib/log_output.sh"

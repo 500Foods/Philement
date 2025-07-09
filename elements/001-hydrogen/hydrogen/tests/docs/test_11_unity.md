@@ -1,8 +1,8 @@
-# Test 90: Unity Script Documentation
+# Test 11: Unity Script Documentation
 
 ## Overview
 
-The `test_90_unity.sh` script is a comprehensive unit testing tool within the Hydrogen test suite, focused on running unit tests for the Hydrogen project using the Unity testing framework with automatic framework management and detailed subtest reporting.
+The `test_11_unity.sh` script is a comprehensive unit testing tool within the Hydrogen test suite, focused on running unit tests for the Hydrogen project using the Unity testing framework with automatic framework management and detailed subtest reporting.
 
 ## Purpose
 
@@ -10,7 +10,7 @@ This script validates the functionality of core components of the Hydrogen serve
 
 ## Script Details
 
-- **Script Name**: `test_90_unity.sh`
+- **Script Name**: `test_11_unity.sh`
 - **Test Name**: Unity
 - **Version**: 2.0.0 (Complete rewrite using modular test libraries)
 - **Dependencies**: Uses modular libraries from `lib/` directory
@@ -84,7 +84,7 @@ To run this test as part of the full suite:
 To run this test individually:
 
 ```bash
-./test_90_unity.sh
+./test_11_unity.sh
 ```
 
 ## Expected Results

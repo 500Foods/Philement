@@ -240,9 +240,17 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [test_32_system_endpoints.md](tests/docs/test_32_system_endpoints.md): System endpoint functionality tests
 - [test_34_swagger.md](tests/docs/test_34_swagger.md): Swagger documentation tests
 - [test_90_check_links.md](tests/docs/test_90_check_links.md): Link validation tests
-- [test_92_unity.md](tests/docs/test_92_unity.md): Unity testing framework integration
-- [test_96_leaks_like_a_sieve.md](tests/docs/test_96_leaks_like_a_sieve.md): Memory leak detection tests
-- [test_99_codebase.md](tests/docs/test_99_codebase.md): Codebase quality and analysis tests
+- [test_11_unity.md](tests/docs/test_11_unity.md): Unity testing framework integration
+- [test_10_leaks_like_a_sieve.md](tests/docs/test_10_leaks_like_a_sieve.md): Memory leak detection tests
+- [test_91_code_size.md](tests/docs/test_91_code_size.md): Code size analysis and metrics
+- [test_92_cppcheck.md](tests/docs/test_92_cppcheck.md): C/C++ static analysis tests
+- [test_93_shellcheck.md](tests/docs/test_93_shellcheck.md): Shell script linting tests
+- [test_94_eslint.md](tests/docs/test_94_eslint.md): JavaScript linting tests
+- [test_95_stylelint.md](tests/docs/test_95_stylelint.md): CSS linting tests
+- [test_96_htmlhint.md](tests/docs/test_96_htmlhint.md): HTML validation tests
+- [test_97_jsonlint.md](tests/docs/test_97_jsonlint.md): JSON validation tests
+- [test_98_markdownlint.md](tests/docs/test_98_markdownlint.md): Markdown linting tests
+- [test_99_cleanup.md](tests/docs/test_99_cleanup.md): Build system cleanup tests
 
 ### Folder: /tests/results
 

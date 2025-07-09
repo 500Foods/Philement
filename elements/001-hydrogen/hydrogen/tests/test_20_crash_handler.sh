@@ -16,13 +16,6 @@ SCRIPT_VERSION="3.0.1"
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Source the new modular test libraries with guard clauses
-if [[ -z "$TABLES_SH_GUARD" ]] || ! command -v tables_render_from_json >/dev/null 2>&1; then
-    # shellcheck source=tests/lib/tables.sh # Resolve path statically
-    source "$SCRIPT_DIR/lib/tables.sh"
-    export TABLES_SOURCED=true
-fi
-
 if [[ -z "$LOG_OUTPUT_SH_GUARD" ]]; then
     # shellcheck source=tests/lib/log_output.sh # Resolve path statically
     source "$SCRIPT_DIR/lib/log_output.sh"
@@ -194,7 +187,7 @@ verify_core_file() {
             break
         fi
         
-        sleep 0.2
+        sleep 0.1
     done
     
     if [ $found -eq 1 ]; then
@@ -304,7 +297,7 @@ wait_for_crash_completion() {
             return 0
         fi
         
-        sleep 0.2
+        sleep 0.1
     done
 }
 
@@ -358,7 +351,7 @@ run_crash_test_with_build() {
             break
         fi
         
-        sleep 0.2
+        sleep 0.1
     done
     
     # Verify server is running and startup completed
