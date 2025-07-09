@@ -197,11 +197,11 @@ run_cloc_analysis() {
         if [ -n "$output_file" ]; then
             cat "$enhanced_output" > "$output_file"
             echo "" >> "$output_file"
-            echo "CodeDoc: $codedoc_ratio    CodeComment: $codecomment_ratio" >> "$output_file"
+            echo "Code/Docs: $codedoc_ratio    Code/Comments: $codecomment_ratio" >> "$output_file"
         else
             cat "$enhanced_output"
             echo ""
-            echo "CodeDoc: $codedoc_ratio    CodeComment: $codecomment_ratio"
+            echo "Code/Docs: $codedoc_ratio    Code/Comments: $codecomment_ratio"
         fi
         return 0
     else
