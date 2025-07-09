@@ -20,17 +20,12 @@ SCRIPT_VERSION="4.0.1"
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Source the table rendering libraries for the summary
-# shellcheck source=tests/lib/tables.sh # Resolve path statically
-source "$SCRIPT_DIR/lib/tables.sh"
 # shellcheck source=tests/lib/log_output.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/log_output.sh"
 # shellcheck source=tests/lib/framework.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/framework.sh"
 # shellcheck source=tests/lib/cloc.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/cloc.sh"
-
-# Set flag to indicate tables.sh is sourced for performance optimization
-export TABLES_SOURCED=true
 
 # Auto-extract test number and set up environment
 TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
@@ -576,6 +571,28 @@ run_all_tests_parallel() {
         # shellcheck disable=SC2206  # We want word splitting here for the array
         local group_tests=(${test_groups[$group]})
         
+        # Reorder tests to run longest-running ones first in the foreground
+        local reordered_tests=()
+        # Prioritize tests known to be slow
+        local tests_to_move_front=("test_20_shutdown.sh" "test_12_env_payload.sh")
+        
+        # Find and move prioritized tests to the front
+        for test_to_move in "${tests_to_move_front[@]}"; do
+            for i in "${!group_tests[@]}"; do
+                if [[ "${group_tests[$i]}" == *"$test_to_move" ]]; then
+                    reordered_tests+=("${group_tests[$i]}")
+                    unset 'group_tests[i]'
+                    break
+                fi
+            done
+        done
+        
+        # Add remaining tests after the prioritized ones
+        reordered_tests+=("${group_tests[@]}")
+        
+        # Use the reordered list for execution
+        group_tests=("${reordered_tests[@]}")
+        
         # Handle skip mode
         if [ "$SKIP_TESTS" = true ]; then
             for test_script in "${group_tests[@]}"; do
@@ -826,8 +843,20 @@ for i in "${!TEST_NUMBERS[@]}"; do
 done
 data_json_content+="]"
 
-# Use sourced tables.sh function to render the summary table directly
-tables_render_from_json "$layout_json_content" "$data_json_content"
+# Use tables executable to render the summary table
+temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory"; exit 1; }
+layout_json="$temp_dir/summary_layout.json"
+data_json="$temp_dir/summary_data.json"
+
+echo "$layout_json_content" > "$layout_json"
+echo "$data_json_content" > "$data_json"
+
+tables_exe="$SCRIPT_DIR/lib/tables"
+if [[ -x "$tables_exe" ]]; then
+    "$tables_exe" "$layout_json" "$data_json" 2>/dev/null
+fi
+
+rm -rf "$temp_dir" 2>/dev/null
 
 # Update README.md with test results (only if not in skip mode)
 if [ "$SKIP_TESTS" = false ]; then

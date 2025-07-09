@@ -157,7 +157,7 @@ To run this test individually:
 ## Related Documentation
 
 - [test_00_all.md](test_00_all.md) - Main test suite documentation
-- [test_99_codebase.md](test_99_codebase.md) - Codebase analysis testing
+- [test_99_cleanup.md](test_99_cleanup.md) - Build system cleanup testing
 - [LIBRARIES.md](LIBRARIES.md) - Modular library documentation
 - [testing.md](../../docs/testing.md) - Overall testing strategy
 - [developer_onboarding.md](../../docs/developer_onboarding.md) - Documentation standards

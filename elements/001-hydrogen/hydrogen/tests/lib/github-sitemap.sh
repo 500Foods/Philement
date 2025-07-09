@@ -132,9 +132,9 @@ fi
 
 # Check dependencies
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TABLES_SCRIPT="${SCRIPT_DIR}/tables.sh"
-if [[ ! -f "$TABLES_SCRIPT" ]]; then
-    echo "Error: $TABLES_SCRIPT not found" >&2
+TABLES_EXE="${SCRIPT_DIR}/tables"
+if [[ ! -x "$TABLES_EXE" ]]; then
+    echo "Error: tables executable not found at $TABLES_EXE" >&2
     exit 1
 fi
 
@@ -679,12 +679,12 @@ fi
 timing_start "table_rendering"
 [[ "$DEBUG" == "true" ]] && debug_flag="--debug" || debug_flag=""
 
-bash "$TABLES_SCRIPT" "$reviewed_layout_json" "$reviewed_data_json" ${debug_flag:+"$debug_flag"}
+"$TABLES_EXE" "$reviewed_layout_json" "$reviewed_data_json" ${debug_flag:+"$debug_flag"}
 if [[ ${#missing_links[@]} -gt 0 ]]; then
-    bash "$TABLES_SCRIPT" "$missing_layout_json" "$missing_data_json" ${debug_flag:+"$debug_flag"}
+    "$TABLES_EXE" "$missing_layout_json" "$missing_data_json" ${debug_flag:+"$debug_flag"}
 fi
 if [[ ${#orphaned_files[@]} -gt 0 ]]; then
-    bash "$TABLES_SCRIPT" "$orphaned_layout_json" "$orphaned_data_json" ${debug_flag:+"$debug_flag"}
+    "$TABLES_EXE" "$orphaned_layout_json" "$orphaned_data_json" ${debug_flag:+"$debug_flag"}
 fi
 timing_end "table_rendering"
 

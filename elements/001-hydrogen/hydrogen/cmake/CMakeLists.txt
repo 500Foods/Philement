@@ -510,17 +510,17 @@ enable_testing()
 
 # Add tests
 add_test(NAME hydrogen_basic_test
-    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../tests/test_15_startup_shutdown.sh
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../tests/22_startup_shutdown.sh
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 add_test(NAME hydrogen_compilation_test
-    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../tests/test_10_compilation.sh
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../tests/test_01_compilation.sh
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 add_test(NAME hydrogen_dependencies_test
-    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../tests/test_25_library_dependencies.sh
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../tests/test_16_library_dependencies.sh
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
