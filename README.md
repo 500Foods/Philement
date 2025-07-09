@@ -64,13 +64,13 @@ There are countless tools, frameworks, coding styles, conventions, languages, an
 [![Count Lines of Code](https://github.com/500Foods/Philement/actions/workflows/main.yml/badge.svg)](https://github.com/500Foods/Philement/actions/workflows/main.yml)
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-07-07 15:25:41 UTC
+Last updated at 2025-07-09 14:02:31 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
+Markdown                       236           7256             50          24112
 C                              150           5252           6023          24042
-Markdown                       228           7187             50          24006
-Bourne Shell                    50           1891           2019          12400
+Bourne Shell                    58           2047           2137          12817
 JSON                            21              2              0           4815
 C/C++ Header                   119           1176           4285           2915
 HTML                             5            114             23            650
@@ -84,14 +84,13 @@ CSS                              2              3              2             38
 YAML                             2              8             13             37
 JavaScript                       1              3              0             25
 -------------------------------------------------------------------------------
-SUM:                           595          15839          12610          69833
+SUM:                           611          16064          12728          70356
 -------------------------------------------------------------------------------
 25 Files were skipped (duplicate, binary, or without source code):
   gitignore: 4
   jpg: 3
   png: 3
   dproj: 2
-  3659972: 1
   disabled: 1
   ggignore: 1
   gitattributes: 1
@@ -103,6 +102,7 @@ SUM:                           595          15839          12610          69833
   lintignore-c: 1
   lintignore-markdown: 1
   lintignore: 1
+  tables: 1
   trial-ignore: 1
 ```
 <!--CLOC-END-->
