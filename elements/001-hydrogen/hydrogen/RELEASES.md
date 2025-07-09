@@ -48,6 +48,7 @@ Remember:
 -->
 
 - July 2025
+  - [2025-Jul-09 (Wed)](docs/releases/2025-07/2025-07-09.md): Testing Infrastructure
   - [2025-Jul-07 (Mon)](docs/releases/2025-07/2025-07-07.md): Testing Updates
   - [2025-Jul-06 (Sun)](docs/releases/2025-07/2025-07-06.md): Testing Updates
   - [2025-Jul-04 (Fri)](docs/releases/2025-07/2025-07-04.md): Testing Updates
