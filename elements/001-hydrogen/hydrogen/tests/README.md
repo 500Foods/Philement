@@ -36,26 +36,42 @@ The Hydrogen testing framework is designed to ensure the robustness and correctn
 
 ## Test Scripts
 
-Below is a list of all test scripts currently available in the suite, ordered numerically:
+Below is a comprehensive list of all test scripts currently available in the suite, organized by category:
+
+### Test Suite Management
 
 - **test_00_all.sh**: Test suite runner for orchestrating all tests (described above).
+
+### Core Functional Tests
+
 - **test_01_compilation.sh**: Verifies successful compilation and build processes.
-- **test_12_env_payload.sh**: Tests environment payload handling.
-- **test_14_env_variables.sh**: Validates environment variable configurations.
+- **test_10_leaks_like_a_sieve.sh**: Detects memory leaks and resource issues using Valgrind.
+- **test_11_unity.sh**: Integrates Unity testing framework for unit tests.
+- **test_12_env_variables.sh**: Validates environment variable configurations.
+- **test_14_env_payload.sh**: Tests environment payload handling.
 - **test_16_library_dependencies.sh**: Checks for required library dependencies.
 - **test_18_json_error_handling.sh**: Tests JSON configuration error handling.
-- **test_20_shutdown.sh**: Focuses on shutdown sequence correctness.
+- **test_20_crash_handler.sh**: Verifies crash handling and recovery mechanisms.
 - **test_22_startup_shutdown.sh**: Validates complete startup and shutdown lifecycles.
-- **test_24_signals.sh**: Tests signal handling (e.g., SIGINT, SIGTERM).
-- **test_26_crash_handler.sh**: Verifies crash handling and recovery mechanisms.
+- **test_24_signals.sh**: Tests signal handling (e.g., SIGINT, SIGTERM, SIGHUP).
+- **test_26_shutdown.sh**: Focuses on shutdown sequence correctness.
 - **test_28_socket_rebind.sh**: Tests socket rebinding behavior.
 - **test_30_api_prefixes.sh**: Validates API prefix configurations.
 - **test_32_system_endpoints.sh**: Tests system endpoint functionality.
 - **test_34_swagger.sh**: Verifies Swagger documentation and UI integration.
-- **test_90_check_links.sh**: Validates links in documentation.
-- **test_92_unity.sh**: Integrates Unity testing framework for unit tests.
-- **test_96_leaks_like_a_sieve.sh**: Detects memory leaks and resource issues.
-- **test_99_codebase.sh**: Performs codebase quality analysis and linting.
+
+### Static Analysis & Code Quality Tests
+
+- **test_90_check_links.sh**: Validates links in documentation files.
+- **test_91_code_size.sh**: Analyzes code size metrics and file distribution.
+- **test_92_cppcheck.sh**: Performs C/C++ static analysis using cppcheck.
+- **test_93_shellcheck.sh**: Validates shell scripts using shellcheck with exception justification checks.
+- **test_94_eslint.sh**: Lints JavaScript files using eslint.
+- **test_95_stylelint.sh**: Validates CSS files using stylelint.
+- **test_96_htmlhint.sh**: Validates HTML files using htmlhint.
+- **test_97_jsonlint.sh**: Validates JSON file syntax and structure.
+- **test_98_markdownlint.sh**: Lints Markdown documentation using markdownlint.
+- **test_99_cleanup.sh**: Performs comprehensive build system cleanup.
 
 ## Configuration Files
 

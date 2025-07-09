@@ -468,25 +468,38 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 <details>
 <summary><b>Test Scripts</b></summary>
 
+### Core Functional Tests
+
 - [tests/README.md](tests/README.md) - Testing documentation and procedures
 - [tests/test_00_all.sh](tests/test_00_all.sh) - Master test runner
 - [tests/test_01_compilation.sh](tests/test_01_compilation.sh) - Compilation tests
-- [tests/test_12_env_payload.sh](tests/test_12_env_payload.sh) - Environment and payload tests
-- [tests/test_14_env_variables.sh](tests/test_14_env_variables.sh) - Environment variable tests
+- [tests/test_10_leaks_like_a_sieve.sh](tests/test_10_leaks_like_a_sieve.sh) - Memory leak tests
+- [tests/test_11_unity.sh](tests/test_11_unity.sh) - Unity framework tests
+- [tests/test_12_env_variables.sh](tests/test_12_env_variables.sh) - Environment variable tests
+- [tests/test_14_env_payload.sh](tests/test_14_env_payload.sh) - Environment and payload tests
 - [tests/test_16_library_dependencies.sh](tests/test_16_library_dependencies.sh) - Library dependency tests
 - [tests/test_18_json_error_handling.sh](tests/test_18_json_error_handling.sh) - JSON error handling tests
-- [tests/test_20_shutdown.sh](tests/test_20_shutdown.sh) - Shutdown-specific tests
+- [tests/test_20_crash_handler.sh](tests/test_20_crash_handler.sh) - Crash handler tests
 - [tests/test_22_startup_shutdown.sh](tests/test_22_startup_shutdown.sh) - Startup/shutdown tests
 - [tests/test_24_signals.sh](tests/test_24_signals.sh) - Signal handling tests
-- [tests/test_26_crash_handler.sh](tests/test_26_crash_handler.sh) - Crash handler tests
+- [tests/test_26_shutdown.sh](tests/test_26_shutdown.sh) - Shutdown-specific tests
 - [tests/test_28_socket_rebind.sh](tests/test_28_socket_rebind.sh) - Socket rebinding tests
 - [tests/test_30_api_prefixes.sh](tests/test_30_api_prefixes.sh) - API prefix tests
 - [tests/test_32_system_endpoints.sh](tests/test_32_system_endpoints.sh) - System endpoint tests
 - [tests/test_34_swagger.sh](tests/test_34_swagger.sh) - Swagger functionality tests
+
+### Static Analysis & Linting Tests
+
 - [tests/test_90_check_links.sh](tests/test_90_check_links.sh) - Link validation tests
-- [tests/test_92_unity.sh](tests/test_92_unity.sh) - Unity framework tests
-- [tests/test_96_leaks_like_a_sieve.sh](tests/test_96_leaks_like_a_sieve.sh) - Memory leak tests
-- [tests/test_99_codebase.sh](tests/test_99_codebase.sh) - Codebase analysis tests
+- [tests/test_91_code_size.sh](tests/test_91_code_size.sh) - Code size analysis and metrics
+- [tests/test_92_cppcheck.sh](tests/test_92_cppcheck.sh) - C/C++ static analysis (cppcheck)
+- [tests/test_93_shellcheck.sh](tests/test_93_shellcheck.sh) - Shell script linting (shellcheck)
+- [tests/test_94_eslint.sh](tests/test_94_eslint.sh) - JavaScript linting (eslint)
+- [tests/test_95_stylelint.sh](tests/test_95_stylelint.sh) - CSS linting (stylelint)
+- [tests/test_96_htmlhint.sh](tests/test_96_htmlhint.sh) - HTML validation (htmlhint)
+- [tests/test_97_jsonlint.sh](tests/test_97_jsonlint.sh) - JSON validation and linting
+- [tests/test_98_markdownlint.sh](tests/test_98_markdownlint.sh) - Markdown linting (markdownlint)
+- [tests/test_99_cleanup.sh](tests/test_99_cleanup.sh) - Build system cleanup
 
 </details>
 
