@@ -44,35 +44,9 @@ if ! navigate_to_project_root "$SCRIPT_DIR"; then
     exit 1
 fi
 
-# Display linting exclusion information
-display_linting_info() {
-    print_message "Linting Configuration Information"
-    print_message "Linting tests use exclusion patterns that may impact results."
-    
-    exclusion_files=(".lintignore" ".lintignore-c" ".lintignore-markdown" ".lintignore-bash")
-    for file in "${exclusion_files[@]}"; do
-        if [ -f "$file" ]; then
-            local summary
-            summary=$(grep -A 5 "SUMMARY" "$file" 2>/dev/null | grep -v "SUMMARY" | grep -v "Used by" | sed 's/^# /  /' | sed 's/#$//')
-            if [ -n "$summary" ]; then
-                # Break multi-line summaries into individual print_message calls
-                echo "$summary" | while IFS= read -r line; do
-                    if [ -n "$line" ]; then
-                        print_message "${file}: $line"
-                    fi
-                done
-            fi
-        fi
-    done
-    
-    print_message "For details, see tests/README.md and .lintignore files."
-}
-
 # Subtest 1: Run CMake cleanish target for the Hydrogen project
 next_subtest
 print_subtest "CMake Clean Build Artifacts"
-
-display_linting_info
 
 print_message "Running comprehensive build cleanup for Hydrogen Project"
 
