@@ -4,7 +4,7 @@
 # Performs JSON validation using jq
 
 # Test configuration
-TEST_NAME="JSON Linting"
+TEST_NAME="JSON Linting (jsonlint)"
 SCRIPT_VERSION="1.0.0"
 
 # Get the directory where this script is located

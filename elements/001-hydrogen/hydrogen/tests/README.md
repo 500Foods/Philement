@@ -62,10 +62,10 @@ Below is a comprehensive list of all test scripts currently available in the sui
 
 ### Static Analysis & Code Quality Tests
 
-- **test_90_check_links.sh**: Validates links in documentation files.
-- **test_91_code_size.sh**: Analyzes code size metrics and file distribution.
-- **test_92_cppcheck.sh**: Performs C/C++ static analysis using cppcheck.
-- **test_93_shellcheck.sh**: Validates shell scripts using shellcheck with exception justification checks.
+- **test_03_code_size.sh**: Analyzes code size metrics and file distribution.
+- **test_04_cppcheck.sh**: Performs C/C++ static analysis using cppcheck.
+- **test_05_shellcheck.sh**: Validates shell scripts using shellcheck with exception justification checks.
+- **test_06_check_links.sh**: Validates links in documentation files.
 - **test_94_eslint.sh**: Lints JavaScript files using eslint.
 - **test_95_stylelint.sh**: Validates CSS files using stylelint.
 - **test_96_htmlhint.sh**: Validates HTML files using htmlhint.

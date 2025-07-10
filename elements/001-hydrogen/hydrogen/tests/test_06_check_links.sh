@@ -11,7 +11,7 @@
 # 1.0.0 - 2025-06-20 - Initial version with subtests for markdown link checking
 
 # Test configuration
-TEST_NAME="Markdown Links Check"
+TEST_NAME="Markdown Links Check (github-sitemap)"
 SCRIPT_VERSION="2.0.3"
 
 # Get the directory where this script is located

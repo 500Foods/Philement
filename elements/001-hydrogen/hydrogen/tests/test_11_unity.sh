@@ -10,7 +10,7 @@
 # 1.0.0 - 2025-06-25 - Initial version for running Unity tests
 
 # Test configuration
-TEST_NAME="Unity"
+TEST_NAME="Unity Unit Tests"
 SCRIPT_VERSION="2.0.2"
 
 # Get the directory where this script is located

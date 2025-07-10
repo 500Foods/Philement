@@ -490,10 +490,10 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 
 ### Static Analysis & Linting Tests
 
-- [tests/test_90_check_links.sh](tests/test_90_check_links.sh) - Link validation tests
-- [tests/test_91_code_size.sh](tests/test_91_code_size.sh) - Code size analysis and metrics
-- [tests/test_92_cppcheck.sh](tests/test_92_cppcheck.sh) - C/C++ static analysis (cppcheck)
-- [tests/test_93_shellcheck.sh](tests/test_93_shellcheck.sh) - Shell script linting (shellcheck)
+- [tests/test_03_code_size.sh](tests/test_03_code_size.sh) - Code size analysis and metrics
+- [tests/test_04_cppcheck.sh](tests/test_04_cppcheck.sh) - C/C++ static analysis (cppcheck)
+- [tests/test_05_shellcheck.sh](tests/test_05_shellcheck.sh) - Shell script linting (shellcheck)
+- [tests/test_06_check_links.sh](tests/test_06_check_links.sh) - Link validation tests
 - [tests/test_94_eslint.sh](tests/test_94_eslint.sh) - JavaScript linting (eslint)
 - [tests/test_95_stylelint.sh](tests/test_95_stylelint.sh) - CSS linting (stylelint)
 - [tests/test_96_htmlhint.sh](tests/test_96_htmlhint.sh) - HTML validation (htmlhint)
