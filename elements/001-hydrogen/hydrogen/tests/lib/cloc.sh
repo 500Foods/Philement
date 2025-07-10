@@ -180,28 +180,38 @@ run_cloc_analysis() {
         # Calculate ratios
         local codedoc_ratio=""
         local codecomment_ratio=""
+        local docscode_ratio=""
+        local commentscode_ratio=""
         
         if [ "$markdown_code" -gt 0 ]; then
             codedoc_ratio=$(awk "BEGIN {printf \"%.1f\", $total_code / $markdown_code}")
+            docscode_ratio=$(awk "BEGIN {printf \"%.1f\", $markdown_code / $total_code}")
         else
             codedoc_ratio="N/A"
+            docscode_ratio="N/A"
         fi
         
         if [ "$total_comment" -gt 0 ]; then
             codecomment_ratio=$(awk "BEGIN {printf \"%.1f\", $total_code / $total_comment}")
+            commentscode_ratio=$(awk "BEGIN {printf \"%.1f\", $total_comment / $total_code}")
         else
             codecomment_ratio="N/A"
+            commentscode_ratio="N/A"
         fi
         
         # Output the original cloc results
         if [ -n "$output_file" ]; then
-            cat "$enhanced_output" > "$output_file"
-            echo "" >> "$output_file"
-            echo "Code/Docs: $codedoc_ratio    Code/Comments: $codecomment_ratio" >> "$output_file"
+            {
+                cat "$enhanced_output"
+                echo ""
+                echo "Code/Docs: $codedoc_ratio    Code/Comments: $codecomment_ratio"
+                echo "Docs/Code: $docscode_ratio    Comments/Code: $commentscode_ratio"
+            } > "$output_file"
         else
             cat "$enhanced_output"
             echo ""
             echo "Code/Docs: $codedoc_ratio    Code/Comments: $codecomment_ratio"
+            echo "Docs/Code: $docscode_ratio    Comments/Code: $commentscode_ratio"
         fi
         return 0
     else
