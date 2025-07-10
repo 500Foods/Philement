@@ -102,5 +102,5 @@ The test captures comprehensive diagnostic information including:
 ## Related Documentation
 
 - [test_00_all.md](test_00_all.md) - Main test orchestration system
-- [test_20_shutdown.md](test_20_shutdown.md) - Related shutdown-focused testing
+- [test_26_shutdown.md](test_26_shutdown.md) - Related shutdown-focused testing
 - [LIBRARIES.md](LIBRARIES.md) - Table of Contents for modular library scripts in the 'lib/' directory

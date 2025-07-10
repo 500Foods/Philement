@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Test 12: Payload Env Vars
+# Test: Payload Env Vars
 # Tests environment variable handling for the payload system
 # Validates that required payload environment variables are present and valid
 

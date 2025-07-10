@@ -1,8 +1,8 @@
-# Test 14 Environment Variables Script Documentation
+# Test 12 Environment Variables Script Documentation
 
 ## Overview
 
-The `test_14_env_variables.sh` script (Test 35: Env Var Substitution) is a comprehensive testing tool within the Hydrogen test suite that validates environment variable substitution and configuration handling. This test ensures that configuration values can be properly provided and processed via environment variables.
+The `test_12_env_variables.sh` script (Test 12: Env Var Substitution) is a comprehensive testing tool within the Hydrogen test suite that validates environment variable substitution and configuration handling. This test ensures that configuration values can be properly provided and processed via environment variables.
 
 ## Purpose
 
@@ -18,8 +18,8 @@ This script verifies that the Hydrogen server correctly processes environment va
 
 ## Technical Details
 
-- **Script Version**: 3.0.0 (Complete rewrite using new modular test libraries)
-- **Test Number**: 14 (internally referenced as Test 35)
+- **Script Version**: 3.0.1 (Complete rewrite using new modular test libraries)
+- **Test Number**: 12 (internally referenced as Test 12)
 - **Total Subtests**: 16
 - **Architecture**: Library-based using modular scripts from lib/ directory
 
@@ -58,7 +58,7 @@ To run this test as part of the full suite:
 To run this test individually:
 
 ```bash
-./test_14_env_variables.sh
+./test_12_env_variables.sh
 ```
 
 ## Output and Logging
@@ -66,10 +66,11 @@ To run this test individually:
 - **Results Directory**: `tests/results/`
 - **Log File**: `tests/logs/hydrogen_test.log`
 - **Diagnostics**: `tests/diagnostics/env_variables_test_[timestamp]/`
-- **Result Log**: `tests/results/test_14_[timestamp].log`
+- **Result Log**: `tests/results/test_12_[timestamp].log`
 
 ## Version History
 
+- **3.0.1** (2025-07-06): Added missing shellcheck justifications
 - **3.0.0** (2025-07-02): Complete rewrite to use new modular test libraries and match test 15 structure
 - **2.1.0** (2025-07-02): Migrated to use modular lib/ scripts
 - **2.0.0** (2025-06-17): Major refactoring with shellcheck fixes, improved modularity, enhanced comments
@@ -79,4 +80,4 @@ To run this test individually:
 
 - [test_00_all.md](test_00_all.md) - Main test orchestration system
 - [LIBRARIES.md](LIBRARIES.md) - Table of Contents for modular library scripts in the 'lib/' directory
-- [test_12_env_payload.md](test_12_env_payload.md) - Related environment and payload testing
+- [test_14_env_payload.md](test_14_env_payload.md) - Related environment and payload testing

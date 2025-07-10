@@ -2,7 +2,7 @@
 
 ## Overview
 
-**test_10_leaks_like_a_sieve.sh** is a comprehensive memory leak detection test that uses Valgrind to analyze the Hydrogen server for memory leaks, memory errors, and resource management issues.
+**test_10_leaks_like_a_sieve.sh** is a comprehensive memory leak detection test that uses AddressSanitizer (ASAN) to analyze the Hydrogen server for memory leaks, memory errors, and resource management issues.
 
 ## Purpose
 
@@ -17,28 +17,26 @@ This test validates that the Hydrogen server:
 
 - **Test Number**: 10
 - **Category**: Memory Analysis
-- **Dependencies**: Valgrind, minimal test configuration
-- **Timeout**: Extended (due to Valgrind overhead)
+- **Dependencies**: ASAN-enabled build, minimal test configuration
+- **Timeout**: Extended (due to ASAN overhead)
 
 ## Test Process
 
-### Valgrind Analysis
+### ASAN Analysis
 
-1. **Startup Testing**: Launches Hydrogen under Valgrind supervision
+1. **Startup Testing**: Launches Hydrogen with ASAN supervision
 2. **Memory Monitoring**: Tracks all memory allocations and deallocations
 3. **Leak Detection**: Identifies any memory that is not properly freed
 4. **Error Detection**: Catches memory access violations and buffer overflows
 
 ### Memory Categories Checked
 
-- **Definitely Lost**: Memory that is leaked with no references
-- **Indirectly Lost**: Memory that is lost due to pointer chain breaks
-- **Possibly Lost**: Memory that may be leaked (heuristic detection)
-- **Still Reachable**: Memory that is still referenced but not freed
+- **Direct Leaks**: Memory that is leaked with no references
+- **Indirect Leaks**: Memory that is lost due to pointer chain breaks
 
 ## Expected Results
 
-- **Zero Memory Leaks**: No definitely lost or indirectly lost memory
+- **Zero Memory Leaks**: No direct or indirect leaks
 - **Clean Shutdown**: All allocated memory properly released
 - **No Memory Errors**: No invalid memory access or corruption
 
@@ -57,12 +55,12 @@ This test validates that the Hydrogen server:
 ### Common Issues
 
 - **False Positives**: Some system libraries may report minor leaks
-- **Performance Impact**: Valgrind significantly slows execution
-- **Large Output**: Valgrind generates verbose debugging information
+- **Performance Impact**: ASAN slows execution
+- **Large Output**: ASAN generates verbose debugging information
 
 ### Analysis Tips
 
-- Focus on "definitely lost" and "indirectly lost" memory
+- Focus on "Direct leak" and "Indirect leak" reports
 - Check for patterns in leaked memory (repeated allocations)
 - Review the call stack for leak sources
 
@@ -76,7 +74,7 @@ This test integrates with:
 
 ## Performance Notes
 
-- Valgrind adds significant runtime overhead (10-50x slower)
+- ASAN adds runtime overhead
 - May require increased timeout values for complex operations
 - Memory usage is also increased during analysis
 

@@ -1,8 +1,8 @@
-# Test 12 Environment Payload Script Documentation
+# Test 14 Environment Payload Script Documentation
 
 ## Overview
 
-The `test_12_env_payload.sh` script is a validation tool within the Hydrogen test suite, focused on ensuring the proper configuration of payload encryption environment variables.
+The `test_14_env_payload.sh` script is a validation tool within the Hydrogen test suite, focused on ensuring the proper configuration of payload encryption environment variables.
 
 ## Purpose
 
@@ -79,13 +79,13 @@ The script sources several library modules:
 ### Run Individually
 
 ```bash
-./test_12_env_payload.sh
+./test_14_env_payload.sh
 ```
 
 ### Run Specific Test
 
 ```bash
-./test_00_all.sh 12_env_payload
+./test_00_all.sh 14_env_payload
 ```
 
 ## Output Format

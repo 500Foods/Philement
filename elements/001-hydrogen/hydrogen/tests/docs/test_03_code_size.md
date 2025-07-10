@@ -1,49 +1,59 @@
-# test_91_code_size.md
+# Test 03 Code Size Analysis Script Documentation
 
 ## Overview
 
-The `test_91_code_size.sh` script analyzes code size metrics and file distribution across the Hydrogen project to track codebase growth and maintain quality standards.
+The `test_03_code_size.sh` script performs comprehensive code size analysis including source code analysis, line counting, large file detection, code line count analysis with cloc, and file count summary.
 
 ## Purpose
 
-This test provides codebase analysis by:
+This test analyzes the codebase to ensure no files exceed line limits, detects large non-source files, provides code metrics using cloc, and summarizes file distributions. It helps maintain code quality and organization.
 
-- Counting lines of code across different file types
-- Analyzing distribution of code vs. documentation vs. configuration
-- Tracking project complexity and size metrics
-- Generating reports for project maintenance and planning
-- Identifying areas with high code density for review
+## Key Features
 
-## Analysis Categories
+- Analyzes source files excluding lintignore patterns
+- Categorizes files by line count bins
+- Detects files exceeding max lines (1000)
+- Finds large non-source files (>25k)
+- Runs cloc for detailed code metrics
+- Summarizes file types and counts
 
-### Code Metrics
+## Script Architecture
 
-- **Line Counting**: Total lines, code lines, comment lines, blank lines
-- **File Distribution**: Breakdown by file type (C, Shell, Markdown, JSON, etc.)
-- **Language Analysis**: Metrics per programming language used
-- **Documentation Ratio**: Code-to-documentation ratios
-- **Size Trends**: Historical growth tracking
+### Version Information
 
-## Tools Used
+- **Current Version**: 1.0.0
 
-- **CLOC (Count Lines of Code)**: Primary tool for code analysis
-- **Custom Scripts**: Additional analysis for project-specific patterns
-- **File Type Detection**: Automatic classification of source files
+### Library Dependencies
 
-## Metrics Reported
+- `log_output.sh` - Logging and output
+- `file_utils.sh` - File utilities
+- `framework.sh` - Test framework
+- `cloc.sh` - CLOC analysis
 
-- Total lines of code across all file types
-- Lines per programming language
-- Comment density and documentation coverage
-- File count and average file size
-- Distribution of functional vs. test vs. documentation code
+### Test Execution Flow
 
-## Expected Outcomes
+1. Linting Configuration Information
+2. Source Code File Analysis
+3. Large Non-Source File Detection
+4. Code Line Count Analysis (cloc)
+5. File Count Summary
 
-- **Pass**: Analysis completed successfully, metrics within expected ranges
-- **Info**: Detailed breakdown of codebase composition and size
-- **Trends**: Comparison with previous runs if historical data available
+## Subtests Performed
+
+5 subtests as detailed above.
+
+## Usage
+
+Run as part of suite or individually.
+
+## Output Format
+
+Detailed metrics and summaries.
 
 ## Integration
 
-This test is part of the static analysis suite (90+ range) and provides valuable metrics for project management and code review processes.
+Part of static analysis tests.
+
+## Related Documentation
+
+- [LIBRARIES.md](LIBRARIES.md)

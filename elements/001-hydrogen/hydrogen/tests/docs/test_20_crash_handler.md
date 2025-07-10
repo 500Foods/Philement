@@ -1,8 +1,8 @@
-# Test 50: Crash Handler Script Documentation
+# Test 20: Crash Handler Script Documentation
 
 ## Overview
 
-The `test_26_crash_handler.sh` script (Test 50: Crash Handler) is a comprehensive crash recovery testing tool within the Hydrogen test suite, focused on validating the functionality of the crash handler across multiple build variants.
+The `test_20_crash_handler.sh` script (Test 20: Crash Handler) is a comprehensive crash recovery testing tool within the Hydrogen test suite, focused on validating the functionality of the crash handler across multiple build variants.
 
 ## Purpose
 
@@ -10,8 +10,8 @@ This script ensures that the Hydrogen server can generate core dumps and handle 
 
 ## Script Details
 
-- **Script Name**: `test_26_crash_handler.sh`
-- **Test Number**: 50
+- **Script Name**: `test_20_crash_handler.sh`
+- **Test Number**: 20
 - **Version**: 3.0.0 (Complete rewrite using modular test libraries)
 - **Dependencies**: Uses modular libraries from `lib/` directory
 
@@ -79,7 +79,7 @@ To run this test as part of the full suite:
 To run this test individually:
 
 ```bash
-./test_26_crash_handler.sh
+./test_20_crash_handler.sh
 ```
 
 ## Configuration
@@ -122,6 +122,6 @@ The test uses minimal configuration (`hydrogen_test_min.json`) to reduce startup
 
 - [test_00_all.md](test_00_all.md) - Main test suite documentation
 - [test_24_signals.md](test_24_signals.md) - Signal handling tests
-- [test_20_shutdown.md](test_20_shutdown.md) - Shutdown testing
+- [test_26_shutdown.md](test_26_shutdown.md) - Shutdown testing
 - [LIBRARIES.md](LIBRARIES.md) - Modular library documentation
 - [testing.md](../../docs/testing.md) - Overall testing strategy
