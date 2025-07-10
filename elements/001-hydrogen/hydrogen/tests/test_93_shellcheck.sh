@@ -150,10 +150,23 @@ if command -v shellcheck >/dev/null 2>&1; then
             fi
         done
         
+        # Build shellcheck exclusion arguments from .lintignore-bash file
+        SHELLCHECK_EXCLUDES=(-e SC1091 -e SC2317 -e SC2034)  # Default exclusions as array
+        if [ -f ".lintignore-bash" ]; then
+            while IFS= read -r line; do
+                # Skip comments and empty lines
+                [[ -z "$line" || "$line" == \#* ]] && continue
+                # Add exclusion if it looks like a shellcheck code (SCxxxx)
+                if [[ "$line" =~ ^SC[0-9]+$ ]]; then
+                    SHELLCHECK_EXCLUDES+=(-e "$line")
+                fi
+            done < ".lintignore-bash"
+        fi
+        
         # Process large files individually (they take the most time)
         if [ ${#large_files[@]} -gt 0 ]; then
             printf '%s\n' "${large_files[@]}" | \
-            xargs -n 1 -P "$CORES" shellcheck -e SC1091 -e SC2317 -e SC2034 -f gcc >> "$TEMP_OUTPUT" 2>&1 || true
+            xargs -n 1 -P "$CORES" shellcheck "${SHELLCHECK_EXCLUDES[@]}" -f gcc >> "$TEMP_OUTPUT" 2>&1 || true
         fi
         
         # Process medium files in groups of 3-4
@@ -163,7 +176,7 @@ if command -v shellcheck >/dev/null 2>&1; then
                 medium_batch_size=4
             fi
             printf '%s\n' "${medium_files[@]}" | \
-            xargs -n "$medium_batch_size" -P "$CORES" shellcheck -e SC1091 -e SC2317 -e SC2034 -f gcc >> "$TEMP_OUTPUT" 2>&1 || true
+            xargs -n "$medium_batch_size" -P "$CORES" shellcheck "${SHELLCHECK_EXCLUDES[@]}" -f gcc >> "$TEMP_OUTPUT" 2>&1 || true
         fi
         
         # Process small files in larger batches (8-12 files per job)
@@ -173,7 +186,7 @@ if command -v shellcheck >/dev/null 2>&1; then
                 small_batch_size=12
             fi
             printf '%s\n' "${small_files[@]}" | \
-            xargs -n "$small_batch_size" -P "$CORES" shellcheck -e SC1091 -e SC2317 -e SC2034 -f gcc >> "$TEMP_OUTPUT" 2>&1 || true
+            xargs -n "$small_batch_size" -P "$CORES" shellcheck "${SHELLCHECK_EXCLUDES[@]}" -f gcc >> "$TEMP_OUTPUT" 2>&1 || true
         fi
         
         # Filter output to show clean relative paths

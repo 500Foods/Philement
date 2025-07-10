@@ -28,7 +28,7 @@ source "$SCRIPT_DIR/lib/cloc.sh"
 
 # Test configuration
 EXIT_CODE=0
-TOTAL_SUBTESTS=4
+TOTAL_SUBTESTS=5
 PASS_COUNT=0
 RESULT_LOG=""
 
@@ -112,7 +112,49 @@ should_exclude_file() {
     return 1 # Do not exclude
 }
 
-# Subtest 1: Analyze source code files and generate statistics
+# Subtest 1: Linting Configuration Information
+next_subtest
+print_subtest "Linting Configuration Information"
+
+print_message "Checking linting configuration files and displaying exclusion patterns..."
+
+exclusion_files=(".lintignore" ".lintignore-c" ".lintignore-markdown" ".lintignore-bash")
+found_files=0
+missing_files=()
+
+for file in "${exclusion_files[@]}"; do
+    if [ -f "$file" ]; then
+        ((found_files++))
+        if [ "$file" = ".lintignore-bash" ]; then
+            # Special handling for .lintignore-bash which doesn't have a SUMMARY section
+            print_message "${file}: Used by shellcheck for bash script linting exclusions"
+        else
+            summary=$(grep -A 5 "SUMMARY" "$file" 2>/dev/null | grep -v "SUMMARY" | grep -v "Used by" | sed 's/^# /  /' | sed 's/#$//')
+            if [ -n "$summary" ]; then
+                # Break multi-line summaries into individual print_message calls
+                echo "$summary" | while IFS= read -r line; do
+                    if [ -n "$line" ]; then
+                        print_message "${file}: $line"
+                    fi
+                done
+            fi
+        fi
+    else
+        missing_files+=("$file")
+    fi
+done
+
+print_message "For details, see tests/README.md and .lintignore files."
+
+if [ ${#missing_files[@]} -eq 0 ]; then
+    print_result 0 "All $found_files linting configuration files found"
+    ((PASS_COUNT++))
+else
+    print_result 1 "Missing linting files: ${missing_files[*]}"
+    EXIT_CODE=1
+fi
+
+# Subtest 2: Analyze source code files and generate statistics
 next_subtest
 print_subtest "Source Code File Analysis"
 
@@ -207,7 +249,7 @@ else
     ((PASS_COUNT++))
 fi
 
-# Subtest 2: Find and list large non-source files
+# Subtest 3: Find and list large non-source files
 next_subtest
 print_subtest "Large Non-Source File Detection"
 
@@ -238,7 +280,7 @@ else
     ((PASS_COUNT++))
 fi
 
-# Subtest 3: Code line count analysis with cloc
+# Subtest 4: Code line count analysis with cloc
 next_subtest
 print_subtest "Code Line Count Analysis (cloc)"
 
@@ -269,7 +311,7 @@ fi
 
 rm -f "$CLOC_OUTPUT"
 
-# Subtest 4: File count summary
+# Subtest 5: File count summary
 next_subtest
 print_subtest "File Count Summary"
 

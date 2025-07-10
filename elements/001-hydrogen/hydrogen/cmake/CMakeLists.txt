@@ -470,7 +470,9 @@ add_custom_target(cleanish
     COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:client_credentials_debug>
     COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:password_flow_debug>
     COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_BINARY_DIR}/*.map
-    COMMAND ${CMAKE_COMMAND} -E echo "✅ Cleanish completed successfully - preserved hydrogen_release and hydrogen_naked"
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_CURRENT_SOURCE_DIR}/../build
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_CURRENT_SOURCE_DIR}/../build_unity_tests
+    COMMAND ${CMAKE_COMMAND} -E echo "✅ Cleanish completed successfully - preserved hydrogen_release and hydrogen_naked, removed build directories"
     COMMENT "Cleaning build artifacts (preserving release executables)"
 )
 
