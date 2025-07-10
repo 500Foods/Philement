@@ -1,43 +1,53 @@
-# test_93_shellcheck.md
+# Test 05 Shell Script Analysis Script Documentation
 
 ## Overview
 
-The `test_93_shellcheck.sh` script validates shell scripts using ShellCheck to identify potential bugs, portability issues, and coding standard violations.
+The `test_05_shellcheck.sh` script performs shellcheck analysis on shell scripts and checks for exception justifications.
 
 ## Purpose
 
-This test ensures shell script quality by:
+This test ensures shell scripts are free of issues detected by shellcheck and that any exceptions are properly justified.
 
-- Analyzing all shell scripts (.sh files) in the project
-- Detecting common shell scripting errors and pitfalls
-- Identifying portability issues across different shells
-- Validating quoting and variable usage patterns
-- Checking for proper error handling
+## Key Features
 
-## Test Categories
+- Analyzes shell scripts excluding lintignore patterns
+- Runs shellcheck with exclusions from .lintignore-bash
+- Checks for shellcheck directives and their justifications
+- Separate analysis for test scripts and other shell scripts
 
-### Script Analysis
+## Script Architecture
 
-- **Syntax Errors**: Detects malformed shell constructs
-- **Logic Issues**: Identifies unreachable code and incorrect conditionals
-- **Portability**: Flags bash-specific features when POSIX compliance is expected
-- **Security**: Highlights potential command injection vulnerabilities
-- **Best Practices**: Ensures proper quoting and variable handling
+### Version Information
 
-## Configuration
+- **Current Version**: 1.0.0
 
-The test respects:
+### Library Dependencies
 
-- ShellCheck directive comments in scripts (e.g., `# shellcheck disable=SC2034`)
-- Exception justification checks to ensure disabled warnings are documented
-- Project-specific ignore patterns for acceptable deviations
+- `log_output.sh` - Logging
+- `file_utils.sh` - File utilities
+- `framework.sh` - Test framework
 
-## Expected Outcomes
+### Test Execution Flow
 
-- **Pass**: All shell scripts pass ShellCheck validation
-- **Fail**: Critical errors or unjustified warnings found
-- **Info**: Reports on disabled checks and their justifications
+1. Shell Script Linting (shellcheck)
+2. Shellcheck Exception Justification Check
+
+## Subtests Performed
+
+2 subtests as detailed above.
+
+## Usage
+
+Run as part of suite or individually.
+
+## Output Format
+
+Detailed issue reports and summaries.
 
 ## Integration
 
-This test is part of the static analysis suite (90+ range) and runs automatically with `test_00_all.sh`.
+Part of static analysis tests.
+
+## Related Documentation
+
+- [LIBRARIES.md](LIBRARIES.md)

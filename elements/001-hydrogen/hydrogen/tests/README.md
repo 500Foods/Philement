@@ -40,38 +40,38 @@ Below is a comprehensive list of all test scripts currently available in the sui
 
 ### Test Suite Management
 
-- **test_00_all.sh**: Test suite runner for orchestrating all tests (described above).
+- **[test_00_all.sh](docs/test_00_all.md)**: Test suite runner for orchestrating all tests (described above).
 
 ### Core Functional Tests
 
-- **test_01_compilation.sh**: Verifies successful compilation and build processes.
-- **test_10_leaks_like_a_sieve.sh**: Detects memory leaks and resource issues using Valgrind.
-- **test_11_unity.sh**: Integrates Unity testing framework for unit tests.
-- **test_12_env_variables.sh**: Validates environment variable configurations.
-- **test_14_env_payload.sh**: Tests environment payload handling.
-- **test_16_library_dependencies.sh**: Checks for required library dependencies.
-- **test_18_json_error_handling.sh**: Tests JSON configuration error handling.
-- **test_20_crash_handler.sh**: Verifies crash handling and recovery mechanisms.
-- **test_22_startup_shutdown.sh**: Validates complete startup and shutdown lifecycles.
-- **test_24_signals.sh**: Tests signal handling (e.g., SIGINT, SIGTERM, SIGHUP).
-- **test_26_shutdown.sh**: Focuses on shutdown sequence correctness.
-- **test_28_socket_rebind.sh**: Tests socket rebinding behavior.
-- **test_30_api_prefixes.sh**: Validates API prefix configurations.
-- **test_32_system_endpoints.sh**: Tests system endpoint functionality.
-- **test_34_swagger.sh**: Verifies Swagger documentation and UI integration.
+- **[test_01_compilation.sh](docs/test_01_compilation.md)**: Verifies successful compilation and build processes.
+- **[test_10_leaks_like_a_sieve.sh](docs/test_10_leaks_like_a_sieve.md)**: Detects memory leaks and resource issues using Valgrind.
+- **[test_11_unity.sh](docs/test_11_unity.md)**: Integrates Unity testing framework for unit tests.
+- **[test_12_env_variables.sh](docs/test_12_env_variables.md)**: Tests that configuration values can be provided via environment variables.
+- **[test_14_env_payload.sh](docs/test_14_env_payload.md)**: Tests environment variable handling for the payload system.
+- **[test_16_library_dependencies.sh](docs/test_16_library_dependencies.md)**: Checks for required library dependencies.
+- **[test_18_json_error_handling.sh](docs/test_18_json_error_handling.md)**: Tests JSON configuration error handling.
+- **[test_20_crash_handler.sh](docs/test_20_crash_handler.md)**: Tests that the crash handler correctly generates and formats core dumps.
+- **[test_22_startup_shutdown.sh](docs/test_22_startup_shutdown.md)**: Validates complete startup and shutdown lifecycles.
+- **[test_24_signals.sh](docs/test_24_signals.md)**: Tests signal handling (e.g., SIGINT, SIGTERM, SIGHUP).
+- **[test_26_shutdown.sh](docs/test_26_shutdown.md)**: Tests the shutdown functionality of the application with a minimal configuration.
+- **[test_28_socket_rebind.sh](docs/test_28_socket_rebind.md)**: Tests socket rebinding behavior.
+- **[test_30_api_prefixes.sh](docs/test_30_api_prefixes.md)**: Validates API prefix configurations.
+- **[test_32_system_endpoints.sh](docs/test_32_system_endpoints.md)**: Tests system endpoint functionality.
+- **[test_34_swagger.sh](docs/test_34_swagger.md)**: Verifies Swagger documentation and UI integration.
 
 ### Static Analysis & Code Quality Tests
 
-- **test_03_code_size.sh**: Analyzes code size metrics and file distribution.
-- **test_04_cppcheck.sh**: Performs C/C++ static analysis using cppcheck.
-- **test_05_shellcheck.sh**: Validates shell scripts using shellcheck with exception justification checks.
-- **test_06_check_links.sh**: Validates links in documentation files.
-- **test_94_eslint.sh**: Lints JavaScript files using eslint.
-- **test_95_stylelint.sh**: Validates CSS files using stylelint.
-- **test_96_htmlhint.sh**: Validates HTML files using htmlhint.
-- **test_97_jsonlint.sh**: Validates JSON file syntax and structure.
-- **test_98_markdownlint.sh**: Lints Markdown documentation using markdownlint.
-- **test_99_cleanup.sh**: Performs comprehensive build system cleanup.
+- **[test_03_code_size.sh](docs/test_03_code_size.md)**: Analyzes code size metrics and file distribution.
+- **[test_04_cppcheck.sh](docs/test_04_cppcheck.md)**: Performs C/C++ static analysis using cppcheck.
+- **[test_05_shellcheck.sh](docs/test_05_shellcheck.md)**: Validates shell scripts using shellcheck with exception justification checks.
+- **[test_06_check_links.sh](docs/test_06_check_links.md)**: Validates links in documentation files.
+- **[test_94_eslint.sh](docs/test_94_eslint.md)**: Lints JavaScript files using eslint.
+- **[test_95_stylelint.sh](docs/test_95_stylelint.md)**: Validates CSS files using stylelint.
+- **[test_96_htmlhint.sh](docs/test_96_htmlhint.md)**: Validates HTML files using htmlhint.
+- **[test_97_jsonlint.sh](docs/test_97_jsonlint.md)**: Validates JSON file syntax and structure.
+- **[test_98_markdownlint.sh](docs/test_98_markdownlint.md)**: Lints Markdown documentation using markdownlint.
+- **[test_99_cleanup.sh](docs/test_99_cleanup.md)**: Performs comprehensive build system cleanup.
 
 ## Configuration Files
 
@@ -118,7 +118,7 @@ Test execution generates output in the following directories, which are cleaned 
 Detailed documentation for each test script and library is available in the `docs/` directory:
 
 - **test_00_all.md**: Documentation for the test suite runner.
-- **test_01_compilation.md** to **test_99_codebase.md**: Individual test script documentation.
+- **test_01_compilation.md** to **test_99_cleanup.md**: Individual test script documentation.
 - **LIBRARIES.md**: Overview of modular library scripts in the `lib/` directory.
 - Additional guides and reference materials for test framework components.
 
