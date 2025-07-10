@@ -4,7 +4,7 @@
 # Performs markdown linting validation
 
 # Test configuration
-TEST_NAME="Markdown Linting"
+TEST_NAME="Markdown Linting (markdownlint)"
 SCRIPT_VERSION="1.0.0"
 
 # Get the directory where this script is located
