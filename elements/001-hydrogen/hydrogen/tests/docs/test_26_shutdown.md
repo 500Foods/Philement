@@ -1,8 +1,8 @@
-# Test 20 Shutdown Script Documentation
+# Test 26 Shutdown Script Documentation
 
 ## Overview
 
-The `test_20_shutdown.sh` script (Test 20: Shutdown) is a specialized testing tool within the Hydrogen test suite that validates the shutdown functionality of the Hydrogen server using a minimal configuration. This test ensures proper server lifecycle management with focus on clean shutdown behavior.
+The `test_26_shutdown.sh` script (Test 26: Shutdown) is a specialized testing tool within the Hydrogen test suite that validates the shutdown functionality of the Hydrogen server using a minimal configuration. This test ensures proper server lifecycle management with focus on clean shutdown behavior.
 
 ## Purpose
 
@@ -18,8 +18,8 @@ This script ensures that the Hydrogen server can start up successfully and then 
 
 ## Technical Details
 
-- **Script Version**: 2.0.0 (Complete rewrite using new modular test libraries)
-- **Test Number**: 20
+- **Script Version**: 2.0.1 (Complete rewrite using new modular test libraries)
+- **Test Number**: 26
 - **Total Subtests**: 6
 - **Architecture**: Library-based using modular scripts from lib/ directory
 
@@ -59,7 +59,7 @@ To run this test as part of the full suite:
 To run this test individually:
 
 ```bash
-./test_20_shutdown.sh
+./test_26_shutdown.sh
 ```
 
 ## Output and Logging
@@ -67,7 +67,7 @@ To run this test individually:
 - **Results Directory**: `tests/results/`
 - **Log File**: `tests/logs/hydrogen_shutdown_test.log`
 - **Diagnostics**: `tests/diagnostics/shutdown_test_[timestamp]/`
-- **Result Log**: `tests/results/test_20_[timestamp].log`
+- **Result Log**: `tests/results/test_26_[timestamp].log`
 
 ## Shutdown Testing Focus
 
@@ -81,6 +81,7 @@ This test specifically validates:
 
 ## Version History
 
+- **2.0.1** (2025-07-06): Added missing shellcheck justifications
 - **2.0.0** (2025-07-02): Complete rewrite to use new modular test libraries
 - **1.1.0**: Enhanced with proper error handling, modular functions, and shellcheck compliance
 - **1.0.0**: Initial version with basic shutdown testing

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `test_18_json_error_handling.sh` script (Test 40: JSON Error Handling) is a comprehensive testing tool within the Hydrogen test suite that validates the application's ability to correctly handle JSON syntax errors in configuration files and provide meaningful error messages with position information.
+The `test_18_json_error_handling.sh` script (Test 18: JSON Error Handling) is a comprehensive testing tool within the Hydrogen test suite that validates the application's ability to correctly handle JSON syntax errors in configuration files and provide meaningful error messages with position information.
 
 ## Purpose
 
@@ -19,7 +19,7 @@ This script ensures that the Hydrogen server can gracefully handle malformed JSO
 ## Technical Details
 
 - **Script Version**: 3.0.0 (Complete rewrite using new modular test libraries)
-- **Test Number**: 18 (internally referenced as Test 40)
+- **Test Number**: 18
 - **Total Subtests**: 4
 - **Architecture**: Library-based using modular scripts from lib/ directory
 
@@ -87,4 +87,4 @@ The test validates that when provided with malformed JSON:
 
 - [test_00_all.md](test_00_all.md) - Main test orchestration system
 - [LIBRARIES.md](LIBRARIES.md) - Table of Contents for modular library scripts in the 'lib/' directory
-- [test_12_env_payload.md](test_12_env_payload.md) - Related configuration and payload testing
+- [test_14_env_payload.md](test_14_env_payload.md) - Related configuration and payload testing
