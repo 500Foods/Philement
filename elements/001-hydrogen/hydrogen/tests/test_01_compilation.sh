@@ -7,13 +7,14 @@
 # using the CMake build system with various configurations.
 
 # CHANGELOG
+# 2.1.0 - 2025-07-09 - Added payload generation subtest
 # 2.0.1 - 2025-07-06 - Added missing shellcheck justifications
 # 2.0.0 - 2025-07-02 - Complete rewrite to use new modular test libraries
 # 1.0.0 - Initial version
 
 # Test configuration
 TEST_NAME="Compilation"
-SCRIPT_VERSION="2.0.1"
+SCRIPT_VERSION="2.1.0"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -32,7 +33,7 @@ source "$SCRIPT_DIR/lib/framework.sh"
 
 # Test configuration
 EXIT_CODE=0
-TOTAL_SUBTESTS=13
+TOTAL_SUBTESTS=14
 PASS_COUNT=0
 
 # Auto-extract test number and set up environment
@@ -127,6 +128,52 @@ else
     EXIT_CODE=1
 fi
 evaluate_test_result_silent "CMake configuration" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
+
+# Subtest: Check and Generate Payload
+next_subtest
+print_subtest "Check and Generate Payload"
+print_command "test -f payloads/payload.tar.br.enc"
+if [ -f "payloads/payload.tar.br.enc" ]; then
+    payload_size=$(get_file_size "payloads/payload.tar.br.enc")
+    formatted_size=$(format_file_size "$payload_size")
+    print_result 0 "Payload file exists: payloads/payload.tar.br.enc (${formatted_size} bytes)"
+    ((PASS_COUNT++))
+else
+    print_message "Payload file not found, generating..."
+    print_command "cd payloads"
+    if safe_cd payloads; then
+        print_command "./swagger-generate.sh"
+        if ./swagger-generate.sh >/dev/null 2>&1; then
+            print_message "Swagger generation completed"
+            print_command "./payload-generate.sh"
+            if ./payload-generate.sh >/dev/null 2>&1; then
+                print_message "Payload generation completed"
+                print_command "cd .."
+                safe_cd ..
+                if [ -f "payloads/payload.tar.br.enc" ]; then
+                    payload_size=$(get_file_size "payloads/payload.tar.br.enc")
+                    formatted_size=$(format_file_size "$payload_size")
+                    print_result 0 "Payload file generated successfully: payloads/payload.tar.br.enc (${formatted_size} bytes)"
+                    ((PASS_COUNT++))
+                else
+                    print_result 1 "Payload file not found after generation"
+                    EXIT_CODE=1
+                fi
+            else
+                print_result 1 "Payload generation failed"
+                safe_cd ..
+                EXIT_CODE=1
+            fi
+        else
+            print_result 1 "Swagger generation failed"
+            safe_cd ..
+            EXIT_CODE=1
+        fi
+    else
+        print_result 1 "Failed to enter payloads directory"
+        EXIT_CODE=1
+    fi
+fi
 
 # Subtest: Build all variants
 next_subtest
