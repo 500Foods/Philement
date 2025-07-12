@@ -42,24 +42,30 @@ find_hydrogen_binary() {
     fi
     print_message "Searching for Hydrogen binary in: $relative_dir"
     
-    # First check for release build
-    hydrogen_bin="$hydrogen_dir/hydrogen_release"
+    # First check for coverage build (highest priority for testing)
+    hydrogen_bin="$hydrogen_dir/hydrogen_coverage"
     if [ -f "$hydrogen_bin" ]; then
-        print_message "Using release build for testing: hydrogen/hydrogen_release"
-    # Then check for standard build
+        print_message "Using coverage build for testing: hydrogen/hydrogen_coverage"
+    # Then check for release build
     else
-        hydrogen_bin="$hydrogen_dir/hydrogen"
+        hydrogen_bin="$hydrogen_dir/hydrogen_release"
         if [ -f "$hydrogen_bin" ]; then
-            print_message "Using standard build for testing: hydrogen/hydrogen"
-        # If neither found, search for binary in possible build directories
+            print_message "Using release build for testing: hydrogen/hydrogen_release"
+        # Then check for standard build
         else
-            print_message "Searching for Hydrogen binary in subdirectories..."
-            hydrogen_bin=$(find "$hydrogen_dir" -type f -executable -name "hydrogen*" -print -quit 2>/dev/null)
-            if [ -n "$hydrogen_bin" ]; then
-                print_message "Found Hydrogen binary at: $hydrogen_bin"
+            hydrogen_bin="$hydrogen_dir/hydrogen"
+            if [ -f "$hydrogen_bin" ]; then
+                print_message "Using standard build for testing: hydrogen/hydrogen"
+            # If none found, search for binary in possible build directories
             else
-                print_error "No Hydrogen binary found in $hydrogen_dir or subdirectories"
-                return 1
+                print_message "Searching for Hydrogen binary in subdirectories..."
+                hydrogen_bin=$(find "$hydrogen_dir" -type f -executable -name "hydrogen*" -print -quit 2>/dev/null)
+                if [ -n "$hydrogen_bin" ]; then
+                    print_message "Found Hydrogen binary at: $hydrogen_bin"
+                else
+                    print_error "No Hydrogen binary found in $hydrogen_dir or subdirectories"
+                    return 1
+                fi
             fi
         fi
     fi
@@ -428,7 +434,14 @@ configure_hydrogen_binary() {
         hydrogen_dir="$( cd "$script_dir/../.." && pwd )"
     fi
     
-    if [ -f "$hydrogen_dir/hydrogen_release" ]; then
+    if [ -f "$hydrogen_dir/hydrogen_coverage" ]; then
+        HYDROGEN_BIN="$hydrogen_dir/hydrogen_coverage"
+        if command -v print_message >/dev/null 2>&1; then
+            print_message "Using coverage build for testing: $HYDROGEN_BIN"
+        else
+            echo "INFO: Using coverage build for testing: $HYDROGEN_BIN"
+        fi
+    elif [ -f "$hydrogen_dir/hydrogen_release" ]; then
         HYDROGEN_BIN="$hydrogen_dir/hydrogen_release"
         if command -v print_message >/dev/null 2>&1; then
             print_message "Using release build for testing: $HYDROGEN_BIN"

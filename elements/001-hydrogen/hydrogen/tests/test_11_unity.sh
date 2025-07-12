@@ -27,6 +27,8 @@ source "$SCRIPT_DIR/lib/file_utils.sh"
 source "$SCRIPT_DIR/lib/framework.sh"
 # shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/lifecycle.sh"
+# shellcheck source=tests/lib/coverage.sh # Resolve path statically
+source "$SCRIPT_DIR/lib/coverage.sh"
 
 # Test configuration
 EXIT_CODE=0
@@ -110,7 +112,7 @@ compile_unity_tests() {
     next_subtest
     print_subtest "Compile Unity Tests"
     print_message "Compiling Unity tests..."
-    local build_dir="$HYDROGEN_DIR/build_unity_tests"
+    local build_dir="$HYDROGEN_DIR/build_unity"
     local temp_log="$DIAG_TEST_DIR/compile_log.txt"
     mkdir -p "$build_dir"
     mkdir -p "$(dirname "$temp_log")"
@@ -135,7 +137,7 @@ run_unity_tests() {
         return 1
     fi
     
-    local build_dir="$HYDROGEN_DIR/build_unity_tests"
+    local build_dir="$HYDROGEN_DIR/build_unity"
     if [ ! -d "$build_dir" ]; then
         print_result 1 "Build directory not found: ${build_dir#"$SCRIPT_DIR"/..}"
         return 1
@@ -205,6 +207,25 @@ if compile_unity_tests; then
     ((PASS_COUNT++))
     if ! run_unity_tests; then
         EXIT_CODE=1
+    fi
+    
+    # Calculate Unity test coverage
+    next_subtest
+    print_subtest "Calculate Unity Test Coverage"
+    print_message "Calculating Unity test coverage..."
+    
+    build_dir="$HYDROGEN_DIR/build_unity"
+    unity_coverage=$(calculate_unity_coverage "$build_dir" "$TIMESTAMP")
+    result=$?
+    
+    if [ $result -eq 0 ]; then
+        print_result 0 "Unity test coverage calculated: $unity_coverage%"
+        ((PASS_COUNT++))
+        TOTAL_SUBTESTS=$((TOTAL_SUBTESTS + 1))
+    else
+        print_result 1 "Failed to calculate Unity test coverage"
+        EXIT_CODE=1
+        TOTAL_SUBTESTS=$((TOTAL_SUBTESTS + 1))
     fi
 else
     print_error "Compilation failed, skipping test execution"
