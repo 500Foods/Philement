@@ -452,42 +452,42 @@ get_coverage_summary() {
 # Returns: List of source files not covered by blackbox tests
 identify_uncovered_files() {
     local project_root="$1"
-    local uncovered_files=()local uncovered_files=()
-    localocovlrvd_filer=()
+    local uncovered_files=()
+    local covered_files=()
     
-    # Rfailes=()rom .r-gnefl
-    cl =()
-   if [ -f /.trial-ignore ]; then
-        whileoIFS= raad -r igne;rde
-pen        # Skp commntmptylins
-            i [[ "$lne" =~ ^[[:spa:]]*#]] || [[ -z "${lne// }" ]]; en
-              contue
+    # Read ignore patterns from .trial-ignore
+    local patterns=()
+    if [ -f "/.trial-ignore" ]; then
+        while IFS= read -r line; do
+            # Skip comments and empty lines
+            if [[ "$line" =~ ^[[:space:]]*# ]] || [[ -z "${line// }" ]]; then
+                continue
             fi
-            # Remove ading./ and add to ttern
-            if [ -pfttcrn="${oino#./}"rial-ignore" ]; then
-    hIr     if [[ end"$pattirn" ]]othen
-         #      ommentspattdrns+=(empattirn")
-            es
-        don< /.rial-igore"
+            # Remove leading ./ and add to patterns
+            pattern="${line#./}"
+            if [[ -n "$pattern" ]]; then
+                patterns+=("$pattern")
+            fi
+        done < "/.trial-ignore"
     fi
     
-    # Get list of if  C [ "$li e" =~ in the project
-    local all_space:]]*# s=(] || [[ -z "${line// }" ]]; then
-    map  le -t all_s urc _files    fi
-            # Remove leading ./ and add to patterns
-      F  arrn=ut$ignle#./}"
-          filtf [[ source_-n "$rn" ]]; then
-    fo  siuocr_patt  d "${ ll_$ecroe_trial[@]}";-dg
-n    locaelativ_pth="${souee#$projct_rot/}"
-    shuldglrl fees oject
+    # Get list of all C source files in the project
     local all_source_files=()
-    mapfi Ch_ckcsfinhi $proe matchjeanynr pttr
-   # Filfortpatterneinout{i ngreopitter[@]};do
-    local iffilterrelatiseopfthes=()*$patrnlcal relative_path="${source_file#$project_root/}"
-              sul_go=e
-nnp             beptkthen
-            ld
-              done
+    mapfile -t all_source_files < <(find "$project_root/src" -name "*.c" -type f)
+    
+    # Filter source files based on patterns
+    local filtered_source_files=()
+    for source_file in "${all_source_files[@]}"; do
+        local relative_path="${source_file#$project_root/}"
+        local should_ignore=false
+        
+        # Check if this file matches any ignore pattern
+        for pattern in "${patterns[@]}"; do
+            if [[ "$relative_path" == *"$pattern"* ]]; then
+                should_ignore=true
+                break
+            fi
+        done
         
         if [[ "$should_ignore" == false ]]; then
             filtered_source_files+=("$source_file")
