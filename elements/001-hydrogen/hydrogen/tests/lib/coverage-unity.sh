@@ -27,14 +27,15 @@ calculate_unity_coverage() {
     local original_dir="$PWD"
     cd "$build_dir" || return 1
     
-    # Generate gcov files for all source files and move them to gcov directory
-    find . -name "*.gcno" -exec gcov {} \; > /dev/null 2>&1
-    
-    # Move all generated .gcov files to the gcov directory
-    find . -name "*.gcov" -type f -exec mv {} "$GCOV_OUTPUT_DIR/" \; 2>/dev/null || true
-    
-    # Also clean up any .gcov files that might be in the project root from blackbox tests
-    find "$original_dir/.." -maxdepth 1 -name "*.gcov" -type f -exec mv {} "$GCOV_OUTPUT_DIR/" \; 2>/dev/null || true
+    # Generate gcov files for all source files (place them in same directories as .gcno/.gcda files)
+    find . -name "*.gcno" | while IFS= read -r gcno_file; do
+        local gcno_dir
+        gcno_dir="$(dirname "$gcno_file")"
+        local original_pwd="$PWD"
+        cd "$gcno_dir" || continue
+        gcov "$(basename "$gcno_file")" > /dev/null 2>&1
+        cd "$original_pwd" || return 1
+    done
     
     # Return to original directory
     cd "$original_dir" || return 1
@@ -49,10 +50,11 @@ calculate_unity_coverage() {
     local instrumented_files=0
     local covered_files=0
     
-    # Process each gcov file
+    # Process each gcov file (in build directory)
     while IFS= read -r gcov_file; do
         if [[ -f "$gcov_file" ]]; then
-            local filename=$(basename "$gcov_file")
+            local filename
+            filename=$(basename "$gcov_file")
             
             # Skip external libraries and test framework files
             if [[ "$filename" == "unity.c.gcov" ]] || \
@@ -65,16 +67,20 @@ calculate_unity_coverage() {
             # Process project source files only
             if [[ "$filename" == *.gcov ]]; then
                 # Extract source filename and check if it should be ignored based on .trial-ignore
-                local source_name="${filename%.gcov}"
-                local test_path="$project_root/src/$source_name"
+                local source_name
+                local test_path
+                source_name="${filename%.gcov}"
+                test_path="$project_root/src/$source_name"
                 
                 if should_ignore_file "$test_path" "$project_root"; then
                     continue
                 fi
                 
                 # Extract lines executed and total lines from gcov file
-                local file_total=$(grep -c "^[[:space:]]*[0-9#-].*:" "$gcov_file" 2>/dev/null || echo "0")
-                local file_covered=$(grep -c "^[[:space:]]*[1-9][0-9]*.*:" "$gcov_file" 2>/dev/null || echo "0")
+                local file_total
+                local file_covered
+                file_total=$(grep -c "^[[:space:]]*[0-9#-].*:" "$gcov_file" 2>/dev/null || echo "0")
+                file_covered=$(grep -c "^[[:space:]]*[1-9][0-9]*.*:" "$gcov_file" 2>/dev/null || echo "0")
                 
                 # Ensure values are clean integers (strip any whitespace/newlines)
                 file_total=$(echo "$file_total" | tr -d '\n\r\t ' | grep -o '[0-9]*' | head -1)
@@ -94,7 +100,7 @@ calculate_unity_coverage() {
                 fi
             fi
         fi
-    done < <(find "$GCOV_OUTPUT_DIR" -name "*.gcov" -type f 2>/dev/null)
+    done < <(find "$build_dir" -name "*.gcov" -type f 2>/dev/null)
     
     # Calculate coverage percentage with 3 decimal places
     if [[ $total_lines -gt 0 ]]; then
