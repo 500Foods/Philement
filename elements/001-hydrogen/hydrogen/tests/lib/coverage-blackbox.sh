@@ -130,8 +130,8 @@ collect_blackbox_coverage() {
             # Use same awk processing as Test 11 for line counting per file
             local file_data
             file_data=$(awk '
-                /^[[:space:]]*[0-9]+:[[:space:]]*[0-9]+:/ { covered++; total++ }
-                /^[[:space:]]*#####:[[:space:]]*[0-9]+:/ { total++ }
+                /^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/ { covered++; total++ }
+                /^[[:space:]]*#####:[[:space:]]*[0-9]+\*?:/ { total++ }
                 END { print total "," covered }
             ' "$gcov_file" 2>/dev/null)
             
@@ -270,8 +270,8 @@ collect_blackbox_coverage_from_dir() {
         # Count only instrumented lines using same method as Test 11
         local line_counts
         line_counts=$(awk '
-            /^[[:space:]]*[0-9]+:[[:space:]]*[0-9]+:/ { covered++; total++ }
-            /^[[:space:]]*#####:[[:space:]]*[0-9]+:/ { total++ }
+            /^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/ { covered++; total++ }
+            /^[[:space:]]*#####:[[:space:]]*[0-9]+\*?:/ { total++ }
             END { print total "," covered }
         ' "$combined_gcov" 2>/dev/null)
         
