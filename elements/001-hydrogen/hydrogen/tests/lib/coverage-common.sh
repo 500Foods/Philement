@@ -13,7 +13,6 @@ if [[ -z "$SCRIPT_DIR" ]]; then
 fi
 COVERAGE_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COVERAGE_RESULTS_DIR="$(dirname "$COVERAGE_SCRIPT_DIR")/results"
-GCOV_OUTPUT_DIR="$(dirname "$COVERAGE_SCRIPT_DIR")/gcov"
 UNITY_COVERAGE_FILE="$COVERAGE_RESULTS_DIR/unity_coverage.txt"
 BLACKBOX_COVERAGE_FILE="$COVERAGE_RESULTS_DIR/blackbox_coverage.txt"
 COMBINED_COVERAGE_FILE="$COVERAGE_RESULTS_DIR/combined_coverage.txt"
@@ -21,7 +20,6 @@ OVERLAP_COVERAGE_FILE="$COVERAGE_RESULTS_DIR/overlap_coverage.txt"
 
 # Ensure coverage directories exist
 mkdir -p "$COVERAGE_RESULTS_DIR"
-mkdir -p "$GCOV_OUTPUT_DIR"
 
 # Global ignore patterns loaded once
 IGNORE_PATTERNS_LOADED=""
@@ -65,7 +63,7 @@ should_ignore_file() {
     # Load patterns if not loaded
     load_ignore_patterns "$project_root"
     
-    local relative_path="${file_path#$project_root/}"
+    local relative_path="${file_path#"$project_root"/}"
     
     # Check if this file matches any ignore pattern
     for pattern in "${IGNORE_PATTERNS[@]}"; do
@@ -83,7 +81,7 @@ cleanup_coverage_data() {
     rm -f "$UNITY_COVERAGE_FILE" "$BLACKBOX_COVERAGE_FILE" "$COMBINED_COVERAGE_FILE" "$OVERLAP_COVERAGE_FILE"
     rm -f "${UNITY_COVERAGE_FILE}.detailed" "${BLACKBOX_COVERAGE_FILE}.detailed"
     rm -rf "$GCOV_PREFIX" 2>/dev/null || true
-    rm -rf "$GCOV_OUTPUT_DIR"
-    mkdir -p "$GCOV_OUTPUT_DIR"
+    # Note: We don't remove .gcov files since they stay in their respective build directories
+    # Only clean up the centralized results
     return 0
 }

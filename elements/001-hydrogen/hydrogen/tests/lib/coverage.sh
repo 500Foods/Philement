@@ -16,6 +16,7 @@ COVERAGE_MAIN_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Source modular coverage components
 source "$COVERAGE_MAIN_SCRIPT_DIR/coverage-common.sh"
 source "$COVERAGE_MAIN_SCRIPT_DIR/coverage-unity.sh"
+source "$COVERAGE_MAIN_SCRIPT_DIR/coverage-blackbox.sh"
 
 # Function to validate coverage consistency and provide detailed breakdown
 validate_coverage_consistency() {
@@ -28,37 +29,51 @@ validate_coverage_consistency() {
     local total_lines=0
     local covered_lines=0
     
-    # Analyze each gcov file for detailed statistics
-    while IFS= read -r gcov_file; do
-        if [[ -f "$gcov_file" ]]; then
-            local filename=$(basename "$gcov_file")
-            
-            # Skip external files
-            if [[ "$filename" == "unity.c.gcov" ]] || [[ "$filename" == *"/usr/include/"* ]]; then
-                continue
-            fi
-            
-            local source_name="${filename%.gcov}"
-            local test_path="$project_root/src/$source_name"
-            
-            # Check if should be ignored
-            if should_ignore_file "$test_path" "$project_root"; then
-                continue
-            fi
-            
-            # Detailed line analysis
-            local file_total=$(grep -c "^[[:space:]]*[0-9#-].*:" "$gcov_file" 2>/dev/null || echo "0")
-            local file_covered=$(grep -c "^[[:space:]]*[1-9][0-9]*.*:" "$gcov_file" 2>/dev/null || echo "0")
-            
-            if [[ $file_covered -gt 0 ]]; then
-                covered_files=$((covered_files + 1))
-            fi
-            
-            total_files=$((total_files + 1))
-            total_lines=$((total_lines + file_total))
-            covered_lines=$((covered_lines + file_covered))
+    # Find potential build directories to check for gcov files
+    local build_dirs=()
+    build_dirs+=("$project_root/build_unity")
+    build_dirs+=("$project_root/build")
+    
+    # Analyze each gcov file for detailed statistics from build directories
+    for build_dir in "${build_dirs[@]}"; do
+        if [[ -d "$build_dir" ]]; then
+            while IFS= read -r gcov_file; do
+                if [[ -f "$gcov_file" ]]; then
+                    local filename
+                    filename=$(basename "$gcov_file")
+                    
+                    # Skip external files
+                    if [[ "$filename" == "unity.c.gcov" ]] || [[ "$filename" == *"/usr/include/"* ]]; then
+                        continue
+                    fi
+                    
+                    local source_name
+                    local test_path
+                    source_name="${filename%.gcov}"
+                    test_path="$project_root/src/$source_name"
+                    
+                    # Check if should be ignored
+                    if should_ignore_file "$test_path" "$project_root"; then
+                        continue
+                    fi
+                    
+                    # Detailed line analysis
+                    local file_total
+                    local file_covered
+                    file_total=$(grep -c "^[[:space:]]*[0-9#-].*:" "$gcov_file" 2>/dev/null || echo "0")
+                    file_covered=$(grep -c "^[[:space:]]*[1-9][0-9]*.*:" "$gcov_file" 2>/dev/null || echo "0")
+                    
+                    if [[ $file_covered -gt 0 ]]; then
+                        covered_files=$((covered_files + 1))
+                    fi
+                    
+                    total_files=$((total_files + 1))
+                    total_lines=$((total_lines + file_total))
+                    covered_lines=$((covered_lines + file_covered))
+                fi
+            done < <(find "$build_dir" -name "*.gcov" -type f 2>/dev/null)
         fi
-    done < <(find "$GCOV_OUTPUT_DIR" -name "*.gcov" -type f 2>/dev/null)
+    done
     
     # Calculate overall statistics
     local file_coverage_pct=0
