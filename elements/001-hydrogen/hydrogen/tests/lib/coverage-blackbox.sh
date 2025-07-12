@@ -127,11 +127,11 @@ collect_blackbox_coverage() {
     # Process valid gcov files individually for accurate coverage calculation
     if [[ ${#valid_gcov_files[@]} -gt 0 ]]; then
         for gcov_file in "${valid_gcov_files[@]}"; do
-            # Use efficient awk processing for line counting per file
+            # Use same awk processing as Test 11 for line counting per file
             local file_data
             file_data=$(awk '
-                /^[[:space:]]*[0-9#-].*:/ { total++ }
-                /^[[:space:]]*[1-9][0-9]*.*:/ { covered++ }
+                /^[[:space:]]*[0-9]+:[[:space:]]*[0-9]+:/ { covered++; total++ }
+                /^[[:space:]]*#####:[[:space:]]*[0-9]+:/ { total++ }
                 END { print total "," covered }
             ' "$gcov_file" 2>/dev/null)
             
@@ -179,6 +179,133 @@ collect_blackbox_coverage_from_dir() {
         echo "0.000" > "$BLACKBOX_COVERAGE_FILE"
         return 1
     fi
+    
+    # Generate .gcov files from .gcda files in coverage directory
+    local original_dir="$PWD"
+    cd "$coverage_dir" || return 1
+    
+    # Generate gcov files efficiently using parallel processing
+    if command -v xargs >/dev/null 2>&1; then
+        find . -name "*.gcda" -print0 | xargs -0 -P4 -I{} sh -c "
+            gcda_dir=\"\$(dirname '{}')\"
+            cd \"\$gcda_dir\" && gcov \"\$(basename '{}')\" >/dev/null 2>&1
+        "
+    else
+        find . -name "*.gcda" -exec sh -c '
+            gcda_dir="$(dirname "$1")"
+            cd "$gcda_dir" && gcov "$(basename "$1")" >/dev/null 2>&1
+        ' _ {} \;
+    fi
+    
+    # Return to original directory
+    cd "$original_dir" || return 1
+    
+    # Use same logic as Test 11 Unity coverage calculation
+    local project_root="$original_dir/.."
+    local total_lines=0
+    local covered_lines=0
+    local instrumented_files=0
+    local covered_files=0
+    
+    # Use exact same filtering logic as Test 11's inline calculation
+    local gcov_files_to_process=()
+    while IFS= read -r gcov_file; do
+        if [[ -f "$gcov_file" ]]; then
+            # Skip Unity framework files and system files (same as Test 11)
+            basename_file=$(basename "$gcov_file")
+            if [[ "$basename_file" == "unity.c.gcov" ]] || [[ "$gcov_file" == *"/usr/"* ]]; then
+                continue
+            fi
+            
+            # Skip system libraries and external dependencies (same as Test 11)
+            if [[ "$basename_file" == *"jansson"* ]] || \
+               [[ "$basename_file" == *"json"* ]] || \
+               [[ "$basename_file" == *"curl"* ]] || \
+               [[ "$basename_file" == *"ssl"* ]] || \
+               [[ "$basename_file" == *"crypto"* ]] || \
+               [[ "$basename_file" == *"pthread"* ]] || \
+               [[ "$basename_file" == *"uuid"* ]] || \
+               [[ "$basename_file" == *"zlib"* ]] || \
+               [[ "$basename_file" == *"pcre"* ]]; then
+                continue
+            fi
+            
+            # Check if this file should be ignored based on .trial-ignore patterns (same as Test 11)
+            source_file="${basename_file%.gcov}"
+            should_ignore=false
+            
+            # Read .trial-ignore patterns directly (same logic as Test 11)
+            if [[ -f "$project_root/.trial-ignore" ]]; then
+                while IFS= read -r line; do
+                    # Skip comments and empty lines
+                    if [[ "$line" =~ ^[[:space:]]*# ]] || [[ -z "$line" ]]; then
+                        continue
+                    fi
+                    # Remove leading ./ if present and add pattern
+                    pattern="${line#./}"
+                    if [[ "$source_file" == *"$pattern"* ]]; then
+                        should_ignore=true
+                        break
+                    fi
+                done < "$project_root/.trial-ignore"
+            fi
+            
+            if [[ "$should_ignore" == true ]]; then
+                continue
+            fi
+            
+            gcov_files_to_process+=("$gcov_file")
+        fi
+    done < <(find "$coverage_dir" -name "*.gcov" -type f 2>/dev/null)
+    
+    # Count total files exactly like Test 11
+    instrumented_files=${#gcov_files_to_process[@]}
+    
+    # Process all gcov files exactly like Test 11 does
+    if [[ ${#gcov_files_to_process[@]} -gt 0 ]]; then
+        # Create temporary combined file (same as Test 11)
+        local combined_gcov="/tmp/combined_blackbox.gcov"
+        cat "${gcov_files_to_process[@]}" > "$combined_gcov"
+        
+        # Count only instrumented lines using same method as Test 11
+        local line_counts
+        line_counts=$(awk '
+            /^[[:space:]]*[0-9]+:[[:space:]]*[0-9]+:/ { covered++; total++ }
+            /^[[:space:]]*#####:[[:space:]]*[0-9]+:/ { total++ }
+            END { print total "," covered }
+        ' "$combined_gcov" 2>/dev/null)
+        
+        total_lines="${line_counts%,*}"
+        covered_lines="${line_counts#*,}"
+        
+        # Default to 0 if parsing failed
+        total_lines=${total_lines:-0}
+        covered_lines=${covered_lines:-0}
+        
+        # Count files individually for file statistics (same as Test 11)
+        covered_files=0
+        for gcov_file in "${gcov_files_to_process[@]}"; do
+            file_covered_lines=$(grep -c "^[[:space:]]*[1-9][0-9]*:[[:space:]]*[0-9][0-9]*:" "$gcov_file" 2>/dev/null)
+            if [[ -z "$file_covered_lines" ]] || [[ ! "$file_covered_lines" =~ ^[0-9]+$ ]]; then
+                file_covered_lines=0
+            fi
+            if [[ $file_covered_lines -gt 0 ]]; then
+                covered_files=$((covered_files + 1))
+            fi
+        done
+        
+        # Clean up temporary file
+        rm -f "$combined_gcov"
+    fi
+    
+    # Calculate coverage percentage with 3 decimal places
+    if [[ $total_lines -gt 0 ]]; then
+        coverage_percentage=$(awk "BEGIN {printf \"%.3f\", ($covered_lines / $total_lines) * 100}")
+    fi
+    
+    # Store coverage result with timestamp
+    echo "$coverage_percentage" > "$BLACKBOX_COVERAGE_FILE"
+    echo "$timestamp,$coverage_percentage,$covered_lines,$total_lines,$instrumented_files,$covered_files" > "${BLACKBOX_COVERAGE_FILE}.detailed"
     
     echo "$coverage_percentage"
     return 0
@@ -259,11 +386,9 @@ identify_uncovered_files() {
     local total_count=0
     local uncovered_files=()
     
-    # Find potential build directories to check for gcov files
+    # For Test 99, only check blackbox coverage directory (build/coverage)
     local build_dirs=()
-    build_dirs+=("$project_root/build/unity")
-    build_dirs+=("$project_root/build")
-    build_dirs+=("$project_root")  # In case gcov files are in project root
+    build_dirs+=("$project_root/build/coverage")
     
     # Cache all gcov files first to avoid repeated filesystem traversals
     declare -A gcov_cache

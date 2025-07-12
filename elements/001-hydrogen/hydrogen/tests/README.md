@@ -71,7 +71,7 @@ Below is a comprehensive list of all test scripts currently available in the sui
 - **[test_96_htmlhint.sh](docs/test_96_htmlhint.md)**: Validates HTML files using htmlhint.
 - **[test_97_jsonlint.sh](docs/test_97_jsonlint.md)**: Validates JSON file syntax and structure.
 - **[test_98_markdownlint.sh](docs/test_98_markdownlint.md)**: Lints Markdown documentation using markdownlint.
-- **[test_99_coverage.sh](docs/test_99_coverage.md)**: Performs comprehensive coverge analysis.    
+- **[test_99_coverage.sh](docs/test_99_coverage.md)**: Performs comprehensive coverge analysis.
 
 ## Configuration Files
 

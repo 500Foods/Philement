@@ -55,62 +55,95 @@ calculate_unity_coverage() {
     local instrumented_files=0
     local covered_files=0
     
-    # Build list of valid gcov files first, then process them all at once
-    local valid_gcov_files=()
+    # Use exact same filtering logic as Test 11's inline calculation
+    local gcov_files_to_process=()
     while IFS= read -r gcov_file; do
         if [[ -f "$gcov_file" ]]; then
-            local filename
-            filename=$(basename "$gcov_file")
-            
-            # Skip external libraries and test framework files (these are not project source files)
-            if [[ "$filename" == "unity.c.gcov" ]] || \
-               [[ "$filename" == "jansson"*".gcov" ]] || \
-               [[ "$filename" == "test_"*".gcov" ]] || \
-               [[ "$gcov_file" == *"/usr/include/"* ]]; then
+            # Skip Unity framework files and system files (same as Test 11)
+            basename_file=$(basename "$gcov_file")
+            if [[ "$basename_file" == "unity.c.gcov" ]] || [[ "$gcov_file" == *"/usr/"* ]]; then
                 continue
             fi
             
-            # Process project source files only
-            if [[ "$filename" == *.gcov ]]; then
-                # Extract source filename and check if it should be ignored based on .trial-ignore
-                local source_name
-                local test_path
-                source_name="${filename%.gcov}"
-                test_path="$project_root/src/$source_name"
-                
-                # Use centralized .trial-ignore checking for consistency
-                if should_ignore_file "$test_path" "$project_root"; then
-                    continue
-                fi
-                
-                valid_gcov_files+=("$gcov_file")
-                instrumented_files=$((instrumented_files + 1))
+            # Skip system libraries and external dependencies (same as Test 11)
+            if [[ "$basename_file" == *"jansson"* ]] || \
+               [[ "$basename_file" == *"json"* ]] || \
+               [[ "$basename_file" == *"curl"* ]] || \
+               [[ "$basename_file" == *"ssl"* ]] || \
+               [[ "$basename_file" == *"crypto"* ]] || \
+               [[ "$basename_file" == *"pthread"* ]] || \
+               [[ "$basename_file" == *"uuid"* ]] || \
+               [[ "$basename_file" == *"zlib"* ]] || \
+               [[ "$basename_file" == *"pcre"* ]]; then
+                continue
             fi
+            
+            # Check if this file should be ignored based on .trial-ignore patterns (same as Test 11)
+            source_file="${basename_file%.gcov}"
+            should_ignore=false
+            
+            # Read .trial-ignore patterns directly (same logic as Test 11)
+            if [[ -f "$project_root/.trial-ignore" ]]; then
+                while IFS= read -r line; do
+                    # Skip comments and empty lines
+                    if [[ "$line" =~ ^[[:space:]]*# ]] || [[ -z "$line" ]]; then
+                        continue
+                    fi
+                    # Remove leading ./ if present and add pattern
+                    pattern="${line#./}"
+                    if [[ "$source_file" == *"$pattern"* ]]; then
+                        should_ignore=true
+                        break
+                    fi
+                done < "$project_root/.trial-ignore"
+            fi
+            
+            if [[ "$should_ignore" == true ]]; then
+                continue
+            fi
+            
+            gcov_files_to_process+=("$gcov_file")
         fi
     done < <(find "$build_dir/src" -name "*.gcov" -type f 2>/dev/null)
     
-    # Process all valid gcov files at once using cat for maximum efficiency
-    if [[ ${#valid_gcov_files[@]} -gt 0 ]]; then
-        local combined_data
-        combined_data=$(cat "${valid_gcov_files[@]}" 2>/dev/null | awk '
+    # Count total files exactly like Test 11
+    instrumented_files=${#gcov_files_to_process[@]}
+    
+    # Process all gcov files exactly like Test 11 does
+    if [[ ${#gcov_files_to_process[@]} -gt 0 ]]; then
+        # Create temporary combined file (same as Test 11)
+        local combined_gcov="/tmp/combined_unity.gcov"
+        cat "${gcov_files_to_process[@]}" > "$combined_gcov"
+        
+        # Count only instrumented lines using same method as Test 11
+        local line_counts
+        line_counts=$(awk '
             /^[[:space:]]*[0-9]+:[[:space:]]*[0-9]+:/ { covered++; total++ }
             /^[[:space:]]*#####:[[:space:]]*[0-9]+:/ { total++ }
             END { print total "," covered }
-        ')
+        ' "$combined_gcov" 2>/dev/null)
         
-        total_lines="${combined_data%,*}"
-        covered_lines="${combined_data#*,}"
+        total_lines="${line_counts%,*}"
+        covered_lines="${line_counts#*,}"
         
         # Default to 0 if parsing failed
         total_lines=${total_lines:-0}
         covered_lines=${covered_lines:-0}
         
-        # Count covered files by checking each file individually for any coverage
-        for gcov_file in "${valid_gcov_files[@]}"; do
-            if grep -q "^[[:space:]]*[1-9][0-9]*.*:" "$gcov_file" 2>/dev/null; then
+        # Count files individually for file statistics (same as Test 11)
+        covered_files=0
+        for gcov_file in "${gcov_files_to_process[@]}"; do
+            file_covered_lines=$(grep -c "^[[:space:]]*[1-9][0-9]*:[[:space:]]*[0-9][0-9]*:" "$gcov_file" 2>/dev/null)
+            if [[ -z "$file_covered_lines" ]] || [[ ! "$file_covered_lines" =~ ^[0-9]+$ ]]; then
+                file_covered_lines=0
+            fi
+            if [[ $file_covered_lines -gt 0 ]]; then
                 covered_files=$((covered_files + 1))
             fi
         done
+        
+        # Clean up temporary file
+        rm -f "$combined_gcov"
     fi
     
     # Calculate coverage percentage with 3 decimal places

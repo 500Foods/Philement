@@ -8,7 +8,9 @@
 # detailed coverage information focusing on the Unity test coverage data.
 
 # Get script directory and project paths
+SCRIPT_DIR
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BUILD_DIR="$PROJECT_ROOT/build/unity/src"
 COVERAGE_BUILD_DIR="$PROJECT_ROOT/build/coverage/src"
@@ -39,11 +41,6 @@ should_ignore_file() {
     
     return 1  # Should not ignore
 }
-
-# Initialize counters and arrays for storing coverage data
-total_covered_lines=0
-total_instrumented_lines=0
-total_files=0
 
 # Associative arrays to store coverage data from both directories
 declare -A unity_covered_lines
@@ -77,12 +74,13 @@ analyze_gcov_file() {
     done < "$gcov_file"
     
     # Skip files with no instrumented lines
-    if [ $instrumented_lines -eq 0 ]; then
+    if [ "$instrumented_lines" -eq 0 ]; then
         return
     fi
     
     # Clean up the path for display - show as src/filename
-    local filename_only=$(basename "$gcov_file" .gcov)
+    local filename_only
+    filename_only=$(basename "$gcov_file" .gcov)
     local display_path="src/$filename_only"
     
     # Store data in appropriate arrays
@@ -139,8 +137,7 @@ collect_gcov_files() {
         done < <(find "$build_dir" -name "*.gcov" -type f -print0 2>/dev/null)
         
         # Sort the valid gcov files by filename and process them
-        IFS=$'\n' sorted_files=($(sort <<<"${valid_gcov_files[*]}"))
-        unset IFS
+        mapfile -t sorted_files < <(printf '%s\n' "${valid_gcov_files[@]}" | sort)
         
         for gcov_file in "${sorted_files[@]}"; do
             analyze_gcov_file "$gcov_file" "$coverage_type"
@@ -148,16 +145,16 @@ collect_gcov_files() {
         done
     fi
     
-    echo $files_found
+    echo "$files_found"
 }
 
 # Collect data from Unity build directory
 unity_files=$(collect_gcov_files "$BUILD_DIR" "unity")
-gcov_files_found=$((gcov_files_found + unity_files))
+gcov_files_found=$((gcov_files_found + "$unity_files"))
 
 # Collect data from Coverage build directory
 coverage_files=$(collect_gcov_files "$COVERAGE_BUILD_DIR" "coverage")
-gcov_files_found=$((gcov_files_found + coverage_files))
+gcov_files_found=$((gcov_files_found + "$coverage_files"))
 
 # Now display the combined table
 for file_path in $(printf '%s\n' "${!all_files[@]}" | sort); do
@@ -165,7 +162,7 @@ for file_path in $(printf '%s\n' "${!all_files[@]}" | sort); do
     u_covered=${unity_covered_lines["$file_path"]:-0}
     u_instrumented=${unity_instrumented_lines["$file_path"]:-0}
     u_percentage="0.000"
-    if [ $u_instrumented -gt 0 ]; then
+    if [ "$u_instrumented" -gt 0 ]; then
         u_percentage=$(awk "BEGIN {printf \"%.3f\", ($u_covered / $u_instrumented) * 100}")
     fi
     
@@ -173,18 +170,18 @@ for file_path in $(printf '%s\n' "${!all_files[@]}" | sort); do
     c_covered=${coverage_covered_lines["$file_path"]:-0}
     c_instrumented=${coverage_instrumented_lines["$file_path"]:-0}
     c_percentage="0.000"
-    if [ $c_instrumented -gt 0 ]; then
+    if [ "$c_instrumented" -gt 0 ]; then
         c_percentage=$(awk "BEGIN {printf \"%.3f\", ($c_covered / $c_instrumented) * 100}")
     fi
     
     # Output row with 6 columns
     printf "%-37s %10s %12s %10s %10s %12s %10s\n" \
         "$file_path" \
-        "$(printf "%'d" $u_covered)" \
-        "$(printf "%'d" $u_instrumented)" \
+        "$(printf "%'d" "$u_covered")" \
+        "$(printf "%'d" "$u_instrumented")" \
         "${u_percentage}%" \
-        "$(printf "%'d" $c_covered)" \
-        "$(printf "%'d" $c_instrumented)" \
+        "$(printf "%'d" "$c_covered")" \
+        "$(printf "%'d" "$c_instrumented")" \
         "${c_percentage}%"
 done
 
@@ -199,29 +196,29 @@ coverage_total_covered=0
 coverage_total_instrumented=0
 
 for file_path in "${!all_files[@]}"; do
-    unity_total_covered=$((unity_total_covered + ${unity_covered_lines["$file_path"]:-0}))
-    unity_total_instrumented=$((unity_total_instrumented + ${unity_instrumented_lines["$file_path"]:-0}))
-    coverage_total_covered=$((coverage_total_covered + ${coverage_covered_lines["$file_path"]:-0}))
-    coverage_total_instrumented=$((coverage_total_instrumented + ${coverage_instrumented_lines["$file_path"]:-0}))
+    unity_total_covered=$((unity_total_covered + "${unity_covered_lines["$file_path"]:-0}"))
+    unity_total_instrumented=$((unity_total_instrumented + "${unity_instrumented_lines["$file_path"]:-0}"))
+    coverage_total_covered=$((coverage_total_covered + "${coverage_covered_lines["$file_path"]:-0}"))
+    coverage_total_instrumented=$((coverage_total_instrumented + "${coverage_instrumented_lines["$file_path"]:-0}"))
 done
 
 # Calculate percentages
 unity_total_pct="0.000"
-if [ $unity_total_instrumented -gt 0 ]; then
+if [ "$unity_total_instrumented" -gt 0 ]; then
     unity_total_pct=$(awk "BEGIN {printf \"%.3f\", ($unity_total_covered / $unity_total_instrumented) * 100}")
 fi
 
 coverage_total_pct="0.000"
-if [ $coverage_total_instrumented -gt 0 ]; then
+if [ "$coverage_total_instrumented" -gt 0 ]; then
     coverage_total_pct=$(awk "BEGIN {printf \"%.3f\", ($coverage_total_covered / $coverage_total_instrumented) * 100}")
 fi
 
 printf "%-37s %10s %12s %10s %10s %12s %10s\n" "TOTAL (${#all_files[@]} files)" \
-    "$(printf "%'d" $unity_total_covered)" \
-    "$(printf "%'d" $unity_total_instrumented)" \
+    "$(printf "%'d" "$unity_total_covered")" \
+    "$(printf "%'d" "$unity_total_instrumented")" \
     "${unity_total_pct}%" \
-    "$(printf "%'d" $coverage_total_covered)" \
-    "$(printf "%'d" $coverage_total_instrumented)" \
+    "$(printf "%'d" "$coverage_total_covered")" \
+    "$(printf "%'d" "$coverage_total_instrumented")" \
     "${coverage_total_pct}%"
 
 echo ""
