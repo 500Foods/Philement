@@ -27,15 +27,20 @@ calculate_unity_coverage() {
     local original_dir="$PWD"
     cd "$build_dir" || return 1
     
-    # Generate gcov files for all source files (place them in same directories as .gcno/.gcda files)
-    find . -name "*.gcno" | while IFS= read -r gcno_file; do
-        local gcno_dir
-        gcno_dir="$(dirname "$gcno_file")"
-        local original_pwd="$PWD"
-        cd "$gcno_dir" || continue
-        gcov "$(basename "$gcno_file")" > /dev/null 2>&1
-        cd "$original_pwd" || return 1
-    done
+    # Generate gcov files more efficiently using parallel processing
+    if command -v xargs >/dev/null 2>&1; then
+        # Use xargs for parallel processing if available (fixed conflicting options)
+        find . -name "*.gcno" -print0 | xargs -0 -P4 -I{} sh -c "
+            gcno_dir=\"\$(dirname '{}')\"
+            cd \"\$gcno_dir\" && gcov \"\$(basename '{}')\" >/dev/null 2>&1
+        "
+    else
+        # Fallback to optimized sequential processing
+        find . -name "*.gcno" -exec sh -c '
+            gcno_dir="$(dirname "$1")"
+            cd "$gcno_dir" && gcov "$(basename "$1")" >/dev/null 2>&1
+        ' _ {} \;
+    fi
     
     # Return to original directory
     cd "$original_dir" || return 1
@@ -50,13 +55,14 @@ calculate_unity_coverage() {
     local instrumented_files=0
     local covered_files=0
     
-    # Process each gcov file (in build directory)
+    # Build list of valid gcov files first, then process them all at once
+    local valid_gcov_files=()
     while IFS= read -r gcov_file; do
         if [[ -f "$gcov_file" ]]; then
             local filename
             filename=$(basename "$gcov_file")
             
-            # Skip external libraries and test framework files
+            # Skip external libraries and test framework files (these are not project source files)
             if [[ "$filename" == "unity.c.gcov" ]] || \
                [[ "$filename" == "jansson"*".gcov" ]] || \
                [[ "$filename" == "test_"*".gcov" ]] || \
@@ -72,35 +78,40 @@ calculate_unity_coverage() {
                 source_name="${filename%.gcov}"
                 test_path="$project_root/src/$source_name"
                 
+                # Use centralized .trial-ignore checking for consistency
                 if should_ignore_file "$test_path" "$project_root"; then
                     continue
                 fi
                 
-                # Extract lines executed and total lines from gcov file
-                local file_total
-                local file_covered
-                file_total=$(grep -c "^[[:space:]]*[0-9#-].*:" "$gcov_file" 2>/dev/null || echo "0")
-                file_covered=$(grep -c "^[[:space:]]*[1-9][0-9]*.*:" "$gcov_file" 2>/dev/null || echo "0")
-                
-                # Ensure values are clean integers (strip any whitespace/newlines)
-                file_total=$(echo "$file_total" | tr -d '\n\r\t ' | grep -o '[0-9]*' | head -1)
-                file_covered=$(echo "$file_covered" | tr -d '\n\r\t ' | grep -o '[0-9]*' | head -1)
-                
-                # Default to 0 if empty
-                file_total=${file_total:-0}
-                file_covered=${file_covered:-0}
-                
-                total_lines=$((total_lines + file_total))
-                covered_lines=$((covered_lines + file_covered))
+                valid_gcov_files+=("$gcov_file")
                 instrumented_files=$((instrumented_files + 1))
-                
-                # Count as covered if any lines were executed
-                if [[ $file_covered -gt 0 ]]; then
-                    covered_files=$((covered_files + 1))
-                fi
             fi
         fi
     done < <(find "$build_dir" -name "*.gcov" -type f 2>/dev/null)
+    
+    # Process all valid gcov files at once using cat for maximum efficiency
+    if [[ ${#valid_gcov_files[@]} -gt 0 ]]; then
+        local combined_data
+        combined_data=$(cat "${valid_gcov_files[@]}" 2>/dev/null | awk '
+            /^[[:space:]]*[0-9#-].*:/ { total++ }
+            /^[[:space:]]*[1-9][0-9]*.*:/ { covered++ }
+            END { print total "," covered }
+        ')
+        
+        total_lines="${combined_data%,*}"
+        covered_lines="${combined_data#*,}"
+        
+        # Default to 0 if parsing failed
+        total_lines=${total_lines:-0}
+        covered_lines=${covered_lines:-0}
+        
+        # Count covered files by checking each file individually for any coverage
+        for gcov_file in "${valid_gcov_files[@]}"; do
+            if grep -q "^[[:space:]]*[1-9][0-9]*.*:" "$gcov_file" 2>/dev/null; then
+                covered_files=$((covered_files + 1))
+            fi
+        done
+    fi
     
     # Calculate coverage percentage with 3 decimal places
     if [[ $total_lines -gt 0 ]]; then

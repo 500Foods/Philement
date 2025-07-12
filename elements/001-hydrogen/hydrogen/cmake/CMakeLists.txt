@@ -200,16 +200,64 @@ list(REMOVE_ITEM HYDROGEN_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/../src/api/system/system_service.c"
 )
 
-# Function to add an executable target with specific build configuration
+# Function to add an executable target with specific build configuration using clean directory structure
 function(hydrogen_add_executable_target target_name build_type extra_cflags extra_ldflags)
-    # Create the executable
-    add_executable(${target_name} ${HYDROGEN_SOURCES})
+    # Create object files for each hydrogen source file to maintain clean directory structure
+    set(TARGET_OBJECT_FILES "")
+    foreach(SOURCE_FILE ${HYDROGEN_SOURCES})
+        # Get relative path from src directory
+        file(RELATIVE_PATH REL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../src" ${SOURCE_FILE})
+        get_filename_component(OBJ_DIR ${REL_PATH} DIRECTORY)
+        get_filename_component(OBJ_BASENAME ${REL_PATH} NAME_WE)
+        
+        # Set up output directory structure to mirror source in build/[target]/src/
+        if(OBJ_DIR)
+            set(OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/${target_name}/src/${OBJ_DIR}")
+            set(OUTPUT_OBJ "${OUTPUT_DIR}/${OBJ_BASENAME}.o")
+        else()
+            set(OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/${target_name}/src")
+            set(OUTPUT_OBJ "${OUTPUT_DIR}/${OBJ_BASENAME}.o")
+        endif()
+        
+        # Prepare extra compile flags as a list
+        if(extra_cflags)
+            separate_arguments(extra_cflags_list UNIX_COMMAND "${extra_cflags}")
+        else()
+            set(extra_cflags_list "")
+        endif()
+        
+        # Create custom command to compile source file to object file
+        add_custom_command(
+            OUTPUT ${OUTPUT_OBJ}
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_DIR}
+            COMMAND ${CMAKE_C_COMPILER} 
+                ${HYDROGEN_BASE_CFLAGS}
+                ${extra_cflags_list}
+                -DVERSION='"${HYDROGEN_VERSION}"'
+                -DRELEASE='"${HYDROGEN_RELEASE}"'
+                -DBUILD_TYPE='"${build_type}"'
+                -I${CMAKE_CURRENT_SOURCE_DIR}/../src
+                ${JANSSON_CFLAGS}
+                ${MICROHTTPD_CFLAGS}
+                ${WEBSOCKETS_CFLAGS}
+                ${BROTLI_CFLAGS}
+                -c ${SOURCE_FILE} -o ${OUTPUT_OBJ}
+            DEPENDS ${SOURCE_FILE}
+            COMMENT "Compiling ${REL_PATH} to ${target_name} object file"
+        )
+        
+        list(APPEND TARGET_OBJECT_FILES ${OUTPUT_OBJ})
+    endforeach()
+
+    # Create target that depends on all object files
+    add_custom_target(${target_name}_objects DEPENDS ${TARGET_OBJECT_FILES})
+
+    # Create the executable using the individual object files
+    add_executable(${target_name} ${TARGET_OBJECT_FILES})
+    add_dependencies(${target_name} ${target_name}_objects)
     
     # Set include directories
     target_include_directories(${target_name} PRIVATE ${HYDROGEN_INCLUDE_DIRS})
-    
-    # Set base compile options
-    target_compile_options(${target_name} PRIVATE ${HYDROGEN_BASE_CFLAGS})
     
     # Add extra compile flags if provided
     if(extra_cflags)
@@ -236,47 +284,142 @@ function(hydrogen_add_executable_target target_name build_type extra_cflags extr
     # Add garbage collection flags
     target_link_options(${target_name} PRIVATE -Wl,--gc-sections)
     
-    # Generate map file
-    target_link_options(${target_name} PRIVATE -Wl,-Map=${CMAKE_CURRENT_BINARY_DIR}/${target_name}.map)
+    # Generate map file in target directory
+    target_link_options(${target_name} PRIVATE -Wl,-Map=${CMAKE_CURRENT_BINARY_DIR}/${target_name}/${target_name}.map)
     
     # Set output name and properties
+    # Binary names should have hydrogen_ prefix except for regular which is just "hydrogen"
+    if(${target_name} STREQUAL "regular")
+        set(BINARY_NAME "hydrogen")
+    else()
+        set(BINARY_NAME "hydrogen_${target_name}")
+    endif()
+    
     set_target_properties(${target_name} PROPERTIES
-        OUTPUT_NAME ${target_name}
+        OUTPUT_NAME ${BINARY_NAME}
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..
+        LINKER_LANGUAGE C
     )
     
     # Add custom command to show build completion
     add_custom_command(TARGET ${target_name} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E echo "${GREEN}${PASS} ${BOLD}${build_type} build${NORMAL} ${GREEN}completed successfully: ${target_name}${NORMAL}"
+        COMMAND ${CMAKE_COMMAND} -E echo "${CYAN}${INFO} Object files located in: ${CMAKE_CURRENT_BINARY_DIR}/${target_name}/src/${NORMAL}"
         VERBATIM
     )
 endfunction()
 
 # Default build target
-hydrogen_add_executable_target(hydrogen "Regular" "-O2 -g" "-no-pie")
+hydrogen_add_executable_target(regular "Regular" "-O2 -g" "-no-pie")
 
 # Debug build with AddressSanitizer
-hydrogen_add_executable_target(hydrogen_debug "Debug" 
-    "-fsanitize=address,leak -fno-omit-frame-pointer" 
+hydrogen_add_executable_target(debug "Debug" 
+    "-g -fsanitize=address,leak -fno-omit-frame-pointer" 
     "-lasan -fsanitize=address,leak -no-pie"
 )
 
 # Valgrind-compatible build
-hydrogen_add_executable_target(hydrogen_valgrind "Valgrind-Compatible" 
-    "-O0" 
+hydrogen_add_executable_target(valgrind "Valgrind-Compatible" 
+    "-O0 -g" 
     "-no-pie"
 )
 
 # Performance-optimized build
-hydrogen_add_executable_target(hydrogen_perf "Performance" 
-    "-O3 -march=native -ffast-math -finline-functions -funroll-loops -DNDEBUG" 
+hydrogen_add_executable_target(perf "Performance" 
+    "-O3 -g -march=native -ffast-math -finline-functions -funroll-loops -DNDEBUG" 
     "-flto=auto -no-pie"
 )
 
-# Coverage build for unit testing with gcov
-hydrogen_add_executable_target(hydrogen_coverage "Coverage" 
-    "-O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer" 
-    "--coverage -lgcov -no-pie"
+# Coverage build for unit testing with gcov - uses clean build/coverage/src directory structure like Unity tests
+# Create object files for each hydrogen source file to maintain clean directory structure
+set(HYDROGEN_COVERAGE_OBJECT_FILES "")
+foreach(SOURCE_FILE ${HYDROGEN_SOURCES})
+    # Get relative path from src directory
+    file(RELATIVE_PATH REL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../src" ${SOURCE_FILE})
+    get_filename_component(OBJ_DIR ${REL_PATH} DIRECTORY)
+    get_filename_component(OBJ_BASENAME ${REL_PATH} NAME_WE)
+    
+    # Set up output directory structure to mirror source in build/coverage/src/
+    if(OBJ_DIR)
+        set(OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/coverage/src/${OBJ_DIR}")
+        set(OUTPUT_OBJ "${OUTPUT_DIR}/${OBJ_BASENAME}.o")
+    else()
+        set(OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/coverage/src")
+        set(OUTPUT_OBJ "${OUTPUT_DIR}/${OBJ_BASENAME}.o")
+    endif()
+    
+    # Create custom command to compile source file to object file
+    add_custom_command(
+        OUTPUT ${OUTPUT_OBJ}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_DIR}
+        COMMAND ${CMAKE_C_COMPILER} 
+            ${HYDROGEN_BASE_CFLAGS}
+            -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer
+            -DVERSION='"${HYDROGEN_VERSION}"'
+            -DRELEASE='"${HYDROGEN_RELEASE}"'
+            -DBUILD_TYPE='"Coverage"'
+            -I${CMAKE_CURRENT_SOURCE_DIR}/../src
+            ${JANSSON_CFLAGS}
+            ${MICROHTTPD_CFLAGS}
+            ${WEBSOCKETS_CFLAGS}
+            ${BROTLI_CFLAGS}
+            -c ${SOURCE_FILE} -o ${OUTPUT_OBJ}
+        DEPENDS ${SOURCE_FILE}
+        COMMENT "Compiling ${REL_PATH} to coverage object file"
+    )
+    
+    list(APPEND HYDROGEN_COVERAGE_OBJECT_FILES ${OUTPUT_OBJ})
+endforeach()
+
+# Create target that depends on all coverage object files
+add_custom_target(hydrogen_coverage_objects DEPENDS ${HYDROGEN_COVERAGE_OBJECT_FILES})
+
+# Create the coverage executable using the individual object files
+add_executable(hydrogen_coverage ${HYDROGEN_COVERAGE_OBJECT_FILES})
+add_dependencies(hydrogen_coverage hydrogen_coverage_objects)
+target_link_libraries(hydrogen_coverage PRIVATE ${HYDROGEN_BASE_LIBS})
+target_link_options(hydrogen_coverage PRIVATE --coverage -lgcov -no-pie)
+set_target_properties(hydrogen_coverage PROPERTIES
+    OUTPUT_NAME hydrogen_coverage
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..
+    LINKER_LANGUAGE C
+)
+
+# Add custom command to show build completion for coverage target
+add_custom_command(TARGET hydrogen_coverage POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E echo "${GREEN}${PASS} ${BOLD}Coverage build${NORMAL} ${GREEN}completed successfully: hydrogen_coverage${NORMAL}"
+    COMMAND ${CMAKE_COMMAND} -E echo "${CYAN}${INFO} Coverage files located in: ${CMAKE_CURRENT_BINARY_DIR}/coverage/src/${NORMAL}"
+    VERBATIM
+)
+
+# Coverage build with payload embedding (similar to release but without UPX compression)
+# This matches the coverage binary behavior for comprehensive testing
+add_custom_target(coverage
+    DEPENDS hydrogen_coverage payload
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Building coverage executable with payload..."
+    # Build the coverage executable
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target hydrogen_coverage
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Stripping debug information from coverage executable..."
+    COMMAND strip -s ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Creating copy for payload embedding..."
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage_temp
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Appending encrypted payload to coverage executable..."
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/embed_payload.sh ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage_temp ${CMAKE_CURRENT_SOURCE_DIR}/../payloads/payload.tar.br.enc
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage_temp ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage
+    COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage_temp
+    COMMAND ${CMAKE_COMMAND} -E echo "✅ Payload embedded successfully"
+    COMMAND ${CMAKE_COMMAND} -E true
+    COMMAND ${CMAKE_COMMAND} -E echo "✅ Coverage build with encrypted payload appended successfully!"
+    COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Creating coverage build with payload (no compression)"
+)
+
+# Clean coverage executables target (used by coverage with payload)
+add_custom_target(clean_coverage_executables
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Cleaning previous coverage executables..."
+    COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage
+    COMMENT "Cleaning previous coverage executables"
 )
 
 # Payload generation target
@@ -305,20 +448,20 @@ add_custom_target(hydrogen_release
     DEPENDS clean_executables payload
     COMMAND ${CMAKE_COMMAND} -E echo "🛈  Building release executable..."
     # Build the release executable
-    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target hydrogen_release_exe
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target release
     COMMAND ${CMAKE_COMMAND} -E echo "🛈  Stripping debug information from release executable..."
-    COMMAND strip -s ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_release_exe
-    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Copying release executable..."
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_release_exe ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_release
-    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Applying UPX compression to release executable..."
-    COMMAND upx --best ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_release || echo "⚠️ UPX compression failed or not available"
-    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Creating UPX-compressed copy as hydrogen_naked..."
+    COMMAND strip -s ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_release
+    COMMAND ${CMAKE_COMMAND} -E echo "STEP 1: Moving hydrogen_release to hydrogen_naked"
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_release ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_naked
-    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Appending encrypted payload to release executable..."
+    COMMAND ${CMAKE_COMMAND} -E echo "STEP 2: UPX compress hydrogen_naked"
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/apply_upx.sh ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_naked
+    COMMAND ${CMAKE_COMMAND} -E echo "STEP 3: Copy hydrogen_naked to hydrogen_release"
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_naked ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_release
+    COMMAND ${CMAKE_COMMAND} -E echo "STEP 4: Embed payload in hydrogen_release - hydrogen_naked untouched"
     COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/embed_payload.sh ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_release ${CMAKE_CURRENT_SOURCE_DIR}/../payloads/payload.tar.br.enc
+    COMMAND ${CMAKE_COMMAND} -E echo "FINAL CHECK:"
+    COMMAND ls -lh ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_naked ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_release
     COMMAND ${CMAKE_COMMAND} -E echo "✅ Payload embedded successfully"
-    COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_release_exe
-    COMMAND ${CMAKE_COMMAND} -E echo "🛈 Removed intermediate hydrogen_release_exe"
     COMMAND ${CMAKE_COMMAND} -E true
     COMMAND ${CMAKE_COMMAND} -E echo "✅ Release build with encrypted payload appended successfully!"
     COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
@@ -327,47 +470,11 @@ add_custom_target(hydrogen_release
 )
 
 # Internal target for building just the release executable (without payload processing)
-hydrogen_add_executable_target(hydrogen_release_exe "Release"
-    "-O2 -s -DNDEBUG -march=x86-64 -flto=auto -fstack-protector -fno-strict-aliasing"
-    "-flto=auto -fno-strict-aliasing"
+hydrogen_add_executable_target(release "Release"
+    "-Os -s -DNDEBUG -march=x86-64 -flto=auto -fno-stack-protector -fno-asynchronous-unwind-tables -ffunction-sections -fdata-sections"
+    "-flto=auto -Wl,--gc-sections -Wl,--strip-all"
 )
 
-# Coverage build with payload embedding (similar to release but without UPX compression)
-# This matches the coverage binary behavior for comprehensive testing
-add_custom_target(hydrogen_coverage_with_payload
-    DEPENDS clean_coverage_executables payload
-    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Building coverage executable with payload..."
-    # Build the coverage executable
-    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target hydrogen_coverage_exe
-    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Stripping debug information from coverage executable..."
-    COMMAND strip -s ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage_exe
-    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Copying coverage executable..."
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage_exe ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage
-    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Appending encrypted payload to coverage executable..."
-    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/embed_payload.sh ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage ${CMAKE_CURRENT_SOURCE_DIR}/../payloads/payload.tar.br.enc
-    COMMAND ${CMAKE_COMMAND} -E echo "✅ Payload embedded successfully"
-    COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage_exe
-    COMMAND ${CMAKE_COMMAND} -E echo "🛈 Removed intermediate hydrogen_coverage_exe"
-    COMMAND ${CMAKE_COMMAND} -E true
-    COMMAND ${CMAKE_COMMAND} -E echo "✅ Coverage build with encrypted payload appended successfully!"
-    COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMENT "Creating coverage build with payload (no compression)"
-)
-
-# Internal target for building just the coverage executable (without payload processing)
-hydrogen_add_executable_target(hydrogen_coverage_exe "Coverage"
-    "-O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer"
-    "--coverage -lgcov"
-)
-
-# Clean coverage executables target (used by coverage with payload)
-add_custom_target(clean_coverage_executables
-    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Cleaning previous coverage executables..."
-    COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage
-    COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage_exe
-    COMMENT "Cleaning previous coverage executables"
-)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Example Programs for Hydrogen OIDC Client
@@ -471,16 +578,16 @@ add_custom_target(all_examples
 
 # Build all variants with parallel execution
 add_custom_target(all_variants
-    DEPENDS hydrogen hydrogen_debug hydrogen_valgrind hydrogen_perf hydrogen_coverage_with_payload hydrogen_release payload
+    DEPENDS regular debug valgrind perf hydrogen_coverage coverage hydrogen_release payload
     COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
     COMMAND ${CMAKE_COMMAND} -E echo "🛈 Building all variants in parallel where possible..."
-    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target hydrogen hydrogen_debug hydrogen_valgrind hydrogen_perf hydrogen_release payload --parallel
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target regular debug valgrind perf hydrogen_coverage coverage hydrogen_release payload --parallel
     COMMAND ${CMAKE_COMMAND} -E echo "✅ All variants built successfully!"
     COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
-    COMMAND ${CMAKE_COMMAND} -E echo "  Default:     $<TARGET_FILE:hydrogen>"
-    COMMAND ${CMAKE_COMMAND} -E echo "  Debug:       $<TARGET_FILE:hydrogen_debug>"
-    COMMAND ${CMAKE_COMMAND} -E echo "  Valgrind:    $<TARGET_FILE:hydrogen_valgrind>"
-    COMMAND ${CMAKE_COMMAND} -E echo "  Performance: $<TARGET_FILE:hydrogen_perf>"
+    COMMAND ${CMAKE_COMMAND} -E echo "  Default:     $<TARGET_FILE:regular>"
+    COMMAND ${CMAKE_COMMAND} -E echo "  Debug:       $<TARGET_FILE:debug>"
+    COMMAND ${CMAKE_COMMAND} -E echo "  Valgrind:    $<TARGET_FILE:valgrind>"
+    COMMAND ${CMAKE_COMMAND} -E echo "  Performance: $<TARGET_FILE:perf>"
     COMMAND ${CMAKE_COMMAND} -E echo "  Coverage:    ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage"
     COMMAND ${CMAKE_COMMAND} -E echo "  Release:     ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_release"
     COMMAND ${CMAKE_COMMAND} -E echo "  Naked:       ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_naked"
@@ -505,12 +612,11 @@ add_custom_target(clean_all
 )
 
 add_custom_target(cleanish
-    COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:hydrogen>
-    COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:hydrogen_debug>
-    COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:hydrogen_valgrind>
-    COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:hydrogen_perf>
+    COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:regular>
+    COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:debug>
+    COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:valgrind>
+    COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:perf>
     COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:hydrogen_coverage>
-    COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage
     COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:auth_code_flow>
     COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:client_credentials>
     COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:password_flow>
@@ -519,9 +625,8 @@ add_custom_target(cleanish
     COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:password_flow_debug>
     COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_BINARY_DIR}/*.map
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_CURRENT_SOURCE_DIR}/../build
-    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_CURRENT_SOURCE_DIR}/../build_unity_tests
-    COMMAND ${CMAKE_COMMAND} -E echo "✅ Cleanish completed successfully - preserved hydrogen_release and hydrogen_naked, removed build directories"
-    COMMENT "Cleaning build artifacts (preserving release executables)"
+    COMMAND ${CMAKE_COMMAND} -E echo "✅ Cleanish completed successfully - preserved hydrogen_release, hydrogen_naked, and hydrogen_coverage, removed build directories"
+    COMMENT "Cleaning build artifacts (preserving release executables and coverage)"
 )
 
 # Help target
@@ -535,6 +640,7 @@ add_custom_target(cmake_help
     COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}hydrogen_valgrind${NORMAL} - Build optimized for Valgrind analysis"
     COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}hydrogen_perf${NORMAL}     - Build with aggressive optimizations"
     COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}hydrogen_coverage${NORMAL} - Build with gcov coverage instrumentation"
+    COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}coverage${NORMAL}          - Build coverage executable with embedded payload"
     COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}hydrogen_release${NORMAL}  - Build stripped, compressed executable"
     COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}payload${NORMAL}           - Generate OpenAPI specs and payload"
     COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}all_variants${NORMAL}      - Build all variants"
@@ -559,9 +665,10 @@ add_custom_target(cmake_help
 # Unity tests target
 add_custom_target(unity_tests
     COMMAND ${CMAKE_COMMAND} -E echo "🛈  Building Unity tests with coverage instrumentation..."
-    COMMAND ${CMAKE_COMMAND} -S ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity -B ${CMAKE_CURRENT_SOURCE_DIR}/../build_unity
-    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_SOURCE_DIR}/../build_unity
+    COMMAND ${CMAKE_COMMAND} -S ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity -B ${CMAKE_CURRENT_SOURCE_DIR}/../build/unity
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_SOURCE_DIR}/../build/unity
     COMMAND ${CMAKE_COMMAND} -E echo "✅ Unity tests built successfully"
+    COMMAND ${CMAKE_COMMAND} -E echo "${CYAN}${INFO} Unity coverage files located in: ${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src/${NORMAL}"
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Building Unity tests with coverage instrumentation"
 )
@@ -601,7 +708,7 @@ set_tests_properties(
 )
 
 # Install targets
-install(TARGETS hydrogen hydrogen_debug hydrogen_valgrind hydrogen_perf hydrogen_release_exe
+install(TARGETS regular debug valgrind perf release
     RUNTIME DESTINATION bin
     COMPONENT Runtime
 )

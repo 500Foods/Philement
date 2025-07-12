@@ -31,7 +31,7 @@ validate_coverage_consistency() {
     
     # Find potential build directories to check for gcov files
     local build_dirs=()
-    build_dirs+=("$project_root/build_unity")
+    build_dirs+=("$project_root/build/unity")
     build_dirs+=("$project_root/build")
     
     # Analyze each gcov file for detailed statistics from build directories

@@ -230,9 +230,9 @@ if [ $EXIT_CODE -eq 0 ]; then
             fi
             
             if [ "$DIRECT_LEAKS" -eq 0 ] && [ "$INDIRECT_LEAKS" -eq 0 ]; then
-                echo "✅ No memory leaks detected!"
+                echo "No memory leaks detected!"
             else
-                echo "❌ Memory leaks detected - see full report for details"
+                echo "Memory leaks detected - see full report for details"
             fi
         } > "$LEAK_SUMMARY"
 
