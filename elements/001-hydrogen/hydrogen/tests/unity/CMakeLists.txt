@@ -30,11 +30,33 @@ pkg_check_modules(BROTLI REQUIRED libbrotlienc libbrotlidec)
 find_package(OpenSSL REQUIRED)
 find_package(Threads REQUIRED)
 
-# Include directories for dependencies
-include_directories(${JANSSON_INCLUDE_DIRS})
-include_directories(${MICROHTTPD_INCLUDE_DIRS})
-include_directories(${WEBSOCKETS_INCLUDE_DIRS})
-include_directories(${BROTLI_INCLUDE_DIRS})
+# Function to filter out non-include directories from pkg-config results
+function(filter_include_dirs var_name input_dirs)
+    set(filtered_dirs "")
+    foreach(dir ${input_dirs})
+        # Only add directories that exist and are actual directories
+        if(EXISTS "${dir}" AND IS_DIRECTORY "${dir}")
+            # Skip directories that are clearly for linking (contain .so files, .a files, etc.)
+            file(GLOB linker_files "${dir}/*.so*" "${dir}/*.a" "${dir}/*.dylib")
+            if(NOT linker_files)
+                list(APPEND filtered_dirs "${dir}")
+            endif()
+        endif()
+    endforeach()
+    set(${var_name} "${filtered_dirs}" PARENT_SCOPE)
+endfunction()
+
+# Filter include directories for dependencies to avoid linker warnings
+filter_include_dirs(JANSSON_FILTERED_INCLUDES "${JANSSON_INCLUDE_DIRS}")
+filter_include_dirs(MICROHTTPD_FILTERED_INCLUDES "${MICROHTTPD_INCLUDE_DIRS}")
+filter_include_dirs(WEBSOCKETS_FILTERED_INCLUDES "${WEBSOCKETS_INCLUDE_DIRS}")
+filter_include_dirs(BROTLI_FILTERED_INCLUDES "${BROTLI_INCLUDE_DIRS}")
+
+# Include directories for dependencies (filtered)
+include_directories(${JANSSON_FILTERED_INCLUDES})
+include_directories(${MICROHTTPD_FILTERED_INCLUDES})
+include_directories(${WEBSOCKETS_FILTERED_INCLUDES})
+include_directories(${BROTLI_FILTERED_INCLUDES})
 
 # Source files for Unity framework
 set(UNITY_SOURCES
@@ -91,6 +113,21 @@ message(STATUS "Unity tests: Processing ${SOURCE_COUNT} source files after .tria
 # For comprehensive coverage, we include all source files but may need to provide
 # stub implementations for functions that require complex initialization
 
+# Build include directory flags from filtered directories
+set(FILTERED_INCLUDE_FLAGS "")
+foreach(dir ${JANSSON_FILTERED_INCLUDES})
+    list(APPEND FILTERED_INCLUDE_FLAGS "-I${dir}")
+endforeach()
+foreach(dir ${MICROHTTPD_FILTERED_INCLUDES})
+    list(APPEND FILTERED_INCLUDE_FLAGS "-I${dir}")
+endforeach()
+foreach(dir ${WEBSOCKETS_FILTERED_INCLUDES})
+    list(APPEND FILTERED_INCLUDE_FLAGS "-I${dir}")
+endforeach()
+foreach(dir ${BROTLI_FILTERED_INCLUDES})
+    list(APPEND FILTERED_INCLUDE_FLAGS "-I${dir}")
+endforeach()
+
 # Create object files for each hydrogen source file to maintain directory structure
 set(HYDROGEN_OBJECT_FILES "")
 foreach(SOURCE_FILE ${HYDROGEN_SOURCES})
@@ -123,10 +160,7 @@ foreach(SOURCE_FILE ${HYDROGEN_SOURCES})
             -DBUILD_TYPE='"${HYDROGEN_BUILD_TYPE}"'
             -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer
             -I${CMAKE_CURRENT_SOURCE_DIR}/../../src
-            -I${JANSSON_INCLUDE_DIRS}
-            -I${MICROHTTPD_INCLUDE_DIRS}
-            -I${WEBSOCKETS_INCLUDE_DIRS}
-            -I${BROTLI_INCLUDE_DIRS}
+            ${FILTERED_INCLUDE_FLAGS}
             -c ${SOURCE_FILE} -o ${OUTPUT_OBJ}
         DEPENDS ${SOURCE_FILE}
         COMMENT "Compiling ${REL_PATH} to object file"

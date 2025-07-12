@@ -237,52 +237,19 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [test_32_system_endpoints.md](tests/docs/test_32_system_endpoints.md): System endpoint functionality tests
 - [test_34_swagger.md](tests/docs/test_34_swagger.md): Swagger documentation tests
 - [test_03_code_size.md](tests/docs/test_03_code_size.md): Code size analysis and metrics
-- [test_04_cppcheck.md](tests/docs/test_04_cppcheck.md): C/C++ static analysis tests
-- [test_05_shellcheck.md](tests/docs/test_05_shellcheck.md): Shell script linting tests
 - [test_06_check_links.md](tests/docs/test_06_check_links.md): Link validation tests
 - [test_10_leaks_like_a_sieve.md](tests/docs/test_10_leaks_like_a_sieve.md): Memory leak detection tests
 - [test_11_unity.md](tests/docs/test_11_unity.md): Unity testing framework integration
+- [test_91_cppcheck.md](tests/docs/test_91_cppcheck.md): C/C++ static analysis tests
+- [test_92_shellcheck.md](tests/docs/test_92_shellcheck.md): Shell script linting tests
 - [test_94_eslint.md](tests/docs/test_94_eslint.md): JavaScript linting tests
 - [test_95_stylelint.md](tests/docs/test_95_stylelint.md): CSS linting tests
 - [test_96_htmlhint.md](tests/docs/test_96_htmlhint.md): HTML validation tests
 - [test_97_jsonlint.md](tests/docs/test_97_jsonlint.md): JSON validation tests
 - [test_98_markdownlint.md](tests/docs/test_98_markdownlint.md): Markdown linting tests
-- [test_99_cleanup.md](tests/docs/test_99_cleanup.md): Build system cleanup tests
+- [test_99_coverage.md](tests/docs/test_99_coverage.md): Build system coverage information
 
 ### Folder: /tests/results
 
 - [latest_test_results.md](tests/results/latest_test_results.md): Links valid: Yes
 - [repository_info.md](tests/results/repository_info.md): Links valid: Yes
-
-### Folder: /tests/unity
-
-Unity testing framework integration
-
-## Folder: tests/unity/framework/Unity
-
-- [README.md](tests/unity/framework/Unity/README.md)
-
-## Folder: tests/unity/framework/Unity/docs
-
-- [CODE_OF_CONDUCT.md](tests/unity/framework/Unity/docs/CODE_OF_CONDUCT.md)
-- [CONTRIBUTING.md](tests/unity/framework/Unity/docs/CONTRIBUTING.md)
-- [MesonGeneratorRunner.md](tests/unity/framework/Unity/docs/MesonGeneratorRunner.md)
-- [ThrowTheSwitchCodingStandard.md](tests/unity/framework/Unity/docs/ThrowTheSwitchCodingStandard.md)
-- [UnityAssertionsReference.md](tests/unity/framework/Unity/docs/UnityAssertionsReference.md)
-- [UnityChangeLog.md](tests/unity/framework/Unity/docs/UnityChangeLog.md)
-- [UnityConfigurationGuide.md](tests/unity/framework/Unity/docs/UnityConfigurationGuide.md)
-- [UnityGettingStartedGuide.md](tests/unity/framework/Unity/docs/UnityGettingStartedGuide.md)
-- [UnityHelperScriptsGuide.md](tests/unity/framework/Unity/docs/UnityHelperScriptsGuide.md)
-- [UnityKnownIssues.md](tests/unity/framework/Unity/docs/UnityKnownIssues.md)
-
-## Folder: tests/unity/framework/Unity/extras/bdd
-
-- [readme.md](tests/unity/framework/Unity/extras/bdd/readme.md)
-
-## Folder: tests/unity/framework/Unity/extras/fixture
-
-- [readme.md](tests/unity/framework/Unity/extras/fixture/readme.md)
-
-## Folder: tests/unity/framework/Unity/extras/memory
-
-- [readme.md](tests/unity/framework/Unity/extras/memory/readme.md)
