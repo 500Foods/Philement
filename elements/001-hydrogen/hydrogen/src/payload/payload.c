@@ -62,7 +62,23 @@ bool check_payload_exists(const char *marker, size_t *size) {
     if (file_data == MAP_FAILED) return false;
     
     bool result = false;
-    const char *marker_pos = memmem(file_data, st.st_size, marker, strlen(marker));
+    
+    // Find the LAST occurrence of the marker (the real payload marker)
+    const char *marker_pos = NULL;
+    char *search_start = (char*)file_data;
+    size_t remaining_size = st.st_size;
+    
+    while (remaining_size >= strlen(marker)) {
+        char *found = memmem(search_start, remaining_size, marker, strlen(marker));
+        if (!found) {
+            break;
+        }
+        marker_pos = found;  // Keep track of the last found occurrence
+        
+        // Move search position past this marker
+        search_start = found + strlen(marker);
+        remaining_size = st.st_size - (search_start - (char*)file_data);
+    }
     
     if (marker_pos && st.st_size > 0) {
         size_t file_size = (size_t)st.st_size;
@@ -211,8 +227,23 @@ bool extract_payload(const char *executable_path, const AppConfig *config,
         return false;
     }
 
-    // Search for marker
-    const char *marker_pos = memmem(file_data, st.st_size, marker, strlen(marker));
+    // Find the LAST occurrence of the marker (the real payload marker)
+    const char *marker_pos = NULL;
+    char *search_start = (char*)file_data;
+    size_t remaining_size = st.st_size;
+    
+    while (remaining_size >= strlen(marker)) {
+        char *found = memmem(search_start, remaining_size, marker, strlen(marker));
+        if (!found) {
+            break;
+        }
+        marker_pos = found;  // Keep track of the last found occurrence
+        
+        // Move search position past this marker
+        search_start = found + strlen(marker);
+        remaining_size = st.st_size - (search_start - (char*)file_data);
+    }
+    
     if (!marker_pos) {
         munmap(file_data, st.st_size);
         log_this("Payload", "No payload marker found in executable", LOG_LEVEL_STATE, NULL);

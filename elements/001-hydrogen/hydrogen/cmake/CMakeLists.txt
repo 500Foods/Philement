@@ -7,6 +7,7 @@
 # - Debug: Build with AddressSanitizer for debugging memory issues
 # - Valgrind: Build optimized for memory analysis with Valgrind
 # - Performance: Highly optimized build for maximum performance
+# - Coverage: Build with gcov coverage instrumentation for unit testing
 # - Release: Stripped, compressed build with embedded encrypted payload
 # - Examples: Builds for OIDC client examples (Authorization Code, Client Credentials, Password flows)
 #
@@ -23,6 +24,7 @@
 # cmake --build . --target hydrogen_debug    : Builds with AddressSanitizer enabled for catching memory issues
 # cmake --build . --target hydrogen_valgrind : Builds with -O0 and full debug info for optimal Valgrind analysis
 # cmake --build . --target hydrogen_perf     : Builds with aggressive optimizations (-O3, native arch, etc.) for maximum performance
+# cmake --build . --target hydrogen_coverage : Builds with gcov coverage instrumentation for unit testing
 # cmake --build . --target hydrogen_release  : Creates stripped, compressed executable with embedded encrypted payload
 # cmake --build . --target payload           : Generates OpenAPI specs and packages payload contents
 # cmake --build . --target all_variants      : Builds all variants (default, debug, valgrind, perf, release) and generates payload
@@ -271,6 +273,12 @@ hydrogen_add_executable_target(hydrogen_perf "Performance"
     "-flto=auto -no-pie"
 )
 
+# Coverage build for unit testing with gcov
+hydrogen_add_executable_target(hydrogen_coverage "Coverage" 
+    "-O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer -fprofile-dir=./gcov" 
+    "--coverage -lgcov -no-pie"
+)
+
 # Payload generation target
 add_custom_target(payload
     COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
@@ -319,9 +327,46 @@ add_custom_target(hydrogen_release
 )
 
 # Internal target for building just the release executable (without payload processing)
-hydrogen_add_executable_target(hydrogen_release_exe "Release" 
-    "-O2 -s -DNDEBUG -march=x86-64 -flto=auto -fstack-protector -fno-strict-aliasing" 
+hydrogen_add_executable_target(hydrogen_release_exe "Release"
+    "-O2 -s -DNDEBUG -march=x86-64 -flto=auto -fstack-protector -fno-strict-aliasing"
     "-flto=auto -fno-strict-aliasing"
+)
+
+# Coverage build with payload embedding (similar to release but without UPX compression)
+# This matches the coverage binary behavior for comprehensive testing
+add_custom_target(hydrogen_coverage_with_payload
+    DEPENDS clean_coverage_executables payload
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Building coverage executable with payload..."
+    # Build the coverage executable
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target hydrogen_coverage_exe
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Stripping debug information from coverage executable..."
+    COMMAND strip -s ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage_exe
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Copying coverage executable..."
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage_exe ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Appending encrypted payload to coverage executable..."
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/embed_payload.sh ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage ${CMAKE_CURRENT_SOURCE_DIR}/../payloads/payload.tar.br.enc
+    COMMAND ${CMAKE_COMMAND} -E echo "✅ Payload embedded successfully"
+    COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage_exe
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈 Removed intermediate hydrogen_coverage_exe"
+    COMMAND ${CMAKE_COMMAND} -E true
+    COMMAND ${CMAKE_COMMAND} -E echo "✅ Coverage build with encrypted payload appended successfully!"
+    COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Creating coverage build with payload (no compression)"
+)
+
+# Internal target for building just the coverage executable (without payload processing)
+hydrogen_add_executable_target(hydrogen_coverage_exe "Coverage"
+    "-O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer"
+    "--coverage -lgcov"
+)
+
+# Clean coverage executables target (used by coverage with payload)
+add_custom_target(clean_coverage_executables
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Cleaning previous coverage executables..."
+    COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage
+    COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage_exe
+    COMMENT "Cleaning previous coverage executables"
 )
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -426,7 +471,7 @@ add_custom_target(all_examples
 
 # Build all variants with parallel execution
 add_custom_target(all_variants
-    DEPENDS hydrogen hydrogen_debug hydrogen_valgrind hydrogen_perf hydrogen_release payload
+    DEPENDS hydrogen hydrogen_debug hydrogen_valgrind hydrogen_perf hydrogen_coverage_with_payload hydrogen_release payload
     COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
     COMMAND ${CMAKE_COMMAND} -E echo "🛈 Building all variants in parallel where possible..."
     COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target hydrogen hydrogen_debug hydrogen_valgrind hydrogen_perf hydrogen_release payload --parallel
@@ -436,6 +481,7 @@ add_custom_target(all_variants
     COMMAND ${CMAKE_COMMAND} -E echo "  Debug:       $<TARGET_FILE:hydrogen_debug>"
     COMMAND ${CMAKE_COMMAND} -E echo "  Valgrind:    $<TARGET_FILE:hydrogen_valgrind>"
     COMMAND ${CMAKE_COMMAND} -E echo "  Performance: $<TARGET_FILE:hydrogen_perf>"
+    COMMAND ${CMAKE_COMMAND} -E echo "  Coverage:    ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage"
     COMMAND ${CMAKE_COMMAND} -E echo "  Release:     ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_release"
     COMMAND ${CMAKE_COMMAND} -E echo "  Naked:       ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_naked"
     COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
@@ -463,6 +509,8 @@ add_custom_target(cleanish
     COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:hydrogen_debug>
     COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:hydrogen_valgrind>
     COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:hydrogen_perf>
+    COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:hydrogen_coverage>
+    COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage
     COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:auth_code_flow>
     COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:client_credentials>
     COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:password_flow>
@@ -486,6 +534,7 @@ add_custom_target(cmake_help
     COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}hydrogen_debug${NORMAL}    - Build with AddressSanitizer for debugging"
     COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}hydrogen_valgrind${NORMAL} - Build optimized for Valgrind analysis"
     COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}hydrogen_perf${NORMAL}     - Build with aggressive optimizations"
+    COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}hydrogen_coverage${NORMAL} - Build with gcov coverage instrumentation"
     COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}hydrogen_release${NORMAL}  - Build stripped, compressed executable"
     COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}payload${NORMAL}           - Generate OpenAPI specs and payload"
     COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}all_variants${NORMAL}      - Build all variants"
@@ -507,6 +556,16 @@ add_custom_target(cmake_help
     COMMENT "Displaying help information"
 )
 
+# Unity tests target
+add_custom_target(unity_tests
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Building Unity tests with coverage instrumentation..."
+    COMMAND ${CMAKE_COMMAND} -S ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity -B ${CMAKE_CURRENT_SOURCE_DIR}/../build_unity
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_SOURCE_DIR}/../build_unity
+    COMMAND ${CMAKE_COMMAND} -E echo "✅ Unity tests built successfully"
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Building Unity tests with coverage instrumentation"
+)
+
 # Enable testing
 enable_testing()
 
@@ -523,6 +582,11 @@ add_test(NAME hydrogen_compilation_test
 
 add_test(NAME hydrogen_dependencies_test
     COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../tests/test_16_library_dependencies.sh
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+add_test(NAME hydrogen_unity_tests
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../tests/test_11_unity.sh
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 

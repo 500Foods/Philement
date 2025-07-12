@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Test: Build System Cleanup
-# Performs comprehensive build cleanup using CMake
+# Test: Build System Cleanup and Coverage Collection
+# Performs comprehensive build cleanup using CMake and collects blackbox test coverage
 
 # Test configuration
-TEST_NAME="Build System Cleanup"
-SCRIPT_VERSION="1.0.0"
+TEST_NAME="Build System Cleanup and Coverage Collection"
+SCRIPT_VERSION="2.0.0"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -19,10 +19,12 @@ fi
 source "$SCRIPT_DIR/lib/file_utils.sh"
 # shellcheck source=tests/lib/framework.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/framework.sh"
+# shellcheck source=tests/lib/coverage.sh # Resolve path statically
+source "$SCRIPT_DIR/lib/coverage.sh"
 
 # Test configuration
 EXIT_CODE=0
-TOTAL_SUBTESTS=1
+TOTAL_SUBTESTS=5
 PASS_COUNT=0
 
 # Auto-extract test number and set up environment
@@ -44,50 +46,151 @@ if ! navigate_to_project_root "$SCRIPT_DIR"; then
     exit 1
 fi
 
-# Subtest 1: Run CMake cleanish target for the Hydrogen project
+# Subtest 1: Collect Unity Test Coverage
 next_subtest
-print_subtest "CMake Clean Build Artifacts"
+print_subtest "Collect Unity Test Coverage"
 
-print_message "Running comprehensive build cleanup for Hydrogen Project"
+print_message "Collecting coverage data from Unity tests..."
 
-if [ -d "build" ]; then
-    TEMP_LOG="$RESULTS_DIR/cmake_clean_hydrogen_${TIMESTAMP}.log"
+# Find the Unity build directory
+HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
+UNITY_BUILD_DIR="$HYDROGEN_DIR/build_unity"
+
+if [ -d "$UNITY_BUILD_DIR" ]; then
+    # Calculate Unity coverage data
+    unity_coverage_percentage=$(calculate_unity_coverage "$UNITY_BUILD_DIR" "$TIMESTAMP")
+    result=$?
     
-    # First try CMake cleanish target
-    print_command "cmake --build build --target cleanish"
-    cmake --build build --target cleanish > "$TEMP_LOG" 2>&1 || true
-    
-    # Count object files before additional cleanup
-    OBJ_FILES_BEFORE=$(find build -name "*.o" 2>/dev/null | wc -l)
-    
-    if [ "$OBJ_FILES_BEFORE" -gt 0 ]; then
-        print_message "Found $OBJ_FILES_BEFORE object files remaining after cleanish, performing additional cleanup"
+    if [ $result -eq 0 ]; then
+        # Parse detailed coverage data to get file counts
+        unity_instrumented_files=0
+        unity_covered_files=0
+        if [ -f "${UNITY_COVERAGE_FILE}.detailed" ]; then
+            IFS=',' read -r _ _ _ _ unity_instrumented_files unity_covered_files < "${UNITY_COVERAGE_FILE}.detailed"
+        fi
         
-        # Remove object files and other build artifacts
-        print_command "find build -name '*.o' -delete"
-        find build -name "*.o" -delete 2>/dev/null || true
-        
-        # Remove other common build artifacts
-        find build -name "*.a" -delete 2>/dev/null || true
-        find build -name "*.so" -delete 2>/dev/null || true
-        find build -name "*.dylib" -delete 2>/dev/null || true
-        
-        OBJ_FILES_AFTER=$(find build -name "*.o" 2>/dev/null | wc -l)
-        print_message "Removed $((OBJ_FILES_BEFORE - OBJ_FILES_AFTER)) object files"
-    fi
-    
-    # Final verification
-    REMAINING_OBJ=$(find build -name "*.o" 2>/dev/null | wc -l)
-    if [ "$REMAINING_OBJ" -eq 0 ]; then
-        print_result 0 "Successfully cleaned all build artifacts including $OBJ_FILES_BEFORE object files"
+        print_result 0 "Unity test coverage collected: $unity_coverage_percentage% - $unity_covered_files of $unity_instrumented_files files covered"
         ((PASS_COUNT++))
     else
-        print_result 0 "Cleaned most artifacts ($REMAINING_OBJ object files remain)"
-        ((PASS_COUNT++))
+        print_result 1 "Failed to collect Unity test coverage"
+        EXIT_CODE=1
     fi
 else
-    print_result 0 "No build directory found (clean not needed)"
+    print_result 1 "Unity build directory not found at: $UNITY_BUILD_DIR"
+    EXIT_CODE=1
+fi
+
+# Subtest 2: Collect Blackbox Test Coverage
+next_subtest
+print_subtest "Collect Blackbox Test Coverage"
+
+print_message "Collecting coverage data from blackbox tests..."
+
+# Find the hydrogen_coverage binary
+HYDROGEN_COVERAGE_BIN="$HYDROGEN_DIR/hydrogen_coverage"
+
+# Also check if it's in the build directory
+if [ ! -f "$HYDROGEN_COVERAGE_BIN" ] && [ -f "$HYDROGEN_DIR/build/hydrogen_coverage" ]; then
+    HYDROGEN_COVERAGE_BIN="$HYDROGEN_DIR/build/hydrogen_coverage"
+fi
+
+if [ -f "$HYDROGEN_COVERAGE_BIN" ]; then
+    # Collect blackbox coverage data
+    coverage_percentage=$(collect_blackbox_coverage "$HYDROGEN_COVERAGE_BIN" "$TIMESTAMP")
+    result=$?
+    
+    if [ $result -eq 0 ]; then
+        # Parse detailed coverage data to get file counts
+        instrumented_files=0
+        covered_files=0
+        if [ -f "${BLACKBOX_COVERAGE_FILE}.detailed" ]; then
+            IFS=',' read -r _ _ _ _ instrumented_files covered_files < "${BLACKBOX_COVERAGE_FILE}.detailed"
+        fi
+        
+        print_result 0 "Blackbox test coverage collected: $coverage_percentage% - $covered_files of $instrumented_files files covered"
+        ((PASS_COUNT++))
+    else
+        print_result 1 "Failed to collect blackbox test coverage"
+        EXIT_CODE=1
+    fi
+else
+    print_result 1 "Hydrogen coverage binary not found at: $HYDROGEN_COVERAGE_BIN"
+    EXIT_CODE=1
+fi
+
+# Subtest 3: Calculate Combined Coverage
+next_subtest
+print_subtest "Calculate Combined Coverage"
+
+print_message "Calculating combined coverage from Unity and blackbox tests..."
+
+combined_coverage=$(calculate_combined_coverage)
+result=$?
+
+if [ $result -eq 0 ]; then
+    print_result 0 "Combined coverage calculated: $combined_coverage%"
     ((PASS_COUNT++))
+else
+    print_result 1 "Failed to calculate combined coverage"
+    EXIT_CODE=1
+fi
+
+# Subtest 4: Calculate Coverage Overlap
+next_subtest
+print_subtest "Calculate Coverage Overlap"
+
+print_message "Calculating coverage overlap between Unity and blackbox tests..."
+
+overlap_percentage=$(calculate_coverage_overlap)
+result=$?
+
+if [ $result -eq 0 ]; then
+    print_result 0 "Coverage overlap calculated: $overlap_percentage%"
+    ((PASS_COUNT++))
+else
+    print_result 1 "Failed to calculate coverage overlap"
+    EXIT_CODE=1
+fi
+
+# Subtest 5: Identify Uncovered Source Files
+next_subtest
+print_subtest "Identify Uncovered Source Files"
+
+print_message "Identifying source files not covered by blackbox tests..."
+
+# Get project root for file analysis
+PROJECT_ROOT="$HYDROGEN_DIR"
+uncovered_analysis=$(identify_uncovered_files "$PROJECT_ROOT")
+
+# Parse the results
+covered_count=0
+uncovered_count=0
+total_count=0
+
+while IFS= read -r line; do
+    if [[ "$line" == "COVERED_FILES_COUNT:"* ]]; then
+        covered_count=${line#*:}
+    elif [[ "$line" == "UNCOVERED_FILES_COUNT:"* ]]; then
+        uncovered_count=${line#*:}
+    elif [[ "$line" == "TOTAL_SOURCE_FILES:"* ]]; then
+        total_count=${line#*:}
+    elif [[ "$line" == "UNCOVERED_FILES:" ]]; then
+        # Start of uncovered files list
+        print_message "Uncovered source files:"
+        continue
+    elif [[ "$line" =~ ^/.*/src/.* ]]; then
+        # This is an uncovered file path
+        relative_path=${line#"$PROJECT_ROOT"/}
+        print_output "  $relative_path"
+    fi
+done <<< "$uncovered_analysis"
+
+if [[ $total_count -gt 0 ]]; then
+    print_result 0 "Coverage analysis: $covered_count of $total_count source files covered, $uncovered_count uncovered"
+    ((PASS_COUNT++))
+else
+    print_result 1 "Failed to analyze source file coverage"
+    EXIT_CODE=1
 fi
 
 # Export results for test_all.sh integration
