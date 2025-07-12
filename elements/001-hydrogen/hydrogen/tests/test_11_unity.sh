@@ -316,8 +316,8 @@ if compile_unity_tests; then
             
             # Count only instrumented lines (covered + uncovered but measurable) using same method as extras script
             line_counts=$(awk '
-                /^[[:space:]]*[0-9]+:[[:space:]]*[0-9]+:/ { covered++; total++ }
-                /^[[:space:]]*#####:[[:space:]]*[0-9]+:/ { total++ }
+                /^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/ { covered++; total++ }
+                /^[[:space:]]*#####:[[:space:]]*[0-9]+\*?:/ { total++ }
                 END { print total "," covered }
             ' "$combined_gcov" 2>/dev/null)
             
