@@ -1,4 +1,4 @@
-e#!/bin/bash
+#!/bin/bash
 
 # Test: Coverage Collection and Analysis
 # Collects and analyzes coverage data from Unity and blackbox tests
@@ -46,37 +46,33 @@ if ! navigate_to_project_root "$SCRIPT_DIR"; then
     exit 1
 fi
 
-# Subtest 1: Collect Unity Test Coverage
+# Subtest 1: Recall Unity Test Coverage
 next_subtest
-print_subtest "Collect Unity Test Coverage"
+print_subtest "Recall Unity Test Coverage"
 
-print_message "Collecting coverage data from Unity tests..."
+print_message "Recalling coverage data from Unity tests (Test 11)..."
 
 # Find the Unity build directory
 HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 UNITY_BUILD_DIR="$HYDROGEN_DIR/build/unity"
 
-if [ -d "$UNITY_BUILD_DIR" ]; then
-    # Calculate Unity coverage data
-    unity_coverage_percentage=$(calculate_unity_coverage "$UNITY_BUILD_DIR" "$TIMESTAMP")
-    result=$?
+# Read Unity coverage data from Test 11's stored results instead of recalculating
+if [ -f "${UNITY_COVERAGE_FILE}" ] && [ -f "${UNITY_COVERAGE_FILE}.detailed" ]; then
+    unity_coverage_percentage=$(cat "${UNITY_COVERAGE_FILE}" 2>/dev/null || echo "0.000")
     
-    if [ $result -eq 0 ]; then
-        # Parse detailed coverage data to get file counts
-        unity_instrumented_files=0
-        unity_covered_files=0
-        if [ -f "${UNITY_COVERAGE_FILE}.detailed" ]; then
-            IFS=',' read -r _ _ _ _ unity_instrumented_files unity_covered_files < "${UNITY_COVERAGE_FILE}.detailed"
-        fi
-        
-        print_result 0 "Unity test coverage collected: $unity_coverage_percentage% - $unity_covered_files of $unity_instrumented_files files covered"
-        ((PASS_COUNT++))
-    else
-        print_result 1 "Failed to collect Unity test coverage"
-        EXIT_CODE=1
-    fi
+    # Parse detailed coverage data to get file counts
+    unity_instrumented_files=0
+    unity_covered_files=0
+    unity_covered_lines=0
+    unity_total_lines=0
+    IFS=',' read -r _ _ unity_covered_lines unity_total_lines unity_instrumented_files unity_covered_files < "${UNITY_COVERAGE_FILE}.detailed"
+    
+    print_message "Files instrumented: $unity_covered_files of $unity_instrumented_files source files have coverage"
+    print_message "Lines instrumented: $unity_covered_lines of $unity_total_lines executable lines covered"
+    print_result 0 "Unity test coverage recalled: $unity_coverage_percentage% - $unity_covered_files of $unity_instrumented_files files covered"
+    ((PASS_COUNT++))
 else
-    print_result 1 "Unity build directory not found at: $UNITY_BUILD_DIR"
+    print_result 1 "Unity coverage data not found. Run Test 11 first to generate Unity coverage data."
     EXIT_CODE=1
 fi
 
@@ -98,10 +94,14 @@ if [ -d "$BLACKBOX_COVERAGE_DIR" ]; then
         # Parse detailed coverage data to get file counts
         instrumented_files=0
         covered_files=0
+        covered_lines=0
+        total_lines=0
         if [ -f "${BLACKBOX_COVERAGE_FILE}.detailed" ]; then
-            IFS=',' read -r _ _ _ _ instrumented_files covered_files < "${BLACKBOX_COVERAGE_FILE}.detailed"
+            IFS=',' read -r _ _ covered_lines total_lines instrumented_files covered_files < "${BLACKBOX_COVERAGE_FILE}.detailed"
         fi
         
+        print_message "Files instrumented: $covered_files of $instrumented_files source files have coverage"
+        print_message "Lines instrumented: $covered_lines of $total_lines executable lines covered"
         print_result 0 "Blackbox test coverage collected: $coverage_percentage% - $covered_files of $instrumented_files files covered"
         ((PASS_COUNT++))
     else
