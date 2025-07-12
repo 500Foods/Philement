@@ -200,8 +200,8 @@ collect_blackbox_coverage_from_dir() {
     # Return to original directory
     cd "$original_dir" || return 1
     
-    # Use same logic as Test 11 Unity coverage calculation
-    local project_root="$original_dir/.."
+    # Use same logic as Test 11 Unity coverage calculation  
+    local project_root="$original_dir"
     local total_lines=0
     local covered_lines=0
     local instrumented_files=0
@@ -258,7 +258,7 @@ collect_blackbox_coverage_from_dir() {
         fi
     done < <(find "$coverage_dir" -name "*.gcov" -type f 2>/dev/null)
     
-    # Count total files exactly like Test 11
+    # Count total files exactly like Test 11 - by counting filtered .gcov files
     instrumented_files=${#gcov_files_to_process[@]}
     
     # Process all gcov files exactly like Test 11 does
@@ -434,13 +434,18 @@ identify_uncovered_files() {
         fi
     done < <(get_cached_source_files "$project_root")
     
+    # Sort uncovered files for consistent output
+    if [[ ${#uncovered_files[@]} -gt 0 ]]; then
+        mapfile -t uncovered_files < <(printf '%s\n' "${uncovered_files[@]}" | sort)
+    fi
+    
     # Output results in a structured format
     echo "COVERED_FILES_COUNT:$covered_count"
     echo "UNCOVERED_FILES_COUNT:$uncovered_count"
     echo "TOTAL_SOURCE_FILES:$total_count"
     echo "UNCOVERED_FILES:"
     
-    # List uncovered files
+    # List uncovered files (now sorted)
     for file in "${uncovered_files[@]}"; do
         echo "$file"
     done

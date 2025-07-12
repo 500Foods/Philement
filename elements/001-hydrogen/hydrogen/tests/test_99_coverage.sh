@@ -157,34 +157,31 @@ print_message "Identifying source files not covered by blackbox tests..."
 PROJECT_ROOT="$HYDROGEN_DIR"
 uncovered_analysis=$(identify_uncovered_files "$PROJECT_ROOT")
 
-# Parse the results
-covered_count=0
-uncovered_count=0
-total_count=0
-
-while IFS= read -r line; do
-    if [[ "$line" == "COVERED_FILES_COUNT:"* ]]; then
-        covered_count=${line#*:}
-    elif [[ "$line" == "UNCOVERED_FILES_COUNT:"* ]]; then
-        uncovered_count=${line#*:}
-    elif [[ "$line" == "TOTAL_SOURCE_FILES:"* ]]; then
-        total_count=${line#*:}
-    elif [[ "$line" == "UNCOVERED_FILES:" ]]; then
-        # Start of uncovered files list
-        print_message "Uncovered source files:"
-        continue
-    elif [[ "$line" =~ ^/.*/src/.* ]]; then
-        # This is an uncovered file path
-        relative_path=${line#"$PROJECT_ROOT"/}
-        print_output "  $relative_path"
-    fi
-done <<< "$uncovered_analysis"
-
-if [[ $total_count -gt 0 ]]; then
-    print_result 0 "Coverage analysis: $covered_count of $total_count source files covered, $uncovered_count uncovered"
+# Use the already-calculated values from blackbox coverage instead of recalculating
+if [ -f "${BLACKBOX_COVERAGE_FILE}.detailed" ]; then
+    # Read the values from blackbox coverage calculation
+    IFS=',' read -r _ _ _ _ instrumented_files covered_files < "${BLACKBOX_COVERAGE_FILE}.detailed"
+    
+    # Parse just the uncovered files list for display
+    while IFS= read -r line; do
+        if [[ "$line" == "UNCOVERED_FILES:" ]]; then
+            # Start of uncovered files list
+            print_message "Uncovered source files:"
+            continue
+        elif [[ "$line" =~ ^/.*/src/.* ]]; then
+            # This is an uncovered file path
+            relative_path=${line#"$PROJECT_ROOT"/}
+            print_output "  $relative_path"
+        fi
+    done <<< "$uncovered_analysis"
+    
+    # Calculate uncovered count from the known values
+    uncovered_count=$((instrumented_files - covered_files))
+    
+    print_result 0 "Coverage analysis: $covered_files of $instrumented_files source files covered, $uncovered_count uncovered"
     ((PASS_COUNT++))
 else
-    print_result 1 "Failed to analyze source file coverage"
+    print_result 1 "Failed to analyze source file coverage - blackbox detailed data not found"
     EXIT_CODE=1
 fi
 
