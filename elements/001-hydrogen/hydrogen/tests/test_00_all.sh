@@ -850,6 +850,12 @@ TOTAL_RUNNING_TIME_FORMATTED=$(format_time_duration "$TOTAL_RUNNING_TIME")
 UNITY_COVERAGE=$(get_unity_coverage)
 BLACKBOX_COVERAGE=$(get_blackbox_coverage)
 
+# Run coverage table before displaying test results
+coverage_table_script="$SCRIPT_DIR/lib/coverage_table.sh"
+if [[ -x "$coverage_table_script" ]] && [ "$SKIP_TESTS" = false ]; then
+    "$coverage_table_script" 2>/dev/null || true
+fi
+
 # Generate summary table using the sourced table libraries
 # Create layout JSON string
 
