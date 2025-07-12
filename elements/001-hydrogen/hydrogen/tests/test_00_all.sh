@@ -421,7 +421,7 @@ perform_cleanup() {
         "$SCRIPT_DIR/results"
         "$SCRIPT_DIR/diagnostics"
         "$SCRIPT_DIR/../build"
-        "$SCRIPT_DIR/../build_unity_tests"
+        "$SCRIPT_DIR/../build/unity"
     )
     
     # Remove directories and their contents silently
@@ -852,9 +852,10 @@ BLACKBOX_COVERAGE=$(get_blackbox_coverage)
 
 # Generate summary table using the sourced table libraries
 # Create layout JSON string
+
 layout_json_content='{
-    "title": "Test Suite Results — Unity: '"$UNITY_COVERAGE"'% | Blackbox: '"$BLACKBOX_COVERAGE"'%",
-    "footer": "Running: '"$TOTAL_RUNNING_TIME_FORMATTED"' ——— Elapsed: '"$TOTAL_ELAPSED_FORMATTED"'",
+    "title": "Test Suite Results {NC}{RED}———{RESET}{BOLD} Unity: '"$UNITY_COVERAGE"'% {RESET}{RED}———{RESET}{BOLD} Blackbox: '"$BLACKBOX_COVERAGE"'%",
+    "footer": "Running: '"$TOTAL_RUNNING_TIME_FORMATTED"'{RED} ——— {RESET}{CYAN}Elapsed: '"$TOTAL_ELAPSED_FORMATTED"'",
     "footer_position": "right",
     "columns": [
         {

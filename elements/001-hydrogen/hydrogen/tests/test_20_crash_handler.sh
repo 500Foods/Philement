@@ -135,8 +135,8 @@ verify_debug_symbols() {
     binary_name=$(basename "$binary")
     local expect_symbols=1
     
-    # Release builds should not have debug symbols
-    if [[ "$binary_name" == *"release"* ]]; then
+    # Release, coverage, and naked builds should not have debug symbols
+    if [[ "$binary_name" == *"release"* ]] || [[ "$binary_name" == *"coverage"* ]] || [[ "$binary_name" == *"naked"* ]]; then
         expect_symbols=0
     fi
     
@@ -257,15 +257,17 @@ EOF
        grep -q "Program terminated with signal SIGSEGV" "${gdb_output_file}"; then
         has_test_crash=1
         has_backtrace=1
-    # For release builds, just check for SIGSEGV
-    elif [[ "$build_name" == *"release"* ]] && grep -q "Program terminated with signal SIGSEGV" "${gdb_output_file}"; then
-        has_backtrace=1
+    # For release, coverage, and naked builds, just check for SIGSEGV
+    elif [[ "$build_name" == *"release"* ]] || [[ "$build_name" == *"coverage"* ]] || [[ "$build_name" == *"naked"* ]]; then
+        if grep -q "Program terminated with signal SIGSEGV" "${gdb_output_file}"; then
+            has_backtrace=1
+        fi
     fi
 
     # Verify backtrace quality based on build type
-    if [[ "$build_name" == *"release"* ]]; then
+    if [[ "$build_name" == *"release"* ]] || [[ "$build_name" == *"coverage"* ]] || [[ "$build_name" == *"naked"* ]]; then
         if [ $has_backtrace -eq 1 ]; then
-            print_message "GDB produced basic backtrace (expected for release build)"
+            print_message "GDB produced basic backtrace (expected for release-style build)"
             return 0
         fi
     elif [ $has_test_crash -eq 1 ]; then
@@ -299,6 +301,181 @@ wait_for_crash_completion() {
         
         sleep 0.1
     done
+}
+
+# Function to run test with a specific build in parallel (writes results to files)
+run_crash_test_parallel() {
+    local binary="$1"
+    local result_dir="$2"
+    local binary_name
+    binary_name=$(basename "$binary")
+    local log_file="$SCRIPT_DIR/hydrogen_crash_test_${binary_name}_${TIMESTAMP}.log"
+    local result_file="$result_dir/${binary_name}.result"
+    
+    # Clear files
+    true > "$log_file"
+    true > "$result_file"
+    
+    # Start hydrogen server in background with ASAN leak detection disabled
+    ASAN_OPTIONS="detect_leaks=0" "$binary" "$TEST_CONFIG" > "$log_file" 2>&1 &
+    local hydrogen_pid=$!
+    
+    # Wait for startup with active log monitoring
+    local startup_start current_time elapsed
+    startup_start=$(date +%s)
+    local startup_complete=false
+    
+    while true; do
+        current_time=$(date +%s)
+        elapsed=$((current_time - startup_start))
+        
+        if [ $elapsed -ge $STARTUP_TIMEOUT ]; then
+            echo "STARTUP_FAILED" > "$result_file"
+            kill -9 $hydrogen_pid 2>/dev/null || true
+            return 1
+        fi
+        
+        if ! ps -p $hydrogen_pid > /dev/null 2>&1; then
+            startup_complete=true
+            break
+        fi
+        
+        if grep -q "Application started" "$log_file" 2>/dev/null; then
+            startup_complete=true
+            break
+        fi
+        
+        sleep 0.1
+    done
+    
+    if [ "$startup_complete" != "true" ] || ! ps -p $hydrogen_pid > /dev/null 2>&1; then
+        echo "STARTUP_FAILED" > "$result_file"
+        kill -9 $hydrogen_pid 2>/dev/null || true
+        return 1
+    fi
+    
+    # Send SIGUSR1 to trigger test crash handler
+    kill -USR1 $hydrogen_pid
+    
+    # Wait for process to crash
+    if ! wait_for_crash_completion $hydrogen_pid $CRASH_TIMEOUT; then
+        echo "CRASH_FAILED" > "$result_file"
+        kill -9 $hydrogen_pid 2>/dev/null || true
+        return 1
+    fi
+    
+    # Store PID for later analysis
+    echo "PID=$hydrogen_pid" >> "$result_file"
+    echo "SUCCESS" >> "$result_file"
+    
+    # Wait for the process to fully exit
+    wait $hydrogen_pid 2>/dev/null || true
+    
+    return 0
+}
+
+# Function to analyze results from parallel crash test
+analyze_parallel_results() {
+    local binary="$1"
+    local result_dir="$2"
+    local binary_name
+    binary_name=$(basename "$binary")
+    local result_file="$result_dir/${binary_name}.result"
+    local log_file="$SCRIPT_DIR/hydrogen_crash_test_${binary_name}_${TIMESTAMP}.log"
+    
+    # Check if result file exists
+    if [ ! -f "$result_file" ]; then
+        print_message "No result file found for $binary_name"
+        return 1
+    fi
+    
+    # Read result file
+    local result_status
+    result_status=$(tail -n 1 "$result_file")
+    
+    if [ "$result_status" != "SUCCESS" ]; then
+        print_message "$binary_name: Test failed during execution ($result_status)"
+        return 1
+    fi
+    
+    # Extract PID from result file
+    local hydrogen_pid
+    hydrogen_pid=$(grep "PID=" "$result_file" | cut -d'=' -f2)
+    
+    if [ -z "$hydrogen_pid" ]; then
+        print_message "$binary_name: Could not extract PID from result file"
+        return 1
+    fi
+    
+    # Initialize result variables for this build
+    local debug_result=1
+    local core_result=1
+    local log_result=1
+    local gdb_result=1
+    
+    # Verify debug symbols
+    if verify_debug_symbols "$binary"; then
+        debug_result=0
+    fi
+    
+    # Verify core file creation
+    if verify_core_file "$binary" "$hydrogen_pid"; then
+        core_result=0
+        
+        # If core file exists, verify its contents
+        local core_file="${HYDROGEN_DIR}/${binary_name}.core.${hydrogen_pid}"
+        if ! verify_core_file_content "$core_file" "$binary"; then
+            print_message "Core file exists but content verification failed"
+            core_result=1
+        fi
+    fi
+    
+    # Verify crash handler log messages
+    if grep -q "Received SIGUSR1" "$log_file" 2>/dev/null && \
+       grep -q "Signal 11 received" "$log_file" 2>/dev/null; then
+        print_message "Found crash handler messages in log"
+        log_result=0
+    else
+        print_message "Missing crash handler messages in log"
+        log_result=1
+    fi
+    
+    # Analyze core file with GDB if core file was created
+    if [ $core_result -eq 0 ]; then
+        local core_file="${HYDROGEN_DIR}/${binary_name}.core.${hydrogen_pid}"
+        if analyze_core_with_gdb "$binary" "$core_file" "$GDB_OUTPUT_DIR/${binary_name}_${TIMESTAMP}.txt"; then
+            gdb_result=0
+        fi
+    fi
+    
+    # Save logs and results
+    if [ -f "$log_file" ]; then
+        cp "$log_file" "$RESULTS_DIR/crash_test_${TIMESTAMP}_${binary_name}.log"
+    fi
+    
+    # Clean up test files (preserve core files for failed tests)
+    rm -f "$log_file"
+    if [ $core_result -eq 0 ] && [ $log_result -eq 0 ] && [ $gdb_result -eq 0 ]; then
+        rm -f "${HYDROGEN_DIR}/${binary_name}.core.${hydrogen_pid}"
+    else
+        print_message "Preserving core file for debugging: ${binary_name}.core.${hydrogen_pid}"
+    fi
+    
+    # Clean up GDB commands file
+    rm -f gdb_commands.txt
+    
+    # Return results via global variables (since we need multiple return values)
+    DEBUG_SYMBOL_RESULT=$debug_result
+    CORE_FILE_RESULT=$core_result
+    CRASH_LOG_RESULT=$log_result
+    GDB_ANALYSIS_RESULT=$gdb_result
+    
+    # Return success only if all subtests passed
+    if [ $debug_result -eq 0 ] && [ $core_result -eq 0 ] && [ $log_result -eq 0 ] && [ $gdb_result -eq 0 ]; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 # Function to run test with a specific build
@@ -504,6 +681,12 @@ for target in "${BUILD_VARIANTS[@]}"; do
             "hydrogen_release")
                 BUILD_DESCRIPTIONS["$target"]="Production deployment"
                 ;;
+            "hydrogen_coverage")
+                BUILD_DESCRIPTIONS["$target"]="Code coverage analysis"
+                ;;
+            "hydrogen_naked")
+                BUILD_DESCRIPTIONS["$target"]="Minimal build without debugging"
+                ;;
             *)
                 BUILD_DESCRIPTIONS["$target"]="Build variant: $target"
                 ;;
@@ -543,9 +726,34 @@ for build in "${BUILDS[@]}"; do
     print_message "  • ${build_name}: ${BUILD_DESCRIPTIONS[$build_name]}"
 done
 
-# Test each build
+# Test each build using parallel execution
 declare -A BUILD_PASSED_SUBTESTS
+declare -a PARALLEL_PIDS
 
+# Create temporary directory for parallel results
+PARALLEL_RESULTS_DIR="$RESULTS_DIR/parallel_${TIMESTAMP}"
+mkdir -p "$PARALLEL_RESULTS_DIR"
+
+print_message "Running crash tests in parallel for all builds..."
+
+# Start all builds in parallel
+for build in "${BUILDS[@]}"; do
+    build_name=$(basename "$build")
+    print_message "Starting parallel test for: $build_name"
+    
+    # Run parallel crash test in background
+    run_crash_test_parallel "$build" "$PARALLEL_RESULTS_DIR" &
+    PARALLEL_PIDS+=($!)
+done
+
+# Wait for all parallel tests to complete
+print_message "Waiting for all ${#BUILDS[@]} parallel tests to complete..."
+for pid in "${PARALLEL_PIDS[@]}"; do
+    wait "$pid"
+done
+print_message "All parallel tests completed, analyzing results..."
+
+# Process results sequentially for clean output
 for build in "${BUILDS[@]}"; do
     build_name=$(basename "$build")
     
@@ -554,23 +762,23 @@ for build in "${BUILDS[@]}"; do
     # Initialize subtest results for this build
     BUILD_PASSED_SUBTESTS[$build_name]=0
     
-    # Run the crash test for this build
-    run_crash_test_with_build "$build"
+    # Analyze the parallel test results
+    analyze_parallel_results "$build" "$PARALLEL_RESULTS_DIR"
     
     # Test 1: Debug Symbols
     next_subtest
     print_subtest "Debug Symbols - $build_name"
     if [ "$DEBUG_SYMBOL_RESULT" -eq 0 ]; then
-        if [[ "$build_name" == *"release"* ]]; then
-            print_result 0 "Debug symbols correctly absent in release build"
+        if [[ "$build_name" == *"release"* ]] || [[ "$build_name" == *"coverage"* ]] || [[ "$build_name" == *"naked"* ]]; then
+            print_result 0 "Debug symbols correctly absent in release-style build"
         else
             print_result 0 "Debug symbols found in development build"
         fi
         ((PASS_COUNT++))
         ((BUILD_PASSED_SUBTESTS[$build_name]++))
     else
-        if [[ "$build_name" == *"release"* ]]; then
-            print_result 1 "Debug symbols unexpectedly found in release build"
+        if [[ "$build_name" == *"release"* ]] || [[ "$build_name" == *"coverage"* ]] || [[ "$build_name" == *"naked"* ]]; then
+            print_result 1 "Debug symbols unexpectedly found in release-style build"
         else
             print_result 1 "Debug symbols missing in development build"
         fi
@@ -634,6 +842,9 @@ for build in "${BUILDS[@]}"; do
 done
 
 print_message "Summary: $successful_builds/${#BUILDS[@]} builds passed all crash handler tests"
+
+# Clean up parallel results directory
+rm -rf "$PARALLEL_RESULTS_DIR"
 
 # Export results for test_all.sh integration
 # Derive test name from script filename for consistency with test_00_all.sh
