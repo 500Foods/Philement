@@ -30,10 +30,12 @@ fi
 source "$SCRIPT_DIR/lib/file_utils.sh"
 # shellcheck source=tests/lib/framework.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/framework.sh"
+# shellcheck source=tests/lib/coverage.sh # Resolve path statically
+source "$SCRIPT_DIR/lib/coverage.sh"
 
 # Test configuration
 EXIT_CODE=0
-TOTAL_SUBTESTS=14
+TOTAL_SUBTESTS=17
 PASS_COUNT=0
 
 # Auto-extract test number and set up environment
@@ -56,6 +58,9 @@ if ! navigate_to_project_root "$SCRIPT_DIR"; then
     print_error "Failed to navigate to project root directory"
     exit 1
 fi
+
+# Clean previous coverage data at the start of compilation
+cleanup_coverage_data 2>/dev/null || true
 
 # Subtest: Check CMake availability
 next_subtest
@@ -251,6 +256,20 @@ else
 fi
 evaluate_test_result_silent "Verify valgrind executable" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
 
+# Subtest: Verify coverage executable
+next_subtest
+print_subtest "Verify Coverage Executable"
+print_command "test -f hydrogen_coverage"
+if [ -f "hydrogen_coverage" ]; then
+    exe_size=$(get_file_size "hydrogen_coverage")
+    formatted_size=$(format_file_size "$exe_size")
+    print_result 0 "Executable created: hydrogen_coverage (${formatted_size} bytes)"
+else
+    print_result 1 "Coverage executable not found after build"
+    EXIT_CODE=1
+fi
+evaluate_test_result_silent "Verify coverage executable" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
+
 # Subtest: Verify release and naked executables
 next_subtest
 print_subtest "Verify Release and Naked Executables"
@@ -304,6 +323,46 @@ else
     EXIT_CODE=1
 fi
 evaluate_test_result_silent "Verify examples executables" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
+
+# Subtest: Verify coverage executable has payload
+next_subtest
+print_subtest "Verify Coverage Executable Payload"
+print_command "test -f hydrogen_coverage && grep -q '<<< HERE BE ME TREASURE >>>' hydrogen_coverage"
+if [ -f "hydrogen_coverage" ]; then
+    # Check if the coverage binary has payload embedded using the correct marker
+    if grep -q "<<< HERE BE ME TREASURE >>>" "hydrogen_coverage" 2>/dev/null; then
+        coverage_size=$(get_file_size "hydrogen_coverage")
+        formatted_size=$(format_file_size "$coverage_size")
+        print_result 0 "Coverage executable has embedded payload (${formatted_size} bytes total)"
+    else
+        print_result 1 "Coverage executable appears to be missing embedded payload marker"
+        EXIT_CODE=1
+    fi
+else
+    print_result 1 "Coverage executable not found for payload verification"
+    EXIT_CODE=1
+fi
+evaluate_test_result_silent "Verify coverage executable payload" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
+
+# Subtest: Verify release executable has payload
+next_subtest
+print_subtest "Verify Release Executable Payload"
+print_command "test -f hydrogen_release && grep -q '<<< HERE BE ME TREASURE >>>' hydrogen_release"
+if [ -f "hydrogen_release" ]; then
+    # Check if the release binary has payload embedded using the correct marker
+    if grep -q "<<< HERE BE ME TREASURE >>>" "hydrogen_release" 2>/dev/null; then
+        release_size=$(get_file_size "hydrogen_release")
+        formatted_size=$(format_file_size "$release_size")
+        print_result 0 "Release executable has embedded payload (${formatted_size} bytes total)"
+    else
+        print_result 1 "Release executable appears to be missing embedded payload marker"
+        EXIT_CODE=1
+    fi
+else
+    print_result 1 "Release executable not found for payload verification"
+    EXIT_CODE=1
+fi
+evaluate_test_result_silent "Verify release executable payload" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
 
 # Export results for test_all.sh integration
 # Derive test name from script filename for consistency with test_00_all.sh

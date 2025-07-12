@@ -9,7 +9,7 @@ build_debug/
 build_perf/
 build_release/
 build_valgrind/
-build_unity_tests/
+build_unity/
 
 # Temporary generated files
 payloads/swagger.json
@@ -25,16 +25,19 @@ error_*.log
 tests/diagnostics/
 tests/results/
 tests/logs/
+tests/gcov/
 tests/*.log
 response_*.json
 temp_*
 *.tmp
+
 
 # Don't need to copy this around, thanks
 tests/unity/framework/
 
 # Executables
 hydrogen           
+hydrogen_coverage
 hydrogen_debug     
 hydrogen_naked     
 hydrogen_perf      

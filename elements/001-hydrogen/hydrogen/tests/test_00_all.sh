@@ -26,6 +26,8 @@ source "$SCRIPT_DIR/lib/log_output.sh"
 source "$SCRIPT_DIR/lib/framework.sh"
 # shellcheck source=tests/lib/cloc.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/cloc.sh"
+# shellcheck source=tests/lib/coverage.sh # Resolve path statically
+source "$SCRIPT_DIR/lib/coverage.sh"
 
 # Auto-extract test number and set up environment
 TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
@@ -73,6 +75,38 @@ if [ ${#TEST_ARGS[@]} -eq 0 ]; then
     :
 fi
 
+# Function to get latest coverage percentages
+get_latest_coverage() {
+    local latest_coverage_file
+    latest_coverage_file=$(find "$RESULTS_DIR" -name "coverage_*.txt" -type f 2>/dev/null | sort -r | head -1)
+    
+    if [ -n "$latest_coverage_file" ] && [ -f "$latest_coverage_file" ]; then
+        cat "$latest_coverage_file" 2>/dev/null || echo "0.000"
+    else
+        echo "0.000"
+    fi
+}
+
+# Function to get Unity test coverage
+get_unity_coverage() {
+    local unity_coverage_file="$RESULTS_DIR/unity_coverage.txt"
+    if [ -f "$unity_coverage_file" ]; then
+        cat "$unity_coverage_file" 2>/dev/null || echo "0.000"
+    else
+        echo "0.000"
+    fi
+}
+
+# Function to get blackbox test coverage
+get_blackbox_coverage() {
+    local blackbox_coverage_file="$RESULTS_DIR/blackbox_coverage.txt"
+    if [ -f "$blackbox_coverage_file" ]; then
+        cat "$blackbox_coverage_file" 2>/dev/null || echo "0.000"
+    else
+        echo "0.000"
+    fi
+}
+
 # Function to update README.md with test results
 update_readme_with_results() {
     local readme_file="$SCRIPT_DIR/../README.md"
@@ -87,6 +121,8 @@ update_readme_with_results() {
     local total_subtests=0
     local total_passed=0
     local total_failed=0
+    local coverage_percentage
+    coverage_percentage=$(get_latest_coverage)
     
     for i in "${!TEST_SUBTESTS[@]}"; do
         total_subtests=$((total_subtests + TEST_SUBTESTS[i]))
@@ -128,6 +164,59 @@ update_readme_with_results() {
                 echo "| Failed Subtests | $total_failed |"
                 echo "| Elapsed Time | $TOTAL_ELAPSED_FORMATTED |"
                 echo "| Running Time | $TOTAL_RUNNING_TIME_FORMATTED |"
+                echo ""
+                echo "### Unit Tests"
+                echo ""
+                
+                # Get detailed coverage information with thousands separators
+                local unity_coverage_detailed="$RESULTS_DIR/unity_coverage.txt.detailed"
+                local blackbox_coverage_detailed="$RESULTS_DIR/blackbox_coverage.txt.detailed"
+                
+                if [ -f "$unity_coverage_detailed" ] || [ -f "$blackbox_coverage_detailed" ]; then
+                    echo "| Test Type | Files Cover | Files Instr | Lines Cover | Lines Instr | Coverage |"
+                    echo "| --------- | ----------- | ----------- | ----------- | ----------- | -------- |"
+                    
+                    # Unity coverage
+                    if [ -f "$unity_coverage_detailed" ]; then
+                        local unity_timestamp unity_coverage_pct unity_covered unity_total unity_instrumented unity_covered_files
+                        IFS=',' read -r unity_timestamp unity_coverage_pct unity_covered unity_total unity_instrumented unity_covered_files < "$unity_coverage_detailed" 2>/dev/null
+                        if [ -n "$unity_total" ] && [ "$unity_total" -gt 0 ]; then
+                            # Add thousands separators
+                            unity_covered_formatted=$(printf "%'d" "$unity_covered" 2>/dev/null || echo "$unity_covered")
+                            unity_total_formatted=$(printf "%'d" "$unity_total" 2>/dev/null || echo "$unity_total")
+                            unity_covered_files=${unity_covered_files:-0}
+                            unity_instrumented=${unity_instrumented:-0}
+                            echo "| Unity Tests | ${unity_covered_files} | ${unity_instrumented} | ${unity_covered_formatted} | ${unity_total_formatted} | ${unity_coverage_pct}% |"
+                        else
+                            echo "| Unity Tests | 0 | 0 | 0 | 0 | 0.000% |"
+                        fi
+                    else
+                        echo "| Unity Tests | 0 | 0 | 0 | 0 | 0.000% |"
+                    fi
+                    
+                    # Blackbox coverage
+                    if [ -f "$blackbox_coverage_detailed" ]; then
+                        local blackbox_timestamp blackbox_coverage_pct blackbox_covered blackbox_total blackbox_instrumented blackbox_covered_files
+                        IFS=',' read -r blackbox_timestamp blackbox_coverage_pct blackbox_covered blackbox_total blackbox_instrumented blackbox_covered_files < "$blackbox_coverage_detailed" 2>/dev/null
+                        if [ -n "$blackbox_total" ] && [ "$blackbox_total" -gt 0 ]; then
+                            # Add thousands separators
+                            blackbox_covered_formatted=$(printf "%'d" "$blackbox_covered" 2>/dev/null || echo "$blackbox_covered")
+                            blackbox_total_formatted=$(printf "%'d" "$blackbox_total" 2>/dev/null || echo "$blackbox_total")
+                            blackbox_covered_files=${blackbox_covered_files:-0}
+                            blackbox_instrumented=${blackbox_instrumented:-0}
+                            echo "| Blackbox Tests | ${blackbox_covered_files} | ${blackbox_instrumented} | ${blackbox_covered_formatted} | ${blackbox_total_formatted} | ${blackbox_coverage_pct}% |"
+                        else
+                            echo "| Blackbox Tests | 0 | 0 | 0 | 0 | 0.000% |"
+                        fi
+                    else
+                        echo "| Blackbox Tests | 0 | 0 | 0 | 0 | 0.000% |"
+                    fi
+                else
+                    echo "| Test Type | Files Cover | Files Instr | Lines Cover | Lines Instr | Coverage |"
+                    echo "| --------- | ----------- | ----------- | ----------- | ----------- | -------- |"
+                    echo "| Unity Tests | 0 | 0 | 0 | 0 | 0.000% |"
+                    echo "| Blackbox Tests | 0 | 0 | 0 | 0 | 0.000% |"
+                fi
                 echo ""
             } >> "$temp_readme"
             continue
@@ -757,10 +846,14 @@ done
 TOTAL_ELAPSED_FORMATTED=$(format_time_duration "$TOTAL_ELAPSED")
 TOTAL_RUNNING_TIME_FORMATTED=$(format_time_duration "$TOTAL_RUNNING_TIME")
 
+# Get coverage percentages for display
+UNITY_COVERAGE=$(get_unity_coverage)
+BLACKBOX_COVERAGE=$(get_blackbox_coverage)
+
 # Generate summary table using the sourced table libraries
 # Create layout JSON string
 layout_json_content='{
-    "title": "Test Suite Results",
+    "title": "Test Suite Results — Unity: '"$UNITY_COVERAGE"'% | Blackbox: '"$BLACKBOX_COVERAGE"'%",
     "footer": "Running: '"$TOTAL_RUNNING_TIME_FORMATTED"' ——— Elapsed: '"$TOTAL_ELAPSED_FORMATTED"'",
     "footer_position": "right",
     "columns": [
@@ -827,6 +920,7 @@ for i in "${!TEST_NUMBERS[@]}"; do
     test_id="${TEST_NUMBERS[$i]}-000"
     # Calculate group (tens digit) from test number
     group=$((${TEST_NUMBERS[$i]} / 10))
+    
     if [ "$i" -gt 0 ]; then
         data_json_content+=","
     fi

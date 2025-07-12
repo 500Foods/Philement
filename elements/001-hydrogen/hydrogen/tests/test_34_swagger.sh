@@ -34,6 +34,8 @@ source "$SCRIPT_DIR/lib/file_utils.sh"
 source "$SCRIPT_DIR/lib/lifecycle.sh"
 # shellcheck source=tests/lib/network_utils.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/network_utils.sh"
+# shellcheck source=tests/lib/coverage.sh # Resolve path statically
+source "$SCRIPT_DIR/lib/coverage.sh"
 
 # Initialize test environment
 RESULTS_DIR="$SCRIPT_DIR/results"
@@ -337,6 +339,9 @@ if [ $EXIT_CODE -eq 0 ]; then
     print_message "Ensuring no existing Hydrogen processes are running..."
     pkill -f "hydrogen.*json" 2>/dev/null || true
     
+    # Note: Coverage data is automatically generated when using hydrogen_coverage binary
+    # No initialization needed - gcda files are created during execution
+    
     print_message "Testing Swagger functionality with immediate restart approach"
     print_message "SO_REUSEADDR is enabled - no need to wait for TIME_WAIT"
     
@@ -348,6 +353,9 @@ if [ $EXIT_CODE -eq 0 ]; then
     test_swagger_configuration "$CONFIG_2" "/apidocs" "swagger_custom" 2
     
     print_message "Immediate restart successful - SO_REUSEADDR is working!"
+    
+    # Note: Blackbox coverage collection is handled centrally in test_99_cleanup.sh
+    # Individual tests just run hydrogen_coverage normally and test 99 collects all coverage data
     
 else
     # Skip Swagger tests if prerequisites failed
