@@ -4,14 +4,6 @@
 
 This document serves as the central Table of Contents (TOC) for the documentation of all library scripts in the 'lib/' directory of the Hydrogen test suite. These libraries provide modular, reusable functionalities to standardize operations across test scripts, supporting the overhaul and migration plan for the test suite.
 
-## Tables Library
-
-This is an adapted version of the Tables script from [Scripts](https://github.com/500Foods/Scripts).
-
-- **[Tables Library](tables.md)** - Documentation for `tables.sh`, the main library for rendering JSON data as ANSI tables. [Script](../lib/tables.sh)
-- **[Tables Technical Guide](tables_technical.md)** - Documentation for `tables_themes.sh`, focusing on visual themes and styling for tables.
-- **[Tables Developer Guide](tables_developer.md)** - Technical documentation for developers wanting to extend or customize the tables.sh system with new features, themes, and data types.
-
 ## GitHub Sitemap Library
 
 - **[GitHub Sitemap Library](github-sitemap.md)** - Documentation for `github-sitemap.sh`, a utility for checking markdown links and generating sitemap reports. [Script](../lib/github-sitemap.sh)
@@ -31,4 +23,3 @@ These libraries were created as part of the test suite migration to replace supp
 ## Related Documentation
 
 - [README.md](../README.md) - Main documentation for the Hydrogen test suite.
-- [Tables Core Library](tables.md) - Documentation for the main table rendering library.

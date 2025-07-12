@@ -48,26 +48,26 @@ list(FILTER HYDROGEN_SOURCES EXCLUDE REGEX ".*hydrogen\\.c$")
 # For comprehensive coverage, we include all source files but may need to provide
 # stub implementations for functions that require complex initialization
 
-# Create object library for each hydrogen source file to maintain directory structure
+# Create static library for each hydrogen source file to maintain directory structure
 set(HYDROGEN_OBJECTS "")
 foreach(SOURCE_FILE ${HYDROGEN_SOURCES})
     # Get relative path from src directory
     file(RELATIVE_PATH REL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../src" ${SOURCE_FILE})
-    # Remove .c extension and create object target name
+    # Remove .c extension and create target name
     string(REPLACE ".c" "" OBJ_NAME ${REL_PATH})
     string(REPLACE "/" "_" OBJ_TARGET ${OBJ_NAME})
     
-    # Create object library for this source file
-    add_library(${OBJ_TARGET}_obj OBJECT ${SOURCE_FILE})
+    # Create static library for this source file to get proper directory structure
+    add_library(${OBJ_TARGET}_lib STATIC ${SOURCE_FILE})
     
     # Set compile flags for coverage
-    target_compile_options(${OBJ_TARGET}_obj PRIVATE 
+    target_compile_options(${OBJ_TARGET}_lib PRIVATE 
         -std=c17 -Wall -Wextra -pedantic -Werror
         -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer
     )
     
     # Set compile definitions
-    target_compile_definitions(${OBJ_TARGET}_obj PRIVATE
+    target_compile_definitions(${OBJ_TARGET}_lib PRIVATE
         _GNU_SOURCE
         _POSIX_C_SOURCE=200809L
         VERSION="1.0.0.test"
@@ -75,15 +75,20 @@ foreach(SOURCE_FILE ${HYDROGEN_SOURCES})
         BUILD_TYPE="Coverage"
     )
     
-    # Set output directory to mirror source structure
+    # Set output directory to mirror source structure  
     get_filename_component(OBJ_DIR ${REL_PATH} DIRECTORY)
     if(OBJ_DIR)
-        set_target_properties(${OBJ_TARGET}_obj PROPERTIES
-            ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${OBJ_DIR}"
+        set_target_properties(${OBJ_TARGET}_lib PROPERTIES
+            ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/src/${OBJ_DIR}"
+        )
+    else()
+        set_target_properties(${OBJ_TARGET}_lib PROPERTIES
+            ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/src"
         )
     endif()
     
-    list(APPEND HYDROGEN_OBJECTS $<TARGET_OBJECTS:${OBJ_TARGET}_obj>)
+    # Add to list for linking
+    list(APPEND HYDROGEN_OBJECTS ${OBJ_TARGET}_lib)
 endforeach()
 
 # Libraries needed for hydrogen
@@ -99,7 +104,7 @@ set(HYDROGEN_LIBS
 )
 
 # Compiler flags for coverage
-set(COVERAGE_FLAGS "-O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer")
+set(COVERAGE_FLAGS -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer)
 set(COVERAGE_LINK_FLAGS "--coverage;-lgcov")
 
 # Enable testing
@@ -114,7 +119,35 @@ foreach(TEST_SOURCE ${TEST_SOURCES})
     add_executable(${TEST_NAME}
         ${TEST_SOURCE}
         ${UNITY_SOURCES}
+    )
+    
+    # Set compile flags for coverage on test executable
+    target_compile_options(${TEST_NAME} PRIVATE ${COVERAGE_FLAGS})
+    target_compile_definitions(${TEST_NAME} PRIVATE
+        _GNU_SOURCE
+        _POSIX_C_SOURCE=200809L
+        VERSION="1.0.0.test"
+        RELEASE="test-build"
+        BUILD_TYPE="Coverage"
+    )
+    
+    # Link with required libraries and coverage flags
+    target_link_libraries(${TEST_NAME} 
         ${HYDROGEN_OBJECTS}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    COMMENT "Generating coverage report..."
-)
+        ${HYDROGEN_LIBS}
+        ${COVERAGE_LINK_FLAGS}
+    )
+    
+    # Set output directory for test executable
+    set_target_properties(${TEST_NAME} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+    )
+    
+    # Add test to CTest
+    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    )
+endforeach()
+
+# Ensure coverage data files (.gcno, .gcda) are generated in the correct location
+# This is handled by the object library output directory settings above
