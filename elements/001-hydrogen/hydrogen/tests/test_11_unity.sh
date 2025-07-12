@@ -118,13 +118,38 @@ compile_unity_tests() {
     print_message "Compiling Unity tests..."
     local build_dir="$HYDROGEN_DIR/build/unity"
     local temp_log="$DIAG_TEST_DIR/compile_log.txt"
+    local filtered_log="$DIAG_TEST_DIR/compile_filtered.txt"
     mkdir -p "$build_dir"
     mkdir -p "$(dirname "$temp_log")"
     cd "$build_dir" || { print_result 1 "Failed to change to build directory: ${build_dir#"$SCRIPT_DIR"/..}"; return 1; }
+    
+    # Run cmake configuration
     cmake "$UNITY_DIR" > "$temp_log" 2>&1 || { print_result 1 "CMake configuration failed for Unity tests"; while IFS= read -r line; do print_output "$line"; done < "$temp_log"; return 1; }
-    while IFS= read -r line; do print_output "$line"; done < "$temp_log"
-    cmake --build . >> "$temp_log" 2>&1 || { print_result 1 "Build failed for Unity tests"; while IFS= read -r line; do print_output "$line"; done < "$temp_log"; return 1; }
-    while IFS= read -r line; do print_output "$line"; done < "$temp_log"
+    
+    # Filter and display cmake output (keep important messages, skip compilation progress)
+    grep -v -E '\[[[:space:]]*[0-9]+%\][[:space:]]*Compiling.*\.c to object file' "$temp_log" > "$filtered_log" || true
+    while IFS= read -r line; do print_output "$line"; done < "$filtered_log"
+    
+    # Detect number of CPU cores for parallel build
+    local cpu_cores
+    if command -v nproc >/dev/null 2>&1; then
+        cpu_cores=$(nproc)
+    elif [ -f /proc/cpuinfo ]; then
+        cpu_cores=$(grep -c ^processor /proc/cpuinfo)
+    else
+        cpu_cores=4  # Fallback to 4 cores
+    fi
+    
+    print_message "Using $cpu_cores cores for parallel compilation..."
+    
+    # Run build with parallel jobs (separate log file to avoid duplication)
+    local build_log="$DIAG_TEST_DIR/build_log.txt"
+    cmake --build . -j"$cpu_cores" > "$build_log" 2>&1 || { print_result 1 "Build failed for Unity tests"; while IFS= read -r line; do print_output "$line"; done < "$build_log"; return 1; }
+    
+    # Filter and display build output (keep important messages, skip compilation progress)  
+    grep -v -E '\[[[:space:]]*[0-9]+%\][[:space:]]*Compiling.*\.c to object file' "$build_log" > "$filtered_log" || true
+    while IFS= read -r line; do print_output "$line"; done < "$filtered_log"
+    
     cd "$SCRIPT_DIR" || { print_result 1 "Failed to return to script directory: ${SCRIPT_DIR#"$SCRIPT_DIR"/..}"; return 1; }
     print_result 0 "Unity tests compiled successfully."
     return 0
@@ -223,17 +248,123 @@ if compile_unity_tests; then
     result=$?
     
     if [ $result -eq 0 ]; then
-        print_result 0 "Unity test coverage calculated: $unity_coverage%"
-        ((PASS_COUNT++))
-        TOTAL_SUBTESTS=$((TOTAL_SUBTESTS + 1))
+        # Read .trial-ignore patterns to exclude files from analysis
+        trial_ignore_patterns=()
+        if [[ -f "$HYDROGEN_DIR/.trial-ignore" ]]; then
+            while IFS= read -r line; do
+                # Skip comments and empty lines
+                if [[ "$line" =~ ^[[:space:]]*# ]] || [[ -z "$line" ]]; then
+                    continue
+                fi
+                # Remove leading ./ if present and add pattern
+                pattern="${line#./}"
+                trial_ignore_patterns+=("$pattern")
+            done < "$HYDROGEN_DIR/.trial-ignore"
+        fi
         
-        # Reset coverage data after collecting Unity statistics
-        # This ensures blackbox tests start with clean coverage data
-        next_subtest
-        print_subtest "Reset Coverage Data for Blackbox Tests"
-        print_message "Resetting coverage data to prepare for blackbox test collection..."
-        cleanup_coverage_data
-        print_result 0 "Coverage data reset completed"
+        # Count coverage statistics directly from .gcov files
+        total_files=0
+        covered_files=0
+        total_lines=0
+        covered_lines=0
+        
+        # Create a list of .gcov files to process, filtering out excluded ones
+        gcov_files_to_process=()
+        while IFS= read -r gcov_file; do
+            if [[ -f "$gcov_file" ]]; then
+                # Skip Unity framework files and system files
+                basename_file=$(basename "$gcov_file")
+                if [[ "$basename_file" == "unity.c.gcov" ]] || [[ "$gcov_file" == *"/usr/"* ]]; then
+                    continue
+                fi
+                
+                # Skip system libraries and external dependencies
+                if [[ "$basename_file" == *"jansson"* ]] || \
+                   [[ "$basename_file" == *"json"* ]] || \
+                   [[ "$basename_file" == *"curl"* ]] || \
+                   [[ "$basename_file" == *"ssl"* ]] || \
+                   [[ "$basename_file" == *"crypto"* ]] || \
+                   [[ "$basename_file" == *"pthread"* ]] || \
+                   [[ "$basename_file" == *"uuid"* ]] || \
+                   [[ "$basename_file" == *"zlib"* ]] || \
+                   [[ "$basename_file" == *"pcre"* ]]; then
+                    continue
+                fi
+                
+                # Check if this file should be ignored based on .trial-ignore patterns
+                source_file="${basename_file%.gcov}"
+                should_ignore=false
+                for pattern in "${trial_ignore_patterns[@]}"; do
+                    if [[ "$source_file" == *"$pattern"* ]]; then
+                        should_ignore=true
+                        break
+                    fi
+                done
+                if [[ "$should_ignore" == true ]]; then
+                    continue
+                fi
+                
+                gcov_files_to_process+=("$gcov_file")
+            fi
+        done < <(find "$build_dir/src" -name "*.gcov" -type f 2>/dev/null)
+        
+        # Concatenate all relevant .gcov files and process them efficiently
+        if [[ ${#gcov_files_to_process[@]} -gt 0 ]]; then
+            # Create temporary combined file
+            combined_gcov="$DIAG_TEST_DIR/combined.gcov"
+            cat "${gcov_files_to_process[@]}" > "$combined_gcov"
+            
+            # Count only instrumented lines (covered + uncovered but measurable) using same method as extras script
+            line_counts=$(awk '
+                /^[[:space:]]*[0-9]+:[[:space:]]*[0-9]+:/ { covered++; total++ }
+                /^[[:space:]]*#####:[[:space:]]*[0-9]+:/ { total++ }
+                END { print total "," covered }
+            ' "$combined_gcov" 2>/dev/null)
+            
+            total_lines="${line_counts%,*}"
+            covered_lines="${line_counts#*,}"
+            
+            if [[ -z "$total_lines" ]] || [[ ! "$total_lines" =~ ^[0-9]+$ ]]; then
+                total_lines=0
+            fi
+            
+            if [[ -z "$covered_lines" ]] || [[ ! "$covered_lines" =~ ^[0-9]+$ ]]; then
+                covered_lines=0
+            fi
+            
+            # Count files individually for file statistics
+            total_files=${#gcov_files_to_process[@]}
+            covered_files=0
+            for gcov_file in "${gcov_files_to_process[@]}"; do
+                file_covered_lines=$(grep -c "^[[:space:]]*[1-9][0-9]*:[[:space:]]*[0-9][0-9]*:" "$gcov_file" 2>/dev/null)
+                if [[ -z "$file_covered_lines" ]] || [[ ! "$file_covered_lines" =~ ^[0-9]+$ ]]; then
+                    file_covered_lines=0
+                fi
+                if [[ $file_covered_lines -gt 0 ]]; then
+                    covered_files=$((covered_files + 1))
+                fi
+            done
+            
+            # Clean up temporary file
+            rm -f "$combined_gcov"
+        fi
+        
+        # Display detailed coverage information and calculate percentage
+        if [[ $total_files -gt 0 ]]; then
+            print_message "Files instrumented: $covered_files of $total_files source files have coverage"
+            print_message "Lines instrumented: $covered_lines of $total_lines executable lines covered"
+            
+            # Calculate actual percentage from our analysis
+            if [[ $total_lines -gt 0 ]]; then
+                actual_percentage=$(awk "BEGIN {printf \"%.3f\", ($covered_lines / $total_lines) * 100}")
+            else
+                actual_percentage="0.000"
+            fi
+        else
+            actual_percentage="0.000"
+        fi
+        
+        print_result 0 "Unity test coverage calculated: $actual_percentage%"
         ((PASS_COUNT++))
         TOTAL_SUBTESTS=$((TOTAL_SUBTESTS + 1))
     else

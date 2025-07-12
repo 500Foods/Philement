@@ -87,14 +87,14 @@ calculate_unity_coverage() {
                 instrumented_files=$((instrumented_files + 1))
             fi
         fi
-    done < <(find "$build_dir" -name "*.gcov" -type f 2>/dev/null)
+    done < <(find "$build_dir/src" -name "*.gcov" -type f 2>/dev/null)
     
     # Process all valid gcov files at once using cat for maximum efficiency
     if [[ ${#valid_gcov_files[@]} -gt 0 ]]; then
         local combined_data
         combined_data=$(cat "${valid_gcov_files[@]}" 2>/dev/null | awk '
-            /^[[:space:]]*[0-9#-].*:/ { total++ }
-            /^[[:space:]]*[1-9][0-9]*.*:/ { covered++ }
+            /^[[:space:]]*[0-9]+:[[:space:]]*[0-9]+:/ { covered++; total++ }
+            /^[[:space:]]*#####:[[:space:]]*[0-9]+:/ { total++ }
             END { print total "," covered }
         ')
         

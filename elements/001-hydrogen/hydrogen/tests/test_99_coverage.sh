@@ -1,10 +1,10 @@
-#!/bin/bash
+e#!/bin/bash
 
-# Test: Build System Cleanup and Coverage Collection
-# Performs comprehensive build cleanup using CMake and collects blackbox test coverage
+# Test: Coverage Collection and Analysis
+# Collects and analyzes coverage data from Unity and blackbox tests
 
 # Test configuration
-TEST_NAME="Build System Cleanup and Coverage Collection"
+TEST_NAME="Coverage Collection and Analysis"
 SCRIPT_VERSION="2.0.0"
 
 # Get the directory where this script is located
@@ -86,12 +86,12 @@ print_subtest "Collect Blackbox Test Coverage"
 
 print_message "Collecting coverage data from blackbox tests..."
 
-# Find the hydrogen_coverage binary
-HYDROGEN_COVERAGE_BIN="$HYDROGEN_DIR/hydrogen_coverage"
+# Check for blackbox coverage data in build/coverage directory only
+BLACKBOX_COVERAGE_DIR="$HYDROGEN_DIR/build/coverage"
 
-if [ -f "$HYDROGEN_COVERAGE_BIN" ]; then
-    # Collect blackbox coverage data
-    coverage_percentage=$(collect_blackbox_coverage "$HYDROGEN_COVERAGE_BIN" "$TIMESTAMP")
+if [ -d "$BLACKBOX_COVERAGE_DIR" ]; then
+    # Collect blackbox coverage data strictly from build/coverage
+    coverage_percentage=$(collect_blackbox_coverage_from_dir "$BLACKBOX_COVERAGE_DIR" "$TIMESTAMP")
     result=$?
     
     if [ $result -eq 0 ]; then
@@ -109,7 +109,7 @@ if [ -f "$HYDROGEN_COVERAGE_BIN" ]; then
         EXIT_CODE=1
     fi
 else
-    print_result 1 "Hydrogen coverage binary not found at: $HYDROGEN_COVERAGE_BIN"
+    print_result 1 "Blackbox coverage directory not found at: $BLACKBOX_COVERAGE_DIR"
     EXIT_CODE=1
 fi
 

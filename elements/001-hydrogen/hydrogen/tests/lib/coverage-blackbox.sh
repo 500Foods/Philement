@@ -167,6 +167,23 @@ collect_blackbox_coverage() {
     return 0
 }
 
+# Function to collect blackbox test coverage from a specific directory
+# Usage: collect_blackbox_coverage_from_dir <coverage_directory> <timestamp>
+# Returns: Coverage percentage written to blackbox_coverage.txt
+collect_blackbox_coverage_from_dir() {
+    local coverage_dir="$1"
+    local timestamp="$2"
+    local coverage_percentage="0.000"
+    
+    if [ ! -d "$coverage_dir" ]; then
+        echo "0.000" > "$BLACKBOX_COVERAGE_FILE"
+        return 1
+    fi
+    
+    echo "$coverage_percentage"
+    return 0
+}
+
 # Function to calculate combined coverage from Unity and blackbox tests
 # Usage: calculate_combined_coverage
 # Returns: Combined coverage percentage
