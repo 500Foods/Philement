@@ -63,15 +63,15 @@ Below is a comprehensive list of all test scripts currently available in the sui
 ### Static Analysis & Code Quality Tests
 
 - **[test_03_code_size.sh](docs/test_03_code_size.md)**: Analyzes code size metrics and file distribution.
-- **[test_04_cppcheck.sh](docs/test_04_cppcheck.md)**: Performs C/C++ static analysis using cppcheck.
-- **[test_05_shellcheck.sh](docs/test_05_shellcheck.md)**: Validates shell scripts using shellcheck with exception justification checks.
 - **[test_06_check_links.sh](docs/test_06_check_links.md)**: Validates links in documentation files.
+- **[test_91_cppcheck.sh](docs/test_91_cppcheck.md)**: Performs C/C++ static analysis using cppcheck.
+- **[test_92_shellcheck.sh](docs/test_92_shellcheck.md)**: Validates shell scripts using shellcheck with exception justification checks.
 - **[test_94_eslint.sh](docs/test_94_eslint.md)**: Lints JavaScript files using eslint.
 - **[test_95_stylelint.sh](docs/test_95_stylelint.md)**: Validates CSS files using stylelint.
 - **[test_96_htmlhint.sh](docs/test_96_htmlhint.md)**: Validates HTML files using htmlhint.
 - **[test_97_jsonlint.sh](docs/test_97_jsonlint.md)**: Validates JSON file syntax and structure.
 - **[test_98_markdownlint.sh](docs/test_98_markdownlint.md)**: Lints Markdown documentation using markdownlint.
-- **[test_99_cleanup.sh](docs/test_99_cleanup.md)**: Performs comprehensive build system cleanup.
+- **[test_99_coverage.sh](docs/test_99_coverage.md)**: Performs comprehensive coverge analysis.    
 
 ## Configuration Files
 

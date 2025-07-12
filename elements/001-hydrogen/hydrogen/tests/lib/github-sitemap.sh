@@ -21,12 +21,8 @@ detect_cpu_count() {
         cpu_count=1
     fi
     
-    # Use CPU count but cap at 8 for reasonable performance
-    if [[ "$cpu_count" -gt 8 ]]; then
-        echo 8
-    else
-        echo "$cpu_count"
-    fi
+    # Use full CPU count without capping for maximum parallelism
+    echo "$cpu_count"
 }
 
 # Performance timing functions
@@ -132,9 +128,9 @@ fi
 
 # Check dependencies
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TABLES_EXE="${SCRIPT_DIR}/tables"
-if [[ ! -x "$TABLES_EXE" ]]; then
-    echo "Error: tables executable not found at $TABLES_EXE" >&2
+TABLES_SCRIPT="${SCRIPT_DIR}/tables"
+if [[ ! -f "$TABLES_SCRIPT" ]]; then
+    echo "Error: $TABLES_SCRIPT not found" >&2
     exit 1
 fi
 
@@ -181,12 +177,11 @@ debug_log "Set repo root to $repo_root for input file $INPUT_FILE"
 
 timing_end "initialization"
 
-# Build file existence cache with optimized find
-timing_start "build_file_cache"
-build_file_cache() {
-    debug_log "Building file existence cache"
-    local cache_count=0
-    local ignore_patterns=()
+# Load ignore patterns once and export for parallel processes
+timing_start "load_ignore_patterns"
+declare -a global_ignore_patterns
+load_ignore_patterns() {
+    debug_log "Loading ignore patterns"
     
     # Read ignore patterns from specified ignore file or default to .lintignore in same dir as input file
     local ignore_file=""
@@ -206,13 +201,28 @@ build_file_cache() {
         while IFS= read -r line; do
             # Skip empty lines and comments
             if [[ -n "$line" && ! "$line" =~ ^[[:space:]]*# ]]; then
-                ignore_patterns+=("$line")
+                global_ignore_patterns+=("$line")
                 debug_log "Added ignore pattern: $line"
             fi
         done < "$ignore_file"
     else
         debug_log "No ignore file found at $ignore_file"
     fi
+    
+    # Export patterns as delimited string for parallel processes
+    local IFS='|'
+    export IGNORE_PATTERNS_SERIALIZED="${global_ignore_patterns[*]}"
+    debug_log "Exported ${#global_ignore_patterns[@]} ignore patterns"
+}
+
+load_ignore_patterns
+timing_end "load_ignore_patterns"
+
+# Build file existence cache with optimized find
+timing_start "build_file_cache"
+build_file_cache() {
+    debug_log "Building file existence cache"
+    local cache_count=0
     
     # Single find command with optimized output
     while IFS= read -r -d '' entry; do
@@ -226,7 +236,7 @@ build_file_cache() {
         fi
         
         local excluded=false
-        for pattern in "${ignore_patterns[@]}"; do
+        for pattern in "${global_ignore_patterns[@]}"; do
             shopt -s extglob
             if [[ "$rel_path" == @($pattern) || "/$rel_path" == @($pattern) ]]; then
                 shopt -u extglob
@@ -294,30 +304,20 @@ process_file_batch() {
             rel_path="$path"
         fi
         
-        # Read ignore patterns from the same file used in main script
-        local ignore_file=""
-        if [[ -n "$IGNORE_FILE" ]]; then
-            if [[ "$IGNORE_FILE" == /* ]]; then
-                ignore_file="$IGNORE_FILE"
-            else
-                ignore_file="$original_dir/$IGNORE_FILE"
-            fi
-        else
-            ignore_file="$repo_root/.lintignore"
-        fi
-        
-        if [[ -f "$ignore_file" ]]; then
-            while IFS= read -r line; do
-                # Skip empty lines and comments
-                if [[ -n "$line" && ! "$line" =~ ^[[:space:]]*# ]]; then
-                    shopt -s extglob
-                    if [[ "$rel_path" == @($line) || "/$rel_path" == @($line) || "$rel_path/" == @($line) || "/$rel_path/" == @($line) ]]; then
-                        shopt -u extglob
-                        return 0  # Should ignore
-                    fi
+        # Use centralized ignore patterns from environment variable
+        if [[ -n "$IGNORE_PATTERNS_SERIALIZED" ]]; then
+            # Split the serialized patterns properly
+            local patterns_string="$IGNORE_PATTERNS_SERIALIZED"
+            local pattern
+            while IFS='|' read -r -d '|' pattern || [[ -n "$pattern" ]]; do
+                [[ -z "$pattern" ]] && continue
+                shopt -s extglob
+                if [[ "$rel_path" == @($pattern) || "/$rel_path" == @($pattern) || "$rel_path/" == @($pattern) || "/$rel_path/" == @($pattern) ]]; then
                     shopt -u extglob
+                    return 0  # Should ignore
                 fi
-            done < "$ignore_file"
+                shopt -u extglob
+            done <<< "${patterns_string}|"
         fi
         
         return 1  # Should not ignore
@@ -494,7 +494,6 @@ while [[ -s "$files_to_process" ]]; do
     
     # Process current batch in parallel using xargs
     xargs -P "$JOBS" -I {} bash -c "process_file_batch \"\$1\" \"\$2\" \"\$3\" \"\$4\" <<< \"\$5\"" _ "$cache_file" "$repo_root" "$original_dir" "$results_file" {} < "$files_to_process"
-    
     # Extract newly discovered files from results
     new_files_temp="$temp_dir/new_files_$iteration.txt"
     : > "$new_files_temp"
@@ -679,12 +678,12 @@ fi
 timing_start "table_rendering"
 [[ "$DEBUG" == "true" ]] && debug_flag="--debug" || debug_flag=""
 
-"$TABLES_EXE" "$reviewed_layout_json" "$reviewed_data_json" ${debug_flag:+"$debug_flag"}
+"$TABLES_SCRIPT" "$reviewed_layout_json" "$reviewed_data_json" ${debug_flag:+"$debug_flag"}
 if [[ ${#missing_links[@]} -gt 0 ]]; then
-    "$TABLES_EXE" "$missing_layout_json" "$missing_data_json" ${debug_flag:+"$debug_flag"}
+    "$TABLES_SCRIPT" "$missing_layout_json" "$missing_data_json" ${debug_flag:+"$debug_flag"}
 fi
 if [[ ${#orphaned_files[@]} -gt 0 ]]; then
-    "$TABLES_EXE" "$orphaned_layout_json" "$orphaned_data_json" ${debug_flag:+"$debug_flag"}
+    "$TABLES_SCRIPT" "$orphaned_layout_json" "$orphaned_data_json" ${debug_flag:+"$debug_flag"}
 fi
 timing_end "table_rendering"
 
@@ -728,6 +727,7 @@ if [[ "$PROFILE" == "true" ]]; then
     echo "[PROFILE] Performance Summary (xargs Parallel Mode - $JOBS jobs):" >&2
     echo "[PROFILE] Total execution: ${timing_data[total_execution_duration]}ms" >&2
     echo "[PROFILE] Initialization: ${timing_data[initialization_duration]}ms" >&2
+    echo "[PROFILE] Load ignore patterns: ${timing_data[load_ignore_patterns_duration]}ms" >&2
     echo "[PROFILE] Build file cache: ${timing_data[build_file_cache_duration]}ms" >&2
     echo "[PROFILE] Parallel setup: ${timing_data[parallel_setup_duration]}ms" >&2
     echo "[PROFILE] Parallel processing: ${timing_data[parallel_processing_duration]}ms" >&2
