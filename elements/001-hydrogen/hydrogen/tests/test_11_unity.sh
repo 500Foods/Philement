@@ -14,21 +14,24 @@ TEST_NAME="Unity Unit Tests"
 SCRIPT_VERSION="2.0.2"
 
 # Get the directory where this script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+TEST_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 if [[ -z "$LOG_OUTPUT_SH_GUARD" ]]; then
     # shellcheck source=tests/lib/log_output.sh  # Resolve path statically
-    source "$SCRIPT_DIR/lib/log_output.sh"
+    source "$TEST_SCRIPT_DIR/lib/log_output.sh"
 fi
 
 # shellcheck source=tests/lib/file_utils.sh # Resolve path statically
-source "$SCRIPT_DIR/lib/file_utils.sh"
+source "$TEST_SCRIPT_DIR/lib/file_utils.sh"
 # shellcheck source=tests/lib/framework.sh # Resolve path statically
-source "$SCRIPT_DIR/lib/framework.sh"
+source "$TEST_SCRIPT_DIR/lib/framework.sh"
 # shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
-source "$SCRIPT_DIR/lib/lifecycle.sh"
+source "$TEST_SCRIPT_DIR/lib/lifecycle.sh"
 # shellcheck source=tests/lib/coverage.sh # Resolve path statically
-source "$SCRIPT_DIR/lib/coverage.sh"
+source "$TEST_SCRIPT_DIR/lib/coverage.sh"
+
+# Restore SCRIPT_DIR after sourcing libraries (they may override it)
+SCRIPT_DIR="$TEST_SCRIPT_DIR"
 
 # Test configuration
 EXIT_CODE=0
@@ -61,6 +64,7 @@ UNITY_DIR="$SCRIPT_DIR/unity"
 DIAG_DIR="$SCRIPT_DIR/diagnostics"
 LOG_FILE="$SCRIPT_DIR/logs/unity_tests.log"
 DIAG_TEST_DIR="$DIAG_DIR/unity_tests_${TIMESTAMP}"
+
 
 # Create output directories
 next_subtest
