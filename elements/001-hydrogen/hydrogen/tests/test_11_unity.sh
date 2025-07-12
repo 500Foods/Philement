@@ -226,6 +226,16 @@ if compile_unity_tests; then
         print_result 0 "Unity test coverage calculated: $unity_coverage%"
         ((PASS_COUNT++))
         TOTAL_SUBTESTS=$((TOTAL_SUBTESTS + 1))
+        
+        # Reset coverage data after collecting Unity statistics
+        # This ensures blackbox tests start with clean coverage data
+        next_subtest
+        print_subtest "Reset Coverage Data for Blackbox Tests"
+        print_message "Resetting coverage data to prepare for blackbox test collection..."
+        cleanup_coverage_data
+        print_result 0 "Coverage data reset completed"
+        ((PASS_COUNT++))
+        TOTAL_SUBTESTS=$((TOTAL_SUBTESTS + 1))
     else
         print_result 1 "Failed to calculate Unity test coverage"
         EXIT_CODE=1

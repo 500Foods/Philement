@@ -275,7 +275,7 @@ hydrogen_add_executable_target(hydrogen_perf "Performance"
 
 # Coverage build for unit testing with gcov
 hydrogen_add_executable_target(hydrogen_coverage "Coverage" 
-    "-O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer -fprofile-dir=./gcov" 
+    "-O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer" 
     "--coverage -lgcov -no-pie"
 )
 
