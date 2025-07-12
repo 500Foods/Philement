@@ -222,9 +222,6 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [lifecycle.md](tests/docs/lifecycle.md): Test lifecycle management documentation
 - [log_output.md](tests/docs/log_output.md): Log output formatting and analysis
 - [network_utils.md](tests/docs/network_utils.md): Network utility functions documentation
-- [tables.md](tests/docs/tables.md): Table system overview documentation
-- [tables_developer.md](tests/docs/tables_developer.md): Documentation for developers wanting to extend or customize the tables.sh system
-- [tables_technical.md](tests/docs/tables_technical.md): Technical information for those who want to make the most of the tables.sh system
 - [test_00_all.md](tests/docs/test_00_all.md): Test orchestration and execution framework
 - [test_01_compilation.md](tests/docs/test_01_compilation.md): Compilation and build verification tests
 - [test_12_env_variables.md](tests/docs/test_12_env_variables.md): Environment variable validation

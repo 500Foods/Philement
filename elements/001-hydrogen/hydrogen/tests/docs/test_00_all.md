@@ -108,4 +108,3 @@ The script automatically updates the project README.md with:
 
 - [LIBRARIES.md](LIBRARIES.md) - Table of Contents for modular library scripts in the 'lib/' directory
 - [framework.md](framework.md) - Testing framework overview and architecture
-- [tables.md](tables.md) - Table system overview documentation
