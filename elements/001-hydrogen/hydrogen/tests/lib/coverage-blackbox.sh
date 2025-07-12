@@ -30,8 +30,13 @@ collect_blackbox_coverage() {
     local project_root="$original_dir"
     
     # Find the directory where hydrogen_coverage was built (contains .gcno and .gcda files)
+    # This should be the main build directory, not build_unity
     local build_dir
-    build_dir="$(dirname "$hydrogen_coverage_bin")"
+    if [[ -d "$original_dir/build" ]]; then
+        build_dir="$original_dir/build"
+    else
+        build_dir="$(dirname "$hydrogen_coverage_bin")"
+    fi
     
     # Generate fresh gcov files from accumulated .gcda files (blackbox test results)
     cd "$build_dir" || return 1
@@ -47,15 +52,20 @@ collect_blackbox_coverage() {
         return 1
     fi
     
-    # Generate gcov files for all .gcda files (place them in same directories as .gcno/.gcda files)
-    find . -name "*.gcda" | while IFS= read -r gcda_file; do
-        local gcda_dir
-        gcda_dir="$(dirname "$gcda_file")"
-        local original_pwd="$PWD"
-        cd "$gcda_dir" || continue
-        gcov "$(basename "$gcda_file")" > /dev/null 2>&1
-        cd "$original_pwd" || return 1
-    done
+    # Generate gcov files more efficiently using parallel processing
+    if command -v xargs >/dev/null 2>&1; then
+        # Use xargs for parallel processing if available (fixed conflicting options)
+        find . -name "*.gcda" -print0 | xargs -0 -P4 -I{} sh -c "
+            gcda_dir=\"\$(dirname '{}')\"
+            cd \"\$gcda_dir\" && gcov \"\$(basename '{}')\" >/dev/null 2>&1
+        "
+    else
+        # Fallback to optimized sequential processing
+        find . -name "*.gcda" -exec sh -c '
+            gcda_dir="$(dirname "$1")"
+            cd "$gcda_dir" && gcov "$(basename "$1")" >/dev/null 2>&1
+        ' _ {} \;
+    fi
     
     # Return to original directory
     cd "$original_dir" || return 1
@@ -66,50 +76,83 @@ collect_blackbox_coverage() {
     local instrumented_files=0
     local covered_files=0
     
-    # Process project source files against gcov data, similar to Unity coverage approach
+    # Build list of valid gcov files that correspond to project source files
+    local valid_gcov_files=()
+    declare -A blackbox_gcov_cache
+    
+    # First, cache all available gcov files
+    while IFS= read -r gcov_file; do
+        local gcov_basename
+        gcov_basename=$(basename "$gcov_file")
+        blackbox_gcov_cache["$gcov_basename"]="$gcov_file"
+    done < <(find "$build_dir" -name "*.gcov" -type f 2>/dev/null)
+    
+    # Debug: Check if we found any gcov files
+    if [[ ${#blackbox_gcov_cache[@]} -eq 0 ]]; then
+        echo "No gcov files found in $build_dir" >&2
+        cd "$original_dir" || return 1
+        echo "0.000" > "$BLACKBOX_COVERAGE_FILE"
+        return 1
+    fi
+    
+    
+    # Process project source files to find matching gcov files
+    local total_source_files=0
+    local ignored_files=0
+    local matched_files=0
+    local unmatched_files=0
+    
     while IFS= read -r source_file; do
+        total_source_files=$((total_source_files + 1))
+        
         if should_ignore_file "$source_file" "$project_root"; then
+            ignored_files=$((ignored_files + 1))
             continue
         fi
         
         local source_basename
         source_basename=$(basename "$source_file")
         local gcov_filename="${source_basename}.gcov"
+        local gcov_file="${blackbox_gcov_cache["$gcov_filename"]}"
         
-        # Look for corresponding gcov file in build directory
-        local gcov_file=""
-        while IFS= read -r potential_gcov; do
-            if [[ "$(basename "$potential_gcov")" == "$gcov_filename" ]]; then
-                gcov_file="$potential_gcov"
-                break
-            fi
-        done < <(find "$build_dir" -name "$gcov_filename" -type f 2>/dev/null)
-        
-        if [[ -f "$gcov_file" ]]; then
-            # Extract lines executed and total lines from gcov file
-            local file_total
-            local file_covered
-            file_total=$(grep -c "^[[:space:]]*[0-9#-].*:" "$gcov_file" 2>/dev/null || echo "0")
-            file_covered=$(grep -c "^[[:space:]]*[1-9][0-9]*.*:" "$gcov_file" 2>/dev/null || echo "0")
+        if [[ -n "$gcov_file" && -f "$gcov_file" ]]; then
+            valid_gcov_files+=("$gcov_file")
+            instrumented_files=$((instrumented_files + 1))
+            matched_files=$((matched_files + 1))
+        else
+            unmatched_files=$((unmatched_files + 1))
+        fi
+    done < <(get_cached_source_files "$project_root")
+    
+    # Process valid gcov files individually for accurate coverage calculation
+    if [[ ${#valid_gcov_files[@]} -gt 0 ]]; then
+        for gcov_file in "${valid_gcov_files[@]}"; do
+            # Use efficient awk processing for line counting per file
+            local file_data
+            file_data=$(awk '
+                /^[[:space:]]*[0-9#-].*:/ { total++ }
+                /^[[:space:]]*[1-9][0-9]*.*:/ { covered++ }
+                END { print total "," covered }
+            ' "$gcov_file" 2>/dev/null)
             
-            # Ensure values are clean integers
-            file_total=$(echo "$file_total" | tr -d '\n\r\t ' | grep -o '[0-9]*' | head -1)
-            file_covered=$(echo "$file_covered" | tr -d '\n\r\t ' | grep -o '[0-9]*' | head -1)
+            local file_total="${file_data%,*}"
+            local file_covered="${file_data#*,}"
             
-            # Default to 0 if empty
+            # Default to 0 if parsing failed
             file_total=${file_total:-0}
             file_covered=${file_covered:-0}
             
             total_lines=$((total_lines + file_total))
             covered_lines=$((covered_lines + file_covered))
-            instrumented_files=$((instrumented_files + 1))
             
             # Count as covered if any lines were executed
             if [[ $file_covered -gt 0 ]]; then
                 covered_files=$((covered_files + 1))
             fi
-        fi
-    done < <(find "$project_root/src" -name "*.c" -type f 2>/dev/null)
+        done
+    else
+        echo "No valid gcov files found for project source files" >&2
+    fi
     
     # Calculate coverage percentage with 3 decimal places
     if [[ $total_lines -gt 0 ]]; then
@@ -201,11 +244,26 @@ identify_uncovered_files() {
     
     # Find potential build directories to check for gcov files
     local build_dirs=()
-    build_dirs+=("$project_root/build_unity")
+    build_dirs+=("$project_root/build/unity")
     build_dirs+=("$project_root/build")
     build_dirs+=("$project_root")  # In case gcov files are in project root
     
-    # Get all source files in the project
+    # Cache all gcov files first to avoid repeated filesystem traversals
+    declare -A gcov_cache
+    for build_dir in "${build_dirs[@]}"; do
+        if [[ -d "$build_dir" ]]; then
+            while IFS= read -r gcov_file; do
+                local gcov_basename
+                gcov_basename=$(basename "$gcov_file")
+                # Store the first found gcov file for each basename
+                if [[ -z "${gcov_cache["$gcov_basename"]}" ]]; then
+                    gcov_cache["$gcov_basename"]="$gcov_file"
+                fi
+            done < <(find "$build_dir" -name "*.gcov" -type f 2>/dev/null)
+        fi
+    done
+    
+    # Process all source files using cached gcov data and cached source files
     while IFS= read -r source_file; do
         if should_ignore_file "$source_file" "$project_root"; then
             continue
@@ -213,35 +271,18 @@ identify_uncovered_files() {
         
         total_count=$((total_count + 1))
         
-        # Check if this source file has corresponding gcov coverage in any build directory
+        # Check if this source file has corresponding gcov coverage using cache
         local source_basename
         source_basename=$(basename "$source_file")
+        local gcov_file="${gcov_cache["${source_basename}.gcov"]}"
         local found_coverage=false
-        local file_covered=0
         
-        for build_dir in "${build_dirs[@]}"; do
-            if [[ -d "$build_dir" ]]; then
-                # Look for gcov files in subdirectories (since they're now placed alongside .gcno/.gcda files)
-                while IFS= read -r gcov_file; do
-                    if [[ "$(basename "$gcov_file")" == "${source_basename}.gcov" ]]; then
-                        # Check if the file has any coverage
-                        file_covered=$(grep -c "^[[:space:]]*[1-9][0-9]*.*:" "$gcov_file" 2>/dev/null || echo "0")
-                        # Clean the variable to remove any whitespace/newlines
-                        file_covered=$(echo "$file_covered" | tr -d '\n\r\t ' | grep -o '[0-9]*' | head -1)
-                        file_covered=${file_covered:-0}
-                        
-                        if [[ $file_covered -gt 0 ]]; then
-                            found_coverage=true
-                            break 2  # Break out of both loops
-                        fi
-                    fi
-                done < <(find "$build_dir" -name "${source_basename}.gcov" -type f 2>/dev/null)
-                
-                if [[ "$found_coverage" == true ]]; then
-                    break
-                fi
+        if [[ -n "$gcov_file" && -f "$gcov_file" ]]; then
+            # Check if the file has any coverage using more efficient approach
+            if grep -q "^[[:space:]]*[1-9][0-9]*.*:" "$gcov_file" 2>/dev/null; then
+                found_coverage=true
             fi
-        done
+        fi
         
         if [[ "$found_coverage" == true ]]; then
             covered_count=$((covered_count + 1))
@@ -249,7 +290,7 @@ identify_uncovered_files() {
             uncovered_count=$((uncovered_count + 1))
             uncovered_files+=("$source_file")
         fi
-    done < <(find "$project_root/src" -name "*.c" -type f 2>/dev/null)
+    done < <(get_cached_source_files "$project_root")
     
     # Output results in a structured format
     echo "COVERED_FILES_COUNT:$covered_count"

@@ -54,7 +54,7 @@ print_message "Collecting coverage data from Unity tests..."
 
 # Find the Unity build directory
 HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
-UNITY_BUILD_DIR="$HYDROGEN_DIR/build_unity"
+UNITY_BUILD_DIR="$HYDROGEN_DIR/build/unity"
 
 if [ -d "$UNITY_BUILD_DIR" ]; then
     # Calculate Unity coverage data
@@ -88,11 +88,6 @@ print_message "Collecting coverage data from blackbox tests..."
 
 # Find the hydrogen_coverage binary
 HYDROGEN_COVERAGE_BIN="$HYDROGEN_DIR/hydrogen_coverage"
-
-# Also check if it's in the build directory
-if [ ! -f "$HYDROGEN_COVERAGE_BIN" ] && [ -f "$HYDROGEN_DIR/build/hydrogen_coverage" ]; then
-    HYDROGEN_COVERAGE_BIN="$HYDROGEN_DIR/build/hydrogen_coverage"
-fi
 
 if [ -f "$HYDROGEN_COVERAGE_BIN" ]; then
     # Collect blackbox coverage data
