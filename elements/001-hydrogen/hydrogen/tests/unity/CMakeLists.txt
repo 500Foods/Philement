@@ -9,6 +9,11 @@ project(hydrogen_unity_tests C)
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED True)
 
+# Define version strings as CMake variables
+set(HYDROGEN_VERSION "1_0_0_test")
+set(HYDROGEN_RELEASE "test_build")
+set(HYDROGEN_BUILD_TYPE "Coverage")
+
 # Path to Unity framework
 set(UNITY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/framework/Unity")
 
@@ -36,60 +41,103 @@ set(UNITY_SOURCES
     ${UNITY_DIR}/src/unity.c
 )
 
+# Load .trial-ignore patterns early for filtering
+set(TRIAL_IGNORE_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../../.trial-ignore")
+set(IGNORED_PATTERNS "")
+if(EXISTS "${TRIAL_IGNORE_FILE}")
+    file(STRINGS "${TRIAL_IGNORE_FILE}" IGNORE_LINES)
+    foreach(line ${IGNORE_LINES})
+        # Skip comments and empty lines
+        if(NOT line MATCHES "^[[:space:]]*#" AND NOT line STREQUAL "")
+            string(REGEX REPLACE "^\\./?" "" pattern "${line}")
+            if(NOT pattern STREQUAL "")
+                list(APPEND IGNORED_PATTERNS "${pattern}")
+            endif()
+        endif()
+    endforeach()
+    list(LENGTH IGNORED_PATTERNS PATTERN_COUNT)
+    message(STATUS "Unity tests: Loaded ${PATTERN_COUNT} ignore patterns from .trial-ignore")
+endif()
+
 # Include actual Hydrogen source files for comprehensive coverage analysis
 # This allows us to measure coverage across the entire project, not just test stubs
-file(GLOB_RECURSE HYDROGEN_SOURCES 
+file(GLOB_RECURSE HYDROGEN_SOURCES_RAW 
     "${CMAKE_CURRENT_SOURCE_DIR}/../../src/*.c"
 )
 
 # Remove the main hydrogen.c file as it contains main() which conflicts with Unity
-list(FILTER HYDROGEN_SOURCES EXCLUDE REGEX ".*hydrogen\\.c$")
+list(FILTER HYDROGEN_SOURCES_RAW EXCLUDE REGEX ".*hydrogen\\.c$")
+
+# Filter HYDROGEN_SOURCES using .trial-ignore patterns (early filtering)
+set(HYDROGEN_SOURCES "")
+foreach(source_file ${HYDROGEN_SOURCES_RAW})
+    file(RELATIVE_PATH rel_path "${CMAKE_CURRENT_SOURCE_DIR}/../../src" ${source_file})
+    set(should_ignore FALSE)
+    foreach(pattern ${IGNORED_PATTERNS})
+        if(rel_path MATCHES "${pattern}")
+            set(should_ignore TRUE)
+            message(STATUS "Unity tests: Ignoring ${rel_path} (matches pattern: ${pattern})")
+            break()
+        endif()
+    endforeach()
+    if(NOT should_ignore)
+        list(APPEND HYDROGEN_SOURCES ${source_file})
+    endif()
+endforeach()
+
+list(LENGTH HYDROGEN_SOURCES SOURCE_COUNT)
+message(STATUS "Unity tests: Processing ${SOURCE_COUNT} source files after .trial-ignore filtering")
 
 # For comprehensive coverage, we include all source files but may need to provide
 # stub implementations for functions that require complex initialization
 
-# Create static library for each hydrogen source file to maintain directory structure
-set(HYDROGEN_OBJECTS "")
+# Create object files for each hydrogen source file to maintain directory structure
+set(HYDROGEN_OBJECT_FILES "")
 foreach(SOURCE_FILE ${HYDROGEN_SOURCES})
     # Get relative path from src directory
     file(RELATIVE_PATH REL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../src" ${SOURCE_FILE})
-    # Remove .c extension and create target name
+    # Remove .c extension and get directory structure
     string(REPLACE ".c" "" OBJ_NAME ${REL_PATH})
-    string(REPLACE "/" "_" OBJ_TARGET ${OBJ_NAME})
-    
-    # Create static library for this source file to get proper directory structure
-    add_library(${OBJ_TARGET}_lib STATIC ${SOURCE_FILE})
-    
-    # Set compile flags for coverage
-    target_compile_options(${OBJ_TARGET}_lib PRIVATE 
-        -std=c17 -Wall -Wextra -pedantic -Werror
-        -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer
-    )
-    
-    # Set compile definitions
-    target_compile_definitions(${OBJ_TARGET}_lib PRIVATE
-        _GNU_SOURCE
-        _POSIX_C_SOURCE=200809L
-        VERSION="1.0.0.test"
-        RELEASE="test-build"
-        BUILD_TYPE="Coverage"
-    )
-    
-    # Set output directory to mirror source structure  
     get_filename_component(OBJ_DIR ${REL_PATH} DIRECTORY)
+    get_filename_component(OBJ_BASENAME ${REL_PATH} NAME_WE)
+    
+    # Set up output directory structure to mirror source
     if(OBJ_DIR)
-        set_target_properties(${OBJ_TARGET}_lib PROPERTIES
-            ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/src/${OBJ_DIR}"
-        )
+        set(OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/src/${OBJ_DIR}")
+        set(OUTPUT_OBJ "${OUTPUT_DIR}/${OBJ_BASENAME}.o")
     else()
-        set_target_properties(${OBJ_TARGET}_lib PROPERTIES
-            ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/src"
-        )
+        set(OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/src")
+        set(OUTPUT_OBJ "${OUTPUT_DIR}/${OBJ_BASENAME}.o")
     endif()
     
-    # Add to list for linking
-    list(APPEND HYDROGEN_OBJECTS ${OBJ_TARGET}_lib)
+    # Create custom command to compile source file to object file
+    add_custom_command(
+        OUTPUT ${OUTPUT_OBJ}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_DIR}
+        COMMAND ${CMAKE_C_COMPILER} 
+            -std=c17 -Wall -Wextra -pedantic -Werror
+            -D_GNU_SOURCE
+            -D_POSIX_C_SOURCE=200809L
+            -DVERSION='"${HYDROGEN_VERSION}"'
+            -DRELEASE='"${HYDROGEN_RELEASE}"'
+            -DBUILD_TYPE='"${HYDROGEN_BUILD_TYPE}"'
+            -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer
+            -I${CMAKE_CURRENT_SOURCE_DIR}/../../src
+            -I${JANSSON_INCLUDE_DIRS}
+            -I${MICROHTTPD_INCLUDE_DIRS}
+            -I${WEBSOCKETS_INCLUDE_DIRS}
+            -I${BROTLI_INCLUDE_DIRS}
+            -c ${SOURCE_FILE} -o ${OUTPUT_OBJ}
+        DEPENDS ${SOURCE_FILE}
+        COMMENT "Compiling ${REL_PATH} to object file"
+    )
+    
+    # Add to list for linking with test executables
+    list(APPEND HYDROGEN_OBJECT_FILES ${OUTPUT_OBJ})
 endforeach()
+
+# Create a target that depends on all object files
+add_custom_target(hydrogen_objects ALL DEPENDS ${HYDROGEN_OBJECT_FILES})
 
 # Libraries needed for hydrogen
 set(HYDROGEN_LIBS
@@ -126,14 +174,17 @@ foreach(TEST_SOURCE ${TEST_SOURCES})
     target_compile_definitions(${TEST_NAME} PRIVATE
         _GNU_SOURCE
         _POSIX_C_SOURCE=200809L
-        VERSION="1.0.0.test"
-        RELEASE="test-build"
-        BUILD_TYPE="Coverage"
+        VERSION="${HYDROGEN_VERSION}"
+        RELEASE="${HYDROGEN_RELEASE}"
+        BUILD_TYPE="${HYDROGEN_BUILD_TYPE}"
     )
+    
+    # Make sure object files are built before linking test executable
+    add_dependencies(${TEST_NAME} hydrogen_objects)
     
     # Link with required libraries and coverage flags
     target_link_libraries(${TEST_NAME} 
-        ${HYDROGEN_OBJECTS}
+        ${HYDROGEN_OBJECT_FILES}
         ${HYDROGEN_LIBS}
         ${COVERAGE_LINK_FLAGS}
     )
