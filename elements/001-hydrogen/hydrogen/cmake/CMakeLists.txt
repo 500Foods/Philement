@@ -1,8 +1,8 @@
 # ──────────────────────────────────────────────────────────────────────────────
 # Hydrogen CMake Build System Configuration
-# 
+
 # This CMake configuration file sets up the build system for the Hydrogen server and example programs.
-#
+
 # - Default: Standard build with optimizations and debug symbols
 # - Debug: Build with AddressSanitizer for debugging memory issues
 # - Valgrind: Build optimized for memory analysis with Valgrind
@@ -10,7 +10,7 @@
 # - Coverage: Build with gcov coverage instrumentation for unit testing
 # - Release: Stripped, compressed build with embedded encrypted payload
 # - Examples: Builds for OIDC client examples (Authorization Code, Client Credentials, Password flows)
-#
+
 # Key features:
 # - Automatic version numbering based on git commits
 # - Multiple optimization levels for different use cases
@@ -18,7 +18,7 @@
 # - UPX compression for release builds
 # - Encrypted payload embedding
 # - Comprehensive build artifact management
-# 
+ 
 # Available CMake targets:
 # cmake --build . --target hydrogen          : Builds the default version with standard optimizations and debug symbols
 # cmake --build . --target hydrogen_debug    : Builds with AddressSanitizer enabled for catching memory issues
@@ -33,11 +33,9 @@
 # cmake --build . --target client_credentials: Builds the Client Credentials flow example
 # cmake --build . --target password_flow     : Builds the Resource Owner Password flow example
 # cmake --build . --target all_examples      : Builds all example programs
-# ──────────────────────────────────────────────────────────────────────────────
-# Change History
-# ──────────────────────────────────────────────────────────────────────────────
+
+# CHANGELOG
 # 2025-07-01: Added targets for building OIDC client example programs (auth_code_flow, client_credentials, password_flow) with regular and debug builds. Updated help and clean targets to include examples.
-# ──────────────────────────────────────────────────────────────────────────────
 
 cmake_minimum_required(VERSION 3.16)
 
