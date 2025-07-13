@@ -73,7 +73,7 @@ Hydrogen is currently designed for technical users who:
 
 ## Latest Test Results
 
-Generated on: Sat Jul 12 16:57:29 PDT 2025
+Generated on: Sat Jul 12 17:01:30 PDT 2025
 
 ### Summary
 
@@ -86,49 +86,49 @@ Generated on: Sat Jul 12 16:57:29 PDT 2025
 | Total Subtests | 179 |
 | Passed Subtests | 179 |
 | Failed Subtests | 0 |
-| Elapsed Time | 00:00:28.434 |
-| Running Time | 00:01:08.643 |
+| Elapsed Time | 00:00:27.309 |
+| Running Time | 00:01:06.693 |
 
 ### Unit Tests
 
 | Test Type | Files Cover | Files Instr | Lines Cover | Lines Instr | Coverage |
 | --------- | ----------- | ----------- | ----------- | ----------- | -------- |
 | Unity Tests | 3 | 118 | 31 | 11,682 | 0.265% |
-| Blackbox Tests | 89 | 119 | 5,574 | 11,856 | 47.014% |
+| Blackbox Tests | 89 | 119 | 5,570 | 11,856 | 46.980% |
 
 ### Individual Test Results
 
 | Status | Time | Test | Tests | Pass | Fail | Summary |
 | ------ | ---- | ---- | ----- | ---- | ---- | ------- |
-| ✅ | 00:00:13.704 | 01_compilation | 17 | 17 | 0 | Test completed without errors |
-| ✅ | 00:00:04.868 | 03_code_size_analysis | 5 | 5 | 0 | Test completed without errors |
-| ✅ | 00:00:10.713 | 06_markdown_links_check_(github-sitemap) | 4 | 4 | 0 | Test completed without errors |
-| ✅ | 00:00:01.380 | 10_memory_leak_detection | 4 | 4 | 0 | Test completed without errors |
-| ✅ | 00:00:04.266 | 11_unity_unit_tests | 6 | 6 | 0 | Test completed without errors |
-| ✅ | 00:00:01.569 | 12_env_var_substitution | 16 | 16 | 0 | Test completed without errors |
-| ✅ | 00:00:00.160 | 14_payload_env_vars | 2 | 2 | 0 | Test completed without errors |
-| ✅ | 00:00:00.668 | 16_library_dependencies | 14 | 14 | 0 | Test completed without errors |
-| ✅ | 00:00:00.404 | 18_json_error_handling | 4 | 4 | 0 | Test completed without errors |
-| ✅ | 00:00:01.946 | 20_crash_handler | 22 | 22 | 0 | Test completed without errors |
-| ✅ | 00:00:00.859 | 22_startup/shutdown | 9 | 9 | 0 | Test completed without errors |
-| ✅ | 00:00:02.375 | 24_signal_handling | 9 | 9 | 0 | Test completed without errors |
-| ✅ | 00:00:00.500 | 26_shutdown | 6 | 6 | 0 | Test completed without errors |
-| ✅ | 00:00:01.033 | 28_socket_rebinding | 7 | 7 | 0 | Test completed without errors |
-| ✅ | 00:00:01.606 | 30_api_prefix | 10 | 10 | 0 | Test completed without errors |
-| ✅ | 00:00:01.684 | 32_system_api_endpoints | 18 | 18 | 0 | Test completed without errors |
-| ✅ | 00:00:01.651 | 34_swagger | 13 | 13 | 0 | Test completed without errors |
-| ✅ | 00:00:04.742 | 91_c/c++_code_analysis_(cppcheck) | 1 | 1 | 0 | Test completed without errors |
-| ✅ | 00:00:05.831 | 92_shell_script_analysis_(shellcheck) | 2 | 2 | 0 | Test completed without errors |
-| ✅ | 00:00:00.070 | 94_javascript_linting_(eslint) | 1 | 1 | 0 | Test completed without errors |
-| ✅ | 00:00:00.065 | 95_css_linting_(stylelint) | 1 | 1 | 0 | Test completed without errors |
-| ✅ | 00:00:00.219 | 96_html_linting_(htmlhint) | 1 | 1 | 0 | Test completed without errors |
-| ✅ | 00:00:00.189 | 97_json_linting_(jsonlint) | 1 | 1 | 0 | Test completed without errors |
-| ✅ | 00:00:04.010 | 98_markdown_linting_(markdownlint) | 1 | 1 | 0 | Test completed without errors |
-| ✅ | 00:00:04.131 | 99_coverage_collection_and_analysis | 5 | 5 | 0 | Test completed without errors |
+| ✅ | 00:00:13.205 | 01_compilation | 17 | 17 | 0 | Test completed without errors |
+| ✅ | 00:00:04.551 | 03_code_size_analysis | 5 | 5 | 0 | Test completed without errors |
+| ✅ | 00:00:10.133 | 06_markdown_links_check_(github-sitemap) | 4 | 4 | 0 | Test completed without errors |
+| ✅ | 00:00:01.381 | 10_memory_leak_detection | 4 | 4 | 0 | Test completed without errors |
+| ✅ | 00:00:04.027 | 11_unity_unit_tests | 6 | 6 | 0 | Test completed without errors |
+| ✅ | 00:00:01.577 | 12_env_var_substitution | 16 | 16 | 0 | Test completed without errors |
+| ✅ | 00:00:00.161 | 14_payload_env_vars | 2 | 2 | 0 | Test completed without errors |
+| ✅ | 00:00:00.676 | 16_library_dependencies | 14 | 14 | 0 | Test completed without errors |
+| ✅ | 00:00:00.407 | 18_json_error_handling | 4 | 4 | 0 | Test completed without errors |
+| ✅ | 00:00:01.995 | 20_crash_handler | 22 | 22 | 0 | Test completed without errors |
+| ✅ | 00:00:00.846 | 22_startup/shutdown | 9 | 9 | 0 | Test completed without errors |
+| ✅ | 00:00:02.363 | 24_signal_handling | 9 | 9 | 0 | Test completed without errors |
+| ✅ | 00:00:00.476 | 26_shutdown | 6 | 6 | 0 | Test completed without errors |
+| ✅ | 00:00:01.043 | 28_socket_rebinding | 7 | 7 | 0 | Test completed without errors |
+| ✅ | 00:00:01.622 | 30_api_prefix | 10 | 10 | 0 | Test completed without errors |
+| ✅ | 00:00:01.711 | 32_system_api_endpoints | 18 | 18 | 0 | Test completed without errors |
+| ✅ | 00:00:01.649 | 34_swagger | 13 | 13 | 0 | Test completed without errors |
+| ✅ | 00:00:04.818 | 91_c/c++_code_analysis_(cppcheck) | 1 | 1 | 0 | Test completed without errors |
+| ✅ | 00:00:05.503 | 92_shell_script_analysis_(shellcheck) | 2 | 2 | 0 | Test completed without errors |
+| ✅ | 00:00:00.058 | 94_javascript_linting_(eslint) | 1 | 1 | 0 | Test completed without errors |
+| ✅ | 00:00:00.057 | 95_css_linting_(stylelint) | 1 | 1 | 0 | Test completed without errors |
+| ✅ | 00:00:00.212 | 96_html_linting_(htmlhint) | 1 | 1 | 0 | Test completed without errors |
+| ✅ | 00:00:00.171 | 97_json_linting_(jsonlint) | 1 | 1 | 0 | Test completed without errors |
+| ✅ | 00:00:04.012 | 98_markdown_linting_(markdownlint) | 1 | 1 | 0 | Test completed without errors |
+| ✅ | 00:00:04.039 | 99_coverage_collection_and_analysis | 5 | 5 | 0 | Test completed without errors |
 
 ## Repository Information
 
-Generated via cloc: Sat Jul 12 16:57:29 PDT 2025
+Generated via cloc: Sat Jul 12 17:01:30 PDT 2025
 
 ```cloc
 -------------------------------------------------------------------------------
@@ -139,12 +139,12 @@ Markdown                       205           6490             48          20184
 Bourne Shell                    51           2164           2331          11426
 JSON                            17              2              0           4701
 C/C++ Header                   105           1098           4275           2678
-CMake                            6            146            221            941
+CMake                            6            151            214            941
 Text                             1            100              0            670
 HTML                             1             74              0            493
 make                             1            162            188            396
 -------------------------------------------------------------------------------
-SUM:                           517          14753          12903          61724
+SUM:                           517          14758          12896          61724
 -------------------------------------------------------------------------------
 
 Code/Docs: 1.7    Code/Comments: 2.8
