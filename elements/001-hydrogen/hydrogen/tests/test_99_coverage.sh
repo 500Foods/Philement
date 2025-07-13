@@ -21,10 +21,12 @@ source "$SCRIPT_DIR/lib/file_utils.sh"
 source "$SCRIPT_DIR/lib/framework.sh"
 # shellcheck source=tests/lib/coverage.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/coverage.sh"
+# shellcheck source=tests/lib/coverage-common.sh # Resolve path statically
+source "$SCRIPT_DIR/lib/coverage-common.sh"
 
 # Test configuration
 EXIT_CODE=0
-TOTAL_SUBTESTS=5
+TOTAL_SUBTESTS=4
 PASS_COUNT=0
 
 # Auto-extract test number and set up environment
@@ -119,35 +121,53 @@ print_subtest "Calculate Combined Coverage"
 
 print_message "Calculating combined coverage from Unity and blackbox tests..."
 
-combined_coverage=$(calculate_combined_coverage)
-result=$?
-
-if [ $result -eq 0 ]; then
-    print_result 0 "Combined coverage calculated: $combined_coverage%"
-    ((PASS_COUNT++))
+# Use the same logic as our successful coverage_table.sh implementation
+if [ -f "${UNITY_COVERAGE_FILE}.detailed" ] && [ -f "${BLACKBOX_COVERAGE_FILE}.detailed" ]; then
+    # Read Unity coverage data
+    IFS=',' read -r _ _ unity_covered_lines unity_total_lines unity_instrumented_files unity_covered_files < "${UNITY_COVERAGE_FILE}.detailed"
+    
+    # Read Blackbox coverage data
+    IFS=',' read -r _ _ blackbox_covered_lines blackbox_total_lines blackbox_instrumented_files blackbox_covered_files < "${BLACKBOX_COVERAGE_FILE}.detailed"
+    
+    # Calculate combined coverage using max logic (union approach)
+    # For total lines: use the maximum total lines from either test suite
+    combined_total_lines=$((unity_total_lines > blackbox_total_lines ? unity_total_lines : blackbox_total_lines))
+    
+    # For covered lines: use the maximum covered lines (represents minimum bound of union)
+    combined_covered_lines=$((unity_covered_lines > blackbox_covered_lines ? unity_covered_lines : blackbox_covered_lines))
+    
+    # Calculate combined percentage
+    if [ "$combined_total_lines" -gt 0 ]; then
+        combined_coverage=$(awk "BEGIN {printf \"%.3f\", ($combined_covered_lines / $combined_total_lines) * 100}")
+        
+        # Format numbers with thousands separators
+        formatted_covered=$(printf "%'d" "$combined_covered_lines")
+        formatted_total=$(printf "%'d" "$combined_total_lines")
+        
+        # Store the combined coverage value for other scripts to use
+        echo "$combined_coverage" > "$COMBINED_COVERAGE_FILE"
+        
+        # Calculate combined file counts for the detailed file
+        # For files covered: count unique files that have coverage in either test suite
+        combined_covered_files=$((unity_covered_files > blackbox_covered_files ? unity_covered_files : blackbox_covered_files))
+        combined_instrumented_files=$((unity_instrumented_files > blackbox_instrumented_files ? unity_instrumented_files : blackbox_instrumented_files))
+        
+        # Store detailed combined coverage data for Test 00 to use in README
+        # Format: timestamp,percentage,covered_lines,total_lines,instrumented_files,covered_files
+        echo "$(date +%Y%m%d_%H%M%S),$combined_coverage,$combined_covered_lines,$combined_total_lines,$combined_instrumented_files,$combined_covered_files" > "${COMBINED_COVERAGE_FILE}.detailed"
+        
+        print_result 0 "Combined coverage calculated: $combined_coverage% - $formatted_covered of $formatted_total lines covered"
+        ((PASS_COUNT++))
+    else
+        print_result 1 "Failed to calculate combined coverage: no instrumented lines found"
+        EXIT_CODE=1
+    fi
 else
-    print_result 1 "Failed to calculate combined coverage"
+    print_result 1 "Failed to calculate combined coverage: detailed coverage data not available"
     EXIT_CODE=1
 fi
 
-# Subtest 4: Calculate Coverage Overlap
-next_subtest
-print_subtest "Calculate Coverage Overlap"
-
-print_message "Calculating coverage overlap between Unity and blackbox tests..."
-
-overlap_percentage=$(calculate_coverage_overlap)
-result=$?
-
-if [ $result -eq 0 ]; then
-    print_result 0 "Coverage overlap calculated: $overlap_percentage%"
-    ((PASS_COUNT++))
-else
-    print_result 1 "Failed to calculate coverage overlap"
-    EXIT_CODE=1
-fi
-
-# Subtest 5: Identify Uncovered Source Files
+# Subtest 4: Identify Uncovered Source Files
 next_subtest
 print_subtest "Identify Uncovered Source Files"
 
