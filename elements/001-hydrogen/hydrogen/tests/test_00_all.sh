@@ -107,6 +107,16 @@ get_blackbox_coverage() {
     fi
 }
 
+# Function to get combined test coverage
+get_combined_coverage() {
+    local combined_coverage_file="$RESULTS_DIR/combined_coverage.txt"
+    if [ -f "$combined_coverage_file" ]; then
+        cat "$combined_coverage_file" 2>/dev/null || echo "0.000"
+    else
+        echo "0.000"
+    fi
+}
+
 # Function to update README.md with test results
 update_readme_with_results() {
     local readme_file="$SCRIPT_DIR/../README.md"
@@ -165,14 +175,15 @@ update_readme_with_results() {
                 echo "| Elapsed Time | $TOTAL_ELAPSED_FORMATTED |"
                 echo "| Running Time | $TOTAL_RUNNING_TIME_FORMATTED |"
                 echo ""
-                echo "### Unit Tests"
+                echo "### Test Coverage"
                 echo ""
                 
                 # Get detailed coverage information with thousands separators
                 local unity_coverage_detailed="$RESULTS_DIR/unity_coverage.txt.detailed"
                 local blackbox_coverage_detailed="$RESULTS_DIR/blackbox_coverage.txt.detailed"
+                local combined_coverage_detailed="$RESULTS_DIR/combined_coverage.txt.detailed"
                 
-                if [ -f "$unity_coverage_detailed" ] || [ -f "$blackbox_coverage_detailed" ]; then
+                if [ -f "$unity_coverage_detailed" ] || [ -f "$blackbox_coverage_detailed" ] || [ -f "$combined_coverage_detailed" ]; then
                     echo "| Test Type | Files Cover | Files Instr | Lines Cover | Lines Instr | Coverage |"
                     echo "| --------- | ----------- | ----------- | ----------- | ----------- | -------- |"
                     
@@ -210,6 +221,24 @@ update_readme_with_results() {
                         fi
                     else
                         echo "| Blackbox Tests | 0 | 0 | 0 | 0 | 0.000% |"
+                    fi
+                    
+                    # Combined coverage
+                    if [ -f "$combined_coverage_detailed" ]; then
+                        local combined_timestamp combined_coverage_pct combined_covered combined_total combined_instrumented combined_covered_files
+                        IFS=',' read -r combined_timestamp combined_coverage_pct combined_covered combined_total combined_instrumented combined_covered_files < "$combined_coverage_detailed" 2>/dev/null
+                        if [ -n "$combined_total" ] && [ "$combined_total" -gt 0 ]; then
+                            # Add thousands separators
+                            combined_covered_formatted=$(printf "%'d" "$combined_covered" 2>/dev/null || echo "$combined_covered")
+                            combined_total_formatted=$(printf "%'d" "$combined_total" 2>/dev/null || echo "$combined_total")
+                            combined_covered_files=${combined_covered_files:-0}
+                            combined_instrumented=${combined_instrumented:-0}
+                            echo "| Combined Tests | ${combined_covered_files} | ${combined_instrumented} | ${combined_covered_formatted} | ${combined_total_formatted} | ${combined_coverage_pct}% |"
+                        else
+                            echo "| Combined Tests | 0 | 0 | 0 | 0 | 0.000% |"
+                        fi
+                    else
+                        echo "| Combined Tests | 0 | 0 | 0 | 0 | 0.000% |"
                     fi
                 else
                     echo "| Test Type | Files Cover | Files Instr | Lines Cover | Lines Instr | Coverage |"
@@ -849,6 +878,7 @@ TOTAL_RUNNING_TIME_FORMATTED=$(format_time_duration "$TOTAL_RUNNING_TIME")
 # Get coverage percentages for display
 UNITY_COVERAGE=$(get_unity_coverage)
 BLACKBOX_COVERAGE=$(get_blackbox_coverage)
+COMBINED_COVERAGE=$(get_combined_coverage)
 
 # Run coverage table before displaying test results
 coverage_table_script="$SCRIPT_DIR/lib/coverage_table.sh"
@@ -860,7 +890,7 @@ fi
 # Create layout JSON string
 
 layout_json_content='{
-    "title": "Test Suite Results {NC}{RED}———{RESET}{BOLD} Unity: '"$UNITY_COVERAGE"'% {RESET}{RED}———{RESET}{BOLD} Blackbox: '"$BLACKBOX_COVERAGE"'%",
+    "title": "Test Suite Results {NC}{RED}———{RESET}{BOLD} Unity: '"$UNITY_COVERAGE"'% {RESET}{RED}———{RESET}{BOLD} Blackbox: '"$BLACKBOX_COVERAGE"'% {RESET}{RED}———{RESET}{BOLD} Combined: '"$COMBINED_COVERAGE"'%",
     "footer": "Running: '"$TOTAL_RUNNING_TIME_FORMATTED"'{RED} ——— {RESET}{CYAN}Elapsed: '"$TOTAL_ELAPSED_FORMATTED"'",
     "footer_position": "right",
     "columns": [

@@ -315,31 +315,58 @@ collect_blackbox_coverage_from_dir() {
 # Usage: calculate_combined_coverage
 # Returns: Combined coverage percentage
 calculate_combined_coverage() {
-    local unity_coverage="0.000"
-    local blackbox_coverage="0.000"
+    local project_root
+    project_root="$(cd "$SCRIPT_DIR/../.." && pwd)"
+    local unity_build_dir="$project_root/build/unity"
+    local blackbox_build_dir="$project_root/build/coverage"
+    
+    local total_combined_instrumented=0
+    local total_combined_covered=0
+    
+    # Get all source files and process matching gcov pairs
+    while IFS= read -r source_file; do
+        if should_ignore_file "$source_file" "$project_root"; then
+            continue
+        fi
+        
+        local source_basename
+        source_basename=$(basename "$source_file")
+        local unity_gcov="$unity_build_dir/src/${source_basename}.gcov"
+        local blackbox_gcov="$blackbox_build_dir/src/${source_basename}.gcov"
+        
+        # Find actual gcov files (they might be in subdirectories)
+        [[ ! -f "$unity_gcov" ]] && unity_gcov=$(find "$unity_build_dir" -name "${source_basename}.gcov" -type f 2>/dev/null | head -1)
+        [[ ! -f "$blackbox_gcov" ]] && blackbox_gcov=$(find "$blackbox_build_dir" -name "${source_basename}.gcov" -type f 2>/dev/null | head -1)
+        
+        # Skip if neither gcov file exists
+        if [[ ! -f "$unity_gcov" && ! -f "$blackbox_gcov" ]]; then
+            continue
+        fi
+        
+        # Use our new combined analysis function
+        local result
+        result=$(analyze_combined_gcov_coverage "$unity_gcov" "$blackbox_gcov")
+        
+        local file_instrumented="${result%,*}"
+        local file_combined_covered="${result#*,}"
+        
+        # Default to 0 if parsing failed
+        file_instrumented=${file_instrumented:-0}
+        file_combined_covered=${file_combined_covered:-0}
+        
+        total_combined_instrumented=$((total_combined_instrumented + file_instrumented))
+        total_combined_covered=$((total_combined_covered + file_combined_covered))
+        
+    done < <(get_cached_source_files "$project_root")
+    
+    # Calculate combined coverage percentage
     local combined_coverage="0.000"
-    
-    # Read coverage data from files
-    if [ -f "$UNITY_COVERAGE_FILE" ]; then
-        unity_coverage=$(cat "$UNITY_COVERAGE_FILE" 2>/dev/null || echo "0.000")
-    fi
-    
-    if [ -f "$BLACKBOX_COVERAGE_FILE" ]; then
-        blackbox_coverage=$(cat "$BLACKBOX_COVERAGE_FILE" 2>/dev/null || echo "0.000")
-    fi
-    
-    # For combined coverage, we need to analyze the actual gcov files to avoid double-counting
-    # This is a simplified approach - take the maximum of the two coverage percentages
-    # In practice, combined coverage could be higher if tests cover different parts
-    if [[ $(awk "BEGIN {print ($unity_coverage > $blackbox_coverage)}") -eq 1 ]]; then
-        combined_coverage="$unity_coverage"
-    else
-        combined_coverage="$blackbox_coverage"
+    if [[ $total_combined_instrumented -gt 0 ]]; then
+        combined_coverage=$(awk "BEGIN {printf \"%.3f\", ($total_combined_covered / $total_combined_instrumented) * 100}")
     fi
     
     # Store combined coverage result
     echo "$combined_coverage" > "$COMBINED_COVERAGE_FILE"
-    
     echo "$combined_coverage"
     return 0
 }

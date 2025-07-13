@@ -18,6 +18,69 @@ BLACKBOX_COVERAGE_FILE="$COVERAGE_RESULTS_DIR/blackbox_coverage.txt"
 COMBINED_COVERAGE_FILE="$COVERAGE_RESULTS_DIR/combined_coverage.txt"
 OVERLAP_COVERAGE_FILE="$COVERAGE_RESULTS_DIR/overlap_coverage.txt"
 
+# Function to analyze combined coverage from two gcov files for the same source file
+# Usage: analyze_combined_gcov_coverage <unity_gcov_file> <blackbox_gcov_file>
+# Returns: "instrumented_lines,combined_covered_lines"
+analyze_combined_gcov_coverage() {
+    local unity_gcov="$1"
+    local blackbox_gcov="$2"
+    
+    # Handle cases where only one file exists
+    if [[ ! -f "$unity_gcov" && ! -f "$blackbox_gcov" ]]; then
+        echo "0,0"
+        return 1
+    elif [[ ! -f "$unity_gcov" ]]; then
+        # Only blackbox coverage exists - count lines properly
+        awk '/^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/ { covered++; total++ }
+             /^[[:space:]]*#####:[[:space:]]*[0-9]+\*?:/ { total++ }
+             END { 
+                 if (total == "") total = 0;
+                 if (covered == "") covered = 0;
+                 print total "," covered 
+             }' "$blackbox_gcov"
+        return 0
+    elif [[ ! -f "$blackbox_gcov" ]]; then
+        # Only unity coverage exists - count lines properly
+        awk '/^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/ { covered++; total++ }
+             /^[[:space:]]*#####:[[:space:]]*[0-9]+\*?:/ { total++ }
+             END { 
+                 if (total == "") total = 0;
+                 if (covered == "") covered = 0;
+                 print total "," covered 
+             }' "$unity_gcov"
+        return 0
+    fi
+    
+    # Both files exist - get individual counts and combine them properly
+    local unity_result blackbox_result
+    unity_result=$(awk '/^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/ { covered++; total++ }
+                        /^[[:space:]]*#####:[[:space:]]*[0-9]+\*?:/ { total++ }
+                        END { 
+                            if (total == "") total = 0;
+                            if (covered == "") covered = 0;
+                            print total "," covered 
+                        }' "$unity_gcov")
+    
+    blackbox_result=$(awk '/^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/ { covered++; total++ }
+                           /^[[:space:]]*#####:[[:space:]]*[0-9]+\*?:/ { total++ }
+                           END { 
+                               if (total == "") total = 0;
+                               if (covered == "") covered = 0;
+                               print total "," covered 
+                           }' "$blackbox_gcov")
+    
+    local unity_total="${unity_result%,*}"
+    local unity_covered="${unity_result#*,}"
+    local blackbox_total="${blackbox_result%,*}"
+    local blackbox_covered="${blackbox_result#*,}"
+    
+    # For now, use the max of the two approaches (will improve with proper line-by-line later)
+    local max_total=$((unity_total > blackbox_total ? unity_total : blackbox_total))
+    local max_covered=$((unity_covered > blackbox_covered ? unity_covered : blackbox_covered))
+    
+    echo "$max_total,$max_covered"
+}
+
 # Ensure coverage directories exist
 mkdir -p "$COVERAGE_RESULTS_DIR"
 

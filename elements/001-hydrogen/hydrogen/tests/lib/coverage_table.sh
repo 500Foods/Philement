@@ -14,6 +14,9 @@ BUILD_DIR="$PROJECT_ROOT/build/unity/src"
 COVERAGE_BUILD_DIR="$PROJECT_ROOT/build/coverage/src"
 TABLES_EXE="$PROJECT_ROOT/tests/lib/tables"
 
+# Source the coverage common functions for combined analysis
+source "$SCRIPT_DIR/coverage-common.sh"
+
 # Load .trial-ignore patterns for consistent filtering
 TRIAL_IGNORE_PATTERNS=()
 if [[ -f "$PROJECT_ROOT/.trial-ignore" ]]; then
@@ -165,11 +168,33 @@ if [ "$gcov_files_found" -eq 0 ]; then
     exit 1
 fi
 
+# Calculate combined coverage for each file using the new shared function
+declare -A combined_covered_lines
+declare -A combined_instrumented_lines
+
+for file_path in "${!all_files[@]}"; do
+    # Use the data we already have from individual analysis instead of re-finding files
+    u_covered=${unity_covered_lines["$file_path"]:-0}
+    u_instrumented=${unity_instrumented_lines["$file_path"]:-0}
+    c_covered=${coverage_covered_lines["$file_path"]:-0}
+    c_instrumented=${coverage_instrumented_lines["$file_path"]:-0}
+    
+    # For combined coverage: use max instrumented lines and max covered lines
+    # This represents the union of coverage from both test suites
+    max_instrumented=$((u_instrumented > c_instrumented ? u_instrumented : c_instrumented))
+    max_covered=$((u_covered > c_covered ? u_covered : c_covered))
+    
+    combined_instrumented_lines["$file_path"]=$max_instrumented
+    combined_covered_lines["$file_path"]=$max_covered
+done
+
 # Calculate totals for summary first
 unity_total_covered=0
 unity_total_instrumented=0
 coverage_total_covered=0
 coverage_total_instrumented=0
+combined_total_covered=0
+combined_total_instrumented=0
 
 for file_path in "${!all_files[@]}"; do
     # Get Unity data
@@ -180,11 +205,17 @@ for file_path in "${!all_files[@]}"; do
     c_covered=${coverage_covered_lines["$file_path"]:-0}
     c_instrumented=${coverage_instrumented_lines["$file_path"]:-0}
     
+    # Get Combined data
+    combined_covered=${combined_covered_lines["$file_path"]:-0}
+    combined_instrumented=${combined_instrumented_lines["$file_path"]:-0}
+    
     # Add to totals
     unity_total_covered=$((unity_total_covered + u_covered))
     unity_total_instrumented=$((unity_total_instrumented + u_instrumented))
     coverage_total_covered=$((coverage_total_covered + c_covered))
     coverage_total_instrumented=$((coverage_total_instrumented + c_instrumented))
+    combined_total_covered=$((combined_total_covered + combined_covered))
+    combined_total_instrumented=$((combined_total_instrumented + combined_instrumented))
 done
 
 # Calculate total percentages
@@ -198,6 +229,14 @@ if [ "$coverage_total_instrumented" -gt 0 ]; then
     coverage_total_pct=$(awk "BEGIN {printf \"%.3f\", ($coverage_total_covered / $coverage_total_instrumented) * 100}")
 fi
 
+combined_total_pct="0.000"
+if [ "$combined_total_instrumented" -gt 0 ]; then
+    combined_total_pct=$(awk "BEGIN {printf \"%.3f\", ($combined_total_covered / $combined_total_instrumented) * 100}")
+fi
+
+# Store the combined coverage value for other scripts to use
+echo "$combined_total_pct" > "$COMBINED_COVERAGE_FILE"
+
 # Create temporary directory for JSON files
 temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory"; exit 1; }
 layout_json="$temp_dir/coverage_layout.json"
@@ -206,7 +245,7 @@ data_json="$temp_dir/coverage_data.json"
     # Create layout JSON for the coverage table (now with correct totals)
     cat > "$layout_json" << EOF
 {
-    "title": "Test Suite Results {NC}{RED}———{RESET}{BOLD} Unity: ${unity_total_pct}% {RESET}{RED}———{RESET}{BOLD} Blackbox: ${coverage_total_pct}%",
+    "title": "Test Suite Results {NC}{RED}———{RESET}{BOLD} Unity: ${unity_total_pct}% {RESET}{RED}———{RESET}{BOLD} Blackbox: ${coverage_total_pct}% {RESET}{RED}———{RESET}{BOLD} Combined: ${combined_total_pct}%",
     "footer": "Generated: $(date)",
     "footer_position": "right",
     "theme": "Red",
@@ -220,7 +259,7 @@ data_json="$temp_dir/coverage_data.json"
         },
         {
             "header": "Cover %",
-            "key": "max_coverage_percentage",
+            "key": "combined_coverage_percentage",
             "datatype": "float",
             "justification": "right"
         },
@@ -235,8 +274,7 @@ data_json="$temp_dir/coverage_data.json"
             "header": "Source File",
             "key": "file_path",
             "datatype": "text",
-            "summary": "count",
-            "width": 61
+            "summary": "count"
         },
         {
             "header": "Unity",
@@ -249,6 +287,14 @@ data_json="$temp_dir/coverage_data.json"
         {
             "header": "Tests",
             "key": "coverage_covered",
+            "datatype": "int",
+            "justification": "right",
+            "summary": "sum",
+            "width": 8
+        },
+        {
+            "header": "Cover",
+            "key": "combined_covered",
             "datatype": "int",
             "justification": "right",
             "summary": "sum",
@@ -317,6 +363,14 @@ for file_data_entry in "${sorted_file_data[@]}"; do
         c_percentage=$(awk "BEGIN {printf \"%.3f\", ($c_covered / $c_instrumented) * 100}")
     fi
     
+    # Get Combined data
+    combined_covered=${combined_covered_lines["$file_path"]:-0}
+    combined_instrumented=${combined_instrumented_lines["$file_path"]:-0}
+    combined_percentage="0.000"
+    if [ "$combined_instrumented" -gt 0 ]; then
+        combined_percentage=$(awk "BEGIN {printf \"%.3f\", ($combined_covered / $combined_instrumented) * 100}")
+    fi
+    
     # Calculate maximum coverage percentage
     max_percentage=$(awk "BEGIN {
         u = $u_percentage
@@ -342,13 +396,16 @@ for file_data_entry in "${sorted_file_data[@]}"; do
     {
         "folder": "$folder",
         "max_coverage_percentage": $max_percentage,
+        "combined_coverage_percentage": $combined_percentage,
         "file_path": "$display_file_path",
         "unity_covered": $u_covered,
         "unity_instrumented": $u_instrumented,
         "unity_percentage": $u_percentage,
         "coverage_covered": $c_covered,
         "coverage_instrumented": $c_instrumented,
-        "coverage_percentage": $c_percentage
+        "coverage_percentage": $c_percentage,
+        "combined_covered": $combined_covered,
+        "combined_instrumented": $combined_instrumented
     }
 EOF
 done
