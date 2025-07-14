@@ -10,6 +10,7 @@
 # - Uses immediate restart without waiting for TIME_WAIT (SO_REUSEADDR enabled)
 
 # CHANGELOG
+# 3.1.2 - 2025-07-15 - No more sleep
 # 3.1.1 - 2025-07-14 - Updated to use build/tests directories for test output consistency
 # 3.1.0 - 2025-07-13 - Added swagger.json file retrieval and validation testing
 # 3.0.1 - 2025-07-06 - Added missing shellcheck justifications
@@ -18,7 +19,7 @@
 
 # Test Configuration
 TEST_NAME="Swagger"
-SCRIPT_VERSION="3.1.1"
+SCRIPT_VERSION="3.1.2"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -75,7 +76,7 @@ wait_for_server_ready() {
             print_message "Server is ready after $(( attempt * 2 / 10 )) seconds"
             return 0
         fi
-        sleep 0.2
+        # sleep 0.2
         ((attempt++))
     done
     

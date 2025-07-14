@@ -4,6 +4,7 @@
 # Tests that the crash handler correctly generates and formats core dumps
 #
 # CHANGELOG
+# 3.0.3 - 2025-07-14 - No more sleep
 # 3.0.2 - 2025-07-14 - Updated to use build/tests directories for test output consistency
 # 3.0.1 - 2025-07-06 - Added missing shellcheck justifications
 # 3.0.0 - 2025-07-02 - Complete rewrite to use new modular test libraries
@@ -12,7 +13,7 @@
 
 # Test Configuration
 TEST_NAME="Crash Handler"
-SCRIPT_VERSION="3.0.2"
+SCRIPT_VERSION="3.0.3"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -196,7 +197,7 @@ verify_core_file() {
             break
         fi
         
-        sleep 0.1
+        # sleep 0.1
     done
     
     if [ $found -eq 1 ]; then
@@ -308,7 +309,7 @@ wait_for_crash_completion() {
             return 0
         fi
         
-        sleep 0.1
+        # sleep 0.1
     done
 }
 
@@ -354,7 +355,7 @@ run_crash_test_parallel() {
             break
         fi
         
-        sleep 0.1
+        # sleep 0.1
     done
     
     if [ "$startup_complete" != "true" ] || ! ps -p $hydrogen_pid > /dev/null 2>&1; then
@@ -537,7 +538,7 @@ run_crash_test_with_build() {
             break
         fi
         
-        sleep 0.1
+        # sleep 0.1
     done
     
     # Verify server is running and startup completed

@@ -11,6 +11,7 @@
 # - /api/system/appconfig: Tests the application configuration endpoint
 
 # CHANGELOG
+# 3.1.2 - 2025-07-15 - No more sleep
 # 3.1.1 - 2025-07-14 - Updated to use build/tests directories for test output consistency
 # 3.1.0 - 2025-07-14 - Major architectural restructure to modular approach for better parallel execution reliability
 # 3.0.2 - 2025-07-14 - Improved error handling in validate_api_request function to better handle parallel test execution
@@ -20,7 +21,7 @@
 
 # Test Configuration
 TEST_NAME="System API Endpoints"
-SCRIPT_VERSION="3.1.1"
+SCRIPT_VERSION="3.1.2"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -225,7 +226,7 @@ wait_for_server_ready() {
             print_message "Server is ready after $(( attempt * 5 / 10 )) seconds"
             return 0
         fi
-        sleep 0.5
+        # sleep 0.5
         ((attempt++))
     done
     
