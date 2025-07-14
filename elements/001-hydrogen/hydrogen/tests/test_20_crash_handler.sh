@@ -68,6 +68,8 @@ if ! navigate_to_project_root "$SCRIPT_DIR"; then
     exit 1
 fi
 
+# Set up results directory (after navigating to project root)
+
 # Get Hydrogen directory
 HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 

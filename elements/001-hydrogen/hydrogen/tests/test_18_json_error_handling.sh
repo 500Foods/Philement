@@ -43,25 +43,19 @@ reset_subtest_counter
 # Print beautiful test header
 print_test_header "$TEST_NAME" "$SCRIPT_VERSION"
 
-# Use tmpfs build directory if available for ultra-fast I/O
-BUILD_DIR="$SCRIPT_DIR/../build"
-if mountpoint -q "$BUILD_DIR" 2>/dev/null; then
-    # tmpfs is mounted, use build/tests/results for ultra-fast I/O
-    RESULTS_DIR="$BUILD_DIR/tests/results"
-else
-    # Fallback to regular filesystem
-    RESULTS_DIR="$SCRIPT_DIR/results"
-fi
-mkdir -p "$RESULTS_DIR"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-RESULT_LOG="$RESULTS_DIR/test_${TEST_NUMBER}_${TIMESTAMP}.log"
-ERROR_OUTPUT="$RESULTS_DIR/json_error_output_${TIMESTAMP}.txt"
 
 # Navigate to the project root (one level up from tests directory)
 if ! navigate_to_project_root "$SCRIPT_DIR"; then
     print_error "Failed to navigate to project root directory"
     exit 1
 fi
+
+# Set up results directory (after navigating to project root)
+RESULTS_DIR="build/tests/results"
+mkdir -p "$RESULTS_DIR"
+RESULT_LOG="$RESULTS_DIR/test_${TEST_NUMBER}_${TIMESTAMP}.log"
+ERROR_OUTPUT="$RESULTS_DIR/json_error_output_${TIMESTAMP}.txt"
 
 # Validate Hydrogen Binary
 next_subtest
