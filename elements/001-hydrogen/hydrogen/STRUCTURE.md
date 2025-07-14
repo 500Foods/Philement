@@ -528,6 +528,11 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 
 - [tests/lib/](tests/lib/) - Test library functions
   - [cloc.sh](tests/lib/cloc.sh) - Code line counting utilities
+  - [coverage.sh](tests/lib/coverage.sh) - Main coverage orchestration and API functions
+  - [coverage-common.sh](tests/lib/coverage-common.sh) - Shared coverage utilities and variables
+  - [coverage-unity.sh](tests/lib/coverage-unity.sh) - Unity test coverage calculation
+  - [coverage-blackbox.sh](tests/lib/coverage-blackbox.sh) - Blackbox test coverage and combined analysis
+  - [coverage_table.sh](tests/lib/coverage_table.sh) - Advanced tabular coverage reporting with visual formatting
   - [env_utils.sh](tests/lib/env_utils.sh) - Environment variable utilities
   - [file_utils.sh](tests/lib/file_utils.sh) - File manipulation utilities
   - [framework.sh](tests/lib/framework.sh) - Core testing framework
@@ -540,6 +545,13 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 </details>
 
 <details>
+<summary><b>Test Documentation</b></summary>
+
+- [tests/docs/coverage.md](tests/docs/coverage.md) - Comprehensive coverage analysis system documentation
+
+</details>
+
+<details>
 <summary><b>Test Results & Diagnostics</b></summary>
 
 - [tests/diagnostics/](tests/diagnostics/) - Test diagnostic outputs
@@ -548,12 +560,25 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 
 </details>
 
-## Utilities
+## Build Tools & Utilities
 
 <details>
-<summary><b>Extra Tools</b></summary>
+<summary><b>Build Scripts</b></summary>
 
-- [extras/filter-log.sh](extras/filter-log.sh) - Log filtering utility
+- [extras/README.md](extras/README.md) - Build scripts and diagnostic tools documentation
+- [extras/make-all.sh](extras/make-all.sh) - Compilation test script
+- [extras/make-clean.sh](extras/make-clean.sh) - Comprehensive build cleanup script
+- [extras/make-trial.sh](extras/make-trial.sh) - Quick trial build and diagnostics script
+- [extras/filter-log.sh](extras/filter-log.sh) - Log output filtering utility
+
+</details>
+
+<details>
+<summary><b>Diagnostic Tools</b></summary>
+
+- [extras/one-offs/debug_payload.c](extras/one-offs/debug_payload.c) - Payload debug analysis tool
+- [extras/one-offs/find_all_markers.c](extras/one-offs/find_all_markers.c) - Multiple marker detection tool
+- [extras/one-offs/test_payload_detection.c](extras/one-offs/test_payload_detection.c) - Payload validation testing tool
 
 </details>
 
