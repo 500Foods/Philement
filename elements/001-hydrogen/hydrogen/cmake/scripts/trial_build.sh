@@ -1,24 +1,10 @@
 #!/bin/bash
-# ──────────────────────────────────────────────────────────────────────────────
-# Trial Build Script for Hydrogen CMake Build System
-# 
-# This script performs a trial build with advanced diagnostics, similar to the
-# Makefile's trial target. It shows only warnings and errors, detects unused
-# source files, and runs shutdown tests.
-# ──────────────────────────────────────────────────────────────────────────────
+# Trial Build Script - Quick build, shutdown test, and unused file detection
 
 set -e
 
 BUILD_DIR="$1"
 SOURCE_DIR="$2"
-CYAN=''
-GREEN=''
-YELLOW=''
-BLUE=''
-NORMAL=''
-INFO='[INFO]'
-PASS='[PASS]'
-WARN='[WARN]'
 
 if [ -z "$BUILD_DIR" ] || [ -z "$SOURCE_DIR" ]; then
     echo "Usage: $0 <build_dir> <source_dir>"
@@ -27,107 +13,85 @@ fi
 
 cd "$BUILD_DIR"
 
-printf "%s%s Starting trial build (warnings and errors only)...%s\n" "$CYAN" "$INFO" "$NORMAL"
-
-# Clean previous build
+# Clean and build, suppressing cmake configuration noise
 cmake --build . --target clean >/dev/null 2>&1 || true
 
-# Build and capture output
+# Remove hydrogen_naked if it exists (byproduct of release builds)
+if [ -f "$SOURCE_DIR/../hydrogen_naked" ]; then
+    rm -f "$SOURCE_DIR/../hydrogen_naked"
+fi
 BUILD_OUTPUT=$(cmake --build . --target hydrogen 2>&1)
 
-# Filter output to show only warnings, errors, and success messages
-echo "$BUILD_OUTPUT" | grep -v -E "^[[:space:]]*\[|^make\[[0-9]+\]: (Entering|Leaving) directory|^[[:space:]]*Compiling|^[[:space:]]*${INFO}" | \
-grep -E "error:|warning:|undefined reference|collect2|ld returned|built successfully|completed successfully" --color=always || true
+# Show only compiler/linker errors and warnings 
+ERRORS=$(echo "$BUILD_OUTPUT" | grep -E "error:|warning:|undefined reference|collect2:|ld returned" || true)
+if [ -n "$ERRORS" ]; then
+    echo "$ERRORS"
+fi
 
 # Check if build was successful
-if echo "$BUILD_OUTPUT" | grep -q "completed successfully" && ! echo "$BUILD_OUTPUT" | grep -q -E "warning:|error:|undefined reference|ld returned"; then
-    printf "\n%s%s Build successful with no warnings/errors. Copying binary to root directory for testing...%s\n" "$CYAN" "$INFO" "$NORMAL"
+if echo "$BUILD_OUTPUT" | grep -q "completed successfully" && [ -z "$ERRORS" ]; then
+    echo "✅ Build successful"
+    
+    # Copy binary for testing
     if [ -f "$BUILD_DIR/hydrogen" ]; then
         cp "$BUILD_DIR/hydrogen" "$SOURCE_DIR/../hydrogen"
-    elif [ -f "$SOURCE_DIR/../hydrogen" ]; then
-        printf "%s%s Binary already exists in root directory, using existing binary.%s\n" "$CYAN" "$INFO" "$NORMAL"
-    else
-        printf "%s%s Error: Binary not found in build or root directory.%s\n" "$YELLOW" "$WARN" "$NORMAL"
-        exit 1
     fi
-    printf "\n%s%s Running shutdown test...%s\n" "$CYAN" "$INFO" "$NORMAL"
     
-# Run shutdown test if available
-if [ -f "$SOURCE_DIR/../tests/test_26_shutdown.sh" ]; then
-    "$SOURCE_DIR/../tests/test_26_shutdown.sh"
-else
-    printf "%s%s Shutdown test script not found%s\n" "$YELLOW" "$WARN" "$NORMAL"
-fi
+    # Run shutdown test
+    echo "🔄 Running shutdown test..."
+    if [ -f "$SOURCE_DIR/../tests/test_26_shutdown.sh" ]; then
+        "$SOURCE_DIR/../tests/test_26_shutdown.sh" >/dev/null 2>&1 && echo "✅ Shutdown test passed" || echo "❌ Shutdown test failed"
+    else
+        echo "⚠️  Shutdown test not found"
+    fi
     
-    printf "\n%s%s Analyzing unused source files...%s\n" "$CYAN" "$INFO" "$NORMAL"
-    
-    # Check for unused source files using the map file
-    MAP_FILE="$BUILD_DIR/hydrogen.map"
+    # Analyze unused files
+    MAP_FILE="$BUILD_DIR/regular/regular.map"
     if [ -f "$MAP_FILE" ]; then
-        printf "%s%s Analyzing map file for used source files...%s\n" "$CYAN" "$INFO" "$NORMAL"
+        echo "🔍 Checking for unused source files..."
         
-        # Extract CMake object file paths from the map file
-        # These have the format: CMakeFiles/hydrogen.dir/full/path/to/source.c.o
-        USED_OBJS=$(grep -oE "CMakeFiles/hydrogen\.dir/[^[:space:]]*\.c\.o" "$MAP_FILE" | sort -u)
+        # Extract object files that are actually linked
+        USED_OBJS=$(awk '/^LOAD.*\.o$/ {print $2}' "$MAP_FILE" | grep -v "^/usr" | sort -u)
         
-        # Skip showing sample of object/source references as it's no longer needed for debugging
-        if [ -z "$USED_OBJS" ]; then
-            printf "%s%s No CMake object file references found in map file.%s\n" "$YELLOW" "$WARN" "$NORMAL"
-        fi
-        
-        # Find all source files
-        ALL_SRCS=$(find "$SOURCE_DIR/../src" -name "*.c" | sed "s|$SOURCE_DIR/../||g" | sort)
-        
-        printf "%s%s Total source files found: %s%s\n" "$CYAN" "$INFO" "$(echo "$ALL_SRCS" | wc -l)" "$NORMAL"
-        printf "%s%s Total object/source references in map: %s%s\n" "$CYAN" "$INFO" "$(echo "$USED_OBJS" | wc -l)" "$NORMAL"
-        
-        # Map used objects back to source files
+        # Convert object files back to source file paths
         USED_SRCS=""
         for obj in $USED_OBJS; do
-            # Extract the source path from CMakeFiles/hydrogen.dir/full/path/to/source.c.o
-            # We want to extract just the src/... part
-            src_path=$(echo "$obj" | sed 's|^.*hydrogen/||' | sed 's|\.o$||')
-            
-            # Check if this source file exists in our source list
-            if echo "$ALL_SRCS" | grep -q "$src_path"; then
+            # Extract the source path from the object file path
+            # Object files are like: regular/src/config/config.o
+            if [[ "$obj" == *"/src/"* ]]; then
+                src_path=$(echo "$obj" | sed 's|^.*/src/|./|' | sed 's|\.o$|.c|')
                 USED_SRCS="$USED_SRCS\n$src_path"
             fi
         done
         USED_SRCS=$(echo -e "$USED_SRCS" | grep -v "^$" | sort -u)
         
-        printf "%s%s Total matched source files: %s%s\n" "$CYAN" "$INFO" "$(echo "$USED_SRCS" | wc -l)" "$NORMAL"
+        # Find all source files relative to src directory  
+        ALL_SRCS=$(find "$SOURCE_DIR/../src" -name "*.c" | sed "s|$SOURCE_DIR/../src/|./|g" | sort)
         
-        # Read ignored files
+        # Read ignored files (already in ./ format)
         IGNORED_SRCS=""
         if [ -f "$SOURCE_DIR/../.trial-ignore" ]; then
-            IGNORED_SRCS=$(grep -v '^#' "$SOURCE_DIR/../.trial-ignore" | grep -v '^$' | sed "s|^\./|src/|")
+            IGNORED_SRCS=$(grep -v '^#' "$SOURCE_DIR/../.trial-ignore" | grep -v '^$' | sort)
         fi
-        
-        # Count ignored files properly (only count non-empty lines)
-        if [ -n "$IGNORED_SRCS" ]; then
-            IGNORED_COUNT=$(echo "$IGNORED_SRCS" | grep -c .)
-        else
-            IGNORED_COUNT=0
-        fi
-        printf "%s%s Total ignored files: %s%s\n" "$CYAN" "$INFO" "$IGNORED_COUNT" "$NORMAL"
         
         # Find unused sources
         UNUSED_SRCS=$(comm -23 <(echo "$ALL_SRCS") <(echo "$USED_SRCS"))
-        REPORTABLE_SRCS=$(comm -23 <(echo "$UNUSED_SRCS") <(echo "$IGNORED_SRCS" | sort))
+        REPORTABLE_SRCS=$(comm -23 <(echo "$UNUSED_SRCS") <(echo "$IGNORED_SRCS"))
         
         if [ -z "$REPORTABLE_SRCS" ]; then
-            printf "%s%s No unexpected unused source files detected%s\n" "$GREEN" "$PASS" "$NORMAL"
+            echo "✅ No unexpected unused source files"
         else
-            printf "%s%s Unexpected unused source files detected:%s\n" "$YELLOW" "$WARN" "$NORMAL"
+            echo "⚠️  Unused source files:"
             echo "$REPORTABLE_SRCS" | while read -r file; do
                 if [ -n "$file" ]; then
-                    printf "  %s- %s%s\n" "$YELLOW" "$file" "$NORMAL"
+                    echo "  $file"
                 fi
             done
         fi
     else
-        printf "%s%s Map file not found, skipping unused file analysis%s\n" "$YELLOW" "$WARN" "$NORMAL"
+        echo "⚠️  Map file not found, skipping unused file analysis"
     fi
-    
-    printf "%s────────────────────────────────────────────────────────────────%s\n" "$BLUE" "$NORMAL"
+else
+    echo "❌ Build failed"
+    exit 1
 fi

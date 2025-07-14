@@ -12,6 +12,10 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [SITEMAP.md](SITEMAP.md): This file
 - [STRUCTURE.md](STRUCTURE.md): Describes the file layout for the project
 
+## Folder: /extras
+
+- [README.md](extras/README.md): Build scripts and diagnostic tools
+
 ## Folder: /cmake
 
 - [README.md](cmake/README.md): Description of the CMake build system
@@ -214,6 +218,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 ### Folder: /tests/docs
 
 - [cloc.md](tests/docs/cloc.md): CLOC (Count Lines of Code) library documentation for code analysis and line counting functionality
+- [coverage.md](tests/docs/coverage.md): Comprehensive coverage analysis system documentation including coverage.sh, coverage-common.sh, coverage-unity.sh, coverage-blackbox.sh, and coverage_table.sh
 - [env_utils.md](tests/docs/env_utils.md): Environment utility functions documentation
 - [file_utils.md](tests/docs/file_utils.md): File utility functions documentation
 - [framework.md](tests/docs/framework.md): Testing framework overview and architecture

@@ -4,6 +4,10 @@
 
 This document serves as the central Table of Contents (TOC) for the documentation of all library scripts in the 'lib/' directory of the Hydrogen test suite. These libraries provide modular, reusable functionalities to standardize operations across test scripts, supporting the overhaul and migration plan for the test suite.
 
+## Tables Library
+
+This is a separate executable file that takes a JSON layout file and a JSON data file and produces a nicely formatted ANSI table that has rounded corners, color support, themes, titles, footers, summaries, and so on. More information can be found at its GitHub Repo here: [Tables](https://github.com/500Foods/Scripts/tables.sh/tables.md)
+
 ## GitHub Sitemap Library
 
 - **[GitHub Sitemap Library](github-sitemap.md)** - Documentation for `github-sitemap.sh`, a utility for checking markdown links and generating sitemap reports. [Script](../lib/github-sitemap.sh)
@@ -19,6 +23,10 @@ These libraries were created as part of the test suite migration to replace supp
 - **[Environment Utils Library](env_utils.md)** - Documentation for `env_utils.sh`, providing environment variable handling and validation functions for test scripts. [Script](../lib/env_utils.sh)
 - **[Lifecycle Management Library](lifecycle.md)** - Documentation for `lifecycle.sh`, providing functions for managing the lifecycle of the Hydrogen application during testing. [Script](../lib/lifecycle.sh)
 - **[Network Utilities Library](network_utils.md)** - Documentation for `network_utils.sh`, providing network-related functions including TIME_WAIT socket management for test scripts. [Script](../lib/network_utils.sh)
+
+## Coverage Libraries
+
+- **[Coverage Analysis System](coverage.md)** - Comprehensive documentation for the coverage analysis system, including `coverage.sh`, `coverage-common.sh`, `coverage-unity.sh`, `coverage-blackbox.sh`, and the advanced `coverage_table.sh` script for detailed visual coverage reporting.
 
 ## Related Documentation
 
