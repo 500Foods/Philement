@@ -28,9 +28,19 @@ calculate_unity_coverage() {
     cd "$build_dir" || return 1
     
     # Generate gcov files more efficiently using parallel processing
+    # Detect number of CPU cores for parallel build
+    local cpu_cores
+    if command -v nproc >/dev/null 2>&1; then
+        cpu_cores=$(nproc)
+    elif [ -f /proc/cpuinfo ]; then
+        cpu_cores=$(grep -c ^processor /proc/cpuinfo)
+    else
+        cpu_cores=4  # Fallback to 4 cores
+    fi
+    
     if command -v xargs >/dev/null 2>&1; then
-        # Use xargs for parallel processing if available (fixed conflicting options)
-        find . -name "*.gcno" -print0 | xargs -0 -P4 -I{} sh -c "
+        # Use xargs for parallel processing with all available cores
+        find . -name "*.gcno" -print0 | xargs -0 -P"$cpu_cores" -I{} sh -c "
             gcno_dir=\"\$(dirname '{}')\"
             cd \"\$gcno_dir\" && gcov \"\$(basename '{}')\" >/dev/null 2>&1
         "
@@ -104,7 +114,7 @@ calculate_unity_coverage() {
             
             gcov_files_to_process+=("$gcov_file")
         fi
-    done < <(find "$build_dir/src" -name "*.gcov" -type f 2>/dev/null)
+    done < <(find "$build_dir" -name "*.gcov" -type f 2>/dev/null)
     
     # Count total files exactly like Test 11
     instrumented_files=${#gcov_files_to_process[@]}
