@@ -135,8 +135,8 @@ verify_debug_symbols() {
     binary_name=$(basename "$binary")
     local expect_symbols=1
     
-    # Release, coverage, and naked builds should not have debug symbols
-    if [[ "$binary_name" == *"release"* ]] || [[ "$binary_name" == *"coverage"* ]] || [[ "$binary_name" == *"naked"* ]]; then
+    # Release and naked builds should not have debug symbols
+    if [[ "$binary_name" == *"release"* ]] || [[ "$binary_name" == *"naked"* ]]; then
         expect_symbols=0
     fi
     
@@ -257,15 +257,15 @@ EOF
        grep -q "Program terminated with signal SIGSEGV" "${gdb_output_file}"; then
         has_test_crash=1
         has_backtrace=1
-    # For release, coverage, and naked builds, just check for SIGSEGV
-    elif [[ "$build_name" == *"release"* ]] || [[ "$build_name" == *"coverage"* ]] || [[ "$build_name" == *"naked"* ]]; then
+    # For release and naked builds, just check for SIGSEGV
+    elif [[ "$build_name" == *"release"* ]] || [[ "$build_name" == *"naked"* ]]; then
         if grep -q "Program terminated with signal SIGSEGV" "${gdb_output_file}"; then
             has_backtrace=1
         fi
     fi
 
     # Verify backtrace quality based on build type
-    if [[ "$build_name" == *"release"* ]] || [[ "$build_name" == *"coverage"* ]] || [[ "$build_name" == *"naked"* ]]; then
+    if [[ "$build_name" == *"release"* ]] || [[ "$build_name" == *"naked"* ]]; then
         if [ $has_backtrace -eq 1 ]; then
             print_message "GDB produced basic backtrace (expected for release-style build)"
             return 0
@@ -659,7 +659,7 @@ declare -a BUILDS
 declare -A BUILD_DESCRIPTIONS
 
 # Define expected build variants based on CMake targets
-declare -a BUILD_VARIANTS=("hydrogen" "hydrogen_debug" "hydrogen_valgrind" "hydrogen_perf" "hydrogen_release")
+declare -a BUILD_VARIANTS=("hydrogen" "hydrogen_debug" "hydrogen_valgrind" "hydrogen_perf" "hydrogen_release" "hydrogen_coverage" "hydrogen_naked")
 for target in "${BUILD_VARIANTS[@]}"; do
     if [ -f "$HYDROGEN_DIR/$target" ] && [ -z "${FOUND_BUILDS[$target]}" ]; then
         FOUND_BUILDS[$target]=1

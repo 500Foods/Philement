@@ -74,6 +74,10 @@
 #include <errno.h>
 #include <libgen.h>
 
+#ifdef HYDROGEN_COVERAGE_BUILD
+#include <gcov.h>
+#endif
+
 /* Internal Headers */
 #include "logging/logging.h"
 #include "state/state.h"
@@ -346,6 +350,10 @@ static void crash_handler(int sig, siginfo_t *info, void *ucontext) {
     fclose(out);
 
     log_this("Crash", "Run: gdb -q %s %s", LOG_LEVEL_ERROR, exe_path, core_name, NULL);
+
+#ifdef HYDROGEN_COVERAGE_BUILD
+    __gcov_dump();
+#endif
 
     _exit(128 + sig);
 }
