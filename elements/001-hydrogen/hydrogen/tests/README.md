@@ -36,7 +36,10 @@ The Hydrogen testing framework is designed to ensure the robustness and correctn
 
 ## Test Scripts
 
-Below is a comprehensive list of all test scripts currently available in the suite, organized by category:
+Below is a comprehensive list of all test scripts currently available in the suite, organized by category.
+With the exception of Test 01 (Compilation) and Test 11 (Unity) these are all considered "blackbox" tests in that they simply run the server and test it from an external point of view.
+Test 01 is just the script that bulids everything, so not really a test in itself, though it does do a number of checks for important things.  
+And Test 11 is all about Unity unit tests, where we have custom code written to call our app's functions directly, which is described in more detail below.
 
 ### Test Suite Management
 
@@ -76,7 +79,8 @@ Below is a comprehensive list of all test scripts currently available in the sui
 
 ## Writing Unity Tests
 
-Unity tests provide comprehensive unit testing for individual functions and modules within the Hydrogen codebase. The Unity testing framework enables thorough validation of core logic, edge cases, and boundary conditions at the function level.
+Unity tests provide comprehensive unit testing for individual functions and modules within the Hydrogen codebase. The Unity testing framework enables thorough validation of core logic, edge cases, and boundary conditions at the function level. Of particular note, the testing framework is constructed in such a way as to create individual executable tests that link directly to object files of the project. We're not adding
+any code at all to our release build that has any kind of intsrumentation in it, really. But by linking to our object code directly, we can get coverage information that can be compared between our blackbox and unity tests to give an overall coverage report in great detail. See Test 99 for the amazing results of that effort.
 
 ### Intent and Purpose
 
