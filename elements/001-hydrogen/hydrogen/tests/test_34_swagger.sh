@@ -6,16 +6,18 @@
 # - Custom "/apidocs" prefix using hydrogen_test_swagger_test_2.json
 # - Tests both with and without trailing slashes
 # - Tests JavaScript file loading and content validation
+# - Tests swagger.json file retrieval and validation
 # - Uses immediate restart without waiting for TIME_WAIT (SO_REUSEADDR enabled)
 
 # CHANGELOG
+# 3.1.0 - 2025-07-13 - Added swagger.json file retrieval and validation testing
 # 3.0.1 - 2025-07-06 - Added missing shellcheck justifications
 # 3.0.0 - 2025-07-02 - Migrated to use lib/ scripts, following established test patterns
 # 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
 
 # Test Configuration
 TEST_NAME="Swagger"
-SCRIPT_VERSION="3.0.1"
+SCRIPT_VERSION="3.1.0"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -48,7 +50,7 @@ set_test_number "$TEST_NUMBER"
 reset_subtest_counter
 
 # Test configuration
-TOTAL_SUBTESTS=13  # 3 prerequisites + 5 tests for each of 2 configurations
+TOTAL_SUBTESTS=15  # 3 prerequisites + 6 tests for each of 2 configurations
 PASS_COUNT=0
 EXIT_CODE=0
 
@@ -141,6 +143,66 @@ check_redirect_response() {
     fi
 }
 
+# Function to check swagger.json file content
+check_swagger_json() {
+    local url="$1"
+    local response_file="$2"
+    
+    print_command "curl -s --max-time 10 \"$url\""
+    if curl -s --max-time 10 "$url" > "$response_file"; then
+        print_message "Successfully received swagger.json from $url"
+        
+        # Check if it's valid JSON and contains expected swagger content
+        if command -v jq >/dev/null 2>&1; then
+            # Use jq to validate JSON and check for required fields
+            if jq -e '.openapi // .swagger' "$response_file" >/dev/null 2>&1; then
+                local openapi_version
+                openapi_version=$(jq -r '.openapi // .swagger // "unknown"' "$response_file")
+                print_message "Valid OpenAPI/Swagger specification found (version: $openapi_version)"
+                
+                # Check for required Hydrogen API components
+                if jq -e '.info.title' "$response_file" >/dev/null 2>&1; then
+                    local api_title
+                    api_title=$(jq -r '.info.title' "$response_file")
+                    print_message "API Title: $api_title"
+                    
+                    if [[ "$api_title" == *"Hydrogen"* ]]; then
+                        print_result 0 "swagger.json contains valid Hydrogen API specification"
+                        return 0
+                    else
+                        print_result 1 "swagger.json doesn't appear to be for Hydrogen API (title: $api_title)"
+                        return 1
+                    fi
+                else
+                    print_result 1 "swagger.json missing required 'info.title' field"
+                    return 1
+                fi
+            else
+                print_result 1 "swagger.json contains invalid JSON or missing OpenAPI/Swagger version"
+                return 1
+            fi
+        else
+            # Fallback validation without jq
+            if grep -q '"openapi":\|"swagger":' "$response_file" && \
+               grep -q '"info":' "$response_file" && \
+               grep -q '"Hydrogen' "$response_file"; then
+                print_result 0 "swagger.json contains expected Hydrogen API content (basic validation)"
+                return 0
+            else
+                print_result 1 "swagger.json doesn't contain expected OpenAPI/Swagger structure or Hydrogen content"
+                print_message "Response excerpt (first 5 lines):"
+                head -n 5 "$response_file" | while IFS= read -r line; do
+                    print_output "$line"
+                done
+                return 1
+            fi
+        fi
+    else
+        print_result 1 "Failed to retrieve swagger.json from $url"
+        return 1
+    fi
+}
+
 # Function to test Swagger UI with a specific configuration
 test_swagger_configuration() {
     local config_file="$1"
@@ -161,7 +223,7 @@ test_swagger_configuration() {
     local base_url="http://localhost:$server_port"
     
     # Start server
-    local subtest_start=$(((config_number - 1) * 5 + 1))
+    local subtest_start=$(((config_number - 1) * 6 + 1))
     
     # Subtest: Start server
     next_subtest
@@ -180,7 +242,7 @@ test_swagger_configuration() {
             print_result 1 "Failed to start server - no PID returned"
             EXIT_CODE=1
             # Skip remaining subtests for this configuration
-            for i in {2..5}; do
+            for i in {2..6}; do
                 next_subtest
                 print_subtest "Subtest $((subtest_start + i - 1)) (Skipped)"
                 print_result 1 "Skipped due to server startup failure"
@@ -191,7 +253,7 @@ test_swagger_configuration() {
         print_result 1 "Failed to start server"
         EXIT_CODE=1
         # Skip remaining subtests for this configuration
-        for i in {2..5}; do
+        for i in {2..6}; do
             next_subtest
             print_subtest "Subtest $((subtest_start + i - 1)) (Skipped)"
             print_result 1 "Skipped due to server startup failure"
@@ -205,7 +267,7 @@ test_swagger_configuration() {
             print_result 1 "Server failed to become ready"
             EXIT_CODE=1
             # Skip remaining subtests
-            for i in {2..5}; do
+            for i in {2..6}; do
                 next_subtest
                 print_subtest "Subtest $((subtest_start + i - 1)) (Skipped)"
                 print_result 1 "Skipped due to server readiness failure"
@@ -267,6 +329,20 @@ test_swagger_configuration() {
         fi
     else
         print_result 1 "Server not running for JavaScript test"
+        EXIT_CODE=1
+    fi
+    
+    # Subtest: Test swagger.json file
+    next_subtest
+    print_subtest "Verify swagger.json file loads and contains valid content (Config $config_number)"
+    if [ -n "$hydrogen_pid" ] && ps -p "$hydrogen_pid" > /dev/null 2>&1; then
+        if check_swagger_json "${base_url}${swagger_prefix}/swagger.json" "$RESULTS_DIR/${test_name}_swagger_json_${TIMESTAMP}.json"; then
+            ((PASS_COUNT++))
+        else
+            EXIT_CODE=1
+        fi
+    else
+        print_result 1 "Server not running for swagger.json test"
         EXIT_CODE=1
     fi
     
@@ -360,8 +436,8 @@ if [ $EXIT_CODE -eq 0 ]; then
 else
     # Skip Swagger tests if prerequisites failed
     print_message "Skipping Swagger tests due to prerequisite failures"
-    # Account for skipped subtests (8 remaining: 4 for each configuration)
-    for i in {4..11}; do
+    # Account for skipped subtests (12 remaining: 6 for each configuration)
+    for i in {4..15}; do
         next_subtest
         print_subtest "Subtest $i (Skipped)"
         print_result 1 "Skipped due to prerequisite failures"
@@ -377,7 +453,7 @@ else
 fi
 
 # Clean up response files but preserve logs if test failed
-rm -f "$RESULTS_DIR"/*_trailing_slash_*.html "$RESULTS_DIR"/*_redirect_*.txt "$RESULTS_DIR"/*_content_*.html "$RESULTS_DIR"/*_initializer_*.js
+rm -f "$RESULTS_DIR"/*_trailing_slash_*.html "$RESULTS_DIR"/*_redirect_*.txt "$RESULTS_DIR"/*_content_*.html "$RESULTS_DIR"/*_initializer_*.js "$RESULTS_DIR"/*_swagger_json_*.json
 
 # Only remove logs if tests were successful
 if [ $FINAL_RESULT -eq 0 ]; then
