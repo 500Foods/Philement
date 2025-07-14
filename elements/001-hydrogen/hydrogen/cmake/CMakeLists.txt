@@ -353,6 +353,7 @@ foreach(SOURCE_FILE ${HYDROGEN_SOURCES})
         COMMAND ${CMAKE_C_COMPILER} 
             ${HYDROGEN_BASE_CFLAGS}
             -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer
+            -DHYDROGEN_COVERAGE_BUILD
             -DVERSION='"${HYDROGEN_VERSION}"'
             -DRELEASE='"${HYDROGEN_RELEASE}"'
             -DBUILD_TYPE='"Coverage"'
@@ -397,8 +398,6 @@ add_custom_target(coverage
     COMMAND ${CMAKE_COMMAND} -E echo "🛈  Building coverage executable with payload..."
     # Build the coverage executable
     COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target hydrogen_coverage
-    COMMAND ${CMAKE_COMMAND} -E echo "🛈  Stripping debug information from coverage executable..."
-    COMMAND strip -s ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage
     COMMAND ${CMAKE_COMMAND} -E echo "🛈  Creating copy for payload embedding..."
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage_temp
     COMMAND ${CMAKE_COMMAND} -E echo "🛈  Appending encrypted payload to coverage executable..."
