@@ -154,7 +154,7 @@ start_hydrogen_with_pid() {
     print_message "Hydrogen process started with PID: $hydrogen_pid"
     
     # Verify process started
-    sleep 0.1  # Give a brief moment to check if process starts
+    sleep 0.05  # Give a brief moment to check if process starts
     if ! ps -p "$hydrogen_pid" > /dev/null 2>&1; then
         print_result 1 "Failed to start Hydrogen - process did not start or crashed immediately"
         print_message "Check log file for possible errors: $log_file"
