@@ -4,6 +4,7 @@
 # Runs unit tests using the Unity framework, treating each test file as a subtest
 
 # CHANGELOG
+# 2.0.3 - 2025-07-14 - Enhanced individual test reporting with INFO lines showing test descriptions and purposes
 # 2.0.2 - 2025-07-06 - Added missing shellcheck justifications
 # 2.0.1 - 2025-07-06 - Removed hardcoded absolute path; now handled by log_output.sh
 # 2.0.0 - 2025-07-02 - Complete rewrite to use new modular test libraries
@@ -11,7 +12,7 @@
 
 # Test configuration
 TEST_NAME="Unity Unit Tests"
-SCRIPT_VERSION="2.0.2"
+SCRIPT_VERSION="2.0.3"
 
 # Get the directory where this script is located
 TEST_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -193,6 +194,17 @@ run_single_unity_test() {
         test_count=$(grep -E "[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored" "$temp_test_log" | awk '{print $1}')
         failure_count=$(grep -E "[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored" "$temp_test_log" | awk '{print $3}')
         ignored_count=$(grep -E "[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored" "$temp_test_log" | awk '{print $5}')
+        
+        # Extract and display individual test names with INFO lines
+        while IFS= read -r line; do
+            # Look for lines that match Unity output format: filepath:line_number:test_name:result
+            if [[ "$line" =~ ^.+:[0-9]+:([a-zA-Z_][a-zA-Z0-9_]*):([A-Z]+)$ ]]; then
+                local individual_test_name="${BASH_REMATCH[1]}"
+                local test_result="${BASH_REMATCH[2]}"
+                
+                print_message "$individual_test_name:$test_result"
+            fi
+        done < "$temp_test_log"
         
         if [ -n "$test_count" ] && [ -n "$failure_count" ] && [ -n "$ignored_count" ]; then
             local passed_count=$((test_count - failure_count - ignored_count))
