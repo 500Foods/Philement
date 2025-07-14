@@ -270,26 +270,134 @@ The Unity tests are automatically discovered and executed by `test_11_unity.sh`.
 
 ### Writing Comprehensive Tests
 
-When writing Unity tests, follow these guidelines:
+When writing Unity tests, follow these guidelines based on lessons learned from implementing payload and swagger module tests:
+
+**Function Safety Assessment**:
+
+Before writing tests, categorize functions by safety:
+
+- **Safe Functions**: Pure functions, validation functions, cleanup functions, structure accessors
+  - Examples: `validate_payload_key()`, `is_swagger_request()`, `free_payload()`, `cleanup_swagger_support()`
+  - These can be tested extensively with all input combinations
+- **Potentially Problematic Functions**: Initialization functions, functions that interact with global state, networking functions
+  - Examples: `init_swagger_support()`, `handle_swagger_request()` (requires MHD connection)
+  - These may require mock objects or should be avoided in unit tests
+- **High-Risk Functions**: Functions that may hang, crash, or have unpredictable behavior
+  - Examples: Functions with infinite loops, signal handlers, thread management
+  - Generally should not be tested in Unity tests
 
 **Test Coverage Guidelines**:
 
-- Test all public functions in the target module
-- Include tests for normal operation, edge cases, and error conditions
-- Test boundary conditions (minimum/maximum values, empty inputs, etc.)
-- Validate return values, side effects, and state changes
-- Test error handling and recovery scenarios
+- **Focus on Safe Functions**: Prioritize testing functions that can be reliably tested in isolation
+- **Test All Public Functions**: In the target module, but assess safety first
+- **Comprehensive Parameter Validation**: Test null parameters, empty inputs, invalid configurations
+- **Boundary Conditions**: Test minimum/maximum values, edge cases, buffer limits
+- **State Validation**: Test different configuration states (enabled/disabled, available/unavailable)
+- **Structure Testing**: Validate data structure initialization, assignment, and cleanup
+- **Error Scenarios**: Test all error paths and recovery mechanisms
+
+**Systematic Test Organization Patterns**:
+
+Organize tests into logical groups:
+
+1. **Parameter Validation Tests** (null, empty, invalid inputs)
+2. **Normal Operation Tests** (valid inputs, expected behavior)
+3. **Edge Case Tests** (boundary conditions, special values)
+4. **Configuration State Tests** (different system states)
+5. **Structure Validation Tests** (data structure behavior)
+6. **Cleanup and Resource Management Tests**
 
 **Test Naming Convention**:
 
 - Use descriptive names: `test_<function_name>_<scenario>`
-- Examples: `test_handle_launch_plan_null_parameter`, `test_handle_launch_plan_all_systems_ready`
+- Examples:
+  - `test_validate_payload_key_null_key`
+  - `test_is_swagger_request_custom_prefix`
+  - `test_cleanup_swagger_support_multiple_calls`
+- Group related tests with consistent prefixes for easy identification
+
+**Preventing Test Hangs and Crashes**:
+
+Based on experience with payload environment variable testing:
+
+- **Use Timeout Mechanisms**: Implement alarm-based timeouts for functions that might hang
+- **Test Global State Carefully**: Some functions depend on global variables; set these appropriately
+- **Avoid System State Functions**: Functions that modify system state may be unreliable in tests
+- **Test Cleanup Functions Multiple Times**: Ensure cleanup functions handle multiple calls gracefully
+
+**Example Timeout Pattern**:
+
+```c
+// Simple timeout mechanism using alarm
+static volatile sig_atomic_t test_timeout = 0;
+
+void timeout_handler(int sig) {
+    (void)sig;
+    test_timeout = 1;
+}
+
+void test_function_with_potential_hang(void) {
+    signal(SIGALRM, timeout_handler);
+    alarm(2);  // 2-second timeout
+    
+    bool result = potentially_slow_function();
+    
+    alarm(0);  // Cancel alarm
+    signal(SIGALRM, SIG_DFL);
+    
+    TEST_ASSERT_FALSE(test_timeout);  // Ensure we didn't timeout
+    TEST_ASSERT_TRUE(result);
+}
+```
 
 **Test Data Management**:
 
-- Use realistic test data that reflects actual system usage
-- Create test fixtures for complex data structures
-- Clean up resources in `tearDown()` function
+- **Use Realistic Test Data**: Reflect actual system usage patterns
+- **Create Comprehensive Fixtures**: Set up complex data structures in setUp()
+- **Test Structure Lifecycle**: Initialization, assignment, modification, cleanup
+- **Memory Management**: Always clean up allocated resources in tearDown()
+- **Configuration Objects**: Test all configuration combinations and states
+
+**Configuration and Structure Testing Patterns**:
+
+```c
+// Example pattern for testing configuration structures
+void test_config_structure_validation(void) {
+    SwaggerConfig config = {0};
+    
+    // Test initialization state
+    TEST_ASSERT_FALSE(config.enabled);
+    TEST_ASSERT_NULL(config.prefix);
+    
+    // Test assignment
+    config.enabled = true;
+    config.prefix = strdup("/swagger");
+    
+    // Test validation
+    TEST_ASSERT_TRUE(config.enabled);
+    TEST_ASSERT_EQUAL_STRING("/swagger", config.prefix);
+    
+    // Cleanup
+    free(config.prefix);
+}
+```
+
+**Parameter Validation Testing Strategy**:
+
+Systematically test all parameter combinations:
+
+1. **Null Parameters**: Test each parameter as NULL individually
+2. **Empty/Invalid Values**: Test empty strings, zero values, invalid enums
+3. **Boundary Values**: Test at limits (max length, max size, etc.)
+4. **Combined Invalid States**: Test multiple invalid parameters together
+5. **Valid Combinations**: Ensure valid inputs work correctly
+
+**Coverage Maximization**:
+
+- **Target High-Value Functions**: Focus on functions that provide maximum coverage gain
+- **Test Wrapper Functions**: Test both wrapper functions and underlying implementations
+- **Exercise All Code Paths**: Use different input combinations to trigger different branches
+- **Validate Coverage Reports**: Use gcov output to identify missed lines and functions
 
 ### Adding New Unity Tests
 

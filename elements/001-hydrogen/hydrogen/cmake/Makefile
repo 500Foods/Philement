@@ -621,6 +621,58 @@ test_launch_plan/fast:
 .PHONY : test_launch_plan/fast
 
 #=============================================================================
+# Target rules for targets named test_payload_objects
+
+# Build rule for target.
+test_payload_objects: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_payload_objects
+.PHONY : test_payload_objects
+
+# fast build rule for target.
+test_payload_objects/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_payload_objects.dir/build.make CMakeFiles/test_payload_objects.dir/build
+.PHONY : test_payload_objects/fast
+
+#=============================================================================
+# Target rules for targets named test_payload
+
+# Build rule for target.
+test_payload: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_payload
+.PHONY : test_payload
+
+# fast build rule for target.
+test_payload/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_payload.dir/build.make CMakeFiles/test_payload.dir/build
+.PHONY : test_payload/fast
+
+#=============================================================================
+# Target rules for targets named test_swagger_objects
+
+# Build rule for target.
+test_swagger_objects: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_swagger_objects
+.PHONY : test_swagger_objects
+
+# fast build rule for target.
+test_swagger_objects/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_swagger_objects.dir/build.make CMakeFiles/test_swagger_objects.dir/build
+.PHONY : test_swagger_objects/fast
+
+#=============================================================================
+# Target rules for targets named test_swagger
+
+# Build rule for target.
+test_swagger: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_swagger
+.PHONY : test_swagger
+
+# fast build rule for target.
+test_swagger/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_swagger.dir/build.make CMakeFiles/test_swagger.dir/build
+.PHONY : test_swagger/fast
+
+#=============================================================================
 # Target rules for targets named test_hydrogen_objects
 
 # Build rule for target.
@@ -773,6 +825,8 @@ help:
 	@echo "... release_objects"
 	@echo "... test_hydrogen_objects"
 	@echo "... test_launch_plan_objects"
+	@echo "... test_payload_objects"
+	@echo "... test_swagger_objects"
 	@echo "... trial"
 	@echo "... unity_objects"
 	@echo "... unity_tests"
@@ -790,6 +844,8 @@ help:
 	@echo "... release"
 	@echo "... test_hydrogen"
 	@echo "... test_launch_plan"
+	@echo "... test_payload"
+	@echo "... test_swagger"
 	@echo "... valgrind"
 	@echo "... home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/examples/C/auth_code_flow.o"
 	@echo "... home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/examples/C/auth_code_flow.i"
