@@ -45,6 +45,49 @@ extern AppConfig* app_config;  // Defined in config.c
 /* Global server context */
 WebSocketServerContext *ws_context = NULL;
 
+// HTTP callback handler for WebSocket upgrade requests
+static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
+                        void *user, void *in, size_t len)
+{
+    (void)user;  // Mark unused parameter
+    (void)in;    // Mark unused parameter
+    (void)len;   // Mark unused parameter
+    
+    switch (reason) {
+        case LWS_CALLBACK_HTTP:
+            // Handle HTTP requests and WebSocket upgrade
+            {
+                char buf[256];
+                int auth_len = lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_AUTHORIZATION);
+                
+                if (auth_len > 0 && auth_len < (int)sizeof(buf)) {
+                    lws_hdr_copy(wsi, buf, sizeof(buf), WSI_TOKEN_HTTP_AUTHORIZATION);
+                    
+                    if (strncmp(buf, "Key ", 4) == 0) {
+                        const char *key = buf + 4;
+                        if (ws_context && strcmp(key, ws_context->auth_key) == 0) {
+                            // Authentication successful, allow upgrade
+                            log_this("WebSocket", "HTTP upgrade authentication successful", LOG_LEVEL_STATE);
+                            return 0;
+                        }
+                    }
+                }
+                
+                // Authentication failed
+                log_this("WebSocket", "HTTP upgrade authentication failed", LOG_LEVEL_ALERT);
+                return -1;
+            }
+            
+        case LWS_CALLBACK_HTTP_CONFIRM_UPGRADE:
+            // Confirm the WebSocket upgrade
+            log_this("WebSocket", "Confirming WebSocket upgrade", LOG_LEVEL_STATE);
+            return 0;
+            
+        default:
+            return 0;
+    }
+}
+
 // Main callback dispatcher for all WebSocket events
 static int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
                            void *user, void *in, size_t len)
@@ -185,14 +228,23 @@ int init_websocket_server(int port, const char* protocol, const char* key)
     struct lws_context_creation_info info;
     memset(&info, 0, sizeof(info));
 
-    // Define protocol handler
+    // Define protocol handlers - need HTTP support for upgrade requests
     struct lws_protocols protocols[] = {
+        {
+            .name = "http",
+            .callback = callback_http,
+            .per_session_data_size = 0,
+            .rx_buffer_size = 0,
+            .id = 0,
+            .user = NULL,
+            .tx_packet_size = 0
+        },
         {
             .name = protocol,
             .callback = callback_hydrogen,
             .per_session_data_size = sizeof(WebSocketSessionData),
             .rx_buffer_size = 0,
-            .id = 0,
+            .id = 1,
             .user = NULL,
             .tx_packet_size = 0
         },
@@ -205,8 +257,8 @@ int init_websocket_server(int port, const char* protocol, const char* key)
     info.uid = -1;
     info.user = ws_context;  // Set context as user data
     info.options = LWS_SERVER_OPTION_EXPLICIT_VHOSTS |
-                  LWS_SERVER_OPTION_SKIP_PROTOCOL_INIT |  // Skip protocol init during context creation
-                  LWS_SERVER_OPTION_ALLOW_LISTEN_SHARE;   // Enable SO_REUSEADDR for immediate rebinding
+                  LWS_SERVER_OPTION_ALLOW_LISTEN_SHARE |   // Enable SO_REUSEADDR for immediate rebinding
+                  LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
 
     // Configure IPv6 if enabled
     if (app_config && app_config->websocket.enable_ipv6) {
@@ -376,6 +428,11 @@ static void *websocket_server_run(void *arg)
     int shutdown_wait = 0;
     const int max_shutdown_wait = 40;  // 2 seconds total (40 * 50ms)
 
+    // Wait for server_running to be set
+    while (!server_running && !ws_context->shutdown) {
+        usleep(10000);  // 10ms
+    }
+
     while (server_running && !ws_context->shutdown) {
         // Add cancellation point before service
         pthread_testcancel();
@@ -500,8 +557,8 @@ void stop_websocket_server()
         
         // Get configurable exit wait timeout from config
         extern AppConfig *app_config;
-        int exit_wait = app_config->websocket.exit_wait_seconds > 0 ? 
-                      app_config->websocket.exit_wait_seconds : 10; // Default to 10s if not set
+        int exit_wait = app_config->websocket.connection_timeouts.exit_wait_seconds > 0 ?
+                       app_config->websocket.connection_timeouts.exit_wait_seconds : 10; // Default to 10s if not set
         
         // Wait for server thread with configurable timeout
         struct timespec ts;

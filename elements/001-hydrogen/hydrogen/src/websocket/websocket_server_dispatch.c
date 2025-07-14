@@ -127,11 +127,16 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
     }
 
     // Session validation for normal operation
+    // Allow these callbacks to proceed without session data during connection establishment
     if (!session && 
         reason != LWS_CALLBACK_SERVER_NEW_CLIENT_INSTANTIATED &&
         reason != LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION &&
-        reason != LWS_CALLBACK_FILTER_NETWORK_CONNECTION) {
-        log_this("WebSocket", "Invalid session data for callback %d", LOG_LEVEL_ERROR, reason);
+        reason != LWS_CALLBACK_FILTER_NETWORK_CONNECTION &&
+        reason != LWS_CALLBACK_HTTP_CONFIRM_UPGRADE &&
+        reason != LWS_CALLBACK_FILTER_HTTP_CONNECTION &&
+        reason != LWS_CALLBACK_WS_SERVER_BIND_PROTOCOL &&
+        reason != LWS_CALLBACK_WS_SERVER_DROP_PROTOCOL) {
+        log_this("WebSocket", "Invalid session data for callback %d", LOG_LEVEL_DEBUG, reason);
         return -1;
     }
 
@@ -160,7 +165,22 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 }
 
                 lws_hdr_copy(wsi, buf, sizeof(buf), WSI_TOKEN_HTTP_AUTHORIZATION);
-                return ws_handle_authentication(wsi, session, buf);
+                
+                // During protocol filtering, session isn't initialized yet
+                // Validate authentication directly without session
+                if (strncmp(buf, "Key ", 4) != 0) {
+                    log_this("WebSocket", "Invalid authentication scheme", LOG_LEVEL_ALERT);
+                    return -1;
+                }
+                
+                const char *key = buf + 4;  // Skip "Key "
+                if (strcmp(key, ws_context->auth_key) != 0) {
+                    log_this("WebSocket", "Authentication failed during protocol filtering", LOG_LEVEL_ALERT);
+                    return -1;
+                }
+                
+                log_this("WebSocket", "Authentication successful during protocol filtering", LOG_LEVEL_STATE);
+                return 0;
             }
 
         // Message Processing
