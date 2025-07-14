@@ -4,6 +4,7 @@
 # Runs unit tests using the Unity framework, treating each test file as a subtest
 
 # CHANGELOG
+# 2.1.0 - 2025-07-14 - Removed Unity framework check (moved to test 01), enhanced individual test reporting with INFO lines
 # 2.0.3 - 2025-07-14 - Enhanced individual test reporting with INFO lines showing test descriptions and purposes
 # 2.0.2 - 2025-07-06 - Added missing shellcheck justifications
 # 2.0.1 - 2025-07-06 - Removed hardcoded absolute path; now handled by log_output.sh
@@ -12,7 +13,7 @@
 
 # Test configuration
 TEST_NAME="Unity Unit Tests"
-SCRIPT_VERSION="2.0.3"
+SCRIPT_VERSION="2.1.0"
 
 # Get the directory where this script is located
 TEST_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -92,42 +93,6 @@ if setup_output_directories "$RESULTS_DIR" "$DIAG_DIR" "$LOG_FILE" "$DIAG_TEST_D
 else
     EXIT_CODE=1
 fi
-
-# Function to download Unity framework if missing
-download_unity_framework() {
-    local framework_dir="$UNITY_DIR/framework"
-    local unity_dir="$framework_dir/Unity"
-    if [ ! -d "$unity_dir" ]; then
-        print_message "Unity framework not found in $unity_dir. Downloading now..."
-        mkdir -p "$framework_dir"
-        if command -v curl >/dev/null 2>&1; then
-            if curl -L https://github.com/ThrowTheSwitch/Unity/archive/refs/heads/master.zip -o "$framework_dir/unity.zip"; then
-                unzip "$framework_dir/unity.zip" -d "$framework_dir/"
-                mv "$framework_dir/Unity-master" "$unity_dir"
-                rm "$framework_dir/unity.zip"
-                print_result 0 "Unity framework downloaded and extracted successfully to $unity_dir."
-                return 0
-            else
-                print_result 1 "Failed to download Unity framework with curl."
-                return 1
-            fi
-        elif command -v git >/dev/null 2>&1; then
-            if git clone https://github.com/ThrowTheSwitch/Unity.git "$unity_dir"; then
-                print_result 0 "Unity framework cloned successfully to $unity_dir."
-                return 0
-            else
-                print_result 1 "Failed to clone Unity framework with git."
-                return 1
-            fi
-        else
-            print_result 1 "Neither curl nor git is available to download the Unity framework."
-            return 1
-        fi
-    else
-        print_message "Unity framework already exists in $unity_dir."
-        return 0
-    fi
-}
 
 # Function to check Unity tests are available via CTest (assumes they're already built by main build system)
 check_unity_tests_available() {
@@ -262,17 +227,6 @@ run_unity_tests() {
     
     return $overall_result
 }
-
-# Check and download Unity framework
-next_subtest
-print_subtest "Check Unity Framework"
-if download_unity_framework; then
-    print_result 0 "Unity framework check passed."
-    ((PASS_COUNT++))
-else
-    print_result 1 "Unity framework check failed."
-    EXIT_CODE=1
-fi
 
 # Check and run tests
 if check_unity_tests_available; then
