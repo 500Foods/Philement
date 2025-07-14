@@ -11,6 +11,7 @@
 # - /api/system/appconfig: Tests the application configuration endpoint
 
 # CHANGELOG
+# 3.1.3 - 2025-07-14 - Enhanced validate_api_request with retry logic to handle API subsystem initialization delays during parallel execution
 # 3.1.2 - 2025-07-15 - No more sleep
 # 3.1.1 - 2025-07-14 - Updated to use build/tests directories for test output consistency
 # 3.1.0 - 2025-07-14 - Major architectural restructure to modular approach for better parallel execution reliability
@@ -21,7 +22,7 @@
 
 # Test Configuration
 TEST_NAME="System API Endpoints"
-SCRIPT_VERSION="3.1.2"
+SCRIPT_VERSION="3.1.3"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -68,7 +69,7 @@ EXIT_CODE=0
 # Configuration file for API testing
 CONFIG_PATH="$(get_config_path "hydrogen_test_system_endpoints.json")"
 
-# Function to make a request and validate response (simplified approach based on test_34)
+# Function to make a request and validate response with retry logic for API readiness
 validate_api_request() {
     local request_name="$1"
     local url="$2"
@@ -89,42 +90,90 @@ validate_api_request() {
     declare -g "RESPONSE_FILE_${request_name^^}=$response_file"
     
     print_command "curl -s --max-time 10 --compressed \"$url\""
-    if curl -s --max-time 10 --compressed "$url" > "$response_file"; then
-        print_message "Successfully received response from $url"
+    
+    # Retry logic for API readiness (especially important in parallel execution)
+    local max_attempts=3
+    local attempt=1
+    local curl_exit_code=0
+    
+    while [ $attempt -le $max_attempts ]; do
+        if [ $attempt -gt 1 ]; then
+            print_message "API request attempt $attempt of $max_attempts (waiting for API subsystem initialization)..."
+            sleep 1  # Brief delay between attempts for API initialization
+        fi
         
-        # Show response excerpt
-        local line_count
-        line_count=$(wc -l < "$response_file")
-        print_message "Response contains $line_count lines"
+        # Run curl and capture exit code
+        curl -s --max-time 10 --compressed "$url" > "$response_file"
+        curl_exit_code=$?
         
-        # Check for expected content based on endpoint type
-        if [[ "$request_name" == "recent" ]]; then
-            # Use fixed string search for recent endpoint
-            if grep -F -q "[" "$response_file"; then
-                print_result 0 "Response contains expected field: log entry"
-                return 0
+        if [ $curl_exit_code -eq 0 ]; then
+            # Check if we got a 404 or other error response
+            if grep -q "404 Not Found" "$response_file" || grep -q "<html>" "$response_file"; then
+                if [ $attempt -eq $max_attempts ]; then
+                    print_message "API endpoint still not ready after $max_attempts attempts"
+                    print_result 1 "API endpoint returned 404 or HTML error page"
+                    print_message "Response content:"
+                    print_output "$(cat "$response_file")"
+                    return 1
+                else
+                    print_message "API endpoint not ready yet (got 404/HTML), retrying..."
+                    ((attempt++))
+                    continue
+                fi
+            fi
+            
+            print_message "Successfully received response from $url"
+            
+            # Show response excerpt
+            local line_count
+            line_count=$(wc -l < "$response_file")
+            print_message "Response contains $line_count lines"
+            
+            # Check for expected content based on endpoint type
+            if [[ "$request_name" == "recent" ]]; then
+                # Use fixed string search for recent endpoint
+                if grep -F -q "[" "$response_file"; then
+                    if [ $attempt -gt 1 ]; then
+                        print_result 0 "Response contains expected field: log entry (succeeded on attempt $attempt)"
+                    else
+                        print_result 0 "Response contains expected field: log entry"
+                    fi
+                    return 0
+                else
+                    print_result 1 "Response doesn't contain expected field: log entry"
+                    return 1
+                fi
             else
-                print_result 1 "Response doesn't contain expected field: log entry"
-                return 1
+                # Normal pattern search for other endpoints
+                if grep -q "$expected_field" "$response_file"; then
+                    if [ $attempt -gt 1 ]; then
+                        print_result 0 "Response contains expected content: $expected_field (succeeded on attempt $attempt)"
+                    else
+                        print_result 0 "Response contains expected content: $expected_field"
+                    fi
+                    return 0
+                else
+                    print_result 1 "Response doesn't contain expected content: $expected_field"
+                    print_message "Response excerpt (first 10 lines):"
+                    head -n 10 "$response_file" | while IFS= read -r line; do
+                        print_output "$line"
+                    done
+                    return 1
+                fi
             fi
         else
-            # Normal pattern search for other endpoints
-            if grep -q "$expected_field" "$response_file"; then
-                print_result 0 "Response contains expected content: $expected_field"
-                return 0
-            else
-                print_result 1 "Response doesn't contain expected content: $expected_field"
-                print_message "Response excerpt (first 10 lines):"
-                head -n 10 "$response_file" | while IFS= read -r line; do
-                    print_output "$line"
-                done
+            if [ $attempt -eq $max_attempts ]; then
+                print_result 1 "Failed to connect to server at $url (curl exit code: $curl_exit_code)"
                 return 1
+            else
+                print_message "Connection failed on attempt $attempt, retrying..."
+                ((attempt++))
+                continue
             fi
         fi
-    else
-        print_result 1 "Failed to connect to server at $url"
-        return 1
-    fi
+    done
+    
+    return 1
 }
 
 # Function to validate JSON syntax

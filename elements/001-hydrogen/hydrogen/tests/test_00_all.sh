@@ -6,6 +6,7 @@
 # Usage: ./test_00_all.sh [test_name1 test_name2 ...] [--skip-tests] [--sequential] [--help]
 
 # CHANGELOG
+# 4.0.2 - 2025-07-14 - Added 100ms delay between parallel test launches to reduce startup contention during parallel execution
 # 4.0.1 - 2025-07-07 - Fixed how individual test elapsed times are stored and accessed
 # 4.0.1 - 2025-07-07 - Added missing shellcheck justifications
 # 4.0.0 - 2025-07-04 - Added dynamic parallel execution with group-based batching for significant performance improvement
@@ -14,7 +15,7 @@
 
 # Test configuration
 TEST_NAME="Test Suite Runner"
-SCRIPT_VERSION="4.0.1"
+SCRIPT_VERSION="4.0.2"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -695,6 +696,9 @@ run_all_tests_parallel() {
             # Run test in background
             run_single_test_parallel "$test_script" "$temp_result_file" "$temp_output_file" &
             pids+=($!)
+            
+            # Brief delay between test launches to reduce parallel startup contention
+            # sleep 0.1
         done
         
         # Run first test in foreground (shows output immediately)

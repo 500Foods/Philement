@@ -10,6 +10,7 @@
 # - Uses immediate restart without waiting for TIME_WAIT (SO_REUSEADDR enabled)
 
 # CHANGELOG
+# 3.1.3 - 2025-07-14 - Enhanced HTTP request functions with retry logic to handle subsystem initialization delays during parallel execution
 # 3.1.2 - 2025-07-15 - No more sleep
 # 3.1.1 - 2025-07-14 - Updated to use build/tests directories for test output consistency
 # 3.1.0 - 2025-07-13 - Added swagger.json file retrieval and validation testing
@@ -19,7 +20,7 @@
 
 # Test Configuration
 TEST_NAME="Swagger"
-SCRIPT_VERSION="3.1.2"
+SCRIPT_VERSION="3.1.3"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -84,7 +85,7 @@ wait_for_server_ready() {
     return 1
 }
 
-# Function to check HTTP response content
+# Function to check HTTP response content with retry logic for subsystem readiness
 check_response_content() {
     local url="$1"
     local expected_content="$2"
@@ -98,118 +99,256 @@ check_response_content() {
     curl_cmd="$curl_cmd --compressed"
     
     print_command "$curl_cmd \"$url\""
-    if eval "$curl_cmd \"$url\" > \"$response_file\""; then
-        print_message "Successfully received response from $url"
-        
-        # Show response excerpt
-        local line_count
-        line_count=$(wc -l < "$response_file")
-        print_message "Response contains $line_count lines"
-        
-        # Check for expected content
-        if grep -q "$expected_content" "$response_file"; then
-            print_result 0 "Response contains expected content: $expected_content"
-            return 0
-        else
-            print_result 1 "Response doesn't contain expected content: $expected_content"
-            print_message "Response excerpt (first 10 lines):"
-            head -n 10 "$response_file" | while IFS= read -r line; do
-                print_output "$line"
-            done
-            return 1
+    
+    # Retry logic for subsystem readiness (especially important in parallel execution)
+    local max_attempts=3
+    local attempt=1
+    local curl_exit_code=0
+    
+    while [ $attempt -le $max_attempts ]; do
+        if [ $attempt -gt 1 ]; then
+            print_message "HTTP request attempt $attempt of $max_attempts (waiting for subsystem initialization)..."
+            sleep 1  # Brief delay between attempts for subsystem initialization
         fi
-    else
-        print_result 1 "Failed to connect to server at $url"
-        return 1
-    fi
+        
+        # Run curl and capture exit code
+        eval "$curl_cmd \"$url\" > \"$response_file\""
+        curl_exit_code=$?
+        
+        if [ $curl_exit_code -eq 0 ]; then
+            # Check if we got a 404 or other error response
+            if grep -q "404 Not Found" "$response_file" || grep -q "<html>" "$response_file"; then
+                if [ $attempt -eq $max_attempts ]; then
+                    print_message "Endpoint still not ready after $max_attempts attempts"
+                    print_result 1 "Endpoint returned 404 or HTML error page"
+                    print_message "Response content:"
+                    print_output "$(cat "$response_file")"
+                    return 1
+                else
+                    print_message "Endpoint not ready yet (got 404/HTML), retrying..."
+                    ((attempt++))
+                    continue
+                fi
+            fi
+            
+            print_message "Successfully received response from $url"
+            
+            # Show response excerpt
+            local line_count
+            line_count=$(wc -l < "$response_file")
+            print_message "Response contains $line_count lines"
+            
+            # Check for expected content
+            if grep -q "$expected_content" "$response_file"; then
+                if [ $attempt -gt 1 ]; then
+                    print_result 0 "Response contains expected content: $expected_content (succeeded on attempt $attempt)"
+                else
+                    print_result 0 "Response contains expected content: $expected_content"
+                fi
+                return 0
+            else
+                print_result 1 "Response doesn't contain expected content: $expected_content"
+                print_message "Response excerpt (first 10 lines):"
+                head -n 10 "$response_file" | while IFS= read -r line; do
+                    print_output "$line"
+                done
+                return 1
+            fi
+        else
+            if [ $attempt -eq $max_attempts ]; then
+                print_result 1 "Failed to connect to server at $url (curl exit code: $curl_exit_code)"
+                return 1
+            else
+                print_message "Connection failed on attempt $attempt, retrying..."
+                ((attempt++))
+                continue
+            fi
+        fi
+    done
+    
+    return 1
 }
 
-# Function to check HTTP redirect
+# Function to check HTTP redirect with retry logic for subsystem readiness
 check_redirect_response() {
     local url="$1"
     local expected_location="$2"
     local redirect_file="$3"
     
     print_command "curl -v -s --max-time 10 -o /dev/null \"$url\""
-    if curl -v -s --max-time 10 -o /dev/null "$url" 2> "$redirect_file"; then
-        print_message "Successfully received response from $url"
-        
-        # Check for redirect
-        if grep -q "< HTTP/1.1 301" "$redirect_file" && grep -q "< Location: $expected_location" "$redirect_file"; then
-            print_result 0 "Response is a 301 redirect to $expected_location"
-            return 0
-        else
-            print_result 1 "Response is not a redirect to $expected_location"
-            print_message "Response headers:"
-            grep -E "< HTTP/|< Location:" "$redirect_file" | while IFS= read -r line; do
-                print_output "$line"
-            done
-            return 1
+    
+    # Retry logic for subsystem readiness (especially important in parallel execution)
+    local max_attempts=3
+    local attempt=1
+    local curl_exit_code=0
+    
+    while [ $attempt -le $max_attempts ]; do
+        if [ $attempt -gt 1 ]; then
+            print_message "Redirect check attempt $attempt of $max_attempts (waiting for subsystem initialization)..."
+            sleep 1  # Brief delay between attempts for subsystem initialization
         fi
-    else
-        print_result 1 "Failed to connect to server at $url"
-        return 1
-    fi
+        
+        # Run curl and capture exit code
+        curl -v -s --max-time 10 -o /dev/null "$url" 2> "$redirect_file"
+        curl_exit_code=$?
+        
+        if [ $curl_exit_code -eq 0 ]; then
+            # Check if we got a 404 or connection error
+            if grep -q "404 Not Found" "$redirect_file"; then
+                if [ $attempt -eq $max_attempts ]; then
+                    print_message "Endpoint still not ready after $max_attempts attempts"
+                    print_result 1 "Endpoint returned 404 error"
+                    print_message "Response headers:"
+                    grep -E "< HTTP/|< Location:" "$redirect_file" | while IFS= read -r line; do
+                        print_output "$line"
+                    done
+                    return 1
+                else
+                    print_message "Endpoint not ready yet (got 404), retrying..."
+                    ((attempt++))
+                    continue
+                fi
+            fi
+            
+            print_message "Successfully received response from $url"
+            
+            # Check for redirect
+            if grep -q "< HTTP/1.1 301" "$redirect_file" && grep -q "< Location: $expected_location" "$redirect_file"; then
+                if [ $attempt -gt 1 ]; then
+                    print_result 0 "Response is a 301 redirect to $expected_location (succeeded on attempt $attempt)"
+                else
+                    print_result 0 "Response is a 301 redirect to $expected_location"
+                fi
+                return 0
+            else
+                print_result 1 "Response is not a redirect to $expected_location"
+                print_message "Response headers:"
+                grep -E "< HTTP/|< Location:" "$redirect_file" | while IFS= read -r line; do
+                    print_output "$line"
+                done
+                return 1
+            fi
+        else
+            if [ $attempt -eq $max_attempts ]; then
+                print_result 1 "Failed to connect to server at $url (curl exit code: $curl_exit_code)"
+                return 1
+            else
+                print_message "Connection failed on attempt $attempt, retrying..."
+                ((attempt++))
+                continue
+            fi
+        fi
+    done
+    
+    return 1
 }
 
-# Function to check swagger.json file content
+# Function to check swagger.json file content with retry logic for subsystem readiness
 check_swagger_json() {
     local url="$1"
     local response_file="$2"
     
     print_command "curl -s --max-time 10 \"$url\""
-    if curl -s --max-time 10 "$url" > "$response_file"; then
-        print_message "Successfully received swagger.json from $url"
+    
+    # Retry logic for subsystem readiness (especially important in parallel execution)
+    local max_attempts=3
+    local attempt=1
+    local curl_exit_code=0
+    
+    while [ $attempt -le $max_attempts ]; do
+        if [ $attempt -gt 1 ]; then
+            print_message "Swagger JSON request attempt $attempt of $max_attempts (waiting for subsystem initialization)..."
+            sleep 1  # Brief delay between attempts for subsystem initialization
+        fi
         
-        # Check if it's valid JSON and contains expected swagger content
-        if command -v jq >/dev/null 2>&1; then
-            # Use jq to validate JSON and check for required fields
-            if jq -e '.openapi // .swagger' "$response_file" >/dev/null 2>&1; then
-                local openapi_version
-                openapi_version=$(jq -r '.openapi // .swagger // "unknown"' "$response_file")
-                print_message "Valid OpenAPI/Swagger specification found (version: $openapi_version)"
-                
-                # Check for required Hydrogen API components
-                if jq -e '.info.title' "$response_file" >/dev/null 2>&1; then
-                    local api_title
-                    api_title=$(jq -r '.info.title' "$response_file")
-                    print_message "API Title: $api_title"
+        # Run curl and capture exit code
+        curl -s --max-time 10 "$url" > "$response_file"
+        curl_exit_code=$?
+        
+        if [ $curl_exit_code -eq 0 ]; then
+            # Check if we got a 404 or other error response
+            if grep -q "404 Not Found" "$response_file" || grep -q "<html>" "$response_file"; then
+                if [ $attempt -eq $max_attempts ]; then
+                    print_message "Swagger endpoint still not ready after $max_attempts attempts"
+                    print_result 1 "Swagger endpoint returned 404 or HTML error page"
+                    print_message "Response content:"
+                    print_output "$(cat "$response_file")"
+                    return 1
+                else
+                    print_message "Swagger endpoint not ready yet (got 404/HTML), retrying..."
+                    ((attempt++))
+                    continue
+                fi
+            fi
+            
+            print_message "Successfully received swagger.json from $url"
+            
+            # Check if it's valid JSON and contains expected swagger content
+            if command -v jq >/dev/null 2>&1; then
+                # Use jq to validate JSON and check for required fields
+                if jq -e '.openapi // .swagger' "$response_file" >/dev/null 2>&1; then
+                    local openapi_version
+                    openapi_version=$(jq -r '.openapi // .swagger // "unknown"' "$response_file")
+                    print_message "Valid OpenAPI/Swagger specification found (version: $openapi_version)"
                     
-                    if [[ "$api_title" == *"Hydrogen"* ]]; then
-                        print_result 0 "swagger.json contains valid Hydrogen API specification"
-                        return 0
+                    # Check for required Hydrogen API components
+                    if jq -e '.info.title' "$response_file" >/dev/null 2>&1; then
+                        local api_title
+                        api_title=$(jq -r '.info.title' "$response_file")
+                        print_message "API Title: $api_title"
+                        
+                        if [[ "$api_title" == *"Hydrogen"* ]]; then
+                            if [ $attempt -gt 1 ]; then
+                                print_result 0 "swagger.json contains valid Hydrogen API specification (succeeded on attempt $attempt)"
+                            else
+                                print_result 0 "swagger.json contains valid Hydrogen API specification"
+                            fi
+                            return 0
+                        else
+                            print_result 1 "swagger.json doesn't appear to be for Hydrogen API (title: $api_title)"
+                            return 1
+                        fi
                     else
-                        print_result 1 "swagger.json doesn't appear to be for Hydrogen API (title: $api_title)"
+                        print_result 1 "swagger.json missing required 'info.title' field"
                         return 1
                     fi
                 else
-                    print_result 1 "swagger.json missing required 'info.title' field"
+                    print_result 1 "swagger.json contains invalid JSON or missing OpenAPI/Swagger version"
                     return 1
                 fi
             else
-                print_result 1 "swagger.json contains invalid JSON or missing OpenAPI/Swagger version"
-                return 1
+                # Fallback validation without jq
+                if grep -q '"openapi":\|"swagger":' "$response_file" && \
+                   grep -q '"info":' "$response_file" && \
+                   grep -q '"Hydrogen' "$response_file"; then
+                    if [ $attempt -gt 1 ]; then
+                        print_result 0 "swagger.json contains expected Hydrogen API content (basic validation, succeeded on attempt $attempt)"
+                    else
+                        print_result 0 "swagger.json contains expected Hydrogen API content (basic validation)"
+                    fi
+                    return 0
+                else
+                    print_result 1 "swagger.json doesn't contain expected OpenAPI/Swagger structure or Hydrogen content"
+                    print_message "Response excerpt (first 5 lines):"
+                    head -n 5 "$response_file" | while IFS= read -r line; do
+                        print_output "$line"
+                    done
+                    return 1
+                fi
             fi
         else
-            # Fallback validation without jq
-            if grep -q '"openapi":\|"swagger":' "$response_file" && \
-               grep -q '"info":' "$response_file" && \
-               grep -q '"Hydrogen' "$response_file"; then
-                print_result 0 "swagger.json contains expected Hydrogen API content (basic validation)"
-                return 0
-            else
-                print_result 1 "swagger.json doesn't contain expected OpenAPI/Swagger structure or Hydrogen content"
-                print_message "Response excerpt (first 5 lines):"
-                head -n 5 "$response_file" | while IFS= read -r line; do
-                    print_output "$line"
-                done
+            if [ $attempt -eq $max_attempts ]; then
+                print_result 1 "Failed to retrieve swagger.json from $url (curl exit code: $curl_exit_code)"
                 return 1
+            else
+                print_message "Connection failed on attempt $attempt, retrying..."
+                ((attempt++))
+                continue
             fi
         fi
-    else
-        print_result 1 "Failed to retrieve swagger.json from $url"
-        return 1
-    fi
+    done
+    
+    return 1
 }
 
 # Function to test Swagger UI with a specific configuration
