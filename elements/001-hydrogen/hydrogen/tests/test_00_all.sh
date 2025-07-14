@@ -6,6 +6,7 @@
 # Usage: ./test_00_all.sh [test_name1 test_name2 ...] [--skip-tests] [--sequential] [--help]
 
 # CHANGELOG
+# 4.1.0 - 2025-07-14 - Added --sequential-groups option to run specific groups sequentially while others run in parallel
 # 4.0.2 - 2025-07-14 - Added 100ms delay between parallel test launches to reduce startup contention during parallel execution
 # 4.0.1 - 2025-07-07 - Fixed how individual test elapsed times are stored and accessed
 # 4.0.1 - 2025-07-07 - Added missing shellcheck justifications
@@ -15,7 +16,7 @@
 
 # Test configuration
 TEST_NAME="Test Suite Runner"
-SCRIPT_VERSION="4.0.2"
+SCRIPT_VERSION="4.1.0"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -57,6 +58,7 @@ mkdir -p "$RESULTS_DIR"
 # Command line argument parsing
 SKIP_TESTS=false
 SEQUENTIAL_MODE=false
+SEQUENTIAL_GROUPS=()
 TEST_ARGS=()
 
 # Parse all arguments
@@ -67,6 +69,19 @@ for arg in "$@"; do
             ;;
         --sequential)
             SEQUENTIAL_MODE=true
+            ;;
+        --sequential-groups=*)
+            # Parse comma-separated list of groups
+            IFS=',' read -ra groups <<< "${arg#--sequential-groups=}"
+            for group in "${groups[@]}"; do
+                # Validate that group is a number
+                if [[ "$group" =~ ^[0-9]+$ ]]; then
+                    SEQUENTIAL_GROUPS+=("$group")
+                else
+                    echo "Error: Invalid group number '$group'. Groups must be numeric."
+                    exit 1
+                fi
+            done
             ;;
         --help|-h)
             # Help will be handled later
@@ -326,19 +341,21 @@ format_time_duration() {
 
 # Function to show help
 show_help() {
-    echo "Usage: $0 [test_name1 test_name2 ...] [--skip-tests] [--sequential] [--help]"
+    echo "Usage: $0 [test_name1 test_name2 ...] [--skip-tests] [--sequential] [--sequential-groups=N,M] [--help]"
     echo ""
     echo "Arguments:"
     echo "  test_name    Run specific tests (e.g., 01_compilation, 98_check_links)"
     echo ""
     echo "Options:"
-    echo "  --skip-tests Skip actual test execution, just show what tests would run"
-    echo "  --sequential Run tests sequentially instead of in parallel batches (default: parallel)"
-    echo "  --help       Show this help message"
+    echo "  --skip-tests           Skip actual test execution, just show what tests would run"
+    echo "  --sequential           Run tests sequentially instead of in parallel batches (default: parallel)"
+    echo "  --sequential-groups=N,M Run specific groups sequentially while others run in parallel"
+    echo "  --help                 Show this help message"
     echo ""
     echo "Execution Modes:"
     echo "  Default:     Tests run in parallel batches grouped by tens digit (0x, 1x, 2x, etc.)"
     echo "  Sequential:  Tests run one at a time in numerical order (original behavior)"
+    echo "  Mixed:       Specified groups run sequentially, others run in parallel"
     echo ""
     echo "Available Tests:"
     for test_script in "${TEST_SCRIPTS[@]}"; do
@@ -348,10 +365,12 @@ show_help() {
     done
     echo ""
     echo "Examples:"
-    echo "  $0                     # Run all tests in parallel batches"
-    echo "  $0 --sequential        # Run all tests sequentially"
-    echo "  $0 01_compilation      # Run specific test"
-    echo "  $0 01_compilation 03_code_size  # Run multiple tests"
+    echo "  $0                             # Run all tests in parallel batches"
+    echo "  $0 --sequential                # Run all tests sequentially"
+    echo "  $0 --sequential-groups=3       # Run group 3x (30-39) sequentially, others in parallel"
+    echo "  $0 --sequential-groups=3,4     # Run groups 3x and 4x sequentially, others in parallel"
+    echo "  $0 01_compilation              # Run specific test"
+    echo "  $0 01_compilation 03_code_size # Run multiple tests"
     echo ""
     exit 0
 }
@@ -637,6 +656,33 @@ run_all_tests_parallel() {
         # shellcheck disable=SC2206  # We want word splitting here for the array
         local group_tests=(${test_groups[$group]})
         
+        # Check if this group should run sequentially
+        local run_sequential=false
+        for sequential_group in "${SEQUENTIAL_GROUPS[@]}"; do
+            if [ "$group" = "$sequential_group" ]; then
+                run_sequential=true
+                break
+            fi
+        done
+        
+        # Handle skip mode
+        if [ "$SKIP_TESTS" = true ]; then
+            for test_script in "${group_tests[@]}"; do
+                run_single_test "$test_script"
+            done
+            continue
+        fi
+        
+        # If group should run sequentially, run all tests one by one
+        if [ "$run_sequential" = true ]; then
+            for test_script in "${group_tests[@]}"; do
+                if ! run_single_test "$test_script"; then
+                    overall_exit_code=1
+                fi
+            done
+            continue
+        fi
+        
         # Reorder tests to run longest-running ones first in the foreground
         local reordered_tests=()
         # Prioritize tests known to be slow
@@ -658,14 +704,6 @@ run_all_tests_parallel() {
         
         # Use the reordered list for execution
         group_tests=("${reordered_tests[@]}")
-        
-        # Handle skip mode
-        if [ "$SKIP_TESTS" = true ]; then
-            for test_script in "${group_tests[@]}"; do
-                run_single_test "$test_script"
-            done
-            continue
-        fi
         
         # If only one test in group, run it normally
         if [ ${#group_tests[@]} -eq 1 ]; then
@@ -698,7 +736,7 @@ run_all_tests_parallel() {
             pids+=($!)
             
             # Brief delay between test launches to reduce parallel startup contention
-            # sleep 0.1
+#            sleep 0.1
         done
         
         # Run first test in foreground (shows output immediately)
