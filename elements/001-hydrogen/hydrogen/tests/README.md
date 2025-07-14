@@ -59,6 +59,7 @@ Below is a comprehensive list of all test scripts currently available in the sui
 - **[test_30_api_prefixes.sh](docs/test_30_api_prefixes.md)**: Validates API prefix configurations.
 - **[test_32_system_endpoints.sh](docs/test_32_system_endpoints.md)**: Tests system endpoint functionality.
 - **[test_34_swagger.sh](docs/test_34_swagger.md)**: Verifies Swagger documentation and UI integration.
+- **[test_36_websockets.sh](docs/test_36_websockets.md)**: Tests WebSocket server functionality and integration.
 
 ### Static Analysis & Code Quality Tests
 

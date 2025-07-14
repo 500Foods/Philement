@@ -148,7 +148,7 @@ ReadinessResults handle_readiness_checks(void) {
     process_subsystem_readiness(&results, &index, "WebServer", check_webserver_launch_readiness());
     process_subsystem_readiness(&results, &index, "API", check_api_launch_readiness());
     process_subsystem_readiness(&results, &index, "Swagger", check_swagger_launch_readiness());
-    process_subsystem_readiness(&results, &index, "WebSocket", check_websocket_launch_readiness());
+    process_subsystem_readiness(&results, &index, "WebSockets", check_websocket_launch_readiness());
     process_subsystem_readiness(&results, &index, "Terminal", check_terminal_launch_readiness());
     process_subsystem_readiness(&results, &index, "mDNS Server", check_mdns_server_launch_readiness());
     process_subsystem_readiness(&results, &index, "mDNS Client", check_mdns_client_launch_readiness());

@@ -175,11 +175,14 @@ bool load_network_config(json_t* root, AppConfig* config) {
                 }
                 config->network.available_interfaces[i].available = is_enabled;
 
-                // Use DIRECT macro for logging with proper path and field
+                // Log the interface availability
                 char path[256];
                 snprintf(path, sizeof(path), "Network.Available.%s", interface_name);
-                success = success && PROCESS_BOOL_DIRECT(&config->network.available_interfaces[i],
-                                                       available, path, "Network", is_enabled);
+                const char* indent = "――― ";
+                char category[256];
+                snprintf(category, sizeof(category), "Config-Network");
+                log_this(category, "%s%s: %s", LOG_LEVEL_STATE,
+                        indent, interface_name, is_enabled ? "enabled" : "disabled");
             }
             
             config->network.available_interfaces_count = interface_count;

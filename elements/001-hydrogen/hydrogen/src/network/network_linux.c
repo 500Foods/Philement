@@ -1,5 +1,5 @@
 /*
- * Network Management for 3D Printer Control
+ * Network Management for Printer Control
  * 
  */
 
@@ -48,8 +48,8 @@
 
 // Check if an interface is configured in the Available section
 bool is_interface_configured(const AppConfig* app_config, const char* interface_name, bool* is_available) {
-    if (!app_config) {
-        *is_available = true;  // Default to available if no config
+    if (!app_config || !interface_name || !is_available) {
+        if (is_available) *is_available = true;  // Default to available if no config
         return false;          // Not explicitly configured
     }
     

@@ -6,6 +6,7 @@
 # including starting and stopping the application with various configurations.
 #
 # VERSION HISTORY
+# 1.2.2 - 2025-07-14 - Fixed job control messages (like "Terminated") appearing in test output by adding disown to background processes
 # 1.2.1 - 2025-07-02 - Updated find_hydrogen_binary to use relative paths in log messages to avoid exposing user information
 # 1.2.0 - 2025-07-02 - Added validate_config_file function for single configuration validation
 # 1.1.0 - 2025-07-02 - Added validate_config_files, setup_output_directories, and run_lifecycle_test functions for enhanced modularity
@@ -144,9 +145,10 @@ start_hydrogen_with_pid() {
     local launch_time_ms
     launch_time_ms=$(date +%s%3N)
     
-    # Launch Hydrogen
+    # Launch Hydrogen (disown to prevent job control messages)
     "$hydrogen_bin" "$config_file" > "$log_file" 2>&1 &
     hydrogen_pid=$!
+    disown "$hydrogen_pid" 2>/dev/null || true
     
     # Display the PID for tracking
     print_message "Hydrogen process started with PID: $hydrogen_pid"
@@ -231,9 +233,10 @@ start_hydrogen() {
     local launch_time_ms
     launch_time_ms=$(date +%s%3N)
     
-    # Launch Hydrogen
+    # Launch Hydrogen (disown to prevent job control messages)
     "$hydrogen_bin" "$config_file" > "$log_file" 2>&1 &
     hydrogen_pid=$!
+    disown "$hydrogen_pid" 2>/dev/null || true
     
     # Display the PID for tracking
     print_message "Hydrogen process started with PID: $hydrogen_pid"
@@ -551,6 +554,7 @@ start_hydrogen_with_env() {
     
     $HYDROGEN_BIN "$config_file" > "$output_file" 2>&1 &
     HYDROGEN_PID=$!
+    disown "$HYDROGEN_PID" 2>/dev/null || true
     
     if command -v print_message >/dev/null 2>&1; then
         print_message "Started with PID: $HYDROGEN_PID"

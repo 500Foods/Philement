@@ -64,6 +64,7 @@ tests/          Test framework
 - tests/test_30_api_prefixes.sh
 - tests/test_32_system_endpoints.sh
 - tests/test_34_swagger.sh
+- tests/test_36_websockets.sh
 - tests/test_91_cppcheck.sh
 - tests/test_92_shellcheck.sh
 - tests/test_94_eslint.sh

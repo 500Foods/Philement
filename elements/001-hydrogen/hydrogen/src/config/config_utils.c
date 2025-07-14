@@ -367,7 +367,7 @@ json_t* process_env_variable(const char* value) {
     } else {
         char value_buffer[512];
         snprintf(value_buffer, sizeof(value_buffer), "%s {%s}: not set", key_name, var_name);
-            log_config_item(key_name, value_buffer, true, "EnvVar");
+        log_config_item(key_name, value_buffer, true, "EnvVar");
         free(var_name);
         return NULL;
     }

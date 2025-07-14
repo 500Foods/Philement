@@ -179,6 +179,64 @@ get_config_path() {
     echo "$config_path"
 }
 
+# Function: Validate WebSocket key format
+# Parameters: $1 - key name, $2 - key value
+# Returns: 0 if valid, 1 otherwise
+# Note: WebSocket key must be at least 8 printable ASCII characters (33-126, no spaces)
+validate_websocket_key() {
+    local key_name="$1"
+    local key_value="$2"
+    
+    # Check if key is empty
+    if [ -z "$key_value" ]; then
+        if command -v print_warning >/dev/null 2>&1; then
+            print_warning "✗ $key_name is empty"
+        else
+            echo "WARNING: ✗ $key_name is empty"
+        fi
+        return 1
+    fi
+    
+    # Check minimum length (8 characters)
+    if [ ${#key_value} -lt 8 ]; then
+        if command -v print_warning >/dev/null 2>&1; then
+            print_warning "✗ $key_name must be at least 8 characters long (got ${#key_value})"
+        else
+            echo "WARNING: ✗ $key_name must be at least 8 characters long (got ${#key_value})"
+        fi
+        return 1
+    fi
+    
+    # Check for printable ASCII characters only (33-126, no spaces/control chars)
+    if [[ "$key_value" =~ [[:space:]] ]]; then
+        if command -v print_warning >/dev/null 2>&1; then
+            print_warning "✗ $key_name contains spaces or control characters"
+        else
+            echo "WARNING: ✗ $key_name contains spaces or control characters"
+        fi
+        return 1
+    fi
+    
+    # Check for non-printable characters
+    if [[ "$key_value" =~ [^[:print:]] ]]; then
+        if command -v print_warning >/dev/null 2>&1; then
+            print_warning "✗ $key_name contains non-printable characters"
+        else
+            echo "WARNING: ✗ $key_name contains non-printable characters"
+        fi
+        return 1
+    fi
+    
+    # All checks passed
+    local display_value="${key_value:0:8}..."
+    if command -v print_message >/dev/null 2>&1; then
+        print_message "✓ $key_name is a valid WebSocket key: $display_value"
+    else
+        echo "INFO: ✓ $key_name is a valid WebSocket key: $display_value"
+    fi
+    return 0
+}
+
 # Function to convert absolute path to path relative to hydrogen project root
 convert_to_relative_path() {
     local absolute_path="$1"

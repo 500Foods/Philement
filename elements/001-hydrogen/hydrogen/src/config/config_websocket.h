@@ -13,15 +13,25 @@
 #include <jansson.h>
 #include "config_forward.h"  // For AppConfig forward declaration
 
+// WebSocket connection timeouts structure
+struct WebSocketConnectionTimeouts {
+    int shutdown_wait_seconds;       // How long to wait for shutdown
+    int service_loop_delay_ms;       // Service loop delay in milliseconds
+    int connection_cleanup_ms;       // Connection cleanup interval
+    int exit_wait_seconds;           // How long to wait for connections to close on exit
+};
+typedef struct WebSocketConnectionTimeouts WebSocketConnectionTimeouts;
+
 // WebSocket configuration structure
 struct WebSocketConfig {
-    bool enabled;             // Whether WebSocket server is enabled
-    bool enable_ipv6;        // Whether to enable IPv6 support
-    int port;                // Port to listen on
-    char* key;               // WebSocket key for authentication
-    char* protocol;          // WebSocket protocol identifier
-    size_t max_message_size; // Maximum allowed message size
-    int exit_wait_seconds;   // How long to wait for connections to close on exit
+    bool enabled;                    // Whether WebSocket server is enabled
+    bool enable_ipv6;               // Whether to enable IPv6 support
+    int lib_log_level;              // Library log level
+    int port;                       // Port to listen on
+    char* key;                      // WebSocket key for authentication
+    char* protocol;                 // WebSocket protocol identifier
+    size_t max_message_size;        // Maximum allowed message size
+    WebSocketConnectionTimeouts connection_timeouts; // Connection timeout settings
 };
 typedef struct WebSocketConfig WebSocketConfig;
 
