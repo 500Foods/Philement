@@ -5,6 +5,7 @@
 # with active HTTP connections that create TIME_WAIT sockets
 
 # CHANGELOG
+# 4.0.3 - 2025-07-15 - No more sleep
 # 4.0.2 - 2025-07-14 - Updated to use build/tests directories for test output consistency
 # 4.0.1 - 2025-07-06 - Added missing shellcheck justifications
 # 4.0.0 - 2025-07-02 - Migrated to use lib/ scripts, following established patterns from other migrated tests
@@ -14,7 +15,7 @@
 
 # Test Configuration
 TEST_NAME="Socket Rebinding"
-SCRIPT_VERSION="4.0.2"
+SCRIPT_VERSION="4.0.3"
 
 # Get the directory where this script is located0
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -250,7 +251,7 @@ if [ -n "$SECOND_PID" ] && [ "$SECOND_PID" != "0" ]; then
         # Brief wait for graceful shutdown
         wait_count=0
         while [ $wait_count -lt 10 ] && ps -p "$SECOND_PID" > /dev/null 2>&1; do
-            sleep 0.2
+            # sleep 0.2
             ((wait_count++))
         done
         if ps -p "$SECOND_PID" > /dev/null 2>&1; then

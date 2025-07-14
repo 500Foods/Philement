@@ -7,6 +7,7 @@
 # - Uses immediate restart without waiting for TIME_WAIT (SO_REUSEADDR enabled)
 
 # CHANGELOG
+# 5.0.6 - 2025-07-15 - No more sleep
 # 5.0.5 - 2025-07-14 - Fixed database and log file conflicts in parallel execution by creating unique config files
 # 5.0.4 - 2025-07-14 - Fixed parallel execution file conflicts by enhancing unique ID generation
 # 5.0.3 - 2025-07-14 - Updated to use build/tests directories for test output consistency
@@ -19,7 +20,7 @@
 
 # Test Configuration
 TEST_NAME="API Prefix"
-SCRIPT_VERSION="5.0.5"
+SCRIPT_VERSION="5.0.6"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -167,7 +168,7 @@ wait_for_server_ready() {
             print_message "Server is ready after $(( attempt * 5 / 10 )) seconds"
             return 0
         fi
-        sleep 0.5
+        # sleep 0.5
         ((attempt++))
     done
     
