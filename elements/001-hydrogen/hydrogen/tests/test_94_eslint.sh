@@ -3,22 +3,29 @@
 # Test: JavaScript Linting
 # Performs JavaScript validation using eslint
 
+# CHANGELOG
+# 2.0.0 - 2025-07-14 - Upgraded to use new modular test framework
+# 1.0.0 - Initial version for JavaScript linting
+
 # Test configuration
 TEST_NAME="JavaScript Linting (eslint)"
-SCRIPT_VERSION="1.0.0"
+SCRIPT_VERSION="2.0.0"
 
 # Get the directory where this script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+TEST_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 if [[ -z "$LOG_OUTPUT_SH_GUARD" ]]; then
     # shellcheck source=tests/lib/log_output.sh # Resolve path statically
-    source "$SCRIPT_DIR/lib/log_output.sh"
+    source "$TEST_SCRIPT_DIR/lib/log_output.sh"
 fi
 
 # shellcheck source=tests/lib/file_utils.sh # Resolve path statically
-source "$SCRIPT_DIR/lib/file_utils.sh"
+source "$TEST_SCRIPT_DIR/lib/file_utils.sh"
 # shellcheck source=tests/lib/framework.sh # Resolve path statically
-source "$SCRIPT_DIR/lib/framework.sh"
+source "$TEST_SCRIPT_DIR/lib/framework.sh"
+
+# Restore SCRIPT_DIR after sourcing libraries (they may override it)
+SCRIPT_DIR="$TEST_SCRIPT_DIR"
 
 # Test configuration
 EXIT_CODE=0
@@ -33,8 +40,15 @@ reset_subtest_counter
 # Print beautiful test header
 print_test_header "$TEST_NAME" "$SCRIPT_VERSION"
 
-# Set up results directory
-RESULTS_DIR="$SCRIPT_DIR/results"
+# Set up results directory - use tmpfs build directory if available
+BUILD_DIR="$SCRIPT_DIR/../build"
+if mountpoint -q "$BUILD_DIR" 2>/dev/null; then
+    # tmpfs is mounted, use build/tests/results for ultra-fast I/O
+    RESULTS_DIR="$BUILD_DIR/tests/results"
+else
+    # Fallback to regular filesystem
+    RESULTS_DIR="$SCRIPT_DIR/results"
+fi
 mkdir -p "$RESULTS_DIR"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 

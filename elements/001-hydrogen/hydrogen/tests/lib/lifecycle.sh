@@ -671,6 +671,39 @@ setup_output_directories() {
     fi
 }
 
+# Function to get tmpfs-optimized output directories
+get_tmpfs_output_dirs() {
+    local script_dir="$1"
+    local test_name="$2"
+    local timestamp="$3"
+    
+    local build_dir="$script_dir/../build"
+    local base_results_dir base_logs_dir base_diag_dir
+    
+    if mountpoint -q "$build_dir" 2>/dev/null; then
+        # tmpfs is mounted, use build/tests/ for ultra-fast I/O
+        base_results_dir="$build_dir/tests/results"
+        base_logs_dir="$build_dir/tests/logs"
+        base_diag_dir="$build_dir/tests/diagnostics"
+    else
+        # Fallback to regular filesystem
+        base_results_dir="$script_dir/results"
+        base_logs_dir="$script_dir/logs"
+        base_diag_dir="$script_dir/diagnostics"
+    fi
+    
+    # Export the directories for use by calling scripts
+    export TMPFS_RESULTS_DIR="$base_results_dir"
+    export TMPFS_LOGS_DIR="$base_logs_dir"
+    export TMPFS_DIAG_DIR="$base_diag_dir"
+    export TMPFS_TEST_DIAG_DIR="$base_diag_dir/${test_name}_${timestamp}"
+    
+    # Create the directories
+    mkdir -p "$TMPFS_RESULTS_DIR" "$TMPFS_LOGS_DIR" "$TMPFS_DIAG_DIR" "$TMPFS_TEST_DIAG_DIR" 2>/dev/null
+    
+    return 0
+}
+
 # Function to run a lifecycle test for a specific configuration
 run_lifecycle_test() {
     local config_file="$1"

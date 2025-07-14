@@ -11,6 +11,9 @@ build_release/
 build_valgrind/
 build_unity/
 
+# Temporary build artifacts
+cmake/CMakeFiles/
+
 # Temporary generated files
 payloads/swagger.json
 payloads/payload.tar.br.enc
