@@ -59,6 +59,8 @@ if ! navigate_to_project_root "$SCRIPT_DIR"; then
     exit 1
 fi
 
+# Set up results directory (after navigating to project root)
+
 # Test configuration constants
 readonly MAX_SOURCE_LINES=1000
 readonly LARGE_FILE_THRESHOLD="25k"

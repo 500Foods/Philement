@@ -59,6 +59,8 @@ if ! navigate_to_project_root "$SCRIPT_DIR"; then
     exit 1
 fi
 
+# Set up results directory (after navigating to project root)
+
 # Subtest 1: Recall Unity Test Coverage
 next_subtest
 print_subtest "Recall Unity Test Coverage"

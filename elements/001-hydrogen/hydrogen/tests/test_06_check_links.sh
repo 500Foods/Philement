@@ -60,6 +60,8 @@ if ! navigate_to_project_root "$SCRIPT_DIR"; then
     exit 1
 fi
 
+# Set up results directory (after navigating to project root)
+
 # Test configuration
 SITEMAP_SCRIPT="tests/lib/github-sitemap.sh"
 TARGET_README="README.md"
