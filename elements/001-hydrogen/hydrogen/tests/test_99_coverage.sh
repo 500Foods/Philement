@@ -4,7 +4,7 @@
 # Collects and analyzes coverage data from Unity and blackbox tests
 
 # Test configuration
-TEST_NAME="Coverage Collection and Analysis"
+TEST_NAME="Test Suite Coverage (coverge_tables)"
 SCRIPT_VERSION="2.0.0"
 
 # Get the directory where this script is located

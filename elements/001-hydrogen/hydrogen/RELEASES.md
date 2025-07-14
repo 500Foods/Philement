@@ -48,6 +48,10 @@ Remember:
 -->
 
 - July 2025
+  - [2025-Jul-13 (Sun)](docs/releases/2025-07/2025-07-13.md): Coverage Improvements
+  - [2025-Jul-12 (Sat)](docs/releases/2025-07/2025-07-12.md): Coverage Tools and Build Updates
+  - [2025-Jul-11 (Fri)](docs/releases/2025-07/2025-07-11.md): Coverage and Testing Enhancements
+  - [2025-Jul-10 (Thu)](docs/releases/2025-07/2025-07-10.md): Documentation Updates
   - [2025-Jul-09 (Wed)](docs/releases/2025-07/2025-07-09.md): Testing Infrastructure
   - [2025-Jul-07 (Mon)](docs/releases/2025-07/2025-07-07.md): Testing Updates
   - [2025-Jul-06 (Sun)](docs/releases/2025-07/2025-07-06.md): Testing Updates

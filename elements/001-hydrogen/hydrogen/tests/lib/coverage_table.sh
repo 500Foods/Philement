@@ -245,7 +245,7 @@ data_json="$temp_dir/coverage_data.json"
     # Create layout JSON for the coverage table (now with correct totals)
     cat > "$layout_json" << EOF
 {
-    "title": "Test Suite Results {NC}{RED}———{RESET}{BOLD} Unity: ${unity_total_pct}% {RESET}{RED}———{RESET}{BOLD} Blackbox: ${coverage_total_pct}% {RESET}{RED}———{RESET}{BOLD} Combined: ${combined_total_pct}%",
+    "title": "Test Suite Coverage {NC}{RED}———{RESET}{BOLD} Unity: ${unity_total_pct}% {RESET}{RED}———{RESET}{BOLD} Blackbox: ${coverage_total_pct}% {RESET}{RED}———{RESET}{BOLD} Combined: ${combined_total_pct}%",
     "footer": "Generated: $(date)",
     "footer_position": "right",
     "theme": "Red",
@@ -274,7 +274,8 @@ data_json="$temp_dir/coverage_data.json"
             "header": "Source File",
             "key": "file_path",
             "datatype": "text",
-            "summary": "count"
+            "summary": "count",
+            "width": 52
         },
         {
             "header": "Unity",

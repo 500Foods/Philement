@@ -891,7 +891,7 @@ fi
 
 layout_json_content='{
     "title": "Test Suite Results {NC}{RED}———{RESET}{BOLD} Unity: '"$UNITY_COVERAGE"'% {RESET}{RED}———{RESET}{BOLD} Blackbox: '"$BLACKBOX_COVERAGE"'% {RESET}{RED}———{RESET}{BOLD} Combined: '"$COMBINED_COVERAGE"'%",
-    "footer": "Running: '"$TOTAL_RUNNING_TIME_FORMATTED"'{RED} ——— {RESET}{CYAN}Elapsed: '"$TOTAL_ELAPSED_FORMATTED"'",
+    "footer": "Cumulative: '"$TOTAL_RUNNING_TIME_FORMATTED"'{RED} ——— {RESET}{CYAN}Elapsed: '"$TOTAL_ELAPSED_FORMATTED"'",
     "footer_position": "right",
     "columns": [
         {
@@ -907,7 +907,8 @@ layout_json_content='{
             "key": "test_id",
             "datatype": "text",
             "width": 8,
-            "summary": "count"
+            "summary": "count",
+	    "justification": "right"
         },
         {
             "header": "Test Name",
