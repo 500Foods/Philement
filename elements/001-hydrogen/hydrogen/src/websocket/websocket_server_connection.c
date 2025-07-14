@@ -30,7 +30,11 @@ int ws_handle_connection_established(struct lws *wsi, WebSocketSessionData *sess
 
     // Initialize session data
     memset(session, 0, sizeof(WebSocketSessionData));
-    session->authenticated = false;
+    session->authenticated = true;  // Authentication already validated during protocol filtering
+    session->connection_time = time(NULL);
+    
+    // Extract client information
+    ws_update_client_info(wsi, session);
 
     // Lock context for thread-safe updates
     pthread_mutex_lock(&ws_context->mutex);

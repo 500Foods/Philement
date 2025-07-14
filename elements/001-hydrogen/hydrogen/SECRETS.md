@@ -8,7 +8,7 @@ In the Hydrogen project, "secrets" are like special keys or passwords that keep 
 
 ## Step-by-Step Guide to Setting Up Your Secrets
 
-We're going to create and set up two secrets called **PAYLOAD_LOCK** and **PAYLOAD_KEY**. Think of PAYLOAD_LOCK as a lock that secures data when we build the project, and PAYLOAD_KEY as the key that unlocks it when the project runs. Here's how to do it:
+We're going to create and set up three secrets: **PAYLOAD_LOCK**, **PAYLOAD_KEY**, and **WEBSOCKET_KEY**. Think of PAYLOAD_LOCK as a lock that secures data when we build the project, PAYLOAD_KEY as the key that unlocks it when the project runs, and WEBSOCKET_KEY as a password that protects WebSocket connections. Here's how to do it:
 
 ### Step 1: Make Sure You Have the Right Tools
 
@@ -69,17 +69,58 @@ If you want these settings to stick around even after restarting your computer, 
 
 After adding them, run `source ~/.bashrc` (or `~/.zshrc`) to apply the changes.
 
-### Step 4: Test That Everything Works
+### Step 4: Set Up Your WebSocket Key
 
-Hydrogen comes with a handy test to make sure your secrets are set up correctly. Run this command:
+The **WEBSOCKET_KEY** is different from the RSA keys above. It's a simpler password-like secret that protects WebSocket connections. Unlike the RSA keys, you can create this yourself using any secure method.
+
+Here's how to set up a WebSocket key:
+
+1. **Generate a secure random key:**
+
+   ```bash
+   openssl rand -hex 32
+   ```
+
+   This creates a 64-character hexadecimal string. Copy this value.
+
+2. **Set the environment variable:**
+
+   ```bash
+   export WEBSOCKET_KEY="your_generated_key_here"
+   ```
+
+   Replace `your_generated_key_here` with the key you generated above.
+
+3. **Make it permanent (optional):**
+
+   Add the export line to your `~/.bashrc` or `~/.zshrc` file just like you did for the payload keys.
+
+**Important WebSocket Key Requirements:**
+
+- Must be at least 8 characters long
+- Should contain only printable ASCII characters (no spaces or control characters)
+- Should be random and unique to your installation
+- Keep it secret - don't share it or commit it to version control
+
+### Step 5: Test That Everything Works
+
+Hydrogen comes with handy tests to make sure your secrets are set up correctly:
+
+**For payload keys (PAYLOAD_LOCK and PAYLOAD_KEY):**
 
 ```bash
 ./tests/test_12_env_payload.sh
 ```
 
+**For WebSocket key (WEBSOCKET_KEY):**
+
+```bash
+./tests/test_36_websockets.sh
+```
+
 If everything is set up right, you’ll see a success message. If something’s wrong, it will tell you what needs fixing. Don’t hesitate to ask for help if you’re stuck!
 
-### Step 5: Clean Up
+### Step 6: Clean Up
 
 Once you’ve set up your secrets, you don’t need the temporary files anymore. You can delete the `temp_keys` folder to keep things tidy:
 

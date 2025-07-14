@@ -7,6 +7,7 @@
 # - Uses immediate restart without waiting for TIME_WAIT (SO_REUSEADDR enabled)
 
 # CHANGELOG
+# 5.0.2 - 2025-07-14 - Improved error handling in validate_api_request function to better handle parallel test execution
 # 5.0.1 - 2025-07-06 - Added missing shellcheck justifications
 # 5.0.0 - 2025-07-02 - Migrated to use lib/ scripts, following established test patterns
 # 4.0.0 - 2025-06-30 - Updated to use immediate restart approach without TIME_WAIT waiting
@@ -15,7 +16,7 @@
 
 # Test Configuration
 TEST_NAME="API Prefix"
-SCRIPT_VERSION="5.0.1"
+SCRIPT_VERSION="5.0.2"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -38,6 +39,8 @@ source "$SCRIPT_DIR/lib/network_utils.sh"
 # Initialize test environment
 RESULTS_DIR="$SCRIPT_DIR/results"
 mkdir -p "$RESULTS_DIR"
+# Ensure RESULTS_DIR is an absolute path
+RESULTS_DIR="$(cd "$RESULTS_DIR" && pwd)"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 # Auto-extract test number and set up environment
@@ -59,24 +62,65 @@ validate_api_request() {
     local request_name="$1"
     local url="$2"
     local expected_field="$3"
-    local response_file="$RESULTS_DIR/response_${request_name}_${TIMESTAMP}.json"
+    
+    # Generate unique ID once and store it
+    local unique_id="${TIMESTAMP}_$$_${RANDOM}"
+    local response_file="$RESULTS_DIR/response_${request_name}_${unique_id}.json"
+    
+    # Ensure results directory exists and is writable
+    if [ ! -d "$RESULTS_DIR" ]; then
+        mkdir -p "$RESULTS_DIR" || {
+            print_result 1 "Failed to create results directory: $RESULTS_DIR"
+            return 1
+        }
+    fi
     
     print_command "curl -s --max-time 10 --compressed \"$url\""
-    if curl -s --max-time 10 --compressed "$url" > "$response_file" 2>/dev/null; then
-        print_message "Request successful, checking response content"
-        
-        # Validate that the response contains expected fields
-        if grep -q "$expected_field" "$response_file"; then
-            print_result 0 "Response contains expected field: $expected_field"
-            return 0
+    local curl_exit_code=0
+    local curl_error_file="$RESULTS_DIR/curl_error_${unique_id}.txt"
+    
+    # Run curl and capture both exit code and any error output
+    curl -s --max-time 10 --compressed "$url" > "$response_file" 2>"$curl_error_file"
+    curl_exit_code=$?
+    
+    if [ $curl_exit_code -eq 0 ]; then
+        # Verify the file actually exists and has content
+        if [ -f "$response_file" ] && [ -s "$response_file" ]; then
+            print_message "Request successful, checking response content"
+            
+            # Clean up error file if not needed
+            rm -f "$curl_error_file" 2>/dev/null
+            
+            # Validate that the response contains expected fields
+            if grep -q "$expected_field" "$response_file"; then
+                print_result 0 "Response contains expected field: $expected_field"
+                return 0
+            else
+                print_result 1 "Response doesn't contain expected field: $expected_field"
+                print_message "Response content:"
+                print_output "$(cat "$response_file")"
+                return 1
+            fi
         else
-            print_result 1 "Response doesn't contain expected field: $expected_field"
-            print_message "Response content:"
-            print_output "$(cat "$response_file")"
+            print_result 1 "Response file was not created or is empty: $response_file"
+            # Show curl error if available
+            if [ -f "$curl_error_file" ] && [ -s "$curl_error_file" ]; then
+                print_message "Curl error output:"
+                print_output "$(cat "$curl_error_file")"
+            fi
+            # Clean up error file
+            rm -f "$curl_error_file" 2>/dev/null
             return 1
         fi
     else
-        print_result 1 "Failed to connect to server"
+        print_result 1 "Failed to connect to server (curl exit code: $curl_exit_code)"
+        # Show curl error if available
+        if [ -f "$curl_error_file" ] && [ -s "$curl_error_file" ]; then
+            print_message "Curl error output:"
+            print_output "$(cat "$curl_error_file")"
+        fi
+        # Clean up error file
+        rm -f "$curl_error_file" 2>/dev/null
         return 1
     fi
 }
@@ -163,7 +207,7 @@ if [ $EXIT_CODE -eq 0 ]; then
     # Subtest 3: Start server with default API prefix
     next_subtest
     print_subtest "Start Server with Default API Prefix (/api)"
-    DEFAULT_LOG="$RESULTS_DIR/default_server_${TIMESTAMP}.log"
+    DEFAULT_LOG="$RESULTS_DIR/api_prefixes_default_server_${TIMESTAMP}.log"
     if start_hydrogen_with_pid "$DEFAULT_CONFIG_PATH" "$DEFAULT_LOG" 15 "$HYDROGEN_BIN" "HYDROGEN_PID" && [ -n "$HYDROGEN_PID" ]; then
         print_result 0 "Server started successfully with PID: $HYDROGEN_PID"
         ((PASS_COUNT++))
@@ -237,7 +281,7 @@ if [ $EXIT_CODE -eq 0 ]; then
     # Subtest 7: Start server with custom API prefix
     next_subtest
     print_subtest "Start Server with Custom API Prefix (/myapi)"
-    CUSTOM_LOG="$RESULTS_DIR/custom_server_${TIMESTAMP}.log"
+    CUSTOM_LOG="$RESULTS_DIR/api_prefixes_custom_server_${TIMESTAMP}.log"
     if start_hydrogen_with_pid "$CUSTOM_CONFIG_PATH" "$CUSTOM_LOG" 15 "$HYDROGEN_BIN" "HYDROGEN_PID" && [ -n "$HYDROGEN_PID" ]; then
         print_result 0 "Server started successfully with PID: $HYDROGEN_PID"
         ((PASS_COUNT++))

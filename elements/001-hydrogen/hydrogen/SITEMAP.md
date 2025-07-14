@@ -241,6 +241,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [test_30_api_prefixes.md](tests/docs/test_30_api_prefixes.md): API prefix configuration tests
 - [test_32_system_endpoints.md](tests/docs/test_32_system_endpoints.md): System endpoint functionality tests
 - [test_34_swagger.md](tests/docs/test_34_swagger.md): Swagger documentation tests
+- [test_36_websockets.md](tests/docs/test_36_websockets.md): WebSocket server functionality and integration tests
 - [test_03_code_size.md](tests/docs/test_03_code_size.md): Code size analysis and metrics
 - [test_06_check_links.md](tests/docs/test_06_check_links.md): Link validation tests
 - [test_10_leaks_like_a_sieve.md](tests/docs/test_10_leaks_like_a_sieve.md): Memory leak detection tests

@@ -536,10 +536,12 @@ print_test_completion() {
         mkdir -p "$results_dir" 2>/dev/null
         # Use the elapsed_time that was already calculated above - SINGLE SOURCE OF TRUTH
         local file_elapsed_time="$elapsed_time"
-        # Write the elapsed time to a result file with a timestamp
+        # Write the elapsed time to a result file with a timestamp and PID for uniqueness
         local timestamp
         timestamp=$(date +%s.%3N 2>/dev/null || date +%s)
-        local subtest_file="$results_dir/subtest_${CURRENT_TEST_NUMBER}_${timestamp}.txt"
+        # Add process ID and random component to ensure uniqueness in parallel execution
+        local unique_id="${timestamp}_$$_${RANDOM}"
+        local subtest_file="$results_dir/subtest_${CURRENT_TEST_NUMBER}_${unique_id}.txt"
         echo "$total_subtests,$TEST_PASSED_COUNT,$test_name,$file_elapsed_time" > "$subtest_file" 2>/dev/null
     fi
 

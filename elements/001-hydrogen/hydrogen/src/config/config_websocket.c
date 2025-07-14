@@ -15,47 +15,67 @@
 // Load WebSocket configuration from JSON
 bool load_websocket_config(json_t* root, AppConfig* config) {
 
-    // Initialize with defaults
+    // Initialize with robust defaults that match no-config behavior
     WebSocketConfig* ws = &config->websocket;
     ws->enabled = true;
-    ws->enable_ipv6 = false;
+    ws->enable_ipv6 = true;
+    ws->lib_log_level = 2;
     ws->port = 5001;
-    ws->max_message_size = 1024 * 1024;  // 1MB
-    ws->exit_wait_seconds = 5;
+    ws->max_message_size = 2048;
+    
+    // Initialize connection timeouts with defaults
+    ws->connection_timeouts.shutdown_wait_seconds = 2;
+    ws->connection_timeouts.service_loop_delay_ms = 50;
+    ws->connection_timeouts.connection_cleanup_ms = 500;
+    ws->connection_timeouts.exit_wait_seconds = 3;
     
     // Initialize string fields with defaults
     ws->protocol = strdup("hydrogen");
     if (!ws->protocol) {
-        log_this("Config-WebSocket", "Failed to allocate protocol string", LOG_LEVEL_ERROR);
-        return false;
+        log_this("Config-WebSocket", "Failed to allocate protocol string, using hardcoded default", LOG_LEVEL_ALERT);
+        ws->protocol = NULL; // Will be handled by WebSocket code
     }
 
     ws->key = strdup("${env.WEBSOCKET_KEY}");
     if (!ws->key) {
-        log_this("Config-WebSocket", "Failed to allocate key string", LOG_LEVEL_ERROR);
-        free(ws->protocol);
-        ws->protocol = NULL;
-        return false;
+        log_this("Config-WebSocket", "Failed to allocate key string, using hardcoded default", LOG_LEVEL_ALERT);
+        ws->key = NULL; // Will be handled by WebSocket code
     }
 
-    // Process configuration values
-    bool success = true;
+    // If no JSON root provided, use defaults (matches no-config behavior)
+    if (!root) {
+        log_this("Config-WebSocket", "No configuration provided, using defaults", LOG_LEVEL_STATE);
+        return true;
+    }
 
-    // Process main section and enabled flag
-    success = PROCESS_SECTION(root, "WebSocket");
-    success = success && PROCESS_BOOL(root, ws, enabled, "WebSocket.Enabled", "WebSocket");
+    // Process main section - if WebSocketServer section doesn't exist, keep defaults
+    json_t* websocket_section = json_object_get(root, "WebSocketServer");
+    if (!websocket_section) {
+        log_this("Config-WebSocket", "WebSocketServer section not found, using defaults", LOG_LEVEL_STATE);
+        return true; // Use defaults
+    }
+
+    // Process enabled flag with fallback
+    (void)PROCESS_BOOL(root, ws, enabled, "WebSocketServer.Enabled", "WebSocket");
     
     if (ws->enabled) {
-        // Process basic settings
-        success = success && PROCESS_BOOL(root, ws, enable_ipv6, "WebSocket.EnableIPv6", "WebSocket");
-        success = success && PROCESS_INT(root, ws, port, "WebSocket.Port", "WebSocket");
-        success = success && PROCESS_STRING(root, ws, protocol, "WebSocket.Protocol", "WebSocket");
-        success = success && PROCESS_SENSITIVE(root, ws, key, "WebSocket.Key", "WebSocket");
-        success = success && PROCESS_SIZE(root, ws, max_message_size, "WebSocket.MaxMessageSize", "WebSocket");
-
+        // Process basic settings with fallbacks (never fail)
+        (void)PROCESS_BOOL(root, ws, enable_ipv6, "WebSocketServer.EnableIPv6", "WebSocket");
+        (void)PROCESS_INT(root, ws, lib_log_level, "WebSocketServer.LibLogLevel", "WebSocket");
+        (void)PROCESS_INT(root, ws, port, "WebSocketServer.Port", "WebSocket");
+        (void)PROCESS_STRING(root, ws, protocol, "WebSocketServer.Protocol", "WebSocket");
+        (void)PROCESS_SENSITIVE(root, ws, key, "WebSocketServer.Key", "WebSocket");
+        (void)PROCESS_SIZE(root, ws, max_message_size, "WebSocketServer.MaxMessageSize", "WebSocket");
+        
+        // Process connection timeouts with fallbacks (never fail)
+        (void)PROCESS_INT(root, &ws->connection_timeouts, shutdown_wait_seconds, "WebSocketServer.ConnectionTimeouts.ShutdownWaitSeconds", "WebSocket");
+        (void)PROCESS_INT(root, &ws->connection_timeouts, service_loop_delay_ms, "WebSocketServer.ConnectionTimeouts.ServiceLoopDelayMs", "WebSocket");
+        (void)PROCESS_INT(root, &ws->connection_timeouts, connection_cleanup_ms, "WebSocketServer.ConnectionTimeouts.ConnectionCleanupMs", "WebSocket");
+        (void)PROCESS_INT(root, &ws->connection_timeouts, exit_wait_seconds, "WebSocketServer.ConnectionTimeouts.ExitWaitSeconds", "WebSocket");
     }
 
-    return success;
+    log_this("Config-WebSocket", "WebSocket configuration loaded successfully (with fallbacks)", LOG_LEVEL_STATE);
+    return true; // Always succeed - use defaults for any missing values
 }
 
 // Dump WebSocket configuration

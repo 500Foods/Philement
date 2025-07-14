@@ -31,10 +31,12 @@
       "JWTSecret":"${env.JWT_SECRET}"
     },
     "WebSocketServer": {
-        "Enabled": true,
+        "EnableIPv4": true,
         "EnableIPv6": true,
         "LibLogLevel": 2,
         "Port": 5001,
+        "Protocol": "hydrogen",
+        "Key": "${env.WEBSOCKET_KEY}",
         "MaxMessageSize": 2048,
         "ConnectionTimeouts": {
             "ShutdownWaitSeconds": 2,
