@@ -9,13 +9,14 @@
 # - Uses immediate restart without waiting for TIME_WAIT (SO_REUSEADDR enabled)
 
 # CHANGELOG
+# 1.0.3 - 2025-07-14 - Enhanced test_websocket_connection with retry logic to handle WebSocket subsystem initialization delays during parallel execution
 # 1.0.2 - 2025-07-15 - No more sleep
 # 1.0.1 - 2025-07-14 - Updated to use build/tests directories for test output consistency
 # 1.0.0 - 2025-07-13 - Initial version for WebSocket server testing
 
 # Test Configuration
 TEST_NAME="WebSockets"
-SCRIPT_VERSION="1.0.2"
+SCRIPT_VERSION="1.0.3"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -82,7 +83,7 @@ wait_for_server_ready() {
     return 1
 }
 
-# Function to test WebSocket connection with proper authentication
+# Function to test WebSocket connection with proper authentication and retry logic
 test_websocket_connection() {
     local ws_url="$1"
     local protocol="$2"
@@ -92,71 +93,123 @@ test_websocket_connection() {
     print_message "Testing WebSocket connection with authentication using websocat"
     print_command "echo '$test_message' | websocat --protocol='$protocol' -H='Authorization: Key $WEBSOCKET_KEY' --ping-interval=30 --exit-on-eof '$ws_url'"
     
-    # Use websocat for proper WebSocket testing with authentication
+    # Retry logic for WebSocket subsystem readiness (especially important in parallel execution)
+    local max_attempts=3
+    local attempt=1
     local websocat_output
     local websocat_exitcode
+    local websocket_ready=false
     
-    # Create a temporary file to capture the full interaction
-    local temp_file
-    temp_file=$(mktemp)
-    
-    # Test WebSocket connection with a 5-second timeout
-    if command -v timeout >/dev/null 2>&1; then
-        # Send test message and wait for any response or timeout
-        echo "$test_message" | timeout 5 websocat \
-            --protocol="$protocol" \
-            -H="Authorization: Key $WEBSOCKET_KEY" \
-            --ping-interval=30 \
-            --exit-on-eof \
-            "$ws_url" > "$temp_file" 2>&1
-        websocat_exitcode=$?
-    else
-        # Fallback without timeout command
-        echo "$test_message" | websocat \
-            --protocol="$protocol" \
-            -H="Authorization: Key $WEBSOCKET_KEY" \
-            --ping-interval=30 \
-            --exit-on-eof \
-            "$ws_url" > "$temp_file" 2>&1 &
-        local websocat_pid=$!
-        sleep 5
-        kill "$websocat_pid" 2>/dev/null || true
-        wait "$websocat_pid" 2>/dev/null || true
-        websocat_exitcode=$?
-    fi
-    
-    # Read the output
-    websocat_output=$(cat "$temp_file" 2>/dev/null || echo "")
-    rm -f "$temp_file"
-    
-    # Analyze the results
-    if [ $websocat_exitcode -eq 0 ]; then
-        print_result 0 "WebSocket connection successful (clean exit)"
-        if [ -n "$websocat_output" ]; then
-            print_message "Server response: $websocat_output"
+    while [ $attempt -le $max_attempts ]; do
+        if [ $attempt -gt 1 ]; then
+            print_message "WebSocket connection attempt $attempt of $max_attempts (waiting for WebSocket subsystem initialization)..."
+            sleep 1  # Brief delay between attempts for WebSocket initialization
         fi
-        return 0
-    elif [ $websocat_exitcode -eq 124 ]; then
-        # Timeout occurred, but that's OK if connection was established
-        print_result 0 "WebSocket connection successful (timeout after successful connection)"
-        return 0
-    else
-        # Check the error output for specific issues
-        if echo "$websocat_output" | grep -qi "401\|forbidden\|unauthorized\|authentication"; then
-            print_result 1 "WebSocket connection failed: Authentication rejected"
-            print_message "Server rejected the provided WebSocket key"
-        elif echo "$websocat_output" | grep -qi "connection refused"; then
-            print_result 1 "WebSocket connection failed: Connection refused"
-            print_message "Server is not accepting connections on the specified port"
-        elif echo "$websocat_output" | grep -qi "protocol.*not.*supported"; then
-            print_result 1 "WebSocket connection failed: Protocol not supported"
-            print_message "Server does not support the specified protocol: $protocol"
+        
+        # Create a temporary file to capture the full interaction
+        local temp_file
+        temp_file=$(mktemp)
+        
+        # Test WebSocket connection with a 5-second timeout
+        if command -v timeout >/dev/null 2>&1; then
+            # Send test message and wait for any response or timeout
+            echo "$test_message" | timeout 5 websocat \
+                --protocol="$protocol" \
+                -H="Authorization: Key $WEBSOCKET_KEY" \
+                --ping-interval=30 \
+                --exit-on-eof \
+                "$ws_url" > "$temp_file" 2>&1
+            websocat_exitcode=$?
         else
-            print_result 1 "WebSocket connection failed"
-            print_message "Error: $websocat_output"
+            # Fallback without timeout command
+            echo "$test_message" | websocat \
+                --protocol="$protocol" \
+                -H="Authorization: Key $WEBSOCKET_KEY" \
+                --ping-interval=30 \
+                --exit-on-eof \
+                "$ws_url" > "$temp_file" 2>&1 &
+            local websocat_pid=$!
+            sleep 5
+            kill "$websocat_pid" 2>/dev/null || true
+            wait "$websocat_pid" 2>/dev/null || true
+            websocat_exitcode=$?
         fi
-        return 1
-    fi
+        
+        # Read the output
+        websocat_output=$(cat "$temp_file" 2>/dev/null || echo "")
+        rm -f "$temp_file"
+        
+        # Analyze the results
+        if [ $websocat_exitcode -eq 0 ]; then
+            if [ $attempt -gt 1 ]; then
+                print_result 0 "WebSocket connection successful (clean exit, succeeded on attempt $attempt)"
+            else
+                print_result 0 "WebSocket connection successful (clean exit)"
+            fi
+            if [ -n "$websocat_output" ]; then
+                print_message "Server response: $websocat_output"
+            fi
+            return 0
+        elif [ $websocat_exitcode -eq 124 ]; then
+            # Timeout occurred, but that's OK if connection was established
+            if [ $attempt -gt 1 ]; then
+                print_result 0 "WebSocket connection successful (timeout after successful connection, succeeded on attempt $attempt)"
+            else
+                print_result 0 "WebSocket connection successful (timeout after successful connection)"
+            fi
+            return 0
+        else
+            # Check for connection refused which might indicate WebSocket server not ready yet
+            if echo "$websocat_output" | grep -qi "connection refused"; then
+                if [ $attempt -eq $max_attempts ]; then
+                    print_result 1 "WebSocket connection failed: Connection refused after $max_attempts attempts"
+                    print_message "Server is not accepting WebSocket connections on the specified port"
+                    return 1
+                else
+                    print_message "WebSocket server not ready yet (connection refused), retrying..."
+                    ((attempt++))
+                    continue
+                fi
+            fi
+            
+            # Check other error types that might be temporary during parallel execution
+            if echo "$websocat_output" | grep -qi "network.*unreachable\|temporarily unavailable\|resource.*unavailable"; then
+                if [ $attempt -eq $max_attempts ]; then
+                    print_result 1 "WebSocket connection failed: Network/resource issues after $max_attempts attempts"
+                    print_message "Error: $websocat_output"
+                    return 1
+                else
+                    print_message "Temporary network/resource issue, retrying..."
+                    ((attempt++))
+                    continue
+                fi
+            fi
+            
+            # For other errors, fail immediately as they're likely permanent
+            if echo "$websocat_output" | grep -qi "401\|forbidden\|unauthorized\|authentication"; then
+                print_result 1 "WebSocket connection failed: Authentication rejected"
+                print_message "Server rejected the provided WebSocket key"
+                return 1
+            elif echo "$websocat_output" | grep -qi "protocol.*not.*supported"; then
+                print_result 1 "WebSocket connection failed: Protocol not supported"
+                print_message "Server does not support the specified protocol: $protocol"
+                return 1
+            else
+                # Unknown error - retry if we have attempts left
+                if [ $attempt -eq $max_attempts ]; then
+                    print_result 1 "WebSocket connection failed after $max_attempts attempts"
+                    print_message "Error: $websocat_output"
+                    return 1
+                else
+                    print_message "WebSocket connection failed on attempt $attempt, retrying..."
+                    ((attempt++))
+                    continue
+                fi
+            fi
+        fi
+    done
+    
+    return 1
 }
 
 # Function to test WebSocket server configuration

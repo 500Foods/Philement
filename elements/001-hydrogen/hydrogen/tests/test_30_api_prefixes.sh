@@ -7,6 +7,7 @@
 # - Uses immediate restart without waiting for TIME_WAIT (SO_REUSEADDR enabled)
 
 # CHANGELOG
+# 5.0.7 - 2025-07-14 - Enhanced validate_api_request with retry logic to handle API subsystem initialization delays during parallel execution
 # 5.0.6 - 2025-07-15 - No more sleep
 # 5.0.5 - 2025-07-14 - Fixed database and log file conflicts in parallel execution by creating unique config files
 # 5.0.4 - 2025-07-14 - Fixed parallel execution file conflicts by enhancing unique ID generation
@@ -20,7 +21,7 @@
 
 # Test Configuration
 TEST_NAME="API Prefix"
-SCRIPT_VERSION="5.0.6"
+SCRIPT_VERSION="5.0.7"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -87,7 +88,7 @@ CUSTOM_CONFIG_PATH="$RESULTS_DIR/hydrogen_test_api_test_2_${TIMESTAMP}.json"
 create_unique_config "$BASE_DEFAULT_CONFIG" "1" "$DEFAULT_CONFIG_PATH"
 create_unique_config "$BASE_CUSTOM_CONFIG" "2" "$CUSTOM_CONFIG_PATH"
 
-# Function to make a request and validate response
+# Function to make a request and validate response with retry logic for API readiness
 validate_api_request() {
     local request_name="$1"
     local url="$2"
@@ -106,53 +107,93 @@ validate_api_request() {
     fi
     
     print_command "curl -s --max-time 10 --compressed \"$url\""
+    
+    # Retry logic for API readiness (especially important in parallel execution)
+    local max_attempts=3
+    local attempt=1
     local curl_exit_code=0
     local curl_error_file="$RESULTS_DIR/curl_error_${unique_id}.txt"
+    local api_ready=false
     
-    # Run curl and capture both exit code and any error output
-    curl -s --max-time 10 --compressed "$url" > "$response_file" 2>"$curl_error_file"
-    curl_exit_code=$?
-    
-    if [ $curl_exit_code -eq 0 ]; then
-        # Verify the file actually exists and has content
-        if [ -f "$response_file" ] && [ -s "$response_file" ]; then
-            print_message "Request successful, checking response content"
-            
-            # Clean up error file if not needed
-            rm -f "$curl_error_file" 2>/dev/null
-            
-            # Validate that the response contains expected fields
-            if grep -q "$expected_field" "$response_file"; then
-                print_result 0 "Response contains expected field: $expected_field"
-                return 0
+    while [ $attempt -le $max_attempts ]; do
+        if [ $attempt -gt 1 ]; then
+            print_message "API request attempt $attempt of $max_attempts (waiting for API subsystem initialization)..."
+            sleep 1  # Brief delay between attempts for API initialization
+        fi
+        
+        # Run curl and capture both exit code and any error output
+        curl -s --max-time 10 --compressed "$url" > "$response_file" 2>"$curl_error_file"
+        curl_exit_code=$?
+        
+        if [ $curl_exit_code -eq 0 ]; then
+            # Verify the file actually exists and has content
+            if [ -f "$response_file" ] && [ -s "$response_file" ]; then
+                # Check if we got a 404 or other error response
+                if grep -q "404 Not Found" "$response_file" || grep -q "<html>" "$response_file"; then
+                    if [ $attempt -eq $max_attempts ]; then
+                        print_message "API endpoint still not ready after $max_attempts attempts"
+                        print_result 1 "API endpoint returned 404 or HTML error page"
+                        print_message "Response content:"
+                        print_output "$(cat "$response_file")"
+                        rm -f "$curl_error_file" 2>/dev/null
+                        return 1
+                    else
+                        print_message "API endpoint not ready yet (got 404/HTML), retrying..."
+                        ((attempt++))
+                        continue
+                    fi
+                fi
+                
+                print_message "Request successful, checking response content"
+                
+                # Clean up error file if not needed
+                rm -f "$curl_error_file" 2>/dev/null
+                
+                # Validate that the response contains expected fields
+                if grep -q "$expected_field" "$response_file"; then
+                    if [ $attempt -gt 1 ]; then
+                        print_result 0 "Response contains expected field: $expected_field (succeeded on attempt $attempt)"
+                    else
+                        print_result 0 "Response contains expected field: $expected_field"
+                    fi
+                    return 0
+                else
+                    print_result 1 "Response doesn't contain expected field: $expected_field"
+                    print_message "Response content:"
+                    print_output "$(cat "$response_file")"
+                    return 1
+                fi
             else
-                print_result 1 "Response doesn't contain expected field: $expected_field"
-                print_message "Response content:"
-                print_output "$(cat "$response_file")"
+                print_result 1 "Response file was not created or is empty: $response_file"
+                # Show curl error if available
+                if [ -f "$curl_error_file" ] && [ -s "$curl_error_file" ]; then
+                    print_message "Curl error output:"
+                    print_output "$(cat "$curl_error_file")"
+                fi
+                # Clean up error file
+                rm -f "$curl_error_file" 2>/dev/null
                 return 1
             fi
         else
-            print_result 1 "Response file was not created or is empty: $response_file"
-            # Show curl error if available
-            if [ -f "$curl_error_file" ] && [ -s "$curl_error_file" ]; then
-                print_message "Curl error output:"
-                print_output "$(cat "$curl_error_file")"
+            if [ $attempt -eq $max_attempts ]; then
+                print_result 1 "Failed to connect to server (curl exit code: $curl_exit_code)"
+                # Show curl error if available
+                if [ -f "$curl_error_file" ] && [ -s "$curl_error_file" ]; then
+                    print_message "Curl error output:"
+                    print_output "$(cat "$curl_error_file")"
+                fi
+                # Clean up error file
+                rm -f "$curl_error_file" 2>/dev/null
+                return 1
+            else
+                print_message "Connection failed on attempt $attempt, retrying..."
+                ((attempt++))
+                continue
             fi
-            # Clean up error file
-            rm -f "$curl_error_file" 2>/dev/null
-            return 1
         fi
-    else
-        print_result 1 "Failed to connect to server (curl exit code: $curl_exit_code)"
-        # Show curl error if available
-        if [ -f "$curl_error_file" ] && [ -s "$curl_error_file" ]; then
-            print_message "Curl error output:"
-            print_output "$(cat "$curl_error_file")"
-        fi
-        # Clean up error file
-        rm -f "$curl_error_file" 2>/dev/null
-        return 1
-    fi
+    done
+    
+    return 1
 }
 
 # Function to wait for server to be ready

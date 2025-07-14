@@ -6,6 +6,7 @@
 # including starting and stopping the application with various configurations.
 #
 # VERSION HISTORY
+# 1.2.3 - 2025-07-14 - Enhanced process validation with multiple retry attempts for more robust PID checking
 # 1.2.2 - 2025-07-14 - Fixed job control messages (like "Terminated") appearing in test output by adding disown to background processes
 # 1.2.1 - 2025-07-02 - Updated find_hydrogen_binary to use relative paths in log messages to avoid exposing user information
 # 1.2.0 - 2025-07-02 - Added validate_config_file function for single configuration validation
@@ -153,10 +154,28 @@ start_hydrogen_with_pid() {
     # Display the PID for tracking
     print_message "Hydrogen process started with PID: $hydrogen_pid"
     
-    # Verify process started
-    sleep 0.05  # Give a brief moment to check if process starts
-    if ! ps -p "$hydrogen_pid" > /dev/null 2>&1; then
-        print_result 1 "Failed to start Hydrogen - process did not start or crashed immediately"
+    # Verify process started with multiple attempts for robustness
+    local check_attempt=1
+    local max_attempts=5
+    local process_running=false
+    
+    while [ $check_attempt -le $max_attempts ]; do
+        if [ $check_attempt -eq 1 ]; then
+            sleep 0.2  # Initial check after brief delay
+        else
+            sleep 0.1  # Short delay between subsequent checks
+        fi
+        
+        if ps -p "$hydrogen_pid" > /dev/null 2>&1; then
+            process_running=true
+            break
+        fi
+        
+        ((check_attempt++))
+    done
+    
+    if [ "$process_running" = false ]; then
+        print_result 1 "Failed to start Hydrogen - process did not start or crashed immediately (checked $max_attempts times)"
         print_message "Check log file for possible errors: $log_file"
         if [ -s "$log_file" ]; then
             print_message "Last few lines of log file:"
@@ -241,10 +260,28 @@ start_hydrogen() {
     # Display the PID for tracking
     print_message "Hydrogen process started with PID: $hydrogen_pid"
     
-    # Verify process started
-    sleep 0.1  # Give a brief moment to check if process starts
-    if ! ps -p "$hydrogen_pid" > /dev/null 2>&1; then
-        print_result 1 "Failed to start Hydrogen - process did not start or crashed immediately"
+    # Verify process started with multiple attempts for robustness
+    local check_attempt=1
+    local max_attempts=5
+    local process_running=false
+    
+    while [ $check_attempt -le $max_attempts ]; do
+        if [ $check_attempt -eq 1 ]; then
+            sleep 0.2  # Initial check after brief delay
+        else
+            sleep 0.1  # Short delay between subsequent checks
+        fi
+        
+        if ps -p "$hydrogen_pid" > /dev/null 2>&1; then
+            process_running=true
+            break
+        fi
+        
+        ((check_attempt++))
+    done
+    
+    if [ "$process_running" = false ]; then
+        print_result 1 "Failed to start Hydrogen - process did not start or crashed immediately (checked $max_attempts times)"
         print_message "Check log file for possible errors: $log_file"
         if [ -s "$log_file" ]; then
             print_message "Last few lines of log file:"
