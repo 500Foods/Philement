@@ -575,10 +575,10 @@ add_custom_target(all_examples
 
 # Build all variants with parallel execution
 add_custom_target(all_variants
-    DEPENDS regular debug valgrind perf hydrogen_coverage coverage hydrogen_release payload
+    DEPENDS regular debug valgrind perf hydrogen_coverage coverage hydrogen_release payload unity_tests
     COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
     COMMAND ${CMAKE_COMMAND} -E echo "🛈 Building all variants in parallel where possible..."
-    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target regular debug valgrind perf hydrogen_coverage coverage hydrogen_release payload --parallel
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target regular debug valgrind perf hydrogen_coverage coverage hydrogen_release payload unity_tests --parallel
     COMMAND ${CMAKE_COMMAND} -E echo "✅ All variants built successfully!"
     COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
     COMMAND ${CMAKE_COMMAND} -E echo "  Default:     $<TARGET_FILE:regular>"
@@ -588,6 +588,7 @@ add_custom_target(all_variants
     COMMAND ${CMAKE_COMMAND} -E echo "  Coverage:    ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage"
     COMMAND ${CMAKE_COMMAND} -E echo "  Release:     ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_release"
     COMMAND ${CMAKE_COMMAND} -E echo "  Naked:       ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_naked"
+    COMMAND ${CMAKE_COMMAND} -E echo "  Unity Tests: ${CMAKE_CURRENT_BINARY_DIR}/unity/"
     COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
     COMMENT "Building all variants with parallel execution"
 )
@@ -639,8 +640,9 @@ add_custom_target(cmake_help
     COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}hydrogen_coverage${NORMAL} - Build with gcov coverage instrumentation"
     COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}coverage${NORMAL}          - Build coverage executable with embedded payload"
     COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}hydrogen_release${NORMAL}  - Build stripped, compressed executable"
+    COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}unity_tests${NORMAL}       - Build Unity unit tests with coverage"
     COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}payload${NORMAL}           - Generate OpenAPI specs and payload"
-    COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}all_variants${NORMAL}      - Build all variants"
+    COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}all_variants${NORMAL}      - Build all variants including Unity tests"
     COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}trial${NORMAL}             - Run trial build with diagnostics"
     COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}auth_code_flow${NORMAL}    - Build Authorization Code flow example"
     COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}client_credentials${NORMAL} - Build Client Credentials flow example"
@@ -652,6 +654,7 @@ add_custom_target(cmake_help
     COMMAND ${CMAKE_COMMAND} -E echo ""
     COMMAND ${CMAKE_COMMAND} -E echo "${CYAN}Examples:${NORMAL}"
     COMMAND ${CMAKE_COMMAND} -E echo "  cmake --build . --target hydrogen"
+    COMMAND ${CMAKE_COMMAND} -E echo "  cmake --build . --target unity_tests"
     COMMAND ${CMAKE_COMMAND} -E echo "  cmake --build . --target all_variants"
     COMMAND ${CMAKE_COMMAND} -E echo "  cmake --build . --target trial"
     COMMAND ${CMAKE_COMMAND} -E echo "  cmake --build . --target all_examples"
@@ -659,13 +662,178 @@ add_custom_target(cmake_help
     COMMENT "Displaying help information"
 )
 
-# Unity tests target
+# ──────────────────────────────────────────────────────────────────────────────
+# Unity Tests Integration
+#
+# This section integrates Unity unit tests directly into the main build system
+# instead of using a separate CMakeLists.txt file. This allows for parallel builds
+# and better integration while maintaining the separate build/unity/src structure.
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Unity framework path
+set(UNITY_FRAMEWORK_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/framework/Unity")
+
+# Unity test source files
+file(GLOB UNITY_TEST_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/src/test_*.c")
+
+# Unity framework source
+set(UNITY_FRAMEWORK_SOURCES
+    ${UNITY_FRAMEWORK_DIR}/src/unity.c
+)
+
+# Create Unity test object files in build/unity/src directory structure (same as original)
+# Exclude hydrogen.c since Unity tests have their own main() function
+set(UNITY_HYDROGEN_SOURCES ${HYDROGEN_SOURCES})
+list(REMOVE_ITEM UNITY_HYDROGEN_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/../src/hydrogen.c")
+
+set(UNITY_OBJECT_FILES "")
+foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
+    # Get relative path from src directory
+    file(RELATIVE_PATH REL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../src" ${SOURCE_FILE})
+    get_filename_component(OBJ_DIR ${REL_PATH} DIRECTORY)
+    get_filename_component(OBJ_BASENAME ${REL_PATH} NAME_WE)
+    
+    # Set up output directory structure to mirror source in build/unity/src/
+    if(OBJ_DIR)
+        set(OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/unity/src/${OBJ_DIR}")
+        set(OUTPUT_OBJ "${OUTPUT_DIR}/${OBJ_BASENAME}.o")
+    else()
+        set(OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/unity/src")
+        set(OUTPUT_OBJ "${OUTPUT_DIR}/${OBJ_BASENAME}.o")
+    endif()
+    
+    # Create custom command to compile source file to object file with Unity-specific flags
+    add_custom_command(
+        OUTPUT ${OUTPUT_OBJ}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_DIR}
+        COMMAND ${CMAKE_C_COMPILER}
+            ${HYDROGEN_BASE_CFLAGS}
+            -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer
+            -DVERSION='"${HYDROGEN_VERSION}"'
+            -DRELEASE='"${HYDROGEN_RELEASE}"'
+            -DBUILD_TYPE='"Coverage"'
+            -I${CMAKE_CURRENT_SOURCE_DIR}/../src
+            -I${UNITY_FRAMEWORK_DIR}/src
+            ${JANSSON_CFLAGS}
+            ${MICROHTTPD_CFLAGS}
+            ${WEBSOCKETS_CFLAGS}
+            ${BROTLI_CFLAGS}
+            -c ${SOURCE_FILE} -o ${OUTPUT_OBJ}
+        DEPENDS ${SOURCE_FILE}
+        COMMENT "Compiling ${REL_PATH} to Unity object file"
+    )
+    
+    list(APPEND UNITY_OBJECT_FILES ${OUTPUT_OBJ})
+endforeach()
+
+# Create target that depends on all Unity object files
+add_custom_target(unity_objects DEPENDS ${UNITY_OBJECT_FILES})
+
+# Create Unity test executables for each test file using custom build structure
+foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
+    get_filename_component(TEST_NAME ${TEST_SOURCE} NAME_WE)
+    
+    # Create Unity framework object files in build/unity/src directory structure
+    set(UNITY_FRAMEWORK_OBJECT_FILES "")
+    foreach(UNITY_SRC ${UNITY_FRAMEWORK_SOURCES})
+        get_filename_component(UNITY_BASENAME ${UNITY_SRC} NAME_WE)
+        set(UNITY_OUTPUT_OBJ "${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src/${UNITY_BASENAME}.o")
+        
+        # Create custom command to compile Unity framework source file to object file
+        add_custom_command(
+            OUTPUT ${UNITY_OUTPUT_OBJ}
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src
+            COMMAND ${CMAKE_C_COMPILER}
+                ${HYDROGEN_BASE_CFLAGS}
+                -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer
+                -I${UNITY_FRAMEWORK_DIR}/src
+                -c ${UNITY_SRC} -o ${UNITY_OUTPUT_OBJ}
+            DEPENDS ${UNITY_SRC}
+            COMMENT "Compiling Unity framework ${UNITY_BASENAME} to object file"
+        )
+        
+        list(APPEND UNITY_FRAMEWORK_OBJECT_FILES ${UNITY_OUTPUT_OBJ})
+    endforeach()
+    
+    # Create test source object file in build/unity/src directory structure
+    get_filename_component(TEST_BASENAME ${TEST_SOURCE} NAME_WE)
+    set(TEST_OUTPUT_OBJ "${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src/${TEST_BASENAME}.o")
+    
+    # Create custom command to compile test source file to object file
+    add_custom_command(
+        OUTPUT ${TEST_OUTPUT_OBJ}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src
+        COMMAND ${CMAKE_C_COMPILER}
+            ${HYDROGEN_BASE_CFLAGS}
+            -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer
+            -DVERSION='"${HYDROGEN_VERSION}"'
+            -DRELEASE='"${HYDROGEN_RELEASE}"'
+            -DBUILD_TYPE='"Coverage"'
+            -I${CMAKE_CURRENT_SOURCE_DIR}/../src
+            -I${UNITY_FRAMEWORK_DIR}/src
+            ${JANSSON_CFLAGS}
+            ${MICROHTTPD_CFLAGS}
+            ${WEBSOCKETS_CFLAGS}
+            ${BROTLI_CFLAGS}
+            -c ${TEST_SOURCE} -o ${TEST_OUTPUT_OBJ}
+        DEPENDS ${TEST_SOURCE}
+        COMMENT "Compiling ${TEST_BASENAME} test to object file"
+    )
+    
+    # Create target that depends on all object files for this test
+    add_custom_target(${TEST_NAME}_objects
+        DEPENDS ${TEST_OUTPUT_OBJ} ${UNITY_FRAMEWORK_OBJECT_FILES} ${UNITY_OBJECT_FILES}
+    )
+    
+    # Create the Unity test executable using the individual object files
+    add_executable(${TEST_NAME}
+        ${TEST_OUTPUT_OBJ}
+        ${UNITY_FRAMEWORK_OBJECT_FILES}
+    )
+    add_dependencies(${TEST_NAME} ${TEST_NAME}_objects unity_objects)
+    
+    # Link with Unity object files and required libraries
+    target_link_libraries(${TEST_NAME}
+        ${UNITY_OBJECT_FILES}
+        ${HYDROGEN_BASE_LIBS}
+        --coverage
+        -lgcov
+    )
+    
+    # Add extra link flags
+    target_link_options(${TEST_NAME} PRIVATE -Wl,--gc-sections)
+    
+    # Generate map file in unity directory
+    target_link_options(${TEST_NAME} PRIVATE -Wl,-Map=${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src/${TEST_NAME}.map)
+    
+    # Set output directory for test executable in build/unity/src (consistent with coverage structure)
+    set_target_properties(${TEST_NAME} PROPERTIES
+        OUTPUT_NAME ${TEST_NAME}
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src"
+        LINKER_LANGUAGE C
+    )
+    
+    # Add custom command to show build completion
+    add_custom_command(TARGET ${TEST_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E echo "${GREEN}${PASS} ${BOLD}Unity test build${NORMAL} ${GREEN}completed successfully: ${TEST_NAME}${NORMAL}"
+        COMMAND ${CMAKE_COMMAND} -E echo "${CYAN}${INFO} Unity test artifacts located in: ${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src/${NORMAL}"
+        VERBATIM
+    )
+    
+    # Add test to CTest
+    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src
+    )
+endforeach()
+
+# Unity tests build target
 add_custom_target(unity_tests
+    DEPENDS ${UNITY_TEST_SOURCES}
     COMMAND ${CMAKE_COMMAND} -E echo "🛈  Building Unity tests with coverage instrumentation..."
-    COMMAND ${CMAKE_COMMAND} -S ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity -B ${CMAKE_CURRENT_SOURCE_DIR}/../build/unity
-    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_SOURCE_DIR}/../build/unity
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target unity_objects --parallel
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target test_hydrogen --parallel
     COMMAND ${CMAKE_COMMAND} -E echo "✅ Unity tests built successfully"
-    COMMAND ${CMAKE_COMMAND} -E echo "${CYAN}${INFO} Unity coverage files located in: ${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src/${NORMAL}"
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈 Unity coverage files located in: ${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src/"
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Building Unity tests with coverage instrumentation"
 )

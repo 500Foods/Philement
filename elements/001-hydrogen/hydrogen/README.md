@@ -74,7 +74,7 @@ Hydrogen is currently designed for technical users who:
 
 ## Latest Test Results
 
-Generated on: Mon Jul 14 01:48:14 PDT 2025
+Generated on: Mon Jul 14 03:26:45 PDT 2025
 
 ### Summary
 
@@ -84,71 +84,74 @@ Generated on: Mon Jul 14 01:48:14 PDT 2025
 | Passed | 26 |
 | Failed | 0 |
 | Skipped | 0 |
-| Total Subtests | 191 |
-| Passed Subtests | 191 |
+| Total Subtests | 190 |
+| Passed Subtests | 190 |
 | Failed Subtests | 0 |
-| Elapsed Time | 00:00:30.266 |
-| Running Time | 00:01:14.987 |
+| Elapsed Time | 00:00:30.962 |
+| Running Time | 00:01:18.314 |
 
 ### Test Coverage
 
 | Test Type | Files Cover | Files Instr | Lines Cover | Lines Instr | Coverage |
 | --------- | ----------- | ----------- | ----------- | ----------- | -------- |
-| Unity Tests | 3 | 118 | 31 | 11,846 | 0.262% |
-| Blackbox Tests | 92 | 119 | 5,863 | 12,021 | 48.773% |
-| Combined Tests | 92 | 119 | 5,863 | 12,021 | 48.773% |
+| Unity Tests | 4 | 119 | 79 | 11,894 | 0.664% |
+| Blackbox Tests | 92 | 119 | 5,872 | 12,021 | 48.848% |
+| Combined Tests | 92 | 119 | 5,872 | 12,021 | 48.848% |
 
 ### Individual Test Results
 
 | Status | Time | Test | Tests | Pass | Fail | Summary |
 | ------ | ---- | ---- | ----- | ---- | ---- | ------- |
-| ✅ | 00:00:13.694 | 01_compilation | 17 | 17 | 0 | Test completed without errors |
-| ✅ | 00:00:04.888 | 03_code_size_analysis | 5 | 5 | 0 | Test completed without errors |
-| ✅ | 00:00:10.756 | 06_markdown_links_check_(github-sitemap) | 4 | 4 | 0 | Test completed without errors |
-| ✅ | 00:00:01.561 | 10_memory_leak_detection | 4 | 4 | 0 | Test completed without errors |
-| ✅ | 00:00:04.016 | 11_unity_unit_tests | 6 | 6 | 0 | Test completed without errors |
-| ✅ | 00:00:01.879 | 12_env_var_substitution | 16 | 16 | 0 | Test completed without errors |
-| ✅ | 00:00:00.164 | 14_payload_env_vars | 2 | 2 | 0 | Test completed without errors |
-| ✅ | 00:00:00.786 | 16_library_dependencies | 14 | 14 | 0 | Test completed without errors |
-| ✅ | 00:00:00.416 | 18_json_error_handling | 4 | 4 | 0 | Test completed without errors |
-| ✅ | 00:00:02.712 | 20_crash_handler | 30 | 30 | 0 | Test completed without errors |
-| ✅ | 00:00:01.066 | 22_startup/shutdown | 9 | 9 | 0 | Test completed without errors |
-| ✅ | 00:00:03.434 | 24_signal_handling | 9 | 9 | 0 | Test completed without errors |
-| ✅ | 00:00:00.577 | 26_shutdown | 6 | 6 | 0 | Test completed without errors |
-| ✅ | 00:00:01.369 | 28_socket_rebinding | 7 | 7 | 0 | Test completed without errors |
-| ✅ | 00:00:01.971 | 30_api_prefix | 10 | 10 | 0 | Test completed without errors |
-| ✅ | 00:00:01.233 | 32_system_api_endpoints | 7 | 7 | 0 | Test completed without errors |
-| ✅ | 00:00:02.223 | 34_swagger | 15 | 15 | 0 | Test completed without errors |
-| ✅ | 00:00:02.994 | 36_websockets | 14 | 14 | 0 | Test completed without errors |
-| ✅ | 00:00:04.782 | 91_c/c++_code_analysis_(cppcheck) | 1 | 1 | 0 | Test completed without errors |
-| ✅ | 00:00:05.623 | 92_shell_script_analysis_(shellcheck) | 2 | 2 | 0 | Test completed without errors |
-| ✅ | 00:00:00.062 | 94_javascript_linting_(eslint) | 1 | 1 | 0 | Test completed without errors |
-| ✅ | 00:00:00.061 | 95_css_linting_(stylelint) | 1 | 1 | 0 | Test completed without errors |
-| ✅ | 00:00:00.211 | 96_html_linting_(htmlhint) | 1 | 1 | 0 | Test completed without errors |
-| ✅ | 00:00:00.209 | 97_json_linting_(jsonlint) | 1 | 1 | 0 | Test completed without errors |
-| ✅ | 00:00:04.162 | 98_markdown_linting_(markdownlint) | 1 | 1 | 0 | Test completed without errors |
-| ✅ | 00:00:04.138 | 99_test_suite_coverage_(coverge_tables) | 4 | 4 | 0 | Test completed without errors |
+| ✅ | 00:00:15.827 | 01_compilation | 17 | 17 | 0 | Test completed without errors |
+| ✅ | 00:00:06.177 | 03_code_size_analysis | 5 | 5 | 0 | Test completed without errors |
+| ✅ | 00:00:13.243 | 06_markdown_links_check_(github-sitemap) | 4 | 4 | 0 | Test completed without errors |
+| ✅ | 00:00:01.568 | 10_memory_leak_detection | 4 | 4 | 0 | Test completed without errors |
+| ✅ | 00:00:00.992 | 11_unity_unit_tests | 5 | 5 | 0 | Test completed without errors |
+| ✅ | 00:00:02.038 | 12_env_var_substitution | 16 | 16 | 0 | Test completed without errors |
+| ✅ | 00:00:00.172 | 14_payload_env_vars | 2 | 2 | 0 | Test completed without errors |
+| ✅ | 00:00:00.873 | 16_library_dependencies | 14 | 14 | 0 | Test completed without errors |
+| ✅ | 00:00:00.459 | 18_json_error_handling | 4 | 4 | 0 | Test completed without errors |
+| ✅ | 00:00:02.577 | 20_crash_handler | 30 | 30 | 0 | Test completed without errors |
+| ✅ | 00:00:00.878 | 22_startup/shutdown | 9 | 9 | 0 | Test completed without errors |
+| ✅ | 00:00:03.556 | 24_signal_handling | 9 | 9 | 0 | Test completed without errors |
+| ✅ | 00:00:00.521 | 26_shutdown | 6 | 6 | 0 | Test completed without errors |
+| ✅ | 00:00:01.254 | 28_socket_rebinding | 7 | 7 | 0 | Test completed without errors |
+| ✅ | 00:00:01.972 | 30_api_prefix | 10 | 10 | 0 | Test completed without errors |
+| ✅ | 00:00:01.288 | 32_system_api_endpoints | 7 | 7 | 0 | Test completed without errors |
+| ✅ | 00:00:02.174 | 34_swagger | 15 | 15 | 0 | Test completed without errors |
+| ✅ | 00:00:03.022 | 36_websockets | 14 | 14 | 0 | Test completed without errors |
+| ✅ | 00:00:05.041 | 91_c/c++_code_analysis_(cppcheck) | 1 | 1 | 0 | Test completed without errors |
+| ✅ | 00:00:05.737 | 92_shell_script_analysis_(shellcheck) | 2 | 2 | 0 | Test completed without errors |
+| ✅ | 00:00:00.061 | 94_javascript_linting_(eslint) | 1 | 1 | 0 | Test completed without errors |
+| ✅ | 00:00:00.063 | 95_css_linting_(stylelint) | 1 | 1 | 0 | Test completed without errors |
+| ✅ | 00:00:00.228 | 96_html_linting_(htmlhint) | 1 | 1 | 0 | Test completed without errors |
+| ✅ | 00:00:00.215 | 97_json_linting_(jsonlint) | 1 | 1 | 0 | Test completed without errors |
+| ✅ | 00:00:04.261 | 98_markdown_linting_(markdownlint) | 1 | 1 | 0 | Test completed without errors |
+| ✅ | 00:00:04.117 | 99_test_suite_coverage_(coverge_tables) | 4 | 4 | 0 | Test completed without errors |
 
 ## Repository Information
 
-Generated via cloc: Mon Jul 14 01:48:14 PDT 2025
+Generated via cloc: Mon Jul 14 03:26:45 PDT 2025
 
 ```cloc
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-Markdown                       213           6762             48          20803
-C                              130           4564           5886          20505
-Bourne Shell                    51           2211           2414          11636
+C                              131           4718           5947          21194
+Markdown                       213           6762             48          20806
+Bourne Shell                    51           2197           2408          11573
 JSON                            21              1              0           5325
+CMake                           50            248            291           3029
 C/C++ Header                   105           1099           4276           2686
-CMake                            6            151            214            940
+Text                            17            100              0           1584
 HTML                             1             74              0            493
-make                             1            162            188            396
+make                             1            171            200            417
+YAML                             1             15              2            284
+TypeScript                      34              0              0             68
 -------------------------------------------------------------------------------
-SUM:                           528          15024          13026          62784
+SUM:                           625          15385          13172          67459
 -------------------------------------------------------------------------------
 
-Code/Docs: 1.7    Code/Comments: 2.8
-Docs/Code: 0.6    Comments/Code: 0.4
+Code/Docs: 1.8    Code/Comments: 3.0
+Docs/Code: 0.5    Comments/Code: 0.3
 ```

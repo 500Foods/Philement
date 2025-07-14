@@ -582,6 +582,45 @@ cmake_help/fast:
 .PHONY : cmake_help/fast
 
 #=============================================================================
+# Target rules for targets named unity_objects
+
+# Build rule for target.
+unity_objects: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 unity_objects
+.PHONY : unity_objects
+
+# fast build rule for target.
+unity_objects/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unity_objects.dir/build.make CMakeFiles/unity_objects.dir/build
+.PHONY : unity_objects/fast
+
+#=============================================================================
+# Target rules for targets named test_hydrogen_objects
+
+# Build rule for target.
+test_hydrogen_objects: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_hydrogen_objects
+.PHONY : test_hydrogen_objects
+
+# fast build rule for target.
+test_hydrogen_objects/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_hydrogen_objects.dir/build.make CMakeFiles/test_hydrogen_objects.dir/build
+.PHONY : test_hydrogen_objects/fast
+
+#=============================================================================
+# Target rules for targets named test_hydrogen
+
+# Build rule for target.
+test_hydrogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_hydrogen
+.PHONY : test_hydrogen
+
+# fast build rule for target.
+test_hydrogen/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_hydrogen.dir/build.make CMakeFiles/test_hydrogen.dir/build
+.PHONY : test_hydrogen/fast
+
+#=============================================================================
 # Target rules for targets named unity_tests
 
 # Build rule for target.
@@ -706,7 +745,9 @@ help:
 	@echo "... perf_objects"
 	@echo "... regular_objects"
 	@echo "... release_objects"
+	@echo "... test_hydrogen_objects"
 	@echo "... trial"
+	@echo "... unity_objects"
 	@echo "... unity_tests"
 	@echo "... valgrind_objects"
 	@echo "... auth_code_flow"
@@ -720,6 +761,7 @@ help:
 	@echo "... perf"
 	@echo "... regular"
 	@echo "... release"
+	@echo "... test_hydrogen"
 	@echo "... valgrind"
 	@echo "... home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/examples/C/auth_code_flow.o"
 	@echo "... home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/examples/C/auth_code_flow.i"
