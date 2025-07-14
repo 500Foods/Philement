@@ -61,6 +61,8 @@ if ! navigate_to_project_root "$SCRIPT_DIR"; then
     exit 1
 fi
 
+# Set up results directory (after navigating to project root)
+
 # Default exclude patterns for linting (can be overridden by .lintignore)
 readonly LINT_EXCLUDES=(
     "build/*"

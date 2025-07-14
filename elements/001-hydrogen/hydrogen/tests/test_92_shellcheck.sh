@@ -61,6 +61,8 @@ if ! navigate_to_project_root "$SCRIPT_DIR"; then
     exit 1
 fi
 
+# Set up results directory (after navigating to project root)
+
 # Test configuration constants
 readonly LINT_OUTPUT_LIMIT=100
 
