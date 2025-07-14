@@ -532,7 +532,16 @@ print_test_completion() {
             # Otherwise assume we're already in tests
             tests_dir="$script_dir"
         fi
-        local results_dir="$tests_dir/results"
+        # Use tmpfs build directory if available for ultra-fast I/O
+        local build_dir="$tests_dir/../build"
+        local results_dir
+        if mountpoint -q "$build_dir" 2>/dev/null; then
+            # tmpfs is mounted, use build/tests/results
+            results_dir="$build_dir/tests/results"
+        else
+            # Fallback to regular filesystem
+            results_dir="$tests_dir/results"
+        fi
         mkdir -p "$results_dir" 2>/dev/null
         # Use the elapsed_time that was already calculated above - SINGLE SOURCE OF TRUTH
         local file_elapsed_time="$elapsed_time"

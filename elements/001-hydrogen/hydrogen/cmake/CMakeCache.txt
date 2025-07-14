@@ -15,10 +15,16 @@
 ########################
 
 //Path to a program.
+CCACHE_EXECUTABLE:FILEPATH=/usr/bin/ccache
+
+//Path to a program.
 CMAKE_ADDR2LINE:FILEPATH=/usr/bin/addr2line
 
 //Path to a program.
 CMAKE_AR:FILEPATH=/usr/bin/ar
+
+//Number of parallel build jobs
+CMAKE_BUILD_PARALLEL_LEVEL:STRING=9
 
 //Choose the type of build
 CMAKE_BUILD_TYPE:STRING=RelWithDebInfo
@@ -27,7 +33,7 @@ CMAKE_BUILD_TYPE:STRING=RelWithDebInfo
 CMAKE_COLOR_MAKEFILE:BOOL=ON
 
 //C compiler
-CMAKE_C_COMPILER:FILEPATH=/usr/lib64/ccache/cc
+CMAKE_C_COMPILER:STRING=/usr/lib64/ccache/cc
 
 //A wrapper around 'ar' adding the appropriate '--plugin' option
 // for the GCC compiler
@@ -275,6 +281,9 @@ Hydrogen_IS_TOP_LEVEL:STATIC=ON
 //Value Computed by CMake
 Hydrogen_SOURCE_DIR:STATIC=/home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/cmake
 
+//Path to a program.
+NINJA_EXECUTABLE:FILEPATH=/usr/bin/ninja
+
 //Path to a library.
 OPENSSL_CRYPTO_LIBRARY:FILEPATH=/usr/lib64/libcrypto.so
 
@@ -289,6 +298,12 @@ PKG_CONFIG_ARGN:STRING=
 
 //pkg-config executable
 PKG_CONFIG_EXECUTABLE:FILEPATH=/usr/bin/pkg-config
+
+//Path to a program.
+ProcessorCount_cmd_nproc:FILEPATH=/usr/bin/nproc
+
+//Path to a program.
+ProcessorCount_cmd_sysctl:FILEPATH=/usr/sbin/sysctl
 
 //Path to a program.
 UPX_EXECUTABLE:FILEPATH=/usr/bin/upx
@@ -666,6 +681,10 @@ PC_CURL_libcurl_VERSION:INTERNAL=
 PKG_CONFIG_ARGN-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: PKG_CONFIG_EXECUTABLE
 PKG_CONFIG_EXECUTABLE-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: ProcessorCount_cmd_nproc
+ProcessorCount_cmd_nproc-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: ProcessorCount_cmd_sysctl
+ProcessorCount_cmd_sysctl-ADVANCED:INTERNAL=1
 WEBSOCKETS_CFLAGS:INTERNAL=-I/usr/include
 WEBSOCKETS_CFLAGS_I:INTERNAL=
 WEBSOCKETS_CFLAGS_OTHER:INTERNAL=

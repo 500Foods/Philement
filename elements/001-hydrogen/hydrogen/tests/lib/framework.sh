@@ -98,9 +98,17 @@ setup_test_environment() {
     local script_dir
     script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
     
-    # Create results directory if it doesn't exist
-    RESULTS_DIR="$script_dir/results"
-    mkdir -p "$RESULTS_DIR"
+    # Create results directory - use tmpfs build directory if available
+    local build_dir="$script_dir/../build"
+    if mountpoint -q "$build_dir" 2>/dev/null; then
+        # tmpfs is mounted, use build/tests/results for ultra-fast I/O
+        RESULTS_DIR="$build_dir/tests/results"
+        mkdir -p "$RESULTS_DIR"
+    else
+        # Fallback to regular filesystem
+        RESULTS_DIR="$script_dir/results"
+        mkdir -p "$RESULTS_DIR"
+    fi
     
     # Get timestamp for this test run
     TIMESTAMP=$(date +%Y%m%d_%H%M%S)

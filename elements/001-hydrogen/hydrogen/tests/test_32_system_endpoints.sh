@@ -11,6 +11,7 @@
 # - /api/system/appconfig: Tests the application configuration endpoint
 
 # CHANGELOG
+# 3.1.1 - 2025-07-14 - Updated to use build/tests directories for test output consistency
 # 3.1.0 - 2025-07-14 - Major architectural restructure to modular approach for better parallel execution reliability
 # 3.0.2 - 2025-07-14 - Improved error handling in validate_api_request function to better handle parallel test execution
 # 3.0.1 - 2025-07-06 - Added missing shellcheck justifications
@@ -19,7 +20,7 @@
 
 # Test Configuration
 TEST_NAME="System API Endpoints"
-SCRIPT_VERSION="3.1.0"
+SCRIPT_VERSION="3.1.1"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -39,8 +40,15 @@ source "$SCRIPT_DIR/lib/lifecycle.sh"
 # shellcheck source=tests/lib/network_utils.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/network_utils.sh"
 
-# Initialize test environment
-RESULTS_DIR="$SCRIPT_DIR/results"
+# Use tmpfs build directory if available for ultra-fast I/O
+BUILD_DIR="$SCRIPT_DIR/../build"
+if mountpoint -q "$BUILD_DIR" 2>/dev/null; then
+    # tmpfs is mounted, use build/tests/results for ultra-fast I/O
+    RESULTS_DIR="$BUILD_DIR/tests/results"
+else
+    # Fallback to regular filesystem
+    RESULTS_DIR="$SCRIPT_DIR/results"
+fi
 mkdir -p "$RESULTS_DIR"
 # Ensure RESULTS_DIR is an absolute path
 RESULTS_DIR="$(cd "$RESULTS_DIR" && pwd)"

@@ -7,6 +7,9 @@
 # - Uses immediate restart without waiting for TIME_WAIT (SO_REUSEADDR enabled)
 
 # CHANGELOG
+# 5.0.5 - 2025-07-14 - Fixed database and log file conflicts in parallel execution by creating unique config files
+# 5.0.4 - 2025-07-14 - Fixed parallel execution file conflicts by enhancing unique ID generation
+# 5.0.3 - 2025-07-14 - Updated to use build/tests directories for test output consistency
 # 5.0.2 - 2025-07-14 - Improved error handling in validate_api_request function to better handle parallel test execution
 # 5.0.1 - 2025-07-06 - Added missing shellcheck justifications
 # 5.0.0 - 2025-07-02 - Migrated to use lib/ scripts, following established test patterns
@@ -16,7 +19,7 @@
 
 # Test Configuration
 TEST_NAME="API Prefix"
-SCRIPT_VERSION="5.0.2"
+SCRIPT_VERSION="5.0.5"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -36,12 +39,20 @@ source "$SCRIPT_DIR/lib/lifecycle.sh"
 # shellcheck source=tests/lib/network_utils.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/network_utils.sh"
 
-# Initialize test environment
-RESULTS_DIR="$SCRIPT_DIR/results"
+# Use tmpfs build directory if available for ultra-fast I/O
+BUILD_DIR="$SCRIPT_DIR/../build"
+if mountpoint -q "$BUILD_DIR" 2>/dev/null; then
+    # tmpfs is mounted, use build/tests/results for ultra-fast I/O
+    RESULTS_DIR="$BUILD_DIR/tests/results"
+else
+    # Fallback to regular filesystem
+    RESULTS_DIR="$SCRIPT_DIR/results"
+fi
 mkdir -p "$RESULTS_DIR"
 # Ensure RESULTS_DIR is an absolute path
 RESULTS_DIR="$(cd "$RESULTS_DIR" && pwd)"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+# Enhanced timestamp with microseconds and process ID for parallel execution safety
+TIMESTAMP=$(date +%Y%m%d_%H%M%S_%N | cut -c1-21)_$$
 
 # Auto-extract test number and set up environment
 TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
@@ -53,9 +64,27 @@ TOTAL_SUBTESTS=10
 PASS_COUNT=0
 EXIT_CODE=0
 
-# Configuration files
-DEFAULT_CONFIG_PATH="$(get_config_path "hydrogen_test_api_test_1.json")"
-CUSTOM_CONFIG_PATH="$(get_config_path "hydrogen_test_api_test_2.json")"
+# Create unique configuration files for parallel execution
+create_unique_config() {
+    local base_config="$1"
+    local unique_suffix="$2"
+    local output_path="$3"
+    
+    # Read base config and modify paths to use build/tests and unique identifiers
+    sed "s|\"./tests/hydrogen_test_api_test_|\"$RESULTS_DIR/hydrogen_test_api_test_${unique_suffix}_|g; \
+         s|\"./logs/hydrogen_test_api_test_|\"$RESULTS_DIR/hydrogen_test_api_test_${unique_suffix}_|g" \
+         "$base_config" > "$output_path"
+}
+
+# Configuration files with unique paths for parallel execution
+BASE_DEFAULT_CONFIG="$(get_config_path "hydrogen_test_api_test_1.json")"
+BASE_CUSTOM_CONFIG="$(get_config_path "hydrogen_test_api_test_2.json")"
+DEFAULT_CONFIG_PATH="$RESULTS_DIR/hydrogen_test_api_test_1_${TIMESTAMP}.json"
+CUSTOM_CONFIG_PATH="$RESULTS_DIR/hydrogen_test_api_test_2_${TIMESTAMP}.json"
+
+# Create unique configs to avoid conflicts in parallel execution
+create_unique_config "$BASE_DEFAULT_CONFIG" "1" "$DEFAULT_CONFIG_PATH"
+create_unique_config "$BASE_CUSTOM_CONFIG" "2" "$CUSTOM_CONFIG_PATH"
 
 # Function to make a request and validate response
 validate_api_request() {
@@ -207,7 +236,7 @@ if [ $EXIT_CODE -eq 0 ]; then
     # Subtest 3: Start server with default API prefix
     next_subtest
     print_subtest "Start Server with Default API Prefix (/api)"
-    DEFAULT_LOG="$RESULTS_DIR/api_prefixes_default_server_${TIMESTAMP}.log"
+    DEFAULT_LOG="$RESULTS_DIR/api_prefixes_default_server_${TIMESTAMP}_${RANDOM}.log"
     if start_hydrogen_with_pid "$DEFAULT_CONFIG_PATH" "$DEFAULT_LOG" 15 "$HYDROGEN_BIN" "HYDROGEN_PID" && [ -n "$HYDROGEN_PID" ]; then
         print_result 0 "Server started successfully with PID: $HYDROGEN_PID"
         ((PASS_COUNT++))
@@ -281,7 +310,7 @@ if [ $EXIT_CODE -eq 0 ]; then
     # Subtest 7: Start server with custom API prefix
     next_subtest
     print_subtest "Start Server with Custom API Prefix (/myapi)"
-    CUSTOM_LOG="$RESULTS_DIR/api_prefixes_custom_server_${TIMESTAMP}.log"
+    CUSTOM_LOG="$RESULTS_DIR/api_prefixes_custom_server_${TIMESTAMP}_${RANDOM}.log"
     if start_hydrogen_with_pid "$CUSTOM_CONFIG_PATH" "$CUSTOM_LOG" 15 "$HYDROGEN_BIN" "HYDROGEN_PID" && [ -n "$HYDROGEN_PID" ]; then
         print_result 0 "Server started successfully with PID: $HYDROGEN_PID"
         ((PASS_COUNT++))
@@ -367,8 +396,9 @@ else
     FINAL_RESULT=1
 fi
 
-# Clean up response files but preserve logs if test failed
+# Clean up response files and temporary configs
 rm -f "$RESULTS_DIR"/response_*.json
+rm -f "$DEFAULT_CONFIG_PATH" "$CUSTOM_CONFIG_PATH"
 
 # Only remove logs if tests were successful
 if [ $FINAL_RESULT -eq 0 ]; then

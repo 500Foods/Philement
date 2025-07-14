@@ -4,6 +4,7 @@
 # Runs github-sitemap.sh to check markdown links and evaluates results with subtests
 
 # CHANGELOG
+# 2.0.4 - 2025-07-14 - Updated to use build/tests directories for test output consistency
 # 2.0.3 - 2025-07-07 - Fixed table detection to distinguish between column headers and dedicated issue tables
 # 2.0.2 - 2025-07-07 - Fixed extraction logic for missing links and orphaned files counts with ANSI color code handling
 # 2.0.1 - 2025-07-06 - Added missing shellcheck justifications
@@ -12,7 +13,7 @@
 
 # Test configuration
 TEST_NAME="Markdown Links Check (github-sitemap)"
-SCRIPT_VERSION="2.0.3"
+SCRIPT_VERSION="2.0.4"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -40,8 +41,15 @@ reset_subtest_counter
 # Print beautiful test header
 print_test_header "$TEST_NAME" "$SCRIPT_VERSION"
 
-# Set up results directory
-RESULTS_DIR="$SCRIPT_DIR/results"
+# Use tmpfs build directory if available for ultra-fast I/O
+BUILD_DIR="$SCRIPT_DIR/../build"
+if mountpoint -q "$BUILD_DIR" 2>/dev/null; then
+    # tmpfs is mounted, use build/tests/results for ultra-fast I/O
+    RESULTS_DIR="$BUILD_DIR/tests/results"
+else
+    # Fallback to regular filesystem
+    RESULTS_DIR="$SCRIPT_DIR/results"
+fi
 mkdir -p "$RESULTS_DIR"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 RESULT_LOG="$RESULTS_DIR/test_${TEST_NUMBER}_${TIMESTAMP}.log"
@@ -58,9 +66,10 @@ TARGET_README="README.md"
 
 # These are expected to exist, but are missing mid-test_00_all.sh
 # We're just ensuring that they exist so sitemap doesn't complain
-mkdir -p tests/results
-touch tests/results/repository_info.md
-touch tests/results/latest_test_results.md
+# Use the same directory structure as RESULTS_DIR
+mkdir -p "$RESULTS_DIR"
+touch "$RESULTS_DIR/repository_info.md"
+touch "$RESULTS_DIR/latest_test_results.md"
 
 # Subtest 1: Validate sitemap script availability
 next_subtest

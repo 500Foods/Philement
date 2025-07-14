@@ -1,4 +1,3 @@
-# ──────────────────────────────────────────────────────────────────────────────
 # Hydrogen CMake Build System Configuration
 
 # This CMake configuration file sets up the build system for the Hydrogen server and example programs.
@@ -50,6 +49,69 @@ project(Hydrogen
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
+
+# Build Performance Optimizations
+
+# Detect available CPU cores for parallel builds
+include(ProcessorCount)
+ProcessorCount(CPU_CORES)
+if(CPU_CORES EQUAL 0)
+    set(CPU_CORES 4)  # Fallback to 4 cores
+endif()
+
+# Set parallel job count (use 80% of available cores to avoid system overload)
+math(EXPR PARALLEL_JOBS "${CPU_CORES} * 8 / 10")
+if(PARALLEL_JOBS LESS 1)
+    set(PARALLEL_JOBS 1)
+endif()
+
+message(STATUS "Detected ${CPU_CORES} CPU cores, using ${PARALLEL_JOBS} parallel jobs")
+
+# Enable parallel builds by default
+set(CMAKE_BUILD_PARALLEL_LEVEL ${PARALLEL_JOBS} CACHE STRING "Number of parallel build jobs")
+
+# Use Ninja generator for faster builds if available
+if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
+    find_program(NINJA_EXECUTABLE ninja)
+    if(NINJA_EXECUTABLE)
+        message(STATUS "Ninja found: ${NINJA_EXECUTABLE} - Consider using -G Ninja for faster builds")
+    endif()
+endif()
+
+# Enable compiler caching if available
+find_program(CCACHE_EXECUTABLE ccache)
+if(CCACHE_EXECUTABLE)
+    message(STATUS "ccache found: ${CCACHE_EXECUTABLE} - Enabling compiler caching")
+    set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_EXECUTABLE})
+endif()
+
+# CPU-specific optimizations
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+    # Detect CPU features for optimal performance
+    execute_process(
+        COMMAND grep -m1 "model name" /proc/cpuinfo
+        OUTPUT_VARIABLE CPU_MODEL
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+    
+    # Set CPU-specific optimizations based on detected processor
+    if(CPU_MODEL MATCHES "Intel.*i[357]-[0-9]+K")
+        set(CPU_ARCH_FLAGS "-march=native;-mtune=native")
+        message(STATUS "Intel K-series CPU detected, using native optimizations")
+    elseif(CPU_MODEL MATCHES "Intel")
+        set(CPU_ARCH_FLAGS "-march=x86-64-v2;-mtune=intel")
+        message(STATUS "Intel CPU detected, using x86-64-v2 optimizations")
+    elseif(CPU_MODEL MATCHES "AMD")
+        set(CPU_ARCH_FLAGS "-march=x86-64-v2;-mtune=generic")
+        message(STATUS "AMD CPU detected, using x86-64-v2 optimizations")
+    else()
+        set(CPU_ARCH_FLAGS "-march=x86-64")
+        message(STATUS "Generic x86-64 optimizations")
+    endif()
+else()
+    set(CPU_ARCH_FLAGS "")
+endif()
 
 # Set default build type if not specified
 if(NOT CMAKE_BUILD_TYPE)
@@ -114,7 +176,7 @@ math(EXPR HYDROGEN_BUILD_NUMBER "${GIT_COMMIT_COUNT} + 1000")
 set(HYDROGEN_VERSION "${HYDROGEN_VERSION_MAJOR}.${HYDROGEN_VERSION_MINOR}.${HYDROGEN_VERSION_PATCH}.${HYDROGEN_BUILD_NUMBER}")
 
 # Release timestamp in ISO 8601 format
-string(TIMESTAMP HYDROGEN_RELEASE "%Y-%m-%dT%H:%M:%SZ" UTC)
+string(TIMESTAMP HYDROGEN_RELEASE "%Y-%m-%d" )
 
 message(STATUS "Hydrogen Version: ${HYDROGEN_VERSION}")
 message(STATUS "Release Timestamp: ${HYDROGEN_RELEASE}")
@@ -146,7 +208,13 @@ set(HYDROGEN_BASE_CFLAGS
     -D_POSIX_C_SOURCE=200809L
     -ffunction-sections
     -fdata-sections
+    -pipe  # Use pipes instead of temporary files for faster compilation
 )
+
+# Add CPU-specific optimizations to base flags for better performance
+if(CPU_ARCH_FLAGS)
+    list(APPEND HYDROGEN_BASE_CFLAGS ${CPU_ARCH_FLAGS})
+endif()
 
 # Base libraries
 set(HYDROGEN_BASE_LIBS
@@ -323,8 +391,8 @@ hydrogen_add_executable_target(valgrind "Valgrind-Compatible"
 )
 
 # Performance-optimized build
-hydrogen_add_executable_target(perf "Performance" 
-    "-O3 -g -march=native -ffast-math -finline-functions -funroll-loops -DNDEBUG" 
+hydrogen_add_executable_target(perf "Performance"
+    "-O3 -g -ffast-math -finline-functions -funroll-loops -DNDEBUG"
     "-flto=auto -no-pie"
 )
 
@@ -473,7 +541,6 @@ hydrogen_add_executable_target(release "Release"
 )
 
 
-# ──────────────────────────────────────────────────────────────────────────────
 # Example Programs for Hydrogen OIDC Client
 # 
 # This section defines targets for building the example programs located in
@@ -490,7 +557,6 @@ hydrogen_add_executable_target(release "Release"
 # cmake --build . --target client_credentials_debug: Builds the Client Credentials flow example with debug symbols
 # cmake --build . --target password_flow_debug     : Builds the Resource Owner Password flow example with debug symbols
 # cmake --build . --target all_examples            : Builds all example programs
-# ──────────────────────────────────────────────────────────────────────────────
 
 # Find required libraries for examples
 find_package(CURL REQUIRED)
@@ -573,12 +639,27 @@ add_custom_target(all_examples
     COMMENT "Building all OIDC client examples"
 )
 
-# Build all variants with parallel execution
+# Optimized all_variants target with better parallelization
 add_custom_target(all_variants
-    DEPENDS regular debug valgrind perf hydrogen_coverage coverage hydrogen_release payload unity_tests
     COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
-    COMMAND ${CMAKE_COMMAND} -E echo "🛈 Building all variants in parallel where possible..."
-    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target regular debug valgrind perf hydrogen_coverage coverage hydrogen_release payload unity_tests --parallel
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈 Building all variants with ${PARALLEL_JOBS} parallel jobs..."
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈 Phase 1: Building independent targets in parallel..."
+    
+    # Phase 1: Build independent targets that can run in parallel
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target regular debug valgrind perf --parallel ${PARALLEL_JOBS}
+    
+    # Phase 2: Build coverage and unity tests (can run in parallel with each other)
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈 Phase 2: Building coverage and unity tests..."
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target hydrogen_coverage unity_tests --parallel ${PARALLEL_JOBS}
+    
+    # Phase 3: Build payload (quick step)
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈 Phase 3: Preparing payload..."
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target payload
+    
+    # Phase 4: Build targets that depend on payload
+    COMMAND ${CMAKE_COMMAND} -E echo "🛈 Phase 4: Building release and coverage with payload..."
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target coverage hydrogen_release --parallel 2
+    
     COMMAND ${CMAKE_COMMAND} -E echo "✅ All variants built successfully!"
     COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
     COMMAND ${CMAKE_COMMAND} -E echo "  Default:     $<TARGET_FILE:regular>"
@@ -588,9 +669,9 @@ add_custom_target(all_variants
     COMMAND ${CMAKE_COMMAND} -E echo "  Coverage:    ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_coverage"
     COMMAND ${CMAKE_COMMAND} -E echo "  Release:     ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_release"
     COMMAND ${CMAKE_COMMAND} -E echo "  Naked:       ${CMAKE_CURRENT_SOURCE_DIR}/../hydrogen_naked"
-    COMMAND ${CMAKE_COMMAND} -E echo "  Unity Tests: ${CMAKE_CURRENT_BINARY_DIR}/unity/"
+    COMMAND ${CMAKE_COMMAND} -E echo "  Unity Tests: ${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src/"
     COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"
-    COMMENT "Building all variants with parallel execution"
+    COMMENT "Building all variants with optimized parallel execution (${PARALLEL_JOBS} jobs)"
 )
 
 # Trial build target
@@ -630,45 +711,47 @@ add_custom_target(cleanish
 # Help target
 add_custom_target(cmake_help
     COMMAND ${CMAKE_COMMAND} -E echo ""
-    COMMAND ${CMAKE_COMMAND} -E echo "${BOLD}Hydrogen CMake Build System${NORMAL}"
+    COMMAND ${CMAKE_COMMAND} -E echo "Hydrogen CMake Build System - Optimized"
+    COMMAND ${CMAKE_COMMAND} -E echo "CPU Cores: ${CPU_CORES}, Parallel Jobs: ${PARALLEL_JOBS}"
     COMMAND ${CMAKE_COMMAND} -E echo ""
-    COMMAND ${CMAKE_COMMAND} -E echo "${CYAN}Available targets:${NORMAL}"
-    COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}hydrogen${NORMAL}          - Build default version with standard optimizations"
-    COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}hydrogen_debug${NORMAL}    - Build with AddressSanitizer for debugging"
-    COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}hydrogen_valgrind${NORMAL} - Build optimized for Valgrind analysis"
-    COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}hydrogen_perf${NORMAL}     - Build with aggressive optimizations"
-    COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}hydrogen_coverage${NORMAL} - Build with gcov coverage instrumentation"
-    COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}coverage${NORMAL}          - Build coverage executable with embedded payload"
-    COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}hydrogen_release${NORMAL}  - Build stripped, compressed executable"
-    COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}unity_tests${NORMAL}       - Build Unity unit tests with coverage"
-    COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}payload${NORMAL}           - Generate OpenAPI specs and payload"
-    COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}all_variants${NORMAL}      - Build all variants including Unity tests"
-    COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}trial${NORMAL}             - Run trial build with diagnostics"
-    COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}auth_code_flow${NORMAL}    - Build Authorization Code flow example"
-    COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}client_credentials${NORMAL} - Build Client Credentials flow example"
-    COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}password_flow${NORMAL}     - Build Resource Owner Password flow example"
-    COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}all_examples${NORMAL}      - Build all example programs"
-    COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}clean_all${NORMAL}         - Remove all build artifacts"
-    COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}cleanish${NORMAL}          - Clean preserving release executables"
-    COMMAND ${CMAKE_COMMAND} -E echo "  ${YELLOW}cmake_help${NORMAL}        - Display this help information"
+    COMMAND ${CMAKE_COMMAND} -E echo "Available targets:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  hydrogen          - Build default version with standard optimizations"
+    COMMAND ${CMAKE_COMMAND} -E echo "  hydrogen_debug    - Build with AddressSanitizer for debugging"
+    COMMAND ${CMAKE_COMMAND} -E echo "  hydrogen_valgrind - Build optimized for Valgrind analysis"
+    COMMAND ${CMAKE_COMMAND} -E echo "  hydrogen_perf     - Build with aggressive optimizations"
+    COMMAND ${CMAKE_COMMAND} -E echo "  hydrogen_coverage - Build with gcov coverage instrumentation"
+    COMMAND ${CMAKE_COMMAND} -E echo "  coverage          - Build coverage executable with embedded payload"
+    COMMAND ${CMAKE_COMMAND} -E echo "  hydrogen_release  - Build stripped, compressed executable"
+    COMMAND ${CMAKE_COMMAND} -E echo "  unity_tests       - Build Unity unit tests with coverage"
+    COMMAND ${CMAKE_COMMAND} -E echo "  payload           - Generate OpenAPI specs and payload"
+    COMMAND ${CMAKE_COMMAND} -E echo "  all_variants      - Build all variants with optimized parallelization"
+    COMMAND ${CMAKE_COMMAND} -E echo "  trial             - Run trial build with diagnostics"
+    COMMAND ${CMAKE_COMMAND} -E echo "  auth_code_flow    - Build Authorization Code flow example"
+    COMMAND ${CMAKE_COMMAND} -E echo "  client_credentials - Build Client Credentials flow example"
+    COMMAND ${CMAKE_COMMAND} -E echo "  password_flow     - Build Resource Owner Password flow example"
+    COMMAND ${CMAKE_COMMAND} -E echo "  all_examples      - Build all example programs"
+    COMMAND ${CMAKE_COMMAND} -E echo "  clean_all         - Remove all build artifacts"
+    COMMAND ${CMAKE_COMMAND} -E echo "  cleanish          - Clean preserving release executables"
+    COMMAND ${CMAKE_COMMAND} -E echo "  cmake_help        - Display this help information"
     COMMAND ${CMAKE_COMMAND} -E echo ""
-    COMMAND ${CMAKE_COMMAND} -E echo "${CYAN}Examples:${NORMAL}"
-    COMMAND ${CMAKE_COMMAND} -E echo "  cmake --build . --target hydrogen"
-    COMMAND ${CMAKE_COMMAND} -E echo "  cmake --build . --target unity_tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "Performance Tips:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  • Use -G Ninja for faster builds: cmake -G Ninja .."
+    COMMAND ${CMAKE_COMMAND} -E echo "  • Parallel builds: cmake --build . --parallel ${PARALLEL_JOBS}"
+    COMMAND ${CMAKE_COMMAND} -E echo "  • Install ccache for faster rebuilds"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Examples:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  cmake --build . --target hydrogen --parallel ${PARALLEL_JOBS}"
     COMMAND ${CMAKE_COMMAND} -E echo "  cmake --build . --target all_variants"
     COMMAND ${CMAKE_COMMAND} -E echo "  cmake --build . --target trial"
-    COMMAND ${CMAKE_COMMAND} -E echo "  cmake --build . --target all_examples"
     COMMAND ${CMAKE_COMMAND} -E echo ""
-    COMMENT "Displaying help information"
+    COMMENT "Displaying optimized build system help information"
 )
 
-# ──────────────────────────────────────────────────────────────────────────────
 # Unity Tests Integration
 #
 # This section integrates Unity unit tests directly into the main build system
 # instead of using a separate CMakeLists.txt file. This allows for parallel builds
 # and better integration while maintaining the separate build/unity/src structure.
-# ──────────────────────────────────────────────────────────────────────────────
 
 # Unity framework path
 set(UNITY_FRAMEWORK_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/framework/Unity")
