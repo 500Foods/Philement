@@ -42,8 +42,15 @@ declare -a TEST_PASSED
 declare -a TEST_FAILED
 declare -a TEST_ELAPSED
 
-# Results directory
-RESULTS_DIR="$SCRIPT_DIR/results"
+# Results directory - use tmpfs build directory if available
+BUILD_DIR="$SCRIPT_DIR/../build"
+if mountpoint -q "$BUILD_DIR" 2>/dev/null; then
+    # tmpfs is mounted, use build/tests/results for ultra-fast I/O
+    RESULTS_DIR="$BUILD_DIR/tests/results"
+else
+    # Fallback to regular filesystem
+    RESULTS_DIR="$SCRIPT_DIR/results"
+fi
 mkdir -p "$RESULTS_DIR"
 
 # Command line argument parsing
@@ -69,53 +76,26 @@ for arg in "$@"; do
     esac
 done
 
-# If no test arguments provided, run all tests by default
-if [ ${#TEST_ARGS[@]} -eq 0 ]; then
-    # No specific tests provided, so run all tests
-    :
-fi
+# Function to get coverage data by type
+get_coverage() {
+    local coverage_type="$1"
+    local coverage_file="$RESULTS_DIR/${coverage_type}_coverage.txt"
+    if [ -f "$coverage_file" ]; then
+        cat "$coverage_file" 2>/dev/null || echo "0.000"
+    else
+        echo "0.000"
+    fi
+}
 
-# Function to get latest coverage percentages
+# Convenience functions for coverage types
 get_latest_coverage() {
-    local latest_coverage_file
-    latest_coverage_file=$(find "$RESULTS_DIR" -name "coverage_*.txt" -type f 2>/dev/null | sort -r | head -1)
-    
-    if [ -n "$latest_coverage_file" ] && [ -f "$latest_coverage_file" ]; then
-        cat "$latest_coverage_file" 2>/dev/null || echo "0.000"
-    else
-        echo "0.000"
-    fi
+    local latest_file
+    latest_file=$(find "$RESULTS_DIR" -name "coverage_*.txt" -type f 2>/dev/null | sort -r | head -1)
+    [ -n "$latest_file" ] && [ -f "$latest_file" ] && cat "$latest_file" 2>/dev/null || echo "0.000"
 }
-
-# Function to get Unity test coverage
-get_unity_coverage() {
-    local unity_coverage_file="$RESULTS_DIR/unity_coverage.txt"
-    if [ -f "$unity_coverage_file" ]; then
-        cat "$unity_coverage_file" 2>/dev/null || echo "0.000"
-    else
-        echo "0.000"
-    fi
-}
-
-# Function to get blackbox test coverage
-get_blackbox_coverage() {
-    local blackbox_coverage_file="$RESULTS_DIR/blackbox_coverage.txt"
-    if [ -f "$blackbox_coverage_file" ]; then
-        cat "$blackbox_coverage_file" 2>/dev/null || echo "0.000"
-    else
-        echo "0.000"
-    fi
-}
-
-# Function to get combined test coverage
-get_combined_coverage() {
-    local combined_coverage_file="$RESULTS_DIR/combined_coverage.txt"
-    if [ -f "$combined_coverage_file" ]; then
-        cat "$combined_coverage_file" 2>/dev/null || echo "0.000"
-    else
-        echo "0.000"
-    fi
-}
+get_unity_coverage() { get_coverage "unity"; }
+get_blackbox_coverage() { get_coverage "blackbox"; }
+get_combined_coverage() { get_coverage "combined"; }
 
 # Function to update README.md with test results
 update_readme_with_results() {
@@ -367,29 +347,10 @@ show_help() {
     done
     echo ""
     echo "Examples:"
-    echo "  $0                                    # Run all tests in parallel batches"
-    echo "  $0 --sequential                       # Run all tests sequentially"
-    if [ ${#TEST_SCRIPTS[@]} -ge 1 ]; then
-        local first_test
-        first_test=$(basename "${TEST_SCRIPTS[0]}" .sh | sed 's/test_//')
-        echo "  $0 $first_test                        # Run only the first test"
-    else
-        echo "  $0 <test_name>                        # Run a specific test"
-    fi
-    if [ ${#TEST_SCRIPTS[@]} -ge 2 ]; then
-        local random_index1=$((RANDOM % ${#TEST_SCRIPTS[@]}))
-        local random_index2=$((RANDOM % ${#TEST_SCRIPTS[@]}))
-        while [ $random_index2 -eq $random_index1 ]; do
-            random_index2=$((RANDOM % ${#TEST_SCRIPTS[@]}))
-        done
-        local random_test1
-        random_test1=$(basename "${TEST_SCRIPTS[$random_index1]}" .sh | sed 's/test_//')
-        local random_test2
-        random_test2=$(basename "${TEST_SCRIPTS[$random_index2]}" .sh | sed 's/test_//')
-        echo "  $0 $random_test1 $random_test2        # Run two specific tests"
-    else
-        echo "  $0 <test1> <test2>                    # Run two specific tests"
-    fi
+    echo "  $0                     # Run all tests in parallel batches"
+    echo "  $0 --sequential        # Run all tests sequentially"
+    echo "  $0 01_compilation      # Run specific test"
+    echo "  $0 01_compilation 03_code_size  # Run multiple tests"
     echo ""
     exit 0
 }
@@ -425,20 +386,13 @@ if [ -f "$SCRIPT_DIR/test_99_codebase.sh" ]; then
     TEST_SCRIPTS+=("$SCRIPT_DIR/test_99_codebase.sh")
 fi
 
-# Check for help flag
+# Check for help flag and skip-tests in single loop
 for arg in "$@"; do
-    if [ "$arg" == "--help" ] || [ "$arg" == "-h" ]; then
-        show_help
-    fi
+    case "$arg" in
+        --help|-h) show_help ;;
+        --skip-tests) SKIP_TESTS=true ;;
+    esac
 done
-
-# Check if --skip-tests is provided as any argument
-for arg in "$@"; do
-    if [ "$arg" == "--skip-tests" ]; then
-        SKIP_TESTS=true
-    fi
-done
-
 
 # Function to perform cleanup before test execution
 perform_cleanup() {
@@ -452,6 +406,16 @@ perform_cleanup() {
         "$SCRIPT_DIR/../build"
         "$SCRIPT_DIR/../build/unity"
     )
+    
+    # Also clean tmpfs test directories if build is mounted on tmpfs
+    local build_dir="$SCRIPT_DIR/../build"
+    if mountpoint -q "$build_dir" 2>/dev/null; then
+        dirs_to_clean+=(
+            "$build_dir/tests/logs"
+            "$build_dir/tests/results"
+            "$build_dir/tests/diagnostics"
+        )
+    fi
     
     # Remove directories and their contents silently
     for dir in "${dirs_to_clean[@]}"; do
@@ -526,37 +490,20 @@ run_single_test() {
     # This eliminates the timing discrepancy by using a single source of truth
     local elapsed_formatted="0.000"
     
-    # Look for subtest results file written by the individual test
-    local total_subtests=1
-    local passed_subtests=0
+    # Extract test results from subtest file or use defaults
+    local total_subtests=1 passed_subtests=0 elapsed_formatted="0.000"
     local test_name_for_file
     test_name_for_file=$(basename "$test_script" .sh | sed 's/test_[0-9]*_//' | tr '_' ' ' | sed 's/\b\w/\U&/g')
-    
-    # Find the most recent subtest file for this test
     local latest_subtest_file
     latest_subtest_file=$(find "$RESULTS_DIR" -name "subtest_${test_number}_*.txt" -type f 2>/dev/null | sort -r | head -1)
     
     if [ -n "$latest_subtest_file" ] && [ -f "$latest_subtest_file" ]; then
-        # Read subtest results, test name, and elapsed time from the file
         IFS=',' read -r total_subtests passed_subtests test_name file_elapsed_time < "$latest_subtest_file" 2>/dev/null || {
-            total_subtests=1
-            passed_subtests=$([ $exit_code -eq 0 ] && echo 1 || echo 0)
-            test_name="$test_name_for_file"
-            file_elapsed_time="0.000"
-        }
-        
-        # Use file elapsed time - this is the SINGLE SOURCE OF TRUTH from log_output.sh
+            passed_subtests=$([ $exit_code -eq 0 ] && echo 1 || echo 0); test_name="$test_name_for_file"; file_elapsed_time="0.000"; }
         elapsed_formatted="$file_elapsed_time"
     else
-        # Default based on exit code if no file found
-        total_subtests=1
-        passed_subtests=$([ $exit_code -eq 0 ] && echo 1 || echo 0)
-        test_name="$test_name_for_file"
-        elapsed_formatted="0.000"
-        # Suppress warning when stdout is redirected
-        if [ -t 1 ]; then
-            echo "Warning: No subtest result file found for test ${test_number}"
-        fi
+        passed_subtests=$([ $exit_code -eq 0 ] && echo 1 || echo 0); test_name="$test_name_for_file"
+        [ -t 1 ] && echo "Warning: No subtest result file found for test ${test_number}"
     fi
     
     # Calculate failed subtests

@@ -5,6 +5,7 @@
 # Validates that required payload environment variables are present and valid
 
 # VERSION HISTORY
+# 3.0.2 - 2025-07-14 - Updated to use build/tests directories for test output consistency
 # 3.0.1 - 2025-07-06 - Added missing shellcheck justifications
 # 3.0.0 - 2025-07-02 - Complete rewrite to use new modular test libraries
 # 2.0.0 - 2025-06-17 - Major refactoring: improved modularity, enhanced comments, added version tracking
@@ -12,7 +13,7 @@
 
 # Test configuration
 TEST_NAME="Payload Env Vars"
-SCRIPT_VERSION="3.0.1"
+SCRIPT_VERSION="3.0.2"
 # 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -42,8 +43,15 @@ reset_subtest_counter
 # Print beautiful test header
 print_test_header "$TEST_NAME" "$SCRIPT_VERSION"
 
-# Set up results directory
-RESULTS_DIR="$SCRIPT_DIR/results"
+# Use tmpfs build directory if available for ultra-fast I/O
+BUILD_DIR="$SCRIPT_DIR/../build"
+if mountpoint -q "$BUILD_DIR" 2>/dev/null; then
+    # tmpfs is mounted, use build/tests/results for ultra-fast I/O
+    RESULTS_DIR="$BUILD_DIR/tests/results"
+else
+    # Fallback to regular filesystem
+    RESULTS_DIR="$SCRIPT_DIR/results"
+fi
 mkdir -p "$RESULTS_DIR"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 RESULT_LOG="$RESULTS_DIR/test_${TEST_NUMBER}_${TIMESTAMP}.log"

@@ -9,11 +9,12 @@
 # - Uses immediate restart without waiting for TIME_WAIT (SO_REUSEADDR enabled)
 
 # CHANGELOG
+# 1.0.1 - 2025-07-14 - Updated to use build/tests directories for test output consistency
 # 1.0.0 - 2025-07-13 - Initial version for WebSocket server testing
 
 # Test Configuration
 TEST_NAME="WebSockets"
-SCRIPT_VERSION="1.0.0"
+SCRIPT_VERSION="1.0.1"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -37,8 +38,15 @@ source "$SCRIPT_DIR/lib/coverage.sh"
 # shellcheck source=tests/lib/env_utils.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/env_utils.sh"
 
-# Initialize test environment
-RESULTS_DIR="$SCRIPT_DIR/results"
+# Use tmpfs build directory if available for ultra-fast I/O
+BUILD_DIR="$SCRIPT_DIR/../build"
+if mountpoint -q "$BUILD_DIR" 2>/dev/null; then
+    # tmpfs is mounted, use build/tests/results for ultra-fast I/O
+    RESULTS_DIR="$BUILD_DIR/tests/results"
+else
+    # Fallback to regular filesystem
+    RESULTS_DIR="$SCRIPT_DIR/results"
+fi
 mkdir -p "$RESULTS_DIR"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 

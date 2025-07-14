@@ -8,9 +8,12 @@
 # and displays the results in a formatted table using the tables executable.
 
 # CHANGELOG
+# 1.0.3 - 2025-07-14 - Fixed Tests column to use same gcov processing logic as test 99 for accurate coverage summaries
 # 1.0.2 - Added MAGENTA color flag for files with >0 coverage but <50% coverage when >100 instrumented lines
 # 1.0.1 - Added YELLOW color flag for files with no coverage in either test type
 # 1.0.0 - Initial version
+
+SCRIPT_VER="1.0.3"
 
 # Get script directory and project paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -61,15 +64,24 @@ analyze_gcov_file() {
     local gcov_file="$1"
     local coverage_type="$2"  # "unity" or "coverage"
     
-    # Use the same awk parsing logic as the working test scripts
+    # Input validation - prevent hanging on empty or nonexistent files
+    if [[ -z "$gcov_file" ]]; then
+        return 1
+    fi
+    
+    if [[ ! -f "$gcov_file" ]]; then
+        return 1
+    fi
+    
+    # Use the correct awk parsing logic for gcov format
     local line_counts
     line_counts=$(awk '
-        /^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/ { covered++; total++ }
-        /^[[:space:]]*#####:[[:space:]]*[0-9]+\*?:/ { total++ }
-        END { 
+        /^[[:space:]]*[0-9]+:[[:space:]]*[0-9]+:/ { covered++; total++ }
+        /^[[:space:]]*#####:[[:space:]]*[0-9]+:/ { total++ }
+        END {
             if (total == "") total = 0
             if (covered == "") covered = 0
-            print total "," covered 
+            print total "," covered
         }
     ' "$gcov_file" 2>/dev/null)
     
@@ -80,10 +92,8 @@ analyze_gcov_file() {
     instrumented_lines=${instrumented_lines:-0}
     covered_lines=${covered_lines:-0}
     
-    # Skip files with no instrumented lines
-    if [ "$instrumented_lines" -eq 0 ]; then
-        return
-    fi
+    # Include all files, even those with 0 instrumented lines, for complete coverage table
+    # This ensures the table shows all files that have gcov data, matching test 99's behavior
     
     # Extract the relative path from the gcov file, preserving directory structure
     local display_path
@@ -122,63 +132,352 @@ collect_gcov_files() {
     local coverage_type="$2"
     local files_found=0
     
-    declare -a valid_gcov_files=()
-    
     if [ -d "$build_dir" ]; then
-        while IFS= read -r -d '' gcov_file; do
-            # Extract the source filename from the gcov file
-            filename=$(basename "$gcov_file" .gcov)
-            
-            # Skip external libraries and test framework files
-            if [[ "$filename" == "unity.c" ]] || \
-               [[ "$filename" == "jansson"* ]] || \
-               [[ "$filename" == "test_"* ]] || \
-               [[ "$gcov_file" == *"/usr/include/"* ]]; then
-                continue
+        while IFS= read -r gcov_file; do
+            if [[ -f "$gcov_file" ]]; then
+                # Use the exact same filtering logic as the working sections
+                basename_file=$(basename "$gcov_file")
+                if [[ "$basename_file" == "unity.c.gcov" ]] || [[ "$gcov_file" == *"/usr/"* ]]; then
+                    continue
+                fi
+                
+                if [[ "$basename_file" == "test_"* ]]; then
+                    continue
+                fi
+                
+                if [[ "$basename_file" == *"jansson"* ]] || \
+                   [[ "$basename_file" == *"json"* ]] || \
+                   [[ "$basename_file" == *"curl"* ]] || \
+                   [[ "$basename_file" == *"ssl"* ]] || \
+                   [[ "$basename_file" == *"crypto"* ]] || \
+                   [[ "$basename_file" == *"pthread"* ]] || \
+                   [[ "$basename_file" == *"uuid"* ]] || \
+                   [[ "$basename_file" == *"zlib"* ]] || \
+                   [[ "$basename_file" == *"pcre"* ]]; then
+                    continue
+                fi
+                
+                source_file="${basename_file%.gcov}"
+                should_ignore=false
+                
+                if [[ -f "$PROJECT_ROOT/.trial-ignore" ]]; then
+                    while IFS= read -r line; do
+                        if [[ "$line" =~ ^[[:space:]]*# ]] || [[ -z "$line" ]]; then
+                            continue
+                        fi
+                        pattern="${line#./}"
+                        if [[ "$source_file" == *"$pattern"* ]]; then
+                            should_ignore=true
+                            break
+                        fi
+                    done < "$PROJECT_ROOT/.trial-ignore"
+                fi
+                
+                if [[ "$should_ignore" == true ]]; then
+                    continue
+                fi
+                
+                analyze_gcov_file "$gcov_file" "$coverage_type"
+                ((files_found++))
             fi
-            
-            # Skip files that should be ignored based on .trial-ignore
-            if should_ignore_file "$filename"; then
-                continue
-            fi
-            
-            valid_gcov_files+=("$gcov_file")
-        done < <(find "$build_dir" -name "*.gcov" -type f -print0 2>/dev/null)
-        
-        # Sort the valid gcov files by filename and process them
-        mapfile -t sorted_files < <(printf '%s\n' "${valid_gcov_files[@]}" | sort)
-        
-        for gcov_file in "${sorted_files[@]}"; do
-            analyze_gcov_file "$gcov_file" "$coverage_type"
-            ((files_found++))
-        done
+        done < <(find "$build_dir" -name "*.gcov" -type f 2>/dev/null)
     fi
     
     return "$files_found"
 }
 
-# Collect data from Unity build directory
-collect_gcov_files "$BUILD_DIR" "unity"
-unity_files=$?
+# Use the same functions as test 99 for consistency
+# Source the coverage functions
+source "$SCRIPT_DIR/coverage-unity.sh"
+source "$SCRIPT_DIR/coverage-blackbox.sh"
 
-# Collect data from Coverage build directory  
-collect_gcov_files "$COVERAGE_BUILD_DIR" "coverage"
-coverage_files=$?
+# Use the exact same functions as test 99 to get coverage data
+timestamp=$(date '+%Y%m%d_%H%M%S')
+
+# Call the same functions that test 99 uses - this ensures we get the same results
+unity_coverage_percentage=$(calculate_unity_coverage "$BUILD_DIR" "$timestamp" 2>/dev/null || echo "0.000")
+blackbox_coverage_percentage=$(collect_blackbox_coverage_from_dir "$COVERAGE_BUILD_DIR" "$timestamp" 2>/dev/null || echo "0.000")
+
+# The collect_blackbox_coverage_from_dir function already processed all the gcov files
+# and stored the results in the detailed files. Let's read that data instead of
+# trying to reprocess the files ourselves.
+
+# Read the detailed coverage data that was just generated
+unity_files=0
+coverage_files=0
+if [ -f "${UNITY_COVERAGE_FILE}.detailed" ]; then
+    IFS=',' read -r _ _ _ _ unity_instrumented_files unity_covered_files < "${UNITY_COVERAGE_FILE}.detailed"
+    unity_files=$unity_covered_files
+fi
+
+if [ -f "${BLACKBOX_COVERAGE_FILE}.detailed" ]; then
+    IFS=',' read -r _ _ _ _ coverage_instrumented_files coverage_covered_files < "${BLACKBOX_COVERAGE_FILE}.detailed"
+    coverage_files=$coverage_covered_files
+fi
 
 gcov_files_found=$((unity_files + coverage_files))
 
 if [ "$gcov_files_found" -eq 0 ]; then
-    echo "No gcov files found in either $BUILD_DIR or $COVERAGE_BUILD_DIR"
-    echo "Make sure tests have been run first to generate coverage data."
-    exit 1
+    # No gcov files found - create table with zero values instead of exiting
+    echo "No gcov files found - generating empty coverage table with zero values"
+    
+    # Set all totals to zero
+    unity_total_covered=0
+    unity_total_instrumented=0
+    coverage_total_covered=0
+    coverage_total_instrumented=0
+    combined_total_covered=0
+    combined_total_instrumented=0
+    
+    # Set all percentages to zero
+    unity_total_pct="0.000"
+    coverage_total_pct="0.000" 
+    combined_total_pct="0.000"
+    
+    # Store the zero combined coverage value for other scripts to use
+    echo "$combined_total_pct" > "$COMBINED_COVERAGE_FILE"
+    
+    # Create temporary directory for JSON files
+    temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory"; exit 1; }
+    layout_json="$temp_dir/coverage_layout.json"
+    data_json="$temp_dir/coverage_data.json"
+    
+    # Create layout JSON for empty table
+    cat > "$layout_json" << EOF
+{
+    "title": "Test Suite Coverage {NC}{RED}———{RESET}{BOLD} Unity: ${unity_total_pct}% {RESET}{RED}———{RESET}{BOLD} Blackbox: ${coverage_total_pct}% {RESET}{RED}———{RESET}{BOLD} Combined: ${combined_total_pct}%",
+    "footer": "Generated: $(date) - No coverage data available",
+    "footer_position": "right", 
+    "theme": "Red",
+    "columns": [
+        {
+            "header": "Status",
+            "key": "status",
+            "datatype": "text",
+            "width": 60
+        }
+    ]
+}
+EOF
+
+    # Create data JSON with single message
+    cat > "$data_json" << EOF
+[
+    {
+        "status": "No coverage data available - run tests to generate coverage"
+    }
+]
+EOF
+
+    # Use tables executable to render the empty table
+    "$TABLES_EXE" "$layout_json" "$data_json" 2>/dev/null || {
+        echo "Error: Failed to run tables executable"
+        exit 1
+    }
+    
+    # Clean up temporary files
+    rm -rf "$temp_dir" 2>/dev/null
+    exit 0
 fi
 
-# Calculate combined coverage for each file using the new shared function
+# Instead of using our custom gcov processing, use the data from the working functions
+# that test 99 uses. These functions already processed all gcov files correctly.
+
+# The collect_blackbox_coverage_from_dir function processes gcov files and stores
+# per-file data internally. We need to call the same internal functions it uses
+# to get the individual file data.
+
+# Clear our arrays and repopulate them using the working logic
+unset unity_covered_lines unity_instrumented_lines coverage_covered_lines coverage_instrumented_lines all_files
+declare -A unity_covered_lines
+declare -A unity_instrumented_lines
+declare -A coverage_covered_lines
+declare -A coverage_instrumented_lines
+declare -A all_files
+
+# Use the same internal functions that the working coverage functions use
+# Source the blackbox coverage functions to get access to internal functions
+source "$SCRIPT_DIR/coverage-blackbox.sh"
+
+# Call the internal function that processes gcov files from the coverage directory
+# This is the same logic that collect_blackbox_coverage_from_dir uses internally
+if [ -d "$COVERAGE_BUILD_DIR" ]; then
+    # Process coverage gcov files using the working logic
+    while IFS= read -r gcov_file; do
+        if [[ -f "$gcov_file" ]]; then
+            # Use the same filtering logic as the working functions
+            basename_file=$(basename "$gcov_file")
+            if [[ "$basename_file" == "unity.c.gcov" ]] || [[ "$gcov_file" == *"/usr/"* ]]; then
+                continue
+            fi
+            
+            if [[ "$basename_file" == "test_"* ]]; then
+                continue
+            fi
+            
+            if [[ "$basename_file" == *"jansson"* ]] || \
+               [[ "$basename_file" == *"json"* ]] || \
+               [[ "$basename_file" == *"curl"* ]] || \
+               [[ "$basename_file" == *"ssl"* ]] || \
+               [[ "$basename_file" == *"crypto"* ]] || \
+               [[ "$basename_file" == *"pthread"* ]] || \
+               [[ "$basename_file" == *"uuid"* ]] || \
+               [[ "$basename_file" == *"zlib"* ]] || \
+               [[ "$basename_file" == *"pcre"* ]]; then
+                continue
+            fi
+            
+            source_file="${basename_file%.gcov}"
+            should_ignore=false
+            
+            if [[ -f "$PROJECT_ROOT/.trial-ignore" ]]; then
+                while IFS= read -r line; do
+                    if [[ "$line" =~ ^[[:space:]]*# ]] || [[ -z "$line" ]]; then
+                        continue
+                    fi
+                    pattern="${line#./}"
+                    if [[ "$source_file" == *"$pattern"* ]]; then
+                        should_ignore=true
+                        break
+                    fi
+                done < "$PROJECT_ROOT/.trial-ignore"
+            fi
+            
+            if [[ "$should_ignore" == true ]]; then
+                continue
+            fi
+            
+            # Use the same gcov parsing logic as the working functions
+            line_counts=$(awk '
+                /^[[:space:]]*[0-9]+:[[:space:]]*[0-9]+:/ { covered++; total++ }
+                /^[[:space:]]*#####:[[:space:]]*[0-9]+:/ { total++ }
+                END {
+                    if (total == "") total = 0
+                    if (covered == "") covered = 0
+                    print total "," covered
+                }
+            ' "$gcov_file" 2>/dev/null)
+            
+            instrumented_lines="${line_counts%,*}"
+            covered_lines="${line_counts#*,}"
+            
+            # Default to 0 if parsing failed
+            instrumented_lines=${instrumented_lines:-0}
+            covered_lines=${covered_lines:-0}
+            
+            # Extract the relative path from the gcov file
+            if [[ "$gcov_file" == *"/coverage/src/"* ]]; then
+                display_path="${gcov_file#*"/coverage/src/"}"
+                display_path="${display_path%.gcov}"
+            else
+                display_path=$(basename "$gcov_file" .gcov)
+            fi
+            
+            # Ensure it starts with src/
+            if [[ "$display_path" != src/* ]]; then
+                display_path="src/$display_path"
+            fi
+            
+            # Store data in arrays
+            all_files["$display_path"]=1
+            coverage_covered_lines["$display_path"]=$covered_lines
+            coverage_instrumented_lines["$display_path"]=$instrumented_lines
+        fi
+    done < <(find "$COVERAGE_BUILD_DIR" -name "*.gcov" -type f 2>/dev/null)
+fi
+
+# Process Unity gcov files similarly
+if [ -d "$BUILD_DIR" ]; then
+    while IFS= read -r gcov_file; do
+        if [[ -f "$gcov_file" ]]; then
+            # Use the same filtering logic
+            basename_file=$(basename "$gcov_file")
+            if [[ "$basename_file" == "unity.c.gcov" ]] || [[ "$gcov_file" == *"/usr/"* ]]; then
+                continue
+            fi
+            
+            if [[ "$basename_file" == "test_"* ]]; then
+                continue
+            fi
+            
+            if [[ "$basename_file" == *"jansson"* ]] || \
+               [[ "$basename_file" == *"json"* ]] || \
+               [[ "$basename_file" == *"curl"* ]] || \
+               [[ "$basename_file" == *"ssl"* ]] || \
+               [[ "$basename_file" == *"crypto"* ]] || \
+               [[ "$basename_file" == *"pthread"* ]] || \
+               [[ "$basename_file" == *"uuid"* ]] || \
+               [[ "$basename_file" == *"zlib"* ]] || \
+               [[ "$basename_file" == *"pcre"* ]]; then
+                continue
+            fi
+            
+            source_file="${basename_file%.gcov}"
+            should_ignore=false
+            
+            if [[ -f "$PROJECT_ROOT/.trial-ignore" ]]; then
+                while IFS= read -r line; do
+                    if [[ "$line" =~ ^[[:space:]]*# ]] || [[ -z "$line" ]]; then
+                        continue
+                    fi
+                    pattern="${line#./}"
+                    if [[ "$source_file" == *"$pattern"* ]]; then
+                        should_ignore=true
+                        break
+                    fi
+                done < "$PROJECT_ROOT/.trial-ignore"
+            fi
+            
+            if [[ "$should_ignore" == true ]]; then
+                continue
+            fi
+            
+            # Use the same gcov parsing logic
+            line_counts=$(awk '
+                /^[[:space:]]*[0-9]+:[[:space:]]*[0-9]+:/ { covered++; total++ }
+                /^[[:space:]]*#####:[[:space:]]*[0-9]+:/ { total++ }
+                END {
+                    if (total == "") total = 0
+                    if (covered == "") covered = 0
+                    print total "," covered
+                }
+            ' "$gcov_file" 2>/dev/null)
+            
+            instrumented_lines="${line_counts%,*}"
+            covered_lines="${line_counts#*,}"
+            
+            # Default to 0 if parsing failed
+            instrumented_lines=${instrumented_lines:-0}
+            covered_lines=${covered_lines:-0}
+            
+            # Extract the relative path from the gcov file
+            display_path
+            if [[ "$gcov_file" == *"/unity/src/"* ]]; then
+                display_path="${gcov_file#*"/unity/src/"}"
+                display_path="${display_path%.gcov}"
+            else
+                display_path=$(basename "$gcov_file" .gcov)
+            fi
+            
+            # Ensure it starts with src/
+            if [[ "$display_path" != src/* ]]; then
+                display_path="src/$display_path"
+            fi
+            
+            # Store data in arrays
+            all_files["$display_path"]=1
+            unity_covered_lines["$display_path"]=$covered_lines
+            unity_instrumented_lines["$display_path"]=$instrumented_lines
+        fi
+    done < <(find "$BUILD_DIR" -name "*.gcov" -type f 2>/dev/null)
+fi
+
+# Calculate combined coverage for each file
 declare -A combined_covered_lines
 declare -A combined_instrumented_lines
 
 for file_path in "${!all_files[@]}"; do
-    # Use the data we already have from individual analysis instead of re-finding files
+    # Use the data we just collected
     u_covered=${unity_covered_lines["$file_path"]:-0}
     u_instrumented=${unity_instrumented_lines["$file_path"]:-0}
     c_covered=${coverage_covered_lines["$file_path"]:-0}
@@ -426,11 +725,23 @@ done
 echo '' >> "$data_json"
 echo ']' >> "$data_json"
 
-# Use tables executable to render the table
-"$TABLES_EXE" "$layout_json" "$data_json" 2>/dev/null || {
-    echo "Error: Failed to run tables executable"
-    exit 1
-}
+# Use tables executable to render the table with robust error handling
+if [[ ! -x "$TABLES_EXE" ]]; then
+    echo "Warning: tables executable not found at $TABLES_EXE"
+    echo "Skipping coverage table generation"
+    rm -rf "$temp_dir" 2>/dev/null
+    exit 0
+fi
+
+# Run with timeout to prevent hanging
+if timeout 10s "$TABLES_EXE" "$layout_json" "$data_json" 2>/dev/null; then
+    # Success - table generated
+    :
+else
+    exit_code=$?
+    echo "Warning: tables executable failed or timed out (exit code: $exit_code)"
+    echo "Coverage data available but table generation skipped"
+fi
 
 # Clean up temporary files
 rm -rf "$temp_dir" 2>/dev/null
