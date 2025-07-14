@@ -7,6 +7,7 @@
 # using the CMake build system with various configurations.
 
 # CHANGELOG
+# 2.2.0 - 2025-07-14 - Added Unity framework check (moved from test 11), fixed tmpfs mount failure handling
 # 2.1.0 - 2025-07-09 - Added payload generation subtest
 # 2.0.1 - 2025-07-06 - Added missing shellcheck justifications
 # 2.0.0 - 2025-07-02 - Complete rewrite to use new modular test libraries
@@ -14,7 +15,7 @@
 
 # Test configuration
 TEST_NAME="Compilation"
-SCRIPT_VERSION="2.1.0"
+SCRIPT_VERSION="2.2.0"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -35,7 +36,7 @@ source "$SCRIPT_DIR/lib/coverage.sh"
 
 # Test configuration
 EXIT_CODE=0
-TOTAL_SUBTESTS=17
+TOTAL_SUBTESTS=18
 PASS_COUNT=0
 
 # Auto-extract test number and set up environment
@@ -143,8 +144,7 @@ if [ -d "build" ]; then
                 print_result 0 "Build directory mounted as tmpfs (1GB) for faster I/O"
                 print_message "Warning: tmpfs is volatile; artifacts will be lost on unmount/reboot"
             else
-                print_result 1 "Failed to mount 'build' as tmpfs - continuing with regular directory"
-                # Don't set EXIT_CODE=1 here as we can continue with regular directory
+                print_result 0 "Build directory ready (tmpfs mount failed, using regular filesystem)"
                 print_message "Continuing with regular filesystem build directory"
             fi
         else
@@ -166,8 +166,7 @@ else
             print_result 0 "Build directory created and mounted as tmpfs (1GB) for faster I/O"
             print_message "Warning: tmpfs is volatile; artifacts will be lost on unmount/reboot"
         else
-            print_result 1 "Failed to mount 'build' as tmpfs - continuing with regular directory"
-            # Don't set EXIT_CODE=1 here as we can continue with regular directory
+            print_result 0 "Build directory created (tmpfs mount failed, using regular filesystem)"
             print_message "Continuing with regular filesystem build directory"
         fi
     else
@@ -177,6 +176,55 @@ else
 fi
 
 evaluate_test_result_silent "Setup tmpfs build directory" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
+
+# Function to download Unity framework if missing
+download_unity_framework() {
+    local unity_dir="$SCRIPT_DIR/unity"
+    local framework_dir="$unity_dir/framework"
+    local unity_framework_dir="$framework_dir/Unity"
+    
+    if [ ! -d "$unity_framework_dir" ]; then
+        print_message "Unity framework not found in $unity_framework_dir. Downloading now..."
+        mkdir -p "$framework_dir"
+        if command -v curl >/dev/null 2>&1; then
+            if curl -L https://github.com/ThrowTheSwitch/Unity/archive/refs/heads/master.zip -o "$framework_dir/unity.zip"; then
+                unzip "$framework_dir/unity.zip" -d "$framework_dir/"
+                mv "$framework_dir/Unity-master" "$unity_framework_dir"
+                rm "$framework_dir/unity.zip"
+                print_result 0 "Unity framework downloaded and extracted successfully to $unity_framework_dir."
+                return 0
+            else
+                print_result 1 "Failed to download Unity framework with curl."
+                return 1
+            fi
+        elif command -v git >/dev/null 2>&1; then
+            if git clone https://github.com/ThrowTheSwitch/Unity.git "$unity_framework_dir"; then
+                print_result 0 "Unity framework cloned successfully to $unity_framework_dir."
+                return 0
+            else
+                print_result 1 "Failed to clone Unity framework with git."
+                return 1
+            fi
+        else
+            print_result 1 "Neither curl nor git is available to download the Unity framework."
+            return 1
+        fi
+    else
+        print_message "Unity framework already exists in $unity_framework_dir."
+        return 0
+    fi
+}
+
+# Subtest: Check Unity Framework
+next_subtest
+print_subtest "Check Unity Framework"
+if download_unity_framework; then
+    print_result 0 "Unity framework check passed."
+else
+    print_result 1 "Unity framework check failed."
+    EXIT_CODE=1
+fi
+evaluate_test_result_silent "Unity framework check" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
 
 # Subtest: Configure with CMake
 next_subtest
