@@ -756,8 +756,8 @@ add_custom_target(cmake_help
 # Unity framework path
 set(UNITY_FRAMEWORK_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/framework/Unity")
 
-# Unity test source files
-file(GLOB UNITY_TEST_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/src/test_*.c")
+# Unity test source files - search recursively to support directory structure
+file(GLOB_RECURSE UNITY_TEST_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/src/test_*.c")
 
 # Unity framework source
 set(UNITY_FRAMEWORK_SOURCES
@@ -816,6 +816,17 @@ add_custom_target(unity_objects DEPENDS ${UNITY_OBJECT_FILES})
 foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
     get_filename_component(TEST_NAME ${TEST_SOURCE} NAME_WE)
     
+    # Get relative path from tests/unity/src to determine output directory structure
+    file(RELATIVE_PATH TEST_REL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/src" ${TEST_SOURCE})
+    get_filename_component(TEST_DIR ${TEST_REL_PATH} DIRECTORY)
+    
+    # Determine output directory - mirror source structure in build/unity/src
+    if(TEST_DIR AND NOT TEST_DIR STREQUAL ".")
+        set(TEST_OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src/${TEST_DIR}")
+    else()
+        set(TEST_OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src")
+    endif()
+    
     # Create Unity framework object files in build/unity/src directory structure
     set(UNITY_FRAMEWORK_OBJECT_FILES "")
     foreach(UNITY_SRC ${UNITY_FRAMEWORK_SOURCES})
@@ -838,14 +849,18 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
         list(APPEND UNITY_FRAMEWORK_OBJECT_FILES ${UNITY_OUTPUT_OBJ})
     endforeach()
     
-    # Create test source object file in build/unity/src directory structure
+    # Create test source object file in the appropriate subdirectory
     get_filename_component(TEST_BASENAME ${TEST_SOURCE} NAME_WE)
-    set(TEST_OUTPUT_OBJ "${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src/${TEST_BASENAME}.o")
+    if(TEST_DIR AND NOT TEST_DIR STREQUAL ".")
+        set(TEST_OUTPUT_OBJ "${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src/${TEST_DIR}/${TEST_BASENAME}.o")
+    else()
+        set(TEST_OUTPUT_OBJ "${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src/${TEST_BASENAME}.o")
+    endif()
     
     # Create custom command to compile test source file to object file
     add_custom_command(
         OUTPUT ${TEST_OUTPUT_OBJ}
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${TEST_OUTPUT_DIR}
         COMMAND ${CMAKE_C_COMPILER}
             ${HYDROGEN_BASE_CFLAGS}
             -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer
@@ -886,35 +901,42 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
     # Add extra link flags
     target_link_options(${TEST_NAME} PRIVATE -Wl,--gc-sections)
     
-    # Generate map file in unity directory
-    target_link_options(${TEST_NAME} PRIVATE -Wl,-Map=${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src/${TEST_NAME}.map)
+    # Generate map file in the appropriate subdirectory
+    target_link_options(${TEST_NAME} PRIVATE -Wl,-Map=${TEST_OUTPUT_DIR}/${TEST_NAME}.map)
     
-    # Set output directory for test executable in build/unity/src (consistent with coverage structure)
+    # Set output directory for test executable to mirror source structure
     set_target_properties(${TEST_NAME} PROPERTIES
         OUTPUT_NAME ${TEST_NAME}
-        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src"
+        RUNTIME_OUTPUT_DIRECTORY "${TEST_OUTPUT_DIR}"
         LINKER_LANGUAGE C
     )
     
     # Add custom command to show build completion
     add_custom_command(TARGET ${TEST_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E echo "${GREEN}${PASS} ${BOLD}Unity test build${NORMAL} ${GREEN}completed successfully: ${TEST_NAME}${NORMAL}"
-        COMMAND ${CMAKE_COMMAND} -E echo "${CYAN}${INFO} Unity test artifacts located in: ${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src/${NORMAL}"
+        COMMAND ${CMAKE_COMMAND} -E echo "${CYAN}${INFO} Unity test artifacts located in: ${TEST_OUTPUT_DIR}/${NORMAL}"
         VERBATIM
     )
     
     # Add test to CTest
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src
+        WORKING_DIRECTORY ${TEST_OUTPUT_DIR}
     )
+endforeach()
+
+# Create list of all Unity test targets
+set(UNITY_TEST_TARGETS "")
+foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
+    get_filename_component(TEST_NAME ${TEST_SOURCE} NAME_WE)
+    list(APPEND UNITY_TEST_TARGETS ${TEST_NAME})
 endforeach()
 
 # Unity tests build target
 add_custom_target(unity_tests
-    DEPENDS ${UNITY_TEST_SOURCES}
+    DEPENDS ${UNITY_TEST_TARGETS}
     COMMAND ${CMAKE_COMMAND} -E echo "🛈  Building Unity tests with coverage instrumentation..."
     COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target unity_objects --parallel
-    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target test_hydrogen --parallel
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target ${UNITY_TEST_TARGETS} --parallel
     COMMAND ${CMAKE_COMMAND} -E echo "✅ Unity tests built successfully"
     COMMAND ${CMAKE_COMMAND} -E echo "🛈 Unity coverage files located in: ${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src/"
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}

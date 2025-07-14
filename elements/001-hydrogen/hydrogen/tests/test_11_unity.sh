@@ -167,52 +167,88 @@ check_unity_tests_available() {
     fi
 }
 
-# Function to run Unity tests via CTest
-run_unity_tests() {
+# Function to run a single Unity test executable and report results
+run_single_unity_test() {
+    local test_name="$1"
+    local test_exe="$HYDROGEN_DIR/build/unity/src/$test_name"
+    
     next_subtest
-    print_subtest "Run Unity Tests"
-    print_message "Running Unity tests via CTest..."
+    print_subtest "Run Unity Test: $test_name"
     
-    # Use the main CMake build directory structure
-    local cmake_build_dir="$HYDROGEN_DIR/cmake"
-    
-    if [ ! -d "$cmake_build_dir" ]; then
-        print_result 1 "CMake build directory not found: ${cmake_build_dir#"$SCRIPT_DIR"/..}"
+    if [ ! -f "$test_exe" ]; then
+        print_result 1 "Unity test executable not found: ${test_exe#"$SCRIPT_DIR"/..}"
         return 1
     fi
     
-    # Run Unity tests using CTest
-    local temp_test_log="$DIAG_TEST_DIR/test_output.txt"
+    # Run the Unity test directly and capture output
+    local temp_test_log="$DIAG_TEST_DIR/${test_name}_output.txt"
     mkdir -p "$(dirname "$temp_test_log")"
-    true > "$LOG_FILE"  # Clear log file
-    true > "$temp_test_log"  # Clear temporary log for this test
+    true > "$temp_test_log"
     
-    # Change to the CMake build directory to run CTest
-    cd "$cmake_build_dir" || { print_result 1 "Failed to change to CMake build directory"; return 1; }
-    
-    # Run Unity tests using CTest with pattern matching
-    if ctest -R "^test_hydrogen$" --output-on-failure > "$temp_test_log" 2>&1; then
-        while IFS= read -r line; do
-            print_output "$line"
-        done < "$temp_test_log"
-        print_result 0 "Unity tests passed."
+    if "$test_exe" > "$temp_test_log" 2>&1; then
+        # Parse the Unity test output to get test counts
+        local test_count
+        local failure_count
+        local ignored_count
+        test_count=$(grep -E "[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored" "$temp_test_log" | awk '{print $1}')
+        failure_count=$(grep -E "[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored" "$temp_test_log" | awk '{print $3}')
+        ignored_count=$(grep -E "[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored" "$temp_test_log" | awk '{print $5}')
+        
+        if [ -n "$test_count" ] && [ -n "$failure_count" ] && [ -n "$ignored_count" ]; then
+            local passed_count=$((test_count - failure_count - ignored_count))
+            print_result 0 "Unity test $test_name passed: $test_count tests ($passed_count/$test_count passed)"
+        else
+            print_result 0 "Unity test $test_name passed"
+        fi
         ((PASS_COUNT++))
-        # Update TOTAL_SUBTESTS to account for this single test run
-        TOTAL_SUBTESTS=$((TOTAL_SUBTESTS + 1))
+        return 0
     else
+        # Show failed test output
         while IFS= read -r line; do
             print_output "$line"
         done < "$temp_test_log"
-        print_result 1 "Unity tests failed. Check ${LOG_FILE#"$SCRIPT_DIR"/..} for details."
-        EXIT_CODE=1
-        # Update TOTAL_SUBTESTS to account for this single test run
-        TOTAL_SUBTESTS=$((TOTAL_SUBTESTS + 1))
+        print_result 1 "Unity test $test_name failed"
+        return 1
     fi
     
     cat "$temp_test_log" >> "$LOG_FILE"
-    cd "$SCRIPT_DIR" || { print_result 1 "Failed to return to script directory"; return 1; }
+}
+
+# Function to run Unity tests via direct execution
+run_unity_tests() {
+    local overall_result=0
     
-    return $EXIT_CODE
+    # Find all Unity test executables
+    local unity_build_dir="$HYDROGEN_DIR/build/unity/src"
+    local unity_tests=()
+    
+    if [ -d "$unity_build_dir" ]; then
+        # Look for executable files that match test_* pattern (recursively in subdirectories)
+        while IFS= read -r -d '' test_exe; do
+            local test_name
+            test_name=$(basename "$test_exe")
+            if [ -x "$test_exe" ] && [[ "$test_name" =~ ^test_[a-zA-Z_]+$ ]]; then
+                # Get relative path from unity_build_dir to show directory structure
+                local relative_path
+                relative_path=$(realpath --relative-to="$unity_build_dir" "$test_exe")
+                unity_tests+=("$relative_path")
+            fi
+        done < <(find "$unity_build_dir" -name "test_*" -type f -print0)
+    fi
+    
+    if [ ${#unity_tests[@]} -eq 0 ]; then
+        print_error "No Unity test executables found in $unity_build_dir"
+        return 1
+    fi
+    
+    # Run each Unity test
+    for test_path in "${unity_tests[@]}"; do
+        if ! run_single_unity_test "$test_path"; then
+            overall_result=1
+        fi
+    done
+    
+    return $overall_result
 }
 
 # Check and download Unity framework

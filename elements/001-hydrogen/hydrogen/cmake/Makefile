@@ -595,6 +595,32 @@ unity_objects/fast:
 .PHONY : unity_objects/fast
 
 #=============================================================================
+# Target rules for targets named test_launch_plan_objects
+
+# Build rule for target.
+test_launch_plan_objects: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_launch_plan_objects
+.PHONY : test_launch_plan_objects
+
+# fast build rule for target.
+test_launch_plan_objects/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_launch_plan_objects.dir/build.make CMakeFiles/test_launch_plan_objects.dir/build
+.PHONY : test_launch_plan_objects/fast
+
+#=============================================================================
+# Target rules for targets named test_launch_plan
+
+# Build rule for target.
+test_launch_plan: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_launch_plan
+.PHONY : test_launch_plan
+
+# fast build rule for target.
+test_launch_plan/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_launch_plan.dir/build.make CMakeFiles/test_launch_plan.dir/build
+.PHONY : test_launch_plan/fast
+
+#=============================================================================
 # Target rules for targets named test_hydrogen_objects
 
 # Build rule for target.
@@ -746,6 +772,7 @@ help:
 	@echo "... regular_objects"
 	@echo "... release_objects"
 	@echo "... test_hydrogen_objects"
+	@echo "... test_launch_plan_objects"
 	@echo "... trial"
 	@echo "... unity_objects"
 	@echo "... unity_tests"
@@ -762,6 +789,7 @@ help:
 	@echo "... regular"
 	@echo "... release"
 	@echo "... test_hydrogen"
+	@echo "... test_launch_plan"
 	@echo "... valgrind"
 	@echo "... home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/examples/C/auth_code_flow.o"
 	@echo "... home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/examples/C/auth_code_flow.i"

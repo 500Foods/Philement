@@ -74,6 +74,286 @@ Below is a comprehensive list of all test scripts currently available in the sui
 - **[test_98_markdownlint.sh](docs/test_98_markdownlint.md)**: Lints Markdown documentation using markdownlint.
 - **[test_99_coverage.sh](docs/test_99_coverage.md)**: Performs comprehensive coverge analysis.
 
+## Writing Unity Tests
+
+Unity tests provide comprehensive unit testing for individual functions and modules within the Hydrogen codebase. The Unity testing framework enables thorough validation of core logic, edge cases, and boundary conditions at the function level.
+
+### Intent and Purpose
+
+Unity tests aim to accomplish several key objectives:
+
+1. **Function-Level Validation**: Test individual functions in isolation to ensure they behave correctly under various conditions
+2. **Edge Case Coverage**: Validate behavior with boundary conditions, invalid inputs, and error scenarios
+3. **Regression Prevention**: Catch breaking changes early in the development cycle
+4. **Code Quality Assurance**: Ensure functions handle all expected input combinations and return appropriate results
+5. **Documentation**: Serve as living documentation of expected function behavior
+6. **Development Confidence**: Enable safe refactoring and modifications with immediate feedback
+
+### Source Code Organization
+
+**Location**: Unity test files are organized to **mirror the source directory structure** in `tests/unity/src/`
+
+**Directory Structure**: Tests are organized in subdirectories that match the `src/` directory structure:
+
+```directory
+tests/unity/src/
+├── test_hydrogen.c              # Tests core hydrogen functionality
+├── launch/
+│   └── test_launch_plan.c       # Tests src/launch/launch_plan.c
+├── api/
+│   └── test_api_service.c       # Tests src/api/api_service.c (example)
+├── utils/
+│   └── test_utils.c             # Tests src/utils/utils.c (example)
+└── [other directories matching src/ structure]
+```
+
+**Naming Convention**: Test files follow the pattern `test_<module_name>.c` where `<module_name>` corresponds to the source file or module being tested.
+
+**Examples**:
+
+- `tests/unity/src/launch/test_launch_plan.c` - Tests functions in `src/launch/launch_plan.c`
+- `tests/unity/src/test_hydrogen.c` - Tests core hydrogen functionality
+- `tests/unity/src/utils/test_utils.c` - Tests utility functions in `src/utils/utils.c`
+
+**Benefits of Mirrored Structure**:
+
+- **Intuitive Organization**: Easy to locate tests for any source file
+- **Maintainability**: Clear relationship between source code and tests
+- **Scalability**: Structure naturally grows with the codebase
+- **Navigation**: Developers can quickly find relevant tests
+
+### Test File Structure
+
+Each Unity test file should follow this structure:
+
+```c
+/*
+ * Unity Test File: <Description>
+ * This file contains unit tests for <module> functionality
+ */
+
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200809L
+#endif
+
+#include "unity.h"
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+#include <stddef.h>
+
+// Include necessary headers for the module being tested
+#include "path/to/module.h"
+
+// Forward declarations for functions being tested
+bool function_to_test(const SomeType* input);
+
+void setUp(void) {
+    // Set up test fixtures, if any
+}
+
+void tearDown(void) {
+    // Clean up test fixtures, if any
+}
+
+// Test functions
+void test_function_name_basic_functionality(void) {
+    // Test basic functionality
+    TEST_ASSERT_TRUE(function_to_test(&valid_input));
+}
+
+void test_function_name_null_parameter(void) {
+    // Test null parameter handling
+    TEST_ASSERT_FALSE(function_to_test(NULL));
+}
+
+void test_function_name_edge_cases(void) {
+    // Test edge cases and boundary conditions
+    // ...
+}
+
+int main(void) {
+    UNITY_BEGIN();
+    
+    RUN_TEST(test_function_name_basic_functionality);
+    RUN_TEST(test_function_name_null_parameter);
+    RUN_TEST(test_function_name_edge_cases);
+    
+    return UNITY_END();
+}
+```
+
+### CMake Build Integration
+
+Unity tests are **automatically discovered and integrated** with the CMake build system. The system uses dynamic discovery to find all Unity test files and build them with coverage instrumentation.
+
+**Automatic Discovery Process**:
+
+1. **File Detection**: CMake automatically finds all `test_*.c` files in `tests/unity/src/`
+2. **Target Creation**: Each test file generates a corresponding build target and executable
+3. **Coverage Instrumentation**: All tests are built with gcov coverage flags enabled
+4. **Directory Structure**: Coverage data is generated in the `build/unity/src/` directory tree
+
+**Build Commands**:
+
+```bash
+# Build all Unity tests (automatically discovers and builds ALL test_*.c files)
+cd cmake
+cmake --build . --target unity_tests
+
+# Build specific test (individual targets are auto-created)
+cmake --build . --target test_launch_plan
+cmake --build . --target test_hydrogen
+
+# Run specific test executable
+cd ../build/unity/src
+./test_launch_plan
+./test_hydrogen
+```
+
+**CMake Target Convention**: For each `test_<module>.c` file, CMake **automatically creates**:
+
+- A build target named `test_<module>`
+- An executable at `build/unity/src/test_<module>`
+- Object files with coverage instrumentation in `build/unity/src/`
+- Coverage data files (`.gcov`, `.gcda`, `.gcno`) in the corresponding subdirectories
+
+**Coverage File Structure**: After building and running Unity tests, coverage data is organized to **mirror the source structure**:
+
+```directory
+build/unity/src/
+├── test_hydrogen              # Executable
+├── test_hydrogen.c.gcov       # Test file coverage
+├── unity.c.gcov               # Unity framework coverage
+├── launch/
+│   ├── test_launch_plan       # Executable (mirrored structure)
+│   ├── test_launch_plan.c.gcov # Test file coverage
+│   ├── launch_plan.c.gcov     # Source coverage for launch_plan.c
+│   ├── launch_plan.gcda       # Coverage data
+│   └── launch_plan.gcno       # Coverage notes
+├── api/
+│   └── [API module coverage files]
+├── utils/
+│   └── [Utils module coverage files]
+└── [other source directories with coverage files]
+```
+
+**Key Integration Features**:
+
+- **No Manual Configuration**: New Unity tests are automatically discovered and built
+- **Parallel Building**: Multiple Unity tests can be built simultaneously
+- **Coverage Instrumentation**: All tests include gcov coverage by default
+- **Dependency Management**: Tests are properly linked with required libraries and source objects
+
+### Test Framework Integration (test_11_unity.sh)
+
+The Unity tests are automatically discovered and executed by `test_11_unity.sh`. This script:
+
+1. **Auto-Discovery**: Automatically finds all Unity test executables in `build/unity/src/`
+2. **Individual Execution**: Runs each test as a separate subtest with detailed reporting
+3. **Results Parsing**: Extracts test counts and pass/fail statistics from Unity output
+4. **Coverage Analysis**: Calculates code coverage for all Unity tests combined
+5. **Failure Handling**: Captures and reports detailed failure information
+
+**Test Output Example**:
+
+```log
+11-004   000.109   ▇▇ TEST   Run Unity Test: test_launch_plan
+11-004   000.131   ▇▇ PASS   Unity test test_launch_plan passed: 14 tests (14/14 passed)
+11-005   000.138   ▇▇ TEST   Run Unity Test: test_hydrogen
+11-005   000.159   ▇▇ PASS   Unity test test_hydrogen passed: 5 tests (5/5 passed)
+```
+
+### Writing Comprehensive Tests
+
+When writing Unity tests, follow these guidelines:
+
+**Test Coverage Guidelines**:
+
+- Test all public functions in the target module
+- Include tests for normal operation, edge cases, and error conditions
+- Test boundary conditions (minimum/maximum values, empty inputs, etc.)
+- Validate return values, side effects, and state changes
+- Test error handling and recovery scenarios
+
+**Test Naming Convention**:
+
+- Use descriptive names: `test_<function_name>_<scenario>`
+- Examples: `test_handle_launch_plan_null_parameter`, `test_handle_launch_plan_all_systems_ready`
+
+**Test Data Management**:
+
+- Use realistic test data that reflects actual system usage
+- Create test fixtures for complex data structures
+- Clean up resources in `tearDown()` function
+
+### Adding New Unity Tests
+
+To add a new Unity test:
+
+1. **Create Test File**: Add `test_<module>.c` in `tests/unity/src/`
+2. **Implement Tests**: Write comprehensive test functions covering all scenarios
+3. **Build**: Run `cmake --build . --target test_<module>` to verify compilation
+4. **Validate**: Execute the test directly to ensure all tests pass
+5. **Integration**: The test will automatically be discovered by `test_11_unity.sh`
+
+**No additional configuration is required** - the CMake build system and test framework automatically handle new Unity tests.
+
+### Unity Framework Features
+
+The Unity framework provides rich assertion capabilities:
+
+**Basic Assertions**:
+
+- `TEST_ASSERT_TRUE(condition)`
+- `TEST_ASSERT_FALSE(condition)`
+- `TEST_ASSERT_NULL(pointer)`
+- `TEST_ASSERT_NOT_NULL(pointer)`
+
+**Numeric Assertions**:
+
+- `TEST_ASSERT_EQUAL_INT(expected, actual)`
+- `TEST_ASSERT_GREATER_THAN(threshold, actual)`
+- `TEST_ASSERT_LESS_THAN(threshold, actual)`
+
+**String Assertions**:
+
+- `TEST_ASSERT_EQUAL_STRING(expected, actual)`
+- `TEST_ASSERT_EQUAL_MEMORY(expected, actual, length)`
+
+**Array Assertions**:
+
+- `TEST_ASSERT_EQUAL_INT_ARRAY(expected, actual, elements)`
+
+### Coverage Analysis
+
+Unity tests automatically generate code coverage data when built with coverage instrumentation. The coverage analysis:
+
+- Tracks line coverage for all tested functions
+- Generates detailed coverage reports
+- Integrates with the overall test suite coverage metrics
+- Helps identify untested code paths
+
+### Best Practices
+
+1. **Focus on Function Logic**: Test the specific function behavior, not entire system integration
+2. **Use Real Dependencies**: When possible, use actual system functions (like logging) rather than mocks
+3. **Test Edge Cases**: Pay special attention to boundary conditions and error scenarios
+4. **Keep Tests Independent**: Each test should be able to run in isolation
+5. **Document Test Intent**: Use clear, descriptive test names and comments
+6. **Maintain Test Quality**: Keep tests simple, focused, and maintainable
+
+### Example: test_launch_plan.c
+
+The `test_launch_plan.c` file demonstrates comprehensive Unity testing:
+
+- **14 test cases** covering all scenarios for `handle_launch_plan()` function
+- Tests null parameters, empty results, mixed readiness states, and boundary conditions
+- Uses real logging integration for authentic system behavior
+- Validates launch plan decision logic across various subsystem configurations
+
+This example serves as a template for writing effective Unity tests that provide thorough coverage and meaningful validation.
+
 ## Configuration Files
 
 The `configs/` directory contains JSON files for various test scenarios:

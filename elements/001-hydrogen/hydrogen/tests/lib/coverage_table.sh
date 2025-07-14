@@ -8,18 +8,19 @@
 # and displays the results in a formatted table using the tables executable.
 
 # CHANGELOG
+# 1.0.4 - 2025-07-14 - Fixed file path extraction using Source: line from gcov files for consistent table alignment
 # 1.0.3 - 2025-07-14 - Fixed Tests column to use same gcov processing logic as test 99 for accurate coverage summaries
 # 1.0.2 - Added MAGENTA color flag for files with >0 coverage but <50% coverage when >100 instrumented lines
 # 1.0.1 - Added YELLOW color flag for files with no coverage in either test type
 # 1.0.0 - Initial version
 
-SCRIPT_VER="1.0.3"
+SCRIPT_VER="1.0.4"
 
 # Get script directory and project paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-BUILD_DIR="$PROJECT_ROOT/build/unity/src"
-COVERAGE_BUILD_DIR="$PROJECT_ROOT/build/coverage/src"
+UNITY_COVS="$PROJECT_ROOT/build/unity/src"
+BLACKBOX_COVS="$PROJECT_ROOT/build/coverage/src"
 TABLES_EXE="$PROJECT_ROOT/tests/lib/tables"
 
 # Source the coverage common functions for combined analysis
@@ -76,7 +77,7 @@ analyze_gcov_file() {
     # Use the correct awk parsing logic for gcov format
     local line_counts
     line_counts=$(awk '
-        /^[[:space:]]*[0-9]+:[[:space:]]*[0-9]+:/ { covered++; total++ }
+        /^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/ { covered++; total++ }
         /^[[:space:]]*#####:[[:space:]]*[0-9]+:/ { total++ }
         END {
             if (total == "") total = 0
@@ -95,23 +96,15 @@ analyze_gcov_file() {
     # Include all files, even those with 0 instrumented lines, for complete coverage table
     # This ensures the table shows all files that have gcov data, matching test 99's behavior
     
-    # Extract the relative path from the gcov file, preserving directory structure
+    # Extract relative path from Source: line in gcov file
+    local source_line
+    source_line=$(grep '^        -:    0:Source:' "$gcov_file" | cut -d':' -f3-)
     local display_path
-    if [[ "$gcov_file" == *"/unity/src/"* ]]; then
-        # Extract path after /unity/src/
-        display_path="${gcov_file#*"/unity/src/"}"
-        display_path="${display_path%.gcov}"
-    elif [[ "$gcov_file" == *"/coverage/src/"* ]]; then
-        # Extract path after /coverage/src/
-        display_path="${gcov_file#*"/coverage/src/"}"
-        display_path="${display_path%.gcov}"
+    if [[ -n "$source_line" ]]; then
+        display_path="${source_line#*/hydrogen/}"
     else
         # Fallback to basename
         display_path=$(basename "$gcov_file" .gcov)
-    fi
-    
-    # Ensure it starts with src/
-    if [[ "$display_path" != src/* ]]; then
         display_path="src/$display_path"
     fi
     
@@ -195,8 +188,8 @@ source "$SCRIPT_DIR/coverage-blackbox.sh"
 timestamp=$(date '+%Y%m%d_%H%M%S')
 
 # Call the same functions that test 99 uses - this ensures we get the same results
-unity_coverage_percentage=$(calculate_unity_coverage "$BUILD_DIR" "$timestamp" 2>/dev/null || echo "0.000")
-blackbox_coverage_percentage=$(collect_blackbox_coverage_from_dir "$COVERAGE_BUILD_DIR" "$timestamp" 2>/dev/null || echo "0.000")
+unity_coverage_percentage=$(calculate_unity_coverage "$UNITY_COVS" "$timestamp" 2>/dev/null || echo "0.000")
+blackbox_coverage_percentage=$(collect_blackbox_coverage_from_dir "$BLACKBOX_COVS" "$timestamp" 2>/dev/null || echo "0.000")
 
 # The collect_blackbox_coverage_from_dir function already processed all the gcov files
 # and stored the results in the detailed files. Let's read that data instead of
@@ -299,178 +292,11 @@ declare -A all_files
 # Source the blackbox coverage functions to get access to internal functions
 source "$SCRIPT_DIR/coverage-blackbox.sh"
 
-# Call the internal function that processes gcov files from the coverage directory
-# This is the same logic that collect_blackbox_coverage_from_dir uses internally
-if [ -d "$COVERAGE_BUILD_DIR" ]; then
-    # Process coverage gcov files using the working logic
-    while IFS= read -r gcov_file; do
-        if [[ -f "$gcov_file" ]]; then
-            # Use the same filtering logic as the working functions
-            basename_file=$(basename "$gcov_file")
-            if [[ "$basename_file" == "unity.c.gcov" ]] || [[ "$gcov_file" == *"/usr/"* ]]; then
-                continue
-            fi
-            
-            if [[ "$basename_file" == "test_"* ]]; then
-                continue
-            fi
-            
-            if [[ "$basename_file" == *"jansson"* ]] || \
-               [[ "$basename_file" == *"json"* ]] || \
-               [[ "$basename_file" == *"curl"* ]] || \
-               [[ "$basename_file" == *"ssl"* ]] || \
-               [[ "$basename_file" == *"crypto"* ]] || \
-               [[ "$basename_file" == *"pthread"* ]] || \
-               [[ "$basename_file" == *"uuid"* ]] || \
-               [[ "$basename_file" == *"zlib"* ]] || \
-               [[ "$basename_file" == *"pcre"* ]]; then
-                continue
-            fi
-            
-            source_file="${basename_file%.gcov}"
-            should_ignore=false
-            
-            if [[ -f "$PROJECT_ROOT/.trial-ignore" ]]; then
-                while IFS= read -r line; do
-                    if [[ "$line" =~ ^[[:space:]]*# ]] || [[ -z "$line" ]]; then
-                        continue
-                    fi
-                    pattern="${line#./}"
-                    if [[ "$source_file" == *"$pattern"* ]]; then
-                        should_ignore=true
-                        break
-                    fi
-                done < "$PROJECT_ROOT/.trial-ignore"
-            fi
-            
-            if [[ "$should_ignore" == true ]]; then
-                continue
-            fi
-            
-            # Use the same gcov parsing logic as the working functions
-            line_counts=$(awk '
-                /^[[:space:]]*[0-9]+:[[:space:]]*[0-9]+:/ { covered++; total++ }
-                /^[[:space:]]*#####:[[:space:]]*[0-9]+:/ { total++ }
-                END {
-                    if (total == "") total = 0
-                    if (covered == "") covered = 0
-                    print total "," covered
-                }
-            ' "$gcov_file" 2>/dev/null)
-            
-            instrumented_lines="${line_counts%,*}"
-            covered_lines="${line_counts#*,}"
-            
-            # Default to 0 if parsing failed
-            instrumented_lines=${instrumented_lines:-0}
-            covered_lines=${covered_lines:-0}
-            
-            # Extract the relative path from the gcov file
-            if [[ "$gcov_file" == *"/coverage/src/"* ]]; then
-                display_path="${gcov_file#*"/coverage/src/"}"
-                display_path="${display_path%.gcov}"
-            else
-                display_path=$(basename "$gcov_file" .gcov)
-            fi
-            
-            # Ensure it starts with src/
-            if [[ "$display_path" != src/* ]]; then
-                display_path="src/$display_path"
-            fi
-            
-            # Store data in arrays
-            all_files["$display_path"]=1
-            coverage_covered_lines["$display_path"]=$covered_lines
-            coverage_instrumented_lines["$display_path"]=$instrumented_lines
-        fi
-    done < <(find "$COVERAGE_BUILD_DIR" -name "*.gcov" -type f 2>/dev/null)
-fi
+# Process coverage gcov files using the existing function
+collect_gcov_files "$BLACKBOX_COVS" "coverage"
 
-# Process Unity gcov files similarly
-if [ -d "$BUILD_DIR" ]; then
-    while IFS= read -r gcov_file; do
-        if [[ -f "$gcov_file" ]]; then
-            # Use the same filtering logic
-            basename_file=$(basename "$gcov_file")
-            if [[ "$basename_file" == "unity.c.gcov" ]] || [[ "$gcov_file" == *"/usr/"* ]]; then
-                continue
-            fi
-            
-            if [[ "$basename_file" == "test_"* ]]; then
-                continue
-            fi
-            
-            if [[ "$basename_file" == *"jansson"* ]] || \
-               [[ "$basename_file" == *"json"* ]] || \
-               [[ "$basename_file" == *"curl"* ]] || \
-               [[ "$basename_file" == *"ssl"* ]] || \
-               [[ "$basename_file" == *"crypto"* ]] || \
-               [[ "$basename_file" == *"pthread"* ]] || \
-               [[ "$basename_file" == *"uuid"* ]] || \
-               [[ "$basename_file" == *"zlib"* ]] || \
-               [[ "$basename_file" == *"pcre"* ]]; then
-                continue
-            fi
-            
-            source_file="${basename_file%.gcov}"
-            should_ignore=false
-            
-            if [[ -f "$PROJECT_ROOT/.trial-ignore" ]]; then
-                while IFS= read -r line; do
-                    if [[ "$line" =~ ^[[:space:]]*# ]] || [[ -z "$line" ]]; then
-                        continue
-                    fi
-                    pattern="${line#./}"
-                    if [[ "$source_file" == *"$pattern"* ]]; then
-                        should_ignore=true
-                        break
-                    fi
-                done < "$PROJECT_ROOT/.trial-ignore"
-            fi
-            
-            if [[ "$should_ignore" == true ]]; then
-                continue
-            fi
-            
-            # Use the same gcov parsing logic
-            line_counts=$(awk '
-                /^[[:space:]]*[0-9]+:[[:space:]]*[0-9]+:/ { covered++; total++ }
-                /^[[:space:]]*#####:[[:space:]]*[0-9]+:/ { total++ }
-                END {
-                    if (total == "") total = 0
-                    if (covered == "") covered = 0
-                    print total "," covered
-                }
-            ' "$gcov_file" 2>/dev/null)
-            
-            instrumented_lines="${line_counts%,*}"
-            covered_lines="${line_counts#*,}"
-            
-            # Default to 0 if parsing failed
-            instrumented_lines=${instrumented_lines:-0}
-            covered_lines=${covered_lines:-0}
-            
-            # Extract the relative path from the gcov file
-            display_path
-            if [[ "$gcov_file" == *"/unity/src/"* ]]; then
-                display_path="${gcov_file#*"/unity/src/"}"
-                display_path="${display_path%.gcov}"
-            else
-                display_path=$(basename "$gcov_file" .gcov)
-            fi
-            
-            # Ensure it starts with src/
-            if [[ "$display_path" != src/* ]]; then
-                display_path="src/$display_path"
-            fi
-            
-            # Store data in arrays
-            all_files["$display_path"]=1
-            unity_covered_lines["$display_path"]=$covered_lines
-            unity_instrumented_lines["$display_path"]=$instrumented_lines
-        fi
-    done < <(find "$BUILD_DIR" -name "*.gcov" -type f 2>/dev/null)
-fi
+# Process Unity gcov files using the existing function
+collect_gcov_files "$UNITY_COVS" "unity"
 
 # Calculate combined coverage for each file
 declare -A combined_covered_lines
@@ -590,7 +416,7 @@ data_json="$temp_dir/coverage_data.json"
             "width": 8
         },
         {
-            "header": "Tests",
+            "header": "Black",
             "key": "coverage_covered",
             "datatype": "int",
             "justification": "right",
