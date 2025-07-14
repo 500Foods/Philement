@@ -4,6 +4,7 @@
 # Tests signal handling capabilities including SIGINT, SIGTERM, SIGHUP, SIGUSR2, and multiple signals
 
 # VERSION HISTORY
+# 3.0.4 - 2025-07-15 - No more sleep
 # 3.0.3 - 2025-07-14 - Updated to use build/tests directories for test output consistency
 # 3.0.2 - 2025-07-06 - Added missing shellcheck justifications
 # 3.0.1 - 2025-07-02 - Performance optimization: removed all artificial delays (sleep statements) for dramatically faster execution while maintaining reliability
@@ -13,7 +14,7 @@
 
 # Test configuration
 TEST_NAME="Signal Handling"
-SCRIPT_VERSION="3.0.3"
+SCRIPT_VERSION="3.0.4"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -126,7 +127,7 @@ wait_for_signal_startup() {
             return 0
         fi
         
-        sleep 0.2
+        # sleep 0.2
     done
 }
 
@@ -151,7 +152,7 @@ wait_for_signal_shutdown() {
             fi
         fi
         
-        sleep 0.2
+        # sleep 0.2
     done
 }
 
@@ -189,7 +190,7 @@ wait_for_restart_completion() {
             return 0
         fi
         
-        sleep 0.2
+        # sleep 0.2
     done
 }
 
@@ -210,7 +211,7 @@ verify_config_dump() {
             break
         fi
         
-        sleep 0.2
+        # sleep 0.2
     done
     
     # Wait for dump to complete
@@ -230,7 +231,7 @@ verify_config_dump() {
             fi
         fi
         
-        sleep 0.2
+        # sleep 0.2
     done
 }
 

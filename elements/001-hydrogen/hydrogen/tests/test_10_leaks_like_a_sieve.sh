@@ -4,6 +4,7 @@
 # Uses Valgrind to detect memory leaks in the Hydrogen application
 
 # CHANGELOG
+# 3.0.4 - 2025-07-15 - No more sleep
 # 3.0.3 - 2025-07-14 - Updated to use build/tests directories for test output consistency
 # 3.0.2 - 2025-07-13 - Filter output to show only leak count lines
 # 3.0.1 - 2025-07-06 - Added missing shellcheck justifications
@@ -13,7 +14,7 @@
 
 # Test configuration
 TEST_NAME="Memory Leak Detection"
-SCRIPT_VERSION="3.0.3"
+SCRIPT_VERSION="3.0.4"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -167,23 +168,23 @@ while true; do
         break
     fi
     
-    sleep 0.2
+    # sleep 0.2
 done
 
 if [ $EXIT_CODE -eq 0 ]; then
     # Let it run briefly and perform some operations
     print_message "Running operations to trigger potential leaks..."
-    sleep 0.3
+    # sleep 0.3
 
     # Try some API calls to trigger potential memory operations
     print_message "Making API calls to exercise memory allocation..."
     for _ in {1..3}; do
         curl -s "http://localhost:5030/api/system/info" > /dev/null 2>&1 || true
-        sleep 0.1
+        # sleep 0.1
     done
 
     # Let memory operations settle
-    sleep 0.3
+    # sleep 0.3
 
     # Send SIGTERM to trigger shutdown and leak detection
     print_message "Sending SIGTERM to trigger shutdown and leak detection..."
