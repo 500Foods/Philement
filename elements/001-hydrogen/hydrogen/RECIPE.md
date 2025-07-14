@@ -1,37 +1,14 @@
 # HYDROGEN
 
-🚨 **CRITICAL: Trial Build with CMake MUST PASS** 🚨
-Run the following command from the project root to set up and perform the trial build using the predefined preset:
+## CRITICAL INSTRUCTIONS
 
-```bash
-cd elements/001-hydrogen/hydrogen/cmake && cmake -S . -B ../build --preset default && cmake --build ../build --preset default && cmake --build ../build --preset trial
-```
+- The script `extras/make-trial.sh` is used to build the project and check for compilation errors
+- This can be run using the alias `mkt` from anyhwere as it has been integrated as a shell alias for this purpose
+- After ANY code/script/MD change, run `mkt` to verify compilation/linting. Do not attempt completion until it passes.
+- End tasks by checking/updating RELEASES.md if changes warrant it.
+- Do NOT run full tests (e.g., test_00_all.sh)—use `mkt` only; humans handle comprehensive testing.
 
-Requires:
-
-1. No warnings/errors
-2. Shutdown test passes
-3. Only then done
-
-**Important Note on Build Process:**
-Always run the trial build first after making any code changes to ensure there are no errors or warnings. Only proceed with other build types (like debug, release, etc.) after the trial build passes successfully. This approach helps catch issues early and maintains the integrity of the codebase.
-
-**Building and Running the Release Version:**
-To build the release version of Hydrogen for production deployment, which includes optimizations and embedded payload, run the following command from the project root:
-
-```bash
-cd elements/001-hydrogen/hydrogen/cmake && cmake -B ../build && cmake --build ../build --target hydrogen_release
-```
-
-After building, to run the release executable and verify features like Swagger, use:
-
-```bash
-cd elements/001-hydrogen/hydrogen && ./hydrogen_release
-```
-
-This ensures you are using the optimized release build with all configured features enabled.
-
-## Project
+## HYDROGEN PROJECT
 
 ```json
 {"name":"Hydrogen","lang":"C","type":"REST API/WebSocket Server","arch":"Multithreaded",
@@ -39,58 +16,7 @@ This ensures you are using the optimized release build with all configured featu
 "critical":["ErrorHandling","ThreadSafety"]}
 ```
 
-## Coding REQUIREMENTS
-
-- Function Prototypes at top of every .c file
-- Grouped/commented include files at the top of every .c/.h file
-- Use log_this outputing anything
-- Update RELEASES.md only when a task is complete
-
-## Configuration
-
-App uses a JSON-based configuration with robust fallback handling. Details in src/config/config.c comments.
-
-A. Server
-B. Network
-C. Database
-D. Logging
-E. WebServer
-F. API
-G. Swagger
-H. WebSocket
-I. Terminal
-J. mDNS Server
-K. mDNS Client
-L. Mail Relay
-M. Print
-N. Resources
-O. OIDC
-P. Notify
-
-## Subsystem Order
-
-App uses subsystems and a launch/landing system to control them. Details in src/launch/launch.c comments.
-
-1. Registry
-2. Payload
-3. Threads
-4. Network
-5. Database
-6. Logging
-7. WebServer
-8. API
-9. Swagger
-10. WebSocket
-11. Terminal
-12. mDNS Server
-13. mDNS Client
-14. MailRelay
-15. Print
-16. Resources
-17. OIDC
-18. Notify
-
-## Structure
+## REPOSITORY STRUCTURE
 
 ```directory
 src/
@@ -118,14 +44,81 @@ payloads/       Payload definitions
 tests/          Test framework
 ```
 
-## Docs
+## TESTS
 
-- developer_onboarding.md: Setup
-- coding_guidelines.md: Standards
-- api.md: API reference
-- testing.md: Test guide
+- tests/test_00_all.sh
+- tests/test_01_compilation.sh
+- tests/test_03_code_size.sh
+- tests/test_06_check_links.sh
+- tets/test_10_leaks_like_a_sieve.sh
+- tests/test_11_unity.sh
+- tests/test_12_env_variables.sh
+- tests/test_14_env_payload.sh
+- tests/test_16_library_dependencies.sh
+- tests/test_18_json_error_handling.sh
+- tests/test_20_crash_handler.sh
+- tests/test_22_startup_shutdown.sh
+- tests/test_24_signals.sh
+- tests/test_26_shutdown.sh
+- tests/test_28_socket_rebind.sh
+- tests/test_30_api_prefixes.sh
+- tests/test_32_system_endpoints.sh
+- tests/test_34_swagger.sh
+- tests/test_91_cppcheck.sh
+- tests/test_92_shellcheck.sh
+- tests/test_94_eslint.sh
+- tests/test_95_stylelint.sh
+- tests/test_96_htmlhint.sh
+- tests/test_97_jsonlint.sh
+- tests/test_98_markdownlint.sh
+- tests/test_99_coverage.sh
 
-## Logging
+## DOCUMENTATION
+
+- README.md contains TOC for all docs
+- SITEMAP.md contains links to all markdown docs
+- STRUCTURE.md contains links to all relevant files
+- tests/README.md contains test suite information
+- docs/developer_onboarding.md: Setup
+- docs/coding_guidelines.md: Standards
+- docs/api.md: API reference
+- docs/testing.md: Test guide
+
+## BASH CODING REQUIREMENTS
+
+- Update CHANGELOG and SCRIPT_VER at top of every script file after every change
+
+## C CODING REQUIREMENTS
+
+- Function Prototypes at top of every .c file
+- Grouped/commented include files at the top of every .c/.h file
+- cmake/CMakeLists.txt is used for main project builds
+- tests/unity/CMakeLists.txt is used for building unity unit tests
+- Use `log_this` when outputing anything to the log
+
+## LINTING GUIDANCE FOR AI-GENERATED CONTENT
+
+### cppcheck
+
+- Follow coding_guidelines.md
+- Use cppcheck-friendly patterns (e.g., check malloc returns, avoid unused vars, unused params)
+
+### shellcheck
+
+- Add shebangs
+- Quote vars (e.g., echo "$VAR")
+- Avoid shellcheck errors like SC2086
+
+### Markdown
+
+- Use consistent headings (# H1, ## H2), valid links;
+- Fix common markdown issues such as these
+- MD009/no-trailing-spaces: Trailing spaces
+- MD012/no-multiple-blanks: Multiple consecutive blank lines
+- MD022/blanks-around-headings: Headings should be surrounded by blank lines
+- MD032/blanks-around-lists: Lists should be surrounded by blank lines
+
+## LOGGING
 
 ```c
 // Levels: 0=TRACE 1=DEBUG 2=STATE 3=ALERT 4=ERROR 5=FATAL 6=QUIET
@@ -133,21 +126,54 @@ log_this("Component", "State: READY", LOG_LEVEL_STATE, true, true, true);
 log_this("Component", "Failed: reason", LOG_LEVEL_ERROR, true, true, true);
 ```
 
-## Launch/Landing
+## CONFIGURATION
+
+App uses a JSON-based configuration with robust fallback handling. Details in src/config/config.c comments.
+
+A. Server
+B. Network
+C. Database
+D. Logging
+E. WebServer
+F. API
+G. Swagger
+H. WebSocket
+I. Terminal
+J. mDNS Server
+K. mDNS Client
+L. Mail Relay
+M. Print
+N. Resources
+O. OIDC
+P. Notify
+
+## SUBSYSTEM ORDER
+
+App uses subsystems and a launch/landing system to control them. Details in src/launch/launch.c comments.
+
+1. Registry
+2. Payload
+3. Threads
+4. Network
+5. Database
+6. Logging
+7. WebServer
+8. API
+9. Swagger
+10. WebSocket
+11. Terminal
+12. mDNS Server
+13. mDNS Client
+14. MailRelay
+15. Print
+16. Resources
+17. OIDC
+18. Notify
+
+## LAUNCH / LANDING
 
 - Registry first in, last out
 - Phases: Readiness > Plan > Execute > Review
 - Landing reverses launch exactly
 - SIGHUP triggers landing then re-launch
 - All resources freed during landing
-
-## Builds
-
-Use CMake presets or build configurations for different build types. Refer to `CMakePresets.json` for details.
-
-- **trial**: Required, clean build with tests
-- **debug**: Includes debug symbols for troubleshooting
-- **perf**: Optimized for performance analysis
-- **release**: Optimized for production use
-- **valgrind**: Configured for memory checking with Valgrind
-- **default**: Standard build configuration

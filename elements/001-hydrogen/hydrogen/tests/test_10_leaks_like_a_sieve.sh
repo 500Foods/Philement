@@ -4,6 +4,7 @@
 # Uses Valgrind to detect memory leaks in the Hydrogen application
 
 # CHANGELOG
+# 3.0.2 - 2025-07-13 - Filter output to show only leak count lines
 # 3.0.1 - 2025-07-06 - Added missing shellcheck justifications
 # 3.0.0 - 2025-07-02 - Migrated to use lib/ scripts, following established test pattern
 # 2.0.0 - 2025-06-17 - Major refactoring: improved modularity, reduced script size, enhanced comments
@@ -11,7 +12,7 @@
 
 # Test configuration
 TEST_NAME="Memory Leak Detection"
-SCRIPT_VERSION="3.0.1"
+SCRIPT_VERSION="3.0.2"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -239,7 +240,10 @@ if [ $EXIT_CODE -eq 0 ]; then
         # Display summary
         print_message "Memory leak analysis results:"
         while IFS= read -r line; do
-            print_output "$line"
+            # Only show lines that contain "Found"
+            if [[ "$line" == *"Found:"* ]]; then
+                print_output "$line"
+            fi
         done < "$LEAK_SUMMARY"
 
         # Copy results to results directory
