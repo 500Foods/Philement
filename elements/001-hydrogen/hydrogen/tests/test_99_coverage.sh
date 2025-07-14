@@ -69,9 +69,15 @@ if [ -f "${UNITY_COVERAGE_FILE}" ] && [ -f "${UNITY_COVERAGE_FILE}.detailed" ]; 
     unity_total_lines=0
     IFS=',' read -r _ _ unity_covered_lines unity_total_lines unity_instrumented_files unity_covered_files < "${UNITY_COVERAGE_FILE}.detailed"
     
-    print_message "Files instrumented: $unity_covered_files of $unity_instrumented_files source files have coverage"
-    print_message "Lines instrumented: $unity_covered_lines of $unity_total_lines executable lines covered"
-    print_result 0 "Unity test coverage recalled: $unity_coverage_percentage% - $unity_covered_files of $unity_instrumented_files files covered"
+    # Format numbers with thousands separators
+    formatted_unity_covered_files=$(printf "%'d" "$unity_covered_files")
+    formatted_unity_instrumented_files=$(printf "%'d" "$unity_instrumented_files")
+    formatted_unity_covered_lines=$(printf "%'d" "$unity_covered_lines")
+    formatted_unity_total_lines=$(printf "%'d" "$unity_total_lines")
+    
+    print_message "Files instrumented: $formatted_unity_covered_files of $formatted_unity_instrumented_files source files have coverage"
+    print_message "Lines instrumented: $formatted_unity_covered_lines of $formatted_unity_total_lines executable lines covered"
+    print_result 0 "Unity test coverage recalled: $unity_coverage_percentage% - $formatted_unity_covered_files of $formatted_unity_instrumented_files files covered"
     ((PASS_COUNT++))
 else
     print_result 1 "Unity coverage data not found. Run Test 11 first to generate Unity coverage data."
@@ -102,9 +108,15 @@ if [ -d "$BLACKBOX_COVERAGE_DIR" ]; then
             IFS=',' read -r _ _ covered_lines total_lines instrumented_files covered_files < "${BLACKBOX_COVERAGE_FILE}.detailed"
         fi
         
-        print_message "Files instrumented: $covered_files of $instrumented_files source files have coverage"
-        print_message "Lines instrumented: $covered_lines of $total_lines executable lines covered"
-        print_result 0 "Blackbox test coverage collected: $coverage_percentage% - $covered_files of $instrumented_files files covered"
+        # Format numbers with thousands separators
+        formatted_covered_files=$(printf "%'d" "$covered_files")
+        formatted_instrumented_files=$(printf "%'d" "$instrumented_files")
+        formatted_covered_lines=$(printf "%'d" "$covered_lines")
+        formatted_total_lines=$(printf "%'d" "$total_lines")
+        
+        print_message "Files instrumented: $formatted_covered_files of $formatted_instrumented_files source files have coverage"
+        print_message "Lines instrumented: $formatted_covered_lines of $formatted_total_lines executable lines covered"
+        print_result 0 "Blackbox test coverage collected: $coverage_percentage% - $formatted_covered_files of $formatted_instrumented_files files covered"
         ((PASS_COUNT++))
     else
         print_result 1 "Failed to collect blackbox test coverage"
@@ -198,7 +210,12 @@ if [ -f "${BLACKBOX_COVERAGE_FILE}.detailed" ]; then
     # Calculate uncovered count from the known values
     uncovered_count=$((instrumented_files - covered_files))
     
-    print_result 0 "Coverage analysis: $covered_files of $instrumented_files source files covered, $uncovered_count uncovered"
+    # Format numbers with thousands separators
+    formatted_covered_files=$(printf "%'d" "$covered_files")
+    formatted_instrumented_files=$(printf "%'d" "$instrumented_files")
+    formatted_uncovered_count=$(printf "%'d" "$uncovered_count")
+    
+    print_result 0 "Coverage analysis: $formatted_covered_files of $formatted_instrumented_files source files covered, $formatted_uncovered_count uncovered"
     ((PASS_COUNT++))
 else
     print_result 1 "Failed to analyze source file coverage - blackbox detailed data not found"

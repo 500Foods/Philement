@@ -111,111 +111,89 @@ download_unity_framework() {
     fi
 }
 
-# Function to compile Unity tests
-compile_unity_tests() {
+# Function to check Unity tests are available via CTest (assumes they're already built by main build system)
+check_unity_tests_available() {
     next_subtest
-    print_subtest "Compile Unity Tests"
-    print_message "Compiling Unity tests..."
-    local build_dir="$HYDROGEN_DIR/build/unity"
-    local temp_log="$DIAG_TEST_DIR/compile_log.txt"
-    local filtered_log="$DIAG_TEST_DIR/compile_filtered.txt"
-    mkdir -p "$build_dir"
-    mkdir -p "$(dirname "$temp_log")"
-    cd "$build_dir" || { print_result 1 "Failed to change to build directory: ${build_dir#"$SCRIPT_DIR"/..}"; return 1; }
+    print_subtest "Check Unity Tests Available"
+    print_message "Checking for Unity tests via CTest (should be built by main build system)..."
     
-    # Run cmake configuration
-    cmake "$UNITY_DIR" > "$temp_log" 2>&1 || { print_result 1 "CMake configuration failed for Unity tests"; while IFS= read -r line; do print_output "$line"; done < "$temp_log"; return 1; }
+    # Check if CMake build directory exists and has CTest configuration
+    local cmake_build_dir="$HYDROGEN_DIR/cmake"
     
-    # Filter and display cmake output (keep important messages, skip compilation progress)
-    grep -v -E '\[[[:space:]]*[0-9]+%\][[:space:]]*Compiling.*\.c to object file' "$temp_log" > "$filtered_log" || true
-    while IFS= read -r line; do print_output "$line"; done < "$filtered_log"
-    
-    # Detect number of CPU cores for parallel build
-    local cpu_cores
-    if command -v nproc >/dev/null 2>&1; then
-        cpu_cores=$(nproc)
-    elif [ -f /proc/cpuinfo ]; then
-        cpu_cores=$(grep -c ^processor /proc/cpuinfo)
-    else
-        cpu_cores=4  # Fallback to 4 cores
+    if [ ! -d "$cmake_build_dir" ]; then
+        print_result 1 "CMake build directory not found: ${cmake_build_dir#"$SCRIPT_DIR"/..}"
+        return 1
     fi
     
-    print_message "Using $cpu_cores cores for parallel compilation..."
+    # Change to CMake directory to check for Unity tests
+    cd "$cmake_build_dir" || { print_result 1 "Failed to change to CMake build directory"; return 1; }
     
-    # Run build with parallel jobs (separate log file to avoid duplication)
-    local build_log="$DIAG_TEST_DIR/build_log.txt"
-    cmake --build . -j"$cpu_cores" > "$build_log" 2>&1 || { print_result 1 "Build failed for Unity tests"; while IFS= read -r line; do print_output "$line"; done < "$build_log"; return 1; }
-    
-    # Filter and display build output (keep important messages, skip compilation progress)  
-    grep -v -E '\[[[:space:]]*[0-9]+%\][[:space:]]*Compiling.*\.c to object file' "$build_log" > "$filtered_log" || true
-    while IFS= read -r line; do print_output "$line"; done < "$filtered_log"
-    
-    cd "$SCRIPT_DIR" || { print_result 1 "Failed to return to script directory: ${SCRIPT_DIR#"$SCRIPT_DIR"/..}"; return 1; }
-    print_result 0 "Unity tests compiled successfully."
-    return 0
+    # Check if Unity tests are registered with CTest
+    if ctest -N | grep -q "test_hydrogen"; then
+        # Also verify the executable exists in the correct location (build/unity/src/)
+        local unity_test_exe="$HYDROGEN_DIR/build/unity/src/test_hydrogen"
+        if [ -f "$unity_test_exe" ]; then
+            exe_size=$(get_file_size "$unity_test_exe")
+            formatted_size=$(format_file_size "$exe_size")
+            print_result 0 "Unity tests available via CTest: ${unity_test_exe#"$SCRIPT_DIR"/..} (${formatted_size} bytes)"
+            cd "$SCRIPT_DIR" || { print_result 1 "Failed to return to script directory"; return 1; }
+            return 0
+        else
+            print_result 1 "Unity test registered with CTest but executable not found at ${unity_test_exe#"$SCRIPT_DIR"/..}"
+            cd "$SCRIPT_DIR" || { print_result 1 "Failed to return to script directory"; return 1; }
+            return 1
+        fi
+    else
+        print_result 1 "Unity tests not found in CTest. Run 'cmake --build . --target unity_tests' from cmake directory first."
+        cd "$SCRIPT_DIR" || { print_result 1 "Failed to return to script directory"; return 1; }
+        return 1
+    fi
 }
 
-# Function to run Unity tests
+# Function to run Unity tests via CTest
 run_unity_tests() {
     next_subtest
-    print_subtest "Enumerate Unity Tests"
-    print_message "Enumerating Unity Tests"
+    print_subtest "Run Unity Tests"
+    print_message "Running Unity tests via CTest..."
     
-    if [ ! -d "$UNITY_DIR" ]; then
-        print_result 1 "Unity test directory not found: ${UNITY_DIR#"$SCRIPT_DIR"/..}"
+    # Use the main CMake build directory structure
+    local cmake_build_dir="$HYDROGEN_DIR/cmake"
+    
+    if [ ! -d "$cmake_build_dir" ]; then
+        print_result 1 "CMake build directory not found: ${cmake_build_dir#"$SCRIPT_DIR"/..}"
         return 1
     fi
     
-    local build_dir="$HYDROGEN_DIR/build/unity"
-    if [ ! -d "$build_dir" ]; then
-        print_result 1 "Build directory not found: ${build_dir#"$SCRIPT_DIR"/..}"
-        return 1
-    fi
-    
-    # Get list of test names using ctest -N
-    cd "$build_dir" || { print_result 1 "Failed to change to build directory: ${build_dir#"$SCRIPT_DIR"/..}"; return 1; }
-    local test_list=()
-    mapfile -t test_list < <(ctest -N | grep "Test #" | awk '{print $3}')
-    local unity_test_count=${#test_list[@]}
-    # Initialize TOTAL_SUBTESTS to account for initial subtests (4 up to this point: Create Output Directories, Check Unity Framework, Compile Unity Tests, Enumerate Unity Tests)
-    TOTAL_SUBTESTS=4
-    TOTAL_SUBTESTS=$((TOTAL_SUBTESTS + unity_test_count))
-    print_result 0 "Unity test enumeration completed."
-    ((PASS_COUNT++))
-    
-    local INITIAL_PASS_COUNT=$PASS_COUNT
-    
-    # Run each test individually to display as subtest
-    local test_name
-    true > "$LOG_FILE"  # Clear log file
+    # Run Unity tests using CTest
     local temp_test_log="$DIAG_TEST_DIR/test_output.txt"
     mkdir -p "$(dirname "$temp_test_log")"
-    PASS_COUNT=0  # Reset for counting Unity tests only in loop
-    for test_name in "${test_list[@]}"; do
-        next_subtest
-        print_subtest "Unity Test: $test_name"
-        true > "$temp_test_log"  # Clear temporary log for this test
-        ctest -R "^$test_name$" --output-on-failure > "$temp_test_log" 2>&1
+    true > "$LOG_FILE"  # Clear log file
+    true > "$temp_test_log"  # Clear temporary log for this test
+    
+    # Change to the CMake build directory to run CTest
+    cd "$cmake_build_dir" || { print_result 1 "Failed to change to CMake build directory"; return 1; }
+    
+    # Run Unity tests using CTest with pattern matching
+    if ctest -R "^test_hydrogen$" --output-on-failure > "$temp_test_log" 2>&1; then
         while IFS= read -r line; do
             print_output "$line"
         done < "$temp_test_log"
-        if grep -q "Passed" "$temp_test_log"; then
-            print_result 0 "$test_name passed."
-            ((PASS_COUNT++))
-        else
-            print_result 1 "$test_name failed. Check ${LOG_FILE#"$SCRIPT_DIR"/..} for details."
-            EXIT_CODE=1
-        fi
-        cat "$temp_test_log" >> "$LOG_FILE"
-    done
+        print_result 0 "Unity tests passed."
+        ((PASS_COUNT++))
+        # Update TOTAL_SUBTESTS to account for this single test run
+        TOTAL_SUBTESTS=$((TOTAL_SUBTESTS + 1))
+    else
+        while IFS= read -r line; do
+            print_output "$line"
+        done < "$temp_test_log"
+        print_result 1 "Unity tests failed. Check ${LOG_FILE#"$SCRIPT_DIR"/..} for details."
+        EXIT_CODE=1
+        # Update TOTAL_SUBTESTS to account for this single test run
+        TOTAL_SUBTESTS=$((TOTAL_SUBTESTS + 1))
+    fi
     
-    cd "$SCRIPT_DIR" || { print_result 1 "Failed to return to script directory: ${SCRIPT_DIR#"$SCRIPT_DIR"/..}"; return 1; }
-    
-    # Update total PASS_COUNT to include passes from initial subtests and Unity tests
-    PASS_COUNT=$((INITIAL_PASS_COUNT + PASS_COUNT))
-    
-    # Summary line removed as per feedback; final table reports the details
-    :
+    cat "$temp_test_log" >> "$LOG_FILE"
+    cd "$SCRIPT_DIR" || { print_result 1 "Failed to return to script directory"; return 1; }
     
     return $EXIT_CODE
 }
@@ -231,149 +209,41 @@ else
     EXIT_CODE=1
 fi
 
-# Compile and run tests
-if compile_unity_tests; then
+# Check and run tests
+if check_unity_tests_available; then
     ((PASS_COUNT++))
     if ! run_unity_tests; then
         EXIT_CODE=1
     fi
     
-    # Calculate Unity test coverage
+    # Calculate Unity test coverage using optimized library function
     next_subtest
     print_subtest "Calculate Unity Test Coverage"
     print_message "Calculating Unity test coverage..."
     
-    build_dir="$HYDROGEN_DIR/build/unity"
+    # Use the main build directory structure for Unity coverage
+    build_dir="$HYDROGEN_DIR/build/unity/src"
     unity_coverage=$(calculate_unity_coverage "$build_dir" "$TIMESTAMP")
     result=$?
     
     if [ $result -eq 0 ]; then
-        # Read .trial-ignore patterns to exclude files from analysis
-        trial_ignore_patterns=()
-        if [[ -f "$HYDROGEN_DIR/.trial-ignore" ]]; then
-            while IFS= read -r line; do
-                # Skip comments and empty lines
-                if [[ "$line" =~ ^[[:space:]]*# ]] || [[ -z "$line" ]]; then
-                    continue
-                fi
-                # Remove leading ./ if present and add pattern
-                pattern="${line#./}"
-                trial_ignore_patterns+=("$pattern")
-            done < "$HYDROGEN_DIR/.trial-ignore"
-        fi
-        
-        # Count coverage statistics directly from .gcov files
-        total_files=0
-        covered_files=0
-        total_lines=0
-        covered_lines=0
-        
-        # Create a list of .gcov files to process, filtering out excluded ones
-        gcov_files_to_process=()
-        while IFS= read -r gcov_file; do
-            if [[ -f "$gcov_file" ]]; then
-                # Skip Unity framework files and system files
-                basename_file=$(basename "$gcov_file")
-                if [[ "$basename_file" == "unity.c.gcov" ]] || [[ "$gcov_file" == *"/usr/"* ]]; then
-                    continue
-                fi
-                
-                # Skip system libraries and external dependencies
-                if [[ "$basename_file" == *"jansson"* ]] || \
-                   [[ "$basename_file" == *"json"* ]] || \
-                   [[ "$basename_file" == *"curl"* ]] || \
-                   [[ "$basename_file" == *"ssl"* ]] || \
-                   [[ "$basename_file" == *"crypto"* ]] || \
-                   [[ "$basename_file" == *"pthread"* ]] || \
-                   [[ "$basename_file" == *"uuid"* ]] || \
-                   [[ "$basename_file" == *"zlib"* ]] || \
-                   [[ "$basename_file" == *"pcre"* ]]; then
-                    continue
-                fi
-                
-                # Check if this file should be ignored based on .trial-ignore patterns
-                source_file="${basename_file%.gcov}"
-                should_ignore=false
-                for pattern in "${trial_ignore_patterns[@]}"; do
-                    if [[ "$source_file" == *"$pattern"* ]]; then
-                        should_ignore=true
-                        break
-                    fi
-                done
-                if [[ "$should_ignore" == true ]]; then
-                    continue
-                fi
-                
-                gcov_files_to_process+=("$gcov_file")
-            fi
-        done < <(find "$build_dir/src" -name "*.gcov" -type f 2>/dev/null)
-        
-        # Concatenate all relevant .gcov files and process them efficiently
-        if [[ ${#gcov_files_to_process[@]} -gt 0 ]]; then
-            # Create temporary combined file
-            combined_gcov="$DIAG_TEST_DIR/combined.gcov"
-            cat "${gcov_files_to_process[@]}" > "$combined_gcov"
-            
-            # Count only instrumented lines (covered + uncovered but measurable) using same method as extras script
-            line_counts=$(awk '
-                /^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/ { covered++; total++ }
-                /^[[:space:]]*#####:[[:space:]]*[0-9]+\*?:/ { total++ }
-                END { print total "," covered }
-            ' "$combined_gcov" 2>/dev/null)
-            
-            total_lines="${line_counts%,*}"
-            covered_lines="${line_counts#*,}"
-            
-            if [[ -z "$total_lines" ]] || [[ ! "$total_lines" =~ ^[0-9]+$ ]]; then
-                total_lines=0
-            fi
-            
-            if [[ -z "$covered_lines" ]] || [[ ! "$covered_lines" =~ ^[0-9]+$ ]]; then
-                covered_lines=0
-            fi
-            
-            # Count files individually for file statistics
-            total_files=${#gcov_files_to_process[@]}
-            covered_files=0
-            for gcov_file in "${gcov_files_to_process[@]}"; do
-                file_covered_lines=$(grep -c "^[[:space:]]*[1-9][0-9]*:[[:space:]]*[0-9][0-9]*:" "$gcov_file" 2>/dev/null)
-                if [[ -z "$file_covered_lines" ]] || [[ ! "$file_covered_lines" =~ ^[0-9]+$ ]]; then
-                    file_covered_lines=0
-                fi
-                if [[ $file_covered_lines -gt 0 ]]; then
-                    covered_files=$((covered_files + 1))
-                fi
-            done
-            
-            # Clean up temporary file
-            rm -f "$combined_gcov"
-        fi
-        
-        # Display detailed coverage information and calculate percentage
-        if [[ $total_files -gt 0 ]]; then
-            print_message "Files instrumented: $covered_files of $total_files source files have coverage"
-            print_message "Lines instrumented: $covered_lines of $total_lines executable lines covered"
-            
-            # Calculate actual percentage from our analysis
-            if [[ $total_lines -gt 0 ]]; then
-                actual_percentage=$(awk "BEGIN {printf \"%.3f\", ($covered_lines / $total_lines) * 100}")
-            else
-                actual_percentage="0.000"
-            fi
+        # Read detailed coverage information if available
+        detailed_file="$RESULTS_DIR/unity_coverage.txt.detailed"
+        if [ -f "$detailed_file" ]; then
+            # Parse detailed coverage: timestamp,coverage_percentage,covered_lines,total_lines,instrumented_files,covered_files
+            IFS=',' read -r timestamp_detail coverage_detail covered_lines total_lines instrumented_files covered_files < "$detailed_file"
+            print_result 0 "Unity test coverage calculated: $unity_coverage% ($covered_lines/$total_lines lines, $covered_files/$instrumented_files files)"
         else
-            actual_percentage="0.000"
+            print_result 0 "Unity test coverage calculated: $unity_coverage%"
         fi
-        
-        print_result 0 "Unity test coverage calculated: $actual_percentage%"
         ((PASS_COUNT++))
-        TOTAL_SUBTESTS=$((TOTAL_SUBTESTS + 1))
     else
         print_result 1 "Failed to calculate Unity test coverage"
         EXIT_CODE=1
-        TOTAL_SUBTESTS=$((TOTAL_SUBTESTS + 1))
     fi
+    TOTAL_SUBTESTS=$((TOTAL_SUBTESTS + 1))
 else
-    print_error "Compilation failed, skipping test execution"
+    print_error "Unity tests not available, skipping test execution"
     EXIT_CODE=1
 fi
 
