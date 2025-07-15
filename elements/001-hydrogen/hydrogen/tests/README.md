@@ -104,6 +104,19 @@ tests/unity/src/
 ├── test_hydrogen.c              # Tests core hydrogen functionality
 ├── launch/
 │   └── test_launch_plan.c       # Tests src/launch/launch_plan.c
+├── payload/
+│   ├── test_validate_payload_key.c      # Tests validate_payload_key() function
+│   ├── test_free_payload.c              # Tests free_payload() function
+│   ├── test_cleanup_openssl.c           # Tests cleanup_openssl() function
+│   └── test_payload_data_structure.c    # Tests PayloadData structure
+├── swagger/
+│   ├── test_is_swagger_request.c        # Tests is_swagger_request() function
+│   ├── test_init_swagger_support.c      # Tests init_swagger_support() function
+│   ├── test_handle_swagger_request.c    # Tests handle_swagger_request() function
+│   ├── test_swagger_request_handler.c   # Tests swagger_request_handler() function
+│   ├── test_cleanup_swagger_support.c   # Tests cleanup_swagger_support() function
+│   ├── test_swagger_url_validator.c     # Tests swagger_url_validator() function
+│   └── test_swagger.c                   # Integration tests for swagger workflow
 ├── api/
 │   └── test_api_service.c       # Tests src/api/api_service.c (example)
 ├── utils/
@@ -111,20 +124,29 @@ tests/unity/src/
 └── [other directories matching src/ structure]
 ```
 
-**Naming Convention**: Test files follow the pattern `test_<module_name>.c` where `<module_name>` corresponds to the source file or module being tested.
+**Naming Convention**: Test files follow the pattern `test_<function_name>.c` where `<function_name>` corresponds to the specific function being tested. For structures and constants, use `test_<structure_name>.c`.
+
+**One Test File Per Function Rule**: Each Unity test file focuses on testing **one specific function** from the source code:
+
+- `test_validate_payload_key.c` - Tests only the `validate_payload_key()` function
+- `test_is_swagger_request.c` - Tests only the `is_swagger_request()` function
+- `test_init_swagger_support.c` - Tests only the `init_swagger_support()` function
 
 **Examples**:
 
 - `tests/unity/src/launch/test_launch_plan.c` - Tests functions in `src/launch/launch_plan.c`
+- `tests/unity/src/payload/test_validate_payload_key.c` - Tests `validate_payload_key()` function from `src/payload/payload.c`
+- `tests/unity/src/swagger/test_is_swagger_request.c` - Tests `is_swagger_request()` function from `src/swagger/swagger.c`
 - `tests/unity/src/test_hydrogen.c` - Tests core hydrogen functionality
-- `tests/unity/src/utils/test_utils.c` - Tests utility functions in `src/utils/utils.c`
 
-**Benefits of Mirrored Structure**:
+**Benefits of One-Function-Per-File Structure**:
 
-- **Intuitive Organization**: Easy to locate tests for any source file
-- **Maintainability**: Clear relationship between source code and tests
-- **Scalability**: Structure naturally grows with the codebase
-- **Navigation**: Developers can quickly find relevant tests
+- **Focused Testing**: Each test file has a single responsibility
+- **Easy Navigation**: Developers can quickly locate tests for specific functions
+- **Maintainability**: Changes to one function only affect its dedicated test file
+- **Scalability**: Structure naturally grows with new functions
+- **Clear Coverage**: Easy to see which functions have dedicated tests
+- **Parallel Development**: Multiple developers can work on tests for different functions simultaneously
 
 ### Test File Structure
 

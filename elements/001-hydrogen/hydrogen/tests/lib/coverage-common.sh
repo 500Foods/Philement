@@ -13,15 +13,9 @@ if [[ -z "$SCRIPT_DIR" ]]; then
 fi
 COVERAGE_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Use tmpfs build directory if available for ultra-fast I/O
+# Always use build/tests/results directory
 COVERAGE_BUILD_DIR="$(dirname "$(dirname "$COVERAGE_SCRIPT_DIR")")/build"
-if mountpoint -q "$COVERAGE_BUILD_DIR" 2>/dev/null; then
-    # tmpfs is mounted, use build/tests/results
-    COVERAGE_RESULTS_DIR="$COVERAGE_BUILD_DIR/tests/results"
-else
-    # Fallback to regular filesystem
-    COVERAGE_RESULTS_DIR="$(dirname "$COVERAGE_SCRIPT_DIR")/results"
-fi
+COVERAGE_RESULTS_DIR="$COVERAGE_BUILD_DIR/tests/results"
 
 UNITY_COVERAGE_FILE="$COVERAGE_RESULTS_DIR/unity_coverage.txt"
 BLACKBOX_COVERAGE_FILE="$COVERAGE_RESULTS_DIR/blackbox_coverage.txt"

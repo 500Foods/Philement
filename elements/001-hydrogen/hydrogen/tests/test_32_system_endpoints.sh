@@ -42,15 +42,9 @@ source "$SCRIPT_DIR/lib/lifecycle.sh"
 # shellcheck source=tests/lib/network_utils.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/network_utils.sh"
 
-# Use tmpfs build directory if available for ultra-fast I/O
+# Always use build/tests/results directory
 BUILD_DIR="$SCRIPT_DIR/../build"
-if mountpoint -q "$BUILD_DIR" 2>/dev/null; then
-    # tmpfs is mounted, use build/tests/results for ultra-fast I/O
-    RESULTS_DIR="$BUILD_DIR/tests/results"
-else
-    # Fallback to regular filesystem
-    RESULTS_DIR="$SCRIPT_DIR/results"
-fi
+RESULTS_DIR="$BUILD_DIR/tests/results"
 mkdir -p "$RESULTS_DIR"
 # Ensure RESULTS_DIR is an absolute path
 RESULTS_DIR="$(cd "$RESULTS_DIR" && pwd)"

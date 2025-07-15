@@ -50,15 +50,9 @@ reset_subtest_counter
 # Print beautiful test header
 print_test_header "$TEST_NAME" "$SCRIPT_VERSION"
 
-# Use tmpfs build directory if available for ultra-fast I/O
+# Use build directory for test results
 BUILD_DIR="$SCRIPT_DIR/../build"
-if mountpoint -q "$BUILD_DIR" 2>/dev/null; then
-    # tmpfs is mounted, use build/tests/results for ultra-fast I/O
-    RESULTS_DIR="$BUILD_DIR/tests/results"
-else
-    # Fallback to regular filesystem
-    RESULTS_DIR="$SCRIPT_DIR/results"
-fi
+RESULTS_DIR="$BUILD_DIR/tests/results"
 mkdir -p "$RESULTS_DIR"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 RESULT_LOG="$RESULTS_DIR/test_${TEST_NUMBER}_${TIMESTAMP}.log"
@@ -98,14 +92,8 @@ else
     EXIT_CODE=1
 fi
 
-# Set up log files for different signal tests - use tmpfs build directory if available
-if mountpoint -q "$BUILD_DIR" 2>/dev/null; then
-    # tmpfs is mounted, use build/tests/logs for ultra-fast I/O
-    LOG_DIR="$BUILD_DIR/tests/logs"
-else
-    # Fallback to regular filesystem
-    LOG_DIR="$SCRIPT_DIR/logs"
-fi
+# Set up log files for different signal tests
+LOG_DIR="$BUILD_DIR/tests/logs"
 mkdir -p "$LOG_DIR"
 LOG_FILE_SIGINT="$LOG_DIR/hydrogen_signal_test_SIGINT_${TIMESTAMP}.log"
 LOG_FILE_SIGTERM="$LOG_DIR/hydrogen_signal_test_SIGTERM_${TIMESTAMP}.log"

@@ -4,6 +4,7 @@
 # Runs unit tests using the Unity framework, treating each test file as a subtest
 
 # CHANGELOG
+# 2.2.0 - 2025-07-15 - Added parallel execution with proper ordering and improved output format
 # 2.1.0 - 2025-07-14 - Removed Unity framework check (moved to test 01), enhanced individual test reporting with INFO lines
 # 2.0.3 - 2025-07-14 - Enhanced individual test reporting with INFO lines showing test descriptions and purposes
 # 2.0.2 - 2025-07-06 - Added missing shellcheck justifications
@@ -13,7 +14,7 @@
 
 # Test configuration
 TEST_NAME="Unity Unit Tests"
-SCRIPT_VERSION="2.1.0"
+SCRIPT_VERSION="2.2.0"
 
 # Get the directory where this script is located
 TEST_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -39,6 +40,7 @@ SCRIPT_DIR="$TEST_SCRIPT_DIR"
 EXIT_CODE=0
 TOTAL_SUBTESTS=0
 PASS_COUNT=0
+CURRENT_SUBTEST_NUM=1
 
 # Auto-extract test number and set up environment
 TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
@@ -48,15 +50,9 @@ reset_subtest_counter
 # Print beautiful test header
 print_test_header "$TEST_NAME" "$SCRIPT_VERSION"
 
-# Set up results directory - use tmpfs build directory if available
+# Set up results directory - always use build/tests/results for consistency
 BUILD_DIR="$SCRIPT_DIR/../build"
-if mountpoint -q "$BUILD_DIR" 2>/dev/null; then
-    # tmpfs is mounted, use build/tests/results for ultra-fast I/O
-    RESULTS_DIR="$BUILD_DIR/tests/results"
-else
-    # Fallback to regular filesystem
-    RESULTS_DIR="$SCRIPT_DIR/results"
-fi
+RESULTS_DIR="$BUILD_DIR/tests/results"
 mkdir -p "$RESULTS_DIR"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 RESULT_LOG="$RESULTS_DIR/test_${TEST_NUMBER}_${TIMESTAMP}.log"
@@ -73,18 +69,11 @@ fi
 HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 UNITY_DIR="$SCRIPT_DIR/unity"
 
-# Use tmpfs build directory if available for ultra-fast I/O
+# Use build/tests/ directory for consistency
 BUILD_DIR="$SCRIPT_DIR/../build"
-if mountpoint -q "$BUILD_DIR" 2>/dev/null; then
-    # tmpfs is mounted, use build/tests/ for ultra-fast I/O
-    DIAG_DIR="$BUILD_DIR/tests/diagnostics"
-    LOG_FILE="$BUILD_DIR/tests/logs/unity_tests.log"
-else
-    # Fallback to regular filesystem
-    DIAG_DIR="$SCRIPT_DIR/diagnostics"
-    LOG_FILE="$SCRIPT_DIR/logs/unity_tests.log"
-fi
-DIAG_TEST_DIR="$DIAG_DIR/unity_tests_${TIMESTAMP}"
+DIAG_DIR="$BUILD_DIR/tests/logs"
+LOG_FILE="$BUILD_DIR/tests/logs/unity_tests.log"
+DIAG_TEST_DIR="$DIAG_DIR/unity_$(date +%H%M%S)"
 
 
 # Create output directories
@@ -162,38 +151,120 @@ run_single_unity_test() {
         failure_count=$(grep -E "[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored" "$temp_test_log" | awk '{print $3}')
         ignored_count=$(grep -E "[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored" "$temp_test_log" | awk '{print $5}')
         
-        # Extract and display individual test names with INFO lines
-        while IFS= read -r line; do
-            # Look for lines that match Unity output format: filepath:line_number:test_name:result
-            if [[ "$line" =~ ^.+:[0-9]+:([a-zA-Z_][a-zA-Z0-9_]*):([A-Z]+)$ ]]; then
-                local individual_test_name="${BASH_REMATCH[1]}"
-                local test_result="${BASH_REMATCH[2]}"
-                
-                print_message "$individual_test_name:$test_result"
-            fi
-        done < "$temp_test_log"
-        
         if [ -n "$test_count" ] && [ -n "$failure_count" ] && [ -n "$ignored_count" ]; then
             local passed_count=$((test_count - failure_count - ignored_count))
-            print_result 0 "Unity test $test_name passed: $test_count tests ($passed_count/$test_count passed)"
+            local log_path
+            log_path="build/tests/logs/unity_$(date +%H%M%S)/${test_name}_output.txt"
+            print_result 0 "$passed_count passed, $failure_count failed: $log_path"
         else
-            print_result 0 "Unity test $test_name passed"
+            local log_path
+            log_path="build/tests/logs/unity_$(date +%H%M%S)/${test_name}_output.txt"
+            print_result 0 "1 passed, 0 failed: $log_path"
         fi
         ((PASS_COUNT++))
         return 0
     else
-        # Show failed test output
+        # Show failed test output for debugging
         while IFS= read -r line; do
             print_output "$line"
         done < "$temp_test_log"
-        print_result 1 "Unity test $test_name failed"
+        local log_path
+        log_path="build/tests/logs/unity_$(date +%H%M%S)/${test_name}_output.txt"
+        print_result 1 "0 passed, 1 failed: $log_path"
         return 1
     fi
     
     cat "$temp_test_log" >> "$LOG_FILE"
 }
 
-# Function to run Unity tests via direct execution
+# Function to run a single unity test in parallel mode
+run_single_unity_test_parallel() {
+    local test_name="$1"
+    local result_file="$2"
+    local output_file="$3"
+    local test_exe="$HYDROGEN_DIR/build/unity/src/$test_name"
+    
+    # Initialize result tracking
+    local subtest_number=$((CURRENT_SUBTEST_NUM++))
+    local passed_count=0
+    local failed_count=0
+    local test_count=0
+    local exit_code=0
+    
+    # Create output header
+    {
+        echo "SUBTEST_START|$subtest_number|$test_name"
+        echo "TEST_LINE|Run Unity Test: $test_name"
+    } >> "$output_file"
+    
+    if [ ! -f "$test_exe" ]; then
+        {
+            echo "RESULT_LINE|FAIL|Unity test executable not found: ${test_exe#"$SCRIPT_DIR"/..}"
+            echo "SUBTEST_END|$subtest_number|$test_name|1|0|1"
+        } >> "$output_file"
+        echo "1|$test_name|1|0|1" > "$result_file"
+        return 1
+    fi
+    
+    # Run the Unity test and capture output
+    local temp_test_log="$DIAG_TEST_DIR/${test_name}_output.txt"
+    mkdir -p "$(dirname "$temp_test_log")"
+    true > "$temp_test_log"
+    
+    if "$test_exe" > "$temp_test_log" 2>&1; then
+        # Parse the Unity test output to get test counts
+        local failure_count
+        local ignored_count
+        test_count=$(grep -E "[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored" "$temp_test_log" | awk '{print $1}')
+        failure_count=$(grep -E "[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored" "$temp_test_log" | awk '{print $3}')
+        ignored_count=$(grep -E "[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored" "$temp_test_log" | awk '{print $5}')
+        
+        if [ -n "$test_count" ] && [ -n "$failure_count" ] && [ -n "$ignored_count" ]; then
+            passed_count=$((test_count - failure_count - ignored_count))
+            local log_path
+            log_path="build/tests/logs/unity_$(date +%H%M%S)/${test_name}_output.txt"
+            echo "RESULT_LINE|PASS|$passed_count passed, $failure_count failed: $log_path" >> "$output_file"
+            failed_count=0
+        else
+            local log_path
+            log_path="build/tests/logs/unity_$(date +%H%M%S)/${test_name}_output.txt"
+            echo "RESULT_LINE|PASS|1 passed, 0 failed: $log_path" >> "$output_file"
+            test_count=1
+            passed_count=1
+            failed_count=0
+        fi
+        exit_code=0
+    else
+        # Test failed - capture full output for display
+        local log_path
+        log_path="build/tests/logs/unity_$(date +%H%M%S)/${test_name}_output.txt"
+        echo "RESULT_LINE|FAIL|$passed_count passed, $failed_count failed: $log_path" >> "$output_file"
+        while IFS= read -r line; do
+            echo "OUTPUT_LINE|$line" >> "$output_file"
+        done < "$temp_test_log"
+        
+        # Try to get test counts even from failed output
+        failure_count=$(grep -E "[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored" "$temp_test_log" | awk '{print $3}')
+        test_count=$(grep -E "[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored" "$temp_test_log" | awk '{print $1}')
+        if [ -n "$test_count" ] && [ -n "$failure_count" ]; then
+            passed_count=$((test_count - failure_count))
+            failed_count=$failure_count
+        else
+            test_count=1
+            passed_count=0
+            failed_count=1
+        fi
+        exit_code=1
+    fi
+    
+    echo "SUBTEST_END|$subtest_number|$test_name|$test_count|$passed_count|$failed_count" >> "$output_file"
+    echo "$exit_code|$test_name|$test_count|$passed_count|$failed_count" > "$result_file"
+    
+    cat "$temp_test_log" >> "$LOG_FILE"
+    return $exit_code
+}
+
+# Function to run Unity tests via parallel execution
 run_unity_tests() {
     local overall_result=0
     
@@ -220,12 +291,149 @@ run_unity_tests() {
         return 1
     fi
     
-    # Run each Unity test
+    # Sort tests by filesystem order: root directory first, then subdirectories
+    local sorted_tests=()
+    local root_tests=()
+    local subdir_tests=()
+    
+    # Separate root directory tests from subdirectory tests
     for test_path in "${unity_tests[@]}"; do
-        if ! run_single_unity_test "$test_path"; then
-            overall_result=1
+        if [[ "$test_path" == *"/"* ]]; then
+            subdir_tests+=("$test_path")
+        else
+            root_tests+=("$test_path")
         fi
     done
+    
+    # Sort root tests and subdirectory tests separately
+    mapfile -t root_tests < <(printf '%s\n' "${root_tests[@]}" | sort)
+    mapfile -t subdir_tests < <(printf '%s\n' "${subdir_tests[@]}" | sort)
+    
+    # Combine in proper order: root tests first, then subdirectory tests
+    sorted_tests=("${root_tests[@]}" "${subdir_tests[@]}")
+    
+    # Detect number of CPU cores for parallel execution
+    local cpu_cores
+    if command -v nproc >/dev/null 2>&1; then
+        cpu_cores=$(nproc)
+    elif [ -f /proc/cpuinfo ]; then
+        cpu_cores=$(grep -c ^processor /proc/cpuinfo)
+    else
+        cpu_cores=4  # Fallback to 4 cores
+    fi
+    
+    # Split tests into batches for parallel execution
+    local batch_size=$cpu_cores
+    local total_tests=${#sorted_tests[@]}
+    local total_test_count=0
+    local total_passed=0
+    local total_failed=0
+    local batch_num=0
+    
+    print_message "Running $total_tests Unity tests in parallel batches of $batch_size"
+    
+    # Process tests in batches
+    local i=0
+    while [ "$i" -lt "$total_tests" ]; do
+        local batch_tests=()
+        local batch_end=$((i + batch_size))
+        if [ "$batch_end" -gt "$total_tests" ]; then
+            batch_end=$total_tests
+        fi
+        
+        # Create batch of tests
+        for ((j=i; j<batch_end; j++)); do
+            batch_tests+=("${sorted_tests[$j]}")
+        done
+        
+        ((batch_num++))
+        local batch_count=${#batch_tests[@]}
+        
+        print_message "Starting batch $batch_num: $batch_count tests"
+        
+        # Run batch in parallel and process results in order
+        local batch_result=0
+        local temp_files=()
+        local temp_outputs=()
+        local pids=()
+        
+        # Start parallel execution for batch
+        for test_path in "${batch_tests[@]}"; do
+            local temp_result_file
+            local temp_output_file
+            temp_result_file=$(mktemp)
+            temp_output_file=$(mktemp)
+            temp_files+=("$temp_result_file")
+            temp_outputs+=("$temp_output_file")
+            
+            # Run test in background
+            run_single_unity_test_parallel "$test_path" "$temp_result_file" "$temp_output_file" &
+            pids+=($!)
+        done
+        
+        # Wait for all tests in batch to complete
+        for pid in "${pids[@]}"; do
+            if ! wait "$pid"; then
+                batch_result=1
+                overall_result=1
+            fi
+        done
+        
+        # Process outputs in order (same order as input)
+        for k in "${!batch_tests[@]}"; do
+            local test_path="${batch_tests[$k]}"
+            local temp_output_file="${temp_outputs[$k]}"
+            local temp_result_file="${temp_files[$k]}"
+            
+            # Display output in order
+            if [ -f "$temp_output_file" ] && [ -s "$temp_output_file" ]; then
+                while IFS='|' read -r line_type content; do
+                    case "$line_type" in
+                        "TEST_LINE")
+                            print_subtest "$content"
+                            ;;
+                        "RESULT_LINE")
+                            IFS='|' read -r result_type message <<< "$content"
+                            if [ "$result_type" = "PASS" ]; then
+                                print_result 0 "$message"
+                                ((PASS_COUNT++))
+                            else
+                                print_result 1 "$message"
+                            fi
+                            ;;
+                        "OUTPUT_LINE")
+                            print_output "$content"
+                            ;;
+                        "SUBTEST_START")
+                            next_subtest
+                            ;;
+                    esac
+                done < "$temp_output_file"
+            fi
+            
+            # Collect statistics from result file
+            if [ -f "$temp_result_file" ] && [ -s "$temp_result_file" ]; then
+                IFS='|' read -r exit_code test_name test_count passed_count failed_count < "$temp_result_file"
+                total_test_count=$((total_test_count + test_count))
+                total_passed=$((total_passed + passed_count))
+                total_failed=$((total_failed + failed_count))
+            fi
+            
+            # Clean up temporary files
+            rm -f "$temp_output_file" "$temp_result_file"
+        done
+        
+        # Clear arrays for next batch
+        temp_files=()
+        temp_outputs=()
+        pids=()
+        
+        i=$batch_end
+    done
+    
+    # Display summary in two parts
+    print_message "Unity test execution: $total_tests test files ran in $batch_num batches"
+    print_message "Unity test results: $(printf "%'d" "$total_test_count") unit tests, $(printf "%'d" "$total_passed") passing, $(printf "%'d" "$total_failed") failing"
     
     return $overall_result
 }
@@ -237,23 +445,29 @@ if check_unity_tests_available; then
         EXIT_CODE=1
     fi
     
-    # Calculate Unity test coverage using optimized library function
+    # Calculate Unity test coverage using the same mechanism as coverage_table.sh
     next_subtest
     print_subtest "Calculate Unity Test Coverage"
     print_message "Calculating Unity test coverage..."
     
-    # Use the main build directory structure for Unity coverage
+    # Use the exact same approach as coverage_table.sh for consistency
     build_dir="$HYDROGEN_DIR/build/unity/src"
-    unity_coverage=$(calculate_unity_coverage "$build_dir" "$TIMESTAMP")
+    
+    # Source coverage libraries to ensure we use the same functions
+    source "$SCRIPT_DIR/lib/coverage-unity.sh"
+    source "$SCRIPT_DIR/lib/coverage-common.sh"
+    
+    # Call the same function that coverage_table.sh uses with the same error handling
+    unity_coverage=$(calculate_unity_coverage "$build_dir" "$TIMESTAMP" 2>/dev/null || echo "0.000")
     result=$?
     
-    if [ $result -eq 0 ]; then
+    if [ $result -eq 0 ] && [ "$unity_coverage" != "0.000" ]; then
         # Read detailed coverage information if available
         detailed_file="$RESULTS_DIR/unity_coverage.txt.detailed"
         if [ -f "$detailed_file" ]; then
             # Parse detailed coverage: timestamp,coverage_percentage,covered_lines,total_lines,instrumented_files,covered_files
             IFS=',' read -r timestamp_detail coverage_detail covered_lines total_lines instrumented_files covered_files < "$detailed_file"
-            print_result 0 "Unity test coverage calculated: $unity_coverage% ($covered_lines/$total_lines lines, $covered_files/$instrumented_files files)"
+            print_result 0 "Unity test coverage calculated: $unity_coverage% ($(printf "%'d" "$covered_lines")/$(printf "%'d" "$total_lines") lines, $(printf "%'d" "$covered_files")/$(printf "%'d" "$instrumented_files") files)"
         else
             print_result 0 "Unity test coverage calculated: $unity_coverage%"
         fi

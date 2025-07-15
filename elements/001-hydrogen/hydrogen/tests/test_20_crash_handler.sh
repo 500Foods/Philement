@@ -47,17 +47,10 @@ reset_subtest_counter
 # Print beautiful test header
 print_test_header "$TEST_NAME" "$SCRIPT_VERSION"
 
-# Use tmpfs build directory if available for ultra-fast I/O
+# Use build directory for test results
 BUILD_DIR="$SCRIPT_DIR/../build"
-if mountpoint -q "$BUILD_DIR" 2>/dev/null; then
-    # tmpfs is mounted, use build/tests/results for ultra-fast I/O
-    RESULTS_DIR="$BUILD_DIR/tests/results"
-    GDB_OUTPUT_DIR="$BUILD_DIR/tests/diagnostics/gdb_analysis"
-else
-    # Fallback to regular filesystem
-    RESULTS_DIR="$SCRIPT_DIR/results"
-    GDB_OUTPUT_DIR="$RESULTS_DIR/gdb_analysis"
-fi
+RESULTS_DIR="$BUILD_DIR/tests/results"
+GDB_OUTPUT_DIR="$BUILD_DIR/tests/diagnostics/gdb_analysis"
 mkdir -p "$RESULTS_DIR" "$GDB_OUTPUT_DIR"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 RESULT_LOG="$RESULTS_DIR/test_${TEST_NUMBER}_${TIMESTAMP}.log"
