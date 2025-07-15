@@ -41,15 +41,9 @@ reset_subtest_counter
 # Print beautiful test header
 print_test_header "$TEST_NAME" "$SCRIPT_VERSION"
 
-# Use tmpfs build directory if available for ultra-fast I/O
+# Always use build/tests/results directory
 BUILD_DIR="$SCRIPT_DIR/../build"
-if mountpoint -q "$BUILD_DIR" 2>/dev/null; then
-    # tmpfs is mounted, use build/tests/results for ultra-fast I/O
-    RESULTS_DIR="$BUILD_DIR/tests/results"
-else
-    # Fallback to regular filesystem
-    RESULTS_DIR="$SCRIPT_DIR/results"
-fi
+RESULTS_DIR="$BUILD_DIR/tests/results"
 mkdir -p "$RESULTS_DIR"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 RESULT_LOG="$RESULTS_DIR/test_${TEST_NUMBER}_${TIMESTAMP}.log"
