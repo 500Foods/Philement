@@ -46,15 +46,9 @@ reset_subtest_counter
 # Print beautiful test header
 print_test_header "$TEST_NAME" "$SCRIPT_VERSION"
 
-# Set up results directory - use tmpfs build directory if available
+# Set up results directory - always use build/tests/results
 BUILD_DIR="$SCRIPT_DIR/../build"
-if mountpoint -q "$BUILD_DIR" 2>/dev/null; then
-    # tmpfs is mounted, use build/tests/results for ultra-fast I/O
-    RESULTS_DIR="$BUILD_DIR/tests/results"
-else
-    # Fallback to regular filesystem
-    RESULTS_DIR="$SCRIPT_DIR/results"
-fi
+RESULTS_DIR="$BUILD_DIR/tests/results"
 mkdir -p "$RESULTS_DIR"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 RESULT_LOG="$RESULTS_DIR/test_${TEST_NUMBER}_${TIMESTAMP}.log"
@@ -75,17 +69,10 @@ STARTUP_TIMEOUT=10    # Seconds to wait for startup
 SHUTDOWN_TIMEOUT=90   # Hard limit on shutdown time
 SHUTDOWN_ACTIVITY_TIMEOUT=5  # Timeout if no new log activity
 
-# Output files and directories - use tmpfs build directory if available
+# Output files and directories - always use build/tests/ for consistency
 BUILD_DIR="$SCRIPT_DIR/../build"
-if mountpoint -q "$BUILD_DIR" 2>/dev/null; then
-    # tmpfs is mounted, use build/tests/ for ultra-fast I/O
-    LOG_FILE="$BUILD_DIR/tests/logs/hydrogen_test.log"
-    DIAG_DIR="$BUILD_DIR/tests/diagnostics"
-else
-    # Fallback to regular filesystem
-    LOG_FILE="$SCRIPT_DIR/logs/hydrogen_test.log"
-    DIAG_DIR="$SCRIPT_DIR/diagnostics"
-fi
+LOG_FILE="$BUILD_DIR/tests/logs/hydrogen_test.log"
+DIAG_DIR="$BUILD_DIR/tests/diagnostics"
 DIAG_TEST_DIR="$DIAG_DIR/env_variables_test_${TIMESTAMP}"
 
 # Validate Hydrogen Binary

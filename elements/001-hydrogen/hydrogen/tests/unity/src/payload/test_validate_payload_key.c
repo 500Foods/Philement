@@ -1,6 +1,7 @@
 /*
- * Unity Test File: Payload Module Tests
- * This file contains unit tests for src/payload/payload.c functionality
+ * Unity Test File: validate_payload_key Function Tests
+ * This file contains unit tests for the validate_payload_key() function
+ * from src/payload/payload.c
  */
 
 #ifndef _POSIX_C_SOURCE
@@ -14,27 +15,16 @@
 #include <stddef.h>
 #include <unistd.h>
 #include <signal.h>
+#include <stdint.h>
 
 // Include necessary headers for the payload module
 #include "../../../../src/payload/payload.h"
 #include "../../../../src/config/config.h"
 
-// Forward declarations for functions being tested
+// Forward declaration for the function being tested
 bool validate_payload_key(const char *key);
-void free_payload(PayloadData *payload);
-void cleanup_openssl(void);
 
-// Test fixtures
-static AppConfig test_config;
-static PayloadData test_payload;
-
-// Global state variables that payload functions check (declared extern)
-extern volatile sig_atomic_t server_stopping;
-extern volatile sig_atomic_t server_running;
-extern volatile sig_atomic_t server_starting;
-extern volatile sig_atomic_t web_server_shutdown;
-
-// Simple timeout mechanism using alarm
+// Timeout handler for environment variable tests
 static volatile sig_atomic_t test_timeout = 0;
 
 void timeout_handler(int sig) {
@@ -43,35 +33,17 @@ void timeout_handler(int sig) {
 }
 
 void setUp(void) {
-    // Reset timeout flag
     test_timeout = 0;
-    
-    // Initialize test config
-    memset(&test_config, 0, sizeof(AppConfig));
-    test_config.server.payload_key = strdup("test_key_12345");
-    test_config.server.server_name = strdup("test_server");
-    test_config.server.log_file = strdup("/tmp/test.log");
-    
-    // Initialize test payload
-    memset(&test_payload, 0, sizeof(PayloadData));
 }
 
 void tearDown(void) {
-    // Cancel any pending alarms
-    alarm(0);
+    // Reset timeout state
+    test_timeout = 0;
     signal(SIGALRM, SIG_DFL);
-    
-    // Clean up test config
-    free(test_config.server.payload_key);
-    free(test_config.server.server_name);
-    free(test_config.server.log_file);
-    memset(&test_config, 0, sizeof(AppConfig));
-    
-    // Clean up test payload
-    free_payload(&test_payload);
+    alarm(0);
 }
 
-// Test functions for validate_payload_key
+// Basic parameter validation tests
 void test_validate_payload_key_null_key(void) {
     TEST_ASSERT_FALSE(validate_payload_key(NULL));
 }
@@ -177,81 +149,6 @@ void test_validate_payload_key_boundary_length(void) {
     TEST_ASSERT_FALSE(validate_payload_key(boundary_key));
 }
 
-// Test functions for free_payload
-void test_free_payload_null_payload(void) {
-    // Should not crash with NULL pointer
-    free_payload(NULL);
-    TEST_ASSERT_TRUE(true); // If we reach here, it didn't crash
-}
-
-void test_free_payload_empty_payload(void) {
-    PayloadData empty_payload = {0};
-    free_payload(&empty_payload);
-    TEST_ASSERT_NULL(empty_payload.data);
-    TEST_ASSERT_EQUAL(0, empty_payload.size);
-    TEST_ASSERT_FALSE(empty_payload.is_compressed);
-}
-
-void test_free_payload_with_data(void) {
-    PayloadData test_payload_local = {0};
-    test_payload_local.data = malloc(100);
-    test_payload_local.size = 100;
-    test_payload_local.is_compressed = true;
-    
-    free_payload(&test_payload_local);
-    
-    TEST_ASSERT_NULL(test_payload_local.data);
-    TEST_ASSERT_EQUAL(0, test_payload_local.size);
-    TEST_ASSERT_FALSE(test_payload_local.is_compressed);
-}
-
-// Test functions for cleanup_openssl
-void test_cleanup_openssl_basic(void) {
-    // Should not crash when called
-    cleanup_openssl();
-    TEST_ASSERT_TRUE(true); // If we reach here, it didn't crash
-}
-
-void test_cleanup_openssl_multiple_calls(void) {
-    // Should handle multiple calls gracefully
-    cleanup_openssl();
-    cleanup_openssl();
-    cleanup_openssl();
-    TEST_ASSERT_TRUE(true); // If we reach here, it didn't crash
-}
-
-// Test PayloadData structure
-void test_payload_data_structure_initialization(void) {
-    PayloadData payload = {0};
-    TEST_ASSERT_NULL(payload.data);
-    TEST_ASSERT_EQUAL(0, payload.size);
-    TEST_ASSERT_FALSE(payload.is_compressed);
-}
-
-void test_payload_data_structure_assignment(void) {
-    PayloadData payload = {0};
-    uint8_t test_data[] = {1, 2, 3, 4, 5};
-    
-    payload.data = malloc(sizeof(test_data));
-    memcpy(payload.data, test_data, sizeof(test_data));
-    payload.size = sizeof(test_data);
-    payload.is_compressed = true;
-    
-    TEST_ASSERT_NOT_NULL(payload.data);
-    TEST_ASSERT_EQUAL(sizeof(test_data), payload.size);
-    TEST_ASSERT_TRUE(payload.is_compressed);
-    TEST_ASSERT_EQUAL_MEMORY(test_data, payload.data, sizeof(test_data));
-    
-    free(payload.data);
-}
-
-// Test PAYLOAD_MARKER constant
-void test_payload_marker_constant(void) {
-    TEST_ASSERT_NOT_NULL(PAYLOAD_MARKER);
-    TEST_ASSERT_TRUE(strlen(PAYLOAD_MARKER) > 0);
-    TEST_ASSERT_EQUAL_STRING("<<< HERE BE ME TREASURE >>>", PAYLOAD_MARKER);
-}
-
 // Test parameter validation patterns
 void test_parameter_validation_patterns(void) {
     // Test that null parameters are consistently rejected
@@ -292,22 +189,6 @@ int main(void) {
     RUN_TEST(test_validate_payload_key_malformed_env_var_no_name);
     RUN_TEST(test_validate_payload_key_malformed_env_var_too_long);
     RUN_TEST(test_validate_payload_key_boundary_length);
-    
-    // free_payload tests
-    RUN_TEST(test_free_payload_null_payload);
-    RUN_TEST(test_free_payload_empty_payload);
-    RUN_TEST(test_free_payload_with_data);
-    
-    // cleanup_openssl tests
-    RUN_TEST(test_cleanup_openssl_basic);
-    RUN_TEST(test_cleanup_openssl_multiple_calls);
-    
-    // PayloadData structure tests
-    RUN_TEST(test_payload_data_structure_initialization);
-    RUN_TEST(test_payload_data_structure_assignment);
-    
-    // Additional tests
-    RUN_TEST(test_payload_marker_constant);
     RUN_TEST(test_parameter_validation_patterns);
     RUN_TEST(test_env_var_pattern_matching);
     

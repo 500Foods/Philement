@@ -134,6 +134,11 @@ collect_gcov_files() {
                     continue
                 fi
                 
+                # Skip system include files that show up in Source: lines
+                if grep -q "Source:/usr/include/" "$gcov_file" 2>/dev/null; then
+                    continue
+                fi
+                
                 if [[ "$basename_file" == "test_"* ]]; then
                     continue
                 fi

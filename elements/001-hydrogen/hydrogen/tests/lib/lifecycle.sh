@@ -717,17 +717,10 @@ get_tmpfs_output_dirs() {
     local build_dir="$script_dir/../build"
     local base_results_dir base_logs_dir base_diag_dir
     
-    if mountpoint -q "$build_dir" 2>/dev/null; then
-        # tmpfs is mounted, use build/tests/ for ultra-fast I/O
-        base_results_dir="$build_dir/tests/results"
-        base_logs_dir="$build_dir/tests/logs"
-        base_diag_dir="$build_dir/tests/diagnostics"
-    else
-        # Fallback to regular filesystem
-        base_results_dir="$script_dir/results"
-        base_logs_dir="$script_dir/logs"
-        base_diag_dir="$script_dir/diagnostics"
-    fi
+    # Always use build/tests/ directories
+    base_results_dir="$build_dir/tests/results"
+    base_logs_dir="$build_dir/tests/logs"
+    base_diag_dir="$build_dir/tests/diagnostics"
     
     # Export the directories for use by calling scripts
     export TMPFS_RESULTS_DIR="$base_results_dir"

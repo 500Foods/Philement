@@ -75,6 +75,16 @@ calculate_unity_coverage() {
                 continue
             fi
             
+            # Skip system include files that show up in Source: lines
+            if grep -q "Source:/usr/include/" "$gcov_file" 2>/dev/null; then
+                continue
+            fi
+            
+            # Skip test files (same as coverage_table.sh)
+            if [[ "$basename_file" == "test_"* ]]; then
+                continue
+            fi
+            
             # Skip system libraries and external dependencies (same as Test 11)
             if [[ "$basename_file" == *"jansson"* ]] || \
                [[ "$basename_file" == *"json"* ]] || \
@@ -128,8 +138,8 @@ calculate_unity_coverage() {
         # Count only instrumented lines using same method as Test 11
         local line_counts
         line_counts=$(awk '
-            /^[[:space:]]*[0-9]+:[[:space:]]*[0-9]+:/ { covered++; total++ }
-            /^[[:space:]]*#####:[[:space:]]*[0-9]+:/ { total++ }
+            /^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/ { covered++; total++ }
+            /^[[:space:]]*#####:[[:space:]]*[0-9]+\*?:/ { total++ }
             END { print total "," covered }
         ' "$combined_gcov" 2>/dev/null)
         

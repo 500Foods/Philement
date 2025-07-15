@@ -44,15 +44,9 @@ declare -a TEST_PASSED
 declare -a TEST_FAILED
 declare -a TEST_ELAPSED
 
-# Results directory - use tmpfs build directory if available
+# Results directory
 BUILD_DIR="$SCRIPT_DIR/../build"
-if mountpoint -q "$BUILD_DIR" 2>/dev/null; then
-    # tmpfs is mounted, use build/tests/results for ultra-fast I/O
-    RESULTS_DIR="$BUILD_DIR/tests/results"
-else
-    # Fallback to regular filesystem
-    RESULTS_DIR="$SCRIPT_DIR/results"
-fi
+RESULTS_DIR="$BUILD_DIR/tests/results"
 mkdir -p "$RESULTS_DIR"
 
 # Command line argument parsing
