@@ -40,6 +40,12 @@ Step 4: Quality Checks
 - Remove any speculation or marketing language
 - Keep focus on technical changes
 
+Step 5: Update RELEASES.md
+- Add link to new release notes file in this RELEASES.md
+- Add entries with newest dates at the top of their respective month/year section
+- Include brief summary after the link
+- Format: [YYYY-MMM-DD (Day)](docs/releases/YYYY-MM/YYYY-MM-DD.md): Brief Summary
+
 Remember:
 - This is a technical record, not marketing
 - Every statement should be backed by commit evidence
@@ -48,6 +54,7 @@ Remember:
 -->
 
 - July 2025
+  - [2025-Jul-15 (Tue)](docs/releases/2025-07/2025-07-15.md): Unity Testing Framework Expansion
   - [2025-Jul-14 (Mon)](docs/releases/2025-07/2025-07-14.md): Test Framework Architecture Overhaul
   - [2025-Jul-13 (Sun)](docs/releases/2025-07/2025-07-13.md): Coverage Improvements & Test Reliability
   - [2025-Jul-12 (Sat)](docs/releases/2025-07/2025-07-12.md): Coverage Tools and Build Updates
