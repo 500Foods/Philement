@@ -4,6 +4,7 @@
 # Runs unit tests using the Unity framework, treating each test file as a subtest
 
 # CHANGELOG
+# 2.3.0 - 2025-07-16 - Changed batching formula to divide tests evenly into minimum groups within CPU limit
 # 2.2.0 - 2025-07-15 - Added parallel execution with proper ordering and improved output format
 # 2.1.0 - 2025-07-14 - Removed Unity framework check (moved to test 01), enhanced individual test reporting with INFO lines
 # 2.0.3 - 2025-07-14 - Enhanced individual test reporting with INFO lines showing test descriptions and purposes
@@ -14,7 +15,7 @@
 
 # Test configuration
 TEST_NAME="Unity Unit Tests"
-SCRIPT_VERSION="2.2.0"
+SCRIPT_VERSION="2.3.0"
 
 # Get the directory where this script is located
 TEST_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -324,14 +325,16 @@ run_unity_tests() {
     fi
     
     # Split tests into batches for parallel execution
-    local batch_size=$cpu_cores
+    # Calculate minimum number of groups needed to fit within CPU limit
     local total_tests=${#sorted_tests[@]}
+    local number_of_groups=$(( (total_tests + cpu_cores - 1) / cpu_cores ))  # ceil(total_tests / cpu_cores)
+    local batch_size=$(( (total_tests + number_of_groups - 1) / number_of_groups ))  # ceil(total_tests / number_of_groups)
     local total_test_count=0
     local total_passed=0
     local total_failed=0
     local batch_num=0
     
-    print_message "Running $total_tests Unity tests in parallel batches of $batch_size"
+    print_message "Running $total_tests Unity tests in parallel batches of ~$batch_size (max $cpu_cores CPUs, $number_of_groups groups)"
     
     # Process tests in batches
     local i=0
