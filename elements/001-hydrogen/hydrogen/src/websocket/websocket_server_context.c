@@ -144,11 +144,13 @@ void ws_context_destroy(WebSocketServerContext* ctx)
             websocket_threads.thread_count = 0;
         }
 
-        // Check if we're in a signal-based shutdown (SIGINT/SIGTERM) for rapid exit
+        // Check if we're in a signal-based shutdown (SIGINT/SIGTERM) or restart (SIGHUP) for rapid exit
         extern volatile sig_atomic_t signal_based_shutdown;
-        if (signal_based_shutdown) {
-            log_this("WebSocket", "Skipping expensive lws_context_destroy during signal shutdown", LOG_LEVEL_STATE);
-            // OS will clean up resources on process exit, no need for graceful cleanup
+        extern volatile sig_atomic_t restart_requested;
+        if (signal_based_shutdown || restart_requested) {
+            log_this("WebSocket", "Skipping expensive lws_context_destroy during %s", LOG_LEVEL_STATE,
+                     signal_based_shutdown ? "signal shutdown" : "restart");
+            // OS will clean up resources on process exit/restart, no need for graceful cleanup
         } else {
             log_this("WebSocket", "Destroying libwebsockets context", LOG_LEVEL_STATE);
             

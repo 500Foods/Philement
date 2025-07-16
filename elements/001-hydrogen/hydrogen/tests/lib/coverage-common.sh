@@ -31,58 +31,73 @@ analyze_combined_gcov_coverage() {
     
     # Handle cases where only one file exists
     if [[ ! -f "$unity_gcov" && ! -f "$blackbox_gcov" ]]; then
-        echo "0,0"
+        echo "0,0,0"
         return 1
     elif [[ ! -f "$unity_gcov" ]]; then
-        # Only blackbox coverage exists - count lines properly
-        awk '/^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/ { covered++; total++ }
-             /^[[:space:]]*#####:[[:space:]]*[0-9]+\*?:/ { total++ }
-             END { 
-                 if (total == "") total = 0;
-                 if (covered == "") covered = 0;
-                 print total "," covered 
-             }' "$blackbox_gcov"
+        # Only blackbox coverage exists
+        local result
+        result=$(awk '
+            /^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/ { covered++; total++ }
+            /^[[:space:]]*#####:[[:space:]]*[0-9]+:/ { total++ }
+            END { 
+                if (total == "") total = 0;
+                if (covered == "") covered = 0;
+                print total "," covered "," covered
+            }' "$blackbox_gcov")
+        echo "$result"
         return 0
     elif [[ ! -f "$blackbox_gcov" ]]; then
-        # Only unity coverage exists - count lines properly
-        awk '/^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/ { covered++; total++ }
-             /^[[:space:]]*#####:[[:space:]]*[0-9]+\*?:/ { total++ }
-             END { 
-                 if (total == "") total = 0;
-                 if (covered == "") covered = 0;
-                 print total "," covered 
-             }' "$unity_gcov"
+        # Only unity coverage exists
+        local result
+        result=$(awk '
+            /^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/ { covered++; total++ }
+            /^[[:space:]]*#####:[[:space:]]*[0-9]+:/ { total++ }
+            END { 
+                if (total == "") total = 0;
+                if (covered == "") covered = 0;
+                print total "," covered "," covered
+            }' "$unity_gcov")
+        echo "$result"
         return 0
     fi
     
-    # Both files exist - get individual counts and combine them properly
-    local unity_result blackbox_result
-    unity_result=$(awk '/^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/ { covered++; total++ }
-                        /^[[:space:]]*#####:[[:space:]]*[0-9]+\*?:/ { total++ }
-                        END { 
-                            if (total == "") total = 0;
-                            if (covered == "") covered = 0;
-                            print total "," covered 
-                        }' "$unity_gcov")
+    # Both files exist - calculate TRUE union using the same logic as manual test
+    local temp_dir
+    temp_dir=$(mktemp -d 2>/dev/null) || return 1
+    local unity_covered="$temp_dir/unity_covered"
+    local blackbox_covered="$temp_dir/blackbox_covered"
+    local all_instrumented="$temp_dir/all_instrumented"
+    local union_covered="$temp_dir/union_covered"
     
-    blackbox_result=$(awk '/^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/ { covered++; total++ }
-                           /^[[:space:]]*#####:[[:space:]]*[0-9]+\*?:/ { total++ }
-                           END { 
-                               if (total == "") total = 0;
-                               if (covered == "") covered = 0;
-                               print total "," covered 
-                           }' "$blackbox_gcov")
+    # Extract covered lines from Unity gcov - ensure we strip whitespace properly
+    grep -E "^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:" "$unity_gcov" 2>/dev/null | \
+        cut -d: -f2 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | sort -n | uniq > "$unity_covered"
     
-    local unity_total="${unity_result%,*}"
-    local unity_covered="${unity_result#*,}"
-    local blackbox_total="${blackbox_result%,*}"
-    local blackbox_covered="${blackbox_result#*,}"
+    # Extract covered lines from Blackbox gcov - ensure we strip whitespace properly  
+    grep -E "^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:" "$blackbox_gcov" 2>/dev/null | \
+        cut -d: -f2 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | sort -n | uniq > "$blackbox_covered"
     
-    # For now, use the max of the two approaches (will improve with proper line-by-line later)
-    local max_total=$((unity_total > blackbox_total ? unity_total : blackbox_total))
-    local max_covered=$((unity_covered > blackbox_covered ? unity_covered : blackbox_covered))
+    # Extract all instrumented lines (covered + uncovered) from both files
+    {
+        grep -E "^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:" "$unity_gcov" 2>/dev/null | cut -d: -f2 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//'
+        grep -E "^[[:space:]]*#####:[[:space:]]*[0-9]+:" "$unity_gcov" 2>/dev/null | cut -d: -f2 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//'
+        grep -E "^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:" "$blackbox_gcov" 2>/dev/null | cut -d: -f2 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//'
+        grep -E "^[[:space:]]*#####:[[:space:]]*[0-9]+:" "$blackbox_gcov" 2>/dev/null | cut -d: -f2 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//'
+    } | sort -n | uniq > "$all_instrumented"
     
-    echo "$max_total,$max_covered"
+    # Calculate union of covered lines (same as manual: cat files | sort -n | uniq)
+    cat "$unity_covered" "$blackbox_covered" | sort -n | uniq > "$union_covered"
+    
+    # Count the results
+    local total_instrumented
+    total_instrumented=$(wc -l < "$all_instrumented" 2>/dev/null || echo "0")
+    local total_covered
+    total_covered=$(wc -l < "$union_covered" 2>/dev/null || echo "0")
+    
+    # Clean up temp files
+    rm -rf "$temp_dir" 2>/dev/null
+    
+    echo "$total_instrumented,$total_covered,$total_covered"
 }
 
 # Ensure coverage directories exist
@@ -134,45 +149,19 @@ should_ignore_file() {
     # Load patterns if not loaded
     load_ignore_patterns "$project_root"
     
-    local relative_path="${file_path#"$project_root"/}"
-    
-    # Use case statement for faster pattern matching when possible
-    # Note: These fast-path patterns should match common entries in .trial-ignore
-    # shellcheck disable=SC2221,SC2222  # Overlapping patterns are intentional for performance
-    case "$relative_path" in
-        src/not_hydrogen.c|not_hydrogen.c)
-            return 0  # Should ignore (matches .trial-ignore)
-            ;;
-        print/print_queue_manager.c)
-            return 0  # Should ignore (matches .trial-ignore)
-            ;;
-        websocket/websocket_dynamic.c)
-            return 0  # Should ignore (matches .trial-ignore)
-            ;;
-        api/system/system_service.c)
-            return 0  # Should ignore (matches .trial-ignore)
-            ;;
-        config/*)
-            return 0  # Should ignore config files (matches .trial-ignore patterns)
-            ;;
-        */config_*.c)
-            return 0  # Should ignore config files with config_ prefix
-            ;;
-    esac
-    
-    # Check remaining patterns only if quick patterns didn't match
+    # Check against patterns
     for pattern in "${IGNORE_PATTERNS[@]}"; do
-        if [[ "$relative_path" == *"$pattern"* ]]; then
-            return 0  # Should ignore
+        if [[ "$file_path" == *"$pattern"* ]]; then
+            return 0  # Ignore
         fi
     done
     
-    return 1  # Should not ignore
+    return 1  # Do not ignore
 }
 
-# Function to load source files cache to avoid repeated filesystem scans
-# Usage: load_source_files_cache <project_root>
-load_source_files_cache() {
+# Function to load all source files from project directory
+# Usage: load_source_files <project_root>
+load_source_files() {
     local project_root="$1"
     
     # Only load once
@@ -181,25 +170,69 @@ load_source_files_cache() {
     fi
     
     SOURCE_FILES_CACHE=()
-    if [[ -d "$project_root/src" ]]; then
-        # Use more efficient approach to cache all source files
-        mapfile -t SOURCE_FILES_CACHE < <(find "$project_root/src" -name "*.c" -type f 2>/dev/null)
+    local src_dir="$project_root/src"
+    
+    if [ -d "$src_dir" ]; then
+        while IFS= read -r -d '' file; do
+            # Get relative path from project root
+            local rel_path="${file#"$project_root"/}"
+            
+            # Skip ignored files
+            if should_ignore_file "$rel_path" "$project_root"; then
+                continue
+            fi
+            
+            # Skip test files
+            local basename_file
+            basename_file=$(basename "$file")
+            if [[ "$basename_file" == "test_"* ]]; then
+                continue
+            fi
+            
+            SOURCE_FILES_CACHE+=("$rel_path")
+        done < <(find "$src_dir" -type f \( -name "*.c" -o -name "*.h" \) -print0 2>/dev/null)
     fi
     
     SOURCE_FILE_CACHE_LOADED="true"
     return 0
 }
 
-# Function to get cached source files
-# Usage: get_cached_source_files <project_root>
-get_cached_source_files() {
+# Function to identify uncovered source files
+# Usage: identify_uncovered_files <project_root>
+identify_uncovered_files() {
     local project_root="$1"
+    local uncovered_files=()
     
-    # Load cache if not loaded
-    load_source_files_cache "$project_root"
+    # Load source files
+    load_source_files "$project_root"
     
-    # Output cached source files
-    printf '%s\n' "${SOURCE_FILES_CACHE[@]}"
+    # Create temporary file for uncovered files
+    local temp_uncovered
+    temp_uncovered=$(mktemp)
+    
+    # Process each source file
+    for file in "${SOURCE_FILES_CACHE[@]}"; do
+        # Check if file has a corresponding .gcov in blackbox coverage directory
+        local basename_file
+        basename_file=$(basename "$file" .c)
+        local gcov_file="$BLACKBOX_COVS/${basename_file}.c.gcov"
+        
+        # If gcov doesn't exist or has zero coverage, consider it uncovered
+        if [[ ! -f "$gcov_file" ]] || [[ $(awk '/^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/ { covered++ } END { print (covered == 0 ? 0 : 1) }' "$gcov_file") -eq 0 ]]; then
+            uncovered_files+=("$file")
+            echo "$file" >> "$temp_uncovered"
+        fi
+    done
+    
+    # Calculate uncovered count
+    local uncovered_count=${#uncovered_files[@]}
+    
+    # Output results
+    echo "UNCOVERED_FILES_COUNT: $uncovered_count"
+    echo "UNCOVERED_FILES:"
+    cat "$temp_uncovered"
+    
+    rm -f "$temp_uncovered"
 }
 
 # Function to clean up coverage data files
@@ -208,10 +241,131 @@ cleanup_coverage_data() {
     rm -f "$UNITY_COVERAGE_FILE" "$BLACKBOX_COVERAGE_FILE" "$COMBINED_COVERAGE_FILE" "$OVERLAP_COVERAGE_FILE"
     rm -f "${UNITY_COVERAGE_FILE}.detailed" "${BLACKBOX_COVERAGE_FILE}.detailed"
     rm -rf "$GCOV_PREFIX" 2>/dev/null || true
-    # Reset caches for next run
-    IGNORE_PATTERNS_LOADED=""
-    SOURCE_FILE_CACHE_LOADED=""
     # Note: We don't remove .gcov files since they stay in their respective build directories
     # Only clean up the centralized results
     return 0
+}
+
+# Function to analyze a single gcov file and store data
+analyze_gcov_file() {
+    local gcov_file="$1"
+    local coverage_type="$2"  # "unity" or "coverage"
+    
+    # Input validation - prevent hanging on empty or nonexistent files
+    if [[ -z "$gcov_file" ]]; then
+        return 1
+    fi
+    
+    if [[ ! -f "$gcov_file" ]]; then
+        return 1
+    fi
+    
+    # Use the correct awk parsing logic for gcov format
+    local line_counts
+    line_counts=$(awk '
+        /^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/ { covered++; total++ }
+        /^[[:space:]]*#####:[[:space:]]*[0-9]+:/ { total++ }
+        END {
+            if (total == "") total = 0
+            if (covered == "") covered = 0
+            print total "," covered
+        }
+    ' "$gcov_file" 2>/dev/null)
+    
+    local instrumented_lines="${line_counts%,*}"
+    local covered_lines="${line_counts#*,}"
+    
+    # Default to 0 if parsing failed
+    instrumented_lines=${instrumented_lines:-0}
+    covered_lines=${covered_lines:-0}
+    
+    # Include all files, even those with 0 instrumented lines, for complete coverage table
+    # This ensures the table shows all files that have gcov data, matching test 99's behavior
+    
+    # Extract relative path from Source: line in gcov file
+    local source_line
+    source_line=$(grep '^        -:    0:Source:' "$gcov_file" | cut -d':' -f3-)
+    local display_path
+    if [[ -n "$source_line" ]]; then
+        display_path="${source_line#*/hydrogen/}"
+    else
+        # Fallback to basename
+        display_path=$(basename "$gcov_file" .gcov)
+        display_path="src/$display_path"
+    fi
+    
+    # Store data in appropriate arrays
+    all_files["$display_path"]=1
+    if [[ "$coverage_type" == "unity" ]]; then
+        unity_covered_lines["$display_path"]=$covered_lines
+        unity_instrumented_lines["$display_path"]=$instrumented_lines
+    else
+        coverage_covered_lines["$display_path"]=$covered_lines
+        coverage_instrumented_lines["$display_path"]=$instrumented_lines
+    fi
+}
+
+# Function to collect and process gcov files from a directory
+collect_gcov_files() {
+    local build_dir="$1"
+    local coverage_type="$2"
+    local files_found=0
+    
+    if [ -d "$build_dir" ]; then
+        while IFS= read -r gcov_file; do
+            if [[ -f "$gcov_file" ]]; then
+                # Use the exact same filtering logic as the working sections
+                basename_file=$(basename "$gcov_file")
+                if [[ "$basename_file" == "unity.c.gcov" ]] || [[ "$gcov_file" == *"/usr/"* ]]; then
+                    continue
+                fi
+                
+                # Skip system include files that show up in Source: lines
+                if grep -q "Source:/usr/include/" "$gcov_file" 2>/dev/null; then
+                    continue
+                fi
+                
+                if [[ "$basename_file" == "test_"* ]]; then
+                    continue
+                fi
+                
+                if [[ "$basename_file" == *"jansson"* ]] || \
+                   [[ "$basename_file" == *"json"* ]] || \
+                   [[ "$basename_file" == *"curl"* ]] || \
+                   [[ "$basename_file" == *"ssl"* ]] || \
+                   [[ "$basename_file" == *"crypto"* ]] || \
+                   [[ "$basename_file" == *"pthread"* ]] || \
+                   [[ "$basename_file" == *"uuid"* ]] || \
+                   [[ "$basename_file" == *"zlib"* ]] || \
+                   [[ "$basename_file" == *"pcre"* ]]; then
+                    continue
+                fi
+                
+                source_file="${basename_file%.gcov}"
+                should_ignore=false
+                
+                if [[ -f "$project_root/.trial-ignore" ]]; then
+                    while IFS= read -r line; do
+                        if [[ "$line" =~ ^[[:space:]]*# ]] || [[ -z "$line" ]]; then
+                            continue
+                        fi
+                        pattern="${line#./}"
+                        if [[ "$source_file" == *"$pattern"* ]]; then
+                            should_ignore=true
+                            break
+                        fi
+                    done < "$project_root/.trial-ignore"
+                fi
+                
+                if [[ "$should_ignore" == true ]]; then
+                    continue
+                fi
+                
+                analyze_gcov_file "$gcov_file" "$coverage_type"
+                ((files_found++))
+            fi
+        done < <(find "$build_dir" -name "*.gcov" -type f 2>/dev/null)
+    fi
+    
+    return "$files_found"
 }
