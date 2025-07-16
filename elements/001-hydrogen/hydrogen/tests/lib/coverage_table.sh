@@ -27,32 +27,7 @@ TABLES_EXE="$PROJECT_ROOT/tests/lib/tables"
 # Source the coverage common functions for combined analysis
 source "$SCRIPT_DIR/coverage-common.sh"
 
-# Load .trial-ignore patterns for consistent filtering
-TRIAL_IGNORE_PATTERNS=()
-if [[ -f "$PROJECT_ROOT/.trial-ignore" ]]; then
-    while IFS= read -r line; do
-        # Skip comments and empty lines
-        if [[ "$line" =~ ^[[:space:]]*# ]] || [[ -z "$line" ]]; then
-            continue
-        fi
-        # Remove leading ./ if present and add pattern
-        pattern="${line#./}"
-        TRIAL_IGNORE_PATTERNS+=("$pattern")
-    done < "$PROJECT_ROOT/.trial-ignore"
-fi
-
-# Function to check if a file should be ignored based on .trial-ignore
-should_ignore_file() {
-    local filename="$1"
-    
-    for pattern in "${TRIAL_IGNORE_PATTERNS[@]}"; do
-        if [[ "$filename" == *"$pattern"* ]]; then
-            return 0  # Should ignore
-        fi
-    done
-    
-    return 1  # Should not ignore
-}
+# Filtering is now handled by coverage-common.sh
 
 # Associative arrays to store coverage data from both directories
 declare -A unity_covered_lines
@@ -178,56 +153,23 @@ declare -A all_files
 # Source the blackbox coverage functions to get access to internal functions
 source "$SCRIPT_DIR/coverage-blackbox.sh"
 
-# Process coverage gcov files using the existing function
-collect_gcov_files "$BLACKBOX_COVS" "coverage"
-
-# Process Unity gcov files using the existing function
-collect_gcov_files "$UNITY_COVS" "unity"
-
-# Calculate combined coverage for each file using TRUE union logic
+# Declare arrays that will be populated by the batch function
+declare -A unity_covered_lines
+declare -A unity_instrumented_lines
+declare -A coverage_covered_lines
+declare -A coverage_instrumented_lines
 declare -A combined_covered_lines
 declare -A combined_instrumented_lines
 
-for file_path in "${!all_files[@]}"; do
-    # Find corresponding gcov files for this source file
-    basename_file=$(basename "$file_path" .c)
-    unity_gcov_file=""
-    blackbox_gcov_file=""
-    
-    # Look for Unity gcov file
-    if [[ -f "$UNITY_COVS/${basename_file}.c.gcov" ]]; then
-        unity_gcov_file="$UNITY_COVS/${basename_file}.c.gcov"
-    else
-        # Try subdirectory structure
-        subdir_path="${file_path#src/}"
-        subdir="${subdir_path%/*}"
-        if [[ "$subdir" != "$subdir_path" && -f "$UNITY_COVS/$subdir/${basename_file}.c.gcov" ]]; then
-            unity_gcov_file="$UNITY_COVS/$subdir/${basename_file}.c.gcov"
-        fi
-    fi
-    
-    # Look for Blackbox gcov file
-    if [[ -f "$BLACKBOX_COVS/${basename_file}.c.gcov" ]]; then
-        blackbox_gcov_file="$BLACKBOX_COVS/${basename_file}.c.gcov"
-    else
-        # Try subdirectory structure
-        subdir_path="${file_path#src/}"
-        subdir="${subdir_path%/*}"
-        if [[ "$subdir" != "$subdir_path" && -f "$BLACKBOX_COVS/$subdir/${basename_file}.c.gcov" ]]; then
-            blackbox_gcov_file="$BLACKBOX_COVS/$subdir/${basename_file}.c.gcov"
-        fi
-    fi
-    
-    # Calculate TRUE union coverage using line-by-line analysis
-    combined_result=$(analyze_combined_gcov_coverage "$unity_gcov_file" "$blackbox_gcov_file")
-    
-    combined_instrumented="${combined_result%%,*}"
-    temp="${combined_result#*,}"
-    combined_covered="${temp%%,*}"
-    
-    # Always use the union result - no fallback to max logic
-    combined_instrumented_lines["$file_path"]=$combined_instrumented
-    combined_covered_lines["$file_path"]=$combined_covered
+# Process all coverage types using optimized batch processing
+analyze_all_gcov_coverage_batch "$UNITY_COVS" "$BLACKBOX_COVS"
+
+# Populate all_files array from coverage arrays (already filtered at batch level)
+for file_path in "${!unity_covered_lines[@]}"; do
+    all_files["$file_path"]=1
+done
+for file_path in "${!coverage_covered_lines[@]}"; do
+    all_files["$file_path"]=1
 done
 
 # Calculate totals for summary first
@@ -329,6 +271,12 @@ mapfile -t sorted_file_data < <(printf '%s\n' "${file_data[@]}" | sort -t: -k1,1
 for file_data_entry in "${sorted_file_data[@]}"; do
     folder="${file_data_entry%%:*}"
     file_path="${file_data_entry#*:}"
+    
+    # Skip empty entries
+    if [[ -z "$file_path" ]]; then
+        continue
+    fi
+    
     # Get Unity data
     u_covered=${unity_covered_lines["$file_path"]:-0}
     u_instrumented=${unity_instrumented_lines["$file_path"]:-0}
