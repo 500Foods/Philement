@@ -1,6 +1,7 @@
 # Hydrogen Testing Framework
 
-This directory contains the comprehensive testing framework for the Hydrogen 3D printer control server. It includes test scripts, configuration files, support utilities, and detailed documentation for validating the functionality, performance, and reliability of the Hydrogen system.
+This directory contains the comprehensive testing framework for the Hydrogen Server.
+It includes test scripts, configuration files, support utilities, and detailed documentation for validating the functionality, performance, and reliability of the Hydrogen system.
 
 ## Overview
 

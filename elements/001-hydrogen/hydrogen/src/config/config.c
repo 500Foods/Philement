@@ -141,6 +141,7 @@ AppConfig* load_config(const char* cmdline_path) {
     if (app_config) {
         clean_app_config(app_config);
         free(app_config);
+        app_config = NULL; // Prevent use-after-free in logging during restart
     }
 
     json_t* root = NULL;

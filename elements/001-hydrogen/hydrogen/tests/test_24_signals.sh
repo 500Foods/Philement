@@ -80,7 +80,7 @@ else
 fi
 
 # Test configuration
-TEST_CONFIG=$(get_config_path "hydrogen_test_min.json")
+TEST_CONFIG=$(get_config_path "hydrogen_test_max.json")
 
 # Validate configuration file exists
 next_subtest

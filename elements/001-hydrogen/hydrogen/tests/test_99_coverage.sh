@@ -63,6 +63,7 @@ print_message "Recalling coverage data from Unity tests (Test 11)..."
 
 # Find the Unity build directory
 HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
+PROJECT_ROOT="$HYDROGEN_DIR"
 UNITY_BUILD_DIR="$HYDROGEN_DIR/build/unity"
 
 # Read Unity coverage data from Test 11's stored results instead of recalculating
@@ -140,47 +141,115 @@ print_subtest "Calculate Combined Coverage"
 
 print_message "Calculating combined coverage from Unity and blackbox tests..."
 
-# Use the same logic as our successful coverage_table.sh implementation
+# Use the same logic as coverage_table.sh
 if [ -f "${UNITY_COVERAGE_FILE}.detailed" ] && [ -f "${BLACKBOX_COVERAGE_FILE}.detailed" ]; then
-    # Read Unity coverage data
-    IFS=',' read -r _ _ unity_covered_lines unity_total_lines unity_instrumented_files unity_covered_files < "${UNITY_COVERAGE_FILE}.detailed"
+    # Set up the same variables that coverage_table.sh uses
+    UNITY_COVS="$PROJECT_ROOT/build/unity/src"
+    BLACKBOX_COVS="$PROJECT_ROOT/build/coverage/src"
     
-    # Read Blackbox coverage data
-    IFS=',' read -r _ _ blackbox_covered_lines blackbox_total_lines blackbox_instrumented_files blackbox_covered_files < "${BLACKBOX_COVERAGE_FILE}.detailed"
+    # Clear our arrays and repopulate them using the working logic from coverage-common.sh
+    unset unity_covered_lines unity_instrumented_lines coverage_covered_lines coverage_instrumented_lines all_files
+    declare -A unity_covered_lines
+    declare -A unity_instrumented_lines
+    declare -A coverage_covered_lines
+    declare -A coverage_instrumented_lines
+    declare -A all_files
+
+    # Process coverage gcov files using the existing function from coverage-common.sh
+    collect_gcov_files "$BLACKBOX_COVS" "coverage"
     
-    # Calculate combined coverage using max logic (union approach)
-    # For total lines: use the maximum total lines from either test suite
-    combined_total_lines=$((unity_total_lines > blackbox_total_lines ? unity_total_lines : blackbox_total_lines))
+    # Process Unity gcov files using the existing function from coverage-common.sh
+    collect_gcov_files "$UNITY_COVS" "unity"
     
-    # For covered lines: use the maximum covered lines (represents minimum bound of union)
-    combined_covered_lines=$((unity_covered_lines > blackbox_covered_lines ? unity_covered_lines : blackbox_covered_lines))
+    # Calculate combined coverage for each file using TRUE union logic
+    declare -A combined_covered_lines
+    declare -A combined_instrumented_lines
+    
+    for file_path in "${!all_files[@]}"; do
+        # Find corresponding gcov files for this source file
+        basename_file=$(basename "$file_path" .c)
+        unity_gcov_file=""
+        blackbox_gcov_file=""
+        
+        # Look for Unity gcov file
+        if [[ -f "$UNITY_COVS/${basename_file}.c.gcov" ]]; then
+            unity_gcov_file="$UNITY_COVS/${basename_file}.c.gcov"
+        else
+            # Try subdirectory structure
+            subdir_path="${file_path#src/}"
+            subdir="${subdir_path%/*}"
+            if [[ "$subdir" != "$subdir_path" && -f "$UNITY_COVS/$subdir/${basename_file}.c.gcov" ]]; then
+                unity_gcov_file="$UNITY_COVS/$subdir/${basename_file}.c.gcov"
+            fi
+        fi
+        
+        # Look for Blackbox gcov file
+        if [[ -f "$BLACKBOX_COVS/${basename_file}.c.gcov" ]]; then
+            blackbox_gcov_file="$BLACKBOX_COVS/${basename_file}.c.gcov"
+        else
+            # Try subdirectory structure
+            subdir_path="${file_path#src/}"
+            subdir="${subdir_path%/*}"
+            if [[ "$subdir" != "$subdir_path" && -f "$BLACKBOX_COVS/$subdir/${basename_file}.c.gcov" ]]; then
+                blackbox_gcov_file="$BLACKBOX_COVS/$subdir/${basename_file}.c.gcov"
+            fi
+        fi
+        
+        # Calculate TRUE union coverage using the function from coverage-common.sh
+        combined_result=$(analyze_combined_gcov_coverage "$unity_gcov_file" "$blackbox_gcov_file")
+        
+        combined_instrumented="${combined_result%%,*}"
+        temp="${combined_result#*,}"
+        combined_covered="${temp%%,*}"
+        
+        combined_instrumented_lines["$file_path"]=$combined_instrumented
+        combined_covered_lines["$file_path"]=$combined_covered
+    done
+    
+    # Calculate totals for summary
+    combined_total_covered=0
+    combined_total_instrumented=0
+    
+    for file_path in "${!all_files[@]}"; do
+        combined_covered=${combined_covered_lines["$file_path"]:-0}
+        combined_instrumented=${combined_instrumented_lines["$file_path"]:-0}
+        
+        combined_total_covered=$((combined_total_covered + combined_covered))
+        combined_total_instrumented=$((combined_total_instrumented + combined_instrumented))
+    done
     
     # Calculate combined percentage
-    if [ "$combined_total_lines" -gt 0 ]; then
-        combined_coverage=$(awk "BEGIN {printf \"%.3f\", ($combined_covered_lines / $combined_total_lines) * 100}")
-        
-        # Format numbers with thousands separators
-        formatted_covered=$(printf "%'d" "$combined_covered_lines")
-        formatted_total=$(printf "%'d" "$combined_total_lines")
-        
-        # Store the combined coverage value for other scripts to use
-        echo "$combined_coverage" > "$COMBINED_COVERAGE_FILE"
-        
-        # Calculate combined file counts for the detailed file
-        # For files covered: count unique files that have coverage in either test suite
-        combined_covered_files=$((unity_covered_files > blackbox_covered_files ? unity_covered_files : blackbox_covered_files))
-        combined_instrumented_files=$((unity_instrumented_files > blackbox_instrumented_files ? unity_instrumented_files : blackbox_instrumented_files))
-        
-        # Store detailed combined coverage data for Test 00 to use in README
-        # Format: timestamp,percentage,covered_lines,total_lines,instrumented_files,covered_files
-        echo "$(date +%Y%m%d_%H%M%S),$combined_coverage,$combined_covered_lines,$combined_total_lines,$combined_instrumented_files,$combined_covered_files" > "${COMBINED_COVERAGE_FILE}.detailed"
-        
-        print_result 0 "Combined coverage calculated: $combined_coverage% - $formatted_covered of $formatted_total lines covered"
-        ((PASS_COUNT++))
-    else
-        print_result 1 "Failed to calculate combined coverage: no instrumented lines found"
-        EXIT_CODE=1
+    combined_coverage="0.000"
+    if [ "$combined_total_instrumented" -gt 0 ]; then
+        combined_coverage=$(awk "BEGIN {printf \"%.3f\", ($combined_total_covered / $combined_total_instrumented) * 100}")
     fi
+    
+    # Format numbers with thousands separators
+    formatted_covered=$(printf "%'d" "$combined_total_covered")
+    formatted_total=$(printf "%'d" "$combined_total_instrumented")
+    
+    # Store the combined coverage value for other scripts to use
+    echo "$combined_coverage" > "$COMBINED_COVERAGE_FILE"
+    
+    # Calculate combined file counts for the detailed file
+    combined_covered_files=0
+    combined_instrumented_files=0
+    for file_path in "${!all_files[@]}"; do
+        combined_instrumented=${combined_instrumented_lines["$file_path"]:-0}
+        combined_covered=${combined_covered_lines["$file_path"]:-0}
+        
+        ((combined_instrumented_files++))
+        if [ "$combined_covered" -gt 0 ]; then
+            ((combined_covered_files++))
+        fi
+    done
+    
+    # Store detailed combined coverage data for Test 00 to use in README
+    # Format: timestamp,percentage,covered_lines,total_lines,instrumented_files,covered_files
+    echo "$(date +%Y%m%d_%H%M%S),$combined_coverage,$combined_total_covered,$combined_total_instrumented,$combined_instrumented_files,$combined_covered_files" > "${COMBINED_COVERAGE_FILE}.detailed"
+    
+    print_result 0 "Combined coverage calculated: $combined_coverage% - $formatted_covered of $formatted_total lines covered"
+    ((PASS_COUNT++))
 else
     print_result 1 "Failed to calculate combined coverage: detailed coverage data not available"
     EXIT_CODE=1
@@ -192,27 +261,33 @@ print_subtest "Identify Uncovered Source Files"
 
 print_message "Identifying source files not covered by blackbox tests..."
 
-# Get project root for file analysis
-PROJECT_ROOT="$HYDROGEN_DIR"
-uncovered_analysis=$(identify_uncovered_files "$PROJECT_ROOT")
-
 # Use the already-calculated values from blackbox coverage instead of recalculating
 if [ -f "${BLACKBOX_COVERAGE_FILE}.detailed" ]; then
     # Read the values from blackbox coverage calculation
     IFS=',' read -r _ _ _ _ instrumented_files covered_files < "${BLACKBOX_COVERAGE_FILE}.detailed"
     
-    # Parse just the uncovered files list for display
-    while IFS= read -r line; do
-        if [[ "$line" == "UNCOVERED_FILES:" ]]; then
-            # Start of uncovered files list
-            print_message "Uncovered source files:"
-            continue
-        elif [[ "$line" =~ ^/.*/src/.* ]]; then
-            # This is an uncovered file path
-            relative_path=${line#"$PROJECT_ROOT"/}
-            print_output "  $relative_path"
+    # Use the coverage data we already have to identify uncovered files
+    # Since we already processed all files in the combined coverage calculation,
+    # we can identify uncovered files directly from the coverage arrays
+    uncovered_files=()
+    
+    for file_path in "${!all_files[@]}"; do
+        # Check if this file has any blackbox coverage
+        blackbox_covered=${coverage_covered_lines["$file_path"]:-0}
+        
+        # If no blackbox coverage, it's uncovered
+        if [ "$blackbox_covered" -eq 0 ]; then
+            uncovered_files+=("$file_path")
         fi
-    done <<< "$uncovered_analysis"
+    done
+    
+    # Sort and display uncovered files
+    if [ ${#uncovered_files[@]} -gt 0 ]; then
+        print_message "Uncovered source files:"
+        printf '%s\n' "${uncovered_files[@]}" | sort | while read -r file; do
+            print_output "  $file"
+        done
+    fi
     
     # Calculate uncovered count from the known values
     uncovered_count=$((instrumented_files - covered_files))

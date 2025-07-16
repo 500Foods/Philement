@@ -23,7 +23,7 @@
         "RefreshTokenExpireMinutes": 1440,
         "Metadata": {
             "Title": "Hydrogen API",
-            "Description": "Hydrogen 3D Printer Control Server API",
+            "Description": "Hydrogen Server API",
             "Version": "1.0.0"
         },
         "Security": {
