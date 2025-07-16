@@ -56,6 +56,7 @@ typedef struct {
     char request_client[50];           // Client identifier
     bool authenticated;                // Authentication state
     time_t connection_time;           // Connection establishment time
+    bool status_response_sent;         // Flag for status response completion
 } WebSocketSessionData;
 
 // Initialize the server context

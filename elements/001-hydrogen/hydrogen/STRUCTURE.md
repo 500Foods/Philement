@@ -321,7 +321,6 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [src/websocket/websocket_server_dispatch.c](src/websocket/websocket_server_dispatch.c) - Message routing system
 - [src/websocket/websocket_server_message.c](src/websocket/websocket_server_message.c) - Message processing engine
 - [src/websocket/websocket_server_status.c](src/websocket/websocket_server_status.c) - Status reporting implementation
-- [src/websocket/websocket_dynamic.c](src/websocket/websocket_dynamic.c) - Dynamic WebSocket functionality
 
 </details>
 

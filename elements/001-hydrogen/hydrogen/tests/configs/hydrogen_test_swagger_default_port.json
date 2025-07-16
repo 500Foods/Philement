@@ -11,8 +11,8 @@
         "MaxUploadSize": 2147483648
     },
     "WebSocket": {
-        "Enabled": true,
-        "EnableIPv6": true,
+        "Enabled": false,
+        "EnableIPv6": false,
         "Port": 5041,
         "MaxMessageSize": 2048,
         "ConnectionTimeouts": {

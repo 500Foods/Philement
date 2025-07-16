@@ -9,11 +9,15 @@
 /*
  * Real-Time WebSocket Server for 3D Printer Control
  * 
- * Core server implementation coordinating:
+ * Core server runtime implementation coordinating:
  * - Connection lifecycle management
  * - Authentication and security
  * - Message processing
  * - Status monitoring
+ * 
+ * This module contains the core runtime functionality.
+ * Startup logic is in websocket_server_startup.c
+ * Shutdown logic is in websocket_server_shutdown.c
  */
 
 /* System headers */
@@ -38,6 +42,7 @@
 #include "../logging/logging.h"
 #include "../config/config.h"
 #include "../utils/utils.h"
+#include "../threads/threads.h"
 
 /* Global variables */
 extern AppConfig* app_config;  // Defined in config.c
@@ -46,8 +51,8 @@ extern AppConfig* app_config;  // Defined in config.c
 WebSocketServerContext *ws_context = NULL;
 
 // HTTP callback handler for WebSocket upgrade requests
-static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
-                        void *user, void *in, size_t len)
+int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
+                         void *user, void *in, size_t len)
 {
     (void)user;  // Mark unused parameter
     (void)in;    // Mark unused parameter
@@ -89,7 +94,7 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 }
 
 // Main callback dispatcher for all WebSocket events
-static int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
+int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
                            void *user, void *in, size_t len)
 {
     // Allow certain callbacks without session data
@@ -176,7 +181,7 @@ static int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
 }
 
 // Custom logging bridge between libwebsockets and Hydrogen
-static void custom_lws_log(int level, const char *line)
+void custom_lws_log(int level, const char *line)
 {
     if (!line) return;
 
@@ -212,196 +217,6 @@ static void custom_lws_log(int level, const char *line)
         // If memory allocation fails, use the original line
         log_this("WebSocket", line, priority);
     }
-}
-
-// Initialize the WebSocket server
-int init_websocket_server(int port, const char* protocol, const char* key)
-{
-    // Create and initialize server context
-    ws_context = ws_context_create(port, protocol, key);
-    if (!ws_context) {
-        log_this("WebSocket", "Failed to create server context", LOG_LEVEL_DEBUG);
-        return -1;
-    }
-
-    // Configure libwebsockets
-    struct lws_context_creation_info info;
-    memset(&info, 0, sizeof(info));
-
-    // Define protocol handlers - need HTTP support for upgrade requests
-    struct lws_protocols protocols[] = {
-        {
-            .name = "http",
-            .callback = callback_http,
-            .per_session_data_size = 0,
-            .rx_buffer_size = 0,
-            .id = 0,
-            .user = NULL,
-            .tx_packet_size = 0
-        },
-        {
-            .name = protocol,
-            .callback = callback_hydrogen,
-            .per_session_data_size = sizeof(WebSocketSessionData),
-            .rx_buffer_size = 0,
-            .id = 1,
-            .user = NULL,
-            .tx_packet_size = 0
-        },
-        { NULL, NULL, 0, 0, 0, NULL, 0 } /* terminator */
-    };
-
-    info.port = port;
-    info.protocols = protocols;
-    info.gid = -1;
-    info.uid = -1;
-    info.user = ws_context;  // Set context as user data
-    info.options = LWS_SERVER_OPTION_EXPLICIT_VHOSTS |
-                  LWS_SERVER_OPTION_ALLOW_LISTEN_SHARE |   // Enable SO_REUSEADDR for immediate rebinding
-                  LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
-
-    // Configure IPv6 if enabled
-    if (app_config && app_config->websocket.enable_ipv6) {
-        info.options |= LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
-        log_this("WebSocket", "IPv6 support enabled", LOG_LEVEL_STATE);
-    }
-
-    log_this("WebSocket", "Configuring SO_REUSEADDR for immediate socket rebinding via LWS_SERVER_OPTION_ALLOW_LISTEN_SHARE", LOG_LEVEL_STATE);
-
-    // Set context user data
-    lws_set_log_level(0, NULL);  // Reset logging before context creation
-
-    // Configure logging based on numeric level
-    // TODO: Move this to a dedicated LibLogLevel in the WebSockets config section
-    // rather than using the console output path's subsystem configuration
-    int config_level = LOG_LEVEL_STATE;  // Default to STATE level
-    
-    // Look up WebSockets-Lib subsystem level if configured
-    for (size_t i = 0; i < app_config->logging.console.subsystem_count; i++) {
-        if (strcmp(app_config->logging.console.subsystems[i].name, "WebSockets-Lib") == 0) {
-            config_level = app_config->logging.console.subsystems[i].level;
-            break;
-        }
-    }
-    
-    lws_set_log_level(0, NULL);  // Reset logging
-
-    // Map numeric levels to libwebsockets levels
-    int lws_level = 0;
-    switch (config_level) {
-        case 0:  // ALL
-            lws_level = LLL_ERR | LLL_WARN | LLL_NOTICE | LLL_INFO | LLL_DEBUG | LLL_PARSER | LLL_HEADER;
-            break;
-        case 1:  // INFO
-            lws_level = LLL_ERR | LLL_WARN | LLL_NOTICE | LLL_INFO;
-            break;
-        case 2:  // WARN
-            lws_level = LLL_ERR | LLL_WARN;
-            break;
-        case 3:  // DEBUG
-            lws_level = LLL_ERR | LLL_WARN | LLL_NOTICE | LLL_INFO | LLL_DEBUG;
-            break;
-        case 4:  // ERROR
-            lws_level = LLL_ERR;
-            break;
-        case 5:  // CRITICAL
-            lws_level = LLL_ERR;
-            break;
-        case 6:  // NONE
-            lws_level = 0;
-            break;
-        default:
-            lws_level = LLL_ERR | LLL_WARN;  // Default to WARN level
-            break;
-    }
-
-    lws_set_log_level(lws_level, custom_lws_log);
-
-    // Create libwebsockets context
-    ws_context->lws_context = lws_create_context(&info);
-    if (!ws_context->lws_context) {
-        log_this("WebSocket", "Failed to create LWS context", LOG_LEVEL_DEBUG);
-        ws_context_destroy(ws_context);
-        ws_context = NULL;
-        return -1;
-    }
-
-    // Create vhost with port fallback
-    struct lws_vhost *vhost = NULL;
-    int try_port = port;
-    int max_attempts = 10;
-
-    // Add initialization options
-    int vhost_options = LWS_SERVER_OPTION_VALIDATE_UTF8 | 
-                       LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE |
-                       LWS_SERVER_OPTION_SKIP_SERVER_CANONICAL_NAME;  // Skip hostname checks during init
-
-    // Set vhost creation flag
-    ws_context->vhost_creating = 1;
-
-    for (int attempt = 0; attempt < max_attempts; attempt++) {
-        // Prepare vhost info
-        struct lws_context_creation_info vhost_info;
-        memset(&vhost_info, 0, sizeof(vhost_info));
-        vhost_info.port = try_port;
-        vhost_info.protocols = protocols;
-        vhost_info.options = vhost_options | LWS_SERVER_OPTION_ALLOW_LISTEN_SHARE;  // Enable SO_REUSEADDR
-        vhost_info.iface = app_config->websocket.enable_ipv6 ? "::" : "0.0.0.0";
-        vhost_info.vhost_name = "hydrogen";  // Set explicit vhost name
-        vhost_info.keepalive_timeout = 60;   // Set explicit keepalive
-        vhost_info.user = ws_context;        // Pass context to callbacks
-
-        // Try to create vhost
-        vhost = lws_create_vhost(ws_context->lws_context, &vhost_info);
-        if (vhost) {
-            ws_context->port = try_port;
-            log_this("WebSocket", "Successfully bound to port %d", LOG_LEVEL_STATE, try_port);
-            break;
-        }
-        
-        // Check port availability
-        int sock = socket(AF_INET, SOCK_STREAM, 0);
-        if (sock != -1) {
-            struct sockaddr_in addr;
-            addr.sin_family = AF_INET;
-            addr.sin_port = htons(try_port);
-            addr.sin_addr.s_addr = INADDR_ANY;
-            
-            if (bind(sock, (struct sockaddr*)&addr, sizeof(addr)) == 0) {
-                // Port is available but vhost creation failed for other reasons
-                close(sock);
-                log_this("WebSocket", "Port %d is available but vhost creation failed", LOG_LEVEL_ALERT, try_port);
-            } else {
-                close(sock);
-                log_this("WebSocket", "Port %d is in use, trying next port", LOG_LEVEL_STATE, try_port);
-            }
-        }
-        
-        try_port++;
-    }
-
-    // Clear vhost creation flag
-    ws_context->vhost_creating = 0;
-
-    // Handle vhost creation result
-    if (!vhost) {
-        log_this("WebSocket", "Failed to create vhost after multiple attempts", LOG_LEVEL_DEBUG);
-        ws_context_destroy(ws_context);
-        ws_context = NULL;
-        return -1;
-    }
-
-    log_this("WebSocket", "Vhost creation completed successfully", LOG_LEVEL_STATE);
-
-    // Log initialization with protocol validation
-    if (protocol) {
-        log_this("WebSocket", "Server initialized on port %d with protocol %s", 
-                 LOG_LEVEL_STATE, ws_context->port, protocol);
-    } else {
-        log_this("WebSocket", "Server initialized on port %d", 
-                 LOG_LEVEL_STATE, ws_context->port);
-    }
-    return 0;
 }
 
 // Server thread function
@@ -507,6 +322,9 @@ static void *websocket_server_run(void *arg)
 // Start the WebSocket server
 int start_websocket_server()
 {
+    extern ServiceThreads websocket_threads;
+    extern pthread_t websocket_thread;
+    
     if (!ws_context) {
         log_this("WebSocket", "Server not initialized", LOG_LEVEL_DEBUG);
         return -1;
@@ -518,300 +336,13 @@ int start_websocket_server()
         return -1;
     }
 
+    // Update external thread tracking variables
+    websocket_thread = ws_context->server_thread;
+    add_service_thread(&websocket_threads, ws_context->server_thread);
+    
+    log_this("WebSocket", "Server thread created and registered for tracking", LOG_LEVEL_STATE);
+
     return 0;
-}
-
-// Stop the WebSocket server
-void stop_websocket_server()
-{
-    if (!ws_context) {
-        return;
-    }
-
-    log_this("WebSocket", "Stopping server on port %d", LOG_LEVEL_STATE, ws_context->port);
-    
-    // Set shutdown flag
-    if (ws_context) {
-        log_this("WebSocket", "Setting shutdown flag and cancelling service", LOG_LEVEL_STATE);
-        ws_context->shutdown = 1;
-        
-        // Force close all connections immediately
-        pthread_mutex_lock(&ws_context->mutex);
-        if (ws_context->active_connections > 0) {
-            log_this("WebSocket", "Forcing close of %d connections", LOG_LEVEL_ALERT,
-                    true, true, true, ws_context->active_connections);
-            ws_context->active_connections = 0;  // Force reset connection counter
-        }
-        
-        // Cancel service multiple times to ensure all threads wake up
-        if (ws_context->lws_context) {
-            log_this("WebSocket", "Canceling service multiple times to force wakeup", LOG_LEVEL_STATE);
-            lws_cancel_service(ws_context->lws_context);
-            usleep(10000);  // 10ms sleep
-            lws_cancel_service(ws_context->lws_context);
-        }
-        
-        // Signal all waiting threads
-        pthread_cond_broadcast(&ws_context->cond);
-        pthread_mutex_unlock(&ws_context->mutex);
-        
-        // Get configurable exit wait timeout from config
-        extern AppConfig *app_config;
-        int exit_wait = app_config->websocket.connection_timeouts.exit_wait_seconds > 0 ?
-                       app_config->websocket.connection_timeouts.exit_wait_seconds : 10; // Default to 10s if not set
-        
-        // Wait for server thread with configurable timeout
-        struct timespec ts;
-        clock_gettime(CLOCK_REALTIME, &ts);
-        ts.tv_sec += exit_wait;
-        
-        log_this("WebSocket", "Waiting for server thread to exit (timeout: %ds)", 
-                 LOG_LEVEL_STATE, exit_wait);
-        int join_result = pthread_timedjoin_np(ws_context->server_thread, NULL, &ts);
-        
-        if (join_result == ETIMEDOUT) {
-            log_this("WebSocket", "Primary thread join timed out, trying final cancellation", LOG_LEVEL_ALERT);
-            
-            // Signal cancellation more aggressively
-            pthread_cancel(ws_context->server_thread);
-            pthread_mutex_lock(&ws_context->mutex);
-            pthread_cond_broadcast(&ws_context->cond);  // One more broadcast to wake any waiting threads
-            pthread_mutex_unlock(&ws_context->mutex);
-            
-            // Wait again with a longer timeout
-            clock_gettime(CLOCK_REALTIME, &ts);
-            ts.tv_sec += 5;  // 5 more seconds (total 15s)
-            
-            join_result = pthread_timedjoin_np(ws_context->server_thread, NULL, &ts);
-            if (join_result == ETIMEDOUT) {
-                log_this("WebSocket", "Final thread join failed, thread may be leaking", LOG_LEVEL_ERROR);
-                
-                // Force cleanup anyway as a last resort
-                extern ServiceThreads websocket_threads;
-                pthread_t server_thread = ws_context->server_thread;
-                remove_service_thread(&websocket_threads, server_thread);
-                
-                log_this("WebSocket", "Forced removal of server thread from tracking", LOG_LEVEL_ERROR);
-            } else {
-                log_this("WebSocket", "Thread terminated after cancellation", LOG_LEVEL_STATE);
-            }
-        } else {
-            log_this("WebSocket", "Thread exited normally", LOG_LEVEL_STATE);
-        }
-        
-        // Do NOT destroy context here - leave that to cleanup_websocket_server
-        // This prevents race conditions with context access
-    }
-
-    log_this("WebSocket", "Server stopped", LOG_LEVEL_STATE);
-}
-
-// Cleanup synchronization data structure
-struct CleanupData {
-    pthread_mutex_t mutex;
-    pthread_cond_t cond;
-    bool complete;
-    bool cancelled;
-    WebSocketServerContext* context;
-};
-
-// Context destruction wrapper function (file scope)
-static void* context_destroy_thread(void *arg) {
-    struct CleanupData *data = (struct CleanupData*)arg;
-    
-    // Enable cancellation
-    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-    pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
-    
-    // Check if cleanup has been cancelled before starting
-    pthread_mutex_lock(&data->mutex);
-    if (data->cancelled) {
-        pthread_mutex_unlock(&data->mutex);
-        return NULL;
-    }
-    pthread_mutex_unlock(&data->mutex);
-    
-    // Log start of actual destruction
-    log_this("WebSocket", "Beginning actual context destruction", LOG_LEVEL_STATE);
-    
-    // Do the actual destruction
-    ws_context_destroy(data->context);
-    
-    // Update completion status
-    pthread_mutex_lock(&data->mutex);
-    data->complete = true;
-    pthread_cond_signal(&data->cond);
-    pthread_mutex_unlock(&data->mutex);
-    
-    log_this("WebSocket", "Context destruction completed successfully", LOG_LEVEL_STATE);
-    return NULL;
-}
-
-// Clean up server resources
-void cleanup_websocket_server()
-{
-    if (!ws_context) {
-        return;
-    }
-    
-    log_this("WebSocket", "Starting WebSocket server cleanup", LOG_LEVEL_STATE);
-    
-    // Shorter delay - just enough to clear immediate callbacks
-    log_this("WebSocket", "Brief pause for callbacks (100ms)", LOG_LEVEL_STATE);
-    usleep(100000);  // 100ms delay
-    
-    // Force close all remaining connections
-    pthread_mutex_lock(&ws_context->mutex);
-    if (ws_context->active_connections > 0) {
-        log_this("WebSocket", "Forcing close of %d connections during cleanup", 
-                LOG_LEVEL_ALERT, true, true, true, ws_context->active_connections);
-        ws_context->active_connections = 0;
-    }
-    
-    // Broadcast condition so any waiting threads will wake up
-    pthread_cond_broadcast(&ws_context->cond);
-    pthread_mutex_unlock(&ws_context->mutex);
-    
-    // Important: Save context locally BEFORE nullifying global pointer
-    WebSocketServerContext* ctx_to_destroy = ws_context;
-    
-    // Extra cancellation calls on context before destruction
-    if (ctx_to_destroy->lws_context) {
-        log_this("WebSocket", "Forcing multiple service cancellations", LOG_LEVEL_STATE);
-        lws_cancel_service(ctx_to_destroy->lws_context);
-        usleep(10000);  // 10ms delay
-        lws_cancel_service(ctx_to_destroy->lws_context);
-        usleep(10000);  // 10ms delay
-        lws_cancel_service(ctx_to_destroy->lws_context);  // Triple cancellation for reliability
-    }
-    
-    // Aggressively terminate any lingering threads BEFORE nullifying global pointer
-    extern ServiceThreads websocket_threads;
-    
-    // First log what threads are still active
-    log_this("WebSocket", "Checking for remaining threads before cleanup", LOG_LEVEL_STATE);
-    update_service_thread_metrics(&websocket_threads);
-    
-    if (websocket_threads.thread_count > 0) {
-        log_this("WebSocket", "Found %d active websocket threads, forcing termination", 
-                LOG_LEVEL_ALERT, true, true, true, websocket_threads.thread_count);
-        
-        // Force cancel all tracked threads
-        for (int i = 0; i < websocket_threads.thread_count; i++) {
-            pthread_t thread = websocket_threads.thread_ids[i];
-            if (thread != 0) {
-                log_this("WebSocket", "Cancelling thread %lu", LOG_LEVEL_ALERT, 
-                        true, true, true, (unsigned long)thread);
-                pthread_cancel(thread);
-            }
-        }
-        
-        // Short wait for cancellation to take effect
-        usleep(100000);  // 100ms delay
-        
-        // Clear thread tracking completely
-        websocket_threads.thread_count = 0;
-        log_this("WebSocket", "Forced all thread tracking to clear", LOG_LEVEL_ALERT);
-    }
-    
-    // NOW nullify the global pointer after thread cleanup
-    ws_context = NULL;
-    
-    // Create and initialize cleanup data structure
-    struct CleanupData cleanup_data;
-    pthread_mutex_init(&cleanup_data.mutex, NULL);
-    pthread_cond_init(&cleanup_data.cond, NULL);
-    cleanup_data.complete = false;
-    cleanup_data.cancelled = false;
-    cleanup_data.context = ctx_to_destroy;
-    
-    // Create the cleanup thread
-    pthread_t cleanup_thread;
-    log_this("WebSocket", "Destroying WebSocket context (with 5s timeout)", LOG_LEVEL_STATE);
-    
-    if (pthread_create(&cleanup_thread, NULL, context_destroy_thread, &cleanup_data) != 0) {
-        // Thread creation failed, clean up and fall back to direct destruction
-        log_this("WebSocket", "Failed to create cleanup thread, destroying directly", LOG_LEVEL_ALERT);
-        pthread_mutex_destroy(&cleanup_data.mutex);
-        pthread_cond_destroy(&cleanup_data.cond);
-        
-        // Direct destruction as fallback
-        ws_context_destroy(ctx_to_destroy);
-        return;
-    }
-    
-    // Wait for completion with timeout using condition variable
-    struct timespec timeout;
-    clock_gettime(CLOCK_REALTIME, &timeout);
-    timeout.tv_sec += 5; // 5 second timeout
-    
-    pthread_mutex_lock(&cleanup_data.mutex);
-    int timed_out = 0;
-    
-    // Wait loop with timeout protection
-    while (!cleanup_data.complete && !timed_out) {
-        int wait_result = pthread_cond_timedwait(&cleanup_data.cond, 
-                                                &cleanup_data.mutex, &timeout);
-        if (wait_result == ETIMEDOUT) {
-            timed_out = 1;
-        }
-    }
-    
-    if (timed_out) {
-        // Timeout occurred
-        cleanup_data.cancelled = true;
-        pthread_mutex_unlock(&cleanup_data.mutex);
-        
-        log_this("WebSocket", "Context destruction timed out after 5s, forcing cancellation", 
-                LOG_LEVEL_ERROR, true, true, true);
-        
-        // Cancel the thread and wait briefly for it to clean up
-        pthread_cancel(cleanup_thread);
-        
-        // Try joining with a shorter timeout to ensure cleanliness
-        struct timespec short_timeout;
-        clock_gettime(CLOCK_REALTIME, &short_timeout);
-        short_timeout.tv_sec += 1; // 1 second timeout
-        
-        if (pthread_timedjoin_np(cleanup_thread, NULL, &short_timeout) != 0) {
-            log_this("WebSocket", "CRITICAL: Could not join cleanup thread even after cancellation", 
-                    LOG_LEVEL_ERROR, true, true, true);
-            
-            // Detach the thread as a last resort
-            pthread_detach(cleanup_thread);
-        }
-        
-        log_this("WebSocket", "Context destruction may be incomplete, but continuing", LOG_LEVEL_ERROR);
-    } else {
-        pthread_mutex_unlock(&cleanup_data.mutex);
-        log_this("WebSocket", "Context destroyed successfully within timeout", LOG_LEVEL_STATE);
-        
-        // Join the thread to clean up resources
-        pthread_join(cleanup_thread, NULL);
-    }
-    
-    // Clean up synchronization resources
-    pthread_mutex_destroy(&cleanup_data.mutex);
-    pthread_cond_destroy(&cleanup_data.cond);
-    
-    // Final check for any remaining threads and force termination
-    update_service_thread_metrics(&websocket_threads);
-    if (websocket_threads.thread_count > 0) {
-        log_this("WebSocket", "CRITICAL: %d threads still remain after full cleanup, forcing exit", 
-                LOG_LEVEL_ERROR, true, true, true, websocket_threads.thread_count);
-        
-        // Force cancel any remaining threads one last time
-        for (int i = 0; i < websocket_threads.thread_count; i++) {
-            if (websocket_threads.thread_ids[i] != 0) {
-                pthread_cancel(websocket_threads.thread_ids[i]);
-            }
-        }
-        
-        // Finally just force clear the count
-        websocket_threads.thread_count = 0;
-    }
-    
-    log_this("WebSocket", "WebSocket server cleanup completed", LOG_LEVEL_STATE);
 }
 
 // Get the actual bound port

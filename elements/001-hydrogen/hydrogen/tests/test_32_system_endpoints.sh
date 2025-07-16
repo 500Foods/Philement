@@ -11,6 +11,7 @@
 # - /api/system/appconfig: Tests the application configuration endpoint
 
 # CHANGELOG
+# 3.2.0 - 2025-07-15 - Added tests for missing system endpoints: /api/system/prometheus, /api/system/recent, /api/system/appconfig to improve coverage
 # 3.1.3 - 2025-07-14 - Enhanced validate_api_request with retry logic to handle API subsystem initialization delays during parallel execution
 # 3.1.2 - 2025-07-15 - No more sleep
 # 3.1.1 - 2025-07-14 - Updated to use build/tests directories for test output consistency
@@ -22,7 +23,7 @@
 
 # Test Configuration
 TEST_NAME="System API Endpoints"
-SCRIPT_VERSION="3.1.3"
+SCRIPT_VERSION="3.2.0"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -56,7 +57,7 @@ set_test_number "$TEST_NUMBER"
 reset_subtest_counter
 
 # Test configuration
-TOTAL_SUBTESTS=6  # Reduced to focus on core functionality with better isolation
+TOTAL_SUBTESTS=9  # Increased to include all system endpoints
 PASS_COUNT=0
 EXIT_CODE=0
 
@@ -423,6 +424,45 @@ test_system_endpoints() {
         EXIT_CODE=1
     fi
     
+    next_subtest
+    print_subtest "Test Prometheus Endpoint ($test_name)"
+    if [ -n "$hydrogen_pid" ] && ps -p "$hydrogen_pid" > /dev/null 2>&1; then
+        if validate_api_request "prometheus" "$base_url/api/system/prometheus" "system_info"; then
+            ((PASS_COUNT++))
+        else
+            EXIT_CODE=1
+        fi
+    else
+        print_result 1 "Server not running for prometheus endpoint test"
+        EXIT_CODE=1
+    fi
+    
+    next_subtest
+    print_subtest "Test Recent Logs Endpoint ($test_name)"
+    if [ -n "$hydrogen_pid" ] && ps -p "$hydrogen_pid" > /dev/null 2>&1; then
+        if validate_api_request "recent" "$base_url/api/system/recent" "\\["; then
+            ((PASS_COUNT++))
+        else
+            EXIT_CODE=1
+        fi
+    else
+        print_result 1 "Server not running for recent endpoint test"
+        EXIT_CODE=1
+    fi
+    
+    next_subtest
+    print_subtest "Test AppConfig Endpoint ($test_name)"
+    if [ -n "$hydrogen_pid" ] && ps -p "$hydrogen_pid" > /dev/null 2>&1; then
+        if validate_api_request "appconfig" "$base_url/api/system/appconfig" "APPCONFIG"; then
+            ((PASS_COUNT++))
+        else
+            EXIT_CODE=1
+        fi
+    else
+        print_result 1 "Server not running for appconfig endpoint test"
+        EXIT_CODE=1
+    fi
+    
     # Stop the server
     if [ -n "$hydrogen_pid" ]; then
         print_message "Stopping server..."
@@ -494,7 +534,7 @@ else
     # Skip API tests if prerequisites failed
     print_message "Skipping API endpoint tests due to prerequisite failures"
     # Account for skipped subtests
-    for i in {3..6}; do
+    for i in {3..9}; do
         next_subtest
         print_subtest "Subtest $i (Skipped)"
         print_result 1 "Skipped due to prerequisite failures"

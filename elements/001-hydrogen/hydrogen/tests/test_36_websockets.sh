@@ -9,6 +9,7 @@
 # - Uses immediate restart without waiting for TIME_WAIT (SO_REUSEADDR enabled)
 
 # CHANGELOG
+# 1.1.0 - 2025-07-15 - Added WebSocket status request test to improve coverage of websocket_server_status.c
 # 1.0.3 - 2025-07-14 - Enhanced test_websocket_connection with retry logic to handle WebSocket subsystem initialization delays during parallel execution
 # 1.0.2 - 2025-07-15 - No more sleep
 # 1.0.1 - 2025-07-14 - Updated to use build/tests directories for test output consistency
@@ -16,7 +17,7 @@
 
 # Test Configuration
 TEST_NAME="WebSockets"
-SCRIPT_VERSION="1.0.3"
+SCRIPT_VERSION="1.1.0"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -52,7 +53,7 @@ set_test_number "$TEST_NUMBER"
 reset_subtest_counter
 
 # Test configuration
-TOTAL_SUBTESTS=14  # 3 prerequisites + 1 WEBSOCKET_KEY + 5 tests for each of 2 configurations
+TOTAL_SUBTESTS=16  # 3 prerequisites + 1 WEBSOCKET_KEY + 6 tests for each of 2 configurations
 PASS_COUNT=0
 EXIT_CODE=0
 
@@ -206,6 +207,112 @@ test_websocket_connection() {
     return 1
 }
 
+# Function to test WebSocket status request
+test_websocket_status() {
+    local ws_url="$1"
+    local protocol="$2"
+    local response_file="$3"
+    
+    print_message "Testing WebSocket status request using websocat"
+    
+    # JSON message to request status
+    local status_request='{"type": "status"}'
+    print_command "echo '$status_request' | websocat --protocol='$protocol' -H='Authorization: Key $WEBSOCKET_KEY' --ping-interval=30 --one-message '$ws_url'"
+    
+    # Retry logic for WebSocket subsystem readiness
+    local max_attempts=3
+    local attempt=1
+    local websocat_output
+    local websocat_exitcode
+    
+    while [ $attempt -le $max_attempts ]; do
+        if [ $attempt -gt 1 ]; then
+            print_message "WebSocket status request attempt $attempt of $max_attempts..."
+            sleep 1
+        fi
+        
+        # Create a temporary file to capture the full interaction
+        local temp_file
+        temp_file=$(mktemp)
+        
+        # Test WebSocket status request with a 5-second timeout
+        if command -v timeout >/dev/null 2>&1; then
+            echo "$status_request" | timeout 5 websocat \
+                --protocol="$protocol" \
+                -H="Authorization: Key $WEBSOCKET_KEY" \
+                --ping-interval=30 \
+                --one-message \
+                "$ws_url" > "$temp_file" 2>&1
+            websocat_exitcode=$?
+        else
+            # Fallback without timeout command
+            echo "$status_request" | websocat \
+                --protocol="$protocol" \
+                -H="Authorization: Key $WEBSOCKET_KEY" \
+                --ping-interval=30 \
+                --one-message \
+                "$ws_url" > "$temp_file" 2>&1 &
+            local websocat_pid=$!
+            sleep 5
+            kill "$websocat_pid" 2>/dev/null || true
+            wait "$websocat_pid" 2>/dev/null || true
+            websocat_exitcode=$?
+        fi
+        
+        # Read the output
+        websocat_output=$(cat "$temp_file" 2>/dev/null || echo "")
+        rm -f "$temp_file"
+        
+        # Check if we got a valid JSON response with system info
+        if [ -n "$websocat_output" ]; then
+            # Use jq to properly validate JSON structure and required fields
+            if echo "$websocat_output" | jq -e '.system and .status.server_started' >/dev/null 2>&1; then
+                if [ $attempt -gt 1 ]; then
+                    print_result 0 "WebSocket status request successful - received system status (succeeded on attempt $attempt)"
+                else
+                    print_result 0 "WebSocket status request successful - received system status"
+                fi
+                print_message "Status response contains system information"
+                echo "$websocat_output" > "$response_file"
+                return 0
+            else
+                # Log what we actually received for debugging
+                print_message "Invalid JSON response or missing required fields:"
+                if command -v jq >/dev/null 2>&1; then
+                    echo "$websocat_output" | jq . 2>/dev/null | head -10 || echo "Non-JSON output: $websocat_output"
+                else
+                    echo "First 200 chars: ${websocat_output:0:200}"
+                fi
+            fi
+        fi
+        
+        # Check for connection issues
+        # Note: websocat with --one-message may exit with code 1 due to connection closure timing
+        # but still successfully receive the response. We accept this as success if we got data.
+        if [ $websocat_exitcode -ne 0 ] && [ $websocat_exitcode -ne 124 ] && [ $websocat_exitcode -ne 1 ]; then
+            if [ $attempt -eq $max_attempts ]; then
+                print_result 1 "WebSocket status request failed - connection error (exit code: $websocat_exitcode)"
+                return 1
+            else
+                print_message "WebSocket status request failed on attempt $attempt, retrying..."
+                ((attempt++))
+                continue
+            fi
+        fi
+        
+        # If we reach here, either got timeout or no valid response
+        if [ $attempt -eq $max_attempts ]; then
+            print_result 1 "WebSocket status request failed - no valid status response received"
+            return 1
+        else
+            print_message "WebSocket status request attempt $attempt failed, retrying..."
+            ((attempt++))
+        fi
+    done
+    
+    return 1
+}
+
 # Function to test WebSocket server configuration
 test_websocket_configuration() {
     local config_file="$1"
@@ -296,6 +403,20 @@ test_websocket_configuration() {
         fi
     else
         print_result 1 "Server not running for WebSocket connection test"
+        EXIT_CODE=1
+    fi
+    
+    # Subtest: Test WebSocket status request
+    next_subtest
+    print_subtest "Test WebSocket Status Request (Config $config_number)"
+    if [ -n "$hydrogen_pid" ] && ps -p "$hydrogen_pid" > /dev/null 2>&1; then
+        if test_websocket_status "$ws_url" "$ws_protocol" "$RESULTS_DIR/${test_name}_status_${TIMESTAMP}.json"; then
+            ((PASS_COUNT++))
+        else
+            EXIT_CODE=1
+        fi
+    else
+        print_result 1 "Server not running for WebSocket status test"
         EXIT_CODE=1
     fi
     

@@ -3,16 +3,16 @@ bin/
 dist/
 web/
 
-# Build outputs
+# Build and test artifacts
 build/
-build_debug/
-build_perf/
-build_release/
-build_valgrind/
-build_unity/
 
-# Temporary build artifacts
+# cmake build artifacts
 cmake/CMakeFiles/
+cmake/coverage/
+cmake/debug/
+cmake/perf/
+cmake/release/
+cmake/valgrind/
 cmake/unity/
 
 # Temporary generated files

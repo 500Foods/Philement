@@ -621,30 +621,186 @@ test_launch_plan/fast:
 .PHONY : test_launch_plan/fast
 
 #=============================================================================
-# Target rules for targets named test_payload_objects
+# Target rules for targets named test_cleanup_openssl_objects
 
 # Build rule for target.
-test_payload_objects: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_payload_objects
-.PHONY : test_payload_objects
+test_cleanup_openssl_objects: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_cleanup_openssl_objects
+.PHONY : test_cleanup_openssl_objects
 
 # fast build rule for target.
-test_payload_objects/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_payload_objects.dir/build.make CMakeFiles/test_payload_objects.dir/build
-.PHONY : test_payload_objects/fast
+test_cleanup_openssl_objects/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_cleanup_openssl_objects.dir/build.make CMakeFiles/test_cleanup_openssl_objects.dir/build
+.PHONY : test_cleanup_openssl_objects/fast
 
 #=============================================================================
-# Target rules for targets named test_payload
+# Target rules for targets named test_cleanup_openssl
 
 # Build rule for target.
-test_payload: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_payload
-.PHONY : test_payload
+test_cleanup_openssl: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_cleanup_openssl
+.PHONY : test_cleanup_openssl
 
 # fast build rule for target.
-test_payload/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_payload.dir/build.make CMakeFiles/test_payload.dir/build
-.PHONY : test_payload/fast
+test_cleanup_openssl/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_cleanup_openssl.dir/build.make CMakeFiles/test_cleanup_openssl.dir/build
+.PHONY : test_cleanup_openssl/fast
+
+#=============================================================================
+# Target rules for targets named test_free_payload_objects
+
+# Build rule for target.
+test_free_payload_objects: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_free_payload_objects
+.PHONY : test_free_payload_objects
+
+# fast build rule for target.
+test_free_payload_objects/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_free_payload_objects.dir/build.make CMakeFiles/test_free_payload_objects.dir/build
+.PHONY : test_free_payload_objects/fast
+
+#=============================================================================
+# Target rules for targets named test_free_payload
+
+# Build rule for target.
+test_free_payload: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_free_payload
+.PHONY : test_free_payload
+
+# fast build rule for target.
+test_free_payload/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_free_payload.dir/build.make CMakeFiles/test_free_payload.dir/build
+.PHONY : test_free_payload/fast
+
+#=============================================================================
+# Target rules for targets named test_payload_data_structure_objects
+
+# Build rule for target.
+test_payload_data_structure_objects: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_payload_data_structure_objects
+.PHONY : test_payload_data_structure_objects
+
+# fast build rule for target.
+test_payload_data_structure_objects/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_payload_data_structure_objects.dir/build.make CMakeFiles/test_payload_data_structure_objects.dir/build
+.PHONY : test_payload_data_structure_objects/fast
+
+#=============================================================================
+# Target rules for targets named test_payload_data_structure
+
+# Build rule for target.
+test_payload_data_structure: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_payload_data_structure
+.PHONY : test_payload_data_structure
+
+# fast build rule for target.
+test_payload_data_structure/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_payload_data_structure.dir/build.make CMakeFiles/test_payload_data_structure.dir/build
+.PHONY : test_payload_data_structure/fast
+
+#=============================================================================
+# Target rules for targets named test_validate_payload_key_objects
+
+# Build rule for target.
+test_validate_payload_key_objects: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_validate_payload_key_objects
+.PHONY : test_validate_payload_key_objects
+
+# fast build rule for target.
+test_validate_payload_key_objects/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_validate_payload_key_objects.dir/build.make CMakeFiles/test_validate_payload_key_objects.dir/build
+.PHONY : test_validate_payload_key_objects/fast
+
+#=============================================================================
+# Target rules for targets named test_validate_payload_key
+
+# Build rule for target.
+test_validate_payload_key: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_validate_payload_key
+.PHONY : test_validate_payload_key
+
+# fast build rule for target.
+test_validate_payload_key/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_validate_payload_key.dir/build.make CMakeFiles/test_validate_payload_key.dir/build
+.PHONY : test_validate_payload_key/fast
+
+#=============================================================================
+# Target rules for targets named test_cleanup_swagger_support_objects
+
+# Build rule for target.
+test_cleanup_swagger_support_objects: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_cleanup_swagger_support_objects
+.PHONY : test_cleanup_swagger_support_objects
+
+# fast build rule for target.
+test_cleanup_swagger_support_objects/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_cleanup_swagger_support_objects.dir/build.make CMakeFiles/test_cleanup_swagger_support_objects.dir/build
+.PHONY : test_cleanup_swagger_support_objects/fast
+
+#=============================================================================
+# Target rules for targets named test_cleanup_swagger_support
+
+# Build rule for target.
+test_cleanup_swagger_support: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_cleanup_swagger_support
+.PHONY : test_cleanup_swagger_support
+
+# fast build rule for target.
+test_cleanup_swagger_support/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_cleanup_swagger_support.dir/build.make CMakeFiles/test_cleanup_swagger_support.dir/build
+.PHONY : test_cleanup_swagger_support/fast
+
+#=============================================================================
+# Target rules for targets named test_handle_swagger_request_objects
+
+# Build rule for target.
+test_handle_swagger_request_objects: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_handle_swagger_request_objects
+.PHONY : test_handle_swagger_request_objects
+
+# fast build rule for target.
+test_handle_swagger_request_objects/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_handle_swagger_request_objects.dir/build.make CMakeFiles/test_handle_swagger_request_objects.dir/build
+.PHONY : test_handle_swagger_request_objects/fast
+
+#=============================================================================
+# Target rules for targets named test_handle_swagger_request
+
+# Build rule for target.
+test_handle_swagger_request: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_handle_swagger_request
+.PHONY : test_handle_swagger_request
+
+# fast build rule for target.
+test_handle_swagger_request/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_handle_swagger_request.dir/build.make CMakeFiles/test_handle_swagger_request.dir/build
+.PHONY : test_handle_swagger_request/fast
+
+#=============================================================================
+# Target rules for targets named test_init_swagger_support_objects
+
+# Build rule for target.
+test_init_swagger_support_objects: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_init_swagger_support_objects
+.PHONY : test_init_swagger_support_objects
+
+# fast build rule for target.
+test_init_swagger_support_objects/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_init_swagger_support_objects.dir/build.make CMakeFiles/test_init_swagger_support_objects.dir/build
+.PHONY : test_init_swagger_support_objects/fast
+
+#=============================================================================
+# Target rules for targets named test_init_swagger_support
+
+# Build rule for target.
+test_init_swagger_support: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_init_swagger_support
+.PHONY : test_init_swagger_support
+
+# fast build rule for target.
+test_init_swagger_support/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_init_swagger_support.dir/build.make CMakeFiles/test_init_swagger_support.dir/build
+.PHONY : test_init_swagger_support/fast
 
 #=============================================================================
 # Target rules for targets named test_swagger_objects
@@ -671,6 +827,84 @@ test_swagger: cmake_check_build_system
 test_swagger/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_swagger.dir/build.make CMakeFiles/test_swagger.dir/build
 .PHONY : test_swagger/fast
+
+#=============================================================================
+# Target rules for targets named test_swagger_is_swagger_request_objects
+
+# Build rule for target.
+test_swagger_is_swagger_request_objects: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_swagger_is_swagger_request_objects
+.PHONY : test_swagger_is_swagger_request_objects
+
+# fast build rule for target.
+test_swagger_is_swagger_request_objects/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_swagger_is_swagger_request_objects.dir/build.make CMakeFiles/test_swagger_is_swagger_request_objects.dir/build
+.PHONY : test_swagger_is_swagger_request_objects/fast
+
+#=============================================================================
+# Target rules for targets named test_swagger_is_swagger_request
+
+# Build rule for target.
+test_swagger_is_swagger_request: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_swagger_is_swagger_request
+.PHONY : test_swagger_is_swagger_request
+
+# fast build rule for target.
+test_swagger_is_swagger_request/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_swagger_is_swagger_request.dir/build.make CMakeFiles/test_swagger_is_swagger_request.dir/build
+.PHONY : test_swagger_is_swagger_request/fast
+
+#=============================================================================
+# Target rules for targets named test_swagger_request_handler_objects
+
+# Build rule for target.
+test_swagger_request_handler_objects: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_swagger_request_handler_objects
+.PHONY : test_swagger_request_handler_objects
+
+# fast build rule for target.
+test_swagger_request_handler_objects/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_swagger_request_handler_objects.dir/build.make CMakeFiles/test_swagger_request_handler_objects.dir/build
+.PHONY : test_swagger_request_handler_objects/fast
+
+#=============================================================================
+# Target rules for targets named test_swagger_request_handler
+
+# Build rule for target.
+test_swagger_request_handler: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_swagger_request_handler
+.PHONY : test_swagger_request_handler
+
+# fast build rule for target.
+test_swagger_request_handler/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_swagger_request_handler.dir/build.make CMakeFiles/test_swagger_request_handler.dir/build
+.PHONY : test_swagger_request_handler/fast
+
+#=============================================================================
+# Target rules for targets named test_swagger_url_validator_objects
+
+# Build rule for target.
+test_swagger_url_validator_objects: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_swagger_url_validator_objects
+.PHONY : test_swagger_url_validator_objects
+
+# fast build rule for target.
+test_swagger_url_validator_objects/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_swagger_url_validator_objects.dir/build.make CMakeFiles/test_swagger_url_validator_objects.dir/build
+.PHONY : test_swagger_url_validator_objects/fast
+
+#=============================================================================
+# Target rules for targets named test_swagger_url_validator
+
+# Build rule for target.
+test_swagger_url_validator: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_swagger_url_validator
+.PHONY : test_swagger_url_validator
+
+# fast build rule for target.
+test_swagger_url_validator/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_swagger_url_validator.dir/build.make CMakeFiles/test_swagger_url_validator.dir/build
+.PHONY : test_swagger_url_validator/fast
 
 #=============================================================================
 # Target rules for targets named test_hydrogen_objects
@@ -823,10 +1057,19 @@ help:
 	@echo "... perf_objects"
 	@echo "... regular_objects"
 	@echo "... release_objects"
+	@echo "... test_cleanup_openssl_objects"
+	@echo "... test_cleanup_swagger_support_objects"
+	@echo "... test_free_payload_objects"
+	@echo "... test_handle_swagger_request_objects"
 	@echo "... test_hydrogen_objects"
+	@echo "... test_init_swagger_support_objects"
 	@echo "... test_launch_plan_objects"
-	@echo "... test_payload_objects"
+	@echo "... test_payload_data_structure_objects"
+	@echo "... test_swagger_is_swagger_request_objects"
 	@echo "... test_swagger_objects"
+	@echo "... test_swagger_request_handler_objects"
+	@echo "... test_swagger_url_validator_objects"
+	@echo "... test_validate_payload_key_objects"
 	@echo "... trial"
 	@echo "... unity_objects"
 	@echo "... unity_tests"
@@ -842,10 +1085,19 @@ help:
 	@echo "... perf"
 	@echo "... regular"
 	@echo "... release"
+	@echo "... test_cleanup_openssl"
+	@echo "... test_cleanup_swagger_support"
+	@echo "... test_free_payload"
+	@echo "... test_handle_swagger_request"
 	@echo "... test_hydrogen"
+	@echo "... test_init_swagger_support"
 	@echo "... test_launch_plan"
-	@echo "... test_payload"
+	@echo "... test_payload_data_structure"
 	@echo "... test_swagger"
+	@echo "... test_swagger_is_swagger_request"
+	@echo "... test_swagger_request_handler"
+	@echo "... test_swagger_url_validator"
+	@echo "... test_validate_payload_key"
 	@echo "... valgrind"
 	@echo "... home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/examples/C/auth_code_flow.o"
 	@echo "... home/asimard/Projects/Philement/elements/001-hydrogen/hydrogen/examples/C/auth_code_flow.i"

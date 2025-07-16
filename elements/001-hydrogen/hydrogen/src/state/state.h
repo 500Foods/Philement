@@ -60,6 +60,7 @@ extern volatile sig_atomic_t server_running;
 extern volatile sig_atomic_t server_stopping;
 extern volatile sig_atomic_t restart_requested;
 extern volatile sig_atomic_t handler_flags_reset_needed;  // For signal handler reset tracking
+extern volatile sig_atomic_t signal_based_shutdown;      // For rapid exit during SIGINT/SIGTERM
 extern volatile int restart_count;
 
 // Thread synchronization

@@ -25,7 +25,7 @@
     "WebSocketServer": {
         "Enabled": true,
         "EnableIPv6": true,
-        "LibLogLevel": 2,
+        "LibLogLevel": 0,
         "Port": 5001,
         "Protocol": "hydrogen",
         "Key": "${env.WEBSOCKET_KEY}",
@@ -119,7 +119,12 @@
             "Enabled": false
         },
         "File": {
-            "Enabled": false
+            "Enabled": true,
+            "DefaultLevel": 0,
+            "Subsystems": {
+                "WebSocket": 0,
+                "WebSocket-Lib": 0
+            }
         },
         "Notify": {
             "Enabled": false

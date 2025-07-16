@@ -87,8 +87,11 @@ void signal_handler(int sig) {
             break;
         case SIGINT:
         case SIGTERM:
-            log_this("Shutdown", "%s received, initiating shutdown", LOG_LEVEL_STATE, 
+            log_this("Shutdown", "%s received, initiating rapid shutdown", LOG_LEVEL_STATE, 
                     sig == SIGINT ? "SIGINT" : "SIGTERM");
+            
+            // Set signal-based shutdown flag for rapid exit
+            __sync_bool_compare_and_swap(&signal_based_shutdown, 0, 1);
             __sync_bool_compare_and_swap(&server_running, 1, 0);
             __sync_bool_compare_and_swap(&server_stopping, 0, 1);
             __sync_synchronize();
@@ -101,6 +104,8 @@ void signal_handler(int sig) {
 
 // Track shutdown state
 static volatile sig_atomic_t shutdown_in_progress = 0;
+// Track if we're in a signal-based shutdown (SIGINT/SIGTERM) for rapid exit
+volatile sig_atomic_t signal_based_shutdown = 0;
 
 // Reset shutdown state - called after successful restart
 void reset_shutdown_state(void) {

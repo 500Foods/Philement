@@ -28,8 +28,8 @@
         }
     },
     "WebSocket": {
-        "Enabled": true,
-        "EnableIPv6": true,
+        "Enabled": false,
+        "EnableIPv6": false,
         "Port": 5035,
         "MaxMessageSize": 2048,
         "ConnectionTimeouts": {
