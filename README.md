@@ -64,13 +64,13 @@ There are countless tools, frameworks, coding styles, conventions, languages, an
 [![Count Lines of Code](https://github.com/500Foods/Philement/actions/workflows/main.yml/badge.svg)](https://github.com/500Foods/Philement/actions/workflows/main.yml)
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-07-14 23:45:29 UTC
+Last updated at 2025-07-15 21:18:41 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C                              156           5729           6398          26017
-Markdown                       242           7042             50          22980
-Bourne Shell                    54           2343           2700          12274
+C                              163           5820           6419          26444
+Markdown                       243           7056             55          23026
+Bourne Shell                    54           2381           2660          12302
 JSON                            25              1              0           5439
 C/C++ Header                   119           1177           4286           2923
 CMake                            5            159            214            975
@@ -84,20 +84,13 @@ CSS                              2              3              2             38
 YAML                             2              8             13             37
 JavaScript                       1              3              0             25
 -------------------------------------------------------------------------------
-SUM:                           627          16992          13966          73009
+SUM:                           635          17135          13952          73510
 -------------------------------------------------------------------------------
-32 Files were skipped (duplicate, binary, or without source code):
+25 Files were skipped (duplicate, binary, or without source code):
   gitignore: 4
   jpg: 3
   png: 3
   dproj: 2
-  2052703: 1
-  2052732: 1
-  2052763: 1
-  2052794: 1
-  2052827: 1
-  2052871: 1
-  2052909: 1
   disabled: 1
   ggignore: 1
   gitattributes: 1
