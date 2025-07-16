@@ -371,7 +371,8 @@ cat > "$layout_json" << EOF
             "header": "Cover %",
             "key": "combined_coverage_percentage",
             "datatype": "float",
-            "justification": "right"
+            "justification": "right",
+            "summary":"nonblanks"
         },
         {
             "header": "Lines",
