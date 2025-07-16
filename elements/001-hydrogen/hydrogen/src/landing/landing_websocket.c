@@ -33,12 +33,13 @@
 extern ServiceThreads websocket_threads;
 extern pthread_t websocket_thread;
 extern volatile sig_atomic_t websocket_server_shutdown;
+extern void stop_websocket_server(void);
 extern void cleanup_websocket_server(void);
 
 // Check if the websocket subsystem is ready to land
 LaunchReadiness check_websocket_landing_readiness(void) {
     LaunchReadiness readiness = {0};
-    readiness.subsystem = "WebSocket";
+    readiness.subsystem = "WebSockets";
     
     // Allocate space for messages (including NULL terminator)
     readiness.messages = malloc(5 * sizeof(char*));
@@ -48,13 +49,13 @@ LaunchReadiness check_websocket_landing_readiness(void) {
     }
     
     // Add initial subsystem identifier
-    readiness.messages[0] = strdup("WebSocket");
+    readiness.messages[0] = strdup("WebSockets");
     
     // Check if websocket is actually running
-    if (!is_subsystem_running_by_name("WebSocket")) {
+    if (!is_subsystem_running_by_name("WebSockets")) {
         readiness.ready = false;
-        readiness.messages[1] = strdup("  No-Go:   WebSocket not running");
-        readiness.messages[2] = strdup("  Decide:  No-Go For Landing of WebSocket");
+        readiness.messages[1] = strdup("  No-Go:   WebSockets not running");
+        readiness.messages[2] = strdup("  Decide:  No-Go For Landing of WebSockets");
         readiness.messages[3] = NULL;
         return readiness;
     }
@@ -62,21 +63,21 @@ LaunchReadiness check_websocket_landing_readiness(void) {
     // Check thread status
     bool threads_ready = true;
     if (websocket_thread && websocket_threads.thread_count > 0) {
-        readiness.messages[1] = strdup("  Go:      WebSocket thread ready for shutdown");
+        readiness.messages[1] = strdup("  Go:      WebSockets thread ready for shutdown");
     } else {
         threads_ready = false;
-        readiness.messages[1] = strdup("  No-Go:   WebSocket thread not accessible");
+        readiness.messages[1] = strdup("  No-Go:   WebSockets thread not accessible");
     }
     
     // Final decision
     if (threads_ready) {
         readiness.ready = true;
         readiness.messages[2] = strdup("  Go:      All resources ready for cleanup");
-        readiness.messages[3] = strdup("  Decide:  Go For Landing of WebSocket");
+        readiness.messages[3] = strdup("  Decide:  Go For Landing of WebSockets");
     } else {
         readiness.ready = false;
         readiness.messages[2] = strdup("  No-Go:   Resources not ready for cleanup");
-        readiness.messages[3] = strdup("  Decide:  No-Go For Landing of WebSocket");
+        readiness.messages[3] = strdup("  Decide:  No-Go For Landing of WebSockets");
     }
     readiness.messages[4] = NULL;
     
@@ -85,34 +86,23 @@ LaunchReadiness check_websocket_landing_readiness(void) {
 
 // Land the websocket subsystem
 int land_websocket_subsystem(void) {
-    log_this("WebSocket", "Beginning WebSocket shutdown sequence", LOG_LEVEL_STATE);
+    log_this("WebSockets", "Beginning WebSockets shutdown sequence", LOG_LEVEL_STATE);
     bool success = true;
     
-    // Signal thread shutdown
-    websocket_server_shutdown = 1;
-    log_this("WebSocket", "Signaled WebSocket thread to stop", LOG_LEVEL_STATE);
+    // Step 1: Stop the WebSocket server (handles thread shutdown and connection termination)
+    log_this("WebSockets", "Stopping WebSockets server", LOG_LEVEL_STATE);
+    stop_websocket_server();
     
-    // Wait for thread to complete
-    if (websocket_thread) {
-        log_this("WebSocket", "Waiting for WebSocket thread to complete", LOG_LEVEL_STATE);
-        if (pthread_join(websocket_thread, NULL) != 0) {
-            log_this("WebSocket", "Error waiting for WebSocket thread", LOG_LEVEL_ERROR);
-            success = false;
-        } else {
-            log_this("WebSocket", "WebSocket thread completed", LOG_LEVEL_STATE);
-        }
-    }
-    
-    // Remove the websocket thread from tracking
-    remove_service_thread(&websocket_threads, websocket_thread);
-    
-    // Reinitialize thread structure
-    init_service_threads(&websocket_threads);
-    
-    // Call websocket server cleanup
+    // Step 2: Clean up server resources (handles context destruction)
+    log_this("WebSockets", "Cleaning up WebSockets server resources", LOG_LEVEL_STATE);
     cleanup_websocket_server();
     
-    log_this("WebSocket", "WebSocket shutdown complete", LOG_LEVEL_STATE);
+    // Step 3: Remove the websocket thread from tracking and reinitialize
+    log_this("WebSockets", "Cleaning up thread tracking", LOG_LEVEL_STATE);
+    remove_service_thread(&websocket_threads, websocket_thread);
+    init_service_threads(&websocket_threads);
+    
+    log_this("WebSockets", "WebSockets shutdown complete", LOG_LEVEL_STATE);
     
     return success ? 1 : 0;  // Return 1 for success, 0 for failure
 }

@@ -6,10 +6,13 @@
  * memory management for the metrics structures.
  */
 
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "status_core.h"
 #include "../logging/logging.h"
+#include "../config/config.h"
 
 // Thread synchronization mutex
 static pthread_mutex_t status_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -114,7 +117,7 @@ static SystemMetrics* allocate_system_metrics(void) {
 }
 
 // Collect all system metrics into a single structure
-SystemMetrics* collect_system_metrics(const WebSocketMetrics *ws_metrics __attribute__((unused))) {
+SystemMetrics* collect_system_metrics(const WebSocketMetrics *ws_metrics) {
     pthread_mutex_lock(&status_mutex);
     
     SystemMetrics *metrics = allocate_system_metrics();
@@ -123,13 +126,44 @@ SystemMetrics* collect_system_metrics(const WebSocketMetrics *ws_metrics __attri
         return NULL;
     }
 
-    // Note: The actual collection of metrics will be implemented
+    // Populate server timing metrics from WebSocket context if available
+    if (ws_metrics) {
+        metrics->server_start_time = ws_metrics->server_start_time;
+        metrics->server_uptime = time(NULL) - ws_metrics->server_start_time;
+    } else {
+        // Default to current time if no WebSocket metrics
+        metrics->server_start_time = time(NULL);
+        metrics->server_uptime = 0;
+    }
+
+    // Populate version information
+    #ifndef VERSION
+    #define VERSION "0.1.0"
+    #endif
+    #ifndef RELEASE
+    #define RELEASE "unknown"
+    #endif
+    #ifndef BUILD_TYPE
+    #define BUILD_TYPE "unknown"
+    #endif
+    
+    snprintf(metrics->server_version, sizeof(metrics->server_version), "%s", VERSION);
+    snprintf(metrics->api_version, sizeof(metrics->api_version), "%s", VERSION);
+    snprintf(metrics->release, sizeof(metrics->release), "%s", RELEASE);
+    snprintf(metrics->build_type, sizeof(metrics->build_type), "%s", BUILD_TYPE);
+
+    // Set server state flags (these would normally come from global state)
+    extern volatile sig_atomic_t server_running;
+    extern volatile sig_atomic_t server_stopping;
+    extern volatile sig_atomic_t server_starting;
+    
+    metrics->server_running = server_running;
+    metrics->server_stopping = server_stopping;
+    metrics->server_starting = server_starting;
+
+    // Note: The actual collection of other metrics will be implemented
     // in separate components (status_system.c, status_process.c, etc.)
     // This function will coordinate those collections.
-    
-    // For now, we just initialize the structure
-    // The real implementation will call functions from other components
-    // to populate each section of metrics
     
     pthread_mutex_unlock(&status_mutex);
     return metrics;

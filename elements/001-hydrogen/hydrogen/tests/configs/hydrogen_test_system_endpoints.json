@@ -33,7 +33,7 @@
         }
     },
     "WebSocket": {
-        "Enabled": true,
+        "Enabled": false,
         "EnableIPv6": false,
         "Port": 5033,
         "MaxMessageSize": 2048,

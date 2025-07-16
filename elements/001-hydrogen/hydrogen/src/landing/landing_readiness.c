@@ -132,7 +132,7 @@ ReadinessResults handle_landing_readiness(void) {
         {"mDNS Client", check_mdns_client_landing_readiness},
         {"mDNS Server", check_mdns_server_landing_readiness},
         {"Terminal", check_terminal_landing_readiness},
-        {"WebSocket", check_websocket_landing_readiness},
+        {"WebSockets", check_websocket_landing_readiness},
         {"Swagger", check_swagger_landing_readiness},
         {"API", check_api_landing_readiness},
         {"WebServer", check_webserver_landing_readiness},

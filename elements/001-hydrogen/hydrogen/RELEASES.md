@@ -44,7 +44,7 @@ Step 5: Update RELEASES.md
 - Add link to new release notes file in this RELEASES.md
 - Add entries with newest dates at the top of their respective month/year section
 - Include brief summary after the link
-- Format: [YYYY-MMM-DD (Day)](docs/releases/YYYY-MM/YYYY-MM-DD.md): Brief Summary
+- Use same format as existing links
 
 Remember:
 - This is a technical record, not marketing
