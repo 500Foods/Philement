@@ -155,58 +155,18 @@ if [ -f "${UNITY_COVERAGE_FILE}.detailed" ] && [ -f "${BLACKBOX_COVERAGE_FILE}.d
     declare -A coverage_instrumented_lines
     declare -A all_files
 
-    # Process coverage gcov files using the existing function from coverage-common.sh
-    collect_gcov_files "$BLACKBOX_COVS" "coverage"
+    # Use optimized batch processing for all coverage types
+    analyze_all_gcov_coverage_batch "$UNITY_COVS" "$BLACKBOX_COVS"
     
-    # Process Unity gcov files using the existing function from coverage-common.sh
-    collect_gcov_files "$UNITY_COVS" "unity"
-    
-    # Calculate combined coverage for each file using TRUE union logic
-    declare -A combined_covered_lines
-    declare -A combined_instrumented_lines
-    
-    for file_path in "${!all_files[@]}"; do
-        # Find corresponding gcov files for this source file
-        basename_file=$(basename "$file_path" .c)
-        unity_gcov_file=""
-        blackbox_gcov_file=""
-        
-        # Look for Unity gcov file
-        if [[ -f "$UNITY_COVS/${basename_file}.c.gcov" ]]; then
-            unity_gcov_file="$UNITY_COVS/${basename_file}.c.gcov"
-        else
-            # Try subdirectory structure
-            subdir_path="${file_path#src/}"
-            subdir="${subdir_path%/*}"
-            if [[ "$subdir" != "$subdir_path" && -f "$UNITY_COVS/$subdir/${basename_file}.c.gcov" ]]; then
-                unity_gcov_file="$UNITY_COVS/$subdir/${basename_file}.c.gcov"
-            fi
-        fi
-        
-        # Look for Blackbox gcov file
-        if [[ -f "$BLACKBOX_COVS/${basename_file}.c.gcov" ]]; then
-            blackbox_gcov_file="$BLACKBOX_COVS/${basename_file}.c.gcov"
-        else
-            # Try subdirectory structure
-            subdir_path="${file_path#src/}"
-            subdir="${subdir_path%/*}"
-            if [[ "$subdir" != "$subdir_path" && -f "$BLACKBOX_COVS/$subdir/${basename_file}.c.gcov" ]]; then
-                blackbox_gcov_file="$BLACKBOX_COVS/$subdir/${basename_file}.c.gcov"
-            fi
-        fi
-        
-        # Calculate TRUE union coverage using the function from coverage-common.sh
-        combined_result=$(analyze_combined_gcov_coverage "$unity_gcov_file" "$blackbox_gcov_file")
-        
-        combined_instrumented="${combined_result%%,*}"
-        temp="${combined_result#*,}"
-        combined_covered="${temp%%,*}"
-        
-        combined_instrumented_lines["$file_path"]=$combined_instrumented
-        combined_covered_lines["$file_path"]=$combined_covered
+    # Populate all_files array from coverage arrays (already filtered at batch level)
+    for file_path in "${!unity_covered_lines[@]}"; do
+        all_files["$file_path"]=1
+    done
+    for file_path in "${!coverage_covered_lines[@]}"; do
+        all_files["$file_path"]=1
     done
     
-    # Calculate totals for summary
+    # Calculate totals for summary using batch-processed arrays
     combined_total_covered=0
     combined_total_instrumented=0
     
@@ -261,48 +221,42 @@ print_subtest "Identify Uncovered Source Files"
 
 print_message "Identifying source files not covered by blackbox tests..."
 
-# Use the already-calculated values from blackbox coverage instead of recalculating
-if [ -f "${BLACKBOX_COVERAGE_FILE}.detailed" ]; then
-    # Read the values from blackbox coverage calculation
-    IFS=',' read -r _ _ _ _ instrumented_files covered_files < "${BLACKBOX_COVERAGE_FILE}.detailed"
+# Use the batch-processed coverage data for consistent file counts
+# Calculate file counts from the coverage arrays we already have
+blackbox_covered_files=0
+blackbox_instrumented_files=0
+uncovered_files=()
+
+for file_path in "${!all_files[@]}"; do
+    # Check if this file has any blackbox coverage
+    blackbox_covered=${coverage_covered_lines["$file_path"]:-0}
     
-    # Use the coverage data we already have to identify uncovered files
-    # Since we already processed all files in the combined coverage calculation,
-    # we can identify uncovered files directly from the coverage arrays
-    uncovered_files=()
-    
-    for file_path in "${!all_files[@]}"; do
-        # Check if this file has any blackbox coverage
-        blackbox_covered=${coverage_covered_lines["$file_path"]:-0}
-        
-        # If no blackbox coverage, it's uncovered
-        if [ "$blackbox_covered" -eq 0 ]; then
-            uncovered_files+=("$file_path")
-        fi
-    done
-    
-    # Sort and display uncovered files
-    if [ ${#uncovered_files[@]} -gt 0 ]; then
-        print_message "Uncovered source files:"
-        printf '%s\n' "${uncovered_files[@]}" | sort | while read -r file; do
-            print_output "  $file"
-        done
+    ((blackbox_instrumented_files++))
+    if [ "$blackbox_covered" -gt 0 ]; then
+        ((blackbox_covered_files++))
+    else
+        uncovered_files+=("$file_path")
     fi
-    
-    # Calculate uncovered count from the known values
-    uncovered_count=$((instrumented_files - covered_files))
-    
-    # Format numbers with thousands separators
-    formatted_covered_files=$(printf "%'d" "$covered_files")
-    formatted_instrumented_files=$(printf "%'d" "$instrumented_files")
-    formatted_uncovered_count=$(printf "%'d" "$uncovered_count")
-    
-    print_result 0 "Coverage analysis: $formatted_covered_files of $formatted_instrumented_files source files covered, $formatted_uncovered_count uncovered"
-    ((PASS_COUNT++))
-else
-    print_result 1 "Failed to analyze source file coverage - blackbox detailed data not found"
-    EXIT_CODE=1
+done
+
+# Sort and display uncovered files
+if [ ${#uncovered_files[@]} -gt 0 ]; then
+    print_message "Uncovered source files:"
+    printf '%s\n' "${uncovered_files[@]}" | sort | while read -r file; do
+        print_output "  $file"
+    done
 fi
+
+# Calculate uncovered count
+uncovered_count=$((blackbox_instrumented_files - blackbox_covered_files))
+
+# Format numbers with thousands separators
+formatted_covered_files=$(printf "%'d" "$blackbox_covered_files")
+formatted_instrumented_files=$(printf "%'d" "$blackbox_instrumented_files")
+formatted_uncovered_count=$(printf "%'d" "$uncovered_count")
+
+print_result 0 "Coverage analysis: $formatted_covered_files of $formatted_instrumented_files source files covered, $formatted_uncovered_count uncovered"
+((PASS_COUNT++))
 
 # Export results for test_all.sh integration
 TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')

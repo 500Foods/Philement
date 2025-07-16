@@ -69,35 +69,302 @@ analyze_combined_gcov_coverage() {
     local all_instrumented="$temp_dir/all_instrumented"
     local union_covered="$temp_dir/union_covered"
     
-    # Extract covered lines from Unity gcov - ensure we strip whitespace properly
-    grep -E "^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:" "$unity_gcov" 2>/dev/null | \
-        cut -d: -f2 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | sort -n | uniq > "$unity_covered"
+    # Single AWK script to process both files and calculate union in memory
+    local result
+    result=$(awk -v unity_file="$unity_gcov" -v blackbox_file="$blackbox_gcov" '
+    BEGIN {
+        # Process Unity file
+        if (unity_file != "") {
+            while ((getline line < unity_file) > 0) {
+                if (match(line, /^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/)) {
+                    split(line, parts, ":")
+                    gsub(/^[[:space:]]*|[[:space:]]*$/, "", parts[2])
+                    unity_covered[parts[2]] = 1
+                    all_instrumented[parts[2]] = 1
+                }
+                else if (match(line, /^[[:space:]]*#####:[[:space:]]*[0-9]+:/)) {
+                    split(line, parts, ":")
+                    gsub(/^[[:space:]]*|[[:space:]]*$/, "", parts[2])
+                    all_instrumented[parts[2]] = 1
+                }
+            }
+            close(unity_file)
+        }
+        
+        # Process Blackbox file
+        if (blackbox_file != "") {
+            while ((getline line < blackbox_file) > 0) {
+                if (match(line, /^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/)) {
+                    split(line, parts, ":")
+                    gsub(/^[[:space:]]*|[[:space:]]*$/, "", parts[2])
+                    blackbox_covered[parts[2]] = 1
+                    all_instrumented[parts[2]] = 1
+                }
+                else if (match(line, /^[[:space:]]*#####:[[:space:]]*[0-9]+:/)) {
+                    split(line, parts, ":")
+                    gsub(/^[[:space:]]*|[[:space:]]*$/, "", parts[2])
+                    all_instrumented[parts[2]] = 1
+                }
+            }
+            close(blackbox_file)
+        }
+        
+        # Count totals
+        total_instrumented = 0
+        for (line in all_instrumented) {
+            total_instrumented++
+        }
+        
+        total_covered = 0
+        for (line in unity_covered) {
+            total_covered++
+        }
+        for (line in blackbox_covered) {
+            if (!(line in unity_covered)) {
+                total_covered++
+            }
+        }
+        
+        print total_instrumented "," total_covered
+    }')
     
-    # Extract covered lines from Blackbox gcov - ensure we strip whitespace properly  
-    grep -E "^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:" "$blackbox_gcov" 2>/dev/null | \
-        cut -d: -f2 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | sort -n | uniq > "$blackbox_covered"
-    
-    # Extract all instrumented lines (covered + uncovered) from both files
-    {
-        grep -E "^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:" "$unity_gcov" 2>/dev/null | cut -d: -f2 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//'
-        grep -E "^[[:space:]]*#####:[[:space:]]*[0-9]+:" "$unity_gcov" 2>/dev/null | cut -d: -f2 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//'
-        grep -E "^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:" "$blackbox_gcov" 2>/dev/null | cut -d: -f2 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//'
-        grep -E "^[[:space:]]*#####:[[:space:]]*[0-9]+:" "$blackbox_gcov" 2>/dev/null | cut -d: -f2 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//'
-    } | sort -n | uniq > "$all_instrumented"
-    
-    # Calculate union of covered lines (same as manual: cat files | sort -n | uniq)
-    cat "$unity_covered" "$blackbox_covered" | sort -n | uniq > "$union_covered"
-    
-    # Count the results
-    local total_instrumented
-    total_instrumented=$(wc -l < "$all_instrumented" 2>/dev/null || echo "0")
-    local total_covered
-    total_covered=$(wc -l < "$union_covered" 2>/dev/null || echo "0")
+    local total_instrumented="${result%,*}"
+    local total_covered="${result#*,}"
     
     # Clean up temp files
     rm -rf "$temp_dir" 2>/dev/null
     
     echo "$total_instrumented,$total_covered,$total_covered"
+}
+
+# True batch processing function for all coverage analysis
+# Usage: analyze_all_gcov_coverage_batch <unity_covs_dir> <blackbox_covs_dir>
+# Sets global arrays: unity_covered_lines, unity_instrumented_lines, coverage_covered_lines, coverage_instrumented_lines, combined_covered_lines, combined_instrumented_lines
+analyze_all_gcov_coverage_batch() {
+    # Ensure global arrays exist
+    declare -gA unity_covered_lines 2>/dev/null || true
+    declare -gA unity_instrumented_lines 2>/dev/null || true
+    declare -gA coverage_covered_lines 2>/dev/null || true
+    declare -gA coverage_instrumented_lines 2>/dev/null || true
+    declare -gA combined_covered_lines 2>/dev/null || true
+    declare -gA combined_instrumented_lines 2>/dev/null || true
+    local unity_dir="$1"
+    local blackbox_dir="$2"
+    
+    # Create temporary file for concatenated input
+    local temp_input
+    temp_input=$(mktemp) || return 1
+    
+    # Get all .gcov files from both directories
+    local unity_files=()
+    local blackbox_files=()
+    
+    if [[ -d "$unity_dir" ]]; then
+        mapfile -t unity_files < <(find "$unity_dir" -name "*.gcov" -type f 2>/dev/null)
+    fi
+    
+    if [[ -d "$blackbox_dir" ]]; then
+        mapfile -t blackbox_files < <(find "$blackbox_dir" -name "*.gcov" -type f 2>/dev/null)
+    fi
+    
+    # Create union of all files by relative path from coverage directory (with filtering)
+    declare -A all_file_set
+    for file in "${unity_files[@]}"; do
+        local rel_path="${file#"$unity_dir/"}"
+        # Convert to source path format for filtering
+        local source_path="$rel_path"
+        if [[ "$source_path" == *.gcov ]]; then
+            source_path="${source_path%.gcov}"
+            if [[ "$source_path" != src/* ]]; then
+                source_path="src/$source_path"
+            fi
+        fi
+        # Apply filtering
+        if ! should_ignore_file "$source_path" "${PROJECT_ROOT:-$PWD}"; then
+            all_file_set["$rel_path"]=1
+        fi
+    done
+    for file in "${blackbox_files[@]}"; do
+        local rel_path="${file#"$blackbox_dir/"}"
+        # Convert to source path format for filtering
+        local source_path="$rel_path"
+        if [[ "$source_path" == *.gcov ]]; then
+            source_path="${source_path%.gcov}"
+            if [[ "$source_path" != src/* ]]; then
+                source_path="src/$source_path"
+            fi
+        fi
+        # Apply filtering
+        if ! should_ignore_file "$source_path" "${PROJECT_ROOT:-$PWD}"; then
+            all_file_set["$rel_path"]=1
+        fi
+    done
+    
+    # Build concatenated input with file markers
+    for file_relpath in "${!all_file_set[@]}"; do
+        local unity_file="$unity_dir/$file_relpath"
+        local blackbox_file="$blackbox_dir/$file_relpath"
+        
+        echo "###FILE_START:$file_relpath###" >> "$temp_input"
+        
+        if [[ -f "$unity_file" ]]; then
+            {
+                echo "###UNITY_START###"
+                cat "$unity_file"
+                echo "###UNITY_END###"
+            } >> "$temp_input"
+        fi
+        
+        if [[ -f "$blackbox_file" ]]; then
+            {
+                echo "###BLACKBOX_START###"
+                cat "$blackbox_file"
+                echo "###BLACKBOX_END###"
+            } >> "$temp_input"
+        fi
+        
+        echo "###FILE_END###" >> "$temp_input"
+    done
+    
+    # Create temporary file for AWK output
+    local temp_output
+    temp_output=$(mktemp) || { rm -f "$temp_input"; return 1; }
+    
+    # Process all files in one AWK operation
+    awk '
+    BEGIN {
+        current_file = ""
+        current_type = ""
+    }
+    
+    /^###FILE_START:/ {
+        current_file = substr($0, 15)
+        gsub(/###$/, "", current_file)
+        next
+    }
+    
+    /^###UNITY_START###/ {
+        current_type = "unity"
+        next
+    }
+    
+    /^###BLACKBOX_START###/ {
+        current_type = "blackbox"
+        next
+    }
+    
+    /^###(UNITY_END|BLACKBOX_END|FILE_END)###/ {
+        current_type = ""
+        next
+    }
+    
+    # Process coverage lines
+    /^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/ {
+        if (current_file != "" && current_type != "") {
+            split($0, parts, ":")
+            gsub(/^[[:space:]]*|[[:space:]]*$/, "", parts[2])
+            line_num = parts[2]
+            
+            if (current_type == "unity") {
+                unity_covered[current_file][line_num] = 1
+            } else if (current_type == "blackbox") {
+                blackbox_covered[current_file][line_num] = 1
+            }
+            all_instrumented[current_file][line_num] = 1
+        }
+        next
+    }
+    
+    # Process uncovered lines
+    /^[[:space:]]*#####:[[:space:]]*[0-9]+:/ {
+        if (current_file != "" && current_type != "") {
+            split($0, parts, ":")
+            gsub(/^[[:space:]]*|[[:space:]]*$/, "", parts[2])
+            line_num = parts[2]
+            
+            all_instrumented[current_file][line_num] = 1
+        }
+        next
+    }
+    
+    END {
+        # Process all files that have any coverage data
+        for (file in all_instrumented) {
+            instrumented_count = 0
+            for (line in all_instrumented[file]) {
+                instrumented_count++
+            }
+            
+            # Convert filename back to path format
+            source_path = file
+            if (match(source_path, /\.gcov$/)) {
+                gsub(/\.gcov$/, "", source_path)
+                # Path already contains subdirectory structure
+                if (!match(source_path, /^src\//)) {
+                    source_path = "src/" source_path
+                }
+            }
+            
+            # Calculate unity coverage
+            unity_covered_count = 0
+            for (line in unity_covered[file]) {
+                unity_covered_count++
+            }
+            
+            # Calculate blackbox coverage
+            blackbox_covered_count = 0
+            for (line in blackbox_covered[file]) {
+                blackbox_covered_count++
+            }
+            
+            # Calculate combined coverage (union)
+            combined_covered_count = unity_covered_count
+            for (line in blackbox_covered[file]) {
+                if (!(line in unity_covered[file])) {
+                    combined_covered_count++
+                }
+            }
+            
+            # Output all three coverage types
+            print "UNITY:" source_path ":" instrumented_count "," unity_covered_count
+            print "COVERAGE:" source_path ":" instrumented_count "," blackbox_covered_count  
+            print "COMBINED:" source_path ":" instrumented_count "," combined_covered_count
+        }
+    }
+    ' "$temp_input" > "$temp_output"
+    
+    # Process output in main shell to populate all global arrays
+    while IFS=':' read -r coverage_type file_path results; do
+        if [[ -n "$coverage_type" && -n "$file_path" && -n "$results" && "$file_path" != "" ]]; then
+            local instrumented="${results%,*}"
+            local covered="${results#*,}"
+            
+            # Skip invalid entries
+            if [[ -z "$instrumented" || -z "$covered" ]]; then
+                continue
+            fi
+            
+            case "$coverage_type" in
+                "UNITY")
+                    unity_instrumented_lines["$file_path"]=$instrumented
+                    unity_covered_lines["$file_path"]=$covered
+                    ;;
+                "COVERAGE")
+                    coverage_instrumented_lines["$file_path"]=$instrumented
+                    coverage_covered_lines["$file_path"]=$covered
+                    ;;
+                "COMBINED")
+                    combined_instrumented_lines["$file_path"]=$instrumented
+                    combined_covered_lines["$file_path"]=$covered
+                    ;;
+            esac
+        fi
+    done < "$temp_output"
+    
+    # Clean up
+    rm -f "$temp_input" "$temp_output"
+    
+    return 0
 }
 
 # Ensure coverage directories exist
@@ -120,6 +387,14 @@ load_ignore_patterns() {
     fi
     
     IGNORE_PATTERNS=()
+    
+    # Add hardcoded filters
+    IGNORE_PATTERNS+=("test_")
+    IGNORE_PATTERNS+=("jansson")
+    IGNORE_PATTERNS+=("microhttpd")
+    IGNORE_PATTERNS+=("src/unity.c")
+    
+    # Load patterns from .trial-ignore
     if [ -f "$project_root/.trial-ignore" ]; then
         # Use more efficient reading with mapfile
         local lines=()

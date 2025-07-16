@@ -20,6 +20,8 @@ calculate_unity_coverage() {
     
     if [ ! -d "$build_dir" ]; then
         echo "0.000" > "$UNITY_COVERAGE_FILE"
+        echo "$timestamp,0.000,0,0,0,0" > "${UNITY_COVERAGE_FILE}.detailed"
+        echo "0.000"
         return 1
     fi
     

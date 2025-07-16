@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Test: Test Suite Runner
+# Test: Test Suite Orchestration
 # Executes all tests in parallel batches or sequentially and generates a summary report
 
 # Usage: ./test_00_all.sh [test_name1 test_name2 ...] [--skip-tests] [--sequential] [--help]
@@ -15,7 +15,7 @@
 # 3.0.0 - 2025-07-02 - Complete rewrite to use lib/ scripts, simplified orchestration approach
 
 # Test configuration
-TEST_NAME="Test Suite Runner"
+TEST_NAME="Test Suite Orchestration"
 SCRIPT_VERSION="4.1.0"
 
 # Get the directory where this script is located
