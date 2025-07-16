@@ -8,13 +8,14 @@
 # and displays the results in a formatted table using the tables executable.
 
 # CHANGELOG
+# 1.0.5 - 2025-07-16 - Fixed Cover column to calculate TRUE union of coverage from Unity and Blackbox tests
 # 1.0.4 - 2025-07-14 - Fixed file path extraction using Source: line from gcov files for consistent table alignment
 # 1.0.3 - 2025-07-14 - Fixed Tests column to use same gcov processing logic as test 99 for accurate coverage summaries
 # 1.0.2 - Added MAGENTA color flag for files with >0 coverage but <50% coverage when >100 instrumented lines
 # 1.0.1 - Added YELLOW color flag for files with no coverage in either test type
 # 1.0.0 - Initial version
 
-SCRIPT_VER="1.0.4"
+SCRIPT_VER="1.0.5"
 
 # Get script directory and project paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -60,129 +61,9 @@ declare -A coverage_covered_lines
 declare -A coverage_instrumented_lines
 declare -A all_files
 
-# Function to analyze a single gcov file and store data
-analyze_gcov_file() {
-    local gcov_file="$1"
-    local coverage_type="$2"  # "unity" or "coverage"
-    
-    # Input validation - prevent hanging on empty or nonexistent files
-    if [[ -z "$gcov_file" ]]; then
-        return 1
-    fi
-    
-    if [[ ! -f "$gcov_file" ]]; then
-        return 1
-    fi
-    
-    # Use the correct awk parsing logic for gcov format
-    local line_counts
-    line_counts=$(awk '
-        /^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/ { covered++; total++ }
-        /^[[:space:]]*#####:[[:space:]]*[0-9]+:/ { total++ }
-        END {
-            if (total == "") total = 0
-            if (covered == "") covered = 0
-            print total "," covered
-        }
-    ' "$gcov_file" 2>/dev/null)
-    
-    local instrumented_lines="${line_counts%,*}"
-    local covered_lines="${line_counts#*,}"
-    
-    # Default to 0 if parsing failed
-    instrumented_lines=${instrumented_lines:-0}
-    covered_lines=${covered_lines:-0}
-    
-    # Include all files, even those with 0 instrumented lines, for complete coverage table
-    # This ensures the table shows all files that have gcov data, matching test 99's behavior
-    
-    # Extract relative path from Source: line in gcov file
-    local source_line
-    source_line=$(grep '^        -:    0:Source:' "$gcov_file" | cut -d':' -f3-)
-    local display_path
-    if [[ -n "$source_line" ]]; then
-        display_path="${source_line#*/hydrogen/}"
-    else
-        # Fallback to basename
-        display_path=$(basename "$gcov_file" .gcov)
-        display_path="src/$display_path"
-    fi
-    
-    # Store data in appropriate arrays
-    all_files["$display_path"]=1
-    if [[ "$coverage_type" == "unity" ]]; then
-        unity_covered_lines["$display_path"]=$covered_lines
-        unity_instrumented_lines["$display_path"]=$instrumented_lines
-    else
-        coverage_covered_lines["$display_path"]=$covered_lines
-        coverage_instrumented_lines["$display_path"]=$instrumented_lines
-    fi
-}
+# Function analyze_combined_gcov_coverage is now in coverage-common.sh
 
-# Function to collect and process gcov files from a directory
-collect_gcov_files() {
-    local build_dir="$1"
-    local coverage_type="$2"
-    local files_found=0
-    
-    if [ -d "$build_dir" ]; then
-        while IFS= read -r gcov_file; do
-            if [[ -f "$gcov_file" ]]; then
-                # Use the exact same filtering logic as the working sections
-                basename_file=$(basename "$gcov_file")
-                if [[ "$basename_file" == "unity.c.gcov" ]] || [[ "$gcov_file" == *"/usr/"* ]]; then
-                    continue
-                fi
-                
-                # Skip system include files that show up in Source: lines
-                if grep -q "Source:/usr/include/" "$gcov_file" 2>/dev/null; then
-                    continue
-                fi
-                
-                if [[ "$basename_file" == "test_"* ]]; then
-                    continue
-                fi
-                
-                if [[ "$basename_file" == *"jansson"* ]] || \
-                   [[ "$basename_file" == *"json"* ]] || \
-                   [[ "$basename_file" == *"curl"* ]] || \
-                   [[ "$basename_file" == *"ssl"* ]] || \
-                   [[ "$basename_file" == *"crypto"* ]] || \
-                   [[ "$basename_file" == *"pthread"* ]] || \
-                   [[ "$basename_file" == *"uuid"* ]] || \
-                   [[ "$basename_file" == *"zlib"* ]] || \
-                   [[ "$basename_file" == *"pcre"* ]]; then
-                    continue
-                fi
-                
-                source_file="${basename_file%.gcov}"
-                should_ignore=false
-                
-                if [[ -f "$PROJECT_ROOT/.trial-ignore" ]]; then
-                    while IFS= read -r line; do
-                        if [[ "$line" =~ ^[[:space:]]*# ]] || [[ -z "$line" ]]; then
-                            continue
-                        fi
-                        pattern="${line#./}"
-                        if [[ "$source_file" == *"$pattern"* ]]; then
-                            should_ignore=true
-                            break
-                        fi
-                    done < "$PROJECT_ROOT/.trial-ignore"
-                fi
-                
-                if [[ "$should_ignore" == true ]]; then
-                    continue
-                fi
-                
-                analyze_gcov_file "$gcov_file" "$coverage_type"
-                ((files_found++))
-            fi
-        done < <(find "$build_dir" -name "*.gcov" -type f 2>/dev/null)
-    fi
-    
-    return "$files_found"
-}
+# analyze_gcov_file and collect_gcov_files are now in coverage-common.sh
 
 # Use the same functions as test 99 for consistency
 # Source the coverage functions
@@ -244,7 +125,7 @@ if [ "$gcov_files_found" -eq 0 ]; then
     cat > "$layout_json" << EOF
 {
     "title": "Test Suite Coverage {NC}{RED}———{RESET}{BOLD} Unity: ${unity_total_pct}% {RESET}{RED}———{RESET}{BOLD} Blackbox: ${coverage_total_pct}% {RESET}{RED}———{RESET}{BOLD} Combined: ${combined_total_pct}%",
-    "footer": "Generated: $(date) - No coverage data available",
+    "footer": "{YELLOW}Zero Coverage:{RESET} {RED}———{RESET} {MAGENTA}100+ Lines < 50% Coverage:{RESET} - No coverage data available",
     "footer_position": "right", 
     "theme": "Red",
     "columns": [
@@ -303,24 +184,50 @@ collect_gcov_files "$BLACKBOX_COVS" "coverage"
 # Process Unity gcov files using the existing function
 collect_gcov_files "$UNITY_COVS" "unity"
 
-# Calculate combined coverage for each file
+# Calculate combined coverage for each file using TRUE union logic
 declare -A combined_covered_lines
 declare -A combined_instrumented_lines
 
 for file_path in "${!all_files[@]}"; do
-    # Use the data we just collected
-    u_covered=${unity_covered_lines["$file_path"]:-0}
-    u_instrumented=${unity_instrumented_lines["$file_path"]:-0}
-    c_covered=${coverage_covered_lines["$file_path"]:-0}
-    c_instrumented=${coverage_instrumented_lines["$file_path"]:-0}
+    # Find corresponding gcov files for this source file
+    basename_file=$(basename "$file_path" .c)
+    unity_gcov_file=""
+    blackbox_gcov_file=""
     
-    # For combined coverage: use max instrumented lines and max covered lines
-    # This represents the union of coverage from both test suites
-    max_instrumented=$((u_instrumented > c_instrumented ? u_instrumented : c_instrumented))
-    max_covered=$((u_covered > c_covered ? u_covered : c_covered))
+    # Look for Unity gcov file
+    if [[ -f "$UNITY_COVS/${basename_file}.c.gcov" ]]; then
+        unity_gcov_file="$UNITY_COVS/${basename_file}.c.gcov"
+    else
+        # Try subdirectory structure
+        subdir_path="${file_path#src/}"
+        subdir="${subdir_path%/*}"
+        if [[ "$subdir" != "$subdir_path" && -f "$UNITY_COVS/$subdir/${basename_file}.c.gcov" ]]; then
+            unity_gcov_file="$UNITY_COVS/$subdir/${basename_file}.c.gcov"
+        fi
+    fi
     
-    combined_instrumented_lines["$file_path"]=$max_instrumented
-    combined_covered_lines["$file_path"]=$max_covered
+    # Look for Blackbox gcov file
+    if [[ -f "$BLACKBOX_COVS/${basename_file}.c.gcov" ]]; then
+        blackbox_gcov_file="$BLACKBOX_COVS/${basename_file}.c.gcov"
+    else
+        # Try subdirectory structure
+        subdir_path="${file_path#src/}"
+        subdir="${subdir_path%/*}"
+        if [[ "$subdir" != "$subdir_path" && -f "$BLACKBOX_COVS/$subdir/${basename_file}.c.gcov" ]]; then
+            blackbox_gcov_file="$BLACKBOX_COVS/$subdir/${basename_file}.c.gcov"
+        fi
+    fi
+    
+    # Calculate TRUE union coverage using line-by-line analysis
+    combined_result=$(analyze_combined_gcov_coverage "$unity_gcov_file" "$blackbox_gcov_file")
+    
+    combined_instrumented="${combined_result%%,*}"
+    temp="${combined_result#*,}"
+    combined_covered="${temp%%,*}"
+    
+    # Always use the union result - no fallback to max logic
+    combined_instrumented_lines["$file_path"]=$combined_instrumented
+    combined_covered_lines["$file_path"]=$combined_covered
 done
 
 # Calculate totals for summary first
@@ -376,77 +283,16 @@ echo "$combined_total_pct" > "$COMBINED_COVERAGE_FILE"
 temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory"; exit 1; }
 layout_json="$temp_dir/coverage_layout.json"
 data_json="$temp_dir/coverage_data.json"
-    
-    # Create layout JSON for the coverage table (now with correct totals)
-    cat > "$layout_json" << EOF
-{
-    "title": "Test Suite Coverage {NC}{RED}———{RESET}{BOLD} Unity: ${unity_total_pct}% {RESET}{RED}———{RESET}{BOLD} Blackbox: ${coverage_total_pct}% {RESET}{RED}———{RESET}{BOLD} Combined: ${combined_total_pct}%",
-    "footer": "Generated: $(date)",
-    "footer_position": "right",
-    "theme": "Red",
-    "columns": [
-        {
-            "header": "Folder",
-            "key": "folder",
-            "datatype": "text",
-            "visible": false,
-            "break": true
-        },
-        {
-            "header": "Cover %",
-            "key": "combined_coverage_percentage",
-            "datatype": "float",
-            "justification": "right"
-        },
-        {
-            "header": "Lines",
-            "key": "coverage_instrumented",
-            "datatype": "int", 
-            "justification": "right",
-            "summary": "sum"
-        },
-        {
-            "header": "Source File",
-            "key": "file_path",
-            "datatype": "text",
-            "summary": "count",
-            "width": 52
-        },
-        {
-            "header": "Unity",
-            "key": "unity_covered",
-            "datatype": "int",
-            "justification": "right",
-            "summary": "sum",
-            "width": 8
-        },
-        {
-            "header": "Black",
-            "key": "coverage_covered",
-            "datatype": "int",
-            "justification": "right",
-            "summary": "sum",
-            "width": 8
-        },
-        {
-            "header": "Cover",
-            "key": "combined_covered",
-            "datatype": "int",
-            "justification": "right",
-            "summary": "sum",
-            "width": 8
-        }
-    ]
-}
-EOF
 
 # Start the data JSON array
 echo '[' > "$data_json"
 first_record=true
 
-
 # Create array for sorting by folder and file
 declare -a file_data=()
+zero_coverage_count=0
+low_coverage_count=0
+
 for file_path in "${!all_files[@]}"; do
     # Extract folder name from file path using first two levels below src/
     folder="src/"
@@ -518,11 +364,13 @@ for file_data_entry in "${sorted_file_data[@]}"; do
     display_file_path="$file_path"
     if [[ $u_covered -eq 0 && $c_covered -eq 0 ]]; then
         display_file_path="{YELLOW}$file_path{RESET}"
+        ((zero_coverage_count++))
     elif [[ $combined_covered -gt 0 && $combined_instrumented -gt 100 ]]; then
         # Check if coverage is less than 50%
         coverage_below_50=$(awk "BEGIN {print ($combined_percentage < 50.0) ? 1 : 0}")
         if [[ $coverage_below_50 -eq 1 ]]; then
             display_file_path="{MAGENTA}$file_path{RESET}"
+            ((low_coverage_count++))
         fi
     fi
     
@@ -555,6 +403,69 @@ done
 # Close the JSON array
 echo '' >> "$data_json"
 echo ']' >> "$data_json"
+
+# Create layout JSON for the coverage table (now with correct totals and counts)
+cat > "$layout_json" << EOF
+{
+    "title": "Test Suite Coverage {NC}{RED}———{RESET}{BOLD} Unity: ${unity_total_pct}% {RESET}{RED}———{RESET}{BOLD} Blackbox: ${coverage_total_pct}% {RESET}{RED}———{RESET}{BOLD} Combined: ${combined_total_pct}%",
+    "footer": "{YELLOW}Zero Coverage:{RESET} {WHITE}${zero_coverage_count}{RESET} {RED}———{RESET} {MAGENTA}100+ Lines && < 50% Coverage:{RESET} {WHITE}${low_coverage_count}{RESET}",
+    "footer_position": "right",
+    "theme": "Red",
+    "columns": [
+        {
+            "header": "Folder",
+            "key": "folder",
+            "datatype": "text",
+            "visible": false,
+            "break": true
+        },
+        {
+            "header": "Cover %",
+            "key": "combined_coverage_percentage",
+            "datatype": "float",
+            "justification": "right"
+        },
+        {
+            "header": "Lines",
+            "key": "coverage_instrumented",
+            "datatype": "int", 
+            "justification": "right",
+            "summary": "sum"
+        },
+        {
+            "header": "Source File",
+            "key": "file_path",
+            "datatype": "text",
+            "summary": "count",
+            "width": 52
+        },
+        {
+            "header": "Unity",
+            "key": "unity_covered",
+            "datatype": "int",
+            "justification": "right",
+            "summary": "sum",
+            "width": 8
+        },
+        {
+            "header": "Black",
+            "key": "coverage_covered",
+            "datatype": "int",
+            "justification": "right",
+            "summary": "sum",
+            "width": 8
+        },
+        {
+            "header": "Cover",
+            "key": "combined_covered",
+            "datatype": "int",
+            "justification": "right",
+            "summary": "sum",
+            "width": 8
+        }
+    ]
+}
+EOF
 
 # Use tables executable to render the table with robust error handling
 if [[ ! -x "$TABLES_EXE" ]]; then

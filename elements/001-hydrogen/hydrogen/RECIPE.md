@@ -3,10 +3,11 @@
 ## CRITICAL INSTRUCTIONS
 
 - The script `extras/make-trial.sh` is used to build the project and check for compilation errors
-- This can be run using the alias `mkt` from anyhwere as it has been integrated as a shell alias for this purpose
+- This can be run using the alias `mkt` from any directory as it has been integrated as a shell alias for this purpose
 - After ANY code/script/MD change, run `mkt` to verify compilation/linting. Do not attempt completion until it passes.
 - End tasks by checking/updating RELEASES.md if changes warrant it.
 - Do NOT run full tests (e.g., test_00_all.sh)—use `mkt` only; humans handle comprehensive testing.
+- In order to run tests, typically `mkb` needs to be run, as this builds all the necessary test binaries.
 
 ## HYDROGEN PROJECT
 

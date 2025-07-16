@@ -2,7 +2,8 @@
 
 ## Overview
 
-The `test_00_all.sh` script serves as the primary test orchestration tool for the Hydrogen test suite. It executes all test scripts in sequence, ensuring comprehensive validation of the Hydrogen 3D printer control server.
+The `test_00_all.sh` script serves as the primary test orchestration tool for the Hydrogen test suite.
+It executes all test scripts in sequence, ensuring comprehensive validation of the Hydrogen Server.
 
 ## Purpose
 
