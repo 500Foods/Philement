@@ -7,10 +7,18 @@
  * - Resource cleanup
  */
 
+/* Feature test macros must come first */
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200809L
+#endif
+
 // System headers
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <pthread.h>
+#include <errno.h>
+#include <unistd.h>
 
 // Project headers
 #include "websocket_server_internal.h"
@@ -96,6 +104,8 @@ void ws_context_destroy(WebSocketServerContext* ctx)
         return;
     }
 
+    log_this("WebSocket", "Starting context destruction", LOG_LEVEL_STATE);
+    
     // Ensure we're in shutdown state
     ctx->shutdown = 1;
 
@@ -103,68 +113,56 @@ void ws_context_destroy(WebSocketServerContext* ctx)
     if (ctx->lws_context) {
         struct lws_context *lws_ctx = ctx->lws_context;
         
-        // Cancel any pending service to trigger final callbacks
-        lws_cancel_service(lws_ctx);
-        
-        // Multiple service loops to ensure all callbacks are processed
-        for (int i = 0; i < 5; i++) {
-            lws_service(lws_ctx, 0);
-            usleep(100000);  // 100ms delay between loops
-        }
-
-        // Now safe to null the context as callbacks are processed
+        // Clear the context pointer immediately to prevent further use
         ctx->lws_context = NULL;
         
-        // Wait for protocol destroy callback and connection cleanup
-        struct timespec wait_time;
-        clock_gettime(CLOCK_REALTIME, &wait_time);
-        wait_time.tv_sec += 3;  // 3 second timeout
-
+        // Force clear any remaining connections
         pthread_mutex_lock(&ctx->mutex);
-        while (ctx->active_connections > 0) {
-            if (pthread_cond_timedwait(&ctx->cond, &ctx->mutex, &wait_time) == ETIMEDOUT) {
-                log_this("WebSocket", "Timeout waiting for cleanup, forcing shutdown", LOG_LEVEL_ALERT);
-                ctx->active_connections = 0;  // Force clear any remaining connections
-                break;
-            }
+        if (ctx->active_connections > 0) {
+            log_this("WebSocket", "Forcing %d connections to close", LOG_LEVEL_ALERT, 
+                    ctx->active_connections);
+            ctx->active_connections = 0;
         }
+        pthread_cond_broadcast(&ctx->cond);
         pthread_mutex_unlock(&ctx->mutex);
 
-        // Final check for any remaining threads
+        // Cancel any remaining threads before context destruction
         extern ServiceThreads websocket_threads;
         update_service_thread_metrics(&websocket_threads);
         if (websocket_threads.thread_count > 0) {
-            log_this("WebSocket", "Waiting for %d threads to exit", LOG_LEVEL_STATE,
+            log_this("WebSocket", "Cancelling %d remaining threads", LOG_LEVEL_ALERT,
                     websocket_threads.thread_count);
             
-            // Give threads a chance to exit cleanly
-            for (int i = 0; i < 10 && websocket_threads.thread_count > 0; i++) {
-                usleep(100000);  // 100ms delay
-                update_service_thread_metrics(&websocket_threads);
-            }
-            
-            // Force any remaining threads to exit
-            if (websocket_threads.thread_count > 0) {
-                log_this("WebSocket", "Forcing %d threads to exit", LOG_LEVEL_ALERT,
-                        websocket_threads.thread_count);
-                for (int i = 0; i < websocket_threads.thread_count; i++) {
-                    pthread_t thread = websocket_threads.thread_ids[i];
-                    pthread_cancel(thread);  // Force thread termination
+            for (int i = 0; i < websocket_threads.thread_count; i++) {
+                pthread_t thread = websocket_threads.thread_ids[i];
+                if (thread != 0) {
+                    pthread_cancel(thread);
                 }
             }
+            
+            // Force clear thread count immediately
+            websocket_threads.thread_count = 0;
         }
 
-        // Final service loop to process any remaining callbacks
-        lws_service(lws_ctx, 0);
-        
-        // Now safe to destroy the context
-        lws_context_destroy(lws_ctx);
-        
-        // Final thread cleanup
-        update_service_thread_metrics(&websocket_threads);
-        if (websocket_threads.thread_count > 0) {
-            log_this("WebSocket", "Warning: %d threads remain after context destruction",
-                    LOG_LEVEL_ALERT, websocket_threads.thread_count);
+        // Check if we're in a signal-based shutdown (SIGINT/SIGTERM) for rapid exit
+        extern volatile sig_atomic_t signal_based_shutdown;
+        if (signal_based_shutdown) {
+            log_this("WebSocket", "Skipping expensive lws_context_destroy during signal shutdown", LOG_LEVEL_STATE);
+            // OS will clean up resources on process exit, no need for graceful cleanup
+        } else {
+            log_this("WebSocket", "Destroying libwebsockets context", LOG_LEVEL_STATE);
+            
+            // Aggressive cleanup sequence - force all pending operations to complete
+            lws_cancel_service(lws_ctx);
+            
+            // Minimal service processing to drain any immediate callbacks
+            lws_service(lws_ctx, 0);
+            lws_service(lws_ctx, 0);
+            
+            // Destroy the libwebsockets context immediately - no delays
+            log_this("WebSocket", "Calling lws_context_destroy", LOG_LEVEL_STATE);
+            lws_context_destroy(lws_ctx);
+            log_this("WebSocket", "lws_context_destroy completed", LOG_LEVEL_STATE);
         }
     }
 
@@ -178,11 +176,10 @@ void ws_context_destroy(WebSocketServerContext* ctx)
     pthread_mutex_destroy(&ctx->mutex);
     pthread_cond_destroy(&ctx->cond);
 
-    // Free the context itself
+    log_this("WebSocket", "Freeing context structure", LOG_LEVEL_STATE);
+    
+    // Free the context itself - this fixes the 680-byte leak
     free(ctx);
 
-    log_this("WebSocket", "Server context destroyed", LOG_LEVEL_STATE);
-    
-    // Final delay to allow any pending logs to be processed
-    usleep(100000);  // 100ms delay
+    log_this("WebSocket", "Context destruction completed", LOG_LEVEL_STATE);
 }

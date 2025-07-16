@@ -17,7 +17,7 @@ bool load_websocket_config(json_t* root, AppConfig* config) {
 
     // Initialize with robust defaults that match no-config behavior
     WebSocketConfig* ws = &config->websocket;
-    ws->enabled = true;
+    ws->enabled = false;  // WebSocket server disabled by default
     ws->enable_ipv6 = true;
     ws->lib_log_level = 2;
     ws->port = 5001;

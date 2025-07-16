@@ -23,7 +23,7 @@
 ./print/print_queue_manager.c
 
 # Websockets not iimplemented
-./websocket/websocket_dynamic.c
+# ./websocket/websocket_dynamic.c
 
 # There's nothing yet common in the system service endpoints that is shared, so this
 # is just a placeholder to mirror the structure of the other services

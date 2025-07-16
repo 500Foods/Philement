@@ -97,6 +97,17 @@ tests/          Test framework
 - tests/unity/CMakeLists.txt is used for building unity unit tests
 - Use `log_this` when outputing anything to the log
 
+## JSON PROCESSING REQUIREMENTS
+
+- ALWAYS use `jq` for JSON parsing, filtering, and validation
+- NEVER use `grep` or text manipulation tools for JSON data
+- Use `jq -r` for raw string output when needed
+- Use `jq -e` for existence checks (exits with error if false/null)
+- Examples:
+  - Check field exists: `echo "$json" | jq -e '.status.server_started'`
+  - Extract value: `echo "$json" | jq -r '.version.build'`
+  - Validate structure: `echo "$json" | jq -e '.status and .system and .version'`
+
 ## LINTING GUIDANCE FOR AI-GENERATED CONTENT
 
 ### cppcheck
