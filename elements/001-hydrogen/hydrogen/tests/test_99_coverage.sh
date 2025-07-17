@@ -8,7 +8,7 @@
 # 2.0.0 - Initial version with comprehensive coverage analysis
 
 # Test configuration
-TEST_NAME="Test Suite Coverage (coverage_tables)"
+TEST_NAME="Test Suite Coverage (coverage_table)"
 SCRIPT_VERSION="2.0.1"
 
 # Get the directory where this script is located
