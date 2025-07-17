@@ -765,11 +765,13 @@ set(UNITY_FRAMEWORK_SOURCES
 )
 
 # Create Unity test object files in build/unity/src directory structure (same as original)
-# Exclude hydrogen.c since Unity tests have their own main() function
+# Include hydrogen.c for coverage instrumentation consistency, but don't link it into test executables
 set(UNITY_HYDROGEN_SOURCES ${HYDROGEN_SOURCES})
-list(REMOVE_ITEM UNITY_HYDROGEN_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/../src/hydrogen.c")
+set(UNITY_HYDROGEN_SOURCES_FOR_LINKING ${HYDROGEN_SOURCES})
+list(REMOVE_ITEM UNITY_HYDROGEN_SOURCES_FOR_LINKING "${CMAKE_CURRENT_SOURCE_DIR}/../src/hydrogen.c")
 
 set(UNITY_OBJECT_FILES "")
+set(UNITY_OBJECT_FILES_FOR_LINKING "")
 foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
     # Get relative path from src directory
     file(RELATIVE_PATH REL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../src" ${SOURCE_FILE})
@@ -807,6 +809,11 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
     )
     
     list(APPEND UNITY_OBJECT_FILES ${OUTPUT_OBJ})
+    
+    # Only add to linking list if not hydrogen.c (has main() function)
+    if(NOT SOURCE_FILE STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}/../src/hydrogen.c")
+        list(APPEND UNITY_OBJECT_FILES_FOR_LINKING ${OUTPUT_OBJ})
+    endif()
 endforeach()
 
 # Create target that depends on all Unity object files
@@ -890,9 +897,9 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
     )
     add_dependencies(${TEST_NAME} ${TEST_NAME}_objects unity_objects)
     
-    # Link with Unity object files and required libraries
+    # Link with Unity object files and required libraries (excluding hydrogen.c which has main())
     target_link_libraries(${TEST_NAME}
-        ${UNITY_OBJECT_FILES}
+        ${UNITY_OBJECT_FILES_FOR_LINKING}
         ${HYDROGEN_BASE_LIBS}
         --coverage
         -lgcov
