@@ -15,7 +15,16 @@ Key features:
 - **Optimized with Brotli compression** - High compression ratio for static assets
 - **Dynamic content adaptation** - Server URL and configuration auto-adjustment
 
-## Directory Contents
+## Payload Mechanism
+
+The basic payload mechanism is trivial. A payload file is created, generally with suitable encryption. This file is simply appended to the binary executable directly, and an extra
+marker is added, <<< HERE BE ME TREASURE >>>, after the payload, to make it easier to identify
+that a payload has been attached.  Finally, a separate value is appended indicating the offset
+of the payload so the program can properly locate and decode it.
+
+Of special note, when using the release build, it is compressed with UPX and stripped of symbols. So strings like the payload marker appear exactly once, where one would expect the payload marker to appear. The coverage build, on the other hand, is neither compressed nor stripped of its debug symbols, leading to the revelation that the payload marker appears numerous times in the file, and thus we have to be mindful to examine the *last* payload marker when using it as designed.
+
+## Payload Contents
 
 - `swagger-generate.sh` - Script that processes annotations and generates the OpenAPI specification
 - `swagger.json` - Generated OpenAPI 3.1.0 specification
