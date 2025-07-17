@@ -58,18 +58,21 @@ fi
 readonly LINT_OUTPUT_LIMIT=100
 
 # Default exclude patterns for linting (can be overridden by .lintignore)
-readonly LINT_EXCLUDES=(
-    "build/*"
-    "build_debug/*"
-    "build_perf/*"
-    "build_release/*"
-    "build_valgrind/*"
-    "tests/logs/*"
-    "tests/results/*"
-    "tests/diagnostics/*"
-    "tests/unity/framework/*"
-    "node_modules/*"
-)
+# Only declare if not already defined (prevents readonly variable redeclaration when sourced)
+if [[ -z "${LINT_EXCLUDES:-}" ]]; then
+    readonly LINT_EXCLUDES=(
+        "build/*"
+        "build_debug/*"
+        "build_perf/*"
+        "build_release/*"
+        "build_valgrind/*"
+        "tests/logs/*"
+        "tests/results/*"
+        "tests/diagnostics/*"
+        "tests/unity/framework/*"
+        "node_modules/*"
+    )
+fi
 
 # Check if a file should be excluded from linting
 should_exclude_file() {
