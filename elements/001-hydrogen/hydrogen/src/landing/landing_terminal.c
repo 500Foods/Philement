@@ -9,7 +9,7 @@
  * 
  * Dependencies:
  * - Must coordinate with WebServer for shutdown
- * - Must coordinate with WebSockets for shutdown
+ * - Must coordinate with WebSocket for shutdown
  */
 
 #include <stdbool.h>
@@ -63,10 +63,10 @@ LaunchReadiness check_terminal_landing_readiness(void) {
     }
     
     // Check WebSocket status
-    bool websocket_ready = is_subsystem_running_by_name("WebSockets");
+    bool websocket_ready = is_subsystem_running_by_name("WebSocket");
     if (!websocket_ready) {
         readiness.ready = false;
-        readiness.messages[1] = strdup("  No-Go:   WebSockets subsystem not running");
+        readiness.messages[1] = strdup("  No-Go:   WebSocket subsystem not running");
         readiness.messages[2] = strdup("  Decide:  No-Go For Landing of Terminal");
         readiness.messages[3] = NULL;
         return readiness;
@@ -75,7 +75,7 @@ LaunchReadiness check_terminal_landing_readiness(void) {
     // All dependencies are ready
     readiness.ready = true;
     readiness.messages[1] = strdup("  Go:      WebServer ready for shutdown");
-    readiness.messages[2] = strdup("  Go:      WebSockets ready for shutdown");
+    readiness.messages[2] = strdup("  Go:      WebSocket ready for shutdown");
     readiness.messages[3] = strdup("  Go:      Terminal ready for cleanup");
     readiness.messages[4] = strdup("  Decide:  Go For Landing of Terminal");
     readiness.messages[5] = NULL;

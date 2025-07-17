@@ -29,7 +29,7 @@
  * - 13. mDNS Client
  * - 12. mDNS Server
  * - 11. Terminal
- * - 10. WebSockets
+ * - 10. WebSocket
  * - 09. Swagger
  * - 08. API
  * - 07. WebServer
@@ -90,7 +90,7 @@ bool handle_landing_plan(const ReadinessResults* results) {
     // Define subsystem order (matching landing_readiness.c)
     const char* expected_order[] = {
         "Print", "Mail Relay", "mDNS Client", "mDNS Server", "Terminal",
-        "WebSockets", "Swagger", "API", "WebServer", "Database", "Logging",
+        "WebSocket", "Swagger", "API", "WebServer", "Database", "Logging",
         "Network", "Payload", "Threads", "Registry"
     };
     
