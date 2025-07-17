@@ -58,7 +58,10 @@ fi
 # Set up results directory (after navigating to project root)
 
 # Test configuration constants
-readonly LINT_OUTPUT_LIMIT=100
+# Only declare if not already defined (prevents readonly variable redeclaration when sourced)
+if [[ -z "${LINT_OUTPUT_LIMIT:-}" ]]; then
+    readonly LINT_OUTPUT_LIMIT=100
+fi
 
 # Default exclude patterns for linting (can be overridden by .lintignore)
 # Only declare if not already defined (prevents readonly variable redeclaration when sourced)
