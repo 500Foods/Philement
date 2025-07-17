@@ -60,16 +60,19 @@ readonly MAX_SOURCE_LINES=1000
 readonly LARGE_FILE_THRESHOLD="25k"
 
 # Default exclude patterns for linting (can be overridden by .lintignore)
-readonly LINT_EXCLUDES=(
-    "build/*"
-    "build_debug/*"
-    "build_perf/*"
-    "build_release/*"
-    "build_valgrind/*"
-    "tests/logs/*"
-    "tests/results/*"
-    "tests/diagnostics/*"
-)
+# Only declare if not already defined (prevents readonly variable redeclaration when sourced)
+if [[ -z "${LINT_EXCLUDES:-}" ]]; then
+    readonly LINT_EXCLUDES=(
+        "build/*"
+        "build_debug/*"
+        "build_perf/*"
+        "build_release/*"
+        "build_valgrind/*"
+        "tests/logs/*"
+        "tests/results/*"
+        "tests/diagnostics/*"
+    )
+fi
 
 # Create temporary files
 SOURCE_FILES_LIST=$(mktemp)

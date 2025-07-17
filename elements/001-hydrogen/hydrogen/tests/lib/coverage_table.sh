@@ -73,7 +73,7 @@ gcov_files_found=$((unity_files + coverage_files))
 
 if [ "$gcov_files_found" -eq 0 ]; then
     # No gcov files found - create table with zero values instead of exiting
-    echo "No gcov files found - generating empty coverage table with zero values"
+    # echo "No gcov files found - generating empty coverage table with zero values"
     
     # Set all totals to zero
     unity_total_covered=0
@@ -107,8 +107,7 @@ if [ "$gcov_files_found" -eq 0 ]; then
         {
             "header": "Status",
             "key": "status",
-            "datatype": "text",
-            "width": 60
+            "datatype": "text"
         }
     ]
 }
@@ -118,7 +117,7 @@ EOF
     cat > "$data_json" << EOF
 [
     {
-        "status": "No coverage data available - run tests to generate coverage"
+        "status": "No source file coverage data available. Run Test 11 (Unity) or other Tests to generate gcov data"
     }
 ]
 EOF
