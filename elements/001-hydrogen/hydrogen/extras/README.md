@@ -6,6 +6,7 @@ This folder contains utility scripts and one-off diagnostic tools for the Hydrog
 
 ### `make-all.sh`
 
+**Alias:** mka  
 **Purpose:** Compilation Test Script  
 **Description:** Tests that all components compile without errors or warnings by running the compilation test suite.
 
@@ -15,6 +16,7 @@ This folder contains utility scripts and one-off diagnostic tools for the Hydrog
 
 ### `make-clean.sh`
 
+**Alias:** mkc  
 **Purpose:** Comprehensive Build Cleanup  
 **Description:** Performs thorough cleaning of build artifacts while preserving release variants. This script:
 
@@ -33,6 +35,7 @@ This folder contains utility scripts and one-off diagnostic tools for the Hydrog
 
 ### `make-trial.sh`
 
+***Alias:** mkt  
 **Purpose:** Quick Trial Build and Diagnostics  
 **Description:** Performs a fast build cycle with comprehensive diagnostics including:
 
@@ -65,7 +68,9 @@ This folder contains utility scripts and one-off diagnostic tools for the Hydrog
 
 ## One-Off Diagnostic Tools
 
-The `one-offs/` directory contains specialized C programs for debugging and testing payload embedding functionality.
+The `one-offs/` directory contains specialized C programs for debugging and testing payload embedding functionality. These came about during various development debugging sessions where
+some particular feature needed to be tested in a standalone fashion. The code tends to be
+either non-trivial or non-obvious, so these were kept for future posterity.
 
 ### `debug_payload.c`
 
@@ -131,6 +136,8 @@ gcc -o find_all_markers find_all_markers.c
 - Size field integrity
 - Payload bounds checking (≤ 100MB, ≤ marker offset)
 - Complete detection workflow
+
+Of special note, when using the release build, it is compressed with UPX and stripped of symbols. So strings like the payload marker appear exactly once, where one would expect the payload marker to appear. The coverage build, on the other hand, is neither compressed nor stripped of its debug symbols, leading to the revelation that the payload marker appears numerous times in the file, and thus we have to be mindful to examine the *last* payload marker when using it as designed.
 
 **Compilation:**
 
