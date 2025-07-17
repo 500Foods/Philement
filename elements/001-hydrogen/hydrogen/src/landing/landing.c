@@ -34,7 +34,7 @@
  * - 13. mDNS Client
  * - 12. mDNS Server
  * - 11. Terminal
- * - 10. WebSockets
+ * - 10. WebSocket
  * - 09. Swagger
  * - 08. API
  * - 07. WebServer
@@ -128,7 +128,7 @@ static LandingFunction get_landing_function(const char* subsystem_name) {
     if (strcmp(subsystem_name, "mDNS Client") == 0) return land_mdns_client_subsystem;
     if (strcmp(subsystem_name, "mDNS Server") == 0) return land_mdns_server_subsystem;
     if (strcmp(subsystem_name, "Terminal") == 0) return land_terminal_subsystem;
-    if (strcmp(subsystem_name, "WebSockets") == 0) return land_websocket_subsystem;
+    if (strcmp(subsystem_name, "WebSocket") == 0) return land_websocket_subsystem;
     if (strcmp(subsystem_name, "Swagger") == 0) return land_swagger_subsystem;
     if (strcmp(subsystem_name, "API") == 0) return land_api_subsystem;
     if (strcmp(subsystem_name, "WebServer") == 0) return land_webserver_subsystem;

@@ -38,7 +38,7 @@
  * - 07. WebServer
  * - 08. API
  * - 09. Swagger
- * - 10. WebSockets
+ * - 10. WebSocket
  * - 11. Terminal
  * - 12. mDNS Server
  * - 13. mDNS Client
@@ -218,7 +218,7 @@ static bool launch_approved_subsystems(ReadinessResults* results) {
             init_ok = (launch_api_subsystem() == 1);
         } else if (strcmp(subsystem, "Swagger") == 0) {
             init_ok = (launch_swagger_subsystem() == 1);
-        } else if (strcmp(subsystem, "WebSockets") == 0) {
+        } else if (strcmp(subsystem, "WebSocket") == 0) {
             init_ok = (launch_websocket_subsystem() == 1);
         } else if (strcmp(subsystem, "Terminal") == 0) {
             init_ok = (launch_terminal_subsystem() == 1);

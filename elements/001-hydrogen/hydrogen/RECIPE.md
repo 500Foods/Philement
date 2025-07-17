@@ -1,21 +1,25 @@
-# HYDROGEN
+# HYDROGEN PROJECT
+
+Hydrogen is a C project that implements a comprehensive suite of capabilities
+
+- REST API with Swagger provided by embedded payload
+- Web, WebSocket, SMTP, mDNS, and other services are included
+- Blackbox and Unity unit tests with gcov for coverage reporting
 
 ## CRITICAL INSTRUCTIONS
 
-- The script `extras/make-trial.sh` is used to build the project and check for compilation errors
-- This can be run using the alias `mkt` from any directory as it has been integrated as a shell alias for this purpose
-- After ANY code/script/MD change, run `mkt` to verify compilation/linting. Do not attempt completion until it passes.
-- End tasks by checking/updating RELEASES.md if changes warrant it.
-- Do NOT run full tests (e.g., test_00_all.sh)—use `mkt` only; humans handle comprehensive testing.
-- In order to run tests, typically `mkb` needs to be run, as this builds all the necessary test binaries.
+- After ANY C coding change, run `mkt` to verify compilation/linting. Do not attempt completion until it passes
+- End tasks by checking/updating RELEASES.md if changes warrant it, following the instructions there closely
+- Do NOT run full tests; humans handle comprehensive testing beyond `mkt`
 
-## HYDROGEN PROJECT
+## USEFUL ALIASES
 
-```json
-{"name":"Hydrogen","lang":"C","type":"REST API/WebSocket Server","arch":"Multithreaded",
-"tech":["POSIX","HTTP/WS","mDNS","Queues","JSON","SQL","OIDC","OpenSSL","Postgres"],
-"critical":["ErrorHandling","ThreadSafety"]}
-```
+alias cdp='cd ~/Projects/Philement/elements/001-hydrogen/hydrogen/'
+alias mka='cd ~/Projects/Philement/elements/001-hydrogen/hydrogen && extras/make-all.sh && cd - > /dev/null 2>&1'
+alias mkb='cd ~/Projects/Philement/elements/001-hydrogen/hydrogen/tests && ./test_00_all.sh --sequential-groups=3 && cd - > /dev/null 2>&1'
+alias mkc='cd ~/Projects/Philement/elements/001-hydrogen/hydrogen && extras/make-clean.sh && cd - > /dev/null 2>&1'
+alias mkl='cd ~/Projects/Philement/elements/001-hydrogen/hydrogen/tests && ./test_06_check_links.sh && cd - > /dev/null 2>&1'
+alias mkt='cd ~/Projects/Philement/elements/001-hydrogen/hydrogen && extras/make-trial.sh && cd - > /dev/null 2>&1'
 
 ## REPOSITORY STRUCTURE
 
@@ -39,8 +43,11 @@ src/
  ├─webserver/    HTTP server
  ├─websocket/    WebSocket
  └─hydrogen.c    Main entry
-docs/           Documentation
+cmake/          cmake/CMakeLists.tst for all builds
+configs/        JSON configuration files
+docs/           Documentation including release notes
 examples/       Example code
+extras/         Helpful scripts and code snippets
 payloads/       Payload definitions
 tests/          Test framework
 ```
@@ -51,7 +58,7 @@ tests/          Test framework
 - tests/test_01_compilation.sh
 - tests/test_03_code_size.sh
 - tests/test_06_check_links.sh
-- tets/test_10_leaks_like_a_sieve.sh
+- tests/test_10_leaks_like_a_sieve.sh
 - tests/test_11_unity.sh
 - tests/test_12_env_variables.sh
 - tests/test_14_env_payload.sh
@@ -75,20 +82,14 @@ tests/          Test framework
 - tests/test_98_markdownlint.sh
 - tests/test_99_coverage.sh
 
-## DOCUMENTATION
+## CRITICAL DOCUMENTATION
 
-- README.md contains TOC for all docs
-- SITEMAP.md contains links to all markdown docs
-- STRUCTURE.md contains links to all relevant files
-- tests/README.md contains test suite information
-- docs/developer_onboarding.md: Setup
-- docs/coding_guidelines.md: Standards
-- docs/api.md: API reference
-- docs/testing.md: Test guide
-
-## BASH CODING REQUIREMENTS
-
-- Update CHANGELOG and SCRIPT_VER at top of every script file after every change
+- README.md - contains TOC for all docs
+- RECIPE.md - this document
+- RELEASES.md - release history and update instructions
+- SITEMAP.md - links to all markdown docs
+- STRUCTURE.md - links to all relevant files
+- tests/README.md - blackbox and Unity unit tests
 
 ## C CODING REQUIREMENTS
 
@@ -98,29 +99,23 @@ tests/          Test framework
 - tests/unity/CMakeLists.txt is used for building unity unit tests
 - Use `log_this` when outputing anything to the log
 
-## JSON PROCESSING REQUIREMENTS
+## BASH CODING REQUIREMENTS
 
+- Update CHANGELOG and SCRIPT_VER at top of every script file after every change
 - ALWAYS use `jq` for JSON parsing, filtering, and validation
 - NEVER use `grep` or text manipulation tools for JSON data
-- Use `jq -r` for raw string output when needed
-- Use `jq -e` for existence checks (exits with error if false/null)
-- Examples:
-  - Check field exists: `echo "$json" | jq -e '.status.server_started'`
-  - Extract value: `echo "$json" | jq -r '.version.build'`
-  - Validate structure: `echo "$json" | jq -e '.status and .system and .version'`
 
-## LINTING GUIDANCE FOR AI-GENERATED CONTENT
+## LINTING GUIDANCE
 
 ### cppcheck
 
-- Follow coding_guidelines.md
 - Use cppcheck-friendly patterns (e.g., check malloc returns, avoid unused vars, unused params)
 
 ### shellcheck
 
-- Add shebangs
 - Quote vars (e.g., echo "$VAR")
 - Avoid shellcheck errors like SC2086
+- Directives/exceptions require justification
 
 ### Markdown
 
