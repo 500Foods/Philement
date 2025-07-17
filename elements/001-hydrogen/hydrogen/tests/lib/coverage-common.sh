@@ -37,9 +37,9 @@ analyze_combined_gcov_coverage() {
         # Only blackbox coverage exists
         local result
         result=$(awk '
-            /^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/ { covered++; total++ }
-            /^[[:space:]]*#####:[[:space:]]*[0-9]+:/ { total++ }
-            END { 
+            /^[ \t]*[0-9]+\*?:[ \t]*[0-9]+:/ { covered++; total++ }
+            /^[ \t]*#####:[ \t]*[0-9]+:/ { total++ }
+            END {
                 if (total == "") total = 0;
                 if (covered == "") covered = 0;
                 print total "," covered "," covered
@@ -50,9 +50,9 @@ analyze_combined_gcov_coverage() {
         # Only unity coverage exists
         local result
         result=$(awk '
-            /^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/ { covered++; total++ }
-            /^[[:space:]]*#####:[[:space:]]*[0-9]+:/ { total++ }
-            END { 
+            /^[ \t]*[0-9]+\*?:[ \t]*[0-9]+:/ { covered++; total++ }
+            /^[ \t]*#####:[ \t]*[0-9]+:/ { total++ }
+            END {
                 if (total == "") total = 0;
                 if (covered == "") covered = 0;
                 print total "," covered "," covered
@@ -76,15 +76,15 @@ analyze_combined_gcov_coverage() {
         # Process Unity file
         if (unity_file != "") {
             while ((getline line < unity_file) > 0) {
-                if (match(line, /^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/)) {
+                if (match(line, /^[ \t]*[0-9]+\*?:[ \t]*[0-9]+:/)) {
                     split(line, parts, ":")
-                    gsub(/^[[:space:]]*|[[:space:]]*$/, "", parts[2])
+                    gsub(/^[ \t]*|[ \t]*$/, "", parts[2])
                     unity_covered[parts[2]] = 1
                     all_instrumented[parts[2]] = 1
                 }
-                else if (match(line, /^[[:space:]]*#####:[[:space:]]*[0-9]+:/)) {
+                else if (match(line, /^[ \t]*#####:[ \t]*[0-9]+:/)) {
                     split(line, parts, ":")
-                    gsub(/^[[:space:]]*|[[:space:]]*$/, "", parts[2])
+                    gsub(/^[ \t]*|[ \t]*$/, "", parts[2])
                     all_instrumented[parts[2]] = 1
                 }
             }
@@ -94,15 +94,15 @@ analyze_combined_gcov_coverage() {
         # Process Blackbox file
         if (blackbox_file != "") {
             while ((getline line < blackbox_file) > 0) {
-                if (match(line, /^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/)) {
+                if (match(line, /^[ \t]*[0-9]+\*?:[ \t]*[0-9]+:/)) {
                     split(line, parts, ":")
-                    gsub(/^[[:space:]]*|[[:space:]]*$/, "", parts[2])
+                    gsub(/^[ \t]*|[ \t]*$/, "", parts[2])
                     blackbox_covered[parts[2]] = 1
                     all_instrumented[parts[2]] = 1
                 }
-                else if (match(line, /^[[:space:]]*#####:[[:space:]]*[0-9]+:/)) {
+                else if (match(line, /^[ \t]*#####:[ \t]*[0-9]+:/)) {
                     split(line, parts, ":")
-                    gsub(/^[[:space:]]*|[[:space:]]*$/, "", parts[2])
+                    gsub(/^[ \t]*|[ \t]*$/, "", parts[2])
                     all_instrumented[parts[2]] = 1
                 }
             }
@@ -259,10 +259,10 @@ analyze_all_gcov_coverage_batch() {
     }
     
     # Process coverage lines
-    /^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/ {
+    /^[ \t]*[0-9]+\*?:[ \t]*[0-9]+:/ {
         if (current_file != "" && current_type != "") {
             split($0, parts, ":")
-            gsub(/^[[:space:]]*|[[:space:]]*$/, "", parts[2])
+            gsub(/^[ \t]*|[ \t]*$/, "", parts[2])
             line_num = parts[2]
             
             if (current_type == "unity") {
@@ -276,10 +276,10 @@ analyze_all_gcov_coverage_batch() {
     }
     
     # Process uncovered lines
-    /^[[:space:]]*#####:[[:space:]]*[0-9]+:/ {
+    /^[ \t]*#####:[ \t]*[0-9]+:/ {
         if (current_file != "" && current_type != "") {
             split($0, parts, ":")
-            gsub(/^[[:space:]]*|[[:space:]]*$/, "", parts[2])
+            gsub(/^[ \t]*|[ \t]*$/, "", parts[2])
             line_num = parts[2]
             
             all_instrumented[current_file][line_num] = 1
@@ -493,7 +493,7 @@ identify_uncovered_files() {
         local gcov_file="$BLACKBOX_COVS/${basename_file}.c.gcov"
         
         # If gcov doesn't exist or has zero coverage, consider it uncovered
-        if [[ ! -f "$gcov_file" ]] || [[ $(awk '/^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/ { covered++ } END { print (covered == 0 ? 0 : 1) }' "$gcov_file") -eq 0 ]]; then
+        if [[ ! -f "$gcov_file" ]] || [[ $(awk '/^[ \t]*[0-9]+\*?:[ \t]*[0-9]+:/ { covered++ } END { print (covered == 0 ? 0 : 1) }' "$gcov_file") -eq 0 ]]; then
             uncovered_files+=("$file")
             echo "$file" >> "$temp_uncovered"
         fi
@@ -538,8 +538,8 @@ analyze_gcov_file() {
     # Use the correct awk parsing logic for gcov format
     local line_counts
     line_counts=$(awk '
-        /^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/ { covered++; total++ }
-        /^[[:space:]]*#####:[[:space:]]*[0-9]+:/ { total++ }
+        /^[ \t]*[0-9]+\*?:[ \t]*[0-9]+:/ { covered++; total++ }
+        /^[ \t]*#####:[ \t]*[0-9]+:/ { total++ }
         END {
             if (total == "") total = 0
             if (covered == "") covered = 0

@@ -60,8 +60,8 @@ validate_coverage_consistency() {
                     # Detailed line analysis
                     local file_total
                     local file_covered
-                    file_total=$(grep -c "^[[:space:]]*[0-9#-].*:" "$gcov_file" 2>/dev/null || echo "0")
-                    file_covered=$(grep -c "^[[:space:]]*[1-9][0-9]*.*:" "$gcov_file" 2>/dev/null || echo "0")
+                    file_total=$(grep -c "^[ \t]*[0-9#-].*:" "$gcov_file" 2>/dev/null || echo "0")
+                    file_covered=$(grep -c "^[ \t]*[1-9][0-9]*.*:" "$gcov_file" 2>/dev/null || echo "0")
                     
                     if [[ $file_covered -gt 0 ]]; then
                         covered_files=$((covered_files + 1))

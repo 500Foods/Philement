@@ -140,8 +140,8 @@ calculate_unity_coverage() {
         # Count only instrumented lines using same method as Test 11
         local line_counts
         line_counts=$(awk '
-            /^[[:space:]]*[0-9]+\*?:[[:space:]]*[0-9]+:/ { covered++; total++ }
-            /^[[:space:]]*#####:[[:space:]]*[0-9]+\*?:/ { total++ }
+            /^[ \t]*[0-9]+\*?:[ \t]*[0-9]+:/ { covered++; total++ }
+            /^[ \t]*#####:[ \t]*[0-9]+\*?:/ { total++ }
             END { print total "," covered }
         ' "$combined_gcov" 2>/dev/null)
         
@@ -155,7 +155,7 @@ calculate_unity_coverage() {
         # Count files individually for file statistics (same as Test 11)
         covered_files=0
         for gcov_file in "${gcov_files_to_process[@]}"; do
-            file_covered_lines=$(grep -c "^[[:space:]]*[1-9][0-9]*:[[:space:]]*[0-9][0-9]*:" "$gcov_file" 2>/dev/null)
+            file_covered_lines=$(grep -c "^[ \t]*[1-9][0-9]*:[ \t]*[0-9][0-9]*:" "$gcov_file" 2>/dev/null)
             if [[ -z "$file_covered_lines" ]] || [[ ! "$file_covered_lines" =~ ^[0-9]+$ ]]; then
                 file_covered_lines=0
             fi
