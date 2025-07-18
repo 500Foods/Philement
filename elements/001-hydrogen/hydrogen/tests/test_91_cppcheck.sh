@@ -4,12 +4,13 @@
 # Performs cppcheck analysis on C/C++ source files
 
 # CHANGELOG
+# 2.0.1 - 2025-07-18 - Fixed subshell issue in cppcheck output that prevented detailed error messages from being displayed in test output
 # 2.0.0 - 2025-07-14 - Upgraded to use new modular test framework
 # 1.0.0 - Initial version for C/C++ code analysis
 
 # Test configuration
 TEST_NAME="C/C++ Code Analysis (cppcheck)"
-SCRIPT_VERSION="2.0.0"
+SCRIPT_VERSION="2.0.1"
 
 # Get the directory where this script is located
 TEST_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -209,9 +210,10 @@ if command -v cppcheck >/dev/null 2>&1; then
     # Display output
     if [ -n "$CPPCHECK_OUTPUT" ]; then
         print_message "cppcheck output:"
-        echo "$CPPCHECK_OUTPUT" | while IFS= read -r line; do
+        # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
+        while IFS= read -r line; do
             print_output "$line"
-        done
+        done < <(echo "$CPPCHECK_OUTPUT")
     fi
     
     if [ $OTHER_ISSUES -gt 0 ]; then

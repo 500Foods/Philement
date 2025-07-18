@@ -1,18 +1,18 @@
 #!/bin/bash
-#
+
 # lifecycle.sh - Hydrogen Application Lifecycle Management
-#
+
 # This script provides functions for managing the lifecycle of the Hydrogen application,
 # including starting and stopping the application with various configurations.
-#
-# VERSION HISTORY
+
+# CHANGELOG
+# 1.2.4 - 2025-07-18 - Fixed subshell issue in error log output functions that prevented detailed error messages from being displayed in test output
 # 1.2.3 - 2025-07-14 - Enhanced process validation with multiple retry attempts for more robust PID checking
 # 1.2.2 - 2025-07-14 - Fixed job control messages (like "Terminated") appearing in test output by adding disown to background processes
 # 1.2.1 - 2025-07-02 - Updated find_hydrogen_binary to use relative paths in log messages to avoid exposing user information
 # 1.2.0 - 2025-07-02 - Added validate_config_file function for single configuration validation
 # 1.1.0 - 2025-07-02 - Added validate_config_files, setup_output_directories, and run_lifecycle_test functions for enhanced modularity
 # 1.0.0 - 2025-07-02 - Initial version with start and stop functions
-#
 
 # Function to find and validate Hydrogen binary
 # Usage: find_hydrogen_binary <hydrogen_dir> <result_var_name>
@@ -179,9 +179,10 @@ start_hydrogen_with_pid() {
         print_message "Check log file for possible errors: $log_file"
         if [ -s "$log_file" ]; then
             print_message "Last few lines of log file:"
-            tail -n 5 "$log_file" | while IFS= read -r line; do
+            # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
+            while IFS= read -r line; do
                 print_output "$line"
-            done
+            done < <(tail -n 5 "$log_file")
         fi
         return 1
     fi
@@ -285,9 +286,10 @@ start_hydrogen() {
         print_message "Check log file for possible errors: $log_file"
         if [ -s "$log_file" ]; then
             print_message "Last few lines of log file:"
-            tail -n 5 "$log_file" | while IFS= read -r line; do
+            # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
+            while IFS= read -r line; do
                 print_output "$line"
-            done
+            done < <(tail -n 5 "$log_file")
         fi
         return 1
     fi

@@ -14,11 +14,6 @@
 FRAMEWORK_NAME="Test Framework Library"
 FRAMEWORK_VERSION="2.1.0"
 
-# Function to display script version information
-print_test_framework_version() {
-    echo "$FRAMEWORK_NAME v$FRAMEWORK_VERSION"
-}
-
 # Function to start a test run with proper header and numbering
 start_test() {
     local test_name="$1"

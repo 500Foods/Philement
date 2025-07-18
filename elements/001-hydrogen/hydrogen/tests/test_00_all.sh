@@ -6,6 +6,7 @@
 # Usage: ./test_00_all.sh [test_name1 test_name2 ...] [--skip-tests] [--sequential] [--help]
 
 # CHANGELOG
+# 4.2.1 - 2025-07-18 - Added timestamp to Test Suite Results footer
 # 4.2.0 - 2025-07-18 - Added SVG generation for coverage table and test results; integrated SVG references in README.md generation
 # 4.1.0 - 2025-07-14 - Added --sequential-groups option to run specific groups sequentially while others run in parallel
 # 4.0.2 - 2025-07-14 - Added 100ms delay between parallel test launches to reduce startup contention during parallel execution
@@ -17,7 +18,7 @@
 
 # Test configuration
 TEST_NAME="Test Suite Orchestration"
-SCRIPT_VERSION="4.2.0"
+SCRIPT_VERSION="4.2.1"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -839,17 +840,22 @@ if [[ -x "$coverage_table_script" ]] && [ "$SKIP_TESTS" = false ]; then
     oh_script="$SCRIPT_DIR/lib/Oh.sh"
     coverage_svg_path="$SCRIPT_DIR/../COVERAGE.svg"
     if [[ -x "$oh_script" ]] && [[ -f "$coverage_table_file" ]]; then
+        # Delete existing file before generating new one
+        rm -f "$coverage_svg_path"
         # Generate SVG from saved coverage table file in background
         ("$oh_script" -i "$coverage_table_file" -o "$coverage_svg_path" 2>/dev/null) &
     fi
 fi
+
+# Generate display timestamp for footer
+display_timestamp=$(date '+%Y-%m-%d %H:%M:%S %Z')
 
 # Generate summary table using the sourced table libraries
 # Create layout JSON string
 
 layout_json_content='{
     "title": "Test Suite Results {NC}{RED}———{RESET}{BOLD} Unity: '"$UNITY_COVERAGE"'% {RESET}{RED}———{RESET}{BOLD} Blackbox: '"$BLACKBOX_COVERAGE"'% {RESET}{RED}———{RESET}{BOLD} Combined: '"$COMBINED_COVERAGE"'%",
-    "footer": "Cumulative: '"$TOTAL_RUNNING_TIME_FORMATTED"'{RED} ——— {RESET}{CYAN}Elapsed: '"$TOTAL_ELAPSED_FORMATTED"'",
+    "footer": "Cumulative: '"$TOTAL_RUNNING_TIME_FORMATTED"'{RED} ——— {RESET}{CYAN}Elapsed: '"$TOTAL_ELAPSED_FORMATTED"'{RED} ——— {RESET}{CYAN}'"$display_timestamp"'",
     "footer_position": "right",
     "columns": [
         {
@@ -951,6 +957,8 @@ if [[ -x "$tables_exe" ]]; then
     oh_script="$SCRIPT_DIR/lib/Oh.sh"
     results_svg_path="$SCRIPT_DIR/../COMPLETE.svg"
     if [[ -x "$oh_script" ]] && [[ -f "$results_table_file" ]]; then
+        # Delete existing file before generating new one
+        rm -f "$results_svg_path"
         # Generate SVG from saved results table file in background
         ("$oh_script" -i "$results_table_file" -o "$results_svg_path" 2>/dev/null) &
     fi

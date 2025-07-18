@@ -4,12 +4,13 @@
 # Performs CSS validation using stylelint
 
 # CHANGELOG
+# 2.0.1 - 2025-07-18 - Fixed subshell issue in stylelint output that prevented detailed error messages from being displayed in test output
 # 2.0.0 - 2025-07-14 - Upgraded to use new modular test framework
 # 1.0.0 - Initial version for CSS linting
 
 # Test configuration
 TEST_NAME="CSS Linting (stylelint)"
-SCRIPT_VERSION="2.0.0"
+SCRIPT_VERSION="2.0.1"
 
 # Get the directory where this script is located
 TEST_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -139,9 +140,10 @@ if command -v stylelint >/dev/null 2>&1; then
         
         if [ "$ISSUE_COUNT" -gt 0 ]; then
             print_message "stylelint found $ISSUE_COUNT issues:"
-            head -n "$LINT_OUTPUT_LIMIT" "$TEMP_LOG" | while IFS= read -r line; do
+            # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
+            while IFS= read -r line; do
                 print_output "$line"
-            done
+            done < <(head -n "$LINT_OUTPUT_LIMIT" "$TEMP_LOG")
             if [ "$ISSUE_COUNT" -gt "$LINT_OUTPUT_LIMIT" ]; then
                 print_message "Output truncated. Showing $LINT_OUTPUT_LIMIT of $ISSUE_COUNT lines."
             fi
