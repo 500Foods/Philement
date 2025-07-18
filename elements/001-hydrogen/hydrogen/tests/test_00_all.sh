@@ -6,6 +6,7 @@
 # Usage: ./test_00_all.sh [test_name1 test_name2 ...] [--skip-tests] [--sequential] [--help]
 
 # CHANGELOG
+# 4.2.0 - 2025-07-18 - Added SVG generation for coverage table and test results; integrated SVG references in README.md generation
 # 4.1.0 - 2025-07-14 - Added --sequential-groups option to run specific groups sequentially while others run in parallel
 # 4.0.2 - 2025-07-14 - Added 100ms delay between parallel test launches to reduce startup contention during parallel execution
 # 4.0.1 - 2025-07-07 - Fixed how individual test elapsed times are stored and accessed
@@ -16,7 +17,7 @@
 
 # Test configuration
 TEST_NAME="Test Suite Orchestration"
-SCRIPT_VERSION="4.1.0"
+SCRIPT_VERSION="4.2.0"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -162,6 +163,8 @@ update_readme_with_results() {
                 echo "| Failed Subtests | $total_failed |"
                 echo "| Elapsed Time | $TOTAL_ELAPSED_FORMATTED |"
                 echo "| Running Time | $TOTAL_RUNNING_TIME_FORMATTED |"
+                echo ""
+                echo "📊 **Visual Reports**: [Coverage Analysis](COVERAGE.svg) | [Complete Test Results](COMPLETE.svg)"
                 echo ""
                 echo "### Test Coverage"
                 echo ""
@@ -331,7 +334,6 @@ format_time_duration() {
     printf "%02d:%02d:%02d.%s" "$hours" "$minutes" "$secs" "$milliseconds"
 }
 
-# Function to show help
 show_help() {
     echo "Usage: $0 [test_name1 test_name2 ...] [--skip-tests] [--sequential] [--sequential-groups=N,M] [--help]"
     echo ""
@@ -367,36 +369,15 @@ show_help() {
     exit 0
 }
 
-# Get list of all test scripts, excluding test_00_all.sh and test_template.sh
-# Run compilation test first, then all others in order, ending with test_99_codebase.sh
+# Get list of all test scripts, excluding test_00_all.sh 
 TEST_SCRIPTS=()
 
-# Add compilation test first if it exists (check both 01 and 10 for compatibility)
-if [ -f "$SCRIPT_DIR/test_01_compilation.sh" ]; then
-    TEST_SCRIPTS+=("$SCRIPT_DIR/test_01_compilation.sh")
-elif [ -f "$SCRIPT_DIR/test_10_compilation.sh" ]; then
-    TEST_SCRIPTS+=("$SCRIPT_DIR/test_10_compilation.sh")
-fi
-
-# Add all other tests except 00, 01, 10, and template
+# Add all other tests except 00
 while IFS= read -r script; do
-    if [[ "$script" != *"test_00_all.sh" ]] && [[ "$script" != *"test_01_compilation.sh" ]] && [[ "$script" != *"test_10_compilation.sh" ]] && [[ "$script" != *"test_template.sh" ]]; then
+    if [[ "$script" != *"test_00_all.sh" ]]; then
         TEST_SCRIPTS+=("$script")
     fi
 done < <(find "$SCRIPT_DIR" -name "test_*.sh" -type f | sort)
-
-# Ensure test_99_codebase.sh is last if it exists
-if [ -f "$SCRIPT_DIR/test_99_codebase.sh" ]; then
-    # Remove test_99_codebase.sh from the array if it's there
-    for i in "${!TEST_SCRIPTS[@]}"; do
-        if [[ "${TEST_SCRIPTS[$i]}" == *"test_99_codebase.sh" ]]; then
-            unset 'TEST_SCRIPTS[i]'
-        fi
-    done
-    # Re-index array and add test_99 at the end
-    TEST_SCRIPTS=("${TEST_SCRIPTS[@]}")
-    TEST_SCRIPTS+=("$SCRIPT_DIR/test_99_codebase.sh")
-fi
 
 # Check for help flag and skip-tests in single loop
 for arg in "$@"; do
@@ -416,18 +397,7 @@ perform_cleanup() {
         "$SCRIPT_DIR/results"
         "$SCRIPT_DIR/diagnostics"
         "$SCRIPT_DIR/../build"
-        "$SCRIPT_DIR/../build/unity"
     )
-    
-    # Also clean tmpfs test directories if build is mounted on tmpfs
-    local build_dir="$SCRIPT_DIR/../build"
-    if mountpoint -q "$build_dir" 2>/dev/null; then
-        dirs_to_clean+=(
-            "$build_dir/tests/logs"
-            "$build_dir/tests/results"
-            "$build_dir/tests/diagnostics"
-        )
-    fi
     
     # Remove directories and their contents silently
     for dir in "${dirs_to_clean[@]}"; do
@@ -726,9 +696,6 @@ run_all_tests_parallel() {
             # Run test in background
             run_single_test_parallel "$test_script" "$temp_result_file" "$temp_output_file" &
             pids+=($!)
-            
-            # Brief delay between test launches to reduce parallel startup contention
-#            sleep 0.1
         done
         
         # Run first test in foreground (shows output immediately)
