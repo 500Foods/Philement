@@ -4,12 +4,13 @@
 # Performs shellcheck analysis and exception justification checking
 
 # CHANGELOG
+# 2.0.1 - 2025-07-18 - Fixed subshell issue in shellcheck output that prevented detailed error messages from being displayed in test output
 # 2.0.0 - 2025-07-14 - Upgraded to use new modular test framework
 # 1.0.0 - Initial version for shell script analysis
 
 # Test configuration
 TEST_NAME="Shell Script Analysis (shellcheck)"
-SCRIPT_VERSION="2.0.0"
+SCRIPT_VERSION="2.0.1"
 
 # Get the directory where this script is located
 TEST_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -212,9 +213,10 @@ if command -v shellcheck >/dev/null 2>&1; then
         if [ "$SHELL_ISSUES" -gt 0 ]; then
             FILES_WITH_ISSUES="$(cut -d: -f1 "${TEMP_OUTPUT}.filtered" | sort -u | wc -l)"
             print_message "shellcheck found $SHELL_ISSUES issues in $FILES_WITH_ISSUES files:"
-            head -n "$LINT_OUTPUT_LIMIT" "${TEMP_OUTPUT}.filtered" | while IFS= read -r line; do
+            # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
+            while IFS= read -r line; do
                 print_output "$line"
-            done
+            done < <(head -n "$LINT_OUTPUT_LIMIT" "${TEMP_OUTPUT}.filtered")
             if [ "$SHELL_ISSUES" -gt "$LINT_OUTPUT_LIMIT" ]; then
                 print_message "Output truncated. Showing $LINT_OUTPUT_LIMIT of $SHELL_ISSUES lines."
             fi

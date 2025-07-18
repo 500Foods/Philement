@@ -1,14 +1,13 @@
 #!/bin/bash
-#
+
 # coverage.sh - Test Coverage Calculation Functions
-#
+
 # This script provides functions for calculating and managing test coverage data
 # for both Unity tests and blackbox tests in the Hydrogen project.
-#
-# VERSION HISTORY
+
+# CHANGELOG
 # 2.0.0 - 2025-07-11 - Refactored into modular components
 # 1.0.0 - 2025-07-11 - Initial version with Unity and blackbox coverage functions
-#
 
 # Get script directory - don't overwrite if already set by calling script
 COVERAGE_MAIN_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

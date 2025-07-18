@@ -10,6 +10,7 @@
 # - Uses immediate restart without waiting for TIME_WAIT (SO_REUSEADDR enabled)
 
 # CHANGELOG
+# 3.1.4 - 2025-07-18 - Fixed subshell issue in response output that prevented detailed error messages from being displayed in test output
 # 3.1.3 - 2025-07-14 - Enhanced HTTP request functions with retry logic to handle subsystem initialization delays during parallel execution
 # 3.1.2 - 2025-07-15 - No more sleep
 # 3.1.1 - 2025-07-14 - Updated to use build/tests directories for test output consistency
@@ -20,7 +21,7 @@
 
 # Test Configuration
 TEST_NAME="Swagger"
-SCRIPT_VERSION="3.1.3"
+SCRIPT_VERSION="3.1.4"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -143,9 +144,10 @@ check_response_content() {
             else
                 print_result 1 "Response doesn't contain expected content: $expected_content"
                 print_message "Response excerpt (first 10 lines):"
-                head -n 10 "$response_file" | while IFS= read -r line; do
+                # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
+                while IFS= read -r line; do
                     print_output "$line"
-                done
+                done < <(head -n 10 "$response_file")
                 return 1
             fi
         else
@@ -193,9 +195,10 @@ check_redirect_response() {
                     print_message "Endpoint still not ready after $max_attempts attempts"
                     print_result 1 "Endpoint returned 404 error"
                     print_message "Response headers:"
-                    grep -E "< HTTP/|< Location:" "$redirect_file" | while IFS= read -r line; do
+                    # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
+                    while IFS= read -r line; do
                         print_output "$line"
-                    done
+                    done < <(grep -E "< HTTP/|< Location:" "$redirect_file")
                     return 1
                 else
                     print_message "Endpoint not ready yet (got 404), retrying..."
@@ -217,9 +220,10 @@ check_redirect_response() {
             else
                 print_result 1 "Response is not a redirect to $expected_location"
                 print_message "Response headers:"
-                grep -E "< HTTP/|< Location:" "$redirect_file" | while IFS= read -r line; do
+                # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
+                while IFS= read -r line; do
                     print_output "$line"
-                done
+                done < <(grep -E "< HTTP/|< Location:" "$redirect_file")
                 return 1
             fi
         else
@@ -324,9 +328,10 @@ check_swagger_json() {
                 else
                     print_result 1 "swagger.json doesn't contain expected OpenAPI/Swagger structure or Hydrogen content"
                     print_message "Response excerpt (first 5 lines):"
-                    head -n 5 "$response_file" | while IFS= read -r line; do
+                    # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
+                    while IFS= read -r line; do
                         print_output "$line"
-                    done
+                    done < <(head -n 5 "$response_file")
                     return 1
                 fi
             fi

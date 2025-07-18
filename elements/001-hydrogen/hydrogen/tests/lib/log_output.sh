@@ -25,7 +25,7 @@ export LOG_OUTPUT_SH_GUARD="true"
 # 3. Use print_* functions for all output
 # 4. Call print_test_completion() at the end
 
-# VERSION HISTORY
+# CHANGELOG
 # 3.1.0 - 2025-07-07 - Restructured how test elapsed times are stored and accessed
 # 3.0.4 - 2025-07-06 - Added mechanism to handle absolute paths in log output
 # 3.0.3 - 2025-07-03 - Applied color consistency to all output types (DATA, EXEC, PASS, FAIL)
@@ -42,11 +42,6 @@ export LOG_OUTPUT_SH_GUARD="true"
 
 LOG_OUTPUT_NAME="Log Output Library"
 LOG_OUTPUT_VERSION="3.1.0"
-
-# Function to display script version information
-print_log_output_version() {
-    echo "$LOG_OUTPUT_NAME v$LOG_OUTPUT_VERSION"
-}
 
 # Global variables for test/subtest numbering
 CURRENT_TEST_NUMBER=""

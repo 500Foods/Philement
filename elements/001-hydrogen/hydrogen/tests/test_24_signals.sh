@@ -3,7 +3,7 @@
 # Test: Signal Handling
 # Tests signal handling capabilities including SIGINT, SIGTERM, SIGHUP, SIGUSR2, and multiple signals
 
-# VERSION HISTORY
+# CHANGELOG
 # 3.0.4 - 2025-07-15 - No more sleep
 # 3.0.3 - 2025-07-14 - Updated to use build/tests directories for test output consistency
 # 3.0.2 - 2025-07-06 - Added missing shellcheck justifications

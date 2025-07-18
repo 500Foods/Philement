@@ -1,18 +1,13 @@
 #!/bin/bash
-#
+
 # Hydrogen Test Suite - CLOC (Count Lines of Code) Library
 # Provides shared cloc functionality for test scripts
-#
-CLOC_LIB_NAME="Hydrogen CLOC Library"
-CLOC_LIB_VERSION="1.0.0"
 
-# VERSION HISTORY
+# CHANGELOG
 # 1.0.0 - 2025-07-02 - Initial creation, extracted from test_99_codebase.sh and test_00_all.sh
 
-# Function to display library version information
-print_cloc_lib_version() {
-    echo "=== $CLOC_LIB_NAME v$CLOC_LIB_VERSION ==="
-}
+CLOC_LIB_NAME="Hydrogen CLOC Library"
+CLOC_LIB_VERSION="1.0.0"
 
 # Default exclude patterns for linting (can be overridden by .lintignore)
 if [ -z "${DEFAULT_LINT_EXCLUDES+x}" ]; then

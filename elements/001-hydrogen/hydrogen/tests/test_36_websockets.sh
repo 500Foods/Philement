@@ -9,6 +9,7 @@
 # - Uses immediate restart without waiting for TIME_WAIT (SO_REUSEADDR enabled)
 
 # CHANGELOG
+# 1.1.1 - 2025-07-18 - Fixed subshell issue in server log output that prevented detailed error messages from being displayed in test output
 # 1.1.0 - 2025-07-15 - Added WebSocket status request test to improve coverage of websocket_server_status.c
 # 1.0.3 - 2025-07-14 - Enhanced test_websocket_connection with retry logic to handle WebSocket subsystem initialization delays during parallel execution
 # 1.0.2 - 2025-07-15 - No more sleep
@@ -17,7 +18,7 @@
 
 # Test Configuration
 TEST_NAME="WebSockets"
-SCRIPT_VERSION="1.1.0"
+SCRIPT_VERSION="1.1.1"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -481,9 +482,10 @@ test_websocket_configuration() {
         else
             print_result 1 "WebSocket initialization not found in logs"
             print_message "Log excerpt (last 10 lines):"
-            tail -n 10 "$server_log" | while IFS= read -r line; do
+            # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
+            while IFS= read -r line; do
                 print_output "$line"
-            done
+            done < <(tail -n 10 "$server_log")
             EXIT_CODE=1
         fi
     else
