@@ -11,6 +11,7 @@
 # - /api/system/appconfig: Tests the application configuration endpoint
 
 # CHANGELOG
+# 3.2.1 - 2025-07-18 - Fixed subshell issue in response file output that prevented detailed error messages from being displayed in test output
 # 3.2.0 - 2025-07-15 - Added tests for missing system endpoints: /api/system/prometheus, /api/system/recent, /api/system/appconfig to improve coverage
 # 3.1.3 - 2025-07-14 - Enhanced validate_api_request with retry logic to handle API subsystem initialization delays during parallel execution
 # 3.1.2 - 2025-07-15 - No more sleep
@@ -23,7 +24,7 @@
 
 # Test Configuration
 TEST_NAME="System API Endpoints"
-SCRIPT_VERSION="3.2.0"
+SCRIPT_VERSION="3.2.1"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -150,9 +151,10 @@ validate_api_request() {
                 else
                     print_result 1 "Response doesn't contain expected content: $expected_field"
                     print_message "Response excerpt (first 10 lines):"
-                    head -n 10 "$response_file" | while IFS= read -r line; do
+                    # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
+                    while IFS= read -r line; do
                         print_output "$line"
-                    done
+                    done < <(head -n 10 "$response_file")
                     return 1
                 fi
             fi

@@ -1,18 +1,14 @@
 #!/bin/bash
-#
+
 # Hydrogen Test Suite - Network Utilities Library
 # Provides network-related functions for test scripts, including TIME_WAIT socket management
-#
-NETWORK_UTILS_NAME="Hydrogen Network Utilities Library"
-NETWORK_UTILS_VERSION="2.0.0"
 
-# VERSION HISTORY
+# CHANGELOG
+# 2.1.0 - 2025-07-18 - Fixed subshell issue in check_time_wait_sockets function that prevented TIME_WAIT socket details from being displayed; added whitespace compression for cleaner output formatting
 # 2.0.0 - 2025-07-02 - Initial creation from support_timewait.sh migration for test_55_socket_rebind.sh
 
-# Function to display script version information
-print_network_utils_version() {
-    echo "=== $NETWORK_UTILS_NAME v$NETWORK_UTILS_VERSION ==="
-}
+NETWORK_UTILS_NAME="Hydrogen Network Utilities Library"
+NETWORK_UTILS_VERSION="2.1.0"
 
 # Function to check if a port is in use (robust version)
 check_port_in_use() {
@@ -87,21 +83,25 @@ check_time_wait_sockets() {
             echo "INFO: Found $time_wait_count socket(s) in TIME_WAIT state on port $port"
         fi
         if command -v ss &> /dev/null; then
-            ss -tan | grep ":$port " | grep "TIME-WAIT" | while IFS= read -r line; do
+            # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
+            # Also compress excessive whitespace for better formatting
+            while IFS= read -r line; do
                 if command -v print_output >/dev/null 2>&1; then
                     print_output "$line"
                 else
                     echo "$line"
                 fi
-            done
+            done < <(ss -tan | grep ":$port " | grep "TIME-WAIT" | sed 's/   */ /g')
         elif command -v netstat &> /dev/null; then
-            netstat -tan | grep ":$port " | grep "TIME_WAIT" | while IFS= read -r line; do
+            # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
+            # Also compress excessive whitespace for better formatting
+            while IFS= read -r line; do
                 if command -v print_output >/dev/null 2>&1; then
                     print_output "$line"
                 else
                     echo "$line"
                 fi
-            done
+            done < <(netstat -tan | grep ":$port " | grep "TIME_WAIT" | sed 's/   */ /g')
         fi
     else
         if command -v print_message >/dev/null 2>&1; then

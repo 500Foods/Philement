@@ -4,7 +4,7 @@
 # Tests environment variable handling for the payload system
 # Validates that required payload environment variables are present and valid
 
-# VERSION HISTORY
+# CHANGELOG
 # 3.0.2 - 2025-07-14 - Updated to use build/tests directories for test output consistency
 # 3.0.1 - 2025-07-06 - Added missing shellcheck justifications
 # 3.0.0 - 2025-07-02 - Complete rewrite to use new modular test libraries

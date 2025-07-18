@@ -8,6 +8,7 @@
 # and displays the results in a formatted table using the tables executable.
 
 # CHANGELOG
+# 1.0.6 - 2025-07-18 - Added timestamp to footer for coverage table generation time
 # 1.0.5 - 2025-07-16 - Fixed Cover column to calculate TRUE union of coverage from Unity and Blackbox tests
 # 1.0.4 - 2025-07-14 - Fixed file path extraction using Source: line from gcov files for consistent table alignment
 # 1.0.3 - 2025-07-14 - Fixed Tests column to use same gcov processing logic as test 99 for accurate coverage summaries
@@ -15,7 +16,7 @@
 # 1.0.1 - Added YELLOW color flag for files with no coverage in either test type
 # 1.0.0 - Initial version
 
-SCRIPT_VER="1.0.5"
+SCRIPT_VER="1.0.6"
 
 # Get script directory and project paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -47,6 +48,9 @@ source "$SCRIPT_DIR/coverage-blackbox.sh"
 
 # Use the exact same functions as test 99 to get coverage data
 timestamp=$(date '+%Y%m%d_%H%M%S')
+
+# Generate display timestamp for footer
+display_timestamp=$(date '+%Y-%m-%d %H:%M:%S %Z')
 
 # Call the same functions that test 99 uses - this ensures we get the same results
 unity_coverage_percentage=$(calculate_unity_coverage "$UNITY_COVS" "$timestamp" 2>/dev/null || echo "0.000")
@@ -100,7 +104,7 @@ if [ "$gcov_files_found" -eq 0 ]; then
     cat > "$layout_json" << EOF
 {
     "title": "Test Suite Coverage {NC}{RED}———{RESET}{BOLD} Unity: ${unity_total_pct}% {RESET}{RED}———{RESET}{BOLD} Blackbox: ${coverage_total_pct}% {RESET}{RED}———{RESET}{BOLD} Combined: ${combined_total_pct}%",
-    "footer": "{YELLOW}Zero Coverage:{RESET} {RED}———{RESET} {MAGENTA}100+ Lines < 50% Coverage:{RESET} - No coverage data available",
+    "footer": "{YELLOW}Zero Coverage:{RESET} {RED}———{RESET} {MAGENTA}100+ Lines < 50% Coverage:{RESET} - No coverage data available {RED}———{RESET} {CYAN}${display_timestamp}{RESET}",
     "footer_position": "right", 
     "theme": "Red",
     "columns": [
@@ -355,7 +359,7 @@ echo ']' >> "$data_json"
 cat > "$layout_json" << EOF
 {
     "title": "Test Suite Coverage {NC}{RED}———{RESET}{BOLD} Unity: ${unity_total_pct}% {RESET}{RED}———{RESET}{BOLD} Blackbox: ${coverage_total_pct}% {RESET}{RED}———{RESET}{BOLD} Combined: ${combined_total_pct}%",
-    "footer": "{YELLOW}Zero Coverage:{RESET} {WHITE}${zero_coverage_count}{RESET} {RED}———{RESET} {MAGENTA}100+ Lines && < 50% Coverage:{RESET} {WHITE}${low_coverage_count}{RESET}",
+    "footer": "{YELLOW}Zero Coverage:{RESET} {WHITE}${zero_coverage_count}{RESET} {RED}———{RESET} {MAGENTA}100+ Lines && < 50% Coverage:{RESET} {WHITE}${low_coverage_count}{RESET} {RED}———{RESET} {CYAN}${display_timestamp}{RESET}",
     "footer_position": "right",
     "theme": "Red",
     "columns": [
