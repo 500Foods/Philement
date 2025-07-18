@@ -63,6 +63,10 @@ declare -a TEST_ELAPSED_TIMES
 # Variable for absolute path replacement
 ABSOLUTE_ROOT=""
 
+# Array for collecting output messages (for performance optimization)
+declare -a OUTPUT_COLLECTION=()
+COLLECT_OUTPUT_MODE=false
+
 # Icon-specific colors for consistent theming
 PASS_COLOR='\033[0;32m'     # Green
 FAIL_COLOR='\033[0;31m'     # Red
@@ -240,6 +244,35 @@ format_file_size() {
 }
 
 #==============================================================================
+# OUTPUT COLLECTION FUNCTIONS
+#==============================================================================
+
+# Function to enable output collection mode
+enable_output_collection() {
+    COLLECT_OUTPUT_MODE=true
+    OUTPUT_COLLECTION=()
+}
+
+# Function to disable output collection mode
+disable_output_collection() {
+    COLLECT_OUTPUT_MODE=false
+}
+
+# Function to dump collected output in a single printf call
+dump_collected_output() {
+    if [ "${#OUTPUT_COLLECTION[@]}" -gt 0 ]; then
+        for line in "${OUTPUT_COLLECTION[@]}"; do
+            echo -e "$line"
+        done
+    fi
+}
+
+# Function to clear collected output
+clear_collected_output() {
+    OUTPUT_COLLECTION=()
+}
+
+#==============================================================================
 # HEADER AND COMPLETION FUNCTIONS
 #==============================================================================
 
@@ -252,6 +285,9 @@ print_test_header() {
     
     # Start the test timer
     start_test_timer
+    
+    # Automatically enable output collection for performance optimization
+    enable_output_collection
     
     # Create timestamp with milliseconds
     local timestamp
@@ -326,7 +362,12 @@ print_subtest() {
     elapsed=$(get_elapsed_time)
     local processed_name
     processed_name=$(process_message "$subtest_name")
-    echo -e "  ${TEST_COLOR}${CURRENT_TEST_NUMBER}-${CURRENT_SUBTEST_NUMBER}   ${elapsed}   ${NC}${TEST_ICON}${TEST_COLOR} TEST   ${processed_name}${NC}"
+    local formatted_output="  ${TEST_COLOR}${CURRENT_TEST_NUMBER}-${CURRENT_SUBTEST_NUMBER}   ${elapsed}   ${NC}${TEST_ICON}${TEST_COLOR} TEST   ${processed_name}${NC}"
+    if [[ "$COLLECT_OUTPUT_MODE" == "true" ]]; then
+        OUTPUT_COLLECTION+=("$formatted_output")
+    else
+        echo -e "$formatted_output"
+    fi
 }
 
 #==============================================================================
@@ -348,7 +389,12 @@ print_command() {
     else
         truncated_cmd="$cmd"
     fi
-    echo -e "  ${prefix}   ${elapsed}   ${EXEC_COLOR}${EXEC_ICON} ${EXEC_COLOR}EXEC${NC}   ${EXEC_COLOR}${truncated_cmd}${NC}"
+    local formatted_output="  ${prefix}   ${elapsed}   ${EXEC_COLOR}${EXEC_ICON} ${EXEC_COLOR}EXEC${NC}   ${EXEC_COLOR}${truncated_cmd}${NC}"
+    if [[ "$COLLECT_OUTPUT_MODE" == "true" ]]; then
+        OUTPUT_COLLECTION+=("$formatted_output")
+    else
+        echo -e "$formatted_output"
+    fi
 }
 
 # Function to print command output
@@ -361,7 +407,12 @@ print_output() {
     message=$(process_message "$1")
     # Skip output if message is empty or contains only whitespace
     if [[ -n "$message" && ! "$message" =~ ^[[:space:]]*$ ]]; then
-        echo -e "  ${prefix}   ${elapsed}   ${DATA_COLOR}${DATA_ICON} ${DATA_COLOR}DATA${NC}   ${DATA_COLOR}${message}${NC}"
+        local formatted_output="  ${prefix}   ${elapsed}   ${DATA_COLOR}${DATA_ICON} ${DATA_COLOR}DATA${NC}   ${DATA_COLOR}${message}${NC}"
+        if [[ "$COLLECT_OUTPUT_MODE" == "true" ]]; then
+            OUTPUT_COLLECTION+=("$formatted_output")
+        else
+            echo -e "$formatted_output"
+        fi
     fi
 }
 
@@ -379,10 +430,17 @@ print_result() {
     # Record the result for statistics
     record_test_result "$status"
     
+    local formatted_output
     if [ "$status" -eq 0 ]; then
-        echo -e "  ${prefix}   ${elapsed}   ${PASS_COLOR}${PASS_ICON} ${PASS_COLOR}PASS${NC}   ${PASS_COLOR}${processed_message}${NC}"
+        formatted_output="  ${prefix}   ${elapsed}   ${PASS_COLOR}${PASS_ICON} ${PASS_COLOR}PASS${NC}   ${PASS_COLOR}${processed_message}${NC}"
     else
-        echo -e "  ${prefix}   ${elapsed}   ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}FAIL${NC}   ${FAIL_COLOR}${processed_message}${NC}"
+        formatted_output="  ${prefix}   ${elapsed}   ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}FAIL${NC}   ${FAIL_COLOR}${processed_message}${NC}"
+    fi
+    
+    if [[ "$COLLECT_OUTPUT_MODE" == "true" ]]; then
+        OUTPUT_COLLECTION+=("$formatted_output")
+    else
+        echo -e "$formatted_output"
     fi
 }
 
@@ -394,7 +452,12 @@ print_warning() {
     elapsed=$(get_elapsed_time)
     local message
     message=$(process_message "$1")
-    echo -e "  ${prefix}   ${elapsed}   ${WARN_COLOR}${WARN_ICON} ${WARN_COLOR}WARN${NC}   ${message}"
+    local formatted_output="  ${prefix}   ${elapsed}   ${WARN_COLOR}${WARN_ICON} ${WARN_COLOR}WARN${NC}   ${message}"
+    if [[ "$COLLECT_OUTPUT_MODE" == "true" ]]; then
+        OUTPUT_COLLECTION+=("$formatted_output")
+    else
+        echo -e "$formatted_output"
+    fi
 }
 
 # Function to print error messages
@@ -405,7 +468,12 @@ print_error() {
     elapsed=$(get_elapsed_time)
     local message
     message=$(process_message "$1")
-    echo -e "  ${prefix}   ${elapsed}   ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}ERROR${NC}   ${message}"
+    local formatted_output="  ${prefix}   ${elapsed}   ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}ERROR${NC}   ${message}"
+    if [[ "$COLLECT_OUTPUT_MODE" == "true" ]]; then
+        OUTPUT_COLLECTION+=("$formatted_output")
+    else
+        echo -e "$formatted_output"
+    fi
 }
 
 # Function to print informational messages
@@ -416,7 +484,12 @@ print_message() {
     elapsed=$(get_elapsed_time)
     local message
     message=$(process_message "$1")
-    echo -e "  ${prefix}   ${elapsed}   ${INFO_COLOR}${INFO_ICON} ${INFO_COLOR}INFO${NC}   ${message}"
+    local formatted_output="  ${prefix}   ${elapsed}   ${INFO_COLOR}${INFO_ICON} ${INFO_COLOR}INFO${NC}   ${message}"
+    if [[ "$COLLECT_OUTPUT_MODE" == "true" ]]; then
+        OUTPUT_COLLECTION+=("$formatted_output")
+    else
+        echo -e "$formatted_output"
+    fi
 }
 
 # Function to print beautiful test suite runner header using tables.sh with blue theme
@@ -515,6 +588,12 @@ print_test_completion() {
         TEST_ELAPSED_TIMES[CURRENT_TEST_NUMBER]="$elapsed_time"
     else
         elapsed_time="${TEST_ELAPSED_TIMES[CURRENT_TEST_NUMBER]}"
+    fi
+    
+    # Automatically dump collected output before final results table
+    if [[ "$COLLECT_OUTPUT_MODE" == "true" ]]; then
+        disable_output_collection
+        dump_collected_output
     fi
     
     # Write elapsed time to the subtest result file if running in test suite
@@ -639,9 +718,16 @@ print_test_item() {
     local processed_details
     processed_details=$(process_message "$details")
     
+    local formatted_output
     if [ "$status" -eq 0 ]; then
-        echo -e "${prefix} ${PASS_COLOR}${PASS_ICON} ${PASS_COLOR}PASS${NC} ${BOLD}$processed_name${NC} - $processed_details"
+        formatted_output="${prefix} ${PASS_COLOR}${PASS_ICON} ${PASS_COLOR}PASS${NC} ${BOLD}$processed_name${NC} - $processed_details"
     else
-        echo -e "${prefix} ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}FAIL${NC} ${BOLD}$processed_name${NC} - $processed_details"
+        formatted_output="${prefix} ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}FAIL${NC} ${BOLD}$processed_name${NC} - $processed_details"
+    fi
+    
+    if [[ "$COLLECT_OUTPUT_MODE" == "true" ]]; then
+        OUTPUT_COLLECTION+=("$formatted_output")
+    else
+        echo -e "$formatted_output"
     fi
 }

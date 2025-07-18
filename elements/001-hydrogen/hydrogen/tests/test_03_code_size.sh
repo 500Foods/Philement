@@ -142,11 +142,12 @@ for file in "${exclusion_files[@]}"; do
             summary=$(grep -A 5 "SUMMARY" "$file" 2>/dev/null | grep -v "SUMMARY" | grep -v "Used by" | sed 's/^# /  /' | sed 's/#$//')
             if [ -n "$summary" ]; then
                 # Break multi-line summaries into individual print_message calls
-                echo "$summary" | while IFS= read -r line; do
+                # Use process substitution to avoid subshell
+                while IFS= read -r line; do
                     if [ -n "$line" ]; then
                         print_message "${file}: $line"
                     fi
-                done
+                done < <(echo "$summary")
             fi
         fi
     else
@@ -257,11 +258,12 @@ show_top_files_by_type() {
         
         grep "\.${ext}$" "$LINE_COUNT_FILE" > "$temp_file"
         print_message "Top 5 $label Files:"
-        head -n 5 "$temp_file" | while read -r line; do
+        # Avoid subshell by using process substitution instead of pipe
+        while read -r line; do
             local count path
             read -r count path <<< "$line"
             print_output "  $count lines: $path"
-        done
+        done < <(head -n 5 "$temp_file")
         rm -f "$temp_file"
     done
 }
@@ -303,9 +305,10 @@ else
     print_message "Found $LARGE_FILE_COUNT large files:"
     # Use du in parallel and sort by size (largest first)
     if [ -s "$LARGE_FILES_LIST" ]; then
-        xargs -P "$(nproc)" -I {} du -k {} < "$LARGE_FILES_LIST" | sort -nr | while read -r size file; do
+        # Use process substitution to avoid subshell
+        while read -r size file; do
             print_output "  ${size}KB: $file"
-        done
+        done < <(xargs -P "$(nproc)" -I {} du -k {} < "$LARGE_FILES_LIST" | sort -nr)
     fi
     print_result 0 "Found $LARGE_FILE_COUNT files >$LARGE_FILE_THRESHOLD"
     ((PASS_COUNT++))
