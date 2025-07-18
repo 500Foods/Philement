@@ -236,18 +236,18 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [test_14_env_payload.md](tests/docs/test_14_env_payload.md): Environment payload testing
 - [test_16_library_dependencies.md](tests/docs/test_16_library_dependencies.md): Library dependency verification
 - [test_18_json_error_handling.md](tests/docs/test_18_json_error_handling.md): JSON error handling tests
-- [test_20_crash_handler.md](tests/docs/test_20_crash_handler.md): Crash handling and recovery tests
+- [test_13_crash_handler.md](tests/docs/test_13_crash_handler.md): Crash handling and recovery tests
 - [test_22_startup_shutdown.md](tests/docs/test_22_startup_shutdown.md): Startup and shutdown lifecycle tests
 - [test_24_signals.md](tests/docs/test_24_signals.md): Signal handling tests
 - [test_26_shutdown.md](tests/docs/test_26_shutdown.md): Shutdown sequence testing
 - [test_28_socket_rebind.md](tests/docs/test_28_socket_rebind.md): Socket rebinding tests
-- [test_30_api_prefixes.md](tests/docs/test_30_api_prefixes.md): API prefix configuration tests
+- [test_29_api_prefixes.md](tests/docs/test_29_api_prefixes.md): API prefix configuration tests
 - [test_32_system_endpoints.md](tests/docs/test_32_system_endpoints.md): System endpoint functionality tests
 - [test_34_swagger.md](tests/docs/test_34_swagger.md): Swagger documentation tests
 - [test_36_websockets.md](tests/docs/test_36_websockets.md): WebSocket server functionality and integration tests
 - [test_03_code_size.md](tests/docs/test_03_code_size.md): Code size analysis and metrics
 - [test_06_check_links.md](tests/docs/test_06_check_links.md): Link validation tests
-- [test_10_leaks_like_a_sieve.md](tests/docs/test_10_leaks_like_a_sieve.md): Memory leak detection tests
+- [test_19_leaks_like_a_sieve.md](tests/docs/test_19_leaks_like_a_sieve.md): Memory leak detection tests
 - [test_11_unity.md](tests/docs/test_11_unity.md): Unity testing framework integration
 - [test_91_cppcheck.md](tests/docs/test_91_cppcheck.md): C/C++ static analysis tests
 - [test_92_shellcheck.md](tests/docs/test_92_shellcheck.md): Shell script linting tests
