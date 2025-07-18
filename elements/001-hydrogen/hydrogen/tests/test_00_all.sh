@@ -164,7 +164,7 @@ update_readme_with_results() {
                 echo "| Elapsed Time | $TOTAL_ELAPSED_FORMATTED |"
                 echo "| Running Time | $TOTAL_RUNNING_TIME_FORMATTED |"
                 echo ""
-                echo "📊 **Visual Reports**: [Coverage Analysis](COVERAGE.svg) | [Complete Test Results](COMPLETE.svg)"
+                echo "[Test Suite Results](COMPLETE.svg) | [Test Suite Coverage](COVERAGE.svg)"
                 echo ""
                 echo "### Test Coverage"
                 echo ""
