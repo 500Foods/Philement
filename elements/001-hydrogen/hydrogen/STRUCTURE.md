@@ -14,6 +14,8 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [SECRETS.md](SECRETS.md) - Security configuration guide
 - [SITEMAP.md](SITEMAP.md) - Project navigation and file index
 - [STRUCTURE.md](STRUCTURE.md) - This file - project structure overview
+- [COVERAGE.svg](COVERAGE.svg) - Visual coverage analysis report (auto-generated)
+- [COMPLETE.svg](COMPLETE.svg) - Complete test suite results visualization (auto-generated)
 
 </details>
 
@@ -539,6 +541,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
   - [lifecycle.sh](tests/lib/lifecycle.sh) - Test lifecycle management
   - [log_output.sh](tests/lib/log_output.sh) - Log output formatting
   - [network_utils.sh](tests/lib/network_utils.sh) - Network testing utilities
+  - [Oh.sh](tests/lib/Oh.sh) - ANSI terminal output to SVG converter
   - [tables.sh](tests/lib/tables.sh) - Table utilities main module
   
 </details>

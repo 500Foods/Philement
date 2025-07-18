@@ -11,6 +11,8 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [SETUP.md](SETUP.md): Describes how to setup the dev environment
 - [SITEMAP.md](SITEMAP.md): This file
 - [STRUCTURE.md](STRUCTURE.md): Describes the file layout for the project
+- [COVERAGE.svg](COVERAGE.svg): Visual coverage analysis report (auto-generated)
+- [COMPLETE.svg](COMPLETE.svg): Complete test suite results visualization (auto-generated)
 
 ## Folder: /extras
 
@@ -227,6 +229,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [lifecycle.md](tests/docs/lifecycle.md): Test lifecycle management documentation
 - [log_output.md](tests/docs/log_output.md): Log output formatting and analysis
 - [network_utils.md](tests/docs/network_utils.md): Network utility functions documentation
+- [Oh.md](tests/docs/Oh.md): ANSI terminal output to SVG converter documentation
 - [test_00_all.md](tests/docs/test_00_all.md): Test orchestration and execution framework
 - [test_01_compilation.md](tests/docs/test_01_compilation.md): Compilation and build verification tests
 - [test_12_env_variables.md](tests/docs/test_12_env_variables.md): Environment variable validation
