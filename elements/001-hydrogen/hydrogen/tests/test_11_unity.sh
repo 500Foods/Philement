@@ -42,6 +42,8 @@ EXIT_CODE=0
 TOTAL_SUBTESTS=0
 PASS_COUNT=0
 CURRENT_SUBTEST_NUM=1
+TOTAL_UNITY_TESTS=0
+TOTAL_UNITY_PASSED=0
 
 # Auto-extract test number and set up environment
 TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
@@ -329,10 +331,10 @@ run_unity_tests() {
     local total_tests=${#sorted_tests[@]}
     local number_of_groups=$(( (total_tests + cpu_cores - 1) / cpu_cores ))  # ceil(total_tests / cpu_cores)
     local batch_size=$(( (total_tests + number_of_groups - 1) / number_of_groups ))  # ceil(total_tests / number_of_groups)
-    local total_test_count=0
-    local total_passed=0
     local total_failed=0
     local batch_num=0
+    TOTAL_UNITY_TESTS=0
+    TOTAL_UNITY_PASSED=0
     
     print_message "Running $total_tests Unity tests in parallel batches of ~$batch_size (max $cpu_cores CPUs, $number_of_groups groups)"
     
@@ -418,8 +420,8 @@ run_unity_tests() {
             # Collect statistics from result file
             if [ -f "$temp_result_file" ] && [ -s "$temp_result_file" ]; then
                 IFS='|' read -r exit_code test_name test_count passed_count failed_count < "$temp_result_file"
-                total_test_count=$((total_test_count + test_count))
-                total_passed=$((total_passed + passed_count))
+                TOTAL_UNITY_TESTS=$((TOTAL_UNITY_TESTS + test_count))
+                TOTAL_UNITY_PASSED=$((TOTAL_UNITY_PASSED + passed_count))
                 total_failed=$((total_failed + failed_count))
             fi
             
@@ -437,7 +439,7 @@ run_unity_tests() {
     
     # Display summary in two parts
     print_message "Unity test execution: $total_tests test files ran in $batch_num batches"
-    print_message "Unity test results: $(printf "%'d" "$total_test_count") unit tests, $(printf "%'d" "$total_passed") passing, $(printf "%'d" "$total_failed") failing"
+    print_message "Unity test results: $(printf "%'d" "$TOTAL_UNITY_TESTS") unit tests, $(printf "%'d" "$TOTAL_UNITY_PASSED") passing, $(printf "%'d" "$total_failed") failing"
     
     return $overall_result
 }
@@ -445,7 +447,12 @@ run_unity_tests() {
 # Check and run tests
 if check_unity_tests_available; then
     ((PASS_COUNT++))
-    if ! run_unity_tests; then
+    if run_unity_tests; then
+        # Update TEST_NAME to include test results for concise display
+        if [ -n "$TOTAL_UNITY_TESTS" ] && [ -n "$TOTAL_UNITY_PASSED" ]; then
+            TEST_NAME="Unity Unit Tests ($(printf "%'d" "$TOTAL_UNITY_PASSED") / $(printf "%'d" "$TOTAL_UNITY_TESTS"))"
+        fi
+    else
         EXIT_CODE=1
     fi
     
