@@ -163,7 +163,7 @@ To run this test individually:
 
 - [test_00_all.md](test_00_all.md) - Main test suite documentation
 - [test_32_system_endpoints.md](test_32_system_endpoints.md) - System endpoint testing
-- [test_30_api_prefixes.md](test_30_api_prefixes.md) - API prefix testing
+- [test_29_api_prefixes.md](test_29_api_prefixes.md) - API prefix testing
 - [test_28_socket_rebind.md](test_28_socket_rebind.md) - Socket rebinding tests (SO_REUSEADDR)
 - [LIBRARIES.md](LIBRARIES.md) - Modular library documentation
 - [api.md](../../docs/api.md) - API documentation and endpoint specifications

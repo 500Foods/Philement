@@ -118,7 +118,7 @@ To run this test individually:
 ## Related Documentation
 
 - [test_00_all.md](test_00_all.md) - Main test suite documentation
-- [test_20_crash_handler.md](test_20_crash_handler.md) - Crash handler testing
+- [test_13_crash_handler.md](test_13_crash_handler.md) - Crash handler testing
 - [test_24_signals.md](test_24_signals.md) - Signal handling tests
 - [LIBRARIES.md](LIBRARIES.md) - Modular library documentation
 - [testing.md](../../docs/testing.md) - Overall testing strategy

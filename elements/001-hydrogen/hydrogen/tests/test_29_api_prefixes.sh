@@ -224,7 +224,7 @@ cleanup() {
 trap cleanup SIGINT SIGTERM
 
 # Main execution starts here
-print_test_header "$NAME_SCRIPT" "$SCRIPT_VERSION"
+print_test_header "$TEST_NAME" "$SCRIPT_VERSION"
 
 # Subtest 1: Find Hydrogen binary
 next_subtest
