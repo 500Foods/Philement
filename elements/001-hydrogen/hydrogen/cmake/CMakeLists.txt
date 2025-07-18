@@ -278,10 +278,10 @@ function(hydrogen_add_executable_target target_name build_type extra_cflags extr
         
         # Set up output directory structure to mirror source in build/[target]/src/
         if(OBJ_DIR)
-            set(OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/${target_name}/src/${OBJ_DIR}")
+            set(OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../build/${target_name}/src/${OBJ_DIR}")
             set(OUTPUT_OBJ "${OUTPUT_DIR}/${OBJ_BASENAME}.o")
         else()
-            set(OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/${target_name}/src")
+            set(OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../build/${target_name}/src")
             set(OUTPUT_OBJ "${OUTPUT_DIR}/${OBJ_BASENAME}.o")
         endif()
         
@@ -351,7 +351,7 @@ function(hydrogen_add_executable_target target_name build_type extra_cflags extr
     target_link_options(${target_name} PRIVATE -Wl,--gc-sections)
     
     # Generate map file in target directory
-    target_link_options(${target_name} PRIVATE -Wl,-Map=${CMAKE_CURRENT_BINARY_DIR}/${target_name}/${target_name}.map)
+    target_link_options(${target_name} PRIVATE -Wl,-Map=${CMAKE_CURRENT_SOURCE_DIR}/../build/${target_name}/${target_name}.map)
     
     # Set output name and properties
     # Binary names should have hydrogen_ prefix except for regular which is just "hydrogen"
@@ -370,7 +370,7 @@ function(hydrogen_add_executable_target target_name build_type extra_cflags extr
     # Add custom command to show build completion
     add_custom_command(TARGET ${target_name} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E echo "${GREEN}${PASS} ${BOLD}${build_type} build${NORMAL} ${GREEN}completed successfully: ${target_name}${NORMAL}"
-        COMMAND ${CMAKE_COMMAND} -E echo "${CYAN}${INFO} Object files located in: ${CMAKE_CURRENT_BINARY_DIR}/${target_name}/src/${NORMAL}"
+        COMMAND ${CMAKE_COMMAND} -E echo "${CYAN}${INFO} Object files located in: ${CMAKE_CURRENT_SOURCE_DIR}/../build/${target_name}/src/${NORMAL}"
         VERBATIM
     )
 endfunction()
@@ -407,10 +407,10 @@ foreach(SOURCE_FILE ${HYDROGEN_SOURCES})
     
     # Set up output directory structure to mirror source in build/coverage/src/
     if(OBJ_DIR)
-        set(OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/coverage/src/${OBJ_DIR}")
+        set(OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../build/coverage/src/${OBJ_DIR}")
         set(OUTPUT_OBJ "${OUTPUT_DIR}/${OBJ_BASENAME}.o")
     else()
-        set(OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/coverage/src")
+        set(OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../build/coverage/src")
         set(OUTPUT_OBJ "${OUTPUT_DIR}/${OBJ_BASENAME}.o")
     endif()
     
@@ -455,7 +455,7 @@ set_target_properties(hydrogen_coverage PROPERTIES
 # Add custom command to show build completion for coverage target
 add_custom_command(TARGET hydrogen_coverage POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E echo "${GREEN}${PASS} ${BOLD}Coverage build${NORMAL} ${GREEN}completed successfully: hydrogen_coverage${NORMAL}"
-    COMMAND ${CMAKE_COMMAND} -E echo "${CYAN}${INFO} Coverage files located in: ${CMAKE_CURRENT_BINARY_DIR}/coverage/src/${NORMAL}"
+    COMMAND ${CMAKE_COMMAND} -E echo "${CYAN}${INFO} Coverage files located in: ${CMAKE_CURRENT_SOURCE_DIR}/../build/coverage/src/${NORMAL}"
     VERBATIM
 )
 
@@ -780,10 +780,10 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
     
     # Set up output directory structure to mirror source in build/unity/src/
     if(OBJ_DIR)
-        set(OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/unity/src/${OBJ_DIR}")
+        set(OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src/${OBJ_DIR}")
         set(OUTPUT_OBJ "${OUTPUT_DIR}/${OBJ_BASENAME}.o")
     else()
-        set(OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/unity/src")
+        set(OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../build/unity/src")
         set(OUTPUT_OBJ "${OUTPUT_DIR}/${OBJ_BASENAME}.o")
     endif()
     

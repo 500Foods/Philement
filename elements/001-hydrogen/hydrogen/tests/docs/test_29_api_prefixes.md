@@ -1,8 +1,8 @@
-# Test 30: API Prefix Script Documentation
+# Test 29: API Prefix Script Documentation
 
 ## Overview
 
-The `test_30_api_prefixes.sh` script is a comprehensive API testing tool within the Hydrogen test suite, focused on validating API routing with different URL prefixes and configurations using immediate restart approach with SO_REUSEADDR functionality.
+The `test_29_api_prefixes.sh` script is a comprehensive API testing tool within the Hydrogen test suite, focused on validating API routing with different URL prefixes and configurations using immediate restart approach with SO_REUSEADDR functionality.
 
 ## Purpose
 
@@ -10,7 +10,7 @@ This script ensures that the Hydrogen server correctly handles API requests with
 
 ## Script Details
 
-- **Script Name**: `test_30_api_prefixes.sh`
+- **Script Name**: `test_29_api_prefixes.sh`
 - **Test Name**: API Prefix
 - **Version**: 5.0.0 (Migrated to use lib/ scripts following established patterns)
 - **Dependencies**: Uses modular libraries from `lib/` directory
@@ -86,7 +86,7 @@ To run this test as part of the full suite:
 To run this test individually:
 
 ```bash
-./test_30_api_prefixes.sh
+./test_29_api_prefixes.sh
 ```
 
 ## Expected Results
