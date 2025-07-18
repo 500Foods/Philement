@@ -64,7 +64,7 @@ There are countless tools, frameworks, coding styles, conventions, languages, an
 [![Count Lines of Code](https://github.com/500Foods/Philement/actions/workflows/main.yml/badge.svg)](https://github.com/500Foods/Philement/actions/workflows/main.yml)
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-07-18 04:07:46 UTC
+Last updated at 2025-07-18 04:09:17 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
@@ -73,9 +73,9 @@ Markdown                       247           7187             57          23388
 Bourne Shell                    55           2542           2806          13242
 JSON                            25              1              0           5444
 C/C++ Header                   119           1177           4286           2925
+SVG                              2              6              4           2132
 CMake                            5            160            215           1000
 HTML                             5            114             23            650
-SVG                              1              3              2            404
 Python                           1             36              9            195
 make                             5             48             16             98
 Text                             2              0              0             77
@@ -85,7 +85,7 @@ CSS                              2              3              2             38
 YAML                             2              8             13             37
 JavaScript                       1              3              0             25
 -------------------------------------------------------------------------------
-SUM:                           641          17260          13974          74473
+SUM:                           642          17263          13976          76201
 -------------------------------------------------------------------------------
 25 Files were skipped (duplicate, binary, or without source code):
   gitignore: 4
