@@ -7,9 +7,9 @@ The Log Output Library (`log_output.sh`) provides consistent logging, formatting
 ## Library Information
 
 - **Script**: `../lib/log_output.sh`
-- **Version**: 3.0.3
+- **Version**: 3.2.0
 - **Created**: 2025-07-02
-- **Updated**: 2025-07-03 - Applied color consistency to all output types, removed legacy functions
+- **Updated**: 2025-07-18 - Modified output collection to dump cache when new TEST starts for progressive feedback
 - **Purpose**: Provides modular logging functionality with modern numbered output system
 
 ## Purpose
@@ -30,6 +30,7 @@ The Log Output Library (`log_output.sh`) provides consistent logging, formatting
 - **Beautiful table headers** using tables.sh integration
 - **Path normalization** for cleaner output
 - **Command truncation** for readability
+- **Progressive output caching** that dumps results each time a new TEST starts
 
 ## Global Variables and Constants
 
@@ -261,7 +262,7 @@ print_test_header "Hydrogen Compilation Test" "1.0.0"
 
 #### `print_subtest(subtest_name)`
 
-Prints a formatted subtest header with timing and numbering.
+Prints a formatted subtest header with timing and numbering. **NEW**: Now provides progressive output by dumping cached results when a new TEST starts.
 
 **Parameters:**
 
@@ -272,12 +273,20 @@ Prints a formatted subtest header with timing and numbering.
 - Shows current test-subtest number (e.g., "10-001")
 - Displays elapsed time since test start
 - Uses blue color formatting with bold text
+- **NEW**: Automatically dumps any cached output from previous test activities before starting new test
+- **NEW**: Clears output cache after dumping for fresh collection
 
 **Usage:**
 
 ```bash
 print_subtest "Check CMake Availability"
 ```
+
+**Progressive Output Behavior:**
+
+- When output collection is enabled, this function dumps cached messages before adding the new TEST entry
+- Provides real-time feedback instead of waiting until test completion
+- Maintains output caching benefits while improving user experience during long tests
 
 #### `print_test_suite_header(test_name, script_version)`
 
@@ -560,6 +569,9 @@ All legacy functions have been completely removed as of version 3.0.2.
 
 ## Version History
 
+- **3.2.0** (2025-07-18) - Modified output collection to dump cache when new TEST starts for progressive feedback
+- **3.1.0** (2025-07-07) - Restructured how test elapsed times are stored and accessed
+- **3.0.4** (2025-07-06) - Added mechanism to handle absolute paths in log output
 - **3.0.3** (2025-07-03) - Applied color consistency to all output types (DATA, EXEC, PASS, FAIL)
 - **3.0.2** (2025-07-03) - Completely removed legacy functions (print_header, print_info)
 - **3.0.1** (2025-07-03) - Enhanced documentation, removed unused functions, improved comments

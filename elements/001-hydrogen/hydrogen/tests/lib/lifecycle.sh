@@ -425,9 +425,9 @@ monitor_shutdown() {
             last_activity=$(date +%s)
         else
             inactive_time=$((current_time - last_activity))
-        if [ "$inactive_time" -ge "$activity_timeout" ]; then
-            get_process_threads "$pid" "$diag_dir/inactive_threads.txt"
-        fi
+            if [ "$inactive_time" -ge "$activity_timeout" ]; then
+                get_process_threads "$pid" "$diag_dir/inactive_threads.txt"
+            fi
         fi
         
         sleep 0.1

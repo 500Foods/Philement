@@ -18,6 +18,7 @@ export LOG_OUTPUT_SH_GUARD="true"
 # - Test/subtest numbering and timing
 # - Beautiful table-based headers and completion summaries
 # - Automatic test statistics tracking
+# - Progressive output caching that dumps results each time a new TEST starts
 
 # USAGE:
 # 1. Source this library in your test script
@@ -26,6 +27,8 @@ export LOG_OUTPUT_SH_GUARD="true"
 # 4. Call print_test_completion() at the end
 
 # CHANGELOG
+# 3.2.1 - 2025-07-18 - Fixed hanging issue in output collection mechanism when running through orchestrator
+# 3.2.0 - 2025-07-18 - Modified output collection to dump cache when new TEST starts for progressive feedback
 # 3.1.0 - 2025-07-07 - Restructured how test elapsed times are stored and accessed
 # 3.0.4 - 2025-07-06 - Added mechanism to handle absolute paths in log output
 # 3.0.3 - 2025-07-03 - Applied color consistency to all output types (DATA, EXEC, PASS, FAIL)
@@ -41,7 +44,7 @@ export LOG_OUTPUT_SH_GUARD="true"
 #==============================================================================
 
 LOG_OUTPUT_NAME="Log Output Library"
-LOG_OUTPUT_VERSION="3.1.0"
+LOG_OUTPUT_VERSION="3.2.1"
 
 # Global variables for test/subtest numbering
 CURRENT_TEST_NUMBER=""
@@ -58,7 +61,8 @@ declare -a TEST_ELAPSED_TIMES
 # Variable for absolute path replacement
 ABSOLUTE_ROOT=""
 
-# Array for collecting output messages (for performance optimization)
+# Array for collecting output messages (for performance optimization and progressive feedback)
+# Output is cached and dumped each time a new TEST starts, providing progressive feedback
 declare -a OUTPUT_COLLECTION=()
 COLLECT_OUTPUT_MODE=false
 
@@ -255,16 +259,44 @@ disable_output_collection() {
 
 # Function to dump collected output in a single printf call
 dump_collected_output() {
-    if [ "${#OUTPUT_COLLECTION[@]}" -gt 0 ]; then
+    # Defensive check to ensure array is properly initialized
+    if [[ ! -v OUTPUT_COLLECTION ]]; then
+        return 0
+    fi
+    
+    # Check if array has elements
+    if [[ "${#OUTPUT_COLLECTION[@]}" -gt 0 ]]; then
+        # Use printf instead of echo -e to avoid potential hanging issues
+        # Process array elements safely with proper quoting and limits
+        local line
+        local count=0
+        local max_lines=1000  # Prevent infinite loops with large arrays
+        
         for line in "${OUTPUT_COLLECTION[@]}"; do
-            echo -e "$line"
+            # Safety check for runaway loops
+            if [[ $count -ge $max_lines ]]; then
+                printf '%b\n' "... (output truncated after $max_lines lines)"
+                break
+            fi
+            
+            # Only output non-empty lines
+            if [[ -n "$line" ]]; then
+                printf '%b\n' "$line" 2>/dev/null || true
+            fi
+            ((count++))
         done
     fi
 }
 
 # Function to clear collected output
 clear_collected_output() {
-    OUTPUT_COLLECTION=()
+    # Safely clear the array with defensive checks
+    if [[ -v OUTPUT_COLLECTION ]]; then
+        OUTPUT_COLLECTION=()
+    else
+        # Initialize array if it doesn't exist
+        declare -ga OUTPUT_COLLECTION=()
+    fi
 }
 
 #==============================================================================
@@ -358,11 +390,20 @@ print_subtest() {
     local processed_name
     processed_name=$(process_message "$subtest_name")
     local formatted_output="  ${TEST_COLOR}${CURRENT_TEST_NUMBER}-${CURRENT_SUBTEST_NUMBER}   ${elapsed}   ${NC}${TEST_ICON}${TEST_COLOR} TEST   ${processed_name}${NC}"
+    
+    # If we're in collection mode and have cached output, dump it before starting new test
     if [[ "$COLLECT_OUTPUT_MODE" == "true" ]]; then
-        OUTPUT_COLLECTION+=("$formatted_output")
-    else
-        echo -e "$formatted_output"
+        # Defensive check for array state to prevent hanging
+        if [[ -n "${OUTPUT_COLLECTION+set}" ]] && [[ "${#OUTPUT_COLLECTION[@]}" -gt 0 ]]; then
+            # Try to dump the cached output, but don't fail if it causes issues
+            dump_collected_output 2>/dev/null || true
+        fi
+        # Clear the cache for new test regardless of dump success
+        clear_collected_output 2>/dev/null || true
     fi
+    
+    # Always output the TEST entry immediately so user sees what test is starting
+    echo -e "$formatted_output"
 }
 
 #==============================================================================
