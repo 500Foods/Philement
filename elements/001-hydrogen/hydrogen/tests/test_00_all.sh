@@ -130,11 +130,9 @@ update_readme_with_results() {
         total_failed=$((total_failed + TEST_FAILED[i]))
     done
     
-    # Create temporary file for new README content
+    # Generate Timestamp, Create temporary file for new README content
     local temp_readme
     temp_readme=$(mktemp) || { echo "Error: Failed to create temporary file" >&2; return 1; }
-    
-    # Generate timestamp
     local timestamp
     timestamp=$(date)
     
@@ -866,7 +864,17 @@ COMBINED_COVERAGE=$(get_combined_coverage)
 # Run coverage table before displaying test results
 coverage_table_script="$SCRIPT_DIR/lib/coverage_table.sh"
 if [[ -x "$coverage_table_script" ]] && [ "$SKIP_TESTS" = false ]; then
-    "$coverage_table_script" 2>/dev/null || true
+    # Save coverage table output to file and display to console using tee
+    coverage_table_file="$RESULTS_DIR/coverage_table.txt"
+    "$coverage_table_script" 2>/dev/null | tee "$coverage_table_file" || true
+    
+    # Launch background process to generate COVERAGE.svg from saved file
+    oh_script="$SCRIPT_DIR/lib/Oh.sh"
+    coverage_svg_path="$SCRIPT_DIR/../COVERAGE.svg"
+    if [[ -x "$oh_script" ]] && [[ -f "$coverage_table_file" ]]; then
+        # Generate SVG from saved coverage table file in background
+        ("$oh_script" -i "$coverage_table_file" -o "$coverage_svg_path" 2>/dev/null) &
+    fi
 fi
 
 # Generate summary table using the sourced table libraries
@@ -968,7 +976,17 @@ echo "$data_json_content" > "$data_json"
 
 tables_exe="$SCRIPT_DIR/lib/tables"
 if [[ -x "$tables_exe" ]]; then
-    "$tables_exe" "$layout_json" "$data_json" 2>/dev/null
+    # Save test results table output to file and display to console using tee
+    results_table_file="$RESULTS_DIR/results_table.txt"
+    "$tables_exe" "$layout_json" "$data_json" 2>/dev/null | tee "$results_table_file"
+    
+    # Launch background process to generate COMPLETE.svg from saved file
+    oh_script="$SCRIPT_DIR/lib/Oh.sh"
+    results_svg_path="$SCRIPT_DIR/../COMPLETE.svg"
+    if [[ -x "$oh_script" ]] && [[ -f "$results_table_file" ]]; then
+        # Generate SVG from saved results table file in background
+        ("$oh_script" -i "$results_table_file" -o "$results_svg_path" 2>/dev/null) &
+    fi
 fi
 
 rm -rf "$temp_dir" 2>/dev/null
