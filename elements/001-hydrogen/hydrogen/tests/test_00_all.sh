@@ -162,7 +162,7 @@ update_readme_with_results() {
                 echo "| Passed Subtests | $total_passed |"
                 echo "| Failed Subtests | $total_failed |"
                 echo "| Elapsed Time | $TOTAL_ELAPSED_FORMATTED |"
-                echo "| Running Time | $TOTAL_RUNNING_TIME_FORMATTED |"
+                echo "| Cumulative Time | $TOTAL_RUNNING_TIME_FORMATTED |"
                 echo ""
                 echo "[Test Suite Results](COMPLETE.svg) | [Test Suite Coverage](COVERAGE.svg)"
                 echo ""
