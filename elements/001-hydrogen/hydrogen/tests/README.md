@@ -593,3 +593,15 @@ When creating new test scripts, adhere to the following standards:
 ```
 
 For more detailed information on the Hydrogen testing approach, refer to the [Testing Documentation](../docs/testing.md).
+
+## Test Renumbering / Renaming
+
+For various reasons, we sometimes renumber or rename tests. Often this is to ensure that the ordering in the main orchestration runs is optimal.
+Sometimes it is because a test function changes. Or maybe due to just wanting the ordering to be more sensible. Whatever the reason,
+this causes a number of issues that need to be resolved, mostly involving links to the file.
+
+- STRUCTURE.md must be updated to reflect the new name/number
+- tests/docs needs to be updated with the new documentation for the test
+- tests/README.md should also be updated with a new link to the test and documentation
+- SITEMAP.md needs to be updated to reflect the new documentation
+- RELEASES.md should be reviewed as this will undoubtedly need to be noted in the release notes
