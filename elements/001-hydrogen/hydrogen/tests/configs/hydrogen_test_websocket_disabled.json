@@ -23,10 +23,12 @@
         "JWTSecret": "test_jwt_secret_websocket_disabled"
     },
     "WebSocketServer": {
-        "Enabled": false,
-        "EnableIPv6": true,
+        "EnableIPv4": false,
+        "EnableIPv6": false,
         "LibLogLevel": 2,
         "Port": 5001,
+        "Protocol": "hydrogen",
+        "Key": "${env.WEBSOCKET_KEY}",
         "MaxMessageSize": 2048,
         "ConnectionTimeouts": {
             "ShutdownWaitSeconds": 2,

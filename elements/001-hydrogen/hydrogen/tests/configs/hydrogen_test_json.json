@@ -13,6 +13,21 @@
             "Prefix": "/swagger"
         }
     },
+    "WebSocketServer": {
+        "EnableIPv4": false,
+        "EnableIPv6": false,
+        "LibLogLevel": 2,
+        "Port": 5001,
+        "Protocol": "hydrogen",
+        "Key": "${env.WEBSOCKET_KEY}",
+        "MaxMessageSize": 2048,
+        "ConnectionTimeouts": {
+            "ShutdownWaitSeconds": 2,
+            "ServiceLoopDelayMs": 50,
+            "ConnectionCleanupMs": 500,
+            "ExitWaitSeconds": 3
+        }
+    },    
     "Logging": {
         "Levels": [
             [0, "ALL"],

@@ -166,7 +166,8 @@ run_cppcheck() {
     done < <(find . -type f \( -name "*.c" -o -name "*.h" -o -name "*.inc" \))
     
     if [ ${#files[@]} -gt 0 ]; then
-        cppcheck -j"$CORES" --quiet "${cppcheck_args[@]}" "${files[@]}" 2>&1
+        mkdir -p "$HOME/.cppcheck"
+        cppcheck -j"$CORES" --quiet --cppcheck-build-dir="$HOME/.cppcheck" "${cppcheck_args[@]}" "${files[@]}" 2>&1
     else
         echo ""
     fi
