@@ -585,12 +585,12 @@ if [ $EXIT_CODE -eq 0 ]; then
     print_message "Testing WebSocket functionality with immediate restart approach"
     print_message "SO_REUSEADDR is enabled - no need to wait for TIME_WAIT"
     
-    # Test with default WebSocket configuration (port 5001, protocol "hydrogen")
-    test_websocket_configuration "$CONFIG_1" "5001" "hydrogen" "websocket_default" 1
+    # Test with default WebSocket configuration (port 5101, protocol "hydrogen")
+    test_websocket_configuration "$CONFIG_1" "5101" "hydrogen" "websocket_default" 1
     
     # Test with custom WebSocket configuration - immediate restart
     print_message "Starting second test immediately (testing SO_REUSEADDR)..."
-    test_websocket_configuration "$CONFIG_2" "5002" "hydrogen-test" "websocket_custom" 2
+    test_websocket_configuration "$CONFIG_2" "5202" "hydrogen-test" "websocket_custom" 2
     
     print_message "Immediate restart successful - SO_REUSEADDR is working!"
     
