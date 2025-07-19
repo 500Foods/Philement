@@ -14,14 +14,25 @@ These tools are required when building or developing with the Hydrogen codebase:
 - [jq](https://stedolan.github.io/jq/) - Command-line JSON processor
 - [upx](https://upx.github.io/) - Executable compressor for release builds
 - [cloc](https://github.com/AlDanial/cloc) - Count Lines of code
-- [markdownlint](https://github.com/DavidAnson/markdownlint) - Markdown file linting and style checking
-- [jsonlint](https://github.com/zaach/jsonlint) - JSON file validation and formatting
 - [cppcheck](https://cppcheck.sourceforge.io/) - Static analysis for C/C++ code
+- [shellcheck](https://www.shellcheck.net/) - Static linting for bash
+- [markdownlint](https://github.com/DavidAnson/markdownlint) - Markdown file linting and style checking
 - [eslint](https://eslint.org/) - JavaScript code linting and style checking
 - [stylelint](https://stylelint.io/) - CSS/SCSS linting and style checking
 - [htmlhint](https://htmlhint.com/) - HTML code linting and validation
+- [jsonlint](https://github.com/zaach/jsonlint) - JSON file validation and formatting
+- [websocat](https://github.com/vi/websocat) - Testing websocket connections
 - [cmake](https://cmake.org/) - Build system
 - [ninja](https://ninja-build.org/) - Faster build system
+- [unity](https://www.throwtheswitch.org/unity) - Unit test framework for C
+
+## Build-time Related Projects
+
+A handful of other projects are directly included in the tests/lib folder of this project.
+
+- [Terminal Tables](https://github.com/500Foods/Terminal-Tables) - Draws ANSI tables using JSON inputs ([lib/tables](tests/lib/tables)) ([Docs](tests/docs/tables.md))
+- [GitHub Sitmemap](https://github.com/500Foods/Scripts/github-sitemap) - Cross-reference all the markdown in a repository [lib/github-sitemap.sh](tests/lib/github-sitemap.sh)) ([Docs](tests/docs/github-sitemap.md))
+- [Oh.sh](https://github.com/500Foods/Oh.sh) - Converts ANSI terminal output into SVG files ([lib/Oh.sh](tests/lib/Oh.sh)) ([Docs](tests/docs/Oh.md))
 
 ## Example Ubuntu Build Environment
 
@@ -110,3 +121,198 @@ To use these variables in the configuration file, use the format `${env.VARIABLE
         }
     }
 }
+```
+
+## GitHub Codespaces
+
+Should you want to build the project in a GitHub codespace, the following can be used. Place these in the `.devcontainer` folder of your repo. Once the repo starts you can then run the usual sorts of commands.
+
+- `git clone https://github.com/500Foods/Philement`
+- `cd Philement/elements/001-hydrogen/hydrogen/tests`
+- `./test_00_all.sh`
+
+The hydrogen build should proceed, downloading unity if needed and running the payload build as well, so long as you've defined PAYLOAD_LOCK, PAYLOAD_KEY and WEBSOCKET_KEY as GitHub secrets in your repo.  See [SECRETS](SECRETS.md) for more information on those environment variables.
+
+### dockerfile
+
+```dockerfile
+FROM ubuntu:24.04
+
+# Install base tools
+RUN apt-get update && apt-get install -y \
+    git \
+    jq \
+    curl \
+    gpg \
+    && rm -rf /var/lib/apt/lists/*
+```
+
+### devcontainer.json
+
+```devcontainer.json
+{
+  "name": "Codespace",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest",
+      "enableNonRootDocker": "true",
+      "moby": "true"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {},
+      "extensions": [
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        "github.vscode-pull-request-github",
+      ]
+    }
+  },
+  "containerEnv": {
+  },
+  "postCreateCommand": "/bin/bash .devcontainer/setup.sh 2>&1 | tee /tmp/post-create.log && cat /tmp/post-create.log",
+  "postStartCommand": "zsh -c 'source ~/.zshrc && echo \"zshrc sourced\"'"
+}
+```
+
+### setup.sh
+
+```setup.sh
+#!/bin/bash
+set -x  # Print commands as they run
+
+apt install -y locales
+locale-gen en_US.UTF-8
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+
+# Update and install base packages
+apt-get update
+DEBIAN_FRONTEND=noninteractive apt-get install -y jq tzdata apt-transport-https ca-certificates curl wget tar gnupg lsb-release
+
+# Set timezone
+ln -fs /usr/share/zoneinfo/America/Vancouver /etc/localtime
+dpkg-reconfigure -f noninteractive tzdata
+
+# Install Docker
+mkdir -p /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list
+
+apt-get update
+DEBIAN_FRONTEND=noninteractive apt-get install -y kubectl docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
+# Configure Docker for non-root user
+groupadd docker || true
+usermod -aG docker $(whoami) || true
+
+# Remove zsh profile to avoid interactive prompt
+rm -f /etc/zsh/zprofile
+
+# Install additional apps from apps.json if it exists
+if [ -f .devcontainer/apps.json ]; then
+  for app in $(jq -r ".apps[]" .devcontainer/apps.json); do
+    DEBIAN_FRONTEND=noninteractive apt-get install -y "$app"
+  done
+else
+  echo "Warning: apps.json not found" >&2
+fi
+
+# Install Oh My Zsh
+yes | sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" --unattended
+
+# Set up environment variables and files *after* Oh My Zsh
+echo "source /workspaces/Festival/.devcontainer/.zshrc" >> ~/.zshrc
+echo "export LANG=en_US.UTF-8" >> ~/.zshrc
+echo "export LC_ALL=en_US.UTF-8" >> ~/.zshrc
+
+# Set Zsh as default shell (with fallback)
+DEBIAN_FRONTEND=noninteractive chsh -s /bin/zsh
+echo "if [ -t 1 ] && [ -n \"$(command -v zsh)\" ]; then exec zsh; fi" >> ~/.bashrc
+
+# Install websocat,  used by test 36 for websocket testing
+wget -qO /usr/local/bin/websocat https://github.com/vi/websocat/releases/latest/download/websocat.x86_64-unknown-linux-musl
+chmod +x /usr/local/bin/websocat
+
+echo "Setup complete" >&2
+```
+
+### apps.json
+
+```apps.json
+{
+  "apps": [
+    "gawk",
+    "gh",
+    "golang",
+    "net-tools",
+    "netcat-openbsd",
+    "vim",
+    "tcpdump",
+    "iputils-ping",
+    "traceroute",
+    "wget",
+    "ftp",
+    "telnet",
+    "kubectl",
+    "helm",
+    "ceph-common",
+    "htop",
+    "less",
+    "dnsutils",
+    "apache2-utils",
+    "zsh",
+    "iproute2",
+    "build-essential",
+    "wget",
+    "curl", 
+    "jq",
+    "nodejs",
+    "npm",
+    "cloc",
+    "cmake",
+    "ninja-build",
+    "upx-ucl",
+    "brotli",
+    "libjansson-dev",
+    "libmicrohttpd-dev",
+    "libssl-dev",
+    "libwebsockets-dev",
+    "libbrotli-dev",
+    "libcurl4-openssl-dev",
+    "libtar-dev",
+    "valgrind",
+    "cppcheck",
+    "eslint",
+    "shellcheck",
+    "bc",
+    "markdownlint",
+    "systemd-coredump",
+    "build-essential",
+    "gdb",
+    "lldb",
+    "cmake",
+    "clang",
+    "libc6-dbg",
+    "libstdc++6-13-dbg",
+    "linux-headers-$(uname -r)",
+    "apport"
+  ]
+}
+```
+
+### .zshrc
+
+```.zshrc
+# Custom .zshrc for devcontainer
+echo "Loaded devcontainer .zshrc"
+
+# Why give Microsft more money than we need to? 
+# Shutdown the codespace rather than waiting 20m for the automatic timeout
+# They sure don't make it easy, though, right? Says something, but we already knew that
+alias bye='cd $CODESPACE_VSCODE_FOLDER && gh codespace stop -c $(gh api /user/codespaces --jq '\''.codespaces[] | select(.state == "Available") | .name'\'' | head -n 1)'
+```
