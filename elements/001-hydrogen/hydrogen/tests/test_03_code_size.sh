@@ -359,6 +359,7 @@ print_subtest "File Count Summary"
 print_message "File type distribution:"
 print_output "Total source files analyzed: $TOTAL_FILES"
 print_output "Large files found: $LARGE_FILE_COUNT"
+TEST_NAME="$TEST_NAME {BLUE}(cloc: $FILES_COUNT files){RESET}"
 
 # Count files by type in parallel for better performance
 {

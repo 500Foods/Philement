@@ -9,7 +9,7 @@
 # 1.0.0 - Initial version for HTML linting
 
 # Test configuration
-TEST_NAME="HTML Linting {BLUE}(htmlhint){RESET}"
+TEST_NAME="HTML Linting"
 SCRIPT_VERSION="2.0.1"
 
 # Get the directory where this script is located
@@ -66,15 +66,6 @@ fi
 if [[ -z "${LINT_EXCLUDES:-}" ]]; then
     readonly LINT_EXCLUDES=(
         "build/*"
-        "build_debug/*"
-        "build_perf/*"
-        "build_release/*"
-        "build_valgrind/*"
-        "tests/logs/*"
-        "tests/results/*"
-        "tests/diagnostics/*"
-        "tests/unity/framework/*"
-        "node_modules/*"
     )
 fi
 
@@ -127,6 +118,8 @@ if command -v htmlhint >/dev/null 2>&1; then
         TEMP_LOG=$(mktemp)
         
         print_message "Running htmlhint on $HTML_COUNT HTML files..."
+        TEST_NAME="$TEST_NAME {BLUE}(htmlhint: $HTML_COUNT files){RESET}"
+
         # List files being checked for debugging
         for file in "${HTML_FILES[@]}"; do
             print_output "Checking: $file"
@@ -167,6 +160,8 @@ if command -v htmlhint >/dev/null 2>&1; then
         rm -f "$TEMP_LOG" "${TEMP_LOG}.filtered"
     else
         print_result 0 "No HTML files to check"
+        TEST_NAME="$TEST_NAME {BLUE}(htmlhint: 0 files){RESET}"
+
         ((PASS_COUNT++))
     fi
 else

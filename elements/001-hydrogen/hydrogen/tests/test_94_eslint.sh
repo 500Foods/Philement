@@ -9,7 +9,7 @@
 # 1.0.0 - Initial version for JavaScript linting
 
 # Test configuration
-TEST_NAME="JavaScript Linting {BLUE}(eslint){RESET}"
+TEST_NAME="JavaScript Linting"
 SCRIPT_VERSION="2.0.1"
 
 # Get the directory where this script is located
@@ -66,15 +66,6 @@ fi
 if [[ -z "${LINT_EXCLUDES:-}" ]]; then
     readonly LINT_EXCLUDES=(
         "build/*"
-        "build_debug/*"
-        "build_perf/*"
-        "build_release/*"
-        "build_valgrind/*"
-        "tests/logs/*"
-        "tests/results/*"
-        "tests/diagnostics/*"
-        "tests/unity/framework/*"
-        "node_modules/*"
     )
 fi
 
@@ -127,6 +118,8 @@ if command -v eslint >/dev/null 2>&1; then
         TEMP_LOG=$(mktemp)
         
         print_message "Running eslint on $JS_COUNT JavaScript files..."
+        TEST_NAME="$TEST_NAME {BLUE}(eslint: $JS_COUNT files){RESET}"
+
         # Use basic eslint rules if no config exists
         if [ -f ".eslintrc.js" ] || [ -f ".eslintrc.json" ] || [ -f "eslint.config.js" ]; then
             eslint "${JS_FILES[@]}" > "$TEMP_LOG" 2>&1 || true
@@ -155,6 +148,8 @@ if command -v eslint >/dev/null 2>&1; then
         rm -f "$TEMP_LOG"
     else
         print_result 0 "No JavaScript files to check"
+        TEST_NAME="$TEST_NAME {BLUE}(eslint: 0 files){RESET}"
+
         ((PASS_COUNT++))
     fi
 else
