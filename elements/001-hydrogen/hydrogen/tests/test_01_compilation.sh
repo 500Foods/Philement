@@ -107,70 +107,71 @@ else
 fi
 evaluate_test_result_silent "Source files check" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
 
-# Subtest: Setup tmpfs build directory
-next_subtest
-print_subtest "Setup tmpfs Build Directory"
+# # Subtest: Setup tmpfs build directory
+# next_subtest
+# print_subtest "Setup tmpfs Build Directory"
 
-# Check if build directory exists
-if [ -d "build" ]; then
-    print_message "Build directory exists, checking mount status..."
+# # Check if build directory exists
+# if [ -d "build" ]; then
+#     print_message "Build directory exists, checking mount status..."
     
-    # Check if build is already a tmpfs mount
-    if mountpoint -q build 2>/dev/null; then
-        print_message "Build directory already mounted as tmpfs, emptying contents..."
-        print_command "rm -rf build/*"
-        if rm -rf build/* 2>/dev/null; then
-            print_result 0 "Build directory (tmpfs) emptied and ready for use"
-        else
-            print_result 1 "Failed to empty tmpfs build directory"
-            EXIT_CODE=1
-        fi
-    else
-        # Empty the regular directory and mount as tmpfs
-        print_message "Emptying regular build directory..."
-        print_command "rm -rf build/*"
-        if rm -rf build/* 2>/dev/null; then
-            print_message "Successfully emptied build directory"
+#     # Check if build is already a tmpfs mount
+#     if mountpoint -q build 2>/dev/null; then
+#         print_message "Build directory already mounted as tmpfs, emptying contents..."
+#         print_command "rm -rf build/*"
+#         if rm -rf build/* 2>/dev/null; then
+#             print_result 0 "Build directory (tmpfs) emptied and ready for use"
+#         else
+#             print_result 1 "Failed to empty tmpfs build directory"
+#             EXIT_CODE=1
+#         fi
+#     else
+#         # Empty the regular directory and mount as tmpfs
+#         print_message "Emptying regular build directory..."
+#         print_command "rm -rf build/*"
+#         if rm -rf build/* 2>/dev/null; then
+#             print_message "Successfully emptied build directory"
             
-            # Mount as tmpfs
-            print_message "Mounting 'build' as tmpfs with 1GB size..."
-            print_command "sudo mount -t tmpfs -o size=1G tmpfs build"
-            if sudo mount -t tmpfs -o size=1G tmpfs build 2>/dev/null; then
-                print_result 0 "Build directory mounted as tmpfs (1GB) for faster I/O"
-                print_message "Warning: tmpfs is volatile; artifacts will be lost on unmount/reboot"
-            else
-                print_result 0 "Build directory ready (tmpfs mount failed, using regular filesystem)"
-                print_message "Continuing with regular filesystem build directory"
-            fi
-        else
-            print_result 1 "Failed to empty 'build' directory"
-            EXIT_CODE=1
-        fi
-    fi
-else
-    # Create the build directory and mount as tmpfs
-    print_message "Creating 'build' directory..."
-    print_command "mkdir build"
-    if mkdir build 2>/dev/null; then
-        print_message "Successfully created build directory"
+#             # Mount as tmpfs
+#             print_message "Mounting 'build' as tmpfs with 1GB size..."
+#             print_command "sudo mount -t tmpfs -o size=1G tmpfs build"
+#             if sudo mount -t tmpfs -o size=1G tmpfs build 2>/dev/null; then
+#                 print_result 0 "Build directory mounted as tmpfs (1GB) for faster I/O"
+#                 print_message "Warning: tmpfs is volatile; artifacts will be lost on unmount/reboot"
+#             else
+#                 print_result 0 "Build directory ready (tmpfs mount failed, using regular filesystem)"
+#                 print_message "Continuing with regular filesystem build directory"
+#             fi
+#         else
+#             print_result 1 "Failed to empty 'build' directory"
+#             EXIT_CODE=1
+#         fi
+#     fi
+# else
+#     # Create the build directory and mount as tmpfs
+#     print_message "Creating 'build' directory..."
+#     print_command "mkdir build"
+#     if mkdir build 2>/dev/null; then
+#         print_message "Successfully created build directory"
         
-        # Mount as tmpfs
-        print_message "Mounting 'build' as tmpfs with 1GB size..."
-        print_command "sudo mount -t tmpfs -o size=1G tmpfs build"
-        if sudo mount -t tmpfs -o size=1G tmpfs build 2>/dev/null; then
-            print_result 0 "Build directory created and mounted as tmpfs (1GB) for faster I/O"
-            print_message "Warning: tmpfs is volatile; artifacts will be lost on unmount/reboot"
-        else
-            print_result 0 "Build directory created (tmpfs mount failed, using regular filesystem)"
-            print_message "Continuing with regular filesystem build directory"
-        fi
-    else
-        print_result 1 "Failed to create 'build' directory"
-        EXIT_CODE=1
-    fi
-fi
+#         # Mount as tmpfs
+#         print_message "Mounting 'build' as tmpfs with 1GB size..."
+#         print_command "sudo mount -t tmpfs -o size=1G tmpfs build"
+#         if sudo mount -t tmpfs -o size=1G tmpfs build 2>/dev/null; then
+#             print_result 0 "Build directory created and mounted as tmpfs (1GB) for faster I/O"
+#             print_message "Warning: tmpfs is volatile; artifacts will be lost on unmount/reboot"
+#         else
+#             print_result 0 "Build directory created (tmpfs mount failed, using regular filesystem)"
+#             print_message "Continuing with regular filesystem build directory"
+#         fi
+#     else
+#         print_result 1 "Failed to create 'build' directory"
+#         EXIT_CODE=1
+#     fi
+# fi
 
-evaluate_test_result_silent "Setup tmpfs build directory" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
+# evaluate_test_result_silent "Setup tmpfs build directory" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
+# mkdir -p "${BUILD_DIR}" "${BUILD_DIR}/tests" "${RESULTS_DIR}" "${BUILD_DIR}/tests/logs" "${BUILD_DIR}/tests/diagnostics"
 
 # Function to download Unity framework if missing
 download_unity_framework() {
