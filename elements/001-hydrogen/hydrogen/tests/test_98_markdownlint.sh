@@ -124,12 +124,58 @@ if command -v markdownlint >/dev/null 2>&1; then
     if [ "$MD_COUNT" -gt 0 ]; then
         TEMP_LOG=$(mktemp)
         FILTERED_LOG=$(mktemp)
+        TEMP_NEW_LOG=$(mktemp)
         
-        # Run markdownlint on all files at once for better performance
-        print_message "Running markdownlint on $MD_COUNT files..."
-        if ! markdownlint --config ".lintignore-markdown" "${MD_FILES[@]}" 2> "$TEMP_LOG"; then
-            # markdownlint failed, but we'll check the output for actual issues
-            :
+        # Cache directory for markdownlint results
+        CACHE_DIR="$HOME/.markdownlint"
+        mkdir -p "$CACHE_DIR"
+        
+        # Function to get file hash (using md5sum or equivalent)
+        get_file_hash() {
+            if command -v md5sum >/dev/null 2>&1; then
+                md5sum "$1" | awk '{print $1}'
+            else
+                md5 -q "$1" 2>/dev/null || sha1sum "$1" | awk '{print $1}'
+            fi
+        }
+        
+        # Categorize files for caching
+        cached_files=0
+        to_process_files=()
+        processed_files=0
+        
+        for file in "${MD_FILES[@]}"; do
+            file_hash=$(get_file_hash "$file")
+            cache_file="$CACHE_DIR/$(basename "$file")_$file_hash"
+            if [ -f "$cache_file" ]; then
+                ((cached_files++))
+                cat "$cache_file" >> "$TEMP_LOG" 2>&1 || true
+            else
+                to_process_files+=("$file")
+                ((processed_files++))
+            fi
+        done
+        
+        print_message "Using cached results for $cached_files files, processing $processed_files files out of $MD_COUNT..."
+        
+        # Run markdownlint on files that need processing
+        if [ $processed_files -gt 0 ]; then
+            print_message "Running markdownlint on $processed_files files..."
+            if ! markdownlint --config ".lintignore-markdown" "${to_process_files[@]}" 2> "$TEMP_NEW_LOG"; then
+                # markdownlint failed, but we'll check the output for actual issues
+                :
+            fi
+            
+            # Cache new results
+            for file in "${to_process_files[@]}"; do
+                file_hash=$(get_file_hash "$file")
+                cache_file="$CACHE_DIR/$(basename "$file")_$file_hash"
+                grep "^$file:" "$TEMP_NEW_LOG" > "$cache_file" || true
+            done
+            
+            # Append new results to total output
+            cat "$TEMP_NEW_LOG" >> "$TEMP_LOG" 2>&1 || true
+            rm -f "$TEMP_NEW_LOG"
         fi
         
         if [ -s "$TEMP_LOG" ]; then

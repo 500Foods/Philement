@@ -23,7 +23,7 @@
 # 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
 
 # Test Configuration
-TEST_NAME="System API Endpoints"
+TEST_NAME="System API"
 SCRIPT_VERSION="3.2.1"
 
 # Get the directory where this script is located
