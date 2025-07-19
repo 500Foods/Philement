@@ -60,7 +60,7 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_24_signals.sh](docs/test_24_signals.md)**: Tests signal handling (e.g., SIGINT, SIGTERM, SIGHUP).
 - **[test_26_shutdown.sh](docs/test_26_shutdown.md)**: Tests the shutdown functionality of the application with a minimal configuration.
 - **[test_28_socket_rebind.sh](docs/test_28_socket_rebind.md)**: Tests socket rebinding behavior.
-- **[test_29_api_prefixes.sh](docs/test_29_api_prefixes.md)**: Validates API prefix configurations.
+- **[test_29_api_prefix.sh](docs/test_29_api_prefix.md)**: Validates API prefix configurations.
 - **[test_32_system_endpoints.sh](docs/test_32_system_endpoints.md)**: Tests system endpoint functionality.
 - **[test_34_swagger.sh](docs/test_34_swagger.md)**: Verifies Swagger documentation and UI integration.
 - **[test_36_websockets.sh](docs/test_36_websockets.md)**: Tests WebSocket server functionality and integration.
