@@ -9,7 +9,7 @@
 # 1.0.0 - Initial version for JavaScript linting
 
 # Test configuration
-TEST_NAME="JavaScript Linting (eslint)"
+TEST_NAME="JavaScript Linting {BLUE}(eslint){RESET}"
 SCRIPT_VERSION="2.0.1"
 
 # Get the directory where this script is located

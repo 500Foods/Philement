@@ -10,7 +10,7 @@
 # 1.0.0 - Initial version for shell script analysis
 
 # Test configuration
-TEST_NAME="Shell Script Analysis (shellcheck)"
+TEST_NAME="Shell Script Analysis {BLUE}(shellcheck){RESET}"
 SCRIPT_VERSION="3.0.0"
 
 # Get the directory where this script is located

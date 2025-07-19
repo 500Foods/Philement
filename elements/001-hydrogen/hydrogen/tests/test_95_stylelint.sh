@@ -9,7 +9,7 @@
 # 1.0.0 - Initial version for CSS linting
 
 # Test configuration
-TEST_NAME="CSS Linting (stylelint)"
+TEST_NAME="CSS Linting {BLUE}(stylelint){RESET}"
 SCRIPT_VERSION="2.0.1"
 
 # Get the directory where this script is located
