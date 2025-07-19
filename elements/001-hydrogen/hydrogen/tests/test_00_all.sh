@@ -391,21 +391,26 @@ done
 # Function to perform cleanup before test execution
 perform_cleanup() {
     # Silently perform cleanup before test execution
+    # find "${BUILD_DIR:?}" -maxdepth 1 -not -path "${BUILD_DIR:?}" -exec rm -rf {} +
+    rm -rf "${BUILD_DIR:?}" > /dev/null 2>&1
+
+    # Build necessary folders
+    mkdir -p "${BUILD_DIR}" "${BUILD_DIR}/tests" "${RESULTS_DIR}" "${BUILD_DIR}/tests/logs" "${BUILD_DIR}/tests/diagnostics"
+
+    # # Define directories to clean
+    # local dirs_to_clean=(
+    #     "$SCRIPT_DIR/logs"
+    #     "$SCRIPT_DIR/results"
+    #     "$SCRIPT_DIR/diagnostics"
+    #     "$SCRIPT_DIR/../build"
+    # )
     
-    # Define directories to clean
-    local dirs_to_clean=(
-        "$SCRIPT_DIR/logs"
-        "$SCRIPT_DIR/results"
-        "$SCRIPT_DIR/diagnostics"
-        "$SCRIPT_DIR/../build"
-    )
-    
-    # Remove directories and their contents silently
-    for dir in "${dirs_to_clean[@]}"; do
-        if [ -d "$dir" ]; then
-            rm -rf "$dir" > /dev/null 2>&1
-        fi
-    done
+    # # Remove directories and their contents silently
+    # for dir in "${dirs_to_clean[@]}"; do
+    #     if [ -d "$dir" ]; then
+    #         rm -rf "$dir" > /dev/null 2>&1
+    #     fi
+    # done
     
     # Remove hydrogen executables silently
     local hydrogen_exe="$SCRIPT_DIR/../hydrogen"
@@ -422,16 +427,15 @@ perform_cleanup() {
     fi
 }
 
+
 # Get start time
 START_TIME=$(date +%s.%N 2>/dev/null || date +%s)
 
 # Print beautiful test suite header in blue
 print_test_suite_header "$TEST_NAME" "$SCRIPT_VERSION"
 
-# Perform cleanup before starting tests (unless skipping tests)
-if [ "$SKIP_TESTS" = false ]; then
-    perform_cleanup
-fi
+# Perform cleanup before starting tests
+perform_cleanup
 
 # Function to run a single test and capture results
 run_single_test() {

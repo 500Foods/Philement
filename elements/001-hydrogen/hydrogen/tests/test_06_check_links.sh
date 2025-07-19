@@ -103,7 +103,7 @@ print_subtest "Execute Markdown Link Check"
 
 # Create temporary file to capture output
 TEMP_OUTPUT=$(mktemp)
-MARKDOWN_RESULT_LOG="$RESULTS_DIR/markdown_links_check_${TIMESTAMP}.log"
+MARKDOWN_RESULT_LOG="$RESULTS_DIR/markdown_links_check_${TIMESTAMP}.log.ansi"
 
 print_message "Running markdown link check on $TARGET_README..."
 print_command "bash $SITEMAP_SCRIPT $TARGET_README --noreport --quiet"
@@ -116,10 +116,11 @@ SITEMAP_EXIT_CODE=$?
 cp "$TEMP_OUTPUT" "$MARKDOWN_RESULT_LOG"
 
 # Display the output
-print_message "Sitemap check output:"
-while IFS= read -r line; do
-    print_output "$line"
-done < "$TEMP_OUTPUT"
+print_message "Results saved to $MARKDOWN_RESULT_LOG"
+# print_message "Sitemap check output:"
+# while IFS= read -r line; do
+#     print_output "$line"
+# done < "$TEMP_OUTPUT"
 
 if [ $SITEMAP_EXIT_CODE -eq 0 ]; then
     print_result 0 "Markdown link check executed successfully with no issues"
@@ -246,7 +247,6 @@ print_message "Link check summary:"
 print_output "Total issues found: $ISSUES_FOUND"
 print_output "Missing links: $MISSING_LINKS_COUNT"
 print_output "Orphaned files: $ORPHANED_FILES_COUNT"
-print_output "Detailed report saved to: $MARKDOWN_RESULT_LOG"
 
 # Validate counts against exit code from github-sitemap.sh for debugging
 # Ensure counts are numeric before performing arithmetic
