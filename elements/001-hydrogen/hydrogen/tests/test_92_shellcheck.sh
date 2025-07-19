@@ -4,13 +4,14 @@
 # Performs shellcheck analysis and exception justification checking
 
 # CHANGELOG
+# 3.0.0 - 2025-07-18 - Added caching mechanism for shellcheck results, improved parallel processing, and optimized output handling
 # 2.0.1 - 2025-07-18 - Fixed subshell issue in shellcheck output that prevented detailed error messages from being displayed in test output
 # 2.0.0 - 2025-07-14 - Upgraded to use new modular test framework
 # 1.0.0 - Initial version for shell script analysis
 
 # Test configuration
 TEST_NAME="Shell Script Analysis (shellcheck)"
-SCRIPT_VERSION="2.0.1"
+SCRIPT_VERSION="3.0.0"
 
 # Get the directory where this script is located
 TEST_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -138,13 +139,20 @@ if command -v shellcheck >/dev/null 2>&1; then
     TEMP_OUTPUT=$(mktemp)
     
     if [ "$SHELL_COUNT" -gt 0 ]; then
-        print_message "Running shellcheck on $SHELL_COUNT shell scripts..."
+        print_message "Running shellcheck on $SHELL_COUNT shell scripts with caching..."
         
-        # Optimized unified approach: Process all files together with size-based batching
-        # This eliminates directory switching overhead while maintaining optimal load balancing
-        # Large files (>400 lines) get processed individually
-        # Medium files (100-400 lines) get processed in groups of 3-4  
-        # Small files (<100 lines) get processed in larger batches (8-12 files per job)
+        # Cache directory for shellcheck results
+        CACHE_DIR="$HOME/.shellcheck"
+        mkdir -p "$CACHE_DIR"
+        
+        # Function to get file hash (using md5sum or equivalent)
+        get_file_hash() {
+            if command -v md5sum >/dev/null 2>&1; then
+                md5sum "$1" | awk '{print $1}'
+            else
+                md5 -q "$1" 2>/dev/null || sha1sum "$1" | awk '{print $1}'
+            fi
+        }
         
         # Function to get file line count
         get_line_count() {
@@ -155,17 +163,29 @@ if command -v shellcheck >/dev/null 2>&1; then
         large_files=()
         medium_files=()
         small_files=()
+        cached_files=0
+        processed_files=0
         
         for file in "${SHELL_FILES[@]}"; do
-            lines=$(get_line_count "$file")
-            if [ "$lines" -gt 400 ]; then
-                large_files+=("$file")
-            elif [ "$lines" -gt 100 ]; then
-                medium_files+=("$file")
+            file_hash=$(get_file_hash "$file")
+            cache_file="$CACHE_DIR/$(basename "$file")_$file_hash"
+            if [ -f "$cache_file" ]; then
+                ((cached_files++))
+                cat "$cache_file" >> "$TEMP_OUTPUT" 2>&1 || true
             else
-                small_files+=("$file")
+                lines=$(get_line_count "$file")
+                if [ "$lines" -gt 400 ]; then
+                    large_files+=("$file")
+                elif [ "$lines" -gt 100 ]; then
+                    medium_files+=("$file")
+                else
+                    small_files+=("$file")
+                fi
+                ((processed_files++))
             fi
         done
+        
+        print_message "Using cached results for $cached_files files, processing $processed_files files..."
         
         # Build shellcheck exclusion arguments from .lintignore-bash file
         SHELLCHECK_EXCLUDES=(-e SC1091 -e SC2317 -e SC2034)  # Default exclusions as array
@@ -179,6 +199,9 @@ if command -v shellcheck >/dev/null 2>&1; then
                 fi
             done < ".lintignore-bash"
         fi
+        
+        # Temporary file to store new results for caching
+        TEMP_NEW_OUTPUT=$(mktemp)
         
         # Process large files individually (they take the most time)
         if [ ${#large_files[@]} -gt 0 ]; then
@@ -204,6 +227,46 @@ if command -v shellcheck >/dev/null 2>&1; then
             fi
             printf '%s\n' "${small_files[@]}" | \
             xargs -n "$small_batch_size" -P "$CORES" shellcheck "${SHELLCHECK_EXCLUDES[@]}" -f gcc >> "$TEMP_OUTPUT" 2>&1 || true
+        fi
+        
+        # Process new files and cache results
+        if [ $processed_files -gt 0 ]; then
+            # Process large files individually (they take the most time)
+            if [ ${#large_files[@]} -gt 0 ]; then
+                printf '%s\n' "${large_files[@]}" | \
+                xargs -n 1 -P "$CORES" shellcheck "${SHELLCHECK_EXCLUDES[@]}" -f gcc >> "$TEMP_NEW_OUTPUT" 2>&1 || true
+            fi
+            
+            # Process medium files in groups of 3-4
+            if [ ${#medium_files[@]} -gt 0 ]; then
+                medium_batch_size=3
+                if [ ${#medium_files[@]} -gt "$((CORES * 4))" ]; then
+                    medium_batch_size=4
+                fi
+                printf '%s\n' "${medium_files[@]}" | \
+                xargs -n "$medium_batch_size" -P "$CORES" shellcheck "${SHELLCHECK_EXCLUDES[@]}" -f gcc >> "$TEMP_NEW_OUTPUT" 2>&1 || true
+            fi
+            
+            # Process small files in larger batches (8-12 files per job)
+            if [ ${#small_files[@]} -gt 0 ]; then
+                small_batch_size=8
+                if [ ${#small_files[@]} -gt "$((CORES * 8))" ]; then
+                    small_batch_size=12
+                fi
+                printf '%s\n' "${small_files[@]}" | \
+                xargs -n "$small_batch_size" -P "$CORES" shellcheck "${SHELLCHECK_EXCLUDES[@]}" -f gcc >> "$TEMP_NEW_OUTPUT" 2>&1 || true
+            fi
+            
+            # Cache new results
+            for file in "${large_files[@]}" "${medium_files[@]}" "${small_files[@]}"; do
+                file_hash=$(get_file_hash "$file")
+                cache_file="$CACHE_DIR/$(basename "$file")_$file_hash"
+                grep "^$file:" "$TEMP_NEW_OUTPUT" > "$cache_file" || true
+            done
+            
+            # Append new results to total output
+            cat "$TEMP_NEW_OUTPUT" >> "$TEMP_OUTPUT" 2>&1 || true
+            rm -f "$TEMP_NEW_OUTPUT"
         fi
         
         # Filter output to show clean relative paths
