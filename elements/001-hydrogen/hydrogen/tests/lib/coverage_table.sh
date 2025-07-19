@@ -358,8 +358,8 @@ echo ']' >> "$data_json"
 # Create layout JSON for the coverage table (now with correct totals and counts)
 cat > "$layout_json" << EOF
 {
-    "title": "Test Suite Coverage {NC}{RED}———{RESET}{BOLD}{CYAN} Unity: {WHITE}${unity_total_pct}% {RESET}{RED}———{RESET}{BOLD}{CYAN} Blackbox: {WHITE}${coverage_total_pct}% {RESET}{RED}———{RESET}{BOLD}{CYAN} Combined: {WHITE}${combined_total_pct}%{RESET}",
-    "footer": "{YELLOW}Zero Coverage:{RESET} {WHITE}${zero_coverage_count}{RESET} {RED}———{RESET} {MAGENTA}100+ Lines && < 50% Coverage:{RESET} {WHITE}${low_coverage_count}{RESET} {RED}———{RESET} {CYAN}${display_timestamp}{RESET}",
+    "title": "Test Suite Coverage {NC}{RED}———{RESET}{BOLD}{CYAN} Unity {WHITE}${unity_total_pct}% {RESET}{RED}———{RESET}{BOLD}{CYAN} Blackbox {WHITE}${coverage_total_pct}% {RESET}{RED}———{RESET}{BOLD}{CYAN} Combined {WHITE}${combined_total_pct}%{RESET}",
+    "footer": "{YELLOW}Zero Coverage{RESET} {WHITE}${zero_coverage_count}{RESET} {RED}———{RESET} {MAGENTA}100+ Lines < 50% Coverage{RESET} {WHITE}${low_coverage_count}{RESET} {RED}———{RESET} {CYAN}Timestamp {WHITE}${display_timestamp}{RESET}",
     "footer_position": "right",
     "theme": "Red",
     "columns": [
