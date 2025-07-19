@@ -9,6 +9,7 @@
 # - Uses immediate restart without waiting for TIME_WAIT (SO_REUSEADDR enabled)
 
 # CHANGELOG
+# 1.1.2 - 2025-07-19 - Bit of tidying up to get rid of steps we don't need
 # 1.1.1 - 2025-07-18 - Fixed subshell issue in server log output that prevented detailed error messages from being displayed in test output
 # 1.1.0 - 2025-07-15 - Added WebSocket status request test to improve coverage of websocket_server_status.c
 # 1.0.3 - 2025-07-14 - Enhanced test_websocket_connection with retry logic to handle WebSocket subsystem initialization delays during parallel execution
@@ -590,7 +591,7 @@ if [ $EXIT_CODE -eq 0 ]; then
     
     # Test with custom WebSocket configuration - immediate restart
     print_message "Starting second test immediately (testing SO_REUSEADDR)..."
-    test_websocket_configuration "$CONFIG_2" "5202" "hydrogen-test" "websocket_custom" 2
+    test_websocket_configuration "$CONFIG_2" "5101" "hydrogen-test" "websocket_custom" 2
     
     print_message "Immediate restart successful - SO_REUSEADDR is working!"
     

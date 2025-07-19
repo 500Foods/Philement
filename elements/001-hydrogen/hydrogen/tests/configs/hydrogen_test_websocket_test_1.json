@@ -11,7 +11,7 @@
     "WebServer": {
         "EnableIPv4": true,
         "EnableIPv6": true,
-        "Port": 5000,
+        "Port": 5100,
         "WebRoot": "/var/www/html",
         "UploadPath": "/api/upload",
         "UploadDir": "/tmp/hydrogen_uploads",
