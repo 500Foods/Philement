@@ -9,7 +9,7 @@
 # 1.0.0 - Initial version for CSS linting
 
 # Test configuration
-TEST_NAME="CSS Linting {BLUE}(stylelint){RESET}"
+TEST_NAME="CSS Linting"
 SCRIPT_VERSION="2.0.1"
 
 # Get the directory where this script is located
@@ -66,15 +66,6 @@ fi
 if [[ -z "${LINT_EXCLUDES:-}" ]]; then
     readonly LINT_EXCLUDES=(
         "build/*"
-        "build_debug/*"
-        "build_perf/*"
-        "build_release/*"
-        "build_valgrind/*"
-        "tests/logs/*"
-        "tests/results/*"
-        "tests/diagnostics/*"
-        "tests/unity/framework/*"
-        "node_modules/*"
     )
 fi
 
@@ -127,6 +118,8 @@ if command -v stylelint >/dev/null 2>&1; then
         TEMP_LOG=$(mktemp)
         
         print_message "Running stylelint on $CSS_COUNT CSS files..."
+        TEST_NAME="$TEST_NAME {BLUE}(stylelint: $CSS_COUNT files){RESET}"
+
         # Use basic stylelint rules if no config exists
         if [ -f ".stylelintrc.json" ] || [ -f ".stylelintrc.js" ] || [ -f "stylelint.config.js" ]; then
             stylelint "${CSS_FILES[@]}" > "$TEMP_LOG" 2>&1 || true
@@ -157,6 +150,8 @@ if command -v stylelint >/dev/null 2>&1; then
         rm -f "$TEMP_LOG"
     else
         print_result 0 "No CSS files to check"
+        TEST_NAME="$TEST_NAME {BLUE}(stylelint: 0 files){RESET}"
+
         ((PASS_COUNT++))
     fi
 else

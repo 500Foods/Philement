@@ -8,7 +8,7 @@
 # 1.0.0 - Initial version for JSON linting
 
 # Test configuration
-TEST_NAME="JSON Linting {BLUE}(jsonlint){RESET}"
+TEST_NAME="JSON Linting"
 SCRIPT_VERSION="2.0.0"
 
 # Get the directory where this script is located
@@ -59,13 +59,6 @@ fi
 if [[ -z "${LINT_EXCLUDES:-}" ]]; then
     readonly LINT_EXCLUDES=(
         "build/*"
-        "build_debug/*"
-        "build_perf/*"
-        "build_release/*"
-        "build_valgrind/*"
-        "tests/logs/*"
-        "tests/results/*"
-        "tests/diagnostics/*"
     )
 fi
 
@@ -125,6 +118,8 @@ if command -v jq >/dev/null 2>&1; then
     
     if [ "$JSON_COUNT" -gt 0 ]; then
         print_message "Checking $JSON_COUNT JSON files..."
+        TEST_NAME="$TEST_NAME {BLUE}(jsonlint: $JSON_COUNT files){RESET}"
+
         for file in "${JSON_FILES[@]}"; do
             if ! jq . "$file" >/dev/null 2>&1; then
                 if [[ "$file" == *"hydrogen_test_json.json" ]]; then
