@@ -10,7 +10,7 @@
 # 1.0.0 - Initial version for shell script analysis
 
 # Test configuration
-TEST_NAME="Shell Script Analysis {BLUE}(shellcheck){RESET}"
+TEST_NAME="Shell Linting"
 SCRIPT_VERSION="3.0.0"
 
 # Get the directory where this script is located
@@ -140,7 +140,8 @@ if command -v shellcheck >/dev/null 2>&1; then
     
     if [ "$SHELL_COUNT" -gt 0 ]; then
         print_message "Running shellcheck on $SHELL_COUNT shell scripts with caching..."
-        
+        TEST_NAME="$TEST_NAME {BLUE}(shellheck: $SHELL_COUNT files){RESET}"        
+
         # Cache directory for shellcheck results
         CACHE_DIR="$HOME/.shellcheck"
         mkdir -p "$CACHE_DIR"

@@ -9,7 +9,7 @@
 # 1.0.0 - Initial version for markdown linting
 
 # Test configuration
-TEST_NAME="Markdown Linting {BLUE}(markdownlint){RESET}"
+TEST_NAME="Markdown Linting"
 SCRIPT_VERSION="2.0.1"
 
 # Get the directory where this script is located
@@ -157,7 +157,8 @@ if command -v markdownlint >/dev/null 2>&1; then
         done
         
         print_message "Using cached results for $cached_files files, processing $processed_files files out of $MD_COUNT..."
-        
+        TEST_NAME="$TEST_NAME {BLUE}(markdownlint: $MD_COUNT files){RESET}"
+
         # Run markdownlint on files that need processing
         if [ $processed_files -gt 0 ]; then
             print_message "Running markdownlint on $processed_files files..."

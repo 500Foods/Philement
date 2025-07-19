@@ -9,7 +9,7 @@
 # 1.0.0 - Initial version for C/C++ code analysis
 
 # Test configuration
-TEST_NAME="C/C++ Code Analysis {BLUE}(cppcheck){RESET}"
+TEST_NAME="C Linting"
 SCRIPT_VERSION="2.0.1"
 
 # Get the directory where this script is located
@@ -190,6 +190,7 @@ if command -v cppcheck >/dev/null 2>&1; then
     
     C_COUNT=${#C_FILES_TO_CHECK[@]}
     print_message "Running cppcheck on $C_COUNT files..."
+    TEST_NAME="$TEST_NAME {BLUE}(cppcheck: $C_COUNT files){RESET}"    
     
     CPPCHECK_OUTPUT=$(run_cppcheck ".")
     
