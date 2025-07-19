@@ -450,7 +450,7 @@ if check_unity_tests_available; then
     if run_unity_tests; then
         # Update TEST_NAME to include test results for concise display
         if [ -n "$TOTAL_UNITY_TESTS" ] && [ -n "$TOTAL_UNITY_PASSED" ]; then
-            TEST_NAME="Unity Unit Tests ($(printf "%'d" "$TOTAL_UNITY_PASSED") / $(printf "%'d" "$TOTAL_UNITY_TESTS"))"
+            TEST_NAME="Unity {BLUE}($(printf "%'d" "$TOTAL_UNITY_PASSED") / $(printf "%'d" "$TOTAL_UNITY_TESTS") unit tests passed){RESET}"
         fi
     else
         EXIT_CODE=1

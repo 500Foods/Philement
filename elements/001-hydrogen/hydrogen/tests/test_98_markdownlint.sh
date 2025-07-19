@@ -9,7 +9,7 @@
 # 1.0.0 - Initial version for markdown linting
 
 # Test configuration
-TEST_NAME="Markdown Linting (markdownlint)"
+TEST_NAME="Markdown Linting {BLUE}(markdownlint){RESET}"
 SCRIPT_VERSION="2.0.1"
 
 # Get the directory where this script is located

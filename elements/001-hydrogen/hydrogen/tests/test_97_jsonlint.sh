@@ -8,7 +8,7 @@
 # 1.0.0 - Initial version for JSON linting
 
 # Test configuration
-TEST_NAME="JSON Linting (jsonlint)"
+TEST_NAME="JSON Linting {BLUE}(jsonlint){RESET}"
 SCRIPT_VERSION="2.0.0"
 
 # Get the directory where this script is located
