@@ -20,7 +20,7 @@
         "JWTSecret": "${env.RESTAPI_JWTSECRET}"
     },
     "WebSocketServer": {
-        "Enabled": "${env.WEBSOCKET_ENABLED}",
+        "EnableIPv4": "${env.WEBSOCKET_ENABLEIPV4}",
         "EnableIPv6": "${env.WEBSOCKET_ENABLEIPV6}",
         "Port": "${env.WEBSOCKET_PORT}",
         "LibLogLevel": "${env.WEBSOCKET_LIBLOGLEVEL}",
