@@ -18,11 +18,14 @@
     <text x="20.00" y="50.8" font-size="14" class="terminal-text" xml:space="preserve" textLength="16.80" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│ </text>
     <text x="36.80" y="50.8" font-size="14" class="terminal-text" xml:space="preserve" textLength="168.00" lengthAdjust="spacingAndGlyphs" fill="#e5e5e5" font-weight="bold">Test Suite Coverage </text>
     <text x="204.80" y="50.8" font-size="14" class="terminal-text" xml:space="preserve" textLength="25.20" lengthAdjust="spacingAndGlyphs" fill="#cd3131">———</text>
-    <text x="230.00" y="50.8" font-size="14" class="terminal-text" xml:space="preserve" textLength="126.00" lengthAdjust="spacingAndGlyphs" fill="#ffffff" font-weight="bold"> Unity: 2.220% </text>
+    <text x="230.00" y="50.8" font-size="14" class="terminal-text" xml:space="preserve" textLength="67.20" lengthAdjust="spacingAndGlyphs" fill="#11a8cd"> Unity: </text>
+    <text x="297.20" y="50.8" font-size="14" class="terminal-text" xml:space="preserve" textLength="58.80" lengthAdjust="spacingAndGlyphs" fill="#e5e5e5" font-weight="bold">2.220% </text>
     <text x="356.00" y="50.8" font-size="14" class="terminal-text" xml:space="preserve" textLength="25.20" lengthAdjust="spacingAndGlyphs" fill="#cd3131">———</text>
-    <text x="381.20" y="50.8" font-size="14" class="terminal-text" xml:space="preserve" textLength="159.60" lengthAdjust="spacingAndGlyphs" fill="#ffffff" font-weight="bold"> Blackbox: 52.024% </text>
+    <text x="381.20" y="50.8" font-size="14" class="terminal-text" xml:space="preserve" textLength="92.40" lengthAdjust="spacingAndGlyphs" fill="#11a8cd"> Blackbox: </text>
+    <text x="473.60" y="50.8" font-size="14" class="terminal-text" xml:space="preserve" textLength="67.20" lengthAdjust="spacingAndGlyphs" fill="#e5e5e5" font-weight="bold">52.024% </text>
     <text x="540.80" y="50.8" font-size="14" class="terminal-text" xml:space="preserve" textLength="25.20" lengthAdjust="spacingAndGlyphs" fill="#cd3131">———</text>
-    <text x="566.00" y="50.8" font-size="14" class="terminal-text" xml:space="preserve" textLength="151.20" lengthAdjust="spacingAndGlyphs" fill="#ffffff" font-weight="bold"> Combined: 52.733%</text>
+    <text x="566.00" y="50.8" font-size="14" class="terminal-text" xml:space="preserve" textLength="92.40" lengthAdjust="spacingAndGlyphs" fill="#11a8cd"> Combined: </text>
+    <text x="658.40" y="50.8" font-size="14" class="terminal-text" xml:space="preserve" textLength="58.80" lengthAdjust="spacingAndGlyphs" fill="#e5e5e5" font-weight="bold">52.733%</text>
     <text x="717.20" y="50.8" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> </text>
     <text x="725.60" y="50.8" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
     <text x="20.00" y="67.6" font-size="14" class="terminal-text" xml:space="preserve" textLength="840.00" lengthAdjust="spacingAndGlyphs" fill="#cd3131">├─────────┬────────┬────────────────────────────────────────────────────┬────────┬──┴─────┬────────╮</text>
@@ -1726,7 +1729,7 @@
     <text x="608.00" y="2554.0" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> </text>
     <text x="616.40" y="2554.0" font-size="14" class="terminal-text" xml:space="preserve" textLength="25.20" lengthAdjust="spacingAndGlyphs" fill="#cd3131">———</text>
     <text x="641.60" y="2554.0" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> </text>
-    <text x="650.00" y="2554.0" font-size="14" class="terminal-text" xml:space="preserve" textLength="193.20" lengthAdjust="spacingAndGlyphs" fill="#11a8cd">2025-07-19 11:42:47 PDT</text>
+    <text x="650.00" y="2554.0" font-size="14" class="terminal-text" xml:space="preserve" textLength="193.20" lengthAdjust="spacingAndGlyphs" fill="#11a8cd">2025-07-19 12:33:50 PDT</text>
     <text x="843.20" y="2554.0" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> </text>
     <text x="851.60" y="2554.0" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
     <text x="20.00" y="2570.8" font-size="14" class="terminal-text" xml:space="preserve" textLength="840.00" lengthAdjust="spacingAndGlyphs" fill="#cd3131">               ╰───────────────────────────────────────────────────────────────────────────────────╯</text>

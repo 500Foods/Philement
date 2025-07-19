@@ -854,8 +854,8 @@ display_timestamp=$(date '+%Y-%m-%d %H:%M:%S %Z')
 # Create layout JSON string
 
 layout_json_content='{
-    "title": "Test Suite Results {NC}{RED}———{RESET}{BOLD} Unity: '"$UNITY_COVERAGE"'% {RESET}{RED}———{RESET}{BOLD} Blackbox: '"$BLACKBOX_COVERAGE"'% {RESET}{RED}———{RESET}{BOLD} Combined: '"$COMBINED_COVERAGE"'%",
-    "footer": "Cumulative: '"$TOTAL_RUNNING_TIME_FORMATTED"'{RED} ——— {RESET}{CYAN}Elapsed: '"$TOTAL_ELAPSED_FORMATTED"'{RED} ——— {RESET}{CYAN}'"$display_timestamp"'",
+    "title": "Test Suite Results {NC}{RED}———{RESET}{BOLD}{CYAN} Unity: {WHITE}'"$UNITY_COVERAGE"'% {RESET}{RED}———{RESET}{BOLD}{CYAN} Blackbox: {WHITE}'"$BLACKBOX_COVERAGE"'% {RESET}{RED}———{RESET}{BOLD}{CYAN} Combined: {WHITE}'"$COMBINED_COVERAGE"'%{RESET}",
+    "footer": "{CYAN}Cumulative: {WHITE}'"$TOTAL_RUNNING_TIME_FORMATTED"'{RED} ——— {RESET}{CYAN}Elapsed: {WHITE}'"$TOTAL_ELAPSED_FORMATTED"'{RED} ——— {CYAN}Timestamp: {WHITE}'"$display_timestamp"'{RESET}",
     "footer_position": "right",
     "columns": [
         {
