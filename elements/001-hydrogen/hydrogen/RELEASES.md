@@ -3,6 +3,8 @@
 <!--
 CRITICAL INSTRUCTIONS
 
+The dev team for this project is based in Vancouver, so PACIFIC TIME applies
+
 Step 1: Gather Changes
 - Use git log to list ALL changed files for the day with the numbers representing the number of lines added or removed:
   ```
