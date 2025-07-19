@@ -485,7 +485,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_24_signals.sh](tests/test_24_signals.sh) - Signal handling tests
 - [tests/test_26_shutdown.sh](tests/test_26_shutdown.sh) - Shutdown-specific tests
 - [tests/test_28_socket_rebind.sh](tests/test_28_socket_rebind.sh) - Socket rebinding tests
-- [tests/test_29_api_prefixes.sh](tests/test_29_api_prefixes.sh) - API prefix tests
+- [tests/test_29_api_prefix.sh](tests/test_29_api_prefix.sh) - API prefix tests
 - [tests/test_32_system_endpoints.sh](tests/test_32_system_endpoints.sh) - System endpoint tests
 - [tests/test_34_swagger.sh](tests/test_34_swagger.sh) - Swagger functionality tests
 

@@ -241,7 +241,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [test_24_signals.md](tests/docs/test_24_signals.md): Signal handling tests
 - [test_26_shutdown.md](tests/docs/test_26_shutdown.md): Shutdown sequence testing
 - [test_28_socket_rebind.md](tests/docs/test_28_socket_rebind.md): Socket rebinding tests
-- [test_29_api_prefixes.md](tests/docs/test_29_api_prefixes.md): API prefix configuration tests
+- [test_29_api_prefix.md](tests/docs/test_29_api_prefix.md): API prefix configuration tests
 - [test_32_system_endpoints.md](tests/docs/test_32_system_endpoints.md): System endpoint functionality tests
 - [test_34_swagger.md](tests/docs/test_34_swagger.md): Swagger documentation tests
 - [test_36_websockets.md](tests/docs/test_36_websockets.md): WebSocket server functionality and integration tests
