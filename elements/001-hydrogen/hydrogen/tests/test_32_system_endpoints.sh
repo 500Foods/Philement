@@ -551,17 +551,6 @@ else
     FINAL_RESULT=1
 fi
 
-# Clean up response files but preserve logs if test failed
-rm -f "$RESULTS_DIR"/response_*.json "$RESULTS_DIR"/response_*.txt
-
-# Only remove logs if tests were successful
-if [ $FINAL_RESULT -eq 0 ]; then
-    print_message "Tests passed, cleaning up log files..."
-    rm -f "$RESULTS_DIR"/*_server_*.log "$RESULTS_DIR"/*_errors_*.log "$RESULTS_DIR"/*_compression_*.log
-else
-    print_message "Tests failed, preserving log files for analysis in $RESULTS_DIR/"
-fi
-
 # Export results for test_all.sh integration
 # Derive test name from script filename for consistency with test_00_all.sh
 TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
