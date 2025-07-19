@@ -9,7 +9,7 @@
 # 1.0.0 - Initial version for C/C++ code analysis
 
 # Test configuration
-TEST_NAME="C/C++ Code Analysis (cppcheck)"
+TEST_NAME="C/C++ Code Analysis {BLUE}(cppcheck){RESET}"
 SCRIPT_VERSION="2.0.1"
 
 # Get the directory where this script is located

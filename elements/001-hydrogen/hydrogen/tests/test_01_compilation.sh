@@ -98,8 +98,9 @@ next_subtest
 print_subtest "Check Source Files"
 print_command "test -d src && test -f src/hydrogen.c"
 if [ -d "src" ] && [ -f "src/hydrogen.c" ]; then
-    src_count=$(find src -name "*.c" -o -name "*.h" | wc -l)
-    print_result 0 "Source directory found with $src_count C/H files"
+    src_count=$(find . -type f \( -path "./src/*" -o -path "./tests/unity/src/*" \) \( -name "*.c" -o -name "*.h" \) | wc -l)
+    print_result 0 "Source directories found with $src_count source files"
+    TEST_NAME="$TEST_NAME {BLUE}($src_count source files){RESET}"
 else
     print_result 1 "Source files not found - src/hydrogen.c missing"
     EXIT_CODE=1

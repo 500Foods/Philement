@@ -9,7 +9,7 @@
 # 1.0.0 - Initial version for HTML linting
 
 # Test configuration
-TEST_NAME="HTML Linting (htmlhint)"
+TEST_NAME="HTML Linting {BLUE}(htmlhint){RESET}"
 SCRIPT_VERSION="2.0.1"
 
 # Get the directory where this script is located
