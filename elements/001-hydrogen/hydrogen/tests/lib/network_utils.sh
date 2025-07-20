@@ -1,14 +1,20 @@
 #!/bin/bash
 
-# Hydrogen Test Suite - Network Utilities Library
+# Network Utilities Library
 # Provides network-related functions for test scripts, including TIME_WAIT socket management
 
 # CHANGELOG
+# 2.2.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 2.1.0 - 2025-07-18 - Fixed subshell issue in check_time_wait_sockets function that prevented TIME_WAIT socket details from being displayed; added whitespace compression for cleaner output formatting
 # 2.0.0 - 2025-07-02 - Initial creation from support_timewait.sh migration for test_55_socket_rebind.sh
 
-NETWORK_UTILS_NAME="Hydrogen Network Utilities Library"
-NETWORK_UTILS_VERSION="2.1.0"
+# Guard clause to prevent multiple sourcing
+[[ -n "$NETWORK_UTILS_GUARD" ]] && return 0
+export NETWORK_UTILS_GUARD="true"
+
+# Library metadata
+NETWORK_UTILS_NAME="Network Utilities Library"
+NETWORK_UTILS_VERSION="2.2.0"
 
 # Function to check if a port is in use (robust version)
 check_port_in_use() {

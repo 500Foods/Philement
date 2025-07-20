@@ -1,13 +1,19 @@
 #!/bin/bash
 
-# Hydrogen Test Suite - File Utilities Library
+# File Utilities Library
 # Provides file and path manipulation functions for test scripts
 
 # CHANGELOG
+# 1.1.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 1.0.0 - 2025-07-02 - Initial creation from support_utils.sh migration
 
-FILE_UTILS_NAME="Hydrogen File Utilities Library"
-FILE_UTILS_VERSION="1.0.0"
+# Guard clause to prevent multiple sourcing
+[[ -n "$FILE_UTILS_GUARD" ]] && return 0
+export FILE_UTILS_GUARD="true"
+
+# Library metadata
+FILE_UTILS_NAME="File Utilities Library"
+FILE_UTILS_VERSION="1.1.0"
 
 # Function to convert absolute path to path relative to hydrogen project root
 convert_to_relative_path() {

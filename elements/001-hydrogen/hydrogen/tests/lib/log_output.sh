@@ -1,32 +1,10 @@
 #!/bin/bash
 
-# tests/lib/log_output.sh
-# Test Suite - Log Output Library
-
-# Guard clause to prevent multiple sourcing
-if [[ -n "$LOG_OUTPUT_SH_GUARD" ]]; then
-    return 0
-fi
-export LOG_OUTPUT_SH_GUARD="true"
-
+# Log Output Library
 # Provides consistent logging, formatting, and display functions for test scripts
-# ALL output must go through functions in this library - zero exceptions
-
-# OVERVIEW:
-# This library provides a comprehensive logging system for test scripts with:
-# - Consistent color-coded output with icons
-# - Test/subtest numbering and timing
-# - Beautiful table-based headers and completion summaries
-# - Automatic test statistics tracking
-# - Progressive output caching that dumps results each time a new TEST starts
-
-# USAGE:
-# 1. Source this library in your test script
-# 2. Call extract_test_number() and set_test_number() to initialize
-# 3. Use print_* functions for all output
-# 4. Call print_test_completion() at the end
 
 # CHANGELOG
+# 3.3.0 - 2025-07-20 - Updated guard clause to prevent multiple sourcing
 # 3.2.1 - 2025-07-18 - Fixed hanging issue in output collection mechanism when running through orchestrator
 # 3.2.0 - 2025-07-18 - Modified output collection to dump cache when new TEST starts for progressive feedback
 # 3.1.0 - 2025-07-07 - Restructured how test elapsed times are stored and accessed
@@ -39,10 +17,11 @@ export LOG_OUTPUT_SH_GUARD="true"
 # 2.0.0 - 2025-07-02 - Complete rewrite with numbered output system
 # 1.0.0 - 2025-07-02 - Initial creation from support_utils.sh migration
 
-#==============================================================================
-# GLOBAL VARIABLES AND CONSTANTS
-#==============================================================================
+# Guard clause to prevent multiple sourcing
+[[ -n "$LOG_OUTPUT_GUARD" ]] && return 0
+export LOG_OUTPUT_GUARD="true"
 
+# Library metadata
 LOG_OUTPUT_NAME="Log Output Library"
 LOG_OUTPUT_VERSION="3.2.1"
 

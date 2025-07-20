@@ -1,15 +1,20 @@
 #!/bin/bash
 
-# Hydrogen Test Suite - Environment Utilities Library
+# Environment Utilities Library
 # Provides functions for environment variable handling and validation
-# Designed for use in test scripts to ensure required environment variables are set
 
 # CHANGELOG
+# 1.2.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 1.1.0 - 2025-07-02 - Updated with additional functions for test_35_env_variables.sh migration
 # 1.0.0 - 2025-07-02 - Initial creation for test_12_env_payload.sh migration
 
-NAME_SCRIPT="Hydrogen Environment Utilities Library"
-VERS_SCRIPT="1.1.0"
+# Guard clause to prevent multiple sourcing
+[[ -n "$ENV_UTILS_GUARD" ]] && return 0
+export ENV_UTILS_GUARD="true"
+
+# Library metadata
+ENV_UTLIS_NAME="Environment Utilities Library"
+ENV_UTILS_VERSION="1.2.0"
 
 # Function: Check if environment variable is set and non-empty
 # Parameters: $1 - variable name
