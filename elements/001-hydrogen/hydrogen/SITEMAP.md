@@ -5,14 +5,14 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 ## Folder: /
 
 - [README.md](README.md): Main Hydrogen project README - eseentially the Table of Contents for the project
-- [RECIPE.md](RECIPE.md): Instructions for helping AI models (or humans!) that are working on the project
-- [RELEASES.md](RELEASES.md): Version history files
+- [RECIPE.md](RECIPE.md): "Recipe For Success" targetting AI models (or humans!) that are working on the project
+- [RELEASES.md](RELEASES.md): Version history index and instructions
 - [SECRETS.md](SECRETS.md): Outlines how secrets are managed in the project
 - [SETUP.md](SETUP.md): Describes how to setup the dev environment
-- [SITEMAP.md](SITEMAP.md): This file
-- [STRUCTURE.md](STRUCTURE.md): Describes the file layout for the project
-- [COVERAGE.svg](COVERAGE.svg): Visual coverage analysis report (auto-generated)
-- [COMPLETE.svg](COMPLETE.svg): Complete test suite results visualization (auto-generated)
+- [SITEMAP.md](SITEMAP.md): An index to all the Markdown files in the proejct
+- [STRUCTURE.md](STRUCTURE.md): An index to all of the files in the project
+- [COMPLETE.svg](COMPLETE.svg): Latest Test Suite Results table rendered as SVG
+- [COVERAGE.svg](COVERAGE.svg): Latest Test Suite Coverage table rendered as SVG
 
 ## Folder: /extras
 
