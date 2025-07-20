@@ -60,13 +60,6 @@ fi
 SITEMAP_SCRIPT="tests/lib/github-sitemap.sh"
 TARGET_README="README.md"
 
-# These are expected to exist, but are missing mid-test_00_all.sh
-# We're just ensuring that they exist so sitemap doesn't complain
-# Use the same directory structure as RESULTS_DIR
-mkdir -p "$RESULTS_DIR"
-touch "$RESULTS_DIR/repository_info.md"
-touch "$RESULTS_DIR/latest_test_results.md"
-
 # Subtest 1: Validate sitemap script availability
 next_subtest
 print_subtest "Validate GitHub Sitemap Script"

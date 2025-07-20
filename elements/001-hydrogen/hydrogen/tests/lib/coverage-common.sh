@@ -17,10 +17,10 @@ COVERAGE_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COVERAGE_BUILD_DIR="$(dirname "$(dirname "$COVERAGE_SCRIPT_DIR")")/build"
 COVERAGE_RESULTS_DIR="$COVERAGE_BUILD_DIR/tests/results"
 
-UNITY_COVERAGE_FILE="$COVERAGE_RESULTS_DIR/unity_coverage.txt"
-BLACKBOX_COVERAGE_FILE="$COVERAGE_RESULTS_DIR/blackbox_coverage.txt"
-COMBINED_COVERAGE_FILE="$COVERAGE_RESULTS_DIR/combined_coverage.txt"
-OVERLAP_COVERAGE_FILE="$COVERAGE_RESULTS_DIR/overlap_coverage.txt"
+UNITY_COVERAGE_FILE="$COVERAGE_RESULTS_DIR/coverage_unity.txt"
+BLACKBOX_COVERAGE_FILE="$COVERAGE_RESULTS_DIR/coverage_blackbox.txt"
+COMBINED_COVERAGE_FILE="$COVERAGE_RESULTS_DIR/coverage_combined.txt"
+OVERLAP_COVERAGE_FILE="$COVERAGE_RESULTS_DIR/coverage_overlap.txt"
 
 # Function to analyze combined coverage from two gcov files for the same source file
 # Usage: analyze_combined_gcov_coverage <unity_gcov_file> <blackbox_gcov_file>

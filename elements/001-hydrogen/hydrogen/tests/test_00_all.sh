@@ -20,18 +20,26 @@
 TEST_NAME="Test Suite Orchestration"
 SCRIPT_VERSION="4.2.1"
 
-# Get the directory where this script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Sort out directories
+PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
+CMAKE_DIR="$PROJECT_DIR/cmake"
+SCRIPT_DIR="$PROJECT_DIR/tests"
+LIB_DIR="$SCRIPT_DIR/lib"
+BUILD_DIR="$PROJECT_DIR/build"
+TESTS_DIR="$BUILD_DIR/tests"
+RESULTS_DIR="$TESTS_DIR/results"
+DIAGS_DIR="$TESTS_DIR/diagnostics"
+LOGS_DIR="$TESTS_DIR/logs"
 
 # Source the table rendering libraries for the summary
 # shellcheck source=tests/lib/log_output.sh # Resolve path statically
-source "$SCRIPT_DIR/lib/log_output.sh"
+source "$LIB_DIR/log_output.sh"
 # shellcheck source=tests/lib/framework.sh # Resolve path statically
-source "$SCRIPT_DIR/lib/framework.sh"
+source "$LIB_DIR/framework.sh"
 # shellcheck source=tests/lib/cloc.sh # Resolve path statically
-source "$SCRIPT_DIR/lib/cloc.sh"
+source "$LIB_DIR/cloc.sh"
 # shellcheck source=tests/lib/coverage.sh # Resolve path statically
-source "$SCRIPT_DIR/lib/coverage.sh"
+source "$LIB_DIR/coverage.sh"
 
 # Auto-extract test number and set up environment
 TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
@@ -45,11 +53,6 @@ declare -a TEST_SUBTESTS
 declare -a TEST_PASSED
 declare -a TEST_FAILED
 declare -a TEST_ELAPSED
-
-# Results directory
-BUILD_DIR="$SCRIPT_DIR/../build"
-RESULTS_DIR="$BUILD_DIR/tests/results"
-mkdir -p "$RESULTS_DIR"
 
 # Command line argument parsing
 SKIP_TESTS=false
@@ -91,7 +94,7 @@ done
 # Function to get coverage data by type
 get_coverage() {
     local coverage_type="$1"
-    local coverage_file="$RESULTS_DIR/${coverage_type}_coverage.txt"
+    local coverage_file="$RESULTS_DIR/coverage_${coverage_type}.txt"
     if [ -f "$coverage_file" ]; then
         cat "$coverage_file" 2>/dev/null || echo "0.000"
     else
@@ -102,7 +105,7 @@ get_coverage() {
 # Convenience functions for coverage types
 get_latest_coverage() {
     local latest_file
-    latest_file=$(find "$RESULTS_DIR" -name "coverage_*.txt" -type f 2>/dev/null | sort -r | head -1)
+    latest_file=$(find "$RESULTS_DIR" -name "*_coverage.txt" -type f 2>/dev/null | sort -r | head -1)
     [ -n "$latest_file" ] && [ -f "$latest_file" ] && cat "$latest_file" 2>/dev/null || echo "0.000"
 }
 get_unity_coverage() { get_coverage "unity"; }
@@ -111,7 +114,7 @@ get_combined_coverage() { get_coverage "combined"; }
 
 # Function to update README.md with test results
 update_readme_with_results() {
-    local readme_file="$SCRIPT_DIR/../README.md"
+    local readme_file="$PROJECT_DIR/README.md"
     
     if [ ! -f "$readme_file" ]; then
         echo "Warning: README.md not found at $readme_file"
@@ -275,7 +278,7 @@ update_readme_with_results() {
                 echo ""
                 
                 # Use shared cloc library function, ensuring we're in the project root directory
-                pushd "$SCRIPT_DIR/.." > /dev/null || return 1
+                pushd "$PROJECT_DIR" > /dev/null || return 1
                 generate_cloc_for_readme "." ".lintignore"
                 popd > /dev/null || return 1
             } >> "$temp_readme"
@@ -395,23 +398,8 @@ perform_cleanup() {
     rm -rf "${BUILD_DIR:?}" > /dev/null 2>&1
 
     # Build necessary folders
-    mkdir -p "${BUILD_DIR}" "${BUILD_DIR}/tests" "${RESULTS_DIR}" "${BUILD_DIR}/tests/logs" "${BUILD_DIR}/tests/diagnostics"
+    mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}"
 
-    # # Define directories to clean
-    # local dirs_to_clean=(
-    #     "$SCRIPT_DIR/logs"
-    #     "$SCRIPT_DIR/results"
-    #     "$SCRIPT_DIR/diagnostics"
-    #     "$SCRIPT_DIR/../build"
-    # )
-    
-    # # Remove directories and their contents silently
-    # for dir in "${dirs_to_clean[@]}"; do
-    #     if [ -d "$dir" ]; then
-    #         rm -rf "$dir" > /dev/null 2>&1
-    #     fi
-    # done
-    
     # Remove hydrogen executables silently
     local hydrogen_exe="$SCRIPT_DIR/../hydrogen"
     if [ -f "$hydrogen_exe" ]; then
@@ -419,7 +407,7 @@ perform_cleanup() {
     fi
     
     # Run CMake clean if CMakeLists.txt exists, silently
-    local cmake_dir="$SCRIPT_DIR/../cmake"
+    local cmake_dir="$CMAKE_DIR"
     if [ -f "$cmake_dir/CMakeLists.txt" ]; then
         cd "$cmake_dir" > /dev/null 2>&1 || return 1
         cmake --build . --target clean > /dev/null 2>&1
@@ -834,15 +822,15 @@ BLACKBOX_COVERAGE=$(get_blackbox_coverage)
 COMBINED_COVERAGE=$(get_combined_coverage)
 
 # Run coverage table before displaying test results
-coverage_table_script="$SCRIPT_DIR/lib/coverage_table.sh"
+coverage_table_script="$LIB_DIR/coverage_table.sh"
 if [[ -x "$coverage_table_script" ]] && [ "$SKIP_TESTS" = false ]; then
     # Save coverage table output to file and display to console using tee
     coverage_table_file="$RESULTS_DIR/coverage_table.txt"
     "$coverage_table_script" 2>/dev/null | tee "$coverage_table_file" || true
     
     # Launch background process to generate COVERAGE.svg from saved file
-    oh_script="$SCRIPT_DIR/lib/Oh.sh"
-    coverage_svg_path="$SCRIPT_DIR/../COVERAGE.svg"
+    oh_script="$LIB_DIR/Oh.sh"
+    coverage_svg_path="$PROJECT_DIR/COVERAGE.svg"
     if [[ -x "$oh_script" ]] && [[ -f "$coverage_table_file" ]]; then
         # Delete existing file before generating new one
         rm -f "$coverage_svg_path"
@@ -951,15 +939,15 @@ data_json="$temp_dir/summary_data.json"
 echo "$layout_json_content" > "$layout_json"
 echo "$data_json_content" > "$data_json"
 
-tables_exe="$SCRIPT_DIR/lib/tables"
+tables_exe="$LIB_DIR/tables"
 if [[ -x "$tables_exe" ]]; then
     # Save test results table output to file and display to console using tee
     results_table_file="$RESULTS_DIR/results_table.txt"
     "$tables_exe" "$layout_json" "$data_json" 2>/dev/null | tee "$results_table_file"
     
     # Launch background process to generate COMPLETE.svg from saved file
-    oh_script="$SCRIPT_DIR/lib/Oh.sh"
-    results_svg_path="$SCRIPT_DIR/../COMPLETE.svg"
+    oh_script="$LIB_DIR/Oh.sh"
+    results_svg_path="$PROJECT_DIR/COMPLETE.svg"
     if [[ -x "$oh_script" ]] && [[ -f "$results_table_file" ]]; then
         # Delete existing file before generating new one
         rm -f "$results_svg_path"

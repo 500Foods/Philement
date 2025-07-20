@@ -469,8 +469,8 @@ if check_unity_tests_available; then
     unity_coverage=$(calculate_unity_coverage "$UNITY_BUILD_DIR" "$TIMESTAMP")
 
     # Always attempt to read details
-    if [ -f "$RESULTS_DIR/unity_coverage.txt.detailed" ]; then
-        IFS=',' read -r _ _ covered_lines total_lines instrumented_files covered_files < "$RESULTS_DIR/unity_coverage.txt.detailed"
+    if [ -f "$RESULTS_DIR/coverage_unity.txt.detailed" ]; then
+        IFS=',' read -r _ _ covered_lines total_lines instrumented_files covered_files < "$RESULTS_DIR/coverage_unity.txt.detailed"
         print_result 0 "Unity test coverage calculated: $unity_coverage% ($(printf "%'d" "$covered_lines")/$(printf "%'d" "$total_lines") lines, $(printf "%'d" "$covered_files")/$(printf "%'d" "$instrumented_files") files)"
         ((PASS_COUNT++))
     else
