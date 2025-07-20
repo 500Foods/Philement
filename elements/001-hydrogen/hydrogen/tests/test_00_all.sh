@@ -3,9 +3,8 @@
 # Test: Test Suite Orchestration
 # Executes all tests in parallel batches or sequentially and generates a summary report
 
-# Usage: ./test_00_all.sh [test_name1 test_name2 ...] [--skip-tests] [--sequential] [--help]
-
 # CHANGELOG
+# 5.0.0 - 2025-07-19 - Script Review: Folder variables used consistently
 # 4.2.1 - 2025-07-18 - Added timestamp to Test Suite Results footer
 # 4.2.0 - 2025-07-18 - Added SVG generation for coverage table and test results; integrated SVG references in README.md generation
 # 4.1.0 - 2025-07-14 - Added --sequential-groups option to run specific groups sequentially while others run in parallel
@@ -18,7 +17,7 @@
 
 # Test configuration
 TEST_NAME="Test Suite Orchestration"
-SCRIPT_VERSION="4.2.1"
+SCRIPT_VERSION="5.0.0"
 
 # Sort out directories
 PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
@@ -31,11 +30,10 @@ RESULTS_DIR="$TESTS_DIR/results"
 DIAGS_DIR="$TESTS_DIR/diagnostics"
 LOGS_DIR="$TESTS_DIR/logs"
 
-# Source the table rendering libraries for the summary
-# shellcheck source=tests/lib/log_output.sh # Resolve path statically
-source "$LIB_DIR/log_output.sh"
 # shellcheck source=tests/lib/framework.sh # Resolve path statically
 source "$LIB_DIR/framework.sh"
+# shellcheck source=tests/lib/log_output.sh # Resolve path statically
+source "$LIB_DIR/log_output.sh"
 # shellcheck source=tests/lib/cloc.sh # Resolve path statically
 source "$LIB_DIR/cloc.sh"
 # shellcheck source=tests/lib/coverage.sh # Resolve path statically
@@ -339,21 +337,16 @@ format_time_duration() {
 }
 
 show_help() {
-    echo "Usage: $0 [test_name1 test_name2 ...] [--skip-tests] [--sequential] [--sequential-groups=N,M] [--help]"
+    echo "Usage: $0 [test_name1 test_name2 ...] [--skip-tests] [--sequential] [--sequential-groups=M,N] [--help]"
     echo ""
     echo "Arguments:"
     echo "  test_name    Run specific tests (e.g., 01_compilation, 98_check_links)"
     echo ""
     echo "Options:"
-    echo "  --skip-tests           Skip actual test execution, just show what tests would run"
-    echo "  --sequential           Run tests sequentially instead of in parallel batches (default: parallel)"
-    echo "  --sequential-groups=N,M Run specific groups sequentially while others run in parallel"
-    echo "  --help                 Show this help message"
-    echo ""
-    echo "Execution Modes:"
-    echo "  Default:     Tests run in parallel batches grouped by tens digit (0x, 1x, 2x, etc.)"
-    echo "  Sequential:  Tests run one at a time in numerical order (original behavior)"
-    echo "  Mixed:       Specified groups run sequentially, others run in parallel"
+    echo "  --skip-tests             Skip actual test execution, just show what tests would run"
+    echo "  --sequential             Run tests sequentially instead of in parallel batches (default: parallel)"
+    echo "  --sequential-groups=M,N  Run specific groups sequentially while others run in parallel"
+    echo "  --help                   Show this help message"
     echo ""
     echo "Available Tests:"
     for test_script in "${TEST_SCRIPTS[@]}"; do
@@ -364,11 +357,11 @@ show_help() {
     echo ""
     echo "Examples:"
     echo "  $0                             # Run all tests in parallel batches"
+    echo "  $0 01_compilation              # Run specific test"
+    echo "  $0 01_compilation 03_code_size # Run multiple tests"
     echo "  $0 --sequential                # Run all tests sequentially"
     echo "  $0 --sequential-groups=3       # Run group 3x (30-39) sequentially, others in parallel"
     echo "  $0 --sequential-groups=3,4     # Run groups 3x and 4x sequentially, others in parallel"
-    echo "  $0 01_compilation              # Run specific test"
-    echo "  $0 01_compilation 03_code_size # Run multiple tests"
     echo ""
     exit 0
 }
@@ -864,7 +857,7 @@ layout_json_content='{
             "datatype": "text",
             "width": 8,
             "summary": "count",
-	    "justification": "right"
+	        "justification": "right"
         },
         {
             "header": "Test Name",
