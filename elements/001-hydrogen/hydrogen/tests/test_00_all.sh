@@ -34,6 +34,8 @@ LOGS_DIR="$TESTS_DIR/logs"
 source "$LIB_DIR/framework.sh"
 # shellcheck source=tests/lib/log_output.sh # Resolve path statically
 source "$LIB_DIR/log_output.sh"
+# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
+source "$LIB_DIR/file_utils.sh"
 # shellcheck source=tests/lib/cloc.sh # Resolve path statically
 source "$LIB_DIR/cloc.sh"
 # shellcheck source=tests/lib/coverage.sh # Resolve path statically
