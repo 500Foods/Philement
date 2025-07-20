@@ -14,6 +14,8 @@ cmake/perf/
 cmake/release/
 cmake/valgrind/
 cmake/unity/
+cmake/*.cmake
+cmake/Testing/*
 
 # Temporary generated files
 payloads/swagger.json

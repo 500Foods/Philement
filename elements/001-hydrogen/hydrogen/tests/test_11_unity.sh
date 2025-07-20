@@ -96,7 +96,7 @@ check_unity_tests_available() {
     print_message "Checking for Unity tests via CTest (should be built by main build system)..."
     
     # Check if CMake build directory exists and has CTest configuration
-    local cmake_build_dir="$HYDROGEN_DIR/cmake"
+    local cmake_build_dir="$BUILD_DIR"
     
     if [ ! -d "$cmake_build_dir" ]; then
         print_result 1 "CMake build directory not found: ${cmake_build_dir#"$SCRIPT_DIR"/..}"
