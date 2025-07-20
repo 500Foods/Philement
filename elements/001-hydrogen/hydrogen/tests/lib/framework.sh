@@ -1,18 +1,21 @@
 #!/bin/bash
 
-# tests/lib/framework.sh
-# Test Framework Library
-
+# Framework Library
 # Provides test lifecycle management and result tracking functions
-# Integrates with numbered output system from log_output.sh
 
 # CHANGELOG
+# 2.2.0 - 2025-07-20 - Added guard
 # 2.1.0 - 2025-07-07 - Restructured how test elapsed times are stored and accessed
 # 2.0.0 - 2025-07-02 - Updated to integrate with numbered output system
 # 1.0.0 - 2025-07-02 - Initial creation from support_utils.sh migration
 
+# Guard clause to prevent multiple sourcing
+[[ -n "$FRAMEWORK_GUARD" ]] && return 0
+export FRAMEWORK_GUARD="true"
+
+# Library metadata
 FRAMEWORK_NAME="Test Framework Library"
-FRAMEWORK_VERSION="2.1.0"
+FRAMEWORK_VERSION="2.2.0"
 
 # Function to start a test run with proper header and numbering
 start_test() {

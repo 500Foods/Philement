@@ -17,22 +17,26 @@
 TEST_NAME="Compilation"
 SCRIPT_VERSION="2.2.0"
 
-# Get the directory where this script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Sort out directories
+PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
+CMAKE_DIR="$PROJECT_DIR/cmake"
+SCRIPT_DIR="$PROJECT_DIR/tests"
+LIB_DIR="$SCRIPT_DIR/lib"
+BUILD_DIR="$PROJECT_DIR/build"
+TESTS_DIR="$BUILD_DIR/tests"
+RESULTS_DIR="$TESTS_DIR/results"
+DIAGS_DIR="$TESTS_DIR/diagnostics"
+LOGS_DIR="$TESTS_DIR/logs"
+mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}"
 
-# Only source log_output.sh if not already loaded (check guard variable)
-if [[ -z "$LOG_OUTPUT_SH_GUARD" ]]; then
-    # shellcheck source=tests/lib/log_output.sh # Resolve path statically
-    source "$SCRIPT_DIR/lib/log_output.sh"
-fi
-
-# Source other modular test libraries (always needed, not provided by test suite)
-# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
-source "$SCRIPT_DIR/lib/file_utils.sh"
 # shellcheck source=tests/lib/framework.sh # Resolve path statically
-source "$SCRIPT_DIR/lib/framework.sh"
+[[ -n "$FRAMEWORK_GUARD" ]] || source "$LIB_DIR/framework.sh"
+# shellcheck source=tests/lib/log_output.sh # Resolve path statically
+[[ -n "$LOG_OUTPUT_GUARD" ]] || source "$LIB_DIR/log_output.sh"
+# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
+[[ -n "$FILE_UTILS_GUARD" ]] || source "$LIB_DIR/file_utils.sh"
 # shellcheck source=tests/lib/coverage.sh # Resolve path statically
-source "$SCRIPT_DIR/lib/coverage.sh"
+[[ -n "$COVERAGE_GUARD" ]] || source "$LIB_DIR/coverage.sh"
 
 # Test configuration
 EXIT_CODE=0
@@ -43,19 +47,11 @@ PASS_COUNT=0
 TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
 set_test_number "$TEST_NUMBER"
 reset_subtest_counter
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+RESULT_LOG="$RESULTS_DIR/test_${TEST_NUMBER}_${TIMESTAMP}.log"
 
 # Print beautiful test header
 print_test_header "$TEST_NAME" "$SCRIPT_VERSION"
-
-# Set up results directory
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-# Always use build/tests/results directory
-BUILD_DIR="$SCRIPT_DIR/../build"
-RESULTS_DIR="$BUILD_DIR/tests/results"
-mkdir -p "$RESULTS_DIR"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-RESULT_LOG="$RESULTS_DIR/test_${TEST_NUMBER}_${TIMESTAMP}.log"
 
 # Navigate to the project root (one level up from tests directory)
 if ! navigate_to_project_root "$SCRIPT_DIR"; then

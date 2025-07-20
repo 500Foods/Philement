@@ -1,25 +1,24 @@
 #!/bin/bash
 
-# Hydrogen Test Suite - CLOC (Count Lines of Code) Library
+# CLOC (Count Lines of Code) Library
 # Provides shared cloc functionality for test scripts
 
 # CHANGELOG
+# 1.1.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 1.0.0 - 2025-07-02 - Initial creation, extracted from test_99_codebase.sh and test_00_all.sh
 
-CLOC_LIB_NAME="Hydrogen CLOC Library"
-CLOC_LIB_VERSION="1.0.0"
+# Guard clause to prevent multiple sourcing
+[[ -n "$CLOC_GUARD" ]] && return 0
+export CLOC_GUARD="true"
+
+# Library metadata
+CLOC_NAME="CLOC Library"
+CLOC_VERSION="1.0.0"
 
 # Default exclude patterns for linting (can be overridden by .lintignore)
 if [ -z "${DEFAULT_LINT_EXCLUDES+x}" ]; then
     readonly DEFAULT_LINT_EXCLUDES=(
         "build/*"
-        "build_debug/*"
-        "build_perf/*"
-        "build_release/*"
-        "build_valgrind/*"
-        "tests/logs/*"
-        "tests/results/*"
-        "tests/diagnostics/*"
     )
 fi
 
