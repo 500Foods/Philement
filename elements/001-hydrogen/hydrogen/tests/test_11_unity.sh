@@ -20,7 +20,6 @@ SCRIPT_VERSION="2.3.0"
 
 # Sort out directories
 PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
-# CMAKE_DIR="$PROJECT_DIR/cmake"
 SCRIPT_DIR="$PROJECT_DIR/tests"
 LIB_DIR="$SCRIPT_DIR/lib"
 BUILD_DIR="$PROJECT_DIR/build"
@@ -40,6 +39,8 @@ mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_D
 [[ -n "$FILE_UTILS_GUARD" ]] || source "$LIB_DIR/file_utils.sh"
 # shellcheck source=tests/lib/coverage.sh # Resolve path statically
 [[ -n "$COVERAGE_GUARD" ]] || source "$LIB_DIR/coverage.sh"
+# shellcheck source=tests/lib/coverage-unity.sh # Resolve path statically
+[[ -n "$COVERAGE_UNITY_GUARD" ]] || source "$LIB_DIR/coverage-unity.sh"
 
 # Test configuration
 EXIT_CODE=0
@@ -72,7 +73,6 @@ fi
 # Configuration
 HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 UNITY_BUILD_DIR="$HYDROGEN_DIR/build/unity"
-UNITY_DIR="$SCRIPT_DIR/unity"
 
 # Use build/tests/ directory for consistency
 BUILD_DIR="$SCRIPT_DIR/../build"
@@ -178,8 +178,8 @@ run_single_unity_test() {
         print_result 1 "0 passed, 1 failed: $log_path"
         return 1
     fi
-    
-    cat "$temp_test_log" >> "$LOG_FILE"
+    # As if stmt always returns, this line is never reached
+    # cat "$temp_test_log" >> "$LOG_FILE"
 }
 
 # Function to run a single unity test in parallel mode
@@ -359,7 +359,6 @@ run_unity_tests() {
         print_message "Starting batch $batch_num: $batch_count tests"
         
         # Run batch in parallel and process results in order
-        local batch_result=0
         local temp_files=()
         local temp_outputs=()
         local pids=()
@@ -381,7 +380,6 @@ run_unity_tests() {
         # Wait for all tests in batch to complete
         for pid in "${pids[@]}"; do
             if ! wait "$pid"; then
-                batch_result=1
                 overall_result=1
             fi
         done
@@ -461,9 +459,6 @@ if check_unity_tests_available; then
     next_subtest
     print_subtest "Calculate Unity Test Coverage"
     print_message "Calculating Unity test coverage..."
-
-    # Source the working Unity coverage calculation function
-    source "$SCRIPT_DIR/lib/coverage-unity.sh"
 
     # Use the same calculation as Test 99
     TIMESTAMP=$(date +%Y%m%d_%H%M%S)

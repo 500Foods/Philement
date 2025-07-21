@@ -49,6 +49,8 @@ print_test_suite_header "$TEST_NAME" "$SCRIPT_VERSION"
 print_message "$FRAMEWORK_NAME $FRAMEWORK_VERSION" "info"
 print_message "$LOG_OUTPUT_NAME $LOG_OUTPUT_VERSION" "info"
 
+# shellcheck source=tests/lib/env_utils.sh # Resolve path statically
+source "$LIB_DIR/env_utils.sh"
 # shellcheck source=tests/lib/file_utils.sh # Resolve path statically
 source "$LIB_DIR/file_utils.sh"
 # shellcheck source=tests/lib/cloc.sh # Resolve path statically
@@ -63,6 +65,50 @@ source "$LIB_DIR/coverage-unity.sh"
 source "$LIB_DIR/coverage-blackbox.sh"
 # shellcheck source=tests/lib/coverage-combined.sh # Resolve path statically
 source "$LIB_DIR/coverage-combined.sh"
+
+# List of commands to check - we're assuming grep and sort are available
+commands=(
+    "bc" "jq" "awk" "sed" "xargs" "nproc" "timeout"
+    "cmake" "curl" "websocat" 
+    "git" "md5sum" "cloc"
+    "cppcheck" "shellcheck" "markdownlint" "eslint" "stylelint" "htmlhint" "jsonlint"
+)
+
+# Array to store results
+declare -a results
+
+# Run version checks in parallel using xargs with inlined logic
+# Use IFS to read full lines into the results array
+# shellcheck disable=SC2016 # This is a script within a script, so the double quotes are not needed here
+while IFS= read -r line; do
+    results+=("$line")
+done < <(printf "%s\n" "${commands[@]}" | xargs -P 0 -I {} bash -c '
+    cmd="{}"
+    if command -v "$cmd" >/dev/null 2>&1; then
+        cmd_path=$(command -v "$cmd")
+        version=$($cmd --version 2>/dev/null | grep -oE "[0-9]+\.[0-9]+([.-][0-9a-zA-Z]+)*" | head -n 1)
+        if [ -n "$version" ]; then
+            echo "0|$cmd @ $cmd_path|$version"
+        else
+            echo "0|$cmd @ $cmd_path|no version found"
+        fi
+    else
+        echo "1|$cmd|Command not found"
+    fi
+')
+
+# Sort the results array based on the message field (field 2, after the first '|')
+declare -a sorted_results
+while IFS= read -r line; do
+    sorted_results+=("$line")
+done < <(printf "%s\n" "${results[@]}" | sort -t'|' -k2)
+
+# Process sorted results array and call print_result
+for result in "${sorted_results[@]}"; do
+    # Split result into status, message, and version (format: "status|message|version")
+    IFS='|' read -r status message version <<< "$result"
+    print_result "$status" "$message: $version"
+done
 
 # Perform cleanup before starting tests
 print_message "Cleaning Build Environment" "info"
@@ -624,10 +670,8 @@ run_all_tests_parallel() {
         fi
         
         # Wait for all background tests to complete
-        local group_exit_code=0
         for i in "${!pids[@]}"; do
             if ! wait "${pids[$i]}"; then
-                group_exit_code=1
                 overall_exit_code=1
             fi
         done

@@ -25,6 +25,7 @@ export NETWORK_UTILS_GUARD="true"
 # Library metadata
 NETWORK_UTILS_NAME="Network Utilities Library"
 NETWORK_UTILS_VERSION="2.2.0"
+export NETWORK_UTILS_NAME NETWORK_UTILS_VERSION
 
 # Function to check if a port is in use (robust version)
 check_port_in_use() {

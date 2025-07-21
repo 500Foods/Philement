@@ -25,8 +25,9 @@
 export ENV_UTILS_GUARD="true"
 
 # Library metadata
-ENV_UTLIS_NAME="Environment Utilities Library"
+ENV_UTILS_NAME="Environment Utilities Library"
 ENV_UTILS_VERSION="1.2.0"
+export ENV_UTILS_NAME ENV_UTILS_VERSION
 
 # Function: Check if environment variable is set and non-empty
 # Parameters: $1 - variable name

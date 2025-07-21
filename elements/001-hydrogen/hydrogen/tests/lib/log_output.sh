@@ -54,8 +54,8 @@ export LOG_OUTPUT_GUARD="true"
 # Library metadata
 LOG_OUTPUT_NAME="Log Output Library"
 LOG_OUTPUT_VERSION="3.2.1"
-
-# print_message "$LOG_OUTPUT_NAME $LOGO_OUTPUT_VERSION" "info"
+export LOG_OUTPUT_NAME LOG_OUTPUT_VERSION
+# print_message "$LOG_OUTPUT_NAME $LOG_OUTPUT_VERSION" "info"
 
 # Global variables for test/subtest numbering
 CURRENT_TEST_NUMBER=""
@@ -66,7 +66,6 @@ SUBTEST_COUNTER=0
 TEST_START_TIME=""
 TEST_PASSED_COUNT=0
 TEST_FAILED_COUNT=0
-TEST_ELAPSED_TIME=""
 declare -a TEST_ELAPSED_TIMES
 
 # Variable for absolute path replacement

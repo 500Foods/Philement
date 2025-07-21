@@ -95,7 +95,6 @@ test_websocket_connection() {
     local attempt=1
     local websocat_output
     local websocat_exitcode
-    local websocket_ready=false
     
     while [ $attempt -le $max_attempts ]; do
         if [ $attempt -gt 1 ]; then
