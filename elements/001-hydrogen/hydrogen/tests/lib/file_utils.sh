@@ -3,6 +3,15 @@
 # File Utilities Library
 # Provides file and path manipulation functions for test scripts
 
+# LIBRARY FUNCTIONS
+# convert_to_relative_path()
+# safe_cd()
+# get_file_size()
+# get_config_path()
+# extract_web_server_port()
+# validate_json()
+# get_webserver_port()
+
 # CHANGELOG
 # 1.1.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 1.0.0 - 2025-07-02 - Initial creation from support_utils.sh migration

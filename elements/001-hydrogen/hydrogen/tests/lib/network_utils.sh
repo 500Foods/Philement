@@ -3,6 +3,16 @@
 # Network Utilities Library
 # Provides network-related functions for test scripts, including TIME_WAIT socket management
 
+# LIBRARY FUNCTIONS
+# check_port_in_use()
+# count_time_wait_sockets()
+# check_time_wait_sockets()
+# wait_for_time_wait_clear()
+# wait_for_port_available()
+# kill_processes_on_port()
+# prepare_test_environment_with_time_wait()
+# make_http_requests()
+
 # CHANGELOG
 # 2.2.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 2.1.0 - 2025-07-18 - Fixed subshell issue in check_time_wait_sockets function that prevented TIME_WAIT socket details from being displayed; added whitespace compression for cleaner output formatting

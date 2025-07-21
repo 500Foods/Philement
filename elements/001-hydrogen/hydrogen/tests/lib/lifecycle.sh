@@ -1,11 +1,31 @@
 #!/bin/bash
 
-# lifecycle.sh - Hydrogen Application Lifecycle Management
+# Lifecycle Management Library
+# Handles starting and stopping the Hydrogen Server with various configurations.
 
-# This script provides functions for managing the lifecycle of the Hydrogen application,
-# including starting and stopping the application with various configurations.
+# LIBRARY FUNCTIONS
+# find_hydrogen_binary()
+# start_hydrogen_with_pid()
+# start_hydrogen()
+# wait_for_startup()
+# stop_hydrogen()
+# monitor_shutdown()
+# get_process_threads()
+# capture_process_diagnostics()
+# configure_hydrogen_binary()
+# initialize_test_environment()
+# ensure_no_hydrogen_running()
+# start_hydrogen_with_env()
+# kill_hydrogen_process()
+# verify_log_file_exists()
+# validate_config_files()
+# validate_config_file()
+# setup_output_directories()
+# get_tmpfs_output_dirs()
+# run_lifecycle_test()
 
 # CHANGELOG
+# 1.3.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 1.2.4 - 2025-07-18 - Fixed subshell issue in error log output functions that prevented detailed error messages from being displayed in test output
 # 1.2.3 - 2025-07-14 - Enhanced process validation with multiple retry attempts for more robust PID checking
 # 1.2.2 - 2025-07-14 - Fixed job control messages (like "Terminated") appearing in test output by adding disown to background processes
@@ -13,6 +33,14 @@
 # 1.2.0 - 2025-07-02 - Added validate_config_file function for single configuration validation
 # 1.1.0 - 2025-07-02 - Added validate_config_files, setup_output_directories, and run_lifecycle_test functions for enhanced modularity
 # 1.0.0 - 2025-07-02 - Initial version with start and stop functions
+
+# Guard clause to prevent multiple sourcing
+[[ -n "$LIFECYCLE_GUARD" ]] && return 0
+export LIFCYCLE_GUARD="true"
+
+# Library metadata
+LIFECYCLE_NAME="Lifecycle Management Library"
+LIFECYCLE_VERSION="1.3.0"
 
 # Function to find and validate Hydrogen binary
 # Usage: find_hydrogen_binary <hydrogen_dir> <result_var_name>
@@ -727,11 +755,11 @@ get_tmpfs_output_dirs() {
     # Export the directories for use by calling scripts
     export TMPFS_RESULTS_DIR="$base_results_dir"
     export TMPFS_LOGS_DIR="$base_logs_dir"
-    export TMPFS_DIAG_DIR="$base_diag_dir"
-    export TMPFS_TEST_DIAG_DIR="$base_diag_dir/${test_name}_${timestamp}"
+    export TMPFS_DIAGS_DIR="$base_diag_dir"
+    export TMPFS_TEST_DIAGS_DIR="$base_diag_dir/${test_name}_${timestamp}"
     
     # Create the directories
-    mkdir -p "$TMPFS_RESULTS_DIR" "$TMPFS_LOGS_DIR" "$TMPFS_DIAG_DIR" "$TMPFS_TEST_DIAG_DIR" 2>/dev/null
+    mkdir -p "$TMPFS_RESULTS_DIR" "$TMPFS_LOGS_DIR" "$TMPFS_DIAGS_DIR" "$TMPFS_TEST_DIAGS_DIR" 2>/dev/null
     
     return 0
 }

@@ -3,6 +3,18 @@
 # Environment Utilities Library
 # Provides functions for environment variable handling and validation
 
+# LIBRARY FUNCTIONS
+# check_env_var()
+# validate_rsa_key()
+# reset_environment_variables()
+# set_basic_test_environment()
+# validate_config_files()
+# get_config_path()
+# validate_websocket_key()
+# convert_to_relative_path()
+# set_type_conversion_environment()
+# set_validation_test_environment()
+
 # CHANGELOG
 # 1.2.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 1.1.0 - 2025-07-02 - Updated with additional functions for test_35_env_variables.sh migration

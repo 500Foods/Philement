@@ -4,6 +4,7 @@
 # Runs unit tests using the Unity framework, treating each test file as a subtest
 
 # CHANGELOG
+# 2.4.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 2.3.0 - 2025-07-16 - Changed batching formula to divide tests evenly into minimum groups within CPU limit
 # 2.2.0 - 2025-07-15 - Added parallel execution with proper ordering and improved output format
 # 2.1.0 - 2025-07-14 - Removed Unity framework check (moved to test 01), enhanced individual test reporting with INFO lines
@@ -17,25 +18,28 @@
 TEST_NAME="Unity Unit Tests"
 SCRIPT_VERSION="2.3.0"
 
-# Get the directory where this script is located
-TEST_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Sort out directories
+PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
+# CMAKE_DIR="$PROJECT_DIR/cmake"
+SCRIPT_DIR="$PROJECT_DIR/tests"
+LIB_DIR="$SCRIPT_DIR/lib"
+BUILD_DIR="$PROJECT_DIR/build"
+TESTS_DIR="$BUILD_DIR/tests"
+RESULTS_DIR="$TESTS_DIR/results"
+DIAGS_DIR="$TESTS_DIR/diagnostics"
+LOGS_DIR="$TESTS_DIR/logs"
+mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}"
 
-if [[ -z "$LOG_OUTPUT_SH_GUARD" ]]; then
-    # shellcheck source=tests/lib/log_output.sh  # Resolve path statically
-    source "$TEST_SCRIPT_DIR/lib/log_output.sh"
-fi
-
-# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
-source "$TEST_SCRIPT_DIR/lib/file_utils.sh"
 # shellcheck source=tests/lib/framework.sh # Resolve path statically
-source "$TEST_SCRIPT_DIR/lib/framework.sh"
+[[ -n "$FRAMEWORK_GUARD" ]] || source "$LIB_DIR/framework.sh"
 # shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
-source "$TEST_SCRIPT_DIR/lib/lifecycle.sh"
+[[ -n "$LIFECYCLE_GUARD" ]] || source "$LIB_DIR/lifecycle.sh"
+# shellcheck source=tests/lib/log_output.sh # Resolve path statically
+[[ -n "$LOG_OUTPUT_GUARD" ]] || source "$LIB_DIR/log_output.sh"
+# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
+[[ -n "$FILE_UTILS_GUARD" ]] || source "$LIB_DIR/file_utils.sh"
 # shellcheck source=tests/lib/coverage.sh # Resolve path statically
-source "$TEST_SCRIPT_DIR/lib/coverage.sh"
-
-# Restore SCRIPT_DIR after sourcing libraries (they may override it)
-SCRIPT_DIR="$TEST_SCRIPT_DIR"
+[[ -n "$COVERAGE_GUARD" ]] || source "$LIB_DIR/coverage.sh"
 
 # Test configuration
 EXIT_CODE=0
@@ -49,16 +53,13 @@ TOTAL_UNITY_PASSED=0
 TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
 set_test_number "$TEST_NUMBER"
 reset_subtest_counter
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+RESULT_LOG="$RESULTS_DIR/test_${TEST_NUMBER}_${TIMESTAMP}.log"
 
 # Print beautiful test header
 print_test_header "$TEST_NAME" "$SCRIPT_VERSION"
 
 # Set up results directory - always use build/tests/results for consistency
-BUILD_DIR="$SCRIPT_DIR/../build"
-RESULTS_DIR="$BUILD_DIR/tests/results"
-mkdir -p "$RESULTS_DIR"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-RESULT_LOG="$RESULTS_DIR/test_${TEST_NUMBER}_${TIMESTAMP}.log"
 
 # Navigate to the project root (one level up from tests directory)
 if ! navigate_to_project_root "$SCRIPT_DIR"; then
@@ -75,15 +76,15 @@ UNITY_DIR="$SCRIPT_DIR/unity"
 
 # Use build/tests/ directory for consistency
 BUILD_DIR="$SCRIPT_DIR/../build"
-DIAG_DIR="$BUILD_DIR/tests/logs"
+DIAGS_DIR="$BUILD_DIR/tests/logs"
 LOG_FILE="$BUILD_DIR/tests/logs/unity_tests.log"
-DIAG_TEST_DIR="$DIAG_DIR/unity_$(date +%H%M%S)"
+DIAG_TEST_DIR="$DIAGS_DIR/unity_$(date +%H%M%S)"
 
 
 # Create output directories
 next_subtest
 print_subtest "Create Output Directories"
-if setup_output_directories "$RESULTS_DIR" "$DIAG_DIR" "$LOG_FILE" "$DIAG_TEST_DIR"; then
+if setup_output_directories "$RESULTS_DIR" "$DIAGS_DIR" "$LOG_FILE" "$DIAG_TEST_DIR"; then
     ((PASS_COUNT++))
 else
     EXIT_CODE=1
