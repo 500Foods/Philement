@@ -21,7 +21,6 @@ SCRIPT_VERSION="5.0.0"
 
 # Sort out directories
 PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
-CMAKE_DIR="$PROJECT_DIR/cmake"
 SCRIPT_DIR="$PROJECT_DIR/tests"
 LIB_DIR="$SCRIPT_DIR/lib"
 BUILD_DIR="$PROJECT_DIR/build"
@@ -45,6 +44,9 @@ source "$LIB_DIR/coverage.sh"
 TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
 set_test_number "$TEST_NUMBER"
 reset_subtest_counter
+
+# Get start time
+START_TIME=$(date +%s.%N 2>/dev/null || date +%s)
 
 # Arrays to track test results
 declare -a TEST_NUMBERS
@@ -91,27 +93,6 @@ for arg in "$@"; do
     esac
 done
 
-# Function to get coverage data by type
-get_coverage() {
-    local coverage_type="$1"
-    local coverage_file="$RESULTS_DIR/coverage_${coverage_type}.txt"
-    if [ -f "$coverage_file" ]; then
-        cat "$coverage_file" 2>/dev/null || echo "0.000"
-    else
-        echo "0.000"
-    fi
-}
-
-# Convenience functions for coverage types
-get_latest_coverage() {
-    local latest_file
-    latest_file=$(find "$RESULTS_DIR" -name "*_coverage.txt" -type f 2>/dev/null | sort -r | head -1)
-    [ -n "$latest_file" ] && [ -f "$latest_file" ] && cat "$latest_file" 2>/dev/null || echo "0.000"
-}
-get_unity_coverage() { get_coverage "unity"; }
-get_blackbox_coverage() { get_coverage "blackbox"; }
-get_combined_coverage() { get_coverage "combined"; }
-
 # Function to update README.md with test results
 update_readme_with_results() {
     local readme_file="$PROJECT_DIR/README.md"
@@ -126,8 +107,6 @@ update_readme_with_results() {
     local total_subtests=0
     local total_passed=0
     local total_failed=0
-    local coverage_percentage
-    coverage_percentage=$(get_latest_coverage)
     
     for i in "${!TEST_SUBTESTS[@]}"; do
         total_subtests=$((total_subtests + TEST_SUBTESTS[i]))
@@ -179,8 +158,8 @@ update_readme_with_results() {
                 local combined_coverage_detailed="$RESULTS_DIR/combined_coverage.txt.detailed"
                 
                 if [ -f "$unity_coverage_detailed" ] || [ -f "$blackbox_coverage_detailed" ] || [ -f "$combined_coverage_detailed" ]; then
-                    echo "| Test Type | Files Cover | Files Instr | Lines Cover | Lines Instr | Coverage |"
-                    echo "| --------- | ----------- | ----------- | ----------- | ----------- | -------- |"
+                    echo "| Test Type | Files Cover | Files Instr | Lines Cover | Lines Instr | Coverage | Timestamp |"
+                    echo "| --------- | ----------- | ----------- | ----------- | ----------- | -------- | --------- |"
                     
                     # Unity coverage
                     if [ -f "$unity_coverage_detailed" ]; then
@@ -192,12 +171,12 @@ update_readme_with_results() {
                             unity_total_formatted=$(printf "%'d" "$unity_total" 2>/dev/null || echo "$unity_total")
                             unity_covered_files=${unity_covered_files:-0}
                             unity_instrumented=${unity_instrumented:-0}
-                            echo "| Unity Tests | ${unity_covered_files} | ${unity_instrumented} | ${unity_covered_formatted} | ${unity_total_formatted} | ${unity_coverage_pct}% |"
+                            echo "| Unity Tests | ${unity_covered_files} | ${unity_instrumented} | ${unity_covered_formatted} | ${unity_total_formatted} | ${unity_coverage_pct}% | ${unity_timestamp} |"
                         else
-                            echo "| Unity Tests | 0 | 0 | 0 | 0 | 0.000% |"
+                            echo "| Unity Tests | 0 | 0 | 0 | 0 | 0.000% |  0 |"
                         fi
                     else
-                        echo "| Unity Tests | 0 | 0 | 0 | 0 | 0.000% |"
+                        echo "| Unity Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
                     fi
                     
                     # Blackbox coverage
@@ -210,12 +189,12 @@ update_readme_with_results() {
                             blackbox_total_formatted=$(printf "%'d" "$blackbox_total" 2>/dev/null || echo "$blackbox_total")
                             blackbox_covered_files=${blackbox_covered_files:-0}
                             blackbox_instrumented=${blackbox_instrumented:-0}
-                            echo "| Blackbox Tests | ${blackbox_covered_files} | ${blackbox_instrumented} | ${blackbox_covered_formatted} | ${blackbox_total_formatted} | ${blackbox_coverage_pct}% |"
+                            echo "| Blackbox Tests | ${blackbox_covered_files} | ${blackbox_instrumented} | ${blackbox_covered_formatted} | ${blackbox_total_formatted} | ${blackbox_coverage_pct}% | ${blackbox_timestamp} |"
                         else
-                            echo "| Blackbox Tests | 0 | 0 | 0 | 0 | 0.000% |"
+                            echo "| Blackbox Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
                         fi
                     else
-                        echo "| Blackbox Tests | 0 | 0 | 0 | 0 | 0.000% |"
+                        echo "| Blackbox Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
                     fi
                     
                     # Combined coverage
@@ -228,18 +207,18 @@ update_readme_with_results() {
                             combined_total_formatted=$(printf "%'d" "$combined_total" 2>/dev/null || echo "$combined_total")
                             combined_covered_files=${combined_covered_files:-0}
                             combined_instrumented=${combined_instrumented:-0}
-                            echo "| Combined Tests | ${combined_covered_files} | ${combined_instrumented} | ${combined_covered_formatted} | ${combined_total_formatted} | ${combined_coverage_pct}% |"
+                            echo "| Combined Tests | ${combined_covered_files} | ${combined_instrumented} | ${combined_covered_formatted} | ${combined_total_formatted} | ${combined_coverage_pct}% | ${combined_timestamp} |"
                         else
-                            echo "| Combined Tests | 0 | 0 | 0 | 0 | 0.000% |"
+                            echo "| Combined Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
                         fi
                     else
-                        echo "| Combined Tests | 0 | 0 | 0 | 0 | 0.000% |"
+                        echo "| Combined Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
                     fi
                 else
-                    echo "| Test Type | Files Cover | Files Instr | Lines Cover | Lines Instr | Coverage |"
-                    echo "| --------- | ----------- | ----------- | ----------- | ----------- | -------- |"
-                    echo "| Unity Tests | 0 | 0 | 0 | 0 | 0.000% |"
-                    echo "| Blackbox Tests | 0 | 0 | 0 | 0 | 0.000% |"
+                    echo "| Test Type | Files Cover | Files Instr | Lines Cover | Lines Instr | Coverage | Timestamp |"
+                    echo "| --------- | ----------- | ----------- | ----------- | ----------- | -------- | --------- |"
+                    echo "| Unity Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
+                    echo "| Blackbox Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
                 fi
                 echo ""
             } >> "$temp_readme"
@@ -309,35 +288,6 @@ update_readme_with_results() {
     fi
 }
 
-# Function to format seconds as HH:MM:SS.ZZZ
-format_time_duration() {
-    local seconds="$1"
-    local hours minutes secs milliseconds
-    
-    # Handle seconds that start with a decimal point (e.g., ".492")
-    if [[ "$seconds" =~ ^\. ]]; then
-        seconds="0$seconds"
-    fi
-    
-    # Handle decimal seconds
-    if [[ "$seconds" =~ ^([0-9]+)\.([0-9]+)$ ]]; then
-        secs="${BASH_REMATCH[1]}"
-        milliseconds="${BASH_REMATCH[2]}"
-        # Pad or truncate milliseconds to 3 digits
-        milliseconds="${milliseconds}000"
-        milliseconds="${milliseconds:0:3}"
-    else
-        secs="$seconds"
-        milliseconds="000"
-    fi
-    
-    hours=$((secs / 3600))
-    minutes=$(((secs % 3600) / 60))
-    secs=$((secs % 60))
-    
-    printf "%02d:%02d:%02d.%s" "$hours" "$minutes" "$secs" "$milliseconds"
-}
-
 show_help() {
     echo "Usage: $0 [test_name1 test_name2 ...] [--skip-tests] [--sequential] [--sequential-groups=M,N] [--help]"
     echo ""
@@ -386,33 +336,17 @@ for arg in "$@"; do
     esac
 done
 
-# Function to perform cleanup before test execution
+# Perform cleanup before test execution
 perform_cleanup() {
-    # Silently perform cleanup before test execution
-    # find "${BUILD_DIR:?}" -maxdepth 1 -not -path "${BUILD_DIR:?}" -exec rm -rf {} +
+    # Clear out build directory
     rm -rf "${BUILD_DIR:?}" > /dev/null 2>&1
+
+    # Remove hydrogen executables silently
+    rm -f "$PROJECT_DIR/hydrogen*" > /dev/null 2>&1
 
     # Build necessary folders
     mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}"
-
-    # Remove hydrogen executables silently
-    local hydrogen_exe="$SCRIPT_DIR/../hydrogen"
-    if [ -f "$hydrogen_exe" ]; then
-        rm -f "$hydrogen_exe" > /dev/null 2>&1
-    fi
-    
-    # Run CMake clean if CMakeLists.txt exists, silently
-    local cmake_dir="$CMAKE_DIR"
-    if [ -f "$cmake_dir/CMakeLists.txt" ]; then
-        cd "$cmake_dir" > /dev/null 2>&1 || return 1
-        cmake --build . --target clean > /dev/null 2>&1
-        cd "$SCRIPT_DIR" > /dev/null 2>&1 || return 1
-    fi
 }
-
-
-# Get start time
-START_TIME=$(date +%s.%N 2>/dev/null || date +%s)
 
 # Print beautiful test suite header in blue
 print_test_suite_header "$TEST_NAME" "$SCRIPT_VERSION"
@@ -445,8 +379,8 @@ run_single_test() {
     fi
     
     # Record start time for this test
-    local test_start
-    test_start=$(date +%s.%N 2>/dev/null || date +%s)
+    # local test_start
+    # test_start=$(date +%s.%N 2>/dev/null || date +%s)
     
     # Set environment variable to indicate running in test suite context
     export RUNNING_IN_TEST_SUITE="true"
@@ -501,10 +435,6 @@ run_single_test_parallel() {
     # Extract test number from script filename
     test_number=$(basename "$test_script" .sh | sed 's/test_//' | sed 's/_.*//')
     test_name=""
-    
-    # Record start time for this test
-    local test_start
-    test_start=$(date +%s.%N 2>/dev/null || date +%s)
     
     # Set environment variable to indicate running in test suite context
     export RUNNING_IN_TEST_SUITE="true"
@@ -778,6 +708,29 @@ else
     done
 fi
 
+# Get coverage percentages for display
+UNITY_COVERAGE=$(get_unity_coverage)
+BLACKBOX_COVERAGE=$(get_blackbox_coverage)
+COMBINED_COVERAGE=$(get_combined_coverage)
+
+# Run coverage table before displaying test results
+coverage_table_script="$LIB_DIR/coverage_table.sh"
+if [[ -x "$coverage_table_script" ]] && [ "$SKIP_TESTS" = false ]; then
+    # Save coverage table output to file and display to console using tee
+    coverage_table_file="$RESULTS_DIR/coverage_table.txt"
+    "$coverage_table_script" 2>/dev/null | tee "$coverage_table_file" || true
+    
+    # Launch background process to generate COVERAGE.svg from saved file
+    oh_script="$LIB_DIR/Oh.sh"
+    coverage_svg_path="$PROJECT_DIR/COVERAGE.svg"
+    if [[ -x "$oh_script" ]] && [[ -f "$coverage_table_file" ]]; then
+        # Delete existing file before generating new one
+        rm -f "$coverage_svg_path"mkb
+        # Generate SVG from saved coverage table file in background
+        ("$oh_script" -i "$coverage_table_file" -o "$coverage_svg_path" 2>/dev/null) &
+    fi
+fi
+
 # Calculate total elapsed time
 END_TIME=$(date +%s.%N 2>/dev/null || date +%s)
 if [[ "$START_TIME" =~ \. ]] && [[ "$END_TIME" =~ \. ]]; then
@@ -811,35 +764,11 @@ done
 TOTAL_ELAPSED_FORMATTED=$(format_time_duration "$TOTAL_ELAPSED")
 TOTAL_RUNNING_TIME_FORMATTED=$(format_time_duration "$TOTAL_RUNNING_TIME")
 
-# Get coverage percentages for display
-UNITY_COVERAGE=$(get_unity_coverage)
-BLACKBOX_COVERAGE=$(get_blackbox_coverage)
-COMBINED_COVERAGE=$(get_combined_coverage)
-
-# Run coverage table before displaying test results
-coverage_table_script="$LIB_DIR/coverage_table.sh"
-if [[ -x "$coverage_table_script" ]] && [ "$SKIP_TESTS" = false ]; then
-    # Save coverage table output to file and display to console using tee
-    coverage_table_file="$RESULTS_DIR/coverage_table.txt"
-    "$coverage_table_script" 2>/dev/null | tee "$coverage_table_file" || true
-    
-    # Launch background process to generate COVERAGE.svg from saved file
-    oh_script="$LIB_DIR/Oh.sh"
-    coverage_svg_path="$PROJECT_DIR/COVERAGE.svg"
-    if [[ -x "$oh_script" ]] && [[ -f "$coverage_table_file" ]]; then
-        # Delete existing file before generating new one
-        rm -f "$coverage_svg_path"
-        # Generate SVG from saved coverage table file in background
-        ("$oh_script" -i "$coverage_table_file" -o "$coverage_svg_path" 2>/dev/null) &
-    fi
-fi
-
 # Generate display timestamp for footer
 display_timestamp=$(date '+%Y-%m-%d %H:%M:%S %Z')
 
-# Generate summary table using the sourced table libraries
-# Create layout JSON string
 
+# Create layout JSON string
 layout_json_content='{
     "title": "Test Suite Results {NC}{RED}———{RESET}{BOLD}{CYAN} Unity {WHITE}'"$UNITY_COVERAGE"'% {RESET}{RED}———{RESET}{BOLD}{CYAN} Blackbox {WHITE}'"$BLACKBOX_COVERAGE"'% {RESET}{RED}———{RESET}{BOLD}{CYAN} Combined {WHITE}'"$COMBINED_COVERAGE"'%{RESET}",
     "footer": "{CYAN}Cumulative {WHITE}'"$TOTAL_RUNNING_TIME_FORMATTED"'{RED} ——— {RESET}{CYAN}Elapsed {WHITE}'"$TOTAL_ELAPSED_FORMATTED"'{RED} ——— {CYAN}Timestamp {WHITE}'"$display_timestamp"'{RESET}",
