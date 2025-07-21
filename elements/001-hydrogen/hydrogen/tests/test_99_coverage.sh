@@ -27,6 +27,12 @@ source "$SCRIPT_DIR/lib/framework.sh"
 source "$SCRIPT_DIR/lib/coverage.sh"
 # shellcheck source=tests/lib/coverage-common.sh # Resolve path statically
 source "$SCRIPT_DIR/lib/coverage-common.sh"
+# shellcheck source=tests/lib/coverage-unity.sh # Resolve path statically
+source "$SCRIPT_DIR/lib/coverage-unity.sh"
+# shellcheck source=tests/lib/coverage-blackbox.sh # Resolve path statically
+source "$SCRIPT_DIR/lib/coverage-blackbox.sh"
+# shellcheck source=tests/lib/coverage-combined.sh # Resolve path statically
+source "$SCRIPT_DIR/lib/coverage-combined.sh"
 
 # Test configuration
 EXIT_CODE=0

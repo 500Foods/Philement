@@ -1,26 +1,48 @@
 #!/bin/bash
-#
-# coverage-common.sh - Common utilities and variables for coverage calculation
-#
-# This script provides shared variables, functions, and utilities used by
-# all coverage calculation modules.
-#
 
-# Coverage data storage locations
-# Use the calling script's SCRIPT_DIR if available, otherwise determine our own
-if [[ -z "$SCRIPT_DIR" ]]; then
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-fi
-COVERAGE_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Coverage Common Library
+# Utilities and variables for coverage calculations
 
-# Always use build/tests/results directory
-COVERAGE_BUILD_DIR="$(dirname "$(dirname "$COVERAGE_SCRIPT_DIR")")/build"
-COVERAGE_RESULTS_DIR="$COVERAGE_BUILD_DIR/tests/results"
+# LIBRARY FUNCTIONS
+# analyze_combined_gcov_coverage()
+# analyze_all_gcov_coverage_batch()
+# load_ignore_patterns()
+# should_ignore_file()
+# load_source_files()
+# identify_uncovered_files()
+# cleanup_coverage_data()
+# analyze_gcov_file()
+# collect_gcov_files()
 
-UNITY_COVERAGE_FILE="$COVERAGE_RESULTS_DIR/coverage_unity.txt"
-BLACKBOX_COVERAGE_FILE="$COVERAGE_RESULTS_DIR/coverage_blackbox.txt"
-COMBINED_COVERAGE_FILE="$COVERAGE_RESULTS_DIR/coverage_combined.txt"
-OVERLAP_COVERAGE_FILE="$COVERAGE_RESULTS_DIR/coverage_overlap.txt"
+# CHANGELOG
+# 1.0.0 - 2025-07-21 - Initial version with common coverage functions
+
+# Guard clause to prevent multiple sourcing
+[[ -n "$COVERAGE_COMMON_GUARD" ]] && return 0
+export COVERAGE_COMMON_GUARD="true"
+
+# Library metadata
+COVERAGE_COMMON_NAME="Coverage Common Library"
+COVERAGE_COMMON_VERSION="2.1.0"
+
+# Sort out directories
+PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
+SCRIPT_DIR="$PROJECT_DIR/tests"
+LIB_DIR="$SCRIPT_DIR/lib"
+BUILD_DIR="$PROJECT_DIR/build"
+TESTS_DIR="$BUILD_DIR/tests"
+RESULTS_DIR="$TESTS_DIR/results"
+DIAGS_DIR="$TESTS_DIR/diagnostics"
+LOGS_DIR="$TESTS_DIR/logs"
+mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}"
+
+print_message "$COVERAGE_COMMON_NAME $COVERAGE_COMMON_VERSION" "info"
+
+# Store resuls
+UNITY_COVERAGE_FILE="$RESULTS_DIR/coverage_unity.txt"
+BLACKBOX_COVERAGE_FILE="$RESULTS_DIR/coverage_blackbox.txt"
+COMBINED_COVERAGE_FILE="$RESULTS_DIR/coverage_combined.txt"
+OVERLAP_COVERAGE_FILE="$RESULTS_DIR/coverage_overlap.txt"
 
 # Function to analyze combined coverage from two gcov files for the same source file
 # Usage: analyze_combined_gcov_coverage <unity_gcov_file> <blackbox_gcov_file>
@@ -366,9 +388,6 @@ analyze_all_gcov_coverage_batch() {
     
     return 0
 }
-
-# Ensure coverage directories exist
-mkdir -p "$COVERAGE_RESULTS_DIR"
 
 # Global ignore patterns and source file cache loaded once
 IGNORE_PATTERNS_LOADED=""
