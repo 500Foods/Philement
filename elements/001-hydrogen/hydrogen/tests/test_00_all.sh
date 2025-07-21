@@ -29,24 +29,44 @@ RESULTS_DIR="$TESTS_DIR/results"
 DIAGS_DIR="$TESTS_DIR/diagnostics"
 LOGS_DIR="$TESTS_DIR/logs"
 
+# Get start time
+START_TIME=$(date +%s.%N 2>/dev/null || date +%s)
+
 # shellcheck source=tests/lib/framework.sh # Resolve path statically
 source "$LIB_DIR/framework.sh"
 # shellcheck source=tests/lib/log_output.sh # Resolve path statically
 source "$LIB_DIR/log_output.sh"
+
+# Auto-extract test number and set up environment
+TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
+set_test_number "$TEST_NUMBER"
+reset_subtest_counter
+next_subtest
+
+# Print beautiful test suite header in blue
+print_test_suite_header "$TEST_NAME" "$SCRIPT_VERSION"
+
+print_message "$FRAMEWORK_NAME $FRAMEWORK_VERSION" "info"
+print_message "$LOG_OUTPUT_NAME $LOG_OUTPUT_VERSION" "info"
+
 # shellcheck source=tests/lib/file_utils.sh # Resolve path statically
 source "$LIB_DIR/file_utils.sh"
 # shellcheck source=tests/lib/cloc.sh # Resolve path statically
 source "$LIB_DIR/cloc.sh"
 # shellcheck source=tests/lib/coverage.sh # Resolve path statically
 source "$LIB_DIR/coverage.sh"
+# shellcheck source=tests/lib/coverage-common.sh # Resolve path statically
+source "$LIB_DIR/coverage-common.sh"
+# shellcheck source=tests/lib/coverage-unity.sh # Resolve path statically
+source "$LIB_DIR/coverage-unity.sh"
+# shellcheck source=tests/lib/coverage-blackbox.sh # Resolve path statically
+source "$LIB_DIR/coverage-blackbox.sh"
+# shellcheck source=tests/lib/coverage-combined.sh # Resolve path statically
+source "$LIB_DIR/coverage-combined.sh"
 
-# Auto-extract test number and set up environment
-TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
-set_test_number "$TEST_NUMBER"
-reset_subtest_counter
-
-# Get start time
-START_TIME=$(date +%s.%N 2>/dev/null || date +%s)
+# Perform cleanup before starting tests
+print_message "Cleaning Build Environment" "info"
+perform_cleanup
 
 # Arrays to track test results
 declare -a TEST_NUMBERS
@@ -335,24 +355,6 @@ for arg in "$@"; do
         --skip-tests) SKIP_TESTS=true ;;
     esac
 done
-
-# Perform cleanup before test execution
-perform_cleanup() {
-    # Clear out build directory
-    rm -rf "${BUILD_DIR:?}" > /dev/null 2>&1
-
-    # Remove hydrogen executables silently
-    rm -f "$PROJECT_DIR/hydrogen*" > /dev/null 2>&1
-
-    # Build necessary folders
-    mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}"
-}
-
-# Print beautiful test suite header in blue
-print_test_suite_header "$TEST_NAME" "$SCRIPT_VERSION"
-
-# Perform cleanup before starting tests
-perform_cleanup
 
 # Function to run a single test and capture results
 run_single_test() {
@@ -715,10 +717,10 @@ COMBINED_COVERAGE=$(get_combined_coverage)
 
 # Run coverage table before displaying test results
 coverage_table_script="$LIB_DIR/coverage_table.sh"
-if [[ -x "$coverage_table_script" ]] && [ "$SKIP_TESTS" = false ]; then
+if [[ -x "$coverage_table_script" ]]; then
     # Save coverage table output to file and display to console using tee
     coverage_table_file="$RESULTS_DIR/coverage_table.txt"
-    "$coverage_table_script" 2>/dev/null | tee "$coverage_table_file" || true
+    env -i bash "$coverage_table_script" 2>/dev/null | tee "$coverage_table_file" || true
     
     # Launch background process to generate COVERAGE.svg from saved file
     oh_script="$LIB_DIR/Oh.sh"

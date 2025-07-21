@@ -55,6 +55,8 @@ export LOG_OUTPUT_GUARD="true"
 LOG_OUTPUT_NAME="Log Output Library"
 LOG_OUTPUT_VERSION="3.2.1"
 
+# print_message "$LOG_OUTPUT_NAME $LOGO_OUTPUT_VERSION" "info"
+
 # Global variables for test/subtest numbering
 CURRENT_TEST_NUMBER=""
 CURRENT_SUBTEST_NUMBER=""
