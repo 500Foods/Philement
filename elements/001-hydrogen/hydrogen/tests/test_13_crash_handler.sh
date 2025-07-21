@@ -512,7 +512,7 @@ run_crash_test_with_build() {
         current_time=$(date +%s)
         elapsed=$((current_time - startup_start))
         
-        if [ $elapsed -ge $STARTUP_TIMEOUT ]; then
+        if [ "$elapsed" -ge "$STARTUP_TIMEOUT" ]; then
             print_message "Startup timeout after ${elapsed}s"
             kill -9 $hydrogen_pid 2>/dev/null || true
             return 1
@@ -555,7 +555,7 @@ run_crash_test_with_build() {
     kill -USR1 $hydrogen_pid
     
     # Wait for process to crash
-    if wait_for_crash_completion $hydrogen_pid $CRASH_TIMEOUT; then
+    if wait_for_crash_completion "$hydrogen_pid" "$CRASH_TIMEOUT"; then
         print_message "Process crashed as expected"
     else
         print_message "Process did not crash within timeout"

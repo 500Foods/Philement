@@ -189,7 +189,8 @@ if command -v shellcheck >/dev/null 2>&1; then
         print_message "Using cached results for $cached_files files, processing $processed_files files..."
         
         # Build shellcheck exclusion arguments from .lintignore-bash file
-        SHELLCHECK_EXCLUDES=(-e SC1091 -e SC2317 -e SC2034)  # Default exclusions as array
+        # SHELLCHECK_EXCLUDES=(-e SC1091 -e SC2317 -e SC2034)  # Default exclusions as array
+        SHELLCHECK_EXCLUDES=()  
         if [ -f ".lintignore-bash" ]; then
             while IFS= read -r line; do
                 # Skip comments and empty lines
@@ -207,7 +208,7 @@ if command -v shellcheck >/dev/null 2>&1; then
         # Process large files individually (they take the most time)
         if [ ${#large_files[@]} -gt 0 ]; then
             printf '%s\n' "${large_files[@]}" | \
-            xargs -n 1 -P "$CORES" shellcheck "${SHELLCHECK_EXCLUDES[@]}" -f gcc >> "$TEMP_OUTPUT" 2>&1 || true
+            xargs -n 1 -P "$CORES" shellcheck -x -f gcc "${SHELLCHECK_EXCLUDES[@]}" >> "$TEMP_OUTPUT" 2>&1 || true
         fi
         
         # Process medium files in groups of 3-4
@@ -217,7 +218,7 @@ if command -v shellcheck >/dev/null 2>&1; then
                 medium_batch_size=4
             fi
             printf '%s\n' "${medium_files[@]}" | \
-            xargs -n "$medium_batch_size" -P "$CORES" shellcheck "${SHELLCHECK_EXCLUDES[@]}" -f gcc >> "$TEMP_OUTPUT" 2>&1 || true
+            xargs -n "$medium_batch_size" -P "$CORES" shellcheck -x -f gcc "${SHELLCHECK_EXCLUDES[@]}" >> "$TEMP_OUTPUT" 2>&1 || true
         fi
         
         # Process small files in larger batches (8-12 files per job)
@@ -227,7 +228,7 @@ if command -v shellcheck >/dev/null 2>&1; then
                 small_batch_size=12
             fi
             printf '%s\n' "${small_files[@]}" | \
-            xargs -n "$small_batch_size" -P "$CORES" shellcheck "${SHELLCHECK_EXCLUDES[@]}" -f gcc >> "$TEMP_OUTPUT" 2>&1 || true
+            xargs -n "$small_batch_size" -P "$CORES" shellcheck -x -f gcc "${SHELLCHECK_EXCLUDES[@]}" >> "$TEMP_OUTPUT" 2>&1 || true
         fi
         
         # Process new files and cache results
@@ -235,7 +236,7 @@ if command -v shellcheck >/dev/null 2>&1; then
             # Process large files individually (they take the most time)
             if [ ${#large_files[@]} -gt 0 ]; then
                 printf '%s\n' "${large_files[@]}" | \
-                xargs -n 1 -P "$CORES" shellcheck "${SHELLCHECK_EXCLUDES[@]}" -f gcc >> "$TEMP_NEW_OUTPUT" 2>&1 || true
+                xargs -n 1 -P "$CORES" shellcheck -x -f gcc "${SHELLCHECK_EXCLUDES[@]}" >> "$TEMP_NEW_OUTPUT" 2>&1 || true
             fi
             
             # Process medium files in groups of 3-4
@@ -245,7 +246,7 @@ if command -v shellcheck >/dev/null 2>&1; then
                     medium_batch_size=4
                 fi
                 printf '%s\n' "${medium_files[@]}" | \
-                xargs -n "$medium_batch_size" -P "$CORES" shellcheck "${SHELLCHECK_EXCLUDES[@]}" -f gcc >> "$TEMP_NEW_OUTPUT" 2>&1 || true
+                xargs -n "$medium_batch_size" -P "$CORES" shellcheck -x -f gcc "${SHELLCHECK_EXCLUDES[@]}" >> "$TEMP_NEW_OUTPUT" 2>&1 || true
             fi
             
             # Process small files in larger batches (8-12 files per job)
@@ -255,7 +256,7 @@ if command -v shellcheck >/dev/null 2>&1; then
                     small_batch_size=12
                 fi
                 printf '%s\n' "${small_files[@]}" | \
-                xargs -n "$small_batch_size" -P "$CORES" shellcheck "${SHELLCHECK_EXCLUDES[@]}" -f gcc >> "$TEMP_NEW_OUTPUT" 2>&1 || true
+                xargs -n "$small_batch_size" -P "$CORES" shellcheck -x -f gcc "${SHELLCHECK_EXCLUDES[@]}" >> "$TEMP_NEW_OUTPUT" 2>&1 || true
             fi
             
             # Cache new results
