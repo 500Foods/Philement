@@ -5,6 +5,7 @@
 # for both Unity tests and blackbox tests in the Hydrogen project.
 
 # LIBRARY FUNCTIONS
+# get_coverage()
 # validate_coverage_consistency()
 # get_coverage_summary()
 
@@ -28,6 +29,22 @@ COVERAGE_MAIN_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$COVERAGE_MAIN_SCRIPT_DIR/coverage-common.sh"
 source "$COVERAGE_MAIN_SCRIPT_DIR/coverage-unity.sh"
 source "$COVERAGE_MAIN_SCRIPT_DIR/coverage-blackbox.sh"
+
+# Function to get coverage data by type
+get_coverage() {
+    local coverage_type="$1"
+    local coverage_file="$RESULTS_DIR/coverage_${coverage_type}.txt"
+    if [ -f "$coverage_file" ]; then
+        cat "$coverage_file" 2>/dev/null || echo "0.000"
+    else
+        echo "0.000"
+    fi
+}
+
+# Convenience functions for coverage types
+get_unity_coverage() { get_coverage "unity"; }
+get_blackbox_coverage() { get_coverage "blackbox"; }
+get_combined_coverage() { get_coverage "combined"; }
 
 # Function to validate coverage consistency and provide detailed breakdown
 validate_coverage_consistency() {

@@ -4,6 +4,7 @@
 # Provides test lifecycle management and result tracking functions
 
 # LIBRARY FUNCTIONS
+# format_time_duration()
 # start_test()
 # start_subtest()
 # end_test()
@@ -39,6 +40,35 @@ export FRAMEWORK_GUARD="true"
 # Library metadata
 FRAMEWORK_NAME="Test Framework Library"
 FRAMEWORK_VERSION="2.2.0"
+
+# Function to format seconds as HH:MM:SS.ZZZ
+format_time_duration() {
+    local seconds="$1"
+    local hours minutes secs milliseconds
+    
+    # Handle seconds that start with a decimal point (e.g., ".492")
+    if [[ "$seconds" =~ ^\. ]]; then
+        seconds="0$seconds"
+    fi
+    
+    # Handle decimal seconds
+    if [[ "$seconds" =~ ^([0-9]+)\.([0-9]+)$ ]]; then
+        secs="${BASH_REMATCH[1]}"
+        milliseconds="${BASH_REMATCH[2]}"
+        # Pad or truncate milliseconds to 3 digits
+        milliseconds="${milliseconds}000"
+        milliseconds="${milliseconds:0:3}"
+    else
+        secs="$seconds"
+        milliseconds="000"
+    fi
+    
+    hours=$((secs / 3600))
+    minutes=$(((secs % 3600) / 60))
+    secs=$((secs % 60))
+    
+    printf "%02d:%02d:%02d.%s" "$hours" "$minutes" "$secs" "$milliseconds"
+}
 
 # Function to start a test run with proper header and numbering
 start_test() {
