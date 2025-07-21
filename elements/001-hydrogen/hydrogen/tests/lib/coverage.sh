@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Coverage Calculation Functions
+# Coverage Library
 # This script provides functions for calculating and managing test coverage data
 # for both Unity tests and blackbox tests in the Hydrogen project.
 
@@ -19,7 +19,7 @@
 export COVERAGE_GUARD="true"
 
 # Library metadata
-COVERAGE_NAME="Hydrogen Coverage Library"
+COVERAGE_NAME="Coverage Library"
 COVERAGE_VERSION="2.1.0"
 
 # Get script directory - don't overwrite if already set by calling script
@@ -29,6 +29,9 @@ COVERAGE_MAIN_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$COVERAGE_MAIN_SCRIPT_DIR/coverage-common.sh"
 source "$COVERAGE_MAIN_SCRIPT_DIR/coverage-unity.sh"
 source "$COVERAGE_MAIN_SCRIPT_DIR/coverage-blackbox.sh"
+source "$COVERAGE_MAIN_SCRIPT_DIR/coverage-combined.sh"
+
+print_message "$COVERAGE_NAME $COVERAGE_VERSION" "info"
 
 # Function to get coverage data by type
 get_coverage() {

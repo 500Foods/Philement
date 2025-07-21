@@ -5,6 +5,7 @@
 
 # LIBRARY FUNCTIONS
 # format_time_duration()
+# perform_cleanup()
 # start_test()
 # start_subtest()
 # end_test()
@@ -38,8 +39,10 @@
 export FRAMEWORK_GUARD="true"
 
 # Library metadata
-FRAMEWORK_NAME="Test Framework Library"
+FRAMEWORK_NAME="Framework Library"
 FRAMEWORK_VERSION="2.2.0"
+
+# print_message "$FRAMEWORK_NAME $FRAMEWORK_VERSION" "info"
 
 # Function to format seconds as HH:MM:SS.ZZZ
 format_time_duration() {
@@ -68,6 +71,18 @@ format_time_duration() {
     secs=$((secs % 60))
     
     printf "%02d:%02d:%02d.%s" "$hours" "$minutes" "$secs" "$milliseconds"
+}
+
+# Perform cleanup before test execution
+perform_cleanup() {
+    # Clear out build directory
+    rm -rf "${BUILD_DIR:?}" > /dev/null 2>&1
+
+    # Remove hydrogen executables silently
+    rm -f "$PROJECT_DIR/hydrogen*" > /dev/null 2>&1
+
+    # Build necessary folders
+    mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}"
 }
 
 # Function to start a test run with proper header and numbering
