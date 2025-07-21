@@ -41,7 +41,7 @@ export FRAMEWORK_GUARD="true"
 # Library metadata
 FRAMEWORK_NAME="Framework Library"
 FRAMEWORK_VERSION="2.2.0"
-
+export FRAMEWORK_NAME FRAMEWORK_VERSION
 # print_message "$FRAMEWORK_NAME $FRAMEWORK_VERSION" "info"
 
 # Function to format seconds as HH:MM:SS.ZZZ

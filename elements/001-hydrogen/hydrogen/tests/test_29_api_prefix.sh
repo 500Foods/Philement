@@ -107,8 +107,7 @@ validate_api_request() {
     local attempt=1
     local curl_exit_code=0
     local curl_error_file="$RESULTS_DIR/curl_error_${unique_id}.txt"
-    local api_ready=false
-    
+        
     while [ $attempt -le $max_attempts ]; do
         if [ $attempt -gt 1 ]; then
             print_message "API request attempt $attempt of $max_attempts (waiting for API subsystem initialization)..."

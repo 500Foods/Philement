@@ -260,6 +260,7 @@ build_file_cache
 timing_end "build_file_cache"
 
 # Optimized file processing function for xargs
+# shellcheck disable=SC2317 # Called by something else
 process_file_batch() {
     local cache_file="$1"
     local repo_root="$2"
