@@ -4,6 +4,7 @@
 # Runs github-sitemap.sh to check markdown links and evaluates results with subtests
 
 # CHANGELOG
+# 2.1.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 2.0.4 - 2025-07-14 - Updated to use build/tests directories for test output consistency
 # 2.0.3 - 2025-07-07 - Fixed table detection to distinguish between column headers and dedicated issue tables
 # 2.0.2 - 2025-07-07 - Fixed extraction logic for missing links and orphaned files counts with ANSI color code handling
@@ -15,18 +16,24 @@
 TEST_NAME="Markdown Links Check {BLUE}(github-sitemap){RESET}"
 SCRIPT_VERSION="2.0.4"
 
-# Get the directory where this script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Sort out directories
+PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
+# CMAKE_DIR="$PROJECT_DIR/cmake"
+SCRIPT_DIR="$PROJECT_DIR/tests"
+LIB_DIR="$SCRIPT_DIR/lib"
+BUILD_DIR="$PROJECT_DIR/build"
+TESTS_DIR="$BUILD_DIR/tests"
+RESULTS_DIR="$TESTS_DIR/results"
+DIAGS_DIR="$TESTS_DIR/diagnostics"
+LOGS_DIR="$TESTS_DIR/logs"
+mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}"
 
-if [[ -z "$LOG_OUTPUT_SH_GUARD" ]]; then
-    # shellcheck source=tests/lib/log_output.sh # Resolve path statically
-    source "$SCRIPT_DIR/lib/log_output.sh"
-fi
-
-# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
-source "$SCRIPT_DIR/lib/file_utils.sh"
 # shellcheck source=tests/lib/framework.sh # Resolve path statically
-source "$SCRIPT_DIR/lib/framework.sh"
+[[ -n "$FRAMEWORK_GUARD" ]] || source "$LIB_DIR/framework.sh"
+# shellcheck source=tests/lib/log_output.sh # Resolve path statically
+[[ -n "$LOG_OUTPUT_GUARD" ]] || source "$LIB_DIR/log_output.sh"
+# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
+[[ -n "$FILE_UTILS_GUARD" ]] || source "$LIB_DIR/file_utils.sh"
 
 # Test configuration
 EXIT_CODE=0
@@ -57,7 +64,7 @@ fi
 # Set up results directory (after navigating to project root)
 
 # Test configuration
-SITEMAP_SCRIPT="tests/lib/github-sitemap.sh"
+SITEMAP_SCRIPT="$LIB_DIR/github-sitemap.sh"
 TARGET_README="README.md"
 
 # Subtest 1: Validate sitemap script availability

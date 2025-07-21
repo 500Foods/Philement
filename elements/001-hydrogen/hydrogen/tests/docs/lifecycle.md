@@ -170,7 +170,7 @@ This document provides detailed information about the functions available in `li
 - **Example**:
 
   ```bash
-  if setup_output_directories "$RESULTS_DIR" "$DIAG_DIR" "$LOG_FILE" "$DIAG_TEST_DIR"; then
+  if setup_output_directories "$RESULTS_DIR" "$DIAGS_DIR" "$LOG_FILE" "$DIAG_TEST_DIR"; then
       ((PASS_COUNT++))
   else
       EXIT_CODE=1
@@ -335,7 +335,7 @@ if hydrogen_pid=$(start_hydrogen "$CONFIG_FILE" "$LOG_FILE" 30 "$HYDROGEN_BIN");
     # Run tests...
     
     # Stop Hydrogen
-    stop_hydrogen "$hydrogen_pid" "$LOG_FILE" 10 5 "$DIAG_DIR"
+    stop_hydrogen "$hydrogen_pid" "$LOG_FILE" 10 5 "$DIAGS_DIR"
 fi
 ```
 

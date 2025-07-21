@@ -91,13 +91,13 @@ SHUTDOWN_ACTIVITY_TIMEOUT=5  # Timeout if no new log activity
 # Output files and directories - always use build/tests/ for consistency
 BUILD_DIR="$SCRIPT_DIR/../build"
 LOG_FILE="$BUILD_DIR/tests/logs/hydrogen_test.log"
-DIAG_DIR="$BUILD_DIR/tests/diagnostics"
-DIAG_TEST_DIR="$DIAG_DIR/startup_shutdown_test_${TIMESTAMP}"
+DIAGS_DIR="$BUILD_DIR/tests/diagnostics"
+DIAG_TEST_DIR="$DIAGS_DIR/startup_shutdown_test_${TIMESTAMP}"
 
 # Create output directories
 next_subtest
 print_subtest "Create Output Directories"
-if setup_output_directories "$RESULTS_DIR" "$DIAG_DIR" "$LOG_FILE" "$DIAG_TEST_DIR"; then
+if setup_output_directories "$RESULTS_DIR" "$DIAGS_DIR" "$LOG_FILE" "$DIAG_TEST_DIR"; then
     ((PASS_COUNT++))
 else
     EXIT_CODE=1

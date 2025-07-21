@@ -4,6 +4,10 @@
 # This script provides functions for calculating and managing test coverage data
 # for both Unity tests and blackbox tests in the Hydrogen project.
 
+# LIBRARY FUNCTIONS
+# validate_coverage_consistency()
+# get_coverage_summary()
+
 # CHANGELOG
 # 2.1.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 2.0.0 - 2025-07-11 - Refactored into modular components

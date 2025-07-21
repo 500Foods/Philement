@@ -3,6 +3,36 @@
 # Log Output Library
 # Provides consistent logging, formatting, and display functions for test scripts
 
+# LIBRARY FUNCTIONS
+# set_absolute_root()
+# process_message()
+# set_test_number()
+# set_subtest_number()
+# extract_test_number()
+# next_subtest()
+# reset_subtest_counter()
+# get_test_prefix()
+# start_test_timer()
+# record_test_result()
+# get_elapsed_time()
+# get_elapsed_time_decimal()
+# format_file_size()
+# enable_output_collection()
+# disable_output_collection()
+# dump_collected_output()
+# clear_collected_output()
+# print_test_header()
+# print_subtest()
+# print_command()
+# print_output()
+# print_result()
+# print_warning()
+# print_error()
+# print_message()
+# print_test_suite_header()
+# print_test_completion()
+# print_test_item()
+
 # CHANGELOG
 # 3.3.0 - 2025-07-20 - Updated guard clause to prevent multiple sourcing
 # 3.2.1 - 2025-07-18 - Fixed hanging issue in output collection mechanism when running through orchestrator
