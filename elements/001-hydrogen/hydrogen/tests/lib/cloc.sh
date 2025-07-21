@@ -3,6 +3,14 @@
 # CLOC (Count Lines of Code) Library
 # Provides shared cloc functionality for test scripts
 
+# LIBRARY FUNCTIONS
+# should_exclude_file()
+# generate_cloc_exclude_list()
+# run_cloc_analysis()
+# generate_cloc_for_readme()
+# extract_cloc_stats()
+# run_cloc_with_stats()
+
 # CHANGELOG
 # 1.1.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 1.0.0 - 2025-07-02 - Initial creation, extracted from test_99_codebase.sh and test_00_all.sh

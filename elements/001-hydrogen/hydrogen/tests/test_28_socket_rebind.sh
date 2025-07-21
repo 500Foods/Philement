@@ -196,10 +196,10 @@ next_subtest
 print_subtest "Shutdown first instance" | tee -a "$RESULT_LOG"
 
 # Stop first instance using lifecycle.sh
-DIAG_DIR="$RESULTS_DIR/diagnostics_${TIMESTAMP}"
-mkdir -p "$DIAG_DIR"
+DIAGS_DIR="$RESULTS_DIR/diagnostics_${TIMESTAMP}"
+mkdir -p "$DIAGS_DIR"
 
-if stop_hydrogen "$FIRST_PID" "$FIRST_LOG" 15 5 "$DIAG_DIR"; then
+if stop_hydrogen "$FIRST_PID" "$FIRST_LOG" 15 5 "$DIAGS_DIR"; then
     print_result 0 "First instance shutdown successfully"
     ((PASS_COUNT++))
 else

@@ -19,7 +19,7 @@ SCRIPT_VERSION="2.2.0"
 
 # Sort out directories
 PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
-CMAKE_DIR="$PROJECT_DIR/cmake"
+# CMAKE_DIR="$PROJECT_DIR/cmake"
 SCRIPT_DIR="$PROJECT_DIR/tests"
 LIB_DIR="$SCRIPT_DIR/lib"
 BUILD_DIR="$PROJECT_DIR/build"

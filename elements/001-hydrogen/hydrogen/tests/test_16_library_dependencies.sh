@@ -63,8 +63,8 @@ HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 # Use build/tests/ directory for consistency
 BUILD_DIR="$SCRIPT_DIR/../build"
 LOG_FILE="$BUILD_DIR/tests/logs/library_deps.log"
-DIAG_DIR="$BUILD_DIR/tests/diagnostics"
-DIAG_TEST_DIR="$DIAG_DIR/library_deps_${TIMESTAMP}"
+DIAGS_DIR="$BUILD_DIR/tests/diagnostics"
+DIAG_TEST_DIR="$DIAGS_DIR/library_deps_${TIMESTAMP}"
 STARTUP_TIMEOUT=10
 
 # Validate Hydrogen Binary
@@ -86,7 +86,7 @@ MINIMAL_CONFIG="$SCRIPT_DIR/configs/hydrogen_test_min.json"
 # Create output directories
 next_subtest
 print_subtest "Create Output Directories"
-if setup_output_directories "$RESULTS_DIR" "$DIAG_DIR" "$LOG_FILE" "$DIAG_TEST_DIR"; then
+if setup_output_directories "$RESULTS_DIR" "$DIAGS_DIR" "$LOG_FILE" "$DIAG_TEST_DIR"; then
     ((PASS_COUNT++))
 else
     EXIT_CODE=1

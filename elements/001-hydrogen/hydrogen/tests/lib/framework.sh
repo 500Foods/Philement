@@ -3,6 +3,29 @@
 # Framework Library
 # Provides test lifecycle management and result tracking functions
 
+# LIBRARY FUNCTIONS
+# start_test()
+# start_subtest()
+# end_test()
+# setup_test_environment()
+# navigate_to_project_root()
+# export_subtest_results()
+# export_test_results()
+# run_check()
+# evaluate_test_result()
+# evaluate_test_result_silent()
+# generate_html_report()
+# start_test_suite()
+# end_test_suite()
+# increment_passed_tests()
+# increment_failed_tests()
+# get_passed_tests()
+# get_failed_tests()
+# get_total_tests()
+# get_exit_code()
+# print_subtest_header()
+# skip_remaining_subtests()
+
 # CHANGELOG
 # 2.2.0 - 2025-07-20 - Added guard
 # 2.1.0 - 2025-07-07 - Restructured how test elapsed times are stored and accessed
