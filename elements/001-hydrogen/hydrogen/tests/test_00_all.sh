@@ -92,7 +92,7 @@ while IFS= read -r line; do
     results+=("${line}")
 done < <(printf "%s\n" "${commands[@]}" | xargs -P 0 -I {} bash -c '
     cmd="{}"
-    export PATH="${PATH}:lib"
+    cd .. && export PATH="${PATH}:tests/lib"
     if command -v "${cmd}" >/dev/null 2>&1; then
         cmd_path=$(command -v "${cmd}")
         version=$(${cmd_path} --version 2>&1 | grep -oE "[0-9]+\.[0-9]+([.-][0-9a-zA-Z]+)*" | head -n 1)
