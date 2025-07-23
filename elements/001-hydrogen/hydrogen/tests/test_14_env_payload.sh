@@ -14,26 +14,29 @@
 # Test configuration
 TEST_NAME="Payload Env Vars"
 SCRIPT_VERSION="3.0.2"
-# 
-# Get the directory where this script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Only source log_output.sh if not already loaded (check guard variable)
-if [[ -z "${LOG_OUTPUT_SH_GUARD}" ]]; then
-    # shellcheck source=tests/lib/log_output.sh # Resolve path statically
-    source "${SCRIPT_DIR}/lib/log_output.sh"
-fi
+# Sort out directories
+PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
+SCRIPT_DIR="${PROJECT_DIR}/tests"
+LIB_DIR="${SCRIPT_DIR}/lib"
+BUILD_DIR="${PROJECT_DIR}/build"
+TESTS_DIR="${BUILD_DIR}/tests"
+RESULTS_DIR="${TESTS_DIR}/results"
+DIAGS_DIR="${TESTS_DIR}/diagnostics"
+LOGS_DIR="${TESTS_DIR}/logs"
+mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}"
 
-# Source other modular test libraries (always needed, not provided by test suite)
 # shellcheck source=tests/lib/framework.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/framework.sh"
-# shellcheck source=tests/lib/env_utils.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/env_utils.sh"
+[[ -n "${FRAMEWORK_GUARD}" ]] || source "${LIB_DIR}/framework.sh"
+# shellcheck source=tests/lib/log_output.sh # Resolve path statically
+[[ -n "${LOG_OUTPUT_GUARD}" ]] || source "${LIB_DIR}/log_output.sh"
 
 # Test configuration
 EXIT_CODE=0
 TOTAL_SUBTESTS=2
 PASS_COUNT=0
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+RESULT_LOG="${RESULTS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
 
 # Auto-extract test number and set up environment
 TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
@@ -43,12 +46,11 @@ reset_subtest_counter
 # Print beautiful test header
 print_test_header "${TEST_NAME}" "${SCRIPT_VERSION}"
 
-# Always use build/tests/results directory
-BUILD_DIR="${SCRIPT_DIR}/../build"
-RESULTS_DIR="${BUILD_DIR}/tests/results"
-mkdir -p "${RESULTS_DIR}"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-RESULT_LOG="${RESULTS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
+# Print framework and log output versions as they are already sourced
+[[ -n "${ORCHESTRATION}" ]] || print_message "${FRAMEWORK_NAME} ${FRAMEWORK_VERSION}" "info"
+[[ -n "${ORCHESTRATION}" ]] || print_message "${LOG_OUTPUT_NAME} ${LOG_OUTPUT_VERSION}" "info"
+# shellcheck source=tests/lib/env_utils.sh # Resolve path statically
+[[ -n "${ENV_UTILS_GUARD}" ]] || source "${LIB_DIR}/env_utils.sh"
 
 # Subtest: Environment Variables Present
 next_subtest
@@ -87,7 +89,7 @@ test_rsa_key_format() {
     local passed_checks=0
 
     # Validate PAYLOAD_KEY (private key)
-    if [ -n "${PAYLOAD_KEY}" ]; then
+    if [[ -n "${PAYLOAD_KEY}" ]]; then
         print_command "echo \"\${PAYLOAD_KEY}\" | base64 -d | openssl rsa -check -noout"
         if validate_rsa_key "PAYLOAD_KEY" "${PAYLOAD_KEY}" "private"; then
             ((passed_checks++))
@@ -97,7 +99,7 @@ test_rsa_key_format() {
     fi
 
     # Validate PAYLOAD_LOCK (public key)
-    if [ -n "${PAYLOAD_LOCK}" ]; then
+    if [[ -n "${PAYLOAD_LOCK}" ]]; then
         print_command "echo \"\${PAYLOAD_LOCK}\" | base64 -d | openssl rsa -pubin -noout"
         if validate_rsa_key "PAYLOAD_LOCK" "${PAYLOAD_LOCK}" "public"; then
             ((passed_checks++))
@@ -120,11 +122,11 @@ export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "${TOTAL_SUBTESTS}" "
 # Print completion table
 print_test_completion "${TEST_NAME}"
 
-end_test ${EXIT_CODE} ${TOTAL_SUBTESTS} ${PASS_COUNT} > /dev/null
+end_test "${EXIT_CODE}" "${TOTAL_SUBTESTS}" "${PASS_COUNT}" > /dev/null
 
 # Return status code if sourced, exit if run standalone
-if [[ "${RUNNING_IN_TEST_SUITE}" == "true" ]]; then
-    return ${EXIT_CODE}
+if [[ "${ORCHESTRATION}" == "true" ]]; then
+    return "${EXIT_CODE}"
 else
-    exit ${EXIT_CODE}
+    exit "${EXIT_CODE}"
 fi

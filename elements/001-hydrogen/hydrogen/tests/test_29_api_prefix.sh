@@ -454,7 +454,7 @@ print_test_completion "${TEST_NAME}"
 end_test "${FINAL_RESULT}" "${TOTAL_SUBTESTS}" "${PASS_COUNT}" > /dev/null
 
 # Return status code if sourced, exit if run standalone
-if [[ "${RUNNING_IN_TEST_SUITE}" == "true" ]]; then
+if [[ "${ORCHESTRATION}" == "true" ]]; then
     return ${FINAL_RESULT}
 else
     exit ${FINAL_RESULT}

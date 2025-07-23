@@ -560,7 +560,7 @@ export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "${TOTAL_SUBTESTS}" "
 print_test_completion "${TEST_NAME}"
 
 # Return status code if sourced, exit if run standalone
-if [[ "${RUNNING_IN_TEST_SUITE}" == "true" ]]; then
+if [[ "${ORCHESTRATION}" == "true" ]]; then
     return ${FINAL_RESULT}
 else
     exit ${FINAL_RESULT}

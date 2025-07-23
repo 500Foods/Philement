@@ -709,17 +709,13 @@ if [ ${#BUILDS[@]} -eq 0 ]; then
     export_subtest_results "50_crash_handler" 3 ${PASS_COUNT} > /dev/null
     print_test_completion "${TEST_NAME}"
     end_test ${EXIT_CODE} 3 ${PASS_COUNT} > /dev/null
+
     # Return status code if sourced, exit if run standalone
-if [[ "${RUNNING_IN_TEST_SUITE}" == "true" ]]; then
-    return ${EXIT_CODE}
-else
-    # Return status code if sourced, exit if run standalone
-if [[ "${RUNNING_IN_TEST_SUITE}" == "true" ]]; then
-    return ${EXIT_CODE}
-else
-    exit ${EXIT_CODE}
-fi
-fi
+    if [[ "${ORCHESTRATION}" == "true" ]]; then
+        return ${EXIT_CODE}
+    else    
+        exit ${EXIT_CODE}
+    fi
 fi
 
 # Calculate total subtests: 2 initial + (4 per build)
@@ -862,7 +858,7 @@ print_test_completion "${TEST_NAME}"
 end_test ${EXIT_CODE} ${TOTAL_SUBTESTS} ${PASS_COUNT} > /dev/null
 
 # Return status code if sourced, exit if run standalone
-if [[ "${RUNNING_IN_TEST_SUITE}" == "true" ]]; then
+if [[ "${ORCHESTRATION}" == "true" ]]; then
     return ${EXIT_CODE}
 else
     exit ${EXIT_CODE}
