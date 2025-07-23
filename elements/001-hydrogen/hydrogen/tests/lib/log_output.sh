@@ -48,14 +48,14 @@
 # 1.0.0 - 2025-07-02 - Initial creation from support_utils.sh migration
 
 # Guard clause to prevent multiple sourcing
-[[ -n "$LOG_OUTPUT_GUARD" ]] && return 0
+[[ -n "${LOG_OUTPUT_GUARD}" ]] && return 0
 export LOG_OUTPUT_GUARD="true"
 
 # Library metadata
 LOG_OUTPUT_NAME="Log Output Library"
 LOG_OUTPUT_VERSION="3.2.1"
 export LOG_OUTPUT_NAME LOG_OUTPUT_VERSION
-# print_message "$LOG_OUTPUT_NAME $LOG_OUTPUT_VERSION" "info"
+# print_message "${LOG_OUTPUT_NAME} ${LOG_OUTPUT_VERSION}" "info"
 
 # Global variables for test/subtest numbering
 CURRENT_TEST_NUMBER=""
@@ -108,12 +108,12 @@ TEST_ICON="${TEST_COLOR}\U2587\U2587${NC}"
 # Usage: set_absolute_root <script_path>
 set_absolute_root() {
   local script_path="$1"
-  if [[ -n "$script_path" && "$script_path" == /* ]]; then
+  if [[ -n "${script_path}" && "${script_path}" == /* ]]; then
     local script_dir
-    script_dir="$(dirname "$script_path")"
+    script_dir="$(dirname "${script_path}")"
     local project_root
-    project_root="$(dirname "$(dirname "$script_dir")")/"
-    ABSOLUTE_ROOT="$project_root"
+    project_root="$(dirname "$(dirname "${script_dir}")")/"
+    ABSOLUTE_ROOT="${project_root}"
   else
     ABSOLUTE_ROOT=""
   fi
@@ -124,11 +124,11 @@ set_absolute_root() {
 # Usage: process_message <message>
 process_message() {
   local message="$1"
-  local processed="$message"
-  if [[ -n "$ABSOLUTE_ROOT" ]]; then
-    processed="${message//$ABSOLUTE_ROOT/}"
+  local processed="${message}"
+  if [[ -n "${ABSOLUTE_ROOT}" ]]; then
+    processed="${message//${ABSOLUTE_ROOT}/}"
   fi
-  echo "$processed"
+  echo "${processed}"
 }
 
 # Set the absolute root based on the current script's directory (assuming this is sourced from a test script)
@@ -156,10 +156,10 @@ set_subtest_number() {
 extract_test_number() {
     local script_path="$1"
     local filename
-    filename=$(basename "$script_path")
+    filename=$(basename "${script_path}")
     
     # Extract number from test_XX_name.sh format
-    if [[ "$filename" =~ test_([0-9]+)_ ]]; then
+    if [[ "${filename}" =~ test_([0-9]+)_ ]]; then
         echo "${BASH_REMATCH[1]}"
     else
         echo "XX"
@@ -169,7 +169,7 @@ extract_test_number() {
 # Function to increment and get next subtest number
 next_subtest() {
     ((SUBTEST_COUNTER++))
-    CURRENT_SUBTEST_NUMBER=$(printf "%03d" $SUBTEST_COUNTER)
+    CURRENT_SUBTEST_NUMBER=$(printf "%03d" ${SUBTEST_COUNTER})
 }
 
 # Function to reset subtest counter
@@ -180,9 +180,9 @@ reset_subtest_counter() {
 
 # Function to get the current test prefix for output
 get_test_prefix() {
-    if [ -n "$CURRENT_SUBTEST_NUMBER" ]; then
+    if [ -n "${CURRENT_SUBTEST_NUMBER}" ]; then
         echo "${CURRENT_TEST_NUMBER}-${CURRENT_SUBTEST_NUMBER}"
-    elif [ -n "$CURRENT_TEST_NUMBER" ]; then
+    elif [ -n "${CURRENT_TEST_NUMBER}" ]; then
         echo "${CURRENT_TEST_NUMBER}"
     else
         echo "XX"
@@ -199,7 +199,7 @@ start_test_timer() {
 # Function to record test result for statistics
 record_test_result() {
     local status=$1
-    if [ "$status" -eq 0 ]; then
+    if [ "${status}" -eq 0 ]; then
         ((TEST_PASSED_COUNT++))
     else
         ((TEST_FAILED_COUNT++))
@@ -208,21 +208,21 @@ record_test_result() {
 
 # Function to calculate elapsed time in SSS.ZZZ format for console output
 get_elapsed_time() {
-    if [ -n "$TEST_START_TIME" ]; then
+    if [ -n "${TEST_START_TIME}" ]; then
         local end_time
         end_time=$(date +%s.%3N)
         local elapsed
-        elapsed=$(echo "$end_time - $TEST_START_TIME" | bc -l 2>/dev/null || echo "0.000")
+        elapsed=$(echo "${end_time} - ${TEST_START_TIME}" | bc -l 2>/dev/null || echo "0.000")
         # Format as SSS.ZZZ (seconds.milliseconds with zero padding)
         local seconds
         local milliseconds
-        seconds=$(echo "$elapsed" | cut -d. -f1)
-        milliseconds=$(echo "$elapsed" | cut -d. -f2)
+        seconds=$(echo "${elapsed}" | cut -d. -f1)
+        milliseconds=$(echo "${elapsed}" | cut -d. -f2)
         # Ensure milliseconds is exactly 3 digits, pad or truncate as needed
         milliseconds="${milliseconds}000"  # Add padding
         milliseconds="${milliseconds:0:3}" # Truncate to 3 digits
         # Format with zero padding for seconds (3 digits)
-        printf "%03d.%s" "$seconds" "$milliseconds"
+        printf "%03d.%s" "${seconds}" "${milliseconds}"
     else
         echo "000.000"
     fi
@@ -230,12 +230,12 @@ get_elapsed_time() {
 
 # Function to calculate elapsed time in decimal format for table output
 get_elapsed_time_decimal() {
-    if [ -n "$TEST_START_TIME" ]; then
+    if [ -n "${TEST_START_TIME}" ]; then
         local end_time
         end_time=$(date +%s.%3N)
         local elapsed
-        elapsed=$(echo "$end_time - $TEST_START_TIME" | bc -l 2>/dev/null || echo "0.000")
-        printf "%.3f" "$elapsed"
+        elapsed=$(echo "${end_time} - ${TEST_START_TIME}" | bc -l 2>/dev/null || echo "0.000")
+        printf "%.3f" "${elapsed}"
     else
         echo "0.000"
     fi
@@ -246,9 +246,9 @@ format_file_size() {
     local file_size="$1"
     # Use printf with thousands separator if available, otherwise return as-is
     if command -v printf >/dev/null 2>&1; then
-        printf "%'d" "$file_size" 2>/dev/null || echo "$file_size"
+        printf "%'d" "${file_size}" 2>/dev/null || echo "${file_size}"
     else
-        echo "$file_size"
+        echo "${file_size}"
     fi
 }
 
@@ -284,14 +284,14 @@ dump_collected_output() {
         
         for line in "${OUTPUT_COLLECTION[@]}"; do
             # Safety check for runaway loops
-            if [[ $count -ge $max_lines ]]; then
-                printf '%b\n' "... (output truncated after $max_lines lines)"
+            if [[ ${count} -ge ${max_lines} ]]; then
+                printf '%b\n' "... (output truncated after ${max_lines} lines)"
                 break
             fi
             
             # Only output non-empty lines
-            if [[ -n "$line" ]]; then
-                printf '%b\n' "$line" 2>/dev/null || true
+            if [[ -n "${line}" ]]; then
+                printf '%b\n' "${line}" 2>/dev/null || true
             fi
             ((count++))
         done
@@ -336,11 +336,11 @@ print_test_header() {
     # Fall back to external process for backward compatibility
     local temp_dir
     temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory"; return 1; }
-    local layout_json="$temp_dir/header_layout.json"
-    local data_json="$temp_dir/header_data.json"
+    local layout_json="${temp_dir}/header_layout.json"
+    local data_json="${temp_dir}/header_data.json"
     
     # Create layout JSON with proper columns
-    cat > "$layout_json" << EOF
+    cat > "${layout_json}" << EOF
 {
     "columns": [
         {
@@ -371,25 +371,25 @@ print_test_header() {
 EOF
 
     # Create data JSON with the test information
-    cat > "$data_json" << EOF
+    cat > "${data_json}" << EOF
 [
     {
-        "test_id": "$test_id",
-        "test_name": "$test_name",
-        "version": "v$script_version",
-        "timestamp": "$timestamp"
+        "test_id": "${test_id}",
+        "test_name": "${test_name}",
+        "version": "v${script_version}",
+        "timestamp": "${timestamp}"
     }
 ]
 EOF
     
     # Use tables executable to render the header
-    local tables_exe="$script_dir/tables"
-    if [[ -f "$tables_exe" ]]; then
-        "$tables_exe" "$layout_json" "$data_json" 2>/dev/null
+    local tables_exe="${script_dir}/tables"
+    if [[ -f "${tables_exe}" ]]; then
+        "${tables_exe}" "${layout_json}" "${data_json}" 2>/dev/null
     fi
     
     # Clean up temporary files
-    rm -rf "$temp_dir" 2>/dev/null
+    rm -rf "${temp_dir}" 2>/dev/null
 }
 
 # Function to print subtest headers
@@ -398,11 +398,11 @@ print_subtest() {
     local elapsed
     elapsed=$(get_elapsed_time)
     local processed_name
-    processed_name=$(process_message "$subtest_name")
+    processed_name=$(process_message "${subtest_name}")
     local formatted_output="  ${TEST_COLOR}${CURRENT_TEST_NUMBER}-${CURRENT_SUBTEST_NUMBER}   ${elapsed}   ${NC}${TEST_ICON}${TEST_COLOR} TEST   ${processed_name}${NC}"
     
     # If we're in collection mode and have cached output, dump it before starting new test
-    if [[ "$COLLECT_OUTPUT_MODE" == "true" ]]; then
+    if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
         # Defensive check for array state to prevent hanging
         if [[ -n "${OUTPUT_COLLECTION+set}" ]] && [[ "${#OUTPUT_COLLECTION[@]}" -gt 0 ]]; then
             # Try to dump the cached output, but don't fail if it causes issues
@@ -413,7 +413,7 @@ print_subtest() {
     fi
     
     # Always output the TEST entry immediately so user sees what test is starting
-    echo -e "$formatted_output"
+    echo -e "${formatted_output}"
 }
 
 #==============================================================================
@@ -433,13 +433,13 @@ print_command() {
     if [ ${#cmd} -gt 200 ]; then
         truncated_cmd="${cmd:0:197}..."
     else
-        truncated_cmd="$cmd"
+        truncated_cmd="${cmd}"
     fi
     local formatted_output="  ${prefix}   ${elapsed}   ${EXEC_COLOR}${EXEC_ICON} ${EXEC_COLOR}EXEC${NC}   ${EXEC_COLOR}${truncated_cmd}${NC}"
-    if [[ "$COLLECT_OUTPUT_MODE" == "true" ]]; then
-        OUTPUT_COLLECTION+=("$formatted_output")
+    if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
+        OUTPUT_COLLECTION+=("${formatted_output}")
     else
-        echo -e "$formatted_output"
+        echo -e "${formatted_output}"
     fi
 }
 
@@ -452,12 +452,12 @@ print_output() {
     local message
     message=$(process_message "$1")
     # Skip output if message is empty or contains only whitespace
-    if [[ -n "$message" && ! "$message" =~ ^[[:space:]]*$ ]]; then
+    if [[ -n "${message}" && ! "${message}" =~ ^[[:space:]]*$ ]]; then
         local formatted_output="  ${prefix}   ${elapsed}   ${DATA_COLOR}${DATA_ICON} ${DATA_COLOR}DATA${NC}   ${DATA_COLOR}${message}${NC}"
-        if [[ "$COLLECT_OUTPUT_MODE" == "true" ]]; then
-            OUTPUT_COLLECTION+=("$formatted_output")
+        if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
+            OUTPUT_COLLECTION+=("${formatted_output}")
         else
-            echo -e "$formatted_output"
+            echo -e "${formatted_output}"
         fi
     fi
 }
@@ -471,22 +471,22 @@ print_result() {
     local elapsed
     elapsed=$(get_elapsed_time)
     local processed_message
-    processed_message=$(process_message "$message")
+    processed_message=$(process_message "${message}")
     
     # Record the result for statistics
-    record_test_result "$status"
+    record_test_result "${status}"
     
     local formatted_output
-    if [ "$status" -eq 0 ]; then
+    if [ "${status}" -eq 0 ]; then
         formatted_output="  ${prefix}   ${elapsed}   ${PASS_COLOR}${PASS_ICON} ${PASS_COLOR}PASS${NC}   ${PASS_COLOR}${processed_message}${NC}"
     else
         formatted_output="  ${prefix}   ${elapsed}   ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}FAIL${NC}   ${FAIL_COLOR}${processed_message}${NC}"
     fi
     
-    if [[ "$COLLECT_OUTPUT_MODE" == "true" ]]; then
-        OUTPUT_COLLECTION+=("$formatted_output")
+    if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
+        OUTPUT_COLLECTION+=("${formatted_output}")
     else
-        echo -e "$formatted_output"
+        echo -e "${formatted_output}"
     fi
 }
 
@@ -499,10 +499,10 @@ print_warning() {
     local message
     message=$(process_message "$1")
     local formatted_output="  ${prefix}   ${elapsed}   ${WARN_COLOR}${WARN_ICON} ${WARN_COLOR}WARN${NC}   ${message}"
-    if [[ "$COLLECT_OUTPUT_MODE" == "true" ]]; then
-        OUTPUT_COLLECTION+=("$formatted_output")
+    if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
+        OUTPUT_COLLECTION+=("${formatted_output}")
     else
-        echo -e "$formatted_output"
+        echo -e "${formatted_output}"
     fi
 }
 
@@ -515,10 +515,10 @@ print_error() {
     local message
     message=$(process_message "$1")
     local formatted_output="  ${prefix}   ${elapsed}   ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}ERROR${NC}   ${message}"
-    if [[ "$COLLECT_OUTPUT_MODE" == "true" ]]; then
-        OUTPUT_COLLECTION+=("$formatted_output")
+    if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
+        OUTPUT_COLLECTION+=("${formatted_output}")
     else
-        echo -e "$formatted_output"
+        echo -e "${formatted_output}"
     fi
 }
 
@@ -531,10 +531,10 @@ print_message() {
     local message
     message=$(process_message "$1")
     local formatted_output="  ${prefix}   ${elapsed}   ${INFO_COLOR}${INFO_ICON} ${INFO_COLOR}INFO${NC}   ${message}"
-    if [[ "$COLLECT_OUTPUT_MODE" == "true" ]]; then
-        OUTPUT_COLLECTION+=("$formatted_output")
+    if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
+        OUTPUT_COLLECTION+=("${formatted_output}")
     else
-        echo -e "$formatted_output"
+        echo -e "${formatted_output}"
     fi
 }
 
@@ -558,11 +558,11 @@ print_test_suite_header() {
     # Fall back to external process for backward compatibility
     local temp_dir
     temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory"; return 1; }
-    local layout_json="$temp_dir/suite_header_layout.json"
-    local data_json="$temp_dir/suite_header_data.json"
+    local layout_json="${temp_dir}/suite_header_layout.json"
+    local data_json="${temp_dir}/suite_header_data.json"
     
     # Create layout JSON with proper columns and blue theme
-    cat > "$layout_json" << EOF
+    cat > "${layout_json}" << EOF
 {
     "theme": "Blue",
     "columns": [
@@ -594,25 +594,25 @@ print_test_suite_header() {
 EOF
 
     # Create data JSON with the test information
-    cat > "$data_json" << EOF
+    cat > "${data_json}" << EOF
 [
     {
-        "test_id": "$test_id",
-        "test_name": "$test_name",
-        "version": "v$script_version",
-        "timestamp": "$timestamp"
+        "test_id": "${test_id}",
+        "test_name": "${test_name}",
+        "version": "v${script_version}",
+        "timestamp": "${timestamp}"
     }
 ]
 EOF
     
     # Use tables executable to render the header
-    local tables_exe="$script_dir/tables"
-    if [[ -f "$tables_exe" ]]; then
-        "$tables_exe" "$layout_json" "$data_json" 2>/dev/null
+    local tables_exe="${script_dir}/tables"
+    if [[ -f "${tables_exe}" ]]; then
+        "${tables_exe}" "${layout_json}" "${data_json}" 2>/dev/null
     fi
     
     # Clean up temporary files
-    rm -rf "$temp_dir" 2>/dev/null
+    rm -rf "${temp_dir}" 2>/dev/null
 }
 
 # Function to print beautiful test completion table using tables.sh
@@ -625,61 +625,61 @@ print_test_completion() {
     local total_subtests=$((TEST_PASSED_COUNT + TEST_FAILED_COUNT))
     local elapsed_time
     local processed_name
-    processed_name=$(process_message "$test_name")
+    processed_name=$(process_message "${test_name}")
     
     # Calculate elapsed time once and store it for consistent use - this is the SINGLE SOURCE OF TRUTH
     # Use decimal format for table output
     if [[ -z "${TEST_ELAPSED_TIMES[CURRENT_TEST_NUMBER]}" ]]; then
         elapsed_time=$(get_elapsed_time_decimal)
-        TEST_ELAPSED_TIMES[CURRENT_TEST_NUMBER]="$elapsed_time"
+        TEST_ELAPSED_TIMES[CURRENT_TEST_NUMBER]="${elapsed_time}"
     else
         elapsed_time="${TEST_ELAPSED_TIMES[CURRENT_TEST_NUMBER]}"
     fi
     
     # Automatically dump collected output before final results table
-    if [[ "$COLLECT_OUTPUT_MODE" == "true" ]]; then
+    if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
         disable_output_collection
         dump_collected_output
     fi
     
     # Write elapsed time to the subtest result file if running in test suite
     # Use the SAME elapsed_time value that was calculated above - no additional calls to get_elapsed_time
-    if [[ -n "$RUNNING_IN_TEST_SUITE" && "$RUNNING_IN_TEST_SUITE" == "true" ]]; then
+    if [[ -n "${RUNNING_IN_TEST_SUITE}" && "${RUNNING_IN_TEST_SUITE}" == "true" ]]; then
         # Use absolute path approach since individual tests may change working directory
         # Find the tests directory by using the script location from BASH_SOURCE
         local script_dir
         script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
         local tests_dir
         # If we're in tests/lib, go up one level to tests
-        if [[ "$(basename "$script_dir")" == "lib" ]]; then
-            tests_dir="$(dirname "$script_dir")"
+        if [[ "$(basename "${script_dir}")" == "lib" ]]; then
+            tests_dir="$(dirname "${script_dir}")"
         else
             # Otherwise assume we're already in tests
-            tests_dir="$script_dir"
+            tests_dir="${script_dir}"
         fi
         # Always use build/tests/results directory
-        local build_dir="$tests_dir/../build"
-        local results_dir="$build_dir/tests/results"
-        mkdir -p "$results_dir" 2>/dev/null
+        local build_dir="${tests_dir}/../build"
+        local results_dir="${build_dir}/tests/results"
+        mkdir -p "${results_dir}" 2>/dev/null
         # Use the elapsed_time that was already calculated above - SINGLE SOURCE OF TRUTH
-        local file_elapsed_time="$elapsed_time"
+        local file_elapsed_time="${elapsed_time}"
         # Write the elapsed time to a result file with a timestamp and PID for uniqueness
         local timestamp
         timestamp=$(date +%s.%3N 2>/dev/null || date +%s)
         # Add process ID and random component to ensure uniqueness in parallel execution
-        local unique_id="${timestamp}_$$_${RANDOM}"
-        local subtest_file="$results_dir/subtest_${CURRENT_TEST_NUMBER}_${unique_id}.txt"
-        echo "$total_subtests,$TEST_PASSED_COUNT,$test_name,$file_elapsed_time" > "$subtest_file" 2>/dev/null
+        local unique_id="${timestamp}_$${_}${RANDOM}"
+        local subtest_file="${results_dir}/subtest_${CURRENT_TEST_NUMBER}_${unique_id}.txt"
+        echo "${total_subtests},${TEST_PASSED_COUNT},${test_name},${file_elapsed_time}" > "${subtest_file}" 2>/dev/null
     fi
 
     # Fall back to external process for backward compatibility
     local temp_dir
     temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory" >&2; return 1; }
-    local layout_json="$temp_dir/completion_layout.json"
-    local data_json="$temp_dir/completion_data.json"
+    local layout_json="${temp_dir}/completion_layout.json"
+    local data_json="${temp_dir}/completion_data.json"
     
     # Create layout JSON with proper columns
-    cat > "$layout_json" << EOF
+    cat > "${layout_json}" << EOF
 {
     "theme": "Blue",
     "columns": [
@@ -728,28 +728,28 @@ EOF
 
     # Create data JSON with the test completion information, using the SAME elapsed time
     # that was calculated at the top of this function - SINGLE SOURCE OF TRUTH
-    local display_elapsed_time="$elapsed_time"
-    cat > "$data_json" << EOF
+    local display_elapsed_time="${elapsed_time}"
+    cat > "${data_json}" << EOF
 [
     {
         "test_id": "${CURRENT_TEST_NUMBER}-000",
-        "test_name": "$processed_name",
-        "total_subtests": $total_subtests,
-        "passed": $TEST_PASSED_COUNT,
-        "failed": $TEST_FAILED_COUNT,
-        "elapsed": "$display_elapsed_time"
+        "test_name": "${processed_name}",
+        "total_subtests": ${total_subtests},
+        "passed": ${TEST_PASSED_COUNT},
+        "failed": ${TEST_FAILED_COUNT},
+        "elapsed": "${display_elapsed_time}"
     }
 ]
 EOF
     
     # Use tables executable to render the completion table
-    local tables_exe="$script_dir/tables"
-    if [[ -f "$tables_exe" ]]; then
-        "$tables_exe" "$layout_json" "$data_json" 2>/dev/null
+    local tables_exe="${script_dir}/tables"
+    if [[ -f "${tables_exe}" ]]; then
+        "${tables_exe}" "${layout_json}" "${data_json}" 2>/dev/null
     fi
     
     # Clean up temporary files
-    rm -rf "$temp_dir" 2>/dev/null
+    rm -rf "${temp_dir}" 2>/dev/null
 }
 
 # Function to print individual test items in a summary
@@ -760,20 +760,20 @@ print_test_item() {
     local prefix
     prefix=$(get_test_prefix)
     local processed_name
-    processed_name=$(process_message "$name")
+    processed_name=$(process_message "${name}")
     local processed_details
-    processed_details=$(process_message "$details")
+    processed_details=$(process_message "${details}")
     
     local formatted_output
-    if [ "$status" -eq 0 ]; then
-        formatted_output="${prefix} ${PASS_COLOR}${PASS_ICON} ${PASS_COLOR}PASS${NC} ${BOLD}$processed_name${NC} - $processed_details"
+    if [ "${status}" -eq 0 ]; then
+        formatted_output="${prefix} ${PASS_COLOR}${PASS_ICON} ${PASS_COLOR}PASS${NC} ${BOLD}${processed_name}${NC} - ${processed_details}"
     else
-        formatted_output="${prefix} ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}FAIL${NC} ${BOLD}$processed_name${NC} - $processed_details"
+        formatted_output="${prefix} ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}FAIL${NC} ${BOLD}${processed_name}${NC} - ${processed_details}"
     fi
     
-    if [[ "$COLLECT_OUTPUT_MODE" == "true" ]]; then
-        OUTPUT_COLLECTION+=("$formatted_output")
+    if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
+        OUTPUT_COLLECTION+=("${formatted_output}")
     else
-        echo -e "$formatted_output"
+        echo -e "${formatted_output}"
     fi
 }

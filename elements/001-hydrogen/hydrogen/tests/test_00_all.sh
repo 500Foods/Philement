@@ -47,6 +47,7 @@ next_subtest
 # Print beautiful test suite header in blue
 print_test_suite_header "${TEST_NAME}" "${SCRIPT_VERSION}"
 
+# Print framework and log output versions as they are already sourced
 print_message "${FRAMEWORK_NAME} ${FRAMEWORK_VERSION}" "info"
 print_message "${LOG_OUTPUT_NAME} ${LOG_OUTPUT_VERSION}" "info"
 
@@ -91,10 +92,10 @@ while IFS= read -r line; do
     results+=("${line}")
 done < <(printf "%s\n" "${commands[@]}" | xargs -P 0 -I {} bash -c '
     cmd="{}"
+    export PATH="${PATH}:lib"
     if command -v "${cmd}" >/dev/null 2>&1; then
-        export PATH="${PATH}:lib"
-        cmd_path=$(command -v "$cmd")
-        version=$(${cmd} --version 2>&1 | grep -oE "[0-9]+\.[0-9]+([.-][0-9a-zA-Z]+)*" | head -n 1)
+        cmd_path=$(command -v "${cmd}")
+        version=$(${cmd_path} --version 2>&1 | grep -oE "[0-9]+\.[0-9]+([.-][0-9a-zA-Z]+)*" | head -n 1)
         if [ -n "${version}" ]; then
             echo "0|${cmd} @ ${cmd_path}|${version}"
         else

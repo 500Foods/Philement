@@ -19,23 +19,23 @@ SCRIPT_VERSION="2.2.0"
 
 # Sort out directories
 PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
-SCRIPT_DIR="$PROJECT_DIR/tests"
-LIB_DIR="$SCRIPT_DIR/lib"
-BUILD_DIR="$PROJECT_DIR/build"
-TESTS_DIR="$BUILD_DIR/tests"
-RESULTS_DIR="$TESTS_DIR/results"
-DIAGS_DIR="$TESTS_DIR/diagnostics"
-LOGS_DIR="$TESTS_DIR/logs"
+SCRIPT_DIR="${PROJECT_DIR}/tests"
+LIB_DIR="${SCRIPT_DIR}/lib"
+BUILD_DIR="${PROJECT_DIR}/build"
+TESTS_DIR="${BUILD_DIR}/tests"
+RESULTS_DIR="${TESTS_DIR}/results"
+DIAGS_DIR="${TESTS_DIR}/diagnostics"
+LOGS_DIR="${TESTS_DIR}/logs"
 mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}"
 
 # shellcheck source=tests/lib/framework.sh # Resolve path statically
-[[ -n "$FRAMEWORK_GUARD" ]] || source "$LIB_DIR/framework.sh"
+[[ -n "${FRAMEWORK_GUARD}" ]] || source "${LIB_DIR}/framework.sh"
 # shellcheck source=tests/lib/log_output.sh # Resolve path statically
-[[ -n "$LOG_OUTPUT_GUARD" ]] || source "$LIB_DIR/log_output.sh"
+[[ -n "${LOG_OUTPUT_GUARD}" ]] || source "${LIB_DIR}/log_output.sh"
 # shellcheck source=tests/lib/file_utils.sh # Resolve path statically
-[[ -n "$FILE_UTILS_GUARD" ]] || source "$LIB_DIR/file_utils.sh"
+[[ -n "${FILE_UTILS_GUARD}" ]] || source "${LIB_DIR}/file_utils.sh"
 # shellcheck source=tests/lib/coverage.sh # Resolve path statically
-[[ -n "$COVERAGE_GUARD" ]] || source "$LIB_DIR/coverage.sh"
+[[ -n "${COVERAGE_GUARD}" ]] || source "${LIB_DIR}/coverage.sh"
 
 # Test configuration
 EXIT_CODE=0
@@ -44,16 +44,16 @@ PASS_COUNT=0
 
 # Auto-extract test number and set up environment
 TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
-set_test_number "$TEST_NUMBER"
+set_test_number "${TEST_NUMBER}"
 reset_subtest_counter
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-RESULT_LOG="$RESULTS_DIR/test_${TEST_NUMBER}_${TIMESTAMP}.log"
+RESULT_LOG="${RESULTS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
 
 # Print beautiful test header
-print_test_header "$TEST_NAME" "$SCRIPT_VERSION"
+print_test_header "${TEST_NAME}" "${SCRIPT_VERSION}"
 
 # Navigate to the project root (one level up from tests directory)
-if ! navigate_to_project_root "$SCRIPT_DIR"; then
+if ! navigate_to_project_root "${SCRIPT_DIR}"; then
     print_error "Failed to navigate to project root directory"
     exit 1
 fi
@@ -67,12 +67,12 @@ print_subtest "Check CMake Availability"
 print_command "command -v cmake"
 if command -v cmake >/dev/null 2>&1; then
     CMAKE_VERSION=$(cmake --version | head -n1)
-    print_result 0 "CMake is available: $CMAKE_VERSION"
+    print_result 0 "CMake is available: ${CMAKE_VERSION}"
 else
     print_result 1 "CMake is not available - required for compilation"
     EXIT_CODE=1
 fi
-evaluate_test_result_silent "CMake availability" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
+evaluate_test_result_silent "CMake availability" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
 # Subtest: Check for CMakeLists.txt
 next_subtest
@@ -80,13 +80,13 @@ print_subtest "Check CMakeLists.txt"
 print_command "test -f cmake/CMakeLists.txt"
 if [ -f "cmake/CMakeLists.txt" ]; then
     file_size=$(get_file_size "cmake/CMakeLists.txt")
-    formatted_size=$(format_file_size "$file_size")
+    formatted_size=$(format_file_size "${file_size}")
     print_result 0 "CMakeLists.txt found in cmake directory (${formatted_size} bytes)"
 else
     print_result 1 "CMakeLists.txt not found in cmake directory"
     EXIT_CODE=1
 fi
-evaluate_test_result_silent "CMakeLists.txt check" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
+evaluate_test_result_silent "CMakeLists.txt check" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
 # Subtest: Check source files
 next_subtest
@@ -94,13 +94,13 @@ print_subtest "Check Source Files"
 print_command "test -d src && test -f src/hydrogen.c"
 if [ -d "src" ] && [ -f "src/hydrogen.c" ]; then
     src_count=$(find . -type f \( -path "./src/*" -o -path "./tests/unity/src/*" -o -path "./extras/*" -o -path "./examples/*" \) \( -name "*.c" -o -name "*.h" \) | wc -l)
-    print_result 0 "Project search found $src_count source files"
-    TEST_NAME="$TEST_NAME {BLUE}($src_count source files){RESET}"
+    print_result 0 "Project search found ${src_count} source files"
+    TEST_NAME="${TEST_NAME} {BLUE}(${src_count} source files){RESET}"
 else
     print_result 1 "Source files not found - src/hydrogen.c missing"
     EXIT_CODE=1
 fi
-evaluate_test_result_silent "Source files check" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
+evaluate_test_result_silent "Source files check" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
 # # Subtest: Setup tmpfs build directory
 # next_subtest
@@ -165,32 +165,32 @@ evaluate_test_result_silent "Source files check" "$EXIT_CODE" "PASS_COUNT" "EXIT
 #     fi
 # fi
 
-# evaluate_test_result_silent "Setup tmpfs build directory" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
+# evaluate_test_result_silent "Setup tmpfs build directory" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 # mkdir -p "${BUILD_DIR}" "${BUILD_DIR}/tests" "${RESULTS_DIR}" "${BUILD_DIR}/tests/logs" "${BUILD_DIR}/tests/diagnostics"
 
 # Function to download Unity framework if missing
 download_unity_framework() {
-    local unity_dir="$SCRIPT_DIR/unity"
-    local framework_dir="$unity_dir/framework"
-    local unity_framework_dir="$framework_dir/Unity"
+    local unity_dir="${SCRIPT_DIR}/unity"
+    local framework_dir="${unity_dir}/framework"
+    local unity_framework_dir="${framework_dir}/Unity"
     
-    if [ ! -d "$unity_framework_dir" ]; then
-        print_message "Unity framework not found in $unity_framework_dir. Downloading now..."
-        mkdir -p "$framework_dir"
+    if [ ! -d "${unity_framework_dir}" ]; then
+        print_message "Unity framework not found in ${unity_framework_dir}. Downloading now..."
+        mkdir -p "${framework_dir}"
         if command -v curl >/dev/null 2>&1; then
-            if curl -L https://github.com/ThrowTheSwitch/Unity/archive/refs/heads/master.zip -o "$framework_dir/unity.zip"; then
-                unzip "$framework_dir/unity.zip" -d "$framework_dir/"
-                mv "$framework_dir/Unity-master" "$unity_framework_dir"
-                rm "$framework_dir/unity.zip"
-                print_result 0 "Unity framework downloaded and extracted successfully to $unity_framework_dir."
+            if curl -L https://github.com/ThrowTheSwitch/Unity/archive/refs/heads/master.zip -o "${framework_dir}/unity.zip"; then
+                unzip "${framework_dir}/unity.zip" -d "${framework_dir}/"
+                mv "${framework_dir}/Unity-master" "${unity_framework_dir}"
+                rm "${framework_dir}/unity.zip"
+                print_result 0 "Unity framework downloaded and extracted successfully to ${unity_framework_dir}."
                 return 0
             else
                 print_result 1 "Failed to download Unity framework with curl."
                 return 1
             fi
         elif command -v git >/dev/null 2>&1; then
-            if git clone https://github.com/ThrowTheSwitch/Unity.git "$unity_framework_dir"; then
-                print_result 0 "Unity framework cloned successfully to $unity_framework_dir."
+            if git clone https://github.com/ThrowTheSwitch/Unity.git "${unity_framework_dir}"; then
+                print_result 0 "Unity framework cloned successfully to ${unity_framework_dir}."
                 return 0
             else
                 print_result 1 "Failed to clone Unity framework with git."
@@ -201,7 +201,7 @@ download_unity_framework() {
             return 1
         fi
     else
-        print_message "Unity framework already exists in $unity_framework_dir."
+        print_message "Unity framework already exists in ${unity_framework_dir}."
         return 0
     fi
 }
@@ -215,7 +215,7 @@ else
     print_result 1 "Unity framework check failed."
     EXIT_CODE=1
 fi
-evaluate_test_result_silent "Unity framework check" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
+evaluate_test_result_silent "Unity framework check" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
 # Subtest: Configure with CMake
 next_subtest
@@ -235,7 +235,7 @@ else
     print_result 1 "Failed to enter cmake directory"
     EXIT_CODE=1
 fi
-evaluate_test_result_silent "CMake configuration" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
+evaluate_test_result_silent "CMake configuration" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
 # Subtest: Check and Generate Payload
 next_subtest
@@ -243,7 +243,7 @@ print_subtest "Check and Generate Payload"
 print_command "test -f payloads/payload.tar.br.enc"
 if [ -f "payloads/payload.tar.br.enc" ]; then
     payload_size=$(get_file_size "payloads/payload.tar.br.enc")
-    formatted_size=$(format_file_size "$payload_size")
+    formatted_size=$(format_file_size "${payload_size}")
     print_result 0 "Payload file exists: payloads/payload.tar.br.enc (${formatted_size} bytes)"
     ((PASS_COUNT++))
 else
@@ -260,7 +260,7 @@ else
                 safe_cd ..
                 if [ -f "payloads/payload.tar.br.enc" ]; then
                     payload_size=$(get_file_size "payloads/payload.tar.br.enc")
-                    formatted_size=$(format_file_size "$payload_size")
+                    formatted_size=$(format_file_size "${payload_size}")
                     print_result 0 "Payload file generated successfully: payloads/payload.tar.br.enc (${formatted_size} bytes)"
                     ((PASS_COUNT++))
                 else
@@ -301,7 +301,7 @@ else
     print_result 1 "Failed to enter cmake directory for building all variants"
     EXIT_CODE=1
 fi
-evaluate_test_result_silent "Build all variants" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
+evaluate_test_result_silent "Build all variants" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
 # Subtest: Verify default executable
 next_subtest
@@ -309,13 +309,13 @@ print_subtest "Verify Default Executable"
 print_command "test -f hydrogen"
 if [ -f "hydrogen" ]; then
     exe_size=$(get_file_size "hydrogen")
-    formatted_size=$(format_file_size "$exe_size")
+    formatted_size=$(format_file_size "${exe_size}")
     print_result 0 "Executable created: hydrogen (${formatted_size} bytes)"
 else
     print_result 1 "Default executable not found after build"
     EXIT_CODE=1
 fi
-evaluate_test_result_silent "Verify default executable" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
+evaluate_test_result_silent "Verify default executable" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
 # Subtest: Verify debug executable
 next_subtest
@@ -323,13 +323,13 @@ print_subtest "Verify Debug Executable"
 print_command "test -f hydrogen_debug"
 if [ -f "hydrogen_debug" ]; then
     exe_size=$(get_file_size "hydrogen_debug")
-    formatted_size=$(format_file_size "$exe_size")
+    formatted_size=$(format_file_size "${exe_size}")
     print_result 0 "Executable created: hydrogen_debug (${formatted_size} bytes)"
 else
     print_result 1 "Debug executable not found after build"
     EXIT_CODE=1
 fi
-evaluate_test_result_silent "Verify debug executable" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
+evaluate_test_result_silent "Verify debug executable" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
 # Subtest: Verify performance executable
 next_subtest
@@ -337,13 +337,13 @@ print_subtest "Verify Performance Executable"
 print_command "test -f hydrogen_perf"
 if [ -f "hydrogen_perf" ]; then
     exe_size=$(get_file_size "hydrogen_perf")
-    formatted_size=$(format_file_size "$exe_size")
+    formatted_size=$(format_file_size "${exe_size}")
     print_result 0 "Executable created: hydrogen_perf (${formatted_size} bytes)"
 else
     print_result 1 "Performance executable not found after build"
     EXIT_CODE=1
 fi
-evaluate_test_result_silent "Verify performance executable" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
+evaluate_test_result_silent "Verify performance executable" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
 # Subtest: Verify valgrind executable
 next_subtest
@@ -351,13 +351,13 @@ print_subtest "Verify Valgrind Executable"
 print_command "test -f hydrogen_valgrind"
 if [ -f "hydrogen_valgrind" ]; then
     exe_size=$(get_file_size "hydrogen_valgrind")
-    formatted_size=$(format_file_size "$exe_size")
+    formatted_size=$(format_file_size "${exe_size}")
     print_result 0 "Executable created: hydrogen_valgrind (${formatted_size} bytes)"
 else
     print_result 1 "Valgrind executable not found after build"
     EXIT_CODE=1
 fi
-evaluate_test_result_silent "Verify valgrind executable" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
+evaluate_test_result_silent "Verify valgrind executable" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
 # Subtest: Verify coverage executable
 next_subtest
@@ -365,13 +365,13 @@ print_subtest "Verify Coverage Executable"
 print_command "test -f hydrogen_coverage"
 if [ -f "hydrogen_coverage" ]; then
     exe_size=$(get_file_size "hydrogen_coverage")
-    formatted_size=$(format_file_size "$exe_size")
+    formatted_size=$(format_file_size "${exe_size}")
     print_result 0 "Executable created: hydrogen_coverage (${formatted_size} bytes)"
 else
     print_result 1 "Coverage executable not found after build"
     EXIT_CODE=1
 fi
-evaluate_test_result_silent "Verify coverage executable" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
+evaluate_test_result_silent "Verify coverage executable" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
 # Subtest: Verify release and naked executables
 next_subtest
@@ -380,14 +380,14 @@ print_command "test -f hydrogen_release && test -f hydrogen_naked"
 if [ -f "hydrogen_release" ] && [ -f "hydrogen_naked" ]; then
     release_size=$(get_file_size "hydrogen_release")
     naked_size=$(get_file_size "hydrogen_naked")
-    formatted_release_size=$(format_file_size "$release_size")
-    formatted_naked_size=$(format_file_size "$naked_size")
+    formatted_release_size=$(format_file_size "${release_size}")
+    formatted_naked_size=$(format_file_size "${naked_size}")
     print_result 0 "Executables created: hydrogen_release (${formatted_release_size} bytes), hydrogen_naked (${formatted_naked_size} bytes)"
 else
     print_result 1 "Release or naked executable not found after build"
     EXIT_CODE=1
 fi
-evaluate_test_result_silent "Verify release and naked executables" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
+evaluate_test_result_silent "Verify release and naked executables" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
 # Subtest: Build examples
 next_subtest
@@ -407,7 +407,7 @@ else
     print_result 1 "Failed to enter cmake directory for examples build"
     EXIT_CODE=1
 fi
-evaluate_test_result_silent "Build examples" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
+evaluate_test_result_silent "Build examples" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
 # Subtest: Verify examples executables
 next_subtest
@@ -417,15 +417,15 @@ if [ -f "examples/C/auth_code_flow" ] && [ -f "examples/C/client_credentials" ] 
     auth_size=$(get_file_size "examples/C/auth_code_flow")
     client_size=$(get_file_size "examples/C/client_credentials")
     password_size=$(get_file_size "examples/C/password_flow")
-    formatted_auth_size=$(format_file_size "$auth_size")
-    formatted_client_size=$(format_file_size "$client_size")
-    formatted_password_size=$(format_file_size "$password_size")
+    formatted_auth_size=$(format_file_size "${auth_size}")
+    formatted_client_size=$(format_file_size "${client_size}")
+    formatted_password_size=$(format_file_size "${password_size}")
     print_result 0 "Executables created: auth_code_flow (${formatted_auth_size} bytes), client_credentials (${formatted_client_size} bytes), password_flow (${formatted_password_size} bytes)"
 else
     print_result 1 "One or more examples executables not found after build"
     EXIT_CODE=1
 fi
-evaluate_test_result_silent "Verify examples executables" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
+evaluate_test_result_silent "Verify examples executables" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
 # Subtest: Verify coverage executable has payload
 next_subtest
@@ -435,7 +435,7 @@ if [ -f "hydrogen_coverage" ]; then
     # Check if the coverage binary has payload embedded using the correct marker
     if grep -q "<<< HERE BE ME TREASURE >>>" "hydrogen_coverage" 2>/dev/null; then
         coverage_size=$(get_file_size "hydrogen_coverage")
-        formatted_size=$(format_file_size "$coverage_size")
+        formatted_size=$(format_file_size "${coverage_size}")
         print_result 0 "Coverage executable has embedded payload (${formatted_size} bytes total)"
     else
         print_result 1 "Coverage executable appears to be missing embedded payload marker"
@@ -445,7 +445,7 @@ else
     print_result 1 "Coverage executable not found for payload verification"
     EXIT_CODE=1
 fi
-evaluate_test_result_silent "Verify coverage executable payload" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
+evaluate_test_result_silent "Verify coverage executable payload" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
 # Subtest: Verify release executable has payload
 next_subtest
@@ -455,7 +455,7 @@ if [ -f "hydrogen_release" ]; then
     # Check if the release binary has payload embedded using the correct marker
     if grep -q "<<< HERE BE ME TREASURE >>>" "hydrogen_release" 2>/dev/null; then
         release_size=$(get_file_size "hydrogen_release")
-        formatted_size=$(format_file_size "$release_size")
+        formatted_size=$(format_file_size "${release_size}")
         print_result 0 "Release executable has embedded payload (${formatted_size} bytes total)"
     else
         print_result 1 "Release executable appears to be missing embedded payload marker"
@@ -465,21 +465,21 @@ else
     print_result 1 "Release executable not found for payload verification"
     EXIT_CODE=1
 fi
-evaluate_test_result_silent "Verify release executable payload" "$EXIT_CODE" "PASS_COUNT" "EXIT_CODE"
+evaluate_test_result_silent "Verify release executable payload" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
 # Export results for test_all.sh integration
 # Derive test name from script filename for consistency with test_00_all.sh
 TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
-export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "$TOTAL_SUBTESTS" "$PASS_COUNT" "$TEST_NAME" > /dev/null
+export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "${TOTAL_SUBTESTS}" "${PASS_COUNT}" "${TEST_NAME}" > /dev/null
 
 # Print completion table
-print_test_completion "$TEST_NAME"
+print_test_completion "${TEST_NAME}"
 
-end_test $EXIT_CODE $TOTAL_SUBTESTS $PASS_COUNT > /dev/null
+end_test ${EXIT_CODE} ${TOTAL_SUBTESTS} ${PASS_COUNT} > /dev/null
 
 # Return status code if sourced, exit if run standalone
-if [[ "$RUNNING_IN_TEST_SUITE" == "true" ]]; then
-    return $EXIT_CODE
+if [[ "${RUNNING_IN_TEST_SUITE}" == "true" ]]; then
+    return ${EXIT_CODE}
 else
-    exit $EXIT_CODE
+    exit ${EXIT_CODE}
 fi
