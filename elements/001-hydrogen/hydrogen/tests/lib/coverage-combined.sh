@@ -18,6 +18,7 @@ export COVERAGE_COMBINED_GUARD="true"
 # Library metadata
 COVERAGE_COMBINED_NAME="Coverage Combined Library"
 COVERAGE_COMBINED_VERSION="1.0.0"
+print_message "$COVERAGE_COMBINED_NAME $COVERAGE_COMBINED_VERSION" "info"
 
 # Sort out directories
 PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"

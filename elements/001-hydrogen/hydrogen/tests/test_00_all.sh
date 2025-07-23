@@ -49,10 +49,14 @@ print_test_suite_header "$TEST_NAME" "$SCRIPT_VERSION"
 print_message "$FRAMEWORK_NAME $FRAMEWORK_VERSION" "info"
 print_message "$LOG_OUTPUT_NAME $LOG_OUTPUT_VERSION" "info"
 
-# shellcheck source=tests/lib/env_utils.sh # Resolve path statically
-source "$LIB_DIR/env_utils.sh"
+# shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
+source "$LIB_DIR/lifecycle.sh"
+# shellcheck source=tests/lib/network_utils.sh # Resolve path statically
+source "$LIB_DIR/network_utils.sh"
 # shellcheck source=tests/lib/file_utils.sh # Resolve path statically
 source "$LIB_DIR/file_utils.sh"
+# shellcheck source=tests/lib/env_utils.sh # Resolve path statically
+source "$LIB_DIR/env_utils.sh"
 # shellcheck source=tests/lib/cloc.sh # Resolve path statically
 source "$LIB_DIR/cloc.sh"
 # shellcheck source=tests/lib/coverage.sh # Resolve path statically

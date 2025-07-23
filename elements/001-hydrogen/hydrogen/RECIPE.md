@@ -17,6 +17,8 @@ Hydrogen is a C project that implements a comprehensive suite of capabilities
 
 These all assume that the repository has been cloned into a Projects folder off of the user's home directory. Adjust accordingly.  These also assume zsh - adding them to ~/.zshrc is the recommended approach.
 
+Most commands should likely be prefixed with `cdp && <command>` to ensure that you're in the correct working directory all the time.
+
 ### cdp - Change to the root of the Hydrogen project
 
 `alias cdp='cd ~/Projects/Philement/elements/001-hydrogen/hydrogen/'`
