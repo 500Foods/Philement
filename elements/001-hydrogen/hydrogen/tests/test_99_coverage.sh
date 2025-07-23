@@ -67,11 +67,6 @@ print_subtest "Recall Unity Test Coverage"
 
 print_message "Recalling coverage data from Unity tests (Test 11)..."
 
-# Find the Unity build directory
-HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
-PROJECT_ROOT="$HYDROGEN_DIR"
-UNITY_BUILD_DIR="$HYDROGEN_DIR/build/unity"
-
 # Read Unity coverage data from Test 11's stored results instead of recalculating
 if [ -f "${UNITY_COVERAGE_FILE}" ] && [ -f "${UNITY_COVERAGE_FILE}.detailed" ]; then
     unity_coverage_percentage=$(cat "${UNITY_COVERAGE_FILE}" 2>/dev/null || echo "0.000")
@@ -105,7 +100,7 @@ print_subtest "Collect Blackbox Test Coverage"
 print_message "Collecting coverage data from blackbox tests..."
 
 # Check for blackbox coverage data in build/coverage directory only
-BLACKBOX_COVERAGE_DIR="$HYDROGEN_DIR/build/coverage"
+BLACKBOX_COVERAGE_DIR="$BUILD_DIR/coverage"
 
 if [ -d "$BLACKBOX_COVERAGE_DIR" ]; then
     # Collect blackbox coverage data strictly from build/coverage
@@ -150,8 +145,8 @@ print_message "Calculating combined coverage from Unity and blackbox tests..."
 # Use the same logic as coverage_table.sh
 if [ -f "${UNITY_COVERAGE_FILE}.detailed" ] && [ -f "${BLACKBOX_COVERAGE_FILE}.detailed" ]; then
     # Set up the same variables that coverage_table.sh uses
-    UNITY_COVS="$PROJECT_ROOT/build/unity/src"
-    BLACKBOX_COVS="$PROJECT_ROOT/build/coverage/src"
+    UNITY_COVS="$BUILD_DIR/unity/src"
+    BLACKBOX_COVS="$BUILD_DIR/coverage/src"
     
     # Clear our arrays and repopulate them using the working logic from coverage-common.sh
     unset unity_covered_lines unity_instrumented_lines coverage_covered_lines coverage_instrumented_lines all_files
