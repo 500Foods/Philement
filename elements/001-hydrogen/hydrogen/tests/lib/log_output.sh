@@ -169,7 +169,7 @@ extract_test_number() {
 # Function to increment and get next subtest number
 next_subtest() {
     ((SUBTEST_COUNTER++))
-    CURRENT_SUBTEST_NUMBER=$(printf "%03d" ${SUBTEST_COUNTER})
+    CURRENT_SUBTEST_NUMBER=$(printf "%03d" "${SUBTEST_COUNTER}")
 }
 
 # Function to reset subtest counter
@@ -180,9 +180,9 @@ reset_subtest_counter() {
 
 # Function to get the current test prefix for output
 get_test_prefix() {
-    if [ -n "${CURRENT_SUBTEST_NUMBER}" ]; then
+    if [[ -n "${CURRENT_SUBTEST_NUMBER}" ]]; then
         echo "${CURRENT_TEST_NUMBER}-${CURRENT_SUBTEST_NUMBER}"
-    elif [ -n "${CURRENT_TEST_NUMBER}" ]; then
+    elif [[ -n "${CURRENT_TEST_NUMBER}" ]]; then
         echo "${CURRENT_TEST_NUMBER}"
     else
         echo "XX"
@@ -199,7 +199,7 @@ start_test_timer() {
 # Function to record test result for statistics
 record_test_result() {
     local status=$1
-    if [ "${status}" -eq 0 ]; then
+    if [[ "${status}" -eq 0 ]]; then
         ((TEST_PASSED_COUNT++))
     else
         ((TEST_FAILED_COUNT++))
@@ -208,7 +208,7 @@ record_test_result() {
 
 # Function to calculate elapsed time in SSS.ZZZ format for console output
 get_elapsed_time() {
-    if [ -n "${TEST_START_TIME}" ]; then
+    if [[ -n "${TEST_START_TIME}" ]]; then
         local end_time
         end_time=$(date +%s.%3N)
         local elapsed
@@ -230,7 +230,7 @@ get_elapsed_time() {
 
 # Function to calculate elapsed time in decimal format for table output
 get_elapsed_time_decimal() {
-    if [ -n "${TEST_START_TIME}" ]; then
+    if [[ -n "${TEST_START_TIME}" ]]; then
         local end_time
         end_time=$(date +%s.%3N)
         local elapsed
@@ -430,7 +430,7 @@ print_command() {
     cmd=$(process_message "$1")
     # Truncate command to approximately 200 characters
     local truncated_cmd
-    if [ ${#cmd} -gt 200 ]; then
+    if [[ ${#cmd} -gt 200 ]]; then
         truncated_cmd="${cmd:0:197}..."
     else
         truncated_cmd="${cmd}"
@@ -477,7 +477,7 @@ print_result() {
     record_test_result "${status}"
     
     local formatted_output
-    if [ "${status}" -eq 0 ]; then
+    if [[ "${status}" -eq 0 ]]; then
         formatted_output="  ${prefix}   ${elapsed}   ${PASS_COLOR}${PASS_ICON} ${PASS_COLOR}PASS${NC}   ${PASS_COLOR}${processed_message}${NC}"
     else
         formatted_output="  ${prefix}   ${elapsed}   ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}FAIL${NC}   ${FAIL_COLOR}${processed_message}${NC}"
@@ -765,7 +765,7 @@ print_test_item() {
     processed_details=$(process_message "${details}")
     
     local formatted_output
-    if [ "${status}" -eq 0 ]; then
+    if [[ "${status}" -eq 0 ]]; then
         formatted_output="${prefix} ${PASS_COLOR}${PASS_ICON} ${PASS_COLOR}PASS${NC} ${BOLD}${processed_name}${NC} - ${processed_details}"
     else
         formatted_output="${prefix} ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}FAIL${NC} ${BOLD}${processed_name}${NC} - ${processed_details}"
