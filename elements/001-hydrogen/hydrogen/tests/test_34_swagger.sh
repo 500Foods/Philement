@@ -23,36 +23,37 @@
 TEST_NAME="Swagger"
 SCRIPT_VERSION="3.1.4"
 
-# Get the directory where this script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-HYDROGEN_DIR="$( cd "${SCRIPT_DIR}/.." && pwd )"
+# Sort out directories
+PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
+SCRIPT_DIR="${PROJECT_DIR}/tests"
+LIB_DIR="${SCRIPT_DIR}/lib"
+BUILD_DIR="${PROJECT_DIR}/build"
+TESTS_DIR="${BUILD_DIR}/tests"
+RESULTS_DIR="${TESTS_DIR}/results"
+DIAGS_DIR="${TESTS_DIR}/diagnostics"
+LOGS_DIR="${TESTS_DIR}/logs"
+mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}"
 
-if [[ -z "${LOG_OUTPUT_SH_GUARD}" ]]; then
-    # shellcheck source=tests/lib/log_output.sh # Resolve path statically
-    source "${SCRIPT_DIR}/lib/log_output.sh"
-fi
+HYDROGEN_DIR="${PROJECT_DIR}"
 
 # shellcheck source=tests/lib/framework.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/framework.sh"
-# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/file_utils.sh"
+[[ -n "${FRAMEWORK_GUARD}" ]] || source "${LIB_DIR}/framework.sh"
+# shellcheck source=tests/lib/log_output.sh # Resolve path statically
+[[ -n "${LOG_OUTPUT_GUARD}" ]] || source "${LIB_DIR}/log_output.sh"
 # shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/lifecycle.sh"
-# shellcheck source=tests/lib/network_utils.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/network_utils.sh"
+[[ -n "${LIFECYCLE_GUARD}" ]] || source "${LIB_DIR}/lifecycle.sh"
+# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
+[[ -n "${FILE_UTILS_GUARD}" ]] || source "${LIB_DIR}/file_utils.sh"
+# shellcheck source=tests/lib/coverage-unity.sh # Resolve path statically
+[[ -n "${COVERAGE_UNITY_GUARD}" ]] || source "${LIB_DIR}/coverage-unity.sh"
+# shellcheck source=tests/lib/coverage-blackbox.sh # Resolve path statically
+[[ -n "${COVERAGE_BLACKBOX_GUARD}" ]] || source "${LIB_DIR}/coverage-blackbox.sh"
+# shellcheck source=tests/lib/coverage-combined.sh # Resolve path statically
+[[ -n "${COVERAGE_COMBINED_GUARD}" ]] || source "${LIB_DIR}/coverage-combined.sh"
+# shellcheck source=tests/lib/coverage-common.sh # Resolve path statically
+[[ -n "${COVERAGE_COMMON_GUARD}" ]] || source "${LIB_DIR}/coverage-common.sh"
 # shellcheck source=tests/lib/coverage.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/coverage.sh"
-
-# Use build/tests/results directory for consistency
-BUILD_DIR="${SCRIPT_DIR}/../build"
-RESULTS_DIR="${BUILD_DIR}/tests/results"
-mkdir -p "${RESULTS_DIR}"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-
-# Auto-extract test number and set up environment
-TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
-set_test_number "${TEST_NUMBER}"
-reset_subtest_counter
+[[ -n "${COVERAGE_GUARD}" ]] || source "${LIB_DIR}/coverage.sh"
 
 # Test configuration
 TOTAL_SUBTESTS=15  # 3 prerequisites + 6 tests for each of 2 configurations
@@ -377,7 +378,7 @@ test_swagger_configuration() {
     print_subtest "Start Hydrogen Server (Config ${config_number})"
     
     # Use a temporary variable name that won't conflict
-    local temp_pid_var="HYDROGEN_PID_$${_}${config_number}"
+    local temp_pid_var="HYDROGEN_PID_$$"
     # shellcheck disable=SC2153  # HYDROGEN_BIN is set by find_hydrogen_binary function
     if start_hydrogen_with_pid "${config_file}" "${server_log}" 15 "${HYDROGEN_BIN}" "${temp_pid_var}"; then
         # Get the PID from the temporary variable
