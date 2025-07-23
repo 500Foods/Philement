@@ -21,8 +21,8 @@ export CLOC_GUARD="true"
 
 # Library metadata
 CLOC_NAME="CLOC Library"
-CLOC_VERSION="1.0.0"
-export CLOC_NAME CLOC_VERSION
+CLOC_VERSION="1.1.0"
+print_message "$CLOC_NAME $CLOC_VERSION" "info"
 
 # Default exclude patterns for linting (can be overridden by .lintignore)
 if [ -z "${DEFAULT_LINT_EXCLUDES+x}" ]; then

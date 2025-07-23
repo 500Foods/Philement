@@ -15,8 +15,9 @@
 export COVERAGE_BLACKBOX_GUARD="true"
 
 # Library metadata
-COVERAGE_BLACKBOX_NAME="Coverage Combined Library"
+COVERAGE_BLACKBOX_NAME="Coverage Blackbox Library"
 COVERAGE_BLACKBOX_VERSION="1.0.0"
+print_message "$COVERAGE_BLACKBOX_NAME $COVERAGE_BLACKBOX_VERSION" "info"
 
 # Sort out directories
 PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
@@ -31,7 +32,6 @@ mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_D
 
 # shellcheck source=tests/lib/coverage-common.sh # Resolve path statically
 [[ -n "$COVERAGE_COMMON_GUARD" ]] || source "$LIB_DIR/coverage-common.sh"
-
 
 # Function to collect blackbox test coverage
 # Usage: collect_blackbox_coverage <hydrogen_coverage_binary> <timestamp>

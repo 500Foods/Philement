@@ -16,6 +16,7 @@ export COVERAGE_UNITY_GUARD="true"
 # Library metadata
 COVERAGE_UNITY_NAME="Coverage Unity Library"
 COVERAGE_UNITY_VERSION="1.0.0"
+print_message "$COVERAGE_UNITY_NAME $COVERAGE_UNITY_VERSION" "info"
 
 # Sort out directories
 PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
@@ -30,8 +31,6 @@ mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_D
 
 # shellcheck source=tests/lib/coverage-common.sh # Resolve path statically
 [[ -n "$COVERAGE_COMMON_GUARD" ]] || source "$LIB_DIR/coverage-common.sh"
-
-print_message "$COVERAGE_UNITY_NAME $COVERAGE_UNITY_VERSION" "info"
 
 # Function to calculate Unity test coverage from gcov data
 # Usage: calculate_unity_coverage <build_dir> <timestamp>

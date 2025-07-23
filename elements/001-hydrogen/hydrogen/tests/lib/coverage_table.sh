@@ -4,6 +4,7 @@
 # Displays comprehensive coverage data from Unity and blackbox tests in a formatted table
 
 # CHANGELOG
+# 2.0.0 - 2025-07-22 - Upgraded for more stringent shellcheck compliance
 # 1.0.6 - 2025-07-18 - Added timestamp to footer for coverage table generation time
 # 1.0.5 - 2025-07-16 - Fixed Cover column to calculate TRUE union of coverage from Unity and Blackbox tests
 # 1.0.4 - 2025-07-14 - Fixed file path extraction using Source: line from gcov files for consistent table alignment
@@ -13,27 +14,32 @@
 # 1.0.0 - Initial version
 
 COVERAGE_TABLE_NAME="Coverage Table Library"
-COVERAGE_TABLE_VERSION="1.0.0"
+COVERAGE_TABLE_VERSION="2.0.0"
+export COVERAGE_TABLE_NAME COVERAGE_TABLE_VERSION
 
 # Sort out directories
 PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
-SCRIPT_DIR="$PROJECT_DIR/tests"
-LIB_DIR="$SCRIPT_DIR/lib"
-BUILD_DIR="$PROJECT_DIR/build"
-TESTS_DIR="$BUILD_DIR/tests"
-RESULTS_DIR="$TESTS_DIR/results"
-DIAGS_DIR="$TESTS_DIR/diagnostics"
-LOGS_DIR="$TESTS_DIR/logs"
+SCRIPT_DIR="${PROJECT_DIR}/tests"
+LIB_DIR="${SCRIPT_DIR}/lib"
+BUILD_DIR="${PROJECT_DIR}/build"
+TESTS_DIR="${BUILD_DIR}/tests"
+RESULTS_DIR="${TESTS_DIR}/results"
+DIAGS_DIR="${TESTS_DIR}/diagnostics"
+LOGS_DIR="${TESTS_DIR}/logs"
 mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}"
 
-UNITY_COVS="$BUILD_DIR/unity/src"
-BLACKBOX_COVS="$BUILD_DIR/coverage/src"
-TABLES_EXE="$LIB_DIR/tables"
+UNITY_COVS="${BUILD_DIR}/unity/src"
+BLACKBOX_COVS="${BUILD_DIR}/coverage/src"
+TABLES_EXE="${LIB_DIR}/tables"
 
-# Source the coverage common functions for combined analysis
-source "$LIB_DIR/coverage-common.sh"
-source "$LIB_DIR/coverage-unity.sh"
-source "$LIB_DIR/coverage-blackbox.sh"
+# shellcheck source=tests/lib/coverage-common.sh # Resolve path statically
+[[ -n "${COVERAGE_COMMON_GUARD}" ]] || source "${LIB_DIR}/coverage-common.sh"
+# shellcheck source=tests/lib/coverage-unity.sh # Resolve path statically
+[[ -n "${COVERAGE_UNITY_GUARD}" ]] || source "${LIB_DIR}/coverage-unity.sh"
+# shellcheck source=tests/lib/coverage-blackbox.sh # Resolve path statically
+[[ -n "${COVERAGE_BLACKBOX_GUARD}" ]] || source "${LIB_DIR}/coverage-blackbox.sh"
+# shellcheck source=tests/lib/coverage-combined.sh # Resolve path statically
+[[ -n "${COVERAGE_COMBINED_GUARD}" ]] || source "${LIB_DIR}/coverage-combined.sh"
 
 # Associative arrays to store coverage data from both directories
 declare -A unity_covered_lines
@@ -49,25 +55,29 @@ timestamp=$(date '+%Y%m%d_%H%M%S')
 display_timestamp=$(date '+%Y-%m-%d %H:%M:%S %Z')
 
 # Call the same functions that test 99 uses - this ensures we get the same results
-unity_coverage_percentage=$(calculate_unity_coverage "$UNITY_COVS" "$timestamp" 2>/dev/null || echo "0.000")
-blackbox_coverage_percentage=$(collect_blackbox_coverage_from_dir "$BLACKBOX_COVS" "$timestamp" 2>/dev/null || echo "0.000")
+# shellcheck disable=SC2034 # declared globally elsewhere
+unity_coverage_percentage=$(calculate_unity_coverage "${UNITY_COVS}" "${timestamp}" 2>/dev/null || echo "0.000")
+# shellcheck disable=SC2034 # declared globally elsewhere
+blackbox_coverage_percentage=$(collect_blackbox_coverage_from_dir "${BLACKBOX_COVS}" "${timestamp}" 2>/dev/null || echo "0.000")
 
 # Read the detailed coverage data that was just generated
-unity_files=0
-coverage_files=0
-if [ -f "${UNITY_COVERAGE_FILE}.detailed" ]; then
+unity_file_count=0
+coverage_file_count=0
+if [[ -f "${UNITY_COVERAGE_FILE}.detailed" ]]; then
+    # shellcheck disable=SC2034 # That's not what we are doing here
     IFS=',' read -r _ _ _ _ unity_instrumented_files unity_covered_files < "${UNITY_COVERAGE_FILE}.detailed"
-    unity_files=$unity_covered_files
+    unity_file_count=${unity_covered_files}
 fi
 
-if [ -f "${BLACKBOX_COVERAGE_FILE}.detailed" ]; then
+if [[ -f "${BLACKBOX_COVERAGE_FILE}.detailed" ]]; then
+    # shellcheck disable=SC2034 # That's not what we are doing here
     IFS=',' read -r _ _ _ _ coverage_instrumented_files coverage_covered_files < "${BLACKBOX_COVERAGE_FILE}.detailed"
-    coverage_files=$coverage_covered_files
+    coverage_file_count=${coverage_covered_files}
 fi
 
-gcov_files_found=$((unity_files + coverage_files))
+gcov_files_found=$((unity_file_count + coverage_file_count))
 
-if [ "$gcov_files_found" -eq 0 ]; then
+if [[ "${gcov_files_found}" -eq 0 ]]; then
     # No gcov files found - create table with zero values instead of exiting
     # echo "No gcov files found - generating empty coverage table with zero values"
     
@@ -85,15 +95,15 @@ if [ "$gcov_files_found" -eq 0 ]; then
     combined_total_pct="0.000"
     
     # Store the zero combined coverage value for other scripts to use
-    echo "$combined_total_pct" > "$COMBINED_COVERAGE_FILE"
+    echo "${combined_total_pct}" > "${COMBINED_COVERAGE_FILE}"
     
     # Create temporary directory for JSON files
     temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory"; exit 1; }
-    layout_json="$temp_dir/coverage_layout.json"
-    data_json="$temp_dir/coverage_data.json"
+    layout_json="${temp_dir}/coverage_layout.json"
+    data_json="${temp_dir}/coverage_data.json"
     
     # Create layout JSON for empty table
-    cat > "$layout_json" << EOF
+    cat > "${layout_json}" << EOF
 {
     "title": "Test Suite Coverage {NC}{RED}———{RESET}{BOLD} Unity: ${unity_total_pct}% {RESET}{RED}———{RESET}{BOLD} Blackbox: ${coverage_total_pct}% {RESET}{RED}———{RESET}{BOLD} Combined: ${combined_total_pct}%",
     "footer": "{YELLOW}Zero Coverage:{RESET} {RED}———{RESET} {MAGENTA}100+ Lines < 50% Coverage:{RESET} - No coverage data available {RED}———{RESET} {CYAN}${display_timestamp}{RESET}",
@@ -110,7 +120,7 @@ if [ "$gcov_files_found" -eq 0 ]; then
 EOF
 
     # Create data JSON with single message
-    cat > "$data_json" << EOF
+    cat > "${data_json}" << EOF
 [
     {
         "status": "No source file coverage data available. Run Test 11 (Unity) or other Tests to generate gcov data"
@@ -119,13 +129,13 @@ EOF
 EOF
 
     # Use tables executable to render the empty table
-    "$TABLES_EXE" "$layout_json" "$data_json" 2>/dev/null || {
+    "${TABLES_EXE}" "${layout_json}" "${data_json}" 2>/dev/null || {
         echo "Error: Failed to run tables executable"
         exit 1
     }
     
     # Clean up temporary files
-    rm -rf "$temp_dir" 2>/dev/null
+    rm -rf "${temp_dir}" 2>/dev/null
     exit 0
 fi
 
@@ -138,14 +148,14 @@ declare -A combined_covered_lines
 declare -A combined_instrumented_lines
 
 # Process all coverage types using optimized batch processing
-analyze_all_gcov_coverage_batch "$UNITY_COVS" "$BLACKBOX_COVS"
+analyze_all_gcov_coverage_batch "${UNITY_COVS}" "${BLACKBOX_COVS}"
 
 # Populate all_files array from coverage arrays (already filtered at batch level)
 for file_path in "${!unity_covered_lines[@]}"; do
-    all_files["$file_path"]=1
+    all_files["${file_path}"]=1
 done
 for file_path in "${!coverage_covered_lines[@]}"; do
-    all_files["$file_path"]=1
+    all_files["${file_path}"]=1
 done
 
 # Calculate totals for summary first
@@ -158,16 +168,16 @@ combined_total_instrumented=0
 
 for file_path in "${!all_files[@]}"; do
     # Get Unity data
-    u_covered=${unity_covered_lines["$file_path"]:-0}
-    u_instrumented=${unity_instrumented_lines["$file_path"]:-0}
+    u_covered=${unity_covered_lines["${file_path}"]:-0}
+    u_instrumented=${unity_instrumented_lines["${file_path}"]:-0}
     
     # Get Coverage data
-    c_covered=${coverage_covered_lines["$file_path"]:-0}
-    c_instrumented=${coverage_instrumented_lines["$file_path"]:-0}
+    c_covered=${coverage_covered_lines["${file_path}"]:-0}
+    c_instrumented=${coverage_instrumented_lines["${file_path}"]:-0}
     
     # Get Combined data
-    combined_covered=${combined_covered_lines["$file_path"]:-0}
-    combined_instrumented=${combined_instrumented_lines["$file_path"]:-0}
+    combined_covered=${combined_covered_lines["${file_path}"]:-0}
+    combined_instrumented=${combined_instrumented_lines["${file_path}"]:-0}
     
     # Add to totals
     unity_total_covered=$((unity_total_covered + u_covered))
@@ -180,30 +190,30 @@ done
 
 # Calculate total percentages
 unity_total_pct="0.000"
-if [ "$unity_total_instrumented" -gt 0 ]; then
-    unity_total_pct=$(awk "BEGIN {printf \"%.3f\", ($unity_total_covered / $unity_total_instrumented) * 100}")
+if [[ "${unity_total_instrumented}" -gt 0 ]]; then
+    unity_total_pct=$(awk "BEGIN {printf \"%.3f\", (${unity_total_covered} / ${unity_total_instrumented}) * 100}")
 fi
 
 coverage_total_pct="0.000"
-if [ "$coverage_total_instrumented" -gt 0 ]; then
-    coverage_total_pct=$(awk "BEGIN {printf \"%.3f\", ($coverage_total_covered / $coverage_total_instrumented) * 100}")
+if [[ "${coverage_total_instrumented}" -gt 0 ]]; then
+    coverage_total_pct=$(awk "BEGIN {printf \"%.3f\", (${coverage_total_covered} / ${coverage_total_instrumented}) * 100}")
 fi
 
 combined_total_pct="0.000"
-if [ "$combined_total_instrumented" -gt 0 ]; then
-    combined_total_pct=$(awk "BEGIN {printf \"%.3f\", ($combined_total_covered / $combined_total_instrumented) * 100}")
+if [[ "${combined_total_instrumented}" -gt 0 ]]; then
+    combined_total_pct=$(awk "BEGIN {printf \"%.3f\", (${combined_total_covered} / ${combined_total_instrumented}) * 100}")
 fi
 
 # Store the combined coverage value for other scripts to use
-echo "$combined_total_pct" > "$COMBINED_COVERAGE_FILE"
+echo "${combined_total_pct}" > "${COMBINED_COVERAGE_FILE}"
 
 # Create temporary directory for JSON files
 temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory"; exit 1; }
-layout_json="$temp_dir/coverage_layout.json"
-data_json="$temp_dir/coverage_data.json"
+layout_json="${temp_dir}/coverage_layout.json"
+data_json="${temp_dir}/coverage_data.json"
 
 # Start the data JSON array
-echo '[' > "$data_json"
+echo '[' > "${data_json}"
 first_record=true
 
 # Create array for sorting by folder and file
@@ -214,15 +224,15 @@ low_coverage_count=0
 for file_path in "${!all_files[@]}"; do
     # Extract folder name from file path using first two levels below src/
     folder="src/"
-    if [[ "$file_path" == src/* ]]; then
+    if [[ "${file_path}" == src/* ]]; then
         # Get the path after src/
         path_after_src="${file_path#src/}"
-        if [[ "$path_after_src" == */* ]]; then
+        if [[ "${path_after_src}" == */* ]]; then
             # Has at least one subdirectory
             first_level="${path_after_src%%/*}"
             remaining_path="${path_after_src#*/}"
             
-            if [[ "$remaining_path" == */* ]]; then
+            if [[ "${remaining_path}" == */* ]]; then
                 # Has at least two subdirectories
                 second_level="${remaining_path%%/*}"
                 folder="src/${first_level}/${second_level}"
@@ -237,10 +247,11 @@ for file_path in "${!all_files[@]}"; do
     fi
     
     # Store data with sort key: folder:filename
-    file_data+=("$folder:$file_path")
+    file_data+=("${folder}:${file_path}")
 done
 
 # Sort by folder, then by filename, ensuring src/hydrogen.c appears first
+# shellcheck disable=SC2312 # This is fine as-is, we want to sort by folder and file name
 mapfile -t sorted_file_data < <(printf '%s\n' "${file_data[@]}" | sort -t: -k1,1 -k2,2)
 
 # Generate JSON data for tables
@@ -249,87 +260,87 @@ for file_data_entry in "${sorted_file_data[@]}"; do
     file_path="${file_data_entry#*:}"
     
     # Skip empty entries
-    if [[ -z "$file_path" ]]; then
+    if [[ -z "${file_path}" ]]; then
         continue
     fi
     
     # Get Unity data
-    u_covered=${unity_covered_lines["$file_path"]:-0}
-    u_instrumented=${unity_instrumented_lines["$file_path"]:-0}
+    u_covered=${unity_covered_lines["${file_path}"]:-0}
+    u_instrumented=${unity_instrumented_lines["${file_path}"]:-0}
     u_percentage="0.000"
-    if [ "$u_instrumented" -gt 0 ]; then
-        u_percentage=$(awk "BEGIN {printf \"%.3f\", ($u_covered / $u_instrumented) * 100}")
+    if [[ "${u_instrumented}" -gt 0 ]]; then
+        u_percentage=$(awk "BEGIN {printf \"%.3f\", (${u_covered} / ${u_instrumented}) * 100}")
     fi
     
     # Get Coverage data
-    c_covered=${coverage_covered_lines["$file_path"]:-0}
-    c_instrumented=${coverage_instrumented_lines["$file_path"]:-0}
+    c_covered=${coverage_covered_lines["${file_path}"]:-0}
+    c_instrumented=${coverage_instrumented_lines["${file_path}"]:-0}
     c_percentage="0.000"
-    if [ "$c_instrumented" -gt 0 ]; then
-        c_percentage=$(awk "BEGIN {printf \"%.3f\", ($c_covered / $c_instrumented) * 100}")
+    if [[ "${c_instrumented}" -gt 0 ]]; then
+        c_percentage=$(awk "BEGIN {printf \"%.3f\", (${c_covered} / ${c_instrumented}) * 100}")
     fi
     
     # Get Combined data
-    combined_covered=${combined_covered_lines["$file_path"]:-0}
-    combined_instrumented=${combined_instrumented_lines["$file_path"]:-0}
+    combined_covered=${combined_covered_lines["${file_path}"]:-0}
+    combined_instrumented=${combined_instrumented_lines["${file_path}"]:-0}
     combined_percentage="0.000"
-    if [ "$combined_instrumented" -gt 0 ]; then
-        combined_percentage=$(awk "BEGIN {printf \"%.3f\", ($combined_covered / $combined_instrumented) * 100}")
+    if [[ "${combined_instrumented}" -gt 0 ]]; then
+        combined_percentage=$(awk "BEGIN {printf \"%.3f\", (${combined_covered} / ${combined_instrumented}) * 100}")
     fi
     
     # Calculate maximum coverage percentage
     max_percentage=$(awk "BEGIN {
-        u = $u_percentage
-        c = $c_percentage
+        u = ${u_percentage}
+        c = ${c_percentage}
         if (u > c) print u; else print c
     }")
     
     # Highlight files with no coverage in either test type
-    display_file_path="$file_path"
-    if [[ $u_covered -eq 0 && $c_covered -eq 0 ]]; then
-        display_file_path="{YELLOW}$file_path{RESET}"
+    display_file_path="${file_path}"
+    if [[ ${u_covered} -eq 0 && ${c_covered} -eq 0 ]]; then
+        display_file_path="{YELLOW}${file_path}{RESET}"
         ((zero_coverage_count++))
-    elif [[ $combined_covered -gt 0 && $combined_instrumented -gt 100 ]]; then
+    elif [[ ${combined_covered} -gt 0 && ${combined_instrumented} -gt 100 ]]; then
         # Check if coverage is less than 50%
-        coverage_below_50=$(awk "BEGIN {print ($combined_percentage < 50.0) ? 1 : 0}")
-        if [[ $coverage_below_50 -eq 1 ]]; then
-            display_file_path="{MAGENTA}$file_path{RESET}"
+        coverage_below_50=$(awk "BEGIN {print (${combined_percentage} < 50.0) ? 1 : 0}")
+        if [[ ${coverage_below_50} -eq 1 ]]; then
+            display_file_path="{MAGENTA}${file_path}{RESET}"
             ((low_coverage_count++))
         fi
     fi
     
     # Add comma before record if not first
-    if [ "$first_record" = false ]; then
-        echo '    ,' >> "$data_json"
+    if [[ "${first_record}" = false ]]; then
+        echo '    ,' >> "${data_json}"
     else
         first_record=false
     fi
     
     # Add JSON record with folder field and max coverage
-    cat >> "$data_json" << EOF
+    cat >> "${data_json}" << EOF
     {
-        "folder": "$folder",
-        "max_coverage_percentage": $max_percentage,
-        "combined_coverage_percentage": $combined_percentage,
-        "file_path": "$display_file_path",
-        "unity_covered": $u_covered,
-        "unity_instrumented": $u_instrumented,
-        "unity_percentage": $u_percentage,
-        "coverage_covered": $c_covered,
-        "coverage_instrumented": $c_instrumented,
-        "coverage_percentage": $c_percentage,
-        "combined_covered": $combined_covered,
-        "combined_instrumented": $combined_instrumented
+        "folder": "${folder}",
+        "max_coverage_percentage": ${max_percentage},
+        "combined_coverage_percentage": ${combined_percentage},
+        "file_path": "${display_file_path}",
+        "unity_covered": ${u_covered},
+        "unity_instrumented": ${u_instrumented},
+        "unity_percentage": ${u_percentage},
+        "coverage_covered": ${c_covered},
+        "coverage_instrumented": ${c_instrumented},
+        "coverage_percentage": ${c_percentage},
+        "combined_covered": ${combined_covered},
+        "combined_instrumented": ${combined_instrumented}
     }
 EOF
 done
 
 # Close the JSON array
-echo '' >> "$data_json"
-echo ']' >> "$data_json"
+echo '' >> "${data_json}"
+echo ']' >> "${data_json}"
 
 # Create layout JSON for the coverage table (now with correct totals and counts)
-cat > "$layout_json" << EOF
+cat > "${layout_json}" << EOF
 {
     "title": "Test Suite Coverage {NC}{RED}———{RESET}{BOLD}{CYAN} Unity {WHITE}${unity_total_pct}% {RESET}{RED}———{RESET}{BOLD}{CYAN} Blackbox {WHITE}${coverage_total_pct}% {RESET}{RED}———{RESET}{BOLD}{CYAN} Combined {WHITE}${combined_total_pct}%{RESET}",
     "footer": "{YELLOW}Zero Coverage{RESET} {WHITE}${zero_coverage_count}{RESET} {RED}———{RESET} {MAGENTA}100+ Lines < 50% Coverage{RESET} {WHITE}${low_coverage_count}{RESET} {RED}———{RESET} {CYAN}Timestamp {WHITE}${display_timestamp}{RESET}",
@@ -393,7 +404,7 @@ cat > "$layout_json" << EOF
 EOF
 
 # Use tables executable to render the table
-"$TABLES_EXE" "$layout_json" "$data_json" 2>/dev/null
+"${TABLES_EXE}" "${layout_json}" "${data_json}" 2>/dev/null
 
 # Clean up temporary files
-rm -rf "$temp_dir" 2>/dev/null
+rm -rf "${temp_dir}" 2>/dev/null

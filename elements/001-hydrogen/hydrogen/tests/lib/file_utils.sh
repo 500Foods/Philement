@@ -23,7 +23,7 @@ export FILE_UTILS_GUARD="true"
 # Library metadata
 FILE_UTILS_NAME="File Utilities Library"
 FILE_UTILS_VERSION="1.1.0"
-export FILE_UTILS_NAME FILE_UTILS_VERSION
+print_message "$FILE_UTILS_NAME $FILE_UTILS_VERSION" "info"
 
 # Function to convert absolute path to path relative to hydrogen project root
 convert_to_relative_path() {

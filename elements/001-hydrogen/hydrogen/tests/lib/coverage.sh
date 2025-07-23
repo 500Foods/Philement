@@ -21,17 +21,16 @@ export COVERAGE_GUARD="true"
 # Library metadata
 COVERAGE_NAME="Coverage Library"
 COVERAGE_VERSION="2.1.0"
-
-# Get script directory - don't overwrite if already set by calling script
-COVERAGE_MAIN_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# Source modular coverage components
-source "$COVERAGE_MAIN_SCRIPT_DIR/coverage-common.sh"
-source "$COVERAGE_MAIN_SCRIPT_DIR/coverage-unity.sh"
-source "$COVERAGE_MAIN_SCRIPT_DIR/coverage-blackbox.sh"
-source "$COVERAGE_MAIN_SCRIPT_DIR/coverage-combined.sh"
-
 print_message "$COVERAGE_NAME $COVERAGE_VERSION" "info"
+
+# shellcheck source=tests/lib/coverage-common.sh # Resolve path statically
+[[ -n "$COVERAGE_COMMON_GUARD" ]] || source "$LIB_DIR/coverage-common.sh"
+# shellcheck source=tests/lib/coverage-unity.sh # Resolve path statically
+[[ -n "$COVERAGE_UNITY_GUARD" ]] || source "$LIB_DIR/coverage-unity.sh"
+# shellcheck source=tests/lib/coverage-blackbox.sh # Resolve path statically
+[[ -n "$COVERAGE_BLACKBOX_GUARD" ]] || source "$LIB_DIR/coverage-blackbox.sh"
+# shellcheck source=tests/lib/coverage-combined.sh # Resolve path statically
+[[ -n "$COVERAGE_COMBINED_GUARD" ]] || source "$LIB_DIR/coverage-combined.sh"
 
 # Function to get coverage data by type
 get_coverage() {
