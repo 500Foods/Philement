@@ -24,19 +24,18 @@ export COVERAGE_COMMON_GUARD="true"
 # Library metadata
 COVERAGE_COMMON_NAME="Coverage Common Library"
 COVERAGE_COMMON_VERSION="2.1.0"
+print_message "$COVERAGE_COMMON_NAME $COVERAGE_COMMON_VERSION" "info"
 
 # Sort out directories
 PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
-SCRIPT_DIR="$PROJECT_DIR/tests"
-LIB_DIR="$SCRIPT_DIR/lib"
+# SCRIPT_DIR="$PROJECT_DIR/tests"
+# LIB_DIR="$SCRIPT_DIR/lib"
 BUILD_DIR="$PROJECT_DIR/build"
 TESTS_DIR="$BUILD_DIR/tests"
 RESULTS_DIR="$TESTS_DIR/results"
 DIAGS_DIR="$TESTS_DIR/diagnostics"
 LOGS_DIR="$TESTS_DIR/logs"
 mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}"
-
-print_message "$COVERAGE_COMMON_NAME $COVERAGE_COMMON_VERSION" "info"
 
 # Store resuls
 UNITY_COVERAGE_FILE="$RESULTS_DIR/coverage_unity.txt"
@@ -91,6 +90,11 @@ analyze_combined_gcov_coverage() {
     local all_instrumented="$temp_dir/all_instrumented"
     local union_covered="$temp_dir/union_covered"
     
+    export unity_covered
+    export blackbox_covered
+    export all_instrumented 
+    export union_covered
+
     # Single AWK script to process both files and calculate union in memory
     local result
     result=$(awk -v unity_file="$unity_gcov" -v blackbox_file="$blackbox_gcov" '
@@ -368,15 +372,21 @@ analyze_all_gcov_coverage_batch() {
             
             case "$coverage_type" in
                 "UNITY")
+                    # shellcheck disable=SC2034 # declared globally elsewhere
                     unity_instrumented_lines["$file_path"]=$instrumented
+                    # shellcheck disable=SC2034 # declared globally elsewhere
                     unity_covered_lines["$file_path"]=$covered
                     ;;
                 "COVERAGE")
+                    # shellcheck disable=SC2034 # declared globally elsewhere
                     coverage_instrumented_lines["$file_path"]=$instrumented
+                    # shellcheck disable=SC2034 # declared globally elsewhere
                     coverage_covered_lines["$file_path"]=$covered
                     ;;
                 "COMBINED")
+                    # shellcheck disable=SC2034 # declared globally elsewhere
                     combined_instrumented_lines["$file_path"]=$instrumented
+                    # shellcheck disable=SC2034 # declared globally elsewhere
                     combined_covered_lines["$file_path"]=$covered
                     ;;
             esac
@@ -589,12 +599,17 @@ analyze_gcov_file() {
     fi
     
     # Store data in appropriate arrays
+    # shellcheck disable=SC2034 # declared globally elsewhere
     all_files["$display_path"]=1
     if [[ "$coverage_type" == "unity" ]]; then
+        # shellcheck disable=SC2034 # declared globally elsewhere
         unity_covered_lines["$display_path"]=$covered_lines
+        # shellcheck disable=SC2034 # declared globally elsewhere
         unity_instrumented_lines["$display_path"]=$instrumented_lines
     else
+        # shellcheck disable=SC2034 # declared globally elsewhere
         coverage_covered_lines["$display_path"]=$covered_lines
+        # shellcheck disable=SC2034 # declared globally elsewhere
         coverage_instrumented_lines["$display_path"]=$instrumented_lines
     fi
 }

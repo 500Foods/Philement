@@ -41,7 +41,7 @@ export LIFCYCLE_GUARD="true"
 # Library metadata
 LIFECYCLE_NAME="Lifecycle Management Library"
 LIFECYCLE_VERSION="1.3.0"
-export LIFECYCLE_NAME LIFECYCLE_VERSION
+print_message "$LIFECYCLE_NAME $LIFECYCLE_VERSION" "info"
 
 # Function to find and validate Hydrogen binary
 # Usage: find_hydrogen_binary <hydrogen_dir> <result_var_name>
