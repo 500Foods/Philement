@@ -4,6 +4,7 @@
 # Executes all tests in parallel batches or sequentially and generates a summary report
 
 # CHANGELOG
+# 6.0.0 - 2025-07-22 - Upgraded for more stringent shellcheck compliance
 # 5.0.0 - 2025-07-19 - Script Review: Folder variables used consistently
 # 4.2.1 - 2025-07-18 - Added timestamp to Test Suite Results footer
 # 4.2.0 - 2025-07-18 - Added SVG generation for coverage table and test results; integrated SVG references in README.md generation
@@ -17,58 +18,58 @@
 
 # Test configuration
 TEST_NAME="Test Suite Orchestration"
-SCRIPT_VERSION="5.0.0"
+SCRIPT_VERSION="6.0.0"
 
 # Sort out directories
 PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
-SCRIPT_DIR="$PROJECT_DIR/tests"
-LIB_DIR="$SCRIPT_DIR/lib"
-BUILD_DIR="$PROJECT_DIR/build"
-TESTS_DIR="$BUILD_DIR/tests"
-RESULTS_DIR="$TESTS_DIR/results"
-DIAGS_DIR="$TESTS_DIR/diagnostics"
-LOGS_DIR="$TESTS_DIR/logs"
+SCRIPT_DIR="${PROJECT_DIR}/tests"
+LIB_DIR="${SCRIPT_DIR}/lib"
+BUILD_DIR="${PROJECT_DIR}/build"
+TESTS_DIR="${BUILD_DIR}/tests"
+RESULTS_DIR="${TESTS_DIR}/results"
+DIAGS_DIR="${TESTS_DIR}/diagnostics"
+LOGS_DIR="${TESTS_DIR}/logs"
 
 # Get start time
 START_TIME=$(date +%s.%N 2>/dev/null || date +%s)
 
 # shellcheck source=tests/lib/framework.sh # Resolve path statically
-source "$LIB_DIR/framework.sh"
+source "${LIB_DIR}/framework.sh"
 # shellcheck source=tests/lib/log_output.sh # Resolve path statically
-source "$LIB_DIR/log_output.sh"
+source "${LIB_DIR}/log_output.sh"
 
 # Auto-extract test number and set up environment
 TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
-set_test_number "$TEST_NUMBER"
+set_test_number "${TEST_NUMBER}"
 reset_subtest_counter
 next_subtest
 
 # Print beautiful test suite header in blue
-print_test_suite_header "$TEST_NAME" "$SCRIPT_VERSION"
+print_test_suite_header "${TEST_NAME}" "${SCRIPT_VERSION}"
 
-print_message "$FRAMEWORK_NAME $FRAMEWORK_VERSION" "info"
-print_message "$LOG_OUTPUT_NAME $LOG_OUTPUT_VERSION" "info"
+print_message "${FRAMEWORK_NAME} ${FRAMEWORK_VERSION}" "info"
+print_message "${LOG_OUTPUT_NAME} ${LOG_OUTPUT_VERSION}" "info"
 
 # shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
-source "$LIB_DIR/lifecycle.sh"
+source "${LIB_DIR}/lifecycle.sh"
 # shellcheck source=tests/lib/network_utils.sh # Resolve path statically
-source "$LIB_DIR/network_utils.sh"
+source "${LIB_DIR}/network_utils.sh"
 # shellcheck source=tests/lib/file_utils.sh # Resolve path statically
-source "$LIB_DIR/file_utils.sh"
+source "${LIB_DIR}/file_utils.sh"
 # shellcheck source=tests/lib/env_utils.sh # Resolve path statically
-source "$LIB_DIR/env_utils.sh"
+source "${LIB_DIR}/env_utils.sh"
 # shellcheck source=tests/lib/cloc.sh # Resolve path statically
-source "$LIB_DIR/cloc.sh"
+source "${LIB_DIR}/cloc.sh"
 # shellcheck source=tests/lib/coverage.sh # Resolve path statically
-source "$LIB_DIR/coverage.sh"
+source "${LIB_DIR}/coverage.sh"
 # shellcheck source=tests/lib/coverage-common.sh # Resolve path statically
-source "$LIB_DIR/coverage-common.sh"
+source "${LIB_DIR}/coverage-common.sh"
 # shellcheck source=tests/lib/coverage-unity.sh # Resolve path statically
-source "$LIB_DIR/coverage-unity.sh"
+source "${LIB_DIR}/coverage-unity.sh"
 # shellcheck source=tests/lib/coverage-blackbox.sh # Resolve path statically
-source "$LIB_DIR/coverage-blackbox.sh"
+source "${LIB_DIR}/coverage-blackbox.sh"
 # shellcheck source=tests/lib/coverage-combined.sh # Resolve path statically
-source "$LIB_DIR/coverage-combined.sh"
+source "${LIB_DIR}/coverage-combined.sh"
 
 # List of commands to check - we're assuming grep and sort are available
 commands=(
@@ -84,34 +85,36 @@ declare -a results
 # Run version checks in parallel using xargs with inlined logic
 # Use IFS to read full lines into the results array
 # shellcheck disable=SC2016 # This is a script within a script, so the double quotes are not needed here
+# shellcheck disable=SC2312 # We are using xargs to handle parallel execution, so we don't need to worry about subshells here
 while IFS= read -r line; do
-    results+=("$line")
+    results+=("${line}")
 done < <(printf "%s\n" "${commands[@]}" | xargs -P 0 -I {} bash -c '
     cmd="{}"
-    if command -v "$cmd" >/dev/null 2>&1; then
+    if command -v "${cmd}" >/dev/null 2>&1; then
         cmd_path=$(command -v "$cmd")
-        version=$($cmd --version 2>/dev/null | grep -oE "[0-9]+\.[0-9]+([.-][0-9a-zA-Z]+)*" | head -n 1)
-        if [ -n "$version" ]; then
-            echo "0|$cmd @ $cmd_path|$version"
+        version=$(${cmd} --version 2>/dev/null | grep -oE "[0-9]+\.[0-9]+([.-][0-9a-zA-Z]+)*" | head -n 1)
+        if [ -n "${version}" ]; then
+            echo "0|${cmd} @ ${cmd_path}|${version}"
         else
-            echo "0|$cmd @ $cmd_path|no version found"
+            echo "0|${cmd} @ ${cmd_path}|no version found"
         fi
     else
-        echo "1|$cmd|Command not found"
+        echo "1|${cmd}|Command not found"
     fi
 ')
 
 # Sort the results array based on the message field (field 2, after the first '|')
 declare -a sorted_results
+# shellcheck disable=SC2312 # We are using xargs to handle parallel execution, so we don't need to worry about subshells here
 while IFS= read -r line; do
-    sorted_results+=("$line")
+    sorted_results+=("${line}")
 done < <(printf "%s\n" "${results[@]}" | sort -t'|' -k2)
 
 # Process sorted results array and call print_result
 for result in "${sorted_results[@]}"; do
     # Split result into status, message, and version (format: "status|message|version")
-    IFS='|' read -r status message version <<< "$result"
-    print_result "$status" "$message: $version"
+    IFS='|' read -r status message version <<< "${result}"
+    print_result "${status}" "${message}: ${version}"
 done
 
 # Perform cleanup before starting tests
@@ -134,7 +137,7 @@ TEST_ARGS=()
 
 # Parse all arguments
 for arg in "$@"; do
-    case "$arg" in
+    case "${arg}" in
         --skip-tests)
             SKIP_TESTS=true
             ;;
@@ -146,10 +149,10 @@ for arg in "$@"; do
             IFS=',' read -ra groups <<< "${arg#--sequential-groups=}"
             for group in "${groups[@]}"; do
                 # Validate that group is a number
-                if [[ "$group" =~ ^[0-9]+$ ]]; then
-                    SEQUENTIAL_GROUPS+=("$group")
+                if [[ "${group}" =~ ^[0-9]+$ ]]; then
+                    SEQUENTIAL_GROUPS+=("${group}")
                 else
-                    echo "Error: Invalid group number '$group'. Groups must be numeric."
+                    echo "Error: Invalid group number '${group}'. Groups must be numeric."
                     exit 1
                 fi
             done
@@ -158,30 +161,37 @@ for arg in "$@"; do
             # Help will be handled later
             ;;
         *)
-            TEST_ARGS+=("$arg")
+            TEST_ARGS+=("${arg}")
             ;;
     esac
 done
 
 # Function to update README.md with test results
 update_readme_with_results() {
-    local readme_file="$PROJECT_DIR/README.md"
+    local readme_file="${PROJECT_DIR}/README.md"
     
-    if [ ! -f "$readme_file" ]; then
-        echo "Warning: README.md not found at $readme_file"
+    if [[ ! -f "${readme_file}" ]]; then
+        echo "Warning: README.md not found at ${readme_file}"
         return 1
     fi
     
     # Calculate summary statistics
     local total_tests=${#TEST_NUMBERS[@]}
-    local total_subtests=0
     local total_passed=0
     local total_failed=0
+    local total_subtests=0
+    local total_subtests_passed=0
+    local total_subtests_failed=0
     
     for i in "${!TEST_SUBTESTS[@]}"; do
         total_subtests=$((total_subtests + TEST_SUBTESTS[i]))
-        total_passed=$((total_passed + TEST_PASSED[i]))
-        total_failed=$((total_failed + TEST_FAILED[i]))
+        total_subtests_passed=$((total_subtests_passed + TEST_PASSED[i]))
+        total_failed=$((total_subtests_failed + TEST_FAILED[i]))
+        if [[ "${TEST_FAILED[i]}" -gt 0 ]]; then
+            total_failed=$((total_failed + 1))
+        else
+            total_passed=$((total_passed + 1))
+        fi
     done
     
     # Generate Timestamp, Create temporary file for new README content
@@ -196,26 +206,25 @@ update_readme_with_results() {
     local in_repo_info=false
     
     while IFS= read -r line; do
-        if [[ "$line" == "## Latest Test Results" ]]; then
+        if [[ "${line}" == "## Latest Test Results" ]]; then
             in_test_results=true
             {
-                echo "$line"
+                echo "${line}"
                 echo ""
-                echo "Generated on: $timestamp"
+                echo "Generated on: ${timestamp}"
                 echo ""
                 echo "### Summary"
                 echo ""
                 echo "| Metric | Value |"
                 echo "| ------ | ----- |"
-                echo "| Total Tests | $total_tests |"
-                echo "| Passed | $total_tests |"
-                echo "| Failed | 0 |"
-                echo "| Skipped | 0 |"
-                echo "| Total Subtests | $total_subtests |"
-                echo "| Passed Subtests | $total_passed |"
-                echo "| Failed Subtests | $total_failed |"
-                echo "| Elapsed Time | $TOTAL_ELAPSED_FORMATTED |"
-                echo "| Cumulative Time | $TOTAL_RUNNING_TIME_FORMATTED |"
+                echo "| Total Tests | ${total_tests} |"
+                echo "| Passed | ${total_passed} |"
+                echo "| Failed | ${total_failed} |"
+                echo "| Total Subtests | ${total_subtests} |"
+                echo "| Passed Subtests | ${total_subtests_passed} |"
+                echo "| Failed Subtests | ${total_subtests_failed} |"
+                echo "| Elapsed Time | ${TOTAL_ELAPSED_FORMATTED} |"
+                echo "| Cumulative Time | ${TOTAL_RUNNING_TIME_FORMATTED} |"
                 echo ""
                 echo "[Test Suite Results](COMPLETE.svg) | [Test Suite Coverage](COVERAGE.svg)"
                 echo ""
@@ -223,22 +232,22 @@ update_readme_with_results() {
                 echo ""
                 
                 # Get detailed coverage information with thousands separators
-                local unity_coverage_detailed="$RESULTS_DIR/unity_coverage.txt.detailed"
-                local blackbox_coverage_detailed="$RESULTS_DIR/blackbox_coverage.txt.detailed"
-                local combined_coverage_detailed="$RESULTS_DIR/combined_coverage.txt.detailed"
+                local unity_coverage_detailed="${RESULTS_DIR}/unity_coverage.txt.detailed"
+                local blackbox_coverage_detailed="${RESULTS_DIR}/blackbox_coverage.txt.detailed"
+                local combined_coverage_detailed="${RESULTS_DIR}/combined_coverage.txt.detailed"
                 
-                if [ -f "$unity_coverage_detailed" ] || [ -f "$blackbox_coverage_detailed" ] || [ -f "$combined_coverage_detailed" ]; then
+                if [[ -f "${unity_coverage_detailed}" ]] || [[ -f "${blackbox_coverage_detailed}" ]] || [[ -f "${combined_coverage_detailed}" ]]; then
                     echo "| Test Type | Files Cover | Files Instr | Lines Cover | Lines Instr | Coverage | Timestamp |"
                     echo "| --------- | ----------- | ----------- | ----------- | ----------- | -------- | --------- |"
                     
                     # Unity coverage
-                    if [ -f "$unity_coverage_detailed" ]; then
+                    if [[ -f "${unity_coverage_detailed}" ]]; then
                         local unity_timestamp unity_coverage_pct unity_covered unity_total unity_instrumented unity_covered_files
-                        IFS=',' read -r unity_timestamp unity_coverage_pct unity_covered unity_total unity_instrumented unity_covered_files < "$unity_coverage_detailed" 2>/dev/null
-                        if [ -n "$unity_total" ] && [ "$unity_total" -gt 0 ]; then
+                        IFS=',' read -r unity_timestamp unity_coverage_pct unity_covered unity_total unity_instrumented unity_covered_files < "${unity_coverage_detailed}" 2>/dev/null
+                        if [[ -n "${unity_total}" ]] && [[ "${unity_total}" -gt 0 ]]; then
                             # Add thousands separators
-                            unity_covered_formatted=$(printf "%'d" "$unity_covered" 2>/dev/null || echo "$unity_covered")
-                            unity_total_formatted=$(printf "%'d" "$unity_total" 2>/dev/null || echo "$unity_total")
+                            unity_covered_formatted=$(printf "%'d" "${unity_covered}" 2>/dev/null || echo "${unity_covered}")
+                            unity_total_formatted=$(printf "%'d" "${unity_total}" 2>/dev/null || echo "${unity_total}")
                             unity_covered_files=${unity_covered_files:-0}
                             unity_instrumented=${unity_instrumented:-0}
                             echo "| Unity Tests | ${unity_covered_files} | ${unity_instrumented} | ${unity_covered_formatted} | ${unity_total_formatted} | ${unity_coverage_pct}% | ${unity_timestamp} |"
@@ -250,13 +259,13 @@ update_readme_with_results() {
                     fi
                     
                     # Blackbox coverage
-                    if [ -f "$blackbox_coverage_detailed" ]; then
+                    if [[ -f "${blackbox_coverage_detailed}" ]]; then
                         local blackbox_timestamp blackbox_coverage_pct blackbox_covered blackbox_total blackbox_instrumented blackbox_covered_files
-                        IFS=',' read -r blackbox_timestamp blackbox_coverage_pct blackbox_covered blackbox_total blackbox_instrumented blackbox_covered_files < "$blackbox_coverage_detailed" 2>/dev/null
-                        if [ -n "$blackbox_total" ] && [ "$blackbox_total" -gt 0 ]; then
+                        IFS=',' read -r blackbox_timestamp blackbox_coverage_pct blackbox_covered blackbox_total blackbox_instrumented blackbox_covered_files < "${blackbox_coverage_detailed}" 2>/dev/null
+                        if [[ -n "${blackbox_total}" ]] && [[ "${blackbox_total}" -gt 0 ]]; then
                             # Add thousands separators
-                            blackbox_covered_formatted=$(printf "%'d" "$blackbox_covered" 2>/dev/null || echo "$blackbox_covered")
-                            blackbox_total_formatted=$(printf "%'d" "$blackbox_total" 2>/dev/null || echo "$blackbox_total")
+                            blackbox_covered_formatted=$(printf "%'d" "${blackbox_covered}" 2>/dev/null || echo "${blackbox_covered}")
+                            blackbox_total_formatted=$(printf "%'d" "${blackbox_total}" 2>/dev/null || echo "${blackbox_total}")
                             blackbox_covered_files=${blackbox_covered_files:-0}
                             blackbox_instrumented=${blackbox_instrumented:-0}
                             echo "| Blackbox Tests | ${blackbox_covered_files} | ${blackbox_instrumented} | ${blackbox_covered_formatted} | ${blackbox_total_formatted} | ${blackbox_coverage_pct}% | ${blackbox_timestamp} |"
@@ -268,13 +277,13 @@ update_readme_with_results() {
                     fi
                     
                     # Combined coverage
-                    if [ -f "$combined_coverage_detailed" ]; then
+                    if [[ -f "${combined_coverage_detailed}" ]]; then
                         local combined_timestamp combined_coverage_pct combined_covered combined_total combined_instrumented combined_covered_files
-                        IFS=',' read -r combined_timestamp combined_coverage_pct combined_covered combined_total combined_instrumented combined_covered_files < "$combined_coverage_detailed" 2>/dev/null
-                        if [ -n "$combined_total" ] && [ "$combined_total" -gt 0 ]; then
+                        IFS=',' read -r combined_timestamp combined_coverage_pct combined_covered combined_total combined_instrumented combined_covered_files < "${combined_coverage_detailed}" 2>/dev/null
+                        if [[ -n "${combined_total}" ]] && [[ "${combined_total}" -gt 0 ]]; then
                             # Add thousands separators
-                            combined_covered_formatted=$(printf "%'d" "$combined_covered" 2>/dev/null || echo "$combined_covered")
-                            combined_total_formatted=$(printf "%'d" "$combined_total" 2>/dev/null || echo "$combined_total")
+                            combined_covered_formatted=$(printf "%'d" "${combined_covered}" 2>/dev/null || echo "${combined_covered}")
+                            combined_total_formatted=$(printf "%'d" "${combined_total}" 2>/dev/null || echo "${combined_total}")
                             combined_covered_files=${combined_covered_files:-0}
                             combined_instrumented=${combined_instrumented:-0}
                             echo "| Combined Tests | ${combined_covered_files} | ${combined_instrumented} | ${combined_covered_formatted} | ${combined_total_formatted} | ${combined_coverage_pct}% | ${combined_timestamp} |"
@@ -291,12 +300,12 @@ update_readme_with_results() {
                     echo "| Blackbox Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
                 fi
                 echo ""
-            } >> "$temp_readme"
+            } >> "${temp_readme}"
             continue
-        elif [[ "$line" == "### Individual Test Results" ]]; then
+        elif [[ "${line}" == "### Individual Test Results" ]]; then
             in_individual_results=true
             {
-                echo "$line"
+                echo "${line}"
                 echo ""
                 echo "| Status | Time | Test | Tests | Pass | Fail | Summary |"
                 echo "| ------ | ---- | ---- | ----- | ---- | ---- | ------- |"
@@ -305,55 +314,56 @@ update_readme_with_results() {
                 for i in "${!TEST_NUMBERS[@]}"; do
                     local status="✅"
                     local summary="Test completed without errors"
-                    if [ "${TEST_FAILED[$i]}" -gt 0 ]; then
+                    if [[ "${TEST_FAILED[${i}]}" -gt 0 ]]; then
                         status="❌"
                         summary="Test failed with errors"
                     fi
                     local time_formatted
-                    time_formatted=$(format_time_duration "${TEST_ELAPSED[$i]}")
-                    echo "| $status | $time_formatted | ${TEST_NUMBERS[$i]}_$(echo "${TEST_NAMES[$i]}" | tr ' ' '_' | tr '[:upper:]' '[:lower:]') | ${TEST_SUBTESTS[$i]} | ${TEST_PASSED[$i]} | ${TEST_FAILED[$i]} | $summary |"
+                    time_formatted=$(format_time_duration "${TEST_ELAPSED[${i}]}")
+                    # shellcheck disable=SC2312 # We are not concerned about return value here, just formatting output
+                    echo "| ${status} | ${time_formatted} | ${TEST_NUMBERS[${i}]}_$(echo "${TEST_NAMES[${i}]}" | tr ' ' '_' | tr '[:upper:]' '[:lower:]') | ${TEST_SUBTESTS[${i}]} | ${TEST_PASSED[${i}]} | ${TEST_FAILED[${i}]} | ${summary} |"
                 done
                 echo ""
-            } >> "$temp_readme"
+            } >> "${temp_readme}"
             continue
-        elif [[ "$line" == "## Repository Information" ]]; then
+        elif [[ "${line}" == "## Repository Information" ]]; then
             in_repo_info=true
             in_test_results=false
             in_individual_results=false
             {
-                echo "$line"
+                echo "${line}"
                 echo ""
-                echo "Generated via cloc: $timestamp"
+                echo "Generated via cloc: ${timestamp}"
                 echo ""
                 
                 # Use shared cloc library function, ensuring we're in the project root directory
-                pushd "$PROJECT_DIR" > /dev/null || return 1
+                pushd "${PROJECT_DIR}" > /dev/null || return 1
                 generate_cloc_for_readme "." ".lintignore"
                 popd > /dev/null || return 1
-            } >> "$temp_readme"
+            } >> "${temp_readme}"
             continue
-        elif [[ "$in_test_results" == true || "$in_individual_results" == true || "$in_repo_info" == true ]]; then
+        elif [[ "${in_test_results}" == true || "${in_individual_results}" == true || "${in_repo_info}" == true ]]; then
             # Skip existing content in these sections
-            if [[ "$line" == "## "* ]]; then
+            if [[ "${line}" == "## "* ]]; then
                 # New section started, stop skipping
                 in_test_results=false
                 in_individual_results=false
                 in_repo_info=false
-                echo "$line" >> "$temp_readme"
+                echo "${line}" >> "${temp_readme}"
             fi
             continue
         else
-            echo "$line" >> "$temp_readme"
+            echo "${line}" >> "${temp_readme}"
         fi
-    done < "$readme_file"
+    done < "${readme_file}"
     
     # Replace original README with updated version
-    if mv "$temp_readme" "$readme_file"; then
+    if mv "${temp_readme}" "${readme_file}"; then
         # echo "Updated README.md with test results"
         :
     else
         echo "Error: Failed to update README.md"
-        rm -f "$temp_readme"
+        rm -f "${temp_readme}"
         return 1
     fi
 }
