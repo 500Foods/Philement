@@ -11,28 +11,33 @@
 TEST_NAME="Test Suite Coverage {BLUE}(coverage_table){RESET}"
 SCRIPT_VERSION="2.0.1"
 
-# Get the directory where this script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Sort out directories
+PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
+SCRIPT_DIR="${PROJECT_DIR}/tests"
+LIB_DIR="${SCRIPT_DIR}/lib"
+BUILD_DIR="${PROJECT_DIR}/build"
+TESTS_DIR="${BUILD_DIR}/tests"
+RESULTS_DIR="${TESTS_DIR}/results"
+DIAGS_DIR="${TESTS_DIR}/diagnostics"
+LOGS_DIR="${TESTS_DIR}/logs"
+mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}"
 
-if [[ -z "${LOG_OUTPUT_SH_GUARD}" ]]; then
-    # shellcheck source=tests/lib/log_output.sh # Resolve path statically
-    source "${SCRIPT_DIR}/lib/log_output.sh"
-fi
-
-# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/file_utils.sh"
 # shellcheck source=tests/lib/framework.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/framework.sh"
-# shellcheck source=tests/lib/coverage.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/coverage.sh"
-# shellcheck source=tests/lib/coverage-common.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/coverage-common.sh"
+[[ -n "${FRAMEWORK_GUARD}" ]] || source "${LIB_DIR}/framework.sh"
+# shellcheck source=tests/lib/log_output.sh # Resolve path statically
+[[ -n "${LOG_OUTPUT_GUARD}" ]] || source "${LIB_DIR}/log_output.sh"
+# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
+[[ -n "${FILE_UTILS_GUARD}" ]] || source "${LIB_DIR}/file_utils.sh"
 # shellcheck source=tests/lib/coverage-unity.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/coverage-unity.sh"
+[[ -n "${COVERAGE_UNITY_GUARD}" ]] || source "${LIB_DIR}/coverage-unity.sh"
 # shellcheck source=tests/lib/coverage-blackbox.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/coverage-blackbox.sh"
+[[ -n "${COVERAGE_BLACKBOX_GUARD}" ]] || source "${LIB_DIR}/coverage-blackbox.sh"
 # shellcheck source=tests/lib/coverage-combined.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/coverage-combined.sh"
+[[ -n "${COVERAGE_COMBINED_GUARD}" ]] || source "${LIB_DIR}/coverage-combined.sh"
+# shellcheck source=tests/lib/coverage-common.sh # Resolve path statically
+[[ -n "${COVERAGE_COMMON_GUARD}" ]] || source "${LIB_DIR}/coverage-common.sh"
+# shellcheck source=tests/lib/coverage.sh # Resolve path statically
+[[ -n "${COVERAGE_GUARD}" ]] || source "${LIB_DIR}/coverage.sh"
 
 # Test configuration
 EXIT_CODE=0

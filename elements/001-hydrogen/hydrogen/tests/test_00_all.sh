@@ -86,8 +86,7 @@ declare -a results
 
 # Run version checks in parallel using xargs with inlined logic
 # Use IFS to read full lines into the results array
-# shellcheck disable=SC2016 # This is a script within a script, so the double quotes are not needed here
-# shellcheck disable=SC2312 # We are using xargs to handle parallel execution, so we don't need to worry about subshells here
+# shellcheck disable=SC2016 # This is a script within a script, so we need to use single quotes
 while IFS= read -r line; do
     results+=("${line}")
 done < <(printf "%s\n" "${commands[@]}" | xargs -P 0 -I {} bash -c '
@@ -104,14 +103,13 @@ done < <(printf "%s\n" "${commands[@]}" | xargs -P 0 -I {} bash -c '
     else
         echo "1|${cmd}|Command not found"
     fi
-')
+' || true)
 
 # Sort the results array based on the message field (field 2, after the first '|')
 declare -a sorted_results
-# shellcheck disable=SC2312 # We are using xargs to handle parallel execution, so we don't need to worry about subshells here
 while IFS= read -r line; do
     sorted_results+=("${line}")
-done < <(printf "%s\n" "${results[@]}" | sort -f -t'|' -k2)
+done < <(printf "%s\n" "${results[@]}" | sort -f -t'|' -k2 || true)
 
 # Process sorted results array and call print_result
 for result in "${sorted_results[@]}"; do
@@ -323,8 +321,7 @@ update_readme_with_results() {
                     fi
                     local time_formatted
                     time_formatted=$(format_time_duration "${TEST_ELAPSED[${i}]}")
-                    # shellcheck disable=SC2312 # We are not concerned about return value here, just formatting output
-                    echo "| ${status} | ${time_formatted} | ${TEST_NUMBERS[${i}]}_$(echo "${TEST_NAMES[${i}]}" | tr ' ' '_' | tr '[:upper:]' '[:lower:]') | ${TEST_SUBTESTS[${i}]} | ${TEST_PASSED[${i}]} | ${TEST_FAILED[${i}]} | ${summary} |"
+                    echo "| ${status} | ${time_formatted} | ${TEST_NUMBERS[${i}]}_$(echo "${TEST_NAMES[${i}]}" | tr ' ' '_' | tr '[:upper:]' '[:lower:]') | ${TEST_SUBTESTS[${i}]} | ${TEST_PASSED[${i}]} | ${TEST_FAILED[${i}]} | ${summary} |" || true
                 done
                 echo ""
             } >> "${temp_readme}"
@@ -405,12 +402,11 @@ show_help() {
 TEST_SCRIPTS=()
 
 # Add all other tests except 00
-# shellcheck disable=SC2312 # We are not worried about return codes here, just collecting file names
 while IFS= read -r script; do
     if [[ "${script}" != *"test_00_all.sh" ]]; then
         TEST_SCRIPTS+=("${script}")
     fi
-done < <(find "${SCRIPT_DIR}" -name "test_*.sh" -type f | sort)
+done < <(find "${SCRIPT_DIR}" -name "test_*.sh" -type f | sort || true)
 
 # Check for help flag and skip-tests in single loop
 for arg in "$@"; do
@@ -428,15 +424,14 @@ run_single_test() {
     local test_name
     
     # Extract test number from script filename
-    # shellcheck disable=SC2312 # We are not worried about return codes here, just extracting the number
-    test_number=$(basename "${test_script}" .sh | sed 's/test_//' | sed 's/_.*//')
+    
+    test_number=$(basename "${test_script}" .sh | sed 's/test_//' | sed 's/_.*//' || true)
     test_name=""
     
     # Handle skip mode
     if [[ "${SKIP_TESTS}" = true ]]; then
         # Extract test name from script filename (same logic as normal mode)
-        # shellcheck disable=SC2312 # We are not worried about return codes here, just extracting the name
-        test_name=$(basename "${test_script}" .sh | sed 's/test_[0-9]*_//' | tr '_' ' ' | sed 's/\b\w/\U&/g')
+        test_name=$(basename "${test_script}" .sh | sed 's/test_[0-9]*_//' | tr '_' ' ' | sed 's/\b\w/\U&/g' || true)
         # Store skipped test results (don't print "Would run" message)
         TEST_NUMBERS+=("${test_number}")
         TEST_NAMES+=("${test_name}")
@@ -462,11 +457,9 @@ run_single_test() {
     # Extract test results from subtest file or use defaults
     local total_subtests=1 passed_subtests=0 elapsed_formatted="0.000"
     local test_name_for_file
-    # shellcheck disable=SC2312 # We are not worried about return codes here, just extracting the name
-    test_name_for_file=$(basename "${test_script}" .sh | sed 's/test_[0-9]*_//' | tr '_' ' ' | sed 's/\b\w/\U&/g')
+    test_name_for_file=$(basename "${test_script}" .sh | sed 's/test_[0-9]*_//' | tr '_' ' ' | sed 's/\b\w/\U&/g' || true)
     local latest_subtest_file
-    # shellcheck disable=SC2312 # We are not worried about return codes here, just extracting the file
-    latest_subtest_file=$(find "${RESULTS_DIR}" -name "subtest_${test_number}_*.txt" -type f 2>/dev/null | sort -r | head -1)
+    latest_subtest_file=$(find "${RESULTS_DIR}" -name "subtest_${test_number}_*.txt" -type f 2>/dev/null | sort -r | head -1 || true)
     
     if [[ -n "${latest_subtest_file}" ]] && [[ -f "${latest_subtest_file}" ]]; then
         IFS=',' read -r total_subtests passed_subtests test_name file_elapsed_time < "${latest_subtest_file}" 2>/dev/null || {
@@ -501,8 +494,7 @@ run_single_test_parallel() {
     local test_name
     
     # Extract test number from script filename
-    # shellcheck disable=SC2312 # We are not worried about return codes here, just extracting the number
-    test_number=$(basename "${test_script}" .sh | sed 's/test_//' | sed 's/_.*//')
+    test_number=$(basename "${test_script}" .sh | sed 's/test_//' | sed 's/_.*//' || true)
     test_name=""
     
     # Set environment variable to indicate running in test suite context
@@ -524,13 +516,11 @@ run_single_test_parallel() {
     local total_subtests=1
     local passed_subtests=0
     local test_name_for_file
-    # shellcheck disable=SC2312 # We are not worried about return codes here, just extracting the name
-    test_name_for_file=$(basename "${test_script}" .sh | sed 's/test_[0-9]*_//' | tr '_' ' ' | sed 's/\b\w/\U&/g')
+    test_name_for_file=$(basename "${test_script}" .sh | sed 's/test_[0-9]*_//' | tr '_' ' ' | sed 's/\b\w/\U&/g' || true)
     
     # Find the most recent subtest file for this test
     local latest_subtest_file
-    # shellcheck disable=SC2312 # We are not worried about return codes here, just extracting the file
-    latest_subtest_file=$(find "${RESULTS_DIR}" -name "subtest_${test_number}_*.txt" -type f 2>/dev/null | sort -r | head -1)
+    latest_subtest_file=$(find "${RESULTS_DIR}" -name "subtest_${test_number}_*.txt" -type f 2>/dev/null | sort -r | head -1 || true)
     
     if [[ -n "${latest_subtest_file}" ]] && [[ -f "${latest_subtest_file}" ]]; then
         # Read subtest results, test name, and elapsed time from the file
@@ -568,12 +558,11 @@ run_specific_test() {
     if [[ ! -f "${test_script}" ]]; then
         echo "Error: Test script not found: ${test_script}"
         echo "Available tests:"
-        # shellcheck disable=SC2312 # We are not worried about return codes here, just extracting the names 
         find "${SCRIPT_DIR}" -name "test_*.sh" -not -name "test_00_all.sh" | sort | while read -r script; do
             local name
             name=$(basename "${script}" .sh | sed 's/test_//')
             echo "  ${name}"
-        done
+        done || true
         return 1
     fi
     
@@ -593,8 +582,7 @@ run_all_tests_parallel() {
     # Group tests dynamically by tens digit
     for test_script in "${TEST_SCRIPTS[@]}"; do
         local test_number
-        # shellcheck disable=SC2312 # We are not worried about return codes here, just extracting the number
-        test_number=$(basename "${test_script}" .sh | sed 's/test_//' | sed 's/_.*//')
+        test_number=$(basename "${test_script}" .sh | sed 's/test_//' | sed 's/_.*//' || true)
         local group=$((test_number / 10))
         
         if [[ -z "${test_groups[${group}]}" ]]; then
@@ -916,8 +904,7 @@ tables_exe="${LIB_DIR}/tables"
 if [[ -x "${tables_exe}" ]]; then
     # Save test results table output to file and display to console using tee
     results_table_file="${RESULTS_DIR}/results_table.txt"
-    # shellcheck disable=SC2312 # We are not worried about return codes here, just executing the command
-    "${tables_exe}" "${layout_json}" "${data_json}" 2>/dev/null | tee "${results_table_file}"
+    "${tables_exe}" "${layout_json}" "${data_json}" 2>/dev/null | tee "${results_table_file}" || true
     
     # Launch background process to generate COMPLETE.svg from saved file
     oh_script="${LIB_DIR}/Oh.sh"
