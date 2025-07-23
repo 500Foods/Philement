@@ -542,7 +542,6 @@ This document provides a comprehensive overview of the Hydrogen project's file o
   - [log_output.sh](tests/lib/log_output.sh) - Log output formatting
   - [network_utils.sh](tests/lib/network_utils.sh) - Network testing utilities
   - [Oh.sh](tests/lib/Oh.sh) - ANSI terminal output to SVG converter
-  - [tables.sh](tests/lib/tables.sh) - Table utilities main module
   
 </details>
 

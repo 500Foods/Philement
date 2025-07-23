@@ -71,7 +71,7 @@ EOF
 
 # Parse command line arguments
 for arg in "$@"; do
-    case $arg in
+    case ${arg} in
         -h|--help)
             show_help
             exit 0
@@ -81,7 +81,7 @@ for arg in "$@"; do
             exit 0
             ;;
         *)
-            echo "Unknown option: $arg" >&2
+            echo "Unknown option: ${arg}" >&2
             echo "Use --help for usage information" >&2
             exit 1
             ;;
