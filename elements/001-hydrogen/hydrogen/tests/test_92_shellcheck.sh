@@ -19,18 +19,18 @@ export SHELLCHECK_OPTS
 # Get the directory where this script is located
 TEST_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-if [[ -z "$LOG_OUTPUT_SH_GUARD" ]]; then
+if [[ -z "${LOG_OUTPUT_SH_GUARD}" ]]; then
     # shellcheck source=tests/lib/log_output.sh # Resolve path statically
-    source "$TEST_SCRIPT_DIR/lib/log_output.sh"
+    source "${TEST_SCRIPT_DIR}/lib/log_output.sh"
 fi
 
 # shellcheck source=tests/lib/file_utils.sh # Resolve path statically
-source "$TEST_SCRIPT_DIR/lib/file_utils.sh"
+source "${TEST_SCRIPT_DIR}/lib/file_utils.sh"
 # shellcheck source=tests/lib/framework.sh # Resolve path statically
-source "$TEST_SCRIPT_DIR/lib/framework.sh"
+source "${TEST_SCRIPT_DIR}/lib/framework.sh"
 
 # Restore SCRIPT_DIR after sourcing libraries (they may override it)
-SCRIPT_DIR="$TEST_SCRIPT_DIR"
+SCRIPT_DIR="${TEST_SCRIPT_DIR}"
 
 # Test configuration
 EXIT_CODE=0
@@ -39,23 +39,23 @@ PASS_COUNT=0
 
 # Auto-extract test number and set up environment
 TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
-set_test_number "$TEST_NUMBER"
+set_test_number "${TEST_NUMBER}"
 reset_subtest_counter
 
 # Detect available cores for optimal parallelization
 CORES=$(nproc 2>/dev/null || echo 1)
 
 # Print beautiful test header
-print_test_header "$TEST_NAME" "$SCRIPT_VERSION"
+print_test_header "${TEST_NAME}" "${SCRIPT_VERSION}"
 
 # Set up results directory
-BUILD_DIR="$SCRIPT_DIR/../build"
-RESULTS_DIR="$BUILD_DIR/tests/results"
-mkdir -p "$RESULTS_DIR"
+BUILD_DIR="${SCRIPT_DIR}/../build"
+RESULTS_DIR="${BUILD_DIR}/tests/results"
+mkdir -p "${RESULTS_DIR}"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 # Navigate to the project root (one level up from tests directory)
-if ! navigate_to_project_root "$SCRIPT_DIR"; then
+if ! navigate_to_project_root "${SCRIPT_DIR}"; then
     print_error "Failed to navigate to project root directory"
     exit 1
 fi
@@ -90,23 +90,23 @@ should_exclude_file() {
     local rel_file="${file#./}"  # Remove leading ./
     
     # Check .lintignore file first if it exists
-    if [ -f "$lint_ignore" ]; then
+    if [ -f "${lint_ignore}" ]; then
         while IFS= read -r pattern; do
-            [[ -z "$pattern" || "$pattern" == \#* ]] && continue
+            [[ -z "${pattern}" || "${pattern}" == \#* ]] && continue
             # Remove trailing /* if present for directory matching
             local clean_pattern="${pattern%/\*}"
             
             # Check if file matches pattern exactly or is within a directory pattern
-            if [[ "$rel_file" == "$pattern" ]] || [[ "$rel_file" == "$clean_pattern"/* ]]; then
+            if [[ "${rel_file}" == "${pattern}" ]] || [[ "${rel_file}" == "${clean_pattern}"/* ]]; then
                 return 0 # Exclude
             fi
-        done < "$lint_ignore"
+        done < "${lint_ignore}"
     fi
     
     # Check default excludes
     for pattern in "${LINT_EXCLUDES[@]}"; do
         local clean_pattern="${pattern%/\*}"
-        if [[ "$rel_file" == "$pattern" ]] || [[ "$rel_file" == "$clean_pattern"/* ]]; then
+        if [[ "${rel_file}" == "${pattern}" ]] || [[ "${rel_file}" == "${clean_pattern}"/* ]]; then
             return 0 # Exclude
         fi
     done
@@ -118,7 +118,7 @@ should_exclude_file() {
 next_subtest
 print_subtest "Shell Script Linting (shellcheck)"
 
-print_message "Detected $CORES CPU cores for parallel processing"
+print_message "Detected ${CORES} CPU cores for parallel processing"
 
 if command -v shellcheck >/dev/null 2>&1; then
     SHELL_FILES=()
@@ -126,13 +126,13 @@ if command -v shellcheck >/dev/null 2>&1; then
     OTHER_SHELL_FILES=()
     
     while read -r file; do
-        if ! should_exclude_file "$file"; then
-            SHELL_FILES+=("$file")
+        if ! should_exclude_file "${file}"; then
+            SHELL_FILES+=("${file}")
             # Separate test scripts from other shell scripts
-            if [[ "$file" == ./tests/* ]]; then
-                TEST_SHELL_FILES+=("$file")
+            if [[ "${file}" == ./tests/* ]]; then
+                TEST_SHELL_FILES+=("${file}")
             else
-                OTHER_SHELL_FILES+=("$file")
+                OTHER_SHELL_FILES+=("${file}")
             fi
         fi
     done < <(find . -type f -name "*.sh")
@@ -141,13 +141,13 @@ if command -v shellcheck >/dev/null 2>&1; then
     SHELL_ISSUES=0
     TEMP_OUTPUT=$(mktemp)
     
-    if [ "$SHELL_COUNT" -gt 0 ]; then
-        print_message "Running shellcheck on $SHELL_COUNT shell scripts with caching..."
-        TEST_NAME="$TEST_NAME {BLUE}(shellheck: $SHELL_COUNT files){RESET}"        
+    if [ "${SHELL_COUNT}" -gt 0 ]; then
+        print_message "Running shellcheck on ${SHELL_COUNT} shell scripts with caching..."
+        TEST_NAME="${TEST_NAME} {BLUE}(shellheck: ${SHELL_COUNT} files){RESET}"        
 
         # Cache directory for shellcheck results
-        CACHE_DIR="$HOME/.shellcheck"
-        mkdir -p "$CACHE_DIR"
+        CACHE_DIR="${HOME}/.shellcheck"
+        mkdir -p "${CACHE_DIR}"
         
         # Function to get file hash (using md5sum or equivalent)
         get_file_hash() {
@@ -171,25 +171,25 @@ if command -v shellcheck >/dev/null 2>&1; then
         processed_files=0
         
         for file in "${SHELL_FILES[@]}"; do
-            file_hash=$(get_file_hash "$file")
-            cache_file="$CACHE_DIR/$(basename "$file")_$file_hash"
-            if [ -f "$cache_file" ]; then
+            file_hash=$(get_file_hash "${file}")
+            cache_file="${CACHE_DIR}/$(basename "${file}")_${file_hash}"
+            if [ -f "${cache_file}" ]; then
                 ((cached_files++))
-                cat "$cache_file" >> "$TEMP_OUTPUT" 2>&1 || true
+                cat "${cache_file}" >> "${TEMP_OUTPUT}" 2>&1 || true
             else
-                lines=$(get_line_count "$file")
-                if [ "$lines" -gt 400 ]; then
-                    large_files+=("$file")
-                elif [ "$lines" -gt 100 ]; then
-                    medium_files+=("$file")
+                lines=$(get_line_count "${file}")
+                if [ "${lines}" -gt 400 ]; then
+                    large_files+=("${file}")
+                elif [ "${lines}" -gt 100 ]; then
+                    medium_files+=("${file}")
                 else
-                    small_files+=("$file")
+                    small_files+=("${file}")
                 fi
                 ((processed_files++))
             fi
         done
         
-        print_message "Using cached results for $cached_files files, processing $processed_files files..."
+        print_message "Using cached results for ${cached_files} files, processing ${processed_files} files..."
         
         # # Build shellcheck exclusion arguments from .lintignore-bash file
         # # SHELLCHECK_EXCLUDES=(-e SC1091 -e SC2317 -e SC2034)  # Default exclusions as array
@@ -197,10 +197,10 @@ if command -v shellcheck >/dev/null 2>&1; then
         # if [ -f ".lintignore-bash" ]; then
         #     while IFS= read -r line; do
         #         # Skip comments and empty lines
-        #         [[ -z "$line" || "$line" == \#* ]] && continue
+        #         [[ -z "${line}" || "${line}" == \#* ]] && continue
         #         # Add exclusion if it looks like a shellcheck code (SCxxxx)
-        #         if [[ "$line" =~ ^SC[0-9]+$ ]]; then
-        #             SHELLCHECK_EXCLUDES+=(-e "$line")
+        #         if [[ "${line}" =~ ^SC[0-9]+$ ]]; then
+        #             SHELLCHECK_EXCLUDES+=(-e "${line}")
         #         fi
         #     done < ".lintignore-bash"
         # fi
@@ -211,7 +211,7 @@ if command -v shellcheck >/dev/null 2>&1; then
         # Process large files individually (they take the most time)
         if [ ${#large_files[@]} -gt 0 ]; then
             printf '%s\n' "${large_files[@]}" | \
-            xargs -n 1 -P "$CORES" shellcheck >> "$TEMP_OUTPUT" 2>&1 || true
+            xargs -n 1 -P "${CORES}" shellcheck >> "${TEMP_OUTPUT}" 2>&1 || true
         fi
         
         # Process medium files in groups of 3-4
@@ -221,7 +221,7 @@ if command -v shellcheck >/dev/null 2>&1; then
                 medium_batch_size=4
             fi
             printf '%s\n' "${medium_files[@]}" | \
-            xargs -n "$medium_batch_size" -P "$CORES" shellcheck >> "$TEMP_OUTPUT" 2>&1 || true
+            xargs -n "${medium_batch_size}" -P "${CORES}" shellcheck >> "${TEMP_OUTPUT}" 2>&1 || true
         fi
         
         # Process small files in larger batches (8-12 files per job)
@@ -231,15 +231,15 @@ if command -v shellcheck >/dev/null 2>&1; then
                 small_batch_size=12
             fi
             printf '%s\n' "${small_files[@]}" | \
-            xargs -n "$small_batch_size" -P "$CORES" shellcheck >> "$TEMP_OUTPUT" 2>&1 || true
+            xargs -n "${small_batch_size}" -P "${CORES}" shellcheck >> "${TEMP_OUTPUT}" 2>&1 || true
         fi
         
         # Process new files and cache results
-        if [ $processed_files -gt 0 ]; then
+        if [ ${processed_files} -gt 0 ]; then
             # Process large files individually (they take the most time)
             if [ ${#large_files[@]} -gt 0 ]; then
                 printf '%s\n' "${large_files[@]}" | \
-                xargs -n 1 -P "$CORES" shellcheck >> "$TEMP_NEW_OUTPUT" 2>&1 || true
+                xargs -n 1 -P "${CORES}" shellcheck >> "${TEMP_NEW_OUTPUT}" 2>&1 || true
             fi
             
             # Process medium files in groups of 3-4
@@ -249,7 +249,7 @@ if command -v shellcheck >/dev/null 2>&1; then
                     medium_batch_size=4
                 fi
                 printf '%s\n' "${medium_files[@]}" | \
-                xargs -n "$medium_batch_size" -P "$CORES" shellcheck >> "$TEMP_NEW_OUTPUT" 2>&1 || true
+                xargs -n "${medium_batch_size}" -P "${CORES}" shellcheck >> "${TEMP_NEW_OUTPUT}" 2>&1 || true
             fi
             
             # Process small files in larger batches (8-12 files per job)
@@ -259,45 +259,45 @@ if command -v shellcheck >/dev/null 2>&1; then
                     small_batch_size=12
                 fi
                 printf '%s\n' "${small_files[@]}" | \
-                xargs -n "$small_batch_size" -P "$CORES" shellcheck >> "$TEMP_NEW_OUTPUT" 2>&1 || true
+                xargs -n "${small_batch_size}" -P "${CORES}" shellcheck >> "${TEMP_NEW_OUTPUT}" 2>&1 || true
             fi
             
             # Cache new results
             for file in "${large_files[@]}" "${medium_files[@]}" "${small_files[@]}"; do
-                file_hash=$(get_file_hash "$file")
-                cache_file="$CACHE_DIR/$(basename "$file")_$file_hash"
-                grep "^$file:" "$TEMP_NEW_OUTPUT" > "$cache_file" || true
+                file_hash=$(get_file_hash "${file}")
+                cache_file="${CACHE_DIR}/$(basename "${file}")_${file_hash}"
+                grep "^${file}:" "${TEMP_NEW_OUTPUT}" > "${cache_file}" || true
             done
             
             # Append new results to total output
-            cat "$TEMP_NEW_OUTPUT" >> "$TEMP_OUTPUT" 2>&1 || true
-            rm -f "$TEMP_NEW_OUTPUT"
+            cat "${TEMP_NEW_OUTPUT}" >> "${TEMP_OUTPUT}" 2>&1 || true
+            rm -f "${TEMP_NEW_OUTPUT}"
         fi
         
         # Filter output to show clean relative paths
-        sed "s|\"$(pwd)\"/||g; s|tests/||g" "$TEMP_OUTPUT" > "${TEMP_OUTPUT}.filtered"
+        sed "s|\"$(pwd)\"/||g; s|tests/||g" "${TEMP_OUTPUT}" > "${TEMP_OUTPUT}.filtered"
         
         SHELL_ISSUES="$(wc -l < "${TEMP_OUTPUT}.filtered")"
-        if [ "$SHELL_ISSUES" -gt 0 ]; then
+        if [ "${SHELL_ISSUES}" -gt 0 ]; then
             FILES_WITH_ISSUES="$(cut -d: -f1 "${TEMP_OUTPUT}.filtered" | sort -u | wc -l)"
-            print_message "shellcheck found $SHELL_ISSUES issues in $FILES_WITH_ISSUES files:"
+            print_message "shellcheck found ${SHELL_ISSUES} issues in ${FILES_WITH_ISSUES} files:"
             # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
             while IFS= read -r line; do
-                print_output "$line"
-            done < <(head -n "$LINT_OUTPUT_LIMIT" "${TEMP_OUTPUT}.filtered")
-            if [ "$SHELL_ISSUES" -gt "$LINT_OUTPUT_LIMIT" ]; then
-                print_message "Output truncated. Showing $LINT_OUTPUT_LIMIT of $SHELL_ISSUES lines."
+                print_output "${line}"
+            done < <(head -n "${LINT_OUTPUT_LIMIT}" "${TEMP_OUTPUT}.filtered")
+            if [ "${SHELL_ISSUES}" -gt "${LINT_OUTPUT_LIMIT}" ]; then
+                print_message "Output truncated. Showing ${LINT_OUTPUT_LIMIT} of ${SHELL_ISSUES} lines."
             fi
         fi
         
-        rm -f "$TEMP_OUTPUT" "${TEMP_OUTPUT}.filtered"
+        rm -f "${TEMP_OUTPUT}" "${TEMP_OUTPUT}.filtered"
     fi
     
-    if [ "$SHELL_ISSUES" -eq 0 ]; then
-        print_result 0 "No issues in $SHELL_COUNT shell files"
+    if [ "${SHELL_ISSUES}" -eq 0 ]; then
+        print_result 0 "No issues in ${SHELL_COUNT} shell files"
         ((PASS_COUNT++))
     else
-        print_result 1 "Found $SHELL_ISSUES issues in shell files"
+        print_result 1 "Found ${SHELL_ISSUES} issues in shell files"
         EXIT_CODE=1
     fi
 else
@@ -319,41 +319,41 @@ SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION=0
 if [ ${#SHELL_FILES[@]} -eq 0 ]; then
     SHELL_FILES=()
     while read -r file; do
-        if ! should_exclude_file "$file"; then
-            SHELL_FILES+=("$file")
+        if ! should_exclude_file "${file}"; then
+            SHELL_FILES+=("${file}")
         fi
     done < <(find . -type f -name "*.sh")
 fi
 
 SHELL_COUNT=${#SHELL_FILES[@]}
 
-if [ "$SHELL_COUNT" -gt 0 ]; then
-    print_message "Analyzing $SHELL_COUNT shell scripts for shellcheck directives..."
+if [ "${SHELL_COUNT}" -gt 0 ]; then
+    print_message "Analyzing ${SHELL_COUNT} shell scripts for shellcheck directives..."
     for file in "${SHELL_FILES[@]}"; do
         # Find lines with shellcheck directives (allowing leading whitespace)
         while IFS= read -r line; do
-            if [[ "$line" =~ ^[[:space:]]*"# shellcheck" ]]; then
+            if [[ "${line}" =~ ^[[:space:]]*"# shellcheck" ]]; then
                 ((SHELLCHECK_DIRECTIVE_TOTAL++))
                 # Check if there's a justification (additional comment after the directive)
-                if [[ "$line" =~ ^[[:space:]]*"# shellcheck"[[:space:]]+[^[:space:]]+[[:space:]]+"#".* ]]; then
+                if [[ "${line}" =~ ^[[:space:]]*"# shellcheck"[[:space:]]+[^[:space:]]+[[:space:]]+"#".* ]]; then
                     ((SHELLCHECK_DIRECTIVE_WITH_JUSTIFICATION++))
                 else
                     ((SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION++))
-                    print_output "No justification found in $file: $line"
+                    print_output "No justification found in ${file}: ${line}"
                 fi
             fi
-        done < <(grep "^[[:space:]]*# shellcheck" "$file")
+        done < <(grep "^[[:space:]]*# shellcheck" "${file}")
     done
     
-    print_message "INFO: Total shellcheck directives: $SHELLCHECK_DIRECTIVE_TOTAL"
-    print_message "INFO: Directives with justification: $SHELLCHECK_DIRECTIVE_WITH_JUSTIFICATION"
-    print_message "INFO: Directives without justification: $SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION"
+    print_message "INFO: Total shellcheck directives: ${SHELLCHECK_DIRECTIVE_TOTAL}"
+    print_message "INFO: Directives with justification: ${SHELLCHECK_DIRECTIVE_WITH_JUSTIFICATION}"
+    print_message "INFO: Directives without justification: ${SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION}"
     
-    if [ "$SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION" -eq 0 ]; then
-        print_result 0 "All $SHELLCHECK_DIRECTIVE_TOTAL shellcheck directives have justifications"
+    if [ "${SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION}" -eq 0 ]; then
+        print_result 0 "All ${SHELLCHECK_DIRECTIVE_TOTAL} shellcheck directives have justifications"
         ((PASS_COUNT++))
     else
-        print_result 1 "Found $SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION shellcheck directives without justifications"
+        print_result 1 "Found ${SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION} shellcheck directives without justifications"
         EXIT_CODE=1
     fi
 else
@@ -363,14 +363,14 @@ fi
 
 # Export results for test_all.sh integration
 TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
-export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "${TOTAL_SUBTESTS}" "${PASS_COUNT}" "$TEST_NAME" > /dev/null
+export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "${TOTAL_SUBTESTS}" "${PASS_COUNT}" "${TEST_NAME}" > /dev/null
 
 # Print completion table
-print_test_completion "$TEST_NAME"
+print_test_completion "${TEST_NAME}"
 
 # Return status code if sourced, exit if run standalone
-if [[ "$RUNNING_IN_TEST_SUITE" == "true" ]]; then
-    return $EXIT_CODE
+if [[ "${RUNNING_IN_TEST_SUITE}" == "true" ]]; then
+    return ${EXIT_CODE}
 else
-    exit $EXIT_CODE
+    exit ${EXIT_CODE}
 fi

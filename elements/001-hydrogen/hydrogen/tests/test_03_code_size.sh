@@ -17,24 +17,24 @@ SCRIPT_VERSION="2.0.0"
 
 # Sort out directories
 PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
-# CMAKE_DIR="$PROJECT_DIR/cmake"
-SCRIPT_DIR="$PROJECT_DIR/tests"
-LIB_DIR="$SCRIPT_DIR/lib"
-BUILD_DIR="$PROJECT_DIR/build"
-TESTS_DIR="$BUILD_DIR/tests"
-RESULTS_DIR="$TESTS_DIR/results"
-DIAGS_DIR="$TESTS_DIR/diagnostics"
-LOGS_DIR="$TESTS_DIR/logs"
+# CMAKE_DIR="${PROJECT_DIR}/cmake"
+SCRIPT_DIR="${PROJECT_DIR}/tests"
+LIB_DIR="${SCRIPT_DIR}/lib"
+BUILD_DIR="${PROJECT_DIR}/build"
+TESTS_DIR="${BUILD_DIR}/tests"
+RESULTS_DIR="${TESTS_DIR}/results"
+DIAGS_DIR="${TESTS_DIR}/diagnostics"
+LOGS_DIR="${TESTS_DIR}/logs"
 mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}"
 
 # shellcheck source=tests/lib/framework.sh # Resolve path statically
-[[ -n "$FRAMEWORK_GUARD" ]] || source "$LIB_DIR/framework.sh"
+[[ -n "${FRAMEWORK_GUARD}" ]] || source "${LIB_DIR}/framework.sh"
 # shellcheck source=tests/lib/log_output.sh # Resolve path statically
-[[ -n "$LOG_OUTPUT_GUARD" ]] || source "$LIB_DIR/log_output.sh"
+[[ -n "${LOG_OUTPUT_GUARD}" ]] || source "${LIB_DIR}/log_output.sh"
 # shellcheck source=tests/lib/file_utils.sh # Resolve path statically
-[[ -n "$FILE_UTILS_GUARD" ]] || source "$LIB_DIR/file_utils.sh"
+[[ -n "${FILE_UTILS_GUARD}" ]] || source "${LIB_DIR}/file_utils.sh"
 # shellcheck source=tests/lib/coverage.sh # Resolve path statically
-[[ -n "$CLOC_GUARD" ]] || source "$LIB_DIR/cloc.sh"
+[[ -n "${CLOC_GUARD}" ]] || source "${LIB_DIR}/cloc.sh"
 
 # Test configuration
 EXIT_CODE=0
@@ -44,16 +44,16 @@ RESULT_LOG=""
 
 # Auto-extract test number and set up environment
 TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
-set_test_number "$TEST_NUMBER"
+set_test_number "${TEST_NUMBER}"
 reset_subtest_counter
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-RESULT_LOG="$RESULTS_DIR/test_${TEST_NUMBER}_${TIMESTAMP}.log"
+RESULT_LOG="${RESULTS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
 
 # Print beautiful test header
-print_test_header "$TEST_NAME" "$SCRIPT_VERSION"
+print_test_header "${TEST_NAME}" "${SCRIPT_VERSION}"
 
 # Navigate to the project root (one level up from tests directory)
-if ! navigate_to_project_root "$SCRIPT_DIR"; then
+if ! navigate_to_project_root "${SCRIPT_DIR}"; then
     print_error "Failed to navigate to project root directory"
     exit 1
 fi
@@ -79,7 +79,7 @@ LINE_COUNT_FILE=$(mktemp)
 
 # Cleanup function
 cleanup_temp_files() {
-    rm -f "$SOURCE_FILES_LIST" "$LARGE_FILES_LIST" "$LINE_COUNT_FILE"
+    rm -f "${SOURCE_FILES_LIST}" "${LARGE_FILES_LIST}" "${LINE_COUNT_FILE}"
 }
 
 # Trap cleanup on exit
@@ -92,23 +92,23 @@ should_exclude_file() {
     local rel_file="${file#./}"  # Remove leading ./
     
     # Check .lintignore file first if it exists
-    if [ -f "$lint_ignore" ]; then
+    if [ -f "${lint_ignore}" ]; then
         while IFS= read -r pattern; do
-            [[ -z "$pattern" || "$pattern" == \#* ]] && continue
+            [[ -z "${pattern}" || "${pattern}" == \#* ]] && continue
             # Remove trailing /* if present for directory matching
             local clean_pattern="${pattern%/\*}"
             
             # Check if file matches pattern exactly or is within a directory pattern
-            if [[ "$rel_file" == "$pattern" ]] || [[ "$rel_file" == "$clean_pattern"/* ]]; then
+            if [[ "${rel_file}" == "${pattern}" ]] || [[ "${rel_file}" == "${clean_pattern}"/* ]]; then
                 return 0 # Exclude
             fi
-        done < "$lint_ignore"
+        done < "${lint_ignore}"
     fi
     
     # Check default excludes
     for pattern in "${LINT_EXCLUDES[@]}"; do
         local clean_pattern="${pattern%/\*}"
-        if [[ "$rel_file" == "$pattern" ]] || [[ "$rel_file" == "$clean_pattern"/* ]]; then
+        if [[ "${rel_file}" == "${pattern}" ]] || [[ "${rel_file}" == "${clean_pattern}"/* ]]; then
             return 0 # Exclude
         fi
     done
@@ -127,32 +127,32 @@ found_files=0
 missing_files=()
 
 for file in "${exclusion_files[@]}"; do
-    if [ -f "$file" ]; then
+    if [ -f "${file}" ]; then
         ((found_files++))
-        if [ "$file" = ".lintignore-bash" ]; then
+        if [ "${file}" = ".lintignore-bash" ]; then
             # Special handling for .lintignore-bash which doesn't have a SUMMARY section
             print_message "${file}: Used by shellcheck for bash script linting exclusions"
         else
-            summary=$(grep -A 5 "SUMMARY" "$file" 2>/dev/null | grep -v "SUMMARY" | grep -v "Used by" | sed 's/^# /  /' | sed 's/#$//')
-            if [ -n "$summary" ]; then
+            summary=$(grep -A 5 "SUMMARY" "${file}" 2>/dev/null | grep -v "SUMMARY" | grep -v "Used by" | sed 's/^# /  /' | sed 's/#$//')
+            if [ -n "${summary}" ]; then
                 # Break multi-line summaries into individual print_message calls
                 # Use process substitution to avoid subshell
                 while IFS= read -r line; do
-                    if [ -n "$line" ]; then
-                        print_message "${file}: $line"
+                    if [ -n "${line}" ]; then
+                        print_message "${file}: ${line}"
                     fi
-                done < <(echo "$summary")
+                done < <(echo "${summary}")
             fi
         fi
     else
-        missing_files+=("$file")
+        missing_files+=("${file}")
     fi
 done
 
 print_message "For details, see tests/README.md and .lintignore files."
 
 if [ ${#missing_files[@]} -eq 0 ]; then
-    print_result 0 "All $found_files linting configuration files found"
+    print_result 0 "All ${found_files} linting configuration files found"
     ((PASS_COUNT++))
 else
     print_result 1 "Missing linting files: ${missing_files[*]}"
@@ -164,7 +164,7 @@ CLOC_OUTPUT=$(mktemp)
 CLOC_PID=""
 if command -v cloc >/dev/null 2>&1; then
     print_message "Starting cloc analysis in background..."
-    run_cloc_analysis "." ".lintignore" "$CLOC_OUTPUT" &
+    run_cloc_analysis "." ".lintignore" "${CLOC_OUTPUT}" &
     CLOC_PID=$!
 fi
 
@@ -175,14 +175,14 @@ print_subtest "Source Code File Analysis"
 print_message "Analyzing source code files and generating statistics..."
 
 # Find all source files, excluding those in .lintignore
-: > "$SOURCE_FILES_LIST"
+: > "${SOURCE_FILES_LIST}"
 while read -r file; do
-    if ! should_exclude_file "$file"; then
-        echo "$file" >> "$SOURCE_FILES_LIST"
+    if ! should_exclude_file "${file}"; then
+        echo "${file}" >> "${SOURCE_FILES_LIST}"
     fi
 done < <(find . -type f \( -name "*.c" -o -name "*.h" -o -name "*.md" -o -name "*.sh" \) | sort)
 
-TOTAL_FILES=$(wc -l < "$SOURCE_FILES_LIST")
+TOTAL_FILES=$(wc -l < "${SOURCE_FILES_LIST}")
 
 # Initialize line count bins
 declare -A line_bins=(
@@ -195,48 +195,48 @@ LARGEST_LINES=0
 HAS_OVERSIZED=0
 
 # Analyze each file using efficient batch processing
-if [ -s "$SOURCE_FILES_LIST" ]; then
+if [ -s "${SOURCE_FILES_LIST}" ]; then
     # Use wc -l on all files at once for maximum efficiency, then process the output
-    xargs wc -l < "$SOURCE_FILES_LIST" > "$LINE_COUNT_FILE.tmp"
+    xargs wc -l < "${SOURCE_FILES_LIST}" > "${LINE_COUNT_FILE}.tmp"
     
     # Process the results to categorize by line count
     while read -r lines file; do
         # Handle the total line at the end
-        [ "$file" = "total" ] && continue
+        [ "${file}" = "total" ] && continue
         
-        printf "%05d %s\n" "$lines" "$file"
+        printf "%05d %s\n" "${lines}" "${file}"
         
         # Categorize by line count
-        if [ "$lines" -lt 100 ]; then line_bins["000-099"]=$((line_bins["000-099"] + 1))
-        elif [ "$lines" -lt 200 ]; then line_bins["100-199"]=$((line_bins["100-199"] + 1))
-        elif [ "$lines" -lt 300 ]; then line_bins["200-299"]=$((line_bins["200-299"] + 1))
-        elif [ "$lines" -lt 400 ]; then line_bins["300-399"]=$((line_bins["300-399"] + 1))
-        elif [ "$lines" -lt 500 ]; then line_bins["400-499"]=$((line_bins["400-499"] + 1))
-        elif [ "$lines" -lt 600 ]; then line_bins["500-599"]=$((line_bins["500-599"] + 1))
-        elif [ "$lines" -lt 700 ]; then line_bins["600-699"]=$((line_bins["600-699"] + 1))
-        elif [ "$lines" -lt 800 ]; then line_bins["700-799"]=$((line_bins["700-799"] + 1))
-        elif [ "$lines" -lt 900 ]; then line_bins["800-899"]=$((line_bins["800-899"] + 1))
-        elif [ "$lines" -lt 1000 ]; then line_bins["900-999"]=$((line_bins["900-999"] + 1))
+        if [ "${lines}" -lt 100 ]; then line_bins["000-099"]=$((line_bins["000-099"] + 1))
+        elif [ "${lines}" -lt 200 ]; then line_bins["100-199"]=$((line_bins["100-199"] + 1))
+        elif [ "${lines}" -lt 300 ]; then line_bins["200-299"]=$((line_bins["200-299"] + 1))
+        elif [ "${lines}" -lt 400 ]; then line_bins["300-399"]=$((line_bins["300-399"] + 1))
+        elif [ "${lines}" -lt 500 ]; then line_bins["400-499"]=$((line_bins["400-499"] + 1))
+        elif [ "${lines}" -lt 600 ]; then line_bins["500-599"]=$((line_bins["500-599"] + 1))
+        elif [ "${lines}" -lt 700 ]; then line_bins["600-699"]=$((line_bins["600-699"] + 1))
+        elif [ "${lines}" -lt 800 ]; then line_bins["700-799"]=$((line_bins["700-799"] + 1))
+        elif [ "${lines}" -lt 900 ]; then line_bins["800-899"]=$((line_bins["800-899"] + 1))
+        elif [ "${lines}" -lt 1000 ]; then line_bins["900-999"]=$((line_bins["900-999"] + 1))
         else
             line_bins["1000+"]=$((line_bins["1000+"] + 1))
             HAS_OVERSIZED=1
-            if [ "$lines" -gt "$LARGEST_LINES" ]; then
-                LARGEST_FILE="$file"
-                LARGEST_LINES=$lines
+            if [ "${lines}" -gt "${LARGEST_LINES}" ]; then
+                LARGEST_FILE="${file}"
+                LARGEST_LINES=${lines}
             fi
         fi
-    done < "$LINE_COUNT_FILE.tmp" > "$LINE_COUNT_FILE"
+    done < "${LINE_COUNT_FILE}.tmp" > "${LINE_COUNT_FILE}"
     
-    rm -f "$LINE_COUNT_FILE.tmp"
+    rm -f "${LINE_COUNT_FILE}.tmp"
 fi
 
 # Sort line count file
-sort -nr -o "$LINE_COUNT_FILE" "$LINE_COUNT_FILE"
+sort -nr -o "${LINE_COUNT_FILE}" "${LINE_COUNT_FILE}"
 
 # Display distribution
-print_message "Source Code Distribution ($TOTAL_FILES files):"
+print_message "Source Code Distribution (${TOTAL_FILES} files):"
 for range in "000-099" "100-199" "200-299" "300-399" "400-499" "500-599" "600-699" "700-799" "800-899" "900-999" "1000+"; do
-    print_output "$range Lines: ${line_bins[$range]} files"
+    print_output "${range} Lines: ${line_bins[${range}]} files"
 done
 
 # Show top files by type
@@ -245,32 +245,32 @@ show_top_files_by_type() {
     local labels=("Markdown" "C Source" "Header" "Shell Script")
     
     for i in "${!types[@]}"; do
-        local ext="${types[$i]}"
-        local label="${labels[$i]}"
+        local ext="${types[${i}]}"
+        local label="${labels[${i}]}"
         local temp_file
         temp_file=$(mktemp)
         
-        grep "\.${ext}$" "$LINE_COUNT_FILE" > "$temp_file"
-        print_message "Top 5 $label Files:"
+        grep "\.${ext}$" "${LINE_COUNT_FILE}" > "${temp_file}"
+        print_message "Top 5 ${label} Files:"
         # Avoid subshell by using process substitution instead of pipe
         while read -r line; do
             local count path
-            read -r count path <<< "$line"
-            print_output "  $count lines: $path"
-        done < <(head -n 5 "$temp_file")
-        rm -f "$temp_file"
+            read -r count path <<< "${line}"
+            print_output "  ${count} lines: ${path}"
+        done < <(head -n 5 "${temp_file}")
+        rm -f "${temp_file}"
     done
 }
 
 show_top_files_by_type
 
 # Check size compliance
-if [ $HAS_OVERSIZED -eq 1 ]; then
-    print_result 1 "Found files exceeding $MAX_SOURCE_LINES lines"
-    print_output "Largest file: $LARGEST_FILE with $LARGEST_LINES lines"
+if [ ${HAS_OVERSIZED} -eq 1 ]; then
+    print_result 1 "Found files exceeding ${MAX_SOURCE_LINES} lines"
+    print_output "Largest file: ${LARGEST_FILE} with ${LARGEST_LINES} lines"
     EXIT_CODE=1
 else
-    print_result 0 "No files exceed $MAX_SOURCE_LINES lines"
+    print_result 0 "No files exceed ${MAX_SOURCE_LINES} lines"
     ((PASS_COUNT++))
 fi
 
@@ -278,33 +278,33 @@ fi
 next_subtest
 print_subtest "Large Non-Source File Detection"
 
-print_message "Finding large non-source files (>$LARGE_FILE_THRESHOLD)..."
+print_message "Finding large non-source files (>${LARGE_FILE_THRESHOLD})..."
 
-: > "$LARGE_FILES_LIST"
+: > "${LARGE_FILES_LIST}"
 while read -r file; do
-    if ! should_exclude_file "$file"; then
-        echo "$file" >> "$LARGE_FILES_LIST"
+    if ! should_exclude_file "${file}"; then
+        echo "${file}" >> "${LARGE_FILES_LIST}"
     fi
-done < <(find . -type f -size "+$LARGE_FILE_THRESHOLD" \
+done < <(find . -type f -size "+${LARGE_FILE_THRESHOLD}" \
     -not \( -path "*/tests/*" -o -name "*.c" -o -name "*.h" -o -name "*.md" -o -name "*.sh" -o -name "Makefile" \) \
     | sort)
 
-LARGE_FILE_COUNT=$(wc -l < "$LARGE_FILES_LIST")
+LARGE_FILE_COUNT=$(wc -l < "${LARGE_FILES_LIST}")
 
-if [ "$LARGE_FILE_COUNT" -eq 0 ]; then
+if [ "${LARGE_FILE_COUNT}" -eq 0 ]; then
     print_message "No large files found (excluding source/docs)"
     print_result 0 "No large files found"
     ((PASS_COUNT++))
 else
-    print_message "Found $LARGE_FILE_COUNT large files:"
+    print_message "Found ${LARGE_FILE_COUNT} large files:"
     # Use du in parallel and sort by size (largest first)
-    if [ -s "$LARGE_FILES_LIST" ]; then
+    if [ -s "${LARGE_FILES_LIST}" ]; then
         # Use process substitution to avoid subshell
         while read -r size file; do
-            print_output "  ${size}KB: $file"
-        done < <(xargs -P "$(nproc)" -I {} du -k {} < "$LARGE_FILES_LIST" | sort -nr)
+            print_output "  ${size}KB: ${file}"
+        done < <(xargs -P "$(nproc)" -I {} du -k {} < "${LARGE_FILES_LIST}" | sort -nr)
     fi
-    print_result 0 "Found $LARGE_FILE_COUNT files >$LARGE_FILE_THRESHOLD"
+    print_result 0 "Found ${LARGE_FILE_COUNT} files >${LARGE_FILE_THRESHOLD}"
     ((PASS_COUNT++))
 fi
 
@@ -312,24 +312,24 @@ fi
 next_subtest
 print_subtest "Code Line Count Analysis (cloc)"
 
-if [ -n "$CLOC_PID" ]; then
+if [ -n "${CLOC_PID}" ]; then
     print_message "Waiting for cloc analysis to complete..."
-    wait "$CLOC_PID"
+    wait "${CLOC_PID}"
     CLOC_EXIT_CODE=$?
     
-    if [ $CLOC_EXIT_CODE -eq 0 ] && [ -s "$CLOC_OUTPUT" ]; then
+    if [ ${CLOC_EXIT_CODE} -eq 0 ] && [ -s "${CLOC_OUTPUT}" ]; then
         print_message "Code line count analysis results:"
         while IFS= read -r line; do
-            print_output "$line"
-        done < "$CLOC_OUTPUT"
+            print_output "${line}"
+        done < "${CLOC_OUTPUT}"
         
         # Extract summary statistics
-        STATS=$(extract_cloc_stats "$CLOC_OUTPUT")
-        if [ -n "$STATS" ]; then
-            IFS=',' read -r files_part lines_part <<< "$STATS"
-            FILES_COUNT=$(echo "$files_part" | cut -d':' -f2)
-            CODE_LINES=$(echo "$lines_part" | cut -d':' -f2)
-            print_result 0 "Found $FILES_COUNT files with $CODE_LINES lines of code"
+        STATS=$(extract_cloc_stats "${CLOC_OUTPUT}")
+        if [ -n "${STATS}" ]; then
+            IFS=',' read -r files_part lines_part <<< "${STATS}"
+            FILES_COUNT=$(echo "${files_part}" | cut -d':' -f2)
+            CODE_LINES=$(echo "${lines_part}" | cut -d':' -f2)
+            print_result 0 "Found ${FILES_COUNT} files with ${CODE_LINES} lines of code"
             ((PASS_COUNT++))
         else
             print_result 1 "Failed to parse cloc output"
@@ -344,16 +344,16 @@ else
     ((PASS_COUNT++))
 fi
 
-rm -f "$CLOC_OUTPUT"
+rm -f "${CLOC_OUTPUT}"
 
 # Subtest 5: File count summary
 next_subtest
 print_subtest "File Count Summary"
 
 print_message "File type distribution:"
-print_output "Total source files analyzed: $TOTAL_FILES"
-print_output "Large files found: $LARGE_FILE_COUNT"
-TEST_NAME="$TEST_NAME {BLUE}(cloc: $FILES_COUNT files){RESET}"
+print_output "Total source files analyzed: ${TOTAL_FILES}"
+print_output "Large files found: ${LARGE_FILE_COUNT}"
+TEST_NAME="${TEST_NAME} {BLUE}(cloc: ${FILES_COUNT} files){RESET}"
 
 # Count files by type in parallel for better performance
 {
@@ -370,32 +370,32 @@ SH_FILES=$(cat /tmp/sh_files_count)
 # Clean up temp files
 rm -f /tmp/c_files_count /tmp/h_files_count /tmp/md_files_count /tmp/sh_files_count
 
-print_output "C source files: $C_FILES"
-print_output "Header files: $H_FILES"
-print_output "Markdown files: $MD_FILES_COUNT"
-print_output "Shell scripts: $SH_FILES"
+print_output "C source files: ${C_FILES}"
+print_output "Header files: ${H_FILES}"
+print_output "Markdown files: ${MD_FILES_COUNT}"
+print_output "Shell scripts: ${SH_FILES}"
 
 print_result 0 "File count analysis completed"
 ((PASS_COUNT++))
 
 # Save analysis results
-cp "$LINE_COUNT_FILE" "$RESULTS_DIR/source_line_counts_${TIMESTAMP}.txt"
-cp "$LARGE_FILES_LIST" "$RESULTS_DIR/large_files_${TIMESTAMP}.txt"
+cp "${LINE_COUNT_FILE}" "${RESULTS_DIR}/source_line_counts_${TIMESTAMP}.txt"
+cp "${LARGE_FILES_LIST}" "${RESULTS_DIR}/large_files_${TIMESTAMP}.txt"
 
 print_message "Analysis files saved to results directory:"
-print_output "Line counts: $RESULTS_DIR/source_line_counts_${TIMESTAMP}.txt"
-print_output "Large files: $RESULTS_DIR/large_files_${TIMESTAMP}.txt"
+print_output "Line counts: ${RESULTS_DIR}/source_line_counts_${TIMESTAMP}.txt"
+print_output "Large files: ${RESULTS_DIR}/large_files_${TIMESTAMP}.txt"
 
 # Export results for test_all.sh integration
 TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
-export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "${TOTAL_SUBTESTS}" "${PASS_COUNT}" "$TEST_NAME" > /dev/null
+export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "${TOTAL_SUBTESTS}" "${PASS_COUNT}" "${TEST_NAME}" > /dev/null
 
 # Print completion table
-print_test_completion "$TEST_NAME"
+print_test_completion "${TEST_NAME}"
 
 # Return status code if sourced, exit if run standalone
-if [[ "$RUNNING_IN_TEST_SUITE" == "true" ]]; then
-    return $EXIT_CODE
+if [[ "${RUNNING_IN_TEST_SUITE}" == "true" ]]; then
+    return ${EXIT_CODE}
 else
-    exit $EXIT_CODE
+    exit ${EXIT_CODE}
 fi

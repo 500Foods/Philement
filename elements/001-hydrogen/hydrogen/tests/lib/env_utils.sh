@@ -21,13 +21,13 @@
 # 1.0.0 - 2025-07-02 - Initial creation for test_12_env_payload.sh migration
 
 # Guard clause to prevent multiple sourcing
-[[ -n "$ENV_UTILS_GUARD" ]] && return 0
+[[ -n "${ENV_UTILS_GUARD}" ]] && return 0
 export ENV_UTILS_GUARD="true"
 
 # Library metadata
 ENV_UTILS_NAME="Environment Utilities Library"
 ENV_UTILS_VERSION="1.2.0"
-print_message "$ENV_UTILS_NAME $ENV_UTILS_VERSION" "info"
+print_message "${ENV_UTILS_NAME} ${ENV_UTILS_VERSION}" "info"
 
 # Function: Check if environment variable is set and non-empty
 # Parameters: $1 - variable name
@@ -36,23 +36,23 @@ check_env_var() {
     local var_name="$1"
     local var_value="${!var_name}"
     
-    if [ -n "$var_value" ]; then
-        local display_value="$var_value"
+    if [ -n "${var_value}" ]; then
+        local display_value="${var_value}"
         # Check if variable name contains sensitive keywords and value length > 20
-        if [[ "$var_name" =~ PASS|LOCK|KEY|JWT|TOKEN|SECRET ]] && [ ${#var_value} -gt 20 ]; then
+        if [[ "${var_name}" =~ PASS|LOCK|KEY|JWT|TOKEN|SECRET ]] && [ ${#var_value} -gt 20 ]; then
             display_value="${var_value:0:20}..."
         fi
         if command -v print_message >/dev/null 2>&1; then
-            print_message "✓ $var_name is set to: $display_value"
+            print_message "✓ ${var_name} is set to: ${display_value}"
         else
-            echo "INFO: ✓ $var_name is set to: $display_value"
+            echo "INFO: ✓ ${var_name} is set to: ${display_value}"
         fi
         return 0
     else
         if command -v print_warning >/dev/null 2>&1; then
-            print_warning "✗ $var_name is not set or empty"
+            print_warning "✗ ${var_name} is not set or empty"
         else
-            echo "WARNING: ✗ $var_name is not set or empty"
+            echo "WARNING: ✗ ${var_name} is not set or empty"
         fi
         return 1
     fi
@@ -69,54 +69,54 @@ validate_rsa_key() {
     local openssl_cmd
     
     # Decode base64 key to temporary file (ignore base64 warnings, focus on output)
-    echo "$key_data" | base64 -d > "$temp_key" 2>/dev/null
+    echo "${key_data}" | base64 -d > "${temp_key}" 2>/dev/null
     
     # Check if the decoded file exists and has content
-    if [ ! -s "$temp_key" ]; then
+    if [ ! -s "${temp_key}" ]; then
         if command -v print_warning >/dev/null 2>&1; then
-            print_warning "✗ $key_name failed base64 decode - no output generated"
+            print_warning "✗ ${key_name} failed base64 decode - no output generated"
         else
-            echo "WARNING: ✗ $key_name failed base64 decode - no output generated"
+            echo "WARNING: ✗ ${key_name} failed base64 decode - no output generated"
         fi
-        rm -f "$temp_key"
+        rm -f "${temp_key}"
         return 1
     fi
     
     # Set appropriate OpenSSL command based on key type
-    case "$key_type" in
+    case "${key_type}" in
         "private")
-            openssl_cmd="openssl rsa -in $temp_key -check -noout"
+            openssl_cmd="openssl rsa -in ${temp_key} -check -noout"
             ;;
         "public")
-            openssl_cmd="openssl rsa -pubin -in $temp_key -noout"
+            openssl_cmd="openssl rsa -pubin -in ${temp_key} -noout"
             ;;
         *)
             if command -v print_warning >/dev/null 2>&1; then
-                print_warning "✗ Unknown key type: $key_type"
+                print_warning "✗ Unknown key type: ${key_type}"
             else
-                echo "WARNING: ✗ Unknown key type: $key_type"
+                echo "WARNING: ✗ Unknown key type: ${key_type}"
             fi
-            rm -f "$temp_key"
+            rm -f "${temp_key}"
             return 1
             ;;
     esac
     
     # Validate key format - this is the real test
-    if $openssl_cmd >/dev/null 2>&1; then
+    if ${openssl_cmd} >/dev/null 2>&1; then
         if command -v print_message >/dev/null 2>&1; then
-            print_message "✓ $key_name is a valid RSA $key_type key"
+            print_message "✓ ${key_name} is a valid RSA ${key_type} key"
         else
-            echo "INFO: ✓ $key_name is a valid RSA $key_type key"
+            echo "INFO: ✓ ${key_name} is a valid RSA ${key_type} key"
         fi
-        rm -f "$temp_key"
+        rm -f "${temp_key}"
         return 0
     else
         if command -v print_warning >/dev/null 2>&1; then
-            print_warning "✗ $key_name is not a valid RSA $key_type key"
+            print_warning "✗ ${key_name} is not a valid RSA ${key_type} key"
         else
-            echo "WARNING: ✗ $key_name is not a valid RSA $key_type key"
+            echo "WARNING: ✗ ${key_name} is not a valid RSA ${key_type} key"
         fi
-        rm -f "$temp_key"
+        rm -f "${temp_key}"
         return 1
     fi
 }
@@ -138,7 +138,7 @@ reset_environment_variables() {
 # Function to set environment variables for basic test
 set_basic_test_environment() {
     export H_SERVER_NAME="hydrogen-env-test"
-    export H_LOG_FILE="$TEST_LOG_FILE"
+    export H_LOG_FILE="${TEST_LOG_FILE}"
     export H_WEB_ENABLED="true"
     export H_WEB_PORT="9000"
     export H_UPLOAD_DIR="/tmp/hydrogen_env_test_uploads"
@@ -165,19 +165,19 @@ validate_config_files() {
     local config_file
     config_file=$(get_config_path "hydrogen_test_env.json")
     
-    if [ ! -f "$config_file" ]; then
+    if [ ! -f "${config_file}" ]; then
         if command -v print_error >/dev/null 2>&1; then
-            print_error "Env test config file not found: $config_file"
+            print_error "Env test config file not found: ${config_file}"
         else
-            echo "ERROR: Env test config file not found: $config_file"
+            echo "ERROR: Env test config file not found: ${config_file}"
         fi
         return 1
     fi
     
     if command -v print_message >/dev/null 2>&1; then
-        print_message "Configuration file validated: $config_file"
+        print_message "Configuration file validated: ${config_file}"
     else
-        echo "INFO: Configuration file validated: $config_file"
+        echo "INFO: Configuration file validated: ${config_file}"
     fi
     return 0
 }
@@ -187,9 +187,9 @@ get_config_path() {
     local config_file="$1"
     local script_dir
     script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-    local config_path="$script_dir/../configs/$config_file"
+    local config_path="${script_dir}/../configs/${config_file}"
     
-    echo "$config_path"
+    echo "${config_path}"
 }
 
 # Function: Validate WebSocket key format
@@ -201,11 +201,11 @@ validate_websocket_key() {
     local key_value="$2"
     
     # Check if key is empty
-    if [ -z "$key_value" ]; then
+    if [ -z "${key_value}" ]; then
         if command -v print_warning >/dev/null 2>&1; then
-            print_warning "✗ $key_name is empty"
+            print_warning "✗ ${key_name} is empty"
         else
-            echo "WARNING: ✗ $key_name is empty"
+            echo "WARNING: ✗ ${key_name} is empty"
         fi
         return 1
     fi
@@ -213,29 +213,29 @@ validate_websocket_key() {
     # Check minimum length (8 characters)
     if [ ${#key_value} -lt 8 ]; then
         if command -v print_warning >/dev/null 2>&1; then
-            print_warning "✗ $key_name must be at least 8 characters long (got ${#key_value})"
+            print_warning "✗ ${key_name} must be at least 8 characters long (got ${#key_value})"
         else
-            echo "WARNING: ✗ $key_name must be at least 8 characters long (got ${#key_value})"
+            echo "WARNING: ✗ ${key_name} must be at least 8 characters long (got ${#key_value})"
         fi
         return 1
     fi
     
     # Check for printable ASCII characters only (33-126, no spaces/control chars)
-    if [[ "$key_value" =~ [[:space:]] ]]; then
+    if [[ "${key_value}" =~ [[:space:]] ]]; then
         if command -v print_warning >/dev/null 2>&1; then
-            print_warning "✗ $key_name contains spaces or control characters"
+            print_warning "✗ ${key_name} contains spaces or control characters"
         else
-            echo "WARNING: ✗ $key_name contains spaces or control characters"
+            echo "WARNING: ✗ ${key_name} contains spaces or control characters"
         fi
         return 1
     fi
     
     # Check for non-printable characters
-    if [[ "$key_value" =~ [^[:print:]] ]]; then
+    if [[ "${key_value}" =~ [^[:print:]] ]]; then
         if command -v print_warning >/dev/null 2>&1; then
-            print_warning "✗ $key_name contains non-printable characters"
+            print_warning "✗ ${key_name} contains non-printable characters"
         else
-            echo "WARNING: ✗ $key_name contains non-printable characters"
+            echo "WARNING: ✗ ${key_name} contains non-printable characters"
         fi
         return 1
     fi
@@ -243,9 +243,9 @@ validate_websocket_key() {
     # All checks passed
     local display_value="${key_value:0:8}..."
     if command -v print_message >/dev/null 2>&1; then
-        print_message "✓ $key_name is a valid WebSocket key: $display_value"
+        print_message "✓ ${key_name} is a valid WebSocket key: ${display_value}"
     else
-        echo "INFO: ✓ $key_name is a valid WebSocket key: $display_value"
+        echo "INFO: ✓ ${key_name} is a valid WebSocket key: ${display_value}"
     fi
     return 0
 }
@@ -256,18 +256,18 @@ convert_to_relative_path() {
     
     # Extract the part starting from "hydrogen" and keep everything after
     local relative_path
-    relative_path=$(echo "$absolute_path" | sed -n 's|.*/hydrogen/|hydrogen/|p')
+    relative_path=$(echo "${absolute_path}" | sed -n 's|.*/hydrogen/|hydrogen/|p')
     
     # If the path contains elements/001-hydrogen/hydrogen but not starting with hydrogen/
-    if [ -z "$relative_path" ]; then
-        relative_path=$(echo "$absolute_path" | sed -n 's|.*/elements/001-hydrogen/hydrogen|hydrogen|p')
+    if [ -z "${relative_path}" ]; then
+        relative_path=$(echo "${absolute_path}" | sed -n 's|.*/elements/001-hydrogen/hydrogen|hydrogen|p')
     fi
     
     # If we still couldn't find a match, return the original
-    if [ -z "$relative_path" ]; then
-        echo "$absolute_path"
+    if [ -z "${relative_path}" ]; then
+        echo "${absolute_path}"
     else
-        echo "$relative_path"
+        echo "${relative_path}"
     fi
 }
 
