@@ -44,6 +44,17 @@ FRAMEWORK_VERSION="2.2.0"
 export FRAMEWORK_NAME FRAMEWORK_VERSION
 # print_message "${FRAMEWORK_NAME} ${FRAMEWORK_VERSION}" "info"
 
+# Sort out directories
+PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
+# SCRIPT_DIR="${PROJECT_DIR}/tests"
+# LIB_DIR="${SCRIPT_DIR}/lib"
+BUILD_DIR="${PROJECT_DIR}/build"
+TESTS_DIR="${BUILD_DIR}/tests"
+RESULTS_DIR="${TESTS_DIR}/results"
+DIAGS_DIR="${TESTS_DIR}/diagnostics"
+LOGS_DIR="${TESTS_DIR}/logs"
+mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}"
+
 # Function to format seconds as HH:MM:SS.ZZZ
 format_time_duration() {
     local seconds="$1"
@@ -103,7 +114,7 @@ start_test() {
         echo "==============================================================================="
         echo "TEST: ${test_name}"
         echo "==============================================================================="
-        echo "Started at: $(date)"
+        echo "Started at: $(date)" || true
         echo ""
     fi
 }
@@ -144,8 +155,8 @@ end_test() {
         echo "==============================================================================="
         echo "Test Summary"
         echo "==============================================================================="
-        echo "Completed at: $(date)"
-        if [ "${test_result}" -eq 0 ]; then
+        echo "Completed at: $(date)" || true
+        if [[ "${test_result}" -eq 0 ]]; then
             echo "OVERALL RESULT: ALL TESTS PASSED"
         else
             echo "OVERALL RESULT: SOME TESTS FAILED"
@@ -178,7 +189,7 @@ setup_test_environment() {
     RESULT_LOG="${RESULTS_DIR}/${test_id}_${TIMESTAMP}.log"
     
     # Start the test with numbering
-    start_test "${test_name}" "${test_number}" | tee -a "${RESULT_LOG}"
+    start_test "${test_name}" "${test_number}" | tee -a "${RESULT_LOG}" || true
     
     # Return log file path
     echo "${RESULT_LOG}"
@@ -229,7 +240,7 @@ export_test_results() {
     "test_name": "${test_name}",
     "status": ${result},
     "details": "${details}",
-    "timestamp": "$(date +%Y-%m-%d\ %H:%M:%S)"
+    "timestamp": "$(date +%Y-%m-%d\ %H:%M:%S || true)"
 }
 EOF
 }
@@ -248,7 +259,7 @@ run_check() {
         else
             echo "INFO: ✓ ${check_name} passed"
         fi
-        eval "${passed_checks_var}=\$((\${$passed_checks_var} + 1))"
+        eval "${passed_checks_var}=\$((\${${passed_checks_var}} + 1))"
         return 0
     else
         if command -v print_warning >/dev/null 2>&1; then
@@ -256,7 +267,7 @@ run_check() {
         else
             echo "WARNING: ✗ ${check_name} failed"
         fi
-        eval "${failed_checks_var}=\$((\${$failed_checks_var} + 1))"
+        eval "${failed_checks_var}=\$((\${${failed_checks_var}} + 1))"
         return 1
     fi
 }
@@ -268,13 +279,13 @@ evaluate_test_result() {
     local pass_count_var="$3"
     local exit_code_var="$4"
     
-    if [ "${failed_checks}" -eq 0 ]; then
+    if [[ "${failed_checks}" -eq 0 ]]; then
         if command -v print_result >/dev/null 2>&1; then
             print_result 0 "${test_name} test PASSED"
         else
             echo "RESULT: ${test_name} test PASSED"
         fi
-        eval "${pass_count_var}=\$((\${$pass_count_var} + 1))"
+        eval "${pass_count_var}=\$((\${${pass_count_var}} + 1))"
     else
         if command -v print_result >/dev/null 2>&1; then
             print_result 1 "${test_name} test FAILED"
@@ -292,8 +303,8 @@ evaluate_test_result_silent() {
     local pass_count_var="$3"
     local exit_code_var="$4"
     
-    if [ "${failed_checks}" -eq 0 ]; then
-        eval "${pass_count_var}=\$((\${$pass_count_var} + 1))"
+    if [[ "${failed_checks}" -eq 0 ]]; then
+        eval "${pass_count_var}=\$((\${${pass_count_var}} + 1))"
     else
         eval "${exit_code_var}=1"
     fi
@@ -371,11 +382,11 @@ generate_html_report() {
 </head>
 <body>
     <h1>🧪 Hydrogen Test Results</h1>
-    <p class="timestamp">Generated on $(date)</p>
+    <p class="timestamp">Generated on $(date || true)</p>
     
     <div class="test-content">
         <h2>Test Log Contents</h2>
-        <pre>$(cat "${result_file}" 2>/dev/null || echo "Log file not found")</pre>
+        <pre>$(cat "${result_file}" 2>/dev/null || echo "Log file not found" || true)</pre>
     </div>
 </body>
 </html>
@@ -439,7 +450,7 @@ get_total_tests() {
 }
 
 get_exit_code() {
-    if [ "${FAILED_TESTS}" -gt 0 ]; then
+    if [[ "${FAILED_TESTS}" -gt 0 ]]; then
         echo 1
     else
         echo 0
