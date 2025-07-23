@@ -36,10 +36,10 @@ check_env_var() {
     local var_name="$1"
     local var_value="${!var_name}"
     
-    if [ -n "${var_value}" ]; then
+    if [[ -n "${var_value}" ]]; then
         local display_value="${var_value}"
         # Check if variable name contains sensitive keywords and value length > 20
-        if [[ "${var_name}" =~ PASS|LOCK|KEY|JWT|TOKEN|SECRET ]] && [ ${#var_value} -gt 20 ]; then
+        if [[ "${var_name}" =~ PASS|LOCK|KEY|JWT|TOKEN|SECRET ]] && [[ ${#var_value} -gt 20 ]]; then
             display_value="${var_value:0:20}..."
         fi
         if command -v print_message >/dev/null 2>&1; then
@@ -72,7 +72,7 @@ validate_rsa_key() {
     echo "${key_data}" | base64 -d > "${temp_key}" 2>/dev/null
     
     # Check if the decoded file exists and has content
-    if [ ! -s "${temp_key}" ]; then
+    if [[ ! -s "${temp_key}" ]]; then
         if command -v print_warning >/dev/null 2>&1; then
             print_warning "✗ ${key_name} failed base64 decode - no output generated"
         else
@@ -123,7 +123,7 @@ validate_rsa_key() {
 
 # Function to reset all environment variables used in testing
 reset_environment_variables() {
-    unset H_SERVER_NAME H_LOG_FILE H_WEB_ENABLED H_WEB_PORT H_UPLOAD_DIR
+    unset H_SERVER_NAME H_WEB_ENABLED H_WEB_PORT H_UPLOAD_DIR
     unset H_MAX_UPLOAD_SIZE H_SHUTDOWN_WAIT H_MAX_QUEUE_BLOCKS H_DEFAULT_QUEUE_CAPACITY
     unset H_MEMORY_WARNING H_LOAD_WARNING H_PRINT_QUEUE_ENABLED H_CONSOLE_LOG_LEVEL
     unset H_DEVICE_ID H_FRIENDLY_NAME
@@ -138,7 +138,6 @@ reset_environment_variables() {
 # Function to set environment variables for basic test
 set_basic_test_environment() {
     export H_SERVER_NAME="hydrogen-env-test"
-    export H_LOG_FILE="${TEST_LOG_FILE}"
     export H_WEB_ENABLED="true"
     export H_WEB_PORT="9000"
     export H_UPLOAD_DIR="/tmp/hydrogen_env_test_uploads"
@@ -165,7 +164,7 @@ validate_config_files() {
     local config_file
     config_file=$(get_config_path "hydrogen_test_env.json")
     
-    if [ ! -f "${config_file}" ]; then
+    if [[ ! -f "${config_file}" ]]; then
         if command -v print_error >/dev/null 2>&1; then
             print_error "Env test config file not found: ${config_file}"
         else
@@ -201,7 +200,7 @@ validate_websocket_key() {
     local key_value="$2"
     
     # Check if key is empty
-    if [ -z "${key_value}" ]; then
+    if [[ -z "${key_value}" ]]; then
         if command -v print_warning >/dev/null 2>&1; then
             print_warning "✗ ${key_name} is empty"
         else
@@ -211,7 +210,7 @@ validate_websocket_key() {
     fi
     
     # Check minimum length (8 characters)
-    if [ ${#key_value} -lt 8 ]; then
+    if [[ ${#key_value} -lt 8 ]]; then
         if command -v print_warning >/dev/null 2>&1; then
             print_warning "✗ ${key_name} must be at least 8 characters long (got ${#key_value})"
         else
@@ -259,12 +258,12 @@ convert_to_relative_path() {
     relative_path=$(echo "${absolute_path}" | sed -n 's|.*/hydrogen/|hydrogen/|p')
     
     # If the path contains elements/001-hydrogen/hydrogen but not starting with hydrogen/
-    if [ -z "${relative_path}" ]; then
+    if [[ -z "${relative_path}" ]]; then
         relative_path=$(echo "${absolute_path}" | sed -n 's|.*/elements/001-hydrogen/hydrogen|hydrogen|p')
     fi
     
     # If we still couldn't find a match, return the original
-    if [ -z "${relative_path}" ]; then
+    if [[ -z "${relative_path}" ]]; then
         echo "${absolute_path}"
     else
         echo "${relative_path}"

@@ -34,12 +34,12 @@ convert_to_relative_path() {
     relative_path=$(echo "${absolute_path}" | sed -n 's|.*/hydrogen/|hydrogen/|p')
     
     # If the path contains elements/001-hydrogen/hydrogen but not starting with hydrogen/
-    if [ -z "${relative_path}" ]; then
+    if [[ -z "${relative_path}" ]]; then
         relative_path=$(echo "${absolute_path}" | sed -n 's|.*/elements/001-hydrogen/hydrogen|hydrogen|p')
     fi
     
     # If we still couldn't find a match, return the original
-    if [ -z "${relative_path}" ]; then
+    if [[ -z "${relative_path}" ]]; then
         echo "${absolute_path}"
     else
         echo "${relative_path}"
@@ -96,7 +96,7 @@ extract_web_server_port() {
         # Use jq if available for proper JSON parsing
         local port
         port=$(jq -r '.WebServer.Port // 5000' "${config_file}" 2>/dev/null)
-        if jq -r '.WebServer.Port // 5000' "${config_file}" >/dev/null 2>&1 && [ -n "${port}" ] && [ "${port}" != "null" ]; then
+        if jq -r '.WebServer.Port // 5000' "${config_file}" >/dev/null 2>&1 && [[ -n "${port}" ]] && [[ "${port}" != "null" ]]; then
             echo "${port}"
             return 0
         fi
@@ -104,8 +104,8 @@ extract_web_server_port() {
     
     # Fallback method using grep and sed
     local port
-    port=$(grep -o '"Port":[^,}]*' "${config_file}" | head -1 | sed 's/"Port":\s*\([0-9]*\)/\1/')
-    if [ -n "${port}" ]; then
+    port=$(grep -o '"Port":[^,}]*' "${config_file}" | head -1 | sed 's/"Port":\s*\([0-9]*\)/\1/' || true)
+    if [[ -n "${port}" ]]; then
         echo "${port}"
         return 0
     fi
@@ -165,13 +165,13 @@ get_webserver_port() {
     if command -v jq &> /dev/null; then
         # Use jq if available
         port=$(jq -r '.WebServer.Port // 8080' "${config}" 2>/dev/null)
-        if [ -z "${port}" ] || [ "${port}" = "null" ]; then
+        if [[ -z "${port}" ]] || [[ "${port}" = "null" ]]; then
             port=8080
         fi
     else
         # Fallback to grep
-        port=$(grep -o '"Port":[[:space:]]*[0-9]*' "${config}" | head -1 | grep -o '[0-9]*')
-        if [ -z "${port}" ]; then
+        port=$(grep -o '"Port":[[:space:]]*[0-9]*' "${config}" | head -1 | grep -o '[0-9]*' || true)
+        if [[ -z "${port}" ]]; then
             port=8080
         fi
     fi
