@@ -77,6 +77,7 @@ commands=(
     "cmake" "curl" "websocat" 
     "git" "md5sum" "cloc"
     "cppcheck" "shellcheck" "markdownlint" "eslint" "stylelint" "htmlhint" "jsonlint"
+    "Oh.sh" "tables" "coverage_table.sh"
 )
 
 # Array to store results
@@ -91,8 +92,9 @@ while IFS= read -r line; do
 done < <(printf "%s\n" "${commands[@]}" | xargs -P 0 -I {} bash -c '
     cmd="{}"
     if command -v "${cmd}" >/dev/null 2>&1; then
+        export PATH="${PATH}:lib"
         cmd_path=$(command -v "$cmd")
-        version=$(${cmd} --version 2>/dev/null | grep -oE "[0-9]+\.[0-9]+([.-][0-9a-zA-Z]+)*" | head -n 1)
+        version=$(${cmd} --version 2>&1 | grep -oE "[0-9]+\.[0-9]+([.-][0-9a-zA-Z]+)*" | head -n 1)
         if [ -n "${version}" ]; then
             echo "0|${cmd} @ ${cmd_path}|${version}"
         else
@@ -108,7 +110,7 @@ declare -a sorted_results
 # shellcheck disable=SC2312 # We are using xargs to handle parallel execution, so we don't need to worry about subshells here
 while IFS= read -r line; do
     sorted_results+=("${line}")
-done < <(printf "%s\n" "${results[@]}" | sort -t'|' -k2)
+done < <(printf "%s\n" "${results[@]}" | sort -f -t'|' -k2)
 
 # Process sorted results array and call print_result
 for result in "${sorted_results[@]}"; do
