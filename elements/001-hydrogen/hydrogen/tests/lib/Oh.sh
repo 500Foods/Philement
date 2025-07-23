@@ -3,6 +3,7 @@
 # oh.sh - Convert ANSI terminal output to GitHub-compatible SVG
 # 
 # CHANGELOG
+# 1.000 - Initial release with basic functionality
 # 0.026 - Fix XML character escaping in xml_escape function; improve width calculation reporting with auto-width limits
 # 0.025 - Fix --width to enforce grid width and clip lines; add debug logging for clipping
 # 0.024 - Fix syntax error in generate_svg loop; add empty input check; enhance debug logging for cell_width and height truncation
@@ -35,7 +36,7 @@
 set -euo pipefail
 
 # Version
-VERSION="0.026"
+VERSION="1.000"
 
 # Default values
 INPUT_FILE=""
@@ -102,8 +103,7 @@ ANSI_COLORS[96]="#29b8db"   # Bright Cyan
 ANSI_COLORS[97]="#e5e5e5"   # Bright White
 
 show_version() {
-    echo "Oh.sh - Convert ANSI terminal output to GitHub-compatible SVG" >&2
-    echo "Version $VERSION" >&2
+    echo "Oh.sh - v${VERSION} - Convert ANSI terminal output to GitHub-compatible SVG" >&2
 }
 
 show_help() {
@@ -128,6 +128,7 @@ OPTIONS:
     --wrap                  Wrap lines at width (default: false)
     --tab-size SIZE         Tab stop size (default: 8)
     --debug                 Enable debug output
+    --version               Show version information
     
 SUPPORTED FONTS:
     Consolas, Monaco, Courier New (system fonts)
@@ -155,6 +156,9 @@ check_for_help() {
 parse_arguments() {
     while [[ $# -gt 0 ]]; do
         case $1 in
+            -v|--version)
+                exit 0
+                ;;
             -i|--input)
                 [[ $# -lt 2 || "$2" =~ ^- ]] && { echo "Error: --input requires a filename" >&2; exit 1; }
                 INPUT_FILE="$2"
