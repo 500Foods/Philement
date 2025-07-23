@@ -175,7 +175,7 @@ next_subtest() {
 # Function to reset subtest counter
 reset_subtest_counter() {
     SUBTEST_COUNTER=0
-    CURRENT_SUBTEST_NUMBER=""
+    CURRENT_SUBTEST_NUMBER="000"
 }
 
 # Function to get the current test prefix for output
@@ -644,7 +644,7 @@ print_test_completion() {
     
     # Write elapsed time to the subtest result file if running in test suite
     # Use the SAME elapsed_time value that was calculated above - no additional calls to get_elapsed_time
-    if [[ -n "${RUNNING_IN_TEST_SUITE}" && "${RUNNING_IN_TEST_SUITE}" == "true" ]]; then
+    if [[ -n "${ORCHESTRATION}" ]]; then
         # Use absolute path approach since individual tests may change working directory
         # Find the tests directory by using the script location from BASH_SOURCE
         local script_dir

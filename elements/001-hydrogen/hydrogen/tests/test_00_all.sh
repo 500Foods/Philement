@@ -19,6 +19,8 @@
 # Test configuration
 TEST_NAME="Test Suite Orchestration"
 SCRIPT_VERSION="6.0.0"
+ORCHESTRATION="true"
+export ORCHESTRATION
 
 # Sort out directories
 PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
@@ -42,7 +44,6 @@ source "${LIB_DIR}/log_output.sh"
 TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
 set_test_number "${TEST_NUMBER}"
 reset_subtest_counter
-next_subtest
 
 # Print beautiful test suite header in blue
 print_test_suite_header "${TEST_NAME}" "${SCRIPT_VERSION}"
@@ -442,9 +443,6 @@ run_single_test() {
         return 0
     fi
     
-    # Set environment variable to indicate running in test suite context
-    export RUNNING_IN_TEST_SUITE="true"
-    
     # Source the test script instead of running it as a separate process
     # shellcheck disable=SC1090  # Can't follow non-constant source
     source "${test_script}"
@@ -496,9 +494,6 @@ run_single_test_parallel() {
     # Extract test number from script filename
     test_number=$(basename "${test_script}" .sh | sed 's/test_//' | sed 's/_.*//' || true)
     test_name=""
-    
-    # Set environment variable to indicate running in test suite context
-    export RUNNING_IN_TEST_SUITE="true"
     
     # Capture all output from the test
     {
