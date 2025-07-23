@@ -72,7 +72,7 @@ Hydrogen is currently designed for technical users who:
 
 ## Latest Test Results
 
-Generated on: Wed Jul 23 14:12:27 PDT 2025
+Generated on: Wed Jul 23 14:22:20 PDT 2025
 
 ### Summary
 
@@ -84,8 +84,8 @@ Generated on: Wed Jul 23 14:12:27 PDT 2025
 | Total Subtests | 193 |
 | Passed Subtests | 192 |
 | Failed Subtests | 0 |
-| Elapsed Time | 00:00:20.902 |
-| Cumulative Time | 00:00:39.847 |
+| Elapsed Time | 00:00:20.883 |
+| Cumulative Time | 00:00:37.759 |
 
 [Test Suite Results](COMPLETE.svg) | [Test Suite Coverage](COVERAGE.svg)
 
@@ -100,36 +100,36 @@ Generated on: Wed Jul 23 14:12:27 PDT 2025
 
 | Status | Time | Test | Tests | Pass | Fail | Summary |
 | ------ | ---- | ---- | ----- | ---- | ---- | ------- |
-| ✅ | 00:00:08.217 | 01_compilation_{blue}(249_source_files){reset} | 17 | 17 | 0 | Test completed without errors |
-| ✅ | 00:00:02.226 | 03_code_size_analysis_{blue}(cloc:_544_files){reset} | 5 | 5 | 0 | Test completed without errors |
-| ✅ | 00:00:02.410 | 06_markdown_links_check_{blue}(github-sitemap){reset} | 4 | 4 | 0 | Test completed without errors |
-| ✅ | 00:00:01.752 | 11_unity_{blue}(187_/_187_unit_tests_passed){reset} | 17 | 17 | 0 | Test completed without errors |
-| ✅ | 00:00:02.102 | 12_env_var_substitution | 16 | 16 | 0 | Test completed without errors |
-| ✅ | 00:00:02.675 | 13_crash_handler | 30 | 30 | 0 | Test completed without errors |
-| ✅ | 00:00:00.178 | 14_payload_env_vars | 2 | 2 | 0 | Test completed without errors |
-| ✅ | 00:00:00.990 | 16_library_dependencies | 14 | 14 | 0 | Test completed without errors |
-| ✅ | 00:00:00.541 | 18_json_error_handling | 4 | 4 | 0 | Test completed without errors |
-| ✅ | 00:00:00.474 | 19_memory_leak_detection | 4 | 4 | 0 | Test completed without errors |
-| ✅ | 00:00:01.090 | 22_startup/shutdown | 9 | 9 | 0 | Test completed without errors |
-| ✅ | 00:00:01.845 | 24_signal_handling | 9 | 9 | 0 | Test completed without errors |
-| ✅ | 00:00:00.623 | 26_shutdown | 6 | 6 | 0 | Test completed without errors |
-| ✅ | 00:00:01.317 | 28_socket_rebinding | 7 | 7 | 0 | Test completed without errors |
-| ✅ | 00:00:02.033 | 29_api_prefix | 10 | 10 | 0 | Test completed without errors |
-| ✅ | 00:00:01.620 | 32_system_api | 10 | 10 | 0 | Test completed without errors |
+| ✅ | 00:00:07.560 | 01_compilation_{blue}(249_source_files){reset} | 17 | 17 | 0 | Test completed without errors |
+| ✅ | 00:00:02.076 | 03_code_size_analysis_{blue}(cloc:_544_files){reset} | 5 | 5 | 0 | Test completed without errors |
+| ✅ | 00:00:02.240 | 06_markdown_links_check_{blue}(github-sitemap){reset} | 4 | 4 | 0 | Test completed without errors |
+| ✅ | 00:00:01.586 | 11_unity_{blue}(187_/_187_unit_tests_passed){reset} | 17 | 17 | 0 | Test completed without errors |
+| ✅ | 00:00:02.006 | 12_env_var_substitution | 16 | 16 | 0 | Test completed without errors |
+| ✅ | 00:00:02.909 | 13_crash_handler | 30 | 30 | 0 | Test completed without errors |
+| ✅ | 00:00:00.170 | 14_payload_env_vars | 2 | 2 | 0 | Test completed without errors |
+| ✅ | 00:00:00.898 | 16_library_dependencies | 14 | 14 | 0 | Test completed without errors |
+| ✅ | 00:00:00.539 | 18_json_error_handling | 4 | 4 | 0 | Test completed without errors |
+| ✅ | 00:00:00.462 | 19_memory_leak_detection | 4 | 4 | 0 | Test completed without errors |
+| ✅ | 00:00:01.061 | 22_startup/shutdown | 9 | 9 | 0 | Test completed without errors |
+| ✅ | 00:00:01.823 | 24_signal_handling | 9 | 9 | 0 | Test completed without errors |
+| ✅ | 00:00:00.607 | 26_shutdown | 6 | 6 | 0 | Test completed without errors |
+| ✅ | 00:00:01.255 | 28_socket_rebinding | 7 | 7 | 0 | Test completed without errors |
+| ✅ | 00:00:01.888 | 29_api_prefix | 10 | 10 | 0 | Test completed without errors |
+| ✅ | 00:00:01.542 | 32_system_api | 10 | 10 | 0 | Test completed without errors |
 | ✅ | 00:00:00.000 | 34_swagger | 1 | 1 | 0 | Test completed without errors |
-| ✅ | 00:00:02.698 | 36_websockets | 16 | 16 | 0 | Test completed without errors |
-| ✅ | 00:00:00.966 | 91_c_linting_{blue}(cppcheck:_249_files){reset} | 1 | 1 | 0 | Test completed without errors |
-| ❌ | 00:00:01.730 | 92_shell_linting_{blue}(shellheck:_52_files){reset} | 2 | 1 | 1 | Test failed with errors |
-| ✅ | 00:00:00.061 | 94_javascript_linting_{blue}(eslint:_0_files){reset} | 1 | 1 | 0 | Test completed without errors |
+| ✅ | 00:00:02.621 | 36_websockets | 16 | 16 | 0 | Test completed without errors |
+| ✅ | 00:00:00.908 | 91_c_linting_{blue}(cppcheck:_249_files){reset} | 1 | 1 | 0 | Test completed without errors |
+| ❌ | 00:00:01.612 | 92_shell_linting_{blue}(shellheck:_52_files){reset} | 2 | 1 | 1 | Test failed with errors |
+| ✅ | 00:00:00.059 | 94_javascript_linting_{blue}(eslint:_0_files){reset} | 1 | 1 | 0 | Test completed without errors |
 | ✅ | 00:00:00.060 | 95_css_linting_{blue}(stylelint:_0_files){reset} | 1 | 1 | 0 | Test completed without errors |
-| ✅ | 00:00:00.243 | 96_html_linting_{blue}(htmlhint:_1_files){reset} | 1 | 1 | 0 | Test completed without errors |
-| ✅ | 00:00:00.241 | 97_json_linting_{blue}(jsonlint:_22_files){reset} | 1 | 1 | 0 | Test completed without errors |
-| ✅ | 00:00:01.894 | 98_markdown_linting_{blue}(markdownlint:_218_files){reset} | 1 | 1 | 0 | Test completed without errors |
-| ✅ | 00:00:01.861 | 99_test_suite_coverage_{blue}(coverage_table){reset} | 4 | 4 | 0 | Test completed without errors |
+| ✅ | 00:00:00.223 | 96_html_linting_{blue}(htmlhint:_1_files){reset} | 1 | 1 | 0 | Test completed without errors |
+| ✅ | 00:00:00.222 | 97_json_linting_{blue}(jsonlint:_22_files){reset} | 1 | 1 | 0 | Test completed without errors |
+| ✅ | 00:00:01.756 | 98_markdown_linting_{blue}(markdownlint:_218_files){reset} | 1 | 1 | 0 | Test completed without errors |
+| ✅ | 00:00:01.676 | 99_test_suite_coverage_{blue}(coverage_table){reset} | 4 | 4 | 0 | Test completed without errors |
 
 ## Repository Information
 
-Generated via cloc: Wed Jul 23 14:12:27 PDT 2025
+Generated via cloc: Wed Jul 23 14:22:20 PDT 2025
 
 ```cloc
 -------------------------------------------------------------------------------
