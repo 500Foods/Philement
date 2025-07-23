@@ -4,6 +4,7 @@
 # Displays comprehensive coverage data from Unity and blackbox tests in a formatted table
 
 # CHANGELOG
+# 2.0.1 - 2025-07-23 - Added --help and --version options
 # 2.0.0 - 2025-07-22 - Upgraded for more stringent shellcheck compliance
 # 1.0.6 - 2025-07-18 - Added timestamp to footer for coverage table generation time
 # 1.0.5 - 2025-07-16 - Fixed Cover column to calculate TRUE union of coverage from Unity and Blackbox tests
@@ -14,7 +15,7 @@
 # 1.0.0 - Initial version
 
 COVERAGE_TABLE_NAME="Coverage Table Library"
-COVERAGE_TABLE_VERSION="2.0.0"
+COVERAGE_TABLE_VERSION="2.0.1"
 export COVERAGE_TABLE_NAME COVERAGE_TABLE_VERSION
 
 # Sort out directories
@@ -40,6 +41,52 @@ TABLES_EXE="${LIB_DIR}/tables"
 [[ -n "${COVERAGE_BLACKBOX_GUARD}" ]] || source "${LIB_DIR}/coverage-blackbox.sh"
 # shellcheck source=tests/lib/coverage-combined.sh # Resolve path statically
 [[ -n "${COVERAGE_COMBINED_GUARD}" ]] || source "${LIB_DIR}/coverage-combined.sh"
+
+show_version() {
+    echo "${COVERAGE_TABLE_NAME} - v${COVERAGE_TABLE_VERSION} - Displays comprehensive coverage data from Unity and blackbox tests in a formatted table" >&2
+}
+
+show_help() {
+    cat >&2 << 'EOF'
+Coverage Table Library - Displays comprehensive coverage data from Unity and blackbox tests in a formatted table
+
+USAGE:
+    coverage_table.sh [OPTIONS]
+
+OPTIONS:
+    -h, --help              Show this help
+    -v, --version           Show version information
+
+DESCRIPTION:
+    Generates a formatted table showing Unity test coverage, blackbox test coverage, 
+    and combined coverage data. The table includes color-coded flags:
+    - YELLOW: Files with no coverage in either test type
+    - MAGENTA: Files with >0 coverage but <50% coverage when >100 instrumented lines
+    
+    The script processes gcov files from both Unity and blackbox test directories
+    and displays comprehensive coverage statistics.
+
+EOF
+}
+
+# Parse command line arguments
+for arg in "$@"; do
+    case $arg in
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+        -v|--version)
+            show_version
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $arg" >&2
+            echo "Use --help for usage information" >&2
+            exit 1
+            ;;
+    esac
+done
 
 # Associative arrays to store coverage data from both directories
 declare -A unity_covered_lines

@@ -17,13 +17,13 @@
 # 1.0.0 - 2025-07-02 - Initial creation from support_utils.sh migration
 
 # Guard clause to prevent multiple sourcing
-[[ -n "$FILE_UTILS_GUARD" ]] && return 0
+[[ -n "${FILE_UTILS_GUARD}" ]] && return 0
 export FILE_UTILS_GUARD="true"
 
 # Library metadata
 FILE_UTILS_NAME="File Utilities Library"
 FILE_UTILS_VERSION="1.1.0"
-print_message "$FILE_UTILS_NAME $FILE_UTILS_VERSION" "info"
+print_message "${FILE_UTILS_NAME} ${FILE_UTILS_VERSION}" "info"
 
 # Function to convert absolute path to path relative to hydrogen project root
 convert_to_relative_path() {
@@ -31,31 +31,31 @@ convert_to_relative_path() {
     
     # Extract the part starting from "hydrogen" and keep everything after
     local relative_path
-    relative_path=$(echo "$absolute_path" | sed -n 's|.*/hydrogen/|hydrogen/|p')
+    relative_path=$(echo "${absolute_path}" | sed -n 's|.*/hydrogen/|hydrogen/|p')
     
     # If the path contains elements/001-hydrogen/hydrogen but not starting with hydrogen/
-    if [ -z "$relative_path" ]; then
-        relative_path=$(echo "$absolute_path" | sed -n 's|.*/elements/001-hydrogen/hydrogen|hydrogen|p')
+    if [ -z "${relative_path}" ]; then
+        relative_path=$(echo "${absolute_path}" | sed -n 's|.*/elements/001-hydrogen/hydrogen|hydrogen|p')
     fi
     
     # If we still couldn't find a match, return the original
-    if [ -z "$relative_path" ]; then
-        echo "$absolute_path"
+    if [ -z "${relative_path}" ]; then
+        echo "${absolute_path}"
     else
-        echo "$relative_path"
+        echo "${relative_path}"
     fi
 }
 
 # Function to safely change directory with error handling
 safe_cd() {
     local target_dir="$1"
-    if ! cd "$target_dir"; then
+    if ! cd "${target_dir}"; then
         # Note: This function uses print_error from log_output.sh
         # The calling script should source log_output.sh before file_utils.sh
         if command -v print_error >/dev/null 2>&1; then
-            print_error "Failed to change directory to $target_dir"
+            print_error "Failed to change directory to ${target_dir}"
         else
-            echo "ERROR: Failed to change directory to $target_dir" >&2
+            echo "ERROR: Failed to change directory to ${target_dir}" >&2
         fi
         return 1
     fi
@@ -66,8 +66,8 @@ safe_cd() {
 get_file_size() {
     local file_path="$1"
     local size
-    if size=$(stat -c %s "$file_path" 2>/dev/null); then
-        echo "$size"
+    if size=$(stat -c %s "${file_path}" 2>/dev/null); then
+        echo "${size}"
         return 0
     else
         echo "0"
@@ -81,9 +81,9 @@ get_config_path() {
     local config_file="$1"
     local script_dir
     script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-    local config_path="$script_dir/../configs/$config_file"
+    local config_path="${script_dir}/../configs/${config_file}"
     
-    echo "$config_path"
+    echo "${config_path}"
 }
 
 # Function to extract web server port from a JSON configuration file
@@ -95,23 +95,23 @@ extract_web_server_port() {
     if command -v jq &> /dev/null; then
         # Use jq if available for proper JSON parsing
         local port
-        port=$(jq -r '.WebServer.Port // 5000' "$config_file" 2>/dev/null)
-        if jq -r '.WebServer.Port // 5000' "$config_file" >/dev/null 2>&1 && [ -n "$port" ] && [ "$port" != "null" ]; then
-            echo "$port"
+        port=$(jq -r '.WebServer.Port // 5000' "${config_file}" 2>/dev/null)
+        if jq -r '.WebServer.Port // 5000' "${config_file}" >/dev/null 2>&1 && [ -n "${port}" ] && [ "${port}" != "null" ]; then
+            echo "${port}"
             return 0
         fi
     fi
     
     # Fallback method using grep and sed
     local port
-    port=$(grep -o '"Port":[^,}]*' "$config_file" | head -1 | sed 's/"Port":\s*\([0-9]*\)/\1/')
-    if [ -n "$port" ]; then
-        echo "$port"
+    port=$(grep -o '"Port":[^,}]*' "${config_file}" | head -1 | sed 's/"Port":\s*\([0-9]*\)/\1/')
+    if [ -n "${port}" ]; then
+        echo "${port}"
         return 0
     fi
     
     # Return default port if extraction fails
-    echo "$default_port"
+    echo "${default_port}"
     return 0
 }
 
@@ -121,8 +121,8 @@ validate_json() {
     
     if command -v jq &> /dev/null; then
         # Use jq if available for proper JSON validation
-        jq . "$file" > /dev/null 2>&1
-        if jq . "$file" >/dev/null 2>&1; then
+        jq . "${file}" > /dev/null 2>&1
+        if jq . "${file}" >/dev/null 2>&1; then
             if command -v print_result >/dev/null 2>&1; then
                 print_result 0 "Response contains valid JSON"
             else
@@ -139,7 +139,7 @@ validate_json() {
         fi
     else
         # Fallback: simple check for JSON structure
-        if grep -q "{" "$file" && grep -q "}" "$file"; then
+        if grep -q "{" "${file}" && grep -q "}" "${file}"; then
             if command -v print_result >/dev/null 2>&1; then
                 print_result 0 "Response appears to be JSON (basic validation only)"
             else
@@ -164,16 +164,16 @@ get_webserver_port() {
     
     if command -v jq &> /dev/null; then
         # Use jq if available
-        port=$(jq -r '.WebServer.Port // 8080' "$config" 2>/dev/null)
-        if [ -z "$port" ] || [ "$port" = "null" ]; then
+        port=$(jq -r '.WebServer.Port // 8080' "${config}" 2>/dev/null)
+        if [ -z "${port}" ] || [ "${port}" = "null" ]; then
             port=8080
         fi
     else
         # Fallback to grep
-        port=$(grep -o '"Port":[[:space:]]*[0-9]*' "$config" | head -1 | grep -o '[0-9]*')
-        if [ -z "$port" ]; then
+        port=$(grep -o '"Port":[[:space:]]*[0-9]*' "${config}" | head -1 | grep -o '[0-9]*')
+        if [ -z "${port}" ]; then
             port=8080
         fi
     fi
-    echo "$port"
+    echo "${port}"
 }
