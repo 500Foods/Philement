@@ -30,11 +30,17 @@ print_message "${NETWORK_UTILS_NAME} ${NETWORK_UTILS_VERSION}" "info"
 # Function to check if a port is in use (robust version)
 check_port_in_use() {
     local port="$1"
-    if command -v ss &> /dev/null; then
-        ss -tuln | grep ":${port} " > /dev/null
+    if command -v ss >/dev/null 2>&1; then
+        # Capture output and check exit status explicitly
+        local ss_output
+        ss_output=$(ss -tuln 2>/dev/null)
+        echo "${ss_output}" | grep -q ":${port}\b"
         return $?
-    elif command -v netstat &> /dev/null; then
-        netstat -tuln | grep ":${port} " > /dev/null
+    elif command -v netstat >/dev/null 2>&1; then
+        # Capture output and check exit status explicitly
+        local netstat_output
+        netstat_output=$(netstat -tuln 2>/dev/null)
+        echo "${netstat_output}" | grep -q ":${port}\b"
         return $?
     else
         if command -v print_error >/dev/null 2>&1; then
@@ -54,11 +60,11 @@ count_time_wait_sockets() {
     if command -v ss &> /dev/null; then
         # Use ss to count TIME_WAIT sockets
         # shellcheck disable=SC2126  # Intentionally using wc -l instead of grep -c to avoid integer expression errors
-        count=$(ss -tan | grep ":${port} " | grep "TIME-WAIT" | wc -l 2>/dev/null)
+        count=$(ss -tan | grep ":${port} " | grep "TIME-WAIT" | wc -l || true 2>/dev/null)
     elif command -v netstat &> /dev/null; then
         # Use netstat to count TIME_WAIT sockets
         # shellcheck disable=SC2126  # Intentionally using wc -l instead of grep -c to avoid integer expression errors
-        count=$(netstat -tan | grep ":${port} " | grep "TIME_WAIT" | wc -l 2>/dev/null)
+        count=$(netstat -tan | grep ":${port} " | grep "TIME_WAIT" | wc -l || true 2>/dev/null)
     else
         if command -v print_warning >/dev/null 2>&1; then
             print_warning "Neither ss nor netstat available - cannot count TIME_WAIT sockets"
@@ -69,7 +75,7 @@ count_time_wait_sockets() {
     fi
     
     # Clean up the count and ensure it's a valid integer
-    count=$(echo "${count}" | tr -d '[:space:]' | grep -o '^[0-9]*' | head -1)
+    count=$(echo "${count}" | tr -d '[:space:]' | grep -o '^[0-9]*' | head -1 || true)
     count=${count:-0}
     
     echo "${count}"
@@ -84,7 +90,7 @@ check_time_wait_sockets() {
     time_wait_count=$(count_time_wait_sockets "${port}")
     local result=$?
     
-    if [ ${result} -ne 0 ]; then
+    if [[ "${result}" -ne 0 ]]; then
         if command -v print_warning >/dev/null 2>&1; then
             print_warning "Could not check for TIME_WAIT sockets"
         else
@@ -93,7 +99,7 @@ check_time_wait_sockets() {
         return 1
     fi
     
-    if [ "${time_wait_count}" -gt 0 ]; then
+    if [[ "${time_wait_count}" -gt 0 ]]; then
         if command -v print_message >/dev/null 2>&1; then
             print_message "Found ${time_wait_count} socket(s) in TIME_WAIT state on port ${port}"
         else
@@ -108,7 +114,7 @@ check_time_wait_sockets() {
                 else
                     echo "${line}"
                 fi
-            done < <(ss -tan | grep ":${port} " | grep "TIME-WAIT" | sed 's/   */ /g')
+            done < <(ss -tan | grep ":${port} " | grep "TIME-WAIT" | sed 's/   */ /g' || true)
         elif command -v netstat &> /dev/null; then
             # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
             # Also compress excessive whitespace for better formatting
@@ -118,7 +124,7 @@ check_time_wait_sockets() {
                 else
                     echo "${line}"
                 fi
-            done < <(netstat -tan | grep ":${port} " | grep "TIME_WAIT" | sed 's/   */ /g')
+            done < <(netstat -tan | grep ":${port} " | grep "TIME_WAIT" | sed 's/   */ /g' || true)
         fi
     else
         if command -v print_message >/dev/null 2>&1; then
@@ -146,11 +152,11 @@ wait_for_time_wait_clear() {
     local elapsed=0
     local time_wait_count
     
-    while [ "${elapsed}" -lt "${max_wait_seconds}" ]; do
+    while [[ "${elapsed}" -lt "${max_wait_seconds}" ]]; do
         # Check for TIME_WAIT sockets
         time_wait_count=$(count_time_wait_sockets "${port}")
         
-        if [ "${time_wait_count}" -eq 0 ]; then
+        if [[ "${time_wait_count}" -eq 0 ]]; then
             if command -v print_message >/dev/null 2>&1; then
                 print_message "TIME_WAIT sockets cleared for port ${port} after ${elapsed}s"
             else
@@ -197,7 +203,7 @@ wait_for_port_available() {
     
     local elapsed=0
     
-    while [ "${elapsed}" -lt "${max_wait_seconds}" ]; do
+    while [[ "${elapsed}" -lt "${max_wait_seconds}" ]]; do
         # Check if port is currently in use
         if ! check_port_in_use "${port}"; then
             if command -v print_message >/dev/null 2>&1; then
@@ -212,7 +218,7 @@ wait_for_port_available() {
         local time_wait_count
         time_wait_count=$(count_time_wait_sockets "${port}")
         
-        if [ "${time_wait_count}" -gt 0 ]; then
+        if [[ "${time_wait_count}" -gt 0 ]]; then
             if command -v print_message >/dev/null 2>&1; then
                 print_message "Port ${port} has ${time_wait_count} TIME_WAIT socket(s), waiting... (${elapsed}s elapsed)"
             else
@@ -253,7 +259,7 @@ kill_processes_on_port() {
     if command -v lsof &> /dev/null; then
         local pids
         pids=$(lsof -ti:"${port}" 2>/dev/null || echo "")
-        if [ -n "${pids}" ]; then
+        if [[ -n "${pids}" ]]; then
             if command -v print_message >/dev/null 2>&1; then
                 print_message "Killing processes using port ${port}: ${pids}"
             else
@@ -278,7 +284,7 @@ kill_processes_on_port() {
         sleep 1
     fi
     
-    if [ ${killed_any} -eq 1 ]; then
+    if [[ ${killed_any} -eq 1 ]]; then
         if command -v print_message >/dev/null 2>&1; then
             print_message "Processes killed, cleanup completed"
         else
@@ -330,7 +336,7 @@ prepare_test_environment_with_time_wait() {
     local time_wait_count
     time_wait_count=$(count_time_wait_sockets "${port}")
     
-    if [ "${time_wait_count}" -gt 0 ]; then
+    if [[ "${time_wait_count}" -gt 0 ]]; then
         if command -v print_warning >/dev/null 2>&1; then
             print_warning "Found ${time_wait_count} TIME_WAIT socket(s) on port ${port}"
             print_message "Waiting for TIME_WAIT sockets to clear (max ${max_wait_seconds}s)..."
@@ -400,7 +406,7 @@ make_http_requests() {
     
     # Extract port from base_url (assumes format like http://localhost:8080)
     local port
-    port=$(echo "${base_url}" | grep -oE ':[0-9]+' | tr -d ':' || echo "80")
+    port=$(echo "${base_url}" | grep -oE ':[0-9]+' | tr -d ':' || echo "80" || true)
     
     # Wait for server to be ready by checking if the port is in use
     if command -v print_message >/dev/null 2>&1; then
@@ -411,7 +417,7 @@ make_http_requests() {
     local max_wait_seconds=5
     local check_interval=0.2
     local elapsed=0.0
-    while [ "$(echo "${elapsed} < ${max_wait_seconds}" | bc)" -eq 1 ]; do
+    while [[ "$(echo "${elapsed} < ${max_wait_seconds}" | bc || true)" -eq 1 ]]; do
         if check_port_in_use "${port}"; then
             local elapsed_ms
             elapsed_ms=$(echo "scale=0; ${elapsed} * 1000" | bc)
@@ -425,7 +431,7 @@ make_http_requests() {
         sleep "${check_interval}"
         elapsed=$(echo "${elapsed} + ${check_interval}" | bc)
     done
-    if [ "$(echo "${elapsed} >= ${max_wait_seconds}" | bc)" -eq 1 ]; then
+    if [[ "$(echo "${elapsed} >= ${max_wait_seconds}" | bc || true)" -eq 1 ]]; then
         if command -v print_warning >/dev/null 2>&1; then
             print_warning "Server did not become ready on port ${port} within ${max_wait_seconds}s"
         else
