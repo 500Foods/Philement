@@ -25,7 +25,7 @@ CLOC_VERSION="1.1.0"
 print_message "${CLOC_NAME} ${CLOC_VERSION}" "info"
 
 # Default exclude patterns for linting (can be overridden by .lintignore)
-if [ -z "${DEFAULT_LINT_EXCLUDES+x}" ]; then
+if [[ -z "${DEFAULT_LINT_EXCLUDES+x}" ]]; then
     readonly DEFAULT_LINT_EXCLUDES=(
         "build/*"
     )
@@ -38,7 +38,7 @@ should_exclude_file() {
     local rel_file="${file#./}"  # Remove leading ./
     
     # Check .lintignore file first if it exists
-    if [ -f "${lint_ignore_file}" ]; then
+    if [[ -f "${lint_ignore_file}" ]]; then
         while IFS= read -r pattern; do
             [[ -z "${pattern}" || "${pattern}" == \#* ]] && continue
             # Remove trailing /* if present for directory matching
@@ -68,7 +68,7 @@ generate_cloc_exclude_list() {
     local lint_ignore_file="${2:-.lintignore}"  # Lintignore file path (default: .lintignore)
     local exclude_list_file="$3"       # Output file for exclude list (required)
     
-    if [ -z "${exclude_list_file}" ]; then
+    if [[ -z "${exclude_list_file}" ]]; then
         echo "Error: exclude_list_file parameter is required" >&2
         return 1
     fi
@@ -76,7 +76,7 @@ generate_cloc_exclude_list() {
     # Generate exclude list based on .lintignore and default excludes
     : > "${exclude_list_file}"
     # Read patterns from .lintignore file and convert to cloc-compatible format
-    if [ -f "${lint_ignore_file}" ]; then
+    if [[ -f "${lint_ignore_file}" ]]; then
         while IFS= read -r pattern; do
             [[ -z "${pattern}" || "${pattern}" == \#* ]] && continue
             # Remove trailing /* if present for directory matching
@@ -145,7 +145,7 @@ run_cloc_analysis() {
             
             # Use awk to parse the line more reliably
             local lang files comment code
-            lang=$(echo "${line}" | awk '{$1=$1; for(i=1;i<=NF-4;i++) printf "%s ", $i; print ""}' | sed 's/ *$//')
+            lang=$(echo "${line}" | awk '{$1=$1; for(i=1;i<=NF-4;i++) printf "%s ", $i; print ""}' | sed 's/ *$//' || true)
             files=$(echo "${line}" | awk '{print $(NF-3)}')
             comment=$(echo "${line}" | awk '{print $(NF-1)}')
             code=$(echo "${line}" | awk '{print $NF}')
@@ -172,6 +172,7 @@ run_cloc_analysis() {
                     "Markdown")
                         markdown_code=${code}
                         ;;
+                    *)  ;;
                 esac
             fi
         done < "${enhanced_output}"
@@ -186,7 +187,7 @@ run_cloc_analysis() {
         local docscode_ratio=""
         local commentscode_ratio=""
         
-        if [ "${markdown_code}" -gt 0 ]; then
+        if [[ "${markdown_code}" -gt 0 ]]; then
             codedoc_ratio=$(awk "BEGIN {printf \"%.1f\", ${total_code} / ${markdown_code}}")
             docscode_ratio=$(awk "BEGIN {printf \"%.1f\", ${markdown_code} / ${total_code}}")
         else
@@ -194,7 +195,7 @@ run_cloc_analysis() {
             docscode_ratio="N/A"
         fi
         
-        if [ "${total_comment}" -gt 0 ]; then
+        if [[ "${total_comment}" -gt 0 ]]; then
             codecomment_ratio=$(awk "BEGIN {printf \"%.1f\", ${total_code} / ${total_comment}}")
             commentscode_ratio=$(awk "BEGIN {printf \"%.1f\", ${total_comment} / ${total_code}}")
         else
@@ -203,7 +204,7 @@ run_cloc_analysis() {
         fi
         
         # Output the original cloc results
-        if [ -n "${output_file}" ]; then
+        if [[ -n "${output_file}" ]]; then
             {
                 cat "${enhanced_output}"
                 echo ""
@@ -253,7 +254,7 @@ generate_cloc_for_readme() {
 extract_cloc_stats() {
     local cloc_output_file="$1"
     
-    if [ ! -f "${cloc_output_file}" ]; then
+    if [[ ! -f "${cloc_output_file}" ]]; then
         echo "Error: cloc output file not found: ${cloc_output_file}" >&2
         return 1
     fi
@@ -262,7 +263,7 @@ extract_cloc_stats() {
     local stats_line
     stats_line=$(grep "SUM:" "${cloc_output_file}")
     
-    if [ -n "${stats_line}" ]; then
+    if [[ -n "${stats_line}" ]]; then
         local files_count code_lines
         files_count=$(echo "${stats_line}" | awk '{print $2}')
         code_lines=$(echo "${stats_line}" | awk '{print $5}')

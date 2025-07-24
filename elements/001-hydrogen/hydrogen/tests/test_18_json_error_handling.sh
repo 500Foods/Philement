@@ -110,7 +110,7 @@ if grep -q "line" "${ERROR_OUTPUT}" && grep -q "column" "${ERROR_OUTPUT}"; then
     # Display the error output content
     while IFS= read -r line; do
         print_output "${line}"
-    done < "${ERROR_OUTPUT}"
+    done < <(tail -n 5 "${ERROR_OUTPUT}")
     ((PASS_COUNT++))
 else
     print_result 1 "Error message does not contain line and column information"
@@ -118,7 +118,7 @@ else
     # Display the error output content
     while IFS= read -r line; do
         print_output "${line}"
-    done < "${ERROR_OUTPUT}"
+    done < <(tail -n 5 "${ERROR_OUTPUT}")
     EXIT_CODE=1
 fi
 
