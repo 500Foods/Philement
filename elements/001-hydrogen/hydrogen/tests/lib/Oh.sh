@@ -185,13 +185,13 @@ parse_arguments() {
                 ;;
             --font-width)
                 [[ $# -lt 2 || "$2" =~ ^- ]] && { echo "Error: --font-width requires a number" >&2; exit 1; }
-                [[ ! "$2" =~ ^[0-9]+(\.[0-9]+)?$ || "$(echo "$2 < 1" | bc)" -eq 1 ]] && { echo "Error: --font-width must be a number >= 1" >&2; exit 1; }
+                [[ ! "$2" =~ ^[0-9]+(\.[0-9]+)?$ || "$(echo "$2 < 1" | bc || true)" -eq 1 ]] && { echo "Error: --font-width must be a number >= 1" >&2; exit 1; }
                 FONT_WIDTH="$2"
                 shift
                 ;;
             --font-height)
                 [[ $# -lt 2 || "$2" =~ ^- ]] && { echo "Error: --font-height requires a number" >&2; exit 1; }
-                [[ ! "$2" =~ ^[0-9]+(\.[0-9]+)?$ || "$(echo "$2 < 1" | bc)" -eq 1 ]] && { echo "Error: --font-height must be a number >= 1" >&2; exit 1; }
+                [[ ! "$2" =~ ^[0-9]+(\.[0-9]+)?$ || "$(echo "$2 < 1" | bc || true)" -eq 1 ]] && { echo "Error: --font-height must be a number >= 1" >&2; exit 1; }
                 FONT_HEIGHT="$2"
                 shift
                 ;;
@@ -393,7 +393,7 @@ read_input() {
     
     # Read input, expanding tabs
     while IFS= read -r line || [[ -n "${line}" ]]; do
-        line="${line//$'\t'/$tab_spaces}"
+        line="${line//$'\t'/${tab_spaces}}"
         lines+=("${line}")
     done < "${input_source}"
     
@@ -405,7 +405,7 @@ read_input() {
     
     # Apply height truncation if specified
     if [[ "${HEIGHT}" -gt 0 && "${#lines[@]}" -gt "${HEIGHT}" ]]; then
-        lines=("${lines[@]:0:$HEIGHT}")
+        lines=("${lines[@]:0:${HEIGHT}}")
         [[ "${DEBUG}" == true ]] && echo "Truncated to ${HEIGHT} lines" >&2
     fi
     
@@ -479,12 +479,11 @@ calculate_dimensions() {
     echo "SVG dimensions: ${SVG_WIDTH}x${SVG_HEIGHT} (${GRID_HEIGHT} lines, grid width: ${GRID_WIDTH} chars)" >&2
     echo "Font: ${FONT_FAMILY} ${FONT_SIZE}px (char width: ${FONT_WIDTH}, line height: ${FONT_HEIGHT}, weight: ${FONT_WEIGHT})" >&2
 }
-
+# shellcheck disable=SC2312 # Got a script within a script
 generate_svg() {
     local cell_width
     cell_width=$(echo "scale=2; (${SVG_WIDTH} - 2 * ${PADDING}) / ${GRID_WIDTH}" | bc)
     [[ "${DEBUG}" == true ]] && echo "Cell width: ${cell_width} pixels" >&2
-    
     cat << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" 
@@ -494,7 +493,7 @@ generate_svg() {
      
   <defs>
     <style>
-$(build_font_css "${FONT_FAMILY}")
+$(build_font_css "${FONT_FAMILY}") 
     </style>
   </defs>
      
@@ -525,7 +524,7 @@ EOF
                 fi
                 if [[ ${#text} -gt ${max_chars} ]]; then
                     [[ "${DEBUG}" == true ]] && echo "  Clipping text at col ${visible_pos}: '${text:0:20}'... to ${max_chars} chars" >&2
-                    text="${text:0:$max_chars}"
+                    text="${text:0:${max_chars}}"
                 fi
                 [[ -z "${text}" ]] && continue
                 
