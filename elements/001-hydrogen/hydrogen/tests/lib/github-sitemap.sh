@@ -95,7 +95,7 @@ done
 
 # Check if help is requested
 if [[ "${HELP}" == "true" ]]; then
-    echo "Usage: $0 <markdown_file> [--debug] [--quiet] [--noreport] [--help] [--theme <Red|Blue>] [--profile] [--jobs <N>] [--ignore <file>]"
+    echo "Usage: $0 <markdown_file> [--debug] [--quiet] [--noreport] [--help] [--theme <Red|Blue>] [--profile] [--jobs <N>] [--ignore <file>]" || true
     echo "Options:"
     echo "  --debug      Enable debug logging"
     echo "  --quiet      Display only tables, suppress other output"
@@ -103,7 +103,7 @@ if [[ "${HELP}" == "true" ]]; then
     echo "  --help       Display this help message"
     echo "  --theme      Set table theme to 'Red' or 'Blue' (default: Red)"
     echo "  --profile    Enable performance profiling"
-    echo "  --jobs       Number of parallel jobs (default: auto-detected $(detect_cpu_count))"
+    echo "  --jobs       Number of parallel jobs (default: auto-detected $(detect_cpu_count || true))"
     echo "  --ignore     Specify a file with ignore patterns (like .lintignore)"
     exit 0
 fi
@@ -116,14 +116,14 @@ fi
 
 # Debug logging function
 debug_log() {
-    [[ "${DEBUG}" == "true" ]] && echo "[DEBUG] $(date '+%Y-%m-%d %H:%M:%S'): $*" >&2
+    [[ "${DEBUG}" == "true" ]] && echo "[DEBUG] $(date '+%Y-%m-%d %H:%M:%S' || true): $*" >&2
 }
 
 timing_start "total_execution"
 timing_start "initialization"
 
 if [[ "${DEBUG}" == "true" ]]; then
-    debug_log "Starting xargs parallel script with \"${JOBS}\" jobs (auto-detected: $(detect_cpu_count) CPUs)"
+    debug_log "Starting xargs parallel script with \"${JOBS}\" jobs (auto-detected: $(detect_cpu_count || true) CPUs)"
 fi
 
 # Check dependencies
@@ -251,7 +251,7 @@ build_file_cache() {
             file_exists_cache["${path}"]="${type}"
             ((cache_count++))
         fi
-    done < <(find "${repo_root}" -name .git -prune -o \( -type f -printf '%p:f\0' \) -o \( -type d -printf '%p:d\0' \) 2>/dev/null)
+    done < <(find "${repo_root}" -name .git -prune -o \( -type f -printf '%p:f\0' \) -o \( -type d -printf '%p:d\0' \) 2>/dev/null || true)
     
     debug_log "Built file existence cache with ${cache_count} entries"
 }
@@ -260,7 +260,7 @@ build_file_cache
 timing_end "build_file_cache"
 
 # Optimized file processing function for xargs
-# shellcheck disable=SC2317 # Called by something else
+# shellcheck disable=SC2317 # This function is designed to be run in parallel with xargs, so we disable SC2317
 process_file_batch() {
     local cache_file="$1"
     local repo_root="$2"
@@ -310,15 +310,14 @@ process_file_batch() {
             # Split the serialized patterns properly
             local patterns_string="${IGNORE_PATTERNS_SERIALIZED}"
             local pattern
+            shopt -s extglob
             while IFS='|' read -r -d '|' pattern || [[ -n "${pattern}" ]]; do
                 [[ -z "${pattern}" ]] && continue
-                shopt -s extglob
                 if [[ "${rel_path}" == @(${pattern}) || "/${rel_path}" == @(${pattern}) || "${rel_path}/" == @(${pattern}) || "/${rel_path}/" == @(${pattern}) ]]; then
-                    shopt -u extglob
                     return 0  # Should ignore
                 fi
-                shopt -u extglob
             done <<< "${patterns_string}|"
+            shopt -u extglob
         fi
         
         return 1  # Should not ignore
@@ -337,6 +336,7 @@ process_file_batch() {
             # Skip external links quickly
             case "${link}" in
                 \#*|http*|ftp*|mailto:*) continue ;;
+                *) ;;
             esac
             
             # Process GitHub and local links
@@ -354,7 +354,7 @@ process_file_batch() {
                     echo "non_md:${link}"
                 fi
             fi
-        done
+        done || true
     }
     
     # Process each file from stdin
@@ -408,7 +408,7 @@ process_file_batch() {
             if [[ "${actual_link}" =~ ^https://github.com/[^/]+/[^/]+/blob/main/(.+)$ ]]; then
                 abs_link="${repo_root}/${BASH_REMATCH[1]}"
             elif [[ "${actual_link}" == /* ]]; then
-                abs_link="${repo_root}$actual_link"
+                abs_link="${repo_root}${actual_link}"
             else
                 abs_link="${base_dir}/${actual_link}"
             fi
@@ -416,6 +416,7 @@ process_file_batch() {
             # Normalize path efficiently (only when needed)
             case "${abs_link}" in
                 */./*|*/../*) abs_link=$(realpath -m "${abs_link}" 2>/dev/null) ;;
+                *) ;;
             esac
             
             local link_file="${abs_link%%#*}"
@@ -435,7 +436,7 @@ process_file_batch() {
                     missing_list+=("${rel_file}:${actual_link}")
                 fi
             fi
-        done < <(extract_links "${abs_file}")
+        done < <(extract_links "${abs_file}" || true)
         
         # Output results in structured format
         echo "SUMMARY:${abs_file}:${links_total}:${links_checked}:${links_missing}:${rel_file}" >> "${results_file}"
@@ -491,7 +492,7 @@ processed_files["${INPUT_FILE}"]=1
 iteration=0
 while [[ -s "${files_to_process}" ]]; do
     ((iteration++))
-    debug_log "Processing iteration ${iteration} with $(wc -l < "${files_to_process}") files"
+    debug_log "Processing iteration ${iteration} with $(wc -l < "${files_to_process}" || true) files"
     
     # Process current batch in parallel using xargs
     xargs -P "${JOBS}" -I {} bash -c "process_file_batch \"\$1\" \"\$2\" \"\$3\" \"\$4\" <<< \"\$5\"" _ "${cache_file}" "${repo_root}" "${original_dir}" "${results_file}" {} < "${files_to_process}"
@@ -512,7 +513,7 @@ while [[ -s "${files_to_process}" ]]; do
     # Update files to process for next iteration
     if [[ -s "${new_files_temp}" ]]; then
         mv "${new_files_temp}" "${files_to_process}"
-        debug_log "Discovered $(wc -l < "${files_to_process}") new files"
+        debug_log "Discovered $(wc -l < "${files_to_process}" || true) new files"
     else
         : > "${files_to_process}"
         debug_log "No new files discovered, processing complete"
@@ -581,7 +582,7 @@ generate_reviewed_files_json() {
         json_data+="{\"file\":\"${rel_file}\",\"folder\":\"${folder_path}\",\"total\":${total},\"checked\":${checked},\"missing\":${missing}}"
     done
     
-    echo "[${json_data}]" | jq -c 'sort_by(.file | split("/") | . as ${parts} | {path: ${parts}, modified_path: (if (${parts} | length > 0 and (${parts}[-1] | test("\\."))) then (${parts}[:-1] + ["A" + ${parts}[-1]]) else ${parts} end | join("/"))} | .modified_path)' > "${json_file}"
+    echo "[${json_data}]" | jq -c 'sort_by(.file | split("/") | . as $parts | {path: $parts, modified_path: (if ($parts | length > 0 and ($parts[-1] | test("\\."))) then ($parts[:-1] + ["A" + $parts[-1]]) else $parts end | join("/"))} | .modified_path)' > "${json_file}"
 }
 
 generate_missing_links_json() {
@@ -616,7 +617,7 @@ generate_orphaned_files_json() {
 generate_reviewed_layout_json() {
     local json_file="$1"
     jq -n --arg theme "${TABLE_THEME}" '{
-        theme: ${theme},
+        theme: $theme,
         title: "Reviewed Files Summary",
         columns: [
             {header: "File", key: "file", datatype: "text", "summary":"count"},
@@ -631,7 +632,7 @@ generate_reviewed_layout_json() {
 generate_missing_layout_json() {
     local json_file="$1"
     jq -n --arg theme "${TABLE_THEME}" '{
-        theme: ${theme},
+        theme: $theme,
         title: "Missing Links",
         columns: [
             {header: "File", key: "file", datatype: "text", "summary":"count"},
@@ -643,7 +644,7 @@ generate_missing_layout_json() {
 generate_orphaned_layout_json() {
     local json_file="$1"
     jq -n --arg theme "${TABLE_THEME}" '{
-        theme: ${theme},
+        theme: $theme,
         title: "Orphaned Markdown Files",
         columns: [
             {header: "File", key: "file", datatype: "text", "summary":"count"}
@@ -739,4 +740,4 @@ fi
 
 # Exit with issue count
 total_issues=$((missing_count + ${#orphaned_files[@]}))
-exit ${total_issues}
+exit "${total_issues}"

@@ -126,6 +126,12 @@ tests/          Test framework
 - Update CHANGELOG and SCRIPT_VER at top of every script file after every change
 - ALWAYS use `jq` for JSON parsing, filtering, and validation
 - NEVER use `grep` or text manipulation tools for JSON data
+- Try to reduce external calls wherever possible to increase performance
+- Compliance with shellcheck --enable=all directives
+  - SC2292: Prefer [[ ]] over [ ]
+  - SC2250: Braces around variable preferences even when not strictly required
+  - SC2312: Invoke commands separately to avoid masking return values (or use `|| true` to ignore)
+  - SC2248: Add double quotes even when variables don't contain special characters
 
 ## LINTING GUIDANCE
 
