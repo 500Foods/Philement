@@ -42,6 +42,10 @@ VERSION="1.000"
 INPUT_FILE=""
 OUTPUT_FILE=""
 DEBUG=false
+SCRIPT_START=$(date +%s.%N)
+
+# Caching 
+CACHE_DIR="${HOME}/.Oh"
 
 # SVG defaults
 FONT_SIZE=14
@@ -50,7 +54,7 @@ FONT_WIDTH=$(echo "scale=2; ${FONT_SIZE} * 0.6" | bc)  # Default character width
 FONT_HEIGHT=$(echo "scale=2; ${FONT_SIZE} * 1.2" | bc)  # Default line height
 FONT_WEIGHT=400
 WIDTH=80  # Default grid width in characters
-HEIGHT=0  # Set to input line count by default
+HEIGHT=0  # Default gird height in lines
 WRAP=false
 PADDING=20
 BG_COLOR="#1e1e1e"
@@ -60,6 +64,7 @@ TAB_SIZE=8  # Standard tab stop every 8 characters
 # Default storage
 declare -a INPUT_LINES
 declare -a LINE_SEGMENTS
+declare -a HASH_CACHE
 
 # Multi-argument option storage
 declare -A MULTI_ARGS
@@ -105,13 +110,21 @@ ANSI_COLORS[95]="#d670d6"   # Bright Magenta
 ANSI_COLORS[96]="#29b8db"   # Bright Cyan
 ANSI_COLORS[97]="#e5e5e5"   # Bright White
 
+log_output() {
+    local message="$1"
+    local elapsed_time
+    elapsed_time=$(echo "$(date +%s.%N) - ${SCRIPT_START}" | bc || true)
+    elapsed_time_formatted=$(printf "%07.3f" "${elapsed_time}")
+    echo "${elapsed_time_formatted} - ${message}" >&2
+}
+
 show_version() {
-    echo "Oh.sh - v${VERSION} - Convert ANSI terminal output to GitHub-compatible SVG" >&2
+    echo "Oh.sh   - v${VERSION} - Convert ANSI terminal output to GitHub-compatible SVG" >&2
 }
 
 show_help() {
-    cat >&2 << 'EOF'
-Oh.sh - Convert ANSI terminal output to GitHub-compatible SVG
+    show_version
+    cat >&2 << HELP_EOF
 
 USAGE:
     command | oh.sh [OPTIONS] > output.svg
@@ -144,7 +157,7 @@ EXAMPLES:
     git diff --color | oh.sh --font "JetBrains Mono" --font-size 16 -o diff.svg
     oh.sh --font Inconsolata --width 60 --wrap -i terminal-output.txt -o styled.svg
 
-EOF
+HELP_EOF
 }
 
 check_for_help() {
@@ -317,16 +330,16 @@ parse_ansi_line() {
     local i=0
     local visible_column=0
     
-    [[ "${DEBUG}" == true ]] && echo "Parsing line (${#line} chars): ${line}" | cat -v >&2
+    [[ "${DEBUG}" == true ]] && log_output "Parsing line (${#line} chars): ${line}" | cat -v
     
     while [[ ${i} -lt ${#line} ]]; do
         if [[ "${line:${i}:1}" == $'\e' ]] && [[ "${line:${i}+1:1}" == "[" ]]; then
             if [[ -n "${current_text}" ]]; then
-                [[ "${DEBUG}" == true ]] && echo "  Emitting segment: \"${current_text}\" (${#current_text} chars) at column ${visible_column} (fg=${current_fg}, bold=${current_bold})" >&2
+                [[ "${DEBUG}" == true ]] && log_output "  Emitting segment: \"${current_text}\" (${#current_text} chars) at column ${visible_column} (fg=${current_fg}, bold=${current_bold})"
                 segments+=("$(printf '%s|%s|%s|%s|%d' "${current_text}" "${current_fg}" "${current_bg}" "${current_bold}" "${visible_column}")")
                 visible_column=$((visible_column + ${#current_text}))
                 current_text=""
-                [[ "${DEBUG}" == true ]] && echo "  Updated visible_column to ${visible_column}" >&2
+                [[ "${DEBUG}" == true ]] && log_output "  Updated visible_column to ${visible_column}"
             fi
             
             while [[ ${i} -lt ${#line} && "${line:${i}:1}" == $'\e' && "${line:${i}+1:1}" == "[" ]]; do
@@ -340,7 +353,7 @@ parse_ansi_line() {
                     [[ "${char}" =~ [a-zA-Z] ]] && break
                 done
                 
-                [[ "${DEBUG}" == true ]] && echo "  ANSI codes: ${ansi_codes}" >&2
+                [[ "${DEBUG}" == true ]] && log_output "  ANSI codes: ${ansi_codes}" 
                 
                 if [[ "${ansi_codes: -1}" == "m" ]]; then
                     ansi_codes="${ansi_codes%?}"
@@ -348,25 +361,25 @@ parse_ansi_line() {
                     for code in "${codes[@]}"; do
                         code=$(echo "${code}" | tr -d -c '0-9')
                         code=$((10#${code}))
-                        [[ "${DEBUG}" == true ]] && echo "    Processing code: ${code}" >&2
+                        [[ "${DEBUG}" == true ]] && log_output "    Processing code: ${code}"
                         if [[ -z "${code}" || "${code}" == 0 ]]; then
                             current_fg="${TEXT_COLOR}"
                             current_bg=""
                             current_bold=false
-                            [[ "${DEBUG}" == true ]] && echo "    Reset: fg=${current_fg}, bg=${current_bg}, bold=${current_bold}" >&2
+                            [[ "${DEBUG}" == true ]] && log_output "    Reset: fg=${current_fg}, bg=${current_bg}, bold=${current_bold}"
                         elif [[ "${code}" == 1 ]]; then
                             current_bold=true
-                            [[ "${DEBUG}" == true ]] && echo "    Set bold=${current_bold}" >&2
+                            [[ "${DEBUG}" == true ]] && log_output "    Set bold=${current_bold}"
                         elif [[ "${code}" == 22 ]]; then
                             current_bold=false
-                            [[ "${DEBUG}" == true ]] && echo "    Unset bold=${current_bold}" >&2
+                            [[ "${DEBUG}" == true ]] && log_output "    Unset bold=${current_bold}"
                         elif [[ -n "${ANSI_COLORS[${code}]:-}" ]]; then
                             current_fg="${ANSI_COLORS[${code}]}"
-                            [[ "${DEBUG}" == true ]] && echo "    Set fg=${current_fg}" >&2
+                            [[ "${DEBUG}" == true ]] && log_output "    Set fg=${current_fg}"
                         elif [[ ${code} -ge 40 && ${code} -le 47 || ${code} -ge 100 && ${code} -le 107 ]]; then
                             local bg_code=$((code - 10))
                             current_bg="${ANSI_COLORS[${bg_code}]:-}"
-                            [[ "${DEBUG}" == true ]] && echo "    Set bg=${current_bg}" >&2
+                            [[ "${DEBUG}" == true ]] && log_output "    Set bg=${current_bg}"
                         fi
                     done
                 fi
@@ -378,7 +391,7 @@ parse_ansi_line() {
     done
     
     if [[ -n "${current_text}" ]]; then
-        [[ "${DEBUG}" == true ]] && echo "  Emitting segment: \"${current_text}\" (${#current_text} chars) at column ${visible_column} (fg=${current_fg}, bold=${current_bold})" >&2
+        [[ "${DEBUG}" == true ]] && log_output "  Emitting segment: \"${current_text}\" (${#current_text} chars) at column ${visible_column} (fg=${current_fg}, bold=${current_bold})"
         segments+=("$(printf '%s|%s|%s|%s|%d' "${current_text}" "${current_fg}" "${current_bg}" "${current_bold}" "${visible_column}")")
     fi
     
@@ -399,9 +412,9 @@ get_visible_line_length() {
 }
 
 read_input() {
-    local -a lines=()
-    local -a hashes=()
     local input_source
+
+    log_output "Reading source input"
     
     if [[ -n "${INPUT_FILE}" ]]; then
         [[ ! -f "${INPUT_FILE}" ]] && { echo "Error: Input file '${INPUT_FILE}' not found" >&2; exit 1; }
@@ -418,25 +431,27 @@ read_input() {
     # Read input, expanding tabs
     while IFS= read -r line || [[ -n "${line}" ]]; do
         line="${line//$'\t'/${tab_spaces}}"
-        lines+=("${line}")
+        INPUT_LINES+=("${line}")
     done < "${input_source}"
     
+    log_output "Read ${#INPUT_LINES[@]} lines from ${input_source}"
+
     # Check for empty input
-    if [[ ${#lines[@]} -eq 0 ]]; then
+    if [[ ${#INPUT_LINES[@]} -eq 0 ]]; then
         echo "Error: No input provided" >&2
         exit 1
     fi
     
     # Apply height truncation if specified
-    if [[ "${HEIGHT}" -gt 0 && "${#lines[@]}" -gt "${HEIGHT}" ]]; then
-        lines=("${lines[@]:0:${HEIGHT}}")
-        [[ "${DEBUG}" == true ]] && echo "Truncated to ${HEIGHT} lines" >&2
+    if [[ "${HEIGHT}" -gt 0 && "${#INPUT_LINES[@]}" -gt "${HEIGHT}" ]]; then
+        INPUT_LINES=("${INPUT_LINES[@]:0:${HEIGHT}}")
+        [[ "${DEBUG}" == true ]] && log_output "Truncated to ${HEIGHT} lines"
     fi
     
     # Apply wrapping if enabled
     if [[ "${WRAP}" == true ]]; then
         local wrapped_lines=()
-        for line in "${lines[@]}"; do
+        for line in "${INPUT_LINES[@]}"; do
             if [[ "${#line}" -gt "${WIDTH}" ]]; then
                 echo "${line}" | fold -w "${WIDTH}" | while IFS= read -r wrapped_line; do
                     wrapped_lines+=("${wrapped_line}")
@@ -445,15 +460,14 @@ read_input() {
                 wrapped_lines+=("${line}")
             fi
         done
-        lines=("${wrapped_lines[@]}")
+        INPUT_LINES=("${wrapped_lines[@]}")
     fi
     
-    # Set HEIGHT to line count if not specified
-    [[ "${HEIGHT}" == 0 ]] && HEIGHT="${#lines[@]}"
-    
-    INPUT_LINES=("${lines[@]}")
-    echo "Read ${#lines[@]} lines from ${input_source}" >&2
+    log_output "Hashing ${#INPUT_LINES[@]} lines after wrapping/truncation"
 
+    # Set HEIGHT to line count if not specified
+    [[ "${HEIGHT}" == 0 ]] && HEIGHT="${#INPUT_LINES[@]}"
+    
     # Let's make some hashes
     start_hash_time=$(date +%s.%N)
 
@@ -463,7 +477,7 @@ read_input() {
     done    
 
     while IFS= read -r hash; do
-        hashes+=("${hash}")
+        HASH_CACHE+=("${hash}")
     done < <(eval "md5sum ${procs[*]} | cut -d' ' -f1" || true)  # eval expands the procs; process sub for input
 
     end_hash_time=$(date +%s.%N)
@@ -475,16 +489,17 @@ read_input() {
         hash_time_per_line=0
     fi
 
-    for i in "${!hashes[@]}"; do
-        echo "Line ${i} hash: ${hashes[i]}" >&2
-    done
+    # for i in "${!HASH_CACHE[@]}"; do
+    #     log_output "Line ${i} hash: ${HASH_CACHE[i]}"
+    # done
 
     # Format times to three decimal places
     elapsed_hash_time_formatted=$(printf "%.3f" "${elapsed_hash_time}")
     hash_time_per_line_formatted=$(printf "%.3f" "${hash_time_per_line}")
 
-    echo "Hash time: ${elapsed_hash_time_formatted}s, Time per line: ${hash_time_per_line_formatted}s" >&2
-    echo "Input lines processed: ${#INPUT_LINES[@]}" >&2
+    log_output "Hash time: ${elapsed_hash_time_formatted}s, Time per line: ${hash_time_per_line_formatted}s"
+    log_output "Processing ${num_hash_lines} lines"
+    
 }
 
 calculate_dimensions() {
@@ -501,25 +516,25 @@ calculate_dimensions() {
         fi
     done
     
-    echo "Content analysis: longest line is ${max_width} characters (line $((longest_line_index + 1)))" >&2
-    [[ "${DEBUG}" == true ]] && echo "  Longest line content: \"${INPUT_LINES[longest_line_index]:0:50}...\"" >&2
+    log_output "Content analysis: longest line is ${max_width} characters (line $((longest_line_index + 1)))" 
+    [[ "${DEBUG}" == true ]] && log_output "  Longest line content: \"${INPUT_LINES[longest_line_index]:0:50}...\""
     
     # Use actual content width if WIDTH is still the default (80) and content is wider
     if [[ "${WIDTH}" == 80 && ${max_width} -gt 80 ]]; then
         if [[ ${max_width} -gt ${max_auto_width} ]]; then
             GRID_WIDTH="${max_auto_width}"
-            echo "Auto-detected width limited to ${max_auto_width} characters (content: ${max_width} chars)" >&2
-            echo "  Use --width ${max_width} to display full content width" >&2
+            log_output "Auto-detected width limited to ${max_auto_width} characters (content: ${max_width} chars)" 
+            log_output "  Use --width ${max_width} to display full content width" 
         else
             GRID_WIDTH="${max_width}"
-            echo "Auto-detected width: ${max_width} characters" >&2
+            log_output "Auto-detected width: ${max_width} characters" 
         fi
     else
         GRID_WIDTH="${WIDTH}"
-        echo "Using specified width: ${WIDTH} characters" >&2
+        log_output "Using specified width: ${WIDTH} characters" 
         # Warn if clipping will occur
         if [[ "${WRAP}" == false && ${max_width} -gt ${WIDTH} ]]; then
-            echo "Warning: Lines exceed width ${WIDTH} (max: ${max_width}), will clip" >&2
+            log_output "Warning: Lines exceed width ${WIDTH} (max: ${max_width}), will clip" 
         fi
     fi
     
@@ -532,15 +547,15 @@ calculate_dimensions() {
     SVG_WIDTH=$(echo "scale=2; (2 * ${PADDING}) + (${GRID_WIDTH} * ${FONT_WIDTH})" | bc)
     SVG_HEIGHT=$(echo "scale=2; (2 * ${PADDING}) + (${GRID_HEIGHT} * ${FONT_HEIGHT})" | bc)
     
-    echo "SVG dimensions: ${SVG_WIDTH}x${SVG_HEIGHT} (${GRID_HEIGHT} lines, grid width: ${GRID_WIDTH} chars)" >&2
-    echo "Font: ${FONT_FAMILY} ${FONT_SIZE}px (char width: ${FONT_WIDTH}, line height: ${FONT_HEIGHT}, weight: ${FONT_WEIGHT})" >&2
+    log_output "SVG dimensions: ${SVG_WIDTH}x${SVG_HEIGHT} (${GRID_HEIGHT} lines, grid width: ${GRID_WIDTH} chars)" 
+    log_output "Font: ${FONT_FAMILY} ${FONT_SIZE}px (char width: ${FONT_WIDTH}, line height: ${FONT_HEIGHT}, weight: ${FONT_WEIGHT})" 
 }
 
 # shellcheck disable=SC2312 # Got a script within a script
 generate_svg() {
     local cell_width
     cell_width=$(echo "scale=2; (${SVG_WIDTH} - 2 * ${PADDING}) / ${GRID_WIDTH}" | bc)
-    [[ "${DEBUG}" == true ]] && echo "Cell width: ${cell_width} pixels" >&2
+    [[ "${DEBUG}" == true ]] && log_output "Cell width: ${cell_width} pixels"
     cat << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" 
@@ -561,9 +576,9 @@ $(build_font_css "${FONT_FAMILY}")
 EOF
 
     for i in "${!INPUT_LINES[@]}"; do
-        [[ ${i} -ge ${GRID_HEIGHT} ]] && { [[ "${DEBUG}" == true ]] && echo "Skipping line ${i} (exceeds grid height ${GRID_HEIGHT})" >&2; break; }
+        [[ ${i} -ge ${GRID_HEIGHT} ]] && { [[ "${DEBUG}" == true ]] && log_output "Skipping line ${i} (exceeds grid height ${GRID_HEIGHT})"; break; }
         local line="${INPUT_LINES[i]}"
-        [[ "${DEBUG}" == true ]] && echo "Processing line ${i}: ${#line} chars" >&2
+        [[ "${DEBUG}" == true ]] && log_otuput "Processing line ${i}: ${#line} chars"
         parse_ansi_line "${line}"
         
         local y_offset
@@ -576,11 +591,11 @@ EOF
                 # Clip text if it exceeds grid width
                 local max_chars=$((GRID_WIDTH - visible_pos))
                 if [[ ${max_chars} -le 0 ]]; then
-                    [[ "${DEBUG}" == true ]] && echo "  Skipping text at col ${visible_pos} (exceeds grid width ${GRID_WIDTH})" >&2
+                    [[ "${DEBUG}" == true ]] && log_output "  Skipping text at col ${visible_pos} (exceeds grid width ${GRID_WIDTH})"
                     continue
                 fi
                 if [[ ${#text} -gt ${max_chars} ]]; then
-                    [[ "${DEBUG}" == true ]] && echo "  Clipping text at col ${visible_pos}: '${text:0:20}'... to ${max_chars} chars" >&2
+                    [[ "${DEBUG}" == true ]] && log_output "  Clipping text at col ${visible_pos}: '${text:0:20}'... to ${max_chars} chars"
                     text="${text:0:${max_chars}}"
                 fi
                 [[ -z "${text}" ]] && continue
@@ -592,7 +607,7 @@ EOF
                 local text_width
                 current_x=$(echo "scale=2; ${PADDING} + (${visible_pos} * ${cell_width})" | bc)
                 text_width=$(echo "scale=2; ${#text} * ${cell_width}" | bc)
-                [[ "${DEBUG}" == true ]] && echo "  Placing text at x=${current_x} (col ${visible_pos}): \"${text:0:20}\"..." "(${#text} chars)" >&2
+                [[ "${DEBUG}" == true ]] && log_output "  Placing text at x=${current_x} (col ${visible_pos}): \"${text:0:20}\"..." "(${#text} chars)"
                 
                 local style_attrs="fill=\"${fg}\""
                 [[ "${bold}" == "true" ]] && style_attrs+=" font-weight=\"bold\""
@@ -619,7 +634,7 @@ output_svg() {
     
     if [[ -n "${OUTPUT_FILE}" ]]; then
         echo "${svg_content}" > "${OUTPUT_FILE}"
-        echo "SVG written to: ${OUTPUT_FILE}" >&2
+        log_output "SVG written to: ${OUTPUT_FILE}"
     else
         echo "${svg_content}"
     fi
@@ -637,22 +652,23 @@ main() {
 
     parse_arguments "$@"
 
-    echo "Parsed options:" >&2
-    echo "  Input: ${INPUT_FILE:-stdin}" >&2
-    echo "  Output: ${OUTPUT_FILE:-stdout}" >&2
-    echo "  Font: ${FONT_FAMILY} ${FONT_SIZE}px (width: ${FONT_WIDTH}, height: ${FONT_HEIGHT}, weight: ${FONT_WEIGHT})" >&2
-    echo "  Grid: ${WIDTH}x${HEIGHT} (wrap: ${WRAP})" >&2
-    echo "  Tab size: ${TAB_SIZE}" >&2
+    log_output "Parsed options:" 
+    log_output "  Input: ${INPUT_FILE:-stdin}" 
+    log_output "  Output: ${OUTPUT_FILE:-stdout}" 
+    log_output "  Font: ${FONT_FAMILY} ${FONT_SIZE}px (width: ${FONT_WIDTH}, height: ${FONT_HEIGHT}, weight: ${FONT_WEIGHT})" 
+    log_output "  Grid: ${WIDTH}x${HEIGHT}" 
+    log_output "  Wrap: ${WRAP}" 
+    log_output "  Tab size: ${TAB_SIZE}"
 
     if [[ -n "${MULTI_ARGS[border]:-}" ]]; then
-        echo "  Border: ${MULTI_ARGS[border]}" >&2
+        echo "  Border: ${MULTI_ARGS[border]}" 
     fi
 
     read_input
     calculate_dimensions
     output_svg
 
-    echo "Oh.sh v${VERSION} complete! 🎯" >&2
+    log_output "Oh.sh v${VERSION} SVG generation complete! 🎯"
 }
 
 main "$@"
