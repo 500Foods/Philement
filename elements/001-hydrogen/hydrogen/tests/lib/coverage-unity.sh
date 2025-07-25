@@ -40,7 +40,7 @@ calculate_unity_coverage() {
     local timestamp="$2"
     local coverage_percentage="0.000"
     
-    if [ ! -d "${build_dir}" ]; then
+    if [[ ! -d "${build_dir}" ]]; then
         echo "0.000" > "${UNITY_COVERAGE_FILE}"
         echo "${timestamp},0.000,0,0,0,0" > "${UNITY_COVERAGE_FILE}.detailed"
         echo "0.000"
@@ -56,7 +56,7 @@ calculate_unity_coverage() {
     local cpu_cores
     if command -v nproc >/dev/null 2>&1; then
         cpu_cores=$(nproc)
-    elif [ -f /proc/cpuinfo ]; then
+    elif [[ -f /proc/cpuinfo ]]; then
         cpu_cores=$(grep -c ^processor /proc/cpuinfo)
     else
         cpu_cores=4  # Fallback to 4 cores
@@ -67,7 +67,7 @@ calculate_unity_coverage() {
         find . -name "*.gcno" -print0 | xargs -0 -P"${cpu_cores}" -I{} sh -c "
             gcno_dir=\"\$(dirname '{}')\"
             cd \"\${gcno_dir}\" && gcov \"\$(basename '{}')\" >/dev/null 2>&1
-        "
+        " || true
     else
         # Fallback to optimized sequential processing
         find . -name "*.gcno" -exec sh -c '
@@ -148,7 +148,7 @@ calculate_unity_coverage() {
             
             gcov_files_to_process+=("${gcov_file}")
         fi
-    done < <(find "${build_dir}" -name "*.gcov" -type f 2>/dev/null)
+    done < <(find "${build_dir}" -name "*.gcov" -type f 2>/dev/null || true)
     
     # Count total files exactly like Test 11
     instrumented_files=${#gcov_files_to_process[@]}
