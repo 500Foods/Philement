@@ -41,7 +41,6 @@ VERSION="1.000"
 # Default values
 INPUT_FILE=""
 OUTPUT_FILE=""
-# HELP variable removed as it's unused
 DEBUG=false
 
 # SVG defaults
@@ -57,6 +56,10 @@ PADDING=20
 BG_COLOR="#1e1e1e"
 TEXT_COLOR="#ffffff"
 TAB_SIZE=8  # Standard tab stop every 8 characters
+
+# Default storage
+declare -a INPUT_LINES
+declare -a LINE_SEGMENTS
 
 # Multi-argument option storage
 declare -A MULTI_ARGS
@@ -250,6 +253,26 @@ parse_arguments() {
     done
 }
 
+# Adler-32 hash function (pure Bash, 32-bit)
+adler32_hash() {
+    local data="$1"
+    local MOD=65521
+    local a=1 b=0
+    local len=${#data}
+    local i=0
+    local byte
+
+    while ((i < len)); do
+        byte=$(printf '%d' "'${data:i:1}")
+        a=$(( (a + (byte & 0xFF)) % MOD ))
+        b=$(( (b + a) % MOD ))
+        ((i++))
+    done
+
+    local hash=$(( (b << 16) | a ))
+    printf '%08x' "${hash}"
+}
+
 xml_escape_url() {
     local input="$1"
     input="${input//&/&amp;}"
@@ -377,6 +400,7 @@ get_visible_line_length() {
 
 read_input() {
     local -a lines=()
+    local -a hashes=()
     local input_source
     
     if [[ -n "${INPUT_FILE}" ]]; then
@@ -429,6 +453,38 @@ read_input() {
     
     INPUT_LINES=("${lines[@]}")
     echo "Read ${#lines[@]} lines from ${input_source}" >&2
+
+    # Let's make some hashes
+    start_hash_time=$(date +%s.%N)
+
+    declare -a procs=()
+    for line in "${INPUT_LINES[@]}"; do
+        procs+=("<(echo -n \"${line}\")")  # Quote to handle special chars; -n avoids extra newline
+    done    
+
+    while IFS= read -r hash; do
+        hashes+=("${hash}")
+    done < <(eval "md5sum ${procs[*]} | cut -d' ' -f1" || true)  # eval expands the procs; process sub for input
+
+    end_hash_time=$(date +%s.%N)
+    elapsed_hash_time=$(echo "${end_hash_time} - ${start_hash_time}" | bc)
+    num_hash_lines=${#INPUT_LINES[@]}
+    if (( num_hash_lines > 0 )); then
+        hash_time_per_line=$(echo "scale=6; ${elapsed_hash_time} / ${num_hash_lines}" | bc)
+    else
+        hash_time_per_line=0
+    fi
+
+    for i in "${!hashes[@]}"; do
+        echo "Line ${i} hash: ${hashes[i]}" >&2
+    done
+
+    # Format times to three decimal places
+    elapsed_hash_time_formatted=$(printf "%.3f" "${elapsed_hash_time}")
+    hash_time_per_line_formatted=$(printf "%.3f" "${hash_time_per_line}")
+
+    echo "Hash time: ${elapsed_hash_time_formatted}s, Time per line: ${hash_time_per_line_formatted}s" >&2
+    echo "Input lines processed: ${#INPUT_LINES[@]}" >&2
 }
 
 calculate_dimensions() {
@@ -479,6 +535,7 @@ calculate_dimensions() {
     echo "SVG dimensions: ${SVG_WIDTH}x${SVG_HEIGHT} (${GRID_HEIGHT} lines, grid width: ${GRID_WIDTH} chars)" >&2
     echo "Font: ${FONT_FAMILY} ${FONT_SIZE}px (char width: ${FONT_WIDTH}, line height: ${FONT_HEIGHT}, weight: ${FONT_WEIGHT})" >&2
 }
+
 # shellcheck disable=SC2312 # Got a script within a script
 generate_svg() {
     local cell_width
@@ -591,13 +648,11 @@ main() {
         echo "  Border: ${MULTI_ARGS[border]}" >&2
     fi
 
-    declare -a INPUT_LINES
-    declare -a LINE_SEGMENTS
     read_input
     calculate_dimensions
     output_svg
 
-    echo "Version 0.026 complete! 🎯" >&2
+    echo "Oh.sh v${VERSION} complete! 🎯" >&2
 }
 
 main "$@"
