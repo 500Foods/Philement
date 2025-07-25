@@ -23,6 +23,17 @@ COVERAGE_NAME="Coverage Library"
 COVERAGE_VERSION="2.1.0"
 print_message "${COVERAGE_NAME} ${COVERAGE_VERSION}" "info" 2> /dev/null || true
 
+# Sort out directories
+PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
+SCRIPT_DIR="${PROJECT_DIR}/tests"
+LIB_DIR="${SCRIPT_DIR}/lib"
+BUILD_DIR="${PROJECT_DIR}/build"
+TESTS_DIR="${BUILD_DIR}/tests"
+RESULTS_DIR="${TESTS_DIR}/results"
+DIAGS_DIR="${TESTS_DIR}/diagnostics"
+LOGS_DIR="${TESTS_DIR}/logs"
+mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}"
+
 # shellcheck source=tests/lib/coverage-common.sh # Resolve path statically
 [[ -n "${COVERAGE_COMMON_GUARD}" ]] || source "${LIB_DIR}/coverage-common.sh"
 # shellcheck source=tests/lib/coverage-unity.sh # Resolve path statically
@@ -36,7 +47,7 @@ print_message "${COVERAGE_NAME} ${COVERAGE_VERSION}" "info" 2> /dev/null || true
 get_coverage() {
     local coverage_type="$1"
     local coverage_file="${RESULTS_DIR}/coverage_${coverage_type}.txt"
-    if [ -f "${coverage_file}" ]; then
+    if [[ -f "${coverage_file}" ]]; then
         cat "${coverage_file}" 2>/dev/null || echo "0.000"
     else
         echo "0.000"
@@ -101,7 +112,7 @@ validate_coverage_consistency() {
                     total_lines=$((total_lines + file_total))
                     covered_lines=$((covered_lines + file_covered))
                 fi
-            done < <(find "${build_dir}" -name "*.gcov" -type f 2>/dev/null)
+            done < <(find "${build_dir}" -name "*.gcov" -type f 2>/dev/null || true)
         fi
     done
     
@@ -139,10 +150,10 @@ get_coverage_summary() {
     local overlap_percentage="0.000"
     
     # Read all coverage files
-    [ -f "${UNITY_COVERAGE_FILE}" ] && unity_coverage=$(cat "${UNITY_COVERAGE_FILE}" 2>/dev/null || echo "0.000")
-    [ -f "${BLACKBOX_COVERAGE_FILE}" ] && blackbox_coverage=$(cat "${BLACKBOX_COVERAGE_FILE}" 2>/dev/null || echo "0.000")
-    [ -f "${COMBINED_COVERAGE_FILE}" ] && combined_coverage=$(cat "${COMBINED_COVERAGE_FILE}" 2>/dev/null || echo "0.000")
-    [ -f "${OVERLAP_COVERAGE_FILE}" ] && overlap_percentage=$(cat "${OVERLAP_COVERAGE_FILE}" 2>/dev/null || echo "0.000")
+    [[ -f "${UNITY_COVERAGE_FILE}" ]] && unity_coverage=$(cat "${UNITY_COVERAGE_FILE}" 2>/dev/null || echo "0.000")
+    [[ -f "${BLACKBOX_COVERAGE_FILE}" ]] && blackbox_coverage=$(cat "${BLACKBOX_COVERAGE_FILE}" 2>/dev/null || echo "0.000")
+    [[ -f "${COMBINED_COVERAGE_FILE}" ]] && combined_coverage=$(cat "${COMBINED_COVERAGE_FILE}" 2>/dev/null || echo "0.000")
+    [[ -f "${OVERLAP_COVERAGE_FILE}" ]] && overlap_percentage=$(cat "${OVERLAP_COVERAGE_FILE}" 2>/dev/null || echo "0.000")
     
     # Format output
     echo "Unity Test Coverage: ${unity_coverage}%"

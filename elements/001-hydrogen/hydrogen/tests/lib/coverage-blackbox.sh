@@ -41,7 +41,7 @@ collect_blackbox_coverage() {
     local timestamp="$2"
     local coverage_percentage="0.000"
     
-    if [ ! -f "${hydrogen_coverage_bin}" ]; then
+    if [[ ! -f "${hydrogen_coverage_bin}" ]]; then
         echo "0.000" > "${BLACKBOX_COVERAGE_FILE}"
         return 1
     fi
@@ -65,9 +65,9 @@ collect_blackbox_coverage() {
     
     # Find .gcda files and ensure corresponding .gcno files exist
     local gcda_files=()
-    mapfile -t gcda_files < <(find . -name "*.gcda" -type f)
+    mapfile -t gcda_files < <(find . -name "*.gcda" -type f || true)
     
-    if [ ${#gcda_files[@]} -eq 0 ]; then
+    if [[ ${#gcda_files[@]} -eq 0 ]]; then
         echo "No .gcda files found in ${build_dir}" >&2
         cd "${original_dir}" || return 1
         echo "0.000" > "${BLACKBOX_COVERAGE_FILE}"
@@ -79,7 +79,7 @@ collect_blackbox_coverage() {
     local cpu_cores
     if command -v nproc >/dev/null 2>&1; then
         cpu_cores=$(nproc)
-    elif [ -f /proc/cpuinfo ]; then
+    elif [[ -f /proc/cpuinfo ]]; then
         cpu_cores=$(grep -c ^processor /proc/cpuinfo)
     else
         cpu_cores=4  # Fallback to 4 cores
@@ -90,7 +90,7 @@ collect_blackbox_coverage() {
         find . -name "*.gcda" -print0 | xargs -0 -P"${cpu_cores}" -I{} sh -c "
             gcda_dir=\"\$(dirname '{}')\"
             cd \"\${gcda_dir}\" && gcov \"\$(basename '{}')\" >/dev/null 2>&1
-        "
+        " || true
     else
         # Fallback to optimized sequential processing
         find . -name "*.gcda" -exec sh -c '
@@ -117,7 +117,7 @@ collect_blackbox_coverage() {
         local gcov_basename
         gcov_basename=$(basename "${gcov_file}")
         blackbox_gcov_cache["${gcov_basename}"]="${gcov_file}"
-    done < <(find "${build_dir}" -name "*.gcov" -type f 2>/dev/null)
+    done < <(find "${build_dir}" -name "*.gcov" -type f 2>/dev/null || true)
     
     # Debug: Check if we found any gcov files
     if [[ ${#blackbox_gcov_cache[@]} -eq 0 ]]; then
@@ -154,7 +154,7 @@ collect_blackbox_coverage() {
         else
             unmatched_files=$((unmatched_files + 1))
         fi
-    done < <(get_cached_source_files "${project_root}")
+    done < <(get_cached_source_files "${project_root}" || true)
     
     # Process valid gcov files individually for accurate coverage calculation
     if [[ ${#valid_gcov_files[@]} -gt 0 ]]; then
@@ -207,7 +207,7 @@ collect_blackbox_coverage_from_dir() {
     local timestamp="$2"
     local coverage_percentage="0.000"
     
-    if [ ! -d "${coverage_dir}" ]; then
+    if [[ ! -d "${coverage_dir}" ]]; then
         echo "0.000" > "${BLACKBOX_COVERAGE_FILE}"
         return 1
     fi
@@ -221,7 +221,7 @@ collect_blackbox_coverage_from_dir() {
     local cpu_cores
     if command -v nproc >/dev/null 2>&1; then
         cpu_cores=$(nproc)
-    elif [ -f /proc/cpuinfo ]; then
+    elif [[ -f /proc/cpuinfo ]]; then
         cpu_cores=$(grep -c ^processor /proc/cpuinfo)
     else
         cpu_cores=4  # Fallback to 4 cores
@@ -231,7 +231,7 @@ collect_blackbox_coverage_from_dir() {
         find . -name "*.gcda" -print0 | xargs -0 -P"${cpu_cores}" -I{} sh -c "
             gcda_dir=\"\$(dirname '{}')\"
             cd \"\${gcda_dir}\" && gcov \"\$(basename '{}')\" >/dev/null 2>&1
-        "
+        " || true
     else
         find . -name "*.gcda" -exec sh -c '
             gcda_dir="$(dirname "$1")"
@@ -298,7 +298,7 @@ collect_blackbox_coverage_from_dir() {
             
             gcov_files_to_process+=("${gcov_file}")
         fi
-    done < <(find "${coverage_dir}" -name "*.gcov" -type f 2>/dev/null)
+    done < <(find "${coverage_dir}" -name "*.gcov" -type f 2>/dev/null || true)
     
     # Count total files exactly like Test 11 - by counting filtered .gcov files
     instrumented_files=${#gcov_files_to_process[@]}

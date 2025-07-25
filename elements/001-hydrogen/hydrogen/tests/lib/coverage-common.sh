@@ -186,11 +186,11 @@ analyze_all_gcov_coverage_batch() {
     local blackbox_files=()
     
     if [[ -d "${unity_dir}" ]]; then
-        mapfile -t unity_files < <(find "${unity_dir}" -name "*.gcov" -type f 2>/dev/null)
+        mapfile -t unity_files < <(find "${unity_dir}" -name "*.gcov" -type f 2>/dev/null || true)
     fi
     
     if [[ -d "${blackbox_dir}" ]]; then
-        mapfile -t blackbox_files < <(find "${blackbox_dir}" -name "*.gcov" -type f 2>/dev/null)
+        mapfile -t blackbox_files < <(find "${blackbox_dir}" -name "*.gcov" -type f 2>/dev/null || true)
     fi
     
     # Create union of all files by relative path from coverage directory (with filtering)
@@ -206,7 +206,7 @@ analyze_all_gcov_coverage_batch() {
             fi
         fi
         # Apply filtering
-        if ! should_ignore_file "${source_path}" "${PROJECT_ROOT:-$PWD}"; then
+        if ! should_ignore_file "${source_path}" "${PROJECT_ROOT:-${PWD}}"; then
             all_file_set["${rel_path}"]=1
         fi
     done
@@ -221,7 +221,7 @@ analyze_all_gcov_coverage_batch() {
             fi
         fi
         # Apply filtering
-        if ! should_ignore_file "${source_path}" "${PROJECT_ROOT:-$PWD}"; then
+        if ! should_ignore_file "${source_path}" "${PROJECT_ROOT:-${PWD}}"; then
             all_file_set["${rel_path}"]=1
         fi
     done
@@ -389,6 +389,9 @@ analyze_all_gcov_coverage_batch() {
                     # shellcheck disable=SC2034 # declared globally elsewhere
                     combined_covered_lines["${file_path}"]=${covered}
                     ;;
+                *)
+                    echo "Warning: Unknown coverage type: ${coverage_type}" >&2
+                    ;;
             esac
         fi
     done < "${temp_output}"
@@ -424,7 +427,7 @@ load_ignore_patterns() {
     IGNORE_PATTERNS+=("src/unity.c")
     
     # Load patterns from .trial-ignore
-    if [ -f "${project_root}/.trial-ignore" ]; then
+    if [[ -f "${project_root}/.trial-ignore" ]]; then
         # Use more efficient reading with mapfile
         local lines=()
         mapfile -t lines < "${project_root}/.trial-ignore"
@@ -476,7 +479,7 @@ load_source_files() {
     SOURCE_FILES_CACHE=()
     local src_dir="${project_root}/src"
     
-    if [ -d "${src_dir}" ]; then
+    if [[ -d "${src_dir}" ]]; then
         while IFS= read -r -d '' file; do
             # Get relative path from project root
             local rel_path="${file#"${project_root}"/}"
@@ -494,7 +497,7 @@ load_source_files() {
             fi
             
             SOURCE_FILES_CACHE+=("${rel_path}")
-        done < <(find "${src_dir}" -type f \( -name "*.c" -o -name "*.h" \) -print0 2>/dev/null)
+        done < <(find "${src_dir}" -type f \( -name "*.c" -o -name "*.h" \) -print0 2>/dev/null || true)
     fi
     
     SOURCE_FILE_CACHE_LOADED="true"
@@ -519,10 +522,11 @@ identify_uncovered_files() {
         # Check if file has a corresponding .gcov in blackbox coverage directory
         local basename_file
         basename_file=$(basename "${file}" .c)
+        # shellcheck disable=SC2154 # BLACKBOX_COVS assigned globally elsewhere
         local gcov_file="${BLACKBOX_COVS}/${basename_file}.c.gcov"
         
         # If gcov doesn't exist or has zero coverage, consider it uncovered
-        if [[ ! -f "${gcov_file}" ]] || [[ $(awk '/^[ \t]*[0-9]+\*?:[ \t]*[0-9]+:/ { covered++ } END { print (covered == 0 ? 0 : 1) }' "${gcov_file}") -eq 0 ]]; then
+        if [[ ! -f "${gcov_file}" ]] || [[ $(awk '/^[ \t]*[0-9]+\*?:[ \t]*[0-9]+:/ { covered++ } END { print (covered == 0 ? 0 : 1) }' "${gcov_file}" || true) -eq 0 ]]; then
             uncovered_files+=("${file}")
             echo "${file}" >> "${temp_uncovered}"
         fi
@@ -544,6 +548,7 @@ identify_uncovered_files() {
 cleanup_coverage_data() {
     rm -f "${UNITY_COVERAGE_FILE}" "${BLACKBOX_COVERAGE_FILE}" "${COMBINED_COVERAGE_FILE}" "${OVERLAP_COVERAGE_FILE}"
     rm -f "${UNITY_COVERAGE_FILE}.detailed" "${BLACKBOX_COVERAGE_FILE}.detailed"
+    # shellcheck disable=SC2154 # GCOV_PREFIX assigned globally elsewhere
     rm -rf "${GCOV_PREFIX}" 2>/dev/null || true
     # Note: We don't remove .gcov files since they stay in their respective build directories
     # Only clean up the centralized results
@@ -588,7 +593,7 @@ analyze_gcov_file() {
     
     # Extract relative path from Source: line in gcov file
     local source_line
-    source_line=$(grep '^        -:    0:Source:' "${gcov_file}" | cut -d':' -f3-)
+    source_line=$(grep '^        -:    0:Source:' "${gcov_file}" | cut -d':' -f3- || true)
     local display_path
     if [[ -n "${source_line}" ]]; then
         display_path="${source_line#*/hydrogen/}"
@@ -620,7 +625,7 @@ collect_gcov_files() {
     local coverage_type="$2"
     local files_found=0
     
-    if [ -d "${build_dir}" ]; then
+    if [[ -d "${build_dir}" ]]; then
         while IFS= read -r gcov_file; do
             if [[ -f "${gcov_file}" ]]; then
                 # Use the exact same filtering logic as the working sections
@@ -673,7 +678,7 @@ collect_gcov_files() {
                 analyze_gcov_file "${gcov_file}" "${coverage_type}"
                 ((files_found++))
             fi
-        done < <(find "${build_dir}" -name "*.gcov" -type f 2>/dev/null)
+        done < <(find "${build_dir}" -name "*.gcov" -type f 2>/dev/null || true)
     fi
     
     return "${files_found}"

@@ -36,7 +36,7 @@
 
 # Guard clause to prevent multiple sourcing
 [[ -n "${LIFECYCLE_GUARD}" ]] && return 0
-export LIFCYCLE_GUARD="true"
+export LIFECYCLE_GUARD="true"
 
 # Library metadata
 LIFECYCLE_NAME="Lifecycle Management Library"
@@ -64,10 +64,10 @@ find_hydrogen_binary() {
     else
         # Fallback: extract just the hydrogen part
         relative_dir=$(echo "${hydrogen_dir}" | sed -n 's|.*/hydrogen$|hydrogen|p')
-        if [ -z "${relative_dir}" ]; then
+        if [[ -z "${relative_dir}" ]]; then
             relative_dir=$(echo "${hydrogen_dir}" | sed -n 's|.*/elements/001-hydrogen/hydrogen|hydrogen|p')
         fi
-        if [ -z "${relative_dir}" ]; then
+        if [[ -z "${relative_dir}" ]]; then
             relative_dir="hydrogen"
         fi
     fi
@@ -75,23 +75,23 @@ find_hydrogen_binary() {
     
     # First check for coverage build (highest priority for testing)
     hydrogen_bin="${hydrogen_dir}/hydrogen_coverage"
-    if [ -f "${hydrogen_bin}" ]; then
+    if [[ -f "${hydrogen_bin}" ]]; then
         print_message "Using coverage build for testing: hydrogen/hydrogen_coverage"
     # Then check for release build
     else
         hydrogen_bin="${hydrogen_dir}/hydrogen_release"
-        if [ -f "${hydrogen_bin}" ]; then
+        if [[ -f "${hydrogen_bin}" ]]; then
             print_message "Using release build for testing: hydrogen/hydrogen_release"
         # Then check for standard build
         else
             hydrogen_bin="${hydrogen_dir}/hydrogen"
-            if [ -f "${hydrogen_bin}" ]; then
+            if [[ -f "${hydrogen_bin}" ]]; then
                 print_message "Using standard build for testing: hydrogen/hydrogen"
             # If none found, search for binary in possible build directories
             else
                 print_message "Searching for Hydrogen binary in subdirectories..."
                 hydrogen_bin=$(find "${hydrogen_dir}" -type f -executable -name "hydrogen*" -print -quit 2>/dev/null)
-                if [ -n "${hydrogen_bin}" ]; then
+                if [[ -n "${hydrogen_bin}" ]]; then
                     print_message "Found Hydrogen binary at: ${hydrogen_bin}"
                 else
                     print_error "No Hydrogen binary found in ${hydrogen_dir} or subdirectories"
@@ -102,12 +102,12 @@ find_hydrogen_binary() {
     fi
     
     # Validate binary exists and is executable
-    if [ ! -f "${hydrogen_bin}" ]; then
+    if [[ ! -f "${hydrogen_bin}" ]]; then
         print_error "Hydrogen binary not found at: ${hydrogen_bin}"
         return 1
     fi
     
-    if [ ! -x "${hydrogen_bin}" ]; then
+    if [[ ! -x "${hydrogen_bin}" ]]; then
         print_error "Hydrogen binary is not executable: ${hydrogen_bin}"
         return 1
     fi
@@ -157,11 +157,11 @@ start_hydrogen_with_pid() {
     true > "${log_file}"
     
     # Validate binary and config exist
-    if [ ! -f "${hydrogen_bin}" ]; then
+    if [[ ! -f "${hydrogen_bin}" ]]; then
         print_error "Hydrogen binary not found at: ${hydrogen_bin}"
         return 1
     fi
-    if [ ! -f "${config_file}" ]; then
+    if [[ ! -f "${config_file}" ]]; then
         print_error "Configuration file not found at: ${config_file}"
         return 1
     fi
@@ -188,8 +188,8 @@ start_hydrogen_with_pid() {
     local max_attempts=5
     local process_running=false
     
-    while [ ${check_attempt} -le ${max_attempts} ]; do
-        if [ ${check_attempt} -eq 1 ]; then
+    while [[ ${check_attempt} -le ${max_attempts} ]]; do
+        if [[ ${check_attempt} -eq 1 ]]; then
             sleep 0.2  # Initial check after brief delay
         else
             sleep 0.1  # Short delay between subsequent checks
@@ -203,15 +203,15 @@ start_hydrogen_with_pid() {
         ((check_attempt++))
     done
     
-    if [ "${process_running}" = false ]; then
+    if [[ "${process_running}" = false ]]; then
         print_result 1 "Failed to start Hydrogen - process did not start or crashed immediately (checked ${max_attempts} times)"
         print_message "Check log file for possible errors: ${log_file}"
-        if [ -s "${log_file}" ]; then
+        if [[ -s "${log_file}" ]]; then
             print_message "Last few lines of log file:"
             # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
             while IFS= read -r line; do
                 print_output "${line}"
-            done < <(tail -n 5 "${log_file}")
+            done < <(tail -n 5 "${log_file}" || true)
         fi
         return 1
     fi
@@ -264,11 +264,11 @@ start_hydrogen() {
     true > "${log_file}"
     
     # Validate binary and config exist
-    if [ ! -f "${hydrogen_bin}" ]; then
+    if [[ ! -f "${hydrogen_bin}" ]]; then
         print_error "Hydrogen binary not found at: ${hydrogen_bin}"
         return 1
     fi
-    if [ ! -f "${config_file}" ]; then
+    if [[ ! -f "${config_file}" ]]; then
         print_error "Configuration file not found at: ${config_file}"
         return 1
     fi
@@ -295,8 +295,8 @@ start_hydrogen() {
     local max_attempts=5
     local process_running=false
     
-    while [ ${check_attempt} -le ${max_attempts} ]; do
-        if [ ${check_attempt} -eq 1 ]; then
+    while [[ ${check_attempt} -le ${max_attempts} ]]; do
+        if [[ ${check_attempt} -eq 1 ]]; then
             sleep 0.2  # Initial check after brief delay
         else
             sleep 0.1  # Short delay between subsequent checks
@@ -310,15 +310,15 @@ start_hydrogen() {
         ((check_attempt++))
     done
     
-    if [ "${process_running}" = false ]; then
+    if [[ "${process_running}" = false ]]; then
         print_result 1 "Failed to start Hydrogen - process did not start or crashed immediately (checked ${max_attempts} times)"
         print_message "Check log file for possible errors: ${log_file}"
-        if [ -s "${log_file}" ]; then
+        if [[ -s "${log_file}" ]]; then
             print_message "Last few lines of log file:"
             # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
             while IFS= read -r line; do
                 print_output "${line}"
-            done < <(tail -n 5 "${log_file}")
+            done < <(tail -n 5 "${log_file}" || true)
         fi
         return 1
     fi
@@ -349,7 +349,7 @@ wait_for_startup() {
         elapsed_ms=$((current_time_ms - launch_time_ms))
         elapsed_s=$((elapsed_ms / 1000))
         
-        if [ "${elapsed_s}" -ge "${timeout}" ]; then
+        if [[ "${elapsed_s}" -ge "${timeout}" ]]; then
             print_warning "Startup timeout after ${elapsed_s}s"
             return 1
         fi
@@ -357,8 +357,8 @@ wait_for_startup() {
         if grep -q "Application started" "${log_file}" 2>/dev/null; then
             # Extract startup time from log if available
             local log_startup_time
-            log_startup_time=$(grep "Startup elapsed time:" "${log_file}" 2>/dev/null | sed 's/.*Startup elapsed time: \([0-9.]*s\).*/\1/' | tail -1)
-            if [ -n "${log_startup_time}" ]; then
+            log_startup_time=$(grep "Startup elapsed time:" "${log_file}" 2>/dev/null | sed 's/.*Startup elapsed time: \([0-9.]*s\).*/\1/' | tail -1 || true)
+            if [[ -n "${log_startup_time}" ]]; then
                 print_message "Startup completed in ${elapsed_ms}ms [Log: ${log_startup_time}]"
             else
                 print_message "Startup completed in ${elapsed_ms}ms [Log: Not found]"
@@ -394,8 +394,8 @@ stop_hydrogen() {
         
         # Extract shutdown time from log if available
         local log_shutdown_time
-        log_shutdown_time=$(grep "Shutdown elapsed time:" "${log_file}" 2>/dev/null | sed 's/.*Shutdown elapsed time: \([0-9.]*s\).*/\1/' | tail -1)
-        if [ -n "${log_shutdown_time}" ]; then
+        log_shutdown_time=$(grep "Shutdown elapsed time:" "${log_file}" 2>/dev/null | sed 's/.*Shutdown elapsed time: \([0-9.]*s\).*/\1/' | tail -1 || true)
+        if [[ -n "${log_shutdown_time}" ]]; then
             print_message "Shutdown completed in ${shutdown_duration_ms}ms [Log: ${log_shutdown_time}]"
         else
             print_message "Shutdown completed in ${shutdown_duration_ms}ms [Log: Not found]"
@@ -436,7 +436,7 @@ monitor_shutdown() {
         elapsed=$((current_time - start_time))
         
         # Check for timeout
-        if [ "${elapsed}" -ge "${timeout}" ]; then
+        if [[ "${elapsed}" -ge "${timeout}" ]]; then
             print_result 1 "Shutdown timeout after ${elapsed}s"
             get_process_threads "${pid}" "${diag_dir}/stuck_threads.txt"
             if command -v lsof > /dev/null 2>&1; then
@@ -449,12 +449,12 @@ monitor_shutdown() {
         
         # Check for log activity
         log_size_now=$(stat -c %s "${log_file}" 2>/dev/null || echo 0)
-        if [ "${log_size_now}" -gt "${log_size_before}" ]; then
+        if [[ "${log_size_now}" -gt "${log_size_before}" ]]; then
             log_size_before=${log_size_now}
             last_activity=$(date +%s)
         else
             inactive_time=$((current_time - last_activity))
-            if [ "${inactive_time}" -ge "${activity_timeout}" ]; then
+            if [[ "${inactive_time}" -ge "${activity_timeout}" ]]; then
                 get_process_threads "${pid}" "${diag_dir}/inactive_threads.txt"
             fi
         fi
@@ -486,12 +486,12 @@ capture_process_diagnostics() {
     get_process_threads "${pid}" "${diag_dir}/${prefix}_threads.txt"
     
     # Capture process status if available
-    if [ -f "/proc/${pid}/status" ]; then
+    if [[ -f "/proc/${pid}/status" ]]; then
         cat "/proc/${pid}/status" > "${diag_dir}/${prefix}_status.txt" 2>/dev/null || true
     fi
     
     # Capture file descriptors if available
-    if [ -d "/proc/${pid}/fd/" ]; then
+    if [[ -d "/proc/${pid}/fd/" ]]; then
         ls -l "/proc/${pid}/fd/" > "${diag_dir}/${prefix}_fds.txt" 2>/dev/null || true
     fi
 }
@@ -499,20 +499,20 @@ capture_process_diagnostics() {
 # Function to configure Hydrogen binary, preferring release build if available
 configure_hydrogen_binary() {
     local hydrogen_dir="${1:-}"
-    if [ -z "${hydrogen_dir}" ]; then
+    if [[ -z "${hydrogen_dir}" ]]; then
         local script_dir
         script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
         hydrogen_dir="$( cd "${script_dir}/../.." && pwd )"
     fi
     
-    if [ -f "${hydrogen_dir}/hydrogen_coverage" ]; then
+    if [[ -f "${hydrogen_dir}/hydrogen_coverage" ]]; then
         HYDROGEN_BIN="${hydrogen_dir}/hydrogen_coverage"
         if command -v print_message >/dev/null 2>&1; then
             print_message "Using coverage build for testing: ${HYDROGEN_BIN}"
         else
             echo "INFO: Using coverage build for testing: ${HYDROGEN_BIN}"
         fi
-    elif [ -f "${hydrogen_dir}/hydrogen_release" ]; then
+    elif [[ -f "${hydrogen_dir}/hydrogen_release" ]]; then
         HYDROGEN_BIN="${hydrogen_dir}/hydrogen_release"
         if command -v print_message >/dev/null 2>&1; then
             print_message "Using release build for testing: ${HYDROGEN_BIN}"
@@ -528,7 +528,7 @@ configure_hydrogen_binary() {
         fi
     fi
     
-    if [ ! -x "${HYDROGEN_BIN}" ]; then
+    if [[ ! -x "${HYDROGEN_BIN}" ]]; then
         if command -v print_error >/dev/null 2>&1; then
             print_error "Hydrogen binary not found or not executable: ${HYDROGEN_BIN}"
         else
@@ -545,7 +545,7 @@ initialize_test_environment() {
     local test_log_file="$2"
     local timestamp
     
-    if [ -z "${results_dir}" ]; then
+    if [[ -z "${results_dir}" ]]; then
         local script_dir
         script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
         results_dir="${script_dir}/../results"
@@ -555,7 +555,7 @@ initialize_test_environment() {
     timestamp=$(date +%Y%m%d_%H%M%S)
     RESULT_LOG="${results_dir}/env_variables_test_${timestamp}.log"
     
-    if [ -n "${test_log_file}" ]; then
+    if [[ -n "${test_log_file}" ]]; then
         TEST_LOG_FILE="${test_log_file}"
     else
         TEST_LOG_FILE="./hydrogen_env_test.log"
@@ -590,13 +590,13 @@ start_hydrogen_with_env() {
     local test_name="$2"
     local config_file="$3"
     
-    if [ -z "${HYDROGEN_BIN}" ]; then
+    if [[ -z "${HYDROGEN_BIN}" ]]; then
         if ! configure_hydrogen_binary ""; then
             return 1
         fi
     fi
     
-    if [ -z "${config_file}" ]; then
+    if [[ -z "${config_file}" ]]; then
         if command -v print_error >/dev/null 2>&1; then
             print_error "Configuration file parameter is required"
         else
@@ -605,7 +605,7 @@ start_hydrogen_with_env() {
         return 1
     fi
     
-    if [ ! -f "${config_file}" ]; then
+    if [[ ! -f "${config_file}" ]]; then
         if command -v print_error >/dev/null 2>&1; then
             print_error "Configuration file not found: ${config_file}"
         else
@@ -654,7 +654,7 @@ start_hydrogen_with_env() {
 
 # Function to kill Hydrogen process if running
 kill_hydrogen_process() {
-    if [ -n "${HYDROGEN_PID}" ] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
+    if [[ -n "${HYDROGEN_PID}" ]] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
         if command -v print_message >/dev/null 2>&1; then
             print_message "Cleaning up Hydrogen (PID ${HYDROGEN_PID})..."
         else
@@ -670,11 +670,11 @@ kill_hydrogen_process() {
 # Function to verify log file exists
 verify_log_file_exists() {
     local log_file="$1"
-    if [ -z "${log_file}" ]; then
+    if [[ -z "${log_file}" ]]; then
         log_file="${TEST_LOG_FILE}"
     fi
     
-    if [ ! -f "${log_file}" ]; then
+    if [[ ! -f "${log_file}" ]]; then
         if command -v print_error >/dev/null 2>&1; then
             print_error "Log file was not created at ${log_file}"
         else
@@ -698,7 +698,7 @@ validate_config_files() {
     
     print_message "Checking configuration files: ${min_config} and ${max_config}"
     print_command "test -f \"${min_config}\" && test -f \"${max_config}\""
-    if [ -f "${min_config}" ] && [ -f "${max_config}" ]; then
+    if [[ -f "${min_config}" ]] && [[ -f "${max_config}" ]]; then
         print_result 0 "Configuration files found"
         return 0
     else
@@ -713,7 +713,7 @@ validate_config_file() {
     
     print_message "Checking configuration file: ${config_file}"
     print_command "test -f \"${config_file}\""
-    if [ -f "${config_file}" ]; then
+    if [[ -f "${config_file}" ]]; then
         print_result 0 "Configuration file found"
         return 0
     else
@@ -795,7 +795,7 @@ run_lifecycle_test() {
     if start_hydrogen_with_pid "${config_file}" "${log_file}" "${startup_timeout}" "${hydrogen_bin}" "${temp_pid_var}"; then
         hydrogen_pid=$(eval "echo \$${temp_pid_var}")
         print_result 0 "Hydrogen started with ${config_name}"
-        eval "${pass_count_var}=$(( $(eval "echo \$${pass_count_var}") + 1 ))"
+        eval "${pass_count_var}=$(( $(eval "echo \$${pass_count_var}" || true) + 1 ))" || true
     else
         print_result 1 "Failed to start Hydrogen with ${config_name}"
         eval "${exit_code_var}=1"
@@ -803,7 +803,7 @@ run_lifecycle_test() {
     ((subtest_count++))
     
     # Capture pre-shutdown diagnostics if started successfully
-    if [ -n "${hydrogen_pid}" ]; then
+    if [[ -n "${hydrogen_pid}" ]]; then
         capture_process_diagnostics "${hydrogen_pid}" "${diag_config_dir}" "pre_shutdown"
         
         # Subtest: Stop Hydrogen
@@ -812,7 +812,7 @@ run_lifecycle_test() {
         local stop_result=0
         if stop_hydrogen "${hydrogen_pid}" "${log_file}" "${shutdown_timeout}" "${shutdown_activity_timeout}" "${diag_config_dir}"; then
             print_result 0 "Hydrogen stopped with ${config_name}"
-            eval "${pass_count_var}=$(( $(eval "echo \$${pass_count_var}") + 1 ))"
+            eval "${pass_count_var}=$(( $(eval "echo \$${pass_count_var}" || true) + 1 ))" || true
             stop_result=0
         else
             print_result 1 "Failed to stop Hydrogen with ${config_name}"
@@ -826,9 +826,9 @@ run_lifecycle_test() {
         print_subtest "Verify Clean Shutdown - ${config_name}"
         # For Hydrogen, a clean shutdown is verified by the process terminating successfully
         # and the stop_hydrogen function returning success (which it already did above)
-        if [ ${stop_result} -eq 0 ]; then
+        if [[ ${stop_result} -eq 0 ]]; then
             print_result 0 "Clean shutdown verified for ${config_name}"
-            eval "${pass_count_var}=$(( $(eval "echo \$${pass_count_var}") + 1 ))"
+            eval "${pass_count_var}=$(( $(eval "echo \$${pass_count_var}" || true) + 1 ))" || true
         else
             print_result 1 "Shutdown completed with issues for ${config_name}"
             eval "${exit_code_var}=1"
@@ -839,5 +839,5 @@ run_lifecycle_test() {
         cp "${log_file}" "${diag_config_dir}/full_log.txt" 2>/dev/null || true
     fi
     
-    return "$(eval "echo \$${exit_code_var}")"
+    return "$(eval "echo \$${exit_code_var}" || true)"
 }

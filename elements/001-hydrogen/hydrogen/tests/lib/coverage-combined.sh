@@ -58,8 +58,8 @@ calculate_combined_coverage() {
         local blackbox_gcov="${blackbox_build_dir}/src/${source_basename}.gcov"
         
         # Find actual gcov files (they might be in subdirectories)
-        [[ ! -f "${unity_gcov}" ]] && unity_gcov=$(find "${unity_build_dir}" -name "${source_basename}.gcov" -type f 2>/dev/null | head -1)
-        [[ ! -f "${blackbox_gcov}" ]] && blackbox_gcov=$(find "${blackbox_build_dir}" -name "${source_basename}.gcov" -type f 2>/dev/null | head -1)
+        [[ ! -f "${unity_gcov}" ]] && unity_gcov=$(find "${unity_build_dir}" -name "${source_basename}.gcov" -type f 2>/dev/null | head -1 || true)
+        [[ ! -f "${blackbox_gcov}" ]] && blackbox_gcov=$(find "${blackbox_build_dir}" -name "${source_basename}.gcov" -type f 2>/dev/null | head -1 || true)
         
         # Skip if neither gcov file exists
         if [[ ! -f "${unity_gcov}" && ! -f "${blackbox_gcov}" ]]; then
@@ -80,7 +80,7 @@ calculate_combined_coverage() {
         total_combined_instrumented=$((total_combined_instrumented + file_instrumented))
         total_combined_covered=$((total_combined_covered + file_combined_covered))
         
-    done < <(get_cached_source_files "${project_root}")
+    done < <(get_cached_source_files "${project_root}" || true)
     
     # Calculate combined coverage percentage
     local combined_coverage="0.000"
@@ -103,17 +103,17 @@ calculate_coverage_overlap() {
     local overlap_percentage="0.000"
     
     # Read coverage data from files
-    if [ -f "${UNITY_COVERAGE_FILE}" ]; then
+    if [[ -f "${UNITY_COVERAGE_FILE}" ]]; then
         unity_coverage=$(cat "${UNITY_COVERAGE_FILE}" 2>/dev/null || echo "0.000")
     fi
     
-    if [ -f "${BLACKBOX_COVERAGE_FILE}" ]; then
+    if [[ -f "${BLACKBOX_COVERAGE_FILE}" ]]; then
         blackbox_coverage=$(cat "${BLACKBOX_COVERAGE_FILE}" 2>/dev/null || echo "0.000")
     fi
     
     # Calculate overlap as the minimum of the two coverage percentages
     # This represents the files/lines that are covered by both test types
-    if [[ $(awk "BEGIN {print (${unity_coverage} < ${blackbox_coverage})}") -eq 1 ]]; then
+    if [[ $(awk "BEGIN {print (${unity_coverage} < ${blackbox_coverage})}" || true) -eq 1 ]]; then
         overlap_percentage="${unity_coverage}"
     else
         overlap_percentage="${blackbox_coverage}"
@@ -151,7 +151,7 @@ identify_uncovered_files() {
                 if [[ -z "${gcov_cache["${gcov_basename}"]}" ]]; then
                     gcov_cache["${gcov_basename}"]="${gcov_file}"
                 fi
-            done < <(find "${build_dir}" -name "*.gcov" -type f 2>/dev/null)
+            done < <(find "${build_dir}" -name "*.gcov" -type f 2>/dev/null || true)
         fi
     done
     
@@ -182,11 +182,11 @@ identify_uncovered_files() {
             uncovered_count=$((uncovered_count + 1))
             uncovered_files+=("${source_file}")
         fi
-    done < <(get_cached_source_files "${project_root}")
+    done < <(get_cached_source_files "${project_root}" || true)
     
     # Sort uncovered files for consistent output
     if [[ ${#uncovered_files[@]} -gt 0 ]]; then
-        mapfile -t uncovered_files < <(printf '%s\n' "${uncovered_files[@]}" | sort)
+        mapfile -t uncovered_files < <(printf '%s\n' "${uncovered_files[@]}" | sort || true)
     fi
     
     # Output results in a structured format
