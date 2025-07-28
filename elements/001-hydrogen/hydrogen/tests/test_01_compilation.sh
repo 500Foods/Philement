@@ -66,7 +66,7 @@ next_subtest
 print_subtest "Check CMake Availability"
 print_command "command -v cmake"
 if command -v cmake >/dev/null 2>&1; then
-    CMAKE_VERSION=$(cmake --version | head -n1)
+    CMAKE_VERSION=$(cmake --version | head -n1 || true)
     print_result 0 "CMake is available: ${CMAKE_VERSION}"
 else
     print_result 1 "CMake is not available - required for compilation"
@@ -78,7 +78,7 @@ evaluate_test_result_silent "CMake availability" "${EXIT_CODE}" "PASS_COUNT" "EX
 next_subtest
 print_subtest "Check CMakeLists.txt"
 print_command "test -f cmake/CMakeLists.txt"
-if [ -f "cmake/CMakeLists.txt" ]; then
+if [[ -f "cmake/CMakeLists.txt" ]]; then
     file_size=$(get_file_size "cmake/CMakeLists.txt")
     formatted_size=$(format_file_size "${file_size}")
     print_result 0 "CMakeLists.txt found in cmake directory (${formatted_size} bytes)"
@@ -92,8 +92,8 @@ evaluate_test_result_silent "CMakeLists.txt check" "${EXIT_CODE}" "PASS_COUNT" "
 next_subtest
 print_subtest "Check Source Files"
 print_command "test -d src && test -f src/hydrogen.c"
-if [ -d "src" ] && [ -f "src/hydrogen.c" ]; then
-    src_count=$(find . -type f \( -path "./src/*" -o -path "./tests/unity/src/*" -o -path "./extras/*" -o -path "./examples/*" \) \( -name "*.c" -o -name "*.h" \) | wc -l)
+if [[ -d "src" ]] && [[ -f "src/hydrogen.c" ]]; then
+    src_count=$(find . -type f \( -path "./src/*" -o -path "./tests/unity/src/*" -o -path "./extras/*" -o -path "./examples/*" \) \( -name "*.c" -o -name "*.h" \) | wc -l || true) 
     print_result 0 "Project search found ${src_count} source files"
     TEST_NAME="${TEST_NAME} {BLUE}(${src_count} source files){RESET}"
 else
@@ -174,7 +174,7 @@ download_unity_framework() {
     local framework_dir="${unity_dir}/framework"
     local unity_framework_dir="${framework_dir}/Unity"
     
-    if [ ! -d "${unity_framework_dir}" ]; then
+    if [[ ! -d "${unity_framework_dir}" ]]; then
         print_message "Unity framework not found in ${unity_framework_dir}. Downloading now..."
         mkdir -p "${framework_dir}"
         if command -v curl >/dev/null 2>&1; then
@@ -241,7 +241,7 @@ evaluate_test_result_silent "CMake configuration" "${EXIT_CODE}" "PASS_COUNT" "E
 next_subtest
 print_subtest "Check and Generate Payload"
 print_command "test -f payloads/payload.tar.br.enc"
-if [ -f "payloads/payload.tar.br.enc" ]; then
+if [[ -f "payloads/payload.tar.br.enc" ]]; then
     payload_size=$(get_file_size "payloads/payload.tar.br.enc")
     formatted_size=$(format_file_size "${payload_size}")
     print_result 0 "Payload file exists: payloads/payload.tar.br.enc (${formatted_size} bytes)"
@@ -258,7 +258,7 @@ else
                 print_message "Payload generation completed"
                 print_command "cd .."
                 safe_cd ..
-                if [ -f "payloads/payload.tar.br.enc" ]; then
+                if [[ -f "payloads/payload.tar.br.enc" ]]; then
                     payload_size=$(get_file_size "payloads/payload.tar.br.enc")
                     formatted_size=$(format_file_size "${payload_size}")
                     print_result 0 "Payload file generated successfully: payloads/payload.tar.br.enc (${formatted_size} bytes)"
@@ -307,7 +307,7 @@ evaluate_test_result_silent "Build all variants" "${EXIT_CODE}" "PASS_COUNT" "EX
 next_subtest
 print_subtest "Verify Default Executable"
 print_command "test -f hydrogen"
-if [ -f "hydrogen" ]; then
+if [[ -f "hydrogen" ]]; then
     exe_size=$(get_file_size "hydrogen")
     formatted_size=$(format_file_size "${exe_size}")
     print_result 0 "Executable created: hydrogen (${formatted_size} bytes)"
@@ -321,7 +321,7 @@ evaluate_test_result_silent "Verify default executable" "${EXIT_CODE}" "PASS_COU
 next_subtest
 print_subtest "Verify Debug Executable"
 print_command "test -f hydrogen_debug"
-if [ -f "hydrogen_debug" ]; then
+if [[ -f "hydrogen_debug" ]]; then
     exe_size=$(get_file_size "hydrogen_debug")
     formatted_size=$(format_file_size "${exe_size}")
     print_result 0 "Executable created: hydrogen_debug (${formatted_size} bytes)"
@@ -335,7 +335,7 @@ evaluate_test_result_silent "Verify debug executable" "${EXIT_CODE}" "PASS_COUNT
 next_subtest
 print_subtest "Verify Performance Executable"
 print_command "test -f hydrogen_perf"
-if [ -f "hydrogen_perf" ]; then
+if [[ -f "hydrogen_perf" ]]; then
     exe_size=$(get_file_size "hydrogen_perf")
     formatted_size=$(format_file_size "${exe_size}")
     print_result 0 "Executable created: hydrogen_perf (${formatted_size} bytes)"
@@ -349,7 +349,7 @@ evaluate_test_result_silent "Verify performance executable" "${EXIT_CODE}" "PASS
 next_subtest
 print_subtest "Verify Valgrind Executable"
 print_command "test -f hydrogen_valgrind"
-if [ -f "hydrogen_valgrind" ]; then
+if [[ -f "hydrogen_valgrind" ]]; then
     exe_size=$(get_file_size "hydrogen_valgrind")
     formatted_size=$(format_file_size "${exe_size}")
     print_result 0 "Executable created: hydrogen_valgrind (${formatted_size} bytes)"
@@ -363,7 +363,7 @@ evaluate_test_result_silent "Verify valgrind executable" "${EXIT_CODE}" "PASS_CO
 next_subtest
 print_subtest "Verify Coverage Executable"
 print_command "test -f hydrogen_coverage"
-if [ -f "hydrogen_coverage" ]; then
+if [[ -f "hydrogen_coverage" ]]; then
     exe_size=$(get_file_size "hydrogen_coverage")
     formatted_size=$(format_file_size "${exe_size}")
     print_result 0 "Executable created: hydrogen_coverage (${formatted_size} bytes)"
@@ -377,7 +377,7 @@ evaluate_test_result_silent "Verify coverage executable" "${EXIT_CODE}" "PASS_CO
 next_subtest
 print_subtest "Verify Release and Naked Executables"
 print_command "test -f hydrogen_release && test -f hydrogen_naked"
-if [ -f "hydrogen_release" ] && [ -f "hydrogen_naked" ]; then
+if [[ -f "hydrogen_release" ]] && [[ -f "hydrogen_naked" ]]; then
     release_size=$(get_file_size "hydrogen_release")
     naked_size=$(get_file_size "hydrogen_naked")
     formatted_release_size=$(format_file_size "${release_size}")
@@ -413,7 +413,7 @@ evaluate_test_result_silent "Build examples" "${EXIT_CODE}" "PASS_COUNT" "EXIT_C
 next_subtest
 print_subtest "Verify Examples Executables"
 print_command "test -f examples/C/auth_code_flow && test -f examples/C/client_credentials && test -f examples/C/password_flow"
-if [ -f "examples/C/auth_code_flow" ] && [ -f "examples/C/client_credentials" ] && [ -f "examples/C/password_flow" ]; then
+if [[ -f "examples/C/auth_code_flow" ]] && [[ -f "examples/C/client_credentials" ]] && [[ -f "examples/C/password_flow" ]]; then
     auth_size=$(get_file_size "examples/C/auth_code_flow")
     client_size=$(get_file_size "examples/C/client_credentials")
     password_size=$(get_file_size "examples/C/password_flow")
@@ -431,7 +431,7 @@ evaluate_test_result_silent "Verify examples executables" "${EXIT_CODE}" "PASS_C
 next_subtest
 print_subtest "Verify Coverage Executable Payload"
 print_command "test -f hydrogen_coverage && grep -q '<<< HERE BE ME TREASURE >>>' hydrogen_coverage"
-if [ -f "hydrogen_coverage" ]; then
+if [[ -f "hydrogen_coverage" ]]; then
     # Check if the coverage binary has payload embedded using the correct marker
     if grep -q "<<< HERE BE ME TREASURE >>>" "hydrogen_coverage" 2>/dev/null; then
         coverage_size=$(get_file_size "hydrogen_coverage")
@@ -451,7 +451,7 @@ evaluate_test_result_silent "Verify coverage executable payload" "${EXIT_CODE}" 
 next_subtest
 print_subtest "Verify Release Executable Payload"
 print_command "test -f hydrogen_release && grep -q '<<< HERE BE ME TREASURE >>>' hydrogen_release"
-if [ -f "hydrogen_release" ]; then
+if [[ -f "hydrogen_release" ]]; then
     # Check if the release binary has payload embedded using the correct marker
     if grep -q "<<< HERE BE ME TREASURE >>>" "hydrogen_release" 2>/dev/null; then
         release_size=$(get_file_size "hydrogen_release")
@@ -475,11 +475,11 @@ export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "${TOTAL_SUBTESTS}" "
 # Print completion table
 print_test_completion "${TEST_NAME}"
 
-end_test ${EXIT_CODE} ${TOTAL_SUBTESTS} ${PASS_COUNT} > /dev/null
+end_test "${EXIT_CODE}" "${TOTAL_SUBTESTS}" "${PASS_COUNT}" > /dev/null
 
 # Return status code if sourced, exit if run standalone
 if [[ "${ORCHESTRATION}" == "true" ]]; then
-    return ${EXIT_CODE}
+    return "${EXIT_CODE}"
 else
-    exit ${EXIT_CODE}
+    exit "${EXIT_CODE}"
 fi
