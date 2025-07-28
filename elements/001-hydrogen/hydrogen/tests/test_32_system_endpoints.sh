@@ -546,22 +546,17 @@ fi
 
 # Calculate overall test result
 if [ ${PASS_COUNT} -eq ${TOTAL_SUBTESTS} ]; then
-    FINAL_RESULT=0
+    EXIT_CODE=0
 else
-    FINAL_RESULT=1
+    EXIT_CODE=1
 fi
-
-# Export results for test_all.sh integration
-# Derive test name from script filename for consistency with test_00_all.sh
-TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
-export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "${TOTAL_SUBTESTS}" "${PASS_COUNT}" "${TEST_NAME}" > /dev/null
 
 # Print test completion summary
 print_test_completion "${TEST_NAME}"
 
 # Return status code if sourced, exit if run standalone
 if [[ "${ORCHESTRATION}" == "true" ]]; then
-    return ${FINAL_RESULT}
+    return "${EXIT_CODE}"
 else
-    exit ${FINAL_RESULT}
+    exit "${EXIT_CODE}"
 fi

@@ -426,9 +426,9 @@ fi
 
 # Calculate overall test result
 if [ ${PASS_COUNT} -eq ${TOTAL_SUBTESTS} ]; then
-    FINAL_RESULT=0
+    EXIT_CODE=0
 else
-    FINAL_RESULT=1
+    EXIT_CODE=1
 fi
 
 # Clean up response files and temporary configs
@@ -436,26 +436,19 @@ rm -f "${RESULTS_DIR}"/response_*.json
 rm -f "${DEFAULT_CONFIG_PATH}" "${CUSTOM_CONFIG_PATH}"
 
 # Only remove logs if tests were successful
-if [ ${FINAL_RESULT} -eq 0 ]; then
+if [ ${EXIT_CODE} -eq 0 ]; then
     print_message "Tests passed, cleaning up log files..."
     rm -f "${RESULTS_DIR}"/*_server_*.log
 else
     print_message "Tests failed, preserving log files for analysis in ${RESULTS_DIR}/"
 fi
 
-# Export results for test_all.sh integration
-# Derive test name from script filename for consistency with test_00_all.sh
-TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
-export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "${TOTAL_SUBTESTS}" "${PASS_COUNT}" "${TEST_NAME}" > /dev/null
-
 # Print test completion summary
 print_test_completion "${TEST_NAME}"
 
-end_test "${FINAL_RESULT}" "${TOTAL_SUBTESTS}" "${PASS_COUNT}" > /dev/null
-
 # Return status code if sourced, exit if run standalone
 if [[ "${ORCHESTRATION}" == "true" ]]; then
-    return ${FINAL_RESULT}
+    return "${EXIT_CODE}"
 else
-    exit ${FINAL_RESULT}
+    exit "${EXIT_CODE}"
 fi

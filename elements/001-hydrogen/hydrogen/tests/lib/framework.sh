@@ -8,10 +8,8 @@
 # perform_cleanup()
 # start_test()
 # start_subtest()
-# end_test()
 # setup_test_environment()
 # navigate_to_project_root()
-# export_subtest_results()
 # export_test_results()
 # run_check()
 # evaluate_test_result()
@@ -137,37 +135,6 @@ start_subtest() {
     fi
 }
 
-# Function to end a test run with proper summary
-end_test() {
-    local test_result=$1
-    local total_subtests=$2
-    local passed_subtests=$3
-    
-    # Calculate failed subtests
-    local failed_subtests=$((total_subtests - passed_subtests))
-    
-    # Use the new print_test_summary function
-    if command -v print_test_summary >/dev/null 2>&1; then
-        print_test_summary "${total_subtests}" "${passed_subtests}" "${failed_subtests}"
-    else
-        # Fallback if log_output.sh not available
-        echo ""
-        echo "==============================================================================="
-        echo "Test Summary"
-        echo "==============================================================================="
-        echo "Completed at: $(date)" || true
-        if [[ "${test_result}" -eq 0 ]]; then
-            echo "OVERALL RESULT: ALL TESTS PASSED"
-        else
-            echo "OVERALL RESULT: SOME TESTS FAILED"
-        fi
-        echo "==============================================================================="
-        echo ""
-    fi
-    
-    return "${test_result}"
-}
-
 # Function to set up the standard test environment with numbering
 setup_test_environment() {
     local test_name="$1"
@@ -207,23 +174,6 @@ navigate_to_project_root() {
         fi
         return 1
     fi
-    return 0
-}
-
-# Function to save subtest statistics and test name for use by test_all.sh
-# NOTE: This function is now a no-op since print_test_completion() handles file writing
-# to ensure single source of truth for timing. Kept for backward compatibility.
-export_subtest_results() {
-    local test_id=$1
-    local total_subtests=$2
-    local passed_subtests=$3
-    local test_name=$4
-    
-    # This function no longer writes files to avoid duplicate file creation
-    # with different timing values. File writing is now handled exclusively
-    # by print_test_completion() in log_output.sh for single source of truth.
-    
-    # Return silently - no need to announce this internal operation
     return 0
 }
 

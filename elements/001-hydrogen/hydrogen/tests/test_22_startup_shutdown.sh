@@ -111,19 +111,12 @@ run_lifecycle_test "${MIN_CONFIG}" "${config_name}" "${DIAG_TEST_DIR}" "${STARTU
 config_name=$(basename "${MAX_CONFIG}" .json)
 run_lifecycle_test "${MAX_CONFIG}" "${config_name}" "${DIAG_TEST_DIR}" "${STARTUP_TIMEOUT}" "${SHUTDOWN_TIMEOUT}" "${SHUTDOWN_ACTIVITY_TIMEOUT}" "${HYDROGEN_BIN}" "${LOG_FILE}" "PASS_COUNT" "EXIT_CODE"
 
-# Export results for test_all.sh integration
-# Derive test name from script filename for consistency with test_00_all.sh
-TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
-export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "${TOTAL_SUBTESTS}" "${PASS_COUNT}" "${TEST_NAME}" > /dev/null
-
 # Print completion table
 print_test_completion "${TEST_NAME}"
 
-end_test ${EXIT_CODE} ${TOTAL_SUBTESTS} ${PASS_COUNT} > /dev/null
-
 # Return status code if sourced, exit if run standalone
 if [[ "${ORCHESTRATION}" == "true" ]]; then
-    return ${EXIT_CODE}
+    return "${EXIT_CODE}"
 else
-    exit ${EXIT_CODE}
+    exit "${EXIT_CODE}"
 fi

@@ -264,16 +264,12 @@ formatted_uncovered_count=$(printf "%'d" "${uncovered_count}")
 print_result 0 "Coverage analysis: ${formatted_covered_files} of ${formatted_instrumented_files} source files covered, ${formatted_uncovered_count} uncovered"
 ((PASS_COUNT++))
 
-# Export results for test_all.sh integration
-TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
-export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "${TOTAL_SUBTESTS}" "${PASS_COUNT}" "${TEST_NAME}" > /dev/null
-
 # Print completion table
 print_test_completion "${TEST_NAME}"
 
 # Return status code if sourced, exit if run standalone
 if [[ "${ORCHESTRATION}" == "true" ]]; then
-    return ${EXIT_CODE}
+    return "${EXIT_CODE}"
 else
-    exit ${EXIT_CODE}
+    exit "${EXIT_CODE}"
 fi
