@@ -69,6 +69,23 @@ These libraries are required for Hydrogen to run:
 
 Environment variables provide a flexible way to configure Hydrogen without modifying its configuration files. Any configuration value can be substituted with an environment variable using the `${env.VARIABLE_NAME}` syntax, making it easy to adapt settings across different environments. The following variables are used in the default configuration:
 
+### SHELLCHECK
+
+This is what is being used for shellcheck during development. A little harsher than it needs to be but we're angling for long-term stability, so perhaps not a waste of time.
+Basically, this enables all the checks possible, and displays the output in a far more concise one-line-per-issue format.  
+
+The `--external-sources` option is a bit tricky as
+this primarily trips over the test scripts, given how they're called from an orchestration script (Test 00). This means we have to tell shellcheck where the files actually are.
+
+Note that the test suite has a shellcheck-specific test, Test 92, which uses the same values but sets up a caching mechanism so that if the scripts themselves aren't changing,
+then the shellcheck validation doesn't slow us down.
+
+Consider adding this to ~/.bashrc or ~/.zshrc as needed.
+
+```bash
+export SHELLCHECK_OPTS=--enable=all --severity=style --external-sources --format=gcc
+```
+
 ### Configuration File Location
 
 - `HYDROGEN_CONFIG` - Override the default configuration file location

@@ -35,8 +35,9 @@
 
 set -euo pipefail
 
-# Version
-VERSION="1.000"
+# MetaData
+SCRIPT_NAME="Oh.sh"
+SCRIPT_VERSION="1.000"
 
 # Default values
 INPUT_FILE=""
@@ -46,6 +47,7 @@ SCRIPT_START=$(date +%s.%N)
 
 # Caching 
 CACHE_DIR="${HOME}/.Oh"
+mkdir -p "${CACHE_DIR}" 
 
 # SVG defaults
 FONT_SIZE=14
@@ -119,7 +121,7 @@ log_output() {
 }
 
 show_version() {
-    echo "Oh.sh   - v${VERSION} - Convert ANSI terminal output to GitHub-compatible SVG" >&2
+    echo "${SCRIPT_NAME}   - v${SCRIPT_VERSION} - Convert ANSI terminal output to GitHub-compatible SVG" >&2
 }
 
 show_help() {
@@ -153,9 +155,9 @@ SUPPORTED FONTS:
     Font metric defaults are editable in the script.
 
 EXAMPLES:
-    ls --color=always -l | oh.sh > listing.svg
-    git diff --color | oh.sh --font "JetBrains Mono" --font-size 16 -o diff.svg
-    oh.sh --font Inconsolata --width 60 --wrap -i terminal-output.txt -o styled.svg
+    ls --color=always -l | ${SCRIPT_NAME} > listing.svg
+    git diff --color | ${SCRIPT_NAME} --font "JetBrains Mono" --font-size 16 -o diff.svg
+    ${SCRIPT_NAME} --font Inconsolata --width 60 --wrap -i terminal-output.txt -o styled.svg
 
 HELP_EOF
 }
@@ -668,7 +670,7 @@ main() {
     calculate_dimensions
     output_svg
 
-    log_output "Oh.sh v${VERSION} SVG generation complete! 🎯"
+    log_output "Oh.sh v${SCRIPT_VERSION} SVG generation complete! 🎯"
 }
 
 main "$@"
