@@ -92,7 +92,7 @@ should_exclude_file() {
     local rel_file="${file#./}"  # Remove leading ./
     
     # Check .lintignore file first if it exists
-    if [ -f "${lint_ignore}" ]; then
+    if [[ -f "${lint_ignore}" ]]; then
         while IFS= read -r pattern; do
             [[ -z "${pattern}" || "${pattern}" == \#* ]] && continue
             # Remove trailing /* if present for directory matching
@@ -127,18 +127,18 @@ found_files=0
 missing_files=()
 
 for file in "${exclusion_files[@]}"; do
-    if [ -f "${file}" ]; then
+    if [[ -f "${file}" ]]; then
         ((found_files++))
-        if [ "${file}" = ".lintignore-bash" ]; then
+        if [[ "${file}" = ".lintignore-bash" ]]; then
             # Special handling for .lintignore-bash which doesn't have a SUMMARY section
             print_message "${file}: Used by shellcheck for bash script linting exclusions"
         else
-            summary=$(grep -A 5 "SUMMARY" "${file}" 2>/dev/null | grep -v "SUMMARY" | grep -v "Used by" | sed 's/^# /  /' | sed 's/#$//')
-            if [ -n "${summary}" ]; then
+            summary=$(grep -A 5 "SUMMARY" "${file}" 2>/dev/null | grep -v "SUMMARY" | grep -v "Used by" | sed 's/^# /  /' | sed 's/#$//' || true)
+            if [[ -n "${summary}" ]]; then
                 # Break multi-line summaries into individual print_message calls
                 # Use process substitution to avoid subshell
                 while IFS= read -r line; do
-                    if [ -n "${line}" ]; then
+                    if [[ -n "${line}" ]]; then
                         print_message "${file}: ${line}"
                     fi
                 done < <(echo "${summary}")
@@ -151,7 +151,7 @@ done
 
 print_message "For details, see tests/README.md and .lintignore files."
 
-if [ ${#missing_files[@]} -eq 0 ]; then
+if [[ ${#missing_files[@]} -eq 0 ]]; then
     print_result 0 "All ${found_files} linting configuration files found"
     ((PASS_COUNT++))
 else
@@ -180,7 +180,7 @@ while read -r file; do
     if ! should_exclude_file "${file}"; then
         echo "${file}" >> "${SOURCE_FILES_LIST}"
     fi
-done < <(find . -type f \( -name "*.c" -o -name "*.h" -o -name "*.md" -o -name "*.sh" \) | sort)
+done < <(find . -type f \( -name "*.c" -o -name "*.h" -o -name "*.md" -o -name "*.sh" \) | sort || true)
 
 TOTAL_FILES=$(wc -l < "${SOURCE_FILES_LIST}")
 
@@ -195,32 +195,32 @@ LARGEST_LINES=0
 HAS_OVERSIZED=0
 
 # Analyze each file using efficient batch processing
-if [ -s "${SOURCE_FILES_LIST}" ]; then
+if [[ -s "${SOURCE_FILES_LIST}" ]]; then
     # Use wc -l on all files at once for maximum efficiency, then process the output
     xargs wc -l < "${SOURCE_FILES_LIST}" > "${LINE_COUNT_FILE}.tmp"
     
     # Process the results to categorize by line count
     while read -r lines file; do
         # Handle the total line at the end
-        [ "${file}" = "total" ] && continue
+        [[ "${file}" = "total" ]] && continue
         
         printf "%05d %s\n" "${lines}" "${file}"
         
         # Categorize by line count
-        if [ "${lines}" -lt 100 ]; then line_bins["000-099"]=$((line_bins["000-099"] + 1))
-        elif [ "${lines}" -lt 200 ]; then line_bins["100-199"]=$((line_bins["100-199"] + 1))
-        elif [ "${lines}" -lt 300 ]; then line_bins["200-299"]=$((line_bins["200-299"] + 1))
-        elif [ "${lines}" -lt 400 ]; then line_bins["300-399"]=$((line_bins["300-399"] + 1))
-        elif [ "${lines}" -lt 500 ]; then line_bins["400-499"]=$((line_bins["400-499"] + 1))
-        elif [ "${lines}" -lt 600 ]; then line_bins["500-599"]=$((line_bins["500-599"] + 1))
-        elif [ "${lines}" -lt 700 ]; then line_bins["600-699"]=$((line_bins["600-699"] + 1))
-        elif [ "${lines}" -lt 800 ]; then line_bins["700-799"]=$((line_bins["700-799"] + 1))
-        elif [ "${lines}" -lt 900 ]; then line_bins["800-899"]=$((line_bins["800-899"] + 1))
-        elif [ "${lines}" -lt 1000 ]; then line_bins["900-999"]=$((line_bins["900-999"] + 1))
+        if   [[ "${lines}" -lt 100  ]]; then line_bins["000-099"]=$((line_bins["000-099"] + 1))
+        elif [[ "${lines}" -lt 200  ]]; then line_bins["100-199"]=$((line_bins["100-199"] + 1))
+        elif [[ "${lines}" -lt 300  ]]; then line_bins["200-299"]=$((line_bins["200-299"] + 1))
+        elif [[ "${lines}" -lt 400  ]]; then line_bins["300-399"]=$((line_bins["300-399"] + 1))
+        elif [[ "${lines}" -lt 500  ]]; then line_bins["400-499"]=$((line_bins["400-499"] + 1))
+        elif [[ "${lines}" -lt 600  ]]; then line_bins["500-599"]=$((line_bins["500-599"] + 1))
+        elif [[ "${lines}" -lt 700  ]]; then line_bins["600-699"]=$((line_bins["600-699"] + 1))
+        elif [[ "${lines}" -lt 800  ]]; then line_bins["700-799"]=$((line_bins["700-799"] + 1))
+        elif [[ "${lines}" -lt 900  ]]; then line_bins["800-899"]=$((line_bins["800-899"] + 1))
+        elif [[ "${lines}" -lt 1000 ]]; then line_bins["900-999"]=$((line_bins["900-999"] + 1))
         else
             line_bins["1000+"]=$((line_bins["1000+"] + 1))
             HAS_OVERSIZED=1
-            if [ "${lines}" -gt "${LARGEST_LINES}" ]; then
+            if [[ "${lines}" -gt "${LARGEST_LINES}" ]]; then
                 LARGEST_FILE="${file}"
                 LARGEST_LINES=${lines}
             fi
@@ -257,7 +257,7 @@ show_top_files_by_type() {
             local count path
             read -r count path <<< "${line}"
             print_output "  ${count} lines: ${path}"
-        done < <(head -n 5 "${temp_file}")
+        done < <(head -n 5 "${temp_file}" || true)
         rm -f "${temp_file}"
     done
 }
@@ -265,7 +265,7 @@ show_top_files_by_type() {
 show_top_files_by_type
 
 # Check size compliance
-if [ ${HAS_OVERSIZED} -eq 1 ]; then
+if [[ "${HAS_OVERSIZED}" -eq 1 ]]; then
     print_result 1 "Found files exceeding ${MAX_SOURCE_LINES} lines"
     print_output "Largest file: ${LARGEST_FILE} with ${LARGEST_LINES} lines"
     EXIT_CODE=1
@@ -285,24 +285,28 @@ while read -r file; do
     if ! should_exclude_file "${file}"; then
         echo "${file}" >> "${LARGE_FILES_LIST}"
     fi
-done < <(find . -type f -size "+${LARGE_FILE_THRESHOLD}" \
-    -not \( -path "*/tests/*" -o -name "*.c" -o -name "*.h" -o -name "*.md" -o -name "*.sh" -o -name "Makefile" \) \
-    | sort)
+done < <(find . -type f -size "+${LARGE_FILE_THRESHOLD}" -not \( -path "*/tests/*" -o -name "*.c" -o -name "*.h" -o -name "*.md" -o -name "*.sh" -o -name "Makefile" \) | sort || true)
 
 LARGE_FILE_COUNT=$(wc -l < "${LARGE_FILES_LIST}")
 
-if [ "${LARGE_FILE_COUNT}" -eq 0 ]; then
+if [[ "${LARGE_FILE_COUNT}" -eq 0 ]]; then
     print_message "No large files found (excluding source/docs)"
     print_result 0 "No large files found"
     ((PASS_COUNT++))
 else
     print_message "Found ${LARGE_FILE_COUNT} large files:"
     # Use du in parallel and sort by size (largest first)
-    if [ -s "${LARGE_FILES_LIST}" ]; then
+    if [[ -s "${LARGE_FILES_LIST}" ]]; then
         # Use process substitution to avoid subshell
+        procs="$(nproc)"
+        temp_du_list="$(mktemp)"
+        xargs -P "${procs}" -I {} du -k {} < "${LARGE_FILES_LIST}" > "${temp_du_list}"
+        sorted_du_list="$(mktemp)"
+        sort -nr "${temp_du_list}" > "${sorted_du_list}"
         while read -r size file; do
             print_output "  ${size}KB: ${file}"
-        done < <(xargs -P "$(nproc)" -I {} du -k {} < "${LARGE_FILES_LIST}" | sort -nr)
+        done < "${sorted_du_list}"
+        rm -f "${temp_du_list}" "${sorted_du_list}"
     fi
     print_result 0 "Found ${LARGE_FILE_COUNT} files >${LARGE_FILE_THRESHOLD}"
     ((PASS_COUNT++))
@@ -312,12 +316,12 @@ fi
 next_subtest
 print_subtest "Code Line Count Analysis (cloc)"
 
-if [ -n "${CLOC_PID}" ]; then
+if [[ -n "${CLOC_PID}" ]]; then
     print_message "Waiting for cloc analysis to complete..."
     wait "${CLOC_PID}"
     CLOC_EXIT_CODE=$?
     
-    if [ ${CLOC_EXIT_CODE} -eq 0 ] && [ -s "${CLOC_OUTPUT}" ]; then
+    if [[ "${CLOC_EXIT_CODE}" -eq 0 ]] && [[ -s "${CLOC_OUTPUT}" ]]; then
         print_message "Code line count analysis results:"
         while IFS= read -r line; do
             print_output "${line}"
@@ -325,7 +329,7 @@ if [ -n "${CLOC_PID}" ]; then
         
         # Extract summary statistics
         STATS=$(extract_cloc_stats "${CLOC_OUTPUT}")
-        if [ -n "${STATS}" ]; then
+        if [[ -n "${STATS}" ]]; then
             IFS=',' read -r files_part lines_part <<< "${STATS}"
             FILES_COUNT=$(echo "${files_part}" | cut -d':' -f2)
             CODE_LINES=$(echo "${lines_part}" | cut -d':' -f2)
@@ -357,10 +361,10 @@ TEST_NAME="${TEST_NAME} {BLUE}(cloc: ${FILES_COUNT} files){RESET}"
 
 # Count files by type in parallel for better performance
 {
-    find . -name "*.c" -type f | wc -l > /tmp/c_files_count &
-    find . -name "*.h" -type f | wc -l > /tmp/h_files_count &
-    find . -name "*.md" -type f | wc -l > /tmp/md_files_count &
-    find . -name "*.sh" -type f | wc -l > /tmp/sh_files_count &
+    find . -name "*.c"  -type f | wc -l > /tmp/c_files_count  || true &
+    find . -name "*.h"  -type f | wc -l > /tmp/h_files_count  || true &
+    find . -name "*.md" -type f | wc -l > /tmp/md_files_count || true &
+    find . -name "*.sh" -type f | wc -l > /tmp/sh_files_count || true &
     wait
 }
 C_FILES=$(cat /tmp/c_files_count)
@@ -395,7 +399,7 @@ print_test_completion "${TEST_NAME}"
 
 # Return status code if sourced, exit if run standalone
 if [[ "${ORCHESTRATION}" == "true" ]]; then
-    return ${EXIT_CODE}
+    return "${EXIT_CODE}"
 else
-    exit ${EXIT_CODE}
+    exit "${EXIT_CODE}"
 fi
