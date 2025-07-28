@@ -35,6 +35,7 @@ TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 EXIT_CODE=0
 TOTAL_SUBTESTS=4
 PASS_COUNT=0
+TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
 TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
 RESULT_LOG="${RESULTS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
 set_test_number "${TEST_NUMBER}"
@@ -463,15 +464,8 @@ else
 fi
 evaluate_test_result_silent "Verify release executable payload" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-# Export results for test_all.sh integration
-# Derive test name from script filename for consistency with test_00_all.sh
-TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
-export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "${TOTAL_SUBTESTS}" "${PASS_COUNT}" "${TEST_NAME}" > /dev/null
-
 # Print completion table
 print_test_completion "${TEST_NAME}"
-
-end_test "${EXIT_CODE}" "${TOTAL_SUBTESTS}" "${PASS_COUNT}" > /dev/null
 
 # Return status code if sourced, exit if run standalone
 if [[ "${ORCHESTRATION}" == "true" ]]; then
