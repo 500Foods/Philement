@@ -44,6 +44,8 @@ HYDROGEN_DIR="${PROJECT_DIR}"
 [[ -n "${LIFECYCLE_GUARD}" ]] || source "${LIB_DIR}/lifecycle.sh"
 # shellcheck source=tests/lib/file_utils.sh # Resolve path statically
 [[ -n "${FILE_UTILS_GUARD}" ]] || source "${LIB_DIR}/file_utils.sh"
+# shellcheck source=tests/lib/network_utils.sh # Resolve path statically
+[[ -n "${NETWORK_UTILS_GUARD}" ]] || source "${LIB_DIR}/network_utils.sh"
 # shellcheck source=tests/lib/coverage-unity.sh # Resolve path statically
 [[ -n "${COVERAGE_UNITY_GUARD}" ]] || source "${LIB_DIR}/coverage-unity.sh"
 # shellcheck source=tests/lib/coverage-blackbox.sh # Resolve path statically
@@ -59,6 +61,11 @@ HYDROGEN_DIR="${PROJECT_DIR}"
 TOTAL_SUBTESTS=15  # 3 prerequisites + 6 tests for each of 2 configurations
 PASS_COUNT=0
 EXIT_CODE=0
+
+# Auto-extract test number and set up environment
+TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
+set_test_number "${TEST_NUMBER}"
+reset_subtest_counter
 
 # Function to wait for server to be ready
 wait_for_server_ready() {

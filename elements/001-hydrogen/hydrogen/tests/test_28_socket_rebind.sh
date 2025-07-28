@@ -174,7 +174,7 @@ else
     print_result 1 "Failed to start first instance"
     EXIT_CODE=1
     print_test_completion "${TEST_NAME}"
-    export_subtest_results "55_socket_rebind" ${TOTAL_SUBTESTS} ${PASS_COUNT}
+    export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "${TOTAL_SUBTESTS}" "${PASS_COUNT}" "${TEST_NAME}" > /dev/null
     exit 1
 fi
 

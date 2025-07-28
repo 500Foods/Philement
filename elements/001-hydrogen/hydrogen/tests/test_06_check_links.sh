@@ -71,11 +71,11 @@ TARGET_README="README.md"
 next_subtest
 print_subtest "Validate GitHub Sitemap Script"
 
-if [ ! -f "${SITEMAP_SCRIPT}" ]; then
+if [[ ! -f "${SITEMAP_SCRIPT}" ]]; then
     print_result 1 "GitHub sitemap script not found: ${SITEMAP_SCRIPT}"
     EXIT_CODE=1
 else
-    if [ ! -f "${TARGET_README}" ]; then
+    if [[ ! -f "${TARGET_README}" ]]; then
         print_result 1 "Target README file not found: ${TARGET_README}"
         EXIT_CODE=1
     else
@@ -85,11 +85,11 @@ else
 fi
 
 # Skip remaining tests if prerequisites failed
-if [ ${EXIT_CODE} -ne 0 ]; then
+if [[ "${EXIT_CODE}" -ne 0 ]]; then
     print_warning "Prerequisites failed - skipping markdown link check"
     
-    # Export results for test_all.sh integration
-    export_subtest_results "98_check_links" ${TOTAL_SUBTESTS} ${PASS_COUNT} > /dev/null
+    # Export results for orchestration integration
+    export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "${TOTAL_SUBTESTS}" "${PASS_COUNT}" "${TEST_NAME}" > /dev/null
     
     # Print completion table
     print_test_completion "${TEST_NAME}"

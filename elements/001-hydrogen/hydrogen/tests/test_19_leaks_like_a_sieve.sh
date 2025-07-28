@@ -100,7 +100,7 @@ if [ ${EXIT_CODE} -ne 0 ]; then
     print_warning "Prerequisites failed - skipping memory leak test"
     
     # Export results for test_all.sh integration
-    export_subtest_results "95_leaks_like_a_sieve" ${TOTAL_SUBTESTS} ${PASS_COUNT} > /dev/null
+    export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "${TOTAL_SUBTESTS}" "${PASS_COUNT}" "${TEST_NAME}" > /dev/null
     
     # Print completion table
     print_test_completion "${TEST_NAME}"

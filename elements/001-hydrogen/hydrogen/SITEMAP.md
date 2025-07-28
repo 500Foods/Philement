@@ -241,7 +241,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [test_24_signals.md](tests/docs/test_24_signals.md): Signal handling tests
 - [test_26_shutdown.md](tests/docs/test_26_shutdown.md): Shutdown sequence testing
 - [test_28_socket_rebind.md](tests/docs/test_28_socket_rebind.md): Socket rebinding tests
-- [test_29_api_prefix.md](tests/docs/test_29_api_prefix.md): API prefix configuration tests
+- [test_30_api_prefix.md](tests/docs/test_30_api_prefix.md): API prefix configuration tests
 - [test_32_system_endpoints.md](tests/docs/test_32_system_endpoints.md): System endpoint functionality tests
 - [test_34_swagger.md](tests/docs/test_34_swagger.md): Swagger documentation tests
 - [test_36_websockets.md](tests/docs/test_36_websockets.md): WebSocket server functionality and integration tests
@@ -249,11 +249,11 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [test_06_check_links.md](tests/docs/test_06_check_links.md): Link validation tests
 - [test_19_leaks_like_a_sieve.md](tests/docs/test_19_leaks_like_a_sieve.md): Memory leak detection tests
 - [test_11_unity.md](tests/docs/test_11_unity.md): Unity testing framework integration
+- [test_90_markdownlint.md](tests/docs/test_90_markdownlint.md): Markdown linting tests
 - [test_91_cppcheck.md](tests/docs/test_91_cppcheck.md): C/C++ static analysis tests
 - [test_92_shellcheck.md](tests/docs/test_92_shellcheck.md): Shell script linting tests
+- [test_93_jsonlint.md](tests/docs/test_93_jsonlint.md): JSON validation tests
 - [test_94_eslint.md](tests/docs/test_94_eslint.md): JavaScript linting tests
 - [test_95_stylelint.md](tests/docs/test_95_stylelint.md): CSS linting tests
 - [test_96_htmlhint.md](tests/docs/test_96_htmlhint.md): HTML validation tests
-- [test_97_jsonlint.md](tests/docs/test_97_jsonlint.md): JSON validation tests
-- [test_98_markdownlint.md](tests/docs/test_98_markdownlint.md): Markdown linting tests
 - [test_99_coverage.md](tests/docs/test_99_coverage.md): Build system coverage information

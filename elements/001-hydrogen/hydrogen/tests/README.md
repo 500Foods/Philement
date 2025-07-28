@@ -60,7 +60,7 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_24_signals.sh](docs/test_24_signals.md)**: Tests signal handling (e.g., SIGINT, SIGTERM, SIGHUP).
 - **[test_26_shutdown.sh](docs/test_26_shutdown.md)**: Tests the shutdown functionality of the application with a minimal configuration.
 - **[test_28_socket_rebind.sh](docs/test_28_socket_rebind.md)**: Tests socket rebinding behavior.
-- **[test_29_api_prefix.sh](docs/test_29_api_prefix.md)**: Validates API prefix configurations.
+- **[test_30_api_prefix.sh](docs/test_30_api_prefix.md)**: Validates API prefix configurations.
 - **[test_32_system_endpoints.sh](docs/test_32_system_endpoints.md)**: Tests system endpoint functionality.
 - **[test_34_swagger.sh](docs/test_34_swagger.md)**: Verifies Swagger documentation and UI integration.
 - **[test_36_websockets.sh](docs/test_36_websockets.md)**: Tests WebSocket server functionality and integration.
@@ -69,13 +69,13 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 
 - **[test_03_code_size.sh](docs/test_03_code_size.md)**: Analyzes code size metrics and file distribution.
 - **[test_06_check_links.sh](docs/test_06_check_links.md)**: Validates links in documentation files.
+- **[test_90_markdownlint.sh](docs/test_90_markdownlint.md)**: Lints Markdown documentation using markdownlint.
 - **[test_91_cppcheck.sh](docs/test_91_cppcheck.md)**: Performs C/C++ static analysis using cppcheck.
 - **[test_92_shellcheck.sh](docs/test_92_shellcheck.md)**: Validates shell scripts using shellcheck with exception justification checks.
+- **[test_93_jsonlint.sh](docs/test_93_jsonlint.md)**: Validates JSON file syntax and structure.
 - **[test_94_eslint.sh](docs/test_94_eslint.md)**: Lints JavaScript files using eslint.
 - **[test_95_stylelint.sh](docs/test_95_stylelint.md)**: Validates CSS files using stylelint.
 - **[test_96_htmlhint.sh](docs/test_96_htmlhint.md)**: Validates HTML files using htmlhint.
-- **[test_97_jsonlint.sh](docs/test_97_jsonlint.md)**: Validates JSON file syntax and structure.
-- **[test_98_markdownlint.sh](docs/test_98_markdownlint.md)**: Lints Markdown documentation using markdownlint.
 - **[test_99_coverage.sh](docs/test_99_coverage.md)**: Performs comprehensive coverge analysis.
 
 ## Writing Unity Tests

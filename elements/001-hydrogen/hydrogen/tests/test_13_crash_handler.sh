@@ -706,7 +706,7 @@ if [ ${#BUILDS[@]} -eq 0 ]; then
     EXIT_CODE=1
     
     # Export results and exit early
-    export_subtest_results "50_crash_handler" 3 ${PASS_COUNT} > /dev/null
+    export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "${TOTAL_SUBTESTS}" "${PASS_COUNT}" "${TEST_NAME}" > /dev/null
     print_test_completion "${TEST_NAME}"
     end_test ${EXIT_CODE} 3 ${PASS_COUNT} > /dev/null
 
