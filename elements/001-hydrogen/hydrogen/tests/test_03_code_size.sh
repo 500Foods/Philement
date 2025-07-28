@@ -387,10 +387,6 @@ print_message "Analysis files saved to results directory:"
 print_output "Line counts: ${RESULTS_DIR}/source_line_counts_${TIMESTAMP}.txt"
 print_output "Large files: ${RESULTS_DIR}/large_files_${TIMESTAMP}.txt"
 
-# Export results for test_all.sh integration
-TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
-export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "${TOTAL_SUBTESTS}" "${PASS_COUNT}" "${TEST_NAME}" > /dev/null
-
 # Print completion table
 print_test_completion "${TEST_NAME}"
 

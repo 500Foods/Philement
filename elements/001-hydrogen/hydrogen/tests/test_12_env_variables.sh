@@ -88,7 +88,7 @@ fi
 next_subtest
 print_subtest "Validate Configuration File"
 if validate_config_file "${CONFIG_FILE}"; then
-    print_message "Using config: $(convert_to_relative_path "${CONFIG_FILE}")"
+    print_message "Using config: $(convert_to_relative_path "${CONFIG_FILE}" || true)"
     ((PASS_COUNT++))
 else
     EXIT_CODE=1
@@ -130,19 +130,12 @@ reset_environment_variables
 print_result 0 "All environment variables reset"
 ((PASS_COUNT++))
 
-# Export results for test_all.sh integration
-# Derive test name from script filename for consistency with test_00_all.sh
-TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
-export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "${TOTAL_SUBTESTS}" "${PASS_COUNT}" "${TEST_NAME}" > /dev/null
-
 # Print completion table
 print_test_completion "${TEST_NAME}"
 
-end_test ${EXIT_CODE} ${TOTAL_SUBTESTS} ${PASS_COUNT} > /dev/null
-
 # Return status code if sourced, exit if run standalone
 if [[ "${ORCHESTRATION}" == "true" ]]; then
-    return ${EXIT_CODE}
+    return "${EXIT_CODE}"
 else
-    exit ${EXIT_CODE}
+    exit "${EXIT_CODE}"
 fi

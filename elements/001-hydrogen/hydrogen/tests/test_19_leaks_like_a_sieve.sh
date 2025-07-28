@@ -105,7 +105,7 @@ if [ ${EXIT_CODE} -ne 0 ]; then
     # Print completion table
     print_test_completion "${TEST_NAME}"
     
-    exit ${EXIT_CODE}
+    exit "${EXIT_CODE}"
 fi
 
 # Subtest 3: Run memory leak detection test
@@ -275,17 +275,12 @@ else
     print_result 1 "Leak analysis skipped due to previous failures"
 fi
 
-# Export results for test_all.sh integration
-# Derive test name from script filename for consistency with test_00_all.sh
-TEST_IDENTIFIER=$(basename "${BASH_SOURCE[0]}" .sh | sed 's/test_[0-9]*_//')
-export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "${TOTAL_SUBTESTS}" "${PASS_COUNT}" "${TEST_NAME}" > /dev/null
-
 # Print completion table
 print_test_completion "${TEST_NAME}"
 
 # Return status code if sourced, exit if run standalone
 if [[ "${ORCHESTRATION}" == "true" ]]; then
-    return ${EXIT_CODE}
+    return "${EXIT_CODE}"
 else
-    exit ${EXIT_CODE}
+    exit "${EXIT_CODE}"
 fi
