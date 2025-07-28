@@ -32,37 +32,28 @@ mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_D
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "${LIB_DIR}/framework.sh"
 # shellcheck source=tests/lib/log_output.sh # Resolve path statically
 [[ -n "${LOG_OUTPUT_GUARD}" ]] || source "${LIB_DIR}/log_output.sh"
-# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
-[[ -n "${FILE_UTILS_GUARD}" ]] || source "${LIB_DIR}/file_utils.sh"
 
 # Test configuration
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 EXIT_CODE=0
 TOTAL_SUBTESTS=4
 PASS_COUNT=0
-
-# Auto-extract test number and set up environment
 TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
+RESULT_LOG="${RESULTS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
 set_test_number "${TEST_NUMBER}"
 reset_subtest_counter
 
 # Print beautiful test header
 print_test_header "${TEST_NAME}" "${SCRIPT_VERSION}"
 
-# Always use build/tests/results directory
-BUILD_DIR="${SCRIPT_DIR}/../build"
-RESULTS_DIR="${BUILD_DIR}/tests/results"
-mkdir -p "${RESULTS_DIR}"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-RESULT_LOG="${RESULTS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
+# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
+[[ -n "${FILE_UTILS_GUARD}" ]] || source "${LIB_DIR}/file_utils.sh"
 
 # Navigate to the project root (one level up from tests directory)
 if ! navigate_to_project_root "${SCRIPT_DIR}"; then
     print_error "Failed to navigate to project root directory"
     exit 1
 fi
-
-# Set up results directory (after navigating to project root)
-
 # Test configuration
 SITEMAP_SCRIPT="${LIB_DIR}/github-sitemap.sh"
 TARGET_README="README.md"
