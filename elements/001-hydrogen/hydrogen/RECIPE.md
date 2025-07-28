@@ -95,13 +95,13 @@ tests/          Test framework
 - tests/test_32_system_endpoints.sh - Validates the functionality of system endpoints
 - tests/test_34_swagger.sh - Checks that Swagger files are served up from payload
 - tests/test_36_websockets.sh - Retrieves status from WebSockets interface
+- tests/test_90_markdownlint.sh - Lint for Markdown
 - tests/test_91_cppcheck.sh - Lint for C
 - tests/test_92_shellcheck.sh - Lint for Bash
+- tests/test_93_jsonlint.sh - Lint for JSON
 - tests/test_94_eslint.sh - Lint for JavaScript
 - tests/test_95_stylelint.sh - Lint for CSS
 - tests/test_96_htmlhint.sh - Lint for HTML
-- tests/test_97_jsonlint.sh - Lint for JSON
-- tests/test_98_markdownlint.sh - Lint for Markdown
 - tests/test_99_coverage.sh - Shows Unity and Blackbox test coverage
 
 ## CRITICAL DOCUMENTATION

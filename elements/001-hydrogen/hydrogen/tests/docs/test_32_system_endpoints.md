@@ -161,7 +161,7 @@ To run this test individually:
 ## Related Documentation
 
 - [test_00_all.md](test_00_all.md) - Main test suite documentation
-- [test_29_api_prefix.md](test_29_api_prefix.md) - API prefix testing
+- [test_30_api_prefix.md](test_30_api_prefix.md) - API prefix testing
 - [test_34_swagger.md](test_34_swagger.md) - Swagger/OpenAPI documentation testing
 - [LIBRARIES.md](LIBRARIES.md) - Modular library documentation
 - [api.md](../../docs/api.md) - API documentation and endpoint specifications
