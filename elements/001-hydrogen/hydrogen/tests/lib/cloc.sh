@@ -22,7 +22,27 @@ export CLOC_GUARD="true"
 # Library metadata
 CLOC_NAME="CLOC Library"
 CLOC_VERSION="1.1.0"
-print_message "${CLOC_NAME} ${CLOC_VERSION}" "info"
+export COVERAGE_TABLE_NAME COVERAGE_TABLE_VERSION
+
+# Sort out directories
+PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
+SCRIPT_DIR="${PROJECT_DIR}/tests"
+LIB_DIR="${SCRIPT_DIR}/lib"
+# BUILD_DIR="${PROJECT_DIR}/build"
+# TESTS_DIR="${BUILD_DIR}/tests"
+# RESULTS_DIR="${TESTS_DIR}/results"
+# DIAGS_DIR="${TESTS_DIR}/diagnostics"
+# LOGS_DIR="${TESTS_DIR}/logs"
+
+# shellcheck source=tests/lib/framework.sh # Resolve path statically
+[[ -n "${FRAMEWORK_GUARD}" ]] || source "${LIB_DIR}/framework.sh"
+# shellcheck source=tests/lib/log_output.sh # Resolve path statically
+[[ -n "${LOG_OUTPUT_GUARD}" ]] || source "${LIB_DIR}/log_output.sh"
+
+if [[ "${ORCHESTRATION}" == "true" ]]; then
+  print_message "${CLOC_NAME} ${CLOC_VERSION}" "info"
+fi
+
 
 # Default exclude patterns for linting (can be overridden by .lintignore)
 if [[ -z "${DEFAULT_LINT_EXCLUDES+x}" ]]; then

@@ -31,26 +31,24 @@ mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_D
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "${LIB_DIR}/framework.sh"
 # shellcheck source=tests/lib/log_output.sh # Resolve path statically
 [[ -n "${LOG_OUTPUT_GUARD}" ]] || source "${LIB_DIR}/log_output.sh"
+
+# Test configuration
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+EXIT_CODE=0
+TOTAL_SUBTESTS=4
+PASS_COUNT=0
+TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
+RESULT_LOG="${RESULTS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
+set_test_number "${TEST_NUMBER}"
+reset_subtest_counter
+
+# Print beautiful test header
+print_test_header "${TEST_NAME}" "${SCRIPT_VERSION}"
+
 # shellcheck source=tests/lib/file_utils.sh # Resolve path statically
 [[ -n "${FILE_UTILS_GUARD}" ]] || source "${LIB_DIR}/file_utils.sh"
 # shellcheck source=tests/lib/coverage.sh # Resolve path statically
 [[ -n "${CLOC_GUARD}" ]] || source "${LIB_DIR}/cloc.sh"
-
-# Test configuration
-EXIT_CODE=0
-TOTAL_SUBTESTS=5
-PASS_COUNT=0
-RESULT_LOG=""
-
-# Auto-extract test number and set up environment
-TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
-set_test_number "${TEST_NUMBER}"
-reset_subtest_counter
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-RESULT_LOG="${RESULTS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
-
-# Print beautiful test header
-print_test_header "${TEST_NAME}" "${SCRIPT_VERSION}"
 
 # Navigate to the project root (one level up from tests directory)
 if ! navigate_to_project_root "${SCRIPT_DIR}"; then
@@ -58,7 +56,6 @@ if ! navigate_to_project_root "${SCRIPT_DIR}"; then
     exit 1
 fi
 
-# Set up results directory (after navigating to project root)
 
 # Test configuration constants
 readonly MAX_SOURCE_LINES=1000
