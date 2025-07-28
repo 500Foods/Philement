@@ -94,7 +94,7 @@ if [[ "${EXIT_CODE}" -ne 0 ]]; then
     # Print completion table
     print_test_completion "${TEST_NAME}"
     
-    exit ${EXIT_CODE}
+    exit "${EXIT_CODE}"
 fi
 
 # Subtest 2: Run markdown link check
@@ -122,7 +122,7 @@ print_message "Results saved to ${MARKDOWN_RESULT_LOG}"
 #     print_output "${line}"
 # done < "${TEMP_OUTPUT}"
 
-if [ ${SITEMAP_EXIT_CODE} -eq 0 ]; then
+if [[ "${SITEMAP_EXIT_CODE}" -eq 0 ]]; then
     print_result 0 "Markdown link check executed successfully with no issues"
     ((PASS_COUNT++))
 else
@@ -136,8 +136,8 @@ print_subtest "Validate Missing Links Count"
 
 # Parse the output to extract counts from the tables
 # Look for "Issues found:" line to get the total issue count
-ISSUES_FOUND=$(grep "Issues found:" "${TEMP_OUTPUT}" | sed 's/Issues found: //' || echo "0")
-if [ -z "${ISSUES_FOUND}" ]; then
+ISSUES_FOUND=$(grep "Issues found:" "${TEMP_OUTPUT}" | sed 's/Issues found: //' || echo "0" || true)
+if [[ -z "${ISSUES_FOUND}" ]]; then
     ISSUES_FOUND="0"
 fi
 
@@ -148,7 +148,7 @@ MISSING_LINKS_COUNT=0
 MISSING_LINKS_TABLE_FOUND=false
 while IFS= read -r line; do
     # Clean the line of ANSI codes and delimiters
-    CLEANED_LINE=$(echo "${line}" | sed 's/\x1B\[[0-9;]*[JKmsu]//g' | sed 's/│//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
+    CLEANED_LINE=$(echo "${line}" | sed 's/\x1B\[[0-9;]*[JKmsu]//g' | sed 's/│//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' || true)
     # Check if this line contains only "Missing Links" (dedicated table title)
     if [[ "${CLEANED_LINE}" == "Missing Links" ]]; then
         MISSING_LINKS_TABLE_FOUND=true
@@ -156,23 +156,31 @@ while IFS= read -r line; do
     fi
 done < "${TEMP_OUTPUT}"
 
-if [ "${MISSING_LINKS_TABLE_FOUND}" = true ]; then
+if [[ "${MISSING_LINKS_TABLE_FOUND}" = true ]]; then
     # Find the line number of the dedicated "Missing Links" table title
-    MISSING_LINKS_LINE=$(grep -n "Missing Links" "${TEMP_OUTPUT}" | while IFS=: read -r line_num line_content; do
-        CLEANED_LINE=$(echo "${line_content}" | sed 's/\x1B\[[0-9;]*[JKmsu]//g' | sed 's/│//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
+    temp_grep_output="$(mktemp)"
+    grep -n "Missing Links" "${TEMP_OUTPUT}" > "${temp_grep_output}"
+    MISSING_LINKS_LINE=$(while IFS=: read -r line_num line_content; do
+        CLEANED_LINE=$(sed 's/\x1B\[[0-9;]*[JKmsu]//g; s/│//g; s/^[[:space:]]*//; s/[[:space:]]*$//' <<< "${line_content}")
         if [[ "${CLEANED_LINE}" == "Missing Links" ]]; then
             echo "${line_num}"
             break
         fi
-    done)
+    done < "${temp_grep_output}")
+    rm -f "${temp_grep_output}" 
     
     # Extract content from the dedicated Missing Links table only
-    if [ -n "${MISSING_LINKS_LINE}" ]; then
+    if [[ -n "${MISSING_LINKS_LINE}" ]]; then
         # Get lines starting from the Missing Links table title
-        LINE_BEFORE_CLOSE=$(tail -n +"${MISSING_LINKS_LINE}" "${TEMP_OUTPUT}" | grep -B 1 "╰" | head -1)
+        LINE_BEFORE_CLOSE=$(tail -n +"${MISSING_LINKS_LINE}" "${TEMP_OUTPUT}" | grep -B 1 "╰" | head -1 || true)
         # Extract the number by removing ANSI color codes, Unicode delimiters, trimming whitespace, and using grep for simplicity
-        MISSING_LINKS_COUNT=$(echo "${LINE_BEFORE_CLOSE}" | sed 's/\x1B\[[0-9;]*[JKmsu]//g' | sed 's/│//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | grep -o '[0-9]\+' | head -1 || echo "0")
-        if [ -z "${MISSING_LINKS_COUNT}" ]; then
+        CLEANED_LINE=$(sed 's/\x1B\[[0-9;]*[JKmsu]//g; s/│//g; s/^[[:space:]]*//; s/[[:space:]]*$//' <<< "${LINE_BEFORE_CLOSE}")
+        if [[ "${CLEANED_LINE}" =~ [0-9]+ ]]; then
+            MISSING_LINKS_COUNT="${BASH_REMATCH[0]}"
+        else
+            MISSING_LINKS_COUNT="0"
+        fi        
+        if [[ -z "${MISSING_LINKS_COUNT}" ]]; then
             MISSING_LINKS_COUNT=0
         fi
     fi
@@ -180,7 +188,7 @@ fi
 
 print_message "Missing links found: ${MISSING_LINKS_COUNT}"
 
-if [ "${MISSING_LINKS_COUNT}" -eq 0 ]; then
+if [[ "${MISSING_LINKS_COUNT}" -eq 0 ]]; then
     print_result 0 "No missing links found"
     ((PASS_COUNT++))
 else
@@ -193,37 +201,37 @@ next_subtest
 print_subtest "Validate Orphaned Files Count"
 
 # Try to extract orphaned files count using corner-detection algorithm
-ORPHANED_FILES_COUNT=0
 # Look for a dedicated "Orphaned Markdown Files" table (not just a column header)
 # Check if there's a line that contains only "Orphaned Markdown Files" after cleaning
+ORPHANED_FILES_COUNT=0
 ORPHANED_FILES_TABLE_FOUND=false
 while IFS= read -r line; do
-    # Clean the line of ANSI codes and delimiters
-    CLEANED_LINE=$(echo "${line}" | sed 's/\x1B\[[0-9;]*[JKmsu]//g' | sed 's/│//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
-    # Check if this line contains only "Orphaned Markdown Files" (dedicated table title)
+    CLEANED_LINE=$(sed 's/\x1B\[[0-9;]*[JKmsu]//g; s/│//g; s/^[[:space:]]*//; s/[[:space:]]*$//' <<< "${line}")
     if [[ "${CLEANED_LINE}" == "Orphaned Markdown Files" ]]; then
         ORPHANED_FILES_TABLE_FOUND=true
         break
     fi
 done < "${TEMP_OUTPUT}"
 
-if [ "${ORPHANED_FILES_TABLE_FOUND}" = true ]; then
+if [[ "${ORPHANED_FILES_TABLE_FOUND}" = true ]]; then
     # Find the line number of the dedicated "Orphaned Markdown Files" table title
-    ORPHANED_FILES_LINE=$(grep -n "Orphaned Markdown Files" "${TEMP_OUTPUT}" | while IFS=: read -r line_num line_content; do
-        CLEANED_LINE=$(echo "${line_content}" | sed 's/\x1B\[[0-9;]*[JKmsu]//g' | sed 's/│//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
+    ORPHANED_FILES_LINE=""
+    grep_output=$(grep -n "Orphaned Markdown Files" "${TEMP_OUTPUT}")
+    while IFS=: read -r line_num line_content; do
+        CLEANED_LINE=$(sed 's/\x1B\[[0-9;]*[JKmsu]//g; s/│//g; s/^[[:space:]]*//; s/[[:space:]]*$//' <<< "${line_content}")
         if [[ "${CLEANED_LINE}" == "Orphaned Markdown Files" ]]; then
-            echo "${line_num}"
+            ORPHANED_FILES_LINE="${line_num}"
             break
         fi
-    done)
+    done <<< "${grep_output}"
     
     # Extract content from the dedicated Orphaned Files table only
-    if [ -n "${ORPHANED_FILES_LINE}" ]; then
-        # Get lines starting from the Orphaned Files table title
-        LINE_BEFORE_CLOSE=$(tail -n +"${ORPHANED_FILES_LINE}" "${TEMP_OUTPUT}" | grep -B 1 "╰" | head -1)
-        # Extract the number by removing ANSI color codes, Unicode delimiters, trimming whitespace, and using grep for simplicity
-        ORPHANED_FILES_COUNT=$(echo "${LINE_BEFORE_CLOSE}" | sed 's/\x1B\[[0-9;]*[JKmsu]//g' | sed 's/│//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | grep -o '[0-9]\+' | head -1 || echo "0")
-        if [ -z "${ORPHANED_FILES_COUNT}" ]; then
+    if [[ -n "${ORPHANED_FILES_LINE}" ]]; then
+        LINE_BEFORE_CLOSE=$(awk -v start="${ORPHANED_FILES_LINE}" 'NR >= start { if ($0 ~ /╰/) { if (prev) print prev; exit } prev = $0 }' "${TEMP_OUTPUT}")
+        CLEANED_LINE=$(sed 's/\x1B\[[0-9;]*[JKmsu]//g; s/│//g; s/^[[:space:]]*//; s/[[:space:]]*$//' <<< "${LINE_BEFORE_CLOSE}")
+        if [[ "${CLEANED_LINE}" =~ [0-9]+ ]]; then
+            ORPHANED_FILES_COUNT="${BASH_REMATCH[0]}"
+        else
             ORPHANED_FILES_COUNT=0
         fi
     fi
@@ -231,7 +239,7 @@ fi
 
 print_message "Orphaned files found: ${ORPHANED_FILES_COUNT}"
 
-if [ "${ORPHANED_FILES_COUNT}" -eq 0 ]; then
+if [[ "${ORPHANED_FILES_COUNT}" -eq 0 ]]; then
     print_result 0 "No orphaned markdown files found"
     ((PASS_COUNT++))
 else
@@ -257,7 +265,7 @@ if ! [[ "${ORPHANED_FILES_COUNT}" =~ ^[0-9]+$ ]]; then
     ORPHANED_FILES_COUNT=0
 fi
 TOTAL_EXTRACTED_ISSUES=$((MISSING_LINKS_COUNT + ORPHANED_FILES_COUNT))
-if [ "${TOTAL_EXTRACTED_ISSUES}" -eq "${SITEMAP_EXIT_CODE}" ]; then
+if [[ "${TOTAL_EXTRACTED_ISSUES}" -eq "${SITEMAP_EXIT_CODE}" ]]; then
     print_message "Validation: Extracted counts match sitemap exit code (${TOTAL_EXTRACTED_ISSUES} issues)"
 else
     print_warning "Validation: Extracted counts (${TOTAL_EXTRACTED_ISSUES}) do not match sitemap exit code (${SITEMAP_EXIT_CODE})"
@@ -273,7 +281,7 @@ print_test_completion "${TEST_NAME}"
 
 # Return status code if sourced, exit if run standalone
 if [[ "${ORCHESTRATION}" == "true" ]]; then
-    return ${EXIT_CODE}
+    return "${EXIT_CODE}"
 else
-    exit ${EXIT_CODE}
+    exit "${EXIT_CODE}"
 fi
