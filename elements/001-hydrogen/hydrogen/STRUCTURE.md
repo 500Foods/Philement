@@ -485,21 +485,22 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_24_signals.sh](tests/test_24_signals.sh) - Signal handling tests
 - [tests/test_26_shutdown.sh](tests/test_26_shutdown.sh) - Shutdown-specific tests
 - [tests/test_28_socket_rebind.sh](tests/test_28_socket_rebind.sh) - Socket rebinding tests
-- [tests/test_29_api_prefix.sh](tests/test_29_api_prefix.sh) - API prefix tests
+- [tests/test_30_api_prefix.sh](tests/test_30_api_prefix.sh) - API prefix tests
 - [tests/test_32_system_endpoints.sh](tests/test_32_system_endpoints.sh) - System endpoint tests
 - [tests/test_34_swagger.sh](tests/test_34_swagger.sh) - Swagger functionality tests
+- [tests/test_36_websockets.sh](tests/test_36_websockets.sh) - Swagger functionality tests
 
 ### Static Analysis & Linting Tests
 
 - [tests/test_03_code_size.sh](tests/test_03_code_size.sh) - Code size analysis and metrics
 - [tests/test_06_check_links.sh](tests/test_06_check_links.sh) - Link validation tests
+- [tests/test_90_markdownlint.sh](tests/test_90_markdownlint.sh) - Markdown linting (markdownlint)
 - [tests/test_91_cppcheck.sh](tests/test_91_cppcheck.sh) - C/C++ static analysis (cppcheck)
 - [tests/test_92_shellcheck.sh](tests/test_92_shellcheck.sh) - Shell script linting (shellcheck)
+- [tests/test_93_jsonlint.sh](tests/test_93_jsonlint.sh) - JSON validation and linting
 - [tests/test_94_eslint.sh](tests/test_94_eslint.sh) - JavaScript linting (eslint)
 - [tests/test_95_stylelint.sh](tests/test_95_stylelint.sh) - CSS linting (stylelint)
 - [tests/test_96_htmlhint.sh](tests/test_96_htmlhint.sh) - HTML validation (htmlhint)
-- [tests/test_97_jsonlint.sh](tests/test_97_jsonlint.sh) - JSON validation and linting
-- [tests/test_98_markdownlint.sh](tests/test_98_markdownlint.sh) - Markdown linting (markdownlint)
 - [tests/test_99_coverage.sh](tests/test_99_coverage.sh) - Build system coverage
 
 </details>
