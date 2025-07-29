@@ -36,7 +36,6 @@ mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_D
 # Test configuration
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 EXIT_CODE=0
-TOTAL_SUBTESTS=4
 PASS_COUNT=0
 TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
 RESULT_LOG="${RESULTS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
@@ -78,9 +77,6 @@ fi
 # Skip remaining tests if prerequisites failed
 if [[ "${EXIT_CODE}" -ne 0 ]]; then
     print_warning "Prerequisites failed - skipping markdown link check"
-    
-    # Export results for orchestration integration
-    export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "${TOTAL_SUBTESTS}" "${PASS_COUNT}" "${TEST_NAME}" > /dev/null
     
     # Print completion table
     print_test_completion "${TEST_NAME}"
