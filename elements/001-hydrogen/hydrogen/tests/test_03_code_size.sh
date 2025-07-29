@@ -297,9 +297,8 @@ else
     # Use du in parallel and sort by size (largest first)
     if [[ -s "${LARGE_FILES_LIST}" ]]; then
         # Use process substitution to avoid subshell
-        procs="$(nproc)"
         temp_du_list="$(mktemp)"
-        xargs -P "${procs}" -I {} du -k {} < "${LARGE_FILES_LIST}" > "${temp_du_list}"
+        xargs -P "${CORES}" -I {} du -k {} < "${LARGE_FILES_LIST}" > "${temp_du_list}"
         sorted_du_list="$(mktemp)"
         sort -nr "${temp_du_list}" > "${sorted_du_list}"
         while read -r size file; do
