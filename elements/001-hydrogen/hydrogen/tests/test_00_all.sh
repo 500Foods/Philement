@@ -75,7 +75,7 @@ source "${LIB_DIR}/coverage-combined.sh"
 
 # List of commands to check - we're assuming grep and sort are available
 commands=(
-    "bc" "jq" "awk" "sed" "xargs" "nproc" "timeout"
+    "grep" "sort" "bc" "jq" "awk" "sed" "xargs" "nproc" "timeout"
     "cmake" "curl" "websocat" 
     "git" "md5sum" "cloc"
     "cppcheck" "shellcheck" "markdownlint" "eslint" "stylelint" "htmlhint" "jsonlint"
@@ -85,26 +85,64 @@ commands=(
 # Array to store results
 declare -a results
 
-# Run version checks in parallel using xargs with inlined logic
-# Use IFS to read full lines into the results array
-# shellcheck disable=SC2016 # This is a script within a script, so we need to use single quotes
-while IFS= read -r line; do
-    results+=("${line}")
-done < <(printf "%s\n" "${commands[@]}" | xargs -P 0 -I {} bash -c '
-    cmd="{}"
-    cd .. && export PATH="${PATH}:tests/lib"
-    if command -v "${cmd}" >/dev/null 2>&1; then
-        cmd_path=$(command -v "${cmd}")
-        version=$(${cmd_path} --version 2>&1 | grep -oE "[0-9]+\.[0-9]+([.-][0-9a-zA-Z]+)*" | head -n 1)
-        if [ -n "${version}" ]; then
-            echo "0|${cmd} @ ${cmd_path}|${version}"
-        else
-            echo "0|${cmd} @ ${cmd_path}|no version found"
+# Cache directory
+CACHE_CMD_DIR="${HOME}/.cache/.hydrogen"
+mkdir -p "${CACHE_CMD_DIR}"
+export CACHE_CMD_DIR
+
+# Change to parent directory and update PATH once
+cd ..
+export PATH="${PATH}:tests/lib"
+
+# Collect commands that need processing (cache misses)
+to_process=()
+cached=0
+
+for cmd in "${commands[@]}"; do
+    cache_file="${CACHE_CMD_DIR}/${cmd// /_}"  # Replace spaces if any, though none here
+    if [ -f "${cache_file}" ]; then
+        # Read cached: format "path|version"
+        IFS='|' read -r cached_path cached_version < "${cache_file}"
+        current_path=$(command -v "${cmd}" 2>/dev/null || echo "")
+        if [ "${current_path}" = "${cached_path}" ]; then
+            ((cached++))
+            if [ -n "${cached_version}" ]; then
+                results+=("0|${cmd} @ ${cached_path}|${cached_version}")
+            else
+                results+=("0|${cmd} @ ${cached_path}|no version found")
+            fi
+            continue
         fi
-    else
-        echo "1|${cmd}|Command not found"
     fi
-' || true)
+    to_process+=("${cmd}")
+done
+
+# Run version checks in parallel for misses using xargs with inlined logic
+if [ ${#to_process[@]} -gt 0 ]; then
+    while IFS= read -r line; do
+        results+=("${line}")
+    done < <(printf "%s\n" "${to_process[@]}" | xargs -P 0 -I {} bash -c '
+        cmd="{}"
+        if command -v "${cmd}" >/dev/null 2>&1; then
+            cmd_path=$(command -v "${cmd}")
+            version=$("${cmd_path}" --version 2>&1 | grep -oE "[0-9]+\.[0-9]+([.-][0-9a-zA-Z]+)*" | head -n 1)
+            if [ -n "${version}" ]; then
+                echo "0|${cmd} @ ${cmd_path}|${version}"
+            else
+                echo "0|${cmd} @ ${cmd_path}|no version found"
+            fi
+            # Cache it: path|version
+            cache_file="${CACHE_CMD_DIR}/${cmd// /_}"
+            if [ -n "${version}" ]; then
+                echo "${cmd_path}|${version}" > "${cache_file}"
+            else
+                echo "${cmd_path}|" > "${cache_file}"
+            fi
+        else
+            echo "1|${cmd}|Command not found"
+        fi
+    ' )
+fi
 
 # Sort the results array based on the message field (field 2, after the first '|')
 declare -a sorted_results
