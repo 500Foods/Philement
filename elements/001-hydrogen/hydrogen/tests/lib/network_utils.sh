@@ -267,7 +267,7 @@ kill_processes_on_port() {
             fi
             echo "${pids}" | xargs -r kill -TERM 2>/dev/null || true
             # Brief wait for graceful termination
-            sleep 1
+            sleep 0.1
             echo "${pids}" | xargs -r kill -KILL 2>/dev/null || true
             killed_any=1
         fi
@@ -281,7 +281,7 @@ kill_processes_on_port() {
             killed_any=1
         fi
         # Brief wait for cleanup
-        sleep 1
+        sleep 0.1
     fi
     
     if [[ ${killed_any} -eq 1 ]]; then
@@ -391,79 +391,94 @@ prepare_test_environment_with_time_wait() {
     fi
     return 0
 }
-
 # Function to make HTTP requests to create active connections
 make_http_requests() {
     local base_url="$1"
     local results_dir="$2"
     local timestamp="$3"
     
-    if command -v print_message >/dev/null 2>&1; then
+    # Cache type checks
+    local use_print_message=0 use_print_warning=0
+    if type print_message >/dev/null 2>&1; then
+        use_print_message=1
+    fi
+    if type print_warning >/dev/null 2>&1; then
+        use_print_warning=1
+    fi
+    
+    # Log start
+    if [ $use_print_message -eq 1 ]; then
         print_message "Making HTTP requests to create active connections"
     else
         echo "INFO: Making HTTP requests to create active connections"
     fi
     
-    # Extract port from base_url (assumes format like http://localhost:8080)
+    # Extract port from base_url (e.g., http://localhost:8080 -> 8080)
     local port
-    port=$(echo "${base_url}" | grep -oE ':[0-9]+' | tr -d ':' || echo "80" || true)
+    if [[ $base_url =~ :([0-9]+) ]]; then
+        port=${BASH_REMATCH[1]}
+    else
+        port=80
+    fi
     
-    # Wait for server to be ready by checking if the port is in use
-    if command -v print_message >/dev/null 2>&1; then
+    # Wait for server to be ready
+    if [ $use_print_message -eq 1 ]; then
         print_message "Waiting for server to be ready..."
     else
         echo "INFO: Waiting for server to be ready..."
     fi
-    local max_wait_seconds=5
-    local check_interval=0.2
-    local elapsed=0.0
-    while [[ "$(echo "${elapsed} < ${max_wait_seconds}" | bc || true)" -eq 1 ]]; do
+    local max_wait_ms=5000  # 5s in milliseconds
+    local check_interval_ms=100  # 0.2s in milliseconds
+    local elapsed_ms=0
+    local start_time
+    start_time=$(date +%s%3N)  # Epoch time in milliseconds
+    while [ $elapsed_ms -lt $max_wait_ms ]; do
         if check_port_in_use "${port}"; then
-            local elapsed_ms
-            elapsed_ms=$(echo "scale=0; ${elapsed} * 1000" | bc)
-            if command -v print_message >/dev/null 2>&1; then
+            local end_time
+            end_time=$(date +%s%3N)
+            elapsed_ms=$((end_time - start_time))
+            if [ $use_print_message -eq 1 ]; then
                 print_message "Server is ready on port ${port} after ${elapsed_ms}ms"
             else
                 echo "INFO: Server is ready on port ${port} after ${elapsed_ms}ms"
             fi
             break
         fi
-        sleep "${check_interval}"
-        elapsed=$(echo "${elapsed} + ${check_interval}" | bc)
+        sleep 0.05
+        elapsed_ms=$((elapsed_ms + check_interval_ms))
     done
-    if [[ "$(echo "${elapsed} >= ${max_wait_seconds}" | bc || true)" -eq 1 ]]; then
-        if command -v print_warning >/dev/null 2>&1; then
-            print_warning "Server did not become ready on port ${port} within ${max_wait_seconds}s"
+    if [ $elapsed_ms -ge $max_wait_ms ]; then
+        if [ $use_print_warning -eq 1 ]; then
+            print_warning "Server did not become ready on port ${port} within $((max_wait_ms / 1000))s"
         else
-            echo "WARNING: Server did not become ready on port ${port} within ${max_wait_seconds}s" >&2
+            echo "WARNING: Server did not become ready on port ${port} within $((max_wait_ms / 1000))s" >&2
         fi
     fi
     
-    # Make requests to common web files to ensure connections are established
-    if command -v print_message >/dev/null 2>&1; then
+    # Make requests to common web files
+    if [ $use_print_message -eq 1 ]; then
         print_message "Requesting index.html..."
     else
         echo "INFO: Requesting index.html..."
     fi
-    curl -s --max-time 5 "${base_url}/" > "${results_dir}/index_response_${timestamp}.html" 2>/dev/null || true
+    curl -s --max-time 5 "${base_url}/" -o "${results_dir}/index_response_${timestamp}.html" 2>/dev/null || true
     
-    if command -v print_message >/dev/null 2>&1; then
+    if [ $use_print_message -eq 1 ]; then
         print_message "Requesting favicon.ico..."
     else
         echo "INFO: Requesting favicon.ico..."
     fi
-    curl -s --max-time 5 "${base_url}/favicon.ico" > "${results_dir}/favicon_response_${timestamp}.ico" 2>/dev/null || true
+    curl -s --max-time 5 "${base_url}/favicon.ico" -o "${results_dir}/favicon_response_${timestamp}.ico" 2>/dev/null || true
     
-    # Make a few more requests to ensure multiple connections
-    if command -v print_message >/dev/null 2>&1; then
+    # Batch additional requests
+    if [ $use_print_message -eq 1 ]; then
         print_message "Making additional requests to establish multiple connections..."
     else
         echo "INFO: Making additional requests to establish multiple connections..."
     fi
-    curl -s --max-time 5 "${base_url}/robots.txt" > /dev/null 2>&1 || true
-    curl -s --max-time 5 "${base_url}/sitemap.xml" > /dev/null 2>&1 || true
+    curl -s --max-time 5 "${base_url}/robots.txt" "${base_url}/sitemap.xml" -o /dev/null 2>/dev/null || true
     
-    if command -v print_message >/dev/null 2>&1; then
+    if [ $use_print_message -eq 1 ]; then
         print_message "HTTP requests completed - connections established"
     else
         echo "INFO: HTTP requests completed - connections established"
