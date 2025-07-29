@@ -233,7 +233,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [test_00_all.md](tests/docs/test_00_all.md): Test orchestration and execution framework
 - [test_01_compilation.md](tests/docs/test_01_compilation.md): Compilation and build verification tests
 - [test_12_env_variables.md](tests/docs/test_12_env_variables.md): Environment variable validation
-- [test_14_env_payload.md](tests/docs/test_14_env_payload.md): Environment payload testing
+- [test_14_secrets.md](tests/docs/test_14_secrets.md): Checks validity of key environment variables
 - [test_16_library_dependencies.md](tests/docs/test_16_library_dependencies.md): Library dependency verification
 - [test_18_json_error_handling.md](tests/docs/test_18_json_error_handling.md): JSON error handling tests
 - [test_13_crash_handler.md](tests/docs/test_13_crash_handler.md): Crash handling and recovery tests

@@ -52,7 +52,7 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_19_leaks_like_a_sieve.sh](docs/test_19_leaks_like_a_sieve.md)**: Detects memory leaks and resource issues using Valgrind.
 - **[test_11_unity.sh](docs/test_11_unity.md)**: Integrates Unity testing framework for unit tests.
 - **[test_12_env_variables.sh](docs/test_12_env_variables.md)**: Tests that configuration values can be provided via environment variables.
-- **[test_14_env_payload.sh](docs/test_14_env_payload.md)**: Tests environment variable handling for the payload system.
+- **[test_14_secrets.sh](docs/test_14_secrets.md)**: Checks validity of key environment variables
 - **[test_16_library_dependencies.sh](docs/test_16_library_dependencies.md)**: Checks for required library dependencies.
 - **[test_18_json_error_handling.sh](docs/test_18_json_error_handling.md)**: Tests JSON configuration error handling.
 - **[test_13_crash_handler.sh](docs/test_13_crash_handler.md)**: Tests that the crash handler correctly generates and formats core dumps.

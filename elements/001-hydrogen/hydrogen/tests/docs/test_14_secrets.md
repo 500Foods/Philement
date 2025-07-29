@@ -1,8 +1,8 @@
-# Test 14 Environment Payload Script Documentation
+# Test 14 Secrets
 
 ## Overview
 
-The `test_14_env_payload.sh` script is a validation tool within the Hydrogen test suite, focused on ensuring the proper configuration of payload encryption environment variables.
+The `test_14_secrets.sh` script is a validation tool within the Hydrogen test suite, focused on ensuring the proper configuration of payload encryption environment variables.
 
 ## Purpose
 
@@ -79,13 +79,13 @@ The script sources several library modules:
 ### Run Individually
 
 ```bash
-./test_14_env_payload.sh
+./test_14_secrets.sh
 ```
 
 ### Run Specific Test
 
 ```bash
-./test_00_all.sh 14_env_payload
+./test_00_all.sh 14_secrets
 ```
 
 ## Output Format
@@ -119,3 +119,4 @@ The test will fail if:
 - [framework.md](framework.md) - Testing framework overview and architecture
 - [env_utils.md](env_utils.md) - Environment utility functions documentation
 - [log_output.md](log_output.md) - Log output formatting and analysis
+- [SECRETS.md](/SECRETS.md) - Information about managing secrets throughout the project

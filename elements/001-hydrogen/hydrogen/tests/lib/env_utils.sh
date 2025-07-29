@@ -88,7 +88,7 @@ validate_rsa_key() {
             openssl_cmd="openssl rsa -in ${temp_key} -check -noout"
             ;;
         "public")
-            openssl_cmd="openssl rsa -pubin -in ${temp_key} -noout"
+            openssl_cmd="openssl pkey -pubin -in ${temp_key} -check -noout"
             ;;
         *)
             if command -v print_warning >/dev/null 2>&1; then
