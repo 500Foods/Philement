@@ -4,6 +4,7 @@
 # Tests that the crash handler correctly generates and formats core dumps
 #
 # CHANGELOG
+# 4.0.0 - 2025-07-28 - Shellcheck fixes, Grok even gave it a full once-over. 
 # 3.0.3 - 2025-07-14 - No more sleep
 # 3.0.2 - 2025-07-14 - Updated to use build/tests directories for test output consistency
 # 3.0.1 - 2025-07-06 - Added missing shellcheck justifications
@@ -13,7 +14,7 @@
 
 # Test Configuration
 TEST_NAME="Crash Handler"
-SCRIPT_VERSION="3.0.3"
+SCRIPT_VERSION="4.0.0"
 
 # Sort out directories
 PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
@@ -37,20 +38,21 @@ TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 EXIT_CODE=0
 PASS_COUNT=0
 TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
-RESULT_LOG="${RESULTS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
 set_test_number "${TEST_NUMBER}"
 reset_subtest_counter
 
 # Set up directories for this test run
-TEST_CONFIG=${CONFIG_DIR}/"hydrogen_test_min.json"
-STARTUP_TIMEOUT=10    
-SHUTDOWN_TIMEOUT=90   
-CRASH_TIMEOUT=30
-SHUTDOWN_ACTIVITY_TIMEOUT=5  
 RESULT_LOG="${RESULTS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
-LOG_FILE="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
+# LOG_FILE="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
 DIAG_TEST_DIR="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}"
 mkdir -p "${DIAG_TEST_DIR}"
+
+# More test configuration
+TEST_CONFIG=${CONFIG_DIR}/"hydrogen_test_min.json"
+STARTUP_TIMEOUT=10    
+# SHUTDOWN_TIMEOUT=90   
+CRASH_TIMEOUT=30
+# SHUTDOWN_ACTIVITY_TIMEOUT=5  
 
 # Print beautiful test header
 print_test_header "${TEST_NAME}" "${SCRIPT_VERSION}"
@@ -74,6 +76,7 @@ fi
 # Validate configuration file exists
 next_subtest
 print_subtest "Validate Test Configuration File"
+
 if validate_config_file "${TEST_CONFIG}"; then
     print_message "Using minimal configuration for crash testing"
     ((PASS_COUNT++))
@@ -120,19 +123,19 @@ verify_core_file_content() {
     # Check file size and verify it's a core file
     local core_size
     core_size=$(stat -c %s "${core_file}" 2>/dev/null || echo "0")
-    if [ "${core_size}" -lt 1024 ]; then
+    if [[ "${core_size}" -lt 1024 ]]; then
         print_message "Core file is suspiciously small (${core_size} bytes)"
         return 1
     fi
     
     # Verify it's a valid core file
-    if readelf -h "${core_file}" 2>/dev/null | grep -q "Core file"; then
+    readelf_output=$(readelf -h "${core_file}" 2>/dev/null)
+    if echo "${readelf_output}" | grep -q "Core file"; then
         print_message "Valid core file found (${core_size} bytes)"
         return 0
-    else
-        print_message "Not a valid core file"
-        return 1
     fi
+    print_message "Not a valid core file"
+    return 1
 }
 
 # Function to verify debug symbols are present
@@ -150,23 +153,25 @@ verify_debug_symbols() {
     print_message "Checking debug symbols in ${binary_name}..."
     
     # Use readelf to check for debug symbols
-    if readelf --debug-dump=info "${binary}" 2>/dev/null | grep -q "DW_AT_name"; then
-        if [ ${expect_symbols} -eq 1 ]; then
+    # NOTE: Use of a temporary file is authorized explicity here to avoid reading the entire file into memory
+    temp_output=$(mktemp)
+    readelf --debug-dump=info "${binary}" 2>/dev/null > "${temp_output}"
+    if grep -q -m 1 "DW_AT_name" "${temp_output}"; then
+        rm -f "${temp_output}"
+        if [[ "${expect_symbols}" -eq 1 ]]; then
             print_message "Debug symbols found in ${binary_name} (as expected)"
             return 0
-        else
-            print_message "Debug symbols found in ${binary_name} (unexpected for release build)"
-            return 1
         fi
-    else
-        if [ ${expect_symbols} -eq 1 ]; then
-            print_message "No debug symbols found in ${binary_name} (symbols required)"
-            return 1
-        else
-            print_message "No debug symbols found in ${binary_name} (as expected for release build)"
-            return 0
-        fi
+        print_message "Debug symbols found in ${binary_name} (unexpected for release build)"
+        return 1
     fi
+    rm -f "${temp_output}"
+    if [[ "${expect_symbols}" -eq 1 ]]; then
+        print_message "No debug symbols found in ${binary_name} (symbols required)"
+        return 1
+    fi
+    print_message "No debug symbols found in ${binary_name} (as expected for release build)"
+    return 0
 }
 
 # Function to verify core file exists and has correct name format
@@ -178,18 +183,17 @@ verify_core_file() {
     local expected_core="${PROJECT_DIR}/${binary_name}.core.${pid}"
     local timeout=${CRASH_TIMEOUT}
     local found=0
-    local start_time
-    start_time=$(date +%s)
+    local start_time="${SECONDS}"
     
     print_message "Waiting for core file ${binary_name}.core.${pid}..."
     
     # Wait for core file to appear
     while true; do
-        if [[ $(($(date +%s) - start_time)) -ge "${timeout}" ]]; then
+        if [[ $((SECONDS - start_time)) -ge "${timeout}" ]]; then
             break
         fi
         
-        if [ -f "${expected_core}" ]; then
+        if [[ -f "${expected_core}" ]]; then
             found=1
             break
         fi
@@ -197,7 +201,7 @@ verify_core_file() {
         # sleep 0.1
     done
     
-    if [ ${found} -eq 1 ]; then
+    if [[ "${found}" -eq 1 ]]; then
         print_message "Core file ${binary_name}.core.${pid} found"
         return 0
     else
@@ -205,7 +209,7 @@ verify_core_file() {
         # List any core files that might exist
         local core_files
         core_files=$(ls "${PROJECT_DIR}"/*.core.* 2>/dev/null || echo "")
-        if [ -n "${core_files}" ]; then
+        if [[ -n "${core_files}" ]]; then
             print_message "Other core files found: ${core_files}"
         else
             print_message "No core files found in hydrogen directory"
@@ -223,11 +227,16 @@ analyze_core_with_gdb() {
     build_name=$(basename "${binary}")
     
     # Check for debug info and set GDB flags accordingly
+    # NOTE: Use of a temporary file is authorized here to avoid reading the entire file into memory
     local gdb_flags
-    if readelf --sections "${binary}" 2>/dev/null | grep -q ".debug_info"; then
+    temp_output=$(mktemp)
+    readelf --sections "${binary}" 2>/dev/null > "${temp_output}"
+    if grep -q -m 1 ".debug_info" "${temp_output}"; then
+        rm -f "${temp_output}"
         print_message "Debug info found in binary, using full output"
         gdb_flags=(-q -ex 'set print frame-arguments all' -ex 'set print object on')
     else
+        rm -f "${temp_output}"
         print_message "No debug info found in binary, using limited output"
         gdb_flags=(-q -ex 'set print frame-arguments none' -ex 'set print object off')
     fi
@@ -273,16 +282,16 @@ EOF
 
     # Verify backtrace quality based on build type
     if [[ "${build_name}" == *"release"* ]] || [[ "${build_name}" == *"naked"* ]]; then
-        if [ ${has_backtrace} -eq 1 ]; then
+        if [[ "${has_backtrace}" -eq 1 ]]; then
             print_message "GDB produced basic backtrace (expected for release-style build)"
             return 0
         fi
-    elif [ ${has_test_crash} -eq 1 ]; then
+    elif [[ "${has_test_crash}" -eq 1 ]]; then
         print_message "GDB found test_crash_handler in backtrace"
         return 0
     else
         print_message "GDB failed to produce useful backtrace"
-        print_message "GDB output preserved at: $(convert_to_relative_path "${gdb_output_file}")"
+        print_message "GDB output preserved at: $(convert_to_relative_path "${gdb_output_file}" || true)"
         return 1
     fi
     
@@ -294,11 +303,10 @@ EOF
 wait_for_crash_completion() {
     local pid="$1"
     local timeout="$2"
-    local start_time
-    start_time=$(date +%s)
+    local start_time="${SECONDS}"
     
     while true; do
-        if [ $(($(date +%s) - start_time)) -ge "${timeout}" ]; then
+        if [[ $((SECONDS - start_time)) -ge "${timeout}" ]]; then
             return 1
         fi
         
@@ -328,21 +336,20 @@ run_crash_test_parallel() {
     local hydrogen_pid=$!
     
     # Wait for startup with active log monitoring
-    local startup_start current_time elapsed
-    startup_start=$(date +%s)
+    local startup_start="${SECONDS}"
+    local elapsed
     local startup_complete=false
     
     while true; do
-        current_time=$(date +%s)
-        elapsed=$((current_time - startup_start))
+        elapsed=$((SECONDS - startup_start))
         
         if [[ ${elapsed} -ge ${STARTUP_TIMEOUT} ]]; then
             echo "STARTUP_FAILED" > "${result_file}"
-            kill -9 ${hydrogen_pid} 2>/dev/null || true
+            kill -9 "${hydrogen_pid}" 2>/dev/null || true
             return 1
         fi
         
-        if ! ps -p ${hydrogen_pid} > /dev/null 2>&1; then
+        if ! ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
             startup_complete=true
             break
         fi
@@ -355,19 +362,19 @@ run_crash_test_parallel() {
         # sleep 0.1
     done
     
-    if [ "${startup_complete}" != "true" ] || ! ps -p ${hydrogen_pid} > /dev/null 2>&1; then
+    if [[ "${startup_complete}" != "true" ]] || ! ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         echo "STARTUP_FAILED" > "${result_file}"
-        kill -9 ${hydrogen_pid} 2>/dev/null || true
+        kill -9 "${hydrogen_pid}" 2>/dev/null || true
         return 1
     fi
     
     # Send SIGUSR1 to trigger test crash handler
-    kill -USR1 ${hydrogen_pid}
+    kill -USR1 "${hydrogen_pid}"
     
     # Wait for process to crash
-    if ! wait_for_crash_completion ${hydrogen_pid} ${CRASH_TIMEOUT}; then
+    if ! wait_for_crash_completion "${hydrogen_pid}" "${CRASH_TIMEOUT}"; then
         echo "CRASH_FAILED" > "${result_file}"
-        kill -9 ${hydrogen_pid} 2>/dev/null || true
+        kill -9 "${hydrogen_pid}" 2>/dev/null || true
         return 1
     fi
     
@@ -376,7 +383,7 @@ run_crash_test_parallel() {
     echo "SUCCESS" >> "${result_file}"
     
     # Wait for the process to fully exit
-    wait ${hydrogen_pid} 2>/dev/null || true
+    wait "${hydrogen_pid}" 2>/dev/null || true
     
     return 0
 }
@@ -391,7 +398,7 @@ analyze_parallel_results() {
     local log_file="${SCRIPT_DIR}/hydrogen_crash_test_${binary_name}_${TIMESTAMP}.log"
     
     # Check if result file exists
-    if [ ! -f "${result_file}" ]; then
+    if [[ ! -f "${result_file}" ]]; then
         print_message "No result file found for ${binary_name}"
         return 1
     fi
@@ -400,16 +407,16 @@ analyze_parallel_results() {
     local result_status
     result_status=$(tail -n 1 "${result_file}")
     
-    if [ "${result_status}" != "SUCCESS" ]; then
+    if [[ "${result_status}" != "SUCCESS" ]]; then
         print_message "${binary_name}: Test failed during execution (${result_status})"
         return 1
     fi
     
     # Extract PID from result file
     local hydrogen_pid
-    hydrogen_pid=$(grep "PID=" "${result_file}" | cut -d'=' -f2)
+    hydrogen_pid=$(grep "PID=" "${result_file}" | cut -d'=' -f2 || true)
     
-    if [ -z "${hydrogen_pid}" ]; then
+    if [[ -z "${hydrogen_pid}" ]]; then
         print_message "${binary_name}: Could not extract PID from result file"
         return 1
     fi
@@ -448,7 +455,7 @@ analyze_parallel_results() {
     fi
     
     # Analyze core file with GDB if core file was created
-    if [ ${core_result} -eq 0 ]; then
+    if [[ "${core_result}" -eq 0 ]]; then
         local core_file="${PROJECT_DIR}/${binary_name}.core.${hydrogen_pid}"
         if analyze_core_with_gdb "${binary}" "${core_file}" "${DIAGS_DIR}/${binary_name}_${TIMESTAMP}.txt"; then
             gdb_result=0
@@ -456,13 +463,13 @@ analyze_parallel_results() {
     fi
     
     # Save logs and results
-    if [ -f "${log_file}" ]; then
+    if [[ -f "${log_file}" ]]; then
         cp "${log_file}" "${RESULTS_DIR}/crash_test_${TIMESTAMP}_${binary_name}.log"
     fi
     
     # Clean up test files (preserve core files for failed tests)
     rm -f "${log_file}"
-    if [ ${core_result} -eq 0 ] && [ ${log_result} -eq 0 ] && [ ${gdb_result} -eq 0 ]; then
+    if [[ "${core_result}" -eq 0 ]] && [[ "${log_result}" -eq 0 ]] && [[ "${gdb_result}" -eq 0 ]]; then
         rm -f "${PROJECT_DIR}/${binary_name}.core.${hydrogen_pid}"
     else
         print_message "Preserving core file for debugging: ${binary_name}.core.${hydrogen_pid}"
@@ -478,7 +485,7 @@ analyze_parallel_results() {
     GDB_ANALYSIS_RESULT=${gdb_result}
     
     # Return success only if all subtests passed
-    if [ ${debug_result} -eq 0 ] && [ ${core_result} -eq 0 ] && [ ${log_result} -eq 0 ] && [ ${gdb_result} -eq 0 ]; then
+    if [[ "${debug_result}" -eq 0 ]] && [[ "${core_result}" -eq 0 ]] && [[ "${log_result}" -eq 0 ]] && [[ "${gdb_result}" -eq 0 ]]; then
         return 0
     else
         return 1
@@ -505,23 +512,22 @@ run_crash_test_with_build() {
     
     # Wait for startup with active log monitoring
     print_message "Waiting for startup (max ${STARTUP_TIMEOUT}s)..."
-    local startup_start current_time elapsed
-    startup_start=$(date +%s)
+    local startup_start="${SECONDS}"
+    local elapsed
     local startup_complete=false
     
     while true; do
         # Check if we've exceeded the timeout
-        current_time=$(date +%s)
-        elapsed=$((current_time - startup_start))
+        elapsed=$((SECONDS - startup_start))
         
-        if [ "${elapsed}" -ge "${STARTUP_TIMEOUT}" ]; then
+        if [[ "${elapsed}" -ge "${STARTUP_TIMEOUT}" ]]; then
             print_message "Startup timeout after ${elapsed}s"
-            kill -9 ${hydrogen_pid} 2>/dev/null || true
+            kill -9 "${hydrogen_pid}" 2>/dev/null || true
             return 1
         fi
         
         # Check if process is still running
-        if ! ps -p ${hydrogen_pid} > /dev/null 2>&1; then
+        if ! ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
             # This could be an expected part of the crash handler test
             print_message "Server crashed during startup (might be expected behavior)"
             startup_complete=true
@@ -539,14 +545,14 @@ run_crash_test_with_build() {
     done
     
     # Verify server is running and startup completed
-    if [ "${startup_complete}" != "true" ]; then
+    if [[ "${startup_complete}" != "true" ]]; then
         print_message "Server failed to start properly"
-        kill -9 ${hydrogen_pid} 2>/dev/null || true
+        kill -9 "${hydrogen_pid}" 2>/dev/null || true
         return 1
     fi
     
     # If process already crashed during startup, that's not what we want for this test
-    if ! ps -p ${hydrogen_pid} > /dev/null 2>&1; then
+    if ! ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         print_message "Process crashed during startup - not suitable for crash handler test"
         return 1
     fi
@@ -554,23 +560,23 @@ run_crash_test_with_build() {
     # Send SIGUSR1 to trigger test crash handler
     print_message "Triggering test crash handler with SIGUSR1..."
     print_command "kill -USR1 ${hydrogen_pid}"
-    kill -USR1 ${hydrogen_pid}
+    kill -USR1 "${hydrogen_pid}"
     
     # Wait for process to crash
     if wait_for_crash_completion "${hydrogen_pid}" "${CRASH_TIMEOUT}"; then
         print_message "Process crashed as expected"
     else
         print_message "Process did not crash within timeout"
-        kill -9 ${hydrogen_pid} 2>/dev/null || true
+        kill -9 "${hydrogen_pid}" 2>/dev/null || true
         return 1
     fi
     
     # Wait for the process to fully exit and get exit code
-    wait ${hydrogen_pid} 2>/dev/null || true
+    wait "${hydrogen_pid}" 2>/dev/null || true
     local crash_exit_code=$?
     
     # Check exit code matches SIGSEGV (11) from the null dereference
-    if [ ${crash_exit_code} -eq $((128 + 11)) ]; then
+    if [[ "${crash_exit_code}" -eq $((128 + 11)) ]]; then
         print_message "Process exited with SIGSEGV (expected for crash test)"
     else
         print_message "Process exited with unexpected code: ${crash_exit_code} (expected SIGSEGV)"
@@ -610,7 +616,7 @@ run_crash_test_with_build() {
     fi
     
     # Analyze core file with GDB if core file was created
-    if [ ${core_result} -eq 0 ]; then
+    if [[ "${core_result}" -eq 0 ]]; then
         local core_file="${PROJECT_DIR}/${binary_name}.core.${hydrogen_pid}"
         if analyze_core_with_gdb "${binary}" "${core_file}" "${PROJECT_DIR}/${binary_name}_${TIMESTAMP}.txt"; then
             gdb_result=0
@@ -618,13 +624,13 @@ run_crash_test_with_build() {
     fi
     
     # Save logs and results
-    if [ -f "${log_file}" ]; then
+    if [[ -f "${log_file}" ]]; then
         cp "${log_file}" "${RESULTS_DIR}/crash_test_${TIMESTAMP}_${binary_name}.log"
     fi
     
     # Clean up test files (preserve core files for failed tests)
     rm -f "${log_file}"
-    if [ ${core_result} -eq 0 ] && [ ${log_result} -eq 0 ] && [ ${gdb_result} -eq 0 ]; then
+    if [[ "${core_result}" -eq 0 ]] && [[ "${log_result}" -eq 0 ]] && [[ "${gdb_result}" -eq 0 ]]; then
         rm -f "${PROJECT_DIR}/${binary_name}.core.${hydrogen_pid}"
     else
         print_message "Preserving core file for debugging: ${binary_name}.core.${hydrogen_pid}"
@@ -640,7 +646,7 @@ run_crash_test_with_build() {
     GDB_ANALYSIS_RESULT=${gdb_result}
     
     # Return success only if all subtests passed
-    if [ ${debug_result} -eq 0 ] && [ ${core_result} -eq 0 ] && [ ${log_result} -eq 0 ] && [ ${gdb_result} -eq 0 ]; then
+    if [[ "${debug_result}" -eq 0 ]] && [[ "${core_result}" -eq 0 ]] && [[ "${log_result}" -eq 0 ]] && [[ "${gdb_result}" -eq 0 ]]; then
         return 0
     else
         return 1
@@ -668,7 +674,7 @@ declare -A BUILD_DESCRIPTIONS
 # Define expected build variants based on CMake targets
 declare -a BUILD_VARIANTS=("hydrogen" "hydrogen_debug" "hydrogen_valgrind" "hydrogen_perf" "hydrogen_release" "hydrogen_coverage" "hydrogen_naked")
 for target in "${BUILD_VARIANTS[@]}"; do
-    if [ -f "${PROJECT_DIR}/${target}" ] && [ -z "${FOUND_BUILDS[${target}]}" ]; then
+    if [[ -f "${PROJECT_DIR}/${target}" ]] && [[ -z "${FOUND_BUILDS[${target}]}" ]]; then
         FOUND_BUILDS[${target}]=1
         BUILDS+=("${PROJECT_DIR}/${target}")
         # Assign description based on build variant
@@ -701,26 +707,22 @@ for target in "${BUILD_VARIANTS[@]}"; do
     fi
 done
 
-if [ ${#BUILDS[@]} -eq 0 ]; then
+if [[ ${#BUILDS[@]} -eq 0 ]]; then
     next_subtest
     print_subtest "Find Hydrogen Builds"
     print_result 1 "No hydrogen builds found"
     EXIT_CODE=1
     
     # Export results and exit early
-    export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "${TOTAL_SUBTESTS}" "${PASS_COUNT}" "${TEST_NAME}" > /dev/null
     print_test_completion "${TEST_NAME}"
 
     # Return status code if sourced, exit if run standalone
     if [[ "${ORCHESTRATION}" == "true" ]]; then
-        return ${EXIT_CODE}
+        return "${EXIT_CODE}"
     else    
-        exit ${EXIT_CODE}
+        exit "${EXIT_CODE}"
     fi
 fi
-
-# Calculate total subtests: 2 initial + (4 per build)
-TOTAL_SUBTESTS=$((2 + ${#BUILDS[@]} * 4))
 
 print_message "Found ${#BUILDS[@]} builds for testing:"
 for build in "${BUILDS[@]}"; do
@@ -770,7 +772,7 @@ for build in "${BUILDS[@]}"; do
     # Test 1: Debug Symbols
     next_subtest
     print_subtest "Debug Symbols - ${build_name}"
-    if [ "${DEBUG_SYMBOL_RESULT}" -eq 0 ]; then
+    if [[ "${DEBUG_SYMBOL_RESULT}" -eq 0 ]]; then
         if [[ "${build_name}" == *"release"* ]] || [[ "${build_name}" == *"coverage"* ]] || [[ "${build_name}" == *"naked"* ]]; then
             print_result 0 "Debug symbols correctly absent in release-style build"
         else
@@ -790,7 +792,7 @@ for build in "${BUILDS[@]}"; do
     # Test 2: Core File Generation
     next_subtest
     print_subtest "Core File Generation - ${build_name}"
-    if [ "${CORE_FILE_RESULT}" -eq 0 ]; then
+    if [[ "${CORE_FILE_RESULT}" -eq 0 ]]; then
         print_result 0 "Core file generated successfully"
         ((PASS_COUNT++))
         ((BUILD_PASSED_SUBTESTS[${build_name}]++))
@@ -802,7 +804,7 @@ for build in "${BUILDS[@]}"; do
     # Test 3: Crash Handler Logging
     next_subtest
     print_subtest "Crash Handler Logging - ${build_name}"
-    if [ "${CRASH_LOG_RESULT}" -eq 0 ]; then
+    if [[ "${CRASH_LOG_RESULT}" -eq 0 ]]; then
         print_result 0 "Crash handler log messages verified"
         ((PASS_COUNT++))
         ((BUILD_PASSED_SUBTESTS[${build_name}]++))
@@ -814,7 +816,7 @@ for build in "${BUILDS[@]}"; do
     # Test 4: GDB Analysis
     next_subtest
     print_subtest "GDB Analysis - ${build_name}"
-    if [ "${GDB_ANALYSIS_RESULT}" -eq 0 ]; then
+    if [[ "${GDB_ANALYSIS_RESULT}" -eq 0 ]]; then
         print_result 0 "GDB backtrace analysis successful"
         ((PASS_COUNT++))
         ((BUILD_PASSED_SUBTESTS[${build_name}]++))
@@ -824,7 +826,7 @@ for build in "${BUILDS[@]}"; do
     fi
     
     # Summary for this build
-    if [ "${BUILD_PASSED_SUBTESTS[${build_name}]}" -eq 4 ]; then
+    if [[ "${BUILD_PASSED_SUBTESTS[${build_name}]}" -eq 4 ]]; then
         print_message "Build ${build_name}: All 4 crash handler tests passed"
     else
         print_message "Build ${build_name}: ${BUILD_PASSED_SUBTESTS[${build_name}]}/4 crash handler tests passed"
@@ -838,7 +840,7 @@ print_message "Crash handler test completed for ${#BUILDS[@]} builds"
 successful_builds=0
 for build in "${BUILDS[@]}"; do
     build_name=$(basename "${build}")
-    if [ "${BUILD_PASSED_SUBTESTS[${build_name}]}" -eq 4 ]; then
+    if [[ "${BUILD_PASSED_SUBTESTS[${build_name}]}" -eq 4 ]]; then
         ((successful_builds++))
     fi
 done
@@ -857,4 +859,3 @@ if [[ "${ORCHESTRATION}" == "true" ]]; then
 else
     exit "${EXIT_CODE}"
 fi
-

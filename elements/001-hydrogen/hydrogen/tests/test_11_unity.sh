@@ -315,27 +315,17 @@ run_unity_tests() {
     # Combine in proper order: root tests first, then subdirectory tests
     sorted_tests=("${root_tests[@]}" "${subdir_tests[@]}")
     
-    # Detect number of CPU cores for parallel execution
-    local cpu_cores
-    if command -v nproc >/dev/null 2>&1; then
-        cpu_cores=$(nproc)
-    elif [[ -f /proc/cpuinfo ]]; then
-        cpu_cores=$(grep -c ^processor /proc/cpuinfo)
-    else
-        cpu_cores=4  # Fallback to 4 cores
-    fi
-    
     # Split tests into batches for parallel execution
     # Calculate minimum number of groups needed to fit within CPU limit
     local total_tests=${#sorted_tests[@]}
-    local number_of_groups=$(( (total_tests + cpu_cores - 1) / cpu_cores ))  # ceil(total_tests / cpu_cores)
+    local number_of_groups=$(( (total_tests + CORES - 1) / CORES ))  # ceil(total_tests / cpu_cores)
     local batch_size=$(( (total_tests + number_of_groups - 1) / number_of_groups ))  # ceil(total_tests / number_of_groups)
     local total_failed=0
     local batch_num=0
     TOTAL_UNITY_TESTS=0
     TOTAL_UNITY_PASSED=0
     
-    print_message "Running ${total_tests} Unity tests in parallel batches of ~${batch_size} (max ${cpu_cores} CPUs, ${number_of_groups} groups)"
+    print_message "Running ${total_tests} Unity tests in parallel batches of ~${batch_size} (max ${CORES} CPUs, ${number_of_groups} groups)"
     
     # Process tests in batches
     local i=0
