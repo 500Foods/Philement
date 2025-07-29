@@ -55,6 +55,9 @@ mkdir -p "${DIAG_TEST_DIR}"
 # Print beautiful test header
 print_test_header "${TEST_NAME}" "${SCRIPT_VERSION}"
 
+# Print framework and log output versions as they are already sourced
+[[ -n "${ORCHESTRATION}" ]] || print_message "${FRAMEWORK_NAME} ${FRAMEWORK_VERSION}" "info"
+[[ -n "${ORCHESTRATION}" ]] || print_message "${LOG_OUTPUT_NAME} ${LOG_OUTPUT_VERSION}" "info"
 # shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
 [[ -n "${LIFECYCLE_GUARD}" ]] || source "${LIB_DIR}/lifecycle.sh"
 # shellcheck source=tests/lib/file_utils.sh # Resolve path statically

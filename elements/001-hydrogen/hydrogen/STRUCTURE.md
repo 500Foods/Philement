@@ -477,7 +477,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_19_leaks_like_a_sieve.sh](tests/test_19_leaks_like_a_sieve.sh) - Memory leak tests
 - [tests/test_11_unity.sh](tests/test_11_unity.sh) - Unity framework tests
 - [tests/test_12_env_variables.sh](tests/test_12_env_variables.sh) - Environment variable tests
-- [tests/test_14_env_payload.sh](tests/test_14_env_payload.sh) - Environment and payload tests
+- [tests/test_14_secrets.sh](tests/test_14_secrets.sh) - Checks validity of key environment variables
 - [tests/test_16_library_dependencies.sh](tests/test_16_library_dependencies.sh) - Library dependency tests
 - [tests/test_18_json_error_handling.sh](tests/test_18_json_error_handling.sh) - JSON error handling tests
 - [tests/test_13_crash_handler.sh](tests/test_13_crash_handler.sh) - Crash handler tests
