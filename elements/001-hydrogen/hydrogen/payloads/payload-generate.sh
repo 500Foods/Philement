@@ -50,18 +50,18 @@ convert_to_relative_path() {
     local relative_path
     
     # Extract the part starting from "hydrogen" and keep everything after
-    relative_path=$(echo "$absolute_path" | sed -n 's|.*/hydrogen/|hydrogen/|p')
+    relative_path=$(echo "${absolute_path}" | sed -n 's|.*/hydrogen/|hydrogen/|p')
     
     # If the path contains elements/001-hydrogen/hydrogen but not starting with hydrogen/
-    if [ -z "$relative_path" ]; then
-        relative_path=$(echo "$absolute_path" | sed -n 's|.*/elements/001-hydrogen/hydrogen|hydrogen|p')
+    if [[ -z "${relative_path}" ]]; then
+        relative_path=$(echo "${absolute_path}" | sed -n 's|.*/elements/001-hydrogen/hydrogen|hydrogen|p')
     fi
     
     # If we still couldn't find a match, return the original
-    if [ -z "$relative_path" ]; then
-        echo "$absolute_path"
+    if [[ -z "${relative_path}" ]]; then
+        echo "${absolute_path}"
     else
-        echo "$relative_path"
+        echo "${relative_path}"
     fi
 }
 
@@ -106,7 +106,7 @@ check_dependencies() {
         missing_deps=1
     fi
     
-    if [ $missing_deps -ne 0 ]; then
+    if [[ "${missing_deps}" -ne 0 ]]; then
         exit 1
     fi
 }
@@ -116,16 +116,18 @@ print_header() {
     local title="$1"
     echo -e "
 ${BLUE}────────────────────────────────────────────────────────────────${NC}"
-    echo -e "${BLUE}${BOLD} $title ${NC}"
+    echo -e "${BLUE}${BOLD} ${title} ${NC}"
     echo -e "${BLUE}────────────────────────────────────────────────────────────────${NC}"
 }
 
 # Function to display script information
 display_script_info() {
     print_header "Encrypted Payload Generator for Hydrogen"
+    PATH1=$(set -e; convert_to_relative_path "${SWAGGERUI_DIR}")
+    PATH2=$(set -e; convert_to_relative_path "${COMPRESSED_TAR_FILE}")
     echo -e "${CYAN}${INFO} SwaggerUI Version:       ${NC}${SWAGGERUI_VERSION}"
-    echo -e "${CYAN}${INFO} Working directory:       ${NC}$(convert_to_relative_path "${SWAGGERUI_DIR}")"
-    echo -e "${CYAN}${INFO} Final encrypted file:    ${NC}$(convert_to_relative_path "${COMPRESSED_TAR_FILE}")"
+    echo -e "${CYAN}${INFO} Working directory:       ${NC}${PATH1}"
+    echo -e "${CYAN}${INFO} Final encrypted file:    ${NC}${PATH2}"
     echo -e "${CYAN}${INFO} Temporary directory:     ${NC}${TEMP_DIR}"
 }
 
@@ -138,13 +140,13 @@ cleanup() {
     rm -rf "${TEMP_DIR}"
     
     # Remove the temporary swaggerui directory if it exists
-    if [ -d "${SWAGGERUI_DIR}" ]; then
+    if [[ -d "${SWAGGERUI_DIR}" ]]; then
         echo -e "${CYAN}${INFO} Removing temporary SwaggerUI directory...${NC}"
         rm -rf "${SWAGGERUI_DIR}"
     fi
     
     # Remove intermediate tar file if it exists
-    if [ -f "${TAR_FILE}" ]; then
+    if [[ -f "${TAR_FILE}" ]]; then
         echo -e "${CYAN}${INFO} Removing intermediate tar file...${NC}"
         rm -f "${TAR_FILE}"
     fi
@@ -161,7 +163,7 @@ cleanup() {
 # Function to create SwaggerUI index.html
 create_index_html() {
     local target_file="$1"
-    cat > "$target_file" << 'EOF'
+    cat > "${target_file}" << 'EOF'
 <!-- HTML for static distribution bundle build -->
 <!DOCTYPE html>
 <html lang="en">
@@ -191,7 +193,7 @@ EOF
 # Function to create SwaggerUI initializer
 create_swagger_initializer() {
     local target_file="$1"
-    cat > "$target_file" << EOF
+    cat > "${target_file}" << EOF
 window.onload = function() {
   window.ui = SwaggerUIBundle({
     url: "swagger.json",
@@ -230,7 +232,7 @@ download_swaggerui() {
     # Create the temporary swaggerui directory for processing
     echo -e "${CYAN}${INFO} Creating temporary SwaggerUI directory...${NC}"
     # Remove existing swaggerui directory if it exists
-    if [ -d "${SWAGGERUI_DIR}" ]; then
+    if [[ -d "${SWAGGERUI_DIR}" ]]; then
         echo -e "${YELLOW}${WARN} Removing existing SwaggerUI directory...${NC}"
         rm -rf "${SWAGGERUI_DIR}"
     fi
@@ -247,7 +249,7 @@ download_swaggerui() {
     cp "${TEMP_DIR}/swagger-ui-${SWAGGERUI_VERSION}/dist/oauth2-redirect.html" "${SWAGGERUI_DIR}/"
     
     # Copy swagger.json (both compressed and uncompressed)
-    if [ -f "${SCRIPT_DIR}/swagger.json" ]; then
+    if [[ -f "${SCRIPT_DIR}/swagger.json" ]]; then
         echo -e "${GREEN}${PASS} Found swagger.json, copying for packaging...${NC}"
         cp "${SCRIPT_DIR}/swagger.json" "${SWAGGERUI_DIR}/"
     else
@@ -306,13 +308,13 @@ validate_brotli_compression() {
     local original_file="$2"
     
     echo -e "${CYAN}${INFO} Testing Brotli decompression...${NC}"
-    if ! brotli -d "$compressed_file" -o "${TEMP_DIR}/test.tar" 2>/dev/null; then
+    if ! brotli -d "${compressed_file}" -o "${TEMP_DIR}/test.tar" 2>/dev/null; then
         echo -e "${RED}${FAIL} Brotli validation failed - invalid compressed data${NC}"
         exit 1
     fi
     
     # Compare original and decompressed files
-    if ! cmp -s "$original_file" "${TEMP_DIR}/test.tar"; then
+    if ! cmp -s "${original_file}" "${TEMP_DIR}/test.tar"; then
         echo -e "${RED}${FAIL} Brotli validation failed - decompressed data mismatch${NC}"
         exit 1
     fi
@@ -360,7 +362,7 @@ create_tarball() {
     echo -e "${CYAN}${INFO} Compressing tar file with Brotli...${NC}"
     echo -e "${CYAN}${INFO} - Quality: 11 (maximum)${NC}"
     echo -e "${CYAN}${INFO} - Window: 24 (16MB)${NC}"
-    echo -e "${CYAN}${INFO} - Input size: $(stat -c%s "${TAR_FILE}") bytes${NC}"
+    echo -e "${CYAN}${INFO} - Input size: $(stat -c%s "${TAR_FILE}" || true) bytes${NC}"
     
     # Use explicit Brotli parameters with correct syntax
     brotli --quality=11 --lgwin=24 --force \
@@ -374,7 +376,7 @@ create_tarball() {
     fi
     
     # Verify the compressed file
-    if [ ! -f "${TEMP_DIR}/payload.tar.br" ]; then
+    if [[ ! -f "${TEMP_DIR}/payload.tar.br" ]]; then
         echo -e "${RED}${FAIL} Compressed file not created${NC}"
         exit 1
     fi
@@ -383,13 +385,13 @@ create_tarball() {
     local br_size
     local br_head_16
     local br_tail_16
-    br_size=$(stat -c%s "${TEMP_DIR}/payload.tar.br")
-    br_head_16=$(head -c16 "${TEMP_DIR}/payload.tar.br" | xxd -p | tr -d '\n')
-    br_tail_16=$(tail -c16 "${TEMP_DIR}/payload.tar.br" | xxd -p | tr -d '\n')
+    br_size=$(stat -c%s "${TEMP_DIR}/payload.tar.br" || true)
+    br_head_16=$(head -c16 "${TEMP_DIR}/payload.tar.br" | xxd -p | tr -d '\n' || true)
+    br_tail_16=$(tail -c16 "${TEMP_DIR}/payload.tar.br" | xxd -p | tr -d '\n' || true)
     
     echo -e "${CYAN}${INFO} Brotli stream validation:${NC}"
     echo -e "${CYAN}${INFO} - Compressed size: ${br_size} bytes${NC}"
-    echo -e "${CYAN}${INFO} - Compression ratio: $(echo "scale=2; ${br_size}*100/$(stat -c%s "${TAR_FILE}")" | bc)%${NC}"
+    echo -e "${CYAN}${INFO} - Compression ratio: $(echo "scale=2; ${br_size}*100/$(stat -c%s "${TAR_FILE}" || true)" | bc || true)%${NC}"
     echo -e "${CYAN}${INFO} - First 32 bytes: ${br_head_16}${NC}"
     echo -e "${CYAN}${INFO} - Last 32 bytes: ${br_tail_16}${NC}"
     
@@ -397,13 +399,13 @@ create_tarball() {
     validate_brotli_compression "${TEMP_DIR}/payload.tar.br" "${TAR_FILE}"
     
     # Create validation files
-    create_validation_files "$br_size" "$br_head_16" "$br_tail_16"
+    create_validation_files "${br_size}" "${br_head_16}" "${br_tail_16}"
 
     print_header "Encrypting Payload Package"
     echo -e "${CYAN}${INFO} Encrypting payload tarball...${NC}"
 
     # Check for PAYLOAD_LOCK environment variable (RSA public key for AES key encryption)
-    if [ -z "${PAYLOAD_LOCK}" ]; then
+    if [[ -z "${PAYLOAD_LOCK}" ]]; then
         echo -e "${RED}${FAIL} Error: PAYLOAD_LOCK environment variable must be set${NC}"
         echo -e "${YELLOW}${INFO} This variable should contain the base64-encoded RSA public key for payload encryption${NC}"
         exit 1
@@ -420,8 +422,8 @@ create_tarball() {
     openssl rand -out "${TEMP_DIR}/aes_iv.bin" 16
     
     # Log first 5 chars of AES key and IV (hex)
-    echo -e "${CYAN}${INFO} AES key first 5 chars (hex): ${BOLD}$(xxd -p -l 5 "${TEMP_DIR}/aes_key.bin")${NC}"
-    echo -e "${CYAN}${INFO} AES IV first 5 chars (hex): ${BOLD}$(xxd -p -l 5 "${TEMP_DIR}/aes_iv.bin")${NC}"
+    echo -e "${CYAN}${INFO} AES key first 5 chars (hex): ${BOLD}$(xxd -p -l 5 "${TEMP_DIR}/aes_key.bin" || true)${NC}"
+    echo -e "${CYAN}${INFO} AES IV first 5 chars (hex): ${BOLD}$(xxd -p -l 5 "${TEMP_DIR}/aes_iv.bin" || true)${NC}"
 
     # Encrypt the AES key with the RSA public key (PAYLOAD_LOCK)
     echo -e "${CYAN}${INFO} Encrypting AES key with RSA public key (PAYLOAD_LOCK)...${NC}"
@@ -450,8 +452,8 @@ create_tarball() {
     openssl enc -aes-256-cbc \
                 -in "${TEMP_DIR}/payload.tar.br" \
                 -out "${TEMP_DIR}/temp_payload.enc" \
-                -K "$(xxd -p -c 32 "${TEMP_DIR}/aes_key.bin")" \
-                -iv "$(xxd -p -c 16 "${TEMP_DIR}/aes_iv.bin")"
+                -K "$(xxd -p -c 32 "${TEMP_DIR}/aes_key.bin" || true)" \
+                -iv "$(xxd -p -c 16 "${TEMP_DIR}/aes_iv.bin" || true)"
     
     # Verify encryption size
     local enc_size
@@ -465,13 +467,13 @@ create_tarball() {
     openssl enc -d -aes-256-cbc \
                 -in "${TEMP_DIR}/temp_payload.enc" \
                 -out "${TEMP_DIR}/validation.br" \
-                -K "$(xxd -p -c 32 "${TEMP_DIR}/aes_key.bin")" \
-                -iv "$(xxd -p -c 16 "${TEMP_DIR}/aes_iv.bin")"
+                -K "$(xxd -p -c 32 "${TEMP_DIR}/aes_key.bin" || true)" \
+                -iv "$(xxd -p -c 16 "${TEMP_DIR}/aes_iv.bin" || true)"
     
     # Compare the first 16 bytes
     local val_head_16
-    val_head_16=$(head -c16 "${TEMP_DIR}/validation.br" | xxd -p | tr -d '\n')
-    if [ "${val_head_16}" = "${br_head_16}" ]; then
+    val_head_16=$(head -c16 "${TEMP_DIR}/validation.br" | xxd -p | tr -d '\n' || true)
+    if [[ "${val_head_16}" = "${br_head_16}" ]]; then
         echo -e "${GREEN}${PASS} Encryption validation passed - headers match${NC}"
     else
         echo -e "${RED}${FAIL} Encryption validation failed!${NC}"
@@ -482,14 +484,14 @@ create_tarball() {
     
     # Log the first 16 bytes of the encrypted payload
     local enc_head_16
-    enc_head_16=$(head -c16 "${TEMP_DIR}/temp_payload.enc" | xxd -p | tr -d '\n')
+    enc_head_16=$(head -c16 "${TEMP_DIR}/temp_payload.enc" | xxd -p | tr -d '\n' || true)
     echo -e "${CYAN}${INFO} AES-encrypted payload first 16 bytes: ${NC}${enc_head_16}"
     
     # Combine the encrypted AES key, IV, and encrypted payload
     echo -e "${CYAN}${INFO} Creating final encrypted payload with IV...${NC}"
     
     # Write the size of the encrypted key as a 4-byte binary header
-    printf "%08x" "$encrypted_key_size" | xxd -r -p > "${COMPRESSED_TAR_FILE}"
+    printf "%08x" "${encrypted_key_size}" | xxd -r -p > "${COMPRESSED_TAR_FILE}"
     
     # Append the encrypted AES key, IV, and encrypted payload using grouped redirects
     {
@@ -505,12 +507,12 @@ create_tarball() {
     brotli -d < "${TEMP_DIR}/payload.tar.br" | tar -tvf - | \
     while read -r line; do
         # Check if the file is a brotli-compressed file
-        if [[ "$line" == *".br" ]]; then
-            echo -e "  ${MAGENTA}${BOLD}$line${NC} ${YELLOW}(brotli-compressed)${NC}"
+        if [[ "${line}" == *".br" ]]; then
+            echo -e "  ${MAGENTA}${BOLD}${line}${NC} ${YELLOW}(brotli-compressed)${NC}"
         else
-            echo -e "  ${CYAN}$line${NC}"
+            echo -e "  ${CYAN}${line}${NC}"
         fi
-    done
+    done || true
     echo -e "${BLUE}────────────────────────────────────────────────────────────────${NC}"
     
     # Display file sizes and hex samples for reference
@@ -519,16 +521,16 @@ create_tarball() {
     # Original tarball
     local tar_size tar_head tar_tail
     tar_size=$(stat -c%s "${TAR_FILE}")
-    tar_head=$(head -c5 "${TAR_FILE}" | xxd -p | tr -d '\n')
-    tar_tail=$(tail -c5 "${TAR_FILE}" | xxd -p | tr -d '\n')
+    tar_head=$(head -c5 "${TAR_FILE}" | xxd -p | tr -d '\n' || true)
+    tar_tail=$(tail -c5 "${TAR_FILE}" | xxd -p | tr -d '\n' || true)
     echo -e "  ${GREEN}${INFO} Uncompressed tar:         ${NC}${tar_size} bytes"
     echo -e "  ${GREEN}${INFO} First 5 bytes (hex):      ${NC}${tar_head}"
     echo -e "  ${GREEN}${INFO} Last 5 bytes (hex):       ${NC}${tar_tail}"
     
     # Brotli compressed tar
     local br_head_5 br_tail_5
-    br_head_5=$(head -c5 "${TEMP_DIR}/payload.tar.br" | xxd -p | tr -d '\n')
-    br_tail_5=$(tail -c5 "${TEMP_DIR}/payload.tar.br" | xxd -p | tr -d '\n')
+    br_head_5=$(head -c5 "${TEMP_DIR}/payload.tar.br" | xxd -p | tr -d '\n' || true)
+    br_tail_5=$(tail -c5 "${TEMP_DIR}/payload.tar.br" | xxd -p | tr -d '\n' || true)
     echo -e "  ${GREEN}${INFO} Compressed tar (brotli):  ${NC}${br_size} bytes"
     echo -e "  ${GREEN}${INFO} First 5 bytes (hex):      ${NC}${br_head_5}"
     echo -e "  ${GREEN}${INFO} Last 5 bytes (hex):       ${NC}${br_tail_5}"
@@ -536,8 +538,8 @@ create_tarball() {
     # Final encrypted payload
     local final_enc_size final_enc_head final_enc_tail
     final_enc_size=$(stat -c%s "${COMPRESSED_TAR_FILE}")
-    final_enc_head=$(head -c5 "${COMPRESSED_TAR_FILE}" | xxd -p | tr -d '\n')
-    final_enc_tail=$(tail -c5 "${COMPRESSED_TAR_FILE}" | xxd -p | tr -d '\n')
+    final_enc_head=$(head -c5 "${COMPRESSED_TAR_FILE}" | xxd -p | tr -d '\n' || true)
+    final_enc_tail=$(tail -c5 "${COMPRESSED_TAR_FILE}" | xxd -p | tr -d '\n' || true)
     echo -e "  ${GREEN}${INFO} Encrypted payload:        ${NC}${final_enc_size} bytes"
     echo -e "  ${GREEN}${INFO} First 5 bytes (hex):      ${NC}${final_enc_head}"
     echo -e "  ${GREEN}${INFO} Last 5 bytes (hex):       ${NC}${final_enc_tail}"
@@ -551,8 +553,9 @@ create_tarball() {
 # Function to display completion summary
 display_completion_summary() {
     print_header "Generation Complete"
+    PATH3=$(set -e;convert_to_relative_path "${COMPRESSED_TAR_FILE}")
     echo -e "${GREEN}${PASS} ${BOLD}Encrypted payload generation completed successfully!${NC}"
-    echo -e "${CYAN}${INFO} Encrypted payload created at: ${BOLD}$(convert_to_relative_path "${COMPRESSED_TAR_FILE}")${NC}"
+    echo -e "${CYAN}${INFO} Encrypted payload created at: ${BOLD}${PATH3}${NC}"
     echo -e "${YELLOW}${INFO} Cleaning up will occur on exit...${NC}"
     echo -e "${BLUE}────────────────────────────────────────────────────────────────${NC}"
 }

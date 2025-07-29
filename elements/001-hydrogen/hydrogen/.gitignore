@@ -28,10 +28,7 @@ system_test_*.log
 error_*.log
 
 # Test generated temporary files
-tests/diagnostics/
-tests/results/
-tests/logs/
-tests/gcov/
+tests/profile*.txt
 tests/*.log
 response_*.json
 temp_*
