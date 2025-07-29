@@ -37,7 +37,6 @@ mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_D
 # Test configuration
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 EXIT_CODE=0
-TOTAL_SUBTESTS=4
 PASS_COUNT=0
 TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
 RESULT_LOG="${RESULTS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
@@ -55,7 +54,6 @@ print_test_header "${TEST_NAME}" "${SCRIPT_VERSION}"
 [[ -n "${COVERAGE_GUARD}" ]] || source "${LIB_DIR}/coverage.sh"
 # shellcheck source=tests/lib/coverage-unity.sh # Resolve path statically
 [[ -n "${COVERAGE_UNITY_GUARD}" ]] || source "${LIB_DIR}/coverage-unity.sh"
-
 
 # Navigate to the project root (one level up from tests directory)
 if ! navigate_to_project_root "${SCRIPT_DIR}"; then

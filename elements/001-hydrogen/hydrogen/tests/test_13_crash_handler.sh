@@ -15,59 +15,58 @@
 TEST_NAME="Crash Handler"
 SCRIPT_VERSION="3.0.3"
 
-# Get the directory where this script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Sort out directories
+PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
+SCRIPT_DIR="${PROJECT_DIR}/tests"
+LIB_DIR="${SCRIPT_DIR}/lib"
+BUILD_DIR="${PROJECT_DIR}/build"
+TESTS_DIR="${BUILD_DIR}/tests"
+RESULTS_DIR="${TESTS_DIR}/results"
+DIAGS_DIR="${TESTS_DIR}/diagnostics"
+LOGS_DIR="${TESTS_DIR}/logs"
+CONFIG_DIR="${SCRIPT_DIR}/configs"
+mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}"
 
-if [[ -z "${LOG_OUTPUT_SH_GUARD}" ]]; then
-    # shellcheck source=tests/lib/log_output.sh # Resolve path statically
-    source "${SCRIPT_DIR}/lib/log_output.sh"
-fi
-
-# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/file_utils.sh"
 # shellcheck source=tests/lib/framework.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/framework.sh"
-# shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/lifecycle.sh"
+[[ -n "${FRAMEWORK_GUARD}" ]] || source "${LIB_DIR}/framework.sh"
+# shellcheck source=tests/lib/log_output.sh # Resolve path statically
+[[ -n "${LOG_OUTPUT_GUARD}" ]] || source "${LIB_DIR}/log_output.sh"
 
 # Test configuration
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 EXIT_CODE=0
-TOTAL_SUBTESTS=0  # Will be calculated dynamically based on builds found
 PASS_COUNT=0
-
-# Crash test configuration
-STARTUP_TIMEOUT=10
-CRASH_TIMEOUT=5
-
-# Auto-extract test number and set up environment
 TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
+RESULT_LOG="${RESULTS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
 set_test_number "${TEST_NUMBER}"
 reset_subtest_counter
+
+# Set up directories for this test run
+TEST_CONFIG=${CONFIG_DIR}/"hydrogen_test_min.json"
+STARTUP_TIMEOUT=10    
+SHUTDOWN_TIMEOUT=90   
+CRASH_TIMEOUT=30
+SHUTDOWN_ACTIVITY_TIMEOUT=5  
+RESULT_LOG="${RESULTS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
+LOG_FILE="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
+DIAG_TEST_DIR="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}"
+mkdir -p "${DIAG_TEST_DIR}"
 
 # Print beautiful test header
 print_test_header "${TEST_NAME}" "${SCRIPT_VERSION}"
 
-# Use build directory for test results
-BUILD_DIR="${SCRIPT_DIR}/../build"
-RESULTS_DIR="${BUILD_DIR}/tests/results"
-GDB_OUTPUT_DIR="${BUILD_DIR}/tests/diagnostics/gdb_analysis"
-mkdir -p "${RESULTS_DIR}" "${GDB_OUTPUT_DIR}"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-RESULT_LOG="${RESULTS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
+# shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
+[[ -n "${LIFECYCLE_GUARD}" ]] || source "${LIB_DIR}/lifecycle.sh"
+# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
+[[ -n "${FILE_UTILS_GUARD}" ]] || source "${LIB_DIR}/file_utils.sh"
+# shellcheck source=tests/lib/env_utils.sh # Resolve path statically
+[[ -n "${ENV_UTILS_GUARD}" ]] || source "${LIB_DIR}/env_utils.sh"
 
 # Navigate to the project root (one level up from tests directory)
 if ! navigate_to_project_root "${SCRIPT_DIR}"; then
     print_error "Failed to navigate to project root directory"
     exit 1
 fi
-
-# Set up results directory (after navigating to project root)
-
-# Get Hydrogen directory
-HYDROGEN_DIR="$( cd "${SCRIPT_DIR}/.." && pwd )"
-
-# Test configuration
-TEST_CONFIG=$(get_config_path "hydrogen_test_min.json")
 
 # Validate configuration file exists
 next_subtest
@@ -173,7 +172,7 @@ verify_core_file() {
     local pid="$2"
     local binary_name
     binary_name=$(basename "${binary}")
-    local expected_core="${HYDROGEN_DIR}/${binary_name}.core.${pid}"
+    local expected_core="${PROJECT_DIR}/${binary_name}.core.${pid}"
     local timeout=${CRASH_TIMEOUT}
     local found=0
     local start_time
@@ -183,7 +182,7 @@ verify_core_file() {
     
     # Wait for core file to appear
     while true; do
-        if [ $(($(date +%s) - start_time)) -ge "${timeout}" ]; then
+        if [[ $(($(date +%s) - start_time)) -ge "${timeout}" ]]; then
             break
         fi
         
@@ -202,7 +201,7 @@ verify_core_file() {
         print_message "Core file ${binary_name}.core.${pid} not found after ${timeout} seconds"
         # List any core files that might exist
         local core_files
-        core_files=$(ls "${HYDROGEN_DIR}"/*.core.* 2>/dev/null || echo "")
+        core_files=$(ls "${PROJECT_DIR}"/*.core.* 2>/dev/null || echo "")
         if [ -n "${core_files}" ]; then
             print_message "Other core files found: ${core_files}"
         else
@@ -334,7 +333,7 @@ run_crash_test_parallel() {
         current_time=$(date +%s)
         elapsed=$((current_time - startup_start))
         
-        if [ ${elapsed} -ge ${STARTUP_TIMEOUT} ]; then
+        if [[ ${elapsed} -ge ${STARTUP_TIMEOUT} ]]; then
             echo "STARTUP_FAILED" > "${result_file}"
             kill -9 ${hydrogen_pid} 2>/dev/null || true
             return 1
@@ -428,7 +427,7 @@ analyze_parallel_results() {
         core_result=0
         
         # If core file exists, verify its contents
-        local core_file="${HYDROGEN_DIR}/${binary_name}.core.${hydrogen_pid}"
+        local core_file="${PROJECT_DIR}/${binary_name}.core.${hydrogen_pid}"
         if ! verify_core_file_content "${core_file}" "${binary}"; then
             print_message "Core file exists but content verification failed"
             core_result=1
@@ -447,8 +446,8 @@ analyze_parallel_results() {
     
     # Analyze core file with GDB if core file was created
     if [ ${core_result} -eq 0 ]; then
-        local core_file="${HYDROGEN_DIR}/${binary_name}.core.${hydrogen_pid}"
-        if analyze_core_with_gdb "${binary}" "${core_file}" "${GDB_OUTPUT_DIR}/${binary_name}_${TIMESTAMP}.txt"; then
+        local core_file="${PROJECT_DIR}/${binary_name}.core.${hydrogen_pid}"
+        if analyze_core_with_gdb "${binary}" "${core_file}" "${DIAGS_DIR}/${binary_name}_${TIMESTAMP}.txt"; then
             gdb_result=0
         fi
     fi
@@ -461,7 +460,7 @@ analyze_parallel_results() {
     # Clean up test files (preserve core files for failed tests)
     rm -f "${log_file}"
     if [ ${core_result} -eq 0 ] && [ ${log_result} -eq 0 ] && [ ${gdb_result} -eq 0 ]; then
-        rm -f "${HYDROGEN_DIR}/${binary_name}.core.${hydrogen_pid}"
+        rm -f "${PROJECT_DIR}/${binary_name}.core.${hydrogen_pid}"
     else
         print_message "Preserving core file for debugging: ${binary_name}.core.${hydrogen_pid}"
     fi
@@ -590,7 +589,7 @@ run_crash_test_with_build() {
         core_result=0
         
         # If core file exists, verify its contents
-        local core_file="${HYDROGEN_DIR}/${binary_name}.core.${hydrogen_pid}"
+        local core_file="${PROJECT_DIR}/${binary_name}.core.${hydrogen_pid}"
         if ! verify_core_file_content "${core_file}" "${binary}"; then
             print_message "Core file exists but content verification failed"
             core_result=1
@@ -609,8 +608,8 @@ run_crash_test_with_build() {
     
     # Analyze core file with GDB if core file was created
     if [ ${core_result} -eq 0 ]; then
-        local core_file="${HYDROGEN_DIR}/${binary_name}.core.${hydrogen_pid}"
-        if analyze_core_with_gdb "${binary}" "${core_file}" "${GDB_OUTPUT_DIR}/${binary_name}_${TIMESTAMP}.txt"; then
+        local core_file="${PROJECT_DIR}/${binary_name}.core.${hydrogen_pid}"
+        if analyze_core_with_gdb "${binary}" "${core_file}" "${PROJECT_DIR}/${binary_name}_${TIMESTAMP}.txt"; then
             gdb_result=0
         fi
     fi
@@ -623,7 +622,7 @@ run_crash_test_with_build() {
     # Clean up test files (preserve core files for failed tests)
     rm -f "${log_file}"
     if [ ${core_result} -eq 0 ] && [ ${log_result} -eq 0 ] && [ ${gdb_result} -eq 0 ]; then
-        rm -f "${HYDROGEN_DIR}/${binary_name}.core.${hydrogen_pid}"
+        rm -f "${PROJECT_DIR}/${binary_name}.core.${hydrogen_pid}"
     else
         print_message "Preserving core file for debugging: ${binary_name}.core.${hydrogen_pid}"
     fi
@@ -666,9 +665,9 @@ declare -A BUILD_DESCRIPTIONS
 # Define expected build variants based on CMake targets
 declare -a BUILD_VARIANTS=("hydrogen" "hydrogen_debug" "hydrogen_valgrind" "hydrogen_perf" "hydrogen_release" "hydrogen_coverage" "hydrogen_naked")
 for target in "${BUILD_VARIANTS[@]}"; do
-    if [ -f "${HYDROGEN_DIR}/${target}" ] && [ -z "${FOUND_BUILDS[${target}]}" ]; then
+    if [ -f "${PROJECT_DIR}/${target}" ] && [ -z "${FOUND_BUILDS[${target}]}" ]; then
         FOUND_BUILDS[${target}]=1
-        BUILDS+=("${HYDROGEN_DIR}/${target}")
+        BUILDS+=("${PROJECT_DIR}/${target}")
         # Assign description based on build variant
         case "${target}" in
             "hydrogen")
