@@ -44,7 +44,8 @@ export FRAMEWORK_NAME FRAMEWORK_VERSION
 
 # Set the number of CPU cores for parallel processing
 CORES=$(nproc)
-export CORES
+CORESPLUS=$((CORES * 2))
+export CORES CORESPLUS
 
 # Sort out directories
 PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"

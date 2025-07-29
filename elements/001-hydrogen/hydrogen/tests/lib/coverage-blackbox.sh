@@ -75,19 +75,10 @@ collect_blackbox_coverage() {
     fi
     
     # Generate gcov files more efficiently using parallel processing
-    # Detect number of CPU cores for parallel build
-    local cpu_cores
-    if command -v nproc >/dev/null 2>&1; then
-        cpu_cores=$(nproc)
-    elif [[ -f /proc/cpuinfo ]]; then
-        cpu_cores=$(grep -c ^processor /proc/cpuinfo)
-    else
-        cpu_cores=4  # Fallback to 4 cores
-    fi
-    
+       
     if command -v xargs >/dev/null 2>&1; then
         # Use xargs for parallel processing with all available cores
-        find . -name "*.gcda" -print0 | xargs -0 -P"${cpu_cores}" -I{} sh -c "
+        find . -name "*.gcda" -print0 | xargs -0 -P 0 -I{} sh -c "
             gcda_dir=\"\$(dirname '{}')\"
             cd \"\${gcda_dir}\" && gcov \"\$(basename '{}')\" >/dev/null 2>&1
         " || true
@@ -217,18 +208,8 @@ collect_blackbox_coverage_from_dir() {
     cd "${coverage_dir}" || return 1
     
     # Generate gcov files efficiently using parallel processing
-    # Detect number of CPU cores for parallel build
-    local cpu_cores
-    if command -v nproc >/dev/null 2>&1; then
-        cpu_cores=$(nproc)
-    elif [[ -f /proc/cpuinfo ]]; then
-        cpu_cores=$(grep -c ^processor /proc/cpuinfo)
-    else
-        cpu_cores=4  # Fallback to 4 cores
-    fi
-    
     if command -v xargs >/dev/null 2>&1; then
-        find . -name "*.gcda" -print0 | xargs -0 -P"${cpu_cores}" -I{} sh -c "
+        find . -name "*.gcda" -print0 | xargs -0 -P 0 -I{} sh -c "
             gcda_dir=\"\$(dirname '{}')\"
             cd \"\${gcda_dir}\" && gcov \"\$(basename '{}')\" >/dev/null 2>&1
         " || true
