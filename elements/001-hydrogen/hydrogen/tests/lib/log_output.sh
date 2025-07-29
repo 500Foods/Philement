@@ -210,32 +210,41 @@ record_test_result() {
 get_elapsed_time() {
     if [[ -n "${TEST_START_TIME}" ]]; then
         local end_time
-        end_time=$(date +%s.%3N)
-        local elapsed
-        elapsed=$(echo "${end_time} - ${TEST_START_TIME}" | bc -l 2>/dev/null || echo "0.000")
-        # Format as SSS.ZZZ (seconds.milliseconds with zero padding)
-        local seconds
-        local milliseconds
-        seconds=$(echo "${elapsed}" | cut -d. -f1)
-        milliseconds=$(echo "${elapsed}" | cut -d. -f2)
-        # Ensure milliseconds is exactly 3 digits, pad or truncate as needed
-        milliseconds="${milliseconds}000"  # Add padding
-        milliseconds="${milliseconds:0:3}" # Truncate to 3 digits
-        # Format with zero padding for seconds (3 digits)
-        printf "%03d.%s" "${seconds}" "${milliseconds}"
+        end_time=$(date +%s.%3N) 
+        local end_secs=${end_time%.*}
+        local end_ms=${end_time#*.}
+        local start_secs=${TEST_START_TIME%.*}
+        local start_ms=${TEST_START_TIME#*.}
+        end_ms=$((10#${end_ms}))
+        start_ms=$((10#${start_ms}))
+        local end_total_ms=$((end_secs * 1000 + end_ms))
+        local start_total_ms=$((start_secs * 1000 + start_ms))
+        local elapsed_ms=$((end_total_ms - start_total_ms))
+        local seconds=$((elapsed_ms / 1000))
+        local milliseconds=$((elapsed_ms % 1000))
+        printf "%03d.%03d" "${seconds}" "${milliseconds}"
     else
         echo "000.000"
     fi
 }
 
-# Function to calculate elapsed time in decimal format for table output
+# Function to calculate elapsed time in decimal format (X.XXX) for table output
 get_elapsed_time_decimal() {
     if [[ -n "${TEST_START_TIME}" ]]; then
         local end_time
-        end_time=$(date +%s.%3N)
-        local elapsed
-        elapsed=$(echo "${end_time} - ${TEST_START_TIME}" | bc -l 2>/dev/null || echo "0.000")
-        printf "%.3f" "${elapsed}"
+        end_time=$(date +%s.%3N) 
+        local end_secs=${end_time%.*}
+        local end_ms=${end_time#*.}
+        local start_secs=${TEST_START_TIME%.*}
+        local start_ms=${TEST_START_TIME#*.}
+        end_ms=$((10#${end_ms}))
+        start_ms=$((10#${start_ms}))
+        local end_total_ms=$((end_secs * 1000 + end_ms))
+        local start_total_ms=$((start_secs * 1000 + start_ms))
+        local elapsed_ms=$((end_total_ms - start_total_ms))
+        local seconds=$((elapsed_ms / 1000))
+        local milliseconds=$((elapsed_ms % 1000))
+        printf "%d.%03d" "${seconds}" "${milliseconds}"
     else
         echo "0.000"
     fi

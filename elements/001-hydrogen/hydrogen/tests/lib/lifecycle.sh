@@ -188,9 +188,9 @@ start_hydrogen_with_pid() {
     
     while [[ ${check_attempt} -le ${max_attempts} ]]; do
         if [[ ${check_attempt} -eq 1 ]]; then
-            sleep 0.2  # Initial check after brief delay
+            sleep 0.1  # Initial check after brief delay
         else
-            sleep 0.1  # Short delay between subsequent checks
+            sleep 0.05  # Short delay between subsequent checks
         fi
         
         if ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
@@ -351,7 +351,7 @@ monitor_shutdown() {
             fi
         fi
         
-        sleep 0.1
+        sleep 0.05
     done
     
     return 0
@@ -472,7 +472,7 @@ ensure_no_hydrogen_running() {
         echo "INFO: Ensuring no Hydrogen instances are running..."
     fi
     pkill -f hydrogen || true
-    sleep 2
+    sleep 0.5
     return 0
 }
 
@@ -485,7 +485,7 @@ kill_hydrogen_process() {
             echo "INFO: Cleaning up Hydrogen (PID ${HYDROGEN_PID})..."
         fi
         kill -SIGINT "${HYDROGEN_PID}" 2>/dev/null || kill -9 "${HYDROGEN_PID}" 2>/dev/null
-        sleep 1
+        sleep 0.1
         HYDROGEN_PID=""
     fi
     return 0

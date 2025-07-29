@@ -1,29 +1,11 @@
 #!/bin/bash
 
 # Markdown link checker script - xargs Parallel Processing Version
-# Usage: ./github-sitemap-xargs.sh <markdown_file> [--debug] [--theme <Red|Blue>] [--profile] [--jobs <N>]
-# Version: 0.7.0
+# Usage: ./github-sitemap-xargs.sh <markdown_file> [--debug] [--theme <Red|Blue>] [--profile] 
 # Description: Checks local markdown links in a repository using xargs parallel processing
 
 # Application version
 declare -r APPVERSION="0.7.0"
-
-# Auto-detect optimal number of jobs
-detect_cpu_count() {
-    local cpu_count
-    if command -v nproc >/dev/null 2>&1; then
-        cpu_count=$(nproc)
-    elif [[ -r /proc/cpuinfo ]]; then
-        cpu_count=$(grep -c ^processor /proc/cpuinfo)
-    elif command -v sysctl >/dev/null 2>&1; then
-        cpu_count=$(sysctl -n hw.ncpu 2>/dev/null || echo 1)
-    else
-        cpu_count=1
-    fi
-    
-    # Use full CPU count without capping for maximum parallelism
-    echo "${cpu_count}"
-}
 
 # Performance timing functions
 declare -A timing_data
@@ -53,7 +35,6 @@ QUIET=false
 NOREPORT=false
 HELP=false
 PROFILE=false
-JOBS=""  # Will be set later if not specified
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -68,15 +49,6 @@ while [[ $# -gt 0 ]]; do
                 shift 2
             else
                 echo "Error: --ignore requires a file path" >&2
-                exit 1
-            fi
-            ;;
-        --jobs)
-            if [[ -n "$2" && "$2" =~ ^[0-9]+$ ]]; then
-                JOBS="$2"
-                shift 2
-            else
-                echo "Error: --jobs requires a number" >&2
                 exit 1
             fi
             ;;
@@ -95,7 +67,7 @@ done
 
 # Check if help is requested
 if [[ "${HELP}" == "true" ]]; then
-    echo "Usage: $0 <markdown_file> [--debug] [--quiet] [--noreport] [--help] [--theme <Red|Blue>] [--profile] [--jobs <N>] [--ignore <file>]" || true
+    echo "Usage: $0 <markdown_file> [--debug] [--quiet] [--noreport] [--help] [--theme <Red|Blue>] [--profile] [--ignore <file>]" || true
     echo "Options:"
     echo "  --debug      Enable debug logging"
     echo "  --quiet      Display only tables, suppress other output"
@@ -103,7 +75,6 @@ if [[ "${HELP}" == "true" ]]; then
     echo "  --help       Display this help message"
     echo "  --theme      Set table theme to 'Red' or 'Blue' (default: Red)"
     echo "  --profile    Enable performance profiling"
-    echo "  --jobs       Number of parallel jobs (default: auto-detected $(detect_cpu_count || true))"
     echo "  --ignore     Specify a file with ignore patterns (like .lintignore)"
     exit 0
 fi
@@ -121,10 +92,6 @@ debug_log() {
 
 timing_start "total_execution"
 timing_start "initialization"
-
-if [[ "${DEBUG}" == "true" ]]; then
-    debug_log "Starting xargs parallel script with \"${JOBS}\" jobs (auto-detected: $(detect_cpu_count || true) CPUs)"
-fi
 
 # Check dependencies
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -477,13 +444,6 @@ timing_end "parallel_setup"
 # Process files in parallel using xargs
 timing_start "parallel_processing"
 
-# Set JOBS if not specified by user
-if [[ -z "${JOBS}" ]]; then
-    JOBS=$(detect_cpu_count)
-fi
-
-debug_log "Starting parallel processing with ${JOBS} jobs using xargs"
-
 # Start with input file and iteratively discover linked files
 declare -A processed_files
 echo "${INPUT_FILE}" > "${files_to_process}"
@@ -495,7 +455,7 @@ while [[ -s "${files_to_process}" ]]; do
     debug_log "Processing iteration ${iteration} with $(wc -l < "${files_to_process}" || true) files"
     
     # Process current batch in parallel using xargs
-    xargs -P "${JOBS}" -I {} bash -c "process_file_batch \"\$1\" \"\$2\" \"\$3\" \"\$4\" <<< \"\$5\"" _ "${cache_file}" "${repo_root}" "${original_dir}" "${results_file}" {} < "${files_to_process}"
+    xargs -P 0 -I {} bash -c "process_file_batch \"\$1\" \"\$2\" \"\$3\" \"\$4\" <<< \"\$5\"" _ "${cache_file}" "${repo_root}" "${original_dir}" "${results_file}" {} < "${files_to_process}"
     # Extract newly discovered files from results
     new_files_temp="${temp_dir}/new_files_${iteration}.txt"
     : > "${new_files_temp}"
@@ -671,7 +631,7 @@ timing_end "json_generation"
 
 # Output results
 if [[ "${QUIET}" != "true" ]]; then
-    echo "Markdown Link Checker v${APPVERSION} (xargs Parallel Mode - ${JOBS} jobs)"
+    echo "Markdown Link Checker v${APPVERSION}"
     echo "Issues found: ${missing_count}"
     echo ""
 fi
@@ -726,7 +686,6 @@ timing_end "total_execution"
 # Performance summary
 if [[ "${PROFILE}" == "true" ]]; then
     echo "" >&2
-    echo "[PROFILE] Performance Summary (xargs Parallel Mode - ${JOBS} jobs):" >&2
     echo "[PROFILE] Total execution: ${timing_data[total_execution_duration]}ms" >&2
     echo "[PROFILE] Initialization: ${timing_data[initialization_duration]}ms" >&2
     echo "[PROFILE] Load ignore patterns: ${timing_data[load_ignore_patterns_duration]}ms" >&2
