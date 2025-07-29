@@ -87,4 +87,3 @@ The test validates that when provided with malformed JSON:
 
 - [test_00_all.md](test_00_all.md) - Main test orchestration system
 - [LIBRARIES.md](LIBRARIES.md) - Table of Contents for modular library scripts in the 'lib/' directory
-- [test_14_env_payload.md](test_14_env_payload.md) - Related configuration and payload testing

@@ -222,30 +222,6 @@ run_check() {
     fi
 }
 
-# Function to evaluate test results and update pass count with output
-evaluate_test_result() {
-    local test_name="$1"
-    local failed_checks="$2"
-    local pass_count_var="$3"
-    local exit_code_var="$4"
-    
-    if [[ "${failed_checks}" -eq 0 ]]; then
-        if command -v print_result >/dev/null 2>&1; then
-            print_result 0 "${test_name} test PASSED"
-        else
-            echo "RESULT: ${test_name} test PASSED"
-        fi
-        eval "${pass_count_var}=\$((\${${pass_count_var}} + 1))"
-    else
-        if command -v print_result >/dev/null 2>&1; then
-            print_result 1 "${test_name} test FAILED"
-        else
-            echo "RESULT: ${test_name} test FAILED"
-        fi
-        eval "${exit_code_var}=1"
-    fi
-}
-
 # Function to evaluate test results silently (no output, just update counts)
 evaluate_test_result_silent() {
     local test_name="$1"
