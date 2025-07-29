@@ -100,13 +100,13 @@ cached=0
 
 for cmd in "${commands[@]}"; do
     cache_file="${CACHE_CMD_DIR}/${cmd// /_}"  # Replace spaces if any, though none here
-    if [ -f "${cache_file}" ]; then
+    if [[ -f "${cache_file}" ]]; then
         # Read cached: format "path|version"
         IFS='|' read -r cached_path cached_version < "${cache_file}"
         current_path=$(command -v "${cmd}" 2>/dev/null || echo "")
-        if [ "${current_path}" = "${cached_path}" ]; then
+        if [[ "${current_path}" = "${cached_path}" ]]; then
             ((cached++))
-            if [ -n "${cached_version}" ]; then
+            if [[ -n "${cached_version}" ]]; then
                 results+=("0|${cmd} @ ${cached_path}|${cached_version}")
             else
                 results+=("0|${cmd} @ ${cached_path}|no version found")
@@ -118,7 +118,8 @@ for cmd in "${commands[@]}"; do
 done
 
 # Run version checks in parallel for misses using xargs with inlined logic
-if [ ${#to_process[@]} -gt 0 ]; then
+if [[ ${#to_process[@]} -gt 0 ]]; then
+    # shellcheck disable=SC2016 # Script within a script doesn't make shellcheck very happy
     while IFS= read -r line; do
         results+=("${line}")
     done < <(printf "%s\n" "${to_process[@]}" | xargs -P 0 -I {} bash -c '
@@ -141,7 +142,7 @@ if [ ${#to_process[@]} -gt 0 ]; then
         else
             echo "1|${cmd}|Command not found"
         fi
-    ' )
+    ' ) || true
 fi
 
 # Sort the results array based on the message field (field 2, after the first '|')
