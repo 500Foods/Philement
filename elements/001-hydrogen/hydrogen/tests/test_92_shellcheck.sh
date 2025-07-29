@@ -56,16 +56,9 @@ if ! navigate_to_project_root "${SCRIPT_DIR}"; then
 fi
 
 # Test configuration constants
-[[ -z "${LINT_OUTPUT_LIMIT:-}" ]] && readonly LINT_OUTPUT_LIMIT=20
+[[ -z "${LINT_OUTPUT_LIMIT:-}" ]] && readonly LINT_OUTPUT_LIMIT=10
 [[ -z "${LINT_EXCLUDES:-}" ]] && readonly LINT_EXCLUDES=(
     "build/*"
-    "build_debug/*"
-    "build_perf/*"
-    "build_release/*"
-    "build_valgrind/*"
-    "tests/logs/*"
-    "tests/results/*"
-    "tests/diagnostics/*"
 )
 
 # Check if a file should be excluded from linting
@@ -128,70 +121,49 @@ if command -v shellcheck >/dev/null 2>&1; then
         CACHE_DIR="${HOME}/.cache/.shellcheck"
         mkdir -p "${CACHE_DIR}"
 
-        # Function to get file modification time as cache key
-        get_file_mtime() {
-            stat -c %Y "$1" 2>/dev/null || echo 0
-        }
+        # Batch compute content hashes for all files
+        declare -A file_hashes
+        while read -r hash file; do
+            file_hashes["${file}"]="${hash}"
+        done < <(md5sum "${SHELL_FILES[@]}")
 
-        # Categorize files by size
-        large_files=()
-        medium_files=()
-        small_files=()
         cached_files=0
-        processed_files=0
+        processed_scripts=0
+        to_process=()
 
         for file in "${SHELL_FILES[@]}"; do
-            file_mtime=$(get_file_mtime "${file}")
-            cache_file="${CACHE_DIR}/$(basename "${file}")_${file_mtime}"
-            if [[ -f "${cache_file}" && "$(stat -c %Y "${file}" 2>/dev/null)" == "${file_mtime}" ]]; then
+            content_hash="${file_hashes[${file}]}"
+            # Flatten path for uniqueness (replace / with _)
+            flat_path=$(echo "${file}" | tr '/' '_')
+            cache_file="${CACHE_DIR}/${flat_path}_${content_hash}"
+            if [ -f "${cache_file}" ]; then
                 ((cached_files++))
                 cat "${cache_file}" >> "${TEMP_OUTPUT}" 2>&1
             else
-                lines=$(wc -l < "${file}" 2>/dev/null || echo 0)
-                if [ "${lines}" -gt 400 ]; then
-                    large_files+=("${file}")
-                elif [ "${lines}" -gt 100 ]; then
-                    medium_files+=("${file}")
-                else
-                    small_files+=("${file}")
-                fi
-                ((processed_files++))
+                to_process+=("${file}")
+                ((processed_scripts++))
             fi
         done
 
-        print_message "Using cached results for ${cached_files} files, processing ${processed_files} files..."
+        print_message "Using cached results for ${cached_files} files, processing ${processed_scripts} files..."
 
-        # Process files and cache results
-        if [ ${processed_files} -gt 0 ]; then
-            CORES=$(nproc)
-            for size in large medium small; do
-                case ${size} in
-                    large)
-                        files=("${large_files[@]}")
-                        batch_size=1
-                        ;;
-                    medium)
-                        files=("${medium_files[@]}")
-                        batch_size=3
-                        [ ${#medium_files[@]} -gt $((CORES * 4)) ] && batch_size=4
-                        ;;
-                    small)
-                        files=("${small_files[@]}")
-                        batch_size=8
-                        [ ${#small_files[@]} -gt $((CORES * 8)) ] && batch_size=12
-                        ;;
-                esac
-                if [ ${#files[@]} -gt 0 ]; then
-                    printf '%s\n' "${files[@]}" | xargs -r -n "${batch_size}" -P "${CORES}" shellcheck > "${TEMP_OUTPUT}.batch" 2>&1
-                    for file in "${files[@]}"; do
-                        file_mtime=$(get_file_mtime "${file}")
-                        cache_file="${CACHE_DIR}/$(basename "${file}")_${file_mtime}"
-                        grep "^${file}:" "${TEMP_OUTPUT}.batch" > "${cache_file}" 2>/dev/null
-                    done
-                    cat "${TEMP_OUTPUT}.batch" >> "${TEMP_OUTPUT}" 2>&1
-                    rm -f "${TEMP_OUTPUT}.batch"
-                fi
-            done
+        # Function to run shellcheck and cache for a single file
+        process_script() {
+            local file="$1"
+            local content_hash="$2"
+            local flat_path=$(echo "${file}" | tr '/' '_')
+            local cache_file="${CACHE_DIR}/${flat_path}_${content_hash}"
+            shellcheck "${file}" > "${cache_file}" 2>&1
+            cat "${cache_file}"
+        }
+
+        export -f process_script  # Export for subshells
+
+        # Process non-cached files in parallel, passing file and hash
+        if [ ${processed_scripts} -gt 0 ]; then
+            for file in "${to_process[@]}"; do
+                printf '%s %s\n' "${file}" "${file_hashes[${file}]}"
+            done | xargs -n 2 -P "${CORES}" bash -c 'process_scripts "$0" "$1"' >> "${TEMP_OUTPUT}" 2>&1
         fi
 
         # Filter output
@@ -234,21 +206,57 @@ SHELLCHECK_DIRECTIVE_TOTAL=0
 SHELLCHECK_DIRECTIVE_WITH_JUSTIFICATION=0
 SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION=0
 
+# Function to process a single file and output counters + messages
+process_file() {
+    local file="$1"
+    local total=0 with_just=0 without_just=0
+    while IFS= read -r line; do
+        if [[ "${line}" =~ ^[[:space:]]*"# shellcheck" ]]; then
+            ((total++))
+            if [[ "${line}" =~ ^[[:space:]]*"# shellcheck"[[:space:]]+[^[:space:]]+[[:space:]]+"#".* ]]; then
+                ((with_just++))
+            else
+                ((without_just++))
+                # Output to a file-specific log to avoid interleaving
+                echo "No justification found in ${file}: ${line}" >> "${file}.nojust.log"
+            fi
+        fi
+    done < "${file}"
+    # Output counters in a parseable format
+    echo "${total} ${with_just} ${without_just} ${file}"
+}
+
+export -f process_file
+
 if [ ${#SHELL_FILES[@]} -gt 0 ]; then
     print_message "Analyzing ${SHELL_COUNT} shell scripts for shellcheck directives..."
-    for file in "${SHELL_FILES[@]}"; do
+
+    # Create a temporary directory for per-file logs
+    tmp_dir=$(mktemp -d)
+    trap 'rm -rf "${tmp_dir}"' EXIT
+
+    # Parallelize with xargs, using 12 processes
+    printf '%s\n' "${SHELL_FILES[@]}" | xargs -P 0 -I {} bash -c 'process_file "{}"' > "${tmp_dir}/results"
+
+    # Aggregate results
+    while IFS= read -r line; do
+        read -r total with_just without_just file <<< "${line}"
+        ((SHELLCHECK_DIRECTIVE_TOTAL += total))
+        ((SHELLCHECK_DIRECTIVE_WITH_JUSTIFICATION += with_just))
+        ((SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION += without_just))
+        # Collect any no-justification messages
+        if [ -f "${file}.nojust.log" ]; then
+            cat "${file}.nojust.log" >> "${tmp_dir}/nojust.log"
+            rm "${file}.nojust.log"
+        fi
+    done < "${tmp_dir}/results"
+
+    # Print collected no-justification messages
+    if [ -f "${tmp_dir}/nojust.log" ]; then
         while IFS= read -r line; do
-            if [[ "${line}" =~ ^[[:space:]]*"# shellcheck" ]]; then
-                ((SHELLCHECK_DIRECTIVE_TOTAL++))
-                if [[ "${line}" =~ ^[[:space:]]*"# shellcheck"[[:space:]]+[^[:space:]]+[[:space:]]+"#".* ]]; then
-                    ((SHELLCHECK_DIRECTIVE_WITH_JUSTIFICATION++))
-                else
-                    ((SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION++))
-                    print_output "No justification found in ${file}: ${line}"
-                fi
-            fi
-        done < <(grep "^[[:space:]]*# shellcheck" "${file}")
-    done
+            print_output "${line}"
+        done < "${tmp_dir}/nojust.log"
+    fi
 
     print_message "INFO: Total shellcheck directives: ${SHELLCHECK_DIRECTIVE_TOTAL}"
     print_message "INFO: Directives with justification: ${SHELLCHECK_DIRECTIVE_WITH_JUSTIFICATION}"
