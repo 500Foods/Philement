@@ -42,9 +42,6 @@ TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
 set_test_number "${TEST_NUMBER}"
 reset_subtest_counter
 
-# Detect available cores for optimal parallelization
-CORES=$(nproc 2>/dev/null || echo 1)
-
 # Print beautiful test header
 print_test_header "${TEST_NAME}" "${SCRIPT_VERSION}"
 

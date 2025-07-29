@@ -42,6 +42,10 @@ FRAMEWORK_VERSION="2.2.0"
 export FRAMEWORK_NAME FRAMEWORK_VERSION
 # print_message "${FRAMEWORK_NAME} ${FRAMEWORK_VERSION}" "info"
 
+# Set the number of CPU cores for parallel processing
+CORES=$(nproc)
+export CORES
+
 # Sort out directories
 PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
 # SCRIPT_DIR="${PROJECT_DIR}/tests"
