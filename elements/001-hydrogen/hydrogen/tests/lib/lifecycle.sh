@@ -4,18 +4,16 @@
 # Handles starting and stopping the Hydrogen Server with various configurations.
 
 # LIBRARY FUNCTIONS
-# find_hydrogen_binary()
-# start_hydrogen_with_pid()
-# start_hydrogen()
-# wait_for_startup()
-# stop_hydrogen()
+# find_hydrogen_binary() - Tests 12, 16, 18, 22,24, 26, 28, 30, 32, 34, 36
+# start_hydrogen_with_pid() - Tests 28, 30, 32, 34, 36
+# wait_for_startup() 
+# stop_hydrogen() - Tests 28, 30, 32, 34, 36
 # monitor_shutdown()
 # get_process_threads()
 # capture_process_diagnostics()
 # configure_hydrogen_binary()
 # initialize_test_environment()
 # ensure_no_hydrogen_running()
-# start_hydrogen_with_env()
 # kill_hydrogen_process()
 # verify_log_file_exists()
 # validate_config_files()
@@ -221,112 +219,6 @@ start_hydrogen_with_pid() {
     if wait_for_startup "${log_file}" "${timeout}" "${launch_time_ms}"; then
         # Set the PID in the reference variable
         eval "${pid_var}='${hydrogen_pid}'"
-        return 0
-    else
-        print_result 1 "Hydrogen startup timed out"
-        kill -9 "${hydrogen_pid}" 2>/dev/null || true
-        return 1
-    fi
-}
-
-# Function to start Hydrogen application
-start_hydrogen() {
-    local config_file="$1"
-    local log_file="$2"
-    local timeout="$3"
-    local hydrogen_bin="$4"
-    local hydrogen_pid
-    
-    # Check if logging functions are available
-    if ! command -v print_message >/dev/null 2>&1; then
-        echo "ERROR: print_message function not available - ensure log_output.sh is sourced" >&2
-        return 1
-    fi
-    if ! command -v print_command >/dev/null 2>&1; then
-        echo "ERROR: print_command function not available - ensure log_output.sh is sourced" >&2
-        return 1
-    fi
-    if ! command -v print_error >/dev/null 2>&1; then
-        echo "ERROR: print_error function not available - ensure log_output.sh is sourced" >&2
-        return 1
-    fi
-    if ! command -v print_result >/dev/null 2>&1; then
-        echo "ERROR: print_result function not available - ensure log_output.sh is sourced" >&2
-        return 1
-    fi
-    if ! command -v print_output >/dev/null 2>&1; then
-        echo "ERROR: print_output function not available - ensure log_output.sh is sourced" >&2
-        return 1
-    fi
-    
-    print_message "Starting Hydrogen with $(basename "${config_file}" .json)..."
-    # Clean log file
-    true > "${log_file}"
-    
-    # Validate binary and config exist
-    if [[ ! -f "${hydrogen_bin}" ]]; then
-        print_error "Hydrogen binary not found at: ${hydrogen_bin}"
-        return 1
-    fi
-    if [[ ! -f "${config_file}" ]]; then
-        print_error "Configuration file not found at: ${config_file}"
-        return 1
-    fi
-    
-    # Show the exact command that will be executed
-    local cmd_display
-    cmd_display="$(basename "${hydrogen_bin}") $(basename "${config_file}")"
-    print_command "${cmd_display}"
-    
-    # Record launch time
-    local launch_time_ms
-    launch_time_ms=$(date +%s%3N)
-    
-    # Launch Hydrogen (disown to prevent job control messages)
-    "${hydrogen_bin}" "${config_file}" > "${log_file}" 2>&1 &
-    hydrogen_pid=$!
-    disown "${hydrogen_pid}" 2>/dev/null || true
-    
-    # Display the PID for tracking
-    print_message "Hydrogen process started with PID: ${hydrogen_pid}"
-    
-    # Verify process started with multiple attempts for robustness
-    local check_attempt=1
-    local max_attempts=5
-    local process_running=false
-    
-    while [[ ${check_attempt} -le ${max_attempts} ]]; do
-        if [[ ${check_attempt} -eq 1 ]]; then
-            sleep 0.2  # Initial check after brief delay
-        else
-            sleep 0.1  # Short delay between subsequent checks
-        fi
-        
-        if ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
-            process_running=true
-            break
-        fi
-        
-        ((check_attempt++))
-    done
-    
-    if [[ "${process_running}" = false ]]; then
-        print_result 1 "Failed to start Hydrogen - process did not start or crashed immediately (checked ${max_attempts} times)"
-        print_message "Check log file for possible errors: ${log_file}"
-        if [[ -s "${log_file}" ]]; then
-            print_message "Last few lines of log file:"
-            # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
-            while IFS= read -r line; do
-                print_output "${line}"
-            done < <(tail -n 5 "${log_file}" || true)
-        fi
-        return 1
-    fi
-    
-    # Wait for startup
-    print_message "Waiting for startup (max ${timeout}s)..."
-    if wait_for_startup "${log_file}" "${timeout}" "${launch_time_ms}"; then
-        # PID is now returned via the calling function's variable capture
         return 0
     else
         print_result 1 "Hydrogen startup timed out"
@@ -581,74 +473,6 @@ ensure_no_hydrogen_running() {
     fi
     pkill -f hydrogen || true
     sleep 2
-    return 0
-}
-
-# Function to start Hydrogen with environment variables and wait for initialization
-start_hydrogen_with_env() {
-    local output_file="$1"
-    local test_name="$2"
-    local config_file="$3"
-    
-    if [[ -z "${HYDROGEN_BIN}" ]]; then
-        if ! configure_hydrogen_binary ""; then
-            return 1
-        fi
-    fi
-    
-    if [[ -z "${config_file}" ]]; then
-        if command -v print_error >/dev/null 2>&1; then
-            print_error "Configuration file parameter is required"
-        else
-            echo "ERROR: Configuration file parameter is required"
-        fi
-        return 1
-    fi
-    
-    if [[ ! -f "${config_file}" ]]; then
-        if command -v print_error >/dev/null 2>&1; then
-            print_error "Configuration file not found: ${config_file}"
-        else
-            echo "ERROR: Configuration file not found: ${config_file}"
-        fi
-        return 1
-    fi
-    
-    if command -v print_message >/dev/null 2>&1; then
-        print_message "Starting Hydrogen with ${test_name}..."
-    else
-        echo "INFO: Starting Hydrogen with ${test_name}..."
-    fi
-    
-    ${HYDROGEN_BIN} "${config_file}" > "${output_file}" 2>&1 &
-    HYDROGEN_PID=$!
-    disown "${HYDROGEN_PID}" 2>/dev/null || true
-    
-    if command -v print_message >/dev/null 2>&1; then
-        print_message "Started with PID: ${HYDROGEN_PID}"
-    else
-        echo "INFO: Started with PID: ${HYDROGEN_PID}"
-    fi
-    
-    # Wait for server to initialize
-    sleep 5
-    
-    # Check if server is running
-    if ! ps -p "${HYDROGEN_PID}" > /dev/null; then
-        if command -v print_error >/dev/null 2>&1; then
-            print_error "Hydrogen failed to start with ${test_name}"
-        else
-            echo "ERROR: Hydrogen failed to start with ${test_name}"
-        fi
-        cat "${output_file}"
-        return 1
-    fi
-    
-    if command -v print_message >/dev/null 2>&1; then
-        print_message "Hydrogen started successfully"
-    else
-        echo "INFO: Hydrogen started successfully"
-    fi
     return 0
 }
 
