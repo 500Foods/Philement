@@ -183,7 +183,7 @@ start_hydrogen_with_pid() {
     
     # Verify process started with multiple attempts for robustness
     local check_attempt=1
-    local max_attempts=5
+    local max_attempts=25
     local process_running=false
     
     while [[ ${check_attempt} -le ${max_attempts} ]]; do

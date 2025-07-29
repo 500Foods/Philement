@@ -407,7 +407,7 @@ make_http_requests() {
     fi
     
     # Log start
-    if [ $use_print_message -eq 1 ]; then
+    if [[ "${use_print_message}" -eq 1 ]]; then
         print_message "Making HTTP requests to create active connections"
     else
         echo "INFO: Making HTTP requests to create active connections"
@@ -415,14 +415,14 @@ make_http_requests() {
     
     # Extract port from base_url (e.g., http://localhost:8080 -> 8080)
     local port
-    if [[ $base_url =~ :([0-9]+) ]]; then
+    if [[ "${base_url}" =~ :([0-9]+) ]]; then
         port=${BASH_REMATCH[1]}
     else
         port=80
     fi
     
     # Wait for server to be ready
-    if [ $use_print_message -eq 1 ]; then
+    if [[ "${use_print_message}" -eq 1 ]]; then
         print_message "Waiting for server to be ready..."
     else
         echo "INFO: Waiting for server to be ready..."
@@ -432,12 +432,12 @@ make_http_requests() {
     local elapsed_ms=0
     local start_time
     start_time=$(date +%s%3N)  # Epoch time in milliseconds
-    while [ $elapsed_ms -lt $max_wait_ms ]; do
+    while [[ "${elapsed_ms}" -lt "${max_wait_ms}" ]]; do
         if check_port_in_use "${port}"; then
             local end_time
             end_time=$(date +%s%3N)
             elapsed_ms=$((end_time - start_time))
-            if [ $use_print_message -eq 1 ]; then
+            if [[ "${use_print_message}" -eq 1 ]]; then
                 print_message "Server is ready on port ${port} after ${elapsed_ms}ms"
             else
                 echo "INFO: Server is ready on port ${port} after ${elapsed_ms}ms"
@@ -447,8 +447,8 @@ make_http_requests() {
         sleep 0.05
         elapsed_ms=$((elapsed_ms + check_interval_ms))
     done
-    if [ $elapsed_ms -ge $max_wait_ms ]; then
-        if [ $use_print_warning -eq 1 ]; then
+    if [[ "${elapsed_ms}" -ge "${max_wait_ms}" ]]; then
+        if [[ "${use_print_warning}" -eq 1 ]]; then
             print_warning "Server did not become ready on port ${port} within $((max_wait_ms / 1000))s"
         else
             echo "WARNING: Server did not become ready on port ${port} within $((max_wait_ms / 1000))s" >&2
@@ -456,14 +456,14 @@ make_http_requests() {
     fi
     
     # Make requests to common web files
-    if [ $use_print_message -eq 1 ]; then
+    if [[ "${use_print_message}" -eq 1 ]]; then
         print_message "Requesting index.html..."
     else
         echo "INFO: Requesting index.html..."
     fi
     curl -s --max-time 5 "${base_url}/" -o "${results_dir}/index_response_${timestamp}.html" 2>/dev/null || true
     
-    if [ $use_print_message -eq 1 ]; then
+    if [[ "${use_print_message}" -eq 1 ]]; then
         print_message "Requesting favicon.ico..."
     else
         echo "INFO: Requesting favicon.ico..."
@@ -471,14 +471,14 @@ make_http_requests() {
     curl -s --max-time 5 "${base_url}/favicon.ico" -o "${results_dir}/favicon_response_${timestamp}.ico" 2>/dev/null || true
     
     # Batch additional requests
-    if [ $use_print_message -eq 1 ]; then
+    if [[ "${use_print_message}" -eq 1 ]]; then
         print_message "Making additional requests to establish multiple connections..."
     else
         echo "INFO: Making additional requests to establish multiple connections..."
     fi
     curl -s --max-time 5 "${base_url}/robots.txt" "${base_url}/sitemap.xml" -o /dev/null 2>/dev/null || true
     
-    if [ $use_print_message -eq 1 ]; then
+    if [[ "${use_print_message}" -eq 1 ]]; then
         print_message "HTTP requests completed - connections established"
     else
         echo "INFO: HTTP requests completed - connections established"
