@@ -166,9 +166,9 @@ start_hydrogen_with_pid() {
     
     while [[ ${check_attempt} -le ${max_attempts} ]]; do
         if [[ ${check_attempt} -eq 1 ]]; then
-            sleep 0.120  # Initial check after brief delay
+            sleep 0.040  # Initial check after brief delay
         else
-            sleep 0.050  # Short delay between subsequent checks
+            sleep 0.040  # Short delay between subsequent checks
         fi
         
         if ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
