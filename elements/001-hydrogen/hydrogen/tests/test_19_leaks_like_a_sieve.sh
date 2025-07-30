@@ -16,40 +16,51 @@
 TEST_NAME="Memory Leak Detection"
 SCRIPT_VERSION="3.0.4"
 
-# Get the directory where this script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Sort out directories
+PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
+SCRIPT_DIR="${PROJECT_DIR}/tests"
+LIB_DIR="${SCRIPT_DIR}/lib"
+BUILD_DIR="${PROJECT_DIR}/build"
+TESTS_DIR="${BUILD_DIR}/tests"
+RESULTS_DIR="${TESTS_DIR}/results"
+DIAGS_DIR="${TESTS_DIR}/diagnostics"
+LOGS_DIR="${TESTS_DIR}/logs"
+CONFIG_DIR="${SCRIPT_DIR}/configs"
+mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}"
 
-if [[ -z "${LOG_OUTPUT_SH_GUARD}" ]]; then
-    # shellcheck source=tests/lib/log_output.sh # Resolve path statically
-    source "${SCRIPT_DIR}/lib/log_output.sh"
-fi
-
-# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/file_utils.sh"
 # shellcheck source=tests/lib/framework.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/framework.sh"
-# shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/lifecycle.sh"
+[[ -n "${FRAMEWORK_GUARD}" ]] || source "${LIB_DIR}/framework.sh"
+# shellcheck source=tests/lib/log_output.sh # Resolve path statically
+[[ -n "${LOG_OUTPUT_GUARD}" ]] || source "${LIB_DIR}/log_output.sh"
 
 # Test configuration
 EXIT_CODE=0
-TOTAL_SUBTESTS=4
 PASS_COUNT=0
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+RESULT_LOG="${RESULTS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
+# ERROR_OUTPUT="${LOGS_DIR}/json_error_output_${TIMESTAMP}.log"
 
 # Auto-extract test number and set up environment
 TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
 set_test_number "${TEST_NUMBER}"
 reset_subtest_counter
 
+# Test configuration
+CONFIG_FILE="${CONFIG_DIR}/hydrogen_test_api_test_1.json"
+SERVER_LOG="${LOGS_DIR}/test_${TEST_NUMBER}_server_${TIMESTAMP}.log"
+LEAK_REPORT="${DIAGS_DIR}/test_${TEST_NUMBER}_leak_report_${TIMESTAMP}.log"
+LEAK_SUMMARY="${DIAGS_DIR}/test_${TEST_NUMBER}_leak_summary_${TIMESTAMP}.log"
+
 # Print beautiful test header
 print_test_header "${TEST_NAME}" "${SCRIPT_VERSION}"
 
-# Always use build/tests/results directory
-BUILD_DIR="${SCRIPT_DIR}/../build"
-RESULTS_DIR="${BUILD_DIR}/tests/results"
-mkdir -p "${RESULTS_DIR}"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-RESULT_LOG="${RESULTS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
+# Print framework and log output versions as they are already sourced
+[[ -n "${ORCHESTRATION}" ]] || print_message "${FRAMEWORK_NAME} ${FRAMEWORK_VERSION}" "info"
+[[ -n "${ORCHESTRATION}" ]] || print_message "${LOG_OUTPUT_NAME} ${LOG_OUTPUT_VERSION}" "info"
+# shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
+[[ -n "${LIFECYCLE_GUARD}" ]] || source "${LIB_DIR}/lifecycle.sh"
+# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
+[[ -n "${FILE_UTILS_GUARD}" ]] || source "${LIB_DIR}/file_utils.sh"
 
 # Navigate to the project root (one level up from tests directory)
 if ! navigate_to_project_root "${SCRIPT_DIR}"; then
@@ -57,23 +68,18 @@ if ! navigate_to_project_root "${SCRIPT_DIR}"; then
     exit 1
 fi
 
-# Set up results directory (after navigating to project root)
-
-# Test configuration
-CONFIG_FILE="tests/configs/hydrogen_test_api_test_1.json"
-
 # Subtest 1: Validate debug build availability and ASAN support
 next_subtest
 print_subtest "Validate Debug Build and ASAN Support"
 
 # Find debug build
 DEBUG_BUILD="hydrogen_debug"
-if [ ! -f "${DEBUG_BUILD}" ]; then
+if [[ ! -f "${DEBUG_BUILD}" ]]; then
     print_result 1 "Debug build not found. This test requires the debug build with ASAN."
     EXIT_CODE=1
 else
     # Verify ASAN is enabled in debug build
-    if ! readelf -s "${DEBUG_BUILD}" | grep -q "__asan"; then
+    if ! { readelf -s "${DEBUG_BUILD}" || true; } | grep -q "__asan"; then
         print_result 1 "Debug build does not have ASAN enabled"
         EXIT_CODE=1
     else
@@ -87,7 +93,7 @@ next_subtest
 print_subtest "Validate Configuration File"
 
 CONFIG_PATH="${CONFIG_FILE}"
-if [ ! -f "${CONFIG_PATH}" ]; then
+if [[ ! -f "${CONFIG_PATH}" ]]; then
     print_result 1 "Configuration file not found: ${CONFIG_PATH}"
     EXIT_CODE=1
 else
@@ -96,11 +102,8 @@ else
 fi
 
 # Skip remaining tests if prerequisites failed
-if [ ${EXIT_CODE} -ne 0 ]; then
+if [[ ${EXIT_CODE} -ne 0 ]]; then
     print_warning "Prerequisites failed - skipping memory leak test"
-    
-    # Export results for test_all.sh integration
-    export_subtest_results "${TEST_NUMBER}_${TEST_IDENTIFIER}" "${TOTAL_SUBTESTS}" "${PASS_COUNT}" "${TEST_NAME}" > /dev/null
     
     # Print completion table
     print_test_completion "${TEST_NAME}"
@@ -111,13 +114,6 @@ fi
 # Subtest 3: Run memory leak detection test
 next_subtest
 print_subtest "Memory Leak Detection Test"
-
-# Set up log files - always use build/tests/logs for consistency
-LOG_DIR="${BUILD_DIR}/tests/logs"
-mkdir -p "${LOG_DIR}"
-SERVER_LOG="${LOG_DIR}/server_${TIMESTAMP}.log"
-LEAK_REPORT="${LOG_DIR}/leak_report_${TIMESTAMP}.log"
-LEAK_SUMMARY="${LOG_DIR}/leak_summary_${TIMESTAMP}.txt"
 
 print_message "Starting memory leak test with debug build..."
 
@@ -136,14 +132,14 @@ while true; do
     CURRENT_TIME=$(date +%s)
     ELAPSED=$((CURRENT_TIME - STARTUP_START))
     
-    if [ ${ELAPSED} -ge ${STARTUP_TIMEOUT} ]; then
+    if [[ ${ELAPSED} -ge ${STARTUP_TIMEOUT} ]]; then
         print_result 1 "Startup timeout after ${ELAPSED}s"
-        kill -9 ${HYDROGEN_PID} 2>/dev/null || true
+        kill -9 "${HYDROGEN_PID}" 2>/dev/null || true
         EXIT_CODE=1
         break
     fi
     
-    if ! kill -0 ${HYDROGEN_PID} 2>/dev/null; then
+    if ! kill -0 "${HYDROGEN_PID}" 2>/dev/null; then
         print_result 1 "Server crashed during startup"
         print_message "Server log contents:"
         while IFS= read -r line; do
@@ -161,7 +157,7 @@ while true; do
     # sleep 0.2
 done
 
-if [ ${EXIT_CODE} -eq 0 ]; then
+if [[ "${EXIT_CODE}" -eq 0 ]]; then
     # Let it run briefly and perform some operations
     print_message "Running operations to trigger potential leaks..."
     # sleep 0.3
@@ -178,10 +174,10 @@ if [ ${EXIT_CODE} -eq 0 ]; then
 
     # Send SIGTERM to trigger shutdown and leak detection
     print_message "Sending SIGTERM to trigger shutdown and leak detection..."
-    kill -TERM ${HYDROGEN_PID}
+    kill -TERM "${HYDROGEN_PID}"
 
     # Wait for process to exit
-    wait ${HYDROGEN_PID} 2>/dev/null || true
+    wait "${HYDROGEN_PID}" 2>/dev/null || true
 
     print_result 0 "Memory leak test execution completed"
     ((PASS_COUNT++))
@@ -193,7 +189,7 @@ fi
 next_subtest
 print_subtest "Analyze Leak Results"
 
-if [ ${EXIT_CODE} -eq 0 ]; then
+if [[ "${EXIT_CODE}" -eq 0 ]]; then
     # Check server.log for ASAN output
     print_message "Analyzing ASAN output for memory leaks..."
     if grep -q "LeakSanitizer" "${SERVER_LOG}"; then
@@ -204,16 +200,16 @@ if [ ${EXIT_CODE} -eq 0 ]; then
         print_message "Analyzing leak report for direct and indirect leaks..."
 
         # Check for direct leaks
-        DIRECT_LEAKS=$(grep -c "Direct leak of" "${LEAK_REPORT}" 2>/dev/null | head -1 || echo "0")
-        INDIRECT_LEAKS=$(grep -c "Indirect leak of" "${LEAK_REPORT}" 2>/dev/null | head -1 || echo "0")
+        DIRECT_LEAKS=$(grep -c "Direct leak of" "${LEAK_REPORT}" 2>/dev/null | head -1 || echo "0" || true)
+        INDIRECT_LEAKS=$(grep -c "Indirect leak of" "${LEAK_REPORT}" 2>/dev/null | head -1 || echo "0" || true)
         
         # Ensure we have clean integer values
-        DIRECT_LEAKS=$(echo "${DIRECT_LEAKS}" | tr -d '\n\r' | grep -o '[0-9]*' | head -1)
-        INDIRECT_LEAKS=$(echo "${INDIRECT_LEAKS}" | tr -d '\n\r' | grep -o '[0-9]*' | head -1)
+        DIRECT_LEAKS=$(echo "${DIRECT_LEAKS}" | tr -d '\n\r' | grep -o '[0-9]*' | head -1 || true)
+        INDIRECT_LEAKS=$(echo "${INDIRECT_LEAKS}" | tr -d '\n\r' | grep -o '[0-9]*' | head -1 || true)
         
         # Default to 0 if empty
-        [ -z "${DIRECT_LEAKS}" ] && DIRECT_LEAKS=0
-        [ -z "${INDIRECT_LEAKS}" ] && INDIRECT_LEAKS=0
+        [[ -z "${DIRECT_LEAKS}" ]] && DIRECT_LEAKS=0
+        [[ -z "${INDIRECT_LEAKS}" ]] && INDIRECT_LEAKS=0
 
         # Create summary
         {
@@ -223,19 +219,19 @@ if [ ${EXIT_CODE} -eq 0 ]; then
             echo "Indirect Leaks Found: ${INDIRECT_LEAKS}"
             echo ""
             
-            if [ "${DIRECT_LEAKS}" -gt 0 ]; then
+            if [[ "${DIRECT_LEAKS}" -gt 0 ]]; then
                 echo "Direct Leak Details:"
                 grep "Direct leak of" "${LEAK_REPORT}" | head -10 || true
                 echo ""
             fi
             
-            if [ "${INDIRECT_LEAKS}" -gt 0 ]; then
+            if [[ "${INDIRECT_LEAKS}" -gt 0 ]]; then
                 echo "Indirect Leak Details:"
                 grep "Indirect leak of" "${LEAK_REPORT}" | head -10 || true
                 echo ""
             fi
             
-            if [ "${DIRECT_LEAKS}" -eq 0 ] && [ "${INDIRECT_LEAKS}" -eq 0 ]; then
+            if [[ "${DIRECT_LEAKS}" -eq 0 ]] && [[ "${INDIRECT_LEAKS}" -eq 0 ]]; then
                 echo "No memory leaks detected!"
             else
                 echo "Memory leaks detected - see full report for details"
@@ -256,7 +252,7 @@ if [ ${EXIT_CODE} -eq 0 ]; then
         cp "${LEAK_SUMMARY}" "${RESULTS_DIR}/leak_summary_${TIMESTAMP}.txt"
 
         # Determine test result
-        if [ "${DIRECT_LEAKS}" -eq 0 ] && [ "${INDIRECT_LEAKS}" -eq 0 ]; then
+        if [[ "${DIRECT_LEAKS}" -eq 0 ]] && [[ "${INDIRECT_LEAKS}" -eq 0 ]]; then
             print_result 0 "No memory leaks detected"
             ((PASS_COUNT++))
         else
