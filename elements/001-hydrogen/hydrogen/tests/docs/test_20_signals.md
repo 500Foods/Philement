@@ -1,8 +1,8 @@
-# Test 24 Signals Script Documentation
+# Test 20 Signals Script Documentation
 
 ## Overview
 
-The `test_24_signals.sh` script (Test 45: Signal Handling) is a comprehensive signal handling test tool within the Hydrogen test suite that validates the server's response to various system signals. This test ensures robust signal handling capabilities including shutdown, restart, configuration dump, and multiple signal scenarios.
+The `test_20_signals.sh` script is a comprehensive signal handling test tool within the Hydrogen test suite that validates the server's response to various system signals. This test ensures robust signal handling capabilities including shutdown, restart, configuration dump, and multiple signal scenarios.
 
 ## Purpose
 
@@ -19,21 +19,14 @@ This script ensures that the Hydrogen server handles system signals appropriatel
 - **Restart Validation**: Tests multiple consecutive restarts to verify restart reliability
 - **Performance Optimized**: Removed artificial delays for dramatically faster execution while maintaining reliability
 
-## Technical Details
-
-- **Script Version**: 3.0.1 (Performance optimization with removed delays)
-- **Test Number**: 24 (internally referenced as Test 45)
-- **Total Subtests**: 9
-- **Architecture**: Library-based using modular scripts from lib/ directory
-
 ### Dependencies
 
 The script uses several modular libraries:
 
-- `log_output.sh` - Logging and output formatting
-- `file_utils.sh` - File operations and validation
 - `framework.sh` - Core testing framework
+- `log_output.sh` - Logging and output formatting
 - `lifecycle.sh` - Server lifecycle management
+- `file_utils.sh` - File operations and validation
 
 ### Signal Test Configuration
 
