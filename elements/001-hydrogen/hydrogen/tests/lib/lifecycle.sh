@@ -128,28 +128,6 @@ start_hydrogen_with_pid() {
     # Clear the PID variable
     eval "${pid_var}=''"
     
-    # Check if logging functions are available
-    if ! command -v print_message >/dev/null 2>&1; then
-        echo "ERROR: print_message function not available - ensure log_output.sh is sourced" >&2
-        return 1
-    fi
-    if ! command -v print_command >/dev/null 2>&1; then
-        echo "ERROR: print_command function not available - ensure log_output.sh is sourced" >&2
-        return 1
-    fi
-    if ! command -v print_error >/dev/null 2>&1; then
-        echo "ERROR: print_error function not available - ensure log_output.sh is sourced" >&2
-        return 1
-    fi
-    if ! command -v print_result >/dev/null 2>&1; then
-        echo "ERROR: print_result function not available - ensure log_output.sh is sourced" >&2
-        return 1
-    fi
-    if ! command -v print_output >/dev/null 2>&1; then
-        echo "ERROR: print_output function not available - ensure log_output.sh is sourced" >&2
-        return 1
-    fi
-    
     print_message "Starting Hydrogen with $(basename "${config_file}" .json)..."
     # Clean log file
     true > "${log_file}"
@@ -176,7 +154,7 @@ start_hydrogen_with_pid() {
     # Launch Hydrogen (disown to prevent job control messages)
     "${hydrogen_bin}" "${config_file}" > "${log_file}" 2>&1 &
     hydrogen_pid=$!
-    disown "${hydrogen_pid}" 2>/dev/null || true
+    # disown "${hydrogen_pid}" 2>/dev/null || true
     
     # Display the PID for tracking
     print_message "Hydrogen process started with PID: ${hydrogen_pid}"
@@ -188,9 +166,9 @@ start_hydrogen_with_pid() {
     
     while [[ ${check_attempt} -le ${max_attempts} ]]; do
         if [[ ${check_attempt} -eq 1 ]]; then
-            sleep 0.1  # Initial check after brief delay
+            sleep 0.120  # Initial check after brief delay
         else
-            sleep 0.05  # Short delay between subsequent checks
+            sleep 0.050  # Short delay between subsequent checks
         fi
         
         if ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
