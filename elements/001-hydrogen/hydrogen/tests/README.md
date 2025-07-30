@@ -49,15 +49,15 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 ### Core Functional Tests
 
 - **[test_01_compilation.sh](docs/test_01_compilation.md)**: Verifies successful compilation and build processes.
-- **[test_19_leaks_like_a_sieve.sh](docs/test_19_leaks_like_a_sieve.md)**: Detects memory leaks and resource issues using Valgrind.
 - **[test_11_unity.sh](docs/test_11_unity.md)**: Integrates Unity testing framework for unit tests.
 - **[test_12_env_variables.sh](docs/test_12_env_variables.md)**: Tests that configuration values can be provided via environment variables.
+- **[test_13_crash_handler.sh](docs/test_13_crash_handler.md)**: Tests that the crash handler correctly generates and formats core dumps.
 - **[test_14_secrets.sh](docs/test_14_secrets.md)**: Checks validity of key environment variables
 - **[test_16_library_dependencies.sh](docs/test_16_library_dependencies.md)**: Checks for required library dependencies.
 - **[test_18_json_error_handling.sh](docs/test_18_json_error_handling.md)**: Tests JSON configuration error handling.
-- **[test_13_crash_handler.sh](docs/test_13_crash_handler.md)**: Tests that the crash handler correctly generates and formats core dumps.
+- **[test_19_leaks_like_a_sieve.sh](docs/test_19_leaks_like_a_sieve.md)**: Detects memory leaks and resource issues using Valgrind.
+- **[test_20_signals.sh](docs/test_20_signals.md)**: Tests signal handling (e.g., SIGINT, SIGTERM, SIGHUP).
 - **[test_22_startup_shutdown.sh](docs/test_22_startup_shutdown.md)**: Validates complete startup and shutdown lifecycles.
-- **[test_24_signals.sh](docs/test_24_signals.md)**: Tests signal handling (e.g., SIGINT, SIGTERM, SIGHUP).
 - **[test_26_shutdown.sh](docs/test_26_shutdown.md)**: Tests the shutdown functionality of the application with a minimal configuration.
 - **[test_28_socket_rebind.sh](docs/test_28_socket_rebind.md)**: Tests socket rebinding behavior.
 - **[test_30_api_prefix.sh](docs/test_30_api_prefix.md)**: Validates API prefix configurations.

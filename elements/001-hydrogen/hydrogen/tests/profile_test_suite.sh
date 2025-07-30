@@ -48,6 +48,7 @@ DU_COUNT=$(grep -c 'execve.*[ /]du[ ""]' "${TRACE_OUT}" 2>/dev/null || echo 0)
 SHELLCHECK_COUNT=$(grep -c 'execve.*[ /]shellcheck[ ""]' "${TRACE_OUT}" 2>/dev/null)
 MAKE_COUNT=$(grep -c 'execve.*[ /]make[ ""]' "${TRACE_OUT}" 2>/dev/null || echo 0)
 CURL_COUNT=$(grep -c 'execve.*[ /]curl[ ""]' "${TRACE_OUT}" 2>/dev/null || echo 0)
+DATE_COUNT=$(grep -c 'execve.*[ /]date[ ""]' "${TRACE_OUT}" 2>/dev/null || echo 0)
 TABLES_COUNT=$(grep -c 'execve.*[ /]tables[ ""]' "${TRACE_OUT}" 2>/dev/null || echo 0)
 
 
@@ -70,6 +71,7 @@ TABLES_COUNT=$(grep -c 'execve.*[ /]tables[ ""]' "${TRACE_OUT}" 2>/dev/null || e
     echo "  shellcheck: ${SHELLCHECK_COUNT}"
     echo "  make: ${MAKE_COUNT}"
     echo "  curl: ${CURL_COUNT}"
+    echo "  date: ${DATE_COUNT}"
     echo "  tables: ${TABLES_COUNT}"
     echo "-----------------------------------"
     echo "- Check ${ERROR_LOG} for strace errors."
