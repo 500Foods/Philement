@@ -18,6 +18,7 @@ SCRIPT_VERSION="3.0.1"
 PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 SCRIPT_DIR="${PROJECT_DIR}/tests"
 LIB_DIR="${SCRIPT_DIR}/lib"
+CONFIG_DIR="${SCRIPT_DIR}/configs"
 BUILD_DIR="${PROJECT_DIR}/build"
 TESTS_DIR="${BUILD_DIR}/tests"
 RESULTS_DIR="${TESTS_DIR}/results"
@@ -64,7 +65,7 @@ if ! navigate_to_project_root "${SCRIPT_DIR}"; then
 fi
 
 # Configuration file paths
-CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_min.json"
+CONFIG_FILE="${CONFIG_DIR}/hydrogen_test_12.json"
 
 # Timeouts and limits
 STARTUP_TIMEOUT=10    # Seconds to wait for startup
