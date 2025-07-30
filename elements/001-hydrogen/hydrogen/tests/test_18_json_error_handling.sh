@@ -33,7 +33,6 @@ mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_D
 
 # Test configuration
 EXIT_CODE=0
-TOTAL_SUBTESTS=4
 PASS_COUNT=0
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 RESULT_LOG="${RESULTS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"

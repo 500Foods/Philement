@@ -55,8 +55,6 @@ print_test_header "${TEST_NAME}" "${SCRIPT_VERSION}"
 [[ -n "${FILE_UTILS_GUARD}" ]] || source "${LIB_DIR}/file_utils.sh"
 # shellcheck source=tests/lib/coverage.sh # Resolve path statically
 [[ -n "${COVERAGE_GUARD}" ]] || source "${LIB_DIR}/coverage.sh"
-# shellcheck source=tests/lib/coverage-unity.sh # Resolve path statically
-[[ -n "${COVERAGE_UNITY_GUARD}" ]] || source "${LIB_DIR}/coverage-unity.sh"
 
 # Navigate to the project root (one level up from tests directory)
 if ! navigate_to_project_root "${SCRIPT_DIR}"; then
