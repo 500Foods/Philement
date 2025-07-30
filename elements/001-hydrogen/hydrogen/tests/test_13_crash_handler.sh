@@ -14,7 +14,14 @@
 
 # Test Configuration
 TEST_NAME="Crash Handler"
-SCRIPT_VERSION="4.0.0"
+TEST_ABBR="BUG"
+TEST_VERSION="4.0.0"
+
+# Timestamps
+# TS_BUG_LOG=$(date '+%Y%m%d_%H%M%S' 2>/dev/null)             # 20250730_124718                 eg: log filenames
+# TS_BUG_TMR=$(date '+%s.%N' 2>/dev/null)                     # 1753904852.568389297            eg: timers, elapsed times
+# TS_BUG_ISO=$(date '+%Y-%m-%d %H:%M:%S %Z' 2>/dev/null)      # 2025-07-30 12:47:46 PDT         eg: short display times
+# TS_BUG_DSP=$(date '+%Y-%b-%d (%a) %H:%M:%S %Z' 2>/dev/null) # 2025-Jul-30 (Wed) 12:49:03 PDT  eg: long display times
 
 # Sort out directories
 PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
@@ -55,7 +62,7 @@ CRASH_TIMEOUT=30
 # SHUTDOWN_ACTIVITY_TIMEOUT=5  
 
 # Print beautiful test header
-print_test_header "${TEST_NAME}" "${SCRIPT_VERSION}"
+print_test_header "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}" 
 
 # Print framework and log output versions as they are already sourced
 [[ -n "${ORCHESTRATION}" ]] || print_message "${FRAMEWORK_NAME} ${FRAMEWORK_VERSION}" "info"
@@ -851,7 +858,7 @@ print_message "Summary: ${successful_builds}/${#BUILDS[@]} builds passed all cra
 rm -rf "${PARALLEL_RESULTS_DIR}"
 
 # Print completion table
-print_test_completion "${TEST_NAME}"
+print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
 
 # Return status code if sourced, exit if run standalone
 if [[ "${ORCHESTRATION}" == "true" ]]; then
