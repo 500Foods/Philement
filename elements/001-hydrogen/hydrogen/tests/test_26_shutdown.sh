@@ -13,25 +13,30 @@
 TEST_NAME="Shutdown"
 SCRIPT_VERSION="2.0.1"
 
-# Get the directory where this script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-if [[ -z "${LOG_OUTPUT_SH_GUARD}" ]]; then
-    # shellcheck source=tests/lib/log_output.sh # Resolve path statically
-    source "${SCRIPT_DIR}/lib/log_output.sh"
-fi
+# Sort out directories
+PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
+SCRIPT_DIR="${PROJECT_DIR}/tests"
+LIB_DIR="${SCRIPT_DIR}/lib"
+BUILD_DIR="${PROJECT_DIR}/build"
+TESTS_DIR="${BUILD_DIR}/tests"
+RESULTS_DIR="${TESTS_DIR}/results"
+DIAGS_DIR="${TESTS_DIR}/diagnostics"
+LOGS_DIR="${TESTS_DIR}/logs"
+# CONFIG_DIR="${SCRIPT_DIR}/configs"
+mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}"
 
-# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/file_utils.sh"
 # shellcheck source=tests/lib/framework.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/framework.sh"
-# shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/lifecycle.sh"
+[[ -n "${FRAMEWORK_GUARD}" ]] || source "${LIB_DIR}/framework.sh"
+# shellcheck source=tests/lib/log_output.sh # Resolve path statically
+[[ -n "${LOG_OUTPUT_GUARD}" ]] || source "${LIB_DIR}/log_output.sh"
 
 # Test configuration
 EXIT_CODE=0
-TOTAL_SUBTESTS=6
 PASS_COUNT=0
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+RESULT_LOG="${RESULTS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
+# ERROR_OUTPUT="${LOGS_DIR}/json_error_output_${TIMESTAMP}.log"
 
 # Auto-extract test number and set up environment
 TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
@@ -41,19 +46,19 @@ reset_subtest_counter
 # Print beautiful test header
 print_test_header "${TEST_NAME}" "${SCRIPT_VERSION}"
 
-# Set up results directory
-BUILD_DIR="${SCRIPT_DIR}/../build"
-RESULTS_DIR="${BUILD_DIR}/tests/results"
-mkdir -p "${RESULTS_DIR}"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-RESULT_LOG="${RESULTS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
+# Print framework and log output versions as they are already sourced
+[[ -n "${ORCHESTRATION}" ]] || print_message "${FRAMEWORK_NAME} ${FRAMEWORK_VERSION}" "info"
+[[ -n "${ORCHESTRATION}" ]] || print_message "${LOG_OUTPUT_NAME} ${LOG_OUTPUT_VERSION}" "info"
+# shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
+[[ -n "${LIFECYCLE_GUARD}" ]] || source "${LIB_DIR}/lifecycle.sh"
+# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
+[[ -n "${FILE_UTILS_GUARD}" ]] || source "${LIB_DIR}/file_utils.sh"
 
 # Navigate to the project root (one level up from tests directory)
 if ! navigate_to_project_root "${SCRIPT_DIR}"; then
     print_error "Failed to navigate to project root directory"
     exit 1
 fi
-
 
 # Validate Hydrogen Binary
 next_subtest
