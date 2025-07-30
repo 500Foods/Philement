@@ -23,7 +23,7 @@ fi
 
 # Run strace
 echo "Running strace on test_00_all.sh..." >> "${ERROR_LOG}"
-strace -f -e trace=fork,execve -o "${TRACE_OUT}" ./test_00_all.sh 2>> "${ERROR_LOG}"
+strace -f -e trace=fork,execve -o "${TRACE_OUT}" ./test_00_all.sh --sequential 2>> "${ERROR_LOG}"
 STRACE_STATUS=$?
 
 # Check strace status
@@ -45,7 +45,7 @@ AWK_COUNT=$(grep -c 'execve.*[ /]awk[ ""]' "${TRACE_OUT}" 2>/dev/null || echo 0)
 BC_COUNT=$(grep -c 'execve.*[ /]bc[ ""]' "${TRACE_OUT}" 2>/dev/null || echo 0)
 WC_COUNT=$(grep -c 'execve.*[ /]wc[ ""]' "${TRACE_OUT}" 2>/dev/null || echo 0)
 DU_COUNT=$(grep -c 'execve.*[ /]du[ ""]' "${TRACE_OUT}" 2>/dev/null || echo 0)
-SHELLCHECK_COUNT=$(grep -c 'execve.*[ /]shellcheck[ ""]' "${TRACE_OUT}" 2>/dev/null || echo 0)
+SHELLCHECK_COUNT=$(grep -c 'execve.*[ /]shellcheck[ ""]' "${TRACE_OUT}" 2>/dev/null)
 MAKE_COUNT=$(grep -c 'execve.*[ /]make[ ""]' "${TRACE_OUT}" 2>/dev/null || echo 0)
 CURL_COUNT=$(grep -c 'execve.*[ /]curl[ ""]' "${TRACE_OUT}" 2>/dev/null || echo 0)
 TABLES_COUNT=$(grep -c 'execve.*[ /]tables[ ""]' "${TRACE_OUT}" 2>/dev/null || echo 0)
