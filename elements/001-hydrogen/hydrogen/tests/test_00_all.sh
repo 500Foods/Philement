@@ -75,7 +75,7 @@ source "${LIB_DIR}/coverage-combined.sh"
 
 # List of commands to check - we're assuming grep and sort are available
 commands=(
-    "grep" "sort" "bc" "jq" "awk" "sed" "xargs" "nproc" "timeout"
+    "grep" "sort" "bc" "jq" "awk" "sed" "xargs" "nproc" "timeout" "date"
     "cmake" "curl" "websocat" 
     "git" "md5sum" "cloc"
     "cppcheck" "shellcheck" "markdownlint" "eslint" "stylelint" "htmlhint" "jsonlint"

@@ -474,15 +474,15 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/README.md](tests/README.md) - Testing documentation and procedures
 - [tests/test_00_all.sh](tests/test_00_all.sh) - Master test runner
 - [tests/test_01_compilation.sh](tests/test_01_compilation.sh) - Compilation tests
-- [tests/test_19_leaks_like_a_sieve.sh](tests/test_19_leaks_like_a_sieve.sh) - Memory leak tests
 - [tests/test_11_unity.sh](tests/test_11_unity.sh) - Unity framework tests
 - [tests/test_12_env_variables.sh](tests/test_12_env_variables.sh) - Environment variable tests
+- [tests/test_13_crash_handler.sh](tests/test_13_crash_handler.sh) - Crash handler tests
 - [tests/test_14_secrets.sh](tests/test_14_secrets.sh) - Checks validity of key environment variables
 - [tests/test_16_library_dependencies.sh](tests/test_16_library_dependencies.sh) - Library dependency tests
 - [tests/test_18_json_error_handling.sh](tests/test_18_json_error_handling.sh) - JSON error handling tests
-- [tests/test_13_crash_handler.sh](tests/test_13_crash_handler.sh) - Crash handler tests
+- [tests/test_19_leaks_like_a_sieve.sh](tests/test_19_leaks_like_a_sieve.sh) - Memory leak tests
+- [tests/test_20_signals.sh](tests/test_20_signals.sh) - Signal handling tests
 - [tests/test_22_startup_shutdown.sh](tests/test_22_startup_shutdown.sh) - Startup/shutdown tests
-- [tests/test_24_signals.sh](tests/test_24_signals.sh) - Signal handling tests
 - [tests/test_26_shutdown.sh](tests/test_26_shutdown.sh) - Shutdown-specific tests
 - [tests/test_28_socket_rebind.sh](tests/test_28_socket_rebind.sh) - Socket rebinding tests
 - [tests/test_30_api_prefix.sh](tests/test_30_api_prefix.sh) - API prefix tests

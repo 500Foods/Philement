@@ -237,8 +237,8 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [test_16_library_dependencies.md](tests/docs/test_16_library_dependencies.md): Library dependency verification
 - [test_18_json_error_handling.md](tests/docs/test_18_json_error_handling.md): JSON error handling tests
 - [test_13_crash_handler.md](tests/docs/test_13_crash_handler.md): Crash handling and recovery tests
+- [test_20_signals.md](tests/docs/test_20_signals.md): Signal handling tests
 - [test_22_startup_shutdown.md](tests/docs/test_22_startup_shutdown.md): Startup and shutdown lifecycle tests
-- [test_24_signals.md](tests/docs/test_24_signals.md): Signal handling tests
 - [test_26_shutdown.md](tests/docs/test_26_shutdown.md): Shutdown sequence testing
 - [test_28_socket_rebind.md](tests/docs/test_28_socket_rebind.md): Socket rebinding tests
 - [test_30_api_prefix.md](tests/docs/test_30_api_prefix.md): API prefix configuration tests

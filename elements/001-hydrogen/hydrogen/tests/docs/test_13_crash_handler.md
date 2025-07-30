@@ -79,7 +79,7 @@ To run this test as part of the full suite:
 To run this test individually:
 
 ```bash
-./test_20_crash_handler.sh
+./test_13_crash_handler.sh
 ```
 
 ## Configuration
@@ -121,7 +121,7 @@ The test uses minimal configuration (`hydrogen_test_min.json`) to reduce startup
 ## Related Documentation
 
 - [test_00_all.md](test_00_all.md) - Main test suite documentation
-- [test_24_signals.md](test_24_signals.md) - Signal handling tests
+- [test_20_signals.md](test_20_signals.md) - Signal handling tests
 - [test_26_shutdown.md](test_26_shutdown.md) - Shutdown testing
 - [LIBRARIES.md](LIBRARIES.md) - Modular library documentation
 - [testing.md](../../docs/testing.md) - Overall testing strategy
