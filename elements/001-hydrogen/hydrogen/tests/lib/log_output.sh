@@ -325,7 +325,9 @@ clear_collected_output() {
 # Function to print beautiful test header using tables.sh
 print_test_header() {
     local test_name="$1"
-    local script_version="$2"
+    local test_abbr="$2"
+    local test_number="$3"
+    local test_version="$4"
     local script_dir
     script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
     
@@ -340,7 +342,7 @@ print_test_header() {
     timestamp=$(date '+%Y-%m-%d %H:%M:%S.%3N')
     
     # Create the test header content
-    local test_id="${CURRENT_TEST_NUMBER}-000"
+    local test_id="${test_number}-${test_abbr}"
 
     # Fall back to external process for backward compatibility
     local temp_dir
@@ -361,13 +363,13 @@ print_test_header() {
             "header": "Test Title",
             "key": "test_name",
             "datatype": "text",
-            "width": 50
+            "width": 53
         },
         {
             "header": "Version",
-            "key": "version",
+            "key": "test_version",
             "datatype": "text",
-            "width": 12
+            "width": 9
         },
         {
             "header": "Started",
@@ -385,7 +387,7 @@ EOF
     {
         "test_id": "${test_id}",
         "test_name": "${test_name}",
-        "version": "v${script_version}",
+        "test_version": "${test_version}",
         "timestamp": "${timestamp}"
     }
 ]
@@ -550,7 +552,9 @@ print_message() {
 # Function to print beautiful test suite runner header using tables.sh with blue theme
 print_test_suite_header() {
     local test_name="$1"
-    local script_version="$2"
+    local test_abbr="$2"
+    local test_number="$3"
+    local test_version="$4"
     local script_dir
     script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
     
@@ -562,7 +566,7 @@ print_test_suite_header() {
     timestamp=$(date '+%Y-%m-%d %H:%M:%S.%3N')
     
     # Create the test header content
-    local test_id="${CURRENT_TEST_NUMBER}-000"
+    local test_id="${test_number}-${test_abbr}"
     
     # Fall back to external process for backward compatibility
     local temp_dir
@@ -584,13 +588,13 @@ print_test_suite_header() {
             "header": "Test Title",
             "key": "test_name",
             "datatype": "text",
-            "width": 50
+            "width": 53
         },
         {
             "header": "Version",
-            "key": "version",
+            "key": "test_version",
             "datatype": "text",
-            "width": 12
+            "width": 9
         },
         {
             "header": "Started",
@@ -608,7 +612,7 @@ EOF
     {
         "test_id": "${test_id}",
         "test_name": "${test_name}",
-        "version": "v${script_version}",
+        "test_version": "${test_version}",
         "timestamp": "${timestamp}"
     }
 ]
@@ -627,9 +631,10 @@ EOF
 # Function to print beautiful test completion table using tables.sh
 print_test_completion() {
     local test_name="$1"
-    local script_dir
-    script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-    
+    local test_abbr="$2"
+    local test_number="$3"
+    local test_version="$4"
+
     # Calculate totals and elapsed time
     local total_subtests=$((TEST_PASSED_COUNT + TEST_FAILED_COUNT))
     local elapsed_time
@@ -654,22 +659,6 @@ print_test_completion() {
     # Write elapsed time to the subtest result file if running in test suite
     # Use the SAME elapsed_time value that was calculated above - no additional calls to get_elapsed_time
     if [[ -n "${ORCHESTRATION}" ]]; then
-        # Use absolute path approach since individual tests may change working directory
-        # Find the tests directory by using the script location from BASH_SOURCE
-        local script_dir
-        script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-        local tests_dir
-        # If we're in tests/lib, go up one level to tests
-        if [[ "$(basename "${script_dir}")" == "lib" ]]; then
-            tests_dir="$(dirname "${script_dir}")"
-        else
-            # Otherwise assume we're already in tests
-            tests_dir="${script_dir}"
-        fi
-        # Always use build/tests/results directory
-        local build_dir="${tests_dir}/../build"
-        local results_dir="${build_dir}/tests/results"
-        mkdir -p "${results_dir}" 2>/dev/null
         # Use the elapsed_time that was already calculated above - SINGLE SOURCE OF TRUTH
         local file_elapsed_time="${elapsed_time}"
         # Write the elapsed time to a result file with a timestamp and PID for uniqueness
@@ -677,8 +666,8 @@ print_test_completion() {
         timestamp=$(date +%s.%3N 2>/dev/null || date +%s)
         # Add process ID and random component to ensure uniqueness in parallel execution
         local unique_id="${timestamp}_$${_}${RANDOM}"
-        local subtest_file="${results_dir}/subtest_${CURRENT_TEST_NUMBER}_${unique_id}.txt"
-        echo "${total_subtests},${TEST_PASSED_COUNT},${test_name},${file_elapsed_time}" > "${subtest_file}" 2>/dev/null
+        local subtest_file="${RESULTS_DIR}/subtest_${CURRENT_TEST_NUMBER}_${unique_id}.txt"
+        echo "${total_subtests},${TEST_PASSED_COUNT},${test_name},${file_elapsed_time},${test_abbr},${test_version}" > "${subtest_file}" 2>/dev/null
     fi
 
     # Fall back to external process for backward compatibility
@@ -701,35 +690,41 @@ print_test_completion() {
             "header": "Test Name",
             "key": "test_name",
             "datatype": "text",
-            "width": 50    
+            "width": 44    
+        },
+        {
+            "header": "Version",
+            "key": "test_version",
+            "datatype": "text",
+            "width": 9
         },
         {
             "header": "Tests",
             "key": "total_subtests",
             "datatype": "int",
             "justification": "right",
-            "width": 8
+            "width": 7
         },
         {
             "header": "Pass",
             "key": "passed",
             "datatype": "int",
             "justification": "right",
-            "width": 8
+            "width": 7
         },
         {
             "header": "Fail",
             "key": "failed",
             "datatype": "int",
             "justification": "right",
-            "width": 8
+            "width": 7
         },
         {
             "header": "Duration",
             "key": "elapsed",
             "datatype": "float",
             "justification": "right",
-            "width": 11
+            "width": 10
         }
     ]
 }
@@ -741,8 +736,9 @@ EOF
     cat > "${data_json}" << EOF
 [
     {
-        "test_id": "${CURRENT_TEST_NUMBER}-000",
+        "test_id": "${test_number}-${test_abbr}",
         "test_name": "${processed_name}",
+        "test_version": "${test_version}",
         "total_subtests": ${total_subtests},
         "passed": ${TEST_PASSED_COUNT},
         "failed": ${TEST_FAILED_COUNT},
@@ -752,13 +748,13 @@ EOF
 EOF
     
     # Use tables executable to render the completion table
-    local tables_exe="${script_dir}/tables"
+    local tables_exe="${LIB_DIR}/tables"
     if [[ -f "${tables_exe}" ]]; then
         "${tables_exe}" "${layout_json}" "${data_json}" 2>/dev/null
     fi
     
     # Clean up temporary files
-    rm -rf "${temp_dir}" 2>/dev/null
+    # rm -rf "${temp_dir}" 2>/dev/null
 }
 
 # Function to print individual test items in a summary

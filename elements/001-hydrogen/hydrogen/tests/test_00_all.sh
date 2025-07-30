@@ -18,9 +18,16 @@
 
 # Test configuration
 TEST_NAME="Test Suite Orchestration"
-SCRIPT_VERSION="6.0.0"
+TEST_ABBR="ORC"
+TEST_VERSION="6.0.0"
 ORCHESTRATION="true"
 export ORCHESTRATION
+
+# Timestamps
+# TS_ORC_LOG=$(date '+%Y%m%d_%H%M%S' 2>/dev/null)             # 20250730_124718                 eg: log filenames
+# TS_ORC_TMR=$(date '+%s.%N' 2>/dev/null)                     # 1753904852.568389297            eg: timers, elapsed times
+# TS_ORC_ISO=$(date '+%Y-%m-%d %H:%M:%S %Z' 2>/dev/null)      # 2025-07-30 12:47:46 PDT         eg: short display times
+TS_ORC_DSP=$(date '+%Y-%b-%d (%a) %H:%M:%S %Z' 2>/dev/null) # 2025-Jul-30 (Wed) 12:49:03 PDT  eg: long display times
 
 # Sort out directories
 PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
@@ -33,7 +40,7 @@ DIAGS_DIR="${TESTS_DIR}/diagnostics"
 LOGS_DIR="${TESTS_DIR}/logs"
 
 # Get start time
-START_TIME=$(date +%s.%N 2>/dev/null || date +%s)
+START_TIME=$(date +%s.%N 2>/dev/null)
 
 # shellcheck source=tests/lib/framework.sh # Resolve path statically
 source "${LIB_DIR}/framework.sh"
@@ -46,7 +53,7 @@ set_test_number "${TEST_NUMBER}"
 reset_subtest_counter
 
 # Print beautiful test suite header in blue
-print_test_suite_header "${TEST_NAME}" "${SCRIPT_VERSION}"
+print_test_suite_header "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}" 
 
 # Print framework and log output versions as they are already sourced
 print_message "${FRAMEWORK_NAME} ${FRAMEWORK_VERSION}" "info"
@@ -164,6 +171,8 @@ perform_cleanup
 
 # Arrays to track test results
 declare -a TEST_NUMBERS
+declare -a TEST_ABBREVS
+declare -a TEST_VERSIONS
 declare -a TEST_NAMES
 declare -a TEST_SUBTESTS
 declare -a TEST_PASSED
@@ -235,11 +244,9 @@ update_readme_with_results() {
         fi
     done
     
-    # Generate Timestamp, Create temporary file for new README content
+    # Create temporary file for new README content
     local temp_readme
     temp_readme=$(mktemp) || { echo "Error: Failed to create temporary file" >&2; return 1; }
-    local timestamp
-    timestamp=$(date)
     
     # Process README.md line by line
     local in_test_results=false
@@ -252,7 +259,7 @@ update_readme_with_results() {
             {
                 echo "${line}"
                 echo ""
-                echo "Generated on: ${timestamp}"
+                echo "Generated on: ${TS_ORC_DSP}"
                 echo ""
                 echo "### Summary"
                 echo ""
@@ -373,7 +380,7 @@ update_readme_with_results() {
             {
                 echo "${line}"
                 echo ""
-                echo "Generated via cloc: ${timestamp}"
+                echo "Generated via cloc: ${TS_ORC_DSP}"
                 echo ""
                 
                 # Use shared cloc library function, ensuring we're in the project root directory
@@ -462,19 +469,22 @@ run_single_test() {
     local test_script="$1"
     local test_number
     local test_name
+    local test_version
     
     # Extract test number from script filename
     
     test_number=$(basename "${test_script}" .sh | sed 's/test_//' | sed 's/_.*//' || true)
-    test_name=""
+    test_name=$(grep '^TEST_NAME=".*"$' "${test_script}" | sed 's/^[A-Za-z_][A-Za-z0-9_]*="\([^"]*\)".*/\1/' || true)
+    test_abbrev=$(grep '^TEST_ABBR=".*"$' "${test_script}" | sed 's/^[A-Za-z_][A-Za-z0-9_]*="\([^"]*\)".*/\1/' || true)
+    test_version=$(grep '^TEST_VERSSION=".*"$' "${test_script}" | sed 's/^[A-Za-z_][A-Za-z0-9_]*="\([^"]*\)".*/\1/' || true)
     
     # Handle skip mode
     if [[ "${SKIP_TESTS}" = true ]]; then
-        # Extract test name from script filename (same logic as normal mode)
-        test_name=$(basename "${test_script}" .sh | sed 's/test_[0-9]*_//' | tr '_' ' ' | sed 's/\b\w/\U&/g' || true)
         # Store skipped test results (don't print "Would run" message)
         TEST_NUMBERS+=("${test_number}")
+        TEST_ABBREVS+=("${test_abbrev}")
         TEST_NAMES+=("${test_name}")
+        TEST_VERSIONS+=("${test_version}")
         TEST_SUBTESTS+=(1)
         TEST_PASSED+=(0)
         TEST_FAILED+=(0)
@@ -499,7 +509,7 @@ run_single_test() {
     latest_subtest_file=$(find "${RESULTS_DIR}" -name "subtest_${test_number}_*.txt" -type f 2>/dev/null | sort -r | head -1 || true)
     
     if [[ -n "${latest_subtest_file}" ]] && [[ -f "${latest_subtest_file}" ]]; then
-        IFS=',' read -r total_subtests passed_subtests test_name file_elapsed_time < "${latest_subtest_file}" 2>/dev/null || {
+        IFS=',' read -r total_subtests passed_subtests test_name file_elapsed_time test_abbr test_version < "${latest_subtest_file}" 2>/dev/null || {
             passed_subtests=$([[ ${exit_code} -eq 0 ]] && echo 1 || echo 0); test_name="${test_name_for_file}"; file_elapsed_time="0.000"; 
         }
         elapsed_formatted="${file_elapsed_time}"
@@ -513,7 +523,9 @@ run_single_test() {
     
     # Store results
     TEST_NUMBERS+=("${test_number}")
+    TEST_ABBREVS+=("${test_abbrev}")
     TEST_NAMES+=("${test_name}")
+    TEST_VERSIONS+=("${test_version}")
     TEST_SUBTESTS+=("${total_subtests}")
     TEST_PASSED+=("${passed_subtests}")
     TEST_FAILED+=("${failed_subtests}")
@@ -558,7 +570,7 @@ run_single_test_parallel() {
     
     if [[ -n "${latest_subtest_file}" ]] && [[ -f "${latest_subtest_file}" ]]; then
         # Read subtest results, test name, and elapsed time from the file
-        IFS=',' read -r total_subtests passed_subtests test_name file_elapsed_time < "${latest_subtest_file}" 2>/dev/null || {
+        IFS=',' read -r total_subtests passed_subtests test_name file_elapsed_time test_abbr test_version < "${latest_subtest_file}" 2>/dev/null || {
             total_subtests=1
             passed_subtests=$([[ ${exit_code} -eq 0 ]] && echo 1 || echo 0)
             test_name="${test_name_for_file}"
@@ -717,10 +729,12 @@ run_all_tests_parallel() {
             local temp_result_file="${temp_result_files[${i}]}"
             if [[ -f "${temp_result_file}" ]] && [[ -s "${temp_result_file}" ]]; then
                 # Read results from temporary file
-                IFS='|' read -r test_number test_name total_subtests passed_subtests failed_subtests elapsed_formatted exit_code < "${temp_result_file}"
+                IFS='|' read -r test_number test_name total_subtests passed_subtests failed_subtests elapsed_formatted test_abbr test_version exit_code< "${temp_result_file}"
                 
                 # Store results in global arrays
                 TEST_NUMBERS+=("${test_number}")
+                TEST_ABBREVS+=("${test_abbr}")
+                TEST_VERSIONS+=("${test_version}")
                 TEST_NAMES+=("${test_name}")
                 TEST_SUBTESTS+=("${total_subtests}")
                 TEST_PASSED+=("${passed_subtests}")
@@ -803,7 +817,7 @@ if [[ -x "${coverage_table_script}" ]]; then
 fi
 
 # Calculate total elapsed time
-END_TIME=$(date +%s.%N 2>/dev/null || date +%s)
+END_TIME=$(date +%s.%N 2>/dev/null)
 if [[ "${START_TIME}" =~ \. ]] && [[ "${END_TIME}" =~ \. ]]; then
     TOTAL_ELAPSED=$(echo "${END_TIME} - ${START_TIME}" | bc 2>/dev/null || echo "0")
     # Ensure TOTAL_ELAPSED is not empty or starts with a dot
@@ -835,14 +849,10 @@ done
 TOTAL_ELAPSED_FORMATTED=$(format_time_duration "${TOTAL_ELAPSED}")
 TOTAL_RUNNING_TIME_FORMATTED=$(format_time_duration "${TOTAL_RUNNING_TIME}")
 
-# Generate display timestamp for footer
-display_timestamp=$(date '+%Y-%m-%d %H:%M:%S %Z')
-
-
 # Create layout JSON string
 layout_json_content='{
     "title": "Test Suite Results {NC}{RED}———{RESET}{BOLD}{CYAN} Unity {WHITE}'"${UNITY_COVERAGE}"'% {RESET}{RED}———{RESET}{BOLD}{CYAN} Blackbox {WHITE}'"${BLACKBOX_COVERAGE}"'% {RESET}{RED}———{RESET}{BOLD}{CYAN} Combined {WHITE}'"${COMBINED_COVERAGE}"'%{RESET}",
-    "footer": "{CYAN}Cumulative {WHITE}'"${TOTAL_RUNNING_TIME_FORMATTED}"'{RED} ——— {RESET}{CYAN}Elapsed {WHITE}'"${TOTAL_ELAPSED_FORMATTED}"'{RED} ——— {CYAN}Timestamp {WHITE}'"${display_timestamp}"'{RESET}",
+    "footer": "{CYAN}Cumulative {WHITE}'"${TOTAL_RUNNING_TIME_FORMATTED}"'{RED} ——— {RESET}{CYAN}Elapsed {WHITE}'"${TOTAL_ELAPSED_FORMATTED}"'{RED} ——— {CYAN}Completed {WHITE}'"${TS_ORC_DSP}"'{RESET}",
     "footer_position": "right",
     "columns": [
         {
@@ -865,14 +875,21 @@ layout_json_content='{
             "header": "Test Name",
             "key": "test_name",
             "datatype": "text",
-            "width": 50,
+            "width": 44,
+            "justification": "left"
+        },
+        {
+            "header": "Version",
+            "key": "test_version",
+            "datatype": "text",
+            "width": 9,
             "justification": "left"
         },
         {
             "header": "Tests",
             "key": "tests",
             "datatype": "int",
-            "width": 8,
+            "width": 7,
             "justification": "right",
             "summary": "sum"
         },
@@ -880,7 +897,7 @@ layout_json_content='{
             "header": "Pass",
             "key": "pass",
             "datatype": "int",
-            "width": 8,
+            "width": 7,
             "justification": "right",
             "summary": "sum"
         },
@@ -888,7 +905,7 @@ layout_json_content='{
             "header": "Fail",
             "key": "fail",
             "datatype": "int",
-            "width": 8,
+            "width": 7,
             "justification": "right",
             "summary": "sum"
         },
@@ -896,7 +913,7 @@ layout_json_content='{
             "header": "Duration",
             "key": "elapsed",
             "datatype": "float",
-            "width": 11,
+            "width": 10,
             "justification": "right",
             "summary": "sum"
         }
@@ -906,7 +923,7 @@ layout_json_content='{
 # Create data JSON string
 data_json_content="["
 for i in "${!TEST_NUMBERS[@]}"; do
-    test_id="${TEST_NUMBERS[${i}]}-000"
+    test_id="${TEST_NUMBERS[${i}]}-${TEST_ABBREVS[${i}]}"
     # Calculate group (tens digit) from test number
     group=$((${TEST_NUMBERS[${i}]} / 10))
     
@@ -918,6 +935,7 @@ for i in "${!TEST_NUMBERS[@]}"; do
         "group": '"${group}"',
         "test_id": "'"${test_id}"'",
         "test_name": "'"${TEST_NAMES[${i}]}"'",
+        "test_version": "'"${TEST_VERSIONS[${i}]}"'",
         "tests": '"${TEST_SUBTESTS[${i}]}"',
         "pass": '"${TEST_PASSED[${i}]}"',
         "fail": '"${TEST_FAILED[${i}]}"',
