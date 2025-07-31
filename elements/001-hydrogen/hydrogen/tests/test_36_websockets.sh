@@ -36,12 +36,11 @@ wait_for_server_ready() {
     
     print_message "Waiting for server to be ready at ${base_url}..."
     
-    while [ ${attempt} -le ${max_attempts} ]; do
+    while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if curl -s --max-time 2 "${base_url}" >/dev/null 2>&1; then
             print_message "Server is ready after $(( attempt * 2 / 10 )) seconds"
             return 0
         fi
-        # sleep 0.2
         ((attempt++))
     done
     
@@ -65,8 +64,8 @@ test_websocket_connection() {
     local websocat_output
     local websocat_exitcode
     
-    while [ ${attempt} -le ${max_attempts} ]; do
-        if [ ${attempt} -gt 1 ]; then
+    while [[ "${attempt}" -le "${max_attempts}" ]]; do
+        if [[ "${attempt}" -gt 1 ]]; then
             print_message "WebSocket connection attempt ${attempt} of ${max_attempts} (waiting for WebSocket subsystem initialization)..."
             sleep 1  # Brief delay between attempts for WebSocket initialization
         fi
@@ -105,19 +104,19 @@ test_websocket_connection() {
         rm -f "${temp_file}"
         
         # Analyze the results
-        if [ ${websocat_exitcode} -eq 0 ]; then
-            if [ ${attempt} -gt 1 ]; then
+        if [[ "${websocat_exitcode}" -eq 0 ]]; then
+            if [[ "${attempt}" -gt 1 ]]; then
                 print_result 0 "WebSocket connection successful (clean exit, succeeded on attempt ${attempt})"
             else
                 print_result 0 "WebSocket connection successful (clean exit)"
             fi
-            if [ -n "${websocat_output}" ]; then
+            if [[ -n "${websocat_output}" ]]; then
                 print_message "Server response: ${websocat_output}"
             fi
             return 0
-        elif [ ${websocat_exitcode} -eq 124 ]; then
+        elif [[ "${websocat_exitcode}" -eq 124 ]]; then
             # Timeout occurred, but that's OK if connection was established
-            if [ ${attempt} -gt 1 ]; then
+            if [[ "${attempt}" -gt 1 ]]; then
                 print_result 0 "WebSocket connection successful (timeout after successful connection, succeeded on attempt ${attempt})"
             else
                 print_result 0 "WebSocket connection successful (timeout after successful connection)"
@@ -126,7 +125,7 @@ test_websocket_connection() {
         else
             # Check for connection refused which might indicate WebSocket server not ready yet
             if echo "${websocat_output}" | grep -qi "connection refused"; then
-                if [ ${attempt} -eq ${max_attempts} ]; then
+                if [[ "${attempt}" -eq "${max_attempts}" ]]; then
                     print_result 1 "WebSocket connection failed: Connection refused after ${max_attempts} attempts"
                     print_message "Server is not accepting WebSocket connections on the specified port"
                     return 1
@@ -139,7 +138,7 @@ test_websocket_connection() {
             
             # Check other error types that might be temporary during parallel execution
             if echo "${websocat_output}" | grep -qi "network.*unreachable\|temporarily unavailable\|resource.*unavailable"; then
-                if [ ${attempt} -eq ${max_attempts} ]; then
+                if [[ "${attempt}" -eq "${max_attempts}" ]]; then
                     print_result 1 "WebSocket connection failed: Network/resource issues after ${max_attempts} attempts"
                     print_message "Error: ${websocat_output}"
                     return 1
@@ -161,7 +160,7 @@ test_websocket_connection() {
                 return 1
             else
                 # Unknown error - retry if we have attempts left
-                if [ ${attempt} -eq ${max_attempts} ]; then
+                if [[ "${attempt}" -eq "${max_attempts}" ]]; then
                     print_result 1 "WebSocket connection failed after ${max_attempts} attempts"
                     print_message "Error: ${websocat_output}"
                     return 1
@@ -195,8 +194,8 @@ test_websocket_status() {
     local websocat_output
     local websocat_exitcode
     
-    while [ ${attempt} -le ${max_attempts} ]; do
-        if [ ${attempt} -gt 1 ]; then
+    while [[ "${attempt}" -le "${max_attempts}" ]]; do
+        if [[ "${attempt}" -gt 1 ]]; then
             print_message "WebSocket status request attempt ${attempt} of ${max_attempts}..."
             sleep 1
         fi
@@ -234,10 +233,10 @@ test_websocket_status() {
         rm -f "${temp_file}"
         
         # Check if we got a valid JSON response with system info
-        if [ -n "${websocat_output}" ]; then
+        if [[ -n "${websocat_output}" ]]; then
             # Use jq to properly validate JSON structure and required fields
             if echo "${websocat_output}" | jq -e '.system and .status.server_started' >/dev/null 2>&1; then
-                if [ ${attempt} -gt 1 ]; then
+                if [[ "${attempt}" -gt 1 ]]; then
                     print_result 0 "WebSocket status request successful - received system status (succeeded on attempt ${attempt})"
                 else
                     print_result 0 "WebSocket status request successful - received system status"
@@ -249,7 +248,7 @@ test_websocket_status() {
                 # Log what we actually received for debugging
                 print_message "Invalid JSON response or missing required fields:"
                 if command -v jq >/dev/null 2>&1; then
-                    echo "${websocat_output}" | jq . 2>/dev/null | head -10 || echo "Non-JSON output: ${websocat_output}"
+                    echo "${websocat_output}" | jq . 2>/dev/null | head -10 || echo "Non-JSON output: ${websocat_output}" || true
                 else
                     echo "First 200 chars: ${websocat_output:0:200}"
                 fi
@@ -259,8 +258,8 @@ test_websocket_status() {
         # Check for connection issues
         # Note: websocat with --one-message may exit with code 1 due to connection closure timing
         # but still successfully receive the response. We accept this as success if we got data.
-        if [ ${websocat_exitcode} -ne 0 ] && [ ${websocat_exitcode} -ne 124 ] && [ ${websocat_exitcode} -ne 1 ]; then
-            if [ ${attempt} -eq ${max_attempts} ]; then
+        if [[ "${websocat_exitcode}" -ne 0 ]] && [[ "${websocat_exitcode}" -ne 124 ]] && [[ "${websocat_exitcode}" -ne 1 ]]; then
+            if [[ "${attempt}" -eq "${max_attempts}" ]]; then
                 print_result 1 "WebSocket status request failed - connection error (exit code: ${websocat_exitcode})"
                 return 1
             else
@@ -271,7 +270,7 @@ test_websocket_status() {
         fi
         
         # If we reach here, either got timeout or no valid response
-        if [ ${attempt} -eq ${max_attempts} ]; then
+        if [[ "${attempt}" -eq "${max_attempts}" ]]; then
             print_result 1 "WebSocket status request failed - no valid status response received"
             return 1
         else
@@ -317,7 +316,7 @@ test_websocket_configuration() {
     if start_hydrogen_with_pid "${config_file}" "${server_log}" 15 "${HYDROGEN_BIN}" "${temp_pid_var}"; then
         # Get the PID from the temporary variable
         hydrogen_pid=$(eval "echo \$${temp_pid_var}")
-        if [ -n "${hydrogen_pid}" ]; then
+        if [[ -n "${hydrogen_pid}" ]]; then
             print_result 0 "Server started successfully with PID: ${hydrogen_pid}"
             ((PASS_COUNT++))
         else
@@ -344,7 +343,7 @@ test_websocket_configuration() {
     fi
     
     # Wait for web server to be ready (indicates full startup)
-    if [ -n "${hydrogen_pid}" ] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+    if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if ! wait_for_server_ready "${base_url}"; then
             print_result 1 "Server failed to become ready"
             EXIT_CODE=1
@@ -361,7 +360,7 @@ test_websocket_configuration() {
     # Test: Test WebSocket connection
     next_subtest
     print_subtest "Test WebSocket Connection (Config ${config_number})"
-    if [ -n "${hydrogen_pid}" ] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+    if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if test_websocket_connection "${ws_url}" "${ws_protocol}" "test_message" "${RESULTS_DIR}/${test_name}_connection_${TIMESTAMP}.txt"; then
             ((PASS_COUNT++))
         else
@@ -375,7 +374,7 @@ test_websocket_configuration() {
     # Test: Test WebSocket status request
     next_subtest
     print_subtest "Test WebSocket Status Request (Config ${config_number})"
-    if [ -n "${hydrogen_pid}" ] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+    if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if test_websocket_status "${ws_url}" "${ws_protocol}" "${RESULTS_DIR}/${test_name}_status_${TIMESTAMP}.json"; then
             ((PASS_COUNT++))
         else
@@ -389,9 +388,9 @@ test_websocket_configuration() {
     # Test: Test WebSocket port accessibility
     next_subtest
     print_subtest "Test WebSocket Port Accessibility (Config ${config_number})"
-    if [ -n "${hydrogen_pid}" ] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+    if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         # Test if the WebSocket port is listening
-        if netstat -ln 2>/dev/null | grep -q ":${ws_port} "; then
+        if netstat -ln 2>/dev/null | grep -q ":${ws_port} " || true; then
             print_result 0 "WebSocket server is listening on port ${ws_port}"
             ((PASS_COUNT++))
         else
@@ -412,7 +411,7 @@ test_websocket_configuration() {
     # Test: Test WebSocket protocol validation
     next_subtest
     print_subtest "Test WebSocket Protocol Validation (Config ${config_number})"
-    if [ -n "${hydrogen_pid}" ] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+    if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         # Test with correct protocol
         if command -v wscat >/dev/null 2>&1; then
             if echo "protocol_test" | timeout 5 wscat -c "${ws_url}" --subprotocol="${ws_protocol}" >/dev/null 2>&1; then
@@ -436,7 +435,7 @@ test_websocket_configuration() {
     # Test: Verify WebSocket in logs
     next_subtest
     print_subtest "Verify WebSocket Initialization in Logs (Config ${config_number})"
-    if [ -n "${hydrogen_pid}" ] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+    if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         # Check server logs for WebSocket initialization
         if grep -q "LAUNCH: WEBSOCKETS" "${server_log}" && grep -q "WebSocket.*successfully" "${server_log}"; then
             print_result 0 "WebSocket initialization confirmed in logs"
@@ -450,7 +449,7 @@ test_websocket_configuration() {
             # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
             while IFS= read -r line; do
                 print_output "${line}"
-            done < <(tail -n 10 "${server_log}")
+            done < <(tail -n 10 "${server_log}" || true)
             EXIT_CODE=1
         fi
     else
@@ -459,7 +458,7 @@ test_websocket_configuration() {
     fi
     
     # Stop the server
-    if [ -n "${hydrogen_pid}" ]; then
+    if [[ -n "${hydrogen_pid}" ]]; then
         print_message "Stopping server..."
         if stop_hydrogen "${hydrogen_pid}" "${server_log}" 10 5 "${RESULTS_DIR}"; then
             print_message "Server stopped successfully"
@@ -518,7 +517,7 @@ fi
 # Test: Validate WEBSOCKET_KEY environment variable
 next_subtest
 print_subtest "Validate WEBSOCKET_KEY Environment Variable"
-if [ -n "${WEBSOCKET_KEY}" ]; then
+if [[ -n "${WEBSOCKET_KEY}" ]]; then
     if validate_websocket_key "WEBSOCKET_KEY" "${WEBSOCKET_KEY}"; then
         print_result 0 "WEBSOCKET_KEY is valid and ready for WebSocket authentication"
         ((PASS_COUNT++))
@@ -535,7 +534,7 @@ else
 fi
 
 # Only proceed with WebSocket tests if prerequisites are met
-if [ ${EXIT_CODE} -eq 0 ]; then
+if [[ "${EXIT_CODE}" -eq 0 ]]; then
     # Ensure clean state
     print_message "Ensuring no existing Hydrogen processes are running..."
     pkill -f "hydrogen.*json" 2>/dev/null || true
