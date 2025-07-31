@@ -65,14 +65,6 @@ validate_api_request() {
     local unique_id="${TIMESTAMP}_$${_}${RANDOM}"
     local response_file="${RESULTS_DIR}/response_${request_name}_${unique_id}.json"
     
-    # Ensure results directory exists and is writable
-    if [ ! -d "${RESULTS_DIR}" ]; then
-        mkdir -p "${RESULTS_DIR}" || {
-            print_result 1 "Failed to create results directory: ${RESULTS_DIR}"
-            return 1
-        }
-    fi
-    
     print_command "curl -s --max-time 10 --compressed \"${url}\""
     
     # Retry logic for API readiness (especially important in parallel execution)
@@ -81,26 +73,26 @@ validate_api_request() {
     local curl_exit_code=0
     local curl_error_file="${RESULTS_DIR}/curl_error_${unique_id}.txt"
         
-    while [ ${attempt} -le ${max_attempts} ]; do
-        if [ ${attempt} -gt 1 ]; then
+    while [[ "${attempt}" -le "${max_attempts}" ]]; do
+        if [[ "${attempt}" -gt 1 ]]; then
             print_message "API request attempt ${attempt} of ${max_attempts} (waiting for API subsystem initialization)..."
-            sleep 1  # Brief delay between attempts for API initialization
+            sleep 0.1  # Brief delay between attempts for API initialization
         fi
         
         # Run curl and capture both exit code and any error output
         curl -s --max-time 10 --compressed "${url}" > "${response_file}" 2>"${curl_error_file}"
         curl_exit_code=$?
         
-        if [ ${curl_exit_code} -eq 0 ]; then
+        if [[ "${curl_exit_code}" -eq 0 ]]; then
             # Verify the file actually exists and has content
-            if [ -f "${response_file}" ] && [ -s "${response_file}" ]; then
+            if [[ -f "${response_file}" ]] && [[ -s "${response_file}" ]]; then
                 # Check if we got a 404 or other error response
                 if grep -q "404 Not Found" "${response_file}" || grep -q "<html>" "${response_file}"; then
-                    if [ ${attempt} -eq ${max_attempts} ]; then
+                    if [[ "${attempt}" -eq "${max_attempts}" ]]; then
                         print_message "API endpoint still not ready after ${max_attempts} attempts"
                         print_result 1 "API endpoint returned 404 or HTML error page"
                         print_message "Response content:"
-                        print_output "$(cat "${response_file}")"
+                        print_output "$(cat "${response_file}" || true)"
                         rm -f "${curl_error_file}" 2>/dev/null
                         return 1
                     else
@@ -117,7 +109,7 @@ validate_api_request() {
                 
                 # Validate that the response contains expected fields
                 if grep -q "${expected_field}" "${response_file}"; then
-                    if [ ${attempt} -gt 1 ]; then
+                    if [[ "${attempt}" -gt 1 ]]; then
                         print_result 0 "Response contains expected field: ${expected_field} (succeeded on attempt ${attempt})"
                     else
                         print_result 0 "Response contains expected field: ${expected_field}"
@@ -126,27 +118,27 @@ validate_api_request() {
                 else
                     print_result 1 "Response doesn't contain expected field: ${expected_field}"
                     print_message "Response content:"
-                    print_output "$(cat "${response_file}")"
+                    print_output "$(cat "${response_file}" || true)"
                     return 1
                 fi
             else
                 print_result 1 "Response file was not created or is empty: ${response_file}"
                 # Show curl error if available
-                if [ -f "${curl_error_file}" ] && [ -s "${curl_error_file}" ]; then
+                if [[ -f "${curl_error_file}" ]] && [[ -s "${curl_error_file}" ]]; then
                     print_message "Curl error output:"
-                    print_output "$(cat "${curl_error_file}")"
+                    print_output "$(cat "${curl_error_file}" || true)"
                 fi
                 # Clean up error file
                 rm -f "${curl_error_file}" 2>/dev/null
                 return 1
             fi
         else
-            if [ ${attempt} -eq ${max_attempts} ]; then
+            if [[ "${attempt}" -eq "${max_attempts}" ]]; then
                 print_result 1 "Failed to connect to server (curl exit code: ${curl_exit_code})"
                 # Show curl error if available
-                if [ -f "${curl_error_file}" ] && [ -s "${curl_error_file}" ]; then
+                if [[ -f "${curl_error_file}" ]] && [[ -s "${curl_error_file}" ]]; then
                     print_message "Curl error output:"
-                    print_output "$(cat "${curl_error_file}")"
+                    print_output "$(cat "${curl_error_file}" || true)"
                 fi
                 # Clean up error file
                 rm -f "${curl_error_file}" 2>/dev/null
@@ -170,7 +162,7 @@ wait_for_server_ready() {
     
     print_message "Waiting for server to be ready at ${base_url}..."
     
-    while [ ${attempt} -le ${max_attempts} ]; do
+    while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if curl -s --max-time 2 "${base_url}" >/dev/null 2>&1; then
             print_message "Server is ready after $(( attempt * 5 / 10 )) seconds"
             return 0
@@ -210,7 +202,7 @@ fi
 # Subtest 2: Validate configuration files
 next_subtest
 print_subtest "Validate Configuration Files"
-if [ -f "${DEFAULT_CONFIG_PATH}" ] && [ -f "${CUSTOM_CONFIG_PATH}" ]; then
+if [[ -f "${DEFAULT_CONFIG_PATH}" ]] && [[ -f "${CUSTOM_CONFIG_PATH}" ]]; then
     print_result 0 "Both configuration files found"
     ((PASS_COUNT++))
     
@@ -225,7 +217,7 @@ else
 fi
 
 # Only proceed with API tests if binary and configs are available
-if [ ${EXIT_CODE} -eq 0 ]; then
+if [[ "${EXIT_CODE}" -eq 0 ]]; then
     # Ensure clean state
     print_message "Ensuring no existing Hydrogen processes are running..."
     pkill -f "hydrogen.*json" 2>/dev/null || true
@@ -242,7 +234,7 @@ if [ ${EXIT_CODE} -eq 0 ]; then
     next_subtest
     print_subtest "Start Server with Default API Prefix (/api)"
     DEFAULT_LOG="${RESULTS_DIR}/api_prefixes_default_server_${TIMESTAMP}_${RANDOM}.log"
-    if start_hydrogen_with_pid "${DEFAULT_CONFIG_PATH}" "${DEFAULT_LOG}" 15 "${HYDROGEN_BIN}" "HYDROGEN_PID" && [ -n "${HYDROGEN_PID}" ]; then
+    if start_hydrogen_with_pid "${DEFAULT_CONFIG_PATH}" "${DEFAULT_LOG}" 15 "${HYDROGEN_BIN}" "HYDROGEN_PID" && [[ -n "${HYDROGEN_PID}" ]]; then
         print_result 0 "Server started successfully with PID: ${HYDROGEN_PID}"
         ((PASS_COUNT++))
     else
@@ -253,7 +245,7 @@ if [ ${EXIT_CODE} -eq 0 ]; then
     # Subtest 4: Test default API health endpoint
     next_subtest
     print_subtest "Test Default API Health Endpoint"
-    if [ -n "${HYDROGEN_PID}" ] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
+    if [[ -n "${HYDROGEN_PID}" ]] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
         if wait_for_server_ready "http://localhost:${DEFAULT_PORT}"; then
             if validate_api_request "default_health" "http://localhost:${DEFAULT_PORT}/api/system/health" "Yes, I'm alive, thanks!"; then
                 ((PASS_COUNT++))
@@ -272,7 +264,7 @@ if [ ${EXIT_CODE} -eq 0 ]; then
     # Subtest 5: Test default API info endpoint
     next_subtest
     print_subtest "Test Default API Info Endpoint"
-    if [ -n "${HYDROGEN_PID}" ] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
+    if [[ -n "${HYDROGEN_PID}" ]] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
         if validate_api_request "default_info" "http://localhost:${DEFAULT_PORT}/api/system/info" "system"; then
             ((PASS_COUNT++))
         else
@@ -286,7 +278,7 @@ if [ ${EXIT_CODE} -eq 0 ]; then
     # Subtest 6: Test default API test endpoint
     next_subtest
     print_subtest "Test Default API Test Endpoint"
-    if [ -n "${HYDROGEN_PID}" ] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
+    if [[ -n "${HYDROGEN_PID}" ]] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
         if validate_api_request "default_test" "http://localhost:${DEFAULT_PORT}/api/system/test" "client_ip"; then
             ((PASS_COUNT++))
         else
@@ -298,7 +290,7 @@ if [ ${EXIT_CODE} -eq 0 ]; then
     fi
     
     # Stop the default server
-    if [ -n "${HYDROGEN_PID}" ]; then
+    if [[ -n "${HYDROGEN_PID}" ]]; then
         print_message "Stopping default server..."
         if stop_hydrogen "${HYDROGEN_PID}" "${DEFAULT_LOG}" 10 5 "${RESULTS_DIR}"; then
             print_message "Default server stopped successfully"
@@ -316,7 +308,7 @@ if [ ${EXIT_CODE} -eq 0 ]; then
     next_subtest
     print_subtest "Start Server with Custom API Prefix (/myapi)"
     CUSTOM_LOG="${RESULTS_DIR}/api_prefixes_custom_server_${TIMESTAMP}_${RANDOM}.log"
-    if start_hydrogen_with_pid "${CUSTOM_CONFIG_PATH}" "${CUSTOM_LOG}" 15 "${HYDROGEN_BIN}" "HYDROGEN_PID" && [ -n "${HYDROGEN_PID}" ]; then
+    if start_hydrogen_with_pid "${CUSTOM_CONFIG_PATH}" "${CUSTOM_LOG}" 15 "${HYDROGEN_BIN}" "HYDROGEN_PID" && [[ -n "${HYDROGEN_PID}" ]]; then
         print_result 0 "Server started successfully with PID: ${HYDROGEN_PID}"
         ((PASS_COUNT++))
     else
@@ -327,7 +319,7 @@ if [ ${EXIT_CODE} -eq 0 ]; then
     # Subtest 8: Test custom API health endpoint
     next_subtest
     print_subtest "Test Custom API Health Endpoint"
-    if [ -n "${HYDROGEN_PID}" ] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
+    if [[ -n "${HYDROGEN_PID}" ]] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
         if wait_for_server_ready "http://localhost:${CUSTOM_PORT}"; then
             if validate_api_request "custom_health" "http://localhost:${CUSTOM_PORT}/myapi/system/health" "Yes, I'm alive, thanks!"; then
                 ((PASS_COUNT++))
@@ -346,7 +338,7 @@ if [ ${EXIT_CODE} -eq 0 ]; then
     # Subtest 9: Test custom API info endpoint
     next_subtest
     print_subtest "Test Custom API Info Endpoint"
-    if [ -n "${HYDROGEN_PID}" ] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
+    if [[ -n "${HYDROGEN_PID}" ]] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
         if validate_api_request "custom_info" "http://localhost:${CUSTOM_PORT}/myapi/system/info" "system"; then
             ((PASS_COUNT++))
         else
@@ -360,7 +352,7 @@ if [ ${EXIT_CODE} -eq 0 ]; then
     # Subtest 10: Test custom API test endpoint
     next_subtest
     print_subtest "Test Custom API Test Endpoint"
-    if [ -n "${HYDROGEN_PID}" ] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
+    if [[ -n "${HYDROGEN_PID}" ]] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
         if validate_api_request "custom_test" "http://localhost:${CUSTOM_PORT}/myapi/system/test" "client_ip"; then
             ((PASS_COUNT++))
         else
@@ -372,7 +364,7 @@ if [ ${EXIT_CODE} -eq 0 ]; then
     fi
     
     # Stop the custom server
-    if [ -n "${HYDROGEN_PID}" ]; then
+    if [[ -n "${HYDROGEN_PID}" ]]; then
         print_message "Stopping custom server..."
         if stop_hydrogen "${HYDROGEN_PID}" "${CUSTOM_LOG}" 10 5 "${RESULTS_DIR}"; then
             print_message "Custom server stopped successfully"
@@ -394,19 +386,9 @@ else
     EXIT_CODE=1
 fi
 
-# Calculate overall test result
-if [[ "${PASS_COUNT}" -eq "${TOTAL_SUBTESTS}" ]]; then
-    EXIT_CODE=0
-else
-    EXIT_CODE=1
-fi
-
 # Clean up response files and temporary configs
 rm -f "${RESULTS_DIR}"/response_*.json
 rm -f "${DEFAULT_CONFIG_PATH}" "${CUSTOM_CONFIG_PATH}"
-
-# Calculate overall test result
-[[ "${PASS_COUNT}" -eq "${TOTAL_SUBTESTS}" ]] && EXIT_CODE=0 || EXIT_CODE=1
 
 # Print test completion summary
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"

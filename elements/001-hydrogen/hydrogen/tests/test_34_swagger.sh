@@ -560,9 +560,6 @@ fi
 # Clean up response files but preserve logs if test failed
 rm -f "${RESULTS_DIR}"/*_trailing_slash_*.html "${RESULTS_DIR}"/*_redirect_*.txt "${RESULTS_DIR}"/*_content_*.html "${RESULTS_DIR}"/*_initializer_*.js "${RESULTS_DIR}"/*_swagger_json_*.json
 
-# Calculate overall test result
-[[ "${PASS_COUNT}" -eq "${TOTAL_SUBTESTS}" ]] && EXIT_CODE=0 || EXIT_CODE=1
-
 # Print test completion summary
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
 
