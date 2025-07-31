@@ -22,7 +22,7 @@
 
 # Test Configuration
 TEST_NAME="API Prefix"
-TEST_ABBR="PRF"
+TEST_ABBR="PRE"
 TEST_NUMBER="30"
 TEST_VERSION="6.0.0"
 
@@ -405,13 +405,8 @@ fi
 rm -f "${RESULTS_DIR}"/response_*.json
 rm -f "${DEFAULT_CONFIG_PATH}" "${CUSTOM_CONFIG_PATH}"
 
-# Only remove logs if tests were successful
-if [ ${EXIT_CODE} -eq 0 ]; then
-    print_message "Tests passed, cleaning up log files..."
-    rm -f "${RESULTS_DIR}"/*_server_*.log
-else
-    print_message "Tests failed, preserving log files for analysis in ${RESULTS_DIR}/"
-fi
+# Calculate overall test result
+[[ "${PASS_COUNT}" -eq "${TOTAL_SUBTESTS}" ]] && EXIT_CODE=0 || EXIT_CODE=1
 
 # Print test completion summary
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
