@@ -8,63 +8,19 @@
 # - File count summary
 
 # CHANGELOG
+# 3.0.0 - 2025-07-30 - Overhaul #1
 # 2.0.0 - 2025-07-18 - Performance optimization: 46% speed improvement (3.136s to 1.705s), background cloc analysis, batch wc -l processing, parallel file type counting, largest-to-smallest file sorting
 # 1.0.0 - Initial version
 
 # Test configuration
 TEST_NAME="Code Size Analysis"
 TEST_ABBR="SIZ"
-TEST_VERSION="2.0.0"
+TEST_NUMBER="03"
+TEST_VERSION="3.0.0"
 
-# Timestamps
-# TS_SIZ_LOG=$(date '+%Y%m%d_%H%M%S' 2>/dev/null)             # 20250730_124718                 eg: log filenames
-# TS_SIZ_TMR=$(date '+%s.%N' 2>/dev/null)                     # 1753904852.568389297            eg: timers, elapsed times
-# TS_SIZ_ISO=$(date '+%Y-%m-%d %H:%M:%S %Z' 2>/dev/null)      # 2025-07-30 12:47:46 PDT         eg: short display times
-# TS_SIZ_DSP=$(date '+%Y-%b-%d (%a) %H:%M:%S %Z' 2>/dev/null) # 2025-Jul-30 (Wed) 12:49:03 PDT  eg: long display times
-
-# Sort out directories
-PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
-# CMAKE_DIR="${PROJECT_DIR}/cmake"
-SCRIPT_DIR="${PROJECT_DIR}/tests"
-LIB_DIR="${SCRIPT_DIR}/lib"
-BUILD_DIR="${PROJECT_DIR}/build"
-TESTS_DIR="${BUILD_DIR}/tests"
-RESULTS_DIR="${TESTS_DIR}/results"
-DIAGS_DIR="${TESTS_DIR}/diagnostics"
-LOGS_DIR="${TESTS_DIR}/logs"
-mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}"
-
-# shellcheck source=tests/lib/framework.sh # Resolve path statically
-[[ -n "${FRAMEWORK_GUARD}" ]] || source "${LIB_DIR}/framework.sh"
-# shellcheck source=tests/lib/log_output.sh # Resolve path statically
-[[ -n "${LOG_OUTPUT_GUARD}" ]] || source "${LIB_DIR}/log_output.sh"
-
-# Test configuration
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-EXIT_CODE=0
-PASS_COUNT=0
-TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
-RESULT_LOG="${RESULTS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
-set_test_number "${TEST_NUMBER}"
-reset_subtest_counter
-
-# Print beautiful test header
-print_test_header "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
-
-# Print framework and log output versions as they are already sourced
-[[ -n "${ORCHESTRATION}" ]] || print_message "${FRAMEWORK_NAME} ${FRAMEWORK_VERSION}" "info"
-[[ -n "${ORCHESTRATION}" ]] || print_message "${LOG_OUTPUT_NAME} ${LOG_OUTPUT_VERSION}" "info"
-# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
-[[ -n "${FILE_UTILS_GUARD}" ]] || source "${LIB_DIR}/file_utils.sh"
-# shellcheck source=tests/lib/coverage.sh # Resolve path statically
-[[ -n "${CLOC_GUARD}" ]] || source "${LIB_DIR}/cloc.sh"
-
-# Navigate to the project root (one level up from tests directory)
-if ! navigate_to_project_root "${SCRIPT_DIR}"; then
-    print_error "Failed to navigate to project root directory"
-    exit 1
-fi
-
+# shellcheck source=tests/lib/framework.sh # Reference framework directly
+[[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+setup_test_environment
 
 # Test configuration constants
 readonly MAX_SOURCE_LINES=1000
@@ -399,8 +355,4 @@ print_output "Large files: ${RESULTS_DIR}/large_files_${TIMESTAMP}.txt"
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
 
 # Return status code if sourced, exit if run standalone
-if [[ "${ORCHESTRATION}" == "true" ]]; then
-    return "${EXIT_CODE}"
-else
-    exit "${EXIT_CODE}"
-fi
+${ORCHESTRATION:-false} && return "${EXIT_CODE}" || exit "${EXIT_CODE}"
