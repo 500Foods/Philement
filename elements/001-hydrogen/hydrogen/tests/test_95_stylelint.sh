@@ -4,56 +4,23 @@
 # Performs CSS validation using stylelint
 
 # CHANGELOG
+# 3.0.0 - 2025-07-30 - Overhaul #1
 # 2.0.1 - 2025-07-18 - Fixed subshell issue in stylelint output that prevented detailed error messages from being displayed in test output
 # 2.0.0 - 2025-07-14 - Upgraded to use new modular test framework
 # 1.0.0 - Initial version for CSS linting
 
 # Test configuration
 TEST_NAME="CSS Linting"
-SCRIPT_VERSION="2.0.1"
+TEST_ABBR="CSS"
+TEST_NUMBER="95"
+TEST_VERSION="3.0.0"
 
-# Get the directory where this script is located
+# shellcheck source=tests/lib/framework.sh # Reference framework directly
+[[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+setup_test_environment
+
+# Test variables
 TEST_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-if [[ -z "${LOG_OUTPUT_SH_GUARD}" ]]; then
-    # shellcheck source=tests/lib/log_output.sh # Resolve path statically
-    source "${TEST_SCRIPT_DIR}/lib/log_output.sh"
-fi
-
-# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
-source "${TEST_SCRIPT_DIR}/lib/file_utils.sh"
-# shellcheck source=tests/lib/framework.sh # Resolve path statically
-source "${TEST_SCRIPT_DIR}/lib/framework.sh"
-
-# Restore SCRIPT_DIR after sourcing libraries (they may override it)
-SCRIPT_DIR="${TEST_SCRIPT_DIR}"
-
-# Test configuration
-EXIT_CODE=0
-TOTAL_SUBTESTS=1
-PASS_COUNT=0
-
-# Auto-extract test number and set up environment
-TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
-set_test_number "${TEST_NUMBER}"
-reset_subtest_counter
-
-# Print beautiful test header
-print_test_header "${TEST_NAME}" "${SCRIPT_VERSION}"
-
-# Set up results directory
-BUILD_DIR="${SCRIPT_DIR}/../build"
-RESULTS_DIR="${BUILD_DIR}/tests/results"
-mkdir -p "${RESULTS_DIR}"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-
-# Navigate to the project root (one level up from tests directory)
-if ! navigate_to_project_root "${SCRIPT_DIR}"; then
-    print_error "Failed to navigate to project root directory"
-    exit 1
-fi
-
-# Set up results directory (after navigating to project root)
 
 # Test configuration constants
 # Only declare if not already defined (prevents readonly variable redeclaration when sourced)
@@ -159,12 +126,11 @@ else
     ((PASS_COUNT++))
 fi
 
-# Print completion table
-print_test_completion "${TEST_NAME}"
+# Calculate overall test result
+[[ "${PASS_COUNT}" -eq "${TOTAL_SUBTESTS}" ]] && EXIT_CODE=0 || EXIT_CODE=1
+
+# Print test completion summary
+print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
 
 # Return status code if sourced, exit if run standalone
-if [[ "${ORCHESTRATION}" == "true" ]]; then
-    return "${EXIT_CODE}"
-else
-    exit "${EXIT_CODE}"
-fi
+${ORCHESTRATION:-false} && return "${EXIT_CODE}" || exit "${EXIT_CODE}"
