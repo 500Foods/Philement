@@ -14,7 +14,7 @@
 # 1.0.0 - Initial version - Basic environment variable validation
 
 # Test configuration
-TEST_NAME="Environment Variables"
+TEST_NAME="Env Vars and Secrets"
 TEST_ABBR="ENV"
 TEST_NUMBER="14"
 TEST_VERSION="5.0.0"
