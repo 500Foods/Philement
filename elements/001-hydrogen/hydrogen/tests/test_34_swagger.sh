@@ -1,15 +1,10 @@
 #!/bin/bash
 
 # Test: Swagger
-# Tests the Swagger functionality with different prefixes and trailing slashes:
-# - Default "/swagger" prefix using hydrogen_test_swagger_test_1.json
-# - Custom "/apidocs" prefix using hydrogen_test_swagger_test_2.json
-# - Tests both with and without trailing slashes
-# - Tests JavaScript file loading and content validation
-# - Tests swagger.json file retrieval and validation
-# - Uses immediate restart without waiting for TIME_WAIT (SO_REUSEADDR enabled)
+# Tests the Swagger functionality, its presence in the payload, etc.
 
 # CHANGELOG
+# 4.0.0 - 2025-07-30 - Overhaul #1
 # 3.1.4 - 2025-07-18 - Fixed subshell issue in response output that prevented detailed error messages from being displayed in test output
 # 3.1.3 - 2025-07-14 - Enhanced HTTP request functions with retry logic to handle subsystem initialization delays during parallel execution
 # 3.1.2 - 2025-07-15 - No more sleep
@@ -21,51 +16,16 @@
 
 # Test Configuration
 TEST_NAME="Swagger"
-SCRIPT_VERSION="3.1.4"
+TEST_ABBR="SWG"
+TEST_NUMBER="34"
+TEST_VERSION="4.0.0"
 
-# Sort out directories
-PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
-SCRIPT_DIR="${PROJECT_DIR}/tests"
-LIB_DIR="${SCRIPT_DIR}/lib"
-BUILD_DIR="${PROJECT_DIR}/build"
-TESTS_DIR="${BUILD_DIR}/tests"
-RESULTS_DIR="${TESTS_DIR}/results"
-DIAGS_DIR="${TESTS_DIR}/diagnostics"
-LOGS_DIR="${TESTS_DIR}/logs"
-mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}"
+# shellcheck source=tests/lib/framework.sh # Reference framework directly
+[[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+setup_test_environment
 
+# Test variables
 HYDROGEN_DIR="${PROJECT_DIR}"
-
-# shellcheck source=tests/lib/framework.sh # Resolve path statically
-[[ -n "${FRAMEWORK_GUARD}" ]] || source "${LIB_DIR}/framework.sh"
-# shellcheck source=tests/lib/log_output.sh # Resolve path statically
-[[ -n "${LOG_OUTPUT_GUARD}" ]] || source "${LIB_DIR}/log_output.sh"
-# shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
-[[ -n "${LIFECYCLE_GUARD}" ]] || source "${LIB_DIR}/lifecycle.sh"
-# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
-[[ -n "${FILE_UTILS_GUARD}" ]] || source "${LIB_DIR}/file_utils.sh"
-# shellcheck source=tests/lib/network_utils.sh # Resolve path statically
-[[ -n "${NETWORK_UTILS_GUARD}" ]] || source "${LIB_DIR}/network_utils.sh"
-# shellcheck source=tests/lib/coverage-unity.sh # Resolve path statically
-[[ -n "${COVERAGE_UNITY_GUARD}" ]] || source "${LIB_DIR}/coverage-unity.sh"
-# shellcheck source=tests/lib/coverage-blackbox.sh # Resolve path statically
-[[ -n "${COVERAGE_BLACKBOX_GUARD}" ]] || source "${LIB_DIR}/coverage-blackbox.sh"
-# shellcheck source=tests/lib/coverage-combined.sh # Resolve path statically
-[[ -n "${COVERAGE_COMBINED_GUARD}" ]] || source "${LIB_DIR}/coverage-combined.sh"
-# shellcheck source=tests/lib/coverage-common.sh # Resolve path statically
-[[ -n "${COVERAGE_COMMON_GUARD}" ]] || source "${LIB_DIR}/coverage-common.sh"
-# shellcheck source=tests/lib/coverage.sh # Resolve path statically
-[[ -n "${COVERAGE_GUARD}" ]] || source "${LIB_DIR}/coverage.sh"
-
-# Test configuration
-TOTAL_SUBTESTS=15  # 3 prerequisites + 6 tests for each of 2 configurations
-PASS_COUNT=0
-EXIT_CODE=0
-
-# Auto-extract test number and set up environment
-TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
-set_test_number "${TEST_NUMBER}"
-reset_subtest_counter
 
 # Function to wait for server to be ready
 wait_for_server_ready() {
@@ -528,9 +488,6 @@ cleanup() {
 # Set up trap for interruption only (not normal exit)
 trap cleanup SIGINT SIGTERM
 
-# Main execution starts here
-print_test_header "${TEST_NAME}" "${SCRIPT_VERSION}"
-
 # Subtest 1: Find Hydrogen binary
 next_subtest
 print_subtest "Locate Hydrogen Binary"
@@ -600,30 +557,14 @@ else
     EXIT_CODE=1
 fi
 
-# Calculate overall test result
-if [ ${PASS_COUNT} -eq ${TOTAL_SUBTESTS} ]; then
-    EXIT_CODE=0
-else
-    EXIT_CODE=1
-fi
-
 # Clean up response files but preserve logs if test failed
 rm -f "${RESULTS_DIR}"/*_trailing_slash_*.html "${RESULTS_DIR}"/*_redirect_*.txt "${RESULTS_DIR}"/*_content_*.html "${RESULTS_DIR}"/*_initializer_*.js "${RESULTS_DIR}"/*_swagger_json_*.json
 
-# Only remove logs if tests were successful
-if [ ${EXIT_CODE} -eq 0 ]; then
-    print_message "Tests passed, cleaning up log files..."
-    rm -f "${RESULTS_DIR}"/swagger_*_*.log
-else
-    print_message "Tests failed, preserving log files for analysis in ${RESULTS_DIR}/"
-fi
+# Calculate overall test result
+[[ "${PASS_COUNT}" -eq "${TOTAL_SUBTESTS}" ]] && EXIT_CODE=0 || EXIT_CODE=1
 
 # Print test completion summary
-print_test_completion "${TEST_NAME}"
+print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
 
 # Return status code if sourced, exit if run standalone
-if [[ "${ORCHESTRATION}" == "true" ]]; then
-    return "${EXIT_CODE}"
-else
-    exit "${EXIT_CODE}"
-fi
+${ORCHESTRATION:-false} && return "${EXIT_CODE}" || exit "${EXIT_CODE}"
