@@ -411,7 +411,6 @@ if check_unity_tests_available; then
         print_result 0 "Unity test coverage calculated: ${unity_coverage}% (0/0 lines, 0/0 files) - No coverage data available"
         ((PASS_COUNT++))
     fi
-    TOTAL_SUBTESTS=$((TOTAL_SUBTESTS + 1))
 else
     print_error "Unity tests not available, skipping test execution"
     EXIT_CODE=1
