@@ -513,9 +513,6 @@ else
     EXIT_CODE=1
 fi
 
-# Calculate overall test result
-[[ "${PASS_COUNT}" -eq "${TOTAL_SUBTESTS}" ]] && EXIT_CODE=0 || EXIT_CODE=1
-
 # Print test completion summary
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
 

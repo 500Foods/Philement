@@ -216,9 +216,6 @@ formatted_uncovered_count=$(printf "%'d" "${uncovered_count}")
 print_result 0 "Coverage analysis: ${formatted_covered_files} of ${formatted_instrumented_files} source files covered, ${formatted_uncovered_count} uncovered"
 ((PASS_COUNT++))
 
-# Calculate overall test result
-[[ "${PASS_COUNT}" -eq "${TOTAL_SUBTESTS}" ]] && EXIT_CODE=0 || EXIT_CODE=1
-
 # Print test completion summary
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
 
