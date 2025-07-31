@@ -4,69 +4,21 @@
 # Collects and analyzes coverage data from Unity and blackbox tests
 
 # CHANGELOG
+# 3.0.0 - 2025-07-30 - Overhaul #1
 # 2.0.1 - 2025-07-14 - Updated to use build/tests directories for test output consistency
 # 2.0.0 - Initial version with comprehensive coverage analysis
 
 # Test configuration
 TEST_NAME="Test Suite Coverage {BLUE}(coverage_table){RESET}"
-SCRIPT_VERSION="2.0.1"
+TEST_ABBR="COV"
+TEST_NUMBER="99"
+TEST_VERSION="3.0.0"
 
-# Sort out directories
-PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
-SCRIPT_DIR="${PROJECT_DIR}/tests"
-LIB_DIR="${SCRIPT_DIR}/lib"
-BUILD_DIR="${PROJECT_DIR}/build"
-TESTS_DIR="${BUILD_DIR}/tests"
-RESULTS_DIR="${TESTS_DIR}/results"
-DIAGS_DIR="${TESTS_DIR}/diagnostics"
-LOGS_DIR="${TESTS_DIR}/logs"
-mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}"
+# shellcheck source=tests/lib/framework.sh # Reference framework directly
+[[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+setup_test_environment
 
-# shellcheck source=tests/lib/framework.sh # Resolve path statically
-[[ -n "${FRAMEWORK_GUARD}" ]] || source "${LIB_DIR}/framework.sh"
-# shellcheck source=tests/lib/log_output.sh # Resolve path statically
-[[ -n "${LOG_OUTPUT_GUARD}" ]] || source "${LIB_DIR}/log_output.sh"
-# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
-[[ -n "${FILE_UTILS_GUARD}" ]] || source "${LIB_DIR}/file_utils.sh"
-# shellcheck source=tests/lib/coverage-unity.sh # Resolve path statically
-[[ -n "${COVERAGE_UNITY_GUARD}" ]] || source "${LIB_DIR}/coverage-unity.sh"
-# shellcheck source=tests/lib/coverage-blackbox.sh # Resolve path statically
-[[ -n "${COVERAGE_BLACKBOX_GUARD}" ]] || source "${LIB_DIR}/coverage-blackbox.sh"
-# shellcheck source=tests/lib/coverage-combined.sh # Resolve path statically
-[[ -n "${COVERAGE_COMBINED_GUARD}" ]] || source "${LIB_DIR}/coverage-combined.sh"
-# shellcheck source=tests/lib/coverage-common.sh # Resolve path statically
-[[ -n "${COVERAGE_COMMON_GUARD}" ]] || source "${LIB_DIR}/coverage-common.sh"
-# shellcheck source=tests/lib/coverage.sh # Resolve path statically
-[[ -n "${COVERAGE_GUARD}" ]] || source "${LIB_DIR}/coverage.sh"
-
-# Test configuration
-EXIT_CODE=0
-TOTAL_SUBTESTS=4
-PASS_COUNT=0
-
-# Auto-extract test number and set up environment
-TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
-set_test_number "${TEST_NUMBER}"
-reset_subtest_counter
-
-# Print beautiful test header
-print_test_header "${TEST_NAME}" "${SCRIPT_VERSION}"
-
-# Use build/tests/results directory for consistency
-BUILD_DIR="${SCRIPT_DIR}/../build"
-RESULTS_DIR="${BUILD_DIR}/tests/results"
-mkdir -p "${RESULTS_DIR}"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-
-# Navigate to the project root (one level up from tests directory)
-if ! navigate_to_project_root "${SCRIPT_DIR}"; then
-    print_error "Failed to navigate to project root directory"
-    exit 1
-fi
-
-# Set up results directory (after navigating to project root)
-
-# Subtest 1: Recall Unity Test Coverage
+# Test: Recall Unity Test Coverage
 next_subtest
 print_subtest "Recall Unity Test Coverage"
 
@@ -98,7 +50,7 @@ else
     EXIT_CODE=1
 fi
 
-# Subtest 2: Collect Blackbox Test Coverage
+# Test: Collect Blackbox Test Coverage
 next_subtest
 print_subtest "Collect Blackbox Test Coverage"
 
@@ -141,7 +93,7 @@ else
     EXIT_CODE=1
 fi
 
-# Subtest 3: Calculate Combined Coverage
+# Test: Calculate Combined Coverage
 next_subtest
 print_subtest "Calculate Combined Coverage"
 
@@ -221,7 +173,7 @@ else
     EXIT_CODE=1
 fi
 
-# Subtest 4: Identify Uncovered Source Files
+# Test: Identify Uncovered Source Files
 next_subtest
 print_subtest "Identify Uncovered Source Files"
 
@@ -264,12 +216,11 @@ formatted_uncovered_count=$(printf "%'d" "${uncovered_count}")
 print_result 0 "Coverage analysis: ${formatted_covered_files} of ${formatted_instrumented_files} source files covered, ${formatted_uncovered_count} uncovered"
 ((PASS_COUNT++))
 
-# Print completion table
-print_test_completion "${TEST_NAME}"
+# Calculate overall test result
+[[ "${PASS_COUNT}" -eq "${TOTAL_SUBTESTS}" ]] && EXIT_CODE=0 || EXIT_CODE=1
+
+# Print test completion summary
+print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
 
 # Return status code if sourced, exit if run standalone
-if [[ "${ORCHESTRATION}" == "true" ]]; then
-    return "${EXIT_CODE}"
-else
-    exit "${EXIT_CODE}"
-fi
+${ORCHESTRATION:-false} && return "${EXIT_CODE}" || exit "${EXIT_CODE}"
