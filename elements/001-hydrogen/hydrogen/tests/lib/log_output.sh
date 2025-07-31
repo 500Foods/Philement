@@ -50,7 +50,11 @@
 # Guard clause to prevent multiple sourcing
 [[ -n "${LOG_OUTPUT_GUARD}" ]] && return 0
 export LOG_OUTPUT_GUARD="true"
-
+navigate_to_project_root() {
+    local subtest_name="$1"
+    local subtest_number="$2"
+    # Set the subtest number in log_output.sh
+}
 # Library metadata
 LOG_OUTPUT_NAME="Log Output Library"
 LOG_OUTPUT_VERSION="3.2.1"
@@ -67,14 +71,6 @@ TEST_START_TIME=""
 TEST_PASSED_COUNT=0
 TEST_FAILED_COUNT=0
 declare -a TEST_ELAPSED_TIMES
-
-# Variable for absolute path replacement
-ABSOLUTE_ROOT=""
-
-# Array for collecting output messages (for performance optimization and progressive feedback)
-# Output is cached and dumped each time a new TEST starts, providing progressive feedback
-declare -a OUTPUT_COLLECTION=()
-COLLECT_OUTPUT_MODE=false
 
 # Icon-specific colors for consistent theming
 PASS_COLOR='\033[0;32m'     # Green
@@ -104,38 +100,14 @@ TEST_ICON="${TEST_COLOR}\U2587\U2587${NC}"
 # PATH HANDLING FUNCTIONS
 #==============================================================================
 
-# Function to set the absolute root to the project root (two levels up from the script path)
-# Usage: set_absolute_root <script_path>
-set_absolute_root() {
-  local script_path="$1"
-  if [[ -n "${script_path}" && "${script_path}" == /* ]]; then
-    local script_dir
-    script_dir="$(dirname "${script_path}")"
-    local project_root
-    project_root="$(dirname "$(dirname "${script_dir}")")/"
-    ABSOLUTE_ROOT="${project_root}"
-  else
-    ABSOLUTE_ROOT=""
-  fi
-  export ABSOLUTE_ROOT
-}
-
 # Function to process a message and replace full paths with relative paths
 # Usage: process_message <message>
 process_message() {
   local message="$1"
   local processed="${message}"
-  if [[ -n "${ABSOLUTE_ROOT}" ]]; then
-    processed="${message//${ABSOLUTE_ROOT}/}"
-  fi
+  processed="${message//${PROJECT_DIR}/}"
   echo "${processed}"
 }
-
-# Set the absolute root based on the current script's directory (assuming this is sourced from a test script)
-# This ensures ABSOLUTE_ROOT is set early to the project root (two levels up from tests/lib)
-if [[ "${BASH_SOURCE[0]}" == /* ]]; then
-  set_absolute_root "${BASH_SOURCE[0]}"
-fi
 
 #==============================================================================
 # TEST NUMBERING AND TIMING FUNCTIONS
@@ -328,8 +300,6 @@ print_test_header() {
     local test_abbr="$2"
     local test_number="$3"
     local test_version="$4"
-    local script_dir
-    script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
     
     # Start the test timer
     start_test_timer
@@ -394,10 +364,8 @@ EOF
 EOF
     
     # Use tables executable to render the header
-    local tables_exe="${script_dir}/tables"
-    if [[ -f "${tables_exe}" ]]; then
-        "${tables_exe}" "${layout_json}" "${data_json}" 2>/dev/null
-    fi
+    # shellcheck disable=SC2154 # TABLES_EXTERNAL Defined externally in framework.sh
+    "${TABLES_EXTERNAL}" "${layout_json}" "${data_json}" 2>/dev/null
     
     # Clean up temporary files
     rm -rf "${temp_dir}" 2>/dev/null
@@ -666,6 +634,7 @@ print_test_completion() {
         timestamp=$(date +%s.%3N 2>/dev/null || date +%s)
         # Add process ID and random component to ensure uniqueness in parallel execution
         local unique_id="${timestamp}_$${_}${RANDOM}"
+        # shellcheck disable=SC2154 # RESULTS_DIR is defined externally in framework.sh
         local subtest_file="${RESULTS_DIR}/subtest_${CURRENT_TEST_NUMBER}_${unique_id}.txt"
         echo "${total_subtests},${TEST_PASSED_COUNT},${test_name},${file_elapsed_time},${test_abbr},${test_version}" > "${subtest_file}" 2>/dev/null
     fi
@@ -748,6 +717,7 @@ EOF
 EOF
     
     # Use tables executable to render the completion table
+    # shellcheck disable=SC2154 # LIB_DIR defined externally in framework.sh    
     local tables_exe="${LIB_DIR}/tables"
     if [[ -f "${tables_exe}" ]]; then
         "${tables_exe}" "${layout_json}" "${data_json}" 2>/dev/null

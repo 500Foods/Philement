@@ -509,7 +509,7 @@ run_single_test() {
     latest_subtest_file=$(find "${RESULTS_DIR}" -name "subtest_${test_number}_*.txt" -type f 2>/dev/null | sort -r | head -1 || true)
     
     if [[ -n "${latest_subtest_file}" ]] && [[ -f "${latest_subtest_file}" ]]; then
-        IFS=',' read -r total_subtests passed_subtests test_name file_elapsed_time test_abbr test_version < "${latest_subtest_file}" 2>/dev/null || {
+        IFS=',' read -r total_subtests passed_subtests test_name file_elapsed_time test_abbrev test_version < "${latest_subtest_file}" 2>/dev/null || {
             passed_subtests=$([[ ${exit_code} -eq 0 ]] && echo 1 || echo 0); test_name="${test_name_for_file}"; file_elapsed_time="0.000"; 
         }
         elapsed_formatted="${file_elapsed_time}"
@@ -570,7 +570,7 @@ run_single_test_parallel() {
     
     if [[ -n "${latest_subtest_file}" ]] && [[ -f "${latest_subtest_file}" ]]; then
         # Read subtest results, test name, and elapsed time from the file
-        IFS=',' read -r total_subtests passed_subtests test_name file_elapsed_time test_abbr test_version < "${latest_subtest_file}" 2>/dev/null || {
+        IFS=',' read -r total_subtests passed_subtests test_name file_elapsed_time test_abbrev test_version < "${latest_subtest_file}" 2>/dev/null || {
             total_subtests=1
             passed_subtests=$([[ ${exit_code} -eq 0 ]] && echo 1 || echo 0)
             test_name="${test_name_for_file}"
@@ -591,7 +591,7 @@ run_single_test_parallel() {
     local failed_subtests=$((total_subtests - passed_subtests))
     
     # Write results to temporary file for collection by main process
-    echo "${test_number}|${test_name}|${total_subtests}|${passed_subtests}|${failed_subtests}|${elapsed_formatted}|${exit_code}" > "${temp_result_file}"
+    echo "${test_number}|${test_name}|${total_subtests}|${passed_subtests}|${failed_subtests}|${elapsed_formatted}|${test_abbrev}|${test_version}|${exit_code}" > "${temp_result_file}"
     
     return "${exit_code}"
 }
