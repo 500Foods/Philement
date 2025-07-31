@@ -64,8 +64,8 @@ validate_api_request() {
     local attempt=1
     local curl_exit_code=0
     
-    while [ ${attempt} -le ${max_attempts} ]; do
-        if [ ${attempt} -gt 1 ]; then
+    while [[ "${attempt}" -le "${max_attempts}" ]]; do
+        if [[ "${attempt}" -gt 1 ]]; then
             print_message "API request attempt ${attempt} of ${max_attempts} (waiting for API subsystem initialization)..."
             sleep 1  # Brief delay between attempts for API initialization
         fi
@@ -74,14 +74,14 @@ validate_api_request() {
         curl -s --max-time 10 --compressed "${url}" > "${response_file}"
         curl_exit_code=$?
         
-        if [ ${curl_exit_code} -eq 0 ]; then
+        if [[ "${curl_exit_code}" -eq 0 ]]; then
             # Check if we got a 404 or other error response
             if grep -q "404 Not Found" "${response_file}" || grep -q "<html>" "${response_file}"; then
-                if [ ${attempt} -eq ${max_attempts} ]; then
+                if [[ "${attempt}" -eq "${max_attempts}" ]]; then
                     print_message "API endpoint still not ready after ${max_attempts} attempts"
                     print_result 1 "API endpoint returned 404 or HTML error page"
                     print_message "Response content:"
-                    print_output "$(cat "${response_file}")"
+                    print_output "$(cat "${response_file}" || true)"
                     return 1
                 else
                     print_message "API endpoint not ready yet (got 404/HTML), retrying..."
@@ -101,7 +101,7 @@ validate_api_request() {
             if [[ "${request_name}" == "recent" ]]; then
                 # Use fixed string search for recent endpoint
                 if grep -F -q "[" "${response_file}"; then
-                    if [ ${attempt} -gt 1 ]; then
+                    if [[ "${attempt}" -gt 1 ]]; then
                         print_result 0 "Response contains expected field: log entry (succeeded on attempt ${attempt})"
                     else
                         print_result 0 "Response contains expected field: log entry"
@@ -114,7 +114,7 @@ validate_api_request() {
             else
                 # Normal pattern search for other endpoints
                 if grep -q "${expected_field}" "${response_file}"; then
-                    if [ ${attempt} -gt 1 ]; then
+                    if [[ "${attempt}" -gt 1 ]]; then
                         print_result 0 "Response contains expected content: ${expected_field} (succeeded on attempt ${attempt})"
                     else
                         print_result 0 "Response contains expected content: ${expected_field}"
@@ -126,12 +126,12 @@ validate_api_request() {
                     # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
                     while IFS= read -r line; do
                         print_output "${line}"
-                    done < <(head -n 10 "${response_file}")
+                    done < <(head -n 10 "${response_file}" || true)
                     return 1
                 fi
             fi
         else
-            if [ ${attempt} -eq ${max_attempts} ]; then
+            if [[ "${attempt}" -eq "${max_attempts}" ]]; then
                 print_result 1 "Failed to connect to server at ${url} (curl exit code: ${curl_exit_code})"
                 return 1
             else
@@ -179,7 +179,7 @@ validate_line_count() {
     local actual_lines
     actual_lines=$(wc -l < "${file}")
     
-    if [ "${actual_lines}" -gt "${min_lines}" ]; then
+    if [[ "${actual_lines}" -gt "${min_lines}" ]]; then
         print_result 0 "${endpoint_name} endpoint contains ${actual_lines} lines (more than ${min_lines} required)"
         return 0
     else
@@ -223,7 +223,7 @@ validate_prometheus_format() {
         fi
     done
     
-    if [ ${prometheus_format_ok} -eq 1 ]; then
+    if [[ "${prometheus_format_ok}" -eq 1 ]]; then
         print_result 0 "Prometheus endpoint contains valid format and metrics"
         return 0
     else
@@ -239,12 +239,11 @@ wait_for_server_ready() {
     
     print_message "Waiting for server to be ready at ${base_url}..."
     
-    while [ ${attempt} -le ${max_attempts} ]; do
+    while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if curl -s --max-time 2 "${base_url}" >/dev/null 2>&1; then
             print_message "Server is ready after $(( attempt * 5 / 10 )) seconds"
             return 0
         fi
-        # sleep 0.5
         ((attempt++))
     done
     
@@ -259,8 +258,8 @@ check_server_logs() {
     
     # Check server logs for API-related errors - filter irrelevant messages
     print_message "Checking server logs for API-related errors..."
-    if grep -i "error\|warn\|fatal\|segmentation" "${log_file}" | grep -i "API\|System\|SystemTest\|SystemService\|Endpoint\|api" > "${RESULTS_DIR}/system_test_errors_${timestamp}.log"; then
-        if [ -s "${RESULTS_DIR}/system_test_errors_${timestamp}.log" ]; then
+    if grep -i "error\|warn\|fatal\|segmentation" "${log_file}" | grep -i "API\|System\|SystemTest\|SystemService\|Endpoint\|api" || true > "${RESULTS_DIR}/system_test_errors_${timestamp}.log"; then
+        if [[ -s "${RESULTS_DIR}/system_test_errors_${timestamp}.log" ]]; then
             print_warning "API-related warning/error messages found in logs:"
             # Process each line individually for clean formatting
             while IFS= read -r line; do
@@ -272,7 +271,7 @@ check_server_logs() {
     # Check for Brotli compression logs
     print_message "Checking for Brotli compression logs..."
     if grep -i "Brotli" "${log_file}" > "${RESULTS_DIR}/brotli_compression_${timestamp}.log" 2>/dev/null; then
-        if [ -s "${RESULTS_DIR}/brotli_compression_${timestamp}.log" ]; then
+        if [[ -s "${RESULTS_DIR}/brotli_compression_${timestamp}.log" ]]; then
             print_message "Brotli compression logs found:"
             # Process each line individually for clean formatting
             while IFS= read -r line; do
@@ -322,7 +321,7 @@ test_system_endpoints() {
     if start_hydrogen_with_pid "${CONFIG_PATH}" "${server_log}" 15 "${HYDROGEN_BIN}" "${temp_pid_var}"; then
         # Get the PID from the temporary variable
         hydrogen_pid=$(eval "echo \$${temp_pid_var}")
-        if [ -n "${hydrogen_pid}" ]; then
+        if [[ -n "${hydrogen_pid}" ]]; then
             print_result 0 "Server started successfully with PID: ${hydrogen_pid}"
             ((PASS_COUNT++))
         else
@@ -337,7 +336,7 @@ test_system_endpoints() {
     fi
     
     # Wait for server to be ready
-    if [ -n "${hydrogen_pid}" ] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+    if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if ! wait_for_server_ready "${base_url}"; then
             print_result 1 "Server failed to become ready"
             EXIT_CODE=1
@@ -348,7 +347,7 @@ test_system_endpoints() {
     # Test core endpoints
     next_subtest
     print_subtest "Test Health Endpoint (${test_name})"
-    if [ -n "${hydrogen_pid}" ] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+    if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if validate_api_request "health" "${base_url}/api/system/health" "Yes, I'm alive, thanks!"; then
             ((PASS_COUNT++))
         else
@@ -361,7 +360,7 @@ test_system_endpoints() {
     
     next_subtest
     print_subtest "Test Info Endpoint (${test_name})"
-    if [ -n "${hydrogen_pid}" ] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+    if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if validate_api_request "info" "${base_url}/api/system/info" "system"; then
             ((PASS_COUNT++))
         else
@@ -374,7 +373,7 @@ test_system_endpoints() {
     
     next_subtest
     print_subtest "Test Config Endpoint (${test_name})"
-    if [ -n "${hydrogen_pid}" ] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+    if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if validate_api_request "config" "${base_url}/api/system/config" "ServerName"; then
             ((PASS_COUNT++))
         else
@@ -387,7 +386,7 @@ test_system_endpoints() {
     
     next_subtest
     print_subtest "Test System Test Endpoint (${test_name})"
-    if [ -n "${hydrogen_pid}" ] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+    if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if validate_api_request "basic_get" "${base_url}/api/system/test" "client_ip"; then
             ((PASS_COUNT++))
         else
@@ -400,7 +399,7 @@ test_system_endpoints() {
     
     next_subtest
     print_subtest "Test Prometheus Endpoint (${test_name})"
-    if [ -n "${hydrogen_pid}" ] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+    if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if validate_api_request "prometheus" "${base_url}/api/system/prometheus" "system_info"; then
             ((PASS_COUNT++))
         else
@@ -413,7 +412,7 @@ test_system_endpoints() {
     
     next_subtest
     print_subtest "Test Recent Logs Endpoint (${test_name})"
-    if [ -n "${hydrogen_pid}" ] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+    if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if validate_api_request "recent" "${base_url}/api/system/recent" "\\["; then
             ((PASS_COUNT++))
         else
@@ -426,7 +425,7 @@ test_system_endpoints() {
     
     next_subtest
     print_subtest "Test AppConfig Endpoint (${test_name})"
-    if [ -n "${hydrogen_pid}" ] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+    if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if validate_api_request "appconfig" "${base_url}/api/system/appconfig" "APPCONFIG"; then
             ((PASS_COUNT++))
         else
@@ -438,7 +437,7 @@ test_system_endpoints() {
     fi
     
     # Stop the server
-    if [ -n "${hydrogen_pid}" ]; then
+    if [[ -n "${hydrogen_pid}" ]]; then
         print_message "Stopping server..."
         if stop_hydrogen "${hydrogen_pid}" "${server_log}" 10 5 "${RESULTS_DIR}"; then
             print_message "Server stopped successfully"
@@ -490,7 +489,7 @@ else
 fi
 
 # Only proceed with API tests if binary and config are available
-if [ ${EXIT_CODE} -eq 0 ]; then
+if [[ "${EXIT_CODE}" -eq 0 ]]; then
     # Ensure clean state
     print_message "Ensuring no existing Hydrogen processes are running..."
     pkill -f "hydrogen.*json" 2>/dev/null || true
@@ -518,4 +517,3 @@ print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VER
 
 # Return status code if sourced, exit if run standalone
 ${ORCHESTRATION:-false} && return "${EXIT_CODE}" || exit "${EXIT_CODE}"
-

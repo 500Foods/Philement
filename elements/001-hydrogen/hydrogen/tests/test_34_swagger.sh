@@ -35,12 +35,11 @@ wait_for_server_ready() {
     
     print_message "Waiting for server to be ready at ${base_url}..."
     
-    while [ ${attempt} -le ${max_attempts} ]; do
+    while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if curl -s --max-time 2 "${base_url}" >/dev/null 2>&1; then
             print_message "Server is ready after $(( attempt * 2 / 10 )) seconds"
             return 0
         fi
-        # sleep 0.2
         ((attempt++))
     done
     
@@ -56,7 +55,7 @@ check_response_content() {
     local follow_redirects="$4"
     
     local curl_cmd="curl -s --max-time 10"
-    if [ "${follow_redirects}" = "true" ]; then
+    if [[ "${follow_redirects}" = "true" ]]; then
         curl_cmd="${curl_cmd} -L"
     fi
     curl_cmd="${curl_cmd} --compressed"
@@ -68,8 +67,8 @@ check_response_content() {
     local attempt=1
     local curl_exit_code=0
     
-    while [ ${attempt} -le ${max_attempts} ]; do
-        if [ ${attempt} -gt 1 ]; then
+    while [[ "${attempt}" -le "${max_attempts}" ]]; do
+        if [[ "${attempt}" -gt 1 ]]; then
             print_message "HTTP request attempt ${attempt} of ${max_attempts} (waiting for subsystem initialization)..."
             sleep 1  # Brief delay between attempts for subsystem initialization
         fi
@@ -78,14 +77,14 @@ check_response_content() {
         eval "${curl_cmd} \"${url}\" > \"${response_file}\""
         curl_exit_code=$?
         
-        if [ ${curl_exit_code} -eq 0 ]; then
+        if [[ "${curl_exit_code}" -eq 0 ]]; then
             # Check if we got a 404 or other error response
             if grep -q "404 Not Found" "${response_file}" || grep -q "<html>" "${response_file}"; then
-                if [ ${attempt} -eq ${max_attempts} ]; then
+                if [[ "${attempt}" -eq "${max_attempts}" ]]; then
                     print_message "Endpoint still not ready after ${max_attempts} attempts"
                     print_result 1 "Endpoint returned 404 or HTML error page"
                     print_message "Response content:"
-                    print_output "$(cat "${response_file}")"
+                    print_output "$(cat "${response_file}" || true)"
                     return 1
                 else
                     print_message "Endpoint not ready yet (got 404/HTML), retrying..."
@@ -103,7 +102,7 @@ check_response_content() {
             
             # Check for expected content
             if grep -q "${expected_content}" "${response_file}"; then
-                if [ ${attempt} -gt 1 ]; then
+                if [[ "${attempt}" -gt 1 ]]; then
                     print_result 0 "Response contains expected content: ${expected_content} (succeeded on attempt ${attempt})"
                 else
                     print_result 0 "Response contains expected content: ${expected_content}"
@@ -115,11 +114,11 @@ check_response_content() {
                 # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
                 while IFS= read -r line; do
                     print_output "${line}"
-                done < <(head -n 10 "${response_file}")
+                done < <(head -n 10 "${response_file}" || true)
                 return 1
             fi
         else
-            if [ ${attempt} -eq ${max_attempts} ]; then
+            if [[ "${attempt}" -eq "${max_attempts}" ]]; then
                 print_result 1 "Failed to connect to server at ${url} (curl exit code: ${curl_exit_code})"
                 return 1
             else
@@ -146,8 +145,8 @@ check_redirect_response() {
     local attempt=1
     local curl_exit_code=0
     
-    while [ ${attempt} -le ${max_attempts} ]; do
-        if [ ${attempt} -gt 1 ]; then
+    while [[ "${attempt}" -le "${max_attempts}" ]]; do
+        if [[ "${attempt}" -gt 1 ]]; then
             print_message "Redirect check attempt ${attempt} of ${max_attempts} (waiting for subsystem initialization)..."
             sleep 1  # Brief delay between attempts for subsystem initialization
         fi
@@ -156,17 +155,17 @@ check_redirect_response() {
         curl -v -s --max-time 10 -o /dev/null "${url}" 2> "${redirect_file}"
         curl_exit_code=$?
         
-        if [ ${curl_exit_code} -eq 0 ]; then
+        if [[ "${curl_exit_code}" -eq 0 ]]; then
             # Check if we got a 404 or connection error
             if grep -q "404 Not Found" "${redirect_file}"; then
-                if [ ${attempt} -eq ${max_attempts} ]; then
+                if [[ "${attempt}" -eq "${max_attempts}" ]]; then
                     print_message "Endpoint still not ready after ${max_attempts} attempts"
                     print_result 1 "Endpoint returned 404 error"
                     print_message "Response headers:"
                     # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
                     while IFS= read -r line; do
                         print_output "${line}"
-                    done < <(grep -E "< HTTP/|< Location:" "${redirect_file}")
+                    done < <(grep -E "< HTTP/|< Location:" "${redirect_file}" || true)
                     return 1
                 else
                     print_message "Endpoint not ready yet (got 404), retrying..."
@@ -179,7 +178,7 @@ check_redirect_response() {
             
             # Check for redirect
             if grep -q "< HTTP/1.1 301" "${redirect_file}" && grep -q "< Location: ${expected_location}" "${redirect_file}"; then
-                if [ ${attempt} -gt 1 ]; then
+                if [[ "${attempt}" -gt 1 ]]; then
                     print_result 0 "Response is a 301 redirect to ${expected_location} (succeeded on attempt ${attempt})"
                 else
                     print_result 0 "Response is a 301 redirect to ${expected_location}"
@@ -191,11 +190,11 @@ check_redirect_response() {
                 # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
                 while IFS= read -r line; do
                     print_output "${line}"
-                done < <(grep -E "< HTTP/|< Location:" "${redirect_file}")
+                done < <(grep -E "< HTTP/|< Location:" "${redirect_file}" || true)
                 return 1
             fi
         else
-            if [ ${attempt} -eq ${max_attempts} ]; then
+            if [[ "${attempt}" -eq "${max_attempts}" ]]; then
                 print_result 1 "Failed to connect to server at ${url} (curl exit code: ${curl_exit_code})"
                 return 1
             else
@@ -221,8 +220,8 @@ check_swagger_json() {
     local attempt=1
     local curl_exit_code=0
     
-    while [ ${attempt} -le ${max_attempts} ]; do
-        if [ ${attempt} -gt 1 ]; then
+    while [[ "${attempt}" -le "${max_attempts}" ]]; do
+        if [[ "${attempt}" -gt 1 ]]; then
             print_message "Swagger JSON request attempt ${attempt} of ${max_attempts} (waiting for subsystem initialization)..."
             sleep 1  # Brief delay between attempts for subsystem initialization
         fi
@@ -231,14 +230,14 @@ check_swagger_json() {
         curl -s --max-time 10 "${url}" > "${response_file}"
         curl_exit_code=$?
         
-        if [ ${curl_exit_code} -eq 0 ]; then
+        if [[ "${curl_exit_code}" -eq 0 ]]; then
             # Check if we got a 404 or other error response
             if grep -q "404 Not Found" "${response_file}" || grep -q "<html>" "${response_file}"; then
-                if [ ${attempt} -eq ${max_attempts} ]; then
+                if [[ "${attempt}" -eq "${max_attempts}" ]]; then
                     print_message "Swagger endpoint still not ready after ${max_attempts} attempts"
                     print_result 1 "Swagger endpoint returned 404 or HTML error page"
                     print_message "Response content:"
-                    print_output "$(cat "${response_file}")"
+                    print_output "$(cat "${response_file}" || true)"
                     return 1
                 else
                     print_message "Swagger endpoint not ready yet (got 404/HTML), retrying..."
@@ -264,7 +263,7 @@ check_swagger_json() {
                         print_message "API Title: ${api_title}"
                         
                         if [[ "${api_title}" == *"Hydrogen"* ]]; then
-                            if [ ${attempt} -gt 1 ]; then
+                            if [[ "${attempt}" -gt 1 ]]; then
                                 print_result 0 "swagger.json contains valid Hydrogen API specification (succeeded on attempt ${attempt})"
                             else
                                 print_result 0 "swagger.json contains valid Hydrogen API specification"
@@ -287,7 +286,7 @@ check_swagger_json() {
                 if grep -q '"openapi":\|"swagger":' "${response_file}" && \
                    grep -q '"info":' "${response_file}" && \
                    grep -q '"Hydrogen' "${response_file}"; then
-                    if [ ${attempt} -gt 1 ]; then
+                    if [[ "${attempt}" -gt 1 ]]; then
                         print_result 0 "swagger.json contains expected Hydrogen API content (basic validation, succeeded on attempt ${attempt})"
                     else
                         print_result 0 "swagger.json contains expected Hydrogen API content (basic validation)"
@@ -299,12 +298,12 @@ check_swagger_json() {
                     # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
                     while IFS= read -r line; do
                         print_output "${line}"
-                    done < <(head -n 5 "${response_file}")
+                    done < <(head -n 5 "${response_file}" || true)
                     return 1
                 fi
             fi
         else
-            if [ ${attempt} -eq ${max_attempts} ]; then
+            if [[ "${attempt}" -eq "${max_attempts}" ]]; then
                 print_result 1 "Failed to retrieve swagger.json from ${url} (curl exit code: ${curl_exit_code})"
                 return 1
             else
@@ -350,7 +349,7 @@ test_swagger_configuration() {
     if start_hydrogen_with_pid "${config_file}" "${server_log}" 15 "${HYDROGEN_BIN}" "${temp_pid_var}"; then
         # Get the PID from the temporary variable
         hydrogen_pid=$(eval "echo \$${temp_pid_var}")
-        if [ -n "${hydrogen_pid}" ]; then
+        if [[ -n "${hydrogen_pid}" ]]; then
             print_result 0 "Server started successfully with PID: ${hydrogen_pid}"
             ((PASS_COUNT++))
         else
@@ -377,7 +376,7 @@ test_swagger_configuration() {
     fi
     
     # Wait for server to be ready
-    if [ -n "${hydrogen_pid}" ] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+    if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if ! wait_for_server_ready "${base_url}"; then
             print_result 1 "Server failed to become ready"
             EXIT_CODE=1
@@ -394,7 +393,7 @@ test_swagger_configuration() {
     # Subtest: Test Swagger UI with trailing slash
     next_subtest
     print_subtest "Access Swagger UI with trailing slash (Config ${config_number})"
-    if [ -n "${hydrogen_pid}" ] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+    if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if check_response_content "${base_url}${swagger_prefix}/" "swagger-ui" "${RESULTS_DIR}/${test_name}_trailing_slash_${TIMESTAMP}.html" "true"; then
             ((PASS_COUNT++))
         else
@@ -408,7 +407,7 @@ test_swagger_configuration() {
     # Subtest: Test redirect without trailing slash
     next_subtest
     print_subtest "Access Swagger UI without trailing slash (Config ${config_number})"
-    if [ -n "${hydrogen_pid}" ] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+    if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if check_redirect_response "${base_url}${swagger_prefix}" "${swagger_prefix}/" "${RESULTS_DIR}/${test_name}_redirect_${TIMESTAMP}.txt"; then
             ((PASS_COUNT++))
         else
@@ -422,7 +421,7 @@ test_swagger_configuration() {
     # Subtest: Verify Swagger UI content
     next_subtest
     print_subtest "Verify Swagger UI content loads (Config ${config_number})"
-    if [ -n "${hydrogen_pid}" ] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+    if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if check_response_content "${base_url}${swagger_prefix}/" "swagger-ui" "${RESULTS_DIR}/${test_name}_content_${TIMESTAMP}.html" "true"; then
             ((PASS_COUNT++))
         else
@@ -436,7 +435,7 @@ test_swagger_configuration() {
     # Subtest: Test JavaScript files
     next_subtest
     print_subtest "Verify JavaScript files load (Config ${config_number})"
-    if [ -n "${hydrogen_pid}" ] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+    if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if check_response_content "${base_url}${swagger_prefix}/swagger-initializer.js" "window.ui = SwaggerUIBundle" "${RESULTS_DIR}/${test_name}_initializer_${TIMESTAMP}.js" "true"; then
             ((PASS_COUNT++))
         else
@@ -450,7 +449,7 @@ test_swagger_configuration() {
     # Subtest: Test swagger.json file
     next_subtest
     print_subtest "Verify swagger.json file loads and contains valid content (Config ${config_number})"
-    if [ -n "${hydrogen_pid}" ] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+    if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if check_swagger_json "${base_url}${swagger_prefix}/swagger.json" "${RESULTS_DIR}/${test_name}_swagger_json_${TIMESTAMP}.json"; then
             ((PASS_COUNT++))
         else
@@ -462,7 +461,7 @@ test_swagger_configuration() {
     fi
     
     # Stop the server
-    if [ -n "${hydrogen_pid}" ]; then
+    if [[ -n "${hydrogen_pid}" ]]; then
         print_message "Stopping server..."
         if stop_hydrogen "${hydrogen_pid}" "${server_log}" 10 5 "${RESULTS_DIR}"; then
             print_message "Server stopped successfully"
@@ -522,7 +521,7 @@ else
 fi
 
 # Only proceed with Swagger tests if prerequisites are met
-if [ ${EXIT_CODE} -eq 0 ]; then
+if [[ "${EXIT_CODE}" -eq 0 ]]; then
     # Ensure clean state
     print_message "Ensuring no existing Hydrogen processes are running..."
     pkill -f "hydrogen.*json" 2>/dev/null || true
