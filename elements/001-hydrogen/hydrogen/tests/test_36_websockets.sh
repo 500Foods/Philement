@@ -1,14 +1,10 @@
 #!/bin/bash
 
 # Test: WebSockets
-# Tests the WebSocket functionality with different configurations:
-# - Default WebSocket server configuration
-# - Custom port and protocol settings
-# - Tests connection establishment and basic communication
-# - Tests authentication and protocol validation
-# - Uses immediate restart without waiting for TIME_WAIT (SO_REUSEADDR enabled)
+# Tests the WebSocket functionality with different configurations
 
 # CHANGELOG
+# 2.0.0 - 2025-07-30 - Overhaul #1
 # 1.1.2 - 2025-07-19 - Bit of tidying up to get rid of steps we don't need
 # 1.1.1 - 2025-07-18 - Fixed subshell issue in server log output that prevented detailed error messages from being displayed in test output
 # 1.1.0 - 2025-07-15 - Added WebSocket status request test to improve coverage of websocket_server_status.c
@@ -19,45 +15,18 @@
 
 # Test Configuration
 TEST_NAME="WebSockets"
-SCRIPT_VERSION="1.1.1"
+TEST_ABBR="WSS"
+TEST_NUMBER="36"
+TEST_VERSION="2.0.0"
 
-# Get the directory where this script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-HYDROGEN_DIR="$( cd "${SCRIPT_DIR}/.." && pwd )"
+# shellcheck source=tests/lib/framework.sh # Reference framework directly
+[[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+setup_test_environment
 
-if [[ -z "${LOG_OUTPUT_SH_GUARD}" ]]; then
-    # shellcheck source=tests/lib/log_output.sh # Resolve path statically
-    source "${SCRIPT_DIR}/lib/log_output.sh"
-fi
-
-# shellcheck source=tests/lib/framework.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/framework.sh"
-# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/file_utils.sh"
-# shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/lifecycle.sh"
-# shellcheck source=tests/lib/network_utils.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/network_utils.sh"
-# shellcheck source=tests/lib/coverage.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/coverage.sh"
-# shellcheck source=tests/lib/env_utils.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/env_utils.sh"
-
-# Use build directory for test results
-BUILD_DIR="${SCRIPT_DIR}/../build"
-RESULTS_DIR="${BUILD_DIR}/tests/results"
-mkdir -p "${RESULTS_DIR}"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-
-# Auto-extract test number and set up environment
-TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
-set_test_number "${TEST_NUMBER}"
-reset_subtest_counter
-
-# Test configuration
-TOTAL_SUBTESTS=16  # 3 prerequisites + 1 WEBSOCKET_KEY + 6 tests for each of 2 configurations
-PASS_COUNT=0
-EXIT_CODE=0
+# Test variables
+HYDROGEN_DIR="${PROJECT_DIR}"
+CONFIG_1="$(get_config_path "hydrogen_test_websocket_test_1.json")"
+CONFIG_2="$(get_config_path "hydrogen_test_websocket_test_2.json")"
 
 # Function to wait for server to be ready
 wait_for_server_ready() {
@@ -389,11 +358,7 @@ test_websocket_configuration() {
         fi
     fi
     
-    # Brief wait for WebSocket server to be ready
-    # print_message "Brief wait for WebSocket server initialization..."
-    # sleep 0.5
-    
-    # Subtest: Test WebSocket connection
+    # Test: Test WebSocket connection
     next_subtest
     print_subtest "Test WebSocket Connection (Config ${config_number})"
     if [ -n "${hydrogen_pid}" ] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
@@ -407,7 +372,7 @@ test_websocket_configuration() {
         EXIT_CODE=1
     fi
     
-    # Subtest: Test WebSocket status request
+    # Test: Test WebSocket status request
     next_subtest
     print_subtest "Test WebSocket Status Request (Config ${config_number})"
     if [ -n "${hydrogen_pid}" ] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
@@ -421,7 +386,7 @@ test_websocket_configuration() {
         EXIT_CODE=1
     fi
     
-    # Subtest: Test WebSocket port accessibility
+    # Test: Test WebSocket port accessibility
     next_subtest
     print_subtest "Test WebSocket Port Accessibility (Config ${config_number})"
     if [ -n "${hydrogen_pid}" ] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
@@ -444,7 +409,7 @@ test_websocket_configuration() {
         EXIT_CODE=1
     fi
     
-    # Subtest: Test WebSocket protocol validation
+    # Test: Test WebSocket protocol validation
     next_subtest
     print_subtest "Test WebSocket Protocol Validation (Config ${config_number})"
     if [ -n "${hydrogen_pid}" ] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
@@ -468,7 +433,7 @@ test_websocket_configuration() {
         EXIT_CODE=1
     fi
     
-    # Subtest: Verify WebSocket in logs
+    # Test: Verify WebSocket in logs
     next_subtest
     print_subtest "Verify WebSocket Initialization in Logs (Config ${config_number})"
     if [ -n "${hydrogen_pid}" ] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
@@ -521,10 +486,7 @@ cleanup() {
 # Set up trap for interruption only (not normal exit)
 trap cleanup SIGINT SIGTERM
 
-# Main execution starts here
-print_test_header "${TEST_NAME}" "${SCRIPT_VERSION}"
-
-# Subtest 1: Find Hydrogen binary
+# Test: Find Hydrogen binary
 next_subtest
 print_subtest "Locate Hydrogen Binary"
 if find_hydrogen_binary "${HYDROGEN_DIR}" "HYDROGEN_BIN"; then
@@ -535,11 +497,7 @@ else
     EXIT_CODE=1
 fi
 
-# Configuration files for testing
-CONFIG_1="$(get_config_path "hydrogen_test_websocket_test_1.json")"
-CONFIG_2="$(get_config_path "hydrogen_test_websocket_test_2.json")"
-
-# Subtest 2: Validate first configuration file
+# Test: Validate first configuration file
 next_subtest
 print_subtest "Validate Configuration File 1"
 if validate_config_file "${CONFIG_1}"; then
@@ -548,7 +506,7 @@ else
     EXIT_CODE=1
 fi
 
-# Subtest 3: Validate second configuration file
+# Test: Validate second configuration file
 next_subtest
 print_subtest "Validate Configuration File 2"
 if validate_config_file "${CONFIG_2}"; then
@@ -557,7 +515,7 @@ else
     EXIT_CODE=1
 fi
 
-# Subtest 4: Validate WEBSOCKET_KEY environment variable
+# Test: Validate WEBSOCKET_KEY environment variable
 next_subtest
 print_subtest "Validate WEBSOCKET_KEY Environment Variable"
 if [ -n "${WEBSOCKET_KEY}" ]; then
@@ -606,30 +564,14 @@ else
     EXIT_CODE=1
 fi
 
-# Calculate overall test result
-if [ ${PASS_COUNT} -eq ${TOTAL_SUBTESTS} ]; then
-    EXIT_CODE=0
-else
-    EXIT_CODE=1
-fi
-
 # Clean up response files but preserve logs if test failed
 rm -f "${RESULTS_DIR}"/*_connection_*.txt
 
-# Only remove logs if tests were successful
-if [ ${EXIT_CODE} -eq 0 ]; then
-    print_message "Tests passed, cleaning up log files..."
-    rm -f "${RESULTS_DIR}"/websocket_*_*.log
-else
-    print_message "Tests failed, preserving log files for analysis in ${RESULTS_DIR}/"
-fi
+# Calculate overall test result
+[[ "${PASS_COUNT}" -eq "${TOTAL_SUBTESTS}" ]] && EXIT_CODE=0 || EXIT_CODE=1
 
 # Print test completion summary
-print_test_completion "${TEST_NAME}"
+print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
 
 # Return status code if sourced, exit if run standalone
-if [[ "${ORCHESTRATION}" == "true" ]]; then
-    return "${EXIT_CODE}"
-else
-    exit "${EXIT_CODE}"
-fi
+${ORCHESTRATION:-false} && return "${EXIT_CODE}" || exit "${EXIT_CODE}"
