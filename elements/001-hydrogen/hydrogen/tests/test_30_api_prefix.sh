@@ -22,7 +22,7 @@
 
 # Test Configuration
 TEST_NAME="API Prefix"
-TEST_ABBR="API"
+TEST_ABBR="PRF"
 TEST_NUMBER="30"
 TEST_VERSION="6.0.0"
 
