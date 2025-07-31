@@ -7,6 +7,7 @@
 # - Uses immediate restart without waiting for TIME_WAIT (SO_REUSEADDR enabled)
 
 # CHANGELOG
+# 6.0.0 - 2025-07-30 - Overhaul #1
 # 5.0.7 - 2025-07-14 - Enhanced validate_api_request with retry logic to handle API subsystem initialization delays during parallel execution
 # 5.0.6 - 2025-07-15 - No more sleep
 # 5.0.5 - 2025-07-14 - Fixed database and log file conflicts in parallel execution by creating unique config files
@@ -21,44 +22,16 @@
 
 # Test Configuration
 TEST_NAME="API Prefix"
-SCRIPT_VERSION="5.0.7"
+TEST_ABBR="API"
+TEST_NUMBER="30"
+TEST_VERSION="6.0.0"
 
-# Get the directory where this script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-HYDROGEN_DIR="$( cd "${SCRIPT_DIR}/.." && pwd )"
+# shellcheck source=tests/lib/framework.sh # Reference framework directly
+[[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+setup_test_environment
 
-if [[ -z "${LOG_OUTPUT_SH_GUARD}" ]]; then
-    # shellcheck source=tests/lib/log_output.sh # Resolve path statically
-    source "${SCRIPT_DIR}/lib/log_output.sh"
-fi
-
-# shellcheck source=tests/lib/framework.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/framework.sh"
-# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/file_utils.sh"
-# shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/lifecycle.sh"
-# shellcheck source=tests/lib/network_utils.sh # Resolve path statically
-source "${SCRIPT_DIR}/lib/network_utils.sh"
-
-# Use build directory for test results
-BUILD_DIR="${SCRIPT_DIR}/../build"
-RESULTS_DIR="${BUILD_DIR}/tests/results"
-mkdir -p "${RESULTS_DIR}"
-# Ensure RESULTS_DIR is an absolute path
-RESULTS_DIR="$(cd "${RESULTS_DIR}" && pwd)"
-# Enhanced timestamp with microseconds and process ID for parallel execution safety
-TIMESTAMP=$(date +%Y%m%d_%H%M%S_%N | cut -c1-21)_$$
-
-# Auto-extract test number and set up environment
-TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
-set_test_number "${TEST_NUMBER}"
-reset_subtest_counter
-
-# Test configuration
-TOTAL_SUBTESTS=10
-PASS_COUNT=0
-EXIT_CODE=0
+# Test variables
+HYDROGEN_DIR="${PROJECT_DIR}"
 
 # Create unique configuration files for parallel execution
 create_unique_config() {
@@ -221,9 +194,6 @@ cleanup() {
 
 # Set up trap for interruption only (not normal exit)
 trap cleanup SIGINT SIGTERM
-
-# Main execution starts here
-print_test_header "${TEST_NAME}" "${SCRIPT_VERSION}"
 
 # Subtest 1: Find Hydrogen binary
 next_subtest
@@ -425,7 +395,7 @@ else
 fi
 
 # Calculate overall test result
-if [ ${PASS_COUNT} -eq ${TOTAL_SUBTESTS} ]; then
+if [[ "${PASS_COUNT}" -eq "${TOTAL_SUBTESTS}" ]]; then
     EXIT_CODE=0
 else
     EXIT_CODE=1
@@ -444,11 +414,7 @@ else
 fi
 
 # Print test completion summary
-print_test_completion "${TEST_NAME}"
+print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
 
 # Return status code if sourced, exit if run standalone
-if [[ "${ORCHESTRATION}" == "true" ]]; then
-    return "${EXIT_CODE}"
-else
-    exit "${EXIT_CODE}"
-fi
+${ORCHESTRATION:-false} && return "${EXIT_CODE}" || exit "${EXIT_CODE}"

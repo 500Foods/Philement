@@ -22,7 +22,7 @@ export CLOC_GUARD="true"
 # Library metadata
 CLOC_NAME="CLOC Library"
 CLOC_VERSION="1.1.0"
-export COVERAGE_TABLE_NAME COVERAGE_TABLE_VERSION
+print_message "${CLOC_NAME} ${CLOC_VERSION}" "info" 2> /dev/null || true
 
 # Sort out directories
 PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"

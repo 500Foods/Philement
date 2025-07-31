@@ -5,6 +5,7 @@
 # Validates that required environment variables for PAYLOAD_LOCK, PAYLOAD_KY and WEBSOCKET_KEY are set
 
 # CHANGELOG
+# 5.0.0 - 2025-07-30 - Overhaul #1
 # 4.0.0 - 2025-07-28 - Shellcheck fixs, added WEBSOCKET_KEY check, streamlined tests, renamed to secrets
 # 3.0.2 - 2025-07-14 - Updated to use build/tests directories for test output consistency
 # 3.0.1 - 2025-07-06 - Added missing shellcheck justifications
@@ -15,52 +16,12 @@
 # Test configuration
 TEST_NAME="Environment Variables"
 TEST_ABBR="ENV"
-TEST_VERSION="4.0.0"
+TEST_NUMBER="14"
+TEST_VERSION="5.0.0"
 
-# Timestamps
-# TS_ENV_LOG=$(date '+%Y%m%d_%H%M%S' 2>/dev/null)             # 20250730_124718                 eg: log filenames
-# TS_ENV_TMR=$(date '+%s.%N' 2>/dev/null)                     # 1753904852.568389297            eg: timers, elapsed times
-# TS_ENV_ISO=$(date '+%Y-%m-%d %H:%M:%S %Z' 2>/dev/null)      # 2025-07-30 12:47:46 PDT         eg: short display times
-# TS_ENV_DSP=$(date '+%Y-%b-%d (%a) %H:%M:%S %Z' 2>/dev/null) # 2025-Jul-30 (Wed) 12:49:03 PDT  eg: long display times
-
-# Sort out directories
-PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
-SCRIPT_DIR="${PROJECT_DIR}/tests"
-LIB_DIR="${SCRIPT_DIR}/lib"
-BUILD_DIR="${PROJECT_DIR}/build"
-TESTS_DIR="${BUILD_DIR}/tests"
-RESULTS_DIR="${TESTS_DIR}/results"
-DIAGS_DIR="${TESTS_DIR}/diagnostics"
-LOGS_DIR="${TESTS_DIR}/logs"
-mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}"
-
-# shellcheck source=tests/lib/framework.sh # Resolve path statically
-[[ -n "${FRAMEWORK_GUARD}" ]] || source "${LIB_DIR}/framework.sh"
-# shellcheck source=tests/lib/log_output.sh # Resolve path statically
-[[ -n "${LOG_OUTPUT_GUARD}" ]] || source "${LIB_DIR}/log_output.sh"
-
-# Test configuration
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-EXIT_CODE=0
-PASS_COUNT=0
-TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
-set_test_number "${TEST_NUMBER}"
-reset_subtest_counter
-
-# Set up directories for this test run
-RESULT_LOG="${RESULTS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
-# LOG_FILE="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
-# DIAG_TEST_DIR="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}"
-# mkdir -p "${DIAG_TEST_DIR}"
-
-# Print beautiful test header
-print_test_header "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}" 
-
-# Print framework and log output versions as they are already sourced
-[[ -n "${ORCHESTRATION}" ]] || print_message "${FRAMEWORK_NAME} ${FRAMEWORK_VERSION}" "info"
-[[ -n "${ORCHESTRATION}" ]] || print_message "${LOG_OUTPUT_NAME} ${LOG_OUTPUT_VERSION}" "info"
-# shellcheck source=tests/lib/env_utils.sh # Resolve path statically
-[[ -n "${ENV_UTILS_GUARD}" ]] || source "${LIB_DIR}/env_utils.sh"
+# shellcheck source=tests/lib/framework.sh # Reference framework directly
+[[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+setup_test_environment
 
 # Subtest: Check PAYLOAD_LOCK
 next_subtest
@@ -132,8 +93,4 @@ fi
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}" 
 
 # Return status code if sourced, exit if run standalone
-if [[ "${ORCHESTRATION}" == "true" ]]; then
-    return "${EXIT_CODE}"
-else
-    exit "${EXIT_CODE}"
-fi
+${ORCHESTRATION:-false} && return "${EXIT_CODE}" || exit "${EXIT_CODE}"

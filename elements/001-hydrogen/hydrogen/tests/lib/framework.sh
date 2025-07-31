@@ -47,17 +47,6 @@ CORES=$(nproc)
 CORESPLUS=$((CORES * 2))
 export CORES CORESPLUS
 
-# Sort out directories
-PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
-# SCRIPT_DIR="${PROJECT_DIR}/tests"
-# LIB_DIR="${SCRIPT_DIR}/lib"
-BUILD_DIR="${PROJECT_DIR}/build"
-TESTS_DIR="${BUILD_DIR}/tests"
-RESULTS_DIR="${TESTS_DIR}/results"
-DIAGS_DIR="${TESTS_DIR}/diagnostics"
-LOGS_DIR="${TESTS_DIR}/logs"
-mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}"
-
 # Function to format seconds as HH:MM:SS.ZZZ
 format_time_duration() {
     local seconds="$1"
@@ -142,44 +131,82 @@ start_subtest() {
 
 # Function to set up the standard test environment with numbering
 setup_test_environment() {
-    local test_name="$1"
-    local test_number="$2"
-    local script_dir
-    script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-    
-    # Create results directory in build/tests/results
-    local build_dir="${script_dir}/../build"
-    RESULTS_DIR="${build_dir}/tests/results"
-    mkdir -p "${RESULTS_DIR}"
-    
-    # Get timestamp for this test run
-    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-    
-    # Create a test-specific log file with shorter name
-    local test_id
-    test_id="test_${test_number}"
-    RESULT_LOG="${RESULTS_DIR}/${test_id}_${TIMESTAMP}.log"
-    
-    # Start the test with numbering
-    start_test "${test_name}" "${test_number}" | tee -a "${RESULT_LOG}" || true
-    
-    # Return log file path
-    echo "${RESULT_LOG}"
-}
 
-# Function to navigate to the project root directory
-navigate_to_project_root() {
-    local script_dir="$1"
-    local project_root="${script_dir}/.."
-    if ! safe_cd "${project_root}"; then
-        if command -v print_error >/dev/null 2>&1; then
-            print_error "Failed to navigate to project root directory"
-        else
-            echo "ERROR: Failed to navigate to project root directory"
-        fi
-        return 1
-    fi
-    return 0
+    # Starting point
+    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+    # Global folder variables
+    PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
+    cd "${PROJECT_DIR}" || exit
+
+    CMAKE_DIR="${PROJECT_DIR}/cmake"
+    SCRIPT_DIR="${PROJECT_DIR}/tests"
+    LIB_DIR="${SCRIPT_DIR}/lib"
+    BUILD_DIR="${PROJECT_DIR}/build"
+    TESTS_DIR="${BUILD_DIR}/tests"
+    RESULTS_DIR="${TESTS_DIR}/results"
+    DIAGS_DIR="${TESTS_DIR}/diagnostics"
+    LOGS_DIR="${TESTS_DIR}/logs"
+    CONFIG_DIR="${SCRIPT_DIR}/configs"
+
+    # Array for collecting output messages (for performance optimization and progressive feedback)
+    # Output is cached and dumped each time a new TEST starts, providing progressive feedback
+    declare -a OUTPUT_COLLECTION=()
+    COLLECT_OUTPUT_MODE=true
+
+    # Setup build folders
+    mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}" 
+
+    # Common files
+    # shellcheck disable=SC2154,SC2153 # TEST_NUMBER defined externally in framework.sh
+    RESULT_LOG="${RESULTS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
+    LOG_FILE="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
+    DIAG_FILE="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
+
+    # Extra handling
+    DIAG_TEST_DIR="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}"
+    mkdir -p "${DIAG_TEST_DIR}"
+
+    # Common utilitiex
+    TABLES_EXTERNAL="${LIB_DIR}/tables"
+    OH_EXTERNAL="${LIB_DIR}/Oh.sh"
+    COVERAGE_EXTERNAL="${LIB_DIR}/coverage_table.sh"
+    SITEMAP_EXTERNAL="${LIB_DIR}/github-sitemap.sh"
+        
+    # Common test configuration
+    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+    EXIT_CODE=0
+    PASS_COUNT=0
+
+    # Need to load log_output a little earlier than the others
+    # shellcheck source=tests/lib/log_output.sh # Resolve path statically
+    [[ -n "${LOG_OUTPUT_GUARD}" ]] || source "${LIB_DIR}/log_output.sh"
+    
+    # Reset test counter to zero
+    set_test_number "${TEST_NUMBER}"
+    reset_subtest_counter
+
+    # Print beautiful test header
+    # shellcheck disable=SC2154,SC2153 # TEST_NAME, TEST_ABBR, TEST_NUMBER, TEST_VERSION defined externally in caller
+    print_test_header "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
+    
+    # Print framework and log output versions as they are already sourced
+    [[ -n "${ORCHESTRATION}" ]] || print_message "${FRAMEWORK_NAME} ${FRAMEWORK_VERSION}" "info"
+    [[ -n "${ORCHESTRATION}" ]] || print_message "${LOG_OUTPUT_NAME} ${LOG_OUTPUT_VERSION}" "info"
+    # shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
+    [[ -n "${LIFECYCLE_GUARD}" ]] || source "${LIB_DIR}/lifecycle.sh"
+    # shellcheck source=tests/lib/file_utils.sh # Resolve path statically
+    [[ -n "${FILE_UTILS_GUARD}" ]] || source "${LIB_DIR}/file_utils.sh"
+    # shellcheck source=tests/lib/env_utils.sh # Resolve path statically
+    [[ -n "${ENV_UTILS_GUARD}" ]] || source "${LIB_DIR}/env_utils.sh"
+    # shellcheck source=tests/lib/network_utils.sh # Resolve path statically
+    [[ -n "${NETWORK_UTILS_GUARD}" ]] || source "${LIB_DIR}/network_utils.sh"
+    # shellcheck source=tests/lib/coverage.sh # Resolve path statically
+    [[ -n "${COVERAGE_GUARD}" ]] || source "${LIB_DIR}/coverage.sh"
+    # shellcheck source=tests/lib/cloc.sh # Resolve path statically
+    [[ -n "${CLOC_GUARD}" ]] || source "${LIB_DIR}/cloc.sh"
+
+    dump_collected_output
 }
 
 # Function to export the test result to a standardized JSON format
