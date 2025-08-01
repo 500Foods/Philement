@@ -19,9 +19,6 @@ TEST_VERSION="3.0.0"
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
-# Test variables
-TEST_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
 # Test configuration constants
 # Only declare if not already defined (prevents readonly variable redeclaration when sourced)
 if [[ -z "${LINT_OUTPUT_LIMIT:-}" ]]; then
@@ -43,7 +40,7 @@ should_exclude_file() {
     local rel_file="${file#./}"  # Remove leading ./
     
     # Check .lintignore file first if it exists
-    if [ -f "${lint_ignore}" ]; then
+    if [[ -f "${lint_ignore}" ]]; then
         while IFS= read -r pattern; do
             [[ -z "${pattern}" || "${pattern}" == \#* ]] && continue
             # Remove trailing /* if present for directory matching
@@ -77,18 +74,18 @@ if command -v stylelint >/dev/null 2>&1; then
         if ! should_exclude_file "${file}"; then
             CSS_FILES+=("${file}")
         fi
-    done < <(find . -type f -name "*.css")
+    done < <(find . -type f -name "*.css" || true)
     
     CSS_COUNT=${#CSS_FILES[@]}
     
-    if [ "${CSS_COUNT}" -gt 0 ]; then
+    if [[ "${CSS_COUNT}" -gt 0 ]]; then
         TEMP_LOG=$(mktemp)
         
         print_message "Running stylelint on ${CSS_COUNT} CSS files..."
         TEST_NAME="${TEST_NAME} {BLUE}(stylelint: ${CSS_COUNT} files){RESET}"
 
         # Use basic stylelint rules if no config exists
-        if [ -f ".stylelintrc.json" ] || [ -f ".stylelintrc.js" ] || [ -f "stylelint.config.js" ]; then
+        if [[ -f ".stylelintrc.json" ]] || [[ -f ".stylelintrc.js" ]] || [[ -f "stylelint.config.js" ]]; then
             stylelint "${CSS_FILES[@]}" > "${TEMP_LOG}" 2>&1 || true
         else
             # Use recommended rules if no config
@@ -98,13 +95,13 @@ if command -v stylelint >/dev/null 2>&1; then
         # Count actual issues (stylelint usually reports errors/warnings)
         ISSUE_COUNT=$(grep -c "✖" "${TEMP_LOG}" 2>/dev/null || wc -l < "${TEMP_LOG}")
         
-        if [ "${ISSUE_COUNT}" -gt 0 ]; then
+        if [[ "${ISSUE_COUNT}" -gt 0 ]]; then
             print_message "stylelint found ${ISSUE_COUNT} issues:"
             # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
             while IFS= read -r line; do
                 print_output "${line}"
-            done < <(head -n "${LINT_OUTPUT_LIMIT}" "${TEMP_LOG}")
-            if [ "${ISSUE_COUNT}" -gt "${LINT_OUTPUT_LIMIT}" ]; then
+            done < <(head -n "${LINT_OUTPUT_LIMIT}" "${TEMP_LOG}" || true)
+            if [[ "${ISSUE_COUNT}" -gt "${LINT_OUTPUT_LIMIT}" ]]; then
                 print_message "Output truncated. Showing ${LINT_OUTPUT_LIMIT} of ${ISSUE_COUNT} lines."
             fi
             print_result 1 "Found ${ISSUE_COUNT} issues in ${CSS_COUNT} CSS files"

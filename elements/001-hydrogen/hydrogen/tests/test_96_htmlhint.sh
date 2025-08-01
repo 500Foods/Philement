@@ -19,9 +19,6 @@ TEST_VERSION="3.0.0"
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
-# Test variables
-TEST_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
 # Test configuration constants
 # Only declare if not already defined (prevents readonly variable redeclaration when sourced)
 if [[ -z "${LINT_OUTPUT_LIMIT:-}" ]]; then
@@ -43,7 +40,7 @@ should_exclude_file() {
     local rel_file="${file#./}"  # Remove leading ./
     
     # Check .lintignore file first if it exists
-    if [ -f "${lint_ignore}" ]; then
+    if [[ -f "${lint_ignore}" ]]; then
         while IFS= read -r pattern; do
             [[ -z "${pattern}" || "${pattern}" == \#* ]] && continue
             # Remove trailing /* if present for directory matching
@@ -77,11 +74,11 @@ if command -v htmlhint >/dev/null 2>&1; then
         if ! should_exclude_file "${file}"; then
             HTML_FILES+=("${file}")
         fi
-    done < <(find . -type f -name "*.html")
+    done < <(find . -type f -name "*.html" || true)
     
     HTML_COUNT=${#HTML_FILES[@]}
     
-    if [ "${HTML_COUNT}" -gt 0 ]; then
+    if [[ "${HTML_COUNT}" -gt 0 ]]; then
         TEMP_LOG=$(mktemp)
         
         print_message "Running htmlhint on ${HTML_COUNT} HTML files..."
@@ -93,7 +90,7 @@ if command -v htmlhint >/dev/null 2>&1; then
         done
         
         # Use basic htmlhint rules if no config exists
-        if [ -f ".htmlhintrc" ]; then
+        if [[ -f ".htmlhintrc" ]]; then
             htmlhint "${HTML_FILES[@]}" > "${TEMP_LOG}" 2>&1 || true
         else
             # Use recommended rules if no config
@@ -108,13 +105,13 @@ if command -v htmlhint >/dev/null 2>&1; then
         grep -v "files.*no errors found" > "${TEMP_LOG}.filtered" || true
         ISSUE_COUNT=$(wc -l < "${TEMP_LOG}.filtered")
         
-        if [ "${ISSUE_COUNT}" -gt 0 ]; then
+        if [[ "${ISSUE_COUNT}" -gt 0 ]]; then
             print_message "htmlhint found ${ISSUE_COUNT} issues:"
             # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
             while IFS= read -r line; do
                 print_output "${line}"
-            done < <(head -n "${LINT_OUTPUT_LIMIT}" "${TEMP_LOG}.filtered")
-            if [ "${ISSUE_COUNT}" -gt "${LINT_OUTPUT_LIMIT}" ]; then
+            done < <(head -n "${LINT_OUTPUT_LIMIT}" "${TEMP_LOG}.filtered" || true)
+            if [[ "${ISSUE_COUNT}" -gt "${LINT_OUTPUT_LIMIT}" ]]; then
                 print_message "Output truncated. Showing ${LINT_OUTPUT_LIMIT} of ${ISSUE_COUNT} lines."
             fi
             print_result 1 "Found ${ISSUE_COUNT} issues in ${HTML_COUNT} HTML files"

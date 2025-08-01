@@ -25,21 +25,21 @@ print_subtest "Recall Unity Test Coverage"
 print_message "Recalling coverage data from Unity tests (Test 11)..."
 
 # Read Unity coverage data from Test 11's stored results instead of recalculating
-if [ -f "${UNITY_COVERAGE_FILE}" ] && [ -f "${UNITY_COVERAGE_FILE}.detailed" ]; then
+if [[ -f "${UNITY_COVERAGE_FILE}" ]] && [[ -f "${UNITY_COVERAGE_FILE}.detailed" ]]; then
     unity_coverage_percentage=$(cat "${UNITY_COVERAGE_FILE}" 2>/dev/null || echo "0.000")
     
     # Parse detailed coverage data to get file counts
-    unity_instrumented_files=0
-    unity_covered_files=0
-    unity_covered_lines=0
-    unity_total_lines=0
-    IFS=',' read -r _ _ unity_covered_lines unity_total_lines unity_instrumented_files unity_covered_files < "${UNITY_COVERAGE_FILE}.detailed"
+    unity_instrumented_files_count=0
+    unity_covered_files_count=0
+    unity_covered_lines_count=0
+    unity_total_lines_count=0
+    IFS=',' read -r _ _ unity_covered_lines_count unity_total_lines_count unity_instrumented_files_count unity_covered_files_count < "${UNITY_COVERAGE_FILE}.detailed"
     
     # Format numbers with thousands separators
-    formatted_unity_covered_files=$(printf "%'d" "${unity_covered_files}")
-    formatted_unity_instrumented_files=$(printf "%'d" "${unity_instrumented_files}")
-    formatted_unity_covered_lines=$(printf "%'d" "${unity_covered_lines}")
-    formatted_unity_total_lines=$(printf "%'d" "${unity_total_lines}")
+    formatted_unity_covered_files=$(printf "%'d" "${unity_covered_files_count}")
+    formatted_unity_instrumented_files=$(printf "%'d" "${unity_instrumented_files_count}")
+    formatted_unity_covered_lines=$(printf "%'d" "${unity_covered_lines_count}")
+    formatted_unity_total_lines=$(printf "%'d" "${unity_total_lines_count}")
     
     print_message "Files instrumented: ${formatted_unity_covered_files} of ${formatted_unity_instrumented_files} source files have coverage"
     print_message "Lines instrumented: ${formatted_unity_covered_lines} of ${formatted_unity_total_lines} executable lines covered"
@@ -59,18 +59,18 @@ print_message "Collecting coverage data from blackbox tests..."
 # Check for blackbox coverage data in build/coverage directory only
 BLACKBOX_COVERAGE_DIR="${BUILD_DIR}/coverage"
 
-if [ -d "${BLACKBOX_COVERAGE_DIR}" ]; then
+if [[ -d "${BLACKBOX_COVERAGE_DIR}" ]]; then
     # Collect blackbox coverage data strictly from build/coverage
     coverage_percentage=$(collect_blackbox_coverage_from_dir "${BLACKBOX_COVERAGE_DIR}" "${TIMESTAMP}")
     result=$?
     
-    if [ ${result} -eq 0 ]; then
+    if [[ "${result}" -eq 0 ]]; then
         # Parse detailed coverage data to get file counts
         instrumented_files=0
         covered_files=0
         covered_lines=0
         total_lines=0
-        if [ -f "${BLACKBOX_COVERAGE_FILE}.detailed" ]; then
+        if [[ -f "${BLACKBOX_COVERAGE_FILE}.detailed" ]]; then
             IFS=',' read -r _ _ covered_lines total_lines instrumented_files covered_files < "${BLACKBOX_COVERAGE_FILE}.detailed"
         fi
         
@@ -100,17 +100,22 @@ print_subtest "Calculate Combined Coverage"
 print_message "Calculating combined coverage from Unity and blackbox tests..."
 
 # Use the same logic as coverage_table.sh
-if [ -f "${UNITY_COVERAGE_FILE}.detailed" ] && [ -f "${BLACKBOX_COVERAGE_FILE}.detailed" ]; then
+if [[ -f "${UNITY_COVERAGE_FILE}.detailed" ]] && [[ -f "${BLACKBOX_COVERAGE_FILE}.detailed" ]]; then
     # Set up the same variables that coverage_table.sh uses
     UNITY_COVS="${BUILD_DIR}/unity/src"
     BLACKBOX_COVS="${BUILD_DIR}/coverage/src"
     
     # Clear our arrays and repopulate them using the working logic from coverage-common.sh
     unset unity_covered_lines unity_instrumented_lines coverage_covered_lines coverage_instrumented_lines all_files
+    # shellcheck disable=SC2034 # These are likeely populated elsewhere
     declare -A unity_covered_lines
+    # shellcheck disable=SC2034 # These are likeely populated elsewhere
     declare -A unity_instrumented_lines
+    # shellcheck disable=SC2034 # These are likeely populated elsewhere
     declare -A coverage_covered_lines
+    # shellcheck disable=SC2034 # These are likeely populated elsewhere
     declare -A coverage_instrumented_lines
+    # shellcheck disable=SC2034 # These are likeely populated elsewhere
     declare -A all_files
 
     # Use optimized batch processing for all coverage types
@@ -138,7 +143,7 @@ if [ -f "${UNITY_COVERAGE_FILE}.detailed" ] && [ -f "${BLACKBOX_COVERAGE_FILE}.d
     
     # Calculate combined percentage
     combined_coverage="0.000"
-    if [ "${combined_total_instrumented}" -gt 0 ]; then
+    if [[ "${combined_total_instrumented}" -gt 0 ]]; then
         combined_coverage=$(awk "BEGIN {printf \"%.3f\", (${combined_total_covered} / ${combined_total_instrumented}) * 100}")
     fi
     
@@ -157,14 +162,14 @@ if [ -f "${UNITY_COVERAGE_FILE}.detailed" ] && [ -f "${BLACKBOX_COVERAGE_FILE}.d
         combined_covered=${combined_covered_lines["${file_path}"]:-0}
         
         ((combined_instrumented_files++))
-        if [ "${combined_covered}" -gt 0 ]; then
+        if [[ "${combined_covered}" -gt 0 ]]; then
             ((combined_covered_files++))
         fi
     done
     
     # Store detailed combined coverage data for Test 00 to use in README
     # Format: timestamp,percentage,covered_lines,total_lines,instrumented_files,covered_files
-    echo "$(date +%Y%m%d_%H%M%S),${combined_coverage},${combined_total_covered},${combined_total_instrumented},${combined_instrumented_files},${combined_covered_files}" > "${COMBINED_COVERAGE_FILE}.detailed"
+    echo "$(date +%Y%m%d_%H%M%S),${combined_coverage},${combined_total_covered},${combined_total_instrumented},${combined_instrumented_files},${combined_covered_files}" > "${COMBINED_COVERAGE_FILE}.detailed" || true
     
     print_result 0 "Combined coverage calculated: ${combined_coverage}% - ${formatted_covered} of ${formatted_total} lines covered"
     ((PASS_COUNT++))
@@ -190,7 +195,7 @@ for file_path in "${!all_files[@]}"; do
     blackbox_covered=${coverage_covered_lines["${file_path}"]:-0}
     
     ((blackbox_instrumented_files++))
-    if [ "${blackbox_covered}" -gt 0 ]; then
+    if [[ "${blackbox_covered}" -gt 0 ]]; then
         ((blackbox_covered_files++))
     else
         uncovered_files+=("${file_path}")
@@ -198,11 +203,11 @@ for file_path in "${!all_files[@]}"; do
 done
 
 # Sort and display uncovered files
-if [ ${#uncovered_files[@]} -gt 0 ]; then
+if [[ ${#uncovered_files[@]} -gt 0 ]]; then
     print_message "Uncovered source files:"
     printf '%s\n' "${uncovered_files[@]}" | sort | while read -r file; do
         print_output "  ${file}"
-    done
+    done || true
 fi
 
 # Calculate uncovered count

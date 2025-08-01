@@ -19,9 +19,6 @@ TEST_VERSION="3.0.0"
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
-# Test variables
-TEST_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
 # Default exclude patterns for linting (can be overridden by .lintignore)
 # Only declare if not already defined (prevents readonly variable redeclaration when sourced)
 if [[ -z "${LINT_EXCLUDES:-}" ]]; then
@@ -37,7 +34,7 @@ should_exclude_file() {
     local rel_file="${file#./}"  # Remove leading ./
     
     # Check .lintignore file first if it exists
-    if [ -f "${lint_ignore}" ]; then
+    if [[ -f "${lint_ignore}" ]]; then
         while IFS= read -r pattern; do
             [[ -z "${pattern}" || "${pattern}" == \#* ]] && continue
             # Remove trailing /* if present for directory matching
@@ -66,11 +63,11 @@ run_cppcheck() {
     local target_dir="$1"
     
     # Check for required files
-    if [ ! -f ".lintignore" ]; then
+    if [[ ! -f ".lintignore" ]]; then
         print_error ".lintignore not found"
         return 1
     fi
-    if [ ! -f ".lintignore-c" ]; then
+    if [[ ! -f ".lintignore-c" ]]; then
         print_error ".lintignore-c not found"
         return 1
     fi
@@ -79,7 +76,7 @@ run_cppcheck() {
     local exclude_patterns=()
     while IFS= read -r pattern; do
         pattern=$(echo "${pattern}" | sed 's/#.*//;s/^[[:space:]]*//;s/[[:space:]]*$//')
-        [ -z "${pattern}" ] && continue
+        [[ -z "${pattern}" ]] && continue
         exclude_patterns+=("${pattern}")
     done < ".lintignore"
     
@@ -112,7 +109,7 @@ run_cppcheck() {
             "suppress") cppcheck_args+=("--suppress=${value}") ;;
             *) ;;
         esac
-    done < <(grep -v '^#' ".lintignore-c" | grep '=')
+    done < <(grep -v '^#' ".lintignore-c" | grep '=' || true)
     
     # Collect files with inline filtering
     local files=()
@@ -120,9 +117,9 @@ run_cppcheck() {
         if ! should_exclude_cppcheck "${file}"; then
             files+=("${file}")
         fi
-    done < <(find . -type f \( -name "*.c" -o -name "*.h" -o -name "*.inc" \))
+    done < <(find . -type f \( -name "*.c" -o -name "*.h" -o -name "*.inc" \) || true)
     
-    if [ ${#files[@]} -gt 0 ]; then
+    if [[ ${#files[@]} -gt 0 ]]; then
         mkdir -p "${HOME}/.cppcheck"
         cppcheck -j"${CORES}" --quiet --cppcheck-build-dir="${HOME}/.cppcheck" "${cppcheck_args[@]}" "${files[@]}" 2>&1
     else
@@ -143,7 +140,7 @@ if command -v cppcheck >/dev/null 2>&1; then
         if ! should_exclude_file "${file}"; then
             C_FILES_TO_CHECK+=("${file}")
         fi
-    done < <(find . -type f \( -name "*.c" -o -name "*.h" -o -name "*.inc" \))
+    done < <(find . -type f \( -name "*.c" -o -name "*.h" -o -name "*.inc" \) || true)
     
     C_COUNT=${#C_FILES_TO_CHECK[@]}
     print_message "Running cppcheck on ${C_COUNT} files..."
@@ -167,7 +164,7 @@ if command -v cppcheck >/dev/null 2>&1; then
     done <<< "${CPPCHECK_OUTPUT}"
     
     # Display output
-    if [ -n "${CPPCHECK_OUTPUT}" ]; then
+    if [[ -n "${CPPCHECK_OUTPUT}" ]]; then
         print_message "cppcheck output:"
         # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
         while IFS= read -r line; do
@@ -175,11 +172,11 @@ if command -v cppcheck >/dev/null 2>&1; then
         done < <(echo "${CPPCHECK_OUTPUT}")
     fi
     
-    if [ ${OTHER_ISSUES} -gt 0 ]; then
+    if [[ ${OTHER_ISSUES} -gt 0 ]]; then
         print_result 1 "Found ${OTHER_ISSUES} unexpected issues in ${C_COUNT} files"
         EXIT_CODE=1
     else
-        if [ ${HAS_EXPECTED} -eq 1 ]; then
+        if [[ ${HAS_EXPECTED} -eq 1 ]]; then
             print_result 0 "Found 1 expected warning in ${C_COUNT} files"
         else
             print_result 0 "No issues found in ${C_COUNT} files"
