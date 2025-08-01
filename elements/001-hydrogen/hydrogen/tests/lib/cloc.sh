@@ -39,11 +39,6 @@ LIB_DIR="${SCRIPT_DIR}/lib"
 # shellcheck source=tests/lib/log_output.sh # Resolve path statically
 [[ -n "${LOG_OUTPUT_GUARD}" ]] || source "${LIB_DIR}/log_output.sh"
 
-if [[ "${ORCHESTRATION}" == "true" ]]; then
-  print_message "${CLOC_NAME} ${CLOC_VERSION}" "info"
-fi
-
-
 # Default exclude patterns for linting (can be overridden by .lintignore)
 if [[ -z "${DEFAULT_LINT_EXCLUDES+x}" ]]; then
     readonly DEFAULT_LINT_EXCLUDES=(
