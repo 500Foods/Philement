@@ -50,11 +50,7 @@
 # Guard clause to prevent multiple sourcing
 [[ -n "${LOG_OUTPUT_GUARD}" ]] && return 0
 export LOG_OUTPUT_GUARD="true"
-navigate_to_project_root() {
-    local subtest_name="$1"
-    local subtest_number="$2"
-    # Set the subtest number in log_output.sh
-}
+
 # Library metadata
 LOG_OUTPUT_NAME="Log Output Library"
 LOG_OUTPUT_VERSION="3.2.1"

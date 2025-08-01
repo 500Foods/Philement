@@ -15,24 +15,24 @@
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-HYDROGEN_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
+HYDROGEN_DIR="$( cd "${SCRIPT_DIR}/.." && pwd )"
 
 # Change to hydrogen directory
-cd "$HYDROGEN_DIR" || exit 1
+cd "${HYDROGEN_DIR}" || exit 1
 
 echo "=== Hydrogen Clean Script ==="
 echo "🛈  Starting comprehensive clean..."
 
 # Remove build directories
 echo "🛈  Removing build directories..."
-if [ -d "build" ]; then
+if [[ -d "build" ]]; then
     rm -rf build
     echo "✅ Removed build/ directory"
 else
     echo "🛈  build/ directory not found"
 fi
 
-if [ -d "build_unity_tests" ]; then
+if [[ -d "build_unity_tests" ]]; then
     rm -rf build_unity_tests
     echo "✅ Removed build_unity_tests/ directory"
 else
@@ -44,52 +44,52 @@ echo "🛈  Removing hydrogen variants (preserving release variants)..."
 variants_removed=0
 
 for variant in hydrogen hydrogen_debug hydrogen_valgrind hydrogen_perf hydrogen_cleanup hydrogen_naked hydrogen_coverage; do
-    if [ -f "$variant" ]; then
-        rm -f "$variant"
-        echo "✅ Removed $variant"
+    if [[ -f "${variant}" ]]; then
+        rm -f "${variant}"
+        echo "✅ Removed ${variant}"
         ((variants_removed++))
     fi
 done
 
-if [ $variants_removed -eq 0 ]; then
+if [[ "${variants_removed}" -eq 0 ]]; then
     echo "🛈  No hydrogen variants found to remove"
 else
-    echo "✅ Removed $variants_removed hydrogen variants"
+    echo "✅ Removed ${variants_removed} hydrogen variants"
 fi
 
 # Preserve release variants
 preserved_count=0
-if [ -f "hydrogen_release" ]; then
+if [[ -f "hydrogen_release" ]]; then
     echo "🛈  Preserved hydrogen_release"
     ((preserved_count++))
 fi
 
-if [ $preserved_count -gt 0 ]; then
-    echo "✅ Preserved $preserved_count release variants"
+if [[ "${preserved_count}" -gt 0 ]]; then
+    echo "✅ Preserved ${preserved_count} release variants"
 fi
 
 # Remove example executables
 echo "🛈  Removing example executables..."
 examples_removed=0
 
-if [ -d "examples/C" ]; then
+if [[ -d "examples/C" ]]; then
     cd examples/C || exit 1
     
     for example in auth_code_flow client_credentials password_flow auth_code_flow_debug client_credentials_debug password_flow_debug; do
-        if [ -f "$example" ]; then
-            rm -f "$example"
-            echo "✅ Removed examples/C/$example"
+        if [[ -f "${example}" ]]; then
+            rm -f "${example}"
+            echo "✅ Removed examples/C/${example}"
             ((examples_removed++))
         fi
     done
     
-    cd "$HYDROGEN_DIR" || exit 1
+    cd "${HYDROGEN_DIR}" || exit 1
 fi
 
-if [ $examples_removed -eq 0 ]; then
+if [[ "${examples_removed}" -eq 0 ]]; then
     echo "🛈  No example executables found to remove"
 else
-    echo "✅ Removed $examples_removed example executables"
+    echo "✅ Removed ${examples_removed} example executables"
 fi
 
 # Remove map files and other build artifacts
@@ -99,38 +99,38 @@ artifacts_removed=0
 # Remove map files
 if ls -- *.map 1> /dev/null 2>&1; then
     for mapfile in *.map; do
-        rm -f "$mapfile"
-        echo "✅ Removed $mapfile"
+        rm -f "${mapfile}"
+        echo "✅ Removed ${mapfile}"
         ((artifacts_removed++))
     done
 fi
 
 # Remove any remaining build artifacts in cmake directory
-if [ -d "cmake" ]; then
+if [[ -d "cmake" ]]; then
     cd cmake || exit 1
     
     # Remove any build artifacts that might be in cmake directory
     if ls -- *.map 1> /dev/null 2>&1; then
         for mapfile in *.map; do
-            rm -f "$mapfile"
-            echo "✅ Removed cmake/$mapfile"
+            rm -f "${mapfile}"
+            echo "✅ Removed cmake/${mapfile}"
             ((artifacts_removed++))
         done
     fi
     
-    if [ -f "CMakeCache.txt" ]; then
+    if [[ -f "CMakeCache.txt" ]]; then
         rm -f "CMakeCache.txt"
         echo "✅ Removed cmake/CMakeCache.txt"
         ((artifacts_removed++))
     fi
     
-    cd "$HYDROGEN_DIR" || exit 1
+    cd "${HYDROGEN_DIR}" || exit 1
 fi
 
-if [ $artifacts_removed -eq 0 ]; then
+if [[ "${artifacts_removed}" -eq 0 ]]; then
     echo "🛈  No additional build artifacts found to remove"
 else
-    echo "✅ Removed $artifacts_removed build artifacts"
+    echo "✅ Removed ${artifacts_removed} build artifacts"
 fi
 
 # Clean test directories
@@ -138,17 +138,17 @@ echo "🛈  Cleaning test directories..."
 test_dirs_cleaned=0
 
 for test_dir in tests/results tests/logs tests/diagnostics; do
-    if [ -d "$test_dir" ]; then
-        rm -rf "$test_dir"
-        echo "✅ Removed $test_dir/ directory"
+    if [[ -d "${test_dir}" ]]; then
+        rm -rf "${test_dir}"
+        echo "✅ Removed ${test_dir}/ directory"
         ((test_dirs_cleaned++))
     fi
 done
 
-if [ $test_dirs_cleaned -eq 0 ]; then
+if [[ "${test_dirs_cleaned}" -eq 0 ]]; then
     echo "🛈  No test directories found to remove"
 else
-    echo "✅ Removed $test_dirs_cleaned test directories"
+    echo "✅ Removed ${test_dirs_cleaned} test directories"
 fi
 
 echo ""
