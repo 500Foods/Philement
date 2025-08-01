@@ -19,9 +19,6 @@ TEST_VERSION="3.0.0"
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
-# Test variables
-TEST_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
 # Test configuration constants
 # Only declare if not already defined (prevents readonly variable redeclaration when sourced)
 if [[ -z "${LINT_OUTPUT_LIMIT:-}" ]]; then
@@ -43,7 +40,7 @@ should_exclude_file() {
     local rel_file="${file#./}"  # Remove leading ./
     
     # Check .lintignore file first if it exists
-    if [ -f "${lint_ignore}" ]; then
+    if [[ -f "${lint_ignore}" ]]; then
         while IFS= read -r pattern; do
             [[ -z "${pattern}" || "${pattern}" == \#* ]] && continue
             # Remove trailing /* if present for directory matching
@@ -77,11 +74,11 @@ if command -v markdownlint >/dev/null 2>&1; then
         if ! should_exclude_file "${file}"; then
             MD_FILES+=("${file}")
         fi
-    done < <(find . -type f -name "*.md")
+    done < <(find . -type f -name "*.md" || true)
     
     MD_COUNT=${#MD_FILES[@]}
     
-    if [ "${MD_COUNT}" -gt 0 ]; then
+    if [[ "${MD_COUNT}" -gt 0 ]]; then
         TEMP_LOG=$(mktemp)
         FILTERED_LOG=$(mktemp)
         TEMP_NEW_LOG=$(mktemp)
@@ -93,9 +90,9 @@ if command -v markdownlint >/dev/null 2>&1; then
         # Function to get file hash (using md5sum or equivalent)
         get_file_hash() {
             if command -v md5sum >/dev/null 2>&1; then
-                md5sum "$1" | awk '{print $1}'
+                md5sum "$1" | awk '{print $1}' || true
             else
-                md5 -q "$1" 2>/dev/null || sha1sum "$1" | awk '{print $1}'
+                md5 -q "$1" 2>/dev/null || sha1sum "$1" | awk '{print $1}' || true
             fi
         }
         
@@ -107,7 +104,7 @@ if command -v markdownlint >/dev/null 2>&1; then
         for file in "${MD_FILES[@]}"; do
             file_hash=$(get_file_hash "${file}")
             cache_file="${CACHE_DIR}/$(basename "${file}")_${file_hash}"
-            if [ -f "${cache_file}" ]; then
+            if [[ -f "${cache_file}" ]]; then
                 ((cached_files++))
                 cat "${cache_file}" >> "${TEMP_LOG}" 2>&1 || true
             else
@@ -120,7 +117,7 @@ if command -v markdownlint >/dev/null 2>&1; then
         TEST_NAME="${TEST_NAME} {BLUE}(markdownlint: ${MD_COUNT} files){RESET}"
 
         # Run markdownlint on files that need processing
-        if [ ${processed_files} -gt 0 ]; then
+        if [[ "${processed_files}" -gt 0 ]]; then
             print_message "Running markdownlint on ${processed_files} files..."
             if ! markdownlint --config ".lintignore-markdown" "${to_process_files[@]}" 2> "${TEMP_NEW_LOG}"; then
                 # markdownlint failed, but we'll check the output for actual issues
@@ -139,21 +136,21 @@ if command -v markdownlint >/dev/null 2>&1; then
             rm -f "${TEMP_NEW_LOG}"
         fi
         
-        if [ -s "${TEMP_LOG}" ]; then
+        if [[ -s "${TEMP_LOG}" ]]; then
             # Filter out Node.js deprecation warnings and other noise
             grep -v "DeprecationWarning" "${TEMP_LOG}" | \
             grep -v "Use \`node --trace-deprecation" | \
             grep -v "^(node:" | \
-            grep -v "^$" > "${FILTERED_LOG}"
+            grep -v "^$" > "${FILTERED_LOG}" || true
             
             ISSUE_COUNT=$(wc -l < "${FILTERED_LOG}")
-            if [ "${ISSUE_COUNT}" -gt 0 ]; then
+            if [[ "${ISSUE_COUNT}" -gt 0 ]]; then
                 print_message "markdownlint found ${ISSUE_COUNT} actual issues:"
                 # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
                 while IFS= read -r line; do
                     print_output "${line}"
-                done < <(head -n "${LINT_OUTPUT_LIMIT}" "${FILTERED_LOG}")
-                if [ "${ISSUE_COUNT}" -gt "${LINT_OUTPUT_LIMIT}" ]; then
+                done < <(head -n "${LINT_OUTPUT_LIMIT}" "${FILTERED_LOG}" || true)
+                if [[ "${ISSUE_COUNT}" -gt "${LINT_OUTPUT_LIMIT}" ]]; then
                     print_message "Output truncated. Showing ${LINT_OUTPUT_LIMIT} of ${ISSUE_COUNT} lines."
                 fi
                 print_result 1 "Found ${ISSUE_COUNT} issues in ${MD_COUNT} markdown files"
