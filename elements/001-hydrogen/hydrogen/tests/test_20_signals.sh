@@ -79,8 +79,6 @@ wait_for_signal_startup() {
         if grep -q "Application started" "${log_file}" 2>/dev/null; then
             return 0
         fi
-        
-        # sleep 0.2
     done
 }
 

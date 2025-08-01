@@ -20,7 +20,7 @@
 # enable_output_collection()
 # disable_output_collection()
 # dump_collected_output()
-# clear_collected_output()
+# clear_collected_output(}
 # print_test_header()
 # print_subtest()
 # print_command()
@@ -34,6 +34,7 @@
 # print_test_item()
 
 # CHANGELOG
+# 3.3.1 - 2025-07-31 - Fixed issue where not all collected output was output/cleared at end of test
 # 3.3.0 - 2025-07-20 - Updated guard clause to prevent multiple sourcing
 # 3.2.1 - 2025-07-18 - Fixed hanging issue in output collection mechanism when running through orchestrator
 # 3.2.0 - 2025-07-18 - Modified output collection to dump cache when new TEST starts for progressive feedback
@@ -53,7 +54,7 @@ export LOG_OUTPUT_GUARD="true"
 
 # Library metadata
 LOG_OUTPUT_NAME="Log Output Library"
-LOG_OUTPUT_VERSION="3.2.1"
+LOG_OUTPUT_VERSION="3.3.1"
 export LOG_OUTPUT_NAME LOG_OUTPUT_VERSION
 # print_message "${LOG_OUTPUT_NAME} ${LOG_OUTPUT_VERSION}" "info"
 
@@ -616,8 +617,8 @@ print_test_completion() {
     
     # Automatically dump collected output before final results table
     if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
-        disable_output_collection
         dump_collected_output
+        clear_collected_output
     fi
     
     # Write elapsed time to the subtest result file if running in test suite

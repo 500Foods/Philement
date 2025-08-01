@@ -68,7 +68,7 @@ validate_api_request() {
     print_command "curl -s --max-time 10 --compressed \"${url}\""
     
     # Retry logic for API readiness (especially important in parallel execution)
-    local max_attempts=3
+    local max_attempts=25
     local attempt=1
     local curl_exit_code=0
     local curl_error_file="${RESULTS_DIR}/curl_error_${unique_id}.txt"
@@ -76,7 +76,7 @@ validate_api_request() {
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
             print_message "API request attempt ${attempt} of ${max_attempts} (waiting for API subsystem initialization)..."
-            sleep 0.1  # Brief delay between attempts for API initialization
+            sleep 0.05 
         fi
         
         # Run curl and capture both exit code and any error output
@@ -167,7 +167,6 @@ wait_for_server_ready() {
             print_message "Server is ready after $(( attempt * 5 / 10 )) seconds"
             return 0
         fi
-        # sleep 0.5
         ((attempt++))
     done
     
@@ -375,7 +374,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         HYDROGEN_PID=""
     fi
     
-    print_message "Immediate restart successful - SO_REUSEADDR is working!"
+    print_message "Immediate restart successful - SO_REUSEADDR applied successfully"
 else
     # Skip API tests if prerequisites failed
     print_result 1 "Skipping API prefix tests due to prerequisite failures"
