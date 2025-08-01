@@ -84,8 +84,8 @@ if command -v shellcheck >/dev/null 2>&1; then
         TEST_NAME="${TEST_NAME} {BLUE}(shellheck: ${SHELL_COUNT} files){RESET}"
 
         # Cache directory
-        CACHE_DIR="${HOME}/.cache/.shellcheck"
-        mkdir -p "${CACHE_DIR}"
+        SHELLCHECK_CACHE_DIR="${HOME}/.cache/.shellcheck"
+        mkdir -p "${SHELLCHECK_CACHE_DIR}"
 
         # Batch compute content hashes for all files
         declare -A file_hashes
@@ -100,8 +100,8 @@ if command -v shellcheck >/dev/null 2>&1; then
         for file in "${SHELL_FILES[@]}"; do
             content_hash="${file_hashes[${file}]}"
             # Flatten path for uniqueness (replace / with _)
-            flat_path=$(echo "${file}" | tr '/' '_')
-            cache_file="${CACHE_DIR}/${flat_path}_${content_hash}"
+            flat_path=$(echo "cache${file}" | tr '/' '_')
+            cache_file="${SHELLCHECK_CACHE_DIR}/${flat_path}_${content_hash}"
             if [[ -f "${cache_file}" ]]; then
                 ((cached_files++))
                 cat "${cache_file}" >> "${TEMP_OUTPUT}" 2>&1
@@ -118,20 +118,21 @@ if command -v shellcheck >/dev/null 2>&1; then
             local file="$1"
             local content_hash="$2"
             local flat_path
-            flat_path=$(echo "${file}" | tr '/' '_')
-            local cache_file="${CACHE_DIR}/${flat_path}_${content_hash}"
+            flat_path=$(echo "cache${file}" | tr '/' '_')
+            local cache_file="${SHELLCHECK_CACHE_DIR}/${flat_path}_${content_hash}"
             shellcheck "${file}" > "${cache_file}" 2>&1
             cat "${cache_file}"
         }
 
         export -f process_script  # Export for subshells
+        export SHELLCHECK_CACHE_DIR
 
         # Process non-cached files in parallel, passing file and hash
         # shellcheck disable=SC2016 # Script within a script is tripping up shellcheck
         if [[ "${processed_scripts}" -gt 0 ]]; then
             for file in "${to_process[@]}"; do
                 printf '%s %s\n' "${file}" "${file_hashes[${file}]}"
-            done | xargs -n 2 -P "${CORES}" bash -c 'process_scripts "$0" "$1"' >> "${TEMP_OUTPUT}" 2>&1
+            done | xargs -n 2 -P "${CORES}" bash -c 'process_script "$0" "$1"' >> "${TEMP_OUTPUT}" 2>&1
         fi
 
         # Filter output
