@@ -63,14 +63,14 @@ check_response_content() {
     print_command "${curl_cmd} \"${url}\""
     
     # Retry logic for subsystem readiness (especially important in parallel execution)
-    local max_attempts=3
+    local max_attempts=25
     local attempt=1
     local curl_exit_code=0
     
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
             print_message "HTTP request attempt ${attempt} of ${max_attempts} (waiting for subsystem initialization)..."
-            sleep 1  # Brief delay between attempts for subsystem initialization
+            sleep 0.05  # Brief delay between attempts for subsystem initialization
         fi
         
         # Run curl and capture exit code
@@ -141,14 +141,14 @@ check_redirect_response() {
     print_command "curl -v -s --max-time 10 -o /dev/null \"${url}\""
     
     # Retry logic for subsystem readiness (especially important in parallel execution)
-    local max_attempts=3
+    local max_attempts=25
     local attempt=1
     local curl_exit_code=0
     
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
             print_message "Redirect check attempt ${attempt} of ${max_attempts} (waiting for subsystem initialization)..."
-            sleep 1  # Brief delay between attempts for subsystem initialization
+            sleep 0.05  # Brief delay between attempts for subsystem initialization
         fi
         
         # Run curl and capture exit code
@@ -216,14 +216,14 @@ check_swagger_json() {
     print_command "curl -s --max-time 10 \"${url}\""
     
     # Retry logic for subsystem readiness (especially important in parallel execution)
-    local max_attempts=3
+    local max_attempts=25
     local attempt=1
     local curl_exit_code=0
     
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
             print_message "Swagger JSON request attempt ${attempt} of ${max_attempts} (waiting for subsystem initialization)..."
-            sleep 1  # Brief delay between attempts for subsystem initialization
+            sleep 0.05  # Brief delay between attempts for subsystem initialization
         fi
         
         # Run curl and capture exit code
@@ -539,7 +539,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     print_message "Starting second test immediately (testing SO_REUSEADDR)..."
     test_swagger_configuration "${CONFIG_2}" "/apidocs" "swagger_custom" 2
     
-    print_message "Immediate restart successful - SO_REUSEADDR is working!"
+    print_message "Immediate restart successful - SO_REUSEADDR applied successfully"
     
     # Note: Blackbox coverage collection is handled centrally in test_99_cleanup.sh
     # Individual tests just run hydrogen_coverage normally and test 99 collects all coverage data

@@ -59,7 +59,7 @@ test_websocket_connection() {
     print_command "echo '${test_message}' | websocat --protocol='${protocol}' -H='Authorization: Key ${WEBSOCKET_KEY}' --ping-interval=30 --exit-on-eof '${ws_url}'"
     
     # Retry logic for WebSocket subsystem readiness (especially important in parallel execution)
-    local max_attempts=3
+    local max_attempts=25
     local attempt=1
     local websocat_output
     local websocat_exitcode
@@ -67,7 +67,7 @@ test_websocket_connection() {
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
             print_message "WebSocket connection attempt ${attempt} of ${max_attempts} (waiting for WebSocket subsystem initialization)..."
-            sleep 1  # Brief delay between attempts for WebSocket initialization
+            sleep 0.05  # Brief delay between attempts for WebSocket initialization
         fi
         
         # Create a temporary file to capture the full interaction
@@ -93,7 +93,7 @@ test_websocket_connection() {
                 --exit-on-eof \
                 "${ws_url}" > "${temp_file}" 2>&1 &
             local websocat_pid=$!
-            sleep 5
+            sleep 1
             kill "${websocat_pid}" 2>/dev/null || true
             wait "${websocat_pid}" 2>/dev/null || true
             websocat_exitcode=$?
@@ -189,7 +189,7 @@ test_websocket_status() {
     print_command "echo '${status_request}' | websocat --protocol='${protocol}' -H='Authorization: Key ${WEBSOCKET_KEY}' --ping-interval=30 --one-message '${ws_url}'"
     
     # Retry logic for WebSocket subsystem readiness
-    local max_attempts=3
+    local max_attempts=25
     local attempt=1
     local websocat_output
     local websocat_exitcode
@@ -197,7 +197,7 @@ test_websocket_status() {
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
             print_message "WebSocket status request attempt ${attempt} of ${max_attempts}..."
-            sleep 1
+            sleep 0.05
         fi
         
         # Create a temporary file to capture the full interaction
@@ -222,7 +222,7 @@ test_websocket_status() {
                 --one-message \
                 "${ws_url}" > "${temp_file}" 2>&1 &
             local websocat_pid=$!
-            sleep 5
+            sleep 1
             kill "${websocat_pid}" 2>/dev/null || true
             wait "${websocat_pid}" 2>/dev/null || true
             websocat_exitcode=$?
@@ -549,7 +549,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     print_message "Starting second test immediately (testing SO_REUSEADDR)..."
     test_websocket_configuration "${CONFIG_2}" "5101" "hydrogen-test" "websocket_custom" 2
     
-    print_message "Immediate restart successful - SO_REUSEADDR is working!"
+    print_message "Immediate restart successful - SO_REUSEADDR applied successfully"
     
 else
     # Skip WebSocket tests if prerequisites failed

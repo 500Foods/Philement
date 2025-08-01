@@ -114,24 +114,17 @@ while true; do
         print_message "Startup completed in ${ELAPSED}s"
         break
     fi
-    
-    # sleep 0.2
 done
 
 if [[ "${EXIT_CODE}" -eq 0 ]]; then
     # Let it run briefly and perform some operations
     print_message "Running operations to trigger potential leaks..."
-    # sleep 0.3
 
     # Try some API calls to trigger potential memory operations
     print_message "Making API calls to exercise memory allocation..."
     for _ in {1..3}; do
         curl -s "http://localhost:5030/api/system/info" > /dev/null 2>&1 || true
-        # sleep 0.1
     done
-
-    # Let memory operations settle
-    # sleep 0.3
 
     # Send SIGTERM to trigger shutdown and leak detection
     print_message "Sending SIGTERM to trigger shutdown and leak detection..."
@@ -193,7 +186,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             fi
             
             if [[ "${DIRECT_LEAKS}" -eq 0 ]] && [[ "${INDIRECT_LEAKS}" -eq 0 ]]; then
-                echo "No memory leaks detected!"
+                echo "No memory leaks detected"
             else
                 echo "Memory leaks detected - see full report for details"
             fi
