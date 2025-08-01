@@ -10,11 +10,11 @@
 # should_ignore_file()
 # load_source_files()
 # identify_uncovered_files()
-# cleanup_coverage_data()
 # analyze_gcov_file()
 # collect_gcov_files()
 
 # CHANGELOG
+# 1.1.0 - 2025-07-30 - Removed cleanup_coverage_data - not needed
 # 1.0.0 - 2025-07-21 - Initial version with common coverage functions
 
 # Guard clause to prevent multiple sourcing
@@ -42,6 +42,7 @@ UNITY_COVERAGE_FILE="${RESULTS_DIR}/coverage_unity.txt"
 BLACKBOX_COVERAGE_FILE="${RESULTS_DIR}/coverage_blackbox.txt"
 COMBINED_COVERAGE_FILE="${RESULTS_DIR}/coverage_combined.txt"
 OVERLAP_COVERAGE_FILE="${RESULTS_DIR}/coverage_overlap.txt"
+export UNITY_COVERAGE_FILE BLACKBOX_COVERAGE_FILE COMBINED_COVERAGE_FILE OVERLAP_COVERAGE_FILE
 
 # Function to analyze combined coverage from two gcov files for the same source file
 # Usage: analyze_combined_gcov_coverage <unity_gcov_file> <blackbox_gcov_file>
@@ -541,18 +542,6 @@ identify_uncovered_files() {
     cat "${temp_uncovered}"
     
     rm -f "${temp_uncovered}"
-}
-
-# Function to clean up coverage data files
-# Usage: cleanup_coverage_data
-cleanup_coverage_data() {
-    rm -f "${UNITY_COVERAGE_FILE}" "${BLACKBOX_COVERAGE_FILE}" "${COMBINED_COVERAGE_FILE}" "${OVERLAP_COVERAGE_FILE}"
-    rm -f "${UNITY_COVERAGE_FILE}.detailed" "${BLACKBOX_COVERAGE_FILE}.detailed"
-    # shellcheck disable=SC2154 # GCOV_PREFIX assigned globally elsewhere
-    rm -rf "${GCOV_PREFIX}" 2>/dev/null || true
-    # Note: We don't remove .gcov files since they stay in their respective build directories
-    # Only clean up the centralized results
-    return 0
 }
 
 # Function to analyze a single gcov file and store data

@@ -28,9 +28,9 @@ ERROR_OUTPUT="${LOGS_DIR}/json_error_output_${TIMESTAMP}.log"
 # Validate Hydrogen Binary
 next_subtest
 print_subtest "Locate Hydrogen Binary"
-HYDROGEN_DIR="$( cd "${SCRIPT_DIR}/.." && pwd )"
+
 # shellcheck disable=SC2153  # HYDROGEN_BIN is set by find_hydrogen_binary function
-if find_hydrogen_binary "${HYDROGEN_DIR}" "HYDROGEN_BIN"; then
+if find_hydrogen_binary "${PROJECT_DIR}" "HYDROGEN_BIN"; then
     print_message "Using Hydrogen binary: $(basename "${HYDROGEN_BIN}")"
     print_result 0 "Hydrogen binary found and validated"
     ((PASS_COUNT++))

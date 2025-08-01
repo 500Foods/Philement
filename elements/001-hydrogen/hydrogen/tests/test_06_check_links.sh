@@ -3,6 +3,8 @@
 # Test: Markdown Links Check
 # Runs github-sitemap.sh to check markdown links and evaluates results with subtests
 
+# FUNCTIONS
+
 # CHANGELOG
 # 3.0.0 - 2025-07-30 - Overhaul #1
 # 2.1.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
