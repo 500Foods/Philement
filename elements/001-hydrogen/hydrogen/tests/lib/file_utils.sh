@@ -4,6 +4,7 @@
 # Provides file and path manipulation functions for test scripts
 
 # LIBRARY FUNCTIONS
+# should_exclude_file()
 # convert_to_relative_path()
 # safe_cd()
 # get_file_size()
@@ -13,6 +14,7 @@
 # get_webserver_port()
 
 # CHANGELOG
+# 1.2.0 - 2025-07-30 - Added common should_exclude_file() from other scripts
 # 1.1.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 1.0.0 - 2025-07-02 - Initial creation from support_utils.sh migration
 
@@ -22,8 +24,40 @@ export FILE_UTILS_GUARD="true"
 
 # Library metadata
 FILE_UTILS_NAME="File Utilities Library"
-FILE_UTILS_VERSION="1.1.0"
+FILE_UTILS_VERSION="1.2.0"
 print_message "${FILE_UTILS_NAME} ${FILE_UTILS_VERSION}" "info"
+
+# Check if a file should be excluded from linting
+should_exclude_file() {
+    local file="$1"
+    local lint_ignore=".lintignore"
+    local rel_file="${file#./}"  # Remove leading ./
+    
+    # Check .lintignore file first if it exists
+    if [[ -f "${lint_ignore}" ]]; then
+        while IFS= read -r pattern; do
+            [[ -z "${pattern}" || "${pattern}" == \#* ]] && continue
+            # Remove trailing /* if present for directory matching
+            local clean_pattern="${pattern%/\*}"
+            
+            # Check if file matches pattern exactly or is within a directory pattern
+            if [[ "${rel_file}" == "${pattern}" ]] || [[ "${rel_file}" == "${clean_pattern}"/* ]]; then
+                return 0 # Exclude
+            fi
+        done < "${lint_ignore}"
+    fi
+    
+    # Check default excludes
+    # shellcheck disable=SC2154 # LINT_EXCLUDES defined externally in framework.sh
+    for pattern in "${LINT_EXCLUDES[@]}"; do
+        local clean_pattern="${pattern%/\*}"
+        if [[ "${rel_file}" == "${pattern}" ]] || [[ "${rel_file}" == "${clean_pattern}"/* ]]; then
+            return 0 # Exclude
+        fi
+    done
+    
+    return 1 # Do not exclude
+}
 
 # Function to convert absolute path to path relative to hydrogen project root
 convert_to_relative_path() {

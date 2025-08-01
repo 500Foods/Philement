@@ -3,7 +3,16 @@
 # Test: Test Suite Orchestration
 # Executes all tests in parallel batches or sequentially and generates a summary report
 
+# FUNCTIONS
+# show_help() 
+# run_single_test() 
+# run_single_test_parallel() 
+# run_specific_test() 
+# run_all_tests_parallel() 
+# run_all_tests() 
+
 # CHANGELOG
+# 6.1.0 - 2025-07-31 - Added tmpfs code that was originally in Test 01
 # 6.0.0 - 2025-07-22 - Upgraded for more stringent shellcheck compliance
 # 5.0.0 - 2025-07-19 - Script Review: Folder variables used consistently
 # 4.2.1 - 2025-07-18 - Added timestamp to Test Suite Results footer
@@ -19,68 +28,17 @@
 # Test configuration
 TEST_NAME="Test Suite Orchestration"
 TEST_ABBR="ORC"
-TEST_VERSION="6.0.0"
-ORCHESTRATION="true"
-export ORCHESTRATION
+TEST_NUMBER="00"
+TEST_VERSION="6.1.0"
+export TEST_NAME TEST_ABBR TEST_NUMBER TEST_VERSION
+ 
+# shellcheck disable=SC1091 # Resolve path statically
+source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+setup_orchestration_environment
 
-# Timestamps
-# TS_ORC_LOG=$(date '+%Y%m%d_%H%M%S' 2>/dev/null)             # 20250730_124718                 eg: log filenames
-# TS_ORC_TMR=$(date '+%s.%N' 2>/dev/null)                     # 1753904852.568389297            eg: timers, elapsed times
-# TS_ORC_ISO=$(date '+%Y-%m-%d %H:%M:%S %Z' 2>/dev/null)      # 2025-07-30 12:47:46 PDT         eg: short display times
-TS_ORC_DSP=$(date '+%Y-%b-%d (%a) %H:%M:%S %Z' 2>/dev/null) # 2025-Jul-30 (Wed) 12:49:03 PDT  eg: long display times
+next_subtest
+print_subtest "Verifying command/version availability"
 
-# Sort out directories
-PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
-SCRIPT_DIR="${PROJECT_DIR}/tests"
-LIB_DIR="${SCRIPT_DIR}/lib"
-BUILD_DIR="${PROJECT_DIR}/build"
-TESTS_DIR="${BUILD_DIR}/tests"
-RESULTS_DIR="${TESTS_DIR}/results"
-DIAGS_DIR="${TESTS_DIR}/diagnostics"
-LOGS_DIR="${TESTS_DIR}/logs"
-
-# Get start time
-START_TIME=$(date +%s.%N 2>/dev/null)
-
-# shellcheck source=tests/lib/framework.sh # Resolve path statically
-source "${LIB_DIR}/framework.sh"
-# shellcheck source=tests/lib/log_output.sh # Resolve path statically
-source "${LIB_DIR}/log_output.sh"
-
-# Auto-extract test number and set up environment
-TEST_NUMBER=$(extract_test_number "${BASH_SOURCE[0]}")
-set_test_number "${TEST_NUMBER}"
-reset_subtest_counter
-
-# Print beautiful test suite header in blue
-print_test_suite_header "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}" 
-
-# Print framework and log output versions as they are already sourced
-print_message "${FRAMEWORK_NAME} ${FRAMEWORK_VERSION}" "info"
-print_message "${LOG_OUTPUT_NAME} ${LOG_OUTPUT_VERSION}" "info"
-
-# shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
-source "${LIB_DIR}/lifecycle.sh"
-# shellcheck source=tests/lib/network_utils.sh # Resolve path statically
-source "${LIB_DIR}/network_utils.sh"
-# shellcheck source=tests/lib/file_utils.sh # Resolve path statically
-source "${LIB_DIR}/file_utils.sh"
-# shellcheck source=tests/lib/env_utils.sh # Resolve path statically
-source "${LIB_DIR}/env_utils.sh"
-# shellcheck source=tests/lib/cloc.sh # Resolve path statically
-source "${LIB_DIR}/cloc.sh"
-# shellcheck source=tests/lib/coverage.sh # Resolve path statically
-source "${LIB_DIR}/coverage.sh"
-# shellcheck source=tests/lib/coverage-common.sh # Resolve path statically
-source "${LIB_DIR}/coverage-common.sh"
-# shellcheck source=tests/lib/coverage-unity.sh # Resolve path statically
-source "${LIB_DIR}/coverage-unity.sh"
-# shellcheck source=tests/lib/coverage-blackbox.sh # Resolve path statically
-source "${LIB_DIR}/coverage-blackbox.sh"
-# shellcheck source=tests/lib/coverage-combined.sh # Resolve path statically
-source "${LIB_DIR}/coverage-combined.sh"
-
-# List of commands to check - we're assuming grep and sort are available
 commands=(
     "grep" "sort" "bc" "jq" "awk" "sed" "xargs" "nproc" "timeout" "date"
     "cmake" "curl" "websocat" 
@@ -93,12 +51,13 @@ commands=(
 declare -a results
 
 # Cache directory
-CACHE_CMD_DIR="${HOME}/.cache/.hydrogen"
+CACHE_CMD_DIR="${HOME}/.cache/.hydrogen/commands"
 mkdir -p "${CACHE_CMD_DIR}"
 export CACHE_CMD_DIR
+# shellcheck disable=SC2154 # PROJECT_DIR defined externally in framework.sh
+pushd "${PROJECT_DIR}" > /dev/null || return 1
 
 # Change to parent directory and update PATH once
-cd ..
 export PATH="${PATH}:tests/lib"
 
 # Collect commands that need processing (cache misses)
@@ -164,10 +123,10 @@ for result in "${sorted_results[@]}"; do
     IFS='|' read -r status message version <<< "${result}"
     print_result "${status}" "${message}: ${version}"
 done
+popd > /dev/null || return 1
 
-# Perform cleanup before starting tests
-print_message "Cleaning Build Environment" "info"
-perform_cleanup
+dump_collected_output
+clear_collected_output
 
 # Arrays to track test results
 declare -a TEST_NUMBERS
@@ -216,205 +175,6 @@ for arg in "$@"; do
     esac
 done
 
-# Function to update README.md with test results
-update_readme_with_results() {
-    local readme_file="${PROJECT_DIR}/README.md"
-    
-    if [[ ! -f "${readme_file}" ]]; then
-        echo "Warning: README.md not found at ${readme_file}"
-        return 1
-    fi
-    
-    # Calculate summary statistics
-    local total_tests=${#TEST_NUMBERS[@]}
-    local total_passed=0
-    local total_failed=0
-    local total_subtests=0
-    local total_subtests_passed=0
-    local total_subtests_failed=0
-    
-    for i in "${!TEST_SUBTESTS[@]}"; do
-        total_subtests=$((total_subtests + TEST_SUBTESTS[i]))
-        total_subtests_passed=$((total_subtests_passed + TEST_PASSED[i]))
-        total_failed=$((total_subtests_failed + TEST_FAILED[i]))
-        if [[ "${TEST_FAILED[i]}" -gt 0 ]]; then
-            total_failed=$((total_failed + 1))
-        else
-            total_passed=$((total_passed + 1))
-        fi
-    done
-    
-    # Create temporary file for new README content
-    local temp_readme
-    temp_readme=$(mktemp) || { echo "Error: Failed to create temporary file" >&2; return 1; }
-    
-    # Process README.md line by line
-    local in_test_results=false
-    local in_individual_results=false
-    local in_repo_info=false
-    
-    while IFS= read -r line; do
-        if [[ "${line}" == "## Latest Test Results" ]]; then
-            in_test_results=true
-            {
-                echo "${line}"
-                echo ""
-                echo "Generated on: ${TS_ORC_DSP}"
-                echo ""
-                echo "### Summary"
-                echo ""
-                echo "| Metric | Value |"
-                echo "| ------ | ----- |"
-                echo "| Total Tests | ${total_tests} |"
-                echo "| Passed | ${total_passed} |"
-                echo "| Failed | ${total_failed} |"
-                echo "| Total Subtests | ${total_subtests} |"
-                echo "| Passed Subtests | ${total_subtests_passed} |"
-                echo "| Failed Subtests | ${total_subtests_failed} |"
-                echo "| Elapsed Time | ${TOTAL_ELAPSED_FORMATTED} |"
-                echo "| Cumulative Time | ${TOTAL_RUNNING_TIME_FORMATTED} |"
-                echo ""
-                echo "[Test Suite Results](COMPLETE.svg) | [Test Suite Coverage](COVERAGE.svg)"
-                echo ""
-                echo "### Test Coverage"
-                echo ""
-                
-                # Get detailed coverage information with thousands separators
-                local unity_coverage_detailed="${RESULTS_DIR}/unity_coverage.txt.detailed"
-                local blackbox_coverage_detailed="${RESULTS_DIR}/blackbox_coverage.txt.detailed"
-                local combined_coverage_detailed="${RESULTS_DIR}/combined_coverage.txt.detailed"
-                
-                if [[ -f "${unity_coverage_detailed}" ]] || [[ -f "${blackbox_coverage_detailed}" ]] || [[ -f "${combined_coverage_detailed}" ]]; then
-                    echo "| Test Type | Files Cover | Files Instr | Lines Cover | Lines Instr | Coverage | Timestamp |"
-                    echo "| --------- | ----------- | ----------- | ----------- | ----------- | -------- | --------- |"
-                    
-                    # Unity coverage
-                    if [[ -f "${unity_coverage_detailed}" ]]; then
-                        local unity_timestamp unity_coverage_pct unity_covered unity_total unity_instrumented unity_covered_files
-                        IFS=',' read -r unity_timestamp unity_coverage_pct unity_covered unity_total unity_instrumented unity_covered_files < "${unity_coverage_detailed}" 2>/dev/null
-                        if [[ -n "${unity_total}" ]] && [[ "${unity_total}" -gt 0 ]]; then
-                            # Add thousands separators
-                            unity_covered_formatted=$(printf "%'d" "${unity_covered}" 2>/dev/null || echo "${unity_covered}")
-                            unity_total_formatted=$(printf "%'d" "${unity_total}" 2>/dev/null || echo "${unity_total}")
-                            unity_covered_files=${unity_covered_files:-0}
-                            unity_instrumented=${unity_instrumented:-0}
-                            echo "| Unity Tests | ${unity_covered_files} | ${unity_instrumented} | ${unity_covered_formatted} | ${unity_total_formatted} | ${unity_coverage_pct}% | ${unity_timestamp} |"
-                        else
-                            echo "| Unity Tests | 0 | 0 | 0 | 0 | 0.000% |  0 |"
-                        fi
-                    else
-                        echo "| Unity Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
-                    fi
-                    
-                    # Blackbox coverage
-                    if [[ -f "${blackbox_coverage_detailed}" ]]; then
-                        local blackbox_timestamp blackbox_coverage_pct blackbox_covered blackbox_total blackbox_instrumented blackbox_covered_files
-                        IFS=',' read -r blackbox_timestamp blackbox_coverage_pct blackbox_covered blackbox_total blackbox_instrumented blackbox_covered_files < "${blackbox_coverage_detailed}" 2>/dev/null
-                        if [[ -n "${blackbox_total}" ]] && [[ "${blackbox_total}" -gt 0 ]]; then
-                            # Add thousands separators
-                            blackbox_covered_formatted=$(printf "%'d" "${blackbox_covered}" 2>/dev/null || echo "${blackbox_covered}")
-                            blackbox_total_formatted=$(printf "%'d" "${blackbox_total}" 2>/dev/null || echo "${blackbox_total}")
-                            blackbox_covered_files=${blackbox_covered_files:-0}
-                            blackbox_instrumented=${blackbox_instrumented:-0}
-                            echo "| Blackbox Tests | ${blackbox_covered_files} | ${blackbox_instrumented} | ${blackbox_covered_formatted} | ${blackbox_total_formatted} | ${blackbox_coverage_pct}% | ${blackbox_timestamp} |"
-                        else
-                            echo "| Blackbox Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
-                        fi
-                    else
-                        echo "| Blackbox Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
-                    fi
-                    
-                    # Combined coverage
-                    if [[ -f "${combined_coverage_detailed}" ]]; then
-                        local combined_timestamp combined_coverage_pct combined_covered combined_total combined_instrumented combined_covered_files
-                        IFS=',' read -r combined_timestamp combined_coverage_pct combined_covered combined_total combined_instrumented combined_covered_files < "${combined_coverage_detailed}" 2>/dev/null
-                        if [[ -n "${combined_total}" ]] && [[ "${combined_total}" -gt 0 ]]; then
-                            # Add thousands separators
-                            combined_covered_formatted=$(printf "%'d" "${combined_covered}" 2>/dev/null || echo "${combined_covered}")
-                            combined_total_formatted=$(printf "%'d" "${combined_total}" 2>/dev/null || echo "${combined_total}")
-                            combined_covered_files=${combined_covered_files:-0}
-                            combined_instrumented=${combined_instrumented:-0}
-                            echo "| Combined Tests | ${combined_covered_files} | ${combined_instrumented} | ${combined_covered_formatted} | ${combined_total_formatted} | ${combined_coverage_pct}% | ${combined_timestamp} |"
-                        else
-                            echo "| Combined Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
-                        fi
-                    else
-                        echo "| Combined Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
-                    fi
-                else
-                    echo "| Test Type | Files Cover | Files Instr | Lines Cover | Lines Instr | Coverage | Timestamp |"
-                    echo "| --------- | ----------- | ----------- | ----------- | ----------- | -------- | --------- |"
-                    echo "| Unity Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
-                    echo "| Blackbox Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
-                fi
-                echo ""
-            } >> "${temp_readme}"
-            continue
-        elif [[ "${line}" == "### Individual Test Results" ]]; then
-            in_individual_results=true
-            {
-                echo "${line}"
-                echo ""
-                echo "| Status | Time | Test | Tests | Pass | Fail | Summary |"
-                echo "| ------ | ---- | ---- | ----- | ---- | ---- | ------- |"
-                
-                # Add individual test results
-                for i in "${!TEST_NUMBERS[@]}"; do
-                    local status="✅"
-                    local summary="Test completed without errors"
-                    if [[ "${TEST_FAILED[${i}]}" -gt 0 ]]; then
-                        status="❌"
-                        summary="Test failed with errors"
-                    fi
-                    local time_formatted
-                    time_formatted=$(format_time_duration "${TEST_ELAPSED[${i}]}")
-                    echo "| ${status} | ${time_formatted} | ${TEST_NUMBERS[${i}]}_$(echo "${TEST_NAMES[${i}]}" | tr ' ' '_' | tr '[:upper:]' '[:lower:]') | ${TEST_SUBTESTS[${i}]} | ${TEST_PASSED[${i}]} | ${TEST_FAILED[${i}]} | ${summary} |" || true
-                done
-                echo ""
-            } >> "${temp_readme}"
-            continue
-        elif [[ "${line}" == "## Repository Information" ]]; then
-            in_repo_info=true
-            in_test_results=false
-            in_individual_results=false
-            {
-                echo "${line}"
-                echo ""
-                echo "Generated via cloc: ${TS_ORC_DSP}"
-                echo ""
-                
-                # Use shared cloc library function, ensuring we're in the project root directory
-                pushd "${PROJECT_DIR}" > /dev/null || return 1
-                generate_cloc_for_readme "." ".lintignore"
-                popd > /dev/null || return 1
-            } >> "${temp_readme}"
-            continue
-        elif [[ "${in_test_results}" == true || "${in_individual_results}" == true || "${in_repo_info}" == true ]]; then
-            # Skip existing content in these sections
-            if [[ "${line}" == "## "* ]]; then
-                # New section started, stop skipping
-                in_test_results=false
-                in_individual_results=false
-                in_repo_info=false
-                echo "${line}" >> "${temp_readme}"
-            fi
-            continue
-        else
-            echo "${line}" >> "${temp_readme}"
-        fi
-    done < "${readme_file}"
-    
-    # Replace original README with updated version
-    if mv "${temp_readme}" "${readme_file}"; then
-        # echo "Updated README.md with test results"
-        :
-    else
-        echo "Error: Failed to update README.md"
-        rm -f "${temp_readme}"
-        return 1
-    fi
-}
-
 show_help() {
     echo "Usage: $0 [test_name1 test_name2 ...] [--skip-tests] [--sequential] [--sequential-groups=M,N] [--help]"
     echo ""
@@ -449,6 +209,7 @@ show_help() {
 TEST_SCRIPTS=()
 
 # Add all other tests except 00
+# shellcheck disable=SC2154 # Defined externally in framework.sh
 while IFS= read -r script; do
     if [[ "${script}" != *"test_00_all.sh" ]]; then
         TEST_SCRIPTS+=("${script}")
@@ -506,6 +267,7 @@ run_single_test() {
     local test_name_for_file
     test_name_for_file=$(basename "${test_script}" .sh | sed 's/test_[0-9]*_//' | tr '_' ' ' | sed 's/\b\w/\U&/g' || true)
     local latest_subtest_file
+    # shellcheck disable=SC2154 # RESULTS_DIR defined externally in framework.sh
     latest_subtest_file=$(find "${RESULTS_DIR}" -name "subtest_${test_number}_*.txt" -type f 2>/dev/null | sort -r | head -1 || true)
     
     if [[ -n "${latest_subtest_file}" ]] && [[ -f "${latest_subtest_file}" ]]; then
@@ -799,25 +561,23 @@ BLACKBOX_COVERAGE=$(get_blackbox_coverage)
 COMBINED_COVERAGE=$(get_combined_coverage)
 
 # Run coverage table before displaying test results
-coverage_table_script="${LIB_DIR}/coverage_table.sh"
-if [[ -x "${coverage_table_script}" ]]; then
-    # Save coverage table output to file and display to console using tee
-    coverage_table_file="${RESULTS_DIR}/coverage_table.txt"
-    env -i bash "${coverage_table_script}" 2>/dev/null | tee "${coverage_table_file}" || true
-    
-    # Launch background process to generate COVERAGE.svg from saved file
-    oh_script="${LIB_DIR}/Oh.sh"
-    coverage_svg_path="${PROJECT_DIR}/COVERAGE.svg"
-    if [[ -x "${oh_script}" ]] && [[ -f "${coverage_table_file}" ]]; then
-        # Delete existing file before generating new one
-        rm -f "${coverage_svg_path}"
-        # Generate SVG from saved coverage table file in background
-        ("${oh_script}" -i "${coverage_table_file}" -o "${coverage_svg_path}" 2>/dev/null) &
-    fi
-fi
+
+# Save coverage table output to file and display to console using tee
+coverage_table_file="${RESULTS_DIR}/coverage_table.txt"
+# shellcheck disable=SC2154 # COVERAGE_EXTERNAL defined externally in framework.sh
+env -i bash "${COVERAGE_EXTERNAL}" 2>/dev/null | tee "${coverage_table_file}" || true
+
+# Launch background process to generate COVERAGE.svg from saved file
+coverage_svg_path="${PROJECT_DIR}/COVERAGE.svg"
+# Delete existing file before generating new one
+rm -f "${coverage_svg_path}"
+# Generate SVG from saved coverage table file in background
+# shellcheck disable=SC2154 # OH_EXTERNAL defined externally in framework.sh
+("${OH_EXTERNAL}" -i "${coverage_table_file}" -o "${coverage_svg_path}" 2>/dev/null) &
 
 # Calculate total elapsed time
 END_TIME=$(date +%s.%N 2>/dev/null)
+# shellcheck disable=SC2154 # START_TIME defined externally in framework.sh
 if [[ "${START_TIME}" =~ \. ]] && [[ "${END_TIME}" =~ \. ]]; then
     TOTAL_ELAPSED=$(echo "${END_TIME} - ${START_TIME}" | bc 2>/dev/null || echo "0")
     # Ensure TOTAL_ELAPSED is not empty or starts with a dot
@@ -850,6 +610,7 @@ TOTAL_ELAPSED_FORMATTED=$(format_time_duration "${TOTAL_ELAPSED}")
 TOTAL_RUNNING_TIME_FORMATTED=$(format_time_duration "${TOTAL_RUNNING_TIME}")
 
 # Create layout JSON string
+# shellcheck disable=SC2154 # TC_ORC_DSP defined externally in framework.sh
 layout_json_content='{
     "title": "Test Suite Results {NC}{RED}———{RESET}{BOLD}{CYAN} Unity {WHITE}'"${UNITY_COVERAGE}"'% {RESET}{RED}———{RESET}{BOLD}{CYAN} Blackbox {WHITE}'"${BLACKBOX_COVERAGE}"'% {RESET}{RED}———{RESET}{BOLD}{CYAN} Combined {WHITE}'"${COMBINED_COVERAGE}"'%{RESET}",
     "footer": "{CYAN}Cumulative {WHITE}'"${TOTAL_RUNNING_TIME_FORMATTED}"'{RED} ——— {RESET}{CYAN}Elapsed {WHITE}'"${TOTAL_ELAPSED_FORMATTED}"'{RED} ——— {CYAN}Completed {WHITE}'"${TS_ORC_DSP}"'{RESET}",
@@ -952,22 +713,18 @@ data_json="${temp_dir}/summary_data.json"
 echo "${layout_json_content}" > "${layout_json}"
 echo "${data_json_content}" > "${data_json}"
 
-tables_exe="${LIB_DIR}/tables"
-if [[ -x "${tables_exe}" ]]; then
-    # Save test results table output to file and display to console using tee
-    results_table_file="${RESULTS_DIR}/results_table.txt"
-    "${tables_exe}" "${layout_json}" "${data_json}" 2>/dev/null | tee "${results_table_file}" || true
-    
-    # Launch background process to generate COMPLETE.svg from saved file
-    oh_script="${LIB_DIR}/Oh.sh"
-    results_svg_path="${PROJECT_DIR}/COMPLETE.svg"
-    if [[ -x "${oh_script}" ]] && [[ -f "${results_table_file}" ]]; then
-        # Delete existing file before generating new one
-        rm -f "${results_svg_path}"
-        # Generate SVG from saved results table file in background
-        ("${oh_script}" -i "${results_table_file}" -o "${results_svg_path}" 2>/dev/null) &
-    fi
-fi
+# Save test results table output to file and display to console using tee
+results_table_file="${RESULTS_DIR}/results_table.txt"
+# shellcheck disable=SC2154 # TABLES_EXTERNAL defined externally in framework.sh
+"${TABLES_EXTERNAL}" "${layout_json}" "${data_json}" 2>/dev/null | tee "${results_table_file}" || true
+
+# Launch background process to generate COMPLETE.svg from saved file
+results_svg_path="${PROJECT_DIR}/COMPLETE.svg"
+# Delete existing file before generating new one
+rm -f "${results_svg_path}"
+# Generate SVG from saved results table file in background
+# shellcheck disable=SC2154 # OH_EXTERNAL defined externally in framework.sh
+("${OH_EXTERNAL}" -i "${results_table_file}" -o "${results_svg_path}" 2>/dev/null) &
 
 rm -rf "${temp_dir}" 2>/dev/null
 

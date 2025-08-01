@@ -5,9 +5,9 @@
 
 # LIBRARY FUNCTIONS
 # format_time_duration()
-# perform_cleanup()
 # start_test()
 # start_subtest()
+# setup_orchestration_environment()
 # setup_test_environment()
 # navigate_to_project_root()
 # export_test_results()
@@ -25,8 +25,11 @@
 # get_exit_code()
 # print_subtest_header()
 # skip_remaining_subtests()
+# update_readme_with_results()
 
 # CHANGELOG
+# 2,3,1 - 2025-07-31 - Added LINT_EXCLUDES to setup_test_environment
+# 2.3.0 - 2025-07-31 - Added update_readme_with_results() from Test 00
 # 2.2.0 - 2025-07-20 - Added guard
 # 2.1.0 - 2025-07-07 - Restructured how test elapsed times are stored and accessed
 # 2.0.0 - 2025-07-02 - Updated to integrate with numbered output system
@@ -38,9 +41,8 @@ export FRAMEWORK_GUARD="true"
 
 # Library metadata
 FRAMEWORK_NAME="Framework Library"
-FRAMEWORK_VERSION="2.2.0"
+FRAMEWORK_VERSION="2.3.1"
 export FRAMEWORK_NAME FRAMEWORK_VERSION
-# print_message "${FRAMEWORK_NAME} ${FRAMEWORK_VERSION}" "info"
 
 # Set the number of CPU cores for parallel processing
 CORES=$(nproc)
@@ -76,69 +78,39 @@ format_time_duration() {
     printf "%02d:%02d:%02d.%s" "${hours}" "${minutes}" "${secs}" "${milliseconds}"
 }
 
-# Perform cleanup before test execution
-perform_cleanup() {
-    # Clear out build directory
-    rm -rf "${BUILD_DIR:?}" > /dev/null 2>&1
-
-    # Remove hydrogen executables silently
-    rm -f "${PROJECT_DIR}/hydrogen*" > /dev/null 2>&1
-
-    # Build necessary folders
-    mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}"
-}
-
-# Function to start a test run with proper header and numbering
-start_test() {
-    local test_name="$1"
-    local script_version="$2"
-    local script_path="$3"
-    
-    # Auto-extract test number from script filename if not provided
-    local test_number
-    if command -v extract_test_number >/dev/null 2>&1; then
-        test_number=$(extract_test_number "${script_path}")
-        set_test_number "${test_number}"
-        reset_subtest_counter
-        print_test_header "${test_name}" "${script_version}"
-    else
-        # Fallback if log_output.sh not available
-        echo "==============================================================================="
-        echo "TEST: ${test_name}"
-        echo "==============================================================================="
-        echo "Started at: $(date)" || true
-        echo ""
-    fi
-}
-
 # Function to start a subtest with proper header and numbering
 start_subtest() {
     local subtest_name="$1"
     local subtest_number="$2"
     
-    # Set the subtest number in log_output.sh
-    if command -v set_subtest_number >/dev/null 2>&1; then
-        set_subtest_number "${subtest_number}"
-        print_subtest "${subtest_name}"
-    else
-        # Fallback if log_output.sh not available
-        echo ""
-        echo "-------------------------------------------------------------------------------"
-        echo "SUBTEST ${subtest_number}: ${subtest_name}"
-        echo "-------------------------------------------------------------------------------"
-    fi
+    set_subtest_number "${subtest_number}"
+    print_subtest "${subtest_name}"
 }
 
-# Function to set up the standard test environment with numbering
-setup_test_environment() {
+setup_orchestration_environment() {
+
+    # Get start time
+    START_TIME=$(date +%s.%N 2>/dev/null)
+
+    # Naturally we're orchestrating
+    ORCHESTRATION=true
 
     # Starting point
     TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+    # TS_ORC_LOG=$(date '+%Y%m%d_%H%M%S' 2>/dev/null)             # 20250730_124718                 eg: log filenames
+    # TS_ORC_TMR=$(date '+%s.%N' 2>/dev/null)                     # 1753904852.568389297            eg: timers, elapsed times
+    # TS_ORC_ISO=$(date '+%Y-%m-%d %H:%M:%S %Z' 2>/dev/null)      # 2025-07-30 12:47:46 PDT         eg: short display times
+    TS_ORC_DSP=$(date '+%Y-%b-%d (%a) %H:%M:%S %Z' 2>/dev/null) # 2025-Jul-30 (Wed) 12:49:03 PDT  eg: long display times
 
+    # Array for collecting output messages (for performance optimization and progressive feedback)
+    # Output is cached and dumped each time a new TEST starts, providing progressive feedback
+    declare -a OUTPUT_COLLECTION=()
+    COLLECT_OUTPUT_MODE=true
+    
     # Global folder variables
     PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
-    cd "${PROJECT_DIR}" || exit
-
+    pushd "${PROJECT_DIR}" >/dev/null 2>&1 || return
+    
     CMAKE_DIR="${PROJECT_DIR}/cmake"
     SCRIPT_DIR="${PROJECT_DIR}/tests"
     LIB_DIR="${SCRIPT_DIR}/lib"
@@ -149,13 +121,158 @@ setup_test_environment() {
     LOGS_DIR="${TESTS_DIR}/logs"
     CONFIG_DIR="${SCRIPT_DIR}/configs"
 
-    # Array for collecting output messages (for performance optimization and progressive feedback)
-    # Output is cached and dumped each time a new TEST starts, providing progressive feedback
-    declare -a OUTPUT_COLLECTION=()
-    COLLECT_OUTPUT_MODE=true
+    # Common utilities
+    TABLES_EXTERNAL="${LIB_DIR}/tables"
+    OH_EXTERNAL="${LIB_DIR}/Oh.sh"
+    COVERAGE_EXTERNAL="${LIB_DIR}/coverage_table.sh"
+    SITEMAP_EXTERNAL="${LIB_DIR}/github-sitemap.sh"
 
-    # Setup build folders
-    mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}" 
+    # Need to load log_output a little earlier than the others
+    # shellcheck source=tests/lib/log_output.sh # Resolve path statically
+    [[ -n "${LOG_OUTPUT_GUARD}" ]] || source "${LIB_DIR}/log_output.sh"
+    
+    # Reset test counter to zero
+    # shellcheck disable=SC2154,SC2153 # TEST_NUMBER defined in caller (Test 00)
+    set_test_number "${TEST_NUMBER}"
+    reset_subtest_counter
+
+    # Print beautiful test header
+    # shellcheck disable=SC2154,SC2153 # TEST_NAME, TEST_ABBR, TEST_NUMBER, TEST_VERSION defined externally in caller
+    print_test_suite_header "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
+
+    print_subtest "Loading Test Suite Libraries"
+    # Print framework and log output versions as they are already sourced
+    [[ -n "${ORCHESTRATION}" ]] || print_message "${FRAMEWORK_NAME} ${FRAMEWORK_VERSION}" "info"
+    [[ -n "${ORCHESTRATION}" ]] || print_message "${LOG_OUTPUT_NAME} ${LOG_OUTPUT_VERSION}" "info"
+    # shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
+    [[ -n "${LIFECYCLE_GUARD}" ]] || source "${LIB_DIR}/lifecycle.sh"
+    # shellcheck source=tests/lib/file_utils.sh # Resolve path statically
+    [[ -n "${FILE_UTILS_GUARD}" ]] || source "${LIB_DIR}/file_utils.sh"
+    # shellcheck source=tests/lib/env_utils.sh # Resolve path statically
+    [[ -n "${ENV_UTILS_GUARD}" ]] || source "${LIB_DIR}/env_utils.sh"
+    # shellcheck source=tests/lib/network_utils.sh # Resolve path statically
+    [[ -n "${NETWORK_UTILS_GUARD}" ]] || source "${LIB_DIR}/network_utils.sh"
+    # shellcheck source=tests/lib/coverage.sh # Resolve path statically
+    [[ -n "${COVERAGE_GUARD}" ]] || source "${LIB_DIR}/coverage.sh"
+    # shellcheck source=tests/lib/cloc.sh # Resolve path statically
+    [[ -n "${CLOC_GUARD}" ]] || source "${LIB_DIR}/cloc.sh"
+    print_result 0 "Test Suite libraries initialized"
+
+    next_subtest
+    print_subtest "Checking for tmpfs Build setup"
+    if [[ -d "build" ]]; then
+        print_message "Build directory exists, checking mount status..."
+    
+        # Check if build is already a tmpfs mount
+        if mountpoint -q build 2>/dev/null; then
+            print_message "Build directory already mounted as tmpfs, emptying contents..."
+            if rm -rf build/* 2>/dev/null; then
+                print_result 0 "Build directory (tmpfs) emptied and ready for use"
+            else
+                print_result 1 "Failed to empty tmpfs build directory"
+                EXIT_CODE=1
+            fi
+        else
+            # Empty the regular directory and mount as tmpfs
+            print_message "Emptying regular build directory..."
+            print_command "rm -rf build/*"
+            if rm -rf build/* 2>/dev/null; then
+                print_message "Successfully emptied build directory"
+                
+                # Mount as tmpfs
+                print_message "Mounting 'build' as tmpfs with 1GB size..."
+                print_command "sudo mount -t tmpfs -o size=1G tmpfs build"
+                if sudo mount -t tmpfs -o size=1G tmpfs build 2>/dev/null; then
+                    print_result 0 "Build directory mounted as tmpfs (1GB) for faster I/O"
+                    print_message "Warning: tmpfs is volatile; artifacts will be lost on unmount/reboot"
+                else
+                    print_result 0 "Build directory ready (tmpfs mount failed, using regular filesystem)"
+                    print_message "Continuing with regular filesystem build directory"
+                fi
+            else
+                print_result 1 "Failed to empty 'build' directory"
+                EXIT_CODE=1
+            fi
+        fi
+    else
+        # Create the build directory and mount as tmpfs
+        print_message "Creating 'build' directory..."
+        print_command "mkdir build"
+        if mkdir build 2>/dev/null; then
+            print_message "Successfully created build directory"
+            
+            # Mount as tmpfs
+            print_message "Mounting 'build' as tmpfs with 1GB size..."
+            print_command "sudo mount -t tmpfs -o size=1G tmpfs build"
+            if sudo mount -t tmpfs -o size=1G tmpfs build 2>/dev/null; then
+                print_result 0 "Build directory created and mounted as tmpfs (1GB) for faster I/O"
+                print_message "Warning: tmpfs is volatile; artifacts will be lost on unmount/reboot"
+            else
+                print_result 0 "Build directory created (tmpfs mount failed, using regular filesystem)"
+                print_message "Continuing with regular filesystem build directory"
+            fi
+        else
+            print_result 1 "Failed to create 'build' directory"
+            EXIT_CODE=1
+        fi
+    fi
+
+    mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${LOGS_DIR}" "${DIAGS_DIR}"
+
+    # Common files
+    # shellcheck disable=SC2154,SC2153 # TEST_NUMBER defined externally in framework.sh
+    RESULT_LOG="${RESULTS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
+    LOG_FILE="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
+    DIAG_FILE="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
+
+    # Default exclude patterns for linting (can be overridden by .lintignore)
+    if [[ -z "${LINT_EXCLUDES:-}" ]]; then
+        readonly LINT_EXCLUDES=(
+            "build/*"
+        )   
+    fi
+
+    dump_collected_output
+    clear_collected_output
+}
+
+# Function to set up the standard test environment with numbering
+setup_test_environment() {
+
+    # Starting point
+    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+    if [[ -z "${ORCHESTRATION}" ]]; then
+        # Global folder variables
+        PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
+        pushd "${PROJECT_DIR}" >/dev/null 2>&1 || return
+
+        CMAKE_DIR="${PROJECT_DIR}/cmake"
+        SCRIPT_DIR="${PROJECT_DIR}/tests"
+        LIB_DIR="${SCRIPT_DIR}/lib"
+        BUILD_DIR="${PROJECT_DIR}/build"
+        TESTS_DIR="${BUILD_DIR}/tests"
+        RESULTS_DIR="${TESTS_DIR}/results"
+        DIAGS_DIR="${TESTS_DIR}/diagnostics"
+        LOGS_DIR="${TESTS_DIR}/logs"
+        CONFIG_DIR="${SCRIPT_DIR}/configs"
+
+        # Array for collecting output messages (for performance optimization and progressive feedback)
+        # Output is cached and dumped each time a new TEST starts, providing progressive feedback
+        declare -a OUTPUT_COLLECTION=()
+        COLLECT_OUTPUT_MODE=true
+
+        # Setup build folders
+        mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}" 
+
+        # Common utilitiex
+        TABLES_EXTERNAL="${LIB_DIR}/tables"
+        OH_EXTERNAL="${LIB_DIR}/Oh.sh"
+        COVERAGE_EXTERNAL="${LIB_DIR}/coverage_table.sh"
+        SITEMAP_EXTERNAL="${LIB_DIR}/github-sitemap.sh"
+    else
+      pushd "${PROJECT_DIR}" >/dev/null 2>&1 || return
+    fi
 
     # Common files
     # shellcheck disable=SC2154,SC2153 # TEST_NUMBER defined externally in framework.sh
@@ -167,12 +284,6 @@ setup_test_environment() {
     DIAG_TEST_DIR="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}"
     mkdir -p "${DIAG_TEST_DIR}"
 
-    # Common utilitiex
-    TABLES_EXTERNAL="${LIB_DIR}/tables"
-    OH_EXTERNAL="${LIB_DIR}/Oh.sh"
-    COVERAGE_EXTERNAL="${LIB_DIR}/coverage_table.sh"
-    SITEMAP_EXTERNAL="${LIB_DIR}/github-sitemap.sh"
-        
     # Common test configuration
     TIMESTAMP=$(date +%Y%m%d_%H%M%S)
     EXIT_CODE=0
@@ -190,23 +301,33 @@ setup_test_environment() {
     # shellcheck disable=SC2154,SC2153 # TEST_NAME, TEST_ABBR, TEST_NUMBER, TEST_VERSION defined externally in caller
     print_test_header "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
     
-    # Print framework and log output versions as they are already sourced
-    [[ -n "${ORCHESTRATION}" ]] || print_message "${FRAMEWORK_NAME} ${FRAMEWORK_VERSION}" "info"
-    [[ -n "${ORCHESTRATION}" ]] || print_message "${LOG_OUTPUT_NAME} ${LOG_OUTPUT_VERSION}" "info"
-    # shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
-    [[ -n "${LIFECYCLE_GUARD}" ]] || source "${LIB_DIR}/lifecycle.sh"
-    # shellcheck source=tests/lib/file_utils.sh # Resolve path statically
-    [[ -n "${FILE_UTILS_GUARD}" ]] || source "${LIB_DIR}/file_utils.sh"
-    # shellcheck source=tests/lib/env_utils.sh # Resolve path statically
-    [[ -n "${ENV_UTILS_GUARD}" ]] || source "${LIB_DIR}/env_utils.sh"
-    # shellcheck source=tests/lib/network_utils.sh # Resolve path statically
-    [[ -n "${NETWORK_UTILS_GUARD}" ]] || source "${LIB_DIR}/network_utils.sh"
-    # shellcheck source=tests/lib/coverage.sh # Resolve path statically
-    [[ -n "${COVERAGE_GUARD}" ]] || source "${LIB_DIR}/coverage.sh"
-    # shellcheck source=tests/lib/cloc.sh # Resolve path statically
-    [[ -n "${CLOC_GUARD}" ]] || source "${LIB_DIR}/cloc.sh"
+    if [[ -z "${ORCHESTRATION}" ]]; then
+         # Print framework and log output versions as they are already sourced
+        print_message "${FRAMEWORK_NAME} ${FRAMEWORK_VERSION}" "info"
+        print_message "${LOG_OUTPUT_NAME} ${LOG_OUTPUT_VERSION}" "info"
+        # shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
+        [[ -n "${LIFECYCLE_GUARD}" ]] || source "${LIB_DIR}/lifecycle.sh"
+        # shellcheck source=tests/lib/file_utils.sh # Resolve path statically
+        [[ -n "${FILE_UTILS_GUARD}" ]] || source "${LIB_DIR}/file_utils.sh"
+        # shellcheck source=tests/lib/env_utils.sh # Resolve path statically
+        [[ -n "${ENV_UTILS_GUARD}" ]] || source "${LIB_DIR}/env_utils.sh"
+        # shellcheck source=tests/lib/network_utils.sh # Resolve path statically
+        [[ -n "${NETWORK_UTILS_GUARD}" ]] || source "${LIB_DIR}/network_utils.sh"
+        # shellcheck source=tests/lib/coverage.sh # Resolve path statically
+        [[ -n "${COVERAGE_GUARD}" ]] || source "${LIB_DIR}/coverage.sh"
+        # shellcheck source=tests/lib/cloc.sh # Resolve path statically
+        [[ -n "${CLOC_GUARD}" ]] || source "${LIB_DIR}/cloc.sh"
+
+        # Default exclude patterns for linting (can be overridden by .lintignore)
+        if [[ -z "${LINT_EXCLUDES:-}" ]]; then
+            readonly LINT_EXCLUDES=(
+                "build/*"
+            )   
+        fi
+    fi
 
     dump_collected_output
+    clear_collected_output
 }
 
 # Function to export the test result to a standardized JSON format
@@ -434,5 +555,204 @@ skip_remaining_subtests() {
         print_warning "Skipping remaining subtests: ${reason}"
     else
         echo "WARNING: Skipping remaining subtests: ${reason}"
+    fi
+}
+
+# Function to update README.md with test results
+update_readme_with_results() {
+    local readme_file="${PROJECT_DIR}/README.md"
+    
+    if [[ ! -f "${readme_file}" ]]; then
+        echo "Warning: README.md not found at ${readme_file}"
+        return 1
+    fi
+    
+    # Calculate summary statistics
+    local total_tests=${#TEST_NUMBERS[@]}
+    local total_passed=0
+    local total_failed=0
+    local total_subtests=0
+    local total_subtests_passed=0
+    local total_subtests_failed=0
+    
+    for i in "${!TEST_SUBTESTS[@]}"; do
+        total_subtests=$((total_subtests + TEST_SUBTESTS[i]))
+        total_subtests_passed=$((total_subtests_passed + TEST_PASSED[i]))
+        total_failed=$((total_subtests_failed + TEST_FAILED[i]))
+        if [[ "${TEST_FAILED[i]}" -gt 0 ]]; then
+            total_failed=$((total_failed + 1))
+        else
+            total_passed=$((total_passed + 1))
+        fi
+    done
+    
+    # Create temporary file for new README content
+    local temp_readme
+    temp_readme=$(mktemp) || { echo "Error: Failed to create temporary file" >&2; return 1; }
+    
+    # Process README.md line by line
+    local in_test_results=false
+    local in_individual_results=false
+    local in_repo_info=false
+    
+    while IFS= read -r line; do
+        if [[ "${line}" == "## Latest Test Results" ]]; then
+            in_test_results=true
+            {
+                echo "${line}"
+                echo ""
+                echo "Generated on: ${TS_ORC_DSP}"
+                echo ""
+                echo "### Summary"
+                echo ""
+                echo "| Metric | Value |"
+                echo "| ------ | ----- |"
+                echo "| Total Tests | ${total_tests} |"
+                echo "| Passed | ${total_passed} |"
+                echo "| Failed | ${total_failed} |"
+                echo "| Total Subtests | ${total_subtests} |"
+                echo "| Passed Subtests | ${total_subtests_passed} |"
+                echo "| Failed Subtests | ${total_subtests_failed} |"
+                echo "| Elapsed Time | ${TOTAL_ELAPSED_FORMATTED} |"
+                echo "| Cumulative Time | ${TOTAL_RUNNING_TIME_FORMATTED} |"
+                echo ""
+                echo "[Test Suite Results](COMPLETE.svg) | [Test Suite Coverage](COVERAGE.svg)"
+                echo ""
+                echo "### Test Coverage"
+                echo ""
+                
+                # Get detailed coverage information with thousands separators
+                local unity_coverage_detailed="${RESULTS_DIR}/unity_coverage.txt.detailed"
+                local blackbox_coverage_detailed="${RESULTS_DIR}/blackbox_coverage.txt.detailed"
+                local combined_coverage_detailed="${RESULTS_DIR}/combined_coverage.txt.detailed"
+                
+                if [[ -f "${unity_coverage_detailed}" ]] || [[ -f "${blackbox_coverage_detailed}" ]] || [[ -f "${combined_coverage_detailed}" ]]; then
+                    echo "| Test Type | Files Cover | Files Instr | Lines Cover | Lines Instr | Coverage | Timestamp |"
+                    echo "| --------- | ----------- | ----------- | ----------- | ----------- | -------- | --------- |"
+                    
+                    # Unity coverage
+                    if [[ -f "${unity_coverage_detailed}" ]]; then
+                        local unity_timestamp unity_coverage_pct unity_covered unity_total unity_instrumented unity_covered_files
+                        IFS=',' read -r unity_timestamp unity_coverage_pct unity_covered unity_total unity_instrumented unity_covered_files < "${unity_coverage_detailed}" 2>/dev/null
+                        if [[ -n "${unity_total}" ]] && [[ "${unity_total}" -gt 0 ]]; then
+                            # Add thousands separators
+                            unity_covered_formatted=$(printf "%'d" "${unity_covered}" 2>/dev/null || echo "${unity_covered}")
+                            unity_total_formatted=$(printf "%'d" "${unity_total}" 2>/dev/null || echo "${unity_total}")
+                            unity_covered_files=${unity_covered_files:-0}
+                            unity_instrumented=${unity_instrumented:-0}
+                            echo "| Unity Tests | ${unity_covered_files} | ${unity_instrumented} | ${unity_covered_formatted} | ${unity_total_formatted} | ${unity_coverage_pct}% | ${unity_timestamp} |"
+                        else
+                            echo "| Unity Tests | 0 | 0 | 0 | 0 | 0.000% |  0 |"
+                        fi
+                    else
+                        echo "| Unity Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
+                    fi
+                    
+                    # Blackbox coverage
+                    if [[ -f "${blackbox_coverage_detailed}" ]]; then
+                        local blackbox_timestamp blackbox_coverage_pct blackbox_covered blackbox_total blackbox_instrumented blackbox_covered_files
+                        IFS=',' read -r blackbox_timestamp blackbox_coverage_pct blackbox_covered blackbox_total blackbox_instrumented blackbox_covered_files < "${blackbox_coverage_detailed}" 2>/dev/null
+                        if [[ -n "${blackbox_total}" ]] && [[ "${blackbox_total}" -gt 0 ]]; then
+                            # Add thousands separators
+                            blackbox_covered_formatted=$(printf "%'d" "${blackbox_covered}" 2>/dev/null || echo "${blackbox_covered}")
+                            blackbox_total_formatted=$(printf "%'d" "${blackbox_total}" 2>/dev/null || echo "${blackbox_total}")
+                            blackbox_covered_files=${blackbox_covered_files:-0}
+                            blackbox_instrumented=${blackbox_instrumented:-0}
+                            echo "| Blackbox Tests | ${blackbox_covered_files} | ${blackbox_instrumented} | ${blackbox_covered_formatted} | ${blackbox_total_formatted} | ${blackbox_coverage_pct}% | ${blackbox_timestamp} |"
+                        else
+                            echo "| Blackbox Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
+                        fi
+                    else
+                        echo "| Blackbox Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
+                    fi
+                    
+                    # Combined coverage
+                    if [[ -f "${combined_coverage_detailed}" ]]; then
+                        local combined_timestamp combined_coverage_pct combined_covered combined_total combined_instrumented combined_covered_files
+                        IFS=',' read -r combined_timestamp combined_coverage_pct combined_covered combined_total combined_instrumented combined_covered_files < "${combined_coverage_detailed}" 2>/dev/null
+                        if [[ -n "${combined_total}" ]] && [[ "${combined_total}" -gt 0 ]]; then
+                            # Add thousands separators
+                            combined_covered_formatted=$(printf "%'d" "${combined_covered}" 2>/dev/null || echo "${combined_covered}")
+                            combined_total_formatted=$(printf "%'d" "${combined_total}" 2>/dev/null || echo "${combined_total}")
+                            combined_covered_files=${combined_covered_files:-0}
+                            combined_instrumented=${combined_instrumented:-0}
+                            echo "| Combined Tests | ${combined_covered_files} | ${combined_instrumented} | ${combined_covered_formatted} | ${combined_total_formatted} | ${combined_coverage_pct}% | ${combined_timestamp} |"
+                        else
+                            echo "| Combined Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
+                        fi
+                    else
+                        echo "| Combined Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
+                    fi
+                else
+                    echo "| Test Type | Files Cover | Files Instr | Lines Cover | Lines Instr | Coverage | Timestamp |"
+                    echo "| --------- | ----------- | ----------- | ----------- | ----------- | -------- | --------- |"
+                    echo "| Unity Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
+                    echo "| Blackbox Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
+                fi
+                echo ""
+            } >> "${temp_readme}"
+            continue
+        elif [[ "${line}" == "### Individual Test Results" ]]; then
+            in_individual_results=true
+            {
+                echo "${line}"
+                echo ""
+                echo "| Status | Time | Test | Tests | Pass | Fail | Summary |"
+                echo "| ------ | ---- | ---- | ----- | ---- | ---- | ------- |"
+                
+                # Add individual test results
+                for i in "${!TEST_NUMBERS[@]}"; do
+                    local status="✅"
+                    local summary="Test completed without errors"
+                    if [[ "${TEST_FAILED[${i}]}" -gt 0 ]]; then
+                        status="❌"
+                        summary="Test failed with errors"
+                    fi
+                    local time_formatted
+                    time_formatted=$(format_time_duration "${TEST_ELAPSED[${i}]}")
+                    echo "| ${status} | ${time_formatted} | ${TEST_NUMBERS[${i}]}_$(echo "${TEST_NAMES[${i}]}" | tr ' ' '_' | tr '[:upper:]' '[:lower:]') | ${TEST_SUBTESTS[${i}]} | ${TEST_PASSED[${i}]} | ${TEST_FAILED[${i}]} | ${summary} |" || true
+                done
+                echo ""
+            } >> "${temp_readme}"
+            continue
+        elif [[ "${line}" == "## Repository Information" ]]; then
+            in_repo_info=true
+            in_test_results=false
+            in_individual_results=false
+            {
+                echo "${line}"
+                echo ""
+                echo "Generated via cloc: ${TS_ORC_DSP}"
+                echo ""
+                
+                # Use shared cloc library function, ensuring we're in the project root directory
+                pushd "${PROJECT_DIR}" > /dev/null || return 1
+                generate_cloc_for_readme "." ".lintignore"
+                popd > /dev/null || return 1
+            } >> "${temp_readme}"
+            continue
+        elif [[ "${in_test_results}" == true || "${in_individual_results}" == true || "${in_repo_info}" == true ]]; then
+            # Skip existing content in these sections
+            if [[ "${line}" == "## "* ]]; then
+                # New section started, stop skipping
+                in_test_results=false
+                in_individual_results=false
+                in_repo_info=false
+                echo "${line}" >> "${temp_readme}"
+            fi
+            continue
+        else
+            echo "${line}" >> "${temp_readme}"
+        fi
+    done < "${readme_file}"
+    
+    # Replace original README with updated version
+    if mv "${temp_readme}" "${readme_file}"; then
+        # echo "Updated README.md with test results"
+        :
+    else
+        echo "Error: Failed to update README.md"
+        rm -f "${temp_readme}"
+        return 1
     fi
 }

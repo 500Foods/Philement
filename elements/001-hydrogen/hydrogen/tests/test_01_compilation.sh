@@ -3,7 +3,11 @@
 # Test: Compilation
 # Tests compilation of the project using CMake
 
+# FUNCTIONS
+# download_unity_framework()
+
 # CHANGELOG
+# 3.1.0 - 2025-07-31 - Removed coverage_cleanup call, another pass through to check for unnecessary comments, etc.
 # 3.0.0 - 2025-07-30 - Overhaul #1
 # 2.2.0 - 2025-07-14 - Added Unity framework check (moved from test 11), fixed tmpfs mount failure handling
 # 2.1.0 - 2025-07-09 - Added payload generation subtest
@@ -15,121 +19,11 @@
 TEST_NAME="Compilation"
 TEST_ABBR="CMP"
 TEST_NUMBER="01"
-TEST_VERSION="3.0.0"
+TEST_VERSION="3.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
-
-# Clean previous coverage data at the start of compilation
-cleanup_coverage_data 2>/dev/null || true
-
-# Subtest: Check CMake availability
-next_subtest
-print_subtest "Check CMake Availability"
-print_command "command -v cmake"
-if command -v cmake >/dev/null 2>&1; then
-    CMAKE_VERSION=$(cmake --version | head -n1 || true)
-    print_result 0 "CMake is available: ${CMAKE_VERSION}"
-else
-    print_result 1 "CMake is not available - required for compilation"
-    EXIT_CODE=1
-fi
-evaluate_test_result_silent "CMake availability" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
-
-# Subtest: Check for CMakeLists.txt
-next_subtest
-print_subtest "Check CMakeLists.txt"
-print_command "test -f cmake/CMakeLists.txt"
-if [[ -f "cmake/CMakeLists.txt" ]]; then
-    file_size=$(get_file_size "cmake/CMakeLists.txt")
-    formatted_size=$(format_file_size "${file_size}")
-    print_result 0 "CMakeLists.txt found in cmake directory (${formatted_size} bytes)"
-else
-    print_result 1 "CMakeLists.txt not found in cmake directory"
-    EXIT_CODE=1
-fi
-evaluate_test_result_silent "CMakeLists.txt check" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
-
-# Subtest: Check source files
-next_subtest
-print_subtest "Check Source Files"
-print_command "test -d src && test -f src/hydrogen.c"
-if [[ -d "src" ]] && [[ -f "src/hydrogen.c" ]]; then
-    src_count=$(find . -type f \( -path "./src/*" -o -path "./tests/unity/src/*" -o -path "./extras/*" -o -path "./examples/*" \) \( -name "*.c" -o -name "*.h" \) | wc -l || true) 
-    print_result 0 "Project search found ${src_count} source files"
-    TEST_NAME="${TEST_NAME} {BLUE}(${src_count} source files){RESET}"
-else
-    print_result 1 "Source files not found - src/hydrogen.c missing"
-    EXIT_CODE=1
-fi
-evaluate_test_result_silent "Source files check" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
-
-# # Subtest: Setup tmpfs build directory
-# next_subtest
-# print_subtest "Setup tmpfs Build Directory"
-
-# # Check if build directory exists
-# if [ -d "build" ]; then
-#     print_message "Build directory exists, checking mount status..."
-    
-#     # Check if build is already a tmpfs mount
-#     if mountpoint -q build 2>/dev/null; then
-#         print_message "Build directory already mounted as tmpfs, emptying contents..."
-#         print_command "rm -rf build/*"
-#         if rm -rf build/* 2>/dev/null; then
-#             print_result 0 "Build directory (tmpfs) emptied and ready for use"
-#         else
-#             print_result 1 "Failed to empty tmpfs build directory"
-#             EXIT_CODE=1
-#         fi
-#     else
-#         # Empty the regular directory and mount as tmpfs
-#         print_message "Emptying regular build directory..."
-#         print_command "rm -rf build/*"
-#         if rm -rf build/* 2>/dev/null; then
-#             print_message "Successfully emptied build directory"
-            
-#             # Mount as tmpfs
-#             print_message "Mounting 'build' as tmpfs with 1GB size..."
-#             print_command "sudo mount -t tmpfs -o size=1G tmpfs build"
-#             if sudo mount -t tmpfs -o size=1G tmpfs build 2>/dev/null; then
-#                 print_result 0 "Build directory mounted as tmpfs (1GB) for faster I/O"
-#                 print_message "Warning: tmpfs is volatile; artifacts will be lost on unmount/reboot"
-#             else
-#                 print_result 0 "Build directory ready (tmpfs mount failed, using regular filesystem)"
-#                 print_message "Continuing with regular filesystem build directory"
-#             fi
-#         else
-#             print_result 1 "Failed to empty 'build' directory"
-#             EXIT_CODE=1
-#         fi
-#     fi
-# else
-#     # Create the build directory and mount as tmpfs
-#     print_message "Creating 'build' directory..."
-#     print_command "mkdir build"
-#     if mkdir build 2>/dev/null; then
-#         print_message "Successfully created build directory"
-        
-#         # Mount as tmpfs
-#         print_message "Mounting 'build' as tmpfs with 1GB size..."
-#         print_command "sudo mount -t tmpfs -o size=1G tmpfs build"
-#         if sudo mount -t tmpfs -o size=1G tmpfs build 2>/dev/null; then
-#             print_result 0 "Build directory created and mounted as tmpfs (1GB) for faster I/O"
-#             print_message "Warning: tmpfs is volatile; artifacts will be lost on unmount/reboot"
-#         else
-#             print_result 0 "Build directory created (tmpfs mount failed, using regular filesystem)"
-#             print_message "Continuing with regular filesystem build directory"
-#         fi
-#     else
-#         print_result 1 "Failed to create 'build' directory"
-#         EXIT_CODE=1
-#     fi
-# fi
-
-# evaluate_test_result_silent "Setup tmpfs build directory" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
-# mkdir -p "${BUILD_DIR}" "${BUILD_DIR}/tests" "${RESULTS_DIR}" "${BUILD_DIR}/tests/logs" "${BUILD_DIR}/tests/diagnostics"
 
 # Function to download Unity framework if missing
 download_unity_framework() {
@@ -164,14 +58,55 @@ download_unity_framework() {
             return 1
         fi
     else
-        print_message "Unity framework already exists in ${unity_framework_dir}."
+        print_message "Unity framework already exists in ${unity_framework_dir}"
         return 0
     fi
 }
 
-# Subtest: Check Unity Framework
+next_subtest
+print_subtest "Check CMake Availability"
+
+print_command "command -v cmake"
+if command -v cmake >/dev/null 2>&1; then
+    CMAKE_VERSION=$(cmake --version | head -n1 || true)
+    print_result 0 "CMake is available: ${CMAKE_VERSION}"
+else
+    print_result 1 "CMake is not available - required for compilation"
+    EXIT_CODE=1
+fi
+evaluate_test_result_silent "CMake availability" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
+
+next_subtest
+print_subtest "Check CMakeLists.txt"
+
+print_command "test -f cmake/CMakeLists.txt"
+if [[ -f "cmake/CMakeLists.txt" ]]; then
+    file_size=$(get_file_size "cmake/CMakeLists.txt")
+    formatted_size=$(format_file_size "${file_size}")
+    print_result 0 "CMakeLists.txt found in cmake directory (${formatted_size} bytes)"
+else
+    print_result 1 "CMakeLists.txt not found in cmake directory"
+    EXIT_CODE=1
+fi
+evaluate_test_result_silent "CMakeLists.txt check" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
+
+next_subtest
+print_subtest "Check Source Files"
+
+print_command "test -d src && test -f src/hydrogen.c"
+if [[ -d "src" ]] && [[ -f "src/hydrogen.c" ]]; then
+    src_count=$(find . -type f \( -path "./src/*" -o -path "./tests/unity/src/*" -o -path "./extras/*" -o -path "./examples/*" \) \( -name "*.c" -o -name "*.h" \) | wc -l || true) 
+    print_result 0 "Project search found ${src_count} source files"
+    TEST_NAME="${TEST_NAME} {BLUE}(${src_count} source files){RESET}"
+else
+    print_result 1 "Source files not found - src/hydrogen.c missing"
+    EXIT_CODE=1
+fi
+evaluate_test_result_silent "Source files check" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
+
 next_subtest
 print_subtest "Check Unity Framework"
+
 if download_unity_framework; then
     print_result 0 "Unity framework check passed."
 else
@@ -180,9 +115,9 @@ else
 fi
 evaluate_test_result_silent "Unity framework check" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-# Subtest: Configure with CMake
 next_subtest
 print_subtest "CMake Configuration"
+
 print_command "cd cmake"
 if safe_cd cmake; then
     print_command "cmake -S . -B ../build --preset default"
@@ -200,9 +135,9 @@ else
 fi
 evaluate_test_result_silent "CMake configuration" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-# Subtest: Check and Generate Payload
 next_subtest
 print_subtest "Check and Generate Payload"
+
 print_command "test -f payloads/payload.tar.br.enc"
 if [[ -f "payloads/payload.tar.br.enc" ]]; then
     payload_size=$(get_file_size "payloads/payload.tar.br.enc")
@@ -246,9 +181,9 @@ else
     fi
 fi
 
-# Subtest: Build all variants
 next_subtest
 print_subtest "Build All Variants"
+
 print_command "cd cmake"
 if safe_cd cmake; then
     print_command "cmake --build ../build --preset default --target all_variants"
@@ -266,9 +201,10 @@ else
 fi
 evaluate_test_result_silent "Build all variants" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-# Subtest: Verify default executable
+
 next_subtest
 print_subtest "Verify Default Executable"
+
 print_command "test -f hydrogen"
 if [[ -f "hydrogen" ]]; then
     exe_size=$(get_file_size "hydrogen")
@@ -280,9 +216,9 @@ else
 fi
 evaluate_test_result_silent "Verify default executable" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-# Subtest: Verify debug executable
 next_subtest
 print_subtest "Verify Debug Executable"
+
 print_command "test -f hydrogen_debug"
 if [[ -f "hydrogen_debug" ]]; then
     exe_size=$(get_file_size "hydrogen_debug")
@@ -294,9 +230,10 @@ else
 fi
 evaluate_test_result_silent "Verify debug executable" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-# Subtest: Verify performance executable
+
 next_subtest
 print_subtest "Verify Performance Executable"
+
 print_command "test -f hydrogen_perf"
 if [[ -f "hydrogen_perf" ]]; then
     exe_size=$(get_file_size "hydrogen_perf")
@@ -308,9 +245,9 @@ else
 fi
 evaluate_test_result_silent "Verify performance executable" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-# Subtest: Verify valgrind executable
 next_subtest
 print_subtest "Verify Valgrind Executable"
+
 print_command "test -f hydrogen_valgrind"
 if [[ -f "hydrogen_valgrind" ]]; then
     exe_size=$(get_file_size "hydrogen_valgrind")
@@ -322,9 +259,9 @@ else
 fi
 evaluate_test_result_silent "Verify valgrind executable" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-# Subtest: Verify coverage executable
 next_subtest
 print_subtest "Verify Coverage Executable"
+
 print_command "test -f hydrogen_coverage"
 if [[ -f "hydrogen_coverage" ]]; then
     exe_size=$(get_file_size "hydrogen_coverage")
@@ -336,9 +273,9 @@ else
 fi
 evaluate_test_result_silent "Verify coverage executable" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-# Subtest: Verify release and naked executables
 next_subtest
 print_subtest "Verify Release and Naked Executables"
+
 print_command "test -f hydrogen_release && test -f hydrogen_naked"
 if [[ -f "hydrogen_release" ]] && [[ -f "hydrogen_naked" ]]; then
     release_size=$(get_file_size "hydrogen_release")
@@ -352,9 +289,9 @@ else
 fi
 evaluate_test_result_silent "Verify release and naked executables" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-# Subtest: Build examples
 next_subtest
 print_subtest "Build Examples"
+
 print_command "cd cmake"
 if safe_cd cmake; then
     print_command "cmake --build ../build --preset default --target all_examples"
@@ -372,9 +309,9 @@ else
 fi
 evaluate_test_result_silent "Build examples" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-# Subtest: Verify examples executables
 next_subtest
 print_subtest "Verify Examples Executables"
+
 print_command "test -f examples/C/auth_code_flow && test -f examples/C/client_credentials && test -f examples/C/password_flow"
 if [[ -f "examples/C/auth_code_flow" ]] && [[ -f "examples/C/client_credentials" ]] && [[ -f "examples/C/password_flow" ]]; then
     auth_size=$(get_file_size "examples/C/auth_code_flow")
@@ -390,9 +327,9 @@ else
 fi
 evaluate_test_result_silent "Verify examples executables" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-# Subtest: Verify coverage executable has payload
 next_subtest
 print_subtest "Verify Coverage Executable Payload"
+
 print_command "test -f hydrogen_coverage && grep -q '<<< HERE BE ME TREASURE >>>' hydrogen_coverage"
 if [[ -f "hydrogen_coverage" ]]; then
     # Check if the coverage binary has payload embedded using the correct marker
@@ -410,9 +347,9 @@ else
 fi
 evaluate_test_result_silent "Verify coverage executable payload" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-# Subtest: Verify release executable has payload
 next_subtest
 print_subtest "Verify Release Executable Payload"
+
 print_command "test -f hydrogen_release && grep -q '<<< HERE BE ME TREASURE >>>' hydrogen_release"
 if [[ -f "hydrogen_release" ]]; then
     # Check if the release binary has payload embedded using the correct marker

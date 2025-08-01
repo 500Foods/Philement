@@ -1,11 +1,12 @@
 #!/bin/bash
 
 # Test: Code Size Analysis
-# Performs comprehensive code size analysis including:
-# - Source code analysis and line counting
-# - Large file detection
-# - Code line count analysis with cloc
-# - File count summary
+# Performs code size analysis and runs cloc ()
+
+# FUNCTIONS
+# cleanup_temp_files()
+# should_exclude_file()
+# show_top_files_by_type()
 
 # CHANGELOG
 # 3.0.0 - 2025-07-30 - Overhaul #1
@@ -26,57 +27,11 @@ setup_test_environment
 readonly MAX_SOURCE_LINES=1000
 readonly LARGE_FILE_THRESHOLD="25k"
 
-# Default exclude patterns for linting (can be overridden by .lintignore)
-# Only declare if not already defined (prevents readonly variable redeclaration when sourced)
-if [[ -z "${LINT_EXCLUDES:-}" ]]; then
-    readonly LINT_EXCLUDES=(
-        "build/*"
-    )
-fi
-
 # Create temporary files
 SOURCE_FILES_LIST=$(mktemp)
 LARGE_FILES_LIST=$(mktemp)
 LINE_COUNT_FILE=$(mktemp)
 
-# Cleanup function
-cleanup_temp_files() {
-    rm -f "${SOURCE_FILES_LIST}" "${LARGE_FILES_LIST}" "${LINE_COUNT_FILE}"
-}
-
-# Trap cleanup on exit
-trap cleanup_temp_files EXIT
-
-# Check if a file should be excluded from linting
-should_exclude_file() {
-    local file="$1"
-    local lint_ignore=".lintignore"
-    local rel_file="${file#./}"  # Remove leading ./
-    
-    # Check .lintignore file first if it exists
-    if [[ -f "${lint_ignore}" ]]; then
-        while IFS= read -r pattern; do
-            [[ -z "${pattern}" || "${pattern}" == \#* ]] && continue
-            # Remove trailing /* if present for directory matching
-            local clean_pattern="${pattern%/\*}"
-            
-            # Check if file matches pattern exactly or is within a directory pattern
-            if [[ "${rel_file}" == "${pattern}" ]] || [[ "${rel_file}" == "${clean_pattern}"/* ]]; then
-                return 0 # Exclude
-            fi
-        done < "${lint_ignore}"
-    fi
-    
-    # Check default excludes
-    for pattern in "${LINT_EXCLUDES[@]}"; do
-        local clean_pattern="${pattern%/\*}"
-        if [[ "${rel_file}" == "${pattern}" ]] || [[ "${rel_file}" == "${clean_pattern}"/* ]]; then
-            return 0 # Exclude
-        fi
-    done
-    
-    return 1 # Do not exclude
-}
 
 # Subtest 1: Linting Configuration Information
 next_subtest

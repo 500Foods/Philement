@@ -520,8 +520,6 @@ print_test_suite_header() {
     local test_abbr="$2"
     local test_number="$3"
     local test_version="$4"
-    local script_dir
-    script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
     
     # Start the test timer
     start_test_timer
@@ -584,10 +582,7 @@ EOF
 EOF
     
     # Use tables executable to render the header
-    local tables_exe="${script_dir}/tables"
-    if [[ -f "${tables_exe}" ]]; then
-        "${tables_exe}" "${layout_json}" "${data_json}" 2>/dev/null
-    fi
+    "${TABLES_EXTERNAL}" "${layout_json}" "${data_json}" 2>/dev/null
     
     # Clean up temporary files
     rm -rf "${temp_dir}" 2>/dev/null
@@ -715,13 +710,13 @@ EOF
     
     # Use tables executable to render the completion table
     # shellcheck disable=SC2154 # LIB_DIR defined externally in framework.sh    
-    local tables_exe="${LIB_DIR}/tables"
-    if [[ -f "${tables_exe}" ]]; then
-        "${tables_exe}" "${layout_json}" "${data_json}" 2>/dev/null
-    fi
+    "${TABLES_EXTERNAL}" "${layout_json}" "${data_json}" 2>/dev/null
     
     # Clean up temporary files
     # rm -rf "${temp_dir}" 2>/dev/null
+
+    # Let's end up here so the next script doesn't have a fit
+    popd >/dev/null 2>&1 || return
 }
 
 # Function to print individual test items in a summary
