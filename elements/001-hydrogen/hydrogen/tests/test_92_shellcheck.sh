@@ -73,13 +73,13 @@ if command -v shellcheck >/dev/null 2>&1; then
                 OTHER_SHELL_FILES+=("${file}")
             fi
         fi
-    done < <(find . -type f -name "*.sh")
+    done < <(find . -type f -name "*.sh" || true)
 
     SHELL_COUNT=${#SHELL_FILES[@]}
     SHELL_ISSUES=0
     TEMP_OUTPUT=$(mktemp)
 
-    if [ "${SHELL_COUNT}" -gt 0 ]; then
+    if [[ "${SHELL_COUNT}" -gt 0 ]]; then
         print_message "Running shellcheck on ${SHELL_COUNT} shell scripts with caching..."
         TEST_NAME="${TEST_NAME} {BLUE}(shellheck: ${SHELL_COUNT} files){RESET}"
 
@@ -91,7 +91,7 @@ if command -v shellcheck >/dev/null 2>&1; then
         declare -A file_hashes
         while read -r hash file; do
             file_hashes["${file}"]="${hash}"
-        done < <(md5sum "${SHELL_FILES[@]}")
+        done < <(md5sum "${SHELL_FILES[@]}" || true)
 
         cached_files=0
         processed_scripts=0
@@ -102,7 +102,7 @@ if command -v shellcheck >/dev/null 2>&1; then
             # Flatten path for uniqueness (replace / with _)
             flat_path=$(echo "${file}" | tr '/' '_')
             cache_file="${CACHE_DIR}/${flat_path}_${content_hash}"
-            if [ -f "${cache_file}" ]; then
+            if [[ -f "${cache_file}" ]]; then
                 ((cached_files++))
                 cat "${cache_file}" >> "${TEMP_OUTPUT}" 2>&1
             else
@@ -117,7 +117,8 @@ if command -v shellcheck >/dev/null 2>&1; then
         process_script() {
             local file="$1"
             local content_hash="$2"
-            local flat_path=$(echo "${file}" | tr '/' '_')
+            local flat_path
+            flat_path=$(echo "${file}" | tr '/' '_')
             local cache_file="${CACHE_DIR}/${flat_path}_${content_hash}"
             shellcheck "${file}" > "${cache_file}" 2>&1
             cat "${cache_file}"
@@ -126,23 +127,24 @@ if command -v shellcheck >/dev/null 2>&1; then
         export -f process_script  # Export for subshells
 
         # Process non-cached files in parallel, passing file and hash
-        if [ ${processed_scripts} -gt 0 ]; then
+        # shellcheck disable=SC2016 # Script within a script is tripping up shellcheck
+        if [[ "${processed_scripts}" -gt 0 ]]; then
             for file in "${to_process[@]}"; do
                 printf '%s %s\n' "${file}" "${file_hashes[${file}]}"
             done | xargs -n 2 -P "${CORES}" bash -c 'process_scripts "$0" "$1"' >> "${TEMP_OUTPUT}" 2>&1
         fi
 
         # Filter output
-        sed "s|$(pwd)/||g; s|tests/||g" "${TEMP_OUTPUT}" > "${TEMP_OUTPUT}.filtered"
+        sed "s|$(pwd)/||g; s|tests/||g" "${TEMP_OUTPUT}" > "${TEMP_OUTPUT}.filtered" || true
 
         SHELL_ISSUES=$(wc -l < "${TEMP_OUTPUT}.filtered")
-        if [ "${SHELL_ISSUES}" -gt 0 ]; then
-            FILES_WITH_ISSUES=$(cut -d: -f1 "${TEMP_OUTPUT}.filtered" | sort -u | wc -l)
+        if [[ "${SHELL_ISSUES}" -gt 0 ]]; then
+            FILES_WITH_ISSUES=$(cut -d: -f1 "${TEMP_OUTPUT}.filtered" | sort -u | wc -l || true)
             print_message "shellcheck found ${SHELL_ISSUES} issues in ${FILES_WITH_ISSUES} files:"
             while IFS= read -r line; do
                 print_output "${line}"
-            done < <(head -n "${LINT_OUTPUT_LIMIT}" "${TEMP_OUTPUT}.filtered")
-            if [ "${SHELL_ISSUES}" -gt "${LINT_OUTPUT_LIMIT}" ]; then
+            done < <(head -n "${LINT_OUTPUT_LIMIT}" "${TEMP_OUTPUT}.filtered" || true)
+            if [[ "${SHELL_ISSUES}" -gt "${LINT_OUTPUT_LIMIT}" ]]; then
                 print_message "Output truncated. Showing ${LINT_OUTPUT_LIMIT} of ${SHELL_ISSUES} lines."
             fi
         fi
@@ -150,7 +152,7 @@ if command -v shellcheck >/dev/null 2>&1; then
         rm -f "${TEMP_OUTPUT}" "${TEMP_OUTPUT}.filtered"
     fi
 
-    if [ "${SHELL_ISSUES}" -eq 0 ]; then
+    if [[ "${SHELL_ISSUES}" -eq 0 ]]; then
         print_result 0 "No issues in ${SHELL_COUNT} shell files"
         ((PASS_COUNT++))
     else
@@ -194,7 +196,7 @@ process_file() {
 
 export -f process_file
 
-if [ ${#SHELL_FILES[@]} -gt 0 ]; then
+if [[ ${#SHELL_FILES[@]} -gt 0 ]]; then
     print_message "Analyzing ${SHELL_COUNT} shell scripts for shellcheck directives..."
 
     # Create a temporary directory for per-file logs
@@ -211,14 +213,14 @@ if [ ${#SHELL_FILES[@]} -gt 0 ]; then
         ((SHELLCHECK_DIRECTIVE_WITH_JUSTIFICATION += with_just))
         ((SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION += without_just))
         # Collect any no-justification messages
-        if [ -f "${file}.nojust.log" ]; then
+        if [[ -f "${file}.nojust.log" ]]; then
             cat "${file}.nojust.log" >> "${tmp_dir}/nojust.log"
             rm "${file}.nojust.log"
         fi
     done < "${tmp_dir}/results"
 
     # Print collected no-justification messages
-    if [ -f "${tmp_dir}/nojust.log" ]; then
+    if [[ -f "${tmp_dir}/nojust.log" ]]; then
         while IFS= read -r line; do
             print_output "${line}"
         done < "${tmp_dir}/nojust.log"
@@ -228,7 +230,7 @@ if [ ${#SHELL_FILES[@]} -gt 0 ]; then
     print_message "INFO: Directives with justification: ${SHELLCHECK_DIRECTIVE_WITH_JUSTIFICATION}"
     print_message "INFO: Directives without justification: ${SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION}"
 
-    if [ "${SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION}" -eq 0 ]; then
+    if [[ "${SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION}" -eq 0 ]]; then
         print_result 0 "All ${SHELLCHECK_DIRECTIVE_TOTAL} shellcheck directives have justifications"
         ((PASS_COUNT++))
     else

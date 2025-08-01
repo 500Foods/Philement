@@ -18,9 +18,6 @@ TEST_VERSION="3.0.0"
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
-# Test variables
-TEST_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
 # Default exclude patterns for linting (can be overridden by .lintignore)
 # Only declare if not already defined (prevents readonly variable redeclaration when sourced)
 if [[ -z "${LINT_EXCLUDES:-}" ]]; then
@@ -36,7 +33,7 @@ should_exclude_file() {
     local rel_file="${file#./}"  # Remove leading ./
     
     # Check .lintignore file first if it exists
-    if [ -f "${lint_ignore}" ]; then
+    if [[ -f "${lint_ignore}" ]]; then
         while IFS= read -r pattern; do
             [[ -z "${pattern}" || "${pattern}" == \#* ]] && continue
             # Remove trailing /* if present for directory matching
@@ -71,11 +68,11 @@ if command -v jq >/dev/null 2>&1; then
         if [[ "${file}" != *"/tests/unity/framework/"* ]] && ! should_exclude_file "${file}"; then
             JSON_FILES+=("${file}")
         fi
-    done < <(find . -type f -name "*.json")
+    done < <(find . -type f -name "*.json" || true)
     
     # Also include the intentionally broken test JSON file
     INTENTIONAL_ERROR_FILE="./tests/configs/hydrogen_test_json.json"
-    if [ -f "${INTENTIONAL_ERROR_FILE}" ]; then
+    if [[ -f "${INTENTIONAL_ERROR_FILE}" ]]; then
         JSON_FILES+=("${INTENTIONAL_ERROR_FILE}")
     fi
     
@@ -83,7 +80,7 @@ if command -v jq >/dev/null 2>&1; then
     JSON_ISSUES=0
     EXPECTED_ERRORS=0
     
-    if [ "${JSON_COUNT}" -gt 0 ]; then
+    if [[ "${JSON_COUNT}" -gt 0 ]]; then
         print_message "Checking ${JSON_COUNT} JSON files..."
         TEST_NAME="${TEST_NAME} {BLUE}(jsonlint: ${JSON_COUNT} files){RESET}"
 
@@ -100,8 +97,8 @@ if command -v jq >/dev/null 2>&1; then
         done
     fi
     
-    if [ "${JSON_ISSUES}" -eq 0 ]; then
-        if [ "${EXPECTED_ERRORS}" -gt 0 ]; then
+    if [[ "${JSON_ISSUES}" -eq 0 ]]; then
+        if [[ "${EXPECTED_ERRORS}" -gt 0 ]]; then
             print_result 0 "Found ${EXPECTED_ERRORS} expected error(s) and no unexpected issues in ${JSON_COUNT} JSON files"
         else
             print_result 0 "No issues in ${JSON_COUNT} JSON files"
