@@ -154,8 +154,6 @@ verify_core_file() {
             found=1
             break
         fi
-        
-        # sleep 0.1
     done
     
     if [[ "${found}" -eq 1 ]]; then
@@ -270,8 +268,6 @@ wait_for_crash_completion() {
         if ! ps -p "${pid}" > /dev/null 2>&1; then
             return 0
         fi
-        
-        # sleep 0.1
     done
 }
 
@@ -315,8 +311,6 @@ run_crash_test_parallel() {
             startup_complete=true
             break
         fi
-        
-        # sleep 0.1
     done
     
     if [[ "${startup_complete}" != "true" ]] || ! ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
@@ -497,8 +491,6 @@ run_crash_test_with_build() {
             print_message "Startup completed in ${elapsed}s"
             break
         fi
-        
-        # sleep 0.1
     done
     
     # Verify server is running and startup completed

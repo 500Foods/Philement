@@ -188,7 +188,7 @@ print_subtest "Start second instance immediately (SO_REUSEADDR test)"
 # Start second instance immediately using lifecycle.sh
 SECOND_LOG="${RESULTS_DIR}/second_instance_${TIMESTAMP}.log"
 if start_hydrogen_with_pid "${CONFIG_FILE}" "${SECOND_LOG}" 15 "${HYDROGEN_BIN}" "SECOND_PID" && [[ -n "${SECOND_PID}" ]]; then
-    print_result 0 "Second instance started successfully (PID: ${SECOND_PID}) - SO_REUSEADDR working!"
+    print_result 0 "Second instance started successfully (PID: ${SECOND_PID}) - SO_REUSEADDR applied successfully"
     print_message "Immediate rebinding after shutdown works correctly"
     ((PASS_COUNT++))
     
@@ -211,7 +211,6 @@ if [[ -n "${SECOND_PID}" ]] && [[ "${SECOND_PID}" != "0" ]]; then
         # Brief wait for graceful shutdown
         wait_count=0
         while [[ "${wait_count}" -lt 10 ]] && ps -p "${SECOND_PID}" > /dev/null 2>&1; do
-            # sleep 0.2
             ((wait_count++))
         done
         if ps -p "${SECOND_PID}" > /dev/null 2>&1; then
