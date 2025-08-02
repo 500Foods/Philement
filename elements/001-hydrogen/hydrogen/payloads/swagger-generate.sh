@@ -20,7 +20,6 @@
 # Display script information
 echo "swagger-generate.sh version 1.2.0"
 echo "OpenAPI JSON Generator for Hydrogen REST API"
-echo ""
 
 # Terminal formatting codes
 readonly GREEN='\033[0;32m'
@@ -456,13 +455,39 @@ extract_api_info() {
             echo -e "  ${GREEN}✓ Found contact email: ${NC}${contact}"
         fi
         
-        # Extract license
-        local license
+        # Extract license - handle both SPDX identifiers and name/url pairs
+        local license license_url
         license=$(grep -E "//@ swagger:license.name" "${api_utils_file}" | sed -E 's/.*swagger:license.name[[:space:]]+([^$]*)/\1/' || echo "" || true)
+        license_url=$(grep -E "//@ swagger:license.url" "${api_utils_file}" | sed -E 's/.*swagger:license.url[[:space:]]+([^$]*)/\1/' || echo "" || true)
+        
         if [[ -n "${license}" ]]; then
-            jq --arg name "${license}" '.license = {"name": $name}' "${api_info_file}" > "${api_info_file}.tmp" && \
+            # Check if this is a standard SPDX license identifier
+            case "${license}" in
+                "MIT"|"Apache-2.0"|"GPL-3.0"|"BSD-3-Clause"|"BSD-2-Clause"|"ISC"|"Unlicense"|"GPL-2.0"|"LGPL-3.0"|"LGPL-2.1")
+                    # Use both name and identifier for standard licenses to ensure compatibility
+                    jq --arg name "${license}" --arg identifier "${license}" '.license = {"name": $name, "identifier": $identifier}' "${api_info_file}" > "${api_info_file}.tmp" && \
+                        mv "${api_info_file}.tmp" "${api_info_file}"
+                    echo -e "  ${GREEN}✓ Found SPDX license: ${NC}${license}"
+                    ;;
+                *)
+                    # For non-standard or custom licenses, use name and url
+                    if [[ -n "${license_url}" ]]; then
+                        jq --arg name "${license}" --arg url "${license_url}" '.license = {"name": $name, "url": $url}' "${api_info_file}" > "${api_info_file}.tmp" && \
+                            mv "${api_info_file}.tmp" "${api_info_file}"
+                        echo -e "  ${GREEN}✓ Found license: ${NC}${license} (${license_url})"
+                    else
+                        # Default to MIT with both name and identifier if no URL provided
+                        jq '.license = {"name": "MIT", "identifier": "MIT"}' "${api_info_file}" > "${api_info_file}.tmp" && \
+                            mv "${api_info_file}.tmp" "${api_info_file}"
+                        echo -e "  ${YELLOW}${WARN} License name without URL, defaulting to MIT${NC}"
+                    fi
+                    ;;
+            esac
+        else
+            # Default to MIT license if none specified
+            jq '.license = {"name": "MIT", "identifier": "MIT"}' "${api_info_file}" > "${api_info_file}.tmp" && \
                 mv "${api_info_file}.tmp" "${api_info_file}"
-            echo -e "  ${GREEN}✓ Found license: ${NC}${license}"
+            echo -e "  ${YELLOW}${WARN} No license found, defaulting to MIT${NC}"
         fi
         
         # Clear the default servers first to prevent duplicates
@@ -530,6 +555,30 @@ assemble_openapi_json() {
     echo -e "${GREEN}${INFO} Documented endpoints: ${NC}${endpoint_count}"
 }
 
+# Function to validate the generated OpenAPI specification
+validate_openapi_spec() {
+    print_header "Validating OpenAPI Specification"
+    
+    # Check if swagger-cli is available
+    if ! command -v swagger-cli &> /dev/null; then
+        echo -e "${YELLOW}${WARN} swagger-cli not found, skipping validation${NC}"
+        echo -e "${CYAN}${INFO} To install swagger-cli: ${NC}npm install -g swagger-cli"
+        return 0
+    fi
+    
+    echo -e "${CYAN}${INFO} Running swagger-cli validation...${NC}"
+    
+    # Run swagger-cli validate and capture the result
+    if swagger-cli validate "swagger.json" &>/dev/null; then
+        echo -e "${GREEN}${PASS} ${BOLD}OpenAPI specification validation passed!${NC}"
+        return 0
+    else
+        echo -e "${RED}${FAIL} ${BOLD}OpenAPI specification validation failed!${NC}"
+        echo -e "${YELLOW}${INFO} Please check the validation errors above and update the annotations accordingly.${NC}"
+        return 1
+    fi
+}
+
 # Function to cleanup temporary files
 cleanup_temp_files() {
     echo -e "${CYAN}${INFO} Cleaning up temporary files...${NC}"
@@ -560,6 +609,9 @@ main() {
     extract_api_info
     find_endpoints
     assemble_openapi_json
+    
+    # Validate the generated specification
+    validate_openapi_spec
     
     # Clean up temporary files
     cleanup_temp_files
