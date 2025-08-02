@@ -43,7 +43,7 @@ commands=(
     "grep" "sort" "bc" "jq" "awk" "sed" "xargs" "nproc" "timeout" "date"
     "cmake" "curl" "websocat" 
     "git" "md5sum" "cloc"
-    "cppcheck" "shellcheck" "markdownlint" "eslint" "stylelint" "htmlhint" "jsonlint"
+    "cppcheck" "shellcheck" "markdownlint" "eslint" "stylelint" "htmlhint" "jsonlint" "swagger-cli"
     "Oh.sh" "tables" "coverage_table.sh"
 )
 
