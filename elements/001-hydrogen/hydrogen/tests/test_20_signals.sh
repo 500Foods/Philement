@@ -40,8 +40,6 @@ STARTUP_TIMEOUT=5
 SHUTDOWN_TIMEOUT=10
 SIGNAL_TIMEOUT=15
 
-# Validate Hydrogen Binary
-next_subtest
 print_subtest "Locate Hydrogen Binary"
 
 if find_hydrogen_binary "${PROJECT_DIR}" "HYDROGEN_BIN"; then
@@ -53,8 +51,6 @@ else
     EXIT_CODE=1
 fi
 
-# Validate configuration file exists
-next_subtest
 print_subtest "Validate Test Configuration File"
 
 if validate_config_file "${TEST_CONFIG}"; then
@@ -178,17 +174,17 @@ verify_config_dump() {
     done
 }
 
-# Test: SIGINT Signal Handling
-next_subtest
 print_subtest "SIGINT Signal Handling (Ctrl+C)"
-
 print_command "$(basename "${HYDROGEN_BIN}") $(basename "${TEST_CONFIG}")"
+
 "${HYDROGEN_BIN}" "${TEST_CONFIG}" > "${LOG_FILE_SIGINT}" 2>&1 &
 HYDROGEN_PID=$!
 
 if wait_for_signal_startup "${LOG_FILE_SIGINT}" "${STARTUP_TIMEOUT}"; then
+
     print_message "Hydrogen started successfully (PID: ${HYDROGEN_PID})"
     print_command "kill -SIGINT ${HYDROGEN_PID}"
+
     kill -SIGINT "${HYDROGEN_PID}"
     
     if wait_for_signal_shutdown "${HYDROGEN_PID}" "${SHUTDOWN_TIMEOUT}" "${LOG_FILE_SIGINT}"; then
@@ -205,17 +201,17 @@ else
     EXIT_CODE=1
 fi
 
-# Test: SIGTERM Signal Handling
-next_subtest
 print_subtest "SIGTERM Signal Handling (Terminate)"
-
 print_command "$(basename "${HYDROGEN_BIN}") $(basename "${TEST_CONFIG}")"
+
 "${HYDROGEN_BIN}" "${TEST_CONFIG}" > "${LOG_FILE_SIGTERM}" 2>&1 &
 HYDROGEN_PID=$!
 
 if wait_for_signal_startup "${LOG_FILE_SIGTERM}" "${STARTUP_TIMEOUT}"; then
+
     print_message "Hydrogen started successfully (PID: ${HYDROGEN_PID})"
     print_command "kill -SIGTERM ${HYDROGEN_PID}"
+
     kill -SIGTERM "${HYDROGEN_PID}"
     
     if wait_for_signal_shutdown "${HYDROGEN_PID}" "${SHUTDOWN_TIMEOUT}" "${LOG_FILE_SIGTERM}"; then
@@ -232,17 +228,17 @@ else
     EXIT_CODE=1
 fi
 
-# Test: SIGHUP Signal Handling (Restart)
-next_subtest
 print_subtest "SIGHUP Signal Handling (Single Restart)"
-
 print_command "$(basename "${HYDROGEN_BIN}") $(basename "${TEST_CONFIG}")"
+
 "${HYDROGEN_BIN}" "${TEST_CONFIG}" > "${LOG_FILE_SIGHUP}" 2>&1 &
 HYDROGEN_PID=$!
 
 if wait_for_signal_startup "${LOG_FILE_SIGHUP}" "${STARTUP_TIMEOUT}"; then
+
     print_message "Hydrogen started successfully (PID: ${HYDROGEN_PID})"
     print_command "kill -SIGHUP ${HYDROGEN_PID}"
+
     kill -SIGHUP "${HYDROGEN_PID}"
     
     # Wait for restart signal to be logged
@@ -269,24 +265,25 @@ else
     EXIT_CODE=1
 fi
 
-# Test Case 4: Multiple SIGHUP Restarts
-next_subtest
 print_subtest "SIGHUP Signal Handling (Many Restarts)"
 print_message "Testing multiple SIGHUP restarts (count: ${RESTART_COUNT})"
-
 print_command "$(basename "${HYDROGEN_BIN}") $(basename "${TEST_CONFIG}")"
+
 "${HYDROGEN_BIN}" "${TEST_CONFIG}" > "${LOG_FILE_RESTART}" 2>&1 &
 HYDROGEN_PID=$!
 
 if wait_for_signal_startup "${LOG_FILE_RESTART}" "${STARTUP_TIMEOUT}"; then
+
     print_message "Hydrogen started successfully (PID: ${HYDROGEN_PID})"
     
     restart_success=0
     current_count=1
     
     while [[ "${current_count}" -le "${RESTART_COUNT}" ]]; do
+
         print_message "Sending SIGHUP #${current_count} of ${RESTART_COUNT}..."
         print_command "kill -SIGHUP ${HYDROGEN_PID}"
+
         kill -SIGHUP "${HYDROGEN_PID}" || true
         
         # Wait for restart signal to be logged
@@ -326,17 +323,17 @@ else
     EXIT_CODE=1
 fi
 
-# Test : SIGUSR1 Signal Handling (Crash Dump)
-next_subtest
 print_subtest "SIGUSR1 Signal Handling (Crash Dump)"
-
 print_command "$(basename "${HYDROGEN_BIN}") $(basename "${TEST_CONFIG}")"
+
 "${HYDROGEN_BIN}" "${TEST_CONFIG}" > "${LOG_FILE_SIGUSR1}" 2>&1 &
 HYDROGEN_PID=$!
 
 if wait_for_signal_startup "${LOG_FILE_SIGUSR1}" "${STARTUP_TIMEOUT}"; then
+
     print_message "Hydrogen started successfully (PID: ${HYDROGEN_PID})"
     print_command "kill -SIGUSR1 ${HYDROGEN_PID}"
+
     kill -SIGUSR1 "${HYDROGEN_PID}"
 
     print_message "Looking for ${HYDROGEN_BIN}.core.${HYDROGEN_PID}"
@@ -359,17 +356,17 @@ else
     EXIT_CODE=1
 fi
 
-# Test : SIGUSR2 Signal Handling (Config Dump)
-next_subtest
 print_subtest "SIGUSR2 Signal Handling (Config Dump)"
-
 print_command "$(basename "${HYDROGEN_BIN}") $(basename "${TEST_CONFIG}")"
+
 "${HYDROGEN_BIN}" "${TEST_CONFIG}" > "${LOG_FILE_SIGUSR2}" 2>&1 &
 HYDROGEN_PID=$!
 
 if wait_for_signal_startup "${LOG_FILE_SIGUSR2}" "${STARTUP_TIMEOUT}"; then
+
     print_message "Hydrogen started successfully (PID: ${HYDROGEN_PID})"
     print_command "kill -SIGUSR2 ${HYDROGEN_PID}"
+
     kill -SIGUSR2 "${HYDROGEN_PID}"
     
     if verify_config_dump "${LOG_FILE_SIGUSR2}" "${SIGNAL_TIMEOUT}"; then
@@ -389,19 +386,19 @@ else
     EXIT_CODE=1
 fi
 
-# Test: Multiple Signal Handling
-next_subtest
 print_subtest "Multiple Signal Handling"
 print_message "Testing multiple signals sent simultaneously"
-
 print_command "$(basename "${HYDROGEN_BIN}") $(basename "${TEST_CONFIG}")"
+
 "${HYDROGEN_BIN}" "${TEST_CONFIG}" > "${LOG_FILE_MULTI}" 2>&1 &
 HYDROGEN_PID=$!
 
 if wait_for_signal_startup "${LOG_FILE_MULTI}" "${STARTUP_TIMEOUT}"; then
+
     print_message "Hydrogen started successfully (PID: ${HYDROGEN_PID})"
     print_message "Sending multiple signals (SIGTERM, SIGINT)..."
     print_command "kill -SIGTERM ${HYDROGEN_PID} && kill -SIGINT ${HYDROGEN_PID}"
+    
     kill -SIGTERM "${HYDROGEN_PID}"
     kill -SIGINT "${HYDROGEN_PID}"
     

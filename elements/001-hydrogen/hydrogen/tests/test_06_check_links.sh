@@ -29,8 +29,6 @@ setup_test_environment
 SITEMAP_SCRIPT="${LIB_DIR}/github-sitemap.sh"
 TARGET_README="README.md"
 
-# Subtest 1: Validate sitemap script availability
-next_subtest
 print_subtest "Validate GitHub Sitemap Script"
 
 if [[ ! -f "${SITEMAP_SCRIPT}" ]]; then
@@ -56,8 +54,6 @@ if [[ "${EXIT_CODE}" -ne 0 ]]; then
     exit "${EXIT_CODE}"
 fi
 
-# Subtest 2: Run markdown link check
-next_subtest
 print_subtest "Execute Markdown Link Check"
 
 # Create temporary file to capture output
@@ -89,8 +85,6 @@ else
     EXIT_CODE=1
 fi
 
-# Subtest 3: Parse and validate missing links count
-next_subtest
 print_subtest "Validate Missing Links Count"
 
 # Parse the output to extract counts from the tables
@@ -155,8 +149,6 @@ else
     EXIT_CODE=1
 fi
 
-# Subtest 4: Parse and validate orphaned files count
-next_subtest
 print_subtest "Validate Orphaned Files Count"
 
 # Try to extract orphaned files count using corner-detection algorithm

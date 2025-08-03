@@ -29,8 +29,6 @@ STARTUP_TIMEOUT=10    # Seconds to wait for startup
 SHUTDOWN_TIMEOUT=90   # Hard limit on shutdown time
 SHUTDOWN_ACTIVITY_TIMEOUT=5  # Timeout if no new log activity
 
-# Validate Hydrogen Binary
-next_subtest
 print_subtest "Locate Hydrogen Binary"
 
 # shellcheck disable=SC2153  # HYDROGEN_BIN is set by find_hydrogen_binary function
@@ -43,9 +41,8 @@ else
     EXIT_CODE=1
 fi
 
-# Validate configuration file exists
-next_subtest
 print_subtest "Validate Configuration File"
+
 if validate_config_file "${CONFIG_FILE}"; then
     print_message "Using config: $(convert_to_relative_path "${CONFIG_FILE}" || true)"
     ((PASS_COUNT++))
@@ -53,9 +50,8 @@ else
     EXIT_CODE=1
 fi
 
-# Create output directories
-next_subtest
 print_subtest "Create Output Directories"
+
 if setup_output_directories "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOG_FILE}" "${DIAG_TEST_DIR}"; then
     ((PASS_COUNT++))
 else
@@ -82,10 +78,10 @@ set_validation_test_environment
 config_name="env_validation"
 run_lifecycle_test "${CONFIG_FILE}" "${config_name}" "${DIAG_TEST_DIR}" "${STARTUP_TIMEOUT}" "${SHUTDOWN_TIMEOUT}" "${SHUTDOWN_ACTIVITY_TIMEOUT}" "${HYDROGEN_BIN}" "${LOG_FILE}" "PASS_COUNT" "EXIT_CODE"
 
-# Reset environment variables
-next_subtest
 print_subtest "Reset Environment Variables"
+
 reset_environment_variables
+
 print_result 0 "All environment variables reset"
 ((PASS_COUNT++))
 

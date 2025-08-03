@@ -36,7 +36,6 @@ export TEST_NAME TEST_ABBR TEST_NUMBER TEST_VERSION
 source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_orchestration_environment
 
-next_subtest
 print_subtest "Verifying command/version availability"
 
 commands=(

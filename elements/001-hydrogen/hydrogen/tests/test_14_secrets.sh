@@ -23,8 +23,6 @@ TEST_VERSION="5.0.0"
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
-# Subtest: Check PAYLOAD_LOCK
-next_subtest
 print_subtest "Payload LOCK Ennvironment Variable Present"
 
 if check_env_var "PAYLOAD_LOCK" "${PAYLOAD_LOCK}"; then
@@ -35,8 +33,6 @@ else
     EXIT_CODE=1
 fi
 
-# Subtest: RSA Key Format Validation
-next_subtest
 print_subtest "RSA Key Format Validation For Payload Lock"
 
 if [[ -n "${PAYLOAD_LOCK}" ]]; then
@@ -50,8 +46,6 @@ if [[ -n "${PAYLOAD_LOCK}" ]]; then
     fi
 fi
 
-# Subtest: Check PAYLOAD_KEY
-next_subtest
 print_subtest "Payload KEY Ennvironment Variable Present"
 
 if check_env_var "PAYLOAD_KEY" "${PAYLOAD_KEY}"; then
@@ -62,8 +56,6 @@ else
     EXIT_CODE=1
 fi
 
-# Subtest: RSA Key Format Validation
-next_subtest
 print_subtest "RSA Key Format Validation For Payload Lock"
 
 if [[ -n "${PAYLOAD_KEY}" ]]; then
@@ -77,8 +69,6 @@ if [[ -n "${PAYLOAD_KEY}" ]]; then
     fi
 fi
 
-# Subtest: Check WEBSOCKET_KEY
-next_subtest
 print_subtest "WebSocket KEY Ennvironment Variable Present"
 
 if check_env_var "WEBSOCKET_KEY" "${PAYLOAD_KEY}"; then

@@ -27,37 +27,7 @@ setup_test_environment
     "build/*"
 )
 
-# Check if a file should be excluded from linting
-should_exclude_file() {
-    local file="$1"
-    local lint_ignore=".lintignore"
-    local rel_file="${file#./}"
-
-    # Check .lintignore
-    if [[ -f "${lint_ignore}" ]]; then
-        while IFS= read -r pattern; do
-            [[ -z "${pattern}" || "${pattern}" == \#* ]] && continue
-            clean_pattern="${pattern%/*}"
-            if [[ "${rel_file}" == "${pattern}" || "${rel_file}" == "${clean_pattern}"/* ]]; then
-                return 0
-            fi
-        done < "${lint_ignore}"
-    fi
-
-    # Check default excludes
-    for pattern in "${LINT_EXCLUDES[@]}"; do
-        clean_pattern="${pattern%/*}"
-        if [[ "${rel_file}" == "${pattern}" || "${rel_file}" == "${clean_pattern}"/* ]]; then
-            return 0
-        fi
-    done
-    return 1
-}
-
-# Subtest 1: Lint Shell scripts
-next_subtest
 print_subtest "Shell Script Linting (shellcheck)"
-
 print_message "Detected ${CORES} CPU cores for parallel processing"
 
 if command -v shellcheck >/dev/null 2>&1; then
@@ -165,10 +135,7 @@ else
     ((PASS_COUNT++))
 fi
 
-# Subtest 2: Shellcheck Exception Justification Check
-next_subtest
 print_subtest "Shellcheck Exception Justification Check"
-
 print_message "Checking for shellcheck directives in shell scripts..."
 
 SHELLCHECK_DIRECTIVE_TOTAL=0
