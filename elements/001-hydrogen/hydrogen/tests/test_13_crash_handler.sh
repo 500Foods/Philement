@@ -30,8 +30,6 @@ STARTUP_TIMEOUT=10
 CRASH_TIMEOUT=30
 # SHUTDOWN_ACTIVITY_TIMEOUT=5  
 
-# Validate configuration file exists
-next_subtest
 print_subtest "Validate Test Configuration File"
 
 if validate_config_file "${TEST_CONFIG}"; then
@@ -602,9 +600,8 @@ run_crash_test_with_build() {
     fi
 }
 
-# Verify core dump configuration before running any tests
-next_subtest
 print_subtest "Verify Core Dump Configuration"
+
 if verify_core_dump_config; then
     print_result 0 "Core dump configuration verified"
     ((PASS_COUNT++))
@@ -657,9 +654,9 @@ for target in "${BUILD_VARIANTS[@]}"; do
 done
 
 if [[ ${#BUILDS[@]} -eq 0 ]]; then
-    next_subtest
     print_subtest "Find Hydrogen Builds"
     print_result 1 "No hydrogen builds found"
+
     EXIT_CODE=1
     
     # Export results and exit early
@@ -718,9 +715,8 @@ for build in "${BUILDS[@]}"; do
     # Analyze the parallel test results
     analyze_parallel_results "${build}" "${PARALLEL_RESULTS_DIR}"
     
-    # Test 1: Debug Symbols
-    next_subtest
     print_subtest "Debug Symbols - ${build_name}"
+
     if [[ "${DEBUG_SYMBOL_RESULT}" -eq 0 ]]; then
         if [[ "${build_name}" == *"release"* ]] || [[ "${build_name}" == *"coverage"* ]] || [[ "${build_name}" == *"naked"* ]]; then
             print_result 0 "Debug symbols correctly absent in release-style build"
@@ -738,9 +734,8 @@ for build in "${BUILDS[@]}"; do
         EXIT_CODE=1
     fi
     
-    # Test 2: Core File Generation
-    next_subtest
     print_subtest "Core File Generation - ${build_name}"
+
     if [[ "${CORE_FILE_RESULT}" -eq 0 ]]; then
         print_result 0 "Core file generated successfully"
         ((PASS_COUNT++))
@@ -750,9 +745,8 @@ for build in "${BUILDS[@]}"; do
         EXIT_CODE=1
     fi
     
-    # Test 3: Crash Handler Logging
-    next_subtest
     print_subtest "Crash Handler Logging - ${build_name}"
+
     if [[ "${CRASH_LOG_RESULT}" -eq 0 ]]; then
         print_result 0 "Crash handler log messages verified"
         ((PASS_COUNT++))
@@ -762,9 +756,8 @@ for build in "${BUILDS[@]}"; do
         EXIT_CODE=1
     fi
     
-    # Test 4: GDB Analysis
-    next_subtest
     print_subtest "GDB Analysis - ${build_name}"
+    
     if [[ "${GDB_ANALYSIS_RESULT}" -eq 0 ]]; then
         print_result 0 "GDB backtrace analysis successful"
         ((PASS_COUNT++))

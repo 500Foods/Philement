@@ -61,8 +61,6 @@ cleanup() {
 # Set up trap for clean termination
 trap cleanup SIGINT SIGTERM EXIT
 
-# Subtest 1: Find Hydrogen binary and configuration
-next_subtest
 print_subtest "Find Hydrogen binary and configuration" 
 
 # Find Hydrogen binary
@@ -89,8 +87,6 @@ print_message "Web server port: ${PORT}"
 print_result 0 "Binary and configuration found successfully"
 ((PASS_COUNT++))
 
-# Subtest 2: Prepare test environment
-next_subtest
 print_subtest "Prepare test environment"
 
 # Check current environment status (no waiting - SO_REUSEADDR should handle TIME_WAIT)
@@ -121,8 +117,6 @@ fi
 print_result 0 "Test environment prepared successfully"
 ((PASS_COUNT++))
 
-# Subtest 3: Start first Hydrogen instance
-next_subtest
 print_subtest "Start first Hydrogen instance" 
 
 # Start first instance using lifecycle.sh
@@ -144,8 +138,6 @@ else
     exit 1
 fi
 
-# Make HTTP requests to create active connections
-next_subtest
 print_subtest "Make HTTP requests to create connections"
 
 BASE_URL="http://localhost:${PORT}"
@@ -157,8 +149,6 @@ else
     EXIT_CODE=1
 fi
 
-# Subtest 4: Shutdown first instance
-next_subtest
 print_subtest "Shutdown first instance" 
 
 # Stop first instance using lifecycle.sh
@@ -173,16 +163,12 @@ else
     EXIT_CODE=1
 fi
 
-# Check for TIME_WAIT sockets
-next_subtest
 print_subtest "Check TIME_WAIT sockets" 
 
 check_time_wait_sockets "${PORT}" 
 print_result 0 "TIME_WAIT socket check completed"
 ((PASS_COUNT++))
 
-# Subtest 5: Immediately start second instance (the main test)
-next_subtest
 print_subtest "Start second instance immediately (SO_REUSEADDR test)" 
 
 # Start second instance immediately using lifecycle.sh

@@ -29,8 +29,6 @@ SERVER_LOG="${LOGS_DIR}/test_${TEST_NUMBER}_server_${TIMESTAMP}.log"
 LEAK_REPORT="${DIAGS_DIR}/test_${TEST_NUMBER}_leak_report_${TIMESTAMP}.log"
 LEAK_SUMMARY="${DIAGS_DIR}/test_${TEST_NUMBER}_leak_summary_${TIMESTAMP}.log"
 
-# Test: Validate debug build availability and ASAN support
-next_subtest
 print_subtest "Validate Debug Build and ASAN Support"
 
 # Find debug build
@@ -49,8 +47,6 @@ else
     fi
 fi
 
-# Test: Validate configuration file
-next_subtest
 print_subtest "Validate Configuration File"
 
 CONFIG_PATH="${CONFIG_FILE}"
@@ -72,10 +68,7 @@ if [[ ${EXIT_CODE} -ne 0 ]]; then
     exit "${EXIT_CODE}"
 fi
 
-# Test: Run memory leak detection test
-next_subtest
 print_subtest "Memory Leak Detection Test"
-
 print_message "Starting memory leak test with debug build..."
 
 # Start hydrogen server with comprehensive ASAN options
@@ -139,8 +132,6 @@ else
     print_result 1 "Memory leak test execution failed"
 fi
 
-# Test: Analyze leak results
-next_subtest
 print_subtest "Analyze Leak Results"
 
 if [[ "${EXIT_CODE}" -eq 0 ]]; then
