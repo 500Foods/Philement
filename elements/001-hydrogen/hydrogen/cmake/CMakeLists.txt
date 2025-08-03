@@ -59,8 +59,8 @@ if(CPU_CORES EQUAL 0)
     set(CPU_CORES 4)  # Fallback to 4 cores
 endif()
 
-# Set parallel job count (use 80% of available cores to avoid system overload)
-math(EXPR PARALLEL_JOBS "${CPU_CORES} * 8 / 10")
+# Set parallel job count (use 200% of available cores to avoid system overload)
+math(EXPR PARALLEL_JOBS "${CPU_CORES} * 20 / 10")
 if(PARALLEL_JOBS LESS 1)
     set(PARALLEL_JOBS 1)
 endif()
@@ -658,7 +658,7 @@ add_custom_target(all_variants
     
     # Phase 4: Build targets that depend on payload
     COMMAND ${CMAKE_COMMAND} -E echo "🛈 Phase 4: Building release and coverage with payload..."
-    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target coverage hydrogen_release --parallel 2
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target coverage hydrogen_release --parallel ${PARALLEL_JOBS}
     
     COMMAND ${CMAKE_COMMAND} -E echo "✅ All variants built successfully!"
     COMMAND ${CMAKE_COMMAND} -E echo "────────────────────────────────────────────────────────────────"

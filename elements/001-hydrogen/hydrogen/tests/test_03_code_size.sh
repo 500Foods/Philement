@@ -5,7 +5,6 @@
 
 # FUNCTIONS
 # cleanup_temp_files()
-# should_exclude_file()
 # show_top_files_by_type()
 
 # CHANGELOG
@@ -32,11 +31,7 @@ SOURCE_FILES_LIST=$(mktemp)
 LARGE_FILES_LIST=$(mktemp)
 LINE_COUNT_FILE=$(mktemp)
 
-
-# Subtest 1: Linting Configuration Information
-next_subtest
 print_subtest "Linting Configuration Information"
-
 print_message "Checking linting configuration files and displaying exclusion patterns..."
 
 exclusion_files=(".lintignore" ".lintignore-c" ".lintignore-markdown" ".lintignore-bash")
@@ -85,10 +80,7 @@ if command -v cloc >/dev/null 2>&1; then
     CLOC_PID=$!
 fi
 
-# Subtest 2: Analyze source code files and generate statistics
-next_subtest
 print_subtest "Source Code File Analysis"
-
 print_message "Analyzing source code files and generating statistics..."
 
 # Find all source files, excluding those in .lintignore
@@ -191,10 +183,7 @@ else
     ((PASS_COUNT++))
 fi
 
-# Subtest 3: Find and list large non-source files
-next_subtest
 print_subtest "Large Non-Source File Detection"
-
 print_message "Finding large non-source files (>${LARGE_FILE_THRESHOLD})..."
 
 : > "${LARGE_FILES_LIST}"
@@ -228,8 +217,6 @@ else
     ((PASS_COUNT++))
 fi
 
-# Subtest 4: Code line count analysis with cloc
-next_subtest
 print_subtest "Code Line Count Analysis (cloc)"
 
 if [[ -n "${CLOC_PID}" ]]; then
@@ -266,11 +253,9 @@ fi
 
 rm -f "${CLOC_OUTPUT}"
 
-# Subtest 5: File count summary
-next_subtest
 print_subtest "File Count Summary"
-
 print_message "File type distribution:"
+
 print_output "Total source files analyzed: ${TOTAL_FILES}"
 print_output "Large files found: ${LARGE_FILE_COUNT}"
 TEST_NAME="${TEST_NAME} {BLUE}(cloc: ${FILES_COUNT} files){RESET}"

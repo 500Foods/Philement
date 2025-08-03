@@ -32,7 +32,7 @@ TOTAL_UNITY_PASSED=0
 
 # Function to check Unity tests are available via CTest (assumes they're already built by main build system)
 check_unity_tests_available() {
-    next_subtest
+
     print_subtest "Check Unity Tests Available"
     print_message "Checking for Unity tests via CTest (should be built by main build system)..."
     
@@ -74,7 +74,6 @@ run_single_unity_test() {
     local test_name="$1"
     local test_exe="${PROJECT_DIR}/build/unity/src/${test_name}"
     
-    next_subtest
     print_subtest "Run Unity Test: ${test_name}"
     
     if [[ ! -f "${test_exe}" ]]; then
@@ -390,8 +389,6 @@ if check_unity_tests_available; then
         EXIT_CODE=1
     fi
     
-    # Calculate Unity test coverage using the same batch processing as other tools
-    next_subtest
     print_subtest "Calculate Unity Test Coverage"
     print_message "Calculating Unity test coverage..."
 

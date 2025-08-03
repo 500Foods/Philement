@@ -63,10 +63,9 @@ download_unity_framework() {
     fi
 }
 
-next_subtest
 print_subtest "Check CMake Availability"
-
 print_command "command -v cmake"
+
 if command -v cmake >/dev/null 2>&1; then
     CMAKE_VERSION=$(cmake --version | head -n1 || true)
     print_result 0 "CMake is available: ${CMAKE_VERSION}"
@@ -76,10 +75,9 @@ else
 fi
 evaluate_test_result_silent "CMake availability" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-next_subtest
 print_subtest "Check CMakeLists.txt"
-
 print_command "test -f cmake/CMakeLists.txt"
+
 if [[ -f "cmake/CMakeLists.txt" ]]; then
     file_size=$(get_file_size "cmake/CMakeLists.txt")
     formatted_size=$(format_file_size "${file_size}")
@@ -90,10 +88,9 @@ else
 fi
 evaluate_test_result_silent "CMakeLists.txt check" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-next_subtest
 print_subtest "Check Source Files"
-
 print_command "test -d src && test -f src/hydrogen.c"
+
 if [[ -d "src" ]] && [[ -f "src/hydrogen.c" ]]; then
     src_count=$(find . -type f \( -path "./src/*" -o -path "./tests/unity/src/*" -o -path "./extras/*" -o -path "./examples/*" \) \( -name "*.c" -o -name "*.h" \) | wc -l || true) 
     print_result 0 "Project search found ${src_count} source files"
@@ -104,7 +101,6 @@ else
 fi
 evaluate_test_result_silent "Source files check" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-next_subtest
 print_subtest "Check Unity Framework"
 
 if download_unity_framework; then
@@ -115,10 +111,9 @@ else
 fi
 evaluate_test_result_silent "Unity framework check" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-next_subtest
 print_subtest "CMake Configuration"
-
 print_command "cd cmake"
+
 if safe_cd cmake; then
     print_command "cmake -S . -B ../build --preset default"
     if cmake -S . -B ../build --preset default >/dev/null 2>&1; then
@@ -135,10 +130,9 @@ else
 fi
 evaluate_test_result_silent "CMake configuration" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-next_subtest
 print_subtest "Check and Generate Payload"
-
 print_command "test -f payloads/payload.tar.br.enc"
+
 if [[ -f "payloads/payload.tar.br.enc" ]]; then
     payload_size=$(get_file_size "payloads/payload.tar.br.enc")
     formatted_size=$(format_file_size "${payload_size}")
@@ -181,10 +175,9 @@ else
     fi
 fi
 
-next_subtest
 print_subtest "Build All Variants"
-
 print_command "cd cmake"
+
 if safe_cd cmake; then
     print_command "cmake --build ../build --preset default --target all_variants"
     if cmake --build ../build --preset default --target all_variants >/dev/null 2>&1; then
@@ -201,11 +194,9 @@ else
 fi
 evaluate_test_result_silent "Build all variants" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-
-next_subtest
 print_subtest "Verify Default Executable"
-
 print_command "test -f hydrogen"
+
 if [[ -f "hydrogen" ]]; then
     exe_size=$(get_file_size "hydrogen")
     formatted_size=$(format_file_size "${exe_size}")
@@ -216,10 +207,9 @@ else
 fi
 evaluate_test_result_silent "Verify default executable" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-next_subtest
 print_subtest "Verify Debug Executable"
-
 print_command "test -f hydrogen_debug"
+
 if [[ -f "hydrogen_debug" ]]; then
     exe_size=$(get_file_size "hydrogen_debug")
     formatted_size=$(format_file_size "${exe_size}")
@@ -230,11 +220,9 @@ else
 fi
 evaluate_test_result_silent "Verify debug executable" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-
-next_subtest
 print_subtest "Verify Performance Executable"
-
 print_command "test -f hydrogen_perf"
+
 if [[ -f "hydrogen_perf" ]]; then
     exe_size=$(get_file_size "hydrogen_perf")
     formatted_size=$(format_file_size "${exe_size}")
@@ -245,10 +233,9 @@ else
 fi
 evaluate_test_result_silent "Verify performance executable" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-next_subtest
 print_subtest "Verify Valgrind Executable"
-
 print_command "test -f hydrogen_valgrind"
+
 if [[ -f "hydrogen_valgrind" ]]; then
     exe_size=$(get_file_size "hydrogen_valgrind")
     formatted_size=$(format_file_size "${exe_size}")
@@ -259,10 +246,9 @@ else
 fi
 evaluate_test_result_silent "Verify valgrind executable" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-next_subtest
 print_subtest "Verify Coverage Executable"
-
 print_command "test -f hydrogen_coverage"
+
 if [[ -f "hydrogen_coverage" ]]; then
     exe_size=$(get_file_size "hydrogen_coverage")
     formatted_size=$(format_file_size "${exe_size}")
@@ -273,10 +259,9 @@ else
 fi
 evaluate_test_result_silent "Verify coverage executable" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-next_subtest
 print_subtest "Verify Release and Naked Executables"
-
 print_command "test -f hydrogen_release && test -f hydrogen_naked"
+
 if [[ -f "hydrogen_release" ]] && [[ -f "hydrogen_naked" ]]; then
     release_size=$(get_file_size "hydrogen_release")
     naked_size=$(get_file_size "hydrogen_naked")
@@ -289,10 +274,9 @@ else
 fi
 evaluate_test_result_silent "Verify release and naked executables" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-next_subtest
 print_subtest "Build Examples"
-
 print_command "cd cmake"
+
 if safe_cd cmake; then
     print_command "cmake --build ../build --preset default --target all_examples"
     if cmake --build ../build --preset default --target all_examples >/dev/null 2>&1; then
@@ -309,10 +293,9 @@ else
 fi
 evaluate_test_result_silent "Build examples" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-next_subtest
 print_subtest "Verify Examples Executables"
-
 print_command "test -f examples/C/auth_code_flow && test -f examples/C/client_credentials && test -f examples/C/password_flow"
+
 if [[ -f "examples/C/auth_code_flow" ]] && [[ -f "examples/C/client_credentials" ]] && [[ -f "examples/C/password_flow" ]]; then
     auth_size=$(get_file_size "examples/C/auth_code_flow")
     client_size=$(get_file_size "examples/C/client_credentials")
@@ -327,10 +310,9 @@ else
 fi
 evaluate_test_result_silent "Verify examples executables" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-next_subtest
 print_subtest "Verify Coverage Executable Payload"
-
 print_command "test -f hydrogen_coverage && grep -q '<<< HERE BE ME TREASURE >>>' hydrogen_coverage"
+
 if [[ -f "hydrogen_coverage" ]]; then
     # Check if the coverage binary has payload embedded using the correct marker
     if grep -q "<<< HERE BE ME TREASURE >>>" "hydrogen_coverage" 2>/dev/null; then
@@ -347,10 +329,9 @@ else
 fi
 evaluate_test_result_silent "Verify coverage executable payload" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
-next_subtest
 print_subtest "Verify Release Executable Payload"
-
 print_command "test -f hydrogen_release && grep -q '<<< HERE BE ME TREASURE >>>' hydrogen_release"
+
 if [[ -f "hydrogen_release" ]]; then
     # Check if the release binary has payload embedded using the correct marker
     if grep -q "<<< HERE BE ME TREASURE >>>" "hydrogen_release" 2>/dev/null; then

@@ -306,8 +306,6 @@ test_websocket_configuration() {
     # Start server
     local subtest_start=$(((config_number - 1) * 5 + 1))
     
-    # Subtest: Start server
-    next_subtest
     print_subtest "Start Hydrogen Server (Config ${config_number})"
     
     # Use a temporary variable name that won't conflict
@@ -324,9 +322,10 @@ test_websocket_configuration() {
             EXIT_CODE=1
             # Skip remaining subtests for this configuration
             for i in {2..5}; do
-                next_subtest
+
                 print_subtest "Subtest $((subtest_start + i - 1)) (Skipped)"
                 print_result 1 "Skipped due to server startup failure"
+
             done
             return 1
         fi
@@ -335,9 +334,10 @@ test_websocket_configuration() {
         EXIT_CODE=1
         # Skip remaining subtests for this configuration
         for i in {2..5}; do
-            next_subtest
+
             print_subtest "Subtest $((subtest_start + i - 1)) (Skipped)"
             print_result 1 "Skipped due to server startup failure"
+
         done
         return 1
     fi
@@ -349,17 +349,17 @@ test_websocket_configuration() {
             EXIT_CODE=1
             # Skip remaining subtests
             for i in {2..5}; do
-                next_subtest
+
                 print_subtest "Subtest $((subtest_start + i - 1)) (Skipped)"
                 print_result 1 "Skipped due to server readiness failure"
+
             done
             return 1
         fi
     fi
     
-    # Test: Test WebSocket connection
-    next_subtest
     print_subtest "Test WebSocket Connection (Config ${config_number})"
+
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if test_websocket_connection "${ws_url}" "${ws_protocol}" "test_message" "${RESULTS_DIR}/${test_name}_connection_${TIMESTAMP}.txt"; then
             ((PASS_COUNT++))
@@ -371,9 +371,8 @@ test_websocket_configuration() {
         EXIT_CODE=1
     fi
     
-    # Test: Test WebSocket status request
-    next_subtest
     print_subtest "Test WebSocket Status Request (Config ${config_number})"
+
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if test_websocket_status "${ws_url}" "${ws_protocol}" "${RESULTS_DIR}/${test_name}_status_${TIMESTAMP}.json"; then
             ((PASS_COUNT++))
@@ -385,9 +384,8 @@ test_websocket_configuration() {
         EXIT_CODE=1
     fi
     
-    # Test: Test WebSocket port accessibility
-    next_subtest
     print_subtest "Test WebSocket Port Accessibility (Config ${config_number})"
+
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         # Test if the WebSocket port is listening
         if netstat -ln 2>/dev/null | grep -q ":${ws_port} " || true; then
@@ -408,9 +406,8 @@ test_websocket_configuration() {
         EXIT_CODE=1
     fi
     
-    # Test: Test WebSocket protocol validation
-    next_subtest
     print_subtest "Test WebSocket Protocol Validation (Config ${config_number})"
+
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         # Test with correct protocol
         if command -v wscat >/dev/null 2>&1; then
@@ -432,9 +429,8 @@ test_websocket_configuration() {
         EXIT_CODE=1
     fi
     
-    # Test: Verify WebSocket in logs
-    next_subtest
     print_subtest "Verify WebSocket Initialization in Logs (Config ${config_number})"
+
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         # Check server logs for WebSocket initialization
         if grep -q "LAUNCH: WEBSOCKETS" "${server_log}" && grep -q "WebSocket.*successfully" "${server_log}"; then
@@ -485,9 +481,8 @@ cleanup() {
 # Set up trap for interruption only (not normal exit)
 trap cleanup SIGINT SIGTERM
 
-# Test: Find Hydrogen binary
-next_subtest
 print_subtest "Locate Hydrogen Binary"
+
 if find_hydrogen_binary "${HYDROGEN_DIR}" "HYDROGEN_BIN"; then
     print_result 0 "Hydrogen binary found: $(basename "${HYDROGEN_BIN}")"
     ((PASS_COUNT++))
@@ -496,27 +491,24 @@ else
     EXIT_CODE=1
 fi
 
-# Test: Validate first configuration file
-next_subtest
 print_subtest "Validate Configuration File 1"
+
 if validate_config_file "${CONFIG_1}"; then
     ((PASS_COUNT++))
 else
     EXIT_CODE=1
 fi
 
-# Test: Validate second configuration file
-next_subtest
 print_subtest "Validate Configuration File 2"
+
 if validate_config_file "${CONFIG_2}"; then
     ((PASS_COUNT++))
 else
     EXIT_CODE=1
 fi
 
-# Test: Validate WEBSOCKET_KEY environment variable
-next_subtest
 print_subtest "Validate WEBSOCKET_KEY Environment Variable"
+
 if [[ -n "${WEBSOCKET_KEY}" ]]; then
     if validate_websocket_key "WEBSOCKET_KEY" "${WEBSOCKET_KEY}"; then
         print_result 0 "WEBSOCKET_KEY is valid and ready for WebSocket authentication"
@@ -556,9 +548,10 @@ else
     print_message "Skipping WebSocket tests due to prerequisite failures"
     # Account for skipped subtests (10 remaining: 5 for each configuration)
     for i in {4..13}; do
-        next_subtest
+
         print_subtest "Subtest ${i} (Skipped)"
         print_result 1 "Skipped due to prerequisite failures"
+        
     done
     EXIT_CODE=1
 fi

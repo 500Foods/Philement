@@ -20,8 +20,6 @@ TEST_VERSION="3.0.0"
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
-# Validate Hydrogen Binary
-next_subtest
 print_subtest "Locate Hydrogen Binary"
 
 # shellcheck disable=SC2153  # HYDROGEN_BIN is set by find_hydrogen_binary function
@@ -37,9 +35,8 @@ fi
 # Test configuration
 MIN_CONFIG="${SCRIPT_DIR}/configs/hydrogen_test_min.json"
 
-# Validate configuration file exists
-next_subtest
 print_subtest "Validate Configuration File"
+
 if validate_config_file "${MIN_CONFIG}"; then
     ((PASS_COUNT++))
 else
@@ -57,9 +54,8 @@ LOG_FILE="${BUILD_DIR}/tests/logs/hydrogen_shutdown_test.log"
 DIAGS_DIR="${BUILD_DIR}/tests/diagnostics"
 DIAG_TEST_DIR="${DIAGS_DIR}/shutdown_test_${TIMESTAMP}"
 
-# Create output directories
-next_subtest
 print_subtest "Create Output Directories"
+
 if setup_output_directories "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOG_FILE}" "${DIAG_TEST_DIR}"; then
     ((PASS_COUNT++))
 else

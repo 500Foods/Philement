@@ -25,8 +25,6 @@ setup_test_environment
 # Test Configuration
 ERROR_OUTPUT="${LOGS_DIR}/json_error_output_${TIMESTAMP}.log"
 
-# Validate Hydrogen Binary
-next_subtest
 print_subtest "Locate Hydrogen Binary"
 
 # shellcheck disable=SC2153  # HYDROGEN_BIN is set by find_hydrogen_binary function
@@ -42,9 +40,8 @@ fi
 # Test configuration with JSON syntax error (missing comma)
 TEST_CONFIG=$(get_config_path "hydrogen_test_json.json")
 
-# Validate configuration file exists
-next_subtest
 print_subtest "Validate Test Configuration File"
+
 if validate_config_file "${TEST_CONFIG}"; then
     print_message "Using test file with JSON syntax error (missing comma)"
     ((PASS_COUNT++))
@@ -52,10 +49,9 @@ else
     EXIT_CODE=1
 fi
 
-# Test 1: Run hydrogen with malformed config - should fail
-next_subtest
 print_subtest "Launch with Malformed JSON Configuration"
 print_message "Testing configuration: $(basename "${TEST_CONFIG}" .json)"
+
 print_command "$(basename "${HYDROGEN_BIN}") $(basename "${TEST_CONFIG}")"
 
 # Capture both stdout and stderr
@@ -67,8 +63,6 @@ else
     ((PASS_COUNT++))
 fi
 
-# Test 2: Check error output for line and column information
-next_subtest
 print_subtest "Verify Error Message Contains Position Information"
 print_message "Examining error output..."
 

@@ -26,39 +26,6 @@ if [[ -z "${LINT_EXCLUDES:-}" ]]; then
     )
 fi
 
-# Check if a file should be excluded from linting
-should_exclude_file() {
-    local file="$1"
-    local lint_ignore=".lintignore"
-    local rel_file="${file#./}"  # Remove leading ./
-    
-    # Check .lintignore file first if it exists
-    if [[ -f "${lint_ignore}" ]]; then
-        while IFS= read -r pattern; do
-            [[ -z "${pattern}" || "${pattern}" == \#* ]] && continue
-            # Remove trailing /* if present for directory matching
-            local clean_pattern="${pattern%/\*}"
-            
-            # Check if file matches pattern exactly or is within a directory pattern
-            if [[ "${rel_file}" == "${pattern}" ]] || [[ "${rel_file}" == "${clean_pattern}"/* ]]; then
-                return 0 # Exclude
-            fi
-        done < "${lint_ignore}"
-    fi
-    
-    # Check default excludes
-    for pattern in "${LINT_EXCLUDES[@]}"; do
-        local clean_pattern="${pattern%/\*}"
-        if [[ "${rel_file}" == "${pattern}" ]] || [[ "${rel_file}" == "${clean_pattern}"/* ]]; then
-            return 0 # Exclude
-        fi
-    done
-    
-    return 1 # Do not exclude
-}
-
-# Subtest 1: Lint JSON files
-next_subtest
 print_subtest "JSON Linting"
 
 if command -v jq >/dev/null 2>&1; then

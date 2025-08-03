@@ -18,10 +18,7 @@ TEST_VERSION="3.0.0"
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
-# Test: Recall Unity Test Coverage
-next_subtest
 print_subtest "Recall Unity Test Coverage"
-
 print_message "Recalling coverage data from Unity tests (Test 11)..."
 
 # Read Unity coverage data from Test 11's stored results instead of recalculating
@@ -50,10 +47,7 @@ else
     EXIT_CODE=1
 fi
 
-# Test: Collect Blackbox Test Coverage
-next_subtest
 print_subtest "Collect Blackbox Test Coverage"
-
 print_message "Collecting coverage data from blackbox tests..."
 
 # Check for blackbox coverage data in build/coverage directory only
@@ -93,10 +87,7 @@ else
     EXIT_CODE=1
 fi
 
-# Test: Calculate Combined Coverage
-next_subtest
 print_subtest "Calculate Combined Coverage"
-
 print_message "Calculating combined coverage from Unity and blackbox tests..."
 
 # Use the same logic as coverage_table.sh
@@ -178,10 +169,7 @@ else
     EXIT_CODE=1
 fi
 
-# Test: Identify Uncovered Source Files
-next_subtest
 print_subtest "Identify Uncovered Source Files"
-
 print_message "Identifying source files not covered by blackbox tests..."
 
 # Use the batch-processed coverage data for consistent file counts

@@ -186,9 +186,8 @@ cleanup() {
 # Set up trap for interruption only (not normal exit)
 trap cleanup SIGINT SIGTERM
 
-# Subtest 1: Find Hydrogen binary
-next_subtest
 print_subtest "Locate Hydrogen Binary"
+
 # shellcheck disable=SC2153  # HYDROGEN_BIN is set by find_hydrogen_binary function
 if find_hydrogen_binary "${HYDROGEN_DIR}" "HYDROGEN_BIN"; then
     print_result 0 "Hydrogen binary found: $(basename "${HYDROGEN_BIN}")"
@@ -198,9 +197,8 @@ else
     EXIT_CODE=1
 fi
 
-# Subtest 2: Validate configuration files
-next_subtest
 print_subtest "Validate Configuration Files"
+
 if [[ -f "${DEFAULT_CONFIG_PATH}" ]] && [[ -f "${CUSTOM_CONFIG_PATH}" ]]; then
     print_result 0 "Both configuration files found"
     ((PASS_COUNT++))
@@ -229,9 +227,8 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     DEFAULT_PORT=$(get_webserver_port "${DEFAULT_CONFIG_PATH}")
     CUSTOM_PORT=$(get_webserver_port "${CUSTOM_CONFIG_PATH}")
     
-    # Subtest 3: Start server with default API prefix
-    next_subtest
     print_subtest "Start Server with Default API Prefix (/api)"
+
     DEFAULT_LOG="${RESULTS_DIR}/api_prefixes_default_server_${TIMESTAMP}_${RANDOM}.log"
     if start_hydrogen_with_pid "${DEFAULT_CONFIG_PATH}" "${DEFAULT_LOG}" 15 "${HYDROGEN_BIN}" "HYDROGEN_PID" && [[ -n "${HYDROGEN_PID}" ]]; then
         print_result 0 "Server started successfully with PID: ${HYDROGEN_PID}"
@@ -241,9 +238,8 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         EXIT_CODE=1
     fi
     
-    # Subtest 4: Test default API health endpoint
-    next_subtest
     print_subtest "Test Default API Health Endpoint"
+
     if [[ -n "${HYDROGEN_PID}" ]] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
         if wait_for_server_ready "http://localhost:${DEFAULT_PORT}"; then
             if validate_api_request "default_health" "http://localhost:${DEFAULT_PORT}/api/system/health" "Yes, I'm alive, thanks!"; then
@@ -260,9 +256,8 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         EXIT_CODE=1
     fi
     
-    # Subtest 5: Test default API info endpoint
-    next_subtest
     print_subtest "Test Default API Info Endpoint"
+
     if [[ -n "${HYDROGEN_PID}" ]] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
         if validate_api_request "default_info" "http://localhost:${DEFAULT_PORT}/api/system/info" "system"; then
             ((PASS_COUNT++))
@@ -274,9 +269,8 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         EXIT_CODE=1
     fi
     
-    # Subtest 6: Test default API test endpoint
-    next_subtest
     print_subtest "Test Default API Test Endpoint"
+
     if [[ -n "${HYDROGEN_PID}" ]] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
         if validate_api_request "default_test" "http://localhost:${DEFAULT_PORT}/api/system/test" "client_ip"; then
             ((PASS_COUNT++))
@@ -303,9 +297,8 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     # Start second test immediately
     print_message "Starting second test immediately (testing SO_REUSEADDR)..."
     
-    # Subtest 7: Start server with custom API prefix
-    next_subtest
     print_subtest "Start Server with Custom API Prefix (/myapi)"
+
     CUSTOM_LOG="${RESULTS_DIR}/api_prefixes_custom_server_${TIMESTAMP}_${RANDOM}.log"
     if start_hydrogen_with_pid "${CUSTOM_CONFIG_PATH}" "${CUSTOM_LOG}" 15 "${HYDROGEN_BIN}" "HYDROGEN_PID" && [[ -n "${HYDROGEN_PID}" ]]; then
         print_result 0 "Server started successfully with PID: ${HYDROGEN_PID}"
@@ -315,9 +308,8 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         EXIT_CODE=1
     fi
     
-    # Subtest 8: Test custom API health endpoint
-    next_subtest
     print_subtest "Test Custom API Health Endpoint"
+
     if [[ -n "${HYDROGEN_PID}" ]] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
         if wait_for_server_ready "http://localhost:${CUSTOM_PORT}"; then
             if validate_api_request "custom_health" "http://localhost:${CUSTOM_PORT}/myapi/system/health" "Yes, I'm alive, thanks!"; then
@@ -334,9 +326,8 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         EXIT_CODE=1
     fi
     
-    # Subtest 9: Test custom API info endpoint
-    next_subtest
     print_subtest "Test Custom API Info Endpoint"
+
     if [[ -n "${HYDROGEN_PID}" ]] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
         if validate_api_request "custom_info" "http://localhost:${CUSTOM_PORT}/myapi/system/info" "system"; then
             ((PASS_COUNT++))
@@ -348,9 +339,8 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         EXIT_CODE=1
     fi
     
-    # Subtest 10: Test custom API test endpoint
-    next_subtest
     print_subtest "Test Custom API Test Endpoint"
+
     if [[ -n "${HYDROGEN_PID}" ]] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
         if validate_api_request "custom_test" "http://localhost:${CUSTOM_PORT}/myapi/system/test" "client_ip"; then
             ((PASS_COUNT++))

@@ -311,8 +311,6 @@ test_system_endpoints() {
     local server_log="${RESULTS_DIR}/system_endpoints_${test_name}_${TIMESTAMP}.log"
     local base_url="http://localhost:${server_port}"
     
-    # Start server
-    next_subtest
     print_subtest "Start Hydrogen Server (${test_name})"
     
     # Use a temporary variable name that won't conflict
@@ -344,9 +342,8 @@ test_system_endpoints() {
         fi
     fi
     
-    # Test core endpoints
-    next_subtest
     print_subtest "Test Health Endpoint (${test_name})"
+
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if validate_api_request "health" "${base_url}/api/system/health" "Yes, I'm alive, thanks!"; then
             ((PASS_COUNT++))
@@ -358,8 +355,8 @@ test_system_endpoints() {
         EXIT_CODE=1
     fi
     
-    next_subtest
     print_subtest "Test Info Endpoint (${test_name})"
+
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if validate_api_request "info" "${base_url}/api/system/info" "system"; then
             ((PASS_COUNT++))
@@ -371,8 +368,8 @@ test_system_endpoints() {
         EXIT_CODE=1
     fi
     
-    next_subtest
     print_subtest "Test Config Endpoint (${test_name})"
+
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if validate_api_request "config" "${base_url}/api/system/config" "ServerName"; then
             ((PASS_COUNT++))
@@ -384,8 +381,8 @@ test_system_endpoints() {
         EXIT_CODE=1
     fi
     
-    next_subtest
     print_subtest "Test System Test Endpoint (${test_name})"
+
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if validate_api_request "basic_get" "${base_url}/api/system/test" "client_ip"; then
             ((PASS_COUNT++))
@@ -397,8 +394,8 @@ test_system_endpoints() {
         EXIT_CODE=1
     fi
     
-    next_subtest
     print_subtest "Test Prometheus Endpoint (${test_name})"
+
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if validate_api_request "prometheus" "${base_url}/api/system/prometheus" "system_info"; then
             ((PASS_COUNT++))
@@ -410,8 +407,8 @@ test_system_endpoints() {
         EXIT_CODE=1
     fi
     
-    next_subtest
     print_subtest "Test Recent Logs Endpoint (${test_name})"
+
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if validate_api_request "recent" "${base_url}/api/system/recent" "\\["; then
             ((PASS_COUNT++))
@@ -423,8 +420,8 @@ test_system_endpoints() {
         EXIT_CODE=1
     fi
     
-    next_subtest
     print_subtest "Test AppConfig Endpoint (${test_name})"
+
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if validate_api_request "appconfig" "${base_url}/api/system/appconfig" "APPCONFIG"; then
             ((PASS_COUNT++))
@@ -463,9 +460,8 @@ cleanup() {
 # Set up trap for interruption only (not normal exit)
 trap cleanup SIGINT SIGTERM
 
-# Subtest 1: Find Hydrogen binary
-next_subtest
 print_subtest "Locate Hydrogen Binary"
+
 # shellcheck disable=SC2153  # HYDROGEN_BIN is set by find_hydrogen_binary function
 if find_hydrogen_binary "${HYDROGEN_DIR}" "HYDROGEN_BIN"; then
     print_result 0 "Hydrogen binary found: $(basename "${HYDROGEN_BIN}")"
@@ -475,9 +471,8 @@ else
     EXIT_CODE=1
 fi
 
-# Subtest 2: Validate configuration file
-next_subtest
 print_subtest "Validate Configuration File"
+
 if validate_config_file "${CONFIG_PATH}"; then
     ((PASS_COUNT++))
     
@@ -505,9 +500,10 @@ else
     print_message "Skipping API endpoint tests due to prerequisite failures"
     # Account for skipped subtests
     for i in {3..9}; do
-        next_subtest
+
         print_subtest "Subtest ${i} (Skipped)"
         print_result 1 "Skipped due to prerequisite failures"
+
     done
     EXIT_CODE=1
 fi

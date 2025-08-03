@@ -24,9 +24,8 @@ setup_test_environment
 # Use build/tests/ directory for consistency
 STARTUP_TIMEOUT=10
 
-# Validate Hydrogen Binary
-next_subtest
 print_subtest "Locate Hydrogen Binary"
+
 # shellcheck disable=SC2153  # HYDROGEN_BIN is set by find_hydrogen_binary function
 if find_hydrogen_binary "${PROJECT_DIR}" "HYDROGEN_BIN"; then
     print_message "Using Hydrogen binary: $(basename "${HYDROGEN_BIN}")"
@@ -40,18 +39,16 @@ fi
 # Test configuration - use minimal config since library dependencies are checked regardless of configuration
 MINIMAL_CONFIG="${SCRIPT_DIR}/configs/hydrogen_test_min.json"
 
-# Create output directories
-next_subtest
 print_subtest "Create Output Directories"
+
 if setup_output_directories "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOG_FILE}" "${DIAG_TEST_DIR}"; then
     ((PASS_COUNT++))
 else
     EXIT_CODE=1
 fi
 
-# Validate minimal configuration file
-next_subtest
 print_subtest "Validate Configuration File"
+
 if validate_config_file "${MINIMAL_CONFIG}"; then
     ((PASS_COUNT++))
 else
@@ -67,7 +64,6 @@ check_dependency_log() {
     local dep_name="$1"
     local log_file="$2"
     
-    next_subtest
     print_subtest "Check Dependency: ${dep_name}"
     
     # Extract the full dependency line

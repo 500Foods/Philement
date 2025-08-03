@@ -339,8 +339,6 @@ test_swagger_configuration() {
     # Start server
     local subtest_start=$(((config_number - 1) * 6 + 1))
     
-    # Subtest: Start server
-    next_subtest
     print_subtest "Start Hydrogen Server (Config ${config_number})"
     
     # Use a temporary variable name that won't conflict
@@ -357,9 +355,10 @@ test_swagger_configuration() {
             EXIT_CODE=1
             # Skip remaining subtests for this configuration
             for i in {2..6}; do
-                next_subtest
+
                 print_subtest "Subtest $((subtest_start + i - 1)) (Skipped)"
                 print_result 1 "Skipped due to server startup failure"
+
             done
             return 1
         fi
@@ -368,9 +367,10 @@ test_swagger_configuration() {
         EXIT_CODE=1
         # Skip remaining subtests for this configuration
         for i in {2..6}; do
-            next_subtest
+
             print_subtest "Subtest $((subtest_start + i - 1)) (Skipped)"
             print_result 1 "Skipped due to server startup failure"
+
         done
         return 1
     fi
@@ -382,17 +382,17 @@ test_swagger_configuration() {
             EXIT_CODE=1
             # Skip remaining subtests
             for i in {2..6}; do
-                next_subtest
+
                 print_subtest "Subtest $((subtest_start + i - 1)) (Skipped)"
                 print_result 1 "Skipped due to server readiness failure"
+
             done
             return 1
         fi
     fi
     
-    # Subtest: Test Swagger UI with trailing slash
-    next_subtest
     print_subtest "Access Swagger UI with trailing slash (Config ${config_number})"
+
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if check_response_content "${base_url}${swagger_prefix}/" "swagger-ui" "${RESULTS_DIR}/${test_name}_trailing_slash_${TIMESTAMP}.html" "true"; then
             ((PASS_COUNT++))
@@ -404,9 +404,8 @@ test_swagger_configuration() {
         EXIT_CODE=1
     fi
     
-    # Subtest: Test redirect without trailing slash
-    next_subtest
     print_subtest "Access Swagger UI without trailing slash (Config ${config_number})"
+
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if check_redirect_response "${base_url}${swagger_prefix}" "${swagger_prefix}/" "${RESULTS_DIR}/${test_name}_redirect_${TIMESTAMP}.txt"; then
             ((PASS_COUNT++))
@@ -418,9 +417,8 @@ test_swagger_configuration() {
         EXIT_CODE=1
     fi
     
-    # Subtest: Verify Swagger UI content
-    next_subtest
     print_subtest "Verify Swagger UI content loads (Config ${config_number})"
+
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if check_response_content "${base_url}${swagger_prefix}/" "swagger-ui" "${RESULTS_DIR}/${test_name}_content_${TIMESTAMP}.html" "true"; then
             ((PASS_COUNT++))
@@ -432,9 +430,8 @@ test_swagger_configuration() {
         EXIT_CODE=1
     fi
     
-    # Subtest: Test JavaScript files
-    next_subtest
     print_subtest "Verify JavaScript files load (Config ${config_number})"
+
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if check_response_content "${base_url}${swagger_prefix}/swagger-initializer.js" "window.ui = SwaggerUIBundle" "${RESULTS_DIR}/${test_name}_initializer_${TIMESTAMP}.js" "true"; then
             ((PASS_COUNT++))
@@ -446,9 +443,8 @@ test_swagger_configuration() {
         EXIT_CODE=1
     fi
     
-    # Subtest: Test swagger.json file
-    next_subtest
     print_subtest "Verify swagger.json file loads and contains valid content (Config ${config_number})"
+
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if check_swagger_json "${base_url}${swagger_prefix}/swagger.json" "${RESULTS_DIR}/${test_name}_swagger_json_${TIMESTAMP}.json"; then
             ((PASS_COUNT++))
@@ -487,9 +483,8 @@ cleanup() {
 # Set up trap for interruption only (not normal exit)
 trap cleanup SIGINT SIGTERM
 
-# Subtest 1: Find Hydrogen binary
-next_subtest
 print_subtest "Locate Hydrogen Binary"
+
 if find_hydrogen_binary "${HYDROGEN_DIR}" "HYDROGEN_BIN"; then
     print_result 0 "Hydrogen binary found: $(basename "${HYDROGEN_BIN}")"
     ((PASS_COUNT++))
@@ -502,18 +497,16 @@ fi
 CONFIG_1="$(get_config_path "hydrogen_test_swagger_test_1.json")"
 CONFIG_2="$(get_config_path "hydrogen_test_swagger_test_2.json")"
 
-# Subtest 2: Validate first configuration file
-next_subtest
 print_subtest "Validate Configuration File 1"
+
 if validate_config_file "${CONFIG_1}"; then
     ((PASS_COUNT++))
 else
     EXIT_CODE=1
 fi
 
-# Subtest 3: Validate second configuration file
-next_subtest
 print_subtest "Validate Configuration File 2"
+
 if validate_config_file "${CONFIG_2}"; then
     ((PASS_COUNT++))
 else
@@ -549,9 +542,10 @@ else
     print_message "Skipping Swagger tests due to prerequisite failures"
     # Account for skipped subtests (12 remaining: 6 for each configuration)
     for i in {4..15}; do
-        next_subtest
+
         print_subtest "Subtest ${i} (Skipped)"
         print_result 1 "Skipped due to prerequisite failures"
+        
     done
     EXIT_CODE=1
 fi
