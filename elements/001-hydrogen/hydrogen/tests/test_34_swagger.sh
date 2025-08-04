@@ -3,6 +3,12 @@
 # Test: Swagger
 # Tests the Swagger functionality, its presence in the payload, etc.
 
+# FUNCTIONS
+# check_response_content() 
+# check_redirect_response() 
+# check_swagger_json() 
+# test_swagger_configuration() 
+
 # CHANGELOG
 # 4.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 4.0.0 - 2025-07-30 - Overhaul #1
@@ -430,17 +436,6 @@ test_swagger_configuration() {
     
     return 0
 }
-
-# Handle cleanup on script interruption (not normal exit)
-# shellcheck disable=SC2317  # Function is invoked indirectly via trap
-cleanup() {
-    print_message "Cleaning up any remaining Hydrogen processes..."
-    pkill -f "hydrogen.*json" 2>/dev/null || true
-    exit "${EXIT_CODE}"
-}
-
-# Set up trap for interruption only (not normal exit)
-trap cleanup SIGINT SIGTERM
 
 print_subtest "Locate Hydrogen Binary"
 

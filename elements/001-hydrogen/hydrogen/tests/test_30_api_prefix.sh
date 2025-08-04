@@ -6,6 +6,10 @@
 # - Custom "/myapi" prefix using hydrogen_test_api_prefix.json
 # - Uses immediate restart without waiting for TIME_WAIT (SO_REUSEADDR enabled)
 
+# FUNCTIONS
+# create_unique_config() 
+# validate_api_request()
+
 # CHANGELOG
 # 6.0.0 - 2025-07-30 - Overhaul #1
 # 5.0.7 - 2025-07-14 - Enhanced validate_api_request with retry logic to handle API subsystem initialization delays during parallel execution
@@ -153,17 +157,6 @@ validate_api_request() {
     
     return 1
 }
-
-# Handle cleanup on script interruption (not normal exit)
-# shellcheck disable=SC2317  # Function is invoked indirectly via trap
-cleanup() {
-    print_message "Cleaning up any remaining Hydrogen processes..."
-    pkill -f "hydrogen.*json" 2>/dev/null || true
-    exit "${EXIT_CODE}"
-}
-
-# Set up trap for interruption only (not normal exit)
-trap cleanup SIGINT SIGTERM
 
 print_subtest "Locate Hydrogen Binary"
 

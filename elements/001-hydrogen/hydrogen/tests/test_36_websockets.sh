@@ -7,7 +7,6 @@
 # test_websocket_connection() 
 # test_websocket_status() 
 # test_websocket_configuration() 
-# cleanup() 
 
 # CHANGELOG
 # 2.0.1 - 2025-08-03 - Removed extraneous command -v calls
@@ -417,17 +416,6 @@ test_websocket_configuration() {
     
     return 0
 }
-
-# Handle cleanup on script interruption (not normal exit)
-# shellcheck disable=SC2317  # Function is invoked indirectly via trap
-cleanup() {
-    print_message "Cleaning up any remaining Hydrogen processes..."
-    pkill -f "hydrogen.*json" 2>/dev/null || true
-    exit "${EXIT_CODE}"
-}
-
-# Set up trap for interruption only (not normal exit)
-trap cleanup SIGINT SIGTERM
 
 print_subtest "Locate Hydrogen Binary"
 

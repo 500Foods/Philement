@@ -10,6 +10,14 @@
 # - /api/system/recent: Tests the recent activity log endpoint
 # - /api/system/appconfig: Tests the application configuration endpoint
 
+# FUNCTIONS
+# validate_api_request()
+# validate_json_response()
+# validate_line_count()
+# validate_prometheus_format()
+# check_server_logs()
+# test_system_endpoints()
+
 # CHANGELOG
 # 4.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 4.0.0 - 2025-07-30 - Overhaul #1
@@ -418,17 +426,6 @@ test_system_endpoints() {
     
     return 0
 }
-
-# Handle cleanup on script interruption (not normal exit)
-# shellcheck disable=SC2317  # Function is invoked indirectly via trap
-cleanup() {
-    print_message "Cleaning up any remaining Hydrogen processes..."
-    pkill -f "hydrogen.*json" 2>/dev/null || true
-    exit "${EXIT_CODE}"
-}
-
-# Set up trap for interruption only (not normal exit)
-trap cleanup SIGINT SIGTERM
 
 print_subtest "Locate Hydrogen Binary"
 

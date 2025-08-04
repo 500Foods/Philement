@@ -1,8 +1,19 @@
 #!/bin/bash
-#
+
 # Test: Crash Handler
 # Tests that the crash handler correctly generates and formats core dumps
-#
+
+# FUNCTIONS
+# verify_core_dump_config() 
+# verify_core_file_content() 
+# verify_debug_symbols() 
+# verify_core_file() 
+# analyze_core_with_gdb() 
+# wait_for_crash_completion() 
+# run_crash_test_parallel() 
+# analyze_parallel_results() 
+# run_crash_test_with_build() 
+
 # CHANGELOG
 # 5.0.0 - 2025-07-30 - Overhaul #1
 # 4.0.0 - 2025-07-28 - Shellcheck fixes, Grok even gave it a full once-over. 
