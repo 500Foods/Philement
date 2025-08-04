@@ -605,6 +605,9 @@ done
 TOTAL_ELAPSED_FORMATTED=$(format_time_duration "${TOTAL_ELAPSED}")
 TOTAL_RUNNING_TIME_FORMATTED=$(format_time_duration "${TOTAL_RUNNING_TIME}")
 
+# Let's come up with a number that represents how much code is in our test suite
+SCRIPT_SCALE=$(printf "%'d" "$(cd "${SCRIPT_DIR}" && find . -type f -name "*.sh" -exec grep -vE '^\s*(#|$)' {} + | wc -l)" || true)
+
 # Create layout JSON string
 # shellcheck disable=SC2154 # TC_ORC_DSP defined externally in framework.sh
 layout_json_content='{
@@ -629,7 +632,7 @@ layout_json_content='{
 	        "justification": "right"
         },
         {
-            "header": "Test Name",
+            "header": "Test Name (Test Suite loc: '"${SCRIPT_SCALE})"'",
             "key": "test_name",
             "datatype": "text",
             "width": 44,

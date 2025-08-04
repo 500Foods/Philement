@@ -292,7 +292,6 @@ test_system_endpoints() {
     
     # Use a temporary variable name that won't conflict
     local temp_pid_var="HYDROGEN_PID_$$"
-    # shellcheck disable=SC2153  # HYDROGEN_BIN is set by find_hydrogen_binary function
     if start_hydrogen_with_pid "${CONFIG_PATH}" "${server_log}" 15 "${HYDROGEN_BIN}" "${temp_pid_var}"; then
         # Get the PID from the temporary variable
         hydrogen_pid=$(eval "echo \$${temp_pid_var}")
