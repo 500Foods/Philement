@@ -30,8 +30,9 @@ print_subtest "JavaScript Linting (eslint)"
 
 JS_FILES=()
 while read -r file; do
-    if ! should_exclude_file "${file}"; then
-        JS_FILES+=("${file}")
+    rel_file="${file#./}"
+    if ! should_exclude_file "${rel_file}"; then
+        JS_FILES+=("${rel_file}")
     fi
 done < <(find . -type f -name "*.js" || true)
 

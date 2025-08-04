@@ -27,8 +27,9 @@ print_subtest "HTML Linting (htmlhint)"
 
 HTML_FILES=()
 while read -r file; do
-    if ! should_exclude_file "${file}"; then
-        HTML_FILES+=("${file}")
+    rel_file="${file#./}"
+    if ! should_exclude_file "${rel_file}"; then
+        HTML_FILES+=("${rel_file}")
     fi
 done < <(find . -type f -name "*.html" || true)
 
