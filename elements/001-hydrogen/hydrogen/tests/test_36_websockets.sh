@@ -3,7 +3,14 @@
 # Test: WebSockets
 # Tests the WebSocket functionality with different configurations
 
+# FUNCTIONS
+# test_websocket_connection() 
+# test_websocket_status() 
+# test_websocket_configuration() 
+# cleanup() 
+
 # CHANGELOG
+# 2.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 2.0.0 - 2025-07-30 - Overhaul #1
 # 1.1.2 - 2025-07-19 - Bit of tidying up to get rid of steps we don't need
 # 1.1.1 - 2025-07-18 - Fixed subshell issue in server log output that prevented detailed error messages from being displayed in test output
@@ -17,7 +24,7 @@
 TEST_NAME="WebSockets"
 TEST_ABBR="WSS"
 TEST_NUMBER="36"
-TEST_VERSION="2.0.0"
+TEST_VERSION="2.0.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -27,26 +34,6 @@ setup_test_environment
 HYDROGEN_DIR="${PROJECT_DIR}"
 CONFIG_1="$(get_config_path "hydrogen_test_websocket_test_1.json")"
 CONFIG_2="$(get_config_path "hydrogen_test_websocket_test_2.json")"
-
-# Function to wait for server to be ready
-wait_for_server_ready() {
-    local base_url="$1"
-    local max_attempts=100   # 20 seconds total (0.2s * 100)
-    local attempt=1
-    
-    print_message "Waiting for server to be ready at ${base_url}..."
-    
-    while [[ "${attempt}" -le "${max_attempts}" ]]; do
-        if curl -s --max-time 2 "${base_url}" >/dev/null 2>&1; then
-            print_message "Server is ready after $(( attempt * 2 / 10 )) seconds"
-            return 0
-        fi
-        ((attempt++))
-    done
-    
-    print_error "Server failed to respond within 20 seconds"
-    return 1
-}
 
 # Function to test WebSocket connection with proper authentication and retry logic
 test_websocket_connection() {
@@ -75,29 +62,14 @@ test_websocket_connection() {
         temp_file=$(mktemp)
         
         # Test WebSocket connection with a 5-second timeout
-        if command -v timeout >/dev/null 2>&1; then
-            # Send test message and wait for any response or timeout
-            echo "${test_message}" | timeout 5 websocat \
-                --protocol="${protocol}" \
-                -H="Authorization: Key ${WEBSOCKET_KEY}" \
-                --ping-interval=30 \
-                --exit-on-eof \
-                "${ws_url}" > "${temp_file}" 2>&1
-            websocat_exitcode=$?
-        else
-            # Fallback without timeout command
-            echo "${test_message}" | websocat \
-                --protocol="${protocol}" \
-                -H="Authorization: Key ${WEBSOCKET_KEY}" \
-                --ping-interval=30 \
-                --exit-on-eof \
-                "${ws_url}" > "${temp_file}" 2>&1 &
-            local websocat_pid=$!
-            sleep 1
-            kill "${websocat_pid}" 2>/dev/null || true
-            wait "${websocat_pid}" 2>/dev/null || true
-            websocat_exitcode=$?
-        fi
+        # Send test message and wait for any response or timeout
+        echo "${test_message}" | timeout 5 websocat \
+            --protocol="${protocol}" \
+            -H="Authorization: Key ${WEBSOCKET_KEY}" \
+            --ping-interval=30 \
+            --exit-on-eof \
+            "${ws_url}" > "${temp_file}" 2>&1
+        websocat_exitcode=$?
         
         # Read the output
         websocat_output=$(cat "${temp_file}" 2>/dev/null || echo "")
@@ -186,7 +158,7 @@ test_websocket_status() {
     
     # JSON message to request status
     local status_request='{"type": "status"}'
-    print_command "echo '${status_request}' | websocat --protocol='${protocol}' -H='Authorization: Key ${WEBSOCKET_KEY}' --ping-interval=30 --one-message '${ws_url}'"
+    print_command "echo '${status_request}' | websocat --protocol='${protocol}' -H='Authorization: Key ${WEBSOCKET_KEY}' --ping-interval=30 --no-close '${ws_url}'"
     
     # Retry logic for WebSocket subsystem readiness
     local max_attempts=25
@@ -197,7 +169,7 @@ test_websocket_status() {
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
             print_message "WebSocket status request attempt ${attempt} of ${max_attempts}..."
-            sleep 0.05
+            sleep 0.25
         fi
         
         # Create a temporary file to capture the full interaction
@@ -205,28 +177,14 @@ test_websocket_status() {
         temp_file=$(mktemp)
         
         # Test WebSocket status request with a 5-second timeout
-        if command -v timeout >/dev/null 2>&1; then
-            echo "${status_request}" | timeout 5 websocat \
-                --protocol="${protocol}" \
-                -H="Authorization: Key ${WEBSOCKET_KEY}" \
-                --ping-interval=30 \
-                --one-message \
-                "${ws_url}" > "${temp_file}" 2>&1
-            websocat_exitcode=$?
-        else
-            # Fallback without timeout command
-            echo "${status_request}" | websocat \
-                --protocol="${protocol}" \
-                -H="Authorization: Key ${WEBSOCKET_KEY}" \
-                --ping-interval=30 \
-                --one-message \
-                "${ws_url}" > "${temp_file}" 2>&1 &
-            local websocat_pid=$!
-            sleep 1
-            kill "${websocat_pid}" 2>/dev/null || true
-            wait "${websocat_pid}" 2>/dev/null || true
-            websocat_exitcode=$?
-        fi
+        echo "${status_request}" | websocat \
+            --protocol="${protocol}" \
+            -H="Authorization: Key ${WEBSOCKET_KEY}" \
+            --ping-interval=30 \
+            --no-close \
+            --one-message \
+            "${ws_url}" > "${temp_file}" 2>&1
+        websocat_exitcode=$?
         
         # Read the output
         websocat_output=$(cat "${temp_file}" 2>/dev/null || echo "")
@@ -247,11 +205,7 @@ test_websocket_status() {
             else
                 # Log what we actually received for debugging
                 print_message "Invalid JSON response or missing required fields:"
-                if command -v jq >/dev/null 2>&1; then
-                    echo "${websocat_output}" | jq . 2>/dev/null | head -10 || echo "Non-JSON output: ${websocat_output}" || true
-                else
-                    echo "First 200 chars: ${websocat_output:0:200}"
-                fi
+                echo "${websocat_output}" | jq . 2>/dev/null | head -10 || echo "Non-JSON output: ${websocat_output}" || true
             fi
         fi
         
@@ -410,18 +364,12 @@ test_websocket_configuration() {
 
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         # Test with correct protocol
-        if command -v wscat >/dev/null 2>&1; then
-            if echo "protocol_test" | timeout 5 wscat -c "${ws_url}" --subprotocol="${ws_protocol}" >/dev/null 2>&1; then
-                print_result 0 "WebSocket accepts correct protocol: ${ws_protocol}"
-                ((PASS_COUNT++))
-            else
-                # Even if connection fails, if server is running, protocol validation is working
-                print_result 0 "WebSocket protocol validation working (connection attempt with correct protocol)"
-                ((PASS_COUNT++))
-            fi
+        if echo "protocol_test" | timeout 5 wscat -c "${ws_url}" --subprotocol="${ws_protocol}" >/dev/null 2>&1; then
+            print_result 0 "WebSocket accepts correct protocol: ${ws_protocol}"
+            ((PASS_COUNT++))
         else
-            # Fallback without wscat
-            print_result 0 "WebSocket protocol validation assumed working (wscat not available)"
+            # Even if connection fails, if server is running, protocol validation is working
+            print_result 0 "WebSocket protocol validation working (connection attempt with correct protocol)"
             ((PASS_COUNT++))
         fi
     else
@@ -537,7 +485,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     # Test with default WebSocket configuration (port 5101, protocol "hydrogen")
     test_websocket_configuration "${CONFIG_1}" "5101" "hydrogen" "websocket_default" 1
     
-    # Test with custom WebSocket configuration - immediate restart
+    # Test with custom WebSocket configuration - immediate restart (same port 5101, protocol "hydrogen-test")
     print_message "Starting second test immediately (testing SO_REUSEADDR)..."
     test_websocket_configuration "${CONFIG_2}" "5101" "hydrogen-test" "websocket_custom" 2
     

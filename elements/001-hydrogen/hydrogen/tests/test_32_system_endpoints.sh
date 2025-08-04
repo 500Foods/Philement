@@ -11,6 +11,7 @@
 # - /api/system/appconfig: Tests the application configuration endpoint
 
 # CHANGELOG
+# 4.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 4.0.0 - 2025-07-30 - Overhaul #1
 # 3.2.1 - 2025-07-18 - Fixed subshell issue in response file output that prevented detailed error messages from being displayed in test output
 # 3.2.0 - 2025-07-15 - Added tests for missing system endpoints: /api/system/prometheus, /api/system/recent, /api/system/appconfig to improve coverage
@@ -27,7 +28,7 @@
 TEST_NAME="System API"
 TEST_ABBR="SYS"
 TEST_NUMBER="32"
-TEST_VERSION="4.0.0"
+TEST_VERSION="4.0.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -150,24 +151,13 @@ validate_json_response() {
     local file="$1"
     local endpoint_name="$2"
     
-    if command -v jq &> /dev/null; then
-        # Use jq if available for proper JSON validation
-        if jq . "${file}" > /dev/null 2>&1; then
-            print_result 0 "${endpoint_name} endpoint returns valid JSON"
-            return 0
-        else
-            print_result 1 "${endpoint_name} endpoint returns invalid JSON"
-            return 1
-        fi
+    # Use jq if available for proper JSON validation
+    if jq . "${file}" > /dev/null 2>&1; then
+        print_result 0 "${endpoint_name} endpoint returns valid JSON"
+        return 0
     else
-        # Fallback: simple check for JSON structure
-        if grep -q "{" "${file}" && grep -q "}" "${file}"; then
-            print_result 0 "${endpoint_name} endpoint appears to be JSON (basic validation only)"
-            return 0
-        else
-            print_result 1 "${endpoint_name} endpoint does not appear to be JSON"
-            return 1
-        fi
+        print_result 1 "${endpoint_name} endpoint returns invalid JSON"
+        return 1
     fi
 }
 
@@ -229,26 +219,6 @@ validate_prometheus_format() {
     else
         return 1
     fi
-}
-
-# Function to wait for server to be ready
-wait_for_server_ready() {
-    local base_url="$1"
-    local max_attempts=40   # 20 seconds total (0.5s * 40) - matches test_30 for better parallel reliability
-    local attempt=1
-    
-    print_message "Waiting for server to be ready at ${base_url}..."
-    
-    while [[ "${attempt}" -le "${max_attempts}" ]]; do
-        if curl -s --max-time 2 "${base_url}" >/dev/null 2>&1; then
-            print_message "Server is ready after $(( attempt * 5 / 10 )) seconds"
-            return 0
-        fi
-        ((attempt++))
-    done
-    
-    print_error "Server failed to respond within 20 seconds"
-    return 1
 }
 
 # Function to check server logs for compression and errors
