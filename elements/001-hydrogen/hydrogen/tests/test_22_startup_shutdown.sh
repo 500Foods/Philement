@@ -22,7 +22,7 @@ setup_test_environment
 
 print_subtest "Locate Hydrogen Binary"
 
-# shellcheck disable=SC2153  # HYDROGEN_BIN is set by find_hydrogen_binary function
+HYDROGEN_BIN='hydrogen'
 if find_hydrogen_binary "${PROJECT_DIR}" "HYDROGEN_BIN"; then
     print_message "Using Hydrogen binary: $(basename "${HYDROGEN_BIN}")"
     print_result 0 "Hydrogen binary found and validated"
@@ -54,14 +54,6 @@ BUILD_DIR="${SCRIPT_DIR}/../build"
 LOG_FILE="${BUILD_DIR}/tests/logs/hydrogen_test.log"
 DIAGS_DIR="${BUILD_DIR}/tests/diagnostics"
 DIAG_TEST_DIR="${DIAGS_DIR}/startup_shutdown_test_${TIMESTAMP}"
-
-print_subtest "Create Output Directories"
-
-if setup_output_directories "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOG_FILE}" "${DIAG_TEST_DIR}"; then
-    ((PASS_COUNT++))
-else
-    EXIT_CODE=1
-fi
 
 # Test minimal configuration
 config_name=$(basename "${MIN_CONFIG}" .json)

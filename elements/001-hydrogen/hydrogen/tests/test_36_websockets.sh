@@ -30,7 +30,6 @@ TEST_VERSION="2.0.1"
 setup_test_environment
 
 # Test variables
-HYDROGEN_DIR="${PROJECT_DIR}"
 CONFIG_1="$(get_config_path "hydrogen_test_websocket_test_1.json")"
 CONFIG_2="$(get_config_path "hydrogen_test_websocket_test_2.json")"
 
@@ -419,11 +418,13 @@ test_websocket_configuration() {
 
 print_subtest "Locate Hydrogen Binary"
 
-if find_hydrogen_binary "${HYDROGEN_DIR}" "HYDROGEN_BIN"; then
-    print_result 0 "Hydrogen binary found: $(basename "${HYDROGEN_BIN}")"
+HYDROGEN_BIN='hydrogen'
+if find_hydrogen_binary "${PROJECT_DIR}" "HYDROGEN_BIN"; then
+    print_message "Using Hydrogen binary: $(basename "${HYDROGEN_BIN}")"
+    print_result 0 "Hydrogen binary found and validated"
     ((PASS_COUNT++))
 else
-    print_result 1 "Hydrogen binary not found"
+    print_result 1 "Failed to find Hydrogen binary"
     EXIT_CODE=1
 fi
 
