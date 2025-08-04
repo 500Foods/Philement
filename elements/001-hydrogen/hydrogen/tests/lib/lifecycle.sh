@@ -40,7 +40,6 @@ print_message "${LIFECYCLE_NAME} ${LIFECYCLE_VERSION}" "info"
 # Sets the named variable with the binary path
 find_hydrogen_binary() {
     local hydrogen_dir="$1"
-    local result_var="$2"
     local hydrogen_bin
     
     # Ensure hydrogen_dir is an absolute path
@@ -90,8 +89,9 @@ find_hydrogen_binary() {
         return 1
     fi
     
-    # Set the result variable with the binary path
-    eval "${result_var}='${hydrogen_bin}'"
+    HYDROGEN_BIN="${hydrogen_bin}"
+    HYDROGEN_BIN_BASE=$(basename "${HYDROGEN_BIN}")
+    export HYDROGEN_BIN HYDROGEN_BIN_BASE
     return 0
 }
 
