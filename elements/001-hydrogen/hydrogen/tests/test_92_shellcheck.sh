@@ -27,9 +27,6 @@ setup_test_environment
 
 # Test configuration constants
 [[ -z "${LINT_OUTPUT_LIMIT:-}" ]] && readonly LINT_OUTPUT_LIMIT=10
-[[ -z "${LINT_EXCLUDES:-}" ]] && readonly LINT_EXCLUDES=(
-    "build/*"
-)
 
 print_subtest "Shell Script Linting (shellcheck)"
 print_message "Detected ${CORES} CPU cores for parallel processing"

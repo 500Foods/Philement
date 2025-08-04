@@ -413,7 +413,7 @@ export -f process_file_batch
 
 # Clear output file if needed
 if [[ "${NOREPORT}" != "true" ]]; then
-    : > "${output_file}"
+    true > "${output_file}"
 fi
 
 # Create temporary files for parallel processing
@@ -424,7 +424,7 @@ results_file="${temp_dir}/results.txt"
 files_to_process="${temp_dir}/files_list.txt"
 
 # Initialize results file
-: > "${results_file}"
+true > "${results_file}"
 
 # Export cache to file
 for path in "${!file_exists_cache[@]}"; do
@@ -451,7 +451,7 @@ while [[ -s "${files_to_process}" ]]; do
     xargs -P 0 -I {} bash -c "process_file_batch \"\$1\" \"\$2\" \"\$3\" \"\$4\" <<< \"\$5\"" _ "${cache_file}" "${repo_root}" "${original_dir}" "${results_file}" {} < "${files_to_process}"
     # Extract newly discovered files from results
     new_files_temp="${temp_dir}/new_files_${iteration}.txt"
-    : > "${new_files_temp}"
+    true > "${new_files_temp}"
     
     while IFS= read -r line; do
         if [[ "${line}" =~ ^LINKED:(.+)$ ]]; then
@@ -468,7 +468,7 @@ while [[ -s "${files_to_process}" ]]; do
         mv "${new_files_temp}" "${files_to_process}"
         debug_log "Discovered $(wc -l < "${files_to_process}" || true) new files"
     else
-        : > "${files_to_process}"
+        true > "${files_to_process}"
         debug_log "No new files discovered, processing complete"
     fi
 done

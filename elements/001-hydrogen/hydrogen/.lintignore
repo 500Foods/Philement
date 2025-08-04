@@ -15,10 +15,6 @@
 # Build directories (these are also excluded by default in the test script)
 # A 'make clean' is also done in the codebase test prior to running lints
 build/*
-build_debug/*
-build_perf/*
-build_release/*
-build_valgrind/*
 build/unity/*
 
 # Test artifacts

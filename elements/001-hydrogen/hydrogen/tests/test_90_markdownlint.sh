@@ -21,27 +21,19 @@ TEST_VERSION="3.0.1"
 setup_test_environment
 
 # Test configuration constants
-# Only declare if not already defined (prevents readonly variable redeclaration when sourced)
-if [[ -z "${LINT_OUTPUT_LIMIT:-}" ]]; then
-    readonly LINT_OUTPUT_LIMIT=100
-fi
-
-# Default exclude patterns for linting (can be overridden by .lintignore)
-# Only declare if not already defined (prevents readonly variable redeclaration when sourced)
-if [[ -z "${LINT_EXCLUDES:-}" ]]; then
-    readonly LINT_EXCLUDES=(
-        "build/*"
-    )
-fi
+[[ -z "${LINT_OUTPUT_LIMIT:-}" ]] && readonly LINT_OUTPUT_LIMIT=10
 
 print_subtest "Markdown Linting"
 
+# Get .lintignore filtered list of markdown files to check
 MD_FILES=()
-while read -r file; do
+cd "${PROJECT_DIR}" || return &>/dev/null
+mapfile -t md_file_list < <(find . -type f -name "*.md" || true)
+for file in "${md_file_list[@]}"; do
     if ! should_exclude_file "${file}"; then
         MD_FILES+=("${file}")
     fi
-done < <(find . -type f -name "*.md" || true)
+done
 
 MD_COUNT=${#MD_FILES[@]}
 
@@ -51,7 +43,7 @@ if [[ "${MD_COUNT}" -gt 0 ]]; then
     TEMP_NEW_LOG=$(mktemp)
     
     # Cache directory for markdownlint results
-    CACHE_DIR="${HOME}/.markdownlint"
+    CACHE_DIR="${HOME}/.cache/markdownlint"
     mkdir -p "${CACHE_DIR}"
     
     # Function to get file hash (using md5sum or equivalent)
@@ -82,11 +74,8 @@ if [[ "${MD_COUNT}" -gt 0 ]]; then
     # Run markdownlint on files that need processing
     if [[ "${processed_files}" -gt 0 ]]; then
         print_message "Running markdownlint on ${processed_files} files..."
-        if ! markdownlint --config ".lintignore-markdown" "${to_process_files[@]}" 2> "${TEMP_NEW_LOG}"; then
-            # markdownlint failed, but we'll check the output for actual issues
-            :
-        fi
-        
+        markdownlint --config ".lintignore-markdown" "${to_process_files[@]}" 2> "${TEMP_NEW_LOG}"
+       
         # Cache new results
         for file in "${to_process_files[@]}"; do
             file_hash=$(get_file_hash "${file}")
