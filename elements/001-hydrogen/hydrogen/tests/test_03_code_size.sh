@@ -8,6 +8,7 @@
 # show_top_files_by_type()
 
 # CHANGELOG
+# 3.1.0 - 2025-08-04 - Better presentation of large file sizes
 # 3.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 3.0.0 - 2025-07-30 - Overhaul #1
 # 2.0.0 - 2025-07-18 - Performance optimization: 46% speed improvement (3.136s to 1.705s), background cloc analysis, batch wc -l processing, parallel file type counting, largest-to-smallest file sorting
@@ -17,7 +18,7 @@
 TEST_NAME="Code Size Analysis"
 TEST_ABBR="SIZ"
 TEST_NUMBER="03"
-TEST_VERSION="3.0.1"
+TEST_VERSION="3.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -85,8 +86,9 @@ print_message "Analyzing source code files and generating statistics..."
 # Find all source files, excluding those in .lintignore
 true > "${SOURCE_FILES_LIST}"
 while read -r file; do
-    if ! should_exclude_file "${file}"; then
-        echo "${file}" >> "${SOURCE_FILES_LIST}"
+    rel_file="${file#./}"
+    if ! should_exclude_file "${rel_file}"; then
+        echo "${rel_file}" >> "${SOURCE_FILES_LIST}"
     fi
 done < <(find . -type f \( -name "*.c" -o -name "*.h" -o -name "*.md" -o -name "*.sh" \) | sort || true)
 
@@ -186,11 +188,13 @@ print_subtest "Large Non-Source File Detection"
 print_message "Finding large non-source files (>${LARGE_FILE_THRESHOLD})..."
 
 true > "${LARGE_FILES_LIST}"
-while read -r file; do
-    if ! should_exclude_file "${file}"; then
-        echo "${file}" >> "${LARGE_FILES_LIST}"
+while read -r size file; do
+    # Strip ./ from find's output to match realpath's format
+    rel_file="${file#./}"
+    if ! should_exclude_file "${rel_file}"; then
+        echo "${size} ${rel_file}" >> "${LARGE_FILES_LIST}"
     fi
-done < <(find . -type f -size "+${LARGE_FILE_THRESHOLD}" -not \( -path "*/tests/*" -o -name "*.c" -o -name "*.h" -o -name "*.md" -o -name "*.sh" -o -name "Makefile" \) | sort || true)
+done < <(find . -type f -size "+${LARGE_FILE_THRESHOLD}" -not \( -path "*/tests/*" -o -name "*.c" -o -name "*.h" -o -name "*.md" -o -name "*.sh" \) -printf "%k %p\n" || true)
 
 LARGE_FILE_COUNT=$(wc -l < "${LARGE_FILES_LIST}")
 
@@ -200,17 +204,14 @@ if [[ "${LARGE_FILE_COUNT}" -eq 0 ]]; then
     ((PASS_COUNT++))
 else
     print_message "Found ${LARGE_FILE_COUNT} large files:"
-    # Use du in parallel and sort by size (largest first)
     if [[ -s "${LARGE_FILES_LIST}" ]]; then
-        # Use process substitution to avoid subshell
-        temp_du_list="$(mktemp)"
-        xargs -P "${CORES}" -I {} du -k {} < "${LARGE_FILES_LIST}" > "${temp_du_list}"
-        sorted_du_list="$(mktemp)"
-        sort -nr "${temp_du_list}" > "${sorted_du_list}"
+        sorted_list="$(mktemp)"
+        sort -nr "${LARGE_FILES_LIST}" > "${sorted_list}"
         while read -r size file; do
-            print_output "  ${size}KB: ${file}"
-        done < "${sorted_du_list}"
-        rm -f "${temp_du_list}" "${sorted_du_list}"
+            size_formatted=$(printf "%6s" "$(printf "%'d" "${size}")" )
+            print_output "${size_formatted} KB: ${file}"
+        done < "${sorted_list}"
+        rm -f "${sorted_list}"
     fi
     print_result 0 "Found ${LARGE_FILE_COUNT} files >${LARGE_FILE_THRESHOLD}"
     ((PASS_COUNT++))

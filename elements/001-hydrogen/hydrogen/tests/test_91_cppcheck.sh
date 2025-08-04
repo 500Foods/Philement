@@ -98,8 +98,9 @@ print_message "Detected ${CORES} CPU cores for parallel processing"
 # Count files that will be checked (excluding .lintignore patterns)
 C_FILES_TO_CHECK=()
 while read -r file; do
-    if ! should_exclude_file "${file}"; then
-        C_FILES_TO_CHECK+=("${file}")
+    rel_file="${file#./}"
+    if ! should_exclude_file "${rel_file}"; then
+        C_FILES_TO_CHECK+=("${rel_file}")
     fi
 done < <(find . -type f \( -name "*.c" -o -name "*.h" -o -name "*.inc" \) || true)
 

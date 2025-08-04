@@ -28,8 +28,9 @@ print_subtest "CSS Linting (stylelint)"
 
 CSS_FILES=()
 while read -r file; do
-    if ! should_exclude_file "${file}"; then
-        CSS_FILES+=("${file}")
+    rel_file="${file#./}"
+    if ! should_exclude_file "${rel_file}"; then
+        CSS_FILES+=("${rel_file}")
     fi
 done < <(find . -type f -name "*.css" || true)
 

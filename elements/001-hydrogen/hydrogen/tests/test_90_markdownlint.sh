@@ -30,8 +30,9 @@ MD_FILES=()
 cd "${PROJECT_DIR}" || return &>/dev/null
 mapfile -t md_file_list < <(find . -type f -name "*.md" || true)
 for file in "${md_file_list[@]}"; do
-    if ! should_exclude_file "${file}"; then
-        MD_FILES+=("${file}")
+    rel_file="${file#./}"
+    if ! should_exclude_file "${rel_file}"; then
+        MD_FILES+=("${rel_file}")
     fi
 done
 

@@ -46,11 +46,7 @@ fi
 
 # Check if a file should be excluded from linting
 should_exclude_file() {
-    local file="$1"
-    local rel_file
-
-    rel_file=$(realpath --relative-to="${PWD}" "${file}" 2>/dev/null || echo "${file}")
-    rel_file="${rel_file#./}" 
+    local rel_file="$1"
     for pattern in "${LINT_IGNORE_PATTERNS[@]}"; do
         # shellcheck disable=SC2053,SC2250 # Right side needs to be a glob which doesn't work when quoted ?!
         if [[ "${rel_file}" == $pattern ]]; then
