@@ -3,6 +3,9 @@
 # Test: C/C++ Code Analysis
 # Performs cppcheck analysis on C/C++ source files
 
+# FUNCTIONS
+# run_cppcheck()
+
 # CHANGELOG
 # 3.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 3.0.0 - 2025-07-30 - Overhaul #1

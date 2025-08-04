@@ -3,6 +3,9 @@
 # Test: Library Dependencies
 # Tests the library dependency checking system added to initialization
 
+# FUNCTIONS
+# check_dependency_log()
+
 # CHANGELOG
 # 3.0.0 - 2025-07-30 - Overhaul #1
 # 2.1.1 - 2025-07-06 - Added missing shellcheck justifications
