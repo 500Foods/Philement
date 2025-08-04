@@ -43,9 +43,6 @@ find_hydrogen_binary() {
     local result_var="$2"
     local hydrogen_bin
     
-    # Clear the result variable
-    eval "${result_var}=''"
-    
     # Ensure hydrogen_dir is an absolute path
     hydrogen_dir=$(realpath "${hydrogen_dir}" 2>/dev/null || echo "${hydrogen_dir}")
     
