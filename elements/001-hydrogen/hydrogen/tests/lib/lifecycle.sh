@@ -13,7 +13,6 @@
 # capture_process_diagnostics()
 # configure_hydrogen_binary()
 # initialize_test_environment()
-# ensure_no_hydrogen_running()
 # kill_hydrogen_process()
 # verify_log_file_exists()
 # validate_config_files()
@@ -21,8 +20,10 @@
 # setup_output_directories()
 # get_tmpfs_output_dirs()
 # run_lifecycle_test()
+# wait_for_server_ready
 
 # CHANGELOG
+# 1.3.1 - 2025-08-03 - Removed extraneous command -v calls
 # 1.3.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 1.2.4 - 2025-07-18 - Fixed subshell issue in error log output functions that prevented detailed error messages from being displayed in test output
 # 1.2.3 - 2025-07-14 - Enhanced process validation with multiple retry attempts for more robust PID checking
@@ -38,7 +39,7 @@ export LIFECYCLE_GUARD="true"
 
 # Library metadata
 LIFECYCLE_NAME="Lifecycle Management Library"
-LIFECYCLE_VERSION="1.3.0"
+LIFECYCLE_VERSION="1.3.1"
 print_message "${LIFECYCLE_NAME} ${LIFECYCLE_VERSION}" "info"
 
 # Function to find and validate Hydrogen binary
@@ -57,18 +58,7 @@ find_hydrogen_binary() {
     
     # Convert to relative path for cleaner logging
     local relative_dir
-    if command -v convert_to_relative_path >/dev/null 2>&1; then
-        relative_dir=$(convert_to_relative_path "${hydrogen_dir}")
-    else
-        # Fallback: extract just the hydrogen part
-        relative_dir=$(echo "${hydrogen_dir}" | sed -n 's|.*/hydrogen$|hydrogen|p')
-        if [[ -z "${relative_dir}" ]]; then
-            relative_dir=$(echo "${hydrogen_dir}" | sed -n 's|.*/elements/001-hydrogen/hydrogen|hydrogen|p')
-        fi
-        if [[ -z "${relative_dir}" ]]; then
-            relative_dir="hydrogen"
-        fi
-    fi
+    relative_dir=$(convert_to_relative_path "${hydrogen_dir}")
     print_message "Searching for Hydrogen binary in: ${relative_dir}"
     
     # First check for coverage build (highest priority for testing)
@@ -309,9 +299,7 @@ monitor_shutdown() {
         if [[ "${elapsed}" -ge "${timeout}" ]]; then
             print_result 1 "Shutdown timeout after ${elapsed}s"
             get_process_threads "${pid}" "${diag_dir}/stuck_threads.txt"
-            if command -v lsof > /dev/null 2>&1; then
-                lsof -p "${pid}" >> "${diag_dir}/stuck_open_files.txt" 2>/dev/null || true
-            fi
+            lsof -p "${pid}" >> "${diag_dir}/stuck_open_files.txt" 2>/dev/null || true
             kill -9 "${pid}" 2>/dev/null || true
             cp "${log_file}" "${diag_dir}/timeout_shutdown.log" 2>/dev/null || true
             return 1
@@ -377,33 +365,17 @@ configure_hydrogen_binary() {
     
     if [[ -f "${hydrogen_dir}/hydrogen_coverage" ]]; then
         HYDROGEN_BIN="${hydrogen_dir}/hydrogen_coverage"
-        if command -v print_message >/dev/null 2>&1; then
-            print_message "Using coverage build for testing: ${HYDROGEN_BIN}"
-        else
-            echo "INFO: Using coverage build for testing: ${HYDROGEN_BIN}"
-        fi
+        print_message "Using coverage build for testing: ${HYDROGEN_BIN}"
     elif [[ -f "${hydrogen_dir}/hydrogen_release" ]]; then
         HYDROGEN_BIN="${hydrogen_dir}/hydrogen_release"
-        if command -v print_message >/dev/null 2>&1; then
-            print_message "Using release build for testing: ${HYDROGEN_BIN}"
-        else
-            echo "INFO: Using release build for testing: ${HYDROGEN_BIN}"
-        fi
+        print_message "Using release build for testing: ${HYDROGEN_BIN}"
     else
         HYDROGEN_BIN="${hydrogen_dir}/hydrogen"
-        if command -v print_message >/dev/null 2>&1; then
-            print_message "Using standard build for testing: ${HYDROGEN_BIN}"
-        else
-            echo "INFO: Using standard build for testing: ${HYDROGEN_BIN}"
-        fi
+        print_message "Using standard build for testing: ${HYDROGEN_BIN}"
     fi
     
     if [[ ! -x "${HYDROGEN_BIN}" ]]; then
-        if command -v print_error >/dev/null 2>&1; then
-            print_error "Hydrogen binary not found or not executable: ${HYDROGEN_BIN}"
-        else
-            echo "ERROR: Hydrogen binary not found or not executable: ${HYDROGEN_BIN}"
-        fi
+        print_error "Hydrogen binary not found or not executable: ${HYDROGEN_BIN}"
         return 1
     fi
     return 0
@@ -434,34 +406,14 @@ initialize_test_environment() {
     # Clean up any existing log file
     rm -f "${TEST_LOG_FILE}"
     
-    if command -v print_message >/dev/null 2>&1; then
-        print_message "Test environment initialized with log file: ${RESULT_LOG}"
-    else
-        echo "INFO: Test environment initialized with log file: ${RESULT_LOG}"
-    fi
-    return 0
-}
-
-# Function to ensure no Hydrogen instances are running
-ensure_no_hydrogen_running() {
-    if command -v print_message >/dev/null 2>&1; then
-        print_message "Ensuring no Hydrogen instances are running..."
-    else
-        echo "INFO: Ensuring no Hydrogen instances are running..."
-    fi
-    pkill -f hydrogen || true
-    sleep 0.5
+    print_message "Test environment initialized with log file: ${RESULT_LOG}"
     return 0
 }
 
 # Function to kill Hydrogen process if running
 kill_hydrogen_process() {
     if [[ -n "${HYDROGEN_PID}" ]] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
-        if command -v print_message >/dev/null 2>&1; then
-            print_message "Cleaning up Hydrogen (PID ${HYDROGEN_PID})..."
-        else
-            echo "INFO: Cleaning up Hydrogen (PID ${HYDROGEN_PID})..."
-        fi
+        print_message "Cleaning up Hydrogen (PID ${HYDROGEN_PID})..."
         kill -SIGINT "${HYDROGEN_PID}" 2>/dev/null || kill -9 "${HYDROGEN_PID}" 2>/dev/null
         sleep 0.1
         HYDROGEN_PID=""
@@ -477,18 +429,10 @@ verify_log_file_exists() {
     fi
     
     if [[ ! -f "${log_file}" ]]; then
-        if command -v print_error >/dev/null 2>&1; then
-            print_error "Log file was not created at ${log_file}"
-        else
-            echo "ERROR: Log file was not created at ${log_file}"
-        fi
+        print_error "Log file was not created at ${log_file}"
         return 1
     else
-        if command -v print_message >/dev/null 2>&1; then
-            print_message "Log file was created successfully at ${log_file}"
-        else
-            echo "INFO: Log file was created successfully at ${log_file}"
-        fi
+        print_message "Log file was created successfully at ${log_file}"
         return 0
     fi
 }
@@ -642,4 +586,25 @@ run_lifecycle_test() {
     fi
     
     return "$(eval "echo \$${exit_code_var}" || true)"
+}
+
+# Function to wait for server to be ready
+wait_for_server_ready() {
+    local base_url="$1"
+    local max_attempts=25   # 2.5 seconds total (0.1s * 25)
+    local attempt=1
+    
+    print_message "Waiting for server to be ready at ${base_url}..."
+    
+    while [[ "${attempt}" -le "${max_attempts}" ]]; do
+        if curl -s --max-time 2 "${base_url}" >/dev/null 2>&1; then
+            print_message "Server is ready after ${attempt} attempt(s)"
+            return 0
+        fi
+        sleep 0.1
+        ((attempt++))
+    done
+    
+    print_error "Server failed to respond within the expected time"
+    return 1
 }

@@ -20,6 +20,7 @@
 # update_readme_with_results()
 
 # CHANGELOG
+# 2.5.1 - 2025-08-03 - Removed extraneous command -v calls
 # 2.5.0 - 2025-08-02 - Removed old functions, added some from log_output
 # 2.4.0 - 2025-08-02 - Optimizations for formatting functions
 # 2,3,1 - 2025-07-31 - Added LINT_EXCLUDES to setup_test_environment
@@ -35,12 +36,12 @@ export FRAMEWORK_GUARD="true"
 
 # Library metadata
 FRAMEWORK_NAME="Framework Library"
-FRAMEWORK_VERSION="2.5.0"
+FRAMEWORK_VERSION="2.5.1"
 export FRAMEWORK_NAME FRAMEWORK_VERSION
 
 # Set the number of CPU cores for parallel processing - why not oversubscribe?
 CORES_ACTUAL=$(nproc)
-CORES=$((CORES_ACTUAL * 1))
+CORES=$((CORES_ACTUAL * 2))
 export CORES
 
 # Function to format seconds as HH:MM:SS.ZZZ
@@ -306,13 +307,6 @@ setup_orchestration_environment() {
     LOG_FILE="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
     DIAG_FILE="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
 
-    # Default exclude patterns for linting (can be overridden by .lintignore)
-    if [[ -z "${LINT_EXCLUDES:-}" ]]; then
-        readonly LINT_EXCLUDES=(
-            "build/*"
-        )   
-    fi
-
     dump_collected_output
     clear_collected_output
 }
@@ -399,12 +393,6 @@ setup_test_environment() {
         # shellcheck source=tests/lib/cloc.sh # Resolve path statically
         [[ -n "${CLOC_GUARD}" ]] || source "${LIB_DIR}/cloc.sh"
 
-        # Default exclude patterns for linting (can be overridden by .lintignore)
-        if [[ -z "${LINT_EXCLUDES:-}" ]]; then
-            readonly LINT_EXCLUDES=(
-                "build/*"
-            )   
-        fi
     fi
 
     dump_collected_output

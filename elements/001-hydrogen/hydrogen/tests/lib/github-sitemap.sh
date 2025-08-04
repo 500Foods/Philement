@@ -4,8 +4,11 @@
 # Usage: ./github-sitemap-xargs.sh <markdown_file> [--debug] [--theme <Red|Blue>] [--profile] 
 # Description: Checks local markdown links in a repository using xargs parallel processing
 
+# CHANGELOG
+# 0.7.1 - 2025-08-03 - Removed extraneous command -v calls
+
 # Application version
-declare -r APPVERSION="0.7.0"
+declare -r APPVERSION="0.7.1"
 
 # Performance timing functions
 declare -A timing_data
@@ -98,16 +101,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TABLES_SCRIPT="${SCRIPT_DIR}/tables"
 if [[ ! -f "${TABLES_SCRIPT}" ]]; then
     echo "Error: ${TABLES_SCRIPT} not found" >&2
-    exit 1
-fi
-
-if ! command -v jq >/dev/null 2>&1; then
-    echo "Error: jq is required but not installed" >&2
-    exit 1
-fi
-
-if ! command -v xargs >/dev/null 2>&1; then
-    echo "Error: xargs is required but not found" >&2
     exit 1
 fi
 

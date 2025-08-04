@@ -4,6 +4,7 @@
 # Performs cppcheck analysis on C/C++ source files
 
 # CHANGELOG
+# 3.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 3.0.0 - 2025-07-30 - Overhaul #1
 # 2.0.1 - 2025-07-18 - Fixed subshell issue in cppcheck output that prevented detailed error messages from being displayed in test output
 # 2.0.0 - 2025-07-14 - Upgraded to use new modular test framework
@@ -13,7 +14,7 @@
 TEST_NAME="C Lint"
 TEST_ABBR="GCC"
 TEST_NUMBER="91"
-TEST_VERSION="3.0.0"
+TEST_VERSION="3.0.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -99,58 +100,53 @@ run_cppcheck() {
 print_subtest "C/C++ Code Linting (cppcheck)"
 print_message "Detected ${CORES} CPU cores for parallel processing"
 
-if command -v cppcheck >/dev/null 2>&1; then
-    # Count files that will be checked (excluding .lintignore patterns)
-    C_FILES_TO_CHECK=()
-    while read -r file; do
-        if ! should_exclude_file "${file}"; then
-            C_FILES_TO_CHECK+=("${file}")
-        fi
-    done < <(find . -type f \( -name "*.c" -o -name "*.h" -o -name "*.inc" \) || true)
-    
-    C_COUNT=${#C_FILES_TO_CHECK[@]}
-    print_message "Running cppcheck on ${C_COUNT} files..."
-    TEST_NAME="${TEST_NAME} {BLUE}(cppcheck: ${C_COUNT} files){RESET}"    
-    
-    CPPCHECK_OUTPUT=$(run_cppcheck ".")
-    
-    # Check for expected vs unexpected issues
-    EXPECTED_WARNING="warning: Possible null pointer dereference: ptr"
-    HAS_EXPECTED=0
-    OTHER_ISSUES=0
-    
+# Count files that will be checked (excluding .lintignore patterns)
+C_FILES_TO_CHECK=()
+while read -r file; do
+    if ! should_exclude_file "${file}"; then
+        C_FILES_TO_CHECK+=("${file}")
+    fi
+done < <(find . -type f \( -name "*.c" -o -name "*.h" -o -name "*.inc" \) || true)
+
+C_COUNT=${#C_FILES_TO_CHECK[@]}
+print_message "Running cppcheck on ${C_COUNT} files..."
+TEST_NAME="${TEST_NAME} {BLUE}(cppcheck: ${C_COUNT} files){RESET}"    
+
+CPPCHECK_OUTPUT=$(run_cppcheck ".")
+
+# Check for expected vs unexpected issues
+EXPECTED_WARNING="warning: Possible null pointer dereference: ptr"
+HAS_EXPECTED=0
+OTHER_ISSUES=0
+
+while IFS= read -r line; do
+    if [[ "${line}" =~ ^🛈 ]]; then
+        continue
+    elif [[ "${line}" == *"${EXPECTED_WARNING}"* ]]; then
+        HAS_EXPECTED=1
+    elif [[ "${line}" =~ /.*: ]]; then
+        ((OTHER_ISSUES++))
+    fi
+done <<< "${CPPCHECK_OUTPUT}"
+
+# Display output
+if [[ -n "${CPPCHECK_OUTPUT}" ]]; then
+    print_message "cppcheck output:"
+    # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
     while IFS= read -r line; do
-        if [[ "${line}" =~ ^🛈 ]]; then
-            continue
-        elif [[ "${line}" == *"${EXPECTED_WARNING}"* ]]; then
-            HAS_EXPECTED=1
-        elif [[ "${line}" =~ /.*: ]]; then
-            ((OTHER_ISSUES++))
-        fi
-    done <<< "${CPPCHECK_OUTPUT}"
-    
-    # Display output
-    if [[ -n "${CPPCHECK_OUTPUT}" ]]; then
-        print_message "cppcheck output:"
-        # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
-        while IFS= read -r line; do
-            print_output "${line}"
-        done < <(echo "${CPPCHECK_OUTPUT}")
-    fi
-    
-    if [[ ${OTHER_ISSUES} -gt 0 ]]; then
-        print_result 1 "Found ${OTHER_ISSUES} unexpected issues in ${C_COUNT} files"
-        EXIT_CODE=1
-    else
-        if [[ ${HAS_EXPECTED} -eq 1 ]]; then
-            print_result 0 "Found 1 expected warning in ${C_COUNT} files"
-        else
-            print_result 0 "No issues found in ${C_COUNT} files"
-        fi
-        ((PASS_COUNT++))
-    fi
+        print_output "${line}"
+    done < <(echo "${CPPCHECK_OUTPUT}")
+fi
+
+if [[ ${OTHER_ISSUES} -gt 0 ]]; then
+    print_result 1 "Found ${OTHER_ISSUES} unexpected issues in ${C_COUNT} files"
+    EXIT_CODE=1
 else
-    print_result 0 "cppcheck not available (skipped)"
+    if [[ ${HAS_EXPECTED} -eq 1 ]]; then
+        print_result 0 "Found 1 expected warning in ${C_COUNT} files"
+    else
+        print_result 0 "No issues found in ${C_COUNT} files"
+    fi
     ((PASS_COUNT++))
 fi
 

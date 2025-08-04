@@ -12,6 +12,7 @@
 # run_cloc_with_stats()
 
 # CHANGELOG
+# 1.1.1 - 2025-08-03 - Removed extraneous command -v calls
 # 1.1.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 1.0.0 - 2025-07-02 - Initial creation, extracted from test_99_codebase.sh and test_00_all.sh
 
@@ -21,7 +22,7 @@ export CLOC_GUARD="true"
 
 # Library metadata
 CLOC_NAME="CLOC Library"
-CLOC_VERSION="1.1.0"
+CLOC_VERSION="1.1.1"
 print_message "${CLOC_NAME} ${CLOC_VERSION}" "info" 2> /dev/null || true
 
 # Sort out directories
@@ -114,12 +115,6 @@ run_cloc_analysis() {
     local base_dir="${1:-.}"           # Base directory to analyze (default: current directory)
     local lint_ignore_file="${2:-.lintignore}"  # Lintignore file path (default: .lintignore)
     local output_file="$3"             # Optional output file (if not provided, outputs to stdout)
-    
-    # Check if cloc is available
-    if ! command -v cloc >/dev/null 2>&1; then
-        echo "cloc not available"
-        return 1
-    fi
     
     # Create temporary files
     local cloc_output
@@ -243,14 +238,6 @@ run_cloc_analysis() {
 generate_cloc_for_readme() {
     local base_dir="${1:-.}"           # Base directory to analyze (default: current directory)
     local lint_ignore_file="${2:-.lintignore}"  # Lintignore file path (default: .lintignore)
-    
-    # Check if cloc is available
-    if ! command -v cloc >/dev/null 2>&1; then
-        echo '```'
-        echo "cloc not available"
-        echo '```'
-        return 1
-    fi
     
     echo '```cloc'
     

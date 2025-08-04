@@ -8,6 +8,7 @@
 # show_top_files_by_type()
 
 # CHANGELOG
+# 3.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 3.0.0 - 2025-07-30 - Overhaul #1
 # 2.0.0 - 2025-07-18 - Performance optimization: 46% speed improvement (3.136s to 1.705s), background cloc analysis, batch wc -l processing, parallel file type counting, largest-to-smallest file sorting
 # 1.0.0 - Initial version
@@ -16,7 +17,7 @@
 TEST_NAME="Code Size Analysis"
 TEST_ABBR="SIZ"
 TEST_NUMBER="03"
-TEST_VERSION="3.0.0"
+TEST_VERSION="3.0.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -74,11 +75,9 @@ fi
 # Start cloc analysis in background to run in parallel with file processing
 CLOC_OUTPUT=$(mktemp)
 CLOC_PID=""
-if command -v cloc >/dev/null 2>&1; then
-    print_message "Starting cloc analysis in background..."
-    run_cloc_analysis "." ".lintignore" "${CLOC_OUTPUT}" &
-    CLOC_PID=$!
-fi
+print_message "Starting cloc analysis in background..."
+run_cloc_analysis "." ".lintignore" "${CLOC_OUTPUT}" &
+CLOC_PID=$!
 
 print_subtest "Source Code File Analysis"
 print_message "Analyzing source code files and generating statistics..."

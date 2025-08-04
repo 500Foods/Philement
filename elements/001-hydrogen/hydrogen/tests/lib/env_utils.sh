@@ -16,6 +16,7 @@
 # set_validation_test_environment()
 
 # CHANGELOG
+# 1.2.1 - 2025-08-03 - Removed extraneous command -v calls
 # 1.2.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 1.1.0 - 2025-07-02 - Updated with additional functions for test_35_env_variables.sh migration
 # 1.0.0 - 2025-07-02 - Initial creation for test_12_env_payload.sh migration
@@ -26,7 +27,7 @@ export ENV_UTILS_GUARD="true"
 
 # Library metadata
 ENV_UTILS_NAME="Environment Utilities Library"
-ENV_UTILS_VERSION="1.2.0"
+ENV_UTILS_VERSION="1.2.1"
 print_message "${ENV_UTILS_NAME} ${ENV_UTILS_VERSION}" "info"
 
 # Function: Check if environment variable is set and non-empty
@@ -42,18 +43,10 @@ check_env_var() {
         if [[ "${var_name}" =~ PASS|LOCK|KEY|JWT|TOKEN|SECRET ]] && [[ ${#var_value} -gt 20 ]]; then
             display_value="${var_value:0:20}..."
         fi
-        if command -v print_message >/dev/null 2>&1; then
-            print_message "✓ ${var_name} is set to: ${display_value}"
-        else
-            echo "INFO: ✓ ${var_name} is set to: ${display_value}"
-        fi
+        print_message "✓ ${var_name} is set to: ${display_value}"
         return 0
     else
-        if command -v print_warning >/dev/null 2>&1; then
-            print_warning "✗ ${var_name} is not set or empty"
-        else
-            echo "WARNING: ✗ ${var_name} is not set or empty"
-        fi
+        print_warning "✗ ${var_name} is not set or empty"
         return 1
     fi
 }
@@ -73,11 +66,7 @@ validate_rsa_key() {
     
     # Check if the decoded file exists and has content
     if [[ ! -s "${temp_key}" ]]; then
-        if command -v print_warning >/dev/null 2>&1; then
-            print_warning "✗ ${key_name} failed base64 decode - no output generated"
-        else
-            echo "WARNING: ✗ ${key_name} failed base64 decode - no output generated"
-        fi
+        print_warning "✗ ${key_name} failed base64 decode - no output generated"
         rm -f "${temp_key}"
         return 1
     fi
@@ -91,11 +80,7 @@ validate_rsa_key() {
             openssl_cmd="openssl pkey -pubin -in ${temp_key} -check -noout"
             ;;
         *)
-            if command -v print_warning >/dev/null 2>&1; then
-                print_warning "✗ Unknown key type: ${key_type}"
-            else
-                echo "WARNING: ✗ Unknown key type: ${key_type}"
-            fi
+            print_warning "✗ Unknown key type: ${key_type}"
             rm -f "${temp_key}"
             return 1
             ;;
@@ -103,19 +88,11 @@ validate_rsa_key() {
     
     # Validate key format - this is the real test
     if ${openssl_cmd} >/dev/null 2>&1; then
-        if command -v print_message >/dev/null 2>&1; then
-            print_message "✓ ${key_name} is a valid RSA ${key_type} key"
-        else
-            echo "INFO: ✓ ${key_name} is a valid RSA ${key_type} key"
-        fi
+        print_message "✓ ${key_name} is a valid RSA ${key_type} key"
         rm -f "${temp_key}"
         return 0
     else
-        if command -v print_warning >/dev/null 2>&1; then
-            print_warning "✗ ${key_name} is not a valid RSA ${key_type} key"
-        else
-            echo "WARNING: ✗ ${key_name} is not a valid RSA ${key_type} key"
-        fi
+        print_warning "✗ ${key_name} is not a valid RSA ${key_type} key"
         rm -f "${temp_key}"
         return 1
     fi
@@ -128,11 +105,7 @@ reset_environment_variables() {
     unset H_MEMORY_WARNING H_LOAD_WARNING H_PRINT_QUEUE_ENABLED H_CONSOLE_LOG_LEVEL
     unset H_DEVICE_ID H_FRIENDLY_NAME
     
-    if command -v print_message >/dev/null 2>&1; then
-        print_message "All Hydrogen environment variables have been unset"
-    else
-        echo "INFO: All Hydrogen environment variables have been unset"
-    fi
+    print_message "All Hydrogen environment variables have been unset"
 }
 
 # Function to set environment variables for basic test
@@ -152,11 +125,8 @@ set_basic_test_environment() {
     export H_DEVICE_ID="hydrogen-env-test"
     export H_FRIENDLY_NAME="Hydrogen Environment Test"
     
-    if command -v print_message >/dev/null 2>&1; then
-        print_message "Basic environment variables for Hydrogen test have been set"
-    else
-        echo "INFO: Basic environment variables for Hydrogen test have been set"
-    fi
+    print_message "Basic environment variables for Hydrogen test have been set"
+    echo "INFO: Basic environment variables for Hydrogen test have been set"
 }
 
 # Function to validate required configuration files exist
@@ -165,19 +135,11 @@ validate_config_files() {
     config_file=$(get_config_path "hydrogen_test_env.json")
     
     if [[ ! -f "${config_file}" ]]; then
-        if command -v print_error >/dev/null 2>&1; then
-            print_error "Env test config file not found: ${config_file}"
-        else
-            echo "ERROR: Env test config file not found: ${config_file}"
-        fi
+        print_error "Env test config file not found: ${config_file}"
         return 1
     fi
     
-    if command -v print_message >/dev/null 2>&1; then
-        print_message "Configuration file validated: ${config_file}"
-    else
-        echo "INFO: Configuration file validated: ${config_file}"
-    fi
+    print_message "Configuration file validated: ${config_file}"
     return 0
 }
 
@@ -201,51 +163,31 @@ validate_websocket_key() {
     
     # Check if key is empty
     if [[ -z "${key_value}" ]]; then
-        if command -v print_warning >/dev/null 2>&1; then
-            print_warning "✗ ${key_name} is empty"
-        else
-            echo "WARNING: ✗ ${key_name} is empty"
-        fi
+        print_warning "✗ ${key_name} is empty"
         return 1
     fi
     
     # Check minimum length (8 characters)
     if [[ ${#key_value} -lt 8 ]]; then
-        if command -v print_warning >/dev/null 2>&1; then
-            print_warning "✗ ${key_name} must be at least 8 characters long (got ${#key_value})"
-        else
-            echo "WARNING: ✗ ${key_name} must be at least 8 characters long (got ${#key_value})"
-        fi
+        print_warning "✗ ${key_name} must be at least 8 characters long (got ${#key_value})"
         return 1
     fi
     
     # Check for printable ASCII characters only (33-126, no spaces/control chars)
     if [[ "${key_value}" =~ [[:space:]] ]]; then
-        if command -v print_warning >/dev/null 2>&1; then
-            print_warning "✗ ${key_name} contains spaces or control characters"
-        else
-            echo "WARNING: ✗ ${key_name} contains spaces or control characters"
-        fi
+        print_warning "✗ ${key_name} contains spaces or control characters"
         return 1
     fi
     
     # Check for non-printable characters
     if [[ "${key_value}" =~ [^[:print:]] ]]; then
-        if command -v print_warning >/dev/null 2>&1; then
-            print_warning "✗ ${key_name} contains non-printable characters"
-        else
-            echo "WARNING: ✗ ${key_name} contains non-printable characters"
-        fi
+        print_warning "✗ ${key_name} contains non-printable characters"
         return 1
     fi
     
     # All checks passed
     local display_value="${key_value:0:8}..."
-    if command -v print_message >/dev/null 2>&1; then
-        print_message "✓ ${key_name} is a valid WebSocket key: ${display_value}"
-    else
-        echo "INFO: ✓ ${key_name} is a valid WebSocket key: ${display_value}"
-    fi
+    print_message "✓ ${key_name} is a valid WebSocket key: ${display_value}"
     return 0
 }
 
@@ -283,11 +225,7 @@ set_type_conversion_environment() {
     export H_MAX_QUEUE_BLOCKS="128"
     export H_DEFAULT_QUEUE_CAPACITY="1024"
     
-    if command -v print_message >/dev/null 2>&1; then
-        print_message "Type conversion environment variables for Hydrogen test have been set"
-    else
-        echo "INFO: Type conversion environment variables for Hydrogen test have been set"
-    fi
+    print_message "Type conversion environment variables for Hydrogen test have been set"
 }
 
 # Function to set environment variables for validation testing
@@ -302,9 +240,5 @@ set_validation_test_environment() {
     export H_SHUTDOWN_WAIT="0"    # edge case: zero timeout
     export H_MAX_QUEUE_BLOCKS="0" # edge case: zero blocks
     
-    if command -v print_message >/dev/null 2>&1; then
-        print_message "Validation test environment variables for Hydrogen test have been set"
-    else
-        echo "INFO: Validation test environment variables for Hydrogen test have been set"
-    fi
+    print_message "Validation test environment variables for Hydrogen test have been set"
 }

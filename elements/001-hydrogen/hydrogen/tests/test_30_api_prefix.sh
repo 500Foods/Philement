@@ -154,27 +154,6 @@ validate_api_request() {
     return 1
 }
 
-# Function to wait for server to be ready
-wait_for_server_ready() {
-    local base_url="$1"
-    local max_attempts=40   # 20 seconds total (0.5s * 40)
-    local attempt=1
-    
-    print_message "Waiting for server to be ready at ${base_url}..."
-    
-    while [[ "${attempt}" -le "${max_attempts}" ]]; do
-        if curl -s --max-time 2 "${base_url}" >/dev/null 2>&1; then
-            print_message "Server is ready after $(( attempt * 5 / 10 )) seconds"
-            return 0
-        fi
-        ((attempt++))
-    done
-    
-    print_error "Server failed to respond within 20 seconds"
-    return 1
-}
-
-
 # Handle cleanup on script interruption (not normal exit)
 # shellcheck disable=SC2317  # Function is invoked indirectly via trap
 cleanup() {

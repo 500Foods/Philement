@@ -7,6 +7,7 @@
 # calculate_unity_coverage()
 
 # CHANGELOG
+# 1.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 1.0.0 - 2025-07-21 - Initial version with Unity coverage calculation functions
 
 # Guard clause to prevent multiple sourcing
@@ -15,7 +16,7 @@ export COVERAGE_UNITY_GUARD="true"
 
 # Library metadata
 COVERAGE_UNITY_NAME="Coverage Unity Library"
-COVERAGE_UNITY_VERSION="1.0.0"
+COVERAGE_UNITY_VERSION="1.0.1"
 print_message "${COVERAGE_UNITY_NAME} ${COVERAGE_UNITY_VERSION}" "info" 2> /dev/null || true
 
 # Sort out directories
@@ -52,19 +53,11 @@ calculate_unity_coverage() {
     cd "${build_dir}" || return 1
     
     # Generate gcov files more efficiently using parallel processing
-    if command -v xargs >/dev/null 2>&1; then
-        # Use xargs for parallel processing with all available cores
-        find . -name "*.gcno" -print0 | xargs -0 -P 0 -I{} sh -c "
-            gcno_dir=\"\$(dirname '{}')\"
-            cd \"\${gcno_dir}\" && gcov \"\$(basename '{}')\" >/dev/null 2>&1
-        " || true
-    else
-        # Fallback to optimized sequential processing
-        find . -name "*.gcno" -exec sh -c '
-            gcno_dir="$(dirname "$1")"
-            cd "${gcno_dir}" && gcov "$(basename "$1")" >/dev/null 2>&1
-        ' _ {} \;
-    fi
+    # Use xargs for parallel processing with all available cores
+    find . -name "*.gcno" -print0 | xargs -0 -P 0 -I{} sh -c "
+        gcno_dir=\"\$(dirname '{}')\"
+        cd \"\${gcno_dir}\" && gcov \"\$(basename '{}')\" >/dev/null 2>&1
+    " || true
     
     # Return to original directory
     cd "${original_dir}" || return 1
