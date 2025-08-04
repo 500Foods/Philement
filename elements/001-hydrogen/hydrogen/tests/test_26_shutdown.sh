@@ -22,9 +22,10 @@ setup_test_environment
 
 print_subtest "Locate Hydrogen Binary"
 
-HYDROGEN_BIN='hydrogen'
-if find_hydrogen_binary "${PROJECT_DIR}" "HYDROGEN_BIN"; then
-    print_message "Using Hydrogen binary: ${HYDROGEN_BIN}"
+HYDROGEN_BIN=''
+HYDROGEN_BIN_BASE=''
+if find_hydrogen_binary "${PROJECT_DIR}"; then
+    print_message "Using Hydrogen binary: ${HYDROGEN_BIN_BASE}"
     print_result 0 "Hydrogen binary found and validated"
     ((PASS_COUNT++))
 else

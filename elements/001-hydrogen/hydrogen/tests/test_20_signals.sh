@@ -32,6 +32,7 @@ setup_test_environment
 
 # Test configuration
 TEST_CONFIG="${CONFIG_DIR}/hydrogen_test_max.json"
+TEST_CONFIG_BASE=$(basename "${TEST_CONFIG}")
 LOG_FILE_SIGINT="${LOGS_DIR}/test_${TEST_NUMBER}_SIGINT_${TIMESTAMP}.log"
 LOG_FILE_SIGTERM="${LOGS_DIR}/test_${TEST_NUMBER}_SIGTERM_${TIMESTAMP}.log"
 LOG_FILE_SIGHUP="${LOGS_DIR}/test_${TEST_NUMBER}_SIGHUP_${TIMESTAMP}.log"
@@ -48,8 +49,10 @@ SIGNAL_TIMEOUT=15
 
 print_subtest "Locate Hydrogen Binary"
 
-if find_hydrogen_binary "${PROJECT_DIR}" "HYDROGEN_BIN"; then
-    print_message "Using Hydrogen binary: $(basename "${HYDROGEN_BIN}")"
+HYDROGEN_BIN=''
+HYDROGEN_BIN_BASE=''
+if find_hydrogen_binary "${PROJECT_DIR}"; then
+    print_message "Using Hydrogen binary: ${HYDROGEN_BIN_BASE}"
     print_result 0 "Hydrogen binary found and validated"
     ((PASS_COUNT++))
 else
@@ -181,7 +184,7 @@ verify_config_dump() {
 }
 
 print_subtest "SIGINT Signal Handling (Ctrl+C)"
-print_command "$(basename "${HYDROGEN_BIN}") $(basename "${TEST_CONFIG}")"
+print_command "${HYDROGEN_BIN_BASE} ${TEST_CONFIG_BASE}"
 
 "${HYDROGEN_BIN}" "${TEST_CONFIG}" > "${LOG_FILE_SIGINT}" 2>&1 &
 HYDROGEN_PID=$!
@@ -208,7 +211,7 @@ else
 fi
 
 print_subtest "SIGTERM Signal Handling (Terminate)"
-print_command "$(basename "${HYDROGEN_BIN}") $(basename "${TEST_CONFIG}")"
+print_command "${HYDROGEN_BIN_BASE} ${TEST_CONFIG_BASE}"
 
 "${HYDROGEN_BIN}" "${TEST_CONFIG}" > "${LOG_FILE_SIGTERM}" 2>&1 &
 HYDROGEN_PID=$!
@@ -235,7 +238,7 @@ else
 fi
 
 print_subtest "SIGHUP Signal Handling (Single Restart)"
-print_command "$(basename "${HYDROGEN_BIN}") $(basename "${TEST_CONFIG}")"
+print_command "${HYDROGEN_BIN_BASE} ${TEST_CONFIG_BASE}"
 
 "${HYDROGEN_BIN}" "${TEST_CONFIG}" > "${LOG_FILE_SIGHUP}" 2>&1 &
 HYDROGEN_PID=$!
@@ -273,7 +276,7 @@ fi
 
 print_subtest "SIGHUP Signal Handling (Many Restarts)"
 print_message "Testing multiple SIGHUP restarts (count: ${RESTART_COUNT})"
-print_command "$(basename "${HYDROGEN_BIN}") $(basename "${TEST_CONFIG}")"
+print_command "${HYDROGEN_BIN_BASE} ${TEST_CONFIG_BASE}"
 
 "${HYDROGEN_BIN}" "${TEST_CONFIG}" > "${LOG_FILE_RESTART}" 2>&1 &
 HYDROGEN_PID=$!
@@ -330,7 +333,7 @@ else
 fi
 
 print_subtest "SIGUSR1 Signal Handling (Crash Dump)"
-print_command "$(basename "${HYDROGEN_BIN}") $(basename "${TEST_CONFIG}")"
+print_command "${HYDROGEN_BIN_BASE} ${TEST_CONFIG_BASE}"
 
 "${HYDROGEN_BIN}" "${TEST_CONFIG}" > "${LOG_FILE_SIGUSR1}" 2>&1 &
 HYDROGEN_PID=$!
@@ -363,7 +366,7 @@ else
 fi
 
 print_subtest "SIGUSR2 Signal Handling (Config Dump)"
-print_command "$(basename "${HYDROGEN_BIN}") $(basename "${TEST_CONFIG}")"
+print_command "${HYDROGEN_BIN_BASE} ${TEST_CONFIG_BASE}"
 
 "${HYDROGEN_BIN}" "${TEST_CONFIG}" > "${LOG_FILE_SIGUSR2}" 2>&1 &
 HYDROGEN_PID=$!
@@ -394,7 +397,7 @@ fi
 
 print_subtest "Multiple Signal Handling"
 print_message "Testing multiple signals sent simultaneously"
-print_command "$(basename "${HYDROGEN_BIN}") $(basename "${TEST_CONFIG}")"
+print_command "${HYDROGEN_BIN_BASE} ${TEST_CONFIG_BASE}"
 
 "${HYDROGEN_BIN}" "${TEST_CONFIG}" > "${LOG_FILE_MULTI}" 2>&1 &
 HYDROGEN_PID=$!
