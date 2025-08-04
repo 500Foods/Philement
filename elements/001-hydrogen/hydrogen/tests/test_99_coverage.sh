@@ -55,7 +55,7 @@ BLACKBOX_COVERAGE_DIR="${BUILD_DIR}/coverage"
 
 if [[ -d "${BLACKBOX_COVERAGE_DIR}" ]]; then
     # Collect blackbox coverage data strictly from build/coverage
-    coverage_percentage=$(collect_blackbox_coverage_from_dir "${BLACKBOX_COVERAGE_DIR}" "${TIMESTAMP}")
+    coverage_percentage=$(calculate_blackbox_coverage "${BLACKBOX_COVERAGE_DIR}" "${TIMESTAMP}")
     result=$?
     
     if [[ "${result}" -eq 0 ]]; then

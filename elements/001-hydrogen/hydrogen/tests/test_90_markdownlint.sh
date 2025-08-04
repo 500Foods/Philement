@@ -59,7 +59,7 @@ if [[ "${MD_COUNT}" -gt 0 ]]; then
     
     for file in "${MD_FILES[@]}"; do
         file_hash=$(get_file_hash "${file}")
-        cache_file="${CACHE_DIR}/$(basename "${file}")_${file_hash}"
+        cache_file="${CACHE_DIR}/${file##*/}_${file_hash}"
         if [[ -f "${cache_file}" ]]; then
             ((cached_files++))
             cat "${cache_file}" >> "${TEMP_LOG}" 2>&1 || true

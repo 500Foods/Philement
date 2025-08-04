@@ -105,7 +105,7 @@ display_timestamp=$(date '+%Y-%m-%d %H:%M:%S %Z')
 # shellcheck disable=SC2034 # declared globally elsewhere
 unity_coverage_percentage=$(calculate_unity_coverage "${UNITY_COVS}" "${timestamp}" 2>/dev/null || echo "0.000")
 # shellcheck disable=SC2034 # declared globally elsewhere
-blackbox_coverage_percentage=$(collect_blackbox_coverage_from_dir "${BLACKBOX_COVS}" "${timestamp}" 2>/dev/null || echo "0.000")
+blackbox_coverage_percentage=$(calculate_blackbox_coverage "${BLACKBOX_COVS}" "${timestamp}" 2>/dev/null || echo "0.000")
 
 # Read the detailed coverage data that was just generated
 unity_file_count=0
