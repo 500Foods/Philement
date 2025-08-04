@@ -14,6 +14,7 @@
 # get_webserver_port()
 
 # CHANGELOG
+# 1.2.1 - 2025-08-03 - Removed extraneous command -v calls
 # 1.2.0 - 2025-07-30 - Added common should_exclude_file() from other scripts
 # 1.1.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 1.0.0 - 2025-07-02 - Initial creation from support_utils.sh migration
@@ -24,8 +25,15 @@ export FILE_UTILS_GUARD="true"
 
 # Library metadata
 FILE_UTILS_NAME="File Utilities Library"
-FILE_UTILS_VERSION="1.2.0"
+FILE_UTILS_VERSION="1.2.1"
 print_message "${FILE_UTILS_NAME} ${FILE_UTILS_VERSION}" "info"
+
+# Default exclude patterns for linting (can be overridden by .lintignore)
+if [[ -z "${LINT_EXCLUDES:-}" ]]; then
+    readonly LINT_EXCLUDES=(
+        "build/*"
+    )   
+fi
 
 # Check if a file should be excluded from linting
 should_exclude_file() {
@@ -84,13 +92,7 @@ convert_to_relative_path() {
 safe_cd() {
     local target_dir="$1"
     if ! cd "${target_dir}"; then
-        # Note: This function uses print_error from log_output.sh
-        # The calling script should source log_output.sh before file_utils.sh
-        if command -v print_error >/dev/null 2>&1; then
-            print_error "Failed to change directory to ${target_dir}"
-        else
-            echo "ERROR: Failed to change directory to ${target_dir}" >&2
-        fi
+        print_error "Failed to change directory to ${target_dir}"
         return 1
     fi
     return 0
@@ -116,7 +118,6 @@ get_config_path() {
     local script_dir
     script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
     local config_path="${script_dir}/../configs/${config_file}"
-    
     echo "${config_path}"
 }
 
@@ -126,24 +127,13 @@ extract_web_server_port() {
     local default_port=5000
     
     # Extract port using grep and sed (simple approach, could be improved with jq)
-    if command -v jq &> /dev/null; then
-        # Use jq if available for proper JSON parsing
-        local port
-        port=$(jq -r '.WebServer.Port // 5000' "${config_file}" 2>/dev/null)
-        if jq -r '.WebServer.Port // 5000' "${config_file}" >/dev/null 2>&1 && [[ -n "${port}" ]] && [[ "${port}" != "null" ]]; then
-            echo "${port}"
-            return 0
-        fi
-    fi
-    
-    # Fallback method using grep and sed
     local port
-    port=$(grep -o '"Port":[^,}]*' "${config_file}" | head -1 | sed 's/"Port":\s*\([0-9]*\)/\1/' || true)
-    if [[ -n "${port}" ]]; then
+    port=$(jq -r '.WebServer.Port // 5000' "${config_file}" 2>/dev/null)
+    if jq -r '.WebServer.Port // 5000' "${config_file}" >/dev/null 2>&1 && [[ -n "${port}" ]] && [[ "${port}" != "null" ]]; then
         echo "${port}"
         return 0
     fi
-    
+   
     # Return default port if extraction fails
     echo "${default_port}"
     return 0
@@ -153,41 +143,14 @@ extract_web_server_port() {
 validate_json() {
     local file="$1"
     
-    if command -v jq &> /dev/null; then
-        # Use jq if available for proper JSON validation
-        jq . "${file}" > /dev/null 2>&1
-        if jq . "${file}" >/dev/null 2>&1; then
-            if command -v print_result >/dev/null 2>&1; then
-                print_result 0 "Response contains valid JSON"
-            else
-                echo "Response contains valid JSON"
-            fi
-            return 0
-        else
-            if command -v print_result >/dev/null 2>&1; then
-                print_result 1 "Response contains invalid JSON"
-            else
-                echo "Response contains invalid JSON" >&2
-            fi
-            return 1
-        fi
+    # Use jq if available for proper JSON validation
+    jq . "${file}" > /dev/null 2>&1
+    if jq . "${file}" >/dev/null 2>&1; then
+        print_result 0 "Response contains valid JSON"
+        return 0
     else
-        # Fallback: simple check for JSON structure
-        if grep -q "{" "${file}" && grep -q "}" "${file}"; then
-            if command -v print_result >/dev/null 2>&1; then
-                print_result 0 "Response appears to be JSON (basic validation only)"
-            else
-                echo "Response appears to be JSON (basic validation only)"
-            fi
-            return 0
-        else
-            if command -v print_result >/dev/null 2>&1; then
-                print_result 1 "Response does not appear to be JSON"
-            else
-                echo "Response does not appear to be JSON" >&2
-            fi
-            return 1
-        fi
+        print_result 1 "Response contains invalid JSON"
+        return 1
     fi
 }
 
@@ -196,18 +159,9 @@ get_webserver_port() {
     local config="$1"
     local port
     
-    if command -v jq &> /dev/null; then
-        # Use jq if available
-        port=$(jq -r '.WebServer.Port // 8080' "${config}" 2>/dev/null)
-        if [[ -z "${port}" ]] || [[ "${port}" = "null" ]]; then
-            port=8080
-        fi
-    else
-        # Fallback to grep
-        port=$(grep -o '"Port":[[:space:]]*[0-9]*' "${config}" | head -1 | grep -o '[0-9]*' || true)
-        if [[ -z "${port}" ]]; then
-            port=8080
-        fi
+    port=$(jq -r '.WebServer.Port // 8080' "${config}" 2>/dev/null)
+    if [[ -z "${port}" ]] || [[ "${port}" = "null" ]]; then
+        port=8080
     fi
     echo "${port}"
 }

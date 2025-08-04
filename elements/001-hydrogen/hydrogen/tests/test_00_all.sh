@@ -12,6 +12,7 @@
 # run_all_tests() 
 
 # CHANGELOG
+# 6.1.1 - 2025-08-03 - Removed extraneous command -v calls
 # 6.1.0 - 2025-07-31 - Added tmpfs code that was originally in Test 01
 # 6.0.0 - 2025-07-22 - Upgraded for more stringent shellcheck compliance
 # 5.0.0 - 2025-07-19 - Script Review: Folder variables used consistently
@@ -29,7 +30,7 @@
 TEST_NAME="Test Suite Orchestration"
 TEST_ABBR="ORC"
 TEST_NUMBER="00"
-TEST_VERSION="6.1.0"
+TEST_VERSION="6.1.1"
 export TEST_NAME TEST_ABBR TEST_NUMBER TEST_VERSION
  
 # shellcheck disable=SC1091 # Resolve path statically
@@ -39,8 +40,8 @@ setup_orchestration_environment
 print_subtest "Verifying command/version availability"
 
 commands=(
-    "grep" "sort" "bc" "jq" "awk" "sed" "xargs" "nproc" "timeout" "date"
-    "cmake" "curl" "websocat" 
+    "grep" "sort" "bc" "jq" "awk" "sed" "xargs" "nproc" "timeout" "date" "lsof"
+    "cmake" "gcc" "ninja" "curl" "websocat" "wscat"
     "git" "md5sum" "cloc"
     "cppcheck" "shellcheck" "markdownlint" "eslint" "stylelint" "htmlhint" "jsonlint" "swagger-cli"
     "Oh.sh" "tables" "coverage_table.sh"
@@ -596,11 +597,7 @@ for i in "${!TEST_ELAPSED[@]}"; do
         elapsed_time="0${elapsed_time}"
     fi
     if [[ "${elapsed_time}" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
-        if command -v bc >/dev/null 2>&1; then
-            TOTAL_RUNNING_TIME=$(echo "${TOTAL_RUNNING_TIME} + ${elapsed_time}" | bc)
-        else
-            TOTAL_RUNNING_TIME=$(awk "BEGIN {print (${TOTAL_RUNNING_TIME} + ${elapsed_time}); exit}")
-        fi
+        TOTAL_RUNNING_TIME=$(echo "${TOTAL_RUNNING_TIME} + ${elapsed_time}" | bc)
     fi
 done
 

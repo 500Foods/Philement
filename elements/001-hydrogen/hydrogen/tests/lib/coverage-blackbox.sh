@@ -8,6 +8,7 @@
 # collect_blackbox_coverage_from_dir()
 
 # CHANGELOG
+# 1.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 1.0.0 - 2025-07-21 - Initial version with combined coverage functions
 
 # Guard clause to prevent multiple sourcing
@@ -16,7 +17,7 @@ export COVERAGE_BLACKBOX_GUARD="true"
 
 # Library metadata
 COVERAGE_BLACKBOX_NAME="Coverage Blackbox Library"
-COVERAGE_BLACKBOX_VERSION="1.0.0"
+COVERAGE_BLACKBOX_VERSION="1.0.1"
 print_message "${COVERAGE_BLACKBOX_NAME} ${COVERAGE_BLACKBOX_VERSION}" "info" 2> /dev/null || true
 
 # Sort out directories
@@ -76,19 +77,11 @@ collect_blackbox_coverage() {
     
     # Generate gcov files more efficiently using parallel processing
        
-    if command -v xargs >/dev/null 2>&1; then
-        # Use xargs for parallel processing with all available cores
-        find . -name "*.gcda" -print0 | xargs -0 -P 0 -I{} sh -c "
-            gcda_dir=\"\$(dirname '{}')\"
-            cd \"\${gcda_dir}\" && gcov \"\$(basename '{}')\" >/dev/null 2>&1
-        " || true
-    else
-        # Fallback to optimized sequential processing
-        find . -name "*.gcda" -exec sh -c '
-            gcda_dir="$(dirname "$1")"
-            cd "${gcda_dir}" && gcov "$(basename "$1")" >/dev/null 2>&1
-        ' _ {} \;
-    fi
+    # Use xargs for parallel processing with all available cores
+    find . -name "*.gcda" -print0 | xargs -0 -P 0 -I{} sh -c "
+        gcda_dir=\"\$(dirname '{}')\"
+        cd \"\${gcda_dir}\" && gcov \"\$(basename '{}')\" >/dev/null 2>&1
+    " || true
     
     # Return to original directory
     cd "${original_dir}" || return 1
@@ -208,17 +201,10 @@ collect_blackbox_coverage_from_dir() {
     cd "${coverage_dir}" || return 1
     
     # Generate gcov files efficiently using parallel processing
-    if command -v xargs >/dev/null 2>&1; then
-        find . -name "*.gcda" -print0 | xargs -0 -P 0 -I{} sh -c "
-            gcda_dir=\"\$(dirname '{}')\"
-            cd \"\${gcda_dir}\" && gcov \"\$(basename '{}')\" >/dev/null 2>&1
-        " || true
-    else
-        find . -name "*.gcda" -exec sh -c '
-            gcda_dir="$(dirname "$1")"
-            cd "${gcda_dir}" && gcov "$(basename "$1")" >/dev/null 2>&1
-        ' _ {} \;
-    fi
+    find . -name "*.gcda" -print0 | xargs -0 -P 0 -I{} sh -c "
+        gcda_dir=\"\$(dirname '{}')\"
+        cd \"\${gcda_dir}\" && gcov \"\$(basename '{}')\" >/dev/null 2>&1
+    " || true
     
     # Return to original directory
     cd "${original_dir}" || return 1

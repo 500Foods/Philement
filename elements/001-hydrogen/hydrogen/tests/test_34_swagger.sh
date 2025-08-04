@@ -4,6 +4,7 @@
 # Tests the Swagger functionality, its presence in the payload, etc.
 
 # CHANGELOG
+# 4.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 4.0.0 - 2025-07-30 - Overhaul #1
 # 3.1.4 - 2025-07-18 - Fixed subshell issue in response output that prevented detailed error messages from being displayed in test output
 # 3.1.3 - 2025-07-14 - Enhanced HTTP request functions with retry logic to handle subsystem initialization delays during parallel execution
@@ -26,26 +27,6 @@ setup_test_environment
 
 # Test variables
 HYDROGEN_DIR="${PROJECT_DIR}"
-
-# Function to wait for server to be ready
-wait_for_server_ready() {
-    local base_url="$1"
-    local max_attempts=100   # 20 seconds total (0.2s * 100)
-    local attempt=1
-    
-    print_message "Waiting for server to be ready at ${base_url}..."
-    
-    while [[ "${attempt}" -le "${max_attempts}" ]]; do
-        if curl -s --max-time 2 "${base_url}" >/dev/null 2>&1; then
-            print_message "Server is ready after $(( attempt * 2 / 10 )) seconds"
-            return 0
-        fi
-        ((attempt++))
-    done
-    
-    print_error "Server failed to respond within 20 seconds"
-    return 1
-}
 
 # Function to check HTTP response content with retry logic for subsystem readiness
 check_response_content() {
@@ -249,58 +230,36 @@ check_swagger_json() {
             print_message "Successfully received swagger.json from ${url}"
             
             # Check if it's valid JSON and contains expected swagger content
-            if command -v jq >/dev/null 2>&1; then
-                # Use jq to validate JSON and check for required fields
-                if jq -e '.openapi // .swagger' "${response_file}" >/dev/null 2>&1; then
-                    local openapi_version
-                    openapi_version=$(jq -r '.openapi // .swagger // "unknown"' "${response_file}")
-                    print_message "Valid OpenAPI/Swagger specification found (version: ${openapi_version})"
+            # Use jq to validate JSON and check for required fields
+            if jq -e '.openapi // .swagger' "${response_file}" >/dev/null 2>&1; then
+                local openapi_version
+                openapi_version=$(jq -r '.openapi // .swagger // "unknown"' "${response_file}")
+                print_message "Valid OpenAPI/Swagger specification found (version: ${openapi_version})"
+                
+                # Check for required Hydrogen API components
+                if jq -e '.info.title' "${response_file}" >/dev/null 2>&1; then
+                    local api_title
+                    api_title=$(jq -r '.info.title' "${response_file}")
+                    print_message "API Title: ${api_title}"
                     
-                    # Check for required Hydrogen API components
-                    if jq -e '.info.title' "${response_file}" >/dev/null 2>&1; then
-                        local api_title
-                        api_title=$(jq -r '.info.title' "${response_file}")
-                        print_message "API Title: ${api_title}"
-                        
-                        if [[ "${api_title}" == *"Hydrogen"* ]]; then
-                            if [[ "${attempt}" -gt 1 ]]; then
-                                print_result 0 "swagger.json contains valid Hydrogen API specification (succeeded on attempt ${attempt})"
-                            else
-                                print_result 0 "swagger.json contains valid Hydrogen API specification"
-                            fi
-                            return 0
+                    if [[ "${api_title}" == *"Hydrogen"* ]]; then
+                        if [[ "${attempt}" -gt 1 ]]; then
+                            print_result 0 "swagger.json contains valid Hydrogen API specification (succeeded on attempt ${attempt})"
                         else
-                            print_result 1 "swagger.json doesn't appear to be for Hydrogen API (title: ${api_title})"
-                            return 1
+                            print_result 0 "swagger.json contains valid Hydrogen API specification"
                         fi
+                        return 0
                     else
-                        print_result 1 "swagger.json missing required 'info.title' field"
+                        print_result 1 "swagger.json doesn't appear to be for Hydrogen API (title: ${api_title})"
                         return 1
                     fi
                 else
-                    print_result 1 "swagger.json contains invalid JSON or missing OpenAPI/Swagger version"
+                    print_result 1 "swagger.json missing required 'info.title' field"
                     return 1
                 fi
             else
-                # Fallback validation without jq
-                if grep -q '"openapi":\|"swagger":' "${response_file}" && \
-                   grep -q '"info":' "${response_file}" && \
-                   grep -q '"Hydrogen' "${response_file}"; then
-                    if [[ "${attempt}" -gt 1 ]]; then
-                        print_result 0 "swagger.json contains expected Hydrogen API content (basic validation, succeeded on attempt ${attempt})"
-                    else
-                        print_result 0 "swagger.json contains expected Hydrogen API content (basic validation)"
-                    fi
-                    return 0
-                else
-                    print_result 1 "swagger.json doesn't contain expected OpenAPI/Swagger structure or Hydrogen content"
-                    print_message "Response excerpt (first 5 lines):"
-                    # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
-                    while IFS= read -r line; do
-                        print_output "${line}"
-                    done < <(head -n 5 "${response_file}" || true)
-                    return 1
-                fi
+                print_result 1 "swagger.json contains invalid JSON or missing OpenAPI/Swagger version"
+                return 1
             fi
         else
             if [[ "${attempt}" -eq "${max_attempts}" ]]; then

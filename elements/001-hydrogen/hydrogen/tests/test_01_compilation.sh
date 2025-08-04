@@ -7,6 +7,7 @@
 # download_unity_framework()
 
 # CHANGELOG
+# 3.1.1 - 2025-08-03 - Removed extraneous command -v calls
 # 3.1.0 - 2025-07-31 - Removed coverage_cleanup call, another pass through to check for unnecessary comments, etc.
 # 3.0.0 - 2025-07-30 - Overhaul #1
 # 2.2.0 - 2025-07-14 - Added Unity framework check (moved from test 11), fixed tmpfs mount failure handling
@@ -19,7 +20,7 @@
 TEST_NAME="Compilation"
 TEST_ABBR="CMP"
 TEST_NUMBER="01"
-TEST_VERSION="3.1.0"
+TEST_VERSION="3.1.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -34,46 +35,18 @@ download_unity_framework() {
     if [[ ! -d "${unity_framework_dir}" ]]; then
         print_message "Unity framework not found in ${unity_framework_dir}. Downloading now..."
         mkdir -p "${framework_dir}"
-        if command -v curl >/dev/null 2>&1; then
-            if curl -L https://github.com/ThrowTheSwitch/Unity/archive/refs/heads/master.zip -o "${framework_dir}/unity.zip"; then
-                unzip "${framework_dir}/unity.zip" -d "${framework_dir}/"
-                mv "${framework_dir}/Unity-master" "${unity_framework_dir}"
-                rm "${framework_dir}/unity.zip"
-                print_result 0 "Unity framework downloaded and extracted successfully to ${unity_framework_dir}."
-                return 0
-            else
-                print_result 1 "Failed to download Unity framework with curl."
-                return 1
-            fi
-        elif command -v git >/dev/null 2>&1; then
-            if git clone https://github.com/ThrowTheSwitch/Unity.git "${unity_framework_dir}"; then
-                print_result 0 "Unity framework cloned successfully to ${unity_framework_dir}."
-                return 0
-            else
-                print_result 1 "Failed to clone Unity framework with git."
-                return 1
-            fi
-        else
-            print_result 1 "Neither curl nor git is available to download the Unity framework."
-            return 1
+        if curl -L https://github.com/ThrowTheSwitch/Unity/archive/refs/heads/master.zip -o "${framework_dir}/unity.zip"; then
+            unzip "${framework_dir}/unity.zip" -d "${framework_dir}/"
+            mv "${framework_dir}/Unity-master" "${unity_framework_dir}"
+            rm "${framework_dir}/unity.zip"
+            print_result 0 "Unity framework downloaded and extracted successfully to ${unity_framework_dir}."
+            return 0
         fi
     else
         print_message "Unity framework already exists in ${unity_framework_dir}"
         return 0
     fi
 }
-
-print_subtest "Check CMake Availability"
-print_command "command -v cmake"
-
-if command -v cmake >/dev/null 2>&1; then
-    CMAKE_VERSION=$(cmake --version | head -n1 || true)
-    print_result 0 "CMake is available: ${CMAKE_VERSION}"
-else
-    print_result 1 "CMake is not available - required for compilation"
-    EXIT_CODE=1
-fi
-evaluate_test_result_silent "CMake availability" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
 print_subtest "Check CMakeLists.txt"
 print_command "test -f cmake/CMakeLists.txt"

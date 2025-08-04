@@ -4,6 +4,7 @@
 # Performs CSS validation using stylelint
 
 # CHANGELOG
+# 3.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 3.0.0 - 2025-07-30 - Overhaul #1
 # 2.0.1 - 2025-07-18 - Fixed subshell issue in stylelint output that prevented detailed error messages from being displayed in test output
 # 2.0.0 - 2025-07-14 - Upgraded to use new modular test framework
@@ -13,7 +14,7 @@
 TEST_NAME="CSS Linting"
 TEST_ABBR="CSS"
 TEST_NUMBER="95"
-TEST_VERSION="3.0.0"
+TEST_VERSION="3.0.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -35,58 +36,53 @@ fi
 
 print_subtest "CSS Linting (stylelint)"
 
-if command -v stylelint >/dev/null 2>&1; then
-    CSS_FILES=()
-    while read -r file; do
-        if ! should_exclude_file "${file}"; then
-            CSS_FILES+=("${file}")
-        fi
-    done < <(find . -type f -name "*.css" || true)
-    
-    CSS_COUNT=${#CSS_FILES[@]}
-    
-    if [[ "${CSS_COUNT}" -gt 0 ]]; then
-        TEMP_LOG=$(mktemp)
-        
-        print_message "Running stylelint on ${CSS_COUNT} CSS files..."
-        TEST_NAME="${TEST_NAME} {BLUE}(stylelint: ${CSS_COUNT} files){RESET}"
+CSS_FILES=()
+while read -r file; do
+    if ! should_exclude_file "${file}"; then
+        CSS_FILES+=("${file}")
+    fi
+done < <(find . -type f -name "*.css" || true)
 
-        # Use basic stylelint rules if no config exists
-        if [[ -f ".stylelintrc.json" ]] || [[ -f ".stylelintrc.js" ]] || [[ -f "stylelint.config.js" ]]; then
-            stylelint "${CSS_FILES[@]}" > "${TEMP_LOG}" 2>&1 || true
-        else
-            # Use recommended rules if no config
-            stylelint --config '{"extends": ["stylelint-config-standard"]}' "${CSS_FILES[@]}" > "${TEMP_LOG}" 2>&1 || true
-        fi
-        
-        # Count actual issues (stylelint usually reports errors/warnings)
-        ISSUE_COUNT=$(grep -c "✖" "${TEMP_LOG}" 2>/dev/null || wc -l < "${TEMP_LOG}")
-        
-        if [[ "${ISSUE_COUNT}" -gt 0 ]]; then
-            print_message "stylelint found ${ISSUE_COUNT} issues:"
-            # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
-            while IFS= read -r line; do
-                print_output "${line}"
-            done < <(head -n "${LINT_OUTPUT_LIMIT}" "${TEMP_LOG}" || true)
-            if [[ "${ISSUE_COUNT}" -gt "${LINT_OUTPUT_LIMIT}" ]]; then
-                print_message "Output truncated. Showing ${LINT_OUTPUT_LIMIT} of ${ISSUE_COUNT} lines."
-            fi
-            print_result 1 "Found ${ISSUE_COUNT} issues in ${CSS_COUNT} CSS files"
-            EXIT_CODE=1
-        else
-            print_result 0 "No issues in ${CSS_COUNT} CSS files"
-            ((PASS_COUNT++))
-        fi
-        
-        rm -f "${TEMP_LOG}"
+CSS_COUNT=${#CSS_FILES[@]}
+
+if [[ "${CSS_COUNT}" -gt 0 ]]; then
+    TEMP_LOG=$(mktemp)
+    
+    print_message "Running stylelint on ${CSS_COUNT} CSS files..."
+    TEST_NAME="${TEST_NAME} {BLUE}(stylelint: ${CSS_COUNT} files){RESET}"
+
+    # Use basic stylelint rules if no config exists
+    if [[ -f ".stylelintrc.json" ]] || [[ -f ".stylelintrc.js" ]] || [[ -f "stylelint.config.js" ]]; then
+        stylelint "${CSS_FILES[@]}" > "${TEMP_LOG}" 2>&1 || true
     else
-        print_result 0 "No CSS files to check"
-        TEST_NAME="${TEST_NAME} {BLUE}(stylelint: 0 files){RESET}"
-
+        # Use recommended rules if no config
+        stylelint --config '{"extends": ["stylelint-config-standard"]}' "${CSS_FILES[@]}" > "${TEMP_LOG}" 2>&1 || true
+    fi
+    
+    # Count actual issues (stylelint usually reports errors/warnings)
+    ISSUE_COUNT=$(grep -c "✖" "${TEMP_LOG}" 2>/dev/null || wc -l < "${TEMP_LOG}")
+    
+    if [[ "${ISSUE_COUNT}" -gt 0 ]]; then
+        print_message "stylelint found ${ISSUE_COUNT} issues:"
+        # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
+        while IFS= read -r line; do
+            print_output "${line}"
+        done < <(head -n "${LINT_OUTPUT_LIMIT}" "${TEMP_LOG}" || true)
+        if [[ "${ISSUE_COUNT}" -gt "${LINT_OUTPUT_LIMIT}" ]]; then
+            print_message "Output truncated. Showing ${LINT_OUTPUT_LIMIT} of ${ISSUE_COUNT} lines."
+        fi
+        print_result 1 "Found ${ISSUE_COUNT} issues in ${CSS_COUNT} CSS files"
+        EXIT_CODE=1
+    else
+        print_result 0 "No issues in ${CSS_COUNT} CSS files"
         ((PASS_COUNT++))
     fi
+    
+    rm -f "${TEMP_LOG}"
 else
-    print_result 0 "stylelint not available (skipped)"
+    print_result 0 "No CSS files to check"
+    TEST_NAME="${TEST_NAME} {BLUE}(stylelint: 0 files){RESET}"
+
     ((PASS_COUNT++))
 fi
 

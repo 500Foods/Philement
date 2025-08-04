@@ -4,6 +4,7 @@
 # Performs shellcheck analysis and exception justification checking
 
 # CHANGELOG
+# 4.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 4.0.0 - 2025-07-30 - Overhaul #1
 # 3.1.0 - 2025-07-28 - Optimized caching, removed md5sum/wc spawns, single shellcheck run
 # 3.0.0 - 2025-07-18 - Added caching mechanism for shellcheck results
@@ -15,7 +16,7 @@
 TEST_NAME="Bash Lint"
 TEST_ABBR="BSH"
 TEST_NUMBER="92"
-TEST_VERSION="4.0.0"
+TEST_VERSION="4.0.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -30,109 +31,104 @@ setup_test_environment
 print_subtest "Shell Script Linting (shellcheck)"
 print_message "Detected ${CORES} CPU cores for parallel processing"
 
-if command -v shellcheck >/dev/null 2>&1; then
-    SHELL_FILES=()
-    TEST_SHELL_FILES=()
-    OTHER_SHELL_FILES=()
-    while read -r file; do
-        if ! should_exclude_file "${file}"; then
-            SHELL_FILES+=("${file}")
-            if [[ "${file}" == ./tests/* ]]; then
-                TEST_SHELL_FILES+=("${file}")
-            else
-                OTHER_SHELL_FILES+=("${file}")
-            fi
+SHELL_FILES=()
+TEST_SHELL_FILES=()
+OTHER_SHELL_FILES=()
+while read -r file; do
+    if ! should_exclude_file "${file}"; then
+        SHELL_FILES+=("${file}")
+        if [[ "${file}" == ./tests/* ]]; then
+            TEST_SHELL_FILES+=("${file}")
+        else
+            OTHER_SHELL_FILES+=("${file}")
         fi
-    done < <(find . -type f -name "*.sh" || true)
+    fi
+done < <(find . -type f -name "*.sh" || true)
 
-    SHELL_COUNT=${#SHELL_FILES[@]}
-    SHELL_ISSUES=0
-    TEMP_OUTPUT=$(mktemp)
+SHELL_COUNT=${#SHELL_FILES[@]}
+SHELL_ISSUES=0
+TEMP_OUTPUT=$(mktemp)
 
-    if [[ "${SHELL_COUNT}" -gt 0 ]]; then
-        print_message "Running shellcheck on ${SHELL_COUNT} shell scripts with caching..."
-        TEST_NAME="${TEST_NAME} {BLUE}(shellheck: ${SHELL_COUNT} files){RESET}"
+if [[ "${SHELL_COUNT}" -gt 0 ]]; then
+    print_message "Running shellcheck on ${SHELL_COUNT} shell scripts with caching..."
+    TEST_NAME="${TEST_NAME} {BLUE}(shellheck: ${SHELL_COUNT} files){RESET}"
 
-        # Cache directory
-        SHELLCHECK_CACHE_DIR="${HOME}/.cache/.shellcheck"
-        mkdir -p "${SHELLCHECK_CACHE_DIR}"
+    # Cache directory
+    SHELLCHECK_CACHE_DIR="${HOME}/.cache/.shellcheck"
+    mkdir -p "${SHELLCHECK_CACHE_DIR}"
 
-        # Batch compute content hashes for all files
-        declare -A file_hashes
-        while read -r hash file; do
-            file_hashes["${file}"]="${hash}"
-        done < <(md5sum "${SHELL_FILES[@]}" || true)
+    # Batch compute content hashes for all files
+    declare -A file_hashes
+    while read -r hash file; do
+        file_hashes["${file}"]="${hash}"
+    done < <(md5sum "${SHELL_FILES[@]}" || true)
 
-        cached_files=0
-        processed_scripts=0
-        to_process=()
+    cached_files=0
+    processed_scripts=0
+    to_process=()
 
-        for file in "${SHELL_FILES[@]}"; do
-            content_hash="${file_hashes[${file}]}"
-            # Flatten path for uniqueness (replace / with _)
-            flat_path=$(echo "cache${file}" | tr '/' '_')
-            cache_file="${SHELLCHECK_CACHE_DIR}/${flat_path}_${content_hash}"
-            if [[ -f "${cache_file}" ]]; then
-                ((cached_files++))
-                cat "${cache_file}" >> "${TEMP_OUTPUT}" 2>&1
-            else
-                to_process+=("${file}")
-                ((processed_scripts++))
-            fi
-        done
-
-        print_message "Using cached results for ${cached_files} files, processing ${processed_scripts} files..."
-
-        # Function to run shellcheck and cache for a single file
-        process_script() {
-            local file="$1"
-            local content_hash="$2"
-            local flat_path
-            flat_path=$(echo "cache${file}" | tr '/' '_')
-            local cache_file="${SHELLCHECK_CACHE_DIR}/${flat_path}_${content_hash}"
-            shellcheck "${file}" > "${cache_file}" 2>&1
-            cat "${cache_file}"
-        }
-
-        export -f process_script  # Export for subshells
-        export SHELLCHECK_CACHE_DIR
-
-        # Process non-cached files in parallel, passing file and hash
-        # shellcheck disable=SC2016 # Script within a script is tripping up shellcheck
-        if [[ "${processed_scripts}" -gt 0 ]]; then
-            for file in "${to_process[@]}"; do
-                printf '%s %s\n' "${file}" "${file_hashes[${file}]}"
-            done | xargs -n 2 -P "${CORES}" bash -c 'process_script "$0" "$1"' >> "${TEMP_OUTPUT}" 2>&1
+    for file in "${SHELL_FILES[@]}"; do
+        content_hash="${file_hashes[${file}]}"
+        # Flatten path for uniqueness (replace / with _)
+        flat_path=$(echo "cache${file}" | tr '/' '_')
+        cache_file="${SHELLCHECK_CACHE_DIR}/${flat_path}_${content_hash}"
+        if [[ -f "${cache_file}" ]]; then
+            ((cached_files++))
+            cat "${cache_file}" >> "${TEMP_OUTPUT}" 2>&1
+        else
+            to_process+=("${file}")
+            ((processed_scripts++))
         fi
+    done
 
-        # Filter output
-        sed "s|$(pwd)/||g; s|tests/||g" "${TEMP_OUTPUT}" > "${TEMP_OUTPUT}.filtered" || true
+    print_message "Using cached results for ${cached_files} files, processing ${processed_scripts} files..."
 
-        SHELL_ISSUES=$(wc -l < "${TEMP_OUTPUT}.filtered")
-        if [[ "${SHELL_ISSUES}" -gt 0 ]]; then
-            FILES_WITH_ISSUES=$(cut -d: -f1 "${TEMP_OUTPUT}.filtered" | sort -u | wc -l || true)
-            print_message "shellcheck found ${SHELL_ISSUES} issues in ${FILES_WITH_ISSUES} files:"
-            while IFS= read -r line; do
-                print_output "${line}"
-            done < <(head -n "${LINT_OUTPUT_LIMIT}" "${TEMP_OUTPUT}.filtered" || true)
-            if [[ "${SHELL_ISSUES}" -gt "${LINT_OUTPUT_LIMIT}" ]]; then
-                print_message "Output truncated. Showing ${LINT_OUTPUT_LIMIT} of ${SHELL_ISSUES} lines."
-            fi
-        fi
+    # Function to run shellcheck and cache for a single file
+    process_script() {
+        local file="$1"
+        local content_hash="$2"
+        local flat_path
+        flat_path=$(echo "cache${file}" | tr '/' '_')
+        local cache_file="${SHELLCHECK_CACHE_DIR}/${flat_path}_${content_hash}"
+        shellcheck "${file}" > "${cache_file}" 2>&1
+        cat "${cache_file}"
+    }
 
-        rm -f "${TEMP_OUTPUT}" "${TEMP_OUTPUT}.filtered"
+    export -f process_script  # Export for subshells
+    export SHELLCHECK_CACHE_DIR
+
+    # Process non-cached files in parallel, passing file and hash
+    # shellcheck disable=SC2016 # Script within a script is tripping up shellcheck
+    if [[ "${processed_scripts}" -gt 0 ]]; then
+        for file in "${to_process[@]}"; do
+            printf '%s %s\n' "${file}" "${file_hashes[${file}]}"
+        done | xargs -n 2 -P "${CORES}" bash -c 'process_script "$0" "$1"' >> "${TEMP_OUTPUT}" 2>&1
     fi
 
-    if [[ "${SHELL_ISSUES}" -eq 0 ]]; then
-        print_result 0 "No issues in ${SHELL_COUNT} shell files"
-        ((PASS_COUNT++))
-    else
-        print_result 1 "Found ${SHELL_ISSUES} issues in shell files"
-        EXIT_CODE=1
+    # Filter output
+    sed "s|$(pwd)/||g; s|tests/||g" "${TEMP_OUTPUT}" > "${TEMP_OUTPUT}.filtered" || true
+
+    SHELL_ISSUES=$(wc -l < "${TEMP_OUTPUT}.filtered")
+    if [[ "${SHELL_ISSUES}" -gt 0 ]]; then
+        FILES_WITH_ISSUES=$(cut -d: -f1 "${TEMP_OUTPUT}.filtered" | sort -u | wc -l || true)
+        print_message "shellcheck found ${SHELL_ISSUES} issues in ${FILES_WITH_ISSUES} files:"
+        while IFS= read -r line; do
+            print_output "${line}"
+        done < <(head -n "${LINT_OUTPUT_LIMIT}" "${TEMP_OUTPUT}.filtered" || true)
+        if [[ "${SHELL_ISSUES}" -gt "${LINT_OUTPUT_LIMIT}" ]]; then
+            print_message "Output truncated. Showing ${LINT_OUTPUT_LIMIT} of ${SHELL_ISSUES} lines."
+        fi
     fi
-else
-    print_result 0 "shellcheck not available (skipped)"
+
+    rm -f "${TEMP_OUTPUT}" "${TEMP_OUTPUT}.filtered"
+fi
+
+if [[ "${SHELL_ISSUES}" -eq 0 ]]; then
+    print_result 0 "No issues in ${SHELL_COUNT} shell files"
     ((PASS_COUNT++))
+else
+    print_result 1 "Found ${SHELL_ISSUES} issues in shell files"
+    EXIT_CODE=1
 fi
 
 print_subtest "Shellcheck Exception Justification Check"
