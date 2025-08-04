@@ -6,6 +6,9 @@
 
 # LIBRARY FUNCTIONS
 # get_coverage()
+# get_unity_coverage() 
+# get_blackbox_coverage() 
+# get_combined_coverage() 
 # validate_coverage_consistency()
 # get_coverage_summary()
 

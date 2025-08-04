@@ -3,6 +3,12 @@
 # Test: Unity
 # Runs unit tests using the Unity framework, treating each test file as a subtest
 
+# FUNCTIONS
+# check_unity_tests_available()
+# run_single_unity_test()
+# run_single_unity_test_parallel()
+# run_unity_tests()
+
 # CHANGELOG
 # 3.0.0 - 2025-07-30 - Overhaul #1
 # 2.4.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing

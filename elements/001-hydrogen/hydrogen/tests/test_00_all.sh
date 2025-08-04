@@ -8,8 +8,8 @@
 # run_single_test() 
 # run_single_test_parallel() 
 # run_specific_test() 
-# run_all_tests_parallel() 
 # run_all_tests() 
+# run_all_tests_parallel() 
 
 # CHANGELOG
 # 6.1.1 - 2025-08-03 - Removed extraneous command -v calls

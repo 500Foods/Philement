@@ -29,38 +29,6 @@ HYDROGEN_DIR="${PROJECT_DIR}"
 FIRST_PID=""
 SECOND_PID=""
 
-# Function to safely kill a process with PID validation
-# shellcheck disable=SC2317  # Function called indirectly via trap
-safe_kill_process() {
-    local pid="$1"
-    local process_name="$2"
-    
-    # Validate PID is not empty and not zero
-    if [[ -z "${pid}" ]] || [[ "${pid}" = "0" ]]; then
-        return 1
-    fi
-    
-    if ps -p "${pid}" > /dev/null 2>&1; then
-        print_message "Cleaning up ${process_name} (PID ${pid})..." 
-        kill -SIGINT "${pid}" 2>/dev/null || kill -9 "${pid}" 2>/dev/null
-        return 0
-    fi
-    return 1
-}
-
-# Handle cleanup on script termination
-# shellcheck disable=SC2317  # Function called indirectly via trap
-cleanup() {
-    # Kill any hydrogen processes started by this script
-    safe_kill_process "${FIRST_PID}" "first instance" || true
-    safe_kill_process "${SECOND_PID}" "second instance" || true
-    
-    exit 0
-}
-
-# Set up trap for clean termination
-trap cleanup SIGINT SIGTERM EXIT
-
 print_subtest "Find Hydrogen binary and configuration" 
 
 # Find Hydrogen binary

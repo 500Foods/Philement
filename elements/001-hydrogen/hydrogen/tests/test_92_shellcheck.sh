@@ -3,6 +3,9 @@
 # Test: Shell Script Analysis
 # Performs shellcheck analysis and exception justification checking
 
+# FUNCTIONS
+# process_file()
+
 # CHANGELOG
 # 4.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 4.0.0 - 2025-07-30 - Overhaul #1
@@ -157,7 +160,6 @@ process_file() {
     # Output counters in a parseable format
     echo "${total} ${with_just} ${without_just} ${file}"
 }
-
 export -f process_file
 
 if [[ ${#SHELL_FILES[@]} -gt 0 ]]; then

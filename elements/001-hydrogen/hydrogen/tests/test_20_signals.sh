@@ -3,6 +3,12 @@
 # Test: Signal Handling
 # Tests signal handling capabilities including SIGINT, SIGTERM, SIGHUP, SIGUSR2, and multiple signals
 
+# FUNCTIONS
+# wait_for_signal_startup()
+# wait_for_signal_shutdown() 
+# wait_for_restart_completion() 
+# verify_config_dump() 
+
 # CHANGELOG
 # 5.0.0 0 2025-07-30 - Overhaul #1
 # 4.0.0 - 2025-07-30 - Shellcheck overhaul, general review

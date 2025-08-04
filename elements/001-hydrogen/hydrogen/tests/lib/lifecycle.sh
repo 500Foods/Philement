@@ -4,10 +4,10 @@
 # Handles starting and stopping the Hydrogen Server with various configurations.
 
 # LIBRARY FUNCTIONS
-# find_hydrogen_binary() - Tests 12, 16, 18, 22,24, 26, 28, 30, 32, 34, 36
-# start_hydrogen_with_pid() - Tests 28, 30, 32, 34, 36
+# find_hydrogen_binary()
+# start_hydrogen_with_pid()
 # wait_for_startup() 
-# stop_hydrogen() - Tests 28, 30, 32, 34, 36
+# stop_hydrogen() 
 # monitor_shutdown()
 # get_process_threads()
 # capture_process_diagnostics()
