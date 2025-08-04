@@ -23,9 +23,9 @@ print_subtest "JSON Linting"
 
 JSON_FILES=()
 while read -r file; do
-    # Use custom exclusion for JSON files - exclude Unity framework but include test configs
-    if [[ "${file}" != *"/tests/unity/framework/"* ]] && ! should_exclude_file "${file}"; then
-        JSON_FILES+=("${file}")
+    rel_file="${file#./}"
+    if ! should_exclude_file "${rel_file}"; then
+        JSON_FILES+=("${rel_file}")
     fi
 done < <(find . -type f -name "*.json" || true)
 
