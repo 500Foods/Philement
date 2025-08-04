@@ -83,7 +83,7 @@ print_subtest "Source Code File Analysis"
 print_message "Analyzing source code files and generating statistics..."
 
 # Find all source files, excluding those in .lintignore
-: > "${SOURCE_FILES_LIST}"
+true > "${SOURCE_FILES_LIST}"
 while read -r file; do
     if ! should_exclude_file "${file}"; then
         echo "${file}" >> "${SOURCE_FILES_LIST}"
@@ -185,7 +185,7 @@ fi
 print_subtest "Large Non-Source File Detection"
 print_message "Finding large non-source files (>${LARGE_FILE_THRESHOLD})..."
 
-: > "${LARGE_FILES_LIST}"
+true > "${LARGE_FILES_LIST}"
 while read -r file; do
     if ! should_exclude_file "${file}"; then
         echo "${file}" >> "${LARGE_FILES_LIST}"

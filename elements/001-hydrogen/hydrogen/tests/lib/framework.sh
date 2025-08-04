@@ -603,10 +603,7 @@ update_readme_with_results() {
     done < "${readme_file}"
     
     # Replace original README with updated version
-    if mv "${temp_readme}" "${readme_file}"; then
-        # echo "Updated README.md with test results"
-        :
-    else
+    if ! mv "${temp_readme}" "${readme_file}"; then
         echo "Error: Failed to update README.md"
         rm -f "${temp_readme}"
         return 1
