@@ -10,15 +10,8 @@
 # stop_hydrogen() 
 # monitor_shutdown()
 # get_process_threads()
-# capture_process_diagnostics()
-# configure_hydrogen_binary()
-# initialize_test_environment()
-# kill_hydrogen_process()
-# verify_log_file_exists()
 # validate_config_files()
 # validate_config_file()
-# setup_output_directories()
-# get_tmpfs_output_dirs()
 # run_lifecycle_test()
 # wait_for_server_ready
 
@@ -334,109 +327,6 @@ get_process_threads() {
     echo "${pid}" >> "${output_file}" 2>/dev/null || true
 }
 
-# Function to capture process diagnostics
-capture_process_diagnostics() {
-    local pid="$1"
-    local diag_dir="$2"
-    local prefix="$3"
-    
-    # Capture thread information using pgrep
-    get_process_threads "${pid}" "${diag_dir}/${prefix}_threads.txt"
-    
-    # Capture process status if available
-    if [[ -f "/proc/${pid}/status" ]]; then
-        cat "/proc/${pid}/status" > "${diag_dir}/${prefix}_status.txt" 2>/dev/null || true
-    fi
-    
-    # Capture file descriptors if available
-    if [[ -d "/proc/${pid}/fd/" ]]; then
-        ls -l "/proc/${pid}/fd/" > "${diag_dir}/${prefix}_fds.txt" 2>/dev/null || true
-    fi
-}
-
-# Function to configure Hydrogen binary, preferring release build if available
-configure_hydrogen_binary() {
-    local hydrogen_dir="${1:-}"
-    if [[ -z "${hydrogen_dir}" ]]; then
-        local script_dir
-        script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-        hydrogen_dir="$( cd "${script_dir}/../.." && pwd )"
-    fi
-    
-    if [[ -f "${hydrogen_dir}/hydrogen_coverage" ]]; then
-        HYDROGEN_BIN="${hydrogen_dir}/hydrogen_coverage"
-        print_message "Using coverage build for testing: ${HYDROGEN_BIN}"
-    elif [[ -f "${hydrogen_dir}/hydrogen_release" ]]; then
-        HYDROGEN_BIN="${hydrogen_dir}/hydrogen_release"
-        print_message "Using release build for testing: ${HYDROGEN_BIN}"
-    else
-        HYDROGEN_BIN="${hydrogen_dir}/hydrogen"
-        print_message "Using standard build for testing: ${HYDROGEN_BIN}"
-    fi
-    
-    if [[ ! -x "${HYDROGEN_BIN}" ]]; then
-        print_error "Hydrogen binary not found or not executable: ${HYDROGEN_BIN}"
-        return 1
-    fi
-    return 0
-}
-
-# Function to initialize test environment and logging
-initialize_test_environment() {
-    local results_dir="$1"
-    local test_log_file="$2"
-    local timestamp
-    
-    if [[ -z "${results_dir}" ]]; then
-        local script_dir
-        script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-        results_dir="${script_dir}/../results"
-    fi
-    
-    mkdir -p "${results_dir}"
-    timestamp=$(date +%Y%m%d_%H%M%S)
-    RESULT_LOG="${results_dir}/env_variables_test_${timestamp}.log"
-    
-    if [[ -n "${test_log_file}" ]]; then
-        TEST_LOG_FILE="${test_log_file}"
-    else
-        TEST_LOG_FILE="./hydrogen_env_test.log"
-    fi
-    
-    # Clean up any existing log file
-    rm -f "${TEST_LOG_FILE}"
-    
-    print_message "Test environment initialized with log file: ${RESULT_LOG}"
-    return 0
-}
-
-# Function to kill Hydrogen process if running
-kill_hydrogen_process() {
-    if [[ -n "${HYDROGEN_PID}" ]] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
-        print_message "Cleaning up Hydrogen (PID ${HYDROGEN_PID})..."
-        kill -SIGINT "${HYDROGEN_PID}" 2>/dev/null || kill -9 "${HYDROGEN_PID}" 2>/dev/null
-        sleep 0.1
-        HYDROGEN_PID=""
-    fi
-    return 0
-}
-
-# Function to verify log file exists
-verify_log_file_exists() {
-    local log_file="$1"
-    if [[ -z "${log_file}" ]]; then
-        log_file="${TEST_LOG_FILE}"
-    fi
-    
-    if [[ ! -f "${log_file}" ]]; then
-        print_error "Log file was not created at ${log_file}"
-        return 1
-    else
-        print_message "Log file was created successfully at ${log_file}"
-        return 0
-    fi
-}
-
 # Function to validate configuration files
 validate_config_files() {
     local min_config="$1"
@@ -466,49 +356,6 @@ validate_config_file() {
         print_result 1 "Configuration file not found"
         return 1
     fi
-}
-
-# Function to setup output directories
-setup_output_directories() {
-    local results_dir="$1"
-    local diag_dir="$2"
-    local log_file="$3"
-    local diag_test_dir="$4"
-    
-    print_command "mkdir -p \"${results_dir}\" \"${diag_dir}\" \"$(dirname "${log_file}")\" \"${diag_test_dir}\""
-    if mkdir -p "${results_dir}" "${diag_dir}" "$(dirname "${log_file}")" "${diag_test_dir}" 2>/dev/null; then
-        print_result 0 "Output directories created/verified"
-        return 0
-    else
-        print_result 1 "Failed to create one or more output directories"
-        return 1
-    fi
-}
-
-# Function to get tmpfs-optimized output directories
-get_tmpfs_output_dirs() {
-    local script_dir="$1"
-    local test_name="$2"
-    local timestamp="$3"
-    
-    local build_dir="${script_dir}/../build"
-    local base_results_dir base_logs_dir base_diag_dir
-    
-    # Always use build/tests/ directories
-    base_results_dir="${build_dir}/tests/results"
-    base_logs_dir="${build_dir}/tests/logs"
-    base_diag_dir="${build_dir}/tests/diagnostics"
-    
-    # Export the directories for use by calling scripts
-    export TMPFS_RESULTS_DIR="${base_results_dir}"
-    export TMPFS_LOGS_DIR="${base_logs_dir}"
-    export TMPFS_DIAGS_DIR="${base_diag_dir}"
-    export TMPFS_TEST_DIAGS_DIR="${base_diag_dir}/${test_name}_${timestamp}"
-    
-    # Create the directories
-    mkdir -p "${TMPFS_RESULTS_DIR}" "${TMPFS_LOGS_DIR}" "${TMPFS_DIAGS_DIR}" "${TMPFS_TEST_DIAGS_DIR}" 2>/dev/null
-    
-    return 0
 }
 
 # Function to run a lifecycle test for a specific configuration

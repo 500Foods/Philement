@@ -29,7 +29,7 @@ STARTUP_TIMEOUT=10
 
 print_subtest "Locate Hydrogen Binary"
 
-# shellcheck disable=SC2153  # HYDROGEN_BIN is set by find_hydrogen_binary function
+HYDROGEN_BIN='hydrogen'
 if find_hydrogen_binary "${PROJECT_DIR}" "HYDROGEN_BIN"; then
     print_message "Using Hydrogen binary: $(basename "${HYDROGEN_BIN}")"
     print_result 0 "Hydrogen binary found and validated"
@@ -41,14 +41,6 @@ fi
 
 # Test configuration - use minimal config since library dependencies are checked regardless of configuration
 MINIMAL_CONFIG="${SCRIPT_DIR}/configs/hydrogen_test_min.json"
-
-print_subtest "Create Output Directories"
-
-if setup_output_directories "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOG_FILE}" "${DIAG_TEST_DIR}"; then
-    ((PASS_COUNT++))
-else
-    EXIT_CODE=1
-fi
 
 print_subtest "Validate Configuration File"
 

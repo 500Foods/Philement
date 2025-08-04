@@ -25,17 +25,19 @@ TEST_VERSION="5.0.0"
 setup_test_environment
 
 # Test variables
-HYDROGEN_DIR="${PROJECT_DIR}"
 FIRST_PID=""
 SECOND_PID=""
 
-print_subtest "Find Hydrogen binary and configuration" 
+print_subtest "Locate Hydrogen Binary"
 
-# Find Hydrogen binary
-if ! find_hydrogen_binary "${HYDROGEN_DIR}" "HYDROGEN_BIN" || [[ -z "${HYDROGEN_BIN}" ]]; then
+HYDROGEN_BIN='hydrogen'
+if find_hydrogen_binary "${PROJECT_DIR}" "HYDROGEN_BIN"; then
+    print_message "Using Hydrogen binary: $(basename "${HYDROGEN_BIN}")"
+    print_result 0 "Hydrogen binary found and validated"
+    ((PASS_COUNT++))
+else
     print_result 1 "Failed to find Hydrogen binary"
-    print_test_completion "${TEST_NAME}"
-    exit 1
+    EXIT_CODE=1
 fi
 
 # Find configuration file

@@ -19,13 +19,13 @@ This document provides detailed information about the functions available in `li
 
 - **Purpose**: Locates and validates the Hydrogen binary in the project directory.
 - **Parameters**:
-  - `hydrogen_dir`: The directory to search for the Hydrogen binary.
+  - `project_dir`: The directory to search for the Hydrogen binary.
 - **Returns**: The path to the Hydrogen binary if found and executable; otherwise, returns an error.
 - **Usage**: Used by test scripts to ensure the Hydrogen binary is available before attempting to start the application.
 - **Example**:
 
   ```bash
-  if HYDROGEN_BIN=$(find_hydrogen_binary "$HYDROGEN_DIR"); then
+  if HYDROGEN_BIN=$(find_hydrogen_binary "$PROJECT_DIR"); then
       print_message "Using Hydrogen binary: $HYDROGEN_BIN"
   else
       print_result 1 "Failed to find Hydrogen binary"
