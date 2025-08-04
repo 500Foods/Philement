@@ -19,14 +19,6 @@ TEST_VERSION="3.0.1"
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
-# Default exclude patterns for linting (can be overridden by .lintignore)
-# Only declare if not already defined (prevents readonly variable redeclaration when sourced)
-if [[ -z "${LINT_EXCLUDES:-}" ]]; then
-    readonly LINT_EXCLUDES=(
-        "build/*"
-    )
-fi
-
 print_subtest "JSON Linting"
 
 JSON_FILES=()

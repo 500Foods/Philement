@@ -39,44 +39,8 @@ LIB_DIR="${SCRIPT_DIR}/lib"
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "${LIB_DIR}/framework.sh"
 # shellcheck source=tests/lib/log_output.sh # Resolve path statically
 [[ -n "${LOG_OUTPUT_GUARD}" ]] || source "${LIB_DIR}/log_output.sh"
-
-# Default exclude patterns for linting (can be overridden by .lintignore)
-if [[ -z "${DEFAULT_LINT_EXCLUDES+x}" ]]; then
-    readonly DEFAULT_LINT_EXCLUDES=(
-        "build/*"
-    )
-fi
-
-# Function to check if a file should be excluded from linting/cloc analysis
-should_exclude_file() {
-    local file="$1"
-    local lint_ignore_file="${2:-.lintignore}"  # Default to .lintignore if not specified
-    local rel_file="${file#./}"  # Remove leading ./
-    
-    # Check .lintignore file first if it exists
-    if [[ -f "${lint_ignore_file}" ]]; then
-        while IFS= read -r pattern; do
-            [[ -z "${pattern}" || "${pattern}" == \#* ]] && continue
-            # Remove trailing /* if present for directory matching
-            local clean_pattern="${pattern%/\*}"
-            
-            # Check if file matches pattern exactly or is within a directory pattern
-            if [[ "${rel_file}" == "${pattern}" ]] || [[ "${rel_file}" == "${clean_pattern}"/* ]]; then
-                return 0 # Exclude
-            fi
-        done < "${lint_ignore_file}"
-    fi
-    
-    # Check default excludes
-    for pattern in "${DEFAULT_LINT_EXCLUDES[@]}"; do
-        local clean_pattern="${pattern%/\*}"
-        if [[ "${rel_file}" == "${pattern}" ]] || [[ "${rel_file}" == "${clean_pattern}"/* ]]; then
-            return 0 # Exclude
-        fi
-    done
-    
-    return 1 # Do not exclude
-}
+# shellcheck source=tests/lib/log_output.sh # Resolve path statically
+[[ -n "${LOG_OUTPUT_GUARD}" ]] || source "${LIB_DIR}/log_output.sh"
 
 # Function to generate cloc exclude list based on .lintignore and default excludes
 generate_cloc_exclude_list() {
@@ -90,7 +54,7 @@ generate_cloc_exclude_list() {
     fi
     
     # Generate exclude list based on .lintignore and default excludes
-    : > "${exclude_list_file}"
+    true > "${exclude_list_file}"
     # Read patterns from .lintignore file and convert to cloc-compatible format
     if [[ -f "${lint_ignore_file}" ]]; then
         while IFS= read -r pattern; do
@@ -241,10 +205,7 @@ generate_cloc_for_readme() {
     
     echo '```cloc'
     
-    if run_cloc_analysis "${base_dir}" "${lint_ignore_file}"; then
-        # Success - output was already printed by run_cloc_analysis
-        :
-    else
+    if ! run_cloc_analysis "${base_dir}" "${lint_ignore_file}"; then
         echo "cloc command failed"
     fi
     

@@ -21,18 +21,7 @@ TEST_VERSION="3.0.1"
 setup_test_environment
 
 # Test configuration constants
-# Only declare if not already defined (prevents readonly variable redeclaration when sourced)
-if [[ -z "${LINT_OUTPUT_LIMIT:-}" ]]; then
-    readonly LINT_OUTPUT_LIMIT=100
-fi
-
-# Default exclude patterns for linting (can be overridden by .lintignore)
-# Only declare if not already defined (prevents readonly variable redeclaration when sourced)
-if [[ -z "${LINT_EXCLUDES:-}" ]]; then
-    readonly LINT_EXCLUDES=(
-        "build/*"
-    )
-fi
+[[ -z "${LINT_OUTPUT_LIMIT:-}" ]] && readonly LINT_OUTPUT_LIMIT=10
 
 print_subtest "HTML Linting (htmlhint)"
 

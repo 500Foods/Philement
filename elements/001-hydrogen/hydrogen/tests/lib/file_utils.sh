@@ -28,64 +28,59 @@ FILE_UTILS_NAME="File Utilities Library"
 FILE_UTILS_VERSION="1.2.1"
 print_message "${FILE_UTILS_NAME} ${FILE_UTILS_VERSION}" "info"
 
-# Default exclude patterns for linting (can be overridden by .lintignore)
-if [[ -z "${LINT_EXCLUDES:-}" ]]; then
-    readonly LINT_EXCLUDES=(
-        "build/*"
-    )   
+# Enable recursive globbing and include dotfiles
+shopt -s dotglob globstar nullglob
+
+# Preload .lintignore patterns into an array
+declare -ag LINT_IGNORE_PATTERNS=()
+if [[ -f ".lintignore" ]]; then
+    while IFS= read -r pattern; do
+        [[ -z "${pattern}" || "${pattern}" == \#* ]] && continue
+        pattern="$(echo "${pattern}" | tr -d '\r' | sed 's/[[:space:]]*$//' || true)"
+        if [[ "${pattern}" == */'*' ]]; then
+            pattern="${pattern%/*}/**"
+        fi
+        LINT_IGNORE_PATTERNS+=("${pattern}")
+    done < ".lintignore"
 fi
 
 # Check if a file should be excluded from linting
 should_exclude_file() {
     local file="$1"
-    local lint_ignore=".lintignore"
-    local rel_file="${file#./}"  # Remove leading ./
-    
-    # Check .lintignore file first if it exists
-    if [[ -f "${lint_ignore}" ]]; then
-        while IFS= read -r pattern; do
-            [[ -z "${pattern}" || "${pattern}" == \#* ]] && continue
-            # Remove trailing /* if present for directory matching
-            local clean_pattern="${pattern%/\*}"
-            
-            # Check if file matches pattern exactly or is within a directory pattern
-            if [[ "${rel_file}" == "${pattern}" ]] || [[ "${rel_file}" == "${clean_pattern}"/* ]]; then
-                return 0 # Exclude
-            fi
-        done < "${lint_ignore}"
-    fi
-    
-    # Check default excludes
-    # shellcheck disable=SC2154 # LINT_EXCLUDES defined externally in framework.sh
-    for pattern in "${LINT_EXCLUDES[@]}"; do
-        local clean_pattern="${pattern%/\*}"
-        if [[ "${rel_file}" == "${pattern}" ]] || [[ "${rel_file}" == "${clean_pattern}"/* ]]; then
-            return 0 # Exclude
+    local rel_file
+
+    rel_file=$(realpath --relative-to="${PWD}" "${file}" 2>/dev/null || echo "${file}")
+    rel_file="${rel_file#./}" 
+    for pattern in "${LINT_IGNORE_PATTERNS[@]}"; do
+        # shellcheck disable=SC2053,SC2250 # Right side needs to be a glob which doesn't work when quoted ?!
+        if [[ "${rel_file}" == $pattern ]]; then
+            return 0
         fi
     done
-    
-    return 1 # Do not exclude
+    return 1
 }
 
 # Function to convert absolute path to path relative to hydrogen project root
 convert_to_relative_path() {
     local absolute_path="$1"
-    
-    # Extract the part starting from "hydrogen" and keep everything after
-    local relative_path
-    relative_path=$(echo "${absolute_path}" | sed -n 's|.*/hydrogen/|hydrogen/|p')
-    
-    # If the path contains elements/001-hydrogen/hydrogen but not starting with hydrogen/
-    if [[ -z "${relative_path}" ]]; then
-        relative_path=$(echo "${absolute_path}" | sed -n 's|.*/elements/001-hydrogen/hydrogen|hydrogen|p')
-    fi
-    
-    # If we still couldn't find a match, return the original
-    if [[ -z "${relative_path}" ]]; then
-        echo "${absolute_path}"
-    else
-        echo "${relative_path}"
-    fi
+    local relative_path=""
+
+    case "${absolute_path}" in
+        */elements/001-hydrogen/hydrogen/*)
+            relative_path="${absolute_path##*/elements/001-hydrogen/hydrogen/}"
+            echo "hydrogen/${relative_path}"
+            ;;
+        */elements/001-hydrogen/hydrogen)
+            echo "hydrogen"
+            ;;
+        */hydrogen/*)
+            relative_path="${absolute_path##*/hydrogen/}"
+            echo "hydrogen/${relative_path}"
+            ;;
+        *)
+            echo "${absolute_path}"
+            ;;
+    esac
 }
 
 # Function to safely change directory with error handling
