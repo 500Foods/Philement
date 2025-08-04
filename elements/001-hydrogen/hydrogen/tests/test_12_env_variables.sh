@@ -31,7 +31,7 @@ SHUTDOWN_ACTIVITY_TIMEOUT=5  # Timeout if no new log activity
 
 print_subtest "Locate Hydrogen Binary"
 
-# shellcheck disable=SC2153  # HYDROGEN_BIN is set by find_hydrogen_binary function
+HYDROGEN_BIN='hydrogen'
 if find_hydrogen_binary "${PROJECT_DIR}" "HYDROGEN_BIN"; then
     print_message "Using Hydrogen binary: $(basename "${HYDROGEN_BIN}")"
     print_result 0 "Hydrogen binary found and validated"
@@ -45,14 +45,6 @@ print_subtest "Validate Configuration File"
 
 if validate_config_file "${CONFIG_FILE}"; then
     print_message "Using config: $(convert_to_relative_path "${CONFIG_FILE}" || true)"
-    ((PASS_COUNT++))
-else
-    EXIT_CODE=1
-fi
-
-print_subtest "Create Output Directories"
-
-if setup_output_directories "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOG_FILE}" "${DIAG_TEST_DIR}"; then
     ((PASS_COUNT++))
 else
     EXIT_CODE=1

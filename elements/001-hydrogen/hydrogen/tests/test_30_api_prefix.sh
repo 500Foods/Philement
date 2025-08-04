@@ -34,9 +34,6 @@ TEST_VERSION="6.0.0"
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
-# Test variables
-HYDROGEN_DIR="${PROJECT_DIR}"
-
 # Create unique configuration files for parallel execution
 create_unique_config() {
     local base_config="$1"
@@ -160,12 +157,13 @@ validate_api_request() {
 
 print_subtest "Locate Hydrogen Binary"
 
-# shellcheck disable=SC2153  # HYDROGEN_BIN is set by find_hydrogen_binary function
-if find_hydrogen_binary "${HYDROGEN_DIR}" "HYDROGEN_BIN"; then
-    print_result 0 "Hydrogen binary found: $(basename "${HYDROGEN_BIN}")"
+HYDROGEN_BIN='hydrogen'
+if find_hydrogen_binary "${PROJECT_DIR}" "HYDROGEN_BIN"; then
+    print_message "Using Hydrogen binary: $(basename "${HYDROGEN_BIN}")"
+    print_result 0 "Hydrogen binary found and validated"
     ((PASS_COUNT++))
 else
-    print_result 1 "Hydrogen binary not found"
+    print_result 1 "Failed to find Hydrogen binary"
     EXIT_CODE=1
 fi
 

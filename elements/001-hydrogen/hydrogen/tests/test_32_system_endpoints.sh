@@ -43,7 +43,6 @@ TEST_VERSION="4.0.1"
 setup_test_environment
 
 # Test variables
-HYDROGEN_DIR="${PROJECT_DIR}"
 CONFIG_PATH="$(get_config_path "hydrogen_test_system_endpoints.json")"
 
 # Function to make a request and validate response with retry logic for API readiness
@@ -429,12 +428,13 @@ test_system_endpoints() {
 
 print_subtest "Locate Hydrogen Binary"
 
-# shellcheck disable=SC2153  # HYDROGEN_BIN is set by find_hydrogen_binary function
-if find_hydrogen_binary "${HYDROGEN_DIR}" "HYDROGEN_BIN"; then
-    print_result 0 "Hydrogen binary found: $(basename "${HYDROGEN_BIN}")"
+HYDROGEN_BIN='hydrogen'
+if find_hydrogen_binary "${PROJECT_DIR}" "HYDROGEN_BIN"; then
+    print_message "Using Hydrogen binary: $(basename "${HYDROGEN_BIN}")"
+    print_result 0 "Hydrogen binary found and validated"
     ((PASS_COUNT++))
 else
-    print_result 1 "Hydrogen binary not found"
+    print_result 1 "Failed to find Hydrogen binary"
     EXIT_CODE=1
 fi
 
