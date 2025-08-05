@@ -42,45 +42,30 @@ calculate_combined_coverage() {
     project_root="$(cd "${SCRIPT_DIR}/../.." && pwd)"
     local unity_build_dir="${project_root}/build/unity"
     local blackbox_build_dir="${project_root}/build/coverage"
+    local timestamp
+    timestamp=$(date +"%Y-%m-%d %H:%M:%S")
     
+    # Use the efficient wrapper functions from coverage.sh
+    local unity_coverage
+    local blackbox_coverage
+    unity_coverage=$(calculate_unity_coverage "${unity_build_dir}" "${timestamp}")
+    blackbox_coverage=$(calculate_blackbox_coverage "${blackbox_build_dir}" "${timestamp}")
+    
+    # Use the efficient batch analysis function for true combined coverage
+    analyze_all_gcov_coverage_batch "${unity_build_dir}" "${blackbox_build_dir}"
+    
+    # Calculate combined coverage from the batch analysis results
     local total_combined_instrumented=0
     local total_combined_covered=0
     
-    # Get all source files and process matching gcov pairs
-    while IFS= read -r source_file; do
-        if should_ignore_file "${source_file}" "${project_root}"; then
-            continue
-        fi
-        
-        local source_basename
-        source_basename=$(basename "${source_file}")
-        local unity_gcov="${unity_build_dir}/src/${source_basename}.gcov"
-        local blackbox_gcov="${blackbox_build_dir}/src/${source_basename}.gcov"
-        
-        # Find actual gcov files (they might be in subdirectories)
-        [[ ! -f "${unity_gcov}" ]] && unity_gcov=$(find "${unity_build_dir}" -name "${source_basename}.gcov" -type f 2>/dev/null | head -1 || true)
-        [[ ! -f "${blackbox_gcov}" ]] && blackbox_gcov=$(find "${blackbox_build_dir}" -name "${source_basename}.gcov" -type f 2>/dev/null | head -1 || true)
-        
-        # Skip if neither gcov file exists
-        if [[ ! -f "${unity_gcov}" && ! -f "${blackbox_gcov}" ]]; then
-            continue
-        fi
-        
-        # Use our new combined analysis function
-        local result
-        result=$(analyze_combined_gcov_coverage "${unity_gcov}" "${blackbox_gcov}")
-        
-        local file_instrumented="${result%,*}"
-        local file_combined_covered="${result#*,}"
-        
-        # Default to 0 if parsing failed
-        file_instrumented=${file_instrumented:-0}
-        file_combined_covered=${file_combined_covered:-0}
+    # Process the combined coverage data from global arrays set by analyze_all_gcov_coverage_batch
+    for file_path in "${!combined_instrumented_lines[@]}"; do
+        local file_instrumented="${combined_instrumented_lines[${file_path}]:-0}"
+        local file_covered="${combined_covered_lines[${file_path}]:-0}"
         
         total_combined_instrumented=$((total_combined_instrumented + file_instrumented))
-        total_combined_covered=$((total_combined_covered + file_combined_covered))
-        
-    done < <(get_cached_source_files "${project_root}" || true)
+        total_combined_covered=$((total_combined_covered + file_covered))
+    done
     
     # Calculate combined coverage percentage
     local combined_coverage="0.000"
@@ -135,42 +120,31 @@ identify_uncovered_files() {
     local uncovered_count=0
     local total_count=0
     local uncovered_files=()
+    local timestamp
+    timestamp=$(date +"%Y-%m-%d %H:%M:%S")
     
-    # For Test 99, only check blackbox coverage directory (build/coverage)
-    local build_dirs=()
-    build_dirs+=("${project_root}/build/coverage")
+    # Use efficient blackbox coverage calculation to ensure gcov files are up to date
+    local blackbox_build_dir="${project_root}/build/coverage"
+    calculate_blackbox_coverage "${blackbox_build_dir}" "${timestamp}" >/dev/null
     
-    # Cache all gcov files first to avoid repeated filesystem traversals
-    declare -A gcov_cache
-    for build_dir in "${build_dirs[@]}"; do
-        if [[ -d "${build_dir}" ]]; then
-            while IFS= read -r gcov_file; do
-                local gcov_basename
-                gcov_basename=$(basename "${gcov_file}")
-                # Store the first found gcov file for each basename
-                if [[ -z "${gcov_cache["${gcov_basename}"]}" ]]; then
-                    gcov_cache["${gcov_basename}"]="${gcov_file}"
-                fi
-            done < <(find "${build_dir}" -name "*.gcov" -type f 2>/dev/null || true)
-        fi
-    done
+    # Load source files and ignore patterns using efficient functions
+    load_source_files "${project_root}"
     
-    # Process all source files using cached gcov data and cached source files
-    while IFS= read -r source_file; do
-        if should_ignore_file "${source_file}" "${project_root}"; then
-            continue
-        fi
-        
+    # Process all source files using the cached data
+    for source_file in "${SOURCE_FILES_CACHE[@]}"; do
         total_count=$((total_count + 1))
         
-        # Check if this source file has corresponding gcov coverage using cache
+        # Check if this source file has corresponding gcov coverage
         local source_basename
         source_basename=$(basename "${source_file}")
-        local gcov_file="${gcov_cache["${source_basename}.gcov"]}"
         local found_coverage=false
         
+        # Find gcov file using the same approach as calculate_coverage_generic
+        local gcov_file
+        gcov_file=$(find "${blackbox_build_dir}" -name "${source_basename}.gcov" -type f 2>/dev/null | head -1 || true)
+        
         if [[ -n "${gcov_file}" && -f "${gcov_file}" ]]; then
-            # Check if the file has any coverage using more efficient approach
+            # Check if the file has any coverage using the same pattern as calculate_coverage_generic
             if grep -q "^[ \t]*[1-9][0-9]*.*:" "${gcov_file}" 2>/dev/null; then
                 found_coverage=true
             fi
@@ -182,7 +156,7 @@ identify_uncovered_files() {
             uncovered_count=$((uncovered_count + 1))
             uncovered_files+=("${source_file}")
         fi
-    done < <(get_cached_source_files "${project_root}" || true)
+    done
     
     # Sort uncovered files for consistent output
     if [[ ${#uncovered_files[@]} -gt 0 ]]; then

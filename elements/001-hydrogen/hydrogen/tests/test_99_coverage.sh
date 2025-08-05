@@ -172,12 +172,13 @@ fi
 print_subtest "Identify Uncovered Source Files"
 print_message "Identifying source files not covered by blackbox tests..."
 
-# Use the batch-processed coverage data for consistent file counts
-# Calculate file counts from the coverage arrays we already have
+# Use the batch-processed coverage data to be consistent with the earlier calculations
+# This ensures the file counts match between sections
 blackbox_covered_files=0
 blackbox_instrumented_files=0
 uncovered_files=()
 
+# Use the data we already calculated from analyze_all_gcov_coverage_batch
 for file_path in "${!all_files[@]}"; do
     # Check if this file has any blackbox coverage
     blackbox_covered=${coverage_covered_lines["${file_path}"]:-0}
@@ -193,12 +194,14 @@ done
 # Sort and display uncovered files
 if [[ ${#uncovered_files[@]} -gt 0 ]]; then
     print_message "Uncovered source files:"
-    printf '%s\n' "${uncovered_files[@]}" | sort | while read -r file; do
+    # Sort the array in place to avoid subshell issues with pipe
+    mapfile -t sorted_uncovered_files < <(printf '%s\n' "${uncovered_files[@]}" | sort || true)
+    for file in "${sorted_uncovered_files[@]}"; do
         print_output "  ${file}"
-    done || true
+    done
 fi
 
-# Calculate uncovered count
+# Calculate uncovered count from our data
 uncovered_count=$((blackbox_instrumented_files - blackbox_covered_files))
 
 # Format numbers with thousands separators

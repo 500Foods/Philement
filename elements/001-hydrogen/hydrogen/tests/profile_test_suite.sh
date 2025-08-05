@@ -21,9 +21,11 @@ if [[ ! -x "./test_00_all.sh" ]]; then
     exit 1
 fi
 
+rm -f ./*.txt
+
 # Run strace
 echo "Running strace on test_00_all.sh..." >> "${ERROR_LOG}"
-strace -f -e trace=fork,execve -o "${TRACE_OUT}" ./test_00_all.sh --sequential 2>> "${ERROR_LOG}"
+strace -f -e trace=fork,execve -o "${TRACE_OUT}" ./test_00_all.sh 2>> "${ERROR_LOG}"
 STRACE_STATUS=$?
 
 # Check strace status
