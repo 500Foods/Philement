@@ -478,9 +478,9 @@ update_readme_with_results() {
                 echo ""
                 
                 # Get detailed coverage information with thousands separators
-                local unity_coverage_detailed="${RESULTS_DIR}/unity_coverage.txt.detailed"
-                local blackbox_coverage_detailed="${RESULTS_DIR}/blackbox_coverage.txt.detailed"
-                local combined_coverage_detailed="${RESULTS_DIR}/combined_coverage.txt.detailed"
+                local unity_coverage_detailed="${RESULTS_DIR}/coverage_unity.txt.detailed"
+                local blackbox_coverage_detailed="${RESULTS_DIR}/coverage_blackbox.txt.detailed"
+                local combined_coverage_detailed="${RESULTS_DIR}/coverage_combined.txt.detailed"
                 
                 if [[ -f "${unity_coverage_detailed}" ]] || [[ -f "${blackbox_coverage_detailed}" ]] || [[ -f "${combined_coverage_detailed}" ]]; then
                     echo "| Test Type | Files Cover | Files Instr | Lines Cover | Lines Instr | Coverage | Timestamp |"
@@ -497,11 +497,7 @@ update_readme_with_results() {
                             unity_covered_files=${unity_covered_files:-0}
                             unity_instrumented=${unity_instrumented:-0}
                             echo "| Unity Tests | ${unity_covered_files} | ${unity_instrumented} | ${unity_covered_formatted} | ${unity_total_formatted} | ${unity_coverage_pct}% | ${unity_timestamp} |"
-                        else
-                            echo "| Unity Tests | 0 | 0 | 0 | 0 | 0.000% |  0 |"
                         fi
-                    else
-                        echo "| Unity Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
                     fi
                     
                     # Blackbox coverage
@@ -515,11 +511,7 @@ update_readme_with_results() {
                             blackbox_covered_files=${blackbox_covered_files:-0}
                             blackbox_instrumented=${blackbox_instrumented:-0}
                             echo "| Blackbox Tests | ${blackbox_covered_files} | ${blackbox_instrumented} | ${blackbox_covered_formatted} | ${blackbox_total_formatted} | ${blackbox_coverage_pct}% | ${blackbox_timestamp} |"
-                        else
-                            echo "| Blackbox Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
                         fi
-                    else
-                        echo "| Blackbox Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
                     fi
                     
                     # Combined coverage
@@ -533,17 +525,8 @@ update_readme_with_results() {
                             combined_covered_files=${combined_covered_files:-0}
                             combined_instrumented=${combined_instrumented:-0}
                             echo "| Combined Tests | ${combined_covered_files} | ${combined_instrumented} | ${combined_covered_formatted} | ${combined_total_formatted} | ${combined_coverage_pct}% | ${combined_timestamp} |"
-                        else
-                            echo "| Combined Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
                         fi
-                    else
-                        echo "| Combined Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
                     fi
-                else
-                    echo "| Test Type | Files Cover | Files Instr | Lines Cover | Lines Instr | Coverage | Timestamp |"
-                    echo "| --------- | ----------- | ----------- | ----------- | ----------- | -------- | --------- |"
-                    echo "| Unity Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
-                    echo "| Blackbox Tests | 0 | 0 | 0 | 0 | 0.000% | 0 |"
                 fi
                 echo ""
             } >> "${temp_readme}"
@@ -553,20 +536,20 @@ update_readme_with_results() {
             {
                 echo "${line}"
                 echo ""
-                echo "| Status | Time | Test | Tests | Pass | Fail | Summary |"
-                echo "| ------ | ---- | ---- | ----- | ---- | ---- | ------- |"
+                echo "| Status | Time | Test | Test Name | Tests | Pass | Fail |"
+                echo "| ------ | ---- | -- | ---- | ----- | ---- | ---- |"
                 
                 # Add individual test results
                 for i in "${!TEST_NUMBERS[@]}"; do
                     local status="✅"
-                    local summary="Test completed without errors"
                     if [[ "${TEST_FAILED[${i}]}" -gt 0 ]]; then
                         status="❌"
-                        summary="Test failed with errors"
                     fi
                     local time_formatted
                     time_formatted=$(format_time_duration "${TEST_ELAPSED[${i}]}")
-                    echo "| ${status} | ${time_formatted} | ${TEST_NUMBERS[${i}]}_$(echo "${TEST_NAMES[${i}]}" | tr ' ' '_' | tr '[:upper:]' '[:lower:]') | ${TEST_SUBTESTS[${i}]} | ${TEST_PASSED[${i}]} | ${TEST_FAILED[${i}]} | ${summary} |" || true
+                    number_formatted=$(printf "%s-%s" "${TEST_NUMBERS[${i}]}" "${TEST_ABBREVS[${i}]}")
+                    name_formatted="$(echo "${TEST_NAMES[${i}]}" | sed 's/{BLUE}//g; s/{RESET}//g')"
+                    echo "| ${status} | ${time_formatted} | ${number_formatted} | ${name_formatted} | ${TEST_SUBTESTS[${i}]} | ${TEST_PASSED[${i}]} | ${TEST_FAILED[${i}]} |" || true
                 done
                 echo ""
             } >> "${temp_readme}"
