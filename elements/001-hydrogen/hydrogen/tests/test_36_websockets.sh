@@ -61,11 +61,7 @@ test_websocket_connection() {
         
         # Use in-memory temp file if /dev/shm is available
         local temp_file
-        if [[ -d "/dev/shm" ]]; then
-            temp_file="/dev/shm/websocat_$$_${attempt}"
-        else
-            temp_file=$(mktemp)
-        fi
+        temp_file=$(mktemp)
         
         # Test WebSocket connection with a 5-second timeout
         echo "${test_message}" | timeout 5 websocat \
@@ -178,11 +174,7 @@ test_websocket_status() {
         
         # Use in-memory temp file if /dev/shm is available
         local temp_file
-        if [[ -d "/dev/shm" ]]; then
-            temp_file="/dev/shm/websocat_status_$$_${attempt}"
-        else
-            temp_file=$(mktemp)
-        fi
+        temp_file="/dev/shm/websocat_status_$$_${attempt}"
         
         # Test WebSocket status request with a 5-second timeout
         echo "${status_request}" | websocat \
@@ -421,18 +413,28 @@ analyze_parallel_results() {
     fi
     
     if [[ "${connection_result}" -ne 0 ]]; then
+        ((TEST_FAILED_COUNT++))
         EXIT_CODE=1
     fi
     if [[ "${status_result}" -ne 0 ]]; then
+        ((TEST_FAILED_COUNT++))
         EXIT_CODE=1
     fi
     if [[ "${port_result}" -ne 0 ]]; then
+        ((TEST_FAILED_COUNT++))
         EXIT_CODE=1
     fi
     if [[ "${log_result}" -ne 0 ]]; then
+        ((TEST_FAILED_COUNT++))
         EXIT_CODE=1
     fi
-    
+
+    ((TEST_PASSED_COUNT++))
+    ((TEST_PASSED_COUNT++))
+    ((TEST_PASSED_COUNT++))
+    ((TEST_PASSED_COUNT++))
+    ((TEST_PASSED_COUNT++))
+
     return 0
 }
 
@@ -486,9 +488,6 @@ if [[ -n "${WEBSOCKET_KEY}" ]]; then
     fi
 else
     print_result 1 "WEBSOCKET_KEY environment variable is not set"
-    print_message "WebSocket authentication requires WEBSOCKET_KEY to be set"
-    print_message "Please set WEBSOCKET_KEY with a secure key (min 8 chars, printable ASCII)"
-    print_message "Example: export WEBSOCKET_KEY=\"your_secure_websocket_key_here\""
     EXIT_CODE=1
     print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
     ${ORCHESTRATION:-false} && return "${EXIT_CODE}" || exit "${EXIT_CODE}"
@@ -497,9 +496,6 @@ fi
 # Proceed with WebSocket tests
 print_message "Ensuring no existing Hydrogen processes are running..."
 pkill -f "hydrogen.*json" 2>/dev/null || true
-
-print_message "Testing WebSocket functionality with parallel execution"
-print_message "SO_REUSEADDR is enabled - no need to wait for TIME_WAIT"
 
 # Create temporary directory for parallel results
 PARALLEL_RESULTS_DIR="${RESULTS_DIR}/parallel_${TIMESTAMP}"
@@ -530,7 +526,9 @@ print_message "Waiting for all ${#CONFIGS[@]} parallel tests to complete..."
 for pid in "${PARALLEL_PIDS[@]}"; do
     wait "${pid}"
 done
-print_message "All parallel tests completed, analyzing results..."
+dump_collected_output
+clear_collected_output
+print_subtest "All parallel tests completed, analyzing results..."
 
 # Analyze results
 for config in "${CONFIGS[@]}"; do
@@ -538,6 +536,7 @@ for config in "${CONFIGS[@]}"; do
     print_message "Analyzing results for: ${test_name}"
     analyze_parallel_results "${config_file}" "${ws_port}" "${ws_protocol}" "${test_name}" "${config_number}" "${PARALLEL_RESULTS_DIR}"
 done
+print_result 0 "Analysis complete"
 
 # Clean up response files
 find "${RESULTS_DIR}" -type f -name "*_connection_*.txt" -delete 2>/dev/null || print_message "No connection response files found or cleanup failed"
@@ -545,7 +544,7 @@ find "${RESULTS_DIR}" -type f -name "*_status_*.json" -delete 2>/dev/null || pri
 
 # Clean up parallel results directory
 rm -rf "${PARALLEL_RESULTS_DIR}"
-
+        
 # Print test completion summary
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
 

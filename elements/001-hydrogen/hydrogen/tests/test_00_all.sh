@@ -605,6 +605,11 @@ done
 TOTAL_ELAPSED_FORMATTED=$(format_time_duration "${TOTAL_ELAPSED}")
 TOTAL_RUNNING_TIME_FORMATTED=$(format_time_duration "${TOTAL_RUNNING_TIME}")
 
+# Update README.md with test results (only if not in skip mode)
+if [[ "${SKIP_TESTS}" = false ]]; then
+    update_readme_with_results
+fi
+
 # Let's come up with a number that represents how much code is in our test suite
 SCRIPT_SCALE=$(printf "%'d" "$(cd "${SCRIPT_DIR}" && find . -type f -name "*.sh" -exec grep -vE '^\s*(#|$)' {} + | wc -l)" || true)
 
@@ -726,10 +731,5 @@ rm -f "${results_svg_path}"
 ("${OH_EXTERNAL}" -i "${results_table_file}" -o "${results_svg_path}" 2>/dev/null) &
 
 rm -rf "${temp_dir}" 2>/dev/null
-
-# Update README.md with test results (only if not in skip mode)
-if [[ "${SKIP_TESTS}" = false ]]; then
-    update_readme_with_results
-fi
 
 exit "${OVERALL_EXIT_CODE}"
