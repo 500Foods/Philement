@@ -75,7 +75,7 @@ validate_api_request() {
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
             print_message "API request attempt ${attempt} of ${max_attempts} (waiting for API subsystem initialization)..."
-            sleep 0.05  # Brief delay between attempts for API initialization
+            # sleep 0.05  # Brief delay between attempts for API initialization
         fi
         
         # Run curl and capture exit code

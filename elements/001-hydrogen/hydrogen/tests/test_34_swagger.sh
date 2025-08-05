@@ -54,7 +54,7 @@ check_response_content() {
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
             print_message "HTTP request attempt ${attempt} of ${max_attempts} (waiting for subsystem initialization)..."
-            sleep 0.05  # Brief delay between attempts for subsystem initialization
+            # sleep 0.05  # Brief delay between attempts for subsystem initialization
         fi
         
         # Run curl and capture exit code
@@ -132,7 +132,7 @@ check_redirect_response() {
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
             print_message "Redirect check attempt ${attempt} of ${max_attempts} (waiting for subsystem initialization)..."
-            sleep 0.05  # Brief delay between attempts for subsystem initialization
+            # sleep 0.05  # Brief delay between attempts for subsystem initialization
         fi
         
         # Run curl and capture exit code
@@ -207,7 +207,7 @@ check_swagger_json() {
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
             print_message "Swagger JSON request attempt ${attempt} of ${max_attempts} (waiting for subsystem initialization)..."
-            sleep 0.05  # Brief delay between attempts for subsystem initialization
+            # sleep 0.05  # Brief delay between attempts for subsystem initialization
         fi
         
         # Run curl and capture exit code
