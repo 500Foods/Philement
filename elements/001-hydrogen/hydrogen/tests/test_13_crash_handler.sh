@@ -15,6 +15,7 @@
 # run_crash_test_with_build() 
 
 # CHANGELOG
+# 6.1.0 - 2025-08-05 - Adjusted output paths - variables not avaialble in subshell
 # 6.0.0 - 2025-08-04 - Overhauled (separately) by Grok 4 so it runs in half the time
 # 5.0.0 - 2025-07-30 - Overhaul #1
 # 4.0.0 - 2025-07-28 - Shellcheck fixes, Grok even gave it a full once-over. 
@@ -29,14 +30,14 @@
 TEST_NAME="Crash Handler"
 TEST_ABBR="BUG"
 TEST_NUMBER="13"
-TEST_VERSION="6.0.0"
+TEST_VERSION="6.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
 # More test configuration
-TEST_CONFIG=${CONFIG_DIR}/"hydrogen_test_min.json"
+TEST_CONFIG="${CONFIG_DIR}/hydrogen_test_min.json"
 STARTUP_TIMEOUT=10    
 CRASH_TIMEOUT=30
 
@@ -290,9 +291,9 @@ run_crash_test_parallel() {
     local result_dir="$2"
     local binary_name
     binary_name=$(basename "${binary}")
-    local log_file="${SCRIPT_DIR}/hydrogen_crash_test_${binary_name}_${TIMESTAMP}.log"
-    local result_file="${result_dir}/${binary_name}.result"
-    local gdb_output_file="${result_dir}/${binary_name}_${TIMESTAMP}.txt"
+    local log_file="../build/tests/logs//hydrogen_crash_test_${binary_name}_${TIMESTAMP}.log"
+    local result_file="../build/tests/results/${binary_name}.result"
+    local gdb_output_file="../build/tests/diagnostics/${binary_name}_${TIMESTAMP}.txt"
     
     # Clear files
     true > "${log_file}"
