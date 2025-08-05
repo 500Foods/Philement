@@ -20,6 +20,11 @@ TEST_VERSION="3.0.1"
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
+# Function to get file hash (using md5sum or equivalent)
+get_file_hash() {
+    md5sum "$1" | awk '{print $1}' || true
+}
+
 # Test configuration constants
 [[ -z "${LINT_OUTPUT_LIMIT:-}" ]] && readonly LINT_OUTPUT_LIMIT=10
 
@@ -46,29 +51,32 @@ if [[ "${MD_COUNT}" -gt 0 ]]; then
     # Cache directory for markdownlint results
     CACHE_DIR="${HOME}/.cache/markdownlint"
     mkdir -p "${CACHE_DIR}"
-    
-    # Function to get file hash (using md5sum or equivalent)
-    get_file_hash() {
-        md5sum "$1" | awk '{print $1}' || true
-    }
-    
+
     # Categorize files for caching
     cached_files=0
     to_process_files=()
     processed_files=0
-    
-    for file in "${MD_FILES[@]}"; do
-        file_hash=$(get_file_hash "${file}")
+
+    # Compute MD5 hashes for all files in one go
+    # Use a temporary file to store the hashes
+    temp_hashes=$(mktemp)
+    printf "%s\0" "${MD_FILES[@]}" | xargs -0 md5sum > "${temp_hashes}" 2>/dev/null
+
+    # Process the hashes and categorize files
+    while IFS=' ' read -r file_hash file; do
         cache_file="${CACHE_DIR}/${file##*/}_${file_hash}"
         if [[ -f "${cache_file}" ]]; then
             ((cached_files++))
-            cat "${cache_file}" >> "${TEMP_LOG}" 2>&1 || true
+            cat "${cache_file}" >> "${TEMP_LOG}" 2>/dev/null || true
         else
             to_process_files+=("${file}")
             ((processed_files++))
         fi
-    done
-    
+    done < "${temp_hashes}"
+
+    # Clean up temporary file
+    rm -f "${temp_hashes}"
+
     print_message "Using cached results for ${cached_files} files, processing ${processed_files} files out of ${MD_COUNT}..."
     TEST_NAME="${TEST_NAME} {BLUE}(markdownlint: ${MD_COUNT} files){RESET}"
 

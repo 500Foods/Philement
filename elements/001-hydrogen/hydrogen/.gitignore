@@ -33,7 +33,7 @@ tests/*.log
 response_*.json
 temp_*
 *.tmp
-
+*.upx
 
 # Don't need to copy this around, thanks
 tests/unity/framework/
