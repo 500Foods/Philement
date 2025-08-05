@@ -27,7 +27,7 @@ These libraries were created as part of the test suite migration to replace supp
 
 ## Coverage Libraries
 
-- **[Coverage Analysis System](coverage.md)** - Comprehensive documentation for the coverage analysis system, including `coverage.sh`, `coverage-common.sh`, `coverage-unity.sh`, `coverage-blackbox.sh`, and the advanced `coverage_table.sh` script for detailed visual coverage reporting.
+- **[Coverage Analysis System](coverage.md)** - Comprehensive documentation for the coverage analysis system, including `coverage.sh`, `coverage-common.sh`, `coverage-combined.sh`, and the advanced `coverage_table.sh` script for detailed visual coverage reporting.
 
 ## Related Documentation
 
