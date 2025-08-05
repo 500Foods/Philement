@@ -532,8 +532,6 @@ This document provides a comprehensive overview of the Hydrogen project's file o
   - [cloc.sh](tests/lib/cloc.sh) - Code line counting utilities
   - [coverage.sh](tests/lib/coverage.sh) - Main coverage orchestration and API functions
   - [coverage-common.sh](tests/lib/coverage-common.sh) - Shared coverage utilities and variables
-  - [coverage-unity.sh](tests/lib/coverage-unity.sh) - Unity test coverage calculation
-  - [coverage-blackbox.sh](tests/lib/coverage-blackbox.sh) - Blackbox test coverage and combined analysis
   - [coverage_table.sh](tests/lib/coverage_table.sh) - Advanced tabular coverage reporting with visual formatting
   - [env_utils.sh](tests/lib/env_utils.sh) - Environment variable utilities
   - [file_utils.sh](tests/lib/file_utils.sh) - File manipulation utilities
