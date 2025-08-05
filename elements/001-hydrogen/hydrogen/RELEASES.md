@@ -55,7 +55,26 @@ Remember:
 - Group by topic to maintain clarity
 -->
 
+- August 2025
+  - [2025-Aug-05 (Tue)](docs/releases/2025-08/2025-08-05.md): Coverage System Optimization, Testing Framework Performance
+  - [2025-Aug-04 (Mon)](docs/releases/2025-08/2025-08-04.md): GCOV Integration, Coverage System Enhancement, Performance Optimization
+  - [2025-Aug-03 (Sun)](docs/releases/2025-08/2025-08-03.md): Testing Framework Metrics, Script Optimization
+  - [2025-Aug-02 (Sat)](docs/releases/2025-08/2025-08-02.md): API Documentation, Swagger CLI Validation
+  - [2025-Aug-01 (Fri)](docs/releases/2025-08/2025-08-01.md): Testing Framework Improvements
+
 - July 2025
+  - [2025-Jul-31 (Thu)](docs/releases/2025-07/2025-07-31.md): Major Testing Framework Overhaul Complete, Code Quality
+  - [2025-Jul-30 (Wed)](docs/releases/2025-07/2025-07-30.md): Testing Framework Cleanup, Signal Handling
+  - [2025-Jul-29 (Tue)](docs/releases/2025-07/2025-07-29.md): Performance Optimization, Caching Implementation
+  - [2025-Jul-28 (Mon)](docs/releases/2025-07/2025-07-28.md): Testing Framework Cleanup, Performance Improvements
+  - [2025-Jul-27 (Sun)](docs/releases/2025-07/2025-07-27.md): Code Quality, Shellcheck Updates
+  - [2025-Jul-25 (Fri)](docs/releases/2025-07/2025-07-25.md): Script Infrastructure Improvements
+  - [2025-Jul-24 (Thu)](docs/releases/2025-07/2025-07-24.md): Script Infrastructure, Testing Framework
+  - [2025-Jul-23 (Wed)](docs/releases/2025-07/2025-07-23.md): Major Shellcheck Overhaul, Testing Framework
+  - [2025-Jul-22 (Tue)](docs/releases/2025-07/2025-07-22.md): Comprehensive Shellcheck Validation
+  - [2025-Jul-21 (Mon)](docs/releases/2025-07/2025-07-21.md): Code Quality, Testing Framework
+  - [2025-Jul-20 (Sun)](docs/releases/2025-07/2025-07-20.md): Testing Framework, Script Infrastructure
+  - [2025-Jul-19 (Sat)](docs/releases/2025-07/2025-07-19.md): Documentation System, Testing Framework, Build System
   - [2025-Jul-18 (Fri)](docs/releases/2025-07/2025-07-18.md): WebSocket Shutdown Optimization, Testing Framework SVG Visualization
   - [2025-Jul-17 (Thu)](docs/releases/2025-07/2025-07-17.md): WebSocket Naming Consistency
   - [2025-Jul-16 (Wed)](docs/releases/2025-07/2025-07-16.md): Unity Test Batching Algorithm Improvement
