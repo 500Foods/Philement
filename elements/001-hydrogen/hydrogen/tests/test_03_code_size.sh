@@ -8,6 +8,7 @@
 # show_top_files_by_type()
 
 # CHANGELOG
+# 3.2.0 - 2025-08-05 - Minor adjustments to output formatting, added TOPLIST variable
 # 3.1.0 - 2025-08-04 - Better presentation of large file sizes
 # 3.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 3.0.0 - 2025-07-30 - Overhaul #1
@@ -18,7 +19,7 @@
 TEST_NAME="Code Size Analysis"
 TEST_ABBR="SIZ"
 TEST_NUMBER="03"
-TEST_VERSION="3.1.0"
+TEST_VERSION="3.2.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -27,6 +28,9 @@ setup_test_environment
 # Test configuration constants
 readonly MAX_SOURCE_LINES=1000
 readonly LARGE_FILE_THRESHOLD="25k"
+
+# Top files
+TOPLIST=10
 
 # Create temporary files
 SOURCE_FILES_LIST=$(mktemp)
@@ -47,7 +51,7 @@ for file in "${exclusion_files[@]}"; do
             # Special handling for .lintignore-bash which doesn't have a SUMMARY section
             print_message "${file}: Used by shellcheck for bash script linting exclusions"
         else
-            summary=$(grep -A 5 "SUMMARY" "${file}" 2>/dev/null | grep -v "SUMMARY" | grep -v "Used by" | sed 's/^# /  /' | sed 's/#$//' || true)
+            summary=$(grep -A "${TOPLIST}" "SUMMARY" "${file}" 2>/dev/null | grep -v "SUMMARY" | grep -v "Used by" | sed 's/^# /  /' | sed 's/#$//' || true)
             if [[ -n "${summary}" ]]; then
                 # Break multi-line summaries into individual print_message calls
                 # Use process substitution to avoid subshell
@@ -145,8 +149,8 @@ sort -nr -o "${LINE_COUNT_FILE}" "${LINE_COUNT_FILE}"
 
 # Display distribution
 print_message "Source Code Distribution (${TOTAL_FILES} files):"
-for range in "000-099" "100-199" "200-299" "300-399" "400-499" "500-599" "600-699" "700-799" "800-899" "900-999" "1000+"; do
-    print_output "${range} Lines: ${line_bins[${range}]} files"
+for range in "000-099" "100-199" "200-299" "300-399" "400-499" "500-599" "600-699" "700-799" "800-899" "900-999" "1,000+ "; do
+    print_output "  ${range} Lines: ${line_bins[${range}]:-0} files"
 done
 
 # Show top files by type
@@ -161,13 +165,13 @@ show_top_files_by_type() {
         temp_file=$(mktemp)
         
         grep "\.${ext}$" "${LINE_COUNT_FILE}" > "${temp_file}"
-        print_message "Top 5 ${label} Files:"
+        print_message "Top ${TOPLIST} ${label} Files:"
         # Avoid subshell by using process substitution instead of pipe
         while read -r line; do
             local count path
             read -r count path <<< "${line}"
             print_output "  ${count} lines: ${path}"
-        done < <(head -n 5 "${temp_file}" || true)
+        done < <(head -n "${TOPLIST}" "${temp_file}" || true)
         rm -f "${temp_file}"
     done
 }
@@ -208,7 +212,7 @@ else
         sorted_list="$(mktemp)"
         sort -nr "${LARGE_FILES_LIST}" > "${sorted_list}"
         while read -r size file; do
-            size_formatted=$(printf "%6s" "$(printf "%'d" "${size}")" )
+            size_formatted=$(printf "%7s" "$(printf "%'d" "${size}")" )
             print_output "${size_formatted} KB: ${file}"
         done < "${sorted_list}"
         rm -f "${sorted_list}"
