@@ -126,7 +126,6 @@ set_basic_test_environment() {
     export H_FRIENDLY_NAME="Hydrogen Environment Test"
     
     print_message "Basic environment variables for Hydrogen test have been set"
-    echo "INFO: Basic environment variables for Hydrogen test have been set"
 }
 
 # Function to validate required configuration files exist
