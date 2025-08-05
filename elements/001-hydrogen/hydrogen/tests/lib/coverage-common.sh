@@ -452,43 +452,16 @@ load_source_files() {
     return 0
 }
 
-# Function to identify uncovered source files
-# Usage: identify_uncovered_files <project_root>
-identify_uncovered_files() {
+# Function to get cached source files (used by other functions)
+# Usage: get_cached_source_files <project_root>
+get_cached_source_files() {
     local project_root="$1"
-    local uncovered_files=()
     
-    # Load source files
+    # Load source files if not already loaded
     load_source_files "${project_root}"
     
-    # Create temporary file for uncovered files
-    local temp_uncovered
-    temp_uncovered=$(mktemp)
-    
-    # Process each source file
-    for file in "${SOURCE_FILES_CACHE[@]}"; do
-        # Check if file has a corresponding .gcov in blackbox coverage directory
-        local basename_file
-        basename_file=$(basename "${file}" .c)
-        # shellcheck disable=SC2154 # BLACKBOX_COVS assigned globally elsewhere
-        local gcov_file="${BLACKBOX_COVS}/${basename_file}.c.gcov"
-        
-        # If gcov doesn't exist or has zero coverage, consider it uncovered
-        if [[ ! -f "${gcov_file}" ]] || [[ $(awk '/^[ \t]*[0-9]+\*?:[ \t]*[0-9]+:/ { covered++ } END { print (covered == 0 ? 0 : 1) }' "${gcov_file}" || true) -eq 0 ]]; then
-            uncovered_files+=("${file}")
-            echo "${file}" >> "${temp_uncovered}"
-        fi
-    done
-    
-    # Calculate uncovered count
-    local uncovered_count=${#uncovered_files[@]}
-    
-    # Output results
-    echo "UNCOVERED_FILES_COUNT: ${uncovered_count}"
-    echo "UNCOVERED_FILES:"
-    cat "${temp_uncovered}"
-    
-    rm -f "${temp_uncovered}"
+    # Output cached source files
+    printf '%s\n' "${SOURCE_FILES_CACHE[@]}"
 }
 
 # Function to analyze a single gcov file and store data
@@ -560,25 +533,24 @@ collect_gcov_files() {
     local build_dir="$1"
     local coverage_type="$2"
     local files_found=0
+    local project_root="${PROJECT_DIR}"
+    
+    # Load ignore patterns once for efficiency
+    load_ignore_patterns "${project_root}"
     
     if [[ -d "${build_dir}" ]]; then
         while IFS= read -r gcov_file; do
             if [[ -f "${gcov_file}" ]]; then
-                # Use the exact same filtering logic as the working sections
+                local basename_file
                 basename_file=$(basename "${gcov_file}")
+                
+                # Apply the same efficient filtering logic
+                # Common skips
                 if [[ "${basename_file}" == "unity.c.gcov" ]] || [[ "${gcov_file}" == *"/usr/"* ]]; then
                     continue
                 fi
                 
-                # Skip system include files that show up in Source: lines
-                if grep -q "Source:/usr/include/" "${gcov_file}" 2>/dev/null; then
-                    continue
-                fi
-                
-                if [[ "${basename_file}" == "test_"* ]]; then
-                    continue
-                fi
-                
+                # Skip system libraries and external dependencies
                 if [[ "${basename_file}" == *"jansson"* ]] || \
                    [[ "${basename_file}" == *"json"* ]] || \
                    [[ "${basename_file}" == *"curl"* ]] || \
@@ -591,23 +563,19 @@ collect_gcov_files() {
                     continue
                 fi
                 
-                source_file="${basename_file%.gcov}"
-                should_ignore=false
-                
-                if [[ -f "${project_root}/.trial-ignore" ]]; then
-                    while IFS= read -r line; do
-                        if [[ "${line}" =~ ^[[:space:]]*# ]] || [[ -z "${line}" ]]; then
-                            continue
-                        fi
-                        pattern="${line#./}"
-                        if [[ "${source_file}" == *"${pattern}"* ]]; then
-                            should_ignore=true
-                            break
-                        fi
-                    done < "${project_root}/.trial-ignore"
+                # Skip system include files that show up in Source: lines
+                if grep -q "Source:/usr/include/" "${gcov_file}" 2>/dev/null; then
+                    continue
                 fi
                 
-                if [[ "${should_ignore}" == true ]]; then
+                # Skip test files
+                if [[ "${basename_file}" == "test_"* ]]; then
+                    continue
+                fi
+                
+                # Check if this file should be ignored using efficient function
+                local source_file="${basename_file%.gcov}"
+                if should_ignore_file "src/${source_file}" "${project_root}"; then
                     continue
                 fi
                 
