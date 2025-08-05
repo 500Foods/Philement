@@ -15,6 +15,7 @@
 # run_crash_test_with_build() 
 
 # CHANGELOG
+# 6.0.0 - 2025-08-04 - Overhauled (separately) by Grok 4 so it runs in half the time
 # 5.0.0 - 2025-07-30 - Overhaul #1
 # 4.0.0 - 2025-07-28 - Shellcheck fixes, Grok even gave it a full once-over. 
 # 3.0.3 - 2025-07-14 - No more sleep
@@ -28,7 +29,7 @@
 TEST_NAME="Crash Handler"
 TEST_ABBR="BUG"
 TEST_NUMBER="13"
-TEST_VERSION="5.0.0"
+TEST_VERSION="6.0.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -37,9 +38,7 @@ setup_test_environment
 # More test configuration
 TEST_CONFIG=${CONFIG_DIR}/"hydrogen_test_min.json"
 STARTUP_TIMEOUT=10    
-# SHUTDOWN_TIMEOUT=90   
 CRASH_TIMEOUT=30
-# SHUTDOWN_ACTIVITY_TIMEOUT=5  
 
 print_subtest "Validate Test Configuration File"
 
@@ -50,29 +49,34 @@ else
     EXIT_CODE=1
 fi
 
+# Global caches
+declare CORE_PATTERN=""
+declare CORE_LIMIT=""
+declare -A DEBUG_SYMBOL_CACHE
+
 # Function to verify core dump configuration
 verify_core_dump_config() {
     print_message "Checking core dump configuration..."
     
+    # Cache core pattern and limit if not already set
+    [[ -z "${CORE_PATTERN}" ]] && CORE_PATTERN=$(cat /proc/sys/kernel/core_pattern 2>/dev/null || echo "unknown")
+    [[ -z "${CORE_LIMIT}" ]] && CORE_LIMIT=$(ulimit -c)
+    
     # Check core pattern
-    local core_pattern
-    core_pattern=$(cat /proc/sys/kernel/core_pattern 2>/dev/null || echo "unknown")
-    if [[ "${core_pattern}" == "core" ]]; then
+    if [[ "${CORE_PATTERN}" == "core" ]]; then
         print_message "Core pattern is set to default 'core'"
-        return 0
     else
-        print_warning "Core pattern is set to '${core_pattern}', might affect core dump location"
+        print_warning "Core pattern is set to '${CORE_PATTERN}', might affect core dump location"
     fi
     
     # Check core dump size limit
-    local core_limit
-    core_limit=$(ulimit -c)
-    if [[ "${core_limit}" == "unlimited" || "${core_limit}" -gt 0 ]]; then
-        print_message "Core dump size limit is adequate (${core_limit})"
+    if [[ "${CORE_LIMIT}" == "unlimited" || "${CORE_LIMIT}" -gt 0 ]]; then
+        print_message "Core dump size limit is adequate (${CORE_LIMIT})"
     else
-        print_warning "Core dump size limit is too restrictive (${core_limit})"
+        print_warning "Core dump size limit is too restrictive (${CORE_LIMIT})"
         # Try to set unlimited core dumps for this session
         ulimit -c unlimited
+        CORE_LIMIT=$(ulimit -c)
         print_message "Attempted to set unlimited core dump size"
     fi
     
@@ -111,6 +115,12 @@ verify_debug_symbols() {
     binary_name=$(basename "${binary}")
     local expect_symbols=1
     
+    # Check cache first
+    if [[ -n "${DEBUG_SYMBOL_CACHE[${binary_name}]}" ]]; then
+        [[ "${DEBUG_SYMBOL_CACHE[${binary_name}]}" -eq 0 ]] && return 0
+        return 1
+    fi
+    
     # Release and naked builds should not have debug symbols
     if [[ "${binary_name}" == *"release"* ]] || [[ "${binary_name}" == *"naked"* ]]; then
         expect_symbols=0
@@ -119,24 +129,23 @@ verify_debug_symbols() {
     print_message "Checking debug symbols in ${binary_name}..."
     
     # Use readelf to check for debug symbols
-    # NOTE: Use of a temporary file is authorized explicity here to avoid reading the entire file into memory
-    temp_output=$(mktemp)
-    readelf --debug-dump=info "${binary}" 2>/dev/null > "${temp_output}"
-    if grep -q -m 1 "DW_AT_name" "${temp_output}"; then
-        rm -f "${temp_output}"
+    if readelf --debug-dump=info "${binary}" 2>/dev/null | grep -q -m 1 "DW_AT_name" || true; then
         if [[ "${expect_symbols}" -eq 1 ]]; then
             print_message "Debug symbols found in ${binary_name} (as expected)"
+            DEBUG_SYMBOL_CACHE[${binary_name}]=0
             return 0
         fi
         print_message "Debug symbols found in ${binary_name} (unexpected for release build)"
+        DEBUG_SYMBOL_CACHE[${binary_name}]=1
         return 1
     fi
-    rm -f "${temp_output}"
     if [[ "${expect_symbols}" -eq 1 ]]; then
         print_message "No debug symbols found in ${binary_name} (symbols required)"
+        DEBUG_SYMBOL_CACHE[${binary_name}]=1
         return 1
     fi
     print_message "No debug symbols found in ${binary_name} (as expected for release build)"
+    DEBUG_SYMBOL_CACHE[${binary_name}]=0
     return 0
 }
 
@@ -191,7 +200,6 @@ analyze_core_with_gdb() {
     build_name=$(basename "${binary}")
     
     # Check for debug info and set GDB flags accordingly
-    # NOTE: Use of a temporary file is authorized here to avoid reading the entire file into memory
     local gdb_flags
     temp_output=$(mktemp)
     readelf --sections "${binary}" 2>/dev/null > "${temp_output}"
@@ -205,28 +213,24 @@ analyze_core_with_gdb() {
         gdb_flags=(-q -ex 'set print frame-arguments none' -ex 'set print object off')
     fi
     
-    # Create GDB commands file
-    cat > gdb_commands.txt << EOF
-set pagination off
-set print elements 0
-set height 0
-set width 0
-file ${binary}
-core-file ${core_file}
-thread
-info threads
-thread apply all bt full
-frame
-info registers
-info locals
-quit
-EOF
-    
     print_message "Analyzing core file with GDB..."
-    if ! gdb "${gdb_flags[@]}" -batch -x gdb_commands.txt > "${gdb_output_file}" 2> "${gdb_output_file}.stderr"; then
+    gdb "${gdb_flags[@]}" -batch \
+        -ex "set pagination off" \
+        -ex "set print elements 0" \
+        -ex "set height 0" \
+        -ex "set width 0" \
+        -ex "file ${binary}" \
+        -ex "core-file ${core_file}" \
+        -ex "thread" \
+        -ex "info threads" \
+        -ex "thread apply all bt full" \
+        -ex "frame" \
+        -ex "info registers" \
+        -ex "info locals" \
+        -ex "quit" > "${gdb_output_file}" 2> "${gdb_output_file}.stderr" || {
         print_message "GDB exited with error, checking output anyway..."
         cat "${gdb_output_file}.stderr" >> "${gdb_output_file}" 2>/dev/null || true
-    fi
+    }
     
     # Check for test_crash_handler in backtrace
     local has_backtrace=0
@@ -288,6 +292,7 @@ run_crash_test_parallel() {
     binary_name=$(basename "${binary}")
     local log_file="${SCRIPT_DIR}/hydrogen_crash_test_${binary_name}_${TIMESTAMP}.log"
     local result_file="${result_dir}/${binary_name}.result"
+    local gdb_output_file="${result_dir}/${binary_name}_${TIMESTAMP}.txt"
     
     # Clear files
     true > "${log_file}"
@@ -345,6 +350,19 @@ run_crash_test_parallel() {
     # Wait for the process to fully exit
     wait "${hydrogen_pid}" 2>/dev/null || true
     
+    # Perform GDB analysis if core file exists
+    if verify_core_file "${binary}" "${hydrogen_pid}"; then
+        local core_file="${PROJECT_DIR}/${binary_name}.core.${hydrogen_pid}"
+        if verify_core_file_content "${core_file}" "${binary}"; then
+            analyze_core_with_gdb "${binary}" "${core_file}" "${gdb_output_file}"
+            echo "GDB_RESULT=$?" >> "${result_file}"
+        else
+            echo "GDB_RESULT=1" >> "${result_file}"
+        fi
+    else
+        echo "GDB_RESULT=1" >> "${result_file}"
+    fi
+    
     return 0
 }
 
@@ -381,11 +399,14 @@ analyze_parallel_results() {
         return 1
     fi
     
+    # Extract GDB result
+    local gdb_result
+    gdb_result=$(grep "GDB_RESULT=" "${result_file}" | cut -d'=' -f2 || echo "1" || true)
+    
     # Initialize result variables for this build
     local debug_result=1
     local core_result=1
     local log_result=1
-    local gdb_result=1
     
     # Verify debug symbols
     if verify_debug_symbols "${binary}"; then
@@ -405,21 +426,12 @@ analyze_parallel_results() {
     fi
     
     # Verify crash handler log messages
-    if grep -q "Received SIGUSR1" "${log_file}" 2>/dev/null && \
-       grep -q "Signal 11 received" "${log_file}" 2>/dev/null; then
+    if grep -q -e "Received SIGUSR1" -e "Signal 11 received" "${log_file}" 2>/dev/null; then
         print_message "Found crash handler messages in log"
         log_result=0
     else
         print_message "Missing crash handler messages in log"
         log_result=1
-    fi
-    
-    # Analyze core file with GDB if core file was created
-    if [[ "${core_result}" -eq 0 ]]; then
-        local core_file="${PROJECT_DIR}/${binary_name}.core.${hydrogen_pid}"
-        if analyze_core_with_gdb "${binary}" "${core_file}" "${DIAGS_DIR}/${binary_name}_${TIMESTAMP}.txt"; then
-            gdb_result=0
-        fi
     fi
     
     # Save logs and results
@@ -434,9 +446,6 @@ analyze_parallel_results() {
     else
         print_message "Preserving core file for debugging: ${binary_name}.core.${hydrogen_pid}"
     fi
-    
-    # Clean up GDB commands file
-    rm -f gdb_commands.txt
     
     # Return results via global variables (since we need multiple return values)
     DEBUG_SYMBOL_RESULT=${debug_result}
@@ -564,8 +573,7 @@ run_crash_test_with_build() {
     fi
     
     # Verify crash handler log messages
-    if grep -q "Received SIGUSR1" "${log_file}" 2>/dev/null && \
-       grep -q "Signal 11 received" "${log_file}" 2>/dev/null; then
+    if grep -q -e "Received SIGUSR1" -e "Signal 11 received" "${log_file}" 2>/dev/null; then
         print_message "Found crash handler messages in log"
         log_result=0
     else
@@ -594,9 +602,6 @@ run_crash_test_with_build() {
         print_message "Preserving core file for debugging: ${binary_name}.core.${hydrogen_pid}"
     fi
     
-    # Clean up GDB commands file
-    rm -f gdb_commands.txt
-    
     # Return results via global variables (since we need multiple return values)
     DEBUG_SYMBOL_RESULT=${debug_result}
     CORE_FILE_RESULT=${core_result}
@@ -613,13 +618,14 @@ run_crash_test_with_build() {
 
 print_subtest "Verify Core Dump Configuration"
 
-if verify_core_dump_config; then
-    print_result 0 "Core dump configuration verified"
-    ((PASS_COUNT++))
-else
+if ! verify_core_dump_config; then
     print_result 1 "Core dump configuration issues detected"
     EXIT_CODE=1
+    print_test_completion "${TEST_NAME}"
+    ${ORCHESTRATION:-false} && return "${EXIT_CODE}" || exit "${EXIT_CODE}"
 fi
+print_result 0 "Core dump configuration verified"
+((PASS_COUNT++))
 
 # Find all available builds
 print_message "Discovering available Hydrogen builds..."
@@ -697,8 +703,13 @@ mkdir -p "${PARALLEL_RESULTS_DIR}"
 
 print_message "Running crash tests in parallel for all builds..."
 
-# Start all builds in parallel
+MAX_JOBS=$(nproc 2>/dev/null || echo 4)  # Default to 4 if nproc unavailable
+
+# Start all builds in parallel with job limiting
 for build in "${BUILDS[@]}"; do
+    while (( $(jobs -r | wc -l || true) >= MAX_JOBS )); do
+        wait -n  # Wait for any job to finish
+    done
     build_name=$(basename "${build}")
     print_message "Starting parallel test for: ${build_name}"
     
@@ -802,6 +813,7 @@ print_message "Summary: ${successful_builds}/${#BUILDS[@]} builds passed all cra
 
 # Clean up parallel results directory
 rm -rf "${PARALLEL_RESULTS_DIR}"
+rm -rf "${PROJECT_DIR}"/*.core.*
 
 # Print completion table
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
