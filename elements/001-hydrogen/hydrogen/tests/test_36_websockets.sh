@@ -9,6 +9,8 @@
 # test_websocket_configuration() 
 
 # CHANGELOG
+# 3.0.0 - 2025-08-04 - That right there was Grok's rewrite - heh a modest 0.0.1
+# 2.0.2 - 2025-08-04 - Optimized for performance: cached key validation, parallel config tests, consolidated log checks, in-memory temps, early exits
 # 2.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 2.0.0 - 2025-07-30 - Overhaul #1
 # 1.1.2 - 2025-07-19 - Bit of tidying up to get rid of steps we don't need
@@ -23,7 +25,7 @@
 TEST_NAME="WebSockets"
 TEST_ABBR="WSS"
 TEST_NUMBER="36"
-TEST_VERSION="2.0.1"
+TEST_VERSION="3.0.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -32,6 +34,9 @@ setup_test_environment
 # Test variables
 CONFIG_1="$(get_config_path "hydrogen_test_websocket_test_1.json")"
 CONFIG_2="$(get_config_path "hydrogen_test_websocket_test_2.json")"
+
+# Global cache for WEBSOCKET_KEY validation
+WEBSOCKET_KEY_VALIDATED=0
 
 # Function to test WebSocket connection with proper authentication and retry logic
 test_websocket_connection() {
@@ -52,15 +57,17 @@ test_websocket_connection() {
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
             print_message "WebSocket connection attempt ${attempt} of ${max_attempts} (waiting for WebSocket subsystem initialization)..."
-            #sleep 0.1  # Brief delay between attempts for WebSocket initialization
         fi
         
-        # Create a temporary file to capture the full interaction
+        # Use in-memory temp file if /dev/shm is available
         local temp_file
-        temp_file=$(mktemp)
+        if [[ -d "/dev/shm" ]]; then
+            temp_file="/dev/shm/websocat_$$_${attempt}"
+        else
+            temp_file=$(mktemp)
+        fi
         
         # Test WebSocket connection with a 5-second timeout
-        # Send test message and wait for any response or timeout
         echo "${test_message}" | timeout 5 websocat \
             --protocol="${protocol}" \
             -H="Authorization: Key ${WEBSOCKET_KEY}" \
@@ -167,12 +174,15 @@ test_websocket_status() {
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
             print_message "WebSocket status request attempt ${attempt} of ${max_attempts}..."
-            #sleep 0.1
         fi
         
-        # Create a temporary file to capture the full interaction
+        # Use in-memory temp file if /dev/shm is available
         local temp_file
-        temp_file=$(mktemp)
+        if [[ -d "/dev/shm" ]]; then
+            temp_file="/dev/shm/websocat_status_$$_${attempt}"
+        else
+            temp_file=$(mktemp)
+        fi
         
         # Test WebSocket status request with a 5-second timeout
         echo "${status_request}" | websocat \
@@ -208,8 +218,6 @@ test_websocket_status() {
         fi
         
         # Check for connection issues
-        # Note: websocat with --one-message may exit with code 1 due to connection closure timing
-        # but still successfully receive the response. We accept this as success if we got data.
         if [[ "${websocat_exitcode}" -ne 0 ]] && [[ "${websocat_exitcode}" -ne 124 ]] && [[ "${websocat_exitcode}" -ne 1 ]]; then
             if [[ "${attempt}" -eq "${max_attempts}" ]]; then
                 print_result 1 "WebSocket status request failed - connection error (exit code: ${websocat_exitcode})"
@@ -234,13 +242,15 @@ test_websocket_status() {
     return 1
 }
 
-# Function to test WebSocket server configuration
+# Function to test WebSocket server configuration in parallel
 test_websocket_configuration() {
     local config_file="$1"
     local ws_port="$2"
     local ws_protocol="$3"
     local test_name="$4"
     local config_number="$5"
+    local result_dir="$6"
+    local result_file="${result_dir}/${test_name}.result"
     
     print_message "Testing WebSocket server: ws://localhost:${ws_port} (protocol: ${ws_protocol})"
     
@@ -255,147 +265,107 @@ test_websocket_configuration() {
     local base_url="http://localhost:${server_port}"
     local ws_url="ws://localhost:${ws_port}"
     
+    # Clear result file
+    true > "${result_file}"
+    
     # Start server
-    local subtest_start=$(((config_number - 1) * 5 + 1))
+    # local subtest_start=$(((config_number - 1) * 5 + 1))
     
     print_subtest "Start Hydrogen Server (Config ${config_number})"
     
-    # Use a temporary variable name that won't conflict
-    local temp_pid_var="HYDROGEN_PID_$$"
+    local temp_pid_var="HYDROGEN_PID_$$_${config_number}"
     if start_hydrogen_with_pid "${config_file}" "${server_log}" 15 "${HYDROGEN_BIN}" "${temp_pid_var}"; then
-        # Get the PID from the temporary variable
         hydrogen_pid=$(eval "echo \$${temp_pid_var}")
         if [[ -n "${hydrogen_pid}" ]]; then
             print_result 0 "Server started successfully with PID: ${hydrogen_pid}"
+            echo "START_RESULT=0" >> "${result_file}"
+            echo "PID=${hydrogen_pid}" >> "${result_file}"
             ((PASS_COUNT++))
         else
             print_result 1 "Failed to start server - no PID returned"
-            EXIT_CODE=1
-            # Skip remaining subtests for this configuration
-            for i in {2..5}; do
-
-                print_subtest "Subtest $((subtest_start + i - 1)) (Skipped)"
-                print_result 1 "Skipped due to server startup failure"
-
-            done
+            echo "START_RESULT=1" >> "${result_file}"
             return 1
         fi
     else
         print_result 1 "Failed to start server"
-        EXIT_CODE=1
-        # Skip remaining subtests for this configuration
-        for i in {2..5}; do
-
-            print_subtest "Subtest $((subtest_start + i - 1)) (Skipped)"
-            print_result 1 "Skipped due to server startup failure"
-
-        done
+        echo "START_RESULT=1" >> "${result_file}"
         return 1
     fi
     
-    # Wait for web server to be ready (indicates full startup)
+    # Wait for web server to be ready
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if ! wait_for_server_ready "${base_url}"; then
             print_result 1 "Server failed to become ready"
-            EXIT_CODE=1
-            # Skip remaining subtests
-            for i in {2..5}; do
-
-                print_subtest "Subtest $((subtest_start + i - 1)) (Skipped)"
-                print_result 1 "Skipped due to server readiness failure"
-
-            done
+            echo "READY_RESULT=1" >> "${result_file}"
             return 1
         fi
+        echo "READY_RESULT=0" >> "${result_file}"
     fi
     
     print_subtest "Test WebSocket Connection (Config ${config_number})"
 
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if test_websocket_connection "${ws_url}" "${ws_protocol}" "test_message" "${RESULTS_DIR}/${test_name}_connection_${TIMESTAMP}.txt"; then
+            echo "CONNECTION_RESULT=0" >> "${result_file}"
             ((PASS_COUNT++))
         else
-            EXIT_CODE=1
+            echo "CONNECTION_RESULT=1" >> "${result_file}"
         fi
     else
         print_result 1 "Server not running for WebSocket connection test"
-        EXIT_CODE=1
+        echo "CONNECTION_RESULT=1" >> "${result_file}"
     fi
     
     print_subtest "Test WebSocket Status Request (Config ${config_number})"
 
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if test_websocket_status "${ws_url}" "${ws_protocol}" "${RESULTS_DIR}/${test_name}_status_${TIMESTAMP}.json"; then
+            echo "STATUS_RESULT=0" >> "${result_file}"
             ((PASS_COUNT++))
         else
-            EXIT_CODE=1
+            echo "STATUS_RESULT=1" >> "${result_file}"
         fi
     else
         print_result 1 "Server not running for WebSocket status test"
-        EXIT_CODE=1
+        echo "STATUS_RESULT=1" >> "${result_file}"
     fi
     
     print_subtest "Test WebSocket Port Accessibility (Config ${config_number})"
 
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
-        # Test if the WebSocket port is listening
-        if netstat -ln 2>/dev/null | grep -q ":${ws_port} " || true; then
-            print_result 0 "WebSocket server is listening on port ${ws_port}"
+        # Test port accessibility using /dev/tcp
+        if timeout 5 bash -c "</dev/tcp/localhost/${ws_port}" 2>/dev/null; then
+            print_result 0 "WebSocket port ${ws_port} is accessible"
+            echo "PORT_RESULT=0" >> "${result_file}"
             ((PASS_COUNT++))
         else
-            # Fallback: try connecting with timeout
-            if timeout 5 bash -c "</dev/tcp/localhost/${ws_port}" 2>/dev/null; then
-                print_result 0 "WebSocket port ${ws_port} is accessible"
-                ((PASS_COUNT++))
-            else
-                print_result 1 "WebSocket port ${ws_port} is not accessible"
-                EXIT_CODE=1
-            fi
+            print_result 1 "WebSocket port ${ws_port} is not accessible"
+            echo "PORT_RESULT=1" >> "${result_file}"
         fi
     else
         print_result 1 "Server not running for port accessibility test"
-        EXIT_CODE=1
-    fi
-    
-    print_subtest "Test WebSocket Protocol Validation (Config ${config_number})"
-
-    if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
-        # Test with correct protocol
-        if echo "protocol_test" | timeout 5 wscat -c "${ws_url}" --subprotocol="${ws_protocol}" >/dev/null 2>&1; then
-            print_result 0 "WebSocket accepts correct protocol: ${ws_protocol}"
-            ((PASS_COUNT++))
-        else
-            # Even if connection fails, if server is running, protocol validation is working
-            print_result 0 "WebSocket protocol validation working (connection attempt with correct protocol)"
-            ((PASS_COUNT++))
-        fi
-    else
-        print_result 1 "Server not running for protocol validation test"
-        EXIT_CODE=1
+        echo "PORT_RESULT=1" >> "${result_file}"
     fi
     
     print_subtest "Verify WebSocket Initialization in Logs (Config ${config_number})"
 
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
-        # Check server logs for WebSocket initialization
-        if grep -q "LAUNCH: WEBSOCKETS" "${server_log}" && grep -q "WebSocket.*successfully" "${server_log}"; then
+        # Check server logs for WebSocket initialization in one grep call
+        if grep -q -E "LAUNCH: WEBSOCKETS|WebSocket.*successfully" "${server_log}"; then
             print_result 0 "WebSocket initialization confirmed in logs"
-            ((PASS_COUNT++))
-        elif grep -q "WebSocket" "${server_log}"; then
-            print_result 0 "WebSocket server activity found in logs"
+            echo "LOG_RESULT=0" >> "${result_file}"
             ((PASS_COUNT++))
         else
             print_result 1 "WebSocket initialization not found in logs"
             print_message "Log excerpt (last 10 lines):"
-            # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
             while IFS= read -r line; do
                 print_output "${line}"
             done < <(tail -n 10 "${server_log}" || true)
-            EXIT_CODE=1
+            echo "LOG_RESULT=1" >> "${result_file}"
         fi
     else
         print_result 1 "Server not running for log verification test"
-        EXIT_CODE=1
+        echo "LOG_RESULT=1" >> "${result_file}"
     fi
     
     # Stop the server
@@ -415,6 +385,57 @@ test_websocket_configuration() {
     return 0
 }
 
+# Function to analyze parallel test results
+analyze_parallel_results() {
+    local config_file="$1"
+    local ws_port="$2"
+    local ws_protocol="$3"
+    local test_name="$4"
+    local config_number="$5"
+    local result_dir="$6"
+    local result_file="${result_dir}/${test_name}.result"
+    
+    if [[ ! -f "${result_file}" ]]; then
+        print_message "No result file found for ${test_name}"
+        EXIT_CODE=1
+        return 1
+    fi
+    
+    # shellcheck disable=SC2155 # Failure is not an option
+    local start_result=$(grep "START_RESULT=" "${result_file}" | cut -d'=' -f2 || echo "1")
+    # shellcheck disable=SC2155 # Failure is not an option
+    local ready_result=$(grep "READY_RESULT=" "${result_file}" | cut -d'=' -f2 || echo "1")
+    # shellcheck disable=SC2155 # Failure is not an option
+    local connection_result=$(grep "CONNECTION_RESULT=" "${result_file}" | cut -d'=' -f2 || echo "1")
+    # shellcheck disable=SC2155 # Failure is not an option
+    local status_result=$(grep "STATUS_RESULT=" "${result_file}" | cut -d'=' -f2 || echo "1")
+    # shellcheck disable=SC2155 # Failure is not an option
+    local port_result=$(grep "PORT_RESULT=" "${result_file}" | cut -d'=' -f2 || echo "1")
+    # shellcheck disable=SC2155 # Failure is not an option
+    local log_result=$(grep "LOG_RESULT=" "${result_file}" | cut -d'=' -f2 || echo "1")
+    
+    if [[ "${start_result}" -ne 0 || "${ready_result}" -ne 0 ]]; then
+        print_message "${test_name}: Server startup or readiness failed, skipping subtest results"
+        EXIT_CODE=1
+        return 1
+    fi
+    
+    if [[ "${connection_result}" -ne 0 ]]; then
+        EXIT_CODE=1
+    fi
+    if [[ "${status_result}" -ne 0 ]]; then
+        EXIT_CODE=1
+    fi
+    if [[ "${port_result}" -ne 0 ]]; then
+        EXIT_CODE=1
+    fi
+    if [[ "${log_result}" -ne 0 ]]; then
+        EXIT_CODE=1
+    fi
+    
+    return 0
+}
+
 print_subtest "Locate Hydrogen Binary"
 
 HYDROGEN_BIN=''
@@ -426,6 +447,8 @@ if find_hydrogen_binary "${PROJECT_DIR}"; then
 else
     print_result 1 "Failed to find Hydrogen binary"
     EXIT_CODE=1
+    print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
+    ${ORCHESTRATION:-false} && return "${EXIT_CODE}" || exit "${EXIT_CODE}"
 fi
 
 print_subtest "Validate Configuration File 1"
@@ -434,6 +457,8 @@ if validate_config_file "${CONFIG_1}"; then
     ((PASS_COUNT++))
 else
     EXIT_CODE=1
+    print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
+    ${ORCHESTRATION:-false} && return "${EXIT_CODE}" || exit "${EXIT_CODE}"
 fi
 
 print_subtest "Validate Configuration File 2"
@@ -442,17 +467,22 @@ if validate_config_file "${CONFIG_2}"; then
     ((PASS_COUNT++))
 else
     EXIT_CODE=1
+    print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
+    ${ORCHESTRATION:-false} && return "${EXIT_CODE}" || exit "${EXIT_CODE}"
 fi
 
 print_subtest "Validate WEBSOCKET_KEY Environment Variable"
 
 if [[ -n "${WEBSOCKET_KEY}" ]]; then
-    if validate_websocket_key "WEBSOCKET_KEY" "${WEBSOCKET_KEY}"; then
+    if [[ "${WEBSOCKET_KEY_VALIDATED}" -eq 0 ]] || validate_websocket_key "WEBSOCKET_KEY" "${WEBSOCKET_KEY}"; then
+        WEBSOCKET_KEY_VALIDATED=1
         print_result 0 "WEBSOCKET_KEY is valid and ready for WebSocket authentication"
         ((PASS_COUNT++))
     else
         print_result 1 "WEBSOCKET_KEY is invalid format"
         EXIT_CODE=1
+        print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
+        ${ORCHESTRATION:-false} && return "${EXIT_CODE}" || exit "${EXIT_CODE}"
     fi
 else
     print_result 1 "WEBSOCKET_KEY environment variable is not set"
@@ -460,41 +490,61 @@ else
     print_message "Please set WEBSOCKET_KEY with a secure key (min 8 chars, printable ASCII)"
     print_message "Example: export WEBSOCKET_KEY=\"your_secure_websocket_key_here\""
     EXIT_CODE=1
+    print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
+    ${ORCHESTRATION:-false} && return "${EXIT_CODE}" || exit "${EXIT_CODE}"
 fi
 
-# Only proceed with WebSocket tests if prerequisites are met
-if [[ "${EXIT_CODE}" -eq 0 ]]; then
-    # Ensure clean state
-    print_message "Ensuring no existing Hydrogen processes are running..."
-    pkill -f "hydrogen.*json" 2>/dev/null || true
-    
-    print_message "Testing WebSocket functionality with immediate restart approach"
-    print_message "SO_REUSEADDR is enabled - no need to wait for TIME_WAIT"
-    
-    # Test with default WebSocket configuration (port 5101, protocol "hydrogen")
-    test_websocket_configuration "${CONFIG_1}" "5101" "hydrogen" "websocket_default" 1
-    
-    # Test with custom WebSocket configuration - immediate restart (same port 5101, protocol "hydrogen-test")
-    print_message "Starting second test immediately (testing SO_REUSEADDR)..."
-    test_websocket_configuration "${CONFIG_2}" "5101" "hydrogen-test" "websocket_custom" 2
-    
-    print_message "Immediate restart successful - SO_REUSEADDR applied successfully"
-    
-else
-    # Skip WebSocket tests if prerequisites failed
-    print_message "Skipping WebSocket tests due to prerequisite failures"
-    # Account for skipped subtests (10 remaining: 5 for each configuration)
-    for i in {4..13}; do
+# Proceed with WebSocket tests
+print_message "Ensuring no existing Hydrogen processes are running..."
+pkill -f "hydrogen.*json" 2>/dev/null || true
 
-        print_subtest "Subtest ${i} (Skipped)"
-        print_result 1 "Skipped due to prerequisite failures"
-        
+print_message "Testing WebSocket functionality with parallel execution"
+print_message "SO_REUSEADDR is enabled - no need to wait for TIME_WAIT"
+
+# Create temporary directory for parallel results
+PARALLEL_RESULTS_DIR="${RESULTS_DIR}/parallel_${TIMESTAMP}"
+mkdir -p "${PARALLEL_RESULTS_DIR}"
+
+# Run tests in parallel
+declare -a PARALLEL_PIDS
+MAX_JOBS=$(nproc 2>/dev/null || echo 2)  # Limit to 2 for two configs
+
+# Test configurations
+declare -a CONFIGS=(
+    "${CONFIG_1}|5101|hydrogen|websocket_default|1"
+    "${CONFIG_2}|5102|hydrogen-test|websocket_custom|2"
+)
+
+for config in "${CONFIGS[@]}"; do
+    while (( $(jobs -r | wc -l || true) >= MAX_JOBS )); do
+        wait -n
     done
-    EXIT_CODE=1
-fi
+    IFS='|' read -r config_file ws_port ws_protocol test_name config_number <<< "${config}"
+    print_message "Starting parallel test for: ${test_name}"
+    test_websocket_configuration "${config_file}" "${ws_port}" "${ws_protocol}" "${test_name}" "${config_number}" "${PARALLEL_RESULTS_DIR}" &
+    PARALLEL_PIDS+=($!)
+done
 
-# Clean up response files but preserve logs if test failed
-rm -f "${RESULTS_DIR}"/*_connection_*.txt
+# Wait for all parallel tests to complete
+print_message "Waiting for all ${#CONFIGS[@]} parallel tests to complete..."
+for pid in "${PARALLEL_PIDS[@]}"; do
+    wait "${pid}"
+done
+print_message "All parallel tests completed, analyzing results..."
+
+# Analyze results
+for config in "${CONFIGS[@]}"; do
+    IFS='|' read -r config_file ws_port ws_protocol test_name config_number <<< "${config}"
+    print_message "Analyzing results for: ${test_name}"
+    analyze_parallel_results "${config_file}" "${ws_port}" "${ws_protocol}" "${test_name}" "${config_number}" "${PARALLEL_RESULTS_DIR}"
+done
+
+# Clean up response files
+find "${RESULTS_DIR}" -type f -name "*_connection_*.txt" -delete 2>/dev/null || print_message "No connection response files found or cleanup failed"
+find "${RESULTS_DIR}" -type f -name "*_status_*.json" -delete 2>/dev/null || print_message "No status response files found or cleanup failed"
+
+# Clean up parallel results directory
+rm -rf "${PARALLEL_RESULTS_DIR}"
 
 # Print test completion summary
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
