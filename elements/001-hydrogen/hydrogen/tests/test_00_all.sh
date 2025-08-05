@@ -601,6 +601,9 @@ for i in "${!TEST_ELAPSED[@]}"; do
     fi
 done
 
+# Let's come up with a number that represents how much code is in our test suite
+SCRIPT_SCALE=$(printf "%'d" "$(cd "${SCRIPT_DIR}" && find . -type f -name "*.sh" -exec grep -vE '^\s*(#|$)' {} + | wc -l)" || true)
+
 # Format both times as HH:MM:SS.ZZZ
 TOTAL_ELAPSED_FORMATTED=$(format_time_duration "${TOTAL_ELAPSED}")
 TOTAL_RUNNING_TIME_FORMATTED=$(format_time_duration "${TOTAL_RUNNING_TIME}")
@@ -609,9 +612,6 @@ TOTAL_RUNNING_TIME_FORMATTED=$(format_time_duration "${TOTAL_RUNNING_TIME}")
 if [[ "${SKIP_TESTS}" = false ]]; then
     update_readme_with_results
 fi
-
-# Let's come up with a number that represents how much code is in our test suite
-SCRIPT_SCALE=$(printf "%'d" "$(cd "${SCRIPT_DIR}" && find . -type f -name "*.sh" -exec grep -vE '^\s*(#|$)' {} + | wc -l)" || true)
 
 # Create layout JSON string
 # shellcheck disable=SC2154 # TC_ORC_DSP defined externally in framework.sh
