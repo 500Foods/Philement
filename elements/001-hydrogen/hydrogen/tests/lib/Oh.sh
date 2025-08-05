@@ -3,6 +3,7 @@
 # oh.sh - Convert ANSI terminal output to GitHub-compatible SVG
 # 
 # CHANGELOG
+# 1.001 - Updated Cache directory
 # 1.000 - Initial release with basic functionality
 # 0.026 - Fix XML character escaping in xml_escape function; improve width calculation reporting with auto-width limits
 # 0.025 - Fix --width to enforce grid width and clip lines; add debug logging for clipping
@@ -37,7 +38,7 @@ set -euo pipefail
 
 # MetaData
 SCRIPT_NAME="Oh.sh"
-SCRIPT_VERSION="1.000"
+SCRIPT_VERSION="1.001"
 
 # Default values
 INPUT_FILE=""
@@ -46,7 +47,7 @@ DEBUG=false
 SCRIPT_START=$(date +%s.%N)
 
 # Caching 
-CACHE_DIR="${HOME}/.Oh"
+CACHE_DIR="${HOME}/.cache/Oh"
 mkdir -p "${CACHE_DIR}" 
 
 # SVG defaults

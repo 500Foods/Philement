@@ -54,7 +54,7 @@ if [[ "${SHELL_COUNT}" -gt 0 ]]; then
     TEST_NAME="${TEST_NAME} {BLUE}(shellheck: ${SHELL_COUNT} files){RESET}"
 
     # Cache directory
-    SHELLCHECK_CACHE_DIR="${HOME}/.cache/.shellcheck"
+    SHELLCHECK_CACHE_DIR="${HOME}/.cache/shellcheck"
     mkdir -p "${SHELLCHECK_CACHE_DIR}"
 
     # Batch compute content hashes for all files

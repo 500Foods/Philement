@@ -23,7 +23,7 @@ export COVERAGE_TABLE_NAME COVERAGE_TABLE_VERSION
 TEST_NAME="Coverage Table"
 TEST_ABBR="CVT"
 TEST_NUMBER="CT"
-TEST_VERSION="3.0.1"
+TEST_VERSION="3.0.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/framework.sh"
@@ -35,7 +35,7 @@ BLACKBOX_COVS="${BUILD_DIR}/coverage"
 TABLES_EXE="${LIB_DIR}/tables"
 
 show_version() {
-    echo "${COVERAGE_TABLE_NAME} - v${COVERAGE_TABLE_VERSION} - Displays comprehensive coverage data from Unity and blackbox tests in a formatted table" >&2
+    echo "${COVERAGE_TABLE_NAME} - ${COVERAGE_TABLE_VERSION} - Displays comprehensive coverage data from Unity and blackbox tests in a formatted table" >&2
 }
 
 show_help() {

@@ -51,7 +51,7 @@ commands=(
 declare -a results
 
 # Cache directory
-CACHE_CMD_DIR="${HOME}/.cache/.hydrogen/commands"
+CACHE_CMD_DIR="${HOME}/.cache/hydrogen/commands"
 mkdir -p "${CACHE_CMD_DIR}"
 export CACHE_CMD_DIR
 # shellcheck disable=SC2154 # PROJECT_DIR defined externally in framework.sh
