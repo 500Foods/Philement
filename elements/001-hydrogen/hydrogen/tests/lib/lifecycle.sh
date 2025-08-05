@@ -9,13 +9,15 @@
 # wait_for_startup() 
 # stop_hydrogen() 
 # monitor_shutdown()
-# get_process_threads()
 # validate_config_files()
 # validate_config_file()
 # run_lifecycle_test()
 # wait_for_server_ready
+# get_process_threads() {
+# capture_process_diagnostics() {
 
 # CHANGELOG
+# 1.4.0 - 2025-08-03 - Was a bit too aggressive with function culling
 # 1.3.1 - 2025-08-03 - Removed extraneous command -v calls
 # 1.3.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 1.2.4 - 2025-07-18 - Fixed subshell issue in error log output functions that prevented detailed error messages from being displayed in test output
@@ -32,7 +34,7 @@ export LIFECYCLE_GUARD="true"
 
 # Library metadata
 LIFECYCLE_NAME="Lifecycle Management Library"
-LIFECYCLE_VERSION="1.3.1"
+LIFECYCLE_VERSION="1.4.0"
 print_message "${LIFECYCLE_NAME} ${LIFECYCLE_VERSION}" "info"
 
 # Function to find and validate Hydrogen binary
@@ -313,17 +315,6 @@ monitor_shutdown() {
     return 0
 }
 
-# Function to get process threads using pgrep
-get_process_threads() {
-    local pid="$1"
-    local output_file="$2"
-    
-    # Use pgrep to find all threads for the process
-    pgrep -P "${pid}" > "${output_file}" 2>/dev/null || true
-    # Also include the main process
-    echo "${pid}" >> "${output_file}" 2>/dev/null || true
-}
-
 # Function to validate configuration files
 validate_config_files() {
     local min_config="$1"
@@ -451,4 +442,35 @@ wait_for_server_ready() {
     
     print_error "Server failed to respond within the expected time"
     return 1
+}
+
+# Function to get process threads using pgrep
+get_process_threads() {
+    local pid="$1"
+    local output_file="$2"
+    
+    # Use pgrep to find all threads for the process
+    pgrep -P "${pid}" > "${output_file}" 2>/dev/null || true
+    # Also include the main process
+    echo "${pid}" >> "${output_file}" 2>/dev/null || true
+}
+
+# Function to capture process diagnostics
+capture_process_diagnostics() {
+    local pid="$1"
+    local diag_dir="$2"
+    local prefix="$3"
+    
+    # Capture thread information using pgrep
+    get_process_threads "${pid}" "${diag_dir}/${prefix}_threads.txt"
+    
+    # Capture process status if available
+    if [[ -f "/proc/${pid}/status" ]]; then
+        cat "/proc/${pid}/status" > "${diag_dir}/${prefix}_status.txt" 2>/dev/null || true
+    fi
+    
+    # Capture file descriptors if available
+    if [[ -d "/proc/${pid}/fd/" ]]; then
+        ls -l "/proc/${pid}/fd/" > "${diag_dir}/${prefix}_fds.txt" 2>/dev/null || true
+    fi
 }

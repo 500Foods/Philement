@@ -13,6 +13,7 @@
 # get_coverage_summary()
 
 # CHANGELOG
+# 3.0.0 - 2025-08-04 - GCOV Optimization Adventure
 # 2.1.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 2.0.0 - 2025-07-11 - Refactored into modular components
 # 1.0.0 - 2025-07-11 - Initial version with Unity and blackbox coverage functions
@@ -23,7 +24,7 @@ export COVERAGE_GUARD="true"
 
 # Library metadata
 COVERAGE_NAME="Coverage Library"
-COVERAGE_VERSION="2.1.0"
+COVERAGE_VERSION="3.0.0"
 print_message "${COVERAGE_NAME} ${COVERAGE_VERSION}" "info" 2> /dev/null || true
 
 # Sort out directories
@@ -163,4 +164,216 @@ get_coverage_summary() {
     echo "Blackbox Test Coverage: ${blackbox_coverage}%"
     echo "Combined Coverage: ${combined_coverage}%"
     echo "Coverage Overlap: ${overlap_percentage}%"
+}
+
+# Shared generic function for calculating coverage
+# Usage: calculate_coverage_generic <dir> <timestamp> <coverage_file> <detailed_file> <use_gcno> <extra_filters>
+# use_gcno: true for .gcno indexing (unity), false for .gcda (blackbox)
+# extra_filters: true to apply unity-specific extra skips (test_*, system Source:)
+calculate_coverage_generic() {
+    local dir="$1"
+    local timestamp="$2"
+    local coverage_file="$3"
+    local detailed_file="$4"
+    local use_gcno="${5:-true}"  # Default to unity style
+    local extra_filters="${6:-true}"  # Default to apply extra filters
+
+    local coverage_percentage="0.000"
+    local covered_lines=0
+    local total_lines=0
+    local instrumented_files=0
+    local covered_files=0
+    
+    if [[ ! -d "${dir}" ]]; then
+        echo "0.000" > "${coverage_file}"
+        echo "${timestamp},0.000,0,0,0,0" > "${detailed_file}"
+        echo "0.000"
+        return 1
+    fi
+    
+    # Load ignore patterns once
+    local project_root="${PWD}/.."  # Use unity's root; adjust if blackbox differs
+    declare -a IGNORE_PATTERNS=()
+    if [[ -f "${project_root}/.trial-ignore" ]]; then
+        while IFS= read -r line; do
+            # Skip comments and empty lines
+            if [[ "${line}" =~ ^[[:space:]]*# ]] || [[ -z "${line}" ]]; then
+                continue
+            fi
+            # Remove leading ./ if present
+            pattern="${line#./}"
+            IGNORE_PATTERNS+=("${pattern}")
+        done < "${project_root}/.trial-ignore"
+    fi
+    
+    # Change to dir to process files
+    local original_dir="${PWD}"
+    cd "${dir}" || return 1
+    
+    # Generate gcov files only for those that need updating
+    declare -a to_process_dirs=()
+    declare -a to_process_bases=()
+    local find_pattern="*.gcno"
+    if [[ "${use_gcno}" != true ]]; then
+        find_pattern="*.gcda"
+    fi
+    while IFS= read -r file; do
+        if [[ -z "${file}" ]]; then continue; fi
+        local subdir="${file%/*}"
+        local base="${file##*/}"
+        base="${base%.*}"  # Strip .gcno or .gcda
+        local gcda="${subdir}/${base}.gcda"
+        local gcno="${subdir}/${base}.gcno"
+        local gcov_file="${subdir}/${base}.gcov"
+        
+        # Timestamp check, adapting for gcno optional in blackbox style
+        if [[ "${use_gcno}" == true ]]; then
+            if [[ -f "${gcov_file}" && "${gcov_file}" -nt "${gcno}" && "${gcov_file}" -nt "${gcda}" ]]; then
+                continue
+            fi
+        else
+            # shellcheck disable=SC2235 # I like it like this, thanks
+            if [[ -f "${gcov_file}" && "${gcov_file}" -nt "${gcda}" ]] && ([[ ! -f "${gcno}" ]] || [[ "${gcov_file}" -nt "${gcno}" ]]); then
+                continue
+            fi
+        fi
+        
+        to_process_dirs+=("${subdir}")
+        to_process_bases+=("${base}")
+    done < <(find . -type f -name "${find_pattern}" 2>/dev/null || true)
+    
+    if [[ ${#to_process_bases[@]} -gt 0 ]]; then
+        for i in "${!to_process_bases[@]}"; do
+            pushd "${to_process_dirs[i]}" >/dev/null || continue
+            gcov -b -c "${to_process_bases[i]}" >/dev/null 2>&1 || true
+            popd >/dev/null || continue
+        done
+    fi
+    
+    # Return to original directory
+    cd "${original_dir}" || return 1
+    
+    # Parse gcov output to calculate overall coverage percentage
+    local gcov_files_to_process=()
+    while IFS= read -r gcov_file; do
+        if [[ -f "${gcov_file}" ]]; then
+            local basename_file="${gcov_file##*/}"
+            
+            # Common skips
+            if [[ "${basename_file}" == "unity.c.gcov" ]] || [[ "${gcov_file}" == *"/usr/"* ]]; then
+                continue
+            fi
+            
+            # Skip system libraries and external dependencies
+            if [[ "${basename_file}" == *"jansson"* ]] || \
+               [[ "${basename_file}" == *"json"* ]] || \
+               [[ "${basename_file}" == *"curl"* ]] || \
+               [[ "${basename_file}" == *"ssl"* ]] || \
+               [[ "${basename_file}" == *"crypto"* ]] || \
+               [[ "${basename_file}" == *"pthread"* ]] || \
+               [[ "${basename_file}" == *"uuid"* ]] || \
+               [[ "${basename_file}" == *"zlib"* ]] || \
+               [[ "${basename_file}" == *"pcre"* ]]; then
+                continue
+            fi
+            
+            # Extra filters (unity-specific, optional)
+            if [[ "${extra_filters}" == true ]]; then
+                if grep -q "Source:/usr/include/" "${gcov_file}" 2>/dev/null; then
+                    continue
+                fi
+                if [[ "${basename_file}" == "test_"* ]]; then
+                    continue
+                fi
+            fi
+            
+            # Check if this file should be ignored based on .trial-ignore patterns
+            local source_file="${basename_file%.gcov}"
+            local should_ignore=false
+            for pattern in "${IGNORE_PATTERNS[@]}"; do
+                if [[ "${source_file}" == *"${pattern}"* ]]; then
+                    should_ignore=true
+                    break
+                fi
+            done
+            
+            if [[ "${should_ignore}" == true ]]; then
+                continue
+            fi
+            
+            gcov_files_to_process+=("${gcov_file}")
+        fi
+    done < <(find "${dir}" -name "*.gcov" -type f 2>/dev/null || true)
+    
+    # Count total files
+    local instrumented_files=${#gcov_files_to_process[@]}
+    
+    # Process all gcov files
+    if [[ ${instrumented_files} -gt 0 ]]; then
+        # Create temporary combined file
+        local combined_gcov="/tmp/combined_coverage_$$.gcov"  # Unique temp to avoid conflicts
+        cat "${gcov_files_to_process[@]}" > "${combined_gcov}"
+        
+        # Count only instrumented lines
+        local line_counts
+        line_counts=$(awk '
+            BEGIN {total=0; covered=0}
+            /^[ \t]*[0-9]+\*?:[ \t]*[0-9]+:/ { covered++; total++ }
+            /^[ \t]*#####:[ \t]*[0-9]+\*?:/ { total++ }
+            END { print total "," covered }
+        ' "${combined_gcov}" 2>/dev/null)
+        
+        total_lines="${line_counts%,*}"
+        covered_lines="${line_counts#*,}"
+        
+        total_lines=${total_lines:-0}
+        covered_lines=${covered_lines:-0}
+        
+        # Count files with at least one covered line using awk with the same pattern
+        covered_files=$(printf '%s\n' "${gcov_files_to_process[@]}" | xargs -I {} awk '
+            /^[ \t]*[0-9]+\*?:[ \t]*[0-9]+:/ { covered++ }
+            END { print (covered > 0 ? 1 : 0) }
+        ' {} | awk 'BEGIN {count=0} {count += $1} END {print count}' || true)
+        
+        # Clean up temporary file
+        rm -f "${combined_gcov}"
+    else
+        # No new processing: Reuse prior data if available
+        if [[ -f "${detailed_file}" ]]; then
+            IFS=',' read -r _ old_percentage old_covered_lines old_total_lines old_instrumented_files old_covered_files < "${detailed_file}"
+            coverage_percentage=${old_percentage:-0.000}
+            covered_lines=${old_covered_lines:-0}
+            total_lines=${old_total_lines:-0}
+            instrumented_files=${old_instrumented_files:-0}
+            covered_files=${old_covered_files:-0}
+        fi
+    fi
+    
+    # Calculate coverage percentage with 3 decimal places
+    if [[ ${total_lines} -gt 0 ]]; then
+        coverage_percentage=$(awk "BEGIN {printf \"%.3f\", (${covered_lines} / ${total_lines}) * 100}")
+    fi
+    
+    # Only write if we have meaningful data (instrumented_files > 0) or file doesn't exist
+    if [[ ${instrumented_files} -gt 0 ]] || [[ ! -f "${detailed_file}" ]]; then
+        echo "${coverage_percentage}" > "${coverage_file}"
+        echo "${timestamp},${coverage_percentage},${covered_lines},${total_lines},${instrumented_files},${covered_files}" > "${detailed_file}"
+    fi
+    
+    echo "${coverage_percentage}"
+    return 0
+}
+
+# Wrapper for Unity coverage
+calculate_unity_coverage() {
+    local build_dir="$1"
+    local timestamp="$2"
+    calculate_coverage_generic "${build_dir}" "${timestamp}" "${UNITY_COVERAGE_FILE}" "${UNITY_COVERAGE_FILE}.detailed" true true
+}
+
+# Wrapper for Blackbox coverage
+calculate_blackbox_coverage() {
+    local coverage_dir="$1"
+    local timestamp="$2"
+    calculate_coverage_generic "${coverage_dir}" "${timestamp}" "${BLACKBOX_COVERAGE_FILE}" "${BLACKBOX_COVERAGE_FILE}.detailed" false false  # No extra filters for blackbox
 }

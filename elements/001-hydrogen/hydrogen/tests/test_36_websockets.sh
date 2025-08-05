@@ -52,7 +52,7 @@ test_websocket_connection() {
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
             print_message "WebSocket connection attempt ${attempt} of ${max_attempts} (waiting for WebSocket subsystem initialization)..."
-            sleep 0.05  # Brief delay between attempts for WebSocket initialization
+            #sleep 0.1  # Brief delay between attempts for WebSocket initialization
         fi
         
         # Create a temporary file to capture the full interaction
@@ -167,7 +167,7 @@ test_websocket_status() {
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
             print_message "WebSocket status request attempt ${attempt} of ${max_attempts}..."
-            sleep 0.25
+            #sleep 0.1
         fi
         
         # Create a temporary file to capture the full interaction
