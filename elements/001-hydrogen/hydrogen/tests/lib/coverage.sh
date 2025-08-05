@@ -39,6 +39,8 @@ LOGS_DIR="${TESTS_DIR}/logs"
 mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}"
 
 # shellcheck source=tests/lib/coverage-common.sh # Resolve path statically
+[[ -n "${FRAMEWORK_GUARD}" ]] || source "${LIB_DIR}/framework.sh"
+# shellcheck source=tests/lib/coverage-common.sh # Resolve path statically
 [[ -n "${COVERAGE_COMMON_GUARD}" ]] || source "${LIB_DIR}/coverage-common.sh"
 # shellcheck source=tests/lib/coverage-combined.sh # Resolve path statically
 [[ -n "${COVERAGE_COMBINED_GUARD}" ]] || source "${LIB_DIR}/coverage-combined.sh"
@@ -239,13 +241,36 @@ calculate_coverage_generic() {
     done < <(find . -type f -name "${find_pattern}" 2>/dev/null || true)
     
     if [[ ${#to_process_bases[@]} -gt 0 ]]; then
+        # Function to run gcov for a single file
+        # shellcheck disable=SC2317,SC2250 # Called by xargs
+        run_gcov() {
+            local dir="$1"
+            local base="$2"
+            if [[ -d "$dir" && -f "${dir}/${base}.gcno" ]]; then
+                pushd "$dir" >/dev/null || {
+                    echo "Warning: Cannot change to directory $dir" >&2
+                    return
+                }
+                gcov -b -c "$base" >/dev/null 2>&1 || true
+                popd >/dev/null || {
+                    echo "Warning: Failed to restore directory from $dir" >&2
+                    return
+                }
+            else
+                echo "Warning: File ${dir}/${base}.gcno not found" >&2
+            fi
+        }
+
+        # Export the function for use in parallel
+        export -f run_gcov
+
+        # Run gcov commands in parallel using xargs
+        # shellcheck disable=SC2154,SC2016 # CORES defined in framework.sh, Fancy script stuff 
         for i in "${!to_process_bases[@]}"; do
-            pushd "${to_process_dirs[i]}" >/dev/null || continue
-            gcov -b -c "${to_process_bases[i]}" >/dev/null 2>&1 || true
-            popd >/dev/null || continue
-        done
+            echo "${to_process_dirs[i]} ${to_process_bases[i]}"
+        done | xargs -n 2 -P "${CORES}" bash -c 'run_gcov "$0" "$1"'
     fi
-    
+        
     # Return to original directory
     cd "${original_dir}" || return 1
     
