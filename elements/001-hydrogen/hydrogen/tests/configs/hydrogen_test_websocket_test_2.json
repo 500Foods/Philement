@@ -26,7 +26,7 @@
         "Enabled": true,
         "EnableIPv6": true,
         "LibLogLevel": 2,
-        "Port": 5101,
+        "Port": 5102,
         "Protocol": "hydrogen-test",
         "Key": "${env.WEBSOCKET_KEY}",
         "MaxMessageSize": 4096,
