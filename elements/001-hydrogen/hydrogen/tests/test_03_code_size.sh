@@ -34,9 +34,9 @@ readonly LARGE_FILE_THRESHOLD="25k"
 TOPLIST=10
 
 # Create temporary files
-SOURCE_FILES_LIST="${DIAG_TEST_DIR}/test_${TEST_NUMBER}_${TS_ORC_LOG}_source_files.txt"
-LARGE_FILES_LIST="${DIAG_TEST_DIR}/test_${TEST_NUMBER}_${TS_ORC_LOG}_large_files.txt"
-LINE_COUNT_FILE="${DIAG_TEST_DIR}/test_${TEST_NUMBER}_${TS_ORC_LOG}_line_count.txt"
+SOURCE_FILES_LIST="${LOG_PREFIX}_source_files.txt"
+LARGE_FILES_LIST="${LOG_PREFIX}_large_files.txt"
+LINE_COUNT_FILE="${LOG_PREFIX}_line_count.txt"
 
 print_subtest "Linting Configuration Information"
 print_message "Checking linting configuration files and displaying exclusion patterns..."
@@ -241,7 +241,7 @@ if [[ -n "${CLOC_PID}" ]]; then
             IFS=',' read -r files_part lines_part <<< "${STATS}"
             FILES_COUNT=$(echo "${files_part}" | cut -d':' -f2)
             CODE_LINES=$(echo "${lines_part}" | cut -d':' -f2)
-            print_result 0 "Found ${FILES_COUNT} files with ${CODE_LINES} lines of code"
+            print_result 0 "Found $(printf "%'d" "${FILES_COUNT}") files with $(printf "%'d" "${CODE_LINES}") lines of code"
             ((PASS_COUNT++))
         else
             print_result 1 "Failed to parse cloc output"
@@ -255,34 +255,6 @@ else
     print_result 0 "cloc not available (skipped)"
     ((PASS_COUNT++))
 fi
-
-print_subtest "File Count Summary"
-print_message "File type distribution:"
-
-print_output "Total source files analyzed: ${TOTAL_FILES}"
-print_output "Large files found: ${LARGE_FILE_COUNT}"
-TEST_NAME="${TEST_NAME} {BLUE}(cloc: ${FILES_COUNT} files){RESET}"
-
-# Count files by type in parallel for better performance
-{
-    find . -name "*.c"  -type f | wc -l > "${DIAG_TEST_DIR}/c_files_count"  || true &
-    find . -name "*.h"  -type f | wc -l > "${DIAG_TEST_DIR}/h_files_count"  || true &
-    find . -name "*.md" -type f | wc -l > "${DIAG_TEST_DIR}/md_files_count" || true &
-    find . -name "*.sh" -type f | wc -l > "${DIAG_TEST_DIR}/sh_files_count" || true &
-    wait
-}
-C_FILES=$(cat "${DIAG_TEST_DIR}/c_files_count")
-H_FILES=$(cat "${DIAG_TEST_DIR}/h_files_count")
-MD_FILES=$(cat "${DIAG_TEST_DIR}/md_files_count")
-SH_FILES=$(cat "${DIAG_TEST_DIR}/sh_files_count")
-
-print_output "C source files: ${C_FILES}"
-print_output "Header files: ${H_FILES}"
-print_output "Markdown files: ${MD_FILES}"
-print_output "Shell scripts: ${SH_FILES}"
-
-print_result 0 "File count analysis completed"
-((PASS_COUNT++))
 
 print_message "Analysis files saved to results directory:"
 print_output "Line counts: ${SOURCE_FILES_LIST}"
