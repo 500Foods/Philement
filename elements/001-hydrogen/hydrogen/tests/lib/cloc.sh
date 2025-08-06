@@ -98,7 +98,7 @@ run_cloc_analysis() {
     fi
     
     # Run cloc with proper environment and parameters
-    if (cd "${base_dir}" && env LC_ALL=en_US.UTF_8 cloc . --quiet --force-lang="C,inc" --exclude-list-file="${exclude_list}" > "${cloc_output}" 2>&1); then
+    if (cd "${base_dir}" && env LC_ALL=en_US.UTF_8 "${CLOC_EXTERNAL}" . --quiet --force-lang="C,inc" --exclude-list-file="${exclude_list}" > "${cloc_output}" 2>&1); then
         # Skip the first line (header) and process the results
         tail -n +2 "${cloc_output}" > "${enhanced_output}"
         
