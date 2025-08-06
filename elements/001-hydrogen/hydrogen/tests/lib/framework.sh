@@ -365,6 +365,7 @@ setup_test_environment() {
     DIAG_TEST_DIR="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}"
     TAB_LAYOUT="${DIAG_TEST_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.layout.json"
     TAB_DATA="${DIAG_TEST_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.data.json"
+    LOG_PREFIX="${DIAG_TEST_DIR}/test_${TEST_NUMBER}_${TS_ORC_LOG}"
     mkdir -p "${DIAG_TEST_DIR}"
 
     # Common test configuration
