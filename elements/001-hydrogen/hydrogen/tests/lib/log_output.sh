@@ -21,6 +21,7 @@
 # print_test_completion()
 
 # CHANGELOG
+# 3.5.0 - 2025-08-06 - Improvements to logging file handling, common TAB file naming
 # 3.4.0 - 2025-08-02 - Removed unused functions, moved test functions to framework.sh
 # 3.3.1 - 2025-07-31 - Fixed issue where not all collected output was output/cleared at end of test
 # 3.3.0 - 2025-07-20 - Updated guard clause to prevent multiple sourcing
@@ -42,7 +43,7 @@ export LOG_OUTPUT_GUARD="true"
 
 # Library metadata
 LOG_OUTPUT_NAME="Log Output Library"
-LOG_OUTPUT_VERSION="3.3.1"
+LOG_OUTPUT_VERSION="3.5.0"
 export LOG_OUTPUT_NAME LOG_OUTPUT_VERSION
 
 # Global variables for test/subtest numbering
@@ -470,24 +471,17 @@ print_test_completion() {
     if [[ -n "${ORCHESTRATION}" ]]; then
         # Use the elapsed_time that was already calculated above - SINGLE SOURCE OF TRUTH
         local file_elapsed_time="${elapsed_time}"
-        # Write the elapsed time to a result file with a timestamp and PID for uniqueness
-        local timestamp
-        timestamp=$(date +%s.%3N 2>/dev/null || date +%s)
         # Add process ID and random component to ensure uniqueness in parallel execution
-        local unique_id="${timestamp}_$${_}${RANDOM}"
-        # shellcheck disable=SC2154 # RESULTS_DIR is defined externally in framework.sh
+        # shellcheck disable=SC2154 # TS_ORC_LOG, is defined externally in framework.sh
+        local unique_id="${TS_ORC_LOG}_$$_${RANDOM}"
+        # shellcheck disable=SC2154 # RESULTS_DIR, is defined externally in framework.sh
         local subtest_file="${RESULTS_DIR}/subtest_${CURRENT_TEST_NUMBER}_${unique_id}.txt"
         echo "${total_subtests},${TEST_PASSED_COUNT},${test_name},${file_elapsed_time},${test_abbr},${test_version}" > "${subtest_file}" 2>/dev/null
     fi
-
-    # Fall back to external process for backward compatibility
-    local temp_dir
-    temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory" >&2; return 1; }
-    local layout_json="${temp_dir}/completion_layout.json"
-    local data_json="${temp_dir}/completion_data.json"
     
     # Create layout JSON with proper columns
-    cat > "${layout_json}" << EOF
+    # shellcheck disable=SC2154 # TAB_LAYOUT defined in framework.sh
+    cat > "${TAB_LAYOUT}" << EOF
 {
     "theme": "Blue",
     "columns": [
@@ -543,7 +537,8 @@ EOF
     # Create data JSON with the test completion information, using the SAME elapsed time
     # that was calculated at the top of this function - SINGLE SOURCE OF TRUTH
     local display_elapsed_time="${elapsed_time}"
-    cat > "${data_json}" << EOF
+    # shellcheck disable=SC2154 # TAB_DATA defined in framework.sh
+    cat > "${TAB_DATA}" << EOF
 [
     {
         "test_id": "${test_number}-${test_abbr}",
@@ -559,11 +554,8 @@ EOF
     
     # Use tables executable to render the completion table
     # shellcheck disable=SC2154 # LIB_DIR defined externally in framework.sh    
-    "${TABLES_EXTERNAL}" "${layout_json}" "${data_json}" 2>/dev/null
+    "${TABLES_EXTERNAL}" "${TAB_LAYOUT}" "${TAB_DATA}" 2>/dev/null
     
-    # Clean up temporary files
-    # rm -rf "${temp_dir}" 2>/dev/null
-
     # Let's end up here so the next script doesn't have a fit
     popd >/dev/null 2>&1 || return
 }
