@@ -83,7 +83,7 @@ format_file_size() {
 get_elapsed_time() {
     if [[ -n "${TEST_START_TIME}" ]]; then
         local end_time
-        end_time=$(date +%s.%3N) 
+        end_time=$(/usr/bin/date +%s.%3N) 
         local end_secs=${end_time%.*}
         local end_ms=${end_time#*.}
         local start_secs=${TEST_START_TIME%.*}
@@ -105,7 +105,7 @@ get_elapsed_time() {
 get_elapsed_time_decimal() {
     if [[ -n "${TEST_START_TIME}" ]]; then
         local end_time
-        end_time=$(date +%s.%3N) 
+        end_time=$(/usr/bin/date +%s.%3N) 
         local end_secs=${end_time%.*}
         local end_ms=${end_time#*.}
         local start_secs=${TEST_START_TIME%.*}
@@ -143,7 +143,7 @@ reset_subtest_counter() {
 
 # Function to start test timing
 start_test_timer() {
-    TEST_START_TIME=$(date +%s.%3N)
+    TEST_START_TIME=$(/usr/bin/date +%s.%3N)
     TEST_PASSED_COUNT=0
     TEST_FAILED_COUNT=0
 }
@@ -172,17 +172,17 @@ record_test_result() {
 setup_orchestration_environment() {
 
     # Get start time
-    START_TIME=$(date +%s.%N 2>/dev/null)
+    START_TIME=$(/usr/bin/date +%s.%N 2>/dev/null)
 
     # Naturally we're orchestrating
     ORCHESTRATION=true
 
     # Starting point
-    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+    TIMESTAMP=$(/usr/bin/date +%Y%m%d_%H%M%S)
     # TS_ORC_LOG=$(date '+%Y%m%d_%H%M%S' 2>/dev/null)             # 20250730_124718                 eg: log filenames
     # TS_ORC_TMR=$(date '+%s.%N' 2>/dev/null)                     # 1753904852.568389297            eg: timers, elapsed times
     # TS_ORC_ISO=$(date '+%Y-%m-%d %H:%M:%S %Z' 2>/dev/null)      # 2025-07-30 12:47:46 PDT         eg: short display times
-    TS_ORC_DSP=$(date '+%Y-%b-%d (%a) %H:%M:%S %Z' 2>/dev/null) # 2025-Jul-30 (Wed) 12:49:03 PDT  eg: long display times
+    TS_ORC_DSP=$(/usr/bin/date '+%Y-%b-%d (%a) %H:%M:%S %Z' 2>/dev/null) # 2025-Jul-30 (Wed) 12:49:03 PDT  eg: long display times
 
     # Array for collecting output messages (for performance optimization and progressive feedback)
     # Output is cached and dumped each time a new TEST starts, providing progressive feedback
@@ -204,6 +204,7 @@ setup_orchestration_environment() {
     CONFIG_DIR="${SCRIPT_DIR}/configs"
 
     # Common utilities
+    CLOC_EXTERNAL="/usr/bin/cloc"
     TABLES_EXTERNAL="${LIB_DIR}/tables"
     OH_EXTERNAL="${LIB_DIR}/Oh.sh"
     COVERAGE_EXTERNAL="${LIB_DIR}/coverage_table.sh"
@@ -315,7 +316,7 @@ setup_orchestration_environment() {
 setup_test_environment() {
 
     # Starting point
-    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+    TIMESTAMP=$(/usr/bin/date +%Y%m%d_%H%M%S)
 
     if [[ -z "${ORCHESTRATION}" ]]; then
         # Global folder variables
@@ -340,11 +341,13 @@ setup_test_environment() {
         # Setup build folders
         mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}" 
 
-        # Common utilitiex
+        # Common utilities
+        CLOC_EXTERNAL="/usr/bin/cloc"
         TABLES_EXTERNAL="${LIB_DIR}/tables"
         OH_EXTERNAL="${LIB_DIR}/Oh.sh"
         COVERAGE_EXTERNAL="${LIB_DIR}/coverage_table.sh"
         SITEMAP_EXTERNAL="${LIB_DIR}/github-sitemap.sh"
+
     else
       pushd "${PROJECT_DIR}" >/dev/null 2>&1 || return
     fi
@@ -360,7 +363,7 @@ setup_test_environment() {
     mkdir -p "${DIAG_TEST_DIR}"
 
     # Common test configuration
-    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+    TIMESTAMP=$(/usr/bin/date +%Y%m%d_%H%M%S)
     EXIT_CODE=0
     PASS_COUNT=0
 
