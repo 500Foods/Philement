@@ -8,6 +8,7 @@
 # show_top_files_by_type()
 
 # CHANGELOG
+# 3.3.0 - 2025-08-06 - Bit of temp file handling management and cleanup
 # 3.2.0 - 2025-08-05 - Minor adjustments to output formatting, added TOPLIST variable
 # 3.1.0 - 2025-08-04 - Better presentation of large file sizes
 # 3.0.1 - 2025-08-03 - Removed extraneous command -v calls
@@ -19,7 +20,7 @@
 TEST_NAME="Code Size Analysis"
 TEST_ABBR="SIZ"
 TEST_NUMBER="03"
-TEST_VERSION="3.2.0"
+TEST_VERSION="3.3.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -33,9 +34,9 @@ readonly LARGE_FILE_THRESHOLD="25k"
 TOPLIST=10
 
 # Create temporary files
-SOURCE_FILES_LIST=$(mktemp)
-LARGE_FILES_LIST=$(mktemp)
-LINE_COUNT_FILE=$(mktemp)
+SOURCE_FILES_LIST="${DIAG_TEST_DIR}/test_${TEST_NUMBER}_${TS_ORC_LOG}_source_files.txt"
+LARGE_FILES_LIST="${DIAG_TEST_DIR}/test_${TEST_NUMBER}_${TS_ORC_LOG}_large_files.txt"
+LINE_COUNT_FILE="${DIAG_TEST_DIR}/test_${TEST_NUMBER}_${TS_ORC_LOG}_line_count.txt"
 
 print_subtest "Linting Configuration Information"
 print_message "Checking linting configuration files and displaying exclusion patterns..."
@@ -78,7 +79,7 @@ else
 fi
 
 # Start cloc analysis in background to run in parallel with file processing
-CLOC_OUTPUT=$(mktemp)
+CLOC_OUTPUT="${DIAG_TEST_DIR}/test_${TEST_NUMBER}_${TS_ORC_LOG}_cloc.txt"
 CLOC_PID=""
 print_message "Starting cloc analysis in background..."
 run_cloc_analysis "." ".lintignore" "${CLOC_OUTPUT}" &
@@ -255,8 +256,6 @@ else
     ((PASS_COUNT++))
 fi
 
-rm -f "${CLOC_OUTPUT}"
-
 print_subtest "File Count Summary"
 print_message "File type distribution:"
 
@@ -266,34 +265,30 @@ TEST_NAME="${TEST_NAME} {BLUE}(cloc: ${FILES_COUNT} files){RESET}"
 
 # Count files by type in parallel for better performance
 {
-    find . -name "*.c"  -type f | wc -l > /tmp/c_files_count  || true &
-    find . -name "*.h"  -type f | wc -l > /tmp/h_files_count  || true &
-    find . -name "*.md" -type f | wc -l > /tmp/md_files_count || true &
-    find . -name "*.sh" -type f | wc -l > /tmp/sh_files_count || true &
+    find . -name "*.c"  -type f | wc -l > "${DIAG_TEST_DIR}/c_files_count"  || true &
+    find . -name "*.h"  -type f | wc -l > "${DIAG_TEST_DIR}/h_files_count"  || true &
+    find . -name "*.md" -type f | wc -l > "${DIAG_TEST_DIR}/md_files_count" || true &
+    find . -name "*.sh" -type f | wc -l > "${DIAG_TEST_DIR}/sh_files_count" || true &
     wait
 }
-C_FILES=$(cat /tmp/c_files_count)
-H_FILES=$(cat /tmp/h_files_count)
-MD_FILES_COUNT=$(cat /tmp/md_files_count)
-SH_FILES=$(cat /tmp/sh_files_count)
-# Clean up temp files
-rm -f /tmp/c_files_count /tmp/h_files_count /tmp/md_files_count /tmp/sh_files_count
+C_FILES=$(cat "${DIAG_TEST_DIR}/c_files_count")
+H_FILES=$(cat "${DIAG_TEST_DIR}/h_files_count")
+MD_FILES=$(cat "${DIAG_TEST_DIR}/md_files_count")
+SH_FILES=$(cat "${DIAG_TEST_DIR}/sh_files_count")
 
 print_output "C source files: ${C_FILES}"
 print_output "Header files: ${H_FILES}"
-print_output "Markdown files: ${MD_FILES_COUNT}"
+print_output "Markdown files: ${MD_FILES}"
 print_output "Shell scripts: ${SH_FILES}"
 
 print_result 0 "File count analysis completed"
 ((PASS_COUNT++))
 
-# Save analysis results
-cp "${LINE_COUNT_FILE}" "${RESULTS_DIR}/source_line_counts_${TIMESTAMP}.txt"
-cp "${LARGE_FILES_LIST}" "${RESULTS_DIR}/large_files_${TIMESTAMP}.txt"
-
 print_message "Analysis files saved to results directory:"
-print_output "Line counts: ${RESULTS_DIR}/source_line_counts_${TIMESTAMP}.txt"
-print_output "Large files: ${RESULTS_DIR}/large_files_${TIMESTAMP}.txt"
+print_output "Line counts: ${SOURCE_FILES_LIST}"
+print_output "Large files: ${LARGE_FILES_LIST}"
+print_output "Line counts: ${LINE_COUNT_FILE}"
+print_output "Cloc output: ${CLOC_OUTPUT}"
 
 # Print completion table
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"

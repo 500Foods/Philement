@@ -20,6 +20,7 @@
 # update_readme_with_results()
 
 # CHANGELOG
+# 2.6.0 - 2025-08-06 - Improvements to logging file handling, common TAB file naming
 # 2.5.1 - 2025-08-03 - Removed extraneous command -v calls
 # 2.5.0 - 2025-08-02 - Removed old functions, added some from log_output
 # 2.4.0 - 2025-08-02 - Optimizations for formatting functions
@@ -179,7 +180,7 @@ setup_orchestration_environment() {
 
     # Starting point
     TIMESTAMP=$(/usr/bin/date +%Y%m%d_%H%M%S)
-    # TS_ORC_LOG=$(date '+%Y%m%d_%H%M%S' 2>/dev/null)             # 20250730_124718                 eg: log filenames
+    TS_ORC_LOG=$(date '+%Y%m%d_%H%M%S' 2>/dev/null)             # 20250730_124718                 eg: log filenames
     # TS_ORC_TMR=$(date '+%s.%N' 2>/dev/null)                     # 1753904852.568389297            eg: timers, elapsed times
     # TS_ORC_ISO=$(date '+%Y-%m-%d %H:%M:%S %Z' 2>/dev/null)      # 2025-07-30 12:47:46 PDT         eg: short display times
     TS_ORC_DSP=$(/usr/bin/date '+%Y-%b-%d (%a) %H:%M:%S %Z' 2>/dev/null) # 2025-Jul-30 (Wed) 12:49:03 PDT  eg: long display times
@@ -307,6 +308,8 @@ setup_orchestration_environment() {
     RESULT_LOG="${RESULTS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
     LOG_FILE="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
     DIAG_FILE="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
+    TAB_LAYOUT="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.layout.json"
+    TAB_DATA="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.data.json"
 
     dump_collected_output
     clear_collected_output
@@ -360,6 +363,8 @@ setup_test_environment() {
 
     # Extra handling
     DIAG_TEST_DIR="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}"
+    TAB_LAYOUT="${DIAG_TEST_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.layout.json"
+    TAB_DATA="${DIAG_TEST_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.data.json"
     mkdir -p "${DIAG_TEST_DIR}"
 
     # Common test configuration
