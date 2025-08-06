@@ -6,6 +6,7 @@
 # FUNCTIONS
 
 # CHANGELOG
+# 3.1.0 - 2025-08-06 - Bit of temp file handling management and cleanup
 # 3.0.0 - 2025-07-30 - Overhaul #1
 # 2.1.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 2.0.4 - 2025-07-14 - Updated to use build/tests directories for test output consistency
@@ -26,56 +27,23 @@ TEST_VERSION="3.0.0"
 setup_test_environment
 
 # Test configuration
-SITEMAP_SCRIPT="${LIB_DIR}/github-sitemap.sh"
 TARGET_README="README.md"
-
-print_subtest "Validate GitHub Sitemap Script"
-
-if [[ ! -f "${SITEMAP_SCRIPT}" ]]; then
-    print_result 1 "GitHub sitemap script not found: ${SITEMAP_SCRIPT}"
-    EXIT_CODE=1
-else
-    if [[ ! -f "${TARGET_README}" ]]; then
-        print_result 1 "Target README file not found: ${TARGET_README}"
-        EXIT_CODE=1
-    else
-        print_result 0 "GitHub sitemap script and target README found"
-        ((PASS_COUNT++))
-    fi
-fi
-
-# Skip remaining tests if prerequisites failed
-if [[ "${EXIT_CODE}" -ne 0 ]]; then
-    print_warning "Prerequisites failed - skipping markdown link check"
-    
-    # Print completion table
-    print_test_completion "${TEST_NAME}"
-    
-    exit "${EXIT_CODE}"
-fi
 
 print_subtest "Execute Markdown Link Check"
 
 # Create temporary file to capture output
-TEMP_OUTPUT=$(mktemp)
-MARKDOWN_RESULT_LOG="${RESULTS_DIR}/markdown_links_check_${TIMESTAMP}.log.ansi"
+MARKDOWN_CHECK="${LOG_PREFIX}_markdown_links_check.ansi"
 
 print_message "Running markdown link check on ${TARGET_README}..."
-print_command "bash ${SITEMAP_SCRIPT} ${TARGET_README} --noreport --quiet"
+# shellcheck disable=SC2153,SC2154 # SITEMAP_EXTERNAL defined in framework.sh
+print_command "${SITEMAP_EXTERMAL} ${TARGET_README} --noreport --quiet"
 
 # Run github-sitemap.sh with --noreport and --quiet to minimize output
-bash "${SITEMAP_SCRIPT}" "${TARGET_README}" --noreport --quiet > "${TEMP_OUTPUT}" 2>&1
+"${SITEMAP_EXTERNAL}" "${TARGET_README}" --noreport --quiet > "${MARKDOWN_CHECK}" 2>&1
 SITEMAP_EXIT_CODE=$?
 
-# Copy output to result log
-cp "${TEMP_OUTPUT}" "${MARKDOWN_RESULT_LOG}"
-
 # Display the output
-print_message "Results saved to ${MARKDOWN_RESULT_LOG}"
-# print_message "Sitemap check output:"
-# while IFS= read -r line; do
-#     print_output "${line}"
-# done < "${TEMP_OUTPUT}"
+print_message "Results saved to ${MARKDOWN_CHECK}"
 
 if [[ "${SITEMAP_EXIT_CODE}" -eq 0 ]]; then
     print_result 0 "Markdown link check executed successfully with no issues"
@@ -89,7 +57,7 @@ print_subtest "Validate Missing Links Count"
 
 # Parse the output to extract counts from the tables
 # Look for "Issues found:" line to get the total issue count
-ISSUES_FOUND=$(grep "Issues found:" "${TEMP_OUTPUT}" | sed 's/Issues found: //' || echo "0" || true)
+ISSUES_FOUND=$(grep "Issues found:" "${MARKDOWN_CHECK}" | sed 's/Issues found: //' || echo "0" || true)
 if [[ -z "${ISSUES_FOUND}" ]]; then
     ISSUES_FOUND="0"
 fi
@@ -107,12 +75,12 @@ while IFS= read -r line; do
         MISSING_LINKS_TABLE_FOUND=true
         break
     fi
-done < "${TEMP_OUTPUT}"
+done < "${MARKDOWN_CHECK}"
 
 if [[ "${MISSING_LINKS_TABLE_FOUND}" = true ]]; then
     # Find the line number of the dedicated "Missing Links" table title
-    temp_grep_output="$(mktemp)"
-    grep -n "Missing Links" "${TEMP_OUTPUT}" > "${temp_grep_output}"
+    temp_grep_output="${LOG_PREFIX}_missing_links.txt"
+    grep -n "Missing Links" "${MARKDOWN_CHECK}" > "${temp_grep_output}"
     MISSING_LINKS_LINE=$(while IFS=: read -r line_num line_content; do
         CLEANED_LINE=$(sed 's/\x1B\[[0-9;]*[JKmsu]//g; s/│//g; s/^[[:space:]]*//; s/[[:space:]]*$//' <<< "${line_content}")
         if [[ "${CLEANED_LINE}" == "Missing Links" ]]; then
@@ -120,12 +88,11 @@ if [[ "${MISSING_LINKS_TABLE_FOUND}" = true ]]; then
             break
         fi
     done < "${temp_grep_output}")
-    rm -f "${temp_grep_output}" 
-    
+        
     # Extract content from the dedicated Missing Links table only
     if [[ -n "${MISSING_LINKS_LINE}" ]]; then
         # Get lines starting from the Missing Links table title
-        LINE_BEFORE_CLOSE=$(tail -n +"${MISSING_LINKS_LINE}" "${TEMP_OUTPUT}" | grep -B 1 "╰" | head -1 || true)
+        LINE_BEFORE_CLOSE=$(tail -n +"${MISSING_LINKS_LINE}" "${MARKDOWN_CHECK}" | grep -B 1 "╰" | head -1 || true)
         # Extract the number by removing ANSI color codes, Unicode delimiters, trimming whitespace, and using grep for simplicity
         CLEANED_LINE=$(sed 's/\x1B\[[0-9;]*[JKmsu]//g; s/│//g; s/^[[:space:]]*//; s/[[:space:]]*$//' <<< "${LINE_BEFORE_CLOSE}")
         if [[ "${CLEANED_LINE}" =~ [0-9]+ ]]; then
@@ -162,12 +129,12 @@ while IFS= read -r line; do
         ORPHANED_FILES_TABLE_FOUND=true
         break
     fi
-done < "${TEMP_OUTPUT}"
+done < "${MARKDOWN_CHECK}"
 
 if [[ "${ORPHANED_FILES_TABLE_FOUND}" = true ]]; then
     # Find the line number of the dedicated "Orphaned Markdown Files" table title
     ORPHANED_FILES_LINE=""
-    grep_output=$(grep -n "Orphaned Markdown Files" "${TEMP_OUTPUT}")
+    grep_output=$(grep -n "Orphaned Markdown Files" "${MARKDOWN_CHECK}")
     while IFS=: read -r line_num line_content; do
         CLEANED_LINE=$(sed 's/\x1B\[[0-9;]*[JKmsu]//g; s/│//g; s/^[[:space:]]*//; s/[[:space:]]*$//' <<< "${line_content}")
         if [[ "${CLEANED_LINE}" == "Orphaned Markdown Files" ]]; then
@@ -178,7 +145,7 @@ if [[ "${ORPHANED_FILES_TABLE_FOUND}" = true ]]; then
     
     # Extract content from the dedicated Orphaned Files table only
     if [[ -n "${ORPHANED_FILES_LINE}" ]]; then
-        LINE_BEFORE_CLOSE=$(awk -v start="${ORPHANED_FILES_LINE}" 'NR >= start { if ($0 ~ /╰/) { if (prev) print prev; exit } prev = $0 }' "${TEMP_OUTPUT}")
+        LINE_BEFORE_CLOSE=$(awk -v start="${ORPHANED_FILES_LINE}" 'NR >= start { if ($0 ~ /╰/) { if (prev) print prev; exit } prev = $0 }' "${MARKDOWN_CHECK}")
         CLEANED_LINE=$(sed 's/\x1B\[[0-9;]*[JKmsu]//g; s/│//g; s/^[[:space:]]*//; s/[[:space:]]*$//' <<< "${LINE_BEFORE_CLOSE}")
         if [[ "${CLEANED_LINE}" =~ [0-9]+ ]]; then
             ORPHANED_FILES_COUNT="${BASH_REMATCH[0]}"
@@ -197,9 +164,6 @@ else
     print_result 1 "Found ${ORPHANED_FILES_COUNT} orphaned markdown files"
     EXIT_CODE=1
 fi
-
-# Clean up temporary file
-rm -f "${TEMP_OUTPUT}"
 
 # Display summary information
 print_message "Link check summary:"
