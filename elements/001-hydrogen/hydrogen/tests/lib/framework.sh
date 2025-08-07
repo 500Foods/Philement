@@ -20,6 +20,7 @@
 # update_readme_with_results()
 
 # CHANGELOG
+# 2.7.0 - 2025-08-07 - Support for commas in test names (ie, thousands separators)
 # 2.6.0 - 2025-08-06 - Improvements to logging file handling, common TAB file naming
 # 2.5.1 - 2025-08-03 - Removed extraneous command -v calls
 # 2.5.0 - 2025-08-02 - Removed old functions, added some from log_output
@@ -37,7 +38,7 @@ export FRAMEWORK_GUARD="true"
 
 # Library metadata
 FRAMEWORK_NAME="Framework Library"
-FRAMEWORK_VERSION="2.5.1"
+FRAMEWORK_VERSION="2.7.0"
 export FRAMEWORK_NAME FRAMEWORK_VERSION
 
 # Set the number of CPU cores for parallel processing - why not oversubscribe?
@@ -550,15 +551,18 @@ update_readme_with_results() {
                 
                 # Add individual test results
                 for i in "${!TEST_NUMBERS[@]}"; do
-                    local status="✅"
+                    local test_status="✅"
                     if [[ "${TEST_FAILED[${i}]}" -gt 0 ]]; then
-                        status="❌"
+                        test_status="❌"
                     fi
-                    local time_formatted
-                    time_formatted=$(format_time_duration "${TEST_ELAPSED[${i}]}")
-                    number_formatted=$(printf "%s-%s" "${TEST_NUMBERS[${i}]}" "${TEST_ABBREVS[${i}]}")
-                    name_formatted="$(echo "${TEST_NAMES[${i}]}" | sed 's/{BLUE}//g; s/{RESET}//g')"
-                    echo "| ${status} | ${time_formatted} | ${number_formatted} | ${name_formatted} | ${TEST_SUBTESTS[${i}]} | ${TEST_PASSED[${i}]} | ${TEST_FAILED[${i}]} |" || true
+                    local test_time_formatted
+                    test_time_formatted=$(format_time_duration "${TEST_ELAPSED[${i}]}")
+                    test_number_formatted=$(printf "%s-%s" "${TEST_NUMBERS[${i}]}" "${TEST_ABBREVS[${i}]}")
+                    test_name_formatted="${TEST_NAMES[${i}]}"
+                    test_name_formatted=${test_name_formatted//\{COMMA\}/,}
+                    test_name_formatted=${test_name_formatted//\{BLUE\}/}
+                    test_name_formatted=${test_name_formatted//\{RESET\}/}
+                    echo "| ${test_status} | ${test_time_formatted} | ${test_number_formatted} | ${test_name_formatted} | ${TEST_SUBTESTS[${i}]} | ${TEST_PASSED[${i}]} | ${TEST_FAILED[${i}]} |" || true
                 done
                 echo ""
             } >> "${temp_readme}"

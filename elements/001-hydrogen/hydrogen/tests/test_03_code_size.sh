@@ -4,10 +4,10 @@
 # Performs code size analysis and runs cloc ()
 
 # FUNCTIONS
-# cleanup_temp_files()
 # show_top_files_by_type()
 
 # CHANGELOG
+# 3.4.0 - 2025-08-07 - Added (cloc: lines) to test name 
 # 3.3.0 - 2025-08-06 - Bit of temp file handling management and cleanup
 # 3.2.0 - 2025-08-05 - Minor adjustments to output formatting, added TOPLIST variable
 # 3.1.0 - 2025-08-04 - Better presentation of large file sizes
@@ -20,7 +20,7 @@
 TEST_NAME="Code Size Analysis"
 TEST_ABBR="SIZ"
 TEST_NUMBER="03"
-TEST_VERSION="3.3.0"
+TEST_VERSION="3.4.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -241,7 +241,8 @@ if [[ -n "${CLOC_PID}" ]]; then
             IFS=',' read -r files_part lines_part <<< "${STATS}"
             FILES_COUNT=$(echo "${files_part}" | cut -d':' -f2)
             CODE_LINES=$(echo "${lines_part}" | cut -d':' -f2)
-            print_result 0 "Found $(printf "%'d" "${FILES_COUNT}") files with $(printf "%'d" "${CODE_LINES}") lines of code"
+            LOCCOUNT=$(printf "%'d" "${CODE_LINES}")
+            print_result 0 "Found $(printf "%'d" "${FILES_COUNT}") files with ${LOCCOUNT} lines of code"
             ((PASS_COUNT++))
         else
             print_result 1 "Failed to parse cloc output"
@@ -261,6 +262,8 @@ print_output "Line counts: ${SOURCE_FILES_LIST}"
 print_output "Large files: ${LARGE_FILES_LIST}"
 print_output "Line counts: ${LINE_COUNT_FILE}"
 print_output "Cloc output: ${CLOC_OUTPUT}"
+
+TEST_NAME="${TEST_NAME} {BLUE}(cloc: ${LOCCOUNT} lines){RESET}"
 
 # Print completion table
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
