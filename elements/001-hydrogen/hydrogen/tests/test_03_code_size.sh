@@ -258,10 +258,10 @@ else
 fi
 
 print_message "Analysis files saved to results directory:"
-print_output "Line counts: ${SOURCE_FILES_LIST}"
-print_output "Large files: ${LARGE_FILES_LIST}"
-print_output "Line counts: ${LINE_COUNT_FILE}"
-print_output "Cloc output: ${CLOC_OUTPUT}"
+print_output "Line counts: ..${SOURCE_FILES_LIST}"
+print_output "Large files: ..${LARGE_FILES_LIST}"
+print_output "Line counts: ..${LINE_COUNT_FILE}"
+print_output "Cloc output: ..${CLOC_OUTPUT}"
 
 TEST_NAME="${TEST_NAME} {BLUE}(cloc: ${LOCCOUNT} lines){RESET}"
 
