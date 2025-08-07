@@ -12,6 +12,7 @@
 # run_all_tests_parallel() 
 
 # CHANGELOG
+# 6.2.0 - 2025-08-07 - Support for commas in test names (ie, thousands separators)
 # 6.1.1 - 2025-08-03 - Removed extraneous command -v calls
 # 6.1.0 - 2025-07-31 - Added tmpfs code that was originally in Test 01
 # 6.0.0 - 2025-07-22 - Upgraded for more stringent shellcheck compliance
@@ -30,7 +31,7 @@
 TEST_NAME="Test Suite Orchestration"
 TEST_ABBR="ORC"
 TEST_NUMBER="00"
-TEST_VERSION="6.1.1"
+TEST_VERSION="6.2.0"
 export TEST_NAME TEST_ABBR TEST_NUMBER TEST_VERSION
  
 # shellcheck disable=SC1091 # Resolve path statically
@@ -689,6 +690,8 @@ layout_json_content='{
 data_json_content="["
 for i in "${!TEST_NUMBERS[@]}"; do
     test_id="${TEST_NUMBERS[${i}]}-${TEST_ABBREVS[${i}]}"
+    test_name_adjusted="${TEST_NAMES[${i}]}"
+    test_name_adjusted=${test_name_adjusted//\{COMMA\}/,}
     # Calculate group (tens digit) from test number
     group=$((${TEST_NUMBERS[${i}]} / 10))
     
@@ -699,7 +702,7 @@ for i in "${!TEST_NUMBERS[@]}"; do
     {
         "group": '"${group}"',
         "test_id": "'"${test_id}"'",
-        "test_name": "'"${TEST_NAMES[${i}]}"'",
+        "test_name": "'${test_name_adjusted}'",
         "test_version": "'"${TEST_VERSIONS[${i}]}"'",
         "tests": '"${TEST_SUBTESTS[${i}]}"',
         "pass": '"${TEST_PASSED[${i}]}"',

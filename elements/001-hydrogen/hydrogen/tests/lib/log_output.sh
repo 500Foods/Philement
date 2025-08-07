@@ -21,6 +21,7 @@
 # print_test_completion()
 
 # CHANGELOG
+# 3.6.0 - 2025-08-07 - Support for commas in test names (ie, thousands separators)
 # 3.5.0 - 2025-08-06 - Improvements to logging file handling, common TAB file naming
 # 3.4.0 - 2025-08-02 - Removed unused functions, moved test functions to framework.sh
 # 3.3.1 - 2025-07-31 - Fixed issue where not all collected output was output/cleared at end of test
@@ -43,7 +44,7 @@ export LOG_OUTPUT_GUARD="true"
 
 # Library metadata
 LOG_OUTPUT_NAME="Log Output Library"
-LOG_OUTPUT_VERSION="3.5.0"
+LOG_OUTPUT_VERSION="3.6.0"
 export LOG_OUTPUT_NAME LOG_OUTPUT_VERSION
 
 # Global variables for test/subtest numbering
@@ -476,7 +477,8 @@ print_test_completion() {
         local unique_id="${TS_ORC_LOG}_$$_${RANDOM}"
         # shellcheck disable=SC2154 # RESULTS_DIR, is defined externally in framework.sh
         local subtest_file="${RESULTS_DIR}/subtest_${CURRENT_TEST_NUMBER}_${unique_id}.txt"
-        echo "${total_subtests},${TEST_PASSED_COUNT},${test_name},${file_elapsed_time},${test_abbr},${test_version}" > "${subtest_file}" 2>/dev/null
+        test_name_adjusted=${test_name//,/\{COMMA\}}
+        echo "${total_subtests},${TEST_PASSED_COUNT},${test_name_adjusted},${file_elapsed_time},${test_abbr},${test_version}" > "${subtest_file}" 2>/dev/null
     fi
     
     # Create layout JSON with proper columns
