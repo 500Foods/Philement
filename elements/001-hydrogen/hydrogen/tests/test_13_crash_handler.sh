@@ -15,6 +15,7 @@
 # run_crash_test_with_build() 
 
 # CHANGELOG
+# 6.2.0 - 2025-08-08 - Bit of cleanup to output paths again, general logging cleanup
 # 6.1.0 - 2025-08-05 - Adjusted output paths - variables not avaialble in subshell
 # 6.0.0 - 2025-08-04 - Overhauled (separately) by Grok 4 so it runs in half the time
 # 5.0.0 - 2025-07-30 - Overhaul #1
@@ -30,34 +31,28 @@
 TEST_NAME="Crash Handler"
 TEST_ABBR="BUG"
 TEST_NUMBER="13"
-TEST_VERSION="6.1.0"
+TEST_VERSION="6.2.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
 # More test configuration
-TEST_CONFIG="${CONFIG_DIR}/hydrogen_test_min.json"
+TEST_CONFIG="${CONFIG_DIR}/hydrogen_test_13_min.json"
 STARTUP_TIMEOUT=10    
 CRASH_TIMEOUT=30
-
-print_subtest "Validate Test Configuration File"
-
-if validate_config_file "${TEST_CONFIG}"; then
-    print_message "Using minimal configuration for crash testing"
-    ((PASS_COUNT++))
-else
-    EXIT_CODE=1
-fi
 
 # Global caches
 declare CORE_PATTERN=""
 declare CORE_LIMIT=""
 declare -A DEBUG_SYMBOL_CACHE
+declare -A FOUND_BUILDS 
+declare -a BUILDS
+declare -A BUILD_DESCRIPTIONS
 
 # Function to verify core dump configuration
 verify_core_dump_config() {
-    print_message "Checking core dump configuration..."
+    # print_message "Checking core dump configuration..."
     
     # Cache core pattern and limit if not already set
     [[ -z "${CORE_PATTERN}" ]] && CORE_PATTERN=$(cat /proc/sys/kernel/core_pattern 2>/dev/null || echo "unknown")
@@ -89,7 +84,7 @@ verify_core_file_content() {
     local core_file="$1"
     local binary="$2"
     
-    print_message "Verifying core file contents..."
+    # print_message "Verifying core file contents..."
     
     # Check file size and verify it's a core file
     local core_size
@@ -127,25 +122,26 @@ verify_debug_symbols() {
         expect_symbols=0
     fi
     
-    print_message "Checking debug symbols in ${binary_name}..."
+    # print_message "Checking debug symbols in ${binary_name}..."
     
     # Use readelf to check for debug symbols
-    if readelf --debug-dump=info "${binary}" 2>/dev/null | grep -q -m 1 "DW_AT_name" || true; then
+    # shellcheck disable=SC2312 # Expect an empty return if no debugging is available
+    if readelf --debug-dump=info "${binary}" 2>/dev/null | grep -q -m 1 "DW_AT_name"; then
         if [[ "${expect_symbols}" -eq 1 ]]; then
-            print_message "Debug symbols found in ${binary_name} (as expected)"
+            # print_message "Debug symbols found in ${binary_name} (as expected)"
             DEBUG_SYMBOL_CACHE[${binary_name}]=0
             return 0
         fi
-        print_message "Debug symbols found in ${binary_name} (unexpected for release build)"
+        # print_message "Debug symbols found in ${binary_name} (unexpected for release build)"
         DEBUG_SYMBOL_CACHE[${binary_name}]=1
         return 1
     fi
     if [[ "${expect_symbols}" -eq 1 ]]; then
-        print_message "No debug symbols found in ${binary_name} (symbols required)"
+        # print_message "No debug symbols found in ${binary_name} (symbols required)"
         DEBUG_SYMBOL_CACHE[${binary_name}]=1
         return 1
     fi
-    print_message "No debug symbols found in ${binary_name} (as expected for release build)"
+    # print_message "No debug symbols found in ${binary_name} (as expected for release build)"
     DEBUG_SYMBOL_CACHE[${binary_name}]=0
     return 0
 }
@@ -161,7 +157,7 @@ verify_core_file() {
     local found=0
     local start_time="${SECONDS}"
     
-    print_message "Waiting for core file ${binary_name}.core.${pid}..."
+    # print_message "Waiting for core file ${binary_name}.core.${pid}..."
     
     # Wait for core file to appear
     while true; do
@@ -202,14 +198,12 @@ analyze_core_with_gdb() {
     
     # Check for debug info and set GDB flags accordingly
     local gdb_flags
-    temp_output=$(mktemp)
+    temp_output="${LOG_PREFIX}${build_name}_${TIMESTAMP}_${RANDOM}"
     readelf --sections "${binary}" 2>/dev/null > "${temp_output}"
     if grep -q -m 1 ".debug_info" "${temp_output}"; then
-        rm -f "${temp_output}"
         print_message "Debug info found in binary, using full output"
         gdb_flags=(-q -ex 'set print frame-arguments all' -ex 'set print object on')
     else
-        rm -f "${temp_output}"
         print_message "No debug info found in binary, using limited output"
         gdb_flags=(-q -ex 'set print frame-arguments none' -ex 'set print object off')
     fi
@@ -288,12 +282,11 @@ wait_for_crash_completion() {
 # Function to run test with a specific build in parallel (writes results to files)
 run_crash_test_parallel() {
     local binary="$1"
-    local result_dir="$2"
     local binary_name
     binary_name=$(basename "${binary}")
-    local log_file="../build/tests/logs//hydrogen_crash_test_${binary_name}_${TIMESTAMP}.log"
-    local result_file="../build/tests/results/${binary_name}.result"
-    local gdb_output_file="../build/tests/diagnostics/${binary_name}_${TIMESTAMP}.txt"
+    local log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${binary_name}_${TIMESTAMP}.log"
+    local result_file="${LOG_PREFIX}${binary_name}_${TIMESTAMP}.log"
+    local gdb_output_file="${LOG_PREFIX}${binary_name}_${TIMESTAMP}.txt"
     
     # Clear files
     true > "${log_file}"
@@ -370,21 +363,38 @@ run_crash_test_parallel() {
 # Function to analyze results from parallel crash test
 analyze_parallel_results() {
     local binary="$1"
-    local result_dir="$2"
     local binary_name
     binary_name=$(basename "${binary}")
-    local result_file="${result_dir}/${binary_name}.result"
-    local log_file="${SCRIPT_DIR}/hydrogen_crash_test_${binary_name}_${TIMESTAMP}.log"
+    local log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${binary_name}_${TIMESTAMP}.log"
+    local result_file="${LOG_PREFIX}${binary_name}_${TIMESTAMP}.log"
+    local gdb_output_file="${LOG_PREFIX}${binary_name}_${TIMESTAMP}.txt"
     
     # Check if result file exists
     if [[ ! -f "${result_file}" ]]; then
-        print_message "No result file found for ${binary_name}"
+        print_result 1 "No result file found for ${binary_name}"
         return 1
     fi
+    # print_message "tst: ..${result_file}"
     
+    # Check if log file exists
+    if [[ ! -f "${log_file}" ]]; then
+        print_result 1 "No log file found for ${binary_name}"
+        return 1
+    fi
+    # print_message "log: ..${log_file}"
+
+    # Check if gdb file exists
+    if [[ ! -f "${gdb_output_file}" ]]; then
+        print_result 1 "No gdb file found for ${binary_name}"
+        return 1
+    fi
+    # print_message "gdb: ..${gdb_output_file}"
+
+    print_result 0 "All execution files found"
+
     # Read result file
     local result_status
-    result_status=$(tail -n 1 "${result_file}")
+    result_status=$(tail -n 2 "${result_file}" | head -n 1 || true)
     
     if [[ "${result_status}" != "SUCCESS" ]]; then
         print_message "${binary_name}: Test failed during execution (${result_status})"
@@ -428,24 +438,11 @@ analyze_parallel_results() {
     
     # Verify crash handler log messages
     if grep -q -e "Received SIGUSR1" -e "Signal 11 received" "${log_file}" 2>/dev/null; then
-        print_message "Found crash handler messages in log"
+        # print_message "Found crash handler messages in log"
         log_result=0
     else
-        print_message "Missing crash handler messages in log"
+        # print_message "Missing crash handler messages in log"
         log_result=1
-    fi
-    
-    # Save logs and results
-    if [[ -f "${log_file}" ]]; then
-        cp "${log_file}" "${RESULTS_DIR}/crash_test_${TIMESTAMP}_${binary_name}.log"
-    fi
-    
-    # Clean up test files (preserve core files for failed tests)
-    rm -f "${log_file}"
-    if [[ "${core_result}" -eq 0 ]] && [[ "${log_result}" -eq 0 ]] && [[ "${gdb_result}" -eq 0 ]]; then
-        rm -f "${PROJECT_DIR}/${binary_name}.core.${hydrogen_pid}"
-    else
-        print_message "Preserving core file for debugging: ${binary_name}.core.${hydrogen_pid}"
     fi
     
     # Return results via global variables (since we need multiple return values)
@@ -462,160 +459,14 @@ analyze_parallel_results() {
     fi
 }
 
-# Function to run test with a specific build
-run_crash_test_with_build() {
-    local binary="$1"
-    local binary_name
-    binary_name=$(basename "${binary}")
-    local log_file="${SCRIPT_DIR}/hydrogen_crash_test_${binary_name}_${TIMESTAMP}.log"
-    
-    print_message "Testing crash handler with build: ${binary_name}"
-    
-    # Clear log file
-    true > "${log_file}"
-    
-    # Start hydrogen server in background with ASAN leak detection disabled
-    print_message "Starting hydrogen server (with leak detection disabled)..."
-    print_command "ASAN_OPTIONS=\"detect_leaks=0\" $(basename "${binary}") $(basename "${TEST_CONFIG}")"
-    ASAN_OPTIONS="detect_leaks=0" "${binary}" "${TEST_CONFIG}" > "${log_file}" 2>&1 &
-    local hydrogen_pid=$!
-    
-    # Wait for startup with active log monitoring
-    print_message "Waiting for startup (max ${STARTUP_TIMEOUT}s)..."
-    local startup_start="${SECONDS}"
-    local elapsed
-    local startup_complete=false
-    
-    while true; do
-        # Check if we've exceeded the timeout
-        elapsed=$((SECONDS - startup_start))
-        
-        if [[ "${elapsed}" -ge "${STARTUP_TIMEOUT}" ]]; then
-            print_message "Startup timeout after ${elapsed}s"
-            kill -9 "${hydrogen_pid}" 2>/dev/null || true
-            return 1
-        fi
-        
-        # Check if process is still running
-        if ! ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
-            # This could be an expected part of the crash handler test
-            print_message "Server crashed during startup (might be expected behavior)"
-            startup_complete=true
-            break
-        fi
-        
-        # Check for startup completion message
-        if grep -q "Application started" "${log_file}" 2>/dev/null; then
-            startup_complete=true
-            print_message "Startup completed in ${elapsed}s"
-            break
-        fi
-    done
-    
-    # Verify server is running and startup completed
-    if [[ "${startup_complete}" != "true" ]]; then
-        print_message "Server failed to start properly"
-        kill -9 "${hydrogen_pid}" 2>/dev/null || true
-        return 1
-    fi
-    
-    # If process already crashed during startup, that's not what we want for this test
-    if ! ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
-        print_message "Process crashed during startup - not suitable for crash handler test"
-        return 1
-    fi
-    
-    # Send SIGUSR1 to trigger test crash handler
-    print_message "Triggering test crash handler with SIGUSR1..."
-    print_command "kill -USR1 ${hydrogen_pid}"
-    kill -USR1 "${hydrogen_pid}"
-    
-    # Wait for process to crash
-    if wait_for_crash_completion "${hydrogen_pid}" "${CRASH_TIMEOUT}"; then
-        print_message "Process crashed as expected"
-    else
-        print_message "Process did not crash within timeout"
-        kill -9 "${hydrogen_pid}" 2>/dev/null || true
-        return 1
-    fi
-    
-    # Wait for the process to fully exit and get exit code
-    wait "${hydrogen_pid}" 2>/dev/null || true
-    local crash_exit_code=$?
-    
-    # Check exit code matches SIGSEGV (11) from the null dereference
-    if [[ "${crash_exit_code}" -eq $((128 + 11)) ]]; then
-        print_message "Process exited with SIGSEGV (expected for crash test)"
-    else
-        print_message "Process exited with unexpected code: ${crash_exit_code} (expected SIGSEGV)"
-    fi
-    
-    # Initialize result variables for this build
-    local debug_result=1
-    local core_result=1
-    local log_result=1
-    local gdb_result=1
-    
-    # Verify debug symbols
-    if verify_debug_symbols "${binary}"; then
-        debug_result=0
-    fi
-    
-    # Verify core file creation
-    if verify_core_file "${binary}" "${hydrogen_pid}"; then
-        core_result=0
-        
-        # If core file exists, verify its contents
-        local core_file="${PROJECT_DIR}/${binary_name}.core.${hydrogen_pid}"
-        if ! verify_core_file_content "${core_file}" "${binary}"; then
-            print_message "Core file exists but content verification failed"
-            core_result=1
-        fi
-    fi
-    
-    # Verify crash handler log messages
-    if grep -q -e "Received SIGUSR1" -e "Signal 11 received" "${log_file}" 2>/dev/null; then
-        print_message "Found crash handler messages in log"
-        log_result=0
-    else
-        print_message "Missing crash handler messages in log"
-        log_result=1
-    fi
-    
-    # Analyze core file with GDB if core file was created
-    if [[ "${core_result}" -eq 0 ]]; then
-        local core_file="${PROJECT_DIR}/${binary_name}.core.${hydrogen_pid}"
-        if analyze_core_with_gdb "${binary}" "${core_file}" "${PROJECT_DIR}/${binary_name}_${TIMESTAMP}.txt"; then
-            gdb_result=0
-        fi
-    fi
-    
-    # Save logs and results
-    if [[ -f "${log_file}" ]]; then
-        cp "${log_file}" "${RESULTS_DIR}/crash_test_${TIMESTAMP}_${binary_name}.log"
-    fi
-    
-    # Clean up test files (preserve core files for failed tests)
-    rm -f "${log_file}"
-    if [[ "${core_result}" -eq 0 ]] && [[ "${log_result}" -eq 0 ]] && [[ "${gdb_result}" -eq 0 ]]; then
-        rm -f "${PROJECT_DIR}/${binary_name}.core.${hydrogen_pid}"
-    else
-        print_message "Preserving core file for debugging: ${binary_name}.core.${hydrogen_pid}"
-    fi
-    
-    # Return results via global variables (since we need multiple return values)
-    DEBUG_SYMBOL_RESULT=${debug_result}
-    CORE_FILE_RESULT=${core_result}
-    CRASH_LOG_RESULT=${log_result}
-    GDB_ANALYSIS_RESULT=${gdb_result}
-    
-    # Return success only if all subtests passed
-    if [[ "${debug_result}" -eq 0 ]] && [[ "${core_result}" -eq 0 ]] && [[ "${log_result}" -eq 0 ]] && [[ "${gdb_result}" -eq 0 ]]; then
-        return 0
-    else
-        return 1
-    fi
-}
+print_subtest "Validate Test Configuration File"
+
+if validate_config_file "${TEST_CONFIG}"; then
+    print_message "Using minimal configuration for crash testing"
+    ((PASS_COUNT++))
+else
+    EXIT_CODE=1
+fi
 
 print_subtest "Verify Core Dump Configuration"
 
@@ -630,10 +481,6 @@ print_result 0 "Core dump configuration verified"
 
 # Find all available builds
 print_message "Discovering available Hydrogen builds..."
-
-declare -A FOUND_BUILDS  # Track which builds we've found
-declare -a BUILDS
-declare -A BUILD_DESCRIPTIONS
 
 # Define expected build variants based on CMake targets
 declare -a BUILD_VARIANTS=("hydrogen" "hydrogen_debug" "hydrogen_valgrind" "hydrogen_perf" "hydrogen_release" "hydrogen_coverage" "hydrogen_naked")
@@ -698,10 +545,6 @@ done
 declare -A BUILD_PASSED_SUBTESTS
 declare -a PARALLEL_PIDS
 
-# Create temporary directory for parallel results
-PARALLEL_RESULTS_DIR="${RESULTS_DIR}/parallel_${TIMESTAMP}"
-mkdir -p "${PARALLEL_RESULTS_DIR}"
-
 print_message "Running crash tests in parallel for all builds..."
 
 MAX_JOBS=$(nproc 2>/dev/null || echo 4)  # Default to 4 if nproc unavailable
@@ -715,7 +558,7 @@ for build in "${BUILDS[@]}"; do
     print_message "Starting parallel test for: ${build_name}"
     
     # Run parallel crash test in background
-    run_crash_test_parallel "${build}" "${PARALLEL_RESULTS_DIR}" &
+    run_crash_test_parallel "${build}" &
     PARALLEL_PIDS+=($!)
 done
 
@@ -730,13 +573,13 @@ print_message "All parallel tests completed, analyzing results..."
 for build in "${BUILDS[@]}"; do
     build_name=$(basename "${build}")
     
-    print_message "Testing build: ${build_name} (${BUILD_DESCRIPTIONS[${build_name}]})"
+    print_subtest "Testing build: ${build_name} (${BUILD_DESCRIPTIONS[${build_name}]})"
     
     # Initialize subtest results for this build
     BUILD_PASSED_SUBTESTS[${build_name}]=0
     
     # Analyze the parallel test results
-    analyze_parallel_results "${build}" "${PARALLEL_RESULTS_DIR}"
+    analyze_parallel_results "${build}"
     
     print_subtest "Debug Symbols - ${build_name}"
 
@@ -813,7 +656,6 @@ done
 print_message "Summary: ${successful_builds}/${#BUILDS[@]} builds passed all crash handler tests"
 
 # Clean up parallel results directory
-rm -rf "${PARALLEL_RESULTS_DIR}"
 rm -rf "${PROJECT_DIR}"/*.core.*
 
 # Print completion table
