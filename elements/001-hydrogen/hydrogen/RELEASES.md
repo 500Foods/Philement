@@ -16,6 +16,7 @@ Step 1: Gather Changes
   ```
   git log --since="YYYY-MM-DD 00:00" --until="YYYY-MM-DD 23:59" -p -- path/to/component
   ```
+- Also use grep to search the repo, eg `grep -r '2025-08-07'` might return a list of CHANGELOG entries from various files
 
 Step 2: Document Changes
 - Keep entries concise and factual
@@ -56,6 +57,7 @@ Remember:
 -->
 
 - August 2025
+  - [2025-Aug-07 (Wed)](docs/releases/2025-08/2025-08-07.md): Shutdown Timing Enhancement, Timing System
   - [2025-Aug-05 (Tue)](docs/releases/2025-08/2025-08-05.md): Coverage System Optimization, Testing Framework Performance
   - [2025-Aug-04 (Mon)](docs/releases/2025-08/2025-08-04.md): GCOV Integration, Coverage System Enhancement, Performance Optimization
   - [2025-Aug-03 (Sun)](docs/releases/2025-08/2025-08-03.md): Testing Framework Metrics, Script Optimization

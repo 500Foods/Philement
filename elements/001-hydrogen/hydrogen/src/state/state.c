@@ -6,6 +6,7 @@
 #include "state.h"
 #include "state_types.h"
 #include "../logging/logging.h"  // For log_this
+#include "../utils/utils_time.h"  // For timing functions
 #include <stdlib.h>  // For free
 
 // Memory management implementation
@@ -87,7 +88,10 @@ void signal_handler(int sig) {
             break;
         case SIGINT:
         case SIGTERM:
-            log_this("Shutdown", "%s received, initiating rapid shutdown", LOG_LEVEL_STATE, 
+            // Record shutdown start time immediately when signal received
+            record_shutdown_start_time();
+            
+            log_this("Shutdown", "%s received, initiating rapid shutdown", LOG_LEVEL_STATE,
                     sig == SIGINT ? "SIGINT" : "SIGTERM");
             
             // Set signal-based shutdown flag for rapid exit

@@ -6,14 +6,10 @@
 # LIBRARY FUNCTIONS
 # check_env_var()
 # validate_rsa_key()
-# reset_environment_variables()
-# set_basic_test_environment()
 # validate_config_files()
 # get_config_path()
 # validate_websocket_key()
 # convert_to_relative_path()
-# set_type_conversion_environment()
-# set_validation_test_environment()
 
 # CHANGELOG
 # 1.2.1 - 2025-08-03 - Removed extraneous command -v calls
@@ -98,36 +94,6 @@ validate_rsa_key() {
     fi
 }
 
-# Function to reset all environment variables used in testing
-reset_environment_variables() {
-    unset H_SERVER_NAME H_WEB_ENABLED H_WEB_PORT H_UPLOAD_DIR
-    unset H_MAX_UPLOAD_SIZE H_SHUTDOWN_WAIT H_MAX_QUEUE_BLOCKS H_DEFAULT_QUEUE_CAPACITY
-    unset H_MEMORY_WARNING H_LOAD_WARNING H_PRINT_QUEUE_ENABLED H_CONSOLE_LOG_LEVEL
-    unset H_DEVICE_ID H_FRIENDLY_NAME
-    
-    print_message "All Hydrogen environment variables have been unset"
-}
-
-# Function to set environment variables for basic test
-set_basic_test_environment() {
-    export H_SERVER_NAME="hydrogen-env-test"
-    export H_WEB_ENABLED="true"
-    export H_WEB_PORT="9000"
-    export H_UPLOAD_DIR="/tmp/hydrogen_env_test_uploads"
-    export H_MAX_UPLOAD_SIZE="1048576"
-    export H_SHUTDOWN_WAIT="3"
-    export H_MAX_QUEUE_BLOCKS="64"
-    export H_DEFAULT_QUEUE_CAPACITY="512"
-    export H_MEMORY_WARNING="95"
-    export H_LOAD_WARNING="7.5"
-    export H_PRINT_QUEUE_ENABLED="false"
-    export H_CONSOLE_LOG_LEVEL="1"
-    export H_DEVICE_ID="hydrogen-env-test"
-    export H_FRIENDLY_NAME="Hydrogen Environment Test"
-    
-    print_message "Basic environment variables for Hydrogen test have been set"
-}
-
 # Function to validate required configuration files exist
 validate_config_files() {
     local config_file
@@ -209,35 +175,4 @@ convert_to_relative_path() {
     else
         echo "${relative_path}"
     fi
-}
-
-# Function to set environment variables for type conversion testing
-set_type_conversion_environment() {
-    export H_SERVER_NAME="hydrogen-type-test"
-    export H_WEB_ENABLED="TRUE"  # uppercase, should convert to boolean true
-    export H_WEB_PORT="8080"     # string that should convert to number
-    export H_MEMORY_WARNING="75" # string that should convert to number
-    export H_LOAD_WARNING="2.5"  # string that should convert to float
-    export H_PRINT_QUEUE_ENABLED="FALSE" # uppercase, should convert to boolean false
-    export H_CONSOLE_LOG_LEVEL="0"
-    export H_SHUTDOWN_WAIT="5"
-    export H_MAX_QUEUE_BLOCKS="128"
-    export H_DEFAULT_QUEUE_CAPACITY="1024"
-    
-    print_message "Type conversion environment variables for Hydrogen test have been set"
-}
-
-# Function to set environment variables for validation testing
-set_validation_test_environment() {
-    export H_SERVER_NAME="hydrogen-validation-test"
-    export H_WEB_ENABLED="yes"   # non-standard boolean value
-    export H_WEB_PORT="invalid"  # invalid port number
-    export H_MEMORY_WARNING="150" # invalid percentage (>100)
-    export H_LOAD_WARNING="-1.0"  # invalid negative load
-    export H_PRINT_QUEUE_ENABLED="maybe" # invalid boolean
-    export H_CONSOLE_LOG_LEVEL="debug"   # string instead of number
-    export H_SHUTDOWN_WAIT="0"    # edge case: zero timeout
-    export H_MAX_QUEUE_BLOCKS="0" # edge case: zero blocks
-    
-    print_message "Validation test environment variables for Hydrogen test have been set"
 }

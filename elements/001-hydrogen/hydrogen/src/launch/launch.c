@@ -68,6 +68,7 @@
 #include "../logging/logging.h"
 #include "../utils/utils_logging.h"
 #include "../utils/utils.h"
+#include "../utils/utils_time.h"  // For timing functions
 #include "../status/status.h"
 #include "../status/status_process.h"
 #include "../utils/utils_dependency.h"
@@ -446,6 +447,9 @@ int startup_hydrogen(const char* config_path) {
     
     __sync_bool_compare_and_swap(&server_starting, 1, 0);
     __sync_bool_compare_and_swap(&server_running, 0, 1);
+    
+    // Record when startup is complete for timing calculations
+    record_startup_complete_time();
     
     __sync_synchronize();  // Ensure state changes are visible
     

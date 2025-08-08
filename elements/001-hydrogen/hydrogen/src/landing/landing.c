@@ -209,6 +209,9 @@ void handle_sigint(void) {
 
 
 bool check_all_landing_readiness(void) {
+    // Record shutdown initiate time for total running time calculation
+    record_shutdown_initiate_time();
+    
     // Record landing start time
     time_t start_time = time(NULL);
     
@@ -217,8 +220,8 @@ bool check_all_landing_readiness(void) {
     
     log_group_begin();
     log_this(subsystem, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    log_this(subsystem, restart_requested ? 
-        "Initiating graceful restart sequence" : 
+    log_this(subsystem, restart_requested ?
+        "Initiating graceful restart sequence" :
         "LANDING SEQUENCE INITIATED", LOG_LEVEL_STATE);
     log_group_end();
     
@@ -326,9 +329,25 @@ bool check_all_landing_readiness(void) {
         
         return true;
     } else {
+        // Record shutdown end time
+        record_shutdown_end_time();
         
-        // Log completion message before cleanup
-        log_this("Shutdown", "Shutdown complete", LOG_LEVEL_STATE);
+        // Calculate timing information
+        double shutdown_elapsed_time = calculate_shutdown_time();
+        double total_running_time = calculate_total_running_time();
+        double total_elapsed_time = calculate_total_elapsed_time();
+        
+        // Log completion message with timing information
+        log_group_begin();
+        log_this("Shutdown", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        log_this("Shutdown", "SHUTDOWN COMPLETE", LOG_LEVEL_STATE);
+        log_this("Shutdown", "Shutdown elapsed time: %.3fs", LOG_LEVEL_STATE, shutdown_elapsed_time);
+        if (total_running_time > 0.0) {
+            log_this("Shutdown", "Total running time: %.3fs", LOG_LEVEL_STATE, total_running_time);
+        }
+        log_this("Shutdown", "Total elapsed time: %.3fs", LOG_LEVEL_STATE, total_elapsed_time);
+        log_this("Shutdown", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        log_group_end();
         
         // Clean up application config after all logging is complete
         cleanup_application_config();
