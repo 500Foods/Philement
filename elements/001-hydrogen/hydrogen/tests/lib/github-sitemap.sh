@@ -5,15 +5,15 @@
 # Description: Checks local markdown links in a repository using xargs parallel processing
 
 # CHANGELOG
-# 0.12.0 - 2025-08-08 - Removed cksum deduplication (added overhead for repositories with few duplicates)
-# 0.11.0 - 2025-08-08 - Added cksum-based within-run deduplication (10x faster than md5sum)
-# 0.10.0 - 2025-08-08 - Fork reduction optimizations: replaced wc -l and dirname with bash builtins
+# 1.3.0 - 2025-08-08 - Removed cksum deduplication (added overhead for repositories with few duplicates)
+# 1.2.0 - 2025-08-08 - Added cksum-based within-run deduplication (10x faster than md5sum)
+# 1.1.0 - 2025-08-08 - Fork reduction optimizations: replaced wc -l and dirname with bash builtins
 # 0.9.0 - 2025-08-08 - Single-pass awk parsing optimization (replaced grep|sed|awk pipelines)
 # 0.8.0 - 2025-08-08 - Performance optimizations following md5sum batching pattern from test_92_shellcheck.sh
 # 0.7.1 - 2025-08-03 - Removed extraneous command -v calls
 
 # Application version
-declare -r APPVERSION="0.12.0"
+declare -r APPVERSION="1.3.0"
 
 # Performance timing functions
 declare -A timing_data
