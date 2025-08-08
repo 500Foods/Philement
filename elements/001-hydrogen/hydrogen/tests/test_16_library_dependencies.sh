@@ -41,7 +41,7 @@ else
 fi
 
 # Test configuration - use minimal config since library dependencies are checked regardless of configuration
-MINIMAL_CONFIG="${SCRIPT_DIR}/configs/hydrogen_test_min.json"
+MINIMAL_CONFIG="${SCRIPT_DIR}/configs/hydrogen_test_16_min.json"
 
 print_subtest "Validate Configuration File"
 
@@ -64,7 +64,7 @@ check_dependency_log() {
     
     # Extract the full dependency line
     local dep_line
-    dep_line=$(grep ".*\[ STATE \]  \[ DepCheck           \]  ${dep_name}.*Status:" "${log_file}" 2>/dev/null)
+    dep_line=$(grep "DepCheck.*${dep_name}.*Status:" "${log_file}" 2>/dev/null)
     
     if [[ -n "${dep_line}" ]]; then
         # Extract version information using sed
