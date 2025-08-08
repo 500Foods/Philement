@@ -248,6 +248,10 @@ echo "source /workspaces/Festival/.devcontainer/.zshrc" >> ~/.zshrc
 echo "export LANG=en_US.UTF-8" >> ~/.zshrc
 echo "export LC_ALL=en_US.UTF-8" >> ~/.zshrc
 
+# Deal with shellcheck
+export SHELLCHECK_OPTS=--enable=all --severity=style --external-sources --format=gcc
+echo "export SHELLCHECK_OPTS=--enable=all --severity=style --external-sources --format=gcc" > ~/.zshrc
+
 # Set Zsh as default shell (with fallback)
 DEBIAN_FRONTEND=noninteractive chsh -s /bin/zsh
 echo "if [ -t 1 ] && [ -n \"$(command -v zsh)\" ]; then exec zsh; fi" >> ~/.bashrc
@@ -266,6 +270,7 @@ echo "Setup complete" >&2
   "apps": [
     "gawk",
     "gh",
+    "lsof",
     "golang",
     "net-tools",
     "netcat-openbsd",
