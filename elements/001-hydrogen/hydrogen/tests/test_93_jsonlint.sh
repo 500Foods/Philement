@@ -19,6 +19,9 @@ TEST_VERSION="3.0.1"
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
+# Test configuration
+INTENTIONAL_ERROR_FILE="hydrogen_test_18_json.json"
+
 print_subtest "JSON Linting"
 
 JSON_FILES=()
@@ -28,12 +31,6 @@ while read -r file; do
         JSON_FILES+=("${rel_file}")
     fi
 done < <(find . -type f -name "*.json" || true)
-
-# Also include the intentionally broken test JSON file
-INTENTIONAL_ERROR_FILE="./tests/configs/hydrogen_test_json.json"
-if [[ -f "${INTENTIONAL_ERROR_FILE}" ]]; then
-    JSON_FILES+=("${INTENTIONAL_ERROR_FILE}")
-fi
 
 JSON_COUNT=${#JSON_FILES[@]}
 JSON_ISSUES=0
@@ -45,7 +42,7 @@ if [[ "${JSON_COUNT}" -gt 0 ]]; then
 
     for file in "${JSON_FILES[@]}"; do
         if ! jq . "${file}" >/dev/null 2>&1; then
-            if [[ "${file}" == *"hydrogen_test_json.json" ]]; then
+            if [[ "${file}" == *"${INTENTIONAL_ERROR_FILE}" ]]; then
                 print_output "Expected invalid JSON (for testing): ${file}"
                 ((EXPECTED_ERRORS++))
             else

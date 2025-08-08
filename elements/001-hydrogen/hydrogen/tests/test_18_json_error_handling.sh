@@ -5,6 +5,7 @@
 # and provides meaningful error messages with position information
 
 # CHANGLEOG
+# 4.1.0 - 2025-08-08 - General logging cleanup and tweaks
 # 4.0.0 - 2025-07-30 - Overhaul #1
 # 3.0.2 - 2025-07-14 - Updated to use build/tests directories for test output consistency
 # 3.0.1 - 2025-07-06 - Added missing shellcheck justifications
@@ -16,14 +17,15 @@
 TEST_NAME="JSON Error Handling"
 TEST_ABBR="JSN"
 TEST_NUMBER="18"
-TEST_VERSION="4.0.0"
+TEST_VERSION="4.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
 # Test Configuration
-ERROR_OUTPUT="${LOGS_DIR}/json_error_output_${TIMESTAMP}.log"
+ERROR_OUTPUT="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_json_error.log"
+TEST_CONFIG=$(get_config_path "hydrogen_test_18_json.json")
 
 print_subtest "Locate Hydrogen Binary"
 
@@ -37,9 +39,6 @@ else
     print_result 1 "Failed to find Hydrogen binary"
     EXIT_CODE=1
 fi
-
-# Test configuration with JSON syntax error (missing comma)
-TEST_CONFIG=$(get_config_path "hydrogen_test_json.json")
 
 print_subtest "Validate Test Configuration File"
 
@@ -68,29 +67,21 @@ print_subtest "Verify Error Message Contains Position Information"
 print_message "Examining error output..."
 
 if grep -q "line" "${ERROR_OUTPUT}" && grep -q "column" "${ERROR_OUTPUT}"; then
-    print_result 0 "Error message contains line and column information"
-    print_message "Error output:"
-    # Display the error output content
     while IFS= read -r line; do
         print_output "${line}"
     done < <(tail -n 5 "${ERROR_OUTPUT}" || true)
     ((PASS_COUNT++))
+    print_result 0 "Error message contains line and column information"
 else
-    print_result 1 "Error message does not contain line and column information"
-    print_message "Error output:"
-    # Display the error output content
     while IFS= read -r line; do
         print_output "${line}"
     done < <(tail -n 5 "${ERROR_OUTPUT}" || true)
     EXIT_CODE=1
+    print_result 1 "Error message does not contain line and column information"
 fi
 
 # Save error output to results directory
-cp "${ERROR_OUTPUT}" "${RESULTS_DIR}/json_error_full_${TIMESTAMP}.txt"
-print_message "Full error output saved to: $(convert_to_relative_path "${RESULTS_DIR}/json_error_full_${TIMESTAMP}.txt" || true)"
-
-# Clean up temporary error output file
-rm -f "${ERROR_OUTPUT}"
+print_message "Log: ..${ERROR_OUTPUT}"
 
 # Print completion table
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
