@@ -17,6 +17,7 @@
 # capture_process_diagnostics() {
 
 # CHANGELOG
+# 1.6.0 - 2025-08-08 - Removed an extra copies of the logs being generated
 # 1.5.0 - 2025-08-07 - Added better checks for showing shutdown time and total elapsed time
 # 1.4.0 - 2025-08-03 - Was a bit too aggressive with function culling
 # 1.3.1 - 2025-08-03 - Removed extraneous command -v calls
@@ -290,7 +291,6 @@ monitor_shutdown() {
             get_process_threads "${pid}" "${diag_dir}/stuck_threads.txt"
             lsof -p "${pid}" >> "${diag_dir}/stuck_open_files.txt" 2>/dev/null || true
             kill -9 "${pid}" 2>/dev/null || true
-            cp "${log_file}" "${diag_dir}/timeout_shutdown.log" 2>/dev/null || true
             return 1
         fi
         
@@ -409,9 +409,6 @@ run_lifecycle_test() {
             eval "${exit_code_var}=1"
         fi
         ((subtest_count++))
-        
-        # Copy full log for reference
-        cp "${log_file}" "${diag_config_dir}/full_log.txt" 2>/dev/null || true
     fi
     
     return "$(eval "echo \$${exit_code_var}" || true)"
