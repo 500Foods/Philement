@@ -25,6 +25,10 @@ double calculate_shutdown_time(void);
 void format_duration(time_t seconds, char *buffer, size_t buflen);
 const char* get_system_start_time_string(void);
 double calculate_startup_time(void);
+void record_startup_complete_time(void);
+void record_shutdown_initiate_time(void);
+double calculate_total_running_time(void);
+double calculate_total_elapsed_time(void);
 
 // External declarations
 extern volatile sig_atomic_t server_starting;
@@ -36,6 +40,8 @@ static struct timespec server_start_time = {0, 0};  // Updated on each startup/r
 static struct timespec original_start_time = {0, 0}; // Set only on first startup
 static struct timespec shutdown_start_time = {0, 0}; // When shutdown begins
 static struct timespec shutdown_end_time = {0, 0};   // When shutdown completes
+static struct timespec startup_complete_time = {0, 0}; // When startup is fully complete
+static struct timespec shutdown_initiate_time = {0, 0}; // When shutdown is initiated
 
 // Private function declarations
 static void format_iso_time(time_t t, char *buffer, size_t buflen);
@@ -189,6 +195,44 @@ double calculate_startup_time(void) {
     pthread_mutex_unlock(&ready_time_mutex);
     
     return elapsed;
+}
+
+// Record when startup is complete (called after startup sequence finishes)
+void record_startup_complete_time(void) {
+    clock_gettime(CLOCK_MONOTONIC, &startup_complete_time);
+}
+
+// Record when shutdown is initiated (called when shutdown sequence begins)
+void record_shutdown_initiate_time(void) {
+    clock_gettime(CLOCK_MONOTONIC, &shutdown_initiate_time);
+}
+
+// Calculate total running time (from startup complete to shutdown initiate)
+double calculate_total_running_time(void) {
+    // Return 0 if times aren't set
+    if (startup_complete_time.tv_sec == 0 || shutdown_initiate_time.tv_sec == 0) {
+        return 0.0;
+    }
+    
+    return calc_elapsed_time(&shutdown_initiate_time, &startup_complete_time);
+}
+
+// Calculate total elapsed time (from original start to shutdown complete)
+double calculate_total_elapsed_time(void) {
+    // Return 0 if original start time isn't set
+    if (original_start_time.tv_sec == 0) {
+        return 0.0;
+    }
+    
+    // If shutdown isn't complete, use current time
+    struct timespec end_time;
+    if (shutdown_end_time.tv_sec == 0) {
+        clock_gettime(CLOCK_MONOTONIC, &end_time);
+    } else {
+        end_time = shutdown_end_time;
+    }
+    
+    return calc_elapsed_time(&end_time, &original_start_time);
 }
 
 // Calculate total runtime (duration from original start)

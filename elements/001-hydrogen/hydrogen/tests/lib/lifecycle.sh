@@ -17,6 +17,7 @@
 # capture_process_diagnostics() {
 
 # CHANGELOG
+# 1.5.0 - 2025-08-07 - Added better checks for showing shutdown time and total elapsed time
 # 1.4.0 - 2025-08-03 - Was a bit too aggressive with function culling
 # 1.3.1 - 2025-08-03 - Removed extraneous command -v calls
 # 1.3.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
@@ -34,7 +35,7 @@ export LIFECYCLE_GUARD="true"
 
 # Library metadata
 LIFECYCLE_NAME="Lifecycle Management Library"
-LIFECYCLE_VERSION="1.4.0"
+LIFECYCLE_VERSION="1.5.0"
 print_message "${LIFECYCLE_NAME} ${LIFECYCLE_VERSION}" "info"
 
 # Function to find and validate Hydrogen binary
@@ -47,25 +48,21 @@ find_hydrogen_binary() {
     # Ensure hydrogen_dir is an absolute path
     hydrogen_dir=$(realpath "${hydrogen_dir}" 2>/dev/null || echo "${hydrogen_dir}")
     
-    # Convert to relative path for cleaner logging
-    local relative_dir
-    relative_dir=$(convert_to_relative_path "${hydrogen_dir}")
-    print_message "Searching for Hydrogen binary in: ${relative_dir}"
-    
+   
     # First check for coverage build (highest priority for testing)
     hydrogen_bin="${hydrogen_dir}/hydrogen_coverage"
     if [[ -f "${hydrogen_bin}" ]]; then
-        print_message "Using coverage build for testing: hydrogen/hydrogen_coverage"
+        print_message "Using coverage build for testing: hydrogen_coverage"
     # Then check for release build
     else
         hydrogen_bin="${hydrogen_dir}/hydrogen_release"
         if [[ -f "${hydrogen_bin}" ]]; then
-            print_message "Using release build for testing: hydrogen/hydrogen_release"
-        # Then check for standard build
+            print_message "Using release build for testing: hydrogen_release"
+        # Then check for debug build
         else
-            hydrogen_bin="${hydrogen_dir}/hydrogen"
+            hydrogen_bin="${hydrogen_dir}/hydrogen_debug"
             if [[ -f "${hydrogen_bin}" ]]; then
-                print_message "Using standard build for testing: hydrogen/hydrogen"
+                print_message "Using debug build for testing: hydrogen"
             # If none found, search for binary in possible build directories
             else
                 print_message "Searching for Hydrogen binary in subdirectories..."
@@ -110,7 +107,6 @@ start_hydrogen_with_pid() {
     # Clear the PID variable
     eval "${pid_var}=''"
     
-    print_message "Starting Hydrogen with $(basename "${config_file}" .json)..."
     # Clean log file
     true > "${log_file}"
     
@@ -246,16 +242,17 @@ stop_hydrogen() {
         
         # Extract shutdown time from log if available
         local log_shutdown_time
-        log_shutdown_time=$(grep "Shutdown elapsed time:" "${log_file}" 2>/dev/null | sed 's/.*Shutdown elapsed time: \([0-9.]*s\).*/\1/' | tail -1 || true)
+        local log_elapsed_time
+        times=$(awk '/Shutdown elapsed time:/ {s=$NF} /Total elapsed time:/ {t=$NF} END {print s, t}' "${log_file}")
+        read -r log_shutdown_time log_elapsed_time <<< "${times}"
         if [[ -n "${log_shutdown_time}" ]]; then
-            print_message "Shutdown completed in ${shutdown_duration_ms}ms [Log: ${log_shutdown_time}]"
+            print_message "Shutdown completed in ${shutdown_duration_ms}ms "
+            print_message "Logged shutdown time reported as ${log_shutdown_time}"
+            print_message "Logged elapsed time reported as ${log_elapsed_time}"
         else
             print_message "Shutdown completed in ${shutdown_duration_ms}ms [Log: Not found]"
         fi
         
-        # For Hydrogen, a clean shutdown is when the process terminates without errors
-        # Hydrogen doesn't write specific shutdown completion messages to the log
-        print_message "Clean shutdown verified (process terminated successfully)"
         return 0
     else
         print_result 1 "Shutdown failed or timed out"
@@ -321,7 +318,6 @@ validate_config_files() {
     local max_config="$2"
     
     print_message "Checking configuration files: ${min_config} and ${max_config}"
-    print_command "test -f \"${min_config}\" && test -f \"${max_config}\""
     if [[ -f "${min_config}" ]] && [[ -f "${max_config}" ]]; then
         print_result 0 "Configuration files found"
         return 0
@@ -336,7 +332,6 @@ validate_config_file() {
     local config_file="$1"
     
     print_message "Checking configuration file: ${config_file}"
-    print_command "test -f \"${config_file}\""
     if [[ -f "${config_file}" ]]; then
         print_result 0 "Configuration file found"
         return 0
@@ -359,18 +354,16 @@ run_lifecycle_test() {
     local pass_count_var="$9"
     local exit_code_var="${10}"
     local subtest_count=0
-    local diag_config_dir="${diag_test_dir}/${config_name}"
+    # shellcheck disable=SC2154 # LOG_PREFIX defined in
+    local diag_config_dir="${LOG_PREFIX}${config_name}"
     local hydrogen_pid
     
-    if ! mkdir -p "${diag_config_dir}" 2>/dev/null; then
-        print_error "Failed to create diagnostics directory: ${diag_config_dir}"
-        return 1
-    fi
+    mkdir -p "${diag_test_dir}" "${diag_config_dir}" 2>/dev/null
     
     # Subtest: Start Hydrogen
     next_subtest
     print_subtest "Start Hydrogen - ${config_name}"
-    print_message "Testing configuration: ${config_name}"
+    
     # Call start_hydrogen and get the PID via a temporary variable
     local temp_pid_var="TEMP_HYDROGEN_PID_$$"
     if start_hydrogen_with_pid "${config_file}" "${log_file}" "${startup_timeout}" "${hydrogen_bin}" "${temp_pid_var}"; then
@@ -407,6 +400,7 @@ run_lifecycle_test() {
         print_subtest "Verify Clean Shutdown - ${config_name}"
         # For Hydrogen, a clean shutdown is verified by the process terminating successfully
         # and the stop_hydrogen function returning success (which it already did above)
+        print_message "Clean shutdown return code: ${stop_result}"
         if [[ ${stop_result} -eq 0 ]]; then
             print_result 0 "Clean shutdown verified for ${config_name}"
             eval "${pass_count_var}=$(( $(eval "echo \$${pass_count_var}" || true) + 1 ))" || true

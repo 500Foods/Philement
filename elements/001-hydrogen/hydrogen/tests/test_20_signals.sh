@@ -101,7 +101,7 @@ wait_for_signal_shutdown() {
         fi
         
         if ! ps -p "${pid}" > /dev/null 2>&1; then
-            if grep -q "Shutdown complete" "${log_file}" 2>/dev/null; then
+            if grep -q "SHUTDOWN COMPLETE" "${log_file}" 2>/dev/null; then
                 return 0
             else
                 return 2  # Process died but no clean shutdown message
