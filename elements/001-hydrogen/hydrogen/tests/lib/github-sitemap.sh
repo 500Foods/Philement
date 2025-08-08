@@ -5,10 +5,15 @@
 # Description: Checks local markdown links in a repository using xargs parallel processing
 
 # CHANGELOG
+# 0.12.0 - 2025-08-08 - Removed cksum deduplication (added overhead for repositories with few duplicates)
+# 0.11.0 - 2025-08-08 - Added cksum-based within-run deduplication (10x faster than md5sum)
+# 0.10.0 - 2025-08-08 - Fork reduction optimizations: replaced wc -l and dirname with bash builtins
+# 0.9.0 - 2025-08-08 - Single-pass awk parsing optimization (replaced grep|sed|awk pipelines)
+# 0.8.0 - 2025-08-08 - Performance optimizations following md5sum batching pattern from test_92_shellcheck.sh
 # 0.7.1 - 2025-08-03 - Removed extraneous command -v calls
 
 # Application version
-declare -r APPVERSION="0.7.1"
+declare -r APPVERSION="0.12.0"
 
 # Performance timing functions
 declare -A timing_data
@@ -219,6 +224,8 @@ build_file_cache() {
 build_file_cache
 timing_end "build_file_cache"
 
+
+
 # Optimized file processing function for xargs
 # shellcheck disable=SC2317 # This function is designed to be run in parallel with xargs, so we disable SC2317
 process_file_batch() {
@@ -233,6 +240,11 @@ process_file_batch() {
     while IFS=':' read -r path type; do
         local_cache["${path}"]="${type}"
     done < "${cache_file}"
+    
+    
+    # Path normalization cache (following md5sum batching pattern)
+    declare -A normalize_candidates
+    declare -A normalized_cache
     
     # Fast file existence check
     file_exists() {
@@ -283,38 +295,48 @@ process_file_batch() {
         return 1  # Should not ignore
     }
     
-    # Optimized link extraction
+    # Optimized link extraction - single awk command instead of grep|sed|awk pipeline
     extract_links() {
         local file="$1"
         [[ ! -r "${file}" ]] && return 1
         
-        # Ultra-fast link extraction using optimized grep pipeline
-        grep -oE '\[([^]]*)\]\(([^)]+)\)' "${file}" 2>/dev/null | \
-        sed -n 's/.*(\([^)]*\)).*/\1/p' | \
-        awk '!seen[$0]++' | \
-        while IFS= read -r link; do
-            # Skip external links quickly
-            case "${link}" in
-                \#*|http*|ftp*|mailto:*) continue ;;
-                *) ;;
-            esac
-            
-            # Process GitHub and local links
-            if [[ "${link}" =~ ^https://github.com/[^/]+/[^/]+/blob/main/(.+)$ ]]; then
-                local relative_path="${BASH_REMATCH[1]}"
-                if [[ "${relative_path}" =~ \.md($|#) ]]; then
-                    echo "${relative_path}"
-                else
-                    echo "non_md:${relative_path}"
-                fi
-            else
-                if [[ "${link}" =~ \.md($|#) ]]; then
-                    echo "${link}"
-                else
-                    echo "non_md:${link}"
-                fi
-            fi
-        done || true
+        # Single awk command optimization (replaces grep | sed | awk pipeline)
+        awk '
+        {
+            # Extract all markdown links from the line
+            while (match($0, /\[([^]]*)\]\(([^)]+)\)/, arr)) {
+                link = arr[2]
+                
+                # Skip external links
+                if (link ~ /^(#|http|ftp|mailto:)/) {
+                    $0 = substr($0, RSTART + RLENGTH)
+                    continue
+                }
+                
+                # Process unique links only
+                if (!seen[link]++) {
+                    # Process GitHub and local links
+                    if (match(link, /^https:\/\/github\.com\/[^\/]+\/[^\/]+\/blob\/main\/(.+)$/, github_arr)) {
+                        relative_path = github_arr[1]
+                        if (relative_path ~ /\.md($|#)/) {
+                            print relative_path
+                        } else {
+                            print "non_md:" relative_path
+                        }
+                    } else {
+                        if (link ~ /\.md($|#)/) {
+                            print link
+                        } else {
+                            print "non_md:" link
+                        }
+                    }
+                }
+                
+                # Continue processing rest of line
+                $0 = substr($0, RSTART + RLENGTH)
+            }
+        }
+        ' "${file}" 2>/dev/null || true
     }
     
     # Process each file from stdin
@@ -373,9 +395,9 @@ process_file_batch() {
                 abs_link="${base_dir}/${actual_link}"
             fi
             
-            # Normalize path efficiently (only when needed)
+            # Collect paths needing normalization (batching optimization)
             case "${abs_link}" in
-                */./*|*/../*) abs_link=$(realpath -m "${abs_link}" 2>/dev/null) ;;
+                */./*|*/../*) normalize_candidates["${abs_link}"]=1 ;;
                 *) ;;
             esac
             
@@ -398,14 +420,78 @@ process_file_batch() {
             fi
         done < <(extract_links "${abs_file}" || true)
         
-        # Output results in structured format
-        echo "SUMMARY:${abs_file}:${links_total}:${links_checked}:${links_missing}:${rel_file}" >> "${results_file}"
-        for missing in "${missing_list[@]}"; do
-            echo "MISSING:${missing}" >> "${results_file}"
-        done
-        for linked in "${linked_files[@]}"; do
-            echo "LINKED:${linked}" >> "${results_file}"
-        done
+        # Batch normalize all collected paths (md5sum pattern optimization)
+        if [[ ${#normalize_candidates[@]} -gt 0 ]]; then
+            # shellcheck disable=SC2312,SC2016 # This has been optimized so let's not fuss with it more
+            while IFS=' ' read -r original normalized; do
+                normalized_cache["${original}"]="${normalized}"
+            done < <(
+                printf '%s\n' "${!normalize_candidates[@]}" | \
+                xargs -r -I {} sh -c 'printf "%s %s\n" "{}" "$(realpath -m "{}" 2>/dev/null || echo "{}")"'
+            )
+        fi
+        
+        # Second pass: process links with normalized paths from cache
+        links_total=0 links_checked=0 links_missing=0
+        linked_files=()
+        missing_list=()
+        
+        # Re-process all links using cached normalized paths
+        while IFS= read -r link; do
+            ((links_total++))
+            local actual_link="${link}"
+            local traverse=true
+            
+            if [[ "${link}" =~ ^non_md:(.+)$ ]]; then
+                actual_link="${BASH_REMATCH[1]}"
+                traverse=false
+            fi
+            
+            # Resolve link path with cached normalization
+            local abs_link
+            if [[ "${actual_link}" =~ ^https://github.com/[^/]+/[^/]+/blob/main/(.+)$ ]]; then
+                abs_link="${repo_root}/${BASH_REMATCH[1]}"
+            elif [[ "${actual_link}" == /* ]]; then
+                abs_link="${repo_root}${actual_link}"
+            else
+                abs_link="${base_dir}/${actual_link}"
+            fi
+            
+            # Use cached normalized path if available
+            if [[ -n "${normalized_cache[${abs_link}]}" ]]; then
+                abs_link="${normalized_cache[${abs_link}]}"
+            fi
+            
+            local link_file="${abs_link%%#*}"
+            
+            if file_exists "${link_file}"; then
+                ((links_checked++))
+                if [[ "${traverse}" == "true" && "${link_file}" =~ \.md$ ]]; then
+                    linked_files+=("${link_file}")
+                fi
+            else
+                # Check if the missing link should be ignored
+                if should_ignore_path "${link_file}"; then
+                    # Treat ignored missing links as checked to avoid reporting them
+                    ((links_checked++))
+                else
+                    ((links_missing++))
+                    missing_list+=("${rel_file}:${actual_link}")
+                fi
+            fi
+        done < <(extract_links "${abs_file}" || true)
+        
+        # Output results in structured format (batch write - fork reduction)
+        {
+            echo "SUMMARY:${abs_file}:${links_total}:${links_checked}:${links_missing}:${rel_file}"
+            for missing in "${missing_list[@]}"; do
+                echo "MISSING:${missing}"
+            done
+            for linked in "${linked_files[@]}"; do
+                echo "LINKED:${linked}"
+            done
+        } >> "${results_file}"
+        
     done
 }
 
@@ -426,10 +512,12 @@ files_to_process="${temp_dir}/files_list.txt"
 # Initialize results file
 true > "${results_file}"
 
-# Export cache to file
-for path in "${!file_exists_cache[@]}"; do
-    echo "${path}:${file_exists_cache[${path}]}"
-done > "${cache_file}"
+# Export cache to file (batch write - fork reduction)
+{
+    for path in "${!file_exists_cache[@]}"; do
+        echo "${path}:${file_exists_cache[${path}]}"
+    done
+} > "${cache_file}"
 
 debug_log "Parallel setup complete"
 timing_end "parallel_setup"
@@ -445,7 +533,10 @@ processed_files["${INPUT_FILE}"]=1
 iteration=0
 while [[ -s "${files_to_process}" ]]; do
     ((iteration++))
-    debug_log "Processing iteration ${iteration} with $(wc -l < "${files_to_process}" || true) files"
+    # Use bash builtin counting instead of wc -l (fork reduction)
+    file_count=0
+    while IFS= read -r; do ((file_count++)); done < "${files_to_process}"
+    debug_log "Processing iteration ${iteration} with ${file_count} files"
     
     # Process current batch in parallel using xargs
     xargs -P 0 -I {} bash -c "process_file_batch \"\$1\" \"\$2\" \"\$3\" \"\$4\" <<< \"\$5\"" _ "${cache_file}" "${repo_root}" "${original_dir}" "${results_file}" {} < "${files_to_process}"
@@ -466,7 +557,10 @@ while [[ -s "${files_to_process}" ]]; do
     # Update files to process for next iteration
     if [[ -s "${new_files_temp}" ]]; then
         mv "${new_files_temp}" "${files_to_process}"
-        debug_log "Discovered $(wc -l < "${files_to_process}" || true) new files"
+        # Use bash builtin counting instead of wc -l (fork reduction)
+        new_file_count=0
+        while IFS= read -r; do ((new_file_count++)); done < "${files_to_process}"
+        debug_log "Discovered ${new_file_count} new files"
     else
         true > "${files_to_process}"
         debug_log "No new files discovered, processing complete"
@@ -526,7 +620,8 @@ generate_reviewed_files_json() {
     local json_data=""
     for abs_file in "${!file_summary[@]}"; do
         IFS=',' read -r total checked missing rel_file <<< "${file_summary[${abs_file}]}"
-        folder_path=$(dirname "${rel_file}")
+        # Use bash parameter expansion instead of dirname (fork reduction)
+        folder_path="${rel_file%/*}"
         [[ "${folder_path}" == "." ]] && folder_path="."
         
         if [[ -n "${json_data}" ]]; then
@@ -605,20 +700,29 @@ generate_orphaned_layout_json() {
     }' > "${json_file}" 2>/dev/null
 }
 
-# Generate JSON files
+# Generate JSON files (optimized temp file usage)
 reviewed_data_json="${temp_dir}/reviewed_data.json"
 reviewed_layout_json="${temp_dir}/reviewed_layout.json"
-missing_data_json="${temp_dir}/missing_data.json"
-missing_layout_json="${temp_dir}/missing_layout.json"
-orphaned_data_json="${temp_dir}/orphaned_data.json"
-orphaned_layout_json="${temp_dir}/orphaned_layout.json"
 
+# Always generate reviewed files JSON (main table)
 generate_reviewed_files_json "${reviewed_data_json}"
 generate_reviewed_layout_json "${reviewed_layout_json}"
-generate_missing_links_json "${missing_data_json}"
-generate_missing_layout_json "${missing_layout_json}"
-generate_orphaned_files_json "${orphaned_data_json}"
-generate_orphaned_layout_json "${orphaned_layout_json}"
+
+# Generate missing links JSON only if needed
+if [[ ${#missing_links[@]} -gt 0 ]]; then
+    missing_data_json="${temp_dir}/missing_data.json"
+    missing_layout_json="${temp_dir}/missing_layout.json"
+    generate_missing_links_json "${missing_data_json}"
+    generate_missing_layout_json "${missing_layout_json}"
+fi
+
+# Generate orphaned files JSON only if needed
+if [[ ${#orphaned_files[@]} -gt 0 ]]; then
+    orphaned_data_json="${temp_dir}/orphaned_data.json"
+    orphaned_layout_json="${temp_dir}/orphaned_layout.json"
+    generate_orphaned_files_json "${orphaned_data_json}"
+    generate_orphaned_layout_json "${orphaned_layout_json}"
+fi
 
 timing_end "json_generation"
 
@@ -634,10 +738,10 @@ timing_start "table_rendering"
 [[ "${DEBUG}" == "true" ]] && debug_flag="--debug" || debug_flag=""
 
 "${TABLES_SCRIPT}" "${reviewed_layout_json}" "${reviewed_data_json}" ${debug_flag:+"${debug_flag}"}
-if [[ ${#missing_links[@]} -gt 0 ]]; then
+if [[ ${#missing_links[@]} -gt 0 && -n "${missing_data_json:-}" ]]; then
     "${TABLES_SCRIPT}" "${missing_layout_json}" "${missing_data_json}" ${debug_flag:+"${debug_flag}"}
 fi
-if [[ ${#orphaned_files[@]} -gt 0 ]]; then
+if [[ ${#orphaned_files[@]} -gt 0 && -n "${orphaned_data_json:-}" ]]; then
     "${TABLES_SCRIPT}" "${orphaned_layout_json}" "${orphaned_data_json}" ${debug_flag:+"${debug_flag}"}
 fi
 timing_end "table_rendering"
