@@ -21,8 +21,9 @@
 # test_system_endpoints()
 
 # CHANGELOG
+# 5.1.0 - 2025-08-09 - Mopping up after major factor, tweaking names of log files mostly
 # 5.0.0 - 2025-08-08 - Major refactor: Implemented parallel execution of endpoint requests against single server. 
-#                     - Extracted modular functions run_endpoint_test_parallel() and analyze_endpoint_test_results(). Now tests all 7 system endpoints simultaneously instead of sequentially, significantly reducing execution time while maintaining single server approach.
+#                    - Extracted modular functions run_endpoint_test_parallel() and analyze_endpoint_test_results(). Now tests all 7 system endpoints simultaneously instead of sequentially, significantly reducing execution time while maintaining single server approach.
 # 4.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 4.0.0 - 2025-07-30 - Overhaul #1
 # 3.2.1 - 2025-07-18 - Fixed subshell issue in response file output that prevented detailed error messages from being displayed in test output
@@ -50,7 +51,6 @@ setup_test_environment
 CONFIG_PATH="${CONFIG_DIR}/hydrogen_test_32_system_endpoints.json"
 
 # Parallel execution configuration for endpoint requests
-MAX_JOBS=$(nproc 2>/dev/null || echo 4)  # Allow proper concurrency for HTTP requests
 declare -A ENDPOINT_TEST_CONFIGS
 
 # Endpoint test configuration - format: "endpoint:expected_content:description"
@@ -69,9 +69,7 @@ validate_api_request() {
     local request_name="$1"
     local url="$2"
     local expected_field="$3"
-    
-    # Generate unique ID once and store it
-    local response_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${request_name}"
+    local response_file="${LOG_PREFIX}${TIMESTAMP}_${request_name}"
     
     # Add appropriate extension based on endpoint type
     if [[ "${request_name}" == "prometheus" ]] || [[ "${request_name}" == "recent" ]] || [[ "${request_name}" == "appconfig" ]]; then
@@ -79,7 +77,7 @@ validate_api_request() {
     else
         response_file="${response_file}.json"
     fi
-    
+
     # Store the actual filename for later access
     declare -g "RESPONSE_FILE_${request_name^^}=${response_file}"
     
@@ -298,16 +296,13 @@ run_endpoint_test_parallel() {
     local expected_content="$4"
     local description="$5"
     
-    local result_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${test_name}.result"
+    local result_file="${LOG_PREFIX}${TIMESTAMP}_${test_name}.result"
     
     # Clear result file
     true > "${result_file}"
     
-    # Create truly unique request name by adding process info to avoid file conflicts in parallel execution
-    local unique_request_name="${test_name}_$$_${BASHPID}"
-    
     # Use the existing validate_api_request function with unique naming
-    if validate_api_request "${unique_request_name}" "${base_url}${endpoint_path}" "${expected_content}"; then
+    if validate_api_request "${test_name}" "${base_url}${endpoint_path}" "${expected_content}"; then
         echo "ENDPOINT_TEST_PASSED" >> "${result_file}"
     else
         echo "ENDPOINT_TEST_FAILED" >> "${result_file}"
@@ -320,7 +315,7 @@ run_endpoint_test_parallel() {
 analyze_endpoint_test_results() {
     local test_name="$1"
     local description="$2"
-    local result_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${test_name}.result"
+    local result_file="${LOG_PREFIX}${TIMESTAMP}_${test_name}.result"
     
     if [[ ! -f "${result_file}" ]]; then
         print_result 1 "No result file found for ${test_name}"
@@ -387,7 +382,7 @@ test_system_endpoints() {
     local endpoint_parallel_pids=()
     for test_config in "${!ENDPOINT_TEST_CONFIGS[@]}"; do
         # shellcheck disable=SC2312 # Job control with wc -l is standard practice
-        while (( $(jobs -r | wc -l) >= MAX_JOBS )); do
+        while (( $(jobs -r | wc -l) >= CORES )); do
             wait -n  # Wait for any job to finish
         done
         

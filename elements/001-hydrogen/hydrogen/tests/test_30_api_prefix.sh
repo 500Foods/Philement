@@ -39,7 +39,6 @@ TEST_VERSION="7.0.0"
 setup_test_environment
 
 # Parallel execution configuration
-MAX_JOBS=$(nproc 2>/dev/null || echo 2)  # Use 2 for this test since we have exactly 2 configurations
 declare -a PARALLEL_PIDS
 declare -A API_TEST_CONFIGS
 
@@ -347,7 +346,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     # Start all API prefix tests in parallel with job limiting
     for test_config in "${!API_TEST_CONFIGS[@]}"; do
         # shellcheck disable=SC2312 # Job control with wc -l is standard practice
-        while (( $(jobs -r | wc -l) >= MAX_JOBS )); do
+        while (( $(jobs -r | wc -l) >= CORES )); do
             wait -n  # Wait for any job to finish
         done
         
