@@ -14,7 +14,7 @@
 # verify_multi_signals()
 
 # CHANGELOG
-# 6.0.0 - 2025-08-09 - Complete refactor using lifecycle.sh and parallel execution pattern from Test 13
+# 6.0.0 - 2025-08-08 - Complete refactor using lifecycle.sh and parallel execution pattern from Test 13
 # 5.0.0 - 2025-07-30 - Overhaul #1
 # 4.0.0 - 2025-07-30 - Shellcheck overhaul, general review
 # 3.0.4 - 2025-07-15 - No more sleep
