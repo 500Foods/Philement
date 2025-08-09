@@ -12,6 +12,7 @@
 # test_swagger_configuration()
 
 # CHANGELOG
+# 5.1.0 - 2025-08-09 - Minor tweaks to log file names
 # 5.0.0 - 2025-08-08 - Major refactor: Implemented parallel execution of Swagger tests following Test 13/20 patterns. 
 #                    - Extracted modular functions run_swagger_test_parallel() and analyze_swagger_test_results(). 
 #                    - Now runs both /swagger and /apidocs tests simultaneously instead of sequentially, significantly reducing execution time.
@@ -37,14 +38,13 @@ TEST_VERSION="5.0.0"
 setup_test_environment
 
 # Parallel execution configuration
-MAX_JOBS=$(nproc 2>/dev/null || echo 2)  # Use 2 for this test since we have exactly 2 configurations
 declare -a PARALLEL_PIDS
 declare -A SWAGGER_TEST_CONFIGS
 
 # Swagger test configuration - format: "config_file:log_suffix:swagger_prefix:description"
 SWAGGER_TEST_CONFIGS=(
-    ["ONE"]="${SCRIPT_DIR}/configs/hydrogen_test_34_swagger_1.json:default:/swagger:Swagger Prefix One"
-    ["TWO"]="${SCRIPT_DIR}/configs/hydrogen_test_34_swagger_2.json:custom:/apidocs:Swagger Prefix Two"
+    ["ONE"]="${SCRIPT_DIR}/configs/hydrogen_test_34_swagger_1.json:one:/swagger:Swagger Prefix One"
+    ["TWO"]="${SCRIPT_DIR}/configs/hydrogen_test_34_swagger_2.json:two:/apidocs:Swagger Prefix Two"
 )
 
 # Test timeouts
@@ -308,7 +308,7 @@ run_swagger_test_parallel() {
     local description="$5"
     
     local log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.log"
-    local result_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.result"
+    local result_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}.result"
     local port
     port=$(get_webserver_port "${config_file}")
     
@@ -432,8 +432,8 @@ analyze_swagger_test_results() {
     local log_suffix="$2"
     local swagger_prefix="$3"
     local description="$4"
-    local result_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.result"
-    
+    local result_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}.result"
+
     if [[ ! -f "${result_file}" ]]; then
         print_result 1 "No result file found for ${test_name}"
         return 1
@@ -695,7 +695,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     # Start all Swagger tests in parallel with job limiting
     for test_config in "${!SWAGGER_TEST_CONFIGS[@]}"; do
         # shellcheck disable=SC2312 # Job control with wc -l is standard practice
-        while (( $(jobs -r | wc -l) >= MAX_JOBS )); do
+        while (( $(jobs -r | wc -l) >= CORES )); do
             wait -n  # Wait for any job to finish
         done
         
@@ -781,7 +781,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     successful_configs=0
     for test_config in "${!SWAGGER_TEST_CONFIGS[@]}"; do
         IFS=':' read -r config_file log_suffix swagger_prefix description <<< "${SWAGGER_TEST_CONFIGS[${test_config}]}"
-        result_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.result"
+        result_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}.result"
         if [[ -f "${result_file}" ]] && grep -q "ALL_SWAGGER_TESTS_PASSED" "${result_file}" 2>/dev/null; then
             ((successful_configs++))
         fi
