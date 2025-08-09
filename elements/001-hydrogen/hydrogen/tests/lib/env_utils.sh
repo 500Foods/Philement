@@ -6,12 +6,12 @@
 # LIBRARY FUNCTIONS
 # check_env_var()
 # validate_rsa_key()
-# validate_config_files()
 # get_config_path()
 # validate_websocket_key()
 # convert_to_relative_path()
 
 # CHANGELOG
+# 1.2.2 - 2025-08-08 - Removeed validate_config_files
 # 1.2.1 - 2025-08-03 - Removed extraneous command -v calls
 # 1.2.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 1.1.0 - 2025-07-02 - Updated with additional functions for test_35_env_variables.sh migration
@@ -23,7 +23,7 @@ export ENV_UTILS_GUARD="true"
 
 # Library metadata
 ENV_UTILS_NAME="Environment Utilities Library"
-ENV_UTILS_VERSION="1.2.1"
+ENV_UTILS_VERSION="1.2.2"
 print_message "${ENV_UTILS_NAME} ${ENV_UTILS_VERSION}" "info"
 
 # Function: Check if environment variable is set and non-empty
@@ -92,20 +92,6 @@ validate_rsa_key() {
         rm -f "${temp_key}"
         return 1
     fi
-}
-
-# Function to validate required configuration files exist
-validate_config_files() {
-    local config_file
-    config_file=$(get_config_path "hydrogen_test_env.json")
-    
-    if [[ ! -f "${config_file}" ]]; then
-        print_error "Env test config file not found: ${config_file}"
-        return 1
-    fi
-    
-    print_message "Configuration file validated: ${config_file}"
-    return 0
 }
 
 # Function to get the full path to a configuration file

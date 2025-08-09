@@ -9,7 +9,6 @@
 # wait_for_startup() 
 # stop_hydrogen() 
 # monitor_shutdown()
-# validate_config_files()
 # validate_config_file()
 # run_lifecycle_test()
 # wait_for_server_ready
@@ -17,6 +16,7 @@
 # capture_process_diagnostics() {
 
 # CHANGELOG
+# 1.6.1 - 2025-08-08 - Removed validate_config_filees() - useed only oncee
 # 1.6.0 - 2025-08-08 - Removed an extra copies of the logs being generated
 # 1.5.0 - 2025-08-07 - Added better checks for showing shutdown time and total elapsed time
 # 1.4.0 - 2025-08-03 - Was a bit too aggressive with function culling
@@ -36,7 +36,7 @@ export LIFECYCLE_GUARD="true"
 
 # Library metadata
 LIFECYCLE_NAME="Lifecycle Management Library"
-LIFECYCLE_VERSION="1.5.0"
+LIFECYCLE_VERSION="1.6.1"
 print_message "${LIFECYCLE_NAME} ${LIFECYCLE_VERSION}" "info"
 
 # Function to find and validate Hydrogen binary
@@ -310,21 +310,6 @@ monitor_shutdown() {
     done
     
     return 0
-}
-
-# Function to validate configuration files
-validate_config_files() {
-    local min_config="$1"
-    local max_config="$2"
-    
-    print_message "Checking configuration files: ${min_config} and ${max_config}"
-    if [[ -f "${min_config}" ]] && [[ -f "${max_config}" ]]; then
-        print_result 0 "Configuration files found"
-        return 0
-    else
-        print_result 1 "One or more configuration files not found"
-        return 1
-    fi
 }
 
 # Function to validate a single configuration file
