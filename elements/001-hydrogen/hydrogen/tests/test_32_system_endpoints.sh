@@ -48,7 +48,7 @@ TEST_VERSION="5.0.0"
 setup_test_environment
 
 # Test variables
-CONFIG_PATH="${CONFIG_DIR}/hydrogen_test_32_system_endpoints.json"
+CONFIG_PATH="${SCRIPT_DIR}/configs/hydrogen_test_32_system_endpoints.json"
 
 # Parallel execution configuration for endpoint requests
 declare -A ENDPOINT_TEST_CONFIGS
