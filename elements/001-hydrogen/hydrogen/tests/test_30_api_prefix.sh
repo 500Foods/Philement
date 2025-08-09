@@ -7,10 +7,14 @@
 # - Uses immediate restart without waiting for TIME_WAIT (SO_REUSEADDR enabled)
 
 # FUNCTIONS
-# create_unique_config() 
 # validate_api_request()
+# run_api_prefix_test_parallel()
+# analyze_api_prefix_test_results()
 
 # CHANGELOG
+# 7.0.0 - 2025-08-08 - Major refactor: Implemented parallel execution of API prefix tests following Test 13/20 patterns. 
+#                    - Extracted modular functions run_api_prefix_test_parallel() and analyze_api_prefix_test_results(). 
+#                    - Now runs both /api and /myapi tests simultaneously instead of sequentially, significantly reducing execution time.
 # 6.0.0 - 2025-07-30 - Overhaul #1
 # 5.0.7 - 2025-07-14 - Enhanced validate_api_request with retry logic to handle API subsystem initialization delays during parallel execution
 # 5.0.6 - 2025-07-15 - No more sleep
@@ -28,51 +32,41 @@
 TEST_NAME="API Prefix"
 TEST_ABBR="PRE"
 TEST_NUMBER="30"
-TEST_VERSION="6.0.0"
+TEST_VERSION="7.0.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
-# Create unique configuration files for parallel execution
-create_unique_config() {
-    local base_config="$1"
-    local unique_suffix="$2"
-    local output_path="$3"
-    
-    # Read base config and modify paths to use build/tests and unique identifiers
-    sed "s|\"./tests/hydrogen_test_api_test_|\"${RESULTS_DIR}/hydrogen_test_api_test_${unique_suffix}_|g; \
-         s|\"./logs/hydrogen_test_api_test_|\"${RESULTS_DIR}/hydrogen_test_api_test_${unique_suffix}_|g" \
-         "${base_config}" > "${output_path}"
-}
+# Parallel execution configuration
+MAX_JOBS=$(nproc 2>/dev/null || echo 2)  # Use 2 for this test since we have exactly 2 configurations
+declare -a PARALLEL_PIDS
+declare -A API_TEST_CONFIGS
 
-# Configuration files with unique paths for parallel execution
-BASE_DEFAULT_CONFIG="$(get_config_path "hydrogen_test_api_test_1.json")"
-BASE_CUSTOM_CONFIG="$(get_config_path "hydrogen_test_api_test_2.json")"
-DEFAULT_CONFIG_PATH="${RESULTS_DIR}/hydrogen_test_api_test_1_${TIMESTAMP}.json"
-CUSTOM_CONFIG_PATH="${RESULTS_DIR}/hydrogen_test_api_test_2_${TIMESTAMP}.json"
+# API test configuration - format: "config_file:log_suffix:api_prefix:description"
+API_TEST_CONFIGS=(
+    ["DEFAULT"]="${SCRIPT_DIR}/configs/hydrogen_test_30_api_1.json:one:/api:First API Prefix"
+    ["CUSTOM"]="${SCRIPT_DIR}/configs/hydrogen_test_30_api_2.json:two:/myapi:Second API Prefix"
+)
 
-# Create unique configs to avoid conflicts in parallel execution
-create_unique_config "${BASE_DEFAULT_CONFIG}" "1" "${DEFAULT_CONFIG_PATH}"
-create_unique_config "${BASE_CUSTOM_CONFIG}" "2" "${CUSTOM_CONFIG_PATH}"
+# Test timeouts
+STARTUP_TIMEOUT=15
+SHUTDOWN_TIMEOUT=10
 
 # Function to make a request and validate response with retry logic for API readiness
 validate_api_request() {
     local request_name="$1"
     local url="$2"
     local expected_field="$3"
-    
-    # Generate unique ID once and store it
-    local unique_id="${TIMESTAMP}_$${_}${RANDOM}"
-    local response_file="${RESULTS_DIR}/response_${request_name}_${unique_id}.json"
-    
+    local response_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${request_name}.json"
+    local error_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${request_name}.log"
+
     print_command "curl -s --max-time 10 --compressed \"${url}\""
     
     # Retry logic for API readiness (especially important in parallel execution)
     local max_attempts=25
     local attempt=1
     local curl_exit_code=0
-    local curl_error_file="${RESULTS_DIR}/curl_error_${unique_id}.txt"
         
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
@@ -81,7 +75,7 @@ validate_api_request() {
         fi
         
         # Run curl and capture both exit code and any error output
-        curl -s --max-time 10 --compressed "${url}" > "${response_file}" 2>"${curl_error_file}"
+        curl -s --max-time 10 --compressed "${url}" > "${response_file}" 2>"${error_file}"
         curl_exit_code=$?
         
         if [[ "${curl_exit_code}" -eq 0 ]]; then
@@ -94,7 +88,6 @@ validate_api_request() {
                         print_result 1 "API endpoint returned 404 or HTML error page"
                         print_message "Response content:"
                         print_output "$(cat "${response_file}" || true)"
-                        rm -f "${curl_error_file}" 2>/dev/null
                         return 1
                     else
                         print_message "API endpoint not ready yet (got 404/HTML), retrying..."
@@ -104,9 +97,6 @@ validate_api_request() {
                 fi
                 
                 print_message "Request successful, checking response content"
-                
-                # Clean up error file if not needed
-                rm -f "${curl_error_file}" 2>/dev/null
                 
                 # Validate that the response contains expected fields
                 if grep -q "${expected_field}" "${response_file}"; then
@@ -124,25 +114,18 @@ validate_api_request() {
                 fi
             else
                 print_result 1 "Response file was not created or is empty: ${response_file}"
-                # Show curl error if available
-                if [[ -f "${curl_error_file}" ]] && [[ -s "${curl_error_file}" ]]; then
-                    print_message "Curl error output:"
-                    print_output "$(cat "${curl_error_file}" || true)"
-                fi
-                # Clean up error file
-                rm -f "${curl_error_file}" 2>/dev/null
                 return 1
             fi
         else
             if [[ "${attempt}" -eq "${max_attempts}" ]]; then
                 print_result 1 "Failed to connect to server (curl exit code: ${curl_exit_code})"
                 # Show curl error if available
-                if [[ -f "${curl_error_file}" ]] && [[ -s "${curl_error_file}" ]]; then
+                if [[ -f "${error_file}" ]] && [[ -s "${error_file}" ]]; then
                     print_message "Curl error output:"
-                    print_output "$(cat "${curl_error_file}" || true)"
+                    print_output "$(cat "${error_file}" || true)"
                 fi
                 # Clean up error file
-                rm -f "${curl_error_file}" 2>/dev/null
+                rm -f "${error_file}" 2>/dev/null
                 return 1
             else
                 print_message "Connection failed on attempt ${attempt}, retrying..."
@@ -153,6 +136,167 @@ validate_api_request() {
     done
     
     return 1
+}
+
+# Function to test API endpoints for a specific configuration in parallel
+run_api_prefix_test_parallel() {
+    local test_name="$1"
+    local config_file="$2"
+    local log_suffix="$3"
+    local api_prefix="$4"
+    local description="$5"
+    
+    local log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.log"
+    local result_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.result"
+    local port
+    port=$(get_webserver_port "${config_file}")
+    
+    # Clear result file
+    true > "${result_file}"
+    
+    # Start hydrogen server
+    "${HYDROGEN_BIN}" "${config_file}" > "${log_file}" 2>&1 &
+    local hydrogen_pid=$!
+    
+    # Store PID for later reference
+    echo "PID=${hydrogen_pid}" >> "${result_file}"
+    
+    # Wait for startup
+    local startup_success=false
+    local start_time
+    start_time=${SECONDS}
+    
+    while true; do
+        if [[ $((SECONDS - start_time)) -ge "${STARTUP_TIMEOUT}" ]]; then
+            break
+        fi
+        
+        if grep -q "Application started" "${log_file}" 2>/dev/null; then
+            startup_success=true
+            break
+        fi
+        sleep 0.1
+    done
+    
+    if [[ "${startup_success}" = true ]]; then
+        echo "STARTUP_SUCCESS" >> "${result_file}"
+        
+        # Wait for server to be ready
+        if wait_for_server_ready "http://localhost:${port}"; then
+            echo "SERVER_READY" >> "${result_file}"
+            
+            # Test all API endpoints
+            local all_tests_passed=true
+            
+            # Health endpoint test
+            if validate_api_request "${log_suffix}_health" "http://localhost:${port}${api_prefix}/system/health" "Yes, I'm alive, thanks!"; then
+                echo "HEALTH_TEST_PASSED" >> "${result_file}"
+            else
+                echo "HEALTH_TEST_FAILED" >> "${result_file}"
+                all_tests_passed=false
+            fi
+            
+            # Info endpoint test
+            if validate_api_request "${log_suffix}_info" "http://localhost:${port}${api_prefix}/system/info" "system"; then
+                echo "INFO_TEST_PASSED" >> "${result_file}"
+            else
+                echo "INFO_TEST_FAILED" >> "${result_file}"
+                all_tests_passed=false
+            fi
+            
+            # Test endpoint test
+            if validate_api_request "${log_suffix}_test" "http://localhost:${port}${api_prefix}/system/test" "client_ip"; then
+                echo "TEST_TEST_PASSED" >> "${result_file}"
+            else
+                echo "TEST_TEST_FAILED" >> "${result_file}"
+                all_tests_passed=false
+            fi
+            
+            if [[ "${all_tests_passed}" = true ]]; then
+                echo "ALL_API_TESTS_PASSED" >> "${result_file}"
+            else
+                echo "SOME_API_TESTS_FAILED" >> "${result_file}"
+            fi
+        else
+            echo "SERVER_NOT_READY" >> "${result_file}"
+        fi
+        
+        # Stop the server
+        if ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+            kill -SIGINT "${hydrogen_pid}" 2>/dev/null || true
+            # Wait for graceful shutdown
+            local shutdown_start
+            shutdown_start=${SECONDS}
+            while ps -p "${hydrogen_pid}" > /dev/null 2>&1; do
+                if [[ $((SECONDS - shutdown_start)) -ge "${SHUTDOWN_TIMEOUT}" ]]; then
+                    kill -9 "${hydrogen_pid}" 2>/dev/null || true
+                    break
+                fi
+                sleep 0.1
+            done
+        fi
+        
+        echo "TEST_COMPLETE" >> "${result_file}"
+    else
+        echo "STARTUP_FAILED" >> "${result_file}"
+        echo "TEST_FAILED" >> "${result_file}"
+        kill -9 "${hydrogen_pid}" 2>/dev/null || true
+    fi
+}
+
+# Function to analyze results from parallel API prefix test execution
+analyze_api_prefix_test_results() {
+    local test_name="$1"
+    local log_suffix="$2"
+    local api_prefix="$3"
+    local description="$4"
+    local result_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.result"
+    
+    if [[ ! -f "${result_file}" ]]; then
+        print_result 1 "No result file found for ${test_name}"
+        return 1
+    fi
+    
+    # Check startup
+    if ! grep -q "STARTUP_SUCCESS" "${result_file}" 2>/dev/null; then
+        print_result 1 "Failed to start Hydrogen for ${description} test"
+        return 1
+    fi
+    
+    # Check server readiness
+    if ! grep -q "SERVER_READY" "${result_file}" 2>/dev/null; then
+        print_result 1 "Server not ready for ${description} test"
+        return 1
+    fi
+    
+    # Check individual API tests
+    local health_passed=false
+    local info_passed=false
+    local test_passed=false
+    
+    if grep -q "HEALTH_TEST_PASSED" "${result_file}" 2>/dev/null; then
+        health_passed=true
+    fi
+    
+    if grep -q "INFO_TEST_PASSED" "${result_file}" 2>/dev/null; then
+        info_passed=true
+    fi
+    
+    if grep -q "TEST_TEST_PASSED" "${result_file}" 2>/dev/null; then
+        test_passed=true
+    fi
+    
+    # Return results via global variables for detailed reporting
+    HEALTH_TEST_RESULT=${health_passed}
+    INFO_TEST_RESULT=${info_passed}
+    TEST_TEST_RESULT=${test_passed}
+    
+    # Return success only if all tests passed
+    if grep -q "ALL_API_TESTS_PASSED" "${result_file}" 2>/dev/null; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 print_subtest "Locate Hydrogen Binary"
@@ -170,17 +314,25 @@ fi
 
 print_subtest "Validate Configuration Files"
 
-if [[ -f "${DEFAULT_CONFIG_PATH}" ]] && [[ -f "${CUSTOM_CONFIG_PATH}" ]]; then
-    print_result 0 "Both configuration files found"
-    ((PASS_COUNT++))
+# Validate both configuration files
+config_valid=true
+for test_config in "${!API_TEST_CONFIGS[@]}"; do
+    # Parse test configuration
+    IFS=':' read -r config_file log_suffix api_prefix description <<< "${API_TEST_CONFIGS[${test_config}]}"
     
-    # Extract and display ports
-    DEFAULT_PORT=$(get_webserver_port "${DEFAULT_CONFIG_PATH}")
-    CUSTOM_PORT=$(get_webserver_port "${CUSTOM_CONFIG_PATH}")
-    print_message "Default configuration will use port: ${DEFAULT_PORT}"
-    print_message "Custom configuration will use port: ${CUSTOM_PORT}"
+    if validate_config_file "${config_file}"; then
+        port=$(get_webserver_port "${config_file}")
+        print_message "${description} configuration will use port: ${port}"
+    else
+        config_valid=false
+    fi
+done
+
+if [[ "${config_valid}" = true ]]; then
+    print_result 0 "All configuration files validated successfully"
+    ((PASS_COUNT++))
 else
-    print_result 1 "One or more configuration files not found"
+    print_result 1 "Configuration file validation failed"
     EXIT_CODE=1
 fi
 
@@ -190,165 +342,92 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     print_message "Ensuring no existing Hydrogen processes are running..."
     pkill -f "hydrogen.*json" 2>/dev/null || true
     
-    print_message "Testing API prefix functionality with immediate restart approach"
-    print_message "SO_REUSEADDR is enabled - no need to wait for TIME_WAIT"
+    print_message "Running API prefix tests in parallel for faster execution..."
     
-    # Global variables for server management
-    HYDROGEN_PID=""
-    DEFAULT_PORT=$(get_webserver_port "${DEFAULT_CONFIG_PATH}")
-    CUSTOM_PORT=$(get_webserver_port "${CUSTOM_CONFIG_PATH}")
+    # Start all API prefix tests in parallel with job limiting
+    for test_config in "${!API_TEST_CONFIGS[@]}"; do
+        # shellcheck disable=SC2312 # Job control with wc -l is standard practice
+        while (( $(jobs -r | wc -l) >= MAX_JOBS )); do
+            wait -n  # Wait for any job to finish
+        done
+        
+        # Parse test configuration
+        IFS=':' read -r config_file log_suffix api_prefix description <<< "${API_TEST_CONFIGS[${test_config}]}"
+        
+        print_message "Starting parallel test: ${test_config} (${description})"
+        
+        # Run parallel API prefix test in background
+        run_api_prefix_test_parallel "${test_config}" "${config_file}" "${log_suffix}" "${api_prefix}" "${description}" &
+        PARALLEL_PIDS+=($!)
+    done
     
-    print_subtest "Start Server with Default API Prefix (/api)"
-
-    DEFAULT_LOG="${RESULTS_DIR}/api_prefixes_default_server_${TIMESTAMP}_${RANDOM}.log"
-    if start_hydrogen_with_pid "${DEFAULT_CONFIG_PATH}" "${DEFAULT_LOG}" 15 "${HYDROGEN_BIN}" "HYDROGEN_PID" && [[ -n "${HYDROGEN_PID}" ]]; then
-        print_result 0 "Server started successfully with PID: ${HYDROGEN_PID}"
-        ((PASS_COUNT++))
-    else
-        print_result 1 "Failed to start server with default configuration"
-        EXIT_CODE=1
-    fi
+    # Wait for all parallel tests to complete
+    print_message "Waiting for all ${#API_TEST_CONFIGS[@]} parallel API prefix tests to complete..."
+    for pid in "${PARALLEL_PIDS[@]}"; do
+        wait "${pid}"
+    done
+    print_message "All parallel tests completed, analyzing results..."
     
-    print_subtest "Test Default API Health Endpoint"
-
-    if [[ -n "${HYDROGEN_PID}" ]] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
-        if wait_for_server_ready "http://localhost:${DEFAULT_PORT}"; then
-            if validate_api_request "default_health" "http://localhost:${DEFAULT_PORT}/api/system/health" "Yes, I'm alive, thanks!"; then
+    # Process results sequentially for clean output
+    for test_config in "${!API_TEST_CONFIGS[@]}"; do
+        # Parse test configuration
+        IFS=':' read -r config_file log_suffix api_prefix description <<< "${API_TEST_CONFIGS[${test_config}]}"
+        
+        print_subtest "API Prefix Test: ${description} (${api_prefix})"
+        
+        if analyze_api_prefix_test_results "${test_config}" "${log_suffix}" "${api_prefix}" "${description}"; then
+            # Test individual endpoint results for detailed feedback
+            print_subtest "Health Endpoint - ${description}"
+            if [[ "${HEALTH_TEST_RESULT}" = true ]]; then
+                print_result 0 "Health endpoint test passed"
                 ((PASS_COUNT++))
             else
+                print_result 1 "Health endpoint test failed"
                 EXIT_CODE=1
             fi
-        else
-            print_result 1 "Server not ready for health endpoint test"
-            EXIT_CODE=1
-        fi
-    else
-        print_result 1 "Server not running for health endpoint test"
-        EXIT_CODE=1
-    fi
-    
-    print_subtest "Test Default API Info Endpoint"
-
-    if [[ -n "${HYDROGEN_PID}" ]] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
-        if validate_api_request "default_info" "http://localhost:${DEFAULT_PORT}/api/system/info" "system"; then
-            ((PASS_COUNT++))
-        else
-            EXIT_CODE=1
-        fi
-    else
-        print_result 1 "Server not running for info endpoint test"
-        EXIT_CODE=1
-    fi
-    
-    print_subtest "Test Default API Test Endpoint"
-
-    if [[ -n "${HYDROGEN_PID}" ]] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
-        if validate_api_request "default_test" "http://localhost:${DEFAULT_PORT}/api/system/test" "client_ip"; then
-            ((PASS_COUNT++))
-        else
-            EXIT_CODE=1
-        fi
-    else
-        print_result 1 "Server not running for test endpoint test"
-        EXIT_CODE=1
-    fi
-    
-    # Stop the default server
-    if [[ -n "${HYDROGEN_PID}" ]]; then
-        print_message "Stopping default server..."
-        if stop_hydrogen "${HYDROGEN_PID}" "${DEFAULT_LOG}" 10 5 "${RESULTS_DIR}"; then
-            print_message "Default server stopped successfully"
-        else
-            print_warning "Default server shutdown had issues"
-        fi
-        check_time_wait_sockets "${DEFAULT_PORT}"
-        HYDROGEN_PID=""
-    fi
-    
-    # Start second test immediately
-    print_message "Starting second test immediately (testing SO_REUSEADDR)..."
-    
-    print_subtest "Start Server with Custom API Prefix (/myapi)"
-
-    CUSTOM_LOG="${RESULTS_DIR}/api_prefixes_custom_server_${TIMESTAMP}_${RANDOM}.log"
-    if start_hydrogen_with_pid "${CUSTOM_CONFIG_PATH}" "${CUSTOM_LOG}" 15 "${HYDROGEN_BIN}" "HYDROGEN_PID" && [[ -n "${HYDROGEN_PID}" ]]; then
-        print_result 0 "Server started successfully with PID: ${HYDROGEN_PID}"
-        ((PASS_COUNT++))
-    else
-        print_result 1 "Failed to start server with custom configuration"
-        EXIT_CODE=1
-    fi
-    
-    print_subtest "Test Custom API Health Endpoint"
-
-    if [[ -n "${HYDROGEN_PID}" ]] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
-        if wait_for_server_ready "http://localhost:${CUSTOM_PORT}"; then
-            if validate_api_request "custom_health" "http://localhost:${CUSTOM_PORT}/myapi/system/health" "Yes, I'm alive, thanks!"; then
+            
+            print_subtest "Info Endpoint - ${description}"
+            if [[ "${INFO_TEST_RESULT}" = true ]]; then
+                print_result 0 "Info endpoint test passed"
                 ((PASS_COUNT++))
             else
+                print_result 1 "Info endpoint test failed"
                 EXIT_CODE=1
             fi
+            
+            print_subtest "Test Endpoint - ${description}"
+            if [[ "${TEST_TEST_RESULT}" = true ]]; then
+                print_result 0 "Test endpoint test passed"
+                ((PASS_COUNT++))
+            else
+                print_result 1 "Test endpoint test failed"
+                EXIT_CODE=1
+            fi
+            
+            print_message "${description}: All API endpoint tests passed"
         else
-            print_result 1 "Server not ready for health endpoint test"
+            print_result 1 "${description} test failed"
             EXIT_CODE=1
         fi
-    else
-        print_result 1 "Server not running for health endpoint test"
-        EXIT_CODE=1
-    fi
+    done
     
-    print_subtest "Test Custom API Info Endpoint"
-
-    if [[ -n "${HYDROGEN_PID}" ]] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
-        if validate_api_request "custom_info" "http://localhost:${CUSTOM_PORT}/myapi/system/info" "system"; then
-            ((PASS_COUNT++))
-        else
-            EXIT_CODE=1
+    # Print summary
+    successful_configs=0
+    for test_config in "${!API_TEST_CONFIGS[@]}"; do
+        IFS=':' read -r config_file log_suffix api_prefix description <<< "${API_TEST_CONFIGS[${test_config}]}"
+        result_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.result"
+        if [[ -f "${result_file}" ]] && grep -q "ALL_API_TESTS_PASSED" "${result_file}" 2>/dev/null; then
+            ((successful_configs++))
         fi
-    else
-        print_result 1 "Server not running for info endpoint test"
-        EXIT_CODE=1
-    fi
+    done
     
-    print_subtest "Test Custom API Test Endpoint"
-
-    if [[ -n "${HYDROGEN_PID}" ]] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
-        if validate_api_request "custom_test" "http://localhost:${CUSTOM_PORT}/myapi/system/test" "client_ip"; then
-            ((PASS_COUNT++))
-        else
-            EXIT_CODE=1
-        fi
-    else
-        print_result 1 "Server not running for test endpoint test"
-        EXIT_CODE=1
-    fi
-    
-    # Stop the custom server
-    if [[ -n "${HYDROGEN_PID}" ]]; then
-        print_message "Stopping custom server..."
-        if stop_hydrogen "${HYDROGEN_PID}" "${CUSTOM_LOG}" 10 5 "${RESULTS_DIR}"; then
-            print_message "Custom server stopped successfully"
-        else
-            print_warning "Custom server shutdown had issues"
-        fi
-        check_time_wait_sockets "${CUSTOM_PORT}"
-        HYDROGEN_PID=""
-    fi
-    
-    print_message "Immediate restart successful - SO_REUSEADDR applied successfully"
+    print_message "Summary: ${successful_configs}/${#API_TEST_CONFIGS[@]} API prefix configurations passed all tests"
+    print_message "Parallel execution completed - SO_REUSEADDR allows immediate port reuse"
 else
     # Skip API tests if prerequisites failed
     print_result 1 "Skipping API prefix tests due to prerequisite failures"
-    # Account for skipped subtests
-    for i in {3..10}; do
-        print_result 1 "Subtest ${i} skipped due to prerequisite failures"
-    done
     EXIT_CODE=1
 fi
-
-# Clean up response files and temporary configs
-rm -f "${RESULTS_DIR}"/response_*.json
-rm -f "${DEFAULT_CONFIG_PATH}" "${CUSTOM_CONFIG_PATH}"
 
 # Print test completion summary
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"

@@ -16,9 +16,13 @@
 # validate_line_count()
 # validate_prometheus_format()
 # check_server_logs()
+# run_endpoint_test_parallel()
+# analyze_endpoint_test_results()
 # test_system_endpoints()
 
 # CHANGELOG
+# 5.0.0 - 2025-08-08 - Major refactor: Implemented parallel execution of endpoint requests against single server. 
+#                     - Extracted modular functions run_endpoint_test_parallel() and analyze_endpoint_test_results(). Now tests all 7 system endpoints simultaneously instead of sequentially, significantly reducing execution time while maintaining single server approach.
 # 4.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 4.0.0 - 2025-07-30 - Overhaul #1
 # 3.2.1 - 2025-07-18 - Fixed subshell issue in response file output that prevented detailed error messages from being displayed in test output
@@ -36,14 +40,29 @@
 TEST_NAME="System API"
 TEST_ABBR="SYS"
 TEST_NUMBER="32"
-TEST_VERSION="4.0.1"
+TEST_VERSION="5.0.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
 # Test variables
-CONFIG_PATH="$(get_config_path "hydrogen_test_system_endpoints.json")"
+CONFIG_PATH="${CONFIG_DIR}/hydrogen_test_32_system_endpoints.json"
+
+# Parallel execution configuration for endpoint requests
+MAX_JOBS=$(nproc 2>/dev/null || echo 4)  # Allow proper concurrency for HTTP requests
+declare -A ENDPOINT_TEST_CONFIGS
+
+# Endpoint test configuration - format: "endpoint:expected_content:description"
+ENDPOINT_TEST_CONFIGS=(
+    ["HEALTH"]="health:Yes, I'm alive, thanks!:Health Check"
+    ["INFO"]="info:system:System Information"
+    ["CONFIG"]="config:ServerName:Configuration Data"
+    ["TEST"]="basic_get:client_ip:System Test"
+    ["PROMETHEUS"]="prometheus:system_info:Prometheus Metrics"
+    ["RECENT"]="recent:\\[:Recent Activity Logs"
+    ["APPCONFIG"]="appconfig:APPCONFIG:Application Configuration"
+)
 
 # Function to make a request and validate response with retry logic for API readiness
 validate_api_request() {
@@ -52,8 +71,7 @@ validate_api_request() {
     local expected_field="$3"
     
     # Generate unique ID once and store it
-    local unique_id="${TIMESTAMP}_$${_}${RANDOM}"
-    local response_file="${RESULTS_DIR}/response_${request_name}_${unique_id}"
+    local response_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${request_name}"
     
     # Add appropriate extension based on endpoint type
     if [[ "${request_name}" == "prometheus" ]] || [[ "${request_name}" == "recent" ]] || [[ "${request_name}" == "appconfig" ]]; then
@@ -67,15 +85,15 @@ validate_api_request() {
     
     print_command "curl -s --max-time 10 --compressed \"${url}\""
     
-    # Retry logic for API readiness (especially important in parallel execution)
-    local max_attempts=25
+    # Retry logic for API readiness (reduced for parallel execution to prevent thundering herd)
+    local max_attempts=10
     local attempt=1
     local curl_exit_code=0
     
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
             print_message "API request attempt ${attempt} of ${max_attempts} (waiting for API subsystem initialization)..."
-            # sleep 0.05  # Brief delay between attempts for API initialization
+            sleep 0.05  # Brief delay between attempts for API initialization
         fi
         
         # Run curl and capture exit code
@@ -272,20 +290,65 @@ check_server_logs() {
     fi
 }
 
-# Function to test system endpoints with better isolation (based on test_34 pattern)
+# Function to test a single endpoint in parallel
+run_endpoint_test_parallel() {
+    local test_name="$1"
+    local base_url="$2"
+    local endpoint_path="$3"
+    local expected_content="$4"
+    local description="$5"
+    
+    local result_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${test_name}.result"
+    
+    # Clear result file
+    true > "${result_file}"
+    
+    # Create truly unique request name by adding process info to avoid file conflicts in parallel execution
+    local unique_request_name="${test_name}_$$_${BASHPID}"
+    
+    # Use the existing validate_api_request function with unique naming
+    if validate_api_request "${unique_request_name}" "${base_url}${endpoint_path}" "${expected_content}"; then
+        echo "ENDPOINT_TEST_PASSED" >> "${result_file}"
+    else
+        echo "ENDPOINT_TEST_FAILED" >> "${result_file}"
+    fi
+    
+    echo "TEST_COMPLETE" >> "${result_file}"
+}
+
+# Function to analyze results from parallel endpoint test execution
+analyze_endpoint_test_results() {
+    local test_name="$1"
+    local description="$2"
+    local result_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${test_name}.result"
+    
+    if [[ ! -f "${result_file}" ]]; then
+        print_result 1 "No result file found for ${test_name}"
+        return 1
+    fi
+    
+    # Check endpoint test result
+    if grep -q "ENDPOINT_TEST_PASSED" "${result_file}" 2>/dev/null; then
+        print_result 0 "${description} endpoint test passed"
+        return 0
+    else
+        print_result 1 "${description} endpoint test failed"
+        return 1
+    fi
+}
+
+# Function to test system endpoints with parallel requests
 test_system_endpoints() {
     local test_name="$1"
-    
-    print_message "Testing System API Endpoints: ${test_name}"
     
     # Extract port from configuration
     local server_port
     server_port=$(get_webserver_port "${CONFIG_PATH}")
-    print_message "Configuration will use port: ${server_port}"
+    print_message "Configuration uses port: ${server_port}"
     
     # Local variables for server management
     local hydrogen_pid=""
-    local server_log="${RESULTS_DIR}/system_endpoints_${test_name}_${TIMESTAMP}.log"
+    local server_log="${LOG_FILE}"
     local base_url="http://localhost:${server_port}"
     
     print_subtest "Start Hydrogen Server (${test_name})"
@@ -318,96 +381,72 @@ test_system_endpoints() {
         fi
     fi
     
-    print_subtest "Test Health Endpoint (${test_name})"
-
-    if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
-        if validate_api_request "health" "${base_url}/api/system/health" "Yes, I'm alive, thanks!"; then
-            ((PASS_COUNT++))
-        else
-            EXIT_CODE=1
-        fi
-    else
-        print_result 1 "Server not running for health endpoint test"
-        EXIT_CODE=1
-    fi
+    print_message "Running endpoint tests in parallel for faster execution..."
     
-    print_subtest "Test Info Endpoint (${test_name})"
-
-    if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
-        if validate_api_request "info" "${base_url}/api/system/info" "system"; then
-            ((PASS_COUNT++))
-        else
-            EXIT_CODE=1
-        fi
-    else
-        print_result 1 "Server not running for info endpoint test"
-        EXIT_CODE=1
-    fi
+    # Start all endpoint tests in parallel with job limiting
+    local endpoint_parallel_pids=()
+    for test_config in "${!ENDPOINT_TEST_CONFIGS[@]}"; do
+        # shellcheck disable=SC2312 # Job control with wc -l is standard practice
+        while (( $(jobs -r | wc -l) >= MAX_JOBS )); do
+            wait -n  # Wait for any job to finish
+        done
+        
+        # Parse test configuration
+        IFS=':' read -r endpoint_name expected_content description <<< "${ENDPOINT_TEST_CONFIGS[${test_config}]}"
+        
+        # Map endpoint names to API paths
+        local endpoint_path
+        case "${endpoint_name}" in
+            "health") endpoint_path="/api/system/health" ;;
+            "info") endpoint_path="/api/system/info" ;;
+            "config") endpoint_path="/api/system/config" ;;
+            "basic_get") endpoint_path="/api/system/test" ;;
+            "prometheus") endpoint_path="/api/system/prometheus" ;;
+            "recent") endpoint_path="/api/system/recent" ;;
+            "appconfig") endpoint_path="/api/system/appconfig" ;;
+            *) endpoint_path="/api/system/${endpoint_name}" ;;
+        esac
+        
+        print_message "Starting parallel test: ${test_config} (${description})"
+        
+        # Run parallel endpoint test in background
+        run_endpoint_test_parallel "${endpoint_name}" "${base_url}" "${endpoint_path}" "${expected_content}" "${description}" &
+        endpoint_parallel_pids+=($!)
+    done
     
-    print_subtest "Test Config Endpoint (${test_name})"
-
-    if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
-        if validate_api_request "config" "${base_url}/api/system/config" "ServerName"; then
-            ((PASS_COUNT++))
-        else
-            EXIT_CODE=1
-        fi
-    else
-        print_result 1 "Server not running for config endpoint test"
-        EXIT_CODE=1
-    fi
+    # Wait for all parallel endpoint tests to complete
+    print_message "Waiting for all ${#ENDPOINT_TEST_CONFIGS[@]} parallel endpoint tests to complete..."
+    for pid in "${endpoint_parallel_pids[@]}"; do
+        wait "${pid}"
+    done
+    print_message "All parallel endpoint tests completed, analyzing results..."
     
-    print_subtest "Test System Test Endpoint (${test_name})"
-
-    if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
-        if validate_api_request "basic_get" "${base_url}/api/system/test" "client_ip"; then
+    # Process results sequentially for clean output
+    for test_config in "${!ENDPOINT_TEST_CONFIGS[@]}"; do
+        # Parse test configuration
+        IFS=':' read -r endpoint_name expected_content description <<< "${ENDPOINT_TEST_CONFIGS[${test_config}]}"
+        
+        print_subtest "${description} Endpoint"
+        
+        if analyze_endpoint_test_results "${endpoint_name}" "${description}"; then
             ((PASS_COUNT++))
         else
             EXIT_CODE=1
         fi
-    else
-        print_result 1 "Server not running for system test endpoint"
-        EXIT_CODE=1
-    fi
+    done
     
-    print_subtest "Test Prometheus Endpoint (${test_name})"
-
-    if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
-        if validate_api_request "prometheus" "${base_url}/api/system/prometheus" "system_info"; then
-            ((PASS_COUNT++))
-        else
-            EXIT_CODE=1
+    # Print summary
+    local successful_endpoints=0
+    for test_config in "${!ENDPOINT_TEST_CONFIGS[@]}"; do
+        IFS=':' read -r endpoint_name expected_content description <<< "${ENDPOINT_TEST_CONFIGS[${test_config}]}"
+        result_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${endpoint_name}.result"
+        if [[ -f "${result_file}" ]] && grep -q "ENDPOINT_TEST_PASSED" "${result_file}" 2>/dev/null; then
+            ((successful_endpoints++))
         fi
-    else
-        print_result 1 "Server not running for prometheus endpoint test"
-        EXIT_CODE=1
-    fi
+    done
     
-    print_subtest "Test Recent Logs Endpoint (${test_name})"
-
-    if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
-        if validate_api_request "recent" "${base_url}/api/system/recent" "\\["; then
-            ((PASS_COUNT++))
-        else
-            EXIT_CODE=1
-        fi
-    else
-        print_result 1 "Server not running for recent endpoint test"
-        EXIT_CODE=1
-    fi
-    
-    print_subtest "Test AppConfig Endpoint (${test_name})"
-
-    if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
-        if validate_api_request "appconfig" "${base_url}/api/system/appconfig" "APPCONFIG"; then
-            ((PASS_COUNT++))
-        else
-            EXIT_CODE=1
-        fi
-    else
-        print_result 1 "Server not running for appconfig endpoint test"
-        EXIT_CODE=1
-    fi
+    print_message "Summary: ${successful_endpoints}/${#ENDPOINT_TEST_CONFIGS[@]} system endpoints passed all tests"
+    print_message "Parallel endpoint execution completed"
     
     # Stop the server
     if [[ -n "${hydrogen_pid}" ]]; then
@@ -455,9 +494,6 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     # Ensure clean state
     print_message "Ensuring no existing Hydrogen processes are running..."
     pkill -f "hydrogen.*json" 2>/dev/null || true
-    
-    print_message "Testing System API Endpoints with modular approach"
-    print_message "SO_REUSEADDR is enabled - no need to wait for TIME_WAIT"
     
     # Test system endpoints using modular approach
     test_system_endpoints "core_endpoints"

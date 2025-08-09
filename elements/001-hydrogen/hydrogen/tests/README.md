@@ -601,8 +601,8 @@ Sometimes it is because a test function changes. Or maybe due to just wanting th
 this causes a number of issues that need to be resolved, mostly involving links to the file.
 
 - STRUCTURE.md must be updated to reflect the new name/number
-- tests/docs needs to be updated with the new documentation for the test
-- tests/README.md should also be updated with a new link to the test and documentation
-- SITEMAP.md needs to be updated to reflect the new documentation
-- RELEASES.md should be reviewed as this will undoubtedly need to be noted in the release notes
-- RECIPE.md should be updated with new test list
+- tests/docs must be updated with the new documentation for the test
+- tests/README.md must be updated with a new link to the test and documentation
+- SITEMAP.md must be updated to reflect the new documentation
+- RELEASES.md must be reviewed as this will undoubtedly need to be noted in the release notes
+- RECIPE.md must be updated with the new test list

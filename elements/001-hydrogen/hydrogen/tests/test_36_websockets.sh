@@ -48,8 +48,8 @@ test_websocket_connection() {
     print_message "Testing WebSocket connection with authentication using websocat"
     print_command "echo '${test_message}' | websocat --protocol='${protocol}' -H='Authorization: Key ${WEBSOCKET_KEY}' --ping-interval=30 --exit-on-eof '${ws_url}'"
     
-    # Retry logic for WebSocket subsystem readiness (especially important in parallel execution)
-    local max_attempts=25
+    # Retry logic for WebSocket subsystem readiness (reduced for parallel execution to prevent thundering herd)
+    local max_attempts=5
     local attempt=1
     local websocat_output
     local websocat_exitcode
@@ -57,6 +57,7 @@ test_websocket_connection() {
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
             print_message "WebSocket connection attempt ${attempt} of ${max_attempts} (waiting for WebSocket subsystem initialization)..."
+            sleep 0.05  # Brief delay between attempts to prevent thundering herd
         fi
         
         # Use in-memory temp file if /dev/shm is available
@@ -161,8 +162,8 @@ test_websocket_status() {
     local status_request='{"type": "status"}'
     print_command "echo '${status_request}' | websocat --protocol='${protocol}' -H='Authorization: Key ${WEBSOCKET_KEY}' --ping-interval=30 --no-close '${ws_url}'"
     
-    # Retry logic for WebSocket subsystem readiness
-    local max_attempts=25
+    # Retry logic for WebSocket subsystem readiness (reduced for parallel execution to prevent thundering herd)
+    local max_attempts=10
     local attempt=1
     local websocat_output
     local websocat_exitcode
@@ -170,6 +171,7 @@ test_websocket_status() {
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
             print_message "WebSocket status request attempt ${attempt} of ${max_attempts}..."
+            sleep 0.05  # Brief delay between attempts to prevent thundering herd
         fi
         
         # Use in-memory temp file if /dev/shm is available

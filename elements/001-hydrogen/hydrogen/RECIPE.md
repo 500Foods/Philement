@@ -80,18 +80,18 @@ tests/          Test framework
 - tests/test_01_compilation.sh - Builds all targets
 - tests/test_03_code_size.sh - Checks limits on source code, runs cloc
 - tests/test_06_check_links.sh - Cross-checks all Markdown files for missing links and orphaned files
-- tests/test_19_leaks_like_a_sieve.sh - Uses ASAN to test for memory leaks
 - tests/test_11_unity.sh - Runs battery of Unity unit tests
 - tests/test_12_env_variables.sh - Checks that environment variables on JSON confg files work properly
-- tests/test_14_env_payload.sh - Checks that PAYLOAD_LOCK and PAYLOAD_KEY are usable
+- tests/test_13_crash_handler.sh - Tests that crash dumps contain debugging information
+- tests/test_14_secrets.sh - Checks that PAYLOAD_LOCK and PAYLOAD_KEY are usable
 - tests/test_16_library_dependencies.sh - Checks for all the libraries the project requires
 - tests/test_18_json_error_handling.sh - Tests that the Hydrogen Server will report JSON errors properly
-- tests/test_13_crash_handler.sh - Tests that crash dumps contain debugging information
+- tests/test_19_leaks_like_a_sieve.sh - Uses ASAN to test for memory leaks
+- tests/test_20_signals.sh - Confirms signal handling for SIGHUP, SIGUSR1, SIGUSR2, SIGTERM and SIGINT
 - tests/test_22_startup_shutdown.sh - Checks that the Hyrogen Server starts and stops cleanly in min and max configurations
-- tests/test_24_signals.sh - Confirms signal handling for SIGHUP, SIGUSR1, SIGUSR2, SIGTERM and SIGINT
 - tests/test_26_shutdown.sh - Quick check that Hydrogen Server shuts down cleanly without hanging
 - tests/test_28_socket_rebind.sh - Confirms TIME_WAIT is configured correctly
-- tests/test_29_api_prefixes.sh - Checks that changing the /api prefix works
+- tests/test_30_api_prefix.sh - Checks that changing the /api prefix works
 - tests/test_32_system_endpoints.sh - Validates the functionality of system endpoints
 - tests/test_34_swagger.sh - Checks that Swagger files are served up from payload
 - tests/test_36_websockets.sh - Retrieves status from WebSockets interface

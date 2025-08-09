@@ -4,12 +4,17 @@
 # Tests the Swagger functionality, its presence in the payload, etc.
 
 # FUNCTIONS
-# check_response_content() 
-# check_redirect_response() 
-# check_swagger_json() 
-# test_swagger_configuration() 
+# check_response_content()
+# check_redirect_response()
+# check_swagger_json()
+# run_swagger_test_parallel()
+# analyze_swagger_test_results()
+# test_swagger_configuration()
 
 # CHANGELOG
+# 5.0.0 - 2025-08-08 - Major refactor: Implemented parallel execution of Swagger tests following Test 13/20 patterns. 
+#                    - Extracted modular functions run_swagger_test_parallel() and analyze_swagger_test_results(). 
+#                    - Now runs both /swagger and /apidocs tests simultaneously instead of sequentially, significantly reducing execution time.
 # 4.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 4.0.0 - 2025-07-30 - Overhaul #1
 # 3.1.4 - 2025-07-18 - Fixed subshell issue in response output that prevented detailed error messages from being displayed in test output
@@ -25,11 +30,26 @@
 TEST_NAME="Swagger"
 TEST_ABBR="SWG"
 TEST_NUMBER="34"
-TEST_VERSION="4.0.0"
+TEST_VERSION="5.0.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
+
+# Parallel execution configuration
+MAX_JOBS=$(nproc 2>/dev/null || echo 2)  # Use 2 for this test since we have exactly 2 configurations
+declare -a PARALLEL_PIDS
+declare -A SWAGGER_TEST_CONFIGS
+
+# Swagger test configuration - format: "config_file:log_suffix:swagger_prefix:description"
+SWAGGER_TEST_CONFIGS=(
+    ["ONE"]="${SCRIPT_DIR}/configs/hydrogen_test_34_swagger_1.json:default:/swagger:Swagger Prefix One"
+    ["TWO"]="${SCRIPT_DIR}/configs/hydrogen_test_34_swagger_2.json:custom:/apidocs:Swagger Prefix Two"
+)
+
+# Test timeouts
+STARTUP_TIMEOUT=15
+SHUTDOWN_TIMEOUT=10
 
 # Function to check HTTP response content with retry logic for subsystem readiness
 check_response_content() {
@@ -279,7 +299,201 @@ check_swagger_json() {
     return 1
 }
 
-# Function to test Swagger UI with a specific configuration
+# Function to test Swagger UI configuration in parallel
+run_swagger_test_parallel() {
+    local test_name="$1"
+    local config_file="$2"
+    local log_suffix="$3"
+    local swagger_prefix="$4"
+    local description="$5"
+    
+    local log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.log"
+    local result_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.result"
+    local port
+    port=$(get_webserver_port "${config_file}")
+    
+    # Clear result file
+    true > "${result_file}"
+    
+    # Start hydrogen server
+    "${HYDROGEN_BIN}" "${config_file}" > "${log_file}" 2>&1 &
+    local hydrogen_pid=$!
+    
+    # Store PID for later reference
+    echo "PID=${hydrogen_pid}" >> "${result_file}"
+    
+    # Wait for startup
+    local startup_success=false
+    local start_time
+    start_time=${SECONDS}
+    
+    while true; do
+        if [[ $((SECONDS - start_time)) -ge "${STARTUP_TIMEOUT}" ]]; then
+            break
+        fi
+        
+        if grep -q "Application started" "${log_file}" 2>/dev/null; then
+            startup_success=true
+            break
+        fi
+        sleep 0.1
+    done
+    
+    if [[ "${startup_success}" = true ]]; then
+        echo "STARTUP_SUCCESS" >> "${result_file}"
+        
+        # Wait for server to be ready
+        if wait_for_server_ready "http://localhost:${port}"; then
+            echo "SERVER_READY" >> "${result_file}"
+            
+            local base_url="http://localhost:${port}"
+            local all_tests_passed=true
+            
+            # Test Swagger UI with trailing slash
+            local trailing_file="${RESULTS_DIR}/${log_suffix}_trailing_slash_${TIMESTAMP}.html"
+            if check_response_content "${base_url}${swagger_prefix}/" "swagger-ui" "${trailing_file}" "true"; then
+                echo "TRAILING_SLASH_TEST_PASSED" >> "${result_file}"
+            else
+                echo "TRAILING_SLASH_TEST_FAILED" >> "${result_file}"
+                all_tests_passed=false
+            fi
+            
+            # Test redirect without trailing slash
+            local redirect_file="${RESULTS_DIR}/${log_suffix}_redirect_${TIMESTAMP}.txt"
+            if check_redirect_response "${base_url}${swagger_prefix}" "${swagger_prefix}/" "${redirect_file}"; then
+                echo "REDIRECT_TEST_PASSED" >> "${result_file}"
+            else
+                echo "REDIRECT_TEST_FAILED" >> "${result_file}"
+                all_tests_passed=false
+            fi
+            
+            # Test Swagger UI content
+            local content_file="${RESULTS_DIR}/${log_suffix}_content_${TIMESTAMP}.html"
+            if check_response_content "${base_url}${swagger_prefix}/" "swagger-ui" "${content_file}" "true"; then
+                echo "CONTENT_TEST_PASSED" >> "${result_file}"
+            else
+                echo "CONTENT_TEST_FAILED" >> "${result_file}"
+                all_tests_passed=false
+            fi
+            
+            # Test JavaScript initializer
+            local js_file="${RESULTS_DIR}/${log_suffix}_initializer_${TIMESTAMP}.js"
+            if check_response_content "${base_url}${swagger_prefix}/swagger-initializer.js" "window.ui = SwaggerUIBundle" "${js_file}" "true"; then
+                echo "JAVASCRIPT_TEST_PASSED" >> "${result_file}"
+            else
+                echo "JAVASCRIPT_TEST_FAILED" >> "${result_file}"
+                all_tests_passed=false
+            fi
+            
+            # Test swagger.json
+            local swagger_json_file="${RESULTS_DIR}/${log_suffix}_swagger_json_${TIMESTAMP}.json"
+            if check_swagger_json "${base_url}${swagger_prefix}/swagger.json" "${swagger_json_file}"; then
+                echo "SWAGGER_JSON_TEST_PASSED" >> "${result_file}"
+            else
+                echo "SWAGGER_JSON_TEST_FAILED" >> "${result_file}"
+                all_tests_passed=false
+            fi
+            
+            if [[ "${all_tests_passed}" = true ]]; then
+                echo "ALL_SWAGGER_TESTS_PASSED" >> "${result_file}"
+            else
+                echo "SOME_SWAGGER_TESTS_FAILED" >> "${result_file}"
+            fi
+        else
+            echo "SERVER_NOT_READY" >> "${result_file}"
+        fi
+        
+        # Stop the server
+        if ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+            kill -SIGINT "${hydrogen_pid}" 2>/dev/null || true
+            # Wait for graceful shutdown
+            local shutdown_start
+            shutdown_start=${SECONDS}
+            while ps -p "${hydrogen_pid}" > /dev/null 2>&1; do
+                if [[ $((SECONDS - shutdown_start)) -ge "${SHUTDOWN_TIMEOUT}" ]]; then
+                    kill -9 "${hydrogen_pid}" 2>/dev/null || true
+                    break
+                fi
+                sleep 0.1
+            done
+        fi
+        
+        echo "TEST_COMPLETE" >> "${result_file}"
+    else
+        echo "STARTUP_FAILED" >> "${result_file}"
+        echo "TEST_FAILED" >> "${result_file}"
+        kill -9 "${hydrogen_pid}" 2>/dev/null || true
+    fi
+}
+
+# Function to analyze results from parallel Swagger test execution
+analyze_swagger_test_results() {
+    local test_name="$1"
+    local log_suffix="$2"
+    local swagger_prefix="$3"
+    local description="$4"
+    local result_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.result"
+    
+    if [[ ! -f "${result_file}" ]]; then
+        print_result 1 "No result file found for ${test_name}"
+        return 1
+    fi
+    
+    # Check startup
+    if ! grep -q "STARTUP_SUCCESS" "${result_file}" 2>/dev/null; then
+        print_result 1 "Failed to start Hydrogen for ${description} test"
+        return 1
+    fi
+    
+    # Check server readiness
+    if ! grep -q "SERVER_READY" "${result_file}" 2>/dev/null; then
+        print_result 1 "Server not ready for ${description} test"
+        return 1
+    fi
+    
+    # Check individual Swagger tests
+    local trailing_slash_passed=false
+    local redirect_passed=false
+    local content_passed=false
+    local javascript_passed=false
+    local swagger_json_passed=false
+    
+    if grep -q "TRAILING_SLASH_TEST_PASSED" "${result_file}" 2>/dev/null; then
+        trailing_slash_passed=true
+    fi
+    
+    if grep -q "REDIRECT_TEST_PASSED" "${result_file}" 2>/dev/null; then
+        redirect_passed=true
+    fi
+    
+    if grep -q "CONTENT_TEST_PASSED" "${result_file}" 2>/dev/null; then
+        content_passed=true
+    fi
+    
+    if grep -q "JAVASCRIPT_TEST_PASSED" "${result_file}" 2>/dev/null; then
+        javascript_passed=true
+    fi
+    
+    if grep -q "SWAGGER_JSON_TEST_PASSED" "${result_file}" 2>/dev/null; then
+        swagger_json_passed=true
+    fi
+    
+    # Return results via global variables for detailed reporting
+    TRAILING_SLASH_TEST_RESULT=${trailing_slash_passed}
+    REDIRECT_TEST_RESULT=${redirect_passed}
+    CONTENT_TEST_RESULT=${content_passed}
+    JAVASCRIPT_TEST_RESULT=${javascript_passed}
+    SWAGGER_JSON_TEST_RESULT=${swagger_json_passed}
+    
+    # Return success only if all tests passed
+    if grep -q "ALL_SWAGGER_TESTS_PASSED" "${result_file}" 2>/dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Function to test Swagger UI with a specific configuration (kept for compatibility)
 test_swagger_configuration() {
     local config_file="$1"
     local swagger_prefix="$2"
@@ -446,23 +660,27 @@ else
     EXIT_CODE=1
 fi
 
-# Configuration files for testing
-CONFIG_1="$(get_config_path "hydrogen_test_swagger_test_1.json")"
-CONFIG_2="$(get_config_path "hydrogen_test_swagger_test_2.json")"
+print_subtest "Validate Configuration Files"
 
-print_subtest "Validate Configuration File 1"
+# Validate both configuration files
+config_valid=true
+for test_config in "${!SWAGGER_TEST_CONFIGS[@]}"; do
+    # Parse test configuration
+    IFS=':' read -r config_file log_suffix swagger_prefix description <<< "${SWAGGER_TEST_CONFIGS[${test_config}]}"
+    
+    if validate_config_file "${config_file}"; then
+        port=$(get_webserver_port "${config_file}")
+        print_message "${description} configuration will use port: ${port}"
+    else
+        config_valid=false
+    fi
+done
 
-if validate_config_file "${CONFIG_1}"; then
+if [[ "${config_valid}" = true ]]; then
+    print_result 0 "All configuration files validated successfully"
     ((PASS_COUNT++))
 else
-    EXIT_CODE=1
-fi
-
-print_subtest "Validate Configuration File 2"
-
-if validate_config_file "${CONFIG_2}"; then
-    ((PASS_COUNT++))
-else
+    print_result 1 "Configuration file validation failed"
     EXIT_CODE=1
 fi
 
@@ -472,34 +690,109 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     print_message "Ensuring no existing Hydrogen processes are running..."
     pkill -f "hydrogen.*json" 2>/dev/null || true
     
-    # Note: Coverage data is automatically generated when using hydrogen_coverage binary
-    # No initialization needed - gcda files are created during execution
+    print_message "Running Swagger tests in parallel for faster execution..."
     
-    print_message "Testing Swagger functionality with immediate restart approach"
-    print_message "SO_REUSEADDR is enabled - no need to wait for TIME_WAIT"
+    # Start all Swagger tests in parallel with job limiting
+    for test_config in "${!SWAGGER_TEST_CONFIGS[@]}"; do
+        # shellcheck disable=SC2312 # Job control with wc -l is standard practice
+        while (( $(jobs -r | wc -l) >= MAX_JOBS )); do
+            wait -n  # Wait for any job to finish
+        done
+        
+        # Parse test configuration
+        IFS=':' read -r config_file log_suffix swagger_prefix description <<< "${SWAGGER_TEST_CONFIGS[${test_config}]}"
+        
+        print_message "Starting parallel test: ${test_config} (${description})"
+        
+        # Run parallel Swagger test in background
+        run_swagger_test_parallel "${test_config}" "${config_file}" "${log_suffix}" "${swagger_prefix}" "${description}" &
+        PARALLEL_PIDS+=($!)
+    done
     
-    # Test with default Swagger prefix (/swagger)
-    test_swagger_configuration "${CONFIG_1}" "/swagger" "swagger_default" 1
+    # Wait for all parallel tests to complete
+    print_message "Waiting for all ${#SWAGGER_TEST_CONFIGS[@]} parallel Swagger tests to complete..."
+    for pid in "${PARALLEL_PIDS[@]}"; do
+        wait "${pid}"
+    done
+    print_message "All parallel tests completed, analyzing results..."
     
-    # Test with custom Swagger prefix (/apidocs) - immediate restart
-    print_message "Starting second test immediately (testing SO_REUSEADDR)..."
-    test_swagger_configuration "${CONFIG_2}" "/apidocs" "swagger_custom" 2
+    # Process results sequentially for clean output
+    for test_config in "${!SWAGGER_TEST_CONFIGS[@]}"; do
+        # Parse test configuration
+        IFS=':' read -r config_file log_suffix swagger_prefix description <<< "${SWAGGER_TEST_CONFIGS[${test_config}]}"
+        
+        print_subtest "Swagger UI Test: ${description} (${swagger_prefix})"
+        
+        if analyze_swagger_test_results "${test_config}" "${log_suffix}" "${swagger_prefix}" "${description}"; then
+            # Test individual endpoint results for detailed feedback
+            print_subtest "Trailing Slash Access - ${description}"
+            if [[ "${TRAILING_SLASH_TEST_RESULT}" = true ]]; then
+                print_result 0 "Swagger UI with trailing slash test passed"
+                ((PASS_COUNT++))
+            else
+                print_result 1 "Swagger UI with trailing slash test failed"
+                EXIT_CODE=1
+            fi
+            
+            print_subtest "Redirect Test - ${description}"
+            if [[ "${REDIRECT_TEST_RESULT}" = true ]]; then
+                print_result 0 "Swagger UI redirect test passed"
+                ((PASS_COUNT++))
+            else
+                print_result 1 "Swagger UI redirect test failed"
+                EXIT_CODE=1
+            fi
+            
+            print_subtest "Content Verification - ${description}"
+            if [[ "${CONTENT_TEST_RESULT}" = true ]]; then
+                print_result 0 "Swagger UI content test passed"
+                ((PASS_COUNT++))
+            else
+                print_result 1 "Swagger UI content test failed"
+                EXIT_CODE=1
+            fi
+            
+            print_subtest "JavaScript Loading - ${description}"
+            if [[ "${JAVASCRIPT_TEST_RESULT}" = true ]]; then
+                print_result 0 "JavaScript initializer test passed"
+                ((PASS_COUNT++))
+            else
+                print_result 1 "JavaScript initializer test failed"
+                EXIT_CODE=1
+            fi
+            
+            print_subtest "Swagger JSON Validation - ${description}"
+            if [[ "${SWAGGER_JSON_TEST_RESULT}" = true ]]; then
+                print_result 0 "Swagger JSON test passed"
+                ((PASS_COUNT++))
+            else
+                print_result 1 "Swagger JSON test failed"
+                EXIT_CODE=1
+            fi
+            
+            print_message "${description}: All Swagger tests passed"
+        else
+            print_result 1 "${description} test failed"
+            EXIT_CODE=1
+        fi
+    done
     
-    print_message "Immediate restart successful - SO_REUSEADDR applied successfully"
+    # Print summary
+    successful_configs=0
+    for test_config in "${!SWAGGER_TEST_CONFIGS[@]}"; do
+        IFS=':' read -r config_file log_suffix swagger_prefix description <<< "${SWAGGER_TEST_CONFIGS[${test_config}]}"
+        result_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.result"
+        if [[ -f "${result_file}" ]] && grep -q "ALL_SWAGGER_TESTS_PASSED" "${result_file}" 2>/dev/null; then
+            ((successful_configs++))
+        fi
+    done
     
-    # Note: Blackbox coverage collection is handled centrally in test_99_cleanup.sh
-    # Individual tests just run hydrogen_coverage normally and test 99 collects all coverage data
+    print_message "Summary: ${successful_configs}/${#SWAGGER_TEST_CONFIGS[@]} Swagger configurations passed all tests"
+    print_message "Parallel execution completed - SO_REUSEADDR allows immediate port reuse"
     
 else
     # Skip Swagger tests if prerequisites failed
     print_message "Skipping Swagger tests due to prerequisite failures"
-    # Account for skipped subtests (12 remaining: 6 for each configuration)
-    for i in {4..15}; do
-
-        print_subtest "Subtest ${i} (Skipped)"
-        print_result 1 "Skipped due to prerequisite failures"
-        
-    done
     EXIT_CODE=1
 fi
 

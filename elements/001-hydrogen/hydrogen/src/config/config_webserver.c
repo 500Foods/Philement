@@ -23,9 +23,9 @@ bool load_webserver_config(json_t* root, AppConfig* config) {
     webserver->enable_ipv6 = false;
     webserver->port = 5000;
     webserver->max_upload_size = 100 * 1024 * 1024;  // 100MB
-    webserver->thread_pool_size = 4;  // Default to 4 threads
-    webserver->max_connections = 100;  // Default to 100 connections
-    webserver->max_connections_per_ip = 10;  // Default to 10 per IP
+    webserver->thread_pool_size = 20;  // Default to 4 threads
+    webserver->max_connections = 200;  // Default to 200 connections (increased for parallel testing)
+    webserver->max_connections_per_ip = 100;  // Default to 50 per IP (increased for parallel testing)
     webserver->connection_timeout = 60;  // Default to 60 seconds
     
     // Allocate and set default paths
