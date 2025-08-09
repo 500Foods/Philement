@@ -1,24 +1,24 @@
 {
-    "ServerName": "Philement/hydrogen-test-system-endpoints",
+    "ServerName": "Philement/hydrogen-test-api-test-1",
     "PayloadKey": "${env.PAYLOAD_KEY}",
-    "LogFile": "./logs/hydrogen_test_system_endpoints.log",
+    "LogFile": "./logs/hydrogen_test_api_test_1.log",
     "WebServer": {
         "Enabled": true,
         "EnableIPv6": false,
-        "Port": 5032,
+        "Port": 5040,
         "WebRoot": "/tmp/www",
         "UploadPath": "/api/upload",
-        "UploadDir": "/tmp/hydrogen_test_uploads",
+        "UploadDir": "/tmp/uploads",
         "MaxUploadSize": 2147483648,
-        "ThreadPoolSize": 64,
-        "MaxConnections": 2000,
-        "MaxConnectionsPerIP": 500,
+        "ThreadPoolSize": 4,
+        "MaxConnections": 100,
+        "MaxConnectionsPerIP": 10,
         "ConnectionTimeout": 60
     },
     "API": {
         "Enabled": true,
         "Prefix": "/api",
-        "JWTSecret": "test-jwt-secret-for-system-endpoints",
+        "JWTSecret": "test-jwt-secret-for-api-test-1",
         "TokenExpireMinutes": 60,
         "RefreshTokenExpireMinutes": 1440,
         "Metadata": {
@@ -28,7 +28,7 @@
         },
         "Security": {
             "Enabled": true,
-            "TokenSecret": "test-jwt-secret-for-system-endpoints",
+            "TokenSecret": "test-jwt-secret-for-api-test-1",
             "TokenExpireMinutes": 60
         }
     },
@@ -55,7 +55,7 @@
             "MaxIPAddressLength": 46
         },
         "PortAllocation": {
-            "StartPort": 5032,
+            "StartPort": 5040,
             "EndPort": 65535,
             "ReservedPorts": [22, 80, 443],
             "RetryAttempts": 5
@@ -142,7 +142,7 @@
         "Database": {
             "Enabled": true,
             "DefaultLevel": 0,
-            "ConnectionString": "sqlite://./tests/hydrogen_test_system_endpoints.db",
+            "ConnectionString": "sqlite://./tests/hydrogen_test_api_test_1.db",
             "Subsystems": {
                 "ThreadMgmt": 0,
                 "Shutdown": 0,
@@ -166,7 +166,7 @@
         "File": {
             "Enabled": true,
             "DefaultLevel": 0,
-            "Path": "./tests/hydrogen_test_system_endpoints.log",
+            "Path": "./tests/hydrogen_test_api_test_1.log",
             "Subsystems": {
                 "ThreadMgmt": 0,
                 "Shutdown": 0,
@@ -191,8 +191,8 @@
     "mDNSServer": {
         "Enabled": false,
         "EnableIPv6": false,
-        "DeviceId": "hydrogen-test-system-endpoints",
-        "FriendlyName": "Hydrogen Test System Endpoints",
+        "DeviceId": "hydrogen-test-api-test-1",
+        "FriendlyName": "Hydrogen Test API Test 1",
         "Model": "Hydrogen-Test",
         "Manufacturer": "Philement",
         "Version": "0.1.0",
