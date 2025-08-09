@@ -198,7 +198,7 @@ analyze_core_with_gdb() {
     
     # Check for debug info and set GDB flags accordingly
     local gdb_flags
-    temp_output="${LOG_PREFIX}${build_name}_${TIMESTAMP}_${RANDOM}"
+    temp_output="${LOG_PREFIX}${TIMESTAMP}_${build_name}.gdb"
     readelf --sections "${binary}" 2>/dev/null > "${temp_output}"
     if grep -q -m 1 ".debug_info" "${temp_output}"; then
         print_message "Debug info found in binary, using full output"
@@ -284,9 +284,9 @@ run_crash_test_parallel() {
     local binary="$1"
     local binary_name
     binary_name=$(basename "${binary}")
-    local log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${binary_name}_${TIMESTAMP}.log"
-    local result_file="${LOG_PREFIX}${binary_name}_${TIMESTAMP}.log"
-    local gdb_output_file="${LOG_PREFIX}${binary_name}_${TIMESTAMP}.txt"
+    local log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${binary_name}.log"
+    local result_file="${LOG_PREFIX}${TIMESTAMP}_${binary_name}.log"
+    local gdb_output_file="${LOG_PREFIX}${TIMESTAMP}_${binary_name}.txt"
     
     # Clear files
     true > "${log_file}"
@@ -365,9 +365,9 @@ analyze_parallel_results() {
     local binary="$1"
     local binary_name
     binary_name=$(basename "${binary}")
-    local log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${binary_name}_${TIMESTAMP}.log"
-    local result_file="${LOG_PREFIX}${binary_name}_${TIMESTAMP}.log"
-    local gdb_output_file="${LOG_PREFIX}${binary_name}_${TIMESTAMP}.txt"
+    local log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${binary_name}.log"
+    local result_file="${LOG_PREFIX}${TIMESTAMP}_${binary_name}.log"
+    local gdb_output_file="${LOG_PREFIX}${TIMESTAMP}_${binary_name}.txt"
     
     # Check if result file exists
     if [[ ! -f "${result_file}" ]]; then
