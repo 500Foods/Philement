@@ -5,6 +5,7 @@
 # with active HTTP connections that create TIME_WAIT sockets
 
 # CHANGELOG
+# 5.1.0 - 2025-08-08 - Review and adjustment to logs and JSON naming
 # 5.0.0 - 2025-07-30 - Overhaul #1
 # 4.0.3 - 2025-07-15 - No more sleep
 # 4.0.2 - 2025-07-14 - Updated to use build/tests directories for test output consistency
@@ -18,15 +19,18 @@
 TEST_NAME="Socket Rebinding"
 TEST_ABBR="SCK"
 TEST_NUMBER="28"
-TEST_VERSION="5.0.0"
+TEST_VERSION="5.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
 # Test variables
+CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_28_api.json"
 FIRST_PID=""
 SECOND_PID=""
+FIRST_LOG="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_first.log"
+SECOND_LOG="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_second.log"
 
 print_subtest "Locate Hydrogen Binary"
 
@@ -41,22 +45,17 @@ else
     EXIT_CODE=1
 fi
 
-# Find configuration file
-CONFIG_FILE="${CONFIG_DIR}/hydrogen_test_api.json"
-if [[ ! -f "${CONFIG_FILE}" ]]; then
-    print_result 1 "Configuration file found: ${CONFIG_FILE}"
-    print_test_completion "${TEST_NAME}"
-    exit 1
-fi
+print_subtest "Validate Configuration File"
 
-print_message "Using config: $(convert_to_relative_path "${CONFIG_FILE}" || true)" 
+if validate_config_file "${CONFIG_FILE}"; then
+    ((PASS_COUNT++))
+else
+    EXIT_CODE=1
+fi
 
 # Get the web server port
 PORT=$(get_webserver_port "${CONFIG_FILE}")
 print_message "Web server port: ${PORT}" 
-
-print_result 0 "Binary and configuration found successfully"
-((PASS_COUNT++))
 
 print_subtest "Prepare test environment"
 
@@ -91,7 +90,6 @@ print_result 0 "Test environment prepared successfully"
 print_subtest "Start first Hydrogen instance" 
 
 # Start first instance using lifecycle.sh
-FIRST_LOG="${RESULTS_DIR}/first_instance_${TIMESTAMP}.log"
 if start_hydrogen_with_pid "${CONFIG_FILE}" "${FIRST_LOG}" 15 "${HYDROGEN_BIN}" "FIRST_PID" && [[ -n "${FIRST_PID}" ]]; then
     print_result 0 "First instance started successfully (PID: ${FIRST_PID})"
     ((PASS_COUNT++))
@@ -123,9 +121,6 @@ fi
 print_subtest "Shutdown first instance" 
 
 # Stop first instance using lifecycle.sh
-DIAGS_DIR="${RESULTS_DIR}/diagnostics_${TIMESTAMP}"
-mkdir -p "${DIAGS_DIR}"
-
 if stop_hydrogen "${FIRST_PID}" "${FIRST_LOG}" 15 5 "${DIAGS_DIR}"; then
     print_result 0 "First instance shutdown successfully"
     ((PASS_COUNT++))
@@ -143,7 +138,6 @@ print_result 0 "TIME_WAIT socket check completed"
 print_subtest "Start second instance immediately (SO_REUSEADDR test)" 
 
 # Start second instance immediately using lifecycle.sh
-SECOND_LOG="${RESULTS_DIR}/second_instance_${TIMESTAMP}.log"
 if start_hydrogen_with_pid "${CONFIG_FILE}" "${SECOND_LOG}" 15 "${HYDROGEN_BIN}" "SECOND_PID" && [[ -n "${SECOND_PID}" ]]; then
     print_result 0 "Second instance started successfully (PID: ${SECOND_PID}) - SO_REUSEADDR applied successfully"
     print_message "Immediate rebinding after shutdown works correctly"
