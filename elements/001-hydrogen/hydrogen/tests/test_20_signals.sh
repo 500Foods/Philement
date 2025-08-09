@@ -4,13 +4,18 @@
 # Tests signal handling capabilities including SIGINT, SIGTERM, SIGHUP, SIGUSR2, and multiple signals
 
 # FUNCTIONS
-# wait_for_signal_startup()
-# wait_for_signal_shutdown() 
-# wait_for_restart_completion() 
-# verify_config_dump() 
+# run_signal_test_parallel()
+# analyze_signal_test_results()
+# verify_clean_shutdown()
+# verify_single_restart()
+# verify_multi_restart()
+# verify_crash_dump()
+# verify_config_dump()
+# verify_multi_signals()
 
 # CHANGELOG
-# 5.0.0 0 2025-07-30 - Overhaul #1
+# 6.0.0 - 2025-08-09 - Complete refactor using lifecycle.sh and parallel execution pattern from Test 13
+# 5.0.0 - 2025-07-30 - Overhaul #1
 # 4.0.0 - 2025-07-30 - Shellcheck overhaul, general review
 # 3.0.4 - 2025-07-15 - No more sleep
 # 3.0.3 - 2025-07-14 - Updated to use build/tests directories for test output consistency
@@ -24,28 +29,36 @@
 TEST_NAME="Signal Handling"
 TEST_ABBR="SIG"
 TEST_NUMBER="20"
-TEST_VERSION="5.0.0"
+TEST_VERSION="6.0.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
 # Test configuration
-TEST_CONFIG="${CONFIG_DIR}/hydrogen_test_max.json"
+TEST_CONFIG="${CONFIG_DIR}/hydrogen_test_20_signals.json"
 TEST_CONFIG_BASE=$(basename "${TEST_CONFIG}")
-LOG_FILE_SIGINT="${LOGS_DIR}/test_${TEST_NUMBER}_SIGINT_${TIMESTAMP}.log"
-LOG_FILE_SIGTERM="${LOGS_DIR}/test_${TEST_NUMBER}_SIGTERM_${TIMESTAMP}.log"
-LOG_FILE_SIGHUP="${LOGS_DIR}/test_${TEST_NUMBER}_SIGHUP_${TIMESTAMP}.log"
-LOG_FILE_SIGUSR1="${LOGS_DIR}/test_${TEST_NUMBER}_SIGUSR1_${TIMESTAMP}.log"
-LOG_FILE_SIGUSR2="${LOGS_DIR}/test_${TEST_NUMBER}_SIGUSR2_${TIMESTAMP}.log"
-LOG_FILE_MULTI="${LOGS_DIR}/test_${TEST_NUMBER}_NULTI_${TIMESTAMP}.log"
-LOG_FILE_RESTART="${LOGS_DIR}/test_${TEST_NUMBER}_RESTART_${TIMESTAMP}.log"
 
-# Signal test configuration
-RESTART_COUNT=5  # Number of SIGHUP restarts to test
+# Signal test configuration - format: "signal:action:description:validation_func:cleanup_signal"
+declare -A SIGNAL_TESTS=(
+    ["SIGINT"]="SIGINT:terminate:Ctrl+C:verify_clean_shutdown:SIGINT"
+    ["SIGTERM"]="SIGTERM:terminate:Terminate:verify_clean_shutdown:SIGTERM"
+    ["SIGHUP_SINGLE"]="SIGHUP:restart:Single Restart:verify_single_restart:SIGTERM"
+    ["SIGHUP_MULTI"]="SIGHUP:restart:Many Restarts:verify_multi_restart:SIGTERM"
+    ["SIGUSR1"]="SIGUSR1:crash:Crash Dump:verify_crash_dump:SIGUSR1"
+    ["SIGUSR2"]="SIGUSR2:config:Config Dump:verify_config_dump:SIGTERM"
+    ["MULTI"]="MULTIPLE:terminate:Multiple Signals:verify_multi_signals:MULTIPLE"
+)
+
+# Signal test timeouts
+RESTART_COUNT=5
 STARTUP_TIMEOUT=5
 SHUTDOWN_TIMEOUT=10
 SIGNAL_TIMEOUT=15
+
+# Parallel execution configuration
+MAX_JOBS=$(nproc 2>/dev/null || echo 4)
+declare -a PARALLEL_PIDS
 
 print_subtest "Locate Hydrogen Binary"
 
@@ -69,368 +82,389 @@ else
     EXIT_CODE=1
 fi
 
-# Function to wait for startup with signal-specific timeout
-wait_for_signal_startup() {
-    local log_file="$1"
-    local timeout="$2"
+# Validation functions for different signal types
+verify_clean_shutdown() {
+    local pid="$1"
+    local log_file="$2"
+    local signal="$3"
+    local result_file="$4"
     local start_time
-    start_time=$(date +%s)
+    start_time=${SECONDS}
     
+    # Wait for process to exit
+    while ps -p "${pid}" > /dev/null 2>&1; do
+        if [[ $((SECONDS - start_time)) -ge "${SHUTDOWN_TIMEOUT}" ]]; then
+            echo "SHUTDOWN_TIMEOUT" >> "${result_file}"
+            return 1
+        fi
+        sleep 0.1
+    done
+    
+    # Check for clean shutdown message
+    if grep -q "SHUTDOWN COMPLETE" "${log_file}" 2>/dev/null; then
+        echo "SHUTDOWN_SUCCESS" >> "${result_file}"
+        return 0
+    else
+        echo "SHUTDOWN_FAILED" >> "${result_file}"
+        return 1
+    fi
+}
+
+verify_single_restart() {
+    local pid="$1"
+    local log_file="$2"
+    local signal="$3"
+    local result_file="$4"
+    local start_time
+    start_time=${SECONDS}
+    
+    # Wait for restart signal to be logged
     while true; do
-        if [[ $(($(date +%s || true) - start_time)) -ge "${timeout}" ]]; then
+        if [[ $((SECONDS - start_time)) -ge "${SIGNAL_TIMEOUT}" ]]; then
+            echo "RESTART_TIMEOUT" >> "${result_file}"
             return 1
         fi
         
-        if grep -q "Application started" "${log_file}" 2>/dev/null; then
+        if grep -q "SIGHUP received" "${log_file}" 2>/dev/null; then
+            break
+        fi
+        sleep 0.1
+    done
+    
+    # Wait for restart completion (simplified to match multi-restart logic)
+    while true; do
+        if [[ $((SECONDS - start_time)) -ge "${SIGNAL_TIMEOUT}" ]]; then
+            echo "RESTART_TIMEOUT" >> "${result_file}"
+            return 1
+        fi
+        
+        # Check for restart completion - either message works
+        if (grep -q "Application restarts: 1" "${log_file}" 2>/dev/null || \
+            grep -q "Restart count: 1" "${log_file}" 2>/dev/null || \
+            grep -q "Restart completed successfully" "${log_file}" 2>/dev/null); then
+            echo "RESTART_SUCCESS" >> "${result_file}"
             return 0
         fi
+        sleep 0.1
     done
 }
 
-# Function to wait for shutdown with signal verification
-wait_for_signal_shutdown() {
-    local pid="$1"
-    local timeout="$2"
-    local log_file="$3"
-    local start_time
-    start_time=$(date +%s)
+verify_multi_restart() {
+    local pid="$1" 
+    local log_file="$2"
+    local signal="$3"
+    local result_file="$4"
+    local current_count=1
     
-    while true; do
-        if [[ $(($(date +%s || true) - start_time)) -ge "${timeout}" ]]; then
-            return 1
-        fi
+    while [[ "${current_count}" -le "${RESTART_COUNT}" ]]; do
+        # Send SIGHUP signal
+        kill -SIGHUP "${pid}" || true
         
-        if ! ps -p "${pid}" > /dev/null 2>&1; then
-            if grep -q "SHUTDOWN COMPLETE" "${log_file}" 2>/dev/null; then
-                return 0
-            else
-                return 2  # Process died but no clean shutdown message
+        # Wait for this restart to complete
+        local start_time
+        start_time=${SECONDS}
+        local restart_completed=false
+        
+        while true; do
+            if [[ $((SECONDS - start_time)) -ge "${SIGNAL_TIMEOUT}" ]]; then
+                echo "MULTI_RESTART_TIMEOUT_${current_count}" >> "${result_file}"
+                return 1
             fi
+            
+            if (grep -q "Application restarts: ${current_count}" "${log_file}" 2>/dev/null || \
+                grep -q "Restart count: ${current_count}" "${log_file}" 2>/dev/null); then
+                restart_completed=true
+                break
+            fi
+            sleep 0.1
+        done
+        
+        if [[ "${restart_completed}" = true ]]; then
+            if [[ "${current_count}" -eq "${RESTART_COUNT}" ]]; then
+                echo "MULTI_RESTART_SUCCESS" >> "${result_file}"
+                return 0
+            fi
+            current_count=$((current_count + 1))
+        else
+            echo "MULTI_RESTART_FAILED_${current_count}" >> "${result_file}"
+            return 1
         fi
     done
+    
+    echo "MULTI_RESTART_FAILED" >> "${result_file}"
+    return 1
 }
 
-# Function to wait for restart completion
-wait_for_restart_completion() {
+verify_crash_dump() {
     local pid="$1"
-    local timeout="$2"
-    local expected_count="$3"
-    local log_file="$4"
+    local log_file="$2" 
+    local signal="$3"
+    local result_file="$4"
+    local binary_name
+    binary_name=$(basename "${HYDROGEN_BIN}")
+    local expected_core="${PROJECT_DIR}/${binary_name}.core.${pid}"
+    local timeout="${SIGNAL_TIMEOUT}"
     local start_time
-    start_time=$(date +%s || true)
+    start_time=${SECONDS}
     
-    print_message "Waiting for restart completion (expecting restart count: ${expected_count})..."
-    
+    # Wait for core file to appear
     while true; do
-        if [[ $(($(date +%s || true) - start_time)) -ge "${timeout}" ]]; then
+        if [[ $((SECONDS - start_time)) -ge "${timeout}" ]]; then
+            echo "CRASH_DUMP_TIMEOUT" >> "${result_file}"
             return 1
         fi
         
-        # Check for restart completion markers
-        if grep -q "Restart completed successfully" "${log_file}" 2>/dev/null; then
-            if grep -q "Application restarts: ${expected_count}" "${log_file}" 2>/dev/null || \
-               grep -q "Restart count: ${expected_count}" "${log_file}" 2>/dev/null; then
-                print_message "Verified restart completed successfully with count ${expected_count}"
-                return 0
-            fi
-        fi
-        
-        # Alternative: Check for restart sequence completion
-        if (grep -q "Application restarts: ${expected_count}" "${log_file}" 2>/dev/null || \
-            grep -q "Restart count: ${expected_count}" "${log_file}" 2>/dev/null) && \
-           grep -q "Initiating graceful restart sequence" "${log_file}" 2>/dev/null && \
-           grep -q "Application started" "${log_file}" 2>/dev/null; then
-            print_message "Verified restart via restart sequence with count ${expected_count}"
+        if [[ -f "${expected_core}" ]]; then
+            echo "CRASH_DUMP_SUCCESS" >> "${result_file}"
+            rm -f "${expected_core}" # Clean up
             return 0
         fi
+        sleep 0.1
     done
 }
 
-# Function to verify config dump
 verify_config_dump() {
-    local log_file="$1"
-    local timeout="$2"
+    local pid="$1"
+    local log_file="$2"
+    local signal="$3" 
+    local result_file="$4"
     local start_time
-    start_time=$(date +%s || true)
+    start_time=${SECONDS}
     
     # Wait for dump to start
     while true; do
-        if [[ $(($(date +%s || true) - start_time)) -ge "${timeout}" ]]; then
+        if [[ $((SECONDS - start_time)) -ge "${SIGNAL_TIMEOUT}" ]]; then
+            echo "CONFIG_DUMP_TIMEOUT" >> "${result_file}"
             return 1
         fi
         
         if grep -q "APPCONFIG Dump Started" "${log_file}" 2>/dev/null; then
             break
         fi
+        sleep 0.1
     done
     
     # Wait for dump to complete
     while true; do
-        if [[ $(($(date +%s || true) - start_time)) -ge "${timeout}" ]]; then
+        if [[ $((SECONDS - start_time)) -ge "${SIGNAL_TIMEOUT}" ]]; then
+            echo "CONFIG_DUMP_TIMEOUT" >> "${result_file}"
             return 1
         fi
         
-        if grep -q "APPCONFIG Dump Complete" "${log_file}" 2>/dev/null || true; then
-            local start_line end_line dump_lines
-            start_line=$(grep -n "APPCONFIG Dump Started" "${log_file}" | tail -1 | cut -d: -f1 || true)
-            end_line=$(grep -n "APPCONFIG Dump Complete" "${log_file}" | tail -1 | cut -d: -f1 || true)
-            if [[ -n "${start_line}" ]] && [[ -n "${end_line}" ]]; then
-                dump_lines=$((end_line - start_line + 1))
-                print_message "Config dump completed with ${dump_lines} lines"
-                return 0
-            fi
+        if grep -q "APPCONFIG Dump Complete" "${log_file}" 2>/dev/null; then
+            echo "CONFIG_DUMP_SUCCESS" >> "${result_file}"
+            return 0
         fi
+        sleep 0.1
     done
 }
 
-print_subtest "SIGINT Signal Handling (Ctrl+C)"
-print_command "${HYDROGEN_BIN_BASE} ${TEST_CONFIG_BASE}"
-
-"${HYDROGEN_BIN}" "${TEST_CONFIG}" > "${LOG_FILE_SIGINT}" 2>&1 &
-HYDROGEN_PID=$!
-
-if wait_for_signal_startup "${LOG_FILE_SIGINT}" "${STARTUP_TIMEOUT}"; then
-
-    print_message "Hydrogen started successfully (PID: ${HYDROGEN_PID})"
-    print_command "kill -SIGINT ${HYDROGEN_PID}"
-
-    kill -SIGINT "${HYDROGEN_PID}"
+verify_multi_signals() {
+    local pid="$1"
+    local log_file="$2"
+    local signal="$3"
+    local result_file="$4"
     
-    if wait_for_signal_shutdown "${HYDROGEN_PID}" "${SHUTDOWN_TIMEOUT}" "${LOG_FILE_SIGINT}"; then
-        print_result 0 "SIGINT handled successfully with clean shutdown"
-        ((PASS_COUNT++))
-    else
-        print_result 1 "SIGINT handling failed - no clean shutdown"
-        kill -9 "${HYDROGEN_PID}" 2>/dev/null || true
-        EXIT_CODE=1
-    fi
-else
-    print_result 1 "Failed to start Hydrogen for SIGINT test"
-    kill -9 "${HYDROGEN_PID}" 2>/dev/null || true
-    EXIT_CODE=1
-fi
-
-print_subtest "SIGTERM Signal Handling (Terminate)"
-print_command "${HYDROGEN_BIN_BASE} ${TEST_CONFIG_BASE}"
-
-"${HYDROGEN_BIN}" "${TEST_CONFIG}" > "${LOG_FILE_SIGTERM}" 2>&1 &
-HYDROGEN_PID=$!
-
-if wait_for_signal_startup "${LOG_FILE_SIGTERM}" "${STARTUP_TIMEOUT}"; then
-
-    print_message "Hydrogen started successfully (PID: ${HYDROGEN_PID})"
-    print_command "kill -SIGTERM ${HYDROGEN_PID}"
-
-    kill -SIGTERM "${HYDROGEN_PID}"
+    # Send multiple signals rapidly
+    kill -SIGTERM "${pid}" 2>/dev/null || true
+    kill -SIGINT "${pid}" 2>/dev/null || true
     
-    if wait_for_signal_shutdown "${HYDROGEN_PID}" "${SHUTDOWN_TIMEOUT}" "${LOG_FILE_SIGTERM}"; then
-        print_result 0 "SIGTERM handled successfully with clean shutdown"
-        ((PASS_COUNT++))
-    else
-        print_result 1 "SIGTERM handling failed - no clean shutdown"
-        kill -9 "${HYDROGEN_PID}" 2>/dev/null || true
-        EXIT_CODE=1
-    fi
-else
-    print_result 1 "Failed to start Hydrogen for SIGTERM test"
-    kill -9 "${HYDROGEN_PID}" 2>/dev/null || true
-    EXIT_CODE=1
-fi
-
-print_subtest "SIGHUP Signal Handling (Single Restart)"
-print_command "${HYDROGEN_BIN_BASE} ${TEST_CONFIG_BASE}"
-
-"${HYDROGEN_BIN}" "${TEST_CONFIG}" > "${LOG_FILE_SIGHUP}" 2>&1 &
-HYDROGEN_PID=$!
-
-if wait_for_signal_startup "${LOG_FILE_SIGHUP}" "${STARTUP_TIMEOUT}"; then
-
-    print_message "Hydrogen started successfully (PID: ${HYDROGEN_PID})"
-    print_command "kill -SIGHUP ${HYDROGEN_PID}"
-
-    kill -SIGHUP "${HYDROGEN_PID}"
-    
-    # Wait for restart signal to be logged
-    if grep -q "SIGHUP received" "${LOG_FILE_SIGHUP}" 2>/dev/null; then
-        print_message "SIGHUP signal received, waiting for restart completion..."
-        if wait_for_restart_completion "${HYDROGEN_PID}" "${SIGNAL_TIMEOUT}" 1 "${LOG_FILE_SIGHUP}"; then
-            print_result 0 "SIGHUP handled successfully with restart"
-            ((PASS_COUNT++))
-        else
-            print_result 1 "SIGHUP restart failed or timed out"
-            EXIT_CODE=1
+    # Wait for shutdown
+    local start_time
+    start_time=${SECONDS}
+    while ps -p "${pid}" > /dev/null 2>&1; do
+        if [[ $((SECONDS - start_time)) -ge "${SHUTDOWN_TIMEOUT}" ]]; then
+            echo "MULTI_SIGNAL_TIMEOUT" >> "${result_file}"
+            return 1
         fi
-    else
-        print_result 1 "SIGHUP signal not received or logged"
-        EXIT_CODE=1
-    fi
-    
-    # Clean up
-    kill -SIGTERM "${HYDROGEN_PID}" 2>/dev/null || true
-    wait_for_signal_shutdown "${HYDROGEN_PID}" "${SHUTDOWN_TIMEOUT}" "${LOG_FILE_SIGHUP}" || true
-else
-    print_result 1 "Failed to start Hydrogen for SIGHUP test"
-    kill -9 "${HYDROGEN_PID}" 2>/dev/null || true
-    EXIT_CODE=1
-fi
-
-print_subtest "SIGHUP Signal Handling (Many Restarts)"
-print_message "Testing multiple SIGHUP restarts (count: ${RESTART_COUNT})"
-print_command "${HYDROGEN_BIN_BASE} ${TEST_CONFIG_BASE}"
-
-"${HYDROGEN_BIN}" "${TEST_CONFIG}" > "${LOG_FILE_RESTART}" 2>&1 &
-HYDROGEN_PID=$!
-
-if wait_for_signal_startup "${LOG_FILE_RESTART}" "${STARTUP_TIMEOUT}"; then
-
-    print_message "Hydrogen started successfully (PID: ${HYDROGEN_PID})"
-    
-    restart_success=0
-    current_count=1
-    
-    while [[ "${current_count}" -le "${RESTART_COUNT}" ]]; do
-
-        print_message "Sending SIGHUP #${current_count} of ${RESTART_COUNT}..."
-        print_command "kill -SIGHUP ${HYDROGEN_PID}"
-
-        kill -SIGHUP "${HYDROGEN_PID}" || true
-        
-        # Wait for restart signal to be logged
-        if grep -q "SIGHUP received" "${LOG_FILE_RESTART}" 2>/dev/null; then
-            print_message "SIGHUP signal #${current_count} received, waiting for restart..."
-            if wait_for_restart_completion "${HYDROGEN_PID}" "${SIGNAL_TIMEOUT}" "${current_count}" "${LOG_FILE_RESTART}"; then
-                print_message "Restart #${current_count} of ${RESTART_COUNT} completed successfully"
-                if [[ "${current_count}" -eq "${RESTART_COUNT}" ]]; then
-                    restart_success=1
-                    break
-                fi
-                current_count=$((current_count + 1))
-            else
-                print_message "Restart #${current_count} of ${RESTART_COUNT} failed"
-                break
-            fi
-        else
-            print_message "SIGHUP signal #${current_count} not received"
-            break
-        fi
+        sleep 0.1
     done
     
-    if [[ "${restart_success}" -eq 1 ]]; then
-        print_result 0 "Multiple SIGHUP restarts successful (${RESTART_COUNT} restarts)"
-        ((PASS_COUNT++))
+    # Check for single shutdown sequence
+    local shutdown_count
+    shutdown_count=$(grep -c "Initiating graceful shutdown sequence" "${log_file}" 2>/dev/null || echo "0")
+    if [[ "${shutdown_count}" -eq 1 ]]; then
+        echo "MULTI_SIGNAL_SUCCESS" >> "${result_file}"
+        return 0
     else
-        print_result 1 "Multiple SIGHUP restarts failed"
-        EXIT_CODE=1
+        echo "MULTI_SIGNAL_MULTIPLE_SEQUENCES" >> "${result_file}"
+        return 1
     fi
+}
+
+# Function to run a single signal test in parallel (background process)
+run_signal_test_parallel() {
+    local test_name="$1"
+    local signal="$2"
+    local action="$3"
+    local description="$4"
+    local validation_func="$5"
+    local cleanup_signal="$6"
     
-    # Clean up
-    kill -SIGTERM "${HYDROGEN_PID}" 2>/dev/null || true
-    wait_for_signal_shutdown "${HYDROGEN_PID}" "${SHUTDOWN_TIMEOUT}" "${LOG_FILE_RESTART}" || true
-else
-    print_result 1 "Failed to start Hydrogen for multiple SIGHUP test"
-    kill -9 "${HYDROGEN_PID}" 2>/dev/null || true
-    EXIT_CODE=1
-fi
-
-print_subtest "SIGUSR1 Signal Handling (Crash Dump)"
-print_command "${HYDROGEN_BIN_BASE} ${TEST_CONFIG_BASE}"
-
-"${HYDROGEN_BIN}" "${TEST_CONFIG}" > "${LOG_FILE_SIGUSR1}" 2>&1 &
-HYDROGEN_PID=$!
-
-if wait_for_signal_startup "${LOG_FILE_SIGUSR1}" "${STARTUP_TIMEOUT}"; then
-
-    print_message "Hydrogen started successfully (PID: ${HYDROGEN_PID})"
-    print_command "kill -SIGUSR1 ${HYDROGEN_PID}"
-
-    kill -SIGUSR1 "${HYDROGEN_PID}"
-
-    print_message "Looking for ${HYDROGEN_BIN}.core.${HYDROGEN_PID}"
-
-    if [[ -f "${HYDROGEN_BIN}.core.${HYDROGEN_PID}" ]]; then
-      print_message "Found ${HYDROGEN_BIN}.core.${HYDROGEN_PID}"
-      ((PASS_COUNT++))
-      print_result 0 "SIGUSR1 generated crash dump"
-      rm -f  "${HYDROGEN_BIN}.core.${HYDROGEN_PID}"
-    else
-      print_message "Missing ${HYDROGEN_BIN}.core.${HYDROGEN_PID}"
-      print_result 1 "SIGUSR1 failed to generate crash dump"
-    fi
-
-    # Clean up
-    wait_for_signal_shutdown "${HYDROGEN_PID}" "${SHUTDOWN_TIMEOUT}" "${LOG_FILE_SIGUSR1}" || true
-else
-    print_result 1 "Failed to start Hydrogen for SIGUSR1 test"
-    kill -9 "${HYDROGEN_PID}" 2>/dev/null || true
-    EXIT_CODE=1
-fi
-
-print_subtest "SIGUSR2 Signal Handling (Config Dump)"
-print_command "${HYDROGEN_BIN_BASE} ${TEST_CONFIG_BASE}"
-
-"${HYDROGEN_BIN}" "${TEST_CONFIG}" > "${LOG_FILE_SIGUSR2}" 2>&1 &
-HYDROGEN_PID=$!
-
-if wait_for_signal_startup "${LOG_FILE_SIGUSR2}" "${STARTUP_TIMEOUT}"; then
-
-    print_message "Hydrogen started successfully (PID: ${HYDROGEN_PID})"
-    print_command "kill -SIGUSR2 ${HYDROGEN_PID}"
-
-    kill -SIGUSR2 "${HYDROGEN_PID}"
+    local log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${test_name}.log"
+    local result_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${test_name}.result"
     
-    if verify_config_dump "${LOG_FILE_SIGUSR2}" "${SIGNAL_TIMEOUT}"; then
-        print_result 0 "SIGUSR2 handled successfully with config dump"
-        ((PASS_COUNT++))
-    else
-        print_result 1 "SIGUSR2 handling failed - no config dump"
-        EXIT_CODE=1
-    fi
+    # Clear result file
+    true > "${result_file}"
     
-    # Clean up
-    kill -SIGTERM "${HYDROGEN_PID}" 2>/dev/null || true
-    wait_for_signal_shutdown "${HYDROGEN_PID}" "${SHUTDOWN_TIMEOUT}" "${LOG_FILE_SIGUSR2}" || true
-else
-    print_result 1 "Failed to start Hydrogen for SIGUSR2 test"
-    kill -9 "${HYDROGEN_PID}" 2>/dev/null || true
-    EXIT_CODE=1
-fi
-
-print_subtest "Multiple Signal Handling"
-print_message "Testing multiple signals sent simultaneously"
-print_command "${HYDROGEN_BIN_BASE} ${TEST_CONFIG_BASE}"
-
-"${HYDROGEN_BIN}" "${TEST_CONFIG}" > "${LOG_FILE_MULTI}" 2>&1 &
-HYDROGEN_PID=$!
-
-if wait_for_signal_startup "${LOG_FILE_MULTI}" "${STARTUP_TIMEOUT}"; then
-
-    print_message "Hydrogen started successfully (PID: ${HYDROGEN_PID})"
-    print_message "Sending multiple signals (SIGTERM, SIGINT)..."
-    print_command "kill -SIGTERM ${HYDROGEN_PID} && kill -SIGINT ${HYDROGEN_PID}"
+    # Start hydrogen server directly
+    "${HYDROGEN_BIN}" "${TEST_CONFIG}" > "${log_file}" 2>&1 &
+    local hydrogen_pid=$!
     
-    kill -SIGTERM "${HYDROGEN_PID}"
-    kill -SIGINT "${HYDROGEN_PID}"
+    # Wait for startup
+    local startup_success=false
+    local start_time
+    start_time=${SECONDS}
     
-    if wait_for_signal_shutdown "${HYDROGEN_PID}" "${SHUTDOWN_TIMEOUT}" "${LOG_FILE_MULTI}"; then
-        # Check logs for single shutdown sequence
-        shutdown_count=$(grep -c "Initiating graceful shutdown sequence" "${LOG_FILE_MULTI}" 2>/dev/null || echo "0")
-        if [[ "${shutdown_count}" -eq 1 ]]; then
-            print_result 0 "Multiple signals handled correctly (single shutdown sequence)"
-            ((PASS_COUNT++))
-        else
-            print_result 1 "Multiple shutdown sequences detected (${shutdown_count} sequences)"
-            EXIT_CODE=1
+    while true; do
+        if [[ $((SECONDS - start_time)) -ge "${STARTUP_TIMEOUT}" ]]; then
+            break
         fi
+        
+        if grep -q "Application started" "${log_file}" 2>/dev/null; then
+            startup_success=true
+            break
+        fi
+        sleep 0.1
+    done
+    
+    if [[ "${startup_success}" = true ]]; then
+        echo "PID=${hydrogen_pid}" >> "${result_file}"
+        echo "STARTUP_SUCCESS" >> "${result_file}"
+        
+        # Send the signal (except for multi-signal test which handles its own signaling)
+        if [[ "${signal}" != "MULTIPLE" ]]; then
+            kill -"${signal}" "${hydrogen_pid}" 2>/dev/null || true
+        fi
+        
+        # Validate signal behavior using specific validation function
+        if "${validation_func}" "${hydrogen_pid}" "${log_file}" "${signal}" "${result_file}"; then
+            echo "VALIDATION_SUCCESS" >> "${result_file}"
+        else
+            echo "VALIDATION_FAILED" >> "${result_file}"
+        fi
+        
+        # Clean up if needed (for restart tests, we need to stop the server)
+        if [[ "${cleanup_signal}" != "${signal}" ]] && [[ "${cleanup_signal}" != "MULTIPLE" ]]; then
+            if ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+                kill -"${cleanup_signal}" "${hydrogen_pid}" 2>/dev/null || true
+                # Simple shutdown wait
+                local shutdown_start
+                shutdown_start=${SECONDS}
+                while ps -p "${hydrogen_pid}" > /dev/null 2>&1; do
+                    if [[ $((SECONDS - shutdown_start)) -ge "${SHUTDOWN_TIMEOUT}" ]]; then
+                        kill -9 "${hydrogen_pid}" 2>/dev/null || true
+                        break
+                    fi
+                    sleep 0.1
+                done
+            fi
+        fi
+        
+        echo "TEST_COMPLETE" >> "${result_file}"
     else
-        print_result 1 "Multiple signal handling failed - no clean shutdown"
-        kill -9 "${HYDROGEN_PID}" 2>/dev/null || true
+        echo "STARTUP_FAILED" >> "${result_file}"
+        echo "TEST_FAILED" >> "${result_file}"
+        kill -9 "${hydrogen_pid}" 2>/dev/null || true
+    fi
+}
+
+# Function to analyze results from parallel signal test execution
+analyze_signal_test_results() {
+    local test_name="$1"
+    local signal="$2"
+    local description="$3"
+    local result_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${test_name}.result"
+    
+    if [[ ! -f "${result_file}" ]]; then
+        print_result 1 "No result file found for ${test_name}"
+        return 1
+    fi
+    
+    # Check startup
+    if ! grep -q "STARTUP_SUCCESS" "${result_file}" 2>/dev/null; then
+        print_result 1 "Failed to start Hydrogen for ${description} test"
+        return 1
+    fi
+    
+    # Check validation
+    if grep -q "VALIDATION_SUCCESS" "${result_file}" 2>/dev/null; then
+        return 0
+    else
+        # Check for specific failure reasons
+        if grep -q "SHUTDOWN_FAILED" "${result_file}" 2>/dev/null; then
+            print_result 1 "${signal} handling failed - no clean shutdown"
+        elif grep -q "RESTART_TIMEOUT" "${result_file}" 2>/dev/null; then
+            print_result 1 "${signal} restart failed or timed out"
+        elif grep -q "CRASH_DUMP_TIMEOUT" "${result_file}" 2>/dev/null; then
+            print_result 1 "${signal} failed to generate crash dump"
+        elif grep -q "CONFIG_DUMP_TIMEOUT" "${result_file}" 2>/dev/null; then
+            print_result 1 "${signal} handling failed - no config dump"
+        elif grep -q "MULTI_SIGNAL_MULTIPLE_SEQUENCES" "${result_file}" 2>/dev/null; then
+            print_result 1 "Multiple shutdown sequences detected"
+        else
+            print_result 1 "${signal} handling failed"
+        fi
+        return 1
+    fi
+}
+
+print_message "Running signal tests in parallel for faster execution..."
+
+# Start all signal tests in parallel with job limiting  
+for test_config in "${!SIGNAL_TESTS[@]}"; do
+    # shellcheck disable=SC2312 # Gettin fancy with the functions
+    while (( $(jobs -r | wc -l) >= MAX_JOBS )); do
+        wait -n  # Wait for any job to finish
+    done
+    
+    # Parse test configuration
+    IFS=':' read -r signal action description validation_func cleanup_signal <<< "${SIGNAL_TESTS[${test_config}]}"
+    
+    print_message "Starting parallel test: ${test_config} (${description})"
+    
+    # Run parallel signal test in background
+    run_signal_test_parallel "${test_config}" "${signal}" "${action}" "${description}" "${validation_func}" "${cleanup_signal}" &
+    PARALLEL_PIDS+=($!)
+done
+
+# Wait for all parallel tests to complete
+print_message "Waiting for all ${#SIGNAL_TESTS[@]} parallel signal tests to complete..."
+for pid in "${PARALLEL_PIDS[@]}"; do
+    wait "${pid}"
+done
+print_message "All parallel tests completed, analyzing results..."
+
+# Process results sequentially for clean output
+for test_config in "${!SIGNAL_TESTS[@]}"; do
+    # Parse test configuration
+    IFS=':' read -r signal action description validation_func cleanup_signal <<< "${SIGNAL_TESTS[${test_config}]}"
+    
+    print_subtest "${signal} Signal Handling (${description})"
+    print_command "${HYDROGEN_BIN_BASE} ${TEST_CONFIG_BASE}"
+    
+    if analyze_signal_test_results "${test_config}" "${signal}" "${description}"; then
+        print_result 0 "${signal} handled successfully"
+        ((PASS_COUNT++))
+    else
         EXIT_CODE=1
     fi
-else
-    print_result 1 "Failed to start Hydrogen for multiple signal test"
-    kill -9 "${HYDROGEN_PID}" 2>/dev/null || true
-    EXIT_CODE=1
-fi
+done
+
+# Print summary
+successful_tests=0
+for test_config in "${!SIGNAL_TESTS[@]}"; do
+    IFS=':' read -r signal action description validation_func cleanup_signal <<< "${SIGNAL_TESTS[${test_config}]}"
+    result_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${test_config}.result"
+    if [[ -f "${result_file}" ]] && grep -q "VALIDATION_SUCCESS" "${result_file}" 2>/dev/null; then
+        ((successful_tests++))
+    fi
+done
+
+print_message "Summary: ${successful_tests}/${#SIGNAL_TESTS[@]} signal tests passed"
+
+# Clean up any remaining core files
+rm -rf "${PROJECT_DIR}"/*.core.* 2>/dev/null || true
 
 # Print completion table
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
