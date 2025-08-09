@@ -4,6 +4,7 @@
 # Tests startup and shutdown of the application with minimal and maximal configurations
 
 # CHANGELOG
+# 4.1.0 - 2025-08-08 - Reviewed. Changed JSON filenames. 
 # 4.0.0 - 2025-07-30 - Overhaul #1
 # 3.0.1 - 2025-07-06 - Added missing shellcheck justifications
 # 3.0.0 - 2025-07-02 - Complete rewrite to use new modular test libraries
@@ -14,7 +15,7 @@
 TEST_NAME="Startup/Shutdown"
 TEST_ABBR="UPD"
 TEST_NUMBER="22"
-TEST_VERSION="4.0.0"
+TEST_VERSION="4.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -33,36 +34,38 @@ else
     EXIT_CODE=1
 fi
 
-# Test configurations
-MIN_CONFIG="${SCRIPT_DIR}/configs/hydrogen_test_min.json"
-MAX_CONFIG="${SCRIPT_DIR}/configs/hydrogen_test_max.json"
+# Test configuration
+MIN_CONFIG="${SCRIPT_DIR}/configs/hydrogen_test_22_min.json"
+MAX_CONFIG="${SCRIPT_DIR}/configs/hydrogen_test_22_max.json"
+STARTUP_TIMEOUT=10    # Seconds to wait for startup
+SHUTDOWN_TIMEOUT=90   # Hard limit on shutdown time
+SHUTDOWN_ACTIVITY_TIMEOUT=5  # Timeout if no new log activity
+LOG_MIN="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_min.log"
+LOG_MAX="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_max.log"
 
-print_subtest "Validate Configuration Files"
+print_subtest "Validate Minimum Configuration File"
 
-if validate_config_files "${MIN_CONFIG}" "${MAX_CONFIG}"; then
+if validate_config_file "${MIN_CONFIG}"; then
     ((PASS_COUNT++))
 else
     EXIT_CODE=1
 fi
 
-# Timeouts and limits
-STARTUP_TIMEOUT=10    # Seconds to wait for startup
-SHUTDOWN_TIMEOUT=90   # Hard limit on shutdown time
-SHUTDOWN_ACTIVITY_TIMEOUT=5  # Timeout if no new log activity
-
-# Output files and directories - always use build/tests/ for consistency
-BUILD_DIR="${SCRIPT_DIR}/../build"
-LOG_FILE="${BUILD_DIR}/tests/logs/hydrogen_test.log"
-DIAGS_DIR="${BUILD_DIR}/tests/diagnostics"
-DIAG_TEST_DIR="${DIAGS_DIR}/startup_shutdown_test_${TIMESTAMP}"
-
 # Test minimal configuration
 config_name=$(basename "${MIN_CONFIG}" .json)
-run_lifecycle_test "${MIN_CONFIG}" "${config_name}" "${DIAG_TEST_DIR}" "${STARTUP_TIMEOUT}" "${SHUTDOWN_TIMEOUT}" "${SHUTDOWN_ACTIVITY_TIMEOUT}" "${HYDROGEN_BIN}" "${LOG_FILE}" "PASS_COUNT" "EXIT_CODE"
+run_lifecycle_test "${MIN_CONFIG}" "${config_name}" "${DIAG_TEST_DIR}" "${STARTUP_TIMEOUT}" "${SHUTDOWN_TIMEOUT}" "${SHUTDOWN_ACTIVITY_TIMEOUT}" "${HYDROGEN_BIN}" "${LOG_MIN}" "PASS_COUNT" "EXIT_CODE"
+
+print_subtest "Validate Maximum Configuration File"
+
+if validate_config_file "${MAX_CONFIG}"; then
+    ((PASS_COUNT++))
+else
+    EXIT_CODE=1
+fi
 
 # Test maximal configuration
 config_name=$(basename "${MAX_CONFIG}" .json)
-run_lifecycle_test "${MAX_CONFIG}" "${config_name}" "${DIAG_TEST_DIR}" "${STARTUP_TIMEOUT}" "${SHUTDOWN_TIMEOUT}" "${SHUTDOWN_ACTIVITY_TIMEOUT}" "${HYDROGEN_BIN}" "${LOG_FILE}" "PASS_COUNT" "EXIT_CODE"
+run_lifecycle_test "${MAX_CONFIG}" "${config_name}" "${DIAG_TEST_DIR}" "${STARTUP_TIMEOUT}" "${SHUTDOWN_TIMEOUT}" "${SHUTDOWN_ACTIVITY_TIMEOUT}" "${HYDROGEN_BIN}" "${LOG_MAX}" "PASS_COUNT" "EXIT_CODE"
 
 # Print completion table
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
