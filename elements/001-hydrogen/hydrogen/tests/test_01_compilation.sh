@@ -7,6 +7,7 @@
 # download_unity_framework()
 
 # CHANGELOG
+# 3.1.2 - 2025-08-08 - Commented out somee of the print_command calls for "cd"
 # 3.1.1 - 2025-08-03 - Removed extraneous command -v calls
 # 3.1.0 - 2025-07-31 - Removed coverage_cleanup call, another pass through to check for unnecessary comments, etc.
 # 3.0.0 - 2025-07-30 - Overhaul #1
@@ -20,7 +21,7 @@
 TEST_NAME="Compilation"
 TEST_ABBR="CMP"
 TEST_NUMBER="01"
-TEST_VERSION="3.1.1"
+TEST_VERSION="3.1.2"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -85,7 +86,7 @@ fi
 evaluate_test_result_silent "Unity framework check" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
 print_subtest "CMake Configuration"
-print_command "cd cmake"
+#print_command "cd cmake"
 
 if safe_cd cmake; then
     print_command "cmake -S . -B ../build --preset default"
@@ -95,7 +96,7 @@ if safe_cd cmake; then
         EXIT_CODE=1
         print_result 1 "CMake configuration failed"
     fi
-    print_command "cd .."
+    # print_command "cd .."
     safe_cd ..
 else
     print_result 1 "Failed to enter cmake directory"
@@ -113,7 +114,7 @@ if [[ -f "payloads/payload.tar.br.enc" ]]; then
     ((PASS_COUNT++))
 else
     print_message "Payload file not found, generating..."
-    print_command "cd payloads"
+    # print_command "cd payloads"
     if safe_cd payloads; then
         print_command "./swagger-generate.sh"
         if ./swagger-generate.sh >/dev/null 2>&1; then
@@ -121,7 +122,7 @@ else
             print_command "./payload-generate.sh"
             if ./payload-generate.sh >/dev/null 2>&1; then
                 print_message "Payload generation completed"
-                print_command "cd .."
+                # print_command "cd .."
                 safe_cd ..
                 if [[ -f "payloads/payload.tar.br.enc" ]]; then
                     payload_size=$(get_file_size "payloads/payload.tar.br.enc")
@@ -149,7 +150,7 @@ else
 fi
 
 print_subtest "Build All Variants"
-print_command "cd cmake"
+# print_command "cd cmake"
 
 if safe_cd cmake; then
     print_command "cmake --build ../build --preset default --target all_variants"
@@ -159,7 +160,7 @@ if safe_cd cmake; then
         EXIT_CODE=1
         print_result 1 "Build of all variants failed"
     fi
-    print_command "cd .."
+    # print_command "cd .."
     safe_cd ..
 else
     print_result 1 "Failed to enter cmake directory for building all variants"
@@ -248,7 +249,7 @@ fi
 evaluate_test_result_silent "Verify release and naked executables" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
 
 print_subtest "Build Examples"
-print_command "cd cmake"
+# print_command "cd cmake"
 
 if safe_cd cmake; then
     print_command "cmake --build ../build --preset default --target all_examples"
@@ -258,7 +259,7 @@ if safe_cd cmake; then
         EXIT_CODE=1
         print_result 1 "Examples build failed"
     fi
-    print_command "cd .."
+    # print_command "cd .."
     safe_cd ..
 else
     print_result 1 "Failed to enter cmake directory for examples build"

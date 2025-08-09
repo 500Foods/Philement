@@ -11,6 +11,7 @@
 #                    - Replaced 6+ file reads and grep|sed|awk pipelines with single awk command
 #                    - Parsing performance improved from ~1.26s to ~0.04s (97% improvement)
 #                    - Overall Test 06 runtime improved from 3.852s to ~2.245s (42% improvement)
+#                    - Fixed typo
 # 3.1.0 - 2025-08-06 - Bit of temp file handling management and cleanup
 # 3.0.0 - 2025-07-30 - Overhaul #1
 # 2.1.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
@@ -41,7 +42,7 @@ MARKDOWN_CHECK="${LOG_PREFIX}_markdown_links_check.ansi"
 
 print_message "Running markdown link check on ${TARGET_README}..."
 # shellcheck disable=SC2153,SC2154 # SITEMAP_EXTERNAL defined in framework.sh
-print_command "${SITEMAP_EXTERMAL} ${TARGET_README} --noreport --quiet"
+print_command ".${SITEMAP_EXTERNAL} ${TARGET_README} --noreport --quiet"
 
 # Run github-sitemap.sh with --noreport and --quiet to minimize output
 "${SITEMAP_EXTERNAL}" "${TARGET_README}" --noreport --quiet > "${MARKDOWN_CHECK}" 2>&1
