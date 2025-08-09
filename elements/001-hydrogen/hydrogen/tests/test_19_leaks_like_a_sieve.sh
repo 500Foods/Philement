@@ -4,6 +4,7 @@
 # Uses Valgrind to detect memory leaks in the Hydrogen application
 
 # CHANGELOG
+# 4,1.0 - 2025-08-08 - Cleaned up log work, added log startup elapsed time
 # 4.0.0 - 2025-07-30 - Overhaul #1
 # 3.0.4 - 2025-07-15 - No more sleep
 # 3.0.3 - 2025-07-14 - Updated to use build/tests directories for test output consistency
@@ -17,17 +18,17 @@
 TEST_NAME="Memory Leak Detection"
 TEST_ABBR="SIV"
 TEST_NUMBER="19"
-TEST_VERSION="4.0.0"
+TEST_VERSION="4.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
 # Test configuration
-CONFIG_FILE="${CONFIG_DIR}/hydrogen_test_api_test_1.json"
-SERVER_LOG="${LOGS_DIR}/test_${TEST_NUMBER}_server_${TIMESTAMP}.log"
-LEAK_REPORT="${DIAGS_DIR}/test_${TEST_NUMBER}_leak_report_${TIMESTAMP}.log"
-LEAK_SUMMARY="${DIAGS_DIR}/test_${TEST_NUMBER}_leak_summary_${TIMESTAMP}.log"
+CONFIG_FILE="${CONFIG_DIR}/hydrogen_test_19_leaks.json"
+SERVER_LOG="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_leaks.log"
+LEAK_REPORT="${LOG_PREFIX}}test_${TEST_NUMBER}_leak_report_${TIMESTAMP}.log"
+LEAK_SUMMARY="${LOG_PREFIX}}test_test_${TEST_NUMBER}_leak_summary_${TIMESTAMP}.log"
 
 print_subtest "Validate Debug Build and ASAN Support"
 
@@ -104,7 +105,8 @@ while true; do
     fi
     
     if grep -q "Application started" "${SERVER_LOG}"; then
-        print_message "Startup completed in ${ELAPSED}s"
+        log_startup_time=$(grep "Startup elapsed time:" "${SERVER_LOG}" 2>/dev/null | sed 's/.*Startup elapsed time: \([0-9.]*s\).*/\1/' | tail -1 || true)
+        print_message "Startup elapsed time (Log): ${log_startup_time}"
         break
     fi
 done
@@ -116,7 +118,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     # Try some API calls to trigger potential memory operations
     print_message "Making API calls to exercise memory allocation..."
     for _ in {1..3}; do
-        curl -s "http://localhost:5030/api/system/info" > /dev/null 2>&1 || true
+        curl -s "http://localhost:5030/api/system/health" > /dev/null 2>&1 || true
     done
 
     # Send SIGTERM to trigger shutdown and leak detection
@@ -191,10 +193,6 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                 print_output "${line}"
             fi
         done < "${LEAK_SUMMARY}"
-
-        # Copy results to results directory
-        cp "${LEAK_REPORT}" "${RESULTS_DIR}/leak_report_${TIMESTAMP}.txt"
-        cp "${LEAK_SUMMARY}" "${RESULTS_DIR}/leak_summary_${TIMESTAMP}.txt"
 
         # Determine test result
         if [[ "${DIRECT_LEAKS}" -eq 0 ]] && [[ "${INDIRECT_LEAKS}" -eq 0 ]]; then
