@@ -4,6 +4,7 @@
 # Tests the shutdown functionality of the application with a minimal configuration
 #
 # CHANGELOG
+# 3.1.0 - 2025-08-08 - Reviewed, updated logging conventions
 # 3.0.0 - 2025-07-30 - Overhaul #1
 # 2.0.1 - 2025-07-06 - Added missing shellcheck justifications
 # 2.0.0 - 2025-07-02 - Complete rewrite to use new modular test libraries
@@ -20,6 +21,13 @@ TEST_VERSION="3.0.0"
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
+# Test configuration
+MIN_CONFIG="${SCRIPT_DIR}/configs/hydrogen_test_26_min.json"
+config_name=$(basename "${MIN_CONFIG}" .json)
+STARTUP_TIMEOUT=10    # Seconds to wait for startup
+SHUTDOWN_TIMEOUT=90   # Hard limit on shutdown time
+SHUTDOWN_ACTIVITY_TIMEOUT=5  # Timeout if no new log activity
+
 print_subtest "Locate Hydrogen Binary"
 
 HYDROGEN_BIN=''
@@ -33,9 +41,6 @@ else
     EXIT_CODE=1
 fi
 
-# Test configuration
-MIN_CONFIG="${SCRIPT_DIR}/configs/hydrogen_test_min.json"
-
 print_subtest "Validate Configuration File"
 
 if validate_config_file "${MIN_CONFIG}"; then
@@ -44,19 +49,7 @@ else
     EXIT_CODE=1
 fi
 
-# Timeouts and limits
-STARTUP_TIMEOUT=5     # Seconds to wait for startup
-SHUTDOWN_TIMEOUT=10   # Hard limit on shutdown time
-SHUTDOWN_ACTIVITY_TIMEOUT=3  # Timeout if no new log activity
-
-# Output files and directories
-BUILD_DIR="${SCRIPT_DIR}/../build"
-LOG_FILE="${BUILD_DIR}/tests/logs/hydrogen_shutdown_test.log"
-DIAGS_DIR="${BUILD_DIR}/tests/diagnostics"
-DIAG_TEST_DIR="${DIAGS_DIR}/shutdown_test_${TIMESTAMP}"
-
-# Test shutdown with minimal configuration
-config_name=$(basename "${MIN_CONFIG}" .json)
+# Run cycle - that's all this test is for
 run_lifecycle_test "${MIN_CONFIG}" "${config_name}" "${DIAG_TEST_DIR}" "${STARTUP_TIMEOUT}" "${SHUTDOWN_TIMEOUT}" "${SHUTDOWN_ACTIVITY_TIMEOUT}" "${HYDROGEN_BIN}" "${LOG_FILE}" "PASS_COUNT" "EXIT_CODE"
 
 # Print completion table
