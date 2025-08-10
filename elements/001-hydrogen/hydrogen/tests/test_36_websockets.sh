@@ -9,6 +9,7 @@
 # test_websocket_configuration() 
 
 # CHANGELOG
+# 3.1.0 - 2025-08-09 - Updates to log file naming mostly
 # 3.0.0 - 2025-08-04 - That right there was Grok's rewrite - heh a modest 0.0.1
 # 2.0.2 - 2025-08-04 - Optimized for performance: cached key validation, parallel config tests, consolidated log checks, in-memory temps, early exits
 # 2.0.1 - 2025-08-03 - Removed extraneous command -v calls
@@ -25,18 +26,25 @@
 TEST_NAME="WebSockets"
 TEST_ABBR="WSS"
 TEST_NUMBER="36"
-TEST_VERSION="3.0.0"
+TEST_VERSION="3.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
 # Test variables
-CONFIG_1="$(get_config_path "hydrogen_test_websocket_test_1.json")"
-CONFIG_2="$(get_config_path "hydrogen_test_websocket_test_2.json")"
+CONFIG_1="${SCRIPT_DIR}/configs/hydrogen_test_36_websocket_1.json"
+CONFIG_2="${SCRIPT_DIR}/configs/hydrogen_test_36_websocket_2.json"
 
 # Global cache for WEBSOCKET_KEY validation
 WEBSOCKET_KEY_VALIDATED=0
+
+# Create temporary directory for parallel results
+declare -a PARALLEL_PIDS
+declare -a CONFIGS=(
+    "${CONFIG_1}|5101|hydrogen|one|1"
+    "${CONFIG_2}|5102|hydrogen-test|two|2"
+)
 
 # Function to test WebSocket connection with proper authentication and retry logic
 test_websocket_connection() {
@@ -53,16 +61,13 @@ test_websocket_connection() {
     local attempt=1
     local websocat_output
     local websocat_exitcode
-    
+    local temp_file="${LOG_PREFIX}${TIMESTAMP}_${protocol}_echo.log"
+
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
             print_message "WebSocket connection attempt ${attempt} of ${max_attempts} (waiting for WebSocket subsystem initialization)..."
             sleep 0.05  # Brief delay between attempts to prevent thundering herd
         fi
-        
-        # Use in-memory temp file if /dev/shm is available
-        local temp_file
-        temp_file=$(mktemp)
         
         # Test WebSocket connection with a 5-second timeout
         echo "${test_message}" | timeout 5 websocat \
@@ -75,7 +80,6 @@ test_websocket_connection() {
         
         # Read the output
         websocat_output=$(cat "${temp_file}" 2>/dev/null || echo "")
-        rm -f "${temp_file}"
         
         # Analyze the results
         if [[ "${websocat_exitcode}" -eq 0 ]]; then
@@ -167,16 +171,13 @@ test_websocket_status() {
     local attempt=1
     local websocat_output
     local websocat_exitcode
-    
+    local temp_file="${LOG_PREFIX}${TIMESTAMP}_${protocol}_status.txt"
+
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
             print_message "WebSocket status request attempt ${attempt} of ${max_attempts}..."
             sleep 0.05  # Brief delay between attempts to prevent thundering herd
         fi
-        
-        # Use in-memory temp file if /dev/shm is available
-        local temp_file
-        temp_file="/dev/shm/websocat_status_$$_${attempt}"
         
         # Test WebSocket status request with a 5-second timeout
         echo "${status_request}" | websocat \
@@ -190,7 +191,6 @@ test_websocket_status() {
         
         # Read the output
         websocat_output=$(cat "${temp_file}" 2>/dev/null || echo "")
-        rm -f "${temp_file}"
         
         # Check if we got a valid JSON response with system info
         if [[ -n "${websocat_output}" ]]; then
@@ -243,8 +243,8 @@ test_websocket_configuration() {
     local ws_protocol="$3"
     local test_name="$4"
     local config_number="$5"
-    local result_dir="$6"
-    local result_file="${result_dir}/${test_name}.result"
+    local result_file="${LOG_PREFIX}${TIMESTAMP}_${ws_protocol}.result"
+    local server_log="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${ws_protocol}.log"
     
     print_message "Testing WebSocket server: ws://localhost:${ws_port} (protocol: ${ws_protocol})"
     
@@ -255,7 +255,6 @@ test_websocket_configuration() {
     
     # Global variables for server management
     local hydrogen_pid=""
-    local server_log="${RESULTS_DIR}/websocket_${test_name}_${TIMESTAMP}.log"
     local base_url="http://localhost:${server_port}"
     local ws_url="ws://localhost:${ws_port}"
     
@@ -299,7 +298,7 @@ test_websocket_configuration() {
     print_subtest "Test WebSocket Connection (Config ${config_number})"
 
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
-        if test_websocket_connection "${ws_url}" "${ws_protocol}" "test_message" "${RESULTS_DIR}/${test_name}_connection_${TIMESTAMP}.txt"; then
+        if test_websocket_connection "${ws_url}" "${ws_protocol}" "test_message" "${LOG_PREFIX}${TIMESTAMP}_${ws_protocol}_connection.result"; then
             echo "CONNECTION_RESULT=0" >> "${result_file}"
             ((PASS_COUNT++))
         else
@@ -313,7 +312,7 @@ test_websocket_configuration() {
     print_subtest "Test WebSocket Status Request (Config ${config_number})"
 
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
-        if test_websocket_status "${ws_url}" "${ws_protocol}" "${RESULTS_DIR}/${test_name}_status_${TIMESTAMP}.json"; then
+        if test_websocket_status "${ws_url}" "${ws_protocol}" "${LOG_PREFIX}${TIMESTAMP}_${ws_protocol}_connection.json"; then
             echo "STATUS_RESULT=0" >> "${result_file}"
             ((PASS_COUNT++))
         else
@@ -386,8 +385,7 @@ analyze_parallel_results() {
     local ws_protocol="$3"
     local test_name="$4"
     local config_number="$5"
-    local result_dir="$6"
-    local result_file="${result_dir}/${test_name}.result"
+    local result_file="${LOG_PREFIX}${TIMESTAMP}_${ws_protocol}.result"
     
     if [[ ! -f "${result_file}" ]]; then
         print_message "No result file found for ${test_name}"
@@ -499,27 +497,13 @@ fi
 print_message "Ensuring no existing Hydrogen processes are running..."
 pkill -f "hydrogen.*json" 2>/dev/null || true
 
-# Create temporary directory for parallel results
-PARALLEL_RESULTS_DIR="${RESULTS_DIR}/parallel_${TIMESTAMP}"
-mkdir -p "${PARALLEL_RESULTS_DIR}"
-
-# Run tests in parallel
-declare -a PARALLEL_PIDS
-MAX_JOBS=$(nproc 2>/dev/null || echo 2)  # Limit to 2 for two configs
-
-# Test configurations
-declare -a CONFIGS=(
-    "${CONFIG_1}|5101|hydrogen|websocket_default|1"
-    "${CONFIG_2}|5102|hydrogen-test|websocket_custom|2"
-)
-
 for config in "${CONFIGS[@]}"; do
-    while (( $(jobs -r | wc -l || true) >= MAX_JOBS )); do
+    while (( $(jobs -r | wc -l || true) >= CORES )); do
         wait -n
     done
     IFS='|' read -r config_file ws_port ws_protocol test_name config_number <<< "${config}"
     print_message "Starting parallel test for: ${test_name}"
-    test_websocket_configuration "${config_file}" "${ws_port}" "${ws_protocol}" "${test_name}" "${config_number}" "${PARALLEL_RESULTS_DIR}" &
+    test_websocket_configuration "${config_file}" "${ws_port}" "${ws_protocol}" "${test_name}" "${config_number}" &
     PARALLEL_PIDS+=($!)
 done
 
@@ -528,25 +512,17 @@ print_message "Waiting for all ${#CONFIGS[@]} parallel tests to complete..."
 for pid in "${PARALLEL_PIDS[@]}"; do
     wait "${pid}"
 done
-dump_collected_output
-clear_collected_output
+
 print_subtest "All parallel tests completed, analyzing results..."
 
 # Analyze results
 for config in "${CONFIGS[@]}"; do
     IFS='|' read -r config_file ws_port ws_protocol test_name config_number <<< "${config}"
     print_message "Analyzing results for: ${test_name}"
-    analyze_parallel_results "${config_file}" "${ws_port}" "${ws_protocol}" "${test_name}" "${config_number}" "${PARALLEL_RESULTS_DIR}"
+    analyze_parallel_results "${config_file}" "${ws_port}" "${ws_protocol}" "${test_name}" "${config_number}"
 done
 print_result 0 "Analysis complete"
-
-# Clean up response files
-find "${RESULTS_DIR}" -type f -name "*_connection_*.txt" -delete 2>/dev/null || print_message "No connection response files found or cleanup failed"
-find "${RESULTS_DIR}" -type f -name "*_status_*.json" -delete 2>/dev/null || print_message "No status response files found or cleanup failed"
-
-# Clean up parallel results directory
-rm -rf "${PARALLEL_RESULTS_DIR}"
-        
+       
 # Print test completion summary
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
 
