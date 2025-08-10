@@ -1,0 +1,152 @@
+{
+    "Server": {
+        "ServerName": "Philement/hydrogen-test",
+        "PayloadKey": "test_key_websocket_1",
+        "LogFile": "/tmp/hydrogen_test_websocket_1.log",
+        "StartupDelay": 1
+    },
+    "Notify": {
+        "Enabled": false
+    },
+    "WebServer": {
+        "EnableIPv4": true,
+        "EnableIPv6": false,
+        "Port": 5270,
+        "WebRoot": "/var/www/html",
+        "UploadPath": "/api/upload",
+        "UploadDir": "/tmp/hydrogen_uploads",
+        "MaxUploadSize": 2147483648
+    },
+    "API": {
+        "Enabled": true,
+        "Prefix": "/api",
+        "JWTSecret": "test_jwt_secret_websocket_1"
+    },
+    "WebSocketServer": {
+        "Enabled": true,
+        "EnableIPv6": true,
+        "LibLogLevel": 0,
+        "Port": 5271,
+        "Protocol": "hydrogen",
+        "Key": "${env.WEBSOCKET_KEY}",
+        "MaxMessageSize": 2048,
+        "ConnectionTimeouts": {
+            "ShutdownWaitSeconds": 2,
+            "ServiceLoopDelayMs": 50,
+            "ConnectionCleanupMs": 500,
+            "ExitWaitSeconds": 3
+        }
+    },
+    "Network": {
+        "Interfaces": {
+            "MaxInterfaces": 16,
+            "MaxIPsPerInterface": 8,
+            "MaxInterfaceNameLength": 16,
+            "MaxIPAddressLength": 46
+        },
+        "PortAllocation": {
+            "StartPort": 5000,
+            "EndPort": 65535,
+            "ReservedPorts": [22, 80, 443],
+            "RetryAttempts": 5
+        },
+        "Available": {
+            "lo": true,
+            "wg0": false,
+            "vnet0": false,
+            "vnet1": false,
+            "vnet2": false,
+            "vnet3": false,
+            "vnet4": false
+        }
+    },
+    "Resources": {
+        "Queues": {
+            "MaxQueueBlocks": 128,
+            "QueueHashSize": 256,
+            "DefaultQueueCapacity": 1024
+        },
+        "Buffers": {
+            "DefaultMessageBuffer": 1024,
+            "MaxLogMessageSize": 2048,
+            "PathBufferSize": 256,
+            "LineBufferSize": 512
+        }
+    },
+    "Monitoring": {
+        "Intervals": {
+            "StatusUpdateMs": 1000,
+            "ResourceCheckMs": 5000,
+            "MetricsUpdateMs": 2000
+        },
+        "Thresholds": {
+            "MemoryWarningPercent": 90,
+            "DiskSpaceWarningPercent": 85,
+            "LoadAverageWarning": 5.0
+        }
+    },
+    "Print": {
+        "Enabled": false
+    },
+    "Logging": {
+        "Levels": [
+            "TRACING",
+            "DEBUGGING",
+            "STATING",
+            "CHECKING",
+            "ALERTING",
+            "ERRORING",
+            "FATALITY"
+        ],
+        "Console": {
+            "Enabled": true,
+            "DefaultLevel": 0,
+            "Subsystems": {
+                "API": 0,
+                "Configuration": 0,
+                "Initialization": 0,
+                "Main": 0,
+                "Network": 0,
+                "Shutdown": 1,
+                "Startup": 1,
+                "Threads": 1,
+                "WebServer": 0,
+                "WebSocket": 0,
+                "WebSocket-Lib": 0
+            }
+        },
+        "Database": {
+            "Enabled": false
+        },
+        "File": {
+            "Enabled": true,
+            "DefaultLevel": 0,
+            "Subsystems": {
+                "WebSocket": 0,
+                "WebSocket-Lib": 0
+            }
+        },
+        "Notify": {
+            "Enabled": false
+        }
+    },
+    "Swagger": {
+        "Enabled": false
+    },
+    "Terminal": {
+        "Enabled": false
+    },
+    "Databases": {
+        "DefaultWorkers": 0,
+        "Connections": {}
+    },
+    "MailRelay": {
+        "Enabled": false
+    },
+    "mDNSClient": {
+        "Enabled": false
+    },
+    "mDNSServer": {
+        "Enabled": false
+    }
+}

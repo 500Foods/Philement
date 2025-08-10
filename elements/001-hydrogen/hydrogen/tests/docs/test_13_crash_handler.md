@@ -121,7 +121,7 @@ The test uses minimal configuration (`hydrogen_test_min.json`) to reduce startup
 ## Related Documentation
 
 - [test_00_all.md](test_00_all.md) - Main test suite documentation
-- [test_20_signals.md](test_20_signals.md) - Signal handling tests
-- [test_26_shutdown.md](test_26_shutdown.md) - Shutdown testing
+- [test_22_signals.md](test_22_signals.md) - Signal handling tests
+- [test_20_shutdown.md](test_20_shutdown.md) - Shutdown testing
 - [LIBRARIES.md](LIBRARIES.md) - Modular library documentation
 - [testing.md](../../docs/testing.md) - Overall testing strategy

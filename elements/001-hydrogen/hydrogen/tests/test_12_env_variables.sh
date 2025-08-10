@@ -26,7 +26,7 @@ TEST_VERSION="4.1.0"
 setup_test_environment
 
 # Configuration file paths
-CONFIG_FILE="${CONFIG_DIR}/hydrogen_test_12.json"
+CONFIG_FILE="${CONFIG_DIR}/hydrogen_test_12_vars.json"
 
 # Timeouts and limits
 STARTUP_TIMEOUT=10    # Seconds to wait for startup

@@ -20,7 +20,7 @@ TEST_VERSION="3.0.1"
 setup_test_environment
 
 # Test configuration
-INTENTIONAL_ERROR_FILE="hydrogen_test_18_json.json"
+INTENTIONAL_ERROR_FILE="hydrogen_test_15_json_error.json"
 
 print_subtest "JSON Linting"
 

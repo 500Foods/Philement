@@ -255,6 +255,7 @@ static void log_early_info(void) {
     log_group_begin();
     log_this("Startup", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
     log_this("Startup", "HYDROGEN STARTUP", LOG_LEVEL_STATE);
+    log_this("Startup", "PID: %d", LOG_LEVEL_STATE, getpid());
     log_this("Startup", "Version: %s", LOG_LEVEL_STATE, VERSION);
     log_this("Startup", "Release: %s", LOG_LEVEL_STATE, RELEASE);
     log_this("Startup", "Build Type: %s", LOG_LEVEL_STATE, BUILD_TYPE);

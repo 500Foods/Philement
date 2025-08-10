@@ -1,0 +1,26 @@
+{
+    "WebServer": {
+        "EnableIPv4": false,
+        "EnableIPv6": false,
+        "Port": 5210,
+        "WebRoot": "./www",
+        "UploadPath": "/api/upload",
+        "UploadDir": "/tmp/hydrogen_test_uploads",
+        "MaxUploadSize": 2147483648
+    },
+    "WebSocketServer": {
+        "EnableIPv4": false,
+        "EnableIPv6": false,
+        "LibLogLevel": 2,
+        "Port": 5211,
+        "Protocol": "hydrogen",
+        "Key": "${env.WEBSOCKET_KEY}",
+        "MaxMessageSize": 2048,
+        "ConnectionTimeouts": {
+            "ShutdownWaitSeconds": 2,
+            "ServiceLoopDelayMs": 50,
+            "ConnectionCleanupMs": 500,
+            "ExitWaitSeconds": 3
+        }
+    }
+}

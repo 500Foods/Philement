@@ -466,34 +466,41 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 
 ## Testing Framework
 
+- [tests/README.md](tests/README.md) - Testing documentation and procedures
+- [tests/test_00_all.sh](tests/test_00_all.sh) - Orchestration script
+
 <details>
 <summary><b>Test Scripts</b></summary>
 
+### Compilation and Static Analysis
+
+- [tests/test_01_compilation.sh](tests/test_01_compilation.sh) - Compilation tests
+- [tests/test_02_secrets.sh](tests/test_02_secrets.sh) - Checks validity of key environment variables
+- [tests/test_03_code_size.sh](tests/test_03_code_size.sh) - Code size analysis and metrics
+- [tests/test_04_check_links.sh](tests/test_04_check_links.sh) - Link validation tests
+
 ### Core Functional Tests
 
-- [tests/README.md](tests/README.md) - Testing documentation and procedures
-- [tests/test_00_all.sh](tests/test_00_all.sh) - Master test runner
-- [tests/test_01_compilation.sh](tests/test_01_compilation.sh) - Compilation tests
-- [tests/test_11_unity.sh](tests/test_11_unity.sh) - Unity framework tests
+- [tests/test_10_unity.sh](tests/test_10_unity.sh) - Unity framework tests
+- [tests/test_11_leaks_like_a_sieve.sh](tests/test_11_leaks_like_a_sieve.sh) - Memory leak tests
 - [tests/test_12_env_variables.sh](tests/test_12_env_variables.sh) - Environment variable tests
 - [tests/test_13_crash_handler.sh](tests/test_13_crash_handler.sh) - Crash handler tests
-- [tests/test_14_secrets.sh](tests/test_14_secrets.sh) - Checks validity of key environment variables
-- [tests/test_16_library_dependencies.sh](tests/test_16_library_dependencies.sh) - Library dependency tests
-- [tests/test_18_json_error_handling.sh](tests/test_18_json_error_handling.sh) - JSON error handling tests
-- [tests/test_19_leaks_like_a_sieve.sh](tests/test_19_leaks_like_a_sieve.sh) - Memory leak tests
-- [tests/test_20_signals.sh](tests/test_20_signals.sh) - Signal handling tests
-- [tests/test_22_startup_shutdown.sh](tests/test_22_startup_shutdown.sh) - Startup/shutdown tests
-- [tests/test_26_shutdown.sh](tests/test_26_shutdown.sh) - Shutdown-specific tests
-- [tests/test_28_socket_rebind.sh](tests/test_28_socket_rebind.sh) - Socket rebinding tests
-- [tests/test_30_api_prefix.sh](tests/test_30_api_prefix.sh) - API prefix tests
-- [tests/test_32_system_endpoints.sh](tests/test_32_system_endpoints.sh) - System endpoint tests
-- [tests/test_34_swagger.sh](tests/test_34_swagger.sh) - Swagger functionality tests
-- [tests/test_36_websockets.sh](tests/test_36_websockets.sh) - Swagger functionality tests
+- [tests/test_14_library_dependencies.sh](tests/test_14_library_dependencies.sh) - Library dependency tests
+- [tests/test_15_json_error_handling.sh](tests/test_15_json_error_handling.sh) - JSON error handling tests
 
-### Static Analysis & Linting Tests
+### General Feature Tests
 
-- [tests/test_03_code_size.sh](tests/test_03_code_size.sh) - Code size analysis and metrics
-- [tests/test_06_check_links.sh](tests/test_06_check_links.sh) - Link validation tests
+- [tests/test_20_shutdown.sh](tests/test_20_shutdown.sh) - Shutdown-specific tests
+- [tests/test_21_startup_shutdown.sh](tests/test_21_startup_shutdown.sh) - Startup/shutdown tests
+- [tests/test_22_signals.sh](tests/test_22_signals.sh) - Signal handling tests
+- [tests/test_23_socket_rebind.sh](tests/test_23_socket_rebind.sh) - Socket rebinding tests
+- [tests/test_24_api_prefix.sh](tests/test_24_api_prefix.sh) - API prefix tests
+- [tests/test_25_system_endpoints.sh](tests/test_25_system_endpoints.sh) - System endpoint tests
+- [tests/test_26_swagger.sh](tests/test_26_swagger.sh) - Swagger functionality tests
+- [tests/test_276_websockets.sh](tests/test_27_websockets.sh) - Swagger functionality tests
+
+### Linting Tests
+
 - [tests/test_90_markdownlint.sh](tests/test_90_markdownlint.sh) - Markdown linting (markdownlint)
 - [tests/test_91_cppcheck.sh](tests/test_91_cppcheck.sh) - C/C++ static analysis (cppcheck)
 - [tests/test_92_shellcheck.sh](tests/test_92_shellcheck.sh) - Shell script linting (shellcheck)
@@ -506,31 +513,12 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 </details>
 
 <details>
-<summary><b>Test Configuration</b></summary>
-
-- [hydrogen_test_api_prefix.json](tests/configs/hydrogen_test_api_prefix.json) - API prefix test config
-- [hydrogen_test_api_test_1.json](tests/configs/hydrogen_test_api_test_1.json) - API test configuration 1
-- [hydrogen_test_api_test_2.json](tests/configs/hydrogen_test_api_test_2.json) - API test configuration 2
-- [hydrogen_test_api.json](tests/configs/hydrogen_test_api.json) - General API test config
-- [hydrogen_test_env.json](tests/configs/hydrogen_test_env.json) - Environment test config
-- [hydrogen_test_json.json](tests/configs/hydrogen_test_json.json) - JSON handling test config
-- [hydrogen_test_max.json](tests/configs/hydrogen_test_max.json) - Maximum feature test config
-- [hydrogen_test_min.json](tests/configs/hydrogen_test_min.json) - Minimal feature test config
-- [hydrogen_test_swagger_default_port.json](tests/configs/hydrogen_test_swagger_default_port.json) - Swagger default port config
-- [hydrogen_test_swagger_port.json](tests/configs/hydrogen_test_swagger_port.json) - Swagger port test config
-- [hydrogen_test_swagger_test_1.json](tests/configs/hydrogen_test_swagger_test_1.json) - Swagger test configuration 1
-- [hydrogen_test_swagger_test_2.json](tests/configs/hydrogen_test_swagger_test_2.json) - Swagger test configuration 2
-- [hydrogen_test_swagger.json](tests/configs/hydrogen_test_swagger.json) - General Swagger test config
-- [hydrogen_test_system_endpoints.json](tests/configs/hydrogen_test_system_endpoints.json) - System endpoints test config
-
-</details>
-
-<details>
 <summary><b>Test Libraries</b></summary>
 
 - [tests/lib/](tests/lib/) - Test library functions
   - [cloc.sh](tests/lib/cloc.sh) - Code line counting utilities
   - [coverage.sh](tests/lib/coverage.sh) - Main coverage orchestration and API functions
+  - [coverage-combinedn.sh](tests/lib/coverage-combined.sh) - Deals with Blackbox and Unity data aggregation
   - [coverage-common.sh](tests/lib/coverage-common.sh) - Shared coverage utilities and variables
   - [coverage_table.sh](tests/lib/coverage_table.sh) - Advanced tabular coverage reporting with visual formatting
   - [env_utils.sh](tests/lib/env_utils.sh) - Environment variable utilities
@@ -540,24 +528,9 @@ This document provides a comprehensive overview of the Hydrogen project's file o
   - [lifecycle.sh](tests/lib/lifecycle.sh) - Test lifecycle management
   - [log_output.sh](tests/lib/log_output.sh) - Log output formatting
   - [network_utils.sh](tests/lib/network_utils.sh) - Network testing utilities
+  - [tables](tests/lib/tables) - Used to generate ANSI tables from JSON inputs
   - [Oh.sh](tests/lib/Oh.sh) - ANSI terminal output to SVG converter
   
-</details>
-
-<details>
-<summary><b>Test Documentation</b></summary>
-
-- [tests/docs/coverage.md](tests/docs/coverage.md) - Comprehensive coverage analysis system documentation
-
-</details>
-
-<details>
-<summary><b>Test Results & Diagnostics</b></summary>
-
-- [tests/diagnostics/](tests/diagnostics/) - Test diagnostic outputs
-- [tests/logs/](tests/logs/) - Test execution logs
-- [tests/results/](tests/results/) - Test result archives and reports
-
 </details>
 
 ## Build Tools & Utilities

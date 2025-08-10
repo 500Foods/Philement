@@ -46,24 +46,6 @@ The testing system includes several specialized scripts:
 
 These scripts work together to provide comprehensive testing and diagnostic capabilities while requiring minimal changes to the core Hydrogen codebase.
 
-## Test Configurations
-
-Two primary test configurations have been created:
-
-### Minimal Configuration (hydrogen_test_min.json)
-
-- **Purpose**: Test core system startup/shutdown without optional subsystems
-- **Enabled Systems**: Core systems only
-- **Logging**: Maximum verbosity (ALL) across all subsystems
-- **Location**: [tests/hydrogen_test_min.json](/tests/configs/hydrogen_test_min.json)
-
-### Maximal Configuration (hydrogen_test_max.json)
-
-- **Purpose**: Test complete system startup/shutdown with all subsystems
-- **Enabled Systems**: All available subsystems (WebServer, WebSocket, PrintQueue, mDNSServer)
-- **Logging**: Maximum verbosity (ALL) across all subsystems
-- **Location**: [tests/hydrogen_test_max.json](/tests/configs/hydrogen_test_max.json)
-
 ## Running Tests
 
 ### Using the Test Runner
@@ -78,14 +60,7 @@ If compilation fails, startup/shutdown tests will be skipped since they would no
 The simplest way to execute tests is using the test runner script:
 
 ```bash
-# Run tests with both configurations
-./tests/run_tests.sh all
-
-# Run with minimal configuration only
-./tests/run_tests.sh min
-
-# Run with maximal configuration only 
-./tests/run_tests.sh max
+./tests/test_00_all.sh
 ```
 
 The test runner automates the process of:
@@ -100,8 +75,9 @@ The test runner automates the process of:
 
 Test execution generates two types of artifacts:
 
-1. **Results** - Test logs and summary reports in `./tests/results/`
-2. **Diagnostics** - Detailed diagnostic data in `./tests/diagnostics/`
+1. **Results** - Test output and summary reports in `./build/tests/results/`
+1. **Logss** - Hydrogen logs for each run in `./build/tests/logs/`
+1. **Diagnostics** - Detailed diagnostic data in `./build/tests/diagnostics/`
 
 These artifacts are managed as follows:
 
@@ -110,64 +86,7 @@ These artifacts are managed as follows:
 - **Local Availability** - Artifacts remain available for analysis until the next test run
 - **External Testing** - This approach allows tests to be run on production systems without sharing data
 
-### Manual Test Execution
-
-You can also execute tests directly with the Hydrogen executable:
-
-```bash
-# Test with minimal configuration (core systems only)
-./hydrogen ./tests/hydrogen_test_min.json
-
-# Test with maximal configuration (all systems)
-./hydrogen ./tests/hydrogen_test_max.json
-```
-
 ## Diagnostic Tools
-
-### Thread Analysis
-
-When Hydrogen stalls during shutdown, the thread analyzer can help identify the cause:
-
-```bash
-./tests/analyze_stuck_threads.sh <hydrogen_pid>
-```
-
-This tool:
-
-- Examines all threads in a running process
-- Identifies threads in problematic states (especially uninterruptible sleep)
-- Captures kernel stacks, wait channels info, and syscall information
-- Generates detailed reports in the `./diagnostics` directory
-
-Thread analysis is particularly useful for identifying:
-
-- Deadlocks where threads are waiting on each other
-- I/O operations that aren't completing
-- Resource contention issues
-- Improper synchronization
-
-### Resource Monitoring
-
-To track system resource usage over time:
-
-```bash
-./tests/monitor_resources.sh <hydrogen_pid> [duration_seconds]
-```
-
-This tool captures:
-
-- Memory usage trends
-- CPU utilization
-- Thread count over time
-- File descriptor usage
-- Periodic detailed snapshots
-
-Resource monitoring helps identify:
-
-- Memory leaks
-- Excessive resource consumption
-- Unusual resource patterns during shutdown
-- Correlation between resource usage and system behavior
 
 ### Analyzing Test Results
 
@@ -224,10 +143,10 @@ The Hydrogen project provides a standardized template (test_template.sh) to help
 
 ### Using the Test Template
 
-1. Start by copying the template:
+1. Start by copying an existing test
 
    ```bash
-   cp tests/test_template.sh tests/test_your_feature.sh
+   cp tests/test_02_secrets.sh tests/test_your_feature.sh
    chmod +x tests/test_your_feature.sh
    ```
 
