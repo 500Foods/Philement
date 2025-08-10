@@ -110,7 +110,7 @@ fi
 print_subtest "Make HTTP requests to create connections"
 
 BASE_URL="http://localhost:${PORT}"
-if make_http_requests "${BASE_URL}" "${RESULTS_DIR}" "${TIMESTAMP}"; then
+if make_http_requests "${BASE_URL}" "${DIAG_TEST_DIR}" "${TIMESTAMP}"; then
     print_result 0 "HTTP requests completed - connections established"
     ((PASS_COUNT++))
 else
