@@ -14,6 +14,7 @@
 # collect_gcov_files()
 
 # CHANGELOG
+# 2.1.0 - 2025-08-10 - Added caching to analyze_all_gcov_coverage_batch()
 # 2.0.0 - 2025-08-04 - GCOV Optimization Adventure
 # 1.1.0 - 2025-07-30 - Removed cleanup_coverage_data - not needed
 # 1.0.0 - 2025-07-21 - Initial version with common coverage functions
@@ -24,7 +25,7 @@ export COVERAGE_COMMON_GUARD="true"
 
 # Library metadata
 COVERAGE_COMMON_NAME="Coverage Common Library"
-COVERAGE_COMMON_VERSION="2.0.0"
+COVERAGE_COMMON_VERSION="2.1.0"
 print_message "${COVERAGE_COMMON_NAME} ${COVERAGE_COMMON_VERSION}" "info" 2> /dev/null || true
 
 # Sort out directories
@@ -176,21 +177,54 @@ analyze_all_gcov_coverage_batch() {
     declare -gA coverage_instrumented_lines 2>/dev/null || true
     declare -gA combined_covered_lines 2>/dev/null || true
     declare -gA combined_instrumented_lines 2>/dev/null || true
+
     local unity_dir="$1"
     local blackbox_dir="$2"
-    
+    local marker_file="${BUILD_DIR}/gcov_batch_marker"
+    local cache_file="${BUILD_DIR}/gcov_batch_cache.txt"
+
+    # Check if cache marker and cache file exist
+    if [[ -f "${marker_file}" && -f "${cache_file}" ]]; then
+        # Load cached results into global arrays
+        while IFS=':' read -r coverage_type file_path results; do
+            if [[ -n "${coverage_type}" && -n "${file_path}" && -n "${results}" && "${file_path}" != "" ]]; then
+                local instrumented="${results%,*}"
+                local covered="${results#*,}"
+                if [[ -z "${instrumented}" || -z "${covered}" ]]; then
+                    continue
+                fi
+                case "${coverage_type}" in
+                    "UNITY")
+                        unity_instrumented_lines["${file_path}"]=${instrumented}
+                        unity_covered_lines["${file_path}"]=${covered}
+                        ;;
+                    "COVERAGE")
+                        coverage_instrumented_lines["${file_path}"]=${instrumented}
+                        coverage_covered_lines["${file_path}"]=${covered}
+                        ;;
+                    "COMBINED")
+                        combined_instrumented_lines["${file_path}"]=${instrumented}
+                        combined_covered_lines["${file_path}"]=${covered}
+                        ;;
+                    *)
+                        ;;
+                esac
+            fi
+        done < "${cache_file}"
+        export combined_instrumented_lines combined_covered_lines
+        return 0
+    fi
+
     # Get all .gcov files from both directories
     local unity_files=()
     local blackbox_files=()
-    
     if [[ -d "${unity_dir}" ]]; then
         mapfile -t unity_files < <(find "${unity_dir}" -name "*.gcov" -type f 2>/dev/null || true)
     fi
-    
     if [[ -d "${blackbox_dir}" ]]; then
         mapfile -t blackbox_files < <(find "${blackbox_dir}" -name "*.gcov" -type f 2>/dev/null || true)
     fi
-    
+
     # Create union of all files by relative path (with filtering)
     declare -A all_file_set
     for file in "${unity_files[@]}" "${blackbox_files[@]}"; do
@@ -209,142 +243,136 @@ analyze_all_gcov_coverage_batch() {
             all_file_set["${rel_path}"]=1
         fi
     done
-    
+
     # Create temporary files
     local temp_input temp_output
     temp_input=$(mktemp) || return 1
     temp_output=$(mktemp) || { rm -f "${temp_input}"; return 1; }
-    
+
     # Build concatenated input in one write block
     {
         for file_relpath in "${!all_file_set[@]}"; do
             local unity_file="${unity_dir}/${file_relpath}"
             local blackbox_file="${blackbox_dir}/${file_relpath}"
-            
             printf '###FILE_START:%s###\n' "${file_relpath}"
-            
             if [[ -f "${unity_file}" ]]; then
                 printf '###UNITY_START###\n'
                 cat "${unity_file}"
                 printf '###UNITY_END###\n'
             fi
-            
             if [[ -f "${blackbox_file}" ]]; then
                 printf '###BLACKBOX_START###\n'
                 cat "${blackbox_file}"
                 printf '###BLACKBOX_END###\n'
             fi
-            
             printf '###FILE_END###\n'
         done
     } > "${temp_input}"
-    
-    # Process with AWK (incremental counting)
-# Process with AWK (incremental counting with union for instrumented)
-awk '
-BEGIN {
-    current_file = ""
-    current_type = ""
-}
 
- /^###FILE_START:/ {
-    current_file = substr($0, 15)
-    gsub(/###$/, "", current_file)
-    unity_covered_count = 0
-    blackbox_covered_count = 0
-    delete combined_covered_lines  # Reset for union
-    delete instrumented_lines      # Reset for instrumented union
-    next
-}
-
-/^###UNITY_START###/ {
-    current_type = "unity"
-    next
-}
-
-/^###BLACKBOX_START###/ {
-    current_type = "blackbox"
-    next
-}
-
-/^###(UNITY_END|BLACKBOX_END|FILE_END)###/ {
-    if ($0 == "###FILE_END###") {
-        # Output when file ends
-        if (current_file != "") {
-            instrumented_count = length(instrumented_lines)
-            source_path = current_file
-            gsub(/\.gcov$/, "", source_path)
-            if (!match(source_path, /^src\//)) {
-                source_path = "src/" source_path
+    # Process with AWK (incremental counting with union for instrumented)
+    awk '
+    BEGIN {
+        current_file = ""
+        current_type = ""
+    }
+    /^###FILE_START:/ {
+        current_file = substr($0, 15)
+        gsub(/###$/, "", current_file)
+        unity_covered_count = 0
+        blackbox_covered_count = 0
+        delete combined_covered_lines  # Reset for union
+        delete instrumented_lines      # Reset for instrumented union
+        next
+    }
+    /^###UNITY_START###/ {
+        current_type = "unity"
+        next
+    }
+    /^###BLACKBOX_START###/ {
+        current_type = "blackbox"
+        next
+    }
+    /^###(UNITY_END|BLACKBOX_END|FILE_END)###/ {
+        if ($0 == "###FILE_END###") {
+            if (current_file != "") {
+                instrumented_count = length(instrumented_lines)
+                source_path = current_file
+                gsub(/\.gcov$/, "", source_path)
+                if (!match(source_path, /^src\//)) {
+                    source_path = "src/" source_path
+                }
+                combined_covered_count = length(combined_covered_lines)
+                print "UNITY:" source_path ":" instrumented_count "," unity_covered_count
+                print "COVERAGE:" source_path ":" instrumented_count "," blackbox_covered_count
+                print "COMBINED:" source_path ":" instrumented_count "," combined_covered_count
             }
-            combined_covered_count = length(combined_covered_lines)
-            print "UNITY:" source_path ":" instrumented_count "," unity_covered_count
-            print "COVERAGE:" source_path ":" instrumented_count "," blackbox_covered_count  
-            print "COMBINED:" source_path ":" instrumented_count "," combined_covered_count
         }
+        current_type = ""
+        next
     }
-    current_type = ""
-    next
-}
-
-# Covered lines (adjust pattern if *? is a typo; assuming it means executed lines with count >0)
- /^[ \t]*[0-9]+\*?:[ \t]*[0-9]+:/ {
-    if (current_file != "" && current_type != "") {
-        split($0, parts, ":")
-        gsub(/^[ \t]*|[ \t]*$/, "", parts[2])
-        line_num = parts[2]
-        instrumented_lines[line_num] = 1
-        if (current_type == "unity") {
-            unity_covered_count++
-            combined_covered_lines[line_num] = 1
-        } else if (current_type == "blackbox") {
-            blackbox_covered_count++
-            combined_covered_lines[line_num] = 1
+    /^[ \t]*[0-9]+\*?:[ \t]*[0-9]+:/ {
+        if (current_file != "" && current_type != "") {
+            split($0, parts, ":")
+            gsub(/^[ \t]*|[ \t]*$/, "", parts[2])
+            line_num = parts[2]
+            instrumented_lines[line_num] = 1
+            if (current_type == "unity") {
+                unity_covered_count++
+                combined_covered_lines[line_num] = 1
+            } else if (current_type == "blackbox") {
+                blackbox_covered_count++
+                combined_covered_lines[line_num] = 1
+            }
         }
+        next
     }
-    next
-}
+    /^[ \t]*#####:[ \t]*[0-9]+:/ {
+        if (current_file != "" && current_type != "") {
+            split($0, parts, ":")
+            gsub(/^[ \t]*|[ \t]*$/, "", parts[2])
+            line_num = parts[2]
+            instrumented_lines[line_num] = 1
+        }
+        next
+    }
+    ' "${temp_input}" > "${temp_output}"
 
-# Uncovered lines
- /^[ \t]*#####:[ \t]*[0-9]+:/ {
-    if (current_file != "" && current_type != "") {
-        split($0, parts, ":")
-        gsub(/^[ \t]*|[ \t]*$/, "", parts[2])
-        line_num = parts[2]
-        instrumented_lines[line_num] = 1
-    }
-    next
-}
-' "${temp_input}" > "${temp_output}"
-    
-    # Process output (same as before)
-    while IFS=':' read -r coverage_type file_path results; do
-        if [[ -n "${coverage_type}" && -n "${file_path}" && -n "${results}" && "${file_path}" != "" ]]; then
-            local instrumented="${results%,*}"
-            local covered="${results#*,}"
-            if [[ -z "${instrumented}" || -z "${covered}" ]]; then
-                continue
+    # Process output and save to cache
+    {
+        while IFS=':' read -r coverage_type file_path results; do
+            if [[ -n "${coverage_type}" && -n "${file_path}" && -n "${results}" && "${file_path}" != "" ]]; then
+                local instrumented="${results%,*}"
+                local covered="${results#*,}"
+                if [[ -z "${instrumented}" || -z "${covered}" ]]; then
+                    continue
+                fi
+                case "${coverage_type}" in
+                    "UNITY")
+                        unity_instrumented_lines["${file_path}"]=${instrumented}
+                        unity_covered_lines["${file_path}"]=${covered}
+                        printf "UNITY:%s:%s,%s\n" "${file_path}" "${instrumented}" "${covered}"
+                        ;;
+                    "COVERAGE")
+                        coverage_instrumented_lines["${file_path}"]=${instrumented}
+                        coverage_covered_lines["${file_path}"]=${covered}
+                        printf "COVERAGE:%s:%s,%s\n" "${file_path}" "${instrumented}" "${covered}"
+                        ;;
+                    "COMBINED")
+                        combined_instrumented_lines["${file_path}"]=${instrumented}
+                        combined_covered_lines["${file_path}"]=${covered}
+                        printf "COMBINED:%s:%s,%s\n" "${file_path}" "${instrumented}" "${covered}"
+                        ;;
+                    *)
+                        ;;
+                esac
             fi
-            case "${coverage_type}" in
-                "UNITY")
-                    unity_instrumented_lines["${file_path}"]=${instrumented}
-                    unity_covered_lines["${file_path}"]=${covered}
-                    ;;
-                "COVERAGE")
-                    coverage_instrumented_lines["${file_path}"]=${instrumented}
-                    coverage_covered_lines["${file_path}"]=${covered}
-                    ;;
-                "COMBINED")
-                    combined_instrumented_lines["${file_path}"]=${instrumented}
-                    combined_covered_lines["${file_path}"]=${covered}
-                    export combined_instrumented_lines combined_covered_lines
-                    ;;
-                *)
-                    ;;
-            esac
-        fi
-    done < "${temp_output}"
-    
+        done < "${temp_output}"
+    } > "${cache_file}"
+
+    # Export combined arrays and create marker
+    export combined_instrumented_lines combined_covered_lines
+    touch "${marker_file}"
+
     # Clean up
     rm -f "${temp_input}" "${temp_output}"
     return 0

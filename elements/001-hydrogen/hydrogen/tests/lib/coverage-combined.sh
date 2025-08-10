@@ -9,6 +9,7 @@
 # identify_uncovered_files()
 
 # CHANGELOG
+# 1.1.0 - 2025-08-10 - Added caching to calculate_combined_coverage()
 # 1.0.0 - 2025-07-21 - Initial version with combined coverage functions
 
 # Guard clause to prevent multiple sourcing
@@ -37,6 +38,7 @@ mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_D
 # Function to calculate combined coverage from Unity and blackbox tests
 # Usage: calculate_combined_coverage
 # Returns: Combined coverage percentage
+# Function to calculate combined coverage
 calculate_combined_coverage() {
     local project_root
     project_root="$(cd "${SCRIPT_DIR}/../.." && pwd)"
@@ -44,7 +46,15 @@ calculate_combined_coverage() {
     local blackbox_build_dir="${project_root}/build/coverage"
     local timestamp
     timestamp=$(date +"%Y-%m-%d %H:%M:%S")
-    
+    local marker_file="${BUILD_DIR}/combined_coverage_marker"
+    local coverage_file="${COMBINED_COVERAGE_FILE}"
+
+    # Check if cache marker and coverage file exist
+    if [[ -f "${marker_file}" && -f "${coverage_file}" ]]; then
+        cat "${coverage_file}" 2>/dev/null || echo "0.000"
+        return 0
+    fi
+
     # Use the efficient wrapper functions from coverage.sh
     local unity_coverage
     local blackbox_coverage
@@ -73,8 +83,9 @@ calculate_combined_coverage() {
         combined_coverage=$(awk "BEGIN {printf \"%.3f\", (${total_combined_covered} / ${total_combined_instrumented}) * 100}")
     fi
     
-    # Store combined coverage result
-    echo "${combined_coverage}" > "${COMBINED_COVERAGE_FILE}"
+    # Store combined coverage result and create marker
+    echo "${combined_coverage}" > "${coverage_file}"
+    touch "${marker_file}"
     echo "${combined_coverage}"
     return 0
 }

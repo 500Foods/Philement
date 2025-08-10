@@ -7,6 +7,7 @@
 # show_top_files_by_type()
 
 # CHANGELOG
+# 3.5.0 - 2025-08-10 - Cleaned out some mktemp calls
 # 3.4.0 - 2025-08-07 - Added (cloc: lines) to test name 
 # 3.3.0 - 2025-08-06 - Bit of temp file handling management and cleanup
 # 3.2.0 - 2025-08-05 - Minor adjustments to output formatting, added TOPLIST variable
@@ -20,7 +21,7 @@
 TEST_NAME="Code Size Analysis"
 TEST_ABBR="SIZ"
 TEST_NUMBER="03"
-TEST_VERSION="3.4.0"
+TEST_VERSION="3.5.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -34,9 +35,9 @@ readonly LARGE_FILE_THRESHOLD="25k"
 TOPLIST=10
 
 # Create temporary files
-SOURCE_FILES_LIST="${LOG_PREFIX}_source_files.txt"
-LARGE_FILES_LIST="${LOG_PREFIX}_large_files.txt"
-LINE_COUNT_FILE="${LOG_PREFIX}_line_count.txt"
+SOURCE_FILES_LIST="${LOG_PREFIX}${TIMESTAMP}_source_files.txt"
+LARGE_FILES_LIST="${LOG_PREFIX}${TIMESTAMP}_large_files.txt"
+LINE_COUNT_FILE="${LOG_PREFIX}${TIMESTAMP}_line_count.txt"
 
 print_subtest "Linting Configuration Information"
 print_message "Checking linting configuration files and displaying exclusion patterns..."
@@ -79,7 +80,7 @@ else
 fi
 
 # Start cloc analysis in background to run in parallel with file processing
-CLOC_OUTPUT="${DIAG_TEST_DIR}/test_${TEST_NUMBER}_${TS_ORC_LOG}_cloc.txt"
+CLOC_OUTPUT="${LOG_PREFIX}${TIMESTAMP}_cloc.txt"
 CLOC_PID=""
 print_message "Starting cloc analysis in background..."
 run_cloc_analysis "." ".lintignore" "${CLOC_OUTPUT}" &
@@ -163,7 +164,7 @@ show_top_files_by_type() {
         local ext="${types[${i}]}"
         local label="${labels[${i}]}"
         local temp_file
-        temp_file=$(mktemp)
+        temp_file="${LOG_PREFIX}${TIMESTAMP}_top_${ext}.txt"
         
         grep "\.${ext}$" "${LINE_COUNT_FILE}" > "${temp_file}"
         print_message "Top ${TOPLIST} ${label} Files:"
@@ -173,7 +174,6 @@ show_top_files_by_type() {
             read -r count path <<< "${line}"
             print_output "  ${count} lines: ${path}"
         done < <(head -n "${TOPLIST}" "${temp_file}" || true)
-        rm -f "${temp_file}"
     done
 }
 
@@ -210,13 +210,12 @@ if [[ "${LARGE_FILE_COUNT}" -eq 0 ]]; then
 else
     print_message "Found ${LARGE_FILE_COUNT} large files:"
     if [[ -s "${LARGE_FILES_LIST}" ]]; then
-        sorted_list="$(mktemp)"
+        sorted_list="${LOG_PREFIX}${TIMESTAMP}_large_files_sorted.txt"
         sort -nr "${LARGE_FILES_LIST}" > "${sorted_list}"
         while read -r size file; do
             size_formatted=$(printf "%7s" "$(printf "%'d" "${size}")" )
             print_output "${size_formatted} KB: ${file}"
         done < "${sorted_list}"
-        rm -f "${sorted_list}"
     fi
     print_result 0 "Found ${LARGE_FILE_COUNT} files >${LARGE_FILE_THRESHOLD}"
     ((PASS_COUNT++))

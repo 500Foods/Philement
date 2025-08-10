@@ -11,8 +11,11 @@
 # get_combined_coverage() 
 # validate_coverage_consistency()
 # get_coverage_summary()
+# calculate_unity_coverage()
+# calculate_blackbox_coverage()
 
 # CHANGELOG
+# 3.1.0 - 2025-08-10 - Added caching to calculate_unity/blackbox_coverage()
 # 3.0.0 - 2025-08-04 - GCOV Optimization Adventure
 # 2.1.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 2.0.0 - 2025-07-11 - Refactored into modular components
@@ -24,7 +27,7 @@ export COVERAGE_GUARD="true"
 
 # Library metadata
 COVERAGE_NAME="Coverage Library"
-COVERAGE_VERSION="3.0.0"
+COVERAGE_VERSION="3.1.0"
 print_message "${COVERAGE_NAME} ${COVERAGE_VERSION}" "info" 2> /dev/null || true
 
 # Sort out directories
@@ -389,12 +392,42 @@ calculate_coverage_generic() {
 calculate_unity_coverage() {
     local build_dir="$1"
     local timestamp="$2"
-    calculate_coverage_generic "${build_dir}" "${timestamp}" "${UNITY_COVERAGE_FILE}" "${UNITY_COVERAGE_FILE}.detailed" true true
+    local marker_file="${BUILD_DIR}/unity_coverage_marker"
+    local coverage_file="${UNITY_COVERAGE_FILE}"
+
+    # Check if cache marker and coverage file exist
+    if [[ -f "${marker_file}" && -f "${coverage_file}" ]]; then
+        cat "${coverage_file}" 2>/dev/null || echo "0.000"
+        return 0
+    fi
+
+    # Calculate coverage and create marker
+    calculate_coverage_generic "${build_dir}" "${timestamp}" "${coverage_file}" "${coverage_file}.detailed" true true
+    local result=$?
+    if [[ ${result} -eq 0 ]]; then
+        touch "${marker_file}"
+    fi
+    return "${result}"
 }
 
 # Wrapper for Blackbox coverage
 calculate_blackbox_coverage() {
     local coverage_dir="$1"
     local timestamp="$2"
-    calculate_coverage_generic "${coverage_dir}" "${timestamp}" "${BLACKBOX_COVERAGE_FILE}" "${BLACKBOX_COVERAGE_FILE}.detailed" false false  # No extra filters for blackbox
+    local marker_file="${BUILD_DIR}/blackbox_coverage_marker"
+    local coverage_file="${BLACKBOX_COVERAGE_FILE}"
+
+    # Check if cache marker and coverage file exist
+    if [[ -f "${marker_file}" && -f "${coverage_file}" ]]; then
+        cat "${coverage_file}" 2>/dev/null || echo "0.000"
+        return 0
+    fi
+
+    # Calculate coverage and create marker
+    calculate_coverage_generic "${coverage_dir}" "${timestamp}" "${coverage_file}" "${coverage_file}.detailed" false false
+    local result=$?
+    if [[ ${result} -eq 0 ]]; then
+        touch "${marker_file}"
+    fi
+    return "${result}"
 }
