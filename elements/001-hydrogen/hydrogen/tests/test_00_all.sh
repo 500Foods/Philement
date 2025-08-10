@@ -12,6 +12,8 @@
 # run_all_tests_parallel() 
 
 # CHANGELOG
+# 6.4.0 - 2025-08-10 - Cleaned out some mktemp calls
+# 6.3.0 - 2025-08-09 - Minor log file adjustmeents
 # 6.2.0 - 2025-08-07 - Support for commas in test names (ie, thousands separators)
 # 6.1.1 - 2025-08-03 - Removed extraneous command -v calls
 # 6.1.0 - 2025-07-31 - Added tmpfs code that was originally in Test 01
@@ -31,7 +33,7 @@
 TEST_NAME="Test Suite Orchestration"
 TEST_ABBR="ORC"
 TEST_NUMBER="00"
-TEST_VERSION="6.2.0"
+TEST_VERSION="6.4.0"
 export TEST_NAME TEST_ABBR TEST_NUMBER TEST_VERSION
  
 # shellcheck disable=SC1091 # Resolve path statically
@@ -55,6 +57,8 @@ declare -a results
 CACHE_CMD_DIR="${HOME}/.cache/hydrogen/commands"
 mkdir -p "${CACHE_CMD_DIR}"
 export CACHE_CMD_DIR
+
+
 # shellcheck disable=SC2154 # PROJECT_DIR defined externally in framework.sh
 pushd "${PROJECT_DIR}" > /dev/null || return 1
 
@@ -64,7 +68,6 @@ export PATH="${PATH}:tests/lib"
 # Collect commands that need processing (cache misses)
 to_process=()
 cached=0
-
 for cmd in "${commands[@]}"; do
     cache_file="${CACHE_CMD_DIR}/${cmd// /_}"  # Replace spaces if any, though none here
     if [[ -f "${cache_file}" ]]; then
@@ -229,17 +232,24 @@ done
 # Function to run a single test and capture results
 run_single_test() {
     local test_script="$1"
-    local test_number
     local test_name
+    local test_abbrev
+    local test_number
     local test_version
     
     # Extract test number from script filename
-    
-    test_number=$(basename "${test_script}" .sh | sed 's/test_//' | sed 's/_.*//' || true)
-    test_name=$(grep '^TEST_NAME=".*"$' "${test_script}" | sed 's/^[A-Za-z_][A-Za-z0-9_]*="\([^"]*\)".*/\1/' || true)
-    test_abbrev=$(grep '^TEST_ABBR=".*"$' "${test_script}" | sed 's/^[A-Za-z_][A-Za-z0-9_]*="\([^"]*\)".*/\1/' || true)
-    test_version=$(grep '^TEST_VERSSION=".*"$' "${test_script}" | sed 's/^[A-Za-z_][A-Za-z0-9_]*="\([^"]*\)".*/\1/' || true)
-    
+    {
+        read -r test_name
+        read -r test_abbrev
+        read -r test_number
+        read -r test_version
+    } < <(awk -F= '
+            /^TEST_NAME=/ {gsub(/"/, "", $2); print $2}
+            /^TEST_ABBR=/ {gsub(/"/, "", $2); print $2}
+            /^TEST_NUMBER=/ {gsub(/"/, "", $2); print $2}
+            /^TEST_VERSION=/ {gsub(/"/, "", $2); print $2}
+        ' "${test_script}" || true)
+
     # Handle skip mode
     if [[ "${SKIP_TESTS}" = true ]]; then
         # Store skipped test results (don't print "Would run" message)
@@ -259,17 +269,16 @@ run_single_test() {
     source "${test_script}"
     local exit_code=$?
     
-    # Don't calculate elapsed time here - we'll get it from the subtest result file
-    # This eliminates the timing discrepancy by using a single source of truth
-    local elapsed_formatted="0.000"
-    
+   
     # Extract test results from subtest file or use defaults
-    local total_subtests=1 passed_subtests=0 elapsed_formatted="0.000"
-    local test_name_for_file
-    test_name_for_file=$(basename "${test_script}" .sh | sed 's/test_[0-9]*_//' | tr '_' ' ' | sed 's/\b\w/\U&/g' || true)
+    local total_subtests=1 
+    local passed_subtests=0 
+    local elapsed_formatted="0.000"
     local latest_subtest_file
+    local test_name_for_file
+    test_name_for_file="${test_abbrev}"
     # shellcheck disable=SC2154 # RESULTS_DIR defined externally in framework.sh
-    latest_subtest_file=$(find "${RESULTS_DIR}" -name "subtest_${test_number}_*.txt" -type f 2>/dev/null | sort -r | head -1 || true)
+    latest_subtest_file=$(find "${RESULTS_DIR}" -name "test_${test_number}_*.txt" -type f 2>/dev/null | sort -r | head -1 || true)
     
     if [[ -n "${latest_subtest_file}" ]] && [[ -f "${latest_subtest_file}" ]]; then
         IFS=',' read -r total_subtests passed_subtests test_name file_elapsed_time test_abbrev test_version < "${latest_subtest_file}" 2>/dev/null || {
@@ -329,7 +338,7 @@ run_single_test_parallel() {
     
     # Find the most recent subtest file for this test
     local latest_subtest_file
-    latest_subtest_file=$(find "${RESULTS_DIR}" -name "subtest_${test_number}_*.txt" -type f 2>/dev/null | sort -r | head -1 || true)
+    latest_subtest_file=$(find "${RESULTS_DIR}" -name "test_${test_number}_*.txt" -type f 2>/dev/null | sort -r | head -1 || true)
     
     if [[ -n "${latest_subtest_file}" ]] && [[ -f "${latest_subtest_file}" ]]; then
         # Read subtest results, test name, and elapsed time from the file
@@ -454,8 +463,13 @@ run_all_tests_parallel() {
         for test_script in "${remaining_tests[@]}"; do
             local temp_result_file
             local temp_output_file
-            temp_result_file=$(mktemp)
-            temp_output_file=$(mktemp)
+            local test_number
+            test_number=$(basename "${test_script}" .sh | sed 's/test_//' | sed 's/_.*//' || true)
+
+            # shellcheck disable=SC2154 # TS_ORC_LOG, is defined externally in framework.sh
+            temp_result_file="${RESULTS_DIR}/test_${test_number}_${TS_ORC_LOG}_output.txt"
+            temp_output_file="${RESULTS_DIR}/test_${test_number}_${TS_ORC_LOG}_output.log"
+
             temp_result_files+=("${temp_result_file}")
             temp_output_files+=("${temp_output_file}")
             
@@ -483,8 +497,6 @@ run_all_tests_parallel() {
                 # Display the captured output
                 cat "${temp_output_file}"
             fi
-            # Clean up output file
-            rm -f "${temp_output_file}"
         done
         
         # Collect results from background tests
@@ -504,9 +516,6 @@ run_all_tests_parallel() {
                 TEST_FAILED+=("${failed_subtests}")
                 TEST_ELAPSED+=("${elapsed_formatted}")
             fi
-            
-            # Clean up result file
-            rm -f "${temp_result_file}"
         done
         
         # Clear arrays for next group
@@ -692,6 +701,7 @@ for i in "${!TEST_NUMBERS[@]}"; do
     test_id="${TEST_NUMBERS[${i}]}-${TEST_ABBREVS[${i}]}"
     test_name_adjusted="${TEST_NAMES[${i}]}"
     test_name_adjusted=${test_name_adjusted//\{COMMA\}/,}
+
     # Calculate group (tens digit) from test number
     group=$((${TEST_NUMBERS[${i}]} / 10))
     
@@ -713,9 +723,8 @@ done
 data_json_content+="]"
 
 # Use tables executable to render the summary table
-temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory"; exit 1; }
-layout_json="${temp_dir}/summary_layout.json"
-data_json="${temp_dir}/summary_data.json"
+layout_json="${RESULTS_DIR}/results_layout.json"
+data_json="${RESULTS_DIR}/results_data.json"
 
 echo "${layout_json_content}" > "${layout_json}"
 echo "${data_json_content}" > "${data_json}"
@@ -725,14 +734,10 @@ results_table_file="${RESULTS_DIR}/results_table.txt"
 # shellcheck disable=SC2154 # TABLES_EXTERNAL defined externally in framework.sh
 "${TABLES_EXTERNAL}" "${layout_json}" "${data_json}" 2>/dev/null | tee "${results_table_file}" || true
 
-# Launch background process to generate COMPLETE.svg from saved file
-results_svg_path="${PROJECT_DIR}/COMPLETE.svg"
-# Delete existing file before generating new one
-rm -f "${results_svg_path}"
 # Generate SVG from saved results table file in background
 # shellcheck disable=SC2154 # OH_EXTERNAL defined externally in framework.sh
+results_svg_path="${PROJECT_DIR}/COMPLETE.svg"
+rm -f "${results_svg_path}"
 ("${OH_EXTERNAL}" -i "${results_table_file}" -o "${results_svg_path}" 2>/dev/null) &
-
-rm -rf "${temp_dir}" 2>/dev/null
 
 exit "${OVERALL_EXIT_CODE}"

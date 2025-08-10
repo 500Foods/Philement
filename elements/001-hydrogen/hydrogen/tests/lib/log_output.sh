@@ -21,6 +21,7 @@
 # print_test_completion()
 
 # CHANGELOG
+# 3.7.0 - 2025-08-10 - Simplifid some log output naming, cleared out mktemp calls
 # 3.6.0 - 2025-08-07 - Support for commas in test names (ie, thousands separators)
 # 3.5.0 - 2025-08-06 - Improvements to logging file handling, common TAB file naming
 # 3.4.0 - 2025-08-02 - Removed unused functions, moved test functions to framework.sh
@@ -44,7 +45,7 @@ export LOG_OUTPUT_GUARD="true"
 
 # Library metadata
 LOG_OUTPUT_NAME="Log Output Library"
-LOG_OUTPUT_VERSION="3.6.0"
+LOG_OUTPUT_VERSION="3.7.0"
 export LOG_OUTPUT_NAME LOG_OUTPUT_VERSION
 
 # Global variables for test/subtest numbering
@@ -160,10 +161,9 @@ print_test_suite_header() {
     local test_id="${test_number}-${test_abbr}"
     
     # Fall back to external process for backward compatibility
-    local temp_dir
-    temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory"; return 1; }
-    local layout_json="${temp_dir}/suite_header_layout.json"
-    local data_json="${temp_dir}/suite_header_data.json"
+    # shellcheck disable=SC2154,SC2153 # RESULTS_DIR, TEST_NUMBER defined in caller (Test 00)
+    local layout_json="${RESULTS_DIR}/suite_header_${TIMESTAMP}_layout.json"
+    local data_json="${RESULTS_DIR}/suite_header_${TIMESTAMP}_data.json"
     
     # Create layout JSON with proper columns and blue theme
     cat > "${layout_json}" << EOF
@@ -212,9 +212,7 @@ EOF
     # Use tables executable to render the header
     # shellcheck disable=SC2154 # TABLES_EXTERNAL defined in framework.sh
     "${TABLES_EXTERNAL}" "${layout_json}" "${data_json}" 2>/dev/null
-    
-    # Clean up temporary files
-    rm -rf "${temp_dir}" 2>/dev/null
+   
 }
 
 # Function to print beautiful test header using tables.sh
@@ -238,10 +236,8 @@ print_test_header() {
     local test_id="${test_number}-${test_abbr}"
 
     # Fall back to external process for backward compatibility
-    local temp_dir
-    temp_dir=$(mktemp -d 2>/dev/null) || { echo "Error: Failed to create temporary directory"; return 1; }
-    local layout_json="${temp_dir}/header_layout.json"
-    local data_json="${temp_dir}/header_data.json"
+    local layout_json="${RESULTS_DIR}/test_${test_number}_${TIMESTAMP}_header_layout.json"
+    local data_json="${RESULTS_DIR}/test_${test_number}_${TIMESTAMP}_header_data.json"
     
     # Create layout JSON with proper columns
     cat > "${layout_json}" << EOF
@@ -289,9 +285,6 @@ EOF
     # Use tables executable to render the header
     # shellcheck disable=SC2154 # TABLES_EXTERNAL Defined externally in framework.sh
     "${TABLES_EXTERNAL}" "${layout_json}" "${data_json}" 2>/dev/null
-    
-    # Clean up temporary files
-    rm -rf "${temp_dir}" 2>/dev/null
 }
 
 # Function to print subtest headers
@@ -472,11 +465,8 @@ print_test_completion() {
     if [[ -n "${ORCHESTRATION}" ]]; then
         # Use the elapsed_time that was already calculated above - SINGLE SOURCE OF TRUTH
         local file_elapsed_time="${elapsed_time}"
-        # Add process ID and random component to ensure uniqueness in parallel execution
         # shellcheck disable=SC2154 # TS_ORC_LOG, is defined externally in framework.sh
-        local unique_id="${TS_ORC_LOG}_$$_${RANDOM}"
-        # shellcheck disable=SC2154 # RESULTS_DIR, is defined externally in framework.sh
-        local subtest_file="${RESULTS_DIR}/subtest_${CURRENT_TEST_NUMBER}_${unique_id}.txt"
+        local subtest_file="${RESULTS_DIR}/test_${CURRENT_TEST_NUMBER}_${TS_ORC_LOG}_results.txt"
         test_name_adjusted=${test_name//,/\{COMMA\}}
         echo "${total_subtests},${TEST_PASSED_COUNT},${test_name_adjusted},${file_elapsed_time},${test_abbr},${test_version}" > "${subtest_file}" 2>/dev/null
     fi

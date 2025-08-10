@@ -20,6 +20,7 @@
 # update_readme_with_results()
 
 # CHANGELOG
+# 2.8.0 - 2025-08-08 - Cleaned out some mktemp calls
 # 2.7.0 - 2025-08-07 - Support for commas in test names (ie, thousands separators)
 # 2.6.0 - 2025-08-06 - Improvements to logging file handling, common TAB file naming
 # 2.5.1 - 2025-08-03 - Removed extraneous command -v calls
@@ -38,7 +39,7 @@ export FRAMEWORK_GUARD="true"
 
 # Library metadata
 FRAMEWORK_NAME="Framework Library"
-FRAMEWORK_VERSION="2.7.0"
+FRAMEWORK_VERSION="2.8.0"
 export FRAMEWORK_NAME FRAMEWORK_VERSION
 
 # Set the number of CPU cores for parallel processing - why not oversubscribe?
@@ -454,7 +455,7 @@ update_readme_with_results() {
     
     # Create temporary file for new README content
     local temp_readme
-    temp_readme=$(mktemp) || { echo "Error: Failed to create temporary file" >&2; return 1; }
+    temp_readme="${RESULTS_DIR}/README_${TIMESTAMP}.md"
     
     # Process README.md line by line
     local in_test_results=false
@@ -601,7 +602,6 @@ update_readme_with_results() {
     # Replace original README with updated version
     if ! mv "${temp_readme}" "${readme_file}"; then
         echo "Error: Failed to update README.md"
-        rm -f "${temp_readme}"
         return 1
     fi
 }
