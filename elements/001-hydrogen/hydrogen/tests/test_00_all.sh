@@ -627,7 +627,7 @@ fi
 # shellcheck disable=SC2154 # TC_ORC_DSP defined externally in framework.sh
 layout_json_content='{
     "title": "Test Suite Results {NC}{RED}———{RESET}{BOLD}{CYAN} Unity {WHITE}'"${UNITY_COVERAGE}"'% {RESET}{RED}———{RESET}{BOLD}{CYAN} Blackbox {WHITE}'"${BLACKBOX_COVERAGE}"'% {RESET}{RED}———{RESET}{BOLD}{CYAN} Combined {WHITE}'"${COMBINED_COVERAGE}"'%{RESET}",
-    "footer": "{CYAN}Cumulative {WHITE}'"${TOTAL_RUNNING_TIME_FORMATTED}"'{RED} ——— {RESET}{CYAN}Elapsed {WHITE}'"${TOTAL_ELAPSED_FORMATTED}"'{RED} ——— {CYAN}Completed {WHITE}'"${TS_ORC_DSP}"'{RESET}",
+    "footer": "{CYAN}Elapsed {WHITE}'"${TOTAL_ELAPSED_FORMATTED}"'{RED} ——— {CYAN}Cumulative {WHITE}'"${TOTAL_RUNNING_TIME_FORMATTED}"'{RED} ——— {RESET} {CYAN}Completed {WHITE}'"${TS_ORC_DSP}"'{RESET}",
     "footer_position": "right",
     "columns": [
         {

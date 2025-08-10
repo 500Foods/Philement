@@ -38,7 +38,7 @@ TEST_VERSION="6.2.0"
 setup_test_environment
 
 # More test configuration
-TEST_CONFIG="${CONFIG_DIR}/hydrogen_test_13_min.json"
+TEST_CONFIG="${CONFIG_DIR}/hydrogen_test_13_crash_test.json"
 STARTUP_TIMEOUT=10    
 CRASH_TIMEOUT=30
 

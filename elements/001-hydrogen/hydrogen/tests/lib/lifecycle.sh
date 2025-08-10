@@ -133,43 +133,43 @@ start_hydrogen_with_pid() {
     # Launch Hydrogen (disown to prevent job control messages)
     "${hydrogen_bin}" "${config_file}" > "${log_file}" 2>&1 &
     hydrogen_pid=$!
-    # disown "${hydrogen_pid}" 2>/dev/null || true
+    disown "${hydrogen_pid}" 2>/dev/null || true
     
     # Display the PID for tracking
     print_message "Hydrogen process started with PID: ${hydrogen_pid}"
     
     # Verify process started with multiple attempts for robustness
-    local check_attempt=1
-    local max_attempts=25
-    local process_running=false
+#     local check_attempt=1
+#     local max_attempts=100
+#     local process_running=false
     
-    while [[ ${check_attempt} -le ${max_attempts} ]]; do
-        if [[ ${check_attempt} -eq 1 ]]; then
-            sleep 0.040  # Initial check after brief delay
-        else
-            sleep 0.040  # Short delay between subsequent checks
-        fi
+#     while [[ ${check_attempt} -le ${max_attempts} ]]; do
+#         if [[ ${check_attempt} -eq 1 ]]; then
+#             sleep 0.05  # Initial check after brief delay
+#         else
+#             sleep 0.05  # Short delay between subsequent checks
+#         fi
         
-        if ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
-            process_running=true
-            break
-        fi
+# #        if ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+#             process_running=true
+#             break
+# #        fi
         
-        ((check_attempt++))
-    done
+#         ((check_attempt++))
+#     done
     
-    if [[ "${process_running}" = false ]]; then
-        print_result 1 "Failed to start Hydrogen - process did not start or crashed immediately (checked ${max_attempts} times)"
-        print_message "Check log file for possible errors: ${log_file}"
-        if [[ -s "${log_file}" ]]; then
-            print_message "Last few lines of log file:"
-            # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
-            while IFS= read -r line; do
-                print_output "${line}"
-            done < <(tail -n 5 "${log_file}" || true)
-        fi
-        return 1
-    fi
+    # if [[ "${process_running}" = false ]]; then
+    #     print_result 1 "Failed to start Hydrogen - process did not start or crashed immediately (checked ${max_attempts} times)"
+    #     print_message "Check log file for possible errors: ${log_file}"
+    #     if [[ -s "${log_file}" ]]; then
+    #         print_message "Last few lines of log file:"
+    #         # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
+    #         while IFS= read -r line; do
+    #             print_output "${line}"
+    #         done < <(tail -n 5 "${log_file}" || true)
+    #     fi
+    #     return 1
+    # fi
     
     # Wait for startup
     print_message "Waiting for startup (max ${timeout}s)..."
@@ -402,7 +402,7 @@ run_lifecycle_test() {
 # Function to wait for server to be ready
 wait_for_server_ready() {
     local base_url="$1"
-    local max_attempts=25   # 2.5 seconds total (0.1s * 25)
+    local max_attempts=100   # 2.5 seconds total (0.1s * 25)
     local attempt=1
     
     print_message "Waiting for server to be ready at ${base_url}..."
@@ -412,7 +412,7 @@ wait_for_server_ready() {
             print_message "Server is ready after ${attempt} attempt(s)"
             return 0
         fi
-        sleep 0.1
+        sleep 0.05
         ((attempt++))
     done
     

@@ -232,23 +232,23 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [Oh.md](tests/docs/Oh.md): ANSI terminal output to SVG converter documentation
 - [test_00_all.md](tests/docs/test_00_all.md): Test orchestration and execution framework
 - [test_01_compilation.md](tests/docs/test_01_compilation.md): Compilation and build verification tests
-- [test_12_env_variables.md](tests/docs/test_12_env_variables.md): Environment variable validation
-- [test_14_secrets.md](tests/docs/test_14_secrets.md): Checks validity of key environment variables
-- [test_16_library_dependencies.md](tests/docs/test_16_library_dependencies.md): Library dependency verification
-- [test_18_json_error_handling.md](tests/docs/test_18_json_error_handling.md): JSON error handling tests
-- [test_13_crash_handler.md](tests/docs/test_13_crash_handler.md): Crash handling and recovery tests
-- [test_20_signals.md](tests/docs/test_20_signals.md): Signal handling tests
-- [test_22_startup_shutdown.md](tests/docs/test_22_startup_shutdown.md): Startup and shutdown lifecycle tests
-- [test_26_shutdown.md](tests/docs/test_26_shutdown.md): Shutdown sequence testing
-- [test_28_socket_rebind.md](tests/docs/test_28_socket_rebind.md): Socket rebinding tests
-- [test_30_api_prefix.md](tests/docs/test_30_api_prefix.md): API prefix configuration tests
-- [test_32_system_endpoints.md](tests/docs/test_32_system_endpoints.md): System endpoint functionality tests
-- [test_34_swagger.md](tests/docs/test_34_swagger.md): Swagger documentation tests
-- [test_36_websockets.md](tests/docs/test_36_websockets.md): WebSocket server functionality and integration tests
+- [test_02_secrets.md](tests/docs/test_02_secrets.md): Checks validity of key environment variables
 - [test_03_code_size.md](tests/docs/test_03_code_size.md): Code size analysis and metrics
-- [test_06_check_links.md](tests/docs/test_06_check_links.md): Link validation tests
-- [test_19_leaks_like_a_sieve.md](tests/docs/test_19_leaks_like_a_sieve.md): Memory leak detection tests
-- [test_11_unity.md](tests/docs/test_11_unity.md): Unity testing framework integration
+- [test_04_check_links.md](tests/docs/test_04_check_links.md): Link validation tests
+- [test_10_unity.md](tests/docs/test_10_unity.md): Unity testing framework integration
+- [test_11_leaks_like_a_sieve.md](tests/docs/test_11_leaks_like_a_sieve.md): Memory leak detection tests
+- [test_12_env_variables.md](tests/docs/test_12_env_variables.md): Environment variable validation
+- [test_13_crash_handler.md](tests/docs/test_13_crash_handler.md): Crash handling and recovery tests
+- [test_14_library_dependencies.md](tests/docs/test_14_library_dependencies.md): Library dependency verification
+- [test_15_json_error_handling.md](tests/docs/test_15_json_error_handling.md): JSON error handling tests
+- [test_20_shutdown.md](tests/docs/test_20_shutdown.md): Shutdown sequence testing
+- [test_21_startup_shutdown.md](tests/docs/test_21_startup_shutdown.md): Startup and shutdown lifecycle tests
+- [test_22_signals.md](tests/docs/test_22_signals.md): Signal handling tests
+- [test_23_socket_rebind.md](tests/docs/test_23_socket_rebind.md): Socket rebinding tests
+- [test_24_api_prefix.md](tests/docs/test_24_api_prefix.md): API prefix configuration tests
+- [test_25_system_endpoints.md](tests/docs/test_25_system_endpoints.md): System endpoint functionality tests
+- [test_26_swagger.md](tests/docs/test_26_swagger.md): Swagger documentation tests
+- [test_27_websockets.md](tests/docs/test_27_websockets.md): WebSocket server functionality and integration tests
 - [test_90_markdownlint.md](tests/docs/test_90_markdownlint.md): Markdown linting tests
 - [test_91_cppcheck.md](tests/docs/test_91_cppcheck.md): C/C++ static analysis tests
 - [test_92_shellcheck.md](tests/docs/test_92_shellcheck.md): Shell script linting tests
