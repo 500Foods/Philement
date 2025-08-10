@@ -17,6 +17,9 @@
 # 2.0.0 - 2025-07-18 - Performance optimization: 46% speed improvement (3.136s to 1.705s), background cloc analysis, batch wc -l processing, parallel file type counting, largest-to-smallest file sorting
 # 1.0.0 - Initial version
 
+# Give Test 01 a headstart
+# [[ -z "${ORCHESTRATION}" ]] || sleep 5.5
+
 # Test configuration
 TEST_NAME="Code Size Analysis"
 TEST_ABBR="SIZ"
@@ -142,8 +145,6 @@ if [[ -s "${SOURCE_FILES_LIST}" ]]; then
             fi
         fi
     done < "${LINE_COUNT_FILE}.tmp" > "${LINE_COUNT_FILE}"
-    
-    rm -f "${LINE_COUNT_FILE}.tmp"
 fi
 
 # Sort line count file
@@ -262,7 +263,7 @@ print_output "Large files: ..${LARGE_FILES_LIST}"
 print_output "Line counts: ..${LINE_COUNT_FILE}"
 print_output "Cloc output: ..${CLOC_OUTPUT}"
 
-TEST_NAME="${TEST_NAME} {BLUE}(cloc: ${LOCCOUNT} lines){RESET}"
+TEST_NAME="${TEST_NAME} {BLUE}(lines: ${LOCCOUNT}){RESET}"
 
 # Print completion table
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"

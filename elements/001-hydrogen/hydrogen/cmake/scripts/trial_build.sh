@@ -39,8 +39,8 @@ if echo "${BUILD_OUTPUT}" | grep -q "completed successfully" && [[ -z "${ERRORS}
     
     # Run shutdown test
     echo "🔄 Running shutdown test..."
-    if [[ -f "${SOURCE_DIR}/../tests/test_26_shutdown.sh" ]]; then
-        "${SOURCE_DIR}/../tests/test_26_shutdown.sh" >/dev/null 2>&1 && echo "✅ Shutdown test passed" || echo "❌ Shutdown test failed"
+    if [[ -f "${SOURCE_DIR}/../tests/test_20_shutdown.sh" ]]; then
+        "${SOURCE_DIR}/../tests/test_20_shutdown.sh" >/dev/null 2>&1 && echo "✅ Shutdown test passed" || echo "❌ Shutdown test failed"
     else
         echo "⚠️  Shutdown test not found"
     fi

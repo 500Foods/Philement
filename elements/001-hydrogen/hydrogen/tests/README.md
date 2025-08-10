@@ -42,33 +42,39 @@ With the exception of Test 01 (Compilation) and Test 11 (Unity) these are all co
 Test 01 is just the script that bulids everything, so not really a test in itself, though it does do a number of checks for important things.  
 And Test 11 is all about Unity unit tests, where we have custom code written to call our app's functions directly, which is described in more detail below.
 
-### Test Suite Management
+### Test Suite Management - Orchestration
 
 - **[test_00_all.sh](docs/test_00_all.md)**: Test suite runner for orchestrating all tests (described above).
 
-### Core Functional Tests
+### Compilation and Static Analysis
 
 - **[test_01_compilation.sh](docs/test_01_compilation.md)**: Verifies successful compilation and build processes.
-- **[test_11_unity.sh](docs/test_11_unity.md)**: Integrates Unity testing framework for unit tests.
+- **[test_02_secrets.sh](docs/test_02_secrets.md)**: Checks validity of key environment variables
+- **[test_03_code_size.sh](docs/test_03_code_size.md)**: Analyzes code size metrics and file distribution.
+- **[test_04_check_links.sh](docs/test_04_check_links.md)**: Validates links in documentation files.
+
+### Core Functional Tests
+
+- **[test_10_unity.sh](docs/test_10_unity.md)**: Integrates Unity testing framework for unit tests.
+- **[test_11_leaks_like_a_sieve.sh](docs/test_11_leaks_like_a_sieve.md)**: Detects memory leaks and resource issues using Valgrind.
 - **[test_12_env_variables.sh](docs/test_12_env_variables.md)**: Tests that configuration values can be provided via environment variables.
 - **[test_13_crash_handler.sh](docs/test_13_crash_handler.md)**: Tests that the crash handler correctly generates and formats core dumps.
-- **[test_14_secrets.sh](docs/test_14_secrets.md)**: Checks validity of key environment variables
-- **[test_16_library_dependencies.sh](docs/test_16_library_dependencies.md)**: Checks for required library dependencies.
-- **[test_18_json_error_handling.sh](docs/test_18_json_error_handling.md)**: Tests JSON configuration error handling.
-- **[test_19_leaks_like_a_sieve.sh](docs/test_19_leaks_like_a_sieve.md)**: Detects memory leaks and resource issues using Valgrind.
-- **[test_20_signals.sh](docs/test_20_signals.md)**: Tests signal handling (e.g., SIGINT, SIGTERM, SIGHUP).
-- **[test_22_startup_shutdown.sh](docs/test_22_startup_shutdown.md)**: Validates complete startup and shutdown lifecycles.
-- **[test_26_shutdown.sh](docs/test_26_shutdown.md)**: Tests the shutdown functionality of the application with a minimal configuration.
-- **[test_28_socket_rebind.sh](docs/test_28_socket_rebind.md)**: Tests socket rebinding behavior.
-- **[test_30_api_prefix.sh](docs/test_30_api_prefix.md)**: Validates API prefix configurations.
-- **[test_32_system_endpoints.sh](docs/test_32_system_endpoints.md)**: Tests system endpoint functionality.
-- **[test_34_swagger.sh](docs/test_34_swagger.md)**: Verifies Swagger documentation and UI integration.
-- **[test_36_websockets.sh](docs/test_36_websockets.md)**: Tests WebSocket server functionality and integration.
+- **[test_14_library_dependencies.sh](docs/test_14_library_dependencies.md)**: Checks for required library dependencies.
+- **[test_15_json_error_handling.sh](docs/test_15_json_error_handling.md)**: Tests JSON configuration error handling.
+
+### General Features Tests
+
+- **[test_20_shutdown.sh](docs/test_20_shutdown.md)**: Tests the shutdown functionality of the application with a minimal configuration.
+- **[test_21_startup_shutdown.sh](docs/test_21_startup_shutdown.md)**: Validates complete startup and shutdown lifecycles.
+- **[test_22_signals.sh](docs/test_22_signals.md)**: Tests signal handling (e.g., SIGINT, SIGTERM, SIGHUP).
+- **[test_23_socket_rebind.sh](docs/test_23_socket_rebind.md)**: Tests socket rebinding behavior.
+- **[test_24_api_prefix.sh](docs/test_24_api_prefix.md)**: Validates API prefix configurations.
+- **[test_25_system_endpoints.sh](docs/test_25_system_endpoints.md)**: Tests system endpoint functionality.
+- **[test_26_swagger.sh](docs/test_26_swagger.md)**: Verifies Swagger documentation and UI integration.
+- **[test_27_websockets.sh](docs/test_27_websockets.md)**: Tests WebSocket server functionality and integration.
 
 ### Static Analysis & Code Quality Tests
 
-- **[test_03_code_size.sh](docs/test_03_code_size.md)**: Analyzes code size metrics and file distribution.
-- **[test_06_check_links.sh](docs/test_06_check_links.md)**: Validates links in documentation files.
 - **[test_90_markdownlint.sh](docs/test_90_markdownlint.md)**: Lints Markdown documentation using markdownlint.
 - **[test_91_cppcheck.sh](docs/test_91_cppcheck.md)**: Performs C/C++ static analysis using cppcheck.
 - **[test_92_shellcheck.sh](docs/test_92_shellcheck.md)**: Validates shell scripts using shellcheck with exception justification checks.
