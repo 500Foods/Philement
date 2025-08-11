@@ -221,26 +221,18 @@ print_test_header() {
     local test_abbr="$2"
     local test_number="$3"
     local test_version="$4"
-    
+    local test_id
+    test_id=$(printf "%s-%s" "${test_number}" "${test_abbr}")
+
     # Start the test timer
     start_test_timer
     
     # Automatically enable output collection for performance optimization
     enable_output_collection
     
-    # Create timestamp with milliseconds
-    local timestamp
-    timestamp=$(date '+%Y-%m-%d %H:%M:%S.%3N')
-    
-    # Create the test header content
-    local test_id="${test_number}-${test_abbr}"
-
-    # Fall back to external process for backward compatibility
-    local layout_json="${RESULTS_DIR}/test_${test_number}_${TIMESTAMP}_header_layout.json"
-    local data_json="${RESULTS_DIR}/test_${test_number}_${TIMESTAMP}_header_data.json"
-    
     # Create layout JSON with proper columns
-    cat > "${layout_json}" << EOF
+    # shellcheck disable=SC2154 # Defined in framework.sh
+    cat > "${TAB_LAYOUT_HEADER}" << EOF
 {
     "columns": [
         {
@@ -271,7 +263,8 @@ print_test_header() {
 EOF
 
     # Create data JSON with the test information
-    cat > "${data_json}" << EOF
+    # shellcheck disable=SC2154 # Defined in framework.sh    
+    cat > "${TAB_DATA_HEADER}" << EOF
 [
     {
         "test_id": "${test_id}",
@@ -284,7 +277,7 @@ EOF
     
     # Use tables executable to render the header
     # shellcheck disable=SC2154 # TABLES_EXTERNAL Defined externally in framework.sh
-    "${TABLES_EXTERNAL}" "${layout_json}" "${data_json}" 2>/dev/null
+    "${TABLES_EXTERNAL}" "${TAB_LAYOUT_HEADER}" "${TAB_DATA_HEADER}" 2>/dev/null
 }
 
 # Function to print subtest headers
@@ -466,14 +459,14 @@ print_test_completion() {
         # Use the elapsed_time that was already calculated above - SINGLE SOURCE OF TRUTH
         local file_elapsed_time="${elapsed_time}"
         # shellcheck disable=SC2154 # TS_ORC_LOG, is defined externally in framework.sh
-        local subtest_file="${RESULTS_DIR}/test_${CURRENT_TEST_NUMBER}_${TS_ORC_LOG}_results.txt"
+        local subtest_file="${RESULTS_DIR}/test_${CURRENT_TEST_NUMBER}_${TIMESTAMP}_results.txt"
         test_name_adjusted=${test_name//,/\{COMMA\}}
         echo "${total_subtests},${TEST_PASSED_COUNT},${test_name_adjusted},${file_elapsed_time},${test_abbr},${test_version}" > "${subtest_file}" 2>/dev/null
     fi
-    
+
     # Create layout JSON with proper columns
     # shellcheck disable=SC2154 # TAB_LAYOUT defined in framework.sh
-    cat > "${TAB_LAYOUT}" << EOF
+    cat > "${TAB_LAYOUT_FOOTER}" << EOF
 {
     "theme": "Blue",
     "columns": [
@@ -530,7 +523,7 @@ EOF
     # that was calculated at the top of this function - SINGLE SOURCE OF TRUTH
     local display_elapsed_time="${elapsed_time}"
     # shellcheck disable=SC2154 # TAB_DATA defined in framework.sh
-    cat > "${TAB_DATA}" << EOF
+    cat > "${TAB_DATA_FOOTER}" << EOF
 [
     {
         "test_id": "${test_number}-${test_abbr}",
@@ -546,8 +539,14 @@ EOF
     
     # Use tables executable to render the completion table
     # shellcheck disable=SC2154 # LIB_DIR defined externally in framework.sh    
-    "${TABLES_EXTERNAL}" "${TAB_LAYOUT}" "${TAB_DATA}" 2>/dev/null
+    "${TABLES_EXTERNAL}" "${TAB_LAYOUT_FOOTER}" "${TAB_DATA_FOOTER}" 2>/dev/null
     
     # Let's end up here so the next script doesn't have a fit
     popd >/dev/null 2>&1 || return
+
+    # Let's kill any stragglers that didn't exit cleanly
+    if [[ -z "${ORCHESTRATION}" ]]; then
+        pkill -f hydrogen_test_    
+    fi
+
 }
