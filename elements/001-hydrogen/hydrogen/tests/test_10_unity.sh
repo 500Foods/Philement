@@ -337,7 +337,6 @@ if check_unity_tests_available; then
     print_message "Calculating Unity test coverage..."
 
     # Use the same calculation as Test 99
-    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
     unity_coverage=$(calculate_unity_coverage "${UNITY_BUILD_DIR}" "${TIMESTAMP}")
 
     # Always attempt to read details

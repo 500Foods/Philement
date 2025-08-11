@@ -466,9 +466,10 @@ run_all_tests_parallel() {
             local test_number
             test_number=$(basename "${test_script}" .sh | sed 's/test_//' | sed 's/_.*//' || true)
 
-            # shellcheck disable=SC2154 # TS_ORC_LOG, is defined externally in framework.sh
-            temp_result_file="${RESULTS_DIR}/test_${test_number}_${TS_ORC_LOG}_output.txt"
-            temp_output_file="${RESULTS_DIR}/test_${test_number}_${TS_ORC_LOG}_output.log"
+            # shellcheck disable=SC2154 # TIMESTAMP defined in framework.sh
+            temp_result_file="${RESULTS_DIR}/test_${test_number}_${TIMESTAMP}_output.txt"
+            temp_output_file="${RESULTS_DIR}/test_${test_number}_${TIMESTAMP}_output.log"
+            mkdir -p "${RESULTS_DIR}"
 
             temp_result_files+=("${temp_result_file}")
             temp_output_files+=("${temp_output_file}")
@@ -565,6 +566,9 @@ else
     done
 fi
 
+# Let's kill any stragglers that didn't exit cleanly
+pkill -f hydrogen_test_    
+
 # Get coverage percentages for display
 UNITY_COVERAGE=$(get_unity_coverage)
 BLACKBOX_COVERAGE=$(get_blackbox_coverage)
@@ -627,7 +631,7 @@ fi
 # shellcheck disable=SC2154 # TC_ORC_DSP defined externally in framework.sh
 layout_json_content='{
     "title": "Test Suite Results {NC}{RED}———{RESET}{BOLD}{CYAN} Unity {WHITE}'"${UNITY_COVERAGE}"'% {RESET}{RED}———{RESET}{BOLD}{CYAN} Blackbox {WHITE}'"${BLACKBOX_COVERAGE}"'% {RESET}{RED}———{RESET}{BOLD}{CYAN} Combined {WHITE}'"${COMBINED_COVERAGE}"'%{RESET}",
-    "footer": "{CYAN}Elapsed {WHITE}'"${TOTAL_ELAPSED_FORMATTED}"'{RED} ——— {CYAN}Cumulative {WHITE}'"${TOTAL_RUNNING_TIME_FORMATTED}"'{RED} ——— {RESET} {CYAN}Completed {WHITE}'"${TS_ORC_DSP}"'{RESET}",
+    "footer": "{CYAN}Elapsed {WHITE}'"${TOTAL_ELAPSED_FORMATTED}"'{RED} ——— {CYAN}Cumulative {WHITE}'"${TOTAL_RUNNING_TIME_FORMATTED}"'{RED} ——— {RESET} {CYAN}Completed {WHITE}'"${TIMESTAMP_DISPLAY}"'{RESET}",
     "footer_position": "right",
     "columns": [
         {
