@@ -182,10 +182,11 @@ setup_orchestration_environment() {
 
     # Starting point
     TIMESTAMP=$(/usr/bin/date +%Y%m%d_%H%M%S)
-    TS_ORC_LOG=$(date '+%Y%m%d_%H%M%S' 2>/dev/null)             # 20250730_124718                 eg: log filenames
-    # TS_ORC_TMR=$(date '+%s.%N' 2>/dev/null)                     # 1753904852.568389297            eg: timers, elapsed times
-    # TS_ORC_ISO=$(date '+%Y-%m-%d %H:%M:%S %Z' 2>/dev/null)      # 2025-07-30 12:47:46 PDT         eg: short display times
-    TS_ORC_DSP=$(/usr/bin/date '+%Y-%b-%d (%a) %H:%M:%S %Z' 2>/dev/null) # 2025-Jul-30 (Wed) 12:49:03 PDT  eg: long display times
+    TIMESTAMP_DISPLAY=$(/usr/bin/date '+%Y-%b-%d (%a) %H:%M:%S %Z' 2>/dev/null) # 2025-Jul-30 (Wed) 12:49:03 PDT  eg: long display times
+
+    # All tests that run hydrogen run with a config that starts with hydrogen_test so we can
+    # ensure nothing else is running by killing those processes at the start and at the end
+    pkill -f hydrogen_test_
 
     # Array for collecting output messages (for performance optimization and progressive feedback)
     # Output is cached and dumped each time a new TEST starts, providing progressive feedback
@@ -206,6 +207,11 @@ setup_orchestration_environment() {
     LOGS_DIR="${TESTS_DIR}/logs"
     CONFIG_DIR="${SCRIPT_DIR}/configs"
 
+    # shellcheck disable=SC2153,SC2154 # TEST_NUMBER defined by caller
+    DIAG_TEST_DIR="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}"
+
+    mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${LOGS_DIR}" "${DIAGS_DIR}" "${DIAG_TEST_DIR}" 
+    
     # Common utilities
     CLOC_EXTERNAL="/usr/bin/cloc"
     TABLES_EXTERNAL="${LIB_DIR}/tables"
@@ -303,15 +309,17 @@ setup_orchestration_environment() {
         fi
     fi
 
-    mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${LOGS_DIR}" "${DIAGS_DIR}"
-
     # Common files
     # shellcheck disable=SC2154,SC2153 # TEST_NUMBER defined externally in framework.sh
     RESULT_LOG="${RESULTS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
     LOG_FILE="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
     DIAG_FILE="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
-    TAB_LAYOUT="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.layout.json"
-    TAB_DATA="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.data.json"
+
+    TAB_LAYOUT_HEADER="${DIAG_TEST_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_table_layout_header.json"
+    TAB_DATA_HEADER="${DIAG_TEST_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_table_data_header.json"
+    TAB_LAYOUT_FOOTER="${DIAG_TEST_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_table_layout_footer.json"
+    TAB_DATA_FOOTER="${DIAG_TEST_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_table_data_footer.json"
+    LOG_PREFIX="${DIAG_TEST_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}"
 
     dump_collected_output
     clear_collected_output
@@ -320,10 +328,16 @@ setup_orchestration_environment() {
 # Function to set up the standard test environment with numbering
 setup_test_environment() {
 
-    # Starting point
-    TIMESTAMP=$(/usr/bin/date +%Y%m%d_%H%M%S)
-
     if [[ -z "${ORCHESTRATION}" ]]; then
+
+        # All tests that run hydrogen run with a config that starts with hydrogen_test so we can
+        # ensure nothing else is running by killing those processes at the start and at the end
+        # We only do this for single tests if it isn't running under orchestration
+        pkill -f hydrogen_test_
+
+        # Starting point
+        TIMESTAMP=$(/usr/bin/date +%Y%m%d_%H%M%S)
+
         # Global folder variables
         PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
         pushd "${PROJECT_DIR}" >/dev/null 2>&1 || return
@@ -343,9 +357,6 @@ setup_test_environment() {
         declare -a OUTPUT_COLLECTION=()
         COLLECT_OUTPUT_MODE=true
 
-        # Setup build folders
-        mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}" 
-
         # Common utilities
         CLOC_EXTERNAL="/usr/bin/cloc"
         TABLES_EXTERNAL="${LIB_DIR}/tables"
@@ -357,6 +368,15 @@ setup_test_environment() {
       pushd "${PROJECT_DIR}" >/dev/null 2>&1 || return
     fi
 
+    # Common test configuration
+    EXIT_CODE=0
+    PASS_COUNT=0
+
+    # Setup build folders
+    # shellcheck disable=SC2153,SC2154 # TEST_NUMBER defined by caller
+    DIAG_TEST_DIR="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}"
+    mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}" "${DIAG_TEST_DIR}"
+
     # Common files
     # shellcheck disable=SC2154,SC2153 # TEST_NUMBER defined externally in framework.sh
     RESULT_LOG="${RESULTS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
@@ -364,16 +384,11 @@ setup_test_environment() {
     DIAG_FILE="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.log"
 
     # Extra handling
-    DIAG_TEST_DIR="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}"
-    TAB_LAYOUT="${DIAG_TEST_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.layout.json"
-    TAB_DATA="${DIAG_TEST_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}.data.json"
-    LOG_PREFIX="${DIAG_TEST_DIR}/test_${TEST_NUMBER}_${TS_ORC_LOG}"
-    mkdir -p "${DIAG_TEST_DIR}"
-
-    # Common test configuration
-    TIMESTAMP=$(/usr/bin/date +%Y%m%d_%H%M%S)
-    EXIT_CODE=0
-    PASS_COUNT=0
+    TAB_LAYOUT_HEADER="${DIAG_TEST_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_table_layout_header.json"
+    TAB_DATA_HEADER="${DIAG_TEST_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_table_data_header.json"
+    TAB_LAYOUT_FOOTER="${DIAG_TEST_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_table_layout_footer.json"
+    TAB_DATA_FOOTER="${DIAG_TEST_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_table_data_footer.json"
+    LOG_PREFIX="${DIAG_TEST_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}"
 
     # Need to load log_output a little earlier than the others
     # shellcheck source=tests/lib/log_output.sh # Resolve path statically
@@ -468,7 +483,7 @@ update_readme_with_results() {
             {
                 echo "${line}"
                 echo ""
-                echo "Generated on: ${TS_ORC_DSP}"
+                echo "Generated on: ${TIMESTAMP_DISPLAY}"
                 echo ""
                 echo "### Summary"
                 echo ""
@@ -575,7 +590,7 @@ update_readme_with_results() {
             {
                 echo "${line}"
                 echo ""
-                echo "Generated via cloc: ${TS_ORC_DSP}"
+                echo "Generated via cloc: ${TIMESTAMP_DISPLAY}"
                 echo ""
                 
                 # Use shared cloc library function, ensuring we're in the project root directory
