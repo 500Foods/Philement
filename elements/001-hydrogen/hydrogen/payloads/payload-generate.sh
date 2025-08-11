@@ -215,7 +215,7 @@ get_latest_swaggerui_version() {
     echo -e "${CYAN}${INFO} Fetching latest SwaggerUI version from GitHub...${NC}" >&2
     
     local latest_version
-    latest_version=$(curl -s "https://api.github.com/repos/swagger-api/swagger-ui/releases/latest" | grep '"tag_name"' | sed 's/.*"tag_name": "\(.*\)".*/\1/')
+    latest_version=$(curl -s "https://api.github.com/repos/swagger-api/swagger-ui/releases/latest" | grep '"tag_name"' | sed 's/.*"tag_name": "\(.*\)".*/\1/' || true)
     
     if [[ -z "${latest_version}" ]]; then
         echo -e "${YELLOW}${WARN} Failed to fetch latest version, falling back to v5.27.1${NC}" >&2
@@ -234,7 +234,7 @@ download_swaggerui() {
     
     # Get the latest version dynamically
     local swaggerui_version
-    swaggerui_version=$(get_latest_swaggerui_version)
+    swaggerui_version=$(set -e; get_latest_swaggerui_version)
     readonly SWAGGERUI_VERSION="${swaggerui_version}"
     
     echo -e "${CYAN}${INFO} Downloading SwaggerUI v${SWAGGERUI_VERSION}...${NC}"
@@ -247,7 +247,7 @@ download_swaggerui() {
     tar -xzf "${TEMP_DIR}/swagger-ui.tar.gz" -C "${TEMP_DIR}"
     
     # Find the extracted directory (GitHub API uses hash-based naming)
-    EXTRACTED_DIR=$(find "${TEMP_DIR}" -maxdepth 1 -type d -name "swagger-api-swagger-ui-*" | head -1)
+    EXTRACTED_DIR=$(find "${TEMP_DIR}" -maxdepth 1 -type d -name "swagger-api-swagger-ui-*" | head -1 || true)
     if [[ -z "${EXTRACTED_DIR}" ]]; then
         echo -e "${RED}${FAIL} Failed to find extracted SwaggerUI directory${NC}"
         exit 1
