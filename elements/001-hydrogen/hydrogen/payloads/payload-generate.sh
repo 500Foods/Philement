@@ -1,18 +1,8 @@
 #!/bin/bash
-# ──────────────────────────────────────────────────────────────────────────────
+
+# payload-generate.sh
 # Encrypted Payload Generator for Hydrogen
-# ──────────────────────────────────────────────────────────────────────────────
-# Script Name: payload-generate.sh
-# Version: 1.2.0
-# Author: Hydrogen Development Team
-# Last Modified: 2025-06-17
-#
-# Version History:
-# 1.0.0 - Initial release with basic payload generation
-# 1.1.0 - Added RSA+AES hybrid encryption support
-# 1.2.0 - Improved modularity, fixed shellcheck warnings, enhanced error handling
-#
-# Description:
+
 # This script creates an encrypted payload package for the Hydrogen project.
 # Currently, it packages SwaggerUI content, but is designed to be extendable
 # for other payload types in the future. The script:
@@ -21,12 +11,16 @@
 # - Creates an optimized tar file compressed with Brotli
 # - Encrypts the package using RSA+AES hybrid encryption
 # - Cleans up all temporary files
-# ──────────────────────────────────────────────────────────────────────────────
+
+# CHANGELONG
+# 2.0.0 - Better at downloading latest version of swagger
+# 1.2.0 - Improved modularity, fixed shellcheck warnings, enhanced error handling
+# 1.1.0 - Added RSA+AES hybrid encryption support
+# 1.0.0 - Initial release with basic payload generation
 
 # Display script information
-echo "payload-generate.sh version 1.2.0"
+echo "payload-generate.sh version 2.0.0"
 echo "Encrypted Payload Generator for Hydrogen"
-echo ""
 
 # Terminal formatting codes
 readonly GREEN='\033[0;32m'
@@ -71,7 +65,6 @@ set -e
 # Path configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT_DIR
-readonly SWAGGERUI_VERSION="5.19.0"
 readonly SWAGGERUI_DIR="${SCRIPT_DIR}/swaggerui"
 readonly TAR_FILE="${SCRIPT_DIR}/payload.tar"
 readonly COMPRESSED_TAR_FILE="${SCRIPT_DIR}/payload.tar.br.enc"
@@ -125,7 +118,7 @@ display_script_info() {
     print_header "Encrypted Payload Generator for Hydrogen"
     PATH1=$(set -e; convert_to_relative_path "${SWAGGERUI_DIR}")
     PATH2=$(set -e; convert_to_relative_path "${COMPRESSED_TAR_FILE}")
-    echo -e "${CYAN}${INFO} SwaggerUI Version:       ${NC}${SWAGGERUI_VERSION}"
+    echo -e "${CYAN}${INFO} SwaggerUI Version:       ${NC}Latest (determined at runtime)"
     echo -e "${CYAN}${INFO} Working directory:       ${NC}${PATH1}"
     echo -e "${CYAN}${INFO} Final encrypted file:    ${NC}${PATH2}"
     echo -e "${CYAN}${INFO} Temporary directory:     ${NC}${TEMP_DIR}"
@@ -217,17 +210,49 @@ window.onload = function() {
 EOF
 }
 
+# Function to get the latest SwaggerUI version from GitHub API
+get_latest_swaggerui_version() {
+    echo -e "${CYAN}${INFO} Fetching latest SwaggerUI version from GitHub...${NC}" >&2
+    
+    local latest_version
+    latest_version=$(curl -s "https://api.github.com/repos/swagger-api/swagger-ui/releases/latest" | grep '"tag_name"' | sed 's/.*"tag_name": "\(.*\)".*/\1/')
+    
+    if [[ -z "${latest_version}" ]]; then
+        echo -e "${YELLOW}${WARN} Failed to fetch latest version, falling back to v5.27.1${NC}" >&2
+        echo "5.27.1"
+    else
+        # Remove 'v' prefix if present
+        latest_version=${latest_version#v}
+        echo -e "${CYAN}${INFO} Latest SwaggerUI version: v${latest_version}${NC}" >&2
+        echo "${latest_version}"
+    fi
+}
+
 # Function to download and extract SwaggerUI
 download_swaggerui() {
     print_header "Downloading and Extracting SwaggerUI"
+    
+    # Get the latest version dynamically
+    local swaggerui_version
+    swaggerui_version=$(get_latest_swaggerui_version)
+    readonly SWAGGERUI_VERSION="${swaggerui_version}"
+    
     echo -e "${CYAN}${INFO} Downloading SwaggerUI v${SWAGGERUI_VERSION}...${NC}"
     
-    # Download SwaggerUI from GitHub
-    curl -L "https://github.com/swagger-api/swagger-ui/archive/refs/tags/v${SWAGGERUI_VERSION}.tar.gz" -o "${TEMP_DIR}/swagger-ui.tar.gz"
+    # Download SwaggerUI from GitHub using API endpoint (more reliable)
+    curl -L "https://api.github.com/repos/swagger-api/swagger-ui/tarball/v${SWAGGERUI_VERSION}" -o "${TEMP_DIR}/swagger-ui.tar.gz"
     
     echo -e "${CYAN}${INFO} Extracting SwaggerUI distribution files...${NC}"
-    # Extract the distribution directory
-    tar -xzf "${TEMP_DIR}/swagger-ui.tar.gz" -C "${TEMP_DIR}" "swagger-ui-${SWAGGERUI_VERSION}/dist"
+    # Extract to temporary directory and get the actual directory name
+    tar -xzf "${TEMP_DIR}/swagger-ui.tar.gz" -C "${TEMP_DIR}"
+    
+    # Find the extracted directory (GitHub API uses hash-based naming)
+    EXTRACTED_DIR=$(find "${TEMP_DIR}" -maxdepth 1 -type d -name "swagger-api-swagger-ui-*" | head -1)
+    if [[ -z "${EXTRACTED_DIR}" ]]; then
+        echo -e "${RED}${FAIL} Failed to find extracted SwaggerUI directory${NC}"
+        exit 1
+    fi
+    echo -e "${CYAN}${INFO} Found extracted directory: $(basename "${EXTRACTED_DIR}")${NC}"
     
     # Create the temporary swaggerui directory for processing
     echo -e "${CYAN}${INFO} Creating temporary SwaggerUI directory...${NC}"
@@ -243,10 +268,10 @@ download_swaggerui() {
     echo -e "${CYAN}${INFO} Selecting essential files for distribution...${NC}"
     
     # Process static files (to be compressed with brotli)
-    cp "${TEMP_DIR}/swagger-ui-${SWAGGERUI_VERSION}/dist/swagger-ui-bundle.js" "${SWAGGERUI_DIR}/"
-    cp "${TEMP_DIR}/swagger-ui-${SWAGGERUI_VERSION}/dist/swagger-ui-standalone-preset.js" "${SWAGGERUI_DIR}/"
-    cp "${TEMP_DIR}/swagger-ui-${SWAGGERUI_VERSION}/dist/swagger-ui.css" "${SWAGGERUI_DIR}/"
-    cp "${TEMP_DIR}/swagger-ui-${SWAGGERUI_VERSION}/dist/oauth2-redirect.html" "${SWAGGERUI_DIR}/"
+    cp "${EXTRACTED_DIR}/dist/swagger-ui-bundle.js" "${SWAGGERUI_DIR}/"
+    cp "${EXTRACTED_DIR}/dist/swagger-ui-standalone-preset.js" "${SWAGGERUI_DIR}/"
+    cp "${EXTRACTED_DIR}/dist/swagger-ui.css" "${SWAGGERUI_DIR}/"
+    cp "${EXTRACTED_DIR}/dist/oauth2-redirect.html" "${SWAGGERUI_DIR}/"
     
     # Copy swagger.json (both compressed and uncompressed)
     if [[ -f "${SCRIPT_DIR}/swagger.json" ]]; then
@@ -259,8 +284,8 @@ download_swaggerui() {
     fi
     
     # Process dynamic files (to remain uncompressed)
-    cp "${TEMP_DIR}/swagger-ui-${SWAGGERUI_VERSION}/dist/favicon-32x32.png" "${SWAGGERUI_DIR}/"
-    cp "${TEMP_DIR}/swagger-ui-${SWAGGERUI_VERSION}/dist/favicon-16x16.png" "${SWAGGERUI_DIR}/"
+    cp "${EXTRACTED_DIR}/dist/favicon-32x32.png" "${SWAGGERUI_DIR}/"
+    cp "${EXTRACTED_DIR}/dist/favicon-16x16.png" "${SWAGGERUI_DIR}/"
     
     # Customize index.html and swagger-initializer.js
     echo -e "${CYAN}${INFO} Customizing index.html...${NC}"
