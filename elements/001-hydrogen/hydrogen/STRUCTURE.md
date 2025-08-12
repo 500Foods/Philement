@@ -458,7 +458,6 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 
 - [payloads/README.md](payloads/README.md) - Payload system documentation
 - [payloads/payload-generate.sh](payloads/payload-generate.sh) - Payload generation script
-- [payloads/payload.tar.br.enc](payloads/payload.tar.br.enc) - Encrypted payload archive
 - [payloads/swagger-generate.sh](payloads/swagger-generate.sh) - Swagger generation script
 - [payloads/swagger.json](payloads/swagger.json) - Swagger API specification
 
