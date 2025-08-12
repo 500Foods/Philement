@@ -6,6 +6,7 @@
 # FUNCTIONS
 
 # CHANGELOG
+# 3.2.1 - 2025-08-11 - Added .. to output log so it can be accessed more easily in VSC
 # 3.2.0 - 2025-08-08 - Optimized parsing using single-pass batch processing (md5sum batching pattern)
 #                    - Applied md5sum optimization principles: minimize external process forks
 #                    - Replaced 6+ file reads and grep|sed|awk pipelines with single awk command
@@ -22,14 +23,11 @@
 # 2.0.0 - 2025-07-02 - Migrated to use lib/ scripts, following established test pattern
 # 1.0.0 - 2025-06-20 - Initial version with subtests for markdown link checking
 
-# Give Test 01 a headstart
-#[[ -z "${ORCHESTRATION}" ]] || sleep 5.5
-
 # Test configuration
 TEST_NAME="Markdown Links Check {BLUE}(github-sitemap){RESET}"
 TEST_ABBR="LNK"
 TEST_NUMBER="04"
-TEST_VERSION="3.2.0"
+TEST_VERSION="3.2.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -52,7 +50,7 @@ print_command ".${SITEMAP_EXTERNAL} ${TARGET_README} --noreport --quiet"
 SITEMAP_EXIT_CODE=$?
 
 # Display the output
-print_message "Results saved to ${MARKDOWN_CHECK}"
+print_message "Results: ..${MARKDOWN_CHECK}"
 
 if [[ "${SITEMAP_EXIT_CODE}" -eq 0 ]]; then
     print_result 0 "Markdown link check executed successfully with no issues"
