@@ -18,12 +18,11 @@
 TEST_NAME="Markdown Lint"
 TEST_ABBR="MKD"
 TEST_NUMBER="90"
-TEST_VERSION="3.0.1"
+TEST_VERSION="3.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
-
 
 # Test setup
 LINT_OUTPUT_LIMIT=10
