@@ -11,7 +11,7 @@
 # 1.0.0 - Initial version for JavaScript linting
 
 # Test configuration
-TEST_NAME="JavaScript Linting"
+TEST_NAME="JavaScript Lint"
 TEST_ABBR="JAV"
 TEST_NUMBER="94"
 TEST_VERSION="3.0.1"

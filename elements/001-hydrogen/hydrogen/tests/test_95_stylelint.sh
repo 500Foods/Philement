@@ -11,7 +11,7 @@
 # 1.0.0 - Initial version for CSS linting
 
 # Test configuration
-TEST_NAME="CSS Linting"
+TEST_NAME="CSS Lint"
 TEST_ABBR="CSS"
 TEST_NUMBER="95"
 TEST_VERSION="3.0.1"
