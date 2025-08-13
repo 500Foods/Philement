@@ -350,7 +350,7 @@ run_swagger_test_parallel() {
             local all_tests_passed=true
             
             # Test Swagger UI with trailing slash
-            local trailing_file="${RESULTS_DIR}/${log_suffix}_trailing_slash_${TIMESTAMP}.html"
+            local trailing_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_trailing_slash.html"
             if check_response_content "${base_url}${swagger_prefix}/" "swagger-ui" "${trailing_file}" "true"; then
                 echo "TRAILING_SLASH_TEST_PASSED" >> "${result_file}"
             else
@@ -359,7 +359,7 @@ run_swagger_test_parallel() {
             fi
             
             # Test redirect without trailing slash
-            local redirect_file="${RESULTS_DIR}/${log_suffix}_redirect_${TIMESTAMP}.txt"
+            local redirect_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_redirect.txt"
             if check_redirect_response "${base_url}${swagger_prefix}" "${swagger_prefix}/" "${redirect_file}"; then
                 echo "REDIRECT_TEST_PASSED" >> "${result_file}"
             else
@@ -368,7 +368,7 @@ run_swagger_test_parallel() {
             fi
             
             # Test Swagger UI content
-            local content_file="${RESULTS_DIR}/${log_suffix}_content_${TIMESTAMP}.html"
+            local content_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_content.html"
             if check_response_content "${base_url}${swagger_prefix}/" "swagger-ui" "${content_file}" "true"; then
                 echo "CONTENT_TEST_PASSED" >> "${result_file}"
             else
@@ -377,7 +377,7 @@ run_swagger_test_parallel() {
             fi
             
             # Test JavaScript initializer
-            local js_file="${RESULTS_DIR}/${log_suffix}_initializer_${TIMESTAMP}.js"
+            local js_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_initializer.js"
             if check_response_content "${base_url}${swagger_prefix}/swagger-initializer.js" "window.ui = SwaggerUIBundle" "${js_file}" "true"; then
                 echo "JAVASCRIPT_TEST_PASSED" >> "${result_file}"
             else
@@ -386,7 +386,7 @@ run_swagger_test_parallel() {
             fi
             
             # Test swagger.json
-            local swagger_json_file="${RESULTS_DIR}/${log_suffix}_swagger_json_${TIMESTAMP}.json"
+            local swagger_json_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_swagger_json_.json"
             if check_swagger_json "${base_url}${swagger_prefix}/swagger.json" "${swagger_json_file}"; then
                 echo "SWAGGER_JSON_TEST_PASSED" >> "${result_file}"
             else
@@ -509,7 +509,7 @@ test_swagger_configuration() {
     
     # Global variables for server management
     local hydrogen_pid=""
-    local server_log="${RESULTS_DIR}/swagger_${test_name}_${TIMESTAMP}.log"
+    local server_log="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_swagger_${test_name}.log"
     local base_url="http://localhost:${server_port}"
     
     # Start server
