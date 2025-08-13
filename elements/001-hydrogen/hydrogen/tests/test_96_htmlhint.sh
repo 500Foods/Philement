@@ -4,6 +4,7 @@
 # Performs HTML validation using htmlhint
 
 # CHANGELOG
+# 3.1.0 - 2025-08-13 - Reviewed - removed mktemp call, not much else
 # 3.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 3.0.0 - 2025-07-30 - Overhaul #1
 # 2.0.1 - 2025-07-18 - Fixed subshell issue in htmlhint output that prevented detailed error messages from being displayed in test output
@@ -14,14 +15,14 @@
 TEST_NAME="HTML Lint"
 TEST_ABBR="HTM"
 TEST_NUMBER="96"
-TEST_VERSION="3.0.1"
+TEST_VERSION="3.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
-# Test configuration constants
-[[ -z "${LINT_OUTPUT_LIMIT:-}" ]] && readonly LINT_OUTPUT_LIMIT=10
+# Test setup
+LINT_OUTPUT_LIMIT=10
 
 print_subtest "HTML Linting (htmlhint)"
 
@@ -36,7 +37,7 @@ done < <(find . -type f -name "*.html" || true)
 HTML_COUNT=${#HTML_FILES[@]}
 
 if [[ "${HTML_COUNT}" -gt 0 ]]; then
-    TEMP_LOG=$(mktemp)
+    TEMP_LOG="${LOG_PREFIX}${TIMESTAMP}_temp.log"
     
     print_message "Running htmlhint on ${HTML_COUNT} HTML files..."
     TEST_NAME="${TEST_NAME} {BLUE}(htmlhint: ${HTML_COUNT} files){RESET}"
@@ -56,10 +57,7 @@ if [[ "${HTML_COUNT}" -gt 0 ]]; then
     
     # Filter out success messages and count actual issues
     # htmlhint success messages include "Scanned X files, no errors found"
-    grep -v "✓" "${TEMP_LOG}" | \
-    grep -v "^$" | \
-    grep -v "Scanned.*files.*no errors found" | \
-    grep -v "files.*no errors found" > "${TEMP_LOG}.filtered" || true
+    grep -Ev "✓|^$|Scanned.*files.*no errors found|files.*no errors found" "${TEMP_LOG}" > "${TEMP_LOG}.filtered" || true
     ISSUE_COUNT=$(wc -l < "${TEMP_LOG}.filtered")
     
     if [[ "${ISSUE_COUNT}" -gt 0 ]]; then
@@ -77,8 +75,7 @@ if [[ "${HTML_COUNT}" -gt 0 ]]; then
         print_result 0 "No issues in ${HTML_COUNT} HTML files"
         ((PASS_COUNT++))
     fi
-    
-    rm -f "${TEMP_LOG}" "${TEMP_LOG}.filtered"
+
 else
     print_result 0 "No HTML files to check"
     TEST_NAME="${TEST_NAME} {BLUE}(htmlhint: 0 files){RESET}"
