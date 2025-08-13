@@ -69,7 +69,7 @@ check_unity_tests_available() {
             return 1
         fi
     else
-        print_result 1 "Unity tests not found in CTest. Run 'cmake --build . --target unity_tests' from cmake directory first."
+        print_result 1 "Unity tests not found in CTest - Run 'cmake --build . --target unity_tests' from cmake directory first"
         cd "${SCRIPT_DIR}" || { print_result 1 "Failed to return to script directory"; return 1; }
         return 1
     fi

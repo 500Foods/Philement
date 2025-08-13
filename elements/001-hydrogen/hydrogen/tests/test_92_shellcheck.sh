@@ -116,7 +116,7 @@ if [[ "${SHELL_COUNT}" -gt 0 ]]; then
             print_output "${line}"
         done < <(head -n "${LINT_OUTPUT_LIMIT}" "${TEMP_OUTPUT}.filtered" || true)
         if [[ "${SHELL_ISSUES}" -gt "${LINT_OUTPUT_LIMIT}" ]]; then
-            print_message "Output truncated. Showing ${LINT_OUTPUT_LIMIT} of ${SHELL_ISSUES} lines."
+            print_message "Output truncated - Showing ${LINT_OUTPUT_LIMIT} of ${SHELL_ISSUES} lines"
         fi
     fi
 fi
