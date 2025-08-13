@@ -7,6 +7,7 @@
 # run_cppcheck()
 
 # CHANGELOG
+# 3.1.0 - 2025-08-13 - Review, removed custom should_exclude code, minor tewaks
 # 3.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 3.0.0 - 2025-07-30 - Overhaul #1
 # 2.0.1 - 2025-07-18 - Fixed subshell issue in cppcheck output that prevented detailed error messages from being displayed in test output
@@ -17,11 +18,15 @@
 TEST_NAME="C Lint"
 TEST_ABBR="GCC"
 TEST_NUMBER="91"
-TEST_VERSION="3.0.1"
+TEST_VERSION="3.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
+
+# Test Setup
+CACHE_DIR="${HOME}/.cache/cppcheck"
+mkdir -p "${CACHE_DIR}"
 
 # Function to run cppcheck
 run_cppcheck() {
@@ -37,31 +42,6 @@ run_cppcheck() {
         return 1
     fi
     
-    # Cache exclude patterns
-    local exclude_patterns=()
-    while IFS= read -r pattern; do
-        pattern=$(echo "${pattern}" | sed 's/#.*//;s/^[[:space:]]*//;s/[[:space:]]*$//')
-        [[ -z "${pattern}" ]] && continue
-        exclude_patterns+=("${pattern}")
-    done < ".lintignore"
-    
-    # Function to check if file should be excluded
-    should_exclude_cppcheck() {
-        local file="$1"
-        local rel_file="${file#./}"  # Remove leading ./
-        
-        for pattern in "${exclude_patterns[@]}"; do
-            # Remove trailing /* if present for directory matching
-            local clean_pattern="${pattern%/\*}"
-            
-            # Check if file matches pattern exactly or is within a directory pattern
-            if [[ "${rel_file}" == "${pattern}" ]] || [[ "${rel_file}" == "${clean_pattern}"/* ]]; then
-                return 0 # Exclude
-            fi
-        done
-        return 1 # Do not exclude
-    }
-    
     # Parse .lintignore-c
     local cppcheck_args=()
     while IFS='=' read -r key value; do
@@ -76,17 +56,17 @@ run_cppcheck() {
         esac
     done < <(grep -v '^#' ".lintignore-c" | grep '=' || true)
     
-    # Collect files with inline filtering
+    # Collect files with inline filtering using centralized exclusion function
     local files=()
     while read -r file; do
-        if ! should_exclude_cppcheck "${file}"; then
+        rel_file="${file#./}"
+        if ! should_exclude_file "${rel_file}"; then
             files+=("${file}")
         fi
     done < <(find . -type f \( -name "*.c" -o -name "*.h" -o -name "*.inc" \) || true)
     
     if [[ ${#files[@]} -gt 0 ]]; then
-        mkdir -p "${HOME}/.cppcheck"
-        cppcheck -j"${CORES}" --quiet --cppcheck-build-dir="${HOME}/.cppcheck" "${cppcheck_args[@]}" "${files[@]}" 2>&1
+        cppcheck -j"${CORES}" --quiet --cppcheck-build-dir="${CACHE_DIR}" "${cppcheck_args[@]}" "${files[@]}" 2>&1
     else
         echo ""
     fi
