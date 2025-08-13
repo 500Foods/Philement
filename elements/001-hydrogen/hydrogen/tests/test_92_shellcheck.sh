@@ -7,6 +7,7 @@
 # process_file()
 
 # CHANGELOG
+# 4.1.0 - 2025-08-13 - General review, tweaks to log files
 # 4.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 4.0.0 - 2025-07-30 - Overhaul #1
 # 3.1.0 - 2025-07-28 - Optimized caching, removed md5sum/wc spawns, single shellcheck run
@@ -19,14 +20,16 @@
 TEST_NAME="Bash Lint"
 TEST_ABBR="BSH"
 TEST_NUMBER="92"
-TEST_VERSION="4.0.1"
+TEST_VERSION="4.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
-# Test configuration constants
-[[ -z "${LINT_OUTPUT_LIMIT:-}" ]] && readonly LINT_OUTPUT_LIMIT=10
+# Test settings
+LINT_OUTPUT_LIMIT=10
+SHELLCHECK_CACHE_DIR="${HOME}/.cache/shellcheck"
+mkdir -p "${SHELLCHECK_CACHE_DIR}"
 
 print_subtest "Shell Script Linting (shellcheck)"
 print_message "Detected ${CORES} CPU cores for parallel processing"
@@ -47,15 +50,11 @@ done < <(find . -type f -name "*.sh" || true)
 
 SHELL_COUNT=${#SHELL_FILES[@]}
 SHELL_ISSUES=0
-TEMP_OUTPUT=$(mktemp)
+TEMP_OUTPUT="${LOG_PREFIX}${TIMESTAMP}_temp.log"
 
 if [[ "${SHELL_COUNT}" -gt 0 ]]; then
     print_message "Running shellcheck on ${SHELL_COUNT} shell scripts with caching..."
     TEST_NAME="${TEST_NAME} {BLUE}(shellheck: ${SHELL_COUNT} files){RESET}"
-
-    # Cache directory
-    SHELLCHECK_CACHE_DIR="${HOME}/.cache/shellcheck"
-    mkdir -p "${SHELLCHECK_CACHE_DIR}"
 
     # Batch compute content hashes for all files
     declare -A file_hashes
@@ -94,7 +93,8 @@ if [[ "${SHELL_COUNT}" -gt 0 ]]; then
         cat "${cache_file}"
     }
 
-    export -f process_script  # Export for subshells
+    # These are needed to ensure subshells can see them
+    export -f process_script  
     export SHELLCHECK_CACHE_DIR
 
     # Process non-cached files in parallel, passing file and hash
@@ -119,8 +119,6 @@ if [[ "${SHELL_COUNT}" -gt 0 ]]; then
             print_message "Output truncated. Showing ${LINT_OUTPUT_LIMIT} of ${SHELL_ISSUES} lines."
         fi
     fi
-
-    rm -f "${TEMP_OUTPUT}" "${TEMP_OUTPUT}.filtered"
 fi
 
 if [[ "${SHELL_ISSUES}" -eq 0 ]]; then
@@ -157,17 +155,18 @@ process_file() {
     # Output counters in a parseable format
     echo "${total} ${with_just} ${without_just} ${file}"
 }
+
+# This is needed so it can be seen from a subshell
 export -f process_file
 
 if [[ ${#SHELL_FILES[@]} -gt 0 ]]; then
     print_message "Analyzing ${SHELL_COUNT} shell scripts for shellcheck directives..."
 
     # Create a temporary directory for per-file logs
-    tmp_dir=$(mktemp -d)
-    trap 'rm -rf "${tmp_dir}"' EXIT
+    tmp_dir="${LOG_PREFIX}${TIMESTAMP}_${RANDOM}"
 
     # Parallelize with xargs, using 12 processes
-    printf '%s\n' "${SHELL_FILES[@]}" | xargs -P 0 -I {} bash -c 'process_file "{}"' > "${tmp_dir}/results"
+    printf '%s\n' "${SHELL_FILES[@]}" | xargs -P 0 -I {} bash -c 'process_file "{}"' > "${tmp_dir}.results"
 
     # Aggregate results
     while IFS= read -r line; do
@@ -177,16 +176,15 @@ if [[ ${#SHELL_FILES[@]} -gt 0 ]]; then
         ((SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION += without_just))
         # Collect any no-justification messages
         if [[ -f "${file}.nojust.log" ]]; then
-            cat "${file}.nojust.log" >> "${tmp_dir}/nojust.log"
-            rm "${file}.nojust.log"
+            cat "${file}.nojust.log" >> "${tmp_dir}_nojust.log"
         fi
-    done < "${tmp_dir}/results"
+    done < "${tmp_dir}.results"
 
     # Print collected no-justification messages
-    if [[ -f "${tmp_dir}/nojust.log" ]]; then
+    if [[ -f "${tmp_dir}_nojust.log" ]]; then
         while IFS= read -r line; do
             print_output "${line}"
-        done < "${tmp_dir}/nojust.log"
+        done < "${tmp_dir}_nojust.log"
     fi
 
     print_message "INFO: Total shellcheck directives: ${SHELLCHECK_DIRECTIVE_TOTAL}"

@@ -6,7 +6,7 @@
  * This file implements the core server functionality including:
  * - Server initialization and shutdown
  * - Signal handling for graceful termination
- * - Advanced crash handling with detailed core dump generation
+ * - Advanced crash handling with custom core dump generation
  * - Main event loop management
  * 
  * Required System Headers:
