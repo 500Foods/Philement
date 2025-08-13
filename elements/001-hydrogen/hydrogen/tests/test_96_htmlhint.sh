@@ -11,7 +11,7 @@
 # 1.0.0 - Initial version for HTML linting
 
 # Test configuration
-TEST_NAME="HTML Linting"
+TEST_NAME="HTML Lint"
 TEST_ABBR="HTM"
 TEST_NUMBER="96"
 TEST_VERSION="3.0.1"

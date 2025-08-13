@@ -3,7 +3,11 @@
 # Test: Markdown Linting
 # Performs markdown linting validation
 
+# FUNCTIONS
+# get_file_hash()
+
 # CHANGELOG
+# 3.1.0 - 2025-08-13 - General review, cleanup log files
 # 3.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 3.0.0 - 2025-07-30 - Overhaul #1
 # 2.0.1 - 2025-07-18 - Fixed subshell issue in markdownlint output that prevented detailed error messages from being displayed in test output
@@ -20,13 +24,16 @@ TEST_VERSION="3.0.1"
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
+
+# Test setup
+LINT_OUTPUT_LIMIT=10
+CACHE_DIR="${HOME}/.cache/markdownlint"
+mkdir -p "${CACHE_DIR}"
+
 # Function to get file hash (using md5sum or equivalent)
 get_file_hash() {
     md5sum "$1" | awk '{print $1}' || true
 }
-
-# Test configuration constants
-[[ -z "${LINT_OUTPUT_LIMIT:-}" ]] && readonly LINT_OUTPUT_LIMIT=10
 
 print_subtest "Markdown Linting"
 
@@ -44,13 +51,10 @@ done
 MD_COUNT=${#MD_FILES[@]}
 
 if [[ "${MD_COUNT}" -gt 0 ]]; then
-    TEMP_LOG=$(mktemp)
-    FILTERED_LOG=$(mktemp)
-    TEMP_NEW_LOG=$(mktemp)
-    
-    # Cache directory for markdownlint results
-    CACHE_DIR="${HOME}/.cache/markdownlint"
-    mkdir -p "${CACHE_DIR}"
+    TEMP_LOG="${LOG_PREFIX}${TIMESTAMP}_temp.log"
+    FILTERED_LOG="${LOG_PREFIX}${TIMESTAMP}_filtered.log"
+    TEMP_NEW_LOG="${LOG_PREFIX}${TIMESTAMP}_new.log"
+    temp_hashes="${LOG_PREFIX}${TIMESTAMP}_hashes.log"
 
     # Categorize files for caching
     cached_files=0
@@ -59,7 +63,6 @@ if [[ "${MD_COUNT}" -gt 0 ]]; then
 
     # Compute MD5 hashes for all files in one go
     # Use a temporary file to store the hashes
-    temp_hashes=$(mktemp)
     printf "%s\0" "${MD_FILES[@]}" | xargs -0 md5sum > "${temp_hashes}" 2>/dev/null
 
     # Process the hashes and categorize files
@@ -74,14 +77,13 @@ if [[ "${MD_COUNT}" -gt 0 ]]; then
         fi
     done < "${temp_hashes}"
 
-    # Clean up temporary file
-    rm -f "${temp_hashes}"
-
     print_message "Using cached results for ${cached_files} files, processing ${processed_files} files out of ${MD_COUNT}..."
+
     TEST_NAME="${TEST_NAME} {BLUE}(markdownlint: ${MD_COUNT} files){RESET}"
 
     # Run markdownlint on files that need processing
     if [[ "${processed_files}" -gt 0 ]]; then
+
         print_message "Running markdownlint on ${processed_files} files..."
         markdownlint --config ".lintignore-markdown" "${to_process_files[@]}" 2> "${TEMP_NEW_LOG}"
        
@@ -98,22 +100,24 @@ if [[ "${MD_COUNT}" -gt 0 ]]; then
     fi
     
     if [[ -s "${TEMP_LOG}" ]]; then
+
         # Filter out Node.js deprecation warnings and other noise
-        grep -v "DeprecationWarning" "${TEMP_LOG}" | \
-        grep -v "Use \`node --trace-deprecation" | \
-        grep -v "^(node:" | \
-        grep -v "^$" > "${FILTERED_LOG}" || true
-        
+        grep -Ev "DeprecationWarning|Use \`node --trace-deprecation|\(node:|^$" "${TEMP_LOG}" > "${FILTERED_LOG}" || true
         ISSUE_COUNT=$(wc -l < "${FILTERED_LOG}")
+
         if [[ "${ISSUE_COUNT}" -gt 0 ]]; then
+
             print_message "markdownlint found ${ISSUE_COUNT} actual issues:"
+        
             # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
             while IFS= read -r line; do
                 print_output "${line}"
             done < <(head -n "${LINT_OUTPUT_LIMIT}" "${FILTERED_LOG}" || true)
+
             if [[ "${ISSUE_COUNT}" -gt "${LINT_OUTPUT_LIMIT}" ]]; then
                 print_message "Output truncated. Showing ${LINT_OUTPUT_LIMIT} of ${ISSUE_COUNT} lines."
             fi
+
             print_result 1 "Found ${ISSUE_COUNT} issues in ${MD_COUNT} markdown files"
             EXIT_CODE=1
         else
@@ -126,7 +130,6 @@ if [[ "${MD_COUNT}" -gt 0 ]]; then
         ((PASS_COUNT++))
     fi
     
-    rm -f "${TEMP_LOG}" "${FILTERED_LOG}"
 else
     print_result 0 "No markdown files to check"
     ((PASS_COUNT++))

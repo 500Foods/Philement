@@ -155,7 +155,7 @@ print_test_suite_header() {
     
     # Create timestamp with milliseconds
     local timestamp
-    timestamp=$(date '+%Y-%m-%d %H:%M:%S.%3N')
+    timestamp=$(/usr/bin/date '+%Y-%m-%d %H:%M:%S.%3N')
     
     # Create the test header content
     local test_id="${test_number}-${test_abbr}"
@@ -229,6 +229,10 @@ print_test_header() {
     
     # Automatically enable output collection for performance optimization
     enable_output_collection
+    
+    # Create timestamp with milliseconds
+    local timestamp
+    timestamp=$(/usr/bin/date '+%Y-%m-%d %H:%M:%S.%3N')
     
     # Create layout JSON with proper columns
     # shellcheck disable=SC2154 # Defined in framework.sh

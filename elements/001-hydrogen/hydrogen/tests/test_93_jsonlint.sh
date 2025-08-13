@@ -10,7 +10,7 @@
 # 1.0.0 - Initial version for JSON linting
 
 # Test configuration
-TEST_NAME="JSON Linting"
+TEST_NAME="JSON Lint"
 TEST_ABBR="JSN"
 TEST_NUMBER="93"
 TEST_VERSION="3.0.1"
