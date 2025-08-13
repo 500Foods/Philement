@@ -4,6 +4,7 @@
 # Performs JavaScript validation using eslint
 
 # CHANGELOG
+# 3.1.0 - 2025-08-13 - Reviewed - removed mktemp call, not much else
 # 3.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 3.0.0 - 2025-07-30 - Overhaul #1
 # 2.0.1 - 2025-07-18 - Fixed subshell issue in eslint output that prevented detailed error messages from being displayed in test output
@@ -14,17 +15,15 @@
 TEST_NAME="JavaScript Lint"
 TEST_ABBR="JAV"
 TEST_NUMBER="94"
-TEST_VERSION="3.0.1"
+TEST_VERSION="3.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
-# Test configuration constants
+# Test setup
 # Only declare if not already defined (prevents readonly variable redeclaration when sourced)
-if [[ -z "${LINT_OUTPUT_LIMIT:-}" ]]; then
-    readonly LINT_OUTPUT_LIMIT=100
-fi
+LINT_OUTPUT_LIMIT=10
 
 print_subtest "JavaScript Linting (eslint)"
 
@@ -39,7 +38,7 @@ done < <(find . -type f -name "*.js" || true)
 JS_COUNT=${#JS_FILES[@]}
 
 if [[ "${JS_COUNT}" -gt 0 ]]; then
-    TEMP_LOG=$(mktemp)
+    TEMP_LOG="${LOG_PREFIX}${TIMESTAMP}_temp.log"
     
     print_message "Running eslint on ${JS_COUNT} JavaScript files..."
     TEST_NAME="${TEST_NAME} {BLUE}(eslint: ${JS_COUNT} files){RESET}"
@@ -68,8 +67,7 @@ if [[ "${JS_COUNT}" -gt 0 ]]; then
         print_result 0 "No issues in ${JS_COUNT} JavaScript files"
         ((PASS_COUNT++))
     fi
-    
-    rm -f "${TEMP_LOG}"
+
 else
     print_result 0 "No JavaScript files to check"
     TEST_NAME="${TEST_NAME} {BLUE}(eslint: 0 files){RESET}"

@@ -4,6 +4,7 @@
 # Performs CSS validation using stylelint
 
 # CHANGELOG
+# 3.1.0 - 2025-08-13 - Reviewed - removed mktemp call, not much else
 # 3.0.1 - 2025-08-03 - Removed extraneous command -v calls
 # 3.0.0 - 2025-07-30 - Overhaul #1
 # 2.0.1 - 2025-07-18 - Fixed subshell issue in stylelint output that prevented detailed error messages from being displayed in test output
@@ -14,15 +15,14 @@
 TEST_NAME="CSS Lint"
 TEST_ABBR="CSS"
 TEST_NUMBER="95"
-TEST_VERSION="3.0.1"
+TEST_VERSION="3.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
-# Test configuration constants
-# Only declare if not already defined (prevents readonly variable redeclaration when sourced)
-[[ -z "${LINT_OUTPUT_LIMIT:-}" ]] && readonly LINT_OUTPUT_LIMIT=10
+# Test setup
+LINT_OUTPUT_LIMIT=10
 
 print_subtest "CSS Linting (stylelint)"
 
@@ -37,7 +37,7 @@ done < <(find . -type f -name "*.css" || true)
 CSS_COUNT=${#CSS_FILES[@]}
 
 if [[ "${CSS_COUNT}" -gt 0 ]]; then
-    TEMP_LOG=$(mktemp)
+    TEMP_LOG="${LOG_PREFIX}${TIMESTAMP}_temp.log"
     
     print_message "Running stylelint on ${CSS_COUNT} CSS files..."
     TEST_NAME="${TEST_NAME} {BLUE}(stylelint: ${CSS_COUNT} files){RESET}"
@@ -68,8 +68,6 @@ if [[ "${CSS_COUNT}" -gt 0 ]]; then
         print_result 0 "No issues in ${CSS_COUNT} CSS files"
         ((PASS_COUNT++))
     fi
-    
-    rm -f "${TEMP_LOG}"
 else
     print_result 0 "No CSS files to check"
     TEST_NAME="${TEST_NAME} {BLUE}(stylelint: 0 files){RESET}"
