@@ -72,7 +72,7 @@ for file in "${exclusion_files[@]}"; do
     fi
 done
 
-print_message "For details, see tests/README.md and .lintignore files."
+print_message "For details, see tests/README.md and .lintignore files"
 
 if [[ ${#missing_files[@]} -eq 0 ]]; then
     print_result 0 "All ${found_files} linting configuration files found"

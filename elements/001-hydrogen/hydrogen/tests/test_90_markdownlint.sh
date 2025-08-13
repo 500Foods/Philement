@@ -114,7 +114,7 @@ if [[ "${MD_COUNT}" -gt 0 ]]; then
             done < <(head -n "${LINT_OUTPUT_LIMIT}" "${FILTERED_LOG}" || true)
 
             if [[ "${ISSUE_COUNT}" -gt "${LINT_OUTPUT_LIMIT}" ]]; then
-                print_message "Output truncated. Showing ${LINT_OUTPUT_LIMIT} of ${ISSUE_COUNT} lines."
+                print_message "Output truncated - Showing ${LINT_OUTPUT_LIMIT} of ${ISSUE_COUNT} lines"
             fi
 
             print_result 1 "Found ${ISSUE_COUNT} issues in ${MD_COUNT} markdown files"

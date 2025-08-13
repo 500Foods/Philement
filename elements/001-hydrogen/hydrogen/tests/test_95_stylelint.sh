@@ -60,7 +60,7 @@ if [[ "${CSS_COUNT}" -gt 0 ]]; then
             print_output "${line}"
         done < <(head -n "${LINT_OUTPUT_LIMIT}" "${TEMP_LOG}" || true)
         if [[ "${ISSUE_COUNT}" -gt "${LINT_OUTPUT_LIMIT}" ]]; then
-            print_message "Output truncated. Showing ${LINT_OUTPUT_LIMIT} of ${ISSUE_COUNT} lines."
+            print_message "Output truncated - Showing ${LINT_OUTPUT_LIMIT} of ${ISSUE_COUNT} lines"
         fi
         print_result 1 "Found ${ISSUE_COUNT} issues in ${CSS_COUNT} CSS files"
         EXIT_CODE=1

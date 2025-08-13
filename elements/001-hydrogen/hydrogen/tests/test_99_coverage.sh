@@ -43,7 +43,7 @@ if [[ -f "${UNITY_COVERAGE_FILE}" ]] && [[ -f "${UNITY_COVERAGE_FILE}.detailed" 
     print_result 0 "Unity test coverage recalled: ${unity_coverage_percentage}% - ${formatted_unity_covered_files} of ${formatted_unity_instrumented_files} files covered"
     ((PASS_COUNT++))
 else
-    print_result 1 "Unity coverage data not found. Run Test 11 first to generate Unity coverage data."
+    print_result 1 "Unity coverage data not found - Run Test 10 first to generate Unity coverage data"
     EXIT_CODE=1
 fi
 

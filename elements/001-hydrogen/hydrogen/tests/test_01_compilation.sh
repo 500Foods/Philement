@@ -40,7 +40,7 @@ download_unity_framework() {
             unzip "${framework_dir}/unity.zip" -d "${framework_dir}/"
             mv "${framework_dir}/Unity-master" "${unity_framework_dir}"
             rm "${framework_dir}/unity.zip"
-            print_result 0 "Unity framework downloaded and extracted successfully to ${unity_framework_dir}."
+            print_result 0 "Unity framework downloaded and extracted successfully to ${unity_framework_dir}"
             return 0
         fi
     else
@@ -78,9 +78,9 @@ evaluate_test_result_silent "Source files check" "${EXIT_CODE}" "PASS_COUNT" "EX
 print_subtest "Check Unity Framework"
 
 if download_unity_framework; then
-    print_result 0 "Unity framework check passed."
+    print_result 0 "Unity framework check passed"
 else
-    print_result 1 "Unity framework check failed."
+    print_result 1 "Unity framework check failed"
     EXIT_CODE=1
 fi
 evaluate_test_result_silent "Unity framework check" "${EXIT_CODE}" "PASS_COUNT" "EXIT_CODE"
@@ -96,7 +96,6 @@ if safe_cd cmake; then
         EXIT_CODE=1
         print_result 1 "CMake configuration failed"
     fi
-    # print_command "cd .."
     safe_cd ..
 else
     print_result 1 "Failed to enter cmake directory"
@@ -122,7 +121,6 @@ else
             print_command "./payload-generate.sh"
             if ./payload-generate.sh >/dev/null 2>&1; then
                 print_message "Payload generation completed"
-                # print_command "cd .."
                 safe_cd ..
                 if [[ -f "payloads/payload.tar.br.enc" ]]; then
                     payload_size=$(get_file_size "payloads/payload.tar.br.enc")
@@ -160,7 +158,6 @@ if safe_cd cmake; then
         EXIT_CODE=1
         print_result 1 "Build of all variants failed"
     fi
-    # print_command "cd .."
     safe_cd ..
 else
     print_result 1 "Failed to enter cmake directory for building all variants"
@@ -259,7 +256,6 @@ if safe_cd cmake; then
         EXIT_CODE=1
         print_result 1 "Examples build failed"
     fi
-    # print_command "cd .."
     safe_cd ..
 else
     print_result 1 "Failed to enter cmake directory for examples build"
