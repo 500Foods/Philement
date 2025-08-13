@@ -1,76 +1,8 @@
 {
-    "ServerName": "Philement/hydrogen-test-payload"
+    "ServerName": "hydrogen-test-15"
     "PayloadKey": "${env.PAYLOAD_KEY}",
-    "PayloadLock": "${env.PAYLOAD_LOCK}",
-    "LogFile": "./logs/hydrogen_test_json.log",
     "WebServer": {
-        "Enabled": true,
-        "EnableIPv6": false,
-        "Port": 5000,
-        "WebRoot": "./www",
-        "Swagger": {
-            "Enabled": true,
-            "Prefix": "/swagger"
-        }
-    },
-    "WebSocketServer": {
         "EnableIPv4": false,
-        "EnableIPv6": false,
-        "LibLogLevel": 2,
-        "Port": 5001,
-        "Protocol": "hydrogen",
-        "Key": "${env.WEBSOCKET_KEY}",
-        "MaxMessageSize": 2048,
-        "ConnectionTimeouts": {
-            "ShutdownWaitSeconds": 2,
-            "ServiceLoopDelayMs": 50,
-            "ConnectionCleanupMs": 500,
-            "ExitWaitSeconds": 3
-        }
-    },    
-    "Logging": {
-        "Levels": [
-            [0, "ALL"],
-            [1, "INFO"],
-            [2, "WARN"],
-            [3, "DEBUG"],
-            [4, "ERROR"],
-            [5, "CRITICAL"],
-            [6, "NONE"]
-        ],
-        "Console": {
-            "Enabled": true,
-            "DefaultLevel": 0,
-            "Subsystems": {
-                "WebServer": 0,
-                "Configuration": 0,
-                "API": 0,
-                "Initialization": 0
-            }
-        },
-        "File": {
-            "Enabled": true,
-            "DefaultLevel": 0,
-            "Path": "./logs/hydrogen_test_json.log",
-            "Subsystems": {
-                "WebServer": 0,
-                "Configuration": 0,
-                "API": 0,
-                "Initialization": 0
-            }
-        }
-    },
-    "SystemResources": {
-        "Queues": {
-            "MaxQueueBlocks": 128,
-            "QueueHashSize": 256,
-            "DefaultQueueCapacity": 1024
-        },
-        "Buffers": {
-            "DefaultMessageBuffer": 1024,
-            "MaxLogMessageSize": 2048,
-            "PathBufferSize": 256,
-            "LineBufferSize": 512
-        }
+        "EnableIPv6": false
     }
 }

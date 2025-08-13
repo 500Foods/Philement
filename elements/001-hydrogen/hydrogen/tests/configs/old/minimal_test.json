@@ -1,8 +1,0 @@
-{
-    "Server": {
-        "ServerName": "Test",
-        "PayloadKey": "test-key",
-        "LogFile": "/tmp/test.log",
-        "StartupDelay": 1
-    }
-}
