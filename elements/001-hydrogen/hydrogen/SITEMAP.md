@@ -215,7 +215,8 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 
 ## Folder: /tests
 
-- [README.md](tests/README.md)
+- [README.md](tests/README.md) - How to use and update the Test Suite
+- [UNITY.md](tests/UNITY.md) - How to create new Unity Unit Test Framework tests
 
 ### Folder: /tests/docs
 
