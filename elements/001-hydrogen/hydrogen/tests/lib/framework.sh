@@ -258,7 +258,7 @@ setup_orchestration_environment() {
         # Check if build is already a tmpfs mount
         if mountpoint -q build 2>/dev/null; then
             print_message "Build directory already mounted as tmpfs, emptying contents..."
-            if rm -rf build/* 2>/dev/null; then
+            if rm -rf build/coverage build/debug build/perf build/regular build/release build/tests /build/unity build/valgrind 2>/dev/null; then
                 print_result 0 "Build directory (tmpfs) emptied and ready for use"
             else
                 print_result 1 "Failed to empty tmpfs build directory"

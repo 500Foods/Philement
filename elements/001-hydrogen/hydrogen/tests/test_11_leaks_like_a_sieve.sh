@@ -35,7 +35,7 @@ print_subtest "Validate Debug Build and ASAN Support"
 # Find debug build
 DEBUG_BUILD="hydrogen_debug"
 if [[ ! -f "${DEBUG_BUILD}" ]]; then
-    print_result 1 "Debug build not found. This test requires the debug build with ASAN."
+    print_result 1 "Debug build not found - This test requires the debug build with ASAN"
     EXIT_CODE=1
 else
     # Verify ASAN is enabled in debug build
@@ -79,7 +79,7 @@ ASAN_OPTIONS="detect_leaks=1:leak_check_at_exit=1:verbosity=1:log_threads=1:prin
 HYDROGEN_PID=$!
 
 # Wait for startup with timeout
-print_message "Waiting for startup (max 5s)..."
+print_message "Waiting for startup..."
 STARTUP_START=$(date +%s)
 STARTUP_TIMEOUT=5
 

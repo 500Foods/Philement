@@ -165,7 +165,7 @@ for arg in "$@"; do
                 if [[ "${group}" =~ ^[0-9]+$ ]]; then
                     SEQUENTIAL_GROUPS+=("${group}")
                 else
-                    echo "Error: Invalid group number '${group}'. Groups must be numeric."
+                    echo "Error: Invalid group number '${group}'- Groups must be numeric"
                     exit 1
                 fi
             done
@@ -269,7 +269,6 @@ run_single_test() {
     source "${test_script}"
     local exit_code=$?
     
-   
     # Extract test results from subtest file or use defaults
     local total_subtests=1 
     local passed_subtests=0 
