@@ -35,6 +35,12 @@ temp_*
 *.tmp
 *.upx
 
+# Core files
+0.*
+1.*
+tests/0.*
+tests/1.*
+
 # Don't need to copy this around, thanks
 tests/unity/framework/
 

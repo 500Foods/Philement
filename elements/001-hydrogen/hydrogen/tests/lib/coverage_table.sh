@@ -284,11 +284,27 @@ analyze_all_gcov_coverage_batch "${UNITY_COVS}" "${BLACKBOX_COVS}"
 
 # print_subtest "analyze completee"
 
-# Populate all_files array from coverage arrays (already filtered at batch level)
+# Populate all_files array from coverage arrays with test file filtering
 for file_path in "${!unity_covered_lines[@]}"; do
+    # Skip test files from table display
+    basename_file=$(basename "${file_path}")
+    if [[ "${basename_file}" == "test_"* ]] || \
+       [[ "${basename_file}" == *"_test.c" ]] || \
+       [[ "${basename_file}" == *"test.c" ]] || \
+       [[ "${file_path}" == *"test"* ]]; then
+        continue
+    fi
     all_files["${file_path}"]=1
 done
 for file_path in "${!coverage_covered_lines[@]}"; do
+    # Skip test files from table display
+    basename_file=$(basename "${file_path}")
+    if [[ "${basename_file}" == "test_"* ]] || \
+       [[ "${basename_file}" == *"_test.c" ]] || \
+       [[ "${basename_file}" == *"test.c" ]] || \
+       [[ "${file_path}" == *"test"* ]]; then
+        continue
+    fi
     all_files["${file_path}"]=1
 done
 

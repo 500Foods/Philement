@@ -53,23 +53,22 @@ check_unity_tests_available() {
     # Change to CMake directory to check for Unity tests
     cd "${cmake_build_dir}" || { print_result 1 "Failed to change to CMake build directory"; return 1; }
     
-    # Check if Unity tests are registered with CTest
-    if ctest -N | grep -q "hydrogen_test" || true; then
-        # Also verify the executable exists in the correct location (build/unity/src/)
-        local unity_test_exe="${UNITY_BUILD_DIR}/src/hydrogen_test"
-        if [[ -f "${unity_test_exe}" ]]; then
-            exe_size=$(get_file_size "${unity_test_exe}")
-            formatted_size=$(format_file_size "${exe_size}")
-            print_result 0 "Unity tests available via CTest: ${unity_test_exe#"${SCRIPT_DIR}"/..} (${formatted_size} bytes)"
+    # Check if any Unity tests are available by looking for test executables
+    if [[ -d "${UNITY_BUILD_DIR}/src" ]]; then
+        # Look for any executable files that match test pattern
+        local test_count
+        test_count=$(find "${UNITY_BUILD_DIR}/src" -name "*test*" -type f -executable | wc -l || true)
+        if [[ "${test_count}" -gt 0 ]]; then
+            print_result 0 "Unity tests available: ${test_count} test executables found in ${UNITY_BUILD_DIR#"${SCRIPT_DIR}"/..}/src"
             cd "${SCRIPT_DIR}" || { print_result 1 "Failed to return to script directory"; return 1; }
             return 0
         else
-            print_result 1 "Unity test registered with CTest but executable not found at ${unity_test_exe#"${SCRIPT_DIR}"/..}"
+            print_result 1 "No Unity test executables found in ${UNITY_BUILD_DIR#"${SCRIPT_DIR}"/..}/src"
             cd "${SCRIPT_DIR}" || { print_result 1 "Failed to return to script directory"; return 1; }
             return 1
         fi
     else
-        print_result 1 "Unity tests not found in CTest - Run 'cmake --build . --target unity_tests' from cmake directory first"
+        print_result 1 "Unity build directory not found: ${UNITY_BUILD_DIR#"${SCRIPT_DIR}"/..}/src - Run 'cmake --build . --target unity_tests' from cmake directory first"
         cd "${SCRIPT_DIR}" || { print_result 1 "Failed to return to script directory"; return 1; }
         return 1
     fi
@@ -165,20 +164,22 @@ run_unity_tests() {
     local unity_tests=()
     
     if [[ -d "${unity_build_dir}" ]]; then
-        # Look for executable files that match test_* pattern (recursively in subdirectories)
+        # Look for executable files that match test pattern (recursively in subdirectories)
         temp_find="${LOG_PREFIX}_search_tests.log"
-        find "${unity_build_dir}" -name "test_*" -type f -print0 > "${temp_find}"
-        mapfile -t -d '' test_exes < "${temp_find}"
-        for test_exe in "${test_exes[@]}"; do
-            local test_name
-            test_name=$(basename "${test_exe}")
-            if [[ -x "${test_exe}" ]] && [[ "${test_name}" =~ ^test_[a-zA-Z_]+$ ]]; then
-                # Get relative path from unity_build_dir to show directory structure
-                local relative_path
-                relative_path=$(realpath --relative-to="${unity_build_dir}" "${test_exe}")
-                unity_tests+=("${relative_path}")
+        find "${unity_build_dir}" -name "*test*" -type f -executable -print > "${temp_find}"
+        while IFS= read -r test_exe; do
+            if [[ -n "${test_exe}" ]] && [[ -x "${test_exe}" ]]; then
+                local test_name
+                test_name=$(basename "${test_exe}")
+                # Accept any executable file with 'test' in the name
+                if [[ "${test_name}" == *test* ]]; then
+                    # Get relative path from unity_build_dir to show directory structure
+                    local relative_path
+                    relative_path=$(realpath --relative-to="${unity_build_dir}" "${test_exe}")
+                    unity_tests+=("${relative_path}")
+                fi
             fi
-        done
+        done < "${temp_find}"
     fi
 
     if [[ ${#unity_tests[@]} -eq 0 ]]; then

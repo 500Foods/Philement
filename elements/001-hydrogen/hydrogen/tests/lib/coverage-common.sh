@@ -182,9 +182,12 @@ analyze_all_gcov_coverage_batch() {
     local blackbox_dir="$2"
     local marker_file="${BUILD_DIR}/gcov_batch_marker"
     local cache_file="${BUILD_DIR}/gcov_batch_cache.txt"
+    local pattern_checksum
+    pattern_checksum=$(printf '%s\n' "${IGNORE_PATTERNS[@]}" | sort | sha256sum | cut -d' ' -f1 2>/dev/null || echo "no_checksum" || true)
+    local pattern_marker="${BUILD_DIR}/gcov_pattern_${pattern_checksum}"
 
-    # Check if cache marker and cache file exist
-    if [[ -f "${marker_file}" && -f "${cache_file}" ]]; then
+    # Check if cache marker, pattern marker, and cache file exist
+    if [[ -f "${marker_file}" && -f "${cache_file}" && -f "${pattern_marker}" ]]; then
         # Load cached results into global arrays
         while IFS=':' read -r coverage_type file_path results; do
             if [[ -n "${coverage_type}" && -n "${file_path}" && -n "${results}" && "${file_path}" != "" ]]; then
@@ -219,16 +222,16 @@ analyze_all_gcov_coverage_batch() {
     local unity_files=()
     local blackbox_files=()
     if [[ -d "${unity_dir}" ]]; then
-        mapfile -t unity_files < <(find "${unity_dir}" -name "*.gcov" -type f 2>/dev/null || true)
+        mapfile -t unity_files < <(find "${unity_dir}" -name "*.gcov" -type f | grep -v '_test' 2>/dev/null || true)
     fi
     if [[ -d "${blackbox_dir}" ]]; then
-        mapfile -t blackbox_files < <(find "${blackbox_dir}" -name "*.gcov" -type f 2>/dev/null || true)
+        mapfile -t blackbox_files < <(find "${blackbox_dir}" -name "*.gcov" -type f | grep -v '_test' 2>/dev/null || true)
     fi
 
     # Create union of all files by relative path (with filtering)
     declare -A all_file_set
     for file in "${unity_files[@]}" "${blackbox_files[@]}"; do
-        local base_dir rel_path source_path
+        local base_dir rel_path source_path basename_file
         if [[ "${file}" == "${unity_dir}"/* ]]; then
             base_dir="${unity_dir}"
         else
@@ -239,6 +242,16 @@ analyze_all_gcov_coverage_batch() {
         if [[ "${source_path}" != src/* ]]; then
             source_path="src/${source_path}"
         fi
+        
+        # Skip test files from batch analysis
+        basename_file=$(basename "${source_path}")
+        if [[ "${basename_file}" == "test_"* ]] || \
+           [[ "${basename_file}" == *"_test.c" ]] || \
+           [[ "${basename_file}" == *"test.c" ]] || \
+           [[ "${source_path}" == *"test"* ]]; then
+            continue
+        fi
+        
         if ! should_ignore_file "${source_path}" "${PROJECT_ROOT:-${PWD}}"; then
             all_file_set["${rel_path}"]=1
         fi
@@ -369,9 +382,13 @@ analyze_all_gcov_coverage_batch() {
         done < "${temp_output}"
     } > "${cache_file}"
 
-    # Export combined arrays and create marker
+    # Export combined arrays and create markers
     export combined_instrumented_lines combined_covered_lines
     touch "${marker_file}"
+    touch "${pattern_marker}"
+    
+    # Clean up old pattern markers
+    find "${BUILD_DIR}" -name "gcov_pattern_*" ! -name "gcov_pattern_${pattern_checksum}" -delete 2>/dev/null || true
 
     # Clean up
     rm -f "${temp_input}" "${temp_output}"
@@ -473,7 +490,7 @@ load_source_files() {
             fi
             
             SOURCE_FILES_CACHE+=("${rel_path}")
-        done < <(find "${src_dir}" -type f \( -name "*.c" -o -name "*.h" \) -print0 2>/dev/null || true)
+        done < <(find "${src_dir}" -type f \( -name "*.c" -o -name "*.h" \) -print0 | grep -v '_test' 2>/dev/null || true)
     fi
     
     SOURCE_FILE_CACHE_LOADED="true"
@@ -596,11 +613,6 @@ collect_gcov_files() {
                     continue
                 fi
                 
-                # Skip test files
-                if [[ "${basename_file}" == "test_"* ]]; then
-                    continue
-                fi
-                
                 # Check if this file should be ignored using efficient function
                 local source_file="${basename_file%.gcov}"
                 if should_ignore_file "src/${source_file}" "${project_root}"; then
@@ -610,7 +622,7 @@ collect_gcov_files() {
                 analyze_gcov_file "${gcov_file}" "${coverage_type}"
                 ((files_found++))
             fi
-        done < <(find "${build_dir}" -name "*.gcov" -type f 2>/dev/null || true)
+        done < <(find "${build_dir}" -name "*.gcov" -type f | grep -v '_test' 2>/dev/null || true)
     fi
     
     return "${files_found}"

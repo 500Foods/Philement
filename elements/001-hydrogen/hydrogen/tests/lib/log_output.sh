@@ -397,7 +397,7 @@ print_warning() {
     fi
 }
 
-# Function to print error messages
+# Function to print error message
 print_error() {
     local prefix
     prefix=$(get_test_prefix)
@@ -405,7 +405,7 @@ print_error() {
     elapsed=$(get_elapsed_time)
     local message
     message=$(process_message "$1")
-    local formatted_output="  ${prefix}   ${elapsed}   ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}ERROR${NC}   ${message}"
+    local formatted_output="  ${prefix}   ${elapsed}   ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}FAIL${NC}   ${message}"
     if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
         OUTPUT_COLLECTION+=("${formatted_output}")
     else
