@@ -550,7 +550,7 @@ EOF
 
     # Let's kill any stragglers that didn't exit cleanly
     if [[ -z "${ORCHESTRATION}" ]]; then
-        pkill -f hydrogen_test_    
+        pkill -9 -f hydrogen_test_    
     fi
 
 }

@@ -571,7 +571,10 @@ else
 fi
 
 # Let's kill any stragglers that didn't exit cleanly
-pkill -f hydrogen_test_    
+pkill -9 -f hydrogen_test_    
+
+# Clean up any remaining core files
+rm -rf "${PROJECT_DIR}"/*.core.* 2>/dev/null || true
 
 # Get coverage percentages for display
 UNITY_COVERAGE=$(get_unity_coverage)

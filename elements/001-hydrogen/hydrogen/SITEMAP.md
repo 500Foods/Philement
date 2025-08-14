@@ -242,15 +242,15 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [test_13_crash_handler.md](tests/docs/test_13_crash_handler.md): Crash handling and recovery tests
 - [test_14_library_dependencies.md](tests/docs/test_14_library_dependencies.md): Library dependency verification
 - [test_15_json_error_handling.md](tests/docs/test_15_json_error_handling.md): JSON error handling tests
-- [test_20_shutdown.md](tests/docs/test_20_shutdown.md): Shutdown sequence testing
-- [test_21_startup_shutdown.md](tests/docs/test_21_startup_shutdown.md): Startup and shutdown lifecycle tests
-- [test_22_signals.md](tests/docs/test_22_signals.md): Signal handling tests
-- [test_23_socket_rebind.md](tests/docs/test_23_socket_rebind.md): Socket rebinding tests
-- [test_24_api_prefix.md](tests/docs/test_24_api_prefix.md): API prefix configuration tests
-- [test_25_system_endpoints.md](tests/docs/test_25_system_endpoints.md): System endpoint functionality tests
-- [test_26_swagger.md](tests/docs/test_26_swagger.md): Swagger documentation tests
-- [test_27_websockets.md](tests/docs/test_27_websockets.md): WebSocket server functionality and integration tests
-- [test_90_markdownlint.md](tests/docs/test_90_markdownlint.md): Markdown linting tests
+- [test_16_shutdown.md](tests/docs/test_16_shutdown.md): Shutdown sequence testing
+- [test_17_startup_shutdown.md](tests/docs/test_17_startup_shutdown.md): Startup and shutdown lifecycle tests
+- [test_18_signals.md](tests/docs/test_18_signals.md): Signal handling tests
+- [test_19_socket_rebind.md](tests/docs/test_19_socket_rebind.md): Socket rebinding tests
+- [test_20_api_prefix.md](tests/docs/test_20_api_prefix.md): API prefix configuration tests
+- [test_21_system_endpoints.md](tests/docs/test_21_system_endpoints.md): System endpoint functionality tests
+- [test_22_swagger.md](tests/docs/test_22_swagger.md): Swagger documentation tests
+- [test_23_websockets.md](tests/docs/test_23_websockets.md): WebSocket server functionality and integration tests
+- [test_24_markdownlint.md](tests/docs/test_90_markdownlint.md): Markdown linting tests
 - [test_91_cppcheck.md](tests/docs/test_91_cppcheck.md): C/C++ static analysis tests
 - [test_92_shellcheck.md](tests/docs/test_92_shellcheck.md): Shell script linting tests
 - [test_93_jsonlint.md](tests/docs/test_93_jsonlint.md): JSON validation tests

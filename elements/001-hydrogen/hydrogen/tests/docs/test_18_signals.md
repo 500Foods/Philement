@@ -136,6 +136,6 @@ To run this test individually:
 ## Related Documentation
 
 - [test_00_all.md](test_00_all.md) - Main test orchestration system
-- [test_20_shutdown.md](test_20_shutdown.md) - Related shutdown testing
-- [test_21_startup_shutdown.md](test_21_startup_shutdown.md) - Related lifecycle testing
+- [test_16_shutdown.md](test_16_shutdown.md) - Related shutdown testing
+- [test_17_startup_shutdown.md](test_17_startup_shutdown.md) - Related lifecycle testing
 - [LIBRARIES.md](LIBRARIES.md) - Table of Contents for modular library scripts in the 'lib/' directory

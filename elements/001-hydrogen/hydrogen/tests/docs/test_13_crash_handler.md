@@ -1,4 +1,4 @@
-# Test 20: Crash Handler Script Documentation
+# Test 13: Crash Handler Script Documentation
 
 ## Overview
 
@@ -10,7 +10,7 @@ This script ensures that the Hydrogen server can generate core dumps and handle 
 
 ## Script Details
 
-- **Script Name**: `test_20_crash_handler.sh`
+- **Script Name**: `test_13_crash_handler.sh`
 - **Test Number**: 20
 - **Version**: 3.0.0 (Complete rewrite using modular test libraries)
 - **Dependencies**: Uses modular libraries from `lib/` directory
@@ -121,7 +121,7 @@ The test uses minimal configuration (`hydrogen_test_min.json`) to reduce startup
 ## Related Documentation
 
 - [test_00_all.md](test_00_all.md) - Main test suite documentation
-- [test_22_signals.md](test_22_signals.md) - Signal handling tests
-- [test_20_shutdown.md](test_20_shutdown.md) - Shutdown testing
+- [test_18_signals.md](test_18_signals.md) - Signal handling tests
+- [test_16_shutdown.md](test_16_shutdown.md) - Shutdown testing
 - [LIBRARIES.md](LIBRARIES.md) - Modular library documentation
 - [testing.md](../../docs/testing.md) - Overall testing strategy

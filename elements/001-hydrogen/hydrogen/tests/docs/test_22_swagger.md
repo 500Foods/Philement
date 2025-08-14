@@ -162,9 +162,9 @@ To run this test individually:
 ## Related Documentation
 
 - [test_00_all.md](test_00_all.md) - Main test suite documentation
-- [test_25_system_endpoints.md](test_25_system_endpoints.md) - System endpoint testing
-- [test_24_api_prefix.md](test_24_api_prefix.md) - API prefix testing
-- [test_23_socket_rebind.md](test_23_socket_rebind.md) - Socket rebinding tests (SO_REUSEADDR)
+- [test_21_system_endpoints.md](test_21_system_endpoints.md) - System endpoint testing
+- [test_20_api_prefix.md](test_20_api_prefix.md) - API prefix testing
+- [test_19_socket_rebind.md](test_19_socket_rebind.md) - Socket rebinding tests (SO_REUSEADDR)
 - [LIBRARIES.md](LIBRARIES.md) - Modular library documentation
 - [api.md](../../docs/api.md) - API documentation and endpoint specifications
 - [configuration.md](../../docs/configuration.md) - Configuration file documentation

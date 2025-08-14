@@ -87,14 +87,14 @@ tests/          Test framework
 - tests/test_13_crash_handler.sh - Tests that crash dumps contain debugging information
 - tests/test_14_library_dependencies.sh - Checks for all the libraries the project requires
 - tests/test_15_json_error_handling.sh - Tests that the Hydrogen Server will report JSON errors properly
-- tests/test_20_shutdown.sh - Quick check that Hydrogen Server shuts down cleanly without hanging
-- tests/test_21_startup_shutdown.sh - Checks that the Hyrogen Server starts and stops cleanly in min and max configurations
-- tests/test_22_signals.sh - Confirms signal handling for SIGHUP, SIGUSR1, SIGUSR2, SIGTERM and SIGINT
-- tests/test_23_socket_rebind.sh - Confirms TIME_WAIT is configured correctly
-- tests/test_24_api_prefix.sh - Checks that changing the /api prefix works
-- tests/test_25_system_endpoints.sh - Validates the functionality of system endpoints
-- tests/test_26_swagger.sh - Checks that Swagger files are served up from payload
-- tests/test_27_websockets.sh - Retrieves status from WebSockets interface
+- tests/test_16_shutdown.sh - Quick check that Hydrogen Server shuts down cleanly without hanging
+- tests/test_17_startup_shutdown.sh - Checks that the Hyrogen Server starts and stops cleanly in min and max configurations
+- tests/test_18_signals.sh - Confirms signal handling for SIGHUP, SIGUSR1, SIGUSR2, SIGTERM and SIGINT
+- tests/test_19_socket_rebind.sh - Confirms TIME_WAIT is configured correctly
+- tests/test_20_api_prefix.sh - Checks that changing the /api prefix works
+- tests/test_21_system_endpoints.sh - Validates the functionality of system endpoints
+- tests/test_22_swagger.sh - Checks that Swagger files are served up from payload
+- tests/test_23_websockets.sh - Retrieves status from WebSockets interface
 - tests/test_90_markdownlint.sh - Lint for Markdown
 - tests/test_91_cppcheck.sh - Lint for C
 - tests/test_92_shellcheck.sh - Lint for Bash
