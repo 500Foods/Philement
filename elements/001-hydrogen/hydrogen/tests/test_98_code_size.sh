@@ -23,7 +23,7 @@
 # Test configuration
 TEST_NAME="Code Size Analysis"
 TEST_ABBR="SIZ"
-TEST_NUMBER="03"
+TEST_NUMBER="98"
 TEST_VERSION="3.5.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
