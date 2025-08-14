@@ -234,7 +234,6 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [test_00_all.md](tests/docs/test_00_all.md): Test orchestration and execution framework
 - [test_01_compilation.md](tests/docs/test_01_compilation.md): Compilation and build verification tests
 - [test_02_secrets.md](tests/docs/test_02_secrets.md): Checks validity of key environment variables
-- [test_03_code_size.md](tests/docs/test_03_code_size.md): Code size analysis and metrics
 - [test_04_check_links.md](tests/docs/test_04_check_links.md): Link validation tests
 - [test_10_unity.md](tests/docs/test_10_unity.md): Unity testing framework integration
 - [test_11_leaks_like_a_sieve.md](tests/docs/test_11_leaks_like_a_sieve.md): Memory leak detection tests
@@ -257,4 +256,5 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [test_94_eslint.md](tests/docs/test_94_eslint.md): JavaScript linting tests
 - [test_95_stylelint.md](tests/docs/test_95_stylelint.md): CSS linting tests
 - [test_96_htmlhint.md](tests/docs/test_96_htmlhint.md): HTML validation tests
+- [test_98_code_size.md](tests/docs/test_98_code_size.md): Code size analysis and metrics
 - [test_99_coverage.md](tests/docs/test_99_coverage.md): Build system coverage information

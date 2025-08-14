@@ -12,6 +12,7 @@
 # run_cloc_with_stats()
 
 # CHANGELOG
+# 2.0.0 - 2025-08-14 - Added instrumentation data to output
 # 1.1.1 - 2025-08-03 - Removed extraneous command -v calls
 # 1.1.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 1.0.0 - 2025-07-02 - Initial creation, extracted from test_99_codebase.sh and test_00_all.sh
@@ -176,20 +177,42 @@ run_cloc_analysis() {
             codecomment_ratio="N/A"
             commentscode_ratio="N/A"
         fi
-        
+
+        # Let's get some mre accurate stats happening
+        if [[ -f "${PROJECT_DIR}/build/tests/results/coverage_unity.info" ]]; then
+            instrumented_both=$(grep -c '^DA:' "${PROJECT_DIR}/build/tests/results/coverage_unity.info" || true)
+        else
+            instrumented_both=$(lcov --capture --initial --directory "${PROJECT_DIR}/build/unity" --output-file "${PROJECT_DIR}/build/tests/results/coverage_unity.info" --ignore-errors empty >/dev/null 2>&1 && grep -c '^DA:' "${PROJECT_DIR}/build/tests/results/coverage_unity.info")
+        fi
+        if [[ -f "${PROJECT_DIR}/build/tests/results/coverage_blackbox.info" ]]; then
+            instrumented_code=$(grep -c '^DA:' "${PROJECT_DIR}/build/tests/results/coverage_blackbox.info" || true)
+        else
+            instrumented_code=$(lcov --capture --initial --directory "${PROJECT_DIR}/build/coverage" --output-file "${PROJECT_DIR}/build/tests/results/coverage_blackbox.info" --ignore-errors empty >/dev/null 2>&1 && grep -c '^DA:' "${PROJECT_DIR}/build/tests/results/coverage_blackbox.info")
+        fi
+
+        # Do the math. Why the -10? Dunno. Just what lcov calculates differently than gcov somehow. Probably an extra file that isn't being filtered 
+        # with lcov that does get filtered somehow with our more complex gcov approach. Something to keep an eye on in case it deviates in future.
+        # Perhaps lcov isn't as fancy with the branching logic (the * in the numbers) that we sorted out with gcov previously.
+        instrumented_test=$(( instrumented_both - instrumented_code ))
+        format_code=$(printf "%'7d" "$(( instrumented_code - 10 ))")
+        format_test=$(printf "%'7d" "$(( instrumented_test - 10 ))")
+        unity_code=$(bc -l <<< "scale=2; 100 * (${instrumented_test} - 10) / (${instrumented_code} - 10)")
+        ratio_code=$(bc -l <<< "scale=2; 100 * (${instrumented_test} - 10) / (${c_code} + ${header_code})")
+
         # Output the original cloc results
         if [[ -n "${output_file}" ]]; then
             {
                 cat "${enhanced_output}"
                 echo ""
-                echo "Code/Docs: ${codedoc_ratio}    Code/Comments: ${codecomment_ratio}"
-                echo "Docs/Code: ${docscode_ratio}    Comments/Code: ${commentscode_ratio}"
+                echo "Code/Docs: ${codedoc_ratio}   Code/Comments: ${codecomment_ratio}   Instrumented Code: ${format_code}   Ratio: ${ratio_code}"
+                echo "Docs/Code: ${docscode_ratio}   Comments/Code: ${commentscode_ratio}   Instrumented Test: ${format_test}   Unity: ${unity_code}"
+
             } > "${output_file}"
         else
             cat "${enhanced_output}"
             echo ""
-            echo "Code/Docs: ${codedoc_ratio}    Code/Comments: ${codecomment_ratio}"
-            echo "Docs/Code: ${docscode_ratio}    Comments/Code: ${commentscode_ratio}"
+            echo "Code/Docs: ${codedoc_ratio}   Code/Comments: ${codecomment_ratio}   Instrumented Code: ${format_code}   Ratio: ${ratio_code}"
+            echo "Docs/Code: ${docscode_ratio}   Comments/Code: ${commentscode_ratio}   Instrumented Test: ${format_test}   Unity: ${unity_code}"
         fi
         return 0
     else
