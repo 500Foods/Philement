@@ -14,51 +14,96 @@ Unity tests aim to accomplish several key objectives:
 5. **Documentation**: Serve as living documentation of expected function behavior
 6. **Development Confidence**: Enable safe refactoring and modifications with immediate feedback
 
-## Source Code Organization
+## Source Code Organization and Naming Convention
 
 **Location**: Unity test files are organized to **mirror the source directory structure** in `tests/unity/src/`
+
+**🔔 IMPORTANT - File Naming Convention**: Unity test files **MUST** follow the pattern:
+
+- **`<source>_test.c`** - For testing a complete source file (e.g., `payload_test.c` tests `payload.c`)
+- **`<source>_test_<function>.c`** - For testing a specific function (e.g., `payload_test_validate_payload_key.c` tests `validate_payload_key()`)
+- **`<source>_test_<structure>.c`** - For testing structures/constants (e.g., `payload_test_data_structure.c` tests `PayloadData`)
 
 **Directory Structure**: Tests are organized in subdirectories that match the `src/` directory structure:
 
 ```directory
 tests/unity/src/
-├── test_hydrogen.c              # Tests core hydrogen functionality
+├── hydrogen_test.c              # Tests core hydrogen functionality
 ├── launch/
-│   └── test_launch_plan.c       # Tests src/launch/launch_plan.c
+│   └── launch_plan_test.c       # Tests src/launch/launch_plan.c
 ├── payload/
-│   ├── test_validate_payload_key.c      # Tests validate_payload_key() function
-│   ├── test_free_payload.c              # Tests free_payload() function
-│   ├── test_cleanup_openssl.c           # Tests cleanup_openssl() function
-│   └── test_payload_data_structure.c    # Tests PayloadData structure
+│   ├── payload_test_validate_payload_key.c      # Tests validate_payload_key() function
+│   ├── payload_test_free_payload.c              # Tests free_payload() function
+│   ├── payload_test_cleanup_openssl.c           # Tests cleanup_openssl() function
+│   └── payload_test_data_structure.c            # Tests PayloadData structure
 ├── swagger/
-│   ├── test_is_swagger_request.c        # Tests is_swagger_request() function
-│   ├── test_init_swagger_support.c      # Tests init_swagger_support() function
-│   ├── test_handle_swagger_request.c    # Tests handle_swagger_request() function
-│   ├── test_swagger_request_handler.c   # Tests swagger_request_handler() function
-│   ├── test_cleanup_swagger_support.c   # Tests cleanup_swagger_support() function
-│   ├── test_swagger_url_validator.c     # Tests swagger_url_validator() function
-│   └── test_swagger.c                   # Integration tests for swagger workflow
+│   ├── swagger_test_is_swagger_request.c        # Tests is_swagger_request() function
+│   ├── swagger_test_init_swagger_support.c      # Tests init_swagger_support() function
+│   ├── swagger_test_handle_swagger_request.c    # Tests handle_swagger_request() function
+│   ├── swagger_test_request_handler.c           # Tests swagger_request_handler() function
+│   ├── swagger_test_cleanup_swagger_support.c   # Tests cleanup_swagger_support() function
+│   ├── swagger_test_url_validator.c             # Tests swagger_url_validator() function
+│   └── swagger_test.c                           # Integration tests for swagger workflow
 ├── api/
-│   └── test_api_service.c       # Tests src/api/api_service.c (example)
+│   └── api_service_test.c       # Tests src/api/api_service.c (example)
 ├── utils/
-│   └── test_utils.c             # Tests src/utils/utils.c (example)
+│   └── utils_time_test.c        # Tests src/utils/utils_time.c (example)
 └── [other directories matching src/ structure]
 ```
 
-**Naming Convention**: Test files follow the pattern `test_<function_name>.c` where `<function_name>` corresponds to the specific function being tested. For structures and constants, use `test_<structure_name>.c`.
+## ✅ Unity Test Naming Convention - **REQUIRED STANDARD**
+
+All new Unity test files **MUST** follow this naming convention:
+
+### Pattern: `<source>_test[_<specific>].c`
+
+- **`<source>`**: The name of the source file being tested (without `.c` extension)
+- **`_test`**: **Required suffix** that identifies the file as a Unity test
+- **`_<specific>`**: **Optional** additional identifier for function/structure name
+
+### Examples by Category
+
+**Module-Level Testing:**
+
+- `hydrogen_test.c` → tests `hydrogen.c`
+- `launch_plan_test.c` → tests `launch_plan.c`
+- `utils_time_test.c` → tests `utils_time.c`
+
+**Function-Specific Testing:**
+
+- `payload_test_validate_payload_key.c` → tests `validate_payload_key()` from `payload.c`
+- `swagger_test_is_swagger_request.c` → tests `is_swagger_request()` from `swagger.c`
+- `websocket_server_startup_test_start_websocket_server.c` → tests `start_websocket_server()` from `websocket_server_startup.c`
+
+**Structure/Data Testing:**
+
+- `payload_test_data_structure.c` → tests `PayloadData` structure from `payload.c`
+
+### 🚫 **Do NOT use these patterns:**
+
+- ~~`test_<source>.c`~~ ❌ (Old convention - deprecated)
+- ~~`<source>Test.c`~~ ❌ (Wrong capitalization)
+- ~~`<source>.test.c`~~ ❌ (Wrong separator)
+
+**Why This Convention?**
+
+- **Clear Source Identification**: Source module name comes first for easy navigation
+- **Consistent Test Suffix**: All test files end with `_test` for instant recognition
+- **Automatic Discovery**: CMake automatically finds all `*_test.c` files
+- **Logical Grouping**: Related tests are grouped alphabetically by source module
 
 **One Test File Per Function Rule**: Each Unity test file focuses on testing **one specific function** from the source code:
 
-- `test_validate_payload_key.c` - Tests only the `validate_payload_key()` function
-- `test_is_swagger_request.c` - Tests only the `is_swagger_request()` function
-- `test_init_swagger_support.c` - Tests only the `init_swagger_support()` function
+- `payload_test_validate_payload_key.c` - Tests only the `validate_payload_key()` function
+- `swagger_test_is_swagger_request.c` - Tests only the `is_swagger_request()` function
+- `swagger_test_init_swagger_support.c` - Tests only the `init_swagger_support()` function
 
 **Examples**:
 
-- `tests/unity/src/launch/test_launch_plan.c` - Tests functions in `src/launch/launch_plan.c`
-- `tests/unity/src/payload/test_validate_payload_key.c` - Tests `validate_payload_key()` function from `src/payload/payload.c`
-- `tests/unity/src/swagger/test_is_swagger_request.c` - Tests `is_swagger_request()` function from `src/swagger/swagger.c`
-- `tests/unity/src/test_hydrogen.c` - Tests core hydrogen functionality
+- `tests/unity/src/launch/launch_plan_test.c` - Tests functions in `src/launch/launch_plan.c`
+- `tests/unity/src/payload/payload_test_validate_payload_key.c` - Tests `validate_payload_key()` function from `src/payload/payload.c`
+- `tests/unity/src/swagger/swagger_test_is_swagger_request.c` - Tests `is_swagger_request()` function from `src/swagger/swagger.c`
+- `tests/unity/src/hydrogen_test.c` - Tests core hydrogen functionality
 
 **Benefits of One-Function-Per-File Structure**:
 
@@ -136,7 +181,7 @@ Unity tests are **automatically discovered and integrated** with the CMake build
 
 **Automatic Discovery Process**:
 
-1. **File Detection**: CMake automatically finds all `test_*.c` files in `tests/unity/src/`
+1. **File Detection**: CMake automatically finds all `*_test.c` files in `tests/unity/src/`
 2. **Target Creation**: Each test file generates a corresponding build target and executable
 3. **Coverage Instrumentation**: All tests are built with gcov coverage flags enabled
 4. **Directory Structure**: Coverage data is generated in the `build/unity/src/` directory tree
@@ -144,7 +189,7 @@ Unity tests are **automatically discovered and integrated** with the CMake build
 **Build Commands**:
 
 ```bash
-# Build all Unity tests (automatically discovers and builds ALL test_*.c files)
+# Build all Unity tests (automatically discovers and builds ALL *_test.c files)
 cd cmake
 cmake --build . --target unity_tests
 
@@ -158,7 +203,7 @@ cd ../build/unity/src
 ./test_hydrogen
 ```
 
-**CMake Target Convention**: For each `test_<module>.c` file, CMake **automatically creates**:
+**CMake Target Convention**: For each `<module>_test.c` file, CMake **automatically creates**:
 
 - A build target named `test_<module>`
 - An executable at `build/unity/src/test_<module>`
@@ -169,12 +214,12 @@ cd ../build/unity/src
 
 ```directory
 build/unity/src/
-├── test_hydrogen              # Executable
-├── test_hydrogen.c.gcov       # Test file coverage
+├── hydrogen_test              # Executable
+├── hydrogen_test.c.gcov       # Test file coverage
 ├── unity.c.gcov               # Unity framework coverage
 ├── launch/
-│   ├── test_launch_plan       # Executable (mirrored structure)
-│   ├── test_launch_plan.c.gcov # Test file coverage
+│   ├── launch_plan_test       # Executable (mirrored structure)
+│   ├── launch_plan_test.c.gcov # Test file coverage
 │   ├── launch_plan.c.gcov     # Source coverage for launch_plan.c
 │   ├── launch_plan.gcda       # Coverage data
 │   └── launch_plan.gcno       # Coverage notes
@@ -344,15 +389,49 @@ Systematically test all parameter combinations:
 
 ## Adding New Unity Tests
 
-To add a new Unity test:
+### 📋 **Step-by-Step Instructions**
 
-1. **Create Test File**: Add `test_<module>.c` in `tests/unity/src/`
-2. **Implement Tests**: Write comprehensive test functions covering all scenarios
-3. **Build**: Run `cmake --build . --target test_<module>` to verify compilation
-4. **Validate**: Execute the test directly to ensure all tests pass
-5. **Integration**: The test will automatically be discovered by `test_11_unity.sh`
+To add a new Unity test, follow these steps:
 
-**No additional configuration is required** - the CMake build system and test framework automatically handle new Unity tests.
+1. **📁 Choose Location**: Place test files in `tests/unity/src/` mirroring the source directory structure
+
+2. **📝 Create Test File**: **CRITICAL** - Follow the naming convention exactly:
+   - **`<source>_test.c`** for module testing
+   - **`<source>_test_<function>.c`** for function-specific testing
+   - **Examples**: `utils_string_test.c`, `config_test_validate_json.c`
+
+3. **🔧 Implement Tests**: Write comprehensive test functions covering all scenarios
+
+4. **🏗️ Build**: Run `cmake --build . --target <module>_test` to verify compilation
+   - **Note**: CMake automatically creates targets based on your filename
+
+5. **✅ Validate**: Execute the test directly to ensure all tests pass
+
+6. **🔄 Integration**: The test will automatically be discovered by `test_11_unity.sh`
+
+### ⚡ **Automatic Features**
+
+**No manual configuration required** - the CMake build system automatically:
+
+- **Discovers** all `*_test.c` files recursively
+- **Creates** individual build targets for each test file
+- **Generates** executables in the mirrored directory structure
+- **Instruments** code with coverage analysis
+- **Links** with all required libraries and dependencies
+
+### 🎯 **Quick Start Template**
+
+When creating a new test file, use this template:
+
+```bash
+# Create your test file (replace 'module' and 'function' as appropriate)
+touch tests/unity/src/module_test_function.c
+
+# Build and test
+cd cmake
+cmake --build . --target module_test_function
+../build/unity/src/module_test_function
+```
 
 ### Unity Framework Features
 
@@ -532,9 +611,9 @@ Before investing in Unity tests for a module:
 
 **Key Lesson**: Not all code needs or benefits from unit tests. System-dependent code is often better validated through integration testing that exercises the complete system in realistic conditions.
 
-## Example: test_launch_plan.c
+## Example: launch_plan_test.c
 
-The `test_launch_plan.c` file demonstrates comprehensive Unity testing:
+The `launch_plan_test.c` file demonstrates comprehensive Unity testing:
 
 - **14 test cases** covering all scenarios for `handle_launch_plan()` function
 - Tests null parameters, empty results, mixed readiness states, and boundary conditions
@@ -542,3 +621,74 @@ The `test_launch_plan.c` file demonstrates comprehensive Unity testing:
 - Validates launch plan decision logic across various subsystem configurations
 
 This example serves as a template for writing effective Unity tests that provide thorough coverage and meaningful validation.
+
+## Coverage Analysis and Test Metrics
+
+### Understanding Direct vs. Indirect Test Coverage
+
+Unity tests can provide coverage to source files in two distinct ways, which is important for understanding coverage reports:
+
+**Direct Coverage**: When Unity test files directly target a specific source file:
+
+- Test files like `payload_test_validate_payload_key.c` directly test functions in `src/payload/payload.c`
+- These show up in both the **Tests** column (test count) and **Unity** column (coverage) in coverage reports
+- Example: `payload/payload.c` shows **28 tests** and significant Unity coverage
+
+**Indirect Coverage**: When Unity tests for one module call functions from another module:
+
+- Tests for `swagger.c` might call utility functions from `config.c`
+- Tests for `websocket.c` might initialize contexts that read configuration settings
+- These files show Unity coverage but **0 tests** in the coverage table
+- Example: `config/config.c` shows Unity coverage but no direct tests
+
+### Coverage Table Integration
+
+The coverage analysis system now includes a **Tests** column that shows the count of `RUN_TEST()` calls for each source file:
+
+```bash
+# Tests column shows count of Unity tests per source file
+│ Cover % │ Lines │ Source File                    │ Tests │ Unity │ Black │ Cover │
+├─────────┼───────┼────────────────────────────────┼───────┼───────┼───────┼───────┤
+│  76.401 │   339 │ payload/payload.c              │    28 │    30 │   240 │   259 │
+│  69.173 │   399 │ swagger/swagger.c              │    82 │    82 │   234 │   276 │
+│  76.331 │   169 │ config/config.c                │       │     2 │   129 │   129 │
+```
+
+**Key Insights**:
+
+- **`payload.c`**: 28 direct tests + indirect coverage from other tests = comprehensive testing
+- **`swagger.c`**: 82 direct tests providing most of its own coverage
+- **`config.c`**: 0 direct tests but gets coverage from payload/swagger/websocket tests calling config functions
+
+### Test Counting and Mapping Logic
+
+The system automatically maps Unity test files to source files using naming conventions:
+
+**Mapping Rules**:
+
+- `<source>_test.c` → `src/<source>.c`
+- `<source>_test_<function>.c` → `src/<source>.c`
+- Directory structure is preserved: `payload/payload_test_*.c` → `src/payload/payload.c`
+
+**Test Counting**:
+
+- Counts `RUN_TEST()` occurrences in all test files for a given source
+- Multiple test files can contribute to one source file's count
+- Results are cached in `$HOME/.cache/unity/` for performance
+
+### Coverage Analysis Best Practices
+
+**When Planning New Tests**:
+
+1. **Check Coverage vs. Tests**: Files with Unity coverage but 0 tests are good candidates for direct testing
+2. **Identify Gaps**: Use the Tests column to find source files that lack dedicated test suites
+3. **Understand Dependencies**: Indirect coverage indicates which modules are tightly coupled
+
+**Interpreting Results**:
+
+- **High tests, high coverage**: Well-tested module (ideal)
+- **Zero tests, some coverage**: Module tested indirectly (consider direct tests)
+- **High tests, low coverage**: Tests may not be calling the right functions
+- **Zero tests, zero coverage**: Untested module (high priority for testing)
+
+This analysis helps prioritize testing efforts and understand the relationship between direct testing and indirect coverage validation.

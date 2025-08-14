@@ -54,9 +54,9 @@ check_unity_tests_available() {
     cd "${cmake_build_dir}" || { print_result 1 "Failed to change to CMake build directory"; return 1; }
     
     # Check if Unity tests are registered with CTest
-    if ctest -N | grep -q "test_hydrogen" || true; then
+    if ctest -N | grep -q "hydrogen_test" || true; then
         # Also verify the executable exists in the correct location (build/unity/src/)
-        local unity_test_exe="${UNITY_BUILD_DIR}/src/test_hydrogen"
+        local unity_test_exe="${UNITY_BUILD_DIR}/src/hydrogen_test"
         if [[ -f "${unity_test_exe}" ]]; then
             exe_size=$(get_file_size "${unity_test_exe}")
             formatted_size=$(format_file_size "${exe_size}")
@@ -105,8 +105,8 @@ run_single_unity_test_parallel() {
     fi
     
     # Run the Unity test and capture output
-    local temp_test_log="${LOG_PREFIX}${test_name}.txt"
-    local log_path="${LOG_PREFIX}${test_name}.log"
+    local temp_test_log="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}/${test_name}.txt"
+    local log_path="${LOG_PREFIX}.log"
     mkdir -p "$(dirname "${temp_test_log}")"
     true > "${temp_test_log}"
     

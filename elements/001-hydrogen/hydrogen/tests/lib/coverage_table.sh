@@ -4,6 +4,7 @@
 # Displays comprehensive coverage data from Unity and blackbox tests in a formatted table
 
 # CHANGELOG
+# 4.0.0 - 2025-08-13 - Added Tests column showing Unity test count per source file with caching
 # 3.0.0 - 2025-08-04 - GCOV Optimization Adventure
 # 2.0.1 - 2025-07-23 - Added --help and --version options
 # 2.0.0 - 2025-07-22 - Upgraded for more stringent shellcheck compliance
@@ -16,14 +17,14 @@
 # 1.0.0 - Initial version
 
 COVERAGE_TABLE_NAME="Coverage Table Library"
-COVERAGE_TABLE_VERSION="3.0.0"
+COVERAGE_TABLE_VERSION="4.0.0"
 export COVERAGE_TABLE_NAME COVERAGE_TABLE_VERSION
 
 # Test Configuration
 TEST_NAME="Coverage Table"
 TEST_ABBR="CVT"
 TEST_NUMBER="CT"
-TEST_VERSION="3.0.0"
+TEST_VERSION="4.0.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/framework.sh"
@@ -33,6 +34,7 @@ setup_test_environment &>/dev/null
 UNITY_COVS="${BUILD_DIR}/unity"
 BLACKBOX_COVS="${BUILD_DIR}/coverage"
 TABLES_EXE="${LIB_DIR}/tables"
+CACHE_DIR="${HOME}/.cache/unity"
 
 show_version() {
     echo "${COVERAGE_TABLE_NAME} - ${COVERAGE_TABLE_VERSION} - Displays comprehensive coverage data from Unity and blackbox tests in a formatted table" >&2
@@ -86,12 +88,81 @@ declare -A unity_instrumented_lines
 declare -A coverage_covered_lines
 declare -A coverage_instrumented_lines
 declare -A all_files
+declare -A unity_test_counts
+
+# Function to count Unity tests for each source file with caching
+count_unity_tests_per_source_file() {
+    # Create cache directory if it doesn't exist
+    mkdir -p "${CACHE_DIR}" 2>/dev/null
+    local cache_file="${CACHE_DIR}/unity_test_counts_${timestamp}.cache"
+    
+    # Check if cache exists and is recent (within 1 hour)
+    if [[ -f "${cache_file}" ]] && [[ $(($(date +%s || true) - $(stat -c %Y "${cache_file}" 2>/dev/null || echo 0 || true))) -lt 3600 ]]; then
+        # Load from cache
+        while IFS='=' read -r source_file test_count; do
+            unity_test_counts["${source_file}"]="${test_count}"
+        done < "${cache_file}"
+        return
+    fi
+    
+    # Clear the cache and rebuild
+    : > "${cache_file}"
+    
+    # Find all Unity test files - use correct path relative to hydrogen root
+    local unity_test_dir="./tests/unity/src"
+    if [[ ! -d "${unity_test_dir}" ]]; then
+        return
+    fi
+    
+    # Process each Unity test file
+    while IFS= read -r -d '' test_file; do
+        # Skip if not a .c file
+        [[ "${test_file}" =~ \.c$ ]] || continue
+        
+        # Get relative path from tests/unity/src/
+        # shellcheck disable=SC2295 # Seems to work, might not want to change it
+        local rel_path="${test_file#${unity_test_dir}/}"
+        
+        # Extract source file name from test file name
+        local test_basename
+        test_basename=$(basename "${rel_path}" .c)
+        
+        # Map test file to source file based on naming convention
+        local source_file=""
+        
+        if [[ "${test_basename}" =~ _test ]]; then
+            local source_name="${test_basename%%_test*}"
+            local source_dir
+            source_dir=$(dirname "${rel_path}")
+            
+            # Handle directory mapping
+            if [[ "${source_dir}" == "." ]]; then
+                # Test file is in root of unity/src, map to src/
+                source_file="src/${source_name}.c"
+            else
+                # Test file is in subdirectory, map to corresponding src subdirectory
+                source_file="src/${source_dir}/${source_name}.c"
+            fi
+            
+            # Count RUN_TEST occurrences in the test file
+            local test_count
+            test_count=$(grep -c "RUN_TEST(" "${test_file}" 2>/dev/null || echo 0)
+            
+            # Add to existing count for this source file
+            local current_count="${unity_test_counts[${source_file}]:-0}"
+            unity_test_counts["${source_file}"]=$((current_count + test_count))
+            
+            # Cache the result
+            echo "${source_file}=${unity_test_counts[${source_file}]}" >> "${cache_file}"
+        fi
+    done < <(find "${unity_test_dir}" -name "*_test*.c" -type f -print0 2>/dev/null || true)
+}
 
 # Use the exact same functions as test 99 to get coverage data
 timestamp=$(date '+%Y%m%d_%H%M%S')
 
 # Generate display timestamp for footer
-display_timestamp=$(date '+%Y-%m-%d %H:%M:%S %Z')
+display_timestamp=$(/usr/bin/date '+%Y-%b-%d (%a) %H:%M:%S %Z' 2>/dev/null)
 
 # print_subtest "Getting started"
 
@@ -110,6 +181,9 @@ unity_coverage_percentage=$(cat "${tmp_unity}")
 blackbox_coverage_percentage=$(cat "${tmp_blackbox}")
 export unity_coverage_percentage blackbox_coverage_percentage
 rm -f "${tmp_unity}" "${tmp_blackbox}"
+
+# Count Unity tests (run in main shell to preserve associative array)
+count_unity_tests_per_source_file
 
 # print_subtest "Calculations done"
 
@@ -363,15 +437,18 @@ for file_data_entry in "${sorted_file_data[@]}"; do
             printf "%.3f %.3f %.3f %.3f %d\n", u_pct, c_pct, comb_pct, max_pct, below_50;
         }')"
     
-    # Highlight files
-    display_file_path="${file_path}"
+    # Remove src/ prefix from display path and highlight files
+    display_file_path="${file_path#src/}"
     if [[ ${u_covered} -eq 0 && ${c_covered} -eq 0 ]]; then
-        display_file_path="{YELLOW}${file_path}{RESET}"
+        display_file_path="{YELLOW}${display_file_path}{RESET}"
         ((zero_coverage_count++))
     elif [[ ${coverage_below_50} -eq 1 ]]; then
-        display_file_path="{MAGENTA}${file_path}{RESET}"
+        display_file_path="{MAGENTA}${display_file_path}{RESET}"
         ((low_coverage_count++))
     fi
+    
+    # Get Unity test count for this source file
+    test_count="${unity_test_counts[${file_path}]:-0}"
     
     # Build JSON record in memory
     if [[ "${first_record}" = false ]]; then
@@ -384,6 +461,7 @@ for file_data_entry in "${sorted_file_data[@]}"; do
         "max_coverage_percentage": '"${max_percentage}"',
         "combined_coverage_percentage": '"${combined_percentage}"',
         "file_path": "'"${display_file_path}"'",
+        "unity_test_count": '"${test_count}"',
         "unity_covered": '"${u_covered}"',
         "unity_instrumented": '"${u_instrumented}"',
         "unity_percentage": '"${u_percentage}"',
@@ -412,7 +490,7 @@ done
 cat > "${layout_json}" << EOF
 {
     "title": "Test Suite Coverage {NC}{RED}———{RESET}{BOLD}{CYAN} Unity {WHITE}${unity_total_pct}% {RESET}{RED}———{RESET}{BOLD}{CYAN} Blackbox {WHITE}${coverage_total_pct}% {RESET}{RED}———{RESET}{BOLD}{CYAN} Combined {WHITE}${combined_total_pct}%{RESET}",
-    "footer": "{YELLOW}Zero Coverage{RESET} {WHITE}${zero_coverage_count}{RESET} {RED}———{RESET} {MAGENTA}100+ Lines < 50% Coverage{RESET} {WHITE}${low_coverage_count}{RESET} {RED}———{RESET} {CYAN}Timestamp {WHITE}${display_timestamp}{RESET}",
+    "footer": "{YELLOW}Zero Coverage{RESET} {WHITE}${zero_coverage_count}{RESET} {RED}———{RESET} {MAGENTA}100+ Lines < 50% Coverage{RESET} {WHITE}${low_coverage_count}{RESET} {RED}———{RESET} {CYAN}Completed {WHITE}${display_timestamp}{RESET}",
     "footer_position": "right",
     "theme": "Red",
     "columns": [
@@ -433,7 +511,7 @@ cat > "${layout_json}" << EOF
         {
             "header": "Lines",
             "key": "coverage_instrumented",
-            "datatype": "int", 
+            "datatype": "int",
             "justification": "right",
             "summary": "sum"
         },
@@ -442,7 +520,15 @@ cat > "${layout_json}" << EOF
             "key": "file_path",
             "datatype": "text",
             "summary": "count",
-            "width": 52
+            "width": 44
+        },
+        {
+            "header": "Tests",
+            "key": "unity_test_count",
+            "datatype": "int",
+            "justification": "right",
+            "summary": "sum",
+            "width": 7
         },
         {
             "header": "Unity",
