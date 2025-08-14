@@ -57,7 +57,7 @@ check_unity_tests_available() {
     if [[ -d "${UNITY_BUILD_DIR}/src" ]]; then
         # Look for any executable files that match test pattern
         local test_count
-        test_count=$(find "${UNITY_BUILD_DIR}/src" -name "*test*" -type f -executable | wc -l || true)
+        test_count=$(find "${UNITY_BUILD_DIR}/src" -name "*_test*" -type f -executable | wc -l || true)
         if [[ "${test_count}" -gt 0 ]]; then
             print_result 0 "Unity tests available: ${test_count} test executables found in ${UNITY_BUILD_DIR#"${SCRIPT_DIR}"/..}/src"
             cd "${SCRIPT_DIR}" || { print_result 1 "Failed to return to script directory"; return 1; }
@@ -172,7 +172,7 @@ run_unity_tests() {
                 local test_name
                 test_name=$(basename "${test_exe}")
                 # Accept any executable file with 'test' in the name
-                if [[ "${test_name}" == *test* ]]; then
+                if [[ "${test_name}" == *_test* ]]; then
                     # Get relative path from unity_build_dir to show directory structure
                     local relative_path
                     relative_path=$(realpath --relative-to="${unity_build_dir}" "${test_exe}")
