@@ -676,7 +676,7 @@ add_custom_target(all_variants
 
 # Trial build target
 add_custom_target(trial
-    COMMAND ${CMAKE_COMMAND} -E echo "Starting trial build..."
+#    COMMAND ${CMAKE_COMMAND} -E echo "Starting trial build..."
     COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/scripts/trial_build.sh" "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}"
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Running trial build with diagnostics"
