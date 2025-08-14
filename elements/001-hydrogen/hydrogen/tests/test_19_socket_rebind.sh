@@ -18,7 +18,7 @@
 # Test Configuration
 TEST_NAME="Socket Rebinding"
 TEST_ABBR="SCK"
-TEST_NUMBER="23"
+TEST_NUMBER="19"
 TEST_VERSION="5.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
@@ -26,7 +26,7 @@ TEST_VERSION="5.1.0"
 setup_test_environment
 
 # Test variables
-CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_23_rebind.json"
+CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_rebind.json"
 FIRST_PID=""
 SECOND_PID=""
 FIRST_LOG="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_first.log"
@@ -65,7 +65,7 @@ print_message "Checking current environment status for port ${PORT}"
 # Check if port is currently bound by an active process
 if check_port_in_use "${PORT}"; then
     print_warning "Port ${PORT} is currently in use by an active process" 
-    kill_processes_on_port "${PORT}"
+    # ll_processes_on_port "${PORT}"
     
     # Verify the port is now free
     if check_port_in_use "${PORT}"; then

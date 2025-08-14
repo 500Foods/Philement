@@ -40,7 +40,7 @@
 # Test Configuration
 TEST_NAME="System API"
 TEST_ABBR="SYS"
-TEST_NUMBER="25"
+TEST_NUMBER="21"
 TEST_VERSION="5.0.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
@@ -48,7 +48,7 @@ TEST_VERSION="5.0.0"
 setup_test_environment
 
 # Test variables
-CONFIG_PATH="${SCRIPT_DIR}/configs/hydrogen_test_25_system_endpoints.json"
+CONFIG_PATH="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_system_endpoints.json"
 
 # Parallel execution configuration for endpoint requests
 declare -A ENDPOINT_TEST_CONFIGS

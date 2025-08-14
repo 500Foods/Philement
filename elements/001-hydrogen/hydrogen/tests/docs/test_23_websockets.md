@@ -1,7 +1,7 @@
 # Test 36: WebSockets
 
 **Version:** 1.0.0  
-**Test Script:** [test_36_websockets.sh](../test_27_websockets.sh)  
+**Test Script:** [test_23_websockets.sh](../test_23_websockets.sh)  
 **Test Type:** Integration Testing  
 **Dependencies:** WebSocket server, libwebsockets, Network subsystem
 
@@ -169,18 +169,3 @@ This test verifies the WebSocket server functionality in the Hydrogen system, en
 - **Project Overview:** [SITEMAP.md](../../SITEMAP.md)
 - **WebSocket Documentation:** [docs/web_socket.md](../../docs/web_socket.md)
 - **Configuration Guide:** [docs/configuration.md](../../docs/configuration.md)
-
-## Changelog
-
-### Version 1.0.0 (2025-07-13)
-
-- Initial test implementation for WebSocket server
-- Complete integration testing coverage
-- Support for multiple configuration scenarios
-- Immediate restart testing with SO_REUSEADDR
-
----
-
-**Test Maintainer:** Hydrogen Development Team  
-**Last Updated:** 2025-07-13  
-**Review Status:** Initial Implementation

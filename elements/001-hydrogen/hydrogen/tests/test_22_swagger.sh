@@ -30,7 +30,7 @@
 # Test Configuration
 TEST_NAME="Swagger"
 TEST_ABBR="SWG"
-TEST_NUMBER="26"
+TEST_NUMBER="22"
 TEST_VERSION="5.0.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
@@ -43,8 +43,8 @@ declare -A SWAGGER_TEST_CONFIGS
 
 # Swagger test configuration - format: "config_file:log_suffix:swagger_prefix:description"
 SWAGGER_TEST_CONFIGS=(
-    ["ONE"]="${SCRIPT_DIR}/configs/hydrogen_test_26_swagger_1.json:one:/swagger:Swagger Prefix One"
-    ["TWO"]="${SCRIPT_DIR}/configs/hydrogen_test_26_swagger_2.json:two:/apidocs:Swagger Prefix Two"
+    ["ONE"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_swagger_1.json:one:/swagger:Swagger Prefix One"
+    ["TWO"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_swagger_2.json:two:/apidocs:Swagger Prefix Two"
 )
 
 # Test timeouts

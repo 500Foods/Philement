@@ -14,7 +14,7 @@
 # Test configuration
 TEST_NAME="Startup/Shutdown"
 TEST_ABBR="UPD"
-TEST_NUMBER="21"
+TEST_NUMBER="17"
 TEST_VERSION="4.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
@@ -22,8 +22,8 @@ TEST_VERSION="4.1.0"
 setup_test_environment
 
 # Test configuration
-MIN_CONFIG="${SCRIPT_DIR}/configs/hydrogen_test_21_min.json"
-MAX_CONFIG="${SCRIPT_DIR}/configs/hydrogen_test_21_max.json"
+MIN_CONFIG="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_startup_min.json"
+MAX_CONFIG="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_startup_max.json"
 STARTUP_TIMEOUT=10    # Seconds to wait for startup
 SHUTDOWN_TIMEOUT=90   # Hard limit on shutdown time
 SHUTDOWN_ACTIVITY_TIMEOUT=5  # Timeout if no new log activity

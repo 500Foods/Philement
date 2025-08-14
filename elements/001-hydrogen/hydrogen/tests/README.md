@@ -63,17 +63,17 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_13_crash_handler.sh](docs/test_13_crash_handler.md)**: Tests that the crash handler correctly generates and formats core dumps.
 - **[test_14_library_dependencies.sh](docs/test_14_library_dependencies.md)**: Checks for required library dependencies.
 - **[test_15_json_error_handling.sh](docs/test_15_json_error_handling.md)**: Tests JSON configuration error handling.
+- **[test_16_shutdown.sh](docs/test_16_shutdown.md)**: Tests the shutdown functionality of the application with a minimal configuration.
+- **[test_17_startup_shutdown.sh](docs/test_17_startup_shutdown.md)**: Validates complete startup and shutdown lifecycles.
+- **[test_18_signals.sh](docs/test_18_signals.md)**: Tests signal handling (e.g., SIGINT, SIGTERM, SIGHUP).
+- **[test_19_socket_rebind.sh](docs/test_19_socket_rebind.md)**: Tests socket rebinding behavior.
 
-### General Features Tests
+### Server Tests
 
-- **[test_20_shutdown.sh](docs/test_20_shutdown.md)**: Tests the shutdown functionality of the application with a minimal configuration.
-- **[test_21_startup_shutdown.sh](docs/test_21_startup_shutdown.md)**: Validates complete startup and shutdown lifecycles.
-- **[test_22_signals.sh](docs/test_22_signals.md)**: Tests signal handling (e.g., SIGINT, SIGTERM, SIGHUP).
-- **[test_23_socket_rebind.sh](docs/test_23_socket_rebind.md)**: Tests socket rebinding behavior.
-- **[test_24_api_prefix.sh](docs/test_24_api_prefix.md)**: Validates API prefix configurations.
-- **[test_25_system_endpoints.sh](docs/test_25_system_endpoints.md)**: Tests system endpoint functionality.
-- **[test_26_swagger.sh](docs/test_26_swagger.md)**: Verifies Swagger documentation and UI integration.
-- **[test_27_websockets.sh](docs/test_27_websockets.md)**: Tests WebSocket server functionality and integration.
+- **[test_20_api_prefix.sh](docs/test_20_api_prefix.md)**: Validates API prefix configurations.
+- **[test_21_system_endpoints.sh](docs/test_21_system_endpoints.md)**: Tests system endpoint functionality.
+- **[test_22_swagger.sh](docs/test_22_swagger.md)**: Verifies Swagger documentation and UI integration.
+- **[test_23_websockets.sh](docs/test_23_websockets.md)**: Tests WebSocket server functionality and integration.
 
 ### Static Analysis & Code Quality Tests
 

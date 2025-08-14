@@ -186,7 +186,7 @@ setup_orchestration_environment() {
 
     # All tests that run hydrogen run with a config that starts with hydrogen_test so we can
     # ensure nothing else is running by killing those processes at the start and at the end
-    pkill -f hydrogen_test_
+    pkill -9 -f hydrogen_test_
 
     # Array for collecting output messages (for performance optimization and progressive feedback)
     # Output is cached and dumped each time a new TEST starts, providing progressive feedback
@@ -333,7 +333,7 @@ setup_test_environment() {
         # All tests that run hydrogen run with a config that starts with hydrogen_test so we can
         # ensure nothing else is running by killing those processes at the start and at the end
         # We only do this for single tests if it isn't running under orchestration
-        pkill -f hydrogen_test_
+        pkill -9 -f hydrogen_test_
 
         # Starting point
         TIMESTAMP=$(/usr/bin/date +%Y%m%d_%H%M%S)
