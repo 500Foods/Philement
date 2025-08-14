@@ -14,7 +14,7 @@
 # Test configuration
 TEST_NAME="Shutdown"
 TEST_ABBR="SHD"
-TEST_NUMBER="20"
+TEST_NUMBER="16"
 TEST_VERSION="3.0.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
@@ -22,7 +22,7 @@ TEST_VERSION="3.0.0"
 setup_test_environment
 
 # Test configuration
-MIN_CONFIG="${SCRIPT_DIR}/configs/hydrogen_test_20_shutdown.json"
+MIN_CONFIG="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_shutdown.json"
 config_name=$(basename "${MIN_CONFIG}" .json)
 STARTUP_TIMEOUT=10    # Seconds to wait for startup
 SHUTDOWN_TIMEOUT=90   # Hard limit on shutdown time

@@ -486,17 +486,17 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_13_crash_handler.sh](tests/test_13_crash_handler.sh) - Crash handler tests
 - [tests/test_14_library_dependencies.sh](tests/test_14_library_dependencies.sh) - Library dependency tests
 - [tests/test_15_json_error_handling.sh](tests/test_15_json_error_handling.sh) - JSON error handling tests
+- [tests/test_16_shutdown.sh](tests/test_16_shutdown.sh) - Shutdown-specific tests
+- [tests/test_17_startup_shutdown.sh](tests/test_17_startup_shutdown.sh) - Startup/shutdown tests
+- [tests/test_18_signals.sh](tests/test_18_signals.sh) - Signal handling tests
+- [tests/test_19_socket_rebind.sh](tests/test_19_socket_rebind.sh) - Socket rebinding tests
 
-### General Feature Tests
+### Server Tests
 
-- [tests/test_20_shutdown.sh](tests/test_20_shutdown.sh) - Shutdown-specific tests
-- [tests/test_21_startup_shutdown.sh](tests/test_21_startup_shutdown.sh) - Startup/shutdown tests
-- [tests/test_22_signals.sh](tests/test_22_signals.sh) - Signal handling tests
-- [tests/test_23_socket_rebind.sh](tests/test_23_socket_rebind.sh) - Socket rebinding tests
-- [tests/test_24_api_prefix.sh](tests/test_24_api_prefix.sh) - API prefix tests
-- [tests/test_25_system_endpoints.sh](tests/test_25_system_endpoints.sh) - System endpoint tests
-- [tests/test_26_swagger.sh](tests/test_26_swagger.sh) - Swagger functionality tests
-- [tests/test_276_websockets.sh](tests/test_27_websockets.sh) - Swagger functionality tests
+- [tests/test_20_api_prefix.sh](tests/test_20_api_prefix.sh) - API prefix tests
+- [tests/test_21_system_endpoints.sh](tests/test_21_system_endpoints.sh) - System endpoint tests
+- [tests/test_22_swagger.sh](tests/test_22_swagger.sh) - Swagger functionality tests
+- [tests/test_23_websockets.sh](tests/test_23_websockets.sh) - Swagger functionality tests
 
 ### Linting Tests
 

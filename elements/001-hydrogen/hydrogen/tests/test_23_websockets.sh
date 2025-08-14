@@ -25,7 +25,7 @@
 # Test Configuration
 TEST_NAME="WebSockets"
 TEST_ABBR="WSS"
-TEST_NUMBER="27"
+TEST_NUMBER="23"
 TEST_VERSION="3.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
@@ -33,8 +33,8 @@ TEST_VERSION="3.1.0"
 setup_test_environment
 
 # Test variables
-CONFIG_1="${SCRIPT_DIR}/configs/hydrogen_test_27_websocket_1.json"
-CONFIG_2="${SCRIPT_DIR}/configs/hydrogen_test_27_websocket_2.json"
+CONFIG_1="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_websocket_1.json"
+CONFIG_2="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_websocket_2.json"
 
 # Global cache for WEBSOCKET_KEY validation
 WEBSOCKET_KEY_VALIDATED=0

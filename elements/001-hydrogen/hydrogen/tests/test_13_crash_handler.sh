@@ -40,7 +40,7 @@ setup_test_environment
 # More test configuration
 TEST_CONFIG="${CONFIG_DIR}/hydrogen_test_13_crash_test.json"
 STARTUP_TIMEOUT=10    
-CRASH_TIMEOUT=30
+CRASH_TIMEOUT=5
 
 # Global caches
 declare CORE_PATTERN=""
@@ -178,7 +178,7 @@ verify_core_file() {
         print_message "Core file ${binary_name}.core.${pid} not found after ${timeout} seconds"
         # List any core files that might exist
         local core_files
-        core_files=$(ls "${PROJECT_DIR}"/*.core.* 2>/dev/null || echo "")
+        core_files=$(find "${PROJECT_DIR}" -name "*.core.*" -type f 2>/dev/null || echo "")
         if [[ -n "${core_files}" ]]; then
             print_message "Other core files found: ${core_files}"
         else
@@ -295,7 +295,8 @@ run_crash_test_parallel() {
     # Start hydrogen server in background with ASAN leak detection disabled
     ASAN_OPTIONS="detect_leaks=0" "${binary}" "${TEST_CONFIG}" > "${log_file}" 2>&1 &
     local hydrogen_pid=$!
-    
+    echo "Starting ${binary} ${TEST_CONFIG} with PID ${hydrogen_pid}" > "${result_file}"
+
     # Wait for startup with active log monitoring
     local startup_start="${SECONDS}"
     local elapsed
@@ -325,6 +326,8 @@ run_crash_test_parallel() {
         echo "STARTUP_FAILED" > "${result_file}"
         kill -9 "${hydrogen_pid}" 2>/dev/null || true
         return 1
+    else
+      echo "Startup complete for ${binary} ${TEST_CONFIG} with PID ${hydrogen_pid}" > "${result_file}"
     fi
     
     # Send SIGUSR1 to trigger test crash handler
@@ -654,9 +657,6 @@ for build in "${BUILDS[@]}"; do
 done
 
 print_message "Summary: ${successful_builds}/${#BUILDS[@]} builds passed all crash handler tests"
-
-# Clean up parallel results directory
-rm -rf "${PROJECT_DIR}"/*.core.*
 
 # Print completion table
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"

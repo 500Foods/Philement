@@ -31,7 +31,7 @@
 # Test Configuration
 TEST_NAME="API Prefix"
 TEST_ABBR="PRE"
-TEST_NUMBER="24"
+TEST_NUMBER="20"
 TEST_VERSION="7.0.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
@@ -44,8 +44,8 @@ declare -A API_TEST_CONFIGS
 
 # API test configuration - format: "config_file:log_suffix:api_prefix:description"
 API_TEST_CONFIGS=(
-    ["DEFAULT"]="${SCRIPT_DIR}/configs/hydrogen_test_24_prefix_1.json:one:/api:First API Prefix"
-    ["CUSTOM"]="${SCRIPT_DIR}/configs/hydrogen_test_24_prefix_2.json:two:/myapi:Second API Prefix"
+    ["DEFAULT"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_prefix_1.json:one:/api:First API Prefix"
+    ["CUSTOM"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_prefix_2.json:two:/myapi:Second API Prefix"
 )
 
 # Test timeouts

@@ -28,7 +28,7 @@
 # Test configuration
 TEST_NAME="Signal Handling"
 TEST_ABBR="SIG"
-TEST_NUMBER="22"
+TEST_NUMBER="18"
 TEST_VERSION="6.0.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
@@ -36,7 +36,7 @@ TEST_VERSION="6.0.0"
 setup_test_environment
 
 # Test configuration
-TEST_CONFIG="${CONFIG_DIR}/hydrogen_test_22_signals.json"
+TEST_CONFIG="${CONFIG_DIR}/hydrogen_test_${TEST_NUMBER}_signals.json"
 TEST_CONFIG_BASE=$(basename "${TEST_CONFIG}")
 
 # Signal test configuration - format: "signal:action:description:validation_func:cleanup_signal"
@@ -461,9 +461,6 @@ for test_config in "${!SIGNAL_TESTS[@]}"; do
 done
 
 print_message "Summary: ${successful_tests}/${#SIGNAL_TESTS[@]} signal tests passed"
-
-# Clean up any remaining core files
-rm -rf "${PROJECT_DIR}"/*.core.* 2>/dev/null || true
 
 # Print completion table
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
