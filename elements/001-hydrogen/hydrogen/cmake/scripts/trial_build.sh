@@ -3,6 +3,8 @@
 
 set -e
 
+echo "$(date +%H:%M:%S.%3N || true) - Clean Build"
+
 BUILD_DIR="$1"
 SOURCE_DIR="$2"
 
@@ -30,7 +32,7 @@ fi
 
 # Check if build was successful
 if echo "${BUILD_OUTPUT}" | grep -q "completed successfully" && [[ -z "${ERRORS}" ]]; then
-    echo "✅ Build successful"
+    echo "$(date +%H:%M:%S.%3N || true) - Build Successful"
     
     # Copy binary for testing
     if [[ -f "${BUILD_DIR}/hydrogen" ]]; then
@@ -38,9 +40,9 @@ if echo "${BUILD_OUTPUT}" | grep -q "completed successfully" && [[ -z "${ERRORS}
     fi
     
     # Run shutdown test
-    echo "🔄 Running shutdown test..."
-    if [[ -f "${SOURCE_DIR}/../tests/test_20_shutdown.sh" ]]; then
-        "${SOURCE_DIR}/../tests/test_20_shutdown.sh" >/dev/null 2>&1 && echo "✅ Shutdown test passed" || echo "❌ Shutdown test failed"
+    echo "$(date +%H:%M:%S.%3N || true) - Running Shutdown Test"
+    if [[ -f "${SOURCE_DIR}/../tests/test_16_shutdown.sh" ]]; then
+        "${SOURCE_DIR}/../tests/test_16_shutdown.sh" >/dev/null 2>&1 && echo "$(date +%H:%M:%S.%3N || true) - Shutdown Test Passed" || echo "❌ Shutdown test failed"
     else
         echo "⚠️  Shutdown test not found"
     fi
@@ -48,7 +50,7 @@ if echo "${BUILD_OUTPUT}" | grep -q "completed successfully" && [[ -z "${ERRORS}
     # Analyze unused files
     MAP_FILE="${BUILD_DIR}/regular/regular.map"
     if [[ -f "${MAP_FILE}" ]]; then
-        echo "🔍 Checking for unused source files..."
+        echo "$(date +%H:%M:%S.%3N || true) - Checking Source Files"
         
         # Extract object files that are actually linked
         USED_OBJS=$(awk '/^LOAD.*\.o$/ {print $2}' "${MAP_FILE}" | grep -v "^/usr" | sort -u || true)
@@ -79,7 +81,7 @@ if echo "${BUILD_OUTPUT}" | grep -q "completed successfully" && [[ -z "${ERRORS}
         REPORTABLE_SRCS=$(comm -23 <(echo "${UNUSED_SRCS}") <(echo "${IGNORED_SRCS}"))
         
         if [[ -z "${REPORTABLE_SRCS}" ]]; then
-            echo "✅ No unexpected unused source files"
+            echo "$(date +%H:%M:%S.%3N || true) - Source Files Checked"
         else
             echo "⚠️  Unused source files:"
             echo "${REPORTABLE_SRCS}" | while read -r file; do
@@ -91,6 +93,7 @@ if echo "${BUILD_OUTPUT}" | grep -q "completed successfully" && [[ -z "${ERRORS}
     else
         echo "⚠️  Map file not found, skipping unused file analysis"
     fi
+    echo "$(date +%H:%M:%S.%3N || true) - Trial Complete"
 else
     echo "❌ Build failed"
     exit 1
