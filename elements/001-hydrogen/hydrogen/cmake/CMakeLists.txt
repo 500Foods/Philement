@@ -757,7 +757,7 @@ add_custom_target(cmake_help
 set(UNITY_FRAMEWORK_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/framework/Unity")
 
 # Unity test source files - search recursively to support directory structure
-file(GLOB_RECURSE UNITY_TEST_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/src/test_*.c")
+file(GLOB_RECURSE UNITY_TEST_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/src/*_test.c")
 
 # Unity framework source
 set(UNITY_FRAMEWORK_SOURCES
