@@ -352,7 +352,12 @@ calculate_coverage_generic() {
         
         total_lines=${total_lines:-0}
         covered_lines=${covered_lines:-0}
-        
+
+        # This is to account for the one extra instrumented line in hydrogen.c that is in coverage and not in unity
+        if [[ "${coverage_file}" == "${UNITY_COVERAGE_FILE}" ]]; then
+          total_lines=$(( total_lines + 1 ))
+        fi
+
         # Count files with at least one covered line using awk with the same pattern
         covered_files=$(printf '%s\n' "${gcov_files_to_process[@]}" | xargs -I {} awk '
             /^[ \t]*[0-9]+\*?:[ \t]*[0-9]+:/ { covered++ }

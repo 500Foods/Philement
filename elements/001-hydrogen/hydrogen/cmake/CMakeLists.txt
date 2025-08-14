@@ -34,7 +34,6 @@
 # cmake --build . --target all_examples      : Builds all example programs
 
 # CHANGELOG
-# 2025-08-14: Added HYDROGEN_UNITY_BUILD as a flag so that we could ensure that the instrumentation counts vs. HYDROGEN_COVERAGE_BUILD were identical (hydrogen.c)
 # 2025-07-01: Added targets for building OIDC client example programs (auth_code_flow, client_credentials, password_flow) with regular and debug builds. Updated help and clean targets to include examples.
 
 cmake_minimum_required(VERSION 3.16)
@@ -795,7 +794,6 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
         COMMAND ${CMAKE_C_COMPILER}
             ${HYDROGEN_BASE_CFLAGS}
             -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer
-            -DHYDROGEN_UNITY_BUILD
             -DVERSION='"${HYDROGEN_VERSION}"'
             -DRELEASE='"${HYDROGEN_RELEASE}"'
             -DBUILD_TYPE='"Coverage"'

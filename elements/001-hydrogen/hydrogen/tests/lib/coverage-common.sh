@@ -531,7 +531,7 @@ analyze_gcov_file() {
     # Default to 0 if parsing failed
     instrumented_lines=${instrumented_lines:-0}
     covered_lines=${covered_lines:-0}
-    
+
     # Include all files, even those with 0 instrumented lines, for complete coverage table
     # This ensures the table shows all files that have gcov data, matching test 99's behavior
     
