@@ -509,48 +509,48 @@ update_readme_with_results() {
                 local combined_coverage_detailed="${RESULTS_DIR}/coverage_combined.txt.detailed"
                 
                 if [[ -f "${unity_coverage_detailed}" ]] || [[ -f "${blackbox_coverage_detailed}" ]] || [[ -f "${combined_coverage_detailed}" ]]; then
-                    echo "| Test Type | Files Cover | Files Instr | Lines Cover | Lines Instr | Coverage | Timestamp |"
-                    echo "| --------- | ----------- | ----------- | ----------- | ----------- | -------- | --------- |"
+                    echo "| Test Type | Files Cover | Files Instr | Lines Cover | Lines Instr | Coverage |"
+                    echo "| --------- | ----------- | ----------- | ----------- | ----------- | -------- |"
                     
                     # Unity coverage
                     if [[ -f "${unity_coverage_detailed}" ]]; then
-                        local unity_timestamp unity_coverage_pct unity_covered unity_total unity_instrumented unity_covered_files
-                        IFS=',' read -r unity_timestamp unity_coverage_pct unity_covered unity_total unity_instrumented unity_covered_files < "${unity_coverage_detailed}" 2>/dev/null
+                        local unity_coverage_pct unity_covered unity_total unity_instrumented unity_covered_files
+                        IFS=',' read -r _ unity_coverage_pct unity_covered unity_total unity_instrumented unity_covered_files < "${unity_coverage_detailed}" 2>/dev/null
                         if [[ -n "${unity_total}" ]] && [[ "${unity_total}" -gt 0 ]]; then
                             # Add thousands separators
                             unity_covered_formatted=$(printf "%'d" "${unity_covered}" 2>/dev/null || echo "${unity_covered}")
                             unity_total_formatted=$(printf "%'d" "${unity_total}" 2>/dev/null || echo "${unity_total}")
                             unity_covered_files=${unity_covered_files:-0}
                             unity_instrumented=${unity_instrumented:-0}
-                            echo "| Unity Tests | ${unity_covered_files} | ${unity_instrumented} | ${unity_covered_formatted} | ${unity_total_formatted} | ${unity_coverage_pct}% | ${unity_timestamp} |"
+                            echo "| Unity Tests | ${unity_covered_files} | ${unity_instrumented} | ${unity_covered_formatted} | ${unity_total_formatted} | ${unity_coverage_pct}% |"
                         fi
                     fi
                     
                     # Blackbox coverage
                     if [[ -f "${blackbox_coverage_detailed}" ]]; then
-                        local blackbox_timestamp blackbox_coverage_pct blackbox_covered blackbox_total blackbox_instrumented blackbox_covered_files
-                        IFS=',' read -r blackbox_timestamp blackbox_coverage_pct blackbox_covered blackbox_total blackbox_instrumented blackbox_covered_files < "${blackbox_coverage_detailed}" 2>/dev/null
+                        local blackbox_coverage_pct blackbox_covered blackbox_total blackbox_instrumented blackbox_covered_files
+                        IFS=',' read -r _ blackbox_coverage_pct blackbox_covered blackbox_total blackbox_instrumented blackbox_covered_files < "${blackbox_coverage_detailed}" 2>/dev/null
                         if [[ -n "${blackbox_total}" ]] && [[ "${blackbox_total}" -gt 0 ]]; then
                             # Add thousands separators
                             blackbox_covered_formatted=$(printf "%'d" "${blackbox_covered}" 2>/dev/null || echo "${blackbox_covered}")
                             blackbox_total_formatted=$(printf "%'d" "${blackbox_total}" 2>/dev/null || echo "${blackbox_total}")
                             blackbox_covered_files=${blackbox_covered_files:-0}
                             blackbox_instrumented=${blackbox_instrumented:-0}
-                            echo "| Blackbox Tests | ${blackbox_covered_files} | ${blackbox_instrumented} | ${blackbox_covered_formatted} | ${blackbox_total_formatted} | ${blackbox_coverage_pct}% | ${blackbox_timestamp} |"
+                            echo "| Blackbox Tests | ${blackbox_covered_files} | ${blackbox_instrumented} | ${blackbox_covered_formatted} | ${blackbox_total_formatted} | ${blackbox_coverage_pct}% |"
                         fi
                     fi
                     
                     # Combined coverage
                     if [[ -f "${combined_coverage_detailed}" ]]; then
-                        local combined_timestamp combined_coverage_pct combined_covered combined_total combined_instrumented combined_covered_files
-                        IFS=',' read -r combined_timestamp combined_coverage_pct combined_covered combined_total combined_instrumented combined_covered_files < "${combined_coverage_detailed}" 2>/dev/null
+                        local combined_coverage_pct combined_covered combined_total combined_instrumented combined_covered_files
+                        IFS=',' read -r _ combined_coverage_pct combined_covered combined_total combined_instrumented combined_covered_files < "${combined_coverage_detailed}" 2>/dev/null
                         if [[ -n "${combined_total}" ]] && [[ "${combined_total}" -gt 0 ]]; then
                             # Add thousands separators
                             combined_covered_formatted=$(printf "%'d" "${combined_covered}" 2>/dev/null || echo "${combined_covered}")
                             combined_total_formatted=$(printf "%'d" "${combined_total}" 2>/dev/null || echo "${combined_total}")
                             combined_covered_files=${combined_covered_files:-0}
                             combined_instrumented=${combined_instrumented:-0}
-                            echo "| Combined Tests | ${combined_covered_files} | ${combined_instrumented} | ${combined_covered_formatted} | ${combined_total_formatted} | ${combined_coverage_pct}% | ${combined_timestamp} |"
+                            echo "| Combined Tests | ${combined_covered_files} | ${combined_instrumented} | ${combined_covered_formatted} | ${combined_total_formatted} | ${combined_coverage_pct}% |"
                         fi
                     fi
                 fi
