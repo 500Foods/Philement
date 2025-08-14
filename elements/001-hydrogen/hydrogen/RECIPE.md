@@ -79,7 +79,6 @@ tests/          Test framework
 - tests/test_00_all.sh - Orchestrator that runs all the tests
 - tests/test_01_compilation.sh - Builds all targets
 - tests/test_02_secrets.sh - Checks that PAYLOAD_LOCK and PAYLOAD_KEY are usable
-- tests/test_03_code_size.sh - Checks limits on source code, runs cloc
 - tests/test_04_check_links.sh - Cross-checks all Markdown files for missing links and orphaned files
 - tests/test_10_unity.sh - Runs battery of Unity unit tests
 - tests/test_11_leaks_like_a_sieve.sh - Uses ASAN to test for memory leaks
@@ -102,6 +101,7 @@ tests/          Test framework
 - tests/test_94_eslint.sh - Lint for JavaScript
 - tests/test_95_stylelint.sh - Lint for CSS
 - tests/test_96_htmlhint.sh - Lint for HTML
+- tests/test_98_code_size.sh - Checks limits on source code, runs cloc
 - tests/test_99_coverage.sh - Shows Unity and Blackbox test coverage
 
 ## CRITICAL DOCUMENTATION

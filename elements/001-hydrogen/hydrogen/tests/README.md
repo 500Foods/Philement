@@ -52,7 +52,6 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 
 - **[test_01_compilation.sh](docs/test_01_compilation.md)**: Verifies successful compilation and build processes.
 - **[test_02_secrets.sh](docs/test_02_secrets.md)**: Checks validity of key environment variables
-- **[test_03_code_size.sh](docs/test_03_code_size.md)**: Analyzes code size metrics and file distribution.
 - **[test_04_check_links.sh](docs/test_04_check_links.md)**: Validates links in documentation files.
 
 ### Core Functional Tests
@@ -84,6 +83,7 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_94_eslint.sh](docs/test_94_eslint.md)**: Lints JavaScript files using eslint.
 - **[test_95_stylelint.sh](docs/test_95_stylelint.md)**: Validates CSS files using stylelint.
 - **[test_96_htmlhint.sh](docs/test_96_htmlhint.md)**: Validates HTML files using htmlhint.
+- **[test_98_code_size.sh](docs/test_98_code_size.md)**: Analyzes code size metrics and file distribution.
 - **[test_99_coverage.sh](docs/test_99_coverage.md)**: Performs comprehensive coverge analysis.
 
 ## Configuration Files
