@@ -243,15 +243,6 @@ analyze_all_gcov_coverage_batch() {
             source_path="src/${source_path}"
         fi
         
-        # Skip test files from batch analysis
-        basename_file=$(basename "${source_path}")
-        if [[ "${basename_file}" == "test_"* ]] || \
-           [[ "${basename_file}" == *"_test.c" ]] || \
-           [[ "${basename_file}" == *"test.c" ]] || \
-           [[ "${source_path}" == *"test"* ]]; then
-            continue
-        fi
-        
         if ! should_ignore_file "${source_path}" "${PROJECT_ROOT:-${PWD}}"; then
             all_file_set["${rel_path}"]=1
         fi
@@ -414,7 +405,6 @@ load_ignore_patterns() {
     IGNORE_PATTERNS=()
     
     # Add hardcoded filters
-    IGNORE_PATTERNS+=("test_")
     IGNORE_PATTERNS+=("jansson")
     IGNORE_PATTERNS+=("microhttpd")
     IGNORE_PATTERNS+=("src/unity.c")
@@ -485,7 +475,7 @@ load_source_files() {
             # Skip test files
             local basename_file
             basename_file=$(basename "${file}")
-            if [[ "${basename_file}" == "test_"* ]]; then
+            if [[ "${basename_file}" == *"_test"* ]]; then
                 continue
             fi
             
