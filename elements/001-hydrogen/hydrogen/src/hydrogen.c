@@ -355,13 +355,6 @@ static void crash_handler(int sig, siginfo_t *info, void *ucontext) {
     __gcov_dump();
 #endif
 
-// Kinda dumb, but the above adds *1* line to our coverage build line count, and we can't
-// have our coverage build count being off-by-one from our unity build line count, so we
-// add something dumb here just to balance things out
-#ifdef HYDROGEN_UNITY_BUILD
-    log_this("Crash", "Unity Build Crash", LOG_LEVEL_ERROR, NULL);
-#endif
-
     _exit(128 + sig);
 }
  

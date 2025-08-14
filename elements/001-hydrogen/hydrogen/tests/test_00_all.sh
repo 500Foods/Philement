@@ -40,8 +40,7 @@ export TEST_NAME TEST_ABBR TEST_NUMBER TEST_VERSION
 source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_orchestration_environment
 
-print_subtest "Verifying command/version availability"
-
+# Test Setup
 commands=(
     "grep" "sort" "bc" "jq" "awk" "sed" "xargs" "nproc" "timeout" "date" "lsof"
     "cmake" "gcc" "ninja" "curl" "websocat" "wscat"
@@ -58,12 +57,18 @@ CACHE_CMD_DIR="${HOME}/.cache/hydrogen/commands"
 mkdir -p "${CACHE_CMD_DIR}"
 export CACHE_CMD_DIR
 
+# SVG locations
+# shellcheck disable=SC2154 # PROJECT_DIR defined externally in framework.sh
+results_svg_path="${PROJECT_DIR}/COMPLETE.svg"
+coverage_svg_path="${PROJECT_DIR}/COVERAGE.svg"
 
 # shellcheck disable=SC2154 # PROJECT_DIR defined externally in framework.sh
 pushd "${PROJECT_DIR}" > /dev/null || return 1
 
 # Change to parent directory and update PATH once
 export PATH="${PATH}:tests/lib"
+
+print_subtest "Verifying command/version availability"
 
 # Collect commands that need processing (cache misses)
 to_process=()
@@ -580,14 +585,6 @@ coverage_table_file="${RESULTS_DIR}/coverage_table.txt"
 # shellcheck disable=SC2154 # COVERAGE_EXTERNAL defined externally in framework.sh
 env -i bash "${COVERAGE_EXTERNAL}" 2>/dev/null | tee "${coverage_table_file}" || true
 
-# Launch background process to generate COVERAGE.svg from saved file
-coverage_svg_path="${PROJECT_DIR}/COVERAGE.svg"
-# Delete existing file before generating new one
-rm -f "${coverage_svg_path}"
-# Generate SVG from saved coverage table file in background
-# shellcheck disable=SC2154 # OH_EXTERNAL defined externally in framework.sh
-("${OH_EXTERNAL}" -i "${coverage_table_file}" -o "${coverage_svg_path}" 2>/dev/null) &
-
 # Calculate total elapsed time
 END_TIME=$(date +%s.%N 2>/dev/null)
 # shellcheck disable=SC2154 # START_TIME defined externally in framework.sh
@@ -629,8 +626,8 @@ fi
 # Create layout JSON string
 # shellcheck disable=SC2154 # TC_ORC_DSP defined externally in framework.sh
 layout_json_content='{
-    "title": "Test Suite Results {NC}{RED}———{RESET}{BOLD}{CYAN} Unity {WHITE}'"${UNITY_COVERAGE}"'% {RESET}{RED}———{RESET}{BOLD}{CYAN} Blackbox {WHITE}'"${BLACKBOX_COVERAGE}"'% {RESET}{RED}———{RESET}{BOLD}{CYAN} Combined {WHITE}'"${COMBINED_COVERAGE}"'%{RESET}",
-    "footer": "{CYAN}Elapsed {WHITE}'"${TOTAL_ELAPSED_FORMATTED}"'{RED} ——— {CYAN}Cumulative {WHITE}'"${TOTAL_RUNNING_TIME_FORMATTED}"'{RED} ——— {RESET} {CYAN}Completed {WHITE}'"${TIMESTAMP_DISPLAY}"'{RESET}",
+    "title": "{BOLD}{WHITE}Test Suite Results {RED}——— {BOLD}{CYAN}Unity{WHITE} '"${UNITY_COVERAGE}"'% {RED}——— {BOLD}{CYAN}Blackbox{WHITE} '"${BLACKBOX_COVERAGE}"'% {RED}——— {BOLD}{CYAN}Combined{WHITE} '"${COMBINED_COVERAGE}"'%{RESET}",
+    "footer": "{CYAN}Elapsed{WHITE} '"${TOTAL_ELAPSED_FORMATTED}"' {RED}——— {CYAN}Cumulative{WHITE} '"${TOTAL_RUNNING_TIME_FORMATTED}"' {RED}——— {CYAN}Completed{WHITE} '"${TIMESTAMP_DISPLAY}"'{RESET}",
     "footer_position": "right",
     "columns": [
         {
@@ -737,10 +734,20 @@ results_table_file="${RESULTS_DIR}/results_table.txt"
 # shellcheck disable=SC2154 # TABLES_EXTERNAL defined externally in framework.sh
 "${TABLES_EXTERNAL}" "${layout_json}" "${data_json}" 2>/dev/null | tee "${results_table_file}" || true
 
-# Generate SVG from saved results table file in background
+# Compare coverage data between 'Test Suite Results' and 'Test Suite Coverage' to ensure they are the same
+results_summary=$(grep 'Test Suite Results' "${results_table_file}" | awk -F'———' '{print $2,$3,$4}' | awk '{print $2,$5,$8}' || true)
+coverage_summary=$(grep 'Test Suite Coverage' "${coverage_table_file}" | awk -F'———' '{print $2,$3,$4}' | awk '{print $2,$5,$8}' || true)
+if [[ ! "${results_summary}" == "${coverage_summary}" ]]; then
+    echo "The coverage percentage values differ:"
+    echo "Results:  ${results_summary}"
+    echo "Coverage: ${coverage_summary}"
+fi
+
+# Generate SVGs from generated tables
+rm -f "${results_svg_path}" "${coverage_svg_path}"
 # shellcheck disable=SC2154 # OH_EXTERNAL defined externally in framework.sh
-results_svg_path="${PROJECT_DIR}/COMPLETE.svg"
-rm -f "${results_svg_path}"
 ("${OH_EXTERNAL}" -i "${results_table_file}" -o "${results_svg_path}" 2>/dev/null) &
+# shellcheck disable=SC2154 # OH_EXTERNAL defined externally in framework.sh
+("${OH_EXTERNAL}" -i "${coverage_table_file}" -o "${coverage_svg_path}" 2>/dev/null) &
 
 exit "${OVERALL_EXIT_CODE}"
