@@ -1,21 +1,8 @@
-# Distribution outputs
-bin/
-dist/
-web/
-
 # Build and test artifacts
 build/
 
 # cmake build artifacts
-cmake/CMakeFiles/
-cmake/coverage/
-cmake/debug/
-cmake/perf/
-cmake/release/
-cmake/valgrind/
-cmake/unity/
-cmake/*.cmake
-cmake/Testing/*
+cmake/Testing/
 
 # Temporary generated files
 payloads/swagger.json
@@ -38,6 +25,7 @@ temp_*
 # Core files
 0.*
 1.*
+*.core.*
 tests/0.*
 tests/1.*
 
