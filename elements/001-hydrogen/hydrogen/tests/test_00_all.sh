@@ -747,7 +747,6 @@ if [[ ! "${results_summary}" == "${coverage_summary}" ]]; then
 fi
 
 # Generate SVGs from generated tables
-rm -f "${results_svg_path}" "${coverage_svg_path}"
 # shellcheck disable=SC2154 # OH_EXTERNAL defined externally in framework.sh
 ("${OH_EXTERNAL}" -i "${results_table_file}" -o "${results_svg_path}" 2>/dev/null) &
 # shellcheck disable=SC2154 # OH_EXTERNAL defined externally in framework.sh
