@@ -33,7 +33,7 @@ A handful of other projects are directly included in the tests/lib folder of thi
 
 - [Terminal Tables](https://github.com/500Foods/Terminal-Tables) - Draws ANSI tables using JSON inputs ([lib/tables](tests/lib/tables)) ([Docs](tests/docs/tables.md))
 - [GitHub Sitmemap](https://github.com/500Foods/Scripts/github-sitemap) - Cross-reference all the markdown in a repository [lib/github-sitemap.sh](tests/lib/github-sitemap.sh)) ([Docs](tests/docs/github-sitemap.md))
-- [Oh.sh](https://github.com/500Foods/Oh.sh) - Converts ANSI terminal output into SVG files ([lib/Oh.sh](tests/lib/Oh.sh)) ([Docs](tests/docs/Oh.md))
+- [Oh](https://github.com/500Foods/Oh.sh) - Converts ANSI terminal output into SVG files ([lib/Oh](tests/lib/Oh)) ([Docs](tests/docs/Oh.md))
 
 ## Example Ubuntu Build Environment
 
