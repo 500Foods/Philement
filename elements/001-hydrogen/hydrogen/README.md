@@ -72,7 +72,7 @@ Hydrogen is currently designed for technical users who:
 
 ## Latest Test Results
 
-Generated on: 2025-Aug-14 (Thu) 23:13:32 PDT
+Generated on: 2025-Aug-14 (Thu) 23:19:48 PDT
 
 ### Summary
 
@@ -84,8 +84,8 @@ Generated on: 2025-Aug-14 (Thu) 23:13:32 PDT
 | Total Subtests | 231 |
 | Passed Subtests | 231 |
 | Failed Subtests | 0 |
-| Elapsed Time | 00:00:13.633 |
-| Cumulative Time | 00:00:30.100 |
+| Elapsed Time | 00:00:24.373 |
+| Cumulative Time | 00:00:41.042 |
 
 [Test Suite Results](COMPLETE.svg) | [Test Suite Coverage](COVERAGE.svg)
 
@@ -101,36 +101,36 @@ Generated on: 2025-Aug-14 (Thu) 23:13:32 PDT
 
 | Status | Time | Test | Test Name | Tests | Pass | Fail |
 | ------ | ---- | -- | ---- | ----- | ---- | ---- |
-| ✅ | 00:00:07.852 | 01-CMP | Compilation (source code: 271 files) | 16 | 16 | 0 |
-| ✅ | 00:00:00.129 | 02-ENV | Environment Variables (secrets: 3) | 5 | 5 | 0 |
-| ✅ | 00:00:02.339 | 04-LNK | Markdown Links Check (github-sitemap) | 3 | 3 | 0 |
-| ✅ | 00:00:01.851 | 10-UNT | Unity (403 / 403 unit tests passed) | 38 | 38 | 0 |
-| ✅ | 00:00:00.540 | 11-SIV | Memory Leak Detection | 4 | 4 | 0 |
-| ✅ | 00:00:01.502 | 12-VAR | Env Var Substitution | 15 | 15 | 0 |
-| ✅ | 00:00:01.686 | 13-BUG | Crash Handler | 37 | 37 | 0 |
-| ✅ | 00:00:00.801 | 14-DEP | Library Dependencies | 13 | 13 | 0 |
-| ✅ | 00:00:00.182 | 15-JSN | JSON Error Handling | 4 | 4 | 0 |
-| ✅ | 00:00:00.515 | 16-SHD | Shutdown | 5 | 5 | 0 |
-| ✅ | 00:00:00.921 | 17-UPD | Startup/Shutdown | 9 | 9 | 0 |
-| ✅ | 00:00:00.732 | 18-SIG | Signal Handling | 9 | 9 | 0 |
-| ✅ | 00:00:01.315 | 19-SCK | Socket Rebinding | 8 | 8 | 0 |
-| ✅ | 00:00:00.652 | 20-PRE | API Prefix | 10 | 10 | 0 |
-| ✅ | 00:00:00.974 | 21-SYS | System API | 10 | 10 | 0 |
-| ✅ | 00:00:00.627 | 22-SWG | Swagger | 14 | 14 | 0 |
-| ✅ | 00:00:01.107 | 23-WSS | WebSockets | 15 | 15 | 0 |
-| ✅ | 00:00:01.140 | 90-MKD | Markdown Lint (markdownlint: 237 files) | 1 | 1 | 0 |
-| ✅ | 00:00:00.696 | 91-GCC | C Lint (cppcheck: 271 files) | 1 | 1 | 0 |
-| ✅ | 00:00:00.798 | 92-BSH | Bash Lint (shellheck: 50 files) | 2 | 2 | 0 |
-| ✅ | 00:00:00.219 | 93-JSN | JSON Lint (jsonlint: 21 files) | 1 | 1 | 0 |
+| ✅ | 00:00:18.492 | 01-CMP | Compilation (source code: 271 files) | 16 | 16 | 0 |
+| ✅ | 00:00:00.114 | 02-ENV | Environment Variables (secrets: 3) | 5 | 5 | 0 |
+| ✅ | 00:00:02.244 | 04-LNK | Markdown Links Check (github-sitemap) | 3 | 3 | 0 |
+| ✅ | 00:00:01.799 | 10-UNT | Unity (403 / 403 unit tests passed) | 38 | 38 | 0 |
+| ✅ | 00:00:00.504 | 11-SIV | Memory Leak Detection | 4 | 4 | 0 |
+| ✅ | 00:00:01.476 | 12-VAR | Env Var Substitution | 15 | 15 | 0 |
+| ✅ | 00:00:01.683 | 13-BUG | Crash Handler | 37 | 37 | 0 |
+| ✅ | 00:00:00.800 | 14-DEP | Library Dependencies | 13 | 13 | 0 |
+| ✅ | 00:00:00.186 | 15-JSN | JSON Error Handling | 4 | 4 | 0 |
+| ✅ | 00:00:00.490 | 16-SHD | Shutdown | 5 | 5 | 0 |
+| ✅ | 00:00:00.987 | 17-UPD | Startup/Shutdown | 9 | 9 | 0 |
+| ✅ | 00:00:00.697 | 18-SIG | Signal Handling | 9 | 9 | 0 |
+| ✅ | 00:00:01.278 | 19-SCK | Socket Rebinding | 8 | 8 | 0 |
+| ✅ | 00:00:00.687 | 20-PRE | API Prefix | 10 | 10 | 0 |
+| ✅ | 00:00:00.936 | 21-SYS | System API | 10 | 10 | 0 |
+| ✅ | 00:00:00.647 | 22-SWG | Swagger | 14 | 14 | 0 |
+| ✅ | 00:00:01.114 | 23-WSS | WebSockets | 15 | 15 | 0 |
+| ✅ | 00:00:01.046 | 90-MKD | Markdown Lint (markdownlint: 237 files) | 1 | 1 | 0 |
+| ✅ | 00:00:00.586 | 91-GCC | C Lint (cppcheck: 271 files) | 1 | 1 | 0 |
+| ✅ | 00:00:01.416 | 92-BSH | Bash Lint (shellheck: 50 files) | 2 | 2 | 0 |
+| ✅ | 00:00:00.235 | 93-JSN | JSON Lint (jsonlint: 21 files) | 1 | 1 | 0 |
 | ✅ | 00:00:00.038 | 94-JAV | JavaScript Lint (eslint: 0 files) | 1 | 1 | 0 |
-| ✅ | 00:00:00.039 | 95-CSS | CSS Lint (stylelint: 0 files) | 1 | 1 | 0 |
-| ✅ | 00:00:00.315 | 96-HTM | HTML Lint (htmlhint: 1 files) | 1 | 1 | 0 |
-| ✅ | 00:00:01.641 | 98-SIZ | Code Size Analysis (lines: 66,957) | 4 | 4 | 0 |
-| ✅ | 00:00:01.489 | 99-COV | Test Suite Coverage (coverage_table) | 4 | 4 | 0 |
+| ✅ | 00:00:00.037 | 95-CSS | CSS Lint (stylelint: 0 files) | 1 | 1 | 0 |
+| ✅ | 00:00:00.297 | 96-HTM | HTML Lint (htmlhint: 1 files) | 1 | 1 | 0 |
+| ✅ | 00:00:01.770 | 98-SIZ | Code Size Analysis (lines: 66,957) | 4 | 4 | 0 |
+| ✅ | 00:00:01.483 | 99-COV | Test Suite Coverage (coverage_table) | 4 | 4 | 0 |
 
 ## Repository Information
 
-Generated via cloc: 2025-Aug-14 (Thu) 23:13:32 PDT
+Generated via cloc: 2025-Aug-14 (Thu) 23:19:48 PDT
 
 ```cloc
 -------------------------------------------------------------------------------
