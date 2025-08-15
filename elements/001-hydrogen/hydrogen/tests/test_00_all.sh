@@ -46,7 +46,7 @@ commands=(
     "cmake" "gcc" "ninja" "curl" "websocat" "wscat"
     "git" "md5sum" "cloc"
     "cppcheck" "shellcheck" "markdownlint" "eslint" "stylelint" "htmlhint" "jsonlint" "swagger-cli"
-    "Oh.sh" "tables" "coverage_table.sh"
+    "Oh" "tables" "coverage_table.sh"
 )
 
 # Array to store results
