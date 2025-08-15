@@ -215,7 +215,7 @@ setup_orchestration_environment() {
     # Common utilities
     CLOC_EXTERNAL="/usr/bin/cloc"
     TABLES_EXTERNAL="${LIB_DIR}/tables"
-    OH_EXTERNAL="${LIB_DIR}/Oh.sh"
+    OH_EXTERNAL="${LIB_DIR}/Oh"
     COVERAGE_EXTERNAL="${LIB_DIR}/coverage_table.sh"
     SITEMAP_EXTERNAL="${LIB_DIR}/github-sitemap.sh"
 
