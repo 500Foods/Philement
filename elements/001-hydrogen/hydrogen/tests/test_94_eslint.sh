@@ -33,7 +33,7 @@ while read -r file; do
     if ! should_exclude_file "${rel_file}"; then
         JS_FILES+=("${rel_file}")
     fi
-done < <(find . -type f -name "*.js" || true)
+done < <("${FIND}" . -type f -name "*.js" || true)
 
 JS_COUNT=${#JS_FILES[@]}
 

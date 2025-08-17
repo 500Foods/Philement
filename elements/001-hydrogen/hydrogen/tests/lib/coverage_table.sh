@@ -154,7 +154,7 @@ count_unity_tests_per_source_file() {
             # Cache the result
             echo "${source_file}=${unity_test_counts[${source_file}]}" >> "${cache_file}"
         fi
-    done < <(find "${unity_test_dir}" -name "*_test*.c" -type f -print0 2>/dev/null || true)
+    done < <("${FIND}" "${unity_test_dir}" -name "*_test*.c" -type f -print0 2>/dev/null || true)
 }
 
 # Use the exact same functions as test 99 to get coverage data

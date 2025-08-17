@@ -99,7 +99,7 @@ while read -r file; do
     if ! should_exclude_file "${rel_file}"; then
         echo "${rel_file}" >> "${SOURCE_FILES_LIST}"
     fi
-done < <(find . -type f \( -name "*.c" -o -name "*.h" -o -name "*.md" -o -name "*.sh" \) | sort || true)
+done < <("${FIND}" . -type f \( -name "*.c" -o -name "*.h" -o -name "*.md" -o -name "*.sh" \) | sort || true)
 
 TOTAL_FILES=$(wc -l < "${SOURCE_FILES_LIST}")
 
@@ -200,7 +200,7 @@ while read -r size file; do
     if ! should_exclude_file "${rel_file}"; then
         echo "${size} ${rel_file}" >> "${LARGE_FILES_LIST}"
     fi
-done < <(find . -type f -size "+${LARGE_FILE_THRESHOLD}" -not \( -path "*/tests/*" -o -name "*.c" -o -name "*.h" -o -name "*.md" -o -name "*.sh" \) -printf "%k %p\n" || true)
+done < <("${FIND}" . -type f -size "+${LARGE_FILE_THRESHOLD}" -not \( -path "*/tests/*" -o -name "*.c" -o -name "*.h" -o -name "*.md" -o -name "*.sh" \) -printf "%k %p\n" || true)
 
 LARGE_FILE_COUNT=$(wc -l < "${LARGE_FILES_LIST}")
 

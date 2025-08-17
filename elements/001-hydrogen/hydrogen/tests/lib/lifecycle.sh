@@ -67,7 +67,8 @@ find_hydrogen_binary() {
             # If none found, search for binary in possible build directories
             else
                 print_message "Searching for Hydrogen binary in subdirectories..."
-                hydrogen_bin=$(find "${hydrogen_dir}" -type f -executable -name "hydrogen*" -print -quit 2>/dev/null)
+                # shellcheck disable=SC2154 # FIND defined externally in framework.sh
+                hydrogen_bin=$("${FIND}" "${hydrogen_dir}" -type f -executable -name "hydrogen*" -print -quit 2>/dev/null)
                 if [[ -n "${hydrogen_bin}" ]]; then
                     print_message "Found Hydrogen binary at: ${hydrogen_bin}"
                 else

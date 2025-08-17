@@ -46,7 +46,7 @@ while read -r file; do
             OTHER_SHELL_FILES+=("${file}")
         fi
     fi
-done < <(find . -type f -name "*.sh" || true)
+done < <("${FIND}" . -type f -name "*.sh" || true)
 
 SHELL_COUNT=${#SHELL_FILES[@]}
 SHELL_ISSUES=0
