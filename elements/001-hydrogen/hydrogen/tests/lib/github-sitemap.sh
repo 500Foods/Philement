@@ -22,7 +22,8 @@ XARGS=$(command -v gxargs 2>/dev/null || command -v xargs)
 FIND=$(command -v gfind 2>/dev/null || command -v find)
 AWK=$(command -v gawk 2>/dev/null || command -v awk)
 REALPATH=$(command -v grealpath 2>/dev/null || command -v realpath)
-export PRINTF DATE XARGS FIND AWK REALPATH
+DIRNAME=$(command -v gdirname 2>/dev/null || command -v dirname)
+export PRINTF DATE XARGS FIND AWK REALPATH DIRNAME
 
 # Performance timing functions
 declare -A timing_data
@@ -133,9 +134,9 @@ output_file="${original_dir}/sitemap_report.txt"
 # Set repo root based on input file's directory
 declare input_dir
 if [[ "${INPUT_FILE}" == /* ]]; then
-    input_dir=$(dirname "${INPUT_FILE}")
+    input_dir=$("${DIRNAME}" "${INPUT_FILE}")
 else
-    input_dir=$(cd "${original_dir}" && "${REALPATH}" -m "$(dirname "${INPUT_FILE}")" 2>/dev/null)
+    input_dir=$(cd "${original_dir}" && "${REALPATH}" -m "$("${DIRNAME}" "${INPUT_FILE}" || true)" 2>/dev/null)
 fi
 if [[ -z "${input_dir}" ]]; then
     echo "Error: Cannot resolve input file directory for ${INPUT_FILE}" >&2
@@ -358,7 +359,7 @@ process_file_batch() {
         if [[ "${file}" == /* ]]; then
             abs_file="${file}"
         else
-            abs_file=$(cd "${original_dir}" && cd "$(dirname "${file}")" && pwd)
+            abs_file=$(cd "${original_dir}" && cd "$("${DIRNAME}" "${file}" || true)" && pwd)
             abs_file="${abs_file}/$(basename "${file}")"
         fi
         
@@ -366,7 +367,7 @@ process_file_batch() {
         file_exists "${abs_file}" || continue
         
         local base_dir
-        base_dir=$(dirname "${abs_file}")
+        base_dir=$("${DIRNAME}" "${abs_file}")
         local rel_file
         if [[ "${abs_file}" == "${repo_root}"* ]]; then
             rel_file="${abs_file#"${repo_root}"/}"
