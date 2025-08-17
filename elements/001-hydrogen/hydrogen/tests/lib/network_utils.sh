@@ -69,9 +69,10 @@ check_time_wait_sockets() {
         print_message "Found ${time_wait_count} socket(s) in TIME_WAIT state on port ${port}"
         # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
         # Also compress excessive whitespace for better formatting
+        # shellcheck disable=SC2154  # SED defined externally in framework.sh
         while IFS= read -r line; do
             print_output "${line}"
-        done < <(ss -tan | "${GREP}" ":${port} " | "${GREP}" "TIME-WAIT" | sed 's/   */ /g' || true)
+        done < <(ss -tan | "${GREP}" ":${port} " | "${GREP}" "TIME-WAIT" | "${SED}" 's/   */ /g' || true)
     else
         print_message "No TIME_WAIT sockets found on port ${port}"
     fi

@@ -106,7 +106,7 @@ run_cloc_analysis() {
             
             # Use awk to parse the line more reliably
             local lang files comment code
-            lang=$(echo "${line}" | awk '{$1=$1; for(i=1;i<=NF-4;i++) printf "%s ", $i; print ""}' | sed 's/ *$//' || true)
+            lang=$(echo "${line}" | awk '{$1=$1; for(i=1;i<=NF-4;i++) printf "%s ", $i; print ""}' | "${SED}" 's/ *$//' || true)
             files=$(echo "${line}" | awk '{print $(NF-3)}')
             comment=$(echo "${line}" | awk '{print $(NF-1)}')
             code=$(echo "${line}" | awk '{print $NF}')

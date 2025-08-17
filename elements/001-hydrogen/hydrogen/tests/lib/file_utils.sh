@@ -36,7 +36,8 @@ declare -ag LINT_IGNORE_PATTERNS=()
 if [[ -f ".lintignore" ]]; then
     while IFS= read -r pattern; do
         [[ -z "${pattern}" || "${pattern}" == \#* ]] && continue
-        pattern="$(echo "${pattern}" | tr -d '\r' | sed 's/[[:space:]]*$//' || true)"
+        # shellcheck disable=SC2154 # SED defined externally in framework.sh
+        pattern="$(echo "${pattern}" | tr -d '\r' | "${SED}" 's/[[:space:]]*$//' || true)"
         if [[ "${pattern}" == */'*' ]]; then
             pattern="${pattern%/*}/**"
         fi
