@@ -74,7 +74,8 @@ parse_sitemap_output() {
     
     # Single pass parsing with awk (following md5sum batching pattern)
     local results
-    results=$(awk '
+    # shellcheck disable=SC2016 # Using single quotes on purpose to avoid escaping issues
+    results=$("${AWK}" '
     BEGIN {
         issues_found = "0"
         missing_count = "0"

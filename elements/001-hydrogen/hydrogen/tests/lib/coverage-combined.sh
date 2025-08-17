@@ -81,7 +81,7 @@ calculate_combined_coverage() {
     # Calculate combined coverage percentage
     local combined_coverage="0.000"
     if [[ ${total_combined_instrumented} -gt 0 ]]; then
-        combined_coverage=$(awk "BEGIN {printf \"%.3f\", (${total_combined_covered} / ${total_combined_instrumented}) * 100}")
+        combined_coverage=$("${AWK}" "BEGIN {printf \"%.3f\", (${total_combined_covered} / ${total_combined_instrumented}) * 100}")
     fi
     
     # Store combined coverage result and create marker
@@ -110,7 +110,7 @@ calculate_coverage_overlap() {
     
     # Calculate overlap as the minimum of the two coverage percentages
     # This represents the files/lines that are covered by both test types
-    if [[ $(awk "BEGIN {print (${unity_coverage} < ${blackbox_coverage})}" || true) -eq 1 ]]; then
+    if [[ $("${AWK}" "BEGIN {print (${unity_coverage} < ${blackbox_coverage})}" || true) -eq 1 ]]; then
         overlap_percentage="${unity_coverage}"
     else
         overlap_percentage="${blackbox_coverage}"

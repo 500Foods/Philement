@@ -246,12 +246,13 @@ run_single_test() {
     local test_version
     
     # Extract test number from script filename
+    # shellcheck disable=SC2016 # Using single quotes on purpose to avoid escaping issues
     {
         read -r test_name
         read -r test_abbrev
         read -r test_number
         read -r test_version
-    } < <(awk -F= '
+    } < <("${AWK}" -F= '
             /^TEST_NAME=/ {gsub(/"/, "", $2); print $2}
             /^TEST_ABBR=/ {gsub(/"/, "", $2); print $2}
             /^TEST_NUMBER=/ {gsub(/"/, "", $2); print $2}
@@ -742,8 +743,10 @@ results_table_file="${RESULTS_DIR}/results_table.txt"
 "${TABLES}" "${layout_json}" "${data_json}" 2>/dev/null | tee "${results_table_file}" || true
 
 # Compare coverage data between 'Test Suite Results' and 'Test Suite Coverage' to ensure they are the same
-results_summary=$("${GREP}" 'Test Suite Results' "${results_table_file}" | awk -F'———' '{print $2,$3,$4}' | awk '{print $2,$5,$8}' || true)
-coverage_summary=$("${GREP}" 'Test Suite Coverage' "${coverage_table_file}" | awk -F'———' '{print $2,$3,$4}' | awk '{print $2,$5,$8}' || true)
+# shellcheck disable=SC2016 # Using single quotes on purpose to avoid escaping issues
+results_summary=$("${GREP}" 'Test Suite Results' "${results_table_file}" | "${AWK}" -F'———' '{print $2,$3,$4}' | "${AWK}" '{print $2,$5,$8}' || true)
+# shellcheck disable=SC2016 # Using single quotes on purpose to avoid escaping issues
+coverage_summary=$("${GREP}" 'Test Suite Coverage' "${coverage_table_file}" | "${AWK}" -F'———' '{print $2,$3,$4}' | "${AWK}" '{print $2,$5,$8}' || true)
 if [[ ! "${results_summary}" == "${coverage_summary}" ]]; then
     echo "The coverage percentage values differ:"
     echo "Results:  ${results_summary}"

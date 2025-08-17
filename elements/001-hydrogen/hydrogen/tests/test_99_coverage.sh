@@ -135,7 +135,7 @@ if [[ -f "${UNITY_COVERAGE_FILE}.detailed" ]] && [[ -f "${BLACKBOX_COVERAGE_FILE
     # Calculate combined percentage
     combined_coverage="0.000"
     if [[ "${combined_total_instrumented}" -gt 0 ]]; then
-        combined_coverage=$(awk "BEGIN {printf \"%.3f\", (${combined_total_covered} / ${combined_total_instrumented}) * 100}")
+        combined_coverage=$("${AWK}" "BEGIN {printf \"%.3f\", (${combined_total_covered} / ${combined_total_instrumented}) * 100}")
     fi
     
     # Format numbers with thousands separators

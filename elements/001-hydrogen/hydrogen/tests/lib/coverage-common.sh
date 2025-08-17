@@ -60,7 +60,8 @@ analyze_combined_gcov_coverage() {
     elif [[ ! -f "${unity_gcov}" ]]; then
         # Only blackbox coverage exists
         local result
-        result=$(awk '
+        # shellcheck disable=SC2154 # AWK defined externally in framework.sh
+        result=$("${AWK}" '
             /^[ \t]*[0-9]+\*?:[ \t]*[0-9]+:/ { covered++; total++ }
             /^[ \t]*#####:[ \t]*[0-9]+:/ { total++ }
             END {
@@ -73,7 +74,7 @@ analyze_combined_gcov_coverage() {
     elif [[ ! -f "${blackbox_gcov}" ]]; then
         # Only unity coverage exists
         local result
-        result=$(awk '
+        result=$("${AWK}" '
             /^[ \t]*[0-9]+\*?:[ \t]*[0-9]+:/ { covered++; total++ }
             /^[ \t]*#####:[ \t]*[0-9]+:/ { total++ }
             END {
@@ -100,7 +101,7 @@ analyze_combined_gcov_coverage() {
 
     # Single AWK script to process both files and calculate union in memory
     local result
-    result=$(awk -v unity_file="${unity_gcov}" -v blackbox_file="${blackbox_gcov}" '
+    result=$("${AWK}" -v unity_file="${unity_gcov}" -v blackbox_file="${blackbox_gcov}" '
     BEGIN {
         # Process Unity file
         if (unity_file != "") {
@@ -275,7 +276,8 @@ analyze_all_gcov_coverage_batch() {
     } > "${temp_input}"
 
     # Process with AWK (incremental counting with union for instrumented)
-    awk '
+    # shellcheck disable=SC2016 # Using single quotes to avoid variable expansion in awk
+    "${AWK}" '
     BEGIN {
         current_file = ""
         current_type = ""
@@ -516,7 +518,7 @@ analyze_gcov_file() {
     
     # Use the correct awk parsing logic for gcov format
     local line_counts
-    line_counts=$(awk '
+    line_counts=$("${AWK}" '
         /^[ \t]*[0-9]+\*?:[ \t]*[0-9]+:/ { covered++; total++ }
         /^[ \t]*#####:[ \t]*[0-9]+:/ { total++ }
         END {

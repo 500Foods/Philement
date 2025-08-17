@@ -247,7 +247,8 @@ stop_hydrogen() {
         # Extract shutdown time from log if available
         local log_shutdown_time
         local log_elapsed_time
-        times=$(awk '/Shutdown elapsed time:/ {s=$NF} /Total elapsed time:/ {t=$NF} END {print s, t}' "${log_file}")
+        # shellcheck disable=SC2154,SC2016 # AWK defined externally in framework.sh, using single quotes on purpose
+        times=$("${AWK}" '/Shutdown elapsed time:/ {s=$NF} /Total elapsed time:/ {t=$NF} END {print s, t}' "${log_file}")
         read -r log_shutdown_time log_elapsed_time <<< "${times}"
         if [[ -n "${log_shutdown_time}" ]]; then
             print_message "Shutdown completed in ${shutdown_duration_ms}ms "
