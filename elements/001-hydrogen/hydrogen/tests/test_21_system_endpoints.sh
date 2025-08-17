@@ -100,7 +100,7 @@ validate_api_request() {
         
         if [[ "${curl_exit_code}" -eq 0 ]]; then
             # Check if we got a 404 or other error response
-            if grep -q "404 Not Found" "${response_file}" || grep -q "<html>" "${response_file}"; then
+            if "${GREP}" -q "404 Not Found" "${response_file}" || "${GREP}" -q "<html>" "${response_file}"; then
                 if [[ "${attempt}" -eq "${max_attempts}" ]]; then
                     print_message "API endpoint still not ready after ${max_attempts} attempts"
                     print_result 1 "API endpoint returned 404 or HTML error page"
@@ -124,7 +124,7 @@ validate_api_request() {
             # Check for expected content based on endpoint type
             if [[ "${request_name}" == "recent" ]]; then
                 # Use fixed string search for recent endpoint
-                if grep -F -q "[" "${response_file}"; then
+                if "${GREP}" -F -q "[" "${response_file}"; then
                     if [[ "${attempt}" -gt 1 ]]; then
                         print_result 0 "Response contains expected field: log entry (succeeded on attempt ${attempt})"
                     else
@@ -137,7 +137,7 @@ validate_api_request() {
                 fi
             else
                 # Normal pattern search for other endpoints
-                if grep -q "${expected_field}" "${response_file}"; then
+                if "${GREP}" -q "${expected_field}" "${response_file}"; then
                     if [[ "${attempt}" -gt 1 ]]; then
                         print_result 0 "Response contains expected content: ${expected_field} (succeeded on attempt ${attempt})"
                     else
@@ -206,7 +206,7 @@ validate_prometheus_format() {
     local file="$1"
     
     # Check content type
-    if ! grep -q "Content-Type: text/plain" "${file}"; then
+    if ! "${GREP}" -q "Content-Type: text/plain" "${file}"; then
         print_result 1 "Prometheus endpoint has incorrect content type"
         return 1
     fi
@@ -215,7 +215,7 @@ validate_prometheus_format() {
     local prometheus_format_ok=1
     
     # Check for TYPE definitions
-    if ! grep -q "^# TYPE" "${file}"; then
+    if ! "${GREP}" -q "^# TYPE" "${file}"; then
         print_result 1 "Prometheus endpoint missing TYPE definitions"
         prometheus_format_ok=0
     fi
@@ -230,7 +230,7 @@ validate_prometheus_format() {
     
     local metric
     for metric in "${required_metrics[@]}"; do
-        if ! grep -q "^${metric}" "${file}"; then
+        if ! "${GREP}" -q "^${metric}" "${file}"; then
             print_result 1 "Prometheus endpoint missing required metric: ${metric}"
             prometheus_format_ok=0
         fi
@@ -251,7 +251,7 @@ check_server_logs() {
     
     # Check server logs for API-related errors - filter irrelevant messages
     print_message "Checking server logs for API-related errors..."
-    if grep -i "error\|warn\|fatal\|segmentation" "${log_file}" | grep -i "API\|System\|SystemTest\|SystemService\|Endpoint\|api" || true > "${RESULTS_DIR}/system_test_errors_${timestamp}.log"; then
+    if "${GREP}" -i "error\|warn\|fatal\|segmentation" "${log_file}" | "${GREP}" -i "API\|System\|SystemTest\|SystemService\|Endpoint\|api" || true > "${RESULTS_DIR}/system_test_errors_${timestamp}.log"; then
         if [[ -s "${RESULTS_DIR}/system_test_errors_${timestamp}.log" ]]; then
             print_warning "API-related warning/error messages found in logs:"
             # Process each line individually for clean formatting
@@ -263,7 +263,7 @@ check_server_logs() {
 
     # Check for Brotli compression logs
     print_message "Checking for Brotli compression logs..."
-    if grep -i "Brotli" "${log_file}" > "${RESULTS_DIR}/brotli_compression_${timestamp}.log" 2>/dev/null; then
+    if "${GREP}" -i "Brotli" "${log_file}" > "${RESULTS_DIR}/brotli_compression_${timestamp}.log" 2>/dev/null; then
         if [[ -s "${RESULTS_DIR}/brotli_compression_${timestamp}.log" ]]; then
             print_message "Brotli compression logs found:"
             # Process each line individually for clean formatting
@@ -271,7 +271,7 @@ check_server_logs() {
                 print_output "${line}"
             done < "${RESULTS_DIR}/brotli_compression_${timestamp}.log"
             # Check for compression metrics with level information
-            if grep -q "Brotli(level=[0-9]\+).*bytes.*ratio.*compression.*time:" "${RESULTS_DIR}/brotli_compression_${timestamp}.log"; then
+            if "${GREP}" -q "Brotli(level=[0-9]\+).*bytes.*ratio.*compression.*time:" "${RESULTS_DIR}/brotli_compression_${timestamp}.log"; then
                 print_result 0 "Compression logs contain detailed metrics with compression level"
                 return 0
             else
@@ -323,7 +323,7 @@ analyze_endpoint_test_results() {
     fi
     
     # Check endpoint test result
-    if grep -q "ENDPOINT_TEST_PASSED" "${result_file}" 2>/dev/null; then
+    if "${GREP}" -q "ENDPOINT_TEST_PASSED" "${result_file}" 2>/dev/null; then
         print_result 0 "${description} endpoint test passed"
         return 0
     else
@@ -435,7 +435,7 @@ test_system_endpoints() {
     for test_config in "${!ENDPOINT_TEST_CONFIGS[@]}"; do
         IFS=':' read -r endpoint_name expected_content description <<< "${ENDPOINT_TEST_CONFIGS[${test_config}]}"
         result_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${endpoint_name}.result"
-        if [[ -f "${result_file}" ]] && grep -q "ENDPOINT_TEST_PASSED" "${result_file}" 2>/dev/null; then
+        if [[ -f "${result_file}" ]] && "${GREP}" -q "ENDPOINT_TEST_PASSED" "${result_file}" 2>/dev/null; then
             ((successful_endpoints++))
         fi
     done

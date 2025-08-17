@@ -153,11 +153,11 @@ identify_uncovered_files() {
         
         # Find gcov file using the same approach as calculate_coverage_generic
         local gcov_file
-        gcov_file=$(find "${blackbox_build_dir}" -name "${source_basename}.gcov" -type f | grep -v '_test' 2>/dev/null | head -1 || true)
+        gcov_file=$(find "${blackbox_build_dir}" -name "${source_basename}.gcov" -type f | "${GREP}" -v '_test' 2>/dev/null | head -1 || true)
         
         if [[ -n "${gcov_file}" && -f "${gcov_file}" ]]; then
             # Check if the file has any coverage using the same pattern as calculate_coverage_generic
-            if grep -q "^[ \t]*[1-9][0-9]*.*:" "${gcov_file}" 2>/dev/null; then
+            if "${GREP}" -q "^[ \t]*[1-9][0-9]*.*:" "${gcov_file}" 2>/dev/null; then
                 found_coverage=true
             fi
         fi

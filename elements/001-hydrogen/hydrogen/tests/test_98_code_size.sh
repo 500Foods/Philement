@@ -56,7 +56,7 @@ for file in "${exclusion_files[@]}"; do
             # Special handling for .lintignore-bash which doesn't have a SUMMARY section
             print_message "${file}: Used by shellcheck for bash script linting exclusions"
         else
-            summary=$(grep -A "${TOPLIST}" "SUMMARY" "${file}" 2>/dev/null | grep -v "SUMMARY" | grep -v "Used by" | sed 's/^# /  /' | sed 's/#$//' || true)
+            summary=$("${GREP}" -A "${TOPLIST}" "SUMMARY" "${file}" 2>/dev/null | "${GREP}" -v "SUMMARY" | "${GREP}" -v "Used by" | sed 's/^# /  /' | sed 's/#$//' || true)
             if [[ -n "${summary}" ]]; then
                 # Break multi-line summaries into individual print_message calls
                 # Use process substitution to avoid subshell
@@ -167,7 +167,7 @@ show_top_files_by_type() {
         local temp_file
         temp_file="${LOG_PREFIX}${TIMESTAMP}_top_${ext}.txt"
         
-        grep "\.${ext}$" "${LINE_COUNT_FILE}" > "${temp_file}"
+        "${GREP}" "\.${ext}$" "${LINE_COUNT_FILE}" > "${temp_file}"
         print_message "Top ${TOPLIST} ${label} Files:"
         # Avoid subshell by using process substitution instead of pipe
         while read -r line; do

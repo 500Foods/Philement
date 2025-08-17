@@ -66,7 +66,7 @@ fi
 print_subtest "Verify Error Message Contains Position Information"
 print_message "Examining error output..."
 
-if grep -q "line" "${ERROR_OUTPUT}" && grep -q "column" "${ERROR_OUTPUT}"; then
+if "${GREP}" -q "line" "${ERROR_OUTPUT}" && "${GREP}" -q "column" "${ERROR_OUTPUT}"; then
     while IFS= read -r line; do
         print_output "${line}"
     done < <(tail -n 5 "${ERROR_OUTPUT}" || true)

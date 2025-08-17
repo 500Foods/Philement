@@ -102,7 +102,7 @@ test_websocket_connection() {
             return 0
         else
             # Check for connection refused which might indicate WebSocket server not ready yet
-            if echo "${websocat_output}" | grep -qi "connection refused"; then
+            if echo "${websocat_output}" | "${GREP}" -qi "connection refused"; then
                 if [[ "${attempt}" -eq "${max_attempts}" ]]; then
                     print_result 1 "WebSocket connection failed: Connection refused after ${max_attempts} attempts"
                     print_message "Server is not accepting WebSocket connections on the specified port"
@@ -115,7 +115,7 @@ test_websocket_connection() {
             fi
             
             # Check other error types that might be temporary during parallel execution
-            if echo "${websocat_output}" | grep -qi "network.*unreachable\|temporarily unavailable\|resource.*unavailable"; then
+            if echo "${websocat_output}" | "${GREP}" -qi "network.*unreachable\|temporarily unavailable\|resource.*unavailable"; then
                 if [[ "${attempt}" -eq "${max_attempts}" ]]; then
                     print_result 1 "WebSocket connection failed: Network/resource issues after ${max_attempts} attempts"
                     print_message "Error: ${websocat_output}"
@@ -128,11 +128,11 @@ test_websocket_connection() {
             fi
             
             # For other errors, fail immediately as they're likely permanent
-            if echo "${websocat_output}" | grep -qi "401\|forbidden\|unauthorized\|authentication"; then
+            if echo "${websocat_output}" | "${GREP}" -qi "401\|forbidden\|unauthorized\|authentication"; then
                 print_result 1 "WebSocket connection failed: Authentication rejected"
                 print_message "Server rejected the provided WebSocket key"
                 return 1
-            elif echo "${websocat_output}" | grep -qi "protocol.*not.*supported"; then
+            elif echo "${websocat_output}" | "${GREP}" -qi "protocol.*not.*supported"; then
                 print_result 1 "WebSocket connection failed: Protocol not supported"
                 print_message "Server does not support the specified protocol: ${protocol}"
                 return 1
@@ -344,7 +344,7 @@ test_websocket_configuration() {
 
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         # Check server logs for WebSocket initialization in one grep call
-        if grep -q -E "LAUNCH: WEBSOCKETS|WebSocket.*successfully" "${server_log}"; then
+        if "${GREP}" -q -E "LAUNCH: WEBSOCKETS|WebSocket.*successfully" "${server_log}"; then
             print_result 0 "WebSocket initialization confirmed in logs"
             echo "LOG_RESULT=0" >> "${result_file}"
             ((PASS_COUNT++))
@@ -394,17 +394,17 @@ analyze_parallel_results() {
     fi
     
     # shellcheck disable=SC2155 # Failure is not an option
-    local start_result=$(grep "START_RESULT=" "${result_file}" | cut -d'=' -f2 || echo "1")
+    local start_result=$("${GREP}" "START_RESULT=" "${result_file}" | cut -d'=' -f2 || echo "1")
     # shellcheck disable=SC2155 # Failure is not an option
-    local ready_result=$(grep "READY_RESULT=" "${result_file}" | cut -d'=' -f2 || echo "1")
+    local ready_result=$("${GREP}" "READY_RESULT=" "${result_file}" | cut -d'=' -f2 || echo "1")
     # shellcheck disable=SC2155 # Failure is not an option
-    local connection_result=$(grep "CONNECTION_RESULT=" "${result_file}" | cut -d'=' -f2 || echo "1")
+    local connection_result=$("${GREP}" "CONNECTION_RESULT=" "${result_file}" | cut -d'=' -f2 || echo "1")
     # shellcheck disable=SC2155 # Failure is not an option
-    local status_result=$(grep "STATUS_RESULT=" "${result_file}" | cut -d'=' -f2 || echo "1")
+    local status_result=$("${GREP}" "STATUS_RESULT=" "${result_file}" | cut -d'=' -f2 || echo "1")
     # shellcheck disable=SC2155 # Failure is not an option
-    local port_result=$(grep "PORT_RESULT=" "${result_file}" | cut -d'=' -f2 || echo "1")
+    local port_result=$("${GREP}" "PORT_RESULT=" "${result_file}" | cut -d'=' -f2 || echo "1")
     # shellcheck disable=SC2155 # Failure is not an option
-    local log_result=$(grep "LOG_RESULT=" "${result_file}" | cut -d'=' -f2 || echo "1")
+    local log_result=$("${GREP}" "LOG_RESULT=" "${result_file}" | cut -d'=' -f2 || echo "1")
     
     if [[ "${start_result}" -ne 0 || "${ready_result}" -ne 0 ]]; then
         print_message "${test_name}: Server startup or readiness failed, skipping subtest results"

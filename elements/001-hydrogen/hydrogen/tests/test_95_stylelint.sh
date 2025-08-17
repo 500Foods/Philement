@@ -51,7 +51,7 @@ if [[ "${CSS_COUNT}" -gt 0 ]]; then
     fi
     
     # Count actual issues (stylelint usually reports errors/warnings)
-    ISSUE_COUNT=$(grep -c "✖" "${TEMP_LOG}" 2>/dev/null || wc -l < "${TEMP_LOG}")
+    ISSUE_COUNT=$("${GREP}" -c "✖" "${TEMP_LOG}" 2>/dev/null || wc -l < "${TEMP_LOG}")
     
     if [[ "${ISSUE_COUNT}" -gt 0 ]]; then
         print_message "stylelint found ${ISSUE_COUNT} issues:"
