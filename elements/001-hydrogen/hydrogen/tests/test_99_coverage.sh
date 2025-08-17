@@ -33,10 +33,10 @@ if [[ -f "${UNITY_COVERAGE_FILE}" ]] && [[ -f "${UNITY_COVERAGE_FILE}.detailed" 
     IFS=',' read -r _ _ unity_covered_lines_count unity_total_lines_count unity_instrumented_files_count unity_covered_files_count < "${UNITY_COVERAGE_FILE}.detailed"
     
     # Format numbers with thousands separators
-    formatted_unity_covered_files=$(printf "%'d" "${unity_covered_files_count}")
-    formatted_unity_instrumented_files=$(printf "%'d" "${unity_instrumented_files_count}")
-    formatted_unity_covered_lines=$(printf "%'d" "${unity_covered_lines_count}")
-    formatted_unity_total_lines=$(printf "%'d" "${unity_total_lines_count}")
+    formatted_unity_covered_files=$("${PRINTF}" "%'d" "${unity_covered_files_count}")
+    formatted_unity_instrumented_files=$("${PRINTF}" "%'d" "${unity_instrumented_files_count}")
+    formatted_unity_covered_lines=$("${PRINTF}" "%'d" "${unity_covered_lines_count}")
+    formatted_unity_total_lines=$("${PRINTF}" "%'d" "${unity_total_lines_count}")
     
     print_message "Files instrumented: ${formatted_unity_covered_files} of ${formatted_unity_instrumented_files} source files have coverage"
     print_message "Lines instrumented: ${formatted_unity_covered_lines} of ${formatted_unity_total_lines} executable lines covered"
@@ -69,10 +69,10 @@ if [[ -d "${BLACKBOX_COVERAGE_DIR}" ]]; then
         fi
         
         # Format numbers with thousands separators
-        formatted_covered_files=$(printf "%'d" "${covered_files}")
-        formatted_instrumented_files=$(printf "%'d" "${instrumented_files}")
-        formatted_covered_lines=$(printf "%'d" "${covered_lines}")
-        formatted_total_lines=$(printf "%'d" "${total_lines}")
+        formatted_covered_files=$("${PRINTF}" "%'d" "${covered_files}")
+        formatted_instrumented_files=$("${PRINTF}" "%'d" "${instrumented_files}")
+        formatted_covered_lines=$("${PRINTF}" "%'d" "${covered_lines}")
+        formatted_total_lines=$("${PRINTF}" "%'d" "${total_lines}")
         
         print_message "Files instrumented: ${formatted_covered_files} of ${formatted_instrumented_files} source files have coverage"
         print_message "Lines instrumented: ${formatted_covered_lines} of ${formatted_total_lines} executable lines covered"
@@ -139,8 +139,8 @@ if [[ -f "${UNITY_COVERAGE_FILE}.detailed" ]] && [[ -f "${BLACKBOX_COVERAGE_FILE
     fi
     
     # Format numbers with thousands separators
-    formatted_covered=$(printf "%'d" "${combined_total_covered}")
-    formatted_total=$(printf "%'d" "${combined_total_instrumented}")
+    formatted_covered=$("${PRINTF}" "%'d" "${combined_total_covered}")
+    formatted_total=$("${PRINTF}" "%'d" "${combined_total_instrumented}")
     
     # Store the combined coverage value for other scripts to use
     echo "${combined_coverage}" > "${COMBINED_COVERAGE_FILE}"
@@ -195,7 +195,7 @@ done
 if [[ ${#uncovered_files[@]} -gt 0 ]]; then
     print_message "Uncovered source files:"
     # Sort the array in place to avoid subshell issues with pipe
-    mapfile -t sorted_uncovered_files < <(printf '%s\n' "${uncovered_files[@]}" | sort || true)
+    mapfile -t sorted_uncovered_files < <("${PRINTF}" '%s\n' "${uncovered_files[@]}" | sort || true)
     for file in "${sorted_uncovered_files[@]}"; do
         print_output "  ${file}"
     done
@@ -205,9 +205,9 @@ fi
 uncovered_count=$((blackbox_instrumented_files - blackbox_covered_files))
 
 # Format numbers with thousands separators
-formatted_covered_files=$(printf "%'d" "${blackbox_covered_files}")
-formatted_instrumented_files=$(printf "%'d" "${blackbox_instrumented_files}")
-formatted_uncovered_count=$(printf "%'d" "${uncovered_count}")
+formatted_covered_files=$("${PRINTF}" "%'d" "${blackbox_covered_files}")
+formatted_instrumented_files=$("${PRINTF}" "%'d" "${blackbox_instrumented_files}")
+formatted_uncovered_count=$("${PRINTF}" "%'d" "${uncovered_count}")
 
 print_result 0 "Coverage analysis: ${formatted_covered_files} of ${formatted_instrumented_files} source files covered, ${formatted_uncovered_count} uncovered"
 ((PASS_COUNT++))

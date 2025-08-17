@@ -184,8 +184,8 @@ run_cloc_analysis() {
         # with lcov that does get filtered somehow with our more complex gcov approach. Something to keep an eye on in case it deviates in future.
         # Perhaps lcov isn't as fancy with the branching logic (the * in the numbers) that we sorted out with gcov previously.
         instrumented_test=$(( instrumented_both - instrumented_code ))
-        format_code=$(printf "%'7d" "$(( instrumented_code - 10 ))")
-        format_test=$(printf "%'7d" "$(( instrumented_test - 10 ))")
+        format_code=$("${PRINTF}" "%'7d" "$(( instrumented_code - 10 ))")
+        format_test=$("${PRINTF}" "%'7d" "$(( instrumented_test - 10 ))")
         unity_code=$(bc -l <<< "scale=2; 100 * (${instrumented_test} - 10) / (${instrumented_code} - 10)")
         ratio_code=$(bc -l <<< "scale=2; 100 * (${instrumented_test} - 10) / (${c_code} + ${header_code})")
 

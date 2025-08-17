@@ -172,7 +172,7 @@ identify_uncovered_files() {
     
     # Sort uncovered files for consistent output
     if [[ ${#uncovered_files[@]} -gt 0 ]]; then
-        mapfile -t uncovered_files < <(printf '%s\n' "${uncovered_files[@]}" | sort || true)
+        mapfile -t uncovered_files < <("${PRINTF}" '%s\n' "${uncovered_files[@]}" | sort || true)
     fi
     
     # Output results in a structured format

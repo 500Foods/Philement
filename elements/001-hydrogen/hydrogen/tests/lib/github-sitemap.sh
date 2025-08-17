@@ -15,11 +15,14 @@
 # Application version
 declare -r APPVERSION="1.3.0"
 
+# Common utilities - use GNU versions if available (eg: homebrew on macOS)
+PRINTF=$(command -v gprintf 2>/dev/null || command -v printf)
 DATE=$(command -v date) 
 XARGS=$(command -v gxargs 2>/dev/null || command -v xargs)
 FIND=$(command -v gfind 2>/dev/null || command -v find)
 AWK=$(command -v gawk 2>/dev/null || command -v awk)
 REALPATH=$(command -v grealpath 2>/dev/null || command -v realpath)
+export PRINTF DATE XARGS FIND AWK REALPATH
 
 # Performance timing functions
 declare -A timing_data
@@ -434,8 +437,8 @@ process_file_batch() {
             while IFS=' ' read -r original normalized; do
                 normalized_cache["${original}"]="${normalized}"
             done < <(
-                printf '%s\n' "${!normalize_candidates[@]}" | \
-                "${XARGS}" -r -I {} sh -c 'printf "%s %s\n" "{}" "$("${REALPATH}" -m "{}" 2>/dev/null || echo "{}")"'
+                "${PRINTF}" '%s\n' "${!normalize_candidates[@]}" | \
+                "${XARGS}" -r -I {} sh -c '"${PRINTF}" "%s %s\n" "{}" "$("${REALPATH}" -m "{}" 2>/dev/null || echo "{}")"'
             )
         fi
         
