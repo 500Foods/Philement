@@ -180,7 +180,7 @@ run_unity_tests() {
                 if [[ "${test_name}" == *_test* ]]; then
                     # Get relative path from unity_build_dir to show directory structure
                     local relative_path
-                    relative_path=$(realpath --relative-to="${unity_build_dir}" "${test_exe}")
+                    relative_path=$("${REALPATH}" --relative-to="${unity_build_dir}" "${test_exe}")
                     unity_tests+=("${relative_path}")
                 fi
             fi
