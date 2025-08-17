@@ -29,7 +29,7 @@ COVERAGE_COMMON_VERSION="2.1.0"
 print_message "${COVERAGE_COMMON_NAME} ${COVERAGE_COMMON_VERSION}" "info" 2> /dev/null || true
 
 # Sort out directories
-PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
+PROJECT_DIR="$( cd "$(dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
 # SCRIPT_DIR="${PROJECT_DIR}/tests"
 # LIB_DIR="${SCRIPT_DIR}/lib"
 BUILD_DIR="${PROJECT_DIR}/build"

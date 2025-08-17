@@ -51,6 +51,7 @@ SED=$(command -v gsed 2>/dev/null || command -v sed)
 AWK=$(command -v gawk 2>/dev/null || command -v awk)
 TAR=$(command -v gtar 2>/dev/null || command -v tar)
 REALPATH=$(command -v grealpath 2>/dev/null || command -v realpath)
+DIRNAME=$(command -v gdirname 2>/dev/null || command -v dirname)
 XARGS=$(command -v gxargs 2>/dev/null || command -v xargs)
 TIMEOUT=$(command -v gtimeout 2>/dev/null || command -v timeout)
 NPROC=$(command -v nproc 2>/dev/null || { command -v sysctl >/dev/null && echo "sysctl -n hw.ncpu" || echo "getconf _NPROCESSORS_ONLN"; })
@@ -219,7 +220,7 @@ setup_orchestration_environment() {
     COLLECT_OUTPUT_MODE=true
     
     # Global folder variables
-    PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
+    PROJECT_DIR="$( cd "$(dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
     pushd "${PROJECT_DIR}" >/dev/null 2>&1 || return
     
     CMAKE_DIR="${PROJECT_DIR}/cmake"
@@ -360,7 +361,7 @@ setup_test_environment() {
         TIMESTAMP=$("${DATE}" +%Y%m%d_%H%M%S)
 
         # Global folder variables
-        PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
+        PROJECT_DIR="$( cd "$(dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
         pushd "${PROJECT_DIR}" >/dev/null 2>&1 || return
 
         CMAKE_DIR="${PROJECT_DIR}/cmake"
