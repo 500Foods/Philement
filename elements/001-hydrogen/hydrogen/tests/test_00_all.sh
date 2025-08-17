@@ -43,7 +43,7 @@ setup_orchestration_environment
 # Test Setup
 commands=(
     "sort" "bc" 
-    "${DATE}" "${FIND}" "${GREP}" "${SED}" "${AWK}" "${XARGS}" "${TAR}" "${TIMEOUT}"
+    "${DATE}" "${FIND}" "${GREP}" "${SED}" "${AWK}" "${XARGS}" "${TAR}" "${TIMEOUT}" "${REALPATH}" 
     "jq"  "nproc" "lsof" "brotli" "openssl"
     "cmake" "gcc" "ninja" "curl" "websocat" "wscat"
     "${GIT}" "${MD5SUM}" "${CLOC}"
