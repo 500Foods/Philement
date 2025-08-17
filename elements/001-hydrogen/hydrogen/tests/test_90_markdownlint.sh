@@ -31,7 +31,7 @@ mkdir -p "${CACHE_DIR}"
 
 # Function to get file hash (using md5sum or equivalent)
 get_file_hash() {
-    md5sum "$1" | awk '{print $1}' || true
+    "${MD5SUM}" "$1" | awk '{print $1}' || true
 }
 
 print_subtest "Markdown Linting"
@@ -62,7 +62,7 @@ if [[ "${MD_COUNT}" -gt 0 ]]; then
 
     # Compute MD5 hashes for all files in one go
     # Use a temporary file to store the hashes
-    printf "%s\0" "${MD_FILES[@]}" | xargs -0 md5sum > "${temp_hashes}" 2>/dev/null
+    printf "%s\0" "${MD_FILES[@]}" | "${XARGS}" -0 "${MD5SUM}" > "${temp_hashes}" 2>/dev/null
 
     # Process the hashes and categorize files
     while IFS=' ' read -r file_hash file; do

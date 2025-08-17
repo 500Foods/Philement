@@ -60,7 +60,7 @@ if [[ "${SHELL_COUNT}" -gt 0 ]]; then
     declare -A file_hashes
     while read -r hash file; do
         file_hashes["${file}"]="${hash}"
-    done < <(md5sum "${SHELL_FILES[@]}" || true)
+    done < <("${MD5SUM}" "${SHELL_FILES[@]}" || true)
 
     cached_files=0
     processed_scripts=0
@@ -102,7 +102,7 @@ if [[ "${SHELL_COUNT}" -gt 0 ]]; then
     if [[ "${processed_scripts}" -gt 0 ]]; then
         for file in "${to_process[@]}"; do
             printf '%s %s\n' "${file}" "${file_hashes[${file}]}"
-        done | xargs -n 2 -P "${CORES}" bash -c 'process_script "$0" "$1"' >> "${TEMP_OUTPUT}" 2>&1
+        done | "${XARGS}" -n 2 -P "${CORES}" bash -c 'process_script "$0" "$1"' >> "${TEMP_OUTPUT}" 2>&1
     fi
 
     # Filter output
@@ -166,7 +166,7 @@ if [[ ${#SHELL_FILES[@]} -gt 0 ]]; then
     tmp_dir="${LOG_PREFIX}${TIMESTAMP}_${RANDOM}"
 
     # Parallelize with xargs, using 12 processes
-    printf '%s\n' "${SHELL_FILES[@]}" | xargs -P 0 -I {} bash -c 'process_file "{}"' > "${tmp_dir}.results"
+    printf '%s\n' "${SHELL_FILES[@]}" | "${XARGS}" -P 0 -I {} bash -c 'process_file "{}"' > "${tmp_dir}.results"
 
     # Aggregate results
     while IFS= read -r line; do
