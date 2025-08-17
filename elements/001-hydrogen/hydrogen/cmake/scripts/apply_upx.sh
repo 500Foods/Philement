@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
 # ──────────────────────────────────────────────────────────────────────────────
 # UPX Compression Script for Hydrogen Release Build
 # 
