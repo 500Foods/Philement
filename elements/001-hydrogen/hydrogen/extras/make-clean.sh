@@ -1,17 +1,15 @@
-#!/bin/bash
-#
+#!/usr/bin/env bash
+
 # About this Script
-#
+
 # Hydrogen Clean Script
 # Performs comprehensive cleaning of build artifacts while preserving release variants
-#
-# This script:
+
 # - Removes build/ and build_unity_tests/ directories completely
 # - Removes all hydrogen variants except hydrogen_release
 # - Removes example executables  
 # - Removes map files and other build artifacts
 # - Cleans test directories (results, logs, diagnostics)
-#
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"

@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
 # check_version.sh - Script to check if the version number needs updating based on git commit count
 
 # Check if the correct number of arguments are provided

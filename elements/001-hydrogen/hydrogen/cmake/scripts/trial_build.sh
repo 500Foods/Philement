@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
 # Trial Build Script - Quick build, shutdown test, and unused file detection
 
 set -e
