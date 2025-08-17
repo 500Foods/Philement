@@ -43,6 +43,7 @@ FRAMEWORK_VERSION="2.8.0"
 export FRAMEWORK_NAME FRAMEWORK_VERSION
 
 # Common utilities - use GNU versions if available (eg: homebrew on macOS)
+PRINTF=$(command -v gprintf 2>/dev/null || command -v printf)
 DATE=$(command -v gdate 2>/dev/null || command -v date)
 FIND=$(command -v gfind 2>/dev/null || command -v find)
 GREP=$(command -v ggrep 2>/dev/null || command -v grep)
@@ -97,13 +98,13 @@ format_time_duration() {
     minutes=$(((secs % 3600) / 60))
     secs=$((secs % 60))
     
-    printf "%02d:%02d:%02d.%s" "${hours}" "${minutes}" "${secs}" "${milliseconds}"
+    "${PRINTF}" "%02d:%02d:%02d.%s" "${hours}" "${minutes}" "${secs}" "${milliseconds}"
 }
 
 # Function to format file size with thousands separators
 format_file_size() {
     local file_size="$1"
-    printf "%'d" "${file_size}" 2>/dev/null || echo "${file_size}"
+    "${PRINTF}" "%'d" "${file_size}" 2>/dev/null || echo "${file_size}"
 }
 
 # Function to calculate elapsed time in SSS.ZZZ format for console output
@@ -122,7 +123,7 @@ get_elapsed_time() {
         local elapsed_ms=$((end_total_ms - start_total_ms))
         local seconds=$((elapsed_ms / 1000))
         local milliseconds=$((elapsed_ms % 1000))
-        printf "%03d.%03d" "${seconds}" "${milliseconds}"
+        "${PRINTF}" "%03d.%03d" "${seconds}" "${milliseconds}"
     else
         echo "000.000"
     fi
@@ -144,7 +145,7 @@ get_elapsed_time_decimal() {
         local elapsed_ms=$((end_total_ms - start_total_ms))
         local seconds=$((elapsed_ms / 1000))
         local milliseconds=$((elapsed_ms % 1000))
-        printf "%d.%03d" "${seconds}" "${milliseconds}"
+        "${PRINTF}" "%d.%03d" "${seconds}" "${milliseconds}"
     else
         echo "0.000"
     fi
@@ -159,7 +160,7 @@ set_test_number() {
 # Function to increment and get next subtest number
 next_subtest() {
     ((SUBTEST_COUNTER++))
-    CURRENT_SUBTEST_NUMBER=$(printf "%03d" "${SUBTEST_COUNTER}")
+    CURRENT_SUBTEST_NUMBER=$("${PRINTF}" "%03d" "${SUBTEST_COUNTER}")
 }
 
 # Function to reset subtest counter
@@ -534,8 +535,8 @@ update_readme_with_results() {
                         IFS=',' read -r _ unity_coverage_pct unity_covered unity_total unity_instrumented unity_covered_files < "${unity_coverage_detailed}" 2>/dev/null
                         if [[ -n "${unity_total}" ]] && [[ "${unity_total}" -gt 0 ]]; then
                             # Add thousands separators
-                            unity_covered_formatted=$(printf "%'d" "${unity_covered}" 2>/dev/null || echo "${unity_covered}")
-                            unity_total_formatted=$(printf "%'d" "${unity_total}" 2>/dev/null || echo "${unity_total}")
+                            unity_covered_formatted=$("${PRINTF}" "%'d" "${unity_covered}" 2>/dev/null || echo "${unity_covered}")
+                            unity_total_formatted=$("${PRINTF}" "%'d" "${unity_total}" 2>/dev/null || echo "${unity_total}")
                             unity_covered_files=${unity_covered_files:-0}
                             unity_instrumented=${unity_instrumented:-0}
                             echo "| Unity Tests | ${unity_covered_files} | ${unity_instrumented} | ${unity_covered_formatted} | ${unity_total_formatted} | ${unity_coverage_pct}% |"
@@ -548,8 +549,8 @@ update_readme_with_results() {
                         IFS=',' read -r _ blackbox_coverage_pct blackbox_covered blackbox_total blackbox_instrumented blackbox_covered_files < "${blackbox_coverage_detailed}" 2>/dev/null
                         if [[ -n "${blackbox_total}" ]] && [[ "${blackbox_total}" -gt 0 ]]; then
                             # Add thousands separators
-                            blackbox_covered_formatted=$(printf "%'d" "${blackbox_covered}" 2>/dev/null || echo "${blackbox_covered}")
-                            blackbox_total_formatted=$(printf "%'d" "${blackbox_total}" 2>/dev/null || echo "${blackbox_total}")
+                            blackbox_covered_formatted=$("${PRINTF}" "%'d" "${blackbox_covered}" 2>/dev/null || echo "${blackbox_covered}")
+                            blackbox_total_formatted=$("${PRINTF}" "%'d" "${blackbox_total}" 2>/dev/null || echo "${blackbox_total}")
                             blackbox_covered_files=${blackbox_covered_files:-0}
                             blackbox_instrumented=${blackbox_instrumented:-0}
                             echo "| Blackbox Tests | ${blackbox_covered_files} | ${blackbox_instrumented} | ${blackbox_covered_formatted} | ${blackbox_total_formatted} | ${blackbox_coverage_pct}% |"
@@ -562,8 +563,8 @@ update_readme_with_results() {
                         IFS=',' read -r _ combined_coverage_pct combined_covered combined_total combined_instrumented combined_covered_files < "${combined_coverage_detailed}" 2>/dev/null
                         if [[ -n "${combined_total}" ]] && [[ "${combined_total}" -gt 0 ]]; then
                             # Add thousands separators
-                            combined_covered_formatted=$(printf "%'d" "${combined_covered}" 2>/dev/null || echo "${combined_covered}")
-                            combined_total_formatted=$(printf "%'d" "${combined_total}" 2>/dev/null || echo "${combined_total}")
+                            combined_covered_formatted=$("${PRINTF}" "%'d" "${combined_covered}" 2>/dev/null || echo "${combined_covered}")
+                            combined_total_formatted=$("${PRINTF}" "%'d" "${combined_total}" 2>/dev/null || echo "${combined_total}")
                             combined_covered_files=${combined_covered_files:-0}
                             combined_instrumented=${combined_instrumented:-0}
                             echo "| Combined Tests | ${combined_covered_files} | ${combined_instrumented} | ${combined_covered_formatted} | ${combined_total_formatted} | ${combined_coverage_pct}% |"
@@ -589,7 +590,7 @@ update_readme_with_results() {
                     fi
                     local test_time_formatted
                     test_time_formatted=$(format_time_duration "${TEST_ELAPSED[${i}]}")
-                    test_number_formatted=$(printf "%s-%s" "${TEST_NUMBERS[${i}]}" "${TEST_ABBREVS[${i}]}")
+                    test_number_formatted=$("${PRINTF}" "%s-%s" "${TEST_NUMBERS[${i}]}" "${TEST_ABBREVS[${i}]}")
                     test_name_formatted="${TEST_NAMES[${i}]}"
                     test_name_formatted=${test_name_formatted//\{COMMA\}/,}
                     test_name_formatted=${test_name_formatted//\{BLUE\}/}

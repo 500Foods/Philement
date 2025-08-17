@@ -207,8 +207,8 @@ run_unity_tests() {
     done
     
     # Sort root tests and subdirectory tests separately
-    mapfile -t root_tests < <(printf '%s\n' "${root_tests[@]}" | sort || true)
-    mapfile -t subdir_tests < <(printf '%s\n' "${subdir_tests[@]}" | sort || true)
+    mapfile -t root_tests < <("${PRINTF}" '%s\n' "${root_tests[@]}" | sort || true)
+    mapfile -t subdir_tests < <("${PRINTF}" '%s\n' "${subdir_tests[@]}" | sort || true)
     
     # Combine in proper order: root tests first, then subdirectory tests
     sorted_tests=("${root_tests[@]}" "${subdir_tests[@]}")
@@ -322,7 +322,7 @@ run_unity_tests() {
     
     # Display summary in two parts
     print_message "Unity test execution: ${total_tests} test files ran in ${batch_num} batches"
-    print_message "Unity test results: $(printf "%'d" "${TOTAL_UNITY_TESTS}") unit tests, $(printf "%'d" "${TOTAL_UNITY_PASSED}") passing, $(printf "%'d" "${total_failed}") failing"
+    print_message "Unity test results: $("${PRINTF}" "%'d" "${TOTAL_UNITY_TESTS}" || true) unit tests, $("${PRINTF}" "%'d" "${TOTAL_UNITY_PASSED}" || true) passing, $("${PRINTF}" "%'d" "${total_failed}" || true) failing"
     
     return "${overall_result}"
 }
@@ -333,7 +333,7 @@ if check_unity_tests_available; then
     if run_unity_tests; then
         # Update TEST_NAME to include test results for concise display
         if [[ -n "${TOTAL_UNITY_TESTS}" ]] && [[ -n "${TOTAL_UNITY_PASSED}" ]]; then
-            TEST_NAME="Unity {BLUE}($(printf "%'d" "${TOTAL_UNITY_PASSED}") / $(printf "%'d" "${TOTAL_UNITY_TESTS}") unit tests passed){RESET}"
+            TEST_NAME="Unity {BLUE}($("${PRINTF}" "%'d" "${TOTAL_UNITY_PASSED}" || true) / $("${PRINTF}" "%'d" "${TOTAL_UNITY_TESTS}" || true) unit tests passed){RESET}"
         fi
     else
         EXIT_CODE=1

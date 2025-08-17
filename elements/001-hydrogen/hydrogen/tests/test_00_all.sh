@@ -43,7 +43,7 @@ setup_orchestration_environment
 # Test Setup
 commands=(
     "sort" "bc" 
-    "${DATE}" "${FIND}" "${GREP}" "${SED}" "${AWK}" "${XARGS}" "${TAR}" "${TIMEOUT}" "${REALPATH}" 
+    "${PRINTF}" "${DATE}" "${FIND}" "${GREP}" "${SED}" "${AWK}" "${XARGS}" "${TAR}" "${TIMEOUT}" "${REALPATH}" 
     "jq"  "nproc" "lsof" "brotli" "openssl"
     "cmake" "gcc" "ninja" "curl" "websocat" "wscat"
     "${GIT}" "${MD5SUM}" "${CLOC}"
@@ -100,7 +100,7 @@ if [[ ${#to_process[@]} -gt 0 ]]; then
     # shellcheck disable=SC2016 # Script within a script doesn't make shellcheck very happy
     while IFS= read -r line; do
         results+=("${line}")
-    done < <(printf "%s\n" "${to_process[@]}" | "${XARGS}" -P 0 -I {} bash -c '
+    done < <("${PRINTF}" "%s\n" "${to_process[@]}" | "${XARGS}" -P 0 -I {} bash -c '
         cmd="{}"
         if command -v "${cmd}" >/dev/null 2>&1; then
             cmd_path=$(command -v "${cmd}")
@@ -127,7 +127,7 @@ fi
 declare -a sorted_results
 while IFS= read -r line; do
     sorted_results+=("${line}")
-done < <(printf "%s\n" "${results[@]}" | sort -f -t'|' -k2 || true)
+done < <("${PRINTF}" "%s\n" "${results[@]}" | sort -f -t'|' -k2 || true)
 
 # Process sorted results array and call print_result
 for result in "${sorted_results[@]}"; do
@@ -419,7 +419,7 @@ run_all_tests_parallel() {
     done
     
     # Execute groups in numerical order
-    for group in $(printf '%s\n' "${!test_groups[@]}" | sort -n); do
+    for group in $("${PRINTF}" '%s\n' "${!test_groups[@]}" | sort -n || true); do
         # shellcheck disable=SC2206  # We want word splitting here for the array
         local group_tests=(${test_groups[${group}]})
         
@@ -620,7 +620,7 @@ for i in "${!TEST_ELAPSED[@]}"; do
 done
 
 # Let's come up with a number that represents how much code is in our test suite
-SCRIPT_SCALE=$(printf "%'d" "$(cd "${SCRIPT_DIR}" && "${FIND}" . -type f -name "*.sh" -exec "${GREP}" -vE '^\s*(#|$)' {} + | wc -l)" || true)
+SCRIPT_SCALE=$("${PRINTF}" "%'d" "$(cd "${SCRIPT_DIR}" && "${FIND}" . -type f -name "*.sh" -exec "${GREP}" -vE '^\s*(#|$)' {} + | wc -l)" || true)
 
 # Format both times as HH:MM:SS.ZZZ
 TOTAL_ELAPSED_FORMATTED=$(format_time_duration "${TOTAL_ELAPSED}")

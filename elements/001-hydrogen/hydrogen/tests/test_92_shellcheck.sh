@@ -101,7 +101,7 @@ if [[ "${SHELL_COUNT}" -gt 0 ]]; then
     # shellcheck disable=SC2016 # Script within a script is tripping up shellcheck
     if [[ "${processed_scripts}" -gt 0 ]]; then
         for file in "${to_process[@]}"; do
-            printf '%s %s\n' "${file}" "${file_hashes[${file}]}"
+            "${PRINTF}" '%s %s\n' "${file}" "${file_hashes[${file}]}" || true
         done | "${XARGS}" -n 2 -P "${CORES}" bash -c 'process_script "$0" "$1"' >> "${TEMP_OUTPUT}" 2>&1
     fi
 
@@ -165,8 +165,9 @@ if [[ ${#SHELL_FILES[@]} -gt 0 ]]; then
     # Create a temporary directory for per-file logs
     tmp_dir="${LOG_PREFIX}${TIMESTAMP}_${RANDOM}"
 
-    # Parallelize with xargs, using 12 processes
-    printf '%s\n' "${SHELL_FILES[@]}" | "${XARGS}" -P 0 -I {} bash -c 'process_file "{}"' > "${tmp_dir}.results"
+    # Parallelize with xargs
+    # shellcheck disable=SC2312 # Using xargs to parallelize file processing
+    "${PRINTF}" '%s\n' "${SHELL_FILES[@]}" | "${XARGS}" -P 0 -I {} bash -c 'process_file "{}"' > "${tmp_dir}.results" 
 
     # Aggregate results
     while IFS= read -r line; do

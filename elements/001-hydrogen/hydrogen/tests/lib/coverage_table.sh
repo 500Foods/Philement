@@ -409,7 +409,7 @@ done
 
 # Sort by folder, then by filename, ensuring src/hydrogen.c appears first
 # shellcheck disable=SC2312 # This is fine as-is, we want to sort by folder and file name
-mapfile -t sorted_file_data < <(printf '%s\n' "${file_data[@]}" | sort -t: -k1,1 -k2,2)
+mapfile -t sorted_file_data < <("${PRINTF}" '%s\n' "${file_data[@]}" | sort -t: -k1,1 -k2,2)
 
 # print_subtest "folder sorted"
 

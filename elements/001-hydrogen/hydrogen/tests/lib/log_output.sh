@@ -119,13 +119,14 @@ dump_collected_output() {
         for line in "${OUTPUT_COLLECTION[@]}"; do
             # Safety check for runaway loops
             if [[ ${count} -ge ${max_lines} ]]; then
-                printf '%b\n' "... (output truncated after ${max_lines} lines)"
+                # shellcheck disable=SC2154 # PRINTF defined externally in framework.sh
+                "${PRINTF}" '%b\n' "... (output truncated after ${max_lines} lines)"
                 break
             fi
             
             # Only output non-empty lines
             if [[ -n "${line}" ]]; then
-                printf '%b\n' "${line}" 2>/dev/null || true
+                "${PRINTF}" '%b\n' "${line}" 2>/dev/null || true
             fi
             ((count++))
         done
@@ -223,7 +224,7 @@ print_test_header() {
     local test_number="$3"
     local test_version="$4"
     local test_id
-    test_id=$(printf "%s-%s" "${test_number}" "${test_abbr}")
+    test_id=$("${PRINTF}" "%s-%s" "${test_number}" "${test_abbr}")
 
     # Start the test timer
     start_test_timer
@@ -295,7 +296,7 @@ print_subtest() {
     local formatted_output="  ${TEST_COLOR}${CURRENT_TEST_NUMBER}-${CURRENT_SUBTEST_NUMBER}   ${elapsed}   ${NC}${TEST_ICON}${TEST_COLOR} TEST   ${processed_name}${NC}"
 
     ((SUBTEST_COUNTER++))
-    CURRENT_SUBTEST_NUMBER=$(printf "%03d" "${SUBTEST_COUNTER}")
+    CURRENT_SUBTEST_NUMBER=$("${PRINTF}" "%03d" "${SUBTEST_COUNTER}")
     
     # If we're in collection mode and have cached output, dump it before starting new test
     if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then

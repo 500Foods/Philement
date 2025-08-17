@@ -123,7 +123,7 @@ if [[ -s "${SOURCE_FILES_LIST}" ]]; then
         # Handle the total line at the end
         [[ "${file}" = "total" ]] && continue
         
-        printf "%05d %s\n" "${lines}" "${file}"
+        "${PRINTF}" "%05d %s\n" "${lines}" "${file}"
         
         # Categorize by line count
         if   [[ "${lines}" -lt 100  ]]; then line_bins["000-099"]=$((line_bins["000-099"] + 1))
@@ -214,7 +214,7 @@ else
         sorted_list="${LOG_PREFIX}${TIMESTAMP}_large_files_sorted.txt"
         sort -nr "${LARGE_FILES_LIST}" > "${sorted_list}"
         while read -r size file; do
-            size_formatted=$(printf "%7s" "$(printf "%'d" "${size}")" )
+            size_formatted=$("${PRINTF}" "%7s" "$("${PRINTF}" "%'d" "${size}")" || true)
             print_output "${size_formatted} KB: ${file}"
         done < "${sorted_list}"
     fi
@@ -241,8 +241,8 @@ if [[ -n "${CLOC_PID}" ]]; then
             IFS=',' read -r files_part lines_part <<< "${STATS}"
             FILES_COUNT=$(echo "${files_part}" | cut -d':' -f2)
             CODE_LINES=$(echo "${lines_part}" | cut -d':' -f2)
-            LOCCOUNT=$(printf "%'d" "${CODE_LINES}")
-            print_result 0 "Found $(printf "%'d" "${FILES_COUNT}") files with ${LOCCOUNT} lines of code"
+            LOCCOUNT=$("${PRINTF}" "%'d" "${CODE_LINES}")
+            print_result 0 "Found $("${PRINTF}" "%'d" "${FILES_COUNT}" || true) files with ${LOCCOUNT} lines of code"
             ((PASS_COUNT++))
         else
             print_result 1 "Failed to parse cloc output"
