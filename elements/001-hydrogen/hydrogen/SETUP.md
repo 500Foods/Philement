@@ -58,9 +58,11 @@ With that all installed, perform the following steps.
 - `brew install gcc`
 - `brew install upx`
 - `brew install jq`
+- `brew install coreutils findutils cmake ccache stylelint jsonlint`
 - `brew install node`
 - `brew install jansson`
-- `npm install -g swagger-cli`
+- `npm install -g swagger-cli eslint htmlhint`
+- `brew install markdownlint-cli`
 - Add to ~/.zshrc, set OhMyZsh to auto-update while you're at it
 
 ``` ~/.zshrc
