@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Test: Env Var Substitution
 # Tests that configuration values can be provided via environment variables

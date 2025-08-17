@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Test: Markdown Links Check
 # Runs github-sitemap.sh to check markdown links and evaluates results with subtests
@@ -42,11 +42,11 @@ print_subtest "Execute Markdown Link Check"
 MARKDOWN_CHECK="${LOG_PREFIX}_markdown_links_check.ansi"
 
 print_message "Running markdown link check on ${TARGET_README}..."
-# shellcheck disable=SC2153,SC2154 # SITEMAP_EXTERNAL defined in framework.sh
-print_command ".${SITEMAP_EXTERNAL} ${TARGET_README} --noreport --quiet"
+# shellcheck disable=SC2153,SC2154 # SITEMAP defined in framework.sh
+print_command ".${SITEMAP} ${TARGET_README} --noreport --quiet"
 
 # Run github-sitemap.sh with --noreport and --quiet to minimize output
-"${SITEMAP_EXTERNAL}" "${TARGET_README}" --noreport --quiet > "${MARKDOWN_CHECK}" 2>&1
+"${SITEMAP}" "${TARGET_README}" --noreport --quiet > "${MARKDOWN_CHECK}" 2>&1
 SITEMAP_EXIT_CODE=$?
 
 # Display the output

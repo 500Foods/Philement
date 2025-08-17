@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Test: Test Suite Orchestration
 # Executes all tests in parallel batches or sequentially and generates a summary report
@@ -44,9 +44,10 @@ setup_orchestration_environment
 commands=(
     "grep" "sort" "bc" "jq" "awk" "sed" "xargs" "nproc" "timeout" "date" "lsof"
     "cmake" "gcc" "ninja" "curl" "websocat" "wscat"
-    "git" "md5sum" "cloc"
+    "git" "md5sum" "${CLOC}"
     "cppcheck" "shellcheck" "markdownlint" "eslint" "stylelint" "htmlhint" "jsonlint" "swagger-cli"
-    "Oh" "tables" "coverage_table.sh"
+    "${OH}" "${TABLES}" 
+    "coverage_table.sh" "github-sitemap.sh"
 )
 
 # Array to store results
@@ -74,7 +75,7 @@ print_subtest "Verifying command/version availability"
 to_process=()
 cached=0
 for cmd in "${commands[@]}"; do
-    cache_file="${CACHE_CMD_DIR}/${cmd// /_}"  # Replace spaces if any, though none here
+    cache_file="${CACHE_CMD_DIR}/${cmd//\//_}"  # Replace forward slashes and spaces with underscores
     if [[ -f "${cache_file}" ]]; then
         # Read cached: format "path|version"
         IFS='|' read -r cached_path cached_version < "${cache_file}"
@@ -108,7 +109,7 @@ if [[ ${#to_process[@]} -gt 0 ]]; then
                 echo "0|${cmd} @ ${cmd_path}|no version found"
             fi
             # Cache it: path|version
-            cache_file="${CACHE_CMD_DIR}/${cmd// /_}"
+            cache_file="${CACHE_CMD_DIR}/${cmd//\//_}"
             if [ -n "${version}" ]; then
                 echo "${cmd_path}|${version}" > "${cache_file}"
             else
@@ -585,8 +586,8 @@ COMBINED_COVERAGE=$(get_combined_coverage)
 
 # Save coverage table output to file and display to console using tee
 coverage_table_file="${RESULTS_DIR}/coverage_table.txt"
-# shellcheck disable=SC2154 # COVERAGE_EXTERNAL defined externally in framework.sh
-env -i bash "${COVERAGE_EXTERNAL}" 2>/dev/null | tee "${coverage_table_file}" || true
+# shellcheck disable=SC2154 # COVERAGE defined externally in framework.sh
+env -i bash "${COVERAGE}" 2>/dev/null | tee "${coverage_table_file}" || true
 
 # Calculate total elapsed time
 END_TIME=$(date +%s.%N 2>/dev/null)
@@ -734,8 +735,8 @@ echo "${data_json_content}" > "${data_json}"
 
 # Save test results table output to file and display to console using tee
 results_table_file="${RESULTS_DIR}/results_table.txt"
-# shellcheck disable=SC2154 # TABLES_EXTERNAL defined externally in framework.sh
-"${TABLES_EXTERNAL}" "${layout_json}" "${data_json}" 2>/dev/null | tee "${results_table_file}" || true
+# shellcheck disable=SC2154 # TABLES defined externally in framework.sh
+"${TABLES}" "${layout_json}" "${data_json}" 2>/dev/null | tee "${results_table_file}" || true
 
 # Compare coverage data between 'Test Suite Results' and 'Test Suite Coverage' to ensure they are the same
 results_summary=$(grep 'Test Suite Results' "${results_table_file}" | awk -F'———' '{print $2,$3,$4}' | awk '{print $2,$5,$8}' || true)
@@ -747,9 +748,9 @@ if [[ ! "${results_summary}" == "${coverage_summary}" ]]; then
 fi
 
 # Generate SVGs from generated tables
-# shellcheck disable=SC2154 # OH_EXTERNAL defined externally in framework.sh
-("${OH_EXTERNAL}" -i "${results_table_file}" -o "${results_svg_path}" 2>/dev/null) &
-# shellcheck disable=SC2154 # OH_EXTERNAL defined externally in framework.sh
-("${OH_EXTERNAL}" -i "${coverage_table_file}" -o "${coverage_svg_path}" 2>/dev/null) &
+# shellcheck disable=SC2154 # OH defined externally in framework.sh
+("${OH}" -i "${results_table_file}" -o "${results_svg_path}" 2>/dev/null) &
+# shellcheck disable=SC2154 # OH defined externally in framework.sh
+("${OH}" -i "${coverage_table_file}" -o "${coverage_svg_path}" 2>/dev/null) &
 
 exit "${OVERALL_EXIT_CODE}"

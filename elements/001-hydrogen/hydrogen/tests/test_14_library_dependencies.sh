@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Test: Library Dependencies
 # Tests the library dependency checking system added to initialization

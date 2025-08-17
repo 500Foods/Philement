@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Test: JavaScript Linting
 # Performs JavaScript validation using eslint

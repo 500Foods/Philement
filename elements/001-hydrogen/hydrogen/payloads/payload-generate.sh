@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # payload-generate.sh
 # Encrypted Payload Generator for Hydrogen
@@ -372,7 +372,7 @@ create_tarball() {
     # - Compressed static assets (.br files)
     # - Uncompressed dynamic files and swagger.json
     # - Strip metadata (permissions and ownership) since we're the only ones using it
-    cd "${SWAGGERUI_DIR}" && tar --mode=0000 --owner=0 --group=0 -cf "${TAR_FILE}" \
+    cd "${SWAGGERUI_DIR}" && tar --owner=0 --group=0 -cf "${TAR_FILE}" \
         swagger-ui-bundle.js.br \
         swagger-ui-standalone-preset.js.br \
         swagger-ui.css.br \

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Test: System API Endpoints
 # Tests all the system API endpoints:

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Coverage Combined Library
 # Functions for calculating combined coverage analysis, and identifying uncovered files.

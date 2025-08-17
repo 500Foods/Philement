@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Framework Library
 # Provides test lifecycle management and result tracking functions
@@ -41,6 +41,11 @@ export FRAMEWORK_GUARD="true"
 FRAMEWORK_NAME="Framework Library"
 FRAMEWORK_VERSION="2.8.0"
 export FRAMEWORK_NAME FRAMEWORK_VERSION
+
+# Common utilities
+CLOC=$(command -v cloc)
+TABLES=$(command -v tables)
+OH=$(command -v Oh) 
 
 # Set the number of CPU cores for parallel processing - why not oversubscribe?
 CORES_ACTUAL=$(nproc)
@@ -207,18 +212,14 @@ setup_orchestration_environment() {
     LOGS_DIR="${TESTS_DIR}/logs"
     CONFIG_DIR="${SCRIPT_DIR}/configs"
 
+    COVERAGE="${LIB_DIR}/coverage_table.sh"
+    SITEMAP="${LIB_DIR}/github-sitemap.sh"
+
     # shellcheck disable=SC2153,SC2154 # TEST_NUMBER defined by caller
     DIAG_TEST_DIR="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}"
 
     mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${LOGS_DIR}" "${DIAGS_DIR}" "${DIAG_TEST_DIR}" 
     
-    # Common utilities
-    CLOC_EXTERNAL="/usr/bin/cloc"
-    TABLES_EXTERNAL="${LIB_DIR}/tables"
-    OH_EXTERNAL="${LIB_DIR}/Oh"
-    COVERAGE_EXTERNAL="${LIB_DIR}/coverage_table.sh"
-    SITEMAP_EXTERNAL="${LIB_DIR}/github-sitemap.sh"
-
     # Need to load log_output a little earlier than the others
     # shellcheck source=tests/lib/log_output.sh # Resolve path statically
     [[ -n "${LOG_OUTPUT_GUARD}" ]] || source "${LIB_DIR}/log_output.sh"
@@ -352,17 +353,13 @@ setup_test_environment() {
         LOGS_DIR="${TESTS_DIR}/logs"
         CONFIG_DIR="${SCRIPT_DIR}/configs"
 
+        COVERAGE="${LIB_DIR}/coverage_table.sh"
+        SITEMAP="${LIB_DIR}/github-sitemap.sh"
+
         # Array for collecting output messages (for performance optimization and progressive feedback)
         # Output is cached and dumped each time a new TEST starts, providing progressive feedback
         declare -a OUTPUT_COLLECTION=()
         COLLECT_OUTPUT_MODE=true
-
-        # Common utilities
-        CLOC_EXTERNAL="/usr/bin/cloc"
-        TABLES_EXTERNAL="${LIB_DIR}/tables"
-        OH_EXTERNAL="${LIB_DIR}/Oh.sh"
-        COVERAGE_EXTERNAL="${LIB_DIR}/coverage_table.sh"
-        SITEMAP_EXTERNAL="${LIB_DIR}/github-sitemap.sh"
 
     else
       pushd "${PROJECT_DIR}" >/dev/null 2>&1 || return

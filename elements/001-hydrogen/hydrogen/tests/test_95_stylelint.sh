@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Test: CSS Linting
 # Performs CSS validation using stylelint
