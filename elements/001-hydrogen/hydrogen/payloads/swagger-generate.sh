@@ -22,6 +22,11 @@
 echo "swagger-generate.sh version 1.2.0"
 echo "OpenAPI JSON Generator for Hydrogen REST API"
 
+# Common utilities - use GNU versions if available (eg: homebrew on macOS)
+GREP=$(command -v ggrep 2>/dev/null || command -v grep)
+SED=$(command -v gsed 2>/dev/null || command -v sed)
+AWK=$(command -v gawk 2>/dev/null || command -v awk)
+
 # Terminal formatting codes
 readonly GREEN='\033[0;32m'
 readonly RED='\033[0;31m'
@@ -43,11 +48,11 @@ convert_to_relative_path() {
     local relative_path
     
     # Extract the part starting from "hydrogen" and keep everything after
-    relative_path=$(echo "${absolute_path}" | sed -n 's|.*/hydrogen/|hydrogen/|p')
+    relative_path=$(echo "${absolute_path}" | "${SED}" -n 's|.*/hydrogen/|hydrogen/|p')
     
     # If the path contains elements/001-hydrogen/hydrogen but not starting with hydrogen/
     if [[ -z "${relative_path}" ]]; then
-        relative_path=$(echo "${absolute_path}" | sed -n 's|.*/elements/001-hydrogen/hydrogen|hydrogen|p')
+        relative_path=$(echo "${absolute_path}" | "${SED}" -n 's|.*/elements/001-hydrogen/hydrogen|hydrogen|p')
     fi
     
     # If we still couldn't find a match, return the original
@@ -117,18 +122,18 @@ process_service_tags() {
     local service_name="$2"
     
     if [[ -f "${service_dir}/${service_name}_service.h" ]]; then
-        grep -E "//@ swagger:tag" "${service_dir}/${service_name}_service.h" | while read -r line; do
+        "${GREP}" -E "//@ swagger:tag" "${service_dir}/${service_name}_service.h" | while read -r line; do
             local tag_name tag_desc clean_tag_name tag_exists
             
             # Extract tag name and description, handling quoted strings
-            if echo "${line}" | grep -q "swagger:tag[[:space:]]*\""; then
+            if echo "${line}" | "${GREP}" -q "swagger:tag[[:space:]]*\""; then
                 # Handle quoted tag names
-                tag_name=$(echo "${line}" | sed -E 's/.*swagger:tag[[:space:]]*"([^"]+)".*/\1/')
-                tag_desc=$(echo "${line}" | sed -E 's/.*swagger:tag[[:space:]]*"[^"]+"[[:space:]]+(.*)/\1/')
+                tag_name=$(echo "${line}" | "${SED}" -E 's/.*swagger:tag[[:space:]]*"([^"]+)".*/\1/')
+                tag_desc=$(echo "${line}" | "${SED}" -E 's/.*swagger:tag[[:space:]]*"[^"]+"[[:space:]]+(.*)/\1/')
             else
                 # Handle unquoted tag names
-                tag_name=$(echo "${line}" | sed -E 's/.*swagger:tag[[:space:]]+([^[:space:]]+)[[:space:]](.*)/\1/')
-                tag_desc=$(echo "${line}" | sed -E 's/.*swagger:tag[[:space:]]+([^[:space:]]+)[[:space:]](.*)/\2/')
+                tag_name=$(echo "${line}" | "${SED}" -E 's/.*swagger:tag[[:space:]]+([^[:space:]]+)[[:space:]](.*)/\1/')
+                tag_desc=$(echo "${line}" | "${SED}" -E 's/.*swagger:tag[[:space:]]+([^[:space:]]+)[[:space:]](.*)/\2/')
             fi
             
             # Add to tags file if not already present
@@ -154,7 +159,7 @@ process_swagger_responses() {
     echo "{}" > "${method_responses_file}"
     
     # Process each swagger:response annotation
-    grep -E "//@ swagger:response" "${header_file}" | while read -r line; do
+    "${GREP}" -E "//@ swagger:response" "${header_file}" | while read -r line; do
         local line_without_prefix status content_type schema_part response_description
         local resp_temp_file="${TEMP_DIR}/resp_temp_${method}.json"
         
@@ -162,14 +167,17 @@ process_swagger_responses() {
         line_without_prefix=${line#*//@ swagger:response}
         
         # Extract status code (first component)
-        status=$(echo "${line_without_prefix}" | awk '{print $1}')
+        # shellcheck disable=SC2016 # We want to use single quotes to avoid variable expansion
+        status=$(echo "${line_without_prefix}" | "${AWK}" '{print $1}')
         
         # Extract content type (second component)
-        content_type=$(echo "${line_without_prefix}" | awk '{print $2}')
+        # shellcheck disable=SC2016 # We want to use single quotes to avoid variable expansion
+        content_type=$(echo "${line_without_prefix}" | "${AWK}" '{print $2}')
         
         # Extract schema - get everything after status and content_type
         # Use awk instead of sed to avoid issues with special characters
-        schema_part=$(echo "${line_without_prefix}" | awk -v s="${status}" -v c="${content_type}" '{
+        # shellcheck disable=SC2016 # We want to use single quotes to avoid variable expansion
+        schema_part=$(echo "${line_without_prefix}" | "${AWK}" -v s="${status}" -v c="${content_type}" '{
             for(i=1; i<=NF; i++) {
                 if (i>2) {
                     printf "%s", (i>3 ? " " : "") $i
@@ -266,7 +274,7 @@ process_endpoint_methods() {
     
     # Extract all methods for this path
     local methods
-    readarray -t methods < <(grep -E "//@ swagger:method" "${header_file}" | sed -E 's/.*swagger:method[[:space:]]+([^[:space:]]+).*/\1/' | tr '[:upper:]' '[:lower:]' || true)
+    readarray -t methods < <("${GREP}" -E "//@ swagger:method" "${header_file}" | "${SED}" -E 's/.*swagger:method[[:space:]]+([^[:space:]]+).*/\1/' | tr '[:upper:]' '[:lower:]' || true)
 
     # If no methods found, default to GET
     if [[ ${#methods[@]} -eq 0 ]]; then
@@ -276,13 +284,13 @@ process_endpoint_methods() {
     # Extract the service tag first - this is used for all methods
     local service_tag_file="${TEMP_DIR}/service_tag.txt"
     local service_tag tag_array summary description
-    grep -E "//@ swagger:tag" "${service_dir}/${service_name}_service.h" | head -1 | sed -E 's/.*swagger:tag[[:space:]]*"([^"]+)".*/\1/' > "${service_tag_file}" || true
+    "${GREP}" -E "//@ swagger:tag" "${service_dir}/${service_name}_service.h" | head -1 | "${SED}" -E 's/.*swagger:tag[[:space:]]*"([^"]+)".*/\1/' > "${service_tag_file}" || true
     service_tag=$(cat "${service_tag_file}")
     tag_array="[\"${service_tag}\"]"
     
     # Extract common info for all methods
-    summary=$(grep -E "//@ swagger:summary" "${header_file}" | sed -E 's/.*swagger:summary[[:space:]]+([^$]*)/\1/' || echo "${endpoint_name} endpoint") || true
-    description=$(grep -E "//@ swagger:description" "${header_file}" | sed -E 's/.*swagger:description[[:space:]]+([^$]*)/\1/' || echo "" || true)
+    summary=$("${GREP}" -E "//@ swagger:summary" "${header_file}" | "${SED}" -E 's/.*swagger:summary[[:space:]]+([^$]*)/\1/' || echo "${endpoint_name} endpoint") || true
+    description=$("${GREP}" -E "//@ swagger:description" "${header_file}" | "${SED}" -E 's/.*swagger:description[[:space:]]+([^$]*)/\1/' || echo "" || true)
     
     # Create path entry if it doesn't exist yet
     local path_exists
@@ -302,12 +310,12 @@ process_endpoint_methods() {
         # Get method-specific operationId if defined
         local operation_id method_op_id generic_op_id
         operation_id=""
-        method_op_id=$(grep -E "//@ swagger:operationId.*${method}" "${header_file}" | head -1 | sed -E 's/.*swagger:operationId[[:space:]]+([^[:space:]]+).*/\1/' || echo "" || true)
+        method_op_id=$("${GREP}" -E "//@ swagger:operationId.*${method}" "${header_file}" | head -1 | "${SED}" -E 's/.*swagger:operationId[[:space:]]+([^[:space:]]+).*/\1/' || echo "" || true)
         if [[ -n "${method_op_id}" ]]; then
             operation_id="${method_op_id}"
         else
             # Fall back to generic operationId
-            generic_op_id=$(grep -E "//@ swagger:operationId" "${header_file}" | head -1 | sed -E 's/.*swagger:operationId[[:space:]]+([^[:space:]]+).*/\1/' || echo "" || true)
+            generic_op_id=$("${GREP}" -E "//@ swagger:operationId" "${header_file}" | head -1 | "${SED}" -E 's/.*swagger:operationId[[:space:]]+([^[:space:]]+).*/\1/' || echo "" || true)
             if [[ -n "${generic_op_id}" ]]; then
                 operation_id="${generic_op_id}${method^}"  # Append capitalized method name
             fi
@@ -352,14 +360,14 @@ process_endpoint_directory() {
         if [[ -f "${header_file}" ]]; then
             # Find handler function
             local handler_func
-            handler_func=$(grep -E "handle_.*_${endpoint_name}" "${header_file}" | grep -v "^//" | head -1 || true)
+            handler_func=$("${GREP}" -E "handle_.*_${endpoint_name}" "${header_file}" | "${GREP}" -v "^//" | head -1 || true)
             
             if [[ -n "${handler_func}" ]]; then
                 echo -e "    ${GREEN}✓ Found handler: ${NC}${handler_func}"
                 
                 # Extract path and methods
                 local path
-                path=$(grep -E "//@ swagger:path" "${header_file}" | head -1 | sed -E 's/.*swagger:path[[:space:]]+([^[:space:]]+).*/\1/' || echo "/${service_name}/${endpoint_name}" || true)
+                path=$("${GREP}" -E "//@ swagger:path" "${header_file}" | head -1 | "${SED}" -E 's/.*swagger:path[[:space:]]+([^[:space:]]+).*/\1/' || echo "/${service_name}/${endpoint_name}" || true)
                 # Remove leading /api/ if present
                 path=${path#/api}
 
@@ -422,7 +430,7 @@ extract_api_info() {
         
         # Extract title
         local title
-        title=$(grep -E "//@ swagger:title" "${api_utils_file}" | sed -E 's/.*swagger:title[[:space:]]+([^$]*)/\1/' || echo "" || true)
+        title=$("${GREP}" -E "//@ swagger:title" "${api_utils_file}" | "${SED}" -E 's/.*swagger:title[[:space:]]+([^$]*)/\1/' || echo "" || true)
         if [[ -n "${title}" ]]; then
             jq --arg title "${title}" '.title = $title' "${api_info_file}" > "${api_info_file}.tmp" && \
                 mv "${api_info_file}.tmp" "${api_info_file}"
@@ -431,7 +439,7 @@ extract_api_info() {
         
         # Extract description
         local desc
-        desc=$(grep -E "//@ swagger:description" "${api_utils_file}" | sed -E 's/.*swagger:description[[:space:]]+([^$]*)/\1/' || echo "" || true)
+        desc=$("${GREP}" -E "//@ swagger:description" "${api_utils_file}" | "${SED}" -E 's/.*swagger:description[[:space:]]+([^$]*)/\1/' || echo "" || true)
         if [[ -n "${desc}" ]]; then
             jq --arg desc "${desc}" '.description = $desc' "${api_info_file}" > "${api_info_file}.tmp" && \
                 mv "${api_info_file}.tmp" "${api_info_file}"
@@ -440,7 +448,7 @@ extract_api_info() {
         
         # Extract version
         local version
-        version=$(grep -E "//@ swagger:version" "${api_utils_file}" | sed -E 's/.*swagger:version[[:space:]]+([^$]*)/\1/' || echo "" || true)
+        version=$("${GREP}" -E "//@ swagger:version" "${api_utils_file}" | "${SED}" -E 's/.*swagger:version[[:space:]]+([^$]*)/\1/' || echo "" || true)
         if [[ -n "${version}" ]]; then
             jq --arg version "${version}" '.version = $version' "${api_info_file}" > "${api_info_file}.tmp" && \
                 mv "${api_info_file}.tmp" "${api_info_file}"
@@ -449,7 +457,7 @@ extract_api_info() {
         
         # Extract contact email
         local contact
-        contact=$(grep -E "//@ swagger:contact.email" "${api_utils_file}" | sed -E 's/.*swagger:contact.email[[:space:]]+([^$]*)/\1/' || echo "" || true)
+        contact=$("${GREP}" -E "//@ swagger:contact.email" "${api_utils_file}" | "${SED}" -E 's/.*swagger:contact.email[[:space:]]+([^$]*)/\1/' || echo "" || true)
         if [[ -n "${contact}" ]]; then
             jq --arg email "${contact}" '.contact = {"email": $email}' "${api_info_file}" > "${api_info_file}.tmp" && \
                 mv "${api_info_file}.tmp" "${api_info_file}"
@@ -458,8 +466,8 @@ extract_api_info() {
         
         # Extract license - handle both SPDX identifiers and name/url pairs
         local license license_url
-        license=$(grep -E "//@ swagger:license.name" "${api_utils_file}" | sed -E 's/.*swagger:license.name[[:space:]]+([^$]*)/\1/' || echo "" || true)
-        license_url=$(grep -E "//@ swagger:license.url" "${api_utils_file}" | sed -E 's/.*swagger:license.url[[:space:]]+([^$]*)/\1/' || echo "" || true)
+        license=$("${GREP}" -E "//@ swagger:license.name" "${api_utils_file}" | "${SED}" -E 's/.*swagger:license.name[[:space:]]+([^$]*)/\1/' || echo "" || true)
+        license_url=$("${GREP}" -E "//@ swagger:license.url" "${api_utils_file}" | "${SED}" -E 's/.*swagger:license.url[[:space:]]+([^$]*)/\1/' || echo "" || true)
         
         if [[ -n "${license}" ]]; then
             # Check if this is a standard SPDX license identifier
@@ -495,10 +503,10 @@ extract_api_info() {
         echo "[]" > "${servers_file}"
         
         # Extract servers
-        grep -E "//@ swagger:server" "${api_utils_file}" | while read -r line; do
+        "${GREP}" -E "//@ swagger:server" "${api_utils_file}" | while read -r line; do
             local url desc exists
-            url=$(echo "${line}" | sed -E 's/.*swagger:server[[:space:]]+([^[:space:]]+)[[:space:]]+.*/\1/')
-            desc=$(echo "${line}" | sed -E 's/.*swagger:server[[:space:]]+[^[:space:]]+[[:space:]]+([^$]*)/\1/')
+            url=$(echo "${line}" | "${SED}" -E 's/.*swagger:server[[:space:]]+([^[:space:]]+)[[:space:]]+.*/\1/')
+            desc=$(echo "${line}" | "${SED}" -E 's/.*swagger:server[[:space:]]+[^[:space:]]+[[:space:]]+([^$]*)/\1/')
             
             # Check if this server already exists to avoid duplicates
             exists=$(jq --arg url "${url}" 'map(select(.url == $url)) | length' "${servers_file}")
