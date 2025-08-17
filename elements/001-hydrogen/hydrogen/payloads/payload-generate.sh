@@ -22,6 +22,12 @@
 echo "payload-generate.sh version 2.0.0"
 echo "Encrypted Payload Generator for Hydrogen"
 
+# Common utilities - use GNU versions if available (eg: homebrew on macOS)
+FIND=$(command -v gfind 2>/dev/null || command -v find)
+GREP=$(command -v ggrep 2>/dev/null || command -v grep)
+SED=$(command -v gsed 2>/dev/null || command -v sed)
+TAR=$(command -v gtar 2>/dev/null || command -v tar)
+
 # Terminal formatting codes
 readonly GREEN='\033[0;32m'
 readonly RED='\033[0;31m'
@@ -44,11 +50,11 @@ convert_to_relative_path() {
     local relative_path
     
     # Extract the part starting from "hydrogen" and keep everything after
-    relative_path=$(echo "${absolute_path}" | sed -n 's|.*/hydrogen/|hydrogen/|p')
+    relative_path=$(echo "${absolute_path}" | "${SED}" -n 's|.*/hydrogen/|hydrogen/|p')
     
     # If the path contains elements/001-hydrogen/hydrogen but not starting with hydrogen/
     if [[ -z "${relative_path}" ]]; then
-        relative_path=$(echo "${absolute_path}" | sed -n 's|.*/elements/001-hydrogen/hydrogen|hydrogen|p')
+        relative_path=$(echo "${absolute_path}" | "${SED}" -n 's|.*/elements/001-hydrogen/hydrogen|hydrogen|p')
     fi
     
     # If we still couldn't find a match, return the original
@@ -83,7 +89,7 @@ check_dependencies() {
         missing_deps=1
     fi
     
-    if ! command -v tar >/dev/null 2>&1; then
+    if ! command -v "${TAR}" >/dev/null 2>&1; then
         echo -e "${RED}${FAIL} Error: tar is required but not installed. Please install tar.${NC}"
         missing_deps=1
     fi
@@ -148,7 +154,7 @@ cleanup() {
     rm -f "${TEMP_DIR}/aes_key.bin" "${TEMP_DIR}/encrypted_aes_key.bin" "${TEMP_DIR}/temp_payload.enc"
     
     # Remove any generated .br files in the script directory (except the final encrypted payload)
-    find "${SCRIPT_DIR}" -name "*.br" -not -name "payload.tar.br.enc" -delete
+    "${FIND}" "${SCRIPT_DIR}" -name "*.br" -not -name "payload.tar.br.enc" -delete
     
     echo -e "${GREEN}${PASS} Cleanup completed successfully.${NC}"
 }
@@ -215,7 +221,7 @@ get_latest_swaggerui_version() {
     echo -e "${CYAN}${INFO} Fetching latest SwaggerUI version from GitHub...${NC}" >&2
     
     local latest_version
-    latest_version=$(curl -s "https://api.github.com/repos/swagger-api/swagger-ui/releases/latest" | grep '"tag_name"' | sed 's/.*"tag_name": "\(.*\)".*/\1/' || true)
+    latest_version=$(curl -s "https://api.github.com/repos/swagger-api/swagger-ui/releases/latest" | "${GREP}" '"tag_name"' | "${SED}" 's/.*"tag_name": "\(.*\)".*/\1/' || true)
     
     if [[ -z "${latest_version}" ]]; then
         echo -e "${YELLOW}${WARN} Failed to fetch latest version, falling back to v5.27.1${NC}" >&2
@@ -244,10 +250,10 @@ download_swaggerui() {
     
     echo -e "${CYAN}${INFO} Extracting SwaggerUI distribution files...${NC}"
     # Extract to temporary directory and get the actual directory name
-    tar -xzf "${TEMP_DIR}/swagger-ui.tar.gz" -C "${TEMP_DIR}"
+    "${TAR}" -xzf "${TEMP_DIR}/swagger-ui.tar.gz" -C "${TEMP_DIR}"
     
     # Find the extracted directory (GitHub API uses hash-based naming)
-    EXTRACTED_DIR=$(find "${TEMP_DIR}" -maxdepth 1 -type d -name "swagger-api-swagger-ui-*" | head -1 || true)
+    EXTRACTED_DIR=$("${FIND}" "${TEMP_DIR}" -maxdepth 1 -type d -name "swagger-api-swagger-ui-*" | head -1 || true)
     if [[ -z "${EXTRACTED_DIR}" ]]; then
         echo -e "${RED}${FAIL} Failed to find extracted SwaggerUI directory${NC}"
         exit 1
@@ -372,7 +378,7 @@ create_tarball() {
     # - Compressed static assets (.br files)
     # - Uncompressed dynamic files and swagger.json
     # - Strip metadata (permissions and ownership) since we're the only ones using it
-    cd "${SWAGGERUI_DIR}" && tar --owner=0 --group=0 -cf "${TAR_FILE}" \
+    cd "${SWAGGERUI_DIR}" && "${TAR}" --mode=0000 --owner=0 --group=0 -cf "${TAR_FILE}" \
         swagger-ui-bundle.js.br \
         swagger-ui-standalone-preset.js.br \
         swagger-ui.css.br \
@@ -529,7 +535,7 @@ create_tarball() {
     print_header "Tarball Contents"
     echo -e "${CYAN}${INFO} Listing contents of compressed tarball:${NC}"
     echo -e "${BLUE}────────────────────────────────────────────────────────────────${NC}"
-    brotli -d < "${TEMP_DIR}/payload.tar.br" | tar -tvf - | \
+    brotli -d < "${TEMP_DIR}/payload.tar.br" | "${TAR}" -tvf - | \
     while read -r line; do
         # Check if the file is a brotli-compressed file
         if [[ "${line}" == *".br" ]]; then
