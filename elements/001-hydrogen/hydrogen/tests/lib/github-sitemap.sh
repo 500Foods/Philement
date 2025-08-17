@@ -19,6 +19,7 @@ DATE=$(command -v date)
 XARGS=$(command -v gxargs 2>/dev/null || command -v xargs)
 FIND=$(command -v gfind 2>/dev/null || command -v find)
 AWK=$(command -v gawk 2>/dev/null || command -v awk)
+REALPATH=$(command -v grealpath 2>/dev/null || command -v realpath)
 
 # Performance timing functions
 declare -A timing_data
@@ -131,7 +132,7 @@ declare input_dir
 if [[ "${INPUT_FILE}" == /* ]]; then
     input_dir=$(dirname "${INPUT_FILE}")
 else
-    input_dir=$(cd "${original_dir}" && realpath -m "$(dirname "${INPUT_FILE}")" 2>/dev/null)
+    input_dir=$(cd "${original_dir}" && "${REALPATH}" -m "$(dirname "${INPUT_FILE}")" 2>/dev/null)
 fi
 if [[ -z "${input_dir}" ]]; then
     echo "Error: Cannot resolve input file directory for ${INPUT_FILE}" >&2
@@ -434,7 +435,7 @@ process_file_batch() {
                 normalized_cache["${original}"]="${normalized}"
             done < <(
                 printf '%s\n' "${!normalize_candidates[@]}" | \
-                "${XARGS}" -r -I {} sh -c 'printf "%s %s\n" "{}" "$(realpath -m "{}" 2>/dev/null || echo "{}")"'
+                "${XARGS}" -r -I {} sh -c 'printf "%s %s\n" "{}" "$("${REALPATH}" -m "{}" 2>/dev/null || echo "{}")"'
             )
         fi
         

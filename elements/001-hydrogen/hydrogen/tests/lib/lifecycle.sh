@@ -47,7 +47,7 @@ find_hydrogen_binary() {
     local hydrogen_bin
     
     # Ensure hydrogen_dir is an absolute path
-    hydrogen_dir=$(realpath "${hydrogen_dir}" 2>/dev/null || echo "${hydrogen_dir}")
+    hydrogen_dir=$("${REALPATH}" "${hydrogen_dir}" 2>/dev/null || echo "${hydrogen_dir}")
     
    
     # First check for coverage build (highest priority for testing)
