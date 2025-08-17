@@ -43,6 +43,7 @@ FRAMEWORK_VERSION="2.8.0"
 export FRAMEWORK_NAME FRAMEWORK_VERSION
 
 # Common utilities - use GNU versions if available (eg: homebrew on macOS)
+PRINTF=$(command -v gprintf 2>/dev/null || command -v printf)
 DATE=$(command -v gdate 2>/dev/null || command -v date)
 FIND=$(command -v gfind 2>/dev/null || command -v find)
 GREP=$(command -v ggrep 2>/dev/null || command -v grep)
@@ -53,7 +54,7 @@ REALPATH=$(command -v grealpath 2>/dev/null || command -v realpath)
 XARGS=$(command -v gxargs 2>/dev/null || command -v xargs)
 TIMEOUT=$(command -v gtimeout 2>/dev/null || command -v timeout)
 NPROC=$(command -v nproc 2>/dev/null || { command -v sysctl >/dev/null && echo "sysctl -n hw.ncpu" || echo "getconf _NPROCESSORS_ONLN"; })
-export DATE FIND GREP SED AWK TAR XARGS TIMEOUT NPROC
+export PRINTF DATE FIND GREP SED AWK TAR REALPATH XARGS TIMEOUT NPROC
 
 # These are standard utilities not tied to a particular OS
 CLOC=$(command -v cloc)
