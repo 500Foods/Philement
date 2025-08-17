@@ -96,7 +96,7 @@ count_unity_tests_per_source_file() {
     local cache_file="${CACHE_DIR}/unity_test_counts_${timestamp}.cache"
     
     # Check if cache exists and is recent (within 1 hour)
-    if [[ -f "${cache_file}" ]] && [[ $(($(date +%s || true) - $(stat -c %Y "${cache_file}" 2>/dev/null || echo 0 || true))) -lt 3600 ]]; then
+    if [[ -f "${cache_file}" ]] && [[ $(($("${DATE}" +%s || true) - $(stat -c %Y "${cache_file}" 2>/dev/null || echo 0 || true))) -lt 3600 ]]; then
         # Load from cache
         while IFS='=' read -r source_file test_count; do
             unity_test_counts["${source_file}"]="${test_count}"
@@ -158,10 +158,10 @@ count_unity_tests_per_source_file() {
 }
 
 # Use the exact same functions as test 99 to get coverage data
-timestamp=$(date '+%Y%m%d_%H%M%S')
+timestamp=$("${DATE}" '+%Y%m%d_%H%M%S')
 
 # Generate display timestamp for footer
-display_timestamp=$(/usr/bin/date '+%Y-%b-%d (%a) %H:%M:%S %Z' 2>/dev/null)
+display_timestamp=$("${DATE}" '+%Y-%b-%d (%a) %H:%M:%S %Z' 2>/dev/null)
 
 # print_subtest "Getting started"
 

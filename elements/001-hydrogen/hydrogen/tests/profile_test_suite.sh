@@ -9,6 +9,8 @@ TRACE_OUT="profile_trace.txt"
 SUMMARY_OUT="profile_summary.txt"
 ERROR_LOG="profile_error.txt"
 
+DATE=$(command -v date)
+
 # Default script to profile
 DEFAULT_SCRIPT="test_00_all.sh"
 # Use first argument if provided, else default
@@ -25,7 +27,7 @@ fi
 ulimit -n 4096 2>> "${ERROR_LOG}"
 
 # Log start
-echo "Starting profiling at $(date || true)" > "${ERROR_LOG}"
+echo "Starting profiling at $("${DATE}" || true)" > "${ERROR_LOG}"
 echo "System limits: $(ulimit -n || true), Memory: $(free -m || true | grep Mem || true)" >> "${ERROR_LOG}"
 
 # Verify test script
@@ -95,7 +97,7 @@ TABLES_COUNT=$(grep -c 'execve.*[ /]tables[ ""]' "${TRACE_OUT}" 2>/dev/null)
 
 # Generate summary
 {
-    echo "Profiling Summary for ${TEST_SCRIPT} ($(date || true))"
+    echo "Profiling Summary for ${TEST_SCRIPT} $("${DATE}" || true)"
     echo "-----------------------------------"
     echo "Total forks (fork/vfork/clone): ${FORKS}"
     echo "Command invocations:"

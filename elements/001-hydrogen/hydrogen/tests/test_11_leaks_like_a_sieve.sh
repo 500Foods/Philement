@@ -80,11 +80,11 @@ HYDROGEN_PID=$!
 
 # Wait for startup with timeout
 print_message "Waiting for startup..."
-STARTUP_START=$(date +%s)
+STARTUP_START=$("${DATE}" +%s)
 STARTUP_TIMEOUT=5
 
 while true; do
-    CURRENT_TIME=$(date +%s)
+    CURRENT_TIME=$("${DATE}" +%s)
     ELAPSED=$((CURRENT_TIME - STARTUP_START))
     
     if [[ ${ELAPSED} -ge ${STARTUP_TIMEOUT} ]]; then

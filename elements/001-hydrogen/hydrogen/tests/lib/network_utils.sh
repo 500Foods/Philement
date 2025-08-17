@@ -102,11 +102,12 @@ make_http_requests() {
     local check_interval_ms=100  # 0.2s in milliseconds
     local elapsed_ms=0
     local start_time
-    start_time=$(date +%s%3N)  # Epoch time in milliseconds
+    # shellcheck disable=SC2154  # DATE defined externally in framework.sh
+    start_time=$("${DATE}" +%s%3N)  # Epoch time in milliseconds
     while [[ "${elapsed_ms}" -lt "${max_wait_ms}" ]]; do
         if check_port_in_use "${port}"; then
             local end_time
-            end_time=$(date +%s%3N)
+            end_time=$("${DATE}" +%s%3N)
             elapsed_ms=$((end_time - start_time))
             print_message "Server is ready on port ${port} after ${elapsed_ms}ms"
             break

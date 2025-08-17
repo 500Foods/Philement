@@ -155,7 +155,8 @@ print_test_suite_header() {
     
     # Create timestamp with milliseconds
     local timestamp
-    timestamp=$(/usr/bin/date '+%Y-%m-%d %H:%M:%S.%3N')
+    # shellcheck disable=SC2154 # DATE defined in framework.sh  
+    timestamp=$("${DATE}" '+%Y-%m-%d %H:%M:%S.%3N')
     
     # Create the test header content
     local test_id="${test_number}-${test_abbr}"
@@ -232,7 +233,7 @@ print_test_header() {
     
     # Create timestamp with milliseconds
     local timestamp
-    timestamp=$(/usr/bin/date '+%Y-%m-%d %H:%M:%S.%3N')
+    timestamp=$("${DATE}" '+%Y-%m-%d %H:%M:%S.%3N')
     
     # Create layout JSON with proper columns
     # shellcheck disable=SC2154 # Defined in framework.sh

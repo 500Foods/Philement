@@ -128,7 +128,8 @@ start_hydrogen_with_pid() {
     
     # Record launch time
     local launch_time_ms
-    launch_time_ms=$(date +%s%3N)
+    # shellcheck disable=SC2154 # DATE defined externally in framework.sh
+    launch_time_ms=$("${DATE}" +%s%3N)
     
     # Launch Hydrogen (disown to prevent job control messages)
     "${hydrogen_bin}" "${config_file}" > "${log_file}" 2>&1 &
@@ -194,7 +195,7 @@ wait_for_startup() {
     local elapsed_s
     
     while true; do
-        current_time_ms=$(date +%s%3N)
+        current_time_ms=$("${DATE}" +%s%3N)
         elapsed_ms=$((current_time_ms - launch_time_ms))
         elapsed_s=$((elapsed_ms / 1000))
         
@@ -233,12 +234,12 @@ stop_hydrogen() {
     # Send shutdown signal
     print_message "Initiating shutdown for PID: ${pid}"
     print_command "kill -SIGINT ${pid}"
-    shutdown_start_ms=$(date +%s%3N)
+    shutdown_start_ms=$("${DATE}" +%s%3N)
     kill -SIGINT "${pid}" 2>/dev/null || true
     
     # Monitor shutdown
     if monitor_shutdown "${pid}" "${log_file}" "${timeout}" "${activity_timeout}" "${diag_dir}"; then
-        shutdown_end_ms=$(date +%s%3N)
+        shutdown_end_ms=$("${DATE}" +%s%3N)
         shutdown_duration_ms=$((shutdown_end_ms - shutdown_start_ms))
         
         # Extract shutdown time from log if available
@@ -277,12 +278,12 @@ monitor_shutdown() {
     local last_activity
     local inactive_time
     
-    start_time=$(date +%s)
+    start_time=$("${DATE}" +%s)
     log_size_before=$(stat -c %s "${log_file}" 2>/dev/null || echo 0)
-    last_activity=$(date +%s)
+    last_activity=$("${DATE}" +%s)
     
     while ps -p "${pid}" > /dev/null 2>&1; do
-        current_time=$(date +%s)
+        current_time=$("${DATE}" +%s)
         elapsed=$((current_time - start_time))
         
         # Check for timeout
@@ -298,7 +299,7 @@ monitor_shutdown() {
         log_size_now=$(stat -c %s "${log_file}" 2>/dev/null || echo 0)
         if [[ "${log_size_now}" -gt "${log_size_before}" ]]; then
             log_size_before=${log_size_now}
-            last_activity=$(date +%s)
+            last_activity=$("${DATE}" +%s)
         else
             inactive_time=$((current_time - last_activity))
             if [[ "${inactive_time}" -ge "${activity_timeout}" ]]; then

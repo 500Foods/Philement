@@ -43,6 +43,8 @@ FRAMEWORK_VERSION="2.8.0"
 export FRAMEWORK_NAME FRAMEWORK_VERSION
 
 # Common utilities
+DATE=$(command -v date)
+TAR=$(command -v tar)
 CLOC=$(command -v cloc)
 TABLES=$(command -v tables)
 OH=$(command -v Oh) 
@@ -91,7 +93,7 @@ format_file_size() {
 get_elapsed_time() {
     if [[ -n "${TEST_START_TIME}" ]]; then
         local end_time
-        end_time=$(/usr/bin/date +%s.%3N) 
+        end_time=$("${DATE}" +%s.%3N) 
         local end_secs=${end_time%.*}
         local end_ms=${end_time#*.}
         local start_secs=${TEST_START_TIME%.*}
@@ -113,7 +115,7 @@ get_elapsed_time() {
 get_elapsed_time_decimal() {
     if [[ -n "${TEST_START_TIME}" ]]; then
         local end_time
-        end_time=$(/usr/bin/date +%s.%3N) 
+        end_time=$("${DATE}" +%s.%3N) 
         local end_secs=${end_time%.*}
         local end_ms=${end_time#*.}
         local start_secs=${TEST_START_TIME%.*}
@@ -151,7 +153,7 @@ reset_subtest_counter() {
 
 # Function to start test timing
 start_test_timer() {
-    TEST_START_TIME=$(/usr/bin/date +%s.%3N)
+    TEST_START_TIME=$("${DATE}" +%s.%3N)
     TEST_PASSED_COUNT=0
     TEST_FAILED_COUNT=0
 }
@@ -180,14 +182,14 @@ record_test_result() {
 setup_orchestration_environment() {
 
     # Get start time
-    START_TIME=$(/usr/bin/date +%s.%N 2>/dev/null)
+    START_TIME=$("${DATE}" +%s.%N 2>/dev/null)
 
     # Naturally we're orchestrating
     ORCHESTRATION=true
 
     # Starting point
-    TIMESTAMP=$(/usr/bin/date +%Y%m%d_%H%M%S)
-    TIMESTAMP_DISPLAY=$(/usr/bin/date '+%Y-%b-%d (%a) %H:%M:%S %Z' 2>/dev/null) # 2025-Jul-30 (Wed) 12:49:03 PDT  eg: long display times
+    TIMESTAMP=$("${DATE}" +%Y%m%d_%H%M%S)
+    TIMESTAMP_DISPLAY=$("${DATE}" '+%Y-%b-%d (%a) %H:%M:%S %Z' 2>/dev/null) # 2025-Jul-30 (Wed) 12:49:03 PDT  eg: long display times
 
     # All tests that run hydrogen run with a config that starts with hydrogen_test so we can
     # ensure nothing else is running by killing those processes at the start and at the end
@@ -337,7 +339,7 @@ setup_test_environment() {
         pkill -9 -f hydrogen_test_
 
         # Starting point
-        TIMESTAMP=$(/usr/bin/date +%Y%m%d_%H%M%S)
+        TIMESTAMP=$("${DATE}" +%Y%m%d_%H%M%S)
 
         # Global folder variables
         PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
