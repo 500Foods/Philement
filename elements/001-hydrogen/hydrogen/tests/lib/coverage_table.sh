@@ -344,17 +344,17 @@ done
 # Calculate total percentages
 unity_total_pct="0.000"
 if [[ "${unity_total_instrumented}" -gt 0 ]]; then
-    unity_total_pct=$(awk "BEGIN {printf \"%.3f\", (${unity_total_covered} / ${unity_total_instrumented}) * 100}")
+    unity_total_pct=$("${AWK}" "BEGIN {printf \"%.3f\", (${unity_total_covered} / ${unity_total_instrumented}) * 100}")
 fi
 
 coverage_total_pct="0.000"
 if [[ "${coverage_total_instrumented}" -gt 0 ]]; then
-    coverage_total_pct=$(awk "BEGIN {printf \"%.3f\", (${coverage_total_covered} / ${coverage_total_instrumented}) * 100}")
+    coverage_total_pct=$("${AWK}" "BEGIN {printf \"%.3f\", (${coverage_total_covered} / ${coverage_total_instrumented}) * 100}")
 fi
 
 combined_total_pct="0.000"
 if [[ "${combined_total_instrumented}" -gt 0 ]]; then
-    combined_total_pct=$(awk "BEGIN {printf \"%.3f\", (${combined_total_covered} / ${combined_total_instrumented}) * 100}")
+    combined_total_pct=$("${AWK}" "BEGIN {printf \"%.3f\", (${combined_total_covered} / ${combined_total_instrumented}) * 100}")
 fi
 
 # Store the combined coverage value for other scripts to use
@@ -440,7 +440,7 @@ for file_data_entry in "${sorted_file_data[@]}"; do
     # Compute all percentages and checks in one awk call
     # shellcheck disable=SC2312 # Not gonna touch this one
     IFS=' ' read -r u_percentage c_percentage combined_percentage max_percentage coverage_below_50 <<< "$(
-        awk -v u_c="${u_covered}" -v u_i="${u_instrumented}" \
+        "${AWK}" -v u_c="${u_covered}" -v u_i="${u_instrumented}" \
             -v c_c="${c_covered}" -v c_i="${c_instrumented}" \
             -v comb_c="${combined_covered}" -v comb_i="${combined_instrumented}" '
         BEGIN {

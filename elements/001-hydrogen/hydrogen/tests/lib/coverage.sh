@@ -125,10 +125,10 @@ validate_coverage_consistency() {
     local file_coverage_pct=0
     local line_coverage_pct=0
     if [[ ${total_files} -gt 0 ]]; then
-        file_coverage_pct=$(awk "BEGIN {printf \"%.1f\", (${covered_files} / ${total_files}) * 100}")
+        file_coverage_pct=$("${AWK}" "BEGIN {printf \"%.1f\", (${covered_files} / ${total_files}) * 100}")
     fi
     if [[ ${total_lines} -gt 0 ]]; then
-        line_coverage_pct=$(awk "BEGIN {printf \"%.1f\", (${covered_lines} / ${total_lines}) * 100}")
+        line_coverage_pct=$("${AWK}" "BEGIN {printf \"%.1f\", (${covered_lines} / ${total_lines}) * 100}")
     fi
     
     # Generate detailed report
@@ -340,7 +340,7 @@ calculate_coverage_generic() {
         
         # Count only instrumented lines
         local line_counts
-        line_counts=$(awk '
+        line_counts=$("${AWK}" '
             BEGIN {total=0; covered=0}
             /^[ \t]*[0-9]+\*?:[ \t]*[0-9]+:/ { covered++; total++ }
             /^[ \t]*#####:[ \t]*[0-9]+\*?:/ { total++ }
@@ -359,10 +359,11 @@ calculate_coverage_generic() {
         fi
 
         # Count files with at least one covered line using awk with the same pattern
-        covered_files=$(printf '%s\n' "${gcov_files_to_process[@]}" | "${XARGS}" -I {} awk '
+        # shellcheck disable=SC2016 # AWK using single quotes on purpose to avoid escaping issues
+        covered_files=$(printf '%s\n' "${gcov_files_to_process[@]}" | "${XARGS}" -I {} "${AWK}" '
             /^[ \t]*[0-9]+\*?:[ \t]*[0-9]+:/ { covered++ }
             END { print (covered > 0 ? 1 : 0) }
-        ' {} | awk 'BEGIN {count=0} {count += $1} END {print count}' || true)
+        ' {} | "${AWK}" 'BEGIN {count=0} {count += $1} END {print count}' || true)
         
         # Clean up temporary file
         rm -f "${combined_gcov}"
@@ -380,7 +381,7 @@ calculate_coverage_generic() {
     
     # Calculate coverage percentage with 3 decimal places
     if [[ ${total_lines} -gt 0 ]]; then
-        coverage_percentage=$(awk "BEGIN {printf \"%.3f\", (${covered_lines} / ${total_lines}) * 100}")
+        coverage_percentage=$("${AWK}" "BEGIN {printf \"%.3f\", (${covered_lines} / ${total_lines}) * 100}")
     fi
     
     # Only write if we have meaningful data (instrumented_files > 0) or file doesn't exist

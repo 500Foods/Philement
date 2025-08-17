@@ -18,6 +18,7 @@ declare -r APPVERSION="1.3.0"
 DATE=$(command -v date) 
 XARGS=$(command -v gxargs 2>/dev/null || command -v xargs)
 FIND=$(command -v gfind 2>/dev/null || command -v find)
+AWK=$(command -v gawk 2>/dev/null || command -v awk)
 
 # Performance timing functions
 declare -A timing_data
@@ -304,7 +305,9 @@ process_file_batch() {
         [[ ! -r "${file}" ]] && return 1
         
         # Single awk command optimization (replaces grep | sed | awk pipeline)
-        awk '
+        AWK=$(command -v gawk 2>/dev/null || command -v awk)
+        # shellcheck disable=SC2016 # Awk command uses single quotes on purpose to avoid escaping issues
+        "${AWK}" '
         {
             # Extract all markdown links from the line
             while (match($0, /\[([^]]*)\]\(([^)]+)\)/, arr)) {

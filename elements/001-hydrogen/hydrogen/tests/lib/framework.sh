@@ -52,15 +52,18 @@ TAR=$(command -v gtar 2>/dev/null || command -v tar)
 XARGS=$(command -v gxargs 2>/dev/null || command -v xargs)
 TIMEOUT=$(command -v gtimeout 2>/dev/null || command -v timeout)
 NPROC=$(command -v nproc 2>/dev/null || { command -v sysctl >/dev/null && echo "sysctl -n hw.ncpu" || echo "getconf _NPROCESSORS_ONLN"; })
+export DATE FIND GREP SED AWK TAR XARGS TIMEOUT NPROC
 
 # These are standard utilities not tied to a particular OS
 CLOC=$(command -v cloc)
 GIT=$(command -v git)
 MD5SUM=$(command -v md5sum)
+export CLOC GIT MD5SUM
 
 # Our own utilities built and installed presumably in /usr/local/bin
 TABLES=$(command -v tables)
 OH=$(command -v Oh) 
+export TABLES OH
 
 # Set the number of CPU cores for parallel processing - why not oversubscribe?
 CORES_ACTUAL=$("${NPROC}")

@@ -113,9 +113,12 @@ run_single_unity_test_parallel() {
         # Parse the Unity test output to get test counts
         local failure_count
         local ignored_count
-        test_count=$("${GREP}" -E "[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored" "${temp_test_log}" | awk '{print $1}' || true)
-        failure_count=$("${GREP}" -E "[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored" "${temp_test_log}" | awk '{print $3}' || true)
-        ignored_count=$("${GREP}" -E "[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored" "${temp_test_log}" | awk '{print $5}' || true)
+        # shellcheck disable=SC2016 # Using single quotes on purpose to avoid escaping issues
+        test_count=$("${GREP}" -E "[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored" "${temp_test_log}" | "${AWK}" '{print $1}' || true)
+        # shellcheck disable=SC2016 # Using single quotes on purpose to avoid escaping issues
+        failure_count=$("${GREP}" -E "[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored" "${temp_test_log}" | "${AWK}" '{print $3}' || true)
+        # shellcheck disable=SC2016 # Using single quotes on purpose to avoid escaping issues
+        ignored_count=$("${GREP}" -E "[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored" "${temp_test_log}" | "${AWK}" '{print $5}' || true)
     
         if [[ -n "${test_count}" ]] && [[ -n "${failure_count}" ]] && [[ -n "${ignored_count}" ]]; then
             passed_count=$((test_count - failure_count - ignored_count))
@@ -136,8 +139,10 @@ run_single_unity_test_parallel() {
         done < "${temp_test_log}"
         
         # Try to get test counts even from failed output
-        failure_count=$("${GREP}" -E "[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored" "${temp_test_log}" | awk '{print $3}' || true)
-        test_count=$("${GREP}" -E "[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored" "${temp_test_log}" | awk '{print $1}' || true)
+        # shellcheck disable=SC2016 # Using single quotes on purpose to avoid escaping issues
+        failure_count=$("${GREP}" -E "[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored" "${temp_test_log}" | "${AWK}" '{print $3}' || true)
+        # shellcheck disable=SC2016 # Using single quotes on purpose to avoid escaping issues
+        test_count=$("${GREP}" -E "[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored" "${temp_test_log}" | "${AWK}" '{print $1}' || true)
         if [[ -n "${test_count}" ]] && [[ -n "${failure_count}" ]]; then
             passed_count=$((test_count - failure_count))
             failed_count=${failure_count}
