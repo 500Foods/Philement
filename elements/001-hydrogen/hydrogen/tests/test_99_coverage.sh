@@ -172,7 +172,7 @@ fi
 print_subtest "Identify Uncovered Source Files"
 print_message "Identifying source files not covered by blackbox tests..."
 
-# Use the batch-processed coverage data to be consistent with the earlier calculations
+# Use the batch-proces coverage data to be consistent with the earlier calculations
 # This ensures the file counts match between sections
 blackbox_covered_files=0
 blackbox_instrumented_files=0

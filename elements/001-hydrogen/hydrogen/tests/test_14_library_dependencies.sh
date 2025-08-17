@@ -68,9 +68,9 @@ check_dependency_log() {
     if [[ -n "${dep_line}" ]]; then
         # Extract version information using sed
         local expected_version found_version status
-        expected_version=$(echo "${dep_line}" | sed -n 's/.*Expecting: \([^ ]*\).*/\1/p' || true)
-        found_version=$(echo "${dep_line}" | sed -n 's/.*Found: \([^(]*\).*/\1/p' | sed 's/ *$//' || true)
-        status=$(echo "${dep_line}" | sed -n 's/.*Status: \([^ ]*\).*/\1/p' || true)
+        expected_version=$(echo "${dep_line}" | "${SED}" -n 's/.*Expecting: \([^ ]*\).*/\1/p' || true)
+        found_version=$(echo "${dep_line}" | "${SED}" -n 's/.*Found: \([^(]*\).*/\1/p' | "${SED}" 's/ *$//' || true)
+        status=$(echo "${dep_line}" | "${SED}" -n 's/.*Status: \([^ ]*\).*/\1/p' || true)
         
         if [[ "${status}" = "Good" ]] || [[ "${status}" = "Less Good" ]] || [[ "${status}" = "Less" ]]; then
             print_result 0 "Found ${dep_name} - Expected: ${expected_version}, Found: ${found_version}, Status: ${status}"

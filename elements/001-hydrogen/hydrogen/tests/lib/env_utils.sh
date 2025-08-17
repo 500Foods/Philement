@@ -148,11 +148,12 @@ convert_to_relative_path() {
     
     # Extract the part starting from "hydrogen" and keep everything after
     local relative_path
-    relative_path=$(echo "${absolute_path}" | sed -n 's|.*/hydrogen/|hydrogen/|p')
+    # shellcheck disable=SC2154 # SED defined externally in framework.sh
+    relative_path=$(echo "${absolute_path}" | "${SED}" -n 's|.*/hydrogen/|hydrogen/|p')
     
     # If the path contains elements/001-hydrogen/hydrogen but not starting with hydrogen/
     if [[ -z "${relative_path}" ]]; then
-        relative_path=$(echo "${absolute_path}" | sed -n 's|.*/elements/001-hydrogen/hydrogen|hydrogen|p')
+        relative_path=$(echo "${absolute_path}" | "${SED}" -n 's|.*/elements/001-hydrogen/hydrogen|hydrogen|p')
     fi
     
     # If we still couldn't find a match, return the original
