@@ -81,7 +81,7 @@ validate_api_request() {
             # Verify the file actually exists and has content
             if [[ -f "${response_file}" ]] && [[ -s "${response_file}" ]]; then
                 # Check if we got a 404 or other error response
-                if grep -q "404 Not Found" "${response_file}" || grep -q "<html>" "${response_file}"; then
+                if "${GREP}" -q "404 Not Found" "${response_file}" || "${GREP}" -q "<html>" "${response_file}"; then
                     if [[ "${attempt}" -eq "${max_attempts}" ]]; then
                         print_message "API endpoint still not ready after ${max_attempts} attempts"
                         print_result 1 "API endpoint returned 404 or HTML error page"
@@ -98,7 +98,7 @@ validate_api_request() {
                 print_message "Request successful, checking response content"
                 
                 # Validate that the response contains expected fields
-                if grep -q "${expected_field}" "${response_file}"; then
+                if "${GREP}" -q "${expected_field}" "${response_file}"; then
                     if [[ "${attempt}" -gt 1 ]]; then
                         print_result 0 "Response contains expected field: ${expected_field} (succeeded on attempt ${attempt})"
                     else
@@ -168,7 +168,7 @@ run_api_prefix_test_parallel() {
             break
         fi
         
-        if grep -q "Application started" "${log_file}" 2>/dev/null; then
+        if "${GREP}" -q "Application started" "${log_file}" 2>/dev/null; then
             startup_success=true
             break
         fi
@@ -255,13 +255,13 @@ analyze_api_prefix_test_results() {
     fi
     
     # Check startup
-    if ! grep -q "STARTUP_SUCCESS" "${result_file}" 2>/dev/null; then
+    if ! "${GREP}" -q "STARTUP_SUCCESS" "${result_file}" 2>/dev/null; then
         print_result 1 "Failed to start Hydrogen for ${description} test"
         return 1
     fi
     
     # Check server readiness
-    if ! grep -q "SERVER_READY" "${result_file}" 2>/dev/null; then
+    if ! "${GREP}" -q "SERVER_READY" "${result_file}" 2>/dev/null; then
         print_result 1 "Server not ready for ${description} test"
         return 1
     fi
@@ -271,15 +271,15 @@ analyze_api_prefix_test_results() {
     local info_passed=false
     local test_passed=false
     
-    if grep -q "HEALTH_TEST_PASSED" "${result_file}" 2>/dev/null; then
+    if "${GREP}" -q "HEALTH_TEST_PASSED" "${result_file}" 2>/dev/null; then
         health_passed=true
     fi
     
-    if grep -q "INFO_TEST_PASSED" "${result_file}" 2>/dev/null; then
+    if "${GREP}" -q "INFO_TEST_PASSED" "${result_file}" 2>/dev/null; then
         info_passed=true
     fi
     
-    if grep -q "TEST_TEST_PASSED" "${result_file}" 2>/dev/null; then
+    if "${GREP}" -q "TEST_TEST_PASSED" "${result_file}" 2>/dev/null; then
         test_passed=true
     fi
     
@@ -289,7 +289,7 @@ analyze_api_prefix_test_results() {
     TEST_TEST_RESULT=${test_passed}
     
     # Return success only if all tests passed
-    if grep -q "ALL_API_TESTS_PASSED" "${result_file}" 2>/dev/null; then
+    if "${GREP}" -q "ALL_API_TESTS_PASSED" "${result_file}" 2>/dev/null; then
         return 0
     else
         return 1
@@ -409,7 +409,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     for test_config in "${!API_TEST_CONFIGS[@]}"; do
         IFS=':' read -r config_file log_suffix api_prefix description <<< "${API_TEST_CONFIGS[${test_config}]}"
         result_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.result"
-        if [[ -f "${result_file}" ]] && grep -q "ALL_API_TESTS_PASSED" "${result_file}" 2>/dev/null; then
+        if [[ -f "${result_file}" ]] && "${GREP}" -q "ALL_API_TESTS_PASSED" "${result_file}" 2>/dev/null; then
             ((successful_configs++))
         fi
     done

@@ -44,6 +44,7 @@ export FRAMEWORK_NAME FRAMEWORK_VERSION
 
 # Common utilities - use GNU versions if available (eg: homebrew on macOS)
 DATE=$(command -v gdate 2>/dev/null || command -v date)
+FIND=$(command -v gfind 2>/dev/null || command -v find)
 GREP=$(command -v ggrep 2>/dev/null || command -v grep)
 SED=$(command -v gsed 2>/dev/null || command -v sed)
 AWK=$(command -v gawk 2>/dev/null || command -v awk)

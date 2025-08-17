@@ -39,7 +39,7 @@ if [[ ! -f "${DEBUG_BUILD}" ]]; then
     EXIT_CODE=1
 else
     # Verify ASAN is enabled in debug build
-    if ! { readelf -s "${DEBUG_BUILD}" || true; } | grep -q "__asan"; then
+    if ! { readelf -s "${DEBUG_BUILD}" || true; } | "${GREP}" -q "__asan"; then
         print_result 1 "Debug build does not have ASAN enabled"
         EXIT_CODE=1
     else
@@ -104,8 +104,8 @@ while true; do
         break
     fi
     
-    if grep -q "Application started" "${SERVER_LOG}"; then
-        log_startup_time=$(grep "Startup elapsed time:" "${SERVER_LOG}" 2>/dev/null | sed 's/.*Startup elapsed time: \([0-9.]*s\).*/\1/' | tail -1 || true)
+    if "${GREP}" -q "Application started" "${SERVER_LOG}"; then
+        log_startup_time=$("${GREP}" "Startup elapsed time:" "${SERVER_LOG}" 2>/dev/null | sed 's/.*Startup elapsed time: \([0-9.]*s\).*/\1/' | tail -1 || true)
         print_message "Startup elapsed time (Log): ${log_startup_time}"
         break
     fi
@@ -139,7 +139,7 @@ print_subtest "Analyze Leak Results"
 if [[ "${EXIT_CODE}" -eq 0 ]]; then
     # Check server.log for ASAN output
     print_message "Analyzing ASAN output for memory leaks..."
-    if grep -q "LeakSanitizer" "${SERVER_LOG}"; then
+    if "${GREP}" -q "LeakSanitizer" "${SERVER_LOG}"; then
         print_message "Found ASAN leak detection output"
         cp "${SERVER_LOG}" "${LEAK_REPORT}"
         
@@ -147,12 +147,12 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         print_message "Analyzing leak report for direct and indirect leaks..."
 
         # Check for direct leaks
-        DIRECT_LEAKS=$(grep -c "Direct leak of" "${LEAK_REPORT}" 2>/dev/null | head -1 || echo "0" || true)
-        INDIRECT_LEAKS=$(grep -c "Indirect leak of" "${LEAK_REPORT}" 2>/dev/null | head -1 || echo "0" || true)
+        DIRECT_LEAKS=$("${GREP}" -c "Direct leak of" "${LEAK_REPORT}" 2>/dev/null | head -1 || echo "0" || true)
+        INDIRECT_LEAKS=$("${GREP}" -c "Indirect leak of" "${LEAK_REPORT}" 2>/dev/null | head -1 || echo "0" || true)
         
         # Ensure we have clean integer values
-        DIRECT_LEAKS=$(echo "${DIRECT_LEAKS}" | tr -d '\n\r' | grep -o '[0-9]*' | head -1 || true)
-        INDIRECT_LEAKS=$(echo "${INDIRECT_LEAKS}" | tr -d '\n\r' | grep -o '[0-9]*' | head -1 || true)
+        DIRECT_LEAKS=$(echo "${DIRECT_LEAKS}" | tr -d '\n\r' | "${GREP}" -o '[0-9]*' | head -1 || true)
+        INDIRECT_LEAKS=$(echo "${INDIRECT_LEAKS}" | tr -d '\n\r' | "${GREP}" -o '[0-9]*' | head -1 || true)
         
         # Default to 0 if empty
         [[ -z "${DIRECT_LEAKS}" ]] && DIRECT_LEAKS=0
@@ -168,13 +168,13 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             
             if [[ "${DIRECT_LEAKS}" -gt 0 ]]; then
                 echo "Direct Leak Details:"
-                grep "Direct leak of" "${LEAK_REPORT}" | head -10 || true
+                "${GREP}" "Direct leak of" "${LEAK_REPORT}" | head -10 || true
                 echo ""
             fi
             
             if [[ "${INDIRECT_LEAKS}" -gt 0 ]]; then
                 echo "Indirect Leak Details:"
-                grep "Indirect leak of" "${LEAK_REPORT}" | head -10 || true
+                "${GREP}" "Indirect leak of" "${LEAK_REPORT}" | head -10 || true
                 echo ""
             fi
             

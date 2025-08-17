@@ -285,7 +285,7 @@ print_command "test -f hydrogen_coverage && grep -q '<<< HERE BE ME TREASURE >>>
 
 if [[ -f "hydrogen_coverage" ]]; then
     # Check if the coverage binary has payload embedded using the correct marker
-    if grep -q "<<< HERE BE ME TREASURE >>>" "hydrogen_coverage" 2>/dev/null; then
+    if "${GREP}" -q "<<< HERE BE ME TREASURE >>>" "hydrogen_coverage" 2>/dev/null; then
         coverage_size=$(get_file_size "hydrogen_coverage")
         formatted_size=$(format_file_size "${coverage_size}")
         print_result 0 "Coverage executable has embedded payload (${formatted_size} bytes total)"
@@ -304,7 +304,7 @@ print_command "test -f hydrogen_release && grep -q '<<< HERE BE ME TREASURE >>>'
 
 if [[ -f "hydrogen_release" ]]; then
     # Check if the release binary has payload embedded using the correct marker
-    if grep -q "<<< HERE BE ME TREASURE >>>" "hydrogen_release" 2>/dev/null; then
+    if "${GREP}" -q "<<< HERE BE ME TREASURE >>>" "hydrogen_release" 2>/dev/null; then
         release_size=$(get_file_size "hydrogen_release")
         formatted_size=$(format_file_size "${release_size}")
         print_result 0 "Release executable has embedded payload (${formatted_size} bytes total)"

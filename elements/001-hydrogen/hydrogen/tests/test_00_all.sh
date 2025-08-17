@@ -43,7 +43,7 @@ setup_orchestration_environment
 # Test Setup
 commands=(
     "sort" "bc" 
-    "${DATE}" "${GREP}" "${SED}" "${AWK}" "${XARGS}" "${TAR}" "${TIMEOUT}"
+    "${DATE}" "${FIND}" "${GREP}" "${SED}" "${AWK}" "${XARGS}" "${TAR}" "${TIMEOUT}"
     "jq"  "nproc" "lsof"
     "cmake" "gcc" "ninja" "curl" "websocat" "wscat"
     "${GIT}" "${MD5SUM}" "${CLOC}"
@@ -104,7 +104,7 @@ if [[ ${#to_process[@]} -gt 0 ]]; then
         cmd="{}"
         if command -v "${cmd}" >/dev/null 2>&1; then
             cmd_path=$(command -v "${cmd}")
-            version=$("${cmd_path}" --version 2>&1 | grep -oE "[0-9]+\.[0-9]+([.-][0-9a-zA-Z]+)*" | head -n 1)
+            version=$("${cmd_path}" --version 2>&1 | "${GREP}" -oE "[0-9]+\.[0-9]+([.-][0-9a-zA-Z]+)*" | head -n 1)
             if [ -n "${version}" ]; then
                 echo "0|${cmd} @ ${cmd_path}|${version}"
             else
@@ -619,7 +619,7 @@ for i in "${!TEST_ELAPSED[@]}"; do
 done
 
 # Let's come up with a number that represents how much code is in our test suite
-SCRIPT_SCALE=$(printf "%'d" "$(cd "${SCRIPT_DIR}" && find . -type f -name "*.sh" -exec grep -vE '^\s*(#|$)' {} + | wc -l)" || true)
+SCRIPT_SCALE=$(printf "%'d" "$(cd "${SCRIPT_DIR}" && find . -type f -name "*.sh" -exec "${GREP}" -vE '^\s*(#|$)' {} + | wc -l)" || true)
 
 # Format both times as HH:MM:SS.ZZZ
 TOTAL_ELAPSED_FORMATTED=$(format_time_duration "${TOTAL_ELAPSED}")
@@ -742,8 +742,8 @@ results_table_file="${RESULTS_DIR}/results_table.txt"
 "${TABLES}" "${layout_json}" "${data_json}" 2>/dev/null | tee "${results_table_file}" || true
 
 # Compare coverage data between 'Test Suite Results' and 'Test Suite Coverage' to ensure they are the same
-results_summary=$(grep 'Test Suite Results' "${results_table_file}" | awk -F'———' '{print $2,$3,$4}' | awk '{print $2,$5,$8}' || true)
-coverage_summary=$(grep 'Test Suite Coverage' "${coverage_table_file}" | awk -F'———' '{print $2,$3,$4}' | awk '{print $2,$5,$8}' || true)
+results_summary=$("${GREP}" 'Test Suite Results' "${results_table_file}" | awk -F'———' '{print $2,$3,$4}' | awk '{print $2,$5,$8}' || true)
+coverage_summary=$("${GREP}" 'Test Suite Coverage' "${coverage_table_file}" | awk -F'———' '{print $2,$3,$4}' | awk '{print $2,$5,$8}' || true)
 if [[ ! "${results_summary}" == "${coverage_summary}" ]]; then
     echo "The coverage percentage values differ:"
     echo "Results:  ${results_summary}"

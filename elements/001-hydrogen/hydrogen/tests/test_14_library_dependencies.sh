@@ -63,7 +63,7 @@ check_dependency_log() {
     
     # Extract the full dependency line
     local dep_line
-    dep_line=$(grep "DepCheck.*${dep_name}.*Status:" "${log_file}" 2>/dev/null)
+    dep_line=$("${GREP}" "DepCheck.*${dep_name}.*Status:" "${log_file}" 2>/dev/null)
     
     if [[ -n "${dep_line}" ]]; then
         # Extract version information using sed

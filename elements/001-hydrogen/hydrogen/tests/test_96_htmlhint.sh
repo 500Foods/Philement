@@ -57,7 +57,7 @@ if [[ "${HTML_COUNT}" -gt 0 ]]; then
     
     # Filter out success messages and count actual issues
     # htmlhint success messages include "Scanned X files, no errors found"
-    grep -Ev "✓|^$|Scanned.*files.*no errors found|files.*no errors found" "${TEMP_LOG}" > "${TEMP_LOG}.filtered" || true
+    "${GREP}" -Ev "✓|^$|Scanned.*files.*no errors found|files.*no errors found" "${TEMP_LOG}" > "${TEMP_LOG}.filtered" || true
     ISSUE_COUNT=$(wc -l < "${TEMP_LOG}.filtered")
     
     if [[ "${ISSUE_COUNT}" -gt 0 ]]; then

@@ -204,10 +204,11 @@ wait_for_startup() {
             return 1
         fi
         
-        if grep -q "Application started" "${log_file}" 2>/dev/null; then
+        # shellcheck disable=SC2154  # GREP defined externally in framework.sh
+        if "${GREP}" -q "Application started" "${log_file}" 2>/dev/null; then
             # Extract startup time from log if available
             local log_startup_time
-            log_startup_time=$(grep "Startup elapsed time:" "${log_file}" 2>/dev/null | sed 's/.*Startup elapsed time: \([0-9.]*s\).*/\1/' | tail -1 || true)
+            log_startup_time=$("${GREP}" "Startup elapsed time:" "${log_file}" 2>/dev/null | sed 's/.*Startup elapsed time: \([0-9.]*s\).*/\1/' | tail -1 || true)
             if [[ -n "${log_startup_time}" ]]; then
                 print_message "Startup completed in ${elapsed_ms}ms [Log: ${log_startup_time}]"
             else

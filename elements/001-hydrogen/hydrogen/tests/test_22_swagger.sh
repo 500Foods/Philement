@@ -83,7 +83,7 @@ check_response_content() {
         
         if [[ "${curl_exit_code}" -eq 0 ]]; then
             # Check if we got a 404 or other error response
-            if grep -q "404 Not Found" "${response_file}" || grep -q "<html>" "${response_file}"; then
+            if "${GREP}" -q "404 Not Found" "${response_file}" || "${GREP}" -q "<html>" "${response_file}"; then
                 if [[ "${attempt}" -eq "${max_attempts}" ]]; then
                     print_message "Endpoint still not ready after ${max_attempts} attempts"
                     print_result 1 "Endpoint returned 404 or HTML error page"
@@ -105,7 +105,7 @@ check_response_content() {
             print_message "Response contains ${line_count} lines"
             
             # Check for expected content
-            if grep -q "${expected_content}" "${response_file}"; then
+            if "${GREP}" -q "${expected_content}" "${response_file}"; then
                 if [[ "${attempt}" -gt 1 ]]; then
                     print_result 0 "Response contains expected content: ${expected_content} (succeeded on attempt ${attempt})"
                 else
@@ -161,7 +161,7 @@ check_redirect_response() {
         
         if [[ "${curl_exit_code}" -eq 0 ]]; then
             # Check if we got a 404 or connection error
-            if grep -q "404 Not Found" "${redirect_file}"; then
+            if "${GREP}" -q "404 Not Found" "${redirect_file}"; then
                 if [[ "${attempt}" -eq "${max_attempts}" ]]; then
                     print_message "Endpoint still not ready after ${max_attempts} attempts"
                     print_result 1 "Endpoint returned 404 error"
@@ -169,7 +169,7 @@ check_redirect_response() {
                     # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
                     while IFS= read -r line; do
                         print_output "${line}"
-                    done < <(grep -E "< HTTP/|< Location:" "${redirect_file}" || true)
+                    done < <("${GREP}" -E "< HTTP/|< Location:" "${redirect_file}" || true)
                     return 1
                 else
                     print_message "Endpoint not ready yet (got 404), retrying..."
@@ -181,7 +181,7 @@ check_redirect_response() {
             print_message "Successfully received response from ${url}"
             
             # Check for redirect
-            if grep -q "< HTTP/1.1 301" "${redirect_file}" && grep -q "< Location: ${expected_location}" "${redirect_file}"; then
+            if "${GREP}" -q "< HTTP/1.1 301" "${redirect_file}" && "${GREP}" -q "< Location: ${expected_location}" "${redirect_file}"; then
                 if [[ "${attempt}" -gt 1 ]]; then
                     print_result 0 "Response is a 301 redirect to ${expected_location} (succeeded on attempt ${attempt})"
                 else
@@ -194,7 +194,7 @@ check_redirect_response() {
                 # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
                 while IFS= read -r line; do
                     print_output "${line}"
-                done < <(grep -E "< HTTP/|< Location:" "${redirect_file}" || true)
+                done < <("${GREP}" -E "< HTTP/|< Location:" "${redirect_file}" || true)
                 return 1
             fi
         else
@@ -236,7 +236,7 @@ check_swagger_json() {
         
         if [[ "${curl_exit_code}" -eq 0 ]]; then
             # Check if we got a 404 or other error response
-            if grep -q "404 Not Found" "${response_file}" || grep -q "<html>" "${response_file}"; then
+            if "${GREP}" -q "404 Not Found" "${response_file}" || "${GREP}" -q "<html>" "${response_file}"; then
                 if [[ "${attempt}" -eq "${max_attempts}" ]]; then
                     print_message "Swagger endpoint still not ready after ${max_attempts} attempts"
                     print_result 1 "Swagger endpoint returned 404 or HTML error page"
@@ -332,7 +332,7 @@ run_swagger_test_parallel() {
             break
         fi
         
-        if grep -q "Application started" "${log_file}" 2>/dev/null; then
+        if "${GREP}" -q "Application started" "${log_file}" 2>/dev/null; then
             startup_success=true
             break
         fi
@@ -440,13 +440,13 @@ analyze_swagger_test_results() {
     fi
     
     # Check startup
-    if ! grep -q "STARTUP_SUCCESS" "${result_file}" 2>/dev/null; then
+    if ! "${GREP}" -q "STARTUP_SUCCESS" "${result_file}" 2>/dev/null; then
         print_result 1 "Failed to start Hydrogen for ${description} test"
         return 1
     fi
     
     # Check server readiness
-    if ! grep -q "SERVER_READY" "${result_file}" 2>/dev/null; then
+    if ! "${GREP}" -q "SERVER_READY" "${result_file}" 2>/dev/null; then
         print_result 1 "Server not ready for ${description} test"
         return 1
     fi
@@ -458,23 +458,23 @@ analyze_swagger_test_results() {
     local javascript_passed=false
     local swagger_json_passed=false
     
-    if grep -q "TRAILING_SLASH_TEST_PASSED" "${result_file}" 2>/dev/null; then
+    if "${GREP}" -q "TRAILING_SLASH_TEST_PASSED" "${result_file}" 2>/dev/null; then
         trailing_slash_passed=true
     fi
     
-    if grep -q "REDIRECT_TEST_PASSED" "${result_file}" 2>/dev/null; then
+    if "${GREP}" -q "REDIRECT_TEST_PASSED" "${result_file}" 2>/dev/null; then
         redirect_passed=true
     fi
     
-    if grep -q "CONTENT_TEST_PASSED" "${result_file}" 2>/dev/null; then
+    if "${GREP}" -q "CONTENT_TEST_PASSED" "${result_file}" 2>/dev/null; then
         content_passed=true
     fi
     
-    if grep -q "JAVASCRIPT_TEST_PASSED" "${result_file}" 2>/dev/null; then
+    if "${GREP}" -q "JAVASCRIPT_TEST_PASSED" "${result_file}" 2>/dev/null; then
         javascript_passed=true
     fi
     
-    if grep -q "SWAGGER_JSON_TEST_PASSED" "${result_file}" 2>/dev/null; then
+    if "${GREP}" -q "SWAGGER_JSON_TEST_PASSED" "${result_file}" 2>/dev/null; then
         swagger_json_passed=true
     fi
     
@@ -486,7 +486,7 @@ analyze_swagger_test_results() {
     SWAGGER_JSON_TEST_RESULT=${swagger_json_passed}
     
     # Return success only if all tests passed
-    if grep -q "ALL_SWAGGER_TESTS_PASSED" "${result_file}" 2>/dev/null; then
+    if "${GREP}" -q "ALL_SWAGGER_TESTS_PASSED" "${result_file}" 2>/dev/null; then
         return 0
     else
         return 1
@@ -779,7 +779,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     for test_config in "${!SWAGGER_TEST_CONFIGS[@]}"; do
         IFS=':' read -r config_file log_suffix swagger_prefix description <<< "${SWAGGER_TEST_CONFIGS[${test_config}]}"
         result_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}.result"
-        if [[ -f "${result_file}" ]] && grep -q "ALL_SWAGGER_TESTS_PASSED" "${result_file}" 2>/dev/null; then
+        if [[ -f "${result_file}" ]] && "${GREP}" -q "ALL_SWAGGER_TESTS_PASSED" "${result_file}" 2>/dev/null; then
             ((successful_configs++))
         fi
     done

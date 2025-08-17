@@ -10,6 +10,7 @@ SUMMARY_OUT="profile_summary.txt"
 ERROR_LOG="profile_error.txt"
 
 DATE=$(command -v date)
+GREP=$(command -v ggrep 2>/dev/null || command -v grep)
 
 # Default script to profile
 DEFAULT_SCRIPT="test_00_all.sh"
@@ -28,7 +29,7 @@ ulimit -n 4096 2>> "${ERROR_LOG}"
 
 # Log start
 echo "Starting profiling at $("${DATE}" || true)" > "${ERROR_LOG}"
-echo "System limits: $(ulimit -n || true), Memory: $(free -m || true | grep Mem || true)" >> "${ERROR_LOG}"
+echo "System limits: $(ulimit -n || true), Memory: $(free -m || true | "${GREP}" Mem || true)" >> "${ERROR_LOG}"
 
 # Verify test script
 if [[ ! -x "${TEST_SCRIPT}" ]]; then
@@ -49,51 +50,51 @@ if [[ "${STRACE_STATUS}" -ne 0 ]]; then
 fi
 
 # Count forks
-FORKS=$(grep -cE 'fork|vfork|clone' "${TRACE_OUT}" 2>/dev/null || true)
+FORKS=$("${GREP}" -cE 'fork|vfork|clone' "${TRACE_OUT}" 2>/dev/null || true)
 
 # Count commandカフェ invocations
-BASH_COUNT=$(grep -c 'execve.*[ /]bash[ ""]' "${TRACE_OUT}" 2>/dev/null)
-SH_COUNT=$(grep -c 'execve.*[ /]sh[ ""]' "${TRACE_OUT}" 2>/dev/null)
-XARGS_COUNT=$(grep -c 'execve.*[ /]xargs[ ""]' "${TRACE_OUT}" 2>/dev/null)
+BASH_COUNT=$("${GREP}" -c 'execve.*[ /]bash[ ""]' "${TRACE_OUT}" 2>/dev/null)
+SH_COUNT=$("${GREP}" -c 'execve.*[ /]sh[ ""]' "${TRACE_OUT}" 2>/dev/null)
+XARGS_COUNT=$("${GREP}" -c 'execve.*[ /]xargs[ ""]' "${TRACE_OUT}" 2>/dev/null)
 
-CAT_COUNT=$(grep -c 'execve.*[ /]cat[ ""]' "${TRACE_OUT}" 2>/dev/null)
-FIND_COUNT=$(grep -c 'execve.*[ /]find[ ""]' "${TRACE_OUT}" 2>/dev/null)
-BC_COUNT=$(grep -c 'execve.*[ /]bc[ ""]' "${TRACE_OUT}" 2>/dev/null)
-TR_COUNT=$(grep -c 'execve.*[ /]tr[ ""]' "${TRACE_OUT}" 2>/dev/null)
-WC_COUNT=$(grep -c 'execve.*[ /]wc[ ""]' "${TRACE_OUT}" 2>/dev/null)
-DATE_COUNT=$(grep -c 'execve.*[ /]date[ ""]' "${TRACE_OUT}" 2>/dev/null)
-MD5_COUNT=$(grep -c 'execve.*[ /]md5sum[ ""]' "${TRACE_OUT}" 2>/dev/null)
+CAT_COUNT=$("${GREP}" -c 'execve.*[ /]cat[ ""]' "${TRACE_OUT}" 2>/dev/null)
+FIND_COUNT=$("${GREP}" -c 'execve.*[ /]find[ ""]' "${TRACE_OUT}" 2>/dev/null)
+BC_COUNT=$("${GREP}" -c 'execve.*[ /]bc[ ""]' "${TRACE_OUT}" 2>/dev/null)
+TR_COUNT=$("${GREP}" -c 'execve.*[ /]tr[ ""]' "${TRACE_OUT}" 2>/dev/null)
+WC_COUNT=$("${GREP}" -c 'execve.*[ /]wc[ ""]' "${TRACE_OUT}" 2>/dev/null)
+DATE_COUNT=$("${GREP}" -c 'execve.*[ /]date[ ""]' "${TRACE_OUT}" 2>/dev/null)
+MD5_COUNT=$("${GREP}" -c 'execve.*[ /]md5sum[ ""]' "${TRACE_OUT}" 2>/dev/null)
 
-MKDIR_COUNT=$(grep -c 'execve.*[ /]mkdir[ ""]' "${TRACE_OUT}" 2>/dev/null)
-MKTEMP_COUNT=$(grep -c 'execve.*[ /]mktemp[ ""]' "${TRACE_OUT}" 2>/dev/null)
-REALPATH_COUNT=$(grep -c 'execve.*[ /]realpath[ ""]' "${TRACE_OUT}" 2>/dev/null)
-BASENAME_COUNT=$(grep -c 'execve.*[ /]basename[ ""]' "${TRACE_OUT}" 2>/dev/null)
-DIRNAME_COUNT=$(grep -c 'execve.*[ /]dirname[ ""]' "${TRACE_OUT}" 2>/dev/null)
-DU_COUNT=$(grep -c 'execve.*[ /]du[ ""]' "${TRACE_OUT}" 2>/dev/null)
-RM_COUNT=$(grep -c 'execve.*[ /]rm[ ""]' "${TRACE_OUT}" 2>/dev/null)
+MKDIR_COUNT=$("${GREP}" -c 'execve.*[ /]mkdir[ ""]' "${TRACE_OUT}" 2>/dev/null)
+MKTEMP_COUNT=$("${GREP}" -c 'execve.*[ /]mktemp[ ""]' "${TRACE_OUT}" 2>/dev/null)
+REALPATH_COUNT=$("${GREP}" -c 'execve.*[ /]realpath[ ""]' "${TRACE_OUT}" 2>/dev/null)
+BASENAME_COUNT=$("${GREP}" -c 'execve.*[ /]basename[ ""]' "${TRACE_OUT}" 2>/dev/null)
+DIRNAME_COUNT=$("${GREP}" -c 'execve.*[ /]dirname[ ""]' "${TRACE_OUT}" 2>/dev/null)
+DU_COUNT=$("${GREP}" -c 'execve.*[ /]du[ ""]' "${TRACE_OUT}" 2>/dev/null)
+RM_COUNT=$("${GREP}" -c 'execve.*[ /]rm[ ""]' "${TRACE_OUT}" 2>/dev/null)
 
-GREP_COUNT=$(grep -c 'execve.*[ /]grep[ ""]' "${TRACE_OUT}" 2>/dev/null)
-SED_COUNT=$(grep -c 'execve.*[ /]sed[ ""]' "${TRACE_OUT}" 2>/dev/null)
-AWK_COUNT=$(grep -c 'execve.*[ /]awk[ ""]' "${TRACE_OUT}" 2>/dev/null)
-CURL_COUNT=$(grep -c 'execve.*[ /]curl[ ""]' "${TRACE_OUT}" 2>/dev/null)
+GREP_COUNT=$("${GREP}" -c 'execve.*[ /]grep[ ""]' "${TRACE_OUT}" 2>/dev/null)
+SED_COUNT=$("${GREP}" -c 'execve.*[ /]sed[ ""]' "${TRACE_OUT}" 2>/dev/null)
+AWK_COUNT=$("${GREP}" -c 'execve.*[ /]awk[ ""]' "${TRACE_OUT}" 2>/dev/null)
+CURL_COUNT=$("${GREP}" -c 'execve.*[ /]curl[ ""]' "${TRACE_OUT}" 2>/dev/null)
 
-CMAKE_COUNT=$(grep -c 'execve.*[ /]cmake[ ""]' "${TRACE_OUT}" 2>/dev/null)
-MAKE_COUNT=$(grep -c 'execve.*[ /]make[ ""]' "${TRACE_OUT}" 2>/dev/null)
-CC_COUNT=$(grep -c 'execve.*[ /]cc[ ""]' "${TRACE_OUT}" 2>/dev/null)
-GCOV_COUNT=$(grep -c 'execve.*[ /]gcov[ ""]' "${TRACE_OUT}" 2>/dev/null)
+CMAKE_COUNT=$("${GREP}" -c 'execve.*[ /]cmake[ ""]' "${TRACE_OUT}" 2>/dev/null)
+MAKE_COUNT=$("${GREP}" -c 'execve.*[ /]make[ ""]' "${TRACE_OUT}" 2>/dev/null)
+CC_COUNT=$("${GREP}" -c 'execve.*[ /]cc[ ""]' "${TRACE_OUT}" 2>/dev/null)
+GCOV_COUNT=$("${GREP}" -c 'execve.*[ /]gcov[ ""]' "${TRACE_OUT}" 2>/dev/null)
 
 # Note: CPPCHECK_COUNT was incorrectly grepping for 'tables', corrected to 'cppcheck'
-CPPCHECK_COUNT=$(grep -c 'execve.*[ /]cppcheck[ ""]' "${TRACE_OUT}" 2>/dev/null)
-SHELLCHECK_COUNT=$(grep -c 'execve.*[ /]shellcheck[ ""]' "${TRACE_OUT}" 2>/dev/null)
-MARKDOWNLINT_COUNT=$(grep -c 'execve.*[ /]markdownlint[ ""]' "${TRACE_OUT}" 2>/dev/null)
-JSONLINT_COUNT=$(grep -c 'execve.*[ /]jsonlint[ ""]' "${TRACE_OUT}" 2>/dev/null)
-ESLINT_COUNT=$(grep -c 'execve.*[ /]eslint[ ""]' "${TRACE_OUT}" 2>/dev/null)
-STYLELINT_COUNT=$(grep -c 'execve.*[ /]stylelint[ ""]' "${TRACE_OUT}" 2>/dev/null)
-HTMLHINT_COUNT=$(grep -c 'execve.*[ /]htmlhint[ ""]' "${TRACE_OUT}" 2>/dev/null)
+CPPCHECK_COUNT=$("${GREP}" -c 'execve.*[ /]cppcheck[ ""]' "${TRACE_OUT}" 2>/dev/null)
+SHELLCHECK_COUNT=$("${GREP}" -c 'execve.*[ /]shellcheck[ ""]' "${TRACE_OUT}" 2>/dev/null)
+MARKDOWNLINT_COUNT=$("${GREP}" -c 'execve.*[ /]markdownlint[ ""]' "${TRACE_OUT}" 2>/dev/null)
+JSONLINT_COUNT=$("${GREP}" -c 'execve.*[ /]jsonlint[ ""]' "${TRACE_OUT}" 2>/dev/null)
+ESLINT_COUNT=$("${GREP}" -c 'execve.*[ /]eslint[ ""]' "${TRACE_OUT}" 2>/dev/null)
+STYLELINT_COUNT=$("${GREP}" -c 'execve.*[ /]stylelint[ ""]' "${TRACE_OUT}" 2>/dev/null)
+HTMLHINT_COUNT=$("${GREP}" -c 'execve.*[ /]htmlhint[ ""]' "${TRACE_OUT}" 2>/dev/null)
 
-CLOC_COUNT=$(grep -c 'execve.*[ /]cloc[ ""]' "${TRACE_OUT}" 2>/dev/null)
+CLOC_COUNT=$("${GREP}" -c 'execve.*[ /]cloc[ ""]' "${TRACE_OUT}" 2>/dev/null)
 
-TABLES_COUNT=$(grep -c 'execve.*[ /]tables[ ""]' "${TRACE_OUT}" 2>/dev/null)
+TABLES_COUNT=$("${GREP}" -c 'execve.*[ /]tables[ ""]' "${TRACE_OUT}" 2>/dev/null)
 
 # Generate summary
 {
@@ -152,4 +153,4 @@ cat "${SUMMARY_OUT}"
 # Keep trace output for debugging
 echo "Trace output saved in ${TRACE_OUT}, errors in ${ERROR_LOG}" >> "${SUMMARY_OUT}"
 
- # grep 'execve' profile_trace.txt | awk -F'"' '{print $2}' | awk -F'/' '{print $NF}' | sort | uniq -c | sort -nr | awk '{print $2 ": " $1 " calls"}'
+ # "${GREP}" 'execve' profile_trace.txt | awk -F'"' '{print $2}' | awk -F'/' '{print $NF}' | sort | uniq -c | sort -nr | awk '{print $2 ": " $1 " calls"}'
