@@ -98,7 +98,7 @@ done
 
 # Run version checks in parallel for misses using xargs with inlined logic
 if [[ ${#to_process[@]} -gt 0 ]]; then
-    # shellcheck disable=SC2016 # Script within a script doesn't make shellcheck very happy
+    # shellcheck disable=SC2016,SC2154 # Script within a script doesn't make shellcheck very happy
     while IFS= read -r line; do
         results+=("${line}")
     done < <("${PRINTF}" "%s\n" "${to_process[@]}" | "${XARGS}" -P 0 -I {} bash -c '
@@ -203,6 +203,7 @@ show_help() {
     echo "Available Tests:"
     for test_script in "${TEST_SCRIPTS[@]}"; do
         local test_name
+        # shellcheck disable=SC2154 # SED defined externally in framework.sh
         test_name=$(basename "${test_script}" .sh | "${SED}" 's/test_//')
         echo "  ${test_name}"
     done
@@ -247,7 +248,7 @@ run_single_test() {
     local test_version
     
     # Extract test number from script filename
-    # shellcheck disable=SC2016 # Using single quotes on purpose to avoid escaping issues
+    # shellcheck disable=SC2016,SC2154 # Using single quotes on purpose to avoid escaping issues
     {
         read -r test_name
         read -r test_abbrev
@@ -621,6 +622,7 @@ for i in "${!TEST_ELAPSED[@]}"; do
 done
 
 # Let's come up with a number that represents how much code is in our test suite
+# shellcheck disable=SC2154 # GREP defined externally in framework.sh
 SCRIPT_SCALE=$("${PRINTF}" "%'d" "$(cd "${SCRIPT_DIR}" && "${FIND}" . -type f -name "*.sh" -exec "${GREP}" -vE '^\s*(#|$)' {} + | wc -l)" || true)
 
 # Format both times as HH:MM:SS.ZZZ
