@@ -57,7 +57,7 @@ check_unity_tests_available() {
     if [[ -d "${UNITY_BUILD_DIR}/src" ]]; then
         # Look for any executable files that match test pattern
         local test_count
-        test_count=$(find "${UNITY_BUILD_DIR}/src" -name "*_test*" -type f -executable | wc -l || true)
+        test_count=$("${FIND}" "${UNITY_BUILD_DIR}/src" -name "*_test*" -type f -executable | wc -l || true)
         if [[ "${test_count}" -gt 0 ]]; then
             print_result 0 "Unity tests available: ${test_count} test executables found in ${UNITY_BUILD_DIR#"${SCRIPT_DIR}"/..}/src"
             cd "${SCRIPT_DIR}" || { print_result 1 "Failed to return to script directory"; return 1; }
@@ -166,7 +166,7 @@ run_unity_tests() {
     if [[ -d "${unity_build_dir}" ]]; then
         # Look for executable files that match test pattern (recursively in subdirectories)
         temp_find="${LOG_PREFIX}_search_tests.log"
-        find "${unity_build_dir}" -name "*test*" -type f -executable -print > "${temp_find}"
+        "${FIND}" "${unity_build_dir}" -name "*test*" -type f -executable -print > "${temp_find}"
         while IFS= read -r test_exe; do
             if [[ -n "${test_exe}" ]] && [[ -x "${test_exe}" ]]; then
                 local test_name

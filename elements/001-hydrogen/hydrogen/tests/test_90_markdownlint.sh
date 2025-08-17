@@ -39,7 +39,7 @@ print_subtest "Markdown Linting"
 # Get .lintignore filtered list of markdown files to check
 MD_FILES=()
 cd "${PROJECT_DIR}" || return &>/dev/null
-mapfile -t md_file_list < <(find . -type f -name "*.md" || true)
+mapfile -t md_file_list < <("${FIND}" . -type f -name "*.md" || true)
 for file in "${md_file_list[@]}"; do
     rel_file="${file#./}"
     if ! should_exclude_file "${rel_file}"; then

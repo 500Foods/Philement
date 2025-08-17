@@ -178,7 +178,7 @@ verify_core_file() {
         print_message "Core file ${binary_name}.core.${pid} not found after ${timeout} seconds"
         # List any core files that might exist
         local core_files
-        core_files=$(find "${PROJECT_DIR}" -name "*.core.*" -type f 2>/dev/null || echo "")
+        core_files=$("${FIND}" "${PROJECT_DIR}" -name "*.core.*" -type f 2>/dev/null || echo "")
         if [[ -n "${core_files}" ]]; then
             print_message "Other core files found: ${core_files}"
         else

@@ -17,6 +17,7 @@ declare -r APPVERSION="1.3.0"
 
 DATE=$(command -v date) 
 XARGS=$(command -v gxargs 2>/dev/null || command -v xargs)
+FIND=$(command -v gfind 2>/dev/null || command -v find)
 
 # Performance timing functions
 declare -A timing_data
@@ -218,7 +219,7 @@ build_file_cache() {
             file_exists_cache["${path}"]="${type}"
             ((cache_count++))
         fi
-    done < <(find "${repo_root}" -name .git -prune -o \( -type f -printf '%p:f\0' \) -o \( -type d -printf '%p:d\0' \) 2>/dev/null || true)
+    done < <("${FIND}" "${repo_root}" -name .git -prune -o \( -type f -printf '%p:f\0' \) -o \( -type d -printf '%p:d\0' \) 2>/dev/null || true)
     
     debug_log "Built file existence cache with ${cache_count} entries"
 }
