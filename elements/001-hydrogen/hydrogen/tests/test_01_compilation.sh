@@ -66,7 +66,7 @@ print_subtest "Check Source Files"
 print_command "test -d src && test -f src/hydrogen.c"
 
 if [[ -d "src" ]] && [[ -f "src/hydrogen.c" ]]; then
-    src_count=$(find . -type f \( -path "./src/*" -o -path "./tests/unity/src/*" -o -path "./extras/*" -o -path "./examples/*" \) \( -name "*.c" -o -name "*.h" \) | wc -l || true) 
+    src_count=$("${FIND}" . -type f \( -path "./src/*" -o -path "./tests/unity/src/*" -o -path "./extras/*" -o -path "./examples/*" \) \( -name "*.c" -o -name "*.h" \) | wc -l || true) 
     print_result 0 "Project search found ${src_count} source files"
     TEST_NAME="${TEST_NAME} {BLUE}(source code: ${src_count} files){RESET}"
 else

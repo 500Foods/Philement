@@ -117,7 +117,7 @@ validate_coverage_consistency() {
                     total_lines=$((total_lines + file_total))
                     covered_lines=$((covered_lines + file_covered))
                 fi
-            done < <(find "${build_dir}" -name "*.gcov" -type f | "${GREP}" -v '_test' 2>/dev/null || true)
+            done < <("${FIND}" "${build_dir}" -name "*.gcov" -type f | "${GREP}" -v '_test' 2>/dev/null || true)
         fi
     done
     
@@ -241,7 +241,7 @@ calculate_coverage_generic() {
         
         to_process_dirs+=("${subdir}")
         to_process_bases+=("${base}")
-    done < <(find . -type f -name "${find_pattern}" | "${GREP}" -v '_test' 2>/dev/null || true)
+    done < <("${FIND}" . -type f -name "${find_pattern}" | "${GREP}" -v '_test' 2>/dev/null || true)
     
     if [[ ${#to_process_bases[@]} -gt 0 ]]; then
         # Function to run gcov for a single file
@@ -327,7 +327,7 @@ calculate_coverage_generic() {
             
             gcov_files_to_process+=("${gcov_file}")
         fi
-    done < <(find "${dir}" -name "*.gcov" -type f | "${GREP}" -v '_test' 2>/dev/null || true)
+    done < <("${FIND}" "${dir}" -name "*.gcov" -type f | "${GREP}" -v '_test' 2>/dev/null || true)
     
     # Count total files
     local instrumented_files=${#gcov_files_to_process[@]}

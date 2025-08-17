@@ -32,7 +32,7 @@ while read -r file; do
     if ! should_exclude_file "${rel_file}"; then
         CSS_FILES+=("${rel_file}")
     fi
-done < <(find . -type f -name "*.css" || true)
+done < <("${FIND}" . -type f -name "*.css" || true)
 
 CSS_COUNT=${#CSS_FILES[@]}
 

@@ -226,7 +226,7 @@ while IFS= read -r script; do
     if [[ "${script}" != *"test_00_all.sh" ]]; then
         TEST_SCRIPTS+=("${script}")
     fi
-done < <(find "${SCRIPT_DIR}" -name "test_*.sh" -type f | sort || true)
+done < <("${FIND}" "${SCRIPT_DIR}" -name "test_*.sh" -type f | sort || true)
 
 # Check for help flag and skip-tests in single loop
 for arg in "$@"; do
@@ -285,7 +285,7 @@ run_single_test() {
     local test_name_for_file
     test_name_for_file="${test_abbrev}"
     # shellcheck disable=SC2154 # RESULTS_DIR defined externally in framework.sh
-    latest_subtest_file=$(find "${RESULTS_DIR}" -name "test_${test_number}_*.txt" -type f 2>/dev/null | sort -r | head -1 || true)
+    latest_subtest_file=$("${FIND}" "${RESULTS_DIR}" -name "test_${test_number}_*.txt" -type f 2>/dev/null | sort -r | head -1 || true)
     
     if [[ -n "${latest_subtest_file}" ]] && [[ -f "${latest_subtest_file}" ]]; then
         IFS=',' read -r total_subtests passed_subtests test_name file_elapsed_time test_abbrev test_version < "${latest_subtest_file}" 2>/dev/null || {
@@ -345,7 +345,7 @@ run_single_test_parallel() {
     
     # Find the most recent subtest file for this test
     local latest_subtest_file
-    latest_subtest_file=$(find "${RESULTS_DIR}" -name "test_${test_number}_*.txt" -type f 2>/dev/null | sort -r | head -1 || true)
+    latest_subtest_file=$("${FIND}" "${RESULTS_DIR}" -name "test_${test_number}_*.txt" -type f 2>/dev/null | sort -r | head -1 || true)
     
     if [[ -n "${latest_subtest_file}" ]] && [[ -f "${latest_subtest_file}" ]]; then
         # Read subtest results, test name, and elapsed time from the file
@@ -383,7 +383,7 @@ run_specific_test() {
     if [[ ! -f "${test_script}" ]]; then
         echo "Error: Test script not found: ${test_script}"
         echo "Available tests:"
-        find "${SCRIPT_DIR}" -name "test_*.sh" -not -name "test_00_all.sh" | sort | while read -r script; do
+        "${FIND}" "${SCRIPT_DIR}" -name "test_*.sh" -not -name "test_00_all.sh" | sort | while read -r script; do
             local name
             name=$(basename "${script}" .sh | sed 's/test_//')
             echo "  ${name}"
@@ -619,7 +619,7 @@ for i in "${!TEST_ELAPSED[@]}"; do
 done
 
 # Let's come up with a number that represents how much code is in our test suite
-SCRIPT_SCALE=$(printf "%'d" "$(cd "${SCRIPT_DIR}" && find . -type f -name "*.sh" -exec "${GREP}" -vE '^\s*(#|$)' {} + | wc -l)" || true)
+SCRIPT_SCALE=$(printf "%'d" "$(cd "${SCRIPT_DIR}" && "${FIND}" . -type f -name "*.sh" -exec "${GREP}" -vE '^\s*(#|$)' {} + | wc -l)" || true)
 
 # Format both times as HH:MM:SS.ZZZ
 TOTAL_ELAPSED_FORMATTED=$(format_time_duration "${TOTAL_ELAPSED}")

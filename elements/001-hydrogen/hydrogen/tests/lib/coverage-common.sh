@@ -223,10 +223,10 @@ analyze_all_gcov_coverage_batch() {
     local blackbox_files=()
     if [[ -d "${unity_dir}" ]]; then
         # shellcheck disable=SC2154 # GREP defined externally in framework.sh
-        mapfile -t unity_files < <(find "${unity_dir}" -name "*.gcov" -type f | "${GREP}" -v '_test' 2>/dev/null || true)
+        mapfile -t unity_files < <("${FIND}" "${unity_dir}" -name "*.gcov" -type f | "${GREP}" -v '_test' 2>/dev/null || true)
     fi
     if [[ -d "${blackbox_dir}" ]]; then
-        mapfile -t blackbox_files < <(find "${blackbox_dir}" -name "*.gcov" -type f | "${GREP}" -v '_test' 2>/dev/null || true)
+        mapfile -t blackbox_files < <("${FIND}" "${blackbox_dir}" -name "*.gcov" -type f | "${GREP}" -v '_test' 2>/dev/null || true)
     fi
 
     # Create union of all files by relative path (with filtering)
@@ -380,7 +380,7 @@ analyze_all_gcov_coverage_batch() {
     touch "${pattern_marker}"
     
     # Clean up old pattern markers
-    find "${BUILD_DIR}" -name "gcov_pattern_*" ! -name "gcov_pattern_${pattern_checksum}" -delete 2>/dev/null || true
+    "${FIND}" "${BUILD_DIR}" -name "gcov_pattern_*" ! -name "gcov_pattern_${pattern_checksum}" -delete 2>/dev/null || true
 
     # Clean up
     rm -f "${temp_input}" "${temp_output}"
@@ -481,7 +481,7 @@ load_source_files() {
             fi
             
             SOURCE_FILES_CACHE+=("${rel_path}")
-        done < <(find "${src_dir}" -type f \( -name "*.c" -o -name "*.h" \) -print0 | "${GREP}" -v '_test' 2>/dev/null || true)
+        done < <("${FIND}" "${src_dir}" -type f \( -name "*.c" -o -name "*.h" \) -print0 | "${GREP}" -v '_test' 2>/dev/null || true)
     fi
     
     SOURCE_FILE_CACHE_LOADED="true"
@@ -613,7 +613,7 @@ collect_gcov_files() {
                 analyze_gcov_file "${gcov_file}" "${coverage_type}"
                 ((files_found++))
             fi
-        done < <(find "${build_dir}" -name "*.gcov" -type f | "${GREP}" -v '_test' 2>/dev/null || true)
+        done < <("${FIND}" "${build_dir}" -name "*.gcov" -type f | "${GREP}" -v '_test' 2>/dev/null || true)
     fi
     
     return "${files_found}"

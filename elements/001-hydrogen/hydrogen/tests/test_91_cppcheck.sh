@@ -63,7 +63,7 @@ run_cppcheck() {
         if ! should_exclude_file "${rel_file}"; then
             files+=("${file}")
         fi
-    done < <(find . -type f \( -name "*.c" -o -name "*.h" -o -name "*.inc" \) || true)
+    done < <("${FIND}" . -type f \( -name "*.c" -o -name "*.h" -o -name "*.inc" \) || true)
     
     if [[ ${#files[@]} -gt 0 ]]; then
         cppcheck -j"${CORES}" --quiet --cppcheck-build-dir="${CACHE_DIR}" "${cppcheck_args[@]}" "${files[@]}" 2>&1
@@ -82,7 +82,7 @@ while read -r file; do
     if ! should_exclude_file "${rel_file}"; then
         C_FILES_TO_CHECK+=("${rel_file}")
     fi
-done < <(find . -type f \( -name "*.c" -o -name "*.h" -o -name "*.inc" \) || true)
+done < <("${FIND}" . -type f \( -name "*.c" -o -name "*.h" -o -name "*.inc" \) || true)
 
 C_COUNT=${#C_FILES_TO_CHECK[@]}
 print_message "Running cppcheck on ${C_COUNT} files..."
