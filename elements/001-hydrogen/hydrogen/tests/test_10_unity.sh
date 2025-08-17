@@ -106,7 +106,7 @@ run_single_unity_test_parallel() {
     # Run the Unity test and capture output
     local temp_test_log="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}/${test_name}.txt"
     local log_path="${LOG_PREFIX}.log"
-    mkdir -p "$(dirname "${temp_test_log}")"
+    mkdir -p "$("${DIRNAME}" "${temp_test_log}" || true)"
     true > "${temp_test_log}"
     
     if "${test_exe}" > "${temp_test_log}" 2>&1; then
