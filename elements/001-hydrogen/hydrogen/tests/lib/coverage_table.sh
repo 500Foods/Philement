@@ -132,7 +132,7 @@ count_unity_tests_per_source_file() {
         if [[ "${test_basename}" =~ _test ]]; then
             local source_name="${test_basename%%_test*}"
             local source_dir
-            source_dir=$(dirname "${rel_path}")
+            source_dir=$("${DIRNAME}" "${rel_path}")
             
             # Handle directory mapping
             if [[ "${source_dir}" == "." ]]; then
