@@ -271,7 +271,7 @@ calculate_coverage_generic() {
         # shellcheck disable=SC2154,SC2016 # CORES defined in framework.sh, Fancy script stuff 
         for i in "${!to_process_bases[@]}"; do
             echo "${to_process_dirs[i]} ${to_process_bases[i]}"
-        done | xargs -n 2 -P "${CORES}" bash -c 'run_gcov "$0" "$1"'
+        done | "${XARGS}" -n 2 -P "${CORES}" bash -c 'run_gcov "$0" "$1"'
     fi
         
     # Return to original directory
@@ -359,7 +359,7 @@ calculate_coverage_generic() {
         fi
 
         # Count files with at least one covered line using awk with the same pattern
-        covered_files=$(printf '%s\n' "${gcov_files_to_process[@]}" | xargs -I {} awk '
+        covered_files=$(printf '%s\n' "${gcov_files_to_process[@]}" | "${XARGS}" -I {} awk '
             /^[ \t]*[0-9]+\*?:[ \t]*[0-9]+:/ { covered++ }
             END { print (covered > 0 ? 1 : 0) }
         ' {} | awk 'BEGIN {count=0} {count += $1} END {print count}' || true)

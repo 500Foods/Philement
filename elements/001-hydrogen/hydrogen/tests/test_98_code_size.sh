@@ -116,7 +116,7 @@ HAS_OVERSIZED=0
 # Analyze each file using efficient batch processing
 if [[ -s "${SOURCE_FILES_LIST}" ]]; then
     # Use wc -l on all files at once for maximum efficiency, then process the output
-    xargs wc -l < "${SOURCE_FILES_LIST}" > "${LINE_COUNT_FILE}.tmp"
+    "${XARGS}" wc -l < "${SOURCE_FILES_LIST}" > "${LINE_COUNT_FILE}.tmp"
     
     # Process the results to categorize by line count
     while read -r lines file; do

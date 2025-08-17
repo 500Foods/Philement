@@ -70,7 +70,7 @@ test_websocket_connection() {
         fi
         
         # Test WebSocket connection with a 5-second timeout
-        echo "${test_message}" | timeout 5 websocat \
+        echo "${test_message}" | "${TIMEOUT}" 5 websocat \
             --protocol="${protocol}" \
             -H="Authorization: Key ${WEBSOCKET_KEY}" \
             --ping-interval=30 \
@@ -327,7 +327,7 @@ test_websocket_configuration() {
 
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         # Test port accessibility using /dev/tcp
-        if timeout 5 bash -c "</dev/tcp/localhost/${ws_port}" 2>/dev/null; then
+        if "${TIMEOUT}" 5 bash -c "</dev/tcp/localhost/${ws_port}" 2>/dev/null; then
             print_result 0 "WebSocket port ${ws_port} is accessible"
             echo "PORT_RESULT=0" >> "${result_file}"
             ((PASS_COUNT++))

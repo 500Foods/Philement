@@ -42,9 +42,11 @@ setup_orchestration_environment
 
 # Test Setup
 commands=(
-    "grep" "sort" "bc" "jq" "awk" "sed" "xargs" "nproc" "timeout" "${DATE}" "lsof"
+    "sort" "bc" 
+    "${DATE}" "${GREP}" "${SED}" "${AWK}" "${XARGS}" "${TAR}" "${TIMEOUT}"
+    "jq"  "nproc" "lsof"
     "cmake" "gcc" "ninja" "curl" "websocat" "wscat"
-    "git" "md5sum" "${CLOC}"
+    "${GIT}" "${MD5SUM}" "${CLOC}"
     "cppcheck" "shellcheck" "markdownlint" "eslint" "stylelint" "htmlhint" "jsonlint" "swagger-cli"
     "${OH}" "${TABLES}" 
     "coverage_table.sh" "github-sitemap.sh"
@@ -98,7 +100,7 @@ if [[ ${#to_process[@]} -gt 0 ]]; then
     # shellcheck disable=SC2016 # Script within a script doesn't make shellcheck very happy
     while IFS= read -r line; do
         results+=("${line}")
-    done < <(printf "%s\n" "${to_process[@]}" | xargs -P 0 -I {} bash -c '
+    done < <(printf "%s\n" "${to_process[@]}" | "${XARGS}" -P 0 -I {} bash -c '
         cmd="{}"
         if command -v "${cmd}" >/dev/null 2>&1; then
             cmd_path=$(command -v "${cmd}")

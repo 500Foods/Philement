@@ -42,15 +42,27 @@ FRAMEWORK_NAME="Framework Library"
 FRAMEWORK_VERSION="2.8.0"
 export FRAMEWORK_NAME FRAMEWORK_VERSION
 
-# Common utilities
-DATE=$(command -v date)
-TAR=$(command -v tar)
+# Common utilities - use GNU versions if available (eg: homebrew on macOS)
+DATE=$(command -v gdate 2>/dev/null || command -v date)
+GREP=$(command -v ggrep 2>/dev/null || command -v grep)
+SED=$(command -v gsed 2>/dev/null || command -v sed)
+AWK=$(command -v gawk 2>/dev/null || command -v awk)
+TAR=$(command -v gtar 2>/dev/null || command -v tar)
+XARGS=$(command -v gxargs 2>/dev/null || command -v xargs)
+TIMEOUT=$(command -v gtimeout 2>/dev/null || command -v timeout)
+NPROC=$(command -v nproc 2>/dev/null || { command -v sysctl >/dev/null && echo "sysctl -n hw.ncpu" || echo "getconf _NPROCESSORS_ONLN"; })
+
+# These are standard utilities not tied to a particular OS
 CLOC=$(command -v cloc)
+GIT=$(command -v git)
+MD5SUM=$(command -v md5sum)
+
+# Our own utilities built and installed presumably in /usr/local/bin
 TABLES=$(command -v tables)
 OH=$(command -v Oh) 
 
 # Set the number of CPU cores for parallel processing - why not oversubscribe?
-CORES_ACTUAL=$(nproc)
+CORES_ACTUAL=$("${NPROC}")
 CORES=$((CORES_ACTUAL * 2))
 export CORES
 
