@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Test: C/C++ Code Analysis
 # Performs cppcheck analysis on C/C++ source files

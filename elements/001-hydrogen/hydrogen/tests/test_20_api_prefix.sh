@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Test: API Prefix
 # Tests the API endpoints with different API prefix configurations using immediate restart approach:

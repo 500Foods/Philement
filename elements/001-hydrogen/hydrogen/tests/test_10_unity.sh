@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Test: Unity
 # Runs unit tests using the Unity framework, treating each test file as a subtest

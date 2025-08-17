@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Coverage Common Library
 # Utilities and variables for coverage calculations

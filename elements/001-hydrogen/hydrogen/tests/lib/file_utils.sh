@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # File Utilities Library
 # Provides file and path manipulation functions for test scripts

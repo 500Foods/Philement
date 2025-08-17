@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Log Output Library
 # Provides consistent logging, formatting, and display functions for test scripts
@@ -210,8 +210,8 @@ EOF
 EOF
     
     # Use tables executable to render the header
-    # shellcheck disable=SC2154 # TABLES_EXTERNAL defined in framework.sh
-    "${TABLES_EXTERNAL}" "${layout_json}" "${data_json}" 2>/dev/null
+    # shellcheck disable=SC2154 # TABLES defined in framework.sh
+    "${TABLES}" "${layout_json}" "${data_json}" 2>/dev/null
    
 }
 
@@ -280,8 +280,8 @@ EOF
 EOF
     
     # Use tables executable to render the header
-    # shellcheck disable=SC2154 # TABLES_EXTERNAL Defined externally in framework.sh
-    "${TABLES_EXTERNAL}" "${TAB_LAYOUT_HEADER}" "${TAB_DATA_HEADER}" 2>/dev/null
+    # shellcheck disable=SC2154 # TABLES Defined externally in framework.sh
+    "${TABLES}" "${TAB_LAYOUT_HEADER}" "${TAB_DATA_HEADER}" 2>/dev/null
 }
 
 # Function to print subtest headers
@@ -542,8 +542,8 @@ EOF
 EOF
     
     # Use tables executable to render the completion table
-    # shellcheck disable=SC2154 # LIB_DIR defined externally in framework.sh    
-    "${TABLES_EXTERNAL}" "${TAB_LAYOUT_FOOTER}" "${TAB_DATA_FOOTER}" 2>/dev/null
+    # shellcheck disable=SC2154 # TABLES defined externally in framework.sh    
+    "${TABLES}" "${TAB_LAYOUT_FOOTER}" "${TAB_DATA_FOOTER}" 2>/dev/null
     
     # Let's end up here so the next script doesn't have a fit
     popd >/dev/null 2>&1 || return

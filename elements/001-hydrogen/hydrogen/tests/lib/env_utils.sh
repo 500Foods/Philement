@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Environment Utilities Library
 # Provides functions for environment variable handling and validation

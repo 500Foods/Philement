@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Coverage Library
 # This script provides functions for calculating and managing test coverage data

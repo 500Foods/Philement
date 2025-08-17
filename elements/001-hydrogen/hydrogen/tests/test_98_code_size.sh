@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Test: Code Size Analysis
 # Performs code size analysis and runs cloc ()

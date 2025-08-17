@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Coverage Table Library
 # Displays comprehensive coverage data from Unity and blackbox tests in a formatted table
@@ -33,7 +33,6 @@ setup_test_environment &>/dev/null
 # Test Parameters
 UNITY_COVS="${BUILD_DIR}/unity"
 BLACKBOX_COVS="${BUILD_DIR}/coverage"
-TABLES_EXE="${LIB_DIR}/tables"
 CACHE_DIR="${HOME}/.cache/unity"
 
 show_version() {
@@ -259,7 +258,7 @@ EOF
 EOF
 
     # Use tables to render the empty table
-    "${TABLES_EXE}" "${layout_json}" "${data_json}" 2>/dev/null || {
+    "${TABLES}" "${layout_json}" "${data_json}" 2>/dev/null || {
         echo "Error: Failed to run tables executable"
         exit 1
     }
@@ -576,7 +575,7 @@ EOF
 # print_subtest "Layout generated"
 
 # Use tables executable to render the table
-"${TABLES_EXE}" "${layout_json}" "${data_json}" 2>/dev/null
+"${TABLES}" "${layout_json}" "${data_json}" 2>/dev/null
 
 # Clean up temporary files
 rm -rf "${temp_dir}" 2>/dev/null

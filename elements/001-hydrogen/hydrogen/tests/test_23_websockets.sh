@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Test: WebSockets
 # Tests the WebSocket functionality with different configurations

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Test: JSON Error Handling
 # Tests if the application correctly handles JSON syntax errors in configuration files

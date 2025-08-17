@@ -23,7 +23,6 @@ These libraries were created as part of the test suite migration to replace supp
 - **[Environment Utils Library](env_utils.md)** - Documentation for `env_utils.sh`, providing environment variable handling and validation functions for test scripts. [Script](../lib/env_utils.sh)
 - **[Lifecycle Management Library](lifecycle.md)** - Documentation for `lifecycle.sh`, providing functions for managing the lifecycle of the Hydrogen application during testing. [Script](../lib/lifecycle.sh)
 - **[Network Utilities Library](network_utils.md)** - Documentation for `network_utils.sh`, providing network-related functions including TIME_WAIT socket management for test scripts. [Script](../lib/network_utils.sh)
-- **[Oh Terminal to SVG Converter](Oh.md)** - Documentation for `Oh`, providing ANSI terminal output to GitHub-compatible SVG conversion for test result visualization. [Script](../lib/Oh)
 
 ## Coverage Libraries
 
