@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # CHANGELOG
 # 2025-07-15: Added Unity test compilation to catch errors in test code during trial builds
