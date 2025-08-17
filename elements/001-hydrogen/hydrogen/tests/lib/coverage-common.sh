@@ -184,7 +184,8 @@ analyze_all_gcov_coverage_batch() {
     local marker_file="${BUILD_DIR}/gcov_batch_marker"
     local cache_file="${BUILD_DIR}/gcov_batch_cache.txt"
     local pattern_checksum
-    pattern_checksum=$(printf '%s\n' "${IGNORE_PATTERNS[@]}" | sort | sha256sum | cut -d' ' -f1 2>/dev/null || echo "no_checksum" || true)
+    # shellcheck disable=SC2154 # PRINTF defined externally in framework.sh
+    pattern_checksum=$("${PRINTF}" '%s\n' "${IGNORE_PATTERNS[@]}" | sort | sha256sum | cut -d' ' -f1 2>/dev/null || echo "no_checksum" || true)
     local pattern_marker="${BUILD_DIR}/gcov_pattern_${pattern_checksum}"
 
     # Check if cache marker, pattern marker, and cache file exist
@@ -260,18 +261,18 @@ analyze_all_gcov_coverage_batch() {
         for file_relpath in "${!all_file_set[@]}"; do
             local unity_file="${unity_dir}/${file_relpath}"
             local blackbox_file="${blackbox_dir}/${file_relpath}"
-            printf '###FILE_START:%s###\n' "${file_relpath}"
+            "${PRINTF}" '###FILE_START:%s###\n' "${file_relpath}"
             if [[ -f "${unity_file}" ]]; then
-                printf '###UNITY_START###\n'
+                "${PRINTF}" '###UNITY_START###\n'
                 cat "${unity_file}"
-                printf '###UNITY_END###\n'
+                "${PRINTF}" '###UNITY_END###\n'
             fi
             if [[ -f "${blackbox_file}" ]]; then
-                printf '###BLACKBOX_START###\n'
+                "${PRINTF}" '###BLACKBOX_START###\n'
                 cat "${blackbox_file}"
-                printf '###BLACKBOX_END###\n'
+                "${PRINTF}" '###BLACKBOX_END###\n'
             fi
-            printf '###FILE_END###\n'
+            "${PRINTF}" '###FILE_END###\n'
         done
     } > "${temp_input}"
 
@@ -357,17 +358,17 @@ analyze_all_gcov_coverage_batch() {
                     "UNITY")
                         unity_instrumented_lines["${file_path}"]=${instrumented}
                         unity_covered_lines["${file_path}"]=${covered}
-                        printf "UNITY:%s:%s,%s\n" "${file_path}" "${instrumented}" "${covered}"
+                        "${PRINTF}" "UNITY:%s:%s,%s\n" "${file_path}" "${instrumented}" "${covered}"
                         ;;
                     "COVERAGE")
                         coverage_instrumented_lines["${file_path}"]=${instrumented}
                         coverage_covered_lines["${file_path}"]=${covered}
-                        printf "COVERAGE:%s:%s,%s\n" "${file_path}" "${instrumented}" "${covered}"
+                        "${PRINTF}" "COVERAGE:%s:%s,%s\n" "${file_path}" "${instrumented}" "${covered}"
                         ;;
                     "COMBINED")
                         combined_instrumented_lines["${file_path}"]=${instrumented}
                         combined_covered_lines["${file_path}"]=${covered}
-                        printf "COMBINED:%s:%s,%s\n" "${file_path}" "${instrumented}" "${covered}"
+                        "${PRINTF}" "COMBINED:%s:%s,%s\n" "${file_path}" "${instrumented}" "${covered}"
                         ;;
                     *)
                         ;;
@@ -499,7 +500,7 @@ get_cached_source_files() {
     load_source_files "${project_root}"
     
     # Output cached source files
-    printf '%s\n' "${SOURCE_FILES_CACHE[@]}"
+    "${PRINTF}" '%s\n' "${SOURCE_FILES_CACHE[@]}"
 }
 
 # Function to analyze a single gcov file and store data

@@ -47,8 +47,8 @@ find_hydrogen_binary() {
     local hydrogen_bin
     
     # Ensure hydrogen_dir is an absolute path
+    # shellcheck disable=SC2154 # REALPATH defined externally in framework.sh
     hydrogen_dir=$("${REALPATH}" "${hydrogen_dir}" 2>/dev/null || echo "${hydrogen_dir}")
-    
    
     # First check for coverage build (highest priority for testing)
     hydrogen_bin="${hydrogen_dir}/hydrogen_coverage"
