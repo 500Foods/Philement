@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Test: Socket Rebinding
 # Tests that the SO_REUSEADDR socket option allows immediate rebinding after shutdown

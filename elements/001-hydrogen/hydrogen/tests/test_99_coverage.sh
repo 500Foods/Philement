@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Test: Coverage Collection and Analysis
 # Collects and analyzes coverage data from Unity and blackbox tests

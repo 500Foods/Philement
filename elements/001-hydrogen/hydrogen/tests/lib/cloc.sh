@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # CLOC (Count Lines of Code) Library
 # Provides shared cloc functionality for test scripts
@@ -26,22 +26,8 @@ CLOC_NAME="CLOC Library"
 CLOC_VERSION="1.1.1"
 print_message "${CLOC_NAME} ${CLOC_VERSION}" "info" 2> /dev/null || true
 
-# Sort out directories
-PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
-SCRIPT_DIR="${PROJECT_DIR}/tests"
-LIB_DIR="${SCRIPT_DIR}/lib"
-# BUILD_DIR="${PROJECT_DIR}/build"
-# TESTS_DIR="${BUILD_DIR}/tests"
-# RESULTS_DIR="${TESTS_DIR}/results"
-# DIAGS_DIR="${TESTS_DIR}/diagnostics"
-# LOGS_DIR="${TESTS_DIR}/logs"
-
 # shellcheck source=tests/lib/framework.sh # Resolve path statically
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "${LIB_DIR}/framework.sh"
-# shellcheck source=tests/lib/log_output.sh # Resolve path statically
-[[ -n "${LOG_OUTPUT_GUARD}" ]] || source "${LIB_DIR}/log_output.sh"
-# shellcheck source=tests/lib/log_output.sh # Resolve path statically
-[[ -n "${LOG_OUTPUT_GUARD}" ]] || source "${LIB_DIR}/log_output.sh"
 
 # Function to generate cloc exclude list based on .lintignore and default excludes
 generate_cloc_exclude_list() {
@@ -99,7 +85,7 @@ run_cloc_analysis() {
     fi
     
     # Run cloc with proper environment and parameters
-    if (cd "${base_dir}" && env LC_ALL=en_US.UTF_8 "${CLOC_EXTERNAL}" . --quiet --force-lang="C,inc" --exclude-list-file="${exclude_list}" > "${cloc_output}" 2>&1); then
+    if (cd "${base_dir}" && env LC_ALL=en_US.UTF_8 "${CLOC}" . --quiet --force-lang="C,inc" --exclude-list-file="${exclude_list}" > "${cloc_output}" 2>&1); then
         # Skip the first line (header) and process the results
         tail -n +2 "${cloc_output}" > "${enhanced_output}"
         

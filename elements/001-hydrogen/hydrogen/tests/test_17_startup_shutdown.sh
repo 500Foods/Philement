@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Test: Startup/Shutdown
 # Tests startup and shutdown of the application with minimal and maximal configurations

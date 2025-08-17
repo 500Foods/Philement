@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Markdown link checker script - xargs Parallel Processing Version
 # Usage: ./github-sitemap-xargs.sh <markdown_file> [--debug] [--theme <Red|Blue>] [--profile] 
@@ -102,10 +102,9 @@ timing_start "total_execution"
 timing_start "initialization"
 
 # Check dependencies
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TABLES_SCRIPT="${SCRIPT_DIR}/tables"
-if [[ ! -f "${TABLES_SCRIPT}" ]]; then
-    echo "Error: ${TABLES_SCRIPT} not found" >&2
+TABLES=$(command -v tables)
+if [[ ! -f "${TABLES}" ]]; then
+    echo "Error: ${TABLES} not found" >&2
     exit 1
 fi
 
@@ -737,12 +736,12 @@ fi
 timing_start "table_rendering"
 [[ "${DEBUG}" == "true" ]] && debug_flag="--debug" || debug_flag=""
 
-"${TABLES_SCRIPT}" "${reviewed_layout_json}" "${reviewed_data_json}" ${debug_flag:+"${debug_flag}"}
+"${TABLES}" "${reviewed_layout_json}" "${reviewed_data_json}" ${debug_flag:+"${debug_flag}"}
 if [[ ${#missing_links[@]} -gt 0 && -n "${missing_data_json:-}" ]]; then
-    "${TABLES_SCRIPT}" "${missing_layout_json}" "${missing_data_json}" ${debug_flag:+"${debug_flag}"}
+    "${TABLES}" "${missing_layout_json}" "${missing_data_json}" ${debug_flag:+"${debug_flag}"}
 fi
 if [[ ${#orphaned_files[@]} -gt 0 && -n "${orphaned_data_json:-}" ]]; then
-    "${TABLES_SCRIPT}" "${orphaned_layout_json}" "${orphaned_data_json}" ${debug_flag:+"${debug_flag}"}
+    "${TABLES}" "${orphaned_layout_json}" "${orphaned_data_json}" ${debug_flag:+"${debug_flag}"}
 fi
 timing_end "table_rendering"
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Lifecycle Management Library
 # Handles starting and stopping the Hydrogen Server with various configurations.

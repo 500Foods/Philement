@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Test: JSON Linting
 # Performs JSON validation using jq

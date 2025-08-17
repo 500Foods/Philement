@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Test: Memory Leak Detection
 # Uses Valgrind to detect memory leaks in the Hydrogen application

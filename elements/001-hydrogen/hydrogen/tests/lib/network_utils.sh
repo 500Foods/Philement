@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Network Utilities Library
 # Provides network-related functions for test scripts, including TIME_WAIT socket management

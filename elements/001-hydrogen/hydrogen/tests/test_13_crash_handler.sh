@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Test: Crash Handler
 # Tests that the crash handler correctly generates and formats core dumps

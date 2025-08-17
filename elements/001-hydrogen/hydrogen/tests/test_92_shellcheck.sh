@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Test: Shell Script Analysis
 # Performs shellcheck analysis and exception justification checking

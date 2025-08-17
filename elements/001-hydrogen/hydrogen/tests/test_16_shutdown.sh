@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Test: Shutdown
 # Tests the shutdown functionality of the application with a minimal configuration

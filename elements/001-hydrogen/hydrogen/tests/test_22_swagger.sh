@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Test: Swagger
 # Tests the Swagger functionality, its presence in the payload, etc.

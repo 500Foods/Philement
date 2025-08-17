@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Test: HTML Linting
 # Performs HTML validation using htmlhint

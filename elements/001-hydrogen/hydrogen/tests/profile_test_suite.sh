@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # profile_test_suite.sh: Profile forks and command executions for a test script
 # Usage: ./profile_test_suite.sh [script_name]

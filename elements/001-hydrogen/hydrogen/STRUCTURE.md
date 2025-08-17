@@ -527,8 +527,6 @@ This document provides a comprehensive overview of the Hydrogen project's file o
   - [lifecycle.sh](tests/lib/lifecycle.sh) - Test lifecycle management
   - [log_output.sh](tests/lib/log_output.sh) - Log output formatting
   - [network_utils.sh](tests/lib/network_utils.sh) - Network testing utilities
-  - [tables](tests/lib/tables) - Used to generate ANSI tables from JSON inputs
-  - [Oh](tests/lib/Oh) - ANSI terminal output to SVG converter
   
 </details>
 
