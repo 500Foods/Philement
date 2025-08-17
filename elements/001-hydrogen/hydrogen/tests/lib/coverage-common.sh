@@ -222,10 +222,11 @@ analyze_all_gcov_coverage_batch() {
     local unity_files=()
     local blackbox_files=()
     if [[ -d "${unity_dir}" ]]; then
-        mapfile -t unity_files < <(find "${unity_dir}" -name "*.gcov" -type f | grep -v '_test' 2>/dev/null || true)
+        # shellcheck disable=SC2154 # GREP defined externally in framework.sh
+        mapfile -t unity_files < <(find "${unity_dir}" -name "*.gcov" -type f | "${GREP}" -v '_test' 2>/dev/null || true)
     fi
     if [[ -d "${blackbox_dir}" ]]; then
-        mapfile -t blackbox_files < <(find "${blackbox_dir}" -name "*.gcov" -type f | grep -v '_test' 2>/dev/null || true)
+        mapfile -t blackbox_files < <(find "${blackbox_dir}" -name "*.gcov" -type f | "${GREP}" -v '_test' 2>/dev/null || true)
     fi
 
     # Create union of all files by relative path (with filtering)
@@ -480,7 +481,7 @@ load_source_files() {
             fi
             
             SOURCE_FILES_CACHE+=("${rel_path}")
-        done < <(find "${src_dir}" -type f \( -name "*.c" -o -name "*.h" \) -print0 | grep -v '_test' 2>/dev/null || true)
+        done < <(find "${src_dir}" -type f \( -name "*.c" -o -name "*.h" \) -print0 | "${GREP}" -v '_test' 2>/dev/null || true)
     fi
     
     SOURCE_FILE_CACHE_LOADED="true"
@@ -537,7 +538,7 @@ analyze_gcov_file() {
     
     # Extract relative path from Source: line in gcov file
     local source_line
-    source_line=$(grep '^        -:    0:Source:' "${gcov_file}" | cut -d':' -f3- || true)
+    source_line=$("${GREP}" '^        -:    0:Source:' "${gcov_file}" | cut -d':' -f3- || true)
     local display_path
     if [[ -n "${source_line}" ]]; then
         display_path="${source_line#*/hydrogen/}"
@@ -599,7 +600,7 @@ collect_gcov_files() {
                 fi
                 
                 # Skip system include files that show up in Source: lines
-                if grep -q "Source:/usr/include/" "${gcov_file}" 2>/dev/null; then
+                if "${GREP}" -q "Source:/usr/include/" "${gcov_file}" 2>/dev/null; then
                     continue
                 fi
                 
@@ -612,7 +613,7 @@ collect_gcov_files() {
                 analyze_gcov_file "${gcov_file}" "${coverage_type}"
                 ((files_found++))
             fi
-        done < <(find "${build_dir}" -name "*.gcov" -type f | grep -v '_test' 2>/dev/null || true)
+        done < <(find "${build_dir}" -name "*.gcov" -type f | "${GREP}" -v '_test' 2>/dev/null || true)
     fi
     
     return "${files_found}"

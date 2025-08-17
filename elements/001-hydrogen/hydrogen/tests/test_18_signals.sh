@@ -100,7 +100,7 @@ verify_clean_shutdown() {
     done
     
     # Check for clean shutdown message
-    if grep -q "SHUTDOWN COMPLETE" "${log_file}" 2>/dev/null; then
+    if "${GREP}" -q "SHUTDOWN COMPLETE" "${log_file}" 2>/dev/null; then
         echo "SHUTDOWN_SUCCESS" >> "${result_file}"
         return 0
     else
@@ -124,7 +124,7 @@ verify_single_restart() {
             return 1
         fi
         
-        if grep -q "SIGHUP received" "${log_file}" 2>/dev/null; then
+        if "${GREP}" -q "SIGHUP received" "${log_file}" 2>/dev/null; then
             break
         fi
         sleep 0.05
@@ -138,9 +138,9 @@ verify_single_restart() {
         fi
         
         # Check for restart completion - either message works
-        if (grep -q "Application restarts: 1" "${log_file}" 2>/dev/null || \
-            grep -q "Restart count: 1" "${log_file}" 2>/dev/null || \
-            grep -q "Restart completed successfully" "${log_file}" 2>/dev/null); then
+        if ("${GREP}" -q "Application restarts: 1" "${log_file}" 2>/dev/null || \
+            "${GREP}" -q "Restart count: 1" "${log_file}" 2>/dev/null || \
+            "${GREP}" -q "Restart completed successfully" "${log_file}" 2>/dev/null); then
             echo "RESTART_SUCCESS" >> "${result_file}"
             return 0
         fi
@@ -170,8 +170,8 @@ verify_multi_restart() {
                 return 1
             fi
             
-            if (grep -q "Application restarts: ${current_count}" "${log_file}" 2>/dev/null || \
-                grep -q "Restart count: ${current_count}" "${log_file}" 2>/dev/null); then
+            if ("${GREP}" -q "Application restarts: ${current_count}" "${log_file}" 2>/dev/null || \
+                "${GREP}" -q "Restart count: ${current_count}" "${log_file}" 2>/dev/null); then
                 restart_completed=true
                 break
             fi
@@ -237,7 +237,7 @@ verify_config_dump() {
             return 1
         fi
         
-        if grep -q "APPCONFIG Dump Started" "${log_file}" 2>/dev/null; then
+        if "${GREP}" -q "APPCONFIG Dump Started" "${log_file}" 2>/dev/null; then
             break
         fi
         sleep 0.05
@@ -250,7 +250,7 @@ verify_config_dump() {
             return 1
         fi
         
-        if grep -q "APPCONFIG Dump Complete" "${log_file}" 2>/dev/null; then
+        if "${GREP}" -q "APPCONFIG Dump Complete" "${log_file}" 2>/dev/null; then
             echo "CONFIG_DUMP_SUCCESS" >> "${result_file}"
             return 0
         fi
@@ -281,7 +281,7 @@ verify_multi_signals() {
     
     # Check for single shutdown sequence
     local shutdown_count
-    shutdown_count=$(grep -c "Initiating graceful shutdown sequence" "${log_file}" 2>/dev/null || echo "0")
+    shutdown_count=$("${GREP}" -c "Initiating graceful shutdown sequence" "${log_file}" 2>/dev/null || echo "0")
     if [[ "${shutdown_count}" -eq 1 ]]; then
         echo "MULTI_SIGNAL_SUCCESS" >> "${result_file}"
         return 0
@@ -320,7 +320,7 @@ run_signal_test_parallel() {
             break
         fi
         
-        if grep -q "Application started" "${log_file}" 2>/dev/null; then
+        if "${GREP}" -q "Application started" "${log_file}" 2>/dev/null; then
             startup_success=true
             break
         fi
@@ -381,25 +381,25 @@ analyze_signal_test_results() {
     fi
     
     # Check startup
-    if ! grep -q "STARTUP_SUCCESS" "${result_file}" 2>/dev/null; then
+    if ! "${GREP}" -q "STARTUP_SUCCESS" "${result_file}" 2>/dev/null; then
         print_result 1 "Failed to start Hydrogen for ${description} test"
         return 1
     fi
     
     # Check validation
-    if grep -q "VALIDATION_SUCCESS" "${result_file}" 2>/dev/null; then
+    if "${GREP}" -q "VALIDATION_SUCCESS" "${result_file}" 2>/dev/null; then
         return 0
     else
         # Check for specific failure reasons
-        if grep -q "SHUTDOWN_FAILED" "${result_file}" 2>/dev/null; then
+        if "${GREP}" -q "SHUTDOWN_FAILED" "${result_file}" 2>/dev/null; then
             print_result 1 "${signal} handling failed - no clean shutdown"
-        elif grep -q "RESTART_TIMEOUT" "${result_file}" 2>/dev/null; then
+        elif "${GREP}" -q "RESTART_TIMEOUT" "${result_file}" 2>/dev/null; then
             print_result 1 "${signal} restart failed or timed out"
-        elif grep -q "CRASH_DUMP_TIMEOUT" "${result_file}" 2>/dev/null; then
+        elif "${GREP}" -q "CRASH_DUMP_TIMEOUT" "${result_file}" 2>/dev/null; then
             print_result 1 "${signal} failed to generate crash dump"
-        elif grep -q "CONFIG_DUMP_TIMEOUT" "${result_file}" 2>/dev/null; then
+        elif "${GREP}" -q "CONFIG_DUMP_TIMEOUT" "${result_file}" 2>/dev/null; then
             print_result 1 "${signal} handling failed - no config dump"
-        elif grep -q "MULTI_SIGNAL_MULTIPLE_SEQUENCES" "${result_file}" 2>/dev/null; then
+        elif "${GREP}" -q "MULTI_SIGNAL_MULTIPLE_SEQUENCES" "${result_file}" 2>/dev/null; then
             print_result 1 "Multiple shutdown sequences detected"
         else
             print_result 1 "${signal} handling failed"
@@ -455,7 +455,7 @@ successful_tests=0
 for test_config in "${!SIGNAL_TESTS[@]}"; do
     IFS=':' read -r signal action description validation_func cleanup_signal <<< "${SIGNAL_TESTS[${test_config}]}"
     result_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${test_config}.result"
-    if [[ -f "${result_file}" ]] && grep -q "VALIDATION_SUCCESS" "${result_file}" 2>/dev/null; then
+    if [[ -f "${result_file}" ]] && "${GREP}" -q "VALIDATION_SUCCESS" "${result_file}" 2>/dev/null; then
         ((successful_tests++))
     fi
 done

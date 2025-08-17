@@ -90,7 +90,7 @@ if [[ "${MD_COUNT}" -gt 0 ]]; then
         for file in "${to_process_files[@]}"; do
             file_hash=$(get_file_hash "${file}")
             cache_file="${CACHE_DIR}/$(basename "${file}")_${file_hash}"
-            grep "^${file}:" "${TEMP_NEW_LOG}" > "${cache_file}" || true
+            "${GREP}" "^${file}:" "${TEMP_NEW_LOG}" > "${cache_file}" || true
         done
         
         # Append new results to total output
@@ -101,7 +101,7 @@ if [[ "${MD_COUNT}" -gt 0 ]]; then
     if [[ -s "${TEMP_LOG}" ]]; then
 
         # Filter out Node.js deprecation warnings and other noise
-        grep -Ev "DeprecationWarning|Use \`node --trace-deprecation|\(node:|^$" "${TEMP_LOG}" > "${FILTERED_LOG}" || true
+        "${GREP}" -Ev "DeprecationWarning|Use \`node --trace-deprecation|\(node:|^$" "${TEMP_LOG}" > "${FILTERED_LOG}" || true
         ISSUE_COUNT=$(wc -l < "${FILTERED_LOG}")
 
         if [[ "${ISSUE_COUNT}" -gt 0 ]]; then

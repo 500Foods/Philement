@@ -145,7 +145,7 @@ count_unity_tests_per_source_file() {
             
             # Count RUN_TEST occurrences in the test file
             local test_count
-            test_count=$(grep -c "RUN_TEST(" "${test_file}" 2>/dev/null || echo 0)
+            test_count=$("${GREP}" -c "RUN_TEST(" "${test_file}" 2>/dev/null || echo 0)
             
             # Add to existing count for this source file
             local current_count="${unity_test_counts[${source_file}]:-0}"

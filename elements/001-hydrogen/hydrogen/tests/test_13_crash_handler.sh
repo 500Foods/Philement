@@ -96,7 +96,7 @@ verify_core_file_content() {
     
     # Verify it's a valid core file
     readelf_output=$(readelf -h "${core_file}" 2>/dev/null)
-    if echo "${readelf_output}" | grep -q "Core file"; then
+    if echo "${readelf_output}" | "${GREP}" -q "Core file"; then
         print_message "Valid core file found (${core_size} bytes)"
         return 0
     fi
@@ -126,7 +126,7 @@ verify_debug_symbols() {
     
     # Use readelf to check for debug symbols
     # shellcheck disable=SC2312 # Expect an empty return if no debugging is available
-    if readelf --debug-dump=info "${binary}" 2>/dev/null | grep -q -m 1 "DW_AT_name"; then
+    if readelf --debug-dump=info "${binary}" 2>/dev/null | "${GREP}" -q -m 1 "DW_AT_name"; then
         if [[ "${expect_symbols}" -eq 1 ]]; then
             # print_message "Debug symbols found in ${binary_name} (as expected)"
             DEBUG_SYMBOL_CACHE[${binary_name}]=0
@@ -200,7 +200,7 @@ analyze_core_with_gdb() {
     local gdb_flags
     temp_output="${LOG_PREFIX}${TIMESTAMP}_${build_name}.gdb"
     readelf --sections "${binary}" 2>/dev/null > "${temp_output}"
-    if grep -q -m 1 ".debug_info" "${temp_output}"; then
+    if "${GREP}" -q -m 1 ".debug_info" "${temp_output}"; then
         print_message "Debug info found in binary, using full output"
         gdb_flags=(-q -ex 'set print frame-arguments all' -ex 'set print object on')
     else
@@ -232,13 +232,13 @@ analyze_core_with_gdb() {
     local has_test_crash=0
 
     # Look for test_crash_handler in backtrace
-    if grep -q "test_crash_handler.*at.*hydrogen\.c:[0-9]" "${gdb_output_file}" && \
-       grep -q "Program terminated with signal SIGSEGV" "${gdb_output_file}"; then
+    if "${GREP}" -q "test_crash_handler.*at.*hydrogen\.c:[0-9]" "${gdb_output_file}" && \
+       "${GREP}" -q "Program terminated with signal SIGSEGV" "${gdb_output_file}"; then
         has_test_crash=1
         has_backtrace=1
     # For release and naked builds, just check for SIGSEGV
     elif [[ "${build_name}" == *"release"* ]] || [[ "${build_name}" == *"naked"* ]]; then
-        if grep -q "Program terminated with signal SIGSEGV" "${gdb_output_file}"; then
+        if "${GREP}" -q "Program terminated with signal SIGSEGV" "${gdb_output_file}"; then
             has_backtrace=1
         fi
     fi
@@ -316,7 +316,7 @@ run_crash_test_parallel() {
             break
         fi
         
-        if grep -q "Application started" "${log_file}" 2>/dev/null; then
+        if "${GREP}" -q "Application started" "${log_file}" 2>/dev/null; then
             startup_complete=true
             break
         fi
@@ -406,7 +406,7 @@ analyze_parallel_results() {
     
     # Extract PID from result file
     local hydrogen_pid
-    hydrogen_pid=$(grep "PID=" "${result_file}" | cut -d'=' -f2 || true)
+    hydrogen_pid=$("${GREP}" "PID=" "${result_file}" | cut -d'=' -f2 || true)
     
     if [[ -z "${hydrogen_pid}" ]]; then
         print_message "${binary_name}: Could not extract PID from result file"
@@ -415,7 +415,7 @@ analyze_parallel_results() {
     
     # Extract GDB result
     local gdb_result
-    gdb_result=$(grep "GDB_RESULT=" "${result_file}" | cut -d'=' -f2 || echo "1" || true)
+    gdb_result=$("${GREP}" "GDB_RESULT=" "${result_file}" | cut -d'=' -f2 || echo "1" || true)
     
     # Initialize result variables for this build
     local debug_result=1
@@ -440,7 +440,7 @@ analyze_parallel_results() {
     fi
     
     # Verify crash handler log messages
-    if grep -q -e "Received SIGUSR1" -e "Signal 11 received" "${log_file}" 2>/dev/null; then
+    if "${GREP}" -q -e "Received SIGUSR1" -e "Signal 11 received" "${log_file}" 2>/dev/null; then
         # print_message "Found crash handler messages in log"
         log_result=0
     else

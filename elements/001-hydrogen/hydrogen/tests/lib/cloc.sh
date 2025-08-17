@@ -166,14 +166,14 @@ run_cloc_analysis() {
 
         # Let's get some mre accurate stats happening
         if [[ -f "${PROJECT_DIR}/build/tests/results/coverage_unity.info" ]]; then
-            instrumented_both=$(grep -c '^DA:' "${PROJECT_DIR}/build/tests/results/coverage_unity.info" || true)
+            instrumented_both=$("${GREP}" -c '^DA:' "${PROJECT_DIR}/build/tests/results/coverage_unity.info" || true)
         else
-            instrumented_both=$(lcov --capture --initial --directory "${PROJECT_DIR}/build/unity" --output-file "${PROJECT_DIR}/build/tests/results/coverage_unity.info" --ignore-errors empty >/dev/null 2>&1 && grep -c '^DA:' "${PROJECT_DIR}/build/tests/results/coverage_unity.info")
+            instrumented_both=$(lcov --capture --initial --directory "${PROJECT_DIR}/build/unity" --output-file "${PROJECT_DIR}/build/tests/results/coverage_unity.info" --ignore-errors empty >/dev/null 2>&1 && "${GREP}" -c '^DA:' "${PROJECT_DIR}/build/tests/results/coverage_unity.info")
         fi
         if [[ -f "${PROJECT_DIR}/build/tests/results/coverage_blackbox.info" ]]; then
-            instrumented_code=$(grep -c '^DA:' "${PROJECT_DIR}/build/tests/results/coverage_blackbox.info" || true)
+            instrumented_code=$("${GREP}" -c '^DA:' "${PROJECT_DIR}/build/tests/results/coverage_blackbox.info" || true)
         else
-            instrumented_code=$(lcov --capture --initial --directory "${PROJECT_DIR}/build/coverage" --output-file "${PROJECT_DIR}/build/tests/results/coverage_blackbox.info" --ignore-errors empty >/dev/null 2>&1 && grep -c '^DA:' "${PROJECT_DIR}/build/tests/results/coverage_blackbox.info")
+            instrumented_code=$(lcov --capture --initial --directory "${PROJECT_DIR}/build/coverage" --output-file "${PROJECT_DIR}/build/tests/results/coverage_blackbox.info" --ignore-errors empty >/dev/null 2>&1 && "${GREP}" -c '^DA:' "${PROJECT_DIR}/build/tests/results/coverage_blackbox.info")
         fi
 
         # Do the math. Why the -10? Dunno. Just what lcov calculates differently than gcov somehow. Probably an extra file that isn't being filtered 
@@ -233,7 +233,7 @@ extract_cloc_stats() {
     
     # Extract summary statistics from the SUM line
     local stats_line
-    stats_line=$(grep "SUM:" "${cloc_output_file}")
+    stats_line=$("${GREP}" "SUM:" "${cloc_output_file}")
     
     if [[ -n "${stats_line}" ]]; then
         local files_count code_lines

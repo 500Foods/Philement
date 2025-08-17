@@ -30,7 +30,8 @@ check_port_in_use() {
     # Capture output and check exit status explicitly
     local ss_output
     ss_output=$(ss -tuln 2>/dev/null)
-    echo "${ss_output}" | grep -q ":${port}\b"
+    # shellcheck disable=SC2154  # GREP defined externally in framework.sh
+    echo "${ss_output}" | "${GREP}" -q ":${port}\b"
     return $?
 }
 
@@ -40,11 +41,11 @@ count_time_wait_sockets() {
     local count=0
     
     # Use ss to count TIME_WAIT sockets
-    # shellcheck disable=SC2126  # Intentionally using wc -l instead of grep -c to avoid integer expression errors
-    count=$(ss -tan | grep ":${port} " | grep "TIME-WAIT" | wc -l || true 2>/dev/null)
+    # shellcheck disable=SC2126,SC2154  # Intentionally using wc -l instead of grep -c to avoid integer expression errors
+    count=$(ss -tan | "${GREP}" ":${port} " | "${GREP}" "TIME-WAIT" | wc -l || true 2>/dev/null)
     
     # Clean up the count and ensure it's a valid integer
-    count=$(echo "${count}" | tr -d '[:space:]' | grep -o '^[0-9]*' | head -1 || true)
+    count=$(echo "${count}" | tr -d '[:space:]' | "${GREP}" -o '^[0-9]*' | head -1 || true)
     count=${count:-0}
     
     echo "${count}"
@@ -70,7 +71,7 @@ check_time_wait_sockets() {
         # Also compress excessive whitespace for better formatting
         while IFS= read -r line; do
             print_output "${line}"
-        done < <(ss -tan | grep ":${port} " | grep "TIME-WAIT" | sed 's/   */ /g' || true)
+        done < <(ss -tan | "${GREP}" ":${port} " | "${GREP}" "TIME-WAIT" | sed 's/   */ /g' || true)
     else
         print_message "No TIME_WAIT sockets found on port ${port}"
     fi

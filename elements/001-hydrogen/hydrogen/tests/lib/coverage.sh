@@ -106,8 +106,8 @@ validate_coverage_consistency() {
                     # Detailed line analysis
                     local file_total
                     local file_covered
-                    file_total=$(grep -c "^[ \t]*[0-9#-].*:" "${gcov_file}" 2>/dev/null || echo "0")
-                    file_covered=$(grep -c "^[ \t]*[1-9][0-9]*.*:" "${gcov_file}" 2>/dev/null || echo "0")
+                    file_total=$("${GREP}" -c "^[ \t]*[0-9#-].*:" "${gcov_file}" 2>/dev/null || echo "0")
+                    file_covered=$("${GREP}" -c "^[ \t]*[1-9][0-9]*.*:" "${gcov_file}" 2>/dev/null || echo "0")
                     
                     if [[ ${file_covered} -gt 0 ]]; then
                         covered_files=$((covered_files + 1))
@@ -117,7 +117,7 @@ validate_coverage_consistency() {
                     total_lines=$((total_lines + file_total))
                     covered_lines=$((covered_lines + file_covered))
                 fi
-            done < <(find "${build_dir}" -name "*.gcov" -type f | grep -v '_test' 2>/dev/null || true)
+            done < <(find "${build_dir}" -name "*.gcov" -type f | "${GREP}" -v '_test' 2>/dev/null || true)
         fi
     done
     
@@ -241,7 +241,7 @@ calculate_coverage_generic() {
         
         to_process_dirs+=("${subdir}")
         to_process_bases+=("${base}")
-    done < <(find . -type f -name "${find_pattern}" | grep -v '_test' 2>/dev/null || true)
+    done < <(find . -type f -name "${find_pattern}" | "${GREP}" -v '_test' 2>/dev/null || true)
     
     if [[ ${#to_process_bases[@]} -gt 0 ]]; then
         # Function to run gcov for a single file
@@ -303,7 +303,7 @@ calculate_coverage_generic() {
             
             # Extra filters (unity-specific, optional)
             if [[ "${extra_filters}" == true ]]; then
-                if grep -q "Source:/usr/include/" "${gcov_file}" 2>/dev/null; then
+                if "${GREP}" -q "Source:/usr/include/" "${gcov_file}" 2>/dev/null; then
                     continue
                 fi
                 if [[ "${basename_file}" == "test_"* ]]; then
@@ -327,7 +327,7 @@ calculate_coverage_generic() {
             
             gcov_files_to_process+=("${gcov_file}")
         fi
-    done < <(find "${dir}" -name "*.gcov" -type f | grep -v '_test' 2>/dev/null || true)
+    done < <(find "${dir}" -name "*.gcov" -type f | "${GREP}" -v '_test' 2>/dev/null || true)
     
     # Count total files
     local instrumented_files=${#gcov_files_to_process[@]}

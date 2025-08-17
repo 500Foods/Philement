@@ -54,7 +54,7 @@ run_cppcheck() {
             "suppress") cppcheck_args+=("--suppress=${value}") ;;
             *) ;;
         esac
-    done < <(grep -v '^#' ".lintignore-c" | grep '=' || true)
+    done < <("${GREP}" -v '^#' ".lintignore-c" | "${GREP}" '=' || true)
     
     # Collect files with inline filtering using centralized exclusion function
     local files=()
