@@ -15,11 +15,13 @@
 # Application version
 declare -r APPVERSION="1.3.0"
 
+DATE=$(command -v date) 
+
 # Performance timing functions
 declare -A timing_data
 timing_start() {
     local name="$1"
-    timing_data["${name}_start"]=$(date +%s%N)
+    timing_data["${name}_start"]=$("${DATE}" +%s%N)
 }
 
 timing_end() {
@@ -27,7 +29,7 @@ timing_end() {
     local start_time="${timing_data["${name}_start"]}"
     if [[ -n "${start_time}" ]]; then
         local end_time
-        end_time=$(date +%s%N)
+        end_time=$("${DATE}" +%s%N)
         local duration=$(( (end_time - start_time) / 1000000 ))
         timing_data["${name}_duration"]=${duration}
         [[ "${PROFILE}" == "true" ]] && echo "[PROFILE] ${name}: ${duration}ms" >&2
@@ -95,7 +97,7 @@ fi
 
 # Debug logging function
 debug_log() {
-    [[ "${DEBUG}" == "true" ]] && echo "[DEBUG] $(date '+%Y-%m-%d %H:%M:%S' || true): $*" >&2
+    [[ "${DEBUG}" == "true" ]] && echo "[DEBUG] $("${DATE}" '+%Y-%m-%d %H:%M:%S' || true): $*" >&2
 }
 
 timing_start "total_execution"

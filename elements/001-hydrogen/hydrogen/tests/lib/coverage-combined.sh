@@ -45,7 +45,8 @@ calculate_combined_coverage() {
     local unity_build_dir="${project_root}/build/unity"
     local blackbox_build_dir="${project_root}/build/coverage"
     local timestamp
-    timestamp=$(date +"%Y-%m-%d %H:%M:%S")
+    # shellcheck disable=SC2154 # DATE defined externally in framework.sh    
+    timestamp=$("${DATE}" +"%Y-%m-%d %H:%M:%S")
     local marker_file="${BUILD_DIR}/combined_coverage_marker"
     local coverage_file="${COMBINED_COVERAGE_FILE}"
 
@@ -132,7 +133,7 @@ identify_uncovered_files() {
     local total_count=0
     local uncovered_files=()
     local timestamp
-    timestamp=$(date +"%Y-%m-%d %H:%M:%S")
+    timestamp=$("${DATE}" +"%Y-%m-%d %H:%M:%S")
     
     # Use efficient blackbox coverage calculation to ensure gcov files are up to date
     local blackbox_build_dir="${project_root}/build/coverage"

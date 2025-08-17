@@ -42,7 +42,7 @@ setup_orchestration_environment
 
 # Test Setup
 commands=(
-    "grep" "sort" "bc" "jq" "awk" "sed" "xargs" "nproc" "timeout" "date" "lsof"
+    "grep" "sort" "bc" "jq" "awk" "sed" "xargs" "nproc" "timeout" "${DATE}" "lsof"
     "cmake" "gcc" "ninja" "curl" "websocat" "wscat"
     "git" "md5sum" "${CLOC}"
     "cppcheck" "shellcheck" "markdownlint" "eslint" "stylelint" "htmlhint" "jsonlint" "swagger-cli"
@@ -590,7 +590,8 @@ coverage_table_file="${RESULTS_DIR}/coverage_table.txt"
 env -i bash "${COVERAGE}" 2>/dev/null | tee "${coverage_table_file}" || true
 
 # Calculate total elapsed time
-END_TIME=$(date +%s.%N 2>/dev/null)
+# shellcheck disable=SC2154 # DATE defined externally in framework.sh   
+END_TIME=$("${DATE}" +%s.%N 2>/dev/null)
 # shellcheck disable=SC2154 # START_TIME defined externally in framework.sh
 if [[ "${START_TIME}" =~ \. ]] && [[ "${END_TIME}" =~ \. ]]; then
     TOTAL_ELAPSED=$(echo "${END_TIME} - ${START_TIME}" | bc 2>/dev/null || echo "0")
