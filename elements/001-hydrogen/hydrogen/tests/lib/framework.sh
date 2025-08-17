@@ -54,7 +54,7 @@ REALPATH=$(command -v grealpath 2>/dev/null || command -v realpath)
 XARGS=$(command -v gxargs 2>/dev/null || command -v xargs)
 TIMEOUT=$(command -v gtimeout 2>/dev/null || command -v timeout)
 NPROC=$(command -v nproc 2>/dev/null || { command -v sysctl >/dev/null && echo "sysctl -n hw.ncpu" || echo "getconf _NPROCESSORS_ONLN"; })
-export DATE FIND GREP SED AWK TAR XARGS TIMEOUT NPROC
+export PRINTF DATE FIND GREP SED AWK TAR REALPATH XARGS TIMEOUT NPROC
 
 # These are standard utilities not tied to a particular OS
 CLOC=$(command -v cloc)
