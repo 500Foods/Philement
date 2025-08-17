@@ -16,6 +16,7 @@
 declare -r APPVERSION="1.3.0"
 
 DATE=$(command -v date) 
+XARGS=$(command -v gxargs 2>/dev/null || command -v xargs)
 
 # Performance timing functions
 declare -A timing_data
@@ -422,13 +423,14 @@ process_file_batch() {
         done < <(extract_links "${abs_file}" || true)
         
         # Batch normalize all collected paths (md5sum pattern optimization)
+        XARGS=$(command -v gxargs 2>/dev/null || command -v xargs)
         if [[ ${#normalize_candidates[@]} -gt 0 ]]; then
             # shellcheck disable=SC2312,SC2016 # This has been optimized so let's not fuss with it more
             while IFS=' ' read -r original normalized; do
                 normalized_cache["${original}"]="${normalized}"
             done < <(
                 printf '%s\n' "${!normalize_candidates[@]}" | \
-                xargs -r -I {} sh -c 'printf "%s %s\n" "{}" "$(realpath -m "{}" 2>/dev/null || echo "{}")"'
+                "${XARGS}" -r -I {} sh -c 'printf "%s %s\n" "{}" "$(realpath -m "{}" 2>/dev/null || echo "{}")"'
             )
         fi
         
@@ -540,7 +542,7 @@ while [[ -s "${files_to_process}" ]]; do
     debug_log "Processing iteration ${iteration} with ${file_count} files"
     
     # Process current batch in parallel using xargs
-    xargs -P 0 -I {} bash -c "process_file_batch \"\$1\" \"\$2\" \"\$3\" \"\$4\" <<< \"\$5\"" _ "${cache_file}" "${repo_root}" "${original_dir}" "${results_file}" {} < "${files_to_process}"
+    "${XARGS}" -P 0 -I {} bash -c "process_file_batch \"\$1\" \"\$2\" \"\$3\" \"\$4\" <<< \"\$5\"" _ "${cache_file}" "${repo_root}" "${original_dir}" "${results_file}" {} < "${files_to_process}"
     # Extract newly discovered files from results
     new_files_temp="${temp_dir}/new_files_${iteration}.txt"
     true > "${new_files_temp}"
