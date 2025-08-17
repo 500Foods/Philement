@@ -106,10 +106,14 @@ run_cloc_analysis() {
             
             # Use awk to parse the line more reliably
             local lang files comment code
-            lang=$(echo "${line}" | awk '{$1=$1; for(i=1;i<=NF-4;i++) printf "%s ", $i; print ""}' | "${SED}" 's/ *$//' || true)
-            files=$(echo "${line}" | awk '{print $(NF-3)}')
-            comment=$(echo "${line}" | awk '{print $(NF-1)}')
-            code=$(echo "${line}" | awk '{print $NF}')
+            # shellcheck disable=SC2016 # Using single quotes to avoid variable expansion in awk
+            lang=$(echo "${line}" | "${AWK}" '{$1=$1; for(i=1;i<=NF-4;i++) printf "%s ", $i; print ""}' | "${SED}" 's/ *$//' || true)
+            # shellcheck disable=SC2016 # Using single quotes to avoid variable expansion in awk
+            files=$(echo "${line}" | "${AWK}" '{print $(NF-3)}')
+            # shellcheck disable=SC2016 # Using single quotes to avoid variable expansion in awk
+            comment=$(echo "${line}" | "${AWK}" '{print $(NF-1)}')
+            # shellcheck disable=SC2016 # Using single quotes to avoid variable expansion in awk
+            code=$(echo "${line}" | "${AWK}" '{print $NF}')
             
             # Only process lines that have numeric values
             if [[ "${files}" =~ ^[0-9]+$ && "${code}" =~ ^[0-9]+$ && "${comment}" =~ ^[0-9]+$ ]]; then
@@ -149,16 +153,16 @@ run_cloc_analysis() {
         local commentscode_ratio=""
         
         if [[ "${markdown_code}" -gt 0 ]]; then
-            codedoc_ratio=$(awk "BEGIN {printf \"%.1f\", ${total_code} / ${markdown_code}}")
-            docscode_ratio=$(awk "BEGIN {printf \"%.1f\", ${markdown_code} / ${total_code}}")
+            codedoc_ratio=$("${AWK}" "BEGIN {printf \"%.1f\", ${total_code} / ${markdown_code}}")
+            docscode_ratio=$("${AWK}" "BEGIN {printf \"%.1f\", ${markdown_code} / ${total_code}}")
         else
             codedoc_ratio="N/A"
             docscode_ratio="N/A"
         fi
         
         if [[ "${total_comment}" -gt 0 ]]; then
-            codecomment_ratio=$(awk "BEGIN {printf \"%.1f\", ${total_code} / ${total_comment}}")
-            commentscode_ratio=$(awk "BEGIN {printf \"%.1f\", ${total_comment} / ${total_code}}")
+            codecomment_ratio=$("${AWK}" "BEGIN {printf \"%.1f\", ${total_code} / ${total_comment}}")
+            commentscode_ratio=$("${AWK}" "BEGIN {printf \"%.1f\", ${total_comment} / ${total_code}}")
         else
             codecomment_ratio="N/A"
             commentscode_ratio="N/A"
@@ -237,8 +241,10 @@ extract_cloc_stats() {
     
     if [[ -n "${stats_line}" ]]; then
         local files_count code_lines
-        files_count=$(echo "${stats_line}" | awk '{print $2}')
-        code_lines=$(echo "${stats_line}" | awk '{print $5}')
+        # shellcheck disable=SC2016 # Using single quotes to avoid variable expansion in awk
+        files_count=$(echo "${stats_line}" | "${AWK}" '{print $2}')
+        # shellcheck disable=SC2016 # Using single quotes to avoid variable expansion in awk
+        code_lines=$(echo "${stats_line}" | "${AWK}" '{print $5}')
         
         echo "files:${files_count},lines:${code_lines}"
         return 0

@@ -31,7 +31,8 @@ mkdir -p "${CACHE_DIR}"
 
 # Function to get file hash (using md5sum or equivalent)
 get_file_hash() {
-    "${MD5SUM}" "$1" | awk '{print $1}' || true
+    # shellcheck disable=SC2016 # Using single quotes on purpose to avoid escaping issues
+    "${MD5SUM}" "$1" | "${AWK}" '{print $1}' || true
 }
 
 print_subtest "Markdown Linting"
