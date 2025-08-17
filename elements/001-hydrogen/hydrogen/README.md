@@ -72,20 +72,29 @@ Hydrogen is currently designed for technical users who:
 
 ## Latest Test Results
 
+<<<<<<< HEAD
 Generated on: 2025-Aug-17 (Sun) 03:00:59 PDT
+=======
+Generated on: 2025-Aug-17 (Sun) 03:16:21 PDT
+>>>>>>> fdf300ab824538b26a0570e8833ab209698804ca
 
 ### Summary
 
 | Metric | Value |
 | ------ | ----- |
-| Total Tests | 26 |
-| Passed | 26 |
+| Total Tests | 1 |
+| Passed | 1 |
 | Failed | 0 |
-| Total Subtests | 231 |
-| Passed Subtests | 231 |
+| Total Subtests | 5 |
+| Passed Subtests | 5 |
 | Failed Subtests | 0 |
+<<<<<<< HEAD
 | Elapsed Time | 00:00:13.422 |
 | Cumulative Time | 00:00:29.653 |
+=======
+| Elapsed Time | 00:00:05.854 |
+| Cumulative Time | 00:00:00.819 |
+>>>>>>> fdf300ab824538b26a0570e8833ab209698804ca
 
 [Test Suite Results](COMPLETE.svg) | [Test Suite Coverage](COVERAGE.svg)
 
@@ -93,14 +102,12 @@ Generated on: 2025-Aug-17 (Sun) 03:00:59 PDT
 
 | Test Type | Files Cover | Files Instr | Lines Cover | Lines Instr | Coverage |
 | --------- | ----------- | ----------- | ----------- | ----------- | -------- |
-| Unity Tests | 16 | 121 | 479 | 12,016 | 3.986% |
-| Blackbox Tests | 98 | 121 | 6,154 | 12,016 | 51.215% |
-| Combined Tests | 98 | 121 | 6,350 | 12,016 | 52.846% |
 
 ### Individual Test Results
 
 | Status | Time | Test | Test Name | Tests | Pass | Fail |
 | ------ | ---- | -- | ---- | ----- | ---- | ---- |
+<<<<<<< HEAD
 | ✅ | 00:00:07.766 | 01-CMP | Compilation (source code: 271 files) | 16 | 16 | 0 |
 | ✅ | 00:00:00.109 | 02-ENV | Environment Variables (secrets: 3) | 5 | 5 | 0 |
 | ✅ | 00:00:02.199 | 04-LNK | Markdown Links Check (github-sitemap) | 3 | 3 | 0 |
@@ -150,4 +157,15 @@ SUM:                           581          16760          14179          66134
 
 Code/Docs: 1.8   Code/Comments: 2.8   Instrumented Code:  12,016   Ratio: 18.21
 Docs/Code: 0.5   Comments/Code: 0.4   Instrumented Test:   5,250   Unity: 43.69
+=======
+| ✅ | 00:00:00.819 | 02-ENV | Environment Variables (secrets: 3) | 5 | 5 | 0 |
+
+## Repository Information
+
+Generated via cloc: 2025-Aug-17 (Sun) 03:16:21 PDT
+
+```cloc
+cloc command failed
+cloc command failed
+>>>>>>> fdf300ab824538b26a0570e8833ab209698804ca
 ```

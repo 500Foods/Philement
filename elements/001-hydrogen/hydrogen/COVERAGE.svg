@@ -1,69 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="880.00" height="2593.60" viewBox="0 0 880.00 2593.60">
+<svg xmlns="http://www.w3.org/2000/svg" width="880.00" height="191.20" viewBox="0 0 880.00 191.20">
   <defs><style>.terminal-text { font-family: 'Consolas', 'Consolas', 'Monaco', 'Courier New', monospace; }</style></defs>
   <rect width="100%" height="100%" fill="#1e1e1e" rx="6"/>
-  <text x="20.00" y="34.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="688.80" lengthAdjust="spacingAndGlyphs" fill="#cd3131">╭────────────────────────────────────────────────────────────────────────────────╮</text>
+  <text x="20.00" y="34.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="697.20" lengthAdjust="spacingAndGlyphs" fill="#cd3131">╭─────────────────────────────────────────────────────────────────────────────────╮</text>
   <text x="20.00" y="50.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="16.80" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│ </text>
   <text x="36.80" y="50.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="168.00" lengthAdjust="spacingAndGlyphs" fill="#e5e5e5">Test Suite Coverage </text>
-  <text x="204.80" y="50.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="33.60" lengthAdjust="spacingAndGlyphs" fill="#cd3131">——— </text>
-  <text x="238.40" y="50.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="42.00" lengthAdjust="spacingAndGlyphs" fill="#11a8cd">Unity</text>
-  <text x="280.40" y="50.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="67.20" lengthAdjust="spacingAndGlyphs" fill="#e5e5e5"> 3.986% </text>
-  <text x="347.60" y="50.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="33.60" lengthAdjust="spacingAndGlyphs" fill="#cd3131">——— </text>
-  <text x="381.20" y="50.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="67.20" lengthAdjust="spacingAndGlyphs" fill="#11a8cd">Blackbox</text>
-  <text x="448.40" y="50.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="75.60" lengthAdjust="spacingAndGlyphs" fill="#e5e5e5"> 51.215% </text>
-  <text x="524.00" y="50.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="33.60" lengthAdjust="spacingAndGlyphs" fill="#cd3131">——— </text>
-  <text x="557.60" y="50.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="67.20" lengthAdjust="spacingAndGlyphs" fill="#11a8cd">Combined</text>
-  <text x="624.80" y="50.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="67.20" lengthAdjust="spacingAndGlyphs" fill="#e5e5e5"> 52.846%</text>
-  <text x="692.00" y="50.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> </text>
-  <text x="700.40" y="50.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="20.00" y="67.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="840.00" lengthAdjust="spacingAndGlyphs" fill="#cd3131">├─────────┬────────┬────────────────────────────────────────────┬───────┬────────┼────────┬────────╮</text>
+  <text x="204.80" y="50.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="25.20" lengthAdjust="spacingAndGlyphs" fill="#cd3131">———</text>
+  <text x="230.00" y="50.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="126.00" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> Unity: 0.000% </text>
+  <text x="356.00" y="50.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="25.20" lengthAdjust="spacingAndGlyphs" fill="#cd3131">———</text>
+  <text x="381.20" y="50.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="151.20" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> Blackbox: 0.000% </text>
+  <text x="532.40" y="50.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="25.20" lengthAdjust="spacingAndGlyphs" fill="#cd3131">———</text>
+  <text x="557.60" y="50.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="142.80" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> Combined: 0.000%</text>
+  <text x="700.40" y="50.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> </text>
+  <text x="708.80" y="50.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
+  <text x="20.00" y="67.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="840.00" lengthAdjust="spacingAndGlyphs" fill="#cd3131">├─────────────────────────────────────────────────────────────────────────────────┴────────────────╮</text>
   <text x="20.00" y="84.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="28.40" y="84.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="75.60" lengthAdjust="spacingAndGlyphs" fill="#0dbc79"> Cover % </text>
-  <text x="104.00" y="84.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="112.40" y="84.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="67.20" lengthAdjust="spacingAndGlyphs" fill="#0dbc79">  Lines </text>
-  <text x="179.60" y="84.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="188.00" y="84.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="369.60" lengthAdjust="spacingAndGlyphs" fill="#0dbc79"> Source File                                </text>
-  <text x="557.60" y="84.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="566.00" y="84.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="58.80" lengthAdjust="spacingAndGlyphs" fill="#0dbc79"> Tests </text>
-  <text x="624.80" y="84.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="633.20" y="84.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="67.20" lengthAdjust="spacingAndGlyphs" fill="#0dbc79">  Unity </text>
-  <text x="700.40" y="84.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="708.80" y="84.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="67.20" lengthAdjust="spacingAndGlyphs" fill="#0dbc79">  Black </text>
-  <text x="776.00" y="84.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="784.40" y="84.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="67.20" lengthAdjust="spacingAndGlyphs" fill="#0dbc79">  Cover </text>
+  <text x="28.40" y="84.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="823.20" lengthAdjust="spacingAndGlyphs" fill="#0dbc79"> Status                                                                                           </text>
   <text x="851.60" y="84.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="20.00" y="101.20" font-size="14" class="terminal-text" xml:space="preserve" textLength="840.00" lengthAdjust="spacingAndGlyphs" fill="#cd3131">├─────────┼────────┼────────────────────────────────────────────┼───────┼────────┼────────┼────────┤</text>
+  <text x="20.00" y="101.20" font-size="14" class="terminal-text" xml:space="preserve" textLength="840.00" lengthAdjust="spacingAndGlyphs" fill="#cd3131">├──────────────────────────────────────────────────────────────────────────────────────────────────┤</text>
   <text x="20.00" y="118.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="28.40" y="118.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="75.60" lengthAdjust="spacingAndGlyphs" fill="#ffffff">  85.714 </text>
-  <text x="104.00" y="118.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="112.40" y="118.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="67.20" lengthAdjust="spacingAndGlyphs" fill="#ffffff">    175 </text>
-  <text x="179.60" y="118.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="188.00" y="118.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="369.60" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> hydrogen.c                                 </text>
-  <text x="557.60" y="118.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="566.00" y="118.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="58.80" lengthAdjust="spacingAndGlyphs" fill="#ffffff">     5 </text>
-  <text x="624.80" y="118.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="633.20" y="118.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="67.20" lengthAdjust="spacingAndGlyphs" fill="#ffffff">        </text>
-  <text x="700.40" y="118.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="708.80" y="118.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="67.20" lengthAdjust="spacingAndGlyphs" fill="#ffffff">    150 </text>
-  <text x="776.00" y="118.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="784.40" y="118.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="67.20" lengthAdjust="spacingAndGlyphs" fill="#ffffff">    150 </text>
+  <text x="28.40" y="118.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="823.20" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> No source file coverage data available. Run Test 11 (Unity) or other Tests to generate gcov data </text>
   <text x="851.60" y="118.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="20.00" y="134.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="840.00" lengthAdjust="spacingAndGlyphs" fill="#cd3131">├─────────┼────────┼────────────────────────────────────────────┼───────┼────────┼────────┼────────┤</text>
-  <text x="20.00" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="28.40" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="75.60" lengthAdjust="spacingAndGlyphs" fill="#ffffff">  67.769 </text>
-  <text x="104.00" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="112.40" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="67.20" lengthAdjust="spacingAndGlyphs" fill="#ffffff">    121 </text>
-  <text x="179.60" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="188.00" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="369.60" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> api/api_service.c                          </text>
-  <text x="557.60" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="566.00" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="58.80" lengthAdjust="spacingAndGlyphs" fill="#ffffff">       </text>
-  <text x="624.80" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="633.20" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="67.20" lengthAdjust="spacingAndGlyphs" fill="#ffffff">        </text>
-  <text x="700.40" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="708.80" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="67.20" lengthAdjust="spacingAndGlyphs" fill="#ffffff">     82 </text>
-  <text x="776.00" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
-  <text x="784.40" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="67.20" lengthAdjust="spacingAndGlyphs" fill="#ffffff">     82 </text>
+  <text x="20.00" y="134.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="840.00" lengthAdjust="spacingAndGlyphs" fill="#cd3131">├──────────────────────────────────────────────────────────────────────────────────────────────────┤</text>
+  <text x="20.00" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="16.80" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│ </text>
+  <text x="36.80" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#11a8cd">:</text>
+  <text x="45.20" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> </text>
+  <text x="53.60" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="25.20" lengthAdjust="spacingAndGlyphs" fill="#cd3131">———</text>
+  <text x="78.80" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> </text>
+  <text x="87.20" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="218.40" lengthAdjust="spacingAndGlyphs" fill="#bc3fbc">100+ Lines &lt; 50% Coverage:</text>
+  <text x="305.60" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="252.00" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> - No coverage data available </text>
+  <text x="557.60" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="25.20" lengthAdjust="spacingAndGlyphs" fill="#cd3131">———</text>
+  <text x="582.80" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> </text>
+  <text x="591.20" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="252.00" lengthAdjust="spacingAndGlyphs" fill="#11a8cd">2025-Aug-17 (Sun) 03:16:26 PDT</text>
+  <text x="843.20" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> </text>
   <text x="851.60" y="151.60" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
+<<<<<<< HEAD
   <text x="20.00" y="168.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="28.40" y="168.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="75.60" lengthAdjust="spacingAndGlyphs" fill="#ffffff">  56.395 </text>
   <text x="104.00" y="168.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
@@ -1962,4 +1933,7 @@
   <text x="843.20" y="2554.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#ffffff"> </text>
   <text x="851.60" y="2554.00" font-size="14" class="terminal-text" xml:space="preserve" textLength="8.40" lengthAdjust="spacingAndGlyphs" fill="#cd3131">│</text>
   <text x="20.00" y="2570.80" font-size="14" class="terminal-text" xml:space="preserve" textLength="840.00" lengthAdjust="spacingAndGlyphs" fill="#cd3131">   ╰───────────────────────────────────────────────────────────────────────────────────────────────╯</text>
+=======
+  <text x="20.00" y="168.40" font-size="14" class="terminal-text" xml:space="preserve" textLength="840.00" lengthAdjust="spacingAndGlyphs" fill="#cd3131">╰──────────────────────────────────────────────────────────────────────────────────────────────────╯</text>
+>>>>>>> fdf300ab824538b26a0570e8833ab209698804ca
 </svg>
