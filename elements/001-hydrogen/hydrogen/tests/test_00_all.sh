@@ -44,7 +44,7 @@ setup_orchestration_environment
 commands=(
     "sort" "bc" 
     "${DATE}" "${FIND}" "${GREP}" "${SED}" "${AWK}" "${XARGS}" "${TAR}" "${TIMEOUT}"
-    "jq"  "nproc" "lsof"
+    "jq"  "nproc" "lsof" "brotli" "openssl"
     "cmake" "gcc" "ninja" "curl" "websocat" "wscat"
     "${GIT}" "${MD5SUM}" "${CLOC}"
     "cppcheck" "shellcheck" "markdownlint" "eslint" "stylelint" "htmlhint" "jsonlint" "swagger-cli"
