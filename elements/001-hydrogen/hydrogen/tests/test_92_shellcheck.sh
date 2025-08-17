@@ -106,7 +106,7 @@ if [[ "${SHELL_COUNT}" -gt 0 ]]; then
     fi
 
     # Filter output
-    sed "s|$(pwd)/||g; s|tests/||g" "${TEMP_OUTPUT}" > "${TEMP_OUTPUT}.filtered" || true
+    "${SED}" "s|$(pwd)/||g; s|tests/||g" "${TEMP_OUTPUT}" > "${TEMP_OUTPUT}.filtered" || true
 
     SHELL_ISSUES=$(wc -l < "${TEMP_OUTPUT}.filtered")
     if [[ "${SHELL_ISSUES}" -gt 0 ]]; then

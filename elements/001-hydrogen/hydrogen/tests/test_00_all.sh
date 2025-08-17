@@ -202,7 +202,7 @@ show_help() {
     echo "Available Tests:"
     for test_script in "${TEST_SCRIPTS[@]}"; do
         local test_name
-        test_name=$(basename "${test_script}" .sh | sed 's/test_//')
+        test_name=$(basename "${test_script}" .sh | "${SED}" 's/test_//')
         echo "  ${test_name}"
     done
     echo ""
@@ -322,7 +322,7 @@ run_single_test_parallel() {
     local test_name
     
     # Extract test number from script filename
-    test_number=$(basename "${test_script}" .sh | sed 's/test_//' | sed 's/_.*//' || true)
+    test_number=$(basename "${test_script}" .sh | "${SED}" 's/test_//' | "${SED}" 's/_.*//' || true)
     test_name=""
     
     # Capture all output from the test
@@ -341,7 +341,7 @@ run_single_test_parallel() {
     local total_subtests=1
     local passed_subtests=0
     local test_name_for_file
-    test_name_for_file=$(basename "${test_script}" .sh | sed 's/test_[0-9]*_//' | tr '_' ' ' | sed 's/\b\w/\U&/g' || true)
+    test_name_for_file=$(basename "${test_script}" .sh | "${SED}" 's/test_[0-9]*_//' | tr '_' ' ' | "${SED}" 's/\b\w/\U&/g' || true)
     
     # Find the most recent subtest file for this test
     local latest_subtest_file
@@ -385,7 +385,7 @@ run_specific_test() {
         echo "Available tests:"
         "${FIND}" "${SCRIPT_DIR}" -name "test_*.sh" -not -name "test_00_all.sh" | sort | while read -r script; do
             local name
-            name=$(basename "${script}" .sh | sed 's/test_//')
+            name=$(basename "${script}" .sh | "${SED}" 's/test_//')
             echo "  ${name}"
         done || true
         return 1
@@ -407,7 +407,7 @@ run_all_tests_parallel() {
     # Group tests dynamically by tens digit
     for test_script in "${TEST_SCRIPTS[@]}"; do
         local test_number
-        test_number=$(basename "${test_script}" .sh | sed 's/test_//' | sed 's/_.*//' || true)
+        test_number=$(basename "${test_script}" .sh | "${SED}" 's/test_//' | "${SED}" 's/_.*//' || true)
         local group=$((test_number / 10))
         
         if [[ -z "${test_groups[${group}]}" ]]; then
@@ -471,7 +471,7 @@ run_all_tests_parallel() {
             local temp_result_file
             local temp_output_file
             local test_number
-            test_number=$(basename "${test_script}" .sh | sed 's/test_//' | sed 's/_.*//' || true)
+            test_number=$(basename "${test_script}" .sh | "${SED}" 's/test_//' | "${SED}" 's/_.*//' || true)
 
             # shellcheck disable=SC2154 # TIMESTAMP defined in framework.sh
             temp_result_file="${RESULTS_DIR}/test_${test_number}_${TIMESTAMP}_output.txt"
