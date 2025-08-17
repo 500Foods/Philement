@@ -64,13 +64,13 @@ There are countless tools, frameworks, coding styles, conventions, languages, an
 [![Count Lines of Code](https://github.com/500Foods/Philement/actions/workflows/main.yml/badge.svg)](https://github.com/500Foods/Philement/actions/workflows/main.yml)
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-08-15 19:02:26 UTC
+Last updated at 2025-08-17 04:29:54 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 C                              185           6941           7353          29435
-Markdown                       266           7617             59          24443
-Bourne Shell                    53           2137           2460           9687
+Markdown                       264           7357             57          23591
+Bourne Shell                    53           2137           2451           9678
 C/C++ Header                   118           1176           4286           2925
 JSON                            24              0              0           2776
 SVG                              2              0              0           2449
@@ -85,9 +85,9 @@ CSS                              2              3              2             38
 YAML                             2              8             13             37
 JavaScript                       1              3              0             25
 -------------------------------------------------------------------------------
-SUM:                           671          18250          14435          73652
+SUM:                           669          17990          14424          72791
 -------------------------------------------------------------------------------
-28 Files were skipped (duplicate, binary, or without source code):
+26 Files were skipped (duplicate, binary, or without source code):
   gitignore: 4
   jpg: 3
   png: 3
@@ -104,8 +104,6 @@ SUM:                           671          18250          14435          73652
   lintignore-c: 1
   lintignore-markdown: 1
   lintignore: 1
-  oh: 1
-  tables: 1
   trial-ignore: 1
 ```
 <!--CLOC-END-->
