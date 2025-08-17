@@ -43,7 +43,7 @@ FRAMEWORK_VERSION="2.8.0"
 export FRAMEWORK_NAME FRAMEWORK_VERSION
 
 # Common utilities - use GNU versions if available (eg: homebrew on macOS)
-PRINTF=$(command -v gprintf 2>/dev/null || command -v printf)
+PRINTF=$(command -v printf 2>/dev/null || command -v printf)
 DATE=$(command -v gdate 2>/dev/null || command -v date)
 FIND=$(command -v gfind 2>/dev/null || command -v find)
 GREP=$(command -v ggrep 2>/dev/null || command -v grep)
