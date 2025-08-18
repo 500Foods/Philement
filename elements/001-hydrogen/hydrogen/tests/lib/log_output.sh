@@ -21,6 +21,7 @@
 # print_test_completion()
 
 # CHANGELOG
+# 3.9.0 - 2025-08-18 - Inlining some functions for performance 
 # 3.8.0 - 2025-08-17 - Converted OUTPUT_COLLECTION from array to simple string for improved performance
 # 3.7.0 - 2025-08-10 - Simplifid some log output naming, cleared out mktemp calls
 # 3.6.0 - 2025-08-07 - Support for commas in test names (ie, thousands separators)
@@ -46,7 +47,7 @@ export LOG_OUTPUT_GUARD="true"
 
 # Library metadata
 LOG_OUTPUT_NAME="Log Output Library"
-LOG_OUTPUT_VERSION="3.8.0"
+LOG_OUTPUT_VERSION="3.9.0"
 export LOG_OUTPUT_NAME LOG_OUTPUT_VERSION
 
 # Global variables for test/subtest numbering
@@ -306,7 +307,7 @@ print_command() {
     local elapsed
     local cmd=$1
 
-    prefix=$(get_test_prefix)
+    prefix="${CURRENT_TEST_NUMBER}-${CURRENT_SUBTEST_NUMBER}"
     elapsed=$(get_elapsed_time)
 
     # shellcheck disable=SC2154 # PROJECT_DIR defined in framework.sh
@@ -338,7 +339,7 @@ print_output() {
     local elapsed
     local message=$1
 
-    prefix=$(get_test_prefix)
+    prefix="${CURRENT_TEST_NUMBER}-${CURRENT_SUBTEST_NUMBER}"
     elapsed=$(get_elapsed_time)
 
     # shellcheck disable=SC2154 # PROJECT_DIR defined in framework.sh
@@ -367,7 +368,7 @@ print_result() {
     local elapsed
     local processed_message
 
-    prefix=$(get_test_prefix)
+    prefix="${CURRENT_TEST_NUMBER}-${CURRENT_SUBTEST_NUMBER}"
     elapsed=$(get_elapsed_time)
 
     # shellcheck disable=SC2154 # PROJECT_DIR defined in framework.sh
@@ -376,14 +377,13 @@ print_result() {
     else
         processed_message="${message}"
     fi
-
-    # Record the result for statistics
-    record_test_result "${status}"
     
     local formatted_output
     if [[ "${status}" -eq 0 ]]; then
+        ((TEST_PASSED_COUNT++))
         formatted_output="  ${prefix}   ${elapsed}   ${PASS_COLOR}${PASS_ICON} ${PASS_COLOR}PASS${NC}   ${PASS_COLOR}${processed_message}${NC}"
     else
+        ((TEST_FAILED_COUNT++))
         formatted_output="  ${prefix}   ${elapsed}   ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}FAIL${NC}   ${FAIL_COLOR}${processed_message}${NC}"
     fi
     
@@ -400,7 +400,7 @@ print_warning() {
     local elapsed
     local message=$1
 
-    prefix=$(get_test_prefix)
+    prefix="${CURRENT_TEST_NUMBER}-${CURRENT_SUBTEST_NUMBER}"
     elapsed=$(get_elapsed_time)
 
     # shellcheck disable=SC2154 # PROJECT_DIR defined in framework.sh
@@ -425,7 +425,7 @@ print_error() {
     local elapsed
     local message=$1
 
-    prefix=$(get_test_prefix)
+    prefix="${CURRENT_TEST_NUMBER}-${CURRENT_SUBTEST_NUMBER}"
     elapsed=$(get_elapsed_time)
 
     # shellcheck disable=SC2154 # PROJECT_DIR defined in framework.sh
@@ -450,7 +450,7 @@ print_message() {
     local elapsed
     local message=$1
 
-    prefix=$(get_test_prefix)
+    prefix="${CURRENT_TEST_NUMBER}-${CURRENT_SUBTEST_NUMBER}"
     elapsed=$(get_elapsed_time)
 
     # shellcheck disable=SC2154 # PROJECT_DIR defined in framework.sh
