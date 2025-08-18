@@ -26,6 +26,21 @@
 bool ws_is_authenticated(const WebSocketSessionData *session);
 void ws_clear_authentication(WebSocketSessionData *session);
 
+// Function prototypes for test functions
+void test_ws_is_authenticated_null_session(void);
+void test_ws_is_authenticated_valid_authenticated_session(void);
+void test_ws_is_authenticated_valid_unauthenticated_session(void);
+void test_ws_is_authenticated_session_state_transitions(void);
+void test_ws_is_authenticated_multiple_calls_consistent(void);
+void test_ws_clear_authentication_null_session(void);
+void test_ws_clear_authentication_valid_authenticated_session(void);
+void test_ws_clear_authentication_valid_unauthenticated_session(void);
+void test_ws_clear_authentication_multiple_calls(void);
+void test_ws_clear_authentication_preserves_other_fields(void);
+void test_authentication_state_lifecycle(void);
+void test_authentication_edge_cases(void);
+void test_session_data_structure_integrity(void);
+
 // Test fixtures
 static WebSocketSessionData test_session;
 

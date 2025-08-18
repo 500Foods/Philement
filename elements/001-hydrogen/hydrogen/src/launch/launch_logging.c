@@ -95,8 +95,8 @@ LaunchReadiness check_logging_launch_readiness(void) {
         };
     }
     
-    const AppConfig* app_config = get_app_config();
-    if (!app_config) {
+    const AppConfig* config = get_app_config();
+    if (!config) {
         add_go_message(messages, &msg_count, "No-Go", "Configuration not loaded");
         messages[msg_count] = NULL;
         return (LaunchReadiness){
@@ -107,7 +107,7 @@ LaunchReadiness check_logging_launch_readiness(void) {
     }
     
     // Get logging configuration
-    const LoggingConfig* log_config = &app_config->logging;
+    const LoggingConfig* log_config = &config->logging;
     bool config_valid = true;
 
     // Validate log levels

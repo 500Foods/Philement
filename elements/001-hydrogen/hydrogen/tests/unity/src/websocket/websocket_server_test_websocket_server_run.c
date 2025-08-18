@@ -32,6 +32,16 @@
 extern WebSocketServerContext *ws_context;
 extern AppConfig* app_config;
 
+// Function prototypes for test functions
+void test_websocket_server_run_null_context(void);
+void test_websocket_server_run_shutdown_state(void);
+void test_websocket_server_run_thread_lifecycle(void);
+void test_websocket_server_run_cancellation_points(void);
+void test_websocket_server_run_shutdown_wait_logic(void);
+void test_websocket_server_run_timespec_calculation(void);
+void test_websocket_server_run_signal_handling(void);
+void test_websocket_server_run_extreme_connection_counts(void);
+
 // Test fixtures
 static WebSocketServerContext test_context;
 static WebSocketServerContext *original_context;

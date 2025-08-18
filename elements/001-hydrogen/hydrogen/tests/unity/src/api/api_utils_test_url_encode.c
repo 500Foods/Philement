@@ -16,6 +16,27 @@
 // Include necessary headers for the module being tested
 #include "../../../../src/api/api_utils.h"
 
+// Function prototypes for test functions
+void test_api_url_encode_basic_string(void);
+void test_api_url_encode_alphanumeric(void);
+void test_api_url_encode_unreserved_characters(void);
+void test_api_url_encode_space_to_plus(void);
+void test_api_url_encode_special_characters(void);
+void test_api_url_encode_multiple_special(void);
+void test_api_url_encode_form_data(void);
+void test_api_url_encode_empty_string(void);
+void test_api_url_encode_null_input(void);
+void test_api_url_encode_single_characters(void);
+void test_api_url_encode_complex_component(void);
+void test_api_url_encode_high_bit_characters(void);
+void test_api_url_encode_all_special_chars(void);
+void test_api_url_encode_consecutive_spaces(void);
+void test_api_url_encode_mixed_characters(void);
+void test_api_url_encode_single_unreserved(void);
+void test_api_url_encode_uppercase_hex(void);
+void test_api_url_encode_percent_sign(void);
+void test_api_url_encode_control_characters(void);
+
 void setUp(void) {
     // No setup needed for this pure function
 }

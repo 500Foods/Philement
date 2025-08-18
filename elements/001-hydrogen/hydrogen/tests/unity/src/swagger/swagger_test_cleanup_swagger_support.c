@@ -22,6 +22,13 @@
 // Forward declaration for the function being tested
 void cleanup_swagger_support(void);
 
+// Function prototypes for test functions
+void test_cleanup_swagger_support_basic(void);
+void test_cleanup_swagger_support_multiple_calls(void);
+void test_cleanup_swagger_support_after_init(void);
+void test_cleanup_swagger_support_repeated_sequence(void);
+void test_cleanup_swagger_support_without_init(void);
+
 void setUp(void) {
     // No setup needed for cleanup tests
 }

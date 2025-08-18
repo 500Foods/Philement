@@ -163,7 +163,7 @@ bool load_mdns_server_config(json_t* root, AppConfig* config) {
                     // Process port
                     json_t* port = json_object_get(service, "Port");
                     if (json_is_integer(port)) {
-                        mdns_config->services[i].port = json_integer_value(port);
+                        mdns_config->services[i].port = (int)json_integer_value(port);
                         log_this("Config-MDNSServer", "――― Service[%zu].Port: %d", LOG_LEVEL_STATE, 
                                 i, mdns_config->services[i].port);
                     } else {

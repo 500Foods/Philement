@@ -20,6 +20,13 @@
 // Forward declaration for function being tested
 bool ws_is_authenticated(const WebSocketSessionData *session);
 
+// Function prototypes for test functions
+void test_ws_is_authenticated_null_session(void);
+void test_ws_is_authenticated_valid_authenticated_session(void);
+void test_ws_is_authenticated_valid_unauthenticated_session(void);
+void test_ws_is_authenticated_state_transitions(void);
+void test_ws_is_authenticated_multiple_calls_consistent(void);
+
 void setUp(void) {
     // Setup before each test
 }

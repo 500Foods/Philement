@@ -29,7 +29,7 @@ bool load_database_config(json_t* root, AppConfig* config) {
     // Count actual databases in config
     json_t* connections = json_object_get(json_object_get(root, "Databases"), "Connections");
     size_t db_count = json_is_object(connections) ? json_object_size(connections) : 1;  // At least Acuranzo
-    db_config->connection_count = db_count;
+    db_config->connection_count = (int)db_count;
 
     // Initialize all database connections with minimal defaults
     for (size_t i = 0; i < db_count; i++) {

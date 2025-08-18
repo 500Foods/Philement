@@ -7,6 +7,10 @@
  * 
  */
 
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 199309L
+#endif
+
 // Core system headers
 #include <sys/types.h>
 #include <pthread.h>
@@ -38,9 +42,9 @@ int queue_system_initialized = 0;  // Initialize to 0 (not initialized)
 // increase in collision probability to maintain fixed memory usage.
 static unsigned int hash(const char* str) {
     unsigned int hash = 5381;
-    int c;
+    unsigned char c;
 
-    while ((c = *str++))
+    while ((c = (unsigned char)*str++))
         hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
 
     return hash % QUEUE_HASH_SIZE;
@@ -55,7 +59,7 @@ static unsigned int hash(const char* str) {
  * - No dynamic allocation prevents failures
  * - Called once at system startup
  */
-void queue_system_init() {
+void queue_system_init(void) {
     memset(&queue_system, 0, sizeof(QueueSystem));
     pthread_mutex_init(&queue_system.mutex, NULL);
     queue_system_initialized = 1;  // Mark as initialized
@@ -76,7 +80,7 @@ void queue_system_init() {
  * - Thread-safe cleanup
  * - Complete resource release
  */
-void queue_system_destroy() {
+void queue_system_destroy(void) {
     queue_system_initialized = 0;  // Mark as not initialized
     pthread_mutex_lock(&queue_system.mutex);
     for (int i = 0; i < QUEUE_HASH_SIZE; i++) {

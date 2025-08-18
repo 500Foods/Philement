@@ -33,6 +33,23 @@
 extern WebSocketServerContext *ws_context;
 extern AppConfig* app_config;
 
+// Function prototypes for test functions
+void test_websocket_context_initialization(void);
+void test_websocket_context_port_assignment(void);
+void test_websocket_context_shutdown_flag(void);
+void test_websocket_context_connection_counters(void);
+void test_websocket_context_protocol_string(void);
+void test_websocket_context_auth_key_string(void);
+void test_websocket_context_start_time(void);
+void test_websocket_context_message_buffer_size(void);
+void test_websocket_context_vhost_creating_flag(void);
+void test_websocket_context_simultaneous_flags(void);
+void test_websocket_context_counter_overflow(void);
+void test_websocket_context_string_boundaries(void);
+void test_websocket_context_memory_boundaries(void);
+void test_websocket_context_state_transitions(void);
+void test_context_integrity_after_operations(void);
+
 // Test fixtures
 static WebSocketServerContext test_context;
 static WebSocketServerContext *original_context;

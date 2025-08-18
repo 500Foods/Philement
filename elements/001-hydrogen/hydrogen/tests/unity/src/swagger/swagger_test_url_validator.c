@@ -22,6 +22,17 @@
 // Forward declaration for the function being tested
 bool swagger_url_validator(const char *url);
 
+// Function prototypes for test functions
+void test_swagger_url_validator_null_url(void);
+void test_swagger_url_validator_empty_url(void);
+void test_swagger_url_validator_valid_urls(void);
+void test_swagger_url_validator_swagger_paths(void);
+void test_swagger_url_validator_non_swagger_paths(void);
+void test_swagger_url_validator_edge_cases(void);
+void test_swagger_url_validator_query_parameters(void);
+void test_swagger_url_validator_long_urls(void);
+void test_swagger_url_validator_special_characters(void);
+
 void setUp(void) {
     // No specific setup needed for URL validator tests
 }

@@ -21,6 +21,20 @@
 
 // Forward declaration of the function we want to test
 bool handle_launch_plan(const ReadinessResults* results);
+void test_handle_launch_plan_null_parameter(void);
+void test_handle_launch_plan_no_subsystems_ready(void);
+void test_handle_launch_plan_all_subsystems_ready(void);
+void test_handle_launch_plan_some_subsystems_ready(void);
+void test_handle_launch_plan_single_subsystem_ready(void);
+void test_handle_launch_plan_single_subsystem_not_ready(void);
+void test_handle_launch_plan_empty_results(void);
+void test_handle_launch_plan_maximum_subsystems(void);
+void test_handle_launch_plan_inconsistent_counters_any_ready_false(void);
+void test_handle_launch_plan_zero_total_checked_but_any_ready_true(void);
+void test_handle_launch_plan_all_standard_subsystems(void);
+void test_handle_launch_plan_mixed_subsystem_names(void);
+void test_handle_launch_plan_boundary_conditions(void);
+void test_handle_launch_plan_boundary_conditions_not_ready(void);
 
 void setUp(void) {
     // Set up test fixtures, if any

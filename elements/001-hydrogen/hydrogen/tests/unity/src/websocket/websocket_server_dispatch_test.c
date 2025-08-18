@@ -31,6 +31,20 @@
 int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                         void *user, void *in, size_t len);
 
+// Function prototypes for test functions
+void test_protocol_lifecycle_callback_identification(void);
+void test_shutdown_callback_categorization(void);
+void test_connection_establishment_callback_identification(void);
+void test_context_state_validation_during_vhost_creation(void);
+void test_context_state_validation_during_shutdown(void);
+void test_context_availability_check(void);
+void test_session_validation_requirements(void);
+void test_session_validation_with_valid_session(void);
+void test_authentication_validation_during_protocol_filtering(void);
+void test_connection_cleanup_during_shutdown(void);
+void test_dispatch_flow_control_protocol_destroy(void);
+void test_dispatch_flow_control_vhost_creation(void);
+
 // External reference
 extern WebSocketServerContext *ws_context;
 

@@ -23,6 +23,14 @@
 WebSocketServerContext* ws_context_create(int port, const char* protocol, const char* key);
 void ws_context_destroy(WebSocketServerContext* ctx);
 
+// Function prototypes for Unity test functions
+void test_ws_context_destroy_null_context(void);
+void test_ws_context_destroy_parameter_validation(void);
+void test_ws_context_destroy_state_validation(void);
+void test_ws_context_destroy_cleanup_logic(void);
+void test_ws_context_destroy_edge_cases(void);
+void test_ws_context_destroy_resource_cleanup_order(void);
+
 // External reference to app_config (needed for context creation)
 extern AppConfig *app_config;
 

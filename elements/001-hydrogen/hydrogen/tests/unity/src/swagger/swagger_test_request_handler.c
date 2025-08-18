@@ -51,6 +51,15 @@ struct MockMHDConnection {
 static struct MockMHDResponse *mock_response = NULL;
 static struct MockMHDConnection mock_connection = {0};
 
+// Function prototypes for test functions
+void test_swagger_request_handler_null_parameters(void);
+void test_swagger_request_handler_valid_request(void);
+void test_swagger_request_handler_different_methods(void);
+void test_swagger_request_handler_different_versions(void);
+void test_swagger_request_handler_with_upload_data(void);
+void test_swagger_request_handler_disabled_config(void);
+void test_swagger_request_handler_payload_not_available(void);
+
 //=============================================================================
 // Mock HTTP Functions (Minimal Implementation for Tests)
 //=============================================================================
@@ -93,7 +102,7 @@ enum MHD_Result MHD_queue_response(struct MHD_Connection *connection,
     (void)connection;
     (void)response;
     if (mock_response) {
-        mock_response->status_code = status_code;
+        mock_response->status_code = (int)status_code;
     }
     return 1; // MHD_YES
 }
@@ -117,9 +126,9 @@ static SwaggerConfig test_config;
 void setUp(void) {
     // Initialize mock connection
     memset(&mock_connection, 0, sizeof(mock_connection));
-    mock_connection.host_header = "localhost:8080";
+    mock_connection.host_header = (char*)"localhost:8080";
     mock_connection.accepts_brotli = true;
-    mock_connection.user_agent = "Test/1.0";
+    mock_connection.user_agent = (char*)"Test/1.0";
     
     // Clean up previous mock response
     if (mock_response) {

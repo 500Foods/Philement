@@ -29,4 +29,21 @@ bool check_all_landing_readiness(void);
 void handle_sighup(void);  // SIGHUP signal handler for restart
 void handle_sigint(void);  // SIGINT signal handler for shutdown
 
+// Individual subsystem landing functions
+int land_api_subsystem(void);
+int land_network_subsystem(void);
+int land_mail_relay_subsystem(void);
+int land_database_subsystem(void);
+int land_mdns_client_subsystem(void);
+int land_logging_subsystem(void);
+int land_mdns_server_subsystem(void);
+int land_swagger_subsystem(void);
+int land_print_subsystem(void);
+int land_webserver_subsystem(void);
+int land_terminal_subsystem(void);
+int land_websocket_subsystem(void);
+
+// Program argument access for restart functionality
+char** get_program_args(void);
+
 #endif /* LANDING_H */

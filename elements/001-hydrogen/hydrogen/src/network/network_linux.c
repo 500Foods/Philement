@@ -293,7 +293,7 @@ int find_available_port(int start_port) {
     addr.sin_addr.s_addr = INADDR_ANY;
 
     for (int port = start_port; port < 65536; port++) {
-        addr.sin_port = htons(port);
+        addr.sin_port = htons((uint16_t)port);
         if (bind(sock, (struct sockaddr *)&addr, sizeof(addr)) == 0) {
             close(sock);
             return port;

@@ -7,6 +7,9 @@
  * 
  */
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
 #include <sys/types.h>
 #include <time.h>
 #include <sys/time.h>
@@ -74,7 +77,7 @@ static int create_multicast_socket(int family, const char *group, const char *if
         return -1;
     }
 
-    if (setsockopt(sockfd, SOL_SOCKET, SO_BINDTODEVICE, if_name, strlen(if_name)) < 0) {
+    if (setsockopt(sockfd, SOL_SOCKET, SO_BINDTODEVICE, if_name, (socklen_t)strlen(if_name)) < 0) {
         log_this("mDNSServer", "Failed to bind to interface %s: %s", LOG_LEVEL_DEBUG, if_name, strerror(errno));
         close(sockfd);
         return -1;
@@ -134,7 +137,7 @@ static int create_multicast_socket(int family, const char *group, const char *if
         struct ip_mreqn mreq;
         mreq.imr_multiaddr.s_addr = inet_addr(group);
         mreq.imr_address.s_addr = INADDR_ANY;
-        mreq.imr_ifindex = if_index;
+        mreq.imr_ifindex = (if_index <= INT_MAX) ? (int)if_index : 0;
         if (setsockopt(sockfd, IPPROTO_IP, IP_MULTICAST_IF, &mreq, sizeof(mreq)) < 0) {
             log_this("mDNSServer", "Failed to set IPv4 multicast interface: %s", LOG_LEVEL_DEBUG, strerror(errno));
             close(sockfd);
@@ -170,8 +173,8 @@ static uint8_t *write_dns_name(uint8_t *ptr, const char *name) {
     while (*part) {
         const char *end = strchr(part, '.');
         if (!end) end = part + strlen(part);
-        size_t len = end - part;
-        *ptr++ = len;
+        size_t len = (size_t)(end - part);
+        *ptr++ = (uint8_t)len;
         memcpy(ptr, part, len);
         ptr += len;
         if (*end == '.') part = end + 1;
@@ -197,7 +200,7 @@ static uint8_t *write_dns_ptr_record(uint8_t *ptr, const char *name, const char 
     *((uint16_t*)ptr) = htons(MDNS_TYPE_PTR); ptr += 2;
     *((uint16_t*)ptr) = htons(MDNS_CLASS_IN); ptr += 2;
     *((uint32_t*)ptr) = htonl(ttl); ptr += 4;
-    uint16_t data_len = strlen(ptr_data) + 2;
+    uint16_t data_len = (uint16_t)(strlen(ptr_data) + 2);
     *((uint16_t*)ptr) = htons(data_len); ptr += 2;
     ptr = write_dns_name(ptr, ptr_data);
     return ptr;
@@ -208,7 +211,7 @@ static uint8_t *write_dns_srv_record(uint8_t *ptr, const char *name, uint16_t pr
     *((uint16_t*)ptr) = htons(MDNS_TYPE_SRV); ptr += 2;
     *((uint16_t*)ptr) = htons(MDNS_CLASS_IN); ptr += 2;
     *((uint32_t*)ptr) = htonl(ttl); ptr += 4;
-    uint16_t data_len = 6 + strlen(target) + 2;
+    uint16_t data_len = (uint16_t)(6 + strlen(target) + 2);
     *((uint16_t*)ptr) = htons(data_len); ptr += 2;
     *((uint16_t*)ptr) = htons(priority); ptr += 2;
     *((uint16_t*)ptr) = htons(weight); ptr += 2;
@@ -226,10 +229,10 @@ static uint8_t *write_dns_txt_record(uint8_t *ptr, const char *name, char **txt_
     for (size_t i = 0; i < num_txt_records; i++) {
         total_len += strlen(txt_records[i]) + 1;
     }
-    *((uint16_t*)ptr) = htons(total_len); ptr += 2;
+    *((uint16_t*)ptr) = htons((uint16_t)total_len); ptr += 2;
     for (size_t i = 0; i < num_txt_records; i++) {
         size_t len = strlen(txt_records[i]);
-        *ptr++ = len;
+        *ptr++ = (uint8_t)len;
         memcpy(ptr, txt_records[i], len);
         ptr += len;
     }
@@ -274,7 +277,17 @@ static void _mdns_server_build_interface_announcement(uint8_t *packet, size_t *p
         char service_type[256];
         char full_service_name[256];
         const char *local_suffix = strstr(mdns_server->services[i].type, ".local");
-        size_t type_len = local_suffix ? (size_t)(local_suffix - mdns_server->services[i].type) : strlen(mdns_server->services[i].type);
+        size_t type_len;
+        if (local_suffix) {
+            ptrdiff_t diff = local_suffix - mdns_server->services[i].type;
+            if (diff > 0) {
+                type_len = (size_t)diff;  // Safe: diff is positive
+            } else {
+                type_len = 0;
+            }
+        } else {
+            type_len = strlen(mdns_server->services[i].type);
+        }
         strncpy(service_type, mdns_server->services[i].type, type_len);
         service_type[type_len] = '\0';
 
@@ -296,13 +309,13 @@ static void _mdns_server_build_interface_announcement(uint8_t *packet, size_t *p
 
         ptr = write_dns_ptr_record(ptr, mdns_server->services[i].type, full_service_name, ttl);
         header->ancount = htons(ntohs(header->ancount) + 1);
-        ptr = write_dns_srv_record(ptr, full_service_name, 0, 0, mdns_server->services[i].port, hostname, ttl);
+        ptr = write_dns_srv_record(ptr, full_service_name, 0, 0, (uint16_t)mdns_server->services[i].port, hostname, ttl);
         header->ancount = htons(ntohs(header->ancount) + 1);
         ptr = write_dns_txt_record(ptr, full_service_name, mdns_server->services[i].txt_records, mdns_server->services[i].num_txt_records, ttl);
         header->ancount = htons(ntohs(header->ancount) + 1);
     }
 
-    *packet_len = ptr - packet;
+    *packet_len = (size_t)(ptr - packet);
     if (*packet_len > 1500) {
         log_this("mDNSServer", "Warning: Packet size %zu exceeds typical MTU (1500)", LOG_LEVEL_ALERT, *packet_len);
     }
@@ -348,7 +361,12 @@ static network_info_t *create_single_interface_net_info(const mdns_server_interf
     if (num_ips > MAX_IPS) {
         num_ips = MAX_IPS;
     }
-    net_info->interfaces[0].ip_count = num_ips;
+    // Safely convert size_t to int, clamping to INT_MAX if necessary
+    if (num_ips <= (size_t)INT_MAX) {
+        net_info->interfaces[0].ip_count = (int)num_ips;
+    } else {
+        net_info->interfaces[0].ip_count = INT_MAX;
+    }
 
     for (size_t i = 0; i < num_ips; i++) {
         strncpy(net_info->interfaces[0].ips[i], iface->ip_addresses[i], INET6_ADDRSTRLEN - 1);
@@ -423,7 +441,7 @@ void *mdns_server_announce_loop(void *arg) {
     log_this("mDNSServer", "mDNS Server announce loop started", LOG_LEVEL_STATE);
 
     int initial_announcements = 3; // Initial burst
-    int interval = 1; // Start with 1-second intervals
+    unsigned int interval = 1; // Start with 1-second intervals
 
     while (!mdns_server_system_shutdown) {
         if (initial_announcements > 0) {
@@ -463,7 +481,8 @@ void *mdns_server_responder_loop(void *arg) {
     log_this("mDNSServer", "mDNS Server responder loop started", LOG_LEVEL_STATE);
 
     // Create pollfd array for all interface sockets
-    struct pollfd *fds = malloc(sizeof(struct pollfd) * mdns_server->num_interfaces * 2); // 2 sockets per interface (v4/v6)
+    size_t num_sockets = mdns_server->num_interfaces * 2U; // 2 sockets per interface (v4/v6)
+    struct pollfd *fds = malloc(sizeof(struct pollfd) * num_sockets);
     if (!fds) {
         log_this("mDNSServer", "Out of memory for poll fds", LOG_LEVEL_DEBUG);
         remove_service_thread(&mdns_server_threads, pthread_self());
@@ -471,7 +490,7 @@ void *mdns_server_responder_loop(void *arg) {
         return NULL;
     }
 
-    int nfds = 0;
+    nfds_t nfds = 0;  // Use nfds_t type to avoid sign conversion
     for (size_t i = 0; i < mdns_server->num_interfaces; i++) {
         mdns_server_interface_t *iface = &mdns_server->interfaces[i];
         if (iface->sockfd_v4 >= 0) {
@@ -495,7 +514,7 @@ void *mdns_server_responder_loop(void *arg) {
     }
 
     while (!mdns_server_system_shutdown) {
-        int ret = poll(fds, nfds, 1000); // 1-second timeout
+        int ret = poll(fds, nfds, 1000); // 1-second timeout, no cast needed
         if (ret < 0) {
             if (errno != EINTR) {
                 log_this("mDNSServer", "Poll error: %s", LOG_LEVEL_DEBUG, strerror(errno));
@@ -504,7 +523,7 @@ void *mdns_server_responder_loop(void *arg) {
         }
         if (ret == 0) continue;
 
-        for (int i = 0; i < nfds; i++) {
+        for (nfds_t i = 0; i < nfds; i++) {
             if (fds[i].revents & POLLIN) {
                 struct sockaddr_storage src_addr;
                 socklen_t src_len = sizeof(src_addr);
@@ -581,7 +600,8 @@ mdns_server_t *mdns_server_init(const char *app_name, const char *id, const char
     }
 
     // Allocate space for interfaces
-    mdns_server->interfaces = malloc(sizeof(mdns_server_interface_t) * net_info->count);
+    size_t interface_count = (net_info->count >= 0) ? (size_t)net_info->count : 0;
+    mdns_server->interfaces = malloc(sizeof(mdns_server_interface_t) * interface_count);
     mdns_server->num_interfaces = 0;
     if (!mdns_server->interfaces) {
         log_this("mDNSServer", "Out of memory for interfaces", LOG_LEVEL_DEBUG);
@@ -601,8 +621,14 @@ mdns_server_t *mdns_server_init(const char *app_name, const char *id, const char
 
         mdns_server_interface_t *mdns_server_if = &mdns_server->interfaces[mdns_server->num_interfaces];
         mdns_server_if->if_name = strdup(iface->name);
-        mdns_server_if->ip_addresses = malloc(sizeof(char*) * iface->ip_count);
-        mdns_server_if->num_addresses = iface->ip_count;
+        if (iface->ip_count > 0) {
+            size_t ip_count = (size_t)iface->ip_count;
+            mdns_server_if->ip_addresses = malloc(sizeof(char*) * ip_count);
+            mdns_server_if->num_addresses = ip_count;
+        } else {
+            mdns_server_if->ip_addresses = NULL;
+            mdns_server_if->num_addresses = 0;
+        }
 
         if (!mdns_server_if->if_name || !mdns_server_if->ip_addresses) {
             log_this("mDNSServer", "Out of memory for interface %s", LOG_LEVEL_DEBUG, iface->name);
@@ -650,8 +676,13 @@ mdns_server_t *mdns_server_init(const char *app_name, const char *id, const char
         mdns_server->services[i].type = strdup(services[i].type);
         mdns_server->services[i].port = services[i].port;
         mdns_server->services[i].num_txt_records = services[i].num_txt_records;
-        mdns_server->services[i].txt_records = malloc(sizeof(char*) * services[i].num_txt_records);
-        for (size_t j = 0; j < services[i].num_txt_records; j++) {
+        if (services[i].num_txt_records > 0) {
+            size_t txt_count = (size_t)services[i].num_txt_records;
+            mdns_server->services[i].txt_records = malloc(sizeof(char*) * txt_count);
+        } else {
+            mdns_server->services[i].txt_records = NULL;
+        }
+        for (size_t j = 0; j < (size_t)services[i].num_txt_records; j++) {
             mdns_server->services[i].txt_records[j] = strdup(services[i].txt_records[j]);
         }
     }

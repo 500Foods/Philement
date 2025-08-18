@@ -25,6 +25,25 @@ void tearDown(void) {
 }
 
 // Test basic URL decoding
+void test_api_url_decode_basic_string(void);
+void test_api_url_decode_plus_to_space(void);
+void test_api_url_decode_percent_encoding(void);
+void test_api_url_decode_mixed_encoding(void);
+void test_api_url_decode_special_characters(void);
+void test_api_url_decode_hex_uppercase(void);
+void test_api_url_decode_hex_lowercase(void);
+void test_api_url_decode_invalid_percent_incomplete(void);
+void test_api_url_decode_invalid_percent_nonhex(void);
+void test_api_url_decode_empty_string(void);
+void test_api_url_decode_null_input(void);
+void test_api_url_decode_only_percent_signs(void);
+void test_api_url_decode_percent_at_end(void);
+void test_api_url_decode_complex_url_component(void);
+void test_api_url_decode_form_data(void);
+void test_api_url_decode_single_character(void);
+void test_api_url_decode_single_plus(void);
+void test_api_url_decode_consecutive_encodings(void);
+void test_api_url_decode_mixed_valid_invalid(void);
 void test_api_url_decode_basic_string(void) {
     char *result = api_url_decode("hello");
     

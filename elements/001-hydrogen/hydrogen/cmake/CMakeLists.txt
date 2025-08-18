@@ -34,6 +34,7 @@
 # cmake --build . --target all_examples      : Builds all example programs
 
 # CHANGELOG
+# 2025-08-17: Added additional compiler flags for better warnings and error checking when building with clang on macOS.
 # 2025-07-01: Added targets for building OIDC client example programs (auth_code_flow, client_credentials, password_flow) with regular and debug builds. Updated help and clean targets to include examples.
 
 cmake_minimum_required(VERSION 3.16)
@@ -204,6 +205,23 @@ set(HYDROGEN_BASE_CFLAGS
     -Wextra
     -pedantic
     -Werror
+    -Wstrict-prototypes
+    -Wmissing-prototypes
+    -Wold-style-definition
+    -Wformat=2
+    -Wshadow
+    -Wconversion
+    -Wnull-dereference
+    -Wuninitialized
+    -Wunused
+    -Wcast-align
+    -Wdouble-promotion
+    -Wswitch-enum
+    -Wmissing-declarations
+    -Wundef
+    -Wpointer-arith
+    -Wstrict-aliasing
+    -Wwrite-strings
     -D_GNU_SOURCE
     -D_POSIX_C_SOURCE=200809L
     -ffunction-sections

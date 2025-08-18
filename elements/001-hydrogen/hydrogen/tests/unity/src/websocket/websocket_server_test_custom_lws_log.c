@@ -31,6 +31,28 @@
 // Forward declarations for functions being tested
 void custom_lws_log(int level, const char *line);
 
+// Function prototypes for Unity test functions
+void test_custom_lws_log_null_line(void);
+void test_custom_lws_log_empty_line(void);
+void test_custom_lws_log_error_level(void);
+void test_custom_lws_log_warning_level(void);
+void test_custom_lws_log_info_level(void);
+void test_custom_lws_log_notice_level(void);
+void test_custom_lws_log_unknown_level(void);
+void test_custom_lws_log_with_newline(void);
+void test_custom_lws_log_long_message(void);
+void test_custom_lws_log_during_shutdown(void);
+void test_custom_lws_log_multiple_newlines(void);
+void test_custom_lws_log_memory_allocation_failure(void);
+void test_custom_lws_log_warn_level_during_shutdown(void);
+void test_custom_lws_log_err_level_during_shutdown(void);
+void test_custom_lws_log_all_levels_normal_operation(void);
+void test_custom_lws_log_newline_removal(void);
+void test_custom_lws_log_very_long_message(void);
+void test_custom_lws_log_special_characters(void);
+void test_custom_lws_log_unicode_handling(void);
+void test_custom_lws_log_concurrent_access(void);
+
 // External variables that need to be accessible for testing
 extern WebSocketServerContext *ws_context;
 extern AppConfig* app_config;
@@ -228,7 +250,7 @@ void test_custom_lws_log_very_long_message(void) {
     // Create a very long message (larger than typical buffer sizes)
     char long_message[5000];
     for (int i = 0; i < 4999; i++) {
-        long_message[i] = 'A' + (i % 26);
+        long_message[i] = (char)('A' + (i % 26));
     }
     long_message[4999] = '\0';
     

@@ -103,19 +103,19 @@
                  messages[msg_index++] = msg;
              }
              
-             // Check if we have a valid key from config - it should already be resolved
-             if (!app_config->server.payload_key || !validate_payload_key(app_config->server.payload_key)) {
-                 messages[msg_index++] = strdup("  No-Go:   No valid payload key available");
-                 ready = false;
-             } else {
-                 char* msg = malloc(256);
-                 if (msg) {
-                     snprintf(msg, 256, "  Go:      Valid payload key available: %.5s...", app_config->server.payload_key);
-                     messages[msg_index++] = msg;
-                 } else {
-                     messages[msg_index++] = strdup("  Go:      Valid payload key available");
-                 }
-             }
+            // Check if we have a valid key from config - it should already be resolved
+            if (!app_config->server.payload_key || !validate_payload_key(app_config->server.payload_key)) {
+                messages[msg_index++] = strdup("  No-Go:   No valid payload key available");
+                ready = false;
+            } else {
+                char* key_msg = malloc(256);
+                if (key_msg) {
+                    snprintf(key_msg, 256, "  Go:      Valid payload key available: %.5s...", app_config->server.payload_key);
+                    messages[msg_index++] = key_msg;
+                } else {
+                    messages[msg_index++] = strdup("  Go:      Valid payload key available");
+                }
+            }
          } else {
              messages[msg_index++] = strdup("  No-Go:   No payload found");
              ready = false;

@@ -39,6 +39,21 @@
 void stop_websocket_server(void);
 void cleanup_websocket_server(void);
 
+// Function prototypes for Unity test functions
+void test_shutdown_state_initialization(void);
+void test_shutdown_flag_setting(void);
+void test_active_connections_forced_reset(void);
+void test_thread_cancellation_setup(void);
+void test_thread_timeout_calculation(void);
+void test_cleanup_synchronization_data_structure(void);
+void test_service_thread_tracking(void);
+void test_context_nullification_safety(void);
+void test_connection_metrics_during_shutdown(void);
+void test_cleanup_delay_timing(void);
+void test_signal_based_shutdown_detection(void);
+void test_lws_service_cancellation_logic(void);
+void test_complete_shutdown_workflow_logic(void);
+
 // External references
 extern WebSocketServerContext *ws_context;
 extern ServiceThreads websocket_threads;

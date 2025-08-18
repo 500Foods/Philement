@@ -68,7 +68,7 @@ enum MHD_Result handle_oidc_revocation_endpoint(struct MHD_Connection *connectio
     
     // RFC 7009 requires a 200 OK response with an empty body for successful revocation
     if (revocation_result) {
-        struct MHD_Response *response = MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT);
+        struct MHD_Response *response = MHD_create_response_from_buffer(0, (void*)"", MHD_RESPMEM_PERSISTENT);
         enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
         MHD_destroy_response(response);
         return ret;

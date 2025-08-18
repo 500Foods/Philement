@@ -28,6 +28,41 @@
 // Forward declaration for the function being tested
 bool is_swagger_request(const char *url, const SwaggerConfig *config);
 
+// Function prototypes for test functions
+void test_is_swagger_request_null_url(void);
+void test_is_swagger_request_null_config(void);
+void test_is_swagger_request_both_null(void);
+void test_is_swagger_request_disabled_config(void);
+void test_is_swagger_request_payload_not_available(void);
+void test_is_swagger_request_null_prefix(void);
+void test_is_swagger_request_empty_url(void);
+void test_is_swagger_request_exact_match(void);
+void test_is_swagger_request_with_trailing_slash(void);
+void test_is_swagger_request_with_path(void);
+void test_is_swagger_request_with_nested_path(void);
+void test_is_swagger_request_wrong_prefix(void);
+void test_is_swagger_request_partial_match(void);
+void test_is_swagger_request_prefix_as_substring(void);
+void test_is_swagger_request_root_url(void);
+void test_is_swagger_request_custom_prefix(void);
+void test_is_swagger_request_long_prefix(void);
+void test_is_swagger_request_boundary_conditions(void);
+void test_is_swagger_request_complex_paths(void);
+void test_is_swagger_request_special_characters(void);
+void test_is_swagger_request_numeric_prefixes(void);
+void test_is_swagger_request_case_sensitivity(void);
+void test_is_swagger_request_query_parameters(void);
+void test_is_swagger_request_fragments(void);
+void test_config_validation_all_disabled(void);
+void test_config_validation_enabled_but_no_payload(void);
+void test_config_validation_payload_but_disabled(void);
+void test_config_validation_empty_config(void);
+void test_config_validation_minimal_config(void);
+void test_parameter_validation_edge_cases(void);
+void test_url_matching_comprehensive_edge_cases(void);
+void test_url_matching_prefix_variations(void);
+void test_stress_many_url_tests(void);
+
 // Test fixtures
 static SwaggerConfig test_config;
 static SwaggerConfig empty_config;

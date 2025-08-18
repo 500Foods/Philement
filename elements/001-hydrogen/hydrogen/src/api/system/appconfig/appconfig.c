@@ -76,7 +76,7 @@ enum MHD_Result handle_system_appconfig_request(struct MHD_Connection *connectio
     }
 
     // Calculate the offset where content starts
-    size_t content_offset = config_marker - first_line;
+    size_t content_offset = (size_t)(config_marker - first_line);
 
     // Process first line
     char **new_lines = malloc(sizeof(char*));

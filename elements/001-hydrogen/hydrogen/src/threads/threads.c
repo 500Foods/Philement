@@ -56,7 +56,7 @@ void init_service_threads(ServiceThreads *threads) {
 void add_service_thread(ServiceThreads *threads, pthread_t thread_id) {
     pthread_mutex_lock(&thread_mutex);
     if (threads->thread_count < MAX_SERVICE_THREADS) {
-        pid_t tid = syscall(SYS_gettid);
+        pid_t tid = (pid_t)syscall(SYS_gettid);
         threads->thread_ids[threads->thread_count] = thread_id;
         threads->thread_tids[threads->thread_count] = tid;
         threads->thread_count++;

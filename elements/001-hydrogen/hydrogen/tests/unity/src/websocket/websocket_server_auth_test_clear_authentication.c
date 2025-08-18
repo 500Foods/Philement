@@ -20,6 +20,13 @@
 // Forward declaration for function being tested
 void ws_clear_authentication(WebSocketSessionData *session);
 
+// Function prototypes for test functions
+void test_ws_clear_authentication_null_session(void);
+void test_ws_clear_authentication_valid_authenticated_session(void);
+void test_ws_clear_authentication_valid_unauthenticated_session(void);
+void test_ws_clear_authentication_multiple_calls(void);
+void test_ws_clear_authentication_preserves_other_fields(void);
+
 void setUp(void) {
     // Setup before each test
 }

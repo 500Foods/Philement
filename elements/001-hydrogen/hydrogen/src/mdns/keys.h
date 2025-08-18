@@ -44,6 +44,6 @@
 
 #define SECRET_KEY_LENGTH 32
 
-char *generate_secret_key();
+char *generate_secret_key(void);
 
 #endif // KEYS_H

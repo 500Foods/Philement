@@ -51,7 +51,7 @@ bool collect_cpu_metrics(CpuMetrics *cpu) {
     }
 
     // Allocate array for per-core usage
-    char **core_usage = calloc(core_count, sizeof(char*));
+    char **core_usage = calloc((size_t)core_count, sizeof(char*));
     if (!core_usage) {
         log_this("SystemMetrics", "Failed to allocate core usage array", LOG_LEVEL_ERROR);
         return false;
@@ -83,7 +83,7 @@ bool collect_cpu_metrics(CpuMetrics *cpu) {
                 
                 long long total = user + nice + system + idle + iowait + irq + softirq + steal;
                 if (total > 0) {  // Avoid division by zero
-                    double usage = 100.0 * (total - idle) / total;
+                    double usage = 100.0 * (double)(total - idle) / (double)total;
 
                     if (strcmp(cpu_id, "cpu") == 0) {
                         format_percentage(usage, cpu->total_usage, MAX_PERCENTAGE_STRING);
@@ -127,14 +127,14 @@ bool collect_memory_metrics(SystemMemoryMetrics *memory) {
     memory->free_ram = si.freeram * si.mem_unit;
     memory->used_ram = memory->total_ram - memory->free_ram;
 
-    double ram_percent = (double)memory->used_ram / memory->total_ram * 100.0;
+    double ram_percent = (double)memory->used_ram / (double)memory->total_ram * 100.0;
     format_percentage(ram_percent, memory->ram_used_percent, MAX_PERCENTAGE_STRING);
 
     memory->total_swap = si.totalswap * si.mem_unit;
     if (memory->total_swap > 0) {
         memory->free_swap = si.freeswap * si.mem_unit;
         memory->used_swap = memory->total_swap - memory->free_swap;
-        double swap_percent = (double)memory->used_swap / memory->total_swap * 100.0;
+        double swap_percent = (double)memory->used_swap / (double)memory->total_swap * 100.0;
         format_percentage(swap_percent, memory->swap_used_percent, MAX_PERCENTAGE_STRING);
     } else {
         memory->free_swap = 0;
@@ -165,7 +165,7 @@ bool collect_network_metrics(NetworkMetrics *network) {
     }
 
     // Allocate array for interfaces
-    network->interfaces = calloc(interface_count, sizeof(NetworkInterfaceMetrics));
+    network->interfaces = calloc((size_t)interface_count, sizeof(NetworkInterfaceMetrics));
     network->interface_count = interface_count;
 
     // Second pass to collect metrics
@@ -232,7 +232,7 @@ bool collect_filesystem_metrics(FilesystemMetrics **filesystems, int *count) {
     }
 
     // Allocate array for filesystem metrics
-    *filesystems = calloc(*count, sizeof(FilesystemMetrics));
+    *filesystems = calloc((size_t)*count, sizeof(FilesystemMetrics));
     if (!*filesystems) {
         endmntent(mtab);
         return false;
@@ -263,7 +263,7 @@ bool collect_filesystem_metrics(FilesystemMetrics **filesystems, int *count) {
         unsigned long long free_space = (unsigned long long)vfs.f_frsize * vfs.f_bfree;
         fs->used_space = fs->total_space - free_space;
 
-        double used_percent = (double)fs->used_space / fs->total_space * 100.0;
+        double used_percent = (double)fs->used_space / (double)fs->total_space * 100.0;
         format_percentage(used_percent, fs->used_percent, MAX_PERCENTAGE_STRING);
 
         current_fs++;

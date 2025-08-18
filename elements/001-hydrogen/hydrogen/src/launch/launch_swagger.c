@@ -79,15 +79,15 @@ LaunchReadiness check_swagger_launch_readiness(void) {
     }
     
     // Get app config
-    const AppConfig *app_config = get_app_config();
-    if (!app_config) {
+    const AppConfig *config = get_app_config();
+    if (!config) {
         messages[msg_index++] = strdup("  No-Go:   Failed to get app config");
         messages[msg_index++] = NULL;
         return (LaunchReadiness){.subsystem = "Swagger", .ready = false, .messages = messages};
     }
 
     // Check if Swagger is enabled
-    if (!app_config || !app_config->swagger.enabled) {
+    if (!config || !config->swagger.enabled) {
         messages[msg_index++] = strdup("  Skip:    Swagger is disabled");
         messages[msg_index++] = NULL;
         return (LaunchReadiness){.subsystem = "Swagger", .ready = false, .messages = messages};
@@ -136,56 +136,56 @@ LaunchReadiness check_swagger_launch_readiness(void) {
     free_readiness_messages(&payload_readiness);
 
     // Validate prefix
-    if (!app_config->swagger.prefix || strlen(app_config->swagger.prefix) < 1 ||
-        strlen(app_config->swagger.prefix) > 64 || app_config->swagger.prefix[0] != '/') {
+    if (!config->swagger.prefix || strlen(config->swagger.prefix) < 1 ||
+        strlen(config->swagger.prefix) > 64 || config->swagger.prefix[0] != '/') {
         messages[msg_index++] = strdup("  No-Go:   Invalid Swagger prefix configuration");
         ready = false;
     } else {
         char* msg = malloc(256);
         if (msg) {
             snprintf(msg, 256, "  Go:      Valid Swagger prefix: %s", 
-                    app_config->swagger.prefix);
+                    config->swagger.prefix);
             messages[msg_index++] = msg;
         }
     }
 
     // Validate required metadata
-    if (!app_config->swagger.metadata.title || 
-        strlen(app_config->swagger.metadata.title) < 1 ||
-        strlen(app_config->swagger.metadata.title) > 128) {
+    if (!config->swagger.metadata.title || 
+        strlen(config->swagger.metadata.title) < 1 ||
+        strlen(config->swagger.metadata.title) > 128) {
         messages[msg_index++] = strdup("  No-Go:   Invalid Swagger title configuration");
         ready = false;
     }
 
-    if (!app_config->swagger.metadata.version ||
-        strlen(app_config->swagger.metadata.version) < 1 ||
-        strlen(app_config->swagger.metadata.version) > 32) {
+    if (!config->swagger.metadata.version ||
+        strlen(config->swagger.metadata.version) < 1 ||
+        strlen(config->swagger.metadata.version) > 32) {
         messages[msg_index++] = strdup("  No-Go:   Invalid Swagger version configuration");
         ready = false;
     }
 
-    if (app_config->swagger.metadata.description && 
-        strlen(app_config->swagger.metadata.description) > 1024) {
+    if (config->swagger.metadata.description && 
+        strlen(config->swagger.metadata.description) > 1024) {
         messages[msg_index++] = strdup("  No-Go:   Swagger description too long");
         ready = false;
     }
 
     // Validate UI options
-    if (app_config->swagger.ui_options.default_models_expand_depth < 0 ||
-        app_config->swagger.ui_options.default_models_expand_depth > 10) {
+    if (config->swagger.ui_options.default_models_expand_depth < 0 ||
+        config->swagger.ui_options.default_models_expand_depth > 10) {
         messages[msg_index++] = strdup("  No-Go:   Invalid models expand depth");
         ready = false;
     }
 
-    if (app_config->swagger.ui_options.default_model_expand_depth < 0 ||
-        app_config->swagger.ui_options.default_model_expand_depth > 10) {
+    if (config->swagger.ui_options.default_model_expand_depth < 0 ||
+        config->swagger.ui_options.default_model_expand_depth > 10) {
         messages[msg_index++] = strdup("  No-Go:   Invalid model expand depth");
         ready = false;
     }
 
     // Validate doc expansion value
-    if (app_config->swagger.ui_options.doc_expansion) {
-        const char* exp = app_config->swagger.ui_options.doc_expansion;
+    if (config->swagger.ui_options.doc_expansion) {
+        const char* exp = config->swagger.ui_options.doc_expansion;
         if (strcmp(exp, "list") != 0 && strcmp(exp, "full") != 0 && strcmp(exp, "none") != 0) {
             messages[msg_index++] = strdup("  No-Go:   Invalid doc expansion value");
             ready = false;

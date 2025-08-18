@@ -26,6 +26,18 @@
 // Forward declaration for the function being tested
 bool init_swagger_support(SwaggerConfig *config);
 
+// Function prototypes for test functions
+void test_init_swagger_support_null_config(void);
+void test_init_swagger_support_disabled_config(void);
+void test_init_swagger_support_system_shutting_down(void);
+void test_init_swagger_support_invalid_system_state(void);
+void test_init_swagger_support_already_initialized(void);
+void test_init_swagger_support_executable_path_failure(void);
+void test_init_swagger_support_payload_extraction_failure(void);
+void test_init_swagger_support_valid_config(void);
+void test_init_swagger_support_minimal_config(void);
+void test_init_swagger_support_payload_not_available(void);
+
 // Global state variables that swagger functions check (declared extern)
 extern volatile sig_atomic_t server_stopping;
 extern volatile sig_atomic_t server_running; 

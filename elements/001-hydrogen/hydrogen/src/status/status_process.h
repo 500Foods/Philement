@@ -12,6 +12,7 @@
 #define STATUS_PROCESS_H
 
 #include "status_core.h"
+#include <sys/types.h>
 #include "../threads/threads.h"
 
 // Helper functions
@@ -20,7 +21,7 @@ char* safe_truncate(char* dest, size_t dest_size, const char* src);
 // File descriptor functions
 bool collect_file_descriptors(FileDescriptorInfo **descriptors, int *count);
 void get_fd_info(int fd, FileDescriptorInfo *info);
-void get_socket_info(int inode, char *proto, int *port);
+void get_socket_info(ino_t inode, char *proto, int *port);
 
 // Memory metrics functions
 bool get_process_memory(size_t *vmsize, size_t *vmrss, size_t *vmswap);

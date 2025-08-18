@@ -21,14 +21,15 @@ extern AppConfig* app_config;
 void generate_uuid(char *uuid_str) {
     struct timeval tv;
     gettimeofday(&tv, NULL);
-    unsigned long long int time_in_usec = ((unsigned long long int)tv.tv_sec * 1000000ULL) + tv.tv_usec;
+    unsigned long long int time_in_usec = ((unsigned long long int)tv.tv_sec * 1000000ULL) + (unsigned long long int)tv.tv_usec;
 
-    snprintf(uuid_str, UUID_STR_LEN, "%08llx-%04x-%04x-%04x-%012llx",
+    snprintf(uuid_str, UUID_STR_LEN, "%08llx-%04x-%04x-%04x-%08llx%04x",
              time_in_usec & 0xFFFFFFFFULL,
              (unsigned int)(rand() & 0xffff),
              (unsigned int)((rand() & 0xfff) | 0x4000),
              (unsigned int)((rand() & 0x3fff) | 0x8000),
-             (unsigned long long int)rand() * rand());
+             ((unsigned long long int)(unsigned int)rand() * (unsigned int)rand()) & 0xFFFFFFFFULL,
+             (unsigned int)(rand() & 0xffff));
 }
 
 enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind kind,
@@ -131,7 +132,7 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
 
             json_object_set_new(print_job, "original_filename", json_string(con_info->original_filename));
             json_object_set_new(print_job, "new_filename", json_string(con_info->new_filename));
-            json_object_set_new(print_job, "file_size", json_integer(con_info->total_size));
+            json_object_set_new(print_job, "file_size", json_integer((json_int_t)con_info->total_size));
             json_object_set_new(print_job, "print_after_upload", json_boolean(con_info->print_after_upload));
 
             json_t* gcode_info = extract_gcode_info(con_info->new_filename);
@@ -175,9 +176,8 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
             log_this("WebServer", info_str, LOG_LEVEL_STATE);
 
             // Send response
-            const char *response_text = "{\"files\": {\"local\": {\"name\": \"%s\", \"origin\": \"local\"}}, \"done\": true}";
-            char *json_response = malloc(strlen(response_text) + strlen(con_info->original_filename) + 1);
-            sprintf(json_response, response_text, con_info->original_filename);
+            char *json_response = malloc(strlen(con_info->original_filename) + 100);  // Extra space for JSON structure
+            sprintf(json_response, "{\"files\": {\"local\": {\"name\": \"%s\", \"origin\": \"local\"}}, \"done\": true}", con_info->original_filename);
 
             struct MHD_Response *response = MHD_create_response_from_buffer(strlen(json_response),
                                             (void*)json_response, MHD_RESPMEM_MUST_FREE);

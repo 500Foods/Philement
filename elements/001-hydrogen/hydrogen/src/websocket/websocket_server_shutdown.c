@@ -1,3 +1,4 @@
+
 /* Feature test macros must come first */
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200809L
@@ -56,7 +57,7 @@ struct CleanupData {
 
 
 // Stop the WebSocket server
-void stop_websocket_server()
+void stop_websocket_server(void)
 {
     if (!ws_context) {
         return;
@@ -129,7 +130,7 @@ void stop_websocket_server()
 }
 
 // Clean up server resources
-void cleanup_websocket_server()
+void cleanup_websocket_server(void)
 {
     if (!ws_context) {
         return;

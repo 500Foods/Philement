@@ -31,6 +31,23 @@
 // Note: Most functions require libwebsockets context and cannot be called directly
 // We test the logic and data structures instead
 
+// Function prototypes for test functions
+void test_connection_establishment_context_validation(void);
+void test_connection_establishment_session_initialization(void);
+void test_connection_establishment_metrics_update(void);
+void test_connection_establishment_thread_safety(void);
+void test_connection_closure_context_validation(void);
+void test_connection_closure_shutdown_state(void);
+void test_connection_closure_metrics_underflow_protection(void);
+void test_connection_closure_remaining_connections_logging(void);
+void test_client_info_structure_initialization(void);
+void test_client_info_structure_assignment(void);
+void test_client_info_structure_boundary_conditions(void);
+void test_client_info_unknown_fallback(void);
+void test_connection_thread_management_logic(void);
+void test_connection_lifecycle_state_transitions(void);
+void test_multiple_connections_lifecycle(void);
+
 // External reference to websocket threads
 extern ServiceThreads websocket_threads;
 extern WebSocketServerContext *ws_context;

@@ -27,6 +27,18 @@ void tearDown(void) {
 }
 
 // Test basic JWT validation with valid inputs
+void test_api_validate_jwt_valid_inputs(void);
+void test_api_validate_jwt_null_token(void);
+void test_api_validate_jwt_null_secret(void);
+void test_api_validate_jwt_both_null(void);
+void test_api_validate_jwt_empty_token(void);
+void test_api_validate_jwt_empty_secret(void);
+void test_api_validate_jwt_realistic_token(void);
+void test_api_validate_jwt_long_token(void);
+void test_api_validate_jwt_long_secret(void);
+void test_api_validate_jwt_claim_structure(void);
+void test_api_validate_jwt_time_consistency(void);
+void test_api_validate_jwt_consistent_results(void);
 void test_api_validate_jwt_valid_inputs(void) {
     json_t *result = api_validate_jwt("dummy.jwt.token", "secret123");
     

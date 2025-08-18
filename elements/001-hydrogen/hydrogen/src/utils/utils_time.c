@@ -55,8 +55,8 @@ static void format_iso_time(time_t t, char *buffer, size_t buflen) {
 
 // Calculate elapsed time in seconds with nanosecond precision
 static double calc_elapsed_time(const struct timespec *end, const struct timespec *start) {
-    double seconds = end->tv_sec - start->tv_sec;
-    double nanoseconds = end->tv_nsec - start->tv_nsec;
+    double seconds = (double)(end->tv_sec - start->tv_sec);
+    double nanoseconds = (double)(end->tv_nsec - start->tv_nsec);
     return seconds + (nanoseconds / 1000000000.0);
 }
 
@@ -113,10 +113,10 @@ void set_server_start_time(void) {
 
 // Format duration in human-readable format (e.g. "4d 1h 22m 0s")
 void format_duration(time_t seconds, char *buffer, size_t buflen) {
-    int days = seconds / 86400;
-    int hours = (seconds % 86400) / 3600;
-    int minutes = (seconds % 3600) / 60;
-    int secs = seconds % 60;
+    int days = (int)(seconds / 86400);
+    int hours = (int)((seconds % 86400) / 3600);
+    int minutes = (int)((seconds % 3600) / 60);
+    int secs = (int)(seconds % 60);
     snprintf(buffer, buflen, "%dd %dh %dm %ds", days, hours, minutes, secs);
 }
 

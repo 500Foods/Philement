@@ -168,8 +168,8 @@ extern int queue_system_initialized;  // Flag indicating if queue system is read
  */
 
 // System Lifecycle
-void queue_system_init();    // Initialize queue system
-void queue_system_destroy(); // Clean shutdown of all queues
+void queue_system_init(void);    // Initialize queue system
+void queue_system_destroy(void); // Clean shutdown of all queues
 
 // Queue Management
 Queue* queue_find(const char* name);  // O(1) queue lookup

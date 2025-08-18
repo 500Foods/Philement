@@ -6,6 +6,10 @@
 #define CONFIG_DATABASES_H
 
 #include <stdbool.h>
+#include <jansson.h>
+
+// Forward declarations
+struct AppConfig;
 
 // Structure for individual database connection
 typedef struct DatabaseConnection {
@@ -38,5 +42,8 @@ void cleanup_database_connection(DatabaseConnection* conn);
 void cleanup_database_config(DatabaseConfig* config);
 
 void dump_database_config(const DatabaseConfig* config);
+
+// Load database configuration from JSON
+bool load_database_config(json_t* root, struct AppConfig* config);
 
 #endif /* CONFIG_DATABASES_H */

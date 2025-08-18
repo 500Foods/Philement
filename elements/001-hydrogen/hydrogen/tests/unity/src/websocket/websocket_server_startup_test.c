@@ -13,6 +13,15 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+// Function prototypes for test functions
+void test_initialization_parameter_validation_valid_params(void);
+void test_initialization_parameter_validation_edge_cases(void);
+void test_port_fallback_logic(void);
+void test_socket_address_configuration(void);
+void test_protocol_string_validation(void);
+void test_ipv6_interface_selection(void);
+void test_logging_level_constants(void);
+
 void setUp(void) {
     // No setup needed - completely isolated tests
 }
@@ -101,7 +110,7 @@ void test_socket_address_configuration(void) {
     // Test address setup
     struct sockaddr_in addr;
     addr.sin_family = AF_INET;
-    addr.sin_port = htons(test_port);
+    addr.sin_port = htons((uint16_t)test_port);
     addr.sin_addr.s_addr = INADDR_ANY;
     
     // Test address setup

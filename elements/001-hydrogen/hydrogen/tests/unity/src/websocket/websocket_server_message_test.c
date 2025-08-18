@@ -31,6 +31,22 @@
 // Forward declarations for functions being tested
 int ws_write_json_response(struct lws *wsi, json_t *json);
 
+// Function prototypes for test functions
+void test_message_buffer_initialization(void);
+void test_message_buffer_size_check(void);
+void test_message_buffer_accumulation(void);
+void test_message_buffer_reset(void);
+void test_message_buffer_overflow_protection(void);
+void test_json_message_parsing_valid(void);
+void test_json_message_parsing_invalid(void);
+void test_json_message_missing_type(void);
+void test_json_message_type_validation(void);
+void test_message_authentication_check(void);
+void test_request_counting(void);
+void test_json_response_creation(void);
+void test_json_response_buffer_allocation(void);
+void test_complete_message_processing_workflow(void);
+
 // External reference
 extern WebSocketServerContext *ws_context;
 

@@ -169,6 +169,26 @@ OIDCUser* oidc_get_user_by_username(OIDCUserContext *context, const char *userna
 OIDCUser* oidc_get_user_by_email(OIDCUserContext *context, const char *email);
 
 /*
+ * Get user information by ID
+ * 
+ * @param context User context
+ * @param user_id User ID to look up
+ * @return JSON string with user info (caller must free) or NULL on error
+ */
+char* oidc_get_user_info(OIDCUserContext *context, const char *user_id);
+
+/*
+ * Update user information
+ * 
+ * @param context User context
+ * @param user_id User ID to update
+ * @param field Field to update
+ * @param value New value for field
+ * @return Update result (0 for success, error code otherwise)
+ */
+int oidc_update_user(OIDCUserContext *context, const char *user_id, const char *field, const char *value);
+
+/*
  * Update user profile
  * 
  * @param context User context

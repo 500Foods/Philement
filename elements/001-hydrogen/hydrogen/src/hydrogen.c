@@ -221,8 +221,8 @@ static void crash_handler(int sig, siginfo_t *info, void *ucontext) {
         .e_machine = EM_X86_64,
         .e_version = EV_CURRENT,
         .e_phoff = sizeof(Elf64_Ehdr),
-        .e_ehsize = sizeof(Elf64_Ehdr),
-        .e_phentsize = sizeof(Elf64_Phdr),
+        .e_ehsize = (Elf64_Half)(sizeof(Elf64_Ehdr) & 0xFFFF),
+        .e_phentsize = (Elf64_Half)(sizeof(Elf64_Phdr) & 0xFFFF),
         .e_phnum = 3,
     };
     fwrite(&ehdr, sizeof(ehdr), 1, out);
@@ -231,7 +231,7 @@ static void crash_handler(int sig, siginfo_t *info, void *ucontext) {
     size_t prpsinfo_sz = sizeof(Elf64_Nhdr) + 4 + sizeof(struct elf_prpsinfo);
     size_t note_size = prstatus_sz + prpsinfo_sz;
 
-    off_t offset = sizeof(Elf64_Ehdr) + 3 * sizeof(Elf64_Phdr);
+    Elf64_Off offset = sizeof(Elf64_Ehdr) + 3 * sizeof(Elf64_Phdr);
     Elf64_Phdr note_phdr = {
         .p_type = PT_NOTE,
         .p_offset = offset,
@@ -266,7 +266,7 @@ static void crash_handler(int sig, siginfo_t *info, void *ucontext) {
     fwrite(&stack_phdr, sizeof(stack_phdr), 1, out);
     fwrite(&code_phdr, sizeof(code_phdr), 1, out);
 
-    fseek(out, note_phdr.p_offset, SEEK_SET);
+    fseek(out, (long)note_phdr.p_offset, SEEK_SET);
 
     /* Step 5: Capture process state and CPU context
      * This section captures:
@@ -275,22 +275,30 @@ static void crash_handler(int sig, siginfo_t *info, void *ucontext) {
      * - Process hierarchy information (PID, PPID, etc.)
      */
     ucontext_t *uc = (ucontext_t *)ucontext;
+    if (!uc) {
+        log_this("Crash", "Invalid ucontext in crash handler", LOG_LEVEL_ERROR, NULL);
+        fclose(mem);
+        fclose(out);
+        _exit(128 + sig);
+    }
     sigset_t pending_signals;
     sigpending(&pending_signals);
 
     struct elf_prstatus prstatus;
     memset(&prstatus, 0, sizeof(prstatus));
     prstatus.pr_info.si_signo = sig;
-    prstatus.pr_info.si_code = info->si_code;
+    prstatus.pr_info.si_code = info ? info->si_code : 0;
     prstatus.pr_info.si_errno = errno;
-    prstatus.pr_cursig = sig;
+    prstatus.pr_cursig = (short)sig;
     prstatus.pr_sigpend = pending_signals.__val[0];
     prstatus.pr_pid = pid;
     prstatus.pr_ppid = getppid();
     prstatus.pr_pgrp = getpgrp();
     prstatus.pr_sid = getsid(0);
     prstatus.pr_fpvalid = 0;
-    memcpy(&prstatus.pr_reg, uc->uc_mcontext.gregs, sizeof(prstatus.pr_reg));
+    if (uc) {
+        memcpy(&prstatus.pr_reg, uc->uc_mcontext.gregs, sizeof(prstatus.pr_reg));
+    }
 
     Elf64_Nhdr nhdr1 = {.n_namesz = 4, .n_descsz = sizeof(prstatus), .n_type = NT_PRSTATUS};
     fwrite(&nhdr1, sizeof(nhdr1), 1, out);
@@ -300,12 +308,12 @@ static void crash_handler(int sig, siginfo_t *info, void *ucontext) {
     struct elf_prpsinfo prpsinfo = {
         .pr_state = 0,
         .pr_sname = 'R',
-        .pr_pid = pid,
-        .pr_ppid = getppid(),
-        .pr_pgrp = getpgrp(),
-        .pr_sid = getsid(0),
-        .pr_uid = getuid(),
-        .pr_gid = getgid()
+        .pr_pid = (pid_t)pid,
+        .pr_ppid = (pid_t)getppid(),
+        .pr_pgrp = (pid_t)getpgrp(),
+        .pr_sid = (pid_t)getsid(0),
+        .pr_uid = (uid_t)getuid(),
+        .pr_gid = (gid_t)getgid()
     };
     snprintf(prpsinfo.pr_fname, sizeof(prpsinfo.pr_fname), "%s", base);
     snprintf(prpsinfo.pr_psargs, sizeof(prpsinfo.pr_psargs), "%s", base);
@@ -323,8 +331,8 @@ static void crash_handler(int sig, siginfo_t *info, void *ucontext) {
      */
     size_t stack_written = 0;
     if (stack_start && stack_end) {
-        fseek(out, stack_phdr.p_offset, SEEK_SET);
-        fseek(mem, stack_start, SEEK_SET);
+        fseek(out, (long)stack_phdr.p_offset, SEEK_SET);
+        fseek(mem, (long)stack_start, SEEK_SET);
         char *buf = malloc(stack_size);
         if (buf) {
             stack_written = fread(buf, 1, stack_size, mem);
@@ -336,8 +344,8 @@ static void crash_handler(int sig, siginfo_t *info, void *ucontext) {
     // Write code
     size_t code_written = 0;
     if (code_start && code_end) {
-        fseek(out, code_phdr.p_offset, SEEK_SET);
-        fseek(mem, code_start, SEEK_SET);
+        fseek(out, (long)code_phdr.p_offset, SEEK_SET);
+        fseek(mem, (long)code_start, SEEK_SET);
         char *buf = malloc(code_size);
         if (buf) {
             code_written = fread(buf, 1, code_size, mem);
@@ -372,7 +380,10 @@ static void test_crash_handler(int sig) {
     (void)sig;
     log_this("Crash", "Received SIGUSR1, simulating crash via null dereference", LOG_LEVEL_ERROR);
     volatile int *ptr = NULL;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
     *ptr = 42; // Triggers SIGSEGV, which your crash_handler will catch
+#pragma GCC diagnostic pop
 }
 
 /**
@@ -388,7 +399,11 @@ static void config_dump_handler(int sig) {
     (void)sig;
     log_this("Config", "Received SIGUSR2, dumping current configuration", LOG_LEVEL_STATE);
     const AppConfig* config = get_app_config();
-    dumpAppConfig(config, NULL);
+    if (config) {
+        dumpAppConfig(config, NULL);
+    } else {
+        log_this("Config", "No configuration available to dump", LOG_LEVEL_ERROR);
+    }
 }
 
 /**

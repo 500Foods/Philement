@@ -56,7 +56,7 @@ bool check_payload_exists(const char *marker, size_t *size) {
         return false;
     }
     
-    void *file_data = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    void *file_data = mmap(NULL, (size_t)st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
     close(fd);
     
     if (file_data == MAP_FAILED) return false;
@@ -66,7 +66,7 @@ bool check_payload_exists(const char *marker, size_t *size) {
     // Find the LAST occurrence of the marker (the real payload marker)
     const char *marker_pos = NULL;
     char *search_start = (char*)file_data;
-    size_t remaining_size = st.st_size;
+    size_t remaining_size = (size_t)st.st_size;
     
     while (remaining_size >= strlen(marker)) {
         char *found = memmem(search_start, remaining_size, marker, strlen(marker));
@@ -77,7 +77,7 @@ bool check_payload_exists(const char *marker, size_t *size) {
         
         // Move search position past this marker
         search_start = found + strlen(marker);
-        remaining_size = st.st_size - (search_start - (char*)file_data);
+        remaining_size = (size_t)st.st_size - (size_t)(search_start - (char*)file_data);
     }
     
     if (marker_pos && st.st_size > 0) {
@@ -96,7 +96,7 @@ bool check_payload_exists(const char *marker, size_t *size) {
         }
     }
     
-    munmap(file_data, st.st_size);
+    munmap(file_data, (size_t)st.st_size);
     return result;
 }
 
@@ -119,7 +119,7 @@ bool validate_payload_key(const char *key) {
         const char *end = strchr(key + 6, '}');
         if (!end) return false;
         
-        size_t len = end - (key + 6);
+        size_t len = (size_t)(end - (key + 6));
         if (len == 0 || len > 255) return false;
         
         char env_var[256];
@@ -219,7 +219,7 @@ bool extract_payload(const char *executable_path, const AppConfig *config,
     }
 
     // Map the file
-    void *file_data = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    void *file_data = mmap(NULL, (size_t)st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
     close(fd);
 
     if (file_data == MAP_FAILED) {
@@ -230,7 +230,7 @@ bool extract_payload(const char *executable_path, const AppConfig *config,
     // Find the LAST occurrence of the marker (the real payload marker)
     const char *marker_pos = NULL;
     char *search_start = (char*)file_data;
-    size_t remaining_size = st.st_size;
+    size_t remaining_size = (size_t)st.st_size;
     
     while (remaining_size >= strlen(marker)) {
         char *found = memmem(search_start, remaining_size, marker, strlen(marker));
@@ -241,11 +241,11 @@ bool extract_payload(const char *executable_path, const AppConfig *config,
         
         // Move search position past this marker
         search_start = found + strlen(marker);
-        remaining_size = st.st_size - (search_start - (char*)file_data);
+        remaining_size = (size_t)st.st_size - (size_t)(search_start - (char*)file_data);
     }
     
     if (!marker_pos) {
-        munmap(file_data, st.st_size);
+        munmap(file_data, (size_t)st.st_size);
         log_this("Payload", "No payload marker found in executable", LOG_LEVEL_STATE, NULL);
         return false;
     }
@@ -260,7 +260,7 @@ bool extract_payload(const char *executable_path, const AppConfig *config,
     // Validate payload size
     if (payload_size == 0 || payload_size > (size_t)(marker_pos - (char*)file_data)) {
         log_this("Payload", "Invalid payload size or corrupted payload", LOG_LEVEL_ERROR, NULL);
-        munmap(file_data, st.st_size);
+        munmap(file_data, (size_t)st.st_size);
         return false;
     }
 
@@ -274,7 +274,7 @@ bool extract_payload(const char *executable_path, const AppConfig *config,
     // Get the payload key directly from config - env vars should already be resolved
     if (!config->server.payload_key) {
         log_this("Payload", "No valid payload key available", LOG_LEVEL_ERROR, NULL);
-        munmap(file_data, st.st_size);
+        munmap(file_data, (size_t)st.st_size);
         return false;
     }
 
@@ -290,7 +290,7 @@ bool extract_payload(const char *executable_path, const AppConfig *config,
                                  &decrypted_data, &decrypted_size);
 
     // Unmap the executable
-    munmap(file_data, st.st_size);
+    munmap(file_data, (size_t)st.st_size);
 
     if (!success) {
         log_this("Payload", "Failed to decrypt payload", LOG_LEVEL_ERROR, NULL);
@@ -368,7 +368,7 @@ static bool process_payload_data(const PayloadData *payload) {
                 
             if (result == BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT) {
                 // Need more output space
-                size_t current_position = next_out - decompressed_data;
+                size_t current_position = (size_t)(next_out - decompressed_data);
                 buffer_size *= 2;
                 uint8_t* new_buffer = realloc(decompressed_data, buffer_size);
                 if (!new_buffer) {
@@ -429,7 +429,7 @@ static bool process_payload_data(const PayloadData *payload) {
                 file_name[100] = '\0';  // Ensure null termination
                 
                 // Only count regular files (type flag '0' or '\0')
-                char type_flag = header[156];
+                char type_flag = (char)header[156];
                 if (type_flag == '0' || type_flag == '\0') {
                     file_count++;
                     total_file_size += file_size;
@@ -587,10 +587,10 @@ static bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size
     private_key_data = calloc(1, private_key_len);
     if (!private_key_data) goto cleanup;
 
-    private_key_len = BIO_read(bio_chain, private_key_data, private_key_len);
+    private_key_len = (size_t)BIO_read(bio_chain, private_key_data, (int)private_key_len);
     if (private_key_len <= 0) goto cleanup;
 
-    bio = BIO_new_mem_buf(private_key_data, private_key_len);
+    bio = BIO_new_mem_buf(private_key_data, (int)private_key_len);
     if (!bio) goto cleanup;
 
     // Load and verify private key
@@ -608,13 +608,13 @@ static bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size
     if (EVP_PKEY_CTX_set_rsa_padding(pkey_ctx, RSA_PKCS1_PADDING) <= 0) goto cleanup;
 
     // Get required buffer size for AES key
-    if (EVP_PKEY_decrypt(pkey_ctx, NULL, &aes_key_len, encrypted_data + 4, key_size) <= 0) goto cleanup;
+    if (EVP_PKEY_decrypt(pkey_ctx, NULL, &aes_key_len, encrypted_data + 4, (size_t)key_size) <= 0) goto cleanup;
 
     aes_key = calloc(1, aes_key_len);
     if (!aes_key) goto cleanup;
 
     // Decrypt the AES key
-    if (EVP_PKEY_decrypt(pkey_ctx, aes_key, &aes_key_len, encrypted_data + 4, key_size) <= 0) {
+    if (EVP_PKEY_decrypt(pkey_ctx, aes_key, &aes_key_len, encrypted_data + 4, (size_t)key_size) <= 0) {
         log_this("Payload", "Failed to decrypt AES key", LOG_LEVEL_ERROR, NULL);
         goto cleanup;
     }
@@ -644,14 +644,14 @@ static bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size
     if (!*decrypted_data) goto cleanup;
 
     // Decrypt payload
-    if (!EVP_DecryptUpdate(ctx, *decrypted_data, &len, encrypted_payload, encrypted_payload_size)) {
+    if (!EVP_DecryptUpdate(ctx, *decrypted_data, &len, encrypted_payload, (int)encrypted_payload_size)) {
         log_this("Payload", "Failed to decrypt payload", LOG_LEVEL_ERROR, NULL);
         free(*decrypted_data);
         *decrypted_data = NULL;
         goto cleanup;
     }
 
-    *decrypted_size = len;
+    *decrypted_size = (size_t)len;
 
     // Finalize decryption
     if (!EVP_DecryptFinal_ex(ctx, *decrypted_data + len, &final_len)) {
@@ -661,7 +661,7 @@ static bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size
         goto cleanup;
     }
 
-    *decrypted_size += final_len;
+    *decrypted_size += (size_t)final_len;
     log_this("Payload", "Payload decrypted successfully (%zu bytes)", LOG_LEVEL_STATE, *decrypted_size);
     success = true;
 

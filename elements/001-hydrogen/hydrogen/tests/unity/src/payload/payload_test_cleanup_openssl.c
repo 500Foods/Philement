@@ -18,6 +18,9 @@
 #include "../../../../src/payload/payload.h"
 
 // Forward declaration for the function being tested
+void test_cleanup_openssl_basic(void);
+void test_cleanup_openssl_multiple_calls(void);
+void test_cleanup_openssl_repeated_sequence(void);
 void cleanup_openssl(void);
 
 void setUp(void) {

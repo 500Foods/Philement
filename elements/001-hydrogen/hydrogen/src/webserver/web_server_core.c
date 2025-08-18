@@ -148,7 +148,7 @@ static bool is_port_available(int port, bool check_ipv6) {
 
         struct sockaddr_in addr;
         addr.sin_family = AF_INET;
-        addr.sin_port = htons(port);
+        addr.sin_port = htons((uint16_t)port);
         addr.sin_addr.s_addr = INADDR_ANY;
 
         int result = bind(sock_v4, (struct sockaddr*)&addr, sizeof(addr));
@@ -178,7 +178,7 @@ static bool is_port_available(int port, bool check_ipv6) {
 
             struct sockaddr_in6 addr;
             addr.sin6_family = AF_INET6;
-            addr.sin6_port = htons(port);
+            addr.sin6_port = htons((uint16_t)port);
             addr.sin6_addr = in6addr_any;
 
             // Enable dual-stack (IPv4 + IPv6) if possible
@@ -371,7 +371,7 @@ void* run_web_server(void* arg) {
     
     // Start the daemon with proper thread configuration
     webserver_daemon = MHD_start_daemon(flags | MHD_USE_DEBUG | MHD_USE_ERROR_LOG,
-                                server_web_config->port, 
+                                (uint16_t)server_web_config->port, 
                                 NULL, NULL,
                                 &handle_request, NULL,
                                 MHD_OPTION_THREAD_POOL_SIZE, server_web_config->thread_pool_size,

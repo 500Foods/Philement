@@ -84,7 +84,7 @@ bool get_process_memory(size_t *vmsize, size_t *vmrss, size_t *vmswap) {
 }
 
 // Get socket information from /proc/net files
-void get_socket_info(int inode, char *proto, int *port) {
+void get_socket_info(ino_t inode, char *proto, int *port) {
     char path[64];  // System path buffer - fixed size for /proc paths
     const char *net_files[] = {
         "tcp", "tcp6", "udp", "udp6"
@@ -106,11 +106,11 @@ void get_socket_info(int inode, char *proto, int *port) {
         
         while (fgets(line, sizeof(line), f)) {
             unsigned local_port;
-            unsigned socket_inode;
-            if (sscanf(line, "%*x: %*x:%x %*x:%*x %*x %*x:%*x %*x:%*x %*x %*d %*d %u",
-                      &local_port, &socket_inode) == 2) {
-                if (socket_inode == (unsigned)inode) {
-                    *port = local_port;
+            ino_t socket_inode;
+            if (sscanf(line, "%*x: %*x:%x %*x:%*x %*x %*x:%*x %*x:%*x %*x %*d %*d %lu",
+                &local_port, &socket_inode) == 2) {
+                if (socket_inode == inode) {
+                    *port = (int)local_port;
                     snprintf(proto, 32, "%s", net_files[i]);  // 32 = size of proto buffer
                     fclose(f);
                     return;
@@ -254,7 +254,7 @@ bool collect_file_descriptors(FileDescriptorInfo **descriptors, int *count) {
     }
 
     // Allocate array for file descriptors
-    *descriptors = calloc(*count, sizeof(FileDescriptorInfo));
+    *descriptors = calloc((size_t)*count, sizeof(FileDescriptorInfo));
     if (!*descriptors) {
         closedir(dir);
         return false;
@@ -283,9 +283,9 @@ void convert_thread_metrics(const ServiceThreads *src, ServiceThreadMetrics *des
     if (!src || !dest) return;
     
     dest->thread_count = src->thread_count;
-    dest->thread_tids = malloc(src->thread_count * sizeof(pid_t));
+    dest->thread_tids = malloc((size_t)src->thread_count * sizeof(pid_t));
     if (dest->thread_tids) {
-        memcpy(dest->thread_tids, src->thread_tids, src->thread_count * sizeof(pid_t));
+        memcpy(dest->thread_tids, src->thread_tids, (size_t)src->thread_count * sizeof(pid_t));
     }
     dest->virtual_memory = src->virtual_memory;
     dest->resident_memory = src->resident_memory;
@@ -338,14 +338,14 @@ bool collect_service_metrics(SystemMetrics *metrics, const WebSocketMetrics *ws_
 
     // Update queue metrics
     // Copy queue metrics
-    metrics->log_queue.entry_count = log_queue_memory.entry_count;
-    metrics->log_queue.block_count = log_queue_memory.block_count;
+    metrics->log_queue.entry_count = (int)log_queue_memory.entry_count;
+    metrics->log_queue.block_count = (int)log_queue_memory.block_count;
     metrics->log_queue.total_allocation = log_queue_memory.total_allocation;
     metrics->log_queue.virtual_bytes = log_queue_memory.metrics.virtual_bytes;
     metrics->log_queue.resident_bytes = log_queue_memory.metrics.resident_bytes;
 
-    metrics->print_queue.entry_count = print_queue_memory.entry_count;
-    metrics->print_queue.block_count = print_queue_memory.block_count;
+    metrics->print_queue.entry_count = (int)print_queue_memory.entry_count;
+    metrics->print_queue.block_count = (int)print_queue_memory.block_count;
     metrics->print_queue.total_allocation = print_queue_memory.total_allocation;
     metrics->print_queue.virtual_bytes = print_queue_memory.metrics.virtual_bytes;
     metrics->print_queue.resident_bytes = print_queue_memory.metrics.resident_bytes;
