@@ -908,8 +908,9 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
     # Add extra link flags
     target_link_options(${TEST_NAME} PRIVATE -Wl,--gc-sections)
     
-    # Generate map file in the appropriate subdirectory
-    target_link_options(${TEST_NAME} PRIVATE -Wl,-Map=${TEST_OUTPUT_DIR}/${TEST_NAME}.map)
+    # Map file generation disabled for Unity tests to improve build performance
+    # Uncomment the following line if map files are needed for Unity test debugging:
+    # target_link_options(${TEST_NAME} PRIVATE -Wl,-Map=${TEST_OUTPUT_DIR}/${TEST_NAME}.map)
     
     # Set output directory for test executable to mirror source structure
     set_target_properties(${TEST_NAME} PROPERTIES

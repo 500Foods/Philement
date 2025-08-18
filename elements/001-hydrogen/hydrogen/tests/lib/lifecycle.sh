@@ -282,6 +282,7 @@ monitor_shutdown() {
     local inactive_time
     
     start_time=$("${DATE}" +%s)
+    # shellcheck disable=SC2154 # STAT defined externally in framework.sh
     log_size_before=$("${STAT}" -c %s "${log_file}" 2>/dev/null || echo 0)
     last_activity=$("${DATE}" +%s)
     

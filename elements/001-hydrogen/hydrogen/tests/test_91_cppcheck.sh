@@ -48,7 +48,7 @@ run_cppcheck() {
         case "${key}" in
             "enable") cppcheck_args+=("--enable=${value}") ;;
             "include") 
-                if [ -e "${value}" ]; then
+                if [[ -e "${value}" ]]; then
                     cppcheck_args+=("--include=${value}")
                 else
                     print_warning "Include path '${value}' does not exist and will be skipped"
