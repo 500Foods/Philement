@@ -282,7 +282,7 @@ monitor_shutdown() {
     local inactive_time
     
     start_time=$("${DATE}" +%s)
-    log_size_before=$(stat -c %s "${log_file}" 2>/dev/null || echo 0)
+    log_size_before=$("${STAT}" -c %s "${log_file}" 2>/dev/null || echo 0)
     last_activity=$("${DATE}" +%s)
     
     while ps -p "${pid}" > /dev/null 2>&1; do
@@ -299,7 +299,7 @@ monitor_shutdown() {
         fi
         
         # Check for log activity
-        log_size_now=$(stat -c %s "${log_file}" 2>/dev/null || echo 0)
+        log_size_now=$("${STAT}" -c %s "${log_file}" 2>/dev/null || echo 0)
         if [[ "${log_size_now}" -gt "${log_size_before}" ]]; then
             log_size_before=${log_size_now}
             last_activity=$("${DATE}" +%s)

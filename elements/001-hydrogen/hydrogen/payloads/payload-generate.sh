@@ -27,6 +27,7 @@ FIND=$(command -v gfind 2>/dev/null || command -v find)
 GREP=$(command -v ggrep 2>/dev/null || command -v grep)
 SED=$(command -v gsed 2>/dev/null || command -v sed)
 TAR=$(command -v gtar 2>/dev/null || command -v tar)
+STAT=$(command -v gstat 2>/dev/null || command -v stat)
 
 # Terminal formatting codes
 readonly GREEN='\033[0;32m'
@@ -393,7 +394,7 @@ create_tarball() {
     echo -e "${CYAN}${INFO} Compressing tar file with Brotli...${NC}"
     echo -e "${CYAN}${INFO} - Quality: 11 (maximum)${NC}"
     echo -e "${CYAN}${INFO} - Window: 24 (16MB)${NC}"
-    echo -e "${CYAN}${INFO} - Input size: $(stat -c%s "${TAR_FILE}" || true) bytes${NC}"
+    echo -e "${CYAN}${INFO} - Input size: $("${STAT}" -c%s "${TAR_FILE}" || true) bytes${NC}"
     
     # Use explicit Brotli parameters with correct syntax
     brotli --quality=11 --lgwin=24 --force \
@@ -416,13 +417,13 @@ create_tarball() {
     local br_size
     local br_head_16
     local br_tail_16
-    br_size=$(stat -c%s "${TEMP_DIR}/payload.tar.br" || true)
+    br_size=$("${STAT}" -c%s "${TEMP_DIR}/payload.tar.br" || true)
     br_head_16=$(head -c16 "${TEMP_DIR}/payload.tar.br" | xxd -p | tr -d '\n' || true)
     br_tail_16=$(tail -c16 "${TEMP_DIR}/payload.tar.br" | xxd -p | tr -d '\n' || true)
     
     echo -e "${CYAN}${INFO} Brotli stream validation:${NC}"
     echo -e "${CYAN}${INFO} - Compressed size: ${br_size} bytes${NC}"
-    echo -e "${CYAN}${INFO} - Compression ratio: $(echo "scale=2; ${br_size}*100/$(stat -c%s "${TAR_FILE}" || true)" | bc || true)%${NC}"
+    echo -e "${CYAN}${INFO} - Compression ratio: $(echo "scale=2; ${br_size}*100/$("${STAT}" -c%s "${TAR_FILE}" || true)" | bc || true)%${NC}"
     echo -e "${CYAN}${INFO} - First 32 bytes: ${br_head_16}${NC}"
     echo -e "${CYAN}${INFO} - Last 32 bytes: ${br_tail_16}${NC}"
     
@@ -468,7 +469,7 @@ create_tarball() {
     
     # Get the size of the encrypted AES key
     local encrypted_key_size
-    encrypted_key_size=$(stat -c%s "${TEMP_DIR}/encrypted_aes_key.bin")
+    encrypted_key_size=$("${STAT}" -c%s "${TEMP_DIR}/encrypted_aes_key.bin")
 
     # Save pre-encryption validation data
     echo -e "${CYAN}${INFO} Pre-encryption validation:${NC}"
@@ -488,7 +489,7 @@ create_tarball() {
     
     # Verify encryption size
     local enc_size
-    enc_size=$(stat -c%s "${TEMP_DIR}/temp_payload.enc")
+    enc_size=$("${STAT}" -c%s "${TEMP_DIR}/temp_payload.enc")
     echo -e "${CYAN}${INFO} Encryption validation:${NC}"
     echo -e "${CYAN}${INFO} - Original size: ${br_size} bytes${NC}"
     echo -e "${CYAN}${INFO} - Encrypted size: ${enc_size} bytes${NC}"
@@ -551,7 +552,7 @@ create_tarball() {
     
     # Original tarball
     local tar_size tar_head tar_tail
-    tar_size=$(stat -c%s "${TAR_FILE}")
+    tar_size=$("${STAT}" -c%s "${TAR_FILE}")
     tar_head=$(head -c5 "${TAR_FILE}" | xxd -p | tr -d '\n' || true)
     tar_tail=$(tail -c5 "${TAR_FILE}" | xxd -p | tr -d '\n' || true)
     echo -e "  ${GREEN}${INFO} Uncompressed tar:         ${NC}${tar_size} bytes"
@@ -568,7 +569,7 @@ create_tarball() {
     
     # Final encrypted payload
     local final_enc_size final_enc_head final_enc_tail
-    final_enc_size=$(stat -c%s "${COMPRESSED_TAR_FILE}")
+    final_enc_size=$("${STAT}" -c%s "${COMPRESSED_TAR_FILE}")
     final_enc_head=$(head -c5 "${COMPRESSED_TAR_FILE}" | xxd -p | tr -d '\n' || true)
     final_enc_tail=$(tail -c5 "${COMPRESSED_TAR_FILE}" | xxd -p | tr -d '\n' || true)
     echo -e "  ${GREEN}${INFO} Encrypted payload:        ${NC}${final_enc_size} bytes"
