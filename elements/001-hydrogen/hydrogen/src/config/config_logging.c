@@ -6,8 +6,25 @@
  * per-subsystem log levels and environment variable configuration.
  */
 
+#ifdef __linux__
+#include <stdlib.h> // reallocarray may be available on some Linux systems
+#elif defined(__APPLE__)
 #include <stdlib.h>
+// Define a fallback for reallocarray
+static inline void* reallocarray(void* ptr, size_t nmemb, size_t size) {
+    // Check for overflow
+    if (size && nmemb > SIZE_MAX / size) {
+        errno = ENOMEM;
+        return NULL;
+    }
+    return realloc(ptr, nmemb * size);
+}
+#else
+#include <stdlib.h>
+#endif
+
 #include <string.h>
+#include <strings.h>
 #include <jansson.h>
 #include "config.h"
 #include "config_utils.h"
