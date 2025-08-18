@@ -6,12 +6,11 @@
  * Note: Validation moved to launch readiness checks
  */
 
-#include <stdlib.h>
-#include <string.h>
+// Global includes 
+#include "hydrogen.h"
+
+// Local includes
 #include "config_databases.h"
-#include "config.h"
-#include "config_utils.h"
-#include "../logging/logging.h"
 
 // Function declarations
 void cleanup_database_connection(DatabaseConnection* conn);

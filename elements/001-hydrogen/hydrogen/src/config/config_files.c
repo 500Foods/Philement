@@ -7,29 +7,11 @@
  * - File size and modification time retrieval
  */
 
-#ifdef __linux__
-#include <linux/limits.h>
-#elif defined(__APPLE__)
-#include <sys/syslimits.h>
-#else
-#include <limits.h>
-#endif
+// Global includes 
+#include "hydrogen.h"
 
-// Core system headers
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <errno.h>
-
-// Standard C headers
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-
-// Project headers
+// Local includes
 #include "config_files.h"
-#include "../logging/logging.h"
 
 /*
  * Filesystem Operations Implementation

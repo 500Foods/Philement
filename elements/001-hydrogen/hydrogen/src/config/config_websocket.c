@@ -5,12 +5,11 @@
  * including JSON parsing and environment variable handling.
  */
 
-#include <stdlib.h>
-#include <string.h>
+ // Global includes 
+#include "../hydrogen.h"
+
+// Local includes
 #include "config_websocket.h"
-#include "config.h"
-#include "config_utils.h"
-#include "../logging/logging.h"
 
 // Load WebSocket configuration from JSON
 bool load_websocket_config(json_t* root, AppConfig* config) {

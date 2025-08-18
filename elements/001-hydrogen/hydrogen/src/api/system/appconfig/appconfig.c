@@ -5,23 +5,12 @@
  * application configuration in plain text format.
  */
 
-// Core system headers
-#include <sys/types.h>
-#include <unistd.h>
+  // Global includes 
+#include "../../../hydrogen.h"
 
-// Network headers
-#include <microhttpd.h>
-
-// Standard C headers
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-// Project headers
+// Local includes
 #include "appconfig.h"
 #include "../system_service.h"
-#include "../../../config/config.h"
-#include "../../../logging/logging.h"
 #include "../../../api/api_utils.h"
 
 // Handle GET /api/system/appconfig requests

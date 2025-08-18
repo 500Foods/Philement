@@ -5,22 +5,11 @@
  * including JSON parsing, environment variable handling, and validation.
  */
 
-#ifdef __linux__
-#include <linux/limits.h>
-#elif defined(__APPLE__)
-#include <sys/syslimits.h>
-#else
-#include <limits.h>
-#endif
+// Global includes 
+#include "../hydrogen.h"
 
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
-#include "config.h"
-#include "config_utils.h"
+// Local includes
 #include "config_server.h"
-#include "../logging/logging.h"
 
 // Load server configuration from JSON
 // Note: Validation moved to launch readiness checks

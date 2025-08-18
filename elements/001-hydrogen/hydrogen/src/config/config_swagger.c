@@ -5,12 +5,11 @@
  * using the standard configuration patterns and PROCESS_ macros.
  */
 
-#include <stdlib.h>
-#include <string.h>
+ // Global includes 
+#include "../hydrogen.h"
+
+// Local includes
 #include "config_swagger.h"
-#include "config.h"
-#include "config_utils.h"
-#include "../logging/logging.h"
 
 // Load Swagger configuration with defaults and environment handling
 bool load_swagger_config(json_t* root, AppConfig* config) {

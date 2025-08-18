@@ -5,12 +5,11 @@
  * including JSON parsing and environment variable handling.
  */
 
-#include <stdlib.h>
-#include <string.h>
+ // Global includes 
+#include "../hydrogen.h"
+
+// Local includes
 #include "config_notify.h"
-#include "config.h"
-#include "config_utils.h"
-#include "../logging/logging.h"
 
 // Load notification configuration from JSON
 bool load_notify_config(json_t* root, AppConfig* config) {

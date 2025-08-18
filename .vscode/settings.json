@@ -8,8 +8,13 @@
     "/elements/001-hydrogen/hydrogen/src/config/config/*.inc": true
 },
 "files.associations": {
+  ".lintignore": "instructions",
   "config_logging_utils.h": "c",
-  "config_mdns_server.h": "c"
+  "config_mdns_server.h": "c",
+  "stdlib.h": "c",
+  "stddef.h": "c",
+  "config_utils.h": "c",
+  "hydrogen.h": "c"
 },
 "C_Cpp.default.compilerPath": "/usr/lib64/ccache/gcc"
 }

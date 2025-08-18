@@ -5,12 +5,11 @@
  * including JSON parsing, environment variable handling, and validation.
  */
 
-#include <stdlib.h>
-#include <string.h>
+ // Global includes 
+#include "../hydrogen.h"
+
+// Local includes
 #include "config_network.h"
-#include "config.h"
-#include "config_utils.h"
-#include "../logging/logging.h"
 
 // Static network limits with default values
 static const NetworkLimits network_limits = {

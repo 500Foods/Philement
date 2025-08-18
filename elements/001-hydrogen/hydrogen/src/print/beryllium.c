@@ -20,13 +20,13 @@
 
 // Memory allocation chunk sizes
 #define Z_VALUES_CHUNK_SIZE 1000  // Initial allocation size for Z values array
-
+extern AppConfig *app_config;
 /**
  * Create a BerylliumConfig from AppConfig
  * @param app_config The application configuration
  * @return BerylliumConfig initialized with values from app_config
  */
-BerylliumConfig beryllium_create_config(const AppConfig *app_config) {
+BerylliumConfig beryllium_create_config(void) {
     BerylliumConfig config = {
         .acceleration = app_config ? app_config->print.motion.acceleration : 500.0,      // Default acceleration
         .z_acceleration = app_config ? app_config->print.motion.z_acceleration : 100.0,  // Default Z acceleration

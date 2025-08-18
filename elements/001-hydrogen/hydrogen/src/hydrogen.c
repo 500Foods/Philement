@@ -38,55 +38,29 @@
  * initialized before any threads are created. The crash handler is async-signal-safe.
  */
 
-/* Feature test macros - defined here if not already set by Makefile */
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L
-#endif
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
+// Global includes 
+#include "hydrogen.h"
 
-#ifdef __linux__
-#include <linux/limits.h>
-#elif defined(__APPLE__)
-#include <sys/syslimits.h>
-#else
-#include <limits.h>
-#endif
-
-/* System headers - must come first after feature test macros */
+// System headers - must come first after feature test macros 
 #include <features.h>     /* GNU/glibc features */
-#include <sys/types.h>    /* Basic system types */
 #include <signal.h>       /* Signal handling */
 #include <ucontext.h>     /* Context handling */
-#include <time.h>         /* Time types */
-#include <unistd.h>       /* POSIX system calls */
 
-/* Extended POSIX headers */
+// Extended POSIX headers 
 #include <sys/ucontext.h> /* Context handling */
 #include <sys/procfs.h>   /* Process info */
 #include <sys/time.h>     /* Time structures */
 #include <sys/resource.h> /* Resource limits */
 #include <sys/prctl.h>    /* Process control */
 
-/* Process and threading */
-#include <pthread.h>      /* POSIX threads */
+// Process and threading 
 #include <elf.h>         /* ELF format */
 
-/* Standard C Library */
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <errno.h>
-#include <libgen.h>
-
 #ifdef HYDROGEN_COVERAGE_BUILD
-#include <gcov.h>
+    #include <gcov.h>
 #endif
 
-/* Internal Headers */
-#include "logging/logging.h"
+// Internal Headers 
 #include "state/state.h"
 #include "launch/launch.h"
 #include "landing/landing.h"
@@ -103,7 +77,7 @@ extern void signal_handler(int sig);
 
 /* Logging levels from logging.h */
 #ifndef LOG_LEVEL_ERROR
-#define LOG_LEVEL_ERROR 4
+    #define LOG_LEVEL_ERROR 4
 #endif
 
 /* Global Variables */
