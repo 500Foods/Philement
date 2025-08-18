@@ -7,12 +7,18 @@
  * - File size and modification time retrieval
  */
 
+#ifdef __linux__
+#include <linux/limits.h>
+#elif defined(__APPLE__)
+#include <sys/syslimits.h>
+#else
+#include <limits.h>
+#endif
+
 // Core system headers
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <limits.h>
-#include <linux/limits.h>
 #include <errno.h>
 
 // Standard C headers
