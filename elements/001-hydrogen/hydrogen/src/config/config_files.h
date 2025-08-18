@@ -72,3 +72,4 @@ long get_file_size(const char* filename);
  */
 char* get_file_modification_time(const char* filename);
 
+#endif /* CONFIG_FILES_H */

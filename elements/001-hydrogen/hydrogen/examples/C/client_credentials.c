@@ -84,9 +84,9 @@ static int validate_token(const char *token, char *error_message, size_t error_s
 static json_t *parse_jwt_payload(const char *jwt);
 static char *find_json_string_value(json_t *obj, const char *key);
 static int display_token_info(const char *token);
-static int current_time();
+static int current_time(void);
 
-int main() {
+int main(void) {
     printf("Client Credentials Flow Example\n");
     printf("===============================\n\n");
 
@@ -661,7 +661,7 @@ static char *find_json_string_value(json_t *obj, const char *key) {
 }
 
 /* Get current UNIX time */
-static int current_time() {
+static int current_time(void) {
     return (int)time(NULL);
 }
 
