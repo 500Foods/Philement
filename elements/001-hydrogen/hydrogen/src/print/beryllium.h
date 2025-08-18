@@ -103,7 +103,7 @@ typedef struct {
  * @param app_config The application configuration
  * @return BerylliumConfig initialized with values from app_config
  */
-BerylliumConfig beryllium_create_config(const AppConfig *app_config);
+BerylliumConfig beryllium_create_config(void);
 
 /**
  * Get current timestamp in ISO8601 format

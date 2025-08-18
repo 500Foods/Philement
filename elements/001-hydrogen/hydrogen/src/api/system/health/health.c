@@ -5,20 +5,11 @@
  * for the service, used for monitoring and health checks.
  */
 
-// Network headers
-#include <microhttpd.h>
+// Global includes 
+#include "../../../hydrogen.h"
 
-// Standard C headers
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-// Third-party libraries
-#include <jansson.h>
-
-// Project headers
+// Local includes
 #include "health.h"
-#include "../../../logging/logging.h"
 #include "../../../api/api_utils.h"
 
 // Handle GET /api/system/health requests

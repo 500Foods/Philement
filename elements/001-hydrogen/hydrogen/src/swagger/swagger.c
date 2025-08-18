@@ -17,7 +17,7 @@
 #include "../logging/logging.h"
 #include "../config/config.h"
 #include "../config/config_utils.h"  // For filesystem operations
-
+extern AppConfig *app_config;
 // Structure to hold in-memory Swagger files
 typedef struct {
     char *name;         // File name (e.g., "index.html")
@@ -98,7 +98,7 @@ bool init_swagger_support(SwaggerConfig *config) {
     }
 
     // Try to extract Swagger payload using the payload handler
-    const AppConfig *app_config = get_app_config();
+    // const AppConfig *app_config = get_app_config();
     PayloadData payload = {0};
     bool success = extract_payload(executable_path, app_config, PAYLOAD_MARKER, &payload);
     if (!success) {
@@ -323,7 +323,7 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
         }
 
         // Get app config for API prefix
-        const AppConfig *app_config = get_app_config();
+        // const AppConfig *app_config = get_app_config();
         if (!app_config || !app_config->api.prefix) {
             log_this("SwaggerUI", "API configuration not available", LOG_LEVEL_ERROR, NULL);
             json_decref(spec);
@@ -720,7 +720,7 @@ cleanup:
  */
 static char* get_server_url(struct MHD_Connection *connection, 
                           const SwaggerConfig *config __attribute__((unused))) {
-    const AppConfig *app_config = get_app_config();
+    // const AppConfig *app_config = get_app_config();
     if (!app_config) {
         log_this("SwaggerUI", "Failed to get app config", LOG_LEVEL_ERROR, NULL);
         return NULL;
@@ -767,7 +767,7 @@ static char* create_dynamic_initializer(const char *base_content __attribute__((
                                       const char *server_url,
                                       const SwaggerConfig *config) {
     // Get the API prefix from the global config
-    const AppConfig *app_config = get_app_config();
+    // const AppConfig *app_config = get_app_config();
     if (!app_config || !app_config->api.prefix) {
         log_this("SwaggerUI", "API configuration not available", LOG_LEVEL_ERROR, NULL);
         return NULL;

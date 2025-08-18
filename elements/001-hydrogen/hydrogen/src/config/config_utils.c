@@ -7,36 +7,12 @@
  * - Environment variable resolution
  * - Logging with proper formatting
  */
-#ifdef __linux__
-#include <linux/limits.h>
-#elif defined(__APPLE__)
-#include <sys/syslimits.h>
-#else
-#include <limits.h>
-#endif
 
-// Core system headers
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <errno.h>
+// Global includes 
+#include "../hydrogen.h"
 
-// Standard C headers
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <strings.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <ctype.h>
-#include <time.h>
-#include <jansson.h>
-
-// Project headers
+// Local includes
 #include "config_utils.h"
-#include "../logging/logging.h"
-
 
 // Thread-local storage for formatting
 static __thread char value_buffer[1024];

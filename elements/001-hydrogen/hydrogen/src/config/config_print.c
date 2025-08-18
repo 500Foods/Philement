@@ -4,12 +4,11 @@
  * Implements configuration loading and management for the print subsystem.
  */
 
-#include <stdlib.h>
-#include <string.h>
+// Global includes 
+#include "../hydrogen.h"
+
+// Local includes
 #include "config_print.h"
-#include "config.h"
-#include "config_utils.h"
-#include "../logging/logging.h"
 
 // Load print configuration from JSON
 bool load_print_config(json_t* root, AppConfig* config) {

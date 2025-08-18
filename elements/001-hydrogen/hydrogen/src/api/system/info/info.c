@@ -5,30 +5,12 @@
  * for monitoring and diagnostics.
  */
 
-// Core system headers
-#include <sys/types.h>
-#include <sys/utsname.h>
-#include <unistd.h>
-#include <time.h>
+ // Global includes 
+#include "../../../hydrogen.h"
 
-// Network headers
-#include <microhttpd.h>
-
-// Standard C headers
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-// Third-party libraries
-#include <jansson.h>
-
-// Project headers
+// Local includes
 #include "info.h"
 #include "../system_service.h"
-#include "../../../config/config.h"
-#include "../../../state/state.h"
-#include "../../../logging/logging.h"
-#include "../../../status/status.h"
 #include "../../../websocket/websocket_server_internal.h"
 #include "../../../api/api_utils.h"
 

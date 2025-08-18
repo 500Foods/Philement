@@ -2,11 +2,10 @@
  * Resources Configuration Implementation
  */
 
-#include <stdlib.h>
-#include <string.h>
-#include <jansson.h>
-#include "config.h"  // For queue and buffer constants
-#include "config_utils.h"
+// Global includes 
+#include "../hydrogen.h"
+
+// Local includes
 #include "config_resources.h"
 
 bool load_resources_config(json_t* root, AppConfig* config) {

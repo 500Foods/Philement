@@ -5,35 +5,16 @@
  * for development and debugging, including caller information, headers, and parameters.
  */
 
-// Feature test macros - must come before any includes
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 199309L
-#endif
+ // Global includes 
+#include "../../../hydrogen.h"
 
- // Network headers
-#include <microhttpd.h>
+// Local includes
+#include "test.h"
+#include "../../../api/api_utils.h"
+#include "../../../webserver/web_server_core.h"
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-
-// Standard C headers
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-#include <time.h>
-#include <unistd.h>
-#include <sys/utsname.h>
-
-// Third-party libraries
-#include <jansson.h>
-
-// Project headers
-#include "test.h"
-#include "../../../api/api_utils.h"
-#include "../../../logging/logging.h"
-#include "../../../config/config.h"
-#include "../../../webserver/web_server_core.h"
 
 /**
  * Enhanced test endpoint with complete diagnostics
