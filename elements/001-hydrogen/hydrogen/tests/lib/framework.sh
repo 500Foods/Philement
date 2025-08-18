@@ -50,6 +50,7 @@ GREP=$(command -v ggrep 2>/dev/null || command -v grep)
 SED=$(command -v gsed 2>/dev/null || command -v sed)
 AWK=$(command -v gawk 2>/dev/null || command -v awk)
 TAR=$(command -v gtar 2>/dev/null || command -v tar)
+STAT=$(command -v gstat 2>/dev/null || command -v stat)
 REALPATH=$(command -v grealpath 2>/dev/null || command -v realpath)
 DIRNAME=$(command -v gdirname 2>/dev/null || command -v dirname)
 XARGS=$(command -v gxargs 2>/dev/null || command -v xargs)
@@ -260,8 +261,6 @@ setup_orchestration_environment() {
     [[ -n "${ORCHESTRATION}" ]] || print_message "${LOG_OUTPUT_NAME} ${LOG_OUTPUT_VERSION}" "info"
     # shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
     [[ -n "${LIFECYCLE_GUARD}" ]] || source "${LIB_DIR}/lifecycle.sh"
-    # shellcheck source=tests/lib/file_utils.sh # Resolve path statically
-    [[ -n "${FILE_UTILS_GUARD}" ]] || source "${LIB_DIR}/file_utils.sh"
     # shellcheck source=tests/lib/env_utils.sh # Resolve path statically
     [[ -n "${ENV_UTILS_GUARD}" ]] || source "${LIB_DIR}/env_utils.sh"
     # shellcheck source=tests/lib/network_utils.sh # Resolve path statically
@@ -270,6 +269,8 @@ setup_orchestration_environment() {
     [[ -n "${COVERAGE_GUARD}" ]] || source "${LIB_DIR}/coverage.sh"
     # shellcheck source=tests/lib/cloc.sh # Resolve path statically
     [[ -n "${CLOC_GUARD}" ]] || source "${LIB_DIR}/cloc.sh"
+    # shellcheck source=tests/lib/file_utils.sh # Resolve path statically
+    [[ -n "${FILE_UTILS_GUARD}" ]] || source "${LIB_DIR}/file_utils.sh"
     print_result 0 "Test Suite libraries initialized"
 
     next_subtest
@@ -280,7 +281,7 @@ setup_orchestration_environment() {
         # Check if build is already a tmpfs mount
         if mountpoint -q build 2>/dev/null; then
             print_message "Build directory already mounted as tmpfs, emptying non-cmake-build contents..."
-            if rm -rf build/coverage build/debug build/perf build/regular build/release build/tests build/unity build/valgrind build/*marker* build/gcov* 2>/dev/null; then
+            if rm -rf build/coverage build/debug build/perf build/regular build/release build/tests build/unity build/valgrind build/*marker* 2>/dev/null; then
                 print_result 0 "Build directory (tmpfs) emptied and ready for use"
             else
                 print_result 1 "Failed to empty tmpfs build directory"
@@ -290,7 +291,7 @@ setup_orchestration_environment() {
             # Empty the regular directory and mount as tmpfs
             print_message "Emptying regular build directory..."
             print_command "rm -rf build/*"
-            if rm -rf build/* 2>/dev/null; then
+            if rm -rf build/coverage build/debug build/perf build/regular build/release build/tests build/unity build/valgrind build/*marker* 2>/dev/null; then
                 print_message "Successfully emptied build directory"
                 
                 # Mount as tmpfs
@@ -426,8 +427,6 @@ setup_test_environment() {
         print_message "${LOG_OUTPUT_NAME} ${LOG_OUTPUT_VERSION}" "info"
         # shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
         [[ -n "${LIFECYCLE_GUARD}" ]] || source "${LIB_DIR}/lifecycle.sh"
-        # shellcheck source=tests/lib/file_utils.sh # Resolve path statically
-        [[ -n "${FILE_UTILS_GUARD}" ]] || source "${LIB_DIR}/file_utils.sh"
         # shellcheck source=tests/lib/env_utils.sh # Resolve path statically
         [[ -n "${ENV_UTILS_GUARD}" ]] || source "${LIB_DIR}/env_utils.sh"
         # shellcheck source=tests/lib/network_utils.sh # Resolve path statically
@@ -436,6 +435,8 @@ setup_test_environment() {
         [[ -n "${COVERAGE_GUARD}" ]] || source "${LIB_DIR}/coverage.sh"
         # shellcheck source=tests/lib/cloc.sh # Resolve path statically
         [[ -n "${CLOC_GUARD}" ]] || source "${LIB_DIR}/cloc.sh"
+        # shellcheck source=tests/lib/file_utils.sh # Resolve path statically
+        [[ -n "${FILE_UTILS_GUARD}" ]] || source "${LIB_DIR}/file_utils.sh"
 
     fi
 
