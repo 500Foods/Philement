@@ -49,15 +49,15 @@ json_t* format_system_status_json(const SystemMetrics *metrics) {
 
     // Memory Information
     json_t *memory = json_object();
-    json_object_set_new(memory, "total", json_integer(metrics->memory.total_ram));
-    json_object_set_new(memory, "used", json_integer(metrics->memory.used_ram));
-    json_object_set_new(memory, "free", json_integer(metrics->memory.free_ram));
+    json_object_set_new(memory, "total", json_integer((json_int_t)metrics->memory.total_ram));
+    json_object_set_new(memory, "used", json_integer((json_int_t)metrics->memory.used_ram));
+    json_object_set_new(memory, "free", json_integer((json_int_t)metrics->memory.free_ram));
     json_object_set_new(memory, "used_percent", json_string(metrics->memory.ram_used_percent));
 
     if (metrics->memory.total_swap > 0) {
-        json_object_set_new(memory, "swap_total", json_integer(metrics->memory.total_swap));
-        json_object_set_new(memory, "swap_used", json_integer(metrics->memory.used_swap));
-        json_object_set_new(memory, "swap_free", json_integer(metrics->memory.free_swap));
+        json_object_set_new(memory, "swap_total", json_integer((json_int_t)metrics->memory.total_swap));
+        json_object_set_new(memory, "swap_used", json_integer((json_int_t)metrics->memory.used_swap));
+        json_object_set_new(memory, "swap_free", json_integer((json_int_t)metrics->memory.free_swap));
         json_object_set_new(memory, "swap_used_percent", 
                           json_string(metrics->memory.swap_used_percent));
     }
@@ -75,8 +75,8 @@ json_t* format_system_status_json(const SystemMetrics *metrics) {
             json_array_append_new(addresses, json_string(iface->addresses[j]));
         }
         json_object_set_new(interface, "addresses", addresses);
-        json_object_set_new(interface, "rx_bytes", json_integer(iface->rx_bytes));
-        json_object_set_new(interface, "tx_bytes", json_integer(iface->tx_bytes));
+        json_object_set_new(interface, "rx_bytes", json_integer((json_int_t)iface->rx_bytes));
+        json_object_set_new(interface, "tx_bytes", json_integer((json_int_t)iface->tx_bytes));
         
         json_object_set_new(interfaces, iface->name, interface);
     }
@@ -90,9 +90,9 @@ json_t* format_system_status_json(const SystemMetrics *metrics) {
         json_object_set_new(filesystem, "device", json_string(fs->device));
         json_object_set_new(filesystem, "mount_point", json_string(fs->mount_point));
         json_object_set_new(filesystem, "type", json_string(fs->type));
-        json_object_set_new(filesystem, "total_space", json_integer(fs->total_space));
-        json_object_set_new(filesystem, "used_space", json_integer(fs->used_space));
-        json_object_set_new(filesystem, "available_space", json_integer(fs->available_space));
+        json_object_set_new(filesystem, "total_space", json_integer((json_int_t)fs->total_space));
+        json_object_set_new(filesystem, "used_space", json_integer((json_int_t)fs->used_space));
+        json_object_set_new(filesystem, "available_space", json_integer((json_int_t)fs->available_space));
         json_object_set_new(filesystem, "used_percent", json_string(fs->used_percent));
         
         json_object_set_new(filesystems, fs->mount_point, filesystem);
@@ -116,12 +116,12 @@ json_t* format_system_status_json(const SystemMetrics *metrics) {
     // Format uptime as human-readable string
     char uptime_str[32];
     time_t uptime = metrics->server_uptime;
-    int days = uptime / 86400;
+    int days = (int)(uptime / 86400);
     uptime %= 86400;
-    int hours = uptime / 3600;
+    int hours = (int)(uptime / 3600);
     uptime %= 3600;
-    int minutes = uptime / 60;
-    int seconds = uptime % 60;
+    int minutes = (int)(uptime / 60);
+    int seconds = (int)(uptime % 60);
     
     if (days > 0) {
         snprintf(uptime_str, sizeof(uptime_str), "%dd %02dh %02dm %02ds", 
@@ -154,13 +154,13 @@ json_t* format_system_status_json(const SystemMetrics *metrics) {
         json_object_set_new(logging, "enabled", json_true());
         json_t *logging_status = json_object();
         json_object_set_new(logging_status, "messageCount", 
-                          json_integer(metrics->logging.specific.logging.message_count));
+                          json_integer((json_int_t)metrics->logging.specific.logging.message_count));
         json_object_set_new(logging_status, "threads", 
-                          json_integer(metrics->logging.threads.thread_count));
+                          json_integer((json_int_t)metrics->logging.threads.thread_count));
         json_object_set_new(logging_status, "virtualMemoryBytes", 
-                          json_integer(metrics->logging.threads.virtual_memory));
+                          json_integer((json_int_t)metrics->logging.threads.virtual_memory));
         json_object_set_new(logging_status, "residentMemoryBytes", 
-                          json_integer(metrics->logging.threads.resident_memory));
+                          json_integer((json_int_t)metrics->logging.threads.resident_memory));
         json_object_set_new(logging, "status", logging_status);
         json_object_set_new(services, "logging", logging);
     }
@@ -171,15 +171,15 @@ json_t* format_system_status_json(const SystemMetrics *metrics) {
         json_object_set_new(webserver, "enabled", json_true());
         json_t *webserver_status = json_object();
         json_object_set_new(webserver_status, "activeRequests", 
-                          json_integer(metrics->webserver.specific.webserver.active_requests));
+                          json_integer((json_int_t)metrics->webserver.specific.webserver.active_requests));
         json_object_set_new(webserver_status, "totalRequests", 
-                          json_integer(metrics->webserver.specific.webserver.total_requests));
+                          json_integer((json_int_t)metrics->webserver.specific.webserver.total_requests));
         json_object_set_new(webserver_status, "threads", 
                           json_integer(metrics->webserver.threads.thread_count));
         json_object_set_new(webserver_status, "virtualMemoryBytes", 
-                          json_integer(metrics->webserver.threads.virtual_memory));
+                          json_integer((json_int_t)metrics->webserver.threads.virtual_memory));
         json_object_set_new(webserver_status, "residentMemoryBytes", 
-                          json_integer(metrics->webserver.threads.resident_memory));
+                          json_integer((json_int_t)metrics->webserver.threads.resident_memory));
         json_object_set_new(webserver, "status", webserver_status);
         json_object_set_new(services, "webserver", webserver);
     }
@@ -190,19 +190,19 @@ json_t* format_system_status_json(const SystemMetrics *metrics) {
         json_object_set_new(websocket, "enabled", json_true());
         json_t *websocket_status = json_object();
         json_object_set_new(websocket_status, "uptime", 
-                          json_integer(metrics->websocket.specific.websocket.uptime));
+                          json_integer((json_int_t)metrics->websocket.specific.websocket.uptime));
         json_object_set_new(websocket_status, "activeConnections", 
-                          json_integer(metrics->websocket.specific.websocket.active_connections));
+                          json_integer((json_int_t)metrics->websocket.specific.websocket.active_connections));
         json_object_set_new(websocket_status, "totalConnections", 
-                          json_integer(metrics->websocket.specific.websocket.total_connections));
+                          json_integer((json_int_t)metrics->websocket.specific.websocket.total_connections));
         json_object_set_new(websocket_status, "totalRequests", 
-                          json_integer(metrics->websocket.specific.websocket.total_requests));
+                          json_integer((json_int_t)metrics->websocket.specific.websocket.total_requests));
         json_object_set_new(websocket_status, "threads", 
                           json_integer(metrics->websocket.threads.thread_count));
         json_object_set_new(websocket_status, "virtualMemoryBytes", 
-                          json_integer(metrics->websocket.threads.virtual_memory));
+                          json_integer((json_int_t)metrics->websocket.threads.virtual_memory));
         json_object_set_new(websocket_status, "residentMemoryBytes", 
-                          json_integer(metrics->websocket.threads.resident_memory));
+                          json_integer((json_int_t)metrics->websocket.threads.resident_memory));
         json_object_set_new(websocket, "status", websocket_status);
         json_object_set_new(services, "websocket", websocket);
     }
@@ -236,7 +236,7 @@ char* format_system_status_prometheus(const SystemMetrics *metrics) {
     // Helper macro to safely append to buffer
     #define APPEND(...) do { \
         int written = snprintf(output + offset, buffer_size - offset, __VA_ARGS__); \
-        if (written > 0) offset += written; \
+        if (written > 0) offset += (size_t)written; \
         if (offset >= buffer_size - 1024) { \
             size_t new_size = buffer_size * 2; \
             char *new_buffer = realloc(output, new_size); \

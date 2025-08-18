@@ -251,8 +251,8 @@ LaunchReadiness check_network_launch_readiness(void) {
         return readiness;
     }
     
-    const AppConfig* app_config = get_app_config();
-    if (!app_config) {
+    const AppConfig* config = get_app_config();
+    if (!config) {
         add_go_message(readiness.messages, &msg_count, "No-Go", "Configuration not loaded");
         add_decision_message(readiness.messages, &msg_count, "No-Go For Launch of Network Subsystem (no configuration)");
         readiness.messages[msg_count] = NULL;
@@ -264,63 +264,63 @@ LaunchReadiness check_network_launch_readiness(void) {
     const NetworkLimits* limits = get_network_limits();
 
     // Validate interface and IP limits
-    if (app_config->network.max_interfaces < limits->min_interfaces ||
-        app_config->network.max_interfaces > limits->max_interfaces) {
+    if (config->network.max_interfaces < limits->min_interfaces ||
+        config->network.max_interfaces > limits->max_interfaces) {
         add_go_message(readiness.messages, &msg_count, "No-Go", 
             "Invalid max_interfaces: %zu (must be between %zu and %zu)",
-            app_config->network.max_interfaces, limits->min_interfaces, limits->max_interfaces);
+            config->network.max_interfaces, limits->min_interfaces, limits->max_interfaces);
         readiness.messages[msg_count] = NULL;
         readiness.ready = false;
         return readiness;
     }
 
-    if (app_config->network.max_ips_per_interface < limits->min_ips_per_interface ||
-        app_config->network.max_ips_per_interface > limits->max_ips_per_interface) {
+    if (config->network.max_ips_per_interface < limits->min_ips_per_interface ||
+        config->network.max_ips_per_interface > limits->max_ips_per_interface) {
         add_go_message(readiness.messages, &msg_count, "No-Go", 
             "Invalid max_ips_per_interface: %zu (must be between %zu and %zu)",
-            app_config->network.max_ips_per_interface, limits->min_ips_per_interface, limits->max_ips_per_interface);
+            config->network.max_ips_per_interface, limits->min_ips_per_interface, limits->max_ips_per_interface);
         readiness.messages[msg_count] = NULL;
         readiness.ready = false;
         return readiness;
     }
 
     // Validate name and address length limits
-    if (app_config->network.max_interface_name_length < limits->min_interface_name_length ||
-        app_config->network.max_interface_name_length > limits->max_interface_name_length) {
+    if (config->network.max_interface_name_length < limits->min_interface_name_length ||
+        config->network.max_interface_name_length > limits->max_interface_name_length) {
         add_go_message(readiness.messages, &msg_count, "No-Go", 
             "Invalid interface name length: %zu (must be between %zu and %zu)",
-            app_config->network.max_interface_name_length, limits->min_interface_name_length, limits->max_interface_name_length);
+            config->network.max_interface_name_length, limits->min_interface_name_length, limits->max_interface_name_length);
         readiness.messages[msg_count] = NULL;
         readiness.ready = false;
         return readiness;
     }
 
-    if (app_config->network.max_ip_address_length < limits->min_ip_address_length ||
-        app_config->network.max_ip_address_length > limits->max_ip_address_length) {
+    if (config->network.max_ip_address_length < limits->min_ip_address_length ||
+        config->network.max_ip_address_length > limits->max_ip_address_length) {
         add_go_message(readiness.messages, &msg_count, "No-Go", 
             "Invalid IP address length: %zu (must be between %zu and %zu)",
-            app_config->network.max_ip_address_length, limits->min_ip_address_length, limits->max_ip_address_length);
+            config->network.max_ip_address_length, limits->min_ip_address_length, limits->max_ip_address_length);
         readiness.messages[msg_count] = NULL;
         readiness.ready = false;
         return readiness;
     }
 
     // Validate port range
-    if (app_config->network.start_port < limits->min_port ||
-        app_config->network.start_port > limits->max_port ||
-        app_config->network.end_port < limits->min_port ||
-        app_config->network.end_port > limits->max_port ||
-        app_config->network.start_port >= app_config->network.end_port) {
+    if (config->network.start_port < limits->min_port ||
+        config->network.start_port > limits->max_port ||
+        config->network.end_port < limits->min_port ||
+        config->network.end_port > limits->max_port ||
+        config->network.start_port >= config->network.end_port) {
         add_go_message(readiness.messages, &msg_count, "No-Go", 
             "Invalid port range: %d-%d (must be between %d and %d, start < end)",
-            app_config->network.start_port, app_config->network.end_port, limits->min_port, limits->max_port);
+            config->network.start_port, config->network.end_port, limits->min_port, limits->max_port);
         readiness.messages[msg_count] = NULL;
         readiness.ready = false;
         return readiness;
     }
 
     // Validate reserved ports array
-    if (app_config->network.reserved_ports_count > 0 && !app_config->network.reserved_ports) {
+    if (config->network.reserved_ports_count > 0 && !config->network.reserved_ports) {
         add_go_message(readiness.messages, &msg_count, "No-Go", "Reserved ports array is NULL but count > 0");
         readiness.messages[msg_count] = NULL;
         readiness.ready = false;
@@ -349,27 +349,27 @@ LaunchReadiness check_network_launch_readiness(void) {
     
     // Check for "all" interfaces configuration
     bool all_interfaces_enabled = false;
-    if (app_config && app_config->network.available_interfaces && 
-        app_config->network.available_interfaces_count == 1 &&
-        app_config->network.available_interfaces[0].interface_name &&
-        strcmp(app_config->network.available_interfaces[0].interface_name, "all") == 0 &&
-        app_config->network.available_interfaces[0].available) {
+    if (config && config->network.available_interfaces && 
+        config->network.available_interfaces_count == 1 &&
+        config->network.available_interfaces[0].interface_name &&
+        strcmp(config->network.available_interfaces[0].interface_name, "all") == 0 &&
+        config->network.available_interfaces[0].available) {
         all_interfaces_enabled = true;
         add_go_message(readiness.messages, &msg_count, "Go", "All network interfaces enabled via config");
     }
     
     // Check for specifically configured interfaces if not using "all"
     int json_interfaces_count = 0;
-    if (!all_interfaces_enabled && app_config && app_config->network.available_interfaces &&
-        app_config->network.available_interfaces_count > 0) {
-        json_interfaces_count = app_config->network.available_interfaces_count;
+    if (!all_interfaces_enabled && config && config->network.available_interfaces &&
+        config->network.available_interfaces_count > 0) {
+        json_interfaces_count = (int)config->network.available_interfaces_count;
         add_go_message(readiness.messages, &msg_count, "Go", "%d network interfaces configured:", json_interfaces_count);
         
         // List specifically configured interfaces
-        for (size_t i = 0; i < app_config->network.available_interfaces_count; i++) {
-            if (app_config->network.available_interfaces[i].interface_name) {
-                const char* interface_name = app_config->network.available_interfaces[i].interface_name;
-                bool is_available = app_config->network.available_interfaces[i].available;
+        for (size_t i = 0; i < config->network.available_interfaces_count; i++) {
+            if (config->network.available_interfaces[i].interface_name) {
+                const char* interface_name = config->network.available_interfaces[i].interface_name;
+                bool is_available = config->network.available_interfaces[i].available;
                 
                 if (is_available) {
                     add_go_message(readiness.messages, &msg_count, "Go", "Available: %s is enabled", interface_name);
@@ -391,14 +391,14 @@ LaunchReadiness check_network_launch_readiness(void) {
         
         // If not all interfaces enabled, check specific configuration
         if (!all_interfaces_enabled) {
-            bool is_configured = is_interface_configured(app_config, interface->name, &is_available);
+            bool is_configured = is_interface_configured(config, interface->name, &is_available);
             if (!is_configured) {
                 is_available = true; // Not configured means enabled by default
             }
         }
         
         const char* config_status = all_interfaces_enabled ? "enabled via all:true" :
-            (is_interface_configured(app_config, interface->name, NULL) ? 
+            (is_interface_configured(config, interface->name, NULL) ? 
                 (is_available ? "enabled in config" : "disabled in config") :
                 "not in config - enabled by default");
         

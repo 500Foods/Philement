@@ -22,6 +22,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <ctype.h>
 #include <time.h>
 #include <jansson.h>
@@ -78,7 +79,13 @@ char* get_executable_path(void) {
         return NULL;
     }
     
-    path[len] = '\0';
+    if (len < 0) {
+        log_this("Config-FileSystem", "Invalid length from readlink", 
+                 LOG_LEVEL_ERROR);
+        return NULL;
+    }
+    
+    path[(size_t)len] = '\0';
     char* result = strdup(path);
     
     if (!result) {
@@ -171,8 +178,13 @@ static const char* get_top_level_section(const char* section) {
         len = strlen(section);
         if (len > MAX_SECTION_LENGTH) len = MAX_SECTION_LENGTH;
     } else {
-        len = dot - section;
-        if (len > MAX_SECTION_LENGTH) len = MAX_SECTION_LENGTH;
+        ptrdiff_t diff = dot - section;
+        if (diff < 0) {
+            len = 0;
+        } else {
+            len = (size_t)diff;
+            if (len > MAX_SECTION_LENGTH) len = MAX_SECTION_LENGTH;
+        }
     }
     
     strncpy(section_buffer, section, len);
@@ -207,7 +219,7 @@ bool process_level_config(json_t* root, int* level_ptr, const char* level_name,
             
             // If we found a valid integer value, update the level
             if (json_val && json_is_integer(json_val)) {
-                *level_ptr = json_integer_value(json_val);
+                *level_ptr = (int)json_integer_value(json_val);
                 using_default = false;
             }
         }
@@ -248,7 +260,9 @@ static const char* get_env_var_name(const char* str, char* buffer, size_t buffer
     const char* end = strchr(start, '}');
     if (!end || end <= start) return NULL;
     
-    size_t len = end - start;
+    ptrdiff_t diff = end - start;
+    if (diff < 0) return NULL;
+    size_t len = (size_t)diff;
     if (len >= buffer_size) len = buffer_size - 1;
     
     strncpy(buffer, start, len);
@@ -341,7 +355,11 @@ json_t* process_env_variable(const char* value) {
     }
     
     // Extract the variable name
-    size_t var_name_len = closing_brace - (value + 6);
+    ptrdiff_t var_name_diff = closing_brace - (value + 6);
+    if (var_name_diff < 0) {
+        return NULL;
+    }
+    size_t var_name_len = (size_t)var_name_diff;
     char* var_name = malloc(var_name_len + 1);
     if (!var_name) {
         return NULL;
@@ -360,14 +378,14 @@ json_t* process_env_variable(const char* value) {
             snprintf(safe_value, sizeof(safe_value), "%s {%s}: ********", key_name, var_name);
                 log_config_item(key_name, safe_value, false, "EnvVar");
         } else {
-            char value_buffer[512];
-            snprintf(value_buffer, sizeof(value_buffer), "%s {%s}: %s", key_name, var_name, env_value);
-                log_config_item(key_name, value_buffer, false, "EnvVar");
+            char env_log_buffer[512];
+            snprintf(env_log_buffer, sizeof(env_log_buffer), "%s {%s}: %s", key_name, var_name, env_value);
+                log_config_item(key_name, env_log_buffer, false, "EnvVar");
         }
     } else {
-        char value_buffer[512];
-        snprintf(value_buffer, sizeof(value_buffer), "%s {%s}: not set", key_name, var_name);
-        log_config_item(key_name, value_buffer, true, "EnvVar");
+        char env_log_buffer[512];
+        snprintf(env_log_buffer, sizeof(env_log_buffer), "%s {%s}: not set", key_name, var_name);
+        log_config_item(key_name, env_log_buffer, true, "EnvVar");
         free(var_name);
         return NULL;
     }
@@ -492,6 +510,27 @@ bool process_config_value(json_t* root, ConfigValue value, ConfigValueType type,
     // Process based on type
     switch (type) {
         
+        case CONFIG_TYPE_SECTION:
+            // Already handled above
+            return true;
+            
+        case CONFIG_TYPE_SUBSECTION:
+            // Subsections are handled by parent logic
+            return true;
+            
+        case CONFIG_TYPE_NULL:
+            // NULL values are handled specially
+            log_value(path, "(null)", true, false, section);
+            return true;
+            
+        case CONFIG_TYPE_ENV_BOOL:
+        case CONFIG_TYPE_ENV_INT:
+        case CONFIG_TYPE_ENV_FLOAT:
+        case CONFIG_TYPE_ENV_STRING:
+        case CONFIG_TYPE_ENV_SENSITIVE:
+            // Environment variable types are processed above
+            return true;
+            
         case CONFIG_TYPE_BOOL: {
             bool val = *value.bool_val;  // Default value
             bool using_default = !(json_val && json_is_boolean(json_val));
@@ -596,19 +635,19 @@ bool process_config_value(json_t* root, ConfigValue value, ConfigValueType type,
                 const char* var_start = strstr(original_ref, "${env.") + 6;
                 const char* var_end = strchr(var_start, '}');
                 if (var_start && var_end) {
-                    char var_name[256];
-                    size_t var_len = var_end - var_start;
-                    strncpy(var_name, var_start, var_len);
-                    var_name[var_len] = '\0';
+                    char env_var_buffer[256];  // Renamed to avoid shadow warning
+                    size_t var_len = (size_t)(var_end - var_start);
+                    strncpy(env_var_buffer, var_start, var_len);
+                    env_var_buffer[var_len] = '\0';
 
                     if (is_sensitive) {
                         log_this(category, "%s%s {%s}: %s%s", LOG_LEVEL_STATE,
-                                indent, key, var_name,
+                                indent, key, env_var_buffer,
                                 format_sensitive(final_value ? final_value : "(not set)"),
                                 using_default ? " *" : "");
                     } else {
                         log_this(category, "%s%s {%s}: %s%s", LOG_LEVEL_STATE,
-                                indent, key, var_name,
+                                indent, key, env_var_buffer,
                                 final_value ? final_value : "(not set)",
                                 using_default ? " *" : "");
                     }
@@ -664,10 +703,10 @@ static const char* format_int_array(const int* array, size_t count) {
         
         // Convert number to string
         int written = snprintf(value_buffer + pos, sizeof(value_buffer) - pos, "%d", array[i]);
-        if (written < 0 || written >= (int)(sizeof(value_buffer) - pos)) {
+        if (written < 0 || (size_t)written >= (sizeof(value_buffer) - pos)) {
             return "[...]"; // Buffer would overflow
         }
-        pos += written;
+        pos += (size_t)written;
     }
 
     // Add closing bracket
@@ -943,6 +982,26 @@ bool process_direct_value(ConfigValue value, ConfigValueType type,
     
     // Process based on type
     switch (type) {
+        case CONFIG_TYPE_SECTION:
+        case CONFIG_TYPE_SUBSECTION:
+        case CONFIG_TYPE_NULL:
+            // These types are not supported for direct values
+            return false;
+            
+        case CONFIG_TYPE_BOOL:
+        case CONFIG_TYPE_INT:
+        case CONFIG_TYPE_FLOAT:
+        case CONFIG_TYPE_ENV_BOOL:
+        case CONFIG_TYPE_ENV_INT:
+        case CONFIG_TYPE_ENV_FLOAT:
+            // These types would need additional implementation
+            return false;
+            
+        case CONFIG_TYPE_ENV_STRING:
+        case CONFIG_TYPE_ENV_SENSITIVE:
+            // Environment variable types should be processed differently
+            return false;
+            
         case CONFIG_TYPE_STRING:
         case CONFIG_TYPE_SENSITIVE: {
             char** str_val = value.string_val;
@@ -961,9 +1020,8 @@ bool process_direct_value(ConfigValue value, ConfigValueType type,
             log_value(path, direct_value, false, is_sensitive, section);
             return true;
         }
-        
-        // Add other types as needed
-        default:
-            return false;
     }
+    
+    // This should never be reached
+    return false;
 }

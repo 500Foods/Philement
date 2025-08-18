@@ -34,6 +34,20 @@
 // Forward declarations for functions being tested
 void handle_status_request(struct lws *wsi);
 
+// Function prototypes for Unity test functions
+void test_websocket_metrics_structure(void);
+void test_metrics_collection_thread_safety(void);
+void test_metrics_consistency_validation(void);
+void test_status_json_response_structure(void);
+void test_json_serialization_formats(void);
+void test_websocket_message_buffer_allocation(void);
+void test_websocket_message_size_validation(void);
+void test_status_request_context_validation(void);
+void test_pretty_print_line_splitting(void);
+void test_system_status_integration_structure(void);
+void test_response_delivery_workflow(void);
+void test_error_handling_scenarios(void);
+
 // External references
 extern WebSocketServerContext *ws_context;
 extern AppConfig *app_config;
@@ -91,9 +105,9 @@ void test_websocket_metrics_structure(void) {
         int active_connections;
         int total_connections;
         int total_requests;
-    } WebSocketMetrics;
+    } LocalWebSocketMetrics;
     
-    WebSocketMetrics metrics;
+    LocalWebSocketMetrics metrics;
     memset(&metrics, 0, sizeof(metrics));
     
     // Test structure initialization
@@ -128,9 +142,9 @@ void test_metrics_collection_thread_safety(void) {
         int active_connections;
         int total_connections;
         int total_requests;
-    } WebSocketMetrics;
+    } LocalThreadSafeMetrics;
     
-    const WebSocketMetrics metrics = {
+    const LocalThreadSafeMetrics metrics = {
         .server_start_time = ws_context->start_time,
         .active_connections = ws_context->active_connections,
         .total_connections = ws_context->total_connections,
@@ -358,9 +372,9 @@ void test_system_status_integration_structure(void) {
         int active_connections;
         int total_connections;
         int total_requests;
-    } WebSocketMetrics;
+    } LocalSystemMetrics;
     
-    WebSocketMetrics mock_metrics = {
+    LocalSystemMetrics mock_metrics = {
         .server_start_time = time(NULL) - 1800, // 30 minutes ago
         .active_connections = 5,
         .total_connections = 50,
@@ -398,9 +412,9 @@ void test_response_delivery_workflow(void) {
         int active_connections;
         int total_connections;
         int total_requests;
-    } WebSocketMetrics;
+    } LocalWorkflowMetrics;
     
-    const WebSocketMetrics metrics = {
+    const LocalWorkflowMetrics metrics = {
         .server_start_time = ws_context->start_time,
         .active_connections = ws_context->active_connections,
         .total_connections = ws_context->total_connections,

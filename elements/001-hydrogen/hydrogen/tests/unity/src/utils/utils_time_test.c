@@ -25,6 +25,42 @@
 // External volatile variable that some functions depend on
 extern volatile sig_atomic_t server_starting;
 
+// Function prototypes for test functions
+void test_format_duration_zero_seconds(void);
+void test_format_duration_seconds_only(void);
+void test_format_duration_minutes_and_seconds(void);
+void test_format_duration_hours_minutes_seconds(void);
+void test_format_duration_full_time(void);
+void test_format_duration_large_values(void);
+void test_format_duration_edge_cases(void);
+void test_format_duration_null_buffer(void);
+void test_format_duration_small_buffer(void);
+void test_set_and_get_server_start_time(void);
+void test_multiple_set_server_start_time(void);
+void test_get_server_start_time_before_set(void);
+void test_is_server_ready_time_set_initially_false(void);
+void test_update_server_ready_time_while_starting(void);
+void test_update_server_ready_time_when_ready(void);
+void test_get_server_ready_time_before_set(void);
+void test_calculate_startup_time_before_start(void);
+void test_calculate_startup_time_after_start(void);
+void test_calculate_total_runtime_before_start(void);
+void test_calculate_total_runtime_after_start(void);
+void test_record_shutdown_start_time(void);
+void test_record_shutdown_end_time(void);
+void test_calculate_shutdown_time_without_start(void);
+void test_record_startup_complete_time(void);
+void test_record_shutdown_initiate_time(void);
+void test_calculate_total_running_time_lifecycle(void);
+void test_calculate_total_running_time_before_complete(void);
+void test_calculate_total_elapsed_time_lifecycle(void);
+void test_calculate_total_elapsed_time_before_start(void);
+void test_get_system_start_time_string_after_start(void);
+void test_get_system_start_time_string_before_start(void);
+void test_get_system_start_time_string_consistent(void);
+void test_complete_startup_sequence(void);
+void test_complete_lifecycle_timing(void);
+
 void setUp(void) {
     // Reset server_starting state for consistent testing
     server_starting = 1;  // Assume starting state

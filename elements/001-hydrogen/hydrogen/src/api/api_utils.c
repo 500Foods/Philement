@@ -34,7 +34,7 @@ char *api_url_decode(const char *src) {
             if (isxdigit(high) && isxdigit(low)) {
                 high = isdigit(high) ? high - '0' : toupper(high) - 'A' + 10;
                 low = isdigit(low) ? low - '0' : toupper(low) - 'A' + 10;
-                decoded[j++] = (high << 4) | low;
+                decoded[j++] = (char)((high << 4) | low);
                 i += 2;
             } else {
                 decoded[j++] = src[i];
@@ -69,7 +69,7 @@ char *api_url_encode(const char *src) {
         unsigned char c = (unsigned char)src[i];
         if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
             // Unreserved characters in RFC 3986
-            encoded[j++] = c;
+            encoded[j++] = (char)c;
         } else if (c == ' ') {
             // Space can be encoded as '+' for form data
             encoded[j++] = '+';

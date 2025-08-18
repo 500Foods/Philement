@@ -44,6 +44,13 @@
 #include "../utils/utils.h"
 #include "../threads/threads.h"
 
+/* Function prototypes */
+int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
+                  void *user, void *in, size_t len);
+int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
+                      void *user, void *in, size_t len);
+void custom_lws_log(int level, const char *line);
+
 /* Global variables */
 extern AppConfig* app_config;  // Defined in config.c
 
@@ -58,6 +65,8 @@ int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
     (void)in;    // Mark unused parameter
     (void)len;   // Mark unused parameter
     
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch-enum"
     switch (reason) {
         case LWS_CALLBACK_HTTP:
             // Handle HTTP requests and WebSocket upgrade
@@ -89,8 +98,10 @@ int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
             return 0;
             
         default:
+            // Handle all other unhandled enumeration values
             return 0;
     }
+#pragma GCC diagnostic pop
 }
 
 // Main callback dispatcher for all WebSocket events
@@ -98,6 +109,8 @@ int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
                            void *user, void *in, size_t len)
 {
     // Allow certain callbacks without session data
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch-enum"
     switch (reason) {
         case LWS_CALLBACK_PROTOCOL_INIT:
         case LWS_CALLBACK_PROTOCOL_DESTROY:
@@ -109,6 +122,7 @@ int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
         default:
             break;
     }
+#pragma GCC diagnostic pop
 
     // Get server context from user data during vhost creation
     WebSocketServerContext *ctx = lws_context_user(lws_get_context(wsi));
@@ -120,6 +134,8 @@ int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
     // During shutdown, allow cleanup and system callbacks
     if (ctx && ctx->shutdown) {
         // Always allow these critical callbacks during shutdown
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch-enum"
         switch (reason) {
             // Protocol lifecycle
             case LWS_CALLBACK_PROTOCOL_INIT:
@@ -168,6 +184,7 @@ int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
                         LOG_LEVEL_STATE, true, true, true, reason);
                 return ws_callback_dispatch(wsi, reason, user, in, len);
         }
+#pragma GCC diagnostic pop
     }
 
     // Cast and validate session data for other callbacks
@@ -320,7 +337,7 @@ static void *websocket_server_run(void *arg)
 }
 
 // Start the WebSocket server
-int start_websocket_server()
+int start_websocket_server(void)
 {
     extern ServiceThreads websocket_threads;
     extern pthread_t websocket_thread;

@@ -159,7 +159,7 @@ static char* get_uppercase_name(const char* name) {
     if (!upper) return NULL;
     
     for (size_t i = 0; i < len; i++) {
-        upper[i] = toupper((unsigned char)name[i]);
+        upper[i] = (char)toupper((unsigned char)name[i]);
     }
     upper[len] = '\0';
     return upper;
@@ -426,7 +426,7 @@ int startup_hydrogen(const char* config_path) {
 
     // Apply configured startup delay silently
     if (app_config->server.startup_delay > 0 && app_config->server.startup_delay < 10000) {
-        usleep(app_config->server.startup_delay * 1000);
+        usleep((unsigned int)(app_config->server.startup_delay * 1000));
     } else {
         usleep(5 * 1000);
     }
@@ -481,7 +481,7 @@ int startup_hydrogen(const char* config_path) {
     gettimeofday(&tv, NULL);
     
     // Calculate startup time using the difference between current time and start time
-    double startup_time = (tv.tv_sec - start_tv.tv_sec) + (tv.tv_usec - start_tv.tv_usec) / 1000000.0;
+    double startup_time = (double)(tv.tv_sec - start_tv.tv_sec) + (double)(tv.tv_usec - start_tv.tv_usec) / 1000000.0;
     
     // Format current time with ISO 8601 format including milliseconds
     time_t current_time = tv.tv_sec;
@@ -490,7 +490,7 @@ int startup_hydrogen(const char* config_path) {
     strftime(current_time_str, sizeof(current_time_str), "%Y-%m-%dT%H:%M:%S", current_tm);
     
     // Add milliseconds to current time
-    int current_ms = tv.tv_usec / 1000;
+    int current_ms = (int)(tv.tv_usec / 1000);
     char temp_str[64];
     snprintf(temp_str, sizeof(temp_str), ".%03dZ", current_ms);
     strcat(current_time_str, temp_str);
@@ -502,7 +502,7 @@ int startup_hydrogen(const char* config_path) {
     strftime(start_time_str, sizeof(start_time_str), "%Y-%m-%dT%H:%M:%S", start_tm);
     
     // Add milliseconds to start time
-    int start_ms = start_tv.tv_usec / 1000;
+    int start_ms = (int)(start_tv.tv_usec / 1000);
     snprintf(temp_str, sizeof(temp_str), ".%03dZ", start_ms);
     strcat(start_time_str, temp_str);
     
@@ -513,7 +513,7 @@ int startup_hydrogen(const char* config_path) {
     // Log memory usage
     size_t vmsize = 0, vmrss = 0, vmswap = 0;
     get_process_memory(&vmsize, &vmrss, &vmswap);
-    log_this("Startup", "    Memory Usage (RSS): %.1f MB", LOG_LEVEL_STATE, vmrss / 1024.0);
+    log_this("Startup", "    Memory Usage (RSS): %.1f MB", LOG_LEVEL_STATE, (double)vmrss / 1024.0);
     
     // Display restart count and timing if application has been restarted
     if (restart_count > 0) {
@@ -527,7 +527,7 @@ int startup_hydrogen(const char* config_path) {
         struct tm* orig_tm = gmtime(&original_start_tv.tv_sec);
         char orig_time_str[64];
         strftime(orig_time_str, sizeof(orig_time_str), "%Y-%m-%dT%H:%M:%S", orig_tm);
-        int orig_ms = original_start_tv.tv_usec / 1000;
+        int orig_ms = (int)(original_start_tv.tv_usec / 1000);
         snprintf(temp_str, sizeof(temp_str), ".%03dZ", orig_ms);
         strcat(orig_time_str, temp_str);
         

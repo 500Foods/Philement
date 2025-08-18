@@ -5,6 +5,11 @@
  * for development and debugging, including caller information, headers, and parameters.
  */
 
+// Feature test macros - must come before any includes
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 199309L
+#endif
+
  // Network headers
 #include <microhttpd.h>
 #include <sys/socket.h>
@@ -211,8 +216,8 @@ enum MHD_Result handle_system_test_request(struct MHD_Connection *connection,
     // 9. Add timing/performance information
     struct timespec end_time;
     clock_gettime(CLOCK_MONOTONIC, &end_time);
-    double processing_time = (end_time.tv_sec - start_time.tv_sec) * 1000.0 + 
-                           (end_time.tv_nsec - start_time.tv_nsec) / 1000000.0;
+    double processing_time = ((double)(end_time.tv_sec - start_time.tv_sec)) * 1000.0 + 
+                           ((double)(end_time.tv_nsec - start_time.tv_nsec)) / 1000000.0;
     
     json_t *timing = json_object();
     json_object_set_new(timing, "processing_time_ms", json_real(processing_time));

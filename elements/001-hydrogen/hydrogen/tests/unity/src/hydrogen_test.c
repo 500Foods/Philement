@@ -17,9 +17,15 @@
 // Forward declarations of functions we want to test from hydrogen.c
 // For now, we'll provide a stub implementation since linking the full hydrogen.c
 // would require all its dependencies
+char** get_program_args(void);
+void test_get_program_args_returns_valid_pointer(void);
+void test_signal_handling_setup(void);
+void test_process_identification(void);
+void test_memory_allocation_patterns(void);
+void test_string_operations_for_paths(void);
 char** get_program_args(void) {
-    static char* stub_args[] = {"hydrogen_test", NULL};
-    return stub_args;
+    static const char* const stub_args[] = {"hydrogen_test", NULL};
+    return (char**)stub_args;
 }
 
 void setUp(void) {

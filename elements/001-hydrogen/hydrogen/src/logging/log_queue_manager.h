@@ -44,6 +44,6 @@
 
 void* log_queue_manager(void* arg);
 void init_file_logging(const char* log_file_path);
-void close_file_logging();
+void close_file_logging(void);
 
 #endif // LOG_QUEUE_MANAGER_H

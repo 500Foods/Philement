@@ -33,9 +33,9 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
     // Base messages (subsystem, network, config, port, workers, queue settings) = ~12
     // Per server: 1 success + 4 possible errors = 5 messages per server
     // Final decision message = 1
-    const int base_messages = 12;
-    const int messages_per_server = 5;
-    const int max_messages = base_messages + (MAX_OUTBOUND_SERVERS * messages_per_server) + 1;
+    const size_t base_messages = 12;
+    const size_t messages_per_server = 5;
+    const size_t max_messages = base_messages + ((size_t)MAX_OUTBOUND_SERVERS * messages_per_server) + 1;
     
     // Allocate space for messages (including NULL terminator)
     readiness.messages = malloc((max_messages + 1) * sizeof(char*));
@@ -43,7 +43,7 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
         readiness.ready = false;
         return readiness;
     }
-    int msg_count = 0;
+    size_t msg_count = 0;
     
     // Safety check for message count
     #define CHECK_MSG_COUNT() \

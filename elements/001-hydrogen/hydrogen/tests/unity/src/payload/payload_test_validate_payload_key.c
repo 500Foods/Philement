@@ -24,6 +24,22 @@
 // Forward declaration for the function being tested
 bool validate_payload_key(const char *key);
 
+// Function prototypes for test functions
+void timeout_handler(int sig);
+void test_validate_payload_key_null_key(void);
+void test_validate_payload_key_empty_key(void);
+void test_validate_payload_key_missing_key(void);
+void test_validate_payload_key_valid_direct_key(void);
+void test_validate_payload_key_valid_env_var_existing(void);
+void test_validate_payload_key_invalid_env_var_missing(void);
+void test_validate_payload_key_invalid_env_var_empty(void);
+void test_validate_payload_key_malformed_env_var_no_closing_brace(void);
+void test_validate_payload_key_malformed_env_var_no_name(void);
+void test_validate_payload_key_malformed_env_var_too_long(void);
+void test_validate_payload_key_boundary_length(void);
+void test_parameter_validation_patterns(void);
+void test_env_var_pattern_matching(void);
+
 // Timeout handler for environment variable tests
 static volatile sig_atomic_t test_timeout = 0;
 

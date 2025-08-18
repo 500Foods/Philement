@@ -179,7 +179,7 @@ bool is_api_endpoint(const char *url, char *service, char *endpoint) {
 
     // Extract service name with overflow protection
     // e.g., "system" from "system/health"
-    size_t service_len = slash - path;
+    size_t service_len = (size_t)(slash - path);
     if (service_len == 0 || service_len >= 32) {
         return false;
     }

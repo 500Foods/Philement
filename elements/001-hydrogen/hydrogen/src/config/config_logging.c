@@ -191,7 +191,7 @@ bool load_logging_config(json_t* root, AppConfig* config) {
 
     // Set default values from config_priority
     for (size_t i = 0; i < NUM_PRIORITY_LEVELS; i++) {
-        logging_config->levels[i].value = i;  // Implicit ordering
+        logging_config->levels[i].value = (int)i;  // Implicit ordering
         logging_config->levels[i].name = strdup(DEFAULT_PRIORITY_LEVELS[i].label);
         if (!logging_config->levels[i].name) return false;
     }

@@ -18,6 +18,13 @@
 // Include necessary headers for the payload module
 #include "../../../../src/payload/payload.h"
 
+void test_payload_data_structure_initialization(void);
+void test_payload_data_structure_assignment(void);
+void test_payload_data_structure_size_field(void);
+void test_payload_data_structure_compression_flag(void);
+void test_payload_data_structure_data_pointer(void);
+void test_payload_marker_constant(void);
+void test_payload_marker_length(void);
 void setUp(void) {
     // No setup needed for structure tests
 }

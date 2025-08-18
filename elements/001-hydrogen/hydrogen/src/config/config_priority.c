@@ -32,7 +32,7 @@ void calculate_max_priority_label_width(void) {
     MAX_PRIORITY_LABEL_WIDTH = 0;
     
     for (int i = 0; i < NUM_PRIORITY_LEVELS; i++) {
-        int label_width = strlen(DEFAULT_PRIORITY_LEVELS[i].label);
+        int label_width = (int)strlen(DEFAULT_PRIORITY_LEVELS[i].label);
         if (label_width > MAX_PRIORITY_LABEL_WIDTH) {
             MAX_PRIORITY_LABEL_WIDTH = label_width;
         }

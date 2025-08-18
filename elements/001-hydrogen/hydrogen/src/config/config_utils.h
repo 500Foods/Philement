@@ -168,6 +168,21 @@ bool process_direct_value(ConfigValue value, ConfigValueType type,
  */
 
 /*
+ * Check if file is readable with proper error detection
+ * 
+ * Uses access() to check file readability:
+ * - Efficient permission checking
+ * - Works with different user contexts
+ * - Follows symbolic links
+ * - Atomic operation
+ * 
+ * @param path Path to the file to check
+ * @return true if file exists and is readable
+ * @return false if file doesn't exist, isn't readable, or isn't a regular file
+ */
+bool is_file_readable(const char* path);
+
+/*
  * Get executable path with robust error handling
  * 
  * Uses /proc/self/exe to find the true binary path, which:

@@ -35,6 +35,16 @@ int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason, void *u
 extern WebSocketServerContext *ws_context;
 extern AppConfig* app_config;
 
+// Function prototypes for test functions
+void test_callback_hydrogen_protocol_init_reason(void);
+void test_callback_hydrogen_session_validation_logic(void);
+void test_callback_hydrogen_context_validation_logic(void);
+void test_callback_hydrogen_vhost_creation_logic(void);
+void test_callback_hydrogen_shutdown_conditions(void);
+void test_callback_hydrogen_callback_reason_categories(void);
+void test_callback_hydrogen_session_validation_conditions(void);
+void test_callback_hydrogen_session_data_structure(void);
+
 // Test fixtures
 static WebSocketServerContext test_context;
 static WebSocketServerContext *original_context;

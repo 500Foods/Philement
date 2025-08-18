@@ -46,8 +46,8 @@ static const char* state_strings[] = {
  * @param new_capacity The new capacity to grow to
  * @return true if successful, false if allocation failed
  */
-static bool grow_registry(int new_capacity) {
-    if (new_capacity <= subsystem_registry.capacity) {
+static bool grow_registry(size_t new_capacity) {
+    if (new_capacity <= (size_t)subsystem_registry.capacity) {
         return true;  // Already large enough
     }
     
@@ -65,7 +65,7 @@ static bool grow_registry(int new_capacity) {
         // Initialize the new elements to zero
         if (new_subsystems) {
             memset(&new_subsystems[subsystem_registry.capacity], 0, 
-                  (new_capacity - subsystem_registry.capacity) * sizeof(SubsystemInfo));
+                  (new_capacity - (size_t)subsystem_registry.capacity) * sizeof(SubsystemInfo));
         }
     }
     
@@ -76,7 +76,7 @@ static bool grow_registry(int new_capacity) {
     
     // Update the registry
     subsystem_registry.subsystems = new_subsystems;
-    subsystem_registry.capacity = new_capacity;
+    subsystem_registry.capacity = (int)new_capacity;
     
     return true;
 }
@@ -117,9 +117,9 @@ int register_subsystem(const char* name, ServiceThreads* threads,
     // Check if we need to grow the registry
     if (subsystem_registry.count >= subsystem_registry.capacity) {
         // Double the capacity or use initial capacity if empty
-        int new_capacity = (subsystem_registry.capacity == 0) ? 
+        size_t new_capacity = (subsystem_registry.capacity == 0) ? 
                            INITIAL_REGISTRY_CAPACITY : 
-                           (subsystem_registry.capacity * 2);
+                           ((size_t)subsystem_registry.capacity * 2);
         
         if (!grow_registry(new_capacity)) {
             log_this("Registry", "Cannot register subsystem '%s': memory allocation failed", 
@@ -520,9 +520,9 @@ void print_subsystem_status(void) {
         
         // Calculate time in current state
         time_t time_in_state = now - subsystem->state_changed;
-        int hours = time_in_state / 3600;
-        int minutes = (time_in_state % 3600) / 60;
-        int seconds = time_in_state % 60;
+        int hours = (int)(time_in_state / 3600);
+        int minutes = (int)((time_in_state % 3600) / 60);
+        int seconds = (int)(time_in_state % 60);
         
         // Format the time string
         snprintf(time_buffer, sizeof(time_buffer), "%02d:%02d:%02d", hours, minutes, seconds);

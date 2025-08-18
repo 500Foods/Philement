@@ -14,6 +14,11 @@
 #include <stdio.h>
 #include <time.h>
 
+// Fallback definition for CLOCK_MONOTONIC if not defined
+#ifndef CLOCK_MONOTONIC
+#define CLOCK_MONOTONIC 1
+#endif
+
 // Project headers
 #include "web_server_compression.h"
 #include "../logging/logging.h"
@@ -128,8 +133,8 @@ bool compress_with_brotli(const uint8_t *input, size_t input_size,
     clock_gettime(CLOCK_MONOTONIC, &end_time);
     
     // Calculate elapsed time in milliseconds with 3 decimal places
-    double elapsed_ms = (end_time.tv_sec - start_time.tv_sec) * 1000.0;
-    elapsed_ms += (end_time.tv_nsec - start_time.tv_nsec) / 1000000.0;
+    double elapsed_ms = (double)(end_time.tv_sec - start_time.tv_sec) * 1000.0;
+    elapsed_ms += (double)(end_time.tv_nsec - start_time.tv_nsec) / 1000000.0;
     
     if (result != BROTLI_TRUE) {
         log_this("WebCompression", "Brotli compression failed", LOG_LEVEL_ERROR);
@@ -146,7 +151,7 @@ bool compress_with_brotli(const uint8_t *input, size_t input_size,
     char stats[256];
     snprintf(stats, sizeof(stats), 
              "Brotli(level=%d): %zu bytes → %zu bytes, ratio: %.2f%%, compression: %.2f%%, time: %.3f ms", 
-             compression_level, input_size, *output_size, ratio * 100.0f, compression_percent, elapsed_ms);
+             compression_level, input_size, *output_size, (double)(ratio * 100.0f), (double)compression_percent, elapsed_ms);
     
     log_this("Brotli", stats, LOG_LEVEL_STATE);
     

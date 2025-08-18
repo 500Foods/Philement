@@ -22,13 +22,13 @@ void generate_id(char *buf, size_t len) {
 
     static int seeded = 0;
     if (!seeded) {
-        srand(time(NULL));
+        srand((unsigned int)time(NULL));
         seeded = 1;
     }
 
     size_t id_chars_len = strlen(ID_CHARS);
     for (int i = 0; i < ID_LEN; i++) {
-        buf[i] = ID_CHARS[rand() % id_chars_len];
+        buf[i] = ID_CHARS[(size_t)(rand() % (int)id_chars_len)];
     }
     buf[ID_LEN] = '\0';
 }
@@ -53,4 +53,3 @@ const char* get_priority_label(int priority) {
     
     return DEFAULT_PRIORITY_LEVELS[LOG_LEVEL_TRACE].label; // Default to TRACE for invalid values
 }
-

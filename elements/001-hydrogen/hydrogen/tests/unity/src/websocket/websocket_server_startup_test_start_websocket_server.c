@@ -31,6 +31,10 @@
 // Forward declarations for functions being tested
 int start_websocket_server(void);
 
+// Function prototypes for test functions
+void test_start_websocket_server_null_context(void);
+void test_start_websocket_server_valid_context(void);
+
 // External variables that need to be accessible for testing
 extern WebSocketServerContext *ws_context;
 extern AppConfig* app_config;

@@ -20,6 +20,11 @@
 
 // Forward declaration for the function being tested
 void free_payload(PayloadData *payload);
+void test_free_payload_null_payload(void);
+void test_free_payload_empty_payload(void);
+void test_free_payload_with_data(void);
+void test_free_payload_multiple_calls(void);
+void test_free_payload_large_data(void);
 
 void setUp(void) {
     // No setup needed for free_payload tests
