@@ -9,8 +9,11 @@
  * - JSON response formatting
  */
 
+ // Global includes 
+#include "../hydrogen.h"
+
+// Local includes
 #include "api_utils.h"
-#include "../logging/logging.h"
 #include "../oidc/oidc_tokens.h"
 #include "../webserver/web_server_compression.h"
 

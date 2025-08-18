@@ -6,12 +6,11 @@
  * Note: Validation moved to launch readiness checks
  */
 
-#include <stdlib.h>
-#include <string.h>
+ // Global includes 
+#include "hydrogen.h"
+
+// Local includes
 #include "config_api.h"
-#include "config.h"
-#include "config_utils.h"
-#include "../logging/logging.h"
 
 // Load API configuration from JSON
 bool load_api_config(json_t* root, AppConfig* config) {

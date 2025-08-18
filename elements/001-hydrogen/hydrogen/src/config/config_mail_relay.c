@@ -2,13 +2,11 @@
  * Mail relay configuration implementation
  */
 
+ // Global includes 
+#include "../hydrogen.h"
+
+// Local includes
 #include "config_mail_relay.h"
-#include <stdlib.h>
-#include <string.h>
-#include <jansson.h>
-#include "config.h"
-#include "config_utils.h"
-#include "../logging/logging.h"
 
 // Helper function to cleanup a single server configuration
 static void cleanup_server(OutboundServer* server) {

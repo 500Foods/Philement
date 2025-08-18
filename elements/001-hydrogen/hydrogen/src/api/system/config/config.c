@@ -4,22 +4,13 @@
  * Returns the complete server configuration file as JSON.
  */
 
-// Network headers
-#include <microhttpd.h>
+ // Global includes 
+#include "../../../hydrogen.h"
+
+// Local includes
 #include <sys/utsname.h>
-
-// Standard C headers
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
-
-// Project headers
 #include "config.h"
 #include "../../../api/api_utils.h"
-#include "../../../logging/logging.h"
-#include "../../../config/config.h"
 
 enum MHD_Result handle_system_config_request(struct MHD_Connection *connection,
                                            const char *method,
@@ -52,7 +43,7 @@ enum MHD_Result handle_system_config_request(struct MHD_Connection *connection,
     }
     
     // Get the application configuration
-    const AppConfig *app_config = get_app_config();
+    // const AppConfig *app_config = get_app_config();
     if (!app_config || !app_config->server.config_file) {
         json_t *error = json_object();
         json_object_set_new(error, "error", json_string("Configuration not available"));

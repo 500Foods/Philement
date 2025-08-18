@@ -5,12 +5,11 @@
  * All validation has been moved to launch readiness checks.
  */
 
-#include <stdlib.h>
-#include <string.h>
-#include "config.h"
+ // Global includes 
+#include "../hydrogen.h"
+
+// Local includes
 #include "config_oidc.h"
-#include "config_utils.h"
-#include "../logging/logging.h"
 
 // Helper function to construct endpoint URL
 static char* construct_endpoint_path(const char* base_path) {

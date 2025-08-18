@@ -5,15 +5,13 @@
  * It provides shared utility functions and routing logic for OIDC endpoints.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
+ // Global includes 
+#include "../../hydrogen.h"
 
+// Local includes
 #include "oidc_service.h"
 #include "../../oidc/oidc_service.h"
 #include "../../webserver/web_server_core.h"
-#include "../../logging/logging.h"
 
 // Global OIDC context pointer
 static OIDCContext *g_oidc_context = NULL;

@@ -6,34 +6,12 @@
  * per-subsystem log levels and environment variable configuration.
  */
 
-#ifdef __linux__
-#include <stdlib.h> // reallocarray may be available on some Linux systems
-#elif defined(__APPLE__)
-#include <stdlib.h>
-#include <stdint.h> // For SIZE_MAX
-#include <errno.h>  // For errno and ENOMEM
-// Define a fallback for reallocarray
-static inline void* reallocarray(void* ptr, size_t nmemb, size_t size) {
-    // Check for overflow
-    if (size && nmemb > SIZE_MAX / size) {
-        errno = ENOMEM;
-        return NULL;
-    }
-    return realloc(ptr, nmemb * size);
-}
-#else
-#include <stdlib.h>
-#endif
+// Global includes 
+#include "../hydrogen.h"
 
-#include <string.h>
-#include <strings.h>
-#include <jansson.h>
-#include "config.h"
-#include "config_utils.h"
+// Local includes
 #include "config_logging.h"
 #include "config_priority.h"
-#include "../logging/logging.h"
-#include "../utils/utils.h"
 
 // Default values for logging destinations
 #define DEFAULT_CONSOLE_ENABLED  true

@@ -5,10 +5,12 @@
  * Delegates requests to appropriate endpoint handlers based on URL.
  */
 
+ // Global includes 
+#include "../hydrogen.h"
+
+// Local includes
 #include "api_service.h"
 #include "api_utils.h"
-#include "../logging/logging.h"
-#include "../config/config.h"
 #include "../webserver/web_server_core.h"
 #include "system/system_service.h"
 #include "oidc/oidc_service.h"

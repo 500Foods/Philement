@@ -43,31 +43,10 @@
  * - Strict type checking and range validation on all values
  */
 
-#ifdef __linux__
-#include <linux/limits.h>
-#elif defined(__APPLE__)
-#include <sys/syslimits.h>
-#else
-#include <limits.h>
-#endif
+ // Global includes 
+#include "../hydrogen.h"
 
-// Core system headers
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <time.h>
-#include <errno.h>
-#include <unistd.h>
-
-// Standard C headers
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <ctype.h>
-
-// Project headers
-#include "config.h"
-#include "config_utils.h"  // Includes string, fd, and filesystem operations
+// Local includes
 #include "config_priority.h"
 
 // Configuration system
@@ -88,14 +67,8 @@
 #include "config_oidc.h"                 // O. OIDC
 #include "config_notify.h"               // P. Notify
 
-// Core system headers
-#include "../logging/logging.h"
-#include "../utils/utils.h"
-
-// JSON loading functions - sections being migrated from json_* to config_*
-
-// Global static configuration instance
-static AppConfig *app_config = NULL;
+// Global configuration instance
+AppConfig *app_config = NULL;
 
 // Forward declaration for cleanup function
 static void clean_app_config(AppConfig* config);

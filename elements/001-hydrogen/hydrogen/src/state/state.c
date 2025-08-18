@@ -63,7 +63,7 @@ ServiceThreads print_threads;
 
 // Shared resource handles
 
-AppConfig *app_config = NULL;
+// extern AppConfig *app_config = NULL;
 mdns_server_t *mdns_server = NULL;
 network_info_t *net_info = NULL;
 

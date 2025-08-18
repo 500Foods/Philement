@@ -3,12 +3,11 @@
  * 
  */
 
-// Standard C headers
-#include <string.h>
+// Global includes 
+#include "../hydrogen.h"
 
-// Project headers
+// Local includes
 #include "config_priority.h"
-#include "../logging/logging.h"
 
 // Global variables
 int MAX_PRIORITY_LABEL_WIDTH = 5;    // All log level names are 5 characters

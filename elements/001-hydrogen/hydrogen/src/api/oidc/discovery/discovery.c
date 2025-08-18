@@ -5,14 +5,12 @@
  * (.well-known/openid-configuration)
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
+  // Global includes 
+#include "../../../hydrogen.h"
 
+// Local includes
 #include "discovery.h"
 #include "../oidc_service.h"
-#include "../../../logging/logging.h"
 
 /**
  * Discovery document endpoint

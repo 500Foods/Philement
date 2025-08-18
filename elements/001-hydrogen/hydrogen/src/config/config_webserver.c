@@ -3,13 +3,11 @@
  *
  * Implements the configuration handlers for the web server subsystem.
  */
+// Global includes 
+#include "../hydrogen.h"
 
-#include <stdlib.h>
-#include <string.h>
-#include "config.h"
+// Local includes
 #include "config_webserver.h"
-#include "config_utils.h"
-#include "../logging/logging.h"
 
 bool load_webserver_config(json_t* root, AppConfig* config) {
     bool success = true;

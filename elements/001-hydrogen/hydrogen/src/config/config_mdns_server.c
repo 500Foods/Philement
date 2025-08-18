@@ -5,14 +5,11 @@
  * including JSON parsing, environment variable handling, and cleanup.
  */
 
-#include <stdlib.h>
-#include <string.h>
-#include <jansson.h>
+// Global includes 
+#include "../hydrogen.h"
+
+// Local includes
 #include "config_mdns_server.h"
-#include "config.h"
-#include "config_utils.h"
-#include "../logging/logging.h"
-#include "../utils/utils.h"
 
 // Helper function to cleanup a single service
 static void cleanup_service(mdns_server_service_t* service) {

@@ -212,7 +212,7 @@ json_t* extract_gcode_info(const char* filename) {
     }
 
     // Use configuration-based defaults
-    BerylliumConfig config = beryllium_create_config(app_config);
+    BerylliumConfig config = beryllium_create_config();
 
     char *start_time = get_iso8601_timestamp();
     clock_t start = clock();
