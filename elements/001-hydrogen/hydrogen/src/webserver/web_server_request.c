@@ -1,10 +1,16 @@
+#ifdef __linux__
+#include <linux/limits.h>
+#elif defined(__APPLE__)
+#include <sys/syslimits.h>
+#else
+#include <limits.h>
+#endif
+
 // System headers
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
 #include <string.h>
-#include <limits.h>
-#include <linux/limits.h>
 
 // Project headers
 #include "web_server_request.h"

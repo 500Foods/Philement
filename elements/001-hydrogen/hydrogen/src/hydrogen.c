@@ -46,6 +46,14 @@
 #define _GNU_SOURCE
 #endif
 
+#ifdef __linux__
+#include <linux/limits.h>
+#elif defined(__APPLE__)
+#include <sys/syslimits.h>
+#else
+#include <limits.h>
+#endif
+
 /* System headers - must come first after feature test macros */
 #include <features.h>     /* GNU/glibc features */
 #include <sys/types.h>    /* Basic system types */
@@ -53,7 +61,6 @@
 #include <ucontext.h>     /* Context handling */
 #include <time.h>         /* Time types */
 #include <unistd.h>       /* POSIX system calls */
-#include <linux/limits.h> /* System limits */
 
 /* Extended POSIX headers */
 #include <sys/ucontext.h> /* Context handling */
