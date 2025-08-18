@@ -88,7 +88,7 @@ verify_core_file_content() {
     
     # Check file size and verify it's a core file
     local core_size
-    core_size=$(stat -c %s "${core_file}" 2>/dev/null || echo "0")
+    core_size=$("${STAT}" -c %s "${core_file}" 2>/dev/null || echo "0")
     if [[ "${core_size}" -lt 1024 ]]; then
         print_message "Core file is suspiciously small (${core_size} bytes)"
         return 1

@@ -96,7 +96,7 @@ count_unity_tests_per_source_file() {
     local cache_file="${CACHE_DIR}/unity_test_counts_${timestamp}.cache"
     
     # Check if cache exists and is recent (within 1 hour)
-    if [[ -f "${cache_file}" ]] && [[ $(($("${DATE}" +%s || true) - $(stat -c %Y "${cache_file}" 2>/dev/null || echo 0 || true))) -lt 3600 ]]; then
+    if [[ -f "${cache_file}" ]] && [[ $(($("${DATE}" +%s || true) - $("${STAT}" -c %Y "${cache_file}" 2>/dev/null || echo 0 || true))) -lt 3600 ]]; then
         # Load from cache
         while IFS='=' read -r source_file test_count; do
             unity_test_counts["${source_file}"]="${test_count}"

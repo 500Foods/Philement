@@ -53,10 +53,12 @@ fi
 FORKS=$("${GREP}" -cE 'fork|vfork|clone' "${TRACE_OUT}" 2>/dev/null || true)
 
 # Count commandカフェ invocations
+echo "Group 1"
 BASH_COUNT=$("${GREP}" -c 'execve.*[ /]bash[ ""]' "${TRACE_OUT}" 2>/dev/null)
 SH_COUNT=$("${GREP}" -c 'execve.*[ /]sh[ ""]' "${TRACE_OUT}" 2>/dev/null)
 XARGS_COUNT=$("${GREP}" -c 'execve.*[ /]xargs[ ""]' "${TRACE_OUT}" 2>/dev/null)
 
+echo "Group 2"
 CAT_COUNT=$("${GREP}" -c 'execve.*[ /]cat[ ""]' "${TRACE_OUT}" 2>/dev/null)
 FIND_COUNT=$("${GREP}" -c 'execve.*[ /]find[ ""]' "${TRACE_OUT}" 2>/dev/null)
 BC_COUNT=$("${GREP}" -c 'execve.*[ /]bc[ ""]' "${TRACE_OUT}" 2>/dev/null)
@@ -65,6 +67,7 @@ WC_COUNT=$("${GREP}" -c 'execve.*[ /]wc[ ""]' "${TRACE_OUT}" 2>/dev/null)
 DATE_COUNT=$("${GREP}" -c 'execve.*[ /]date[ ""]' "${TRACE_OUT}" 2>/dev/null)
 MD5_COUNT=$("${GREP}" -c 'execve.*[ /]md5sum[ ""]' "${TRACE_OUT}" 2>/dev/null)
 
+echo "Group 3"
 MKDIR_COUNT=$("${GREP}" -c 'execve.*[ /]mkdir[ ""]' "${TRACE_OUT}" 2>/dev/null)
 MKTEMP_COUNT=$("${GREP}" -c 'execve.*[ /]mktemp[ ""]' "${TRACE_OUT}" 2>/dev/null)
 REALPATH_COUNT=$("${GREP}" -c 'execve.*[ /]realpath[ ""]' "${TRACE_OUT}" 2>/dev/null)
@@ -73,17 +76,19 @@ DIRNAME_COUNT=$("${GREP}" -c 'execve.*[ /]dirname[ ""]' "${TRACE_OUT}" 2>/dev/nu
 DU_COUNT=$("${GREP}" -c 'execve.*[ /]du[ ""]' "${TRACE_OUT}" 2>/dev/null)
 RM_COUNT=$("${GREP}" -c 'execve.*[ /]rm[ ""]' "${TRACE_OUT}" 2>/dev/null)
 
+echo "Group 4"
 GREP_COUNT=$("${GREP}" -c 'execve.*[ /]grep[ ""]' "${TRACE_OUT}" 2>/dev/null)
 SED_COUNT=$("${GREP}" -c 'execve.*[ /]sed[ ""]' "${TRACE_OUT}" 2>/dev/null)
 AWK_COUNT=$("${GREP}" -c 'execve.*[ /]awk[ ""]' "${TRACE_OUT}" 2>/dev/null)
 CURL_COUNT=$("${GREP}" -c 'execve.*[ /]curl[ ""]' "${TRACE_OUT}" 2>/dev/null)
 
+echo "Group 5"
 CMAKE_COUNT=$("${GREP}" -c 'execve.*[ /]cmake[ ""]' "${TRACE_OUT}" 2>/dev/null)
 MAKE_COUNT=$("${GREP}" -c 'execve.*[ /]make[ ""]' "${TRACE_OUT}" 2>/dev/null)
 CC_COUNT=$("${GREP}" -c 'execve.*[ /]cc[ ""]' "${TRACE_OUT}" 2>/dev/null)
 GCOV_COUNT=$("${GREP}" -c 'execve.*[ /]gcov[ ""]' "${TRACE_OUT}" 2>/dev/null)
 
-# Note: CPPCHECK_COUNT was incorrectly grepping for 'tables', corrected to 'cppcheck'
+echo "Group 6"
 CPPCHECK_COUNT=$("${GREP}" -c 'execve.*[ /]cppcheck[ ""]' "${TRACE_OUT}" 2>/dev/null)
 SHELLCHECK_COUNT=$("${GREP}" -c 'execve.*[ /]shellcheck[ ""]' "${TRACE_OUT}" 2>/dev/null)
 MARKDOWNLINT_COUNT=$("${GREP}" -c 'execve.*[ /]markdownlint[ ""]' "${TRACE_OUT}" 2>/dev/null)
@@ -92,8 +97,8 @@ ESLINT_COUNT=$("${GREP}" -c 'execve.*[ /]eslint[ ""]' "${TRACE_OUT}" 2>/dev/null
 STYLELINT_COUNT=$("${GREP}" -c 'execve.*[ /]stylelint[ ""]' "${TRACE_OUT}" 2>/dev/null)
 HTMLHINT_COUNT=$("${GREP}" -c 'execve.*[ /]htmlhint[ ""]' "${TRACE_OUT}" 2>/dev/null)
 
+echo "Group 7"
 CLOC_COUNT=$("${GREP}" -c 'execve.*[ /]cloc[ ""]' "${TRACE_OUT}" 2>/dev/null)
-
 TABLES_COUNT=$("${GREP}" -c 'execve.*[ /]tables[ ""]' "${TRACE_OUT}" 2>/dev/null)
 
 # Generate summary

@@ -47,7 +47,12 @@ run_cppcheck() {
     while IFS='=' read -r key value; do
         case "${key}" in
             "enable") cppcheck_args+=("--enable=${value}") ;;
-            "include") cppcheck_args+=("--include=${value}") ;;
+            "include") 
+                if [ -e "${value}" ]; then
+                    cppcheck_args+=("--include=${value}")
+                else
+                    print_warning "Include path '${value}' does not exist and will be skipped"
+                fi ;;
             "check-level") cppcheck_args+=("--check-level=${value}") ;;
             "template") cppcheck_args+=("--template=${value}") ;;
             "option") cppcheck_args+=("${value}") ;;

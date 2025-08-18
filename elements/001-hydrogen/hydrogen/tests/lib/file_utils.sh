@@ -94,7 +94,7 @@ safe_cd() {
 get_file_size() {
     local file_path="$1"
     local size
-    if size=$(stat -c %s "${file_path}" 2>/dev/null); then
+    if size=$("${STAT}" -c %s "${file_path}" 2>/dev/null); then
         echo "${size}"
         return 0
     else
