@@ -11,17 +11,11 @@
  * - Must coordinate with WebServer for shutdown
  */
 
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
+// Global includes 
+#include "../hydrogen.h"
 
+// Local includes
 #include "landing.h"
-#include "landing_readiness.h"
-#include "../logging/logging.h"
-#include "../utils/utils_logging.h"
-#include "../registry/registry.h"
-#include "../registry/registry_integration.h"
-#include "../state/state_types.h"
 
 // Check if the API subsystem is ready to land
 LaunchReadiness check_api_landing_readiness(void) {

@@ -8,6 +8,7 @@
 #ifndef LANDING_THREADS_H
 #define LANDING_THREADS_H
 
+#include "landing.h"
 #include "landing_readiness.h"
 #include "../threads/threads.h"
 #include "../state/state_types.h"

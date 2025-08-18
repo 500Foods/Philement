@@ -7,20 +7,11 @@
  * and that no threads are left running.
  */
 
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
-#include <signal.h>
+// Global includes 
+#include "../hydrogen.h"
 
-#include "landing.h"
-#include "landing_readiness.h"
+// Local includes
 #include "landing_threads.h"
-#include "../logging/logging.h"
-#include "../threads/threads.h"
-#include "../registry/registry.h"
-#include "../registry/registry_integration.h"
-#include "../state/state_types.h"
 
 // External declarations for thread tracking
 extern ServiceThreads logging_threads;

@@ -46,34 +46,13 @@
  * - 01. Registry (first launched, last to land)
  */
 
-// System includes
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
-#include <sys/time.h>
-#include <time.h>
-#include <ctype.h>
-#include <signal.h>
-#include <unistd.h>  // For usleep
+// Global includes 
+#include "../hydrogen.h"
 
 // Local includes
 #include "landing.h"
-#include "landing_readiness.h"
 #include "landing_plan.h"
 #include "landing_review.h"
-
-// Project includes
-#include "../logging/logging.h"
-#include "../utils/utils_logging.h"
-#include "../utils/utils.h"
-#include "../utils/utils_time.h"
-#include "../threads/threads.h"
-#include "../registry/registry.h"
-#include "../registry/registry_integration.h"
-#include "../state/state.h"  // For reset_shutdown_state
-#include "../config/config.h"  // For cleanup_application_config
-#include "../state/state_types.h"
 #include "../launch/launch.h"
 
 // External declarations for landing orchestration

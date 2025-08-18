@@ -12,19 +12,11 @@
  * 2. land_network_subsystem - Performs actual network shutdown
  */
 
-// System includes
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
+// Global includes 
+#include "../hydrogen.h"
 
-// Project includes
+// Local includes
 #include "landing.h"
-#include "landing_readiness.h"
-#include "../logging/logging.h"
-#include "../network/network.h"
-#include "../registry/registry_integration.h"
-#include "../state/state_types.h"
-#include "../utils/utils_logging.h"
 
 /*
  * Land the network subsystem

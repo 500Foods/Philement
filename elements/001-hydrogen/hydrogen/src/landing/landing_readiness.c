@@ -25,22 +25,11 @@
  * separation of concerns.
  */
 
-// System includes
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
+// Global includes 
+#include "../hydrogen.h"
 
 // Local includes
-#include "landing.h"
 #include "landing_readiness.h"
-
-// Project includes
-#include "../logging/logging.h"
-#include "../utils/utils_logging.h"
-#include "../registry/registry.h"
-#include "../registry/registry_integration.h"
-#include "../state/state_types.h"
 
 // External declarations for subsystem readiness checks (in reverse launch order)
 extern LaunchReadiness check_print_landing_readiness(void);        // from landing_print.c

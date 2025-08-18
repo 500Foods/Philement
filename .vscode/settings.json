@@ -14,7 +14,8 @@
   "stdlib.h": "c",
   "stddef.h": "c",
   "config_utils.h": "c",
-  "hydrogen.h": "c"
+  "hydrogen.h": "c",
+  "stdbool.h": "c"
 },
 "C_Cpp.default.compilerPath": "/usr/lib64/ccache/gcc"
 }

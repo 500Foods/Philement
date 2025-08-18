@@ -46,22 +46,11 @@
  * - All decisions are based on actual dependencies, not importance
  */
 
-// System includes
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
-#include <time.h>
+// Global includes 
+#include "../hydrogen.h"
 
 // Local includes
-#include "landing.h"
 #include "landing_plan.h"
-
-// Project includes
-#include "../logging/logging.h"
-#include "../utils/utils_logging.h"
-#include "../registry/registry.h"
-#include "../registry/registry_integration.h"
 
 // Forward declarations
 static bool check_dependent_states(const char* subsystem, bool* can_land);
