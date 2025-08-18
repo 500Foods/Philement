@@ -5,10 +5,17 @@
  * including JSON parsing, environment variable handling, and validation.
  */
 
+#ifdef __linux__
+#include <linux/limits.h>
+#elif defined(__APPLE__)
+#include <sys/syslimits.h>
+#else
+#include <limits.h>
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <linux/limits.h>
 
 #include "config.h"
 #include "config_utils.h"
