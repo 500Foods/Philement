@@ -21,6 +21,7 @@
 # print_test_completion()
 
 # CHANGELOG
+# 3.8.0 - 2025-08-17 - Converted OUTPUT_COLLECTION from array to simple string for improved performance
 # 3.7.0 - 2025-08-10 - Simplifid some log output naming, cleared out mktemp calls
 # 3.6.0 - 2025-08-07 - Support for commas in test names (ie, thousands separators)
 # 3.5.0 - 2025-08-06 - Improvements to logging file handling, common TAB file naming
@@ -45,7 +46,7 @@ export LOG_OUTPUT_GUARD="true"
 
 # Library metadata
 LOG_OUTPUT_NAME="Log Output Library"
-LOG_OUTPUT_VERSION="3.7.0"
+LOG_OUTPUT_VERSION="3.8.0"
 export LOG_OUTPUT_NAME LOG_OUTPUT_VERSION
 
 # Global variables for test/subtest numbering
@@ -84,16 +85,20 @@ TEST_ICON="${TEST_COLOR}\U2587\U2587${NC}"
 
 # Function to process a message and replace full paths with relative paths
 process_message() {
-  local message="$1"
-  local processed="${message}"
-  processed="${message//${PROJECT_DIR}/}"
-  echo "${processed}"
+    local message="$1"
+    # shellcheck disable=SC2154 # PROJECT_DIR defined in framework.sh
+    if [[ "${#message}" -ge "${#PROJECT_DIR}" ]]; then
+        # shellcheck disable=SC2154 # PRINTF defined in framework.sh
+        "${PRINTF}" '%s' "${message/${PROJECT_DIR}/}"
+    else
+        "${PRINTF}" '%s' "${message}"
+    fi
 }
 
 # Function to enable output collection mode
 enable_output_collection() {
     COLLECT_OUTPUT_MODE=true
-    OUTPUT_COLLECTION=()
+    OUTPUT_COLLECTION=""
 }
 
 # Function to disable output collection mode
@@ -103,44 +108,26 @@ disable_output_collection() {
 
 # Function to dump collected output in a single printf call
 dump_collected_output() {
-    # Defensive check to ensure array is properly initialized
+    # Defensive check to ensure string is properly initialized
     if [[ ! -v OUTPUT_COLLECTION ]]; then
         return 0
     fi
     
-    # Check if array has elements
-    if [[ "${#OUTPUT_COLLECTION[@]}" -gt 0 ]]; then
-        # Use printf instead of echo -e to avoid potential hanging issues
-        # Process array elements safely with proper quoting and limits
-        local line
-        local count=0
-        local max_lines=1000  # Prevent infinite loops with large arrays
-        
-        for line in "${OUTPUT_COLLECTION[@]}"; do
-            # Safety check for runaway loops
-            if [[ ${count} -ge ${max_lines} ]]; then
-                # shellcheck disable=SC2154 # PRINTF defined externally in framework.sh
-                "${PRINTF}" '%b\n' "... (output truncated after ${max_lines} lines)"
-                break
-            fi
-            
-            # Only output non-empty lines
-            if [[ -n "${line}" ]]; then
-                "${PRINTF}" '%b\n' "${line}" 2>/dev/null || true
-            fi
-            ((count++))
-        done
+    # Check if string has content
+    if [[ -n "${OUTPUT_COLLECTION}" ]]; then
+        # Use printf to output the collected string with proper line breaks
+        "${PRINTF}" '%b' "${OUTPUT_COLLECTION}" 2>/dev/null || true
     fi
 }
 
 # Function to clear collected output
 clear_collected_output() {
-    # Safely clear the array with defensive checks
+    # Safely clear the string with defensive checks
     if [[ -v OUTPUT_COLLECTION ]]; then
-        OUTPUT_COLLECTION=()
+        OUTPUT_COLLECTION=""
     else
-        # Initialize array if it doesn't exist
-        declare -ga OUTPUT_COLLECTION=()
+        # Initialize string if it doesn't exist
+        OUTPUT_COLLECTION=""
     fi
 }
 
@@ -300,8 +287,8 @@ print_subtest() {
     
     # If we're in collection mode and have cached output, dump it before starting new test
     if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
-        # Defensive check for array state to prevent hanging
-        if [[ -n "${OUTPUT_COLLECTION+set}" ]] && [[ "${#OUTPUT_COLLECTION[@]}" -gt 0 ]]; then
+        # Defensive check for string state to prevent hanging
+        if [[ -n "${OUTPUT_COLLECTION+set}" ]] && [[ -n "${OUTPUT_COLLECTION}" ]]; then
             # Try to dump the cached output, but don't fail if it causes issues
             dump_collected_output 2>/dev/null || true
         fi
@@ -316,21 +303,30 @@ print_subtest() {
 # Function to print commands that will be executed
 print_command() {
     local prefix
-    prefix=$(get_test_prefix)
     local elapsed
+    local cmd=$1
+
+    prefix=$(get_test_prefix)
     elapsed=$(get_elapsed_time)
-    local cmd
-    cmd=$(process_message "$1")
+
+    # shellcheck disable=SC2154 # PROJECT_DIR defined in framework.sh
+    if [[ "${#cmd}" -ge "${#PROJECT_DIR}" ]]; then
+        processed_cmd="${cmd/${PROJECT_DIR}/}"
+    else
+        processed_cmd="${cmd}"
+    fi
+
+
     # Truncate command to approximately 200 characters
     local truncated_cmd
-    if [[ ${#cmd} -gt 200 ]]; then
-        truncated_cmd="${cmd:0:197}..."
+    if [[ ${#processed_cmd} -gt 200 ]]; then
+        truncated_cmd="${processed_cmd:0:197}..."
     else
-        truncated_cmd="${cmd}"
+        truncated_cmd="${processed_cmd}"
     fi
     local formatted_output="  ${prefix}   ${elapsed}   ${EXEC_COLOR}${EXEC_ICON} ${EXEC_COLOR}EXEC${NC}   ${EXEC_COLOR}${truncated_cmd}${NC}"
     if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
-        OUTPUT_COLLECTION+=("${formatted_output}")
+        OUTPUT_COLLECTION+="${formatted_output}\n"
     else
         echo -e "${formatted_output}"
     fi
@@ -339,16 +335,24 @@ print_command() {
 # Function to print command output
 print_output() {
     local prefix
-    prefix=$(get_test_prefix)
     local elapsed
+    local message=$1
+
+    prefix=$(get_test_prefix)
     elapsed=$(get_elapsed_time)
-    local message
-    message=$(process_message "$1")
+
+    # shellcheck disable=SC2154 # PROJECT_DIR defined in framework.sh
+    if [[ "${#message}" -ge "${#PROJECT_DIR}" ]]; then
+        processed_message="${message/${PROJECT_DIR}/}"
+    else
+        processed_message="${message}"
+    fi
+
     # Skip output if message is empty or contains only whitespace
-    if [[ -n "${message}" && ! "${message}" =~ ^[[:space:]]*$ ]]; then
-        local formatted_output="  ${prefix}   ${elapsed}   ${DATA_COLOR}${DATA_ICON} ${DATA_COLOR}DATA${NC}   ${DATA_COLOR}${message}${NC}"
+    if [[ -n "${processed_message}" && ! "${processed_message}" =~ ^[[:space:]]*$ ]]; then
+        local formatted_output="  ${prefix}   ${elapsed}   ${DATA_COLOR}${DATA_ICON} ${DATA_COLOR}DATA${NC}   ${DATA_COLOR}${processed_message}${NC}"
         if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
-            OUTPUT_COLLECTION+=("${formatted_output}")
+            OUTPUT_COLLECTION+="${formatted_output}\n"
         else
             echo -e "${formatted_output}"
         fi
@@ -360,12 +364,19 @@ print_result() {
     local status=$1
     local message=$2
     local prefix
-    prefix=$(get_test_prefix)
     local elapsed
-    elapsed=$(get_elapsed_time)
     local processed_message
-    processed_message=$(process_message "${message}")
-    
+
+    prefix=$(get_test_prefix)
+    elapsed=$(get_elapsed_time)
+
+    # shellcheck disable=SC2154 # PROJECT_DIR defined in framework.sh
+    if [[ "${#message}" -ge "${#PROJECT_DIR}" ]]; then
+        processed_message="${message/${PROJECT_DIR}/}"
+    else
+        processed_message="${message}"
+    fi
+
     # Record the result for statistics
     record_test_result "${status}"
     
@@ -377,7 +388,7 @@ print_result() {
     fi
     
     if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
-        OUTPUT_COLLECTION+=("${formatted_output}")
+        OUTPUT_COLLECTION+="${formatted_output}\n"
     else
         echo -e "${formatted_output}"
     fi
@@ -386,14 +397,23 @@ print_result() {
 # Function to print warnings
 print_warning() {
     local prefix
-    prefix=$(get_test_prefix)
     local elapsed
+    local message=$1
+
+    prefix=$(get_test_prefix)
     elapsed=$(get_elapsed_time)
-    local message
-    message=$(process_message "$1")
-    local formatted_output="  ${prefix}   ${elapsed}   ${WARN_COLOR}${WARN_ICON} ${WARN_COLOR}WARN${NC}   ${message}"
+
+    # shellcheck disable=SC2154 # PROJECT_DIR defined in framework.sh
+    if [[ "${#message}" -ge "${#PROJECT_DIR}" ]]; then
+        processed_message="${message/${PROJECT_DIR}/}"
+    else
+        processed_message="${message}"
+    fi
+
+    local formatted_output="  ${prefix}   ${elapsed}   ${WARN_COLOR}${WARN_ICON} ${WARN_COLOR}WARN${NC}   ${processed_message}"
+
     if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
-        OUTPUT_COLLECTION+=("${formatted_output}")
+        OUTPUT_COLLECTION+="${formatted_output}\n"
     else
         echo -e "${formatted_output}"
     fi
@@ -402,14 +422,23 @@ print_warning() {
 # Function to print error message
 print_error() {
     local prefix
-    prefix=$(get_test_prefix)
     local elapsed
+    local message=$1
+
+    prefix=$(get_test_prefix)
     elapsed=$(get_elapsed_time)
-    local message
-    message=$(process_message "$1")
-    local formatted_output="  ${prefix}   ${elapsed}   ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}FAIL${NC}   ${message}"
+
+    # shellcheck disable=SC2154 # PROJECT_DIR defined in framework.sh
+    if [[ "${#message}" -ge "${#PROJECT_DIR}" ]]; then
+        processed_message="${message/${PROJECT_DIR}/}"
+    else
+        processed_message="${message}"
+    fi
+
+    local formatted_output="  ${prefix}   ${elapsed}   ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}FAIL${NC}   ${processed_message}"
+
     if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
-        OUTPUT_COLLECTION+=("${formatted_output}")
+        OUTPUT_COLLECTION+="${formatted_output}\n"
     else
         echo -e "${formatted_output}"
     fi
@@ -418,14 +447,23 @@ print_error() {
 # Function to print informational messages
 print_message() {
     local prefix
-    prefix=$(get_test_prefix)
     local elapsed
+    local message=$1
+
+    prefix=$(get_test_prefix)
     elapsed=$(get_elapsed_time)
-    local message
-    message=$(process_message "$1")
-    local formatted_output="  ${prefix}   ${elapsed}   ${INFO_COLOR}${INFO_ICON} ${INFO_COLOR}INFO${NC}   ${message}"
+
+    # shellcheck disable=SC2154 # PROJECT_DIR defined in framework.sh
+    if [[ "${#message}" -ge "${#PROJECT_DIR}" ]]; then
+        processed_message="${message/${PROJECT_DIR}/}"
+    else
+        processed_message="${message}"
+    fi
+
+    local formatted_output="  ${prefix}   ${elapsed}   ${INFO_COLOR}${INFO_ICON} ${INFO_COLOR}INFO${NC}   ${processed_message}"
+
     if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
-        OUTPUT_COLLECTION+=("${formatted_output}")
+        OUTPUT_COLLECTION+="${formatted_output}\n"
     else
         echo -e "${formatted_output}"
     fi

@@ -94,6 +94,7 @@ safe_cd() {
 get_file_size() {
     local file_path="$1"
     local size
+    # shellcheck disable=SC2154 # STAT defined externally in framework.sh
     if size=$("${STAT}" -c %s "${file_path}" 2>/dev/null); then
         echo "${size}"
         return 0

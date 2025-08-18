@@ -42,21 +42,35 @@ FRAMEWORK_NAME="Framework Library"
 FRAMEWORK_VERSION="2.8.0"
 export FRAMEWORK_NAME FRAMEWORK_VERSION
 
+# Function to find a command, preferring GNU version
+find_command() {
+    local gnu_cmd=$1 std_cmd=$2 var_name=$3
+    if command -v "${gnu_cmd}" >/dev/null 2>&1; then
+        eval "${var_name}=$(command -v "${gnu_cmd}" || true)"
+    elif command -v "${std_cmd}" >/dev/null 2>&1; then
+        eval "${var_name}=$(command -v "${std_cmd}" || true)"
+    else
+        echo "Error: Neither ${gnu_cmd} nor ${std_cmd} found" >&2
+        exit 1
+    fi
+}
+
 # Common utilities - use GNU versions if available (eg: homebrew on macOS)
-PRINTF=$(command -v printf 2>/dev/null || command -v printf)
-DATE=$(command -v gdate 2>/dev/null || command -v date)
-FIND=$(command -v gfind 2>/dev/null || command -v find)
-GREP=$(command -v ggrep 2>/dev/null || command -v grep)
-SED=$(command -v gsed 2>/dev/null || command -v sed)
-AWK=$(command -v gawk 2>/dev/null || command -v awk)
-TAR=$(command -v gtar 2>/dev/null || command -v tar)
-STAT=$(command -v gstat 2>/dev/null || command -v stat)
-REALPATH=$(command -v grealpath 2>/dev/null || command -v realpath)
-DIRNAME=$(command -v gdirname 2>/dev/null || command -v dirname)
-XARGS=$(command -v gxargs 2>/dev/null || command -v xargs)
-TIMEOUT=$(command -v gtimeout 2>/dev/null || command -v timeout)
-NPROC=$(command -v nproc 2>/dev/null || { command -v sysctl >/dev/null && echo "sysctl -n hw.ncpu" || echo "getconf _NPROCESSORS_ONLN"; })
-export PRINTF DATE FIND GREP SED AWK TAR REALPATH XARGS TIMEOUT NPROC
+find_command printf    printf   PRINTF
+find_command gdate     date     DATE
+find_command gfind     find     FIND
+find_command ggrep     grep     GREP
+find_command gsed      sed      SED
+find_command gawk      awk      AWK
+find_command gtar      tar      TAR
+find_command gstat     stat     STAT
+find_command grealpath realpath REALPATH
+find_command gbasename basename BASENAME
+find_command gdirname  dirname  DIRNAME
+find_command gxargs    xargs    XARGS
+find_command gtimeout  timeout  TIMEOUT
+find_command nproc     nproc    NPROC
+export PRINTF DATE FIND GREP SED AWK TAR STAT REALPATH BASENAME DIRNAME XARGS TIMEOUT NPROC
 
 # These are standard utilities not tied to a particular OS
 CLOC=$(command -v cloc)
@@ -217,7 +231,7 @@ setup_orchestration_environment() {
 
     # Array for collecting output messages (for performance optimization and progressive feedback)
     # Output is cached and dumped each time a new TEST starts, providing progressive feedback
-    declare -a OUTPUT_COLLECTION=()
+    OUTPUT_COLLECTION=""
     COLLECT_OUTPUT_MODE=true
     
     # Global folder variables
@@ -274,60 +288,62 @@ setup_orchestration_environment() {
     print_result 0 "Test Suite libraries initialized"
 
     next_subtest
-    print_subtest "Checking for tmpfs Build setup"
+    print_subtest "Checking Build Directory"
     if [[ -d "build" ]]; then
-        print_message "Build directory exists, checking mount status..."
-    
-        # Check if build is already a tmpfs mount
-        if mountpoint -q build 2>/dev/null; then
-            print_message "Build directory already mounted as tmpfs, emptying non-cmake-build contents..."
-            if rm -rf build/coverage build/debug build/perf build/regular build/release build/tests build/unity build/valgrind build/*marker* 2>/dev/null; then
-                print_result 0 "Build directory (tmpfs) emptied and ready for use"
-            else
-                print_result 1 "Failed to empty tmpfs build directory"
-                EXIT_CODE=1
-            fi
-        else
+        # print_message "Build directory exists, checking mount status..."
+        # 
+        # # Check if build is already a tmpfs mount
+        # if mountpoint -q build 2>/dev/null; then
+        #     print_message "Build directory already mounted as tmpfs, emptying non-cmake-build contents..."
+        #     if rm -rf build/coverage build/debug build/perf build/regular build/release build/tests build/unity build/valgrind build/*marker* 2>/dev/null; then
+        #         print_result 0 "Build directory (tmpfs) emptied and ready for use"
+        #     else
+        #         print_result 1 "Failed to empty tmpfs build directory"
+        #         EXIT_CODE=1
+        #     fi
+        # else
             # Empty the regular directory and mount as tmpfs
-            print_message "Emptying regular build directory..."
+            print_message "Emptying Build directory..."
             print_command "rm -rf build/*"
-            if rm -rf build/coverage build/debug build/perf build/regular build/release build/tests build/unity build/valgrind build/*marker* 2>/dev/null; then
+            # if rm -rf build/coverage build/debug build/perf build/regular build/release build/tests build/unity build/valgrind build/*marker* 2>/dev/null; then
+            if rm -rf build/coverage build/tests build/unity build/*marker* 2>/dev/null; then
+            # if rm -rf build/* 2>/dev/null; then
                 print_message "Successfully emptied build directory"
                 
-                # Mount as tmpfs
-                print_message "Mounting 'build' as tmpfs with 1GB size..."
-                print_command "sudo mount -t tmpfs -o size=1G tmpfs build"
-                if sudo mount -t tmpfs -o size=1G tmpfs build 2>/dev/null; then
-                    print_result 0 "Build directory mounted as tmpfs (1GB) for faster I/O"
-                    print_message "Warning: tmpfs is volatile; artifacts will be lost on unmount/reboot"
-                else
-                    print_result 0 "Build directory ready (tmpfs mount failed, using regular filesystem)"
-                    print_message "Continuing with regular filesystem build directory"
-                fi
+            #     # # Mount as tmpfs
+            #     # print_message "Mounting 'build' as tmpfs with 1GB size..."
+            #     # print_command "sudo mount -t tmpfs -o size=1G tmpfs build"
+            #     # if sudo mount -t tmpfs -o size=1G tmpfs build 2>/dev/null; then
+            #     #     print_result 0 "Build directory mounted as tmpfs (1GB) for faster I/O"
+            #     #     print_message "Warning: tmpfs is volatile; artifacts will be lost on unmount/reboot"
+            #     # else
+            #     #     print_result 0 "Build directory ready (tmpfs mount failed, using regular filesystem)"
+            #     #     print_message "Continuing with regular filesystem build directory"
+            #     # fi
             else
-                print_result 1 "Failed to empty 'build' directory"
+                print_result 1 "Failed to empty Build directory"
                 EXIT_CODE=1
             fi
-        fi
+        # fi
     else
         # Create the build directory and mount as tmpfs
-        print_message "Creating 'build' directory..."
+        print_message "Creating Build directory..."
         print_command "mkdir build"
         if mkdir build 2>/dev/null; then
-            print_message "Successfully created build directory"
+            print_message "Successfully created Build directory"
             
-            # Mount as tmpfs
-            print_message "Mounting 'build' as tmpfs with 1GB size..."
-            print_command "sudo mount -t tmpfs -o size=1G tmpfs build"
-            if sudo mount -t tmpfs -o size=1G tmpfs build 2>/dev/null; then
-                print_result 0 "Build directory created and mounted as tmpfs (1GB) for faster I/O"
-                print_message "Warning: tmpfs is volatile; artifacts will be lost on unmount/reboot"
-            else
-                print_result 0 "Build directory created (tmpfs mount failed, using regular filesystem)"
-                print_message "Continuing with regular filesystem build directory"
-            fi
+            # # Mount as tmpfs
+            # print_message "Mounting 'build' as tmpfs with 1GB size..."
+            # print_command "sudo mount -t tmpfs -o size=1G tmpfs build"
+            # if sudo mount -t tmpfs -o size=1G tmpfs build 2>/dev/null; then
+            #     print_result 0 "Build directory created and mounted as tmpfs (1GB) for faster I/O"
+            #     print_message "Warning: tmpfs is volatile; artifacts will be lost on unmount/reboot"
+            # else
+            #     print_result 0 "Build directory created (tmpfs mount failed, using regular filesystem)"
+            #     print_message "Continuing with regular filesystem build directory"
+            # fi
         else
-            print_result 1 "Failed to create 'build' directory"
+            print_result 1 "Failed to create Build directory"
             EXIT_CODE=1
         fi
     fi
