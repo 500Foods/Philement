@@ -63,6 +63,7 @@
 #include <ctype.h>          // Character classification/conversion (e.g., isalpha, tolower)
 #include <errno.h>          // Error codes and errno variable (e.g., perror, strerror)
 #include <libgen.h>         // Pathname utilities (e.g., basename, dirname; POSIX)
+#include <signal.h>         // Signal handling (e.g., signal, sigaction)
 #include <stdbool.h>        // Boolean type and constants (bool, true, false)
 #include <stddef.h>         // Standard types and macros (e.g., size_t, NULL, offsetof)
 #include <stdint.h>         // Fixed-width integer types (e.g., uint8_t, int64_t)
@@ -85,12 +86,15 @@
 #include <microhttpd.h>     // For microhttpd
 #include <pthread.h>        // For pthreads
 
-// Project-specific includes
+// Project includes
 #include "config/config.h"
 #include "logging/logging.h"
-#include "utils/utils.h"
+#include "network/network.h"
+#include "payload/payload.h"
+#include "registry/registry.h"
 #include "state/state.h"
 #include "status/status.h"
-
+#include "threads/threads.h"
+#include "utils/utils.h"
 
 #endif /* HYDROGEN_H */

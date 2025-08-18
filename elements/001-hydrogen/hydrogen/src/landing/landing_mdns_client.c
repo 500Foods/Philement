@@ -12,18 +12,11 @@
  * - Requires Logging system to be operational
  */
 
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
+// Global includes 
+#include "../hydrogen.h"
 
+// Local includes
 #include "landing.h"
-#include "landing_readiness.h"
-#include "../logging/logging.h"
-#include "../utils/utils_logging.h"
-#include "../registry/registry.h"
-#include "../registry/registry_integration.h"
-#include "../state/state_types.h"
 
 // External declarations
 extern volatile sig_atomic_t mdns_client_system_shutdown;

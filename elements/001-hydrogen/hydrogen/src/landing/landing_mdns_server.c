@@ -11,20 +11,11 @@
  * - Must coordinate with Network subsystem for clean shutdown
  */
 
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
-#include <signal.h>
+// Global includes 
+#include "../hydrogen.h"
 
+// Local includes
 #include "landing.h"
-#include "landing_readiness.h"
-#include "../logging/logging.h"
-#include "../utils/utils_logging.h"
-#include "../threads/threads.h"
-#include "../registry/registry.h"
-#include "../registry/registry_integration.h"
-#include "../state/state_types.h"
 
 // External declarations
 extern ServiceThreads mdns_server_threads;

@@ -6,18 +6,11 @@
  * subsystems have properly shut down before proceeding with its own cleanup.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
+// Global includes 
+#include "../hydrogen.h"
 
+// Local includes
 #include "landing_registry.h"
-#include "../logging/logging.h"
-#include "../config/config.h"
-#include "../registry/registry.h"
-#include "../registry/registry_integration.h"
-#include "../utils/utils.h"
-#include "../state/state_types.h"
 
 // External declarations
 extern AppConfig* app_config;

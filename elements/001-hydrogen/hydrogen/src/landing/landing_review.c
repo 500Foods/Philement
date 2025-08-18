@@ -51,23 +51,11 @@
  * - Clear presentation of results
  */
 
-// System includes
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
-#include <time.h>
+// Global includes 
+#include "../hydrogen.h"
 
 // Local includes
-#include "landing.h"
 #include "landing_review.h"
-
-// Project includes
-#include "../logging/logging.h"
-#include "../utils/utils_logging.h"
-#include "../threads/threads.h"
-#include "../registry/registry.h"
-#include "../registry/registry_integration.h"
 
 /*
  * Report thread cleanup status
