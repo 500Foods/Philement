@@ -61,30 +61,40 @@
 
 // Standard C library includes
 #include <ctype.h>          // Character classification/conversion (e.g., isalpha, tolower)
+#include <dirent.h>         // Directory operations (e.g., opendir, readdir; POSIX)
+#include <dlfcn.h>          // Dynamic linking (e.g., dlopen, dlsym; POSIX)
 #include <errno.h>          // Error codes and errno variable (e.g., perror, strerror)
+#include <fcntl.h>          // File control options (e.g., open, O_RDONLY; POSIX)
 #include <libgen.h>         // Pathname utilities (e.g., basename, dirname; POSIX)
+#include <math.h>           // Mathematical functions (e.g., sin, cos, sqrt)
+#include <mntent.h>         // Filesystem mount points (e.g., getmntent; POSIX)
 #include <signal.h>         // Signal handling (e.g., signal, sigaction)
+#include <stdarg.h>         // Variable argument lists (e.g., va_list, va_start for variadic functions)
 #include <stdbool.h>        // Boolean type and constants (bool, true, false)
 #include <stddef.h>         // Standard types and macros (e.g., size_t, NULL, offsetof)
 #include <stdint.h>         // Fixed-width integer types (e.g., uint8_t, int64_t)
 #include <stdio.h>          // Formatted I/O functions (e.g., printf, scanf, fopen)
 #include <stdlib.h>         // General utilities (e.g., malloc, free, atoi, exit, rand)
-#include <stdarg.h>         // Variable argument lists (e.g., va_list, va_start for variadic functions)
 #include <string.h>         // String manipulation (e.g., strcpy, strlen, memcmp)
 #include <strings.h>        // Case-insensitive/BSD string functions (e.g., strcasecmp, bcopy; POSIX extension)
 #include <time.h>           // Time/date manipulation (e.g., time, localtime, strftime)
 
 // POSIX-specific includes
-#include <sys/types.h>      // POSIX types (e.g., pid_t, ssize_t, off_t; often required before other sys/ headers)
+#include <sys/ioctl.h>      // I/O control operations (e.g., ioctl; POSIX)
+#include <sys/mman.h>       // Memory management declarations (e.g., mmap, munmap; POSIX)
 #include <sys/stat.h>       // File status and modes (e.g., stat, fstat, mkdir, chmod; for file metadata)
-#include <unistd.h>         // POSIX functions (e.g., fork, exec, getpid, sleep, access; for system calls and utilities)
+#include <sys/time.h>       // Time-related functions (e.g., gettimeofday, clock_gettime; POSIX)
+#include <sys/types.h>      // POSIX types (e.g., pid_t, ssize_t, off_t; often required before other sys/ headers)
 #include <sys/utsname.h>    // System information (e.g., uname for OS name, version, architecture; POSIX)
+#include <unistd.h>         // POSIX functions (e.g., fork, exec, getpid, sleep, access; for system calls and utilities)
 
 // Thid-party libraries
-#include <jansson.h>        // For jansson (JSON)
-#include <libwebsockets.h>  // For websockets
-#include <microhttpd.h>     // For microhttpd
-#include <pthread.h>        // For pthreads
+#include <jansson.h>        // For jansson - JSON handling
+#include <libwebsockets.h>  // For websockets - WebSocket server/client
+#include <microhttpd.h>     // For microhttpd - Web server
+#include <pthread.h>        // For pthreads - Threading and synchronization
+#include <brotli/decode.h>  // For Brotli - Decompressing payloads
+#include <brotli/encode.h>  // For Brotli - Compressing content
 
 // Project includes
 #include "config/config.h"
