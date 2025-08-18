@@ -59,32 +59,32 @@ struct MemoryStruct {
 };
 
 /* Function prototypes */
-static char *generate_code_verifier();
+static char *generate_code_verifier(void);
 static char *generate_code_challenge(const char *verifier);
 static char *base64_url_encode(const unsigned char *input, int length);
 static char *generate_random_string(size_t length);
 static void build_authorization_url(char *url, size_t url_len);
-static int token_request(const char *auth_code);
-static int refresh_token_request();
-static int userinfo_request();
-static int validate_id_token();
+static int token_request(const char *authorization_code);
+static int refresh_token_request(void);
+static int userinfo_request(void);
+static int validate_id_token(void);
 static enum MHD_Result callback_handler(void *cls, struct MHD_Connection *connection,
                           const char *url, const char *method,
                           const char *version, const char *upload_data,
                           size_t *upload_data_size, void **con_cls);
 static size_t write_callback(void *contents, size_t size, size_t nmemb, void *userp);
-static void start_callback_server();
-static void log_ssl_errors();
+static void start_callback_server(void);
+static void log_ssl_errors(void);
 static void print_json_value(json_t *value, const char *prefix);
 static json_t *parse_jwt_payload(const char *jwt);
 static char *find_json_string_value(json_t *obj, const char *key);
-static int current_time();
+static int current_time(void);
 static int display_token_info(const char *token, const char *token_type);
 static int perform_http_request(const char *url, struct curl_slist *headers, 
                              const char *post_fields, struct MemoryStruct *chunk, 
                              long *http_code);
 
-int main() {
+int main(void) {
     printf("Authorization Code Flow with PKCE Example\n");
     printf("=========================================\n\n");
 
@@ -160,7 +160,7 @@ int main() {
 }
 
 /* Generate a random code verifier for PKCE */
-static char *generate_code_verifier() {
+static char *generate_code_verifier(void) {
     unsigned char random[64];
     if (RAND_bytes(random, sizeof(random)) != 1) {
         log_ssl_errors();
@@ -189,7 +189,7 @@ static char *generate_code_challenge(const char *verifier) {
     }
     
     EVP_MD_CTX_free(ctx);
-    return base64_url_encode(hash, hash_len);
+    return base64_url_encode(hash, (int)hash_len);
 }
 
 /* Base64-URL encode data */
@@ -211,13 +211,13 @@ static char *base64_url_encode(const unsigned char *input, int length) {
     char *base64_data = NULL;
     long base64_length = BIO_get_mem_data(bmem, &base64_data);
     
-    char *result = malloc(base64_length + 1);
+    char *result = malloc((size_t)base64_length + 1);
     if (!result) {
         BIO_free_all(b64);
         return NULL;
     }
     
-    memcpy(result, base64_data, base64_length);
+    memcpy(result, base64_data, (size_t)base64_length);
     result[base64_length] = 0;
     
     /* Base64-URL encoding: replace '+' with '-', '/' with '_', and remove '=' */
@@ -242,7 +242,7 @@ static char *generate_random_string(size_t length) {
     unsigned char *random = malloc(length);
     if (!random) return NULL;
     
-    if (RAND_bytes(random, length) != 1) {
+    if (RAND_bytes(random, (int)length) != 1) {
         log_ssl_errors();
         free(random);
         return NULL;
@@ -331,7 +331,7 @@ static int perform_http_request(const char *url, struct curl_slist *headers,
 }
 
 /* Make a token request to exchange the authorization code for tokens */
-static int token_request(const char *auth_code) {
+static int token_request(const char *authorization_code) {
     struct MemoryStruct chunk = {malloc(1), 0};
     long http_code = 0;
     
@@ -353,7 +353,7 @@ static int token_request(const char *auth_code) {
         "&client_id=%s"
         "&client_secret=%s"
         "&code_verifier=%s",
-        auth_code, REDIRECT_URI, CLIENT_ID, CLIENT_SECRET, code_verifier);
+        authorization_code, REDIRECT_URI, CLIENT_ID, CLIENT_SECRET, code_verifier);
     
     /* Perform the request */
     int success = perform_http_request(TOKEN_ENDPOINT, headers, post_fields, &chunk, &http_code);
@@ -398,7 +398,7 @@ static int token_request(const char *auth_code) {
 }
 
 /* Make a refresh token request to get new access token */
-static int refresh_token_request() {
+static int refresh_token_request(void) {
     if (refresh_token[0] == '\0') {
         printf("No refresh token available\n");
         return 0;
@@ -472,7 +472,7 @@ static int refresh_token_request() {
 }
 
 /* Request user information using the access token */
-static int userinfo_request() {
+static int userinfo_request(void) {
     if (access_token[0] == '\0') {
         printf("No access token available\n");
         return 0;
@@ -522,7 +522,7 @@ static int userinfo_request() {
 }
 
 /* Validate the ID token */
-static int validate_id_token() {
+static int validate_id_token(void) {
     if (id_token[0] == '\0') {
         snprintf(error_message, sizeof(error_message), "No ID token available");
         return 0;
@@ -693,7 +693,7 @@ static size_t write_callback(void *contents, size_t size, size_t nmemb, void *us
 }
 
 /* Start the callback server to receive the authorization code */
-static void start_callback_server() {
+static void start_callback_server(void) {
     struct MHD_Daemon *daemon;
     
     daemon = MHD_start_daemon(MHD_USE_INTERNAL_POLLING_THREAD, PORT, NULL, NULL,
@@ -718,7 +718,7 @@ static void start_callback_server() {
 }
 
 /* Log OpenSSL errors */
-static void log_ssl_errors() {
+static void log_ssl_errors(void) {
     unsigned long err;
     char err_buf[256];
     
@@ -864,7 +864,7 @@ static json_t *parse_jwt_payload(const char *jwt) {
     }
     
     BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL);
-    int decoded_len = BIO_read(bio, decoded, payload_len);
+    int decoded_len = BIO_read(bio, decoded, (int)payload_len);
     
     BIO_free_all(bio);
     free(base64_buf);
@@ -893,7 +893,7 @@ static char *find_json_string_value(json_t *obj, const char *key) {
 }
 
 /* Get current UNIX time */
-static int current_time() {
+static int current_time(void) {
     return (int)time(NULL);
 }
 

@@ -71,7 +71,7 @@ static size_t write_callback(void *contents, size_t size, size_t nmemb, void *us
 static json_t *parse_jwt_payload(const char *jwt);
 static int validate_token(const char *token, char *error_message, size_t error_size);
 static int display_token_info(const char *token, const char *token_type);
-static int current_time();
+static int current_time(void);
 static void print_json_value(json_t *value, const char *prefix);
 
 int main(int argc, char *argv[]) {
@@ -825,7 +825,7 @@ static int validate_token(const char *token, char *error_message, size_t error_s
 }
 
 /* Get current UNIX time */
-static int current_time() {
+static int current_time(void) {
     return (int)time(NULL);
 }
 
