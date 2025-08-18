@@ -43,12 +43,19 @@
  * - Strict type checking and range validation on all values
  */
 
+#ifdef __linux__
+#include <linux/limits.h>
+#elif defined(__APPLE__)
+#include <sys/syslimits.h>
+#else
+#include <limits.h>
+#endif
+
 // Core system headers
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <time.h>
 #include <errno.h>
-#include <limits.h>
 #include <unistd.h>
 
 // Standard C headers
