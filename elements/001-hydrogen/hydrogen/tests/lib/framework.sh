@@ -20,6 +20,7 @@
 # update_readme_with_results()
 
 # CHANGELOG
+# 2.8.1 - 2025-08-18 - Upgraded elapsed_time() to use $EPOCHREALTIME for more performance
 # 2.8.0 - 2025-08-08 - Cleaned out some mktemp calls
 # 2.7.0 - 2025-08-07 - Support for commas in test names (ie, thousands separators)
 # 2.6.0 - 2025-08-06 - Improvements to logging file handling, common TAB file naming
@@ -126,20 +127,20 @@ format_file_size() {
 # Function to calculate elapsed time in SSS.ZZZ format for console output
 get_elapsed_time() {
     if [[ -n "${TEST_START_TIME}" ]]; then
-        local end_time
-        end_time=$("${DATE}" +%s.%3N) 
+        local end_time="${EPOCHREALTIME}"
         local end_secs=${end_time%.*}
         local end_ms=${end_time#*.}
+        end_ms=${end_ms:0:3}
         local start_secs=${TEST_START_TIME%.*}
         local start_ms=${TEST_START_TIME#*.}
-        end_ms=$((10#${end_ms}))
-        start_ms=$((10#${start_ms}))
-        local end_total_ms=$((end_secs * 1000 + end_ms))
-        local start_total_ms=$((start_secs * 1000 + start_ms))
-        local elapsed_ms=$((end_total_ms - start_total_ms))
-        local seconds=$((elapsed_ms / 1000))
-        local milliseconds=$((elapsed_ms % 1000))
-        "${PRINTF}" "%03d.%03d" "${seconds}" "${milliseconds}"
+        start_ms=${start_ms:0:3}
+        local diff_secs=$((end_secs - start_secs))
+        local diff_ms=$((10#${end_ms} - 10#${start_ms}))
+        if ((diff_ms < 0)); then
+            diff_ms=$((diff_ms + 1000))
+            diff_secs=$((diff_secs - 1))
+        fi
+        "${PRINTF}" "%03d.%03d" "${diff_secs}" "${diff_ms}"
     else
         echo "000.000"
     fi
@@ -190,17 +191,6 @@ start_test_timer() {
     TEST_START_TIME=$("${DATE}" +%s.%3N)
     TEST_PASSED_COUNT=0
     TEST_FAILED_COUNT=0
-}
-
-# Function to get the current test prefix for output
-get_test_prefix() {
-    if [[ -n "${CURRENT_SUBTEST_NUMBER}" ]]; then
-        echo "${CURRENT_TEST_NUMBER}-${CURRENT_SUBTEST_NUMBER}"
-    elif [[ -n "${CURRENT_TEST_NUMBER}" ]]; then
-        echo "${CURRENT_TEST_NUMBER}"
-    else
-        echo "XX"
-    fi
 }
 
 # Function to record test result for statistics
