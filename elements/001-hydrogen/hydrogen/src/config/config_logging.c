@@ -10,6 +10,8 @@
 #include <stdlib.h> // reallocarray may be available on some Linux systems
 #elif defined(__APPLE__)
 #include <stdlib.h>
+#include <stdint.h> // For SIZE_MAX
+#include <errno.h>  // For errno and ENOMEM
 // Define a fallback for reallocarray
 static inline void* reallocarray(void* ptr, size_t nmemb, size_t size) {
     // Check for overflow
