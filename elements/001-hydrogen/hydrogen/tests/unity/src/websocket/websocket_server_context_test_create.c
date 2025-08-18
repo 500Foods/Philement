@@ -22,6 +22,15 @@
 // Forward declaration for function being tested
 WebSocketServerContext* ws_context_create(int port, const char* protocol, const char* key);
 
+// Function prototypes for test functions
+void test_ws_context_create_valid_parameters(void);
+void test_ws_context_create_null_protocol(void);
+void test_ws_context_create_null_key(void);
+void test_ws_context_create_null_protocol_and_key(void);
+void test_ws_context_create_edge_case_ports(void);
+void test_ws_context_create_mutex_initialization(void);
+void test_ws_context_create_time_initialization(void);
+
 // External reference to app_config (needed for context creation)
 extern AppConfig *app_config;
 

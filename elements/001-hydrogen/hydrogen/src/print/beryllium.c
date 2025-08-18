@@ -41,6 +41,10 @@ BerylliumConfig beryllium_create_config(const AppConfig *app_config) {
     return config;
 }
 
+// Function prototypes
+char* parse_parameter_string(const char *line, const char *parameter);
+char* parse_name_parameter(const char *line);
+
 // Generate ISO8601 timestamps for print metadata
 //
 // Uses static buffer for efficiency since:
@@ -96,7 +100,7 @@ char* parse_parameter_string(const char *line, const char *parameter) {
                 end = pos + strlen(pos);
             }
             // Allocate memory and copy the value
-            int length = end - pos;
+            size_t length = (size_t)(end - pos);
             char *value = malloc(length + 1);
             if (value != NULL) {
                 strncpy(value, pos, length);
@@ -114,7 +118,7 @@ char* parse_name_parameter(const char *line) {
         name_start += 5; // Skip "NAME="
         char *name_end = strchr(name_start, ' ');
         if (name_end != NULL) {
-            int name_length = (int)(name_end - name_start);
+            size_t name_length = (size_t)(name_end - name_start);
             char *name = (char *)malloc((name_length + 1) * sizeof(char));
             if (name != NULL) {
                 strncpy(name, name_start, name_length);
@@ -161,7 +165,7 @@ static int parse_current_layer(const char *line) {
 //    - Prevents excessive acceleration
 //    - Respects maximum velocities
 //    - Models actual motor capabilities
-static int accelerated_move(double length, double acceleration, double max_velocity) {
+static double accelerated_move(double length, double acceleration, double max_velocity) {
     if (length == 0.0) {
         return 0.0;
     }
@@ -205,7 +209,8 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
     }
 
     fseek(file, 0, SEEK_END);
-    stats.file_size = ftell(file);
+    long file_size_long = ftell(file);
+    stats.file_size = (file_size_long >= 0) ? (int)file_size_long : 0;
     rewind(file); // Reset the file pointer to the beginning
 
     double *z_values = calloc(Z_VALUES_CHUNK_SIZE, sizeof(double));  // Start with configured chunk size
@@ -229,8 +234,8 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
             char *name_start = strstr(line, "NAME=") + 5;
             char *name_end = strchr(name_start, ' ');
             if (name_end) {
-                int name_length = name_end - name_start;
-                ObjectInfo *temp = realloc(object_infos, (num_objects + 1) * sizeof(ObjectInfo));
+                size_t name_length = (size_t)(name_end - name_start);
+                ObjectInfo *temp = realloc(object_infos, ((size_t)num_objects + 1) * sizeof(ObjectInfo));
                 if (temp == NULL) {
                     log_this("Beryllium", "Memory reallocation failed for object_infos", LOG_LEVEL_ERROR);
                     free(stats.object_times);
@@ -266,7 +271,7 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
        if (strstr(line, "EXCLUDE_OBJECT_START") != NULL) {
             char *name_start = strstr(line, "NAME=") + 5;
             char *name_end = strchr(name_start, ' ');
-                int name_length = name_end - name_start;
+            size_t name_length = (size_t)(name_end - name_start);
 	    //printf("%d\n", name_length);
             if (name_end) {
                 char object_name[name_length + 1];
@@ -298,11 +303,11 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
             current_layer = layer;
 //	    current_object = -1;
             layer_start_time = stats.print_time;
-            stats.layer_count_slicer = fmax(stats.layer_count_slicer, current_layer + 1);
+            stats.layer_count_slicer = (int)fmax(stats.layer_count_slicer, current_layer + 1);
 
-            if (current_layer >= 0 && current_layer < MAX_LAYERS) {
+                if (current_layer >= 0 && current_layer < MAX_LAYERS) {
                 if (stats.object_times[current_layer] == NULL) {
-                    stats.object_times[current_layer] = calloc(num_objects, sizeof(double));
+                    stats.object_times[current_layer] = calloc((size_t)num_objects, sizeof(double));
                     if (stats.object_times[current_layer] == NULL) {
                         log_this("Beryllium", "Memory allocation failed for layer object times", LOG_LEVEL_ERROR);
                         // Free previously allocated layer arrays
@@ -383,7 +388,7 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
                 if (!z_exists) {
                     if (z_values_count == z_values_capacity) {
                         z_values_capacity += Z_VALUES_CHUNK_SIZE;
-                        double *new_z_values = realloc(z_values, z_values_capacity * sizeof(double));
+                        double *new_z_values = realloc(z_values, (size_t)z_values_capacity * sizeof(double));
                         if (new_z_values == NULL) {
                             log_this("Beryllium", "Memory reallocation failed for z_values", LOG_LEVEL_ERROR);
                             free(z_values);

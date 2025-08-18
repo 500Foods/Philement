@@ -59,6 +59,11 @@ void handle_launch_review(const ReadinessResults* results);
 // Main system startup function
 int startup_hydrogen(const char* config_path);
 
+// Utility functions
+char* get_current_config_path(void);
+LaunchReadiness get_api_readiness(void);
+int is_api_running(void);
+
 // Subsystem readiness checks (in standard order)
 LaunchReadiness check_registry_launch_readiness(void);  // Must be first
 LaunchReadiness check_payload_launch_readiness(void);

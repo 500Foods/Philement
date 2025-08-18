@@ -54,8 +54,9 @@
          case LIB_STATUS_GOOD: return "Good";
          case LIB_STATUS_WARNING: return "Less Good";
          case LIB_STATUS_CRITICAL: return "Trouble awaits";
-         default: return "Unknown";
+         case LIB_STATUS_UNKNOWN: return "Unknown";
      }
+     return "Unknown";
  }
  
  static LibraryStatus determine_status(const char *expected, const char *found, bool required) {

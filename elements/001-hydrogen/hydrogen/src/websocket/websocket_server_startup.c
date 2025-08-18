@@ -25,6 +25,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -90,8 +91,8 @@ int init_websocket_server(int port, const char* protocol, const char* key)
 
     info.port = port;
     info.protocols = protocols;
-    info.gid = -1;
-    info.uid = -1;
+    info.gid = (gid_t)-1;
+    info.uid = (uid_t)-1;
     info.user = ws_context;  // Set context as user data
     info.options = LWS_SERVER_OPTION_EXPLICIT_VHOSTS |
                   LWS_SERVER_OPTION_ALLOW_LISTEN_SHARE |   // Enable SO_REUSEADDR for immediate rebinding
@@ -164,9 +165,9 @@ int init_websocket_server(int port, const char* protocol, const char* key)
     int max_attempts = 10;
 
     // Add initialization options
-    int vhost_options = LWS_SERVER_OPTION_VALIDATE_UTF8 | 
-                       LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE |
-                       LWS_SERVER_OPTION_SKIP_SERVER_CANONICAL_NAME;  // Skip hostname checks during init
+    uint64_t vhost_options = LWS_SERVER_OPTION_VALIDATE_UTF8 |
+                            LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE |
+                            LWS_SERVER_OPTION_SKIP_SERVER_CANONICAL_NAME;  // Skip hostname checks during init
 
     // Set vhost creation flag
     ws_context->vhost_creating = 1;
@@ -180,7 +181,6 @@ int init_websocket_server(int port, const char* protocol, const char* key)
         vhost_info.options = vhost_options | LWS_SERVER_OPTION_ALLOW_LISTEN_SHARE;  // Enable SO_REUSEADDR
         vhost_info.iface = app_config->websocket.enable_ipv6 ? "::" : "0.0.0.0";
         vhost_info.vhost_name = "hydrogen";  // Set explicit vhost name
-        vhost_info.keepalive_timeout = 60;   // Set explicit keepalive
         vhost_info.user = ws_context;        // Pass context to callbacks
 
         // Try to create vhost
@@ -196,7 +196,7 @@ int init_websocket_server(int port, const char* protocol, const char* key)
         if (sock != -1) {
             struct sockaddr_in addr;
             addr.sin_family = AF_INET;
-            addr.sin_port = htons(try_port);
+            addr.sin_port = htons((uint16_t)try_port);
             addr.sin_addr.s_addr = INADDR_ANY;
             
             if (bind(sock, (struct sockaddr*)&addr, sizeof(addr)) == 0) {

@@ -326,7 +326,7 @@ enum MHD_Result send_oauth_error(struct MHD_Connection *connection,
             return MHD_NO;
         }
         
-        struct MHD_Response *response = MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT);
+        struct MHD_Response *response = MHD_create_response_from_buffer(0, (void*)"", MHD_RESPMEM_PERSISTENT);
         MHD_add_response_header(response, "Location", redirect_url);
         enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_FOUND, response);
         MHD_destroy_response(response);

@@ -31,6 +31,15 @@
 // Forward declarations for functions being tested
 int get_websocket_port(void);
 
+// Function prototypes for Unity test functions
+void test_get_websocket_port_null_context(void);
+void test_get_websocket_port_valid_context(void);
+void test_get_websocket_port_zero_port(void);
+void test_get_websocket_port_negative_port(void);
+void test_get_websocket_port_high_port(void);
+void test_get_websocket_port_during_shutdown(void);
+void test_get_websocket_port_concurrent_access(void);
+
 // External variables that need to be accessible for testing
 extern WebSocketServerContext *ws_context;
 

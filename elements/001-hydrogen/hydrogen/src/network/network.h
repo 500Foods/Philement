@@ -88,7 +88,7 @@ typedef struct {
  * - Network testing and monitoring
  */
 int find_available_port(int start_port);
-network_info_t *get_network_info();
+network_info_t *get_network_info(void);
 void free_network_info(network_info_t *info);
 bool network_shutdown(void);  // Gracefully shuts down all network interfaces
 

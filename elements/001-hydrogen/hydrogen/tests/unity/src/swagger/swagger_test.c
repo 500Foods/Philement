@@ -44,6 +44,16 @@ void cleanup_swagger_support(void);
 bool swagger_url_validator(const char *url);
 bool is_swagger_request(const char *url, const SwaggerConfig *config);
 
+// Function prototypes for test functions
+void test_swagger_complete_initialization_workflow(void);
+void test_swagger_url_validation_integration(void);
+void test_swagger_request_handling_integration(void);
+void test_swagger_state_transitions(void);
+void test_swagger_error_recovery(void);
+void test_swagger_multiple_initialization_calls(void);
+void test_swagger_cross_function_consistency(void);
+void test_swagger_configuration_variations(void);
+
 // Mock structures for integration testing
 struct MockMHDResponse {
     size_t size;
@@ -79,13 +89,13 @@ const char *MHD_lookup_connection_value(struct MHD_Connection *connection,
     (void)connection;
     (void)kind;
     if (strcmp(key, "Host") == 0) {
-        return mock_connection.host_header;
+        return (const char*)mock_connection.host_header;
     }
     if (strcmp(key, "Accept-Encoding") == 0) {
         return mock_connection.accepts_brotli ? "gzip, deflate, br" : "gzip, deflate";
     }
     if (strcmp(key, "User-Agent") == 0) {
-        return mock_connection.user_agent;
+        return (const char*)mock_connection.user_agent;
     }
     return NULL;
 }
@@ -112,7 +122,7 @@ enum MHD_Result MHD_queue_response(struct MHD_Connection *connection,
     (void)connection;
     (void)response;
     if (mock_response) {
-        mock_response->status_code = status_code;
+        mock_response->status_code = (int)status_code;
     }
     return 1; // MHD_YES
 }
@@ -158,9 +168,9 @@ void setUp(void) {
     
     // Initialize mock connection
     memset(&mock_connection, 0, sizeof(mock_connection));
-    mock_connection.host_header = "localhost:8080";
+    mock_connection.host_header = (char*)"localhost:8080";
     mock_connection.accepts_brotli = true;
-    mock_connection.user_agent = "Test/1.0";
+    mock_connection.user_agent = (char*)"Test/1.0";
     
     // Clean up previous mock response
     if (mock_response) {

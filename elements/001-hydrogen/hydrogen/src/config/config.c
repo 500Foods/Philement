@@ -332,7 +332,7 @@ static void format_section_header(char* buffer, size_t size, const char* letter,
     // Uppercase title (between 3 emdashes + space and next space)
     size_t title_start = 10; // 3 * 3 + 1
     for (size_t i = title_start; temp[i] && temp[i] != ' '; i++) {
-        temp[i] = toupper(temp[i]);
+        temp[i] = (char)toupper((unsigned char)temp[i]);
     }
 
     // Truncate to target_char_count characters

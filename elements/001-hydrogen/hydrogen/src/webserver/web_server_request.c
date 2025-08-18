@@ -41,7 +41,7 @@ static enum MHD_Result serve_file(struct MHD_Connection *connection, const char 
         return MHD_NO;
     }
     
-    struct MHD_Response *response = MHD_create_response_from_fd(st.st_size, fd);
+    struct MHD_Response *response = MHD_create_response_from_fd((size_t)st.st_size, fd);
     if (!response) {
         close(fd);
         return MHD_NO;
@@ -140,9 +140,9 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
      * Each subsystem (API, Swagger, etc.) registers its endpoints with prefix and handler.
      * This allows for flexible URL routing without hardcoding paths.
      */
-    const WebServerEndpoint* endpoint = get_endpoint_for_url(url);
-    if (endpoint) {
-        return endpoint->handler(cls, connection, url, method, version,
+    const WebServerEndpoint* web_endpoint = get_endpoint_for_url(url);
+    if (web_endpoint) {
+        return web_endpoint->handler(cls, connection, url, method, version,
                                upload_data, upload_data_size, con_cls);
     }
 
@@ -173,9 +173,9 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
     // Handle POST requests
     else if (strcmp(method, "POST") == 0) {
         // Check for registered endpoint handler first
-        const WebServerEndpoint* endpoint = get_endpoint_for_url(url);
-        if (endpoint) {
-            return endpoint->handler(cls, connection, url, method, version,
+        const WebServerEndpoint* post_endpoint = get_endpoint_for_url(url);
+        if (post_endpoint) {
+            return post_endpoint->handler(cls, connection, url, method, version,
                                   upload_data, upload_data_size, con_cls);
         }
         

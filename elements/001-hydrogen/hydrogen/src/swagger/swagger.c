@@ -129,9 +129,9 @@ bool init_swagger_support(SwaggerConfig *config) {
             if (swagger_files[i].size < 1024) {
                 snprintf(size_display, sizeof(size_display), "%zu bytes", swagger_files[i].size);
             } else if (swagger_files[i].size < 1024 * 1024) {
-                snprintf(size_display, sizeof(size_display), "%.1fK", swagger_files[i].size / 1024.0);
+                snprintf(size_display, sizeof(size_display), "%.1fK", (double)swagger_files[i].size / 1024.0);
             } else {
-                snprintf(size_display, sizeof(size_display), "%.1fM", swagger_files[i].size / (1024.0 * 1024.0));
+                snprintf(size_display, sizeof(size_display), "%.1fM", (double)swagger_files[i].size / (1024.0 * 1024.0));
             }
             
             log_this("SwaggerUI", "-> %s (%s%s)", LOG_LEVEL_STATE,
@@ -242,9 +242,9 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
         strcmp(url_path + strlen(url_path) - 3, ".br") == 0) {
         char base_path[256];
         size_t path_len = strlen(url_path);
-        if (path_len - 3 < sizeof(base_path)) {
-            memcpy(base_path, url_path, path_len - 3);
-            base_path[path_len - 3] = '\0';
+        if (path_len > 3U && path_len - 3U < sizeof(base_path)) {
+            memcpy(base_path, url_path, path_len - 3U);
+            base_path[path_len - 3U] = '\0';
             
             for (size_t i = 0; i < num_swagger_files; i++) {
                 if (strcmp(swagger_files[i].name, base_path) == 0) {
@@ -342,7 +342,8 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
         }
 
         char *full_url;
-        if (asprintf(&full_url, "%s%s", server_url, app_config->api.prefix) == -1) {
+        int asprintf_result = asprintf(&full_url, "%s%s", server_url, app_config->api.prefix);
+        if (asprintf_result == -1) {
             free(server_url);
             json_decref(spec);
             json_decref(servers);
@@ -417,9 +418,12 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
         if (strcmp(ext, ".br") == 0) {
             // Find the real extension before .br
             char clean_path[256];
-            strncpy(clean_path, url_path, ext - url_path);
-            clean_path[ext - url_path] = '\0';
-            ext = strrchr(clean_path, '.');
+            ptrdiff_t len = ext - url_path;
+            if (len > 0 && (size_t)len < sizeof(clean_path)) {
+                strncpy(clean_path, url_path, (size_t)len);
+                clean_path[len] = '\0';
+                ext = strrchr(clean_path, '.');
+            }
         }
         
         if (ext) {
@@ -697,7 +701,8 @@ cleanup:
         num_swagger_files++;
 
         // Move to next file (aligned to block size)
-        current += (file_size + TAR_BLOCK_SIZE - 1) / TAR_BLOCK_SIZE * TAR_BLOCK_SIZE;
+        size_t blocks = (file_size + TAR_BLOCK_SIZE - 1) / TAR_BLOCK_SIZE;
+        current += blocks * TAR_BLOCK_SIZE;
     }
 
     free(decompressed_data);

@@ -31,6 +31,16 @@
 // Forward declarations for functions being tested
 int callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len);
 
+// Function prototypes for test functions
+void test_callback_http_unknown_reason(void);
+void test_callback_http_confirm_upgrade(void);
+void test_callback_http_with_mock_auth_header(void);
+void test_callback_http_auth_flow_logic(void);
+void test_callback_http_auth_key_prefix_logic(void);
+void test_callback_http_missing_auth_header(void);
+void test_callback_http_malformed_auth_header(void);
+void test_callback_http_empty_auth_header(void);
+
 // External variables that need to be accessible for testing
 extern WebSocketServerContext *ws_context;
 extern AppConfig* app_config;
@@ -183,7 +193,7 @@ void test_callback_http_malformed_auth_header(void) {
 void test_callback_http_empty_auth_header(void) {
     // Test HTTP callback with empty authorization header
     const char *empty_header = "";
-    int header_len = strlen(empty_header);
+    int header_len = (int)strlen(empty_header);
     
     bool has_content = (header_len > 0);
     TEST_ASSERT_FALSE(has_content);

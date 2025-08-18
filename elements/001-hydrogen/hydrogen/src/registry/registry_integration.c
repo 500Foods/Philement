@@ -239,7 +239,7 @@ size_t stop_all_subsystems_in_dependency_order(void) {
         
         pthread_mutex_lock(&subsystem_registry.mutex);
         
-        bool* is_leaf = calloc(subsystem_registry.count, sizeof(bool));
+        bool* is_leaf = calloc((size_t)subsystem_registry.count, sizeof(bool));
         int leaf_count = 0;
         
         if (!is_leaf) {
@@ -387,9 +387,9 @@ bool get_running_subsystems_status(char** status_buffer) {
         if (subsystem->state == SUBSYSTEM_RUNNING) {
             time_t now = time(NULL);
             time_t running_time = now - subsystem->state_changed;
-            int hours = running_time / 3600;
-            int minutes = (running_time % 3600) / 60;
-            int seconds = running_time % 60;
+            int hours = (int)(running_time / 3600);
+            int minutes = (int)((running_time % 3600) / 60);
+            int seconds = (int)(running_time % 60);
             
             int thread_count = 0;
             if (subsystem->threads) {

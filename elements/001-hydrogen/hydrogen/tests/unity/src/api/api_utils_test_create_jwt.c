@@ -17,6 +17,20 @@
 // Include necessary headers for the module being tested
 #include "../../../../src/api/api_utils.h"
 
+// Function prototypes for test functions
+void test_api_create_jwt_valid_inputs(void);
+void test_api_create_jwt_null_claims(void);
+void test_api_create_jwt_null_secret(void);
+void test_api_create_jwt_both_null(void);
+void test_api_create_jwt_empty_claims(void);
+void test_api_create_jwt_empty_secret(void);
+void test_api_create_jwt_complex_claims(void);
+void test_api_create_jwt_long_secret(void);
+void test_api_create_jwt_nested_claims(void);
+void test_api_create_jwt_array_claims(void);
+void test_api_create_jwt_consistency(void);
+void test_api_create_jwt_special_characters(void);
+
 void setUp(void) {
     // No setup needed for this function
 }

@@ -104,7 +104,7 @@ static void report_final_landing_summary(const ReadinessResults* results) {
     log_this("Landing", "Total Subsystems:     %d", LOG_LEVEL_STATE,
              results->total_checked);
     log_this("Landing", "Landing Success Rate: %.1f%%", LOG_LEVEL_STATE,
-             (results->total_ready * 100.0) / results->total_checked);
+             ((double)results->total_ready * 100.0) / (double)results->total_checked);
     
     // Log individual subsystem status
     log_this("Landing", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);

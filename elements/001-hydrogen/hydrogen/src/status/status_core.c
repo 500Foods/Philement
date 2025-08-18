@@ -14,6 +14,9 @@
 #include "../logging/logging.h"
 #include "../config/config.h"
 
+// Function prototypes
+pthread_mutex_t* get_status_mutex(void);
+
 // Thread synchronization mutex
 static pthread_mutex_t status_mutex = PTHREAD_MUTEX_INITIALIZER;
 

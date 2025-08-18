@@ -244,7 +244,7 @@ void init_file_logging(const char* log_file_path) {
     }
 }
 
-void close_file_logging() {
+void close_file_logging(void) {
     if (log_file) {
         fclose(log_file);
         log_file = NULL;
