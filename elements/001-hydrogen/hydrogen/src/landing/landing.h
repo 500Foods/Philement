@@ -15,10 +15,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <time.h>
+#include <signal.h>  // For sig_atomic_t
 
 // Project includes
-#include "../state/state_types.h"  // For shared types
-#include <signal.h>  // For sig_atomic_t
+#include "landing_readiness.h"
 
 // Restart control
 extern volatile sig_atomic_t restart_requested;
@@ -37,11 +37,15 @@ int land_database_subsystem(void);
 int land_mdns_client_subsystem(void);
 int land_logging_subsystem(void);
 int land_mdns_server_subsystem(void);
-int land_swagger_subsystem(void);
+int land_payload_subsystem(void);
 int land_print_subsystem(void);
-int land_webserver_subsystem(void);
+int land_swagger_subsystem(void);
 int land_terminal_subsystem(void);
+int land_webserver_subsystem(void);
 int land_websocket_subsystem(void);
+
+// Payload landing helper functions
+void free_payload_resources(void);
 
 // Program argument access for restart functionality
 char** get_program_args(void);

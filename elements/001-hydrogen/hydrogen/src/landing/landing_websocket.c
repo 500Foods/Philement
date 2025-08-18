@@ -12,22 +12,11 @@
  * - Requires thread synchronization for clean shutdown
  */
 
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
-#include <signal.h>
+// Global includes 
+#include "../hydrogen.h"
 
+// Local includes
 #include "landing.h"
-#include "landing_readiness.h"
-#include "../logging/logging.h"
-#include "../utils/utils_logging.h"
-#include "../threads/threads.h"
-#include "../registry/registry.h"
-#include "../registry/registry_integration.h"
-#include "../websocket/websocket_server.h"
-#include "../utils/utils_dependency.h"
-#include "../state/state_types.h"
 
 // External declarations
 extern ServiceThreads websocket_threads;

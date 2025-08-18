@@ -44,6 +44,7 @@
 #include <time.h>
 
 // Project includes
+#include "landing.h"
 #include "../state/state_types.h"  // For shared types
 
 // Core landing readiness functions

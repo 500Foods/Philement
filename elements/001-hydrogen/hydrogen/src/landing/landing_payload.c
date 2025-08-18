@@ -3,20 +3,11 @@
  * @brief Payload subsystem landing (shutdown) implementation
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <signal.h>
+// Global includes 
+#include "../hydrogen.h"
 
+// Local includes
 #include "landing_payload.h"
-#include "../logging/logging.h"
-#include "../config/config.h"
-#include "../registry/registry.h"
-#include "../registry/registry_integration.h"
-#include "../payload/payload.h"
-#include "../utils/utils.h"
-#include "../state/state_types.h"
 
 // External declarations
 extern AppConfig* app_config;

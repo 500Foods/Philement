@@ -11,16 +11,11 @@
  * Note: System is currently under development
  */
 
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
+// Global includes 
+#include "../hydrogen.h"
 
+// Local includes
 #include "../landing/landing.h"
-#include "../landing/landing_readiness.h"
-#include "../utils/utils_logging.h"
-#include "../registry/registry_integration.h"
-#include "../state/state_types.h"
 
 // External declarations
 extern volatile sig_atomic_t mail_relay_system_shutdown;
