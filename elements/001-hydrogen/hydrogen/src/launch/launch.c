@@ -49,63 +49,18 @@
  * - 18. Notify
   #*/
 
-// System includes
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
-#include <time.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/time.h>
-#include <ctype.h>
-#include <sys/resource.h>
+ // Global includes 
+#include "../hydrogen.h"
 
 // Local includes
 #include "launch.h"
-
-// Project includes
-#include "../logging/logging.h"
-#include "../utils/utils_logging.h"
-#include "../utils/utils.h"
-#include "../utils/utils_time.h"  // For timing functions
-#include "../status/status.h"
 #include "../status/status_process.h"
 #include "../utils/utils_dependency.h"
-#include "../config/config.h"
-#include "../config/config_utils.h"  // For filesystem operations
-#include "../queue/queue.h"
-#include "../registry/registry.h"
-#include "../registry/registry_integration.h"
-
-// Launch subsystem includes (in standard order)
-#include "launch_registry.h"  // Must be first
-#include "launch_payload.h"
-#include "launch_threads.h"
-#include "launch_webserver.h"
-#include "launch_swagger.h"
-#include "launch_websocket.h"
-#include "launch_terminal.h"
-#include "launch_print.h"
-#include "launch_resources.h"
-
-// Define RELEASE if not provided by compiler
-#ifndef RELEASE
-#define RELEASE "unknown"
-#endif
-
-// Define BUILD_TYPE if not provided by compiler
-#ifndef BUILD_TYPE
-#define BUILD_TYPE "unknown"
-#endif
 
 // External declarations
 extern void close_file_logging(void);
 extern volatile sig_atomic_t restart_count;
 extern volatile sig_atomic_t restart_requested;
-extern volatile sig_atomic_t server_stopping;
-extern volatile sig_atomic_t server_starting;
-extern volatile sig_atomic_t server_running;
 
 // Current config path storage
 static char* current_config_path = NULL;

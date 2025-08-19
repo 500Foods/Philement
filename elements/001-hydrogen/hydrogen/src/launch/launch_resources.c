@@ -5,28 +5,11 @@
  * It provides functions for checking readiness and launching resource monitoring.
  */
 
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
-#include <signal.h>
+// Global includes 
+#include "../hydrogen.h"
 
+// Local includes
 #include "launch.h"
-#include "launch_resources.h"
-#include "../utils/utils_logging.h"
-#include "../threads/threads.h"
-#include "../config/config.h"
-#include "../registry/registry_integration.h"
-
-// External declarations
-extern AppConfig* app_config;
-
-// Forward declarations for validation helpers
-static bool validate_memory_limits(const ResourceConfig* config, int* msg_count, const char** messages);
-static bool validate_queue_settings(const ResourceConfig* config, int* msg_count, const char** messages);
-static bool validate_thread_limits(const ResourceConfig* config, int* msg_count, const char** messages);
-static bool validate_file_limits(const ResourceConfig* config, int* msg_count, const char** messages);
-static bool validate_monitoring_settings(const ResourceConfig* config, int* msg_count, const char** messages);
 
 // Check if the resources subsystem is ready to launch
 LaunchReadiness check_resources_launch_readiness(void) {
@@ -95,7 +78,7 @@ LaunchReadiness check_resources_launch_readiness(void) {
     return readiness;
 }
 
-static bool validate_memory_limits(const ResourceConfig* config, int* msg_count, const char** messages) {
+bool validate_memory_limits(const ResourceConfig* config, int* msg_count, const char** messages) {
     if (config->max_memory_mb < MIN_MEMORY_MB || config->max_memory_mb > MAX_MEMORY_MB) {
         char msg[128];
         snprintf(msg, sizeof(msg), "  No-Go:   Invalid max memory %zu MB (must be between %d and %d)",
@@ -119,7 +102,7 @@ static bool validate_memory_limits(const ResourceConfig* config, int* msg_count,
     return true;
 }
 
-static bool validate_queue_settings(const ResourceConfig* config, int* msg_count, const char** messages) {
+bool validate_queue_settings(const ResourceConfig* config, int* msg_count, const char** messages) {
     if (config->max_queue_size < MIN_QUEUE_SIZE || config->max_queue_size > MAX_QUEUE_SIZE) {
         char msg[128];
         snprintf(msg, sizeof(msg), "  No-Go:   Invalid max queue size %zu (must be between %d and %d)",
@@ -137,7 +120,7 @@ static bool validate_queue_settings(const ResourceConfig* config, int* msg_count
     return true;
 }
 
-static bool validate_thread_limits(const ResourceConfig* config, int* msg_count, const char** messages) {
+bool validate_thread_limits(const ResourceConfig* config, int* msg_count, const char** messages) {
     if (config->min_threads < MIN_THREADS || config->min_threads > config->max_threads) {
         char msg[128];
         snprintf(msg, sizeof(msg), "  No-Go:   Invalid min threads %d (must be between %d and max threads)",
@@ -166,7 +149,7 @@ static bool validate_thread_limits(const ResourceConfig* config, int* msg_count,
     return true;
 }
 
-static bool validate_file_limits(const ResourceConfig* config, int* msg_count, const char** messages) {
+bool validate_file_limits(const ResourceConfig* config, int* msg_count, const char** messages) {
     if (config->max_open_files < MIN_OPEN_FILES || config->max_open_files > MAX_OPEN_FILES) {
         char msg[128];
         snprintf(msg, sizeof(msg), "  No-Go:   Invalid max open files %d (must be between %d and %d)",
@@ -192,7 +175,7 @@ static bool validate_file_limits(const ResourceConfig* config, int* msg_count, c
     return true;
 }
 
-static bool validate_monitoring_settings(const ResourceConfig* config, int* msg_count, const char** messages) {
+bool validate_monitoring_settings(const ResourceConfig* config, int* msg_count, const char** messages) {
     if (config->check_interval_ms < MIN_CHECK_INTERVAL_MS || 
         config->check_interval_ms > MAX_CHECK_INTERVAL_MS) {
         char msg[128];
