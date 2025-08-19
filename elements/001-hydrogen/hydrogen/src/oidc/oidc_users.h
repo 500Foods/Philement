@@ -18,9 +18,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-// Project Libraries
-#include "../logging/logging.h"
-
 /*
  * User Authentication Level
  * Defines the level of authentication the user has achieved

@@ -1,15 +1,11 @@
 /*
  * Simplified library dependency checking utilities
  */
+// Global includes 
+#include "../hydrogen.h"
 
- #include <stdio.h>
- #include <stdlib.h>
- #include <string.h>
- #include <dlfcn.h>
- #include <signal.h>
- #include <stdint.h>
+// Local includes
  #include "utils_dependency.h"
- #include "../logging/logging.h"
  
  extern const char *jansson_version_str(void);
  

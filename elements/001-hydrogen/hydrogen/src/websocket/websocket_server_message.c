@@ -8,17 +8,12 @@
  * - Error handling
  */
 
-// System headers
-#include <string.h>
+// Global includes 
+#include "../hydrogen.h"
 
-// External libraries
-#include <jansson.h>
-#include <libwebsockets.h>
-
-// Project headers
+// Local includes
 #include "websocket_server.h"        // For handle_status_request
 #include "websocket_server_internal.h"
-#include "../logging/logging.h"
 
 // External reference to the server context
 extern WebSocketServerContext *ws_context;

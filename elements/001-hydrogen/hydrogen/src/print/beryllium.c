@@ -2,24 +2,15 @@
  * G-code Analysis System for High-Quality 3D Printing
  * 
  */
+
+// Global includes 
 #include "../hydrogen.h"
 
-// Core system headers
-#include <sys/types.h>
-#include <time.h>
-
-// Standard C headers
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <math.h>
-
-// Project headers
+// Local includes
 #include "beryllium.h"
-#include "../utils/utils.h"
-#include "../logging/logging.h"
 
 extern AppConfig *app_config;
+
 /**
  * Create a BerylliumConfig from AppConfig
  * @param app_config The application configuration
@@ -39,10 +30,6 @@ BerylliumConfig beryllium_create_config(void) {
     };
     return config;
 }
-
-// Function prototypes
-char* parse_parameter_string(const char *line, const char *parameter);
-char* parse_name_parameter(const char *line);
 
 // Generate ISO8601 timestamps for print metadata
 //
@@ -145,7 +132,6 @@ static int parse_current_layer(const char *line) {
     }
     return -1;
 }
-
 
 // Calculate move duration using real-world motion profiles
 //

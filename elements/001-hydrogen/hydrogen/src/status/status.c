@@ -2,14 +2,14 @@
  * System Status Implementation
  */
 
-#include <stdlib.h>
-#include <string.h>
-#include "status.h"
+// Global includes 
+#include "../hydrogen.h"
+
+// Local includes
 #include "status_core.h"
 #include "status_system.h"
 #include "status_process.h"
 #include "status_formatters.h"
-#include "../logging/logging.h"
 
 // Initialize the status collection system
 void status_init(void) {

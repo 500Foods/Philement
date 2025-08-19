@@ -10,10 +10,11 @@
 #define PAYLOAD_H
 
 #include "../constants.h"
+#include "../config/config.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include "../config/config.h"
 
 // Structure to hold extracted payload data
 typedef struct {
@@ -85,5 +86,11 @@ bool launch_payload(const AppConfig *config, const char *marker);
  * It should be called during shutdown to prevent memory leaks.
  */
 void cleanup_openssl(void);
+
+bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size,
+                          const char *private_key_b64, uint8_t **decrypted_data,
+                          size_t *decrypted_size);
+void init_openssl(void);
+bool process_payload_data(const PayloadData *payload);
 
 #endif /* PAYLOAD_H */

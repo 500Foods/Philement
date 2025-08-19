@@ -2,22 +2,17 @@
  * System Metrics Collection Implementation
  */
 
+// Global includes 
+#include "../hydrogen.h"
+
+// Local includes
+#include "status_system.h"
 #include <sys/sysinfo.h>
 #include <sys/statvfs.h>
-#include <sys/types.h>
 #include <sys/utsname.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <ifaddrs.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <mntent.h>
-#include <math.h>
-
-#include "status_system.h"
-#include "../logging/logging.h"
 
 // Helper function to format percentage with consistent precision (3 decimal places)
 void format_percentage(double value, char *buffer, size_t buffer_size) {

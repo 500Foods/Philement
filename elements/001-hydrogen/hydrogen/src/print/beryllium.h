@@ -127,5 +127,9 @@ BerylliumStats beryllium_analyze_gcode(FILE *file, const BerylliumConfig *config
  */
 void beryllium_free_stats(BerylliumStats *stats);
 
+// Function prototypes
+char* parse_parameter_string(const char *line, const char *parameter);
+char* parse_name_parameter(const char *line);
+
 #endif // BERYLLIUM_H
 

@@ -15,7 +15,7 @@
 #include <net/if.h> 
 #include <poll.h>
 
-#include "keys.h"
+#include "mdns_keys.h"
 #include "mdns_server.h"
 
 extern volatile sig_atomic_t server_running;
@@ -700,7 +700,7 @@ mdns_server_t *mdns_server_init(const char *app_name, const char *id, const char
     mdns_server_instance->hw_version = strdup(hw_version);
     mdns_server_instance->hw_version = strdup(hw_version);
     mdns_server_instance->config_url = strdup(config_url);
-    mdns_server_instance->secret_key = generate_secret_key();
+    mdns_server_instance->secret_key = generate_secret_mdns_key();
 
     if (!mdns_server_instance->service_name || !mdns_server_instance->device_id || !mdns_server_instance->friendly_name ||
         !mdns_server_instance->model || !mdns_server_instance->manufacturer || !mdns_server_instance->sw_version ||

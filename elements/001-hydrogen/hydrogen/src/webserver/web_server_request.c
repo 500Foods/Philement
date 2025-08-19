@@ -1,30 +1,15 @@
-#ifdef __linux__
-#include <linux/limits.h>
-#elif defined(__APPLE__)
-#include <sys/syslimits.h>
-#else
-#include <limits.h>
-#endif
+// Global includes 
+#include "../hydrogen.h"
 
-// System headers
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <string.h>
-
-// Project headers
+// Local includes
 #include "web_server_request.h"
 #include "web_server_core.h"
 #include "web_server_upload.h"
 #include "web_server_compression.h"
 #include "../swagger/swagger.h"
 #include "../api/api_service.h"
-#include "../threads/threads.h"
-#include "../logging/logging.h"
-#include "../state/state.h"
 #include "../api/system/config/config.h"
 #include "../api/system/prometheus/prometheus.h"
-
 
 static enum MHD_Result serve_file(struct MHD_Connection *connection, const char *file_path) {
     // Check if client accepts Brotli compression

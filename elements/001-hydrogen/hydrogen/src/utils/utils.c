@@ -1,10 +1,8 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+// Global includes 
+#include "../hydrogen.h"
 
-// Project headers
+// Local includes
 #include "utils.h"
-#include "../logging/logging.h"
 
 // Forward declarations of static functions
 static void init_all_service_threads(void);

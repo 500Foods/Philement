@@ -17,7 +17,9 @@
   "hydrogen.h": "c",
   "stdbool.h": "c",
   "launch_network.h": "c",
-  "launch.h": "c"
+  "launch.h": "c",
+  "ifaddrs.h": "c",
+  "in.h": "c"
 },
 "C_Cpp.default.compilerPath": "/usr/lib64/ccache/gcc"
 }

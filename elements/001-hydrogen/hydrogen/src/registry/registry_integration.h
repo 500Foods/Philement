@@ -12,6 +12,7 @@
 #include <stdbool.h>
 
 // Project includes
+#include "../config/config.h"
 #include "registry.h"
 
 /**
@@ -98,5 +99,49 @@ bool get_running_subsystems_status(char** status_buffer);
  * @note AI-guidance: Used during shutdown sequence to safely stop subsystems
  */
 size_t stop_all_subsystems_in_dependency_order(void);
+// External declarations from state.h
+extern AppConfig* app_config;
+extern ServiceThreads logging_threads;
+extern ServiceThreads webserver_threads;
+extern ServiceThreads websocket_threads;
+extern ServiceThreads mdns_server_threads;
+extern ServiceThreads print_threads;
+
+// Component shutdown flags
+extern volatile sig_atomic_t mdns_client_system_shutdown;
+extern volatile sig_atomic_t mail_relay_system_shutdown;
+extern volatile sig_atomic_t swagger_system_shutdown;
+extern volatile sig_atomic_t terminal_system_shutdown;
+
+// Subsystem init/shutdown declarations
+extern int init_logging_subsystem(void);
+extern void shutdown_logging_subsystem(void);
+
+extern int init_webserver_subsystem(void);
+extern void shutdown_web_server(void);
+
+extern int init_websocket_subsystem(void);
+extern void stop_websocket_server(void);
+
+extern int init_mdns_server_subsystem(void);
+extern void mdns_server_shutdown(mdns_server_t* server);
+
+extern int init_mdns_client_subsystem(void);
+extern void shutdown_mdns_client(void);
+
+extern int init_mail_relay_subsystem(void);
+extern void shutdown_mail_relay(void);
+
+extern int init_swagger_subsystem(void);
+extern void shutdown_swagger(void);
+
+extern int init_terminal_subsystem(void);
+extern void shutdown_terminal(void);
+
+extern int init_print_subsystem(void);
+extern void shutdown_print_queue(void);
+
+// Forward declarations of static functions
+bool stop_subsystem_and_dependents(int subsystem_id);
 
 #endif /* REGISTRY_INTEGRATION_H */

@@ -14,13 +14,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-// Project Libraries
-#include "../config/config.h"
-#include "../logging/logging.h"
-
-// OIDCConfig is defined in ../config/config.h
-// No need to redefine it here
-
 /*
  * OIDC Context
  * Main context structure for the OIDC service

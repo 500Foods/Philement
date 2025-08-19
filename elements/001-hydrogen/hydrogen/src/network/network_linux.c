@@ -1,14 +1,13 @@
 /*
- * Network Management for Printer Control
+ * Network Management
  * 
  */
 
-// Core system headers
-#include "hydrogen.h"
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/ioctl.h>
-#include <sys/time.h>
+// Global includes 
+#include "../hydrogen.h"
+
+// Local includes
+#include "network.h"
 
 // Network headers
 #include <net/if.h>          // Must be first for interface definitions
@@ -21,20 +20,6 @@
 #include <linux/if_packet.h>
 #include <netdb.h>
 #include <ifaddrs.h>
-
-// Standard C headers
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <errno.h>
-#include <time.h>
-
-// Project headers
-#include "network.h"
-#include "../utils/utils.h"
-#include "../logging/logging.h"
-#include "../config/config.h"
 
 // Check if an interface is configured in the Available section
 bool is_interface_configured(const char* interface_name, bool* is_available) {

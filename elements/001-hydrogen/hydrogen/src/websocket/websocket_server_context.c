@@ -7,9 +7,10 @@
  * - Resource cleanup
  */
 
+// Global includes 
 #include "../hydrogen.h"
 
-// Project headers
+// Local includes
 #include "websocket_server_internal.h"
 
 // External configuration reference

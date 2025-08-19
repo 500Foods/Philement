@@ -2,12 +2,11 @@
  * Status Output Formatters Implementation
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+// Global includes 
+#include "../hydrogen.h"
+
+// Local includes
 #include "status_formatters.h"
-#include "../logging/logging.h"
 
 // Convert system metrics to JSON format
 json_t* format_system_status_json(const SystemMetrics *metrics) {

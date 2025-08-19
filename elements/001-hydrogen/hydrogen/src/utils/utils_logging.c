@@ -1,17 +1,8 @@
-// System headers
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <time.h>
-#include <sys/time.h>
-#include <stdbool.h>
+// Global includes 
+#include "../hydrogen.h"
 
-// Project headers
+// Local includes
 #include "utils_logging.h"
-#include "../config/config.h"
-#include "../config/config_priority.h"
-#include "../config/config_logging.h"
-#include "../logging/logging.h"
 
 // Thread-safe identifier generation with collision resistance
 void generate_id(char *buf, size_t len) {

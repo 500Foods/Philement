@@ -8,18 +8,11 @@
  * dynamically as subsystems are registered during launch readiness checks.
  */
 
-// System includes
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <pthread.h>
+// Global includes 
+#include "../hydrogen.h"
 
-// Project includes
+// Local includes
 #include "registry.h"
-#include "../logging/logging.h"
-#include "../threads/threads.h"
-#include "../launch/launch.h"  // For LaunchReadiness struct
 
 // Global registry instance - initialized with empty array
 SubsystemRegistry subsystem_registry = { 

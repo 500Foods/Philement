@@ -6,13 +6,11 @@
  * memory management for the metrics structures.
  */
 
-#include <signal.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+// Global includes 
+#include "../hydrogen.h"
+
+// Local includes
 #include "status_core.h"
-#include "../logging/logging.h"
-#include "../config/config.h"
 
 // Function prototypes
 pthread_mutex_t* get_status_mutex(void);

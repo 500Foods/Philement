@@ -3,11 +3,12 @@
  * 
  */
 
+ // Global includes 
+#include "../hydrogen.h"
+
+// Local includes
 #include "state.h"
 #include "state_types.h"
-#include "../logging/logging.h"  // For log_this
-#include "../utils/utils_time.h"  // For timing functions
-#include <stdlib.h>  // For free
 
 // Memory management implementation
 void free_readiness_messages(LaunchReadiness* readiness) {
@@ -21,7 +22,6 @@ void free_readiness_messages(LaunchReadiness* readiness) {
 }
 
 // Core state flags
-
 volatile sig_atomic_t server_starting = 1;  // Start as true, will be set to false once startup complete
 volatile sig_atomic_t server_running = 0;
 volatile sig_atomic_t server_stopping = 0;

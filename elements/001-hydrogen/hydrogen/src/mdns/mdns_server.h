@@ -1,32 +1,5 @@
 /*
- * mDNS Server (multicast DNS) service discovery interface for the Hydrogen printer.
- * 
- * This module implements zero-configuration network service announcements, allowing Hydrogen
- * printers to be automatically discovered on local networks. Key features:
- * 
- * 1. Protocol Support
- *    - Full mDNS Server (RFC 6762) compliance
- *    - DNS-SD service registration (RFC 6763)
- *    - Dual-stack IPv4/IPv6 support
- *    - Multiple service type advertisement
- * 
- * 2. Discovery Features
- *    - Automatic printer detection
- *    - Service capability advertisement
- *    - Instance naming/renaming
- *    - Conflict resolution
- * 
- * 3. Security Considerations
- *    - Scope limitation to local network
- *    - Response rate limiting
- *    - Query validation
- *    - Resource exhaustion prevention
- * 
- * 4. Performance
- *    - Efficient packet construction
- *    - Minimal memory footprint
- *    - Cached responses
- *    - Announcement coalescing
+ * mDNS Server (multicast DNS) service discovery interface for the Hydrogen Server
  */
 
 #ifndef MDNS_SERVER_H
@@ -85,6 +58,7 @@ typedef struct {
  *    - Dynamic service updates
  *    - Resource cleanup
  */
+
 // Per-interface socket information
 typedef struct {
     char *if_name;         // Interface name
