@@ -3,8 +3,10 @@
 # CHANGELOG
 # 2025-07-15: Added Unity test compilation to catch errors in test code during trial builds
 
-echo "$(date +%H:%M:%S.%3N || true) - Configuring CMake"
+echo "$(date +%H:%M:%S.%3N || true) - Cleaning Build Directory"
+rm -rf build/*
 
+echo "$(date +%H:%M:%S.%3N || true) - Configuring CMake"
 cd cmake && cmake -S . -B ../build --preset default >/dev/null 2>&1
 
 echo "$(date +%H:%M:%S.%3N || true) - Default Build"

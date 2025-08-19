@@ -75,21 +75,21 @@ extern volatile sig_atomic_t server_running;
 extern volatile sig_atomic_t server_starting;
 
 // External declarations for subsystem landing functions (in reverse launch order)
-extern int land_print_subsystem(void);
-extern int land_mail_relay_subsystem(void);
-extern int land_mdns_client_subsystem(void);
-extern int land_mdns_server_subsystem(void);
-extern int land_terminal_subsystem(void);
-extern int land_websocket_subsystem(void);
-extern int land_swagger_subsystem(void);
-extern int land_api_subsystem(void);
-extern int land_webserver_subsystem(void);
-extern int land_database_subsystem(void);
-extern int land_logging_subsystem(void);
-extern int land_network_subsystem(void);
-extern int land_payload_subsystem(void);
-extern int land_threads_subsystem(void);
-extern int land_registry_subsystem(bool is_restart);
+// extern int land_print_subsystem(void);
+// extern int land_mail_relay_subsystem(void);
+// extern int land_mdns_client_subsystem(void);
+// extern int land_mdns_server_subsystem(void);
+// extern int land_terminal_subsystem(void);
+// extern int land_websocket_subsystem(void);
+// extern int land_swagger_subsystem(void);
+// extern int land_api_subsystem(void);
+// extern int land_webserver_subsystem(void);
+// extern int land_database_subsystem(void);
+// extern int land_logging_subsystem(void);
+// extern int land_network_subsystem(void);
+// extern int land_payload_subsystem(void);
+// extern int land_threads_subsystem(void);
+// extern int land_registry_subsystem(bool is_restart);
 
 // Function types for landing operations
 typedef int (*LandingFunction)(void);

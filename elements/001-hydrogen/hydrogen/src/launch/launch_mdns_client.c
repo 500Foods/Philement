@@ -21,11 +21,7 @@
 #include "../hydrogen.h"
 
 // Local includes
-#include "launch_mdns_client.h"
-
-// External declarations
-extern volatile sig_atomic_t mdns_client_system_shutdown;
-extern AppConfig* app_config;
+#include "launch.h"
 
 // Check if the mDNS client subsystem is ready to launch
 LaunchReadiness check_mdns_client_launch_readiness(void) {

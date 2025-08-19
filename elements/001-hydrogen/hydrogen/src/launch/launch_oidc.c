@@ -5,21 +5,11 @@
  * It provides functions for checking readiness and launching OIDC services.
  */
 
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
-#include <signal.h>
+  // Global includes 
+#include "../hydrogen.h"
 
+// Local includes
 #include "launch.h"
-#include "launch_oidc.h"
-#include "../utils/utils_logging.h"
-#include "../threads/threads.h"
-#include "../config/config.h"
-#include "../registry/registry_integration.h"
-
-// External declarations
-extern AppConfig* app_config;
 
 // Helper function for URL validation
 static bool validate_url(const char* url, const char* field_name, int* msg_count, const char** messages) {

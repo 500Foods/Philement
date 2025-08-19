@@ -94,7 +94,7 @@ if echo "${BUILD_OUTPUT}" | grep -q "completed successfully" && [[ -z "${ERRORS}
     else
         echo "⚠️  Map file not found, skipping unused file analysis"
     fi
-    echo "$(date +%H:%M:%S.%3N || true) - Trial Complete"
+    echo "$(date +%H:%M:%S.%3N || true) - Trial Build Complete"
 else
     echo "❌ Build failed"
     exit 1

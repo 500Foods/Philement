@@ -63,7 +63,6 @@ LaunchReadiness check_registry_launch_readiness(void) {
     msg_index++;
 
     // Validate server configuration
-    const AppConfig* app_config = get_app_config();
     if (!app_config) {
         messages[msg_index++] = strdup("  No-Go:   Failed to access application configuration");
         messages[msg_index++] = strdup("  Decide:  No-Go For Launch of Registry");

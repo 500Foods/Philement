@@ -31,9 +31,7 @@
 
 // Launch system includes
 #include "launch.h"
-#include "launch_api.h"
 #include "launch_payload.h"
-#include "launch_network.h"    // For get_network_readiness()
 #include "launch_webserver.h"  // For is_web_server_running()
 
 // External declarations

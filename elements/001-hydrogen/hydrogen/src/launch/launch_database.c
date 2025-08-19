@@ -6,14 +6,8 @@
 #include "../hydrogen.h"
 
 // Local includes
-#include "launch_database.h"
+#include "launch.h"
 
-// External system state flags
-extern volatile sig_atomic_t server_stopping;
-extern volatile sig_atomic_t server_starting;
-extern volatile sig_atomic_t server_running;
-
-// Shutdown flag
 volatile sig_atomic_t database_stopping = 0;
 
 // Helper functions for message formatting

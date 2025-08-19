@@ -10,22 +10,14 @@
  * Note: Shutdown functionality has been moved to landing/landing_mdns_server.c
  */
 
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
-#include <signal.h>
+ // Global includes 
+#include "../hydrogen.h"
 
+// Local includes
 #include "launch.h"
-#include "../utils/utils_logging.h"
-#include "../threads/threads.h"
-#include "../config/config.h"
-#include "../registry/registry_integration.h"
 
 // External declarations
 extern ServiceThreads mdns_server_threads;
-extern volatile sig_atomic_t mdns_server_system_shutdown;
-extern AppConfig* app_config;
 
 // Check if the mDNS server subsystem is ready to launch
 LaunchReadiness check_mdns_server_launch_readiness(void) {
