@@ -11,6 +11,8 @@
 #ifndef OIDC_TOKENS_H
 #define OIDC_TOKENS_H
 
+#include "../constants.h"
+
 // Standard Libraries
 #include <stdbool.h>
 #include <stdlib.h>
@@ -19,11 +21,6 @@
 // Project Libraries
 #include "oidc_keys.h"
 #include "../logging/logging.h"
-
-// Token length constants
-#define OIDC_ACCESS_TOKEN_LENGTH 64
-#define OIDC_REFRESH_TOKEN_LENGTH 64
-#define OIDC_AUTHORIZATION_CODE_LENGTH 32
 
 /*
  * Token Context

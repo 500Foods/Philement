@@ -70,11 +70,6 @@ extern pthread_cond_t terminate_cond;
 /* Signal handler from shutdown.h */
 extern void signal_handler(int sig);
 
-/* Logging levels from logging.h */
-#ifndef LOG_LEVEL_ERROR
-    #define LOG_LEVEL_ERROR 4
-#endif
-
 /* Global Variables */
 extern ServiceThreads logging_threads;
 pthread_t main_thread_id;

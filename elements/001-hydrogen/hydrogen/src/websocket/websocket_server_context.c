@@ -7,23 +7,10 @@
  * - Resource cleanup
  */
 
-/* Feature test macros must come first */
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L
-#endif
-
-// System headers
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <pthread.h>
-#include <errno.h>
-#include <unistd.h>
+#include "../hydrogen.h"
 
 // Project headers
 #include "websocket_server_internal.h"
-#include "../logging/logging.h"
-#include "../config/config.h"
 
 // External configuration reference
 extern AppConfig *app_config;

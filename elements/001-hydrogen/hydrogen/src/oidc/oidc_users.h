@@ -11,6 +11,8 @@
 #ifndef OIDC_USERS_H
 #define OIDC_USERS_H
 
+#include "../constants.h"
+
 // Standard Libraries
 #include <stdbool.h>
 #include <stdlib.h>
@@ -18,11 +20,6 @@
 
 // Project Libraries
 #include "../logging/logging.h"
-
-// Password hash length
-#define OIDC_PASSWORD_HASH_LENGTH 64
-// Salt length
-#define OIDC_SALT_LENGTH 32
 
 /*
  * User Authentication Level

@@ -7,6 +7,8 @@
  * - Compressing data on-the-fly
  */
 
+ #include "../hydrogen.h"
+
 // System headers
 #include <sys/stat.h>
 #include <string.h>
@@ -14,27 +16,10 @@
 #include <stdio.h>
 #include <time.h>
 
-// Fallback definition for CLOCK_MONOTONIC if not defined
-#ifndef CLOCK_MONOTONIC
-#define CLOCK_MONOTONIC 1
-#endif
-
 // Project headers
 #include "web_server_compression.h"
 #include "../logging/logging.h"
 #include "../utils/utils_time.h"
-
-// Default Brotli compression level (0-11, where 11 is highest)
-// Default Brotli compression parameters
-// Window size for Brotli (10-24)
-#define BROTLI_WINDOW_SIZE 22
-
-// Dynamic compression levels based on content size
-#define BROTLI_SMALL_THRESHOLD 5120        // 5KB
-#define BROTLI_MEDIUM_THRESHOLD 512000     // 500KB
-#define BROTLI_LEVEL_SMALL 11              // Highest compression for small content
-#define BROTLI_LEVEL_MEDIUM 6              // Medium compression for medium content
-#define BROTLI_LEVEL_LARGE 4               // Lower compression for large content
 
 bool client_accepts_brotli(struct MHD_Connection *connection) {
     // Get the Accept-Encoding header

@@ -4,6 +4,7 @@
  */
 
 // Core system headers
+#include "hydrogen.h"
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
@@ -21,14 +22,6 @@
 #include <netdb.h>
 #include <ifaddrs.h>
 
-// ICMP definitions
-#ifndef ICMP_ECHO
-#define ICMP_ECHO 8
-#endif
-#ifndef ICMP_ECHOREPLY
-#define ICMP_ECHOREPLY 0
-#endif
-
 // Standard C headers
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,11 +36,8 @@
 #include "../logging/logging.h"
 #include "../config/config.h"
 
-#define PING_TIMEOUT_SEC 1
-#define PING_PACKET_SIZE 64
-
 // Check if an interface is configured in the Available section
-bool is_interface_configured(const AppConfig* app_config, const char* interface_name, bool* is_available) {
+bool is_interface_configured(const char* interface_name, bool* is_available) {
     if (!app_config || !interface_name || !is_available) {
         if (is_available) *is_available = true;  // Default to available if no config
         return false;          // Not explicitly configured
@@ -118,7 +108,6 @@ bool test_network_interfaces(network_info_t *info) {
 
     bool success = false;
     struct ifreq ifr;
-    const AppConfig* app_config = get_app_config();
     
     for (int i = 0; i < info->count; i++) {
         interface_t *iface = &info->interfaces[i];
@@ -128,7 +117,7 @@ bool test_network_interfaces(network_info_t *info) {
 
         // Check if interface is enabled in config
         bool is_available = true;
-        bool is_configured = is_interface_configured(app_config, iface->name, &is_available);
+        bool is_configured = is_interface_configured(iface->name, &is_available);
         
         // Skip if explicitly disabled in config
         if (is_configured && !is_available) {

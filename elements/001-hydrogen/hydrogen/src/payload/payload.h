@@ -9,13 +9,11 @@
 #ifndef PAYLOAD_H
 #define PAYLOAD_H
 
+#include "../constants.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include "../config/config.h"
-
-// Standard marker for identifying payloads in executables
-#define PAYLOAD_MARKER "<<< HERE BE ME TREASURE >>>"
 
 // Structure to hold extracted payload data
 typedef struct {

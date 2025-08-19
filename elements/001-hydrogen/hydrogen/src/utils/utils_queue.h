@@ -12,12 +12,8 @@
 #define UTILS_QUEUE_H
 
 #include <stddef.h>
-
+#include "../constants.h"
 #include "../config/config.h"  // For AppConfig and queue constants
-
-// Early initialization limits - subset of full configuration
-#define EARLY_MAX_QUEUE_BLOCKS MIN_QUEUE_BLOCKS  // Use minimum from config
-#define EARLY_BLOCK_LIMIT (MIN_QUEUE_BLOCKS / 2) // Half of minimum blocks
 
 // Memory metrics structure
 typedef struct {

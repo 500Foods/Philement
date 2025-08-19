@@ -42,51 +42,6 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-// Version information
-#ifndef VERSION
-    #define VERSION "0.1.0"
-#endif
-
-/*
- * Buffer and Layer Configuration Constants
- * These constants are used throughout the system for
- * consistent buffer allocation and layer handling.
- */
-
-// Default buffer sizes
-#define DEFAULT_LINE_BUFFER_SIZE 4096           // 4KB for line buffers
-#define DEFAULT_LOG_BUFFER_SIZE 8192            // 8KB for log messages
-#define DEFAULT_POST_PROCESSOR_BUFFER_SIZE 8192 // 8KB for post processing
-#define DEFAULT_COMMAND_BUFFER_SIZE 4096        // 4KB for commands
-#define DEFAULT_RESPONSE_BUFFER_SIZE 16384      // 16KB for responses
-
-// Layer limits
-#define DEFAULT_MAX_LAYERS 1000                 // Maximum number of layers
-#define MIN_LAYERS 1                            // Minimum number of layers
-#define MAX_LAYERS 10000                        // Absolute maximum layers
-
-/*
- * Queue Configuration Constants
- * These constants are used by both the configuration system
- * and the queue utilities.
- */
-
-// Queue size limits
-#define DEFAULT_MAX_QUEUE_SIZE 10000            // 10K items
-#define DEFAULT_MAX_QUEUE_MEMORY_MB 256         // 256MB default
-#define DEFAULT_MAX_QUEUE_BLOCKS 1024           // 1K blocks
-#define DEFAULT_QUEUE_TIMEOUT_MS 30000          // 30 seconds
-
-// Queue validation limits
-#define MIN_QUEUE_SIZE 10
-#define MAX_QUEUE_SIZE 1000000
-#define MIN_QUEUE_MEMORY_MB 64
-#define MAX_QUEUE_MEMORY_MB 16384
-#define MIN_QUEUE_BLOCKS 64
-#define MAX_QUEUE_BLOCKS 16384
-#define MIN_QUEUE_TIMEOUT_MS 1000
-#define MAX_QUEUE_TIMEOUT_MS 300000
-
 
 // File operation utilities
 bool is_file_readable(const char* path);

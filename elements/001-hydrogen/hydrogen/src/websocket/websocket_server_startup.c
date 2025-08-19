@@ -1,11 +1,3 @@
-/* Feature test macros must come first */
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L
-#endif
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
 /*
  * WebSocket Server Startup Module
  * 
@@ -17,30 +9,16 @@
  * - Logging setup
  */
 
+ #include "../hydrogen.h"
+
 /* System headers */
-#include <time.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <unistd.h>
-#include <pthread.h>
-
-// External libraries
-#include <libwebsockets.h>
-#include <jansson.h>
 
 // Project headers
 #include "websocket_server.h"
 #include "websocket_server_internal.h"
-#include "../logging/logging.h"
-#include "../config/config.h"
-#include "../utils/utils.h"
-
+#
 /* External variables */
 extern AppConfig* app_config;
 extern WebSocketServerContext *ws_context;
