@@ -7,20 +7,15 @@
  * - Protocol flow handling
  */
 
-// Standard Libraries
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+// Global includes 
+#include "../hydrogen.h"
 
-// Project Libraries
+// Local includes
 #include "oidc_service.h"
 #include "oidc_keys.h"
 #include "oidc_tokens.h"
 #include "oidc_users.h"
 #include "../api/oidc/oidc_service.h"
-#include "../logging/logging.h"
-#include "../utils/utils.h"
 
 // Global OIDC context
 static OIDCContext *oidc_context = NULL;

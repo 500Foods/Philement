@@ -2,32 +2,17 @@
  * Payload Handler Implementation
  */
 
-// System headers
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
-#include <signal.h>
-#include <brotli/decode.h>
+// Global includes 
+#include "../hydrogen.h"
+
+// Local includes
+#include "payload.h"
+
+// OpenSSL includes
 #include <openssl/rsa.h>
 #include <openssl/pem.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
-
-// Project headers
-#include "payload.h"
-#include "../logging/logging.h"
-#include "../config/config.h"
-#include "../config/config_utils.h"  // For filesystem operations
-
-// Static function declarations
-static bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size,
-                          const char *private_key_b64, uint8_t **decrypted_data,
-                          size_t *decrypted_size);
-static void init_openssl(void);
-static bool process_payload_data(const PayloadData *payload);
 
 /**
  * Check if a payload exists in the executable
@@ -135,7 +120,7 @@ bool validate_payload_key(const char *key) {
 }
 
 // Initialize OpenSSL once at startup
-static void init_openssl(void) {
+void init_openssl(void) {
     static bool initialized = false;
     if (!initialized) {
         OpenSSL_add_all_algorithms();
@@ -321,7 +306,7 @@ void free_payload(PayloadData *payload) {
  * @param payload The payload data to process
  * @return true if payload was successfully processed, false otherwise
  */
-static bool process_payload_data(const PayloadData *payload) {
+bool process_payload_data(const PayloadData *payload) {
     if (!payload || !payload->data || payload->size == 0) {
         log_this("Payload", "Invalid payload data", LOG_LEVEL_ERROR);
         return false;
@@ -522,7 +507,7 @@ bool launch_payload(const AppConfig *config, const char *marker) {
     return true;
 }
 
-static bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size,
+bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size,
                           const char *private_key_b64, uint8_t **decrypted_data,
                           size_t *decrypted_size) {
     if (!encrypted_data || encrypted_size < 21 || !private_key_b64 || 

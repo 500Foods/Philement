@@ -3,28 +3,11 @@
  * 
  */
 
-// Core system headers
-#include <sys/types.h>
-#include <pthread.h>
-#include <signal.h>
-#include <unistd.h>
-#include <time.h>
+// Global includes 
+#include "../hydrogen.h"
 
-// Standard C headers
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-
-// Third-party libraries
-#include <jansson.h>
-
-// Project headers
+// Local includes
 #include "print_queue_manager.h"
-#include "../queue/queue.h"
-#include "../config/config.h"
-#include "../logging/logging.h"
-#include "../utils/utils.h"
 
 extern volatile sig_atomic_t print_queue_shutdown;
 extern pthread_cond_t terminate_cond;

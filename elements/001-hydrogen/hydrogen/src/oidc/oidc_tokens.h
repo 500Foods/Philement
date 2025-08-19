@@ -20,7 +20,6 @@
 
 // Project Libraries
 #include "oidc_keys.h"
-#include "../logging/logging.h"
 
 /*
  * Token Context

@@ -4,13 +4,11 @@
  * Manages cryptographic keys used for signing tokens and verifying signatures.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
+// Global includes 
+#include "../hydrogen.h"
 
+// Local includes
 #include "oidc_keys.h"
-#include "../utils/utils_logging.h"
 
 // Key management context structure implementation
 struct OIDCKeyContext {

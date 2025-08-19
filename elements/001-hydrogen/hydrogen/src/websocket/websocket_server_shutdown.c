@@ -8,15 +8,14 @@
  * - Resource deallocation
  * - Timeout handling
  */
+
+// Global includes 
 #include "../hydrogen.h"
 
-/* System headers */
-#include <sys/socket.h>
-#include <netinet/in.h>
-
-// Project headers
+// Local includes
 #include "websocket_server.h"
 #include "websocket_server_internal.h"
+#include <netinet/in.h>
 
 /* External variables */
 extern AppConfig* app_config;

@@ -6,16 +6,12 @@
  * role as an OpenID Provider (OP).
  */
 
-// Standard Libraries
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
 
-// Project Libraries
+// Global includes 
+#include "../hydrogen.h"
+
+// Local includes
 #include "oidc_clients.h"
-#include "../logging/logging.h"
-#include "../utils/utils.h"
 
 /*
  * Initialize the client registry

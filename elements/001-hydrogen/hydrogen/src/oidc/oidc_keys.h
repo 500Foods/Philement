@@ -23,9 +23,6 @@
 #include <openssl/evp.h>
 #include <openssl/pem.h>
 
-// Project Libraries
-#include "../logging/logging.h"
-
 /*
  * Key Usage
  * Defines how a key can be used within the OIDC service

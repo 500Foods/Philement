@@ -1,41 +1,7 @@
 /*
  * State Management for Safety-Critical 3D Printing
  * 
- * Why Centralized State Matters:
- * 1. Hardware Safety
- *    - Coordinated emergency stops
- *    - Temperature limit enforcement
- *    - Motion boundary protection
- *    - Power system monitoring
- * 
- * 2. Real-time Control
- *    Why This Design?
- *    - Immediate state updates
- *    - Synchronized movements
- *    - Thermal management
- *    - Timing precision
- * 
- * 3. Resource Coordination
- *    Why This Approach?
- *    - Thread synchronization
- *    - Memory management
- *    - File system access
- *    - Network resources
- * 
- * 4. Error Recovery
- *    Why These Features?
- *    - Print job preservation
- *    - Hardware protection
- *    - State restoration
- *    - Failure isolation
- * 
- * 5. System Monitoring
- *    Why This Matters?
- *    - Component health tracking
- *    - Resource utilization
- *    - Performance metrics
- *    - Diagnostic support
- */
+  */
 
 #ifndef HYDROGEN_STATE_H
 #define HYDROGEN_STATE_H

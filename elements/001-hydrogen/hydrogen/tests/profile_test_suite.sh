@@ -53,6 +53,9 @@ fi
 FORKS=$("${GREP}" -cE 'fork|vfork|clone' "${TRACE_OUT}" 2>/dev/null || true)
 
 # Count commandカフェ invocations
+echo "Group 0"
+HYDROGEN_COUNT=$("${GREP}" -c 'execve.*[ /]hydrogen/hydrogen' "${TRACE_OUT}" 2>/dev/null)
+
 echo "Group 1"
 BASH_COUNT=$("${GREP}" -c 'execve.*[ /]bash[ ""]' "${TRACE_OUT}" 2>/dev/null)
 SH_COUNT=$("${GREP}" -c 'execve.*[ /]sh[ ""]' "${TRACE_OUT}" 2>/dev/null)
@@ -107,6 +110,8 @@ TABLES_COUNT=$("${GREP}" -c 'execve.*[ /]tables[ ""]' "${TRACE_OUT}" 2>/dev/null
     echo "-----------------------------------"
     echo "Total forks (fork/vfork/clone): ${FORKS}"
     echo "Command invocations:"
+    echo "  hydrogen: ${HYDROGEN_COUNT}"
+    echo " "
     echo "  bash: ${BASH_COUNT}"
     echo "  sh: ${SH_COUNT}"
     echo "  xargs: ${XARGS_COUNT}"

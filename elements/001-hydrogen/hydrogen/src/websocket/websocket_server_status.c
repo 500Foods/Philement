@@ -1,27 +1,13 @@
 /*
  * Real-time Status Monitoring for 3D Printer Control
  */
+ // Global includes 
+#include "../hydrogen.h"
 
-// Core system headers
-#include <sys/types.h>
-#include <sys/sysinfo.h>
-#include <time.h>
-
-// Standard C headers
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-// Third-party libraries
-#include <jansson.h>
-#include <libwebsockets.h>
-
-// Project headers
+// Local includes
 #include "websocket_server.h"
 #include "websocket_server_internal.h"
-#include "../logging/logging.h"
-#include "../config/config.h"
-#include "../utils/utils.h"
+#include <sys/sysinfo.h>
 
 extern AppConfig *app_config;
 extern WebSocketServerContext *ws_context;

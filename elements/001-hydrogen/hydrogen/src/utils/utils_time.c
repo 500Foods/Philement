@@ -1,15 +1,8 @@
-
+// Global includes 
 #include "../hydrogen.h"
 
-// System headers
-#include <pthread.h>
-#include <signal.h>
-#include <stdio.h>
-#include <time.h>
-
-// Project headers
+// Local includes
 #include "utils_time.h"
-#include "../logging/logging.h"
 
 // Public interface declarations
 void set_server_start_time(void);

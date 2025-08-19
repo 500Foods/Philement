@@ -5,26 +5,15 @@
  * including initialization, request handling, and shutdown procedures.
  */
 
- #include "../hydrogen.h"
-// System headers
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
+// Global includes 
+#include "../hydrogen.h"
+
+// Local includes
+#include "web_server_core.h"
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <ifaddrs.h>
 #include <netdb.h>
-#include <pthread.h>
-#include <signal.h>
-#include <string.h>
-#include <errno.h>
-#include <unistd.h>
-
-// Project headers
-#include "web_server_core.h"
-#include "../config/config_webserver.h"  // For WebServerConfig
-#include "../threads/threads.h"
-#include "../logging/logging.h"
 
 // Endpoint registry
 static WebServerEndpoint registered_endpoints[MAX_ENDPOINTS];
