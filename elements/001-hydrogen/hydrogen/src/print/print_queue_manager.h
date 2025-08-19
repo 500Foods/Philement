@@ -1,5 +1,5 @@
 /*
- * Print Job Management for Reliable 3D Printing
+ * Print Job Management for 3D Printing
  * 
  */
 

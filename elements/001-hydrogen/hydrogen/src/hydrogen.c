@@ -9,13 +9,6 @@
  * - Advanced crash handling with custom core dump generation
  * - Main event loop management
  * 
- * Required System Headers:
- * - <signal.h>: SA_RESTART, SA_NODEFER, SA_SIGINFO, siginfo_t, struct sigaction
- * - <time.h>: CLOCK_REALTIME
- * - <limits.h>: PATH_MAX
- * - <sys/ucontext.h>: ucontext_t, mcontext_t
- * - <sys/procfs.h>: struct elf_prstatus, struct elf_prpsinfo
- * 
  * Register Access:
  * The code accesses CPU registers through the ucontext_t structure:
  * - uc_mcontext.gregs: General purpose registers array

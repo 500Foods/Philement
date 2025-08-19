@@ -1,15 +1,6 @@
 /*
- * Real-Time WebSocket Server for 3D Printer Control
+ * WebSocket Server 
  * 
- * Core server runtime implementation coordinating:
- * - Connection lifecycle management
- * - Authentication and security
- * - Message processing
- * - Status monitoring
- * 
- * This module contains the core runtime functionality.
- * Startup logic is in websocket_server_startup.c
- * Shutdown logic is in websocket_server_shutdown.c
  */
 
  #include "../hydrogen.h"

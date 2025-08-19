@@ -17,6 +17,9 @@ DEFAULT_SCRIPT="test_00_all.sh"
 # Use first argument if provided, else default
 TEST_SCRIPT="${1:-${DEFAULT_SCRIPT}}"
 
+echo " "
+echo "Profiling Summary for ${TEST_SCRIPT} $("${DATE}" || true)"
+
 # Optimize PATH for strace to reduce noise
 STRACE=$(PATH=/usr/bin command -v strace)
 if [[ -z "${STRACE}" ]]; then
@@ -50,18 +53,18 @@ if [[ "${STRACE_STATUS}" -ne 0 ]]; then
 fi
 
 # Count forks
-FORKS=$("${GREP}" -cE 'fork|vfork|clone' "${TRACE_OUT}" 2>/dev/null || true)
+FORKS=$("${GREP}" -c 'execve(.*' "${TRACE_OUT}" 2>/dev/null)
 
 # Count commandカフェ invocations
-echo "Group 0"
+echo "Processing Group 0"
 HYDROGEN_COUNT=$("${GREP}" -c 'execve.*[ /]hydrogen/hydrogen' "${TRACE_OUT}" 2>/dev/null)
 
-echo "Group 1"
+echo "Processing Group 1"
 BASH_COUNT=$("${GREP}" -c 'execve.*[ /]bash[ ""]' "${TRACE_OUT}" 2>/dev/null)
 SH_COUNT=$("${GREP}" -c 'execve.*[ /]sh[ ""]' "${TRACE_OUT}" 2>/dev/null)
 XARGS_COUNT=$("${GREP}" -c 'execve.*[ /]xargs[ ""]' "${TRACE_OUT}" 2>/dev/null)
 
-echo "Group 2"
+echo "Processing Group 2"
 CAT_COUNT=$("${GREP}" -c 'execve.*[ /]cat[ ""]' "${TRACE_OUT}" 2>/dev/null)
 FIND_COUNT=$("${GREP}" -c 'execve.*[ /]find[ ""]' "${TRACE_OUT}" 2>/dev/null)
 BC_COUNT=$("${GREP}" -c 'execve.*[ /]bc[ ""]' "${TRACE_OUT}" 2>/dev/null)
@@ -70,7 +73,7 @@ WC_COUNT=$("${GREP}" -c 'execve.*[ /]wc[ ""]' "${TRACE_OUT}" 2>/dev/null)
 DATE_COUNT=$("${GREP}" -c 'execve.*[ /]date[ ""]' "${TRACE_OUT}" 2>/dev/null)
 MD5_COUNT=$("${GREP}" -c 'execve.*[ /]md5sum[ ""]' "${TRACE_OUT}" 2>/dev/null)
 
-echo "Group 3"
+echo "Processing Group 3"
 MKDIR_COUNT=$("${GREP}" -c 'execve.*[ /]mkdir[ ""]' "${TRACE_OUT}" 2>/dev/null)
 MKTEMP_COUNT=$("${GREP}" -c 'execve.*[ /]mktemp[ ""]' "${TRACE_OUT}" 2>/dev/null)
 REALPATH_COUNT=$("${GREP}" -c 'execve.*[ /]realpath[ ""]' "${TRACE_OUT}" 2>/dev/null)
@@ -79,19 +82,19 @@ DIRNAME_COUNT=$("${GREP}" -c 'execve.*[ /]dirname[ ""]' "${TRACE_OUT}" 2>/dev/nu
 DU_COUNT=$("${GREP}" -c 'execve.*[ /]du[ ""]' "${TRACE_OUT}" 2>/dev/null)
 RM_COUNT=$("${GREP}" -c 'execve.*[ /]rm[ ""]' "${TRACE_OUT}" 2>/dev/null)
 
-echo "Group 4"
+echo "Processing Group 4"
 GREP_COUNT=$("${GREP}" -c 'execve.*[ /]grep[ ""]' "${TRACE_OUT}" 2>/dev/null)
 SED_COUNT=$("${GREP}" -c 'execve.*[ /]sed[ ""]' "${TRACE_OUT}" 2>/dev/null)
 AWK_COUNT=$("${GREP}" -c 'execve.*[ /]awk[ ""]' "${TRACE_OUT}" 2>/dev/null)
 CURL_COUNT=$("${GREP}" -c 'execve.*[ /]curl[ ""]' "${TRACE_OUT}" 2>/dev/null)
 
-echo "Group 5"
+echo "Processing Group 5"
 CMAKE_COUNT=$("${GREP}" -c 'execve.*[ /]cmake[ ""]' "${TRACE_OUT}" 2>/dev/null)
 MAKE_COUNT=$("${GREP}" -c 'execve.*[ /]make[ ""]' "${TRACE_OUT}" 2>/dev/null)
 CC_COUNT=$("${GREP}" -c 'execve.*[ /]cc[ ""]' "${TRACE_OUT}" 2>/dev/null)
 GCOV_COUNT=$("${GREP}" -c 'execve.*[ /]gcov[ ""]' "${TRACE_OUT}" 2>/dev/null)
 
-echo "Group 6"
+echo "Processing Group 6"
 CPPCHECK_COUNT=$("${GREP}" -c 'execve.*[ /]cppcheck[ ""]' "${TRACE_OUT}" 2>/dev/null)
 SHELLCHECK_COUNT=$("${GREP}" -c 'execve.*[ /]shellcheck[ ""]' "${TRACE_OUT}" 2>/dev/null)
 MARKDOWNLINT_COUNT=$("${GREP}" -c 'execve.*[ /]markdownlint[ ""]' "${TRACE_OUT}" 2>/dev/null)
@@ -100,16 +103,17 @@ ESLINT_COUNT=$("${GREP}" -c 'execve.*[ /]eslint[ ""]' "${TRACE_OUT}" 2>/dev/null
 STYLELINT_COUNT=$("${GREP}" -c 'execve.*[ /]stylelint[ ""]' "${TRACE_OUT}" 2>/dev/null)
 HTMLHINT_COUNT=$("${GREP}" -c 'execve.*[ /]htmlhint[ ""]' "${TRACE_OUT}" 2>/dev/null)
 
-echo "Group 7"
+echo "Processing Group 7"
 CLOC_COUNT=$("${GREP}" -c 'execve.*[ /]cloc[ ""]' "${TRACE_OUT}" 2>/dev/null)
 TABLES_COUNT=$("${GREP}" -c 'execve.*[ /]tables[ ""]' "${TRACE_OUT}" 2>/dev/null)
 
 # Generate summary
 {
+    echo " "
     echo "Profiling Summary for ${TEST_SCRIPT} $("${DATE}" || true)"
     echo "-----------------------------------"
-    echo "Total forks (fork/vfork/clone): ${FORKS}"
-    echo "Command invocations:"
+    echo "  Total exec: ${FORKS}"
+    echo " "
     echo "  hydrogen: ${HYDROGEN_COUNT}"
     echo " "
     echo "  bash: ${BASH_COUNT}"

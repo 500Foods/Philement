@@ -22,7 +22,7 @@ bool load_swagger_config(json_t* root, AppConfig* config) {
         .payload_available = false,
         .metadata = {
             .title = strdup("Hydrogen API"),
-            .description = strdup("Hydrogen 3D Printer Control Server API"),
+            .description = strdup("Hydrogen Server API"),
             .version = strdup(VERSION),
             .contact = {0},  // Initialize to NULL
             .license = {0}   // Initialize to NULL

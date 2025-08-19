@@ -1,24 +1,5 @@
 /*
  * Priority level management for configuration system
- * 
- * This module handles priority level definitions and calculations used
- * throughout the configuration system. It provides:
- * 
- * 1. Priority Level Management
- *    - Standard priority level definitions
- *    - Label width calculations
- *    - Consistent formatting
- * 
- * 2. Label Formatting
- *    - Pre-calculated widths for alignment
- *    - Dynamic width adjustment
- *    - Consistent output formatting
- * 
- * Why This Design:
- * - Centralizes priority management
- * - Ensures consistent formatting
- * - Supports dynamic priority systems
- * - Maintains log readability
  */
 
 #ifndef CONFIG_PRIORITY_H

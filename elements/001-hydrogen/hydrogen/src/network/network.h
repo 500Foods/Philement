@@ -1,5 +1,5 @@
 /*
- * Network Management for Remote 3D Printer Control
+ * Network Management
  */
 
 #ifndef NETWORK_H
