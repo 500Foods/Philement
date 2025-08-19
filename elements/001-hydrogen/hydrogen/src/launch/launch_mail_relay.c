@@ -10,16 +10,11 @@
  * Note: Shutdown functionality has been moved to landing/landing_mail_relay.c
  */
 
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
+// Global includes 
+#include "../hydrogen.h"
 
-#include "launch.h"
-#include "../utils/utils_logging.h"
-#include "../threads/threads.h"
-#include "../config/config.h"
-#include "../registry/registry_integration.h"
+// Local includes
+#include "launch_mail_relay.h"
 
 // External declarations
 extern volatile sig_atomic_t mail_relay_system_shutdown;
