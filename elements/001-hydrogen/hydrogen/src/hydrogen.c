@@ -43,14 +43,11 @@
 
 // System headers - must come first after feature test macros 
 #include <features.h>     /* GNU/glibc features */
-#include <signal.h>       /* Signal handling */
 #include <ucontext.h>     /* Context handling */
 
 // Extended POSIX headers 
 #include <sys/ucontext.h> /* Context handling */
 #include <sys/procfs.h>   /* Process info */
-#include <sys/time.h>     /* Time structures */
-#include <sys/resource.h> /* Resource limits */
 #include <sys/prctl.h>    /* Process control */
 
 // Process and threading 
@@ -61,10 +58,8 @@
 #endif
 
 // Internal Headers 
-#include "state/state.h"
 #include "launch/launch.h"
 #include "landing/landing.h"
-#include "threads/threads.h"
 
 /* Global Variables and External Declarations */
 /* State flags from state.h */

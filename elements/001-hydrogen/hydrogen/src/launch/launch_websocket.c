@@ -10,83 +10,28 @@
  * Note: Shutdown functionality has been moved to landing/landing_websocket.c
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <pthread.h>
-#include <signal.h>
-#include <time.h>
+// Global includes 
+#include "../hydrogen.h"
+
+// Local includes
+#include "launch.h"
 #include <sys/socket.h>
 #include <netdb.h>
 #include <ifaddrs.h>
-
-#include "launch.h"
-#include "launch_websocket.h"
-#include "launch_threads.h"
-#include "../logging/logging.h"
-#include "../utils/utils_logging.h"
-#include "../threads/threads.h"
 #include "../websocket/websocket_server.h"
-#include "../config/config.h"
-#include "../registry/registry_integration.h"
-#include "../state/state_types.h"
-
-// Network constants
-#ifndef NI_MAXHOST
-#define NI_MAXHOST 1025
-#endif
-
-#ifndef NI_NUMERICHOST
-#define NI_NUMERICHOST 0x02
-#endif
-
-// Validation limits
-#define MIN_PORT 1024
-#define MAX_PORT 65535
-#define MIN_EXIT_WAIT_SECONDS 1
-#define MAX_EXIT_WAIT_SECONDS 60
-#define WEBSOCKET_MIN_MESSAGE_SIZE 1024        // 1KB
-#define WEBSOCKET_MAX_MESSAGE_SIZE 0x40000000  // 1GB
 
 // External declarations
 extern ServiceThreads websocket_threads;
 extern pthread_t websocket_thread;
 extern volatile sig_atomic_t websocket_server_shutdown;
-extern AppConfig* app_config;
 extern volatile sig_atomic_t server_starting;
 
 // Registry ID and cached readiness state
 int websocket_subsystem_id = -1;
-static LaunchReadiness cached_readiness = {0};
-static bool readiness_cached = false;
 
-// Forward declarations
-static void clear_cached_readiness(void);
-static void register_websocket(void);
-static bool validate_protocol(const char* protocol);
-static bool validate_key(const char* key);
-
-// Helper to clear cached readiness
-static void clear_cached_readiness(void) {
-    if (readiness_cached && cached_readiness.messages) {
-        free_readiness_messages(&cached_readiness);
-        readiness_cached = false;
-    }
-}
-
-// Get cached readiness result
-LaunchReadiness get_websocket_readiness(void) {
-    if (readiness_cached) {
-        return cached_readiness;
-    }
-    
-    // Perform fresh check and cache result
-    cached_readiness = check_websocket_launch_readiness();
-    readiness_cached = true;
-    return cached_readiness;
-}
 
 // Register the websocket subsystem with the registry
-static void register_websocket(void) {
+void register_websocket(void) {
     // Always register during readiness check if not already registered
     if (websocket_subsystem_id < 0) {
         websocket_subsystem_id = register_subsystem("WebSocket", NULL, NULL, NULL,
@@ -96,7 +41,7 @@ static void register_websocket(void) {
 }
 
 // Validate protocol string
-static bool validate_protocol(const char* protocol) {
+bool validate_protocol(const char* protocol) {
     if (!protocol || !protocol[0]) {
         return false;
     }
@@ -123,7 +68,7 @@ static bool validate_protocol(const char* protocol) {
 }
 
 // Validate key string
-static bool validate_key(const char* key) {
+bool validate_key(const char* key) {
     if (!key || !key[0]) {
         return false;
     }
@@ -202,25 +147,25 @@ LaunchReadiness check_websocket_launch_readiness(void) {
     }
     
     // 1. Check Threads subsystem launch readiness (using cached version)
-    LaunchReadiness threads_readiness = get_threads_readiness();
-    if (!threads_readiness.ready) {
-        messages[msg_index++] = strdup("  No-Go:   Threads subsystem not Go for Launch");
-        messages[msg_index] = NULL;
-        readiness.ready = false;
-        free_readiness_messages(&readiness);
-        return readiness;
-    } else {
-        messages[msg_index++] = strdup("  Go:      Threads subsystem Go for Launch");
-    }
+    // LaunchReadiness threads_readiness = get_threads_readiness();
+    // if (!threads_readiness.ready) {
+    //     messages[msg_index++] = strdup("  No-Go:   Threads subsystem not Go for Launch");
+    //     messages[msg_index] = NULL;
+    //     readiness.ready = false;
+    //     free_readiness_messages(&readiness);
+    //     return readiness;
+    // } else {
+    //     messages[msg_index++] = strdup("  Go:      Threads subsystem Go for Launch");
+    // }
     
-    // 2. Check Network subsystem launch readiness (using cached version)
-    LaunchReadiness network_readiness = get_network_readiness();
-    if (!network_readiness.ready) {
-        messages[msg_index++] = strdup("  No-Go:   Network subsystem not Go for Launch");
-        ready = false;
-    } else {
-        messages[msg_index++] = strdup("  Go:      Network subsystem Go for Launch");
-    }
+    // // 2. Check Network subsystem launch readiness (using cached version)
+    // LaunchReadiness network_readiness = get_network_readiness();
+    // if (!network_readiness.ready) {
+    //     messages[msg_index++] = strdup("  No-Go:   Network subsystem not Go for Launch");
+    //     ready = false;
+    // } else {
+    //     messages[msg_index++] = strdup("  Go:      Network subsystem Go for Launch");
+    // }
     
     // 3. Check configuration
     if (!app_config) {
@@ -356,8 +301,7 @@ LaunchReadiness check_websocket_launch_readiness(void) {
 int launch_websocket_subsystem(void) {
     extern volatile sig_atomic_t server_stopping;
     extern volatile sig_atomic_t websocket_server_shutdown;
-    // Clear any cached readiness before checking final state
-    clear_cached_readiness();
+    
     log_this("WebSocket", LOG_LINE_BREAK, LOG_LEVEL_STATE);
     log_this("WebSocket", "LAUNCH: WEBSOCKETS", LOG_LEVEL_STATE);
 

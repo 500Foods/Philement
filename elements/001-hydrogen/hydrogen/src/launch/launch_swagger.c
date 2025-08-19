@@ -9,39 +9,17 @@
  * - Payload subsystem must be initialized and ready (for serving Swagger files)
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <signal.h>
-#include <unistd.h>
+// Global includes 
+#include "../hydrogen.h"
 
-// Configuration includes
-#include "../config/config.h"
+// Local includes
+#include "launch.h"
 #include "../config/config_swagger.h"
-
-// Core system includes
-#include "../logging/logging.h"
-#include "../utils/utils_logging.h"
-#include "../registry/registry_integration.h"
-#include "../state/state_types.h"
-#include "../payload/payload.h"
 #include "../swagger/swagger.h"
 #include "../webserver/web_server_core.h"  // For WebServerEndpoint
 
-// Launch system includes
-#include "launch.h"
-#include "launch_payload.h"
-#include "launch_webserver.h"  // For is_web_server_running()
-
-// External declarations
-extern AppConfig* app_config;
-
 // Registry ID for the Swagger subsystem
 int swagger_subsystem_id = -1;
-
-// Register the Swagger subsystem with the registry
-void register_swagger(void);
 
 void register_swagger(void) {
     // Only register if not already registered
@@ -91,25 +69,25 @@ LaunchReadiness check_swagger_launch_readiness(void) {
         return (LaunchReadiness){.subsystem = "Swagger", .ready = false, .messages = messages};
     }
 
-    // Check Registry subsystem readiness (primary dependency)
-    LaunchReadiness registry_readiness = get_registry_readiness();
-    if (!registry_readiness.ready) {
-        messages[msg_index++] = strdup("  No-Go:   Registry subsystem not ready");
-        messages[msg_index] = NULL;
-        free_readiness_messages(&registry_readiness);
-        return (LaunchReadiness){.subsystem = "Swagger", .ready = false, .messages = messages};
-    }
-    messages[msg_index++] = strdup("  Go:      Registry subsystem ready");
-    free_readiness_messages(&registry_readiness);
+    // // Check Registry subsystem readiness (primary dependency)
+    // LaunchReadiness registry_readiness = get_registry_readiness();
+    // if (!registry_readiness.ready) {
+    //     messages[msg_index++] = strdup("  No-Go:   Registry subsystem not ready");
+    //     messages[msg_index] = NULL;
+    //     free_readiness_messages(&registry_readiness);
+    //     return (LaunchReadiness){.subsystem = "Swagger", .ready = false, .messages = messages};
+    // }
+    // messages[msg_index++] = strdup("  Go:      Registry subsystem ready");
+    // free_readiness_messages(&registry_readiness);
 
     // Check Network subsystem readiness (using cached version)
-    LaunchReadiness network_readiness = get_network_readiness();
-    if (!network_readiness.ready) {
-        messages[msg_index++] = strdup("  No-Go:   Network subsystem not ready");
-        messages[msg_index] = NULL;
-        return (LaunchReadiness){.subsystem = "Swagger", .ready = false, .messages = messages};
-    }
-    messages[msg_index++] = strdup("  Go:      Network subsystem ready");
+    // LaunchReadiness network_readiness = get_network_readiness();
+    // if (!network_readiness.ready) {
+    //     messages[msg_index++] = strdup("  No-Go:   Network subsystem not ready");
+    //     messages[msg_index] = NULL;
+    //     return (LaunchReadiness){.subsystem = "Swagger", .ready = false, .messages = messages};
+    // }
+    // messages[msg_index++] = strdup("  Go:      Network subsystem ready");
 
     // Check API subsystem readiness (depends on Registry and Network)
     LaunchReadiness api_readiness = check_api_launch_readiness();

@@ -16,32 +16,6 @@ volatile sig_atomic_t network_system_shutdown = 0;
 
 // Registry ID and cached readiness state
 static int network_subsystem_id = -1;
-static LaunchReadiness cached_readiness = {0};
-static bool readiness_cached = false;
-
-// Forward declarations
-static void clear_cached_readiness(void);
-static void register_network(void);
-
-// Helper to clear cached readiness
-static void clear_cached_readiness(void) {
-    if (readiness_cached && cached_readiness.messages) {
-        free_readiness_messages(&cached_readiness);
-        readiness_cached = false;
-    }
-}
-
-// Get cached readiness result
-LaunchReadiness get_network_readiness(void) {
-    if (readiness_cached) {
-        return cached_readiness;
-    }
-    
-    // Perform fresh check and cache result
-    cached_readiness = check_network_launch_readiness();
-    readiness_cached = true;
-    return cached_readiness;
-}
 
 // Register the network subsystem with the registry (for readiness)
 static void register_network(void) {
@@ -105,10 +79,7 @@ int launch_network_subsystem(void) {
     update_subsystem_on_startup("Network", true);
     
     SubsystemState final_state = get_subsystem_state(network_subsystem_id);
-    
-    // Clear any cached readiness before checking final state
-    clear_cached_readiness();
-    
+  
     if (final_state == SUBSYSTEM_RUNNING) {
         log_this("Network", "LAUNCH: NETWORK - Successfully launched and running", LOG_LEVEL_STATE);
         return 1;

@@ -82,6 +82,7 @@
 // POSIX-specific includes
 #include <sys/ioctl.h>      // I/O control operations (e.g., ioctl; POSIX)
 #include <sys/mman.h>       // Memory management declarations (e.g., mmap, munmap; POSIX)
+#include <sys/resource.h>   // Resource limits (e.g., getrlimit, setrlimit; POSIX)
 #include <sys/stat.h>       // File status and modes (e.g., stat, fstat, mkdir, chmod; for file metadata)
 #include <sys/time.h>       // Time-related functions (e.g., gettimeofday, clock_gettime; POSIX)
 #include <sys/types.h>      // POSIX types (e.g., pid_t, ssize_t, off_t; often required before other sys/ headers)
@@ -96,11 +97,15 @@
 #include <brotli/decode.h>  // For Brotli - Decompressing payloads
 #include <brotli/encode.h>  // For Brotli - Compressing content
 
+// Project constants
+#include "constants.h"
+
 // Project includes
 #include "config/config.h"
 #include "logging/logging.h"
 #include "network/network.h"
 #include "payload/payload.h"
+#include "queue/queue.h"
 #include "registry/registry.h"
 #include "state/state.h"
 #include "status/status.h"

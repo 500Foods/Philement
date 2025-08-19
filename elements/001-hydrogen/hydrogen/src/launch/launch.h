@@ -49,7 +49,6 @@
 #include "../config/config.h"
 #include "../threads/threads.h"
 #include "../state/state_types.h"  // For SubsystemState and LaunchReadiness
-#include "launch_registry.h"       // Registry must be first
 
 extern AppConfig *app_config;
 
@@ -70,7 +69,9 @@ int startup_hydrogen(const char* config_path);
 // Utility functions
 char* get_current_config_path(void);
 LaunchReadiness get_api_readiness(void);
+
 int is_api_running(void);
+int is_swagger_running(void);
 
 // Subsystem registration functions
 void register_api(void);
@@ -85,8 +86,11 @@ extern volatile sig_atomic_t mdns_client_system_shutdown;
 extern volatile sig_atomic_t mdns_server_system_shutdown;
 extern volatile sig_atomic_t web_server_shutdown;
 extern volatile sig_atomic_t network_system_shutdown;
+extern volatile sig_atomic_t print_system_shutdown;
+extern volatile sig_atomic_t terminal_system_shutdown;
 
-LaunchReadiness get_network_readiness(void);
+// Subsystem IDs
+extern int payload_subsystem_id;
 
 // Subsystem readiness checks (in standard order)
 LaunchReadiness check_registry_launch_readiness(void);  // Must be first
@@ -106,6 +110,7 @@ LaunchReadiness check_mail_relay_launch_readiness(void);
 LaunchReadiness check_print_launch_readiness(void);
 LaunchReadiness check_notify_launch_readiness(void);
 LaunchReadiness check_oidc_launch_readiness(void);
+LaunchReadiness check_resources_launch_readiness(void);
 
 // Subsystem launch functions 
 int launch_registry_subsystem(bool is_restart);  // Must be first
@@ -125,8 +130,38 @@ int launch_mdns_client_subsystem(void);
 int launch_mail_relay_subsystem(void);
 int launch_print_subsystem(void);
 int launch_oidc_subsystem(void);
+int launch_resources_subsystem(void);
 
+// Forward deeclarations from launch_api.c
 int is_api_running(void);
+int is_web_server_running(void);
+void free_webserver_resources(void);
+int is_websocket_server_running(void);
+// Forward declarations
+void register_websocket(void);
+bool validate_protocol(const char* protocol);
+bool validate_key(const char* key);
+
+// Forward declarations from launch_payload.c
+extern bool launch_payload(const AppConfig *config, const char *marker);
+extern bool check_payload_exists(const char *marker, size_t *size);
+extern bool validate_payload_key(const char *key);
+
+// Forward declarations of static functions
+void log_readiness_messages(LaunchReadiness* readiness);
+void cleanup_readiness_messages(LaunchReadiness* readiness);
+void process_subsystem_readiness(ReadinessResults* results, size_t* index,
+                                      const char* name, LaunchReadiness readiness);
+
+// Forward declarations for validation helpers for launch_resources.c
+bool validate_memory_limits(const ResourceConfig* config, int* msg_count, const char** messages);
+bool validate_queue_settings(const ResourceConfig* config, int* msg_count, const char** messages);
+bool validate_thread_limits(const ResourceConfig* config, int* msg_count, const char** messages);
+bool validate_file_limits(const ResourceConfig* config, int* msg_count, const char** messages);
+bool validate_monitoring_settings(const ResourceConfig* config, int* msg_count, const char** messages);
+
+// Forward declarations for launch_threads.c
+void register_threads(void);
 
 void shutdown_database_subsystem(void);
 void shutdown_network_subsystem(void);
@@ -141,23 +176,5 @@ void shutdown_mdns_client(void);
 void shutdown_mail_relay(void);
 void shutdown_print_queue(void);
 void stop_websocket_server(void);
-
-// Notification configuration limits
-#define MIN_SMTP_PORT 1
-#define MAX_SMTP_PORT 65535
-#define MIN_SMTP_TIMEOUT 1
-#define MAX_SMTP_TIMEOUT 300
-#define MIN_SMTP_RETRIES 0
-#define MAX_SMTP_RETRIES 10
-
-// OIDC configuration limits
-#define MIN_OIDC_PORT 1024
-#define MAX_OIDC_PORT 65535
-#define MIN_TOKEN_LIFETIME 300        // 5 minutes
-#define MAX_TOKEN_LIFETIME 86400      // 24 hours
-#define MIN_REFRESH_LIFETIME 3600     // 1 hour
-#define MAX_REFRESH_LIFETIME 2592000  // 30 days
-#define MIN_KEY_ROTATION_DAYS 1
-#define MAX_KEY_ROTATION_DAYS 90
 
 #endif /* LAUNCH_H */

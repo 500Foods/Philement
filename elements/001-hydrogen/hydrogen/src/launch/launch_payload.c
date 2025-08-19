@@ -10,38 +10,11 @@
  * Note: Shutdown functionality has been moved to landing/landing_payload.c
  */
 
- #include <stdio.h>
- #include <stdlib.h>
- #include <string.h>
- #include <unistd.h>
- #include <sys/stat.h>
- #include <sys/mman.h>
- #include <fcntl.h>
- #include <errno.h>
- #include <signal.h>
- 
- #include "launch.h"
- #include "launch_payload.h"
- #include "../logging/logging.h"
- #include "../config/config.h"
- #include "../config/config_utils.h"  // For filesystem operations
- #include "../registry/registry_integration.h"
- #include "../payload/payload.h"
- #include "../utils/utils.h"
- 
- // External declarations
- extern AppConfig* app_config;
- 
- // External system state flags
- extern volatile sig_atomic_t server_stopping;
- extern volatile sig_atomic_t server_starting;
- extern volatile sig_atomic_t server_running;
- extern volatile sig_atomic_t web_server_shutdown;
- 
- // Forward declarations from payload.c
- extern bool launch_payload(const AppConfig *config, const char *marker);
- extern bool check_payload_exists(const char *marker, size_t *size);
- extern bool validate_payload_key(const char *key);
+// Global includes 
+#include "../hydrogen.h"
+
+// Local includes
+#include "launch.h"
  
  /**
   * Check if the payload subsystem is ready to launch

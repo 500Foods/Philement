@@ -6,25 +6,14 @@
  * so it appears first in the launch sequence.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <signal.h>
+// Global includes 
+#include "../hydrogen.h"
 
+// Local includes
 #include "launch.h"
-#include "../logging/logging.h"
-#include "../registry/registry.h"
-#include "../registry/registry_integration.h"
-#include "../config/config.h"
 
 // Registry ID
 static int registry_subsystem_id = -1;
-
-// Get registry readiness status
-LaunchReadiness get_registry_readiness(void) {
-    return check_registry_launch_readiness();
-}
 
 /*
  * Check if registry is ready to launch
