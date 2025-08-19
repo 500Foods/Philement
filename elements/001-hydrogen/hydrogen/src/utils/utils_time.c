@@ -1,13 +1,11 @@
+
+#include "../hydrogen.h"
+
 // System headers
 #include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
 #include <time.h>
-
-// Fallback definition for CLOCK_MONOTONIC if not defined
-#ifndef CLOCK_MONOTONIC
-#define CLOCK_MONOTONIC 1
-#endif
 
 // Project headers
 #include "utils_time.h"

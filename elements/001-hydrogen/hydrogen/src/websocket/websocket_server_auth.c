@@ -7,14 +7,14 @@
  * - Provides security logging
  */
 
+#include "../hydrogen.h"
+
 // System headers
 #include <string.h>
 
 // Project headers
 #include "websocket_server_internal.h"
 #include "../logging/logging.h"
-
-#define HYDROGEN_AUTH_SCHEME "Key"
 
 // External reference to the server context
 extern WebSocketServerContext *ws_context;

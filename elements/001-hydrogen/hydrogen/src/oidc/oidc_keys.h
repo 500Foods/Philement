@@ -11,6 +11,8 @@
 #ifndef OIDC_KEYS_H
 #define OIDC_KEYS_H
 
+#include "../constants.h"
+
 // Standard Libraries
 #include <stdbool.h>
 #include <stdlib.h>
@@ -23,9 +25,6 @@
 
 // Project Libraries
 #include "../logging/logging.h"
-
-// Key ID length
-#define OIDC_KEY_ID_LENGTH 32
 
 /*
  * Key Usage

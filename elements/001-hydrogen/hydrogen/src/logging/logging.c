@@ -2,6 +2,8 @@
  * Hydrogen Server Logging System
  */
 
+ #include "../hydrogen.h"
+
 // Core system headers
 #include <sys/types.h>
 #include <sys/time.h>
@@ -34,10 +36,6 @@ extern volatile sig_atomic_t log_queue_shutdown;
 extern pthread_cond_t terminate_cond;
 extern pthread_mutex_t terminate_mutex;
 extern int queue_system_initialized;  // From queue.c
-
-// Rolling buffer size
-#define LOG_BUFFER_SIZE 500
-#define MAX_LOG_LINE_LENGTH DEFAULT_LOG_ENTRY_SIZE
 
 // Internal state
 static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;

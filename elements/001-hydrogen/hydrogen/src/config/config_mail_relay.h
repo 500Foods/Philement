@@ -9,6 +9,8 @@
 #ifndef CONFIG_MAIL_RELAY_H
 #define CONFIG_MAIL_RELAY_H
 
+#include "../constants.h"
+
 // System headers
 #include <stdbool.h>
 
@@ -17,9 +19,6 @@
 
 // Project headers
 #include "config_forward.h"  // For AppConfig forward declaration
-
-// Maximum number of outbound servers
-#define MAX_OUTBOUND_SERVERS 5
 
 // Forward declarations from other modules
 struct NotifyConfig;

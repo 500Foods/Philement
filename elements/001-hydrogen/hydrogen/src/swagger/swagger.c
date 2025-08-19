@@ -1,5 +1,5 @@
+#include "../hydrogen.h"
 
-// System headers
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -483,12 +483,6 @@ static void free_swagger_files(void) {
     swagger_files = NULL;
     num_swagger_files = 0;
 }
-
-// TAR format constants
-#define TAR_BLOCK_SIZE 512
-#define TAR_NAME_SIZE 100
-#define TAR_SIZE_OFFSET 124
-#define TAR_SIZE_LENGTH 12
 
 static bool load_swagger_files_from_tar(const uint8_t *tar_data, size_t tar_size) {
     // Try to decompress with Brotli using streaming API

@@ -24,8 +24,7 @@
 #ifndef CONFIG_PRIORITY_H
 #define CONFIG_PRIORITY_H
 
-// Number of priority levels in the system
-#define NUM_PRIORITY_LEVELS 7
+#include "../constants.h"
 
 // Priority level structure
 typedef struct {

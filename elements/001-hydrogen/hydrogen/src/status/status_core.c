@@ -139,17 +139,6 @@ SystemMetrics* collect_system_metrics(const WebSocketMetrics *ws_metrics) {
         metrics->server_uptime = 0;
     }
 
-    // Populate version information
-    #ifndef VERSION
-    #define VERSION "0.1.0"
-    #endif
-    #ifndef RELEASE
-    #define RELEASE "unknown"
-    #endif
-    #ifndef BUILD_TYPE
-    #define BUILD_TYPE "unknown"
-    #endif
-    
     snprintf(metrics->server_version, sizeof(metrics->server_version), "%s", VERSION);
     snprintf(metrics->api_version, sizeof(metrics->api_version), "%s", VERSION);
     snprintf(metrics->release, sizeof(metrics->release), "%s", RELEASE);

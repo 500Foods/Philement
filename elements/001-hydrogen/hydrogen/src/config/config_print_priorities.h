@@ -8,18 +8,9 @@
 #ifndef HYDROGEN_CONFIG_PRINT_PRIORITIES_H
 #define HYDROGEN_CONFIG_PRINT_PRIORITIES_H
 
+#include "../constants.h"
 #include <stdbool.h>
 #include <jansson.h>
-
-// Default values
-#define DEFAULT_PRIORITY_DEFAULT 1
-#define DEFAULT_PRIORITY_EMERGENCY 0
-#define DEFAULT_PRIORITY_MAINTENANCE 2
-#define DEFAULT_PRIORITY_SYSTEM 3
-
-// Validation limits
-#define MIN_PRIORITY 0
-#define MAX_PRIORITY 10
 
 // Print priorities configuration structure
 typedef struct PrintPrioritiesConfig {

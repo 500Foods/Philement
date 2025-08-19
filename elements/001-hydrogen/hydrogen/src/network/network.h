@@ -40,6 +40,7 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
+#include "../constants.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <net/if.h>      
@@ -48,20 +49,8 @@
 // Forward declarations
 struct AppConfig;  // Forward declare to avoid include cycle
 
-#ifndef INET_ADDRSTRLEN
-#define INET_ADDRSTRLEN 16
-#endif
-
-#ifndef INET6_ADDRSTRLEN
-#define INET6_ADDRSTRLEN 46
-#endif
-
-#define MAC_LEN 6
-#define MAX_IPS 50
-#define MAX_INTERFACES 50
-
 // Interface configuration functions
-bool is_interface_configured(const struct AppConfig* app_config, const char* interface_name, bool* is_available);
+bool is_interface_configured(const char* interface_name, bool* is_available);
 
 typedef struct {
     char name[IF_NAMESIZE];

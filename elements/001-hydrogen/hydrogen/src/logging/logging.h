@@ -40,30 +40,9 @@
 #ifndef LOGGING_H
 #define LOGGING_H
 
+#include "../constants.h"
 #include <stdbool.h>
 #include "../config/config_priority.h"
-
-/* Log Level Constants
- * These match the levels defined in the configuration file.
- * DO NOT use raw numbers (0-6) in log calls, use these constants instead.
- */
-#define LOG_LEVEL_TRACE   0  /* Log everything possible */
-#define LOG_LEVEL_DEBUG   1  /* Debug-level messages */
-#define LOG_LEVEL_STATE   2  /* General information, normal operation */
-#define LOG_LEVEL_ALERT   3  /* Pay attention to these, not deal-breakers */
-#define LOG_LEVEL_ERROR   4  /* Likely need to do something here */
-#define LOG_LEVEL_FATAL   5  /* Can't continue  */
-#define LOG_LEVEL_QUIET   6  /* Used primarily for logging UI work */
-
-#define LOG_LINE_BREAK "――――――――――――――――――――――――――――――――――――――――"
-
-/* Logging Size Constants
- * These define the maximum sizes for various logging components.
- * They are specific to the logging system and not part of the general
- * resource configuration.
- */
-#define DEFAULT_LOG_ENTRY_SIZE        1024  /* Size of individual log entries */
-#define DEFAULT_MAX_LOG_MESSAGE_SIZE  2048  /* Size of JSON-formatted messages */
 
 /*
  * Primary logging function - use this for all logging needs

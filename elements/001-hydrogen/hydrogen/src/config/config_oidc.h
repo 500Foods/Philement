@@ -9,7 +9,7 @@
  * - Token lifetimes and algorithms
  * 
  * All validation has been moved to launch readiness checks.
- * Default values are set in code rather than #defines.
+ *
  */
 
 #ifndef CONFIG_OIDC_H

@@ -15,6 +15,7 @@
 #define REGISTRY_H
 
 // System includes
+#include "../constants.h"
 #include <stdbool.h>
 #include <time.h>
 #include <signal.h>
@@ -24,10 +25,6 @@
 #include "../threads/threads.h"
 #include "../state/state_types.h"  // For shared types
 #include "registry_integration.h"  // For subsystem registration and integration
-
-// Constants
-#define MAX_DEPENDENCIES 8
-#define INITIAL_REGISTRY_CAPACITY 8
 
 // Subsystem metadata structure
 typedef struct {

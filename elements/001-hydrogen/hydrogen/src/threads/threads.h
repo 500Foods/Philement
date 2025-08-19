@@ -12,12 +12,10 @@
 #define THREADS_H
 
 // System includes
+#include "../constants.h"
 #include <pthread.h>
 #include <sys/types.h>
 #include <stddef.h>
-
-// Constants
-#define MAX_SERVICE_THREADS 32
 
 // Memory metrics structure
 typedef struct {

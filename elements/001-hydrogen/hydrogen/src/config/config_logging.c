@@ -13,17 +13,6 @@
 #include "config_logging.h"
 #include "config_priority.h"
 
-// Default values for logging destinations
-#define DEFAULT_CONSOLE_ENABLED  true
-#define DEFAULT_FILE_ENABLED     true
-#define DEFAULT_DATABASE_ENABLED false
-#define DEFAULT_NOTIFY_ENABLED   false
-
-#define DEFAULT_CONSOLE_LEVEL  0 // TRACE
-#define DEFAULT_FILE_LEVEL     1 // DEBUG
-#define DEFAULT_DATABASE_LEVEL 4 // ERROR
-#define DEFAULT_NOTIFY_LEVEL   4 // ERROR
-
 // Helper function for initializing subsystems
 static bool init_subsystems(LoggingDestConfig* dest) {
     dest->subsystems = calloc(2, sizeof(LoggingSubsystem));

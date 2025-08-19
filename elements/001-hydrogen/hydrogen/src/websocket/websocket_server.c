@@ -1,11 +1,3 @@
-/* Feature test macros must come first */
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L
-#endif
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
 /*
  * Real-Time WebSocket Server for 3D Printer Control
  * 
@@ -20,6 +12,8 @@
  * Shutdown logic is in websocket_server_shutdown.c
  */
 
+ #include "../hydrogen.h"
+ 
 /* System headers */
 #include <time.h>
 #include <sys/types.h>

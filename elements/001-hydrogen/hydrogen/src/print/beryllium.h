@@ -40,24 +40,11 @@
 #ifndef BERYLLIUM_H
 #define BERYLLIUM_H
 
+#include "../constants.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include "../config/config.h"  // For buffer and configuration constants
-
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
-// Max length of a G-Code Line
-#define MAX_LINE_LENGTH DEFAULT_LINE_BUFFER_SIZE
-
-// Default feedrate in mm/min (not configurable as it's a G-code standard)
-#define DEFAULT_FEEDRATE   7500.0
-
-// Filament properties
-#define DEFAULT_FILAMENT_DIAMETER 1.75  // mm
-#define DEFAULT_FILAMENT_DENSITY 1.04   // g/cm^3
 
 // What we're sending in
 typedef struct {
