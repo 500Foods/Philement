@@ -7,15 +7,12 @@
  * - ID tokens
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <time.h>
+// Global includes 
+#include "../hydrogen.h"
 
+// Local includes
 #include "oidc_tokens.h"
 #include "oidc_keys.h"
-#include "../utils/utils_logging.h"
 
 // Token context structure implementation
 struct OIDCTokenContext {

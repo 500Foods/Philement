@@ -2,25 +2,14 @@
  * Process Metrics Collection Implementation
  */
 
-#include <sys/types.h>
+// Global includes 
+#include "../hydrogen.h"
+
+// Local includes
+#include "status_process.h"
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <sys/stat.h>
 #include <netinet/in.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
-#include <dirent.h>
-#include <errno.h>
-#include <signal.h>
-
-#include "status_process.h"
-#include "../logging/logging.h"
-#include "../config/config.h"
-#include "../utils/utils_queue.h"
-#include "../threads/threads.h"
 
 // External configuration and state
 extern AppConfig *app_config;

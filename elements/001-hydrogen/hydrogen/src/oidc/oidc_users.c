@@ -4,13 +4,11 @@
  * Manages user accounts, authentication, and authorization for OIDC services.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
+// Global includes 
+#include "../hydrogen.h"
 
+// Local includes
 #include "oidc_users.h"
-#include "../utils/utils_logging.h"
 
 // User management context structure implementation
 struct OIDCUserContext {

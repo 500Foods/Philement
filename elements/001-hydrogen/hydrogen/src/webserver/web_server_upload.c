@@ -1,18 +1,10 @@
-// System headers
-#include <sys/time.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+// Global includes 
+#include "../hydrogen.h"
 
-// Project headers
+// Local includes
 #include "web_server_upload.h"
 #include "web_server_core.h"
 #include "../print/beryllium.h"
-#include "../queue/queue.h"
-#include "../logging/logging.h"
-#include "../utils/utils_time.h"
-#include "../utils/utils_logging.h"
-#include "../config/config.h"
 
 // Global configuration
 extern AppConfig* app_config;

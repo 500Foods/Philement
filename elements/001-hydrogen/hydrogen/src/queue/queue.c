@@ -7,9 +7,10 @@
  * 
  */
 
+// Global includes 
 #include "../hydrogen.h"
 
-// Core system headers
+// Local includes
 #include "queue.h"
 
 // External configuration

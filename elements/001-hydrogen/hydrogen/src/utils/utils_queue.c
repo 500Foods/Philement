@@ -1,11 +1,11 @@
 /*
  * Queue Management Implementation
  */
+// Global includes 
+#include "../hydrogen.h"
 
-#include <string.h>
+// Local includes
 #include "utils_queue.h"
-#include "../logging/logging.h"
-#include "../config/config.h"
 
 // Global queue memory tracking
 QueueMemoryMetrics log_queue_memory;

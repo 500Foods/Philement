@@ -1,23 +1,13 @@
+// Global includes 
 #include "../hydrogen.h"
 
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
-#include <signal.h>
-#include <brotli/decode.h>
-
-// Project headers
+// Local includes
 #include "swagger.h"
 #include "../webserver/web_server_core.h"
 #include "../webserver/web_server_compression.h"
-#include "../payload/payload.h"
-#include "../logging/logging.h"
-#include "../config/config.h"
-#include "../config/config_utils.h"  // For filesystem operations
+
 extern AppConfig *app_config;
+
 // Structure to hold in-memory Swagger files
 typedef struct {
     char *name;         // File name (e.g., "index.html")

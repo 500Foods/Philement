@@ -2,32 +2,13 @@
  * Log Queue Manager for the Hydrogen 3D Printer Control System
  * 
  */
+// Global includes 
+#include "../hydrogen.h"
 
-// Core system headers
-#include <sys/types.h>
-#include <sys/time.h>
-#include <pthread.h>
-#include <signal.h>
-#include <unistd.h>
-#include <time.h>
-
-// Standard C headers
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-
-// Third-party libraries
-#include <jansson.h>
-
-// Project headers
+// Local includes
 #include "log_queue_manager.h"
-#include "logging.h"
-#include "../queue/queue.h"
-#include "../config/config.h"
 #include "../config/config_priority.h"
 #include "../config/config_logging.h"
-#include "../utils/utils.h"
 
 // Public interface declarations
 void init_file_logging(const char* log_file_path);

@@ -1,23 +1,9 @@
-// System headers
-#include <sys/syscall.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <signal.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <fcntl.h>
+// Global includes 
+#include "../hydrogen.h"
 
-// Project headers
+// Local includes
 #include "threads.h"
-#include "../utils/utils_logging.h"
-#include "../logging/logging.h"  // For LOG_LEVEL constants
-#include "../state/state.h"
-
-// Log level constants from logging.h
-#ifndef LOG_LEVEL_STATE
-#error "LOG_LEVEL_STATE not defined - logging.h not properly included"
-#endif
+#include <sys/syscall.h>
 
 // Public interface declarations
 void init_service_threads(ServiceThreads *threads);

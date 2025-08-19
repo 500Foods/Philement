@@ -7,19 +7,11 @@
  * - Compressing data on-the-fly
  */
 
- #include "../hydrogen.h"
+// Global includes 
+#include "../hydrogen.h"
 
-// System headers
-#include <sys/stat.h>
-#include <string.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <time.h>
-
-// Project headers
+// Local includes
 #include "web_server_compression.h"
-#include "../logging/logging.h"
-#include "../utils/utils_time.h"
 
 bool client_accepts_brotli(struct MHD_Connection *connection) {
     // Get the Accept-Encoding header

@@ -8,13 +8,11 @@
  * - Thread registration and metrics
  */
 
-// System headers
-#include <string.h>
-#include <unistd.h>
+// Global includes 
+#include "../hydrogen.h"
 
-// Project headers
+// Local includes
 #include "websocket_server_internal.h"
-#include "../logging/logging.h"
 
 // External reference to the server context
 extern WebSocketServerContext *ws_context;

@@ -2,28 +2,12 @@
  * Hydrogen Server Logging System
  */
 
- #include "../hydrogen.h"
+// Global includes 
+#include "../hydrogen.h"
 
-// Core system headers
-#include <sys/types.h>
-#include <sys/time.h>
-#include <time.h>
-#include <pthread.h>
-#include <signal.h>
-#include <unistd.h>
-
-// Standard C headers
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdarg.h>
-
-// Project headers
+// Local includes
 #include "logging.h"
-#include "../config/config.h"
 #include "../config/config_priority.h"
-#include "../queue/queue.h"
-#include "../utils/utils.h"
 
 // Public interface declarations
 void log_this(const char* subsystem, const char* format, int priority, ...);
