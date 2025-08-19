@@ -14,11 +14,7 @@
 #include "../hydrogen.h"
 
 // Local includes
-#include "launch_mail_relay.h"
-
-// External declarations
-extern volatile sig_atomic_t mail_relay_system_shutdown;
-extern AppConfig* app_config;
+#include "launch.h"
 
 // Check if the mail relay subsystem is ready to launch
 LaunchReadiness check_mail_relay_launch_readiness(void) {
