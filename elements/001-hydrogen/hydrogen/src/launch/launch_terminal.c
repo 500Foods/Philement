@@ -9,17 +9,11 @@
  * - WebSockets subsystem must be initialized and ready
  */
 
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
+// Global includes 
+#include "../hydrogen.h"
 
+// Local includes
 #include "launch.h"
-#include "../config/config.h"
-#include "../utils/utils_logging.h"
-
-// External declarations
-extern volatile sig_atomic_t terminal_system_shutdown;
 
 // Check if the terminal subsystem is ready to launch
 LaunchReadiness check_terminal_launch_readiness(void) {

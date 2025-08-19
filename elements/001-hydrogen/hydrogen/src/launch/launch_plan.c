@@ -25,21 +25,11 @@
  * separation of concerns.
  */
 
-// System includes
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
-#include <time.h>
+// Global includes 
+#include "../hydrogen.h"
 
 // Local includes
 #include "launch.h"
-
-// Project includes
-#include "../logging/logging.h"
-#include "../utils/utils_logging.h"
-#include "../registry/registry.h"
-#include "../registry/registry_integration.h"
 
 // Execute the launch plan and make Go/No-Go decisions
 bool handle_launch_plan(const ReadinessResults* results) {

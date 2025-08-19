@@ -12,24 +12,15 @@
  * Note: Shutdown functionality has been moved to landing/landing_print.c
  */
 
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
-#include <signal.h>
+// Global includes 
+#include "../hydrogen.h"
 
+// Local includes
 #include "launch.h"
-#include "launch_print.h"
-#include "../utils/utils_logging.h"
-#include "../threads/threads.h"
-#include "../config/config.h"
-#include "../registry/registry_integration.h"
 
 // External declarations
 extern ServiceThreads print_threads;
 extern pthread_t print_queue_thread;
-extern volatile sig_atomic_t print_system_shutdown;
-extern AppConfig* app_config;
 
 // Check if the print subsystem is ready to launch
 LaunchReadiness check_print_launch_readiness(void) {
