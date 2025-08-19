@@ -5,30 +5,14 @@
  * It verifies that network interfaces are available and properly configured.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
+ // Global includes 
+#include "../hydrogen.h"
 
-// Project headers
-#include "../state/state.h"
-#include "../landing/landing.h"
-#include "../config/config.h"
-#include "../config/config_network.h"
-#include "../network/network.h"
-#include "../logging/logging.h"
-#include "../registry/registry_integration.h"
+// Local includes
 #include "launch.h"
-#include "launch_network.h"
-
-// External system state flags
-extern volatile sig_atomic_t server_stopping;
-extern volatile sig_atomic_t server_starting;
-extern volatile sig_atomic_t server_running;
-extern volatile sig_atomic_t web_server_shutdown;
 
 // Network subsystem shutdown flag
-volatile int network_system_shutdown = 0;
+volatile sig_atomic_t network_system_shutdown = 0;
 
 // Registry ID and cached readiness state
 static int network_subsystem_id = -1;

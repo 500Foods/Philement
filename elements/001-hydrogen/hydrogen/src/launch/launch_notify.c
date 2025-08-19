@@ -5,21 +5,11 @@
  * It provides functions for checking readiness and launching notification services.
  */
 
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
-#include <signal.h>
+ // Global includes 
+#include "../hydrogen.h"
 
+// Local includes
 #include "launch.h"
-#include "launch_notify.h"
-#include "../utils/utils_logging.h"
-#include "../threads/threads.h"
-#include "../config/config.h"
-#include "../registry/registry_integration.h"
-
-// External declarations
-extern AppConfig* app_config;
 
 // Forward declarations for validation helpers
 static bool validate_smtp_settings(const SMTPConfig* config, int* msg_count, const char** messages);

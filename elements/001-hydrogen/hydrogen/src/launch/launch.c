@@ -82,44 +82,12 @@
 #include "launch_registry.h"  // Must be first
 #include "launch_payload.h"
 #include "launch_threads.h"
-#include "launch_network.h"
-#include "launch_database.h"
-#include "launch_logging.h"
 #include "launch_webserver.h"
-#include "launch_api.h"
 #include "launch_swagger.h"
 #include "launch_websocket.h"
 #include "launch_terminal.h"
-#include "launch_mdns_server.h"
-#include "launch_mdns_client.h"
-#include "launch_mail_relay.h"
 #include "launch_print.h"
 #include "launch_resources.h"
-#include "launch_oidc.h"
-#include "launch_notify.h"
-
-// External declarations for subsystem launch functions (in standard order)
-extern int launch_registry_subsystem(bool is_restart);     // from launch_registry.c
-extern int launch_payload_subsystem(void);      // from launch_payload.c
-extern int launch_threads_subsystem(void);      // from launch_threads.c
-extern int launch_network_subsystem(void);      // from launch_network.c
-extern int launch_database_subsystem(void);     // from launch_database.c
-extern int launch_logging_subsystem(void);      // from launch_logging.c
-extern int launch_webserver_subsystem(void);    // from launch_webserver.c
-extern int launch_api_subsystem(void);          // from launch_api.c
-extern int launch_swagger_subsystem(void);      // from launch_swagger.c
-extern int launch_websocket_subsystem(void);    // from launch_websocket.c
-extern int launch_terminal_subsystem(void);     // from launch_terminal.c
-extern int launch_mdns_server_subsystem(void);  // from launch_mdns_server.c
-extern int launch_mdns_client_subsystem(void);  // from launch_mdns_client.c
-extern int launch_mail_relay_subsystem(void);   // from launch_mail_relay.c
-extern int launch_print_subsystem(void);        // from launch_print.c
-extern int launch_resources_subsystem(void);    // from launch_resources.c
-extern int launch_oidc_subsystem(void);         // from launch_oidc.c
-extern int launch_notify_subsystem(void);       // from launch_notify.c
-
-// External declarations from config.h
-extern AppConfig* app_config;
 
 // Define RELEASE if not provided by compiler
 #ifndef RELEASE

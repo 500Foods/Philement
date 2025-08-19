@@ -14,11 +14,7 @@
 // Local includes
 #include "launch.h"
 #include "launch_webserver.h"   // For is_web_server_running()
-#include "launch_network.h"     // For get_network_readiness()
 #include "../api/api_service.h" // For API service initialization
-
-// External declarations
-extern AppConfig* app_config;
 
 // Registry ID and cached readiness state
 int api_subsystem_id = -1;
