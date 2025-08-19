@@ -18,7 +18,6 @@
 #include "landing.h"
 
 #include "../landing/landing.h"
-#include "../landing/landing_readiness.h"
 #include "../utils/utils_logging.h"
 #include "../threads/threads.h"
 #include "../config/config.h"

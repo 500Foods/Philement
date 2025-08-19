@@ -51,8 +51,6 @@
 
 // Local includes
 #include "landing.h"
-#include "landing_plan.h"
-#include "landing_review.h"
 #include "../launch/launch.h"
 
 // External declarations for landing orchestration

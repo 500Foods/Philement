@@ -2,18 +2,11 @@
  * Logging Subsystem Launch Implementation
  */
 
-#include <stdbool.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdarg.h>
+// Global includes 
+#include "../hydrogen.h"
 
+// Local includes
 #include "launch_logging.h"
-#include "../logging/logging.h"
-#include "../registry/registry.h"
-#include "../state/state.h"
-#include "../config/config.h"
-#include "../config/config_logging.h"
 
 // External system state flags
 extern volatile sig_atomic_t server_stopping;

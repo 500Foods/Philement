@@ -8,20 +8,14 @@
  * - WebServer subsystem must be initialized and ready
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+// Global includes 
+#include "../hydrogen.h"
 
+// Local includes
 #include "launch.h"
-#include "launch_webserver.h"  // For is_web_server_running()
-#include "launch_network.h"    // For get_network_readiness()
-#include "../logging/logging.h"
-#include "../utils/utils_logging.h"
-#include "../config/config.h"
-#include "../registry/registry_integration.h"
-#include "../state/state_types.h"
-#include "../config/config_api.h"
-#include "../api/api_service.h"  // For API service initialization
+#include "launch_webserver.h"   // For is_web_server_running()
+#include "launch_network.h"     // For get_network_readiness()
+#include "../api/api_service.h" // For API service initialization
 
 // External declarations
 extern AppConfig* app_config;

@@ -23,6 +23,7 @@
 // Project includes
 #include "../threads/threads.h"
 #include "../state/state_types.h"  // For shared types
+#include "registry_integration.h"  // For subsystem registration and integration
 
 // Constants
 #define MAX_DEPENDENCIES 8
