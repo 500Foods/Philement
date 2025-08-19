@@ -15,23 +15,6 @@
 #include "system/system_service.h"
 #include "oidc/oidc_service.h"
 
-// External declarations for endpoint handlers
-extern enum MHD_Result handle_system_info_request(struct MHD_Connection *connection);
-extern enum MHD_Result handle_system_health_request(struct MHD_Connection *connection);
-extern enum MHD_Result handle_system_test_request(struct MHD_Connection *connection,
-                                               const char *method,
-                                               const char *upload_data,
-                                               size_t *upload_data_size,
-                                               void **con_cls);
-extern enum MHD_Result handle_system_config_request(struct MHD_Connection *connection,
-                                                 const char *method,
-                                                 const char *upload_data,
-                                                 size_t *upload_data_size,
-                                                 void **con_cls);
-extern enum MHD_Result handle_system_prometheus_request(struct MHD_Connection *connection);
-extern enum MHD_Result handle_system_appconfig_request(struct MHD_Connection *connection);
-extern enum MHD_Result handle_system_recent_request(struct MHD_Connection *connection);
-
 bool init_api_endpoints(void) {
     log_this("API", "Initializing API endpoints", LOG_LEVEL_STATE);
     
