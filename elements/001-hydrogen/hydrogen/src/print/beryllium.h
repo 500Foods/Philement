@@ -1,40 +1,5 @@
 /*
- * G-code Analysis for High-Quality 3D Printing
- * 
- * Why Advanced Analysis Matters:
- * 1. Print Quality
- *    - Motion path validation
- *    - Acceleration profiles
- *    - Layer timing analysis
- *    - Material flow rates
- * 
- * 2. Resource Management
- *    Why These Calculations?
- *    - Material consumption
- *    - Print time prediction
- *    - Power usage estimation
- *    - Cost calculation
- * 
- * 3. Time Estimation
- *    Why So Precise?
- *    - Scheduling accuracy
- *    - Resource planning
- *    - Progress tracking
- *    - Maintenance timing
- * 
- * 4. Multi-Object Printing
- *    Why This Support?
- *    - Object separation
- *    - Print sequencing
- *    - Failure isolation
- *    - Resource allocation
- * 
- * 5. Safety Features
- *    Why These Checks?
- *    - Motion limit validation
- *    - Temperature profiling
- *    - Tool path verification
- *    - Resource bounds
+ * G-code Analysis
  */
 
 #ifndef BERYLLIUM_H

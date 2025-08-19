@@ -1,5 +1,5 @@
 /*
- * Safety-Critical State Management for 3D Printer Control
+ * State Management
  * 
  */
 

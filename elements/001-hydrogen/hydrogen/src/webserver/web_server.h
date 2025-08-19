@@ -1,5 +1,5 @@
 /*
- * Web Interface for 3D Printer Control
+ * WebServer
  * 
  * This header serves as a facade for the web server subsystem,
  * providing access to all web server functionality through a single include.

@@ -1,32 +1,5 @@
 /*
  * Landing Review System
- * 
- * DESIGN PRINCIPLES:
- * - This file is a lightweight orchestrator only - no subsystem-specific code
- * - All subsystems are equal in importance - no hierarchy
- * - Status reporting is comprehensive but minimal
- * - Processing order matches landing sequence
- *
- * REVIEW SEQUENCE:
- * 1. Timing Assessment:
- *    - Calculate total landing duration
- *    - Log elapsed time statistics
- *    - Track shutdown performance
- *
- * 2. Thread Analysis:
- *    - Check for remaining active threads
- *    - Verify thread cleanup completion
- *    - Report any cleanup issues
- *
- * 3. Status Summary:
- *    - Report landing success rate
- *    - Detail each subsystem's final state
- *    - Provide comprehensive status overview
- *
- * 4. Final Report:
- *    - Summarize overall landing success
- *    - Report any remaining issues
- *    - Provide final system state
  *
  * Standard Processing Order (matches landing):
  * - 15. Print (first to land)
@@ -45,10 +18,6 @@
  * - 02. Payload
  * - 01. Registry (last to land)
  *
- * Key Points:
- * - All subsystems are reviewed equally
- * - Focus on factual status reporting
- * - Clear presentation of results
  */
 
 // Global includes 

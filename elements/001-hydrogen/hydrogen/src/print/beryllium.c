@@ -1,5 +1,5 @@
 /*
- * G-code Analysis System for High-Quality 3D Printing
+ * G-code Analysis
  * 
  */
 
