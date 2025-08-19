@@ -29,7 +29,7 @@
 #include "../hydrogen.h"
 
 // Local includes
-#include "landing_readiness.h"
+#include "landing.h"
 
 // External declarations for subsystem readiness checks (in reverse launch order)
 extern LaunchReadiness check_print_landing_readiness(void);        // from landing_print.c

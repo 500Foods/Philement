@@ -2,17 +2,11 @@
  * Database Subsystem Launch Implementation
  */
 
-#include <stdbool.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdarg.h>
+// Global includes 
+#include "../hydrogen.h"
 
+// Local includes
 #include "launch_database.h"
-#include "../logging/logging.h"
-#include "../registry/registry.h"
-#include "../state/state.h"
-#include "../config/config.h"
 
 // External system state flags
 extern volatile sig_atomic_t server_stopping;

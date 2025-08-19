@@ -50,7 +50,7 @@
 #include "../hydrogen.h"
 
 // Local includes
-#include "landing_plan.h"
+#include "landing.h"
 
 // Forward declarations
 static bool check_dependent_states(const char* subsystem, bool* can_land);

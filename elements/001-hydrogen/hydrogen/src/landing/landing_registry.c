@@ -10,7 +10,7 @@
 #include "../hydrogen.h"
 
 // Local includes
-#include "landing_registry.h"
+#include "landing.h"
 
 // External declarations
 extern AppConfig* app_config;
