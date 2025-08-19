@@ -1,5 +1,5 @@
 /*
- * Print Job Management System for 3D Printer Control
+ * Print Job Management for 3D Printing
  * 
  */
 

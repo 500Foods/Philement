@@ -1,5 +1,5 @@
 /*
- * Log Queue Manager for the Hydrogen 3D Printer Control System
+ * Log Queue Manager
  * 
  */
 // Global includes 

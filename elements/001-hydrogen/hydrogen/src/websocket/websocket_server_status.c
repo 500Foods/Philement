@@ -1,7 +1,4 @@
-/*
- * Real-time Status Monitoring for 3D Printer Control
- */
- // Global includes 
+// Global includes 
 #include "../hydrogen.h"
 
 // Local includes

@@ -1,7 +1,3 @@
-/*
- * Real-time Communication for 3D Printer Control
- */
-
 #ifndef WEBSOCKET_SERVER_H
 #define WEBSOCKET_SERVER_H
 

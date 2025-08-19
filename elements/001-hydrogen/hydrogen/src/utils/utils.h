@@ -1,5 +1,5 @@
 /*
- * Core Utilities for High-Precision 3D Printing
+ * Core Utilities
  * 
  * This header serves as a facade for the utility subsystem,
  * providing access to all utility functions through a single include.
