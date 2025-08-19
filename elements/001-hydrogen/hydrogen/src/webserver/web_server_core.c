@@ -5,6 +5,7 @@
  * including initialization, request handling, and shutdown procedures.
  */
 
+ #include "../hydrogen.h"
 // System headers
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -24,18 +25,6 @@
 #include "../config/config_webserver.h"  // For WebServerConfig
 #include "../threads/threads.h"
 #include "../logging/logging.h"
-
-// Network constants
-#ifndef NI_MAXHOST
-#define NI_MAXHOST 1025
-#endif
-
-#ifndef NI_NUMERICHOST
-#define NI_NUMERICHOST 0x02
-#endif
-
-// Maximum number of registered endpoints
-#define MAX_ENDPOINTS 16
 
 // Endpoint registry
 static WebServerEndpoint registered_endpoints[MAX_ENDPOINTS];
@@ -276,11 +265,6 @@ bool init_web_server(WebServerConfig *web_config) {
 
     return true;
 }
-
-// Option constants for microhttpd
-#ifndef MHD_OPTION_LISTENING_ADDRESS_REUSE
-#define MHD_OPTION_LISTENING_ADDRESS_REUSE 5
-#endif
 
 void* run_web_server(void* arg) {
     (void)arg; // Unused parameter

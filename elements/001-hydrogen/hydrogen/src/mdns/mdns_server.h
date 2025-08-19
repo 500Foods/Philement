@@ -39,48 +39,12 @@
  */
 
 // System Libraries
+#include "../constants.h"
 #include <stdint.h>
 #include <pthread.h>
 
 // Project Libraries
 #include "../network/network.h"
-
-/*
- * Protocol Constants:
- * 
- * Network Parameters:
- * - MDNS_PORT: Standard mDNS port (5353)
- * - MDNS_GROUP_*: Multicast group addresses
- * - MDNS_TTL: Time-to-live for multicast packets
- * 
- * DNS Record Types:
- * - Used in packet construction
- * - Each type serves specific discovery purpose
- * - Follows RFC 1035 standards
- * 
- * Packet Construction:
- * - Flag values for response headers
- * - Size limits for UDP datagrams
- * - Class values for Internet records
- */
-#define MDNS_PORT 5353                    // Standard mDNS port
-#define MDNS_GROUP_V4 "224.0.0.251"      // IPv4 multicast group
-#define MDNS_GROUP_V6 "ff02::fb"         // IPv6 multicast group
-
-#define MDNS_TTL 255                      // Default TTL for announcements
-
-// DNS Type Values (RFC 1035)
-#define MDNS_TYPE_A 1      // Host address (IPv4)
-#define MDNS_TYPE_PTR 12   // Domain name pointer (service discovery)
-#define MDNS_TYPE_TXT 16   // Text strings (metadata)
-#define MDNS_TYPE_AAAA 28  // Host address (IPv6)
-#define MDNS_TYPE_SRV 33   // Service location
-#define MDNS_TYPE_ANY 255  // Request for all records
-
-#define MDNS_CLASS_IN 1                   // Internet class records
-#define MDNS_FLAG_RESPONSE 0x8400         // Response packet flag
-#define MDNS_FLAG_AUTHORITATIVE 0x0400    // Authoritative answer flag
-#define MDNS_MAX_PACKET_SIZE 1500         // MTU-compatible size
 
 /*
  * Service Description:

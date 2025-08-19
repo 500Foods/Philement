@@ -7,24 +7,10 @@
  * 
  */
 
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 199309L
-#endif
+#include "../hydrogen.h"
 
 // Core system headers
-#include <sys/types.h>
-#include <pthread.h>
-#include <time.h>
-
-// Standard C headers
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-// Project headers
 #include "queue.h"
-#include "../logging/logging.h"
-#include "../config/config.h"
 
 // External configuration
 extern AppConfig *app_config;

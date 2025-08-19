@@ -8,24 +8,13 @@
 #ifndef HYDROGEN_CONFIG_WEBSERVER_H
 #define HYDROGEN_CONFIG_WEBSERVER_H
 
+#include "../constants.h"
 #include <stddef.h>
 #include <stdbool.h>
 #include <jansson.h>
 #include "config_forward.h"  // For AppConfig forward declaration
 #include "config_swagger.h"  // For SwaggerConfig
 #include "config_api.h"      // For APIConfig
-
-// Validation limits (used by launch readiness check)
-#define MIN_PORT 1024
-#define MAX_PORT 65535
-#define MIN_THREAD_POOL_SIZE 1
-#define MAX_THREAD_POOL_SIZE 64
-#define MIN_CONNECTIONS 1
-#define MAX_CONNECTIONS 10000
-#define MIN_CONNECTIONS_PER_IP 1
-#define MAX_CONNECTIONS_PER_IP 1000
-#define MIN_CONNECTION_TIMEOUT 1
-#define MAX_CONNECTION_TIMEOUT 3600
 
 /*
  * Web server configuration structure

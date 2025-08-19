@@ -11,11 +11,10 @@
 #ifndef WEB_SERVER_UPLOAD_H
 #define WEB_SERVER_UPLOAD_H
 
+#include "../constants.h"
 #include <microhttpd.h>
 #include "web_server_core.h"
 
-// UUID generation for unique filenames
-#define UUID_STR_LEN 37
 void generate_uuid(char *uuid_str);
 
 // Upload data processing

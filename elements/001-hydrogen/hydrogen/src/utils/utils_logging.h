@@ -13,11 +13,8 @@
 #ifndef UTILS_LOGGING_H
 #define UTILS_LOGGING_H
 
+#include "../constants.h"
 #include <stddef.h>
-
-// Constants for ID generation
-#define ID_CHARS "BCDFGHKPRST"  // Consonants for readable IDs
-#define ID_LEN 5                // Balance of uniqueness and readability
 
 // Include configuration for label widths
 #include "../config/config.h"

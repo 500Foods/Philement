@@ -346,14 +346,14 @@ LaunchReadiness check_network_launch_readiness(void) {
         
         // If not all interfaces enabled, check specific configuration
         if (!all_interfaces_enabled) {
-            bool is_configured = is_interface_configured(config, interface->name, &is_available);
+            bool is_configured = is_interface_configured(interface->name, &is_available);
             if (!is_configured) {
                 is_available = true; // Not configured means enabled by default
             }
         }
         
         const char* config_status = all_interfaces_enabled ? "enabled via all:true" :
-            (is_interface_configured(config, interface->name, NULL) ? 
+            (is_interface_configured(interface->name, NULL) ? 
                 (is_available ? "enabled in config" : "disabled in config") :
                 "not in config - enabled by default");
         

@@ -9,6 +9,7 @@
 #ifndef STATUS_CORE_H
 #define STATUS_CORE_H
 
+#include "../constants.h"
 #include <sys/types.h>
 #include <pthread.h>
 #include <stdbool.h>
@@ -21,14 +22,6 @@ typedef struct {
     int total_connections;
     int total_requests;
 } WebSocketMetrics;
-
-// Maximum string lengths for various fields
-#define MAX_VERSION_STRING 64
-#define MAX_SYSINFO_STRING 256
-#define MAX_PATH_STRING 1024
-#define MAX_TYPE_STRING 32
-#define MAX_DESC_STRING 256
-#define MAX_PERCENTAGE_STRING 32
 
 // File descriptor information
 typedef struct {

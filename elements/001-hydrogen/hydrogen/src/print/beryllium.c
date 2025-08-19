@@ -2,6 +2,7 @@
  * G-code Analysis System for High-Quality 3D Printing
  * 
  */
+#include "../hydrogen.h"
 
 // Core system headers
 #include <sys/types.h>
@@ -18,8 +19,6 @@
 #include "../utils/utils.h"
 #include "../logging/logging.h"
 
-// Memory allocation chunk sizes
-#define Z_VALUES_CHUNK_SIZE 1000  // Initial allocation size for Z values array
 extern AppConfig *app_config;
 /**
  * Create a BerylliumConfig from AppConfig
