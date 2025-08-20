@@ -122,7 +122,7 @@ int land_logging_subsystem(void) {
     remove_service_thread(&logging_threads, log_thread);
     
     // Reinitialize thread structure
-    init_service_threads(&logging_threads);
+    init_service_threads(&logging_threads, "Logging");
     
     // Clean up logging configuration
     if (app_config) {

@@ -89,7 +89,7 @@ int land_websocket_subsystem(void) {
     // Step 3: Remove the websocket thread from tracking and reinitialize
     log_this("WebSocket", "Cleaning up thread tracking", LOG_LEVEL_STATE);
     remove_service_thread(&websocket_threads, websocket_thread);
-    init_service_threads(&websocket_threads);
+    init_service_threads(&websocket_threads, "WebSocket");
     
     log_this("WebSocket", "WebSocket shutdown complete", LOG_LEVEL_STATE);
     

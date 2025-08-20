@@ -69,8 +69,10 @@
          size_t size;
          if (check_payload_exists(PAYLOAD_MARKER, &size)) {
              char* msg = malloc(256);
+             char* nice_size = malloc(12);
+             nice_size = format_number_with_commas(size,nice_size, 12);
              if (msg) {
-                 snprintf(msg, 256, "  Go:      Payload found: %zu bytes", size);
+                 snprintf(msg, 256, "  Go:      Payload found: %s bytes", nice_size);
                  messages[msg_index++] = msg;
              }
              

@@ -152,11 +152,11 @@ static void log_early_info(void) {
     log_group_begin();
     log_this("Startup", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
     log_this("Startup", "HYDROGEN STARTUP", LOG_LEVEL_STATE);
-    log_this("Startup", "PID:      %d", LOG_LEVEL_STATE, getpid());
-    log_this("Startup", "Version:  %s", LOG_LEVEL_STATE, VERSION);
-    log_this("Startup", "Release:  %s", LOG_LEVEL_STATE, RELEASE);
-    log_this("Startup", "Build:    %s", LOG_LEVEL_STATE, BUILD_TYPE);
-    log_this("Startup", "Size:     %'d bytes", LOG_LEVEL_STATE, server_executable_size);    
+    log_this("Startup", "PID:     %d", LOG_LEVEL_STATE, getpid());
+    log_this("Startup", "Version: %s", LOG_LEVEL_STATE, VERSION);
+    log_this("Startup", "Release: %s", LOG_LEVEL_STATE, RELEASE);
+    log_this("Startup", "Build:   %s", LOG_LEVEL_STATE, BUILD_TYPE);
+    log_this("Startup", "Size:    %'d bytes", LOG_LEVEL_STATE, server_executable_size);    
     log_group_end();
 }
 
@@ -401,10 +401,6 @@ int startup_hydrogen(const char* config_path) {
     log_this("Startup", "    Current system clock:  %s", LOG_LEVEL_STATE, current_time_str);
     log_this("Startup", "    Startup elapsed time:  %.3fs", LOG_LEVEL_STATE, startup_time);
     
-    // Log memory usage
-    size_t vmsize = 0, vmrss = 0, vmswap = 0;
-    get_process_memory(&vmsize, &vmrss, &vmswap);
-    log_this("Startup", "    Memory Usage (RSS):    %.1f MB", LOG_LEVEL_STATE, (double)vmrss / 1024.0);
     
     // Display restart count and timing if application has been restarted
     if (restart_count > 0) {
@@ -431,11 +427,27 @@ int startup_hydrogen(const char* config_path) {
     }
 
     log_this("Startup", "- Resources Information", LOG_LEVEL_STATE);
-    log_this("Startup", "    Threads:    TBD", LOG_LEVEL_STATE);
-    log_this("Startup", "    Queues:     TBD", LOG_LEVEL_STATE);
-    log_this("Startup", "    Registry:   TBD", LOG_LEVEL_STATE);
-    log_this("Startup", "    Databases:  TBD", LOG_LEVEL_STATE);
-    log_this("Startup", "    AppConfig:  %'d bytes", LOG_LEVEL_STATE, sizeof(*app_config));
+
+    size_t vmsize = 0, vmrss = 0, vmswap = 0;
+    get_process_memory(&vmsize, &vmrss, &vmswap);
+    log_this("Startup", "    Memory (RSS): %.1f MB", LOG_LEVEL_STATE, (double)vmrss / 1024.0);
+        
+    log_this("Startup", "    AppConfig: %'7d bytes", LOG_LEVEL_STATE, sizeof(*app_config));
+    log_this("Startup", "    Subsystems:  %'5d Registered", LOG_LEVEL_STATE, registry_registered);
+    log_this("Startup", "    - Active:    %'5d", LOG_LEVEL_STATE, registry_running);
+    log_this("Startup", "    - Failed:    %'5d", LOG_LEVEL_STATE, registry_failed);
+    log_this("Startup", "    - Unused:    %'5d", LOG_LEVEL_STATE, registry_registered - (registry_running + registry_failed));
+    log_this("Startup", "    Threads:     %'5d Total", LOG_LEVEL_STATE,
+             logging_threads.thread_count + webserver_threads.thread_count +
+             websocket_threads.thread_count + mdns_server_threads.thread_count +
+             print_threads.thread_count);
+    log_this("Startup", "    - Logging:   %'5d", LOG_LEVEL_STATE, logging_threads.thread_count);
+    log_this("Startup", "    - WebServer: %'5d", LOG_LEVEL_STATE, webserver_threads.thread_count);
+    log_this("Startup", "    - WebSocket: %'5d", LOG_LEVEL_STATE, websocket_threads.thread_count);
+    log_this("Startup", "    - mDNS:      %'5d", LOG_LEVEL_STATE, mdns_server_threads.thread_count);
+    log_this("Startup", "    - Print:     %'5d", LOG_LEVEL_STATE, print_threads.thread_count);
+    log_this("Startup", "    Queues:      %'5d", LOG_LEVEL_STATE, 0);
+    log_this("Startup", "    Databases:   %'5d", LOG_LEVEL_STATE, 0);
     
     log_this("Startup", "- Application started", LOG_LEVEL_STATE);
     log_this("Startup", "Press Ctrl+C to exit", LOG_LEVEL_STATE);

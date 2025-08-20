@@ -313,11 +313,11 @@ bool process_payload_data(const PayloadData *payload) {
     }
 
     // Log payload information
-    log_this("Payload", "Processing payload: %'d bytes", LOG_LEVEL_STATE, payload->size);
+    log_this("Payload", "Processing payload:   %'d bytes", LOG_LEVEL_STATE, payload->size);
 
     // Check if payload is compressed
     if (payload->is_compressed) {
-        log_this("Payload", "Payload is compressed (Brotli)", LOG_LEVEL_STATE);
+        // log_this("Payload", "Payload is compressed with Brotli", LOG_LEVEL_STATE);
         
         // Use Brotli streaming API for decompression
         BrotliDecoderState* decoder = BrotliDecoderCreateInstance(NULL, NULL, NULL);
@@ -552,11 +552,11 @@ bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size,
 
     // Log payload structure details
     log_this("Payload", "Payload structure:", LOG_LEVEL_STATE, NULL);
-    log_this("Payload", "- File size:         %'d bytes", LOG_LEVEL_STATE, server_executable_size);
-    log_this("Payload", "- Payload size:      %'d bytes", LOG_LEVEL_STATE, encrypted_size);
-    log_this("Payload", "- Key size:          %u bytes", LOG_LEVEL_STATE, key_size);
-    log_this("Payload", "- Init Vector (IV):  16 bytes", LOG_LEVEL_STATE, NULL);
-    log_this("Payload", "- Encrypted size:    %'d bytes", LOG_LEVEL_STATE, encrypted_size - 4 - key_size - 16);
+    log_this("Payload", "- File size:         %'8d bytes", LOG_LEVEL_STATE, server_executable_size);
+    log_this("Payload", "- Payload size:      %'8d bytes", LOG_LEVEL_STATE, encrypted_size);
+    log_this("Payload", "- Key size:          %8u bytes", LOG_LEVEL_STATE, key_size);
+    log_this("Payload", "- Init Vector (IV):  %8d bytes", LOG_LEVEL_STATE, 16);
+    log_this("Payload", "- Encrypted size:    %'8d bytes", LOG_LEVEL_STATE, encrypted_size - 4 - key_size - 16);
 
     // Decode private key from base64
     b64 = BIO_new(BIO_f_base64());
@@ -647,7 +647,7 @@ bool decrypt_payload(const uint8_t *encrypted_data, size_t encrypted_size,
     }
 
     *decrypted_size += (size_t)final_len;
-    log_this("Payload", "Payload decrypted: %'d bytes", LOG_LEVEL_STATE, *decrypted_size);
+    log_this("Payload", "Payload decrypted:   %'8d bytes", LOG_LEVEL_STATE, *decrypted_size);
     success = true;
 
 cleanup:

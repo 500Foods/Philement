@@ -5,8 +5,15 @@
 // Global configuration instance
 AppConfig *app_config = NULL;
 
+//Global subsystem registry state
+size_t registry_registered = 0;
+size_t registry_running = 0;
+size_t registry_attempted = 0;
+size_t registry_failed = 0;
+
 // Tracks current executable size
 long long server_executable_size = 0;
+
 
 void get_executable_size(char *argv[]) {
     struct stat server_executable;
