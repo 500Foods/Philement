@@ -9,7 +9,7 @@
 #ifndef PAYLOAD_H
 #define PAYLOAD_H
 
-#include "../constants.h"
+#include "../globals.h"
 #include "../config/config.h"
 
 #include <stdbool.h>

@@ -209,11 +209,13 @@ wait_for_startup() {
         if "${GREP}" -q "Application started" "${log_file}" 2>/dev/null; then
             # Extract startup time from log if available
             local log_startup_time
-            log_startup_time=$("${GREP}" "Startup elapsed time:" "${log_file}" 2>/dev/null | sed 's/.*Startup elapsed time: \([0-9.]*s\).*/\1/' | tail -1 || true)
+            log_startup_time=$("${GREP}" "Startup elapsed time:" "${log_file}" 2>/dev/null | sed 's/.*Startup elapsed time:  \([0-9.]*s\).*/\1/' | tail -1 || true)
             if [[ -n "${log_startup_time}" ]]; then
-                print_message "Startup completed in ${elapsed_ms}ms [Log: ${log_startup_time}]"
+                print_message "Startup completed in ${elapsed_ms}ms"
+                print_message "Logged startup time reported as ${log_startup_time}"
             else
-                print_message "Startup completed in ${elapsed_ms}ms [Log: Not found]"
+                print_message "Startup completed in ${elapsed_ms}ms"
+                print_message "Logged startup time not found"
             fi
             return 0
         fi

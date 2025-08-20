@@ -71,7 +71,7 @@
 
 // LOGGING ////////////////////////////////////////////////////////////////////////////////////////
 
-#define LOG_LINE_BREAK "――――――――――――――――――――――――――――――――――――――――"   // 40-char line break
+#define LOG_LINE_BREAK "――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――"   
 
 #define LOG_LEVEL_TRACE   0  // Log everything possible 
 #define LOG_LEVEL_DEBUG   1  // Debug-level messages

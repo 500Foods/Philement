@@ -77,8 +77,9 @@ void handle_launch_review(const ReadinessResults* results) {
     }
     
     // Log summary statistics
-    log_this("Launch", "Subsystems        %d", LOG_LEVEL_STATE, results->total_checked);
-    log_this("Launch", "Launch Attempts   %d", LOG_LEVEL_STATE, total_attempts);
-    log_this("Launch", "Launch Successes  %d", LOG_LEVEL_STATE, total_running);
+    log_this("Launch", "Subsystems:        %d", LOG_LEVEL_STATE, results->total_checked);
+    log_this("Launch", "Launch Attempts:   %d", LOG_LEVEL_STATE, total_attempts);
+    log_this("Launch", "Launch Successes:  %d", LOG_LEVEL_STATE, total_running);
+    log_this("Launch", "Launch Failures:   %d", LOG_LEVEL_STATE, total_attempts - total_running);
     
 }
