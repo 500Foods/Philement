@@ -11,7 +11,7 @@
 #ifndef OIDC_KEYS_H
 #define OIDC_KEYS_H
 
-#include "../constants.h"
+#include "../globals.h"
 
 // Standard Libraries
 #include <stdbool.h>

@@ -1,32 +1,5 @@
 /*
  * Launch System Coordinator
- * 
- * DESIGN PRINCIPLES:
- * - All subsystems are equal in importance
- * - No subsystem is inherently critical or non-critical relative to others
- * - Dependencies determine what's needed, not importance
- * - The processing order is for consistency, not priority
- *
- * LAUNCH SEQUENCE:
- * 1. Launch Readiness (launch_readiness.c):
- *    - Determines if each subsystem has what it needs to start
- *    - No subsystem is prioritized over others
- *    - Each makes its own Go/No-Go decision
- *
- * 2. Launch Plan (launch_plan.c):
- *    - Summarizes readiness status of all subsystems
- *    - Creates launch sequence based on dependencies
- *    - No inherent priority, just dependency order
- *
- * 3. Launch Execution (launch.c):
- *    - Launches each ready subsystem
- *    - Order is for consistency and dependencies only
- *    - Each subsystem is equally important
- *
- * 4. Launch Review (launch_review.c):
- *    - Assesses what happened during launch
- *    - Reports success/failure for each subsystem
- *    - All outcomes are equally important
  *
  * Standard Processing Order (for consistency, not priority):
  * - 01. Registry (processes registrations)
@@ -114,7 +87,8 @@ static bool launch_approved_subsystems(ReadinessResults* results) {
         // Get subsystem ID
         int subsystem_id = get_subsystem_id_by_name(subsystem);
         if (subsystem_id < 0) {
-            log_this("Launch", "Failed to get subsystem ID for '%s'", LOG_LEVEL_ERROR, subsystem);
+            log_this("Startup", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+            log_this("Launch", "LAUNCH: Failed to get subsystem ID for '%s'", LOG_LEVEL_ERROR, subsystem);
             free(upper_name);
             continue;
         }
@@ -178,10 +152,11 @@ static void log_early_info(void) {
     log_group_begin();
     log_this("Startup", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
     log_this("Startup", "HYDROGEN STARTUP", LOG_LEVEL_STATE);
-    log_this("Startup", "PID: %d", LOG_LEVEL_STATE, getpid());
-    log_this("Startup", "Version: %s", LOG_LEVEL_STATE, VERSION);
-    log_this("Startup", "Release: %s", LOG_LEVEL_STATE, RELEASE);
-    log_this("Startup", "Build Type: %s", LOG_LEVEL_STATE, BUILD_TYPE);
+    log_this("Startup", "PID:      %d", LOG_LEVEL_STATE, getpid());
+    log_this("Startup", "Version:  %s", LOG_LEVEL_STATE, VERSION);
+    log_this("Startup", "Release:  %s", LOG_LEVEL_STATE, RELEASE);
+    log_this("Startup", "Build:    %s", LOG_LEVEL_STATE, BUILD_TYPE);
+    log_this("Startup", "Size:     %'d bytes", LOG_LEVEL_STATE, server_executable_size);    
     log_group_end();
 }
 
@@ -286,14 +261,12 @@ int startup_hydrogen(const char* config_path) {
     srand((unsigned int)time(NULL));
     
     // 1. Check core library dependencies (before config)
-    log_this("Startup", "Performing core library dependency checks...", LOG_LEVEL_STATE);
     int critical_dependencies = check_library_dependencies(NULL);
     if (critical_dependencies > 0) {
         log_this("Startup", "Missing core library dependencies", LOG_LEVEL_ERROR);
         return 0;
     }
-    log_this("Startup", "Core dependency checks completed successfully", LOG_LEVEL_STATE);
-    
+       
     // 2. Load configuration
     // Store config path for restart
     if (config_path) {
@@ -314,21 +287,14 @@ int startup_hydrogen(const char* config_path) {
     
     // Log successful configuration loading
     log_this("Startup", "Configuration loading complete", LOG_LEVEL_STATE);
-    
-    // Initialize and launch core systems
-    log_this("Startup", "Initializing core systems...", LOG_LEVEL_STATE);
+    log_this("Startup", "Starting launch sequence...", LOG_LEVEL_STATE);
     
     // Initialize registry first as it's needed for subsystem tracking
     initialize_registry();
-    
+
     // Initialize queue system for inter-thread communication
     queue_system_init();
     update_queue_limits_from_config(app_config);
-    
-    log_this("Startup", "Core systems initialized", LOG_LEVEL_STATE);
-    
-    // Begin launch sequence
-    log_this("Startup", "Starting launch sequence...", LOG_LEVEL_STATE);
     
     // 3. Perform launch readiness checks and planning
     ReadinessResults readiness_results = handle_readiness_checks();
@@ -341,7 +307,7 @@ int startup_hydrogen(const char* config_path) {
     }
 
     // Launch Registry first after plan is approved
-    log_this("Launch", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+    // log_this("Launch", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
     if (!launch_registry_subsystem(restart_requested)) {
         log_this("Startup", "Failed to launch registry - cannot continue", LOG_LEVEL_ERROR);
         return 0;
@@ -382,20 +348,22 @@ int startup_hydrogen(const char* config_path) {
     log_this("Startup", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
     log_this("Startup", "STARTUP COMPLETE", LOG_LEVEL_STATE);
     log_this("Startup", "- Version Information", LOG_LEVEL_STATE);
-    log_this("Startup", "    Version: %s", LOG_LEVEL_STATE, VERSION);
-    log_this("Startup", "    Release: %s", LOG_LEVEL_STATE, RELEASE);
-    log_this("Startup", "    Build Type: %s", LOG_LEVEL_STATE, BUILD_TYPE);
+    log_this("Startup", "    PID:      %d", LOG_LEVEL_STATE, getpid());
+    log_this("Startup", "    Version:  %s", LOG_LEVEL_STATE, VERSION);
+    log_this("Startup", "    Release:  %s", LOG_LEVEL_STATE, RELEASE);
+    log_this("Startup", "    Build:    %s", LOG_LEVEL_STATE, BUILD_TYPE);
+    log_this("Startup", "    Size:     %'d bytes", LOG_LEVEL_STATE, server_executable_size);
     log_this("Startup", "- Services Information", LOG_LEVEL_STATE);
     
     // Log server URLs if subsystems are running
     if (is_subsystem_running_by_name("WebServer")) {
-        log_this("Startup", "    Web Server running: http://localhost:%d", LOG_LEVEL_STATE, app_config->webserver.port);
+        log_this("Startup", "    Web Server running:  http://localhost:%d", LOG_LEVEL_STATE, app_config->webserver.port);
     }
     if (is_subsystem_running_by_name("API")) {
-        log_this("Startup", "    API Server running: http://localhost:%d%s", LOG_LEVEL_STATE, app_config->webserver.port, app_config->api.prefix);
+        log_this("Startup", "    API Server running:  http://localhost:%d%s", LOG_LEVEL_STATE, app_config->webserver.port, app_config->api.prefix);
     }
     if (is_subsystem_running_by_name("Swagger")) {
-        log_this("Startup", "    Swagger running: http://localhost:%d%s", LOG_LEVEL_STATE, app_config->webserver.port, app_config->swagger.prefix);
+        log_this("Startup", "    Swagger running:     http://localhost:%d%s", LOG_LEVEL_STATE, app_config->webserver.port, app_config->swagger.prefix);
     }
     
     log_this("Startup", "- Performance Information", LOG_LEVEL_STATE);
@@ -429,14 +397,14 @@ int startup_hydrogen(const char* config_path) {
     snprintf(temp_str, sizeof(temp_str), ".%03dZ", start_ms);
     strcat(start_time_str, temp_str);
     
-    log_this("Startup", "    System startup began: %s", LOG_LEVEL_STATE, start_time_str);
-    log_this("Startup", "    Current system clock: %s", LOG_LEVEL_STATE, current_time_str);
-    log_this("Startup", "    Startup elapsed time: %.3fs", LOG_LEVEL_STATE, startup_time);
+    log_this("Startup", "    System startup began:  %s", LOG_LEVEL_STATE, start_time_str);
+    log_this("Startup", "    Current system clock:  %s", LOG_LEVEL_STATE, current_time_str);
+    log_this("Startup", "    Startup elapsed time:  %.3fs", LOG_LEVEL_STATE, startup_time);
     
     // Log memory usage
     size_t vmsize = 0, vmrss = 0, vmswap = 0;
     get_process_memory(&vmsize, &vmrss, &vmswap);
-    log_this("Startup", "    Memory Usage (RSS): %.1f MB", LOG_LEVEL_STATE, (double)vmrss / 1024.0);
+    log_this("Startup", "    Memory Usage (RSS):    %.1f MB", LOG_LEVEL_STATE, (double)vmrss / 1024.0);
     
     // Display restart count and timing if application has been restarted
     if (restart_count > 0) {
@@ -457,10 +425,17 @@ int startup_hydrogen(const char* config_path) {
         // Calculate and log total runtime since original start
         double total_runtime = calculate_total_runtime();
         
-        log_this("Startup", "    Original launch time: %s", LOG_LEVEL_STATE, orig_time_str);
-        log_this("Startup", "    Overall running time: %.3fs", LOG_LEVEL_STATE, total_runtime);
-        log_this("Startup", "    Application restarts: %d", LOG_LEVEL_STATE, restart_count);
+        log_this("Startup", "    Original launch time:  %s", LOG_LEVEL_STATE, orig_time_str);
+        log_this("Startup", "    Overall running time:  %.3fs", LOG_LEVEL_STATE, total_runtime);
+        log_this("Startup", "    Application restarts:  %d", LOG_LEVEL_STATE, restart_count);
     }
+
+    log_this("Startup", "- Resources Information", LOG_LEVEL_STATE);
+    log_this("Startup", "    Threads:    TBD", LOG_LEVEL_STATE);
+    log_this("Startup", "    Queues:     TBD", LOG_LEVEL_STATE);
+    log_this("Startup", "    Registry:   TBD", LOG_LEVEL_STATE);
+    log_this("Startup", "    Databases:  TBD", LOG_LEVEL_STATE);
+    log_this("Startup", "    AppConfig:  %'d bytes", LOG_LEVEL_STATE, sizeof(*app_config));
     
     log_this("Startup", "- Application started", LOG_LEVEL_STATE);
     log_this("Startup", "Press Ctrl+C to exit", LOG_LEVEL_STATE);

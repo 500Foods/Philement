@@ -16,6 +16,7 @@
 #include <pthread.h>
 
 // Include necessary headers
+#include "../../../../src/hydrogen.h"
 #include "../../../../src/websocket/websocket_server_internal.h"
 #include "../../../../src/config/config.h"
 

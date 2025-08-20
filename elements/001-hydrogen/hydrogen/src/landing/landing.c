@@ -318,11 +318,11 @@ bool check_all_landing_readiness(void) {
         log_group_begin();
         log_this("Shutdown", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
         log_this("Shutdown", "SHUTDOWN COMPLETE", LOG_LEVEL_STATE);
-        log_this("Shutdown", "Shutdown elapsed time: %.3fs", LOG_LEVEL_STATE, shutdown_elapsed_time);
+        log_this("Shutdown", "Shutdown elapsed time:  %.3fs", LOG_LEVEL_STATE, shutdown_elapsed_time);
         if (total_running_time > 0.0) {
-            log_this("Shutdown", "Total running time: %.3fs", LOG_LEVEL_STATE, total_running_time);
+            log_this("Shutdown", "Total running time:     %.3fs", LOG_LEVEL_STATE, total_running_time);
         }
-        log_this("Shutdown", "Total elapsed time: %.3fs", LOG_LEVEL_STATE, total_elapsed_time);
+        log_this("Shutdown", "Total elapsed time:     %.3fs", LOG_LEVEL_STATE, total_elapsed_time);
         log_this("Shutdown", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
         log_group_end();
         

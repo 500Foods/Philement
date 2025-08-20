@@ -193,7 +193,6 @@ int launch_swagger_subsystem(void) {
     extern volatile sig_atomic_t server_starting;
 
     log_this("Swagger", LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this("Swagger", "――――――――――――――――――――――――――――――――――――――――", LOG_LEVEL_STATE);
     log_this("Swagger", "LAUNCH: SWAGGER", LOG_LEVEL_STATE);
 
     // Step 1: Register with registry and add dependencies

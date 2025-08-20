@@ -126,7 +126,7 @@ void graceful_shutdown(void) {
 
     // Start shutdown sequence
     const char* subsystem = restart_requested ? "Restart" : "Shutdown";
-    log_this(subsystem, "----------------------------------------", LOG_LEVEL_STATE);
+    log_this(subsystem, LOG_LINE_BREAK, LOG_LEVEL_STATE);
     log_this(subsystem, restart_requested ? 
         "Initiating graceful restart sequence" : 
         "Initiating graceful shutdown sequence", LOG_LEVEL_STATE);

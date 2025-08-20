@@ -13,7 +13,7 @@
 #ifndef UTILS_LOGGING_H
 #define UTILS_LOGGING_H
 
-#include "../constants.h"
+#include "../globals.h"
 #include <stddef.h>
 
 // Include configuration for label widths

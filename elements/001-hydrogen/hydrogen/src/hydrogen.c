@@ -35,6 +35,7 @@
 #include "hydrogen.h"
 
 // System headers - must come first after feature test macros 
+#include <locale.h>       /* Locale settings */
 #include <features.h>     /* GNU/glibc features */
 #include <ucontext.h>     /* Context handling */
 
@@ -387,7 +388,15 @@ static void config_dump_handler(int sig) {
  * @param argv Argument vector, argv[1] may contain config path
  * @return 0 on success, 1 on initialization failure
  */
+
 int main(int argc, char *argv[]) {
+
+    // Initialize locale
+    setlocale(LC_NUMERIC, "");
+
+    // Get the executable size
+    get_executable_size(argv);
+
      // Store program arguments for restart
      stored_argc = argc;
      stored_argv = argv;

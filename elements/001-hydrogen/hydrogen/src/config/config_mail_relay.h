@@ -9,7 +9,7 @@
 #ifndef CONFIG_MAIL_RELAY_H
 #define CONFIG_MAIL_RELAY_H
 
-#include "../constants.h"
+#include "../globals.h"
 
 // System headers
 #include <stdbool.h>

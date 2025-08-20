@@ -11,7 +11,7 @@
 #ifndef OIDC_USERS_H
 #define OIDC_USERS_H
 
-#include "../constants.h"
+#include "../globals.h"
 
 // Standard Libraries
 #include <stdbool.h>

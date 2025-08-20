@@ -11,7 +11,7 @@
 #ifndef OIDC_TOKENS_H
 #define OIDC_TOKENS_H
 
-#include "../constants.h"
+#include "../globals.h"
 
 // Standard Libraries
 #include <stdbool.h>

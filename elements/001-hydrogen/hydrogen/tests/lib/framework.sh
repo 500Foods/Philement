@@ -280,7 +280,7 @@ setup_orchestration_environment() {
     next_subtest
     print_subtest "Checking Build Directory"
     if [[ -d "build" ]]; then
-        # print_message "Build directory exists, checking mount status..."
+        print_message "Nice Build directory you have there,"
         # 
         # # Check if build is already a tmpfs mount
         # if mountpoint -q build 2>/dev/null; then
@@ -292,28 +292,28 @@ setup_orchestration_environment() {
         #         EXIT_CODE=1
         #     fi
         # else
-            # Empty the regular directory and mount as tmpfs
-            print_message "Emptying Build directory..."
-            print_command "rm -rf build/*"
-            # if rm -rf build/coverage build/debug build/perf build/regular build/release build/tests build/unity build/valgrind build/*marker* 2>/dev/null; then
-            if rm -rf build/coverage build/tests build/unity build/*marker* 2>/dev/null; then
-            # if rm -rf build/* 2>/dev/null; then
-                print_message "Successfully emptied build directory"
+            # # Empty the regular directory and mount as tmpfs
+            # print_message "Emptying Build directory..."
+            # print_command "rm -rf build/*"
+            # # if rm -rf build/coverage build/debug build/perf build/regular build/release build/tests build/unity build/valgrind build/*marker* 2>/dev/null; then
+            # if rm -rf build/coverage build/tests build/unity build/*marker* 2>/dev/null; then
+            # # if rm -rf build/* 2>/dev/null; then
+            #     print_message "Successfully emptied build directory"
                 
-            #     # # Mount as tmpfs
-            #     # print_message "Mounting 'build' as tmpfs with 1GB size..."
-            #     # print_command "sudo mount -t tmpfs -o size=1G tmpfs build"
-            #     # if sudo mount -t tmpfs -o size=1G tmpfs build 2>/dev/null; then
-            #     #     print_result 0 "Build directory mounted as tmpfs (1GB) for faster I/O"
-            #     #     print_message "Warning: tmpfs is volatile; artifacts will be lost on unmount/reboot"
-            #     # else
-            #     #     print_result 0 "Build directory ready (tmpfs mount failed, using regular filesystem)"
-            #     #     print_message "Continuing with regular filesystem build directory"
-            #     # fi
-            else
-                print_result 1 "Failed to empty Build directory"
-                EXIT_CODE=1
-            fi
+            # #     # # Mount as tmpfs
+            # #     # print_message "Mounting 'build' as tmpfs with 1GB size..."
+            # #     # print_command "sudo mount -t tmpfs -o size=1G tmpfs build"
+            # #     # if sudo mount -t tmpfs -o size=1G tmpfs build 2>/dev/null; then
+            # #     #     print_result 0 "Build directory mounted as tmpfs (1GB) for faster I/O"
+            # #     #     print_message "Warning: tmpfs is volatile; artifacts will be lost on unmount/reboot"
+            # #     # else
+            # #     #     print_result 0 "Build directory ready (tmpfs mount failed, using regular filesystem)"
+            # #     #     print_message "Continuing with regular filesystem build directory"
+            # #     # fi
+            # else
+            #     print_result 1 "Failed to empty Build directory"
+            #     EXIT_CODE=1
+            # fi
         # fi
     else
         # Create the build directory and mount as tmpfs

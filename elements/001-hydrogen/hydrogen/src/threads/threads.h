@@ -12,7 +12,7 @@
 #define THREADS_H
 
 // System includes
-#include "../constants.h"
+#include "../globals.h"
 #include <pthread.h>
 #include <sys/types.h>
 #include <stddef.h>

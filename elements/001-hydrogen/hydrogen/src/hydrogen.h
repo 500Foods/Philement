@@ -98,7 +98,7 @@
 #include <brotli/encode.h>  // For Brotli - Compressing content
 
 // Project constants
-#include "constants.h"
+#include "globals.h"
 
 // Project includes
 #include "config/config.h"
@@ -111,5 +111,30 @@
 #include "status/status.h"
 #include "threads/threads.h"
 #include "utils/utils.h"
+
+// Main application configuration structure
+struct AppConfig {
+    ServerConfig server;           // A. Server configuration
+    NetworkConfig network;         // B. Network configuration
+    DatabaseConfig databases;      // C. Database configuration
+    LoggingConfig logging;         // D. Logging configuration
+    WebServerConfig webserver;     // E. WebServer configuration
+    APIConfig api;                 // F. API configuration
+    SwaggerConfig swagger;         // G. Swagger configuration
+    WebSocketConfig websocket;     // H. WebSocket configuration
+    TerminalConfig terminal;       // I. Terminal configuration
+    MDNSServerConfig mdns_server;  // J. mDNS Server configuration
+    MDNSClientConfig mdns_client;  // K. mDNS Client configuration
+    MailRelayConfig mail_relay;    // L. Mail Relay configuration
+    PrintConfig print;             // M. Print configuration
+    ResourceConfig resources;      // N. Resources configuration
+    OIDCConfig oidc;               // O. OIDC configuration
+    NotifyConfig notify;           // P. Notify configuration
+};
+
+// Global variables defined in global.c
+extern long long server_executable_size;
+extern AppConfig *app_config;
+void get_executable_size(char *argv[]);
 
 #endif /* HYDROGEN_H */

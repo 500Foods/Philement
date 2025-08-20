@@ -145,7 +145,6 @@ LaunchReadiness check_registry_launch_readiness(void) {
 // Launch registry subsystem
 int launch_registry_subsystem(bool is_restart) {
     log_this("Registry", LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this("Registry", "――――――――――――――――――――――――――――――――――――――――", LOG_LEVEL_STATE);
     log_this("Registry", "LAUNCH: REGISTRY", LOG_LEVEL_STATE);
     
     // Step 1: Verify registry system

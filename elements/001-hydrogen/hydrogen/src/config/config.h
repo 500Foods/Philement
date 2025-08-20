@@ -70,26 +70,6 @@ bool is_file_readable(const char* path);
 // Support for configuration value handling and type conversion
 #include "config_utils.h"  // Includes string handling and file operations
 
-// Main application configuration structure
-struct AppConfig {
-    ServerConfig server;           // A. Server configuration
-    NetworkConfig network;         // B. Network configuration
-    DatabaseConfig databases;      // C. Database configuration
-    LoggingConfig logging;         // D. Logging configuration
-    WebServerConfig webserver;     // E. WebServer configuration
-    APIConfig api;                 // F. API configuration
-    SwaggerConfig swagger;         // G. Swagger configuration
-    WebSocketConfig websocket;     // H. WebSocket configuration
-    TerminalConfig terminal;       // I. Terminal configuration
-    MDNSServerConfig mdns_server;  // J. mDNS Server configuration
-    MDNSClientConfig mdns_client;  // K. mDNS Client configuration
-    MailRelayConfig mail_relay;    // L. Mail Relay configuration
-    PrintConfig print;            // M. Print configuration
-    ResourceConfig resources;      // N. Resources configuration
-    OIDCConfig oidc;               // O. OIDC configuration
-    NotifyConfig notify;           // P. Notify configuration
-};
-
 /*
  * Get the current application configuration
  * 

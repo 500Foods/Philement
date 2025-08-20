@@ -1,6 +1,6 @@
 /*
  * Configuration Management System
- * -----------------------------
+ *
  * Manages application configuration through a hierarchical system with fallbacks:
  * 1. JSON config file (optional, searched in standard locations)
  * 2. Environment variables (can override JSON values)
@@ -66,9 +66,6 @@
 #include "config_resources.h"            // N. Resources
 #include "config_oidc.h"                 // O. OIDC
 #include "config_notify.h"               // P. Notify
-
-// Global configuration instance
-AppConfig *app_config = NULL;
 
 // Forward declaration for cleanup function
 static void clean_app_config(AppConfig* config);
@@ -236,22 +233,22 @@ AppConfig* load_config(const char* cmdline_path) {
         }
 
     // Load configurations in A-P order
-    LOAD_SERVER_CONFIG("A", "Server",       load_server_config, config_path);
-    LOAD_CONFIG("B", "Network",      load_network_config);
-    LOAD_CONFIG("C", "Database",     load_database_config);
-    LOAD_CONFIG("D", "Logging",      load_logging_config);
-    LOAD_CONFIG("E", "WebServer",    load_webserver_config);
-    LOAD_CONFIG("F", "API",          load_api_config);
-    LOAD_CONFIG("G", "Swagger",      load_swagger_config);
-    LOAD_CONFIG("H", "WebSocket",    load_websocket_config);
-    LOAD_CONFIG("I", "Terminal",     load_terminal_config);
-    LOAD_CONFIG("J", "mDNS Server",  load_mdns_server_config);
-    LOAD_CONFIG("K", "mDNS Client",  load_mdns_client_config);
-    LOAD_CONFIG("L", "Mail Relay",   load_mailrelay_config);
-    LOAD_CONFIG("M", "Print",        load_print_config);
-    LOAD_CONFIG("N", "Resources",    load_resources_config);
-    LOAD_CONFIG("O", "OIDC",         load_oidc_config);
-    LOAD_CONFIG("P", "Notify",       load_notify_config);
+    LOAD_SERVER_CONFIG("A", "Server",   load_server_config, config_path);
+    LOAD_CONFIG("B", "Network",         load_network_config);
+    LOAD_CONFIG("C", "Database",        load_database_config);
+    LOAD_CONFIG("D", "Logging",         load_logging_config);
+    LOAD_CONFIG("E", "WebServer",       load_webserver_config);
+    LOAD_CONFIG("F", "API",             load_api_config);
+    LOAD_CONFIG("G", "Swagger",         load_swagger_config);
+    LOAD_CONFIG("H", "WebSocket",       load_websocket_config);
+    LOAD_CONFIG("I", "Terminal",        load_terminal_config);
+    LOAD_CONFIG("J", "mDNS Server",     load_mdns_server_config);
+    LOAD_CONFIG("K", "mDNS Client",     load_mdns_client_config);
+    LOAD_CONFIG("L", "Mail Relay",      load_mailrelay_config);
+    LOAD_CONFIG("M", "Print",           load_print_config);
+    LOAD_CONFIG("N", "Resources",       load_resources_config);
+    LOAD_CONFIG("O", "OIDC",            load_oidc_config);
+    LOAD_CONFIG("P", "Notify",          load_notify_config);
 
     #undef LOAD_SERVER_CONFIG
     #undef LOAD_CONFIG
