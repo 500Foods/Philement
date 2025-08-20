@@ -173,7 +173,7 @@ int launch_mdns_server_subsystem(void) {
     mdns_server_system_shutdown = 0;
     
     // Initialize mDNS server thread structure
-    init_service_threads(&mdns_server_threads);
+    init_service_threads(&mdns_server_threads, "mDNS Server");
     
     // Additional initialization as needed
     return 1;

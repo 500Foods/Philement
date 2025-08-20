@@ -86,7 +86,7 @@ int land_print_subsystem(void) {
     }
     
     // Reset thread resources
-    init_service_threads(&print_threads);
+    init_service_threads(&print_threads, "Print");
     
     // Additional cleanup as needed
     return 1;  // Success

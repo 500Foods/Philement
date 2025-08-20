@@ -208,7 +208,7 @@ int launch_print_subsystem(void) {
     print_system_shutdown = 0;
     
     // Initialize print queue thread structure
-    init_service_threads(&print_threads);
+    init_service_threads(&print_threads, "Print");
     
     // Additional initialization as needed
     return 1;

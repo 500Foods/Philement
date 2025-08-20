@@ -41,8 +41,8 @@ void handle_launch_review(const ReadinessResults* results) {
     log_this("Launch", "LAUNCH REVIEW", LOG_LEVEL_STATE);
     
     // Track launch statistics
-    int total_attempts = 0;
-    int total_running = 0;
+    size_t total_attempts = 0;
+    size_t total_running = 0;
     
     // Show status for all subsystems
     for (size_t i = 0; i < results->total_checked; i++) {
@@ -77,9 +77,15 @@ void handle_launch_review(const ReadinessResults* results) {
     }
     
     // Log summary statistics
-    log_this("Launch", "Subsystems:        %d", LOG_LEVEL_STATE, results->total_checked);
-    log_this("Launch", "Launch Attempts:   %d", LOG_LEVEL_STATE, total_attempts);
-    log_this("Launch", "Launch Successes:  %d", LOG_LEVEL_STATE, total_running);
-    log_this("Launch", "Launch Failures:   %d", LOG_LEVEL_STATE, total_attempts - total_running);
+    log_this("Launch", "Subsystems:      %3d", LOG_LEVEL_STATE, results->total_checked);
+    log_this("Launch", "Launch Attempts: %3d", LOG_LEVEL_STATE, total_attempts);
+    log_this("Launch", "Launch Successes:%3d", LOG_LEVEL_STATE, total_running);
+    log_this("Launch", "Launch Failures: %3d", LOG_LEVEL_STATE, total_attempts - total_running);
+
+    registry_registered = results->total_checked;
+    registry_running = total_running;
+    registry_attempted = total_attempts;
+    registry_failed = total_attempts - total_running;
+
     
 }
