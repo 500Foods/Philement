@@ -6,7 +6,7 @@
 #ifndef LOGGING_H
 #define LOGGING_H
 
-#include "../constants.h"
+#include "../globals.h"
 #include <stdbool.h>
 #include "../config/config_priority.h"
 

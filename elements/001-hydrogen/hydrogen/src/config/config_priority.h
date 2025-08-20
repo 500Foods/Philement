@@ -5,7 +5,7 @@
 #ifndef CONFIG_PRIORITY_H
 #define CONFIG_PRIORITY_H
 
-#include "../constants.h"
+#include "../globals.h"
 
 // Priority level structure
 typedef struct {

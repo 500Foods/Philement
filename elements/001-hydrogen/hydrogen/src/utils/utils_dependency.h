@@ -51,10 +51,6 @@ int check_library_dependencies(const AppConfig *config);
 // Determines if it's available and its version, then logs the result
 void check_library_dependency(const char *name, const char *expected, bool is_required);
 
-//------------------------------------------------------------------------------
-// Dynamic Library Loading
-//------------------------------------------------------------------------------
-
 // Dynamically load a library and return a handle to it
 // If the library is not available, returns a handle with is_loaded=false
 // The library is loaded with RTLD_LAZY and RTLD_LOCAL flags unless otherwise specified

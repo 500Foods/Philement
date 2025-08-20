@@ -158,7 +158,6 @@ int launch_api_subsystem(void) {
     extern volatile sig_atomic_t server_starting;
     
     log_this("API", LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this("API", "――――――――――――――――――――――――――――――――――――――――", LOG_LEVEL_STATE);
     log_this("API", "LAUNCH: API", LOG_LEVEL_STATE);
 
     // Step 1: Register with registry and add dependencies

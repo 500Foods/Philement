@@ -25,6 +25,7 @@
 #include <jansson.h>
 
 // Include necessary headers for the websocket status module
+#include "../../../../src/hydrogen.h"
 #include "../../../../src/websocket/websocket_server_internal.h"
 #include "../../../../src/websocket/websocket_server.h"
 #include "../../../../src/config/config.h"

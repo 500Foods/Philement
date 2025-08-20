@@ -5,7 +5,7 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
-#include "../constants.h"
+#include "../globals.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <net/if.h>      
