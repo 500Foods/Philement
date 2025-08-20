@@ -163,7 +163,7 @@ static bool check_dependent_states(const char* subsystem, bool* can_land) {
  * Provides a summary of subsystem readiness
  */
 static void log_landing_status(const ReadinessResults* results) {
-    log_this("Landing", "Total Subsystems Checked: %d", LOG_LEVEL_STATE, results->total_checked);
-    log_this("Landing", "Ready Subsystems:         %d", LOG_LEVEL_STATE, results->total_ready);
-    log_this("Landing", "Not Ready Subsystems:     %d", LOG_LEVEL_STATE, results->total_not_ready);
+    log_this("Landing", "Total Subsystems Checked: %3d", LOG_LEVEL_STATE, results->total_checked);
+    log_this("Landing", "Ready Subsystems:         %3d", LOG_LEVEL_STATE, results->total_ready);
+    log_this("Landing", "Not Ready Subsystems:     %3d", LOG_LEVEL_STATE, results->total_not_ready);
 }

@@ -5,19 +5,19 @@
 #include "threads.h"
 #include <sys/syscall.h>
 
-// Public interface declarations
-void init_service_threads(ServiceThreads *threads);
-void add_service_thread(ServiceThreads *threads, pthread_t thread_id);
-void remove_service_thread(ServiceThreads *threads, pthread_t thread_id);
-void update_service_thread_metrics(ServiceThreads *threads);
-ThreadMemoryMetrics get_thread_memory_metrics(ServiceThreads *threads, pthread_t thread_id);
+// // Public interface declarations
+// void init_service_threads(ServiceThreads *threads);
+// void add_service_thread(ServiceThreads *threads, pthread_t thread_id);
+// void remove_service_thread(ServiceThreads *threads, pthread_t thread_id);
+// void update_service_thread_metrics(ServiceThreads *threads);
+// ThreadMemoryMetrics get_thread_memory_metrics(ServiceThreads *threads, pthread_t thread_id);
 
-// External declarations
-extern ServiceThreads logging_threads;
-extern ServiceThreads webserver_threads;
-extern ServiceThreads websocket_threads;
-extern ServiceThreads mdns_server_threads;
-extern ServiceThreads print_threads;
+// // External declarations
+// extern ServiceThreads logging_threads;
+// extern ServiceThreads webserver_threads;
+// extern ServiceThreads websocket_threads;
+// extern ServiceThreads mdns_server_threads;
+// extern ServiceThreads print_threads;
 
 // Flag to indicate we're in final shutdown mode - no more thread management logging
 // This will be set just before logging the final "Shutdown complete" message
@@ -30,11 +30,20 @@ static pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 static size_t get_thread_stack_size(pid_t tid);
 
 // Initialize service thread tracking
-void init_service_threads(ServiceThreads *threads) {
+void init_service_threads(ServiceThreads *threads, const char* subsystem_name) {
     pthread_mutex_lock(&thread_mutex);
     threads->thread_count = 0;
     memset(threads->thread_metrics, 0, sizeof(ThreadMemoryMetrics) * MAX_SERVICE_THREADS);
     memset(threads->thread_tids, 0, sizeof(pid_t) * MAX_SERVICE_THREADS);
+        
+    if (subsystem_name) {
+        strncpy(threads->subsystem, subsystem_name, 31); // Leave space for null terminator
+        threads->subsystem[31] = '\0'; // Ensure null-termination
+    } else {
+        strncpy(threads->subsystem, "Unknown", 31);
+        threads->subsystem[31] = '\0';
+    }
+
     pthread_mutex_unlock(&thread_mutex);
 }
 
@@ -52,8 +61,8 @@ void add_service_thread(ServiceThreads *threads, pthread_t thread_id) {
             char msg[128];
             // Use log group to ensure consistent formatting
             log_group_begin();
-            snprintf(msg, sizeof(msg), "Thread %lu (tid: %d) added, count: %d", 
-                     (unsigned long)thread_id, tid, threads->thread_count);
+            snprintf(msg, sizeof(msg), "%s: Thread %lu (tid: %d) added, count: %d", 
+                     threads->subsystem, (unsigned long)thread_id, tid, threads->thread_count);
             log_this("Threads-Manager", msg, LOG_LEVEL_STATE);
             log_group_end();
         }
@@ -80,8 +89,8 @@ static void remove_thread_internal(ServiceThreads *threads, int index, bool skip
     if (!skip_logging && !final_shutdown_mode) {
         char msg[128];
         log_group_begin();
-        snprintf(msg, sizeof(msg), "Thread %lu removed, count: %d", 
-                 (unsigned long)thread_id, threads->thread_count);
+        snprintf(msg, sizeof(msg), "%s: Thread %lu removed, count: %d", 
+                 threads->subsystem, (unsigned long)thread_id, threads->thread_count);
         log_this("Threads-Manager", msg, LOG_LEVEL_STATE);
         log_group_end();
     }
@@ -220,19 +229,19 @@ void free_threads_resources(void) {
     final_shutdown_mode = 1;
     
     // Clean up logging threads
-    init_service_threads(&logging_threads);
+    init_service_threads(&logging_threads, "Logging");
     
     // Clean up web threads
-    init_service_threads(&webserver_threads);
+    init_service_threads(&webserver_threads, "WebServer");
     
     // Clean up websocket threads
-    init_service_threads(&websocket_threads);
+    init_service_threads(&websocket_threads, "WebSocket");
     
     // Clean up mdns server threads
-    init_service_threads(&mdns_server_threads);
+    init_service_threads(&mdns_server_threads, "mDNS Server");
     
     // Clean up print threads
-    init_service_threads(&print_threads);
+    init_service_threads(&print_threads, "Print");
     
     pthread_mutex_unlock(&thread_mutex);
 }

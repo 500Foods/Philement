@@ -40,9 +40,9 @@ bool handle_launch_plan(const ReadinessResults* results) {
     log_this("Launch", "LAUNCH PLAN", LOG_LEVEL_STATE);
     
     // Log overall readiness status
-    log_this("Launch", "Total Subsystems Checked: %d", LOG_LEVEL_STATE, results->total_checked);
-    log_this("Launch", "Ready Subsystems:         %d", LOG_LEVEL_STATE, results->total_ready);
-    log_this("Launch", "Not Ready Subsystems:     %d", LOG_LEVEL_STATE, results->total_not_ready);
+    log_this("Launch", "Total Subsystems Checked: %3d", LOG_LEVEL_STATE, results->total_checked);
+    log_this("Launch", "Ready Subsystems:         %3d", LOG_LEVEL_STATE, results->total_ready);
+    log_this("Launch", "Not Ready Subsystems:     %3d", LOG_LEVEL_STATE, results->total_not_ready);
     
     // Check if any subsystems are ready
     if (!results->any_ready) {

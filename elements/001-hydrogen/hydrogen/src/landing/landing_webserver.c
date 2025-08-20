@@ -95,7 +95,7 @@ int land_webserver_subsystem(void) {
     remove_service_thread(&webserver_threads, webserver_thread);
     
     // Reinitialize thread structure
-    init_service_threads(&webserver_threads);
+    init_service_threads(&webserver_threads, "WebServer");
     
     log_this("WebServer", "WebServer shutdown complete", LOG_LEVEL_STATE);
     

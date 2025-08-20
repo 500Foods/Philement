@@ -101,7 +101,7 @@ int land_mdns_server_subsystem(void) {
     }
     
     // Reinitialize thread structure
-    init_service_threads(&mdns_server_threads);
+    init_service_threads(&mdns_server_threads, "mDNS Server");
     
     log_this("mDNS Server", "mDNS Server shutdown complete", LOG_LEVEL_STATE);
     return 1; // Success

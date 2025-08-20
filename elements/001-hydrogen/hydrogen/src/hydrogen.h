@@ -136,5 +136,9 @@ struct AppConfig {
 extern long long server_executable_size;
 extern AppConfig *app_config;
 void get_executable_size(char *argv[]);
+extern size_t registry_registered;
+extern size_t registry_running;
+extern size_t registry_attempted;
+extern size_t registry_failed;
 
 #endif /* HYDROGEN_H */
