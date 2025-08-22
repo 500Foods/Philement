@@ -12,6 +12,8 @@
 # 0.8.0 - 2025-08-08 - Performance optimizations following md5sum batching pattern from test_92_shellcheck.sh
 # 0.7.1 - 2025-08-03 - Removed extraneous command -v calls
 
+set -euo pipefail
+
 # Application version
 declare -r APPVERSION="1.3.0"
 
@@ -35,17 +37,19 @@ timing_start() {
 timing_end() {
     local name="$1"
     local start_time="${timing_data["${name}_start"]}"
-    if [[ -n "${start_time}" ]]; then
+    if [[ -n "${start_time:-}" ]]; then
         local end_time
         end_time=$("${DATE}" +%s%N)
         local duration=$(( (end_time - start_time) / 1000000 ))
         timing_data["${name}_duration"]=${duration}
-        [[ "${PROFILE}" == "true" ]] && echo "[PROFILE] ${name}: ${duration}ms" >&2
+        if [[ "${PROFILE}" == "true" ]]; then
+            echo "[PROFILE] ${name}: ${duration}ms" >&2
+        fi
     fi
 }
 
 # Parse arguments
-DEBUG=false
+DEBUG="false"
 INPUT_FILE=""
 IGNORE_FILE=""
 TABLE_THEME="Red"
@@ -105,7 +109,9 @@ fi
 
 # Debug logging function
 debug_log() {
-    [[ "${DEBUG}" == "true" ]] && echo "[DEBUG] $("${DATE}" '+%Y-%m-%d %H:%M:%S' || true): $*" >&2
+    if [[ "${DEBUG}" == "true" ]]; then
+        echo "[DEBUG] $("${DATE}" '+%Y-%m-%d %H:%M:%S' || true): $*" >&2
+    fi
 }
 
 timing_start "total_execution"
@@ -122,8 +128,8 @@ fi
 declare -A file_exists_cache
 declare -A checked_files
 declare -A file_summary
-declare -a missing_links
-declare -a orphaned_files
+declare -a missing_links=()
+declare -a orphaned_files=()
 missing_count=0
 
 # Store the original working directory
@@ -148,8 +154,7 @@ if ! cd "${input_dir}" 2>/dev/null; then
 fi
 repo_root="${input_dir}"
 debug_log "Set repo root to ${repo_root} for input file ${INPUT_FILE}"
-
-timing_end "initialization"
+timing_end "initialization" 
 
 # Load ignore patterns once and export for parallel processes
 timing_start "load_ignore_patterns"
@@ -223,7 +228,7 @@ build_file_cache() {
         
         if [[ "${excluded}" == false ]]; then
             file_exists_cache["${path}"]="${type}"
-            ((cache_count++))
+            cache_count=$(( cache_count + 1 ))
         fi
     done < <("${FIND}" "${repo_root}" -name .git -prune -o \( -type f -printf '%p:f\0' \) -o \( -type d -printf '%p:d\0' \) 2>/dev/null || true)
     
@@ -259,7 +264,9 @@ process_file_batch() {
     file_exists() {
         local path="$1"
         # Check exact path first
-        [[ -n "${local_cache[${path}]}" ]] && return 0
+        if [[ -n "${local_cache[${path}]}" ]]; then
+            return 0
+        fi
         
         # If path ends with /, try without the trailing slash (for directory links)
         if [[ "${path}" == */ ]]; then
@@ -364,6 +371,7 @@ process_file_batch() {
         fi
         
         # Skip if file doesn't exist
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
         file_exists "${abs_file}" || continue
         
         local base_dir
@@ -386,8 +394,9 @@ process_file_batch() {
         local missing_list=()
         
         # Process all links
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
         while IFS= read -r link; do
-            ((links_total++))
+            links_total=$(( links_total + 1 ))
             local actual_link="${link}"
             local traverse=true
             
@@ -414,18 +423,20 @@ process_file_batch() {
             
             local link_file="${abs_link%%#*}"
             
+            # shellcheck disable=SC2310 # We want to continue even if the test fails
             if file_exists "${link_file}"; then
-                ((links_checked++))
+                links_checked=$(( links_checked + 1 ))
                 if [[ "${traverse}" == "true" && "${link_file}" =~ \.md$ ]]; then
                     linked_files+=("${link_file}")
                 fi
             else
                 # Check if the missing link should be ignored
+                # shellcheck disable=SC2310 # We want to continue even if the test fails
                 if should_ignore_path "${link_file}"; then
                     # Treat ignored missing links as checked to avoid reporting them
-                    ((links_checked++))
+                    links_checked=$(( links_checked + 1 ))
                 else
-                    ((links_missing++))
+                    links_missing=$(( links_missing + 1 ))
                     missing_list+=("${rel_file}:${actual_link}")
                 fi
             fi
@@ -449,8 +460,9 @@ process_file_batch() {
         missing_list=()
         
         # Re-process all links using cached normalized paths
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
         while IFS= read -r link; do
-            ((links_total++))
+            links_total=$(( links_total + 1 ))
             local actual_link="${link}"
             local traverse=true
             
@@ -475,9 +487,9 @@ process_file_batch() {
             fi
             
             local link_file="${abs_link%%#*}"
-            
+            # shellcheck disable=SC2310 # We want to continue even if the test fails
             if file_exists "${link_file}"; then
-                ((links_checked++))
+                links_checked=$(( links_checked + 1 ))
                 if [[ "${traverse}" == "true" && "${link_file}" =~ \.md$ ]]; then
                     linked_files+=("${link_file}")
                 fi
@@ -485,9 +497,9 @@ process_file_batch() {
                 # Check if the missing link should be ignored
                 if should_ignore_path "${link_file}"; then
                     # Treat ignored missing links as checked to avoid reporting them
-                    ((links_checked++))
+                    links_checked=$(( links_checked + 1 ))
                 else
-                    ((links_missing++))
+                    links_missing=$(( links_missing + 1 ))
                     missing_list+=("${rel_file}:${actual_link}")
                 fi
             fi
@@ -544,10 +556,10 @@ processed_files["${INPUT_FILE}"]=1
 
 iteration=0
 while [[ -s "${files_to_process}" ]]; do
-    ((iteration++))
+    iteration=$(( iteration + 1 ))
     # Use bash builtin counting instead of wc -l (fork reduction)
     file_count=0
-    while IFS= read -r; do ((file_count++)); done < "${files_to_process}"
+    while IFS= read -r; do file_count=$(( file_count + 1 )); done < "${files_to_process}"
     debug_log "Processing iteration ${iteration} with ${file_count} files"
     
     # Process current batch in parallel using xargs
@@ -559,7 +571,7 @@ while [[ -s "${files_to_process}" ]]; do
     while IFS= read -r line; do
         if [[ "${line}" =~ ^LINKED:(.+)$ ]]; then
             linked_file="${BASH_REMATCH[1]}"
-            if [[ -z "${processed_files[${linked_file}]}" ]]; then
+            if [[ -z "${processed_files[${linked_file}]:-}" ]]; then
                 processed_files["${linked_file}"]=1
                 echo "${linked_file}" >> "${new_files_temp}"
             fi
@@ -571,7 +583,7 @@ while [[ -s "${files_to_process}" ]]; do
         mv "${new_files_temp}" "${files_to_process}"
         # Use bash builtin counting instead of wc -l (fork reduction)
         new_file_count=0
-        while IFS= read -r; do ((new_file_count++)); done < "${files_to_process}"
+        while IFS= read -r; do new_file_count=$(( new_file_count + 1 )); done < "${files_to_process}"
         debug_log "Discovered ${new_file_count} new files"
     else
         true > "${files_to_process}"
@@ -595,7 +607,7 @@ while IFS= read -r line; do
         
         file_summary["${abs_file}"]="${total},${checked},${missing},${rel_file}"
         checked_files["${abs_file}"]=1
-        ((missing_count += missing))
+        missing_count=$(( missing_count + missing ))
         
     elif [[ "${line}" =~ ^MISSING:(.+)$ ]]; then
         missing_links+=("${BASH_REMATCH[1]}")
@@ -721,7 +733,7 @@ generate_reviewed_files_json "${reviewed_data_json}"
 generate_reviewed_layout_json "${reviewed_layout_json}"
 
 # Generate missing links JSON only if needed
-if [[ ${#missing_links[@]} -gt 0 ]]; then
+if [[ -v missing_links && ${#missing_links[@]} -gt 0 ]]; then
     missing_data_json="${temp_dir}/missing_data.json"
     missing_layout_json="${temp_dir}/missing_layout.json"
     generate_missing_links_json "${missing_data_json}"
@@ -729,7 +741,7 @@ if [[ ${#missing_links[@]} -gt 0 ]]; then
 fi
 
 # Generate orphaned files JSON only if needed
-if [[ ${#orphaned_files[@]} -gt 0 ]]; then
+if [[ -v orphaned_files && ${#orphaned_files[@]:0} -gt 0 ]]; then
     orphaned_data_json="${temp_dir}/orphaned_data.json"
     orphaned_layout_json="${temp_dir}/orphaned_layout.json"
     generate_orphaned_files_json "${orphaned_data_json}"

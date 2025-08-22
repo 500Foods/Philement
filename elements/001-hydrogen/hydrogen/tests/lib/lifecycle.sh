@@ -30,6 +30,8 @@
 # 1.1.0 - 2025-07-02 - Added validate_config_files, setup_output_directories, and run_lifecycle_test functions for enhanced modularity
 # 1.0.0 - 2025-07-02 - Initial version with start and stop functions
 
+set -euo pipefail
+
 # Guard clause to prevent multiple sourcing
 [[ -n "${LIFECYCLE_GUARD:-}" ]] && return 0
 export LIFECYCLE_GUARD="true"
@@ -176,6 +178,7 @@ start_hydrogen_with_pid() {
     
     # Wait for startup
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for startup (max ${timeout}s)..."
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
     if wait_for_startup "${log_file}" "${timeout}" "${launch_time_ms}"; then
         # Set the PID in the reference variable
         eval "${pid_var}='${hydrogen_pid}'"
@@ -243,6 +246,7 @@ stop_hydrogen() {
     kill -SIGINT "${pid}" 2>/dev/null || true
     
     # Monitor shutdown
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
     if monitor_shutdown "${pid}" "${log_file}" "${timeout}" "${activity_timeout}" "${diag_dir}"; then
         shutdown_end_ms=$("${DATE}" +%s%3N)
         shutdown_duration_ms=$((shutdown_end_ms - shutdown_start_ms))
@@ -358,6 +362,7 @@ run_lifecycle_test() {
     
     # Call start_hydrogen and get the PID via a temporary variable
     local temp_pid_var="TEMP_HYDROGEN_PID_$$"
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
     if start_hydrogen_with_pid "${config_file}" "${log_file}" "${startup_timeout}" "${hydrogen_bin}" "${temp_pid_var}"; then
         hydrogen_pid=$(eval "echo \$${temp_pid_var}")
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Hydrogen started with ${config_name}"
@@ -375,6 +380,7 @@ run_lifecycle_test() {
         # Subtest: Stop Hydrogen
         print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Stop Hydrogen - ${config_name}"
         local stop_result=0
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
         if stop_hydrogen "${hydrogen_pid}" "${log_file}" "${shutdown_timeout}" "${shutdown_activity_timeout}" "${diag_config_dir}"; then
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Hydrogen stopped with ${config_name}"
             eval "${pass_count_var}=$(( $(eval "echo \$${pass_count_var}" || true) + 1 ))" || true

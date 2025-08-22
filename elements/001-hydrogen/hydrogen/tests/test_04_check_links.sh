@@ -47,8 +47,8 @@ print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Running markdown link check on
 print_command "${TEST_NUMBER}" "${TEST_COUNTER}" ".${SITEMAP} ${TARGET_README} --noreport --quiet"
 
 # Run github-sitemap.sh with --noreport and --quiet to minimize output
-"${SITEMAP}" "${TARGET_README}" --noreport --quiet > "${MARKDOWN_CHECK}" 2>&1
-SITEMAP_EXIT_CODE=$?
+# shellcheck disable=SC2310 # We want to continue even if the test fails
+SITEMAP_EXIT_CODE=$("${SITEMAP}" "${TARGET_README}" --noreport --quiet > "${MARKDOWN_CHECK}")
 
 # Display the output
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Results: ..${MARKDOWN_CHECK}"

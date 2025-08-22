@@ -15,6 +15,8 @@
 # 2.1.0 - 2025-07-18 - Fixed subshell issue in check_time_wait_sockets function that prevented TIME_WAIT socket details from being displayed; added whitespace compression for cleaner output formatting
 # 2.0.0 - 2025-07-02 - Initial creation from support_timewait.sh migration for test_55_socket_rebind.sh
 
+set -euo pipefail
+
 # Guard clause to prevent multiple sourcing
 [[ -n "${NETWORK_UTILS_GUARD:-}" ]] && return 0
 export NETWORK_UTILS_GUARD="true"
@@ -108,6 +110,7 @@ make_http_requests() {
     # shellcheck disable=SC2154  # DATE defined externally in framework.sh
     start_time=$("${DATE}" +%s%3N)  # Epoch time in milliseconds
     while [[ "${elapsed_ms}" -lt "${max_wait_ms}" ]]; do
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
         if check_port_in_use "${port}"; then
             local end_time
             end_time=$("${DATE}" +%s%3N)

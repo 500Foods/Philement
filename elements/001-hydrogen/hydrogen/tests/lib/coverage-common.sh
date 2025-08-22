@@ -19,6 +19,8 @@
 # 1.1.0 - 2025-07-30 - Removed cleanup_coverage_data - not needed
 # 1.0.0 - 2025-07-21 - Initial version with common coverage functions
 
+set -euo pipefail
+
 # Guard clause to prevent multiple sourcing
 [[ -n "${COVERAGE_COMMON_GUARD:-}" ]] && return 0
 export COVERAGE_COMMON_GUARD="true"
@@ -246,7 +248,7 @@ analyze_all_gcov_coverage_batch() {
         if [[ "${source_path}" != src/* ]]; then
             source_path="src/${source_path}"
         fi
-        
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
         if ! should_ignore_file "${source_path}" "${PROJECT_ROOT:-${PWD}}"; then
             all_file_set["${rel_path}"]=1
         fi
@@ -473,6 +475,7 @@ load_source_files() {
             local rel_path="${file#"${project_root}"/}"
             
             # Skip ignored files
+            # shellcheck disable=SC2310 # We want to continue even if the test fails
             if should_ignore_file "${rel_path}" "${project_root}"; then
                 continue
             fi
@@ -610,6 +613,7 @@ collect_gcov_files() {
                 
                 # Check if this file should be ignored using efficient function
                 local source_file="${basename_file%.gcov}"
+                # shellcheck disable=SC2310 # We want to continue even if the test fails
                 if should_ignore_file "src/${source_file}" "${project_root}"; then
                     continue
                 fi
