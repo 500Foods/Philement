@@ -11,14 +11,17 @@
 # 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
 # 1.0.0 - Initial version
 
+set -euo pipefail
+
 # Test configuration
 TEST_NAME="Startup/Shutdown"
 TEST_ABBR="UPD"
 TEST_NUMBER="17"
+TEST_COUNTER=0
 TEST_VERSION="4.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
-[[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+[[ -n "${FRAMEWORK_GUAR:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
 # Test configuration
@@ -30,23 +33,24 @@ SHUTDOWN_ACTIVITY_TIMEOUT=5  # Timeout if no new log activity
 LOG_MIN="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_min.log"
 LOG_MAX="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_max.log"
 
-print_subtest "Locate Hydrogen Binary"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Locate Hydrogen Binary"
 
 HYDROGEN_BIN=''
 HYDROGEN_BIN_BASE=''
+# shellcheck disable=SC2310 # We want to continue even if the test fails
 if find_hydrogen_binary "${PROJECT_DIR}"; then
-    print_message "Using Hydrogen binary: ${HYDROGEN_BIN_BASE}"
-    print_result 0 "Hydrogen binary found and validated"
-    ((PASS_COUNT++))
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Using Hydrogen binary: ${HYDROGEN_BIN_BASE}"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Hydrogen binary found and validated"
 else
-    print_result 1 "Failed to find Hydrogen binary"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to find Hydrogen binary"
     EXIT_CODE=1
 fi
 
-print_subtest "Validate Minimum Configuration File"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Minimum Configuration File"
 
+# shellcheck disable=SC2310 # We want to continue even if the test fails
 if validate_config_file "${MIN_CONFIG}"; then
-    ((PASS_COUNT++))
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Validated Minimum Configuration File"
 else
     EXIT_CODE=1
 fi
@@ -55,10 +59,11 @@ fi
 config_name=$(basename "${MIN_CONFIG}" .json)
 run_lifecycle_test "${MIN_CONFIG}" "${config_name}" "${DIAG_TEST_DIR}" "${STARTUP_TIMEOUT}" "${SHUTDOWN_TIMEOUT}" "${SHUTDOWN_ACTIVITY_TIMEOUT}" "${HYDROGEN_BIN}" "${LOG_MIN}" "PASS_COUNT" "EXIT_CODE"
 
-print_subtest "Validate Maximum Configuration File"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Maximum Configuration File"
 
+# shellcheck disable=SC2310 # We want to continue even if the test fails
 if validate_config_file "${MAX_CONFIG}"; then
-    ((PASS_COUNT++))
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Validated Maximum Configuration File"
 else
     EXIT_CODE=1
 fi

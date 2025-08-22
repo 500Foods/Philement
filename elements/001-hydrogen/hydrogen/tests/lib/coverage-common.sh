@@ -20,13 +20,14 @@
 # 1.0.0 - 2025-07-21 - Initial version with common coverage functions
 
 # Guard clause to prevent multiple sourcing
-[[ -n "${COVERAGE_COMMON_GUARD}" ]] && return 0
+[[ -n "${COVERAGE_COMMON_GUARD:-}" ]] && return 0
 export COVERAGE_COMMON_GUARD="true"
 
 # Library metadata
 COVERAGE_COMMON_NAME="Coverage Common Library"
 COVERAGE_COMMON_VERSION="2.1.0"
-print_message "${COVERAGE_COMMON_NAME} ${COVERAGE_COMMON_VERSION}" "info" 2> /dev/null || true
+# shellcheck disable=SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${COVERAGE_COMMON_NAME} ${COVERAGE_COMMON_VERSION}" "info" 2> /dev/null || true
 
 # Sort out directories
 PROJECT_DIR="$( cd "$(dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"

@@ -22,13 +22,14 @@
 # 1.0.0 - 2025-07-11 - Initial version with Unity and blackbox coverage functions
 
 # Guard clause to prevent multiple sourcing
-[[ -n "${COVERAGE_GUARD}" ]] && return 0
+[[ -n "${COVERAGE_GUARD:-}" ]] && return 0
 export COVERAGE_GUARD="true"
 
 # Library metadata
 COVERAGE_NAME="Coverage Library"
 COVERAGE_VERSION="3.1.0"
-print_message "${COVERAGE_NAME} ${COVERAGE_VERSION}" "info" 2> /dev/null || true
+# shellcheck disable=SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${COVERAGE_NAME} ${COVERAGE_VERSION}" "info" 2> /dev/null || true
 
 # Sort out directories
 PROJECT_DIR="$( cd "$(dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
@@ -42,11 +43,11 @@ LOGS_DIR="${TESTS_DIR}/logs"
 mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}"
 
 # shellcheck source=tests/lib/coverage-common.sh # Resolve path statically
-[[ -n "${FRAMEWORK_GUARD}" ]] || source "${LIB_DIR}/framework.sh"
+[[ -n "${FRAMEWORK_GUARD:-}" ]] || source "${LIB_DIR}/framework.sh"
 # shellcheck source=tests/lib/coverage-common.sh # Resolve path statically
-[[ -n "${COVERAGE_COMMON_GUARD}" ]] || source "${LIB_DIR}/coverage-common.sh"
+[[ -n "${COVERAGE_COMMON_GUARD:-}" ]] || source "${LIB_DIR}/coverage-common.sh"
 # shellcheck source=tests/lib/coverage-combined.sh # Resolve path statically
-[[ -n "${COVERAGE_COMBINED_GUARD}" ]] || source "${LIB_DIR}/coverage-combined.sh"
+[[ -n "${COVERAGE_COMBINED_GUARD:-}" ]] || source "${LIB_DIR}/coverage-combined.sh"
 
 # Function to get coverage data by type
 get_coverage() {

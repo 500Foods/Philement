@@ -17,14 +17,17 @@
 # 1.1.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 1.0.0 - 2025-07-02 - Initial creation, extracted from test_99_codebase.sh and test_00_all.sh
 
+set -euo pipefail
+
 # Guard clause to prevent multiple sourcing
-[[ -n "${CLOC_GUARD}" ]] && return 0
+[[ -n "${CLOC_GUARD:-}" ]] && return 0
 export CLOC_GUARD="true"
 
 # Library metadata
 CLOC_NAME="CLOC Library"
 CLOC_VERSION="1.1.1"
-print_message "${CLOC_NAME} ${CLOC_VERSION}" "info" 2> /dev/null || true
+# shellcheck disable=SC2310,SC2153,SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${CLOC_NAME} ${CLOC_VERSION}" "info" 2> /dev/null || true
 
 # shellcheck source=tests/lib/framework.sh # Resolve path statically
 [[ -n "${FRAMEWORK_GUARD}" ]] || source "${LIB_DIR}/framework.sh"
@@ -65,7 +68,7 @@ generate_cloc_exclude_list() {
 run_cloc_analysis() {
     local base_dir="${1:-.}"           # Base directory to analyze (default: current directory)
     local lint_ignore_file="${2:-.lintignore}"  # Lintignore file path (default: .lintignore)
-    local output_file="$3"             # Optional output file (if not provided, outputs to stdout)
+    local output_file="${3:-}"             # Optional output file (if not provided, outputs to stdout)
     
     # Create temporary files
     local cloc_output
@@ -74,11 +77,9 @@ run_cloc_analysis() {
     cloc_output=$(mktemp) || return 1
     exclude_list=$(mktemp) || return 1
     enhanced_output=$(mktemp) || return 1
-    
-    # Ensure cleanup on exit
-    trap 'rm -f "${cloc_output}" "${exclude_list}" "${enhanced_output}"' EXIT
-    
+       
     # Generate exclude list
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
     if ! generate_cloc_exclude_list "${base_dir}" "${lint_ignore_file}" "${exclude_list}"; then
         echo "Failed to generate exclude list" >&2
         return 1
@@ -218,6 +219,7 @@ generate_cloc_for_readme() {
     
     echo '```cloc'
     
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
     if ! run_cloc_analysis "${base_dir}" "${lint_ignore_file}"; then
         echo "cloc command failed"
     fi
@@ -262,9 +264,7 @@ run_cloc_with_stats() {
     local temp_output
     temp_output=$(mktemp) || return 1
     
-    # Ensure cleanup
-    trap 'rm -f "${temp_output}"' RETURN
-    
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
     if run_cloc_analysis "${base_dir}" "${lint_ignore_file}" "${temp_output}"; then
         # Extract and return statistics
         extract_cloc_stats "${temp_output}"

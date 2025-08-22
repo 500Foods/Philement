@@ -16,6 +16,8 @@
 # 1.0.1 - Added YELLOW color flag for files with no coverage in either test type
 # 1.0.0 - Initial version
 
+set -euo pipefail
+
 COVERAGE_TABLE_NAME="Coverage Table Library"
 COVERAGE_TABLE_VERSION="4.0.0"
 export COVERAGE_TABLE_NAME COVERAGE_TABLE_VERSION
@@ -24,16 +26,19 @@ export COVERAGE_TABLE_NAME COVERAGE_TABLE_VERSION
 TEST_NAME="Coverage Table"
 TEST_ABBR="CVT"
 TEST_NUMBER="CT"
+TEST_COUNTER=0
 TEST_VERSION="4.0.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
-[[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/framework.sh"
-setup_test_environment &>/dev/null
+[[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/framework.sh"
+# shellcheck disable=SC2310 # We want to continue even if the test fails
+#source "$(dirname "${BASH_SOURCE[0]}")/framework.sh"
+setup_test_environment &>/dev/null || true
 
 # Test Parameters
 UNITY_COVS="${BUILD_DIR}/unity"
 BLACKBOX_COVS="${BUILD_DIR}/coverage"
-CACHE_DIR="${HOME}/.cache/unity"
+CACHE_DIR="${BUILD_DIR}/.cache/unity"
 
 show_version() {
     echo "${COVERAGE_TABLE_NAME} - ${COVERAGE_TABLE_VERSION} - Displays comprehensive coverage data from Unity and blackbox tests in a formatted table" >&2
@@ -173,7 +178,9 @@ display_timestamp=$("${DATE}" '+%Y-%b-%d (%a) %H:%M:%S %Z' 2>/dev/null)
 
 tmp_unity=$(mktemp)
 tmp_blackbox=$(mktemp)
+# shellcheck disable=SC2310 # We want to continue even if the test fails
 ( calculate_unity_coverage "${UNITY_COVS}" "${timestamp}" > "${tmp_unity}" 2>/dev/null || echo "0.000" > "${tmp_unity}" ) &
+# shellcheck disable=SC2310 # We want to continue even if the test fails
 ( calculate_blackbox_coverage "${BLACKBOX_COVS}" "${timestamp}" > "${tmp_blackbox}" 2>/dev/null || echo "0.000" > "${tmp_blackbox}" ) &
 wait
 unity_coverage_percentage=$(cat "${tmp_unity}")
@@ -456,10 +463,10 @@ for file_data_entry in "${sorted_file_data[@]}"; do
     display_file_path="${file_path#src/}"
     if [[ ${u_covered} -eq 0 && ${c_covered} -eq 0 ]]; then
         display_file_path="{YELLOW}${display_file_path}{RESET}"
-        ((zero_coverage_count++))
+        zero_coverage_count=$(( zero_coverage_count + 1 ))
     elif [[ ${coverage_below_50} -eq 1 ]]; then
         display_file_path="{MAGENTA}${display_file_path}{RESET}"
-        ((low_coverage_count++))
+        low_coverage_count=$(( low_coverage_count + 1 ))
     fi
     
     # Get Unity test count for this source file
@@ -578,6 +585,6 @@ EOF
 "${TABLES}" "${layout_json}" "${data_json}" 2>/dev/null
 
 # Clean up temporary files
-rm -rf "${temp_dir}" 2>/dev/null
+rm -rf "${temp_dir}" 2>/dev/null || true
 
 # print_subtest "Script complete"

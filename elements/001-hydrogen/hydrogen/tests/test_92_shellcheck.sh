@@ -16,14 +16,17 @@
 # 2.0.0 - 2025-07-14 - Upgraded to modular test framework
 # 1.0.0 - Initial version
 
+set -euo pipefail
+
 # Test configuration
 TEST_NAME="Bash Lint"
 TEST_ABBR="BSH"
 TEST_NUMBER="92"
+TEST_COUNTER=0
 TEST_VERSION="4.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
-[[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+[[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
 # Test settings
@@ -31,13 +34,14 @@ LINT_OUTPUT_LIMIT=10
 SHELLCHECK_CACHE_DIR="${HOME}/.cache/shellcheck"
 mkdir -p "${SHELLCHECK_CACHE_DIR}"
 
-print_subtest "Shell Script Linting (shellcheck)"
-print_message "Detected ${CORES} CPU cores for parallel processing"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Shell Script Linting (shellcheck)"
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Detected ${CORES} CPU cores for parallel processing"
 
 SHELL_FILES=()
 TEST_SHELL_FILES=()
 OTHER_SHELL_FILES=()
 while read -r file; do
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
     if ! should_exclude_file "${file}"; then
         SHELL_FILES+=("${file}")
         if [[ "${file}" == ./tests/* ]]; then
@@ -53,7 +57,7 @@ SHELL_ISSUES=0
 TEMP_OUTPUT="${LOG_PREFIX}${TIMESTAMP}_temp.log"
 
 if [[ "${SHELL_COUNT}" -gt 0 ]]; then
-    print_message "Running shellcheck on ${SHELL_COUNT} shell scripts with caching..."
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Running shellcheck on ${SHELL_COUNT} shell scripts with caching..."
     TEST_NAME="${TEST_NAME} {BLUE}(shellheck: ${SHELL_COUNT} files){RESET}"
 
     # Batch compute content hashes for all files
@@ -72,15 +76,15 @@ if [[ "${SHELL_COUNT}" -gt 0 ]]; then
         flat_path=$(echo "cache${file}" | tr '/' '_')
         cache_file="${SHELLCHECK_CACHE_DIR}/${flat_path}_${content_hash}"
         if [[ -f "${cache_file}" ]]; then
-            ((cached_files++))
+            cached_files=$(( cached_files + 1 ))
             cat "${cache_file}" >> "${TEMP_OUTPUT}" 2>&1
         else
             to_process+=("${file}")
-            ((processed_scripts++))
+            processed_scripts=$(( processed_scripts + 1 ))
         fi
     done
 
-    print_message "Using cached results for ${cached_files} files, processing ${processed_scripts} files..."
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Using cached results for ${cached_files} files, processing ${processed_scripts} files..."
 
     # Function to run shellcheck and cache for a single file
     process_script() {
@@ -111,27 +115,28 @@ if [[ "${SHELL_COUNT}" -gt 0 ]]; then
     SHELL_ISSUES=$(wc -l < "${TEMP_OUTPUT}.filtered")
     if [[ "${SHELL_ISSUES}" -gt 0 ]]; then
         FILES_WITH_ISSUES=$(cut -d: -f1 "${TEMP_OUTPUT}.filtered" | sort -u | wc -l || true)
-        print_message "shellcheck found ${SHELL_ISSUES} issues in ${FILES_WITH_ISSUES} files:"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "shellcheck found ${SHELL_ISSUES} issues in ${FILES_WITH_ISSUES} files:"
         while IFS= read -r line; do
-            print_output "${line}"
+            print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
         done < <(head -n "${LINT_OUTPUT_LIMIT}" "${TEMP_OUTPUT}.filtered" || true)
         if [[ "${SHELL_ISSUES}" -gt "${LINT_OUTPUT_LIMIT}" ]]; then
-            print_message "Output truncated - Showing ${LINT_OUTPUT_LIMIT} of ${SHELL_ISSUES} lines"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Output truncated - Showing ${LINT_OUTPUT_LIMIT} of ${SHELL_ISSUES} lines"
         fi
     fi
 fi
 
 if [[ "${SHELL_ISSUES}" -eq 0 ]]; then
-    print_result 0 "No issues in ${SHELL_COUNT} shell files"
-    ((PASS_COUNT++))
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "No issues in ${SHELL_COUNT} shell files"
 else
-    print_result 1 "Found ${SHELL_ISSUES} issues in shell files"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Found ${SHELL_ISSUES} issues in shell files"
     EXIT_CODE=1
 fi
 
-print_subtest "Shellcheck Exception Justification Check"
-print_message "Checking for shellcheck directives in shell scripts..."
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Shellcheck Exception Justification Check"
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Checking for shellcheck directives in shell scripts..."
 
+with_just=0
+without_just=0
 SHELLCHECK_DIRECTIVE_TOTAL=0
 SHELLCHECK_DIRECTIVE_WITH_JUSTIFICATION=0
 SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION=0
@@ -142,11 +147,11 @@ process_file() {
     local total=0 with_just=0 without_just=0
     while IFS= read -r line; do
         if [[ "${line}" =~ ^[[:space:]]*"# shellcheck" ]]; then
-            ((total++))
+            total=$(( total + 1 ))
             if [[ "${line}" =~ ^[[:space:]]*"# shellcheck"[[:space:]]+[^[:space:]]+[[:space:]]+"#".* ]]; then
-                ((with_just++))
+                with_just=$(( with_just + 1 ))
             else
-                ((without_just++))
+                without_just=$(( without_just + 1 ))
                 # Output to a file-specific log to avoid interleaving
                 echo "No justification found in ${file}: ${line}" >> "${file}.nojust.log"
             fi
@@ -160,7 +165,7 @@ process_file() {
 export -f process_file
 
 if [[ ${#SHELL_FILES[@]} -gt 0 ]]; then
-    print_message "Analyzing ${SHELL_COUNT} shell scripts for shellcheck directives..."
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Analyzing ${SHELL_COUNT} shell scripts for shellcheck directives..."
 
     # Create a temporary directory for per-file logs
     tmp_dir="${LOG_PREFIX}${TIMESTAMP}_${RANDOM}"
@@ -172,9 +177,9 @@ if [[ ${#SHELL_FILES[@]} -gt 0 ]]; then
     # Aggregate results
     while IFS= read -r line; do
         read -r total with_just without_just file <<< "${line}"
-        ((SHELLCHECK_DIRECTIVE_TOTAL += total))
-        ((SHELLCHECK_DIRECTIVE_WITH_JUSTIFICATION += with_just))
-        ((SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION += without_just))
+        SHELLCHECK_DIRECTIVE_TOTAL=$(( SHELLCHECK_DIRECTIVE_TOTAL + total ))
+        SHELLCHECK_DIRECTIVE_WITH_JUSTIFICATION=$(( SHELLCHECK_DIRECTIVE_WITH_JUSTIFICATION + with_just ))
+        SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION=$(( SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION + without_just ))
         # Collect any no-justification messages
         if [[ -f "${file}.nojust.log" ]]; then
             cat "${file}.nojust.log" >> "${tmp_dir}_nojust.log"
@@ -184,24 +189,22 @@ if [[ ${#SHELL_FILES[@]} -gt 0 ]]; then
     # Print collected no-justification messages
     if [[ -f "${tmp_dir}_nojust.log" ]]; then
         while IFS= read -r line; do
-            print_output "${line}"
+            print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
         done < "${tmp_dir}_nojust.log"
     fi
 
-    print_message "INFO: Total shellcheck directives: ${SHELLCHECK_DIRECTIVE_TOTAL}"
-    print_message "INFO: Directives with justification: ${SHELLCHECK_DIRECTIVE_WITH_JUSTIFICATION}"
-    print_message "INFO: Directives without justification: ${SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION}"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "INFO: Total shellcheck directives: ${SHELLCHECK_DIRECTIVE_TOTAL}"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "INFO: Directives with justification: ${SHELLCHECK_DIRECTIVE_WITH_JUSTIFICATION}"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "INFO: Directives without justification: ${SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION}"
 
     if [[ "${SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION}" -eq 0 ]]; then
-        print_result 0 "All ${SHELLCHECK_DIRECTIVE_TOTAL} shellcheck directives have justifications"
-        ((PASS_COUNT++))
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "All ${SHELLCHECK_DIRECTIVE_TOTAL} shellcheck directives have justifications"
     else
-        print_result 1 "Found ${SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION} shellcheck directives without justifications"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Found ${SHELLCHECK_DIRECTIVE_WITHOUT_JUSTIFICATION} shellcheck directives without justifications"
         EXIT_CODE=1
     fi
 else
-    print_result 0 "No shell scripts found to check for shellcheck directives"
-    ((PASS_COUNT++))
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "No shell scripts found to check for shellcheck directives"
 fi
 
 # Print test completion summary

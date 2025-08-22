@@ -13,69 +13,72 @@
 # 2.0.0 - 2025-06-17 - Major refactoring: improved modularity, enhanced comments, added version tracking
 # 1.0.0 - Initial version - Basic environment variable validation
 
+set -euo pipefail
+
 # Test configuration
 TEST_NAME="Environment Variables"
 TEST_ABBR="ENV"
 TEST_NUMBER="02"
+TEST_COUNTER=0
 TEST_VERSION="5.0.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
-[[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+[[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
-print_subtest "Payload LOCK Ennvironment Variable Present"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Payload LOCK Ennvironment Variable Present"
 
+# shellcheck disable=SC2310 # We want to continue even if the test fails
 if check_env_var "PAYLOAD_LOCK" "${PAYLOAD_LOCK}"; then
-    print_result 0 "PAYLOAD_LOCK Found"
-    ((PASS_COUNT++))
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "PAYLOAD_LOCK Found"
 else
-    print_result 1 "PAYLOAD_LOCK Missing or Invalid"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "PAYLOAD_LOCK Missing or Invalid"
     EXIT_CODE=1
 fi
 
-print_subtest "RSA Key Format Validation For Payload Lock"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "RSA Key Format Validation For Payload Lock"
 
 if [[ -n "${PAYLOAD_LOCK}" ]]; then
-    print_command "echo \"\${PAYLOAD_LOCK}\" | base64 -d | openssl pkey -pubin -check -noout"
+    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "echo \"\${PAYLOAD_LOCK}\" | base64 -d | openssl pkey -pubin -check -noout"
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
     if validate_rsa_key "PAYLOAD_LOCK" "${PAYLOAD_LOCK}" "public"; then
-        print_result 0 "PAYLOAD_LOCK valid RSA Pulic Key Format"
-        ((PASS_COUNT++))
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "PAYLOAD_LOCK valid RSA Pulic Key Format"
     else
-        print_result 1 "PAYLOAD_LOCK not vlaid RSA Public Key Format"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "PAYLOAD_LOCK not vlaid RSA Public Key Format"
         EXIT_CODE=1
     fi
 fi
 
-print_subtest "Payload KEY Ennvironment Variable Present"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Payload KEY Ennvironment Variable Present"
 
+# shellcheck disable=SC2310 # We want to continue even if the test fails
 if check_env_var "PAYLOAD_KEY" "${PAYLOAD_KEY}"; then
-    print_result 0 "PAYLOAD_KEY Found"
-    ((PASS_COUNT++))
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "PAYLOAD_KEY Found"
 else
-    print_result 1 "PAYLOAD_KEY Missing or Invalid"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "PAYLOAD_KEY Missing or Invalid"
     EXIT_CODE=1
 fi
 
-print_subtest "RSA Key Format Validation For Payload Lock"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "RSA Key Format Validation For Payload Lock"
 
 if [[ -n "${PAYLOAD_KEY}" ]]; then
-    print_command "echo \"\${PAYLOAD_KEY}\" | base64 -d | openssl rsa -check -noout"
+    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "echo \"\${PAYLOAD_KEY}\" | base64 -d | openssl rsa -check -noout"
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
     if validate_rsa_key "PAYLOAD_KEY" "${PAYLOAD_KEY}" "private"; then
-        print_result 0 "PAYLOAD_KEY valid RSA Key Format"
-        ((PASS_COUNT++))
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "PAYLOAD_KEY valid RSA Key Format"
     else
-        print_result 1 "PAYLOAD_KEY not vlaid RSA Key Format"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "PAYLOAD_KEY not vlaid RSA Key Format"
         EXIT_CODE=1
     fi
 fi
 
-print_subtest "WebSocket KEY Ennvironment Variable Present"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "WebSocket KEY Ennvironment Variable Present"
 
+# shellcheck disable=SC2310 # We want to continue even if the test fails
 if check_env_var "WEBSOCKET_KEY" "${PAYLOAD_KEY}"; then
-    print_result 0 "WEBSOCKET_KEY Found"
-    ((PASS_COUNT++))
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "WEBSOCKET_KEY Found"
 else
-    print_result 1 "WEBSOCKET_KEY Missing or Invalid"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "WEBSOCKET_KEY Missing or Invalid"
     EXIT_CODE=1
 fi
 

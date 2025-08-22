@@ -14,14 +14,17 @@
 # 2.0.0 - 2025-07-14 - Upgraded to use new modular test framework
 # 1.0.0 - Initial version for markdown linting
 
+set -euo pipefail
+
 # Test configuration
 TEST_NAME="Markdown Lint"
 TEST_ABBR="MKD"
 TEST_NUMBER="90"
+TEST_COUNTER=0
 TEST_VERSION="3.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
-[[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+[[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
 # Test setup
@@ -35,7 +38,7 @@ get_file_hash() {
     "${MD5SUM}" "$1" | "${AWK}" '{print $1}' || true
 }
 
-print_subtest "Markdown Linting"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Markdown Linting"
 
 # Get .lintignore filtered list of markdown files to check
 MD_FILES=()
@@ -43,6 +46,7 @@ cd "${PROJECT_DIR}" || return &>/dev/null
 mapfile -t md_file_list < <("${FIND}" . -type f -name "*.md" || true)
 for file in "${md_file_list[@]}"; do
     rel_file="${file#./}"
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
     if ! should_exclude_file "${rel_file}"; then
         MD_FILES+=("${rel_file}")
     fi
@@ -69,22 +73,22 @@ if [[ "${MD_COUNT}" -gt 0 ]]; then
     while IFS=' ' read -r file_hash file; do
         cache_file="${CACHE_DIR}/${file##*/}_${file_hash}"
         if [[ -f "${cache_file}" ]]; then
-            ((cached_files++))
+            cached_files=$(( cached_files + 1 ))
             cat "${cache_file}" >> "${TEMP_LOG}" 2>/dev/null || true
         else
             to_process_files+=("${file}")
-            ((processed_files++))
+            processed_files=$(( processed_files + 1 ))
         fi
     done < "${temp_hashes}"
 
-    print_message "Using cached results for ${cached_files} files, processing ${processed_files} files out of ${MD_COUNT}..."
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Using cached results for ${cached_files} files, processing ${processed_files} files out of ${MD_COUNT}..."
 
     TEST_NAME="${TEST_NAME} {BLUE}(markdownlint: ${MD_COUNT} files){RESET}"
 
     # Run markdownlint on files that need processing
     if [[ "${processed_files}" -gt 0 ]]; then
 
-        print_message "Running markdownlint on ${processed_files} files..."
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Running markdownlint on ${processed_files} files..."
         markdownlint --config ".lintignore-markdown" "${to_process_files[@]}" 2> "${TEMP_NEW_LOG}"
        
         # Cache new results
@@ -107,32 +111,29 @@ if [[ "${MD_COUNT}" -gt 0 ]]; then
 
         if [[ "${ISSUE_COUNT}" -gt 0 ]]; then
 
-            print_message "markdownlint found ${ISSUE_COUNT} actual issues:"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "markdownlint found ${ISSUE_COUNT} actual issues:"
         
             # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
             while IFS= read -r line; do
-                print_output "${line}"
+                print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
             done < <(head -n "${LINT_OUTPUT_LIMIT}" "${FILTERED_LOG}" || true)
 
             if [[ "${ISSUE_COUNT}" -gt "${LINT_OUTPUT_LIMIT}" ]]; then
-                print_message "Output truncated - Showing ${LINT_OUTPUT_LIMIT} of ${ISSUE_COUNT} lines"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Output truncated - Showing ${LINT_OUTPUT_LIMIT} of ${ISSUE_COUNT} lines"
             fi
 
-            print_result 1 "Found ${ISSUE_COUNT} issues in ${MD_COUNT} markdown files"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Found ${ISSUE_COUNT} issues in ${MD_COUNT} markdown files"
             EXIT_CODE=1
         else
-            print_message "markdownlint completed (Node.js deprecation warnings filtered out)"
-            print_result 0 "No issues in ${MD_COUNT} markdown files"
-            ((PASS_COUNT++))
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "markdownlint completed (Node.js deprecation warnings filtered out)"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "No issues in ${MD_COUNT} markdown files"
         fi
     else
-        print_result 0 "No issues in ${MD_COUNT} markdown files"
-        ((PASS_COUNT++))
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "No issues in ${MD_COUNT} markdown files"
     fi
     
 else
-    print_result 0 "No markdown files to check"
-    ((PASS_COUNT++))
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "No markdown files to check"
 fi
 
 # Print test completion summary

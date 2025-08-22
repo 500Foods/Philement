@@ -15,14 +15,17 @@
 # 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
 # 1.0.0 - Original version - Basic environment variable testing functionality
 
+set -euo pipefail
+
 # Test configuration
 TEST_NAME="Env Var Substitution"
 TEST_ABBR="VAR"
 TEST_NUMBER="12"
+TEST_COUNTER=0
 TEST_VERSION="4.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
-[[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+[[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
 # Configuration file paths
@@ -40,26 +43,26 @@ reset_environment_variables() {
     unset H_MEMORY_WARNING H_LOAD_WARNING H_PRINT_QUEUE_ENABLED H_CONSOLE_LOG_LEVEL
     unset H_DEVICE_ID H_FRIENDLY_NAME
     
-    print_message "All Hydrogen environment variables have been unset"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "All Hydrogen environment variables have been unset"
 }
 
-print_subtest "Locate Hydrogen Binary"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Locate Hydrogen Binary"
 
 HYDROGEN_BIN=''
 HYDROGEN_BIN_BASE=''
+# shellcheck disable=SC2310 # We want to continue even if the test fails
 if find_hydrogen_binary "${PROJECT_DIR}"; then
-    print_result 0 "Hydrogen binary found and validated: ${HYDROGEN_BIN_BASE}"
-    ((PASS_COUNT++))
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Hydrogen binary found and validated: ${HYDROGEN_BIN_BASE}"
 else
-    print_result 1 "Failed to find Hydrogen binary"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to find Hydrogen binary"
     EXIT_CODE=1
 fi
 
-print_subtest "Validate Configuration File"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration File"
 
+# shellcheck disable=SC2310 # We want to continue even if the test fails
 if validate_config_file "${CONFIG_FILE}"; then
-    print_message "Using config: $(convert_to_relative_path "${CONFIG_FILE}" || true)"
-    ((PASS_COUNT++))
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Using config: $(convert_to_relative_path "${CONFIG_FILE}" || true)"
 else
     EXIT_CODE=1
 fi
@@ -83,7 +86,7 @@ export H_FRIENDLY_NAME="Hydrogen Environment Test"
 config_name="basic_env_vars"
 LOG_FILE="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${config_name}.log"
    
-print_message "Basic environment variables for Hydrogen test have been set"
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Basic environment variables for Hydrogen test have been set"
 run_lifecycle_test "${CONFIG_FILE}" "${config_name}" "${DIAG_TEST_DIR}" "${STARTUP_TIMEOUT}" "${SHUTDOWN_TIMEOUT}" "${SHUTDOWN_ACTIVITY_TIMEOUT}" "${HYDROGEN_BIN}" "${LOG_FILE}" "PASS_COUNT" "EXIT_CODE"
 
 # Test missing environment variables fallback
@@ -91,7 +94,7 @@ reset_environment_variables
 config_name="missing_env_vars"
 LOG_FILE="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${config_name}.log"
 
-print_message "Environment variables have been removed"
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Environment variables have been removed"
 run_lifecycle_test "${CONFIG_FILE}" "${config_name}" "${DIAG_TEST_DIR}" "${STARTUP_TIMEOUT}" "${SHUTDOWN_TIMEOUT}" "${SHUTDOWN_ACTIVITY_TIMEOUT}" "${HYDROGEN_BIN}" "${LOG_FILE}" "PASS_COUNT" "EXIT_CODE"
 
 # Test environment variable type conversion
@@ -109,7 +112,7 @@ export H_DEFAULT_QUEUE_CAPACITY="1024"
 config_name="type_conversion"
 LOG_FILE="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${config_name}.log"
 
-print_message "Type conversion environment variables for Hydrogen test have been set"
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Type conversion environment variables for Hydrogen test have been set"
 run_lifecycle_test "${CONFIG_FILE}" "${config_name}" "${DIAG_TEST_DIR}" "${STARTUP_TIMEOUT}" "${SHUTDOWN_TIMEOUT}" "${SHUTDOWN_ACTIVITY_TIMEOUT}" "${HYDROGEN_BIN}" "${LOG_FILE}" "PASS_COUNT" "EXIT_CODE"
 
 # Test environment variable validation
@@ -126,13 +129,12 @@ export H_MAX_QUEUE_BLOCKS="0" # edge case: zero blocks
 config_name="env_validation"
 LOG_FILE="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${config_name}.log"
 
-print_message "Validation environment variables for Hydrogen test have been set"
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Validation environment variables for Hydrogen test have been set"
 run_lifecycle_test "${CONFIG_FILE}" "${config_name}" "${DIAG_TEST_DIR}" "${STARTUP_TIMEOUT}" "${SHUTDOWN_TIMEOUT}" "${SHUTDOWN_ACTIVITY_TIMEOUT}" "${HYDROGEN_BIN}" "${LOG_FILE}" "PASS_COUNT" "EXIT_CODE"
 
-print_subtest "Reset Environment Variables"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Reset Environment Variables"
 reset_environment_variables
-print_result 0 "All environment variables reset"
-((PASS_COUNT++))
+print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "All environment variables reset"
 
 # Print completion table
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"

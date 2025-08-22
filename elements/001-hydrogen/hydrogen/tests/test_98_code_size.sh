@@ -17,17 +17,17 @@
 # 2.0.0 - 2025-07-18 - Performance optimization: 46% speed improvement (3.136s to 1.705s), background cloc analysis, batch wc -l processing, parallel file type counting, largest-to-smallest file sorting
 # 1.0.0 - Initial version
 
-# Give Test 01 a headstart
-# [[ -z "${ORCHESTRATION}" ]] || sleep 5.5
+set -euo pipefail
 
 # Test configuration
 TEST_NAME="Code Size Analysis"
 TEST_ABBR="SIZ"
 TEST_NUMBER="98"
+TEST_COUNTER=0
 TEST_VERSION="3.5.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
-[[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+[[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
 # Test configuration constants
@@ -42,8 +42,8 @@ SOURCE_FILES_LIST="${LOG_PREFIX}${TIMESTAMP}_source_files.txt"
 LARGE_FILES_LIST="${LOG_PREFIX}${TIMESTAMP}_large_files.txt"
 LINE_COUNT_FILE="${LOG_PREFIX}${TIMESTAMP}_line_count.txt"
 
-print_subtest "Linting Configuration Information"
-print_message "Checking linting configuration files and displaying exclusion patterns..."
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Linting Configuration Information"
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Checking linting configuration files and displaying exclusion patterns..."
 
 exclusion_files=(".lintignore" ".lintignore-c" ".lintignore-markdown" ".lintignore-bash")
 found_files=0
@@ -51,10 +51,10 @@ missing_files=()
 
 for file in "${exclusion_files[@]}"; do
     if [[ -f "${file}" ]]; then
-        ((found_files++))
+        found_files=$(( found_files + 1 ))
         if [[ "${file}" = ".lintignore-bash" ]]; then
             # Special handling for .lintignore-bash which doesn't have a SUMMARY section
-            print_message "${file}: Used by shellcheck for bash script linting exclusions"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${file}: Used by shellcheck for bash script linting exclusions"
         else
             summary=$("${GREP}" -A "${TOPLIST}" "SUMMARY" "${file}" 2>/dev/null | "${GREP}" -v "SUMMARY" | "${GREP}" -v "Used by" | "${SED}" 's/^# /  /' | "${SED}" 's/#$//' || true)
             if [[ -n "${summary}" ]]; then
@@ -62,7 +62,7 @@ for file in "${exclusion_files[@]}"; do
                 # Use process substitution to avoid subshell
                 while IFS= read -r line; do
                     if [[ -n "${line}" ]]; then
-                        print_message "${file}: ${line}"
+                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${file}: ${line}"
                     fi
                 done < <(echo "${summary}")
             fi
@@ -72,30 +72,30 @@ for file in "${exclusion_files[@]}"; do
     fi
 done
 
-print_message "For details, see tests/README.md and .lintignore files"
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "For details, see tests/README.md and .lintignore files"
 
 if [[ ${#missing_files[@]} -eq 0 ]]; then
-    print_result 0 "All ${found_files} linting configuration files found"
-    ((PASS_COUNT++))
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "All ${found_files} linting configuration files found"
 else
-    print_result 1 "Missing linting files: ${missing_files[*]}"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Missing linting files: ${missing_files[*]}"
     EXIT_CODE=1
 fi
 
 # Start cloc analysis in background to run in parallel with file processing
 CLOC_OUTPUT="${LOG_PREFIX}${TIMESTAMP}_cloc.txt"
 CLOC_PID=""
-print_message "Starting cloc analysis in background..."
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting cloc analysis in background..."
 run_cloc_analysis "." ".lintignore" "${CLOC_OUTPUT}" &
 CLOC_PID=$!
 
-print_subtest "Source Code File Analysis"
-print_message "Analyzing source code files and generating statistics..."
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Source Code File Analysis"
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Analyzing source code files and generating statistics..."
 
 # Find all source files, excluding those in .lintignore
 true > "${SOURCE_FILES_LIST}"
 while read -r file; do
     rel_file="${file#./}"
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
     if ! should_exclude_file "${rel_file}"; then
         echo "${rel_file}" >> "${SOURCE_FILES_LIST}"
     fi
@@ -151,9 +151,9 @@ fi
 sort -nr -o "${LINE_COUNT_FILE}" "${LINE_COUNT_FILE}"
 
 # Display distribution
-print_message "Source Code Distribution (${TOTAL_FILES} files):"
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Source Code Distribution (${TOTAL_FILES} files):"
 for range in "000-099" "100-199" "200-299" "300-399" "400-499" "500-599" "600-699" "700-799" "800-899" "900-999" "1,000+ "; do
-    print_output "  ${range} Lines: ${line_bins[${range}]:-0} files"
+    print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "  ${range} Lines: ${line_bins[${range}]:-0} files"
 done
 
 # Show top files by type
@@ -168,12 +168,12 @@ show_top_files_by_type() {
         temp_file="${LOG_PREFIX}${TIMESTAMP}_top_${ext}.txt"
         
         "${GREP}" "\.${ext}$" "${LINE_COUNT_FILE}" > "${temp_file}"
-        print_message "Top ${TOPLIST} ${label} Files:"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Top ${TOPLIST} ${label} Files:"
         # Avoid subshell by using process substitution instead of pipe
         while read -r line; do
             local count path
             read -r count path <<< "${line}"
-            print_output "  ${count} lines: ${path}"
+            print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "  ${count} lines: ${path}"
         done < <(head -n "${TOPLIST}" "${temp_file}" || true)
     done
 }
@@ -182,21 +182,21 @@ show_top_files_by_type
 
 # Check size compliance
 if [[ "${HAS_OVERSIZED}" -eq 1 ]]; then
-    print_result 1 "Found files exceeding ${MAX_SOURCE_LINES} lines"
-    print_output "Largest file: ${LARGEST_FILE} with ${LARGEST_LINES} lines"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Found files exceeding ${MAX_SOURCE_LINES} lines"
+    print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "Largest file: ${LARGEST_FILE} with ${LARGEST_LINES} lines"
     EXIT_CODE=1
 else
-    print_result 0 "No files exceed ${MAX_SOURCE_LINES} lines"
-    ((PASS_COUNT++))
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "No files exceed ${MAX_SOURCE_LINES} lines"
 fi
 
-print_subtest "Large Non-Source File Detection"
-print_message "Finding large non-source files (>${LARGE_FILE_THRESHOLD})..."
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Large Non-Source File Detection"
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Finding large non-source files (>${LARGE_FILE_THRESHOLD})..."
 
 true > "${LARGE_FILES_LIST}"
 while read -r size file; do
     # Strip ./ from find's output to match realpath's format
     rel_file="${file#./}"
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
     if ! should_exclude_file "${rel_file}"; then
         echo "${size} ${rel_file}" >> "${LARGE_FILES_LIST}"
     fi
@@ -205,34 +205,32 @@ done < <("${FIND}" . -type f -size "+${LARGE_FILE_THRESHOLD}" -not \( -path "*/t
 LARGE_FILE_COUNT=$(wc -l < "${LARGE_FILES_LIST}")
 
 if [[ "${LARGE_FILE_COUNT}" -eq 0 ]]; then
-    print_message "No large files found (excluding source/docs)"
-    print_result 0 "No large files found"
-    ((PASS_COUNT++))
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "No large files found (excluding source/docs)"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "No large files found"
 else
-    print_message "Found ${LARGE_FILE_COUNT} large files:"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Found ${LARGE_FILE_COUNT} large files:"
     if [[ -s "${LARGE_FILES_LIST}" ]]; then
         sorted_list="${LOG_PREFIX}${TIMESTAMP}_large_files_sorted.txt"
         sort -nr "${LARGE_FILES_LIST}" > "${sorted_list}"
         while read -r size file; do
             size_formatted=$("${PRINTF}" "%7s" "$("${PRINTF}" "%'d" "${size}")" || true)
-            print_output "${size_formatted} KB: ${file}"
+            print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${size_formatted} KB: ${file}"
         done < "${sorted_list}"
     fi
-    print_result 0 "Found ${LARGE_FILE_COUNT} files >${LARGE_FILE_THRESHOLD}"
-    ((PASS_COUNT++))
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Found ${LARGE_FILE_COUNT} files >${LARGE_FILE_THRESHOLD}"
 fi
 
-print_subtest "Code Line Count Analysis (cloc)"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Code Line Count Analysis (cloc)"
 
 if [[ -n "${CLOC_PID}" ]]; then
-    print_message "Waiting for cloc analysis to complete..."
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for cloc analysis to complete..."
     wait "${CLOC_PID}"
     CLOC_EXIT_CODE=$?
     
     if [[ "${CLOC_EXIT_CODE}" -eq 0 ]] && [[ -s "${CLOC_OUTPUT}" ]]; then
-        print_message "Code line count analysis results:"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Code line count analysis results:"
         while IFS= read -r line; do
-            print_output "${line}"
+            print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
         done < "${CLOC_OUTPUT}"
         
         # Extract summary statistics
@@ -242,26 +240,24 @@ if [[ -n "${CLOC_PID}" ]]; then
             FILES_COUNT=$(echo "${files_part}" | cut -d':' -f2)
             CODE_LINES=$(echo "${lines_part}" | cut -d':' -f2)
             LOCCOUNT=$("${PRINTF}" "%'d" "${CODE_LINES}")
-            print_result 0 "Found $("${PRINTF}" "%'d" "${FILES_COUNT}" || true) files with ${LOCCOUNT} lines of code"
-            ((PASS_COUNT++))
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Found $("${PRINTF}" "%'d" "${FILES_COUNT}" || true) files with ${LOCCOUNT} lines of code"
         else
-            print_result 1 "Failed to parse cloc output"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to parse cloc output"
             EXIT_CODE=1
         fi
     else
-        print_result 1 "cloc analysis failed"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "cloc analysis failed"
         EXIT_CODE=1
     fi
 else
-    print_result 0 "cloc not available (skipped)"
-    ((PASS_COUNT++))
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "cloc not available (skipped)"
 fi
 
-print_message "Analysis files saved to results directory:"
-print_output "Line counts: ..${SOURCE_FILES_LIST}"
-print_output "Large files: ..${LARGE_FILES_LIST}"
-print_output "Line counts: ..${LINE_COUNT_FILE}"
-print_output "Cloc output: ..${CLOC_OUTPUT}"
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Analysis files saved to results directory:"
+print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "Line counts: ..${SOURCE_FILES_LIST}"
+print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "Large files: ..${LARGE_FILES_LIST}"
+print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "Line counts: ..${LINE_COUNT_FILE}"
+print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "Cloc output: ..${CLOC_OUTPUT}"
 
 TEST_NAME="${TEST_NAME} {BLUE}(lines: ${LOCCOUNT}){RESET}"
 

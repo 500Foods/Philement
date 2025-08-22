@@ -9,7 +9,6 @@
 # get_elapsed_time()
 # get_elapsed_time_decimal()
 # set_test_number()
-# next_subtest()
 # reset_subtest_counter()
 # start_test_timer()
 # get_test_prefix()
@@ -34,8 +33,14 @@
 # 2.0.0 - 2025-07-02 - Updated to integrate with numbered output system
 # 1.0.0 - 2025-07-02 - Initial creation from support_utils.sh migration
 
+# Let's get this party started... Maybe
+if (( BASH_VERSINFO[0] < 5 )); then
+    echo "Bash 5.0 or higher required" >&2
+    exit 1
+fi
+
 # Guard clause to prevent multiple sourcing
-[[ -n "${FRAMEWORK_GUARD}" ]] && return 0
+[[ -n "${FRAMEWORK_GUARD:-}" ]] && return 0
 export FRAMEWORK_GUARD="true"
 
 # Library metadata
@@ -174,12 +179,6 @@ set_test_number() {
     CURRENT_SUBTEST_NUMBER=""
 }
 
-# Function to increment and get next subtest number
-next_subtest() {
-    ((SUBTEST_COUNTER++))
-    CURRENT_SUBTEST_NUMBER=$("${PRINTF}" "%03d" "${SUBTEST_COUNTER}")
-}
-
 # Function to reset subtest counter
 reset_subtest_counter() {
     SUBTEST_COUNTER=0
@@ -197,9 +196,9 @@ start_test_timer() {
 record_test_result() {
     local status=$1
     if [[ "${status}" -eq 0 ]]; then
-        ((TEST_PASSED_COUNT++))
+        TEST_PASSED_COUNT=$(( TEST_PASSED_COUNT +1 ))
     else
-        ((TEST_FAILED_COUNT++))
+        TEST_FAILED_COUNT=$(( TEST_FAILED_COUNT +1 ))
     fi
 }
 
@@ -217,7 +216,7 @@ setup_orchestration_environment() {
 
     # All tests that run hydrogen run with a config that starts with hydrogen_test so we can
     # ensure nothing else is running by killing those processes at the start and at the end
-    pkill -9 -f hydrogen_test_
+    pkill -9 -f hydrogen_test_ || true
 
     # Array for collecting output messages (for performance optimization and progressive feedback)
     # Output is cached and dumped each time a new TEST starts, providing progressive feedback
@@ -248,7 +247,7 @@ setup_orchestration_environment() {
     
     # Need to load log_output a little earlier than the others
     # shellcheck source=tests/lib/log_output.sh # Resolve path statically
-    [[ -n "${LOG_OUTPUT_GUARD}" ]] || source "${LIB_DIR}/log_output.sh"
+    [[ -n "${LOG_OUTPUT_GUARD:-}" ]] || source "${LIB_DIR}/log_output.sh"
     
     # Reset test counter to zero
     # shellcheck disable=SC2154,SC2153 # TEST_NUMBER defined in caller (Test 00)
@@ -259,81 +258,80 @@ setup_orchestration_environment() {
     # shellcheck disable=SC2154,SC2153 # TEST_NAME, TEST_ABBR, TEST_NUMBER, TEST_VERSION defined externally in caller
     print_test_suite_header "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
 
-    print_subtest "Loading Test Suite Libraries"
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Loading Test Suite Libraries"
     # Print framework and log output versions as they are already sourced
-    [[ -n "${ORCHESTRATION}" ]] || print_message "${FRAMEWORK_NAME} ${FRAMEWORK_VERSION}" "info"
-    [[ -n "${ORCHESTRATION}" ]] || print_message "${LOG_OUTPUT_NAME} ${LOG_OUTPUT_VERSION}" "info"
+    [[ -n "${ORCHESTRATION:-}" ]] || print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${FRAMEWORK_NAME} ${FRAMEWORK_VERSION}" "info"
+    [[ -n "${ORCHESTRATION:-}" ]] || print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${LOG_OUTPUT_NAME} ${LOG_OUTPUT_VERSION}" "info"
     # shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
-    [[ -n "${LIFECYCLE_GUARD}" ]] || source "${LIB_DIR}/lifecycle.sh"
+    [[ -n "${LIFECYCLE_GUARD:-}" ]] || source "${LIB_DIR}/lifecycle.sh"
     # shellcheck source=tests/lib/env_utils.sh # Resolve path statically
-    [[ -n "${ENV_UTILS_GUARD}" ]] || source "${LIB_DIR}/env_utils.sh"
+    [[ -n "${ENV_UTILS_GUARD:-}" ]] || source "${LIB_DIR}/env_utils.sh"
     # shellcheck source=tests/lib/network_utils.sh # Resolve path statically
-    [[ -n "${NETWORK_UTILS_GUARD}" ]] || source "${LIB_DIR}/network_utils.sh"
+    [[ -n "${NETWORK_UTILS_GUARD:-}" ]] || source "${LIB_DIR}/network_utils.sh"
     # shellcheck source=tests/lib/coverage.sh # Resolve path statically
-    [[ -n "${COVERAGE_GUARD}" ]] || source "${LIB_DIR}/coverage.sh"
+    [[ -n "${COVERAGE_GUARD:-}" ]] || source "${LIB_DIR}/coverage.sh"
     # shellcheck source=tests/lib/cloc.sh # Resolve path statically
-    [[ -n "${CLOC_GUARD}" ]] || source "${LIB_DIR}/cloc.sh"
+    [[ -n "${CLOC_GUARD:-}" ]] || source "${LIB_DIR}/cloc.sh"
     # shellcheck source=tests/lib/file_utils.sh # Resolve path statically
-    [[ -n "${FILE_UTILS_GUARD}" ]] || source "${LIB_DIR}/file_utils.sh"
-    print_result 0 "Test Suite libraries initialized"
+    [[ -n "${FILE_UTILS_GUARD:-}" ]] || source "${LIB_DIR}/file_utils.sh"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Test Suite libraries initialized"
 
-    next_subtest
-    print_subtest "Checking Build Directory"
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Checking Build Directory"
     if [[ -d "build" ]]; then
-        print_message "Nice Build directory you have there,"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Nice Build directory you have there"
         # 
         # # Check if build is already a tmpfs mount
         # if mountpoint -q build 2>/dev/null; then
-        #     print_message "Build directory already mounted as tmpfs, emptying non-cmake-build contents..."
+        #     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Build directory already mounted as tmpfs, emptying non-cmake-build contents..."
         #     if rm -rf build/coverage build/debug build/perf build/regular build/release build/tests build/unity build/valgrind build/*marker* 2>/dev/null; then
-        #         print_result 0 "Build directory (tmpfs) emptied and ready for use"
+        #         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Build directory (tmpfs) emptied and ready for use"
         #     else
-        #         print_result 1 "Failed to empty tmpfs build directory"
+        #         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to empty tmpfs build directory"
         #         EXIT_CODE=1
         #     fi
         # else
             # # Empty the regular directory and mount as tmpfs
-            # print_message "Emptying Build directory..."
-            # print_command "rm -rf build/*"
+            # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Emptying Build directory..."
+            # print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "rm -rf build/*"
             # # if rm -rf build/coverage build/debug build/perf build/regular build/release build/tests build/unity build/valgrind build/*marker* 2>/dev/null; then
             # if rm -rf build/coverage build/tests build/unity build/*marker* 2>/dev/null; then
             # # if rm -rf build/* 2>/dev/null; then
-            #     print_message "Successfully emptied build directory"
+            #     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Successfully emptied build directory"
                 
             # #     # # Mount as tmpfs
-            # #     # print_message "Mounting 'build' as tmpfs with 1GB size..."
-            # #     # print_command "sudo mount -t tmpfs -o size=1G tmpfs build"
+            # #     # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Mounting 'build' as tmpfs with 1GB size..."
+            # #     # print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "sudo mount -t tmpfs -o size=1G tmpfs build"
             # #     # if sudo mount -t tmpfs -o size=1G tmpfs build 2>/dev/null; then
-            # #     #     print_result 0 "Build directory mounted as tmpfs (1GB) for faster I/O"
-            # #     #     print_message "Warning: tmpfs is volatile; artifacts will be lost on unmount/reboot"
+            # #     #     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Build directory mounted as tmpfs (1GB) for faster I/O"
+            # #     #     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Warning: tmpfs is volatile; artifacts will be lost on unmount/reboot"
             # #     # else
-            # #     #     print_result 0 "Build directory ready (tmpfs mount failed, using regular filesystem)"
-            # #     #     print_message "Continuing with regular filesystem build directory"
+            # #     #     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Build directory ready (tmpfs mount failed, using regular filesystem)"
+            # #     #     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Continuing with regular filesystem build directory"
             # #     # fi
             # else
-            #     print_result 1 "Failed to empty Build directory"
+            #     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to empty Build directory"
             #     EXIT_CODE=1
             # fi
         # fi
     else
         # Create the build directory and mount as tmpfs
-        print_message "Creating Build directory..."
-        print_command "mkdir build"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Creating Build directory..."
+        print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "mkdir build"
         if mkdir build 2>/dev/null; then
-            print_message "Successfully created Build directory"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Successfully created Build directory"
             
             # # Mount as tmpfs
-            # print_message "Mounting 'build' as tmpfs with 1GB size..."
-            # print_command "sudo mount -t tmpfs -o size=1G tmpfs build"
+            # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Mounting 'build' as tmpfs with 1GB size..."
+            # print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "sudo mount -t tmpfs -o size=1G tmpfs build"
             # if sudo mount -t tmpfs -o size=1G tmpfs build 2>/dev/null; then
-            #     print_result 0 "Build directory created and mounted as tmpfs (1GB) for faster I/O"
-            #     print_message "Warning: tmpfs is volatile; artifacts will be lost on unmount/reboot"
+            #     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Build directory created and mounted as tmpfs (1GB) for faster I/O"
+            #     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Warning: tmpfs is volatile; artifacts will be lost on unmount/reboot"
             # else
-            #     print_result 0 "Build directory created (tmpfs mount failed, using regular filesystem)"
-            #     print_message "Continuing with regular filesystem build directory"
+            #     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Build directory created (tmpfs mount failed, using regular filesystem)"
+            #     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Continuing with regular filesystem build directory"
             # fi
         else
-            print_result 1 "Failed to create Build directory"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to create Build directory"
             EXIT_CODE=1
         fi
     fi
@@ -357,12 +355,12 @@ setup_orchestration_environment() {
 # Function to set up the standard test environment with numbering
 setup_test_environment() {
 
-    if [[ -z "${ORCHESTRATION}" ]]; then
+    if [[ -z "${ORCHESTRATION:-}" ]]; then
 
         # All tests that run hydrogen run with a config that starts with hydrogen_test so we can
         # ensure nothing else is running by killing those processes at the start and at the end
         # We only do this for single tests if it isn't running under orchestration
-        pkill -9 -f hydrogen_test_
+        pkill -9 -f hydrogen_test_ || true
 
         # Starting point
         TIMESTAMP=$("${DATE}" +%Y%m%d_%H%M%S)
@@ -417,7 +415,7 @@ setup_test_environment() {
 
     # Need to load log_output a little earlier than the others
     # shellcheck source=tests/lib/log_output.sh # Resolve path statically
-    [[ -n "${LOG_OUTPUT_GUARD}" ]] || source "${LIB_DIR}/log_output.sh"
+    [[ -n "${LOG_OUTPUT_GUARD:-}" ]] || source "${LIB_DIR}/log_output.sh"
     
     # Reset test counter to zero
     set_test_number "${TEST_NUMBER}"
@@ -427,22 +425,22 @@ setup_test_environment() {
     # shellcheck disable=SC2154,SC2153 # TEST_NAME, TEST_ABBR, TEST_NUMBER, TEST_VERSION defined externally in caller
     print_test_header "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
     
-    if [[ -z "${ORCHESTRATION}" ]]; then
+    if [[ -z "${ORCHESTRATION:-}" ]]; then
          # Print framework and log output versions as they are already sourced
-        print_message "${FRAMEWORK_NAME} ${FRAMEWORK_VERSION}" "info"
-        print_message "${LOG_OUTPUT_NAME} ${LOG_OUTPUT_VERSION}" "info"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${FRAMEWORK_NAME} ${FRAMEWORK_VERSION}" "info"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${LOG_OUTPUT_NAME} ${LOG_OUTPUT_VERSION}" "info"
         # shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
-        [[ -n "${LIFECYCLE_GUARD}" ]] || source "${LIB_DIR}/lifecycle.sh"
+        [[ -n "${LIFECYCLE_GUARD:-}" ]] || source "${LIB_DIR}/lifecycle.sh"
         # shellcheck source=tests/lib/env_utils.sh # Resolve path statically
-        [[ -n "${ENV_UTILS_GUARD}" ]] || source "${LIB_DIR}/env_utils.sh"
+        [[ -n "${ENV_UTILS_GUARD:-}" ]] || source "${LIB_DIR}/env_utils.sh"
         # shellcheck source=tests/lib/network_utils.sh # Resolve path statically
-        [[ -n "${NETWORK_UTILS_GUARD}" ]] || source "${LIB_DIR}/network_utils.sh"
+        [[ -n "${NETWORK_UTILS_GUARD:-}" ]] || source "${LIB_DIR}/network_utils.sh"
         # shellcheck source=tests/lib/coverage.sh # Resolve path statically
-        [[ -n "${COVERAGE_GUARD}" ]] || source "${LIB_DIR}/coverage.sh"
+        [[ -n "${COVERAGE_GUARD:-}" ]] || source "${LIB_DIR}/coverage.sh"
         # shellcheck source=tests/lib/cloc.sh # Resolve path statically
-        [[ -n "${CLOC_GUARD}" ]] || source "${LIB_DIR}/cloc.sh"
+        [[ -n "${CLOC_GUARD:-}" ]] || source "${LIB_DIR}/cloc.sh"
         # shellcheck source=tests/lib/file_utils.sh # Resolve path statically
-        [[ -n "${FILE_UTILS_GUARD}" ]] || source "${LIB_DIR}/file_utils.sh"
+        [[ -n "${FILE_UTILS_GUARD:-}" ]] || source "${LIB_DIR}/file_utils.sh"
 
     fi
 
@@ -451,6 +449,7 @@ setup_test_environment() {
 }
 
 # Function to evaluate test results silently (no output, just update counts)
+# Intentionally not calling print_result to avoid duplicate PASS messages
 evaluate_test_result_silent() {
     local test_name="$1"
     local failed_checks="$2"
@@ -462,7 +461,6 @@ evaluate_test_result_silent() {
     else
         eval "${exit_code_var}=1"
     fi
-    # Intentionally not calling print_result to avoid duplicate PASS messages
 }
 
 # Function to update README.md with test results

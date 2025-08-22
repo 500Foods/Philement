@@ -28,14 +28,17 @@
 # 3.0.0 - 2025-06-30 - Refactored to use robust server management functions from test_55
 # 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
 
+set -euo pipefail
+
 # Test Configuration
 TEST_NAME="API Prefix"
 TEST_ABBR="PRE"
 TEST_NUMBER="20"
+TEST_COUNTER=0
 TEST_VERSION="7.0.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
-[[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+[[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
 # Parallel execution configuration
@@ -44,8 +47,8 @@ declare -A API_TEST_CONFIGS
 
 # API test configuration - format: "config_file:log_suffix:api_prefix:description"
 API_TEST_CONFIGS=(
-    ["DEFAULT"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_prefix_1.json:one:/api:First API Prefix"
-    ["CUSTOM"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_prefix_2.json:two:/myapi:Second API Prefix"
+    ["First"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_prefix_1.json:one:/api:First API Prefix"
+    ["Second"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_prefix_2.json:two:/myapi:Second API Prefix"
 )
 
 # Test timeouts
@@ -60,7 +63,7 @@ validate_api_request() {
     local response_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${request_name}.json"
     local error_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${request_name}.log"
 
-    print_command "curl -s --max-time 10 --compressed \"${url}\""
+    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl -s --max-time 10 --compressed \"${url}\""
     
     # Retry logic for API readiness (especially important in parallel execution)
     local max_attempts=25
@@ -69,7 +72,7 @@ validate_api_request() {
         
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
-            print_message "API request attempt ${attempt} of ${max_attempts} (waiting for API subsystem initialization)..."
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "API request attempt ${attempt} of ${max_attempts} (waiting for API subsystem initialization)..."
             #sleep 0.05 
         fi
         
@@ -83,49 +86,49 @@ validate_api_request() {
                 # Check if we got a 404 or other error response
                 if "${GREP}" -q "404 Not Found" "${response_file}" || "${GREP}" -q "<html>" "${response_file}"; then
                     if [[ "${attempt}" -eq "${max_attempts}" ]]; then
-                        print_message "API endpoint still not ready after ${max_attempts} attempts"
-                        print_result 1 "API endpoint returned 404 or HTML error page"
-                        print_message "Response content:"
-                        print_output "$(cat "${response_file}" || true)"
+                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "API endpoint still not ready after ${max_attempts} attempts"
+                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "API endpoint returned 404 or HTML error page"
+                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response content:"
+                        print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "$(cat "${response_file}" || true)"
                         return 1
                     else
-                        print_message "API endpoint not ready yet (got 404/HTML), retrying..."
+                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "API endpoint not ready yet (got 404/HTML), retrying..."
                         ((attempt++))
                         continue
                     fi
                 fi
                 
-                print_message "Request successful, checking response content"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Request successful, checking response content"
                 
                 # Validate that the response contains expected fields
                 if "${GREP}" -q "${expected_field}" "${response_file}"; then
                     if [[ "${attempt}" -gt 1 ]]; then
-                        print_result 0 "Response contains expected field: ${expected_field} (succeeded on attempt ${attempt})"
+                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response contains expected field: ${expected_field} (succeeded on attempt ${attempt})"
                     else
-                        print_result 0 "Response contains expected field: ${expected_field}"
+                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response contains expected field: ${expected_field}"
                     fi
                     return 0
                 else
-                    print_result 1 "Response doesn't contain expected field: ${expected_field}"
-                    print_message "Response content:"
-                    print_output "$(cat "${response_file}" || true)"
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Response doesn't contain expected field: ${expected_field}"
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response content:"
+                    print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "$(cat "${response_file}" || true)"
                     return 1
                 fi
             else
-                print_result 1 "Response file was not created or is empty: ${response_file}"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Response file was not created or is empty: ${response_file}"
                 return 1
             fi
         else
             if [[ "${attempt}" -eq "${max_attempts}" ]]; then
-                print_result 1 "Failed to connect to server (curl exit code: ${curl_exit_code})"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to connect to server (curl exit code: ${curl_exit_code})"
                 # Show curl error if available
                 if [[ -f "${error_file}" ]] && [[ -s "${error_file}" ]]; then
-                    print_message "Curl error output:"
-                    print_output "$(cat "${error_file}" || true)"
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Curl error output:"
+                    print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "$(cat "${error_file}" || true)"
                 fi
                 return 1
             else
-                print_message "Connection failed on attempt ${attempt}, retrying..."
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Connection failed on attempt ${attempt}, retrying..."
                 ((attempt++))
                 continue
             fi
@@ -145,11 +148,12 @@ run_api_prefix_test_parallel() {
     
     local log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.log"
     local result_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.result"
+
+    # Clear result file
+    echo "TEST_NAME=${TEST_NAME}" >> "${result_file}"
+
     local port
     port=$(get_webserver_port "${config_file}")
-    
-    # Clear result file
-    true > "${result_file}"
     
     # Start hydrogen server
     "${HYDROGEN_BIN}" "${config_file}" > "${log_file}" 2>&1 &
@@ -179,13 +183,15 @@ run_api_prefix_test_parallel() {
         echo "STARTUP_SUCCESS" >> "${result_file}"
         
         # Wait for server to be ready
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
         if wait_for_server_ready "http://localhost:${port}"; then
             echo "SERVER_READY" >> "${result_file}"
             
             # Test all API endpoints
             local all_tests_passed=true
-            
+
             # Health endpoint test
+            # shellcheck disable=SC2310 # We want to continue even if the test fails
             if validate_api_request "${log_suffix}_health" "http://localhost:${port}${api_prefix}/system/health" "Yes, I'm alive, thanks!"; then
                 echo "HEALTH_TEST_PASSED" >> "${result_file}"
             else
@@ -194,6 +200,7 @@ run_api_prefix_test_parallel() {
             fi
             
             # Info endpoint test
+            # shellcheck disable=SC2310 # We want to continue even if the test fails
             if validate_api_request "${log_suffix}_info" "http://localhost:${port}${api_prefix}/system/info" "system"; then
                 echo "INFO_TEST_PASSED" >> "${result_file}"
             else
@@ -202,6 +209,7 @@ run_api_prefix_test_parallel() {
             fi
             
             # Test endpoint test
+            # shellcheck disable=SC2310 # We want to continue even if the test fails
             if validate_api_request "${log_suffix}_test" "http://localhost:${port}${api_prefix}/system/test" "client_ip"; then
                 echo "TEST_TEST_PASSED" >> "${result_file}"
             else
@@ -248,21 +256,22 @@ analyze_api_prefix_test_results() {
     local api_prefix="$3"
     local description="$4"
     local result_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.result"
+    local subtest_counter
     
     if [[ ! -f "${result_file}" ]]; then
-        print_result 1 "No result file found for ${test_name}"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "No result file found for ${test_name}"
         return 1
     fi
     
     # Check startup
     if ! "${GREP}" -q "STARTUP_SUCCESS" "${result_file}" 2>/dev/null; then
-        print_result 1 "Failed to start Hydrogen for ${description} test"
+        print_result "${TEST_NUMBER}" "${subtest_counter}" 1 "Failed to start Hydrogen for ${description} test"
         return 1
     fi
     
     # Check server readiness
     if ! "${GREP}" -q "SERVER_READY" "${result_file}" 2>/dev/null; then
-        print_result 1 "Server not ready for ${description} test"
+        print_result "${TEST_NUMBER}" "${subtest_counter}" 1 "Server not ready for ${description} test"
         return 1
     fi
     
@@ -296,46 +305,48 @@ analyze_api_prefix_test_results() {
     fi
 }
 
-print_subtest "Locate Hydrogen Binary"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Locate Hydrogen Binary"
 
 HYDROGEN_BIN=''
 HYDROGEN_BIN_BASE=''
+# shellcheck disable=SC2310 # We want to continue even if the test fails
 if find_hydrogen_binary "${PROJECT_DIR}"; then
-    print_message "Using Hydrogen binary: ${HYDROGEN_BIN_BASE}"
-    print_result 0 "Hydrogen binary found and validated"
-    ((PASS_COUNT++))
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Using Hydrogen binary: ${HYDROGEN_BIN_BASE}"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Hydrogen binary found and validated"
 else
-    print_result 1 "Failed to find Hydrogen binary"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to find Hydrogen binary"
     EXIT_CODE=1
 fi
 
-print_subtest "Validate Configuration Files"
 
 # Validate both configuration files
 config_valid=true
 for test_config in "${!API_TEST_CONFIGS[@]}"; do
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration File for ${test_config}"
+
     # Parse test configuration
     IFS=':' read -r config_file log_suffix api_prefix description <<< "${API_TEST_CONFIGS[${test_config}]}"
     
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
     if validate_config_file "${config_file}"; then
         port=$(get_webserver_port "${config_file}")
-        print_message "${description} configuration will use port: ${port}"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description} configuration will use port: ${port}"
     else
         config_valid=false
     fi
 done
 
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration Files"
 if [[ "${config_valid}" = true ]]; then
-    print_result 0 "All configuration files validated successfully"
-    ((PASS_COUNT++))
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "All configuration files validated successfully"
 else
-    print_result 1 "Configuration file validation failed"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Configuration file validation failed"
     EXIT_CODE=1
 fi
 
 # Only proceed with API tests if binary and configs are available
 if [[ "${EXIT_CODE}" -eq 0 ]]; then
-    print_message "Running API prefix tests in parallel for faster execution..."
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Running API prefix tests in parallel"
     
     # Start all API prefix tests in parallel with job limiting
     for test_config in "${!API_TEST_CONFIGS[@]}"; do
@@ -347,7 +358,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         # Parse test configuration
         IFS=':' read -r config_file log_suffix api_prefix description <<< "${API_TEST_CONFIGS[${test_config}]}"
         
-        print_message "Starting parallel test: ${test_config} (${description})"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting parallel test: ${test_config} (${description})"
         
         # Run parallel API prefix test in background
         run_api_prefix_test_parallel "${test_config}" "${config_file}" "${log_suffix}" "${api_prefix}" "${description}" &
@@ -355,51 +366,49 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     done
     
     # Wait for all parallel tests to complete
-    print_message "Waiting for all ${#API_TEST_CONFIGS[@]} parallel API prefix tests to complete..."
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for ${#API_TEST_CONFIGS[@]} parallel API prefix tests to complete"
     for pid in "${PARALLEL_PIDS[@]}"; do
         wait "${pid}"
     done
-    print_message "All parallel tests completed, analyzing results..."
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "All parallel tests completed - Analyzing results"
     
     # Process results sequentially for clean output
     for test_config in "${!API_TEST_CONFIGS[@]}"; do
         # Parse test configuration
         IFS=':' read -r config_file log_suffix api_prefix description <<< "${API_TEST_CONFIGS[${test_config}]}"
         
-        print_subtest "API Prefix Test: ${description} (${api_prefix})"
+        # print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "API Prefix Test: ${description} (${api_prefix})"
         
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
         if analyze_api_prefix_test_results "${test_config}" "${log_suffix}" "${api_prefix}" "${description}"; then
             # Test individual endpoint results for detailed feedback
-            print_subtest "Health Endpoint - ${description}"
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Health Endpoint - ${description}"
             if [[ "${HEALTH_TEST_RESULT}" = true ]]; then
-                print_result 0 "Health endpoint test passed"
-                ((PASS_COUNT++))
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Health endpoint test passed"
             else
-                print_result 1 "Health endpoint test failed"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Health endpoint test failed"
                 EXIT_CODE=1
             fi
             
-            print_subtest "Info Endpoint - ${description}"
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Info Endpoint - ${description}"
             if [[ "${INFO_TEST_RESULT}" = true ]]; then
-                print_result 0 "Info endpoint test passed"
-                ((PASS_COUNT++))
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Info endpoint test passed"
             else
-                print_result 1 "Info endpoint test failed"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Info endpoint test failed"
                 EXIT_CODE=1
             fi
             
-            print_subtest "Test Endpoint - ${description}"
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Test Endpoint - ${description}"
             if [[ "${TEST_TEST_RESULT}" = true ]]; then
-                print_result 0 "Test endpoint test passed"
-                ((PASS_COUNT++))
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Test endpoint test passed"
             else
-                print_result 1 "Test endpoint test failed"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Test endpoint test failed"
                 EXIT_CODE=1
             fi
             
-            print_message "${description}: All API endpoint tests passed"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: All API endpoint tests passed"
         else
-            print_result 1 "${description} test failed"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description} test failed"
             EXIT_CODE=1
         fi
     done
@@ -410,15 +419,15 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         IFS=':' read -r config_file log_suffix api_prefix description <<< "${API_TEST_CONFIGS[${test_config}]}"
         result_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.result"
         if [[ -f "${result_file}" ]] && "${GREP}" -q "ALL_API_TESTS_PASSED" "${result_file}" 2>/dev/null; then
-            ((successful_configs++))
+            successful_configs=$(( successful_configs + 1 ))
         fi
     done
     
-    print_message "Summary: ${successful_configs}/${#API_TEST_CONFIGS[@]} API prefix configurations passed all tests"
-    print_message "Parallel execution completed - SO_REUSEADDR allows immediate port reuse"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Summary: ${successful_configs}/${#API_TEST_CONFIGS[@]} API prefix configurations passed all tests"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Parallel execution completed - SO_REUSEADDR allows immediate port reuse"
 else
     # Skip API tests if prerequisites failed
-    print_result 1 "Skipping API prefix tests due to prerequisite failures"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Skipping API prefix tests due to prerequisite failures"
     EXIT_CODE=1
 fi
 

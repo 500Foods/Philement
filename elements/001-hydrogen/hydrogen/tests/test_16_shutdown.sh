@@ -11,14 +11,17 @@
 # 1.1.0 - Enhanced with proper error handling, modular functions, and shellcheck compliance
 # 1.0.0 - Initial version with basic shutdown testing
 
+set -euo pipefail
+
 # Test configuration
 TEST_NAME="Shutdown"
 TEST_ABBR="SHD"
 TEST_NUMBER="16"
+TEST_COUNTER=0
 TEST_VERSION="3.0.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
-[[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+[[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
 # Test configuration
@@ -28,23 +31,24 @@ STARTUP_TIMEOUT=10    # Seconds to wait for startup
 SHUTDOWN_TIMEOUT=90   # Hard limit on shutdown time
 SHUTDOWN_ACTIVITY_TIMEOUT=5  # Timeout if no new log activity
 
-print_subtest "Locate Hydrogen Binary"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Locate Hydrogen Binary"
 
 HYDROGEN_BIN=''
 HYDROGEN_BIN_BASE=''
+# shellcheck disable=SC2310 # We want to continue even if the test fails
 if find_hydrogen_binary "${PROJECT_DIR}"; then
-    print_message "Using Hydrogen binary: ${HYDROGEN_BIN_BASE}"
-    print_result 0 "Hydrogen binary found and validated"
-    ((PASS_COUNT++))
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Using Hydrogen binary: ${HYDROGEN_BIN_BASE}"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Hydrogen binary found and validated"
 else
-    print_result 1 "Failed to find Hydrogen binary"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to find Hydrogen binary"
     EXIT_CODE=1
 fi
 
-print_subtest "Validate Configuration File"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration File"
 
+# shellcheck disable=SC2310 # We want to continue even if the test fails
 if validate_config_file "${MIN_CONFIG}"; then
-    ((PASS_COUNT++))
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Validated configuration file"
 else
     EXIT_CODE=1
 fi

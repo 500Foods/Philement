@@ -13,13 +13,14 @@
 # 1.0.0 - 2025-07-21 - Initial version with combined coverage functions
 
 # Guard clause to prevent multiple sourcing
-[[ -n "${COVERAGE_COMBINED_GUARD}" ]] && return 0
+[[ -n "${COVERAGE_COMBINED_GUARD:-}" ]] && return 0
 export COVERAGE_COMBINED_GUARD="true"
 
 # Library metadata
 COVERAGE_COMBINED_NAME="Coverage Combined Library"
 COVERAGE_COMBINED_VERSION="1.0.0"
-print_message "${COVERAGE_COMBINED_NAME} ${COVERAGE_COMBINED_VERSION}" "info" 2> /dev/null || true
+# shellcheck disable=SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${COVERAGE_COMBINED_NAME} ${COVERAGE_COMBINED_VERSION}" "info" 2> /dev/null || true
 
 # Sort out directories
 PROJECT_DIR="$( cd "$(dirname "${BASH_SOURCE[0]}" )" && cd ../.. && pwd )"
