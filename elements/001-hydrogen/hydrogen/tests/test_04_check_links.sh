@@ -3,6 +3,9 @@
 # Test: Markdown Links Check
 # Runs github-sitemap.sh to check markdown links and evaluates results with subtests
 
+# FUNCTIONS
+# parse_sitemap_output()
+
 # CHANGELOG
 # 3.2.1 - 2025-08-11 - Added .. to output log so it can be accessed more easily in VSC
 # 3.2.0 - 2025-08-08 - Optimized parsing using single-pass batch processing (md5sum batching pattern)
