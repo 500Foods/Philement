@@ -57,6 +57,20 @@ Remember:
 -->
 
 - August 2025
+  - [2025-Aug-21 (Thu)](docs/releases/2025-08/2025-08-21.md): Test Framework Improvements
+  - [2025-Aug-20 (Wed)](docs/releases/2025-08/2025-08-20.md): Thread Management Enhancement
+  - [2025-Aug-19 (Tue)](docs/releases/2025-08/2025-08-19.md): Core System Architecture Updates
+  - [2025-Aug-18 (Mon)](docs/releases/2025-08/2025-08-18.md): Test Framework Maintenance
+  - [2025-Aug-17 (Sun)](docs/releases/2025-08/2025-08-17.md): Test Framework Maintenance
+  - [2025-Aug-16 (Sat)](docs/releases/2025-08/2025-08-16.md): Test Framework Maintenance
+  - [2025-Aug-15 (Fri)](docs/releases/2025-08/2025-08-15.md): Test Framework Maintenance
+  - [2025-Aug-14 (Thu)](docs/releases/2025-08/2025-08-14.md): Test Framework Maintenance
+  - [2025-Aug-13 (Wed)](docs/releases/2025-08/2025-08-13.md): Test Framework Maintenance
+  - [2025-Aug-12 (Tue)](docs/releases/2025-08/2025-08-12.md): Test Framework Maintenance
+  - [2025-Aug-11 (Mon)](docs/releases/2025-08/2025-08-11.md): Unity Testing Expansion
+  - [2025-Aug-10 (Sun)](docs/releases/2025-08/2025-08-10.md): Coverage System Optimization
+  - [2025-Aug-09 (Sat)](docs/releases/2025-08/2025-08-09.md): Swagger Testing Enhancement
+  - [2025-Aug-08 (Fri)](docs/releases/2025-08/2025-08-08.md): Signal Handling Testing
   - [2025-Aug-07 (Wed)](docs/releases/2025-08/2025-08-07.md): Shutdown Timing Enhancement, Timing System
   - [2025-Aug-05 (Tue)](docs/releases/2025-08/2025-08-05.md): Coverage System Optimization, Testing Framework Performance
   - [2025-Aug-04 (Mon)](docs/releases/2025-08/2025-08-04.md): GCOV Integration, Coverage System Enhancement, Performance Optimization
