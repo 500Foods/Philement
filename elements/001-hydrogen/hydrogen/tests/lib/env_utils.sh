@@ -18,13 +18,14 @@
 # 1.0.0 - 2025-07-02 - Initial creation for test_12_env_payload.sh migration
 
 # Guard clause to prevent multiple sourcing
-[[ -n "${ENV_UTILS_GUARD}" ]] && return 0
+[[ -n "${ENV_UTILS_GUARD:-}" ]] && return 0
 export ENV_UTILS_GUARD="true"
 
 # Library metadata
 ENV_UTILS_NAME="Environment Utilities Library"
 ENV_UTILS_VERSION="1.2.2"
-print_message "${ENV_UTILS_NAME} ${ENV_UTILS_VERSION}" "info"
+# shellcheck disable=SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${ENV_UTILS_NAME} ${ENV_UTILS_VERSION}" "info"
 
 # Function: Check if environment variable is set and non-empty
 # Parameters: $1 - variable name
@@ -39,10 +40,10 @@ check_env_var() {
         if [[ "${var_name}" =~ PASS|LOCK|KEY|JWT|TOKEN|SECRET ]] && [[ ${#var_value} -gt 20 ]]; then
             display_value="${var_value:0:20}..."
         fi
-        print_message "✓ ${var_name} is set to: ${display_value}"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ ${var_name} is set to: ${display_value}"
         return 0
     else
-        print_warning "✗ ${var_name} is not set or empty"
+        print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ ${var_name} is not set or empty"
         return 1
     fi
 }
@@ -62,7 +63,7 @@ validate_rsa_key() {
     
     # Check if the decoded file exists and has content
     if [[ ! -s "${temp_key}" ]]; then
-        print_warning "✗ ${key_name} failed base64 decode - no output generated"
+        print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ ${key_name} failed base64 decode - no output generated"
         rm -f "${temp_key}"
         return 1
     fi
@@ -76,7 +77,7 @@ validate_rsa_key() {
             openssl_cmd="openssl pkey -pubin -in ${temp_key} -check -noout"
             ;;
         *)
-            print_warning "✗ Unknown key type: ${key_type}"
+            print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ Unknown key type: ${key_type}"
             rm -f "${temp_key}"
             return 1
             ;;
@@ -84,11 +85,11 @@ validate_rsa_key() {
     
     # Validate key format - this is the real test
     if ${openssl_cmd} >/dev/null 2>&1; then
-        print_message "✓ ${key_name} is a valid RSA ${key_type} key"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ ${key_name} is a valid RSA ${key_type} key"
         rm -f "${temp_key}"
         return 0
     else
-        print_warning "✗ ${key_name} is not a valid RSA ${key_type} key"
+        print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ ${key_name} is not a valid RSA ${key_type} key"
         rm -f "${temp_key}"
         return 1
     fi
@@ -114,31 +115,31 @@ validate_websocket_key() {
     
     # Check if key is empty
     if [[ -z "${key_value}" ]]; then
-        print_warning "✗ ${key_name} is empty"
+        print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ ${key_name} is empty"
         return 1
     fi
     
     # Check minimum length (8 characters)
     if [[ ${#key_value} -lt 8 ]]; then
-        print_warning "✗ ${key_name} must be at least 8 characters long (got ${#key_value})"
+        print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ ${key_name} must be at least 8 characters long (got ${#key_value})"
         return 1
     fi
     
     # Check for printable ASCII characters only (33-126, no spaces/control chars)
     if [[ "${key_value}" =~ [[:space:]] ]]; then
-        print_warning "✗ ${key_name} contains spaces or control characters"
+        print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ ${key_name} contains spaces or control characters"
         return 1
     fi
     
     # Check for non-printable characters
     if [[ "${key_value}" =~ [^[:print:]] ]]; then
-        print_warning "✗ ${key_name} contains non-printable characters"
+        print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ ${key_name} contains non-printable characters"
         return 1
     fi
     
     # All checks passed
     local display_value="${key_value:0:8}..."
-    print_message "✓ ${key_name} is a valid WebSocket key: ${display_value}"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ ${key_name} is a valid WebSocket key: ${display_value}"
     return 0
 }
 

@@ -27,14 +27,17 @@
 # 2.0.1 - 2025-07-01 - Updated to use predefined CMake build variants instead of parsing Makefile
 # 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
 
+set -euo pipefail
+
 # Test Configuration
 TEST_NAME="Crash Handler"
 TEST_ABBR="BUG"
 TEST_NUMBER="13"
+TEST_COUNTER=0
 TEST_VERSION="6.2.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
-[[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+[[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
 # More test configuration
@@ -52,7 +55,7 @@ declare -A BUILD_DESCRIPTIONS
 
 # Function to verify core dump configuration
 verify_core_dump_config() {
-    # print_message "Checking core dump configuration..."
+    # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Checking core dump configuration..."
     
     # Cache core pattern and limit if not already set
     [[ -z "${CORE_PATTERN}" ]] && CORE_PATTERN=$(cat /proc/sys/kernel/core_pattern 2>/dev/null || echo "unknown")
@@ -60,20 +63,20 @@ verify_core_dump_config() {
     
     # Check core pattern
     if [[ "${CORE_PATTERN}" == "core" ]]; then
-        print_message "Core pattern is set to default 'core'"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Core pattern is set to default 'core'"
     else
-        print_warning "Core pattern is set to '${CORE_PATTERN}', might affect core dump location"
+        print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "Core pattern is set to '${CORE_PATTERN}', might affect core dump location"
     fi
     
     # Check core dump size limit
     if [[ "${CORE_LIMIT}" == "unlimited" || "${CORE_LIMIT}" -gt 0 ]]; then
-        print_message "Core dump size limit is adequate (${CORE_LIMIT})"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Core dump size limit is adequate (${CORE_LIMIT})"
     else
-        print_warning "Core dump size limit is too restrictive (${CORE_LIMIT})"
+        print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "Core dump size limit is too restrictive (${CORE_LIMIT})"
         # Try to set unlimited core dumps for this session
         ulimit -c unlimited
         CORE_LIMIT=$(ulimit -c)
-        print_message "Attempted to set unlimited core dump size"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Attempted to set unlimited core dump size"
     fi
     
     return 0
@@ -84,23 +87,24 @@ verify_core_file_content() {
     local core_file="$1"
     local binary="$2"
     
-    # print_message "Verifying core file contents..."
+    # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Verifying core file contents..."
     
     # Check file size and verify it's a core file
     local core_size
     core_size=$("${STAT}" -c %s "${core_file}" 2>/dev/null || echo "0")
     if [[ "${core_size}" -lt 1024 ]]; then
-        print_message "Core file is suspiciously small (${core_size} bytes)"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Core file is suspiciously small: $("${PRINTF}" "%'d" "${core_size}" || true) bytes"
         return 1
     fi
     
     # Verify it's a valid core file
     readelf_output=$(readelf -h "${core_file}" 2>/dev/null)
+
     if echo "${readelf_output}" | "${GREP}" -q "Core file"; then
-        print_message "Valid core file found (${core_size} bytes)"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Valid core file found: $("${PRINTF}" "%'d" "${core_size}" || true) bytes"
         return 0
     fi
-    print_message "Not a valid core file"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Not a valid core file"
     return 1
 }
 
@@ -112,7 +116,7 @@ verify_debug_symbols() {
     local expect_symbols=1
     
     # Check cache first
-    if [[ -n "${DEBUG_SYMBOL_CACHE[${binary_name}]}" ]]; then
+    if [[ -n "${DEBUG_SYMBOL_CACHE[${binary_name}]:-}" ]]; then
         [[ "${DEBUG_SYMBOL_CACHE[${binary_name}]}" -eq 0 ]] && return 0
         return 1
     fi
@@ -122,26 +126,26 @@ verify_debug_symbols() {
         expect_symbols=0
     fi
     
-    # print_message "Checking debug symbols in ${binary_name}..."
+    # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Checking debug symbols in ${binary_name}..."
     
     # Use readelf to check for debug symbols
     # shellcheck disable=SC2312 # Expect an empty return if no debugging is available
     if readelf --debug-dump=info "${binary}" 2>/dev/null | "${GREP}" -q -m 1 "DW_AT_name"; then
         if [[ "${expect_symbols}" -eq 1 ]]; then
-            # print_message "Debug symbols found in ${binary_name} (as expected)"
+            # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Debug symbols found in ${binary_name} (as expected)"
             DEBUG_SYMBOL_CACHE[${binary_name}]=0
             return 0
         fi
-        # print_message "Debug symbols found in ${binary_name} (unexpected for release build)"
+        # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Debug symbols found in ${binary_name} (unexpected for release build)"
         DEBUG_SYMBOL_CACHE[${binary_name}]=1
         return 1
     fi
     if [[ "${expect_symbols}" -eq 1 ]]; then
-        # print_message "No debug symbols found in ${binary_name} (symbols required)"
+        # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "No debug symbols found in ${binary_name} (symbols required)"
         DEBUG_SYMBOL_CACHE[${binary_name}]=1
         return 1
     fi
-    # print_message "No debug symbols found in ${binary_name} (as expected for release build)"
+    # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "No debug symbols found in ${binary_name} (as expected for release build)"
     DEBUG_SYMBOL_CACHE[${binary_name}]=0
     return 0
 }
@@ -157,7 +161,7 @@ verify_core_file() {
     local found=0
     local start_time="${SECONDS}"
     
-    # print_message "Waiting for core file ${binary_name}.core.${pid}..."
+    # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for core file ${binary_name}.core.${pid}..."
     
     # Wait for core file to appear
     while true; do
@@ -172,17 +176,17 @@ verify_core_file() {
     done
     
     if [[ "${found}" -eq 1 ]]; then
-        print_message "Core file ${binary_name}.core.${pid} found"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Core file ${binary_name}.core.${pid} found"
         return 0
     else
-        print_message "Core file ${binary_name}.core.${pid} not found after ${timeout} seconds"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Core file ${binary_name}.core.${pid} not found after ${timeout} seconds"
         # List any core files that might exist
         local core_files
         core_files=$("${FIND}" "${PROJECT_DIR}" -name "*.core.*" -type f 2>/dev/null || echo "")
         if [[ -n "${core_files}" ]]; then
-            print_message "Other core files found: ${core_files}"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Other core files found: ${core_files}"
         else
-            print_message "No core files found in hydrogen directory"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "No core files found in hydrogen directory"
         fi
         return 1
     fi
@@ -201,14 +205,14 @@ analyze_core_with_gdb() {
     temp_output="${LOG_PREFIX}${TIMESTAMP}_${build_name}.gdb"
     readelf --sections "${binary}" 2>/dev/null > "${temp_output}"
     if "${GREP}" -q -m 1 ".debug_info" "${temp_output}"; then
-        print_message "Debug info found in binary, using full output"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Debug info found in binary, using full output"
         gdb_flags=(-q -ex 'set print frame-arguments all' -ex 'set print object on')
     else
-        print_message "No debug info found in binary, using limited output"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "No debug info found in binary, using limited output"
         gdb_flags=(-q -ex 'set print frame-arguments none' -ex 'set print object off')
     fi
     
-    print_message "Analyzing core file with GDB..."
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Analyzing core file with GDB..."
     gdb "${gdb_flags[@]}" -batch \
         -ex "set pagination off" \
         -ex "set print elements 0" \
@@ -223,7 +227,7 @@ analyze_core_with_gdb() {
         -ex "info registers" \
         -ex "info locals" \
         -ex "quit" > "${gdb_output_file}" 2> "${gdb_output_file}.stderr" || {
-        print_message "GDB exited with error, checking output anyway..."
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "GDB exited with error, checking output anyway..."
         cat "${gdb_output_file}.stderr" >> "${gdb_output_file}" 2>/dev/null || true
     }
     
@@ -246,19 +250,20 @@ analyze_core_with_gdb() {
     # Verify backtrace quality based on build type
     if [[ "${build_name}" == *"release"* ]] || [[ "${build_name}" == *"naked"* ]]; then
         if [[ "${has_backtrace}" -eq 1 ]]; then
-            print_message "GDB produced basic backtrace (expected for release-style build)"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "GDB produced basic backtrace (expected for release-style build)"
             return 0
         fi
     elif [[ "${has_test_crash}" -eq 1 ]]; then
-        print_message "GDB found test_crash_handler in backtrace"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "GDB found test_crash_handler in backtrace"
         return 0
     else
-        print_message "GDB failed to produce useful backtrace"
-        print_message "GDB output preserved at: $(convert_to_relative_path "${gdb_output_file}" || true)"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "GDB failed to produce useful backtrace"
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "GDB output preserved at: $(convert_to_relative_path "${gdb_output_file}" || true)"
         return 1
     fi
     
-    print_message "GDB analysis failed to find expected patterns"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "GDB analysis failed to find expected patterns"
     return 1
 }
 
@@ -331,9 +336,10 @@ run_crash_test_parallel() {
     fi
     
     # Send SIGUSR1 to trigger test crash handler
-    kill -USR1 "${hydrogen_pid}"
+    kill -USR1 "${hydrogen_pid}" || true
     
     # Wait for process to crash
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
     if ! wait_for_crash_completion "${hydrogen_pid}" "${CRASH_TIMEOUT}"; then
         echo "CRASH_FAILED" > "${result_file}"
         kill -9 "${hydrogen_pid}" 2>/dev/null || true
@@ -348,8 +354,11 @@ run_crash_test_parallel() {
     wait "${hydrogen_pid}" 2>/dev/null || true
     
     # Perform GDB analysis if core file exists
+    local core_file="${PROJECT_DIR}/${binary_name}.core.${hydrogen_pid}"
+
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
     if verify_core_file "${binary}" "${hydrogen_pid}"; then
-        local core_file="${PROJECT_DIR}/${binary_name}.core.${hydrogen_pid}"
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
         if verify_core_file_content "${core_file}" "${binary}"; then
             analyze_core_with_gdb "${binary}" "${core_file}" "${gdb_output_file}"
             echo "GDB_RESULT=$?" >> "${result_file}"
@@ -359,7 +368,7 @@ run_crash_test_parallel() {
     else
         echo "GDB_RESULT=1" >> "${result_file}"
     fi
-    
+
     return 0
 }
 
@@ -374,33 +383,33 @@ analyze_parallel_results() {
     
     # Check if result file exists
     if [[ ! -f "${result_file}" ]]; then
-        print_result 1 "No result file found for ${binary_name}"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "No result file found for ${binary_name}"
         return 1
     fi
-    # print_message "tst: ..${result_file}"
+    # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "tst: ..${result_file}"
     
     # Check if log file exists
     if [[ ! -f "${log_file}" ]]; then
-        print_result 1 "No log file found for ${binary_name}"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "No log file found for ${binary_name}"
         return 1
     fi
-    # print_message "log: ..${log_file}"
+    # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "log: ..${log_file}"
 
     # Check if gdb file exists
     if [[ ! -f "${gdb_output_file}" ]]; then
-        print_result 1 "No gdb file found for ${binary_name}"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "No gdb file found for ${binary_name}"
         return 1
     fi
-    # print_message "gdb: ..${gdb_output_file}"
+    # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "gdb: ..${gdb_output_file}"
 
-    print_result 0 "All execution files found"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "All execution files found"
 
     # Read result file
     local result_status
     result_status=$(tail -n 2 "${result_file}" | head -n 1 || true)
     
     if [[ "${result_status}" != "SUCCESS" ]]; then
-        print_message "${binary_name}: Test failed during execution (${result_status})"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${binary_name}: Test failed during execution (${result_status})"
         return 1
     fi
     
@@ -409,7 +418,7 @@ analyze_parallel_results() {
     hydrogen_pid=$("${GREP}" "PID=" "${result_file}" | cut -d'=' -f2 || true)
     
     if [[ -z "${hydrogen_pid}" ]]; then
-        print_message "${binary_name}: Could not extract PID from result file"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${binary_name}: Could not extract PID from result file"
         return 1
     fi
     
@@ -423,28 +432,32 @@ analyze_parallel_results() {
     local log_result=1
     
     # Verify debug symbols
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
     if verify_debug_symbols "${binary}"; then
         debug_result=0
     fi
     
     # Verify core file creation
+    local core_file="${PROJECT_DIR}/${binary_name}.core.${hydrogen_pid}"
+
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
     if verify_core_file "${binary}" "${hydrogen_pid}"; then
         core_result=0
         
         # If core file exists, verify its contents
-        local core_file="${PROJECT_DIR}/${binary_name}.core.${hydrogen_pid}"
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
         if ! verify_core_file_content "${core_file}" "${binary}"; then
-            print_message "Core file exists but content verification failed"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Core file exists but content verification failed"
             core_result=1
         fi
     fi
     
     # Verify crash handler log messages
     if "${GREP}" -q -e "Received SIGUSR1" -e "Signal 11 received" "${log_file}" 2>/dev/null; then
-        # print_message "Found crash handler messages in log"
+        # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Found crash handler messages in log"
         log_result=0
     else
-        # print_message "Missing crash handler messages in log"
+        # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Missing crash handler messages in log"
         log_result=1
     fi
     
@@ -454,41 +467,36 @@ analyze_parallel_results() {
     CRASH_LOG_RESULT=${log_result}
     GDB_ANALYSIS_RESULT=${gdb_result}
     
-    # Return success only if all subtests passed
-    if [[ "${debug_result}" -eq 0 ]] && [[ "${core_result}" -eq 0 ]] && [[ "${log_result}" -eq 0 ]] && [[ "${gdb_result}" -eq 0 ]]; then
-        return 0
-    else
-        return 1
-    fi
+    rm -f "${core_file}" 2>/dev/null || true  # Clean up core file after analysis
 }
 
-print_subtest "Validate Test Configuration File"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Test Configuration File"
 
+# shellcheck disable=SC2310 # We want to continue even if the test fails
 if validate_config_file "${TEST_CONFIG}"; then
-    print_message "Using minimal configuration for crash testing"
-    ((PASS_COUNT++))
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Using minimal configuration for crash testing"
 else
     EXIT_CODE=1
 fi
 
-print_subtest "Verify Core Dump Configuration"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Verify Core Dump Configuration"
 
+# shellcheck disable=SC2310 # We want to continue even if the test fails
 if ! verify_core_dump_config; then
-    print_result 1 "Core dump configuration issues detected"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Core dump configuration issues detected"
     EXIT_CODE=1
-    print_test_completion "${TEST_NAME}"
+    print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
     ${ORCHESTRATION:-false} && return "${EXIT_CODE}" || exit "${EXIT_CODE}"
 fi
-print_result 0 "Core dump configuration verified"
-((PASS_COUNT++))
+print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Core dump configuration verified"
 
 # Find all available builds
-print_message "Discovering available Hydrogen builds..."
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Discovering available Hydrogen builds..."
 
 # Define expected build variants based on CMake targets
 declare -a BUILD_VARIANTS=("hydrogen" "hydrogen_debug" "hydrogen_valgrind" "hydrogen_perf" "hydrogen_release" "hydrogen_coverage" "hydrogen_naked")
 for target in "${BUILD_VARIANTS[@]}"; do
-    if [[ -f "${PROJECT_DIR}/${target}" ]] && [[ -z "${FOUND_BUILDS[${target}]}" ]]; then
+    if [[ -f "${PROJECT_DIR}/${target}" ]] && [[ -z "${FOUND_BUILDS[${target}]:-}" ]]; then
         FOUND_BUILDS[${target}]=1
         BUILDS+=("${PROJECT_DIR}/${target}")
         # Assign description based on build variant
@@ -522,13 +530,13 @@ for target in "${BUILD_VARIANTS[@]}"; do
 done
 
 if [[ ${#BUILDS[@]} -eq 0 ]]; then
-    print_subtest "Find Hydrogen Builds"
-    print_result 1 "No hydrogen builds found"
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Find Hydrogen Builds"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "No hydrogen builds found"
 
     EXIT_CODE=1
     
     # Export results and exit early
-    print_test_completion "${TEST_NAME}"
+    print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
 
     # Return status code if sourced, exit if run standalone
     if [[ "${ORCHESTRATION}" == "true" ]]; then
@@ -538,17 +546,17 @@ if [[ ${#BUILDS[@]} -eq 0 ]]; then
     fi
 fi
 
-print_message "Found ${#BUILDS[@]} builds for testing:"
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Found ${#BUILDS[@]} builds for testing:"
 for build in "${BUILDS[@]}"; do
     build_name=$(basename "${build}")
-    print_message "  • ${build_name}: ${BUILD_DESCRIPTIONS[${build_name}]}"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  • ${build_name}: ${BUILD_DESCRIPTIONS[${build_name}]}"
 done
 
 # Test each build using parallel execution
 declare -A BUILD_PASSED_SUBTESTS
 declare -a PARALLEL_PIDS
 
-print_message "Running crash tests in parallel for all builds..."
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Running crash tests in parallel for all builds..."
 
 MAX_JOBS=$(nproc 2>/dev/null || echo 4)  # Default to 4 if nproc unavailable
 
@@ -558,7 +566,7 @@ for build in "${BUILDS[@]}"; do
         wait -n  # Wait for any job to finish
     done
     build_name=$(basename "${build}")
-    print_message "Starting parallel test for: ${build_name}"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting parallel test for: ${build_name}"
     
     # Run parallel crash test in background
     run_crash_test_parallel "${build}" &
@@ -566,97 +574,96 @@ for build in "${BUILDS[@]}"; do
 done
 
 # Wait for all parallel tests to complete
-print_message "Waiting for all ${#BUILDS[@]} parallel tests to complete..."
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for all ${#BUILDS[@]} parallel tests to complete..."
 for pid in "${PARALLEL_PIDS[@]}"; do
     wait "${pid}"
 done
-print_message "All parallel tests completed, analyzing results..."
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "All parallel tests completed, analyzing results..."
 
 # Process results sequentially for clean output
 for build in "${BUILDS[@]}"; do
     build_name=$(basename "${build}")
     
-    print_subtest "Testing build: ${build_name} (${BUILD_DESCRIPTIONS[${build_name}]})"
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing build: ${build_name} (${BUILD_DESCRIPTIONS[${build_name}]})"
     
     # Initialize subtest results for this build
     BUILD_PASSED_SUBTESTS[${build_name}]=0
     
     # Analyze the parallel test results
     analyze_parallel_results "${build}"
-    
-    print_subtest "Debug Symbols - ${build_name}"
+     
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Debug Symbols - ${build_name}"
 
     if [[ "${DEBUG_SYMBOL_RESULT}" -eq 0 ]]; then
-        if [[ "${build_name}" == *"release"* ]] || [[ "${build_name}" == *"coverage"* ]] || [[ "${build_name}" == *"naked"* ]]; then
-            print_result 0 "Debug symbols correctly absent in release-style build"
+        if [[ "${build_name}" == *"release"* ]] || [[ "${build_name}" == *"naked"* ]]; then
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Debug symbols correctly absent in release-style build"
+            BUILD_PASSED_SUBTESTS[${build_name}]=$(( BUILD_PASSED_SUBTESTS[${build_name}] + 1 ))
         else
-            print_result 0 "Debug symbols found in development build"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Debug symbols missing in development build"
         fi
-        ((PASS_COUNT++))
-        ((BUILD_PASSED_SUBTESTS[${build_name}]++))
+
     else
-        if [[ "${build_name}" == *"release"* ]] || [[ "${build_name}" == *"coverage"* ]] || [[ "${build_name}" == *"naked"* ]]; then
-            print_result 1 "Debug symbols unexpectedly found in release-style build"
+        if [[ "${build_name}" == *"release"* ]] || [[ "${build_name}" == *"naked"* ]]; then
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Debug symbols unexpectedly found in release-style build"
         else
-            print_result 1 "Debug symbols missing in development build"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Debug symbols found in development build"
+            BUILD_PASSED_SUBTESTS[${build_name}]=$(( BUILD_PASSED_SUBTESTS[${build_name}] + 1 ))
         fi
         EXIT_CODE=1
     fi
     
-    print_subtest "Core File Generation - ${build_name}"
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Core File Generation - ${build_name}"
 
     if [[ "${CORE_FILE_RESULT}" -eq 0 ]]; then
-        print_result 0 "Core file generated successfully"
-        ((PASS_COUNT++))
-        ((BUILD_PASSED_SUBTESTS[${build_name}]++))
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Core file generated successfully"
+        BUILD_PASSED_SUBTESTS[${build_name}]=$(( BUILD_PASSED_SUBTESTS[${build_name}] + 1 ))
     else
-        print_result 1 "Core file generation failed"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Core file generation failed"
         EXIT_CODE=1
     fi
     
-    print_subtest "Crash Handler Logging - ${build_name}"
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Crash Handler Logging - ${build_name}"
 
     if [[ "${CRASH_LOG_RESULT}" -eq 0 ]]; then
-        print_result 0 "Crash handler log messages verified"
-        ((PASS_COUNT++))
-        ((BUILD_PASSED_SUBTESTS[${build_name}]++))
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Crash handler log messages verified"
+        BUILD_PASSED_SUBTESTS[${build_name}]=$(( BUILD_PASSED_SUBTESTS[${build_name}] + 1 ))
     else
-        print_result 1 "Crash handler log messages missing"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Crash handler log messages missing"
         EXIT_CODE=1
     fi
     
-    print_subtest "GDB Analysis - ${build_name}"
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "GDB Analysis - ${build_name}"
     
     if [[ "${GDB_ANALYSIS_RESULT}" -eq 0 ]]; then
-        print_result 0 "GDB backtrace analysis successful"
-        ((PASS_COUNT++))
-        ((BUILD_PASSED_SUBTESTS[${build_name}]++))
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "GDB backtrace analysis successful"
+        BUILD_PASSED_SUBTESTS[${build_name}]=$(( BUILD_PASSED_SUBTESTS[${build_name}] + 1 ))
     else
-        print_result 1 "GDB backtrace analysis failed"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "GDB backtrace analysis failed"
         EXIT_CODE=1
     fi
     
     # Summary for this build
     if [[ "${BUILD_PASSED_SUBTESTS[${build_name}]}" -eq 4 ]]; then
-        print_message "Build ${build_name}: All 4 crash handler tests passed"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Build ${build_name}: All 4 crash handler tests passed"
     else
-        print_message "Build ${build_name}: ${BUILD_PASSED_SUBTESTS[${build_name}]}/4 crash handler tests passed"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Build ${build_name}: ${BUILD_PASSED_SUBTESTS[${build_name}]}/4 crash handler tests passed"
     fi
 done
 
 # Print build summary
-print_message "Crash handler test completed for ${#BUILDS[@]} builds"
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Crash handler test completed for ${#BUILDS[@]} builds"
 
 # Calculate successful builds
 successful_builds=0
 for build in "${BUILDS[@]}"; do
     build_name=$(basename "${build}")
+
     if [[ "${BUILD_PASSED_SUBTESTS[${build_name}]}" -eq 4 ]]; then
-        ((successful_builds++))
+        successful_builds=$(( successful_builds + 1 ))
     fi
 done
 
-print_message "Summary: ${successful_builds}/${#BUILDS[@]} builds passed all crash handler tests"
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Summary: ${successful_builds}/${#BUILDS[@]} builds passed all crash handler tests"
 
 # Print completion table
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"

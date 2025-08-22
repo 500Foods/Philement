@@ -25,14 +25,17 @@
 # 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
 # 1.0.0 - Original version - Basic signal handling test
 
+set -euo pipefail
+
 # Test configuration
 TEST_NAME="Signal Handling"
 TEST_ABBR="SIG"
 TEST_NUMBER="18"
+TEST_COUNTER=0
 TEST_VERSION="6.0.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
-[[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+[[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
 # Test configuration
@@ -59,24 +62,24 @@ SIGNAL_TIMEOUT=10
 # Parallel execution configuration
 declare -a PARALLEL_PIDS
 
-print_subtest "Locate Hydrogen Binary"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Locate Hydrogen Binary"
 
 HYDROGEN_BIN=''
 HYDROGEN_BIN_BASE=''
+# shellcheck disable=SC2310 # We want to continue even if the test fails
 if find_hydrogen_binary "${PROJECT_DIR}"; then
-    print_message "Using Hydrogen binary: ${HYDROGEN_BIN_BASE}"
-    print_result 0 "Hydrogen binary found and validated"
-    ((PASS_COUNT++))
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Using Hydrogen binary: ${HYDROGEN_BIN_BASE}"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Hydrogen binary found and validated"
 else
-    print_result 1 "Failed to find Hydrogen binary"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to find Hydrogen binary"
     EXIT_CODE=1
 fi
 
-print_subtest "Validate Test Configuration File"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Test Configuration File"
 
+# shellcheck disable=SC2310 # We want to continue even if the test fails
 if validate_config_file "${TEST_CONFIG}"; then
-    print_message "Using minimal configuration for signal testing"
-    ((PASS_COUNT++))
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Using minimal configuration for signal testing"
 else
     EXIT_CODE=1
 fi
@@ -376,13 +379,13 @@ analyze_signal_test_results() {
     local result_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${test_name}.result"
     
     if [[ ! -f "${result_file}" ]]; then
-        print_result 1 "No result file found for ${test_name}"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "No result file found for ${test_name}"
         return 1
     fi
     
     # Check startup
     if ! "${GREP}" -q "STARTUP_SUCCESS" "${result_file}" 2>/dev/null; then
-        print_result 1 "Failed to start Hydrogen for ${description} test"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to start Hydrogen for ${description} test"
         return 1
     fi
     
@@ -392,23 +395,23 @@ analyze_signal_test_results() {
     else
         # Check for specific failure reasons
         if "${GREP}" -q "SHUTDOWN_FAILED" "${result_file}" 2>/dev/null; then
-            print_result 1 "${signal} handling failed - no clean shutdown"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${signal} handling failed - no clean shutdown"
         elif "${GREP}" -q "RESTART_TIMEOUT" "${result_file}" 2>/dev/null; then
-            print_result 1 "${signal} restart failed or timed out"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${signal} restart failed or timed out"
         elif "${GREP}" -q "CRASH_DUMP_TIMEOUT" "${result_file}" 2>/dev/null; then
-            print_result 1 "${signal} failed to generate crash dump"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${signal} failed to generate crash dump"
         elif "${GREP}" -q "CONFIG_DUMP_TIMEOUT" "${result_file}" 2>/dev/null; then
-            print_result 1 "${signal} handling failed - no config dump"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${signal} handling failed - no config dump"
         elif "${GREP}" -q "MULTI_SIGNAL_MULTIPLE_SEQUENCES" "${result_file}" 2>/dev/null; then
-            print_result 1 "Multiple shutdown sequences detected"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Multiple shutdown sequences detected"
         else
-            print_result 1 "${signal} handling failed"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${signal} handling failed"
         fi
         return 1
     fi
 }
 
-print_message "Running signal tests in parallel for faster execution..."
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Running signal tests in parallel for faster execution..."
 
 # Start all signal tests in parallel with job limiting  
 for test_config in "${!SIGNAL_TESTS[@]}"; do
@@ -420,7 +423,7 @@ for test_config in "${!SIGNAL_TESTS[@]}"; do
     # Parse test configuration
     IFS=':' read -r signal action description validation_func cleanup_signal <<< "${SIGNAL_TESTS[${test_config}]}"
     
-    print_message "Starting parallel test: ${test_config} (${description})"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting parallel test: ${test_config} (${description})"
     
     # Run parallel signal test in background
     run_signal_test_parallel "${test_config}" "${signal}" "${action}" "${description}" "${validation_func}" "${cleanup_signal}" &
@@ -428,23 +431,23 @@ for test_config in "${!SIGNAL_TESTS[@]}"; do
 done
 
 # Wait for all parallel tests to complete
-print_message "Waiting for all ${#SIGNAL_TESTS[@]} parallel signal tests to complete..."
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for all ${#SIGNAL_TESTS[@]} parallel signal tests to complete..."
 for pid in "${PARALLEL_PIDS[@]}"; do
     wait "${pid}"
 done
-print_message "All parallel tests completed, analyzing results..."
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "All parallel tests completed, analyzing results..."
 
 # Process results sequentially for clean output
 for test_config in "${!SIGNAL_TESTS[@]}"; do
     # Parse test configuration
     IFS=':' read -r signal action description validation_func cleanup_signal <<< "${SIGNAL_TESTS[${test_config}]}"
     
-    print_subtest "${signal} Signal Handling (${description})"
-    print_command "${HYDROGEN_BIN_BASE} ${TEST_CONFIG_BASE}"
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${signal} Signal Handling (${description})"
+    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "${HYDROGEN_BIN_BASE} ${TEST_CONFIG_BASE}"
     
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
     if analyze_signal_test_results "${test_config}" "${signal}" "${description}"; then
-        print_result 0 "${signal} handled successfully"
-        ((PASS_COUNT++))
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${signal} handled successfully"
     else
         EXIT_CODE=1
     fi
@@ -456,11 +459,11 @@ for test_config in "${!SIGNAL_TESTS[@]}"; do
     IFS=':' read -r signal action description validation_func cleanup_signal <<< "${SIGNAL_TESTS[${test_config}]}"
     result_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${test_config}.result"
     if [[ -f "${result_file}" ]] && "${GREP}" -q "VALIDATION_SUCCESS" "${result_file}" 2>/dev/null; then
-        ((successful_tests++))
+       successful_tests=$(( successful_tests + 1 ))
     fi
 done
 
-print_message "Summary: ${successful_tests}/${#SIGNAL_TESTS[@]} signal tests passed"
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Summary: ${successful_tests}/${#SIGNAL_TESTS[@]} signal tests passed"
 
 # Print completion table
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"

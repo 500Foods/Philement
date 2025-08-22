@@ -16,13 +16,14 @@
 # 2.0.0 - 2025-07-02 - Initial creation from support_timewait.sh migration for test_55_socket_rebind.sh
 
 # Guard clause to prevent multiple sourcing
-[[ -n "${NETWORK_UTILS_GUARD}" ]] && return 0
+[[ -n "${NETWORK_UTILS_GUARD:-}" ]] && return 0
 export NETWORK_UTILS_GUARD="true"
 
 # Library metadata
 NETWORK_UTILS_NAME="Network Utilities Library"
 NETWORK_UTILS_VERSION="2.2.1"
-print_message "${NETWORK_UTILS_NAME} ${NETWORK_UTILS_VERSION}" "info"
+# shellcheck disable=SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${NETWORK_UTILS_NAME} ${NETWORK_UTILS_VERSION}" "info"
 
 # Function to check if a port is in use (robust version)
 check_port_in_use() {
@@ -61,20 +62,20 @@ check_time_wait_sockets() {
     local result=$?
     
     if [[ "${result}" -ne 0 ]]; then
-        print_warning "Could not check for TIME_WAIT sockets"
+        print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "Could not check for TIME_WAIT sockets"
         return 1
     fi
     
     if [[ "${time_wait_count}" -gt 0 ]]; then
-        print_message "Found ${time_wait_count} socket(s) in TIME_WAIT state on port ${port}"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Found ${time_wait_count} socket(s) in TIME_WAIT state on port ${port}"
         # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
         # Also compress excessive whitespace for better formatting
         # shellcheck disable=SC2154  # SED defined externally in framework.sh
         while IFS= read -r line; do
-            print_output "${line}"
+            print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
         done < <(ss -tan | "${GREP}" ":${port} " | "${GREP}" "TIME-WAIT" | "${SED}" 's/   */ /g' || true)
     else
-        print_message "No TIME_WAIT sockets found on port ${port}"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "No TIME_WAIT sockets found on port ${port}"
     fi
     
     return 0
@@ -87,7 +88,7 @@ make_http_requests() {
     local timestamp="$3"
     
     # Log start
-    print_message "Making HTTP requests to create active connections"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Making HTTP requests to create active connections"
     
     # Extract port from base_url (e.g., http://localhost:8080 -> 8080)
     local port
@@ -98,7 +99,7 @@ make_http_requests() {
     fi
     
     # Wait for server to be ready
-    print_message "Waiting for server to be ready..."
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for server to be ready..."
     
     local max_wait_ms=5000  # 5s in milliseconds
     local check_interval_ms=100  # 0.2s in milliseconds
@@ -111,18 +112,18 @@ make_http_requests() {
             local end_time
             end_time=$("${DATE}" +%s%3N)
             elapsed_ms=$((end_time - start_time))
-            print_message "Server is ready on port ${port} after ${elapsed_ms}ms"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server is ready on port ${port} after ${elapsed_ms}ms"
             break
         fi
         sleep 0.05
         elapsed_ms=$((elapsed_ms + check_interval_ms))
     done
     if [[ "${elapsed_ms}" -ge "${max_wait_ms}" ]]; then
-        print_warning "Server did not become ready on port ${port} within $((max_wait_ms / 1000))s"
+        print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "Server did not become ready on port ${port} within $((max_wait_ms / 1000))s"
     fi
     
     # Make requests to common web files
-    print_message "Requesting index.html..."
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Requesting index.html..."
     curl -s --max-time 5 "${base_url}/" -o "${results_dir}/index_response_${timestamp}.html" 2>/dev/null || true
        
     return 0

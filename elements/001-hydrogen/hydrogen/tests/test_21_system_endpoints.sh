@@ -37,14 +37,17 @@
 # 3.0.0 - 2025-07-02 - Migrated to use lib/ scripts, following established test patterns
 # 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
 
+set -euo pipefail
+
 # Test Configuration
 TEST_NAME="System API"
 TEST_ABBR="SYS"
 TEST_NUMBER="21"
+TEST_COUNTER=0
 TEST_VERSION="5.0.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
-[[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+[[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
 # Test variables
@@ -81,7 +84,7 @@ validate_api_request() {
     # Store the actual filename for later access
     declare -g "RESPONSE_FILE_${request_name^^}=${response_file}"
     
-    print_command "curl -s --max-time 10 --compressed \"${url}\""
+    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl -s --max-time 10 --compressed \"${url}\""
     
     # Retry logic for API readiness (reduced for parallel execution to prevent thundering herd)
     local max_attempts=10
@@ -90,7 +93,7 @@ validate_api_request() {
     
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
-            print_message "API request attempt ${attempt} of ${max_attempts} (waiting for API subsystem initialization)..."
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "API request attempt ${attempt} of ${max_attempts} (waiting for API subsystem initialization)..."
             sleep 0.05  # Brief delay between attempts for API initialization
         fi
         
@@ -102,64 +105,64 @@ validate_api_request() {
             # Check if we got a 404 or other error response
             if "${GREP}" -q "404 Not Found" "${response_file}" || "${GREP}" -q "<html>" "${response_file}"; then
                 if [[ "${attempt}" -eq "${max_attempts}" ]]; then
-                    print_message "API endpoint still not ready after ${max_attempts} attempts"
-                    print_result 1 "API endpoint returned 404 or HTML error page"
-                    print_message "Response content:"
-                    print_output "$(cat "${response_file}" || true)"
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "API endpoint still not ready after ${max_attempts} attempts"
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "API endpoint returned 404 or HTML error page"
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response content:"
+                    print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "$(cat "${response_file}" || true)"
                     return 1
                 else
-                    print_message "API endpoint not ready yet (got 404/HTML), retrying..."
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "API endpoint not ready yet (got 404/HTML), retrying..."
                     ((attempt++))
                     continue
                 fi
             fi
             
-            print_message "Successfully received response from ${url}"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Successfully received response from ${url}"
             
             # Show response excerpt
             local line_count
             line_count=$(wc -l < "${response_file}")
-            print_message "Response contains ${line_count} lines"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response contains ${line_count} lines"
             
             # Check for expected content based on endpoint type
             if [[ "${request_name}" == "recent" ]]; then
                 # Use fixed string search for recent endpoint
                 if "${GREP}" -F -q "[" "${response_file}"; then
                     if [[ "${attempt}" -gt 1 ]]; then
-                        print_result 0 "Response contains expected field: log entry (succeeded on attempt ${attempt})"
+                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response contains expected field: log entry (succeeded on attempt ${attempt})"
                     else
-                        print_result 0 "Response contains expected field: log entry"
+                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response contains expected field: log entry"
                     fi
                     return 0
                 else
-                    print_result 1 "Response doesn't contain expected field: log entry"
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Response doesn't contain expected field: log entry"
                     return 1
                 fi
             else
                 # Normal pattern search for other endpoints
                 if "${GREP}" -q "${expected_field}" "${response_file}"; then
                     if [[ "${attempt}" -gt 1 ]]; then
-                        print_result 0 "Response contains expected content: ${expected_field} (succeeded on attempt ${attempt})"
+                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response contains expected content: ${expected_field} (succeeded on attempt ${attempt})"
                     else
-                        print_result 0 "Response contains expected content: ${expected_field}"
+                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response contains expected content: ${expected_field}"
                     fi
                     return 0
                 else
-                    print_result 1 "Response doesn't contain expected content: ${expected_field}"
-                    print_message "Response excerpt (first 10 lines):"
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Response doesn't contain expected content: ${expected_field}"
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response excerpt (first 10 lines):"
                     # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
                     while IFS= read -r line; do
-                        print_output "${line}"
+                        print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
                     done < <(head -n 10 "${response_file}" || true)
                     return 1
                 fi
             fi
         else
             if [[ "${attempt}" -eq "${max_attempts}" ]]; then
-                print_result 1 "Failed to connect to server at ${url} (curl exit code: ${curl_exit_code})"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to connect to server at ${url} (curl exit code: ${curl_exit_code})"
                 return 1
             else
-                print_message "Connection failed on attempt ${attempt}, retrying..."
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Connection failed on attempt ${attempt}, retrying..."
                 ((attempt++))
                 continue
             fi
@@ -176,10 +179,10 @@ validate_json_response() {
     
     # Use jq if available for proper JSON validation
     if jq . "${file}" > /dev/null 2>&1; then
-        print_result 0 "${endpoint_name} endpoint returns valid JSON"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${endpoint_name} endpoint returns valid JSON"
         return 0
     else
-        print_result 1 "${endpoint_name} endpoint returns invalid JSON"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${endpoint_name} endpoint returns invalid JSON"
         return 1
     fi
 }
@@ -193,10 +196,10 @@ validate_line_count() {
     actual_lines=$(wc -l < "${file}")
     
     if [[ "${actual_lines}" -gt "${min_lines}" ]]; then
-        print_result 0 "${endpoint_name} endpoint contains ${actual_lines} lines (more than ${min_lines} required)"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${endpoint_name} endpoint contains ${actual_lines} lines (more than ${min_lines} required)"
         return 0
     else
-        print_result 1 "${endpoint_name} endpoint contains only ${actual_lines} lines (${min_lines} required)"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${endpoint_name} endpoint contains only ${actual_lines} lines (${min_lines} required)"
         return 1
     fi
 }
@@ -207,7 +210,7 @@ validate_prometheus_format() {
     
     # Check content type
     if ! "${GREP}" -q "Content-Type: text/plain" "${file}"; then
-        print_result 1 "Prometheus endpoint has incorrect content type"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Prometheus endpoint has incorrect content type"
         return 1
     fi
     
@@ -216,7 +219,7 @@ validate_prometheus_format() {
     
     # Check for TYPE definitions
     if ! "${GREP}" -q "^# TYPE" "${file}"; then
-        print_result 1 "Prometheus endpoint missing TYPE definitions"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Prometheus endpoint missing TYPE definitions"
         prometheus_format_ok=0
     fi
     
@@ -231,13 +234,13 @@ validate_prometheus_format() {
     local metric
     for metric in "${required_metrics[@]}"; do
         if ! "${GREP}" -q "^${metric}" "${file}"; then
-            print_result 1 "Prometheus endpoint missing required metric: ${metric}"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Prometheus endpoint missing required metric: ${metric}"
             prometheus_format_ok=0
         fi
     done
     
     if [[ "${prometheus_format_ok}" -eq 1 ]]; then
-        print_result 0 "Prometheus endpoint contains valid format and metrics"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Prometheus endpoint contains valid format and metrics"
         return 0
     else
         return 1
@@ -250,40 +253,40 @@ check_server_logs() {
     local timestamp="$2"
     
     # Check server logs for API-related errors - filter irrelevant messages
-    print_message "Checking server logs for API-related errors..."
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Checking server logs for API-related errors..."
     if "${GREP}" -i "error\|warn\|fatal\|segmentation" "${log_file}" | "${GREP}" -i "API\|System\|SystemTest\|SystemService\|Endpoint\|api" || true > "${RESULTS_DIR}/system_test_errors_${timestamp}.log"; then
         if [[ -s "${RESULTS_DIR}/system_test_errors_${timestamp}.log" ]]; then
-            print_warning "API-related warning/error messages found in logs:"
+            print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "API-related warning/error messages found in logs:"
             # Process each line individually for clean formatting
             while IFS= read -r line; do
-                print_output "${line}"
+                print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
             done < "${RESULTS_DIR}/system_test_errors_${timestamp}.log"
         fi
     fi
 
     # Check for Brotli compression logs
-    print_message "Checking for Brotli compression logs..."
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Checking for Brotli compression logs..."
     if "${GREP}" -i "Brotli" "${log_file}" > "${RESULTS_DIR}/brotli_compression_${timestamp}.log" 2>/dev/null; then
         if [[ -s "${RESULTS_DIR}/brotli_compression_${timestamp}.log" ]]; then
-            print_message "Brotli compression logs found:"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Brotli compression logs found:"
             # Process each line individually for clean formatting
             while IFS= read -r line; do
-                print_output "${line}"
+                print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
             done < "${RESULTS_DIR}/brotli_compression_${timestamp}.log"
             # Check for compression metrics with level information
             if "${GREP}" -q "Brotli(level=[0-9]\+).*bytes.*ratio.*compression.*time:" "${RESULTS_DIR}/brotli_compression_${timestamp}.log"; then
-                print_result 0 "Compression logs contain detailed metrics with compression level"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Compression logs contain detailed metrics with compression level"
                 return 0
             else
-                print_warning "Compression logs found but missing metrics details"
+                print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "Compression logs found but missing metrics details"
                 return 1
             fi
         else
-            print_warning "No Brotli compression logs found"
+            print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "No Brotli compression logs found"
             return 1
         fi
     else
-        print_warning "No Brotli compression logs found"
+        print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "No Brotli compression logs found"
         return 1
     fi
 }
@@ -302,6 +305,7 @@ run_endpoint_test_parallel() {
     true > "${result_file}"
     
     # Use the existing validate_api_request function with unique naming
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
     if validate_api_request "${test_name}" "${base_url}${endpoint_path}" "${expected_content}"; then
         echo "ENDPOINT_TEST_PASSED" >> "${result_file}"
     else
@@ -318,16 +322,16 @@ analyze_endpoint_test_results() {
     local result_file="${LOG_PREFIX}${TIMESTAMP}_${test_name}.result"
     
     if [[ ! -f "${result_file}" ]]; then
-        print_result 1 "No result file found for ${test_name}"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "No result file found for ${test_name}"
         return 1
     fi
     
     # Check endpoint test result
     if "${GREP}" -q "ENDPOINT_TEST_PASSED" "${result_file}" 2>/dev/null; then
-        print_result 0 "${description} endpoint test passed"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description} endpoint test passed"
         return 0
     else
-        print_result 1 "${description} endpoint test failed"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description} endpoint test failed"
         return 1
     fi
 }
@@ -339,44 +343,45 @@ test_system_endpoints() {
     # Extract port from configuration
     local server_port
     server_port=$(get_webserver_port "${CONFIG_PATH}")
-    print_message "Configuration uses port: ${server_port}"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Configuration uses port: ${server_port}"
     
     # Local variables for server management
     local hydrogen_pid=""
     local server_log="${LOG_FILE}"
     local base_url="http://localhost:${server_port}"
     
-    print_subtest "Start Hydrogen Server (${test_name})"
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start Hydrogen Server (${test_name})"
     
     # Use a temporary variable name that won't conflict
     local temp_pid_var="HYDROGEN_PID_$$"
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
     if start_hydrogen_with_pid "${CONFIG_PATH}" "${server_log}" 15 "${HYDROGEN_BIN}" "${temp_pid_var}"; then
         # Get the PID from the temporary variable
         hydrogen_pid=$(eval "echo \$${temp_pid_var}")
         if [[ -n "${hydrogen_pid}" ]]; then
-            print_result 0 "Server started successfully with PID: ${hydrogen_pid}"
-            ((PASS_COUNT++))
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Server started successfully with PID: ${hydrogen_pid}"
         else
-            print_result 1 "Failed to start server - no PID returned"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to start server - no PID returned"
             EXIT_CODE=1
             return 1
         fi
     else
-        print_result 1 "Failed to start server"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to start server"
         EXIT_CODE=1
         return 1
     fi
     
     # Wait for server to be ready
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
         if ! wait_for_server_ready "${base_url}"; then
-            print_result 1 "Server failed to become ready"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Server failed to become ready"
             EXIT_CODE=1
             return 1
         fi
     fi
     
-    print_message "Running endpoint tests in parallel for faster execution..."
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Running endpoint tests in parallel for faster execution..."
     
     # Start all endpoint tests in parallel with job limiting
     local endpoint_parallel_pids=()
@@ -402,7 +407,7 @@ test_system_endpoints() {
             *) endpoint_path="/api/system/${endpoint_name}" ;;
         esac
         
-        print_message "Starting parallel test: ${test_config} (${description})"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting parallel test: ${test_config} (${description})"
         
         # Run parallel endpoint test in background
         run_endpoint_test_parallel "${endpoint_name}" "${base_url}" "${endpoint_path}" "${expected_content}" "${description}" &
@@ -410,22 +415,24 @@ test_system_endpoints() {
     done
     
     # Wait for all parallel endpoint tests to complete
-    print_message "Waiting for all ${#ENDPOINT_TEST_CONFIGS[@]} parallel endpoint tests to complete..."
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for all ${#ENDPOINT_TEST_CONFIGS[@]} parallel endpoint tests to complete..."
     for pid in "${endpoint_parallel_pids[@]}"; do
         wait "${pid}"
     done
-    print_message "All parallel endpoint tests completed, analyzing results..."
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "All parallel endpoint tests completed, analyzing results..."
     
     # Process results sequentially for clean output
     for test_config in "${!ENDPOINT_TEST_CONFIGS[@]}"; do
         # Parse test configuration
         IFS=':' read -r endpoint_name expected_content description <<< "${ENDPOINT_TEST_CONFIGS[${test_config}]}"
         
-        print_subtest "${description} Endpoint"
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description} Endpoint"
         
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
         if analyze_endpoint_test_results "${endpoint_name}" "${description}"; then
-            ((PASS_COUNT++))
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Analysis complete"
         else
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Analysis failed"
             EXIT_CODE=1
         fi
     done
@@ -434,22 +441,23 @@ test_system_endpoints() {
     local successful_endpoints=0
     for test_config in "${!ENDPOINT_TEST_CONFIGS[@]}"; do
         IFS=':' read -r endpoint_name expected_content description <<< "${ENDPOINT_TEST_CONFIGS[${test_config}]}"
-        result_file="${LOG_PREFIX}test_${TEST_NUMBER}_${TIMESTAMP}_${endpoint_name}.result"
+        result_file="${LOG_PREFIX}${TIMESTAMP}_${endpoint_name}.result"
         if [[ -f "${result_file}" ]] && "${GREP}" -q "ENDPOINT_TEST_PASSED" "${result_file}" 2>/dev/null; then
-            ((successful_endpoints++))
+            successful_endpoints=$(( successful_endpoints + 1 ))
         fi
     done
     
-    print_message "Summary: ${successful_endpoints}/${#ENDPOINT_TEST_CONFIGS[@]} system endpoints passed all tests"
-    print_message "Parallel endpoint execution completed"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Summary: ${successful_endpoints}/${#ENDPOINT_TEST_CONFIGS[@]} system endpoints passed all tests"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Parallel endpoint execution completed"
     
     # Stop the server
     if [[ -n "${hydrogen_pid}" ]]; then
-        print_message "Stopping server..."
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Stopping server..."
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
         if stop_hydrogen "${hydrogen_pid}" "${server_log}" 10 5 "${RESULTS_DIR}"; then
-            print_message "Server stopped successfully"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server stopped successfully"
         else
-            print_warning "Server shutdown had issues"
+            print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "Server shutdown had issues"
         fi
         
         # Check TIME_WAIT sockets
@@ -459,27 +467,26 @@ test_system_endpoints() {
     return 0
 }
 
-print_subtest "Locate Hydrogen Binary"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Locate Hydrogen Binary"
 
 HYDROGEN_BIN=''
 HYDROGEN_BIN_BASE=''
+# shellcheck disable=SC2310 # We want to continue even if the test fails
 if find_hydrogen_binary "${PROJECT_DIR}"; then
-    print_message "Using Hydrogen binary: ${HYDROGEN_BIN_BASE}"
-    print_result 0 "Hydrogen binary found and validated"
-    ((PASS_COUNT++))
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}"4 "Using Hydrogen binary: ${HYDROGEN_BIN_BASE}"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Hydrogen binary found and validated"
 else
-    print_result 1 "Failed to find Hydrogen binary"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to find Hydrogen binary"
     EXIT_CODE=1
 fi
 
-print_subtest "Validate Configuration File"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration File"
 
+# shellcheck disable=SC2310 # We want to continue even if the test fails
 if validate_config_file "${CONFIG_PATH}"; then
-    ((PASS_COUNT++))
-    
     # Extract and display port
     SERVER_PORT=$(get_webserver_port "${CONFIG_PATH}")
-    print_message "Configuration will use port: ${SERVER_PORT}"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Configuration will use port: ${SERVER_PORT}"
 else
     EXIT_CODE=1
 fi
@@ -491,12 +498,12 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     
 else
     # Skip API tests if prerequisites failed
-    print_message "Skipping API endpoint tests due to prerequisite failures"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipping API endpoint tests due to prerequisite failures"
     # Account for skipped subtests
     for i in {3..9}; do
 
-        print_subtest "Subtest ${i} (Skipped)"
-        print_result 1 "Skipped due to prerequisite failures"
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Subtest ${i} (Skipped)"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Skipped due to prerequisite failures"
 
     done
     EXIT_CODE=1
