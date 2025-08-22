@@ -14,14 +14,17 @@
 # 2.0.0 - 2025-06-17 - Major refactoring: improved modularity, reduced script size, enhanced comments
 # 1.0.0 - 2025-06-15 - Initial version with basic memory leak detection
 
+set -euo pipefail
+
 # Test configuration
 TEST_NAME="Memory Leak Detection"
 TEST_ABBR="SIV"
 TEST_NUMBER="11"
+TEST_COUNTER=0
 TEST_VERSION="4.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
-[[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+[[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
 # Test configuration
@@ -30,56 +33,54 @@ SERVER_LOG="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_leaks.log"
 LEAK_REPORT="${LOG_PREFIX}}test_${TEST_NUMBER}_leak_report_${TIMESTAMP}.log"
 LEAK_SUMMARY="${LOG_PREFIX}}test_test_${TEST_NUMBER}_leak_summary_${TIMESTAMP}.log"
 
-print_subtest "Validate Debug Build and ASAN Support"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Debug Build and ASAN Support"
 
 # Find debug build
 DEBUG_BUILD="hydrogen_debug"
 if [[ ! -f "${DEBUG_BUILD}" ]]; then
-    print_result 1 "Debug build not found - This test requires the debug build with ASAN"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Debug build not found - This test requires the debug build with ASAN"
     EXIT_CODE=1
 else
     # Verify ASAN is enabled in debug build
     if ! { readelf -s "${DEBUG_BUILD}" || true; } | "${GREP}" -q "__asan"; then
-        print_result 1 "Debug build does not have ASAN enabled"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Debug build does not have ASAN enabled"
         EXIT_CODE=1
     else
-        print_result 0 "Debug build with ASAN support found"
-        ((PASS_COUNT++))
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Debug build with ASAN support found"
     fi
 fi
 
-print_subtest "Validate Configuration File"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration File"
 
 CONFIG_PATH="${CONFIG_FILE}"
 if [[ ! -f "${CONFIG_PATH}" ]]; then
-    print_result 1 "Configuration file not found: ${CONFIG_PATH}"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Configuration file not found: ${CONFIG_PATH}"
     EXIT_CODE=1
 else
-    print_result 0 "Configuration file validated: ${CONFIG_PATH}"
-    ((PASS_COUNT++))
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Configuration file validated: ${CONFIG_PATH}"
 fi
 
 # Skip remaining tests if prerequisites failed
 if [[ ${EXIT_CODE} -ne 0 ]]; then
-    print_warning "Prerequisites failed - skipping memory leak test"
+    print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "Prerequisites failed - skipping memory leak test"
     
     # Print completion table
-    print_test_completion "${TEST_NAME}"
+    print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
     
     exit "${EXIT_CODE}"
 fi
 
-print_subtest "Memory Leak Detection Test"
-print_message "Starting memory leak test with debug build..."
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Memory Leak Detection Test"
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting memory leak test with debug build..."
 
 # Start hydrogen server with comprehensive ASAN options
-print_command "ASAN_OPTIONS=\"detect_leaks=1:leak_check_at_exit=1:verbosity=1:log_threads=1:print_stats=1\" ./${DEBUG_BUILD} ${CONFIG_PATH}"
+print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "ASAN_OPTIONS=\"detect_leaks=1:leak_check_at_exit=1:verbosity=1:log_threads=1:print_stats=1\" ./${DEBUG_BUILD} ${CONFIG_PATH}"
 
 ASAN_OPTIONS="detect_leaks=1:leak_check_at_exit=1:verbosity=1:log_threads=1:print_stats=1" ./"${DEBUG_BUILD}" "${CONFIG_PATH}" > "${SERVER_LOG}" 2>&1 &
 HYDROGEN_PID=$!
 
 # Wait for startup with timeout
-print_message "Waiting for startup..."
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for startup..."
 STARTUP_START=$("${DATE}" +%s)
 STARTUP_TIMEOUT=5
 
@@ -88,63 +89,66 @@ while true; do
     ELAPSED=$((CURRENT_TIME - STARTUP_START))
     
     if [[ ${ELAPSED} -ge ${STARTUP_TIMEOUT} ]]; then
-        print_result 1 "Startup timeout after ${ELAPSED}s"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Startup timeout after ${ELAPSED}s"
         kill -9 "${HYDROGEN_PID}" 2>/dev/null || true
         EXIT_CODE=1
         break
     fi
     
     if ! kill -0 "${HYDROGEN_PID}" 2>/dev/null; then
-        print_result 1 "Server crashed during startup"
-        print_message "Server log contents:"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Server crashed during startup"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server log contents:"
         while IFS= read -r line; do
-            print_output "${line}"
+            print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
         done < "${SERVER_LOG}"
         EXIT_CODE=1
         break
     fi
     
     if "${GREP}" -q "Application started" "${SERVER_LOG}"; then
-        log_startup_time=$("${GREP}" "Startup elapsed time:" "${SERVER_LOG}" 2>/dev/null | sed 's/.*Startup elapsed time: \([0-9.]*s\).*/\1/' | tail -1 || true)
-        print_message "Startup elapsed time (Log): ${log_startup_time}"
+        log_startup_time=$("${GREP}" "Startup elapsed time:" "${SERVER_LOG}" 2>/dev/null | sed 's/.*Startup elapsed time:  \([0-9.]*s\).*/\1/' | tail -1 || true)
+        if [[ -n "${log_startup_time}" ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Logged startup time reported as ${log_startup_time}"
+        else
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Logged startup time not found"
+        fi
         break
     fi
 done
 
 if [[ "${EXIT_CODE}" -eq 0 ]]; then
     # Let it run briefly and perform some operations
-    print_message "Running operations to trigger potential leaks..."
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Running operations to trigger potential leaks..."
 
     # Try some API calls to trigger potential memory operations
-    print_message "Making API calls to exercise memory allocation..."
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Making API calls to exercise memory allocation..."
     for _ in {1..3}; do
         curl -s "http://localhost:5030/api/system/health" > /dev/null 2>&1 || true
     done
 
     # Send SIGTERM to trigger shutdown and leak detection
-    print_message "Sending SIGTERM to trigger shutdown and leak detection..."
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Sending SIGTERM to trigger shutdown and leak detection..."
     kill -TERM "${HYDROGEN_PID}"
 
     # Wait for process to exit
     wait "${HYDROGEN_PID}" 2>/dev/null || true
 
-    print_result 0 "Memory leak test execution completed"
-    ((PASS_COUNT++))
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Memory leak test execution completed"
 else
-    print_result 1 "Memory leak test execution failed"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Memory leak test execution failed"
 fi
 
-print_subtest "Analyze Leak Results"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Analyze Leak Results"
 
 if [[ "${EXIT_CODE}" -eq 0 ]]; then
     # Check server.log for ASAN output
-    print_message "Analyzing ASAN output for memory leaks..."
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Analyzing ASAN output for memory leaks..."
     if "${GREP}" -q "LeakSanitizer" "${SERVER_LOG}"; then
-        print_message "Found ASAN leak detection output"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Found ASAN leak detection output"
         cp "${SERVER_LOG}" "${LEAK_REPORT}"
         
         # Analyze leak report
-        print_message "Analyzing leak report for direct and indirect leaks..."
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Analyzing leak report for direct and indirect leaks..."
 
         # Check for direct leaks
         DIRECT_LEAKS=$("${GREP}" -c "Direct leak of" "${LEAK_REPORT}" 2>/dev/null | head -1 || echo "0" || true)
@@ -186,32 +190,31 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         } > "${LEAK_SUMMARY}"
 
         # Display summary
-        print_message "Memory leak analysis results:"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Memory leak analysis results:"
         while IFS= read -r line; do
             # Only show lines that contain "Found"
             if [[ "${line}" == *"Found:"* ]]; then
-                print_output "${line}"
+                print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
             fi
         done < "${LEAK_SUMMARY}"
 
         # Determine test result
         if [[ "${DIRECT_LEAKS}" -eq 0 ]] && [[ "${INDIRECT_LEAKS}" -eq 0 ]]; then
-            print_result 0 "No memory leaks detected"
-            ((PASS_COUNT++))
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "No memory leaks detected"
         else
-            print_result 1 "Memory leaks detected: ${DIRECT_LEAKS} direct, ${INDIRECT_LEAKS} indirect"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Memory leaks detected: ${DIRECT_LEAKS} direct, ${INDIRECT_LEAKS} indirect"
             EXIT_CODE=1
         fi
     else
-        print_result 1 "No ASAN leak detection output found"
-        print_message "Server log contents:"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "No ASAN leak detection output found"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server log contents:"
         while IFS= read -r line; do
-            print_output "${line}"
+            print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
         done < "${SERVER_LOG}"
         EXIT_CODE=1
     fi
 else
-    print_result 1 "Leak analysis skipped due to previous failures"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Leak analysis skipped due to previous failures"
 fi
 
 # Print completion table

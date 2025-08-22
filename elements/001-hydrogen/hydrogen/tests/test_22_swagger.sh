@@ -27,14 +27,17 @@
 # 3.0.0 - 2025-07-02 - Migrated to use lib/ scripts, following established test patterns
 # 2.0.0 - 2025-06-17 - Major refactoring: fixed all shellcheck warnings, improved modularity, enhanced comments
 
+set -euo pipefail
+
 # Test Configuration
 TEST_NAME="Swagger"
 TEST_ABBR="SWG"
 TEST_NUMBER="22"
+TEST_COUNTER=0
 TEST_VERSION="5.0.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
-[[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+[[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
 # Parallel execution configuration
@@ -64,7 +67,7 @@ check_response_content() {
     fi
     curl_cmd="${curl_cmd} --compressed"
     
-    print_command "${curl_cmd} \"${url}\""
+    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "${curl_cmd} \"${url}\""
     
     # Retry logic for subsystem readiness (especially important in parallel execution)
     local max_attempts=25
@@ -73,7 +76,7 @@ check_response_content() {
     
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
-            print_message "HTTP request attempt ${attempt} of ${max_attempts} (waiting for subsystem initialization)..."
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HTTP request attempt ${attempt} of ${max_attempts} (waiting for subsystem initialization)..."
             # sleep 0.05  # Brief delay between attempts for subsystem initialization
         fi
         
@@ -85,48 +88,48 @@ check_response_content() {
             # Check if we got a 404 or other error response
             if "${GREP}" -q "404 Not Found" "${response_file}" || "${GREP}" -q "<html>" "${response_file}"; then
                 if [[ "${attempt}" -eq "${max_attempts}" ]]; then
-                    print_message "Endpoint still not ready after ${max_attempts} attempts"
-                    print_result 1 "Endpoint returned 404 or HTML error page"
-                    print_message "Response content:"
-                    print_output "$(cat "${response_file}" || true)"
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Endpoint still not ready after ${max_attempts} attempts"
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Endpoint returned 404 or HTML error page"
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response content:"
+                    print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "$(cat "${response_file}" || true)"
                     return 1
                 else
-                    print_message "Endpoint not ready yet (got 404/HTML), retrying..."
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Endpoint not ready yet (got 404/HTML), retrying..."
                     ((attempt++))
                     continue
                 fi
             fi
             
-            print_message "Successfully received response from ${url}"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Successfully received response from ${url}"
             
             # Show response excerpt
             local line_count
             line_count=$(wc -l < "${response_file}")
-            print_message "Response contains ${line_count} lines"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response contains ${line_count} lines"
             
             # Check for expected content
             if "${GREP}" -q "${expected_content}" "${response_file}"; then
                 if [[ "${attempt}" -gt 1 ]]; then
-                    print_result 0 "Response contains expected content: ${expected_content} (succeeded on attempt ${attempt})"
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response contains expected content: ${expected_content} (succeeded on attempt ${attempt})"
                 else
-                    print_result 0 "Response contains expected content: ${expected_content}"
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response contains expected content: ${expected_content}"
                 fi
                 return 0
             else
-                print_result 1 "Response doesn't contain expected content: ${expected_content}"
-                print_message "Response excerpt (first 10 lines):"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Response doesn't contain expected content: ${expected_content}"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response excerpt (first 10 lines):"
                 # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
                 while IFS= read -r line; do
-                    print_output "${line}"
+                    print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
                 done < <(head -n 10 "${response_file}" || true)
                 return 1
             fi
         else
             if [[ "${attempt}" -eq "${max_attempts}" ]]; then
-                print_result 1 "Failed to connect to server at ${url} (curl exit code: ${curl_exit_code})"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to connect to server at ${url} (curl exit code: ${curl_exit_code})"
                 return 1
             else
-                print_message "Connection failed on attempt ${attempt}, retrying..."
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Connection failed on attempt ${attempt}, retrying..."
                 ((attempt++))
                 continue
             fi
@@ -142,7 +145,7 @@ check_redirect_response() {
     local expected_location="$2"
     local redirect_file="$3"
     
-    print_command "curl -v -s --max-time 10 -o /dev/null \"${url}\""
+    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl -v -s --max-time 10 -o /dev/null \"${url}\""
     
     # Retry logic for subsystem readiness (especially important in parallel execution)
     local max_attempts=25
@@ -151,7 +154,7 @@ check_redirect_response() {
     
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
-            print_message "Redirect check attempt ${attempt} of ${max_attempts} (waiting for subsystem initialization)..."
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Redirect check attempt ${attempt} of ${max_attempts} (waiting for subsystem initialization)..."
             # sleep 0.05  # Brief delay between attempts for subsystem initialization
         fi
         
@@ -163,46 +166,46 @@ check_redirect_response() {
             # Check if we got a 404 or connection error
             if "${GREP}" -q "404 Not Found" "${redirect_file}"; then
                 if [[ "${attempt}" -eq "${max_attempts}" ]]; then
-                    print_message "Endpoint still not ready after ${max_attempts} attempts"
-                    print_result 1 "Endpoint returned 404 error"
-                    print_message "Response headers:"
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Endpoint still not ready after ${max_attempts} attempts"
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Endpoint returned 404 error"
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response headers:"
                     # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
                     while IFS= read -r line; do
-                        print_output "${line}"
+                        print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
                     done < <("${GREP}" -E "< HTTP/|< Location:" "${redirect_file}" || true)
                     return 1
                 else
-                    print_message "Endpoint not ready yet (got 404), retrying..."
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Endpoint not ready yet (got 404), retrying..."
                     ((attempt++))
                     continue
                 fi
             fi
             
-            print_message "Successfully received response from ${url}"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Successfully received response from ${url}"
             
             # Check for redirect
             if "${GREP}" -q "< HTTP/1.1 301" "${redirect_file}" && "${GREP}" -q "< Location: ${expected_location}" "${redirect_file}"; then
                 if [[ "${attempt}" -gt 1 ]]; then
-                    print_result 0 "Response is a 301 redirect to ${expected_location} (succeeded on attempt ${attempt})"
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response is a 301 redirect to ${expected_location} (succeeded on attempt ${attempt})"
                 else
-                    print_result 0 "Response is a 301 redirect to ${expected_location}"
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response is a 301 redirect to ${expected_location}"
                 fi
                 return 0
             else
-                print_result 1 "Response is not a redirect to ${expected_location}"
-                print_message "Response headers:"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Response is not a redirect to ${expected_location}"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response headers:"
                 # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
                 while IFS= read -r line; do
-                    print_output "${line}"
+                    print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
                 done < <("${GREP}" -E "< HTTP/|< Location:" "${redirect_file}" || true)
                 return 1
             fi
         else
             if [[ "${attempt}" -eq "${max_attempts}" ]]; then
-                print_result 1 "Failed to connect to server at ${url} (curl exit code: ${curl_exit_code})"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to connect to server at ${url} (curl exit code: ${curl_exit_code})"
                 return 1
             else
-                print_message "Connection failed on attempt ${attempt}, retrying..."
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Connection failed on attempt ${attempt}, retrying..."
                 ((attempt++))
                 continue
             fi
@@ -217,7 +220,7 @@ check_swagger_json() {
     local url="$1"
     local response_file="$2"
     
-    print_command "curl -s --max-time 10 \"${url}\""
+    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl -s --max-time 10 \"${url}\""
     
     # Retry logic for subsystem readiness (especially important in parallel execution)
     local max_attempts=25
@@ -226,7 +229,7 @@ check_swagger_json() {
     
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
-            print_message "Swagger JSON request attempt ${attempt} of ${max_attempts} (waiting for subsystem initialization)..."
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Swagger JSON request attempt ${attempt} of ${max_attempts} (waiting for subsystem initialization)..."
             # sleep 0.05  # Brief delay between attempts for subsystem initialization
         fi
         
@@ -238,58 +241,58 @@ check_swagger_json() {
             # Check if we got a 404 or other error response
             if "${GREP}" -q "404 Not Found" "${response_file}" || "${GREP}" -q "<html>" "${response_file}"; then
                 if [[ "${attempt}" -eq "${max_attempts}" ]]; then
-                    print_message "Swagger endpoint still not ready after ${max_attempts} attempts"
-                    print_result 1 "Swagger endpoint returned 404 or HTML error page"
-                    print_message "Response content:"
-                    print_output "$(cat "${response_file}" || true)"
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Swagger endpoint still not ready after ${max_attempts} attempts"
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Swagger endpoint returned 404 or HTML error page"
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response content:"
+                    print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "$(cat "${response_file}" || true)"
                     return 1
                 else
-                    print_message "Swagger endpoint not ready yet (got 404/HTML), retrying..."
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Swagger endpoint not ready yet (got 404/HTML), retrying..."
                     ((attempt++))
                     continue
                 fi
             fi
             
-            print_message "Successfully received swagger.json from ${url}"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Successfully received swagger.json from ${url}"
             
             # Check if it's valid JSON and contains expected swagger content
             # Use jq to validate JSON and check for required fields
             if jq -e '.openapi // .swagger' "${response_file}" >/dev/null 2>&1; then
                 local openapi_version
                 openapi_version=$(jq -r '.openapi // .swagger // "unknown"' "${response_file}")
-                print_message "Valid OpenAPI/Swagger specification found (version: ${openapi_version})"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Valid OpenAPI/Swagger specification found (version: ${openapi_version})"
                 
                 # Check for required Hydrogen API components
                 if jq -e '.info.title' "${response_file}" >/dev/null 2>&1; then
                     local api_title
                     api_title=$(jq -r '.info.title' "${response_file}")
-                    print_message "API Title: ${api_title}"
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "API Title: ${api_title}"
                     
                     if [[ "${api_title}" == *"Hydrogen"* ]]; then
                         if [[ "${attempt}" -gt 1 ]]; then
-                            print_result 0 "swagger.json contains valid Hydrogen API specification (succeeded on attempt ${attempt})"
+                            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "swagger.json contains valid Hydrogen API specification (succeeded on attempt ${attempt})"
                         else
-                            print_result 0 "swagger.json contains valid Hydrogen API specification"
+                            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "swagger.json contains valid Hydrogen API specification"
                         fi
                         return 0
                     else
-                        print_result 1 "swagger.json doesn't appear to be for Hydrogen API (title: ${api_title})"
+                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "swagger.json doesn't appear to be for Hydrogen API (title: ${api_title})"
                         return 1
                     fi
                 else
-                    print_result 1 "swagger.json missing required 'info.title' field"
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "swagger.json missing required 'info.title' field"
                     return 1
                 fi
             else
-                print_result 1 "swagger.json contains invalid JSON or missing OpenAPI/Swagger version"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "swagger.json contains invalid JSON or missing OpenAPI/Swagger version"
                 return 1
             fi
         else
             if [[ "${attempt}" -eq "${max_attempts}" ]]; then
-                print_result 1 "Failed to retrieve swagger.json from ${url} (curl exit code: ${curl_exit_code})"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to retrieve swagger.json from ${url} (curl exit code: ${curl_exit_code})"
                 return 1
             else
-                print_message "Connection failed on attempt ${attempt}, retrying..."
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Connection failed on attempt ${attempt}, retrying..."
                 ((attempt++))
                 continue
             fi
@@ -343,6 +346,7 @@ run_swagger_test_parallel() {
         echo "STARTUP_SUCCESS" >> "${result_file}"
         
         # Wait for server to be ready
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
         if wait_for_server_ready "http://localhost:${port}"; then
             echo "SERVER_READY" >> "${result_file}"
             
@@ -351,6 +355,7 @@ run_swagger_test_parallel() {
             
             # Test Swagger UI with trailing slash
             local trailing_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_trailing_slash.html"
+            # shellcheck disable=SC2310 # We want to continue even if the test fails
             if check_response_content "${base_url}${swagger_prefix}/" "swagger-ui" "${trailing_file}" "true"; then
                 echo "TRAILING_SLASH_TEST_PASSED" >> "${result_file}"
             else
@@ -360,6 +365,7 @@ run_swagger_test_parallel() {
             
             # Test redirect without trailing slash
             local redirect_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_redirect.txt"
+            # shellcheck disable=SC2310 # We want to continue even if the test fails
             if check_redirect_response "${base_url}${swagger_prefix}" "${swagger_prefix}/" "${redirect_file}"; then
                 echo "REDIRECT_TEST_PASSED" >> "${result_file}"
             else
@@ -369,6 +375,7 @@ run_swagger_test_parallel() {
             
             # Test Swagger UI content
             local content_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_content.html"
+            # shellcheck disable=SC2310 # We want to continue even if the test fails
             if check_response_content "${base_url}${swagger_prefix}/" "swagger-ui" "${content_file}" "true"; then
                 echo "CONTENT_TEST_PASSED" >> "${result_file}"
             else
@@ -378,6 +385,7 @@ run_swagger_test_parallel() {
             
             # Test JavaScript initializer
             local js_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_initializer.js"
+            # shellcheck disable=SC2310 # We want to continue even if the test fails
             if check_response_content "${base_url}${swagger_prefix}/swagger-initializer.js" "window.ui = SwaggerUIBundle" "${js_file}" "true"; then
                 echo "JAVASCRIPT_TEST_PASSED" >> "${result_file}"
             else
@@ -387,6 +395,7 @@ run_swagger_test_parallel() {
             
             # Test swagger.json
             local swagger_json_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_swagger_json_.json"
+            # shellcheck disable=SC2310 # We want to continue even if the test fails
             if check_swagger_json "${base_url}${swagger_prefix}/swagger.json" "${swagger_json_file}"; then
                 echo "SWAGGER_JSON_TEST_PASSED" >> "${result_file}"
             else
@@ -435,19 +444,19 @@ analyze_swagger_test_results() {
     local result_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}.result"
 
     if [[ ! -f "${result_file}" ]]; then
-        print_result 1 "No result file found for ${test_name}"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "No result file found for ${test_name}"
         return 1
     fi
     
     # Check startup
     if ! "${GREP}" -q "STARTUP_SUCCESS" "${result_file}" 2>/dev/null; then
-        print_result 1 "Failed to start Hydrogen for ${description} test"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to start Hydrogen for ${description} test"
         return 1
     fi
     
     # Check server readiness
     if ! "${GREP}" -q "SERVER_READY" "${result_file}" 2>/dev/null; then
-        print_result 1 "Server not ready for ${description} test"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Server not ready for ${description} test"
         return 1
     fi
     
@@ -500,12 +509,12 @@ test_swagger_configuration() {
     local test_name="$3"
     local config_number="$4"
     
-    print_message "Testing Swagger UI: ${swagger_prefix} (using ${test_name})"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing Swagger UI: ${swagger_prefix} (using ${test_name})"
     
     # Extract port from configuration
     local server_port
     server_port=$(get_webserver_port "${config_file}")
-    print_message "Configuration will use port: ${server_port}"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Configuration will use port: ${server_port}"
     
     # Global variables for server management
     local hydrogen_pid=""
@@ -515,129 +524,137 @@ test_swagger_configuration() {
     # Start server
     local subtest_start=$(((config_number - 1) * 6 + 1))
     
-    print_subtest "Start Hydrogen Server (Config ${config_number})"
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start Hydrogen Server (Config ${config_number})"
     
     # Use a temporary variable name that won't conflict
     local temp_pid_var="HYDROGEN_PID_$$"
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
     if start_hydrogen_with_pid "${config_file}" "${server_log}" 15 "${HYDROGEN_BIN}" "${temp_pid_var}"; then
         # Get the PID from the temporary variable
         hydrogen_pid=$(eval "echo \$${temp_pid_var}")
         if [[ -n "${hydrogen_pid}" ]]; then
-            print_result 0 "Server started successfully with PID: ${hydrogen_pid}"
-            ((PASS_COUNT++))
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Server started successfully with PID: ${hydrogen_pid}"
+            PASS_COUNT=$(( PASS_COUNT + 1 ))
         else
-            print_result 1 "Failed to start server - no PID returned"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to start server - no PID returned"
             EXIT_CODE=1
             # Skip remaining subtests for this configuration
             for i in {2..6}; do
 
-                print_subtest "Subtest $((subtest_start + i - 1)) (Skipped)"
-                print_result 1 "Skipped due to server startup failure"
+                print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Subtest $((subtest_start + i - 1)) (Skipped)"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Skipped due to server startup failure"
 
             done
             return 1
         fi
     else
-        print_result 1 "Failed to start server"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to start server"
         EXIT_CODE=1
         # Skip remaining subtests for this configuration
         for i in {2..6}; do
 
-            print_subtest "Subtest $((subtest_start + i - 1)) (Skipped)"
-            print_result 1 "Skipped due to server startup failure"
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Subtest $((subtest_start + i - 1)) (Skipped)"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Skipped due to server startup failure"
 
         done
         return 1
     fi
     
     # Wait for server to be ready
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
         if ! wait_for_server_ready "${base_url}"; then
-            print_result 1 "Server failed to become ready"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Server failed to become ready"
             EXIT_CODE=1
             # Skip remaining subtests
             for i in {2..6}; do
 
-                print_subtest "Subtest $((subtest_start + i - 1)) (Skipped)"
-                print_result 1 "Skipped due to server readiness failure"
+                print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Subtest $((subtest_start + i - 1)) (Skipped)"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Skipped due to server readiness failure"
 
             done
             return 1
         fi
     fi
     
-    print_subtest "Access Swagger UI with trailing slash (Config ${config_number})"
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Access Swagger UI with trailing slash (Config ${config_number})"
 
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
         if check_response_content "${base_url}${swagger_prefix}/" "swagger-ui" "${RESULTS_DIR}/${test_name}_trailing_slash_${TIMESTAMP}.html" "true"; then
-            ((PASS_COUNT++))
+            PASS_COUNT=$(( PASS_COUNT + 1 ))
         else
             EXIT_CODE=1
         fi
     else
-        print_result 1 "Server not running for trailing slash test"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Server not running for trailing slash test"
         EXIT_CODE=1
     fi
     
-    print_subtest "Access Swagger UI without trailing slash (Config ${config_number})"
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Access Swagger UI without trailing slash (Config ${config_number})"
 
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
         if check_redirect_response "${base_url}${swagger_prefix}" "${swagger_prefix}/" "${RESULTS_DIR}/${test_name}_redirect_${TIMESTAMP}.txt"; then
-            ((PASS_COUNT++))
+            PASS_COUNT=$(( PASS_COUNT + 1 ))
         else
             EXIT_CODE=1
         fi
     else
-        print_result 1 "Server not running for redirect test"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Server not running for redirect test"
         EXIT_CODE=1
     fi
     
-    print_subtest "Verify Swagger UI content loads (Config ${config_number})"
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Verify Swagger UI content loads (Config ${config_number})"
 
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
         if check_response_content "${base_url}${swagger_prefix}/" "swagger-ui" "${RESULTS_DIR}/${test_name}_content_${TIMESTAMP}.html" "true"; then
-            ((PASS_COUNT++))
+            PASS_COUNT=$(( PASS_COUNT + 1 ))
         else
             EXIT_CODE=1
         fi
     else
-        print_result 1 "Server not running for content test"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Server not running for content test"
         EXIT_CODE=1
     fi
     
-    print_subtest "Verify JavaScript files load (Config ${config_number})"
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Verify JavaScript files load (Config ${config_number})"
 
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
         if check_response_content "${base_url}${swagger_prefix}/swagger-initializer.js" "window.ui = SwaggerUIBundle" "${RESULTS_DIR}/${test_name}_initializer_${TIMESTAMP}.js" "true"; then
-            ((PASS_COUNT++))
+            PASS_COUNT=$(( PASS_COUNT + 1 ))
         else
             EXIT_CODE=1
         fi
     else
-        print_result 1 "Server not running for JavaScript test"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Server not running for JavaScript test"
         EXIT_CODE=1
     fi
     
-    print_subtest "Verify swagger.json file loads and contains valid content (Config ${config_number})"
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Verify swagger.json file loads and contains valid content (Config ${config_number})"
 
     if [[ -n "${hydrogen_pid}" ]] && ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
         if check_swagger_json "${base_url}${swagger_prefix}/swagger.json" "${RESULTS_DIR}/${test_name}_swagger_json_${TIMESTAMP}.json"; then
-            ((PASS_COUNT++))
+            PASS_COUNT=$(( PASS_COUNT + 1 ))
         else
             EXIT_CODE=1
         fi
     else
-        print_result 1 "Server not running for swagger.json test"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Server not running for swagger.json test"
         EXIT_CODE=1
     fi
     
     # Stop the server
     if [[ -n "${hydrogen_pid}" ]]; then
-        print_message "Stopping server..."
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Stopping server..."
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
         if stop_hydrogen "${hydrogen_pid}" "${server_log}" 10 5 "${RESULTS_DIR}"; then
-            print_message "Server stopped successfully"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server stopped successfully"
         else
-            print_warning "Server shutdown had issues"
+            print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "Server shutdown had issues"
         fi
         
         # Check TIME_WAIT sockets
@@ -647,47 +664,50 @@ test_swagger_configuration() {
     return 0
 }
 
-print_subtest "Locate Hydrogen Binary"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Locate Hydrogen Binary"
 
 HYDROGEN_BIN=''
 HYDROGEN_BIN_BASE=''
+# shellcheck disable=SC2310 # We want to continue even if the test fails
 if find_hydrogen_binary "${PROJECT_DIR}"; then
-    print_message "Using Hydrogen binary: ${HYDROGEN_BIN_BASE}"
-    print_result 0 "Hydrogen binary found and validated"
-    ((PASS_COUNT++))
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Using Hydrogen binary: ${HYDROGEN_BIN_BASE}"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Hydrogen binary found and validated"
+    PASS_COUNT=$(( PASS_COUNT + 1 ))
 else
-    print_result 1 "Failed to find Hydrogen binary"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to find Hydrogen binary"
     EXIT_CODE=1
 fi
-
-print_subtest "Validate Configuration Files"
 
 # Validate both configuration files
 config_valid=true
 for test_config in "${!SWAGGER_TEST_CONFIGS[@]}"; do
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration File: ${test_config}"
+
     # Parse test configuration
     IFS=':' read -r config_file log_suffix swagger_prefix description <<< "${SWAGGER_TEST_CONFIGS[${test_config}]}"
     
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
     if validate_config_file "${config_file}"; then
         port=$(get_webserver_port "${config_file}")
-        print_message "${description} configuration will use port: ${port}"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description} configuration will use port: ${port}"
     else
         config_valid=false
     fi
 done
 
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration Files"
 if [[ "${config_valid}" = true ]]; then
-    print_result 0 "All configuration files validated successfully"
-    ((PASS_COUNT++))
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "All configuration files validated successfully"
+    PASS_COUNT=$(( PASS_COUNT + 1 ))
 else
-    print_result 1 "Configuration file validation failed"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Configuration file validation failed"
     EXIT_CODE=1
 fi
 
 # Only proceed with Swagger tests if prerequisites are met
 if [[ "${EXIT_CODE}" -eq 0 ]]; then
    
-    print_message "Running Swagger tests in parallel for faster execution..."
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Running Swagger tests in parallel"
     
     # Start all Swagger tests in parallel with job limiting
     for test_config in "${!SWAGGER_TEST_CONFIGS[@]}"; do
@@ -699,7 +719,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         # Parse test configuration
         IFS=':' read -r config_file log_suffix swagger_prefix description <<< "${SWAGGER_TEST_CONFIGS[${test_config}]}"
         
-        print_message "Starting parallel test: ${test_config} (${description})"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting parallel test: ${test_config} (${description})"
         
         # Run parallel Swagger test in background
         run_swagger_test_parallel "${test_config}" "${config_file}" "${log_suffix}" "${swagger_prefix}" "${description}" &
@@ -707,69 +727,70 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     done
     
     # Wait for all parallel tests to complete
-    print_message "Waiting for all ${#SWAGGER_TEST_CONFIGS[@]} parallel Swagger tests to complete..."
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for ${#SWAGGER_TEST_CONFIGS[@]} parallel Swagger tests to complete"
     for pid in "${PARALLEL_PIDS[@]}"; do
         wait "${pid}"
     done
-    print_message "All parallel tests completed, analyzing results..."
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "All parallel tests completed, analyzing results"
     
     # Process results sequentially for clean output
     for test_config in "${!SWAGGER_TEST_CONFIGS[@]}"; do
         # Parse test configuration
         IFS=':' read -r config_file log_suffix swagger_prefix description <<< "${SWAGGER_TEST_CONFIGS[${test_config}]}"
         
-        print_subtest "Swagger UI Test: ${description} (${swagger_prefix})"
+        #print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Swagger UI Test: ${description} (${swagger_prefix})"
         
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
         if analyze_swagger_test_results "${test_config}" "${log_suffix}" "${swagger_prefix}" "${description}"; then
             # Test individual endpoint results for detailed feedback
-            print_subtest "Trailing Slash Access - ${description}"
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Trailing Slash Access - ${description}"
             if [[ "${TRAILING_SLASH_TEST_RESULT}" = true ]]; then
-                print_result 0 "Swagger UI with trailing slash test passed"
-                ((PASS_COUNT++))
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Swagger UI with trailing slash test passed"
+                PASS_COUNT=$(( PASS_COUNT + 1 ))
             else
-                print_result 1 "Swagger UI with trailing slash test failed"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Swagger UI with trailing slash test failed"
                 EXIT_CODE=1
             fi
             
-            print_subtest "Redirect Test - ${description}"
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Redirect Test - ${description}"
             if [[ "${REDIRECT_TEST_RESULT}" = true ]]; then
-                print_result 0 "Swagger UI redirect test passed"
-                ((PASS_COUNT++))
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Swagger UI redirect test passed"
+                PASS_COUNT=$(( PASS_COUNT + 1 ))
             else
-                print_result 1 "Swagger UI redirect test failed"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Swagger UI redirect test failed"
                 EXIT_CODE=1
             fi
             
-            print_subtest "Content Verification - ${description}"
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Content Verification - ${description}"
             if [[ "${CONTENT_TEST_RESULT}" = true ]]; then
-                print_result 0 "Swagger UI content test passed"
-                ((PASS_COUNT++))
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Swagger UI content test passed"
+                PASS_COUNT=$(( PASS_COUNT + 1 ))
             else
-                print_result 1 "Swagger UI content test failed"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Swagger UI content test failed"
                 EXIT_CODE=1
             fi
             
-            print_subtest "JavaScript Loading - ${description}"
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "JavaScript Loading - ${description}"
             if [[ "${JAVASCRIPT_TEST_RESULT}" = true ]]; then
-                print_result 0 "JavaScript initializer test passed"
-                ((PASS_COUNT++))
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "JavaScript initializer test passed"
+                PASS_COUNT=$(( PASS_COUNT + 1 ))
             else
-                print_result 1 "JavaScript initializer test failed"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "JavaScript initializer test failed"
                 EXIT_CODE=1
             fi
             
-            print_subtest "Swagger JSON Validation - ${description}"
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Swagger JSON Validation - ${description}"
             if [[ "${SWAGGER_JSON_TEST_RESULT}" = true ]]; then
-                print_result 0 "Swagger JSON test passed"
-                ((PASS_COUNT++))
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Swagger JSON test passed"
+                PASS_COUNT=$(( PASS_COUNT + 1 ))
             else
-                print_result 1 "Swagger JSON test failed"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Swagger JSON test failed"
                 EXIT_CODE=1
             fi
             
-            print_message "${description}: All Swagger tests passed"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: All Swagger tests passed"
         else
-            print_result 1 "${description} test failed"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description} test failed"
             EXIT_CODE=1
         fi
     done
@@ -780,16 +801,16 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         IFS=':' read -r config_file log_suffix swagger_prefix description <<< "${SWAGGER_TEST_CONFIGS[${test_config}]}"
         result_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}.result"
         if [[ -f "${result_file}" ]] && "${GREP}" -q "ALL_SWAGGER_TESTS_PASSED" "${result_file}" 2>/dev/null; then
-            ((successful_configs++))
+            successful_configs=$(( successful_configs + 1 ))
         fi
     done
     
-    print_message "Summary: ${successful_configs}/${#SWAGGER_TEST_CONFIGS[@]} Swagger configurations passed all tests"
-    print_message "Parallel execution completed - SO_REUSEADDR allows immediate port reuse"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Summary: ${successful_configs}/${#SWAGGER_TEST_CONFIGS[@]} Swagger configurations passed all tests"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Parallel execution completed - SO_REUSEADDR allows immediate port reuse"
     
 else
     # Skip Swagger tests if prerequisites failed
-    print_message "Skipping Swagger tests due to prerequisite failures"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipping Swagger tests due to prerequisite failures"
     EXIT_CODE=1
 fi
 

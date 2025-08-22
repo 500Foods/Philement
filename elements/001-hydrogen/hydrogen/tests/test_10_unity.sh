@@ -21,14 +21,17 @@
 # 2.0.0 - 2025-07-02 - Complete rewrite to use new modular test libraries
 # 1.0.0 - 2025-06-25 - Initial version for running Unity tests
 
+set -euo pipefail
+
 # Test configuration
 TEST_NAME="Unity Unit Tests"
 TEST_ABBR="UNT"
 TEST_NUMBER="10"
+TEST_COUNTER=0
 TEST_VERSION="3.0.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
-[[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+[[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
 # Configuration
@@ -39,19 +42,19 @@ TOTAL_UNITY_PASSED=0
 # Function to check Unity tests are available via CTest (assumes they're already built by main build system)
 check_unity_tests_available() {
 
-    print_subtest "Check Unity Tests Available"
-    print_message "Checking for Unity tests via CTest (should be built by main build system)..."
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Check Unity Tests Available"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Checking for Unity tests via CTest (should be built by main build system)..."
     
     # Check if CMake build directory exists and has CTest configuration
     local cmake_build_dir="${BUILD_DIR}"
     
     if [[ ! -d "${cmake_build_dir}" ]]; then
-        print_result 1 "CMake build directory not found: ${cmake_build_dir#"${SCRIPT_DIR}"/..}"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "CMake build directory not found: ${cmake_build_dir#"${SCRIPT_DIR}"/..}"
         return 1
     fi
     
     # Change to CMake directory to check for Unity tests
-    cd "${cmake_build_dir}" || { print_result 1 "Failed to change to CMake build directory"; return 1; }
+    cd "${cmake_build_dir}" || { print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to change to CMake build directory"; return 1; }
     
     # Check if any Unity tests are available by looking for test executables
     if [[ -d "${UNITY_BUILD_DIR}/src" ]]; then
@@ -59,17 +62,17 @@ check_unity_tests_available() {
         local test_count
         test_count=$("${FIND}" "${UNITY_BUILD_DIR}/src" -name "*_test*" -type f -executable | wc -l || true)
         if [[ "${test_count}" -gt 0 ]]; then
-            print_result 0 "Unity tests available: ${test_count} test executables found in ${UNITY_BUILD_DIR#"${SCRIPT_DIR}"/..}/src"
-            cd "${SCRIPT_DIR}" || { print_result 1 "Failed to return to script directory"; return 1; }
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Unity tests available: ${test_count} test executables found in ${UNITY_BUILD_DIR#"${SCRIPT_DIR}"/..}/src"
+            cd "${SCRIPT_DIR}" || { print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to return to script directory"; return 1; }
             return 0
         else
-            print_result 1 "No Unity test executables found in ${UNITY_BUILD_DIR#"${SCRIPT_DIR}"/..}/src"
-            cd "${SCRIPT_DIR}" || { print_result 1 "Failed to return to script directory"; return 1; }
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "No Unity test executables found in ${UNITY_BUILD_DIR#"${SCRIPT_DIR}"/..}/src"
+            cd "${SCRIPT_DIR}" || { print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to return to script directory"; return 1; }
             return 1
         fi
     else
-        print_result 1 "Unity build directory not found: ${UNITY_BUILD_DIR#"${SCRIPT_DIR}"/..}/src - Run 'cmake --build . --target unity_tests' from cmake directory first"
-        cd "${SCRIPT_DIR}" || { print_result 1 "Failed to return to script directory"; return 1; }
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Unity build directory not found: ${UNITY_BUILD_DIR#"${SCRIPT_DIR}"/..}/src - Run 'cmake --build . --target unity_tests' from cmake directory first"
+        cd "${SCRIPT_DIR}" || { print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to return to script directory"; return 1; }
         return 1
     fi
 }
@@ -82,7 +85,7 @@ run_single_unity_test_parallel() {
     local test_exe="${UNITY_BUILD_DIR}/src/${test_name}"
     
     # Initialize result tracking
-    local subtest_number=$((CURRENT_SUBTEST_NUM++))
+    local subtest_number=${TEST_COUNTER}
     local passed_count=0
     local failed_count=0
     local test_count=0
@@ -188,7 +191,7 @@ run_unity_tests() {
     fi
 
     if [[ ${#unity_tests[@]} -eq 0 ]]; then
-        print_error "No Unity test executables found in ${unity_build_dir}"
+        print_error "${TEST_NUMBER}" "${TEST_COUNTER}" "No Unity test executables found in ${unity_build_dir}"
         return 1
     fi
     
@@ -223,7 +226,7 @@ run_unity_tests() {
     TOTAL_UNITY_TESTS=0
     TOTAL_UNITY_PASSED=0
     
-    print_message "Running ${total_tests} Unity tests in parallel batches of ~${batch_size} (max ${CORES} CPUs, ${number_of_groups} groups)"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Running ${total_tests} Unity tests in parallel batches of ~${batch_size} (max ${CORES} CPUs, ${number_of_groups} groups)"
     
     # Process tests in batches
     local i=0
@@ -242,7 +245,7 @@ run_unity_tests() {
         ((batch_num++))
         local batch_count=${#batch_tests[@]}
         
-        print_message "Starting batch ${batch_num}: ${batch_count} tests"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting batch ${batch_num}: ${batch_count} tests"
         
         # Run batch in parallel and process results in order
         local temp_files=()
@@ -280,22 +283,20 @@ run_unity_tests() {
                 while IFS='|' read -r line_type content; do
                     case "${line_type}" in
                         "TEST_LINE")
-                            print_subtest "${content}"
+                            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${content}"
                             ;;
                         "RESULT_LINE")
                             IFS='|' read -r result_type message <<< "${content}"
                             if [[ "${result_type}" = "PASS" ]]; then
-                                print_result 0 "${message}"
-                                ((PASS_COUNT++))
+                                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${message}"
                             else
-                                print_result 1 "${message}"
+                                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${message}"
                             fi
                             ;;
                         "OUTPUT_LINE")
-                            print_output "${content}"
+                            print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${content}"
                             ;;
                         "SUBTEST_START")
-                            next_subtest
                             ;;
                         *) ;;
                     esac
@@ -321,15 +322,16 @@ run_unity_tests() {
     done
     
     # Display summary in two parts
-    print_message "Unity test execution: ${total_tests} test files ran in ${batch_num} batches"
-    print_message "Unity test results: $("${PRINTF}" "%'d" "${TOTAL_UNITY_TESTS}" || true) unit tests, $("${PRINTF}" "%'d" "${TOTAL_UNITY_PASSED}" || true) passing, $("${PRINTF}" "%'d" "${total_failed}" || true) failing"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Unity test execution: ${total_tests} test files ran in ${batch_num} batches"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Unity test results: $("${PRINTF}" "%'d" "${TOTAL_UNITY_TESTS}" || true) unit tests, $("${PRINTF}" "%'d" "${TOTAL_UNITY_PASSED}" || true) passing, $("${PRINTF}" "%'d" "${total_failed}" || true) failing"
     
     return "${overall_result}"
 }
 
 # Check and run tests
+# shellcheck disable=SC2310 # We want to continue even if the test fails
 if check_unity_tests_available; then
-    ((PASS_COUNT++))
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
     if run_unity_tests; then
         # Update TEST_NAME to include test results for concise display
         if [[ -n "${TOTAL_UNITY_TESTS}" ]] && [[ -n "${TOTAL_UNITY_PASSED}" ]]; then
@@ -339,8 +341,8 @@ if check_unity_tests_available; then
         EXIT_CODE=1
     fi
     
-    print_subtest "Calculate Unity Test Coverage"
-    print_message "Calculating Unity test coverage..."
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Calculate Unity Test Coverage"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Calculating Unity test coverage..."
 
     # Use the same calculation as Test 99
     unity_coverage=$(calculate_unity_coverage "${UNITY_BUILD_DIR}" "${TIMESTAMP}")
@@ -348,17 +350,15 @@ if check_unity_tests_available; then
     # Always attempt to read details
     if [[ -f "${RESULTS_DIR}/coverage_unity.txt.detailed" ]]; then
         IFS=',' read -r _ _ covered_lines total_lines instrumented_files covered_files < "${RESULTS_DIR}/coverage_unity.txt.detailed"
-        print_result 0 "Unity test coverage calculated: ${unity_coverage}% ($(printf "%'d" "${covered_lines}")/$(printf "%'d" "${total_lines}") lines, $(printf "%'d" "${covered_files}")/$(printf "%'d" "${instrumented_files}") files)"
-        ((PASS_COUNT++))
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Unity test coverage calculated: ${unity_coverage}% ($(printf "%'d" "${covered_lines}")/$(printf "%'d" "${total_lines}") lines, $(printf "%'d" "${covered_files}")/$(printf "%'d" "${instrumented_files}") files)"
     else
         if [[ -z "${unity_coverage}" ]]; then
             unity_coverage="0.000"
         fi
-        print_result 0 "Unity test coverage calculated: ${unity_coverage}% (0/0 lines, 0/0 files) - No coverage data available"
-        ((PASS_COUNT++))
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Unity test coverage calculated: ${unity_coverage}% (0/0 lines, 0/0 files) - No coverage data available"
     fi
 else
-    print_error "Unity tests not available, skipping test execution"
+    print_error "${TEST_NUMBER}" "${TEST_COUNTER}" "Unity tests not available, skipping test execution"
     EXIT_CODE=1
 fi
 

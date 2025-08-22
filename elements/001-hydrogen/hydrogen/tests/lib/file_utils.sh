@@ -20,13 +20,14 @@
 # 1.0.0 - 2025-07-02 - Initial creation from support_utils.sh migration
 
 # Guard clause to prevent multiple sourcing
-[[ -n "${FILE_UTILS_GUARD}" ]] && return 0
+[[ -n "${FILE_UTILS_GUARD:-}" ]] && return 0
 export FILE_UTILS_GUARD="true"
 
 # Library metadata
 FILE_UTILS_NAME="File Utilities Library"
 FILE_UTILS_VERSION="1.2.1"
-print_message "${FILE_UTILS_NAME} ${FILE_UTILS_VERSION}" "info"
+# shellcheck disable=SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${FILE_UTILS_NAME} ${FILE_UTILS_VERSION}" "info"
 
 # Enable recursive globbing and include dotfiles
 shopt -s dotglob globstar nullglob

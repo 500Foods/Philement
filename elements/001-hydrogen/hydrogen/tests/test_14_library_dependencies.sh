@@ -14,38 +14,42 @@
 # 1.1.0 - Enhanced with proper error handling, modular functions, and shellcheck compliance
 # 1.0.0 - Initial version with library dependency checking
 
+set -euo pipefail
+
 # Test configuration
 TEST_NAME="Library Dependencies"
 TEST_ABBR="DEP"
 TEST_NUMBER="14"
+TEST_COUNTER=0
 TEST_VERSION="3.0.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
-[[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+[[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
 # Test configuration 
 MINIMAL_CONFIG="${SCRIPT_DIR}/configs/hydrogen_test_14_libraries.json"
 STARTUP_TIMEOUT=10
 
-print_subtest "Locate Hydrogen Binary"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Locate Hydrogen Binary"
 
 HYDROGEN_BIN=''
 HYDROGEN_BIN_BASE=''
+# shellcheck disable=SC2310 # We want to continue even if the test fails
 if find_hydrogen_binary "${PROJECT_DIR}"; then
-    print_message "Using Hydrogen binary: ${HYDROGEN_BIN_BASE}"
-    print_result 0 "Hydrogen binary found and validated"
-    ((PASS_COUNT++))
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Using Hydrogen binary: ${HYDROGEN_BIN_BASE}"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Hydrogen binary found and validated"
 else
-    print_result 1 "Failed to find Hydrogen binary"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to find Hydrogen binary"
     EXIT_CODE=1
 fi
 
 
-print_subtest "Validate Configuration File"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration File"
 
+# shellcheck disable=SC2310 # We want to continue even if the test fails
 if validate_config_file "${MINIMAL_CONFIG}"; then
-    ((PASS_COUNT++))
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Validated configuration file"
 else
     EXIT_CODE=1
 fi
@@ -59,7 +63,7 @@ check_dependency_log() {
     local dep_name="$1"
     local log_file="$2"
     
-    print_subtest "Check Dependency: ${dep_name}"
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Check Dependency: ${dep_name}"
     
     # Extract the full dependency line
     local dep_line
@@ -73,16 +77,15 @@ check_dependency_log() {
         status=$(echo "${dep_line}" | "${SED}" -n 's/.*Status: \([^ ]*\).*/\1/p' || true)
         
         if [[ "${status}" = "Good" ]] || [[ "${status}" = "Less Good" ]] || [[ "${status}" = "Less" ]]; then
-            print_result 0 "Found ${dep_name} - Expected: ${expected_version}, Found: ${found_version}, Status: ${status}"
-            ((PASS_COUNT++))
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Found ${dep_name} - Expected: ${expected_version}, Found: ${found_version}, Status: ${status}"
             return 0
         else
-            print_result 1 "Found ${dep_name} but status is not Good, Less Good, or Less - Expected: ${expected_version}, Found: ${found_version}, Status: ${status}"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Found ${dep_name} but status is not Good, Less Good, or Less - Expected: ${expected_version}, Found: ${found_version}, Status: ${status}"
             EXIT_CODE=1
             return 1
         fi
     else
-        print_result 0 "Did not find ${dep_name} dependency check in logs (skipped)"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Did not find ${dep_name} dependency check in logs (skipped)"
         return 0
     fi
 }
@@ -92,7 +95,7 @@ config_name=$(basename "${MINIMAL_CONFIG}" .json)
 run_lifecycle_test "${MINIMAL_CONFIG}" "${config_name}" "${DIAG_TEST_DIR}" "${STARTUP_TIMEOUT}" "${SHUTDOWN_TIMEOUT}" "${SHUTDOWN_ACTIVITY_TIMEOUT}" "${HYDROGEN_BIN}" "${LOG_FILE}" "PASS_COUNT" "EXIT_CODE"
 
 # Analyze logs for dependency checks
-print_message "Checking dependency logs for library dependency detection"
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Checking dependency logs for library dependency detection"
 check_dependency_log "pthreads" "${LOG_FILE}"
 check_dependency_log "jansson" "${LOG_FILE}"
 check_dependency_log "libm" "${LOG_FILE}"

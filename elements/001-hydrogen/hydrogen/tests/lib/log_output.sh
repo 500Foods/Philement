@@ -42,7 +42,7 @@
 # 1.0.0 - 2025-07-02 - Initial creation from support_utils.sh migration
 
 # Guard clause to prevent multiple sourcing
-[[ -n "${LOG_OUTPUT_GUARD}" ]] && return 0
+[[ -n "${LOG_OUTPUT_GUARD:-}" ]] && return 0
 export LOG_OUTPUT_GUARD="true"
 
 # Library metadata
@@ -52,7 +52,6 @@ export LOG_OUTPUT_NAME LOG_OUTPUT_VERSION
 
 # Global variables for test/subtest numbering
 CURRENT_TEST_NUMBER=""
-CURRENT_SUBTEST_NUMBER=""
 SUBTEST_COUNTER=0
 TEST_START_TIME=""
 TEST_PASSED_COUNT=0
@@ -72,7 +71,8 @@ TEST_COLOR='\033[0;34m'     # Blue
 # Other formatting codes
 if [[ -z "${BOLD:-}" ]]; then
     BOLD='\033[1m'
-    NC='\033[0m' # No Color
+    NC='\033[0;37m'   # White
+#    NC='\033[0m' # No Color
 fi
 
 # Rounded rectangle icons with colors matching label themes (double-wide)
@@ -116,8 +116,8 @@ dump_collected_output() {
     
     # Check if string has content
     if [[ -n "${OUTPUT_COLLECTION}" ]]; then
-        # Use printf to output the collected string with proper line breaks
-        "${PRINTF}" '%b' "${OUTPUT_COLLECTION}" 2>/dev/null || true
+        # Use printf to output the collected string, pipe through sort, preserving ANSI codes
+        "${PRINTF}" '%b' "${OUTPUT_COLLECTION}" 2>/dev/null | sort -k1.9,1.15 -k1.18,1.25n || true
     fi
 }
 
@@ -276,38 +276,35 @@ EOF
 
 # Function to print subtest headers
 print_subtest() {
-    local subtest_name="$1"
+    TEST_COUNTER=$(( TEST_COUNTER + 1 ))
+
+    local subtest_number="$1"
+    local subtest_counter="$2"
+    local subtest_name="$3"
+
+    local test_ref
+    test_ref="${subtest_number}-$(${PRINTF} "%03d" "$((subtest_counter + 1))")"
+
     local elapsed
     elapsed=$(get_elapsed_time)
+
     local processed_name
     processed_name=$(process_message "${subtest_name}")
-    local formatted_output="  ${TEST_COLOR}${CURRENT_TEST_NUMBER}-${CURRENT_SUBTEST_NUMBER}   ${elapsed}   ${NC}${TEST_ICON}${TEST_COLOR} TEST   ${processed_name}${NC}"
 
-    ((SUBTEST_COUNTER++))
-    CURRENT_SUBTEST_NUMBER=$("${PRINTF}" "%03d" "${SUBTEST_COUNTER}")
-    
-    # If we're in collection mode and have cached output, dump it before starting new test
-    if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
-        # Defensive check for string state to prevent hanging
-        if [[ -n "${OUTPUT_COLLECTION+set}" ]] && [[ -n "${OUTPUT_COLLECTION}" ]]; then
-            # Try to dump the cached output, but don't fail if it causes issues
-            dump_collected_output 2>/dev/null || true
-        fi
-        # Clear the cache for new test regardless of dump success
-        clear_collected_output 2>/dev/null || true
-    fi
-    
-    # Always output the TEST entry immediately so user sees what test is starting
-    echo -e "${formatted_output}"
+    local formatted_output=" ${TEST_COLOR} ${test_ref}   ${elapsed}   ${NC}${TEST_ICON}${TEST_COLOR} TEST   ${processed_name}${NC}"
+    OUTPUT_COLLECTION+="${formatted_output}\n"
 }
 
 # Function to print commands that will be executed
 print_command() {
-    local prefix
-    local elapsed
-    local cmd=$1
+    local subtest_number="$1"
+    local subtest_counter="$2"
+    local cmd="$3"
 
-    prefix="${CURRENT_TEST_NUMBER}-${CURRENT_SUBTEST_NUMBER}"
+    local test_ref
+    test_ref="${subtest_number}-$(${PRINTF} "%03d" "${subtest_counter}")"
+
+    local elapsed
     elapsed=$(get_elapsed_time)
 
     # shellcheck disable=SC2154 # PROJECT_DIR defined in framework.sh
@@ -317,7 +314,6 @@ print_command() {
         processed_cmd="${cmd}"
     fi
 
-
     # Truncate command to approximately 200 characters
     local truncated_cmd
     if [[ ${#processed_cmd} -gt 200 ]]; then
@@ -325,7 +321,7 @@ print_command() {
     else
         truncated_cmd="${processed_cmd}"
     fi
-    local formatted_output="  ${prefix}   ${elapsed}   ${EXEC_COLOR}${EXEC_ICON} ${EXEC_COLOR}EXEC${NC}   ${EXEC_COLOR}${truncated_cmd}${NC}"
+    local formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${EXEC_COLOR}${EXEC_ICON} ${EXEC_COLOR}EXEC${NC}   ${EXEC_COLOR}${truncated_cmd}${NC}"
     if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
         OUTPUT_COLLECTION+="${formatted_output}\n"
     else
@@ -335,11 +331,14 @@ print_command() {
 
 # Function to print command output
 print_output() {
-    local prefix
-    local elapsed
-    local message=$1
+    local subtest_number="$1"
+    local subtest_counter="$2"
+    local message=$3
 
-    prefix="${CURRENT_TEST_NUMBER}-${CURRENT_SUBTEST_NUMBER}"
+    local test_ref
+    test_ref="${subtest_number}-$(${PRINTF} "%03d" "${subtest_counter}")"
+
+    local elapsed
     elapsed=$(get_elapsed_time)
 
     # shellcheck disable=SC2154 # PROJECT_DIR defined in framework.sh
@@ -351,7 +350,7 @@ print_output() {
 
     # Skip output if message is empty or contains only whitespace
     if [[ -n "${processed_message}" && ! "${processed_message}" =~ ^[[:space:]]*$ ]]; then
-        local formatted_output="  ${prefix}   ${elapsed}   ${DATA_COLOR}${DATA_ICON} ${DATA_COLOR}DATA${NC}   ${DATA_COLOR}${processed_message}${NC}"
+        local formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${DATA_COLOR}${DATA_ICON} ${DATA_COLOR}DATA${NC}   ${DATA_COLOR}${processed_message}${NC}"
         if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
             OUTPUT_COLLECTION+="${formatted_output}\n"
         else
@@ -362,13 +361,16 @@ print_output() {
 
 # Function to print test results
 print_result() {
-    local status=$1
-    local message=$2
-    local prefix
-    local elapsed
+    local subtest_number="$1"
+    local subtest_counter="$2"
+    local status=$3
+    local message=$4
     local processed_message
 
-    prefix="${CURRENT_TEST_NUMBER}-${CURRENT_SUBTEST_NUMBER}"
+    local test_ref
+    test_ref="${subtest_number}-$(${PRINTF} "%03d" "${subtest_counter}")"
+
+    local elapsed
     elapsed=$(get_elapsed_time)
 
     # shellcheck disable=SC2154 # PROJECT_DIR defined in framework.sh
@@ -380,11 +382,11 @@ print_result() {
     
     local formatted_output
     if [[ "${status}" -eq 0 ]]; then
-        ((TEST_PASSED_COUNT++))
-        formatted_output="  ${prefix}   ${elapsed}   ${PASS_COLOR}${PASS_ICON} ${PASS_COLOR}PASS${NC}   ${PASS_COLOR}${processed_message}${NC}"
+        TEST_PASSED_COUNT=$(( TEST_PASSED_COUNT + 1 ))
+        formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${PASS_COLOR}${PASS_ICON} ${PASS_COLOR}PASS${NC}   ${PASS_COLOR}${processed_message}${NC}"
     else
-        ((TEST_FAILED_COUNT++))
-        formatted_output="  ${prefix}   ${elapsed}   ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}FAIL${NC}   ${FAIL_COLOR}${processed_message}${NC}"
+        TEST_FAILED_COUNT=$(( TEST_FAILED_COUNT + 1 ))
+        formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}FAIL${NC}   ${FAIL_COLOR}${processed_message}${NC}"
     fi
     
     if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
@@ -396,11 +398,14 @@ print_result() {
 
 # Function to print warnings
 print_warning() {
-    local prefix
-    local elapsed
-    local message=$1
+    local subtest_number="$1"
+    local subtest_counter="$2"
+    local message=$3
 
-    prefix="${CURRENT_TEST_NUMBER}-${CURRENT_SUBTEST_NUMBER}"
+    local test_ref
+    test_ref="${subtest_number}-$(${PRINTF} "%03d" "${subtest_counter}")"
+
+    local elapsed
     elapsed=$(get_elapsed_time)
 
     # shellcheck disable=SC2154 # PROJECT_DIR defined in framework.sh
@@ -410,7 +415,7 @@ print_warning() {
         processed_message="${message}"
     fi
 
-    local formatted_output="  ${prefix}   ${elapsed}   ${WARN_COLOR}${WARN_ICON} ${WARN_COLOR}WARN${NC}   ${processed_message}"
+    local formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${WARN_COLOR}${WARN_ICON} ${WARN_COLOR}WARN${NC}   ${processed_message}"
 
     if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
         OUTPUT_COLLECTION+="${formatted_output}\n"
@@ -421,11 +426,14 @@ print_warning() {
 
 # Function to print error message
 print_error() {
-    local prefix
-    local elapsed
-    local message=$1
+    local subtest_number="$1"
+    local subtest_counter="$2"
+    local message=$3
 
-    prefix="${CURRENT_TEST_NUMBER}-${CURRENT_SUBTEST_NUMBER}"
+    local test_ref
+    test_ref="${subtest_number}-$(${PRINTF} "%03d" "${subtest_counter}")"
+
+    local elapsed
     elapsed=$(get_elapsed_time)
 
     # shellcheck disable=SC2154 # PROJECT_DIR defined in framework.sh
@@ -435,7 +443,7 @@ print_error() {
         processed_message="${message}"
     fi
 
-    local formatted_output="  ${prefix}   ${elapsed}   ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}FAIL${NC}   ${processed_message}"
+    local formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${FAIL_COLOR}${FAIL_ICON} ${FAIL_COLOR}FAIL${NC}   ${processed_message}"
 
     if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
         OUTPUT_COLLECTION+="${formatted_output}\n"
@@ -446,11 +454,14 @@ print_error() {
 
 # Function to print informational messages
 print_message() {
-    local prefix
-    local elapsed
-    local message=$1
+    local subtest_number="$1"
+    local subtest_counter="$2"
+    local message=$3
 
-    prefix="${CURRENT_TEST_NUMBER}-${CURRENT_SUBTEST_NUMBER}"
+    local test_ref
+    test_ref="${subtest_number}-$(${PRINTF} "%03d" "${subtest_counter}")"
+
+    local elapsed
     elapsed=$(get_elapsed_time)
 
     # shellcheck disable=SC2154 # PROJECT_DIR defined in framework.sh
@@ -460,7 +471,7 @@ print_message() {
         processed_message="${message}"
     fi
 
-    local formatted_output="  ${prefix}   ${elapsed}   ${INFO_COLOR}${INFO_ICON} ${INFO_COLOR}INFO${NC}   ${processed_message}"
+    local formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${INFO_COLOR}${INFO_ICON} ${INFO_COLOR}INFO${NC}   ${processed_message}"
 
     if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
         OUTPUT_COLLECTION+="${formatted_output}\n"
@@ -484,7 +495,8 @@ print_test_completion() {
     
     # Calculate elapsed time once and store it for consistent use - this is the SINGLE SOURCE OF TRUTH
     # Use decimal format for table output
-    if [[ -z "${TEST_ELAPSED_TIMES[CURRENT_TEST_NUMBER]}" ]]; then
+    : "${CURRENT_TEST_NUMBER:=0}"
+    if [[ -z "${TEST_ELAPSED_TIMES[CURRENT_TEST_NUMBER]:-}" ]]; then
         elapsed_time=$(get_elapsed_time_decimal)
         TEST_ELAPSED_TIMES[CURRENT_TEST_NUMBER]="${elapsed_time}"
     else
@@ -499,7 +511,7 @@ print_test_completion() {
     
     # Write elapsed time to the subtest result file if running in test suite
     # Use the SAME elapsed_time value that was calculated above - no additional calls to get_elapsed_time
-    if [[ -n "${ORCHESTRATION}" ]]; then
+    if [[ -n "${ORCHESTRATION:-}" ]]; then
         # Use the elapsed_time that was already calculated above - SINGLE SOURCE OF TRUTH
         local file_elapsed_time="${elapsed_time}"
         # shellcheck disable=SC2154 # TS_ORC_LOG, is defined externally in framework.sh
@@ -589,8 +601,8 @@ EOF
     popd >/dev/null 2>&1 || return
 
     # Let's kill any stragglers that didn't exit cleanly
-    if [[ -z "${ORCHESTRATION}" ]]; then
-        pkill -9 -f hydrogen_test_    
+    if [[ -z "${ORCHESTRATION:-}" ]]; then
+        pkill -9 -f hydrogen_test_ || true
     fi
 
 }
