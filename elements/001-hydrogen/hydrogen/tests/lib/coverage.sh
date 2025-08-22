@@ -21,6 +21,8 @@
 # 2.0.0 - 2025-07-11 - Refactored into modular components
 # 1.0.0 - 2025-07-11 - Initial version with Unity and blackbox coverage functions
 
+set -euo pipefail
+
 # Guard clause to prevent multiple sourcing
 [[ -n "${COVERAGE_GUARD:-}" ]] && return 0
 export COVERAGE_GUARD="true"
@@ -100,6 +102,7 @@ validate_coverage_consistency() {
                     test_path="${project_root}/src/${source_name}"
                     
                     # Check if should be ignored
+                    # shellcheck disable=SC2310 # We want to continue even if the test fails
                     if should_ignore_file "${test_path}" "${project_root}"; then
                         continue
                     fi

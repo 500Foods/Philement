@@ -29,7 +29,7 @@
 # 3.0.1 - 2025-07-03 - Enhanced --help to list test names, suppressed non-table output, updated history
 # 3.0.0 - 2025-07-02 - Complete rewrite to use lib/ scripts, simplified orchestration approach
 
-# set -xeuo pipefail
+set -euo pipefail
 
 # Test configuration
 TEST_NAME="Test Suite Orchestration"
