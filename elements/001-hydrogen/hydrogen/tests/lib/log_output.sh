@@ -41,6 +41,8 @@
 # 2.0.0 - 2025-07-02 - Complete rewrite with numbered output system
 # 1.0.0 - 2025-07-02 - Initial creation from support_utils.sh migration
 
+set -euo pipefail
+
 # Guard clause to prevent multiple sourcing
 [[ -n "${LOG_OUTPUT_GUARD:-}" ]] && return 0
 export LOG_OUTPUT_GUARD="true"

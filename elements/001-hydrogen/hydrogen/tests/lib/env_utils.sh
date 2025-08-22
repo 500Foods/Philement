@@ -17,6 +17,8 @@
 # 1.1.0 - 2025-07-02 - Updated with additional functions for test_35_env_variables.sh migration
 # 1.0.0 - 2025-07-02 - Initial creation for test_12_env_payload.sh migration
 
+set -euo pipefail
+
 # Guard clause to prevent multiple sourcing
 [[ -n "${ENV_UTILS_GUARD:-}" ]] && return 0
 export ENV_UTILS_GUARD="true"

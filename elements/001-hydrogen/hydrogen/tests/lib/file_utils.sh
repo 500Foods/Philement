@@ -19,6 +19,8 @@
 # 1.1.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
 # 1.0.0 - 2025-07-02 - Initial creation from support_utils.sh migration
 
+set -euo pipefail
+
 # Guard clause to prevent multiple sourcing
 [[ -n "${FILE_UTILS_GUARD:-}" ]] && return 0
 export FILE_UTILS_GUARD="true"

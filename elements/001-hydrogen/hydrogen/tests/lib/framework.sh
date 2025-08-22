@@ -33,6 +33,8 @@
 # 2.0.0 - 2025-07-02 - Updated to integrate with numbered output system
 # 1.0.0 - 2025-07-02 - Initial creation from support_utils.sh migration
 
+set -euo pipefail
+
 # Let's get this party started... Maybe
 if (( BASH_VERSINFO[0] < 5 )); then
     echo "Bash 5.0 or higher required" >&2

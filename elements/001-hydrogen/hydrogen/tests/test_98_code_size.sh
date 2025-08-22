@@ -123,7 +123,7 @@ if [[ -s "${SOURCE_FILES_LIST}" ]]; then
         # Handle the total line at the end
         [[ "${file}" = "total" ]] && continue
         
-        "${PRINTF}" "%05d %s\n" "${lines}" "${file}"
+        "${PRINTF}" "%5d %s\n" "${lines}" "${file}"
         
         # Categorize by line count
         if   [[ "${lines}" -lt 100  ]]; then line_bins["000-099"]=$((line_bins["000-099"] + 1))
@@ -153,7 +153,7 @@ sort -nr -o "${LINE_COUNT_FILE}" "${LINE_COUNT_FILE}"
 # Display distribution
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Source Code Distribution (${TOTAL_FILES} files):"
 for range in "000-099" "100-199" "200-299" "300-399" "400-499" "500-599" "600-699" "700-799" "800-899" "900-999" "1,000+ "; do
-    print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "  ${range} Lines: ${line_bins[${range}]:-0} files"
+    print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "  ${range} Lines: $("${PRINTF}" "%5d" "${line_bins[${range}]:-0}" || true) files"
 done
 
 # Show top files by type
@@ -213,7 +213,7 @@ else
         sorted_list="${LOG_PREFIX}${TIMESTAMP}_large_files_sorted.txt"
         sort -nr "${LARGE_FILES_LIST}" > "${sorted_list}"
         while read -r size file; do
-            size_formatted=$("${PRINTF}" "%7s" "$("${PRINTF}" "%'d" "${size}")" || true)
+            size_formatted=$("${PRINTF}" "%'7d" "${size}" || true)
             print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${size_formatted} KB: ${file}"
         done < "${sorted_list}"
     fi
