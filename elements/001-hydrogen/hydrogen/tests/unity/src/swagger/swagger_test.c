@@ -13,24 +13,12 @@
  * - Cross-function integration validation
  */
 
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L
-#endif
-
+// Standard project header plus Unity Framework header
+#include "../../../../src/hydrogen.h"
 #include "unity.h"
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <unistd.h>
-#include <signal.h>
-#include <stdint.h>
 
 // Include necessary headers
 #include "../../../../src/swagger/swagger.h"
-#include "../../../../src/config/config.h"
-#include "../../../../src/config/config_swagger.h"
-#include "../../../../src/payload/payload.h"
 
 // Forward declarations for functions being tested
 bool init_swagger_support(SwaggerConfig *config);

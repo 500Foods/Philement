@@ -1,18 +1,9 @@
 // registry_integration_test_update_subsystem_on_shutdown.c
 // Unity tests for update_subsystem_on_shutdown function
 
+// Standard project header plus Unity Framework header
+#include "../../../../src/hydrogen.h"
 #include "unity.h"
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <time.h>
-#include <pthread.h>
-#include <unistd.h>
-
-// Include necessary headers for the module being tested
-#include "../../../../../src/registry/registry.h"
-#include "../../../../../src/registry/registry_integration.h"
 
 // Test globals
 extern SubsystemRegistry subsystem_registry;

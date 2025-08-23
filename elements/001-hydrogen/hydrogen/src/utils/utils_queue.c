@@ -18,7 +18,7 @@ void init_queue_memory(QueueMemoryMetrics *queue, const AppConfig *config) {
     queue->entry_count = 0;
     queue->metrics.virtual_bytes = 0;
     queue->metrics.resident_bytes = 0;
-    memset(queue->block_sizes, 0, sizeof(size_t) * EARLY_MAX_QUEUE_BLOCKS);
+    memset(queue->block_sizes, 0, sizeof(queue->block_sizes));
     
     // Set initial limits and initialization state
     if (config) {

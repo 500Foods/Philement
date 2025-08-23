@@ -3,16 +3,9 @@
  * This file contains unit tests for the api_create_jwt function in api_utils.c
  */
 
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L
-#endif
-
+// Standard project header plus Unity Framework header
+#include "../../../../src/hydrogen.h"
 #include "unity.h"
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <jansson.h>
 
 // Include necessary headers for the module being tested
 #include "../../../../src/api/api_utils.h"

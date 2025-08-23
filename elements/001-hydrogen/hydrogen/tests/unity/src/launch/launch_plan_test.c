@@ -3,21 +3,9 @@
  * This file contains unit tests for launch_plan.c functionality
  */
 
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L
-#endif
-
+// Standard project header plus Unity Framework header
+#include "../../../../src/hydrogen.h"
 #include "unity.h"
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <stddef.h>
-
-// Include the state types for ReadinessResults structure
-#include "state/state_types.h"
-
-// Include logging for the real log_this function and constants
-#include "logging/logging.h"
 
 // Forward declaration of the function we want to test
 bool handle_launch_plan(const ReadinessResults* results);

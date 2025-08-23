@@ -3,27 +3,22 @@
  * This file contains unit tests for core hydrogen.c functionality
  */
 
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L
-#endif
-
+// Standard project header plus Unity Framework header
+#include "../../../src/hydrogen.h"
 #include "unity.h"
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
-#include <unistd.h>
-#include <sys/types.h>
 
 // Forward declarations of functions we want to test from hydrogen.c
 // For now, we'll provide a stub implementation since linking the full hydrogen.c
 // would require all its dependencies
-char** get_program_args(void);
 void test_get_program_args_returns_valid_pointer(void);
 void test_signal_handling_setup(void);
 void test_process_identification(void);
 void test_memory_allocation_patterns(void);
 void test_string_operations_for_paths(void);
-char** get_program_args(void) {
+
+// Stub implementation for testing - this provides test-specific behavior
+// without conflicting with the real implementation in utils.c
+static char** get_program_args_stub(void) {
     static const char* const stub_args[] = {"hydrogen_test", NULL};
     return (char**)stub_args;
 }
@@ -39,14 +34,14 @@ void tearDown(void) {
 void test_get_program_args_returns_valid_pointer(void) {
     // Test that get_program_args returns a non-null pointer
     // Since we have a stub implementation, it should always return non-null
-    char** args = get_program_args();
-    
+    char** args = get_program_args_stub();
+
     // Our stub implementation should return a valid pointer
     TEST_ASSERT_NOT_NULL(args);
-    
+
     // Verify the first argument is not null
     TEST_ASSERT_NOT_NULL(args[0]);
-    
+
     // Verify it contains expected content
     TEST_ASSERT_EQUAL_STRING("hydrogen_test", args[0]);
 }

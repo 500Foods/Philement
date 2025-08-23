@@ -3,24 +3,9 @@
  * This file contains unit tests for utils_time.c functionality
  */
 
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L
-#endif
-
+// Standard project header plus Unity Framework header
+#include "../../../../src/hydrogen.h"
 #include "unity.h"
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <time.h>
-#include <unistd.h>
-#include <signal.h>
-
-// Include the utils_time header
-#include "utils/utils_time.h"
-
-// Include logging for real log_this function
-#include "logging/logging.h"
 
 // External volatile variable that some functions depend on
 extern volatile sig_atomic_t server_starting;

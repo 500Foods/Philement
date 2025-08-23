@@ -284,6 +284,8 @@ run_unity_tests() {
                     case "${line_type}" in
                         "TEST_LINE")
                             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${content}"
+                            dump_collected_output
+                            clear_collected_output
                             ;;
                         "RESULT_LINE")
                             IFS='|' read -r result_type message <<< "${content}"

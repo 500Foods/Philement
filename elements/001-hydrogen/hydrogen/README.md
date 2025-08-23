@@ -72,7 +72,7 @@ Hydrogen is currently designed for technical users who:
 
 ## Latest Test Results
 
-Generated on: 2025-Aug-23 (Sat) 02:25:37 PDT
+Generated on: 2025-Aug-23 (Sat) 08:51:21 PDT
 
 ### Summary
 
@@ -81,11 +81,11 @@ Generated on: 2025-Aug-23 (Sat) 02:25:37 PDT
 | Total Tests | 26 |
 | Passed | 26 |
 | Failed | 0 |
-| Total Subtests | 250 |
-| Passed Subtests | 250 |
+| Total Subtests | 276 |
+| Passed Subtests | 276 |
 | Failed Subtests | 0 |
-| Elapsed Time | 00:00:14.721 |
-| Cumulative Time | 00:00:26.854 |
+| Elapsed Time | 00:00:15.608 |
+| Cumulative Time | 00:00:27.807 |
 
 [Test Suite Results](COMPLETE.svg) | [Test Suite Coverage](COVERAGE.svg)
 
@@ -93,61 +93,61 @@ Generated on: 2025-Aug-23 (Sat) 02:25:37 PDT
 
 | Test Type | Files Cover | Files Instr | Lines Cover | Lines Instr | Coverage |
 | --------- | ----------- | ----------- | ----------- | ----------- | -------- |
-| Unity Tests | 20 | 123 | 933 | 12,033 | 7.754% |
-| Blackbox Tests | 100 | 123 | 6,112 | 12,033 | 50.794% |
-| Combined Tests | 100 | 123 | 6,588 | 12,033 | 54.749% |
+| Unity Tests | 81 | 123 | 4,164 | 12,045 | 34.570% |
+| Blackbox Tests | 100 | 123 | 6,119 | 12,045 | 50.801% |
+| Combined Tests | 100 | 123 | 6,824 | 12,045 | 56.654% |
 
 ### Individual Test Results
 
 | Status | Time | Test | Test Name | Tests | Pass | Fail |
 | ------ | ---- | -- | ---- | ----- | ---- | ---- |
-| ✅ | 00:00:05.102 | 01-CMP | Compilation (source code: 271 files) | 16 | 16 | 0 |
-| ✅ | 00:00:00.433 | 02-ENV | Environment Variables (secrets: 3) | 5 | 5 | 0 |
-| ✅ | 00:00:03.368 | 04-LNK | Markdown Links Check (github-sitemap) | 3 | 3 | 0 |
-| ✅ | 00:00:01.135 | 10-UNT | Unity (603 / 603 unit tests passed) | 57 | 57 | 0 |
-| ✅ | 00:00:00.601 | 11-SIV | Memory Leak Detection | 4 | 4 | 0 |
-| ✅ | 00:00:01.230 | 12-VAR | Env Var Substitution | 15 | 15 | 0 |
-| ✅ | 00:00:01.314 | 13-BUG | Crash Handler | 37 | 37 | 0 |
-| ✅ | 00:00:00.763 | 14-DEP | Library Dependencies | 13 | 13 | 0 |
-| ✅ | 00:00:00.243 | 15-JSN | JSON Error Handling | 4 | 4 | 0 |
-| ✅ | 00:00:00.488 | 16-SHD | Shutdown | 5 | 5 | 0 |
-| ✅ | 00:00:00.815 | 17-UPD | Startup/Shutdown | 9 | 9 | 0 |
-| ✅ | 00:00:00.605 | 18-SIG | Signal Handling | 9 | 9 | 0 |
-| ✅ | 00:00:01.083 | 19-SCK | Socket Rebinding | 8 | 8 | 0 |
-| ✅ | 00:00:00.648 | 20-PRE | API Prefix | 11 | 11 | 0 |
-| ✅ | 00:00:00.801 | 21-SYS | System API | 10 | 10 | 0 |
-| ✅ | 00:00:00.669 | 22-SWG | Swagger | 15 | 15 | 0 |
-| ✅ | 00:00:01.141 | 23-WSS | WebSockets | 13 | 13 | 0 |
-| ✅ | 00:00:01.117 | 90-MKD | Markdown Lint (markdownlint: 249 files) | 1 | 1 | 0 |
-| ✅ | 00:00:00.756 | 91-GCC | C Lint (cppcheck: 271 files) | 1 | 1 | 0 |
-| ✅ | 00:00:00.912 | 92-BSH | Bash Lint (shellheck: 50 files) | 2 | 2 | 0 |
-| ✅ | 00:00:00.528 | 93-JSN | JSON Lint (jsonlint: 21 files) | 1 | 1 | 0 |
-| ✅ | 00:00:00.117 | 94-JAV | JavaScript Lint (eslint: 0 files) | 1 | 1 | 0 |
-| ✅ | 00:00:00.097 | 95-CSS | CSS Lint (stylelint: 0 files) | 1 | 1 | 0 |
-| ✅ | 00:00:00.334 | 96-HTM | HTML Lint (htmlhint: 1 files) | 1 | 1 | 0 |
-| ✅ | 00:00:02.122 | 98-SIZ | Code Size Analysis (lines: 68,812) | 4 | 4 | 0 |
-| ✅ | 00:00:00.432 | 99-COV | Test Suite Coverage (coverage_table) | 4 | 4 | 0 |
+| ✅ | 00:00:05.741 | 01-CMP | Compilation (source code: 297 files) | 16 | 16 | 0 |
+| ✅ | 00:00:00.386 | 02-ENV | Environment Variables (secrets: 3) | 5 | 5 | 0 |
+| ✅ | 00:00:03.034 | 04-LNK | Markdown Links Check (github-sitemap) | 3 | 3 | 0 |
+| ✅ | 00:00:02.269 | 10-UNT | Unity (849 / 849 unit tests passed) | 83 | 83 | 0 |
+| ✅ | 00:00:00.626 | 11-SIV | Memory Leak Detection | 4 | 4 | 0 |
+| ✅ | 00:00:01.284 | 12-VAR | Env Var Substitution | 15 | 15 | 0 |
+| ✅ | 00:00:01.385 | 13-BUG | Crash Handler | 37 | 37 | 0 |
+| ✅ | 00:00:00.789 | 14-DEP | Library Dependencies | 13 | 13 | 0 |
+| ✅ | 00:00:00.225 | 15-JSN | JSON Error Handling | 4 | 4 | 0 |
+| ✅ | 00:00:00.435 | 16-SHD | Shutdown | 5 | 5 | 0 |
+| ✅ | 00:00:00.942 | 17-UPD | Startup/Shutdown | 9 | 9 | 0 |
+| ✅ | 00:00:00.709 | 18-SIG | Signal Handling | 9 | 9 | 0 |
+| ✅ | 00:00:01.160 | 19-SCK | Socket Rebinding | 8 | 8 | 0 |
+| ✅ | 00:00:00.572 | 20-PRE | API Prefix | 11 | 11 | 0 |
+| ✅ | 00:00:00.681 | 21-SYS | System API | 10 | 10 | 0 |
+| ✅ | 00:00:00.518 | 22-SWG | Swagger | 15 | 15 | 0 |
+| ✅ | 00:00:01.061 | 23-WSS | WebSockets | 13 | 13 | 0 |
+| ✅ | 00:00:01.224 | 90-MKD | Markdown Lint (markdownlint: 249 files) | 1 | 1 | 0 |
+| ✅ | 00:00:00.844 | 91-GCC | C Lint (cppcheck: 297 files) | 1 | 1 | 0 |
+| ✅ | 00:00:00.833 | 92-BSH | Bash Lint (shellheck: 50 files) | 2 | 2 | 0 |
+| ✅ | 00:00:00.201 | 93-JSN | JSON Lint (jsonlint: 21 files) | 1 | 1 | 0 |
+| ✅ | 00:00:00.046 | 94-JAV | JavaScript Lint (eslint: 0 files) | 1 | 1 | 0 |
+| ✅ | 00:00:00.055 | 95-CSS | CSS Lint (stylelint: 0 files) | 1 | 1 | 0 |
+| ✅ | 00:00:00.280 | 96-HTM | HTML Lint (htmlhint: 1 files) | 1 | 1 | 0 |
+| ✅ | 00:00:02.182 | 98-SIZ | Code Size Analysis (lines: 71,673) | 4 | 4 | 0 |
+| ✅ | 00:00:00.325 | 99-COV | Test Suite Coverage (coverage_table) | 4 | 4 | 0 |
 
 ## Repository Information
 
-Generated via cloc: 2025-Aug-23 (Sat) 02:25:37 PDT
+Generated via cloc: 2025-Aug-23 (Sat) 08:51:21 PDT
 
 ```cloc
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C                              187           7136           8174          28385
+C                              213           8172           9448          31295
 Markdown                       249           7188             55          21555
-Bourne Shell                    50           2195           2614           9667
-C/C++ Header                    84           1043           3315           2799
+Bourne Shell                    50           2187           2612           9618
+C/C++ Header                    84           1045           3326           2801
 JSON                            21              0              0           2723
-SVG                              2              0              0           2475
+SVG                              2              0              0           2473
 CMake                            1            139            186            715
 HTML                             1             74              0            493
 -------------------------------------------------------------------------------
-SUM:                           595          17775          14344          68812
+SUM:                           621          18805          15627          71673
 -------------------------------------------------------------------------------
 
-Code/Docs: 1.9   Code/Comments: 2.9   Instrumented Code:  12,033   Ratio: 23.54
-Docs/Code: 0.5   Comments/Code: 0.3   Instrumented Test:   7,343   Unity: 61.02
+Code/Docs: 2.1   Code/Comments: 2.9   Instrumented Code:  12,045   Ratio: 29.60
+Docs/Code: 0.5   Comments/Code: 0.4   Instrumented Test:  10,093   Unity: 83.79
 ```

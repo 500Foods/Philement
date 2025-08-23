@@ -13,7 +13,7 @@ extern volatile sig_atomic_t restart_requested;
 extern volatile int restart_count;
 
 // Core landing functions
-char** get_program_args(void); // Access program arguments for restart functionality
+extern char** get_program_args(void);
 bool check_all_landing_readiness(void); // Check readiness of all subsystems for landing
 void report_registry_landing_status(void); // Report final registry status during landing
 

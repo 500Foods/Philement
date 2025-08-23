@@ -49,4 +49,19 @@ char* format_number_with_commas(size_t n, char* formatted, size_t size);
  */
 bool add_message_to_array(const char** messages, int max_messages, int* count, const char* format, ...);
 
+/**
+ * @brief Store program arguments for later retrieval
+ * @param argc Argument count from main()
+ * @param argv Argument vector from main()
+ * @note Called by main() to preserve original command line arguments
+ */
+void store_program_args(int argc, char* argv[]);
+
+/**
+ * @brief Get stored program arguments
+ * @return Pointer to stored argv array from main()
+ * @note Used by restart functionality to preserve original command line arguments
+ */
+char** get_program_args(void);
+
 #endif // UTILS_H

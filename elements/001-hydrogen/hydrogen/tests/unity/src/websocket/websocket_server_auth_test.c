@@ -4,23 +4,12 @@
  * focusing on authentication state management and validation logic.
  */
 
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L
-#endif
-
+// Standard project header plus Unity Framework header
+#include "../../../../src/hydrogen.h"
 #include "unity.h"
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <time.h>
-
-// External libraries
-#include <libwebsockets.h>
 
 // Include necessary headers for the websocket auth module
 #include "../../../../src/websocket/websocket_server_internal.h"
-#include "../../../../src/logging/logging.h"
 
 // Forward declarations for functions being tested
 bool ws_is_authenticated(const WebSocketSessionData *session);

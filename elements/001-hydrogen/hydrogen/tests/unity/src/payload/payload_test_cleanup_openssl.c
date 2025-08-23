@@ -4,18 +4,9 @@
  * from src/payload/payload.c
  */
 
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L
-#endif
-
+// Standard project header plus Unity Framework header
+#include "../../../../src/hydrogen.h"
 #include "unity.h"
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <stddef.h>
-
-// Include necessary headers for the payload module
-#include "../../../../src/payload/payload.h"
 
 // Forward declaration for the function being tested
 void test_cleanup_openssl_basic(void);
