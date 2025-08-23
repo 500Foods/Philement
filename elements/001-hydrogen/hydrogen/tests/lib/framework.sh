@@ -36,14 +36,37 @@
 set -euo pipefail
 
 # Let's get this party started... Maybe
-if (( BASH_VERSINFO[0] < 5 )); then
-    echo "Bash 5.0 or higher required" >&2
-    exit 1
-fi
 
 # Guard clause to prevent multiple sourcing
 [[ -n "${FRAMEWORK_GUARD:-}" ]] && return 0
 export FRAMEWORK_GUARD="true"
+
+# Showstopper: Bash is too old
+if (( BASH_VERSINFO[0] < 5 )); then
+    echo "SHOWSTOPPER: Bash 5.0 or higher required"
+    exit 1
+fi
+
+# Showstopper: Not enough available disk space
+# NOTE: Unity Test Framework builds are huge
+available_space=$(df -m . | awk 'NR==2 {print $4}')
+if (( available_space < 750 )); then
+    echo "SHOWSTOPPER: At least 750 MB of free disk space required"
+    exit 1
+fi
+
+# Showstopper: Need access to tables command
+if ! command -v tables >/dev/null 2>&1; then
+    echo "SHOWSTOPPER: 'tables' command not found"
+    exit 1
+fi
+
+# Showstopper: Need access to Oh command
+# NOTE: This isn't a showstopper, really
+if ! command -v Oh >/dev/null 2>&1; then
+    echo "SHOWSTOPPER: 'Oh' command not found"
+    exit 1
+fi
 
 # Library metadata
 FRAMEWORK_NAME="Framework Library"
