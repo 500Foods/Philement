@@ -25,6 +25,12 @@ void initialize_registry(void) {
 int register_subsystem_from_launch(const char* name, ServiceThreads* threads, 
                                 pthread_t* main_thread, volatile sig_atomic_t* shutdown_flag,
                                 int (*init_function)(void), void (*shutdown_function)(void)) {
+    // Validate name is not NULL or empty
+    if (!name || strlen(name) == 0) {
+        log_this("Launch", "Cannot register subsystem with NULL or empty name", LOG_LEVEL_ERROR);
+        return -1;
+    }
+    
     int subsys_id = register_subsystem(name, threads, main_thread, shutdown_flag, 
                                     init_function, shutdown_function);
     
@@ -39,6 +45,12 @@ int register_subsystem_from_launch(const char* name, ServiceThreads* threads,
  * Add a dependency for a subsystem from the launch process.
  */
 bool add_dependency_from_launch(int subsystem_id, const char* dependency_name) {
+    // Validate dependency name is not NULL or empty
+    if (!dependency_name || strlen(dependency_name) == 0) {
+        log_this("Launch", "Cannot add NULL or empty dependency name", LOG_LEVEL_ERROR);
+        return false;
+    }
+    
     bool result = add_subsystem_dependency(subsystem_id, dependency_name);
     
     if (!result) {
@@ -126,10 +138,16 @@ void update_subsystem_after_shutdown(const char* subsystem_name) {
  * Stop a subsystem and all its dependents safely.
  */
 bool stop_subsystem_and_dependents(int subsystem_id) {
+    pthread_mutex_lock(&subsystem_registry.mutex);
+    
+    // Check if subsystem_id is valid
+    if (subsystem_id < 0 || subsystem_id >= subsystem_registry.count) {
+        pthread_mutex_unlock(&subsystem_registry.mutex);
+        return false;
+    }
+    
     SubsystemInfo* subsystem = &subsystem_registry.subsystems[subsystem_id];
     bool success = true;
-    
-    pthread_mutex_lock(&subsystem_registry.mutex);
     
     // First check if any other running subsystems depend on this one
     for (int i = 0; i < subsystem_registry.count; i++) {
@@ -141,6 +159,13 @@ bool stop_subsystem_and_dependents(int subsystem_id) {
                     pthread_mutex_unlock(&subsystem_registry.mutex);
                     success &= stop_subsystem_and_dependents(i);
                     pthread_mutex_lock(&subsystem_registry.mutex);
+                    // Re-check bounds after recursive call
+                    if (subsystem_id >= subsystem_registry.count) {
+                        pthread_mutex_unlock(&subsystem_registry.mutex);
+                        return false;
+                    }
+                    // Refresh subsystem pointer after potential reallocation
+                    subsystem = &subsystem_registry.subsystems[subsystem_id];
                 }
             }
         }
@@ -148,24 +173,34 @@ bool stop_subsystem_and_dependents(int subsystem_id) {
     
     // Now safe to stop this subsystem
     if (subsystem->state == SUBSYSTEM_RUNNING) {
-        log_this("Shutdown", "Stopping subsystem '%s'", LOG_LEVEL_STATE, subsystem->name);
+        // Update state directly while holding mutex (avoid deadlock)
+        subsystem->state = SUBSYSTEM_STOPPING;
+        subsystem->state_changed = time(NULL);
         
-        update_subsystem_state(subsystem_id, SUBSYSTEM_STOPPING);
-        
-        pthread_mutex_unlock(&subsystem_registry.mutex);
-        
+        // Call shutdown function while holding mutex to ensure thread safety
         if (subsystem->shutdown_function) {
+            pthread_mutex_unlock(&subsystem_registry.mutex);
             subsystem->shutdown_function();
+            pthread_mutex_lock(&subsystem_registry.mutex);
+            // Refresh subsystem pointer after potential reallocation
+            subsystem = &subsystem_registry.subsystems[subsystem_id];
         }
         
+        // Join main thread if provided
         if (subsystem->main_thread && *subsystem->main_thread != 0) {
+            pthread_mutex_unlock(&subsystem_registry.mutex);
             pthread_join(*subsystem->main_thread, NULL);
+            pthread_mutex_lock(&subsystem_registry.mutex);
+            // Refresh subsystem pointer after potential reallocation
+            subsystem = &subsystem_registry.subsystems[subsystem_id];
             *subsystem->main_thread = 0;
         }
         
-        pthread_mutex_lock(&subsystem_registry.mutex);
-        
-        update_subsystem_state(subsystem_id, SUBSYSTEM_INACTIVE);
+        // Update state directly while holding mutex (avoid deadlock)
+        subsystem->state = SUBSYSTEM_INACTIVE;
+        subsystem->state_changed = time(NULL);
+    } else if (subsystem->state == SUBSYSTEM_INACTIVE) {
+        // Already stopped, but this is still considered success
         success = true;
     }
     
@@ -185,20 +220,14 @@ size_t stop_all_subsystems_in_dependency_order(void) {
         
         pthread_mutex_lock(&subsystem_registry.mutex);
         
-        bool* is_leaf = calloc((size_t)subsystem_registry.count, sizeof(bool));
-        int leaf_count = 0;
-        
-        if (!is_leaf) {
-            log_this("Shutdown", "Failed to allocate memory for leaf subsystem tracking", LOG_LEVEL_ERROR);
-            pthread_mutex_unlock(&subsystem_registry.mutex);
-            return stopped_count;
-        }
-        
+        // Find all running subsystems that have no running dependents (leaf nodes)
         for (int i = 0; i < subsystem_registry.count; i++) {
             SubsystemInfo* subsystem = &subsystem_registry.subsystems[i];
+            
             if (subsystem->state == SUBSYSTEM_RUNNING) {
                 bool has_dependents = false;
                 
+                // Check if any other running subsystem depends on this one
                 for (int j = 0; j < subsystem_registry.count; j++) {
                     if (i != j && subsystem_registry.subsystems[j].state == SUBSYSTEM_RUNNING) {
                         for (int k = 0; k < subsystem_registry.subsystems[j].dependency_count; k++) {
@@ -211,30 +240,49 @@ size_t stop_all_subsystems_in_dependency_order(void) {
                     }
                 }
                 
+                // If no dependents, this is a leaf node - stop it
                 if (!has_dependents) {
-                    is_leaf[i] = true;
-                    leaf_count++;
+                    // Store the shutdown function pointer before updating state
+                    void (*shutdown_func)(void) = subsystem->shutdown_function;
+                    pthread_t* main_thread = subsystem->main_thread;
+                    
+                    // Update state to stopping
+                    subsystem->state = SUBSYSTEM_STOPPING;
+                    subsystem->state_changed = time(NULL);
+                    
+                    pthread_mutex_unlock(&subsystem_registry.mutex);
+                    
+                    // Call shutdown function
+                    if (shutdown_func) {
+                        shutdown_func();
+                    }
+                    
+                    // Join main thread if provided
+                    if (main_thread && *main_thread != 0) {
+                        pthread_join(*main_thread, NULL);
+                        *main_thread = 0;
+                    }
+                    
+                    // Update final state to inactive
+                    pthread_mutex_lock(&subsystem_registry.mutex);
+                    if (i < subsystem_registry.count) {
+                        subsystem_registry.subsystems[i].state = SUBSYSTEM_INACTIVE;
+                        subsystem_registry.subsystems[i].state_changed = time(NULL);
+                    }
+                    
+                    stopped_count++;
+                    any_stopped = true;
+                    
+                    // Break out of the loop since we changed the registry state
+                    break;
                 }
             }
         }
         
         pthread_mutex_unlock(&subsystem_registry.mutex);
         
-        if (leaf_count > 0) {
-            for (int i = 0; i < subsystem_registry.count; i++) {
-                if (is_leaf[i]) {
-                    if (stop_subsystem_and_dependents(i)) {
-                        stopped_count++;
-                        any_stopped = true;
-                    }
-                }
-            }
-        }
-        
-        free(is_leaf);
-        
         if (any_stopped) {
-            usleep(100000);  // 100ms
+            usleep(10000);  // 10ms delay between rounds
         }
         
     } while (any_stopped);

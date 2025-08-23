@@ -13,6 +13,25 @@ Hydrogen is a C project that implements a comprehensive suite of capabilities
 - End tasks by checking/updating RELEASES.md if changes warrant it, following the instructions there closely
 - Do NOT run full tests; humans handle comprehensive testing beyond `mkt`
 
+## ⚠️ IMPORTANT BUILD INSTRUCTIONS
+
+**ALWAYS USE THE `mkt` COMMAND FOR BUILDING:**
+
+```bash
+cd elements/001-hydrogen/hydrogen
+extras/make-trial.sh
+```
+
+**DO NOT USE `cmake` directly** unless you are an expert familiar with the project's specific build requirements. The `mkt` command handles all the necessary steps:
+
+- Cleaning build directories
+- Configuring CMake with proper settings
+- Building all targets including Unity tests
+- Running basic validation tests
+- Source code checking
+
+The `mkt` command is the **only supported way** to build this project and ensures consistency across all development environments.
+
 ## USEFUL ALIASES
 
 These all assume that the repository has been cloned into a Projects folder off of the user's home directory. Adjust accordingly.  These also assume zsh - adding them to ~/.zshrc is the recommended approach.

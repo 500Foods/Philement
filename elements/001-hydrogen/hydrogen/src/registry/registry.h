@@ -177,4 +177,21 @@ const char* subsystem_state_to_string(SubsystemState state);
  */
 LaunchReadiness check_registry_readiness(void);
 
+/**
+ * @brief Get the number of dependencies for a subsystem
+ * @param subsystem_id ID of the subsystem
+ * @return Number of dependencies or -1 if invalid ID
+ * @note AI-guidance: Thread-safe, useful for testing and debugging
+ */
+int get_subsystem_dependency_count(int subsystem_id);
+
+/**
+ * @brief Get a dependency name by index for a subsystem
+ * @param subsystem_id ID of the subsystem
+ * @param dependency_index Index of the dependency (0-based)
+ * @return Dependency name or NULL if invalid ID or index
+ * @note AI-guidance: Thread-safe, useful for testing and debugging
+ */
+const char* get_subsystem_dependency(int subsystem_id, int dependency_index);
+
 #endif // REGISTRY_H

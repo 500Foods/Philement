@@ -77,20 +77,40 @@ static bool grow_registry(size_t new_capacity) {
  * Initialize the registry.
  */
 void init_registry(void) {
-    pthread_mutex_lock(&subsystem_registry.mutex);
-    
-    // Free any existing allocation (just in case)
+    // Lock the mutex to ensure thread safety during cleanup
+    int lock_result = pthread_mutex_lock(&subsystem_registry.mutex);
+
+    // Free any existing allocation
     if (subsystem_registry.subsystems) {
+        // Free any dynamically allocated strings in the subsystems
+        for (int i = 0; i < subsystem_registry.count; i++) {
+            // Free the dynamically allocated name (created with strdup)
+            if (subsystem_registry.subsystems[i].name) {
+                free((char*)subsystem_registry.subsystems[i].name);
+                subsystem_registry.subsystems[i].name = NULL;
+            }
+            
+            // Free the dynamically allocated dependency names
+            for (int j = 0; j < subsystem_registry.subsystems[i].dependency_count; j++) {
+                if (subsystem_registry.subsystems[i].dependencies[j]) {
+                    free((char*)subsystem_registry.subsystems[i].dependencies[j]);
+                    subsystem_registry.subsystems[i].dependencies[j] = NULL;
+                }
+            }
+        }
         free(subsystem_registry.subsystems);
         subsystem_registry.subsystems = NULL;
     }
-    
-    // Start with an empty array - don't allocate until needed
+
+    // Reset all fields to ensure complete cleanup
     subsystem_registry.subsystems = NULL;
     subsystem_registry.count = 0;
     subsystem_registry.capacity = 0;
-    
-    pthread_mutex_unlock(&subsystem_registry.mutex);
+
+    // Unlock the mutex if we successfully locked it
+    if (lock_result == 0) {
+        pthread_mutex_unlock(&subsystem_registry.mutex);
+    }
 }
 
 /*
@@ -133,7 +153,13 @@ int register_subsystem(const char* name, ServiceThreads* threads,
     
     // Register the new subsystem
     int id = subsystem_registry.count;
-    subsystem_registry.subsystems[id].name = name;
+    subsystem_registry.subsystems[id].name = strdup(name);  // Create a copy of the name
+    if (!subsystem_registry.subsystems[id].name) {
+        log_this("Registry", "Cannot register subsystem '%s': failed to allocate name", 
+                LOG_LEVEL_ERROR, name);
+        pthread_mutex_unlock(&subsystem_registry.mutex);
+        return -1;
+    }
     subsystem_registry.subsystems[id].state = SUBSYSTEM_INACTIVE;
     subsystem_registry.subsystems[id].state_changed = time(NULL);
     subsystem_registry.subsystems[id].threads = threads;
@@ -397,7 +423,7 @@ SubsystemState get_subsystem_state(int subsystem_id) {
  * Add a dependency to a subsystem.
  */
 bool add_subsystem_dependency(int subsystem_id, const char* dependency_name) {
-    if (!dependency_name) return false;
+    if (!dependency_name || strlen(dependency_name) == 0) return false;
     
     pthread_mutex_lock(&subsystem_registry.mutex);
     
@@ -423,12 +449,18 @@ bool add_subsystem_dependency(int subsystem_id, const char* dependency_name) {
             if (already_exists) {
                 log_this("Registry", "Dependency '%s' already registered for '%s'", 
                         LOG_LEVEL_DEBUG, dependency_name, subsystem->name);
-                success = true;
+                success = true;  // Core function returns true for duplicates (but doesn't add)
             } else {
-                // Add the dependency
-                subsystem->dependencies[subsystem->dependency_count] = dependency_name;
-                subsystem->dependency_count++;
-                success = true;
+                // Add the dependency (make a copy of the name)
+                subsystem->dependencies[subsystem->dependency_count] = strdup(dependency_name);
+                if (!subsystem->dependencies[subsystem->dependency_count]) {
+                    log_this("Registry", "Failed to allocate memory for dependency name '%s'", 
+                            LOG_LEVEL_ERROR, dependency_name);
+                    success = false;
+                } else {
+                    subsystem->dependency_count++;
+                    success = true;
+                }
             }
         }
     }
@@ -443,31 +475,35 @@ bool add_subsystem_dependency(int subsystem_id, const char* dependency_name) {
  */
 bool check_subsystem_dependencies(int subsystem_id) {
     pthread_mutex_lock(&subsystem_registry.mutex);
-    
+
+    // Check if subsystem_id is valid first
+    if (subsystem_id < 0 || subsystem_id >= subsystem_registry.count) {
+        pthread_mutex_unlock(&subsystem_registry.mutex);
+        return false; // Invalid subsystem ID
+    }
+
     bool all_running = true;
-    if (subsystem_id >= 0 && subsystem_id < subsystem_registry.count) {
-        SubsystemInfo* subsystem = &subsystem_registry.subsystems[subsystem_id];
-        
-        for (int i = 0; i < subsystem->dependency_count; i++) {
-            const char* dep_name = subsystem->dependencies[i];
-            bool dep_running = false;
-            
-            for (int j = 0; j < subsystem_registry.count; j++) {
-                if (strcmp(subsystem_registry.subsystems[j].name, dep_name) == 0) {
-                    dep_running = (subsystem_registry.subsystems[j].state == SUBSYSTEM_RUNNING);
-                    break;
-                }
-            }
-            
-            if (!dep_running) {
-                all_running = false;
+    SubsystemInfo* subsystem = &subsystem_registry.subsystems[subsystem_id];
+
+    for (int i = 0; i < subsystem->dependency_count; i++) {
+        const char* dep_name = subsystem->dependencies[i];
+        bool dep_running = false;
+
+        for (int j = 0; j < subsystem_registry.count; j++) {
+            if (strcmp(subsystem_registry.subsystems[j].name, dep_name) == 0) {
+                dep_running = (subsystem_registry.subsystems[j].state == SUBSYSTEM_RUNNING);
                 break;
             }
         }
+
+        if (!dep_running) {
+            all_running = false;
+            break;
+        }
     }
-    
+
     pthread_mutex_unlock(&subsystem_registry.mutex);
-    
+
     return all_running;
 }
 
@@ -611,4 +647,39 @@ LaunchReadiness check_registry_readiness(void) {
     readiness.messages[3] = NULL;  // NULL terminator
     
     return readiness;
+}
+
+/*
+ * Get the number of dependencies for a subsystem.
+ */
+int get_subsystem_dependency_count(int subsystem_id) {
+    pthread_mutex_lock(&subsystem_registry.mutex);
+
+    int count = -1;
+    if (subsystem_id >= 0 && subsystem_id < subsystem_registry.count) {
+        count = subsystem_registry.subsystems[subsystem_id].dependency_count;
+    }
+
+    pthread_mutex_unlock(&subsystem_registry.mutex);
+
+    return count;
+}
+
+/*
+ * Get a dependency name by index for a subsystem.
+ */
+const char* get_subsystem_dependency(int subsystem_id, int dependency_index) {
+    pthread_mutex_lock(&subsystem_registry.mutex);
+
+    const char* dependency_name = NULL;
+    if (subsystem_id >= 0 && subsystem_id < subsystem_registry.count) {
+        SubsystemInfo* subsystem = &subsystem_registry.subsystems[subsystem_id];
+        if (dependency_index >= 0 && dependency_index < subsystem->dependency_count) {
+            dependency_name = subsystem->dependencies[dependency_index];
+        }
+    }
+
+    pthread_mutex_unlock(&subsystem_registry.mutex);
+
+    return dependency_name;
 }

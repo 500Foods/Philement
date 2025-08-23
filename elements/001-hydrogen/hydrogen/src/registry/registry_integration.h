@@ -141,7 +141,12 @@ extern void shutdown_terminal(void);
 extern int init_print_subsystem(void);
 extern void shutdown_print_queue(void);
 
-// Forward declarations of static functions
+/**
+ * @brief Stop a subsystem and all its dependents safely
+ * @param subsystem_id ID of the subsystem to stop
+ * @return true if stopped successfully, false otherwise  
+ * @note AI-guidance: Stops dependents first, then the subsystem itself
+ */
 bool stop_subsystem_and_dependents(int subsystem_id);
 
 #endif /* REGISTRY_INTEGRATION_H */

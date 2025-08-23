@@ -622,6 +622,153 @@ The `launch_plan_test.c` file demonstrates comprehensive Unity testing:
 
 This example serves as a template for writing effective Unity tests that provide thorough coverage and meaningful validation.
 
+## Lessons Learned from AppConfig Test Suite
+
+### System Dependency Analysis
+
+When creating Unity tests, first analyze function dependencies:
+
+**System-Dependent Functions (Not Suitable for Unit Tests):**
+
+- Functions requiring `struct MHD_Connection *` (libmicrohttpd)
+- Functions needing global state initialization
+- Functions calling system APIs like `stat()`, `fork()`, etc.
+- Functions requiring network, file system, or thread resources
+
+**Unit-Testable Functions:**
+
+- Pure functions with no side effects
+- Functions operating on local data structures
+- Functions with simple system calls that can be mocked
+- Utility functions in global headers like `globals.c`
+
+### Mock Function Testing Strategy
+
+When the main function is system-dependent but contains testable logic:
+
+1. **Extract Logic**: Identify pure logic within system-dependent functions
+2. **Create Mock Functions**: Implement the logic as separate mock functions in tests
+3. **Test Mocks**: Write comprehensive tests for the mock implementations
+4. **Document Intent**: Use tests to document expected behavior for integration testing
+
+**Example Pattern:**
+
+```c
+// Mock function in test file demonstrating logic that should be extracted
+static char* extract_content_after_marker(const char *line, size_t offset) {
+    // Pure logic extracted from system-dependent function
+    if (!line || offset >= strlen(line)) return NULL;
+    return strdup(line + offset);
+}
+```
+
+### Coverage File Separation
+
+**Important**: gcov coverage is **file-specific**. Each source file gets its own coverage report:
+
+- Tests calling `globals.c` functions → coverage in `globals.c`
+- Tests calling `appconfig.c` functions → coverage in `appconfig.c`
+- Mock functions in test files → **no coverage** in source files
+
+**Coverage Strategy:**
+
+- Test real functions in source files for actual coverage
+- Use mock functions to document expected behavior
+- Combine unit test coverage + integration test coverage for complete picture
+
+### Global Function Testing
+
+Functions in `src/globals.h` and `src/globals.c` are often more testable:
+
+**Benefits:**
+
+- Simple parameter interfaces
+- Minimal system dependencies
+- Easy to test error conditions
+- Often pure utility functions
+
+**Testing Pattern:**
+
+```c
+// Include the global header to access functions
+#include "../../../../../../src/hydrogen.h"
+
+// Test global functions directly
+void test_get_executable_size_valid_executable(void) {
+    char *argv[] = {(char*)"/bin/ls", NULL};
+    get_executable_size(argv);  // Calls real function
+    TEST_ASSERT_GREATER_THAN(0LL, server_executable_size);
+}
+```
+
+### Memory Management Testing
+
+When testing functions that allocate memory:
+
+**Common Issues:**
+
+- cppcheck warnings about potential null pointer dereferences
+- Memory leaks in test code
+- Platform-specific allocation behavior
+
+**Best Practices:**
+
+```c
+// Always check malloc results
+char **line_array = malloc(2 * sizeof(char*));
+TEST_ASSERT_NOT_NULL(line_array);  // Verify allocation succeeded
+
+// Clean up properly in tearDown
+void tearDown(void) {
+    server_executable_size = 0;  // Reset global state
+}
+```
+
+### Error Path Testing Without System Context
+
+For functions requiring system resources, test error handling conceptually:
+
+**Documentation Tests:**
+
+```c
+// Document expected error behavior
+void test_appconfig_error_handling_structure(void) {
+    // Document: Function should handle NULL configuration gracefully
+    // Document: Function should return appropriate HTTP error codes
+    // Document: Memory allocation failures should be handled
+    TEST_ASSERT_TRUE(true);  // Placeholder for documentation
+}
+```
+
+### Build System Integration
+
+**Automatic Discovery:**
+
+- CMake automatically finds `*_test.c` files
+- No manual build system configuration required
+- Tests are built with coverage instrumentation by default
+
+**File Organization:**
+
+- Mirror source directory structure in `tests/unity/src/`
+- Use consistent naming: `<source>_test_<function>.c`
+- Keep test files focused on specific functionality
+
+### Practical Coverage Maximization
+
+**When Full Coverage Isn't Possible:**
+
+1. **Focus on Testable Functions**: Prioritize testing functions that can be isolated
+2. **Document System Dependencies**: Explain why certain functions aren't unit tested
+3. **Create Integration Test Coverage**: Plan for system-level testing of complex functions
+4. **Extract Pure Logic**: Refactor complex functions to separate testable logic from system code
+
+**Coverage Goals:**
+
+- Aim for high coverage of utility functions and pure logic
+- Accept lower coverage for system-dependent integration points
+- Use combination of unit tests + integration tests for complete validation
+
 ## Coverage Analysis and Test Metrics
 
 ### Understanding Direct vs. Indirect Test Coverage
