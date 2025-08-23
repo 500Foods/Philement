@@ -7,6 +7,7 @@
 # download_unity_framework()
 
 # CHANGELOG
+# 3.1.3 - 2025-08-23 - Added console dumps to give a more nuanced progress update
 # 3.1.2 - 2025-08-08 - Commented out somee of the print_command calls for "cd"
 # 3.1.1 - 2025-08-03 - Removed extraneous command -v calls
 # 3.1.0 - 2025-07-31 - Removed coverage_cleanup call, another pass through to check for unnecessary comments, etc.
@@ -95,6 +96,10 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "CMake Configuration"
 # shellcheck disable=SC2310 # We want to continue even if the test fails
 if safe_cd cmake; then
     print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "cmake -S . -B ../build --preset default"
+
+    dump_collected_output
+    clear_collected_output
+
     if cmake -S . -B ../build --preset default >/dev/null 2>&1; then
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "CMake configuration successful with preset default"
     else
@@ -159,6 +164,10 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Build All Variants"
 # shellcheck disable=SC2310 # We want to continue even if the test fails
 if safe_cd cmake; then
     print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "cmake --build ../build --preset default --target all_variants"
+
+    dump_collected_output
+    clear_collected_output
+
     if cmake --build ../build --preset default --target all_variants >/dev/null 2>&1; then
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "All variants build successful with preset default"
     else

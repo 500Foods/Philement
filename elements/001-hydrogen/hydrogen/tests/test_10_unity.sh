@@ -9,6 +9,7 @@
 # run_unity_tests()
 
 # CHANGELOG
+# 3.1.1 - 2025-08-23 - Added console dumps to give a more nuanced progress update  
 # 3.1.0 - 2025-08-07 - Cleaned up use of tmp files and sorted out diagnostics files, removed extraneous function
 # 3.0.0 - 2025-07-30 - Overhaul #1
 # 2.4.0 - 2025-07-20 - Added guard clause to prevent multiple sourcing
@@ -28,7 +29,7 @@ TEST_NAME="Unity Unit Tests"
 TEST_ABBR="UNT"
 TEST_NUMBER="10"
 TEST_COUNTER=0
-TEST_VERSION="3.0.0"
+TEST_VERSION="3.1.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
