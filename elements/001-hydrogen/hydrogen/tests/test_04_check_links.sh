@@ -1,13 +1,11 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # Test: Markdown Links Check
 # Runs github-sitemap.sh to check markdown links and evaluates results with subtests
 
 # FUNCTIONS
-# parse_sitemap_output()
 
 # CHANGELOG
-# 3.2.1 - 2025-08-11 - Added .. to output log so it can be accessed more easily in VSC
 # 3.2.0 - 2025-08-08 - Optimized parsing using single-pass batch processing (md5sum batching pattern)
 #                    - Applied md5sum optimization principles: minimize external process forks
 #                    - Replaced 6+ file reads and grep|sed|awk pipelines with single awk command
@@ -24,42 +22,43 @@
 # 2.0.0 - 2025-07-02 - Migrated to use lib/ scripts, following established test pattern
 # 1.0.0 - 2025-06-20 - Initial version with subtests for markdown link checking
 
-set -euo pipefail
+# Give Test 01 a headstart
+#[[ -z "${ORCHESTRATION}" ]] || sleep 5.5
 
 # Test configuration
 TEST_NAME="Markdown Links Check {BLUE}(github-sitemap){RESET}"
 TEST_ABBR="LNK"
 TEST_NUMBER="04"
-TEST_COUNTER=0
-TEST_VERSION="3.2.1"
+TEST_VERSION="3.2.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
-[[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+[[ -n "${FRAMEWORK_GUARD}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
 # Test configuration
 TARGET_README="README.md"
 
-print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Execute Markdown Link Check"
+print_subtest "Execute Markdown Link Check"
 
 # Create temporary file to capture output
 MARKDOWN_CHECK="${LOG_PREFIX}_markdown_links_check.ansi"
 
-print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Running markdown link check on ${TARGET_README}..."
-# shellcheck disable=SC2153,SC2154 # SITEMAP defined in framework.sh
-print_command "${TEST_NUMBER}" "${TEST_COUNTER}" ".${SITEMAP} ${TARGET_README} --noreport --quiet"
+print_message "Running markdown link check on ${TARGET_README}..."
+# shellcheck disable=SC2153,SC2154 # SITEMAP_EXTERNAL defined in framework.sh
+print_command ".${SITEMAP_EXTERNAL} ${TARGET_README} --noreport --quiet"
 
 # Run github-sitemap.sh with --noreport and --quiet to minimize output
-# shellcheck disable=SC2310 # We want to continue even if the test fails
-SITEMAP_EXIT_CODE=$("${SITEMAP}" "${TARGET_README}" --noreport --quiet > "${MARKDOWN_CHECK}")
+"${SITEMAP_EXTERNAL}" "${TARGET_README}" --noreport --quiet > "${MARKDOWN_CHECK}" 2>&1
+SITEMAP_EXIT_CODE=$?
 
 # Display the output
-print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Results: ..${MARKDOWN_CHECK}"
+print_message "Results saved to ${MARKDOWN_CHECK}"
 
 if [[ "${SITEMAP_EXIT_CODE}" -eq 0 ]]; then
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Markdown link check executed successfully with no issues"
+    print_result 0 "Markdown link check executed successfully with no issues"
+    ((PASS_COUNT++))
 else
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Markdown link check found issues (exit code: ${SITEMAP_EXIT_CODE})"
+    print_result 1 "Markdown link check found issues (exit code: ${SITEMAP_EXIT_CODE})"
     EXIT_CODE=1
 fi
 
@@ -77,8 +76,7 @@ parse_sitemap_output() {
     
     # Single pass parsing with awk (following md5sum batching pattern)
     local results
-    # shellcheck disable=SC2016 # Using single quotes on purpose to avoid escaping issues
-    results=$("${AWK}" '
+    results=$(awk '
     BEGIN {
         issues_found = "0"
         missing_count = "0"
@@ -146,7 +144,7 @@ parse_sitemap_output() {
     [[ "${orphaned_ref}" =~ ^[0-9]+$ ]] || orphaned_ref="0"
 }
 
-print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Missing Links Count"
+print_subtest "Validate Missing Links Count"
 
 # Parse all values in single batch operation (md5sum pattern)
 ISSUES_FOUND=""
@@ -154,31 +152,33 @@ MISSING_LINKS_COUNT=""
 ORPHANED_FILES_COUNT=""
 parse_sitemap_output "${MARKDOWN_CHECK}" ISSUES_FOUND MISSING_LINKS_COUNT ORPHANED_FILES_COUNT
 
-print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Missing links found: ${MISSING_LINKS_COUNT}"
+print_message "Missing links found: ${MISSING_LINKS_COUNT}"
 
 if [[ "${MISSING_LINKS_COUNT}" -eq 0 ]]; then
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "No missing links found"
+    print_result 0 "No missing links found"
+    ((PASS_COUNT++))
 else
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Found ${MISSING_LINKS_COUNT} missing links"
+    print_result 1 "Found ${MISSING_LINKS_COUNT} missing links"
     EXIT_CODE=1
 fi
 
-print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Orphaned Files Count"
+print_subtest "Validate Orphaned Files Count"
 
-print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Orphaned files found: ${ORPHANED_FILES_COUNT}"
+print_message "Orphaned files found: ${ORPHANED_FILES_COUNT}"
 
 if [[ "${ORPHANED_FILES_COUNT}" -eq 0 ]]; then
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "No orphaned markdown files found"
+    print_result 0 "No orphaned markdown files found"
+    ((PASS_COUNT++))
 else
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Found ${ORPHANED_FILES_COUNT} orphaned markdown files"
+    print_result 1 "Found ${ORPHANED_FILES_COUNT} orphaned markdown files"
     EXIT_CODE=1
 fi
 
 # Display summary information
-print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Link check summary:"
-print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "Total issues found: ${ISSUES_FOUND}"
-print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "Missing links: ${MISSING_LINKS_COUNT}"
-print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "Orphaned files: ${ORPHANED_FILES_COUNT}"
+print_message "Link check summary:"
+print_output "Total issues found: ${ISSUES_FOUND}"
+print_output "Missing links: ${MISSING_LINKS_COUNT}"
+print_output "Orphaned files: ${ORPHANED_FILES_COUNT}"
 
 # Validate counts against exit code from github-sitemap.sh for debugging
 # Ensure counts are numeric before performing arithmetic
@@ -190,9 +190,9 @@ if ! [[ "${ORPHANED_FILES_COUNT}" =~ ^[0-9]+$ ]]; then
 fi
 TOTAL_EXTRACTED_ISSUES=$((MISSING_LINKS_COUNT + ORPHANED_FILES_COUNT))
 if [[ "${TOTAL_EXTRACTED_ISSUES}" -eq "${SITEMAP_EXIT_CODE}" ]]; then
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Validation: Extracted counts match sitemap exit code (${TOTAL_EXTRACTED_ISSUES} issues)"
+    print_message "Validation: Extracted counts match sitemap exit code (${TOTAL_EXTRACTED_ISSUES} issues)"
 else
-    print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "Validation: Extracted counts (${TOTAL_EXTRACTED_ISSUES}) do not match sitemap exit code (${SITEMAP_EXIT_CODE})"
+    print_warning "Validation: Extracted counts (${TOTAL_EXTRACTED_ISSUES}) do not match sitemap exit code (${SITEMAP_EXIT_CODE})"
 fi
 
 # Print completion table
