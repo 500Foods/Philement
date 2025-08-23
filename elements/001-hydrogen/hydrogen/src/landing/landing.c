@@ -238,10 +238,9 @@ bool check_all_landing_readiness(void) {
     
     // For restart, proceed with restart sequence
     if (restart_requested) {
-        // Get initial config path from argv[1]
-        extern char** get_program_args(void);
-        char** argv = get_program_args();
-        char* config_path = (argv && argv[1]) ? argv[1] : NULL;
+        // Get initial config path from stored program args
+        char** program_args = get_program_args();
+        char* config_path = (program_args && program_args[1]) ? program_args[1] : NULL;
         
         // Land Registry as final step
         log_this("Landing", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);

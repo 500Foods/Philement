@@ -4,21 +4,12 @@
  * from websocket_server_context.c
  */
 
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L
-#endif
-
+// Standard project header plus Unity Framework header
+#include "../../../../src/hydrogen.h"
 #include "unity.h"
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <time.h>
-#include <pthread.h>
 
 // Include necessary headers
-#include "../../../../src/hydrogen.h"
 #include "../../../../src/websocket/websocket_server_internal.h"
-#include "../../../../src/config/config.h"
 
 // Forward declarations for functions being tested
 WebSocketServerContext* ws_context_create(int port, const char* protocol, const char* key);

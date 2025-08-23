@@ -7,30 +7,13 @@
  * These tests focus on metrics handling, JSON structure, and status logic validation.
  */
 
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L
-#endif
-
+// Standard project header plus Unity Framework header
+#include "../../../../src/hydrogen.h"
 #include "unity.h"
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <time.h>
-#include <pthread.h>
-#include <sys/sysinfo.h>
-
-// External libraries
-#include <libwebsockets.h>
-#include <jansson.h>
 
 // Include necessary headers for the websocket status module
-#include "../../../../src/hydrogen.h"
 #include "../../../../src/websocket/websocket_server_internal.h"
 #include "../../../../src/websocket/websocket_server.h"
-#include "../../../../src/config/config.h"
-#include "../../../../src/logging/logging.h"
-#include "../../../../src/utils/utils.h"
 
 // Forward declarations for functions being tested
 void handle_status_request(struct lws *wsi);

@@ -21,7 +21,8 @@
   "ifaddrs.h": "c",
   "in.h": "c",
   "swagger.h": "c",
-  "payload.h": "c"
+  "payload.h": "c",
+  "registry_integration.h": "c"
 },
 "C_Cpp.default.compilerPath": "/usr/lib64/ccache/gcc"
 }

@@ -7,25 +7,12 @@
  * logic validation rather than direct function calls.
  */
 
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L
-#endif
-
+// Standard project header plus Unity Framework header
+#include "../../../../src/hydrogen.h"
 #include "unity.h"
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <time.h>
-#include <pthread.h>
-
-// External libraries
-#include <libwebsockets.h>
 
 // Include necessary headers for the websocket connection module
 #include "../../../../src/websocket/websocket_server_internal.h"
-#include "../../../../src/logging/logging.h"
-#include "../../../../src/threads/threads.h"
 
 // Forward declarations for functions being tested
 // Note: Most functions require libwebsockets context and cannot be called directly

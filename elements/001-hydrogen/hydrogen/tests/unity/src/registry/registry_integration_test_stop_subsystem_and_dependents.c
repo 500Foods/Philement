@@ -5,15 +5,9 @@
  * Following the "One Test File Per Function Rule" from UNITY.md
  */
 
+// Standard project header plus Unity Framework header
+#include "../../../../src/hydrogen.h"
 #include "unity.h"
-#include <pthread.h>
-#include <string.h>
-#include <stdlib.h>
-#include <signal.h>
-#include <stdbool.h>
-
-// Include the state types header for proper enum definitions
-#include "../../../../src/state/state_types.h"
 
 // Function prototypes to avoid -Werror=missing-prototypes
 void test_stop_subsystem_and_dependents_no_dependents(void);
@@ -25,11 +19,7 @@ void test_stop_subsystem_and_dependents_chain_dependencies(void);
 // Include the module under test
 extern void initialize_registry(void);
 extern bool stop_subsystem_and_dependents(int subsystem_id);
-extern int register_subsystem(const char* name, void* threads, pthread_t* main_thread, 
-                             volatile sig_atomic_t* shutdown_flag, 
-                             int (*init_function)(void), void (*shutdown_function)(void));
 extern bool add_subsystem_dependency(int subsystem_id, const char* dependency_name);
-extern void update_subsystem_state(int subsystem_id, int new_state);
 extern int get_subsystem_id_by_name(const char* name);
 
 static pthread_t dummy_thread = 0;

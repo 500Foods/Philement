@@ -31,8 +31,9 @@
  * initialized before any threads are created. The crash handler is async-signal-safe.
  */
 
-// Global includes 
+// Global includes
 #include "hydrogen.h"
+#include "utils/utils.h"
 
 // System headers - must come first after feature test macros 
 #include <locale.h>       /* Locale settings */
@@ -68,14 +69,7 @@ extern void signal_handler(int sig);
 extern ServiceThreads logging_threads;
 pthread_t main_thread_id;
 
-// Store program arguments for restart
-static int stored_argc;
-static char** stored_argv;
 
-// Get program arguments (used by landing.c for restart)
-char** get_program_args(void) {
-    return stored_argv;
-}
 
 /*
  * ELF Core Dump Structures
@@ -398,8 +392,7 @@ int main(int argc, char *argv[]) {
     get_executable_size(argv);
 
      // Store program arguments for restart
-     stored_argc = argc;
-     stored_argv = argv;
+     store_program_args(argc, argv);
      if (prctl(PR_SET_DUMPABLE, 1) == -1) {
          log_this("Main", "Failed to set dumpable: %s", LOG_LEVEL_ERROR, strerror(errno));
      }

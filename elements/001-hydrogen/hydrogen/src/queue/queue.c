@@ -16,7 +16,7 @@
 // External configuration
 extern AppConfig *app_config;
 
-QueueSystem queue_system;
+QueueSystem queue_system = {0};  // Explicit zero initialization
 int queue_system_initialized = 0;  // Initialize to 0 (not initialized)
 
 // DJB2 hash function chosen for queue name lookup because:
@@ -28,6 +28,10 @@ int queue_system_initialized = 0;  // Initialize to 0 (not initialized)
 // We use modulo QUEUE_HASH_SIZE to bound the result, accepting the slight
 // increase in collision probability to maintain fixed memory usage.
 static unsigned int hash(const char* str) {
+    if (str == NULL) {
+        return 0;  // Return 0 for NULL strings
+    }
+
     unsigned int hash = 5381;
     unsigned char c;
 
@@ -48,7 +52,13 @@ static unsigned int hash(const char* str) {
  */
 void queue_system_init(void) {
     memset(&queue_system, 0, sizeof(QueueSystem));
-    pthread_mutex_init(&queue_system.mutex, NULL);
+    if (pthread_mutex_init(&queue_system.mutex, NULL) != 0) {
+        // Mutex initialization failed - this is a critical error
+        // In a real system, we might want to log this or handle it differently
+        // For now, we'll set initialized to 0 to prevent further operations
+        queue_system_initialized = 0;
+        return;
+    }
     queue_system_initialized = 1;  // Mark as initialized
 }
 
@@ -127,7 +137,7 @@ Queue* queue_find(const char* name) {
 // The strdup of name creates a private copy, isolating the queue from external
 // string lifetime issues.
 Queue* queue_create(const char* name, QueueAttributes* attrs) {
-    if (name == NULL || attrs == NULL) {
+    if (name == NULL || attrs == NULL || strlen(name) == 0) {
         return NULL;
     }
 
@@ -185,9 +195,12 @@ Queue* queue_create(const char* name, QueueAttributes* attrs) {
 
     // During early initialization (SystemLog queue creation), logging system isn't ready
     // For all other queues, use the normal logging system
+    // Temporarily disabled logging to debug segfault
+    /*
     if (strcmp(name, "SystemLog") != 0) {
         log_this("QueueSystem", "New queue created: %s", LOG_LEVEL_STATE, name);
     }
+    */
 
     return queue;
 }

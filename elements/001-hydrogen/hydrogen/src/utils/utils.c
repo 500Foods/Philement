@@ -4,6 +4,10 @@
 // Local includes
 #include "utils.h"
 
+// Static variables for program arguments storage
+static int stored_argc;
+static char** stored_argv;
+
 // Forward declarations of static functions
 static void init_all_service_threads(void);
 
@@ -101,4 +105,21 @@ bool add_message_to_array(const char** messages, int max_messages, int* count, c
     }
     
     return false;
+}
+
+/**
+ * Store program arguments for later retrieval
+ * Called by main() to preserve original command line arguments
+ */
+void store_program_args(int argc, char* argv[]) {
+    stored_argc = argc;
+    stored_argv = argv;
+}
+
+/**
+ * Get stored program arguments
+ * Used by restart functionality to preserve original command line arguments
+ */
+char** get_program_args(void) {
+    return stored_argv;
 }
