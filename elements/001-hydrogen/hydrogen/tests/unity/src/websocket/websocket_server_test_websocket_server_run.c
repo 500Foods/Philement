@@ -3,30 +3,14 @@
  * Tests the websocket_server_run function logic and conditions
  */
 
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L
-#endif
-
+// Standard project header plus Unity Framework header
+#include "../../../../src/hydrogen.h"
 #include "unity.h"
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <unistd.h>
-#include <signal.h>
-#include <stdint.h>
-#include <pthread.h>
-#include <time.h>
-
-// External libraries
-#include <libwebsockets.h>
 #include <jansson.h>
 
 // Include necessary headers for the websocket module
 #include "../../../../src/websocket/websocket_server.h"
 #include "../../../../src/websocket/websocket_server_internal.h"
-#include "../../../../src/config/config.h"
-#include "../../../../src/logging/logging.h"
 
 // External variables that need to be accessible for testing
 extern WebSocketServerContext *ws_context;
@@ -178,24 +162,24 @@ void test_websocket_server_run_signal_handling(void) {
     // Test signal handling concepts in server run
     ws_context = &test_context;
     test_context.shutdown = 0;
-    
+
     // Test signal-like conditions
-    volatile sig_atomic_t server_running = 1;
+    volatile sig_atomic_t local_server_running = 1;
     volatile sig_atomic_t shutdown_requested = 0;
-    
+
     // Test normal operation condition
-    bool should_continue = (server_running && !test_context.shutdown && !shutdown_requested);
+    bool should_continue = (local_server_running && !test_context.shutdown && !shutdown_requested);
     TEST_ASSERT_TRUE(should_continue);
-    
+
     // Test shutdown signal
     shutdown_requested = 1;
-    should_continue = (server_running && !test_context.shutdown && !shutdown_requested);
+    should_continue = (local_server_running && !test_context.shutdown && !shutdown_requested);
     TEST_ASSERT_FALSE(should_continue);
-    
+
     // Test context shutdown
     shutdown_requested = 0;
     test_context.shutdown = 1;
-    should_continue = (server_running && !test_context.shutdown && !shutdown_requested);
+    should_continue = (local_server_running && !test_context.shutdown && !shutdown_requested);
     TEST_ASSERT_FALSE(should_continue);
 }
 

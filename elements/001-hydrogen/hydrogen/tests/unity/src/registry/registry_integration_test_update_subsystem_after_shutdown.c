@@ -5,12 +5,9 @@
  * Following the "One Test File Per Function Rule" from UNITY.md
  */
 
+// Standard project header plus Unity Framework header
+#include "../../../../src/hydrogen.h"
 #include "unity.h"
-#include <pthread.h>
-#include <string.h>
-#include <stdlib.h>
-#include <signal.h>
-#include <stdbool.h>
 
 // Function prototypes to avoid -Werror=missing-prototypes
 void test_update_subsystem_after_shutdown_valid_subsystem(void);
@@ -21,16 +18,7 @@ void test_update_subsystem_after_shutdown_state_transition(void);
 // Include the module under test
 extern void initialize_registry(void);
 extern void update_subsystem_after_shutdown(const char* subsystem_name);
-extern int register_subsystem(const char* name, void* threads, pthread_t* main_thread, 
-                             volatile sig_atomic_t* shutdown_flag, 
-                             int (*init_function)(void), void (*shutdown_function)(void));
 extern int get_subsystem_id_by_name(const char* name);
-extern void update_subsystem_state(int subsystem_id, int new_state);
-
-#define SUBSYSTEM_INACTIVE 0
-#define SUBSYSTEM_RUNNING 1
-#define SUBSYSTEM_STOPPING 2
-#define SUBSYSTEM_ERROR 3
 
 static pthread_t dummy_thread = 0;
 static volatile sig_atomic_t dummy_shutdown_flag = 0;

@@ -3,18 +3,11 @@
  * This file contains unit tests for the cleanup_api_endpoints function in api_service.c
  */
 
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L
-#endif
-
+// Standard project header plus Unity Framework header
+#include "../../../../src/hydrogen.h"
 #include "unity.h"
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <stddef.h>
 
 // Include necessary headers for the module being tested
-#include "../../../../src/hydrogen.h"
 #include "../../../../src/api/api_service.h"
 
 // Forward declarations for functions being tested

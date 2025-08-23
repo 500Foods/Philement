@@ -7,33 +7,13 @@
  * These tests focus on shutdown logic, state management, and cleanup procedures.
  */
 
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L
-#endif
-
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
+// Standard project header plus Unity Framework header
+#include "../../../../src/hydrogen.h"
 #include "unity.h"
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <time.h>
-#include <pthread.h>
-#include <signal.h>
-#include <errno.h>
-#include <unistd.h>
-
-// External libraries
-#include <libwebsockets.h>
 
 // Include necessary headers for the websocket shutdown module
 #include "../../../../src/websocket/websocket_server_internal.h"
 #include "../../../../src/websocket/websocket_server.h"
-#include "../../../../src/logging/logging.h"
-#include "../../../../src/threads/threads.h"
 
 // Forward declarations for functions being tested
 void stop_websocket_server(void);
@@ -335,28 +315,28 @@ void test_cleanup_delay_timing(void) {
 // Tests for signal-based shutdown detection
 void test_signal_based_shutdown_detection(void) {
     // Test signal-based shutdown detection logic
-    volatile sig_atomic_t signal_based_shutdown = 0;
-    volatile sig_atomic_t restart_requested = 0;
-    
+    volatile sig_atomic_t local_signal_shutdown = 0;
+    volatile sig_atomic_t local_restart_requested = 0;
+
     // Test normal shutdown (not signal-based)
-    bool is_signal_shutdown = (signal_based_shutdown || restart_requested);
+    bool is_signal_shutdown = (local_signal_shutdown || local_restart_requested);
     TEST_ASSERT_FALSE(is_signal_shutdown);
-    
+
     // Test signal-based shutdown
-    signal_based_shutdown = 1;
-    is_signal_shutdown = (signal_based_shutdown || restart_requested);
+    local_signal_shutdown = 1;
+    is_signal_shutdown = (local_signal_shutdown || local_restart_requested);
     TEST_ASSERT_TRUE(is_signal_shutdown);
-    
+
     // Reset and test restart
-    signal_based_shutdown = 0;
-    restart_requested = 1;
-    is_signal_shutdown = (signal_based_shutdown || restart_requested);
+    local_signal_shutdown = 0;
+    local_restart_requested = 1;
+    is_signal_shutdown = (local_signal_shutdown || local_restart_requested);
     TEST_ASSERT_TRUE(is_signal_shutdown);
-    
+
     // Test both set
-    signal_based_shutdown = 1;
-    restart_requested = 1;
-    is_signal_shutdown = (signal_based_shutdown || restart_requested);
+    local_signal_shutdown = 1;
+    local_restart_requested = 1;
+    is_signal_shutdown = (local_signal_shutdown || local_restart_requested);
     TEST_ASSERT_TRUE(is_signal_shutdown);
 }
 

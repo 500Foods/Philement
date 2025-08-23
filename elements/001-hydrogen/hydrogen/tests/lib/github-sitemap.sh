@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Markdown link checker script - xargs Parallel Processing Version
-# Usage: ./github-sitemap-xargs.sh <markdown_file> [--debug] [--theme <Red|Blue>] [--profile] 
+# Usage: ./github-sitemap-xargs.sh <markdown_file> [--debug] [--theme <Red|Blue>]
 # Description: Checks local markdown links in a repository using xargs parallel processing
 
 # CHANGELOG
@@ -27,27 +27,6 @@ REALPATH=$(command -v grealpath 2>/dev/null || command -v realpath)
 DIRNAME=$(command -v gdirname 2>/dev/null || command -v dirname)
 export PRINTF DATE XARGS FIND AWK REALPATH DIRNAME
 
-# Performance timing functions
-declare -A timing_data
-timing_start() {
-    local name="$1"
-    timing_data["${name}_start"]=$("${DATE}" +%s%N)
-}
-
-timing_end() {
-    local name="$1"
-    local start_time="${timing_data["${name}_start"]}"
-    if [[ -n "${start_time:-}" ]]; then
-        local end_time
-        end_time=$("${DATE}" +%s%N)
-        local duration=$(( (end_time - start_time) / 1000000 ))
-        timing_data["${name}_duration"]=${duration}
-        if [[ "${PROFILE}" == "true" ]]; then
-            echo "[PROFILE] ${name}: ${duration}ms" >&2
-        fi
-    fi
-}
-
 # Parse arguments
 DEBUG="false"
 INPUT_FILE=""
@@ -56,7 +35,6 @@ TABLE_THEME="Red"
 QUIET=false
 NOREPORT=false
 HELP=false
-PROFILE=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -64,7 +42,6 @@ while [[ $# -gt 0 ]]; do
         --quiet) QUIET=true; shift ;;
         --noreport) NOREPORT=true; shift ;;
         --help) HELP=true; shift ;;
-        --profile) PROFILE=true; shift ;;
         --ignore)
             if [[ -n "$2" ]]; then
                 IGNORE_FILE="$2"
@@ -89,14 +66,13 @@ done
 
 # Check if help is requested
 if [[ "${HELP}" == "true" ]]; then
-    echo "Usage: $0 <markdown_file> [--debug] [--quiet] [--noreport] [--help] [--theme <Red|Blue>] [--profile] [--ignore <file>]" || true
+    echo "Usage: $0 <markdown_file> [--debug] [--quiet] [--noreport] [--help] [--theme <Red|Blue>] [--ignore <file>]" || true
     echo "Options:"
     echo "  --debug      Enable debug logging"
     echo "  --quiet      Display only tables, suppress other output"
     echo "  --noreport   Do not create a report file"
     echo "  --help       Display this help message"
     echo "  --theme      Set table theme to 'Red' or 'Blue' (default: Red)"
-    echo "  --profile    Enable performance profiling"
     echo "  --ignore     Specify a file with ignore patterns (like .lintignore)"
     exit 0
 fi
@@ -113,9 +89,6 @@ debug_log() {
         echo "[DEBUG] $("${DATE}" '+%Y-%m-%d %H:%M:%S' || true): $*" >&2
     fi
 }
-
-timing_start "total_execution"
-timing_start "initialization"
 
 # Check dependencies
 TABLES=$(command -v tables)
@@ -154,10 +127,8 @@ if ! cd "${input_dir}" 2>/dev/null; then
 fi
 repo_root="${input_dir}"
 debug_log "Set repo root to ${repo_root} for input file ${INPUT_FILE}"
-timing_end "initialization" 
 
 # Load ignore patterns once and export for parallel processes
-timing_start "load_ignore_patterns"
 declare -a global_ignore_patterns
 load_ignore_patterns() {
     debug_log "Loading ignore patterns"
@@ -195,10 +166,8 @@ load_ignore_patterns() {
 }
 
 load_ignore_patterns
-timing_end "load_ignore_patterns"
 
 # Build file existence cache with optimized find
-timing_start "build_file_cache"
 build_file_cache() {
     debug_log "Building file existence cache"
     local cache_count=0
@@ -236,9 +205,6 @@ build_file_cache() {
 }
 
 build_file_cache
-timing_end "build_file_cache"
-
-
 
 # Optimized file processing function for xargs
 # shellcheck disable=SC2317 # This function is designed to be run in parallel with xargs, so we disable SC2317
@@ -527,7 +493,6 @@ if [[ "${NOREPORT}" != "true" ]]; then
 fi
 
 # Create temporary files for parallel processing
-timing_start "parallel_setup"
 temp_dir=$(mktemp -d) || { echo "Error: Failed to create temporary directory" >&2; exit 1; }
 cache_file="${temp_dir}/file_cache.txt"
 results_file="${temp_dir}/results.txt"
@@ -544,10 +509,8 @@ true > "${results_file}"
 } > "${cache_file}"
 
 debug_log "Parallel setup complete"
-timing_end "parallel_setup"
 
 # Process files in parallel using xargs
-timing_start "parallel_processing"
 
 # Start with input file and iteratively discover linked files
 declare -A processed_files
@@ -591,10 +554,8 @@ while [[ -s "${files_to_process}" ]]; do
     fi
 done
 
-timing_end "parallel_processing"
 
 # Process results
-timing_start "process_results"
 debug_log "Processing parallel results"
 
 while IFS= read -r line; do
@@ -621,7 +582,7 @@ done < "${results_file}"
 # Find orphaned files
 for path in "${!file_exists_cache[@]}"; do
     if [[ "${path}" == *.md && "${file_exists_cache[${path}]}" == "f" ]]; then
-        if [[ -z "${checked_files[${path}]}" ]]; then
+        if [[ -z "${checked_files[${path}]:-}" ]]; then
             rel_file=""
             if [[ "${path}" == "${repo_root}"* ]]; then
                 rel_file="${path#"${repo_root}"/}"
@@ -633,10 +594,7 @@ for path in "${!file_exists_cache[@]}"; do
     fi
 done
 
-timing_end "process_results"
-
 # Generate JSON and render tables
-timing_start "json_generation"
 
 # Generate JSON functions (optimized)
 generate_reviewed_files_json() {
@@ -741,14 +699,13 @@ if [[ -v missing_links && ${#missing_links[@]} -gt 0 ]]; then
 fi
 
 # Generate orphaned files JSON only if needed
-if [[ -v orphaned_files && ${#orphaned_files[@]:0} -gt 0 ]]; then
+if [[ -v orphaned_files && ${#orphaned_files[@]} -gt 0 ]]; then
     orphaned_data_json="${temp_dir}/orphaned_data.json"
     orphaned_layout_json="${temp_dir}/orphaned_layout.json"
     generate_orphaned_files_json "${orphaned_data_json}"
     generate_orphaned_layout_json "${orphaned_layout_json}"
 fi
 
-timing_end "json_generation"
 
 # Output results
 if [[ "${QUIET}" != "true" ]]; then
@@ -758,7 +715,6 @@ if [[ "${QUIET}" != "true" ]]; then
 fi
 
 # Render tables
-timing_start "table_rendering"
 [[ "${DEBUG}" == "true" ]] && debug_flag="--debug" || debug_flag=""
 
 "${TABLES}" "${reviewed_layout_json}" "${reviewed_data_json}" ${debug_flag:+"${debug_flag}"}
@@ -768,7 +724,6 @@ fi
 if [[ ${#orphaned_files[@]} -gt 0 && -n "${orphaned_data_json:-}" ]]; then
     "${TABLES}" "${orphaned_layout_json}" "${orphaned_data_json}" ${debug_flag:+"${debug_flag}"}
 fi
-timing_end "table_rendering"
 
 # Write summary to report file
 if [[ "${NOREPORT}" != "true" ]]; then
@@ -800,22 +755,6 @@ if [[ "${QUIET}" != "true" ]]; then
     else
         echo "Link check complete. Report generation skipped due to --noreport option"
     fi
-fi
-
-timing_end "total_execution"
-
-# Performance summary
-if [[ "${PROFILE}" == "true" ]]; then
-    echo "" >&2
-    echo "[PROFILE] Total execution: ${timing_data[total_execution_duration]}ms" >&2
-    echo "[PROFILE] Initialization: ${timing_data[initialization_duration]}ms" >&2
-    echo "[PROFILE] Load ignore patterns: ${timing_data[load_ignore_patterns_duration]}ms" >&2
-    echo "[PROFILE] Build file cache: ${timing_data[build_file_cache_duration]}ms" >&2
-    echo "[PROFILE] Parallel setup: ${timing_data[parallel_setup_duration]}ms" >&2
-    echo "[PROFILE] Parallel processing: ${timing_data[parallel_processing_duration]}ms" >&2
-    echo "[PROFILE] Process results: ${timing_data[process_results_duration]}ms" >&2
-    echo "[PROFILE] JSON generation: ${timing_data[json_generation_duration]}ms" >&2
-    echo "[PROFILE] Table rendering: ${timing_data[table_rendering_duration]}ms" >&2
 fi
 
 # Exit with issue count

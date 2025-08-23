@@ -4,22 +4,9 @@
  * from src/payload/payload.c
  */
 
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L
-#endif
-
+// Standard project header plus Unity Framework header
+#include "../../../../src/hydrogen.h"
 #include "unity.h"
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <unistd.h>
-#include <signal.h>
-#include <stdint.h>
-
-// Include necessary headers for the payload module
-#include "../../../../src/payload/payload.h"
-#include "../../../../src/config/config.h"
 
 // Forward declaration for the function being tested
 bool validate_payload_key(const char *key);

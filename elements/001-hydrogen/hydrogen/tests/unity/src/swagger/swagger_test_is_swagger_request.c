@@ -10,20 +10,12 @@
  * - Configuration state validation
  */
 
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L
-#endif
-
+// Standard project header plus Unity Framework header
+#include "../../../../src/hydrogen.h"
 #include "unity.h"
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <stddef.h>
 
 // Include necessary headers for the swagger module
 #include "../../../../src/swagger/swagger.h"
-#include "../../../../src/config/config.h"
-#include "../../../../src/config/config_swagger.h"
 
 // Forward declaration for the function being tested
 bool is_swagger_request(const char *url, const SwaggerConfig *config);

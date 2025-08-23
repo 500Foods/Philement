@@ -4,20 +4,9 @@
  * This function is more testable as it doesn't require complex system resources.
  */
 
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L
-#endif
-
-#include "unity.h"
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <unistd.h>
-#include <sys/stat.h>
-
-// Include the hydrogen header to access global functions and variables
+// Standard project header plus Unity Framework header
 #include "../../../../../../src/hydrogen.h"
+#include "unity.h"
 
 // Test function prototypes
 void test_get_executable_size_valid_executable(void);

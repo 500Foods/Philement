@@ -33,9 +33,10 @@ static size_t get_thread_stack_size(pid_t tid);
 void init_service_threads(ServiceThreads *threads, const char* subsystem_name) {
     pthread_mutex_lock(&thread_mutex);
     threads->thread_count = 0;
+    memset(threads->thread_ids, 0, sizeof(pthread_t) * MAX_SERVICE_THREADS);
     memset(threads->thread_metrics, 0, sizeof(ThreadMemoryMetrics) * MAX_SERVICE_THREADS);
     memset(threads->thread_tids, 0, sizeof(pid_t) * MAX_SERVICE_THREADS);
-        
+
     if (subsystem_name) {
         strncpy(threads->subsystem, subsystem_name, 31); // Leave space for null terminator
         threads->subsystem[31] = '\0'; // Ensure null-termination
@@ -76,14 +77,22 @@ void add_service_thread(ServiceThreads *threads, pthread_t thread_id) {
 // If skip_logging is true, don't generate log messages (used during shutdown)
 static void remove_thread_internal(ServiceThreads *threads, int index, bool skip_logging) {
     pthread_t thread_id = threads->thread_ids[index];
-    
-    // Move last thread to this position
-    threads->thread_count--;
-    if (index < threads->thread_count) {
-        threads->thread_ids[index] = threads->thread_ids[threads->thread_count];
-        threads->thread_tids[index] = threads->thread_tids[threads->thread_count];
-        threads->thread_metrics[index] = threads->thread_metrics[threads->thread_count];
+
+    // Move last thread to this position to maintain array compaction
+    if (index < threads->thread_count - 1) {  // Only move if not removing the last element
+        threads->thread_ids[index] = threads->thread_ids[threads->thread_count - 1];
+        threads->thread_tids[index] = threads->thread_tids[threads->thread_count - 1];
+        threads->thread_metrics[index] = threads->thread_metrics[threads->thread_count - 1];
     }
+
+    // Always clear the last element (whether moved or not)
+    int last_index = threads->thread_count - 1;
+    threads->thread_ids[last_index] = 0;
+    threads->thread_tids[last_index] = 0;
+    threads->thread_metrics[last_index].virtual_bytes = 0;
+    threads->thread_metrics[last_index].resident_bytes = 0;
+
+    threads->thread_count--;
 
     // Only log if not skipping, not in final shutdown, and early in shutdown (when app_config still exists)
     if (!skip_logging && !final_shutdown_mode) {
@@ -167,9 +176,14 @@ void update_service_thread_metrics(ServiceThreads *threads) {
 // Get memory metrics for a specific thread
 ThreadMemoryMetrics get_thread_memory_metrics(ServiceThreads *threads, pthread_t thread_id) {
     ThreadMemoryMetrics metrics = {0, 0};
-    
+
+    // Check for NULL threads parameter
+    if (!threads) {
+        return metrics;
+    }
+
     pthread_mutex_lock(&thread_mutex);
-    
+
     // Find the thread in our tracking array
     for (int i = 0; i < threads->thread_count; i++) {
         if (pthread_equal(threads->thread_ids[i], thread_id)) {
@@ -177,9 +191,9 @@ ThreadMemoryMetrics get_thread_memory_metrics(ServiceThreads *threads, pthread_t
             break;
         }
     }
-    
+
     pthread_mutex_unlock(&thread_mutex);
-    
+
     return metrics;
 }
 

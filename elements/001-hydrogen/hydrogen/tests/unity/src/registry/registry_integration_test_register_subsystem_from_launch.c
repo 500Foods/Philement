@@ -1,18 +1,9 @@
 // registry_integration_test_register_subsystem_from_launch.c
 // Unity tests for register_subsystem_from_launch function
 
+// Standard project header plus Unity Framework header
+#include "../../../../src/hydrogen.h"
 #include "unity.h"
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <time.h>
-#include <pthread.h>
-#include <unistd.h>
-
-// Include necessary headers for the module being tested
-#include "../../../../../src/registry/registry.h"
-#include "../../../../../src/registry/registry_integration.h"
 
 // Test globals
 extern SubsystemRegistry subsystem_registry;
