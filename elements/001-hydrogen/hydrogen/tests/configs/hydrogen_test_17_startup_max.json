@@ -5,7 +5,7 @@
     "WebServer": {
         "EnableIPv4": true,
         "EnableIPv6": true,
-        "Port": 5210,
+        "Port": 5170,
         "WebRoot": "./www",
         "UploadPath": "/api/upload",
         "UploadDir": "/tmp/hydrogen_test_uploads",
@@ -15,7 +15,7 @@
         "EnableIPv4": true,
         "EnableIPv6": true,
         "LibLogLevel": 2,
-        "Port": 5211,
+        "Port": 5171,
         "Protocol": "hydrogen",
         "Key": "${env.WEBSOCKET_KEY}",
         "MaxMessageSize": 2048,
@@ -280,19 +280,19 @@
             {
                 "Name": "Hydrogen_Test_Web_Interface",
                 "Type": "_http._tcp",
-                "Port": 5000,
+                "Port": 5170,
                 "TxtRecords": "path=/api/upload"
             },
             {
                 "Name": "Hydrogen_Test_OctoPrint_Emulation",
                 "Type": "_octoprint._tcp",
-                "Port": 5000,
+                "Port": 5170,
                 "TxtRecords": "path=/api,version=1.1.0"
             },
             {
                 "Name": "Hydrogen_Test_WebSocket",
                 "Type": "_websocket._tcp",
-                "Port": 5001,
+                "Port": 5171,
                 "TxtRecords": "path=/websocket"
             }
         ]

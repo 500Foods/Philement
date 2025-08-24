@@ -3,12 +3,12 @@
     "WebServer": {
         "Enabled": false,
         "EnableIPv6": false,
-        "Port": 5272
+        "Port": 5232
     },
     "WebSocketServer": {
         "Enabled": true,
         "EnableIPv6": true,
-        "Port": 5273,
+        "Port": 5233,
         "Protocol": "hydrogen-test",
         "Key": "${env.WEBSOCKET_KEY}"
     }

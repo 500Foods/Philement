@@ -41,15 +41,15 @@ static void init_all_service_threads(void) {
  */
 char* format_number_with_commas(size_t n, char* formatted, size_t size) {
     if (!formatted || size < 2) return NULL;
-    
+
     // Convert to temporary string
     char temp[32];
     snprintf(temp, sizeof(temp), "%zu", n);
-    
+
     // Get the length
     size_t len = strlen(temp);
     size_t j = 0;
-    
+
     // Add commas
     for (size_t i = 0; i < len; i++) {
         // Check buffer space (including null terminator)
@@ -57,11 +57,11 @@ char* format_number_with_commas(size_t n, char* formatted, size_t size) {
             formatted[size-1] = '\0';
             return formatted;
         }
-        
+
         // Add comma every 3 digits from the right
         if (i > 0 && (len - i) % 3 == 0) {
             formatted[j++] = ',';
-            
+
             // Check buffer again after adding comma
             if (j >= size - 1) {
                 formatted[size-1] = '\0';
@@ -70,10 +70,86 @@ char* format_number_with_commas(size_t n, char* formatted, size_t size) {
         }
         formatted[j++] = temp[i];
     }
-    
+
     // Null terminate
     formatted[j] = '\0';
-    
+
+    return formatted;
+}
+
+/**
+ * Format a double with thousands separators
+ * Thread-safe as long as different buffers are used
+ * Only adds commas to the integer part, decimal part remains unchanged
+ */
+char* format_double_with_commas(double value, int decimals, char* formatted, size_t size) {
+    if (!formatted || size < 2) return NULL;
+
+    // Handle negative numbers
+    bool is_negative = value < 0;
+    double abs_value = is_negative ? -value : value;
+
+    // Format the number with specified decimal places
+    char temp[64];
+    if (decimals >= 0) {
+        snprintf(temp, sizeof(temp), "%.*f", decimals, abs_value);
+    } else {
+        // No decimal formatting - convert to integer-like string
+        snprintf(temp, sizeof(temp), "%.0f", abs_value);
+    }
+
+    // Find decimal point position
+    char* decimal_point = strchr(temp, '.');
+
+    // Calculate integer part length
+    size_t integer_part_len = decimal_point ? (size_t)(decimal_point - temp) : strlen(temp);
+    size_t j = 0;
+
+    // Handle negative sign
+    if (is_negative) {
+        if (j >= size - 1) {
+            formatted[size-1] = '\0';
+            return formatted;
+        }
+        formatted[j++] = '-';
+    }
+
+    // Process integer part with commas
+    for (size_t i = 0; i < integer_part_len; i++) {
+        // Check buffer space
+        if (j >= size - 1) {
+            formatted[size-1] = '\0';
+            return formatted;
+        }
+
+        // Add comma every 3 digits from the right (before decimal point)
+        if (i > 0 && (integer_part_len - i) % 3 == 0) {
+            formatted[j++] = ',';
+
+            // Check buffer again after adding comma
+            if (j >= size - 1) {
+                formatted[size-1] = '\0';
+                return formatted;
+            }
+        }
+        formatted[j++] = temp[i];
+    }
+
+    // Add decimal part as-is (if it exists)
+    if (decimal_point) {
+        size_t remaining_len = strlen(decimal_point);
+        if (j + remaining_len >= size) {
+            // Not enough space for decimal part
+            formatted[size-1] = '\0';
+            return formatted;
+        }
+        strcpy(formatted + j, decimal_point);
+        j += remaining_len;
+    }
+
+    // Null terminate
+    formatted[j] = '\0';
+
     return formatted;
 }
 

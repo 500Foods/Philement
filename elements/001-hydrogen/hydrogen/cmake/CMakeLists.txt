@@ -814,8 +814,10 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
             -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer
             -DVERSION='"${HYDROGEN_VERSION}"'
             -DRELEASE='"${HYDROGEN_RELEASE}"'
-            -DBUILD_TYPE='"Coverage"'
+            -DBUILD_TYPE='"Unity"'
+            -DUNITY_INCLUDE_DOUBLE
             -I${CMAKE_CURRENT_SOURCE_DIR}/../src
+            -I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity
             -I${UNITY_FRAMEWORK_DIR}/src
             ${JANSSON_CFLAGS}
             ${MICROHTTPD_CFLAGS}
@@ -865,7 +867,9 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
             COMMAND ${CMAKE_C_COMPILER}
                 ${HYDROGEN_BASE_CFLAGS}
                 -O0 -g3 -ggdb3 --coverage -fprofile-arcs -ftest-coverage -fno-omit-frame-pointer
+                -Wno-double-promotion
                 -I${UNITY_FRAMEWORK_DIR}/src
+                -DUNITY_INCLUDE_DOUBLE
                 -c ${UNITY_SRC} -o ${UNITY_OUTPUT_OBJ}
             DEPENDS ${UNITY_SRC}
             COMMENT "Compiling Unity framework ${UNITY_BASENAME} to object file"
@@ -892,7 +896,9 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
             -DVERSION='"${HYDROGEN_VERSION}"'
             -DRELEASE='"${HYDROGEN_RELEASE}"'
             -DBUILD_TYPE='"Coverage"'
+            -DUNITY_INCLUDE_DOUBLE
             -I${CMAKE_CURRENT_SOURCE_DIR}/../src
+            -I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity
             -I${UNITY_FRAMEWORK_DIR}/src
             ${JANSSON_CFLAGS}
             ${MICROHTTPD_CFLAGS}

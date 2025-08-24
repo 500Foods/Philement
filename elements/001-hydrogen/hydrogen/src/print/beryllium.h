@@ -41,6 +41,7 @@ typedef struct {
     double extrusion;
     double filament_volume;
     double filament_weight;
+    double layer_height;  // Average layer height in mm
     double layer_times[MAX_LAYERS];
     double **object_times;
     ObjectInfo *object_infos;
@@ -71,6 +72,20 @@ char* get_iso8601_timestamp(void);
 void format_time(double seconds, char *buffer);
 
 /**
+ * Format numbers with thousands separators for better readability
+ * @param value Number to format
+ * @param decimals Number of decimal places (-1 for integer)
+ * @return Static buffer containing formatted string
+ */
+char* format_number_with_separators(double value, int decimals);
+
+/**
+ * Format and display analysis results with improved readability
+ * @param stats Pointer to BerylliumStats structure containing analysis results
+ */
+void beryllium_format_stats(const BerylliumStats *stats);
+
+/**
  * Analyze G-code file and return statistics
  * @param file File pointer to G-code file
  * @param config Printer configuration
@@ -97,4 +112,3 @@ char* parse_parameter_string(const char *line, const char *parameter);
 char* parse_name_parameter(const char *line);
 
 #endif // BERYLLIUM_H
-

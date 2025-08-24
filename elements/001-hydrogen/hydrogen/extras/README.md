@@ -51,9 +51,73 @@ This folder contains utility scripts and one-off diagnostic tools for the Hydrog
 
 ## Utility Scripts
 
+### `run-unity-test.sh`
+
+**Purpose:** Unity Test Runner by Name
+**Description:** Runs Unity tests by name from any directory. This script automatically:
+
+- Finds the test source file in `tests/unity/src/` recursively
+- Determines the correct build target and executable path
+- Builds the specific test using CMake/Ninja
+- Runs the test and displays results with colored output
+- Handles errors gracefully with helpful error messages
+
+**Usage:**
+
+```bash
+./run-unity-test.sh <test_name>
+```
+
+**Examples:**
+
+```bash
+# Run a specific test by name
+./run-unity-test.sh beryllium_test_analyze_gcode
+
+# Run the main hydrogen test
+./run-unity-test.sh hydrogen_test
+
+# Run an API utility test
+./run-unity-test.sh api_utils_test_create_jwt
+
+# Show usage information
+./run-unity-test.sh
+```
+
+**Features:**
+
+- ✅ Works from any directory (no need to cd to project root)
+- ✅ Automatically finds test files in subdirectories
+- ✅ Builds only the specific test needed (fast)
+- ✅ Colored output for better readability
+- ✅ Shows available tests when test name is not found
+- ✅ Provides clear error messages and build guidance
+- ✅ Returns appropriate exit codes for CI/CD integration
+
+**Example Output:**
+
+```bash
+[INFO] Project root: /path/to/hydrogen
+[INFO] Looking for test: beryllium_test_analyze_gcode
+[INFO] Searching for test source file...
+[SUCCESS] Found test source: /path/to/tests/unity/src/print/beryllium_test_analyze_gcode.c
+[INFO] Expected executable: /path/to/build/unity/src/print/beryllium_test_analyze_gcode
+[INFO] Building test: beryllium_test_analyze_gcode
+[INFO] Build command: ninja -C /path/to/build beryllium_test_analyze_gcode
+ninja: Entering directory `/path/to/build'
+ninja: no work to do.
+[SUCCESS] Test built successfully
+[INFO] Running test: beryllium_test_analyze_gcode
+Test Output:
+test_file.c:147:test_function:PASS
+test_file.c:173:another_test:FAIL
+...
+[SUCCESS] Test beryllium_test_analyze_gcode PASSED
+```
+
 ### `filter-log.sh`
 
-**Purpose:** Log Output Filtering  
+**Purpose:** Log Output Filtering
 **Description:** Filters Hydrogen log output using regex pattern matching. Extracts structured log entries in the format:
 
 ```log

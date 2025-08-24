@@ -3,6 +3,6 @@
     "WebServer": {
         "EnableIPv4": true,
         "EnableIPv6": false,
-        "Port": 5230
+        "Port": 5190
     }
 }
