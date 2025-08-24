@@ -34,6 +34,8 @@ struct ConnectionInfo {
     bool is_first_chunk;
     bool print_after_upload;
     bool response_sent;
+    bool upload_failed;
+    unsigned int error_code;
 };
 
 // Endpoint registration structure

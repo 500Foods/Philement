@@ -70,12 +70,14 @@ print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Examining error output..."
 
 if "${GREP}" -q "line" "${ERROR_OUTPUT}" && "${GREP}" -q "column" "${ERROR_OUTPUT}"; then
     while IFS= read -r line; do
-        print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
+        output_line=$([[ "${line}" == \[* ]] && echo "${line:39}" || echo "${line}")
+        print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${output_line}"
     done < <(tail -n 5 "${ERROR_OUTPUT}" || true)
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Error message contains line and column information"
 else
     while IFS= read -r line; do
-        print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
+        output_line=$([[ "${line}" == \[* ]] && echo "${line:39}" || echo "${line}")
+        print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${output_line}"
     done < <(tail -n 5 "${ERROR_OUTPUT}" || true)
     EXIT_CODE=1
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Error message does not contain line and column information"
