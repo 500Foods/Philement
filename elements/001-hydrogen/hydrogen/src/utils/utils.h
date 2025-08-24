@@ -38,6 +38,18 @@
 char* format_number_with_commas(size_t n, char* formatted, size_t size);
 
 /**
+ * @brief Format a double with thousands separators
+ * @param value The double value to format
+ * @param decimals Number of decimal places (use -1 for no decimal formatting)
+ * @param formatted Buffer to store the formatted string
+ * @param size Size of the buffer
+ * @return The formatted string (same as formatted parameter)
+ * @note Thread-safe as long as different buffers are used
+ * @note Only adds commas to the integer part, decimal part remains unchanged
+ */
+char* format_double_with_commas(double value, int decimals, char* formatted, size_t size);
+
+/**
  * @brief Add a formatted message to a message array
  * @param messages Array of message strings
  * @param max_messages Maximum number of messages the array can hold

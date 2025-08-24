@@ -73,4 +73,6 @@ enum MHD_Result handle_system_upload_request(struct MHD_Connection *connection,
                                            size_t *upload_data_size,
                                            void **con_cls);
 
+enum MHD_Result handle_system_upload_info_request(struct MHD_Connection *connection);
+
 #endif /* HYDROGEN_SYSTEM_UPLOAD_H */

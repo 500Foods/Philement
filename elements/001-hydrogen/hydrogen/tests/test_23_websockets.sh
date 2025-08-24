@@ -46,8 +46,8 @@ WEBSOCKET_KEY_VALIDATED=0
 # Create temporary directory for parallel results
 declare -a PARALLEL_PIDS
 declare -a CONFIGS=(
-    "${CONFIG_1}|5271|hydrogen|one|1"
-    "${CONFIG_2}|5273|hydrogen-test|two|2"
+    "${CONFIG_1}|5231|hydrogen|one|1"
+    "${CONFIG_2}|5233|hydrogen-test|two|2"
 )
 
 # Function to test WebSocket connection with proper authentication and retry logic

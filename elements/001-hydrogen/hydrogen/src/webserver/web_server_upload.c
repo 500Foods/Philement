@@ -1,10 +1,11 @@
-// Global includes 
+// Global includes
 #include "../hydrogen.h"
 
 // Local includes
 #include "web_server_upload.h"
 #include "web_server_core.h"
 #include "../print/beryllium.h"
+#include "../utils/utils.h"
 
 // Global configuration
 extern AppConfig* app_config;
@@ -164,156 +165,122 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
                 if (gcode_info) {
                     json_object_set_new(print_job, "gcode_info", gcode_info);
 
-                    // Extract and log detailed beryllium analysis results
+                    // Extract BerylliumStats from JSON for proper formatting
+                    BerylliumStats stats;
+                    memset(&stats, 0, sizeof(BerylliumStats));
+                    stats.success = true; // Assume success since we have gcode_info
+
                     json_t* file_size = json_object_get(gcode_info, "file_size");
+                    if (file_size) stats.file_size = (int)json_integer_value(file_size);
+
                     json_t* total_lines = json_object_get(gcode_info, "total_lines");
+                    if (total_lines) stats.total_lines = (int)json_integer_value(total_lines);
+
                     json_t* gcode_lines = json_object_get(gcode_info, "gcode_lines");
+                    if (gcode_lines) stats.gcode_lines = (int)json_integer_value(gcode_lines);
+
                     json_t* layer_count_height = json_object_get(gcode_info, "layer_count_height");
+                    if (layer_count_height) stats.layer_count_height = (int)json_integer_value(layer_count_height);
+
                     json_t* layer_count_slicer = json_object_get(gcode_info, "layer_count_slicer");
-                    json_t* estimated_time = json_object_get(gcode_info, "estimated_print_time");
+                    if (layer_count_slicer) stats.layer_count_slicer = (int)json_integer_value(layer_count_slicer);
+
+                    // Extract filament and timing data
                     json_t* filament_used = json_object_get(gcode_info, "filament_used_mm");
+                    if (filament_used) stats.extrusion = json_real_value(filament_used);
+
                     json_t* filament_volume = json_object_get(gcode_info, "filament_used_cm3");
+                    if (filament_volume) stats.filament_volume = json_real_value(filament_volume);
+
                     json_t* filament_weight = json_object_get(gcode_info, "filament_weight_g");
+                    if (filament_weight) stats.filament_weight = json_real_value(filament_weight);
+
                     json_t* objects = json_object_get(gcode_info, "objects");
+                    if (objects) stats.num_objects = (int)json_array_size(objects);
 
-                    // Format numbers with thousands separators - use larger buffers
-                    char file_size_str[32], total_lines_str[32], gcode_lines_str[32];
-                    char layer_height_str[32], layer_slicer_str[32];
+                    // Calculate print time from the formatted time string
+                    json_t* estimated_time = json_object_get(gcode_info, "estimated_print_time");
+                    if (estimated_time) {
+                        // Parse time string like "01:30:45" to seconds
+                        const char* time_str = json_string_value(estimated_time);
+                        int days = 0, hours = 0, minutes = 0, seconds = 0;
+                        sscanf(time_str, "%d:%d:%d:%d", &days, &hours, &minutes, &seconds);
+                        stats.print_time = days * 86400 + hours * 3600 + minutes * 60 + seconds;
+                    }
 
-                    if (file_size) {
-                        long long fs = json_integer_value(file_size);
-                        if (fs >= 1000000) {
-                            snprintf(file_size_str, sizeof(file_size_str), "%lld,%03lld,%03lld",
-                                    fs / 1000000, (fs % 1000000) / 1000, fs % 1000);
-                        } else if (fs >= 1000) {
-                            snprintf(file_size_str, sizeof(file_size_str), "%lld,%03lld",
-                                    fs / 1000, fs % 1000);
+                    // Calculate layer height from total height / layer count
+                    // Note: We need to estimate this since it's not directly available in JSON
+                    if (stats.layer_count_height > 0) {
+                        // This is a simplified calculation - in practice you'd want to track Z values
+                        stats.layer_height = 0.2; // Default layer height assumption
+                    }
+
+                    // Use the improved beryllium formatting logic with proper server logging
+                    // Format time as Hh Mm Ss
+                    int hours = (int)(stats.print_time / 3600);
+                    int minutes = (int)((stats.print_time - hours * 3600) / 60);
+                    int seconds = (int)(stats.print_time - hours * 3600 - minutes * 60);
+
+                    // Calculate total height from layer count * layer height
+                    double total_height = stats.layer_count_height * stats.layer_height;
+
+                    // Create formatted strings for logging
+                    char file_info[80], lines_info[96], layers_info[96], time_info[80], filament_info[96], material_info[96], objects_info[80];
+
+                    // Format each line using the improved format_double_with_commas function
+                    char formatted_file_size[32], formatted_gcode_lines[32], formatted_layer_count[32], formatted_extrusion[32], formatted_objects[32];
+
+                    format_number_with_commas((size_t)stats.file_size, formatted_file_size, sizeof(formatted_file_size));
+                    snprintf(file_info, sizeof(file_info), "- File: %s bytes", formatted_file_size);
+                    log_this("WebServer", file_info, LOG_LEVEL_STATE);
+
+                    format_number_with_commas((size_t)stats.gcode_lines, formatted_gcode_lines, sizeof(formatted_gcode_lines));
+                    snprintf(lines_info, sizeof(lines_info), "- Lines: %s", formatted_gcode_lines);
+                    log_this("WebServer", lines_info, LOG_LEVEL_STATE);
+
+                    if (stats.layer_count_height > 0) {
+                        if (total_height > 0.0) {
+                            format_number_with_commas((size_t)stats.layer_count_height, formatted_layer_count, sizeof(formatted_layer_count));
+                            snprintf(layers_info, sizeof(layers_info), "- Layers: %s layers, %.1f mm height",
+                                    formatted_layer_count, total_height);
                         } else {
-                            snprintf(file_size_str, sizeof(file_size_str), "%lld", fs);
-                        }
-                    }
-
-                    if (total_lines) {
-                        long long tl = json_integer_value(total_lines);
-                        if (tl >= 1000000) {
-                            snprintf(total_lines_str, sizeof(total_lines_str), "%lld,%03lld,%03lld",
-                                    tl / 1000000, (tl % 1000000) / 1000, tl % 1000);
-                        } else if (tl >= 1000) {
-                            snprintf(total_lines_str, sizeof(total_lines_str), "%lld,%03lld",
-                                    tl / 1000, tl % 1000);
-                        } else {
-                            snprintf(total_lines_str, sizeof(total_lines_str), "%lld", tl);
-                        }
-                    }
-
-                    if (gcode_lines) {
-                        long long gl = json_integer_value(gcode_lines);
-                        if (gl >= 1000000) {
-                            snprintf(gcode_lines_str, sizeof(gcode_lines_str), "%lld,%03lld,%03lld",
-                                    gl / 1000000, (gl % 1000000) / 1000, gl % 1000);
-                        } else if (gl >= 1000) {
-                            snprintf(gcode_lines_str, sizeof(gcode_lines_str), "%lld,%03lld",
-                                    gl / 1000, gl % 1000);
-                        } else {
-                            snprintf(gcode_lines_str, sizeof(gcode_lines_str), "%lld", gl);
-                        }
-                    }
-
-                    if (layer_count_height) {
-                        long long lh = json_integer_value(layer_count_height);
-                        if (lh >= 1000000) {
-                            snprintf(layer_height_str, sizeof(layer_height_str), "%lld,%03lld,%03lld",
-                                    lh / 1000000, (lh % 1000000) / 1000, lh % 1000);
-                        } else if (lh >= 1000) {
-                            snprintf(layer_height_str, sizeof(layer_height_str), "%lld,%03lld",
-                                    lh / 1000, lh % 1000);
-                        } else {
-                            snprintf(layer_height_str, sizeof(layer_height_str), "%lld", lh);
-                        }
-                    }
-
-                    if (layer_count_slicer) {
-                        long long ls = json_integer_value(layer_count_slicer);
-                        if (ls >= 1000000) {
-                            snprintf(layer_slicer_str, sizeof(layer_slicer_str), "%lld,%03lld,%03lld",
-                                    ls / 1000000, (ls % 1000000) / 1000, ls % 1000);
-                        } else if (ls >= 1000) {
-                            snprintf(layer_slicer_str, sizeof(layer_slicer_str), "%lld,%03lld",
-                                    ls / 1000, ls % 1000);
-                        } else {
-                            snprintf(layer_slicer_str, sizeof(layer_slicer_str), "%lld", ls);
-                        }
-                    }
-
-                    // Log each element on separate lines with - prefix
-                    if (file_size) {
-                        char file_info[80];
-                        snprintf(file_info, sizeof(file_info), "- File: %s bytes", file_size_str);
-                        log_this("WebServer", file_info, LOG_LEVEL_STATE);
-                    }
-
-                    if (total_lines && gcode_lines) {
-                        char lines_info[96];
-                        snprintf(lines_info, sizeof(lines_info), "- Lines: %s total / %s gcode",
-                                total_lines_str, gcode_lines_str);
-                        log_this("WebServer", lines_info, LOG_LEVEL_STATE);
-                    }
-
-                    if (layer_count_height && layer_count_slicer) {
-                        char layers_info[96];
-                        if (json_integer_value(layer_count_height) != json_integer_value(layer_count_slicer)) {
-                            snprintf(layers_info, sizeof(layers_info), "- Layers: %s (height) / %s (slicer)",
-                                    layer_height_str, layer_slicer_str);
-                        } else {
-                            snprintf(layers_info, sizeof(layers_info), "- Layers: %s", layer_height_str);
+                            // Fallback if layer height calculation failed
+                            format_number_with_commas((size_t)stats.layer_count_height, formatted_layer_count, sizeof(formatted_layer_count));
+                            snprintf(layers_info, sizeof(layers_info), "- Layers: %s", formatted_layer_count);
                         }
                         log_this("WebServer", layers_info, LOG_LEVEL_STATE);
                     }
 
-                    if (estimated_time) {
-                        char time_info[80];
-                        snprintf(time_info, sizeof(time_info), "- Print Time: %s", json_string_value(estimated_time));
+                    if (hours > 0 || minutes > 0 || seconds > 0) {
+                        if (hours > 0) {
+                            snprintf(time_info, sizeof(time_info), "- Print Time: %dh %02dm %02ds", hours, minutes, seconds);
+                        } else if (minutes > 0) {
+                            snprintf(time_info, sizeof(time_info), "- Print Time: %dm %02ds", minutes, seconds);
+                        } else {
+                            snprintf(time_info, sizeof(time_info), "- Print Time: %ds", seconds);
+                        }
                         log_this("WebServer", time_info, LOG_LEVEL_STATE);
                     }
 
-                    if (filament_used) {
-                        char filament_info[96];
-                        double filament_mm = json_real_value(filament_used);
-                        if (filament_mm >= 1000) {
-                            snprintf(filament_info, sizeof(filament_info), "- Filament: %.1f mm (%.1f meters)",
-                                    filament_mm, filament_mm / 1000);
-                        } else {
-                            snprintf(filament_info, sizeof(filament_info), "- Filament: %.1f mm", filament_mm);
-                        }
+                    if (stats.extrusion > 0.0) {
+                        format_double_with_commas(stats.extrusion, 1, formatted_extrusion, sizeof(formatted_extrusion));
+                        snprintf(filament_info, sizeof(filament_info), "- Filament: %s mm", formatted_extrusion);
                         log_this("WebServer", filament_info, LOG_LEVEL_STATE);
                     }
 
-                    if (filament_volume && filament_weight) {
-                        char volume_info[96];
-                        double volume_cm3 = json_real_value(filament_volume);
-                        double weight_g = json_real_value(filament_weight);
-                        if (volume_cm3 >= 1000) {
-                            snprintf(volume_info, sizeof(volume_info), "- Material: %.1f cm³ (%.1f liters) / %.1f g",
-                                    volume_cm3, volume_cm3 / 1000, weight_g);
-                        } else {
-                            snprintf(volume_info, sizeof(volume_info), "- Material: %.1f cm³ / %.1f g",
-                                    volume_cm3, weight_g);
-                        }
-                        log_this("WebServer", volume_info, LOG_LEVEL_STATE);
+                    if (stats.filament_volume > 0.0 && stats.filament_weight > 0.0) {
+                        char formatted_volume[32], formatted_weight[32];
+                        format_double_with_commas(stats.filament_volume, 3, formatted_volume, sizeof(formatted_volume));
+                        format_double_with_commas(stats.filament_weight, 1, formatted_weight, sizeof(formatted_weight));
+                        snprintf(material_info, sizeof(material_info), "- Material: %s cm³ / %s g",
+                                formatted_volume, formatted_weight);
+                        log_this("WebServer", material_info, LOG_LEVEL_STATE);
                     }
 
-                    if (objects) {
-                        size_t object_count_size = json_array_size(objects);
-                        if (object_count_size > 0) {
-                            char objects_info[80];
-                            if (object_count_size >= 1000) {
-                                snprintf(objects_info, sizeof(objects_info), "- Objects: %zu,%03zu",
-                                        object_count_size / 1000, object_count_size % 1000);
-                            } else {
-                                snprintf(objects_info, sizeof(objects_info), "- Objects: %zu", object_count_size);
-                            }
-                            log_this("WebServer", objects_info, LOG_LEVEL_STATE);
-                        }
+                    if (stats.num_objects > 0) {
+                        format_number_with_commas((size_t)stats.num_objects, formatted_objects, sizeof(formatted_objects));
+                        snprintf(objects_info, sizeof(objects_info), "- Objects: %s", formatted_objects);
+                        log_this("WebServer", objects_info, LOG_LEVEL_STATE);
                     }
 
                     log_this("WebServer", "Beryllium analysis completed successfully", LOG_LEVEL_STATE);
