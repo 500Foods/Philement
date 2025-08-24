@@ -3,7 +3,7 @@
     "WebServer": {
         "Enabled": true,
         "EnableIPv6": false,
-        "Port": 5240
+        "Port": 5200
     },
     "API": {
         "Enabled": true,

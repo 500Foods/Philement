@@ -19,7 +19,6 @@
 #include "web_server_core.h"
 #include "web_server_request.h"
 #include "web_server_upload.h"
-#include "web_server_print.h"
 #include "web_server_compression.h"
 
 #endif // WEB_SERVER_H

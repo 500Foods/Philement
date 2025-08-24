@@ -56,7 +56,22 @@ enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind kind,
 
         if (size > 0) {
             if (con_info->total_size + size > server_web_config->max_upload_size) {
-                log_this("WebServer", "File upload exceeds maximum allowed size", LOG_LEVEL_DEBUG);
+                log_this("WebServer", "File upload exceeds maximum allowed size", LOG_LEVEL_ERROR);
+
+                // Close and delete the partially uploaded file
+                if (con_info->fp) {
+                    fclose(con_info->fp);
+                    con_info->fp = NULL;
+                    if (remove(con_info->new_filename) != 0) {
+                        log_this("WebServer", "Failed to remove partial upload file", LOG_LEVEL_DEBUG);
+                    }
+                    free(con_info->new_filename);
+                    con_info->new_filename = NULL;
+                }
+
+                // Mark upload as failed
+                con_info->upload_failed = true;
+                con_info->error_code = MHD_HTTP_CONTENT_TOO_LARGE;
                 return MHD_NO;
             }
 
@@ -115,6 +130,21 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
         *upload_data_size = 0;
         return MHD_YES;
     } else if (!con_info->response_sent) {
+        // Check if upload failed due to size limit
+        if (con_info->upload_failed) {
+            log_this("WebServer", "File upload rejected due to size limit", LOG_LEVEL_ERROR);
+
+            const char *error_response = "{\"error\": \"File too large\", \"done\": false}";
+            struct MHD_Response *response = MHD_create_response_from_buffer(strlen(error_response),
+                                            (void*)error_response, MHD_RESPMEM_PERSISTENT);
+            add_cors_headers(response);
+            MHD_add_response_header(response, "Content-Type", "application/json");
+            enum MHD_Result ret = MHD_queue_response(connection, con_info->error_code, response);
+            MHD_destroy_response(response);
+            con_info->response_sent = true;
+            return ret;
+        }
+
         if (con_info->fp) {
             fclose(con_info->fp);
             con_info->fp = NULL;
@@ -127,9 +157,169 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
             json_object_set_new(print_job, "file_size", json_integer((json_int_t)con_info->total_size));
             json_object_set_new(print_job, "print_after_upload", json_boolean(con_info->print_after_upload));
 
-            json_t* gcode_info = extract_gcode_info(con_info->new_filename);
-            if (gcode_info) {
-                json_object_set_new(print_job, "gcode_info", gcode_info);
+            // Run beryllium analysis for .gcode files
+            if (con_info->original_filename && strstr(con_info->original_filename, ".gcode")) {
+                log_this("WebServer", "Running beryllium analysis on uploaded G-code file", LOG_LEVEL_STATE);
+                json_t* gcode_info = extract_gcode_info(con_info->new_filename);
+                if (gcode_info) {
+                    json_object_set_new(print_job, "gcode_info", gcode_info);
+
+                    // Extract and log detailed beryllium analysis results
+                    json_t* file_size = json_object_get(gcode_info, "file_size");
+                    json_t* total_lines = json_object_get(gcode_info, "total_lines");
+                    json_t* gcode_lines = json_object_get(gcode_info, "gcode_lines");
+                    json_t* layer_count_height = json_object_get(gcode_info, "layer_count_height");
+                    json_t* layer_count_slicer = json_object_get(gcode_info, "layer_count_slicer");
+                    json_t* estimated_time = json_object_get(gcode_info, "estimated_print_time");
+                    json_t* filament_used = json_object_get(gcode_info, "filament_used_mm");
+                    json_t* filament_volume = json_object_get(gcode_info, "filament_used_cm3");
+                    json_t* filament_weight = json_object_get(gcode_info, "filament_weight_g");
+                    json_t* objects = json_object_get(gcode_info, "objects");
+
+                    // Format numbers with thousands separators - use larger buffers
+                    char file_size_str[32], total_lines_str[32], gcode_lines_str[32];
+                    char layer_height_str[32], layer_slicer_str[32];
+
+                    if (file_size) {
+                        long long fs = json_integer_value(file_size);
+                        if (fs >= 1000000) {
+                            snprintf(file_size_str, sizeof(file_size_str), "%lld,%03lld,%03lld",
+                                    fs / 1000000, (fs % 1000000) / 1000, fs % 1000);
+                        } else if (fs >= 1000) {
+                            snprintf(file_size_str, sizeof(file_size_str), "%lld,%03lld",
+                                    fs / 1000, fs % 1000);
+                        } else {
+                            snprintf(file_size_str, sizeof(file_size_str), "%lld", fs);
+                        }
+                    }
+
+                    if (total_lines) {
+                        long long tl = json_integer_value(total_lines);
+                        if (tl >= 1000000) {
+                            snprintf(total_lines_str, sizeof(total_lines_str), "%lld,%03lld,%03lld",
+                                    tl / 1000000, (tl % 1000000) / 1000, tl % 1000);
+                        } else if (tl >= 1000) {
+                            snprintf(total_lines_str, sizeof(total_lines_str), "%lld,%03lld",
+                                    tl / 1000, tl % 1000);
+                        } else {
+                            snprintf(total_lines_str, sizeof(total_lines_str), "%lld", tl);
+                        }
+                    }
+
+                    if (gcode_lines) {
+                        long long gl = json_integer_value(gcode_lines);
+                        if (gl >= 1000000) {
+                            snprintf(gcode_lines_str, sizeof(gcode_lines_str), "%lld,%03lld,%03lld",
+                                    gl / 1000000, (gl % 1000000) / 1000, gl % 1000);
+                        } else if (gl >= 1000) {
+                            snprintf(gcode_lines_str, sizeof(gcode_lines_str), "%lld,%03lld",
+                                    gl / 1000, gl % 1000);
+                        } else {
+                            snprintf(gcode_lines_str, sizeof(gcode_lines_str), "%lld", gl);
+                        }
+                    }
+
+                    if (layer_count_height) {
+                        long long lh = json_integer_value(layer_count_height);
+                        if (lh >= 1000000) {
+                            snprintf(layer_height_str, sizeof(layer_height_str), "%lld,%03lld,%03lld",
+                                    lh / 1000000, (lh % 1000000) / 1000, lh % 1000);
+                        } else if (lh >= 1000) {
+                            snprintf(layer_height_str, sizeof(layer_height_str), "%lld,%03lld",
+                                    lh / 1000, lh % 1000);
+                        } else {
+                            snprintf(layer_height_str, sizeof(layer_height_str), "%lld", lh);
+                        }
+                    }
+
+                    if (layer_count_slicer) {
+                        long long ls = json_integer_value(layer_count_slicer);
+                        if (ls >= 1000000) {
+                            snprintf(layer_slicer_str, sizeof(layer_slicer_str), "%lld,%03lld,%03lld",
+                                    ls / 1000000, (ls % 1000000) / 1000, ls % 1000);
+                        } else if (ls >= 1000) {
+                            snprintf(layer_slicer_str, sizeof(layer_slicer_str), "%lld,%03lld",
+                                    ls / 1000, ls % 1000);
+                        } else {
+                            snprintf(layer_slicer_str, sizeof(layer_slicer_str), "%lld", ls);
+                        }
+                    }
+
+                    // Log each element on separate lines with - prefix
+                    if (file_size) {
+                        char file_info[80];
+                        snprintf(file_info, sizeof(file_info), "- File: %s bytes", file_size_str);
+                        log_this("WebServer", file_info, LOG_LEVEL_STATE);
+                    }
+
+                    if (total_lines && gcode_lines) {
+                        char lines_info[96];
+                        snprintf(lines_info, sizeof(lines_info), "- Lines: %s total / %s gcode",
+                                total_lines_str, gcode_lines_str);
+                        log_this("WebServer", lines_info, LOG_LEVEL_STATE);
+                    }
+
+                    if (layer_count_height && layer_count_slicer) {
+                        char layers_info[96];
+                        if (json_integer_value(layer_count_height) != json_integer_value(layer_count_slicer)) {
+                            snprintf(layers_info, sizeof(layers_info), "- Layers: %s (height) / %s (slicer)",
+                                    layer_height_str, layer_slicer_str);
+                        } else {
+                            snprintf(layers_info, sizeof(layers_info), "- Layers: %s", layer_height_str);
+                        }
+                        log_this("WebServer", layers_info, LOG_LEVEL_STATE);
+                    }
+
+                    if (estimated_time) {
+                        char time_info[80];
+                        snprintf(time_info, sizeof(time_info), "- Print Time: %s", json_string_value(estimated_time));
+                        log_this("WebServer", time_info, LOG_LEVEL_STATE);
+                    }
+
+                    if (filament_used) {
+                        char filament_info[96];
+                        double filament_mm = json_real_value(filament_used);
+                        if (filament_mm >= 1000) {
+                            snprintf(filament_info, sizeof(filament_info), "- Filament: %.1f mm (%.1f meters)",
+                                    filament_mm, filament_mm / 1000);
+                        } else {
+                            snprintf(filament_info, sizeof(filament_info), "- Filament: %.1f mm", filament_mm);
+                        }
+                        log_this("WebServer", filament_info, LOG_LEVEL_STATE);
+                    }
+
+                    if (filament_volume && filament_weight) {
+                        char volume_info[96];
+                        double volume_cm3 = json_real_value(filament_volume);
+                        double weight_g = json_real_value(filament_weight);
+                        if (volume_cm3 >= 1000) {
+                            snprintf(volume_info, sizeof(volume_info), "- Material: %.1f cm³ (%.1f liters) / %.1f g",
+                                    volume_cm3, volume_cm3 / 1000, weight_g);
+                        } else {
+                            snprintf(volume_info, sizeof(volume_info), "- Material: %.1f cm³ / %.1f g",
+                                    volume_cm3, weight_g);
+                        }
+                        log_this("WebServer", volume_info, LOG_LEVEL_STATE);
+                    }
+
+                    if (objects) {
+                        size_t object_count_size = json_array_size(objects);
+                        if (object_count_size > 0) {
+                            char objects_info[80];
+                            if (object_count_size >= 1000) {
+                                snprintf(objects_info, sizeof(objects_info), "- Objects: %zu,%03zu",
+                                        object_count_size / 1000, object_count_size % 1000);
+                            } else {
+                                snprintf(objects_info, sizeof(objects_info), "- Objects: %zu", object_count_size);
+                            }
+                            log_this("WebServer", objects_info, LOG_LEVEL_STATE);
+                        }
+                    }
+
+                    log_this("WebServer", "Beryllium analysis completed successfully", LOG_LEVEL_STATE);
+                } else {
+                    log_this("WebServer", "Beryllium analysis failed", LOG_LEVEL_ERROR);
+                }
             }
 
             char* preview_image = extract_preview_image(con_info->new_filename);
@@ -156,7 +346,7 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
             json_decref(print_job);
 
             log_this("WebServer", "File upload completed:", LOG_LEVEL_STATE);
-            
+
             char info_str[DEFAULT_LINE_BUFFER_SIZE];
             snprintf(info_str, sizeof(info_str), "Source: %s", con_info->original_filename);
             log_this("WebServer", info_str, LOG_LEVEL_STATE);
