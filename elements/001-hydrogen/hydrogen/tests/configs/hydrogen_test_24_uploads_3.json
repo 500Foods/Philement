@@ -1,0 +1,14 @@
+{
+    "ServerName": "hydrogen-test-24-upload-3",
+    "PayloadKey": "${env.PAYLOAD_KEY}",
+    "WebServer": {
+        "Enabled": true,
+        "EnableIPv6": false,
+        "Port": 5242,
+        "MaxUploadSize": 10485760
+    },
+    "API": {
+        "Enabled": true,
+        "Prefix": "/api"
+    }
+}

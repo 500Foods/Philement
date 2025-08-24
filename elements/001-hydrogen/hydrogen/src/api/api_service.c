@@ -13,6 +13,7 @@
 #include "api_utils.h"
 #include "../webserver/web_server_core.h"
 #include "system/system_service.h"
+#include "system/upload/upload.h"
 #include "oidc/oidc_service.h"
 
 bool init_api_endpoints(void) {
@@ -93,6 +94,7 @@ bool register_api_endpoints(void) {
     log_this("API", "  -> %s/system/prometheus", LOG_LEVEL_STATE, app_config->api.prefix);
     log_this("API", "  -> %s/system/appconfig", LOG_LEVEL_STATE, app_config->api.prefix);
     log_this("API", "  -> %s/system/recent", LOG_LEVEL_STATE, app_config->api.prefix);
+    log_this("API", "  -> %s/system/upload", LOG_LEVEL_STATE, app_config->api.prefix);
     // OIDC endpoints
     log_this("API", "  -> %s/oidc/authorize", LOG_LEVEL_STATE, app_config->api.prefix);
     log_this("API", "  -> %s/oidc/token", LOG_LEVEL_STATE, app_config->api.prefix);
@@ -281,6 +283,10 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
     }
     else if (strcmp(path, "system/recent") == 0) {
         return handle_system_recent_request(connection);
+    }
+    else if (strcmp(path, "system/upload") == 0) {
+        return handle_system_upload_request(connection, method, upload_data,
+                                          upload_data_size, con_cls);
     }
     // Handle OIDC endpoints
     else if (strncmp(path, "oidc/", 5) == 0) {

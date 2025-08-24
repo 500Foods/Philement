@@ -76,21 +76,25 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
         char msg[128];
         snprintf(msg, sizeof(msg), "New connection thread for %s %s", method, url);
         log_this("WebServer", msg, LOG_LEVEL_STATE);
-    }
+    
 
-    /*
-     * Log API endpoint access using is_api_endpoint from the API service.
-     * This function validates the URL against the configured prefix (e.g., "/api" or "/myapi")
-     * and extracts the service and endpoint names. For example:
-     * URL: "/api/system/health" -> service: "system", endpoint: "health"
-     * URL: "/myapi/system/info" -> service: "system", endpoint: "info"
-     */
-    char service[32] = {0};
-    char endpoint[32] = {0};
-    if (is_api_endpoint(url, service, endpoint)) {
-        char detail[128];
-        snprintf(detail, sizeof(detail), "%sService/%s", service, endpoint);
-        log_this("API", detail, LOG_LEVEL_STATE);
+        /*
+        * Log API endpoint access using is_api_endpoint from the API service.
+        * This function validates the URL against the configured prefix (e.g., "/api" or "/myapi")
+        * and extracts the service and endpoint names. For example:
+        * URL: "/api/system/health" -> service: "system", endpoint: "health"
+        * URL: "/myapi/system/info" -> service: "system", endpoint: "info"
+        * 
+        * NOTE: Uploads happen in many parts, and we don't need to log each one, so this section
+        * has been moved up into the above section so it just runs the one time, thanks.
+        */
+        char service[32] = {0};
+        char endpoint[32] = {0};
+        if (is_api_endpoint(url, service, endpoint)) {
+            char detail[128];
+            snprintf(detail, sizeof(detail), "%sService/%s", service, endpoint);
+            log_this("API", detail, LOG_LEVEL_STATE);
+        }
     }
 
     // Handle OPTIONS method for CORS preflight requests
