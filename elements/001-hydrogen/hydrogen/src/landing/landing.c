@@ -99,7 +99,7 @@ typedef int (*RegistryLandingFunction)(bool);
 static LandingFunction get_landing_function(const char* subsystem_name) {
     // Registry is handled separately due to different signature
     if (strcmp(subsystem_name, "Registry") == 0) return NULL;
-    
+
     if (strcmp(subsystem_name, "Print") == 0) return land_print_subsystem;
     if (strcmp(subsystem_name, "MailRelay") == 0) return land_mail_relay_subsystem;
     if (strcmp(subsystem_name, "mDNS Client") == 0) return land_mdns_client_subsystem;
@@ -114,6 +114,9 @@ static LandingFunction get_landing_function(const char* subsystem_name) {
     if (strcmp(subsystem_name, "Network") == 0) return land_network_subsystem;
     if (strcmp(subsystem_name, "Payload") == 0) return land_payload_subsystem;
     if (strcmp(subsystem_name, "Threads") == 0) return land_threads_subsystem;
+    if (strcmp(subsystem_name, "Resources") == 0) return land_resources_subsystem;
+    if (strcmp(subsystem_name, "OIDC") == 0) return land_oidc_subsystem;
+    if (strcmp(subsystem_name, "Notify") == 0) return land_notify_subsystem;
     return NULL;
 }
 

@@ -60,39 +60,32 @@ static void register_webserver(void) {
  * @return LaunchReadiness structure with readiness status and messages
  */
 LaunchReadiness check_webserver_launch_readiness(void) {
-    const char** messages = malloc(15 * sizeof(char*));  // Space for messages + NULL
-    if (!messages) {
-        return (LaunchReadiness){ .subsystem = "WebServer", .ready = false, .messages = NULL };
-    }
-    
-    int msg_index = 0;
+    const char** messages = NULL;
+    size_t count = 0;
+    size_t capacity = 0;
     bool ready = true;
-    
+
     // First message is subsystem name
-    messages[msg_index++] = strdup("WebServer");
-    
+    add_launch_message(&messages, &count, &capacity, strdup("WebServer"));
+
     // Register with registry if not already registered
     register_webserver();
-    
-    LaunchReadiness readiness = { .subsystem = "WebServer", .ready = false, .messages = messages };
-    
+
     // Register dependencies
     if (webserver_subsystem_id >= 0) {
         if (!add_dependency_from_launch(webserver_subsystem_id, "Threads")) {
-            messages[msg_index++] = strdup("  No-Go:   Failed to register Threads dependency");
-            messages[msg_index] = NULL;
-            free_readiness_messages(&readiness);
-            return readiness;
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Failed to register Threads dependency"));
+            finalize_launch_messages(&messages, &count, &capacity);
+            return (LaunchReadiness){ .subsystem = "WebServer", .ready = false, .messages = messages };
         }
-        messages[msg_index++] = strdup("  Go:      Threads dependency registered");
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Threads dependency registered"));
 
         if (!add_dependency_from_launch(webserver_subsystem_id, "Network")) {
-            messages[msg_index++] = strdup("  No-Go:   Failed to register Network dependency");
-            messages[msg_index] = NULL;
-            free_readiness_messages(&readiness);
-            return readiness;
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Failed to register Network dependency"));
+            finalize_launch_messages(&messages, &count, &capacity);
+            return (LaunchReadiness){ .subsystem = "WebServer", .ready = false, .messages = messages };
         }
-        messages[msg_index++] = strdup("  Go:      Network dependency registered");
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Network dependency registered"));
     }
     
     // 1. Check Threads subsystem launch readiness (using cached version)
@@ -115,35 +108,35 @@ LaunchReadiness check_webserver_launch_readiness(void) {
     // } else {
     //     messages[msg_index++] = strdup("  Go:      Network subsystem Go for Launch");
     // }
-    
+
     // 3. Check protocol configuration
     if (!app_config) {
-        messages[msg_index++] = strdup("  No-Go:   Configuration not loaded");
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Configuration not loaded"));
         ready = false;
     } else {
         if (!app_config->webserver.enable_ipv4 && !app_config->webserver.enable_ipv6) {
-            messages[msg_index++] = strdup("  No-Go:   No network protocols enabled");
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   No network protocols enabled"));
             ready = false;
         } else {
-            char* msg = malloc(256);
-            if (msg) {
-                snprintf(msg, 256, "  Go:      Protocols enabled: %s%s%s", 
+            char* protocol_msg = malloc(256);
+            if (protocol_msg) {
+                snprintf(protocol_msg, 256, "  Go:      Protocols enabled: %s%s%s",
                     app_config->webserver.enable_ipv4 ? "IPv4" : "",
                     (app_config->webserver.enable_ipv4 && app_config->webserver.enable_ipv6) ? " and " : "",
                     app_config->webserver.enable_ipv6 ? "IPv6" : "");
-                messages[msg_index++] = msg;
+                add_launch_message(&messages, &count, &capacity, protocol_msg);
             }
         }
-        
+
         // 4 & 5. Check interface availability
         struct ifaddrs *ifaddr, *ifa;
         bool ipv4_available = false;
         bool ipv6_available = false;
-        
+
         if (getifaddrs(&ifaddr) != -1) {
             for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
                 if (ifa->ifa_addr == NULL) continue;
-                
+
                 if (ifa->ifa_addr->sa_family == AF_INET) {
                     ipv4_available = true;
                 } else if (ifa->ifa_addr->sa_family == AF_INET6) {
@@ -152,57 +145,58 @@ LaunchReadiness check_webserver_launch_readiness(void) {
             }
             freeifaddrs(ifaddr);
         }
-        
+
         if (app_config->webserver.enable_ipv4 && !ipv4_available) {
-            messages[msg_index++] = strdup("  No-Go:   No IPv4 interfaces available");
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   No IPv4 interfaces available"));
             ready = false;
         } else if (app_config->webserver.enable_ipv4) {
-            messages[msg_index++] = strdup("  Go:      IPv4 interfaces available");
+            add_launch_message(&messages, &count, &capacity, strdup("  Go:      IPv4 interfaces available"));
         }
-        
+
         if (app_config->webserver.enable_ipv6 && !ipv6_available) {
-            messages[msg_index++] = strdup("  No-Go:   No IPv6 interfaces available");
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   No IPv6 interfaces available"));
             ready = false;
         } else if (app_config->webserver.enable_ipv6) {
-            messages[msg_index++] = strdup("  Go:      IPv6 interfaces available");
+            add_launch_message(&messages, &count, &capacity, strdup("  Go:      IPv6 interfaces available"));
         }
-        
+
         // 6. Check port number
         int port = app_config->webserver.port;
         if (port != 80 && port != 443 && port <= 1023) {
-            char* msg = malloc(256);
-            if (msg) {
-                snprintf(msg, 256, "  No-Go:   Invalid port number: %d", port);
-                messages[msg_index++] = msg;
+            char* port_msg = malloc(256);
+            if (port_msg) {
+                snprintf(port_msg, 256, "  No-Go:   Invalid port number: %d", port);
+                add_launch_message(&messages, &count, &capacity, port_msg);
             }
             ready = false;
         } else {
-            char* msg = malloc(256);
-            if (msg) {
-                snprintf(msg, 256, "  Go:      Valid port number: %d", port);
-                messages[msg_index++] = msg;
+            char* port_valid_msg = malloc(256);
+            if (port_valid_msg) {
+                snprintf(port_valid_msg, 256, "  Go:      Valid port number: %d", port);
+                add_launch_message(&messages, &count, &capacity, port_valid_msg);
             }
         }
-        
+
         // 7. Check webserver root
         if (!app_config->webserver.web_root || !strchr(app_config->webserver.web_root, '/')) {
-            messages[msg_index++] = strdup("  No-Go:   Invalid web root path");
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid web root path"));
             ready = false;
         } else {
-            char* msg = malloc(256);
-            if (msg) {
-                snprintf(msg, 256, "  Go:      Valid web root: %s", app_config->webserver.web_root);
-                messages[msg_index++] = msg;
+            char* root_msg = malloc(256);
+            if (root_msg) {
+                snprintf(root_msg, 256, "  Go:      Valid web root: %s", app_config->webserver.web_root);
+                add_launch_message(&messages, &count, &capacity, root_msg);
             }
         }
     }
-    
+
     // Final decision
-    messages[msg_index++] = strdup(ready ? 
+    add_launch_message(&messages, &count, &capacity, strdup(ready ?
         "  Decide:  Go For Launch of WebServer Subsystem" :
-        "  Decide:  No-Go For Launch of WebServer Subsystem");
-    messages[msg_index] = NULL;
-    
+        "  Decide:  No-Go For Launch of WebServer Subsystem"));
+
+    finalize_launch_messages(&messages, &count, &capacity);
+
     return (LaunchReadiness){
         .subsystem = "WebServer",
         .ready = ready,

@@ -70,12 +70,20 @@ int startup_hydrogen(const char* config_path);
 char* get_current_config_path(void);
 LaunchReadiness get_api_readiness(void);
 
+// Dynamic message array utilities for readiness functions
+void add_launch_message(const char*** messages, size_t* count, size_t* capacity, const char* message);
+void finalize_launch_messages(const char*** messages, size_t* count, size_t* capacity);
+void free_launch_messages(const char** messages, size_t count);
+void set_readiness_messages(LaunchReadiness* readiness, const char** messages);
+
 int is_api_running(void);
 int is_swagger_running(void);
 
 // Subsystem registration functions
 void register_api(void);
 void register_swagger(void);
+void register_oidc(void);
+void register_notify(void);
 
 void free_threads_resources(void);
 void free_payload_resources(void);
@@ -162,6 +170,9 @@ bool validate_monitoring_settings(const ResourceConfig* config, int* msg_count, 
 
 // Forward declarations for launch_threads.c
 void register_threads(void);
+
+// Subsystem state checking functions
+bool is_subsystem_launchable_by_name(const char* name);
 
 void shutdown_database_subsystem(void);
 void shutdown_network_subsystem(void);

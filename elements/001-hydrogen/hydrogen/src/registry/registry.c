@@ -25,6 +25,7 @@ SubsystemRegistry subsystem_registry = {
 // State string mapping for human-readable output
 static const char* state_strings[] = {
     "Inactive",
+    "Ready",
     "Starting",
     "Running",
     "Stopping",

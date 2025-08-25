@@ -10,106 +10,63 @@
 
 volatile sig_atomic_t logging_stopping = 0;
 
-// Helper functions for message formatting
-static void add_message(const char** messages, int* count, const char* message) {
-    if (message) {
-        messages[*count] = message;
-        (*count)++;
-    }
-}
 
-static void add_go_message(const char** messages, int* count, const char* prefix, const char* format, ...) {
-    char temp[256];
-    va_list args;
-    va_start(args, format);
-    vsnprintf(temp, sizeof(temp), format, args);
-    va_end(args);
-    
-    char buffer[512];
-    if (strcmp(prefix, "No-Go") == 0) {
-        snprintf(buffer, sizeof(buffer), "  %s:   %s", prefix, temp);
-    } else {
-        snprintf(buffer, sizeof(buffer), "  %s:      %s", prefix, temp);
-    }
-    
-    add_message(messages, count, strdup(buffer));
-}
-
-static void add_decision_message(const char** messages, int* count, const char* format, ...) {
-    char temp[256];
-    va_list args;
-    va_start(args, format);
-    vsnprintf(temp, sizeof(temp), format, args);
-    va_end(args);
-    
-    char buffer[512];
-    snprintf(buffer, sizeof(buffer), "  Decide:  %s", temp);
-    add_message(messages, count, strdup(buffer));
-}
 
 // Check logging subsystem launch readiness
 LaunchReadiness check_logging_launch_readiness(void) {
+    const char** messages = NULL;
+    size_t count = 0;
+    size_t capacity = 0;
     bool overall_readiness = false;
-    
-    // Allocate space for messages
-    const char** messages = malloc(10 * sizeof(const char*));
-    if (!messages) {
-        return (LaunchReadiness){0};
-    }
-    int msg_count = 0;
-    
-    // Add the subsystem name as the first message
-    add_message(messages, &msg_count, strdup("Logging"));
-    
-    // Early return cases with cleanup
+
+    // First message is subsystem name
+    add_launch_message(&messages, &count, &capacity, strdup("Logging"));
+
+    // Early return cases
     if (server_stopping) {
-        add_go_message(messages, &msg_count, "No-Go", "System shutdown in progress");
-        messages[msg_count] = NULL;
-        return (LaunchReadiness){
-            .subsystem = "Logging",
-            .ready = false,
-            .messages = messages
-        };
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   System shutdown in progress"));
+        finalize_launch_messages(&messages, &count, &capacity);
+        return (LaunchReadiness){ .subsystem = "Logging", .ready = false, .messages = messages };
     }
-    
+
     if (!server_starting && !server_running) {
-        add_go_message(messages, &msg_count, "No-Go", "System not in startup or running state");
-        messages[msg_count] = NULL;
-        return (LaunchReadiness){
-            .subsystem = "Logging",
-            .ready = false,
-            .messages = messages
-        };
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   System not in startup or running state"));
+        finalize_launch_messages(&messages, &count, &capacity);
+        return (LaunchReadiness){ .subsystem = "Logging", .ready = false, .messages = messages };
     }
-    
+
     const AppConfig* config = get_app_config();
     if (!config) {
-        add_go_message(messages, &msg_count, "No-Go", "Configuration not loaded");
-        messages[msg_count] = NULL;
-        return (LaunchReadiness){
-            .subsystem = "Logging",
-            .ready = false,
-            .messages = messages
-        };
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Configuration not loaded"));
+        finalize_launch_messages(&messages, &count, &capacity);
+        return (LaunchReadiness){ .subsystem = "Logging", .ready = false, .messages = messages };
     }
-    
+
     // Get logging configuration
     const LoggingConfig* log_config = &config->logging;
     bool config_valid = true;
 
     // Validate log levels
     if (!log_config->levels || log_config->level_count == 0) {
-        add_go_message(messages, &msg_count, "No-Go", "No log levels defined");
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   No log levels defined"));
         config_valid = false;
     } else {
-        add_go_message(messages, &msg_count, "Go", "Log levels defined: %zu", log_config->level_count);
-        
+        char* level_count_msg = malloc(256);
+        if (level_count_msg) {
+            snprintf(level_count_msg, 256, "  Go:      Log levels defined: %zu", log_config->level_count);
+            add_launch_message(&messages, &count, &capacity, level_count_msg);
+        }
+
         // Check each level
         for (size_t i = 0; i < log_config->level_count; i++) {
-            if (log_config->levels[i].value < LOG_LEVEL_TRACE || 
+            if (log_config->levels[i].value < LOG_LEVEL_TRACE ||
                 log_config->levels[i].value > LOG_LEVEL_QUIET ||
                 !log_config->levels[i].name) {
-                add_go_message(messages, &msg_count, "No-Go", "Invalid log level at index %zu", i);
+                char* invalid_level_msg = malloc(256);
+                if (invalid_level_msg) {
+                    snprintf(invalid_level_msg, 256, "  No-Go:   Invalid log level at index %zu", i);
+                    add_launch_message(&messages, &count, &capacity, invalid_level_msg);
+                }
                 config_valid = false;
             }
         }
@@ -117,82 +74,99 @@ LaunchReadiness check_logging_launch_readiness(void) {
 
     // Validate console logging
     if (log_config->console.enabled) {
-        if (log_config->console.default_level < LOG_LEVEL_TRACE || 
+        if (log_config->console.default_level < LOG_LEVEL_TRACE ||
             log_config->console.default_level > LOG_LEVEL_QUIET) {
-            add_go_message(messages, &msg_count, "No-Go", "Invalid console default level");
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid console default level"));
             config_valid = false;
         } else {
-            add_go_message(messages, &msg_count, "Go", "Console logging enabled at level %s", 
-                          config_logging_get_level_name(log_config, log_config->console.default_level));
+            char* console_msg = malloc(256);
+            if (console_msg) {
+                snprintf(console_msg, 256, "  Go:      Console logging enabled at level %s",
+                        config_logging_get_level_name(log_config, log_config->console.default_level));
+                add_launch_message(&messages, &count, &capacity, console_msg);
+            }
         }
     } else {
-        add_go_message(messages, &msg_count, "Go", "Console logging disabled");
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Console logging disabled"));
     }
 
     // Validate file logging
     if (log_config->file.enabled) {
-        if (log_config->file.default_level < LOG_LEVEL_TRACE || 
+        if (log_config->file.default_level < LOG_LEVEL_TRACE ||
             log_config->file.default_level > LOG_LEVEL_QUIET) {
-            add_go_message(messages, &msg_count, "No-Go", "Invalid file default level");
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid file default level"));
             config_valid = false;
         } else {
-            add_go_message(messages, &msg_count, "Go", "File logging enabled at level %s",
-                          config_logging_get_level_name(log_config, log_config->file.default_level));
+            char* file_msg = malloc(256);
+            if (file_msg) {
+                snprintf(file_msg, 256, "  Go:      File logging enabled at level %s",
+                        config_logging_get_level_name(log_config, log_config->file.default_level));
+                add_launch_message(&messages, &count, &capacity, file_msg);
+            }
         }
     } else {
-        add_go_message(messages, &msg_count, "Go", "File logging disabled");
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      File logging disabled"));
     }
 
     // Validate database logging
     if (log_config->database.enabled) {
-        if (log_config->database.default_level < LOG_LEVEL_TRACE || 
+        if (log_config->database.default_level < LOG_LEVEL_TRACE ||
             log_config->database.default_level > LOG_LEVEL_QUIET) {
-            add_go_message(messages, &msg_count, "No-Go", "Invalid database default level");
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid database default level"));
             config_valid = false;
         } else {
-            add_go_message(messages, &msg_count, "Go", "Database logging enabled at level %s",
-                          config_logging_get_level_name(log_config, log_config->database.default_level));
+            char* db_msg = malloc(256);
+            if (db_msg) {
+                snprintf(db_msg, 256, "  Go:      Database logging enabled at level %s",
+                        config_logging_get_level_name(log_config, log_config->database.default_level));
+                add_launch_message(&messages, &count, &capacity, db_msg);
+            }
         }
     } else {
-        add_go_message(messages, &msg_count, "Go", "Database logging disabled");
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Database logging disabled"));
     }
 
     // Validate notification logging
     if (log_config->notify.enabled) {
-        if (log_config->notify.default_level < LOG_LEVEL_TRACE || 
+        if (log_config->notify.default_level < LOG_LEVEL_TRACE ||
             log_config->notify.default_level > LOG_LEVEL_QUIET) {
-            add_go_message(messages, &msg_count, "No-Go", "Invalid notification default level");
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid notification default level"));
             config_valid = false;
         } else {
-            add_go_message(messages, &msg_count, "Go", "Notification logging enabled at level %s",
-                          config_logging_get_level_name(log_config, log_config->notify.default_level));
+            char* notify_msg = malloc(256);
+            if (notify_msg) {
+                snprintf(notify_msg, 256, "  Go:      Notification logging enabled at level %s",
+                        config_logging_get_level_name(log_config, log_config->notify.default_level));
+                add_launch_message(&messages, &count, &capacity, notify_msg);
+            }
         }
     } else {
-        add_go_message(messages, &msg_count, "Go", "Notification logging disabled");
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Notification logging disabled"));
     }
 
     // Ensure at least one logging destination is enabled
-    if (!log_config->console.enabled && !log_config->file.enabled && 
+    if (!log_config->console.enabled && !log_config->file.enabled &&
         !log_config->database.enabled && !log_config->notify.enabled) {
-        add_go_message(messages, &msg_count, "No-Go", "No logging destinations enabled");
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   No logging destinations enabled"));
         config_valid = false;
     }
 
     // Basic readiness check - verify subsystem registration and config validity
     int subsystem_id = get_subsystem_id_by_name("Logging");
     if (subsystem_id >= 0 && config_valid) {
-        add_go_message(messages, &msg_count, "Go", "Logging subsystem registered");
-        add_decision_message(messages, &msg_count, "Go For Launch of Logging Subsystem");
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Logging subsystem registered"));
+        add_launch_message(&messages, &count, &capacity, strdup("  Decide:  Go For Launch of Logging Subsystem"));
         overall_readiness = true;
     } else {
         if (subsystem_id < 0) {
-            add_go_message(messages, &msg_count, "No-Go", "Logging subsystem not registered");
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Logging subsystem not registered"));
         }
-        add_decision_message(messages, &msg_count, "No-Go For Launch of Logging Subsystem");
+        add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Logging Subsystem"));
         overall_readiness = false;
     }
-    
-    messages[msg_count] = NULL;
+
+    finalize_launch_messages(&messages, &count, &capacity);
+
     return (LaunchReadiness){
         .subsystem = "Logging",
         .ready = overall_readiness,

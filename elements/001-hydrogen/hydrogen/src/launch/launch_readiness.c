@@ -38,16 +38,16 @@
 // Log all messages from a readiness check
 void log_readiness_messages(LaunchReadiness* readiness) {
     if (!readiness || !readiness->messages) return;
-    
+
     // Log each message (first message is the subsystem name)
     for (int i = 0; readiness->messages[i] != NULL; i++) {
         int level = LOG_LEVEL_STATE;
-        
+
         // Use appropriate log level based on the message content
         if (strstr(readiness->messages[i], "No-Go") != NULL) {
             level = LOG_LEVEL_ALERT;
         }
-        
+
         // Print the message directly (formatting is already in the message)
         log_this("Launch", "%s", level, readiness->messages[i]);
     }
@@ -120,6 +120,9 @@ ReadinessResults handle_readiness_checks(void) {
     process_subsystem_readiness(&results, &index, "mDNS Client", check_mdns_client_launch_readiness());
     process_subsystem_readiness(&results, &index, "Mail Relay", check_mail_relay_launch_readiness());
     process_subsystem_readiness(&results, &index, "Print", check_print_launch_readiness());
+    process_subsystem_readiness(&results, &index, "Resources", check_resources_launch_readiness());
+    process_subsystem_readiness(&results, &index, "OIDC", check_oidc_launch_readiness());
+    process_subsystem_readiness(&results, &index, "Notify", check_notify_launch_readiness());
     
     return results;
 }

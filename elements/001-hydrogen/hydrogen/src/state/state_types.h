@@ -17,6 +17,7 @@
 // Subsystem state enum
 typedef enum {
     SUBSYSTEM_INACTIVE,  // Not started
+    SUBSYSTEM_READY,     // Passed readiness checks, ready for launch
     SUBSYSTEM_STARTING,  // In the process of starting
     SUBSYSTEM_RUNNING,   // Running normally
     SUBSYSTEM_STOPPING,  // In the process of stopping
@@ -35,7 +36,7 @@ typedef struct {
     struct {
         const char* subsystem;
         bool ready;
-    } results[15];  // Must match number of subsystems
+    } results[MAX_SUBSYSTEMS];  // Must match number of subsystems (updated for Resources, OIDC, Notify)
     size_t total_checked;
     size_t total_ready;
     size_t total_not_ready;

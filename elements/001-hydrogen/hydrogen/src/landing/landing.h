@@ -58,11 +58,13 @@ int land_swagger_subsystem(void);
 int land_terminal_subsystem(void);
 int land_webserver_subsystem(void);
 int land_websocket_subsystem(void);
-int land_payload_subsystem(void);
 int land_threads_subsystem(void);
+int land_resources_subsystem(void);
+int land_oidc_subsystem(void);
+int land_notify_subsystem(void);
 int land_registry_subsystem(bool is_restart);
 
-// Landing readiness checks 
+// Landing readiness checks
 LaunchReadiness check_registry_landing_readiness(void);
 LaunchReadiness check_print_landing_readiness(void);
 LaunchReadiness check_mail_relay_landing_readiness(void);
@@ -78,7 +80,8 @@ LaunchReadiness check_logging_landing_readiness(void);
 LaunchReadiness check_network_landing_readiness(void);
 LaunchReadiness check_payload_landing_readiness(void);
 LaunchReadiness check_threads_landing_readiness(void);
-LaunchReadiness check_registry_landing_readiness(void);
-LaunchReadiness check_payload_landing_readiness(void);
+LaunchReadiness check_resources_landing_readiness(void);
+LaunchReadiness check_oidc_landing_readiness(void);
+LaunchReadiness check_notify_landing_readiness(void);
 
 #endif /* LANDING_H */

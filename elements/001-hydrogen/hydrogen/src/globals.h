@@ -68,6 +68,7 @@
 
 #define INITIAL_REGISTRY_CAPACITY 20
 #define MAX_DEPENDENCIES 20
+#define MAX_SUBSYSTEMS 18  // Total number of subsystems (Registry, Payload, Threads, Network, Database, Logging, WebServer, API, Swagger, WebSocket, Terminal, mDNS Server, mDNS Client, Mail Relay, Print, Resources, OIDC, Notify)
 
 // LOGGING ////////////////////////////////////////////////////////////////////////////////////////
 

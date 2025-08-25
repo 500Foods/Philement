@@ -378,7 +378,9 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         IFS=':' read -r config_file log_suffix api_prefix description <<< "${API_TEST_CONFIGS[${test_config}]}"
         
         # print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "API Prefix Test: ${description} (${api_prefix})"
-        
+        server_log="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.log"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${test_config} Server Log: ..${server_log}" 
+
         # shellcheck disable=SC2310 # We want to continue even if the test fails
         if analyze_api_prefix_test_results "${test_config}" "${log_suffix}" "${api_prefix}" "${description}"; then
             # Test individual endpoint results for detailed feedback
