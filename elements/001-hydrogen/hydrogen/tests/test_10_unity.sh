@@ -158,8 +158,8 @@ run_single_unity_test_parallel() {
         exit_code=1
     fi
     
-    echo "SUBTEST_END|${subtest_number}|${test_name}|${test_count}|${passed_count}|${failed_count}" >> "${output_file}"
-    echo "${exit_code}|${test_name}|${test_count}|${passed_count}|${failed_count}" > "${result_file}"
+    echo "SUBTEST_END|${subtest_number}|${test_name}|${test_count}|${passed_count}|${failed_count}|${ignored_count}" >> "${output_file}"
+    echo "${exit_code}|${test_name}|${test_count}|${passed_count}|${failed_count}|${ignored_count}" > "${result_file}"
     
     return "${exit_code}"
 }
@@ -308,8 +308,8 @@ run_unity_tests() {
             
             # Collect statistics from result file
             if [[ -f "${temp_result_file}" ]] && [[ -s "${temp_result_file}" ]]; then
-                IFS='|' read -r exit_code test_name test_count passed_count failed_count < "${temp_result_file}"
-                TOTAL_UNITY_TESTS=$((TOTAL_UNITY_TESTS + test_count))
+                IFS='|' read -r exit_code test_name test_count passed_count failed_count ignored_count < "${temp_result_file}"
+                TOTAL_UNITY_TESTS=$((TOTAL_UNITY_TESTS + test_count - ignored_count))
                 TOTAL_UNITY_PASSED=$((TOTAL_UNITY_PASSED + passed_count))
                 total_failed=$((total_failed + failed_count))
             fi
