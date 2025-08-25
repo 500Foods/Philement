@@ -32,6 +32,11 @@ bool client_accepts_brotli(struct MHD_Connection *connection) {
 }
 
 bool brotli_file_exists(const char *file_path, char *br_file_path, size_t buffer_size) {
+    // Validate input parameters
+    if (!file_path) {
+        return false;
+    }
+
     // Check if file_path already ends with .br
     size_t len = strlen(file_path);
     if (len >= 3 && strcmp(file_path + len - 3, ".br") == 0) {

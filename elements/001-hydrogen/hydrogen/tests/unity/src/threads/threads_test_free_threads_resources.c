@@ -314,25 +314,25 @@ int main(void) {
     RUN_TEST(test_free_threads_resources_simple_test);
 
     // Basic resource cleanup tests (commented out to avoid hanging)
-    // RUN_TEST(test_free_threads_resources_empty_state);
-    // RUN_TEST(test_free_threads_resources_with_threads);
-    // RUN_TEST(test_free_threads_resources_max_threads);
+    if (0) RUN_TEST(test_free_threads_resources_empty_state);
+    if (0) RUN_TEST(test_free_threads_resources_with_threads);
+    if (0) RUN_TEST(test_free_threads_resources_max_threads);
 
     // Final shutdown mode tests
-    // RUN_TEST(test_free_threads_resources_sets_shutdown_mode);
-    // RUN_TEST(test_free_threads_resources_shutdown_mode_persistent);
+    if (0) RUN_TEST(test_free_threads_resources_sets_shutdown_mode);
+    if (0) RUN_TEST(test_free_threads_resources_shutdown_mode_persistent);
 
     // Structure reset tests
-    // RUN_TEST(test_free_threads_resources_resets_subsystem_names);
-    // RUN_TEST(test_free_threads_resources_resets_memory_totals);
-    // RUN_TEST(test_free_threads_resources_resets_memory_percent);
+    if (0) RUN_TEST(test_free_threads_resources_resets_subsystem_names);
+    if (0) RUN_TEST(test_free_threads_resources_resets_memory_totals);
+    if (0) RUN_TEST(test_free_threads_resources_resets_memory_percent);
 
     // Array reset tests
-    // RUN_TEST(test_free_threads_resources_clears_thread_arrays);
+    if (0) RUN_TEST(test_free_threads_resources_clears_thread_arrays);
 
     // Multiple calls tests
-    // RUN_TEST(test_free_threads_resources_multiple_calls_safe);
-    // RUN_TEST(test_free_threads_resources_reinitialization_after_cleanup);
+    if (0) RUN_TEST(test_free_threads_resources_multiple_calls_safe);
+    if (0) RUN_TEST(test_free_threads_resources_reinitialization_after_cleanup);
 
     return UNITY_END();
 }
