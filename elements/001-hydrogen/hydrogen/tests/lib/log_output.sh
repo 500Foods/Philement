@@ -171,7 +171,7 @@ print_test_suite_header() {
             "header": "Test Title",
             "key": "test_name",
             "datatype": "text",
-            "width": 53
+            "width": 61
         },
         {
             "header": "Version",
@@ -240,7 +240,7 @@ print_test_header() {
             "header": "Test Title",
             "key": "test_name",
             "datatype": "text",
-            "width": 53
+            "width": 61
         },
         {
             "header": "Version",
@@ -537,7 +537,7 @@ print_test_completion() {
             "header": "Test Name",
             "key": "test_name",
             "datatype": "text",
-            "width": 44    
+            "width": 52    
         },
         {
             "header": "Version",

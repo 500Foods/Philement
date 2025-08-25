@@ -449,7 +449,7 @@ for file_data_entry in "${sorted_file_data[@]}"; do
     
     # Compute all percentages and checks in one awk call
     # shellcheck disable=SC2312 # Not gonna touch this one
-    IFS=' ' read -r u_percentage c_percentage combined_percentage max_percentage coverage_below_50 <<< "$(
+    IFS=' ' read -r u_percentage c_percentage combined_percentage max_percentage coverage_below_50 focus_value <<< "$(
         "${AWK}" -v u_c="${u_covered}" -v u_i="${u_instrumented}" \
             -v c_c="${c_covered}" -v c_i="${c_instrumented}" \
             -v comb_c="${combined_covered}" -v comb_i="${combined_instrumented}" '
@@ -459,7 +459,27 @@ for file_data_entry in "${sorted_file_data[@]}"; do
             comb_pct = (comb_i > 0) ? (comb_c / comb_i * 100) : 0;
             max_pct = (u_pct > c_pct) ? u_pct : c_pct;
             below_50 = (comb_c > 0 && comb_i > 100 && comb_pct < 50.0) ? 1 : 0;
-            printf "%.3f %.3f %.3f %.3f %d\n", u_pct, c_pct, comb_pct, max_pct, below_50;
+
+            # Focus calculation using combined coverage and instrumented lines
+            coverage = comb_pct;
+            lines = comb_i;
+
+            # coverage_gap = 100 - coverage (handle None as 0)
+            coverage_gap = 100 - coverage;
+
+            # size_weight = min(log10(lines), 3) if lines > 0 else 0
+            size_weight = (lines > 0) ? ((lines <= 1) ? 0 : ((log(lines)/log(10) > 3) ? 3 : log(lines)/log(10))) : 0;
+
+            # coverage_penalty = 1.0 if coverage < 80 else 0.5 if coverage <= 90 else 0.25
+            coverage_penalty = (coverage < 80) ? 1.0 : ((coverage <= 90) ? 0.5 : 0.25);
+
+            # small_file_penalty = 1.0 if lines >= 50 or (coverage is not None and coverage < 20) else 0.2
+            small_file_penalty = ((lines >= 50 || (coverage < 20 && comb_i > 0)) ? 1.0 : 0.2);
+
+            # Calculate focus value
+            focus = coverage_gap * size_weight * coverage_penalty * small_file_penalty;
+
+            printf "%.3f %.3f %.3f %.3f %d %.1f\n", u_pct, c_pct, comb_pct, max_pct, below_50, focus;
         }')"
     
     # Remove src/ prefix from display path and highlight files
@@ -494,7 +514,8 @@ for file_data_entry in "${sorted_file_data[@]}"; do
         "coverage_instrumented": '"${c_instrumented}"',
         "coverage_percentage": '"${c_percentage}"',
         "combined_covered": '"${combined_covered}"',
-        "combined_instrumented": '"${combined_instrumented}"'
+        "combined_instrumented": '"${combined_instrumented}"',
+        "focus": '"${focus_value}"'
     }'
 done
 
@@ -531,7 +552,7 @@ cat > "${layout_json}" << EOF
             "key": "combined_coverage_percentage",
             "datatype": "float",
             "justification": "right",
-            "summary":"nonblanks"
+            "summary": "nonblanks"
         },
         {
             "header": "Lines",
@@ -578,10 +599,19 @@ cat > "${layout_json}" << EOF
             "justification": "right",
             "summary": "sum",
             "width": 8
+        },
+        {
+            "header": "Focus",
+            "key": "focus",
+            "datatype": "float",
+            "justification": "right",
+            "summary": "",
+            "width": 7
         }
     ]
 }
 EOF
+
 # print_subtest "Layout generated"
 
 # Use tables executable to render the table
