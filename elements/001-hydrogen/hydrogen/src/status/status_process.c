@@ -32,6 +32,7 @@ extern QueueMemoryMetrics print_queue_memory;
 static bool collect_process_memory(size_t *vmsize, size_t *vmrss, size_t *vmswap);
 
 // Helper function to safely truncate strings
+// Exposed for testing - was previously static
 char* safe_truncate(char* dest, size_t dest_size, const char* src) {
     size_t src_len = strlen(src);
     size_t copy_len = src_len < dest_size - 1 ? src_len : dest_size - 1;
@@ -268,6 +269,7 @@ bool collect_file_descriptors(FileDescriptorInfo **descriptors, int *count) {
 }
 
 // Convert ServiceThreads metrics to ServiceThreadMetrics
+// Exposed for testing - was previously static
 void convert_thread_metrics(const ServiceThreads *src, ServiceThreadMetrics *dest) {
     if (!src || !dest) return;
     

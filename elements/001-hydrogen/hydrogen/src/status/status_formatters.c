@@ -9,7 +9,13 @@
 #include "status_formatters.h"
 
 // Convert system metrics to JSON format
+// Exposed for testing - was previously static
 json_t* format_system_status_json(const SystemMetrics *metrics) {
+    // Check for NULL metrics parameter
+    if (!metrics) {
+        return NULL;
+    }
+
     json_t *root = json_object();
     
     // Version Information
@@ -226,7 +232,13 @@ void format_prometheus_percentage(char *buffer, size_t buffer_size,
 }
 
 // Convert system metrics to Prometheus format
+// Exposed for testing - was previously static
 char* format_system_status_prometheus(const SystemMetrics *metrics) {
+    // Check for NULL metrics parameter
+    if (!metrics) {
+        return NULL;
+    }
+
     // Initial buffer size - will be expanded if needed
     size_t buffer_size = 16384;
     char *output = malloc(buffer_size);

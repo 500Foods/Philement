@@ -671,7 +671,7 @@ layout_json_content='{
             "header": "Test Name (Test Suite loc: '"${SCRIPT_SCALE})"'",
             "key": "test_name",
             "datatype": "text",
-            "width": 44,
+            "width": 52,
             "justification": "left"
         },
         {
