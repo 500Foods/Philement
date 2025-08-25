@@ -32,7 +32,7 @@ typedef struct {
     uint16_t arcount;
 } __attribute__((packed)) dns_header_t;
 
-static uint8_t *read_dns_name(uint8_t *ptr, const uint8_t *packet, char *name, size_t name_len) {
+uint8_t *read_dns_name(uint8_t *ptr, const uint8_t *packet, char *name, size_t name_len) {
     size_t i = 0;
     while (*ptr) {
         if ((*ptr & 0xC0) == 0xC0) {
@@ -52,7 +52,8 @@ static uint8_t *read_dns_name(uint8_t *ptr, const uint8_t *packet, char *name, s
     return ptr + 1;
 }
 
-static int create_multicast_socket(int family, const char *group, const char *if_name) {
+
+int create_multicast_socket(int family, const char *group, const char *if_name) {
     if (!if_name) {
         log_this("mDNSServer", "No interface name provided", LOG_LEVEL_DEBUG);
         return -1;
@@ -155,7 +156,13 @@ static int create_multicast_socket(int family, const char *group, const char *if
     return sockfd;
 }
 
-static uint8_t *write_dns_name(uint8_t *ptr, const char *name) {
+uint8_t *write_dns_name(uint8_t *ptr, const char *name) {
+    // Defensive check for NULL name
+    if (!name) {
+        *ptr++ = 0;  // Just write null terminator for NULL name
+        return ptr;
+    }
+
     const char *part = name;
     while (*part) {
         const char *end = strchr(part, '.');
@@ -171,7 +178,7 @@ static uint8_t *write_dns_name(uint8_t *ptr, const char *name) {
     return ptr;
 }
 
-static uint8_t *write_dns_record(uint8_t *ptr, const char *name, uint16_t type, uint16_t class, uint32_t ttl, const void *rdata, uint16_t rdlen) {
+uint8_t *write_dns_record(uint8_t *ptr, const char *name, uint16_t type, uint16_t class, uint32_t ttl, const void *rdata, uint16_t rdlen) {
     ptr = write_dns_name(ptr, name);
     *((uint16_t*)ptr) = htons(type); ptr += 2;
     *((uint16_t*)ptr) = htons(class); ptr += 2;
@@ -182,7 +189,7 @@ static uint8_t *write_dns_record(uint8_t *ptr, const char *name, uint16_t type, 
     return ptr;
 }
 
-static uint8_t *write_dns_ptr_record(uint8_t *ptr, const char *name, const char *ptr_data, uint32_t ttl) {
+uint8_t *write_dns_ptr_record(uint8_t *ptr, const char *name, const char *ptr_data, uint32_t ttl) {
     ptr = write_dns_name(ptr, name);
     *((uint16_t*)ptr) = htons(MDNS_TYPE_PTR); ptr += 2;
     *((uint16_t*)ptr) = htons(MDNS_CLASS_IN); ptr += 2;
@@ -193,7 +200,7 @@ static uint8_t *write_dns_ptr_record(uint8_t *ptr, const char *name, const char 
     return ptr;
 }
 
-static uint8_t *write_dns_srv_record(uint8_t *ptr, const char *name, uint16_t priority, uint16_t weight, uint16_t port, const char *target, uint32_t ttl) {
+uint8_t *write_dns_srv_record(uint8_t *ptr, const char *name, uint16_t priority, uint16_t weight, uint16_t port, const char *target, uint32_t ttl) {
     ptr = write_dns_name(ptr, name);
     *((uint16_t*)ptr) = htons(MDNS_TYPE_SRV); ptr += 2;
     *((uint16_t*)ptr) = htons(MDNS_CLASS_IN); ptr += 2;
@@ -207,7 +214,7 @@ static uint8_t *write_dns_srv_record(uint8_t *ptr, const char *name, uint16_t pr
     return ptr;
 }
 
-static uint8_t *write_dns_txt_record(uint8_t *ptr, const char *name, char **txt_records, size_t num_txt_records, uint32_t ttl) {
+uint8_t *write_dns_txt_record(uint8_t *ptr, const char *name, char **txt_records, size_t num_txt_records, uint32_t ttl) {
     ptr = write_dns_name(ptr, name);
     *((uint16_t*)ptr) = htons(MDNS_TYPE_TXT); ptr += 2;
     *((uint16_t*)ptr) = htons(MDNS_CLASS_IN); ptr += 2;
@@ -308,8 +315,15 @@ static void _mdns_server_build_interface_announcement(uint8_t *packet, size_t *p
     }
 }
 
-void mdns_server_build_announcement(uint8_t *packet, size_t *packet_len, const char *hostname, 
+void mdns_server_build_announcement(uint8_t *packet, size_t *packet_len, const char *hostname,
                            const mdns_server_t *mdns_server_instance, uint32_t ttl, const network_info_t *net_info_instance) {
+    // Defensive check for NULL server instance
+    if (!mdns_server_instance) {
+        log_this("mDNSServer", "Warning: NULL mDNS server instance passed to build_announcement", LOG_LEVEL_ALERT);
+        if (packet_len) *packet_len = 0;
+        return;
+    }
+
     // Find the matching interface from net_info
     mdns_server_interface_t *matching_iface = NULL;
     if (net_info_instance && net_info_instance->primary_index >= 0 && net_info_instance->primary_index < net_info_instance->count) {

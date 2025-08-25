@@ -51,4 +51,8 @@ bool network_shutdown(void);  // Gracefully shuts down all network interfaces
 // Updates ping_ms and is_ipv6 fields in interface_t
 bool test_network_interfaces(network_info_t *info);
 
+// Test-exposed functions (not part of public API)
+bool test_network_interfaces(network_info_t *info);
+bool is_interface_configured(const char* interface_name, bool* is_available);
+
 #endif // NETWORK_H

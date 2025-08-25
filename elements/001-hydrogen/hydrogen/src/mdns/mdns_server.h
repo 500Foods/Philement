@@ -149,4 +149,14 @@ void *mdns_server_announce_loop(void *arg);
 // Background thread for handling incoming queries
 void *mdns_server_responder_loop(void *arg);
 
+// Test-exposed functions (not part of public API)
+uint8_t *read_dns_name(uint8_t *ptr, const uint8_t *packet, char *name, size_t name_len);
+uint8_t *write_dns_name(uint8_t *ptr, const char *name);
+uint8_t *write_dns_record(uint8_t *ptr, const char *name, uint16_t type, uint16_t class, uint32_t ttl, const void *rdata, uint16_t rdlen);
+uint8_t *write_dns_ptr_record(uint8_t *ptr, const char *name, const char *ptr_data, uint32_t ttl);
+uint8_t *write_dns_srv_record(uint8_t *ptr, const char *name, uint16_t priority, uint16_t weight, uint16_t port, const char *target, uint32_t ttl);
+uint8_t *write_dns_txt_record(uint8_t *ptr, const char *name, char **txt_records, size_t num_txt_records, uint32_t ttl);
+int create_multicast_socket(int family, const char *group, const char *if_name);
+void mdns_server_send_announcement(mdns_server_t *mdns_server, const network_info_t *net_info);
+
 #endif // MDNS_SERVER_H
