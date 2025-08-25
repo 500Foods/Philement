@@ -153,7 +153,11 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
             // Process print job here
             json_t* print_job = json_object();
 
-            json_object_set_new(print_job, "original_filename", json_string(con_info->original_filename));
+            if (con_info->original_filename) {
+                json_object_set_new(print_job, "original_filename", json_string(con_info->original_filename));
+            } else {
+                json_object_set_new(print_job, "original_filename", json_string("unknown"));
+            }
             json_object_set_new(print_job, "new_filename", json_string(con_info->new_filename));
             json_object_set_new(print_job, "file_size", json_integer((json_int_t)con_info->total_size));
             json_object_set_new(print_job, "print_after_upload", json_boolean(con_info->print_after_upload));
@@ -315,7 +319,11 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
             log_this("WebServer", "File upload completed:", LOG_LEVEL_STATE);
 
             char info_str[DEFAULT_LINE_BUFFER_SIZE];
-            snprintf(info_str, sizeof(info_str), "Source: %s", con_info->original_filename);
+            if (con_info->original_filename) {
+                snprintf(info_str, sizeof(info_str), "Source: %s", con_info->original_filename);
+            } else {
+                snprintf(info_str, sizeof(info_str), "Source: (no filename)");
+            }
             log_this("WebServer", info_str, LOG_LEVEL_STATE);
             snprintf(info_str, sizeof(info_str), "Local: %s", con_info->new_filename);
             log_this("WebServer", info_str, LOG_LEVEL_STATE);
@@ -325,8 +333,10 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
             log_this("WebServer", info_str, LOG_LEVEL_STATE);
 
             // Send response
-            char *json_response = malloc(strlen(con_info->original_filename) + 100);  // Extra space for JSON structure
-            sprintf(json_response, "{\"files\": {\"local\": {\"name\": \"%s\", \"origin\": \"local\"}}, \"done\": true}", con_info->original_filename);
+            const char* filename_for_response = con_info->original_filename ? con_info->original_filename : "unknown";
+            size_t filename_len = strlen(filename_for_response);
+            char *json_response = malloc(filename_len + 100);  // Extra space for JSON structure
+            sprintf(json_response, "{\"files\": {\"local\": {\"name\": \"%s\", \"origin\": \"local\"}}, \"done\": true}", filename_for_response);
 
             struct MHD_Response *response = MHD_create_response_from_buffer(strlen(json_response),
                                             (void*)json_response, MHD_RESPMEM_MUST_FREE);
@@ -354,6 +364,11 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
 }
 
 json_t* extract_gcode_info(const char* filename) {
+    if (!filename) {
+        log_this("WebServer", "NULL filename passed to extract_gcode_info", LOG_LEVEL_DEBUG);
+        return NULL;
+    }
+
     FILE* file = fopen(filename, "r");
     if (!file) {
         log_this("WebServer", "Failed to open G-code file for analysis", LOG_LEVEL_DEBUG);
@@ -457,6 +472,11 @@ json_t* extract_gcode_info(const char* filename) {
 }
 
 char* extract_preview_image(const char* filename) {
+    if (!filename) {
+        log_this("WebServer", "NULL filename passed to extract_preview_image", LOG_LEVEL_DEBUG);
+        return NULL;
+    }
+
     FILE* file = fopen(filename, "r");
     if (!file) {
         log_this("WebServer", "Failed to open G-code file for image extraction", LOG_LEVEL_DEBUG);

@@ -150,11 +150,14 @@ count_unity_tests_per_source_file() {
             
             # Count RUN_TEST occurrences in the test file
             local test_count
-            test_count=$("${GREP}" -c "RUN_TEST(" "${test_file}" 2>/dev/null || echo 0)
-            
+            test_count=$("${GREP}" -c "RUN_TEST(" "${test_file:-}" 2>/dev/null || true)
+
+            local ignore_count
+            ignore_count=$("${GREP}" -Ec "TEST_IGNORE_MESSAGE\(|\if \(0\) RUN_TEST\(" "${test_file}" 2>/dev/null || true)
+                        
             # Add to existing count for this source file
             local current_count="${unity_test_counts[${source_file}]:-0}"
-            unity_test_counts["${source_file}"]=$((current_count + test_count))
+            unity_test_counts["${source_file}"]=$((current_count + test_count - ignore_count))
             
             # Cache the result
             echo "${source_file}=${unity_test_counts[${source_file}]}" >> "${cache_file}"
