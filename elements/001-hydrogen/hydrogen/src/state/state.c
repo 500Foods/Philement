@@ -3,8 +3,9 @@
  * 
  */
 
- // Global includes 
+ // Global includes
 #include "../hydrogen.h"
+#include <stdint.h>  // For uintptr_t
 
 // Local includes
 #include "state.h"
@@ -14,7 +15,10 @@
 void free_readiness_messages(LaunchReadiness* readiness) {
     if (readiness && readiness->messages) {
         for (size_t i = 0; readiness->messages[i]; i++) {
-            free((void*)readiness->messages[i]);
+            // Only free if the pointer looks valid (not NULL and not in low memory)
+            if (readiness->messages[i] && (uintptr_t)readiness->messages[i] > 0x1000) {
+                free((void*)readiness->messages[i]);
+            }
         }
         free(readiness->messages);
         readiness->messages = NULL;

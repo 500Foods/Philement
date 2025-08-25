@@ -17,86 +17,83 @@
 
 // Check if the terminal subsystem is ready to launch
 LaunchReadiness check_terminal_launch_readiness(void) {
-    LaunchReadiness readiness = {0};
-    const AppConfig* config = get_app_config();
-    
-    // Allocate space for messages (including NULL terminator)
-    readiness.messages = malloc(10 * sizeof(char*));
-    if (!readiness.messages) {
-        readiness.ready = false;
-        return readiness;
-    }
-    
-    // Start with header
-    readiness.messages[0] = strdup("Terminal");
-    size_t msg_index = 1;
+    const char** messages = NULL;
+    size_t count = 0;
+    size_t capacity = 0;
     bool is_ready = true;
+
+    const AppConfig* config = get_app_config();
+
+    // First message is subsystem name
+    add_launch_message(&messages, &count, &capacity, strdup("Terminal"));
 
     // Check dependencies first
     if (!config->webserver.enable_ipv4 && !config->webserver.enable_ipv6) {
-        readiness.messages[msg_index++] = strdup("  No-Go:   WebServer Not Enabled");
-        readiness.messages[msg_index++] = strdup("  Reason:  Terminal Requires WebServer (IPv4 or IPv6)");
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   WebServer Not Enabled"));
+        add_launch_message(&messages, &count, &capacity, strdup("  Reason:  Terminal Requires WebServer (IPv4 or IPv6)"));
         is_ready = false;
     }
 
     if (!config->websocket.enabled) {
-        readiness.messages[msg_index++] = strdup("  No-Go:   WebSocket Not Enabled");
-        readiness.messages[msg_index++] = strdup("  Reason:  Terminal Requires WebSocket");
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   WebSocket Not Enabled"));
+        add_launch_message(&messages, &count, &capacity, strdup("  Reason:  Terminal Requires WebSocket"));
         is_ready = false;
     }
 
     // Check if terminal is enabled
     if (!config->terminal.enabled) {
-        readiness.messages[msg_index++] = strdup("  No-Go:   Terminal System Disabled");
-        readiness.messages[msg_index++] = strdup("  Reason:  Disabled in Configuration");
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Terminal System Disabled"));
+        add_launch_message(&messages, &count, &capacity, strdup("  Reason:  Disabled in Configuration"));
         is_ready = false;
     } else {
         // Validate required strings
         if (!config->terminal.web_path) {
-            readiness.messages[msg_index++] = strdup("  No-Go:   Missing Web Path");
-            readiness.messages[msg_index++] = strdup("  Reason:  Web Path Must Be Set");
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Missing Web Path"));
+            add_launch_message(&messages, &count, &capacity, strdup("  Reason:  Web Path Must Be Set"));
             is_ready = false;
         }
-        
+
         if (!config->terminal.shell_command) {
-            readiness.messages[msg_index++] = strdup("  No-Go:   Missing Shell Command");
-            readiness.messages[msg_index++] = strdup("  Reason:  Shell Command Must Be Set");
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Missing Shell Command"));
+            add_launch_message(&messages, &count, &capacity, strdup("  Reason:  Shell Command Must Be Set"));
             is_ready = false;
         }
-        
+
         // Validate numeric ranges
         if (config->terminal.max_sessions < 1 || config->terminal.max_sessions > 100) {
             char msg[128];
-            snprintf(msg, sizeof(msg), "  No-Go:   Invalid Max Sessions: %d", 
+            snprintf(msg, sizeof(msg), "  No-Go:   Invalid Max Sessions: %d",
                     config->terminal.max_sessions);
-            readiness.messages[msg_index++] = strdup(msg);
-            readiness.messages[msg_index++] = strdup("  Reason:  Must Be Between 1 and 100");
+            add_launch_message(&messages, &count, &capacity, strdup(msg));
+            add_launch_message(&messages, &count, &capacity, strdup("  Reason:  Must Be Between 1 and 100"));
             is_ready = false;
         }
-        
-        if (config->terminal.idle_timeout_seconds < 60 || 
+
+        if (config->terminal.idle_timeout_seconds < 60 ||
             config->terminal.idle_timeout_seconds > 3600) {
             char msg[128];
-            snprintf(msg, sizeof(msg), "  No-Go:   Invalid Idle Timeout: %d", 
+            snprintf(msg, sizeof(msg), "  No-Go:   Invalid Idle Timeout: %d",
                     config->terminal.idle_timeout_seconds);
-            readiness.messages[msg_index++] = strdup(msg);
-            readiness.messages[msg_index++] = strdup("  Reason:  Must Be Between 60 and 3600 Seconds");
+            add_launch_message(&messages, &count, &capacity, strdup(msg));
+            add_launch_message(&messages, &count, &capacity, strdup("  Reason:  Must Be Between 60 and 3600 Seconds"));
             is_ready = false;
         }
     }
 
     // Add final decision message
     if (is_ready) {
-        readiness.messages[msg_index++] = strdup("  Go:      Terminal System Ready");
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Terminal System Ready"));
     } else {
-        readiness.messages[msg_index++] = strdup("  Decide:  No-Go For Launch of Terminal");
+        add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Terminal"));
     }
-    
-    // Null terminate the message list
-    readiness.messages[msg_index] = NULL;
-    readiness.ready = is_ready;
-    
-    return readiness;
+
+    finalize_launch_messages(&messages, &count, &capacity);
+
+    return (LaunchReadiness){
+        .subsystem = "Terminal",
+        .ready = is_ready,
+        .messages = messages
+    };
 }
 
 // Launch the terminal subsystem

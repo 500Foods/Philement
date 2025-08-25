@@ -111,39 +111,32 @@ bool validate_key(const char* key) {
  * @return LaunchReadiness structure with readiness status and messages
  */
 LaunchReadiness check_websocket_launch_readiness(void) {
-    const char** messages = malloc(20 * sizeof(char*));  // Space for messages + NULL
-    if (!messages) {
-        return (LaunchReadiness){ .subsystem = "WebSocket", .ready = false, .messages = NULL };
-    }
-    
-    int msg_index = 0;
+    const char** messages = NULL;
+    size_t count = 0;
+    size_t capacity = 0;
     bool ready = true;
-    
+
     // First message is subsystem name
-    messages[msg_index++] = strdup("WebSocket");
-    
+    add_launch_message(&messages, &count, &capacity, strdup("WebSocket"));
+
     // Register with registry if not already registered
     register_websocket();
-    
-    LaunchReadiness readiness = { .subsystem = "WebSocket", .ready = false, .messages = messages };
-    
+
     // Register dependencies
     if (websocket_subsystem_id >= 0) {
         if (!add_dependency_from_launch(websocket_subsystem_id, "Threads")) {
-            messages[msg_index++] = strdup("  No-Go:   Failed to register Threads dependency");
-            messages[msg_index] = NULL;
-            free_readiness_messages(&readiness);
-            return readiness;
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Failed to register Threads dependency"));
+            finalize_launch_messages(&messages, &count, &capacity);
+            return (LaunchReadiness){ .subsystem = "WebSocket", .ready = false, .messages = messages };
         }
-        messages[msg_index++] = strdup("  Go:      Threads dependency registered");
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Threads dependency registered"));
 
         if (!add_dependency_from_launch(websocket_subsystem_id, "Network")) {
-            messages[msg_index++] = strdup("  No-Go:   Failed to register Network dependency");
-            messages[msg_index] = NULL;
-            free_readiness_messages(&readiness);
-            return readiness;
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Failed to register Network dependency"));
+            finalize_launch_messages(&messages, &count, &capacity);
+            return (LaunchReadiness){ .subsystem = "WebSocket", .ready = false, .messages = messages };
         }
-        messages[msg_index++] = strdup("  Go:      Network dependency registered");
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Network dependency registered"));
     }
     
     // 1. Check Threads subsystem launch readiness (using cached version)
@@ -166,35 +159,35 @@ LaunchReadiness check_websocket_launch_readiness(void) {
     // } else {
     //     messages[msg_index++] = strdup("  Go:      Network subsystem Go for Launch");
     // }
-    
+
     // 3. Check configuration
     if (!app_config) {
-        messages[msg_index++] = strdup("  No-Go:   Configuration not loaded");
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Configuration not loaded"));
         ready = false;
     } else {
         if (!app_config->websocket.enabled) {
-            messages[msg_index++] = strdup("  No-Go:   WebSocket server disabled in configuration");
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   WebSocket server disabled in configuration"));
             ready = false;
         } else {
-            messages[msg_index++] = strdup("  Go:      WebSocket server enabled");
+            add_launch_message(&messages, &count, &capacity, strdup("  Go:      WebSocket server enabled"));
         }
-        
+
         // Check protocol configuration
         if (app_config->websocket.enable_ipv6) {
-            messages[msg_index++] = strdup("  Go:      IPv6 enabled");
+            add_launch_message(&messages, &count, &capacity, strdup("  Go:      IPv6 enabled"));
         } else {
-            messages[msg_index++] = strdup("  Go:      IPv4 only (IPv6 disabled)");
+            add_launch_message(&messages, &count, &capacity, strdup("  Go:      IPv4 only (IPv6 disabled)"));
         }
-        
+
         // 4. Check interface availability
         struct ifaddrs *ifaddr, *ifa;
         bool ipv4_available = false;
         bool ipv6_available = false;
-        
+
         if (getifaddrs(&ifaddr) != -1) {
             for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
                 if (ifa->ifa_addr == NULL) continue;
-                
+
                 if (ifa->ifa_addr->sa_family == AF_INET) {
                     ipv4_available = true;
                 } else if (ifa->ifa_addr->sa_family == AF_INET6) {
@@ -203,85 +196,86 @@ LaunchReadiness check_websocket_launch_readiness(void) {
             }
             freeifaddrs(ifaddr);
         }
-        
+
         if (!ipv4_available) {
-            messages[msg_index++] = strdup("  No-Go:   No IPv4 interfaces available");
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   No IPv4 interfaces available"));
             ready = false;
         } else {
-            messages[msg_index++] = strdup("  Go:      IPv4 interfaces available");
+            add_launch_message(&messages, &count, &capacity, strdup("  Go:      IPv4 interfaces available"));
         }
-        
+
         if (app_config->websocket.enable_ipv6 && !ipv6_available) {
-            messages[msg_index++] = strdup("  No-Go:   No IPv6 interfaces available");
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   No IPv6 interfaces available"));
             ready = false;
         } else if (app_config->websocket.enable_ipv6) {
-            messages[msg_index++] = strdup("  Go:      IPv6 interfaces available");
+            add_launch_message(&messages, &count, &capacity, strdup("  Go:      IPv6 interfaces available"));
         }
-        
+
         // 5. Check port number
         int port = app_config->websocket.port;
         if (port != 80 && port != 443 && (port < MIN_PORT || port > MAX_PORT)) {
-            char* msg = malloc(256);
-            if (msg) {
-                snprintf(msg, 256, "  No-Go:   Invalid port number: %d", port);
-                messages[msg_index++] = msg;
+            char* port_msg = malloc(256);
+            if (port_msg) {
+                snprintf(port_msg, 256, "  No-Go:   Invalid port number: %d", port);
+                add_launch_message(&messages, &count, &capacity, port_msg);
             }
             ready = false;
         } else {
-            char* msg = malloc(256);
-            if (msg) {
-                snprintf(msg, 256, "  Go:      Valid port number: %d", port);
-                messages[msg_index++] = msg;
+            char* port_valid_msg = malloc(256);
+            if (port_valid_msg) {
+                snprintf(port_valid_msg, 256, "  Go:      Valid port number: %d", port);
+                add_launch_message(&messages, &count, &capacity, port_valid_msg);
             }
         }
-        
+
         // 6. Validate protocol (use default if not set)
         const char* protocol = app_config->websocket.protocol ? app_config->websocket.protocol : "hydrogen";
         if (!validate_protocol(protocol)) {
-            messages[msg_index++] = strdup("  No-Go:   Invalid protocol format");
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid protocol format"));
             ready = false;
         } else {
-            char* msg = malloc(256);
-            if (msg) {
-                snprintf(msg, 256, "  Go:      Protocol format valid: %s", protocol);
-                messages[msg_index++] = msg;
+            char* protocol_msg = malloc(256);
+            if (protocol_msg) {
+                snprintf(protocol_msg, 256, "  Go:      Protocol format valid: %s", protocol);
+                add_launch_message(&messages, &count, &capacity, protocol_msg);
             }
         }
 
         // 7. Validate key (use default if not set)
         const char* key = app_config->websocket.key ? app_config->websocket.key : "default_websocket_key";
         if (!validate_key(key)) {
-            messages[msg_index++] = strdup("  No-Go:   Invalid key format (must be at least 8 printable characters)");
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid key format (must be at least 8 printable characters)"));
             ready = false;
         } else {
-            messages[msg_index++] = strdup("  Go:      Key format valid");
+            add_launch_message(&messages, &count, &capacity, strdup("  Go:      Key format valid"));
         }
 
         // 8. Validate message size limits
         if (app_config->websocket.max_message_size < WEBSOCKET_MIN_MESSAGE_SIZE ||
             app_config->websocket.max_message_size > WEBSOCKET_MAX_MESSAGE_SIZE) {
-            messages[msg_index++] = strdup("  No-Go:   Invalid message size limits");
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid message size limits"));
             ready = false;
         } else {
-            messages[msg_index++] = strdup("  Go:      Message size limits valid");
+            add_launch_message(&messages, &count, &capacity, strdup("  Go:      Message size limits valid"));
         }
 
         // 9. Validate exit wait timeout
         if (app_config->websocket.connection_timeouts.exit_wait_seconds < MIN_EXIT_WAIT_SECONDS ||
             app_config->websocket.connection_timeouts.exit_wait_seconds > MAX_EXIT_WAIT_SECONDS) {
-            messages[msg_index++] = strdup("  No-Go:   Invalid exit wait timeout (must be between 1-60 seconds)");
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid exit wait timeout (must be between 1-60 seconds)"));
             ready = false;
         } else {
-            messages[msg_index++] = strdup("  Go:      Exit wait timeout valid");
+            add_launch_message(&messages, &count, &capacity, strdup("  Go:      Exit wait timeout valid"));
         }
     }
-    
+
     // Final decision
-    messages[msg_index++] = strdup(ready ? 
+    add_launch_message(&messages, &count, &capacity, strdup(ready ?
         "  Decide:  Go For Launch of WebSocket Subsystem" :
-        "  Decide:  No-Go For Launch of WebSocket Subsystem");
-    messages[msg_index] = NULL;
-    
+        "  Decide:  No-Go For Launch of WebSocket Subsystem"));
+
+    finalize_launch_messages(&messages, &count, &capacity);
+
     return (LaunchReadiness){
         .subsystem = "WebSocket",
         .ready = ready,
