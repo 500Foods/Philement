@@ -35,127 +35,104 @@ void register_swagger(void) {
 
 // Check if the Swagger subsystem is ready to launch
 LaunchReadiness check_swagger_launch_readiness(void) {
-    const char** messages = malloc(12 * sizeof(char*));  // Space for messages + NULL
-    if (!messages) {
-        return (LaunchReadiness){ .subsystem = "Swagger", .ready = false, .messages = NULL };
-    }
-    
-    size_t msg_index = 0;
+    const char** messages = NULL;
+    size_t count = 0;
+    size_t capacity = 0;
     bool ready = true;
 
     // First message is subsystem name
-    messages[msg_index++] = strdup("Swagger");
-    
+    add_launch_message(&messages, &count, &capacity, strdup("Swagger"));
+
     // Register with registry first
     register_swagger();
     if (swagger_subsystem_id < 0) {
-        messages[msg_index++] = strdup("  No-Go:   Failed to register with registry");
-        messages[msg_index++] = NULL;
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Failed to register with registry"));
+        finalize_launch_messages(&messages, &count, &capacity);
         return (LaunchReadiness){ .subsystem = "Swagger", .ready = false, .messages = messages };
     }
-    
+
     // Get app config
     const AppConfig *config = get_app_config();
     if (!config) {
-        messages[msg_index++] = strdup("  No-Go:   Failed to get app config");
-        messages[msg_index++] = NULL;
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Failed to get app config"));
+        finalize_launch_messages(&messages, &count, &capacity);
         return (LaunchReadiness){.subsystem = "Swagger", .ready = false, .messages = messages};
     }
 
     // Check if Swagger is enabled
     if (!config || !config->swagger.enabled) {
-        messages[msg_index++] = strdup("  Skip:    Swagger is disabled");
-        messages[msg_index++] = NULL;
+        add_launch_message(&messages, &count, &capacity, strdup("  Skip:    Swagger is disabled"));
+        finalize_launch_messages(&messages, &count, &capacity);
         return (LaunchReadiness){.subsystem = "Swagger", .ready = false, .messages = messages};
     }
-
-    // // Check Registry subsystem readiness (primary dependency)
-    // LaunchReadiness registry_readiness = get_registry_readiness();
-    // if (!registry_readiness.ready) {
-    //     messages[msg_index++] = strdup("  No-Go:   Registry subsystem not ready");
-    //     messages[msg_index] = NULL;
-    //     free_readiness_messages(&registry_readiness);
-    //     return (LaunchReadiness){.subsystem = "Swagger", .ready = false, .messages = messages};
-    // }
-    // messages[msg_index++] = strdup("  Go:      Registry subsystem ready");
-    // free_readiness_messages(&registry_readiness);
-
-    // Check Network subsystem readiness (using cached version)
-    // LaunchReadiness network_readiness = get_network_readiness();
-    // if (!network_readiness.ready) {
-    //     messages[msg_index++] = strdup("  No-Go:   Network subsystem not ready");
-    //     messages[msg_index] = NULL;
-    //     return (LaunchReadiness){.subsystem = "Swagger", .ready = false, .messages = messages};
-    // }
-    // messages[msg_index++] = strdup("  Go:      Network subsystem ready");
 
     // Check API subsystem readiness (depends on Registry and Network)
     LaunchReadiness api_readiness = check_api_launch_readiness();
     if (!api_readiness.ready) {
-        messages[msg_index++] = strdup("  No-Go:   API subsystem not ready");
-        messages[msg_index] = NULL;
-        free_readiness_messages(&api_readiness);
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   API subsystem not ready"));
+        finalize_launch_messages(&messages, &count, &capacity);
+        cleanup_readiness_messages(&api_readiness);
         return (LaunchReadiness){.subsystem = "Swagger", .ready = false, .messages = messages};
     }
-    messages[msg_index++] = strdup("  Go:      API subsystem ready");
-    free_readiness_messages(&api_readiness);
+    add_launch_message(&messages, &count, &capacity, strdup("  Go:      API subsystem ready"));
+    cleanup_readiness_messages(&api_readiness);
 
     // Check Payload subsystem readiness
     LaunchReadiness payload_readiness = check_payload_launch_readiness();
     if (!payload_readiness.ready) {
-        messages[msg_index++] = strdup("  No-Go:   Payload subsystem not ready");
-        messages[msg_index] = NULL;
-        free_readiness_messages(&payload_readiness);
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Payload subsystem not ready"));
+        finalize_launch_messages(&messages, &count, &capacity);
+        cleanup_readiness_messages(&payload_readiness);
         return (LaunchReadiness){.subsystem = "Swagger", .ready = false, .messages = messages};
     }
-    messages[msg_index++] = strdup("  Go:      Payload subsystem ready");
-    free_readiness_messages(&payload_readiness);
+    add_launch_message(&messages, &count, &capacity, strdup("  Go:      Payload subsystem ready"));
+    cleanup_readiness_messages(&payload_readiness);
 
     // Validate prefix
     if (!config->swagger.prefix || strlen(config->swagger.prefix) < 1 ||
         strlen(config->swagger.prefix) > 64 || config->swagger.prefix[0] != '/') {
-        messages[msg_index++] = strdup("  No-Go:   Invalid Swagger prefix configuration");
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid Swagger prefix configuration"));
         ready = false;
     } else {
-        char* msg = malloc(256);
-        if (msg) {
-            snprintf(msg, 256, "  Go:      Valid Swagger prefix: %s", 
+        char* prefix_msg = malloc(256);
+        if (prefix_msg) {
+            snprintf(prefix_msg, 256, "  Go:      Valid Swagger prefix: %s",
                     config->swagger.prefix);
-            messages[msg_index++] = msg;
+            add_launch_message(&messages, &count, &capacity, prefix_msg);
         }
     }
 
     // Validate required metadata
-    if (!config->swagger.metadata.title || 
+    if (!config->swagger.metadata.title ||
         strlen(config->swagger.metadata.title) < 1 ||
         strlen(config->swagger.metadata.title) > 128) {
-        messages[msg_index++] = strdup("  No-Go:   Invalid Swagger title configuration");
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid Swagger title configuration"));
         ready = false;
     }
 
     if (!config->swagger.metadata.version ||
         strlen(config->swagger.metadata.version) < 1 ||
         strlen(config->swagger.metadata.version) > 32) {
-        messages[msg_index++] = strdup("  No-Go:   Invalid Swagger version configuration");
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid Swagger version configuration"));
         ready = false;
     }
 
-    if (config->swagger.metadata.description && 
+    if (config->swagger.metadata.description &&
         strlen(config->swagger.metadata.description) > 1024) {
-        messages[msg_index++] = strdup("  No-Go:   Swagger description too long");
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Swagger description too long"));
         ready = false;
     }
 
     // Validate UI options
     if (config->swagger.ui_options.default_models_expand_depth < 0 ||
         config->swagger.ui_options.default_models_expand_depth > 10) {
-        messages[msg_index++] = strdup("  No-Go:   Invalid models expand depth");
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid models expand depth"));
         ready = false;
     }
 
     if (config->swagger.ui_options.default_model_expand_depth < 0 ||
         config->swagger.ui_options.default_model_expand_depth > 10) {
-        messages[msg_index++] = strdup("  No-Go:   Invalid model expand depth");
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid model expand depth"));
         ready = false;
     }
 
@@ -163,21 +140,22 @@ LaunchReadiness check_swagger_launch_readiness(void) {
     if (config->swagger.ui_options.doc_expansion) {
         const char* exp = config->swagger.ui_options.doc_expansion;
         if (strcmp(exp, "list") != 0 && strcmp(exp, "full") != 0 && strcmp(exp, "none") != 0) {
-            messages[msg_index++] = strdup("  No-Go:   Invalid doc expansion value");
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid doc expansion value"));
             ready = false;
         }
     }
 
     if (ready) {
-        messages[msg_index++] = strdup("  Go:      All configuration values validated");
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      All configuration values validated"));
     }
 
     // Final decision
-    messages[msg_index++] = strdup(ready ? 
+    add_launch_message(&messages, &count, &capacity, strdup(ready ?
         "  Decide:  Go For Launch of Swagger Subsystem" :
-        "  Decide:  No-Go For Launch of Swagger Subsystem");
-    messages[msg_index] = NULL;
-    
+        "  Decide:  No-Go For Launch of Swagger Subsystem"));
+
+    finalize_launch_messages(&messages, &count, &capacity);
+
     return (LaunchReadiness){
         .subsystem = "Swagger",
         .ready = ready,

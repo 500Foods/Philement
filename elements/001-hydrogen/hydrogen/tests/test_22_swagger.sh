@@ -230,7 +230,7 @@ check_swagger_json() {
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Swagger JSON request attempt ${attempt} of ${max_attempts} (waiting for subsystem initialization)..."
-            # sleep 0.05  # Brief delay between attempts for subsystem initialization
+            #sleep 0.05  # Brief delay between attempts for subsystem initialization
         fi
         
         # Run curl and capture exit code
@@ -739,7 +739,9 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         IFS=':' read -r config_file log_suffix swagger_prefix description <<< "${SWAGGER_TEST_CONFIGS[${test_config}]}"
         
         #print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Swagger UI Test: ${description} (${swagger_prefix})"
-        
+        log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.log"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${test_config} Server Log: ..${log_file}" 
+
         # shellcheck disable=SC2310 # We want to continue even if the test fails
         if analyze_swagger_test_results "${test_config}" "${log_suffix}" "${swagger_prefix}" "${description}"; then
             # Test individual endpoint results for detailed feedback

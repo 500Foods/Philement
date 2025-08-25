@@ -30,8 +30,8 @@ setup_test_environment
 # Test configuration
 CONFIG_FILE="${CONFIG_DIR}/hydrogen_test_11_leaks.json"
 SERVER_LOG="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_leaks.log"
-LEAK_REPORT="${LOG_PREFIX}}test_${TEST_NUMBER}_leak_report_${TIMESTAMP}.log"
-LEAK_SUMMARY="${LOG_PREFIX}}test_test_${TEST_NUMBER}_leak_summary_${TIMESTAMP}.log"
+LEAK_REPORT="${LOG_PREFIX}_leak_report.log"
+LEAK_SUMMARY="${LOG_PREFIX}_leak_summary.log"
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Debug Build and ASAN Support"
 
@@ -216,6 +216,9 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
 else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Leak analysis skipped due to previous failures"
 fi
+
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Report: ..${LEAK_REPORT}"
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Summary: ..${LEAK_SUMMARY}"
 
 # Print completion table
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"

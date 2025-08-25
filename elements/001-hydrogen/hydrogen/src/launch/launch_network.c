@@ -96,44 +96,7 @@ void shutdown_network_subsystem(void) {
     // No specific shutdown actions needed for network subsystem
 }
 
-// Add a message to the messages array
-static void add_message(const char** messages, int* count, const char* message) {
-    if (message) {
-        messages[*count] = message;
-        (*count)++;
-    }
-}
 
-// Format and add a Go/No-Go message
-static void add_go_message(const char** messages, int* count, const char* prefix, const char* format, ...) {
-    char temp[256];
-    va_list args;
-    va_start(args, format);
-    vsnprintf(temp, sizeof(temp), format, args);
-    va_end(args);
-    
-    char buffer[512];
-    if (strcmp(prefix, "No-Go") == 0) {
-        snprintf(buffer, sizeof(buffer), "  %s:   %s", prefix, temp);
-    } else {
-        snprintf(buffer, sizeof(buffer), "  %s:      %s", prefix, temp);
-    }
-    
-    add_message(messages, count, strdup(buffer));
-}
-
-// Format and add a decision message
-static void add_decision_message(const char** messages, int* count, const char* format, ...) {
-    char temp[256];
-    va_list args;
-    va_start(args, format);
-    vsnprintf(temp, sizeof(temp), format, args);
-    va_end(args);
-    
-    char buffer[512];
-    snprintf(buffer, sizeof(buffer), "  Decide:  %s", temp);
-    add_message(messages, count, strdup(buffer));
-}
 
 
 /*
@@ -159,60 +122,47 @@ static void add_decision_message(const char** messages, int* count, const char* 
 
 // Check if the network subsystem is ready to launch
 LaunchReadiness check_network_launch_readiness(void) {
-    LaunchReadiness readiness = {0};
-    
-    // Allocate space for messages (estimate max needed + NULL terminator)
-    readiness.messages = malloc(50 * sizeof(const char*));
-    if (!readiness.messages) {
-        readiness.ready = false;
-        return readiness;
-    }
-    int msg_count = 0;
-    
-    // Always set the subsystem name
-    readiness.subsystem = "Network";
-    
-    // Add the subsystem name as the first message
-    add_message(readiness.messages, &msg_count, strdup("Network"));
-    
+    const char** messages = NULL;
+    size_t count = 0;
+    size_t capacity = 0;
+    bool ready = true;
+
+    // First message is subsystem name
+    add_launch_message(&messages, &count, &capacity, strdup("Network"));
+
     // Register with registry if not already registered
     register_network();
-    add_go_message(readiness.messages, &msg_count, "Go", "Network subsystem registered");
-    
+    add_launch_message(&messages, &count, &capacity, strdup("  Go:      Network subsystem registered"));
+
     // Register Thread dependency - we only need to verify it's ready for launch
     if (!add_dependency_from_launch(network_subsystem_id, "Threads")) {
-        add_go_message(readiness.messages, &msg_count, "No-Go", "Failed to register Thread dependency");
-        add_decision_message(readiness.messages, &msg_count, "No-Go For Launch of Network Subsystem (dependency registration failed)");
-        readiness.messages[msg_count] = NULL;
-        readiness.ready = false;
-        return readiness;
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Failed to register Thread dependency"));
+        finalize_launch_messages(&messages, &count, &capacity);
+        return (LaunchReadiness){ .subsystem = "Network", .ready = false, .messages = messages };
     }
-    add_go_message(readiness.messages, &msg_count, "Go", "Thread dependency registered");
-    
+    add_launch_message(&messages, &count, &capacity, strdup("  Go:      Thread dependency registered"));
+
     // Early return cases
     if (server_stopping || web_server_shutdown) {
-        add_go_message(readiness.messages, &msg_count, "No-Go", "System shutdown in progress");
-        add_decision_message(readiness.messages, &msg_count, "No-Go For Launch of Network Subsystem (system shutdown)");
-        readiness.messages[msg_count] = NULL;
-        readiness.ready = false;
-        return readiness;
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   System shutdown in progress"));
+        add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (system shutdown)"));
+        finalize_launch_messages(&messages, &count, &capacity);
+        return (LaunchReadiness){ .subsystem = "Network", .ready = false, .messages = messages };
     }
-    
+
     if (!server_starting && !server_running) {
-        add_go_message(readiness.messages, &msg_count, "No-Go", "System not in startup or running state");
-        add_decision_message(readiness.messages, &msg_count, "No-Go For Launch of Network Subsystem (invalid system state)");
-        readiness.messages[msg_count] = NULL;
-        readiness.ready = false;
-        return readiness;
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   System not in startup or running state"));
+        add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (invalid system state)"));
+        finalize_launch_messages(&messages, &count, &capacity);
+        return (LaunchReadiness){ .subsystem = "Network", .ready = false, .messages = messages };
     }
-    
+
     const AppConfig* config = get_app_config();
     if (!config) {
-        add_go_message(readiness.messages, &msg_count, "No-Go", "Configuration not loaded");
-        add_decision_message(readiness.messages, &msg_count, "No-Go For Launch of Network Subsystem (no configuration)");
-        readiness.messages[msg_count] = NULL;
-        readiness.ready = false;
-        return readiness;
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Configuration not loaded"));
+        add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (no configuration)"));
+        finalize_launch_messages(&messages, &count, &capacity);
+        return (LaunchReadiness){ .subsystem = "Network", .ready = false, .messages = messages };
     }
 
     // Get network limits for validation
@@ -221,43 +171,55 @@ LaunchReadiness check_network_launch_readiness(void) {
     // Validate interface and IP limits
     if (config->network.max_interfaces < limits->min_interfaces ||
         config->network.max_interfaces > limits->max_interfaces) {
-        add_go_message(readiness.messages, &msg_count, "No-Go", 
-            "Invalid max_interfaces: %zu (must be between %zu and %zu)",
-            config->network.max_interfaces, limits->min_interfaces, limits->max_interfaces);
-        readiness.messages[msg_count] = NULL;
-        readiness.ready = false;
-        return readiness;
+        char* msg = malloc(256);
+        if (msg) {
+            snprintf(msg, 256, "  No-Go:   Invalid max_interfaces: %zu (must be between %zu and %zu)",
+                    config->network.max_interfaces, limits->min_interfaces, limits->max_interfaces);
+            add_launch_message(&messages, &count, &capacity, msg);
+        }
+        add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (invalid max_interfaces)"));
+        finalize_launch_messages(&messages, &count, &capacity);
+        return (LaunchReadiness){ .subsystem = "Network", .ready = false, .messages = messages };
     }
 
     if (config->network.max_ips_per_interface < limits->min_ips_per_interface ||
         config->network.max_ips_per_interface > limits->max_ips_per_interface) {
-        add_go_message(readiness.messages, &msg_count, "No-Go", 
-            "Invalid max_ips_per_interface: %zu (must be between %zu and %zu)",
-            config->network.max_ips_per_interface, limits->min_ips_per_interface, limits->max_ips_per_interface);
-        readiness.messages[msg_count] = NULL;
-        readiness.ready = false;
-        return readiness;
+        char* msg = malloc(256);
+        if (msg) {
+            snprintf(msg, 256, "  No-Go:   Invalid max_ips_per_interface: %zu (must be between %zu and %zu)",
+                    config->network.max_ips_per_interface, limits->min_ips_per_interface, limits->max_ips_per_interface);
+            add_launch_message(&messages, &count, &capacity, msg);
+        }
+        add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (invalid max_ips_per_interface)"));
+        finalize_launch_messages(&messages, &count, &capacity);
+        return (LaunchReadiness){ .subsystem = "Network", .ready = false, .messages = messages };
     }
 
     // Validate name and address length limits
     if (config->network.max_interface_name_length < limits->min_interface_name_length ||
         config->network.max_interface_name_length > limits->max_interface_name_length) {
-        add_go_message(readiness.messages, &msg_count, "No-Go", 
-            "Invalid interface name length: %zu (must be between %zu and %zu)",
-            config->network.max_interface_name_length, limits->min_interface_name_length, limits->max_interface_name_length);
-        readiness.messages[msg_count] = NULL;
-        readiness.ready = false;
-        return readiness;
+        char* msg = malloc(256);
+        if (msg) {
+            snprintf(msg, 256, "  No-Go:   Invalid interface name length: %zu (must be between %zu and %zu)",
+                    config->network.max_interface_name_length, limits->min_interface_name_length, limits->max_interface_name_length);
+            add_launch_message(&messages, &count, &capacity, msg);
+        }
+        add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (invalid interface name length)"));
+        finalize_launch_messages(&messages, &count, &capacity);
+        return (LaunchReadiness){ .subsystem = "Network", .ready = false, .messages = messages };
     }
 
     if (config->network.max_ip_address_length < limits->min_ip_address_length ||
         config->network.max_ip_address_length > limits->max_ip_address_length) {
-        add_go_message(readiness.messages, &msg_count, "No-Go", 
-            "Invalid IP address length: %zu (must be between %zu and %zu)",
-            config->network.max_ip_address_length, limits->min_ip_address_length, limits->max_ip_address_length);
-        readiness.messages[msg_count] = NULL;
-        readiness.ready = false;
-        return readiness;
+        char* msg = malloc(256);
+        if (msg) {
+            snprintf(msg, 256, "  No-Go:   Invalid IP address length: %zu (must be between %zu and %zu)",
+                    config->network.max_ip_address_length, limits->min_ip_address_length, limits->max_ip_address_length);
+            add_launch_message(&messages, &count, &capacity, msg);
+        }
+        add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (invalid IP address length)"));
+        finalize_launch_messages(&messages, &count, &capacity);
+        return (LaunchReadiness){ .subsystem = "Network", .ready = false, .messages = messages };
     }
 
     // Validate port range
@@ -266,84 +228,99 @@ LaunchReadiness check_network_launch_readiness(void) {
         config->network.end_port < limits->min_port ||
         config->network.end_port > limits->max_port ||
         config->network.start_port >= config->network.end_port) {
-        add_go_message(readiness.messages, &msg_count, "No-Go", 
-            "Invalid port range: %d-%d (must be between %d and %d, start < end)",
-            config->network.start_port, config->network.end_port, limits->min_port, limits->max_port);
-        readiness.messages[msg_count] = NULL;
-        readiness.ready = false;
-        return readiness;
+        char* msg = malloc(256);
+        if (msg) {
+            snprintf(msg, 256, "  No-Go:   Invalid port range: %d-%d (must be between %d and %d, start < end)",
+                    config->network.start_port, config->network.end_port, limits->min_port, limits->max_port);
+            add_launch_message(&messages, &count, &capacity, msg);
+        }
+        add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (invalid port range)"));
+        finalize_launch_messages(&messages, &count, &capacity);
+        return (LaunchReadiness){ .subsystem = "Network", .ready = false, .messages = messages };
     }
 
     // Validate reserved ports array
     if (config->network.reserved_ports_count > 0 && !config->network.reserved_ports) {
-        add_go_message(readiness.messages, &msg_count, "No-Go", "Reserved ports array is NULL but count > 0");
-        readiness.messages[msg_count] = NULL;
-        readiness.ready = false;
-        return readiness;
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Reserved ports array is NULL but count > 0"));
+        add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (reserved ports array issue)"));
+        finalize_launch_messages(&messages, &count, &capacity);
+        return (LaunchReadiness){ .subsystem = "Network", .ready = false, .messages = messages };
     }
 
-    add_go_message(readiness.messages, &msg_count, "Go", "Network configuration validated");
-    
+    add_launch_message(&messages, &count, &capacity, strdup("  Go:      Network configuration validated"));
+
     network_info_t* network_info = get_network_info();
     if (!network_info) {
-        add_go_message(readiness.messages, &msg_count, "No-Go", "Failed to get network information");
-        readiness.messages[msg_count] = NULL;
-        readiness.ready = false;
-        return readiness;
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Failed to get network information"));
+        add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (no network information)"));
+        finalize_launch_messages(&messages, &count, &capacity);
+        return (LaunchReadiness){ .subsystem = "Network", .ready = false, .messages = messages };
     }
-    
+
     if (network_info->count == 0) {
-        add_go_message(readiness.messages, &msg_count, "No-Go", "No network interfaces available");
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   No network interfaces available"));
+        add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (no interfaces)"));
         free_network_info(network_info);
-        readiness.messages[msg_count] = NULL;
-        readiness.ready = false;
-        return readiness;
+        finalize_launch_messages(&messages, &count, &capacity);
+        return (LaunchReadiness){ .subsystem = "Network", .ready = false, .messages = messages };
     }
-    
-    add_go_message(readiness.messages, &msg_count, "Go", "%d network interfaces available", network_info->count);
-    
+
+    char* count_msg = malloc(256);
+    if (count_msg) {
+        snprintf(count_msg, 256, "  Go:      %d network interfaces available", network_info->count);
+        add_launch_message(&messages, &count, &capacity, count_msg);
+    }
+
     // Check for "all" interfaces configuration
     bool all_interfaces_enabled = false;
-    if (config && config->network.available_interfaces && 
+    if (config && config->network.available_interfaces &&
         config->network.available_interfaces_count == 1 &&
         config->network.available_interfaces[0].interface_name &&
         strcmp(config->network.available_interfaces[0].interface_name, "all") == 0 &&
         config->network.available_interfaces[0].available) {
         all_interfaces_enabled = true;
-        add_go_message(readiness.messages, &msg_count, "Go", "All network interfaces enabled via config");
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      All network interfaces enabled via config"));
     }
-    
+
     // Check for specifically configured interfaces if not using "all"
     int json_interfaces_count = 0;
     if (!all_interfaces_enabled && config && config->network.available_interfaces &&
         config->network.available_interfaces_count > 0) {
         json_interfaces_count = (int)config->network.available_interfaces_count;
-        add_go_message(readiness.messages, &msg_count, "Go", "%d network interfaces configured:", json_interfaces_count);
-        
+        char* config_count_msg = malloc(256);
+        if (config_count_msg) {
+            snprintf(config_count_msg, 256, "  Go:      %d network interfaces configured:", json_interfaces_count);
+            add_launch_message(&messages, &count, &capacity, config_count_msg);
+        }
+
         // List specifically configured interfaces
         for (size_t i = 0; i < config->network.available_interfaces_count; i++) {
             if (config->network.available_interfaces[i].interface_name) {
                 const char* interface_name = config->network.available_interfaces[i].interface_name;
                 bool is_available = config->network.available_interfaces[i].available;
-                
-                if (is_available) {
-                    add_go_message(readiness.messages, &msg_count, "Go", "Available: %s is enabled", interface_name);
-                } else {
-                    add_go_message(readiness.messages, &msg_count, "No-Go", "Available: %s is disabled", interface_name);
+
+                char* interface_msg = malloc(256);
+                if (interface_msg) {
+                    if (is_available) {
+                        snprintf(interface_msg, 256, "  Go:      Available: %s is enabled", interface_name);
+                    } else {
+                        snprintf(interface_msg, 256, "  No-Go:   Available: %s is disabled", interface_name);
+                    }
+                    add_launch_message(&messages, &count, &capacity, interface_msg);
                 }
             }
         }
     } else if (!all_interfaces_enabled) {
-        add_go_message(readiness.messages, &msg_count, "Go", "No specific interfaces configured - using defaults");
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      No specific interfaces configured - using defaults"));
     }
-    
+
     // Check each interface's status
     int up_interfaces = 0;
     for (int i = 0; i < network_info->count; i++) {
         interface_t* interface = &network_info->interfaces[i];
         bool is_up = interface->ip_count > 0;
         bool is_available = all_interfaces_enabled; // If all interfaces enabled, start with true
-        
+
         // If not all interfaces enabled, check specific configuration
         if (!all_interfaces_enabled) {
             bool is_configured = is_interface_configured(interface->name, &is_available);
@@ -351,35 +328,46 @@ LaunchReadiness check_network_launch_readiness(void) {
                 is_available = true; // Not configured means enabled by default
             }
         }
-        
+
         const char* config_status = all_interfaces_enabled ? "enabled via all:true" :
-            (is_interface_configured(interface->name, NULL) ? 
+            (is_interface_configured(interface->name, NULL) ?
                 (is_available ? "enabled in config" : "disabled in config") :
                 "not in config - enabled by default");
-        
-        if (is_up) {
-            if (is_available) {
-                up_interfaces++;
-                add_go_message(readiness.messages, &msg_count, "Go", "Interface %s is up (%s)", interface->name, config_status);
+
+        char* status_msg = malloc(256);
+        if (status_msg) {
+            if (is_up) {
+                if (is_available) {
+                    up_interfaces++;
+                    snprintf(status_msg, 256, "  Go:      Interface %s is up (%s)", interface->name, config_status);
+                } else {
+                    snprintf(status_msg, 256, "  No-Go:   Interface %s is up but %s", interface->name, config_status);
+                }
             } else {
-                add_go_message(readiness.messages, &msg_count, "No-Go", "Interface %s is up but %s", interface->name, config_status);
+                snprintf(status_msg, 256, "  No-Go:   Interface %s is down (%s)", interface->name, config_status);
             }
-        } else {
-            add_go_message(readiness.messages, &msg_count, "No-Go", "Interface %s is down (%s)", interface->name, config_status);
+            add_launch_message(&messages, &count, &capacity, status_msg);
         }
     }
-    
+
     if (up_interfaces > 0) {
-        add_decision_message(readiness.messages, &msg_count, "Go For Launch of Network Subsystem (%d interfaces ready)", up_interfaces);
-        readiness.ready = true;
+        char* decision_msg = malloc(256);
+        if (decision_msg) {
+            snprintf(decision_msg, 256, "  Decide:  Go For Launch of Network Subsystem (%d interfaces ready)", up_interfaces);
+            add_launch_message(&messages, &count, &capacity, decision_msg);
+        }
+        ready = true;
     } else {
-        add_decision_message(readiness.messages, &msg_count, "No-Go For Launch of Network Subsystem (no interfaces ready)");
-        readiness.ready = false;
+        add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (no interfaces ready)"));
+        ready = false;
     }
-    
+
     free_network_info(network_info);
-    readiness.messages[msg_count] = NULL;
-    readiness.subsystem = "Network";
-    
-    return readiness;
+    finalize_launch_messages(&messages, &count, &capacity);
+
+    return (LaunchReadiness){
+        .subsystem = "Network",
+        .ready = ready,
+        .messages = messages
+    };
 }

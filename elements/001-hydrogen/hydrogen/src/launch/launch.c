@@ -43,6 +43,73 @@ char* get_current_config_path(void) {
     return current_config_path;
 }
 
+// Dynamic message array utilities for readiness functions
+void add_launch_message(const char*** messages, size_t* count, size_t* capacity, const char* message) {
+    if (*count >= *capacity) {
+        *capacity = (*capacity == 0) ? 4 : (*capacity * 2);
+        *messages = realloc(*messages, *capacity * sizeof(char*));
+        if (!*messages) {
+            // Handle allocation failure - this is startup code so we can be aggressive
+            fprintf(stderr, "Fatal: Memory allocation failed during startup\n");
+            exit(1);
+        }
+    }
+    (*messages)[(*count)++] = message;
+}
+
+void set_readiness_messages(LaunchReadiness* readiness, const char** messages) {
+    readiness->messages = messages;
+}
+
+void finalize_launch_messages(const char*** messages, size_t* count, size_t* capacity) {
+    if (*count >= *capacity) {
+        *capacity = *count + 1;
+        *messages = realloc(*messages, *capacity * sizeof(char*));
+        if (!*messages) {
+            fprintf(stderr, "Fatal: Memory allocation failed during startup\n");
+            exit(1);
+        }
+    }
+    (*messages)[*count] = NULL;
+}
+
+void free_launch_messages(const char** messages, size_t count) {
+    if (messages) {
+        for (size_t i = 0; i < count; i++) {
+            free((void*)messages[i]);
+        }
+        free(messages);
+    }
+}
+
+/**
+ * Check if a subsystem is launchable by name
+ *
+ * A subsystem is considered launchable if it's in READY, RUNNING state,
+ * or if it's the Registry (which is fundamental and always considered available
+ * once registered, even before launch).
+ *
+ * This is used for dependency checking during readiness verification.
+ *
+ * @param name The name of the subsystem to check
+ * @return true if the subsystem is launchable, false otherwise
+ */
+bool is_subsystem_launchable_by_name(const char* name) {
+    if (!name) return false;
+
+    int subsystem_id = get_subsystem_id_by_name(name);
+    if (subsystem_id < 0) return false;
+
+    // Special case: Registry is always considered launchable once registered
+    // This handles the case where Registry readiness is checked before it's launched
+    if (strcmp(name, "Registry") == 0) {
+        return true;  // Registry is fundamental and always available once registered
+    }
+
+    SubsystemState state = get_subsystem_state(subsystem_id);
+    return (state == SUBSYSTEM_READY || state == SUBSYSTEM_RUNNING);
+}
+
 // Private declarations
 static void log_early_info(void);
 static bool launch_approved_subsystems(ReadinessResults* results);
@@ -190,15 +257,8 @@ bool check_all_launch_readiness(void) {
      */
     handle_launch_review(&results);
     
-    // Clean up readiness messages for each subsystem
-    for (size_t i = 0; i < results.total_checked; i++) {
-        LaunchReadiness readiness = {
-            .subsystem = results.results[i].subsystem,
-            .ready = results.results[i].ready,
-            .messages = NULL  // We don't have the messages here
-        };
-        free_readiness_messages(&readiness);
-    }
+    // Note: Readiness messages are already cleaned up in process_subsystem_readiness()
+    // No additional cleanup needed here as messages are freed immediately after logging
     
     // Return overall launch success
     return launch_success;
