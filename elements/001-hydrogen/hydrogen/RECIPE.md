@@ -113,6 +113,7 @@ tests/          Test framework
 - tests/test_21_system_endpoints.sh - Validates the functionality of system endpoints
 - tests/test_22_swagger.sh - Checks that Swagger files are served up from payload
 - tests/test_23_websockets.sh - Retrieves status from WebSockets interface
+- tests/test_24_uploads.sh - Upload file to server
 - tests/test_90_markdownlint.sh - Lint for Markdown
 - tests/test_91_cppcheck.sh - Lint for C
 - tests/test_92_shellcheck.sh - Lint for Bash

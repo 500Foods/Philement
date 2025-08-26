@@ -42,6 +42,9 @@ void shutdown_terminal(void);
 void shutdown_mdns_server(void);
 void shutdown_mdns_client(void);
 void shutdown_mail_relay(void);
+void shutdown_resources(void);
+void shutdown_notify(void);
+void shutdown_oidc(void);
 void shutdown_print_queue(void);
 
 // Landing functions

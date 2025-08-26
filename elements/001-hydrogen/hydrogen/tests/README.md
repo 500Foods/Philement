@@ -73,6 +73,7 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_21_system_endpoints.sh](docs/test_21_system_endpoints.md)**: Tests system endpoint functionality.
 - **[test_22_swagger.sh](docs/test_22_swagger.md)**: Verifies Swagger documentation and UI integration.
 - **[test_23_websockets.sh](docs/test_23_websockets.md)**: Tests WebSocket server functionality and integration.
+- **[test_24_uploads.sh](docs/test_24_uploads.md)**: Tests uploading a file to the server
 
 ### Static Analysis & Code Quality Tests
 

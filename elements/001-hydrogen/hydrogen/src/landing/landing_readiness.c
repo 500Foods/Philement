@@ -46,6 +46,9 @@ extern LaunchReadiness check_logging_landing_readiness(void);      // from landi
 extern LaunchReadiness check_network_landing_readiness(void);      // from landing_network.c
 extern LaunchReadiness check_payload_landing_readiness(void);      // from landing_payload.c
 extern LaunchReadiness check_threads_landing_readiness(void);      // from landing_threads.c
+extern LaunchReadiness check_oidc_landing_readiness(void);         // from landing_oidc.c
+extern LaunchReadiness check_resources_landing_readiness(void);    // from landing_resources.c
+extern LaunchReadiness check_notify_landing_readiness(void);       // from landing_notify.c
 extern LaunchReadiness check_registry_landing_readiness(void);     // from landing_registry.c
 
 // Forward declarations of static functions
@@ -128,6 +131,9 @@ ReadinessResults handle_landing_readiness(void) {
         {"Database", check_database_landing_readiness},
         {"Logging", check_logging_landing_readiness},
         {"Network", check_network_landing_readiness},
+        {"Resources", check_resources_landing_readiness},
+        {"Notify", check_notify_landing_readiness},
+        {"OIDC", check_oidc_landing_readiness},
         {"Payload", check_payload_landing_readiness},
         {"Threads", check_threads_landing_readiness},
         {"Registry", check_registry_landing_readiness}

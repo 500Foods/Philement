@@ -26,12 +26,13 @@ setup_test_environment
 declare -a PARALLEL_PIDS
 declare -A UPLOAD_TEST_CONFIGS
 
-# Upload test configuration - format: "config_file:log_suffix:test_type:artifact_file:description"
+# Upload test configuration - format: "config_file:log_suffix:test_type:artifact_file:http_method:description"
 UPLOAD_TEST_CONFIGS=(
-    ["T1"]="${SCRIPT_DIR}/configs/hydrogen_test_24_uploads_1.json:t1:api:3DBenchy.3mf:T1 - API Upload 3DBenchy.3mf (3.0MB - should succeed)"
-    ["T2"]="${SCRIPT_DIR}/configs/hydrogen_test_24_uploads_2.json:t2:api:3DBenchy.stl:T2 - API Upload 3DBenchy.stl (11MB - should fail)"
-    ["T3"]="${SCRIPT_DIR}/configs/hydrogen_test_24_uploads_3.json:t3:web:3DBenchy.gcode:T3 - Web Upload 3DBenchy.gcode (4.2MB - should succeed with Beryllium)"
-    ["T4"]="${SCRIPT_DIR}/configs/hydrogen_test_24_uploads_4.json:t4:web:3DBenchy.stl:T4 - Web Upload 3DBenchy.stl (11MB - should fail)"
+    ["T1"]="${SCRIPT_DIR}/configs/hydrogen_test_24_uploads_1.json:t1:api:3DBenchy.3mf:POST:T1 - API Upload 3DBenchy.3mf (3.0MB - should succeed)"
+    ["T2"]="${SCRIPT_DIR}/configs/hydrogen_test_24_uploads_2.json:t2:api:3DBenchy.stl:POST:T2 - API Upload 3DBenchy.stl (11MB - should fail)"
+    ["T3"]="${SCRIPT_DIR}/configs/hydrogen_test_24_uploads_3.json:t3:web:3DBenchy.gcode:POST:T3 - Web Upload 3DBenchy.gcode (4.2MB - should succeed with Beryllium)"
+    ["T4"]="${SCRIPT_DIR}/configs/hydrogen_test_24_uploads_4.json:t4:web:3DBenchy.stl:POST:T4 - Web Upload 3DBenchy.stl (11MB - should fail)"
+    ["T5"]="${SCRIPT_DIR}/configs/hydrogen_test_24_uploads_5.json:t5:api::GET:T5 - API Method Test (GET - should return 405 Method Not Allowed)"
 )
 
 # Test timeouts
@@ -45,7 +46,8 @@ run_upload_test_parallel() {
     local log_suffix="$3"
     local test_type="$4"
     local artifact_file="$5"
-    local description="$6"
+    local http_method="$6"
+    local description="$7"
 
     local log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.log"
     local result_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}.result"
@@ -105,69 +107,101 @@ run_upload_test_parallel() {
                 local response
                 local http_code
 
-                print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl -s -w 'HTTPSTATUS:%{http_code}' -X POST -F 'file=@${artifact_path}' -F 'print=false' '${base_url}/api/system/upload'"
+                if [[ "${http_method}" = "POST" ]]; then
+                    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl -s -w 'HTTPSTATUS:%{http_code}' -X POST -F 'file=@${artifact_path}' -F 'print=false' '${base_url}/api/system/upload'"
 
-                response=$(curl -s -w "HTTPSTATUS:%{http_code}" \
-                    -X POST \
-                    -F "file=@${artifact_path}" \
-                    -F "print=false" \
-                    --max-time 60 \
-                    "${base_url}/api/system/upload")
+                    response=$(curl -s -w "HTTPSTATUS:%{http_code}" \
+                        -X POST \
+                        -F "file=@${artifact_path}" \
+                        -F "print=false" \
+                        --max-time 60 \
+                        "${base_url}/api/system/upload")
 
-                http_code=$(echo "${response}" | tr -d '\n' | "${SED}" -e 's/.*HTTPSTATUS://')
-                local response_body
-                response_body=${response%%HTTPSTATUS:*}
+                    http_code=$(echo "${response}" | tr -d '\n' | "${SED}" -e 's/.*HTTPSTATUS://')
+                    local response_body
+                    response_body=${response%%HTTPSTATUS:*}
 
-                echo "${response_body}" > "${api_response_file}"
+                    echo "${response_body}" > "${api_response_file}"
 
-                if [[ "${http_code}" -eq 200 ]]; then
-                    # Should succeed for 3DBenchy.3mf, fail for 3DBenchy.stl
-                    if [[ "${artifact_file}" = "3DBenchy.3mf" ]]; then
-                        if echo "${response_body}" | jq -e '.done' >/dev/null 2>&1; then
-                            echo "API_UPLOAD_SUCCESS" >> "${result_file}"
+                    if [[ "${http_code}" -eq 200 ]]; then
+                        # Should succeed for 3DBenchy.3mf, fail for 3DBenchy.stl
+                        if [[ "${artifact_file}" = "3DBenchy.3mf" ]]; then
+                            if echo "${response_body}" | jq -e '.done' >/dev/null 2>&1; then
+                                echo "API_UPLOAD_SUCCESS" >> "${result_file}"
 
-                            # Extract upload completion info from server logs
-                            local upload_info
-                            upload_info=$("${GREP}" -A 5 "File upload completed:" "${log_file}" 2>/dev/null || true)
-                            if [[ -n "${upload_info}" ]]; then
-                                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ ${description} - SUCCESS"
-                                print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${upload_info}"
+                                # Extract upload completion info from server logs
+                                local upload_info
+                                upload_info=$("${GREP}" -A 5 "File upload completed:" "${log_file}" 2>/dev/null || true)
+                                if [[ -n "${upload_info}" ]]; then
+                                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ ${description} - SUCCESS"
+                                    print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${upload_info}"
+                                else
+                                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ ${description} - Success: $("${STAT}" -c%s "${artifact_path}" || true) bytes uploaded"
+                                fi
                             else
-                                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ ${description} - Success: $("${STAT}" -c%s "${artifact_path}" || true) bytes uploaded"
+                                echo "API_UPLOAD_FAILED" >> "${result_file}"
+                                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ ${description} - Response validation failed"
+                                all_tests_passed=false
                             fi
                         else
-                            echo "API_UPLOAD_FAILED" >> "${result_file}"
-                            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ ${description} - Response validation failed"
+                            echo "API_UPLOAD_UNEXPECTED_SUCCESS" >> "${result_file}"
+                            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ ${description} - Unexpected success for oversized file"
+                            all_tests_passed=false
+                        fi
+                    elif [[ "${http_code}" -eq 413 ]]; then
+                        # Should fail for 3DBenchy.stl due to size limit
+                        if [[ "${artifact_file}" = "3DBenchy.stl" ]]; then
+                            echo "API_UPLOAD_CORRECTLY_REJECTED" >> "${result_file}"
+
+                            # Extract rejection info from server logs
+                            local reject_info
+                            reject_info=$("${GREP}" -B 2 -A 2 "File upload exceeds maximum allowed size" "${log_file}" 2>/dev/null || true)
+                            if [[ -n "${reject_info}" ]]; then
+                                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ ${description} - Correctly rejected"
+                                print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${reject_info}"
+                            else
+                                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ ${description} - Correctly rejected oversized file"
+                            fi
+                        else
+                            echo "API_UPLOAD_UNEXPECTEDLY_REJECTED" >> "${result_file}"
+                            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ ${description} - Unexpected rejection for valid file"
                             all_tests_passed=false
                         fi
                     else
-                        echo "API_UPLOAD_UNEXPECTED_SUCCESS" >> "${result_file}"
-                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ ${description} - Unexpected success for oversized file"
-                        all_tests_passed=false
-                    fi
-                elif [[ "${http_code}" -eq 413 ]]; then
-                    # Should fail for 3DBenchy.stl due to size limit
-                    if [[ "${artifact_file}" = "3DBenchy.stl" ]]; then
-                        echo "API_UPLOAD_CORRECTLY_REJECTED" >> "${result_file}"
-
-                        # Extract rejection info from server logs
-                        local reject_info
-                        reject_info=$("${GREP}" -B 2 -A 2 "File upload exceeds maximum allowed size" "${log_file}" 2>/dev/null || true)
-                        if [[ -n "${reject_info}" ]]; then
-                            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ ${description} - Correctly rejected"
-                            print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${reject_info}"
-                        else
-                            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ ${description} - Correctly rejected oversized file"
-                        fi
-                    else
-                        echo "API_UPLOAD_UNEXPECTEDLY_REJECTED" >> "${result_file}"
-                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ ${description} - Unexpected rejection for valid file"
+                        echo "API_UPLOAD_UNEXPECTED_CODE_${http_code}" >> "${result_file}"
+                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ ${description} - Unexpected HTTP code: ${http_code}"
                         all_tests_passed=false
                     fi
                 else
-                    echo "API_UPLOAD_UNEXPECTED_CODE_${http_code}" >> "${result_file}"
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ ${description} - Unexpected HTTP code: ${http_code}"
-                    all_tests_passed=false
+                    # Non-POST method test (e.g., GET)
+                    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl -s -w 'HTTPSTATUS:%{http_code}' -X ${http_method} '${base_url}/api/system/upload'"
+
+                    response=$(curl -s -w "HTTPSTATUS:%{http_code}" \
+                        -X "${http_method}" \
+                        --max-time 60 \
+                        "${base_url}/api/system/upload")
+
+                    http_code=$(echo "${response}" | tr -d '\n' | "${SED}" -e 's/.*HTTPSTATUS://')
+                    local response_body
+                    response_body=${response%%HTTPSTATUS:*}
+
+                    echo "${response_body}" > "${api_response_file}"
+
+                    if [[ "${http_code}" -eq 405 ]]; then
+                        echo "API_METHOD_NOT_ALLOWED_SUCCESS" >> "${result_file}"
+                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ ${description} - Correctly returned 405 Method Not Allowed"
+
+                        # Extract method not allowed info from server logs if available
+                        local method_info
+                        method_info=$("${GREP}" -B 2 -A 2 "Method not allowed" "${log_file}" 2>/dev/null || true)
+                        if [[ -n "${method_info}" ]]; then
+                            print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${method_info}"
+                        fi
+                    else
+                        echo "API_METHOD_UNEXPECTED_CODE_${http_code}" >> "${result_file}"
+                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ ${description} - Expected 405, got ${http_code}"
+                        all_tests_passed=false
+                    fi
                 fi
 
             elif [[ "${test_type}" = "web" ]]; then
@@ -328,6 +362,15 @@ analyze_upload_test_results() {
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description} - FAILED"
                 return 1
             fi
+        elif [[ -z "${artifact_file}" ]]; then
+            # This is the method test case (e.g., GET method)
+            if "${GREP}" -q "API_METHOD_NOT_ALLOWED_SUCCESS" "${result_file}" 2>/dev/null; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description} - SUCCESS (correctly rejected)"
+                return 0
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description} - FAILED"
+                return 1
+            fi
         fi
     elif [[ "${test_type}" = "web" ]]; then
         if [[ "${artifact_file}" = "3DBenchy.gcode" ]]; then
@@ -373,20 +416,24 @@ for test_config in "${!UPLOAD_TEST_CONFIGS[@]}"; do
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration File: ${test_config}"
 
     # Parse test configuration
-    IFS=':' read -r config_file log_suffix test_type artifact_file description <<< "${UPLOAD_TEST_CONFIGS[${test_config}]}"
+    IFS=':' read -r config_file log_suffix test_type artifact_file http_method description <<< "${UPLOAD_TEST_CONFIGS[${test_config}]}"
 
     # shellcheck disable=SC2310 # We want to continue even if the test fails
     if validate_config_file "${config_file}"; then
         port=$(get_webserver_port "${config_file}")
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description} will use port: ${port}"
 
-        # Check if artifact file exists
-        if [[ -f "${SCRIPT_DIR}/artifacts/uploads/${artifact_file}" ]]; then
-            file_size=$(stat -c%s "${SCRIPT_DIR}/artifacts/uploads/${artifact_file}")
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Test file: ${artifact_file} (${file_size} bytes)"
+        # Check if artifact file exists (skip for method tests with no artifact)
+        if [[ -n "${artifact_file}" ]]; then
+            if [[ -f "${SCRIPT_DIR}/artifacts/uploads/${artifact_file}" ]]; then
+                file_size=$(stat -c%s "${SCRIPT_DIR}/artifacts/uploads/${artifact_file}")
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Test file: ${artifact_file} (${file_size} bytes)"
+            else
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ERROR: Test file not found: ${SCRIPT_DIR}/artifacts/uploads/${artifact_file}"
+                config_valid=false
+            fi
         else
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ERROR: Test file not found: ${SCRIPT_DIR}/artifacts/uploads/${artifact_file}"
-            config_valid=false
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Method test - no artifact file required"
         fi
     else
         config_valid=false
@@ -416,12 +463,12 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         done
 
         # Parse test configuration
-        IFS=':' read -r config_file log_suffix test_type artifact_file description <<< "${UPLOAD_TEST_CONFIGS[${test_config}]}"
+        IFS=':' read -r config_file log_suffix test_type artifact_file http_method description <<< "${UPLOAD_TEST_CONFIGS[${test_config}]}"
 
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting parallel test: ${test_config} (${description})"
 
         # Run parallel upload test in background
-        run_upload_test_parallel "${test_config}" "${config_file}" "${log_suffix}" "${test_type}" "${artifact_file}" "${description}" &
+        run_upload_test_parallel "${test_config}" "${config_file}" "${log_suffix}" "${test_type}" "${artifact_file}" "${http_method}" "${description}" &
         PARALLEL_PIDS+=($!)
     done
 
@@ -436,7 +483,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     successful_tests=0
     for test_config in "${!UPLOAD_TEST_CONFIGS[@]}"; do
         # Parse test configuration
-        IFS=':' read -r config_file log_suffix test_type artifact_file description <<< "${UPLOAD_TEST_CONFIGS[${test_config}]}"
+        IFS=':' read -r config_file log_suffix test_type artifact_file http_method description <<< "${UPLOAD_TEST_CONFIGS[${test_config}]}"
 
         print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Upload Test: ${description}"
 
