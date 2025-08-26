@@ -55,6 +55,7 @@ bool is_file_readable(const char* path);
 #include "config_forward.h"
 
 // Subsystem configurations with struct definitions
+#include "config_defaults.h"
 #include "config_server.h"               // A. Server
 #include "config_network.h"              // B. Network
 #include "config_databases.h"            // C. Database

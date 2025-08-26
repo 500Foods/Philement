@@ -263,8 +263,6 @@ file(GLOB_RECURSE HYDROGEN_SOURCES
 # Remove files that should not be linked (from .trial-ignore)
 list(REMOVE_ITEM HYDROGEN_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/../src/not_hydrogen.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../src/config/config_defaults.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../src/config/mdns/config_mdns.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../src/config/oidc/config_oidc.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../src/config/oidc/config_oidc_endpoints.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../src/config/oidc/config_oidc_keys.c"

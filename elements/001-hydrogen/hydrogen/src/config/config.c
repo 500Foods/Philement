@@ -47,22 +47,7 @@
 #include "../hydrogen.h"
 
 // Configuration system
-#include "config_server.h"               // A. Server
-#include "config_network.h"              // B. Network
-#include "config_databases.h"            // C. Database
-#include "config_logging.h"              // D. Logging
-#include "config_webserver.h"            // E. WebServer
-#include "config_api.h"                  // F. API
-#include "config_swagger.h"              // G. Swagger
-#include "config_websocket.h"            // H. WebSocket
-#include "config_terminal.h"             // I. Terminal
-#include "config_mdns_server.h"          // J. mDNS Server
-#include "config_mdns_client.h"          // K. mDNS Client
-#include "config_mail_relay.h"           // L. Mail Relay
-#include "config_print.h"                // M. Print
-#include "config_resources.h"            // N. Resources
-#include "config_oidc.h"                 // O. OIDC
-#include "config_notify.h"               // P. Notify
+#include "config.h"
 
 // Forward declaration for cleanup function
 static void clean_app_config(AppConfig* config);
@@ -200,6 +185,10 @@ AppConfig* load_config(const char* cmdline_path) {
         }
         for (int i = 0; i < NUM_CONFIG_PATHS; i++) {
             log_this("Config", "――― %s", LOG_LEVEL_STATE, CONFIG_PATHS[i]);
+        }
+        if (initialize_config_defaults(config)) {
+          app_config = config;
+          return config;
         }
     }
 
