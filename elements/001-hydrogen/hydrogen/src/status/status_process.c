@@ -12,7 +12,6 @@
 #include <netinet/in.h>
 
 // External configuration and state
-extern AppConfig *app_config;
 extern volatile sig_atomic_t server_running;
 extern volatile sig_atomic_t server_stopping;
 extern volatile sig_atomic_t server_starting;

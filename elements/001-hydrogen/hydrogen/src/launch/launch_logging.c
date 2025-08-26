@@ -35,15 +35,14 @@ LaunchReadiness check_logging_launch_readiness(void) {
         return (LaunchReadiness){ .subsystem = "Logging", .ready = false, .messages = messages };
     }
 
-    const AppConfig* config = get_app_config();
-    if (!config) {
+    if (!app_config) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Configuration not loaded"));
         finalize_launch_messages(&messages, &count, &capacity);
         return (LaunchReadiness){ .subsystem = "Logging", .ready = false, .messages = messages };
     }
 
     // Get logging configuration
-    const LoggingConfig* log_config = &config->logging;
+    const LoggingConfig* log_config = &app_config->logging;
     bool config_valid = true;
 
     // Validate log levels

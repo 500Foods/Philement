@@ -13,9 +13,6 @@
 // Local includes
 #include "websocket_server_internal.h"
 
-// External configuration reference
-extern AppConfig *app_config;
-
 WebSocketServerContext* ws_context_create(int port, const char* protocol, const char* key)
 {
     WebSocketServerContext *ctx = calloc(1, sizeof(WebSocketServerContext));

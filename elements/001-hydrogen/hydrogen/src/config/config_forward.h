@@ -91,6 +91,9 @@ typedef struct MDNSClientConfig MDNSClientConfig;
 struct MailRelayConfig;
 typedef struct MailRelayConfig MailRelayConfig;
 
+struct SMTPConfig;
+typedef struct SMTPConfig SMTPConfig;
+
 // M. Print Configuration
 struct PrintQueueConfig;
 typedef struct PrintQueueConfig PrintQueueConfig;
@@ -127,8 +130,5 @@ typedef struct OIDCSecurityConfig OIDCSecurityConfig;
 // P. Notify Configuration
 struct NotifyConfig;
 typedef struct NotifyConfig NotifyConfig;
-
-struct SMTPConfig;
-typedef struct SMTPConfig SMTPConfig;
 
 #endif /* CONFIG_FORWARD_H */

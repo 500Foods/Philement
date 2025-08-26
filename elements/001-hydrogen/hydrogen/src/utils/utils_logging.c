@@ -26,12 +26,10 @@ void generate_id(char *buf, size_t len) {
 
 // Get the string representation of a log priority level
 const char* get_priority_label(int priority) {
-    // Get the application configuration
-    const AppConfig* config = get_app_config();
-    
+   
     // If we have a valid config, use the custom log level names if defined
-    if (config) {
-        const char* level_name = config_logging_get_level_name(&config->logging, priority);
+    if (app_config) {
+        const char* level_name = config_logging_get_level_name(&app_config->logging, priority);
         if (level_name) {
             return level_name;
         }

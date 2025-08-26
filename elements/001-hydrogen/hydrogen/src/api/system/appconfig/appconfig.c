@@ -21,8 +21,7 @@ enum MHD_Result handle_system_appconfig_request(struct MHD_Connection *connectio
     log_this("SystemService/appconfig", "Handling appconfig endpoint request", LOG_LEVEL_STATE);
 
     // Get current configuration
-    const AppConfig *config = get_app_config();
-    if (!config) {
+    if (!app_config) {
         log_this("SystemService/appconfig", "Failed to get application configuration", LOG_LEVEL_ERROR);
         json_t *error = json_pack("{s:s}", "error", "Failed to get configuration");
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_INTERNAL_SERVER_ERROR);
@@ -31,7 +30,7 @@ enum MHD_Result handle_system_appconfig_request(struct MHD_Connection *connectio
     }
 
     // Dump configuration to logs
-    dumpAppConfig(config, NULL);
+    dumpAppConfig(app_config, NULL);
 
     // Get the dumped configuration from logs
     char *raw_text = log_get_messages("Config-Dump");

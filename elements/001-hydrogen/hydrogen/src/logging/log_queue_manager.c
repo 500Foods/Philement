@@ -135,7 +135,6 @@ static bool should_log_to_database(const char* subsystem, int priority, const Lo
 }
 
 static void process_log_message(const char* message, int priority) {
-    extern AppConfig *app_config;  // Get access to global config
     if (!app_config) return;
 
     json_error_t error;

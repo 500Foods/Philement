@@ -357,9 +357,8 @@ static void test_crash_handler(int sig) {
 static void config_dump_handler(int sig) {
     (void)sig;
     log_this("Config", "Received SIGUSR2, dumping current configuration", LOG_LEVEL_STATE);
-    const AppConfig* config = get_app_config();
-    if (config) {
-        dumpAppConfig(config, NULL);
+    if (app_config) {
+        dumpAppConfig(app_config, NULL);
     } else {
         log_this("Config", "No configuration available to dump", LOG_LEVEL_ERROR);
     }

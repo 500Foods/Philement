@@ -16,7 +16,6 @@
 #include "../../../api/api_utils.h"
 
 // External variables
-extern AppConfig *app_config;
 extern WebSocketServerContext *ws_context;
 extern volatile sig_atomic_t server_running;
 extern volatile sig_atomic_t server_stopping;

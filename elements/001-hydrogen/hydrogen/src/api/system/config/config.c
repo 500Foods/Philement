@@ -43,7 +43,6 @@ enum MHD_Result handle_system_config_request(struct MHD_Connection *connection,
     }
     
     // Get the application configuration
-    // const AppConfig *app_config = get_app_config();
     if (!app_config || !app_config->server.config_file) {
         json_t *error = json_object();
         json_object_set_new(error, "error", json_string("Configuration not available"));
