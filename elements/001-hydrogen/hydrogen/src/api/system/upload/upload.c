@@ -28,7 +28,7 @@ enum MHD_Result handle_system_upload_request(struct MHD_Connection *connection,
     // Only allow POST method
     if (strcmp(method, "POST") != 0) {
         // Commented out to reduce excessive logging during multipart uploads
-        // log_this("SystemService/upload", "Method not allowed", LOG_LEVEL_ERROR);
+        log_this("WebServer-Upload", "Method not allowed: %s", LOG_LEVEL_ERROR, method);
         const char *error_json = "{\"error\": \"Method not allowed. Use POST.\"}";
         struct MHD_Response *response = MHD_create_response_from_buffer(
             strlen(error_json), (void*)error_json, MHD_RESPMEM_PERSISTENT);
