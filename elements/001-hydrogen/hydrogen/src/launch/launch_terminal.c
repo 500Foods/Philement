@@ -27,21 +27,21 @@ LaunchReadiness check_terminal_launch_readiness(void) {
     // First message is subsystem name
     add_launch_message(&messages, &count, &capacity, strdup("Terminal"));
 
-    // Check dependencies first
-    if (!config->webserver.enable_ipv4 && !config->webserver.enable_ipv6) {
+    // Check dependencies first - handle NULL config gracefully
+    if (!config || (!config->webserver.enable_ipv4 && !config->webserver.enable_ipv6)) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   WebServer Not Enabled"));
         add_launch_message(&messages, &count, &capacity, strdup("  Reason:  Terminal Requires WebServer (IPv4 or IPv6)"));
         is_ready = false;
     }
 
-    if (!config->websocket.enabled) {
+    if (!config || !config->websocket.enabled) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   WebSocket Not Enabled"));
         add_launch_message(&messages, &count, &capacity, strdup("  Reason:  Terminal Requires WebSocket"));
         is_ready = false;
     }
 
-    // Check if terminal is enabled
-    if (!config->terminal.enabled) {
+    // Check if terminal is enabled - handle NULL config gracefully
+    if (!config || !config->terminal.enabled) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Terminal System Disabled"));
         add_launch_message(&messages, &count, &capacity, strdup("  Reason:  Disabled in Configuration"));
         is_ready = false;

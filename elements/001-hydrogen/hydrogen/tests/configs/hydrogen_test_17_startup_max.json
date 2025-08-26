@@ -27,6 +27,15 @@
         }
     },
     "Network": {
+        "Available": {
+            "lo": true,
+            "wg0": true,     
+            "vnet0": true,   
+            "vnet1": false,
+            "vnet2": false,
+            "vnet3": false,
+            "vnet4": false
+        },
         "Interfaces": {
             "MaxInterfaces": 16,
             "MaxIPsPerInterface": 8,
