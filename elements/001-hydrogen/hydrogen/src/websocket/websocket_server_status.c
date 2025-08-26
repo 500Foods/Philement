@@ -6,7 +6,6 @@
 #include "websocket_server_internal.h"
 #include <sys/sysinfo.h>
 
-extern AppConfig *app_config;
 extern WebSocketServerContext *ws_context;
 
 // Handle real-time status request via WebSocket

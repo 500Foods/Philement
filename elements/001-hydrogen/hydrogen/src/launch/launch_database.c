@@ -35,15 +35,14 @@ LaunchReadiness check_database_launch_readiness(void) {
         return (LaunchReadiness){ .subsystem = "Database", .ready = false, .messages = messages };
     }
 
-    const AppConfig* config = get_app_config();
-    if (!config) {
+    if (!app_config) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Configuration not loaded"));
         finalize_launch_messages(&messages, &count, &capacity);
         return (LaunchReadiness){ .subsystem = "Database", .ready = false, .messages = messages };
     }
 
     // Validate database configuration
-    const DatabaseConfig* db_config = &config->databases;
+    const DatabaseConfig* db_config = &app_config->databases;
 
     // Check default workers
     if (db_config->default_workers < 1 || db_config->default_workers > 32) {

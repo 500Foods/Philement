@@ -10,8 +10,6 @@
 // Local includes
 #include "beryllium.h"
 
-extern AppConfig *app_config;
-
 /**
  * Create a BerylliumConfig from AppConfig
  * @param app_config The application configuration

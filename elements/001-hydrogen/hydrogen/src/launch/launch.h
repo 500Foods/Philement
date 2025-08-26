@@ -50,8 +50,6 @@
 #include "../threads/threads.h"
 #include "../state/state_types.h"  // For SubsystemState and LaunchReadiness
 
-extern AppConfig *app_config;
-
 // External system state flags
 extern volatile sig_atomic_t server_stopping;
 extern volatile sig_atomic_t server_starting;

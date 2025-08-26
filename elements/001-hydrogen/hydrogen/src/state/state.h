@@ -60,7 +60,6 @@ extern pthread_t mdns_server_thread;
 extern pthread_t print_queue_thread;
 
 // Shared resources
-extern AppConfig *app_config;
 extern mdns_server_t *mdns_server;
 extern network_info_t *net_info;
 
