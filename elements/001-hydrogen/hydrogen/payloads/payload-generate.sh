@@ -13,13 +13,14 @@
 # - Cleans up all temporary files
 
 # CHANGELONG
+# 2.1.0 - Added swagger/ directory structure within tar file for better organization
 # 2.0.0 - Better at downloading latest version of swagger
 # 1.2.0 - Improved modularity, fixed shellcheck warnings, enhanced error handling
 # 1.1.0 - Added RSA+AES hybrid encryption support
 # 1.0.0 - Initial release with basic payload generation
 
 # Display script information
-echo "payload-generate.sh version 2.0.0"
+echo "payload-generate.sh version 2.1.0"
 echo "Encrypted Payload Generator for Hydrogen"
 
 # Common utilities - use GNU versions if available (eg: homebrew on macOS)
@@ -374,21 +375,36 @@ create_validation_files() {
 create_tarball() {
     print_header "Creating Payload Package"
     echo -e "${CYAN}${INFO} Creating payload tarball...${NC}"
-    
-    # Create flat tar file including only what we need
+
+    # Create swagger directory structure within the working directory
+    echo -e "${CYAN}${INFO} Organizing files into swagger/ directory structure...${NC}"
+    mkdir -p "${SWAGGERUI_DIR}/swagger"
+
+    # Move all files into the swagger directory to create proper folder structure
+    mv "${SWAGGERUI_DIR}/swagger-ui-bundle.js.br" "${SWAGGERUI_DIR}/swagger/"
+    mv "${SWAGGERUI_DIR}/swagger-ui-standalone-preset.js.br" "${SWAGGERUI_DIR}/swagger/"
+    mv "${SWAGGERUI_DIR}/swagger-ui.css.br" "${SWAGGERUI_DIR}/swagger/"
+    mv "${SWAGGERUI_DIR}/swagger.json" "${SWAGGERUI_DIR}/swagger/"
+    mv "${SWAGGERUI_DIR}/oauth2-redirect.html.br" "${SWAGGERUI_DIR}/swagger/"
+    mv "${SWAGGERUI_DIR}/index.html" "${SWAGGERUI_DIR}/swagger/"
+    mv "${SWAGGERUI_DIR}/swagger-initializer.js" "${SWAGGERUI_DIR}/swagger/"
+    mv "${SWAGGERUI_DIR}/favicon-32x32.png" "${SWAGGERUI_DIR}/swagger/"
+    mv "${SWAGGERUI_DIR}/favicon-16x16.png" "${SWAGGERUI_DIR}/swagger/"
+
+    # Create tar file with swagger directory structure
     # - Compressed static assets (.br files)
     # - Uncompressed dynamic files and swagger.json
     # - Strip metadata (permissions and ownership) since we're the only ones using it
     cd "${SWAGGERUI_DIR}" && "${TAR}" --mode=0000 --owner=0 --group=0 -cf "${TAR_FILE}" \
-        swagger-ui-bundle.js.br \
-        swagger-ui-standalone-preset.js.br \
-        swagger-ui.css.br \
-        swagger.json \
-        oauth2-redirect.html.br \
-        index.html \
-        swagger-initializer.js \
-        favicon-32x32.png \
-        favicon-16x16.png
+        swagger/swagger-ui-bundle.js.br \
+        swagger/swagger-ui-standalone-preset.js.br \
+        swagger/swagger-ui.css.br \
+        swagger/swagger.json \
+        swagger/oauth2-redirect.html.br \
+        swagger/index.html \
+        swagger/swagger-initializer.js \
+        swagger/favicon-32x32.png \
+        swagger/favicon-16x16.png
     
     # Compress the tar file with Brotli using explicit settings
     echo -e "${CYAN}${INFO} Compressing tar file with Brotli...${NC}"

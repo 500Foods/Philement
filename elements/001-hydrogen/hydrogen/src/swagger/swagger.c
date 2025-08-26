@@ -636,6 +636,12 @@ cleanup:
         // Get file name
         char name[TAR_NAME_SIZE + 1] = {0};
         memcpy(name, current, TAR_NAME_SIZE);
+
+        // Strip "swagger/" prefix if present to maintain compatibility
+        char *clean_name = name;
+        if (strncmp(name, "swagger/", 8) == 0) {
+            clean_name = name + 8; // Skip "swagger/" prefix
+        }
         
         // Get file size (octal string)
         char size_str[TAR_SIZE_LENGTH + 1] = {0};
@@ -661,7 +667,7 @@ cleanup:
         }
 
         // Store file
-        swagger_files[num_swagger_files].name = strdup(name);
+        swagger_files[num_swagger_files].name = strdup(clean_name);
         swagger_files[num_swagger_files].size = file_size;
         swagger_files[num_swagger_files].data = malloc(file_size);
         
