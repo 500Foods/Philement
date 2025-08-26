@@ -71,8 +71,6 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [src/config/config_print.c](src/config/config_print.c) - Print subsystem configuration implementation
 - [src/config/config_print.h](src/config/config_print.h) - Print subsystem configuration interface definitions
 - [src/config/config_print_priorities.h](src/config/config_print_priorities.h) - Print priority definitions
-- [src/config/config_priority.c](src/config/config_priority.c) - Priority management implementation
-- [src/config/config_priority.h](src/config/config_priority.h) - Priority management interface definitions
 - [src/config/config_resources.c](src/config/config_resources.c) - Resource configuration implementation
 - [src/config/config_resources.h](src/config/config_resources.h) - Resource configuration interface definitions
 - [src/config/config_server.c](src/config/config_server.c) - Server configuration implementation

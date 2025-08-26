@@ -7,7 +7,6 @@
 
 // Local includes
 #include "log_queue_manager.h"
-#include "../config/config_priority.h"
 #include "../config/config_logging.h"
 
 // Public interface declarations

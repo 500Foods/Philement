@@ -7,7 +7,6 @@
 
 // Local includes
 #include "logging.h"
-#include "../config/config_priority.h"
 
 // Public interface declarations
 void log_this(const char* subsystem, const char* format, int priority, ...);

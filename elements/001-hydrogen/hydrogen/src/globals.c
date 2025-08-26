@@ -14,6 +14,19 @@ size_t registry_failed = 0;
 // Tracks current executable size
 long long server_executable_size = 0;
 
+// Global logging variables
+int MAX_PRIORITY_LABEL_WIDTH = 5;    // All log level names are 5 characters
+int MAX_SUBSYSTEM_LABEL_WIDTH = 18;  // Default minimum width
+
+PriorityLevel DEFAULT_PRIORITY_LEVELS[NUM_PRIORITY_LEVELS] = {
+    {0, "TRACE"},
+    {1, "DEBUG"},
+    {2, "STATE"},
+    {3, "ALERT"},
+    {4, "ERROR"},
+    {5, "FATAL"},
+    {6, "QUIET"}
+};
 
 void get_executable_size(char *argv[]) {
     struct stat server_executable;
