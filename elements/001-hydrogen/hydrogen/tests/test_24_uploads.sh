@@ -97,7 +97,7 @@ run_upload_test_parallel() {
             fi
 
             local all_tests_passed=true
-            local artifact_path="${SCRIPT_DIR}/artifacts/${artifact_file}"
+            local artifact_path="${SCRIPT_DIR}/artifacts/uploads/${artifact_file}"
 
             if [[ "${test_type}" = "api" ]]; then
                 # API endpoint test
@@ -381,11 +381,11 @@ for test_config in "${!UPLOAD_TEST_CONFIGS[@]}"; do
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description} will use port: ${port}"
 
         # Check if artifact file exists
-        if [[ -f "${SCRIPT_DIR}/artifacts/${artifact_file}" ]]; then
-            file_size=$(stat -c%s "${SCRIPT_DIR}/artifacts/${artifact_file}")
+        if [[ -f "${SCRIPT_DIR}/artifacts/uploads/${artifact_file}" ]]; then
+            file_size=$(stat -c%s "${SCRIPT_DIR}/artifacts/uploads/${artifact_file}")
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Test file: ${artifact_file} (${file_size} bytes)"
         else
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ERROR: Test file not found: ${SCRIPT_DIR}/artifacts/${artifact_file}"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ERROR: Test file not found: ${SCRIPT_DIR}/artifacts/uploads/${artifact_file}"
             config_valid=false
         fi
     else
