@@ -479,6 +479,10 @@ for file_data_entry in "${sorted_file_data[@]}"; do
             # Calculate focus value
             focus = coverage_gap * size_weight * coverage_penalty * small_file_penalty;
 
+            # Set focus to 0 if focus < 25 and combined coverage > 75%
+            if (focus < 25 && comb_pct > 75) focus = 0;
+            if (focus < 25 && lines < 25) focus = 0;
+
             printf "%.3f %.3f %.3f %.3f %d %.1f\n", u_pct, c_pct, comb_pct, max_pct, below_50, focus;
         }')"
     
