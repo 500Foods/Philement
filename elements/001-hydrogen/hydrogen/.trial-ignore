@@ -1,7 +1,4 @@
 # Still working through the configuration 
-./config/config_defaults.c
-./config/mdns/config_mdns.c
-./config/oidc/config_oidc.c
 ./config/oidc/config_oidc_endpoints.c
 ./config/oidc/config_oidc_keys.c
 ./config/oidc/config_oidc_security.c
