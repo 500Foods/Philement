@@ -157,8 +157,7 @@ LaunchReadiness check_network_launch_readiness(void) {
         return (LaunchReadiness){ .subsystem = "Network", .ready = false, .messages = messages };
     }
 
-    const AppConfig* config = get_app_config();
-    if (!config) {
+    if (!app_config) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Configuration not loaded"));
         add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (no configuration)"));
         finalize_launch_messages(&messages, &count, &capacity);
@@ -169,12 +168,12 @@ LaunchReadiness check_network_launch_readiness(void) {
     const NetworkLimits* limits = get_network_limits();
 
     // Validate interface and IP limits
-    if (config->network.max_interfaces < limits->min_interfaces ||
-        config->network.max_interfaces > limits->max_interfaces) {
+    if (app_config->network.max_interfaces < limits->min_interfaces ||
+        app_config->network.max_interfaces > limits->max_interfaces) {
         char* msg = malloc(256);
         if (msg) {
             snprintf(msg, 256, "  No-Go:   Invalid max_interfaces: %zu (must be between %zu and %zu)",
-                    config->network.max_interfaces, limits->min_interfaces, limits->max_interfaces);
+                    app_config->network.max_interfaces, limits->min_interfaces, limits->max_interfaces);
             add_launch_message(&messages, &count, &capacity, msg);
         }
         add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (invalid max_interfaces)"));
@@ -182,12 +181,12 @@ LaunchReadiness check_network_launch_readiness(void) {
         return (LaunchReadiness){ .subsystem = "Network", .ready = false, .messages = messages };
     }
 
-    if (config->network.max_ips_per_interface < limits->min_ips_per_interface ||
-        config->network.max_ips_per_interface > limits->max_ips_per_interface) {
+    if (app_config->network.max_ips_per_interface < limits->min_ips_per_interface ||
+        app_config->network.max_ips_per_interface > limits->max_ips_per_interface) {
         char* msg = malloc(256);
         if (msg) {
             snprintf(msg, 256, "  No-Go:   Invalid max_ips_per_interface: %zu (must be between %zu and %zu)",
-                    config->network.max_ips_per_interface, limits->min_ips_per_interface, limits->max_ips_per_interface);
+                    app_config->network.max_ips_per_interface, limits->min_ips_per_interface, limits->max_ips_per_interface);
             add_launch_message(&messages, &count, &capacity, msg);
         }
         add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (invalid max_ips_per_interface)"));
@@ -196,12 +195,12 @@ LaunchReadiness check_network_launch_readiness(void) {
     }
 
     // Validate name and address length limits
-    if (config->network.max_interface_name_length < limits->min_interface_name_length ||
-        config->network.max_interface_name_length > limits->max_interface_name_length) {
+    if (app_config->network.max_interface_name_length < limits->min_interface_name_length ||
+        app_config->network.max_interface_name_length > limits->max_interface_name_length) {
         char* msg = malloc(256);
         if (msg) {
             snprintf(msg, 256, "  No-Go:   Invalid interface name length: %zu (must be between %zu and %zu)",
-                    config->network.max_interface_name_length, limits->min_interface_name_length, limits->max_interface_name_length);
+                    app_config->network.max_interface_name_length, limits->min_interface_name_length, limits->max_interface_name_length);
             add_launch_message(&messages, &count, &capacity, msg);
         }
         add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (invalid interface name length)"));
@@ -209,12 +208,12 @@ LaunchReadiness check_network_launch_readiness(void) {
         return (LaunchReadiness){ .subsystem = "Network", .ready = false, .messages = messages };
     }
 
-    if (config->network.max_ip_address_length < limits->min_ip_address_length ||
-        config->network.max_ip_address_length > limits->max_ip_address_length) {
+    if (app_config->network.max_ip_address_length < limits->min_ip_address_length ||
+        app_config->network.max_ip_address_length > limits->max_ip_address_length) {
         char* msg = malloc(256);
         if (msg) {
             snprintf(msg, 256, "  No-Go:   Invalid IP address length: %zu (must be between %zu and %zu)",
-                    config->network.max_ip_address_length, limits->min_ip_address_length, limits->max_ip_address_length);
+                    app_config->network.max_ip_address_length, limits->min_ip_address_length, limits->max_ip_address_length);
             add_launch_message(&messages, &count, &capacity, msg);
         }
         add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (invalid IP address length)"));
@@ -223,15 +222,15 @@ LaunchReadiness check_network_launch_readiness(void) {
     }
 
     // Validate port range
-    if (config->network.start_port < limits->min_port ||
-        config->network.start_port > limits->max_port ||
-        config->network.end_port < limits->min_port ||
-        config->network.end_port > limits->max_port ||
-        config->network.start_port >= config->network.end_port) {
+    if (app_config->network.start_port < limits->min_port ||
+        app_config->network.start_port > limits->max_port ||
+        app_config->network.end_port < limits->min_port ||
+        app_config->network.end_port > limits->max_port ||
+        app_config->network.start_port >= app_config->network.end_port) {
         char* msg = malloc(256);
         if (msg) {
             snprintf(msg, 256, "  No-Go:   Invalid port range: %d-%d (must be between %d and %d, start < end)",
-                    config->network.start_port, config->network.end_port, limits->min_port, limits->max_port);
+                    app_config->network.start_port, app_config->network.end_port, limits->min_port, limits->max_port);
             add_launch_message(&messages, &count, &capacity, msg);
         }
         add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (invalid port range)"));
@@ -240,7 +239,7 @@ LaunchReadiness check_network_launch_readiness(void) {
     }
 
     // Validate reserved ports array
-    if (config->network.reserved_ports_count > 0 && !config->network.reserved_ports) {
+    if (app_config->network.reserved_ports_count > 0 && !app_config->network.reserved_ports) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Reserved ports array is NULL but count > 0"));
         add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (reserved ports array issue)"));
         finalize_launch_messages(&messages, &count, &capacity);
@@ -273,20 +272,20 @@ LaunchReadiness check_network_launch_readiness(void) {
 
     // Check for "all" interfaces configuration
     bool all_interfaces_enabled = false;
-    if (config && config->network.available_interfaces &&
-        config->network.available_interfaces_count == 1 &&
-        config->network.available_interfaces[0].interface_name &&
-        strcmp(config->network.available_interfaces[0].interface_name, "all") == 0 &&
-        config->network.available_interfaces[0].available) {
+    if (app_config && app_config->network.available_interfaces &&
+        app_config->network.available_interfaces_count == 1 &&
+        app_config->network.available_interfaces[0].interface_name &&
+        strcmp(app_config->network.available_interfaces[0].interface_name, "all") == 0 &&
+        app_config->network.available_interfaces[0].available) {
         all_interfaces_enabled = true;
         add_launch_message(&messages, &count, &capacity, strdup("  Go:      All network interfaces enabled via config"));
     }
 
     // Check for specifically configured interfaces if not using "all"
     int json_interfaces_count = 0;
-    if (!all_interfaces_enabled && config && config->network.available_interfaces &&
-        config->network.available_interfaces_count > 0) {
-        json_interfaces_count = (int)config->network.available_interfaces_count;
+    if (!all_interfaces_enabled && app_config->network.available_interfaces &&
+        app_config->network.available_interfaces_count > 0) {
+        json_interfaces_count = (int)app_config->network.available_interfaces_count;
         char* config_count_msg = malloc(256);
         if (config_count_msg) {
             snprintf(config_count_msg, 256, "  Go:      %d network interfaces configured:", json_interfaces_count);
@@ -294,10 +293,10 @@ LaunchReadiness check_network_launch_readiness(void) {
         }
 
         // List specifically configured interfaces
-        for (size_t i = 0; i < config->network.available_interfaces_count; i++) {
-            if (config->network.available_interfaces[i].interface_name) {
-                const char* interface_name = config->network.available_interfaces[i].interface_name;
-                bool is_available = config->network.available_interfaces[i].available;
+        for (size_t i = 0; i < app_config->network.available_interfaces_count; i++) {
+            if (app_config->network.available_interfaces[i].interface_name) {
+                const char* interface_name = app_config->network.available_interfaces[i].interface_name;
+                bool is_available = app_config->network.available_interfaces[i].available;
 
                 char* interface_msg = malloc(256);
                 if (interface_msg) {

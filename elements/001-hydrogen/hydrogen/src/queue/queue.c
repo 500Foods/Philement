@@ -13,9 +13,6 @@
 // Local includes
 #include "queue.h"
 
-// External configuration
-extern AppConfig *app_config;
-
 QueueSystem queue_system = {0};  // Explicit zero initialization
 int queue_system_initialized = 0;  // Initialize to 0 (not initialized)
 

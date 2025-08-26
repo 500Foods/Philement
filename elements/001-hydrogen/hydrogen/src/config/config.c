@@ -76,7 +76,6 @@ static const char* const CONFIG_PATHS[] = {
 static const int NUM_CONFIG_PATHS = sizeof(CONFIG_PATHS) / sizeof(CONFIG_PATHS[0]);
 
 // Function forward declarations
-const AppConfig* get_app_config(void);
 AppConfig* load_config(const char* cmdline_path);
 
 // Function declarations for configuration loading
@@ -183,8 +182,6 @@ AppConfig* load_config(const char* cmdline_path) {
         return NULL;
     }
     
-    app_config = config;
-
     // Set up config path for use in server section
     const char* config_path = final_path;
     if (!config_path) {
@@ -251,9 +248,13 @@ AppConfig* load_config(const char* cmdline_path) {
     #undef LOAD_CONFIG
 
     if (root) json_decref(root);
-    
+
+    // Make config available globally
+    app_config = config;
+
     return config;
 }
+
 // Count UTF-8 characters
 static size_t utf8_char_count(const char* str) {
     size_t chars = 0;
@@ -378,19 +379,6 @@ void dumpAppConfig(const AppConfig* config, const char* section) {
     format_section_header(header, sizeof(header), "AppConfig Dump Complete", "");
     log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
 
-}
-
-/*
- * Get the current application configuration
- * 
- * Returns a pointer to the current application configuration.
- * This configuration is loaded by load_config() and stored in a static variable.
- * The returned pointer should not be modified by the caller.
- * 
- * @return Pointer to the current application configuration
- */
-const AppConfig* get_app_config(void) {
-    return app_config;
 }
 
 /*

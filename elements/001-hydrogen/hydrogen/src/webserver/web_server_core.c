@@ -103,7 +103,6 @@ const WebServerEndpoint* get_endpoint_for_url(const char* url) {
 }
 
 // External state
-extern AppConfig *app_config;
 extern volatile sig_atomic_t server_running;
 extern volatile sig_atomic_t web_server_shutdown;
 extern pthread_cond_t terminate_cond;

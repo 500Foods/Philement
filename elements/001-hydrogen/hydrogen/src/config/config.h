@@ -17,21 +17,26 @@
  * 
  * System Monitoring
  * A. Server
- * B. Network
- * C. Database
- * D. Logging
- * E. WebServer
- * F. API
- * G. Swagger
- * H. WebSocket
- * I. Terminal
- * J. mDNS Server
- * K. mDNS Client
- * L. Mail Relay
- * M. Print
- * N. Resources
- * O. OIDC
- * P. Notify
+ * B. Network (subsystem)
+ * C. Database (subsystem)
+ * D. Logging (subsystem)
+ * E. WebServer (subsystem)
+ * F. API (subsystem)
+ * G. Swagger (subsystem)
+ * H. WebSocket (subsystem)
+ * I. Terminal (subsystem)
+ * J. mDNS Server(subsystem)
+ * K. mDNS Client (subsystem)
+ * L. Mail Relay (subsystem)
+ * M. Print (subsystem)
+ * N. Resources (subsystem)
+ * O. OIDC (subsystem)
+ * P. Notify (subsystem)
+ * 
+ * NOTE: threads, registry, and payload are subsystems that don't 
+ * have their own sections in the config system because they are
+ * mostly internal or, like threads, are found in the individual
+ * sections where appropriate.
  */
 
 #ifndef CONFIG_H
@@ -69,15 +74,6 @@ bool is_file_readable(const char* path);
 
 // Support for configuration value handling and type conversion
 #include "config_utils.h"  // Includes string handling and file operations
-
-/*
- * Get the current application configuration
- * 
- * Returns a pointer to the current application configuration.
- * This configuration is loaded by load_config() and stored in a static variable.
- * The returned pointer should not be modified by the caller.
- */
-const AppConfig* get_app_config(void);
 
 /*
  * Load and validate configuration with comprehensive error handling

@@ -22,58 +22,56 @@ LaunchReadiness check_terminal_launch_readiness(void) {
     size_t capacity = 0;
     bool is_ready = true;
 
-    const AppConfig* config = get_app_config();
-
     // First message is subsystem name
     add_launch_message(&messages, &count, &capacity, strdup("Terminal"));
 
     // Check dependencies first - handle NULL config gracefully
-    if (!config || (!config->webserver.enable_ipv4 && !config->webserver.enable_ipv6)) {
+    if (!app_config || (!app_config->webserver.enable_ipv4 && !app_config->webserver.enable_ipv6)) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   WebServer Not Enabled"));
         add_launch_message(&messages, &count, &capacity, strdup("  Reason:  Terminal Requires WebServer (IPv4 or IPv6)"));
         is_ready = false;
     }
 
-    if (!config || !config->websocket.enabled) {
+    if (!app_config || !app_config->websocket.enabled) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   WebSocket Not Enabled"));
         add_launch_message(&messages, &count, &capacity, strdup("  Reason:  Terminal Requires WebSocket"));
         is_ready = false;
     }
 
     // Check if terminal is enabled - handle NULL config gracefully
-    if (!config || !config->terminal.enabled) {
+    if (!app_config || !app_config->terminal.enabled) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Terminal System Disabled"));
         add_launch_message(&messages, &count, &capacity, strdup("  Reason:  Disabled in Configuration"));
         is_ready = false;
     } else {
         // Validate required strings
-        if (!config->terminal.web_path) {
+        if (!app_config->terminal.web_path) {
             add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Missing Web Path"));
             add_launch_message(&messages, &count, &capacity, strdup("  Reason:  Web Path Must Be Set"));
             is_ready = false;
         }
 
-        if (!config->terminal.shell_command) {
+        if (!app_config->terminal.shell_command) {
             add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Missing Shell Command"));
             add_launch_message(&messages, &count, &capacity, strdup("  Reason:  Shell Command Must Be Set"));
             is_ready = false;
         }
 
         // Validate numeric ranges
-        if (config->terminal.max_sessions < 1 || config->terminal.max_sessions > 100) {
+        if (app_config->terminal.max_sessions < 1 || app_config->terminal.max_sessions > 100) {
             char msg[128];
             snprintf(msg, sizeof(msg), "  No-Go:   Invalid Max Sessions: %d",
-                    config->terminal.max_sessions);
+                    app_config->terminal.max_sessions);
             add_launch_message(&messages, &count, &capacity, strdup(msg));
             add_launch_message(&messages, &count, &capacity, strdup("  Reason:  Must Be Between 1 and 100"));
             is_ready = false;
         }
 
-        if (config->terminal.idle_timeout_seconds < 60 ||
-            config->terminal.idle_timeout_seconds > 3600) {
+        if (app_config->terminal.idle_timeout_seconds < 60 ||
+            app_config->terminal.idle_timeout_seconds > 3600) {
             char msg[128];
             snprintf(msg, sizeof(msg), "  No-Go:   Invalid Idle Timeout: %d",
-                    config->terminal.idle_timeout_seconds);
+                    app_config->terminal.idle_timeout_seconds);
             add_launch_message(&messages, &count, &capacity, strdup(msg));
             add_launch_message(&messages, &count, &capacity, strdup("  Reason:  Must Be Between 60 and 3600 Seconds"));
             is_ready = false;
@@ -101,9 +99,7 @@ int launch_terminal_subsystem(void) {
     // Reset shutdown flag
     terminal_system_shutdown = 0;
     
-    // Get configuration
-    const AppConfig* config = get_app_config();
-    if (!config || !config->terminal.enabled) {
+    if (!app_config || !app_config->terminal.enabled) {
         return -1;
     }
     
