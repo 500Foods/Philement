@@ -11,7 +11,6 @@
 
 // Local includes
 #include "config_logging.h"
-#include "config_priority.h"
 
 // Helper function for initializing subsystems
 static bool init_subsystems(LoggingDestConfig* dest) {
@@ -175,7 +174,7 @@ bool load_logging_config(json_t* root, AppConfig* config) {
     logging_config->levels = calloc(NUM_PRIORITY_LEVELS, sizeof(LogLevel));
     if (!logging_config->levels) return false;
 
-    // Set default values from config_priority
+    // Set default values
     for (size_t i = 0; i < NUM_PRIORITY_LEVELS; i++) {
         logging_config->levels[i].value = (int)i;  // Implicit ordering
         logging_config->levels[i].name = strdup(DEFAULT_PRIORITY_LEVELS[i].label);

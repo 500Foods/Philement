@@ -1,7 +1,7 @@
-// constants.c
+// globals.h
 
-#ifndef CONSTANTS_H
-#define CONSTANTS_H
+#ifndef GLOBALS_H
+#define GLOBALS_H
 
 // VERSIONING /////////////////////////////////////////////////////////////////////////////////////
 // These should be set by build system, eg: cmake
@@ -72,6 +72,17 @@
 
 // LOGGING ////////////////////////////////////////////////////////////////////////////////////////
 
+#define NUM_PRIORITY_LEVELS 7
+extern int MAX_PRIORITY_LABEL_WIDTH;   // All log level names are 5 characters
+extern int MAX_SUBSYSTEM_LABEL_WIDTH;  // Default minimum width
+
+typedef struct {
+    int value;
+    const char* label;
+} PriorityLevel;
+
+extern PriorityLevel DEFAULT_PRIORITY_LEVELS[];
+
 #define LOG_LINE_BREAK "――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――"   
 
 #define LOG_LEVEL_TRACE   0  // Log everything possible 
@@ -132,7 +143,6 @@
 #define MIN_PRIORITY 0
 #define MAX_PRIORITY 100
 #define MIN_PRIORITY_SPREAD 10  // Minimum difference between priority levels
-#define NUM_PRIORITY_LEVELS 7
 
 #define DEFAULT_PRIORITY_EMERGENCY 0
 #define DEFAULT_PRIORITY_DEFAULT 1
@@ -301,4 +311,4 @@
 // UUID generation for unique filenames
 #define UUID_STR_LEN 37
 
-#endif /* CONSTANTS_H */
+#endif /* GLOBALS_H */

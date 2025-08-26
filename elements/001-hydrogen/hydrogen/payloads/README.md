@@ -86,7 +86,8 @@ The primary payload currently embedded is a highly optimized SwaggerUI implement
     - swagger-initializer.js
     - favicon-32x32.png
     - favicon-16x16.png
-  - All packaged in a flat tar structure for efficient serving
+  - All packaged in a tar structure with organized directories for future extensibility
+- **Organized Directory Structure**: Files are organized in a `swagger/` directory within the tar file for easy separation from future payload types
 - **Dynamic Server URL**: Automatically adapts to the current server host and protocol
 - **OAuth Support**: Full OAuth 2.0 authorization flow support
 - **SwaggerUI Configuration**: All UI options can be configured in `hydrogen.json`:
@@ -119,6 +120,26 @@ The primary payload currently embedded is a highly optimized SwaggerUI implement
   - `syntaxHighlightTheme`: Theme for code samples and responses
 
 The `payload-generate.sh` script handles downloading, compressing, encrypting, and packaging the payload distribution. Run this script when you want to update or recreate the payload package.
+
+## Payload Structure
+
+The payload is organized in a structured tar format to support multiple payload types:
+
+```structure
+payload.tar.br (encrypted, brotli-compressed)
+└── swagger/
+    ├── swagger-ui-bundle.js.br (brotli-compressed)
+    ├── swagger-ui-standalone-preset.js.br (brotli-compressed)
+    ├── swagger-ui.css.br (brotli-compressed)
+    ├── oauth2-redirect.html.br (brotli-compressed)
+    ├── swagger.json (uncompressed for runtime modification)
+    ├── index.html (uncompressed for runtime modification)
+    ├── swagger-initializer.js (uncompressed for runtime modification)
+    ├── favicon-32x32.png (uncompressed)
+    └── favicon-16x16.png (uncompressed)
+```
+
+This structure allows for easy addition of new payload types in the future by creating additional directories (e.g., `docs/`, `assets/`, `config/`) alongside the `swagger/` directory.
 
 ## API Documentation Annotation System
 

@@ -46,9 +46,6 @@
  // Global includes 
 #include "../hydrogen.h"
 
-// Local includes
-#include "config_priority.h"
-
 // Configuration system
 #include "config_server.h"               // A. Server
 #include "config_network.h"              // B. Network

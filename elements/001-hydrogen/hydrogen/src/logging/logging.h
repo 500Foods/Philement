@@ -8,7 +8,6 @@
 
 #include "../globals.h"
 #include <stdbool.h>
-#include "../config/config_priority.h"
 
 /*
  * Primary logging function - use this for all logging needs
