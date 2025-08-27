@@ -198,12 +198,12 @@ bool check_all_landing_readiness(void) {
     // Use appropriate subsystem name based on operation
     const char* subsystem = restart_requested ? "Restart" : "Landing";
     
-    log_group_begin();
-    log_this(subsystem, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    log_this(subsystem, restart_requested ?
-        "Initiating graceful restart sequence" :
-        "LANDING SEQUENCE INITIATED", LOG_LEVEL_STATE);
-    log_group_end();
+    // log_group_begin();
+    // log_this(subsystem, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+    // log_this(subsystem, restart_requested ?
+    //     "Initiating graceful restart sequence" :
+    //     "Landing sequence initiated", LOG_LEVEL_STATE);
+    // log_group_end();
     
     /*
      * Phase 1: Check readiness of all subsystems
