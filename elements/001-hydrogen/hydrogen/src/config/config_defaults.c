@@ -77,11 +77,11 @@ bool initialize_config_defaults(AppConfig* config) {
 void initialize_config_defaults_server(AppConfig* config) {
     if (config) {
         config->server.server_name = strdup("Philement/hydrogen");
-        config->server.exec_file = NULL; // Will be set by caller if needed
-        config->server.config_file = NULL; // Will be set by caller if needed
+        config->server.exec_file = NULL; 
+        config->server.config_file = NULL; 
         config->server.log_file = strdup("/var/log/hydrogen/hydrogen.log");
-        config->server.payload_key = strdup("${env.PAYLOAD_KEY}");
         config->server.startup_delay = 5;
+        config->server.payload_key = process_env_variable_string("${env.PAYLOAD_KEY}");
         
         log_this("Config-Defaults", "Applied config defaults for Server", LOG_LEVEL_STATE);        
     }
