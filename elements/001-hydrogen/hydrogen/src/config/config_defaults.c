@@ -242,7 +242,7 @@ void initialize_config_defaults_swagger(AppConfig* config) {
 // H. WebSocket Configuration Defaults 
 void initialize_config_defaults_websocket(AppConfig* config) {
     if (config) {
-        config->websocket.enabled = false;
+        config->websocket.enable_ipv4 = false;
         config->websocket.enable_ipv6 = false;
         config->websocket.lib_log_level = 2;
         config->websocket.port = 5001;

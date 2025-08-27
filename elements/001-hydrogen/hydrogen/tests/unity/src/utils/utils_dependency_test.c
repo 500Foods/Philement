@@ -324,7 +324,7 @@ void test_check_library_dependencies_different_configs(void) {
 
     // Configure different scenarios
     config1.webserver.enable_ipv4 = true;
-    config1.websocket.enabled = true;
+    config1.websocket.enable_ipv4 = true;
 
     config2.print.enabled = true;
 

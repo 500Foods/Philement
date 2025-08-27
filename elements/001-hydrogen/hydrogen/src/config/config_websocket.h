@@ -24,7 +24,7 @@ typedef struct WebSocketConnectionTimeouts WebSocketConnectionTimeouts;
 
 // WebSocket configuration structure
 struct WebSocketConfig {
-    bool enabled;                    // Whether WebSocket server is enabled
+    bool enable_ipv4;               // Whether WebSocket server is enabled
     bool enable_ipv6;               // Whether to enable IPv6 support
     int lib_log_level;              // Library log level
     int port;                       // Port to listen on

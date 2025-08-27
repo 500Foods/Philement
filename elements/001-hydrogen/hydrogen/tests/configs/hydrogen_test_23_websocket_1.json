@@ -1,12 +1,12 @@
 {
     "ServerName": "hydrogen-test-26",
     "WebServer": {
-        "Enabled": false,
-        "EnableIPv6": false,
+        "EnableIPv4": true,
+        "EnableIPv6": true,
         "Port": 5230
     },
     "WebSocketServer": {
-        "Enabled": true,
+        "EnableIPv4": true,
         "EnableIPv6": true,
         "Port": 5231,
         "Protocol": "hydrogen",

@@ -165,18 +165,23 @@ LaunchReadiness check_websocket_launch_readiness(void) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Configuration not loaded"));
         ready = false;
     } else {
-        if (!app_config->websocket.enabled) {
-            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   WebSocket server disabled in configuration"));
-            ready = false;
+        if (!app_config->websocket.enable_ipv4) {
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   IPv4 disabled"));
         } else {
-            add_launch_message(&messages, &count, &capacity, strdup("  Go:      WebSocket server enabled"));
+            add_launch_message(&messages, &count, &capacity, strdup("  Go:      IPv4 enabled"));
         }
 
-        // Check protocol configuration
-        if (app_config->websocket.enable_ipv6) {
-            add_launch_message(&messages, &count, &capacity, strdup("  Go:      IPv6 enabled"));
+                if (app_config->websocket.enable_ipv6) {
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:      IPv6 enabled"));
         } else {
-            add_launch_message(&messages, &count, &capacity, strdup("  Go:      IPv4 only (IPv6 disabled)"));
+            add_launch_message(&messages, &count, &capacity, strdup("  Go:         IPv6 disabled"));
+        }
+
+        if (app_config->websocket.enable_ipv4 || app_config->websocket.enable_ipv6) {
+            add_launch_message(&messages, &count, &capacity, strdup("  Go:         At least one interface enabled"));    
+        } else {
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:      No interfaces enabled"));    
+            ready = false;
         }
 
         // 4. Check interface availability
@@ -320,11 +325,11 @@ int launch_websocket_subsystem(void) {
         return 0;
     }
 
-    if (!app_config->websocket.enabled) {
-        log_this("WebSocket", "Websocket disabled in configuration", LOG_LEVEL_STATE);
-        log_this("WebSocket", "LAUNCH: WEBSOCKETS - Disabled by configuration", LOG_LEVEL_STATE);
-        return 1; // Not an error if disabled
-    }
+    // if (!app_config->websocket.enabled) {
+    //     log_this("WebSocket", "Websocket disabled in configuration", LOG_LEVEL_STATE);
+    //     log_this("WebSocket", "LAUNCH: WEBSOCKETS - Disabled by configuration", LOG_LEVEL_STATE);
+    //     return 1; // Not an error if disabled
+    // }
 
     log_this("WebSocket", "    System state verified", LOG_LEVEL_STATE);
 
@@ -446,5 +451,6 @@ int is_websocket_server_running(void) {
     // Server is running if:
     // 1. Enabled in config
     // 2. Not in shutdown state
-    return (app_config && app_config->websocket.enabled && !websocket_server_shutdown);
+    //return (app_config && app_config->websocket.enabled && !websocket_server_shutdown);
+    return (app_config && !websocket_server_shutdown);
 }

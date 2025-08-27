@@ -32,7 +32,7 @@ LaunchReadiness check_terminal_launch_readiness(void) {
         is_ready = false;
     }
 
-    if (!app_config || !app_config->websocket.enabled) {
+    if (!app_config || (!app_config->websocket.enable_ipv4 && !app_config->websocket.enable_ipv6)) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   WebSocket Not Enabled"));
         add_launch_message(&messages, &count, &capacity, strdup("  Reason:  Terminal Requires WebSocket"));
         is_ready = false;
