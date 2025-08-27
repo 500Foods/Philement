@@ -240,7 +240,7 @@
      int critical_count = 0;
  
      bool web = config ? (config->webserver.enable_ipv4 || config->webserver.enable_ipv6) : false;
-     bool ws = config ? config->websocket.enabled : false;
+     bool ws = config ? (config->websocket.enable_ipv4 || config->websocket.enable_ipv6) : false;
      bool sec = config ? (web || ws) : false;
      bool print = config ? config->print.enabled : false;
  
