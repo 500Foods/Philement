@@ -302,7 +302,7 @@ bool collect_service_metrics(SystemMetrics *metrics, const WebSocketMetrics *ws_
     metrics->webserver.specific.webserver.total_requests = 0;
 
     // WebSocket service
-    metrics->websocket.enabled = app_config->websocket.enabled;
+    metrics->websocket.enabled = (app_config->websocket.enable_ipv4 || app_config->websocket.enable_ipv6);
     convert_thread_metrics(&websocket_threads, &metrics->websocket.threads);
     if (ws_metrics) {
         metrics->websocket.specific.websocket.uptime = 
