@@ -121,6 +121,7 @@ bool process_env_var(const char* env_name, ConfigValueType type,
 
 // Process environment variable reference and convert to JSON value
 json_t* process_env_variable(const char* value);
+char* process_env_variable_string(const char* value);
 
 /*
  * Indentation management

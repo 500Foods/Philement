@@ -287,6 +287,17 @@ json_t* process_env_variable(const char* value) {
     return json_string(env_value);
 }
 
+char* process_env_variable_string(const char* value) {
+    json_t *result = process_env_variable(value);
+    if (result && json_is_string(result)) {
+        char *env_string = strdup(json_string_value(result));
+        json_decref(result);
+        return env_string;
+    }
+    json_decref(result);
+    return NULL;
+}
+
 // Format and log a configuration value
 static void log_value(const char* path, const char* value, bool is_default, bool is_sensitive, const char* section) {
     if (!path) return;
