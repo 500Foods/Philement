@@ -68,12 +68,12 @@ LaunchReadiness check_registry_launch_readiness(void) {
     }
 
     // Validate config file path
-    if (!server->config_file || !server->config_file[0]) {
-        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid config file path (must not be empty)"));
-        config_valid = false;
-    } else {
-        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Config file path validated"));
-    }
+    // if (!server->config_file || !server->config_file[0]) {
+    //     add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid config file path (must not be empty)"));
+    //     config_valid = false;
+    // } else {
+    //     add_launch_message(&messages, &count, &capacity, strdup("  Go:      Config file path validated"));
+    // }
 
     // Validate payload key
     if (!server->payload_key || !server->payload_key[0]) {

@@ -41,4 +41,21 @@
  */
 bool initialize_config_defaults(AppConfig* config);
 
+void initialize_config_defaults_server(AppConfig* config);
+void initialize_config_defaults_network(AppConfig* config);
+void initialize_config_defaults_database(AppConfig* config);
+void initialize_config_defaults_logging(AppConfig* config);
+void initialize_config_defaults_webserver(AppConfig* config);
+void initialize_config_defaults_api(AppConfig* config);
+void initialize_config_defaults_swagger(AppConfig* config);
+void initialize_config_defaults_websocket(AppConfig* config);
+void initialize_config_defaults_terminal(AppConfig* config);
+void initialize_config_defaults_mdns_server(AppConfig* config);
+void initialize_config_defaults_mdns_client(AppConfig* config);
+void initialize_config_defaults_mail_relay(AppConfig* config);
+void initialize_config_defaults_print(AppConfig* config);
+void initialize_config_defaults_resources(AppConfig* config);
+void initialize_config_defaults_oidc(AppConfig* config);
+void initialize_config_defaults_notify(AppConfig* config);
+
 #endif /* HYDROGEN_CONFIG_DEFAULTS_H */
