@@ -1,0 +1,75 @@
+{
+    "Server": {
+        "ServerName": "hydrogen-mdns-test",
+        "PayloadKey": "${env.PAYLOAD_KEY}",
+        "LogFile": "/tmp/hydrogen_mdns_test.log",
+        "StartupDelay": 2
+    },
+    "WebServer": {
+        "EnableIPv4": false,
+        "EnableIPv6": false,
+        "Port": 5225
+    },
+    "mDNSClient": {
+        "EnableIPv4": true,
+        "EnableIPv6": true,
+        "ScanIntervalMs": 5000,
+        "ServiceTypes": [
+            "_http._tcp",
+            "_websocket._tcp",
+            "_hydrogen._tcp",
+            "_test._tcp"
+        ],
+        "MonitoredServices": {
+            "OwnServices": true,
+            "LoadBalancers": false,
+            "PrinterServices": true,
+            "CustomServices": []
+        },
+        "HealthCheck": {
+            "Enabled": true,
+            "IntervalMs": 30000,
+            "TimeoutMs": 5000,
+            "RetryCount": 3
+        }
+    },
+    "mDNSServer": {
+        "EnableIPv4": true,
+        "EnableIPv6": true,
+        "DeviceId": "hydrogen-mdns-test",
+        "FriendlyName": "Hydrogen mDNS Test Server",
+        "Model": "HydrogenTest",
+        "Manufacturer": "Philement Test",
+        "Version": "25.0.0-test",
+        "Services": [
+            {
+                "Name": "Hydrogen_Test_Web_Interface",
+                "Type": "_http._tcp",
+                "Port": 5225,
+                "TxtRecords": [
+                    "test=true",
+                    "version=25.0.0-test",
+                    "path=/api"
+                ]
+            },
+            {
+                "Name": "Hydrogen_Test_WebSocket",
+                "Type": "_websocket._tcp",
+                "Port": 5226,
+                "TxtRecords": [
+                    "test=true",
+                    "protocol=test-protocol"
+                ]
+            },
+            {
+                "Name": "Hydrogen_Test_Service",
+                "Type": "_hydrogen._tcp",
+                "Port": 5225,
+                "TxtRecords": [
+                    "test=true",
+                    "services=http,websocket,api"
+                ]
+            }
+        ]
+    }
+}
