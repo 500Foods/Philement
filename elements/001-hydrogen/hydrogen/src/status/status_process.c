@@ -316,7 +316,7 @@ bool collect_service_metrics(SystemMetrics *metrics, const WebSocketMetrics *ws_
     }
 
     // mDNS service
-    metrics->mdns.enabled = app_config->mdns_server.enabled;
+    metrics->mdns.enabled = (app_config->mdns_server.enable_ipv4 || app_config->mdns_server.enable_ipv6);
     convert_thread_metrics(&mdns_server_threads, &metrics->mdns.threads);
     metrics->mdns.specific.mdns.discovery_count = 0;  // TODO: Implement discovery counting
 

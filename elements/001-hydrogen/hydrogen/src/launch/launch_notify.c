@@ -63,7 +63,7 @@ LaunchReadiness check_notify_launch_readiness(void) {
     }
 
     // Validate notifier type
-    if (!app_config->notify.notifier || strlen(app_config->notify.notifier) == 0) {
+    if (!app_config->notify.notifier || (!app_config->notify.notifier[0])) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Notifier type is required when notify is enabled"));
         ready = false;
     } else if (strcmp(app_config->notify.notifier, "SMTP") != 0) {
@@ -200,7 +200,7 @@ int launch_notify_subsystem(void) {
     log_this("Notify", "  Step 3: Initializing Notify services", LOG_LEVEL_STATE);
 
     // Validate notifier type
-    if (!app_config->notify.notifier || strcmp(app_config->notify.notifier, "SMTP") != 0) {
+    if (!app_config->notify.notifier || !app_config->notify.notifier[0] || strcmp(app_config->notify.notifier, "SMTP") != 0) {
         log_this("Notify", "    Unsupported notifier type: %s",
                 LOG_LEVEL_ERROR, app_config->notify.notifier ? app_config->notify.notifier : "NULL");
         log_this("Notify", "LAUNCH: NOTIFY - Failed: Unsupported notifier type", LOG_LEVEL_STATE);

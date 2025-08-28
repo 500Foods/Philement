@@ -79,7 +79,7 @@ bool load_mdns_server_config(json_t* root, AppConfig* config) {
     MDNSServerConfig* mdns_config = &config->mdns_server;
 
     // Initialize with defaults
-    mdns_config->enabled = true;
+    mdns_config->enable_ipv4 = false;
     mdns_config->enable_ipv6 = false;
     mdns_config->device_id = strdup("hydrogen");
     mdns_config->friendly_name = strdup("Hydrogen Server");
@@ -93,7 +93,7 @@ bool load_mdns_server_config(json_t* root, AppConfig* config) {
     success = PROCESS_SECTION(root, "mDNSServer");
     
     // Process basic fields
-    success = success && PROCESS_BOOL(root, mdns_config, enabled, "mDNSServer.Enabled", "MDNSServer");
+    success = success && PROCESS_BOOL(root, mdns_config, enable_ipv4, "mDNSServer.EnableIPv4", "MDNSServer");
     success = success && PROCESS_BOOL(root, mdns_config, enable_ipv6, "mDNSServer.EnableIPv6", "MDNSServer");
     success = success && PROCESS_STRING(root, mdns_config, device_id, "mDNSServer.DeviceId", "MDNSServer");
     success = success && PROCESS_STRING(root, mdns_config, friendly_name, "mDNSServer.FriendlyName", "MDNSServer");
@@ -222,7 +222,7 @@ void dump_mdns_server_config(const MDNSServerConfig* config) {
     }
 
     // Dump basic configuration
-    DUMP_BOOL2("――", "Enabled", config->enabled);
+    DUMP_BOOL2("――", "IPv4 Enabled", config->enable_ipv4);
     DUMP_BOOL2("――", "IPv6 Enabled", config->enable_ipv6);
     
     char buffer[256];

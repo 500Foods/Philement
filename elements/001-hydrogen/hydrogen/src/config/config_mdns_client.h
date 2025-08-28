@@ -26,7 +26,7 @@ typedef struct MDNSServiceType {
 
 // mDNS client configuration structure
 typedef struct MDNSClientConfig {
-    bool enabled;
+    bool enable_ipv4;
     bool enable_ipv6;
     
     // Scanning configuration

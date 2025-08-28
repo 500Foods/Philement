@@ -74,7 +74,8 @@ void test_load_mdns_server_config_null_root(void) {
 
     // Function initializes defaults and returns success even with NULL root
     TEST_ASSERT_TRUE(result);
-    TEST_ASSERT_TRUE(config.mdns_server.enabled);  // Default is enabled in the function
+    TEST_ASSERT_FALSE(config.mdns_server.enable_ipv4);  // Default is enabled in the function
+    TEST_ASSERT_FALSE(config.mdns_server.enable_ipv6);  // Default is enabled in the function
     TEST_ASSERT_EQUAL_STRING("hydrogen", config.mdns_server.device_id);  // Default value
 
     cleanup_mdns_server_config(&config.mdns_server);
@@ -90,8 +91,8 @@ void test_load_mdns_server_config_empty_json(void) {
     bool result = load_mdns_server_config(root, &config);
 
     TEST_ASSERT_TRUE(result);
-    TEST_ASSERT_TRUE(config.mdns_server.enabled);  // Default is enabled in load function
-    TEST_ASSERT_FALSE(config.mdns_server.enable_ipv6);
+    TEST_ASSERT_FALSE(config.mdns_server.enable_ipv4);  // Default is disabled in load function
+    TEST_ASSERT_FALSE(config.mdns_server.enable_ipv6);  // Default is disabled in load function
     TEST_ASSERT_EQUAL_STRING("hydrogen", config.mdns_server.device_id);  // Default value
     TEST_ASSERT_EQUAL_STRING("Hydrogen Server", config.mdns_server.friendly_name);
     TEST_ASSERT_EQUAL_STRING("Hydrogen", config.mdns_server.model);
@@ -114,7 +115,7 @@ void test_load_mdns_server_config_basic_fields(void) {
     json_t* mdns_section = json_object();
 
     // Set up basic configuration
-    json_object_set(mdns_section, "Enabled", json_true());
+    json_object_set(mdns_section, "EnableIPv4", json_true());
     json_object_set(mdns_section, "EnableIPv6", json_true());
     json_object_set(mdns_section, "DeviceId", json_string("test-device"));
     json_object_set(mdns_section, "FriendlyName", json_string("Test Server"));
@@ -127,7 +128,7 @@ void test_load_mdns_server_config_basic_fields(void) {
     bool result = load_mdns_server_config(root, &config);
 
     TEST_ASSERT_TRUE(result);
-    TEST_ASSERT_TRUE(config.mdns_server.enabled);
+    TEST_ASSERT_TRUE(config.mdns_server.enable_ipv4);
     TEST_ASSERT_TRUE(config.mdns_server.enable_ipv6);
     TEST_ASSERT_EQUAL_STRING("test-device", config.mdns_server.device_id);
     TEST_ASSERT_EQUAL_STRING("Test Server", config.mdns_server.friendly_name);
@@ -147,13 +148,15 @@ void test_load_mdns_server_config_enabled_disabled(void) {
     json_t* mdns_section = json_object();
 
     // Test explicitly disabled
-    json_object_set(mdns_section, "Enabled", json_false());
+    json_object_set(mdns_section, "EnableIPv4", json_false());
+    json_object_set(mdns_section, "EnableIPv6", json_false());
     json_object_set(root, "mDNSServer", mdns_section);
 
     bool result = load_mdns_server_config(root, &config);
 
     TEST_ASSERT_TRUE(result);
-    TEST_ASSERT_FALSE(config.mdns_server.enabled);
+    TEST_ASSERT_FALSE(config.mdns_server.enable_ipv4);
+    TEST_ASSERT_FALSE(config.mdns_server.enable_ipv6);
 
     json_decref(root);
     cleanup_mdns_server_config(&config.mdns_server);
@@ -286,13 +289,15 @@ void test_load_mdns_server_config_basic_functionality(void) {
     json_t* mdns_section = json_object();
 
     // Test basic enable/disable functionality
-    json_object_set(mdns_section, "Enabled", json_false());
+    json_object_set(mdns_section, "EnableIPv4", json_false());
+    json_object_set(mdns_section, "EnableIPv6", json_false());
     json_object_set(root, "mDNSServer", mdns_section);
 
     bool result = load_mdns_server_config(root, &config);
 
     TEST_ASSERT_TRUE(result);
-    TEST_ASSERT_FALSE(config.mdns_server.enabled);
+    TEST_ASSERT_FALSE(config.mdns_server.enable_ipv4);
+    TEST_ASSERT_FALSE(config.mdns_server.enable_ipv6);
 
     json_decref(root);
     cleanup_mdns_server_config(&config.mdns_server);
@@ -313,7 +318,7 @@ void test_cleanup_mdns_server_config_empty_config(void) {
     cleanup_mdns_server_config(&config);
 
     // Config should be zeroed out
-    TEST_ASSERT_FALSE(config.enabled);
+    TEST_ASSERT_FALSE(config.enable_ipv4);
     TEST_ASSERT_FALSE(config.enable_ipv6);
     TEST_ASSERT_NULL(config.device_id);
     TEST_ASSERT_NULL(config.friendly_name);
@@ -328,7 +333,7 @@ void test_cleanup_mdns_server_config_with_data(void) {
     MDNSServerConfig config = {0};
 
     // Initialize with some test data
-    config.enabled = true;
+    config.enable_ipv4 = true;
     config.enable_ipv6 = true;
     config.device_id = strdup("test-device");
     config.friendly_name = strdup("Test Server");
@@ -342,7 +347,7 @@ void test_cleanup_mdns_server_config_with_data(void) {
     cleanup_mdns_server_config(&config);
 
     // Config should be zeroed out
-    TEST_ASSERT_FALSE(config.enabled);
+    TEST_ASSERT_FALSE(config.enable_ipv4);
     TEST_ASSERT_FALSE(config.enable_ipv6);
     TEST_ASSERT_NULL(config.device_id);
     TEST_ASSERT_NULL(config.friendly_name);
@@ -365,7 +370,7 @@ void test_dump_mdns_server_config_basic(void) {
     MDNSServerConfig config = {0};
 
     // Initialize with test data
-    config.enabled = true;
+    config.enable_ipv4 = true;
     config.enable_ipv6 = false;
     config.device_id = strdup("test-device");
     config.friendly_name = strdup("Test Server");
