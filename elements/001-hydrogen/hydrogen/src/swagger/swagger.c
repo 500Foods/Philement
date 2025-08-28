@@ -36,10 +36,10 @@ enum MHD_Result swagger_request_handler(void *cls,
     const SwaggerConfig *config = (const SwaggerConfig *)cls;
     return handle_swagger_request(connection, url, config);
 }
-static bool load_swagger_files_from_tar(const uint8_t *tar_data, size_t tar_size);
+bool load_swagger_files_from_tar(const uint8_t *tar_data, size_t tar_size);
 static void free_swagger_files(void);
-static char* get_server_url(struct MHD_Connection *connection, const SwaggerConfig *config);
-static char* create_dynamic_initializer(const char *base_content, const char *server_url, const SwaggerConfig *config);
+char* get_server_url(struct MHD_Connection *connection, const SwaggerConfig *config);
+char* create_dynamic_initializer(const char *base_content, const char *server_url, const SwaggerConfig *config);
 
 bool init_swagger_support(SwaggerConfig *config) {
     // Store config globally for validator
@@ -470,7 +470,7 @@ static void free_swagger_files(void) {
     num_swagger_files = 0;
 }
 
-static bool load_swagger_files_from_tar(const uint8_t *tar_data, size_t tar_size) {
+bool load_swagger_files_from_tar(const uint8_t *tar_data, size_t tar_size) {
     // Try to decompress with Brotli using streaming API
     uint8_t *decompressed_data = NULL;
     size_t buffer_size = tar_size * 4;  // Initial estimate
@@ -704,7 +704,7 @@ cleanup:
  * @param config The web server configuration
  * @return Dynamically allocated string with the base URL, or NULL on error
  */
-static char* get_server_url(struct MHD_Connection *connection, 
+char* get_server_url(struct MHD_Connection *connection,
                           const SwaggerConfig *config __attribute__((unused))) {
     if (!app_config) {
         log_this("SwaggerUI", "Failed to get app config", LOG_LEVEL_ERROR, NULL);
@@ -748,7 +748,7 @@ static char* get_server_url(struct MHD_Connection *connection,
  * @param config The web server configuration containing the swagger prefix
  * @return Dynamically allocated string with the modified content, or NULL on error
  */
-static char* create_dynamic_initializer(const char *base_content __attribute__((unused)),
+char* create_dynamic_initializer(const char *base_content __attribute__((unused)),
                                       const char *server_url,
                                       const SwaggerConfig *config) {
     // Get the API prefix from the global config
