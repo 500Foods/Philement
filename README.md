@@ -64,16 +64,16 @@ There are countless tools, frameworks, coding styles, conventions, languages, an
 [![Count Lines of Code](https://github.com/500Foods/Philement/actions/workflows/main.yml/badge.svg)](https://github.com/500Foods/Philement/actions/workflows/main.yml)
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-08-27 23:28:57 UTC
+Last updated at 2025-08-28 00:54:32 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C                              316          11236          12532          41696
-Markdown                       280           7712             57          24379
+C                              318          11519          12652          42429
+Markdown                       280           7780             57          24570
 Bourne Shell                    55           2354           2792          10330
 C/C++ Header                    98           1132           3431           3091
 JSON                            29              0              0           2944
-SVG                              2              0              0           2784
+SVG                              2              0              0           2780
 CMake                            1            139            186            719
 HTML                             5            114             23            650
 Python                           1             36              9            195
@@ -85,7 +85,7 @@ CSS                              2              3              2             38
 YAML                             2              8             13             37
 JavaScript                       1              3              0             25
 -------------------------------------------------------------------------------
-SUM:                           803          22813          19092          87181
+SUM:                           805          23164          19212          88101
 -------------------------------------------------------------------------------
 28 Files were skipped (duplicate, binary, or without source code):
   gitignore: 4
