@@ -13,6 +13,15 @@ Hydrogen is a C project that implements a comprehensive suite of capabilities
 - End tasks by checking/updating RELEASES.md if changes warrant it, following the instructions there closely
 - Do NOT run full tests; humans handle comprehensive testing beyond `mkt`
 
+## AI-SPECIFIC GUIDANCE
+
+- Use full commands from the USEFUL ALIASES section if shell aliases are not available
+- Always work from the project root and use relative paths like `elements/001-hydrogen/hydrogen/`
+- When searching code, use tools like grep to find patterns efficiently
+- Follow the C and Bash coding requirements strictly to avoid linting errors
+- Use the repository structure diagram to quickly understand the codebase organization
+- For configuration changes, refer to the CONFIGURATION section and update JSON files accordingly
+
 ## ⚠️ IMPORTANT BUILD INSTRUCTIONS
 
 **ALWAYS USE THE `mkt` COMMAND FOR BUILDING:**
@@ -42,25 +51,37 @@ Most commands should likely be prefixed with `cdp && <command>` to ensure that y
 
 `alias cdp='cd ~/Projects/Philement/elements/001-hydrogen/hydrogen/'`
 
+Full command: `cd elements/001-hydrogen/hydrogen/`
+
 ### mka - Build all variants
 
 `alias mka='cdp && extras/make-all.sh && cd - > /dev/null 2>&1'`
+
+Full command: `cd elements/001-hydrogen/hydrogen && ./extras/make-all.sh`
 
 ### mkb - Build all variants and run all tests
 
 `alias mkb='cdp && cd tests && ./test_00_all.sh && cd - > /dev/null 2>&1'`
 
+Full command: `cd elements/001-hydrogen/hydrogen && cd tests && ./test_00_all.sh`
+
 ### mkc - Clean the project
 
 `alias mkc='cdp && extras/make-clean.sh && cd - > /dev/null 2>&1'`
+
+Full command: `cd elements/001-hydrogen/hydrogen && ./extras/make-clean.sh`
 
 ### mkl - Run the Markdown Links Check, aka github-sitemap.sh
 
 `alias mkl='cdp && tests/lib/github-sitemap.sh README.md --quiet --noreport && cd - > /dev/null 2>&1'`
 
+Full command: `cd elements/001-hydrogen/hydrogen && ./tests/lib/github-sitemap.sh README.md --quiet --noreport`
+
 ### mkt - Run the Trial Build
 
 `alias mkt='cdp && extras/make-trial.sh && cd - > /dev/null 2>&1'`
+
+Full command: `cd elements/001-hydrogen/hydrogen && ./extras/make-trial.sh`
 
 ## REPOSITORY STRUCTURE
 
