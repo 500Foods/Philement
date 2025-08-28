@@ -281,12 +281,250 @@ The Unity framework provides rich assertion capabilities:
 
 ## Best Practices
 
+### Core Testing Principles
+
 1. **Focus on Function Logic**: Test the specific function behavior, not entire system integration
 2. **Use Real Dependencies**: When possible, use actual system functions (like logging) rather than mocks
 3. **Test Edge Cases**: Pay special attention to boundary conditions and error scenarios
 4. **Keep Tests Independent**: Each test should be able to run in isolation
 5. **Document Test Intent**: Use clear, descriptive test names and comments
 6. **Maintain Test Quality**: Keep tests simple, focused, and maintainable
+
+### Advanced Testing Strategies
+
+#### JSON Processing Best Practices
+
+**Critical**: `json_object_get()` does NOT support dotted paths. Always traverse nested objects step by step:
+
+```c
+// ❌ WRONG - This doesn't work
+json_t* services = json_object_get(root, "mDNSServer.Services");
+
+// ✅ CORRECT - Traverse nested objects properly
+json_t* mdns_section = json_object_get(root, "mDNSServer");
+json_t* services = mdns_section ? json_object_get(mdns_section, "Services") : NULL;
+```
+
+**Always validate JSON structure** before processing:
+
+```c
+if (services && json_is_array(services)) {
+    // Safe to process array
+}
+```
+
+#### Array Processing with Invalid Entries
+
+When processing arrays that may contain invalid entries, use a separate counter for valid items:
+
+```c
+// ✅ CORRECT - Use separate counter for valid services
+size_t valid_services = 0;
+for (size_t i = 0; i < mdns_config->num_services; i++) {
+    json_t* service = json_array_get(services, i);
+    if (!json_is_object(service)) continue;  // Skip invalid entries
+
+    // Process valid service...
+    valid_services++;
+}
+
+// Update count to reflect only valid services
+mdns_config->num_services = valid_services;
+```
+
+#### Memory Management Testing
+
+**Always test memory allocation failure scenarios**:
+
+```c
+void test_function_memory_allocation_failure(void) {
+    // Test how function handles malloc failures
+    // This may require simulating allocation failures or testing cleanup paths
+}
+```
+
+**Test cleanup functions with various states**:
+
+```c
+void test_cleanup_null_pointer(void) {
+    cleanup_function(NULL);  // Should handle gracefully
+}
+
+void test_cleanup_empty_structure(void) {
+    MyStruct config = {0};
+    cleanup_function(&config);  // Should handle zeroed structures
+}
+
+void test_cleanup_allocated_resources(void) {
+    MyStruct config = {0};
+    config.allocated_field = strdup("test");
+    cleanup_function(&config);  // Should free resources and zero structure
+}
+```
+
+#### Configuration Testing Patterns
+
+**Test all configuration scenarios**:
+
+- Default values
+- Custom values for each field
+- Invalid/malformed configurations
+- Complex nested structures (services, arrays, objects)
+
+**Example comprehensive configuration test**:
+
+```c
+void test_config_full_customization(void) {
+    json_t* root = json_object();
+    json_t* config_section = json_object();
+
+    // Set all possible configuration fields
+    json_object_set(config_section, "Enabled", json_true());
+    json_object_set(config_section, "CustomField1", json_string("value1"));
+    json_object_set(config_section, "CustomField2", json_integer(42));
+    // ... set all fields
+
+    json_object_set(root, "ConfigSection", config_section);
+
+    AppConfig config = {0};
+    bool result = load_config_function(root, &config);
+
+    TEST_ASSERT_TRUE(result);
+    TEST_ASSERT_TRUE(config.enabled);
+    TEST_ASSERT_EQUAL_STRING("value1", config.custom_field1);
+    TEST_ASSERT_EQUAL(42, config.custom_field2);
+    // ... verify all fields
+
+    json_decref(root);
+    cleanup_config(&config);
+}
+```
+
+#### Error Condition Testing
+
+**Test all error paths systematically**:
+
+```c
+void test_function_null_parameters(void) {
+    TEST_ASSERT_FALSE(function_under_test(NULL, valid_param));
+    TEST_ASSERT_FALSE(function_under_test(valid_param, NULL));
+    TEST_ASSERT_FALSE(function_under_test(NULL, NULL));
+}
+
+void test_function_malformed_data(void) {
+    // Test with invalid JSON structures
+    json_t* malformed = json_string("not an object");
+    TEST_ASSERT_FALSE(function_under_test(malformed));
+}
+
+void test_function_edge_cases(void) {
+    // Test empty arrays, oversized inputs, boundary values
+    json_t* empty_array = json_array();
+    TEST_ASSERT_TRUE(function_under_test(empty_array));  // Should handle empty gracefully
+}
+```
+
+#### Complex Data Structure Testing
+
+**Test nested structures comprehensively**:
+
+```c
+void test_services_array_processing(void) {
+    // Test empty services array
+    // Test single service with minimal fields
+    // Test single service with all fields
+    // Test multiple services
+    // Test services with TXT records
+    // Test malformed service entries
+    // Test memory allocation failures during service processing
+}
+```
+
+#### Coverage Maximization Strategies
+
+1. **Target high-value functions** that provide maximum coverage gain
+2. **Test all public functions** in the module
+3. **Exercise all code paths** with different input combinations
+4. **Validate coverage reports** regularly to identify gaps
+5. **Test helper functions indirectly** through public interfaces
+6. **Focus on complex logic branches** that are hard to test through integration tests
+
+#### Test Organization Best Practices
+
+**Structure tests by functionality**:
+
+```c
+// Parameter validation tests
+void test_function_null_parameters(void);
+void test_function_empty_inputs(void);
+void test_function_invalid_parameters(void);
+
+// Normal operation tests
+void test_function_basic_functionality(void);
+void test_function_custom_values(void);
+void test_function_default_values(void);
+
+// Edge case tests
+void test_function_boundary_conditions(void);
+void test_function_extreme_values(void);
+
+// Complex scenario tests
+void test_function_complex_configurations(void);
+void test_function_nested_structures(void);
+
+// Error handling tests
+void test_function_error_recovery(void);
+void test_function_cleanup_on_failure(void);
+
+// Resource management tests
+void test_function_memory_management(void);
+void test_function_resource_cleanup(void);
+```
+
+#### Performance Considerations
+
+**Keep unit tests fast**:
+
+- Avoid sleep() calls or long delays
+- Use minimal timing delays when needed (microseconds, not seconds)
+- Test timeout scenarios appropriately
+- Ensure test suite completes in seconds, not minutes
+
+**Handle global state carefully**:
+
+```c
+void setUp(void) {
+    // Reset global state before each test
+    reset_global_variables();
+    initialize_test_fixtures();
+}
+
+void tearDown(void) {
+    // Clean up after each test
+    cleanup_test_resources();
+    reset_global_state();
+}
+```
+
+### Decision Framework for Unity Testing
+
+**Before investing in Unity tests for a module**:
+
+1. **Assess Function Safety**: Can functions be called safely in isolation?
+2. **Evaluate Dependencies**: Do functions require system resources or external contexts?
+3. **Check Existing Coverage**: Do integration tests already provide adequate coverage?
+4. **Estimate Effort vs. Benefit**: Will the Unity tests provide proportional value?
+5. **Consider Alternatives**: Would integration or component tests be more appropriate?
+
+**Skip Unity tests when**:
+
+- Functions require external library contexts that can't be easily mocked
+- Code depends heavily on global state or system initialization
+- Functions are primarily "glue code" between system components
+- Existing integration tests already provide adequate coverage
+- The effort to create reliable unit tests exceeds the practical benefit
+
+**Key Lesson**: Not all code needs or benefits from unit tests. System-dependent code is often better validated through integration testing that exercises the complete system in realistic conditions.
 
 ## Performance and Timing Best Practices
 
@@ -439,7 +677,7 @@ This example serves as a template for writing effective Unity tests that provide
 - Use mock functions to document expected behavior
 - Combine unit test coverage + integration test coverage for complete picture
 
-### Memory Management Testing
+### Memory Management Unit Testing
 
 When testing functions that allocate memory:
 

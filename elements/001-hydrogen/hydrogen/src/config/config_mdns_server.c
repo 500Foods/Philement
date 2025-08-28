@@ -103,7 +103,8 @@ bool load_mdns_server_config(json_t* root, AppConfig* config) {
 
     // Process services array if present
     if (success) {
-        json_t* services = json_object_get(root, "mDNSServer.Services");
+        json_t* mdns_section = json_object_get(root, "mDNSServer");
+        json_t* services = mdns_section ? json_object_get(mdns_section, "Services") : NULL;
         if (json_is_array(services)) {
             mdns_config->num_services = json_array_size(services);
             log_this("Config-MDNSServer", "――― Services: %zu configured", LOG_LEVEL_STATE, mdns_config->num_services);
@@ -117,6 +118,7 @@ bool load_mdns_server_config(json_t* root, AppConfig* config) {
                 }
 
                 // Process each service
+                size_t valid_services = 0;
                 for (size_t i = 0; i < mdns_config->num_services; i++) {
                     json_t* service = json_array_get(services, i);
                     if (!json_is_object(service)) continue;
@@ -128,54 +130,59 @@ bool load_mdns_server_config(json_t* root, AppConfig* config) {
                     // Process name
                     json_t* name = json_object_get(service, "Name");
                     if (json_is_string(name)) {
-                        mdns_config->services[i].name = strdup(json_string_value(name));
-                        if (!mdns_config->services[i].name) {
+                        mdns_config->services[valid_services].name = strdup(json_string_value(name));
+                        if (!mdns_config->services[valid_services].name) {
                             success = false;
                             break;
                         }
-                        log_this("Config-MDNSServer", "――― Service[%zu].Name: %s", LOG_LEVEL_STATE, 
-                                i, mdns_config->services[i].name);
+                        log_this("Config-MDNSServer", "――― Service[%zu].Name: %s", LOG_LEVEL_STATE,
+                                valid_services, mdns_config->services[valid_services].name);
                     } else {
-                        mdns_config->services[i].name = strdup("hydrogen");
-                        log_this("Config-MDNSServer", "――― Service[%zu].Name: %s (*)", LOG_LEVEL_STATE, 
-                                i, mdns_config->services[i].name);
+                        mdns_config->services[valid_services].name = strdup("hydrogen");
+                        log_this("Config-MDNSServer", "――― Service[%zu].Name: %s (*)", LOG_LEVEL_STATE,
+                                valid_services, mdns_config->services[valid_services].name);
                     }
 
                     // Process type
                     json_t* type = json_object_get(service, "Type");
                     if (json_is_string(type)) {
-                        mdns_config->services[i].type = strdup(json_string_value(type));
-                        if (!mdns_config->services[i].type) {
+                        mdns_config->services[valid_services].type = strdup(json_string_value(type));
+                        if (!mdns_config->services[valid_services].type) {
                             success = false;
                             break;
                         }
-                        log_this("Config-MDNSServer", "――― Service[%zu].Type: %s", LOG_LEVEL_STATE, 
-                                i, mdns_config->services[i].type);
+                        log_this("Config-MDNSServer", "――― Service[%zu].Type: %s", LOG_LEVEL_STATE,
+                                valid_services, mdns_config->services[valid_services].type);
                     } else {
-                        mdns_config->services[i].type = strdup("_http._tcp.local");
-                        log_this("Config-MDNSServer", "――― Service[%zu].Type: %s (*)", LOG_LEVEL_STATE, 
-                                i, mdns_config->services[i].type);
+                        mdns_config->services[valid_services].type = strdup("_http._tcp.local");
+                        log_this("Config-MDNSServer", "――― Service[%zu].Type: %s (*)", LOG_LEVEL_STATE,
+                                valid_services, mdns_config->services[valid_services].type);
                     }
 
                     // Process port
                     json_t* port = json_object_get(service, "Port");
                     if (json_is_integer(port)) {
-                        mdns_config->services[i].port = (int)json_integer_value(port);
-                        log_this("Config-MDNSServer", "――― Service[%zu].Port: %d", LOG_LEVEL_STATE, 
-                                i, mdns_config->services[i].port);
+                        mdns_config->services[valid_services].port = (int)json_integer_value(port);
+                        log_this("Config-MDNSServer", "――― Service[%zu].Port: %d", LOG_LEVEL_STATE,
+                                valid_services, mdns_config->services[valid_services].port);
                     } else {
-                        mdns_config->services[i].port = 80;
-                        log_this("Config-MDNSServer", "――― Service[%zu].Port: %d (*)", LOG_LEVEL_STATE, 
-                                i, mdns_config->services[i].port);
+                        mdns_config->services[valid_services].port = 80;
+                        log_this("Config-MDNSServer", "――― Service[%zu].Port: %d (*)", LOG_LEVEL_STATE,
+                                valid_services, mdns_config->services[valid_services].port);
                     }
 
                     // Process TXT records
                     json_t* txt_records = json_object_get(service, "TxtRecords");
-                    if (txt_records && !process_txt_records(txt_records, &mdns_config->services[i])) {
+                    if (txt_records && !process_txt_records(txt_records, &mdns_config->services[valid_services])) {
                         success = false;
                         break;
                     }
+
+                    valid_services++;
                 }
+
+                // Update the actual number of services
+                mdns_config->num_services = valid_services;
             }
         }
     }

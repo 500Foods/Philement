@@ -59,7 +59,8 @@ bool load_mailrelay_config(json_t* root, AppConfig* config) {
     success = success && PROCESS_INT(root, &mail->Queue, RetryDelaySeconds, "MailRelay.Queue.RetryDelaySeconds", "MailRelay");
 
     // Process server configurations
-    json_t* servers = json_object_get(root, "MailRelay.Servers");
+    json_t* mail_relay_section = json_object_get(root, "MailRelay");
+    json_t* servers = mail_relay_section ? json_object_get(mail_relay_section, "Servers") : NULL;
     if (servers && json_is_array(servers)) {
         size_t index;
         json_t* server;
