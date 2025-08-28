@@ -280,7 +280,7 @@ void initialize_config_defaults_terminal(AppConfig* config) {
 // J. mDNS Server Configuration Defaults 
 void initialize_config_defaults_mdns_server(AppConfig* config) {
     if (config) {
-        config->mdns_server.enabled = false;
+        config->mdns_server.enable_ipv4 = false;
         config->mdns_server.enable_ipv6 = false;
         config->mdns_server.device_id = strdup("hydrogen-server");
         config->mdns_server.friendly_name = strdup("Hydrogen Server");
@@ -297,7 +297,7 @@ void initialize_config_defaults_mdns_server(AppConfig* config) {
 // K. mDNS Client Configuration Defaults 
 void initialize_config_defaults_mdns_client(AppConfig* config) {
     if (config) {
-        config->mdns_client.enabled = false;
+        config->mdns_client.enable_ipv4 = false;
         config->mdns_client.enable_ipv6 = false;
         config->mdns_client.scan_interval = 30;
         config->mdns_client.max_services = 100;

@@ -53,7 +53,7 @@ LaunchReadiness check_mdns_client_launch_readiness(void) {
     }
 
     // Check basic configuration
-    if (!app_config || !app_config->mdns_client.enabled) {
+    if (!app_config || !(app_config->mdns_client.enable_ipv4 || app_config->mdns_client.enable_ipv6)) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   mDNS client disabled in configuration"));
         finalize_launch_messages(&messages, &count, &capacity);
         return (LaunchReadiness){ .subsystem = "mDNS Client", .ready = false, .messages = messages };

@@ -17,7 +17,7 @@ bool load_mdns_client_config(json_t* root, AppConfig* config) {
     MDNSClientConfig* mdns_config = &config->mdns_client;
 
     // Initialize with defaults
-    mdns_config->enabled = true;
+    mdns_config->enable_ipv4 = true;
     mdns_config->enable_ipv6 = false;
     mdns_config->scan_interval = 30;  // seconds
     mdns_config->max_services = 100;
@@ -29,7 +29,7 @@ bool load_mdns_client_config(json_t* root, AppConfig* config) {
 
     // Process main section
     success = PROCESS_SECTION(root, "mDNSClient");
-    success = success && PROCESS_BOOL(root, mdns_config, enabled, "mDNSClient.Enabled", "MDNSClient");
+    success = success && PROCESS_BOOL(root, mdns_config, enable_ipv4, "mDNSClient.EnableIPv4", "MDNSClient");
     success = success && PROCESS_BOOL(root, mdns_config, enable_ipv6, "mDNSClient.EnableIPv6", "MDNSClient");
     success = success && PROCESS_INT(root, mdns_config, scan_interval, "mDNSClient.ScanIntervalMs", "MDNSClient");
     success = success && PROCESS_SIZE(root, mdns_config, max_services, "mDNSClient.MaxServices", "MDNSClient");
@@ -124,7 +124,7 @@ void dump_mdns_client_config(const MDNSClientConfig* config) {
     }
 
     // Dump basic configuration
-    DUMP_BOOL2("――", "Enabled", config->enabled);
+    DUMP_BOOL2("――", "IPv4 Enabled", config->enable_ipv4);
     DUMP_BOOL2("――", "IPv6 Enabled", config->enable_ipv6);
     
     char buffer[256];

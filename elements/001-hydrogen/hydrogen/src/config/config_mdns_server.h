@@ -19,7 +19,7 @@
 
 // mDNS server configuration structure
 typedef struct MDNSServerConfig {
-    bool enabled;                    // Whether mDNS server is enabled
+    bool enable_ipv4;                    // Whether mDNS server is enabled
     bool enable_ipv6;               // Whether IPv6 is enabled
     char* device_id;                // Device identifier
     char* friendly_name;            // Human-readable device name
