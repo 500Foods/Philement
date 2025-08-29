@@ -93,7 +93,7 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
         if (is_api_endpoint(url, service, endpoint)) {
             char detail[128];
             snprintf(detail, sizeof(detail), "%sService/%s", service, endpoint);
-            log_this("API", detail, LOG_LEVEL_STATE);
+            log_this(SR_API, detail, LOG_LEVEL_STATE);
         }
     }
 

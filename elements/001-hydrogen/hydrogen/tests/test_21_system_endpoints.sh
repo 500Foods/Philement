@@ -65,6 +65,7 @@ ENDPOINT_TEST_CONFIGS=(
     ["PROMETHEUS"]="prometheus:system_info:Prometheus Metrics"
     ["RECENT"]="recent:\\[:Recent Activity Logs"
     ["APPCONFIG"]="appconfig:APPCONFIG:Application Configuration"
+    ["VERSION"]="version:OctoPrint:Version Information"
 )
 
 # Function to make a request and validate response with retry logic for API readiness
