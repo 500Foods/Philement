@@ -107,7 +107,7 @@ bool is_subsystem_launchable_by_name(const char* name) {
     }
 
     SubsystemState state = get_subsystem_state(subsystem_id);
-    return (state == SUBSYSTEM_READY || state == SUBSYSTEM_RUNNING);
+    return (state == SUBSYSTEM_READY || state == SUBSYSTEM_RUNNING || state == SUBSYSTEM_STARTING);
 }
 
 // Private declarations

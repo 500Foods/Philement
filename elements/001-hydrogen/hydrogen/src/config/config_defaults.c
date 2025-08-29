@@ -289,6 +289,7 @@ void initialize_config_defaults_mdns_server(AppConfig* config) {
         config->mdns_server.version = strdup("1.0.0");
         config->mdns_server.services = NULL;
         config->mdns_server.num_services = 0;
+        config->mdns_server.retry_count = 1;
             
         log_this("Config-Defaults", "Applied config defaults for mDNS Server", LOG_LEVEL_STATE);        
     }

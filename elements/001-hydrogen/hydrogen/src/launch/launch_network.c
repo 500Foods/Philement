@@ -355,6 +355,9 @@ LaunchReadiness check_network_launch_readiness(void) {
             snprintf(decision_msg, 256, "  Decide:  Go For Launch of Network Subsystem (%d interfaces ready)", up_interfaces);
             add_launch_message(&messages, &count, &capacity, decision_msg);
         }
+        // Mark as ready for launch - this enables dependent subsystems to detect network availability
+        update_subsystem_state(network_subsystem_id, SUBSYSTEM_READY);
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Network subsystem marked as ready"));
         ready = true;
     } else {
         add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (no interfaces ready)"));

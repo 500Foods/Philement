@@ -86,6 +86,7 @@ bool load_mdns_server_config(json_t* root, AppConfig* config) {
     mdns_config->model = strdup("Hydrogen");
     mdns_config->manufacturer = strdup("Philement");
     mdns_config->version = strdup(VERSION);
+    mdns_config->retry_count = 1;
     mdns_config->services = NULL;
     mdns_config->num_services = 0;
 
@@ -100,6 +101,7 @@ bool load_mdns_server_config(json_t* root, AppConfig* config) {
     success = success && PROCESS_STRING(root, mdns_config, model, "mDNSServer.Model", "MDNSServer");
     success = success && PROCESS_STRING(root, mdns_config, manufacturer, "mDNSServer.Manufacturer", "MDNSServer");
     success = success && PROCESS_STRING(root, mdns_config, version, "mDNSServer.Version", "MDNSServer");
+    success = success && PROCESS_INT(root, mdns_config, retry_count, "mDNSServer.Retries", "MDNSServer");
 
     // Process services array if present
     if (success) {

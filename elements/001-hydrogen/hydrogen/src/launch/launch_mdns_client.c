@@ -17,11 +17,29 @@
  * Note: Shutdown functionality has been moved to landing/landing_mdns_client.c
  */
 
-// Global includes 
+// Global includes
 #include "../hydrogen.h"
 
 // Local includes
 #include "launch.h"
+
+// Registry ID and cached readiness state
+int mdns_client_subsystem_id = -1;
+
+// Forward declarations
+static void register_mdns_client_for_launch(void);
+
+// Register the mDNS client subsystem with the registry (for launch)
+static void register_mdns_client_for_launch(void) {
+    // Always register during readiness check if not already registered
+    if (mdns_client_subsystem_id < 0) {
+        // Register with the launch system
+        mdns_client_subsystem_id = register_subsystem_from_launch("mDNS Client", NULL, NULL,
+                                                                &mdns_client_system_shutdown,
+                                                                (int (*)(void))launch_mdns_client_subsystem,
+                                                                NULL);  // Client has no shutdown function yet
+    }
+}
 
 // Check if the mDNS client subsystem is ready to launch
 LaunchReadiness check_mdns_client_launch_readiness(void) {
@@ -33,6 +51,9 @@ LaunchReadiness check_mdns_client_launch_readiness(void) {
     // First message is subsystem name
     add_launch_message(&messages, &count, &capacity, strdup("mDNS Client"));
 
+    // Register with registry for launch
+    register_mdns_client_for_launch();
+
     // Register dependency on Network subsystem
     int mdns_id = get_subsystem_id_by_name("mDNS Client");
     if (mdns_id >= 0) {
@@ -43,13 +64,13 @@ LaunchReadiness check_mdns_client_launch_readiness(void) {
         }
         add_launch_message(&messages, &count, &capacity, strdup("  Go:      Network dependency registered"));
 
-        // Verify Network subsystem is running
-        if (!is_subsystem_running_by_name("Network")) {
-            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Network subsystem not running"));
+        // Verify Network subsystem is ready to launch
+        if (!is_subsystem_launchable_by_name("Network")) {
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Network subsystem not launchable"));
             finalize_launch_messages(&messages, &count, &capacity);
             return (LaunchReadiness){ .subsystem = "mDNS Client", .ready = false, .messages = messages };
         }
-        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Network subsystem running"));
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Network subsystem will be available"));
     }
 
     // Check basic configuration
@@ -117,10 +138,70 @@ LaunchReadiness check_mdns_client_launch_readiness(void) {
 
 // Launch the mDNS client subsystem
 int launch_mdns_client_subsystem(void) {
+    log_this("mDNSClient", LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this("mDNSClient", "LAUNCH: MDNS CLIENT", LOG_LEVEL_STATE);
+
+    // Register with subsystem registry (from launch) - critical for dependencies to work
+    if (mdns_client_subsystem_id < 0) {
+        mdns_client_subsystem_id = register_subsystem_from_launch("mDNS Client", NULL, NULL,
+                                                                &mdns_client_system_shutdown,
+                                                                (int (*)(void))launch_mdns_client_subsystem,
+                                                                NULL);  // Client has no shutdown function yet
+        if (mdns_client_subsystem_id < 0) {
+            log_this("mDNSClient", "Failed to register mDNS Client subsystem for launch", LOG_LEVEL_ERROR);
+            log_this("mDNSClient", "LAUNCH: MDNS CLIENT - Failed: Registration error", LOG_LEVEL_STATE);
+            return 0;
+        }
+    }
+
     // Reset shutdown flag
     mdns_client_system_shutdown = 0;
-    
+
     // Initialize mDNS client system
-    // TODO: Add proper initialization when system is ready
-    return 1;
+    // TODO: Add proper initialization when system is ready - for now just mark as successful
+    // This will be implemented when the actual mDNS client functionality is added
+
+    log_this("mDNSClient", "Initializing mDNS client system", LOG_LEVEL_STATE);
+
+    // Step 1: Verify system state
+    if (server_stopping || server_starting != 1) {
+        log_this("mDNSClient", "Cannot initialize mDNS client outside startup phase", LOG_LEVEL_STATE);
+        log_this("mDNSClient", "LAUNCH: MDNS CLIENT - Failed: Not in startup phase", LOG_LEVEL_STATE);
+        return 0;
+    }
+
+    if (!app_config) {
+        log_this("mDNSClient", "Configuration not loaded", LOG_LEVEL_ERROR);
+        log_this("mDNSClient", "LAUNCH: MDNS CLIENT - Failed: No configuration", LOG_LEVEL_STATE);
+        return 0;
+    }
+
+    if (!app_config->mdns_client.enable_ipv4 && !app_config->mdns_client.enable_ipv6) {
+        log_this("mDNSClient", "mDNS client disabled in configuration (no protocols enabled)", LOG_LEVEL_STATE);
+        log_this("mDNSClient", "LAUNCH: MDNS CLIENT - Disabled by configuration", LOG_LEVEL_STATE);
+        return 1; // Not an error if disabled
+    }
+
+    // Step 2: Initialize mDNS client
+    log_this("mDNSClient", "Starting mDNS client service discovery", LOG_LEVEL_STATE);
+
+    // TODO: Implement actual mDNS client initialization when functionality is available
+    // For now, just register success
+
+    // Step 3: Update subsystem registry
+    update_subsystem_on_startup("mDNS Client", true);
+
+    // Step 4: Verify final state
+    SubsystemState final_state = get_subsystem_state(mdns_client_subsystem_id);
+
+    log_this("mDNSClient", "mDNS Client subsystem launched successfully (placeholder)", LOG_LEVEL_STATE);
+
+    if (final_state == SUBSYSTEM_RUNNING) {
+        log_this("mDNSClient", "LAUNCH: MDNS CLIENT - Successfully launched and running", LOG_LEVEL_STATE);
+        return 1;
+    } else {
+        log_this("mDNSClient", "LAUNCH: MDNS CLIENT - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
+                subsystem_state_to_string(final_state));
+        return 0;
+    }
 }

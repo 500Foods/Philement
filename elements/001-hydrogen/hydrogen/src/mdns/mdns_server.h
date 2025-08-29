@@ -66,6 +66,16 @@ typedef struct {
     int sockfd_v6;         // IPv6 socket for this interface
     char **ip_addresses;   // IP addresses for this interface
     size_t num_addresses;  // Number of IP addresses
+
+    // Legacy interface-level tracking (maintained for compatibility)
+    int consecutive_failures; // Count of consecutive announcement failures (all protocols)
+    int disabled;          // Flag to indicate manual interface disable state
+
+    // Protocol-level failure tracking
+    int v4_consecutive_failures; // IPv4-specific consecutive failure count
+    int v6_consecutive_failures; // IPv6-specific consecutive failure count
+    int v4_disabled;       // IPv4 protocol disabled flag
+    int v6_disabled;       // IPv6 protocol disabled flag
 } mdns_server_interface_t;
 
 typedef struct {
@@ -142,6 +152,9 @@ void mdns_server_send_announcement(mdns_server_t *mdns_server, const network_inf
 
 // Clean shutdown of mDNS server
 void mdns_server_shutdown(mdns_server_t *mdns_server);
+
+// Get configured retry count for interface failure detection
+int get_mdns_server_retry_count(const AppConfig* config);
 
 // Background thread for periodic announcements
 void *mdns_server_announce_loop(void *arg);
