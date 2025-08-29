@@ -100,7 +100,9 @@ LaunchReadiness check_logging_landing_readiness(void) {
 
 // Land the logging subsystem
 int land_logging_subsystem(void) {
-    log_this("Logging", "Beginning Logging shutdown sequence", LOG_LEVEL_STATE);
+    log_this("Logging", LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this("Logging", "LANDING: LOGGING", LOG_LEVEL_STATE);
+    
     bool success = true;
     
     // Signal thread shutdown

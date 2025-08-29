@@ -16,6 +16,8 @@
 
 // Local includes
 #include "landing.h"
+#include "../launch/launch.h"
+#include "../api/api_service.h"
 
 // Check if the API subsystem is ready to land
 LaunchReadiness check_api_landing_readiness(void) {
@@ -61,14 +63,34 @@ LaunchReadiness check_api_landing_readiness(void) {
     return readiness;
 }
 
-// Forward declaration of the API cleanup function
-extern void shutdown_api(void);
-
-// Land the API subsystem
+// Shutdown API subsystem
 int land_api_subsystem(void) {
-    // Call the existing cleanup function
-    shutdown_api();
-    
-    // Return success
-    return 1;
+    log_this("API", LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this("API", "LANDING: API", LOG_LEVEL_STATE);
+
+    bool success = true;
+
+    // Step 1: Verify state
+    log_this("API", "  Step 1: Verifying state", LOG_LEVEL_STATE);
+    if (!is_api_running()) {
+        log_this("API", "API already shut down", LOG_LEVEL_STATE);
+        log_this("API", "LANDING: API - Already landed", LOG_LEVEL_STATE);
+        return 1;
+    }
+    log_this("API", "    State verified", LOG_LEVEL_STATE);
+
+    // Step 2: Clean up API resources
+    log_this("API", "  Step 2: Cleaning up API resources", LOG_LEVEL_STATE);
+
+    // Clean up API endpoints
+    cleanup_api_endpoints();
+    log_this("API", "    API endpoints cleaned up", LOG_LEVEL_STATE);
+
+    // Step 3: Update registry state
+    log_this("API", "  Step 3: Updating registry state", LOG_LEVEL_STATE);
+    update_subsystem_on_shutdown("API");
+
+    log_this("API", "LANDING: API - Successfully landed", LOG_LEVEL_STATE);
+
+    return success ? 1 : 0;  // Return 1 for success, 0 for failure
 }

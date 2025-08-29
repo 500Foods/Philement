@@ -51,9 +51,8 @@ LaunchReadiness check_notify_landing_readiness(void) {
  */
 static void free_notify_resources(void) {
     // Begin LANDING: NOTIFY section
-    log_this("Landing", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    log_this("Landing", "LANDING: NOTIFY", LOG_LEVEL_STATE);
-    log_this("Landing", "Beginning notification service cleanup", LOG_LEVEL_STATE);
+    log_this("Notify", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+    log_this("Notify", "LANDING: NOTIFY", LOG_LEVEL_STATE);
 
     // Check if notify is enabled before attempting cleanup
     if (app_config && !app_config->notify.enabled) {

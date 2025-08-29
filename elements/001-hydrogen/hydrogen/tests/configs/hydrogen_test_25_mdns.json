@@ -8,17 +8,29 @@
     "WebServer": {
         "EnableIPv4": true,
         "EnableIPv6": true,
-        "Port": 5225
+        "Port": 5250
+    },
+    "API": {
+        "Enabled": true,
+        "Prefix": "/api"
+    },
+    "Network": {
+        "Available":{
+            "eno1": false,
+            "docker0": false,
+            "virbr1": false,
+            "wg0": false
+        }
     },
     "mDNSClient": {
         "EnableIPv4": true,
         "EnableIPv6": true,
-        "ScanIntervalMs": 5000,
+        "ScanIntervalMs": 5251,
         "ServiceTypes": [
-            "_http._tcp",
-            "_websocket._tcp",
-            "_hydrogen._tcp",
-            "_test._tcp"
+            "_http._tcp.local",
+            "_websocket._tcp.local",
+            "_hydrogen._tcp.local",
+            "_test._tcp.local"
         ],
         "MonitoredServices": {
             "OwnServices": true,
@@ -45,8 +57,8 @@
         "Services": [
             {
                 "Name": "Hydrogen_Test_Web_Interface",
-                "Type": "_http._tcp",
-                "Port": 5225,
+                "Type": "_http._tcp.local",
+                "Port": 5252,
                 "TxtRecords": [
                     "test=true",
                     "version=25.0.0-test",
@@ -55,8 +67,8 @@
             },
             {
                 "Name": "Hydrogen_Test_WebSocket",
-                "Type": "_websocket._tcp",
-                "Port": 5226,
+                "Type": "_websocket._tcp.local",
+                "Port": 5253,
                 "TxtRecords": [
                     "test=true",
                     "protocol=test-protocol"
@@ -64,12 +76,24 @@
             },
             {
                 "Name": "Hydrogen_Test_Service",
-                "Type": "_hydrogen._tcp",
-                "Port": 5225,
+                "Type": "_hydrogen._tcp.local",
+                "Port": 5254,
                 "TxtRecords": [
                     "test=true",
                     "services=http,websocket,api"
                 ]
+            },
+            {
+            "Name": "Hydrogen_Test_Octoprint",
+            "Type": "_octoprint._tcp.local",
+            "Port": 5250,
+            "TxtRecords": [
+                "path=/",
+                "model=Ender 3",
+                "api_key_required=true",
+                "version=1.9.3",
+                "protocol=http"
+            ]
             }
         ]
     }

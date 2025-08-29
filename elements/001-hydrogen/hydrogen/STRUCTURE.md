@@ -159,7 +159,8 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [src/network/network.h](src/network/network.h) - Network interface abstractions
 - [src/network/network_linux.c](src/network/network_linux.c) - Linux network stack implementation
 - [src/mdns/mdns_server.h](src/mdns/mdns_server.h) - Service discovery interface definitions
-- [src/mdns/mdns_linux.c](src/mdns/mdns_linux.c) - Linux-specific mDNS implementation
+- [src/mdns/mdns_server.c](src/mdns/mdns_server.c) - mDNS implementation
+- [src/mdns/mdns_server_announce.c](src/mdns/mdns_server_announce.c) - announcement aspects of mdns implementation
 - [src/mdns/keys.c](src/mdns/mdns_keys.c) - mDNS cryptographic key management implementation
 - [src/mdns/keys.h](src/mdns/mdns_keys.h) - mDNS cryptographic key management interface definitions
 

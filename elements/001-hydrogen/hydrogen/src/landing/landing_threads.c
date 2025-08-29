@@ -97,7 +97,7 @@ LaunchReadiness check_threads_landing_readiness(void) {
 static void free_thread_resources(void) {
     // Begin resource cleanup section
     log_this("Threads", LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this("Threads", "LANDING: THREADS - Resource Cleanup", LOG_LEVEL_STATE);
+    log_this("Threads", "LANDING: THREADS", LOG_LEVEL_STATE);
     
     // Step 1: Remove individual threads first
     if (webserver_threads.thread_count > 0) {

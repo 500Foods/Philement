@@ -23,8 +23,8 @@
  * Returns 1 on success, 0 on failure
  */
 int land_network_subsystem(void) {
-    log_this("Landing", LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this("Landing", "LANDING: NETWORK", LOG_LEVEL_STATE);
+    log_this("Network", LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this("Network", "LANDING: NETWORK", LOG_LEVEL_STATE);
     
     // Step 1: Verify subsystem state
     log_this("Landing", "  Step 1: Verifying subsystem state", LOG_LEVEL_STATE);

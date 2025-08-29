@@ -55,9 +55,8 @@ LaunchReadiness check_payload_landing_readiness(void) {
  */
 void free_payload_resources(void) {
     // Begin LANDING: PAYLOAD section
-    log_this("Landing", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    log_this("Landing", "LANDING: PAYLOAD", LOG_LEVEL_STATE);
-    log_this("Landing", "Beginning payload resource cleanup", LOG_LEVEL_STATE);
+    log_this("Payload", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+    log_this("Payload", "LANDING: PAYLOAD", LOG_LEVEL_STATE);
     
     // Free any resources allocated during payload launch
     log_this("Landing", "  Step 1: Freeing payload resources", LOG_LEVEL_STATE);

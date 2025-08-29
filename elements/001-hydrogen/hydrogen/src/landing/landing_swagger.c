@@ -65,7 +65,8 @@ LaunchReadiness check_swagger_landing_readiness(void) {
 
 // Land the swagger subsystem
 int land_swagger_subsystem(void) {
-    log_this("Swagger", "Beginning Swagger shutdown sequence", LOG_LEVEL_STATE);
+    log_this("Swagger", LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this("Swagger", "LANDING: SWAGGER", LOG_LEVEL_STATE);
     
     // Signal shutdown
     swagger_system_shutdown = 1;

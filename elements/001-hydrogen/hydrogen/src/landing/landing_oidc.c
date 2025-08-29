@@ -51,10 +51,9 @@ LaunchReadiness check_oidc_landing_readiness(void) {
  */
 static void free_oidc_resources(void) {
     // Begin LANDING: OIDC section
-    log_this("Landing", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    log_this("Landing", "LANDING: OIDC", LOG_LEVEL_STATE);
-    log_this("Landing", "Beginning OIDC service cleanup", LOG_LEVEL_STATE);
-
+    log_this("OIDC", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+    log_this("OIDC", "LANDING: OIDC", LOG_LEVEL_STATE);
+    
     // Check if OIDC is enabled before attempting cleanup
     if (app_config && !app_config->oidc.enabled) {
         log_this("Landing", "  Step 1: OIDC disabled, skipping cleanup", LOG_LEVEL_STATE);

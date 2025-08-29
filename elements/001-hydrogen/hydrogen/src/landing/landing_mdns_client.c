@@ -78,19 +78,21 @@ LaunchReadiness check_mdns_client_landing_readiness(void) {
 
 // Land the mDNS client subsystem
 int land_mdns_client_subsystem(void) {
-    log_this("mDNS Client", "Beginning mDNS Client shutdown sequence", LOG_LEVEL_STATE);
+    log_this("mDNSClient", LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this("mDNSClient", "LANDING: mDNS CLIENT", LOG_LEVEL_STATE);
+    
     bool success = true;
     
     // Signal shutdown
     mdns_client_system_shutdown = 1;
-    log_this("mDNS Client", "Signaled mDNS Client to stop", LOG_LEVEL_STATE);
+    log_this("mDNSClient", "Signaled mDNS Client to stop", LOG_LEVEL_STATE);
     
     // Stop service discovery
-    log_this("mDNS Client", "Stopping service discovery", LOG_LEVEL_STATE);
+    log_this("mDNSClient", "Stopping service discovery", LOG_LEVEL_STATE);
     
     // Additional cleanup will be added as needed
     
-    log_this("mDNS Client", "mDNS Client shutdown complete", LOG_LEVEL_STATE);
+    log_this("mDNSClient", "mDNS Client shutdown complete", LOG_LEVEL_STATE);
     
     return success ? 1 : 0;  // Return 1 for success, 0 for failure
 }
