@@ -78,7 +78,7 @@ bool handle_landing_plan(const ReadinessResults* results) {
     
     // Define subsystem order (matching landing_readiness.c)
     const char* expected_order[] = {
-        "Print", "Mail Relay", "mDNS Client", "mDNS Server", "Terminal",
+        "Notify", "OIDC", "Resources", "Print", "Mail Relay", "mDNS Client", "mDNS Server", "Terminal",
         "WebSocket", "Swagger", "API", "WebServer", "Database", "Logging",
         "Network", "Payload", "Threads", "Registry"
     };

@@ -155,7 +155,57 @@ int init_websocket_server(int port, const char* protocol, const char* key)
         vhost_info.port = try_port;
         vhost_info.protocols = protocols;
         vhost_info.options = vhost_options | LWS_SERVER_OPTION_ALLOW_LISTEN_SHARE;  // Enable SO_REUSEADDR
-        vhost_info.iface = app_config->websocket.enable_ipv6 ? "::" : "0.0.0.0";
+        // Configure interface binding based on Network.Available configuration
+        bool has_enabled_interfaces = false;
+
+        // Check if we have any enabled network interfaces
+        if (app_config && app_config->network.available_interfaces &&
+            app_config->network.available_interfaces_count > 0) {
+
+            // Get network interface information to find enabled interfaces
+            network_info_t *enabled_interfaces = filter_enabled_interfaces(get_network_info(), app_config);
+            if (enabled_interfaces && enabled_interfaces->count > 0) {
+                has_enabled_interfaces = true;
+
+                // Set interface binding - use first enabled interface's IP
+                if (app_config->websocket.enable_ipv6 && enabled_interfaces->interfaces[0].ip_count > 0) {
+                    // Find first IPv6 address
+                    for (int i = 0; i < enabled_interfaces->interfaces[0].ip_count; i++) {
+                        if (strchr(enabled_interfaces->interfaces[0].ips[i], ':') != NULL) {
+                            vhost_info.iface = enabled_interfaces->interfaces[0].ips[i];
+                            log_this("WebSocket", "Binding to IPv6 interface %s (%s)",
+                                    LOG_LEVEL_STATE, enabled_interfaces->interfaces[0].name, vhost_info.iface);
+                            break;
+                        }
+                    }
+                    if (!vhost_info.iface) vhost_info.iface = "::"; // Fallback if no IPv6 found
+                } else if (enabled_interfaces->interfaces[0].ip_count > 0) {
+                    // Find first IPv4 address
+                    for (int i = 0; i < enabled_interfaces->interfaces[0].ip_count; i++) {
+                        if (strchr(enabled_interfaces->interfaces[0].ips[i], ':') == NULL) {
+                            vhost_info.iface = enabled_interfaces->interfaces[0].ips[i];
+                            log_this("WebSocket", "Binding to IPv4 interface %s (%s)",
+                                    LOG_LEVEL_STATE, enabled_interfaces->interfaces[0].name, vhost_info.iface);
+                            break;
+                        }
+                    }
+                    if (!vhost_info.iface) vhost_info.iface = "0.0.0.0"; // Fallback if no IPv4 found
+                }
+            }
+            if (enabled_interfaces) free_network_info(enabled_interfaces);
+        }
+
+        // Fallback to all interfaces if no enabled interfaces found
+        if (!has_enabled_interfaces || !vhost_info.iface) {
+            vhost_info.iface = app_config && app_config->websocket.enable_ipv6 ? "::" : "0.0.0.0";
+            if (!has_enabled_interfaces) {
+                log_this("WebSocket", "No enabled interfaces found, binding to all interfaces (%s)",
+                        LOG_LEVEL_ALERT, vhost_info.iface);
+            } else {
+                log_this("WebSocket", "Using fallback interface binding (%s)",
+                        LOG_LEVEL_STATE, vhost_info.iface);
+            }
+        }
         vhost_info.vhost_name = "hydrogen";  // Set explicit vhost name
         vhost_info.user = ws_context;        // Pass context to callbacks
 

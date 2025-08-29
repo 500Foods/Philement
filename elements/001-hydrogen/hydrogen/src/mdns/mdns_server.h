@@ -162,6 +162,12 @@ void *mdns_server_announce_loop(void *arg);
 // Background thread for handling incoming queries
 void *mdns_server_responder_loop(void *arg);
 
+/**
+ * Close sockets and free interface resources
+ * Made non-static for unit testing
+ */
+void close_mdns_server_interfaces(mdns_server_t *mdns_server);
+
 // Test-exposed functions (not part of public API)
 uint8_t *read_dns_name(uint8_t *ptr, const uint8_t *packet, char *name, size_t name_len);
 uint8_t *write_dns_name(uint8_t *ptr, const char *name);

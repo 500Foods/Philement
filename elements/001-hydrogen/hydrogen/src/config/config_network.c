@@ -135,60 +135,60 @@ bool load_network_config(json_t* root, AppConfig* config) {
         if (available && json_is_object(available)) {
 
             // Process Available section header
-            success = success && PROCESS_SECTION(root, "Network.Available");
+        success = success && PROCESS_SECTION(root, "Network.Available");
 
-            // Get all interface names for sorting
-            const char** interface_names = malloc(json_object_size(available) * sizeof(char*));
-            size_t interface_count = 0;
-            
-            const char* interface_name;
-            json_t* value;
-            json_object_foreach(available, interface_name, value) {
-                if (json_is_boolean(value)) {
-                    interface_names[interface_count++] = interface_name;
-                }
+        // Log the Available section header (like other sections)
+        log_this("Config-Network", "―― Available", LOG_LEVEL_STATE);
+
+        // Get all interface names for sorting
+        const char** interface_names = malloc(json_object_size(available) * sizeof(char*));
+        size_t interface_count = 0;
+
+        const char* interface_name;
+        json_t* value;
+        json_object_foreach(available, interface_name, value) {
+            if (json_is_boolean(value)) {
+                interface_names[interface_count++] = interface_name;
             }
+        }
 
-            // Allocate space for interfaces (we'll sort them after loading)
-            config->network.available_interfaces = malloc(interface_count * sizeof(*config->network.available_interfaces));
-            if (!config->network.available_interfaces) {
+        // Allocate space for interfaces (we'll sort them after loading)
+        config->network.available_interfaces = malloc(interface_count * sizeof(*config->network.available_interfaces));
+        if (!config->network.available_interfaces) {
+            free(interface_names);
+            log_this("Config-Network", "Failed to allocate interface array", LOG_LEVEL_ERROR);
+            cleanup_network_config(&config->network);
+            return false;
+        }
+
+        // Process each interface in sorted order
+        for (size_t i = 0; i < interface_count; i++) {
+            interface_name = interface_names[i];
+            value = json_object_get(available, interface_name);
+            bool is_enabled = json_boolean_value(value);
+
+            // Initialize interface entry
+            config->network.available_interfaces[i].interface_name = strdup(interface_name);
+            if (!config->network.available_interfaces[i].interface_name) {
                 free(interface_names);
-                log_this("Config-Network", "Failed to allocate interface array", LOG_LEVEL_ERROR);
+                log_this("Config-Network", "Failed to allocate interface name", LOG_LEVEL_ERROR);
                 cleanup_network_config(&config->network);
                 return false;
             }
+            config->network.available_interfaces[i].available = is_enabled;
 
-            // Process each interface in sorted order
-            for (size_t i = 0; i < interface_count; i++) {
-                interface_name = interface_names[i];
-                value = json_object_get(available, interface_name);
-                bool is_enabled = json_boolean_value(value);
-
-                // Initialize interface entry
-                config->network.available_interfaces[i].interface_name = strdup(interface_name);
-                if (!config->network.available_interfaces[i].interface_name) {
-                    free(interface_names);
-                    log_this("Config-Network", "Failed to allocate interface name", LOG_LEVEL_ERROR);
-                    cleanup_network_config(&config->network);
-                    return false;
-                }
-                config->network.available_interfaces[i].available = is_enabled;
-
-                // Log the interface availability
-                char path[256];
-                snprintf(path, sizeof(path), "Network.Available.%s", interface_name);
-                const char* indent = "――― ";
-                char category[256];
-                snprintf(category, sizeof(category), "Config-Network");
-                log_this(category, "%s%s: %s", LOG_LEVEL_STATE,
-                        indent, interface_name, is_enabled ? "enabled" : "disabled");
+            // Log the interface availability with proper format (but only if not "all")
+            if (strcmp(interface_name, "all") != 0) {
+                log_this("Config-Network", "――― %s: %s", LOG_LEVEL_STATE,
+                        interface_name, is_enabled ? "enabled" : "disabled");
             }
-            
-            config->network.available_interfaces_count = interface_count;
-            free(interface_names);
+        }
 
-            // Sort interfaces by name for consistent ordering
-            sort_available_interfaces(&config->network);
+        config->network.available_interfaces_count = interface_count;
+        free(interface_names);
+
+        // Sort interfaces by name for consistent ordering
+        sort_available_interfaces(&config->network);
         } else {
             // Default to just "all" enabled if no Available section (IE, an invalid actual interface)
             config->network.available_interfaces = malloc(sizeof(*config->network.available_interfaces));

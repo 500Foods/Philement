@@ -95,6 +95,10 @@ LaunchReadiness check_registry_landing_readiness(void) {
 // Land the Registry subsystem (minimal output)
 // is_restart: true if this is part of a restart sequence
 int land_registry_subsystem(bool is_restart) {
+
+    log_this("Registry", LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this("Registry", "LANDING: REGISTRY", LOG_LEVEL_STATE);    
+
     // Report final status
     report_registry_landing_status();
     
