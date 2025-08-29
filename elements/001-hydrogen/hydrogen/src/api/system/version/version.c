@@ -6,12 +6,12 @@
  */
 
 // Global includes
-#include "../hydrogen.h"
+#include "../../../hydrogen.h"
 
 // Local includes
 #include "version.h"
-#include "api_utils.h"
-#include "../webserver/web_server_core.h"
+#include "../../api_utils.h"
+#include "../../../webserver/web_server_core.h"
 
 /**
  * Simple version endpoint that returns version information

@@ -22,7 +22,7 @@
 // Check if the API subsystem is ready to land
 LaunchReadiness check_api_landing_readiness(void) {
     LaunchReadiness readiness = {0};
-    readiness.subsystem = "API";
+    readiness.subsystem = SR_API;
     
     // Allocate space for messages (including NULL terminator)
     readiness.messages = malloc(5 * sizeof(char*));
@@ -32,10 +32,10 @@ LaunchReadiness check_api_landing_readiness(void) {
     }
     
     // Add initial subsystem identifier
-    readiness.messages[0] = strdup("API");
+    readiness.messages[0] = strdup(SR_API);
     
     // Check if API is actually running
-    if (!is_subsystem_running_by_name("API")) {
+    if (!is_subsystem_running_by_name(SR_API)) {
         readiness.ready = false;
         readiness.messages[1] = strdup("  No-Go:   API not running");
         readiness.messages[2] = strdup("  Decide:  No-Go For Landing of API");
@@ -65,32 +65,32 @@ LaunchReadiness check_api_landing_readiness(void) {
 
 // Shutdown API subsystem
 int land_api_subsystem(void) {
-    log_this("API", LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this("API", "LANDING: API", LOG_LEVEL_STATE);
+    log_this(SR_API, LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this(SR_API, "LANDING: API", LOG_LEVEL_STATE);
 
     bool success = true;
 
     // Step 1: Verify state
-    log_this("API", "  Step 1: Verifying state", LOG_LEVEL_STATE);
+    log_this(SR_API, "  Step 1: Verifying state", LOG_LEVEL_STATE);
     if (!is_api_running()) {
-        log_this("API", "API already shut down", LOG_LEVEL_STATE);
-        log_this("API", "LANDING: API - Already landed", LOG_LEVEL_STATE);
+        log_this(SR_API, "API already shut down", LOG_LEVEL_STATE);
+        log_this(SR_API, "LANDING: API - Already landed", LOG_LEVEL_STATE);
         return 1;
     }
-    log_this("API", "    State verified", LOG_LEVEL_STATE);
+    log_this(SR_API, "    State verified", LOG_LEVEL_STATE);
 
     // Step 2: Clean up API resources
-    log_this("API", "  Step 2: Cleaning up API resources", LOG_LEVEL_STATE);
+    log_this(SR_API, "  Step 2: Cleaning up API resources", LOG_LEVEL_STATE);
 
     // Clean up API endpoints
     cleanup_api_endpoints();
-    log_this("API", "    API endpoints cleaned up", LOG_LEVEL_STATE);
+    log_this(SR_API, "    API endpoints cleaned up", LOG_LEVEL_STATE);
 
     // Step 3: Update registry state
-    log_this("API", "  Step 3: Updating registry state", LOG_LEVEL_STATE);
-    update_subsystem_on_shutdown("API");
+    log_this(SR_API, "  Step 3: Updating registry state", LOG_LEVEL_STATE);
+    update_subsystem_on_shutdown(SR_API);
 
-    log_this("API", "LANDING: API - Successfully landed", LOG_LEVEL_STATE);
+    log_this(SR_API, "LANDING: API - Successfully landed", LOG_LEVEL_STATE);
 
     return success ? 1 : 0;  // Return 1 for success, 0 for failure
 }

@@ -65,6 +65,9 @@
 #define DEFAULT_RESPONSE_BUFFER_SIZE 16384      // 16KB for responses
 
 // SUBSYSTEM REGISTRY /////////////////////////////////////////////////////////////////////////////
+#define SR_API "API"
+#define SR_WEBSOCKETS "WebSocket"
+#define SR_WEBSERVER "WebServer"
 
 #define INITIAL_REGISTRY_CAPACITY 20
 #define MAX_DEPENDENCIES 20
