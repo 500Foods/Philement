@@ -19,6 +19,13 @@
 #include "mdns_server.h"
 
 extern volatile sig_atomic_t server_running;
+// Get configured retry count for interface failure detection
+int get_mdns_server_retry_count(const AppConfig* config) {
+    if (!config) return 1;
+    // Ensure retry_count is at least 1 to prevent division by zero or infinite loop
+    return (config->mdns_server.retry_count > 0) ? config->mdns_server.retry_count : 1;
+}
+
 extern volatile sig_atomic_t mdns_server_system_shutdown;
 extern pthread_cond_t terminate_cond;
 extern pthread_mutex_t terminate_mutex;
@@ -412,24 +419,108 @@ void mdns_server_send_announcement(mdns_server_t *mdns_server_instance, const ne
         mdns_server_build_announcement(packet, &packet_len, mdns_server_instance->hostname, mdns_server_instance, MDNS_TTL, iface_net_info);
         free_single_interface_net_info(iface_net_info);
 
-        // Send IPv4 announcement
-        if (iface->sockfd_v4 >= 0) {
+        // Track send attempt outcomes
+        int v4_success = 0;
+        int v6_success = 0;
+
+        // Check if entire interface is manually disabled (global disable)
+        if (iface->disabled) {
+            // log_this("mDNSServer", "Skipping disabled interface %s", LOG_LEVEL_DEBUG, iface->if_name);
+            continue;
+        }
+
+        // Get retry count from configuration
+        int retry_count = get_mdns_server_retry_count(app_config);
+
+        // Send IPv4 announcement (if not protocol-specifically disabled)
+        if (iface->sockfd_v4 >= 0 && iface->v4_disabled == 0) {
+            // Add debugging information for packet content
+            log_this("mDNSServer", "DEBUG: IPv4 announcement to mDNS group on %s, packet size %zu bytes", LOG_LEVEL_STATE,
+                    iface->if_name, packet_len);
             if (sendto(iface->sockfd_v4, packet, packet_len, 0, (struct sockaddr *)&addr_v4, sizeof(addr_v4)) < 0) {
                 log_this("mDNSServer", "Failed to send IPv4 announcement on %s: %s", LOG_LEVEL_DEBUG,
                         iface->if_name, strerror(errno));
+
+                // Increment IPv4-specific failure count
+                iface->v4_consecutive_failures++;
+                log_this("mDNSServer", "IPv4 on %s has %d consecutive failures (limit: %d)", LOG_LEVEL_ALERT,
+                        iface->if_name, iface->v4_consecutive_failures, retry_count);
+
+                // Automatically disable IPv4 after configured consecutive failures
+                if (iface->v4_consecutive_failures >= retry_count && iface->v4_disabled == 0) {
+                    iface->v4_disabled = 1;
+                    log_this("mDNSServer", "Automatically disabling IPv4 on %s after %d consecutive failures",
+                            LOG_LEVEL_ALERT, iface->if_name, iface->v4_consecutive_failures);
+                }
             } else {
                 log_this("mDNSServer", "Sent IPv4 announcement on %s", LOG_LEVEL_STATE, iface->if_name);
+                v4_success = 1;
+
+                // Reset IPv4 failure count on success
+                iface->v4_consecutive_failures = 0;
+
+                // Reactivate IPv4 if it was disabled and is now working
+                if (iface->v4_disabled == 1) {
+                    iface->v4_disabled = 0;
+                    log_this("mDNSServer", "IPv4 on %s recovered from failures, re-enabled", LOG_LEVEL_STATE, iface->if_name);
+                }
             }
+        } else if (iface->v4_disabled == 1) {
+            // log_this("mDNSServer", "Skipping disabled IPv4 on interface %s", LOG_LEVEL_DEBUG, iface->if_name);
         }
 
-        // Send IPv6 announcement
-        if (iface->sockfd_v6 >= 0) {
+        // Send IPv6 announcement (if not protocol-specifically disabled)
+        if (iface->sockfd_v6 >= 0 && iface->v6_disabled == 0) {
             if (sendto(iface->sockfd_v6, packet, packet_len, 0, (struct sockaddr *)&addr_v6, sizeof(addr_v6)) < 0) {
                 log_this("mDNSServer", "Failed to send IPv6 announcement on %s: %s", LOG_LEVEL_ALERT,
                         iface->if_name, strerror(errno));
+
+                // Increment IPv6-specific failure count
+                iface->v6_consecutive_failures++;
+                log_this("mDNSServer", "IPv6 on %s has %d consecutive failures (limit: %d)", LOG_LEVEL_ALERT,
+                        iface->if_name, iface->v6_consecutive_failures, retry_count);
+
+                // Automatically disable IPv6 after configured consecutive failures
+                if (iface->v6_consecutive_failures >= retry_count && iface->v6_disabled == 0) {
+                    iface->v6_disabled = 1;
+                    log_this("mDNSServer", "Automatically disabling IPv6 on %s after %d consecutive failures",
+                            LOG_LEVEL_ALERT, iface->if_name, iface->v6_consecutive_failures);
+                }
             } else {
                 log_this("mDNSServer", "Sent IPv6 announcement on %s", LOG_LEVEL_STATE, iface->if_name);
+                v6_success = 1;
+
+                // Reset IPv6 failure count on success
+                iface->v6_consecutive_failures = 0;
+
+                // Reactivate IPv6 if it was disabled and is now working
+                if (iface->v6_disabled == 1) {
+                    iface->v6_disabled = 0;
+                    log_this("mDNSServer", "IPv6 on %s recovered from failures, re-enabled", LOG_LEVEL_STATE, iface->if_name);
+                }
             }
+        } else if (iface->v6_disabled == 1) {
+            // log_this("mDNSServer", "Skipping disabled IPv6 on interface %s", LOG_LEVEL_DEBUG, iface->if_name);
+        }
+
+        // Legacy interface-level failure tracking (for backward compatibility)
+        // This maintains the existing logic but with protocol-level granularity
+        if (v4_success == 0 && v6_success == 0) {
+            // No announcements succeeded on this interface
+            iface->consecutive_failures++;
+
+            log_this("mDNSServer", "Interface %s has %d consecutive announcement failures (limit: %d)",
+                    LOG_LEVEL_ALERT, iface->if_name, iface->consecutive_failures, retry_count);
+
+            // Automatically disable interface after configured consecutive failures
+            if (iface->consecutive_failures >= retry_count && iface->disabled == 0) {
+                iface->disabled = 1;
+                log_this("mDNSServer", "Automatically disabling interface %s after %d consecutive failures",
+                        LOG_LEVEL_ALERT, iface->if_name, iface->consecutive_failures);
+            }
+        } else if (iface->disabled == 0) {
+            // Reset interface-level failure count if either protocol succeeded
+            iface->consecutive_failures = 0;
         }
     }
 }
@@ -645,16 +736,26 @@ mdns_server_t *mdns_server_init(const char *app_name, const char *id, const char
             }
         }
 
-        // Create sockets
-        mdns_server_if->sockfd_v4 = create_multicast_socket(AF_INET, MDNS_GROUP_V4, mdns_server_if->if_name);
-        mdns_server_if->sockfd_v6 = enable_ipv6 ? create_multicast_socket(AF_INET6, MDNS_GROUP_V6, mdns_server_if->if_name) : -1;
+    // Create sockets
+    mdns_server_if->sockfd_v4 = create_multicast_socket(AF_INET, MDNS_GROUP_V4, mdns_server_if->if_name);
+    mdns_server_if->sockfd_v6 = enable_ipv6 ? create_multicast_socket(AF_INET6, MDNS_GROUP_V6, mdns_server_if->if_name) : -1;
 
-        if (mdns_server_if->sockfd_v4 < 0 && (!enable_ipv6 || mdns_server_if->sockfd_v6 < 0)) {
-            log_this("mDNSServer", "Failed to create sockets for interface %s", LOG_LEVEL_DEBUG, mdns_server_if->if_name);
-            goto cleanup;
-        }
+    if (mdns_server_if->sockfd_v4 < 0 && (!enable_ipv6 || mdns_server_if->sockfd_v6 < 0)) {
+        log_this("mDNSServer", "Failed to create sockets for interface %s", LOG_LEVEL_DEBUG, mdns_server_if->if_name);
+        goto cleanup;
+    }
 
-        mdns_server_instance->num_interfaces++;
+    // Initialize failure tracking for automatic disable/enable
+    mdns_server_if->consecutive_failures = 0;
+    mdns_server_if->disabled = 0;
+
+    // Initialize protocol-level failure tracking
+    mdns_server_if->v4_consecutive_failures = 0;
+    mdns_server_if->v6_consecutive_failures = 0;
+    mdns_server_if->v4_disabled = 0;
+    mdns_server_if->v6_disabled = 0;
+
+    mdns_server_instance->num_interfaces++;
     }
 
     if (mdns_server_instance->num_interfaces == 0) {

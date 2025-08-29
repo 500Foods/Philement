@@ -26,6 +26,7 @@ typedef struct MDNSServerConfig {
     char* model;                    // Device model
     char* manufacturer;             // Device manufacturer
     char* version;                  // Software version
+    int retry_count;                // Number of consecutive failures before disabling interface
     mdns_server_service_t* services;// Array of services to advertise
     size_t num_services;           // Number of services in array
 } MDNSServerConfig;

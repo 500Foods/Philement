@@ -6,8 +6,8 @@
         "StartupDelay": 2
     },
     "WebServer": {
-        "EnableIPv4": false,
-        "EnableIPv6": false,
+        "EnableIPv4": true,
+        "EnableIPv6": true,
         "Port": 5225
     },
     "mDNSClient": {
@@ -41,6 +41,7 @@
         "Model": "HydrogenTest",
         "Manufacturer": "Philement Test",
         "Version": "25.0.0-test",
+        "Retries": 1,
         "Services": [
             {
                 "Name": "Hydrogen_Test_Web_Interface",

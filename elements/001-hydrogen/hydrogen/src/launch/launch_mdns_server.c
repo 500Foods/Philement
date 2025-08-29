@@ -10,14 +10,37 @@
  * Note: Shutdown functionality has been moved to landing/landing_mdns_server.c
  */
 
- // Global includes 
+// Global includes
 #include "../hydrogen.h"
 
 // Local includes
 #include "launch.h"
+#include "../state/state_types.h"
+#include "../mdns/mdns_server.h"
 
 // External declarations
 extern ServiceThreads mdns_server_threads;
+
+// mDNS server subsystem global variables
+static mdns_server_t* mdns_server_instance = NULL;
+static pthread_t mdns_server_announce_thread = 0;
+static pthread_t mdns_server_responder_thread = 0;
+
+// Registry ID and cached readiness state
+int mdns_server_subsystem_id = -1;
+
+// Forward declarations - now handled in launch function
+
+// Register the mDNS server subsystem with the registry (for launch)
+static void register_mdns_server_for_launch(void) {
+    // Always register during readiness check if not already registered
+    if (mdns_server_subsystem_id < 0) {
+        mdns_server_subsystem_id = register_subsystem_from_launch("mDNS Server", &mdns_server_threads, NULL,
+                                                                &mdns_server_system_shutdown,
+                                                                (int (*)(void))launch_mdns_server_subsystem,
+                                                                (void (*)(void))mdns_server_shutdown);
+    }
+}
 
 // Check if the mDNS server subsystem is ready to launch
 LaunchReadiness check_mdns_server_launch_readiness(void) {
@@ -29,6 +52,9 @@ LaunchReadiness check_mdns_server_launch_readiness(void) {
     // First message is subsystem name
     add_launch_message(&messages, &count, &capacity, strdup("mDNS Server"));
 
+    // Register with subsystem registry for launch
+    register_mdns_server_for_launch();
+
     // Register dependency on Network subsystem
     int mdns_id = get_subsystem_id_by_name("mDNS Server");
     if (mdns_id >= 0) {
@@ -39,13 +65,13 @@ LaunchReadiness check_mdns_server_launch_readiness(void) {
         }
         add_launch_message(&messages, &count, &capacity, strdup("  Go:      Network dependency registered"));
 
-        // Verify Network subsystem is running
-        if (!is_subsystem_running_by_name("Network")) {
-            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Network subsystem not running"));
+        // Verify Network subsystem is ready to launch
+        if (!is_subsystem_launchable_by_name("Network")) {
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Network subsystem not launchable"));
             finalize_launch_messages(&messages, &count, &capacity);
             return (LaunchReadiness){ .subsystem = "mDNS Server", .ready = false, .messages = messages };
         }
-        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Network subsystem running"));
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Network subsystem will be available"));
     }
 
     // Check basic configuration
@@ -155,12 +181,121 @@ LaunchReadiness check_mdns_server_launch_readiness(void) {
 
 // Launch the mDNS server subsystem
 int launch_mdns_server_subsystem(void) {
-    // Reset shutdown flag
-    mdns_server_system_shutdown = 0;
-    
+    log_this("mDNSServer", LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this("mDNSServer", "LAUNCH: MDNS SERVER", LOG_LEVEL_STATE);
+
+    // Step 1: Verify system state
+    if (server_stopping || server_starting != 1) {
+        log_this("mDNSServer", "Cannot initialize mDNS server outside startup phase", LOG_LEVEL_STATE);
+        log_this("mDNSServer", "LAUNCH: MDNS SERVER - Failed: Not in startup phase", LOG_LEVEL_STATE);
+        return 0;
+    }
+
+    if (!app_config) {
+        log_this("mDNSServer", "Configuration not loaded", LOG_LEVEL_ERROR);
+        log_this("mDNSServer", "LAUNCH: MDNS SERVER - Failed: No configuration", LOG_LEVEL_STATE);
+        return 0;
+    }
+
+    if (!app_config->mdns_server.enable_ipv4 && !app_config->mdns_server.enable_ipv6) {
+        log_this("mDNSServer", "mDNS server disabled in configuration (no protocols enabled)", LOG_LEVEL_STATE);
+        log_this("mDNSServer", "LAUNCH: MDNS SERVER - Disabled by configuration", LOG_LEVEL_STATE);
+        return 1; // Not an error if disabled
+    }
+
+    // Step 2: Initialize mDNS server instance
+    log_this("mDNSServer", "Initializing mDNS server with device configuration", LOG_LEVEL_STATE);
+
+    // Get server configuration
+    const MDNSServerConfig* server_config = &app_config->mdns_server;
+
+    // Initialize mDNS server
+    mdns_server_instance = mdns_server_init(
+        "Hydrogen",                           // Application name
+        server_config->device_id,             // Unique device ID
+        server_config->friendly_name,         // Human-readable name
+        server_config->model,                 // Device model
+        server_config->manufacturer,          // Manufacturer
+        VERSION,                              // Software version
+        "1.0.0",                              // Hardware version (placeholder)
+        "/config",                            // Config URL (placeholder)
+        server_config->services,              // Services array
+        server_config->num_services,         // Number of services
+        server_config->enable_ipv6           // IPv6 support flag
+    );
+
+    if (!mdns_server_instance) {
+        log_this("mDNSServer", "Failed to initialize mDNS server", LOG_LEVEL_ERROR);
+        log_this("mDNSServer", "LAUNCH: MDNS SERVER - Failed to initialize", LOG_LEVEL_STATE);
+        return 0;
+    }
+
+    // Step 3: Initialize and start threads
+    log_this("mDNSServer", "Starting mDNS server background threads", LOG_LEVEL_STATE);
+
+    // Create thread argument structure
+    mdns_server_thread_arg_t *thread_arg = calloc(1, sizeof(mdns_server_thread_arg_t));
+    if (!thread_arg) {
+        log_this("mDNSServer", "Failed to allocate thread arguments", LOG_LEVEL_ERROR);
+        mdns_server_shutdown(mdns_server_instance);
+        return 0;
+    }
+
+    thread_arg->mdns_server = mdns_server_instance;
+    thread_arg->port = 0; // For future use
+    thread_arg->net_info = NULL; // Thread will get network info when needed
+    thread_arg->running = &mdns_server_system_shutdown;
+
     // Initialize mDNS server thread structure
     init_service_threads(&mdns_server_threads, "mDNS Server");
-    
-    // Additional initialization as needed
-    return 1;
+
+    // Create announcer thread
+    pthread_attr_t thread_attr;
+    pthread_attr_init(&thread_attr);
+    pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_JOINABLE);
+
+    if (pthread_create(&mdns_server_announce_thread, &thread_attr, mdns_server_announce_loop, thread_arg) != 0) {
+        log_this("mDNSServer", "Failed to start mDNS server announce thread", LOG_LEVEL_ERROR);
+        pthread_attr_destroy(&thread_attr);
+        free(thread_arg);
+        mdns_server_shutdown(mdns_server_instance);
+        return 0;
+    }
+
+    // Create responder thread
+    if (pthread_create(&mdns_server_responder_thread, &thread_attr, mdns_server_responder_loop, thread_arg) != 0) {
+        log_this("mDNSServer", "Failed to start mDNS server responder thread", LOG_LEVEL_ERROR);
+        mdns_server_system_shutdown = 1; // Signal announce thread to exit
+        pthread_join(mdns_server_announce_thread, NULL);
+        pthread_attr_destroy(&thread_attr);
+        free(thread_arg);
+        mdns_server_shutdown(mdns_server_instance);
+        return 0;
+    }
+
+    pthread_attr_destroy(&thread_attr);
+
+    // Register thread references
+    add_service_thread(&mdns_server_threads, mdns_server_announce_thread);
+    add_service_thread(&mdns_server_threads, mdns_server_responder_thread);
+
+    // Step 4: Send initial announcements
+    log_this("mDNSServer", "Sending initial mDNS announcements", LOG_LEVEL_STATE);
+    mdns_server_send_announcement(mdns_server_instance, thread_arg->net_info);
+
+    // Step 5: Update subsystem registry
+    log_this("mDNSServer", "Updating subsystem registry", LOG_LEVEL_STATE);
+    update_subsystem_on_startup("mDNS Server", true);
+
+    // Step 6: Verify final state
+    SubsystemState final_state = get_subsystem_state(mdns_server_subsystem_id);
+
+    if (final_state == SUBSYSTEM_RUNNING) {
+        log_this("mDNSServer", "LAUNCH: MDNS SERVER - Successfully launched and running", LOG_LEVEL_STATE);
+        return 1;
+    } else {
+        log_this("mDNSServer", "LAUNCH: MDNS SERVER - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
+                subsystem_state_to_string(final_state));
+        return 0;
+    }
 }
