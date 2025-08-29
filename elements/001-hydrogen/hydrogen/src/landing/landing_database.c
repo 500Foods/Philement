@@ -49,7 +49,9 @@ LaunchReadiness check_database_landing_readiness(void) {
 
 // Land the database subsystem
 int land_database_subsystem(void) {
-    log_this("Database", "Beginning Database shutdown sequence", LOG_LEVEL_STATE);
+    log_this("Database", LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this("Database", "LANDING: DATABASE", LOG_LEVEL_STATE);
+
     bool success = true;
     
     // Since this is just a configuration handler, cleanup is minimal

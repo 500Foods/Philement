@@ -37,7 +37,8 @@ LaunchReadiness check_mdns_server_landing_readiness(void) {
     readiness.messages[0] = strdup("mDNS Server");
     
     // Check if mDNS server is actually running
-    if (!is_subsystem_running_by_name("mDNSServer")) {
+    // Note: Launch system registers as "mDNS Server" (with space) but logs as "mDNSServer"
+    if (!is_subsystem_running_by_name("mDNS Server")) {
         readiness.ready = false;
         readiness.messages[1] = strdup("  No-Go:   mDNS Server not running");
         readiness.messages[2] = strdup("  Decide:  No-Go For Landing of mDNS Server");
@@ -85,14 +86,15 @@ LaunchReadiness check_mdns_server_landing_readiness(void) {
 
 // Land the mDNS server subsystem
 int land_mdns_server_subsystem(void) {
-    log_this("mDNS Server", "Beginning mDNS Server shutdown sequence", LOG_LEVEL_STATE);
-    
+    log_this("mDNSServer", LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this("mDNSServer", "LANDING: mDNS SERVER", LOG_LEVEL_STATE);
+
     // Signal thread shutdown
     mdns_server_system_shutdown = 1;
-    log_this("mDNS Server", "Signaled mDNS Server threads to stop", LOG_LEVEL_STATE);
+    log_this("mDNSServer", "Signaled mDNS Server threads to stop", LOG_LEVEL_STATE);
     
     // Log thread count before cleanup
-    log_this("mDNS Server", "Cleaning up %d mDNS Server threads", LOG_LEVEL_STATE, 
+    log_this("mDNSServer", "Cleaning up %d mDNS Server threads", LOG_LEVEL_STATE, 
              mdns_server_threads.thread_count);
     
     // Remove all mDNS server threads from tracking
@@ -103,6 +105,6 @@ int land_mdns_server_subsystem(void) {
     // Reinitialize thread structure
     init_service_threads(&mdns_server_threads, "mDNS Server");
     
-    log_this("mDNS Server", "mDNS Server shutdown complete", LOG_LEVEL_STATE);
+    log_this("mDNSServer", "mDNS Server shutdown complete", LOG_LEVEL_STATE);
     return 1; // Success
 }

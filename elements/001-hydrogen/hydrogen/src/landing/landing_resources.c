@@ -51,10 +51,9 @@ LaunchReadiness check_resources_landing_readiness(void) {
  */
 static void free_resources_resources(void) {
     // Begin LANDING: RESOURCES section
-    log_this("Landing", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    log_this("Landing", "LANDING: RESOURCES", LOG_LEVEL_STATE);
-    log_this("Landing", "Beginning resource monitoring cleanup", LOG_LEVEL_STATE);
-
+    log_this("Resources", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+    log_this("Resources", "LANDING: RESOURCES", LOG_LEVEL_STATE);
+    
     // Clean up resource monitoring threads and data structures
     log_this("Landing", "  Step 1: Stopping resource monitoring threads", LOG_LEVEL_STATE);
 

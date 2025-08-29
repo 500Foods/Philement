@@ -27,13 +27,13 @@ bool is_interface_configured(const char* interface_name, bool* is_available) {
         if (is_available) *is_available = true;  // Default to available if no config
         return false;          // Not explicitly configured
     }
-    
+
     // Check if the available_interfaces array is NULL
     if (!app_config->network.available_interfaces || app_config->network.available_interfaces_count == 0) {
-        *is_available = true;  // Default to available if no available_interfaces
+        *is_available = true;  // Default to available if no available_interfaces section exists
         return false;          // Not explicitly configured
     }
-    
+
     // Check if the interface is in the available_interfaces array
     for (size_t i = 0; i < app_config->network.available_interfaces_count; i++) {
         if (app_config->network.available_interfaces[i].interface_name) {
@@ -44,10 +44,11 @@ bool is_interface_configured(const char* interface_name, bool* is_available) {
             }
         }
     }
-    
-    // If not in the configuration, it's not explicitly configured
-    *is_available = true;  // Default to available
-    return false;          // Not explicitly configured
+
+    // Interface is not in the configuration - if Network.Available section exists,
+    // interfaces not listed should be ENABLED by default (unless explicitly disabled)
+    *is_available = true;  // Default to available for unlisted interfaces
+    return false;           // Not explicitly configured
 }
 
 // Test a single interface with UDP socket
@@ -279,6 +280,84 @@ int find_available_port(int start_port) {
     return -1;
 }
 
+// Filter interfaces based on Network.Available configuration
+// Returns a new network_info_t with only enabled interfaces
+network_info_t *filter_enabled_interfaces(const network_info_t *raw_net_info, const struct AppConfig *config) {
+    if (!raw_net_info) {
+        return NULL;
+    }
+
+    network_info_t *filtered_info = malloc(sizeof(network_info_t));
+    if (!filtered_info) {
+        log_this("Network", "Failed to allocate filtered network info", LOG_LEVEL_ERROR);
+        return NULL;
+    }
+
+    filtered_info->primary_index = -1;
+    filtered_info->count = 0;
+
+    // Iterate through all interfaces and check if they are enabled
+    for (int i = 0; i < raw_net_info->count && filtered_info->count < MAX_INTERFACES; i++) {
+        const interface_t *iface = &raw_net_info->interfaces[i];
+
+        // Skip loopback interface
+        if (strcmp(iface->name, "lo") == 0) {
+            continue;
+        }
+
+        // Check if interface is enabled in config
+        bool is_available = true;
+        bool is_configured = false;
+
+        if (config) {
+            is_configured = is_interface_configured(iface->name, &is_available);
+        }
+
+        // Skip if explicitly disabled in config
+        if (is_configured && !is_available) {
+            log_this("Network", "Interface %s: filtered out (disabled in config)", LOG_LEVEL_STATE,
+                    iface->name);
+            continue;
+        }
+
+        // Interface is enabled, add it to filtered list
+        interface_t *filtered_iface = &filtered_info->interfaces[filtered_info->count];
+
+        // Copy interface name
+        strncpy(filtered_iface->name, iface->name, IF_NAMESIZE);
+        filtered_iface->name[IF_NAMESIZE - 1] = '\0';
+
+        // Copy IP addresses
+        filtered_iface->ip_count = iface->ip_count;
+        for (int j = 0; j < iface->ip_count && j < MAX_IPS; j++) {
+            strncpy(filtered_iface->ips[j], iface->ips[j], INET6_ADDRSTRLEN);
+            filtered_iface->ips[j][INET6_ADDRSTRLEN - 1] = '\0';
+            filtered_iface->ping_ms[j] = iface->ping_ms[j];
+            filtered_iface->is_ipv6[j] = iface->is_ipv6[j];
+        }
+
+        // Copy MAC address if available
+        if (iface->mac[0]) {
+            strncpy(filtered_iface->mac, iface->mac, sizeof(filtered_iface->mac));
+            filtered_iface->mac[sizeof(filtered_iface->mac) - 1] = '\0';
+        }
+
+        log_this("Network", "Interface %s: enabled and included", LOG_LEVEL_STATE, iface->name);
+
+        // Set primary index if not set yet
+        if (filtered_info->primary_index == -1) {
+            filtered_info->primary_index = filtered_info->count;
+        }
+
+        filtered_info->count++;
+    }
+
+    log_this("Network", "Filtered %d interfaces, %d remaining", LOG_LEVEL_STATE,
+            raw_net_info->count, filtered_info->count);
+
+    return filtered_info;
+}
+
 // Gracefully shut down all network interfaces
 //
 // Shutdown strategy:
@@ -301,28 +380,28 @@ int find_available_port(int start_port) {
 //    - Final verification
 bool network_shutdown(void) {
     log_this("Network", "Starting network shutdown...", LOG_LEVEL_STATE);
-    
+
     // Get current network interfaces for status reporting
     network_info_t *info = get_network_info();
     if (!info) {
         log_this("Network", "Failed to get network info for shutdown", LOG_LEVEL_ERROR);
         return false;
     }
-    
+
     // Log interface status during shutdown
     for (int i = 0; i < info->count; i++) {
         // Skip loopback interface
         if (strcmp(info->interfaces[i].name, "lo") == 0) {
             continue;
         }
-        
-        log_this("Network", "Interface %s: cleaning up application resources", 
+
+        log_this("Network", "Interface %s: cleaning up application resources",
                 LOG_LEVEL_STATE, info->interfaces[i].name);
     }
-    
+
     // Clean up network info
     free_network_info(info);
-    
+
     // Report successful shutdown - we don't modify system interfaces
     log_this("Network", "Network subsystem shutdown completed successfully", LOG_LEVEL_STATE);
     return true;

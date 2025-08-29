@@ -73,7 +73,9 @@ LaunchReadiness check_webserver_landing_readiness(void) {
 
 // Land the webserver subsystem
 int land_webserver_subsystem(void) {
-    log_this("WebServer", "Beginning WebServer shutdown sequence", LOG_LEVEL_STATE);
+    log_this("WebServer", LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this("WebServer", "LANDING: LOGGING", LOG_LEVEL_STATE);
+    
     bool success = true;
     
     // Signal thread shutdown

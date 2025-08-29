@@ -5,16 +5,49 @@
  * Delegates requests to appropriate endpoint handlers based on URL.
  */
 
- // Global includes 
+ // Global includes
 #include "../hydrogen.h"
 
 // Local includes
 #include "api_service.h"
 #include "api_utils.h"
+#include "version.h"
 #include "../webserver/web_server_core.h"
 #include "system/system_service.h"
 #include "system/upload/upload.h"
 #include "oidc/oidc_service.h"
+
+// Simple hardcoded endpoint validator and handler for /api/version
+static bool is_exact_api_version_endpoint(const char *url) {
+    return strcmp(url, "/api/version") == 0;
+}
+
+static enum MHD_Result handle_exact_api_version_request(void *cls, struct MHD_Connection *connection,
+                                                       const char *url, const char *method,
+                                                       const char *version, const char *upload_data,
+                                                       size_t *upload_data_size, void **con_cls) {
+    (void)cls; (void)url; (void)method; (void)version; (void)upload_data;
+    (void)upload_data_size; (void)con_cls;  // Unused parameters
+
+    // log_this("HardcodedVersion", "Handling exact /api/version request", LOG_LEVEL_STATE);
+    return handle_version_request(connection);
+}
+
+// Simple hardcoded endpoint validator and handler for /api/files/local
+static bool is_exact_api_files_local_endpoint(const char *url) {
+    return strcmp(url, "/api/files/local") == 0;
+}
+
+static enum MHD_Result handle_exact_api_files_local_request(void *cls, struct MHD_Connection *connection,
+                                                           const char *url, const char *method,
+                                                           const char *version, const char *upload_data,
+                                                           size_t *upload_data_size, void **con_cls) {
+    (void)cls; (void)url; (void)version; // Unused parameters
+    // log_this("HardcodedFilesLocal", "Handling exact /api/files/local request", LOG_LEVEL_STATE);
+    // Delegate to the same handler as /api/system/upload
+    return handle_system_upload_request(connection, method, upload_data,
+                                      upload_data_size, con_cls);
+}
 
 bool init_api_endpoints(void) {
     log_this("API", "Initializing API endpoints", LOG_LEVEL_STATE);
@@ -69,27 +102,61 @@ bool register_api_endpoints(void) {
         return false;
     }
 
-    // Create endpoint registration
+    // Register hardcoded /api/version endpoint with higher precedence FIRST
+    WebServerEndpoint hardcoded_version_endpoint = {
+        .prefix = "/api/version",
+        .validator = is_exact_api_version_endpoint,
+        .handler = handle_exact_api_version_request
+    };
+
+    // Register hardcoded version endpoint
+    if (!register_web_endpoint(&hardcoded_version_endpoint)) {
+        log_this("API", "Failed to register hardcoded /api/version endpoint", LOG_LEVEL_ERROR);
+        return false;
+    }
+
+    log_this("API", "Registered hardcoded endpoint: /api/version", LOG_LEVEL_STATE);
+
+    // Register hardcoded /api/files/local endpoint with high precedence SECOND
+    WebServerEndpoint hardcoded_files_local_endpoint = {
+        .prefix = "/api/files/local",
+        .validator = is_exact_api_files_local_endpoint,
+        .handler = handle_exact_api_files_local_request
+    };
+
+    // Register hardcoded files/local endpoint
+    if (!register_web_endpoint(&hardcoded_files_local_endpoint)) {
+        log_this("API", "Failed to register hardcoded /api/files/local endpoint", LOG_LEVEL_ERROR);
+        return false;
+    }
+
+    log_this("API", "Registered hardcoded endpoint: /api/files/local", LOG_LEVEL_STATE);
+
+    // Create general API endpoint registration
     WebServerEndpoint api_endpoint = {
         .prefix = app_config->api.prefix,
         .validator = is_api_request,
         .handler = api_handler
     };
 
-    // Register with webserver
+    // Register general API endpoint (registered second so hardcoded endpoint gets precedence)
     if (!register_web_endpoint(&api_endpoint)) {
         log_this("API", "Failed to register API endpoint with webserver", LOG_LEVEL_ERROR);
         return false;
     }
 
-    log_this("API", "Registered API endpoints with prefix: %s", LOG_LEVEL_STATE, 
+    log_this("API", "Registered API endpoints with prefix: %s", LOG_LEVEL_STATE,
              app_config->api.prefix);
-    
+
     // Log available endpoints
     log_this("API", "Available endpoints:", LOG_LEVEL_STATE);
+    log_this("API", "  -> /api/version (hardcoded, high precedence)", LOG_LEVEL_STATE);
+    log_this("API", "  -> /api/files/local (hardcoded, high precedence - upload alias)", LOG_LEVEL_STATE);
+    log_this("API", "  -> %s/version", LOG_LEVEL_STATE, app_config->api.prefix);
     log_this("API", "  -> %s/system/info", LOG_LEVEL_STATE, app_config->api.prefix);
     log_this("API", "  -> %s/system/health", LOG_LEVEL_STATE, app_config->api.prefix);
     log_this("API", "  -> %s/system/test", LOG_LEVEL_STATE, app_config->api.prefix);
+    log_this("API", "  -> %s/system/version", LOG_LEVEL_STATE, app_config->api.prefix);
     log_this("API", "  -> %s/system/config", LOG_LEVEL_STATE, app_config->api.prefix);
     log_this("API", "  -> %s/system/prometheus", LOG_LEVEL_STATE, app_config->api.prefix);
     log_this("API", "  -> %s/system/appconfig", LOG_LEVEL_STATE, app_config->api.prefix);
@@ -257,19 +324,27 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
      * Each handler processes requests regardless of prefix:
      * - "/api/system/health"    -> handle_system_health_request
      * - "/myapi/system/health"  -> handle_system_health_request
-     * 
+     *
      * This routing system means handlers don't need to know
      * about prefixes - they just handle their specific endpoints.
      */
-    if (strcmp(path, "system/info") == 0) {
+    // Top-level version endpoint (/api/version)
+    if (strcmp(path, "version") == 0) {
+        return handle_version_request(connection);
+    }
+    // System endpoints
+    else if (strcmp(path, "system/info") == 0) {
         return handle_system_info_request(connection);
     }
     else if (strcmp(path, "system/health") == 0) {
         return handle_system_health_request(connection);
     }
     else if (strcmp(path, "system/test") == 0) {
-        return handle_system_test_request(connection, method, upload_data, 
+        return handle_system_test_request(connection, method, upload_data,
                                        upload_data_size, con_cls);
+    }
+    else if (strcmp(path, "system/version") == 0) {
+        return handle_version_request(connection);
     }
     else if (strcmp(path, "system/config") == 0) {
         return handle_system_config_request(connection, method, upload_data,

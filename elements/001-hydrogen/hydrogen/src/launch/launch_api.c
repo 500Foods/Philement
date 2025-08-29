@@ -234,31 +234,3 @@ int is_api_running(void) {
             is_subsystem_running_by_name("Registry") &&
             is_web_server_running());
 }
-
-// Shutdown API subsystem
-void shutdown_api(void) {
-    log_this("API", LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this("API", "LANDING: API", LOG_LEVEL_STATE);
-
-    // Step 1: Verify state
-    log_this("API", "  Step 1: Verifying state", LOG_LEVEL_STATE);
-    if (!is_api_running()) {
-        log_this("API", "API already shut down", LOG_LEVEL_STATE);
-        log_this("API", "LANDING: API - Already landed", LOG_LEVEL_STATE);
-        return;
-    }
-    log_this("API", "    State verified", LOG_LEVEL_STATE);
-
-    // Step 2: Clean up API resources
-    log_this("API", "  Step 2: Cleaning up API resources", LOG_LEVEL_STATE);
-
-    // Clean up API endpoints
-    cleanup_api_endpoints();
-    log_this("API", "    API endpoints cleaned up", LOG_LEVEL_STATE);
-
-    // Step 3: Update registry state
-    log_this("API", "  Step 3: Updating registry state", LOG_LEVEL_STATE);
-    update_subsystem_on_shutdown("API");
-
-    log_this("API", "LANDING: API - Successfully landed", LOG_LEVEL_STATE);
-}

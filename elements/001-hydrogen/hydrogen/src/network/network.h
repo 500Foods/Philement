@@ -8,7 +8,7 @@
 #include "../globals.h"
 #include <stdbool.h>
 #include <stdint.h>
-#include <net/if.h>      
+#include <net/if.h>
 #include <netinet/in.h>
 
 // Forward declarations
@@ -54,5 +54,9 @@ bool test_network_interfaces(network_info_t *info);
 // Test-exposed functions (not part of public API)
 bool test_network_interfaces(network_info_t *info);
 bool is_interface_configured(const char* interface_name, bool* is_available);
+
+// Filter interfaces based on Network.Available configuration
+// Returns a new network_info_t with only enabled interfaces
+network_info_t *filter_enabled_interfaces(const network_info_t *net_info, const struct AppConfig *config);
 
 #endif // NETWORK_H

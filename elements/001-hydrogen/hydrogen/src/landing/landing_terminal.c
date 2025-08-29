@@ -78,7 +78,9 @@ LaunchReadiness check_terminal_landing_readiness(void) {
 
 // Land the terminal subsystem
 int land_terminal_subsystem(void) {
-    log_this("Terminal", "Beginning Terminal shutdown sequence", LOG_LEVEL_STATE);
+    log_this("Terminal", LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this("Terminal", "LANDING: TERMINAL", LOG_LEVEL_STATE);
+    
     bool success = true;
     
     // Signal shutdown

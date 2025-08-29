@@ -75,7 +75,9 @@ LaunchReadiness check_websocket_landing_readiness(void) {
 
 // Land the websocket subsystem
 int land_websocket_subsystem(void) {
-    log_this("WebSocket", "Beginning WebSocket shutdown sequence", LOG_LEVEL_STATE);
+    log_this("WebSocket", LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this("WebSocket", "LANDING: LOGGING", LOG_LEVEL_STATE);
+
     bool success = true;
     
     // Step 1: Stop the WebSocket server (handles thread shutdown and connection termination)
