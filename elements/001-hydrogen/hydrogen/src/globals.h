@@ -65,6 +65,8 @@
 #define DEFAULT_RESPONSE_BUFFER_SIZE 16384      // 16KB for responses
 
 // SUBSYSTEM REGISTRY /////////////////////////////////////////////////////////////////////////////
+
+// Tracked but not Subsystems
 #define SR_SERVER           "Server"
 #define SR_STARTUP          "Startup"
 #define SR_SHUTDOWN         "Shutdown"
@@ -76,6 +78,7 @@
 #define SR_LAUNCH           "Launch"
 #define SR_LANDING          "Landing"
 
+// The primary 18 Subsystems
 #define SR_REGISTRY         "Registry"
 #define SR_THREADS          "Threads"
 #define SR_PAYLOAD          "Payload"
@@ -95,8 +98,10 @@
 #define SR_OIDC             "OIDC"
 #define SR_NOTIFY           "Notify"
 
-#define SR_WEBSOCKET_LIB    "WebSocket-Lib"
-#define SR_THREADS_LIB      "Threads-Lib"
+// Additional sub-Subsystem Tracking
+#define SR_WEBSOCKET_LIB    "WebSocket-Lib"     // Low-level libwebsockets diagnostics
+#define SR_THREADS_LIB      "Threads-Lib"       // Tracks thread changes
+#define SR_BERYLLIUM        "Beryllium"         // G-code parsing
 
 #define INITIAL_REGISTRY_CAPACITY 20
 #define MAX_DEPENDENCIES 20
