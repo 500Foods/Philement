@@ -104,7 +104,7 @@ int launch_terminal_subsystem(void) {
     }
     
     // Initialize terminal system
-    log_this("Terminal", "Initializing terminal subsystem", LOG_LEVEL_STATE);
+    log_this(SR_TERMINAL, "Initializing " SR_TERMINAL " subsystem", LOG_LEVEL_STATE);
     
     return 0;
 }

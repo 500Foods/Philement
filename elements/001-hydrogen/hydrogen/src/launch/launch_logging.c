@@ -20,25 +20,25 @@ LaunchReadiness check_logging_launch_readiness(void) {
     bool overall_readiness = false;
 
     // First message is subsystem name
-    add_launch_message(&messages, &count, &capacity, strdup("Logging"));
+    add_launch_message(&messages, &count, &capacity, strdup(SR_LOGGING));
 
     // Early return cases
     if (server_stopping) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   System shutdown in progress"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Logging", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_LOGGING, .ready = false, .messages = messages };
     }
 
     if (!server_starting && !server_running) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   System not in startup or running state"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Logging", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_LOGGING, .ready = false, .messages = messages };
     }
 
     if (!app_config) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Configuration not loaded"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Logging", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_LOGGING, .ready = false, .messages = messages };
     }
 
     // Get logging configuration
@@ -151,23 +151,23 @@ LaunchReadiness check_logging_launch_readiness(void) {
     }
 
     // Basic readiness check - verify subsystem registration and config validity
-    int subsystem_id = get_subsystem_id_by_name("Logging");
+    int subsystem_id = get_subsystem_id_by_name(SR_LOGGING);
     if (subsystem_id >= 0 && config_valid) {
-        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Logging subsystem registered"));
-        add_launch_message(&messages, &count, &capacity, strdup("  Decide:  Go For Launch of Logging Subsystem"));
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      " SR_LOGGING " subsystem registered"));
+        add_launch_message(&messages, &count, &capacity, strdup("  Decide:  Go For Launch of " SR_LOGGING " subsystem"));
         overall_readiness = true;
     } else {
         if (subsystem_id < 0) {
-            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Logging subsystem not registered"));
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   " SR_LOGGING " subsystem not registered"));
         }
-        add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Logging Subsystem"));
+        add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of " SR_LOGGING " subsystem"));
         overall_readiness = false;
     }
 
     finalize_launch_messages(&messages, &count, &capacity);
 
     return (LaunchReadiness){
-        .subsystem = "Logging",
+        .subsystem = SR_LOGGING,
         .ready = overall_readiness,
         .messages = messages
     };
@@ -178,17 +178,17 @@ int launch_logging_subsystem(void) {
     // Reset shutdown flag
     logging_stopping = 0;
     
-    log_this("Logging", "Initializing logging subsystem", LOG_LEVEL_STATE);
+    log_this(SR_LOGGING, "Initializing " SR_LOGGING " subsystem", LOG_LEVEL_STATE);
     
     // Get subsystem ID and update state
-    int subsystem_id = get_subsystem_id_by_name("Logging");
+    int subsystem_id = get_subsystem_id_by_name(SR_LOGGING);
     if (subsystem_id >= 0) {
         update_subsystem_state(subsystem_id, SUBSYSTEM_RUNNING);
-        log_this("Logging", "Logging subsystem initialized", LOG_LEVEL_STATE);
+        log_this(SR_LOGGING, SR_LOGGING " subsystem initialized", LOG_LEVEL_STATE);
         return 1;
     }
     
-    log_this("Logging", "Failed to initialize logging subsystem", LOG_LEVEL_ERROR);
+    log_this(SR_LOGGING, "Failed to initialize " SR_LOGGING " subsystem", LOG_LEVEL_ERROR);
     return 0;
 }
 
@@ -196,6 +196,6 @@ int launch_logging_subsystem(void) {
 void shutdown_logging(void) {
     if (!logging_stopping) {
         logging_stopping = 1;
-        log_this("Logging", "Logging subsystem shutting down", LOG_LEVEL_STATE);
+        log_this(SR_LOGGING, SR_LOGGING " subsystem shutting down", LOG_LEVEL_STATE);
     }
 }

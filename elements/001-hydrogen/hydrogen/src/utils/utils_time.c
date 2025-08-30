@@ -71,8 +71,8 @@ void record_shutdown_end_time(void) {
     (void)elapsed;
     
     // Comment out log messages for cleaner shutdown sequence
-    // log_this("Utils", "System shutdown initiated at %s", LOG_LEVEL_STATE, iso_time);
-    // log_this("Utils", "System shutdown took %.3fs", LOG_LEVEL_STATE, elapsed);
+    // log_this(SR_LOGGING, "System shutdown initiated at %s", LOG_LEVEL_STATE, iso_time);
+    // log_this(SR_LOGGING, "System shutdown took %.3fs", LOG_LEVEL_STATE, elapsed);
 }
 
 // Get the server start time

@@ -23,7 +23,7 @@ void format_percentage(double value, char *buffer, size_t buffer_size) {
 bool collect_cpu_metrics(CpuMetrics *cpu) {
     FILE *stat = fopen("/proc/stat", "r");
     if (!stat) {
-        log_this("SystemMetrics", "Failed to open /proc/stat", LOG_LEVEL_ERROR);
+        log_this(SR_STATUS, "Failed to open /proc/stat", LOG_LEVEL_ERROR);
         return false;
     }
 
@@ -40,7 +40,7 @@ bool collect_cpu_metrics(CpuMetrics *cpu) {
     }
 
     if (core_count == 0) {
-        log_this("SystemMetrics", "No CPU cores found", LOG_LEVEL_ERROR);
+        log_this(SR_STATUS, "No CPU cores found", LOG_LEVEL_ERROR);
         fclose(stat);
         return false;
     }
@@ -48,14 +48,14 @@ bool collect_cpu_metrics(CpuMetrics *cpu) {
     // Allocate array for per-core usage
     char **core_usage = calloc((size_t)core_count, sizeof(char*));
     if (!core_usage) {
-        log_this("SystemMetrics", "Failed to allocate core usage array", LOG_LEVEL_ERROR);
+        log_this(SR_STATUS, "Failed to allocate core usage array", LOG_LEVEL_ERROR);
         return false;
     }
 
     for (int i = 0; i < core_count; i++) {
         core_usage[i] = calloc(MAX_PERCENTAGE_STRING, sizeof(char));
         if (!core_usage[i]) {
-            log_this("SystemMetrics", "Failed to allocate core usage string", LOG_LEVEL_ERROR);
+            log_this(SR_STATUS, "Failed to allocate core usage string", LOG_LEVEL_ERROR);
             // Clean up previously allocated strings
             for (int j = 0; j < i; j++) {
                 free(core_usage[j]);
@@ -114,7 +114,7 @@ bool collect_cpu_metrics(CpuMetrics *cpu) {
 bool collect_memory_metrics(SystemMemoryMetrics *memory) {
     struct sysinfo si;
     if (sysinfo(&si) != 0) {
-        log_this("SystemMetrics", "Failed to get system memory info", LOG_LEVEL_ERROR);
+        log_this(SR_STATUS, "Failed to get system memory info", LOG_LEVEL_ERROR);
         return false;
     }
 
@@ -145,7 +145,7 @@ bool collect_memory_metrics(SystemMemoryMetrics *memory) {
 bool collect_network_metrics(NetworkMetrics *network) {
     struct ifaddrs *ifaddr, *ifa;
     if (getifaddrs(&ifaddr) != 0) {
-        log_this("SystemMetrics", "Failed to get network interfaces", LOG_LEVEL_ERROR);
+        log_this(SR_STATUS, "Failed to get network interfaces", LOG_LEVEL_ERROR);
         return false;
     }
 
@@ -183,7 +183,7 @@ bool collect_network_metrics(NetworkMetrics *network) {
         FILE *f = fopen(path, "r");
         if (f) {
             if (fscanf(f, "%llu", &iface->rx_bytes) != 1) {
-                log_this("SystemMetrics", "Failed to read rx_bytes", LOG_LEVEL_ERROR);
+                log_this(SR_STATUS, "Failed to read rx_bytes", LOG_LEVEL_ERROR);
                 iface->rx_bytes = 0; // Default value
             }
             fclose(f);
@@ -193,7 +193,7 @@ bool collect_network_metrics(NetworkMetrics *network) {
         f = fopen(path, "r");
         if (f) {
             if (fscanf(f, "%llu", &iface->tx_bytes) != 1) {
-                log_this("SystemMetrics", "Failed to read tx_bytes", LOG_LEVEL_ERROR);
+                log_this(SR_STATUS, "Failed to read tx_bytes", LOG_LEVEL_ERROR);
                 iface->tx_bytes = 0; // Default value
             }
             fclose(f);
@@ -210,7 +210,7 @@ bool collect_network_metrics(NetworkMetrics *network) {
 bool collect_filesystem_metrics(FilesystemMetrics **filesystems, int *count) {
     FILE *mtab = setmntent("/etc/mtab", "r");
     if (!mtab) {
-        log_this("SystemMetrics", "Failed to open /etc/mtab", LOG_LEVEL_ERROR);
+        log_this(SR_STATUS, "Failed to open /etc/mtab", LOG_LEVEL_ERROR);
         return false;
     }
 
@@ -272,7 +272,7 @@ bool collect_filesystem_metrics(FilesystemMetrics **filesystems, int *count) {
 bool collect_system_info(SystemMetrics *metrics) {
     struct utsname system_info;
     if (uname(&system_info) != 0) {
-        log_this("SystemMetrics", "Failed to get system information", LOG_LEVEL_ERROR);
+        log_this(SR_STATUS, "Failed to get system information", LOG_LEVEL_ERROR);
         return false;
     }
 

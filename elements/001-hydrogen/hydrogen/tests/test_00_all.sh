@@ -49,7 +49,7 @@ commands=(
     "${PRINTF}" "${DATE}" "${FIND}" "${GREP}" "${SED}" "${AWK}" "${XARGS}" "${TAR}" "${TIMEOUT}" 
     "${REALPATH}" "${DIRNAME}"  
     "jq"  "nproc" "lsof" "brotli" "openssl"
-    "cmake" "gcc" "ninja" "curl" "websocat" "wscat"
+    "cmake" "gcc" "ninja" "curl" "websocat" "wscat" "tshark"
     "${GIT}" "${MD5SUM}" "${CLOC}"
     "cppcheck" "shellcheck" "markdownlint" "eslint" "stylelint" "htmlhint" "jsonlint" "swagger-cli"
     "${OH}" "${TABLES}" 
