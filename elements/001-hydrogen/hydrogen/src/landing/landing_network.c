@@ -99,3 +99,9 @@ LaunchReadiness check_network_landing_readiness(void) {
     
     return readiness;
 }
+
+// Network subsystem shutdown function
+void shutdown_network_subsystem(void) {
+    log_this(SR_NETWORK, "Shutting down network subsystem", LOG_LEVEL_STATE);
+    // No specific shutdown actions needed for network subsystem
+}

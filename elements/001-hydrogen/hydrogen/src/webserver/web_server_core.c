@@ -258,8 +258,6 @@ void* run_web_server(void* arg) {
     (void)arg; // Unused parameter
 
     // Check all shutdown flags atomically
-    extern volatile sig_atomic_t server_stopping;
-    extern volatile sig_atomic_t server_starting;
     extern volatile sig_atomic_t web_server_shutdown;
     
     // Prevent initialization during any shutdown state

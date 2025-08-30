@@ -155,7 +155,7 @@ LaunchReadiness check_notify_launch_readiness(void) {
 int launch_notify_subsystem(void) {
     // Begin LAUNCH: NOTIFY section
     log_this(SR_NOTIFY, LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this(SR_NOTIFY, "LAUNCH: NOTIFY", LOG_LEVEL_STATE);
+    log_this(SR_NOTIFY, "LAUNCH: " SR_NOTIFY, LOG_LEVEL_STATE);
 
     // Step 1: Verify explicit dependencies
     log_this(SR_NOTIFY, "  Step 1: Verifying explicit dependencies", LOG_LEVEL_STATE);

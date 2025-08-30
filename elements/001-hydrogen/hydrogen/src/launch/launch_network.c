@@ -15,7 +15,7 @@
 volatile sig_atomic_t network_system_shutdown = 0;
 
 // Registry ID and cached readiness state
-static int network_subsystem_id = -1;
+int network_subsystem_id = -1;
 
 // Register the network subsystem with the registry (for readiness)
 static void register_network(void) {
@@ -23,81 +23,6 @@ static void register_network(void) {
         network_subsystem_id = register_subsystem(SR_NETWORK, NULL, NULL, NULL, NULL, NULL);
     }
 }
-
-// Network subsystem launch function
-int launch_network_subsystem(void) {
-    log_this(SR_NETWORK, LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this(SR_NETWORK, "LAUNCH: NETWORK", LOG_LEVEL_STATE);
-    
-    // Register with launch handlers if not already registered
-    if (network_subsystem_id < 0) {
-        network_subsystem_id = register_subsystem_from_launch(SR_NETWORK, NULL, NULL, NULL,
-                                                            (int (*)(void))launch_network_subsystem,
-                                                            (void (*)(void))shutdown_network_subsystem);
-        if (network_subsystem_id < 0) {
-            log_this(SR_NETWORK, "Failed to register network subsystem", LOG_LEVEL_ERROR);
-            return 0;
-        }
-    }
-    
-    // Step 1: Verify system state
-    if (server_stopping) {
-        log_this(SR_NETWORK, "Cannot initialize network during shutdown", LOG_LEVEL_STATE);
-        return 0;
-    }
-    
-    if (!server_starting && !server_running) {
-        log_this(SR_NETWORK, "Cannot initialize network outside startup/running phase", LOG_LEVEL_STATE);
-        return 0;
-    }
-    
-    // Step 2: Initialize network subsystem
-    log_this(SR_NETWORK, "  Step 1: Initializing network subsystem", LOG_LEVEL_STATE);
-    
-    // Step 3: Enumerate network interfaces
-    log_this(SR_NETWORK, "  Step 2: Enumerating network interfaces", LOG_LEVEL_STATE);
-    network_info_t *info = get_network_info();
-    if (!info) {
-        log_this(SR_NETWORK, "Failed to get network info", LOG_LEVEL_ERROR);
-        return 0;
-    }
-    
-    // Step 4: Test network interfaces
-    log_this(SR_NETWORK, "  Step 3: Testing network interfaces", LOG_LEVEL_STATE);
-    bool ping_success = test_network_interfaces(info);
-    
-    free_network_info(info);
-    
-    if (!ping_success) {
-        log_this(SR_NETWORK, "No network interfaces responded to ping", LOG_LEVEL_ERROR);
-        log_this(SR_NETWORK, "LAUNCH: NETWORK - Failed to launch", LOG_LEVEL_STATE);
-        return 0;
-    }
-    
-    // Step 5: Update registry and verify state
-    log_this(SR_NETWORK, "  Step 4: Updating subsystem registry", LOG_LEVEL_STATE);
-    update_subsystem_on_startup(SR_NETWORK, true);
-    
-    SubsystemState final_state = get_subsystem_state(network_subsystem_id);
-  
-    if (final_state == SUBSYSTEM_RUNNING) {
-        log_this(SR_NETWORK, "LAUNCH: NETWORK - Successfully launched and running", LOG_LEVEL_STATE);
-        return 1;
-    } else {
-        log_this(SR_NETWORK, "LAUNCH: NETWORK - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
-                subsystem_state_to_string(final_state));
-        return 0;
-    }
-}
-
-// Network subsystem shutdown function
-void shutdown_network_subsystem(void) {
-    log_this(SR_NETWORK, "Shutting down network subsystem", LOG_LEVEL_STATE);
-    // No specific shutdown actions needed for network subsystem
-}
-
-
-
 
 /*
  * Check if the network subsystem is ready to launch
@@ -117,8 +42,6 @@ void shutdown_network_subsystem(void) {
  * - messages: NULL-terminated array of status messages (must be freed by caller on success path)
  * - subsystem: Name of the subsystem ("Network")
  */
-
-
 
 // Check if the network subsystem is ready to launch
 LaunchReadiness check_network_launch_readiness(void) {
@@ -373,3 +296,72 @@ LaunchReadiness check_network_launch_readiness(void) {
         .messages = messages
     };
 }
+
+// Network subsystem launch function
+int launch_network_subsystem(void) {
+
+    // Step 1: Log Launch
+    log_this(SR_NETWORK, LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this(SR_NETWORK, "LAUNCH: " SR_NETWORK, LOG_LEVEL_STATE);
+    
+    // Step 3: Verify system state
+    if (server_stopping || server_starting != 1) {
+        log_this(SR_NETWORK, "Cannot initialize " SR_NETWORK " subsystem outside startup phase", LOG_LEVEL_STATE);
+        log_this(SR_NETWORK, "LAUNCH: " SR_MDNS_SERVER " Failed: Not in startup phase", LOG_LEVEL_STATE);
+        return 0;
+    }
+
+    // Step 4: Verify config state
+    if (!app_config) {
+        log_this(SR_NETWORK, "Configuration not loaded", LOG_LEVEL_ERROR);
+        log_this(SR_NETWORK, "LAUNCH: " SR_NETWORK " Failed: No configuration", LOG_LEVEL_STATE);
+        return 0;
+    }
+
+    // Register with launch handlers if not already registered
+    if (network_subsystem_id < 0) {
+        network_subsystem_id = register_subsystem_from_launch(SR_NETWORK, NULL, NULL, NULL,
+                                                            (int (*)(void))launch_network_subsystem,
+                                                            (void (*)(void))shutdown_network_subsystem);
+        if (network_subsystem_id < 0) {
+            log_this(SR_NETWORK, "Failed to register " SR_NETWORK " subsystem", LOG_LEVEL_ERROR);
+            return 0;
+        }
+    }
+    
+    // Enumerate network interfaces
+    log_this(SR_NETWORK, "  Enumerating network interfaces", LOG_LEVEL_STATE);
+    network_info_t *info = get_network_info();
+    if (!info) {
+        log_this(SR_NETWORK, "Failed to get network info", LOG_LEVEL_ERROR);
+        return 0;
+    }
+    
+    // Test network interfaces
+    log_this(SR_NETWORK, "  Testing network interfaces", LOG_LEVEL_STATE);
+    bool ping_success = test_network_interfaces(info);
+    
+    free_network_info(info);
+    
+    if (!ping_success) {
+        log_this(SR_NETWORK, "No network interfaces responded to ping", LOG_LEVEL_ERROR);
+        log_this(SR_NETWORK, "LAUNCH: NETWORK - Failed to launch", LOG_LEVEL_STATE);
+        return 0;
+    }
+    
+    // Update registry and verify state
+    log_this(SR_NETWORK, "  Updating subsystem registry", LOG_LEVEL_STATE);
+    update_subsystem_on_startup(SR_NETWORK, true);
+    
+    SubsystemState final_state = get_subsystem_state(network_subsystem_id);
+  
+    if (final_state == SUBSYSTEM_RUNNING) {
+        log_this(SR_NETWORK, "LAUNCH: " SR_NETWORK " Success: Launched and running", LOG_LEVEL_STATE);
+        return 1;
+    } else {
+        log_this(SR_NETWORK, "LAUNCH: " SR_NETWORK " Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
+                subsystem_state_to_string(final_state));
+        return 0;
+    }
+}
+

@@ -142,11 +142,6 @@ SystemMetrics* collect_system_metrics(const WebSocketMetrics *ws_metrics) {
     snprintf(metrics->release, sizeof(metrics->release), "%s", RELEASE);
     snprintf(metrics->build_type, sizeof(metrics->build_type), "%s", BUILD_TYPE);
 
-    // Set server state flags (these would normally come from global state)
-    extern volatile sig_atomic_t server_running;
-    extern volatile sig_atomic_t server_stopping;
-    extern volatile sig_atomic_t server_starting;
-    
     metrics->server_running = server_running;
     metrics->server_stopping = server_stopping;
     metrics->server_starting = server_starting;

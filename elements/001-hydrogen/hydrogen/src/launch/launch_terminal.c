@@ -96,15 +96,16 @@ LaunchReadiness check_terminal_launch_readiness(void) {
 
 // Launch the terminal subsystem
 int launch_terminal_subsystem(void) {
+
+    log_this(SR_TERMINAL, LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this(SR_TERMINAL, "LAUNCH: " SR_TERMINAL, LOG_LEVEL_STATE);    
+
     // Reset shutdown flag
     terminal_system_shutdown = 0;
     
     if (!app_config || !app_config->terminal.enabled) {
         return -1;
     }
-    
-    // Initialize terminal system
-    log_this(SR_TERMINAL, "Initializing " SR_TERMINAL " subsystem", LOG_LEVEL_STATE);
-    
+        
     return 0;
 }
