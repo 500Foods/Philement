@@ -195,7 +195,7 @@ Queue* queue_create(const char* name, QueueAttributes* attrs) {
     // Temporarily disabled logging to debug segfault
     /*
     if (strcmp(name, "SystemLog") != 0) {
-        log_this("QueueSystem", "New queue created: %s", LOG_LEVEL_STATE, name);
+        log_this(SR_QUEUES, "New queue created: %s", LOG_LEVEL_STATE, name);
     }
     */
 

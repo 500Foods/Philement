@@ -52,8 +52,8 @@ LaunchReadiness check_mail_relay_landing_readiness(void) {
 
 // Land the mail relay subsystem
 int land_mail_relay_subsystem(void) {
-    log_this("MailRelay", LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this("MailRelay", "LANDING: MAIL RELAY", LOG_LEVEL_STATE);
+    log_this(SR_MAIL_RELAY, LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this(SR_MAIL_RELAY, "LANDING: " SR_MAIL_RELAY, LOG_LEVEL_STATE);
 
     // Set shutdown flag
     mail_relay_system_shutdown = 1;

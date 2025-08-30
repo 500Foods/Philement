@@ -33,7 +33,7 @@ enum MHD_Result handle_system_test_request(struct MHD_Connection *connection,
                                          size_t *upload_data_size,
                                          void **con_cls) {
     (void)upload_data; // Mark parameter as intentionally unused
-    log_this("SystemTest", "Handling test endpoint request", LOG_LEVEL_STATE);
+    log_this(SR_API, "Handling test endpoint request", LOG_LEVEL_STATE);
     
     // Start timing for performance metrics
     struct timespec start_time;
