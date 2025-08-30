@@ -23,10 +23,10 @@ static OIDCContext *g_oidc_context = NULL;
  * @return true if initialization successful, false otherwise
  */
 bool init_oidc_endpoints(OIDCContext *oidc_context) {
-    log_this("OIDC Endpoints", "Initializing OIDC endpoints", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "Initializing OIDC endpoints", LOG_LEVEL_STATE);
     
     if (!oidc_context) {
-        log_this("OIDC Endpoints", "Invalid OIDC context", LOG_LEVEL_ERROR);
+        log_this(SR_OIDC, "Invalid OIDC context", LOG_LEVEL_ERROR);
         return false;
     }
     
@@ -34,11 +34,11 @@ bool init_oidc_endpoints(OIDCContext *oidc_context) {
     
     // Register endpoints with the web server
     if (!register_oidc_endpoints()) {
-        log_this("OIDC Endpoints", "Failed to register OIDC endpoints", LOG_LEVEL_ERROR);
+        log_this(SR_OIDC, "Failed to register OIDC endpoints", LOG_LEVEL_ERROR);
         return false;
     }
     
-    log_this("OIDC Endpoints", "OIDC endpoints initialized successfully", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "OIDC endpoints initialized successfully", LOG_LEVEL_STATE);
     return true;
 }
 
@@ -46,12 +46,12 @@ bool init_oidc_endpoints(OIDCContext *oidc_context) {
  * Clean up OIDC API endpoints
  */
 void cleanup_oidc_endpoints(void) {
-    log_this("OIDC Endpoints", "Cleaning up OIDC endpoints", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "Cleaning up OIDC endpoints", LOG_LEVEL_STATE);
     
     // Reset the global context
     g_oidc_context = NULL;
     
-    log_this("OIDC Endpoints", "OIDC endpoints cleanup completed", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "OIDC endpoints cleanup completed", LOG_LEVEL_STATE);
 }
 
 /**
@@ -60,7 +60,7 @@ void cleanup_oidc_endpoints(void) {
  * @return true if registration successful, false otherwise
  */
 bool register_oidc_endpoints(void) {
-    log_this("OIDC Endpoints", "Registering OIDC endpoints with web server", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "Registering OIDC endpoints with web server", LOG_LEVEL_STATE);
     
     // Stub implementation that pretends to register endpoints
     // In a real implementation, this would call web_server_register_handler
@@ -115,10 +115,10 @@ enum MHD_Result handle_oidc_request(struct MHD_Connection *connection,
     /* Mark unused parameters */
     (void)version;
     
-    log_this("OIDC Endpoints", "Handling OIDC request", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "Handling OIDC request", LOG_LEVEL_STATE);
     
     if (!g_oidc_context) {
-        log_this("OIDC Endpoints", "OIDC context not initialized", LOG_LEVEL_ERROR);
+        log_this(SR_OIDC, "OIDC context not initialized", LOG_LEVEL_ERROR);
         return MHD_NO;
     }
     
@@ -146,7 +146,7 @@ enum MHD_Result handle_oidc_request(struct MHD_Connection *connection,
     }
     
     // Not an OIDC endpoint or unknown endpoint
-    log_this("OIDC Endpoints", "Unknown OIDC endpoint", LOG_LEVEL_ERROR);
+    log_this(SR_OIDC, "Unknown OIDC endpoint", LOG_LEVEL_ERROR);
     return MHD_NO;
 }
 

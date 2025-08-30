@@ -100,23 +100,23 @@ static LandingFunction get_landing_function(const char* subsystem_name) {
     // Registry is handled separately due to different signature
     if (strcmp(subsystem_name, "Registry") == 0) return NULL;
 
-    if (strcmp(subsystem_name, "Print") == 0) return land_print_subsystem;
-    if (strcmp(subsystem_name, "MailRelay") == 0) return land_mail_relay_subsystem;
-    if (strcmp(subsystem_name, "mDNS Client") == 0) return land_mdns_client_subsystem;
-    if (strcmp(subsystem_name, "mDNS Server") == 0) return land_mdns_server_subsystem;
-    if (strcmp(subsystem_name, "Terminal") == 0) return land_terminal_subsystem;
-    if (strcmp(subsystem_name, "WebSocket") == 0) return land_websocket_subsystem;
-    if (strcmp(subsystem_name, "Swagger") == 0) return land_swagger_subsystem;
-    if (strcmp(subsystem_name, "API") == 0) return land_api_subsystem;
-    if (strcmp(subsystem_name, "WebServer") == 0) return land_webserver_subsystem;
-    if (strcmp(subsystem_name, "Database") == 0) return land_database_subsystem;
-    if (strcmp(subsystem_name, "Logging") == 0) return land_logging_subsystem;
-    if (strcmp(subsystem_name, "Network") == 0) return land_network_subsystem;
-    if (strcmp(subsystem_name, "Payload") == 0) return land_payload_subsystem;
-    if (strcmp(subsystem_name, "Threads") == 0) return land_threads_subsystem;
-    if (strcmp(subsystem_name, "Resources") == 0) return land_resources_subsystem;
-    if (strcmp(subsystem_name, "OIDC") == 0) return land_oidc_subsystem;
-    if (strcmp(subsystem_name, "Notify") == 0) return land_notify_subsystem;
+    if (strcmp(subsystem_name, SR_PRINT         ) == 0) return land_print_subsystem;
+    if (strcmp(subsystem_name, SR_MAIL_RELAY    ) == 0) return land_mail_relay_subsystem;
+    if (strcmp(subsystem_name, SR_MDNS_CLIENT   ) == 0) return land_mdns_client_subsystem;
+    if (strcmp(subsystem_name, SR_MDNS_SERVER   ) == 0) return land_mdns_server_subsystem;
+    if (strcmp(subsystem_name, SR_TERMINAL      ) == 0) return land_terminal_subsystem;
+    if (strcmp(subsystem_name, SR_WEBSOCKET     ) == 0) return land_websocket_subsystem;
+    if (strcmp(subsystem_name, SR_SWAGGER       ) == 0) return land_swagger_subsystem;
+    if (strcmp(subsystem_name, SR_API           ) == 0) return land_api_subsystem;
+    if (strcmp(subsystem_name, SR_WEBSERVER     ) == 0) return land_webserver_subsystem;
+    if (strcmp(subsystem_name, SR_DATABASE      ) == 0) return land_database_subsystem;
+    if (strcmp(subsystem_name, SR_LOGGING       ) == 0) return land_logging_subsystem;
+    if (strcmp(subsystem_name, SR_NETWORK       ) == 0) return land_network_subsystem;
+    if (strcmp(subsystem_name, SR_PAYLOAD       ) == 0) return land_payload_subsystem;
+    if (strcmp(subsystem_name, SR_THREADS       ) == 0) return land_threads_subsystem;
+    if (strcmp(subsystem_name, SR_RESOURCES     ) == 0) return land_resources_subsystem;
+    if (strcmp(subsystem_name, SR_OIDC          ) == 0) return land_oidc_subsystem;
+    if (strcmp(subsystem_name, SR_NOTIFY        ) == 0) return land_notify_subsystem;
     return NULL;
 }
 

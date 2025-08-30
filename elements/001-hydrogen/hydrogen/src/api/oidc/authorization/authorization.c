@@ -33,7 +33,7 @@ enum MHD_Result handle_oidc_authorization_endpoint(struct MHD_Connection *connec
     (void)upload_data_size;
     (void)con_cls;
     
-    log_this("OIDC Authorization", "Handling authorization endpoint request", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "Handling authorization endpoint request", LOG_LEVEL_STATE);
     
     // Extract and validate OAuth parameters
     char *client_id = NULL;
@@ -47,7 +47,7 @@ enum MHD_Result handle_oidc_authorization_endpoint(struct MHD_Connection *connec
     
     if (!extract_oauth_params(connection, &client_id, &redirect_uri, &response_type,
                            &scope, &state, &nonce, &code_challenge, &code_challenge_method)) {
-        log_this("OIDC Authorization", "Failed to extract OAuth parameters", LOG_LEVEL_ERROR);
+        log_this(SR_OIDC, "Failed to extract OAuth parameters", LOG_LEVEL_ERROR);
         return MHD_NO;
     }
     
