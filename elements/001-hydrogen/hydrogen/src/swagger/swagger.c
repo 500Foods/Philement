@@ -52,20 +52,20 @@ bool init_swagger_support(SwaggerConfig *config) {
     
     // Prevent initialization during shutdown
     if (server_stopping || web_server_shutdown) {
-        log_this("Swagger", "Cannot initialize Swagger UI during shutdown", LOG_LEVEL_STATE, NULL);
+        log_this(SR_SWAGGER, "Cannot initialize Swagger UI during shutdown", LOG_LEVEL_STATE, NULL);
         swagger_initialized = false;  // Reset initialization flag during shutdown
         return false;
     }
 
     // Only proceed if we're in startup phase and not shutting down
     if (!server_starting || server_stopping || web_server_shutdown) {
-        log_this("Swagger", "Cannot initialize - invalid system state", LOG_LEVEL_STATE, NULL);
+        log_this(SR_SWAGGER, "Cannot initialize - invalid system state", LOG_LEVEL_STATE, NULL);
         return false;
     }
 
     // Double-check shutdown state before proceeding
     if (server_stopping || web_server_shutdown) {
-        log_this("Swagger", "Shutdown initiated, aborting Swagger UI initialization", LOG_LEVEL_STATE, NULL);
+        log_this(SR_SWAGGER, "Shutdown initiated, aborting Swagger UI initialization", LOG_LEVEL_STATE, NULL);
         swagger_initialized = false;  // Reset initialization flag
         return false;
     }
@@ -73,7 +73,7 @@ bool init_swagger_support(SwaggerConfig *config) {
     // Skip if already initialized or disabled
     if (swagger_initialized || !config || !config->enabled) {
         if (swagger_initialized) {
-            log_this("Swagger", "Already initialized", LOG_LEVEL_STATE, NULL);
+            log_this(SR_SWAGGER, "Already initialized", LOG_LEVEL_STATE, NULL);
         }
         return swagger_initialized;
     }
@@ -81,7 +81,7 @@ bool init_swagger_support(SwaggerConfig *config) {
     // Get executable path
     char *executable_path = get_executable_path();
     if (!executable_path) {
-        log_this("Swagger", "Failed to get executable path", LOG_LEVEL_ERROR, NULL);
+        log_this(SR_SWAGGER, "Failed to get executable path", LOG_LEVEL_ERROR, NULL);
         return false;
     }
 
@@ -94,7 +94,7 @@ bool init_swagger_support(SwaggerConfig *config) {
     free(executable_path);
 
     if (!success) {
-        log_this("Swagger", "Failed to load UI files", LOG_LEVEL_ALERT, NULL);
+        log_this(SR_SWAGGER, "Failed to load UI files", LOG_LEVEL_ALERT, NULL);
         config->payload_available = false;
         return false;
     }
@@ -108,7 +108,7 @@ bool init_swagger_support(SwaggerConfig *config) {
     swagger_initialized = success;
     
     if (success) {
-        log_this("Swagger", "Files available:", LOG_LEVEL_STATE, NULL);
+        log_this(SR_SWAGGER, "Files available:", LOG_LEVEL_STATE, NULL);
         
         // Log each file's details
         for (size_t i = 0; i < num_swagger_files; i++) {
@@ -121,12 +121,12 @@ bool init_swagger_support(SwaggerConfig *config) {
                 snprintf(size_display, sizeof(size_display), "%.1fM", (double)swagger_files[i].size / (1024.0 * 1024.0));
             }
             
-            log_this("Swagger", "-> %s (%s%s)", LOG_LEVEL_STATE,
+            log_this(SR_SWAGGER, "-> %s (%s%s)", LOG_LEVEL_STATE,
                     swagger_files[i].name, size_display, 
                     swagger_files[i].is_compressed ? ", compressed" : "");
         }
     } else {
-        log_this("Swagger", "Failed to load UI files from payload", LOG_LEVEL_ALERT, NULL);
+        log_this(SR_SWAGGER, "Failed to load UI files from payload", LOG_LEVEL_ALERT, NULL);
     }
 
     return success;
@@ -170,7 +170,7 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
     if (strcmp(url, config->prefix) == 0) {
         char *redirect_url;
         if (asprintf(&redirect_url, "%s/", url) != -1) {
-            log_this("Swagger", "Redirecting %s to %s for proper relative path resolution", 
+            log_this(SR_SWAGGER, "Redirecting %s to %s for proper relative path resolution", 
                     LOG_LEVEL_STATE, url, redirect_url);
                     
             struct MHD_Response *response = MHD_create_response_from_buffer(0, NULL, MHD_RESPMEM_PERSISTENT);
@@ -195,7 +195,7 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
     }
     
     // Log the URL processing for debugging
-    log_this("Swagger", "Request: Original URL: %s, Processed path: %s", 
+    log_this(SR_SWAGGER, "Request: Original URL: %s, Processed path: %s", 
              LOG_LEVEL_STATE, url, url_path);
 
     // Try to find the requested file
@@ -258,7 +258,7 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
         json_error_t error;
         json_t *spec = json_loadb((const char*)file->data, file->size, 0, &error);
         if (!spec) {
-            log_this("Swagger", "Failed to parse swagger.json: %s", LOG_LEVEL_ERROR, error.text);
+            log_this(SR_SWAGGER, "Failed to parse swagger.json: %s", LOG_LEVEL_ERROR, error.text);
             return MHD_NO;
         }
 
@@ -311,7 +311,7 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
 
         // Get app config for API prefix
         if (!app_config || !app_config->api.prefix) {
-            log_this("Swagger", "API configuration not available", LOG_LEVEL_ERROR, NULL);
+            log_this(SR_SWAGGER, "API configuration not available", LOG_LEVEL_ERROR, NULL);
             json_decref(spec);
             return MHD_NO;
         }
@@ -345,14 +345,14 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
         free(full_url);
 
         // Log the server URL for debugging
-        log_this("Swagger", "Updated swagger.json with API prefix: %s", LOG_LEVEL_STATE, app_config->api.prefix);
+        log_this(SR_SWAGGER, "Updated swagger.json with API prefix: %s", LOG_LEVEL_STATE, app_config->api.prefix);
 
         // Convert the modified spec back to JSON
         dynamic_content = json_dumps(spec, JSON_INDENT(2));
         json_decref(spec);
 
         if (!dynamic_content) {
-            log_this("Swagger", "Failed to serialize modified swagger.json", LOG_LEVEL_ERROR, NULL);
+            log_this(SR_SWAGGER, "Failed to serialize modified swagger.json", LOG_LEVEL_ERROR, NULL);
             return MHD_NO;
         }
 
@@ -480,13 +480,13 @@ bool load_swagger_files_from_tar(const uint8_t *tar_data, size_t tar_size) {
     // Create decoder state with custom allocator and configure for high compression
     decoder = BrotliDecoderCreateInstance(NULL, NULL, NULL);
     if (!decoder) {
-        log_this("Swagger", "Failed to create Brotli decoder instance", LOG_LEVEL_ERROR, NULL);
+        log_this(SR_SWAGGER, "Failed to create Brotli decoder instance", LOG_LEVEL_ERROR, NULL);
         return false;
     }
 
     // Enable large window support for high compression
     if (!BrotliDecoderSetParameter(decoder, BROTLI_DECODER_PARAM_LARGE_WINDOW, 1)) {
-        log_this("Swagger", "Failed to set Brotli large window parameter", LOG_LEVEL_ERROR, NULL);
+        log_this(SR_SWAGGER, "Failed to set Brotli large window parameter", LOG_LEVEL_ERROR, NULL);
         BrotliDecoderDestroyInstance(decoder);
         return false;
     }
@@ -495,13 +495,13 @@ bool load_swagger_files_from_tar(const uint8_t *tar_data, size_t tar_size) {
     buffer_size = tar_size * 32;  // Increased buffer size for high compression ratio
     decompressed_data = malloc(buffer_size);
     if (!decompressed_data) {
-        log_this("Swagger", "Failed to allocate decompression buffer", LOG_LEVEL_ERROR, NULL);
+        log_this(SR_SWAGGER, "Failed to allocate decompression buffer", LOG_LEVEL_ERROR, NULL);
         BrotliDecoderDestroyInstance(decoder);
         return false;
     }
 
     // Log buffer allocation
-    log_this("Swagger", "Allocated decompression buffer: %zu bytes", LOG_LEVEL_STATE, buffer_size);
+    log_this(SR_SWAGGER, "Allocated decompression buffer: %zu bytes", LOG_LEVEL_STATE, buffer_size);
     
     // Set up streaming variables
     const uint8_t* next_in = tar_data;
@@ -520,17 +520,17 @@ bool load_swagger_files_from_tar(const uint8_t *tar_data, size_t tar_size) {
     for (size_t i = 0; i < 32 && i < tar_size; i++) {
         sprintf(debug_bytes_end + (i * 3), "%02x ", tar_data[tar_size - 32 + i]);
     }
-    log_this("Swagger", "Decompression input analysis:", LOG_LEVEL_STATE, NULL);
-    log_this("Swagger", "- Input size: %zu bytes", LOG_LEVEL_STATE, tar_size);
-    log_this("Swagger", "- First 32 bytes: %s", LOG_LEVEL_STATE, debug_bytes);
-    log_this("Swagger", "- Last 32 bytes: %s", LOG_LEVEL_STATE, debug_bytes_end);
-    log_this("Swagger", "- Decompression buffer: %zu bytes", LOG_LEVEL_STATE, buffer_size);
+    log_this(SR_SWAGGER, "Decompression input analysis:", LOG_LEVEL_STATE, NULL);
+    log_this(SR_SWAGGER, "- Input size: %zu bytes", LOG_LEVEL_STATE, tar_size);
+    log_this(SR_SWAGGER, "- First 32 bytes: %s", LOG_LEVEL_STATE, debug_bytes);
+    log_this(SR_SWAGGER, "- Last 32 bytes: %s", LOG_LEVEL_STATE, debug_bytes_end);
+    log_this(SR_SWAGGER, "- Decompression buffer: %zu bytes", LOG_LEVEL_STATE, buffer_size);
 
     // Check if this looks like a tar file already
     if (tar_size > 262 && memcmp(tar_data + 257, "ustar", 5) == 0) {
-        log_this("Swagger", "Input appears to be uncompressed tar (ustar magic detected)", 
+        log_this(SR_SWAGGER, "Input appears to be uncompressed tar (ustar magic detected)", 
                  LOG_LEVEL_STATE, NULL);
-        log_this("Swagger", "Skipping Brotli decompression", LOG_LEVEL_STATE, NULL);
+        log_this(SR_SWAGGER, "Skipping Brotli decompression", LOG_LEVEL_STATE, NULL);
         // Copy the tar data directly
         memcpy(decompressed_data, tar_data, tar_size);
         buffer_size = tar_size;
@@ -539,9 +539,9 @@ bool load_swagger_files_from_tar(const uint8_t *tar_data, size_t tar_size) {
     }
 
     // Log Brotli decompression parameters
-    log_this("Swagger", "Starting Brotli decompression with:", LOG_LEVEL_STATE, NULL);
-    log_this("Swagger", "- Large window: enabled", LOG_LEVEL_STATE, NULL);
-    log_this("Swagger", "- Initial buffer: %zu bytes", LOG_LEVEL_STATE, buffer_size);
+    log_this(SR_SWAGGER, "Starting Brotli decompression with:", LOG_LEVEL_STATE, NULL);
+    log_this(SR_SWAGGER, "- Large window: enabled", LOG_LEVEL_STATE, NULL);
+    log_this(SR_SWAGGER, "- Initial buffer: %zu bytes", LOG_LEVEL_STATE, buffer_size);
     
     // Decompress in chunks
     do {
@@ -553,7 +553,7 @@ bool load_swagger_files_from_tar(const uint8_t *tar_data, size_t tar_size) {
             size_t new_size = buffer_size * 2;
             uint8_t* new_buffer = realloc(decompressed_data, new_size);
             if (!new_buffer) {
-                log_this("Swagger", "Failed to expand decompression buffer", LOG_LEVEL_ERROR, NULL);
+                log_this(SR_SWAGGER, "Failed to expand decompression buffer", LOG_LEVEL_ERROR, NULL);
                 goto cleanup;
             }
             
@@ -569,7 +569,7 @@ bool load_swagger_files_from_tar(const uint8_t *tar_data, size_t tar_size) {
     
     if (result != BROTLI_DECODER_RESULT_SUCCESS) {
         const char* error = BrotliDecoderErrorString(BrotliDecoderGetErrorCode(decoder));
-        log_this("Swagger", "Failed to decompress UI files: %s", LOG_LEVEL_ERROR, error);
+        log_this(SR_SWAGGER, "Failed to decompress UI files: %s", LOG_LEVEL_ERROR, error);
         goto cleanup;
     }
     
@@ -586,10 +586,10 @@ bool load_swagger_files_from_tar(const uint8_t *tar_data, size_t tar_size) {
     for (size_t i = 0; i < 32 && i < buffer_size; i++) {
         sprintf(decompressed_bytes_end + (i * 3), "%02x ", decompressed_data[buffer_size - 32 + i]);
     }
-    log_this("Swagger", "Decompression successful: %zu bytes -> %zu bytes",
+    log_this(SR_SWAGGER, "Decompression successful: %zu bytes -> %zu bytes",
              LOG_LEVEL_STATE, tar_size, buffer_size);
-    log_this("Swagger", "Decompressed data first 32 bytes: %s", LOG_LEVEL_STATE, decompressed_bytes);
-    log_this("Swagger", "Decompressed data last 32 bytes: %s", LOG_LEVEL_STATE, decompressed_bytes_end);
+    log_this(SR_SWAGGER, "Decompressed data first 32 bytes: %s", LOG_LEVEL_STATE, decompressed_bytes);
+    log_this(SR_SWAGGER, "Decompressed data last 32 bytes: %s", LOG_LEVEL_STATE, decompressed_bytes_end);
     
 cleanup:
     BrotliDecoderDestroyInstance(decoder);
@@ -600,7 +600,7 @@ cleanup:
     
     // Verify we have a valid tar file
     if (buffer_size <= 262 || memcmp(decompressed_data + 257, "ustar", 5) != 0) {
-        log_this("Swagger", "Invalid tar format (missing ustar magic)", LOG_LEVEL_ERROR, NULL);
+        log_this(SR_SWAGGER, "Invalid tar format (missing ustar magic)", LOG_LEVEL_ERROR, NULL);
         free(decompressed_data);
         return false;
     }
@@ -707,7 +707,7 @@ cleanup:
 char* get_server_url(struct MHD_Connection *connection,
                           const SwaggerConfig *config __attribute__((unused))) {
     if (!app_config) {
-        log_this("Swagger", "Failed to get app config", LOG_LEVEL_ERROR, NULL);
+        log_this(SR_SWAGGER, "Failed to get app config", LOG_LEVEL_ERROR, NULL);
         return NULL;
     }
 
@@ -753,7 +753,7 @@ char* create_dynamic_initializer(const char *base_content __attribute__((unused)
                                       const SwaggerConfig *config) {
     // Get the API prefix from the global config
     if (!app_config || !app_config->api.prefix) {
-        log_this("Swagger", "API configuration not available", LOG_LEVEL_ERROR, NULL);
+        log_this(SR_SWAGGER, "API configuration not available", LOG_LEVEL_ERROR, NULL);
         return NULL;
     }
 

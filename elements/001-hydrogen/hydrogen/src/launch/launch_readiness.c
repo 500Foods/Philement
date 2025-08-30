@@ -49,7 +49,7 @@ void log_readiness_messages(LaunchReadiness* readiness) {
         }
 
         // Print the message directly (formatting is already in the message)
-        log_this("Launch", "%s", level, readiness->messages[i]);
+        log_this(SR_LAUNCH, "%s", level, readiness->messages[i]);
     }
 }
 
@@ -101,28 +101,28 @@ ReadinessResults handle_readiness_checks(void) {
     size_t index = 0;
     
     // Begin LAUNCH READINESS logging section
-    log_this("Launch", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    log_this("Launch", "LAUNCH READINESS", LOG_LEVEL_STATE);
-    
-    // Check each subsystem in standard order 
-    process_subsystem_readiness(&results, &index, "Registry", check_registry_launch_readiness());
-    process_subsystem_readiness(&results, &index, "Payload", check_payload_launch_readiness());
-    process_subsystem_readiness(&results, &index, "Threads", check_threads_launch_readiness());
-    process_subsystem_readiness(&results, &index, "Network", check_network_launch_readiness());
-    process_subsystem_readiness(&results, &index, "Database", check_database_launch_readiness());
-    process_subsystem_readiness(&results, &index, "Logging", check_logging_launch_readiness());
-    process_subsystem_readiness(&results, &index, "WebServer", check_webserver_launch_readiness());
-    process_subsystem_readiness(&results, &index, "API", check_api_launch_readiness());
-    process_subsystem_readiness(&results, &index, "Swagger", check_swagger_launch_readiness());
-    process_subsystem_readiness(&results, &index, "WebSocket", check_websocket_launch_readiness());
-    process_subsystem_readiness(&results, &index, "Terminal", check_terminal_launch_readiness());
-    process_subsystem_readiness(&results, &index, "mDNS Server", check_mdns_server_launch_readiness());
-    process_subsystem_readiness(&results, &index, "mDNS Client", check_mdns_client_launch_readiness());
-    process_subsystem_readiness(&results, &index, "Mail Relay", check_mail_relay_launch_readiness());
-    process_subsystem_readiness(&results, &index, "Print", check_print_launch_readiness());
-    process_subsystem_readiness(&results, &index, "Resources", check_resources_launch_readiness());
-    process_subsystem_readiness(&results, &index, "OIDC", check_oidc_launch_readiness());
-    process_subsystem_readiness(&results, &index, "Notify", check_notify_launch_readiness());
+    log_group_begin();
+        log_this(SR_LAUNCH, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        log_this(SR_LAUNCH, "LAUNCH READINESS", LOG_LEVEL_STATE);
+        process_subsystem_readiness(&results, &index, "Registry", check_registry_launch_readiness());
+        process_subsystem_readiness(&results, &index, "Payload", check_payload_launch_readiness());
+        process_subsystem_readiness(&results, &index, "Threads", check_threads_launch_readiness());
+        process_subsystem_readiness(&results, &index, "Network", check_network_launch_readiness());
+        process_subsystem_readiness(&results, &index, "Database", check_database_launch_readiness());
+        process_subsystem_readiness(&results, &index, "Logging", check_logging_launch_readiness());
+        process_subsystem_readiness(&results, &index, "WebServer", check_webserver_launch_readiness());
+        process_subsystem_readiness(&results, &index, "API", check_api_launch_readiness());
+        process_subsystem_readiness(&results, &index, "Swagger", check_swagger_launch_readiness());
+        process_subsystem_readiness(&results, &index, "WebSocket", check_websocket_launch_readiness());
+        process_subsystem_readiness(&results, &index, "Terminal", check_terminal_launch_readiness());
+        process_subsystem_readiness(&results, &index, "mDNS Server", check_mdns_server_launch_readiness());
+        process_subsystem_readiness(&results, &index, "mDNS Client", check_mdns_client_launch_readiness());
+        process_subsystem_readiness(&results, &index, "Mail Relay", check_mail_relay_launch_readiness());
+        process_subsystem_readiness(&results, &index, "Print", check_print_launch_readiness());
+        process_subsystem_readiness(&results, &index, "Resources", check_resources_launch_readiness());
+        process_subsystem_readiness(&results, &index, "OIDC", check_oidc_launch_readiness());
+        process_subsystem_readiness(&results, &index, "Notify", check_notify_launch_readiness());
+    log_group_end();
     
     return results;
 }
