@@ -22,12 +22,12 @@
  * @return Client registry context pointer or NULL on failure
  */
 OIDCClientContext* init_oidc_client_registry(void) {
-    log_this("OIDC-Clients", "Initializing client registry", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "Initializing client registry", LOG_LEVEL_STATE);
     
     // Allocate context
     OIDCClientContext *context = (OIDCClientContext *)malloc(sizeof(OIDCClientContext));
     if (!context) {
-        log_this("OIDC-Clients", "Failed to allocate client registry context", LOG_LEVEL_ERROR);
+        log_this(SR_OIDC, "Failed to allocate client registry context", LOG_LEVEL_ERROR);
         return NULL;
     }
     
@@ -36,7 +36,7 @@ OIDCClientContext* init_oidc_client_registry(void) {
     context->client_count = 0;
     context->client_db = NULL; // Would typically point to actual client storage
     
-    log_this("OIDC-Clients", "Client registry initialized successfully", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "Client registry initialized successfully", LOG_LEVEL_STATE);
     return context;
 }
 
@@ -52,7 +52,7 @@ void cleanup_oidc_client_registry(OIDCClientContext *client_context) {
         return;
     }
     
-    log_this("OIDC-Clients", "Cleaning up client registry", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "Cleaning up client registry", LOG_LEVEL_STATE);
     
     // No need to cast, as the parameter is now directly OIDCClientContext*
     
@@ -62,7 +62,7 @@ void cleanup_oidc_client_registry(OIDCClientContext *client_context) {
     // Free the context itself
     free(client_context);
     
-    log_this("OIDC-Clients", "Client registry cleanup complete", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "Client registry cleanup complete", LOG_LEVEL_STATE);
 }
 
 /*
@@ -83,7 +83,7 @@ bool oidc_validate_client(OIDCClientContext *client_context, const char *client_
         return false;
     }
     
-    log_this("OIDC-Clients", "Validating client %s", LOG_LEVEL_DEBUG, client_id);
+    log_this(SR_OIDC, "Validating client %s", LOG_LEVEL_DEBUG, client_id);
     
     // In a real implementation, this would check the client database
     // For now, we'll assume the client is valid for compilation purposes
@@ -106,7 +106,7 @@ bool oidc_authenticate_client(OIDCClientContext *client_context, const char *cli
         return false;
     }
     
-    log_this("OIDC-Clients", "Authenticating client %s", LOG_LEVEL_DEBUG, client_id);
+    log_this(SR_OIDC, "Authenticating client %s", LOG_LEVEL_DEBUG, client_id);
     
     // In a real implementation, this would verify the client's credentials
     // For now, we'll assume the authentication succeeds for compilation purposes
@@ -133,7 +133,7 @@ bool oidc_register_client(OIDCClientContext *client_context, const char *client_
         return false;
     }
     
-    log_this("OIDC-Clients", "Registering new client: %s", LOG_LEVEL_STATE, client_name);
+    log_this(SR_OIDC, "Registering new client: %s", LOG_LEVEL_STATE, client_name);
     
     // No need to cast, as the parameter is now directly OIDCClientContext*
     

@@ -24,7 +24,7 @@ enum MHD_Result handle_oidc_userinfo_endpoint(struct MHD_Connection *connection,
     /* Mark unused parameters */
     (void)method;
     
-    log_this("OIDC UserInfo", "Handling userinfo endpoint request", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "Handling userinfo endpoint request", LOG_LEVEL_STATE);
     
     // Extract access token from Authorization header
     const char *auth_header = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "Authorization");

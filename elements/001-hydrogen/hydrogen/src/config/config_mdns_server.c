@@ -91,21 +91,21 @@ bool load_mdns_server_config(json_t* root, AppConfig* config) {
     mdns_config->num_services = 0;
 
     // Process main section
-    success = PROCESS_SECTION(root, "mDNSServer");
+    success = PROCESS_SECTION(root, SR_MDNS_SERVER);
     
     // Process basic fields
-    success = success && PROCESS_BOOL(root, mdns_config, enable_ipv4, "mDNSServer.EnableIPv4", "MDNSServer");
-    success = success && PROCESS_BOOL(root, mdns_config, enable_ipv6, "mDNSServer.EnableIPv6", "MDNSServer");
-    success = success && PROCESS_STRING(root, mdns_config, device_id, "mDNSServer.DeviceId", "MDNSServer");
-    success = success && PROCESS_STRING(root, mdns_config, friendly_name, "mDNSServer.FriendlyName", "MDNSServer");
-    success = success && PROCESS_STRING(root, mdns_config, model, "mDNSServer.Model", "MDNSServer");
-    success = success && PROCESS_STRING(root, mdns_config, manufacturer, "mDNSServer.Manufacturer", "MDNSServer");
-    success = success && PROCESS_STRING(root, mdns_config, version, "mDNSServer.Version", "MDNSServer");
-    success = success && PROCESS_INT(root, mdns_config, retry_count, "mDNSServer.Retries", "MDNSServer");
+    success = success && PROCESS_BOOL(root, mdns_config, enable_ipv4, "mDNSServer.EnableIPv4", SR_MDNS_SERVER);
+    success = success && PROCESS_BOOL(root, mdns_config, enable_ipv6, "mDNSServer.EnableIPv6", SR_MDNS_SERVER);
+    success = success && PROCESS_STRING(root, mdns_config, device_id, "mDNSServer.DeviceId", SR_MDNS_SERVER);
+    success = success && PROCESS_STRING(root, mdns_config, friendly_name, "mDNSServer.FriendlyName", SR_MDNS_SERVER);
+    success = success && PROCESS_STRING(root, mdns_config, model, "mDNSServer.Model", SR_MDNS_SERVER);
+    success = success && PROCESS_STRING(root, mdns_config, manufacturer, "mDNSServer.Manufacturer", SR_MDNS_SERVER);
+    success = success && PROCESS_STRING(root, mdns_config, version, "mDNSServer.Version", SR_MDNS_SERVER);
+    success = success && PROCESS_INT(root, mdns_config, retry_count, "mDNSServer.Retries", SR_MDNS_SERVER);
 
     // Process services array if present
     if (success) {
-        json_t* mdns_section = json_object_get(root, "mDNSServer");
+        json_t* mdns_section = json_object_get(root, SR_MDNS_SERVER);
         json_t* services = mdns_section ? json_object_get(mdns_section, "Services") : NULL;
         if (json_is_array(services)) {
             mdns_config->num_services = json_array_size(services);

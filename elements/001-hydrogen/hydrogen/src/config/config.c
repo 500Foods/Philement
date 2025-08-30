@@ -216,22 +216,22 @@ AppConfig* load_config(const char* cmdline_path) {
         }
 
     // Load configurations in A-P order
-    LOAD_SERVER_CONFIG("A", "Server",   load_server_config, config_path);
-    LOAD_CONFIG("B", "Network",         load_network_config);
-    LOAD_CONFIG("C", "Database",        load_database_config);
-    LOAD_CONFIG("D", "Logging",         load_logging_config);
-    LOAD_CONFIG("E", "WebServer",       load_webserver_config);
-    LOAD_CONFIG("F", "API",             load_api_config);
-    LOAD_CONFIG("G", "Swagger",         load_swagger_config);
-    LOAD_CONFIG("H", "WebSocket",       load_websocket_config);
-    LOAD_CONFIG("I", "Terminal",        load_terminal_config);
-    LOAD_CONFIG("J", "mDNS Server",     load_mdns_server_config);
-    LOAD_CONFIG("K", "mDNS Client",     load_mdns_client_config);
-    LOAD_CONFIG("L", "Mail Relay",      load_mailrelay_config);
-    LOAD_CONFIG("M", "Print",           load_print_config);
-    LOAD_CONFIG("N", "Resources",       load_resources_config);
-    LOAD_CONFIG("O", "OIDC",            load_oidc_config);
-    LOAD_CONFIG("P", "Notify",          load_notify_config);
+    LOAD_SERVER_CONFIG("A", SR_SERVER,   load_server_config, config_path);
+    LOAD_CONFIG("B", SR_NETWORK,         load_network_config);
+    LOAD_CONFIG("C", SR_DATABASE,        load_database_config);
+    LOAD_CONFIG("D", SR_LOGGING,         load_logging_config);
+    LOAD_CONFIG("E", SR_WEBSERVER,       load_webserver_config);
+    LOAD_CONFIG("F", SR_API,             load_api_config);
+    LOAD_CONFIG("G", SR_SWAGGER,         load_swagger_config);
+    LOAD_CONFIG("H", SR_WEBSOCKET,       load_websocket_config);
+    LOAD_CONFIG("I", SR_TERMINAL,        load_terminal_config);
+    LOAD_CONFIG("J", SR_MDNS_SERVER,     load_mdns_server_config);
+    LOAD_CONFIG("K", SR_MDNS_CLIENT,     load_mdns_client_config);
+    LOAD_CONFIG("L", SR_MAIL_RELAY,      load_mailrelay_config);
+    LOAD_CONFIG("M", SR_PRINT,           load_print_config);
+    LOAD_CONFIG("N", SR_RESOURCES,       load_resources_config);
+    LOAD_CONFIG("O", SR_OIDC,            load_oidc_config);
+    LOAD_CONFIG("P", SR_NOTIFY,          load_notify_config);
 
     #undef LOAD_SERVER_CONFIG
     #undef LOAD_CONFIG
@@ -345,22 +345,22 @@ void dumpAppConfig(const AppConfig* config, const char* section) {
             if (section) log_this(SR_CONFIG_CURRENT, "――― Section dump not yet implemented", LOG_LEVEL_STATE); \
         }
 
-    DUMP_CONFIG_SECTION("A", "Server",      server,      dump_server_config);
-    DUMP_CONFIG_SECTION("B", "Network",     network,     dump_network_config);
-    DUMP_CONFIG_SECTION("C", "Databases",   databases,   dump_database_config);
-    DUMP_CONFIG_SECTION("D", "Logging",     logging,     dump_logging_config);
-    DUMP_CONFIG_SECTION("E", "WebServer",   webserver,   dump_webserver_config);
-    DUMP_CONFIG_SECTION("F", "API",         api,         dump_api_config);
-    DUMP_CONFIG_SECTION("G", "Swagger",     swagger,     dump_swagger_config);
-    DUMP_CONFIG_SECTION("H", "WebSocket",   websocket,   dump_websocket_config);
-    DUMP_CONFIG_SECTION("I", "Terminal",    terminal,    dump_terminal_config);
-    DUMP_CONFIG_SECTION("J", "mDNS Server", mdns_server, dump_mdns_server_config);
-    DUMP_CONFIG_SECTION("K", "mDNS Client", mdns_client, dump_mdns_client_config);
-    DUMP_CONFIG_SECTION("L", "Mail Relay",  mail_relay,  dump_mailrelay_config);
-    DUMP_CONFIG_SECTION("M", "Print",       print,       dump_print_config);
-    DUMP_CONFIG_SECTION("N", "Resources",   resources,   dump_resources_config);
-    DUMP_CONFIG_SECTION("O", "OIDC",        oidc,        dump_oidc_config);
-    DUMP_CONFIG_SECTION("P", "Notify",      notify,      dump_notify_config);
+    DUMP_CONFIG_SECTION("A", SR_SERVER,       server,      dump_server_config);
+    DUMP_CONFIG_SECTION("B", SR_NETWORK,     network,     dump_network_config);
+    DUMP_CONFIG_SECTION("C", SR_DATABASE,    databases,   dump_database_config);
+    DUMP_CONFIG_SECTION("D", SR_LOGGING,     logging,     dump_logging_config);
+    DUMP_CONFIG_SECTION("E", SR_WEBSERVER,   webserver,   dump_webserver_config);
+    DUMP_CONFIG_SECTION("F", SR_API,         api,         dump_api_config);
+    DUMP_CONFIG_SECTION("G", SR_SWAGGER,     swagger,     dump_swagger_config);
+    DUMP_CONFIG_SECTION("H", SR_WEBSOCKET,   websocket,   dump_websocket_config);
+    DUMP_CONFIG_SECTION("I", SR_TERMINAL,    terminal,    dump_terminal_config);
+    DUMP_CONFIG_SECTION("J", SR_MDNS_SERVER, mdns_server, dump_mdns_server_config);
+    DUMP_CONFIG_SECTION("K", SR_MDNS_CLIENT, mdns_client, dump_mdns_client_config);
+    DUMP_CONFIG_SECTION("L", SR_MAIL_RELAY,  mail_relay,  dump_mailrelay_config);
+    DUMP_CONFIG_SECTION("M", SR_PRINT,       print,       dump_print_config);
+    DUMP_CONFIG_SECTION("N", SR_RESOURCES,   resources,   dump_resources_config);
+    DUMP_CONFIG_SECTION("O", SR_OIDC,        oidc,        dump_oidc_config);
+    DUMP_CONFIG_SECTION("P", SR_NOTIFY,      notify,      dump_notify_config);
 
     #undef DUMP_CONFIG_SECTION
     #undef DUMP_NOT_IMPLEMENTED

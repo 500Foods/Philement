@@ -20,71 +20,71 @@ static int network_subsystem_id = -1;
 // Register the network subsystem with the registry (for readiness)
 static void register_network(void) {
     if (network_subsystem_id < 0) {
-        network_subsystem_id = register_subsystem("Network", NULL, NULL, NULL, NULL, NULL);
+        network_subsystem_id = register_subsystem(SR_NETWORK, NULL, NULL, NULL, NULL, NULL);
     }
 }
 
 // Network subsystem launch function
 int launch_network_subsystem(void) {
-    log_this("Network", LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this("Network", "LAUNCH: NETWORK", LOG_LEVEL_STATE);
+    log_this(SR_NETWORK, LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this(SR_NETWORK, "LAUNCH: NETWORK", LOG_LEVEL_STATE);
     
     // Register with launch handlers if not already registered
     if (network_subsystem_id < 0) {
-        network_subsystem_id = register_subsystem_from_launch("Network", NULL, NULL, NULL,
+        network_subsystem_id = register_subsystem_from_launch(SR_NETWORK, NULL, NULL, NULL,
                                                             (int (*)(void))launch_network_subsystem,
                                                             (void (*)(void))shutdown_network_subsystem);
         if (network_subsystem_id < 0) {
-            log_this("Network", "Failed to register network subsystem", LOG_LEVEL_ERROR);
+            log_this(SR_NETWORK, "Failed to register network subsystem", LOG_LEVEL_ERROR);
             return 0;
         }
     }
     
     // Step 1: Verify system state
     if (server_stopping) {
-        log_this("Network", "Cannot initialize network during shutdown", LOG_LEVEL_STATE);
+        log_this(SR_NETWORK, "Cannot initialize network during shutdown", LOG_LEVEL_STATE);
         return 0;
     }
     
     if (!server_starting && !server_running) {
-        log_this("Network", "Cannot initialize network outside startup/running phase", LOG_LEVEL_STATE);
+        log_this(SR_NETWORK, "Cannot initialize network outside startup/running phase", LOG_LEVEL_STATE);
         return 0;
     }
     
     // Step 2: Initialize network subsystem
-    log_this("Network", "  Step 1: Initializing network subsystem", LOG_LEVEL_STATE);
+    log_this(SR_NETWORK, "  Step 1: Initializing network subsystem", LOG_LEVEL_STATE);
     
     // Step 3: Enumerate network interfaces
-    log_this("Network", "  Step 2: Enumerating network interfaces", LOG_LEVEL_STATE);
+    log_this(SR_NETWORK, "  Step 2: Enumerating network interfaces", LOG_LEVEL_STATE);
     network_info_t *info = get_network_info();
     if (!info) {
-        log_this("Network", "Failed to get network info", LOG_LEVEL_ERROR);
+        log_this(SR_NETWORK, "Failed to get network info", LOG_LEVEL_ERROR);
         return 0;
     }
     
     // Step 4: Test network interfaces
-    log_this("Network", "  Step 3: Testing network interfaces", LOG_LEVEL_STATE);
+    log_this(SR_NETWORK, "  Step 3: Testing network interfaces", LOG_LEVEL_STATE);
     bool ping_success = test_network_interfaces(info);
     
     free_network_info(info);
     
     if (!ping_success) {
-        log_this("Network", "No network interfaces responded to ping", LOG_LEVEL_ERROR);
-        log_this("Network", "LAUNCH: NETWORK - Failed to launch", LOG_LEVEL_STATE);
+        log_this(SR_NETWORK, "No network interfaces responded to ping", LOG_LEVEL_ERROR);
+        log_this(SR_NETWORK, "LAUNCH: NETWORK - Failed to launch", LOG_LEVEL_STATE);
         return 0;
     }
     
     // Step 5: Update registry and verify state
-    log_this("Network", "  Step 4: Updating subsystem registry", LOG_LEVEL_STATE);
-    update_subsystem_on_startup("Network", true);
+    log_this(SR_NETWORK, "  Step 4: Updating subsystem registry", LOG_LEVEL_STATE);
+    update_subsystem_on_startup(SR_NETWORK, true);
     
     SubsystemState final_state = get_subsystem_state(network_subsystem_id);
   
     if (final_state == SUBSYSTEM_RUNNING) {
-        log_this("Network", "LAUNCH: NETWORK - Successfully launched and running", LOG_LEVEL_STATE);
+        log_this(SR_NETWORK, "LAUNCH: NETWORK - Successfully launched and running", LOG_LEVEL_STATE);
         return 1;
     } else {
-        log_this("Network", "LAUNCH: NETWORK - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
+        log_this(SR_NETWORK, "LAUNCH: NETWORK - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
                 subsystem_state_to_string(final_state));
         return 0;
     }
@@ -92,7 +92,7 @@ int launch_network_subsystem(void) {
 
 // Network subsystem shutdown function
 void shutdown_network_subsystem(void) {
-    log_this("Network", "Shutting down network subsystem", LOG_LEVEL_STATE);
+    log_this(SR_NETWORK, "Shutting down network subsystem", LOG_LEVEL_STATE);
     // No specific shutdown actions needed for network subsystem
 }
 
@@ -128,17 +128,17 @@ LaunchReadiness check_network_launch_readiness(void) {
     bool ready = true;
 
     // First message is subsystem name
-    add_launch_message(&messages, &count, &capacity, strdup("Network"));
+    add_launch_message(&messages, &count, &capacity, strdup(SR_NETWORK));
 
     // Register with registry if not already registered
     register_network();
     add_launch_message(&messages, &count, &capacity, strdup("  Go:      Network subsystem registered"));
 
     // Register Thread dependency - we only need to verify it's ready for launch
-    if (!add_dependency_from_launch(network_subsystem_id, "Threads")) {
+    if (!add_dependency_from_launch(network_subsystem_id, SR_THREADS)) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Failed to register Thread dependency"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Network", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_NETWORK, .ready = false, .messages = messages };
     }
     add_launch_message(&messages, &count, &capacity, strdup("  Go:      Thread dependency registered"));
 
@@ -147,21 +147,21 @@ LaunchReadiness check_network_launch_readiness(void) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   System shutdown in progress"));
         add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (system shutdown)"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Network", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_NETWORK, .ready = false, .messages = messages };
     }
 
     if (!server_starting && !server_running) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   System not in startup or running state"));
         add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (invalid system state)"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Network", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_NETWORK, .ready = false, .messages = messages };
     }
 
     if (!app_config) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Configuration not loaded"));
         add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (no configuration)"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Network", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_NETWORK, .ready = false, .messages = messages };
     }
 
     // Get network limits for validation
@@ -178,7 +178,7 @@ LaunchReadiness check_network_launch_readiness(void) {
         }
         add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (invalid max_interfaces)"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Network", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_NETWORK, .ready = false, .messages = messages };
     }
 
     if (app_config->network.max_ips_per_interface < limits->min_ips_per_interface ||
@@ -191,7 +191,7 @@ LaunchReadiness check_network_launch_readiness(void) {
         }
         add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (invalid max_ips_per_interface)"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Network", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_NETWORK, .ready = false, .messages = messages };
     }
 
     // Validate name and address length limits
@@ -205,7 +205,7 @@ LaunchReadiness check_network_launch_readiness(void) {
         }
         add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (invalid interface name length)"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Network", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_NETWORK, .ready = false, .messages = messages };
     }
 
     if (app_config->network.max_ip_address_length < limits->min_ip_address_length ||
@@ -218,7 +218,7 @@ LaunchReadiness check_network_launch_readiness(void) {
         }
         add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (invalid IP address length)"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Network", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_NETWORK, .ready = false, .messages = messages };
     }
 
     // Validate port range
@@ -235,7 +235,7 @@ LaunchReadiness check_network_launch_readiness(void) {
         }
         add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (invalid port range)"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Network", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_NETWORK, .ready = false, .messages = messages };
     }
 
     // Validate reserved ports array
@@ -243,7 +243,7 @@ LaunchReadiness check_network_launch_readiness(void) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Reserved ports array is NULL but count > 0"));
         add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (reserved ports array issue)"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Network", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_NETWORK, .ready = false, .messages = messages };
     }
 
     add_launch_message(&messages, &count, &capacity, strdup("  Go:      Network configuration validated"));
@@ -253,7 +253,7 @@ LaunchReadiness check_network_launch_readiness(void) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Failed to get network information"));
         add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (no network information)"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Network", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_NETWORK, .ready = false, .messages = messages };
     }
 
     if (network_info->count == 0) {
@@ -261,7 +261,7 @@ LaunchReadiness check_network_launch_readiness(void) {
         add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (no interfaces)"));
         free_network_info(network_info);
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Network", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_NETWORK, .ready = false, .messages = messages };
     }
 
     char* count_msg = malloc(256);
@@ -357,7 +357,7 @@ LaunchReadiness check_network_launch_readiness(void) {
         }
         // Mark as ready for launch - this enables dependent subsystems to detect network availability
         update_subsystem_state(network_subsystem_id, SUBSYSTEM_READY);
-        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Network subsystem marked as ready"));
+//        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Network subsystem marked as ready"));
         ready = true;
     } else {
         add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Network Subsystem (no interfaces ready)"));
@@ -368,7 +368,7 @@ LaunchReadiness check_network_launch_readiness(void) {
     finalize_launch_messages(&messages, &count, &capacity);
 
     return (LaunchReadiness){
-        .subsystem = "Network",
+        .subsystem = SR_NETWORK,
         .ready = ready,
         .messages = messages
     };

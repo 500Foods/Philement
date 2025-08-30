@@ -243,19 +243,19 @@ void free_threads_resources(void) {
     final_shutdown_mode = 1;
     
     // Clean up logging threads
-    init_service_threads(&logging_threads, "Logging");
+    init_service_threads(&logging_threads, SR_LOGGING);
     
     // Clean up web threads
-    init_service_threads(&webserver_threads, "WebServer");
+    init_service_threads(&webserver_threads, SR_WEBSERVER);
     
     // Clean up websocket threads
-    init_service_threads(&websocket_threads, "WebSocket");
+    init_service_threads(&websocket_threads, SR_WEBSOCKET);
     
     // Clean up mdns server threads
-    init_service_threads(&mdns_server_threads, "mDNS Server");
+    init_service_threads(&mdns_server_threads, SR_MDNS_SERVER);
     
     // Clean up print threads
-    init_service_threads(&print_threads, "Print");
+    init_service_threads(&print_threads, SR_PRINT);
     
     pthread_mutex_unlock(&thread_mutex);
 }

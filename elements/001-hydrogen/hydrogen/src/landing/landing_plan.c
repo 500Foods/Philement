@@ -76,11 +76,26 @@ bool handle_landing_plan(const ReadinessResults* results) {
         return false;
     }
     
-    // Define subsystem order (matching landing_readiness.c)
+    // Define subsystem order (reversing landing_readiness.c)
     const char* expected_order[] = {
-        "Notify", "OIDC", "Resources", "Print", "Mail Relay", "mDNS Client", "mDNS Server", "Terminal",
-        "WebSocket", "Swagger", "API", "WebServer", "Database", "Logging",
-        "Network", "Payload", "Threads", "Registry"
+        SR_NOTIFY,
+        SR_OIDC,
+        SR_RESOURCES,
+        SR_PRINT,
+        SR_MAIL_RELAY,
+        SR_MDNS_CLIENT,
+        SR_MDNS_SERVER,
+        SR_TERMINAL,
+        SR_WEBSOCKET,
+        SR_SWAGGER,
+        SR_API,
+        SR_WEBSERVER,
+        SR_DATABASE,
+        SR_LOGGING,
+        SR_NETWORK,
+        SR_PAYLOAD,
+        SR_THREADS,
+        SR_REGISTRY
     };
     
     // Process subsystems in defined order
