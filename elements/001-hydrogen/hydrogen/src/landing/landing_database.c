@@ -17,7 +17,7 @@
 // Check if the database subsystem is ready to land
 LaunchReadiness check_database_landing_readiness(void) {
     LaunchReadiness readiness = {0};
-    readiness.subsystem = "Database";
+    readiness.subsystem = SR_DATABASE;
     
     // Allocate space for messages (including NULL terminator)
     readiness.messages = malloc(4 * sizeof(char*));
@@ -27,10 +27,10 @@ LaunchReadiness check_database_landing_readiness(void) {
     }
     
     // Add initial subsystem identifier
-    readiness.messages[0] = strdup("Database");
+    readiness.messages[0] = strdup(SR_DATABASE);
     
     // Check if database is actually running
-    if (!is_subsystem_running_by_name("Database")) {
+    if (!is_subsystem_running_by_name(SR_DATABASE)) {
         readiness.ready = false;
         readiness.messages[1] = strdup("  No-Go:   Database not running");
         readiness.messages[2] = strdup("  Decide:  No-Go For Landing of Database");
@@ -49,17 +49,17 @@ LaunchReadiness check_database_landing_readiness(void) {
 
 // Land the database subsystem
 int land_database_subsystem(void) {
-    log_this("Database", LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this("Database", "LANDING: DATABASE", LOG_LEVEL_STATE);
+    log_this(SR_DATABASE, LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this(SR_DATABASE, "LANDING: DATABASE", LOG_LEVEL_STATE);
 
     bool success = true;
     
     // Since this is just a configuration handler, cleanup is minimal
-    log_this("Database", "Cleaning up database configuration", LOG_LEVEL_STATE);
+    log_this(SR_DATABASE, "Cleaning up database configuration", LOG_LEVEL_STATE);
     
     // Additional cleanup will be added as needed
     
-    log_this("Database", "Database shutdown complete", LOG_LEVEL_STATE);
+    log_this(SR_DATABASE, "Database shutdown complete", LOG_LEVEL_STATE);
     
     return success ? 1 : 0;  // Return 1 for success, 0 for failure
 }

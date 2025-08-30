@@ -121,7 +121,7 @@ int register_subsystem(const char* name, ServiceThreads* threads,
                      pthread_t* main_thread, volatile sig_atomic_t* shutdown_flag,
                      int (*init_function)(void), void (*shutdown_function)(void)) {
     if (!name) {
-        log_this("Registry", "Cannot register subsystem with NULL name", LOG_LEVEL_ERROR);
+        log_this(SR_REGISTRY, "Cannot register subsystem with NULL name", LOG_LEVEL_ERROR);
         return -1;
     }
     
@@ -135,7 +135,7 @@ int register_subsystem(const char* name, ServiceThreads* threads,
                            ((size_t)subsystem_registry.capacity * 2);
         
         if (!grow_registry(new_capacity)) {
-            log_this("Registry", "Cannot register subsystem '%s': memory allocation failed", 
+            log_this(SR_REGISTRY, "Cannot register subsystem '%s': memory allocation failed", 
                     LOG_LEVEL_ERROR, name);
             pthread_mutex_unlock(&subsystem_registry.mutex);
             return -1;
@@ -146,7 +146,7 @@ int register_subsystem(const char* name, ServiceThreads* threads,
     for (int i = 0; i < subsystem_registry.count; i++) {
         if (subsystem_registry.subsystems[i].name && 
             strcmp(subsystem_registry.subsystems[i].name, name) == 0) {
-            log_this("Registry", "Subsystem '%s' already registered", LOG_LEVEL_ERROR, name);
+            log_this(SR_REGISTRY, "Subsystem '%s' already registered", LOG_LEVEL_ERROR, name);
             pthread_mutex_unlock(&subsystem_registry.mutex);
             return -1;
         }
@@ -156,7 +156,7 @@ int register_subsystem(const char* name, ServiceThreads* threads,
     int id = subsystem_registry.count;
     subsystem_registry.subsystems[id].name = strdup(name);  // Create a copy of the name
     if (!subsystem_registry.subsystems[id].name) {
-        log_this("Registry", "Cannot register subsystem '%s': failed to allocate name", 
+        log_this(SR_REGISTRY, "Cannot register subsystem '%s': failed to allocate name", 
                 LOG_LEVEL_ERROR, name);
         pthread_mutex_unlock(&subsystem_registry.mutex);
         return -1;
@@ -202,7 +202,7 @@ bool start_subsystem(int subsystem_id) {
     pthread_mutex_lock(&subsystem_registry.mutex);
     
     if (subsystem_id < 0 || subsystem_id >= subsystem_registry.count) {
-        log_this("Registry", "Invalid subsystem ID: %d", LOG_LEVEL_ERROR, subsystem_id);
+        log_this(SR_REGISTRY, "Invalid subsystem ID: %d", LOG_LEVEL_ERROR, subsystem_id);
         pthread_mutex_unlock(&subsystem_registry.mutex);
         return false;
     }
@@ -211,7 +211,7 @@ bool start_subsystem(int subsystem_id) {
     
     // Check if already running or starting
     if (subsystem->state == SUBSYSTEM_RUNNING || subsystem->state == SUBSYSTEM_STARTING) {
-        log_this("Registry", "Subsystem '%s' is already %s", 
+        log_this(SR_REGISTRY, "Subsystem '%s' is already %s", 
                 LOG_LEVEL_DEBUG, subsystem->name, state_strings[subsystem->state]);
         pthread_mutex_unlock(&subsystem_registry.mutex);
         return true;
@@ -248,7 +248,7 @@ bool start_subsystem(int subsystem_id) {
     }
     
     if (!dependencies_met) {
-        log_this("Registry", "Cannot start subsystem '%s': missing dependencies: %s", 
+        log_this(SR_REGISTRY, "Cannot start subsystem '%s': missing dependencies: %s", 
                 LOG_LEVEL_ERROR, subsystem->name, missing_deps);
         pthread_mutex_unlock(&subsystem_registry.mutex);
         return false;
@@ -275,7 +275,7 @@ bool start_subsystem(int subsystem_id) {
         update_subsystem_state(subsystem_id, SUBSYSTEM_RUNNING);
     } else {
         update_subsystem_state(subsystem_id, SUBSYSTEM_ERROR);
-        log_this("Registry", "Failed to start subsystem '%s'", LOG_LEVEL_ERROR, subsystem->name);
+        log_this(SR_REGISTRY, "Failed to start subsystem '%s'", LOG_LEVEL_ERROR, subsystem->name);
     }
     
     return success;
@@ -288,7 +288,7 @@ bool stop_subsystem(int subsystem_id) {
     pthread_mutex_lock(&subsystem_registry.mutex);
     
     if (subsystem_id < 0 || subsystem_id >= subsystem_registry.count) {
-        log_this("Registry", "Invalid subsystem ID: %d", LOG_LEVEL_ERROR, subsystem_id);
+        log_this(SR_REGISTRY, "Invalid subsystem ID: %d", LOG_LEVEL_ERROR, subsystem_id);
         pthread_mutex_unlock(&subsystem_registry.mutex);
         return false;
     }
@@ -297,7 +297,7 @@ bool stop_subsystem(int subsystem_id) {
     
     // Check if already stopped
     if (subsystem->state == SUBSYSTEM_INACTIVE) {
-        log_this("Registry", "Subsystem '%s' is already inactive", LOG_LEVEL_DEBUG, subsystem->name);
+        log_this(SR_REGISTRY, "Subsystem '%s' is already inactive", LOG_LEVEL_DEBUG, subsystem->name);
         pthread_mutex_unlock(&subsystem_registry.mutex);
         return true;
     }
@@ -329,7 +329,7 @@ bool stop_subsystem(int subsystem_id) {
     }
     
     if (dependent_count > 0) {
-        log_this("Registry", "Cannot stop subsystem '%s': required by: %s", 
+        log_this(SR_REGISTRY, "Cannot stop subsystem '%s': required by: %s", 
                 LOG_LEVEL_ERROR, subsystem->name, dependent_systems);
         pthread_mutex_unlock(&subsystem_registry.mutex);
         return false;
@@ -341,7 +341,7 @@ bool stop_subsystem(int subsystem_id) {
     
     pthread_mutex_unlock(&subsystem_registry.mutex);
     
-    log_this("Registry", "Stopping subsystem '%s'", LOG_LEVEL_STATE, subsystem->name);
+    log_this(SR_REGISTRY, "Stopping subsystem '%s'", LOG_LEVEL_STATE, subsystem->name);
     
     // Set the shutdown flag if provided
     if (subsystem->shutdown_flag) {
@@ -362,7 +362,7 @@ bool stop_subsystem(int subsystem_id) {
     // Update state to inactive
     update_subsystem_state(subsystem_id, SUBSYSTEM_INACTIVE);
     
-    log_this("Registry", "Subsystem '%s' stopped successfully", LOG_LEVEL_STATE, subsystem->name);
+    log_this(SR_REGISTRY, "Subsystem '%s' stopped successfully", LOG_LEVEL_STATE, subsystem->name);
     
     return true;
 }
@@ -434,7 +434,7 @@ bool add_subsystem_dependency(int subsystem_id, const char* dependency_name) {
         
         // Check if we've reached the maximum dependencies
         if (subsystem->dependency_count >= MAX_DEPENDENCIES) {
-            log_this("Registry", "Cannot add dependency for '%s': maximum dependencies reached", 
+            log_this(SR_REGISTRY, "Cannot add dependency for '%s': maximum dependencies reached", 
                     LOG_LEVEL_ERROR, subsystem->name);
         } 
         // Check if the dependency already exists
@@ -448,14 +448,14 @@ bool add_subsystem_dependency(int subsystem_id, const char* dependency_name) {
             }
             
             if (already_exists) {
-                log_this("Registry", "Dependency '%s' already registered for '%s'", 
+                log_this(SR_REGISTRY, "Dependency '%s' already registered for '%s'", 
                         LOG_LEVEL_DEBUG, dependency_name, subsystem->name);
                 success = true;  // Core function returns true for duplicates (but doesn't add)
             } else {
                 // Add the dependency (make a copy of the name)
                 subsystem->dependencies[subsystem->dependency_count] = strdup(dependency_name);
                 if (!subsystem->dependencies[subsystem->dependency_count]) {
-                    log_this("Registry", "Failed to allocate memory for dependency name '%s'", 
+                    log_this(SR_REGISTRY, "Failed to allocate memory for dependency name '%s'", 
                             LOG_LEVEL_ERROR, dependency_name);
                     success = false;
                 } else {
@@ -536,9 +536,9 @@ void print_subsystem_status(void) {
     pthread_mutex_lock(&subsystem_registry.mutex);
     
     // Header for the status report
-    log_this("Registry", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    log_this("Registry", "SUBSYSTEM STATUS REPORT", LOG_LEVEL_STATE);
-    log_this("Registry", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+    log_this(SR_REGISTRY, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+    log_this(SR_REGISTRY, "SUBSYSTEM STATUS REPORT", LOG_LEVEL_STATE);
+    log_this(SR_REGISTRY, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
     
     time_t now = time(NULL);
     char time_buffer[64];
@@ -565,7 +565,7 @@ void print_subsystem_status(void) {
         }
         
         // Log the basic subsystem status
-        log_this("Registry", "Subsystem: %s - State: %s - Time: %s", 
+        log_this(SR_REGISTRY, "Subsystem: %s - State: %s - Time: %s", 
                 log_level, subsystem->name, state_strings[subsystem->state], time_buffer);
         
         // Count running subsystems
@@ -580,23 +580,23 @@ void print_subsystem_status(void) {
                 if (j > 0) strcat(deps, ", ");
                 strcat(deps, subsystem->dependencies[j]);
             }
-            log_this("Registry", "  Dependencies: %s", LOG_LEVEL_STATE, deps);
+            log_this(SR_REGISTRY, "  Dependencies: %s", LOG_LEVEL_STATE, deps);
         }
         
         // Log thread information if available
         if (subsystem->threads) {
             update_service_thread_metrics(subsystem->threads);
-            log_this("Registry", "  Threads: %d - Memory: %zu bytes", 
+            log_this(SR_REGISTRY, "  Threads: %d - Memory: %zu bytes", 
                     LOG_LEVEL_STATE, subsystem->threads->thread_count, 
                     subsystem->threads->resident_memory);
         }
     }
     
     // Summary information
-    log_this("Registry", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    log_this("Registry", "Total subsystems: %d - Running: %d", 
+    log_this(SR_REGISTRY, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+    log_this(SR_REGISTRY, "Total subsystems: %d - Running: %d", 
             LOG_LEVEL_STATE, subsystem_registry.count, running_count);
-    log_this("Registry", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+    log_this(SR_REGISTRY, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
     
     pthread_mutex_unlock(&subsystem_registry.mutex);
 }
@@ -625,7 +625,7 @@ LaunchReadiness check_registry_readiness(void) {
     }
     
     // First message is always the subsystem name
-    readiness.messages[0] = strdup("Registry");
+    readiness.messages[0] = strdup(SR_REGISTRY);
     
     // Check if mutex is initialized (non-zero value)
     pthread_mutex_lock(&subsystem_registry.mutex);

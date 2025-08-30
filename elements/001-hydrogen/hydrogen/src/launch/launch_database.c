@@ -20,25 +20,25 @@ LaunchReadiness check_database_launch_readiness(void) {
     bool overall_readiness = false;
 
     // First message is subsystem name
-    add_launch_message(&messages, &count, &capacity, strdup("Database"));
+    add_launch_message(&messages, &count, &capacity, strdup(SR_DATABASE));
 
     // Early return cases
     if (server_stopping) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   System shutdown in progress"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Database", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_DATABASE, .ready = false, .messages = messages };
     }
 
     if (!server_starting && !server_running) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   System not in startup or running state"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Database", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_DATABASE, .ready = false, .messages = messages };
     }
 
     if (!app_config) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Configuration not loaded"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Database", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_DATABASE, .ready = false, .messages = messages };
     }
 
     // Validate database configuration
@@ -126,7 +126,7 @@ LaunchReadiness check_database_launch_readiness(void) {
     }
 
     // Basic readiness check - verify subsystem registration and config validity
-    int subsystem_id = get_subsystem_id_by_name("Database");
+    int subsystem_id = get_subsystem_id_by_name(SR_DATABASE);
     if (subsystem_id >= 0 && connections_valid) {
         add_launch_message(&messages, &count, &capacity, strdup("  Go:      Database subsystem registered"));
         add_launch_message(&messages, &count, &capacity, strdup("  Decide:  Go For Launch of Database Subsystem"));
@@ -142,7 +142,7 @@ LaunchReadiness check_database_launch_readiness(void) {
     finalize_launch_messages(&messages, &count, &capacity);
 
     return (LaunchReadiness){
-        .subsystem = "Database",
+        .subsystem = SR_DATABASE,
         .ready = overall_readiness,
         .messages = messages
     };
@@ -153,17 +153,17 @@ int launch_database_subsystem(void) {
     // Reset shutdown flag
     database_stopping = 0;
     
-    log_this("Database", "Initializing database subsystem", LOG_LEVEL_STATE);
+    log_this(SR_DATABASE, "Initializing database subsystem", LOG_LEVEL_STATE);
     
     // Get subsystem ID and update state
-    int subsystem_id = get_subsystem_id_by_name("Database");
+    int subsystem_id = get_subsystem_id_by_name(SR_DATABASE);
     if (subsystem_id >= 0) {
         update_subsystem_state(subsystem_id, SUBSYSTEM_RUNNING);
-        log_this("Database", "Database subsystem initialized", LOG_LEVEL_STATE);
+        log_this(SR_DATABASE, "Database subsystem initialized", LOG_LEVEL_STATE);
         return 1;
     }
     
-    log_this("Database", "Failed to initialize database subsystem", LOG_LEVEL_ERROR);
+    log_this(SR_DATABASE, "Failed to initialize database subsystem", LOG_LEVEL_ERROR);
     return 0;
 }
 
@@ -171,6 +171,6 @@ int launch_database_subsystem(void) {
 void shutdown_database(void) {
     if (!database_stopping) {
         database_stopping = 1;
-        log_this("Database", "Database subsystem shutting down", LOG_LEVEL_STATE);
+        log_this(SR_DATABASE, "Database subsystem shutting down", LOG_LEVEL_STATE);
     }
 }

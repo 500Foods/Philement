@@ -94,14 +94,14 @@ bool load_mdns_server_config(json_t* root, AppConfig* config) {
     success = PROCESS_SECTION(root, SR_MDNS_SERVER);
     
     // Process basic fields
-    success = success && PROCESS_BOOL(root, mdns_config, enable_ipv4, "mDNSServer.EnableIPv4", SR_MDNS_SERVER);
-    success = success && PROCESS_BOOL(root, mdns_config, enable_ipv6, "mDNSServer.EnableIPv6", SR_MDNS_SERVER);
-    success = success && PROCESS_STRING(root, mdns_config, device_id, "mDNSServer.DeviceId", SR_MDNS_SERVER);
-    success = success && PROCESS_STRING(root, mdns_config, friendly_name, "mDNSServer.FriendlyName", SR_MDNS_SERVER);
-    success = success && PROCESS_STRING(root, mdns_config, model, "mDNSServer.Model", SR_MDNS_SERVER);
-    success = success && PROCESS_STRING(root, mdns_config, manufacturer, "mDNSServer.Manufacturer", SR_MDNS_SERVER);
-    success = success && PROCESS_STRING(root, mdns_config, version, "mDNSServer.Version", SR_MDNS_SERVER);
-    success = success && PROCESS_INT(root, mdns_config, retry_count, "mDNSServer.Retries", SR_MDNS_SERVER);
+    success = success && PROCESS_BOOL(root, mdns_config, enable_ipv4, SR_MDNS_SERVER ".EnableIPv4", SR_MDNS_SERVER);
+    success = success && PROCESS_BOOL(root, mdns_config, enable_ipv6, SR_MDNS_SERVER ".EnableIPv6", SR_MDNS_SERVER);
+    success = success && PROCESS_STRING(root, mdns_config, device_id, SR_MDNS_SERVER ".DeviceId", SR_MDNS_SERVER);
+    success = success && PROCESS_STRING(root, mdns_config, friendly_name, SR_MDNS_SERVER ".FriendlyName", SR_MDNS_SERVER);
+    success = success && PROCESS_STRING(root, mdns_config, model, SR_MDNS_SERVER ".Model", SR_MDNS_SERVER);
+    success = success && PROCESS_STRING(root, mdns_config, manufacturer, SR_MDNS_SERVER ".Manufacturer", SR_MDNS_SERVER);
+    success = success && PROCESS_STRING(root, mdns_config, version, SR_MDNS_SERVER ".Version", SR_MDNS_SERVER);
+    success = success && PROCESS_INT(root, mdns_config, retry_count, SR_MDNS_SERVER ".Retries", SR_MDNS_SERVER);
 
     // Process services array if present
     if (success) {
@@ -127,7 +127,7 @@ bool load_mdns_server_config(json_t* root, AppConfig* config) {
 
                     // Process service properties
                     char service_path[128];
-                    snprintf(service_path, sizeof(service_path), "mDNSServer.Services[%zu]", i);
+                    snprintf(service_path, sizeof(service_path), SR_MDNS_SERVER ".Services[%zu]", i);
 
                     // Process name
                     json_t* name = json_object_get(service, "Name");
