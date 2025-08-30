@@ -188,6 +188,10 @@ LaunchReadiness check_print_launch_readiness(void) {
 
 // Launch the print subsystem
 int launch_print_subsystem(void) {
+
+    log_this(SR_PRINT, LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this(SR_PRINT, "LAUNCH: " SR_PRINT, LOG_LEVEL_STATE);
+
     // Reset shutdown flag
     print_system_shutdown = 0;
     

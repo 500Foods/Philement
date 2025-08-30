@@ -191,6 +191,10 @@ bool validate_monitoring_settings(const ResourceConfig* config, int* msg_count, 
 
 // Launch the resources subsystem
 int launch_resources_subsystem(void) {
+
+    log_this(SR_RESOURCES, LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this(SR_RESOURCES, "LAUNCH: " SR_RESOURCES, LOG_LEVEL_STATE);
+
     // Initialize resource monitoring
     if (!app_config->resources.enforce_limits) {
         log_this(SR_RESOURCES, "Resource limit enforcement disabled", LOG_LEVEL_ALERT);

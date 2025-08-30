@@ -181,30 +181,29 @@ LaunchReadiness check_mdns_server_launch_readiness(void) {
 
 // Launch the mDNS server subsystem
 int launch_mdns_server_subsystem(void) {
+    
+    // Step 1: Log Launch
     log_this(SR_MDNS_SERVER, LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this(SR_MDNS_SERVER, "LAUNCH: MDNS SERVER", LOG_LEVEL_STATE);
+    log_this(SR_MDNS_SERVER, "LAUNCH: " SR_MDNS_SERVER, LOG_LEVEL_STATE);
 
-    // Step 1: Verify system state
+    // Step 2: Reset shutdown state
+
+    // Step 3: Verify system state
     if (server_stopping || server_starting != 1) {
-        log_this(SR_MDNS_SERVER, "Cannot initialize mDNS server outside startup phase", LOG_LEVEL_STATE);
-        log_this(SR_MDNS_SERVER, "LAUNCH: MDNS SERVER - Failed: Not in startup phase", LOG_LEVEL_STATE);
+        log_this(SR_MDNS_SERVER, "Cannot initialize " SR_MDNS_SERVER " subsystem outside startup phase", LOG_LEVEL_STATE);
+        log_this(SR_MDNS_SERVER, "LAUNCH: " SR_MDNS_SERVER " Failed: Not in startup phase", LOG_LEVEL_STATE);
         return 0;
     }
 
+    // Step 4: Verify config state
     if (!app_config) {
         log_this(SR_MDNS_SERVER, "Configuration not loaded", LOG_LEVEL_ERROR);
-        log_this(SR_MDNS_SERVER, "LAUNCH: MDNS SERVER - Failed: No configuration", LOG_LEVEL_STATE);
+        log_this(SR_MDNS_SERVER, "LAUNCH: " SR_MDNS_SERVER " Failed: No configuration", LOG_LEVEL_STATE);
         return 0;
     }
 
-    if (!app_config->mdns_server.enable_ipv4 && !app_config->mdns_server.enable_ipv6) {
-        log_this(SR_MDNS_SERVER, "mDNS server disabled in configuration (no protocols enabled)", LOG_LEVEL_STATE);
-        log_this(SR_MDNS_SERVER, "LAUNCH: MDNS SERVER - Disabled by configuration", LOG_LEVEL_STATE);
-        return 1; // Not an error if disabled
-    }
-
-    // Step 2: Initialize mDNS server instance
-    log_this(SR_MDNS_SERVER, "Initializing mDNS server with device configuration", LOG_LEVEL_STATE);
+    // Step 5: Initialize subsystem instance
+    log_this(SR_MDNS_SERVER, "Initializing " SR_MDNS_SERVER " with device configuration", LOG_LEVEL_STATE);
 
     // Get server configuration
     const MDNSServerConfig* server_config = &app_config->mdns_server;
@@ -225,13 +224,13 @@ int launch_mdns_server_subsystem(void) {
     );
 
     if (!mdns_server_instance) {
-        log_this(SR_MDNS_SERVER, "Failed to initialize mDNS server", LOG_LEVEL_ERROR);
-        log_this(SR_MDNS_SERVER, "LAUNCH: MDNS SERVER - Failed to initialize", LOG_LEVEL_STATE);
+        log_this(SR_MDNS_SERVER, "Failed to initialize " SR_MDNS_SERVER, LOG_LEVEL_ERROR);
+        log_this(SR_MDNS_SERVER, "LAUNCH: " SR_MDNS_SERVER " Failed to initialize", LOG_LEVEL_STATE);
         return 0;
     }
 
-    // Step 3: Initialize and start threads
-    log_this(SR_MDNS_SERVER, "Starting mDNS server background threads", LOG_LEVEL_STATE);
+    // Initialize and start threads
+    log_this(SR_MDNS_SERVER, "Starting " SR_MDNS_SERVER" background threads", LOG_LEVEL_STATE);
 
     // Create thread argument structure
     mdns_server_thread_arg_t *thread_arg = calloc(1, sizeof(mdns_server_thread_arg_t));
@@ -255,7 +254,7 @@ int launch_mdns_server_subsystem(void) {
     pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_JOINABLE);
 
     if (pthread_create(&mdns_server_announce_thread, &thread_attr, mdns_server_announce_loop, thread_arg) != 0) {
-        log_this(SR_MDNS_SERVER, "Failed to start mDNS server announce thread", LOG_LEVEL_ERROR);
+        log_this(SR_MDNS_SERVER, "Failed to start " SR_MDNS_SERVER " announcer thread", LOG_LEVEL_ERROR);
         pthread_attr_destroy(&thread_attr);
         free(thread_arg);
         mdns_server_shutdown(mdns_server_instance);
@@ -264,8 +263,8 @@ int launch_mdns_server_subsystem(void) {
 
     // Create responder thread
     if (pthread_create(&mdns_server_responder_thread, &thread_attr, mdns_server_responder_loop, thread_arg) != 0) {
-        log_this(SR_MDNS_SERVER, "Failed to start mDNS server responder thread", LOG_LEVEL_ERROR);
-        mdns_server_system_shutdown = 1; // Signal announce thread to exit
+        log_this(SR_MDNS_SERVER, "Failed to start " SR_MDNS_SERVER " responder thread", LOG_LEVEL_ERROR);
+        mdns_server_system_shutdown = 1; 
         pthread_join(mdns_server_announce_thread, NULL);
         pthread_attr_destroy(&thread_attr);
         free(thread_arg);
@@ -279,22 +278,22 @@ int launch_mdns_server_subsystem(void) {
     add_service_thread(&mdns_server_threads, mdns_server_announce_thread);
     add_service_thread(&mdns_server_threads, mdns_server_responder_thread);
 
-    // Step 4: Send initial announcements
-    log_this(SR_MDNS_SERVER, "Sending initial mDNS announcements", LOG_LEVEL_STATE);
+    // Send initial announcements
+    log_this(SR_MDNS_SERVER, "Sending initial " SR_MDNS_SERVER " announcements", LOG_LEVEL_STATE);
     mdns_server_send_announcement(mdns_server_instance, thread_arg->net_info);
 
-    // Step 5: Update subsystem registry
+    // Update subsystem registry
     log_this(SR_MDNS_SERVER, "Updating subsystem registry", LOG_LEVEL_STATE);
     update_subsystem_on_startup(SR_MDNS_SERVER, true);
 
-    // Step 6: Verify final state
+    // Verify final state
     SubsystemState final_state = get_subsystem_state(mdns_server_subsystem_id);
 
     if (final_state == SUBSYSTEM_RUNNING) {
-        log_this(SR_MDNS_SERVER, "LAUNCH: MDNS SERVER - Successfully launched and running", LOG_LEVEL_STATE);
+        log_this(SR_MDNS_SERVER, "LAUNCH: " SR_MDNS_SERVER "Success: Launched and running", LOG_LEVEL_STATE);
         return 1;
     } else {
-        log_this(SR_MDNS_SERVER, "LAUNCH: MDNS SERVER - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
+        log_this(SR_MDNS_SERVER, "LAUNCH: " SR_MDNS_SERVER" Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
                 subsystem_state_to_string(final_state));
         return 0;
     }

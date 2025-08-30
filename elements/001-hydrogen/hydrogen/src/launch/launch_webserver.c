@@ -23,7 +23,6 @@
 extern ServiceThreads webserver_threads;
 extern pthread_t webserver_thread;
 extern volatile sig_atomic_t web_server_shutdown;
-extern volatile sig_atomic_t server_starting;
 
 // Registry ID and cached readiness state
 int webserver_subsystem_id = -1;
@@ -217,7 +216,7 @@ int launch_webserver_subsystem(void) {
     extern volatile sig_atomic_t web_server_shutdown;
     
     log_this(SR_WEBSERVER, LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this(SR_WEBSERVER, "LAUNCH: WEBSERVER", LOG_LEVEL_STATE);
+    log_this(SR_WEBSERVER, "LAUNCH: " SR_WEBSERVER, LOG_LEVEL_STATE);
 
     // Step 1: Verify system state
     log_this(SR_WEBSERVER, "  Step 1: Verifying system state", LOG_LEVEL_STATE);

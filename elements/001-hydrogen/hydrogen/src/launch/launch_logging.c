@@ -175,11 +175,12 @@ LaunchReadiness check_logging_launch_readiness(void) {
 
 // Launch the logging subsystem
 int launch_logging_subsystem(void) {
-    // Reset shutdown flag
+    
     logging_stopping = 0;
     
-    log_this(SR_LOGGING, "Initializing " SR_LOGGING " subsystem", LOG_LEVEL_STATE);
-    
+    log_this(SR_LOGGING, LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this(SR_LOGGING, "LAUNCH: " SR_LOGGING, LOG_LEVEL_STATE);
+
     // Get subsystem ID and update state
     int subsystem_id = get_subsystem_id_by_name(SR_LOGGING);
     if (subsystem_id >= 0) {

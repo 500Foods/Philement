@@ -21,9 +21,6 @@ void record_shutdown_initiate_time(void);
 double calculate_total_running_time(void);
 double calculate_total_elapsed_time(void);
 
-// External declarations
-extern volatile sig_atomic_t server_starting;
-
 // Internal state
 static pthread_mutex_t ready_time_mutex = PTHREAD_MUTEX_INITIALIZER;
 static struct timespec server_ready_time = {0, 0};  // Protected by ready_time_mutex
@@ -115,8 +112,7 @@ void format_duration(time_t seconds, char *buffer, size_t buflen) {
 void update_server_ready_time(void) {
     pthread_mutex_lock(&ready_time_mutex);
     if (server_ready_time.tv_sec == 0) {  // Only set it once
-        volatile sig_atomic_t starting = server_starting;  // Get current state
-        if (!starting) {  // Check if we're no longer starting
+        if (!server_starting) {  // Check if we're no longer starting
             // Get high precision ready time
             clock_gettime(CLOCK_MONOTONIC, &server_ready_time);
             

@@ -122,9 +122,9 @@ LaunchReadiness check_threads_launch_readiness(void) {
  * @return 1 if thread management was successfully launched, 0 on failure
  */
 int launch_threads_subsystem(void) {
-    // Begin LAUNCH: THREADS section
+    
     log_this(SR_THREADS, LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this(SR_THREADS, "LAUNCH: THREADS", LOG_LEVEL_STATE);
+    log_this(SR_THREADS, "LAUNCH: " SR_THREADS, LOG_LEVEL_STATE);
 
     // Step 1: Verify explicit dependencies
     log_this(SR_THREADS, "  Step 1: Verifying explicit dependencies", LOG_LEVEL_STATE);

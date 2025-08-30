@@ -24,11 +24,9 @@
 extern ServiceThreads websocket_threads;
 extern pthread_t websocket_thread;
 extern volatile sig_atomic_t websocket_server_shutdown;
-extern volatile sig_atomic_t server_starting;
 
 // Registry ID and cached readiness state
 int websocket_subsystem_id = -1;
-
 
 // Register the websocket subsystem with the registry
 void register_websocket(void) {
@@ -38,6 +36,19 @@ void register_websocket(void) {
                                                   (int (*)(void))launch_websocket_subsystem,
                                                   (void (*)(void))stop_websocket_server);
     }
+}
+
+// Check if websocket server is running
+// This function checks if the websocket server is currently running
+// and available to handle requests.
+int is_websocket_server_running(void) {
+    extern volatile sig_atomic_t websocket_server_shutdown;
+    
+    // Server is running if:
+    // 1. Enabled in config
+    // 2. Not in shutdown state
+    //return (app_config && app_config->websocket.enabled && !websocket_server_shutdown);
+    return (app_config && !websocket_server_shutdown);
 }
 
 // Validate protocol string
@@ -298,11 +309,10 @@ LaunchReadiness check_websocket_launch_readiness(void) {
 // 3. Support flexible deployment
 // 4. Enable different security policies
 int launch_websocket_subsystem(void) {
-    extern volatile sig_atomic_t server_stopping;
     extern volatile sig_atomic_t websocket_server_shutdown;
     
     log_this(SR_WEBSOCKET, LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this(SR_WEBSOCKET, "LAUNCH: WEBSOCKETS", LOG_LEVEL_STATE);
+    log_this(SR_WEBSOCKET, "LAUNCH: " SR_WEBSOCKET, LOG_LEVEL_STATE);
 
     // Step 1: Verify system state
     log_this(SR_WEBSOCKET, "  Step 1: Verifying system state", LOG_LEVEL_STATE);
@@ -440,17 +450,4 @@ int launch_websocket_subsystem(void) {
         return 0;
     }
     return 1;
-}
-
-// Check if websocket server is running
-// This function checks if the websocket server is currently running
-// and available to handle requests.
-int is_websocket_server_running(void) {
-    extern volatile sig_atomic_t websocket_server_shutdown;
-    
-    // Server is running if:
-    // 1. Enabled in config
-    // 2. Not in shutdown state
-    //return (app_config && app_config->websocket.enabled && !websocket_server_shutdown);
-    return (app_config && !websocket_server_shutdown);
 }

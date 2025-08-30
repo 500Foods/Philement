@@ -163,14 +163,10 @@ LaunchReadiness check_swagger_launch_readiness(void) {
 }
 
 // Launch Swagger subsystem
-int launch_swagger_subsystem(void);
-
 int launch_swagger_subsystem(void) {
-    extern volatile sig_atomic_t server_stopping;
-    extern volatile sig_atomic_t server_starting;
 
     log_this(SR_SWAGGER, LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this(SR_SWAGGER, "LAUNCH: SWAGGER", LOG_LEVEL_STATE);
+    log_this(SR_SWAGGER, "LAUNCH: " SR_SWAGGER, LOG_LEVEL_STATE);
 
     // Step 1: Register with registry and add dependencies
     log_this(SR_SWAGGER, "  Step 1: Registering with registry", LOG_LEVEL_STATE);
