@@ -21,13 +21,13 @@ bool load_terminal_config(json_t* root, AppConfig* config) {
     // Initialize string fields with defaults
     terminal->web_path = strdup("/terminal");  // Standard web path
     if (!terminal->web_path) {
-        log_this("Terminal", "Failed to allocate web path string", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "Failed to allocate web path string", LOG_LEVEL_ERROR);
         return false;
     }
 
     terminal->shell_command = strdup("/bin/bash");  // Default shell
     if (!terminal->shell_command) {
-        log_this("Terminal", "Failed to allocate shell command string", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "Failed to allocate shell command string", LOG_LEVEL_ERROR);
         free(terminal->web_path);
         terminal->web_path = NULL;
         return false;
@@ -37,14 +37,14 @@ bool load_terminal_config(json_t* root, AppConfig* config) {
     bool success = true;
 
     // Process main section and enabled flag
-    success = PROCESS_SECTION(root, "Terminal");
-    success = success && PROCESS_BOOL(root, terminal, enabled, "Terminal.Enabled", "Terminal");
+    success = PROCESS_SECTION(root, SR_TERMINAL);
+    success = success && PROCESS_BOOL(root, terminal, enabled, SR_TERMINAL ".Enabled", SR_TERMINAL);
     
     
-        success = success && PROCESS_STRING(root, terminal, web_path, "Terminal.WebPath", "Terminal");
-        success = success && PROCESS_STRING(root, terminal, shell_command, "Terminal.ShellCommand", "Terminal");
-        success = success && PROCESS_INT(root, terminal, max_sessions, "Terminal.MaxSessions", "Terminal");
-        success = success && PROCESS_INT(root, terminal, idle_timeout_seconds, "Terminal.IdleTimeoutSeconds", "Terminal");
+        success = success && PROCESS_STRING(root, terminal, web_path, SR_TERMINAL ".WebPath", SR_TERMINAL);
+        success = success && PROCESS_STRING(root, terminal, shell_command, SR_TERMINAL ".ShellCommand", SR_TERMINAL);
+        success = success && PROCESS_INT(root, terminal, max_sessions, SR_TERMINAL ".MaxSessions", SR_TERMINAL);
+        success = success && PROCESS_INT(root, terminal, idle_timeout_seconds, SR_TERMINAL ".IdleTimeoutSeconds", SR_TERMINAL);
     
     return success;
 }

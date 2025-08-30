@@ -38,14 +38,14 @@ LaunchReadiness check_registry_launch_readiness(void) {
     bool ready = true;
 
     // First message is subsystem name
-    add_launch_message(&messages, &count, &capacity, strdup("Registry"));
+    add_launch_message(&messages, &count, &capacity, strdup(SR_REGISTRY));
 
     // Validate server configuration
     if (!app_config) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Failed to access application configuration"));
         add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Registry"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Registry", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_REGISTRY, .ready = false, .messages = messages };
     }
 
     const ServerConfig* server = &app_config->server;
@@ -94,7 +94,7 @@ LaunchReadiness check_registry_launch_readiness(void) {
     if (!config_valid) {
         add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Registry: Invalid server configuration"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Registry", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_REGISTRY, .ready = false, .messages = messages };
     }
 
     // Add success message for config validation
@@ -102,7 +102,7 @@ LaunchReadiness check_registry_launch_readiness(void) {
 
     // Register the registry subsystem during readiness check
     if (registry_subsystem_id < 0) {
-        registry_subsystem_id = register_subsystem("Registry", NULL, NULL, NULL,
+        registry_subsystem_id = register_subsystem(SR_REGISTRY, NULL, NULL, NULL,
                                                  NULL,  // No init function needed
                                                  NULL); // No special shutdown needed
     }
@@ -112,7 +112,7 @@ LaunchReadiness check_registry_launch_readiness(void) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Failed to register Registry subsystem"));
         add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Registry"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Registry", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_REGISTRY, .ready = false, .messages = messages };
     } else {
         add_launch_message(&messages, &count, &capacity, strdup("  Go:      Registry initialized"));
         add_launch_message(&messages, &count, &capacity, strdup("  Decide:  Go For Launch of Registry"));
@@ -122,7 +122,7 @@ LaunchReadiness check_registry_launch_readiness(void) {
     finalize_launch_messages(&messages, &count, &capacity);
 
     return (LaunchReadiness){
-        .subsystem = "Registry",
+        .subsystem = SR_REGISTRY,
         .ready = ready,
         .messages = messages
     };
@@ -130,26 +130,26 @@ LaunchReadiness check_registry_launch_readiness(void) {
 
 // Launch registry subsystem
 int launch_registry_subsystem(bool is_restart) {
-    log_this("Registry", LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this("Registry", "LAUNCH: REGISTRY", LOG_LEVEL_STATE);
+    log_this(SR_REGISTRY, LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this(SR_REGISTRY, "LAUNCH: REGISTRY", LOG_LEVEL_STATE);
     
     // Step 1: Verify registry system
-    log_this("Registry", "  Step 1: Verifying registry system", LOG_LEVEL_STATE);
+    log_this(SR_REGISTRY, "  Step 1: Verifying registry system", LOG_LEVEL_STATE);
     if (registry_subsystem_id < 0) {
         // Try to register if not already registered
-        registry_subsystem_id = register_subsystem("Registry", NULL, NULL, NULL,
+        registry_subsystem_id = register_subsystem(SR_REGISTRY, NULL, NULL, NULL,
                                                  NULL,  // No init function needed
                                                  NULL); // No special shutdown needed
         if (registry_subsystem_id < 0) {
-            log_this("Registry", "    Failed to register Registry subsystem", LOG_LEVEL_ERROR);
-            log_this("Registry", "LAUNCH: REGISTRY - Failed: Registration failed", LOG_LEVEL_STATE);
+            log_this(SR_REGISTRY, "    Failed to register Registry subsystem", LOG_LEVEL_ERROR);
+            log_this(SR_REGISTRY, "LAUNCH: REGISTRY - Failed: Registration failed", LOG_LEVEL_STATE);
             return 0;
         }
     }
-    log_this("Registry", "    Registry system verified", LOG_LEVEL_STATE);
+    log_this(SR_REGISTRY, "    Registry system verified", LOG_LEVEL_STATE);
 
     // Step 2: Set registry state
-    log_this("Registry", "  Step 2: Setting registry state", LOG_LEVEL_STATE);
+    log_this(SR_REGISTRY, "  Step 2: Setting registry state", LOG_LEVEL_STATE);
     
     // The registry is special - ensure it's marked as running
     pthread_mutex_lock(&subsystem_registry.mutex);
@@ -157,32 +157,32 @@ int launch_registry_subsystem(bool is_restart) {
         // Set directly to RUNNING since registry is special
         subsystem_registry.subsystems[registry_subsystem_id].state = SUBSYSTEM_RUNNING;
         subsystem_registry.subsystems[registry_subsystem_id].state_changed = time(NULL);
-        log_this("Registry", "    Registry state set to running", LOG_LEVEL_STATE);
+        log_this(SR_REGISTRY, "    Registry state set to running", LOG_LEVEL_STATE);
     }
     pthread_mutex_unlock(&subsystem_registry.mutex);
 
     // Step 3: Verify registry state
-    log_this("Registry", "  Step 3: Verifying registry state", LOG_LEVEL_STATE);
+    log_this(SR_REGISTRY, "  Step 3: Verifying registry state", LOG_LEVEL_STATE);
     SubsystemState final_state = get_subsystem_state(registry_subsystem_id);
     
     if (is_restart) {
         // During restart, we're more lenient about state
         if (final_state != SUBSYSTEM_ERROR) {
             // Any non-error state is acceptable during restart
-            log_this("Registry", "LAUNCH: REGISTRY - State during restart: %s", LOG_LEVEL_STATE,
+            log_this(SR_REGISTRY, "LAUNCH: REGISTRY - State during restart: %s", LOG_LEVEL_STATE,
                     subsystem_state_to_string(final_state));
             return 1;
         } else {
-            log_this("Registry", "LAUNCH: REGISTRY - Error state during restart", LOG_LEVEL_ERROR);
+            log_this(SR_REGISTRY, "LAUNCH: REGISTRY - Error state during restart", LOG_LEVEL_ERROR);
             return 0;
         }
     } else {
         // Normal launch requires RUNNING state
         if (final_state == SUBSYSTEM_RUNNING) {
-            log_this("Registry", "LAUNCH: REGISTRY - Successfully launched and running", LOG_LEVEL_STATE);
+            log_this(SR_REGISTRY, "LAUNCH: REGISTRY - Successfully launched and running", LOG_LEVEL_STATE);
             return 1;
         } else {
-            log_this("Registry", "LAUNCH: REGISTRY - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
+            log_this(SR_REGISTRY, "LAUNCH: REGISTRY - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
                     subsystem_state_to_string(final_state));
             return 0;
         }

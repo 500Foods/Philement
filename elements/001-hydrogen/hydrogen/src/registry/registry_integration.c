@@ -79,39 +79,36 @@ void update_registry_on_startup(void) {
     
     // Logging - Always starts first
     update_service_thread_metrics(&logging_threads);
-    update_subsystem_on_startup("Logging", logging_threads.thread_count > 0);
+    update_subsystem_on_startup(SR_LOGGING, logging_threads.thread_count > 0);
     
     // Web Server
     update_service_thread_metrics(&webserver_threads);
-    update_subsystem_on_startup("WebServer", webserver_threads.thread_count > 0);
+    update_subsystem_on_startup(SR_WEBSERVER, webserver_threads.thread_count > 0);
     
     // WebSocket
     update_service_thread_metrics(&websocket_threads);
-    update_subsystem_on_startup("WebSocket", websocket_threads.thread_count > 0);
+    update_subsystem_on_startup(SR_WEBSOCKET, websocket_threads.thread_count > 0);
     
     // mDNS Server
     update_service_thread_metrics(&mdns_server_threads);
-    update_subsystem_on_startup("MDNSServer", mdns_server_threads.thread_count > 0);
+    update_subsystem_on_startup(SR_MDNS_SERVER, mdns_server_threads.thread_count > 0);
     
     // mDNS Client - No thread, check if not shutdown
-    update_subsystem_on_startup("MDNSClient", 
-                            app_config && !mdns_client_system_shutdown);
+    update_subsystem_on_startup(SR_MDNS_CLIENT, app_config && !mdns_client_system_shutdown);
     
     // Mail Relay - No thread, check if not shutdown
-    update_subsystem_on_startup("MailRelay", 
-                            app_config && !mail_relay_system_shutdown);
+    update_subsystem_on_startup(SR_MAIL_RELAY, app_config && !mail_relay_system_shutdown);
     
     // Swagger - No thread, check if not shutdown
-    update_subsystem_on_startup("Swagger", 
-                            app_config && !swagger_system_shutdown);
+    update_subsystem_on_startup(SR_SWAGGER, app_config && !swagger_system_shutdown);
     
     // Terminal - No thread, check if not shutdown
-    update_subsystem_on_startup("Terminal", 
-                            app_config && !terminal_system_shutdown);
+    update_subsystem_on_startup(SR_TERMINAL, app_config && !terminal_system_shutdown);
     
     // Print Queue
     update_service_thread_metrics(&print_threads);
-    update_subsystem_on_startup("PrintQueue", print_threads.thread_count > 0);
+    update_subsystem_on_startup(SR_PRINT, print_threads.thread_count > 0);
+
 }
 
 /*

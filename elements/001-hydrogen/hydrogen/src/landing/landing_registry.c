@@ -29,14 +29,14 @@ void report_registry_landing_status(void) {
     
     // Only report if there are active subsystems (potential issue)
     if (total_active > 0) {
-        log_this("Registry", "Warning: %d subsystems still active", LOG_LEVEL_ALERT, total_active);
+        log_this(SR_REGISTRY, "Warning: %d subsystems still active", LOG_LEVEL_ALERT, total_active);
     }
 }
 
 // Check if the Registry is ready to land
 LaunchReadiness check_registry_landing_readiness(void) {
     LaunchReadiness readiness = {0};
-    readiness.subsystem = "Registry";
+    readiness.subsystem = SR_REGISTRY;
     
     // Allocate space for messages (including NULL terminator)
     readiness.messages = malloc(6 * sizeof(char*));
@@ -46,7 +46,7 @@ LaunchReadiness check_registry_landing_readiness(void) {
     }
     
     // Add initial subsystem identifier
-    readiness.messages[0] = strdup("Registry");
+    readiness.messages[0] = strdup(SR_REGISTRY);
     
     // Check if system is in shutdown state
     if (!server_stopping) {
@@ -62,7 +62,7 @@ LaunchReadiness check_registry_landing_readiness(void) {
     for (int i = 0; i < subsystem_registry.count; i++) {
         SubsystemInfo* info = &subsystem_registry.subsystems[i];
         // Skip the registry itself
-        if (strcmp(info->name, "Registry") == 0) continue;
+        if (strcmp(info->name, SR_REGISTRY) == 0) continue;
         
         if (info->state != SUBSYSTEM_INACTIVE) {
             active_subsystems++;
@@ -96,8 +96,8 @@ LaunchReadiness check_registry_landing_readiness(void) {
 // is_restart: true if this is part of a restart sequence
 int land_registry_subsystem(bool is_restart) {
 
-    log_this("Registry", LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this("Registry", "LANDING: REGISTRY", LOG_LEVEL_STATE);    
+    log_this(SR_REGISTRY, LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this(SR_REGISTRY, "LANDING: REGISTRY", LOG_LEVEL_STATE);    
 
     // Report final status
     report_registry_landing_status();
@@ -110,7 +110,7 @@ int land_registry_subsystem(bool is_restart) {
         for (int i = 0; i < subsystem_registry.count; i++) {
             SubsystemInfo* info = &subsystem_registry.subsystems[i];
             // Preserve the registry's state
-            if (strcmp(info->name, "Registry") != 0) {
+            if (strcmp(info->name, SR_REGISTRY) != 0) {
                 info->state = SUBSYSTEM_INACTIVE;
                 info->threads = NULL;  // Don't free - owned by subsystems
                 info->main_thread = NULL;

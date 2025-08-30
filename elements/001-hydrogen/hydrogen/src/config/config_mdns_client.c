@@ -28,23 +28,23 @@ bool load_mdns_client_config(json_t* root, AppConfig* config) {
     mdns_config->num_service_types = 0;
 
     // Process main section
-    success = PROCESS_SECTION(root, "mDNSClient");
-    success = success && PROCESS_BOOL(root, mdns_config, enable_ipv4, "mDNSClient.EnableIPv4", "MDNSClient");
-    success = success && PROCESS_BOOL(root, mdns_config, enable_ipv6, "mDNSClient.EnableIPv6", "MDNSClient");
-    success = success && PROCESS_INT(root, mdns_config, scan_interval, "mDNSClient.ScanIntervalMs", "MDNSClient");
-    success = success && PROCESS_SIZE(root, mdns_config, max_services, "mDNSClient.MaxServices", "MDNSClient");
-    success = success && PROCESS_INT(root, mdns_config, retry_count, "mDNSClient.RetryCount", "MDNSClient");
+    success = PROCESS_SECTION(root, SR_MDNS_CLIENT);
+    success = success && PROCESS_BOOL(root, mdns_config, enable_ipv4, SR_MDNS_CLIENT ".EnableIPv4", SR_MDNS_CLIENT);
+    success = success && PROCESS_BOOL(root, mdns_config, enable_ipv6, SR_MDNS_CLIENT ".EnableIPv6", SR_MDNS_CLIENT);
+    success = success && PROCESS_INT(root, mdns_config, scan_interval, SR_MDNS_CLIENT ".ScanIntervalMs", SR_MDNS_CLIENT);
+    success = success && PROCESS_SIZE(root, mdns_config, max_services, SR_MDNS_CLIENT ".MaxServices", SR_MDNS_CLIENT);
+    success = success && PROCESS_INT(root, mdns_config, retry_count, SR_MDNS_CLIENT ".RetryCount", SR_MDNS_CLIENT);
 
     // Process health check section
     if (success) {
-        success = PROCESS_SECTION(root, "mDNSClient.HealthCheck");
-        success = success && PROCESS_BOOL(root, mdns_config, health_check_enabled, "mDNSClient.HealthCheck.Enabled", "MDNSClient");
-        success = success && PROCESS_INT(root, mdns_config, health_check_interval, "mDNSClient.HealthCheck.IntervalMs", "MDNSClient");
+        success = PROCESS_SECTION(root, SR_MDNS_CLIENT ".HealthCheck");
+        success = success && PROCESS_BOOL(root, mdns_config, health_check_enabled, SR_MDNS_CLIENT ".HealthCheck.Enabled", SR_MDNS_CLIENT);
+        success = success && PROCESS_INT(root, mdns_config, health_check_interval, SR_MDNS_CLIENT ".HealthCheck.IntervalMs", SR_MDNS_CLIENT);
     }
 
     // Process service types array
     if (success) {
-        json_t* service_types = json_object_get(root, "mDNSClient.ServiceTypes");
+        json_t* service_types = json_object_get(root, SR_MDNS_CLIENT ".ServiceTypes");
         if (json_is_array(service_types)) {
             size_t type_count = json_array_size(service_types);
             log_this(SR_CONFIG, "――― Service Types: %zu configured", LOG_LEVEL_STATE, type_count);
