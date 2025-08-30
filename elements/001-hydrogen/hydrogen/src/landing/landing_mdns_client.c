@@ -24,7 +24,7 @@ extern volatile sig_atomic_t mdns_client_system_shutdown;
 // Check if the mDNS client subsystem is ready to land
 LaunchReadiness check_mdns_client_landing_readiness(void) {
     LaunchReadiness readiness = {0};
-    readiness.subsystem = "mDNS Client";
+    readiness.subsystem = SR_MDNS_CLIENT;
     
     // Allocate space for messages (including NULL terminator)
     readiness.messages = malloc(6 * sizeof(char*));
@@ -34,10 +34,10 @@ LaunchReadiness check_mdns_client_landing_readiness(void) {
     }
     
     // Add initial subsystem identifier
-    readiness.messages[0] = strdup("mDNS Client");
+    readiness.messages[0] = strdup(SR_MDNS_CLIENT);
     
     // Check if mDNS client is actually running
-    if (!is_subsystem_running_by_name("mDNSClient")) {
+    if (!is_subsystem_running_by_name(SR_MDNS_CLIENT)) {
         readiness.ready = false;
         readiness.messages[1] = strdup("  No-Go:   mDNS Client not running");
         readiness.messages[2] = strdup("  Decide:  No-Go For Landing of mDNS Client");
@@ -78,21 +78,21 @@ LaunchReadiness check_mdns_client_landing_readiness(void) {
 
 // Land the mDNS client subsystem
 int land_mdns_client_subsystem(void) {
-    log_this("mDNSClient", LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this("mDNSClient", "LANDING: mDNS CLIENT", LOG_LEVEL_STATE);
+    log_this(SR_MDNS_CLIENT, LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this(SR_MDNS_CLIENT, "LANDING: mDNS CLIENT", LOG_LEVEL_STATE);
     
     bool success = true;
     
     // Signal shutdown
     mdns_client_system_shutdown = 1;
-    log_this("mDNSClient", "Signaled mDNS Client to stop", LOG_LEVEL_STATE);
+    log_this(SR_MDNS_CLIENT, "Signaled mDNS Client to stop", LOG_LEVEL_STATE);
     
     // Stop service discovery
-    log_this("mDNSClient", "Stopping service discovery", LOG_LEVEL_STATE);
+    log_this(SR_MDNS_CLIENT, "Stopping service discovery", LOG_LEVEL_STATE);
     
     // Additional cleanup will be added as needed
     
-    log_this("mDNSClient", "mDNS Client shutdown complete", LOG_LEVEL_STATE);
+    log_this(SR_MDNS_CLIENT, "mDNS Client shutdown complete", LOG_LEVEL_STATE);
     
     return success ? 1 : 0;  // Return 1 for success, 0 for failure
 }

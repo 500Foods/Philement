@@ -30,7 +30,7 @@ void test_check_mdns_client_launch_readiness_basic_functionality(void) {
     // Test basic functionality
     LaunchReadiness result = check_mdns_client_launch_readiness();
     TEST_ASSERT_NOT_NULL(result.subsystem);
-    TEST_ASSERT_EQUAL_STRING("mDNS Client", result.subsystem);
+    TEST_ASSERT_EQUAL_STRING(SR_MDNS_CLIENT, result.subsystem);
     // Note: actual readiness depends on system state and mDNS client configuration
 }
 

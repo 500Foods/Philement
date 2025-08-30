@@ -31,7 +31,7 @@
  static void register_payload(void) {
      // Only register if not already registered
      if (payload_subsystem_id < 0) {
-         payload_subsystem_id = register_subsystem_from_launch("Payload", NULL, NULL, NULL,
+         payload_subsystem_id = register_subsystem_from_launch(SR_PAYLOAD, NULL, NULL, NULL,
                                                              (int (*)(void))launch_payload_subsystem,
                                                              NULL);  // No special shutdown needed
      }
@@ -44,7 +44,7 @@ LaunchReadiness check_payload_launch_readiness(void) {
     bool ready = true;
 
     // First message is subsystem name
-    add_launch_message(&messages, &count, &capacity, strdup("Payload"));
+    add_launch_message(&messages, &count, &capacity, strdup(SR_PAYLOAD));
 
     // Register with registry if not already registered
     register_payload();
@@ -112,7 +112,7 @@ LaunchReadiness check_payload_launch_readiness(void) {
      finalize_launch_messages(&messages, &count, &capacity);
 
      return (LaunchReadiness){
-         .subsystem = "Payload",
+         .subsystem = SR_PAYLOAD,
          .ready = ready,
          .messages = messages
      };
@@ -138,42 +138,42 @@ LaunchReadiness check_payload_launch_readiness(void) {
  */
 int launch_payload_subsystem(void) {
     // Begin LAUNCH: PAYLOAD section
-    log_this("Payload", LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this("Payload", "LAUNCH: PAYLOAD", LOG_LEVEL_STATE);
+    log_this(SR_PAYLOAD, LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this(SR_PAYLOAD, "LAUNCH: PAYLOAD", LOG_LEVEL_STATE);
 
     // Step 1: Verify explicit dependencies
-    log_this("Payload", "  Step 1: Verifying explicit dependencies", LOG_LEVEL_STATE);
+    log_this(SR_PAYLOAD, "  Step 1: Verifying explicit dependencies", LOG_LEVEL_STATE);
 
     // Check Registry dependency
     if (is_subsystem_running_by_name("Registry")) {
-        log_this("Payload", "    Registry dependency verified (running)", LOG_LEVEL_STATE);
-        log_this("Payload", "    All dependencies verified", LOG_LEVEL_STATE);
+        log_this(SR_PAYLOAD, "    Registry dependency verified (running)", LOG_LEVEL_STATE);
+        log_this(SR_PAYLOAD, "    All dependencies verified", LOG_LEVEL_STATE);
     } else {
-        log_this("Payload", "    Registry dependency not met", LOG_LEVEL_ERROR);
-        log_this("Payload", "LAUNCH: PAYLOAD - Failed: Registry dependency not met", LOG_LEVEL_STATE);
+        log_this(SR_PAYLOAD, "    Registry dependency not met", LOG_LEVEL_ERROR);
+        log_this(SR_PAYLOAD, "LAUNCH: PAYLOAD - Failed: Registry dependency not met", LOG_LEVEL_STATE);
         return 0;
     }
 
     // Step 2: Launch the payload
-    log_this("Payload", "  Step 2: Launching payload processing", LOG_LEVEL_STATE);
+    log_this(SR_PAYLOAD, "  Step 2: Launching payload processing", LOG_LEVEL_STATE);
     bool success = launch_payload(app_config, PAYLOAD_MARKER);
 
     if (success) {
-        log_this("Payload", "    Payload processing completed successfully", LOG_LEVEL_STATE);
+        log_this(SR_PAYLOAD, "    Payload processing completed successfully", LOG_LEVEL_STATE);
     } else {
-        log_this("Payload", "    Payload processing failed", LOG_LEVEL_ERROR);
+        log_this(SR_PAYLOAD, "    Payload processing failed", LOG_LEVEL_ERROR);
     }
 
     // Step 3: Update registry and verify state
-    log_this("Payload", "  Step 3: Updating subsystem registry", LOG_LEVEL_STATE);
-    update_subsystem_on_startup("Payload", success);
+    log_this(SR_PAYLOAD, "  Step 3: Updating subsystem registry", LOG_LEVEL_STATE);
+    update_subsystem_on_startup(SR_PAYLOAD, success);
 
     SubsystemState final_state = get_subsystem_state(payload_subsystem_id);
     if (final_state == SUBSYSTEM_RUNNING) {
-        log_this("Payload", "LAUNCH: PAYLOAD - Successfully launched and running", LOG_LEVEL_STATE);
+        log_this(SR_PAYLOAD, "LAUNCH: PAYLOAD - Successfully launched and running", LOG_LEVEL_STATE);
         return 1;
     } else {
-        log_this("Payload", "LAUNCH: PAYLOAD - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
+        log_this(SR_PAYLOAD, "LAUNCH: PAYLOAD - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
                 subsystem_state_to_string(final_state));
         return 0;
     }

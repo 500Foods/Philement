@@ -96,6 +96,7 @@
 #define SR_NOTIFY           "Notify"
 
 #define SR_WEBSOCKET_LIB    "WebSocket-Lib"
+#define SR_THREADS_LIB      "Threads-Lib"
 
 #define INITIAL_REGISTRY_CAPACITY 20
 #define MAX_DEPENDENCIES 20
