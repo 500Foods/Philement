@@ -24,7 +24,7 @@ LaunchReadiness check_resources_launch_readiness(void) {
     int msg_count = 0;
     
     // Add the subsystem name as the first message
-    readiness.messages[msg_count++] = strdup("Resources");
+    readiness.messages[msg_count++] = strdup(SR_RESOURCES);
     
     // Check configuration
     if (!app_config) {

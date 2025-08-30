@@ -23,7 +23,7 @@ LaunchReadiness check_terminal_launch_readiness(void) {
     bool is_ready = true;
 
     // First message is subsystem name
-    add_launch_message(&messages, &count, &capacity, strdup("Terminal"));
+    add_launch_message(&messages, &count, &capacity, strdup(SR_TERMINAL));
 
     // Check dependencies first - handle NULL config gracefully
     if (!app_config || (!app_config->webserver.enable_ipv4 && !app_config->webserver.enable_ipv6)) {

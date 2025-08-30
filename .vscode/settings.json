@@ -23,7 +23,8 @@
   "swagger.h": "c",
   "payload.h": "c",
   "registry_integration.h": "c",
-  "landing.h": "c"
+  "landing.h": "c",
+  "cstdlib": "c"
 },
 "C_Cpp.default.compilerPath": "/usr/lib64/ccache/gcc"
 }
