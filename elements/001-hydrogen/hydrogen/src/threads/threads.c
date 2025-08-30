@@ -64,11 +64,11 @@ void add_service_thread(ServiceThreads *threads, pthread_t thread_id) {
             log_group_begin();
             snprintf(msg, sizeof(msg), "%s: Thread %lu (tid: %d) added, count: %d", 
                      threads->subsystem, (unsigned long)thread_id, tid, threads->thread_count);
-            log_this("Threads-Manager", msg, LOG_LEVEL_STATE);
+            log_this(SR_THREADS_LIB, msg, LOG_LEVEL_STATE);
             log_group_end();
         }
     } else {
-        log_this("Threads-Manager", "Failed to add thread: MAX_SERVICE_THREADS reached", LOG_LEVEL_DEBUG);
+        log_this(SR_THREADS_LIB, "Failed to add thread: MAX_SERVICE_THREADS reached", LOG_LEVEL_DEBUG);
     }
     pthread_mutex_unlock(&thread_mutex);
 }
@@ -100,7 +100,7 @@ static void remove_thread_internal(ServiceThreads *threads, int index, bool skip
         log_group_begin();
         snprintf(msg, sizeof(msg), "%s: Thread %lu removed, count: %d", 
                  threads->subsystem, (unsigned long)thread_id, threads->thread_count);
-        log_this("Threads-Manager", msg, LOG_LEVEL_STATE);
+        log_this(SR_THREADS_LIB, msg, LOG_LEVEL_STATE);
         log_group_end();
     }
 }
@@ -201,26 +201,26 @@ ThreadMemoryMetrics get_thread_memory_metrics(ServiceThreads *threads, pthread_t
 void report_thread_status(void) {
     pthread_mutex_lock(&thread_mutex);
     
-    log_this("Threads", "Thread Status Report:", LOG_LEVEL_STATE);
+    log_this(SR_THREADS, "Thread Status Report:", LOG_LEVEL_STATE);
     
     // Report logging threads
-    log_this("Threads", "  Logging Threads: %d active", LOG_LEVEL_STATE, 
+    log_this(SR_THREADS, "  Logging Threads: %d active", LOG_LEVEL_STATE, 
              logging_threads.thread_count);
     
     // Report web threads
-    log_this("Threads", "  Web Threads: %d active", LOG_LEVEL_STATE, 
+    log_this(SR_THREADS, "  Web Threads: %d active", LOG_LEVEL_STATE, 
              webserver_threads.thread_count);
     
     // Report websocket threads
-    log_this("Threads", "  WebSocket Threads: %d active", LOG_LEVEL_STATE, 
+    log_this(SR_THREADS, "  WebSocket Threads: %d active", LOG_LEVEL_STATE, 
              websocket_threads.thread_count);
     
     // Report mdns server threads
-    log_this("Threads", "  mDNS Server Threads: %d active", LOG_LEVEL_STATE, 
+    log_this(SR_THREADS, "  mDNS Server Threads: %d active", LOG_LEVEL_STATE, 
              mdns_server_threads.thread_count);
     
     // Report print threads
-    log_this("Threads", "  Print Threads: %d active", LOG_LEVEL_STATE, 
+    log_this(SR_THREADS, "  Print Threads: %d active", LOG_LEVEL_STATE, 
              print_threads.thread_count);
     
     // Calculate total threads
@@ -230,7 +230,7 @@ void report_thread_status(void) {
                        mdns_server_threads.thread_count +
                        print_threads.thread_count;
     
-    log_this("Threads", "Total Active Threads: %d", LOG_LEVEL_STATE, total_threads);
+    log_this(SR_THREADS, "Total Active Threads: %d", LOG_LEVEL_STATE, total_threads);
     
     pthread_mutex_unlock(&thread_mutex);
 }

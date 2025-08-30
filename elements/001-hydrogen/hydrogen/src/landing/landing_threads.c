@@ -22,13 +22,13 @@ extern ServiceThreads print_threads;
 
 // Get the thread subsystem ID from registry
 static int get_thread_subsystem_id(void) {
-    return get_subsystem_id_by_name("Threads");
+    return get_subsystem_id_by_name(SR_THREADS);
 }
 
 // Check if the thread subsystem is ready to land
 LaunchReadiness check_threads_landing_readiness(void) {
     LaunchReadiness readiness = {0};
-    readiness.subsystem = "Threads";
+    readiness.subsystem = SR_THREADS;
     
     // Allocate space for messages (including NULL terminator)
     readiness.messages = malloc(6 * sizeof(char*));
@@ -38,11 +38,11 @@ LaunchReadiness check_threads_landing_readiness(void) {
     }
     
     // Add initial subsystem identifier
-    readiness.messages[0] = strdup("Threads");
+    readiness.messages[0] = strdup(SR_THREADS);
     int msg_idx = 1;
     
     // Check if thread management is actually running
-    if (!is_subsystem_running_by_name("Threads")) {
+    if (!is_subsystem_running_by_name(SR_THREADS)) {
         readiness.ready = false;
         readiness.messages[msg_idx++] = strdup("  No-Go:   Thread management not running");
         readiness.messages[msg_idx++] = strdup("  Decide:  No-Go For Landing of Threads");
@@ -96,12 +96,12 @@ LaunchReadiness check_threads_landing_readiness(void) {
  */
 static void free_thread_resources(void) {
     // Begin resource cleanup section
-    log_this("Threads", LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this("Threads", "LANDING: THREADS", LOG_LEVEL_STATE);
+    log_this(SR_THREADS, LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this(SR_THREADS, "LANDING: THREADS", LOG_LEVEL_STATE);
     
     // Step 1: Remove individual threads first
     if (webserver_threads.thread_count > 0) {
-        log_this("Threads", "  Step 1a: Removing web threads (%d remaining)", 
+        log_this(SR_THREADS, "  Step 1a: Removing web threads (%d remaining)", 
                 LOG_LEVEL_STATE, webserver_threads.thread_count);
         for (int i = 0; i < webserver_threads.thread_count; i++) {
             remove_service_thread(&webserver_threads, webserver_threads.thread_ids[i]);
@@ -109,7 +109,7 @@ static void free_thread_resources(void) {
     }
     
     if (websocket_threads.thread_count > 0) {
-        log_this("Threads", "  Step 1b: Removing websocket threads (%d remaining)", 
+        log_this(SR_THREADS, "  Step 1b: Removing websocket threads (%d remaining)", 
                 LOG_LEVEL_STATE, websocket_threads.thread_count);
         for (int i = 0; i < websocket_threads.thread_count; i++) {
             remove_service_thread(&websocket_threads, websocket_threads.thread_ids[i]);
@@ -117,7 +117,7 @@ static void free_thread_resources(void) {
     }
     
     if (mdns_server_threads.thread_count > 0) {
-        log_this("Threads", "  Step 1c: Removing mDNS server threads (%d remaining)", 
+        log_this(SR_THREADS, "  Step 1c: Removing mDNS server threads (%d remaining)", 
                 LOG_LEVEL_STATE, mdns_server_threads.thread_count);
         for (int i = 0; i < mdns_server_threads.thread_count; i++) {
             remove_service_thread(&mdns_server_threads, mdns_server_threads.thread_ids[i]);
@@ -125,7 +125,7 @@ static void free_thread_resources(void) {
     }
     
     if (print_threads.thread_count > 0) {
-        log_this("Threads", "  Step 1d: Removing print threads (%d remaining)", 
+        log_this(SR_THREADS, "  Step 1d: Removing print threads (%d remaining)", 
                 LOG_LEVEL_STATE, print_threads.thread_count);
         for (int i = 0; i < print_threads.thread_count; i++) {
             remove_service_thread(&print_threads, print_threads.thread_ids[i]);
@@ -133,11 +133,11 @@ static void free_thread_resources(void) {
     }
     
     // Step 2: Free all thread resources
-    log_this("Threads", "  Step 2: Freeing thread resources", LOG_LEVEL_STATE);
+    log_this(SR_THREADS, "  Step 2: Freeing thread resources", LOG_LEVEL_STATE);
     free_threads_resources();
     
     // Note: Logging threads are handled last by the logging subsystem shutdown
-    log_this("Threads", "  Step 3: Resource cleanup complete", LOG_LEVEL_STATE);
+    log_this(SR_THREADS, "  Step 3: Resource cleanup complete", LOG_LEVEL_STATE);
 }
 
 /**
@@ -150,32 +150,32 @@ static void free_thread_resources(void) {
  */
 int land_threads_subsystem(void) {
     // Begin LANDING: THREADS section
-    log_this("Threads", LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this("Threads", "LANDING: THREADS", LOG_LEVEL_STATE);
+    log_this(SR_THREADS, LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this(SR_THREADS, "LANDING: THREADS", LOG_LEVEL_STATE);
     
     // Step 1: Get current subsystem state
     int subsys_id = get_thread_subsystem_id();
     if (subsys_id < 0 || !is_subsystem_running(subsys_id)) {
-        log_this("Threads", "Thread management not running, skipping shutdown", LOG_LEVEL_STATE);
+        log_this(SR_THREADS, "Thread management not running, skipping shutdown", LOG_LEVEL_STATE);
         return 1;  // Success - nothing to do
     }
     
     // Step 2: Mark as stopping
     update_subsystem_state(subsys_id, SUBSYSTEM_STOPPING);
-    log_this("Threads", "Beginning thread management shutdown sequence", LOG_LEVEL_STATE);
+    log_this(SR_THREADS, "Beginning thread management shutdown sequence", LOG_LEVEL_STATE);
     
     // Step 3: Clean up resources
     free_thread_resources();
     
     // Step 4: Update registry and verify state
-    update_subsystem_after_shutdown("Threads");
+    update_subsystem_after_shutdown(SR_THREADS);
     
     // Step 5: Verify final state for restart capability
     SubsystemState final_state = get_subsystem_state(subsys_id);
     if (final_state == SUBSYSTEM_INACTIVE) {
-        log_this("Threads", "LANDING: THREADS - Successfully landed and ready for future restart", LOG_LEVEL_STATE);
+        log_this(SR_THREADS, "LANDING: THREADS - Successfully landed and ready for future restart", LOG_LEVEL_STATE);
     } else {
-        log_this("Threads", "LANDING: THREADS - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
+        log_this(SR_THREADS, "LANDING: THREADS - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
                 subsystem_state_to_string(final_state));
     }
     

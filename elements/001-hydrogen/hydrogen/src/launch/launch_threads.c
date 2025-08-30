@@ -30,7 +30,7 @@ static int thread_subsystem_id = -1;
 void register_threads(void) {
     // Always register during readiness check if not already registered
     if (thread_subsystem_id < 0) {
-        thread_subsystem_id = register_subsystem("Threads", NULL, NULL, NULL, NULL, NULL);
+        thread_subsystem_id = register_subsystem(SR_THREADS, NULL, NULL, NULL, NULL, NULL);
     }
 }
 
@@ -56,13 +56,13 @@ LaunchReadiness check_threads_launch_readiness(void) {
     bool ready = true;
 
     // First message is subsystem name
-    add_launch_message(&messages, &count, &capacity, strdup("Threads"));
+    add_launch_message(&messages, &count, &capacity, strdup(SR_THREADS));
 
     // Register with registry if not already registered
     register_threads();
 
     // Check if registry subsystem is available (explicit dependency verification)
-    if (is_subsystem_launchable_by_name("Registry")) {
+    if (is_subsystem_launchable_by_name(SR_REGISTRY)) {
         add_launch_message(&messages, &count, &capacity, strdup("  Go:      Registry dependency verified (launchable)"));
     } else {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Registry subsystem not launchable (dependency)"));
@@ -78,7 +78,7 @@ LaunchReadiness check_threads_launch_readiness(void) {
     }
 
     // Check if already running
-    if (is_subsystem_running_by_name("Threads")) {
+    if (is_subsystem_running_by_name(SR_THREADS)) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Thread subsystem already running"));
         ready = false;
     } else {
@@ -100,7 +100,7 @@ LaunchReadiness check_threads_launch_readiness(void) {
     finalize_launch_messages(&messages, &count, &capacity);
 
     return (LaunchReadiness){
-        .subsystem = "Threads",
+        .subsystem = SR_THREADS,
         .ready = ready,
         .messages = messages
     };
@@ -123,62 +123,62 @@ LaunchReadiness check_threads_launch_readiness(void) {
  */
 int launch_threads_subsystem(void) {
     // Begin LAUNCH: THREADS section
-    log_this("Threads", LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this("Threads", "LAUNCH: THREADS", LOG_LEVEL_STATE);
+    log_this(SR_THREADS, LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this(SR_THREADS, "LAUNCH: THREADS", LOG_LEVEL_STATE);
 
     // Step 1: Verify explicit dependencies
-    log_this("Threads", "  Step 1: Verifying explicit dependencies", LOG_LEVEL_STATE);
+    log_this(SR_THREADS, "  Step 1: Verifying explicit dependencies", LOG_LEVEL_STATE);
 
     // Check Registry dependency
     if (is_subsystem_running_by_name("Registry")) {
-        log_this("Threads", "    Registry dependency verified (running)", LOG_LEVEL_STATE);
-        log_this("Threads", "    All dependencies verified", LOG_LEVEL_STATE);
+        log_this(SR_THREADS, "    Registry dependency verified (running)", LOG_LEVEL_STATE);
+        log_this(SR_THREADS, "    All dependencies verified", LOG_LEVEL_STATE);
     } else {
-        log_this("Threads", "    Registry dependency not met", LOG_LEVEL_ERROR);
-        log_this("Threads", "LAUNCH: THREADS - Failed: Registry dependency not met", LOG_LEVEL_STATE);
+        log_this(SR_THREADS, "    Registry dependency not met", LOG_LEVEL_ERROR);
+        log_this(SR_THREADS, "LAUNCH: THREADS - Failed: Registry dependency not met", LOG_LEVEL_STATE);
         return 0;
     }
 
     // Step 2: Verify system state
-    log_this("Threads", "  Step 2: Verifying system state", LOG_LEVEL_STATE);
+    log_this(SR_THREADS, "  Step 2: Verifying system state", LOG_LEVEL_STATE);
     if (server_stopping) {
-        log_this("Threads", "    Cannot initialize thread management during shutdown", LOG_LEVEL_STATE);
-        log_this("Threads", "LAUNCH: THREADS - Failed: System in shutdown", LOG_LEVEL_STATE);
+        log_this(SR_THREADS, "    Cannot initialize thread management during shutdown", LOG_LEVEL_STATE);
+        log_this(SR_THREADS, "LAUNCH: THREADS - Failed: System in shutdown", LOG_LEVEL_STATE);
         return 0;
     }
 
     if (!server_starting && !server_running) {
-        log_this("Threads", "    Cannot initialize thread management outside startup/running phase", LOG_LEVEL_STATE);
-        log_this("Threads", "LAUNCH: THREADS - Failed: Not in startup phase", LOG_LEVEL_STATE);
+        log_this(SR_THREADS, "    Cannot initialize thread management outside startup/running phase", LOG_LEVEL_STATE);
+        log_this(SR_THREADS, "LAUNCH: THREADS - Failed: Not in startup phase", LOG_LEVEL_STATE);
         return 0;
     }
-    log_this("Threads", "    System state verified", LOG_LEVEL_STATE);
+    log_this(SR_THREADS, "    System state verified", LOG_LEVEL_STATE);
 
     // Step 3: Initialize thread tracking structures
-    log_this("Threads", "  Step 3: Initializing thread tracking structures", LOG_LEVEL_STATE);
+    log_this(SR_THREADS, "  Step 3: Initializing thread tracking structures", LOG_LEVEL_STATE);
     init_service_threads(&logging_threads, SR_LOGGING);
     init_service_threads(&webserver_threads, SR_WEBSERVER);
     init_service_threads(&websocket_threads, SR_WEBSOCKET);
     init_service_threads(&mdns_server_threads, SR_MDNS_SERVER);
     init_service_threads(&print_threads, SR_PRINT);
-    log_this("Threads", "    Thread tracking structures initialized", LOG_LEVEL_STATE);
+    log_this(SR_THREADS, "    Thread tracking structures initialized", LOG_LEVEL_STATE);
 
     // Step 4: Register the main thread
-    log_this("Threads", "  Step 4: Registering main thread", LOG_LEVEL_STATE);
+    log_this(SR_THREADS, "  Step 4: Registering main thread", LOG_LEVEL_STATE);
     pthread_t main_thread = pthread_self();
     add_service_thread(&logging_threads, main_thread);
-    log_this("Threads", "    Main thread registered", LOG_LEVEL_STATE);
+    log_this(SR_THREADS, "    Main thread registered", LOG_LEVEL_STATE);
 
     // Step 5: Update registry and verify state
-    log_this("Threads", "  Step 5: Updating subsystem registry", LOG_LEVEL_STATE);
-    update_subsystem_on_startup("Threads", true);
+    log_this(SR_THREADS, "  Step 5: Updating subsystem registry", LOG_LEVEL_STATE);
+    update_subsystem_on_startup(SR_THREADS, true);
 
     SubsystemState final_state = get_subsystem_state(thread_subsystem_id);
     if (final_state == SUBSYSTEM_RUNNING) {
-        log_this("Threads", "LAUNCH: THREADS - Successfully launched and running", LOG_LEVEL_STATE);
+        log_this(SR_THREADS, "LAUNCH: THREADS - Successfully launched and running", LOG_LEVEL_STATE);
         return 1;
     } else {
-        log_this("Threads", "LAUNCH: THREADS - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
+        log_this(SR_THREADS, "LAUNCH: THREADS - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
                 subsystem_state_to_string(final_state));
         return 0;
     }
