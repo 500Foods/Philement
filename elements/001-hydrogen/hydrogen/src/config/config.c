@@ -92,8 +92,8 @@ bool load_notify_config(json_t* root, AppConfig* config);
  * @return Pointer to the loaded configuration, or NULL on error
  */
 AppConfig* load_config(const char* cmdline_path) {
-    log_this("Config", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    log_this("Config", "CONFIGURATION", LOG_LEVEL_STATE);
+    log_this(SR_CONFIG, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+    log_this(SR_CONFIG, "CONFIGURATION", LOG_LEVEL_STATE);
 
     // Free previous configuration if it exists
     if (app_config) {
@@ -112,35 +112,35 @@ AppConfig* load_config(const char* cmdline_path) {
     if (env_path) {
         explicit_config = true;
         if (!is_file_readable(env_path)) {
-            log_this("Config", "― Env config file not found: %s", LOG_LEVEL_ERROR, env_path);
+            log_this(SR_CONFIG, "― Env config file not found: %s", LOG_LEVEL_ERROR, env_path);
             return NULL;
         }
         root = json_load_file(env_path, 0, &error);
         if (!root) {
-            log_this("Config", "― Failed to load env config: %s (line %d, column %d)",
+            log_this(SR_CONFIG, "― Failed to load env config: %s (line %d, column %d)",
                      LOG_LEVEL_ERROR, error.text, error.line, error.column);
             return NULL;
         }
         final_path = env_path;
-        log_this("Config", "― Using env config: %s", LOG_LEVEL_STATE, env_path);
+        log_this(SR_CONFIG, "― Using env config: %s", LOG_LEVEL_STATE, env_path);
     }
 
     // Then try command line path if provided
     if (!root && cmdline_path) {
         explicit_config = true;
         if (!is_file_readable(cmdline_path)) {
-            log_this("Config", "― Param config file not found: %s", LOG_LEVEL_ERROR, cmdline_path);
+            log_this(SR_CONFIG, "― Param config file not found: %s", LOG_LEVEL_ERROR, cmdline_path);
             return NULL;
         }
         root = json_load_file(cmdline_path, 0, &error);
         if (!root) {
             dprintf(STDERR_FILENO, "― JSON parse error at line %d, column %d: %s\n", error.line, error.column, error.text);
-            log_this("Config", "― Failed to load param config: %s (line %d, column %d)",
+            log_this(SR_CONFIG, "― Failed to load param config: %s (line %d, column %d)",
                      LOG_LEVEL_ERROR, error.text, error.line, error.column);
             return NULL;
         }
         final_path = cmdline_path;
-        log_this("Config", "― Using param config: %s", LOG_LEVEL_STATE, cmdline_path);
+        log_this(SR_CONFIG, "― Using param config: %s", LOG_LEVEL_STATE, cmdline_path);
     }
 
     // If no explicit config was provided, try standard locations
@@ -150,11 +150,11 @@ AppConfig* load_config(const char* cmdline_path) {
                 root = json_load_file(CONFIG_PATHS[i], 0, &error);
                 if (root) {
                     final_path = CONFIG_PATHS[i];
-                    log_this("Config", "― Using config from: %s", LOG_LEVEL_STATE, final_path);
+                    log_this(SR_CONFIG, "― Using config from: %s", LOG_LEVEL_STATE, final_path);
                     break;
                 }
                 // If file exists but has errors, try next location
-                log_this("Config", "― Skipping %s due to parse errors", LOG_LEVEL_ALERT, CONFIG_PATHS[i]);
+                log_this(SR_CONFIG, "― Skipping %s due to parse errors", LOG_LEVEL_ALERT, CONFIG_PATHS[i]);
             }
         }
     }
@@ -162,7 +162,7 @@ AppConfig* load_config(const char* cmdline_path) {
     // Allocate config structure
     AppConfig* config = calloc(1, sizeof(AppConfig));
     if (!config) {
-        log_this("Config", "― Failed to allocate memory for config", LOG_LEVEL_ERROR);
+        log_this(SR_CONFIG, "― Failed to allocate memory for config", LOG_LEVEL_ERROR);
         if (root) json_decref(root);
         return NULL;
     }
@@ -175,16 +175,16 @@ AppConfig* load_config(const char* cmdline_path) {
 
     // If no config file was found, log the checked locations
     if (!root) {
-        log_this("Config", "― No configuration file found, using defaults", LOG_LEVEL_ALERT);
-        log_this("Config", "― Checked locations:", LOG_LEVEL_STATE);
+        log_this(SR_CONFIG, "― No configuration file found, using defaults", LOG_LEVEL_ALERT);
+        log_this(SR_CONFIG, "― Checked locations:", LOG_LEVEL_STATE);
         if (env_path) {
-            log_this("Config", "――― $HYDROGEN_CONFIG: %s", LOG_LEVEL_STATE, env_path);
+            log_this(SR_CONFIG, "――― $HYDROGEN_CONFIG: %s", LOG_LEVEL_STATE, env_path);
         }
         if (cmdline_path) {
-            log_this("Config", "――― Command line path: %s", LOG_LEVEL_STATE, cmdline_path);
+            log_this(SR_CONFIG, "――― Command line path: %s", LOG_LEVEL_STATE, cmdline_path);
         }
         for (int i = 0; i < NUM_CONFIG_PATHS; i++) {
-            log_this("Config", "――― %s", LOG_LEVEL_STATE, CONFIG_PATHS[i]);
+            log_this(SR_CONFIG, "――― %s", LOG_LEVEL_STATE, CONFIG_PATHS[i]);
         }
         if (initialize_config_defaults(config)) {
           app_config = config;
@@ -320,20 +320,20 @@ static void format_section_header(char* buffer, size_t size, const char* letter,
 
 void dumpAppConfig(const AppConfig* config, const char* section) {
     if (!config) {
-        log_this("Config", "Cannot dump NULL config", LOG_LEVEL_TRACE);
+        log_this(SR_CONFIG_CURRENT, "Cannot dump NULL config", LOG_LEVEL_TRACE);
         return;
     }
 
     char header[MAX_HEADER_LENGTH];
 
     format_section_header(header, sizeof(header), "AppConfig Dump Started", "");
-    log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
+    log_this(SR_CONFIG_CURRENT, "%s", LOG_LEVEL_STATE, header);
 
     // Macro for standard config sections
     #define DUMP_CONFIG_SECTION(letter, name, field, func) \
         if (!section || strcmp(section, name) == 0) { \
             format_section_header(header, sizeof(header), letter, name); \
-            log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header); \
+            log_this(SR_CONFIG_CURRENT, "%s", LOG_LEVEL_STATE, header); \
             func(&config->field); \
         }
 
@@ -341,8 +341,8 @@ void dumpAppConfig(const AppConfig* config, const char* section) {
     #define DUMP_NOT_IMPLEMENTED(letter, name) \
         if (!section || strcmp(section, name) == 0) { \
             format_section_header(header, sizeof(header), letter, name); \
-            log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header); \
-            if (section) log_this("Config", "――― Section dump not yet implemented", LOG_LEVEL_STATE); \
+            log_this(SR_CONFIG_CURRENT, "%s", LOG_LEVEL_STATE, header); \
+            if (section) log_this(SR_CONFIG_CURRENT, "――― Section dump not yet implemented", LOG_LEVEL_STATE); \
         }
 
     DUMP_CONFIG_SECTION("A", "Server",      server,      dump_server_config);
@@ -366,7 +366,7 @@ void dumpAppConfig(const AppConfig* config, const char* section) {
     #undef DUMP_NOT_IMPLEMENTED
 
     format_section_header(header, sizeof(header), "AppConfig Dump Complete", "");
-    log_this("Config-Dump", "%s", LOG_LEVEL_STATE, header);
+    log_this(SR_CONFIG_CURRENT, "%s", LOG_LEVEL_STATE, header);
 
 }
 
@@ -409,7 +409,7 @@ static void clean_app_config(AppConfig* config) {
  */
 void cleanup_application_config(void) {
     if (app_config) {
-        log_this("Config", "Cleaning up application configuration", LOG_LEVEL_STATE);
+        log_this(SR_CONFIG, "Cleaning up application configuration", LOG_LEVEL_STATE);
         clean_app_config(app_config);
         free(app_config);
         app_config = NULL;

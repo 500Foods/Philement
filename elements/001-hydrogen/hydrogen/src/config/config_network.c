@@ -83,7 +83,7 @@ bool load_network_config(json_t* root, AppConfig* config) {
     // Allocate initial reserved ports array
     config->network.reserved_ports = malloc(network_limits.initial_reserved_ports_capacity * sizeof(int));
     if (!config->network.reserved_ports) {
-        log_this("Config-Network", "Failed to allocate reserved ports array", LOG_LEVEL_ERROR);
+        log_this(SR_CONFIG, "Failed to allocate reserved ports array", LOG_LEVEL_ERROR);
         return false;
     }
 
@@ -138,7 +138,7 @@ bool load_network_config(json_t* root, AppConfig* config) {
         success = success && PROCESS_SECTION(root, "Network.Available");
 
         // Log the Available section header (like other sections)
-        log_this("Config-Network", "―― Available", LOG_LEVEL_STATE);
+        log_this(SR_CONFIG, "―― Available", LOG_LEVEL_STATE);
 
         // Get all interface names for sorting
         const char** interface_names = malloc(json_object_size(available) * sizeof(char*));
@@ -156,7 +156,7 @@ bool load_network_config(json_t* root, AppConfig* config) {
         config->network.available_interfaces = malloc(interface_count * sizeof(*config->network.available_interfaces));
         if (!config->network.available_interfaces) {
             free(interface_names);
-            log_this("Config-Network", "Failed to allocate interface array", LOG_LEVEL_ERROR);
+            log_this(SR_CONFIG, "Failed to allocate interface array", LOG_LEVEL_ERROR);
             cleanup_network_config(&config->network);
             return false;
         }
@@ -171,7 +171,7 @@ bool load_network_config(json_t* root, AppConfig* config) {
             config->network.available_interfaces[i].interface_name = strdup(interface_name);
             if (!config->network.available_interfaces[i].interface_name) {
                 free(interface_names);
-                log_this("Config-Network", "Failed to allocate interface name", LOG_LEVEL_ERROR);
+                log_this(SR_CONFIG, "Failed to allocate interface name", LOG_LEVEL_ERROR);
                 cleanup_network_config(&config->network);
                 return false;
             }
@@ -179,7 +179,7 @@ bool load_network_config(json_t* root, AppConfig* config) {
 
             // Log the interface availability with proper format (but only if not "all")
             if (strcmp(interface_name, "all") != 0) {
-                log_this("Config-Network", "――― %s: %s", LOG_LEVEL_STATE,
+                log_this(SR_CONFIG, "――― %s: %s", LOG_LEVEL_STATE,
                         interface_name, is_enabled ? "enabled" : "disabled");
             }
         }
@@ -193,14 +193,14 @@ bool load_network_config(json_t* root, AppConfig* config) {
             // Default to just "all" enabled if no Available section (IE, an invalid actual interface)
             config->network.available_interfaces = malloc(sizeof(*config->network.available_interfaces));
             if (!config->network.available_interfaces) {
-                log_this("Config-Network", "Failed to allocate interface array", LOG_LEVEL_ERROR);
+                log_this(SR_CONFIG, "Failed to allocate interface array", LOG_LEVEL_ERROR);
                 cleanup_network_config(&config->network);
                 return false;
             }
 
             config->network.available_interfaces[0].interface_name = strdup("all");
             if (!config->network.available_interfaces[0].interface_name) {
-                log_this("Config-Network", "Failed to allocate interface name", LOG_LEVEL_ERROR);
+                log_this(SR_CONFIG, "Failed to allocate interface name", LOG_LEVEL_ERROR);
                 cleanup_network_config(&config->network);
                 return false;
             }
@@ -208,8 +208,8 @@ bool load_network_config(json_t* root, AppConfig* config) {
             config->network.available_interfaces_count = 1;
 
             // Log the default interface
-            log_this("Config-Network", "― Available *", LOG_LEVEL_STATE);
-            log_this("Config-Network", "――― all: enabled *", LOG_LEVEL_STATE);
+            log_this(SR_CONFIG, "― Available *", LOG_LEVEL_STATE);
+            log_this(SR_CONFIG, "――― all: enabled *", LOG_LEVEL_STATE);
         }
 
     if (!success) {
@@ -223,7 +223,7 @@ bool load_network_config(json_t* root, AppConfig* config) {
 // Initialize network configuration with default values from limits
 int config_network_init(NetworkConfig* config) {
     if (!config) {
-        log_this("Config-Network", "Network config pointer is NULL", LOG_LEVEL_ERROR);
+        log_this(SR_CONFIG, "Network config pointer is NULL", LOG_LEVEL_ERROR);
         return -1;
     }
 
@@ -238,7 +238,7 @@ int config_network_init(NetworkConfig* config) {
     // Initialize arrays
     config->reserved_ports = malloc(network_limits.initial_reserved_ports_capacity * sizeof(int));
     if (!config->reserved_ports) {
-        log_this("Config-Network", "Failed to allocate reserved ports array", LOG_LEVEL_ERROR);
+        log_this(SR_CONFIG, "Failed to allocate reserved ports array", LOG_LEVEL_ERROR);
         return -1;
     }
     config->reserved_ports_count = 0;
@@ -250,7 +250,7 @@ int config_network_init(NetworkConfig* config) {
 
 void dump_network_config(const NetworkConfig* config) {
     if (!config) {
-        log_this("Config", "Cannot dump NULL network config", LOG_LEVEL_TRACE);
+        log_this(SR_CONFIG, "Cannot dump NULL network config", LOG_LEVEL_TRACE);
         return;
     }
 
@@ -283,7 +283,7 @@ void dump_network_config(const NetworkConfig* config) {
             DUMP_STRING2( "――――", config->available_interfaces[i].interface_name, status);
         }
     } else {
-        log_this("Config", "―――― None", LOG_LEVEL_STATE);
+        log_this(SR_CONFIG, "―――― None", LOG_LEVEL_STATE);
     }
 }
 

@@ -47,12 +47,12 @@ bool load_mdns_client_config(json_t* root, AppConfig* config) {
         json_t* service_types = json_object_get(root, "mDNSClient.ServiceTypes");
         if (json_is_array(service_types)) {
             size_t type_count = json_array_size(service_types);
-            log_this("Config-MDNSClient", "――― Service Types: %zu configured", LOG_LEVEL_STATE, type_count);
+            log_this(SR_CONFIG, "――― Service Types: %zu configured", LOG_LEVEL_STATE, type_count);
 
             if (type_count > 0) {
                 mdns_config->service_types = calloc(type_count, sizeof(MDNSServiceType));
                 if (!mdns_config->service_types) {
-                    log_this("Config-MDNSClient", "Failed to allocate service types array", LOG_LEVEL_ERROR);
+                    log_this(SR_CONFIG, "Failed to allocate service types array", LOG_LEVEL_ERROR);
                     return false;
                 }
                 mdns_config->num_service_types = type_count;
@@ -69,24 +69,24 @@ bool load_mdns_client_config(json_t* root, AppConfig* config) {
                             success = false;
                             break;
                         }
-                        log_this("Config-MDNSClient", "――――― Type: %s", LOG_LEVEL_STATE, 
+                        log_this(SR_CONFIG, "――――― Type: %s", LOG_LEVEL_STATE, 
                                 mdns_config->service_types[i].type);
                     } else {
                         mdns_config->service_types[i].type = strdup("_http._tcp.local");
-                        log_this("Config-MDNSClient", "――――― Type: %s (*)", LOG_LEVEL_STATE, 
+                        log_this(SR_CONFIG, "――――― Type: %s (*)", LOG_LEVEL_STATE, 
                                 mdns_config->service_types[i].type);
                     }
 
                     // Process required flag
                     json_t* required = json_object_get(type, "Required");
                     mdns_config->service_types[i].required = json_is_true(required);
-                    log_this("Config-MDNSClient", "――――― Required: %s", LOG_LEVEL_STATE,
+                    log_this(SR_CONFIG, "――――― Required: %s", LOG_LEVEL_STATE,
                             mdns_config->service_types[i].required ? "true" : "false");
 
                     // Process auto_connect flag
                     json_t* auto_connect = json_object_get(type, "AutoConnect");
                     mdns_config->service_types[i].auto_connect = json_is_true(auto_connect);
-                    log_this("Config-MDNSClient", "――――― AutoConnect: %s", LOG_LEVEL_STATE,
+                    log_this(SR_CONFIG, "――――― AutoConnect: %s", LOG_LEVEL_STATE,
                             mdns_config->service_types[i].auto_connect ? "true" : "false");
                 }
             }

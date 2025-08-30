@@ -45,7 +45,7 @@
  */
 bool initialize_config_defaults(AppConfig* config) {
     if (!config) {
-        log_this("Config-Defaults", "Cannot initialize NULL config", LOG_LEVEL_ERROR);
+        log_this(SR_CONFIG, "Cannot initialize NULL config", LOG_LEVEL_ERROR);
         return false;
     }
 
@@ -69,7 +69,7 @@ bool initialize_config_defaults(AppConfig* config) {
     initialize_config_defaults_oidc(config);
     initialize_config_defaults_notify(config);
 
-    log_this("Config-Defaults", "Successfully initialized configuration defaults", LOG_LEVEL_STATE);
+    log_this(SR_CONFIG, "Successfully initialized configuration defaults", LOG_LEVEL_STATE);
     return true;
 }
 
@@ -83,7 +83,7 @@ void initialize_config_defaults_server(AppConfig* config) {
         config->server.startup_delay = 5;
         config->server.payload_key = process_env_variable_string("${env.PAYLOAD_KEY}");
         
-        log_this("Config-Defaults", "Applied config defaults for Server", LOG_LEVEL_STATE);        
+        log_this(SR_CONFIG, "Applied config defaults for Server", LOG_LEVEL_STATE);        
     }
 }
 
@@ -107,7 +107,7 @@ void initialize_config_defaults_network(AppConfig* config) {
         config->network.available_interfaces[0].available = true;
         config->network.available_interfaces_count = 1;
         
-        log_this("Config-Defaults", "Applied config defaults for Network", LOG_LEVEL_STATE);        
+        log_this(SR_CONFIG, "Applied config defaults for Network", LOG_LEVEL_STATE);        
     }
 }
 
@@ -136,7 +136,7 @@ void initialize_config_defaults_database(AppConfig* config) {
             memset(&config->databases.connections[i], 0, sizeof(DatabaseConnection));
         }
         
-        log_this("Config-Defaults", "Applied config defaults for Database", LOG_LEVEL_STATE);        
+        log_this(SR_CONFIG, "Applied config defaults for Database", LOG_LEVEL_STATE);        
     }
 }
 
@@ -171,7 +171,7 @@ void initialize_config_defaults_logging(AppConfig* config) {
         config->logging.notify.subsystem_count = 0;
         config->logging.notify.subsystems = NULL;
         
-        log_this("Config-Defaults", "Applied config defaults for Logging", LOG_LEVEL_STATE);        
+        log_this(SR_CONFIG, "Applied config defaults for Logging", LOG_LEVEL_STATE);        
     }
 }
 
@@ -190,7 +190,7 @@ void initialize_config_defaults_webserver(AppConfig* config) {
         config->webserver.max_connections_per_ip = 100;
         config->webserver.connection_timeout = 60;
         
-        log_this("Config-Defaults", "Applied config defaults for Webserver", LOG_LEVEL_STATE);        
+        log_this(SR_CONFIG, "Applied config defaults for Webserver", LOG_LEVEL_STATE);        
     }
 }
 
@@ -201,7 +201,7 @@ void initialize_config_defaults_api(AppConfig* config) {
         config->api.prefix = strdup("/api");
         config->api.jwt_secret = strdup("${env.JWT_SECRET}");
         
-        log_this("Config-Defaults", "Applied config defaults for API", LOG_LEVEL_STATE);        
+        log_this(SR_CONFIG, "Applied config defaults for API", LOG_LEVEL_STATE);        
     }
 }
 
@@ -235,7 +235,7 @@ void initialize_config_defaults_swagger(AppConfig* config) {
         config->swagger.ui_options.doc_expansion = strdup("list");
         config->swagger.ui_options.syntax_highlight_theme = strdup("agate");
         
-        log_this("Config-Defaults", "Applied config defaults for Swagger", LOG_LEVEL_STATE);        
+        log_this(SR_CONFIG, "Applied config defaults for Swagger", LOG_LEVEL_STATE);        
     }
 }
 
@@ -258,7 +258,7 @@ void initialize_config_defaults_websocket(AppConfig* config) {
         config->websocket.protocol = strdup("hydrogen");
         config->websocket.key = strdup("${env.WEBSOCKET_KEY}");
         
-        log_this("Config-Defaults", "Applied config defaults for Websockets", LOG_LEVEL_STATE);        
+        log_this(SR_CONFIG, "Applied config defaults for Websockets", LOG_LEVEL_STATE);        
     }
 }
 
@@ -273,7 +273,7 @@ void initialize_config_defaults_terminal(AppConfig* config) {
         config->terminal.web_path = strdup("/terminal");
         config->terminal.shell_command = strdup("/bin/bash");
         
-        log_this("Config-Defaults", "Applied config defaults for Terminal", LOG_LEVEL_STATE);        
+        log_this(SR_CONFIG, "Applied config defaults for Terminal", LOG_LEVEL_STATE);        
     }
 }
 
@@ -291,7 +291,7 @@ void initialize_config_defaults_mdns_server(AppConfig* config) {
         config->mdns_server.num_services = 0;
         config->mdns_server.retry_count = 1;
             
-        log_this("Config-Defaults", "Applied config defaults for mDNS Server", LOG_LEVEL_STATE);        
+        log_this(SR_CONFIG, "Applied config defaults for mDNS Server", LOG_LEVEL_STATE);        
     }
 }
 
@@ -308,7 +308,7 @@ void initialize_config_defaults_mdns_client(AppConfig* config) {
         config->mdns_client.service_types = NULL;
         config->mdns_client.num_service_types = 0;
         
-        log_this("Config-Defaults", "Applied config defaults for mDNS Client", LOG_LEVEL_STATE);        
+        log_this(SR_CONFIG, "Applied config defaults for mDNS Client", LOG_LEVEL_STATE);        
     }
 }
 
@@ -337,7 +337,7 @@ void initialize_config_defaults_mail_relay(AppConfig* config) {
             memset(&config->mail_relay.Servers[i], 0, sizeof(OutboundServer));
         }
         
-        log_this("Config-Defaults", "Applied config defaults for Mail Relay", LOG_LEVEL_STATE);        
+        log_this(SR_CONFIG, "Applied config defaults for Mail Relay", LOG_LEVEL_STATE);        
     }
 }
 
@@ -373,7 +373,7 @@ void initialize_config_defaults_print(AppConfig* config) {
         config->print.motion.jerk = 10.0;
         config->print.motion.smooth_moves = true;
         
-        log_this("Config-Defaults", "Applied config defaults for Print", LOG_LEVEL_STATE);        
+        log_this(SR_CONFIG, "Applied config defaults for Print", LOG_LEVEL_STATE);        
     }
 }
 
@@ -398,7 +398,7 @@ void initialize_config_defaults_resources(AppConfig* config) {
         config->resources.log_usage = false;
         config->resources.check_interval_ms = 60000; // 1 minute
         
-        log_this("Config-Defaults", "Applied config defaults for Resources", LOG_LEVEL_STATE);        
+        log_this(SR_CONFIG, "Applied config defaults for Resources", LOG_LEVEL_STATE);        
     }
 }
 
@@ -433,7 +433,7 @@ void initialize_config_defaults_oidc(AppConfig* config) {
         config->oidc.tokens.signing_alg = strdup("RS256");
         config->oidc.tokens.encryption_alg = NULL;
         
-        log_this("Config-Defaults", "Applied config defaults for OIDC", LOG_LEVEL_STATE);        
+        log_this(SR_CONFIG, "Applied config defaults for OIDC", LOG_LEVEL_STATE);        
     }
 }
 
@@ -453,6 +453,6 @@ void initialize_config_defaults_notify(AppConfig* config) {
         config->notify.smtp.max_retries = 3;
         config->notify.smtp.from_address = strdup("hydrogen@localhost");
         
-        log_this("Config-Defaults", "Applied config defaults for Notify", LOG_LEVEL_STATE);        
+        log_this(SR_CONFIG, "Applied config defaults for Notify", LOG_LEVEL_STATE);        
     }
 }

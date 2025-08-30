@@ -27,7 +27,7 @@ int register_subsystem_from_launch(const char* name, ServiceThreads* threads,
                                 int (*init_function)(void), void (*shutdown_function)(void)) {
     // Validate name is not NULL or empty
     if (!name || strlen(name) == 0) {
-        log_this("Launch", "Cannot register subsystem with NULL or empty name", LOG_LEVEL_ERROR);
+        log_this(SR_LAUNCH, "Cannot register subsystem with NULL or empty name", LOG_LEVEL_ERROR);
         return -1;
     }
     
@@ -35,7 +35,7 @@ int register_subsystem_from_launch(const char* name, ServiceThreads* threads,
                                     init_function, shutdown_function);
     
     if (subsys_id < 0) {
-        log_this("Launch", "Failed to register subsystem '%s'", LOG_LEVEL_ERROR, name);
+        log_this(SR_LAUNCH, "Failed to register subsystem '%s'", LOG_LEVEL_ERROR, name);
     }
     
     return subsys_id;
@@ -47,14 +47,14 @@ int register_subsystem_from_launch(const char* name, ServiceThreads* threads,
 bool add_dependency_from_launch(int subsystem_id, const char* dependency_name) {
     // Validate dependency name is not NULL or empty
     if (!dependency_name || strlen(dependency_name) == 0) {
-        log_this("Launch", "Cannot add NULL or empty dependency name", LOG_LEVEL_ERROR);
+        log_this(SR_LAUNCH, "Cannot add NULL or empty dependency name", LOG_LEVEL_ERROR);
         return false;
     }
     
     bool result = add_subsystem_dependency(subsystem_id, dependency_name);
     
     if (!result) {
-        log_this("Launch", "Failed to add dependency '%s' to subsystem", LOG_LEVEL_ERROR, 
+        log_this(SR_LAUNCH, "Failed to add dependency '%s' to subsystem", LOG_LEVEL_ERROR, 
                 dependency_name);
     }
     

@@ -55,7 +55,7 @@ void cleanup_api_config(APIConfig* config) {
 // Dump API configuration for debugging
 void dump_api_config(const APIConfig* config) {
     if (!config) {
-        log_this("Config", "Cannot dump NULL API config", LOG_LEVEL_TRACE);
+        log_this(SR_CONFIG, "Cannot dump NULL API config", LOG_LEVEL_TRACE);
         return;
     }
 

@@ -129,8 +129,8 @@ void update_server_ready_time(void) {
             double elapsed = calc_elapsed_time(&server_ready_time, &server_start_time);
 
             log_group_begin();
-            log_this("Startup", "System started at %s", LOG_LEVEL_STATE, iso_time);
-            log_this("Startup", "System startup took %.3fs", LOG_LEVEL_STATE, elapsed);
+            log_this(SR_STARTUP, "System started at %s", LOG_LEVEL_STATE, iso_time);
+            log_this(SR_STARTUP, "System startup took %.3fs", LOG_LEVEL_STATE, elapsed);
             log_group_end();
         }
     }
