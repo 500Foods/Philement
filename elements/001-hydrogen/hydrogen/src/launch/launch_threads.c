@@ -156,11 +156,11 @@ int launch_threads_subsystem(void) {
 
     // Step 3: Initialize thread tracking structures
     log_this("Threads", "  Step 3: Initializing thread tracking structures", LOG_LEVEL_STATE);
-    init_service_threads(&logging_threads, "Logging");
-    init_service_threads(&webserver_threads, "WebServer");
-    init_service_threads(&websocket_threads, "WebSocket");
-    init_service_threads(&mdns_server_threads, "mDNS Server");
-    init_service_threads(&print_threads, "Print");
+    init_service_threads(&logging_threads, SR_LOGGING);
+    init_service_threads(&webserver_threads, SR_WEBSERVER);
+    init_service_threads(&websocket_threads, SR_WEBSOCKET);
+    init_service_threads(&mdns_server_threads, SR_MDNS_SERVER);
+    init_service_threads(&print_threads, SR_PRINT);
     log_this("Threads", "    Thread tracking structures initialized", LOG_LEVEL_STATE);
 
     // Step 4: Register the main thread

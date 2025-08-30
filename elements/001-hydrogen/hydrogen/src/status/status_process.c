@@ -149,9 +149,9 @@ void get_fd_info(int fd, FileDescriptorInfo *info) {
         safe_truncate(info->type, sizeof(info->type), "socket");
         if (port > 0) {
             const char *service = "";
-            if (port == app_config->webserver.port) service = "web server";
-            else if (port == app_config->websocket.port) service = "websocket server";
-            else if (port == 5353) service = "mDNS server";
+            if (port == app_config->webserver.port) service = SR_WEBSERVER;
+            else if (port == app_config->websocket.port) service = SR_WEBSOCKET;
+            else if (port == 5353) service = SR_MDNS_SERVER;
             
             char temp[MAX_DESC_STRING * 2];  // Larger temp buffer
             if (service[0]) {

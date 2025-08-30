@@ -167,41 +167,24 @@ static bool launch_approved_subsystems(ReadinessResults* results) {
         bool init_ok = false;
         
         // Each subsystem has its own launch function in its respective launch_*.c file
-        if (strcmp(subsystem, "Payload") == 0) {
-            init_ok = (launch_payload_subsystem() == 1);
-        } else if (strcmp(subsystem, "Threads") == 0) {
-            init_ok = (launch_threads_subsystem() == 1);
-        } else if (strcmp(subsystem, "Network") == 0) {
-            init_ok = (launch_network_subsystem() == 1);
-        } else if (strcmp(subsystem, "Database") == 0) {
-            init_ok = (launch_database_subsystem() == 1);
-        } else if (strcmp(subsystem, "Logging") == 0) {
-            init_ok = (launch_logging_subsystem() == 1);
-        } else if (strcmp(subsystem, "WebServer") == 0) {
-            init_ok = (launch_webserver_subsystem() == 1);
-        } else if (strcmp(subsystem, "API") == 0) {
-            init_ok = (launch_api_subsystem() == 1);
-        } else if (strcmp(subsystem, "Swagger") == 0) {
-            init_ok = (launch_swagger_subsystem() == 1);
-        } else if (strcmp(subsystem, "WebSocket") == 0) {
-            init_ok = (launch_websocket_subsystem() == 1);
-        } else if (strcmp(subsystem, "Terminal") == 0) {
-            init_ok = (launch_terminal_subsystem() == 1);
-        } else if (strcmp(subsystem, "mDNS Server") == 0) {
-            init_ok = (launch_mdns_server_subsystem() == 1);
-        } else if (strcmp(subsystem, "mDNS Client") == 0) {
-            init_ok = (launch_mdns_client_subsystem() == 1);
-        } else if (strcmp(subsystem, "MailRelay") == 0) {
-            init_ok = (launch_mail_relay_subsystem() == 1);
-        } else if (strcmp(subsystem, "Print") == 0) {
-            init_ok = (launch_print_subsystem() == 1);
-        } else if (strcmp(subsystem, "Resources") == 0) {
-            init_ok = (launch_resources_subsystem() == 1);
-        } else if (strcmp(subsystem, "OIDC") == 0) {
-            init_ok = (launch_oidc_subsystem() == 1);
-        } else if (strcmp(subsystem, "Notify") == 0) {
-            init_ok = (launch_notify_subsystem() == 1);
-        }
+        if      (strcmp(subsystem, SR_PAYLOAD     ) == 0) { init_ok = (launch_payload_subsystem()     == 1); }
+        else if (strcmp(subsystem, SR_THREADS     ) == 0) { init_ok = (launch_threads_subsystem()     == 1); }
+        else if (strcmp(subsystem, SR_NETWORK     ) == 0) { init_ok = (launch_network_subsystem()     == 1); }
+        else if (strcmp(subsystem, SR_DATABASE    ) == 0) { init_ok = (launch_database_subsystem()    == 1); }
+        else if (strcmp(subsystem, SR_LOGGING     ) == 0) { init_ok = (launch_logging_subsystem()     == 1); }
+        else if (strcmp(subsystem, SR_WEBSERVER   ) == 0) { init_ok = (launch_webserver_subsystem()   == 1); }
+        else if (strcmp(subsystem, SR_API         ) == 0) { init_ok = (launch_api_subsystem()         == 1); }
+        else if (strcmp(subsystem, SR_SWAGGER     ) == 0) { init_ok = (launch_swagger_subsystem()     == 1); }
+        else if (strcmp(subsystem, SR_WEBSOCKET   ) == 0) { init_ok = (launch_websocket_subsystem()   == 1); }
+        else if (strcmp(subsystem, SR_TERMINAL    ) == 0) { init_ok = (launch_terminal_subsystem()    == 1); }
+        else if (strcmp(subsystem, SR_MDNS_SERVER ) == 0) { init_ok = (launch_mdns_server_subsystem() == 1); }
+        else if (strcmp(subsystem, SR_MDNS_CLIENT ) == 0) { init_ok = (launch_mdns_client_subsystem() == 1); }
+        else if (strcmp(subsystem, SR_MAIL_RELAY  ) == 0) { init_ok = (launch_mail_relay_subsystem()  == 1); }
+        else if (strcmp(subsystem, SR_PRINT       ) == 0) { init_ok = (launch_print_subsystem()       == 1); }
+        else if (strcmp(subsystem, SR_RESOURCES   ) == 0) { init_ok = (launch_resources_subsystem()   == 1); }
+        else if (strcmp(subsystem, SR_OIDC        ) == 0) { init_ok = (launch_oidc_subsystem()        == 1); }
+        else if (strcmp(subsystem, SR_NOTIFY      ) == 0) { init_ok = (launch_notify_subsystem()      == 1); }
+        
         
         // Update registry state based on result
         update_subsystem_state(subsystem_id, init_ok ? SUBSYSTEM_RUNNING : SUBSYSTEM_ERROR);

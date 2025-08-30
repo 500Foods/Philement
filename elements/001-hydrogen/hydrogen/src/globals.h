@@ -65,9 +65,11 @@
 #define DEFAULT_RESPONSE_BUFFER_SIZE 16384      // 16KB for responses
 
 // SUBSYSTEM REGISTRY /////////////////////////////////////////////////////////////////////////////
+#define SR_SERVER           "Server"
 #define SR_STARTUP          "Startup"
 #define SR_SHUTDOWN         "Shutdown"
 #define SR_RESTART          "Restart"
+#define SR_CRASH            "Crash"
 #define SR_DEPCHECK         "DepCheck"
 #define SR_CONFIG           "Config"
 #define SR_CONFIG_CURRENT   "Config-Current"
@@ -88,7 +90,7 @@
 #define SR_PRINT            "Print"
 #define SR_DATABASE         "Database"
 #define SR_LOGGING          "Logging"
-#define SR_NETWORK          "Netowrk"
+#define SR_NETWORK          "Network"
 #define SR_RESOURCES        "Resources"
 #define SR_OIDC             "OIDC"
 #define SR_NOTIFY           "Notify"

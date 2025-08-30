@@ -48,7 +48,7 @@ void mdns_server_build_announcement(uint8_t *packet, size_t *packet_len, const c
 static void _mdns_server_build_interface_announcement(uint8_t *packet, size_t *packet_len, const char *hostname,
                                              const mdns_server_t *mdns_server_instance, uint32_t ttl, const mdns_server_interface_t *iface) {
     if (!iface) {
-        log_this("mDNSServer", "Warning: NULL interface passed to announcement builder", LOG_LEVEL_ALERT);
+        log_this(SR_MDNS_SERVER, "Warning: NULL interface passed to announcement builder", LOG_LEVEL_ALERT);
         // Initialize header with zeros and return minimum packet
         dns_header_t *header = (dns_header_t *)packet;
         memset(header, 0, sizeof(dns_header_t));
@@ -95,7 +95,7 @@ static void _mdns_server_build_interface_announcement(uint8_t *packet, size_t *p
 
         size_t total_len = name_len + 1 + type_len + 6;  // +6 for extra formatting
         if (total_len >= sizeof(service_type_with_local)) {
-            log_this("mDNSServer", "Service name too long: %s.%s truncated", LOG_LEVEL_ALERT,
+            log_this(SR_MDNS_SERVER, "Service name too long: %s.%s truncated", LOG_LEVEL_ALERT,
                      mdns_server_instance->services[i].name, mdns_server_instance->services[i].type);
             name_len = max_name_len < name_len ? max_name_len : name_len;
             type_len = max_type_len < type_len ? max_type_len : type_len;
@@ -121,7 +121,7 @@ static void _mdns_server_build_interface_announcement(uint8_t *packet, size_t *p
 
     *packet_len = (size_t)(ptr - packet);
     if (*packet_len > 1500) {
-        log_this("mDNSServer", "Warning: Packet size %zu exceeds typical MTU (1500)", LOG_LEVEL_ALERT, *packet_len);
+        log_this(SR_MDNS_SERVER, "Warning: Packet size %zu exceeds typical MTU (1500)", LOG_LEVEL_ALERT, *packet_len);
     }
 }
 
@@ -133,7 +133,7 @@ void mdns_server_build_announcement(uint8_t *packet, size_t *packet_len, const c
                            const mdns_server_t *mdns_server_instance, uint32_t ttl, const network_info_t *net_info_instance) {
     // Defensive check for NULL server instance
     if (!mdns_server_instance) {
-        log_this("mDNSServer", "Warning: NULL mDNS server instance passed to build_announcement", LOG_LEVEL_ALERT);
+        log_this(SR_MDNS_SERVER, "Warning: NULL mDNS server instance passed to build_announcement", LOG_LEVEL_ALERT);
         if (packet_len) *packet_len = 0;
         return;
     }
@@ -152,7 +152,7 @@ void mdns_server_build_announcement(uint8_t *packet, size_t *packet_len, const c
 
     if (!matching_iface && mdns_server_instance->num_interfaces > 0) {
         // Fall back to the first available interface if no match found
-        log_this("mDNSServer", "No matching interface found, using first available", LOG_LEVEL_ALERT);
+        log_this(SR_MDNS_SERVER, "No matching interface found, using first available", LOG_LEVEL_ALERT);
         matching_iface = &mdns_server_instance->interfaces[0];
     }
 
@@ -229,7 +229,7 @@ void mdns_server_send_announcement(mdns_server_t *mdns_server_instance, const ne
         // Create temporary network_info for this interface
         network_info_t *iface_net_info = create_single_interface_net_info(iface);
         if (!iface_net_info) {
-            log_this("mDNSServer", "Failed to create network info for interface %s", LOG_LEVEL_DEBUG, iface->if_name);
+            log_this(SR_MDNS_SERVER, "Failed to create network info for interface %s", LOG_LEVEL_DEBUG, iface->if_name);
             continue;
         }
 
@@ -243,7 +243,7 @@ void mdns_server_send_announcement(mdns_server_t *mdns_server_instance, const ne
 
         // Check if entire interface is manually disabled (global disable)
         if (iface->disabled) {
-            // log_this("mDNSServer", "Skipping disabled interface %s", LOG_LEVEL_DEBUG, iface->if_name);
+            // log_this(SR_MDNS_SERVER, "Skipping disabled interface %s", LOG_LEVEL_DEBUG, iface->if_name);
             continue;
         }
 
@@ -253,25 +253,25 @@ void mdns_server_send_announcement(mdns_server_t *mdns_server_instance, const ne
         // Send IPv4 announcement (if not protocol-specifically disabled)
         if (iface->sockfd_v4 >= 0 && iface->v4_disabled == 0) {
             // Add debugging information for packet content
-            log_this("mDNSServer", "DEBUG: IPv4 announcement to mDNS group on %s, packet size %zu bytes", LOG_LEVEL_STATE,
+            log_this(SR_MDNS_SERVER, "DEBUG: IPv4 announcement to mDNS group on %s, packet size %zu bytes", LOG_LEVEL_STATE,
                     iface->if_name, packet_len);
             if (sendto(iface->sockfd_v4, packet, packet_len, 0, (struct sockaddr *)&addr_v4, sizeof(addr_v4)) < 0) {
-                log_this("mDNSServer", "Failed to send IPv4 announcement on %s: %s", LOG_LEVEL_DEBUG,
+                log_this(SR_MDNS_SERVER, "Failed to send IPv4 announcement on %s: %s", LOG_LEVEL_DEBUG,
                         iface->if_name, strerror(errno));
 
                 // Increment IPv4-specific failure count
                 iface->v4_consecutive_failures++;
-                log_this("mDNSServer", "IPv4 on %s has %d consecutive failures (limit: %d)", LOG_LEVEL_ALERT,
+                log_this(SR_MDNS_SERVER, "IPv4 on %s has %d consecutive failures (limit: %d)", LOG_LEVEL_ALERT,
                         iface->if_name, iface->v4_consecutive_failures, retry_count);
 
                 // Automatically disable IPv4 after configured consecutive failures
                 if (iface->v4_consecutive_failures >= retry_count && iface->v4_disabled == 0) {
                     iface->v4_disabled = 1;
-                    log_this("mDNSServer", "Automatically disabling IPv4 on %s after %d consecutive failures",
+                    log_this(SR_MDNS_SERVER, "Automatically disabling IPv4 on %s after %d consecutive failures",
                             LOG_LEVEL_ALERT, iface->if_name, iface->v4_consecutive_failures);
                 }
             } else {
-                log_this("mDNSServer", "Sent IPv4 announcement on %s", LOG_LEVEL_STATE, iface->if_name);
+                log_this(SR_MDNS_SERVER, "Sent IPv4 announcement on %s", LOG_LEVEL_STATE, iface->if_name);
                 v4_success = 1;
 
                 // Reset IPv4 failure count on success
@@ -280,32 +280,32 @@ void mdns_server_send_announcement(mdns_server_t *mdns_server_instance, const ne
                 // Reactivate IPv4 if it was disabled and is now working
                 if (iface->v4_disabled == 1) {
                     iface->v4_disabled = 0;
-                    log_this("mDNSServer", "IPv4 on %s recovered from failures, re-enabled", LOG_LEVEL_STATE, iface->if_name);
+                    log_this(SR_MDNS_SERVER, "IPv4 on %s recovered from failures, re-enabled", LOG_LEVEL_STATE, iface->if_name);
                 }
             }
         } else if (iface->v4_disabled == 1) {
-            // log_this("mDNSServer", "Skipping disabled IPv4 on interface %s", LOG_LEVEL_DEBUG, iface->if_name);
+            // log_this(SR_MDNS_SERVER, "Skipping disabled IPv4 on interface %s", LOG_LEVEL_DEBUG, iface->if_name);
         }
 
         // Send IPv6 announcement (if not protocol-specifically disabled)
         if (iface->sockfd_v6 >= 0 && iface->v6_disabled == 0) {
             if (sendto(iface->sockfd_v6, packet, packet_len, 0, (struct sockaddr *)&addr_v6, sizeof(addr_v6)) < 0) {
-                log_this("mDNSServer", "Failed to send IPv6 announcement on %s: %s", LOG_LEVEL_ALERT,
+                log_this(SR_MDNS_SERVER, "Failed to send IPv6 announcement on %s: %s", LOG_LEVEL_ALERT,
                         iface->if_name, strerror(errno));
 
                 // Increment IPv6-specific failure count
                 iface->v6_consecutive_failures++;
-                log_this("mDNSServer", "IPv6 on %s has %d consecutive failures (limit: %d)", LOG_LEVEL_ALERT,
+                log_this(SR_MDNS_SERVER, "IPv6 on %s has %d consecutive failures (limit: %d)", LOG_LEVEL_ALERT,
                         iface->if_name, iface->v6_consecutive_failures, retry_count);
 
                 // Automatically disable IPv6 after configured consecutive failures
                 if (iface->v6_consecutive_failures >= retry_count && iface->v6_disabled == 0) {
                     iface->v6_disabled = 1;
-                    log_this("mDNSServer", "Automatically disabling IPv6 on %s after %d consecutive failures",
+                    log_this(SR_MDNS_SERVER, "Automatically disabling IPv6 on %s after %d consecutive failures",
                             LOG_LEVEL_ALERT, iface->if_name, iface->v6_consecutive_failures);
                 }
             } else {
-                log_this("mDNSServer", "Sent IPv6 announcement on %s", LOG_LEVEL_STATE, iface->if_name);
+                log_this(SR_MDNS_SERVER, "Sent IPv6 announcement on %s", LOG_LEVEL_STATE, iface->if_name);
                 v6_success = 1;
 
                 // Reset IPv6 failure count on success
@@ -314,11 +314,11 @@ void mdns_server_send_announcement(mdns_server_t *mdns_server_instance, const ne
                 // Reactivate IPv6 if it was disabled and is now working
                 if (iface->v6_disabled == 1) {
                     iface->v6_disabled = 0;
-                    log_this("mDNSServer", "IPv6 on %s recovered from failures, re-enabled", LOG_LEVEL_STATE, iface->if_name);
+                    log_this(SR_MDNS_SERVER, "IPv6 on %s recovered from failures, re-enabled", LOG_LEVEL_STATE, iface->if_name);
                 }
             }
         } else if (iface->v6_disabled == 1) {
-            // log_this("mDNSServer", "Skipping disabled IPv6 on interface %s", LOG_LEVEL_DEBUG, iface->if_name);
+            // log_this(SR_MDNS_SERVER, "Skipping disabled IPv6 on interface %s", LOG_LEVEL_DEBUG, iface->if_name);
         }
 
         // Legacy interface-level failure tracking (for backward compatibility)
@@ -327,13 +327,13 @@ void mdns_server_send_announcement(mdns_server_t *mdns_server_instance, const ne
             // No announcements succeeded on this interface
             iface->consecutive_failures++;
 
-            log_this("mDNSServer", "Interface %s has %d consecutive announcement failures (limit: %d)",
+            log_this(SR_MDNS_SERVER, "Interface %s has %d consecutive announcement failures (limit: %d)",
                     LOG_LEVEL_ALERT, iface->if_name, iface->consecutive_failures, retry_count);
 
             // Automatically disable interface after configured consecutive failures
             if (iface->consecutive_failures >= retry_count && iface->disabled == 0) {
                 iface->disabled = 1;
-                log_this("mDNSServer", "Automatically disabling interface %s after %d consecutive failures",
+                log_this(SR_MDNS_SERVER, "Automatically disabling interface %s after %d consecutive failures",
                         LOG_LEVEL_ALERT, iface->if_name, iface->consecutive_failures);
             }
         } else if (iface->disabled == 0) {

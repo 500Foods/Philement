@@ -30,11 +30,11 @@ struct OIDCUserContext {
 OIDCUserContext* init_oidc_user_management(int max_failed_attempts,
                                         bool require_email_verification,
                                         int password_min_length) {
-    log_this("OIDC Users", "Initializing user management", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "Initializing user management", LOG_LEVEL_STATE);
     
     OIDCUserContext *context = (OIDCUserContext*)calloc(1, sizeof(OIDCUserContext));
     if (!context) {
-        log_this("OIDC Users", "Failed to allocate memory for user context", LOG_LEVEL_ERROR);
+        log_this(SR_OIDC, "Failed to allocate memory for user context", LOG_LEVEL_ERROR);
         return NULL;
     }
     
@@ -44,7 +44,7 @@ OIDCUserContext* init_oidc_user_management(int max_failed_attempts,
     context->require_email_verification = require_email_verification;
     context->password_min_length = password_min_length;
     
-    log_this("OIDC Users", "User management initialized successfully", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "User management initialized successfully", LOG_LEVEL_STATE);
     return context;
 }
 
@@ -58,7 +58,7 @@ void cleanup_oidc_user_management(OIDCUserContext *context) {
         return;
     }
     
-    log_this("OIDC Users", "Cleaning up user management", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "Cleaning up user management", LOG_LEVEL_STATE);
     
     // Clean up user storage resources
     if (context->user_storage) {
@@ -66,7 +66,7 @@ void cleanup_oidc_user_management(OIDCUserContext *context) {
     }
     
     free(context);
-    log_this("OIDC Users", "User management cleanup completed", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "User management cleanup completed", LOG_LEVEL_STATE);
 }
 
 /**
@@ -83,14 +83,14 @@ OIDCAuthResult oidc_authenticate_user(OIDCUserContext *context,
     OIDCAuthResult result = {0};  // Initialize all fields to 0/NULL
     
     if (!context || !username || !password) {
-        log_this("OIDC Users", "Invalid parameters for user authentication", LOG_LEVEL_ERROR);
+        log_this(SR_OIDC, "Invalid parameters for user authentication", LOG_LEVEL_ERROR);
         result.success = false;
         result.level = AUTH_LEVEL_NONE;
         result.error = strdup("Invalid parameters");
         return result;
     }
     
-    log_this("OIDC Users", "Authenticating user", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "Authenticating user", LOG_LEVEL_STATE);
     
     // This is a stub implementation that always succeeds for "test_user"
     if (strcmp(username, "test_user") == 0) {
@@ -129,23 +129,23 @@ char* oidc_create_user(OIDCUserContext *context,
     (void)family_name;
     
     if (!context || !username || !password || !email) {
-        log_this("OIDC Users", "Invalid parameters for user creation", LOG_LEVEL_ERROR);
+        log_this(SR_OIDC, "Invalid parameters for user creation", LOG_LEVEL_ERROR);
         return NULL;
     }
     
     // Check password length
     if (strlen(password) < (size_t)context->password_min_length) {
-        log_this("OIDC Users", "Password too short", LOG_LEVEL_ERROR);
+        log_this(SR_OIDC, "Password too short", LOG_LEVEL_ERROR);
         return NULL;
     }
     
-    log_this("OIDC Users", "Creating new user", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "Creating new user", LOG_LEVEL_STATE);
     
     // This is a stub implementation that returns a dummy user ID
     char *user_id = strdup("user_12345");
     
     if (!user_id) {
-        log_this("OIDC Users", "Failed to allocate memory for user ID", LOG_LEVEL_ERROR);
+        log_this(SR_OIDC, "Failed to allocate memory for user ID", LOG_LEVEL_ERROR);
         return NULL;
     }
     
@@ -161,11 +161,11 @@ char* oidc_create_user(OIDCUserContext *context,
  */
 char* oidc_get_user_info(OIDCUserContext *context, const char *user_id) {
     if (!context || !user_id) {
-        log_this("OIDC Users", "Invalid parameters for user info retrieval", LOG_LEVEL_ERROR);
+        log_this(SR_OIDC, "Invalid parameters for user info retrieval", LOG_LEVEL_ERROR);
         return NULL;
     }
     
-    log_this("OIDC Users", "Retrieving user info", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "Retrieving user info", LOG_LEVEL_STATE);
     
     // This is a stub implementation that returns a minimal valid user info
     char *user_info = strdup("{"
@@ -176,7 +176,7 @@ char* oidc_get_user_info(OIDCUserContext *context, const char *user_id) {
         "}");
     
     if (!user_info) {
-        log_this("OIDC Users", "Failed to allocate memory for user info", LOG_LEVEL_ERROR);
+        log_this(SR_OIDC, "Failed to allocate memory for user info", LOG_LEVEL_ERROR);
         return NULL;
     }
     
@@ -197,11 +197,11 @@ int oidc_update_user(OIDCUserContext *context,
                    const char *field,
                    const char *value) {
     if (!context || !user_id || !field || !value) {
-        log_this("OIDC Users", "Invalid parameters for user update", LOG_LEVEL_ERROR);
+        log_this(SR_OIDC, "Invalid parameters for user update", LOG_LEVEL_ERROR);
         return -1;
     }
     
-    log_this("OIDC Users", "Updating user", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "Updating user", LOG_LEVEL_STATE);
     
     // This is a stub implementation that always succeeds
     return 0;

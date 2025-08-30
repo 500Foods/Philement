@@ -72,32 +72,32 @@ uint8_t *read_dns_name(uint8_t *ptr, const uint8_t *packet, char *name, size_t n
 
 int create_multicast_socket(int family, const char *group, const char *if_name) {
     if (!if_name) {
-        log_this("mDNSServer", "No interface name provided", LOG_LEVEL_DEBUG);
+        log_this(SR_MDNS_SERVER, "No interface name provided", LOG_LEVEL_DEBUG);
         return -1;
     }
 
     int sockfd = socket(family, SOCK_DGRAM, 0);
     if (sockfd < 0) {
-        log_this("mDNSServer", "Failed to create socket: %s", LOG_LEVEL_DEBUG, strerror(errno));
+        log_this(SR_MDNS_SERVER, "Failed to create socket: %s", LOG_LEVEL_DEBUG, strerror(errno));
         return -1;
     }
 
     if (setsockopt(sockfd, SOL_SOCKET, SO_BINDTODEVICE, if_name, (socklen_t)strlen(if_name)) < 0) {
-        log_this("mDNSServer", "Failed to bind to interface %s: %s", LOG_LEVEL_DEBUG, if_name, strerror(errno));
+        log_this(SR_MDNS_SERVER, "Failed to bind to interface %s: %s", LOG_LEVEL_DEBUG, if_name, strerror(errno));
         close(sockfd);
         return -1;
     }
 
     unsigned int if_index = if_nametoindex(if_name);
     if (if_index == 0) {
-        log_this("mDNSServer", "Failed to get interface index for %s: %s", LOG_LEVEL_DEBUG, if_name, strerror(errno));
+        log_this(SR_MDNS_SERVER, "Failed to get interface index for %s: %s", LOG_LEVEL_DEBUG, if_name, strerror(errno));
         close(sockfd);
         return -1;
     }
 
     int yes = 1;
     if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) < 0) {
-        log_this("mDNSServer", "Failed to set SO_REUSEADDR: %s", LOG_LEVEL_DEBUG, strerror(errno));
+        log_this(SR_MDNS_SERVER, "Failed to set SO_REUSEADDR: %s", LOG_LEVEL_DEBUG, strerror(errno));
         close(sockfd);
         return -1;
     }
@@ -117,7 +117,7 @@ int create_multicast_socket(int family, const char *group, const char *if_name) 
     }
 
     if (bind(sockfd, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
-        log_this("mDNSServer", "Failed to bind socket: %s", LOG_LEVEL_DEBUG, strerror(errno));
+        log_this(SR_MDNS_SERVER, "Failed to bind socket: %s", LOG_LEVEL_DEBUG, strerror(errno));
         close(sockfd);
         return -1;
     }
@@ -126,7 +126,7 @@ int create_multicast_socket(int family, const char *group, const char *if_name) 
     if (setsockopt(sockfd, family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6,
                    family == AF_INET ? IP_MULTICAST_TTL : IPV6_MULTICAST_HOPS,
                    &ttl, sizeof(ttl)) < 0) {
-        log_this("mDNSServer", "Failed to set multicast TTL: %s", LOG_LEVEL_DEBUG, strerror(errno));
+        log_this(SR_MDNS_SERVER, "Failed to set multicast TTL: %s", LOG_LEVEL_DEBUG, strerror(errno));
         close(sockfd);
         return -1;
     }
@@ -135,7 +135,7 @@ int create_multicast_socket(int family, const char *group, const char *if_name) 
     if (setsockopt(sockfd, family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6,
                    family == AF_INET ? IP_MULTICAST_LOOP : IPV6_MULTICAST_LOOP,
                    &loop, sizeof(loop)) < 0) {
-        log_this("mDNSServer", "Failed to enable multicast loop: %s", LOG_LEVEL_ALERT, strerror(errno));
+        log_this(SR_MDNS_SERVER, "Failed to enable multicast loop: %s", LOG_LEVEL_ALERT, strerror(errno));
     }
 
     if (family == AF_INET) {
@@ -144,12 +144,12 @@ int create_multicast_socket(int family, const char *group, const char *if_name) 
         mreq.imr_address.s_addr = INADDR_ANY;
         mreq.imr_ifindex = (if_index <= INT_MAX) ? (int)if_index : 0;
         if (setsockopt(sockfd, IPPROTO_IP, IP_MULTICAST_IF, &mreq, sizeof(mreq)) < 0) {
-            log_this("mDNSServer", "Failed to set IPv4 multicast interface: %s", LOG_LEVEL_DEBUG, strerror(errno));
+            log_this(SR_MDNS_SERVER, "Failed to set IPv4 multicast interface: %s", LOG_LEVEL_DEBUG, strerror(errno));
             close(sockfd);
             return -1;
         }
         if (setsockopt(sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0) {
-            log_this("mDNSServer", "Failed to join IPv4 multicast group: %s", LOG_LEVEL_DEBUG, strerror(errno));
+            log_this(SR_MDNS_SERVER, "Failed to join IPv4 multicast group: %s", LOG_LEVEL_DEBUG, strerror(errno));
             close(sockfd);
             return -1;
         }
@@ -158,18 +158,18 @@ int create_multicast_socket(int family, const char *group, const char *if_name) 
         inet_pton(AF_INET6, group, &mreq.ipv6mr_multiaddr);
         mreq.ipv6mr_interface = if_index;
         if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_MULTICAST_IF, &if_index, sizeof(if_index)) < 0) {
-            log_this("mDNSServer", "Failed to set IPv6 multicast interface: %s", LOG_LEVEL_DEBUG, strerror(errno));
+            log_this(SR_MDNS_SERVER, "Failed to set IPv6 multicast interface: %s", LOG_LEVEL_DEBUG, strerror(errno));
             close(sockfd);
             return -1;
         }
         if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_JOIN_GROUP, &mreq, sizeof(mreq)) < 0) {
-            log_this("mDNSServer", "Failed to join IPv6 multicast group: %s", LOG_LEVEL_DEBUG, strerror(errno));
+            log_this(SR_MDNS_SERVER, "Failed to join IPv6 multicast group: %s", LOG_LEVEL_DEBUG, strerror(errno));
             close(sockfd);
             return -1;
         }
     }
 
-    log_this("mDNSServer", "Created multicast socket on interface %s", LOG_LEVEL_STATE, if_name);
+    log_this(SR_MDNS_SERVER, "Created multicast socket on interface %s", LOG_LEVEL_STATE, if_name);
     return sockfd;
 }
 
@@ -257,7 +257,7 @@ void *mdns_server_announce_loop(void *arg) {
     mdns_server_t *mdns_server_instance = thread_arg->mdns_server;
     add_service_thread(&mdns_server_threads, pthread_self());
 
-    log_this("mDNSServer", "mDNS Server announce loop started", LOG_LEVEL_STATE);
+    log_this(SR_MDNS_SERVER, "mDNS Server announce loop started", LOG_LEVEL_STATE);
 
     int initial_announcements = 3; // Initial burst
     unsigned int interval = 1; // Start with 1-second intervals
@@ -284,7 +284,7 @@ void *mdns_server_announce_loop(void *arg) {
         }
     }
 
-    log_this("mDNSServer", "Shutdown: mDNS Server announce loop exiting", LOG_LEVEL_STATE);
+    log_this(SR_MDNS_SERVER, "Shutdown: mDNS Server announce loop exiting", LOG_LEVEL_STATE);
     remove_service_thread(&mdns_server_threads, pthread_self());
     free(thread_arg);
     return NULL;
@@ -297,13 +297,13 @@ void *mdns_server_responder_loop(void *arg) {
     char name[256];
 
     add_service_thread(&mdns_server_threads, pthread_self());
-    log_this("mDNSServer", "mDNS Server responder loop started", LOG_LEVEL_STATE);
+    log_this(SR_MDNS_SERVER, "mDNS Server responder loop started", LOG_LEVEL_STATE);
 
     // Create pollfd array for all interface sockets
     size_t num_sockets = mdns_server_instance->num_interfaces * 2U; // 2 sockets per interface (v4/v6)
     struct pollfd *fds = malloc(sizeof(struct pollfd) * num_sockets);
     if (!fds) {
-        log_this("mDNSServer", "Out of memory for poll fds", LOG_LEVEL_DEBUG);
+        log_this(SR_MDNS_SERVER, "Out of memory for poll fds", LOG_LEVEL_DEBUG);
         remove_service_thread(&mdns_server_threads, pthread_self());
         free(thread_arg);
         return NULL;
@@ -325,7 +325,7 @@ void *mdns_server_responder_loop(void *arg) {
     }
 
     if (nfds == 0) {
-        log_this("mDNSServer", "No sockets to monitor", LOG_LEVEL_DEBUG);
+        log_this(SR_MDNS_SERVER, "No sockets to monitor", LOG_LEVEL_DEBUG);
         free(fds);
         remove_service_thread(&mdns_server_threads, pthread_self());
         free(thread_arg);
@@ -336,7 +336,7 @@ void *mdns_server_responder_loop(void *arg) {
         int ret = poll(fds, nfds, 1000); // 1-second timeout, no cast needed
         if (ret < 0) {
             if (errno != EINTR) {
-                log_this("mDNSServer", "Poll error: %s", LOG_LEVEL_DEBUG, strerror(errno));
+                log_this(SR_MDNS_SERVER, "Poll error: %s", LOG_LEVEL_DEBUG, strerror(errno));
             }
             continue;
         }
@@ -349,7 +349,7 @@ void *mdns_server_responder_loop(void *arg) {
                 ssize_t len = recvfrom(fds[i].fd, buffer, sizeof(buffer), 0, (struct sockaddr *)&src_addr, &src_len);
                 if (len < 0) {
                     if (errno != EAGAIN && errno != EWOULDBLOCK) {
-                        log_this("mDNSServer", "Failed to receive mDNS Server packet: %s", LOG_LEVEL_DEBUG, strerror(errno));
+                        log_this(SR_MDNS_SERVER, "Failed to receive mDNS Server packet: %s", LOG_LEVEL_DEBUG, strerror(errno));
                     }
                     continue;
                 }
@@ -394,7 +394,7 @@ void *mdns_server_responder_loop(void *arg) {
         }
     }
 
-    log_this("mDNSServer", "Shutdown: mDNS Server responder loop exiting", LOG_LEVEL_STATE);
+    log_this(SR_MDNS_SERVER, "Shutdown: mDNS Server responder loop exiting", LOG_LEVEL_STATE);
     remove_service_thread(&mdns_server_threads, pthread_self());
     free(thread_arg);
     return NULL;
@@ -406,7 +406,7 @@ mdns_server_t *mdns_server_init(const char *app_name, const char *id, const char
                   mdns_server_service_t *services, size_t num_services, int enable_ipv6) {
     mdns_server_t *mdns_server_instance = malloc(sizeof(mdns_server_t));
     if (!mdns_server_instance) {
-        log_this("mDNSServer", "Out of memory", LOG_LEVEL_ERROR);
+        log_this(SR_MDNS_SERVER, "Out of memory", LOG_LEVEL_ERROR);
         return NULL;
     }
 
@@ -415,7 +415,7 @@ mdns_server_t *mdns_server_init(const char *app_name, const char *id, const char
     // Get raw network info first
     network_info_t *raw_net_info = get_network_info();
     if (!raw_net_info) {
-        log_this("mDNSServer", "Failed to get network info", LOG_LEVEL_DEBUG);
+        log_this(SR_MDNS_SERVER, "Failed to get network info", LOG_LEVEL_DEBUG);
         free(mdns_server_instance);
         return NULL;
     }
@@ -425,7 +425,7 @@ mdns_server_t *mdns_server_init(const char *app_name, const char *id, const char
     free_network_info(raw_net_info); // Clean up raw network info
 
     if (!net_info_instance || net_info_instance->count == 0) {
-        log_this("mDNSServer", "No enabled interfaces found after filtering", LOG_LEVEL_DEBUG);
+        log_this(SR_MDNS_SERVER, "No enabled interfaces found after filtering", LOG_LEVEL_DEBUG);
         free(mdns_server_instance);
         if (net_info_instance) {
             free_network_info(net_info_instance);
@@ -438,7 +438,7 @@ mdns_server_t *mdns_server_init(const char *app_name, const char *id, const char
     mdns_server_instance->interfaces = malloc(sizeof(mdns_server_interface_t) * interface_count);
     mdns_server_instance->num_interfaces = 0;
     if (!mdns_server_instance->interfaces) {
-        log_this("mDNSServer", "Out of memory for interfaces", LOG_LEVEL_DEBUG);
+        log_this(SR_MDNS_SERVER, "Out of memory for interfaces", LOG_LEVEL_DEBUG);
         free(mdns_server_instance);
         free_network_info(net_info_instance);
         return NULL;
@@ -465,7 +465,7 @@ mdns_server_t *mdns_server_init(const char *app_name, const char *id, const char
         }
 
         if (!mdns_server_if->if_name || !mdns_server_if->ip_addresses) {
-            log_this("mDNSServer", "Out of memory for interface %s", LOG_LEVEL_DEBUG, iface->name);
+            log_this(SR_MDNS_SERVER, "Out of memory for interface %s", LOG_LEVEL_DEBUG, iface->name);
             goto cleanup;
         }
 
@@ -473,7 +473,7 @@ mdns_server_t *mdns_server_init(const char *app_name, const char *id, const char
         for (int j = 0; j < iface->ip_count; j++) {
             mdns_server_if->ip_addresses[j] = strdup(iface->ips[j]);
             if (!mdns_server_if->ip_addresses[j]) {
-                log_this("mDNSServer", "Out of memory for IP address", LOG_LEVEL_DEBUG);
+                log_this(SR_MDNS_SERVER, "Out of memory for IP address", LOG_LEVEL_DEBUG);
                 goto cleanup;
             }
         }
@@ -483,7 +483,7 @@ mdns_server_t *mdns_server_init(const char *app_name, const char *id, const char
     mdns_server_if->sockfd_v6 = enable_ipv6 ? create_multicast_socket(AF_INET6, MDNS_GROUP_V6, mdns_server_if->if_name) : -1;
 
     if (mdns_server_if->sockfd_v4 < 0 && (!enable_ipv6 || mdns_server_if->sockfd_v6 < 0)) {
-        log_this("mDNSServer", "Failed to create sockets for interface %s", LOG_LEVEL_DEBUG, mdns_server_if->if_name);
+        log_this(SR_MDNS_SERVER, "Failed to create sockets for interface %s", LOG_LEVEL_DEBUG, mdns_server_if->if_name);
         goto cleanup;
     }
 
@@ -501,7 +501,7 @@ mdns_server_t *mdns_server_init(const char *app_name, const char *id, const char
     }
 
     if (mdns_server_instance->num_interfaces == 0) {
-        log_this("mDNSServer", "No usable interfaces found", LOG_LEVEL_DEBUG);
+        log_this(SR_MDNS_SERVER, "No usable interfaces found", LOG_LEVEL_DEBUG);
         goto cleanup;
     }
 
@@ -509,7 +509,7 @@ mdns_server_t *mdns_server_init(const char *app_name, const char *id, const char
     mdns_server_instance->num_services = num_services;
     mdns_server_instance->services = malloc(sizeof(mdns_server_service_t) * num_services);
     if (!mdns_server_instance->services) {
-        log_this("mDNSServer", "Out of memory for services", LOG_LEVEL_DEBUG);
+        log_this(SR_MDNS_SERVER, "Out of memory for services", LOG_LEVEL_DEBUG);
         free(mdns_server_instance);
         free_network_info(net_info_instance);
         return NULL;
@@ -534,7 +534,7 @@ mdns_server_t *mdns_server_init(const char *app_name, const char *id, const char
     // Initialize hostname
     char hostname[256];
     if (gethostname(hostname, sizeof(hostname)) < 0) {
-        log_this("mDNSServer", "Failed to get hostname: %s", LOG_LEVEL_DEBUG, strerror(errno));
+        log_this(SR_MDNS_SERVER, "Failed to get hostname: %s", LOG_LEVEL_DEBUG, strerror(errno));
         strncpy(hostname, "unknown", sizeof(hostname));
     }
     char *dot = strchr(hostname, '.');
@@ -542,7 +542,7 @@ mdns_server_t *mdns_server_init(const char *app_name, const char *id, const char
 
     mdns_server_instance->hostname = malloc(strlen(hostname) + 7);
     if (!mdns_server_instance->hostname) {
-        log_this("mDNSServer", "Out of memory", LOG_LEVEL_ERROR);
+        log_this(SR_MDNS_SERVER, "Out of memory", LOG_LEVEL_ERROR);
         goto cleanup;
     }
     sprintf(mdns_server_instance->hostname, "%s.local", hostname);
@@ -562,11 +562,11 @@ mdns_server_t *mdns_server_init(const char *app_name, const char *id, const char
     if (!mdns_server_instance->service_name || !mdns_server_instance->device_id || !mdns_server_instance->friendly_name ||
         !mdns_server_instance->model || !mdns_server_instance->manufacturer || !mdns_server_instance->sw_version ||
         !mdns_server_instance->hw_version || !mdns_server_instance->config_url || !mdns_server_instance->secret_key) {
-        log_this("mDNSServer", "Out of memory", LOG_LEVEL_ERROR);
+        log_this(SR_MDNS_SERVER, "Out of memory", LOG_LEVEL_ERROR);
         goto cleanup;
     }
 
-    log_this("mDNSServer", "mDNS Server initialized with hostname: %s", LOG_LEVEL_STATE, mdns_server_instance->hostname);
+    log_this(SR_MDNS_SERVER, "mDNS Server initialized with hostname: %s", LOG_LEVEL_STATE, mdns_server_instance->hostname);
     free_network_info(net_info_instance);
     return mdns_server_instance;
 
@@ -627,13 +627,13 @@ void close_mdns_server_interfaces(mdns_server_t *mdns_server_instance) {
         
         // Close sockets first
         if (iface->sockfd_v4 >= 0) {
-            log_this("mDNSServer", "Closing IPv4 socket on interface %s", LOG_LEVEL_STATE, iface->if_name);
+            log_this(SR_MDNS_SERVER, "Closing IPv4 socket on interface %s", LOG_LEVEL_STATE, iface->if_name);
             close(iface->sockfd_v4);
             iface->sockfd_v4 = -1;
         }
         
         if (iface->sockfd_v6 >= 0) {
-            log_this("mDNSServer", "Closing IPv6 socket on interface %s", LOG_LEVEL_STATE, iface->if_name);
+            log_this(SR_MDNS_SERVER, "Closing IPv6 socket on interface %s", LOG_LEVEL_STATE, iface->if_name);
             close(iface->sockfd_v6);
             iface->sockfd_v6 = -1;
         }
@@ -643,7 +643,7 @@ void close_mdns_server_interfaces(mdns_server_t *mdns_server_instance) {
 void mdns_server_shutdown(mdns_server_t *mdns_server_instance) {
     if (!mdns_server_instance) return;
 
-    log_this("mDNSServer", "Shutdown: Initiating mDNS Server shutdown", LOG_LEVEL_STATE);
+    log_this(SR_MDNS_SERVER, "Shutdown: Initiating mDNS Server shutdown", LOG_LEVEL_STATE);
     
     // Wait for any active threads to notice the shutdown flag
     // This ensures they don't access mdns_server after we free it
@@ -652,7 +652,7 @@ void mdns_server_shutdown(mdns_server_t *mdns_server_instance) {
     
     // Check for active threads before proceeding
     if (mdns_server_threads.thread_count > 0) {
-        log_this("mDNSServer", "Waiting for %d mDNS Server threads to exit", 
+        log_this(SR_MDNS_SERVER, "Waiting for %d mDNS Server threads to exit", 
                 LOG_LEVEL_STATE, mdns_server_threads.thread_count);
                 
         // Wait with timeout for threads to exit
@@ -662,7 +662,7 @@ void mdns_server_shutdown(mdns_server_t *mdns_server_instance) {
         }
         
         if (mdns_server_threads.thread_count > 0) {
-            log_this("mDNSServer", "Warning: %d mDNS Server threads still active", 
+            log_this(SR_MDNS_SERVER, "Warning: %d mDNS Server threads still active", 
                    LOG_LEVEL_ALERT, mdns_server_threads.thread_count);
         }
     }
@@ -696,18 +696,18 @@ void mdns_server_shutdown(mdns_server_t *mdns_server_instance) {
             for (int i = 0; i < 3; i++) {
                 if (iface->sockfd_v4 >= 0) {
                     if (sendto(iface->sockfd_v4, packet, packet_len, 0, (struct sockaddr *)&addr_v4, sizeof(addr_v4)) < 0) {
-                        log_this("mDNSServer", "Failed to send IPv4 goodbye on %s: %s", LOG_LEVEL_ALERT,
+                        log_this(SR_MDNS_SERVER, "Failed to send IPv4 goodbye on %s: %s", LOG_LEVEL_ALERT,
                                 iface->if_name, strerror(errno));
                     } else {
-                        log_this("mDNSServer", "Sent IPv4 goodbye packet %d/3 on %s", LOG_LEVEL_STATE, i+1, iface->if_name);
+                        log_this(SR_MDNS_SERVER, "Sent IPv4 goodbye packet %d/3 on %s", LOG_LEVEL_STATE, i+1, iface->if_name);
                     }
                 }
                 if (iface->sockfd_v6 >= 0) {
                     if (sendto(iface->sockfd_v6, packet, packet_len, 0, (struct sockaddr *)&addr_v6, sizeof(addr_v6)) < 0) {
-                        log_this("mDNSServer", "Failed to send IPv6 goodbye on %s: %s", LOG_LEVEL_ALERT,
+                        log_this(SR_MDNS_SERVER, "Failed to send IPv6 goodbye on %s: %s", LOG_LEVEL_ALERT,
                                 iface->if_name, strerror(errno));
                     } else {
-                        log_this("mDNSServer", "Sent IPv6 goodbye packet %d/3 on %s", LOG_LEVEL_STATE, i+1, iface->if_name);
+                        log_this(SR_MDNS_SERVER, "Sent IPv6 goodbye packet %d/3 on %s", LOG_LEVEL_STATE, i+1, iface->if_name);
                     }
                 }
                 usleep(250000); // 250ms per RFC 6762
@@ -720,19 +720,19 @@ void mdns_server_shutdown(mdns_server_t *mdns_server_instance) {
     }
     
     // Close all sockets before freeing memory
-    log_this("mDNSServer", "Closing mDNS Server sockets", LOG_LEVEL_STATE);
+    log_this(SR_MDNS_SERVER, "Closing mDNS Server sockets", LOG_LEVEL_STATE);
     close_mdns_server_interfaces(mdns_server_instance);
     
     // Final check for active threads
     update_service_thread_metrics(&mdns_server_threads);
     if (mdns_server_threads.thread_count > 0) {
-        log_this("mDNSServer", "Warning: Proceeding with cleanup with %d threads still active", 
+        log_this(SR_MDNS_SERVER, "Warning: Proceeding with cleanup with %d threads still active", 
                 LOG_LEVEL_ALERT, mdns_server_threads.thread_count);
     }
     
     // Brief delay to ensure no threads are accessing resources
     usleep(200000);  // 200ms delay
-    log_this("mDNSServer", "Freeing mDNS Server resources", LOG_LEVEL_STATE);
+    log_this(SR_MDNS_SERVER, "Freeing mDNS Server resources", LOG_LEVEL_STATE);
     
     // Free interfaces
     if (mdns_server_instance->interfaces) {
@@ -776,5 +776,5 @@ void mdns_server_shutdown(mdns_server_t *mdns_server_instance) {
     // Finally free the server structure
     free(mdns_server_instance);
     
-    log_this("mDNSServer", "Shutdown: mDNS Server shutdown complete", LOG_LEVEL_STATE);
+    log_this(SR_MDNS_SERVER, "Shutdown: mDNS Server shutdown complete", LOG_LEVEL_STATE);
 }

@@ -35,7 +35,7 @@ int mdns_server_subsystem_id = -1;
 static void register_mdns_server_for_launch(void) {
     // Always register during readiness check if not already registered
     if (mdns_server_subsystem_id < 0) {
-        mdns_server_subsystem_id = register_subsystem_from_launch("mDNS Server", &mdns_server_threads, NULL,
+        mdns_server_subsystem_id = register_subsystem_from_launch(SR_MDNS_SERVER, &mdns_server_threads, NULL,
                                                                 &mdns_server_system_shutdown,
                                                                 (int (*)(void))launch_mdns_server_subsystem,
                                                                 (void (*)(void))mdns_server_shutdown);
@@ -50,26 +50,26 @@ LaunchReadiness check_mdns_server_launch_readiness(void) {
     bool ready = true;
 
     // First message is subsystem name
-    add_launch_message(&messages, &count, &capacity, strdup("mDNS Server"));
+    add_launch_message(&messages, &count, &capacity, strdup(SR_MDNS_SERVER));
 
     // Register with subsystem registry for launch
     register_mdns_server_for_launch();
 
     // Register dependency on Network subsystem
-    int mdns_id = get_subsystem_id_by_name("mDNS Server");
+    int mdns_id = get_subsystem_id_by_name(SR_MDNS_SERVER);
     if (mdns_id >= 0) {
-        if (!add_dependency_from_launch(mdns_id, "Network")) {
+        if (!add_dependency_from_launch(mdns_id, SR_NETWORK)) {
             add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Failed to register Network dependency"));
             finalize_launch_messages(&messages, &count, &capacity);
-            return (LaunchReadiness){ .subsystem = "mDNS Server", .ready = false, .messages = messages };
+            return (LaunchReadiness){ .subsystem = SR_MDNS_SERVER, .ready = false, .messages = messages };
         }
         add_launch_message(&messages, &count, &capacity, strdup("  Go:      Network dependency registered"));
 
         // Verify Network subsystem is ready to launch
-        if (!is_subsystem_launchable_by_name("Network")) {
+        if (!is_subsystem_launchable_by_name(SR_NETWORK)) {
             add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Network subsystem not launchable"));
             finalize_launch_messages(&messages, &count, &capacity);
-            return (LaunchReadiness){ .subsystem = "mDNS Server", .ready = false, .messages = messages };
+            return (LaunchReadiness){ .subsystem = SR_MDNS_SERVER, .ready = false, .messages = messages };
         }
         add_launch_message(&messages, &count, &capacity, strdup("  Go:      Network subsystem will be available"));
     }
@@ -78,7 +78,7 @@ LaunchReadiness check_mdns_server_launch_readiness(void) {
     if (!app_config || !(app_config->mdns_server.enable_ipv4 || app_config->mdns_server.enable_ipv6)) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   mDNS server disabled in configuration"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "mDNS Server", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_MDNS_SERVER, .ready = false, .messages = messages };
     }
     add_launch_message(&messages, &count, &capacity, strdup("  Go:      mDNS server enabled in configuration"));
 
@@ -88,35 +88,35 @@ LaunchReadiness check_mdns_server_launch_readiness(void) {
     if (!config->device_id || !config->device_id[0]) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Device ID is required"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "mDNS Server", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_MDNS_SERVER, .ready = false, .messages = messages };
     }
     add_launch_message(&messages, &count, &capacity, strdup("  Go:      Device ID configured"));
 
     if (!config->friendly_name || !config->friendly_name[0]) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Friendly name is required"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "mDNS Server", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_MDNS_SERVER, .ready = false, .messages = messages };
     }
     add_launch_message(&messages, &count, &capacity, strdup("  Go:      Friendly name configured"));
 
     if (!config->model || !config->model[0]) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Model is required"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "mDNS Server", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_MDNS_SERVER, .ready = false, .messages = messages };
     }
     add_launch_message(&messages, &count, &capacity, strdup("  Go:      Model configured"));
 
     if (!config->manufacturer || !config->manufacturer[0]) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Manufacturer is required"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "mDNS Server", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_MDNS_SERVER, .ready = false, .messages = messages };
     }
     add_launch_message(&messages, &count, &capacity, strdup("  Go:      Manufacturer configured"));
 
     if (!config->version || !config->version[0]) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Version is required"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "mDNS Server", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_MDNS_SERVER, .ready = false, .messages = messages };
     }
     add_launch_message(&messages, &count, &capacity, strdup("  Go:      Version configured"));
 
@@ -125,7 +125,7 @@ LaunchReadiness check_mdns_server_launch_readiness(void) {
         if (!config->services) {
             add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Services array is NULL but count is non-zero"));
             finalize_launch_messages(&messages, &count, &capacity);
-            return (LaunchReadiness){ .subsystem = "mDNS Server", .ready = false, .messages = messages };
+            return (LaunchReadiness){ .subsystem = SR_MDNS_SERVER, .ready = false, .messages = messages };
         }
         add_launch_message(&messages, &count, &capacity, strdup("  Go:      Services array allocated"));
 
@@ -138,28 +138,28 @@ LaunchReadiness check_mdns_server_launch_readiness(void) {
                 snprintf(msg_buffer, sizeof(msg_buffer), "  No-Go:   Service %zu name is required", i + 1);
                 add_launch_message(&messages, &count, &capacity, strdup(msg_buffer));
                 finalize_launch_messages(&messages, &count, &capacity);
-                return (LaunchReadiness){ .subsystem = "mDNS Server", .ready = false, .messages = messages };
+                return (LaunchReadiness){ .subsystem = SR_MDNS_SERVER, .ready = false, .messages = messages };
             }
 
             if (!service->type || !service->type[0]) {
                 snprintf(msg_buffer, sizeof(msg_buffer), "  No-Go:   Service %zu type is required", i + 1);
                 add_launch_message(&messages, &count, &capacity, strdup(msg_buffer));
                 finalize_launch_messages(&messages, &count, &capacity);
-                return (LaunchReadiness){ .subsystem = "mDNS Server", .ready = false, .messages = messages };
+                return (LaunchReadiness){ .subsystem = SR_MDNS_SERVER, .ready = false, .messages = messages };
             }
 
             if (service->port <= 0 || service->port > 65535) {
                 snprintf(msg_buffer, sizeof(msg_buffer), "  No-Go:   Service %zu has invalid port number", i + 1);
                 add_launch_message(&messages, &count, &capacity, strdup(msg_buffer));
                 finalize_launch_messages(&messages, &count, &capacity);
-                return (LaunchReadiness){ .subsystem = "mDNS Server", .ready = false, .messages = messages };
+                return (LaunchReadiness){ .subsystem = SR_MDNS_SERVER, .ready = false, .messages = messages };
             }
 
             if (service->num_txt_records > 0 && !service->txt_records) {
                 snprintf(msg_buffer, sizeof(msg_buffer), "  No-Go:   Service %zu TXT records array is NULL but count is non-zero", i + 1);
                 add_launch_message(&messages, &count, &capacity, strdup(msg_buffer));
                 finalize_launch_messages(&messages, &count, &capacity);
-                return (LaunchReadiness){ .subsystem = "mDNS Server", .ready = false, .messages = messages };
+                return (LaunchReadiness){ .subsystem = SR_MDNS_SERVER, .ready = false, .messages = messages };
             }
 
             snprintf(msg_buffer, sizeof(msg_buffer), "  Go:      Service %zu validated", i + 1);
@@ -173,7 +173,7 @@ LaunchReadiness check_mdns_server_launch_readiness(void) {
     finalize_launch_messages(&messages, &count, &capacity);
 
     return (LaunchReadiness){
-        .subsystem = "mDNS Server",
+        .subsystem = SR_MDNS_SERVER,
         .ready = ready,
         .messages = messages
     };
@@ -181,30 +181,30 @@ LaunchReadiness check_mdns_server_launch_readiness(void) {
 
 // Launch the mDNS server subsystem
 int launch_mdns_server_subsystem(void) {
-    log_this("mDNSServer", LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this("mDNSServer", "LAUNCH: MDNS SERVER", LOG_LEVEL_STATE);
+    log_this(SR_MDNS_SERVER, LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this(SR_MDNS_SERVER, "LAUNCH: MDNS SERVER", LOG_LEVEL_STATE);
 
     // Step 1: Verify system state
     if (server_stopping || server_starting != 1) {
-        log_this("mDNSServer", "Cannot initialize mDNS server outside startup phase", LOG_LEVEL_STATE);
-        log_this("mDNSServer", "LAUNCH: MDNS SERVER - Failed: Not in startup phase", LOG_LEVEL_STATE);
+        log_this(SR_MDNS_SERVER, "Cannot initialize mDNS server outside startup phase", LOG_LEVEL_STATE);
+        log_this(SR_MDNS_SERVER, "LAUNCH: MDNS SERVER - Failed: Not in startup phase", LOG_LEVEL_STATE);
         return 0;
     }
 
     if (!app_config) {
-        log_this("mDNSServer", "Configuration not loaded", LOG_LEVEL_ERROR);
-        log_this("mDNSServer", "LAUNCH: MDNS SERVER - Failed: No configuration", LOG_LEVEL_STATE);
+        log_this(SR_MDNS_SERVER, "Configuration not loaded", LOG_LEVEL_ERROR);
+        log_this(SR_MDNS_SERVER, "LAUNCH: MDNS SERVER - Failed: No configuration", LOG_LEVEL_STATE);
         return 0;
     }
 
     if (!app_config->mdns_server.enable_ipv4 && !app_config->mdns_server.enable_ipv6) {
-        log_this("mDNSServer", "mDNS server disabled in configuration (no protocols enabled)", LOG_LEVEL_STATE);
-        log_this("mDNSServer", "LAUNCH: MDNS SERVER - Disabled by configuration", LOG_LEVEL_STATE);
+        log_this(SR_MDNS_SERVER, "mDNS server disabled in configuration (no protocols enabled)", LOG_LEVEL_STATE);
+        log_this(SR_MDNS_SERVER, "LAUNCH: MDNS SERVER - Disabled by configuration", LOG_LEVEL_STATE);
         return 1; // Not an error if disabled
     }
 
     // Step 2: Initialize mDNS server instance
-    log_this("mDNSServer", "Initializing mDNS server with device configuration", LOG_LEVEL_STATE);
+    log_this(SR_MDNS_SERVER, "Initializing mDNS server with device configuration", LOG_LEVEL_STATE);
 
     // Get server configuration
     const MDNSServerConfig* server_config = &app_config->mdns_server;
@@ -225,18 +225,18 @@ int launch_mdns_server_subsystem(void) {
     );
 
     if (!mdns_server_instance) {
-        log_this("mDNSServer", "Failed to initialize mDNS server", LOG_LEVEL_ERROR);
-        log_this("mDNSServer", "LAUNCH: MDNS SERVER - Failed to initialize", LOG_LEVEL_STATE);
+        log_this(SR_MDNS_SERVER, "Failed to initialize mDNS server", LOG_LEVEL_ERROR);
+        log_this(SR_MDNS_SERVER, "LAUNCH: MDNS SERVER - Failed to initialize", LOG_LEVEL_STATE);
         return 0;
     }
 
     // Step 3: Initialize and start threads
-    log_this("mDNSServer", "Starting mDNS server background threads", LOG_LEVEL_STATE);
+    log_this(SR_MDNS_SERVER, "Starting mDNS server background threads", LOG_LEVEL_STATE);
 
     // Create thread argument structure
     mdns_server_thread_arg_t *thread_arg = calloc(1, sizeof(mdns_server_thread_arg_t));
     if (!thread_arg) {
-        log_this("mDNSServer", "Failed to allocate thread arguments", LOG_LEVEL_ERROR);
+        log_this(SR_MDNS_SERVER, "Failed to allocate thread arguments", LOG_LEVEL_ERROR);
         mdns_server_shutdown(mdns_server_instance);
         return 0;
     }
@@ -247,7 +247,7 @@ int launch_mdns_server_subsystem(void) {
     thread_arg->running = &mdns_server_system_shutdown;
 
     // Initialize mDNS server thread structure
-    init_service_threads(&mdns_server_threads, "mDNS Server");
+    init_service_threads(&mdns_server_threads, SR_MDNS_SERVER);
 
     // Create announcer thread
     pthread_attr_t thread_attr;
@@ -255,7 +255,7 @@ int launch_mdns_server_subsystem(void) {
     pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_JOINABLE);
 
     if (pthread_create(&mdns_server_announce_thread, &thread_attr, mdns_server_announce_loop, thread_arg) != 0) {
-        log_this("mDNSServer", "Failed to start mDNS server announce thread", LOG_LEVEL_ERROR);
+        log_this(SR_MDNS_SERVER, "Failed to start mDNS server announce thread", LOG_LEVEL_ERROR);
         pthread_attr_destroy(&thread_attr);
         free(thread_arg);
         mdns_server_shutdown(mdns_server_instance);
@@ -264,7 +264,7 @@ int launch_mdns_server_subsystem(void) {
 
     // Create responder thread
     if (pthread_create(&mdns_server_responder_thread, &thread_attr, mdns_server_responder_loop, thread_arg) != 0) {
-        log_this("mDNSServer", "Failed to start mDNS server responder thread", LOG_LEVEL_ERROR);
+        log_this(SR_MDNS_SERVER, "Failed to start mDNS server responder thread", LOG_LEVEL_ERROR);
         mdns_server_system_shutdown = 1; // Signal announce thread to exit
         pthread_join(mdns_server_announce_thread, NULL);
         pthread_attr_destroy(&thread_attr);
@@ -280,21 +280,21 @@ int launch_mdns_server_subsystem(void) {
     add_service_thread(&mdns_server_threads, mdns_server_responder_thread);
 
     // Step 4: Send initial announcements
-    log_this("mDNSServer", "Sending initial mDNS announcements", LOG_LEVEL_STATE);
+    log_this(SR_MDNS_SERVER, "Sending initial mDNS announcements", LOG_LEVEL_STATE);
     mdns_server_send_announcement(mdns_server_instance, thread_arg->net_info);
 
     // Step 5: Update subsystem registry
-    log_this("mDNSServer", "Updating subsystem registry", LOG_LEVEL_STATE);
-    update_subsystem_on_startup("mDNS Server", true);
+    log_this(SR_MDNS_SERVER, "Updating subsystem registry", LOG_LEVEL_STATE);
+    update_subsystem_on_startup(SR_MDNS_SERVER, true);
 
     // Step 6: Verify final state
     SubsystemState final_state = get_subsystem_state(mdns_server_subsystem_id);
 
     if (final_state == SUBSYSTEM_RUNNING) {
-        log_this("mDNSServer", "LAUNCH: MDNS SERVER - Successfully launched and running", LOG_LEVEL_STATE);
+        log_this(SR_MDNS_SERVER, "LAUNCH: MDNS SERVER - Successfully launched and running", LOG_LEVEL_STATE);
         return 1;
     } else {
-        log_this("mDNSServer", "LAUNCH: MDNS SERVER - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
+        log_this(SR_MDNS_SERVER, "LAUNCH: MDNS SERVER - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
                 subsystem_state_to_string(final_state));
         return 0;
     }

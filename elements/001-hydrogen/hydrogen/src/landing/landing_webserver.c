@@ -26,7 +26,7 @@ extern volatile sig_atomic_t web_server_shutdown;
 // Check if the webserver subsystem is ready to land
 LaunchReadiness check_webserver_landing_readiness(void) {
     LaunchReadiness readiness = {0};
-    readiness.subsystem = "WebServer";
+    readiness.subsystem = SR_WEBSERVER;
     
     // Allocate space for messages (including NULL terminator)
     readiness.messages = malloc(5 * sizeof(char*));
@@ -36,10 +36,10 @@ LaunchReadiness check_webserver_landing_readiness(void) {
     }
     
     // Add initial subsystem identifier
-    readiness.messages[0] = strdup("WebServer");
+    readiness.messages[0] = strdup(SR_WEBSERVER);
     
     // Check if webserver is actually running
-    if (!is_subsystem_running_by_name("WebServer")) {
+    if (!is_subsystem_running_by_name(SR_WEBSERVER)) {
         readiness.ready = false;
         readiness.messages[1] = strdup("  No-Go:   WebServer not running");
         readiness.messages[2] = strdup("  Decide:  No-Go For Landing of WebServer");
@@ -73,23 +73,23 @@ LaunchReadiness check_webserver_landing_readiness(void) {
 
 // Land the webserver subsystem
 int land_webserver_subsystem(void) {
-    log_this("WebServer", LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this("WebServer", "LANDING: LOGGING", LOG_LEVEL_STATE);
+    log_this(SR_WEBSERVER, LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this(SR_WEBSERVER, "LANDING: LOGGING", LOG_LEVEL_STATE);
     
     bool success = true;
     
     // Signal thread shutdown
     web_server_shutdown = 1;
-    log_this("WebServer", "Signaled WebServer thread to stop", LOG_LEVEL_STATE);
+    log_this(SR_WEBSERVER, "Signaled WebServer thread to stop", LOG_LEVEL_STATE);
     
     // Wait for thread to complete
     if (webserver_thread) {
-        log_this("WebServer", "Waiting for WebServer thread to complete", LOG_LEVEL_STATE);
+        log_this(SR_WEBSERVER, "Waiting for WebServer thread to complete", LOG_LEVEL_STATE);
         if (pthread_join(webserver_thread, NULL) != 0) {
-            log_this("WebServer", "Error waiting for WebServer thread", LOG_LEVEL_ERROR);
+            log_this(SR_WEBSERVER, "Error waiting for WebServer thread", LOG_LEVEL_ERROR);
             success = false;
         } else {
-            log_this("WebServer", "WebServer thread completed", LOG_LEVEL_STATE);
+            log_this(SR_WEBSERVER, "WebServer thread completed", LOG_LEVEL_STATE);
         }
     }
     
@@ -97,9 +97,9 @@ int land_webserver_subsystem(void) {
     remove_service_thread(&webserver_threads, webserver_thread);
     
     // Reinitialize thread structure
-    init_service_threads(&webserver_threads, "WebServer");
+    init_service_threads(&webserver_threads, SR_WEBSERVER);
     
-    log_this("WebServer", "WebServer shutdown complete", LOG_LEVEL_STATE);
+    log_this(SR_WEBSERVER, "WebServer shutdown complete", LOG_LEVEL_STATE);
     
     return success ? 1 : 0;  // Return 1 for success, 0 for failure
 }
