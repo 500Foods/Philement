@@ -46,8 +46,6 @@ bool init_swagger_support(SwaggerConfig *config) {
     global_swagger_config = config;
     
     // Check all shutdown flags atomically
-    extern volatile sig_atomic_t server_stopping;
-    extern volatile sig_atomic_t server_starting;
     extern volatile sig_atomic_t web_server_shutdown;
     
     // Prevent initialization during shutdown

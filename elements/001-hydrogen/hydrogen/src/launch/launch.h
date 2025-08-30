@@ -50,11 +50,6 @@
 #include "../threads/threads.h"
 #include "../state/state_types.h"  // For SubsystemState and LaunchReadiness
 
-// External system state flags
-extern volatile sig_atomic_t server_stopping;
-extern volatile sig_atomic_t server_starting;
-extern volatile sig_atomic_t server_running;
-
 // Core launch functions
 ReadinessResults handle_readiness_checks(void);
 bool check_all_launch_readiness(void);
@@ -173,7 +168,6 @@ void register_threads(void);
 bool is_subsystem_launchable_by_name(const char* name);
 
 void shutdown_database_subsystem(void);
-void shutdown_network_subsystem(void);
 void shutdown_logging_subsystem(void);
 void shutdown_notify_subsystem(void);
 void shutdown_web_server(void);

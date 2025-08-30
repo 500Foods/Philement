@@ -10,8 +10,6 @@
 
 volatile sig_atomic_t database_stopping = 0;
 
-
-
 // Check database subsystem launch readiness
 LaunchReadiness check_database_launch_readiness(void) {
     const char** messages = NULL;
@@ -150,11 +148,12 @@ LaunchReadiness check_database_launch_readiness(void) {
 
 // Launch the database subsystem
 int launch_database_subsystem(void) {
-    // Reset shutdown flag
+    
     database_stopping = 0;
     
-    log_this(SR_DATABASE, "Initializing database subsystem", LOG_LEVEL_STATE);
-    
+    log_this(SR_DATABASE, LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this(SR_DATABASE, "LAUNCH: " SR_DATABASE, LOG_LEVEL_STATE);    
+
     // Get subsystem ID and update state
     int subsystem_id = get_subsystem_id_by_name(SR_DATABASE);
     if (subsystem_id >= 0) {

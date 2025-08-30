@@ -113,6 +113,9 @@
 #include "utils/utils.h"
 
 // Main application configuration structure
+// NOTE: Network-Notify are all primary subsystems that are also
+// represented directly in config. Registry, Payload, and Threads 
+// are the remaining subsystems with no direct config analog
 struct AppConfig {
     ServerConfig server;           // A. Server configuration
     NetworkConfig network;         // B. Network configuration
@@ -132,13 +135,22 @@ struct AppConfig {
     NotifyConfig notify;           // P. Notify configuration
 };
 
-// Global variables defined in global.c
-extern long long server_executable_size;
+// Defined in global.c
 extern AppConfig *app_config;
+
+// Defined in global.c
+extern long long server_executable_size;
 void get_executable_size(char *argv[]);
+
+// Defined in global.c
 extern size_t registry_registered;
 extern size_t registry_running;
 extern size_t registry_attempted;
 extern size_t registry_failed;
+
+// Defined in state/state.c
+extern volatile sig_atomic_t server_starting;
+extern volatile sig_atomic_t server_stopping;
+extern volatile sig_atomic_t server_running;
 
 #endif /* HYDROGEN_H */

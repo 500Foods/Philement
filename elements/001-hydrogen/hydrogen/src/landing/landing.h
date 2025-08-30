@@ -28,6 +28,8 @@ void handle_landing_review(const ReadinessResults* results, time_t start_time);
 void free_payload_resources(void);
 
 // Shutdown functions
+void shutdown_network_subsystem(void);
+
 void shutdown_registry(void);
 void shutdown_payload(void);
 void shutdown_threads(void);

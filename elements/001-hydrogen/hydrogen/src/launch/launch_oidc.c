@@ -22,10 +22,6 @@ void register_oidc(void) {
     }
 }
 
-
-
-
-
 // Check if the OIDC subsystem is ready to launch
 LaunchReadiness check_oidc_launch_readiness(void) {
     const char** messages = NULL;
@@ -189,7 +185,7 @@ LaunchReadiness check_oidc_launch_readiness(void) {
 int launch_oidc_subsystem(void) {
     // Begin LAUNCH: OIDC section
     log_this(SR_OIDC, LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this(SR_OIDC, "LAUNCH: OIDC", LOG_LEVEL_STATE);
+    log_this(SR_OIDC, "LAUNCH: " SR_OIDC, LOG_LEVEL_STATE);
 
     // Step 1: Verify explicit dependencies
     log_this(SR_OIDC, "  Step 1: Verifying explicit dependencies", LOG_LEVEL_STATE);

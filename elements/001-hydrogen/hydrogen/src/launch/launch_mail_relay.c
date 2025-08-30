@@ -152,8 +152,11 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
 
 // Launch the mail relay subsystem
 int launch_mail_relay_subsystem(void) {
-    // Reset shutdown flag
+    
     mail_relay_system_shutdown = 0;
+    
+    log_this(SR_MAIL_RELAY, LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this(SR_MAIL_RELAY, "LAUNCH: " SR_MAIL_RELAY, LOG_LEVEL_STATE);    
     
     // Initialize mail relay system
     // TODO: Add proper initialization when system is ready

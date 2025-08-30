@@ -138,8 +138,11 @@ LaunchReadiness check_mdns_client_launch_readiness(void) {
 
 // Launch the mDNS client subsystem
 int launch_mdns_client_subsystem(void) {
+
+    mdns_client_system_shutdown = 0;
+    
     log_this(SR_MDNS_CLIENT, LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this(SR_MDNS_CLIENT, "LAUNCH: MDNS CLIENT", LOG_LEVEL_STATE);
+    log_this(SR_MDNS_CLIENT, "LAUNCH: " SR_MDNS_CLIENT, LOG_LEVEL_STATE);
 
     // Register with subsystem registry (from launch) - critical for dependencies to work
     if (mdns_client_subsystem_id < 0) {
@@ -153,10 +156,7 @@ int launch_mdns_client_subsystem(void) {
             return 0;
         }
     }
-
-    // Reset shutdown flag
-    mdns_client_system_shutdown = 0;
-
+    
     // Initialize mDNS client system
     // TODO: Add proper initialization when system is ready - for now just mark as successful
     // This will be implemented when the actual mDNS client functionality is added

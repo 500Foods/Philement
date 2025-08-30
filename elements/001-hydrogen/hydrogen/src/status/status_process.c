@@ -11,11 +11,6 @@
 #include <sys/un.h>
 #include <netinet/in.h>
 
-// External configuration and state
-extern volatile sig_atomic_t server_running;
-extern volatile sig_atomic_t server_stopping;
-extern volatile sig_atomic_t server_starting;
-
 // External service thread structures
 extern ServiceThreads logging_threads;
 extern ServiceThreads webserver_threads;

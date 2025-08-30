@@ -139,7 +139,7 @@ LaunchReadiness check_payload_launch_readiness(void) {
 int launch_payload_subsystem(void) {
     // Begin LAUNCH: PAYLOAD section
     log_this(SR_PAYLOAD, LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this(SR_PAYLOAD, "LAUNCH: PAYLOAD", LOG_LEVEL_STATE);
+    log_this(SR_PAYLOAD, "LAUNCH: " SR_PAYLOAD, LOG_LEVEL_STATE);
 
     // Step 1: Verify explicit dependencies
     log_this(SR_PAYLOAD, "  Step 1: Verifying explicit dependencies", LOG_LEVEL_STATE);
