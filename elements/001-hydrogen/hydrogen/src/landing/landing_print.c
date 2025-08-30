@@ -43,10 +43,10 @@ LaunchReadiness check_print_landing_readiness(void) {
     int msg_count = 0;
     
     // Add the subsystem name as the first message
-    readiness.messages[msg_count++] = strdup("Print");
+    readiness.messages[msg_count++] = strdup(SR_PRINT);
     
     // Check if print subsystem is running
-    if (!is_subsystem_running_by_name("Print")) {
+    if (!is_subsystem_running_by_name(SR_PRINT)) {
         readiness.messages[msg_count++] = strdup("  No-Go:   Print subsystem not running");
         readiness.messages[msg_count] = NULL;
         readiness.ready = false;
@@ -77,8 +77,8 @@ LaunchReadiness check_print_landing_readiness(void) {
 
 // Land the print subsystem
 int land_print_subsystem(void) {
-    log_this("Print", LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this("Print", "LANDING: PRINT", LOG_LEVEL_STATE);    
+    log_this(SR_PRINT, LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this(SR_PRINT, "LANDING: " SR_PRINT, LOG_LEVEL_STATE);    
     
     // Set shutdown flag
     print_system_shutdown = 1;
@@ -89,7 +89,7 @@ int land_print_subsystem(void) {
     }
     
     // Reset thread resources
-    init_service_threads(&print_threads, "Print");
+    init_service_threads(&print_threads, SR_PRINT);
     
     // Additional cleanup as needed
     return 1;  // Success

@@ -68,21 +68,21 @@ bool brotli_file_exists(const char *file_path, char *br_file_path, size_t buffer
 bool compress_with_brotli(const uint8_t *input, size_t input_size, 
                          uint8_t **output, size_t *output_size) {
     if (!input || input_size == 0 || !output || !output_size) {
-        log_this("WebCompression", "Invalid parameters for Brotli compression", LOG_LEVEL_ERROR);
+        log_this(SR_WEBSERVER, "Invalid parameters for Brotli compression", LOG_LEVEL_ERROR);
         return false;
     }
     
     // Get the maximum compressed size needed
     *output_size = BrotliEncoderMaxCompressedSize(input_size);
     if (*output_size == 0) {
-        log_this("WebCompression", "Failed to calculate max compressed size", LOG_LEVEL_ERROR);
+        log_this(SR_WEBSERVER, "Failed to calculate max compressed size", LOG_LEVEL_ERROR);
         return false;
     }
     
     // Allocate buffer for compressed data
     *output = (uint8_t *)malloc(*output_size);
     if (!*output) {
-        log_this("WebCompression", "Failed to allocate memory for compressed data", LOG_LEVEL_ERROR);
+        log_this(SR_WEBSERVER, "Failed to allocate memory for compressed data", LOG_LEVEL_ERROR);
         return false;
     }
     
@@ -119,7 +119,7 @@ bool compress_with_brotli(const uint8_t *input, size_t input_size,
     elapsed_ms += (double)(end_time.tv_nsec - start_time.tv_nsec) / 1000000.0;
     
     if (result != BROTLI_TRUE) {
-        log_this("WebCompression", "Brotli compression failed", LOG_LEVEL_ERROR);
+        log_this(SR_WEBSERVER, "Brotli compression failed", LOG_LEVEL_ERROR);
         free(*output);
         *output = NULL;
         *output_size = 0;
@@ -135,7 +135,7 @@ bool compress_with_brotli(const uint8_t *input, size_t input_size,
              "Brotli(level=%d): %zu bytes → %zu bytes, ratio: %.2f%%, compression: %.2f%%, time: %.3f ms", 
              compression_level, input_size, *output_size, (double)(ratio * 100.0f), (double)compression_percent, elapsed_ms);
     
-    log_this("Brotli", stats, LOG_LEVEL_STATE);
+    log_this(SR_WEBSERVER, stats, LOG_LEVEL_STATE);
     
     return true;
 }

@@ -42,7 +42,7 @@ void update_queue_limits(QueueMemoryMetrics *queue, const AppConfig *config) {
         queue->limits.early_init = 0;
         
         if (queue->block_count > queue->limits.block_limit) {
-            log_this("Queue", "Warning: Current queue usage (%zu blocks) exceeds new limit (%zu blocks)",
+            log_this(SR_QUEUES, "Warning: Current queue usage (%zu blocks) exceeds new limit (%zu blocks)",
                     LOG_LEVEL_ALERT, queue->block_count, queue->limits.block_limit);
         }
     } else {
@@ -51,7 +51,7 @@ void update_queue_limits(QueueMemoryMetrics *queue, const AppConfig *config) {
         
         // Use log_this for normal operation
         if (queue->block_count > queue->limits.block_limit) {
-            log_this("Queue", "Warning: Current queue usage (%zu blocks) exceeds new limit (%zu blocks)",
+            log_this(SR_QUEUES, "Warning: Current queue usage (%zu blocks) exceeds new limit (%zu blocks)",
                     LOG_LEVEL_ALERT, queue->block_count, queue->limits.block_limit);
         }
     }
@@ -64,7 +64,7 @@ void track_queue_allocation(QueueMemoryMetrics *queue, size_t size) {
         queue->metrics.virtual_bytes = queue->total_allocation;
         queue->metrics.resident_bytes = queue->total_allocation;
     } else {
-        log_this("Queue", "Queue block limit reached (%zu blocks)", LOG_LEVEL_ALERT, queue->limits.block_limit);
+        log_this(SR_QUEUES, "Queue block limit reached (%zu blocks)", LOG_LEVEL_ALERT, queue->limits.block_limit);
     }
 }
 

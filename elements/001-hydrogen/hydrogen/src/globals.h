@@ -77,6 +77,8 @@
 #define SR_CONFIG_CURRENT   "Config-Current"
 #define SR_LAUNCH           "Launch"
 #define SR_LANDING          "Landing"
+#define SR_STATUS           "Status"
+#define SR_QUEUES           "Queues"
 
 // The primary 18 Subsystems
 #define SR_REGISTRY         "Registry"

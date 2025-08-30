@@ -29,7 +29,7 @@ static enum MHD_Result handle_exact_api_version_request(void *cls, struct MHD_Co
     (void)cls; (void)url; (void)method; (void)version; (void)upload_data;
     (void)upload_data_size; (void)con_cls;  // Unused parameters
 
-    // log_this("HardcodedVersion", "Handling exact /api/version request", LOG_LEVEL_STATE);
+    // log_this(SR_API, "Handling exact /api/version request", LOG_LEVEL_STATE);
     return handle_version_request(connection);
 }
 
@@ -43,7 +43,7 @@ static enum MHD_Result handle_exact_api_files_local_request(void *cls, struct MH
                                                            const char *version, const char *upload_data,
                                                            size_t *upload_data_size, void **con_cls) {
     (void)cls; (void)url; (void)version; // Unused parameters
-    // log_this("HardcodedFilesLocal", "Handling exact /api/files/local request", LOG_LEVEL_STATE);
+    // log_this(SR_API, "Handling exact /api/files/local request", LOG_LEVEL_STATE);
     // Delegate to the same handler as /api/system/upload
     return handle_system_upload_request(connection, method, upload_data,
                                       upload_data_size, con_cls);

@@ -29,7 +29,7 @@ static bool check_other_subsystems_complete(void) {
     for (int i = 0; i < subsystem_registry.count; i++) {
         SubsystemInfo* info = &subsystem_registry.subsystems[i];
         // Skip logging subsystem itself
-        if (strcmp(info->name, "Logging") == 0) continue;
+        if (strcmp(info->name, SR_LOGGING) == 0) continue;
         
         // If any other subsystem is still active, we're not ready
         if (info->state != SUBSYSTEM_INACTIVE) {
@@ -42,7 +42,7 @@ static bool check_other_subsystems_complete(void) {
 // Check if the logging subsystem is ready to land
 LaunchReadiness check_logging_landing_readiness(void) {
     LaunchReadiness readiness = {0};
-    readiness.subsystem = "Logging";
+    readiness.subsystem = SR_LOGGING;
     
     // Allocate space for messages (including NULL terminator)
     readiness.messages = malloc(6 * sizeof(char*));
@@ -52,10 +52,10 @@ LaunchReadiness check_logging_landing_readiness(void) {
     }
     
     // Add initial subsystem identifier
-    readiness.messages[0] = strdup("Logging");
+    readiness.messages[0] = strdup(SR_LOGGING);
     
     // Check if logging is actually running
-    if (!is_subsystem_running_by_name("Logging")) {
+    if (!is_subsystem_running_by_name(SR_LOGGING)) {
         readiness.ready = false;
         readiness.messages[1] = strdup("  No-Go:   Logging not running");
         readiness.messages[2] = strdup("  Decide:  No-Go For Landing of Logging");
@@ -100,23 +100,23 @@ LaunchReadiness check_logging_landing_readiness(void) {
 
 // Land the logging subsystem
 int land_logging_subsystem(void) {
-    log_this("Logging", LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this("Logging", "LANDING: LOGGING", LOG_LEVEL_STATE);
+    log_this(SR_LOGGING, LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this(SR_LOGGING, "LANDING: " SR_LOGGING, LOG_LEVEL_STATE);
     
     bool success = true;
     
     // Signal thread shutdown
     log_queue_shutdown = 1;
-    log_this("Logging", "Signaled Logging thread to stop", LOG_LEVEL_STATE);
+    log_this(SR_LOGGING, "Signaled " SR_LOGGING " thread to stop", LOG_LEVEL_STATE);
     
     // Wait for thread to complete
     if (log_thread) {
-        log_this("Logging", "Waiting for Logging thread to complete", LOG_LEVEL_STATE);
+        log_this(SR_LOGGING, "Waiting for " SR_LOGGING " thread to complete", LOG_LEVEL_STATE);
         if (pthread_join(log_thread, NULL) != 0) {
-            log_this("Logging", "Error waiting for Logging thread", LOG_LEVEL_ERROR);
+            log_this(SR_LOGGING, "Error waiting for " SR_LOGGING " thread", LOG_LEVEL_ERROR);
             success = false;
         } else {
-            log_this("Logging", "Logging thread completed", LOG_LEVEL_STATE);
+            log_this(SR_LOGGING, SR_LOGGING " thread completed", LOG_LEVEL_STATE);
         }
     }
     
@@ -124,19 +124,19 @@ int land_logging_subsystem(void) {
     remove_service_thread(&logging_threads, log_thread);
     
     // Reinitialize thread structure
-    init_service_threads(&logging_threads, "Logging");
+    init_service_threads(&logging_threads, SR_LOGGING);
     
     // Clean up logging configuration
     if (app_config) {
-        log_this("Logging", "Cleaning up logging configuration", LOG_LEVEL_STATE);
+        log_this(SR_LOGGING, "Cleaning up " SR_LOGGING " configuration", LOG_LEVEL_STATE);
         
         // Clean up logging config - handles all components including file logging
         cleanup_logging_config(&app_config->logging);
     } else {
-        log_this("Logging", "Warning: app_config is NULL during logging cleanup", LOG_LEVEL_ALERT);
+        log_this(SR_LOGGING, "Warning: app_config is NULL during " SR_LOGGING " cleanup", LOG_LEVEL_ALERT);
     }
     
-    log_this("Logging", "Logging shutdown complete", LOG_LEVEL_STATE);
+    log_this(SR_LOGGING, SR_LOGGING " shutdown complete", LOG_LEVEL_STATE);
     
     return success ? 1 : 0;  // Return 1 for success, 0 for failure
 }
