@@ -31,7 +31,7 @@ extern volatile sig_atomic_t websocket_server_shutdown;
 // Includes CORS headers for cross-origin access
 enum MHD_Result handle_system_info_request(struct MHD_Connection *connection)
 {
-    log_this("SystemService/info", "Handling info endpoint request", LOG_LEVEL_STATE);
+    log_this(SR_API, "Handling info endpoint request", LOG_LEVEL_STATE);
     
     json_t *root = NULL;
     WebSocketMetrics metrics = {0};
@@ -49,7 +49,7 @@ enum MHD_Result handle_system_info_request(struct MHD_Connection *connection)
     // Get complete system status using the utility function
     root = get_system_status_json(ws_context ? &metrics : NULL);
     if (!root) {
-        log_this("SystemService/info", "Failed to generate system status", LOG_LEVEL_ERROR);
+        log_this(SR_API, "Failed to generate system status", LOG_LEVEL_ERROR);
         return MHD_NO;
     }
 

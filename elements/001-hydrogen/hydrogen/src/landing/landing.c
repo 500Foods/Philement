@@ -246,8 +246,8 @@ bool check_all_landing_readiness(void) {
         char* config_path = (program_args && program_args[1]) ? program_args[1] : NULL;
         
         // Land Registry as final step
-        log_this("Landing", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-        log_this("Landing", "LANDING: REGISTRY (Final Step)", LOG_LEVEL_STATE);
+        log_this(SR_LANDING, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+        log_this(SR_LANDING, "LANDING: REGISTRY (Final Step)", LOG_LEVEL_STATE);
         bool registry_ok = land_registry_subsystem(restart_requested);
         landing_success &= registry_ok;
         
