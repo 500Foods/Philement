@@ -34,7 +34,7 @@ int init_websocket_server(int port, const char* protocol, const char* key)
     // Create and initialize server context
     ws_context = ws_context_create(port, protocol, key);
     if (!ws_context) {
-        log_this("WebSocket", "Failed to create server context", LOG_LEVEL_DEBUG);
+        log_this(SR_WEBSOCKET, "Failed to create server context", LOG_LEVEL_DEBUG);
         return -1;
     }
 
@@ -77,10 +77,10 @@ int init_websocket_server(int port, const char* protocol, const char* key)
     // Configure IPv6 if enabled
     if (app_config && app_config->websocket.enable_ipv6) {
         info.options |= LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
-        log_this("WebSocket", "IPv6 support enabled", LOG_LEVEL_STATE);
+        log_this(SR_WEBSOCKET, "IPv6 support enabled", LOG_LEVEL_STATE);
     }
 
-    log_this("WebSocket", "Configuring SO_REUSEADDR for immediate socket rebinding via LWS_SERVER_OPTION_ALLOW_LISTEN_SHARE", LOG_LEVEL_STATE);
+    log_this(SR_WEBSOCKET, "Configuring SO_REUSEADDR for immediate socket rebinding via LWS_SERVER_OPTION_ALLOW_LISTEN_SHARE", LOG_LEVEL_STATE);
 
     // Set context user data
     lws_set_log_level(0, NULL);  // Reset logging before context creation
@@ -91,7 +91,7 @@ int init_websocket_server(int port, const char* protocol, const char* key)
     
     // Look up WebSockets-Lib subsystem level if configured
     for (size_t i = 0; i < app_config->logging.console.subsystem_count; i++) {
-        if (strcmp(app_config->logging.console.subsystems[i].name, "WebSockets-Lib") == 0) {
+        if (strcmp(app_config->logging.console.subsystems[i].name, SR_WEBSOCKET_LIB) == 0) {
             config_level = app_config->logging.console.subsystems[i].level;
             break;
         }
@@ -129,7 +129,7 @@ int init_websocket_server(int port, const char* protocol, const char* key)
     // Create libwebsockets context
     ws_context->lws_context = lws_create_context(&info);
     if (!ws_context->lws_context) {
-        log_this("WebSocket", "Failed to create LWS context", LOG_LEVEL_DEBUG);
+        log_this(SR_WEBSOCKET, "Failed to create LWS context", LOG_LEVEL_DEBUG);
         ws_context_destroy(ws_context);
         ws_context = NULL;
         return -1;
@@ -173,7 +173,7 @@ int init_websocket_server(int port, const char* protocol, const char* key)
                     for (int i = 0; i < enabled_interfaces->interfaces[0].ip_count; i++) {
                         if (strchr(enabled_interfaces->interfaces[0].ips[i], ':') != NULL) {
                             vhost_info.iface = enabled_interfaces->interfaces[0].ips[i];
-                            log_this("WebSocket", "Binding to IPv6 interface %s (%s)",
+                            log_this(SR_WEBSOCKET, "Binding to IPv6 interface %s (%s)",
                                     LOG_LEVEL_STATE, enabled_interfaces->interfaces[0].name, vhost_info.iface);
                             break;
                         }
@@ -184,7 +184,7 @@ int init_websocket_server(int port, const char* protocol, const char* key)
                     for (int i = 0; i < enabled_interfaces->interfaces[0].ip_count; i++) {
                         if (strchr(enabled_interfaces->interfaces[0].ips[i], ':') == NULL) {
                             vhost_info.iface = enabled_interfaces->interfaces[0].ips[i];
-                            log_this("WebSocket", "Binding to IPv4 interface %s (%s)",
+                            log_this(SR_WEBSOCKET, "Binding to IPv4 interface %s (%s)",
                                     LOG_LEVEL_STATE, enabled_interfaces->interfaces[0].name, vhost_info.iface);
                             break;
                         }
@@ -199,10 +199,10 @@ int init_websocket_server(int port, const char* protocol, const char* key)
         if (!has_enabled_interfaces || !vhost_info.iface) {
             vhost_info.iface = app_config && app_config->websocket.enable_ipv6 ? "::" : "0.0.0.0";
             if (!has_enabled_interfaces) {
-                log_this("WebSocket", "No enabled interfaces found, binding to all interfaces (%s)",
+                log_this(SR_WEBSOCKET, "No enabled interfaces found, binding to all interfaces (%s)",
                         LOG_LEVEL_ALERT, vhost_info.iface);
             } else {
-                log_this("WebSocket", "Using fallback interface binding (%s)",
+                log_this(SR_WEBSOCKET, "Using fallback interface binding (%s)",
                         LOG_LEVEL_STATE, vhost_info.iface);
             }
         }
@@ -213,7 +213,7 @@ int init_websocket_server(int port, const char* protocol, const char* key)
         vhost = lws_create_vhost(ws_context->lws_context, &vhost_info);
         if (vhost) {
             ws_context->port = try_port;
-            log_this("WebSocket", "Successfully bound to port %d", LOG_LEVEL_STATE, try_port);
+            log_this(SR_WEBSOCKET, "Successfully bound to port %d", LOG_LEVEL_STATE, try_port);
             break;
         }
         
@@ -228,10 +228,10 @@ int init_websocket_server(int port, const char* protocol, const char* key)
             if (bind(sock, (struct sockaddr*)&addr, sizeof(addr)) == 0) {
                 // Port is available but vhost creation failed for other reasons
                 close(sock);
-                log_this("WebSocket", "Port %d is available but vhost creation failed", LOG_LEVEL_ALERT, try_port);
+                log_this(SR_WEBSOCKET, "Port %d is available but vhost creation failed", LOG_LEVEL_ALERT, try_port);
             } else {
                 close(sock);
-                log_this("WebSocket", "Port %d is in use, trying next port", LOG_LEVEL_STATE, try_port);
+                log_this(SR_WEBSOCKET, "Port %d is in use, trying next port", LOG_LEVEL_STATE, try_port);
             }
         }
         
@@ -243,20 +243,20 @@ int init_websocket_server(int port, const char* protocol, const char* key)
 
     // Handle vhost creation result
     if (!vhost) {
-        log_this("WebSocket", "Failed to create vhost after multiple attempts", LOG_LEVEL_DEBUG);
+        log_this(SR_WEBSOCKET, "Failed to create vhost after multiple attempts", LOG_LEVEL_DEBUG);
         ws_context_destroy(ws_context);
         ws_context = NULL;
         return -1;
     }
 
-    log_this("WebSocket", "Vhost creation completed successfully", LOG_LEVEL_STATE);
+    log_this(SR_WEBSOCKET, "Vhost creation completed successfully", LOG_LEVEL_STATE);
 
     // Log initialization with protocol validation
     if (protocol) {
-        log_this("WebSocket", "Server initialized on port %d with protocol %s", 
+        log_this(SR_WEBSOCKET, "Server initialized on port %d with protocol %s", 
                  LOG_LEVEL_STATE, ws_context->port, protocol);
     } else {
-        log_this("WebSocket", "Server initialized on port %d", 
+        log_this(SR_WEBSOCKET, "Server initialized on port %d", 
                  LOG_LEVEL_STATE, ws_context->port);
     }
     return 0;

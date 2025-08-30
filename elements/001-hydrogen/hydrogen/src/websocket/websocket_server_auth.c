@@ -19,7 +19,7 @@ extern WebSocketServerContext *ws_context;
 int ws_handle_authentication(struct lws *wsi, WebSocketSessionData *session, const char *auth_header)
 {
     if (!session || !auth_header || !ws_context) {
-        log_this("WebSocket", "Invalid authentication parameters", LOG_LEVEL_ERROR);
+        log_this(SR_WEBSOCKET, "Invalid authentication parameters", LOG_LEVEL_ERROR);
         return -1;
     }
 
@@ -30,7 +30,7 @@ int ws_handle_authentication(struct lws *wsi, WebSocketSessionData *session, con
 
     // Check if the authorization scheme is correct
     if (strncmp(auth_header, HYDROGEN_AUTH_SCHEME " ", strlen(HYDROGEN_AUTH_SCHEME) + 1) != 0) {
-        log_this("WebSocket", "Invalid authentication scheme", LOG_LEVEL_ALERT);
+        log_this(SR_WEBSOCKET, "Invalid authentication scheme", LOG_LEVEL_ALERT);
         return -1;
     }
 
@@ -41,7 +41,7 @@ int ws_handle_authentication(struct lws *wsi, WebSocketSessionData *session, con
     ws_update_client_info(wsi, session);
     
     if (strcmp(key, ws_context->auth_key) != 0) {
-        log_this("WebSocket", "Authentication failed for client %s (%s)",
+        log_this(SR_WEBSOCKET, "Authentication failed for client %s (%s)",
                  LOG_LEVEL_ALERT, true, true, true,
                  session->request_ip,
                  session->request_app);
@@ -50,7 +50,7 @@ int ws_handle_authentication(struct lws *wsi, WebSocketSessionData *session, con
 
     // Authentication successful
     session->authenticated = true;
-    log_this("WebSocket", "Client authenticated successfully: %s (%s)",
+    log_this(SR_WEBSOCKET, "Client authenticated successfully: %s (%s)",
              LOG_LEVEL_STATE, true, true, true,
              session->request_ip,
              session->request_app);

@@ -24,13 +24,13 @@ static int handle_message_type(struct lws *wsi, const char *type);
 int ws_handle_receive(struct lws *wsi, WebSocketSessionData *session, void *in, size_t len)
 {
     if (!session || !ws_context) {
-        log_this("WebSocket", "Invalid session or context", LOG_LEVEL_ERROR);
+        log_this(SR_WEBSOCKET, "Invalid session or context", LOG_LEVEL_ERROR);
         return -1;
     }
 
     // Verify authentication
     if (!ws_is_authenticated(session)) {
-        log_this("WebSocket", "Received data from unauthenticated connection", LOG_LEVEL_ALERT);
+        log_this(SR_WEBSOCKET, "Received data from unauthenticated connection", LOG_LEVEL_ALERT);
         return -1;
     }
 
@@ -40,7 +40,7 @@ int ws_handle_receive(struct lws *wsi, WebSocketSessionData *session, void *in, 
     // Check message size
     if (ws_context->message_length + len > ws_context->max_message_size) {
         pthread_mutex_unlock(&ws_context->mutex);
-        log_this("WebSocket", "Message too large (max size: %zu bytes)", 
+        log_this(SR_WEBSOCKET, "Message too large (max size: %zu bytes)", 
                  LOG_LEVEL_ALERT, true, true, true,
                  ws_context->max_message_size);
         ws_context->message_length = 0; // Reset buffer
@@ -64,14 +64,14 @@ int ws_handle_receive(struct lws *wsi, WebSocketSessionData *session, void *in, 
     pthread_mutex_unlock(&ws_context->mutex);
 
     // Log the complete message for debugging
-    log_this("WebSocket", "Processing complete message", LOG_LEVEL_STATE);
+    log_this(SR_WEBSOCKET, "Processing complete message", LOG_LEVEL_STATE);
 
     // Parse JSON message
     json_error_t error;
     json_t *root = json_loads((const char *)ws_context->message_buffer, 0, &error);
     
     if (!root) {
-        log_this("WebSocket", "Error parsing JSON: %s", LOG_LEVEL_ALERT, error.text);
+        log_this(SR_WEBSOCKET, "Error parsing JSON: %s", LOG_LEVEL_ALERT, error.text);
         return 0;
     }
 
@@ -81,10 +81,10 @@ int ws_handle_receive(struct lws *wsi, WebSocketSessionData *session, void *in, 
 
     if (json_is_string(type_json)) {
         const char *type = json_string_value(type_json);
-        log_this("WebSocket", "Processing message type: %s", LOG_LEVEL_STATE, type);
+        log_this(SR_WEBSOCKET, "Processing message type: %s", LOG_LEVEL_STATE, type);
         result = handle_message_type(wsi, type);
     } else {
-        log_this("WebSocket", "Missing or invalid 'type' in request", LOG_LEVEL_STATE);
+        log_this(SR_WEBSOCKET, "Missing or invalid 'type' in request", LOG_LEVEL_STATE);
     }
 
     json_decref(root);
@@ -94,12 +94,12 @@ int ws_handle_receive(struct lws *wsi, WebSocketSessionData *session, void *in, 
 static int handle_message_type(struct lws *wsi, const char *type)
 {
     if (strcmp(type, "status") == 0) {
-        log_this("WebSocket", "Handling status request", LOG_LEVEL_STATE);
+        log_this(SR_WEBSOCKET, "Handling status request", LOG_LEVEL_STATE);
         handle_status_request(wsi);
         return 0;
     }
 
-    log_this("WebSocket", "Unknown message type: %s", LOG_LEVEL_STATE, type);
+    log_this(SR_WEBSOCKET, "Unknown message type: %s", LOG_LEVEL_STATE, type);
     return -1;
 }
 
@@ -108,7 +108,7 @@ int ws_write_json_response(struct lws *wsi, json_t *json)
 {
     char *response_str = json_dumps(json, JSON_COMPACT);
     if (!response_str) {
-        log_this("WebSocket", "Failed to serialize JSON response", LOG_LEVEL_ERROR);
+        log_this(SR_WEBSOCKET, "Failed to serialize JSON response", LOG_LEVEL_ERROR);
         return -1;
     }
 
@@ -121,7 +121,7 @@ int ws_write_json_response(struct lws *wsi, json_t *json)
         result = lws_write(wsi, buf + LWS_PRE, len, LWS_WRITE_TEXT);
         free(buf);
     } else {
-        log_this("WebSocket", "Failed to allocate response buffer", LOG_LEVEL_ERROR);
+        log_this(SR_WEBSOCKET, "Failed to allocate response buffer", LOG_LEVEL_ERROR);
     }
 
     free(response_str);
