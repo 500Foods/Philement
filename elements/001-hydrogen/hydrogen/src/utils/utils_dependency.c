@@ -66,7 +66,7 @@
      int level = (status == LIB_STATUS_GOOD) ? LOG_LEVEL_STATE :
                  (status == LIB_STATUS_WARNING) ? LOG_LEVEL_ALERT :
                  (status == LIB_STATUS_CRITICAL) ? LOG_LEVEL_FATAL : LOG_LEVEL_ERROR;
-     log_this("DepCheck", "%s Expecting: %s Found: %s (%s) Status: %s",
+     log_this(SR_DEPCHECK, "%s Expecting: %s Found: %s (%s) Status: %s",
               level, name, expected ? expected : "(default)", found ? found : "None",
               method, get_status_string(status));
  }
@@ -84,7 +84,7 @@
      for (const char **path = config->paths; *path; path++) {
          void *handle = dlopen(*path, RTLD_LAZY);
          if (!handle) {
-//             log_this("DepCheck", "Failed to open %s at %s: %s", LOG_LEVEL_DEBUG, config->name, *path, dlerror());
+//             log_this(SR_DEPCHECK, "Failed to open %s at %s: %s", LOG_LEVEL_DEBUG, config->name, *path, dlerror());
              continue;
          }
  
@@ -102,7 +102,7 @@
                              buffer[len] = '\0';
                              version = buffer;
                              *method = "API";
-//                             log_this("DepCheck", "%s: Found version %s via direct call", LOG_LEVEL_DEBUG, config->name, version);
+//                             log_this(SR_DEPCHECK, "%s: Found version %s via direct call", LOG_LEVEL_DEBUG, config->name, version);
                              dlclose(handle);
                              return version;
                          }
@@ -114,31 +114,31 @@
                  void *func_ptr = dlsym(handle, *func_name);
                  const char *err = dlerror();
                  if (err || !func_ptr) {
-//                     log_this("DepCheck", "%s: dlsym(%s) failed: %s", LOG_LEVEL_DEBUG, config->name, *func_name, err ? err : "NULL");
+//                     log_this(SR_DEPCHECK, "%s: dlsym(%s) failed: %s", LOG_LEVEL_DEBUG, config->name, *func_name, err ? err : "NULL");
                      continue;
                  }
  
                  if (strcmp(config->name, "libtar") == 0 && strcmp(*func_name, "libtar_version") == 0) {
                      const char *version_str = (const char *)func_ptr;
-//                     log_this("DepCheck", "%s: Raw version_str at %p", LOG_LEVEL_DEBUG, config->name, func_ptr);
+//                     log_this(SR_DEPCHECK, "%s: Raw version_str at %p", LOG_LEVEL_DEBUG, config->name, func_ptr);
                      if (version_str) {
                          volatile char probe = *version_str; // Force read to catch segfault
                          if (probe != '\0') {
                              size_t len = strnlen(version_str, size - 1);
-//                             log_this("DepCheck", "%s: Version string length: %zu", LOG_LEVEL_DEBUG, config->name, len);
+//                             log_this(SR_DEPCHECK, "%s: Version string length: %zu", LOG_LEVEL_DEBUG, config->name, len);
                              if (len > 0 && len < size - 1) {
                                  strncpy(buffer, version_str, len);
                                  buffer[len] = '\0';
                                  version = buffer;
                                  *method = "SYM";
-//                                 log_this("DepCheck", "%s: Found version %s via %s (data symbol)", LOG_LEVEL_DEBUG, config->name, version, *func_name);
+//                                 log_this(SR_DEPCHECK, "%s: Found version %s via %s (data symbol)", LOG_LEVEL_DEBUG, config->name, version, *func_name);
                                  dlclose(handle);
                                  return version;
                              }
                          }
                      }
                      version = "NoVersionFound";
-//                     log_this("DepCheck", "%s: %s is empty or inaccessible", LOG_LEVEL_DEBUG, config->name, *func_name);
+//                     log_this(SR_DEPCHECK, "%s: %s is empty or inaccessible", LOG_LEVEL_DEBUG, config->name, *func_name);
                      dlclose(handle);
                      return version;
                  }
@@ -151,7 +151,7 @@
                               ver >> 24, (ver >> 12) & 0xFFF, ver & 0xFFF);
                      version = buffer;
                      *method = "SYM";
-//                     log_this("DepCheck", "%s: Found version %s via %s", LOG_LEVEL_DEBUG, config->name, version, *func_name);
+//                     log_this(SR_DEPCHECK, "%s: Found version %s via %s", LOG_LEVEL_DEBUG, config->name, version, *func_name);
                      dlclose(handle);
                      return version;
                  }
@@ -170,7 +170,7 @@
                      temp = func.void_func();
                  }
                  if (!temp) {
-//                     log_this("DepCheck", "%s: Version function %s returned NULL", LOG_LEVEL_DEBUG, config->name, *func_name);
+//                     log_this(SR_DEPCHECK, "%s: Version function %s returned NULL", LOG_LEVEL_DEBUG, config->name, *func_name);
                      continue;
                  }
  
@@ -190,7 +190,7 @@
                          buffer[len] = '\0';
                          version = buffer;
                          *method = "SYM";
-//                         log_this("DepCheck", "%s: Found version %s via %s", LOG_LEVEL_DEBUG, config->name, version, *func_name);
+//                         log_this(SR_DEPCHECK, "%s: Found version %s via %s", LOG_LEVEL_DEBUG, config->name, version, *func_name);
                          dlclose(handle);
                          return version;
                      }
@@ -202,7 +202,7 @@
          return version;
      }
      if (strcmp(config->name, "libtar") == 0) {
-//         log_this("DepCheck", "libtar not found; installed at /usr/lib64/libtar.so.1? Run 'ldd ./hydrogen' and 'sudo ldconfig'", LOG_LEVEL_DEBUG);
+//         log_this(SR_DEPCHECK, "libtar not found; installed at /usr/lib64/libtar.so.1? Run 'ldd ./hydrogen' and 'sudo ldconfig'", LOG_LEVEL_DEBUG);
      }
      return "None";
  }
@@ -235,8 +235,8 @@
  }
  
  int check_library_dependencies(const AppConfig *config) {
-     log_this("DepCheck", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-     log_this("DepCheck", "DEPENDENCY CHECK", LOG_LEVEL_STATE);
+     log_this(SR_DEPCHECK, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+     log_this(SR_DEPCHECK, "DEPENDENCY CHECK", LOG_LEVEL_STATE);
      int critical_count = 0;
  
      bool web = config ? (config->webserver.enable_ipv4 || config->webserver.enable_ipv6) : false;
@@ -259,7 +259,7 @@
          log_status(lib.name, lib.expected, found, method, status);
          if (status == LIB_STATUS_CRITICAL && lib.required) critical_count++;
      }
-     log_this("DepCheck", "Completed dependency check, critical issues: %d", LOG_LEVEL_STATE, critical_count);
+     log_this(SR_DEPCHECK, "Completed dependency check, critical issues: %d", LOG_LEVEL_STATE, critical_count);
      return critical_count;
  }
  
