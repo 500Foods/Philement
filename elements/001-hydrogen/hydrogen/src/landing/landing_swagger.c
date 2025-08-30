@@ -22,7 +22,7 @@ extern volatile sig_atomic_t swagger_system_shutdown;
 // Check if the swagger subsystem is ready to land
 LaunchReadiness check_swagger_landing_readiness(void) {
     LaunchReadiness readiness = {0};
-    readiness.subsystem = "Swagger";
+    readiness.subsystem = SR_SWAGGER;
     
     // Allocate space for messages (including NULL terminator)
     readiness.messages = malloc(5 * sizeof(char*));
@@ -32,10 +32,10 @@ LaunchReadiness check_swagger_landing_readiness(void) {
     }
     
     // Add initial subsystem identifier
-    readiness.messages[0] = strdup("Swagger");
+    readiness.messages[0] = strdup(SR_SWAGGER);
     
     // Check if swagger is actually running
-    if (!is_subsystem_running_by_name("Swagger")) {
+    if (!is_subsystem_running_by_name(SR_SWAGGER)) {
         readiness.ready = false;
         readiness.messages[1] = strdup("  No-Go:   Swagger not running");
         readiness.messages[2] = strdup("  Decide:  No-Go For Landing of Swagger");
@@ -65,16 +65,16 @@ LaunchReadiness check_swagger_landing_readiness(void) {
 
 // Land the swagger subsystem
 int land_swagger_subsystem(void) {
-    log_this("Swagger", LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this("Swagger", "LANDING: SWAGGER", LOG_LEVEL_STATE);
+    log_this(SR_SWAGGER, LOG_LINE_BREAK, LOG_LEVEL_STATE);
+    log_this(SR_SWAGGER, "LANDING: SWAGGER", LOG_LEVEL_STATE);
     
     // Signal shutdown
     swagger_system_shutdown = 1;
-    log_this("Swagger", "Signaled Swagger system to stop", LOG_LEVEL_STATE);
+    log_this(SR_SWAGGER, "Signaled Swagger system to stop", LOG_LEVEL_STATE);
     
     // Cleanup resources
     // Additional cleanup will be added as needed
     
-    log_this("Swagger", "Swagger shutdown complete", LOG_LEVEL_STATE);
+    log_this(SR_SWAGGER, "Swagger shutdown complete", LOG_LEVEL_STATE);
     return 1; // Success
 }

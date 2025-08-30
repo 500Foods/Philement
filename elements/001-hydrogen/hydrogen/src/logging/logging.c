@@ -14,7 +14,6 @@ void log_group_begin(void);
 void log_group_end(void);
 
 // External declarations
-extern AppConfig* app_config;
 extern volatile sig_atomic_t log_queue_shutdown;
 extern pthread_cond_t terminate_cond;
 extern pthread_mutex_t terminate_mutex;

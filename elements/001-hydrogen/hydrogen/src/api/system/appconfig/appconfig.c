@@ -18,11 +18,11 @@
 // Success: 200 OK with plain text response
 // Error: 500 Internal Server Error with error details
 enum MHD_Result handle_system_appconfig_request(struct MHD_Connection *connection) {
-    log_this("SystemService/appconfig", "Handling appconfig endpoint request", LOG_LEVEL_STATE);
+    log_this(SR_API, "Handling appconfig endpoint request", LOG_LEVEL_STATE);
 
     // Get current configuration
     if (!app_config) {
-        log_this("SystemService/appconfig", "Failed to get application configuration", LOG_LEVEL_ERROR);
+        log_this(SR_API, "Failed to get application configuration", LOG_LEVEL_ERROR);
         json_t *error = json_pack("{s:s}", "error", "Failed to get configuration");
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_INTERNAL_SERVER_ERROR);
         json_decref(error);
@@ -33,9 +33,9 @@ enum MHD_Result handle_system_appconfig_request(struct MHD_Connection *connectio
     dumpAppConfig(app_config, NULL);
 
     // Get the dumped configuration from logs
-    char *raw_text = log_get_messages("Config-Dump");
+    char *raw_text = log_get_messages(SR_CONFIG_CURRENT);
     if (!raw_text) {
-        log_this("SystemService/appconfig", "Failed to get configuration dump", LOG_LEVEL_ERROR);
+        log_this(SR_API, "Failed to get configuration dump", LOG_LEVEL_ERROR);
         json_t *error = json_pack("{s:s}", "error", "Failed to generate configuration");
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_INTERNAL_SERVER_ERROR);
         json_decref(error);
@@ -52,14 +52,14 @@ enum MHD_Result handle_system_appconfig_request(struct MHD_Connection *connectio
     char *first_line = strtok(raw_text, "\n");
     if (!first_line) {
         free(raw_text);
-        log_this("SystemService/appconfig", "No configuration output found", LOG_LEVEL_ERROR);
+        log_this(SR_API, "No configuration output found", LOG_LEVEL_ERROR);
         return MHD_NO;
     }
 
     char *config_marker = strstr(first_line, "APPCONFIG");
     if (!config_marker) {
         free(raw_text);
-        log_this("SystemService/appconfig", "Could not find APPCONFIG marker", LOG_LEVEL_ERROR);
+        log_this(SR_API, "Could not find APPCONFIG marker", LOG_LEVEL_ERROR);
         return MHD_NO;
     }
 
@@ -70,7 +70,7 @@ enum MHD_Result handle_system_appconfig_request(struct MHD_Connection *connectio
     char **new_lines = malloc(sizeof(char*));
     if (!new_lines) {
         free(raw_text);
-        log_this("SystemService/appconfig", "Memory allocation failed", LOG_LEVEL_ERROR);
+        log_this(SR_API, "Memory allocation failed", LOG_LEVEL_ERROR);
         return MHD_NO;
     }
     lines = new_lines;
@@ -86,7 +86,7 @@ enum MHD_Result handle_system_appconfig_request(struct MHD_Connection *connectio
                 free(lines[i]);
             }
             free(lines);
-            log_this("SystemService/appconfig", "Memory allocation failed", LOG_LEVEL_ERROR);
+            log_this(SR_API, "Memory allocation failed", LOG_LEVEL_ERROR);
             return MHD_NO;
         }
         lines = new_lines;
@@ -105,7 +105,7 @@ enum MHD_Result handle_system_appconfig_request(struct MHD_Connection *connectio
                 free(lines[i]);
             }
             free(lines);
-            log_this("SystemService/appconfig", "Memory allocation failed", LOG_LEVEL_ERROR);
+            log_this(SR_API, "Memory allocation failed", LOG_LEVEL_ERROR);
             return MHD_NO;
         }
         
@@ -125,7 +125,7 @@ enum MHD_Result handle_system_appconfig_request(struct MHD_Connection *connectio
             free(lines[i]);
         }
         free(lines);
-        log_this("SystemService/appconfig", "Memory allocation failed", LOG_LEVEL_ERROR);
+        log_this(SR_API, "Memory allocation failed", LOG_LEVEL_ERROR);
         return MHD_NO;
     }
 
@@ -157,7 +157,7 @@ enum MHD_Result handle_system_appconfig_request(struct MHD_Connection *connectio
     );
 
     if (!response) {
-        log_this("SystemService/appconfig", "Failed to create response", LOG_LEVEL_ERROR);
+        log_this(SR_API, "Failed to create response", LOG_LEVEL_ERROR);
         free(processed_text);
         return MHD_NO;
     }

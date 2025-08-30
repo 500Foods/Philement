@@ -356,11 +356,11 @@ static void test_crash_handler(int sig) {
  */
 static void config_dump_handler(int sig) {
     (void)sig;
-    log_this("Config", "Received SIGUSR2, dumping current configuration", LOG_LEVEL_STATE);
+    log_this(SR_CONFIG, "Received SIGUSR2, dumping current configuration", LOG_LEVEL_STATE);
     if (app_config) {
         dumpAppConfig(app_config, NULL);
     } else {
-        log_this("Config", "No configuration available to dump", LOG_LEVEL_ERROR);
+        log_this(SR_CONFIG, "No configuration available to dump", LOG_LEVEL_ERROR);
     }
 }
 

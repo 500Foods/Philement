@@ -88,7 +88,7 @@ void cleanup_server_config(ServerConfig* config) {
 
 void dump_server_config(const ServerConfig* config) {
     if (!config) {
-        log_this("Config", "Cannot dump NULL server config", LOG_LEVEL_TRACE);
+        log_this(SR_CONFIG, "Cannot dump NULL server config", LOG_LEVEL_TRACE);
         return;
     }
 

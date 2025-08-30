@@ -27,7 +27,7 @@ static void cleanup_server(OutboundServer* server) {
 // Load mail relay configuration from JSON
 bool load_mailrelay_config(json_t* root, AppConfig* config) {
     if (!config) {
-        log_this("Config-MailRelay", "Invalid parameters for mail relay configuration", LOG_LEVEL_ERROR);
+        log_this(SR_CONFIG, "Invalid parameters for mail relay configuration", LOG_LEVEL_ERROR);
         return false;
     }
 
@@ -66,7 +66,7 @@ bool load_mailrelay_config(json_t* root, AppConfig* config) {
         json_t* server;
         json_array_foreach(servers, index, server) {
             if (index >= MAX_OUTBOUND_SERVERS) {
-                log_this("Config-MailRelay", "Too many outbound servers configured", LOG_LEVEL_ERROR);
+                log_this(SR_CONFIG, "Too many outbound servers configured", LOG_LEVEL_ERROR);
                 break;
             }
 
@@ -114,7 +114,7 @@ bool load_mailrelay_config(json_t* root, AppConfig* config) {
         mail->OutboundServerCount = 2;
 
         // Log default server setup
-        log_this("Config-MailRelay", "――― Using default environment variables for SMTP servers (*)", LOG_LEVEL_STATE);
+        log_this(SR_CONFIG, "――― Using default environment variables for SMTP servers (*)", LOG_LEVEL_STATE);
     }
 
     if (!success) {

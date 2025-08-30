@@ -539,7 +539,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Filter:  ..${FILTER_LOG}"
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Packet:  ..${PACKET_LOG}"
 
-        sleep 1
+        sleep 1.5
 
         if [[ -f "${CAPTURE_LOG}" ]]; then
             # Start diagnostics log with header information

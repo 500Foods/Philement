@@ -113,7 +113,8 @@ run_single_unity_test_parallel() {
     mkdir -p "$("${DIRNAME}" "${temp_test_log}" || true)"
     true > "${temp_test_log}"
     
-    if "${test_exe}" > "${temp_test_log}" 2>&1; then
+    # Limit runtime of individual tests
+    if timeout 2s "${test_exe}" > "${temp_test_log}" 2>&1; then
         # Parse the Unity test output to get test counts
         local failure_count
         local ignored_count

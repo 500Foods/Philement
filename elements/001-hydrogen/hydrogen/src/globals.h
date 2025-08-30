@@ -65,9 +65,17 @@
 #define DEFAULT_RESPONSE_BUFFER_SIZE 16384      // 16KB for responses
 
 // SUBSYSTEM REGISTRY /////////////////////////////////////////////////////////////////////////////
-#define SR_API "API"
-#define SR_WEBSOCKETS "WebSocket"
-#define SR_WEBSERVER "WebServer"
+#define SR_STARTUP          "Startup"
+#define SR_SHUTDOWN         "Shutdown"
+#define SR_RESTART          "Restart"
+#define SR_CONFIG           "Config"
+#define SR_CONFIG_CURRENT   "Config-Current"
+#define SR_LAUNCH           "Launch"
+#define SR_LANDING          "Landing"
+#define SR_API              "API"
+#define SR_WEBSOCKETS       "WebSocket"
+#define SR_WEBSERVER        "WebServer"
+#define SR_SWAGGER          "Swagger"
 
 #define INITIAL_REGISTRY_CAPACITY 20
 #define MAX_DEPENDENCIES 20
