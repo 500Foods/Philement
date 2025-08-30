@@ -70,7 +70,7 @@ static void log_readiness_messages(const LaunchReadiness* readiness) {
         }
         
         // Print the message directly (formatting is already in the message)
-        log_this("Landing", "%s", level, readiness->messages[i]);
+        log_this(SR_LANDING, "%s", level, readiness->messages[i]);
     }
 }
 
@@ -111,32 +111,32 @@ ReadinessResults handle_landing_readiness(void) {
     size_t index = 0;
     
     // Begin LANDING READINESS logging section
-    log_this("Landing", "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
-    log_this("Landing", "LANDING READINESS", LOG_LEVEL_STATE);
+    log_this(SR_LANDING, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
+    log_this(SR_LANDING, "LANDING READINESS", LOG_LEVEL_STATE);
     
     // Define subsystem order and readiness check functions
     struct {
         const char* name;
         LaunchReadiness (*check_func)(void);
     } subsystems[] = {
-        {"Print", check_print_landing_readiness},
-        {"Mail Relay", check_mail_relay_landing_readiness},
-        {"mDNS Client", check_mdns_client_landing_readiness},
-        {"mDNS Server", check_mdns_server_landing_readiness},
-        {"Terminal", check_terminal_landing_readiness},
-        {"WebSocket", check_websocket_landing_readiness},
-        {"Swagger", check_swagger_landing_readiness},
-        {"API", check_api_landing_readiness},
-        {"WebServer", check_webserver_landing_readiness},
-        {"Database", check_database_landing_readiness},
-        {"Logging", check_logging_landing_readiness},
-        {"Network", check_network_landing_readiness},
-        {"Resources", check_resources_landing_readiness},
-        {"Notify", check_notify_landing_readiness},
-        {"OIDC", check_oidc_landing_readiness},
-        {"Payload", check_payload_landing_readiness},
-        {"Threads", check_threads_landing_readiness},
-        {"Registry", check_registry_landing_readiness}
+        {SR_PRINT,          check_print_landing_readiness},
+        {SR_MAIL_RELAY,     check_mail_relay_landing_readiness},
+        {SR_MDNS_CLIENT,    check_mdns_client_landing_readiness},
+        {SR_MDNS_SERVER,    check_mdns_server_landing_readiness},
+        {SR_TERMINAL,       check_terminal_landing_readiness},
+        {SR_WEBSOCKET,      check_websocket_landing_readiness},
+        {SR_SWAGGER,        check_swagger_landing_readiness},
+        {SR_API,            check_api_landing_readiness},
+        {SR_WEBSERVER,      check_webserver_landing_readiness},
+        {SR_DATABASE,       check_database_landing_readiness},
+        {SR_LOGGING,        check_logging_landing_readiness},
+        {SR_NETWORK,        check_network_landing_readiness},
+        {SR_RESOURCES,      check_resources_landing_readiness},
+        {SR_NOTIFY,         check_notify_landing_readiness},
+        {SR_OIDC,           check_oidc_landing_readiness},
+        {SR_PAYLOAD,        check_payload_landing_readiness},
+        {SR_THREADS,        check_threads_landing_readiness},
+        {SR_REGISTRY,       check_registry_landing_readiness}
     };
     
     // Process subsystems in defined order

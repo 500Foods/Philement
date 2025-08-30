@@ -18,12 +18,12 @@
 // Success: 200 OK with plain text response
 // Error: 500 Internal Server Error with error details
 enum MHD_Result handle_system_recent_request(struct MHD_Connection *connection) {
-    log_this("SystemService/recent", "Handling recent logs request", LOG_LEVEL_STATE);
+    log_this(SR_API, "Handling recent logs request", LOG_LEVEL_STATE);
 
     // Get all available messages from the rolling buffer
     char *raw_text = log_get_last_n(500);  // Get all messages (buffer size is 500)
     if (!raw_text) {
-        log_this("SystemService/recent", "Failed to get log messages", LOG_LEVEL_ERROR);
+        log_this(SR_API, "Failed to get log messages", LOG_LEVEL_ERROR);
         json_t *error = json_pack("{s:s}", "error", "Failed to retrieve log messages");
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_INTERNAL_SERVER_ERROR);
         json_decref(error);
@@ -45,7 +45,7 @@ enum MHD_Result handle_system_recent_request(struct MHD_Connection *connection) 
                 free(lines[i]);
             }
             free(lines);
-            log_this("SystemService/recent", "Memory allocation failed", LOG_LEVEL_ERROR);
+            log_this(SR_API, "Memory allocation failed", LOG_LEVEL_ERROR);
             return MHD_NO;
         }
         lines = new_lines;
@@ -57,7 +57,7 @@ enum MHD_Result handle_system_recent_request(struct MHD_Connection *connection) 
                 free(lines[i]);
             }
             free(lines);
-            log_this("SystemService/recent", "Memory allocation failed", LOG_LEVEL_ERROR);
+            log_this(SR_API, "Memory allocation failed", LOG_LEVEL_ERROR);
             return MHD_NO;
         }
 
@@ -74,7 +74,7 @@ enum MHD_Result handle_system_recent_request(struct MHD_Connection *connection) 
             free(lines[i]);
         }
         free(lines);
-        log_this("SystemService/recent", "Memory allocation failed", LOG_LEVEL_ERROR);
+        log_this(SR_API, "Memory allocation failed", LOG_LEVEL_ERROR);
         return MHD_NO;
     }
 
@@ -108,7 +108,7 @@ enum MHD_Result handle_system_recent_request(struct MHD_Connection *connection) 
     );
 
     if (!response) {
-        log_this("SystemService/recent", "Failed to create response", LOG_LEVEL_ERROR);
+        log_this(SR_API, "Failed to create response", LOG_LEVEL_ERROR);
         free(processed_text);
         return MHD_NO;
     }

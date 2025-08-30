@@ -33,7 +33,7 @@ extern volatile sig_atomic_t websocket_server_shutdown;
 // Includes CORS headers for cross-origin access
 enum MHD_Result handle_system_prometheus_request(struct MHD_Connection *connection)
 {
-    log_this("SystemService/prometheus", "Handling prometheus endpoint request", LOG_LEVEL_STATE);
+    log_this(SR_API, "Handling prometheus endpoint request", LOG_LEVEL_STATE);
     
     WebSocketMetrics metrics = {0};
 
@@ -50,7 +50,7 @@ enum MHD_Result handle_system_prometheus_request(struct MHD_Connection *connecti
     // Get metrics in Prometheus format
     char *prometheus_output = get_system_status_prometheus(ws_context ? &metrics : NULL);
     if (!prometheus_output) {
-        log_this("SystemService/prometheus", "Failed to get metrics in Prometheus format", LOG_LEVEL_ERROR);
+        log_this(SR_API, "Failed to get metrics in Prometheus format", LOG_LEVEL_ERROR);
         return MHD_NO;
     }
 
