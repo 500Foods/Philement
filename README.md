@@ -64,15 +64,15 @@ There are countless tools, frameworks, coding styles, conventions, languages, an
 [![Count Lines of Code](https://github.com/500Foods/Philement/actions/workflows/main.yml/badge.svg)](https://github.com/500Foods/Philement/actions/workflows/main.yml)
 <!--CLOC-START -->
 ```cloc
-Last updated at 2025-08-30 15:52:43 UTC
+Last updated at 2025-08-30 16:05:30 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 C                              328          11996          13142          43976
 Markdown                       281           7833             57          24731
 Bourne Shell                    56           2466           2900          10807
-C/C++ Header                    99           1146           3470           3140
-JSON                            30              0              0           3045
+C/C++ Header                    99           1147           3473           3141
+JSON                            30              0              0           3046
 SVG                              2              0              0           2829
 CMake                            1            139            186            719
 HTML                             5            114             23            650
@@ -85,7 +85,7 @@ CSS                              2              3              2             38
 YAML                             2              8             13             37
 JavaScript                       1              3              0             25
 -------------------------------------------------------------------------------
-SUM:                           819          23820          19849          90485
+SUM:                           819          23821          19852          90487
 -------------------------------------------------------------------------------
 28 Files were skipped (duplicate, binary, or without source code):
   gitignore: 4
