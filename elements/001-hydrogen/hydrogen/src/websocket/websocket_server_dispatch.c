@@ -33,7 +33,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 
                 // Log any remaining connections
                 if (ws_context->active_connections > 0) {
-                    log_this("WebSocket", "Protocol destroy with %d active connections",
+                    log_this(SR_WEBSOCKET, "Protocol destroy with %d active connections",
                             LOG_LEVEL_ALERT, true, true, true, ws_context->active_connections);
                 }
                 
@@ -43,10 +43,10 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 
                 pthread_mutex_unlock(&ws_context->mutex);
                 
-                log_this("WebSocket", "Protocol cleanup complete", LOG_LEVEL_STATE);
+                log_this(SR_WEBSOCKET, "Protocol cleanup complete", LOG_LEVEL_STATE);
             } else {
                 // Context already cleaned up, which is also valid
-                log_this("WebSocket", "Protocol destroy with no context", LOG_LEVEL_STATE);
+                log_this(SR_WEBSOCKET, "Protocol destroy with no context", LOG_LEVEL_STATE);
             }
         }
         return 0;
@@ -65,7 +65,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
 
     // Normal operation requires valid context
     if (!ws_context) {
-        log_this("WebSocket", "No server context available for callback %d", LOG_LEVEL_ERROR, reason);
+        log_this(SR_WEBSOCKET, "No server context available for callback %d", LOG_LEVEL_ERROR, reason);
         return -1;
     }
 
@@ -79,7 +79,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 if (reason == LWS_CALLBACK_CLOSED || reason == LWS_CALLBACK_WSI_DESTROY) {
                     // During shutdown, some sessions might be already cleaned up
                     if (!session) {
-                        log_this("WebSocket", "Connection cleanup with no session during shutdown", 
+                        log_this(SR_WEBSOCKET, "Connection cleanup with no session during shutdown", 
                                 LOG_LEVEL_STATE, true, true, true);
                         return 0;
                     }
@@ -88,7 +88,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                     if (result == 0) {
                         pthread_mutex_lock(&ws_context->mutex);
                         if (ws_context->active_connections == 0) {
-                            log_this("WebSocket", "Last connection closed, notifying waiters", 
+                            log_this(SR_WEBSOCKET, "Last connection closed, notifying waiters", 
                                     LOG_LEVEL_STATE, true, true, true);
                             pthread_cond_broadcast(&ws_context->cond);
                         }
@@ -220,7 +220,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
             case LWS_CALLBACK_CGI_PROCESS_ATTACH:
                 // During shutdown, log but don't error on missing session
                 if (!session) {
-                    log_this("WebSocket", "Ignoring callback %d during shutdown (no session)", 
+                    log_this(SR_WEBSOCKET, "Ignoring callback %d during shutdown (no session)", 
                             LOG_LEVEL_STATE, true, true, true, reason);
                 }
                 return -1;  // Silently reject other callbacks during shutdown
@@ -237,7 +237,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
         reason != LWS_CALLBACK_FILTER_HTTP_CONNECTION &&
         reason != LWS_CALLBACK_WS_SERVER_BIND_PROTOCOL &&
         reason != LWS_CALLBACK_WS_SERVER_DROP_PROTOCOL) {
-        log_this("WebSocket", "Invalid session data for callback %d", LOG_LEVEL_DEBUG, reason);
+        log_this(SR_WEBSOCKET, "Invalid session data for callback %d", LOG_LEVEL_DEBUG, reason);
         return -1;
     }
 
@@ -261,7 +261,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 char buf[256];
                 int length = lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_AUTHORIZATION);
                 if (length <= 0) {
-                    log_this("WebSocket", "Missing authorization header", LOG_LEVEL_ALERT);
+                    log_this(SR_WEBSOCKET, "Missing authorization header", LOG_LEVEL_ALERT);
                     return -1;
                 }
 
@@ -270,17 +270,17 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 // During protocol filtering, session isn't initialized yet
                 // Validate authentication directly without session
                 if (strncmp(buf, "Key ", 4) != 0) {
-                    log_this("WebSocket", "Invalid authentication scheme", LOG_LEVEL_ALERT);
+                    log_this(SR_WEBSOCKET, "Invalid authentication scheme", LOG_LEVEL_ALERT);
                     return -1;
                 }
                 
                 const char *key = buf + 4;  // Skip "Key "
                 if (strcmp(key, ws_context->auth_key) != 0) {
-                    log_this("WebSocket", "Authentication failed during protocol filtering", LOG_LEVEL_ALERT);
+                    log_this(SR_WEBSOCKET, "Authentication failed during protocol filtering", LOG_LEVEL_ALERT);
                     return -1;
                 }
                 
-                log_this("WebSocket", "Authentication successful during protocol filtering", LOG_LEVEL_STATE);
+                log_this(SR_WEBSOCKET, "Authentication successful during protocol filtering", LOG_LEVEL_STATE);
                 return 0;
             }
 
@@ -417,7 +417,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
         case LWS_CALLBACK_CGI_STDIN_COMPLETED:
         case LWS_CALLBACK_CGI_PROCESS_ATTACH:
             // Log unhandled callback for debugging
-            log_this("WebSocket", "Unhandled callback reason: %d", LOG_LEVEL_STATE, reason);
+            log_this(SR_WEBSOCKET, "Unhandled callback reason: %d", LOG_LEVEL_STATE, reason);
             return 0;  // Accept unhandled callbacks during normal operation
     }
     
