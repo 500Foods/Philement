@@ -270,37 +270,24 @@ int launch_swagger_subsystem(void) {
 
     log_this(SR_SWAGGER, "    Swagger files verified (%zu files in cache):", LOG_LEVEL_STATE, num_swagger_files);
     for (size_t i = 0; i < num_swagger_files; i++) {
-        log_this(SR_SWAGGER, "      -> %s", LOG_LEVEL_STATE, swagger_files[i].name);
+        log_this(SR_SWAGGER, "      -> %s (%s)", LOG_LEVEL_STATE,
+                swagger_files[i].name,
+                swagger_files[i].size < 1024 ?
+                    swagger_files[i].size < 512 ? "small file" : "medium file" :
+                    "large file");
     }
 
-    // Free the retrieved files array
+    // Set the global config so validators and handlers can access it and load files
+    if (!init_swagger_support_from_payload(&app_config->swagger, swagger_files, num_swagger_files)) {
+        log_this(SR_SWAGGER, "    Failed to load swagger files into memory", LOG_LEVEL_ERROR);
+        log_this(SR_SWAGGER, "LAUNCH: SWAGGER - Failed: File loading failed", LOG_LEVEL_STATE);
+        free(swagger_files);
+        return 0;
+    }
+
+    // Free the retrieved files array (but not individual data - owned by swagger now)
     free(swagger_files);
     log_this(SR_SWAGGER, "    All dependencies verified", LOG_LEVEL_STATE);
-
-    // Step 4: Initialize Swagger UI
-    log_this(SR_SWAGGER, "  Step 3: Initializing " SR_SWAGGER " subsystem", LOG_LEVEL_STATE);
-    
-    // Wait for API to be fully running
-    int retries = 0;
-    while (!is_subsystem_running_by_name(SR_API) && retries < 10) {
-        usleep(100000); // Wait 100ms between checks
-        retries++;
-    }
-    
-    if (!is_subsystem_running_by_name(SR_API)) {
-        log_this(SR_SWAGGER, "    " SR_API " subsystem not running after waiting", LOG_LEVEL_ERROR);
-        log_this(SR_SWAGGER, "LAUNCH: " SR_SWAGGER " Failed: " SR_API " not running", LOG_LEVEL_STATE);
-        return 0;
-    }
-    log_this(SR_SWAGGER, "    " SR_API " subsystem running", LOG_LEVEL_STATE);
-
-    // Initialize Swagger UI support
-    if (!init_swagger_support(&app_config->swagger)) {
-        log_this(SR_SWAGGER, "    Failed to initialize " SR_SWAGGER " subsystem", LOG_LEVEL_ERROR);
-        log_this(SR_SWAGGER, "LAUNCH: " SR_SWAGGER " Failed: Initialization failed", LOG_LEVEL_STATE);
-        return 0;
-    }
-    log_this(SR_SWAGGER, "    " SR_SWAGGER " subsystem initialized", LOG_LEVEL_STATE);
 
     // Register Swagger endpoint with webserver
     WebServerEndpoint swagger_endpoint = {

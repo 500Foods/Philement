@@ -336,7 +336,11 @@ static bool parse_tar_into_cache(const uint8_t *tar_data, size_t tar_size) {
             // Store file information
             temp_files[file_count].name = strdup(filename);
             temp_files[file_count].size = file_size;
-            temp_files[file_count].is_compressed = false; // Tar files inside payload are typically already uncompressed
+
+            // Check if this is a Brotli compressed file by extension
+            size_t name_len = strlen(filename);
+            temp_files[file_count].is_compressed =
+                (name_len > 3 && strcmp(filename + name_len - 3, ".br") == 0);
 
             // Extract file data
             size_t data_offset = pos + 512;
