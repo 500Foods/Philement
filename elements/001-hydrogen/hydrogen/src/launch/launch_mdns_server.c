@@ -202,7 +202,7 @@ int launch_mdns_server_subsystem(void) {
         return 0;
     }
 
-    // Step 5: Initialize subsystem instance
+    // Initialize subsystem instance
     log_this(SR_MDNS_SERVER, "Initializing " SR_MDNS_SERVER " with device configuration", LOG_LEVEL_STATE);
 
     // Get server configuration

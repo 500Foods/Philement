@@ -69,14 +69,9 @@ void finalize_launch_messages(const char*** messages, size_t* count, size_t* cap
 void free_launch_messages(const char** messages, size_t count);
 void set_readiness_messages(LaunchReadiness* readiness, const char** messages);
 
-int is_api_running(void);
-int is_swagger_running(void);
+// Subsystem state checking functions
+bool is_subsystem_launchable_by_name(const char* name);
 
-// Subsystem registration functions
-void register_api(void);
-void register_swagger(void);
-void register_oidc(void);
-void register_notify(void);
 
 void free_threads_resources(void);
 void free_payload_resources(void);
@@ -90,8 +85,29 @@ extern volatile sig_atomic_t network_system_shutdown;
 extern volatile sig_atomic_t print_system_shutdown;
 extern volatile sig_atomic_t terminal_system_shutdown;
 
-// Subsystem IDs
-extern int payload_subsystem_id;
+// Forward deeclarations
+void free_webserver_resources(void);
+void register_websocket(void);
+bool validate_protocol(const char* protocol);
+bool validate_key(const char* key);
+
+// Forward declarations from launch_payload.c
+extern bool launch_payload(const AppConfig *config, const char *marker);
+extern bool check_payload_exists(const char *marker, size_t *size);
+extern bool validate_payload_key(const char *key);
+
+// Forward declarations of static functions
+void log_readiness_messages(LaunchReadiness* readiness);
+void cleanup_readiness_messages(LaunchReadiness* readiness);
+void process_subsystem_readiness(ReadinessResults* results, size_t* index,
+                                      const char* name, LaunchReadiness readiness);
+
+// Forward declarations for validation helpers for launch_resources.c
+bool validate_memory_limits(const ResourceConfig* config, int* msg_count, const char** messages);
+bool validate_queue_settings(const ResourceConfig* config, int* msg_count, const char** messages);
+bool validate_thread_limits(const ResourceConfig* config, int* msg_count, const char** messages);
+bool validate_file_limits(const ResourceConfig* config, int* msg_count, const char** messages);
+bool validate_monitoring_settings(const ResourceConfig* config, int* msg_count, const char** messages);
 
 // Subsystem readiness checks (in standard order)
 LaunchReadiness check_registry_launch_readiness(void);  // Must be first
@@ -132,52 +148,5 @@ int launch_mail_relay_subsystem(void);
 int launch_print_subsystem(void);
 int launch_oidc_subsystem(void);
 int launch_resources_subsystem(void);
-
-// Forward deeclarations from launch_api.c
-int is_api_running(void);
-int is_web_server_running(void);
-void free_webserver_resources(void);
-int is_websocket_server_running(void);
-// Forward declarations
-void register_websocket(void);
-bool validate_protocol(const char* protocol);
-bool validate_key(const char* key);
-
-// Forward declarations from launch_payload.c
-extern bool launch_payload(const AppConfig *config, const char *marker);
-extern bool check_payload_exists(const char *marker, size_t *size);
-extern bool validate_payload_key(const char *key);
-
-// Forward declarations of static functions
-void log_readiness_messages(LaunchReadiness* readiness);
-void cleanup_readiness_messages(LaunchReadiness* readiness);
-void process_subsystem_readiness(ReadinessResults* results, size_t* index,
-                                      const char* name, LaunchReadiness readiness);
-
-// Forward declarations for validation helpers for launch_resources.c
-bool validate_memory_limits(const ResourceConfig* config, int* msg_count, const char** messages);
-bool validate_queue_settings(const ResourceConfig* config, int* msg_count, const char** messages);
-bool validate_thread_limits(const ResourceConfig* config, int* msg_count, const char** messages);
-bool validate_file_limits(const ResourceConfig* config, int* msg_count, const char** messages);
-bool validate_monitoring_settings(const ResourceConfig* config, int* msg_count, const char** messages);
-
-// Forward declarations for launch_threads.c
-void register_threads(void);
-
-// Subsystem state checking functions
-bool is_subsystem_launchable_by_name(const char* name);
-
-void shutdown_database_subsystem(void);
-void shutdown_logging_subsystem(void);
-void shutdown_notify_subsystem(void);
-void shutdown_web_server(void);
-void shutdown_api(void);
-void shutdown_swagger(void);
-void shutdown_terminal(void);
-void shutdown_mdns_server(void);
-void shutdown_mdns_client(void);
-void shutdown_mail_relay(void);
-void shutdown_print_queue(void);
-void stop_websocket_server(void);
 
 #endif /* LAUNCH_H */

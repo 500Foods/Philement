@@ -18,35 +18,6 @@
 // Registry ID and cached readiness state
 int api_subsystem_id = -1;
 
-// Register the API subsystem with the registry
-void register_api(void) {
-    // Always register during readiness check if not already registered
-    if (api_subsystem_id < 0) {
-        api_subsystem_id = register_subsystem_from_launch(SR_API, NULL, NULL, NULL,
-                                            (int (*)(void))launch_api_subsystem,
-                                            NULL);  // No special shutdown needed
-        if (api_subsystem_id < 0) {
-            log_this(SR_API, "Failed to register " SR_API " subsystem", LOG_LEVEL_ERROR);
-        }
-    }
-}
-
-// Check if API is running
-int is_api_running(void) {
-    extern volatile sig_atomic_t server_stopping;
-
-    // API is running if:
-    // 1. It's enabled in config
-    // 2. Not in shutdown state
-    // 3. Registry is running
-    // 4. WebServer is running
-    return (app_config &&
-            app_config->api.enabled &&
-            !server_stopping &&
-            is_subsystem_running_by_name("Registry") &&
-            is_web_server_running());
-}
-
 /*
  * Check if the API subsystem is ready to launch
  *
@@ -66,7 +37,15 @@ LaunchReadiness check_api_launch_readiness(void) {
     add_launch_message(&messages, &count, &capacity, strdup(SR_API));
 
     // Register with registry first
-    register_api();
+    if (api_subsystem_id < 0) {
+        api_subsystem_id = register_subsystem_from_launch(SR_API, NULL, NULL, NULL,
+                                            (int (*)(void))launch_api_subsystem,
+                                            NULL);  // No special shutdown needed
+        if (api_subsystem_id < 0) {
+            log_this(SR_API, "Failed to register " SR_API " subsystem", LOG_LEVEL_ERROR);
+        }
+    }
+
     if (api_subsystem_id < 0) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Failed to register with registry"));
         finalize_launch_messages(&messages, &count, &capacity);
@@ -140,53 +119,34 @@ LaunchReadiness check_api_launch_readiness(void) {
 // Launch API subsystem
 int launch_api_subsystem(void) {
 
+    // Step 1: Log Launch
     log_this(SR_API, LOG_LINE_BREAK, LOG_LEVEL_STATE);
     log_this(SR_API, "LAUNCH: " SR_API, LOG_LEVEL_STATE);
 
-    // Step 1: Register with registry and add dependencies
-    log_this(SR_API, "  Registering with registry", LOG_LEVEL_STATE);
-    register_api();
+    // Step 2: Check Registration
     if (api_subsystem_id < 0) {
         log_this(SR_API, "    Failed to register " SR_API " subsystem", LOG_LEVEL_ERROR);
         log_this(SR_API, "LAUNCH: " SR_API " Failed: Registration failed", LOG_LEVEL_STATE);
         return 0;
     }
+
+    // Step 3: Register Dependencies
     add_subsystem_dependency(api_subsystem_id, "Registry");
     add_subsystem_dependency(api_subsystem_id, "WebServer");
-    log_this(SR_API, "    Registration complete", LOG_LEVEL_STATE);
 
-    // Step 2: Verify system state
-    log_this(SR_API, "  Verifying system state", LOG_LEVEL_STATE);
-
-    if (server_stopping) {
-        log_this(SR_API, "    Cannot initialize " SR_API " during shutdown", LOG_LEVEL_STATE);
-        log_this(SR_API, "LAUNCH: " SR_API " Failed: System in shutdown", LOG_LEVEL_STATE);
-        return 0;
-    }
-
-    if (!server_starting) {
-        log_this(SR_API, "    Cannot initialize " SR_API " outside startup phase", LOG_LEVEL_STATE);
+    // Step 4: Verify system state
+    if (server_stopping || server_starting != 1) {
+        log_this(SR_API, "Cannot initialize " SR_API " subsystem outside startup phase", LOG_LEVEL_STATE);
         log_this(SR_API, "LAUNCH: " SR_API " Failed: Not in startup phase", LOG_LEVEL_STATE);
         return 0;
     }
 
+    // Step 5: Verify config state
     if (!app_config) {
-        log_this(SR_API, "    " SR_API " configuration not loaded", LOG_LEVEL_STATE);
+        log_this(SR_API, "Configuration not loaded", LOG_LEVEL_ERROR);
         log_this(SR_API, "LAUNCH: " SR_API " Failed: No configuration", LOG_LEVEL_STATE);
         return 0;
     }
-
-    if (!app_config->api.enabled) {
-        log_this(SR_API, "    " SR_API " subsystem disabled in configuration", LOG_LEVEL_STATE);
-        log_this(SR_API, "LAUNCH: " SR_API " FAILED: Disabled in configuration", LOG_LEVEL_STATE);
-        return 1; // Not an error if disabled
-    }
-
-    log_this(SR_API, "    System state verified", LOG_LEVEL_STATE);
-
-    // Step 3: Verify dependencies
-    log_this(SR_API, "  Verifying dependencies", LOG_LEVEL_STATE);
-
     // Check Registry first
     if (!is_subsystem_running_by_name("Registry")) {
         log_this(SR_API, "    Registry not running", LOG_LEVEL_ERROR);
@@ -196,28 +156,28 @@ int launch_api_subsystem(void) {
     log_this(SR_API, "    Registry dependency verified", LOG_LEVEL_STATE);
 
     // Then check WebServer
-    if (!is_web_server_running()) {
-        log_this(SR_API, "    Web server not running", LOG_LEVEL_ERROR);
-        log_this(SR_API, "LAUNCH: API - Failed: WebServer dependency not met", LOG_LEVEL_STATE);
+    if (!is_subsystem_running_by_name(SR_WEBSERVER)) {
+        log_this(SR_API, "    " SR_WEBSERVER " not running", LOG_LEVEL_ERROR);
+        log_this(SR_API, "LAUNCH: " SR_API " Failed: " SR_WEBSERVER " subsystem dependency not met", LOG_LEVEL_STATE);
         return 0;
     }
-    log_this(SR_API, "    WebServer dependency verified", LOG_LEVEL_STATE);
+    log_this(SR_API, "    " SR_WEBSERVER " subsystem dependency verified", LOG_LEVEL_STATE);
     log_this(SR_API, "    All dependencies verified", LOG_LEVEL_STATE);
 
     // Step 4: Initialize API endpoints
-    log_this(SR_API, "  Initializing API endpoints", LOG_LEVEL_STATE);
+    log_this(SR_API, "  Initializing " SR_API " endpoints", LOG_LEVEL_STATE);
 
     // Initialize and register API endpoints
     if (!init_api_endpoints()) {
-        log_this(SR_API, "    Failed to initialize API endpoints", LOG_LEVEL_ERROR);
+        log_this(SR_API, "    Failed to initialize " SR_API " endpoints", LOG_LEVEL_ERROR);
         log_this(SR_API, "LAUNCH: " SR_API " Failed: Endpoint initialization failed", LOG_LEVEL_STATE);
         return 0;
     }
 
-    log_this(SR_API, "    API endpoints initialized successfully", LOG_LEVEL_STATE);
+    log_this(SR_API, "    " SR_API " endpoints initialized successfully", LOG_LEVEL_STATE);
 
     // Step 5: Update registry and verify state
-    log_this(SR_API, "  Updating subsystem registry", LOG_LEVEL_STATE);
+    log_this(SR_API, "  Updating " SR_REGISTRY " subsystem", LOG_LEVEL_STATE);
     update_subsystem_on_startup(SR_API, true);
 
     SubsystemState final_state = get_subsystem_state(api_subsystem_id);
