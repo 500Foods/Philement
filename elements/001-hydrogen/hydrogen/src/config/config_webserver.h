@@ -27,12 +27,15 @@ typedef struct WebServerConfig {
     char* upload_path;
     char* upload_dir;
     size_t max_upload_size;
-    
+
     // Thread pool and connection settings
     int thread_pool_size;
     int max_connections;
     int max_connections_per_ip;
     int connection_timeout;
+
+    // NEW: Global CORS default that subsystems can override
+    char* cors_origin;             // NEW: Global CORS default "*" - can be overridden per subsystem
 
     // Reference to subsystem configurations
     SwaggerConfig swagger;  // G. Swagger configuration

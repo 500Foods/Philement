@@ -492,8 +492,7 @@ int startup_hydrogen(const char* config_path) {
         log_this(SR_STARTUP, "    Queues:      %'5d", LOG_LEVEL_STATE, 0);
         log_this(SR_STARTUP, "    Databases:   %'5d", LOG_LEVEL_STATE, 0);
         
-        log_this(SR_STARTUP, "- Application started", LOG_LEVEL_STATE);
-        log_this(SR_STARTUP, "Press Ctrl+C to exit", LOG_LEVEL_STATE);
+        log_this(SR_STARTUP, "Press Ctrl+C to exit (SIGINT)", LOG_LEVEL_STATE);
         log_this(SR_STARTUP, "%s", LOG_LEVEL_STATE, LOG_LINE_BREAK);
     log_group_end();
  

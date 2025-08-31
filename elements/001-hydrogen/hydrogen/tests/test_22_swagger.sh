@@ -335,7 +335,7 @@ run_swagger_test_parallel() {
             break
         fi
         
-        if "${GREP}" -q "Application started" "${log_file}" 2>/dev/null; then
+        if "${GREP}" -q "STARTUP COMPLETE" "${log_file}" 2>/dev/null; then
             startup_success=true
             break
         fi

@@ -17,6 +17,7 @@ typedef struct APIConfig {
     bool enabled;         // Whether API endpoints are enabled
     char* prefix;         // API URL prefix (e.g., "/api")
     char* jwt_secret;     // Secret key for JWT token signing
+    char* cors_origin;    // NEW: CORS origin for API endpoints
 } APIConfig;
 
 /*
