@@ -24,14 +24,27 @@
 
 /**
  * Initialize Swagger support
- * 
+ *
  * Checks for Swagger payload in executable and extracts it if found.
  * Must be called during server initialization.
- * 
+ *
  * @param config The Swagger configuration
  * @return true if initialization successful, false otherwise
  */
 bool init_swagger_support(SwaggerConfig *config);
+
+/**
+ * Initialize Swagger support from payload cache files
+ *
+ * Takes pre-loaded files from payload cache and sets up memory structures.
+ * This is used when files have already been loaded by the payload system.
+ *
+ * @param config The Swagger configuration
+ * @param payload_files Array of payload files
+ * @param num_payload_files Number of files in the array
+ * @return true if initialization successful, false otherwise
+ */
+bool init_swagger_support_from_payload(SwaggerConfig *config, PayloadFile *payload_files, size_t num_payload_files);
 
 /**
  * Validate if a URL is a Swagger request (wrapper for webserver integration)

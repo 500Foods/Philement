@@ -32,6 +32,23 @@ LaunchReadiness check_terminal_launch_readiness(void) {
     // First message is subsystem name
     add_launch_message(&messages, &count, &capacity, strdup(SR_TERMINAL));
 
+    // Register with registry first
+    if (terminal_subsystem_id < 0) {
+        terminal_subsystem_id = register_subsystem_from_launch(SR_TERMINAL, NULL, NULL, NULL,
+                                                (int (*)(void))launch_terminal_subsystem,
+                                                NULL);  // No special shutdown needed
+        if (terminal_subsystem_id < 0) {
+            log_this(SR_TERMINAL, "Failed to register Terminal subsystem", LOG_LEVEL_ERROR);
+        }
+    }
+
+    // Check if registration succeeded
+    if (terminal_subsystem_id < 0) {
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Failed to register with registry"));
+        finalize_launch_messages(&messages, &count, &capacity);
+        return (LaunchReadiness){ .subsystem = SR_TERMINAL, .ready = false, .messages = messages };
+    }
+
     // Check dependencies first - handle NULL config gracefully
     if (!app_config || (!app_config->webserver.enable_ipv4 && !app_config->webserver.enable_ipv6)) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   WebServer Not Enabled"));
@@ -95,7 +112,7 @@ LaunchReadiness check_terminal_launch_readiness(void) {
     finalize_launch_messages(&messages, &count, &capacity);
 
     return (LaunchReadiness){
-        .subsystem = "Terminal",
+        .subsystem = SR_TERMINAL,
         .ready = is_ready,
         .messages = messages
     };
@@ -175,7 +192,7 @@ int launch_terminal_subsystem(void) {
 
     // Check WebSocket subsystem
     if (!is_subsystem_running_by_name(SR_WEBSOCKET)) {
-        log_this(SR_WEBSOCKET, "    " SR_WEBSOCKET " subsystem not running", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "    " SR_WEBSOCKET " subsystem not running", LOG_LEVEL_ERROR);
         log_this(SR_TERMINAL, "LAUNCH: TERMINAL - Failed: " SR_WEBSOCKET " dependency not met", LOG_LEVEL_STATE);
         return 0;
     }
@@ -210,22 +227,26 @@ int launch_terminal_subsystem(void) {
 
     log_this(SR_TERMINAL, "    Terminal files verified (%zu files in cache):", LOG_LEVEL_STATE, num_terminal_files);
     for (size_t i = 0; i < num_terminal_files; i++) {
-        log_this(SR_TERMINAL, "      -> %s", LOG_LEVEL_STATE, terminal_files[i].name);
+        log_this(SR_TERMINAL, "      -> %s (%s)", LOG_LEVEL_STATE,
+                terminal_files[i].name,
+                terminal_files[i].size < 1024 ?
+                    terminal_files[i].size < 512 ? "small file" : "medium file" :
+                    "large file");
     }
 
-    // Free the retrieved files array (but not individual data)
-    free(terminal_files);
-    log_this(SR_TERMINAL, "    All dependencies verified", LOG_LEVEL_STATE);
-
-    // Step 4: Initialize Terminal subsystem
-    log_this(SR_TERMINAL, "  Step 4: Initializing " SR_TERMINAL " subsystem", LOG_LEVEL_STATE);
-
-    // Initialize terminal support
-    if (!init_terminal_support(&app_config->terminal)) {
-        log_this(SR_TERMINAL, "    Failed to initialize " SR_TERMINAL " subsystem", LOG_LEVEL_ERROR);
-        log_this(SR_TERMINAL, "LAUNCH: TERMINAL - Failed: Initialization failed", LOG_LEVEL_STATE);
+    // Load terminal files into memory using init function
+    // This replaces the payload cache loading we removed earlier
+    TerminalConfig *mutable_terminal_config = (TerminalConfig*)&app_config->terminal;
+    if (!init_terminal_support(mutable_terminal_config)) {
+        log_this(SR_TERMINAL, "    Failed to load terminal files into memory", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "LAUNCH: TERMINAL - Failed: File loading failed", LOG_LEVEL_STATE);
+        free(terminal_files);
         return 0;
     }
+
+    // Free the retrieved files array (but not individual data - owned by payload cache now)
+    free(terminal_files);
+    log_this(SR_TERMINAL, "    All dependencies verified", LOG_LEVEL_STATE);
     log_this(SR_TERMINAL, "    " SR_TERMINAL " subsystem initialized", LOG_LEVEL_STATE);
 
     // Register Terminal endpoint with webserver

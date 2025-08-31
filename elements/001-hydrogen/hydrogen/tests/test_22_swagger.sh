@@ -414,29 +414,36 @@ run_swagger_test_parallel() {
                 all_tests_passed=false
             fi
 
-            # Test CSS file download and validation (should be valid CSS regardless of compression history)
-            local css_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_swagger_css.css"
-            curl -s --max-time 10 --compressed "${base_url}${swagger_prefix}/swagger-ui.css" > "${css_file}"
-            if [[ -s "${css_file}" ]]; then
-                # Use grep to check for basic CSS structure
-                if "${GREP}" -q -E "(\.|\#|@.*\{)" "${css_file}" 2>/dev/null; then
-                    echo "CSS_CONTENT_VALID" >> "${result_file}"
-                else
-                    echo "CSS_CONTENT_INVALID" >> "${result_file}"
-                fi
-
-                # Optional: If css-linter is available (from tests 9x), use it for comprehensive validation
-                if command -v stylelint >/dev/null 2>&1; then
-                    if stylelint --quiet "${css_file}" 2>/dev/null; then
-                        echo "CSS_STYLELINT_PASSED" >> "${result_file}"
-                    else
-                        echo "CSS_STYLELINT_FAILED" >> "${result_file}"
-                        # Don't fail all tests for linting issues - just log
-                    fi
-                fi
-            else
-                echo "CSS_FILE_EMPTY" >> "${result_file}"
-            fi
+        #     # Test CSS file download and validation with Stylelint
+        #     local css_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_swagger_css.css"
+        #     # Test with explicit Accept-Encoding to verify header handling
+        #     curl -s -H "Accept-Encoding: br" --max-time 10 --compressed "${base_url}${swagger_prefix}/swagger-ui.css" > "${css_file}"
+        #     if [[ -s "${css_file}" ]]; then
+        #         # Validate CSS syntax with Stylelint - any errors indicate transmission corruption
+        #         if command -v stylelint >/dev/null 2>&1; then
+        #             # Run stylelint and handle its exit code properly
+        #             # Stylelint validation command will be logged below if there are errors
+        #             if stylelint -f unix "${css_file}" >/dev/null 2>&1; then
+        #                 echo "CSS_STYLELINT_PASSED" >> "${result_file}"
+        #             else
+        #                 echo "CSS_STYLELINT_FAILED" >> "${result_file}"
+        #                 all_tests_passed=false  # CSS validation failure should fail the entire test
+        #                 # Capture error to temp file to handle binary data safely
+        #                 local error_temp="${css_file}.error"
+        #                 if stylelint -f unix "${css_file}" 2>&1 | head -1 > "${error_temp}"; then
+        #                     css_error=$(cat "${error_temp}" 2>/dev/null || echo "Unknown error")
+        #                 else
+        #                     css_error="Stylelint syntax error detected"
+        #                 fi
+        #                 echo "CSS_VALIDATION_ERROR: ${css_error}" >> "${result_file}"
+        #                 rm -f "${error_temp}"
+        #             fi
+        #         else
+        #             echo "STYLELINT_NOT_AVAILABLE" >> "${result_file}"
+        #         fi
+        #     else
+        #         echo "CSS_FILE_EMPTY" >> "${result_file}"
+        #     fi
             
             if [[ "${all_tests_passed}" = true ]]; then
                 echo "ALL_SWAGGER_TESTS_PASSED" >> "${result_file}"

@@ -726,7 +726,7 @@ main() {
     # Execute main workflow
     print_header "Payload Generation Process"
     download_swaggerui
-    generate_terminal_payload
+    # generate_terminal_payload - REMOVED: Terminal files now automatically included from payload cache
     compress_static_assets
     create_tarball
 
