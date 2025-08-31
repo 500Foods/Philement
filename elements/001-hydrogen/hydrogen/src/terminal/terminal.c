@@ -98,45 +98,85 @@ bool init_terminal_support(TerminalConfig *config) {
         return terminal_initialized;
     }
 
-    // Check if payload cache is available
-    if (!is_payload_cache_available()) {
+    // Determine serving mode based on WebRoot configuration
+    bool is_payload_mode = false;
+
+    if (config->webroot && strlen(config->webroot) > 0) {
+        if (strncmp(config->webroot, "PAYLOAD:", 8) == 0) {
+            is_payload_mode = true;
+        }
+    } else {
+        // Legacy behavior: default to payload mode if no WebRoot specified
+        is_payload_mode = true;
+    }
+
+    // Only check payload cache availability if we're in payload mode
+    if (is_payload_mode && !is_payload_cache_available()) {
         log_this(SR_TERMINAL, "Payload cache not available - has payload subsystem launched?", LOG_LEVEL_ERROR);
         return false;
     }
 
-    // Get Terminal files from payload cache
-    PayloadFile *payload_files = NULL;
-    size_t num_payload_files = 0;
-    size_t capacity = 0;
-
-    bool success = get_payload_files_by_prefix("terminal/", &payload_files, &num_payload_files, &capacity);
-
-    if (!success) {
-        log_this(SR_TERMINAL, "Failed to get terminal files from payload cache", LOG_LEVEL_ERROR);
-        terminal_initialized = false;
-        return false;
-    }
-
-    // Convert PayloadFile array to TerminalFile array (compatibility layer)
-    terminal_files = calloc(num_payload_files, sizeof(TerminalFile));
-    if (!terminal_files) {
-        log_this(SR_TERMINAL, "Failed to allocate terminal files array", LOG_LEVEL_ERROR);
-        free(payload_files);
-        return false;
-    }
-
+    // Initialize file arrays based on mode
     num_terminal_files = 0;
 
-    for (size_t i = 0; i < num_payload_files; i++) {
-        terminal_files[i].name = payload_files[i].name;
-        terminal_files[i].data = payload_files[i].data;
-        terminal_files[i].size = payload_files[i].size;
-        terminal_files[i].is_compressed = payload_files[i].is_compressed;
-        num_terminal_files++;
-    }
+    if (is_payload_mode) {
+        // Get Terminal files from payload cache
+        PayloadFile *payload_files = NULL;
+        size_t num_payload_files = 0;
+        size_t capacity = 0;
 
-    // Free the PayloadFile array (but not the individual files - we keep references)
-    free(payload_files);
+        bool success = get_payload_files_by_prefix("terminal/", &payload_files, &num_payload_files, &capacity);
+
+        if (!success) {
+            log_this(SR_TERMINAL, "Failed to get terminal files from payload cache", LOG_LEVEL_ERROR);
+            terminal_initialized = false;
+            return false;
+        }
+
+        // Convert PayloadFile array to TerminalFile array (compatibility layer)
+        terminal_files = calloc(num_payload_files, sizeof(TerminalFile));
+        if (!terminal_files) {
+            log_this(SR_TERMINAL, "Failed to allocate terminal files array", LOG_LEVEL_ERROR);
+            free(payload_files);
+            return false;
+        }
+
+        num_terminal_files = 0;
+
+        for (size_t i = 0; i < num_payload_files; i++) {
+            // Clean the file name to remove prefixes (e.g., "terminal/terminal.html" -> "terminal.html")
+            char *clean_name = payload_files[i].name;
+            if (strncmp(payload_files[i].name, "terminal/", 9) == 0) {
+                clean_name = payload_files[i].name + 9; // Skip "terminal/" prefix
+            }
+
+            terminal_files[i].name = strdup(clean_name); // Use cleaned name
+            terminal_files[i].data = payload_files[i].data;
+            terminal_files[i].size = payload_files[i].size;
+            terminal_files[i].is_compressed = payload_files[i].is_compressed;
+
+            if (!terminal_files[i].name) {
+                log_this(SR_TERMINAL, "Failed to allocate memory for file name", LOG_LEVEL_ERROR);
+                // Cleanup already allocated names
+                for (size_t j = 0; j < i; j++) {
+                    free(terminal_files[j].name);
+                }
+                free(terminal_files);
+                free(payload_files);
+                return false;
+            }
+
+            num_terminal_files++;
+        }
+
+        // Free the PayloadFile array (but not the individual files - we keep references)
+        free(payload_files);
+        log_this(SR_TERMINAL, "Initialized in PAYLOAD mode with %zu files", LOG_LEVEL_STATE, num_terminal_files);
+    } else {
+        // Initialize empty by design - this will force filesystem-only serving
+        terminal_files = NULL;
+        log_this(SR_TERMINAL, "Initialized in FILESYSTEM mode (no payload files loaded)", LOG_LEVEL_STATE);
+    }
 
     // Update configuration based on payload availability
     terminal_initialized = true;
@@ -148,22 +188,22 @@ bool init_terminal_support(TerminalConfig *config) {
         log_this(SR_TERMINAL, "Initialized with default index page", LOG_LEVEL_STATE);
     }
 
-    log_this(SR_TERMINAL, "Terminal subsystem initialized with %zu files", LOG_LEVEL_STATE, num_terminal_files);
+    // Log each file's details (only for payload mode)
+    if (is_payload_mode) {
+        for (size_t i = 0; i < num_terminal_files; i++) {
+            char size_display[32];
+            if (terminal_files[i].size < 1024) {
+                snprintf(size_display, sizeof(size_display), "%zu bytes", terminal_files[i].size);
+            } else if (terminal_files[i].size < 1024 * 1024) {
+                snprintf(size_display, sizeof(size_display), "%.1fK", (double)terminal_files[i].size / 1024.0);
+            } else {
+                snprintf(size_display, sizeof(size_display), "%.1fM", (double)terminal_files[i].size / (1024.0 * 1024.0));
+            }
 
-    // Log each file's details
-    for (size_t i = 0; i < num_terminal_files; i++) {
-        char size_display[32];
-        if (terminal_files[i].size < 1024) {
-            snprintf(size_display, sizeof(size_display), "%zu bytes", terminal_files[i].size);
-        } else if (terminal_files[i].size < 1024 * 1024) {
-            snprintf(size_display, sizeof(size_display), "%.1fK", (double)terminal_files[i].size / 1024.0);
-        } else {
-            snprintf(size_display, sizeof(size_display), "%.1fM", (double)terminal_files[i].size / (1024.0 * 1024.0));
+            log_this(SR_TERMINAL, "-> %s (%s%s)", LOG_LEVEL_STATE,
+                    terminal_files[i].name, size_display,
+                    terminal_files[i].is_compressed ? ", compressed" : "");
         }
-
-        log_this(SR_TERMINAL, "-> %s (%s%s)", LOG_LEVEL_STATE,
-                terminal_files[i].name, size_display,
-                terminal_files[i].is_compressed ? ", compressed" : "");
     }
 
     return true;
@@ -369,18 +409,41 @@ enum MHD_Result handle_terminal_request(struct MHD_Connection *connection,
     }
 
     if (!file) {
-        // Try to serve from filesystem WebRoot if configured and no payload file found
+        // Determine serving mode based on WebRoot configuration
+        bool serve_from_payload_only = false;
+        bool serve_from_filesystem_only = false;
+        const char* filesystem_root = NULL;
+
         if (config->webroot && strlen(config->webroot) > 0) {
+            // Check if WebRoot specifies payload-only mode
+            if (strncmp(config->webroot, "PAYLOAD:", 8) == 0) {
+                serve_from_payload_only = true;
+                log_this(SR_TERMINAL, "Configured for payload-only mode: %s", LOG_LEVEL_STATE, config->webroot);
+            } else {
+                // Default to filesystem mode
+                serve_from_filesystem_only = true;
+                filesystem_root = config->webroot;
+                log_this(SR_TERMINAL, "Configured for filesystem mode: %s", LOG_LEVEL_STATE, config->webroot);
+            }
+        } else {
+            // Legacy behavior: if no WebRoot configured, assume filesystem from current directory
+            serve_from_filesystem_only = true;
+            filesystem_root = ".";
+            log_this(SR_TERMINAL, "No WebRoot configured, using current directory as fallback", LOG_LEVEL_STATE);
+        }
+
+        // Handle filesystem fallback only if not in payload-only mode
+        if (!serve_from_payload_only && serve_from_filesystem_only && filesystem_root) {
             // Build filesystem path using WebRoot
             char full_path[PATH_MAX];
-            if (snprintf(full_path, sizeof(full_path), "%s/%s", config->webroot, url_path) >= (int)sizeof(full_path)) {
-                log_this(SR_TERMINAL, "File path too long: %s/%s", LOG_LEVEL_ERROR, config->webroot, url_path);
+            if (snprintf(full_path, sizeof(full_path), "%s/%s", filesystem_root, url_path) >= (int)sizeof(full_path)) {
+                log_this(SR_TERMINAL, "File path too long: %s/%s", LOG_LEVEL_ERROR, filesystem_root, url_path);
                 return MHD_NO;
             }
 
             // Check if file exists on filesystem
             if (access(full_path, F_OK) != -1) {
-                log_this(SR_TERMINAL, "File not found in payload, serving from filesystem: %s", LOG_LEVEL_STATE, full_path);
+                log_this(SR_TERMINAL, "Serving from filesystem: %s", LOG_LEVEL_STATE, full_path);
                 return serve_file_from_path(connection, full_path);
             }
         }
@@ -467,9 +530,14 @@ void cleanup_terminal_support(TerminalConfig *config __attribute__((unused))) {
     terminal_initialized = false;
     global_terminal_config = NULL;
 
-    // Free terminal files array (but not individual file data - owned by payload cache)
-    free(terminal_files);
-    terminal_files = NULL;
+    // Free terminal files array and allocated names
+    if (terminal_files) {
+        for (size_t i = 0; i < num_terminal_files; i++) {
+            free(terminal_files[i].name); // Free strdup'd names
+        }
+        free(terminal_files);
+        terminal_files = NULL;
+    }
     num_terminal_files = 0;
 
     log_this(SR_TERMINAL, "Terminal subsystem cleanup completed", LOG_LEVEL_STATE);
