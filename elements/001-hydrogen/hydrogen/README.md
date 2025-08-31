@@ -72,20 +72,20 @@ Hydrogen is currently designed for technical users who:
 
 ## Latest Test Results
 
-Generated on: 2025-Aug-30 (Sat) 23:51:12 PDT
+Generated on: 2025-Aug-31 (Sun) 04:14:29 PDT
 
 ### Summary
 
 | Metric | Value |
 | ------ | ----- |
 | Total Tests | 28 |
-| Passed | 28 |
+| Passed | 27 |
 | Failed | 0 |
 | Total Subtests | 387 |
-| Passed Subtests | 387 |
+| Passed Subtests | 386 |
 | Failed Subtests | 0 |
-| Elapsed Time | 00:00:28.974 |
-| Cumulative Time | 00:00:37.988 |
+| Elapsed Time | 00:01:29.726 |
+| Cumulative Time | 00:01:40.486 |
 
 [Test Suite Results](COMPLETE.svg) | [Test Suite Coverage](COVERAGE.svg)
 
@@ -101,45 +101,45 @@ Generated on: 2025-Aug-30 (Sat) 23:51:12 PDT
 
 | Status | Time | Test | Test Name | Tests | Pass | Fail |
 | ------ | ---- | -- | ---- | ----- | ---- | ---- |
-| ✅ | 00:00:08.386 | 01-CMP | Compilation (source code: 394 files) | 16 | 16 | 0 |
-| ✅ | 00:00:00.084 | 02-ENV | Environment Variables (secrets: 3) | 5 | 5 | 0 |
-| ✅ | 00:00:02.763 | 04-LNK | Markdown Links Check (github-sitemap) | 3 | 3 | 0 |
-| ✅ | 00:00:05.641 | 10-UNT | Unity (1,345 / 1,345 unit tests passed) | 173 | 173 | 0 |
-| ✅ | 00:00:00.542 | 11-SIV | Memory Leak Detection | 4 | 4 | 0 |
-| ✅ | 00:00:01.202 | 12-VAR | Env Var Substitution | 15 | 15 | 0 |
-| ✅ | 00:00:01.288 | 13-BUG | Crash Handler | 37 | 37 | 0 |
-| ✅ | 00:00:00.698 | 14-DEP | Library Dependencies | 13 | 13 | 0 |
-| ✅ | 00:00:00.240 | 15-JSN | JSON Error Handling | 4 | 4 | 0 |
-| ✅ | 00:00:00.497 | 16-SHD | Shutdown | 5 | 5 | 0 |
-| ✅ | 00:00:01.006 | 17-UPD | Startup/Shutdown | 9 | 9 | 0 |
-| ✅ | 00:00:00.587 | 18-SIG | Signal Handling | 9 | 9 | 0 |
-| ✅ | 00:00:01.032 | 19-SCK | Socket Rebinding | 8 | 8 | 0 |
-| ✅ | 00:00:00.587 | 20-PRE | API Prefix | 11 | 11 | 0 |
-| ✅ | 00:00:00.679 | 21-SYS | System API | 11 | 11 | 0 |
-| ✅ | 00:00:00.539 | 22-SWG | Swagger | 15 | 15 | 0 |
-| ✅ | 00:00:01.431 | 23-WSS | WebSockets | 13 | 13 | 0 |
-| ✅ | 00:00:00.987 | 24-UPL | Uploads | 13 | 13 | 0 |
-| ✅ | 00:00:04.128 | 25-DNS | mDNS | 7 | 7 | 0 |
-| ✅ | 00:00:01.086 | 90-MKD | Markdown Lint (markdownlint: 252 files) | 1 | 1 | 0 |
-| ✅ | 00:00:01.101 | 91-GCC | C Lint (cppcheck: 395 files) | 1 | 1 | 0 |
-| ✅ | 00:00:00.632 | 92-BSH | Bash Lint (shellheck: 53 files) | 2 | 2 | 0 |
-| ✅ | 00:00:00.293 | 93-JSN | JSON Lint (jsonlint: 27 files) | 1 | 1 | 0 |
-| ✅ | 00:00:00.118 | 94-JAV | JavaScript Lint (eslint: 0 files) | 1 | 1 | 0 |
-| ✅ | 00:00:00.091 | 95-CSS | CSS Lint (stylelint: 0 files) | 1 | 1 | 0 |
-| ✅ | 00:00:00.215 | 96-HTM | HTML Lint (htmlhint: 1 files) | 1 | 1 | 0 |
-| ✅ | 00:00:01.977 | 98-SIZ | Code Size Analysis (lines: 83,660) | 4 | 4 | 0 |
-| ✅ | 00:00:00.158 | 99-COV | Test Suite Coverage (coverage_table) | 4 | 4 | 0 |
+| ✅ | 00:01:09.586 | 01-CMP | Compilation (source code: 394 files) | 16 | 16 | 0 |
+| ✅ | 00:00:00.404 | 02-ENV | Environment Variables (secrets: 3) | 5 | 5 | 0 |
+| ✅ | 00:00:03.108 | 04-LNK | Markdown Links Check (github-sitemap) | 3 | 3 | 0 |
+| ✅ | 00:00:05.358 | 10-UNT | Unity (1,345 / 1,345 unit tests passed) | 173 | 173 | 0 |
+| ✅ | 00:00:00.624 | 11-SIV | Memory Leak Detection | 4 | 4 | 0 |
+| ✅ | 00:00:01.177 | 12-VAR | Env Var Substitution | 15 | 15 | 0 |
+| ✅ | 00:00:01.391 | 13-BUG | Crash Handler | 37 | 37 | 0 |
+| ✅ | 00:00:00.799 | 14-DEP | Library Dependencies | 13 | 13 | 0 |
+| ✅ | 00:00:00.291 | 15-JSN | JSON Error Handling | 4 | 4 | 0 |
+| ✅ | 00:00:00.485 | 16-SHD | Shutdown | 5 | 5 | 0 |
+| ✅ | 00:00:00.974 | 17-UPD | Startup/Shutdown | 9 | 9 | 0 |
+| ✅ | 00:00:00.572 | 18-SIG | Signal Handling | 9 | 9 | 0 |
+| ✅ | 00:00:00.998 | 19-SCK | Socket Rebinding | 8 | 8 | 0 |
+| ✅ | 00:00:00.563 | 20-PRE | API Prefix | 11 | 11 | 0 |
+| ✅ | 00:00:00.642 | 21-SYS | System API | 11 | 11 | 0 |
+| ✅ | 00:00:00.510 | 22-SWG | Swagger | 15 | 15 | 0 |
+| ✅ | 00:00:01.614 | 23-WSS | WebSockets | 13 | 13 | 0 |
+| ✅ | 00:00:01.259 | 24-UPL | Uploads | 13 | 13 | 0 |
+| ✅ | 00:00:03.879 | 25-DNS | mDNS | 7 | 7 | 0 |
+| ❌ | 00:00:01.343 | 90-MKD | Markdown Lint (markdownlint: 253 files) | 1 | 0 | 1 |
+| ✅ | 00:00:01.059 | 91-GCC | C Lint (cppcheck: 395 files) | 1 | 1 | 0 |
+| ✅ | 00:00:00.737 | 92-BSH | Bash Lint (shellheck: 53 files) | 2 | 2 | 0 |
+| ✅ | 00:00:00.304 | 93-JSN | JSON Lint (jsonlint: 27 files) | 1 | 1 | 0 |
+| ✅ | 00:00:00.117 | 94-JAV | JavaScript Lint (eslint: 0 files) | 1 | 1 | 0 |
+| ✅ | 00:00:00.092 | 95-CSS | CSS Lint (stylelint: 0 files) | 1 | 1 | 0 |
+| ✅ | 00:00:00.235 | 96-HTM | HTML Lint (htmlhint: 1 files) | 1 | 1 | 0 |
+| ✅ | 00:00:02.203 | 98-SIZ | Code Size Analysis (lines: 84,359) | 4 | 4 | 0 |
+| ✅ | 00:00:00.162 | 99-COV | Test Suite Coverage (coverage_table) | 4 | 4 | 0 |
 
 ## Repository Information
 
-Generated via cloc: 2025-Aug-30 (Sat) 23:51:12 PDT
+Generated via cloc: 2025-Aug-31 (Sun) 04:14:29 PDT
 
 ```cloc
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 C                              309          11324          12970          40587
-Markdown                       252           7509             55          22445
+Markdown                       253           7745             56          23144
 Bourne Shell                    53           2438           2846          10726
 JSON                            27              0              0           2977
 C/C++ Header                    86           1070           3458           2884
@@ -147,7 +147,7 @@ SVG                              2              0              0           2829
 CMake                            1            139            186            719
 HTML                             1             74              0            493
 -------------------------------------------------------------------------------
-SUM:                           731          22554          19515          83660
+SUM:                           732          22790          19516          84359
 -------------------------------------------------------------------------------
 
 Code/Docs: 2.4   Code/Comments: 2.8   Instrumented Code:  13,007   Ratio: 36.99
