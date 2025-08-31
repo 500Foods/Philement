@@ -14,6 +14,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [STRUCTURE.md](STRUCTURE.md): An index to all of the files in the project
 - [COMPLETE.svg](COMPLETE.svg): Latest Test Suite Results table rendered as SVG
 - [COVERAGE.svg](COVERAGE.svg): Latest Test Suite Coverage table rendered as SVG
+- [TERMINAL_PLAN.md](TERMINAL_PLAN.md): Implementation plan for Terminal feature
 
 ## Folder: /extras
 
