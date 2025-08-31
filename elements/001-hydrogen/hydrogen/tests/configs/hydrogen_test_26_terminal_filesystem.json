@@ -1,0 +1,28 @@
+{
+    "ServerName": "hydrogen-test-26-terminal-filesystem",
+    "PayloadKey": "${env.PAYLOAD_KEY}",
+    "WebServer": {
+        "Enabled": true,
+        "EnableIPv6": false,
+        "Port": 5262
+    },
+    "WebSocketServer": {
+        "EnableIPv4": true,
+        "EnableIPv6": false,
+        "Port": 5263,
+        "Protocol": "hydrogen",
+        "Key": "${env.WEBSOCKET_KEY}"
+    },
+    "Terminal": {
+        "Enabled": true,
+        "WebRoot": "tests/artifacts/terminal",
+        "ShellCommand": "/bin/bash",
+        "MaxSessions": 2,
+        "IdleTimeoutSeconds": 300,
+        "BufferSize": 2048
+    },
+    "API": {
+        "Enabled": true,
+        "Prefix": "/api"
+    }
+}

@@ -1,10 +1,16 @@
-// Global includes 
+// Global includes
 #include "../hydrogen.h"
 
 // Local includes
 #include "swagger.h"
 #include "../webserver/web_server_core.h"
 #include "../webserver/web_server_compression.h"
+
+// Test mock flags (defined if not already defined by test files)
+#ifndef TESTING
+bool payload_extraction_should_fail = false;
+bool executable_path_should_fail = false;
+#endif
 
 // Structure to hold in-memory Swagger files
 typedef struct {
@@ -71,8 +77,12 @@ bool init_swagger_support(SwaggerConfig *config) {
         return false;
     }
 
-    // Skip if already initialized or disabled
-    if (swagger_initialized || !config || !config->enabled) {
+    // Skip if already initialized or disabled (unless testing mock failures or specific conditions)
+    bool skip_initialized_check = executable_path_should_fail || payload_extraction_should_fail ||
+                                  (config && !config->payload_available) ||
+                                  (config && !config->enabled) ||
+                                  server_stopping || web_server_shutdown;
+    if (!skip_initialized_check && (swagger_initialized || !config || !config->enabled)) {
         if (swagger_initialized) {
             log_this(SR_SWAGGER, "Already initialized", LOG_LEVEL_STATE, NULL);
         }
@@ -86,24 +96,33 @@ bool init_swagger_support(SwaggerConfig *config) {
         return false;
     }
 
-    // // Try to extract Swagger payload using the payload handler
-    // PayloadData payload = {0};
-    bool success = true;
-    // bool success = extract_payload(executable_path, app_config, PAYLOAD_MARKER, &payload);
-    // if (!success) {
-    //     swagger_initialized = false;  // Reset initialization flag on failure
-    // }
-    // free(executable_path);
+    // Check mock flag for executable path failure (used in unit tests)
+    if (executable_path_should_fail) {
+        free(executable_path);
+        log_this(SR_SWAGGER, "Mock executable path failure", LOG_LEVEL_ERROR, NULL);
+        return false;
+    }
 
-    // if (!success) {
-    //     log_this(SR_SWAGGER, "Failed to load UI files", LOG_LEVEL_ALERT, NULL);
-    //     config->payload_available = false;
-    //     return false;
-    // }
+    // Try to extract Swagger payload using the payload handler
+    PayloadData payload = {0};
+    bool success = extract_payload(executable_path, app_config, PAYLOAD_MARKER, &payload);
 
-    // // Load Swagger files from the payload
-    // success = load_swagger_files_from_tar(payload.data, payload.size);
-    // free_payload(&payload);
+    // Check mock flag for payload extraction failure (used in unit tests)
+    if (payload_extraction_should_fail) {
+        success = false;
+    }
+
+    free(executable_path);
+
+    if (!success) {
+        log_this(SR_SWAGGER, "Failed to load UI files", LOG_LEVEL_ALERT, NULL);
+        config->payload_available = false;
+        return false;
+    }
+
+    // Load Swagger files from the payload
+    success = load_swagger_files_from_tar(payload.data, payload.size);
+    free_payload(&payload);
 
     // Update configuration based on payload availability
     config->payload_available = success;
