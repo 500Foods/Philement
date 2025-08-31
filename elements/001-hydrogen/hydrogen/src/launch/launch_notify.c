@@ -14,16 +14,6 @@
 // Registry ID and cached readiness state
 static int notify_subsystem_id = -1;
 
-// Register the notify subsystem with the registry
-void register_notify(void) {
-    // Always register during readiness check if not already registered
-    if (notify_subsystem_id < 0) {
-        notify_subsystem_id = register_subsystem(SR_NOTIFY, NULL, NULL, NULL, NULL, NULL);
-    }
-}
-
-
-
 // Check if the notify subsystem is ready to launch
 LaunchReadiness check_notify_launch_readiness(void) {
     const char** messages = NULL;
@@ -35,7 +25,9 @@ LaunchReadiness check_notify_launch_readiness(void) {
     add_launch_message(&messages, &count, &capacity, strdup(SR_NOTIFY));
 
     // Register with registry if not already registered
-    register_notify();
+    if (notify_subsystem_id < 0) {
+        notify_subsystem_id = register_subsystem(SR_NOTIFY, NULL, NULL, NULL, NULL, NULL);
+    }
 
     // Check configuration
     if (!app_config) {
@@ -152,6 +144,7 @@ LaunchReadiness check_notify_launch_readiness(void) {
  *
  * @return 1 if Notify subsystem was successfully launched, 0 on failure
  */
+
 int launch_notify_subsystem(void) {
     // Begin LAUNCH: NOTIFY section
     log_this(SR_NOTIFY, LOG_LINE_BREAK, LOG_LEVEL_STATE);

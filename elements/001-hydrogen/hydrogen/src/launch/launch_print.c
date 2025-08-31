@@ -29,23 +29,23 @@ LaunchReadiness check_print_launch_readiness(void) {
     size_t capacity = 0;
 
     // First message is subsystem name
-    add_launch_message(&messages, &count, &capacity, strdup("Print"));
+    add_launch_message(&messages, &count, &capacity, strdup(SR_PRINT));
 
     // Register dependency on Network subsystem for remote printing
-    int print_id = get_subsystem_id_by_name("Print");
+    int print_id = get_subsystem_id_by_name(SR_PRINT);
     if (print_id >= 0) {
-        if (!add_dependency_from_launch(print_id, "Network")) {
+        if (!add_dependency_from_launch(print_id, SR_NETWORK)) {
             add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Failed to register Network dependency"));
             finalize_launch_messages(&messages, &count, &capacity);
-            return (LaunchReadiness){ .subsystem = "Print", .ready = false, .messages = messages };
+            return (LaunchReadiness){ .subsystem = SR_PRINT, .ready = false, .messages = messages };
         }
         add_launch_message(&messages, &count, &capacity, strdup("  Go:      Network dependency registered"));
 
         // Verify Network subsystem is running
-        if (!is_subsystem_running_by_name("Network")) {
+        if (!is_subsystem_running_by_name(SR_NETWORK)) {
             add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Network subsystem not running"));
             finalize_launch_messages(&messages, &count, &capacity);
-            return (LaunchReadiness){ .subsystem = "Print", .ready = false, .messages = messages };
+            return (LaunchReadiness){ .subsystem = SR_PRINT, .ready = false, .messages = messages };
         }
         add_launch_message(&messages, &count, &capacity, strdup("  Go:      Network subsystem running"));
     }
@@ -54,7 +54,7 @@ LaunchReadiness check_print_launch_readiness(void) {
     if (!app_config || !app_config->print.enabled) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Print queue disabled in configuration"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Print", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_PRINT, .ready = false, .messages = messages };
     }
     add_launch_message(&messages, &count, &capacity, strdup("  Go:      Print queue enabled in configuration"));
 
@@ -66,7 +66,7 @@ LaunchReadiness check_print_launch_readiness(void) {
                 app_config->print.max_queued_jobs, MIN_QUEUED_JOBS, MAX_QUEUED_JOBS);
         add_launch_message(&messages, &count, &capacity, strdup(msg));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Print", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_PRINT, .ready = false, .messages = messages };
     }
     add_launch_message(&messages, &count, &capacity, strdup("  Go:      Max queued jobs within limits"));
 
@@ -77,7 +77,7 @@ LaunchReadiness check_print_launch_readiness(void) {
                 app_config->print.max_concurrent_jobs, MIN_CONCURRENT_JOBS, MAX_CONCURRENT_JOBS);
         add_launch_message(&messages, &count, &capacity, strdup(msg));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Print", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_PRINT, .ready = false, .messages = messages };
     }
     add_launch_message(&messages, &count, &capacity, strdup("  Go:      Max concurrent jobs within limits"));
 
@@ -89,7 +89,7 @@ LaunchReadiness check_print_launch_readiness(void) {
         p->system_priority < MIN_PRIORITY || p->system_priority > MAX_PRIORITY) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Priority values outside valid range"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Print", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_PRINT, .ready = false, .messages = messages };
     }
 
     // Check priority spreads
@@ -98,7 +98,7 @@ LaunchReadiness check_print_launch_readiness(void) {
         (p->maintenance_priority - p->default_priority) < MIN_PRIORITY_SPREAD) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Insufficient spread between priority levels"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Print", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_PRINT, .ready = false, .messages = messages };
     }
     add_launch_message(&messages, &count, &capacity, strdup("  Go:      Priority settings and spreads valid"));
 
@@ -110,7 +110,7 @@ LaunchReadiness check_print_launch_readiness(void) {
                 t->shutdown_wait_ms, MIN_SHUTDOWN_WAIT, MAX_SHUTDOWN_WAIT);
         add_launch_message(&messages, &count, &capacity, strdup(msg));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Print", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_PRINT, .ready = false, .messages = messages };
     }
 
     if (t->job_processing_timeout_ms < MIN_JOB_TIMEOUT || t->job_processing_timeout_ms > MAX_JOB_TIMEOUT) {
@@ -119,7 +119,7 @@ LaunchReadiness check_print_launch_readiness(void) {
                 t->job_processing_timeout_ms, MIN_JOB_TIMEOUT, MAX_JOB_TIMEOUT);
         add_launch_message(&messages, &count, &capacity, strdup(msg));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Print", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_PRINT, .ready = false, .messages = messages };
     }
     add_launch_message(&messages, &count, &capacity, strdup("  Go:      Timeout settings valid"));
 
@@ -131,7 +131,7 @@ LaunchReadiness check_print_launch_readiness(void) {
                 b->job_message_size, MIN_MESSAGE_SIZE, MAX_MESSAGE_SIZE);
         add_launch_message(&messages, &count, &capacity, strdup(msg));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Print", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_PRINT, .ready = false, .messages = messages };
     }
 
     if (b->status_message_size < MIN_MESSAGE_SIZE || b->status_message_size > MAX_MESSAGE_SIZE) {
@@ -140,7 +140,7 @@ LaunchReadiness check_print_launch_readiness(void) {
                 b->status_message_size, MIN_MESSAGE_SIZE, MAX_MESSAGE_SIZE);
         add_launch_message(&messages, &count, &capacity, strdup(msg));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Print", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_PRINT, .ready = false, .messages = messages };
     }
     add_launch_message(&messages, &count, &capacity, strdup("  Go:      Buffer settings valid"));
 
@@ -152,7 +152,7 @@ LaunchReadiness check_print_launch_readiness(void) {
                 m->max_speed, MIN_SPEED, MAX_SPEED);
         add_launch_message(&messages, &count, &capacity, strdup(msg));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Print", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_PRINT, .ready = false, .messages = messages };
     }
 
     if (m->acceleration < MIN_ACCELERATION || m->acceleration > MAX_ACCELERATION) {
@@ -161,7 +161,7 @@ LaunchReadiness check_print_launch_readiness(void) {
                 m->acceleration, MIN_ACCELERATION, MAX_ACCELERATION);
         add_launch_message(&messages, &count, &capacity, strdup(msg));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Print", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_PRINT, .ready = false, .messages = messages };
     }
 
     if (m->jerk < MIN_JERK || m->jerk > MAX_JERK) {
@@ -170,7 +170,7 @@ LaunchReadiness check_print_launch_readiness(void) {
                 m->jerk, MIN_JERK, MAX_JERK);
         add_launch_message(&messages, &count, &capacity, strdup(msg));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Print", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_PRINT, .ready = false, .messages = messages };
     }
     add_launch_message(&messages, &count, &capacity, strdup("  Go:      Motion control settings valid"));
 
@@ -180,7 +180,7 @@ LaunchReadiness check_print_launch_readiness(void) {
     finalize_launch_messages(&messages, &count, &capacity);
 
     return (LaunchReadiness){
-        .subsystem = "Print",
+        .subsystem = SR_PRINT,
         .ready = true,
         .messages = messages
     };
@@ -196,7 +196,7 @@ int launch_print_subsystem(void) {
     print_system_shutdown = 0;
     
     // Initialize print queue thread structure
-    init_service_threads(&print_threads, "Print");
+    init_service_threads(&print_threads, SR_PRINT);
     
     // Additional initialization as needed
     return 1;

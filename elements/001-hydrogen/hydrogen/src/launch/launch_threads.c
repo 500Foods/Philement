@@ -26,14 +26,6 @@ extern ServiceThreads print_threads;
 // Registry ID and cached readiness state
 static int thread_subsystem_id = -1;
 
-// Register the thread subsystem with the registry
-void register_threads(void) {
-    // Always register during readiness check if not already registered
-    if (thread_subsystem_id < 0) {
-        thread_subsystem_id = register_subsystem(SR_THREADS, NULL, NULL, NULL, NULL, NULL);
-    }
-}
-
 /*
  * Check if the thread subsystem is ready to launch
  *
@@ -59,7 +51,9 @@ LaunchReadiness check_threads_launch_readiness(void) {
     add_launch_message(&messages, &count, &capacity, strdup(SR_THREADS));
 
     // Register with registry if not already registered
-    register_threads();
+    if (thread_subsystem_id < 0) {
+        thread_subsystem_id = register_subsystem(SR_THREADS, NULL, NULL, NULL, NULL, NULL);
+    }
 
     // Check if registry subsystem is available (explicit dependency verification)
     if (is_subsystem_launchable_by_name(SR_REGISTRY)) {
