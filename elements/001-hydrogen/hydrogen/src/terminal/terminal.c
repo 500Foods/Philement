@@ -10,9 +10,22 @@
 #include "../webserver/web_server_core.h"
 #include "../webserver/web_server_compression.h"
 
+// Include std headers for filesystem operations
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
+
 // Forward declaration for payload cache functions
 bool get_payload_files_by_prefix(const char *prefix, PayloadFile **files, size_t *num_files, size_t *capacity);
 bool is_payload_cache_available(void);
+
+// Forward declarations for compression and filesystem functions
+bool brotli_file_exists(const char *file_path, char *br_file_path, size_t br_buffer_size);
+bool client_accepts_brotli(struct MHD_Connection *connection);
+void add_brotli_header(struct MHD_Response *response);
+
+// Forward declaration for filesystem serving function
+static enum MHD_Result serve_file_from_path(struct MHD_Connection *connection, const char *file_path);
 
 // Global state for terminal subsystem
 static const TerminalConfig *global_terminal_config = NULL;
@@ -42,7 +55,7 @@ bool terminal_url_validator(const char *url) {
  * Request handler wrapper for terminal subsystem
  * This function wraps the main terminal request handler for use by the web server
  */
-enum MHD_Result terminal_request_handler(void *cls,
+enum MHD_Result terminal_request_handler(void *cls __attribute__((unused)),
                                        struct MHD_Connection *connection,
                                        const char *url,
                                        const char *method __attribute__((unused)),
@@ -50,8 +63,7 @@ enum MHD_Result terminal_request_handler(void *cls,
                                        const char *upload_data __attribute__((unused)),
                                        size_t *upload_data_size __attribute__((unused)),
                                        void **con_cls __attribute__((unused))) {
-    const TerminalConfig *config = (const TerminalConfig *)cls;
-    return handle_terminal_request(connection, url, config);
+    return handle_terminal_request(connection, url, global_terminal_config);
 }
 
 /**
@@ -185,6 +197,68 @@ bool is_terminal_request(const char *url, const TerminalConfig *config) {
 }
 
 /**
+ * Serve a file from filesystem path
+ * This function serves files directly from the filesystem
+ */
+static enum MHD_Result serve_file_from_path(struct MHD_Connection *connection, const char *file_path) {
+    // Check if client accepts Brotli compression
+    bool accepts_brotli = client_accepts_brotli(connection);
+
+    // If client accepts Brotli, check if we have a pre-compressed version
+    char br_file_path[PATH_MAX];
+    bool use_br_file = accepts_brotli && brotli_file_exists(file_path, br_file_path, sizeof(br_file_path));
+
+    // If we're using a pre-compressed file, use that instead
+    const char *path_to_serve = use_br_file ? br_file_path : file_path;
+
+    // Open the file
+    int fd = open(path_to_serve, O_RDONLY);
+    if (fd == -1) {
+        log_this(SR_TERMINAL, "Failed to open file: %s", LOG_LEVEL_ERROR, file_path);
+        return MHD_NO;
+    }
+
+    struct stat st;
+    if (fstat(fd, &st) == -1) {
+        close(fd);
+        log_this(SR_TERMINAL, "Failed to stat file: %s", LOG_LEVEL_ERROR, file_path);
+        return MHD_NO;
+    }
+
+    struct MHD_Response *response = MHD_create_response_from_fd((size_t)st.st_size, fd);
+    if (!response) {
+        close(fd);
+        log_this(SR_TERMINAL, "Failed to create response from file descriptor", LOG_LEVEL_ERROR);
+        return MHD_NO;
+    }
+
+    add_cors_headers(response);
+
+    // Set Content-Type based on the original file (not the .br version)
+    const char *ext = strrchr(file_path, '.');
+    if (ext) {
+        if (strcmp(ext, ".html") == 0) MHD_add_response_header(response, "Content-Type", "text/html");
+        else if (strcmp(ext, ".css") == 0) MHD_add_response_header(response, "Content-Type", "text/css");
+        else if (strcmp(ext, ".js") == 0) MHD_add_response_header(response, "Content-Type", "application/javascript");
+        else if (strcmp(ext, ".json") == 0) MHD_add_response_header(response, "Content-Type", "application/json");
+        else if (strcmp(ext, ".png") == 0) MHD_add_response_header(response, "Content-Type", "image/png");
+        // Add more content types as needed
+    }
+
+    // If serving a .br file, add the Content-Encoding header
+    if (use_br_file) {
+        add_brotli_header(response);
+        log_this(SR_TERMINAL, "Served pre-compressed Brotli file from filesystem: %s", LOG_LEVEL_STATE, br_file_path);
+    } else {
+        log_this(SR_TERMINAL, "Served file from filesystem: %s", LOG_LEVEL_STATE, file_path);
+    }
+
+    enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+    MHD_destroy_response(response);
+    return ret;
+}
+
+/**
  * Handle terminal requests
  * This function processes HTTP requests for the terminal subsystem
  */
@@ -231,33 +305,52 @@ enum MHD_Result handle_terminal_request(struct MHD_Connection *connection,
     log_this(SR_TERMINAL, "Request: Original URL: %s, Processed path: %s",
              LOG_LEVEL_STATE, url, url_path);
 
-    // Try to find the requested file
+    // Try to find the requested file - robust approach matching swagger.c
     TerminalFile *file = NULL;
     bool client_accepts_br = client_accepts_brotli(connection);
 
-    // First try to find an exact match (handles direct .br requests)
-    for (size_t i = 0; i < num_terminal_files; i++) {
-        if (strcmp(terminal_files[i].name, url_path) == 0) {
-            file = &terminal_files[i];
-            break;
-        }
+    // Debug logging for troubleshooting
+    const char *accept_encoding = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "Accept-Encoding");
+    if (accept_encoding) {
+        log_this(SR_TERMINAL, "Client Accept-Encoding: %s", LOG_LEVEL_STATE, accept_encoding);
+    } else {
+        log_this(SR_TERMINAL, "No Accept-Encoding header from client", LOG_LEVEL_STATE, NULL);
     }
 
-    // If not found and client accepts brotli, try the .br version
-    if (!file && client_accepts_br && !strstr(url_path, ".br")) {
-        char br_path[256];
+    // Look for both compressed and uncompressed versions
+    TerminalFile *compressed_file = NULL;
+    TerminalFile *uncompressed_file = NULL;
+    char br_path[256];
+
+    // Prepare the compressed version path
+    if (!strstr(url_path, ".br")) {
         snprintf(br_path, sizeof(br_path), "%s.br", url_path);
+    }
 
-        for (size_t i = 0; i < num_terminal_files; i++) {
-            if (strcmp(terminal_files[i].name, br_path) == 0) {
-                file = &terminal_files[i];
-                break;
-            }
+    for (size_t i = 0; i < num_terminal_files; i++) {
+        const char *name = terminal_files[i].name;
+        if (!strstr(url_path, ".br") && strcmp(name, br_path) == 0) {
+            compressed_file = &terminal_files[i];
+        } else if (strcmp(name, url_path) == 0) {
+            uncompressed_file = &terminal_files[i];
         }
     }
 
-    // If still not found and the request was for a .br file,
-    // try without the .br extension
+    // Prefer uncompressed file for browser compatibility, fallback to compressed
+    if (uncompressed_file) {
+        file = uncompressed_file;
+        log_this(SR_TERMINAL, "Using uncompressed version of %s", LOG_LEVEL_STATE, url_path);
+    } else if (compressed_file && client_accepts_br) {
+        file = compressed_file;
+        log_this(SR_TERMINAL, "Using compressed version of %s (client supports brotli)", LOG_LEVEL_STATE, url_path);
+    } else if (compressed_file) {
+        file = compressed_file;
+        log_this(SR_TERMINAL, "Using compressed version of %s (forcing header for client compatibility)", LOG_LEVEL_STATE, url_path);
+    } else {
+        log_this(SR_TERMINAL, "No version found for %s", LOG_LEVEL_ERROR, url_path);
+    }
+
+    // Fallback handling for direct .br requests (if someone requests the compressed version directly)
     if (!file && strlen(url_path) > 3 &&
         strcmp(url_path + strlen(url_path) - 3, ".br") == 0) {
         char base_path[256];
@@ -276,12 +369,28 @@ enum MHD_Result handle_terminal_request(struct MHD_Connection *connection,
     }
 
     if (!file) {
+        // Try to serve from filesystem WebRoot if configured and no payload file found
+        if (config->webroot && strlen(config->webroot) > 0) {
+            // Build filesystem path using WebRoot
+            char full_path[PATH_MAX];
+            if (snprintf(full_path, sizeof(full_path), "%s/%s", config->webroot, url_path) >= (int)sizeof(full_path)) {
+                log_this(SR_TERMINAL, "File path too long: %s/%s", LOG_LEVEL_ERROR, config->webroot, url_path);
+                return MHD_NO;
+            }
+
+            // Check if file exists on filesystem
+            if (access(full_path, F_OK) != -1) {
+                log_this(SR_TERMINAL, "File not found in payload, serving from filesystem: %s", LOG_LEVEL_STATE, full_path);
+                return serve_file_from_path(connection, full_path);
+            }
+        }
+
         log_this(SR_TERMINAL, "File not found: %s", LOG_LEVEL_STATE, url_path);
         return MHD_NO; // File not found
     }
 
-    // Determine if we should serve compressed content
-    bool serve_compressed = file->is_compressed && client_accepts_brotli(connection);
+    // Note: Compression header will be added below if file->is_compressed is true
+    // regardless of client acceptance, as per fixed protocol
 
     // For all terminal files, serve directly from memory
     struct MHD_Response *response = MHD_create_response_from_buffer(
@@ -334,7 +443,8 @@ enum MHD_Result handle_terminal_request(struct MHD_Connection *connection,
     MHD_add_response_header(response, "Content-Type", content_type);
 
     // Add compression header if serving compressed content
-    if (serve_compressed) {
+    // IMPORTANT: Always add header when serving compressed data, regardless of client support
+    if (file->is_compressed) {
         add_brotli_header(response);
     }
 

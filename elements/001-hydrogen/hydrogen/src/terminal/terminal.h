@@ -22,8 +22,17 @@ enum MHD_Result handle_terminal_request(struct MHD_Connection *connection,
                                       const char *url,
                                       const TerminalConfig *config);
 
-// Terminal-specific utility functions
+/**
+ * Terminal URL validator - wrapper for webserver integration
+ * @param url The URL to validate
+ * @return true if URL is handled by terminal subsystem
+ */
 bool terminal_url_validator(const char *url);
+
+/**
+ * Terminal request handler - wrapper for webserver integration
+ * Compatible with MHD webserver callback requirements
+ */
 enum MHD_Result terminal_request_handler(void *cls,
                                        struct MHD_Connection *connection,
                                        const char *url,

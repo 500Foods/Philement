@@ -37,6 +37,9 @@ enum MHD_Result swagger_request_handler(void *cls,
     return handle_swagger_request(connection, url, config);
 }
 bool load_swagger_files_from_tar(const uint8_t *tar_data, size_t tar_size);
+
+// Forward declaration for payload cache access
+bool get_payload_files_by_prefix(const char *prefix, PayloadFile **files, size_t *num_files, size_t *capacity);
 static void free_swagger_files(void);
 char* get_server_url(struct MHD_Connection *connection, const SwaggerConfig *config);
 char* create_dynamic_initializer(const char *base_content, const char *server_url, const SwaggerConfig *config);
@@ -83,51 +86,132 @@ bool init_swagger_support(SwaggerConfig *config) {
         return false;
     }
 
-    // Try to extract Swagger payload using the payload handler
-    PayloadData payload = {0};
-    bool success = extract_payload(executable_path, app_config, PAYLOAD_MARKER, &payload);
-    if (!success) {
-        swagger_initialized = false;  // Reset initialization flag on failure
-    }
-    free(executable_path);
+    // // Try to extract Swagger payload using the payload handler
+    // PayloadData payload = {0};
+    bool success = true;
+    // bool success = extract_payload(executable_path, app_config, PAYLOAD_MARKER, &payload);
+    // if (!success) {
+    //     swagger_initialized = false;  // Reset initialization flag on failure
+    // }
+    // free(executable_path);
 
-    if (!success) {
-        log_this(SR_SWAGGER, "Failed to load UI files", LOG_LEVEL_ALERT, NULL);
-        config->payload_available = false;
-        return false;
-    }
+    // if (!success) {
+    //     log_this(SR_SWAGGER, "Failed to load UI files", LOG_LEVEL_ALERT, NULL);
+    //     config->payload_available = false;
+    //     return false;
+    // }
 
-    // Load Swagger files from the payload
-    success = load_swagger_files_from_tar(payload.data, payload.size);
-    free_payload(&payload);
+    // // Load Swagger files from the payload
+    // success = load_swagger_files_from_tar(payload.data, payload.size);
+    // free_payload(&payload);
 
     // Update configuration based on payload availability
     config->payload_available = success;
     swagger_initialized = success;
     
-    if (success) {
-        log_this(SR_SWAGGER, "Files available:", LOG_LEVEL_STATE, NULL);
+    // if (success) {
+    //     log_this(SR_SWAGGER, "Files available:", LOG_LEVEL_STATE, NULL);
         
-        // Log each file's details
-        for (size_t i = 0; i < num_swagger_files; i++) {
-            char size_display[32];
-            if (swagger_files[i].size < 1024) {
-                snprintf(size_display, sizeof(size_display), "%zu bytes", swagger_files[i].size);
-            } else if (swagger_files[i].size < 1024 * 1024) {
-                snprintf(size_display, sizeof(size_display), "%.1fK", (double)swagger_files[i].size / 1024.0);
-            } else {
-                snprintf(size_display, sizeof(size_display), "%.1fM", (double)swagger_files[i].size / (1024.0 * 1024.0));
-            }
+    //     // Log each file's details
+    //     for (size_t i = 0; i < num_swagger_files; i++) {
+    //         char size_display[32];
+    //         if (swagger_files[i].size < 1024) {
+    //             snprintf(size_display, sizeof(size_display), "%zu bytes", swagger_files[i].size);
+    //         } else if (swagger_files[i].size < 1024 * 1024) {
+    //             snprintf(size_display, sizeof(size_display), "%.1fK", (double)swagger_files[i].size / 1024.0);
+    //         } else {
+    //             snprintf(size_display, sizeof(size_display), "%.1fM", (double)swagger_files[i].size / (1024.0 * 1024.0));
+    //         }
             
-            log_this(SR_SWAGGER, "-> %s (%s%s)", LOG_LEVEL_STATE,
-                    swagger_files[i].name, size_display, 
-                    swagger_files[i].is_compressed ? ", compressed" : "");
-        }
-    } else {
-        log_this(SR_SWAGGER, "Failed to load UI files from payload", LOG_LEVEL_ALERT, NULL);
-    }
+    //         log_this(SR_SWAGGER, "-> %s (%s%s)", LOG_LEVEL_STATE,
+    //                 swagger_files[i].name, size_display, 
+    //                 swagger_files[i].is_compressed ? ", compressed" : "");
+    //     }
+    // } else {
+    //     log_this(SR_SWAGGER, "Failed to load UI files from payload", LOG_LEVEL_ALERT, NULL);
+    // }
 
     return success;
+}
+
+/**
+ * Initialize swagger support using payload cache files
+ * This function takes pre-loaded files from payload cache and sets up memory structures
+ */
+bool init_swagger_support_from_payload(SwaggerConfig *config, PayloadFile *payload_files, size_t num_payload_files) {
+    if (!config) {
+        log_this(SR_SWAGGER, "Invalid config parameter", LOG_LEVEL_ERROR, NULL);
+        return false;
+    }
+
+    // Store config globally for validator
+    global_swagger_config = config;
+
+    // Check all shutdown flags atomically
+    extern volatile sig_atomic_t web_server_shutdown;
+
+    // Prevent initialization during shutdown
+    if (server_stopping || web_server_shutdown) {
+        log_this(SR_SWAGGER, "Cannot initialize Swagger UI during shutdown", LOG_LEVEL_STATE, NULL);
+        swagger_initialized = false;
+        return false;
+    }
+
+    // Only proceed if we're in startup phase
+    if (!server_starting || server_stopping || web_server_shutdown) {
+        log_this(SR_SWAGGER, "Cannot initialize - invalid system state", LOG_LEVEL_STATE, NULL);
+        return false;
+    }
+
+    // Skip if already initialized or disabled
+    if (swagger_initialized || !config->enabled) {
+        if (swagger_initialized) {
+            log_this(SR_SWAGGER, "Already initialized", LOG_LEVEL_STATE, NULL);
+        }
+        return swagger_initialized;
+    }
+
+    // Free any existing files first
+    free_swagger_files();
+
+    // Allocate SwaggerFile array
+    swagger_files = calloc(num_payload_files, sizeof(SwaggerFile));
+    if (!swagger_files) {
+        log_this(SR_SWAGGER, "Failed to allocate swagger files array", LOG_LEVEL_ERROR, NULL);
+        return false;
+    }
+
+    num_swagger_files = 0;
+
+    // Convert PayloadFile to SwaggerFile
+    for (size_t i = 0; i < num_payload_files; i++) {
+        // Clean the file name to remove prefixes (e.g., "swagger/index.html" -> "index.html")
+        char *clean_name = payload_files[i].name;
+        if (strncmp(payload_files[i].name, "swagger/", 8) == 0) {
+            clean_name = payload_files[i].name + 8; // Skip "swagger/" prefix
+        }
+
+        swagger_files[i].name = strdup(clean_name);
+        swagger_files[i].data = payload_files[i].data; // Reference the payload data
+        swagger_files[i].size = payload_files[i].size;
+        swagger_files[i].is_compressed = payload_files[i].is_compressed;
+
+        if (!swagger_files[i].name) {
+            log_this(SR_SWAGGER, "Failed to allocate memory for file name", LOG_LEVEL_ERROR, NULL);
+            free_swagger_files();
+            return false;
+        }
+
+        num_swagger_files++;
+    }
+
+    // Update configuration
+    config->payload_available = true;
+    swagger_initialized = true;
+
+    log_this(SR_SWAGGER, "Loaded %zu swagger files from payload cache", LOG_LEVEL_STATE, num_swagger_files);
+
+    return true;
 }
 
 bool is_swagger_request(const char *url, const SwaggerConfig *config) {
@@ -196,28 +280,60 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
     log_this(SR_SWAGGER, "Request: Original URL: %s, Processed path: %s", 
              LOG_LEVEL_STATE, url, url_path);
 
-    // Try to find the requested file
+    // Try to find the requested file - prioritize uncompressed versions for browser compatibility
     SwaggerFile *file = NULL;
     bool client_accepts_br = client_accepts_brotli(connection);
-    
+
+    // Debug logging for troubleshooting
+    const char *accept_encoding = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "Accept-Encoding");
+    if (accept_encoding) {
+        log_this(SR_SWAGGER, "Client Accept-Encoding: %s", LOG_LEVEL_STATE, accept_encoding);
+    } else {
+        log_this(SR_SWAGGER, "No Accept-Encoding header from client", LOG_LEVEL_STATE, NULL);
+    }
+
     // First try to find an exact match (handles direct .br requests)
     for (size_t i = 0; i < num_swagger_files; i++) {
         if (strcmp(swagger_files[i].name, url_path) == 0) {
             file = &swagger_files[i];
+            const char *file_type = file->is_compressed ? "compressed" : "uncompressed";
+            log_this(SR_SWAGGER, "Found exact match for %s (%s)", LOG_LEVEL_STATE, url_path, file_type);
             break;
         }
     }
 
-    // If not found and client accepts brotli, try the .br version
-    if (!file && client_accepts_br && !strstr(url_path, ".br")) {
+    // If not found, try to find both compressed and uncompressed versions
+    if (!file) {
         char br_path[256];
-        snprintf(br_path, sizeof(br_path), "%s.br", url_path);
-        
+        SwaggerFile *compressed_file = NULL;
+        SwaggerFile *uncompressed_file = NULL;
+
+        // Look for both .br and non-.br versions
+        if (!strstr(url_path, ".br")) {
+            snprintf(br_path, sizeof(br_path), "%s.br", url_path);
+        }
+
         for (size_t i = 0; i < num_swagger_files; i++) {
-            if (strcmp(swagger_files[i].name, br_path) == 0) {
-                file = &swagger_files[i];
-                break;
+            const char *name = swagger_files[i].name;
+            if (!strstr(url_path, ".br") && strcmp(name, br_path) == 0) {
+                compressed_file = &swagger_files[i];
+            } else if (strcmp(name, url_path) == 0) {
+                uncompressed_file = &swagger_files[i];
             }
+        }
+
+        // Prefer uncompressed file for browser compatibility, fallback to compressed
+        if (uncompressed_file) {
+            file = uncompressed_file;
+            log_this(SR_SWAGGER, "Using uncompressed version of %s", LOG_LEVEL_STATE, url_path);
+        } else if (compressed_file && client_accepts_br) {
+            file = compressed_file;
+            log_this(SR_SWAGGER, "Using compressed version of %s (client supports brotli)", LOG_LEVEL_STATE, url_path);
+        } else if (compressed_file) {
+            file = compressed_file;
+            log_this(SR_SWAGGER, "Using compressed version of %s (forcing header for client compatibility)", LOG_LEVEL_STATE, url_path);
+        } else {
+            log_this(SR_SWAGGER, "No version found for %s", LOG_LEVEL_ERROR, url_path);
         }
     }
 
@@ -244,8 +360,7 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
         return MHD_NO; // File not found
     }
 
-    // Determine if we should serve compressed content
-    bool serve_compressed = file->is_compressed && client_accepts_brotli(connection);
+    // Note: serve_compressed variable removed as we now serve compressed content with headers always
 
     // If this is swagger.json or swagger-initializer.js, we need to modify it
     struct MHD_Response *response;
@@ -434,8 +549,12 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
     MHD_add_response_header(response, "Content-Type", content_type);
 
     // Add compression header if serving compressed content
-    if (serve_compressed) {
+    // IMPORTANT: Always add header when serving compressed data, regardless of client support
+    if (file->is_compressed) {
+        log_this(SR_SWAGGER, "Serving compressed file: %s (Content-Encoding: br)", LOG_LEVEL_STATE, url_path);
         add_brotli_header(response);
+    } else {
+        log_this(SR_SWAGGER, "Serving uncompressed file: %s", LOG_LEVEL_STATE, url_path);
     }
 
     // Add CORS headers
