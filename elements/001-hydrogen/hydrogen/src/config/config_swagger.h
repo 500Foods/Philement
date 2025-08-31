@@ -21,6 +21,7 @@ typedef struct SwaggerConfig {
     // NEW: WebRoot support for PAYLOAD:/ paths or filesystem paths
     char* webroot;                  // NEW: PAYLOAD:/swagger or /filesystem/path
     char* cors_origin;              // NEW: Optional per-subsystem CORS override
+    char* index_page;               // NEW: Configurable index page (default: "swagger.html")
 
     struct {
         char* title;

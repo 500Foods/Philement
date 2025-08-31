@@ -66,6 +66,13 @@ const WebServerEndpoint* get_endpoint_for_url(const char* url);
 void add_cors_headers(struct MHD_Response *response);
 const char* get_upload_path(void);
 
+// WebRoot path resolution functions
+char* resolve_webroot_path(const char* webroot_spec, const PayloadData* payload,
+                          AppConfig* config);
+char* get_payload_subdirectory_path(const PayloadData* payload, const char* subdir,
+                                 AppConfig* config);
+char* resolve_filesystem_path(const char* path_spec, AppConfig* config);
+
 // Request handling functions (implemented in web_server_request.c)
 enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
                              const char *url, const char *method,

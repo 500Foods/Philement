@@ -412,3 +412,87 @@ void shutdown_web_server(void) {
 const char* get_upload_path(void) {
     return server_web_config->upload_path;
 }
+
+// WebRoot path resolution functions
+
+/**
+ * Resolve a WebRoot specification to an actual path
+ * Supports PAYLOAD:/ paths and filesystem paths
+ */
+char* resolve_webroot_path(const char* webroot_spec, const PayloadData* payload,
+                          AppConfig* config __attribute__((unused))) {
+    if (webroot_spec == NULL) return NULL;
+
+    if (strncmp(webroot_spec, "PAYLOAD:", 8) == 0) {
+        // Extract from payload using subdirectory function
+        return get_payload_subdirectory_path(payload, webroot_spec + 8, config);
+    } else {
+        // Use as filesystem path directly
+        return resolve_filesystem_path(webroot_spec, config);
+    }
+}
+
+/**
+ * Extract files from a payload subdirectory
+ * Creates a virtual filesystem structure from tar data
+ */
+char* get_payload_subdirectory_path(const PayloadData* payload, const char* subdir,
+                                 AppConfig* config __attribute__((unused))) {
+    static char buffer[PATH_MAX];
+
+    if (!payload || !subdir) {
+        log_this(SR_WEBSERVER, "Invalid payload or subdirectory parameter", LOG_LEVEL_ERROR);
+        return NULL;
+    }
+
+    // Build prefix to search for (e.g., "terminal/")
+    char prefix[256];
+    if (snprintf(prefix, sizeof(prefix), "%s/", subdir) >= (int)sizeof(prefix)) {
+        log_this(SR_WEBSERVER, "Subdirectory prefix too long", LOG_LEVEL_ERROR);
+        return NULL;
+    }
+
+    // Log the payload extraction request
+    log_this(SR_WEBSERVER, "Resolving payload subdirectory: %s", LOG_LEVEL_STATE, prefix);
+
+    // For now, return a placeholder path since payload extraction requires tar parsing
+    // This would need implementation based on existing swagger payload handling
+    if (snprintf(buffer, sizeof(buffer), "/payload/%s", subdir) >= (int)sizeof(buffer)) {
+        log_this(SR_WEBSERVER, "Payload path buffer overflow", LOG_LEVEL_ERROR);
+        return NULL;
+    }
+
+    log_this(SR_WEBSERVER, "Resolved payload path: %s", LOG_LEVEL_STATE, buffer);
+    return strdup(buffer);
+}
+
+/**
+ * Resolve a filesystem path specification
+ * Handles relative paths and environment variable substitution
+ */
+char* resolve_filesystem_path(const char* path_spec, AppConfig* config __attribute__((unused))) {
+    static char buffer[PATH_MAX];
+
+    if (!path_spec) {
+        log_this(SR_WEBSERVER, "No path specification provided", LOG_LEVEL_ERROR);
+        return NULL;
+    }
+
+    // For absolute paths, use as-is
+    if (path_spec[0] == '/') {
+        log_this(SR_WEBSERVER, "Using absolute filesystem path: %s", LOG_LEVEL_STATE, path_spec);
+        return strdup(path_spec);
+    }
+
+    // Build relative path from web server webroot (if available)
+    const char* base_path = server_web_config && server_web_config->web_root
+                           ? server_web_config->web_root : ".";
+
+    if (snprintf(buffer, sizeof(buffer), "%s/%s", base_path, path_spec) >= (int)sizeof(buffer)) {
+        log_this(SR_WEBSERVER, "Filesystem path buffer overflow", LOG_LEVEL_ERROR);
+        return NULL;
+    }
+
+    log_this(SR_WEBSERVER, "Resolved filesystem path: %s", LOG_LEVEL_STATE, buffer);
+    return strdup(buffer);
+}

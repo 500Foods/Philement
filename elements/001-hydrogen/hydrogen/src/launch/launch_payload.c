@@ -10,11 +10,12 @@
  * Note: Shutdown functionality has been moved to landing/landing_payload.c
  */
 
-// Global includes 
+// Global includes
 #include "../hydrogen.h"
 
 // Local includes
 #include "launch.h"
+#include "../payload/payload_cache.h"
  
  /**
   * Check if the payload subsystem is ready to launch
@@ -154,9 +155,46 @@ int launch_payload_subsystem(void) {
         return 0;
     }
 
-    // Step 2: Launch the payload
-    log_this(SR_PAYLOAD, "  Step 2: Launching payload processing", LOG_LEVEL_STATE);
-    bool success = launch_payload(app_config, PAYLOAD_MARKER);
+    // Step 2: Initialize and load payload cache
+    log_this(SR_PAYLOAD, "  Step 2: Initializing payload cache", LOG_LEVEL_STATE);
+    bool cache_initialized = initialize_payload_cache();
+    if (!cache_initialized) {
+        log_this(SR_PAYLOAD, "    Payload cache initialization failed", LOG_LEVEL_ERROR);
+        log_this(SR_PAYLOAD, "LAUNCH: PAYLOAD - Failed: Cache initialization failed", LOG_LEVEL_STATE);
+        return 0;
+    }
+    log_this(SR_PAYLOAD, "    Payload cache initialized successfully", LOG_LEVEL_STATE);
+
+    // Load payload into cache
+    log_this(SR_PAYLOAD, "    Loading payload into cache", LOG_LEVEL_STATE);
+    bool success = load_payload_cache(app_config, PAYLOAD_MARKER);
+    if (!success) {
+        log_this(SR_PAYLOAD, "    Payload cache loading failed", LOG_LEVEL_ERROR);
+        cleanup_payload_cache();
+        log_this(SR_PAYLOAD, "LAUNCH: PAYLOAD - Failed: Cache loading failed", LOG_LEVEL_STATE);
+        return 0;
+    }
+    log_this(SR_PAYLOAD, "    Payload cache loaded successfully", LOG_LEVEL_STATE);
+
+    // List cached files
+    if (is_payload_cache_available()) {
+        log_this(SR_PAYLOAD, "    Available cached payload files:", LOG_LEVEL_STATE);
+        PayloadFile *files = NULL;
+        size_t num_files = 0;
+        size_t capacity = 0;
+
+        bool files_retrieved = get_payload_files_by_prefix("", &files, &num_files, &capacity);
+        if (files_retrieved && files && num_files > 0) {
+            for (size_t i = 0; i < num_files; i++) {
+                log_this(SR_PAYLOAD, "      -> %s", LOG_LEVEL_STATE, files[i].name);
+            }
+            free(files);
+        } else {
+            log_this(SR_PAYLOAD, "      -> No files currently available", LOG_LEVEL_STATE);
+        }
+    } else {
+        log_this(SR_PAYLOAD, "    Cache not yet available - will be initialized on first access", LOG_LEVEL_STATE);
+    }
 
     if (success) {
         log_this(SR_PAYLOAD, "    Payload processing completed successfully", LOG_LEVEL_STATE);
