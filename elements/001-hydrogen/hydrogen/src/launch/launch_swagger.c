@@ -21,18 +21,6 @@
 // Registry ID for the Swagger subsystem
 int swagger_subsystem_id = -1;
 
-void register_swagger(void) {
-    // Only register if not already registered
-    if (swagger_subsystem_id < 0) {
-        swagger_subsystem_id = register_subsystem_from_launch(SR_SWAGGER, NULL, NULL, NULL,
-                                                (int (*)(void))launch_swagger_subsystem,
-                                                NULL);  // No special shutdown needed
-        if (swagger_subsystem_id < 0) {
-            log_this(SR_SWAGGER, "Failed to register Swagger subsystem", LOG_LEVEL_ERROR);
-        }
-    }
-}
-
 // Check if the Swagger subsystem is ready to launch
 LaunchReadiness check_swagger_launch_readiness(void) {
     const char** messages = NULL;
@@ -44,7 +32,15 @@ LaunchReadiness check_swagger_launch_readiness(void) {
     add_launch_message(&messages, &count, &capacity, strdup(SR_SWAGGER));
 
     // Register with registry first
-    register_swagger();
+        if (swagger_subsystem_id < 0) {
+        swagger_subsystem_id = register_subsystem_from_launch(SR_SWAGGER, NULL, NULL, NULL,
+                                                (int (*)(void))launch_swagger_subsystem,
+                                                NULL);  // No special shutdown needed
+        if (swagger_subsystem_id < 0) {
+            log_this(SR_SWAGGER, "Failed to register Swagger subsystem", LOG_LEVEL_ERROR);
+        }
+    }
+
     if (swagger_subsystem_id < 0) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Failed to register with registry"));
         finalize_launch_messages(&messages, &count, &capacity);
@@ -170,7 +166,7 @@ int launch_swagger_subsystem(void) {
 
     // Step 1: Register with registry and add dependencies
     log_this(SR_SWAGGER, "  Step 1: Registering with registry", LOG_LEVEL_STATE);
-    register_swagger();
+    
     if (swagger_subsystem_id < 0) {
         log_this(SR_SWAGGER, "    Failed to register Swagger subsystem", LOG_LEVEL_ERROR);
         log_this(SR_SWAGGER, "LAUNCH: SWAGGER - Failed: Registration failed", LOG_LEVEL_STATE);
@@ -221,36 +217,36 @@ int launch_swagger_subsystem(void) {
     }
     log_this(SR_SWAGGER, "    Registry dependency verified", LOG_LEVEL_STATE);
 
-    // Then check API
-    if (!is_api_running()) {
-        log_this(SR_SWAGGER, "    API subsystem not running", LOG_LEVEL_ERROR);
-        log_this(SR_SWAGGER, "LAUNCH: SWAGGER - Failed: API dependency not met", LOG_LEVEL_STATE);
+    // Then check API subsystem
+    if (!is_subsystem_running_by_name(SR_API)) {
+        log_this(SR_SWAGGER, "    " SR_API " subsystem not running", LOG_LEVEL_ERROR);
+        log_this(SR_SWAGGER, "LAUNCH: SWAGGER - Failed: " SR_API " subsystem dependency not met", LOG_LEVEL_STATE);
         return 0;
     }
-    log_this(SR_SWAGGER, "    API dependency verified", LOG_LEVEL_STATE);
+    log_this(SR_SWAGGER, "    " SR_API " subsystem dependency verified", LOG_LEVEL_STATE);
 
     // Check webserver
-    if (!is_web_server_running()) {
-        log_this(SR_SWAGGER, "    Web server not running", LOG_LEVEL_ERROR);
-        log_this(SR_SWAGGER, "LAUNCH: SWAGGER - Failed: WebServer dependency not met", LOG_LEVEL_STATE);
+    if (!is_subsystem_running_by_name(SR_WEBSERVER)) {
+        log_this(SR_SWAGGER, "    " SR_WEBSERVER " subsystem not running", LOG_LEVEL_ERROR);
+        log_this(SR_SWAGGER, "LAUNCH: " SR_SWAGGER" Failed: " SR_WEBSERVER " subsystem dependency not met", LOG_LEVEL_STATE);
         return 0;
     }
-    log_this(SR_SWAGGER, "    Web server verified", LOG_LEVEL_STATE);
+    log_this(SR_SWAGGER, "    " SR_WEBSERVER " subsystem verified", LOG_LEVEL_STATE);
 
     // Check payload subsystem state
     int payload_id = get_subsystem_id_by_name("Payload");
     if (payload_id < 0 || get_subsystem_state(payload_id) != SUBSYSTEM_RUNNING) {
-        log_this(SR_SWAGGER, "    Payload subsystem not in running state", LOG_LEVEL_ERROR);
-        log_this(SR_SWAGGER, "LAUNCH: SWAGGER - Failed: Payload dependency not met", LOG_LEVEL_STATE);
+        log_this(SR_SWAGGER, "    " SR_PAYLOAD " subsystem not running", LOG_LEVEL_ERROR);
+        log_this(SR_SWAGGER, "LAUNCH: " SR_PAYLOAD " Failed: " SR_PAYLOAD "subsystem dependency not met", LOG_LEVEL_STATE);
         return 0;
     }
-    log_this(SR_SWAGGER, "    Payload subsystem verified", LOG_LEVEL_STATE);
+    log_this(SR_SWAGGER, "    " SR_PAYLOAD " subsystem verified", LOG_LEVEL_STATE);
 
     // Verify payload files can be accessed
     size_t payload_size;
     if (!check_payload_exists(PAYLOAD_MARKER, &payload_size)) {
         log_this(SR_SWAGGER, "    Swagger UI files not found in payload", LOG_LEVEL_STATE);
-        log_this(SR_SWAGGER, "LAUNCH: SWAGGER - Failed: Missing UI files", LOG_LEVEL_STATE);
+        log_this(SR_SWAGGER, "LAUNCH: " SR_SWAGGER " Failed: Missing Swagger UI files", LOG_LEVEL_STATE);
         return 0;
     }
 
@@ -263,31 +259,31 @@ int launch_swagger_subsystem(void) {
     log_this(SR_SWAGGER, "    All dependencies verified", LOG_LEVEL_STATE);
 
     // Step 4: Initialize Swagger UI
-    log_this(SR_SWAGGER, "  Step 3: Initializing Swagger UI", LOG_LEVEL_STATE);
+    log_this(SR_SWAGGER, "  Step 3: Initializing " SR_SWAGGER " subsystem", LOG_LEVEL_STATE);
     
     // Wait for API to be fully running
     int retries = 0;
-    while (!is_api_running() && retries < 10) {
+    while (!is_subsystem_running_by_name(SR_API) && retries < 10) {
         usleep(100000); // Wait 100ms between checks
         retries++;
     }
     
-    if (!is_api_running()) {
-        log_this(SR_SWAGGER, "    API subsystem not running after waiting", LOG_LEVEL_ERROR);
-        log_this(SR_SWAGGER, "LAUNCH: SWAGGER - Failed: API not running", LOG_LEVEL_STATE);
+    if (!is_subsystem_running_by_name(SR_API)) {
+        log_this(SR_SWAGGER, "    " SR_API " subsystem not running after waiting", LOG_LEVEL_ERROR);
+        log_this(SR_SWAGGER, "LAUNCH: " SR_SWAGGER " Failed: " SR_API " not running", LOG_LEVEL_STATE);
         return 0;
     }
-    log_this(SR_SWAGGER, "    API subsystem running", LOG_LEVEL_STATE);
+    log_this(SR_SWAGGER, "    " SR_API " subsystem running", LOG_LEVEL_STATE);
 
     // Initialize Swagger UI support
     if (!init_swagger_support(&app_config->swagger)) {
-        log_this(SR_SWAGGER, "    Failed to initialize Swagger UI", LOG_LEVEL_ERROR);
-        log_this(SR_SWAGGER, "LAUNCH: SWAGGER - Failed: UI initialization failed", LOG_LEVEL_STATE);
+        log_this(SR_SWAGGER, "    Failed to initialize " SR_SWAGGER " subsystem", LOG_LEVEL_ERROR);
+        log_this(SR_SWAGGER, "LAUNCH: " SR_SWAGGER " Failed: Initialization failed", LOG_LEVEL_STATE);
         return 0;
     }
-    log_this(SR_SWAGGER, "    Swagger UI initialized", LOG_LEVEL_STATE);
+    log_this(SR_SWAGGER, "    " SR_SWAGGER " subsystem initialized", LOG_LEVEL_STATE);
 
-    // Register Swagger endpoint with webserver using our static wrapper functions
+    // Register Swagger endpoint with webserver
     WebServerEndpoint swagger_endpoint = {
         .prefix = app_config->swagger.prefix,
         .validator = swagger_url_validator,
@@ -295,8 +291,8 @@ int launch_swagger_subsystem(void) {
     };
 
     if (!register_web_endpoint(&swagger_endpoint)) {
-        log_this(SR_SWAGGER, "    Failed to register Swagger endpoint", LOG_LEVEL_ERROR);
-        log_this(SR_SWAGGER, "LAUNCH: SWAGGER - Failed: Endpoint registration failed", LOG_LEVEL_STATE);
+        log_this(SR_SWAGGER, "    Failed to register endpoint", LOG_LEVEL_ERROR);
+        log_this(SR_SWAGGER, "LAUNCH: " SR_SWAGGER " Failed: Endpoint registration failed", LOG_LEVEL_STATE);
         return 0;
     }
 
@@ -316,40 +312,20 @@ int launch_swagger_subsystem(void) {
     log_this(SR_SWAGGER, "      -> Title: %s", LOG_LEVEL_STATE, app_config->swagger.metadata.title);
     log_this(SR_SWAGGER, "      -> Version: %s", LOG_LEVEL_STATE, app_config->swagger.metadata.version);
     log_this(SR_SWAGGER, "      -> Payload: available", LOG_LEVEL_STATE);
-    log_this(SR_SWAGGER, "    Swagger UI initialized", LOG_LEVEL_STATE);
+    log_this(SR_SWAGGER, "    " SR_SWAGGER " subsystem initialized", LOG_LEVEL_STATE);
 
     // Step 4: Update registry and verify state
-    log_this(SR_SWAGGER, "  Step 4: Updating subsystem registry", LOG_LEVEL_STATE);
+    log_this(SR_SWAGGER, "  Updating " SR_REGISTRY, LOG_LEVEL_STATE);
     update_subsystem_on_startup(SR_SWAGGER, true);
     
     SubsystemState final_state = get_subsystem_state(swagger_subsystem_id);
     if (final_state == SUBSYSTEM_RUNNING) {
-        log_this(SR_SWAGGER, "LAUNCH: SWAGGER - Successfully launched and running", LOG_LEVEL_STATE);
+        log_this(SR_SWAGGER, "LAUNCH: " SR_SWAGGER " Success: Launched and running", LOG_LEVEL_STATE);
     } else {
-        log_this(SR_SWAGGER, "LAUNCH: SWAGGER - Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
+        log_this(SR_SWAGGER, "LAUNCH: " SR_SWAGGER " Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
                 subsystem_state_to_string(final_state));
         return 0;
     }
     
     return 1;
-}
-
-// Check if Swagger is running
-int is_swagger_running(void);
-
-int is_swagger_running(void) {
-    extern volatile sig_atomic_t server_stopping;
-    
-    // Swagger is running if:
-    // 1. It's enabled in config
-    // 2. Not in shutdown state
-    // 3. Registry is running
-    // 4. API is running
-    // 5. Payload is available
-    return (app_config && 
-            app_config->swagger.enabled && 
-            app_config->swagger.payload_available &&
-            !server_stopping &&
-            is_subsystem_running_by_name("Registry") &&
-            is_api_running());
 }

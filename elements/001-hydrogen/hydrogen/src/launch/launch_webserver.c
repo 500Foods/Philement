@@ -72,14 +72,14 @@ LaunchReadiness check_webserver_launch_readiness(void) {
 
     // Register dependencies
     if (webserver_subsystem_id >= 0) {
-        if (!add_dependency_from_launch(webserver_subsystem_id, "Threads")) {
+        if (!add_dependency_from_launch(webserver_subsystem_id, SR_THREADS)) {
             add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Failed to register Threads dependency"));
             finalize_launch_messages(&messages, &count, &capacity);
             return (LaunchReadiness){ .subsystem = SR_WEBSERVER, .ready = false, .messages = messages };
         }
         add_launch_message(&messages, &count, &capacity, strdup("  Go:      Threads dependency registered"));
 
-        if (!add_dependency_from_launch(webserver_subsystem_id, "Network")) {
+        if (!add_dependency_from_launch(webserver_subsystem_id, SR_NETWORK)) {
             add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Failed to register Network dependency"));
             finalize_launch_messages(&messages, &count, &capacity);
             return (LaunchReadiness){ .subsystem = SR_WEBSERVER, .ready = false, .messages = messages };
@@ -387,16 +387,4 @@ int launch_webserver_subsystem(void) {
         return 0;
     }
     return 1;
-}
-
-// Check if web server is running
-// This function checks if the web server is currently running
-// and available to handle requests.
-int is_web_server_running(void) {
-    extern volatile sig_atomic_t web_server_shutdown;
-    
-    // Server is running if:
-    // 1. At least one protocol is enabled in config
-    // 2. Not in shutdown state
-    return (app_config && (app_config->webserver.enable_ipv4 || app_config->webserver.enable_ipv6) && !web_server_shutdown);
 }

@@ -13,7 +13,15 @@
 
 // Local includes
 #include "landing.h"
-#
+
+// Shutdown handler - defined in launch_database.h, implemented here
+void shutdown_database(void) {
+    // if (!database_stopping) {
+    //     database_stopping = 1;
+    //     log_this(SR_DATABASE, "Database subsystem shutting down", LOG_LEVEL_STATE);
+    // }
+}
+
 // Check if the database subsystem is ready to land
 LaunchReadiness check_database_landing_readiness(void) {
     LaunchReadiness readiness = {0};

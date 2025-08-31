@@ -31,24 +31,6 @@ int websocket_subsystem_id = -1;
 // Register the websocket subsystem with the registry
 void register_websocket(void) {
     // Always register during readiness check if not already registered
-    if (websocket_subsystem_id < 0) {
-        websocket_subsystem_id = register_subsystem(SR_WEBSOCKET, NULL, NULL, NULL,
-                                                  (int (*)(void))launch_websocket_subsystem,
-                                                  (void (*)(void))stop_websocket_server);
-    }
-}
-
-// Check if websocket server is running
-// This function checks if the websocket server is currently running
-// and available to handle requests.
-int is_websocket_server_running(void) {
-    extern volatile sig_atomic_t websocket_server_shutdown;
-    
-    // Server is running if:
-    // 1. Enabled in config
-    // 2. Not in shutdown state
-    //return (app_config && app_config->websocket.enabled && !websocket_server_shutdown);
-    return (app_config && !websocket_server_shutdown);
 }
 
 // Validate protocol string
@@ -131,18 +113,22 @@ LaunchReadiness check_websocket_launch_readiness(void) {
     add_launch_message(&messages, &count, &capacity, strdup(SR_WEBSOCKET));
 
     // Register with registry if not already registered
-    register_websocket();
+    if (websocket_subsystem_id < 0) {
+        websocket_subsystem_id = register_subsystem(SR_WEBSOCKET, NULL, NULL, NULL,
+                                                  (int (*)(void))launch_websocket_subsystem,
+                                                  (void (*)(void))stop_websocket_server);
+    }
 
     // Register dependencies
     if (websocket_subsystem_id >= 0) {
-        if (!add_dependency_from_launch(websocket_subsystem_id, "Threads")) {
+        if (!add_dependency_from_launch(websocket_subsystem_id, SR_THREADS)) {
             add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Failed to register Threads dependency"));
             finalize_launch_messages(&messages, &count, &capacity);
             return (LaunchReadiness){ .subsystem = SR_WEBSOCKET, .ready = false, .messages = messages };
         }
         add_launch_message(&messages, &count, &capacity, strdup("  Go:      Threads dependency registered"));
 
-        if (!add_dependency_from_launch(websocket_subsystem_id, "Network")) {
+        if (!add_dependency_from_launch(websocket_subsystem_id, SR_NETWORK)) {
             add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Failed to register Network dependency"));
             finalize_launch_messages(&messages, &count, &capacity);
             return (LaunchReadiness){ .subsystem = SR_WEBSOCKET, .ready = false, .messages = messages };

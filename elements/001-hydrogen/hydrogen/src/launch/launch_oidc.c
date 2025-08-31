@@ -14,14 +14,6 @@
 // Registry ID and cached readiness state
 static int oidc_subsystem_id = -1;
 
-// Register the OIDC subsystem with the registry
-void register_oidc(void) {
-    // Always register during readiness check if not already registered
-    if (oidc_subsystem_id < 0) {
-        oidc_subsystem_id = register_subsystem(SR_OIDC, NULL, NULL, NULL, NULL, NULL);
-    }
-}
-
 // Check if the OIDC subsystem is ready to launch
 LaunchReadiness check_oidc_launch_readiness(void) {
     const char** messages = NULL;
@@ -33,7 +25,9 @@ LaunchReadiness check_oidc_launch_readiness(void) {
     add_launch_message(&messages, &count, &capacity, strdup(SR_OIDC));
 
     // Register with registry if not already registered
-    register_oidc();
+    if (oidc_subsystem_id < 0) {
+        oidc_subsystem_id = register_subsystem(SR_OIDC, NULL, NULL, NULL, NULL, NULL);
+    }
 
     // Check configuration
     if (!app_config) {

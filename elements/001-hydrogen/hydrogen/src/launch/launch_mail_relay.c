@@ -24,23 +24,23 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
     bool ready = true;
 
     // First message is subsystem name
-    add_launch_message(&messages, &count, &capacity, strdup("Mail Relay"));
+    add_launch_message(&messages, &count, &capacity, strdup(SR_MAIL_RELAY));
 
     // Register dependency on Network subsystem
-    int relay_id = get_subsystem_id_by_name("Mail Relay");
+    int relay_id = get_subsystem_id_by_name(SR_MAIL_RELAY);
     if (relay_id >= 0) {
-        if (!add_dependency_from_launch(relay_id, "Network")) {
+        if (!add_dependency_from_launch(relay_id, SR_NETWORK)) {
             add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Failed to register Network dependency"));
             finalize_launch_messages(&messages, &count, &capacity);
-            return (LaunchReadiness){ .subsystem = "Mail Relay", .ready = false, .messages = messages };
+            return (LaunchReadiness){ .subsystem = SR_MAIL_RELAY, .ready = false, .messages = messages };
         }
         add_launch_message(&messages, &count, &capacity, strdup("  Go:      Network dependency registered"));
 
         // Verify Network subsystem is running
-        if (!is_subsystem_running_by_name("Network")) {
+        if (!is_subsystem_running_by_name(SR_NETWORK)) {
             add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Network subsystem not running"));
             finalize_launch_messages(&messages, &count, &capacity);
-            return (LaunchReadiness){ .subsystem = "Mail Relay", .ready = false, .messages = messages };
+            return (LaunchReadiness){ .subsystem = SR_MAIL_RELAY, .ready = false, .messages = messages };
         }
         add_launch_message(&messages, &count, &capacity, strdup("  Go:      Network subsystem running"));
     }
@@ -60,7 +60,7 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
     if (config->ListenPort <= 0 || config->ListenPort > 65535) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid listen port (must be 1-65535)"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Mail Relay", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_MAIL_RELAY, .ready = false, .messages = messages };
     }
     add_launch_message(&messages, &count, &capacity, strdup("  Go:      Listen port valid"));
 
@@ -68,7 +68,7 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
     if (config->Workers <= 0) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid worker count (must be positive)"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Mail Relay", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_MAIL_RELAY, .ready = false, .messages = messages };
     }
     add_launch_message(&messages, &count, &capacity, strdup("  Go:      Worker count valid"));
 
@@ -76,21 +76,21 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
     if (config->Queue.MaxQueueSize <= 0) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid max queue size (must be positive)"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Mail Relay", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_MAIL_RELAY, .ready = false, .messages = messages };
     }
     add_launch_message(&messages, &count, &capacity, strdup("  Go:      Queue size valid"));
 
     if (config->Queue.RetryAttempts < 0) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid retry attempts (must be non-negative)"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Mail Relay", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_MAIL_RELAY, .ready = false, .messages = messages };
     }
     add_launch_message(&messages, &count, &capacity, strdup("  Go:      Retry attempts valid"));
 
     if (config->Queue.RetryDelaySeconds <= 0) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid retry delay (must be positive)"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Mail Relay", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_MAIL_RELAY, .ready = false, .messages = messages };
     }
     add_launch_message(&messages, &count, &capacity, strdup("  Go:      Retry delay valid"));
 
@@ -98,7 +98,7 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
     if (config->OutboundServerCount <= 0 || config->OutboundServerCount > MAX_OUTBOUND_SERVERS) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid number of outbound servers"));
         finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = "Mail Relay", .ready = false, .messages = messages };
+        return (LaunchReadiness){ .subsystem = SR_MAIL_RELAY, .ready = false, .messages = messages };
     }
     add_launch_message(&messages, &count, &capacity, strdup("  Go:      Server count valid"));
 
@@ -110,28 +110,28 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
             snprintf(msg_buffer, sizeof(msg_buffer), "  No-Go:   Server %d missing host", i + 1);
             add_launch_message(&messages, &count, &capacity, strdup(msg_buffer));
             finalize_launch_messages(&messages, &count, &capacity);
-            return (LaunchReadiness){ .subsystem = "Mail Relay", .ready = false, .messages = messages };
+            return (LaunchReadiness){ .subsystem = SR_MAIL_RELAY, .ready = false, .messages = messages };
         }
 
         if (!config->Servers[i].Port || !config->Servers[i].Port[0]) {
             snprintf(msg_buffer, sizeof(msg_buffer), "  No-Go:   Server %d missing port", i + 1);
             add_launch_message(&messages, &count, &capacity, strdup(msg_buffer));
             finalize_launch_messages(&messages, &count, &capacity);
-            return (LaunchReadiness){ .subsystem = "Mail Relay", .ready = false, .messages = messages };
+            return (LaunchReadiness){ .subsystem = SR_MAIL_RELAY, .ready = false, .messages = messages };
         }
 
         if (!config->Servers[i].Username || !config->Servers[i].Username[0]) {
             snprintf(msg_buffer, sizeof(msg_buffer), "  No-Go:   Server %d missing username", i + 1);
             add_launch_message(&messages, &count, &capacity, strdup(msg_buffer));
             finalize_launch_messages(&messages, &count, &capacity);
-            return (LaunchReadiness){ .subsystem = "Mail Relay", .ready = false, .messages = messages };
+            return (LaunchReadiness){ .subsystem = SR_MAIL_RELAY, .ready = false, .messages = messages };
         }
 
         if (!config->Servers[i].Password || !config->Servers[i].Password[0]) {
             snprintf(msg_buffer, sizeof(msg_buffer), "  No-Go:   Server %d missing password", i + 1);
             add_launch_message(&messages, &count, &capacity, strdup(msg_buffer));
             finalize_launch_messages(&messages, &count, &capacity);
-            return (LaunchReadiness){ .subsystem = "Mail Relay", .ready = false, .messages = messages };
+            return (LaunchReadiness){ .subsystem = SR_MAIL_RELAY, .ready = false, .messages = messages };
         }
 
         snprintf(msg_buffer, sizeof(msg_buffer), "  Go:      Server %d configuration valid", i + 1);
@@ -144,7 +144,7 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
     finalize_launch_messages(&messages, &count, &capacity);
 
     return (LaunchReadiness){
-        .subsystem = "Mail Relay",
+        .subsystem = SR_MAIL_RELAY,
         .ready = ready,
         .messages = messages
     };

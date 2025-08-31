@@ -165,11 +165,3 @@ int launch_database_subsystem(void) {
     log_this(SR_DATABASE, "Failed to initialize database subsystem", LOG_LEVEL_ERROR);
     return 0;
 }
-
-// Shutdown handler - defined in launch_database.h, implemented here
-void shutdown_database(void) {
-    if (!database_stopping) {
-        database_stopping = 1;
-        log_this(SR_DATABASE, "Database subsystem shutting down", LOG_LEVEL_STATE);
-    }
-}

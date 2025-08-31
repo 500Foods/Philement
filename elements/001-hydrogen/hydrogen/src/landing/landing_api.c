@@ -72,7 +72,7 @@ int land_api_subsystem(void) {
 
     // Step 1: Verify state
     log_this(SR_API, "  Step 1: Verifying state", LOG_LEVEL_STATE);
-    if (!is_api_running()) {
+    if (!is_subsystem_running_by_name(SR_API)) {
         log_this(SR_API, "API already shut down", LOG_LEVEL_STATE);
         log_this(SR_API, "LANDING: API - Already landed", LOG_LEVEL_STATE);
         return 1;
