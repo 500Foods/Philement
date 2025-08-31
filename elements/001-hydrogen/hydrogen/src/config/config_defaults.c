@@ -221,6 +221,7 @@ void initialize_config_defaults_swagger(AppConfig* config) {
         // NEW: WebRoot defaults
         config->swagger.webroot = strdup("PAYLOAD:/swagger");
         config->swagger.cors_origin = strdup("*");  // Allow all origins by default
+        config->swagger.index_page = strdup("swagger.html");  // Configurable index page
 
         // Metadata defaults
         config->swagger.metadata.title = strdup("Hydrogen API");
@@ -272,7 +273,7 @@ void initialize_config_defaults_websocket(AppConfig* config) {
     }
 }
 
-// I. Terminal Configuration Defaults 
+// I. Terminal Configuration Defaults
 void initialize_config_defaults_terminal(AppConfig* config) {
     if (config) {
         config->terminal.enabled = true;
@@ -282,8 +283,13 @@ void initialize_config_defaults_terminal(AppConfig* config) {
         // String fields
         config->terminal.web_path = strdup("/terminal");
         config->terminal.shell_command = strdup("/bin/bash");
-        
-        log_this(SR_CONFIG, "Applied config defaults for Terminal", LOG_LEVEL_STATE);        
+
+        // NEW: WebRoot defaults for terminal
+        config->terminal.webroot = strdup("PAYLOAD:/terminal");
+        config->terminal.cors_origin = strdup("*");  // Allow all origins by default
+        config->terminal.index_page = strdup("terminal.html");  // Configurable index page
+
+        log_this(SR_CONFIG, "Applied config defaults for Terminal", LOG_LEVEL_STATE);
     }
 }
 

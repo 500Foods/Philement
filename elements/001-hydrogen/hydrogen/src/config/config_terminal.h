@@ -26,6 +26,7 @@ typedef struct TerminalConfig {
     // NEW: WebRoot support for PAYLOAD:/ paths or filesystem paths
     char* webroot;                 /** NEW: PAYLOAD:/terminal or /filesystem/path */
     char* cors_origin;             /** NEW: Optional per-subsystem CORS override */
+    char* index_page;              /** NEW: Configurable index page (default: "terminal.html") */
 } TerminalConfig;
 
 /**

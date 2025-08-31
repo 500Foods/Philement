@@ -9,11 +9,18 @@
  * - WebSockets subsystem must be initialized and ready
  */
 
-// Global includes 
+// Global includes
 #include "../hydrogen.h"
 
 // Local includes
 #include "launch.h"
+#include "../config/config_terminal.h"       // For TerminalConfig
+#include "../terminal/terminal.h"            // For terminal functions
+#include "../webserver/web_server_core.h"   // For WebServerEndpoint and register_web_endpoint
+#include "../payload/payload_cache.h"        // For payload cache functions
+
+// Registry ID for the Terminal subsystem
+int terminal_subsystem_id = -1;
 
 // Check if the terminal subsystem is ready to launch
 LaunchReadiness check_terminal_launch_readiness(void) {
@@ -98,14 +105,163 @@ LaunchReadiness check_terminal_launch_readiness(void) {
 int launch_terminal_subsystem(void) {
 
     log_this(SR_TERMINAL, LOG_LINE_BREAK, LOG_LEVEL_STATE);
-    log_this(SR_TERMINAL, "LAUNCH: " SR_TERMINAL, LOG_LEVEL_STATE);    
+    log_this(SR_TERMINAL, "LAUNCH: " SR_TERMINAL, LOG_LEVEL_STATE);
 
-    // Reset shutdown flag
-    terminal_system_shutdown = 0;
-    
-    if (!app_config || !app_config->terminal.enabled) {
-        return -1;
+    // Step 1: Register with registry and add dependencies
+    log_this(SR_TERMINAL, "  Step 1: Registering with registry", LOG_LEVEL_STATE);
+
+    if (terminal_subsystem_id < 0) {
+        terminal_subsystem_id = register_subsystem_from_launch(SR_TERMINAL, NULL, NULL, NULL,
+                                                (int (*)(void))launch_terminal_subsystem,
+                                                NULL);  // No special shutdown needed
+        if (terminal_subsystem_id < 0) {
+            log_this(SR_TERMINAL, "Failed to register Terminal subsystem", LOG_LEVEL_ERROR);
+            log_this(SR_TERMINAL, "LAUNCH: TERMINAL - Failed: Registration failed", LOG_LEVEL_STATE);
+            return 0;
+        }
     }
-        
-    return 0;
+    add_subsystem_dependency(terminal_subsystem_id, "Registry");
+    add_subsystem_dependency(terminal_subsystem_id, "WebServer");
+    add_subsystem_dependency(terminal_subsystem_id, "WebSocket");
+    add_subsystem_dependency(terminal_subsystem_id, "Payload");
+    log_this(SR_TERMINAL, "    Registration complete", LOG_LEVEL_STATE);
+
+    // Step 2: Verify system state
+    log_this(SR_TERMINAL, "  Step 2: Verifying system state", LOG_LEVEL_STATE);
+
+    if (server_stopping) {
+        log_this(SR_TERMINAL, "    Cannot initialize Terminal during shutdown", LOG_LEVEL_STATE);
+        log_this(SR_TERMINAL, "LAUNCH: TERMINAL - Failed: System in shutdown", LOG_LEVEL_STATE);
+        return 0;
+    }
+
+    if (!server_starting) {
+        log_this(SR_TERMINAL, "    Cannot initialize Terminal outside startup phase", LOG_LEVEL_STATE);
+        log_this(SR_TERMINAL, "LAUNCH: TERMINAL - Failed: Not in startup phase", LOG_LEVEL_STATE);
+        return 0;
+    }
+
+    if (!app_config) {
+        log_this(SR_TERMINAL, "    Terminal configuration not loaded", LOG_LEVEL_STATE);
+        log_this(SR_TERMINAL, "LAUNCH: TERMINAL - Failed: No configuration", LOG_LEVEL_STATE);
+        return 0;
+    }
+
+    if (!app_config->terminal.enabled) {
+        log_this(SR_TERMINAL, "    Terminal disabled in configuration", LOG_LEVEL_STATE);
+        log_this(SR_TERMINAL, "LAUNCH: TERMINAL - Disabled by configuration", LOG_LEVEL_STATE);
+        return 1; // Not an error if disabled
+    }
+    log_this(SR_TERMINAL, "    System state verified", LOG_LEVEL_STATE);
+
+    // Step 3: Verify dependencies
+    log_this(SR_TERMINAL, "  Step 3: Verifying dependencies", LOG_LEVEL_STATE);
+
+    // Check Registry first
+    if (!is_subsystem_running_by_name("Registry")) {
+        log_this(SR_TERMINAL, "    Registry not running", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "LAUNCH: TERMINAL - Failed: Registry dependency not met", LOG_LEVEL_STATE);
+        return 0;
+    }
+    log_this(SR_TERMINAL, "    Registry dependency verified", LOG_LEVEL_STATE);
+
+    // Check WebServer subsystem
+    if (!is_subsystem_running_by_name(SR_WEBSERVER)) {
+        log_this(SR_TERMINAL, "    " SR_WEBSERVER " subsystem not running", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "LAUNCH: TERMINAL - Failed: " SR_WEBSERVER " dependency not met", LOG_LEVEL_STATE);
+        return 0;
+    }
+    log_this(SR_TERMINAL, "    " SR_WEBSERVER " subsystem verified", LOG_LEVEL_STATE);
+
+    // Check WebSocket subsystem
+    if (!is_subsystem_running_by_name(SR_WEBSOCKET)) {
+        log_this(SR_WEBSOCKET, "    " SR_WEBSOCKET " subsystem not running", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "LAUNCH: TERMINAL - Failed: " SR_WEBSOCKET " dependency not met", LOG_LEVEL_STATE);
+        return 0;
+    }
+    log_this(SR_TERMINAL, "    " SR_WEBSOCKET " subsystem verified", LOG_LEVEL_STATE);
+
+    // Check Payload subsystem and verify terminal files are available
+    int payload_id = get_subsystem_id_by_name("Payload");
+    if (payload_id < 0 || get_subsystem_state(payload_id) != SUBSYSTEM_RUNNING) {
+        log_this(SR_TERMINAL, "    " SR_PAYLOAD " subsystem not running", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "LAUNCH: TERMINAL - Failed: " SR_PAYLOAD " subsystem dependency not met", LOG_LEVEL_STATE);
+        return 0;
+    }
+
+    // Check for terminal files in payload cache
+    if (!is_payload_cache_available()) {
+        log_this(SR_TERMINAL, "    Payload cache not available", LOG_LEVEL_STATE);
+        log_this(SR_TERMINAL, "LAUNCH: TERMINAL - Failed: Payload cache not available", LOG_LEVEL_STATE);
+        return 0;
+    }
+
+    // Verify terminal files are in cache
+    PayloadFile *terminal_files = NULL;
+    size_t num_terminal_files = 0;
+    size_t capacity = 0;
+
+    bool files_retrieved = get_payload_files_by_prefix("terminal/", &terminal_files, &num_terminal_files, &capacity);
+    if (!files_retrieved || !terminal_files || num_terminal_files == 0) {
+        log_this(SR_TERMINAL, "    No terminal files found in payload cache", LOG_LEVEL_STATE);
+        log_this(SR_TERMINAL, "LAUNCH: TERMINAL - Failed: Missing Terminal UI files", LOG_LEVEL_STATE);
+        return 0;
+    }
+
+    log_this(SR_TERMINAL, "    Terminal files verified (%zu files in cache):", LOG_LEVEL_STATE, num_terminal_files);
+    for (size_t i = 0; i < num_terminal_files; i++) {
+        log_this(SR_TERMINAL, "      -> %s", LOG_LEVEL_STATE, terminal_files[i].name);
+    }
+
+    // Free the retrieved files array (but not individual data)
+    free(terminal_files);
+    log_this(SR_TERMINAL, "    All dependencies verified", LOG_LEVEL_STATE);
+
+    // Step 4: Initialize Terminal subsystem
+    log_this(SR_TERMINAL, "  Step 4: Initializing " SR_TERMINAL " subsystem", LOG_LEVEL_STATE);
+
+    // Initialize terminal support
+    if (!init_terminal_support(&app_config->terminal)) {
+        log_this(SR_TERMINAL, "    Failed to initialize " SR_TERMINAL " subsystem", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "LAUNCH: TERMINAL - Failed: Initialization failed", LOG_LEVEL_STATE);
+        return 0;
+    }
+    log_this(SR_TERMINAL, "    " SR_TERMINAL " subsystem initialized", LOG_LEVEL_STATE);
+
+    // Register Terminal endpoint with webserver
+    WebServerEndpoint terminal_endpoint = {
+        .prefix = app_config->terminal.web_path,
+        .validator = terminal_url_validator,
+        .handler = terminal_request_handler
+    };
+
+    if (!register_web_endpoint(&terminal_endpoint)) {
+        log_this(SR_TERMINAL, "    Failed to register endpoint", LOG_LEVEL_ERROR);
+        log_this(SR_TERMINAL, "LAUNCH: TERMINAL - Failed: Endpoint registration failed", LOG_LEVEL_STATE);
+        return 0;
+    }
+
+    // Log configuration
+    log_this(SR_TERMINAL, "    Configuration:", LOG_LEVEL_STATE);
+    log_this(SR_TERMINAL, "      -> Enabled: yes", LOG_LEVEL_STATE);
+    log_this(SR_TERMINAL, "      -> Web Path: %s", LOG_LEVEL_STATE, app_config->terminal.web_path);
+    log_this(SR_TERMINAL, "      -> WebRoot: %s", LOG_LEVEL_STATE, app_config->terminal.webroot);
+    log_this(SR_TERMINAL, "      -> Shell: %s", LOG_LEVEL_STATE, app_config->terminal.shell_command);
+    log_this(SR_TERMINAL, "      -> Max Sessions: %d", LOG_LEVEL_STATE, app_config->terminal.max_sessions);
+    log_this(SR_TERMINAL, "      -> Payload: available", LOG_LEVEL_STATE);
+    log_this(SR_TERMINAL, "    " SR_TERMINAL " subsystem initialized", LOG_LEVEL_STATE);
+
+    // Step 5: Update registry and verify state
+    log_this(SR_TERMINAL, "  Updating " SR_REGISTRY, LOG_LEVEL_STATE);
+    update_subsystem_on_startup(SR_TERMINAL, true);
+
+    SubsystemState final_state = get_subsystem_state(terminal_subsystem_id);
+    if (final_state == SUBSYSTEM_RUNNING) {
+        log_this(SR_TERMINAL, "LAUNCH: TERMINAL Success: Launched and running", LOG_LEVEL_STATE);
+        return 1;
+    } else {
+        log_this(SR_TERMINAL, "LAUNCH: TERMINAL Warning: Unexpected final state: %s", LOG_LEVEL_ALERT,
+                subsystem_state_to_string(final_state));
+        return 0;
+    }
 }

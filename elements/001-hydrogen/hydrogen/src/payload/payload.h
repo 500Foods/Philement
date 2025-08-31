@@ -16,12 +16,31 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+// Structure to hold a single extracted file
+typedef struct {
+    char *name;         // File name (including path prefix like "swagger/")
+    uint8_t *data;      // File content
+    size_t size;        // Content size
+    bool is_compressed; // Whether content is Brotli compressed
+} PayloadFile;
+
 // Structure to hold extracted payload data
 typedef struct {
     uint8_t *data;
     size_t size;
     bool is_compressed;  // Whether the data is Brotli compressed
 } PayloadData;
+
+// Global payload cache structure
+typedef struct {
+    bool is_initialized;     // Whether cache is ready
+    bool is_available;       // Whether payload was found and extracted
+    PayloadFile *files;      // Array of files in the payload
+    size_t num_files;       // Number of files available
+    size_t capacity;        // Allocated capacity of files array
+    uint8_t *tar_data;      // Decompressed tar archive
+    size_t tar_size;        // Size of decompressed tar archive
+} PayloadCache;
 
 /**
  * Extract an encrypted payload from the executable
@@ -80,8 +99,33 @@ bool validate_payload_key(const char *key);
 bool launch_payload(const AppConfig *config, const char *marker);
 
 /**
+ * Check if payload cache is available and initialized
+ *
+ * This function checks whether the payload cache has been successfully initialized
+ * and contains extracted payload files that can be accessed by other subsystems.
+ *
+ * @return true if payload cache is available and ready, false otherwise
+ */
+bool is_payload_cache_available(void);
+
+/**
+ * Get payload files with a specific prefix
+ *
+ * This function retrieves all payload files that start with the specified prefix.
+ * It's used by subsystems like Swagger and Terminal to get their specific file sets.
+ *
+ * @param prefix The file prefix to search for (e.g., "swagger/", "terminal/")
+ * @param files Pointer to array of PayloadFile structures (will be allocated)
+ * @param num_files Pointer to store the number of files found
+ * @param capacity Pointer to store the allocated capacity of the array
+ * @return true if operation succeeded, false otherwise
+ */
+bool get_payload_files_by_prefix(const char *prefix, PayloadFile **files,
+                                size_t *num_files, size_t *capacity);
+
+/**
  * Clean up OpenSSL resources
- * 
+ *
  * This function cleans up resources allocated by OpenSSL during payload processing.
  * It should be called during shutdown to prevent memory leaks.
  */

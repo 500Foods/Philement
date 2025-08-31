@@ -9,7 +9,7 @@
  * - Payload subsystem must be initialized and ready (for serving Swagger files)
  */
 
-// Global includes 
+// Global includes
 #include "../hydrogen.h"
 
 // Local includes
@@ -17,6 +17,7 @@
 #include "../config/config_swagger.h"
 #include "../swagger/swagger.h"
 #include "../webserver/web_server_core.h"  // For WebServerEndpoint
+#include "../payload/payload_cache.h"      // For payload cache functions
 
 // Registry ID for the Swagger subsystem
 int swagger_subsystem_id = -1;
@@ -242,20 +243,38 @@ int launch_swagger_subsystem(void) {
     }
     log_this(SR_SWAGGER, "    " SR_PAYLOAD " subsystem verified", LOG_LEVEL_STATE);
 
-    // Verify payload files can be accessed
-    size_t payload_size;
-    if (!check_payload_exists(PAYLOAD_MARKER, &payload_size)) {
-        log_this(SR_SWAGGER, "    Swagger UI files not found in payload", LOG_LEVEL_STATE);
+    // Check for swagger files in payload cache
+    if (!is_payload_cache_available()) {
+        log_this(SR_SWAGGER, "    Payload cache not available", LOG_LEVEL_STATE);
+        log_this(SR_SWAGGER, "LAUNCH: " SR_SWAGGER " Failed: Payload cache not available", LOG_LEVEL_STATE);
+        return 0;
+    }
+
+    // Verify swagger files are in cache
+    PayloadFile *swagger_files = NULL;
+    size_t num_swagger_files = 0;
+    size_t capacity = 0;
+
+    bool files_retrieved = get_payload_files_by_prefix("swagger/", &swagger_files, &num_swagger_files, &capacity);
+    if (!files_retrieved || !swagger_files || num_swagger_files == 0) {
+        log_this(SR_SWAGGER, "    No swagger files found in payload cache", LOG_LEVEL_STATE);
         log_this(SR_SWAGGER, "LAUNCH: " SR_SWAGGER " Failed: Missing Swagger UI files", LOG_LEVEL_STATE);
         return 0;
     }
 
-    // Set payload availability flag since we found it
+    // Set payload availability flag and log available files
     if (app_config) {
         AppConfig* mutable_config = (AppConfig*)app_config;
         mutable_config->swagger.payload_available = 1;
     }
-    log_this(SR_SWAGGER, "    Swagger UI files verified (%zu bytes)", LOG_LEVEL_STATE, payload_size);
+
+    log_this(SR_SWAGGER, "    Swagger files verified (%zu files in cache):", LOG_LEVEL_STATE, num_swagger_files);
+    for (size_t i = 0; i < num_swagger_files; i++) {
+        log_this(SR_SWAGGER, "      -> %s", LOG_LEVEL_STATE, swagger_files[i].name);
+    }
+
+    // Free the retrieved files array
+    free(swagger_files);
     log_this(SR_SWAGGER, "    All dependencies verified", LOG_LEVEL_STATE);
 
     // Step 4: Initialize Swagger UI
@@ -295,15 +314,6 @@ int launch_swagger_subsystem(void) {
         log_this(SR_SWAGGER, "LAUNCH: " SR_SWAGGER " Failed: Endpoint registration failed", LOG_LEVEL_STATE);
         return 0;
     }
-
-    log_this(SR_SWAGGER, "    Registered endpoint with prefix: %s", LOG_LEVEL_STATE, app_config->swagger.prefix);
-    log_this(SR_SWAGGER, "      -> /", LOG_LEVEL_STATE);
-    log_this(SR_SWAGGER, "      -> /index.html", LOG_LEVEL_STATE);
-    log_this(SR_SWAGGER, "      -> /swagger-ui.css", LOG_LEVEL_STATE);
-    log_this(SR_SWAGGER, "      -> /swagger-ui-bundle.js", LOG_LEVEL_STATE);
-    log_this(SR_SWAGGER, "      -> /swagger-ui-standalone-preset.js", LOG_LEVEL_STATE);
-    log_this(SR_SWAGGER, "      -> /swagger.json", LOG_LEVEL_STATE);
-    log_this(SR_SWAGGER, "    Routes registered", LOG_LEVEL_STATE);
     
     // Log configuration
     log_this(SR_SWAGGER, "    Configuration:", LOG_LEVEL_STATE);

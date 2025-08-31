@@ -7,12 +7,14 @@
 # Currently, it packages SwaggerUI content, but is designed to be extendable
 # for other payload types in the future. The script:
 # - Downloads SwaggerUI from GitHub
+# - Downloads and xterm.js for terminal subsystem
 # - Extracts essential files and compresses static assets with Brotli
 # - Creates an optimized tar file compressed with Brotli
 # - Encrypts the package using RSA+AES hybrid encryption
 # - Cleans up all temporary files
 
 # CHANGELONG
+# 2.2.0 - Added terminal payload generation with xterm.js
 # 2.1.0 - Added swagger/ directory structure within tar file for better organization
 # 2.0.0 - Better at downloading latest version of swagger
 # 1.2.0 - Improved modularity, fixed shellcheck warnings, enhanced error handling
@@ -20,7 +22,7 @@
 # 1.0.0 - Initial release with basic payload generation
 
 # Display script information
-echo "payload-generate.sh version 2.1.0"
+echo "payload-generate.sh version 2.2.0"
 echo "Encrypted Payload Generator for Hydrogen"
 
 # Common utilities - use GNU versions if available (eg: homebrew on macOS)
@@ -50,15 +52,15 @@ readonly INFO="🛈 "
 convert_to_relative_path() {
     local absolute_path="$1"
     local relative_path
-    
+
     # Extract the part starting from "hydrogen" and keep everything after
     relative_path=$(echo "${absolute_path}" | "${SED}" -n 's|.*/hydrogen/|hydrogen/|p')
-    
+
     # If the path contains elements/001-hydrogen/hydrogen but not starting with hydrogen/
     if [[ -z "${relative_path}" ]]; then
         relative_path=$(echo "${absolute_path}" | "${SED}" -n 's|.*/elements/001-hydrogen/hydrogen|hydrogen|p')
     fi
-    
+
     # If we still couldn't find a match, return the original
     if [[ -z "${relative_path}" ]]; then
         echo "${absolute_path}"
@@ -74,6 +76,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT_DIR
 readonly SWAGGERUI_DIR="${SCRIPT_DIR}/swaggerui"
+readonly XTERMJS_DIR="${SCRIPT_DIR}/xtermjs"
 readonly TAR_FILE="${SCRIPT_DIR}/payload.tar"
 readonly COMPRESSED_TAR_FILE="${SCRIPT_DIR}/payload.tar.br.enc"
 
@@ -84,29 +87,29 @@ readonly TEMP_DIR
 # Function to check for required dependencies
 check_dependencies() {
     local missing_deps=0
-    
+
     # Required for basic operation
     if ! command -v curl >/dev/null 2>&1; then
         echo -e "${RED}${FAIL} Error: curl is required but not installed. Please install curl.${NC}"
         missing_deps=1
     fi
-    
+
     if ! command -v "${TAR}" >/dev/null 2>&1; then
         echo -e "${RED}${FAIL} Error: tar is required but not installed. Please install tar.${NC}"
         missing_deps=1
     fi
-    
+
     if ! command -v brotli >/dev/null 2>&1; then
         echo -e "${RED}${FAIL} Error: brotli is required but not installed. Please install brotli.${NC}"
         missing_deps=1
     fi
-    
+
     # Required for encryption
     if ! command -v openssl >/dev/null 2>&1; then
         echo -e "${RED}${FAIL} Error: openssl is required but not installed. Please install openssl.${NC}"
         missing_deps=1
     fi
-    
+
     if [[ "${missing_deps}" -ne 0 ]]; then
         exit 1
     fi
@@ -127,7 +130,8 @@ display_script_info() {
     PATH1=$(set -e; convert_to_relative_path "${SWAGGERUI_DIR}")
     PATH2=$(set -e; convert_to_relative_path "${COMPRESSED_TAR_FILE}")
     echo -e "${CYAN}${INFO} SwaggerUI Version:       ${NC}Latest (determined at runtime)"
-    echo -e "${CYAN}${INFO} Working directory:       ${NC}${PATH1}"
+    echo -e "${CYAN}${INFO} xterm.js Version:        ${NC}Latest (determined at runtime)"
+    echo -e "${CYAN}${INFO} SwaggerUI Directory:     ${NC}${PATH1}"
     echo -e "${CYAN}${INFO} Final encrypted file:    ${NC}${PATH2}"
     echo -e "${CYAN}${INFO} Temporary directory:     ${NC}${TEMP_DIR}"
 }
@@ -136,33 +140,39 @@ display_script_info() {
 cleanup() {
     print_header "Cleanup Process"
     echo -e "${CYAN}${INFO} Cleaning up temporary files and directories...${NC}"
-    
+
     # Remove the temporary working directory
     rm -rf "${TEMP_DIR}"
-    
+
     # Remove the temporary swaggerui directory if it exists
     if [[ -d "${SWAGGERUI_DIR}" ]]; then
         echo -e "${CYAN}${INFO} Removing temporary SwaggerUI directory...${NC}"
         rm -rf "${SWAGGERUI_DIR}"
     fi
-    
+
+    # Remove the temporary xtermjs directory if it exists
+    if [[ -d "${XTERMJS_DIR}" ]]; then
+        echo -e "${CYAN}${INFO} Removing temporary xterm.js directory...${NC}"
+        rm -rf "${XTERMJS_DIR}"
+    fi
+
     # Remove intermediate tar file if it exists
     if [[ -f "${TAR_FILE}" ]]; then
         echo -e "${CYAN}${INFO} Removing intermediate tar file...${NC}"
         rm -f "${TAR_FILE}"
     fi
-    
+
     # Remove encryption temporary files if they exist
     rm -f "${TEMP_DIR}/aes_key.bin" "${TEMP_DIR}/encrypted_aes_key.bin" "${TEMP_DIR}/temp_payload.enc"
-    
+
     # Remove any generated .br files in the script directory (except the final encrypted payload)
     "${FIND}" "${SCRIPT_DIR}" -name "*.br" -not -name "payload.tar.br.enc" -delete
-    
+
     echo -e "${GREEN}${PASS} Cleanup completed successfully.${NC}"
 }
 
-# Function to create SwaggerUI index.html
-create_index_html() {
+# Function to create SwaggerUI swagger.html
+create_swagger_html() {
     local target_file="$1"
     cat > "${target_file}" << 'EOF'
 <!-- HTML for static distribution bundle build -->
@@ -221,10 +231,10 @@ EOF
 # Function to get the latest SwaggerUI version from GitHub API
 get_latest_swaggerui_version() {
     echo -e "${CYAN}${INFO} Fetching latest SwaggerUI version from GitHub...${NC}" >&2
-    
+
     local latest_version
     latest_version=$(curl -s "https://api.github.com/repos/swagger-api/swagger-ui/releases/latest" | "${GREP}" '"tag_name"' | "${SED}" 's/.*"tag_name": "\(.*\)".*/\1/' || true)
-    
+
     if [[ -z "${latest_version}" ]]; then
         echo -e "${YELLOW}${WARN} Failed to fetch latest version, falling back to v5.27.1${NC}" >&2
         echo "5.27.1"
@@ -236,24 +246,38 @@ get_latest_swaggerui_version() {
     fi
 }
 
+# Function to generate terminal payload
+generate_terminal_payload() {
+    print_header "Generating Terminal Payload"
+
+    # Run the terminal generation script
+    echo -e "${CYAN}${INFO} Running terminal-generate.sh...${NC}"
+    if ! "${SCRIPT_DIR}/terminal-generate.sh" >/dev/null 2>&1; then
+        echo -e "${RED}${FAIL} Terminal payload generation failed${NC}"
+        exit 1
+    fi
+
+    echo -e "${GREEN}${PASS} Terminal payload generated successfully.${NC}"
+}
+
 # Function to download and extract SwaggerUI
 download_swaggerui() {
     print_header "Downloading and Extracting SwaggerUI"
-    
+
     # Get the latest version dynamically
     local swaggerui_version
     swaggerui_version=$(set -e; get_latest_swaggerui_version)
     readonly SWAGGERUI_VERSION="${swaggerui_version}"
-    
+
     echo -e "${CYAN}${INFO} Downloading SwaggerUI v${SWAGGERUI_VERSION}...${NC}"
-    
+
     # Download SwaggerUI from GitHub using API endpoint (more reliable)
     curl -L "https://api.github.com/repos/swagger-api/swagger-ui/tarball/v${SWAGGERUI_VERSION}" -o "${TEMP_DIR}/swagger-ui.tar.gz"
-    
+
     echo -e "${CYAN}${INFO} Extracting SwaggerUI distribution files...${NC}"
     # Extract to temporary directory and get the actual directory name
     "${TAR}" -xzf "${TEMP_DIR}/swagger-ui.tar.gz" -C "${TEMP_DIR}"
-    
+
     # Find the extracted directory (GitHub API uses hash-based naming)
     EXTRACTED_DIR=$("${FIND}" "${TEMP_DIR}" -maxdepth 1 -type d -name "swagger-api-swagger-ui-*" | head -1 || true)
     if [[ -z "${EXTRACTED_DIR}" ]]; then
@@ -261,7 +285,7 @@ download_swaggerui() {
         exit 1
     fi
     echo -e "${CYAN}${INFO} Found extracted directory: $(basename "${EXTRACTED_DIR}")${NC}"
-    
+
     # Create the temporary swaggerui directory for processing
     echo -e "${CYAN}${INFO} Creating temporary SwaggerUI directory...${NC}"
     # Remove existing swaggerui directory if it exists
@@ -270,17 +294,17 @@ download_swaggerui() {
         rm -rf "${SWAGGERUI_DIR}"
     fi
     mkdir -p "${SWAGGERUI_DIR}"
-    
+
     # List of required files from the distribution
     # We'll selectively copy only what we need
     echo -e "${CYAN}${INFO} Selecting essential files for distribution...${NC}"
-    
+
     # Process static files (to be compressed with brotli)
     cp "${EXTRACTED_DIR}/dist/swagger-ui-bundle.js" "${SWAGGERUI_DIR}/"
     cp "${EXTRACTED_DIR}/dist/swagger-ui-standalone-preset.js" "${SWAGGERUI_DIR}/"
     cp "${EXTRACTED_DIR}/dist/swagger-ui.css" "${SWAGGERUI_DIR}/"
     cp "${EXTRACTED_DIR}/dist/oauth2-redirect.html" "${SWAGGERUI_DIR}/"
-    
+
     # Copy swagger.json (both compressed and uncompressed)
     if [[ -f "${SCRIPT_DIR}/swagger.json" ]]; then
         echo -e "${GREEN}${PASS} Found swagger.json, copying for packaging...${NC}"
@@ -290,18 +314,18 @@ download_swaggerui() {
         # Create a minimal placeholder swagger.json
         echo '{"openapi":"3.1.0","info":{"title":"Hydrogen API","version":"1.0.0"},"paths":{}}' > "${SWAGGERUI_DIR}/swagger.json"
     fi
-    
+
     # Process dynamic files (to remain uncompressed)
     cp "${EXTRACTED_DIR}/dist/favicon-32x32.png" "${SWAGGERUI_DIR}/"
     cp "${EXTRACTED_DIR}/dist/favicon-16x16.png" "${SWAGGERUI_DIR}/"
-    
-    # Customize index.html and swagger-initializer.js
-    echo -e "${CYAN}${INFO} Customizing index.html...${NC}"
-    create_index_html "${SWAGGERUI_DIR}/index.html"
-    
+
+    # Customize swagger.html and swagger-initializer.js
+    echo -e "${CYAN}${INFO} Customizing swagger.html...${NC}"
+    create_swagger_html "${SWAGGERUI_DIR}/swagger.html"
+
     echo -e "${CYAN}${INFO} Customizing swagger-initializer.js with recommended settings...${NC}"
     create_swagger_initializer "${SWAGGERUI_DIR}/swagger-initializer.js"
-    
+
     echo -e "${GREEN}${PASS} SwaggerUI files prepared for packaging.${NC}"
 }
 
@@ -309,29 +333,61 @@ download_swaggerui() {
 compress_static_assets() {
     print_header "Compressing Static Assets"
     echo -e "${CYAN}${INFO} Applying Brotli compression to static assets...${NC}"
-    
+
     # Compress swagger-ui-bundle.js (won't change at runtime)
     echo -e "${CYAN}${INFO} Compressing swagger-ui-bundle.js with Brotli...${NC}"
     brotli --quality=11 --lgwin=24 -f "${SWAGGERUI_DIR}/swagger-ui-bundle.js" -o "${SWAGGERUI_DIR}/swagger-ui-bundle.js.br"
-    
+
     # Compress swagger-ui-standalone-preset.js
     echo -e "${CYAN}${INFO} Compressing swagger-ui-standalone-preset.js with Brotli...${NC}"
     brotli --quality=11 --lgwin=24 -f "${SWAGGERUI_DIR}/swagger-ui-standalone-preset.js" -o "${SWAGGERUI_DIR}/swagger-ui-standalone-preset.js.br"
-    
+
     # Compress swagger-ui.css (static styling)
     echo -e "${CYAN}${INFO} Compressing swagger-ui.css with Brotli...${NC}"
     brotli --quality=11 --lgwin=24 -f "${SWAGGERUI_DIR}/swagger-ui.css" -o "${SWAGGERUI_DIR}/swagger-ui.css.br"
-    
+
     # Compress oauth2-redirect.html
     echo -e "${CYAN}${INFO} Compressing oauth2-redirect.html with Brotli...${NC}"
     brotli --quality=11 --lgwin=24 -f "${SWAGGERUI_DIR}/oauth2-redirect.html" -o "${SWAGGERUI_DIR}/oauth2-redirect.html.br"
-    
+
+    # Compress terminal files if xtermjs directory exists
+    if [[ -d "${XTERMJS_DIR}" ]]; then
+        echo -e "${CYAN}${INFO} Compressing terminal static assets with Brotli...${NC}"
+
+        if [[ -f "${XTERMJS_DIR}/xterm.js" ]]; then
+            brotli --quality=11 --lgwin=24 -f "${XTERMJS_DIR}/xterm.js" -o "${XTERMJS_DIR}/xterm.js.br"
+        fi
+
+        if [[ -f "${XTERMJS_DIR}/xterm.css" ]]; then
+            brotli --quality=11 --lgwin=24 -f "${XTERMJS_DIR}/xterm.css" -o "${XTERMJS_DIR}/xterm.css.br"
+        fi
+
+        if [[ -f "${XTERMJS_DIR}/xterm-addon-attach.js" ]]; then
+            brotli --quality=11 --lgwin=24 -f "${XTERMJS_DIR}/xterm-addon-attach.js" -o "${XTERMJS_DIR}/xterm-addon-attach.js.br"
+        fi
+
+        if [[ -f "${XTERMJS_DIR}/xterm-addon-fit.js" ]]; then
+            brotli --quality=11 --lgwin=24 -f "${XTERMJS_DIR}/xterm-addon-fit.js" -o "${XTERMJS_DIR}/xterm-addon-fit.js.br"
+        fi
+
+        if [[ -f "${XTERMJS_DIR}/terminal.css" ]]; then
+            brotli --quality=11 --lgwin=24 -f "${XTERMJS_DIR}/terminal.css" -o "${XTERMJS_DIR}/terminal.css.br"
+        fi
+
+        if [[ -f "${XTERMJS_DIR}/terminal.html" ]]; then
+            brotli --quality=11 --lgwin=24 -f "${XTERMJS_DIR}/terminal.html" -o "${XTERMJS_DIR}/terminal.html.br"
+        fi
+
+        # Remove uncompressed terminal files (keep HTML, CSS, and JS uncompressed as they contain dynamic content)
+        rm -f "${XTERMJS_DIR}/xterm.js" "${XTERMJS_DIR}/xterm.css" "${XTERMJS_DIR}/xterm-addon-attach.js" "${XTERMJS_DIR}/xterm-addon-fit.js"
+    fi
+
     # Remove the uncompressed static files - we'll only include the .br versions in the tar
     rm -f "${SWAGGERUI_DIR}/swagger-ui-bundle.js" \
           "${SWAGGERUI_DIR}/swagger-ui-standalone-preset.js" \
           "${SWAGGERUI_DIR}/swagger-ui.css" \
           "${SWAGGERUI_DIR}/oauth2-redirect.html"
-    
+
     echo -e "${GREEN}${PASS} Static assets compressed successfully.${NC}"
 }
 
@@ -339,19 +395,19 @@ compress_static_assets() {
 validate_brotli_compression() {
     local compressed_file="$1"
     local original_file="$2"
-    
+
     echo -e "${CYAN}${INFO} Testing Brotli decompression...${NC}"
     if ! brotli -d "${compressed_file}" -o "${TEMP_DIR}/test.tar" 2>/dev/null; then
         echo -e "${RED}${FAIL} Brotli validation failed - invalid compressed data${NC}"
         exit 1
     fi
-    
+
     # Compare original and decompressed files
     if ! cmp -s "${original_file}" "${TEMP_DIR}/test.tar"; then
         echo -e "${RED}${FAIL} Brotli validation failed - decompressed data mismatch${NC}"
         exit 1
     fi
-    
+
     echo -e "${GREEN}${PASS} Brotli compression validated successfully${NC}"
     rm -f "${TEMP_DIR}/test.tar"
 }
@@ -361,7 +417,7 @@ create_validation_files() {
     local br_size="$1"
     local br_head_16="$2"
     local br_tail_16="$3"
-    
+
     # Create validation file for debugging
     {
         echo "BROTLI_VALIDATION"
@@ -377,7 +433,37 @@ create_tarball() {
     echo -e "${CYAN}${INFO} Creating payload tarball...${NC}"
 
     # Create swagger directory structure within the working directory
-    echo -e "${CYAN}${INFO} Organizing files into swagger/ directory structure...${NC}"
+    echo -e "${CYAN}${INFO} Organizing files into directory structures...${NC}"
+
+    # Create terminal directory structure if xtermjs directory exists
+    if [[ -d "${XTERMJS_DIR}" ]]; then
+        mkdir -p "${SWAGGERUI_DIR}/terminal"
+        echo -e "${CYAN}${INFO} Creating terminal/ directory structure...${NC}"
+
+        if [[ -f "${XTERMJS_DIR}/terminal.html.br" ]]; then
+            mv "${XTERMJS_DIR}/terminal.html.br" "${SWAGGERUI_DIR}/terminal/"
+        fi
+        if [[ -f "${XTERMJS_DIR}/terminal.css.br" ]]; then
+            mv "${XTERMJS_DIR}/terminal.css.br" "${SWAGGERUI_DIR}/terminal/"
+        fi
+        if [[ -f "${XTERMJS_DIR}/xterm.js.br" ]]; then
+            mv "${XTERMJS_DIR}/xterm.js.br" "${SWAGGERUI_DIR}/terminal/"
+        fi
+        if [[ -f "${XTERMJS_DIR}/xterm.css.br" ]]; then
+            mv "${XTERMJS_DIR}/xterm.css.br" "${SWAGGERUI_DIR}/terminal/"
+        fi
+        if [[ -f "${XTERMJS_DIR}/xterm-addon-attach.js.br" ]]; then
+            mv "${XTERMJS_DIR}/xterm-addon-attach.js.br" "${SWAGGERUI_DIR}/terminal/"
+        fi
+        if [[ -f "${XTERMJS_DIR}/xterm-addon-fit.js.br" ]]; then
+            mv "${XTERMJS_DIR}/xterm-addon-fit.js.br" "${SWAGGERUI_DIR}/terminal/"
+        fi
+        if [[ -f "${XTERMJS_DIR}/xtermjs_version.txt" ]]; then
+            cp "${XTERMJS_DIR}/xtermjs_version.txt" "${SWAGGERUI_DIR}/terminal/"
+        fi
+    fi
+
+    # Create swagger directory structure within the working directory
     mkdir -p "${SWAGGERUI_DIR}/swagger"
 
     # Move all files into the swagger directory to create proper folder structure
@@ -386,7 +472,7 @@ create_tarball() {
     mv "${SWAGGERUI_DIR}/swagger-ui.css.br" "${SWAGGERUI_DIR}/swagger/"
     mv "${SWAGGERUI_DIR}/swagger.json" "${SWAGGERUI_DIR}/swagger/"
     mv "${SWAGGERUI_DIR}/oauth2-redirect.html.br" "${SWAGGERUI_DIR}/swagger/"
-    mv "${SWAGGERUI_DIR}/index.html" "${SWAGGERUI_DIR}/swagger/"
+    mv "${SWAGGERUI_DIR}/swagger.html" "${SWAGGERUI_DIR}/swagger/"
     mv "${SWAGGERUI_DIR}/swagger-initializer.js" "${SWAGGERUI_DIR}/swagger/"
     mv "${SWAGGERUI_DIR}/favicon-32x32.png" "${SWAGGERUI_DIR}/swagger/"
     mv "${SWAGGERUI_DIR}/favicon-16x16.png" "${SWAGGERUI_DIR}/swagger/"
@@ -395,40 +481,58 @@ create_tarball() {
     # - Compressed static assets (.br files)
     # - Uncompressed dynamic files and swagger.json
     # - Strip metadata (permissions and ownership) since we're the only ones using it
-    cd "${SWAGGERUI_DIR}" && "${TAR}" --mode=0000 --owner=0 --group=0 -cf "${TAR_FILE}" \
-        swagger/swagger-ui-bundle.js.br \
-        swagger/swagger-ui-standalone-preset.js.br \
-        swagger/swagger-ui.css.br \
-        swagger/swagger.json \
-        swagger/oauth2-redirect.html.br \
-        swagger/index.html \
-        swagger/swagger-initializer.js \
-        swagger/favicon-32x32.png \
-        swagger/favicon-16x16.png
-    
+
+    # Build the tar command with appropriate files
+    TAR_FILES=(
+        "swagger/swagger-ui-bundle.js.br"
+        "swagger/swagger-ui-standalone-preset.js.br"
+        "swagger/swagger-ui.css.br"
+        "swagger/swagger.json"
+        "swagger/oauth2-redirect.html.br"
+        "swagger/swagger.html"
+        "swagger/swagger-initializer.js"
+        "swagger/favicon-32x32.png"
+        "swagger/favicon-16x16.png"
+    )
+
+    # Add terminal files if they exist
+    if [[ -d "${SWAGGERUI_DIR}/terminal" ]]; then
+        TAR_FILES+=(
+            "terminal/terminal.html.br"
+            "terminal/terminal.css.br"
+            "terminal/xterm.js.br"
+            "terminal/xterm.css.br"
+            "terminal/xterm-addon-attach.js.br"
+            "terminal/xterm-addon-fit.js.br"
+            "terminal/xtermjs_version.txt"
+        )
+    fi
+
+    cd "${SWAGGERUI_DIR}" && "${TAR}" --mode=0000 --owner=0 --group=0 -cf "${TAR_FILE}" "${TAR_FILES[@]}"
+
     # Compress the tar file with Brotli using explicit settings
     echo -e "${CYAN}${INFO} Compressing tar file with Brotli...${NC}"
     echo -e "${CYAN}${INFO} - Quality: 11 (maximum)${NC}"
     echo -e "${CYAN}${INFO} - Window: 24 (16MB)${NC}"
     echo -e "${CYAN}${INFO} - Input size: $("${STAT}" -c%s "${TAR_FILE}" || true) bytes${NC}"
-    
+
     # Use explicit Brotli parameters with correct syntax
     brotli --quality=11 --lgwin=24 --force \
            "${TAR_FILE}" \
            -o "${TEMP_DIR}/payload.tar.br"
-    
+
     # Check if brotli compression succeeded
     if ! brotli --quality=11 --lgwin=24 --force "${TAR_FILE}" -o "${TEMP_DIR}/payload.tar.br"; then
         echo -e "${RED}${FAIL} Brotli compression failed${NC}"
         exit 1
     fi
-    
+
     # Verify the compressed file
     if [[ ! -f "${TEMP_DIR}/payload.tar.br" ]]; then
         echo -e "${RED}${FAIL} Compressed file not created${NC}"
         exit 1
     fi
-    
+
     # Log detailed Brotli stream information
     local br_size
     local br_head_16
@@ -436,16 +540,16 @@ create_tarball() {
     br_size=$("${STAT}" -c%s "${TEMP_DIR}/payload.tar.br" || true)
     br_head_16=$(head -c16 "${TEMP_DIR}/payload.tar.br" | xxd -p | tr -d '\n' || true)
     br_tail_16=$(tail -c16 "${TEMP_DIR}/payload.tar.br" | xxd -p | tr -d '\n' || true)
-    
+
     echo -e "${CYAN}${INFO} Brotli stream validation:${NC}"
     echo -e "${CYAN}${INFO} - Compressed size: ${br_size} bytes${NC}"
     echo -e "${CYAN}${INFO} - Compression ratio: $(echo "scale=2; ${br_size}*100/$("${STAT}" -c%s "${TAR_FILE}" || true)" | bc || true)%${NC}"
     echo -e "${CYAN}${INFO} - First 32 bytes: ${br_head_16}${NC}"
     echo -e "${CYAN}${INFO} - Last 32 bytes: ${br_tail_16}${NC}"
-    
+
     # Validate brotli compression
     validate_brotli_compression "${TEMP_DIR}/payload.tar.br" "${TAR_FILE}"
-    
+
     # Create validation files
     create_validation_files "${br_size}" "${br_head_16}" "${br_tail_16}"
 
@@ -463,26 +567,26 @@ create_tarball() {
     local payload_lock_prefix
     payload_lock_prefix=$(echo "${PAYLOAD_LOCK}" | cut -c1-5)
     echo -e "${CYAN}${INFO} PAYLOAD_LOCK first 5 chars: ${BOLD}${payload_lock_prefix}${NC}"
-    
+
     # Generate a random AES-256 key and IV for encrypting the payload
     echo -e "${CYAN}${INFO} Generating AES-256 key and IV for payload encryption...${NC}"
     openssl rand -out "${TEMP_DIR}/aes_key.bin" 32
     openssl rand -out "${TEMP_DIR}/aes_iv.bin" 16
-    
+
     # Log first 5 chars of AES key and IV (hex)
     echo -e "${CYAN}${INFO} AES key first 5 chars (hex): ${BOLD}$(xxd -p -l 5 "${TEMP_DIR}/aes_key.bin" || true)${NC}"
     echo -e "${CYAN}${INFO} AES IV first 5 chars (hex): ${BOLD}$(xxd -p -l 5 "${TEMP_DIR}/aes_iv.bin" || true)${NC}"
 
     # Encrypt the AES key with the RSA public key (PAYLOAD_LOCK)
     echo -e "${CYAN}${INFO} Encrypting AES key with RSA public key (PAYLOAD_LOCK)...${NC}"
-    
+
     # Save the base64-decoded PAYLOAD_LOCK to a temporary PEM file
     echo "${PAYLOAD_LOCK}" | openssl base64 -d -A > "${TEMP_DIR}/public_key.pem"
-    
+
     # Encrypt the AES key with the public key
     openssl pkeyutl -encrypt -inkey "${TEMP_DIR}/public_key.pem" -pubin \
                    -in "${TEMP_DIR}/aes_key.bin" -out "${TEMP_DIR}/encrypted_aes_key.bin"
-    
+
     # Get the size of the encrypted AES key
     local encrypted_key_size
     encrypted_key_size=$("${STAT}" -c%s "${TEMP_DIR}/encrypted_aes_key.bin")
@@ -494,7 +598,7 @@ create_tarball() {
     echo -e "${CYAN}${INFO} - Key: Direct (32 bytes)${NC}"
     echo -e "${CYAN}${INFO} - IV: Direct (16 bytes)${NC}"
     echo -e "${CYAN}${INFO} - Padding: PKCS7${NC}"
-    
+
     # Encrypt the Brotli-compressed tar with AES using direct key and IV
     echo -e "${CYAN}${INFO} Encrypting compressed tar with AES-256 (direct key/IV)...${NC}"
     openssl enc -aes-256-cbc \
@@ -502,14 +606,14 @@ create_tarball() {
                 -out "${TEMP_DIR}/temp_payload.enc" \
                 -K "$(xxd -p -c 32 "${TEMP_DIR}/aes_key.bin" || true)" \
                 -iv "$(xxd -p -c 16 "${TEMP_DIR}/aes_iv.bin" || true)"
-    
+
     # Verify encryption size
     local enc_size
     enc_size=$("${STAT}" -c%s "${TEMP_DIR}/temp_payload.enc")
     echo -e "${CYAN}${INFO} Encryption validation:${NC}"
     echo -e "${CYAN}${INFO} - Original size: ${br_size} bytes${NC}"
     echo -e "${CYAN}${INFO} - Encrypted size: ${enc_size} bytes${NC}"
-    
+
     # Quick validation test (decrypt and compare headers)
     echo -e "${CYAN}${INFO} Performing validation test...${NC}"
     openssl enc -d -aes-256-cbc \
@@ -517,7 +621,7 @@ create_tarball() {
                 -out "${TEMP_DIR}/validation.br" \
                 -K "$(xxd -p -c 32 "${TEMP_DIR}/aes_key.bin" || true)" \
                 -iv "$(xxd -p -c 16 "${TEMP_DIR}/aes_iv.bin" || true)"
-    
+
     # Compare the first 16 bytes
     local val_head_16
     val_head_16=$(head -c16 "${TEMP_DIR}/validation.br" | xxd -p | tr -d '\n' || true)
@@ -529,18 +633,18 @@ create_tarball() {
         echo -e "${RED}${INFO} Decrypted: ${val_head_16}${NC}"
         exit 1
     fi
-    
+
     # Log the first 16 bytes of the encrypted payload
     local enc_head_16
     enc_head_16=$(head -c16 "${TEMP_DIR}/temp_payload.enc" | xxd -p | tr -d '\n' || true)
     echo -e "${CYAN}${INFO} AES-encrypted payload first 16 bytes: ${NC}${enc_head_16}"
-    
+
     # Combine the encrypted AES key, IV, and encrypted payload
     echo -e "${CYAN}${INFO} Creating final encrypted payload with IV...${NC}"
-    
+
     # Write the size of the encrypted key as a 4-byte binary header
     printf "%08x" "${encrypted_key_size}" | xxd -r -p > "${COMPRESSED_TAR_FILE}"
-    
+
     # Append the encrypted AES key, IV, and encrypted payload using grouped redirects
     {
         cat "${TEMP_DIR}/encrypted_aes_key.bin"
@@ -562,10 +666,10 @@ create_tarball() {
         fi
     done || true
     echo -e "${BLUE}────────────────────────────────────────────────────────────────${NC}"
-    
+
     # Display file sizes and hex samples for reference
     echo -e "${BLUE}${BOLD}Distribution file details:${NC}"
-    
+
     # Original tarball
     local tar_size tar_head tar_tail
     tar_size=$("${STAT}" -c%s "${TAR_FILE}")
@@ -574,7 +678,7 @@ create_tarball() {
     echo -e "  ${GREEN}${INFO} Uncompressed tar:         ${NC}${tar_size} bytes"
     echo -e "  ${GREEN}${INFO} First 5 bytes (hex):      ${NC}${tar_head}"
     echo -e "  ${GREEN}${INFO} Last 5 bytes (hex):       ${NC}${tar_tail}"
-    
+
     # Brotli compressed tar
     local br_head_5 br_tail_5
     br_head_5=$(head -c5 "${TEMP_DIR}/payload.tar.br" | xxd -p | tr -d '\n' || true)
@@ -582,7 +686,7 @@ create_tarball() {
     echo -e "  ${GREEN}${INFO} Compressed tar (brotli):  ${NC}${br_size} bytes"
     echo -e "  ${GREEN}${INFO} First 5 bytes (hex):      ${NC}${br_head_5}"
     echo -e "  ${GREEN}${INFO} Last 5 bytes (hex):       ${NC}${br_tail_5}"
-    
+
     # Final encrypted payload
     local final_enc_size final_enc_head final_enc_tail
     final_enc_size=$("${STAT}" -c%s "${COMPRESSED_TAR_FILE}")
@@ -591,10 +695,10 @@ create_tarball() {
     echo -e "  ${GREEN}${INFO} Encrypted payload:        ${NC}${final_enc_size} bytes"
     echo -e "  ${GREEN}${INFO} First 5 bytes (hex):      ${NC}${final_enc_head}"
     echo -e "  ${GREEN}${INFO} Last 5 bytes (hex):       ${NC}${final_enc_tail}"
-    
+
     # Log size of encrypted AES key being added
     echo -e "  ${GREEN}${INFO} Encrypted AES key size:   ${NC}${encrypted_key_size} bytes"
-    
+
     echo -e "${GREEN}${PASS} Encrypted payload package is ready for distribution.${NC}"
 }
 
@@ -615,16 +719,17 @@ trap cleanup EXIT
 main() {
     # Display script information
     display_script_info
-    
+
     # Check dependencies
     check_dependencies
-    
+
     # Execute main workflow
     print_header "Payload Generation Process"
     download_swaggerui
+    generate_terminal_payload
     compress_static_assets
     create_tarball
-    
+
     # Display completion summary
     display_completion_summary
 }
