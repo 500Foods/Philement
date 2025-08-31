@@ -187,7 +187,7 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
     
     // Check if this is a request for the root path
     if (!*url_path || strcmp(url_path, "/") == 0) {
-        url_path = "index.html";
+        url_path = "swagger.html";
     } else if (*url_path == '/') {
         url_path++; // Skip leading slash for other paths
     }

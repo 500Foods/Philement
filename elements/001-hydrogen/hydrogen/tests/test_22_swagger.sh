@@ -61,28 +61,27 @@ check_response_content() {
     local response_file="$3"
     local follow_redirects="$4"
     
-    local curl_cmd="curl -s --max-time 10"
-    if [[ "${follow_redirects}" = "true" ]]; then
-        curl_cmd="${curl_cmd} -L"
-    fi
-    curl_cmd="${curl_cmd} --compressed"
-    
-    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "${curl_cmd} \"${url}\""
-    
+    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl -s --max-time 10 --compressed ${follow_redirects:+-L} \"${url}\""
+
     # Retry logic for subsystem readiness (especially important in parallel execution)
     local max_attempts=25
     local attempt=1
     local curl_exit_code=0
-    
+
     while [[ "${attempt}" -le "${max_attempts}" ]]; do
         if [[ "${attempt}" -gt 1 ]]; then
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HTTP request attempt ${attempt} of ${max_attempts} (waiting for subsystem initialization)..."
             # sleep 0.05  # Brief delay between attempts for subsystem initialization
         fi
-        
+
         # Run curl and capture exit code
-        "${curl_cmd} \"${url}\" > \"${response_file}\""
-        curl_exit_code=$?
+        if [[ "${follow_redirects}" = "true" ]]; then
+            curl -s --max-time 10 --compressed -L "${url}" > "${response_file}"
+            curl_exit_code=$?
+        else
+            curl -s --max-time 10 --compressed "${url}" > "${response_file}"
+            curl_exit_code=$?
+        fi
         
         if [[ "${curl_exit_code}" -eq 0 ]]; then
             # Check if we got a 404 or other error response
