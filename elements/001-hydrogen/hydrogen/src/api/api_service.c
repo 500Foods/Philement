@@ -214,6 +214,12 @@ bool is_api_endpoint(const char *url, char *service, char *endpoint) {
         return false;
     }
 
+    // Ensure the prefix is followed by a separator or equal to the URL (exact match)
+    // This prevents partial matches like "/api" matching "/apidocs"
+    if (url[prefix_len] != '\0' && url[prefix_len] != '/') {
+        return false;
+    }
+
     // Skip past prefix and normalize path
     // e.g., "/api/system/health" -> "system/health"
     const char *path = url + prefix_len;
