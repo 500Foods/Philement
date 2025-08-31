@@ -105,7 +105,7 @@ while true; do
         break
     fi
     
-    if "${GREP}" -q "Application started" "${SERVER_LOG}"; then
+    if "${GREP}" -q "STARTUP COMPLETE" "${SERVER_LOG}"; then
         log_startup_time=$("${GREP}" "Startup elapsed time:" "${SERVER_LOG}" 2>/dev/null | sed 's/.*Startup elapsed time:  \([0-9.]*s\).*/\1/' | tail -1 || true)
         if [[ -n "${log_startup_time}" ]]; then
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Logged startup time reported as ${log_startup_time}"

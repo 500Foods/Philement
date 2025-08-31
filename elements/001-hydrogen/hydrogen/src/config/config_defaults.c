@@ -77,13 +77,13 @@ bool initialize_config_defaults(AppConfig* config) {
 void initialize_config_defaults_server(AppConfig* config) {
     if (config) {
         config->server.server_name = strdup("Philement/hydrogen");
-        config->server.exec_file = NULL; 
-        config->server.config_file = NULL; 
+        config->server.exec_file = NULL;
+        config->server.config_file = NULL;
         config->server.log_file = strdup("/var/log/hydrogen/hydrogen.log");
         config->server.startup_delay = 5;
         config->server.payload_key = process_env_variable_string("${env.PAYLOAD_KEY}");
-        
-        log_this(SR_CONFIG, "Applied config defaults for Server", LOG_LEVEL_STATE);        
+
+        log_this(SR_CONFIG, "Applied config defaults for Server", LOG_LEVEL_STATE);
     }
 }
 
@@ -189,8 +189,11 @@ void initialize_config_defaults_webserver(AppConfig* config) {
         config->webserver.max_connections = 200;
         config->webserver.max_connections_per_ip = 100;
         config->webserver.connection_timeout = 60;
-        
-        log_this(SR_CONFIG, "Applied config defaults for Webserver", LOG_LEVEL_STATE);        
+
+        // NEW: Global CORS default for WebServer
+        config->webserver.cors_origin = strdup("*");  // Allow all origins as default
+
+        log_this(SR_CONFIG, "Applied config defaults for Webserver", LOG_LEVEL_STATE);
     }
 }
 
@@ -200,8 +203,11 @@ void initialize_config_defaults_api(AppConfig* config) {
         config->api.enabled = true;
         config->api.prefix = strdup("/api");
         config->api.jwt_secret = strdup("${env.JWT_SECRET}");
-        
-        log_this(SR_CONFIG, "Applied config defaults for API", LOG_LEVEL_STATE);        
+
+        // NEW: CORS defaults for API
+        config->api.cors_origin = strdup("*");  // Allow all origins as default
+
+        log_this(SR_CONFIG, "Applied config defaults for API", LOG_LEVEL_STATE);
     }
 }
 
@@ -211,6 +217,10 @@ void initialize_config_defaults_swagger(AppConfig* config) {
         config->swagger.enabled = true;
         config->swagger.prefix = strdup("/apidocs");
         config->swagger.payload_available = false;
+
+        // NEW: WebRoot defaults
+        config->swagger.webroot = strdup("PAYLOAD:/swagger");
+        config->swagger.cors_origin = strdup("*");  // Allow all origins by default
 
         // Metadata defaults
         config->swagger.metadata.title = strdup("Hydrogen API");
@@ -234,8 +244,8 @@ void initialize_config_defaults_swagger(AppConfig* config) {
         config->swagger.ui_options.show_common_extensions = true;
         config->swagger.ui_options.doc_expansion = strdup("list");
         config->swagger.ui_options.syntax_highlight_theme = strdup("agate");
-        
-        log_this(SR_CONFIG, "Applied config defaults for Swagger", LOG_LEVEL_STATE);        
+
+        log_this(SR_CONFIG, "Applied config defaults for Swagger", LOG_LEVEL_STATE);
     }
 }
 

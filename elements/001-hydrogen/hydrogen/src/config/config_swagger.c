@@ -20,6 +20,10 @@ bool load_swagger_config(json_t* root, AppConfig* config) {
         .enabled = true,
         .prefix = strdup("/apidocs"),
         .payload_available = false,
+
+        // NEW: WebRoot defaults
+        .webroot = strdup("PAYLOAD:/swagger"),
+        .cors_origin = strdup("*"),  // NEW: Allow all origins by default
         .metadata = {
             .title = strdup("Hydrogen API"),
             .description = strdup("Hydrogen Server API"),
@@ -47,6 +51,10 @@ bool load_swagger_config(json_t* root, AppConfig* config) {
     success = PROCESS_SECTION(root, "Swagger");
     success = success && PROCESS_BOOL(root, swagger, enabled, "Swagger.Enabled", "Swagger");
     success = success && PROCESS_STRING(root, swagger, prefix, "Swagger.Prefix", "Swagger");
+
+    // NEW: Process WebRoot and CORS fields
+    success = success && PROCESS_STRING(root, swagger, webroot, "Swagger.WebRoot", "Swagger");
+    success = success && PROCESS_STRING(root, swagger, cors_origin, "Swagger.CORSOrigin", "Swagger");
 
     // Process metadata section
     success = success && PROCESS_SECTION(root, "Swagger.Metadata");
@@ -94,6 +102,10 @@ void dump_swagger_config(const SwaggerConfig* config) {
     DUMP_STRING("―― Prefix", config->prefix);
     DUMP_BOOL("―― Payload", config->payload_available);
 
+    // NEW: Dump WebRoot and CORS fields
+    DUMP_STRING("―― WebRoot", config->webroot);
+    DUMP_STRING("―― CORS Origin", config->cors_origin);
+
     DUMP_TEXT("――", "Metadata");
     DUMP_STRING2("――――", "Title", config->metadata.title);
     DUMP_STRING2("――――", "Description", config->metadata.description);
@@ -128,6 +140,10 @@ void cleanup_swagger_config(SwaggerConfig* config) {
 
     // Free prefix
     free(config->prefix);
+
+    // NEW: Free WebRoot and CORS strings
+    free(config->webroot);
+    free(config->cors_origin);
 
     // Free metadata strings
     free(config->metadata.title);

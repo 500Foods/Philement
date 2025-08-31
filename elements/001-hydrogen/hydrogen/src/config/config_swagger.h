@@ -17,24 +17,28 @@ typedef struct SwaggerConfig {
     bool enabled;
     char* prefix;
     int payload_available;  // Track if swagger payload was loaded
-    
+
+    // NEW: WebRoot support for PAYLOAD:/ paths or filesystem paths
+    char* webroot;                  // NEW: PAYLOAD:/swagger or /filesystem/path
+    char* cors_origin;              // NEW: Optional per-subsystem CORS override
+
     struct {
         char* title;
         char* description;
         char* version;
-        
+
         struct {
             char* name;
             char* email;
             char* url;
         } contact;
-        
+
         struct {
             char* name;
             char* url;
         } license;
     } metadata;
-    
+
     struct {
         bool try_it_enabled;
         bool always_expanded;

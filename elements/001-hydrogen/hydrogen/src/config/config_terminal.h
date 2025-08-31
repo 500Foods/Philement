@@ -22,6 +22,10 @@ typedef struct TerminalConfig {
     char* shell_command;          /**< Shell command to execute */
     int max_sessions;             /**< Maximum concurrent terminal sessions */
     int idle_timeout_seconds;     /**< Session idle timeout in seconds */
+
+    // NEW: WebRoot support for PAYLOAD:/ paths or filesystem paths
+    char* webroot;                 /** NEW: PAYLOAD:/terminal or /filesystem/path */
+    char* cors_origin;             /** NEW: Optional per-subsystem CORS override */
 } TerminalConfig;
 
 /**

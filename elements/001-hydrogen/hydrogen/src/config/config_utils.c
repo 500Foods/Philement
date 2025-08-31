@@ -202,7 +202,6 @@ const char* format_int_buffer(int value) {
  * Handles type inference and conversion for environment values
  */
 json_t* process_env_variable(const char* value) {
-    const char* key_name = "EnvVar"; // Default key name for logging when not part of a specific config
     if (!value || strncmp(value, "${env.", 6) != 0) {
         return NULL;
     }
@@ -229,27 +228,17 @@ json_t* process_env_variable(const char* value) {
     
     // Look up the environment variable
     const char* env_value = getenv(var_name);
-    
-    // Log environment variable processing
+
     if (env_value) {
-        if (is_sensitive_value(var_name)) {
-            char safe_value[256];
-            snprintf(safe_value, sizeof(safe_value), "%s {%s}: ********", key_name, var_name);
-                log_config_item(key_name, safe_value, false, "EnvVar");
-        } else {
-            char env_log_buffer[512];
-            snprintf(env_log_buffer, sizeof(env_log_buffer), "%s {%s}: %s", key_name, var_name, env_value);
-                log_config_item(key_name, env_log_buffer, false, "EnvVar");
-        }
+        // Process the environment variable value
     } else {
-        char env_log_buffer[512];
-        snprintf(env_log_buffer, sizeof(env_log_buffer), "%s {%s}: not set", key_name, var_name);
-        log_config_item(key_name, env_log_buffer, true, "EnvVar");
         free(var_name);
         return NULL;
     }
-    
-    if (env_value[0] == '\0') {
+
+    // Check if env_value is empty string (avoid direct array access under LTO)
+    // Compare to empty string instead of checking *env_value
+    if (!env_value || strcmp(env_value, "") == 0) {
         free(var_name);
         return json_null();
     }
@@ -264,23 +253,29 @@ json_t* process_env_variable(const char* value) {
         return json_false();
     }
     
-    // Check if it's a number
-    char* endptr;
-    // Try parsing as integer first
-    long long int_value = strtoll(env_value, &endptr, 10);
-    if (*endptr == '\0') {
-        // It's a valid integer
-        free(var_name);
-        return json_integer(int_value);
-    }
-    
-    // Try parsing as double
-    double real_value = strtod(env_value, &endptr);
-    if (*endptr == '\0') {
-        // It's a valid floating point number
-        free(var_name);
-        return json_real(real_value);
-    }
+// Check if it's a number
+if (!env_value) {
+    log_this(SR_CONFIG, "LTO: env_value is NULL for %s", LOG_LEVEL_ERROR, var_name);
+    free(var_name);
+    return json_null();
+}
+
+char* endptr;
+// Try parsing as integer first
+long long int_value = strtoll(env_value, &endptr, 10);
+if (*endptr == '\0') {
+    // It's a valid integer
+    free(var_name);
+    return json_integer(int_value);
+}
+
+// Try parsing as double
+double real_value = strtod(env_value, &endptr);
+if (*endptr == '\0') {
+    // It's a valid floating point number
+    free(var_name);
+    return json_real(real_value);
+}
     
     // Otherwise, treat it as a string
     free(var_name);
